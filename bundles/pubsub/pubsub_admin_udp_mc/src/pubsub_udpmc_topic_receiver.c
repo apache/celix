@@ -36,22 +36,15 @@
 #define UDP_BUFFER_SIZE         65535
 #define MAX_UDP_SESSIONS        16
 
-struct pubsub_updmc_topic_receiver {
+struct pubsub_udpmc_topic_receiver {
     celix_bundle_context_t *ctx;
+    long serializerSvcId;
+    pubsub_serializer_service_t *serializer;
     char *scope;
     char *topic;
     char* ifIpAddress;
     largeUdp_pt largeUdpHandle;
     int topicEpollFd; // EPOLL filedescriptor where the sockets are registered.
-
-    //serialiser svc
-    long serializerTrackerId;
-    struct {
-
-        celix_thread_mutex_t mutex; //protect svc
-        pubsub_serializer_service_t *svc;
-        const celix_properties_t *props;
-    } serializer;
 
     struct {
         celix_thread_t thread;
@@ -92,20 +85,22 @@ typedef struct pubsub_msg{
     unsigned int payloadSize;
 } pubsub_msg_t;
 
-static void pubsub_udpmcTopicReceiver_setSerializer(void *handle, void *svc, const celix_properties_t *props);
 static void pubsub_udpmcTopicReceiver_addSubscriber(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner);
 static void pubsub_udpmcTopicReceiver_removeSubscriber(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner);
-static void psa_udpmc_processMsg(pubsub_updmc_topic_receiver_t *receiver, pubsub_udp_msg_t *msg);
+static void psa_udpmc_processMsg(pubsub_udpmc_topic_receiver_t *receiver, pubsub_udp_msg_t *msg);
 static void* psa_udpmc_recvThread(void * data);
 
 
-pubsub_updmc_topic_receiver_t* pubsub_udpmcTopicReceiver_create(celix_bundle_context_t *ctx,
+pubsub_udpmc_topic_receiver_t* pubsub_udpmcTopicReceiver_create(celix_bundle_context_t *ctx,
                                                                 const char *scope,
                                                                 const char *topic,
                                                                 const char *ifIP,
-                                                                long serializerSvcId) {
-    pubsub_updmc_topic_receiver_t *receiver = calloc(1, sizeof(*receiver));
+                                                                long serializerSvcId,
+                                                                pubsub_serializer_service_t *serializer) {
+    pubsub_udpmc_topic_receiver_t *receiver = calloc(1, sizeof(*receiver));
     receiver->ctx = ctx;
+    receiver->serializerSvcId = serializerSvcId;
+    receiver->serializer = serializer;
     receiver->scope = strndup(scope, 1024 * 1024);
     receiver->topic = strndup(topic, 1024 * 1024);
     receiver->ifIpAddress = strndup(ifIP, 1024 * 1024);
@@ -114,27 +109,12 @@ pubsub_updmc_topic_receiver_t* pubsub_udpmcTopicReceiver_create(celix_bundle_con
     receiver->topicEpollFd = epoll_create1(0);
 
 
-    celixThreadMutex_create(&receiver->serializer.mutex, NULL);
     celixThreadMutex_create(&receiver->subscribers.mutex, NULL);
     celixThreadMutex_create(&receiver->requestedConnections.mutex, NULL);
     celixThreadMutex_create(&receiver->recvThread.mutex, NULL);
 
     receiver->subscribers.map = hashMap_create(NULL, NULL, NULL, NULL);
     receiver->requestedConnections.map = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
-
-    //track serializer svc based on the provided serializerSvcId
-    {
-        char filter[64];
-        snprintf(filter, 64, "(service.id=%li)", serializerSvcId);
-
-        celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
-        opts.filter.serviceName = PUBSUB_SERIALIZER_SERVICE_NAME;
-        opts.filter.filter = filter;
-        opts.filter.ignoreServiceLanguage = true;
-        opts.callbackHandle = receiver;
-        opts.setWithProperties = pubsub_udpmcTopicReceiver_setSerializer;
-        receiver->serializerTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
-    }
 
     //track subscribers
     {
@@ -157,9 +137,8 @@ pubsub_updmc_topic_receiver_t* pubsub_udpmcTopicReceiver_create(celix_bundle_con
     return receiver;
 }
 
-void pubsub_udpmcTopicReceiver_destroy(pubsub_updmc_topic_receiver_t *receiver) {
+void pubsub_udpmcTopicReceiver_destroy(pubsub_udpmc_topic_receiver_t *receiver) {
     if (receiver != NULL) {
-        celix_bundleContext_stopTracker(receiver->ctx, receiver->serializerTrackerId);
         celix_bundleContext_stopTracker(receiver->ctx, receiver->subscriberTrackerId);
 
         celixThreadMutex_lock(&receiver->recvThread.mutex);
@@ -167,7 +146,6 @@ void pubsub_udpmcTopicReceiver_destroy(pubsub_updmc_topic_receiver_t *receiver) 
         celixThreadMutex_unlock(&receiver->recvThread.mutex);
         celixThread_join(receiver->recvThread.thread, NULL);
 
-        celixThreadMutex_destroy(&receiver->serializer.mutex);
         celixThreadMutex_destroy(&receiver->subscribers.mutex);
         celixThreadMutex_destroy(&receiver->requestedConnections.mutex);
         celixThreadMutex_destroy(&receiver->recvThread.mutex);
@@ -180,29 +158,19 @@ void pubsub_udpmcTopicReceiver_destroy(pubsub_updmc_topic_receiver_t *receiver) 
     free(receiver);
 }
 
-const char* pubsub_udpmcTopicReceiver_psaType(pubsub_updmc_topic_receiver_t *receiver) {
-    return PSA_UDPMC_PUBSUB_ADMIN_TYPE;
-}
-
-const char* pubsub_udpmcTopicReceiver_serializerType(pubsub_updmc_topic_receiver_t *receiver) {
-    const char *result = NULL;
-    celixThreadMutex_lock(&receiver->serializer.mutex);
-    if (receiver->serializer.props != NULL) {
-        result = celix_properties_get(receiver->serializer.props, PUBSUB_SERIALIZER_TYPE_KEY, NULL);
-    }
-    celixThreadMutex_unlock(&receiver->serializer.mutex);
-    return result;
-}
-
-const char* pubsub_udpmcTopicReceiver_scope(pubsub_updmc_topic_receiver_t *receiver) {
+const char* pubsub_udpmcTopicReceiver_scope(pubsub_udpmc_topic_receiver_t *receiver) {
     return receiver->scope;
 }
-const char* pubsub_udpmcTopicReceiver_topic(pubsub_updmc_topic_receiver_t *receiver) {
+const char* pubsub_udpmcTopicReceiver_topic(pubsub_udpmc_topic_receiver_t *receiver) {
     return receiver->topic;
 }
 
+long pubsub_udpmcTopicReceiver_serializerSvcId(pubsub_udpmc_topic_receiver_t *receiver) {
+    return receiver->serializerSvcId;
+}
+
 void pubsub_udpmcTopicReceiver_connectTo(
-        pubsub_updmc_topic_receiver_t *receiver,
+        pubsub_udpmc_topic_receiver_t *receiver,
         const char *socketAddress,
         long socketPort) {
     printf("[PSA UDPMC] TopicReceiver %s/%s connect to socket address = %s:%li\n", receiver->scope, receiver->topic, socketAddress, socketPort);
@@ -261,7 +229,7 @@ void pubsub_udpmcTopicReceiver_connectTo(
     celixThreadMutex_unlock(&receiver->requestedConnections.mutex);
 }
 
-void pubsub_udpmcTopicReceiver_disconnectFrom(pubsub_updmc_topic_receiver_t *receiver, const char *socketAddress, long socketPort) {
+void pubsub_udpmcTopicReceiver_disconnectFrom(pubsub_udpmc_topic_receiver_t *receiver, const char *socketAddress, long socketPort) {
     printf("[PSA UDPMC] TopicReceiver %s/%s disconnect from socket address = %s:%li\n", receiver->scope, receiver->topic, socketAddress, socketPort);
 
     int len = snprintf(NULL, 0, "%s:%li", socketAddress, socketPort);
@@ -287,23 +255,8 @@ void pubsub_udpmcTopicReceiver_disconnectFrom(pubsub_updmc_topic_receiver_t *rec
     celixThreadMutex_unlock(&receiver->requestedConnections.mutex);
 }
 
-
-static void pubsub_udpmcTopicReceiver_setSerializer(void *handle, void *svc, const celix_properties_t *props) {
-    pubsub_updmc_topic_receiver_t *receiver = handle;
-    pubsub_serializer_service_t *ser = svc;
-
-    if (ser == NULL) {
-        //TODO -> no serializer -> remove all publishers
-    }
-
-    celixThreadMutex_lock(&receiver->serializer.mutex);
-    receiver->serializer.svc = ser;
-    receiver->serializer.props = props;
-    celixThreadMutex_unlock(&receiver->serializer.mutex);
-}
-
 static void pubsub_udpmcTopicReceiver_addSubscriber(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *bnd) {
-    pubsub_updmc_topic_receiver_t *receiver = handle;
+    pubsub_udpmc_topic_receiver_t *receiver = handle;
 
     long bndId = celix_bundle_getId(bnd);
     const char *subScope = celix_properties_get(props, PUBSUB_SUBSCRIBER_SCOPE, "default");
@@ -322,22 +275,19 @@ static void pubsub_udpmcTopicReceiver_addSubscriber(void *handle, void *svc, con
         entry->usageCount = 1;
         entry->svc = svc;
 
-        celixThreadMutex_lock(&receiver->serializer.mutex);
-        if (receiver->serializer.svc != NULL) {
-            receiver->serializer.svc->createSerializerMap(receiver->serializer.svc->handle, (celix_bundle_t*)bnd, &entry->msgTypes);
+        int rc = receiver->serializer->createSerializerMap(receiver->serializer->handle, (celix_bundle_t*)bnd, &entry->msgTypes);
+        if (rc == 0) {
+            hashMap_put(receiver->subscribers.map, (void*)bndId, entry);
         } else {
+            free(entry);
             fprintf(stderr, "Cannot find serializer for TopicReceiver %s/%s", receiver->scope, receiver->topic);
         }
-        celixThreadMutex_unlock(&receiver->serializer.mutex);
-
-        hashMap_put(receiver->subscribers.map, (void*)bndId, entry);
-
     }
     celixThreadMutex_unlock(&receiver->subscribers.mutex);
 }
 
 static void pubsub_udpmcTopicReceiver_removeSubscriber(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *bnd) {
-    pubsub_updmc_topic_receiver_t *receiver = handle;
+    pubsub_udpmc_topic_receiver_t *receiver = handle;
 
     long bndId = celix_bundle_getId(bnd);
 
@@ -349,20 +299,17 @@ static void pubsub_udpmcTopicReceiver_removeSubscriber(void *handle, void *svc, 
     if (entry != NULL && entry->usageCount <= 0) {
         //remove entry
         hashMap_remove(receiver->subscribers.map, (void*)bndId);
-        celixThreadMutex_lock(&receiver->serializer.mutex);
-        if (receiver->serializer.svc != NULL) {
-            receiver->serializer.svc->destroySerializerMap(receiver->serializer.svc->handle, entry->msgTypes);
-        } else {
+        int rc =  receiver->serializer->destroySerializerMap(receiver->serializer->handle, entry->msgTypes);
+        if (rc != 0) {
             fprintf(stderr, "Cannot find serializer for TopicReceiver %s/%s", receiver->scope, receiver->topic);
         }
-        celixThreadMutex_unlock(&receiver->serializer.mutex);
         free(entry);
     }
     celixThreadMutex_unlock(&receiver->subscribers.mutex);
 }
 
 static void* psa_udpmc_recvThread(void * data) {
-    pubsub_updmc_topic_receiver_t *receiver = data;
+    pubsub_udpmc_topic_receiver_t *receiver = data;
 
     struct epoll_event events[MAX_EPOLL_EVENTS];
 
@@ -397,7 +344,7 @@ static void* psa_udpmc_recvThread(void * data) {
     return NULL;
 }
 
-static void psa_udpmc_processMsg(pubsub_updmc_topic_receiver_t *receiver, pubsub_udp_msg_t *msg) {
+static void psa_udpmc_processMsg(pubsub_udpmc_topic_receiver_t *receiver, pubsub_udp_msg_t *msg) {
     celixThreadMutex_lock(&receiver->subscribers.mutex);
     hash_map_iterator_t iter = hashMapIterator_construct(receiver->subscribers.map);
     while (hashMapIterator_hasNext(&iter)) {

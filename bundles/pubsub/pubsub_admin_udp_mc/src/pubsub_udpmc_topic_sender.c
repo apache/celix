@@ -38,8 +38,10 @@
 #define UDP_MAX_PORT	                        65000
 
 
-struct pubsub_updmc_topic_sender {
+struct pubsub_udpmc_topic_sender {
     celix_bundle_context_t *ctx;
+    long serializerSvcId;
+    pubsub_serializer_service_t *serializer;
     char *scope;
     char *topic;
     char *socketAddress;
@@ -47,13 +49,6 @@ struct pubsub_updmc_topic_sender {
 
     int sendSocket;
     struct sockaddr_in destAddr;
-
-    long serTrackerId;
-    struct {
-        celix_thread_mutex_t mutex;
-        pubsub_serializer_service_t *svc;
-        const celix_properties_t *props;
-    } serializer;
 
     struct {
         long svcId;
@@ -67,7 +62,7 @@ struct pubsub_updmc_topic_sender {
 };
 
 typedef struct psa_udpmc_bounded_service_entry {
-    pubsub_updmc_topic_sender_t *parent;
+    pubsub_udpmc_topic_sender_t *parent;
     pubsub_publisher_t service;
     long bndId;
     hash_map_t *msgTypes;
@@ -81,26 +76,27 @@ typedef struct pubsub_msg{
     unsigned int payloadSize;
 } pubsub_msg_t;
 
-static void pubsub_udpmcTopicSender_setSerializer(void *handle, void *svc, const celix_properties_t *props);
 static void* psa_udpmc_getPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties);
 static void psa_udpmc_ungetPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties);
 static int psa_udpmc_topicPublicationSend(void* handle, unsigned int msgTypeId, const void *inMsg);
 static bool psa_udpmc_sendMsg(psa_udpmc_bounded_service_entry_t *entry, pubsub_msg_t* msg, bool last, pubsub_release_callback_t *releaseCallback);
 static unsigned int rand_range(unsigned int min, unsigned int max);
 
-pubsub_updmc_topic_sender_t* pubsub_udpmcTopicSender_create(
+pubsub_udpmc_topic_sender_t* pubsub_udpmcTopicSender_create(
         celix_bundle_context_t *ctx,
         const char *scope,
         const char *topic,
         long serializerSvcId,
+        pubsub_serializer_service_t *serializer,
         int sendSocket,
         const char *bindIP) {
-    pubsub_updmc_topic_sender_t *sender = calloc(1, sizeof(*sender));
+    pubsub_udpmc_topic_sender_t *sender = calloc(1, sizeof(*sender));
     sender->ctx = ctx;
+    sender->serializerSvcId = serializerSvcId;
+    sender->serializer = serializer;
     sender->scope = strndup(scope, 1024 * 1024);
     sender->topic = strndup(topic, 1024 * 1024);
 
-    celixThreadMutex_create(&sender->serializer.mutex, NULL);
     celixThreadMutex_create(&sender->boundedServices.mutex, NULL);
     sender->boundedServices.map = hashMap_create(NULL, NULL, NULL, NULL);
 
@@ -114,20 +110,6 @@ pubsub_updmc_topic_sender_t* pubsub_udpmcTopicSender_create(
 
         sender->socketAddress = strndup(bindIP, 1024);
         sender->socketPort = port;
-    }
-
-    //track serializer svc based on the provided serializerSvcId
-    {
-        char filter[64];
-        snprintf(filter, 64, "(service.id=%li)", serializerSvcId);
-
-        celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
-        opts.filter.serviceName = PUBSUB_SERIALIZER_SERVICE_NAME;
-        opts.filter.filter = filter;
-        opts.filter.ignoreServiceLanguage = true;
-        opts.callbackHandle = sender;
-        opts.setWithProperties = pubsub_udpmcTopicSender_setSerializer;
-        sender->serTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
     }
 
     //register publisher services using a service factory
@@ -147,12 +129,10 @@ pubsub_updmc_topic_sender_t* pubsub_udpmcTopicSender_create(
     return sender;
 }
 
-void pubsub_udpmcTopicSender_destroy(pubsub_updmc_topic_sender_t *sender) {
+void pubsub_udpmcTopicSender_destroy(pubsub_udpmc_topic_sender_t *sender) {
     if (sender != NULL) {
-        celix_bundleContext_stopTracker(sender->ctx, sender->serTrackerId);
         celix_bundleContext_unregisterService(sender->ctx, sender->publisher.svcId);
 
-        celixThreadMutex_destroy(&sender->serializer.mutex);
         celixThreadMutex_destroy(&sender->boundedServices.mutex);
 
         //TODO loop and cleanup?
@@ -165,61 +145,40 @@ void pubsub_udpmcTopicSender_destroy(pubsub_updmc_topic_sender_t *sender) {
     }
 }
 
-const char* pubsub_udpmcTopicSender_psaType(pubsub_updmc_topic_sender_t *sender __attribute__((unused))) {
+const char* pubsub_udpmcTopicSender_psaType(pubsub_udpmc_topic_sender_t *sender __attribute__((unused))) {
     return PSA_UDPMC_PUBSUB_ADMIN_TYPE;
 }
 
-const char* pubsub_udpmcTopicSender_serializerType(pubsub_updmc_topic_sender_t *sender) {
-    const char *result = NULL;
-    celixThreadMutex_lock(&sender->serializer.mutex);
-    if (sender->serializer.props != NULL) {
-        result = celix_properties_get(sender->serializer.props, PUBSUB_SERIALIZER_TYPE_KEY, NULL);
-    }
-    celixThreadMutex_unlock(&sender->serializer.mutex);
-    return result;
-}
 
-const char* pubsub_udpmcTopicSender_scope(pubsub_updmc_topic_sender_t *sender) {
+const char* pubsub_udpmcTopicSender_scope(pubsub_udpmc_topic_sender_t *sender) {
     return sender->scope;
 }
 
-const char* pubsub_udpmcTopicSender_topic(pubsub_updmc_topic_sender_t *sender) {
+const char* pubsub_udpmcTopicSender_topic(pubsub_udpmc_topic_sender_t *sender) {
     return sender->topic;
 }
 
-const char* pubsub_udpmcTopicSender_socketAddress(pubsub_updmc_topic_sender_t *sender) {
+const char* pubsub_udpmcTopicSender_socketAddress(pubsub_udpmc_topic_sender_t *sender) {
     return sender->socketAddress;
 }
 
-long pubsub_udpmcTopicSender_socketPort(pubsub_updmc_topic_sender_t *sender) {
+long pubsub_udpmcTopicSender_socketPort(pubsub_udpmc_topic_sender_t *sender) {
     return sender->socketPort;
 }
 
-void pubsub_udpmcTopicSender_connectTo(pubsub_updmc_topic_sender_t *sender, const celix_properties_t *endpoint) {
+void pubsub_udpmcTopicSender_connectTo(pubsub_udpmc_topic_sender_t *sender, const celix_properties_t *endpoint) {
     //TODO subscriber count -> topic info
 }
 
-void pubsub_udpmcTopicSender_disconnectFrom(pubsub_updmc_topic_sender_t *sender, const celix_properties_t *endpoint) {
+void pubsub_udpmcTopicSender_disconnectFrom(pubsub_udpmc_topic_sender_t *sender, const celix_properties_t *endpoint) {
     //TODO
 }
 
-static void pubsub_udpmcTopicSender_setSerializer(void *handle, void *svc, const celix_properties_t *props) {
-    pubsub_updmc_topic_sender_t *sender = handle;
-    pubsub_serializer_service_t *ser = svc;
-
-    if (ser == NULL) {
-        //TODO -> no serializer -> remove all publishers
-    }
-
-    celixThreadMutex_lock(&sender->serializer.mutex);
-    sender->serializer.svc = ser;
-    sender->serializer.props = props;
-    celixThreadMutex_unlock(&sender->serializer.mutex);
-}
-
 static void* psa_udpmc_getPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties __attribute__((unused))) {
-    pubsub_updmc_topic_sender_t *sender = handle;
+    pubsub_udpmc_topic_sender_t *sender = handle;
     long bndId = celix_bundle_getId(requestingBundle);
+
+    pubsub_publisher_t *svc = NULL;
 
     celixThreadMutex_lock(&sender->boundedServices.mutex);
     psa_udpmc_bounded_service_entry_t *entry = hashMap_get(sender->boundedServices.map, (void*)bndId);
@@ -232,32 +191,26 @@ static void* psa_udpmc_getPublisherService(void *handle, const celix_bundle_t *r
         entry->bndId = bndId;
         entry->largeUdpHandle = largeUdp_create(1);
 
-        celixThreadMutex_lock(&sender->serializer.mutex);
-        celix_status_t rc = CELIX_SUCCESS;
-        if (sender->serializer.svc != NULL) {
-            rc = sender->serializer.svc->createSerializerMap(sender->serializer.svc->handle, (celix_bundle_t*)requestingBundle, &entry->msgTypes);
-        }
-        if (sender->serializer.svc == NULL || rc != CELIX_SUCCESS) {
-            //TODO destroy and return NULL?
+        int rc = sender->serializer->createSerializerMap(sender->serializer->handle, (celix_bundle_t*)requestingBundle, &entry->msgTypes);
+        if (rc == 0) {
+            entry->service.handle = entry;
+            entry->service.localMsgTypeIdForMsgType = psa_udpmc_localMsgTypeIdForMsgType;
+            entry->service.send = psa_udpmc_topicPublicationSend;
+            entry->service.sendMultipart = NULL; //note multipart not supported by MCUDP
+            hashMap_put(sender->boundedServices.map, (void*)bndId, entry);
+            svc = &entry->service;
+        } else {
             fprintf(stderr, "Error creating publisher service, serializer not available / cannot get msg serializer map\n");
+            free(entry);
         }
-        celixThreadMutex_unlock(&sender->serializer.mutex);
-
-
-        entry->service.handle = entry;
-        entry->service.localMsgTypeIdForMsgType = psa_udpmc_localMsgTypeIdForMsgType;
-        entry->service.send = psa_udpmc_topicPublicationSend;
-        entry->service.sendMultipart = NULL; //note multipart not supported by MCUDP
-
-        hashMap_put(sender->boundedServices.map, (void*)bndId, entry);
     }
     celixThreadMutex_unlock(&sender->boundedServices.mutex);
 
-    return &entry->service;
+    return svc;
 }
 
 static void psa_udpmc_ungetPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties __attribute__((unused))) {
-    pubsub_updmc_topic_sender_t *sender = handle;
+    pubsub_udpmc_topic_sender_t *sender = handle;
     long bndId = celix_bundle_getId(requestingBundle);
 
     celixThreadMutex_lock(&sender->boundedServices.mutex);
@@ -269,17 +222,10 @@ static void psa_udpmc_ungetPublisherService(void *handle, const celix_bundle_t *
         //free entry
         hashMap_remove(sender->boundedServices.map, (void*)bndId);
 
-
-        celixThreadMutex_lock(&sender->serializer.mutex);
-        celix_status_t rc = CELIX_SUCCESS;
-        if (sender->serializer.svc != NULL) {
-            rc = sender->serializer.svc->destroySerializerMap(sender->serializer.svc->handle, entry->msgTypes);
-        }
-        if (sender->serializer.svc == NULL || rc != CELIX_SUCCESS) {
+        int rc = sender->serializer->destroySerializerMap(sender->serializer->handle, entry->msgTypes);
+        if (rc != 0) {
             fprintf(stderr, "Error destroying publisher service, serializer not available / cannot get msg serializer map\n");
         }
-        celixThreadMutex_unlock(&sender->serializer.mutex);
-
 
         largeUdp_destroy(entry->largeUdpHandle);
         free(entry);

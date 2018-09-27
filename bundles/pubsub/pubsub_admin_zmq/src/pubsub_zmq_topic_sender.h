@@ -29,16 +29,17 @@ pubsub_zmq_topic_sender_t* pubsub_zmqTopicSender_create(
         const char *scope,
         const char *topic,
         long serializerSvcId,
+        pubsub_serializer_service_t *ser,
         const char *bindIP,
         unsigned int basePort,
         unsigned int maxPort);
 void pubsub_zmqTopicSender_destroy(pubsub_zmq_topic_sender_t *sender);
 
-const char* pubsub_zmqTopicSender_psaType(pubsub_zmq_topic_sender_t *sender);
-const char* pubsub_zmqTopicSender_serializerType(pubsub_zmq_topic_sender_t *sender);
 const char* pubsub_zmqTopicSender_scope(pubsub_zmq_topic_sender_t *sender);
 const char* pubsub_zmqTopicSender_topic(pubsub_zmq_topic_sender_t *sender);
 const char* pubsub_zmqTopicSender_url(pubsub_zmq_topic_sender_t *sender);
+
+long pubsub_zmqTopicSender_serializerSvcId(pubsub_zmq_topic_sender_t *sender);
 
 void pubsub_zmqTopicSender_connectTo(pubsub_zmq_topic_sender_t *sender, const celix_properties_t *endpoint);
 void pubsub_zmqTopicSender_disconnectFrom(pubsub_zmq_topic_sender_t *sender, const celix_properties_t *endpoint);

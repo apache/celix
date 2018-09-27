@@ -20,26 +20,28 @@
 #define CELIX_PUBSUB_UDPMC_TOPIC_RECEIVER_H
 
 #include "celix_bundle_context.h"
+#include "pubsub_serializer.h"
 
-typedef struct pubsub_updmc_topic_receiver pubsub_updmc_topic_receiver_t;
+typedef struct pubsub_udpmc_topic_receiver pubsub_udpmc_topic_receiver_t;
 
-pubsub_updmc_topic_receiver_t* pubsub_udpmcTopicReceiver_create(celix_bundle_context_t *ctx, 
+pubsub_udpmc_topic_receiver_t* pubsub_udpmcTopicReceiver_create(celix_bundle_context_t *ctx, 
         const char *scope, 
         const char *topic, 
         const char *ifIP, 
-        long serializerSvcId);
-void pubsub_udpmcTopicReceiver_destroy(pubsub_updmc_topic_receiver_t *receiver);
+        long serializerSvcId,
+        pubsub_serializer_service_t *serializer);
+void pubsub_udpmcTopicReceiver_destroy(pubsub_udpmc_topic_receiver_t *receiver);
 
-const char* pubsub_udpmcTopicReceiver_psaType(pubsub_updmc_topic_receiver_t *receiver);
-const char* pubsub_udpmcTopicReceiver_serializerType(pubsub_updmc_topic_receiver_t *receiver);
-const char* pubsub_udpmcTopicReceiver_scope(pubsub_updmc_topic_receiver_t *receiver);
-const char* pubsub_udpmcTopicReceiver_topic(pubsub_updmc_topic_receiver_t *receiver);
-const char* pubsub_udpmcTopicReceiver_socketAddress(pubsub_updmc_topic_receiver_t *receiver);
+const char* pubsub_udpmcTopicReceiver_scope(pubsub_udpmc_topic_receiver_t *receiver);
+const char* pubsub_udpmcTopicReceiver_topic(pubsub_udpmc_topic_receiver_t *receiver);
+const char* pubsub_udpmcTopicReceiver_socketAddress(pubsub_udpmc_topic_receiver_t *receiver);
+
+long pubsub_udpmcTopicReceiver_serializerSvcId(pubsub_udpmc_topic_receiver_t *receiver);
 
 void pubsub_udpmcTopicReceiver_connectTo(
-        pubsub_updmc_topic_receiver_t *receiver,
+        pubsub_udpmc_topic_receiver_t *receiver,
         const char *socketAddress,
         long socketPort);
-void pubsub_udpmcTopicReceiver_disconnectFrom(pubsub_updmc_topic_receiver_t *receiver, const char *socketAddress, long socketPort);
+void pubsub_udpmcTopicReceiver_disconnectFrom(pubsub_udpmc_topic_receiver_t *receiver, const char *socketAddress, long socketPort);
 
 #endif //CELIX_PUBSUB_UDPMC_TOPIC_RECEIVER_H

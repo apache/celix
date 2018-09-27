@@ -33,6 +33,8 @@ typedef struct psa_udpmc_activator {
 
 	pubsub_udpmc_admin_t *admin;
 
+	long serializersTrackerId;
+
 	pubsub_admin_service_t adminService;
 	long adminSvcId;
 
@@ -43,12 +45,25 @@ typedef struct psa_udpmc_activator {
 int psa_udpmc_start(psa_udpmc_activator_t *act, celix_bundle_context_t *ctx) {
 	act->adminSvcId = -1L;
 	act->cmdSvcId = -1L;
+	act->serializersTrackerId = -1L;
+
 
 	logHelper_create(ctx, &act->logHelper);
 	logHelper_start(act->logHelper);
 
 	act->admin = pubsub_udpmcAdmin_create(ctx, act->logHelper);
 	celix_status_t status = act->admin != NULL ? CELIX_SUCCESS : CELIX_BUNDLE_EXCEPTION;
+
+	//track serializers
+	if (status == CELIX_SUCCESS) {
+		celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
+		opts.filter.serviceName = PUBSUB_SERIALIZER_SERVICE_NAME;
+		opts.filter.ignoreServiceLanguage = true;
+		opts.callbackHandle = act->admin;
+		opts.addWithProperties = pubsub_udpmcAdmin_addSerializerSvc;
+		opts.removeWithProperties = pubsub_udpmcAdmin_removeSerializerSvc;
+		act->serializersTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
+	}
 
 	//register pubsub admin service
 	if (status == CELIX_SUCCESS) {
@@ -87,6 +102,7 @@ int psa_udpmc_start(psa_udpmc_activator_t *act, celix_bundle_context_t *ctx) {
 int psa_udpmc_stop(psa_udpmc_activator_t *act, celix_bundle_context_t *ctx) {
 	celix_bundleContext_unregisterService(ctx, act->adminSvcId);
 	celix_bundleContext_unregisterService(ctx, act->cmdSvcId);
+	celix_bundleContext_stopTracker(ctx, act->serializersTrackerId);
 	pubsub_udpmcAdmin_destroy(act->admin);
 
 	logHelper_stop(act->logHelper);

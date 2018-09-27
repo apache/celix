@@ -20,28 +20,30 @@
 #define CELIX_PUBSUB_UDPMC_TOPIC_SENDER_H
 
 #include "celix_bundle_context.h"
+#include "pubsub_serializer.h"
 
-typedef struct pubsub_updmc_topic_sender pubsub_updmc_topic_sender_t;
+typedef struct pubsub_udpmc_topic_sender pubsub_udpmc_topic_sender_t;
 
-pubsub_updmc_topic_sender_t* pubsub_udpmcTopicSender_create(
+pubsub_udpmc_topic_sender_t* pubsub_udpmcTopicSender_create(
         celix_bundle_context_t *ctx,
         const char *scope,
         const char *topic,
         long serializerSvcId,
+        pubsub_serializer_service_t *serializer,
         int sendSocket,
         const char *bindIP);
-void pubsub_udpmcTopicSender_destroy(pubsub_updmc_topic_sender_t *sender);
+void pubsub_udpmcTopicSender_destroy(pubsub_udpmc_topic_sender_t *sender);
 
-const char* pubsub_udpmcTopicSender_psaType(pubsub_updmc_topic_sender_t *sender);
-const char* pubsub_udpmcTopicSender_serializerType(pubsub_updmc_topic_sender_t *sender);
-const char* pubsub_udpmcTopicSender_scope(pubsub_updmc_topic_sender_t *sender);
-const char* pubsub_udpmcTopicSender_topic(pubsub_updmc_topic_sender_t *sender);
-const char* pubsub_udpmcTopicSender_socketAddress(pubsub_updmc_topic_sender_t *sender);
-long pubsub_udpmcTopicSender_socketPort(pubsub_updmc_topic_sender_t *sender);
+const char* pubsub_udpmcTopicSender_scope(pubsub_udpmc_topic_sender_t *sender);
+const char* pubsub_udpmcTopicSender_topic(pubsub_udpmc_topic_sender_t *sender);
+const char* pubsub_udpmcTopicSender_socketAddress(pubsub_udpmc_topic_sender_t *sender);
+long pubsub_udpmcTopicSender_socketPort(pubsub_udpmc_topic_sender_t *sender);
+
+long pubsub_udpmcTopicSender_serializerSvcId(pubsub_udpmc_topic_sender_t *sender);
 
 //TODO connections etc
 
-void pubsub_udpmcTopicSender_connectTo(pubsub_updmc_topic_sender_t *sender, const celix_properties_t *endpoint);
-void pubsub_udpmcTopicSender_disconnectFrom(pubsub_updmc_topic_sender_t *sender, const celix_properties_t *endpoint);
+void pubsub_udpmcTopicSender_connectTo(pubsub_udpmc_topic_sender_t *sender, const celix_properties_t *endpoint);
+void pubsub_udpmcTopicSender_disconnectFrom(pubsub_udpmc_topic_sender_t *sender, const celix_properties_t *endpoint);
 
 #endif //CELIX_PUBSUB_UDPMC_TOPIC_SENDER_H

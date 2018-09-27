@@ -46,11 +46,6 @@ typedef struct pubsub_topology_manager {
 
 	struct {
 		celix_thread_mutex_t mutex;
-		hash_map_t *map; //key = psa svc id, value = list<celix_properties_t /*endpoint*/>
-	} announcedEndpoints;
-
-	struct {
-		celix_thread_mutex_t mutex;
 		hash_map_t *map; //key = uuid , value = pstm_discovered_endpoint_entry_t
 	} discoveredEndpoints;
 

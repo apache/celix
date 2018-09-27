@@ -21,21 +21,22 @@
 
 #include "celix_bundle_context.h"
 
-typedef struct pubsub_updmc_topic_receiver pubsub_updmc_topic_receiver_t;
+typedef struct pubsub_zmq_topic_receiver pubsub_zmq_topic_receiver_t;
 
-pubsub_updmc_topic_receiver_t* pubsub_zmqTopicReceiver_create(celix_bundle_context_t *ctx,
+pubsub_zmq_topic_receiver_t* pubsub_zmqTopicReceiver_create(celix_bundle_context_t *ctx,
         log_helper_t *logHelper,
         const char *scope, 
         const char *topic,
-        long serializerSvcId);
-void pubsub_zmqTopicReceiver_destroy(pubsub_updmc_topic_receiver_t *receiver);
+        long serializerSvcId,
+        pubsub_serializer_service_t *serializer);
+void pubsub_zmqTopicReceiver_destroy(pubsub_zmq_topic_receiver_t *receiver);
 
-const char* pubsub_zmqTopicReceiver_psaType(pubsub_updmc_topic_receiver_t *receiver);
-const char* pubsub_zmqTopicReceiver_serializerType(pubsub_updmc_topic_receiver_t *receiver);
-const char* pubsub_zmqTopicReceiver_scope(pubsub_updmc_topic_receiver_t *receiver);
-const char* pubsub_zmqTopicReceiver_topic(pubsub_updmc_topic_receiver_t *receiver);
+const char* pubsub_zmqTopicReceiver_scope(pubsub_zmq_topic_receiver_t *receiver);
+const char* pubsub_zmqTopicReceiver_topic(pubsub_zmq_topic_receiver_t *receiver);
 
-void pubsub_zmqTopicReceiver_connectTo(pubsub_updmc_topic_receiver_t *receiver, const char *url);
-void pubsub_zmqTopicReceiver_disconnectFrom(pubsub_updmc_topic_receiver_t *receiver, const char *url);
+long pubsub_zmqTopicReceiver_serializerSvcId(pubsub_zmq_topic_receiver_t *receiver);
+
+void pubsub_zmqTopicReceiver_connectTo(pubsub_zmq_topic_receiver_t *receiver, const char *url);
+void pubsub_zmqTopicReceiver_disconnectFrom(pubsub_zmq_topic_receiver_t *receiver, const char *url);
 
 #endif //CELIX_PUBSUB_ZMQ_TOPIC_RECEIVER_H
