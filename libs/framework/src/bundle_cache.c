@@ -16,28 +16,34 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * bundle_cache.c
- *
- *  \date       Aug 6, 2010
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
+
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <dirent.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 #include "bundle_cache_private.h"
 #include "bundle_archive.h"
 #include "constants.h"
 #include "celix_log.h"
+#include "celix_properties.h"
 
 static celix_status_t bundleCache_deleteTree(bundle_cache_pt cache, char * directory);
 
-celix_status_t bundleCache_create(properties_pt configurationMap, bundle_cache_pt *bundle_cache) {
+static const char* bundleCache_progamName() {
+#if defined(__APPLE__) || defined(__FreeBSD__)
+	return getprogname();
+#elif defined(_GNU_SOURCE)
+	return program_invocation_short_name;
+#else
+	return "";
+#endif
+}
+
+celix_status_t bundleCache_create(const char *fwUUID, celix_properties_t *configurationMap, bundle_cache_pt *bundle_cache) {
 	celix_status_t status;
 	bundle_cache_pt cache;
 
@@ -52,9 +58,22 @@ celix_status_t bundleCache_create(properties_pt configurationMap, bundle_cache_p
 		char* cacheDir = (char*)properties_get(configurationMap, (char *) OSGI_FRAMEWORK_FRAMEWORK_STORAGE);
 		cache->configurationMap = configurationMap;
 		if (cacheDir == NULL) {
-			cacheDir = ".cache";
+			//Using /tmp dir for cache, so that multiple frameworks can be launched
+			//instead of cacheDir = ".cache";
+			const char *pg = bundleCache_progamName();
+			if (pg == NULL) {
+			    pg = "";
+			}
+			size_t len = (size_t)snprintf(NULL, 0, "/tmp/celix-cache-%s-%s",pg, fwUUID) + 1;
+			char *tmpdir = calloc(len, sizeof(char));
+			snprintf(tmpdir, len, "/tmp/celix-cache-%s-%s", pg, fwUUID);
+
+			cache->cacheDir = tmpdir;
+			cache->deleteOnDestroy = true;
+		} else {
+			cache->cacheDir = strdup(cacheDir);
+			cache->deleteOnDestroy = false;
 		}
-		cache->cacheDir = cacheDir;
 
 		*bundle_cache = cache;
 		status = CELIX_SUCCESS;
@@ -66,7 +85,10 @@ celix_status_t bundleCache_create(properties_pt configurationMap, bundle_cache_p
 }
 
 celix_status_t bundleCache_destroy(bundle_cache_pt *cache) {
-
+	if ((*cache)->deleteOnDestroy) {
+		bundleCache_delete(*cache);
+	}
+	free((*cache)->cacheDir);
 	free(*cache);
 	*cache = NULL;
 

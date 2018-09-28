@@ -64,7 +64,7 @@ TEST(bundle_cache, create) {
 		.andReturnValue((char *) NULL);
 
 	bundle_cache_pt cache = NULL;
-	LONGS_EQUAL(CELIX_SUCCESS, bundleCache_create(configuration, &cache));
+	LONGS_EQUAL(CELIX_SUCCESS, bundleCache_create("test-uuid", configuration, &cache));
 
 	LONGS_EQUAL(CELIX_SUCCESS, bundleCache_destroy(&cache));
 }

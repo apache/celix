@@ -27,7 +27,7 @@
 
 #include "bundle_cache.h"
 
-celix_status_t bundleCache_create(properties_pt configurationMap, bundle_cache_pt *bundle_cache) {
+celix_status_t bundleCache_create(const char *fwUUID, properties_pt configurationMap, bundle_cache_pt *bundle_cache) {
 	mock_c()->actualCall("bundleCache_create")
 		->withPointerParameters("configurationMap", configurationMap)
 		->withOutputParameter("bundle_cache", bundle_cache);

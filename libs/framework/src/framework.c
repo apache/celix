@@ -433,6 +433,15 @@ celix_status_t fw_init(framework_pt framework) {
 	array_list_pt archives = NULL;
 	bundle_archive_pt archive = NULL;
 
+    /*create and store framework uuid*/
+    char uuid[37];
+
+    uuid_t uid;
+    uuid_generate(uid);
+    uuid_unparse(uid, uuid);
+
+    properties_set(framework->configurationMap, (char*) OSGI_FRAMEWORK_FRAMEWORK_UUID, uuid);
+
 	celix_status_t status = CELIX_SUCCESS;
 	status = CELIX_DO_IF(status, framework_acquireBundleLock(framework, framework->bundle, OSGI_FRAMEWORK_BUNDLE_INSTALLED|OSGI_FRAMEWORK_BUNDLE_RESOLVED|OSGI_FRAMEWORK_BUNDLE_STARTING|OSGI_FRAMEWORK_BUNDLE_ACTIVE));
 	status = CELIX_DO_IF(status, arrayList_create(&framework->serviceListeners)); //entry is celix_fw_service_listener_entry_t
@@ -444,7 +453,7 @@ celix_status_t fw_init(framework_pt framework) {
 	if (status == CELIX_SUCCESS) {
 	    if ((state == OSGI_FRAMEWORK_BUNDLE_INSTALLED) || (state == OSGI_FRAMEWORK_BUNDLE_RESOLVED)) {
 	        bundle_state_e state;
-	        status = CELIX_DO_IF(status, bundleCache_create(framework->configurationMap,&framework->cache));
+	        status = CELIX_DO_IF(status, bundleCache_create(uuid, framework->configurationMap,&framework->cache));
 	        status = CELIX_DO_IF(status, bundle_getState(framework->bundle, &state));
 	        if (status == CELIX_SUCCESS) {
 	            if (state == OSGI_FRAMEWORK_BUNDLE_INSTALLED) {
@@ -458,15 +467,6 @@ celix_status_t fw_init(framework_pt framework) {
 	}
 
 	if (status == CELIX_SUCCESS) {
-        /*create and store framework uuid*/
-        char uuid[37];
-
-	    uuid_t uid;
-        uuid_generate(uid);
-        uuid_unparse(uid, uuid);
-
-        properties_set(framework->configurationMap, (char*) OSGI_FRAMEWORK_FRAMEWORK_UUID, uuid);
-
         framework->installedBundleMap = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
 	}
 

@@ -47,14 +47,13 @@ typedef struct bundleCache *bundle_cache_pt;
  * Creates the bundle cache using the supplied configuration map.
  *
  * @param configurationMap Set with properties to use for this cache
- * @param mp The memory pool to use for allocation the cache
  * @param bundle_cache Output parameter for the created cache
  * @return Status code indication failure or success:
  * 		- CELIX_SUCCESS when no errors are encountered.
  * 		- CELIX_ILLEGAL_ARGUMENT If <code>bundle_cache</code> not is null.
  * 		- CELIX_ENOMEM If allocating memory for <code>bundle_cache</code> failed.
  */
-celix_status_t bundleCache_create(properties_pt configurationMap, bundle_cache_pt *bundle_cache);
+celix_status_t bundleCache_create(const char *fwUUID, properties_pt configurationMap, bundle_cache_pt *bundle_cache);
 
 /**
  * Frees the bundle_cache memory allocated in bundleCache_create

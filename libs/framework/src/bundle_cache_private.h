@@ -33,6 +33,7 @@
 struct bundleCache {
 	properties_pt configurationMap;
 	char * cacheDir;
+	bool deleteOnDestroy;
 };
 
 
