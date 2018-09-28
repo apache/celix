@@ -63,6 +63,8 @@ TEST(bundle_cache, create) {
 		.withParameter("key", "org.osgi.framework.storage")
 		.andReturnValue((char *) NULL);
 
+    mock().ignoreOtherCalls();
+
 	bundle_cache_pt cache = NULL;
 	LONGS_EQUAL(CELIX_SUCCESS, bundleCache_create("test-uuid", configuration, &cache));
 
