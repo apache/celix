@@ -129,6 +129,10 @@ static int pstm_start(pstm_activator_t *act, celix_bundle_context_t *ctx) {
 		act->shellCmdSvcId = celix_bundleContext_registerService(ctx, &act->shellCmdSvc, OSGI_SHELL_COMMAND_SERVICE_NAME, props);
 	}
 
+	//TODO add tracker for pubsub_serializer and
+	//1) on remove reset sender/receivers entries
+	//2) on add indicate that topic/senders should be reevaluated.
+
 	/* NOTE: Enable those line in order to remotely expose the topic_info service
 	properties_pt props = properties_create();
 	properties_set(props, (char *) OSGI_RSA_SERVICE_EXPORTED_INTERFACES, (char *) PUBSUB_TOPIC_INFO_SERVICE);

@@ -150,6 +150,9 @@ celix_status_t pubsub_topologyManager_destroy(pubsub_topology_manager_t *manager
     celixThreadMutex_unlock(&manager->topicSenders.mutex);
     celixThreadMutex_destroy(&manager->topicSenders.mutex);
 
+    celixThreadMutex_destroy(&manager->announceEndpointListeners.mutex);
+	celix_arrayList_destroy(manager->announceEndpointListeners.list);
+
 	free(manager);
 
 	return status;
@@ -306,7 +309,7 @@ void pubsub_topologyManager_subscriberRemoved(void * handle, void *svc __attribu
 
 	char *scopeAndTopicKey = pubsubEndpoint_createScopeTopicKey(scope, topic);
 	celixThreadMutex_lock(&manager->topicReceivers.mutex);
-	pstm_topic_receiver_or_sender_entry_t *entry = hashMap_remove(manager->topicReceivers.map, scopeAndTopicKey);
+	pstm_topic_receiver_or_sender_entry_t *entry = hashMap_get(manager->topicReceivers.map, scopeAndTopicKey);
 	if (entry != NULL) {
 		entry->usageCount -= 0;
 	}

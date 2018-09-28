@@ -208,6 +208,9 @@ pubsub_zmq_topic_receiver_t* pubsub_zmqTopicReceiver_create(celix_bundle_context
     if (receiver->zmqSocket != NULL ) {
         receiver->recvThread.running = true;
         celixThread_create(&receiver->recvThread.thread, NULL, psa_zmq_recvThread, receiver);
+        char name[64];
+        snprintf(name, 64, "ZMQ TR %s/%s", scope, topic);
+        celixThread_setName(&receiver->recvThread.thread, name);
     }
 
     if (receiver->zmqSocket == NULL) {
@@ -258,6 +261,9 @@ void pubsub_zmqTopicReceiver_destroy(pubsub_zmq_topic_receiver_t *receiver) {
         celixThreadMutex_destroy(&receiver->recvThread.mutex);
 
         zsock_destroy(&receiver->zmqSocket);
+
+        free(receiver->scope);
+        free(receiver->topic);
     }
     free(receiver);
 }
@@ -271,6 +277,20 @@ const char* pubsub_zmqTopicReceiver_topic(pubsub_zmq_topic_receiver_t *receiver)
 
 long pubsub_zmqTopicReceiver_serializerSvcId(pubsub_zmq_topic_receiver_t *receiver) {
     return receiver->serializerSvcId;
+}
+
+void pubsub_zmqTopicReceiver_listConnections(pubsub_zmq_topic_receiver_t *receiver, celix_array_list_t *connectedUrls, celix_array_list_t *unconnectedUrls) {
+    celixThreadMutex_lock(&receiver->requestedConnections.mutex);
+    hash_map_iterator_t iter = hashMapIterator_construct(receiver->requestedConnections.map);
+    while (hashMapIterator_hasNext(&iter)) {
+        psa_zmq_requested_connection_entry_t *entry = hashMapIterator_nextValue(&iter);
+        if (entry->connected) {
+            celix_arrayList_add(connectedUrls, strndup(entry->url, 1024));
+        } else {
+            celix_arrayList_add(unconnectedUrls, strndup(entry->url, 1024));
+        }
+    }
+    celixThreadMutex_unlock(&receiver->requestedConnections.mutex);
 }
 
 
@@ -446,6 +466,13 @@ static void* psa_zmq_recvThread(void * data) {
                     }
 
                     psa_zmq_processMsg(receiver, msg_list);
+                    for (int i = 0; i < celix_arrayList_size(msg_list); ++i) {
+                        complete_zmq_msg_t *msg = celix_arrayList_get(msg_list, i);
+                        zframe_destroy(&msg->header);
+                        zframe_destroy(&msg->payload);
+                        free(msg);
+                    }
+                    celix_arrayList_destroy(msg_list);
                 }
 
             } else {

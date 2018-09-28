@@ -25,6 +25,7 @@
  */
 #include <stdlib.h>
 #include <sys/time.h>
+#include <time.h>
 #include "signal.h"
 #include "celix_threads.h"
 
@@ -42,7 +43,7 @@ celix_status_t celixThread_create(celix_thread_t *new_thread, celix_thread_attr_
 	return status;
 }
 
-#ifdef _GNU_SOURCE
+#if defined(_GNU_SOURCE) && defined(__linux__)
 void celixThread_setName(celix_thread_t *thread, const char *threadName) {
 	pthread_setname_np(thread->thread, threadName);
 }

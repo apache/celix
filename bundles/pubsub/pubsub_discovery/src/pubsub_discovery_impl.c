@@ -93,6 +93,7 @@ pubsub_discovery_t* pubsub_discovery_create(bundle_context_pt context, log_helpe
 celix_status_t pubsub_discovery_destroy(pubsub_discovery_t *ps_discovery) {
     celix_status_t status = CELIX_SUCCESS;
 
+    //note cleanup done in stop
     celixThreadMutex_lock(&ps_discovery->discoveredEndpointsMutex);
     hashMap_destroy(ps_discovery->discoveredEndpoints, false, false);
     celixThreadMutex_unlock(&ps_discovery->discoveredEndpointsMutex);
@@ -103,6 +104,7 @@ celix_status_t pubsub_discovery_destroy(pubsub_discovery_t *ps_discovery) {
     celixThreadMutex_unlock(&ps_discovery->discoveredEndpointsListenersMutex);
     celixThreadMutex_destroy(&ps_discovery->discoveredEndpointsListenersMutex);
 
+    //note cleanup done in stop
     celixThreadMutex_lock(&ps_discovery->announcedEndpointsMutex);
     hashMap_destroy(ps_discovery->announcedEndpoints, false, false);
     celixThreadMutex_unlock(&ps_discovery->announcedEndpointsMutex);
@@ -278,6 +280,7 @@ void* psd_refresh(void *data) {
                     L_ERROR("[PSD] Warning: error setting endpoint in etcd for key %s\n", entry->key);
                     entry->errorCount += 1;
                 }
+                free(str);
             }
         }
         celixThreadMutex_unlock(&disc->announcedEndpointsMutex);
@@ -451,9 +454,8 @@ static void pubsub_discovery_addDiscoveredEndpoint(pubsub_discovery_t *disc, cel
     assert(fwUUID != NULL);
 
     if (fwUUID != NULL && strncmp(disc->fwUUID, fwUUID, strlen(disc->fwUUID)) == 0) {
-//        if (disc->verbose) {
-//            printf("[PSD] Ignoring endpoint %s from own framework\n", uuid);
-//        }
+        //own endpoint -> ignore
+        celix_properties_destroy(endpoint);
         return;
     }
 

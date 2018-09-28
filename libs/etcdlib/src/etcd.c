@@ -373,6 +373,7 @@ int etcd_refresh(const char* key, int ttl) {
 			} else {
 				retVal = ETCDLIB_RC_ERROR;
 			}
+			json_decref(root);
 		} else {
 			retVal = ETCDLIB_RC_ERROR;
 			fprintf(stderr, "[ETCDLIB] Error: %s is not json", reply.memory);

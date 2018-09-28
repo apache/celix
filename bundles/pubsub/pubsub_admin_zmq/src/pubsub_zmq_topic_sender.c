@@ -245,6 +245,8 @@ void pubsub_zmqTopicSender_destroy(pubsub_zmq_topic_sender_t *sender) {
     if (sender != NULL) {
         celix_bundleContext_unregisterService(sender->ctx, sender->publisher.svcId);
 
+        zsock_destroy(&sender->zmq.socket);
+
         celixThreadMutex_lock(&sender->boundedServices.mutex);
         hash_map_iterator_t iter = hashMapIterator_construct(sender->boundedServices.map);
         while (hashMapIterator_hasNext(&iter)) {
@@ -289,7 +291,6 @@ const char* pubsub_zmqTopicSender_topic(pubsub_zmq_topic_sender_t *sender) {
 const char* pubsub_zmqTopicSender_url(pubsub_zmq_topic_sender_t *sender) {
     return sender->url;
 }
-
 
 void pubsub_zmqTopicSender_connectTo(pubsub_zmq_topic_sender_t *sender, const celix_properties_t *endpoint) {
     //TODO subscriber count -> topic info
