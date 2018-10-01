@@ -322,3 +322,7 @@ static unsigned int rand_range(unsigned int min, unsigned int max){
     double scaled = ((double)random())/((double)RAND_MAX);
     return (unsigned int)((max-min+1)*scaled + min);
 }
+
+long pubsub_udpmcTopicSender_serializerSvcId(pubsub_udpmc_topic_sender_t *sender) {
+    return sender->serializerSvcId;
+}

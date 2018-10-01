@@ -102,7 +102,7 @@ endif ()
 if (BUILD_PUBSUB_PSA_ZMQ)
 
     # Dynamic ZMQ / UDP admin
-    add_celix_container("pubsub_publisher"
+    add_celix_container(pubsub_publisher
         GROUP "pubsub"
         BUNDLES
             Celix::shell
@@ -114,13 +114,10 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             Celix::pubsub_admin_udp_multicast
             celix_pubsub_poi_publisher
             celix_pubsub_poi_publisher2
-        PROPERTIES
-            poi1.psa=zmq
-            poi2.psa=udp
     )
     target_link_libraries(pubsub_publisher PRIVATE ${PUBSUB_CONTAINER_LIBS})
 
-    add_celix_container("pubsub_subscriber"
+    add_celix_container(pubsub_subscriber
             GROUP "pubsub"
             BUNDLES
             Celix::shell
@@ -131,10 +128,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             Celix::pubsub_admin_zmq
             Celix::pubsub_admin_udp_multicast
             celix_pubsub_poi_subscriber
-            PROPERTIES
-            poi1.psa=zmq
-            poi2.psa=udp
-            )
+    )
     target_link_libraries(pubsub_subscriber PRIVATE ${PUBSUB_CONTAINER_LIBS})
 
     # ZMQ

@@ -607,7 +607,7 @@ static void pstm_teardownTopicSenders(pubsub_topology_manager_t *manager) {
 static void pstm_teardownTopicReceiverCallback(void *handle, void *svc) {
     pstm_topic_receiver_or_sender_entry_t *entry = handle;
     pubsub_admin_service_t *psa = svc;
-    psa->teardownTopicSender(psa->handle, entry->scope, entry->topic);
+    psa->teardownTopicReceiver(psa->handle, entry->scope, entry->topic);
 }
 
 static void pstm_teardownTopicReceivers(pubsub_topology_manager_t *manager) {
@@ -761,7 +761,7 @@ static void pstm_setupTopicSenders(pubsub_topology_manager_t *manager) {
 static void pstm_setupTopicReceiverCallback(void *handle, void *svc) {
     pstm_topic_receiver_or_sender_entry_t *entry = handle;
     pubsub_admin_service_t *psa = svc;
-    psa->setupTopicReciever(psa->handle, entry->scope, entry->topic, entry->selectedSerializerSvcId, &entry->endpoint);
+    psa->setupTopicReceiver(psa->handle, entry->scope, entry->topic, entry->selectedSerializerSvcId, &entry->endpoint);
 }
 
 static void pstm_setupTopicReceivers(pubsub_topology_manager_t *manager) {

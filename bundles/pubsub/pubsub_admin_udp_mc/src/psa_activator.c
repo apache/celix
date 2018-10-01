@@ -74,7 +74,7 @@ int psa_udpmc_start(psa_udpmc_activator_t *act, celix_bundle_context_t *ctx) {
 		psaSvc->matchEndpoint = pubsub_udpmcAdmin_matchEndpoint;
 		psaSvc->setupTopicSender = pubsub_udpmcAdmin_setupTopicSender;
 		psaSvc->teardownTopicSender = pubsub_udpmcAdmin_teardownTopicSender;
-		psaSvc->setupTopicReceover = pubsub_udpmcAdmin_setupTopicReceiver;
+		psaSvc->setupTopicReceiver = pubsub_udpmcAdmin_setupTopicReceiver;
 		psaSvc->teardownTopicReceiver = pubsub_udpmcAdmin_teardownTopicReceiver;
 		psaSvc->addEndpoint = pubsub_udpmcAdmin_addEndpoint;
 		psaSvc->removeEndpoint = pubsub_udpmcAdmin_removeEndpoint;
