@@ -118,12 +118,21 @@ pubsub_udpmc_topic_sender_t* pubsub_udpmcTopicSender_create(
         sender->publisher.factory.getService = psa_udpmc_getPublisherService;
         sender->publisher.factory.ungetService = psa_udpmc_ungetPublisherService;
 
-        celix_properties_t *props = celix_properties_create();
-        celix_properties_set(props, PUBSUB_PUBLISHER_TOPIC, sender->topic);
-        celix_properties_set(props, PUBSUB_PUBLISHER_SCOPE, sender->scope);
 
+        //register publisher factory service
+        {
+            celix_properties_t *props = celix_properties_create();
+            celix_properties_set(props, PUBSUB_PUBLISHER_TOPIC, sender->topic);
+            celix_properties_set(props, PUBSUB_PUBLISHER_SCOPE, sender->scope);
 
-        sender->publisher.svcId = celix_bundleContext_registerServiceFactory(ctx, &sender->publisher.factory, PUBSUB_PUBLISHER_SERVICE_NAME, props);
+            celix_service_registration_options_t opts = CELIX_EMPTY_SERVICE_REGISTRATION_OPTIONS;
+            opts.factory = &sender->publisher.factory;
+            opts.serviceName = PUBSUB_PUBLISHER_SERVICE_NAME;
+            opts.serviceVersion = PUBSUB_PUBLISHER_SERVICE_VERSION;
+            opts.properties = props;
+
+            sender->publisher.svcId = celix_bundleContext_registerServiceWithOptions(ctx, &opts);
+        }
     }
 
     return sender;
