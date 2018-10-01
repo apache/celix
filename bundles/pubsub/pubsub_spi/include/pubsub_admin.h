@@ -53,8 +53,8 @@ struct pubsub_admin_service {
 	celix_status_t (*teardownTopicSender)(void *handle, const char *scope, const char *topic);
 
 	//note endpoint is owned by caller
-	celix_status_t (*setupTopicReciever)(void *handle, const char *scope, const char *topic, long serializerSvcId, celix_properties_t **subscriberEndpoint);
-	celix_status_t (*teardownTopicReciever)(void *handle, const char *scope, const char *topic);
+	celix_status_t (*setupTopicReceiver)(void *handle, const char *scope, const char *topic, long serializerSvcId, celix_properties_t **subscriberEndpoint);
+	celix_status_t (*teardownTopicReceiver)(void *handle, const char *scope, const char *topic);
 
 	celix_status_t (*addEndpoint)(void *handle, const celix_properties_t *endpoint);
 	celix_status_t (*removeEndpoint)(void *handle, const celix_properties_t *endpoint);

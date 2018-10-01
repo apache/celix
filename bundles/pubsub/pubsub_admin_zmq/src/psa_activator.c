@@ -73,8 +73,8 @@ int psa_zmq_start(psa_zmq_activator_t *act, celix_bundle_context_t *ctx) {
 		psaSvc->matchEndpoint = pubsub_zmqAdmin_matchEndpoint;
 		psaSvc->setupTopicSender = pubsub_zmqAdmin_setupTopicSender;
 		psaSvc->teardownTopicSender = pubsub_zmqAdmin_teardownTopicSender;
-		psaSvc->setupTopicReciever = pubsub_zmqAdmin_setupTopicReceiver;
-		psaSvc->teardownTopicReciever = pubsub_zmqAdmin_teardownTopicReceiver;
+		psaSvc->setupTopicReceiver = pubsub_zmqAdmin_setupTopicReceiver;
+		psaSvc->teardownTopicReceiver = pubsub_zmqAdmin_teardownTopicReceiver;
 		psaSvc->addEndpoint = pubsub_zmqAdmin_addEndpoint;
 		psaSvc->removeEndpoint = pubsub_zmqAdmin_removeEndpoint;
 

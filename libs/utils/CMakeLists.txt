@@ -43,6 +43,10 @@ if (ANDROID)
     target_compile_definitions(utils PRIVATE -DUSE_FILE32API)
 endif ()
 
+if (NOT APPLE) 
+    target_link_libraries(utils PUBLIC -lrt)
+endif ()
+
 target_include_directories(utils PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
         $<BUILD_INTERFACE:${MEMSTREAM_INCLUDE_DIR}>
