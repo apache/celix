@@ -42,6 +42,7 @@ add_celix_container("dm_example_cxx"
 
 
 add_celix_docker(dm_exmpl_cxx_docker
+       CXX
        IMAGE_NAME dm_exmpl_cxx
        GROUP examples
        BUNDLES_DIR /usr/share/bundles
