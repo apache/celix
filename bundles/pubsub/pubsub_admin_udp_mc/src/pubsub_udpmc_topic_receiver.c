@@ -146,14 +146,44 @@ void pubsub_udpmcTopicReceiver_destroy(pubsub_udpmc_topic_receiver_t *receiver) 
         celixThreadMutex_unlock(&receiver->recvThread.mutex);
         celixThread_join(receiver->recvThread.thread, NULL);
 
+        celixThreadMutex_lock(&receiver->requestedConnections.mutex);
+        hash_map_iterator_t iter = hashMapIterator_construct(receiver->requestedConnections.map);
+        while (hashMapIterator_hasNext(&iter)) {
+            psa_udpmc_requested_connection_entry_t *entry = hashMapIterator_nextValue(&iter);
+            if (entry != NULL) {
+                free(entry->socketAddress);
+                free(entry->key);
+                free(entry);
+            }
+        }
+        celixThreadMutex_unlock(&receiver->requestedConnections.mutex);
+        hashMap_destroy(receiver->requestedConnections.map, false, false);
+
+        celixThreadMutex_lock(&receiver->subscribers.mutex);
+        iter = hashMapIterator_construct(receiver->subscribers.map);
+        while (hashMapIterator_hasNext(&iter)) {
+            psa_udpmc_subscriber_entry_t *entry = hashMapIterator_nextValue(&iter);
+            if (entry != NULL) {
+                if (receiver->serializer != NULL && entry->msgTypes != NULL) {
+                    receiver->serializer->destroySerializerMap(receiver->serializer->handle, entry->msgTypes);
+                }
+                free(entry);
+            }
+        }
+        celixThreadMutex_unlock(&receiver->subscribers.mutex);
+        hashMap_destroy(receiver->subscribers.map, false, false);
+
+
+
         celixThreadMutex_destroy(&receiver->subscribers.mutex);
         celixThreadMutex_destroy(&receiver->requestedConnections.mutex);
         celixThreadMutex_destroy(&receiver->recvThread.mutex);
 
         largeUdp_destroy(receiver->largeUdpHandle);
-        //TODO cleanup entries, free map
 
-        //TODO clean up requested connections map
+        free(receiver->scope);
+        free(receiver->topic);
+        free(receiver->ifIpAddress);
     }
     free(receiver);
 }

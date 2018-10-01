@@ -333,7 +333,7 @@ bool largeUdp_dataAvailable(largeUdp_pt handle, int fd, unsigned int *index, uns
 			result=false;
 		}
 		else{
-			arrayList_add(handle->udpPartLists, udpPartList);
+				arrayList_add(handle->udpPartLists, udpPartList);
 
 			if(udpPartList->nrPartsRemaining == 0) {
 				*index = nrUdpLists;

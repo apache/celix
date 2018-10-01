@@ -647,27 +647,38 @@ static void bundleContext_cleanupServiceTrackerTrackers(bundle_context_t *ctx) {
 void celix_bundleContext_stopTracker(bundle_context_t *ctx, long trackerId) {
     if (ctx != NULL && trackerId >0) {
         bool found = false;
+        celix_bundle_context_bundle_tracker_entry_t *bundleTracker = NULL;
+        service_tracker_t *serviceTracker = NULL;
+        celix_bundle_context_service_tracker_tracker_entry_t *svcTrackerTracker = NULL;
+
         celixThreadMutex_lock(&ctx->mutex);
         if (hashMap_containsKey(ctx->bundleTrackers, (void*)trackerId)) {
             found = true;
-            celix_bundle_context_bundle_tracker_entry_t *tracker = hashMap_remove(ctx->bundleTrackers, (void*)trackerId);
-            fw_removeBundleListener(ctx->framework, ctx->bundle, &tracker->listener);
-            free(tracker);
+            bundleTracker = hashMap_remove(ctx->bundleTrackers, (void*)trackerId);
         } else if (hashMap_containsKey(ctx->serviceTrackers, (void*)trackerId)) {
             found = true;
-            service_tracker_t *tracker = hashMap_remove(ctx->serviceTrackers, (void*)trackerId);
-            celix_serviceTracker_destroy(tracker);
+            serviceTracker = hashMap_remove(ctx->serviceTrackers, (void*)trackerId);
         } else if (hashMap_containsKey(ctx->serviceTrackerTrackers, (void*)trackerId)) {
             found = true;
-            celix_bundle_context_service_tracker_tracker_entry_t *entry = hashMap_remove(ctx->serviceTrackerTrackers, (void*)trackerId);
-            serviceRegistration_unregister(entry->hookReg);
-            free(entry);
+            svcTrackerTracker = hashMap_remove(ctx->serviceTrackerTrackers, (void*)trackerId);
+        }
+        celixThreadMutex_unlock(&ctx->mutex);
+
+        if (bundleTracker != NULL) {
+            fw_removeBundleListener(ctx->framework, ctx->bundle, &bundleTracker->listener);
+            free(bundleTracker);
+        }
+        if (serviceTracker != NULL) {
+            celix_serviceTracker_destroy(serviceTracker);
+        }
+        if (svcTrackerTracker != NULL) {
+            serviceRegistration_unregister(svcTrackerTracker->hookReg);
+            free(svcTrackerTracker);
         }
 
         if (!found) {
             framework_logIfError(logger, CELIX_ILLEGAL_ARGUMENT, NULL, "No tracker with id %li found'", trackerId);
         }
-        celixThreadMutex_unlock(&ctx->mutex);
     }
 }
 

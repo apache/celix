@@ -64,17 +64,17 @@ struct pubsub_udpmc_admin {
 
     struct {
         celix_thread_mutex_t mutex;
-        hash_map_t *map; //key = scope:topic key, value = pubsub_udpmc_topic_sender_t
+        hash_map_t *map; //key = scope:topic key, value = pubsub_udpmc_topic_sender_t*
     } topicSenders;
 
     struct {
         celix_thread_mutex_t mutex;
-        hash_map_t *map; //key = scope:topic key, value = pubsub_udpmc_topic_sender_t
+        hash_map_t *map; //key = scope:topic key, value = pubsub_udpmc_topic_receiver_t*
     } topicReceivers;
 
     struct {
         celix_thread_mutex_t mutex;
-        hash_map_t *map; //key = endpoint uuid, value = psa_udpmc_connected_endpoint_entry_t
+        hash_map_t *map; //key = endpoint uuid, value = celix_properties_t*
     } discoveredEndpoints;
 
 };
@@ -644,6 +644,8 @@ void pubsub_udpmcAdmin_removeSerializerSvc(void *handle, void *svc, const celix_
             }
         }
         celixThreadMutex_unlock(&psa->topicReceivers.mutex);
+
+        free(entry);
     }
     celixThreadMutex_unlock(&psa->serializers.mutex);
 }
