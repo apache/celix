@@ -47,6 +47,7 @@ typedef struct celix_bundle_context_service_tracker_tracker_entry {
 	struct listener_hook_service hook;
 	service_registration_t *hookReg;
 
+	char *serviceName;
 	void *callbackHandle;
 	void (*add)(void *handle, const celix_service_tracker_info_t *info);
 	void (*remove)(void *handle, const celix_service_tracker_info_t *info);

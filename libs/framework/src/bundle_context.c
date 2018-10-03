@@ -966,9 +966,11 @@ static celix_status_t bundleContext_callServicedTrackerTrackerCallback(void *han
             trkInfo.filter = celix_filter_create(info->filter);
             trkInfo.serviceName = celix_filter_findAttribute(trkInfo.filter, OSGI_FRAMEWORK_OBJECTCLASS);
             trkInfo.serviceLanguage = celix_filter_findAttribute(trkInfo.filter, CELIX_FRAMEWORK_SERVICE_LANGUAGE);
-            if (add && entry->add != NULL) {
+            const char *filterSvcName = celix_filter_findAttribute(trkInfo.filter, OSGI_FRAMEWORK_OBJECTCLASS);
+
+            if (add && entry->add != NULL && filterSvcName != NULL && strncmp(filterSvcName, entry->serviceName, 1024*1024) == 0) {
                 entry->add(entry->callbackHandle, &trkInfo);
-            } else if (entry->remove != NULL) {
+            } else if (entry->remove != NULL && filterSvcName != NULL && strncmp(filterSvcName, entry->serviceName, 1024*1024) == 0) {
                 entry->remove(entry->callbackHandle, &trkInfo);
             }
             celix_filter_destroy(trkInfo.filter);
@@ -994,11 +996,17 @@ long celix_bundleContext_trackServiceTrackers(
 
     long trackerId = -1L;
 
+    if (serviceName == NULL) {
+        fw_log(ctx->framework->logger, OSGI_FRAMEWORK_LOG_ERROR, "Required serviceName not provided for function ", __FUNCTION__);
+        return trackerId;
+    }
+
     celix_bundle_context_service_tracker_tracker_entry_t *entry = calloc(1, sizeof(*entry));
 
     entry->callbackHandle = callbackHandle;
     entry->add = trackerAdd;
     entry->remove = trackerRemove;
+    entry->serviceName = strndup(serviceName, 1024*1024);
 
     entry->hook.handle = entry;
     entry->hook.added = bundleContext_callServicedTrackerTrackerAdd;

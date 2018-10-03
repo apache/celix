@@ -684,6 +684,10 @@ TEST(CelixBundleContextServicesTests, trackServiceTrackerTest) {
     CHECK_TRUE(tracker3 >= 0);
     CHECK_EQUAL(2, count);
 
+    long tracker4 = celix_bundleContext_trackServices(ctx, "no-match", NULL, NULL, NULL);
+    CHECK_TRUE(tracker4 >= 0);
+    CHECK_EQUAL(2, count);
+
     celix_bundleContext_stopTracker(ctx, tracker2);
     celix_serviceTracker_syncForContext(ctx); //service tracker shutdown on separate track -> need sync
     CHECK_EQUAL(1, count);
@@ -692,4 +696,5 @@ TEST(CelixBundleContextServicesTests, trackServiceTrackerTest) {
     CHECK_EQUAL(0, count);
 
     celix_bundleContext_stopTracker(ctx, trackerId);
+    celix_bundleContext_stopTracker(ctx, tracker4);
 }

@@ -372,12 +372,6 @@ void pubsub_topologyManager_publisherTrackerAdded(void *handle, const celix_serv
 	//2) update the usage count. if not found
 	//3) signal psaHandling thread to find a psa and setup TopicSender
 
-	//TODO FIXME
-	if (strcmp(info->serviceName, PUBSUB_PUBLISHER_SERVICE_NAME) != 0) {
-	    logHelper_log(manager->loghelper, OSGI_LOGSERVICE_WARNING, "Bug. trackServiceTracker should only trigger for %s. Now triggering on %s", PUBSUB_PUBLISHER_SERVICE_NAME, info->serviceName);
-	    return;
-	}
-
 
 	char *topicFromFilter = NULL;
 	char *scopeFromFilter = NULL;
@@ -425,12 +419,6 @@ void pubsub_topologyManager_publisherTrackerRemoved(void *handle, const celix_se
 
 	//NOTE local subscriber service unregister
 	//1) Find topic sender and decrease count
-
-    //TODO FIXME
-    if (strcmp(info->serviceName, PUBSUB_PUBLISHER_SERVICE_NAME) != 0) {
-        logHelper_log(manager->loghelper, OSGI_LOGSERVICE_WARNING, "Bug. trackServiceTracker should only trigger for %s. Now triggering on %s", PUBSUB_PUBLISHER_SERVICE_NAME, info->serviceName);
-        return;
-    }
 
 	char *topic = NULL;
 	char *scopeFromFilter = NULL;
