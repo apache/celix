@@ -459,21 +459,21 @@ static void pubsub_discovery_addDiscoveredEndpoint(pubsub_discovery_t *disc, cel
         return;
     }
 
-    if (disc->verbose) {
-        const char *uuid = celix_properties_get(endpoint, PUBSUB_ENDPOINT_UUID, "!Error!");
-        const char *type = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TYPE, "!Error!");
-        const char *admin = celix_properties_get(endpoint, PUBSUB_ENDPOINT_ADMIN_TYPE, "!Error!");
-        const char *ser = celix_properties_get(endpoint, PUBSUB_SERIALIZER_TYPE_KEY, "!Error!");
-        printf("[PSD] Adding discovered endpoint %s. type is %s, admin is %s, serializer is %s.\n",
-               uuid, type, admin, ser);
-    }
-
     celixThreadMutex_lock(&disc->discoveredEndpointsMutex);
     bool exists = hashMap_containsKey(disc->discoveredEndpoints, (void*)uuid);
     hashMap_put(disc->discoveredEndpoints, (void*)uuid, endpoint);
     celixThreadMutex_unlock(&disc->discoveredEndpointsMutex);
 
     if (!exists) {
+        if (disc->verbose) {
+            const char *uuid = celix_properties_get(endpoint, PUBSUB_ENDPOINT_UUID, "!Error!");
+            const char *type = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TYPE, "!Error!");
+            const char *admin = celix_properties_get(endpoint, PUBSUB_ENDPOINT_ADMIN_TYPE, "!Error!");
+            const char *ser = celix_properties_get(endpoint, PUBSUB_SERIALIZER_TYPE_KEY, "!Error!");
+            printf("[PSD] Adding discovered endpoint %s. type is %s, admin is %s, serializer is %s.\n",
+                   uuid, type, admin, ser);
+        }
+
         celixThreadMutex_lock(&disc->discoveredEndpointsListenersMutex);
         hash_map_iterator_t iter = hashMapIterator_construct(disc->discoveredEndpointsListeners);
         while (hashMapIterator_hasNext(&iter)) {
