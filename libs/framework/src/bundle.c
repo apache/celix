@@ -53,13 +53,6 @@ celix_status_t bundle_create(bundle_pt * bundle) {
         module = module_createFrameworkModule((*bundle));
         bundle_addModule(*bundle, module);
 
-        status = celixThreadMutex_create(&(*bundle)->lock, NULL);
-        if (status != CELIX_SUCCESS) {
-        	status = CELIX_ILLEGAL_STATE;
-        } else {
-			(*bundle)->lockCount = 0;
-			(*bundle)->lockThread = celix_thread_default;
-        }
 	}
 	framework_logIfError(logger, status, NULL, "Failed to create bundle");
 
@@ -88,13 +81,6 @@ celix_status_t bundle_createFromArchive(bundle_pt * bundle, framework_pt framewo
 	status = bundle_createModule(*bundle, &module);
 	if (status == CELIX_SUCCESS) {
 		bundle_addModule(*bundle, module);
-        status = celixThreadMutex_create(&(*bundle)->lock, NULL);
-        if (status != CELIX_SUCCESS) {
-			status = CELIX_ILLEGAL_STATE;
-		} else {
-			(*bundle)->lockCount = 0;
-			(*bundle)->lockThread = celix_thread_default;
-		}
 	} else {
 	    status = CELIX_FILE_IO_EXCEPTION;
 	}
@@ -112,7 +98,6 @@ celix_status_t bundle_destroy(bundle_pt bundle) {
 	}
 	arrayListIterator_destroy(iter);
 	arrayList_destroy(bundle->modules);
-	celixThreadMutex_destroy(&bundle->lock);
 
 	free(bundle);
 
@@ -427,106 +412,6 @@ celix_status_t bundle_isSystemBundle(bundle_pt bundle, bool *systemBundle) {
 	}
 
 	framework_logIfError(logger, status, NULL, "Failed to check if bundle is the systembundle");
-
-	return status;
-}
-
-celix_status_t bundle_isLockable(bundle_pt bundle, bool *lockable) {
-	celix_status_t status;
-
-	status = celixThreadMutex_lock(&bundle->lock);
-	if (status != CELIX_SUCCESS) {
-		status = CELIX_BUNDLE_EXCEPTION;
-	} else {
-		bool equals;
-		status = thread_equalsSelf(bundle->lockThread, &equals);
-		if (status == CELIX_SUCCESS) {
-			*lockable = (bundle->lockCount == 0) || (equals);
-		}
-
-		status = celixThreadMutex_unlock(&bundle->lock);
-		if (status != CELIX_SUCCESS) {
-			status = CELIX_BUNDLE_EXCEPTION;
-		}
-	}
-
-	framework_logIfError(logger, status, NULL, "Failed to check if bundle is lockable");
-
-	return status;
-}
-
-celix_status_t bundle_getLockingThread(bundle_pt bundle, celix_thread_t *thread) {
-	celix_status_t status;
-
-	status = celixThreadMutex_lock(&bundle->lock);
-	if (status != CELIX_SUCCESS) {
-		status = CELIX_BUNDLE_EXCEPTION;
-	} else {
-		*thread = bundle->lockThread;
-
-		status = celixThreadMutex_unlock(&bundle->lock);
-		if (status != CELIX_SUCCESS) {
-			status = CELIX_BUNDLE_EXCEPTION;
-		}
-	}
-
-	framework_logIfError(logger, status, NULL, "Failed to get locking thread");
-
-	return status;
-}
-
-celix_status_t bundle_lock(bundle_pt bundle, bool *locked) {
-	celix_status_t status;
-	bool equals;
-
-	celixThreadMutex_lock(&bundle->lock);
-
-	status = thread_equalsSelf(bundle->lockThread, &equals);
-	if (status == CELIX_SUCCESS) {
-		if ((bundle->lockCount > 0) && !equals) {
-			*locked = false;
-		} else {
-			bundle->lockCount++;
-			bundle->lockThread = celixThread_self();
-			*locked = true;
-		}
-	}
-
-	celixThreadMutex_unlock(&bundle->lock);
-
-	framework_logIfError(logger, status, NULL, "Failed to lock bundle");
-
-	return status;
-}
-
-celix_status_t bundle_unlock(bundle_pt bundle, bool *unlocked) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	bool equals;
-
-	celixThreadMutex_lock(&bundle->lock);
-
-	if (bundle->lockCount == 0) {
-		*unlocked = false;
-	} else {
-		status = thread_equalsSelf(bundle->lockThread, &equals);
-		if (status == CELIX_SUCCESS) {
-			if ((bundle->lockCount > 0) && !equals) {
-				*unlocked = false;
-			}
-			else{
-			   bundle->lockCount--;
-			   if (bundle->lockCount == 0) {
-			   	bundle->lockThread = celix_thread_default;
-			   }
-			   *unlocked = true;
-		   }
-	   }
-	}
-
-	celixThreadMutex_unlock(&bundle->lock);
-
-	framework_logIfError(logger, status, NULL, "Failed to unlock bundle");
 
 	return status;
 }

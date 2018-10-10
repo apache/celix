@@ -102,14 +102,6 @@ FRAMEWORK_EXPORT int compareTo(service_reference_pt a, service_reference_pt b);
 
 FRAMEWORK_EXPORT celix_status_t bundle_getState(bundle_pt bundle, bundle_state_e *state);
 
-FRAMEWORK_EXPORT celix_status_t bundle_isLockable(bundle_pt bundle, bool *lockable);
-
-FRAMEWORK_EXPORT celix_status_t bundle_getLockingThread(bundle_pt bundle, celix_thread_t *thread);
-
-FRAMEWORK_EXPORT celix_status_t bundle_lock(bundle_pt bundle, bool *locked);
-
-FRAMEWORK_EXPORT celix_status_t bundle_unlock(bundle_pt bundle, bool *unlocked);
-
 FRAMEWORK_EXPORT celix_status_t bundle_closeAndDelete(bundle_pt bundle);
 
 FRAMEWORK_EXPORT celix_status_t bundle_close(bundle_pt bundle);

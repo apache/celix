@@ -67,6 +67,7 @@ static const char *const OSGI_FRAMEWORK_EXPORT_LIBRARY = "Export-Library";
 static const char *const OSGI_FRAMEWORK_IMPORT_LIBRARY = "Import-Library";
 
 static const char *const OSGI_FRAMEWORK_FRAMEWORK_STORAGE = "org.osgi.framework.storage";
+static const char *const OSGI_FRAMEWORK_STORAGE_USE_TMP_DIR = "org.osgi.framework.storage.use.tmp.dir";
 static const char *const OSGI_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN = "org.osgi.framework.storage.clean";
 static const char *const OSGI_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_ONFIRSTINIT = "onFirstInit";
 static const char *const OSGI_FRAMEWORK_FRAMEWORK_UUID = "org.osgi.framework.uuid";

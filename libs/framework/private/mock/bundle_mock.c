@@ -157,6 +157,12 @@ celix_status_t bundle_setPersistentStateUninstalled(bundle_pt bundle) {
 	return mock_c()->returnValue().value.intValue;
 }
 
+celix_status_t bundle_getBundleLocation(bundle_pt bundle, const char **location) {
+	mock_c()->actualCall("bundle_getBundleLocation")
+	    ->withPointerParameters("bundle", bundle)
+	    ->withOutputParameter("location", location);
+	return mock_c()->returnValue().value.intValue;
+}
 
 void uninstallBundle(bundle_pt bundle) {
 	mock_c()->actualCall("uninstallBundle");

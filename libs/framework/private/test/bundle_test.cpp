@@ -97,9 +97,6 @@ TEST(bundle, create) {
 	POINTERS_EQUAL(archive, actual->archive);
 	CHECK(actual->modules);
 	POINTERS_EQUAL(NULL, actual->manifest);
-	//	CHECK(actual->lock)
-	LONGS_EQUAL(0, actual->lockCount);
-	POINTERS_EQUAL(NULL, actual->lockThread.thread);
 	POINTERS_EQUAL(NULL, actual->framework);
 
 	mock().expectOneCall("module_destroy");
@@ -166,9 +163,6 @@ TEST(bundle, createFromArchive) {
 	POINTERS_EQUAL(archive, actual->archive);
 	CHECK(actual->modules);
 	POINTERS_EQUAL(NULL, actual->manifest);
-	//	CHECK(actual->lock)
-	LONGS_EQUAL(0, actual->lockCount);
-	POINTERS_EQUAL(NULL, actual->lockThread.thread);
 	POINTERS_EQUAL(framework, actual->framework);
 
 	arrayList_destroy(actual->modules);
@@ -706,51 +700,6 @@ TEST(bundle, revise) {
 	free(actual_manifest);
 }
 
-TEST(bundle, isLockable) {
-	bundle_pt bundle = (bundle_pt) malloc(sizeof(*bundle));
-	celixThreadMutex_create(&bundle->lock, NULL);
-	bundle->lockCount = 0;
-
-	bool lockable = false;
-	celix_status_t status = bundle_isLockable(bundle, &lockable);
-	LONGS_EQUAL(CELIX_SUCCESS, status);
-	//	FAIL("Test not fully implemented");
-
-	free(bundle);
-}
-
-
-TEST(bundle, lockingThread) {
-	bundle_pt bundle = (bundle_pt) malloc(sizeof(*bundle));
-	celixThreadMutex_create(&bundle->lock, NULL);
-	celix_thread_t thread;
-
-	bundle->lockCount = 0;
-
-	bool locked = false;
-	LONGS_EQUAL(CELIX_SUCCESS, bundle_lock(bundle, &locked));
-	CHECK(locked);
-	LONGS_EQUAL(1, bundle->lockCount);
-
-	LONGS_EQUAL(CELIX_SUCCESS, bundle_getLockingThread(bundle, &thread));
-	bool equals;
-	thread_equalsSelf(thread, &equals);
-	CHECK(equals);
-
-	bool unlocked;
-	bundle->lockCount = 1;
-	LONGS_EQUAL(CELIX_SUCCESS, bundle_unlock(bundle, &unlocked));
-	CHECK(unlocked);
-	LONGS_EQUAL(0, bundle->lockCount);
-
-	//try to unlock unlocked lock
-	LONGS_EQUAL(CELIX_SUCCESS, bundle_unlock(bundle, &unlocked));
-	CHECK_FALSE(unlocked);
-	LONGS_EQUAL(0, bundle->lockCount);
-
-	celixThreadMutex_destroy(&bundle->lock);
-	free(bundle);
-}
 
 TEST(bundle, close) {
 	bundle_pt bundle = (bundle_pt) malloc(sizeof(*bundle));

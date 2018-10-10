@@ -35,10 +35,6 @@ struct bundle {
 	array_list_pt modules;
 	manifest_pt manifest;
 
-	celix_thread_mutex_t lock;
-	int lockCount;
-	celix_thread_t lockThread;
-
 	struct framework * framework;
 };
 

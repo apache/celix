@@ -46,6 +46,7 @@ enum framework_event_type {
 
 typedef enum framework_event_type framework_event_type_e;
 typedef struct framework_event *framework_event_pt;
+typedef struct framework_event framework_event_t;
 #ifdef __cplusplus
 }
 #endif

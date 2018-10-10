@@ -46,7 +46,7 @@ struct framework {
     apr_pool_t *pool;
 #endif
     struct bundle * bundle;
-    hash_map_pt installedBundleMap;
+    long bundleId; //the bundle id of the framework (normally 0)
     hash_map_pt installRequestMap;
 
     celix_thread_mutex_t serviceListenersLock;
@@ -62,28 +62,30 @@ struct framework {
     celix_service_registry_t *registry;
     bundle_cache_pt cache;
 
-    celix_thread_cond_t shutdownGate;
-    celix_thread_cond_t condition;
+    struct {
+        celix_thread_mutex_t mutex;
+        celix_thread_cond_t cond;
+        bool done; //true is shutdown is done
+        celix_thread_t thread;
+    } shutdown;
 
-    celix_thread_mutex_t installedBundleMapLock;
-    celix_thread_mutex_t installRequestLock;
-    celix_thread_mutex_t mutex;
-    celix_thread_mutex_t bundleLock;
+    struct {
+        celix_array_list_t *entries; //value = celix_framework_bundle_entry_t*. Note ordered by installed bundle time
+                                     //i.e. later installed bundle are last
+        celix_thread_mutex_t mutex;
+    } installedBundles;
 
-    celix_thread_t globalLockThread;
-    array_list_pt globalLockWaitersList;
-    int globalLockCount;
-
-    bool interrupted;
-    bool shutdown;
 
     properties_pt configurationMap;
 
-    array_list_pt requests;
-    celix_thread_cond_t dispatcher;
-    celix_thread_mutex_t dispatcherLock;
-    celix_thread_t dispatcherThread;
-    celix_thread_t shutdownThread;
+
+    struct {
+        celix_thread_cond_t cond;
+        celix_thread_t thread;
+        celix_thread_mutex_t mutex; //protect active and requests
+        bool active;
+        celix_array_list_t *requests;
+    } dispatcher;
 
     framework_logger_pt logger;
 };

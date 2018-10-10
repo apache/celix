@@ -55,9 +55,10 @@ celix_status_t bundleCache_create(const char *fwUUID, celix_properties_t *config
 	if (cache == NULL) {
 		status = CELIX_ENOMEM;
 	} else {
-		char* cacheDir = (char*)properties_get(configurationMap, (char *) OSGI_FRAMEWORK_FRAMEWORK_STORAGE);
+		const char* cacheDir = celix_properties_get(configurationMap, OSGI_FRAMEWORK_FRAMEWORK_STORAGE, ".cache");
+		bool useTmpDir = celix_properties_getAsBool(configurationMap, OSGI_FRAMEWORK_STORAGE_USE_TMP_DIR, false);
 		cache->configurationMap = configurationMap;
-		if (cacheDir == NULL) {
+		if (cacheDir == NULL || useTmpDir) {
 			//Using /tmp dir for cache, so that multiple frameworks can be launched
 			//instead of cacheDir = ".cache";
 			const char *pg = bundleCache_progamName();
