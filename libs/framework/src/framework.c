@@ -121,6 +121,7 @@ static inline void fw_bundleEntry_increaseUseCount(framework_t *fw, long bndId) 
     }
 }
 
+/*
 static inline size_t fw_bundleEntry_getUseCount(framework_t *fw, long bndId) {
     size_t count = 0;
     celixThreadMutex_lock(&fw->installedBundles.mutex);
@@ -135,7 +136,7 @@ static inline size_t fw_bundleEntry_getUseCount(framework_t *fw, long bndId) {
     }
     celixThreadMutex_unlock(&fw->installedBundles.mutex);
     return count;
-}
+}*/
 
 static inline void fw_bundleEntry_decreaseUseCount(framework_t *fw, long bndId) {
     assert(bndId >= 0);
