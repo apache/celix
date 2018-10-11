@@ -515,8 +515,8 @@ static celix_status_t pubsub_zmqAdmin_connectEndpointToReceiver(pubsub_zmq_admin
     const char *url = celix_properties_get(endpoint, PUBSUB_ZMQ_URL_KEY, NULL);
 
     if (url == NULL) {
-        const char *admin = celix_properties_get(endpoint, PUBSUB_ENDPOINT_ADMIN_TYPE);
-        const char *type = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TYPE);
+        const char *admin = celix_properties_get(endpoint, PUBSUB_ENDPOINT_ADMIN_TYPE, NULL);
+        const char *type = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TYPE, NULL);
         L_WARN("[PSA ZMQ] Error got endpoint without a zmq url (admin: %s, type: %s)", admin , type);
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
