@@ -466,7 +466,10 @@ celix_status_t pubsub_zmqAdmin_setupTopicReceiver(void *handle, const char *scop
         hash_map_iterator_t iter = hashMapIterator_construct(psa->discoveredEndpoints.map);
         while (hashMapIterator_hasNext(&iter)) {
             celix_properties_t *endpoint = hashMapIterator_nextValue(&iter);
-            pubsub_zmqAdmin_connectEndpointToReceiver(psa, receiver, endpoint);
+            const char *type = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TYPE, NULL);
+            if (type != NULL && strncmp(PUBSUB_PUBLISHER_ENDPOINT_TYPE, type, strlen(PUBSUB_PUBLISHER_ENDPOINT_TYPE)) == 0) {
+                pubsub_zmqAdmin_connectEndpointToReceiver(psa, receiver, endpoint);
+            }
         }
         celixThreadMutex_unlock(&psa->discoveredEndpoints.mutex);
     }
@@ -512,7 +515,9 @@ static celix_status_t pubsub_zmqAdmin_connectEndpointToReceiver(pubsub_zmq_admin
     const char *url = celix_properties_get(endpoint, PUBSUB_ZMQ_URL_KEY, NULL);
 
     if (url == NULL) {
-        L_WARN("[PSA ZMQ] Error got endpoint without a zmq url");
+        const char *admin = celix_properties_get(endpoint, PUBSUB_ENDPOINT_ADMIN_TYPE);
+        const char *type = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TYPE);
+        L_WARN("[PSA ZMQ] Error got endpoint without a zmq url (admin: %s, type: %s)", admin , type);
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
         if (eScope != NULL && eTopic != NULL &&

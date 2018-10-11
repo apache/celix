@@ -96,6 +96,27 @@ celix_status_t serviceRegistry_destroy(service_registry_pt registry) {
 
     //destroy service registration map
     int size = hashMap_size(registry->serviceRegistrations);
+    if (size > 0) {
+        fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "%i bundles with dangling service registration\n");
+        hash_map_iterator_t iter = hashMapIterator_construct(registry->serviceRegistrations);
+        while (hashMapIterator_nextValue(&iter)) {
+            hash_map_entry_t *entry = hashMapIterator_nextEntry(&iter);
+            bundle_t *bnd = hashMapEntry_getKey(entry);
+            celix_array_list_t *registrations = hashMapEntry_getValue(entry);
+            module_pt mod = NULL;
+            const char *name = NULL;
+            bundle_getCurrentModule(bnd, &mod);
+            if (mod != NULL) {
+                module_getSymbolicName(mod, &name);
+            }
+            for (int i = 0; i < celix_arrayList_size(registrations); ++i) {
+                service_registration_pt reg = celix_arrayList_get(registrations, i);
+                const char *svcName = NULL;
+                serviceRegistration_getServiceName(reg, &svcName);
+                fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Bundle %s still has a %s service registered\n", name, svcName);
+            }
+        }
+    }
     assert(size == 0);
     hashMap_destroy(registry->serviceRegistrations, false, false);
 

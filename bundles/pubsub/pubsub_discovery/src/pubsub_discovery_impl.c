@@ -154,11 +154,11 @@ static void psd_watchForChange(pubsub_discovery_t *disc, bool *connectedPtr, lon
         char *readKey = NULL;
         //TODO add interruptable etcd_wait -> which returns a handle to interrupt and a can be used for a wait call
         int rc = etcd_watch(disc->pubsubPath, watchIndex, &action, NULL, &value, &readKey, mIndex);
-        if (rc == ETCDLIB_RC_TIMEOUT) {
-            //nop
-        } else if (rc == ETCDLIB_RC_ERROR || action == NULL) {
+        if (rc == ETCDLIB_RC_ERROR) {
             printf("[PSD] Error communicating with etcd. rc is %i, action value is %s\n", rc, action);
             *connectedPtr = false;
+        } else if (rc == ETCDLIB_RC_TIMEOUT || action == NULL) {
+            //nop
         } else {
             if (strncmp(ETCDLIB_ACTION_CREATE, action, strlen(ETCDLIB_ACTION_CREATE)) == 0 ||
                        strncmp(ETCDLIB_ACTION_SET, action, strlen(ETCDLIB_ACTION_SET)) == 0 ||

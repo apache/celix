@@ -28,6 +28,7 @@
 #include <sys/stat.h>
 #include <string.h>
 #include <unistd.h>
+#include <celix_properties.h>
 
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/TestHarness_c.h"
@@ -56,14 +57,7 @@ TEST_GROUP(bundle_cache) {
 };
 
 TEST(bundle_cache, create) {
-	properties_pt configuration = (properties_pt) 0x10;
-
-	mock().expectOneCall("properties_get")
-		.withParameter("properties", configuration)
-		.withParameter("key", "org.osgi.framework.storage")
-		.andReturnValue((char *) NULL);
-
-    mock().ignoreOtherCalls();
+	properties_pt configuration = celix_properties_create();
 
 	bundle_cache_pt cache = NULL;
 	LONGS_EQUAL(CELIX_SUCCESS, bundleCache_create("test-uuid", configuration, &cache));

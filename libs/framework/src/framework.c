@@ -81,6 +81,15 @@ static inline celix_framework_bundle_entry_t* fw_bundleEntry_create(celix_bundle
     return entry;
 }
 
+
+static inline void fw_bundleEntry_waitTillNotUsed(celix_framework_bundle_entry_t *entry) {
+    celixThreadMutex_lock(&entry->useMutex);
+    while (entry->useCount != 0) {
+        celixThreadCondition_wait(&entry->useCond, &entry->useMutex);
+    }
+    celixThreadMutex_unlock(&entry->useMutex);
+}
+
 static inline void fw_bundleEntry_destroy(celix_framework_bundle_entry_t *entry, bool wait) {
     celixThreadMutex_lock(&entry->useMutex);
     while (wait && entry->useCount != 0) {
@@ -1065,7 +1074,6 @@ celix_status_t fw_stopBundle(framework_pt framework, bundle_pt bundle, bool reco
     celix_bundle_activator_t *activator = NULL;
     bundle_context_t *context = NULL;
     bool wasActive = false;
-    long id = 0;
     char *error = NULL;
 
     long bndId = celix_bundle_getId(bundle);
@@ -1107,9 +1115,8 @@ celix_status_t fw_stopBundle(framework_pt framework, bundle_pt bundle, bool reco
 
 	status = CELIX_DO_IF(status, framework_setBundleStateAndNotify(framework, bundle, OSGI_FRAMEWORK_BUNDLE_STOPPING));
 	status = CELIX_DO_IF(status, fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_STOPPING, bundle));
-    status = CELIX_DO_IF(status, bundle_getBundleId(bundle, &id));
 	if (status == CELIX_SUCCESS) {
-	    if (wasActive || (id == 0)) {
+	    if (wasActive || (bndId == 0)) {
 	        activator = bundle_getActivator(bundle);
 
 	        status = CELIX_DO_IF(status, bundle_getContext(bundle, &context));
@@ -1128,7 +1135,7 @@ celix_status_t fw_stopBundle(framework_pt framework, bundle_pt bundle, bool reco
                 }
 	        }
 
-            if (id != 0) {
+            if (bndId > 0) {
 	            celix_serviceTracker_syncForContext(bundle->context);
                 status = CELIX_DO_IF(status, serviceRegistry_clearServiceRegistrations(framework->registry, bundle));
                 if (status == CELIX_SUCCESS) {
@@ -2110,41 +2117,52 @@ static void* framework_shutdown(void *framework) {
 	fw_log(fw->logger, OSGI_FRAMEWORK_LOG_INFO, "FRAMEWORK: Shutdown");
 
     //celix_framework_bundle_entry_t *fwEntry = NULL;
-	celix_array_list_t *removeEntries = celix_arrayList_create();
+	celix_array_list_t *stopEntries = celix_arrayList_create();
+	celix_framework_bundle_entry_t *fwEntry = NULL;
 	celixThreadMutex_lock(&fw->installedBundles.mutex);
 	int size = celix_arrayList_size(fw->installedBundles.entries);
 	for (int i = 0; i < size; ++i) {
         celix_framework_bundle_entry_t *entry = celix_arrayList_get(fw->installedBundles.entries, i);
         if (entry->bndId != 0) { //i.e. not framework bundle
-            celix_arrayList_add(fw->installedBundles.entries, entry);
+            celix_arrayList_add(stopEntries, entry);
+        } else {
+            fwEntry = entry;
         }
-
 	}
-	celix_arrayList_clear(fw->installedBundles.entries);
+//	celix_arrayList_clear(fw->installedBundles.entries);
     celixThreadMutex_unlock(&fw->installedBundles.mutex);
 
 
-    size = celix_arrayList_size(removeEntries);
+    size = celix_arrayList_size(stopEntries);
     for (int i = size-1; i >= 0; --i) { //note loop in reverse order -> stop later installed bundle first
-        celix_framework_bundle_entry_t *entry = celix_arrayList_get(removeEntries, i);
+        celix_framework_bundle_entry_t *entry = celix_arrayList_get(stopEntries, i);
 
         //wait until entry use counts is 0
         bundle_t *bnd = entry->bnd;
-        fw_bundleEntry_destroy(entry, true);
+        fw_bundleEntry_waitTillNotUsed(entry);
 
         bundle_state_e state;
         bundle_getState(bnd, &state);
         if (state == OSGI_FRAMEWORK_BUNDLE_ACTIVE || state == OSGI_FRAMEWORK_BUNDLE_STARTING) {
             fw_stopBundle(fw, bnd, 0);
         }
+        bundle_close(bnd);
+    }
+    celix_arrayList_destroy(stopEntries);
+
+
+    // 'stop' framework bundle
+    if (fwEntry != NULL) {
+        bundle_t *bnd = fwEntry->bnd;
+        fw_bundleEntry_waitTillNotUsed(fwEntry);
+
+        bundle_state_e state;
         bundle_getState(bnd, &state);
         if (state == OSGI_FRAMEWORK_BUNDLE_ACTIVE || state == OSGI_FRAMEWORK_BUNDLE_STARTING) {
             fw_stopBundle(fw, bnd, 0);
         }
         bundle_close(bnd);
     }
-
-    //ignore fwEntry ?? TODO check
 
     celixThreadMutex_lock(&fw->shutdown.mutex);
     fw->shutdown.done = true;
