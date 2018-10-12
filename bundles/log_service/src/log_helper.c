@@ -37,7 +37,11 @@
 
 #include "log_helper.h"
 
-#define LOGHELPER_ENABLE_STDOUT_FALLBACK_PROPERTY_NAME 	"LOGHELPER_ENABLE_STDOUT_FALLBACK"
+#define LOGHELPER_ENABLE_STDOUT_FALLBACK_NAME 				"LOGHELPER_ENABLE_STDOUT_FALLBACK"
+#define LOGHELPER_ENABLE_STDOUT_FALLBACK_DEFAULT 			false
+
+#define LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG_NAME 		"LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG"
+#define LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG_DEFAULT 	false
 
 
 struct log_helper {
@@ -46,6 +50,7 @@ struct log_helper {
 	celix_thread_mutex_t logListLock;
 	array_list_pt logServices;
 	bool stdOutFallback;
+	bool stdOutFallbackIncludeDebug;
 };
 
 celix_status_t logHelper_logServiceAdded(void *handle, service_reference_pt reference, void *service);
@@ -64,16 +69,12 @@ celix_status_t logHelper_create(bundle_context_pt context, log_helper_pt* loghel
 	}
 	else
 	{
-		const char* stdOutFallbackStr = NULL;
 		(*loghelper)->bundleContext = context;
 		(*loghelper)->logServiceTracker = NULL;
 		(*loghelper)->stdOutFallback = false;
 
-		bundleContext_getProperty(context, LOGHELPER_ENABLE_STDOUT_FALLBACK_PROPERTY_NAME, &stdOutFallbackStr);
-
-		if (stdOutFallbackStr != NULL) {
-			(*loghelper)->stdOutFallback = true;
-		}
+		(*loghelper)->stdOutFallback = celix_bundleContext_getPropertyAsBool(context, LOGHELPER_ENABLE_STDOUT_FALLBACK_NAME, LOGHELPER_ENABLE_STDOUT_FALLBACK_DEFAULT);
+		(*loghelper)->stdOutFallbackIncludeDebug = celix_bundleContext_getPropertyAsBool(context, LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG_NAME, LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG_DEFAULT);
 
 		pthread_mutex_init(&(*loghelper)->logListLock, NULL);
         arrayList_create(&(*loghelper)->logServices);
@@ -185,6 +186,7 @@ celix_status_t logHelper_log(log_helper_pt loghelper, log_level_t level, char* m
 
     if (!logged && loghelper->stdOutFallback) {
         char *levelStr = NULL;
+        bool print = true;
 
         switch (level) {
             case OSGI_LOGSERVICE_ERROR:
@@ -199,10 +201,13 @@ celix_status_t logHelper_log(log_helper_pt loghelper, log_level_t level, char* m
             case OSGI_LOGSERVICE_DEBUG:
             default:
                 levelStr = "DEBUG";
+                print = loghelper->stdOutFallbackIncludeDebug;
                 break;
         }
 
-        printf("%s: %s\n", levelStr, msg);
+        if (print) {
+			printf("%s: %s\n", levelStr, msg);
+		}
     }
 
     va_end(listPointer);

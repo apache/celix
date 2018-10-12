@@ -673,6 +673,7 @@ void celix_bundleContext_stopTracker(bundle_context_t *ctx, long trackerId) {
         }
         if (svcTrackerTracker != NULL) {
             serviceRegistration_unregister(svcTrackerTracker->hookReg);
+            free(svcTrackerTracker->serviceName);
             free(svcTrackerTracker);
         }
 

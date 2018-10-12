@@ -378,11 +378,10 @@ void pubsub_discovery_discoveredEndpointsListenerAdded(void *handle, void *svc, 
 
 void pubsub_discovery_discoveredEndpointsListenerRemoved(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *bnd) {
     pubsub_discovery_t *disc = handle;
-    pubsub_discovered_endpoint_listener_t *listener = svc;
 
     long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
     celixThreadMutex_lock(&disc->discoveredEndpointsListenersMutex);
-    hashMap_put(disc->discoveredEndpointsListeners, (void*)svcId, listener);
+    hashMap_remove(disc->discoveredEndpointsListeners, (void*)svcId);
     celixThreadMutex_unlock(&disc->discoveredEndpointsListenersMutex);
 }
 

@@ -543,8 +543,9 @@ celix_status_t fw_init(framework_pt framework) {
 	        status = CELIX_DO_IF(status, bundle_getState(framework->bundle, &state));
 	        if (status == CELIX_SUCCESS) {
 	            if (state == OSGI_FRAMEWORK_BUNDLE_INSTALLED) {
-	                const char *clean = properties_get(framework->configurationMap, OSGI_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN);
-	                if (clean != NULL && (strcmp(clean, OSGI_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_ONFIRSTINIT) == 0)) {
+	                const char *clean = properties_get(framework->configurationMap, OSGI_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_NAME);
+	                bool cleanCache = clean == NULL ? true : strcmp(clean, "false") != 0;
+	                if (cleanCache) {
 	                    bundleCache_delete(framework->cache);
 	                }
 	            }
@@ -2416,7 +2417,7 @@ static celix_status_t frameworkActivator_stop(void * userData, bundle_context_t 
 
 	if (bundleContext_getFramework(context, &framework) == CELIX_SUCCESS) {
 
-	    fw_log(framework->logger, OSGI_FRAMEWORK_LOG_INFO, "FRAMEWORK: Start shutdownthread");
+	    fw_log(framework->logger, OSGI_FRAMEWORK_LOG_DEBUG, "FRAMEWORK: Start shutdownthread");
 
         celixThreadMutex_lock(&framework->dispatcher.mutex);
         framework->dispatcher.active = false;

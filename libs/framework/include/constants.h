@@ -27,6 +27,8 @@
 #ifndef CONSTANTS_H_
 #define CONSTANTS_H_
 
+#include <stdbool.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -68,8 +70,8 @@ static const char *const OSGI_FRAMEWORK_IMPORT_LIBRARY = "Import-Library";
 
 static const char *const OSGI_FRAMEWORK_FRAMEWORK_STORAGE = "org.osgi.framework.storage";
 static const char *const OSGI_FRAMEWORK_STORAGE_USE_TMP_DIR = "org.osgi.framework.storage.use.tmp.dir";
-static const char *const OSGI_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN = "org.osgi.framework.storage.clean";
-static const char *const OSGI_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_ONFIRSTINIT = "onFirstInit";
+static const char *const OSGI_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_NAME = "org.osgi.framework.storage.clean";
+static const bool        OSGI_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_DEFAULT = true;
 static const char *const OSGI_FRAMEWORK_FRAMEWORK_UUID = "org.osgi.framework.uuid";
 
 #define CELIX_AUTO_START_0 "CELIX_AUTO_START_0"

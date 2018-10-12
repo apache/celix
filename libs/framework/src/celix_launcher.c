@@ -192,17 +192,10 @@ int celixLauncher_launchWithProperties(properties_pt config, framework_pt *frame
 	// Before doing anything else, let's setup Curl
 	curl_global_init(CURL_GLOBAL_NOTHING);
 #endif
-
-
 	status = framework_create(framework, config);
 	if (status == CELIX_SUCCESS) {
 		status = framework_start(*framework);
 	}
-
-	if (status == CELIX_SUCCESS) {
-		printf("Launcher: Framework Started\n");
-	}
-	
 	return status;
 }
 
@@ -212,13 +205,10 @@ void celixLauncher_waitForShutdown(framework_pt framework) {
 
 void celixLauncher_destroy(framework_pt framework) {
 	framework_destroy(framework);
-
 #ifndef CELIX_NO_CURLINIT
 	// Cleanup Curl
 	curl_global_cleanup();
 #endif
-
-	printf("Launcher: Exit\n");
 }
 
 void celixLauncher_stop(framework_pt framework) {

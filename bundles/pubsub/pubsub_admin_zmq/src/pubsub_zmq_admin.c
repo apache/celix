@@ -225,7 +225,7 @@ void pubsub_zmqAdmin_destroy(pubsub_zmq_admin_t *psa) {
     hashMap_destroy(psa->topicReceivers.map, true, false);
 
     celixThreadMutex_destroy(&psa->discoveredEndpoints.mutex);
-    hashMap_destroy(psa->discoveredEndpoints.map, true, false);
+    hashMap_destroy(psa->discoveredEndpoints.map, false, false);
 
     celixThreadMutex_destroy(&psa->serializers.mutex);
     hashMap_destroy(psa->serializers.map, false, false);
