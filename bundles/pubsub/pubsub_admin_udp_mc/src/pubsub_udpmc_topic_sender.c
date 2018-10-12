@@ -254,35 +254,39 @@ static int psa_udpmc_topicPublicationSend(void* handle, unsigned int msgTypeId, 
     if (msgSer != NULL) {
         int major=0, minor=0;
 
-        pubsub_msg_header_t *msg_hdr = calloc(1,sizeof(struct pubsub_msg_header));
-        strncpy(msg_hdr->topic,entry->parent->topic,MAX_TOPIC_LEN-1);
-        msg_hdr->type = msgTypeId;
-
-
-        if (msgSer->msgVersion != NULL){
-            version_getMajor(msgSer->msgVersion, &major);
-            version_getMinor(msgSer->msgVersion, &minor);
-            msg_hdr->major = major;
-            msg_hdr->minor = minor;
-        }
-
         void* serializedOutput = NULL;
         size_t serializedOutputLen = 0;
-        msgSer->serialize(msgSer,inMsg,&serializedOutput, &serializedOutputLen);
+        if (msgSer->serialize(msgSer,inMsg,&serializedOutput, &serializedOutputLen) == CELIX_SUCCESS) {
 
-        pubsub_msg_t *msg = calloc(1,sizeof(pubsub_msg_t));
-        msg->header = msg_hdr;
-        msg->payload = (char*)serializedOutput;
-        msg->payloadSize = serializedOutputLen;
+            pubsub_msg_header_t *msg_hdr = calloc(1,sizeof(struct pubsub_msg_header));
+            strncpy(msg_hdr->topic,entry->parent->topic,MAX_TOPIC_LEN-1);
+            msg_hdr->type = msgTypeId;
 
 
-        if(psa_udpmc_sendMsg(entry, msg,true, NULL) == false) {
-            status = -1;
+            if (msgSer->msgVersion != NULL){
+                version_getMajor(msgSer->msgVersion, &major);
+                version_getMinor(msgSer->msgVersion, &minor);
+                msg_hdr->major = major;
+                msg_hdr->minor = minor;
+            }
+
+
+            pubsub_msg_t *msg = calloc(1, sizeof(pubsub_msg_t));
+            msg->header = msg_hdr;
+            msg->payload = (char *) serializedOutput;
+            msg->payloadSize = serializedOutputLen;
+
+
+            if (psa_udpmc_sendMsg(entry, msg, true, NULL) == false) {
+                status = -1;
+            }
+            free(msg);
+            free(msg_hdr);
+            free(serializedOutput);
+        } else {
+            printf("[PSA_UDPMC/TopicSender] Serialization of msg type id %d failed\n", msgTypeId);
+            status=-1;
         }
-        free(msg_hdr);
-        free(msg);
-        free(serializedOutput);
-
 
     } else {
         printf("[PSA_UDPMC/TopicSender] No msg serializer available for msg type id %d\n", msgTypeId);

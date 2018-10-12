@@ -443,55 +443,62 @@ static int psa_zmq_topicPublicationSendMultipart(void *handle, unsigned int msgT
 
         void *serializedOutput = NULL;
         size_t serializedOutputLen = 0;
-        msgSer->serialize(msgSer,inMsg,&serializedOutput, &serializedOutputLen);
+        status = msgSer->serialize(msgSer,inMsg,&serializedOutput, &serializedOutputLen);
+        if(status == CELIX_SUCCESS) {
+            pubsub_msg_t *msg = calloc(1, sizeof(struct pubsub_msg));
+            msg->header = msg_hdr;
+            msg->payload = (char *) serializedOutput;
+            msg->payloadSize = (int) serializedOutputLen;
+            bool snd = true;
 
-        pubsub_msg_t *msg = calloc(1,sizeof(struct pubsub_msg));
-        msg->header = msg_hdr;
-        msg->payload = (char*)serializedOutput;
-        msg->payloadSize = (int)serializedOutputLen;
-        bool snd = true;
-
-        switch(flags) {
-            case PUBSUB_PUBLISHER_FIRST_MSG:
-                bound->multipart.inProgress = true;
-                celix_arrayList_add(bound->multipart.parts, msg);
-                break;
-            case PUBSUB_PUBLISHER_PART_MSG:
-                if(!bound->multipart.inProgress){
-                    L_INFO("PSA_ZMQ_TP: ERROR: received msg part without the first part.\n");
-                    status = -4;
-                }
-                else{
+            switch (flags) {
+                case PUBSUB_PUBLISHER_FIRST_MSG:
+                    bound->multipart.inProgress = true;
                     celix_arrayList_add(bound->multipart.parts, msg);
-                }
-                break;
-            case PUBSUB_PUBLISHER_LAST_MSG:
-                if(!bound->multipart.inProgress){
-                    L_INFO("PSA_ZMQ_TP: ERROR: received end msg without the first part.\n");
+                    break;
+                case PUBSUB_PUBLISHER_PART_MSG:
+                    if (!bound->multipart.inProgress) {
+                        L_INFO("PSA_ZMQ_TP: ERROR: received msg part without the first part.\n");
+                        status = -4;
+                    } else {
+                        celix_arrayList_add(bound->multipart.parts, msg);
+                    }
+                    break;
+                case PUBSUB_PUBLISHER_LAST_MSG:
+                    if (!bound->multipart.inProgress) {
+                        L_INFO("PSA_ZMQ_TP: ERROR: received end msg without the first part.\n");
+                        status = -4;
+                    } else {
+                        celix_arrayList_add(bound->multipart.parts, msg);
+                        snd = psa_zmq_sendMsgParts(bound->parent, bound->multipart.parts);
+                        bound->multipart.inProgress = false;
+                        assert(celix_arrayList_size(bound->multipart.parts) == 0); //should be cleanup by sendMsg
+                    }
+                    break;
+                case PUBSUB_PUBLISHER_FIRST_MSG | PUBSUB_PUBLISHER_LAST_MSG:    //Normal send case
+                    snd = psa_zmq_sendMsg(bound->parent, msg, true);
+                    break;
+                default:
+                    L_INFO("PSA_ZMQ_TP: ERROR: Invalid MP flags combination\n");
                     status = -4;
-                }
-                else{
-                    celix_arrayList_add(bound->multipart.parts, msg);
-                    snd = psa_zmq_sendMsgParts(bound->parent, bound->multipart.parts);
-                    bound->multipart.inProgress = false;
-                    assert(celix_arrayList_size(bound->multipart.parts) == 0); //should be cleanup by sendMsg
-                }
-                break;
-            case PUBSUB_PUBLISHER_FIRST_MSG | PUBSUB_PUBLISHER_LAST_MSG:	//Normal send case
-                snd = psa_zmq_sendMsg(bound->parent, msg, true);
-                break;
-            default:
-                L_INFO("PSA_ZMQ_TP: ERROR: Invalid MP flags combination\n");
-                status = -4;
-                break;
-        }
+                    break;
+            }
 
-        if (status==-4) {
-            free(msg);
-        }
+            if (status == -4) {
+                free(msg);
+            }
 
-        if (!snd) {
-            L_WARN("[PSA_ZMQ] Failed to send %s message %u.\n",flags == (PUBSUB_PUBLISHER_FIRST_MSG | PUBSUB_PUBLISHER_LAST_MSG) ? "single" : "multipart", msgTypeId);
+            if (!snd) {
+                L_WARN("[PSA_ZMQ] Failed to send %s message %u.\n",
+                       flags == (PUBSUB_PUBLISHER_FIRST_MSG | PUBSUB_PUBLISHER_LAST_MSG) ? "single" : "multipart",
+                       msgTypeId);
+                status = -1;
+            }
+        } else {
+            L_WARN("[PSA_ZMQ] Failed to serialize %s message %u.\n",
+                   flags == (PUBSUB_PUBLISHER_FIRST_MSG | PUBSUB_PUBLISHER_LAST_MSG) ? "single" : "multipart",
+                   msgTypeId);
+            status = -1;
         }
 
     } else {
