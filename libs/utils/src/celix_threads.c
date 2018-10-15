@@ -155,6 +155,17 @@ celix_status_t celixThreadCondition_wait(celix_thread_cond_t *cond, celix_thread
     return pthread_cond_wait(cond, mutex);
 }
 
+#ifdef __APPLE__
+celix_status_t celixThreadCondition_timedwaitRelative(celix_thread_cond_t *cond, celix_thread_mutex_t *mutex, long seconds, long nanoseconds) {
+    struct timeval tv;
+    struct timespec time;
+    gettimeofday(&tv, NULL);
+    TIMEVAL_TO_TIMESPEC(&tv, &time)
+	time.tv_sec += seconds;
+	time.tv_nsec += nanoseconds;
+	return pthread_cond_timedwait(cond, mutex, &time);
+}
+#else
 celix_status_t celixThreadCondition_timedwaitRelative(celix_thread_cond_t *cond, celix_thread_mutex_t *mutex, long seconds, long nanoseconds) {
 	struct timespec time;
 	clock_gettime(CLOCK_REALTIME, &time);
@@ -162,6 +173,7 @@ celix_status_t celixThreadCondition_timedwaitRelative(celix_thread_cond_t *cond,
 	time.tv_nsec += nanoseconds;
 	return pthread_cond_timedwait(cond, mutex, &time);
 }
+#endif
 
 celix_status_t celixThreadCondition_broadcast(celix_thread_cond_t *cond) {
     return pthread_cond_broadcast(cond);
