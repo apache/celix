@@ -173,6 +173,7 @@ double pubsub_utils_matchSubscriber(
 	if (ep != NULL) {
 		requested_admin = celix_properties_get(ep, PUBSUB_ENDPOINT_ADMIN_TYPE, NULL);
 		requested_qos = celix_properties_get(ep, PUBSUB_UTILS_QOS_ATTRIBUTE_KEY, NULL);
+		celix_properties_destroy(ep);
 	}
 
 	double score = getPSAScore(requested_admin, requested_qos, adminType, sampleScore, controlScore, defaultScore);

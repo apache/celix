@@ -376,6 +376,7 @@ celix_status_t framework_create(framework_pt *framework, properties_pt config) {
             (*framework)->bundle = NULL;
             (*framework)->registry = NULL;
             (*framework)->shutdown.done = false;
+            (*framework)->shutdown.initialized = false;
             (*framework)->dispatcher.active = true;
             (*framework)->nextBundleId = 1L; //system bundle is 0
             (*framework)->cache = NULL;
@@ -471,6 +472,12 @@ celix_status_t framework_destroy(framework_pt framework) {
 	serviceRegistry_destroy(framework->registry);
 
     if (framework->serviceListeners != NULL) {
+        int size = celix_arrayList_size(framework->serviceListeners);
+        for (int i = 0; i < size; ++i) {
+            celix_fw_service_listener_entry_t *entry = celix_arrayList_get(framework->serviceListeners, i);
+            listener_release(entry);
+            listener_waitAndDestroy(framework, entry);
+        }
         arrayList_destroy(framework->serviceListeners);
     }
     if (framework->bundleListeners) {
@@ -2419,13 +2426,20 @@ static celix_status_t frameworkActivator_stop(void * userData, bundle_context_t 
 
 	    fw_log(framework->logger, OSGI_FRAMEWORK_LOG_DEBUG, "FRAMEWORK: Start shutdownthread");
 
-        celixThreadMutex_lock(&framework->dispatcher.mutex);
-        framework->dispatcher.active = false;
-        celixThreadCondition_broadcast(&framework->dispatcher.cond);
-        celixThreadMutex_unlock(&framework->dispatcher.mutex);
-        celixThread_join(framework->dispatcher.thread, NULL);
+	    celixThreadMutex_lock(&framework->shutdown.mutex);
+	    bool alreadyIntialized = framework->shutdown.initialized;
+	    framework->shutdown.initialized = true;
+        celixThreadMutex_unlock(&framework->shutdown.mutex);
 
-        celixThread_create(&framework->shutdown.thread, NULL, &framework_shutdown, framework);
+        if (!alreadyIntialized) {
+            celixThreadMutex_lock(&framework->dispatcher.mutex);
+            framework->dispatcher.active = false;
+            celixThreadCondition_broadcast(&framework->dispatcher.cond);
+            celixThreadMutex_unlock(&framework->dispatcher.mutex);
+            celixThread_join(framework->dispatcher.thread, NULL);
+
+            celixThread_create(&framework->shutdown.thread, NULL, &framework_shutdown, framework);
+        }
 	} else {
 		status = CELIX_FRAMEWORK_EXCEPTION;
 	}

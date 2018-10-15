@@ -765,13 +765,17 @@ celix_status_t serviceRegistry_getListenerHooks(service_registry_pt registry, bu
         for (i = 0; i < size; i += 1) {
             celixThreadRwlock_readLock(&registry->lock);
             service_registration_pt registration = arrayList_get(registry->listenerHooks, i);
-            serviceRegistration_retain(registration);
+            if (registration != NULL) {
+                serviceRegistration_retain(registration);
+            }
             celixThreadRwlock_unlock(&registry->lock);
 
-            service_reference_pt reference = NULL;
-            serviceRegistry_getServiceReference(registry, owner, registration, &reference);
-            arrayList_add(result, reference);
-            serviceRegistration_release(registration);
+            if (registration != NULL) {
+                service_reference_pt reference = NULL;
+                serviceRegistry_getServiceReference(registry, owner, registration, &reference);
+                arrayList_add(result, reference);
+                serviceRegistration_release(registration);
+            }
         }
     }
 

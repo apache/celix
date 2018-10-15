@@ -440,6 +440,7 @@ void pubsub_topologyManager_publisherTrackerRemoved(void *handle, const celix_se
 	celixThreadMutex_unlock(&manager->topicSenders.mutex);
 
 	free(scopeAndTopicKey);
+	free(topic);
 	free(scopeFromFilter);
 }
 

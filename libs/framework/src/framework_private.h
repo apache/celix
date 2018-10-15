@@ -66,6 +66,7 @@ struct framework {
         celix_thread_mutex_t mutex;
         celix_thread_cond_t cond;
         bool done; //true is shutdown is done
+        bool initialized; //true is a shutdown is initialized
         celix_thread_t thread;
     } shutdown;
 
