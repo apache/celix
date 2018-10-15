@@ -31,7 +31,7 @@
 #include "celix_log.h"
 #include "celix_properties.h"
 
-static celix_status_t bundleCache_deleteTree(bundle_cache_pt cache, char * directory);
+static celix_status_t bundleCache_deleteTree(bundle_cache_pt cache, char * directory, bool root);
 
 static const char* bundleCache_progamName() {
 #if defined(__APPLE__) || defined(__FreeBSD__)
@@ -97,7 +97,7 @@ celix_status_t bundleCache_destroy(bundle_cache_pt *cache) {
 }
 
 celix_status_t bundleCache_delete(bundle_cache_pt cache) {
-	return bundleCache_deleteTree(cache, cache->cacheDir);
+	return bundleCache_deleteTree(cache, cache->cacheDir, true);
 }
 
 celix_status_t bundleCache_getArchives(bundle_cache_pt cache, array_list_pt *archives) {
@@ -193,7 +193,7 @@ celix_status_t bundleCache_createArchive(bundle_cache_pt cache, long id, const c
 	return status;
 }
 
-static celix_status_t bundleCache_deleteTree(bundle_cache_pt cache, char * directory) {
+static celix_status_t bundleCache_deleteTree(bundle_cache_pt cache, char * directory, bool root) {
 	DIR *dir;
 	celix_status_t status = CELIX_SUCCESS;
 	struct stat st;
@@ -212,7 +212,7 @@ static celix_status_t bundleCache_deleteTree(bundle_cache_pt cache, char * direc
 
 				if (stat(subdir, &st) == 0) {
 					if (S_ISDIR (st.st_mode)) {
-						status = bundleCache_deleteTree(cache, subdir);
+						status = bundleCache_deleteTree(cache, subdir, false);
 					} else {
 						if (remove(subdir) != 0) {
 							status = CELIX_FILE_IO_EXCEPTION;
@@ -238,7 +238,10 @@ static celix_status_t bundleCache_deleteTree(bundle_cache_pt cache, char * direc
 		}
 	}
 
-	framework_logIfError(logger, status, NULL, "Failed to delete tree at dir '%s'", directory);
+    if (!root) {
+        //note root dir can be non existing
+        framework_logIfError(logger, status, NULL, "Failed to delete tree at dir '%s'", directory);
+    }
 
 	return status;
 }
