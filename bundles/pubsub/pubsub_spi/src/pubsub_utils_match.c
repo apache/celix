@@ -176,6 +176,7 @@ double pubsub_utils_matchSubscriber(
 		requested_qos = celix_properties_get(ep, PUBSUB_UTILS_QOS_ATTRIBUTE_KEY, NULL);
 		requested_serializer = celix_properties_get(ep, PUBSUB_ENDPOINT_SERIALIZER, NULL);
 		celix_properties_destroy(ep);
+		data.outEndpoint = NULL;
 	}
 
 	double score = getPSAScore(requested_admin, requested_qos, adminType, sampleScore, controlScore, defaultScore);
@@ -184,8 +185,6 @@ double pubsub_utils_matchSubscriber(
 	if (serializerSvcId < 0) {
 		score = PUBSUB_ADMIN_NO_MATCH_SCORE; //no serializer, no match
 	}
-
-//	printf("Score subscriber service match for psa type %s is %f\n", adminType, score);
 
 	if (outSerializerSvcId != NULL) {
 		*outSerializerSvcId = serializerSvcId;

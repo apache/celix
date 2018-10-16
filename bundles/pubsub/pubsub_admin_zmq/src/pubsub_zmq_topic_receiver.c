@@ -165,7 +165,14 @@ pubsub_zmq_topic_receiver_t* pubsub_zmqTopicReceiver_create(celix_bundle_context
     }
 
     if (receiver->zmqSocket != NULL) {
+        int timeout = PSA_ZMQ_RECV_TIMEOUT;
+        void *zmqSocket =  zsock_resolve(receiver->zmqSocket);
+        int res = zmq_setsockopt(zmqSocket, ZMQ_RCVTIMEO, &timeout, sizeof(timeout));
+        if (res) {
+            L_ERROR("[PSA_ZMQ] Cannot set ZMQ socket option ZMQ_RCVTIMEO errno=%d", errno);
+        }
 #ifdef BUILD_WITH_ZMQ_SECURITY
+
         zcert_apply (sub_cert, zmq_s);
         zsock_set_curve_serverkey (zmq_s, pub_key); //apply key of publisher to socket of subscriber
 #endif
@@ -397,10 +404,10 @@ static void* psa_zmq_recvThread(void * data) {
     celixThreadMutex_unlock(&receiver->recvThread.mutex);
 
     while (running) {
-        zframe_t* headerMsg = zframe_recv_nowait(receiver->zmqSocket);
+        zframe_t* headerMsg = zframe_recv(receiver->zmqSocket);
         if (headerMsg == NULL) {
             if(errno == EAGAIN) {
-                usleep(PSA_ZMQ_RECV_TIMEOUT);
+                // Do nothing
             } else if (errno == EINTR) {
                 //It means we got a signal and we have to exit...
                 L_INFO("PSA_ZMQ_TS: header_recv thread for topic got a signal and will exit.\n");
