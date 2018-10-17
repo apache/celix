@@ -30,17 +30,5 @@
 #define PUBSUB_ANNOUNCE_ENDPOINT_LISTENER_SERVICE	"pubsub_announce_endpoint_listener"
 #define PUBSUB_DISCOVERED_ENDPOINT_LISTENER_SERVICE	"pubsub_discovered_endpoint_listener"
 
-#define MAX_SCOPE_LEN                           	1024
-#define MAX_TOPIC_LEN								1024
-
-struct pubsub_msg_header{
-	char topic[MAX_TOPIC_LEN];
-	unsigned int type;
-	unsigned char major;
-	unsigned char minor;
-};
-
-typedef struct pubsub_msg_header pubsub_msg_header_t;
-
 
 #endif /* PUBSUB_COMMON_H_ */

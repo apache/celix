@@ -26,9 +26,31 @@
 #include "pubsub_common.h"
 
 
-int psa_zmq_localMsgTypeIdForMsgType(void* handle __attribute__((unused)), const char* msgType, unsigned int* msgTypeId);
+/*
+ * NOTE zmq is used by first sending three frames:
+ * 1) A subscription filter.
+ * This is a 5 char string of the first two chars of scope and topic combined and terminated with a '\0'.
+ *
+ * 2) The pubsub_zmq_msg_header_t is send containg the type id and major/minor version
+ *
+ * 3) The actual payload
+ */
 
-bool psa_zmq_checkVersion(version_pt msgVersion, pubsub_msg_header_t *hdr);
+
+struct pubsub_zmq_msg_header {
+    //header
+    unsigned int type;
+    unsigned char major;
+    unsigned char minor;
+};
+
+typedef struct pubsub_zmq_msg_header pubsub_zmq_msg_header_t;
+
+
+int psa_zmq_localMsgTypeIdForMsgType(void* handle, const char* msgType, unsigned int* msgTypeId);
+void psa_zmq_setScopeAndTopicFilter(const char* scope, const char *topic, char *filter);
+
+bool psa_zmq_checkVersion(version_pt msgVersion, const pubsub_zmq_msg_header_t *hdr);
 
 
 #endif //CELIX_PUBSUB_ZMQ_COMMON_H

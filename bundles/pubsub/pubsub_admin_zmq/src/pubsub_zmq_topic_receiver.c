@@ -31,6 +31,7 @@
 #include "pubsub_zmq_topic_receiver.h"
 #include "pubsub_psa_zmq_constants.h"
 #include "pubsub_zmq_common.h"
+#include "../../pubsub_topology_manager/src/pubsub_topology_manager.h"
 
 //TODO see if block and wakeup (reset) also works
 #define PSA_ZMQ_RECV_TIMEOUT 1000
@@ -52,6 +53,7 @@ struct pubsub_zmq_topic_receiver {
     pubsub_serializer_service_t *serializer;
     char *scope;
     char *topic;
+    char scopeAndTopicFilter[5];
 
     zsock_t *zmqSocket;
 
@@ -84,25 +86,9 @@ typedef struct psa_zmq_subscriber_entry {
     pubsub_subscriber_t *svc;
 } psa_zmq_subscriber_entry_t;
 
-typedef struct complete_zmq_msg {
-    zframe_t* header;
-    zframe_t* payload;
-} complete_zmq_msg_t;
-
-typedef struct mp_handle {
-    hash_map_pt svc_msg_db;
-    hash_map_pt rcv_msg_map;
-} mp_handle_t;
-
-typedef struct msg_map_entry {
-    bool retain;
-    void* msgInst;
-} msg_map_entry_t;
-
 
 static void pubsub_zmqTopicReceiver_addSubscriber(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner);
 static void pubsub_zmqTopicReceiver_removeSubscriber(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner);
-static void psa_zmq_processMsg(pubsub_zmq_topic_receiver_t *receiver, celix_array_list_t *messages);
 static void* psa_zmq_recvThread(void * data);
 
 
@@ -117,6 +103,7 @@ pubsub_zmq_topic_receiver_t* pubsub_zmqTopicReceiver_create(celix_bundle_context
     receiver->logHelper = logHelper;
     receiver->serializerSvcId = serializerSvcId;
     receiver->serializer = serializer;
+    psa_zmq_setScopeAndTopicFilter(scope, topic, receiver->scopeAndTopicFilter);
 
 
 #ifdef BUILD_WITH_ZMQ_SECURITY
@@ -176,7 +163,9 @@ pubsub_zmq_topic_receiver_t* pubsub_zmqTopicReceiver_create(celix_bundle_context
         zcert_apply (sub_cert, zmq_s);
         zsock_set_curve_serverkey (zmq_s, pub_key); //apply key of publisher to socket of subscriber
 #endif
-        zsock_set_subscribe(receiver->zmqSocket, topic);
+        char subscribeFilter[5];
+        psa_zmq_setScopeAndTopicFilter(scope, topic, subscribeFilter);
+        zsock_set_subscribe(receiver->zmqSocket, subscribeFilter);
 
 #ifdef BUILD_WITH_ZMQ_SECURITY
         ts->zmq_cert = sub_cert;
@@ -396,6 +385,42 @@ static void pubsub_zmqTopicReceiver_removeSubscriber(void *handle, void *svc, co
     celixThreadMutex_unlock(&receiver->subscribers.mutex);
 }
 
+static inline void processMsgForSubscriberEntry(pubsub_zmq_topic_receiver_t *receiver, psa_zmq_subscriber_entry_t* entry, const pubsub_zmq_msg_header_t *hdr, const byte* payload, size_t payloadSize) {
+    pubsub_msg_serializer_t* msgSer = hashMap_get(entry->msgTypes, (void*)(uintptr_t)(hdr->type));
+    pubsub_subscriber_t *svc = entry->svc;
+
+    if (msgSer!= NULL) {
+        void *deserializedMsg = NULL;
+        bool validVersion = psa_zmq_checkVersion(msgSer->msgVersion, hdr);
+        if (validVersion) {
+            celix_status_t status = msgSer->deserialize(msgSer, payload, payloadSize, &deserializedMsg);
+            if(status == CELIX_SUCCESS) {
+                bool release = true;
+                svc->receive(svc->handle, msgSer->msgName, msgSer->msgId, deserializedMsg, NULL, &release);
+                if (release) {
+                    msgSer->freeMsg(msgSer->handle, deserializedMsg);
+                }
+            } else {
+                L_WARN("[PSA_ZMQ_TR] Cannot deserialize msg type %s for scope/topic %s/%s", msgSer->msgName, receiver->scope, receiver->topic);
+            }
+        }
+    } else {
+        L_WARN("[PSA_ZMQ_TR] Cannot find serializer for type id %i", hdr->type);
+    }
+}
+
+static inline void processMsg(pubsub_zmq_topic_receiver_t *receiver, const pubsub_zmq_msg_header_t *hdr, const byte *payload, size_t payloadSize) {
+    celixThreadMutex_lock(&receiver->subscribers.mutex);
+    hash_map_iterator_t iter = hashMapIterator_construct(receiver->subscribers.map);
+    while (hashMapIterator_hasNext(&iter)) {
+        psa_zmq_subscriber_entry_t *entry = hashMapIterator_nextValue(&iter);
+        if (entry != NULL) {
+            processMsgForSubscriberEntry(receiver, entry, hdr, payload, payloadSize);
+        }
+    }
+    celixThreadMutex_unlock(&receiver->subscribers.mutex);
+}
+
 static void* psa_zmq_recvThread(void * data) {
     pubsub_zmq_topic_receiver_t *receiver = data;
 
@@ -404,89 +429,30 @@ static void* psa_zmq_recvThread(void * data) {
     celixThreadMutex_unlock(&receiver->recvThread.mutex);
 
     while (running) {
-        zframe_t* headerMsg = zframe_recv(receiver->zmqSocket);
-        if (headerMsg == NULL) {
-            if(errno == EAGAIN) {
-                // Do nothing
-            } else if (errno == EINTR) {
-                //It means we got a signal and we have to exit...
-                L_INFO("PSA_ZMQ_TS: header_recv thread for topic got a signal and will exit.\n");
+        zmsg_t *zmsg = zmsg_recv(receiver->zmqSocket);
+        if (zmsg != NULL) {
+            if (zmsg_size(zmsg) != 3) {
+                L_WARN("[PSA_ZMQ_TR] Always expecting 2 frames per zmsg (header + payload), got %i frames", (int)zmsg_size(zmsg));
             } else {
-                L_ERROR("PSA_ZMQ_TS: header_recv thread (%s)", strerror(errno));
-            }
-        } else {
-            pubsub_msg_header_t *hdr = (pubsub_msg_header_t*)zframe_data(headerMsg);
-
-            if (zframe_more(headerMsg)) {
-                zframe_t* payloadMsg = zframe_recv(receiver->zmqSocket);
-                if (payloadMsg == NULL) {
-                    if (errno == EINTR) {
-                        //It means we got a signal and we have to exit...
-                        L_INFO("[PSA_ZMQ] TopicSender payload_recv thread for topic got a signal and will exit.\n");
-                    } else {
-                        L_WARN("[PSA_ZMQ] TopicSender: payload_recv (%s)", strerror(errno));
-                    }
-                    zframe_destroy(&headerMsg);
-                } else {
-
-                    //Let's fetch all the messages from the socket
-                    celix_array_list_t *msg_list = celix_arrayList_create();
-                    complete_zmq_msg_t *firstMsg = calloc(1, sizeof(struct complete_zmq_msg));
-                    firstMsg->header = headerMsg;
-                    firstMsg->payload = payloadMsg;
-                    arrayList_add(msg_list, firstMsg);
-
-                    bool more = (bool)zframe_more(payloadMsg);
-                    while (more) {
-
-                        zframe_t* h_msg = zframe_recv(receiver->zmqSocket);
-                        if (h_msg == NULL) {
-                            if (errno == EINTR) {
-                                //It means we got a signal and we have to exit...
-                                L_INFO("[PSA_ZMQ] TopicSender payload_recv thread for topic got a signal and will exit.\n");
-                            } else {
-                                L_WARN("[PSA_ZMQ] TopicSender: payload_recv (%s)", strerror(errno));
-                            }
-                            break;
-                        }
-
-                        zframe_t* p_msg = zframe_recv(receiver->zmqSocket);
-                        if (p_msg == NULL) {
-                            if (errno == EINTR) {
-                                //It means we got a signal and we have to exit...
-                                L_INFO("[PSA_ZMQ] TopicSender payload_recv thread for topic got a signal and will exit.\n");
-                            } else {
-                                L_WARN("[PSA_ZMQ] TopicSender: payload_recv (%s)", strerror(errno));
-                            }
-                            zframe_destroy(&h_msg);
-                            break;
-                        }
-
-                        complete_zmq_msg_t *c_msg = calloc(1, sizeof(struct complete_zmq_msg));
-                        c_msg->header = h_msg;
-                        c_msg->payload = p_msg;
-                        arrayList_add(msg_list, c_msg);
-
-                        if (!zframe_more(p_msg)) {
-                            more = false;
-                        }
-                    }
-
-                    psa_zmq_processMsg(receiver, msg_list);
-                    for (int i = 0; i < celix_arrayList_size(msg_list); ++i) {
-                        complete_zmq_msg_t *msg = celix_arrayList_get(msg_list, i);
-                        zframe_destroy(&msg->header);
-                        zframe_destroy(&msg->payload);
-                        free(msg);
-                    }
-                    celix_arrayList_destroy(msg_list);
+                zframe_t *filter = zmsg_pop(zmsg); //char[5] filter
+                zframe_t *header = zmsg_pop(zmsg); //pubsub_zmq_msg_header_t
+                zframe_t *payload = zmsg_pop(zmsg); //serialized payload
+                if (header != NULL && payload != NULL) {
+                    processMsg(receiver, (pubsub_zmq_msg_header_t*)zframe_data(header), zframe_data(payload), zframe_size(payload));
                 }
-
-            } else {
-                free(headerMsg);
-                L_WARN("PSA_ZMQ_TS: received message %u for topic %s without payload!\n", hdr->type, hdr->topic);
+                zframe_destroy(&filter);
+                zframe_destroy(&header);
+                zframe_destroy(&payload);
             }
-
+            zmsg_destroy(&zmsg);
+        } else {
+            if (errno == EAGAIN) {
+                //nop
+            } else if (errno == EINTR) {
+                L_DEBUG("[PSA_ZMQ_TR] zmsg_recv interrupted");
+            } else {
+                L_WARN("[PSA_ZMQ_TR] Error receiving zmq message: %s", strerror(errno));
+            }
         }
 
         celixThreadMutex_lock(&receiver->recvThread.mutex);
@@ -495,146 +461,4 @@ static void* psa_zmq_recvThread(void * data) {
     } // while
 
     return NULL;
-}
-
-static int psa_zmq_getMultipart(void *handle, unsigned int msgTypeId, bool retain, void **part){
-
-    if(handle==NULL){
-        *part = NULL;
-        return -1;
-    }
-
-    mp_handle_t *mp_handle = handle;
-    msg_map_entry_t *entry = hashMap_get(mp_handle->rcv_msg_map, (void*)(uintptr_t) msgTypeId);
-    if(entry!=NULL){
-        entry->retain = retain;
-        *part = entry->msgInst;
-    }
-    else{
-        printf("TP: getMultipart cannot find msg '%u'\n",msgTypeId);
-        *part=NULL;
-        return -2;
-    }
-
-    return 0;
-
-}
-
-static void psa_zmq_destroyMultipartHandle(mp_handle_t *mp_handle) {
-
-    hash_map_iterator_pt iter = hashMapIterator_create(mp_handle->rcv_msg_map);
-    while(hashMapIterator_hasNext(iter)){
-        hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
-        unsigned int msgId = (unsigned int)(uintptr_t)hashMapEntry_getKey(entry);
-        msg_map_entry_t *msgEntry = hashMapEntry_getValue(entry);
-        pubsub_msg_serializer_t* msgSer = hashMap_get(mp_handle->svc_msg_db, (void*)(uintptr_t)msgId);
-
-        if(msgSer!=NULL){
-            if(!msgEntry->retain){
-                msgSer->freeMsg(msgSer->handle,msgEntry->msgInst);
-            }
-        }
-        else{
-            printf("PSA_ZMQ_TS: ERROR: Cannot find messageSerializer for msg %u, so cannot destroy it!\n",msgId);
-        }
-
-        free(msgEntry);
-    }
-    hashMapIterator_destroy(iter);
-
-    hashMap_destroy(mp_handle->rcv_msg_map,false,false);
-    free(mp_handle);
-}
-
-static mp_handle_t* psa_zmq_createMultipartHandle(hash_map_pt svc_msg_db,array_list_pt rcv_msg_list){
-
-    if(arrayList_size(rcv_msg_list)==1){ //Means it's not a multipart message
-        return NULL;
-    }
-
-    mp_handle_t *mp_handle = calloc(1,sizeof(struct mp_handle));
-    mp_handle->svc_msg_db = svc_msg_db;
-    mp_handle->rcv_msg_map = hashMap_create(NULL, NULL, NULL, NULL);
-
-    int i=1; //We skip the first message, it will be handle differently
-    for(;i<arrayList_size(rcv_msg_list);i++){
-        complete_zmq_msg_t *c_msg = celix_arrayList_get(rcv_msg_list,i);
-        pubsub_msg_header_t *header = (pubsub_msg_header_t*)zframe_data(c_msg->header);
-
-        pubsub_msg_serializer_t* msgSer = hashMap_get(svc_msg_db, (void*)(uintptr_t)(header->type));
-
-        if (msgSer!= NULL) {
-            void *msgInst = NULL;
-
-            bool validVersion = psa_zmq_checkVersion(msgSer->msgVersion,header);
-
-            if(validVersion){
-                celix_status_t status = msgSer->deserialize(msgSer, (const void*)zframe_data(c_msg->payload), 0, &msgInst);
-
-                if(status == CELIX_SUCCESS){
-                    msg_map_entry_t *entry = calloc(1,sizeof(struct msg_map_entry));
-                    entry->msgInst = msgInst;
-                    hashMap_put(mp_handle->rcv_msg_map, (void*)(uintptr_t)header->type,entry);
-                }
-            }
-        }
-    }
-
-    return mp_handle;
-
-}
-
-
-static void psa_zmq_processMsg(pubsub_zmq_topic_receiver_t *receiver, celix_array_list_t *messages) {
-
-    pubsub_msg_header_t *first_msg_hdr = (pubsub_msg_header_t*)zframe_data(((complete_zmq_msg_t*)celix_arrayList_get(messages,0))->header);
-
-    celixThreadMutex_lock(&receiver->subscribers.mutex);
-    hash_map_iterator_t iter = hashMapIterator_construct(receiver->subscribers.map);
-    while (hashMapIterator_hasNext(&iter)) {
-        psa_zmq_subscriber_entry_t *entry = hashMapIterator_nextValue(&iter);
-
-        pubsub_msg_serializer_t *msgSer = NULL;
-        if (entry->msgTypes != NULL) {
-            msgSer = hashMap_get(entry->msgTypes, (void *) (uintptr_t) first_msg_hdr->type);
-        }
-        if (msgSer == NULL) {
-            printf("[PSA_ZMQ] Serializer not available for message %d.\n", first_msg_hdr->type);
-        } else {
-            void *msgInst = NULL;
-            bool validVersion = psa_zmq_checkVersion(msgSer->msgVersion,first_msg_hdr);
-
-            if (validVersion) {
-
-                celix_status_t status = msgSer->deserialize(msgSer, (const void *) zframe_data(((complete_zmq_msg_t*)celix_arrayList_get(messages,0))->payload), 0, &msgInst);
-                if (status == CELIX_SUCCESS) {
-                    bool release = true;
-                    mp_handle_t *mp_handle = psa_zmq_createMultipartHandle(entry->msgTypes, messages);
-                    pubsub_multipart_callbacks_t mp_callbacks;
-                    mp_callbacks.handle = mp_handle;
-                    mp_callbacks.localMsgTypeIdForMsgType = psa_zmq_localMsgTypeIdForMsgType;
-                    mp_callbacks.getMultipart = psa_zmq_getMultipart;
-                    entry->svc->receive(entry->svc->handle, msgSer->msgName, first_msg_hdr->type, msgInst, &mp_callbacks, &release);
-
-                    if (release) {
-                        msgSer->freeMsg(msgSer,msgInst); // pubsubSerializer_freeMsg(msgType, msgInst);
-                    }
-                    if (mp_handle!=NULL) {
-                        psa_zmq_destroyMultipartHandle(mp_handle);
-                    }
-                }
-                else{
-                    L_WARN("[PSA_ZMQ] TopicReceiver Cannot deserialize msgType %s.\n",msgSer->msgName);
-                }
-
-            } else {
-                int major=0,minor=0;
-                version_getMajor(msgSer->msgVersion,&major);
-                version_getMinor(msgSer->msgVersion,&minor);
-                L_WARN("[PSA_ZMQ] TopicReceiver: Version mismatch for primary message '%s' (have %d.%d, received %u.%u). NOT sending any part of the whole message.\n",
-                       msgSer->msgName,major,minor,first_msg_hdr->major,first_msg_hdr->minor);
-            }
-        }
-    }
-    celixThreadMutex_unlock(&receiver->subscribers.mutex);
 }

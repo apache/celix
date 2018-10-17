@@ -17,6 +17,7 @@
  *under the License.
  */
 
+#include <memory.h>
 #include "pubsub_zmq_common.h"
 
 int psa_zmq_localMsgTypeIdForMsgType(void* handle __attribute__((unused)), const char* msgType, unsigned int* msgTypeId) {
@@ -24,11 +25,11 @@ int psa_zmq_localMsgTypeIdForMsgType(void* handle __attribute__((unused)), const
     return 0;
 }
 
-bool psa_zmq_checkVersion(version_pt msgVersion, pubsub_msg_header_t *hdr) {
+bool psa_zmq_checkVersion(version_pt msgVersion, const pubsub_zmq_msg_header_t *hdr) {
     bool check=false;
     int major=0,minor=0;
 
-    if(msgVersion!=NULL){
+    if (msgVersion!=NULL) {
         version_getMajor(msgVersion,&major);
         version_getMinor(msgVersion,&minor);
         if(hdr->major==((unsigned char)major)){ /* Different major means incompatible */
@@ -37,4 +38,18 @@ bool psa_zmq_checkVersion(version_pt msgVersion, pubsub_msg_header_t *hdr) {
     }
 
     return check;
+}
+
+void psa_zmq_setScopeAndTopicFilter(const char* scope, const char *topic, char *filter) {
+    for (int i = 0; i < 5; ++i) {
+        filter[i] = '\0';
+    }
+    if (scope != NULL && strnlen(scope, 3) >= 2)  {
+        filter[0] = scope[0];
+        filter[1] = scope[1];
+    }
+    if (topic != NULL && strnlen(topic, 3) >= 2)  {
+        filter[2] = topic[0];
+        filter[3] = topic[1];
+    }
 }

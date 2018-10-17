@@ -52,6 +52,7 @@ struct pubsub_zmq_topic_sender {
 
     char *scope;
     char *topic;
+    char scopeAndTopicFilter[5];
     char *url;
 
     struct {
@@ -77,20 +78,7 @@ typedef struct psa_zmq_bounded_service_entry {
     long bndId;
     hash_map_t *msgTypes;
     int getCount;
-
-    struct {
-        celix_thread_mutex_t mutex;
-        bool inProgress;
-        celix_array_list_t *parts;
-    } multipart;
 } psa_zmq_bounded_service_entry_t;
-
-
-typedef struct pubsub_msg {
-    pubsub_msg_header_t *header;
-    char* payload;
-    int payloadSize;
-} pubsub_msg_t;
 
 static void* psa_zmq_getPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties);
 static void psa_zmq_ungetPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties);
@@ -98,7 +86,6 @@ static unsigned int rand_range(unsigned int min, unsigned int max);
 static void delay_first_send_for_late_joiners(pubsub_zmq_topic_sender_t *sender);
 
 static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, const void *msg);
-static int psa_zmq_topicPublicationSendMultipart(void *handle, unsigned int msgTypeId, const void *inMsg, int flags);
 
 pubsub_zmq_topic_sender_t* pubsub_zmqTopicSender_create(
         celix_bundle_context_t *ctx,
@@ -115,6 +102,7 @@ pubsub_zmq_topic_sender_t* pubsub_zmqTopicSender_create(
     sender->logHelper = logHelper;
     sender->serializerSvcId = serializerSvcId;
     sender->serializer = ser;
+    psa_zmq_setScopeAndTopicFilter(scope, topic, sender->scopeAndTopicFilter);
 
     //setting up zmq socket for ZMQ TopicSender
     {
@@ -258,13 +246,6 @@ void pubsub_zmqTopicSender_destroy(pubsub_zmq_topic_sender_t *sender) {
             psa_zmq_bounded_service_entry_t *entry = hashMapIterator_nextValue(&iter);
             if (entry != NULL) {
                 sender->serializer->destroySerializerMap(sender->serializer->handle, entry->msgTypes);
-                celixThreadMutex_destroy(&entry->multipart.mutex);
-                for (int i = 0; i < celix_arrayList_size(entry->multipart.parts); ++i) {
-                    pubsub_msg_t *msg = celix_arrayList_get(entry->multipart.parts, i);
-                    free(msg->header);
-                    free(msg->payload);
-                    free(msg);
-                }
                 free(entry);
             }
         }
@@ -324,7 +305,7 @@ static void* psa_zmq_getPublisherService(void *handle, const celix_bundle_t *req
             entry->service.handle = entry;
             entry->service.localMsgTypeIdForMsgType = psa_zmq_localMsgTypeIdForMsgType;
             entry->service.send = psa_zmq_topicPublicationSend;
-            entry->service.sendMultipart = psa_zmq_topicPublicationSendMultipart;
+            entry->service.sendMultipart = NULL; //not supported TODO remove
             hashMap_put(sender->boundedServices.map, (void*)bndId, entry);
         } else {
             L_ERROR("Error creating serializer map for ZMQ TopicSender %s/%s", sender->scope, sender->topic);
@@ -360,156 +341,52 @@ static void psa_zmq_ungetPublisherService(void *handle, const celix_bundle_t *re
     celixThreadMutex_unlock(&sender->boundedServices.mutex);
 }
 
-static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, const void *msg) {
-    return psa_zmq_topicPublicationSendMultipart( handle, msgTypeId, msg, PUBSUB_PUBLISHER_FIRST_MSG | PUBSUB_PUBLISHER_LAST_MSG);
-}
-
-static bool psa_zmq_sendMsg(pubsub_zmq_topic_sender_t *sender, pubsub_msg_t *msg, bool last){
-
-    bool ret = true;
-
-    zframe_t* headerMsg = zframe_new(msg->header, sizeof(struct pubsub_msg_header));
-    if (headerMsg == NULL) ret=false;
-    zframe_t* payloadMsg = zframe_new(msg->payload, (size_t)msg->payloadSize);
-    if (payloadMsg == NULL) ret=false;
-
-    delay_first_send_for_late_joiners(sender);
-
-    celixThreadMutex_lock(&sender->zmq.mutex);
-    if (sender->zmq.socket == NULL) {
-        L_ERROR("[PSA_ZMQ] TopicSender zmq socket is NULL");
-    } else {
-        if (zframe_send(&headerMsg, sender->zmq.socket, ZFRAME_MORE) == -1) ret = false;
-
-        if (!last) {
-            if (zframe_send(&payloadMsg, sender->zmq.socket, ZFRAME_MORE) == -1) ret = false;
-        } else {
-            if (zframe_send(&payloadMsg, sender->zmq.socket, 0) == -1) ret = false;
-        }
-    }
-    celixThreadMutex_unlock(&sender->zmq.mutex);
-
-    if (!ret){
-        zframe_destroy(&headerMsg);
-        zframe_destroy(&payloadMsg);
-    }
-
-    free(msg->header);
-    free(msg->payload);
-    free(msg);
-
-    return ret;
-
-}
-
-static bool psa_zmq_sendMsgParts(pubsub_zmq_topic_sender_t *sender, celix_array_list_t *parts){
-    bool ret = true;
-    unsigned int i = 0;
-    unsigned int mp_num = (unsigned int)celix_arrayList_size(parts);
-    for (; i<mp_num; i++) {
-        ret = ret && psa_zmq_sendMsg(sender, (pubsub_msg_t*)celix_arrayList_get(parts,i), (i==mp_num-1));
-    }
-    celix_arrayList_clear(parts);
-    return ret;
-}
-
-static int psa_zmq_topicPublicationSendMultipart(void *handle, unsigned int msgTypeId, const void *inMsg, int flags) {
-    int status = 0;
+static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, const void *inMsg) {
+    int status = CELIX_SUCCESS;
     psa_zmq_bounded_service_entry_t *bound = handle;
     pubsub_zmq_topic_sender_t *sender = bound->parent;
 
-    celixThreadMutex_lock(&bound->multipart.mutex);
-    if( (flags & PUBSUB_PUBLISHER_FIRST_MSG) && !(flags & PUBSUB_PUBLISHER_LAST_MSG) && bound->multipart.inProgress){ //means a real mp_msg
-        L_INFO("PSA_ZMQ_TP: Multipart send already in progress. Cannot process a new one.\n");
-        celixThreadMutex_unlock(&bound->multipart.mutex);
-        return -3;
-    }
-
     pubsub_msg_serializer_t* msgSer = hashMap_get(bound->msgTypes, (void*)(uintptr_t)msgTypeId);
 
-    if (msgSer!= NULL) {
-        int major=0, minor=0;
+    if (msgSer != NULL) {
+        delay_first_send_for_late_joiners(sender);
 
-        pubsub_msg_header_t *msg_hdr = calloc(1,sizeof(struct pubsub_msg_header));
-        strncpy( msg_hdr->topic, bound->parent->topic, MAX_TOPIC_LEN-1);
-        msg_hdr->type = msgTypeId;
+        int major = 0, minor = 0;
 
-        if (msgSer->msgVersion != NULL){
+        pubsub_zmq_msg_header_t msg_hdr;// = calloc(1, sizeof(*msg_hdr));
+        msg_hdr.type = msgTypeId;
+
+        if (msgSer->msgVersion != NULL) {
             version_getMajor(msgSer->msgVersion, &major);
             version_getMinor(msgSer->msgVersion, &minor);
-            msg_hdr->major = (unsigned char)major;
-            msg_hdr->minor = (unsigned char)minor;
+            msg_hdr.major = (unsigned char) major;
+            msg_hdr.minor = (unsigned char) minor;
         }
 
         void *serializedOutput = NULL;
         size_t serializedOutputLen = 0;
-        status = msgSer->serialize(msgSer,inMsg,&serializedOutput, &serializedOutputLen);
-        if(status == CELIX_SUCCESS) {
-            pubsub_msg_t *msg = calloc(1, sizeof(struct pubsub_msg));
-            msg->header = msg_hdr;
-            msg->payload = (char *) serializedOutput;
-            msg->payloadSize = (int) serializedOutputLen;
-            bool snd = true;
-
-            switch (flags) {
-                case PUBSUB_PUBLISHER_FIRST_MSG:
-                    bound->multipart.inProgress = true;
-                    celix_arrayList_add(bound->multipart.parts, msg);
-                    break;
-                case PUBSUB_PUBLISHER_PART_MSG:
-                    if (!bound->multipart.inProgress) {
-                        L_INFO("PSA_ZMQ_TP: ERROR: received msg part without the first part.\n");
-                        status = -4;
-                    } else {
-                        celix_arrayList_add(bound->multipart.parts, msg);
-                    }
-                    break;
-                case PUBSUB_PUBLISHER_LAST_MSG:
-                    if (!bound->multipart.inProgress) {
-                        L_INFO("PSA_ZMQ_TP: ERROR: received end msg without the first part.\n");
-                        status = -4;
-                    } else {
-                        celix_arrayList_add(bound->multipart.parts, msg);
-                        snd = psa_zmq_sendMsgParts(bound->parent, bound->multipart.parts);
-                        bound->multipart.inProgress = false;
-                        assert(celix_arrayList_size(bound->multipart.parts) == 0); //should be cleanup by sendMsg
-                    }
-                    break;
-                case PUBSUB_PUBLISHER_FIRST_MSG | PUBSUB_PUBLISHER_LAST_MSG:    //Normal send case
-                    snd = psa_zmq_sendMsg(bound->parent, msg, true);
-                    break;
-                default:
-                    L_INFO("PSA_ZMQ_TP: ERROR: Invalid MP flags combination\n");
-                    status = -4;
-                    break;
-            }
-
-            if (status == -4) {
-                free(msg);
-            }
-
-            if (!snd) {
-                L_WARN("[PSA_ZMQ] Failed to send %s message %u.\n",
-                       flags == (PUBSUB_PUBLISHER_FIRST_MSG | PUBSUB_PUBLISHER_LAST_MSG) ? "single" : "multipart",
-                       msgTypeId);
-                status = -1;
+        status = msgSer->serialize(msgSer, inMsg, &serializedOutput, &serializedOutputLen);
+        if (status == CELIX_SUCCESS) {
+            zmsg_t *msg = zmsg_new();
+            //TODO revert to use zmq_msg_init_data (or something like that) for zero copy for the payload
+            //TODO remove socket mutex .. not needed (initialized during creation)
+            zmsg_addstr(msg, sender->scopeAndTopicFilter);
+            zmsg_addmem(msg, &msg_hdr, sizeof(msg_hdr));
+            zmsg_addmem(msg, serializedOutput, serializedOutputLen);
+            errno = 0;
+            int rc = zmsg_send(&msg, sender->zmq.socket);
+            free(serializedOutput);
+            if (rc != 0) {
+                L_WARN("[PSA_ZMQ_TS] Error sending zmsg, rc is %i. %s", rc, strerror(errno));
             }
         } else {
-            L_WARN("[PSA_ZMQ] Failed to serialize %s message %u.\n",
-                   flags == (PUBSUB_PUBLISHER_FIRST_MSG | PUBSUB_PUBLISHER_LAST_MSG) ? "single" : "multipart",
-                   msgTypeId);
-            status = -1;
+            L_WARN("[PSA_ZMQ_TS] Error serialize message of type %s for scope/topic %s/%s", msgSer->msgName, sender->scope, sender->topic);
         }
-
     } else {
-        L_ERROR("[PSA_ZMQ] No msg serializer available for msg type id %d\n", msgTypeId);
-        status=-1;
+        status = CELIX_SERVICE_EXCEPTION;
+        L_WARN("[PSA_ZMQ_TS] Error cannot serialize message with msg type id %i for scope/topic %s/%s", msgTypeId, sender->scope, sender->topic);
     }
-
-    celixThreadMutex_unlock(&(bound->multipart.mutex));
-
     return status;
-
 }
 
 static void delay_first_send_for_late_joiners(pubsub_zmq_topic_sender_t *sender) {
