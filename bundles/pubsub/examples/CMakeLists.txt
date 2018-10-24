@@ -25,7 +25,7 @@ find_package(ZMQ REQUIRED)
 find_package(CZMQ REQUIRED)
 find_package(Jansson REQUIRED)
 
-set(PUBSUB_CONTAINER_LIBS ${JANSSON_LIBRARY} ${ZMQ_LIBRARIES} ${CZMQ_LIBRARIES} ${OPENSSL_CRYPTO_LIBRARY} Celix::dfi)
+set(PUBSUB_CONTAINER_LIBS ${JANSSON_LIBRARY} ${ZMQ_LIBRARIES} ${CZMQ_LIBRARIES} ${NANOMSG_LIBRARIES} ${OPENSSL_CRYPTO_LIBRARY} Celix::dfi)
 
 # UDP Multicast
 add_celix_container(pubsub_publisher_udp_mc
@@ -263,6 +263,92 @@ if (BUILD_PUBSUB_PSA_ZMQ)
                 etcd
             USE_TERM
         )
+    endif ()
+endif()
+if (BUILD_PUBSUB_PSA_NANOMSG)
+    add_celix_container("pubsub_publisher1_nanomsg"
+            GROUP "pubsub"
+            BUNDLES
+            Celix::shell
+            Celix::shell_tui
+            Celix::pubsub_serializer_json
+            Celix::pubsub_discovery_etcd
+            Celix::pubsub_topology_manager
+            Celix::pubsub_admin_nanomsg
+            celix_pubsub_poi_publisher
+            PROPERTIES
+            PSA_NANOMSG_VERBOSE=true
+            PUBSUB_ETCD_DISCOVERY_VERBOSE=true
+            PUBSUB_TOPOLOGY_MANAGER_VERBOSE=true
+            )
+    target_link_libraries(pubsub_publisher1_nanomsg PRIVATE ${PUBSUB_CONTAINER_LIBS})
+
+    add_celix_container("pubsub_publisher2_nanomsg"
+            GROUP "pubsub"
+            BUNDLES
+            Celix::shell
+            Celix::shell_tui
+            Celix::pubsub_serializer_json
+            Celix::pubsub_discovery_etcd
+            Celix::pubsub_topology_manager
+            Celix::pubsub_admin_nanomsg
+            celix_pubsub_poi_publisher
+            PROPERTIES
+            PSA_NANOMSG_VERBOSE=true
+            PUBSUB_ETCD_DISCOVERY_VERBOSE=true
+            PUBSUB_TOPOLOGY_MANAGER_VERBOSE=true
+            )
+    target_link_libraries(pubsub_publisher2_nanomsg PRIVATE ${PUBSUB_CONTAINER_LIBS})
+
+    add_celix_container(pubsub_subscriber1_nanomsg
+            GROUP "pubsub"
+            BUNDLES
+            Celix::shell
+            Celix::shell_tui
+            Celix::pubsub_serializer_json
+            Celix::pubsub_discovery_etcd
+            Celix::pubsub_topology_manager
+            Celix::pubsub_admin_nanomsg
+            celix_pubsub_poi_subscriber
+            PROPERTIES
+            PSA_NANOMSG_VERBOSE=true
+            PUBSUB_ETCD_DISCOVERY_VERBOSE=true
+            PUBSUB_TOPOLOGY_MANAGER_VERBOSE=true
+            )
+    target_link_libraries(pubsub_subscriber1_nanomsg PRIVATE ${PUBSUB_CONTAINER_LIBS})
+
+    add_celix_container(pubsub_subscriber2_nanomsg
+            GROUP "pubsub"
+            BUNDLES
+            Celix::shell
+            Celix::shell_tui
+            Celix::pubsub_serializer_json
+            Celix::pubsub_discovery_etcd
+            Celix::pubsub_topology_manager
+            Celix::pubsub_admin_nanomsg
+            celix_pubsub_poi_subscriber
+            PROPERTIES
+            PSA_NANOMSG_VERBOSE=true
+            PUBSUB_ETCD_DISCOVERY_VERBOSE=true
+            PUBSUB_TOPOLOGY_MANAGER_VERBOSE=true
+            )
+    target_link_libraries(pubsub_subscriber2_nanomsg PRIVATE ${PUBSUB_CONTAINER_LIBS})
+
+
+    if (ETCD_CMD AND XTERM_CMD)
+        #Runtime starting a publish and 2 subscribers for zmq
+        add_celix_runtime(pubsub_rt_nanomsg
+                NAME zmq
+                GROUP pubsub
+                CONTAINERS
+                pubsub_publisher1_nanomsg
+                pubsub_publisher2_nanomsg
+                pubsub_subscriber1_nanomsg
+                pubsub_subscriber2_nanomsg
+                COMMANDS
+                etcd
+                USE_TERM
+                )
     endif ()
 
 endif()

@@ -28,6 +28,9 @@
 
 #include "pubsub_constants.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 //required for valid endpoint
 #define PUBSUB_ENDPOINT_TOPIC_NAME      "pubsub.topic.name"
 #define PUBSUB_ENDPOINT_TOPIC_SCOPE     "pubsub.topic.scope"
@@ -43,16 +46,26 @@
 #define PUBSUB_SUBSCRIBER_ENDPOINT_TYPE "pubsub.subscriber"
 
 
-celix_properties_t* pubsubEndpoint_create(const char* fwUUID, const char* scope, const char* topic, const char* pubsubType, const char* adminType, const char *serType, celix_properties_t *topic_props);
-celix_properties_t* pubsubEndpoint_createFromSubscriberSvc(bundle_context_t* ctx, long svcBndId, const celix_properties_t *svcProps);
-celix_properties_t* pubsubEndpoint_createFromPublisherTrackerInfo(bundle_context_t *ctx, long bundleId, const char *filter);
+celix_properties_t *
+pubsubEndpoint_create(const char *fwUUID, const char *scope, const char *topic, const char *pubsubType,
+                      const char *adminType, const char *serType, celix_properties_t *topic_props);
+
+celix_properties_t *
+pubsubEndpoint_createFromSubscriberSvc(bundle_context_t *ctx, long svcBndId, const celix_properties_t *svcProps);
+
+celix_properties_t *
+pubsubEndpoint_createFromPublisherTrackerInfo(bundle_context_t *ctx, long bundleId, const char *filter);
 
 bool pubsubEndpoint_equals(const celix_properties_t *psEp1, const celix_properties_t *psEp2);
 
 //check if the required properties are available for the endpoint
-bool pubsubEndpoint_isValid(const celix_properties_t *endpointProperties, bool requireAdminType, bool requireSerializerType);
+bool
+pubsubEndpoint_isValid(const celix_properties_t *endpointProperties, bool requireAdminType, bool requireSerializerType);
 
 
-char * pubsubEndpoint_createScopeTopicKey(const char* scope, const char* topic);
+char *pubsubEndpoint_createScopeTopicKey(const char *scope, const char *topic);
 
+#ifdef __cplusplus
+}
+#endif
 #endif /* PUBSUB_ENDPOINT_H_ */

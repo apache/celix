@@ -79,7 +79,7 @@ struct pubsub_udpmc_admin {
 
 };
 
-typedef struct psa_zmq_serializer_entry {
+typedef struct psa_nanomsg_serializer_entry {
     const char *serType;
     long svcId;
     pubsub_serializer_service_t *svc;
