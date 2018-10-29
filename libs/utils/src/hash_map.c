@@ -102,7 +102,7 @@ void hashMap_destroy(hash_map_pt map, bool freeKeys, bool freeValues) {
 	free(map);
 }
 
-int hashMap_size(hash_map_pt map) {
+int hashMap_size(hash_map_t *map) {
 	return map->size;
 }
 

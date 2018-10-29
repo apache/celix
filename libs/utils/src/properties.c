@@ -446,3 +446,17 @@ bool celix_properties_getAsBool(celix_properties_t *props, const char *key, bool
 void celix_properties_setBool(celix_properties_t *props, const char *key, bool val) {
     celix_properties_set(props, key, val ? "true" : "false");
 }
+
+int celix_properties_size(const celix_properties_t *properties) {
+	return hashMap_size((hash_map_t*)properties);
+}
+
+celix_properties_iterator_t celix_propertiesIterator_construct(const celix_properties_t *properties) {
+	return hashMapIterator_construct((hash_map_t*)properties);
+}
+bool celix_propertiesIterator_hasNext(celix_properties_iterator_t *iter) {
+	return hashMapIterator_hasNext(iter);
+}
+const char* celix_propertiesIterator_nextKey(celix_properties_iterator_t *iter) {
+	return (const char*)hashMapIterator_nextKey(iter);
+}

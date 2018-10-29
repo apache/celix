@@ -778,9 +778,48 @@ celix_status_t fw_installBundle(framework_pt framework, bundle_pt * bundle, cons
 	return fw_installBundle2(framework, bundle, -1, location, inputFile, NULL);
 }
 
-celix_status_t fw_installBundle2(framework_pt framework, bundle_pt * bundle, long id, const char * location, const char *inputFile, bundle_archive_pt archive) {
+static char* resolveBundleLocation(celix_framework_t *fw, const char *bndLoc, const char *p) {
+    char *result = NULL;
+    if (strnlen(bndLoc, 1) > 0) {
+        if (bndLoc[0] == '/') {
+            //absolute path, just use that
+            asprintf(&result, "%s", bndLoc);
+        } else if (access(bndLoc, F_OK) != -1) {
+            //current relative path points to an existing file, so use that.
+            result = strndup(bndLoc, 1024*1024);
+        } else {
+            //relative path -> resolve using BUNDLES_PATH
+            char *paths = strndup(p, 1024 * 1024);
+            const char *sep = ";";
+            char *savePtr = NULL;
+
+            for (char *path = strtok_r(paths, sep, &savePtr); path != NULL; path = strtok_r(NULL, sep, &savePtr)){
+                char *absPath = NULL;
+                asprintf(&absPath, "%s/%s", path, bndLoc);
+                if (access(absPath, F_OK) != -1 ) {
+                    result = absPath;
+                    break;
+                } else {
+                    free(absPath);
+                }
+            }
+            free(paths);
+        }
+    }
+    return result;
+}
+
+celix_status_t fw_installBundle2(framework_pt framework, bundle_pt * bundle, long id, const char *bndLoc, const char *inputFile, bundle_archive_pt archive) {
     celix_status_t status = CELIX_SUCCESS;
     bundle_state_e state = OSGI_FRAMEWORK_BUNDLE_UNKNOWN;
+
+    const char *paths = celix_bundleContext_getProperty(framework->bundle->context, CELIX_BUNDLES_PATH_NAME, CELIX_BUNDLES_PATH_DEFAULT);
+    char *location = resolveBundleLocation(framework, bndLoc, paths);
+    if (location == NULL) {
+        fw_log(framework->logger, OSGI_FRAMEWORK_LOG_WARNING, "Cannot find bundle %s. Using %s=%s", bndLoc, CELIX_BUNDLES_PATH_NAME, paths);
+        free(location);
+        return CELIX_FILE_IO_EXCEPTION;
+    }
 
     //increase use count of framework bundle to prevent a stop. TODO is concurrent installing of bundles supported? -> else need another lock
     fw_bundleEntry_increaseUseCount(framework, framework->bundleId);
@@ -797,6 +836,7 @@ celix_status_t fw_installBundle2(framework_pt framework, bundle_pt * bundle, lon
         *bundle = framework_getBundle(framework, location);
         if (*bundle != NULL) {
             fw_bundleEntry_decreaseUseCount(framework, framework->bundleId);
+            free(location);
             return CELIX_SUCCESS;
         }
 
@@ -838,6 +878,8 @@ celix_status_t fw_installBundle2(framework_pt framework, bundle_pt * bundle, lon
     } else {
         status = CELIX_DO_IF(status, fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_INSTALLED, *bundle));
     }
+
+    free(location);
 
   	return status;
 }

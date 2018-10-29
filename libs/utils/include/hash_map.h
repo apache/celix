@@ -89,8 +89,6 @@ UTILS_EXPORT void hashMapIterator_dealloc(hash_map_iterator_pt iterator);
 
 UTILS_EXPORT void hashMapIterator_init(hash_map_pt map, hash_map_iterator_pt iterator);
 
-UTILS_EXPORT void hashMapIterator_deinit(hash_map_iterator_pt iterator);
-
 UTILS_EXPORT hash_map_iterator_t hashMapIterator_construct(hash_map_pt map);
 
 

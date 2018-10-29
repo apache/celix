@@ -139,7 +139,7 @@ celix_status_t bundleContext_installBundle(bundle_context_pt context, const char
 	return bundleContext_installBundle2(context, location, NULL, bundle);
 }
 
-celix_status_t bundleContext_installBundle2(bundle_context_pt context, const char * location, const char *inputFile, bundle_pt *bundle) {
+celix_status_t bundleContext_installBundle2(bundle_context_pt context, const char *location, const char *inputFile, bundle_pt *bundle) {
 	celix_status_t status = CELIX_SUCCESS;
 	bundle_pt b = NULL;
 
