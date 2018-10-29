@@ -194,6 +194,8 @@ void celixLauncher_stop(framework_pt framework) {
 
 static void show_properties(celix_properties_t *embeddedProps, const char *configFile) {
 	const char *key = NULL;
+	celix_properties_t *keys = celix_properties_create(); //only to store the keys
+
 	printf("Embedded properties:\n");
 	if (embeddedProps == NULL || celix_properties_size(embeddedProps) == 0) {
 		printf("|- Empty!\n");
@@ -201,41 +203,48 @@ static void show_properties(celix_properties_t *embeddedProps, const char *confi
 		CELIX_PROPERTIES_FOR_EACH(embeddedProps, key) {
 			const char *val = celix_properties_get(embeddedProps, key, "!Error!");
 			printf("|- %s=%s\n", key, val);
-		}
+            celix_properties_set(keys, key, NULL);
+        }
 	}
 	printf("\n");
 
-	celix_properties_t *configProps = NULL;
+	celix_properties_t *runtimeProps = NULL;
 	if (configFile != NULL) {
-		configProps = celix_properties_load(configFile);
+        runtimeProps = celix_properties_load(configFile);
 	}
 	printf("Runtime properties (input %s):\n", configFile);
-	if (configProps == NULL || celix_properties_size(configProps) == 0) {
+	if (runtimeProps == NULL || celix_properties_size(runtimeProps) == 0) {
 		printf("|- Empty!\n");
 	} else {
-		CELIX_PROPERTIES_FOR_EACH(configProps, key) {
-			const char *val = celix_properties_get(configProps, key, "!Error!");
+		CELIX_PROPERTIES_FOR_EACH(runtimeProps, key) {
+			const char *val = celix_properties_get(runtimeProps, key, "!Error!");
 			printf("|- %s=%s\n", key, val);
+            celix_properties_set(keys, key, NULL);
 		}
 	}
     printf("\n");
 
 	//combined result
-	combine_properties(embeddedProps, configProps);
-	printf("Resolved (embedded + runtime) properties:\n");
-	if (embeddedProps == NULL || celix_properties_size(embeddedProps) == 0) {
+	combine_properties(embeddedProps, runtimeProps);
+	printf("Resolved (env, runtime and embedded) properties:\n");
+	if (celix_properties_size(keys) == 0) {
 		printf("|- Empty!\n");
 	} else {
-		CELIX_PROPERTIES_FOR_EACH(embeddedProps, key) {
-			const char *val = celix_properties_get(embeddedProps, key, "!Error!");
-			printf("|- %s=%s\n", key, val);
+		CELIX_PROPERTIES_FOR_EACH(keys, key) {
+			const char *valEm = celix_properties_get(embeddedProps, key, NULL);
+            const char *valRt = celix_properties_get(runtimeProps, key, NULL);
+            const char *envVal = getenv(key);
+            const char *val = envVal != NULL ? envVal : valRt != NULL ? valRt : valEm;
+            const char *source = envVal != NULL ? "environment" : valRt != NULL ? "runtime" : "embedded";
+			printf("|- %s=%s (source %s)\n", key, val, source);
 		}
 	}
     printf("\n");
 
-	if (configProps != NULL) {
-		celix_properties_destroy(configProps);
+	if (runtimeProps != NULL) {
+		celix_properties_destroy(runtimeProps);
 	}
+	celix_properties_destroy(keys);
 }
 
 static void combine_properties(celix_properties_t *orignal, const celix_properties_t *append) {

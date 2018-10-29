@@ -74,7 +74,7 @@ static const char *const OSGI_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_NAME = "org.osgi
 static const bool        OSGI_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_DEFAULT = true;
 static const char *const OSGI_FRAMEWORK_FRAMEWORK_UUID = "org.osgi.framework.uuid";
 
-static const char *const CELIX_BUNDLES_PATH_NAME = "CELIX_BUNDLE_PATH";
+static const char *const CELIX_BUNDLES_PATH_NAME = "CELIX_BUNDLES_PATH";
 static const char *const CELIX_BUNDLES_PATH_DEFAULT = "bundles";
 
 #define CELIX_AUTO_START_0 "CELIX_AUTO_START_0"

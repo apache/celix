@@ -723,7 +723,7 @@ static void framework_autoStartConfiguredBundlesForList(bundle_context_t *fwCtx,
             if (rc == CELIX_SUCCESS) {
                 arrayList_add(installed, bnd);
             } else {
-                printf("Could not install bundle from %s\n", location); //TODO use logger
+                printf("Could not install bundle '%s'\n", location);
             }
             location = strtok_r(NULL, delims, &save_ptr);
         }
@@ -813,7 +813,8 @@ celix_status_t fw_installBundle2(framework_pt framework, bundle_pt * bundle, lon
     celix_status_t status = CELIX_SUCCESS;
     bundle_state_e state = OSGI_FRAMEWORK_BUNDLE_UNKNOWN;
 
-    const char *paths = celix_bundleContext_getProperty(framework->bundle->context, CELIX_BUNDLES_PATH_NAME, CELIX_BUNDLES_PATH_DEFAULT);
+    const char *paths = NULL;
+    fw_getProperty(framework, CELIX_BUNDLES_PATH_NAME, CELIX_BUNDLES_PATH_DEFAULT, &paths);
     char *location = resolveBundleLocation(framework, bndLoc, paths);
     if (location == NULL) {
         fw_log(framework->logger, OSGI_FRAMEWORK_LOG_WARNING, "Cannot find bundle %s. Using %s=%s", bndLoc, CELIX_BUNDLES_PATH_NAME, paths);

@@ -34,8 +34,10 @@ add_celix_container(dm_example
         dm_example_phase2a
         dm_example_phase2b
         dm_example_phase3
-    PROPERTIES
+    RUNTIME_PROPERTIES
         LOGHELPER_ENABLE_STDOUT_FALLBACK=true
+        PROP2=val2
+        PROP3=val3
 )
 
 

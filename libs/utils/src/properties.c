@@ -363,15 +363,16 @@ const char* celix_properties_get(const celix_properties_t *properties, const cha
 
 void celix_properties_set(celix_properties_t *properties, const char *key, const char *value) {
 	hash_map_entry_pt entry = hashMap_getEntry(properties, key);
-	char* oldValue = NULL;
+	char* oldVal = NULL;
+	char *newVal = value == NULL ? NULL : strndup(value, 1024*1024);
 	if (entry != NULL) {
 		char* oldKey = hashMapEntry_getKey(entry);
-		oldValue = hashMapEntry_getValue(entry);
-		hashMap_put(properties, oldKey, strndup(value, 1024*10));
+        oldVal = hashMapEntry_getValue(entry);
+		hashMap_put(properties, oldKey, newVal);
 	} else {
-		hashMap_put(properties, strndup(key, 1024*10), strndup(value, 1024*10));
+		hashMap_put(properties, strndup(key, 1024*1024), newVal);
 	}
-	free(oldValue);
+	free(oldVal);
 }
 
 void celix_properties_unset(celix_properties_t *properties, const char *key) {

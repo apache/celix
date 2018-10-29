@@ -39,7 +39,7 @@ function(add_celix_container)
 
     set(OPTIONS COPY CXX)
     set(ONE_VAL_ARGS GROUP NAME LAUNCHER LAUNCHER_SRC DIR)
-    set(MULTI_VAL_ARGS BUNDLES PROPERTIES EMBEDDED_PROPERTIES)
+    set(MULTI_VAL_ARGS BUNDLES PROPERTIES EMBEDDED_PROPERTIES RUNTIME_PROPERTIES)
     cmake_parse_arguments(CONTAINER "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
 
     ##### Check arguments #####
@@ -66,10 +66,6 @@ function(add_celix_container)
     list(APPEND CONTAINERDEPS ${CONTAINER_TARGET})
     set_target_properties(celix-containers PROPERTIES "CONTAINER_DEPLOYMENTS" "${CONTAINERDEPS}")
 
-    #FILE TARGETS FOR CONTAINER
-    set(CONTAINER_PROPS "${CONTAINER_LOC}/config.properties")
-    set(CONTAINER_ECLIPSE_LAUNCHER "${CONTAINER_LOC}/${CONTAINER_NAME}.launch")
-
     set(LAUNCHER_DEP )
     if (CONTAINER_LAUNCHER)
         if (IS_ABSOLUTE "${CONTAINER_LAUNCHER}")
@@ -92,20 +88,32 @@ function(add_celix_container)
         else()
             set(LAUNCHER_SRC "${PROJECT_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/main.c")
         endif()
+        set(STAGE1_LAUNCHER_SRC "${PROJECT_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/main.stage1.c")
 
         file(GENERATE
-                OUTPUT "${LAUNCHER_SRC}"
+                OUTPUT "${STAGE1_LAUNCHER_SRC}"
                 CONTENT "#include <celix_launcher.h>
 int main(int argc, char *argv[]) {
     const char * config = \"\\
+CELIX_CONTAINER_NAME=$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_NAME>\\n\\
+CELIX_BUNDLES_PATH=bundles\\n\\
+$<$<BOOL:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_BUNDLES_LEVEL_0>>:CELIX_AUTO_START_0=$<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_BUNDLES_LEVEL_0>, >\\n>\\
+$<$<BOOL:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_BUNDLES_LEVEL_1>>:CELIX_AUTO_START_1=$<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_BUNDLES_LEVEL_1>, >\\n>\\
+$<$<BOOL:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_BUNDLES_LEVEL_2>>:CELIX_AUTO_START_2=$<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_BUNDLES_LEVEL_2>, >\\n>\\
+$<$<BOOL:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_BUNDLES_LEVEL_3>>:CELIX_AUTO_START_3=$<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_BUNDLES_LEVEL_3>, >\\n>\\
+$<$<BOOL:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_BUNDLES_LEVEL_4>>:CELIX_AUTO_START_4=$<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_BUNDLES_LEVEL_4>, >\\n>\\
+$<$<BOOL:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_BUNDLES_LEVEL_5>>:CELIX_AUTO_START_5=$<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_BUNDLES_LEVEL_5>, >\\n>\\
+$<$<BOOL:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_BUNDLES_LEVEL_6>>:CELIX_AUTO_START_5=$<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_BUNDLES_LEVEL_6>, >\\n>\\
 $<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_EMBEDDED_PROPERTIES>,\\n\\
 >\";
 
-    properties_pt packedConfig = properties_loadFromString(config);
-    return celixLauncher_launchAndWaitForShutdown(argc, argv, packedConfig);
+    celix_properties_t *embeddedProps = celix_properties_loadFromString(config);
+    return celixLauncher_launchAndWaitForShutdown(argc, argv, embeddedProps);
 }
 "
         )
+
+        file(GENERATE OUTPUT "${LAUNCHER_SRC}" INPUT "${STAGE1_LAUNCHER_SRC}")
     endif ()
 
     if (LAUNCHER_SRC) #compilation needed
@@ -121,24 +129,20 @@ $<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_EMBEDDED_PROPERTIES>,\\n\
         )
     endif ()
 
-    #generate config.properties
+    #generate config.properties. C
+    set(CONTAINER_PROPS "${CONTAINER_LOC}/config.properties")
     set(STAGE1_PROPERTIES "${PROJECT_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/container-config-stage1.properties")
     file(GENERATE 
         OUTPUT "${STAGE1_PROPERTIES}"
-        CONTENT "CELIX_AUTO_START_0=$<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_BUNDLES_LEVEL_0>, >
-CELIX_AUTO_START_1=$<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_BUNDLES_LEVEL_1>, >
-CELIX_AUTO_START_2=$<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_BUNDLES_LEVEL_2>, >
-CELIX_AUTO_START_3=$<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_BUNDLES_LEVEL_3>, >
-CELIX_AUTO_START_4=$<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_BUNDLES_LEVEL_4>, >
-CELIX_AUTO_START_5=$<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_BUNDLES_LEVEL_5>, >
-CELIX_CONTAINER_NAME=$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_NAME>
-$<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_PROPERTIES>,
+        CONTENT "$<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_RUNTIME_PROPERTIES>,
 >
 "
     )
+    #Condition is there so that config.properties file will only be generated if there are runtime properties
     file(GENERATE
         OUTPUT "${CONTAINER_PROPS}"
         INPUT "${STAGE1_PROPERTIES}"
+        CONDITION $<NOT:$<STREQUAL:,$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_RUNTIME_PROPERTIES>>>
     )
 
     #needed in the release.sh & run.sh files
@@ -158,63 +162,37 @@ $<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_PROPERTIES>,
         set(LIB_PATH_NAME "LD_LIBRARY_PATH")
     endif()
 
-    set(RELEASE_SH ${CONTAINER_LOC}/release.sh)
-    set(RELEASE_CONTENT "#!/bin/sh\nexport ${LIB_PATH_NAME}=${CELIX_LIB_DIRS}:\${${LIB_PATH_NAME}}\nexport PATH=${CELIX_BIN_DIR}:\${PATH}")
-    file(GENERATE
-        OUTPUT ${RELEASE_SH}
-        CONTENT ${RELEASE_CONTENT}
-    )
-
-    set(RUN_SH ${CONTAINER_LOC}/run.sh)
-    set(RUN_CONTENT "${RELEASE_CONTENT}\n${LAUNCHER} \$@\n")
-    file(GENERATE
-        OUTPUT ${RUN_SH}
-        CONTENT ${RUN_CONTENT}
-    )
-
-    #generate eclipse project launch file
-    set(PROGRAM_NAME "${LAUNCHER}")
-    set(PROJECT_ATTR "${CMAKE_PROJECT_NAME}-build")
-    set(WORKING_DIRECTORY ${CONTAINER_LOC})
-    include("${CELIX_CMAKE_DIRECTORY}/RunConfig.in.cmake") #set VAR RUN_CONFIG_IN
-    file(GENERATE
-        OUTPUT "${CONTAINER_ECLIPSE_LAUNCHER}"
-        CONTENT "${RUN_CONFIG_IN}"
-    )
 
     #add a custom target which can depend on generation expressions
     add_custom_target(${CONTAINER_TARGET}-deps
         DEPENDS
-            ${RUN_SH}
-            ${CONTAINER_ECLIPSE_LAUNCHER}
-            ${RELEASE_SH}
-            ${CONTAINER_PROPS}
             $<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_TARGET_DEPS>
     )
     add_dependencies(${CONTAINER_TARGET} ${CONTAINER_TARGET}-deps)
 
-
     ##### Container Target Properties #####
     #internal use
     set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_TARGET_DEPS" "") #target deps for the container.
-    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_BUNDLES_LEVEL_0" "") #bundles to deploy for the container for run level 0
-    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_BUNDLES_LEVEL_1" "") #bundles to deploy for the container for run level 0
-    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_BUNDLES_LEVEL_2" "") #bundles to deploy for the container for run level 0
-    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_BUNDLES_LEVEL_3" "") #bundles to deploy for the container for run level 0
-    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_BUNDLES_LEVEL_4" "") #bundles to deploy for the container for run level 0
-    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_BUNDLES_LEVEL_5" "") #bundles to deploy for the container for run level 0
+    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_BUNDLES_LEVEL_0" "") #bundles to deploy for the container for startup level 0
+    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_BUNDLES_LEVEL_1" "") #bundles to deploy for the container for startup level 1
+    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_BUNDLES_LEVEL_2" "") #bundles to deploy for the container for startup level 2
+    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_BUNDLES_LEVEL_3" "") #bundles to deploy for the container for startup level 3, the default used startup level
+    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_BUNDLES_LEVEL_4" "") #bundles to deploy for the container for startup level 4
+    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_BUNDLES_LEVEL_5" "") #bundles to deploy for the container for startup level 5
+    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_BUNDLES_LEVEL_6" "") #bundles to deploy for the container for startup level 6
     set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_COPY_BUNDLES" ${CONTAINER_COPY}) #copy bundles in bundle dir or link using abs paths. NOTE this cannot be changed after a add_deploy command
 
     #deploy specific
     set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_NAME" "${CONTAINER_NAME}")
     set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_GROUP" "${CONTAINER_GROUP}")
     set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_LOC" "${CONTAINER_LOC}")
-    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_PROPERTIES" "")
+    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_RUNTIME_PROPERTIES" "")
     set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_EMBEDDED_PROPERTIES" "")
     #####
 
-    celix_container_bundles(${CONTAINER_TARGET} LEVEL 1 ${CONTAINER_BUNDLES})
-    celix_container_properties(${CONTAINER_TARGET} ${CONTAINER_PROPERTIES})
+    celix_container_bundles(${CONTAINER_TARGET} LEVEL 3 ${CONTAINER_BUNDLES})
+    celix_container_embedded_properties(${CONTAINER_TARGET} ${CONTAINER_PROPERTIES})
+    celix_container_runtime_properties(${CONTAINER_TARGET} ${CONTAINER_RUNTIME_PROPERTIES})
     celix_container_embedded_properties(${CONTAINER_TARGET} ${CONTAINER_EMBEDDED_PROPERTIES})
 
 
@@ -327,7 +305,7 @@ function(celix_container_bundles)
         set(HANDLED FALSE)
         if (IS_ABSOLUTE ${BUNDLE} AND EXISTS ${BUNDLE})
                get_filename_component(BUNDLE_FILENAME ${BUNDLE} NAME)
-               set(COPY_LOC "bundles/${BUNDLE_FILENAME}")
+               set(COPY_LOC "${BUNDLE_FILENAME}")
                set(ABS_LOC "${BUNDLE}")
                set(HANDLED TRUE)
            elseif (TARGET ${BUNDLE})
@@ -338,7 +316,7 @@ function(celix_container_bundles)
                else()
                    get_target_property(IMP ${BUNDLE} BUNDLE_IMPORTED)
                    if (IMP) #An imported bundle target -> handle target without DEPENDS
-                       set(COPY_LOC "bundles/$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILENAME>")
+                       set(COPY_LOC "$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILENAME>")
                        set(ABS_LOC "$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILE>")
                        set(HANDLED TRUE)
                    endif ()
@@ -346,7 +324,7 @@ function(celix_container_bundles)
            endif ()
 
            if (NOT HANDLED) #not a imported bundle target, so assuming a (future) bundle target
-               set(COPY_LOC "bundles/$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILENAME>")
+               set(COPY_LOC "$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILENAME>")
                set(ABS_LOC "$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILE>")
 
                if (NOT COPY) #in case of COPY dep will be added in celix_container_bundles_dir
@@ -375,21 +353,21 @@ function(celix_container_bundles)
 endfunction()
 
 function(deploy_properties)
-    celix_container_properties(${ARGN})
+    celix_container_runtime_properties(${ARGN})
 endfunction()
-function(celix_container_properties)
+function(celix_container_runtime_properties)
     #0 is container TARGET
     #1..n is bundles
     list(GET ARGN 0 CONTAINER_TARGET)
     list(REMOVE_AT ARGN 0)
 
-    get_target_property(PROPS ${CONTAINER_TARGET} "CONTAINER_PROPERTIES")
+    get_target_property(PROPS ${CONTAINER_TARGET} "CONTAINER_RUNTIME_PROPERTIES")
 
     foreach(PROP IN ITEMS ${ARGN})
         list(APPEND PROPS ${PROP})
     endforeach()
 
-   set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_PROPERTIES" "${PROPS}")
+   set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_RUNTIME_PROPERTIES" "${PROPS}")
 endfunction()
 
 function(deploy_embedded_properties)
@@ -409,4 +387,8 @@ function(celix_container_embedded_properties)
     endforeach()
 
     set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_EMBEDDED_PROPERTIES" "${PROPS}")
+endfunction()
+
+function(celix_container_properties)
+    celix_container_embedded_properties(${ARGN})
 endfunction()
