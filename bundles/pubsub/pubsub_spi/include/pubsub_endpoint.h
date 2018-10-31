@@ -35,12 +35,14 @@
 #define PUBSUB_ENDPOINT_UUID            "pubsub.endpoint.uuid" //required
 #define PUBSUB_ENDPOINT_FRAMEWORK_UUID  "pubsub.framework.uuid" //required
 #define PUBSUB_ENDPOINT_TYPE            "pubsub.endpoint.type" //PUBSUB_PUBLISHER_ENDPOINT_TYPE or PUBSUB_SUBSCRIBER_ENDPOINT_TYPE
+#define PUBSUB_ENDPOINT_VISIBILITY      "pubsub.endpoint.visiblity" //local, host or system. e.g. for IPC host
 #define PUBSUB_ENDPOINT_ADMIN_TYPE       PUBSUB_ADMIN_TYPE_KEY
 #define PUBSUB_ENDPOINT_SERIALIZER       PUBSUB_SERIALIZER_TYPE_KEY
 
 
-#define PUBSUB_PUBLISHER_ENDPOINT_TYPE  "pubsub.publisher"
-#define PUBSUB_SUBSCRIBER_ENDPOINT_TYPE "pubsub.subscriber"
+#define PUBSUB_PUBLISHER_ENDPOINT_TYPE      "pubsub.publisher"
+#define PUBSUB_SUBSCRIBER_ENDPOINT_TYPE     "pubsub.subscriber"
+#define PUBSUB_ENDPOINT_VISIBILITY_DEFAULT  PUBSUB_ENDPOINT_SYSTEM_VISIBLITY
 
 
 celix_properties_t* pubsubEndpoint_create(const char* fwUUID, const char* scope, const char* topic, const char* pubsubType, const char* adminType, const char *serType, celix_properties_t *topic_props);
