@@ -87,10 +87,6 @@ private:
     LogHelper logHelper;
 	pubsub_nanomsg_admin admin;
 
-
-//    command_service_t cmdSvc{};
-
-//	long cmdSvcId = -1L;
 };
 
 celix_status_t  celix_bundleActivator_create(celix_bundle_context_t *ctx , void **userData) {

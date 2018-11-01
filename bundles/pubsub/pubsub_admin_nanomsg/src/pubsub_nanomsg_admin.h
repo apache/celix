@@ -20,6 +20,7 @@
 #ifndef CELIX_PUBSUB_ZMQ_ADMIN_H
 #define CELIX_PUBSUB_ZMQ_ADMIN_H
 
+#include <mutex>
 #include <pubsub_admin.h>
 #include "celix_api.h"
 #include "log_helper.h"
@@ -98,22 +99,22 @@ private:
     bool verbose{};
 
     struct {
-        celix_thread_mutex_t mutex;
+        std::mutex mutex;
         hash_map_t *map; //key = svcId, value = psa_nanomsg_serializer_entry_t*
     } serializers{};
 
     struct {
-        celix_thread_mutex_t mutex;
+        std::mutex mutex;
         hash_map_t *map; //key = scope:topic key, value = pubsub_nanomsg_topic_sender_t*
     } topicSenders{};
 
     struct {
-        celix_thread_mutex_t mutex;
+        std::mutex mutex;
         hash_map_t *map; //key = scope:topic key, value = pubsub_nanomsg_topic_sender_t*
     } topicReceivers{};
 
     struct {
-        celix_thread_mutex_t mutex;
+        std::mutex mutex;
         hash_map_t *map; //key = endpoint uuid, value = celix_properties_t* (endpoint)
     } discoveredEndpoints{};
 
@@ -127,7 +128,6 @@ extern "C" {
 }
 #endif
 
-celix_status_t pubsub_nanoMsgAdmin_executeCommand(void *handle, char *commandLine, FILE *outStream, FILE *errStream);
 
 #endif //CELIX_PUBSUB_ZMQ_ADMIN_H
 
