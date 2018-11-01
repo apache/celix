@@ -21,10 +21,13 @@
 #define CELIX_PUBSUB_ZMQ_ADMIN_H
 
 #include <mutex>
+#include <map>
 #include <pubsub_admin.h>
 #include "celix_api.h"
 #include "log_helper.h"
 #include "pubsub_nanomsg_topic_receiver.h"
+#include <pubsub_serializer.h>
+
 #include "../../../shell/shell/include/command.h"
 
 #define PUBSUB_NANOMSG_ADMIN_TYPE       "zmq"
@@ -98,9 +101,15 @@ private:
 
     bool verbose{};
 
+    typedef struct psa_nanomsg_serializer_entry {
+        const char *serType;
+        long svcId;
+        pubsub_serializer_service_t *svc;
+    } psa_nanomsg_serializer_entry_t;
     struct {
         std::mutex mutex;
-        hash_map_t *map; //key = svcId, value = psa_nanomsg_serializer_entry_t*
+        std::map<long, psa_nanomsg_serializer_entry_t*> map;
+        //hash_map_t *map; //key = svcId, value = psa_nanomsg_serializer_entry_t*
     } serializers{};
 
     struct {

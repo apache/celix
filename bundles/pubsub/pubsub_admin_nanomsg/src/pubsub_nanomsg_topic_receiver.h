@@ -20,7 +20,8 @@
 #define CELIX_PUBSUB_NANOMSG_TOPIC_RECEIVER_H
 #include <string>
 #include <vector>
-
+#include "pubsub_serializer.h"
+#include "log_helper.h"
 #include "celix_bundle_context.h"
 
 typedef struct pubsub_nanomsg_topic_receiver pubsub_nanomsg_topic_receiver_t;
