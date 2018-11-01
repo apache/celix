@@ -122,7 +122,6 @@ pubsub_nanomsg_topic_sender_t* pubsub_nanoMsgTopicSender_create(celix_bundle_con
         while(rv == -1 && retry < NANOMSG_BIND_MAX_RETRY ) {
             /* Randomized part due to same bundle publishing on different topics */
             unsigned int port = rand_range(basePort,maxPort);
-
             size_t len = (size_t)snprintf(NULL, 0, "tcp://%s:%u", bindIP, port) + 1;
             char *url = static_cast<char*>(calloc(len, sizeof(char*)));
             snprintf(url, len, "tcp://%s:%u", bindIP, port);
@@ -130,7 +129,6 @@ pubsub_nanomsg_topic_sender_t* pubsub_nanoMsgTopicSender_create(celix_bundle_con
             len = (size_t)snprintf(NULL, 0, "tcp://0.0.0.0:%u", port) + 1;
             char *bindUrl = static_cast<char*>(calloc(len, sizeof(char)));
             snprintf(bindUrl, len, "tcp://0.0.0.0:%u", port);
-
             rv = nn_bind (socket, bindUrl);
             if (rv == -1) {
                 perror("Error for nn_bind");

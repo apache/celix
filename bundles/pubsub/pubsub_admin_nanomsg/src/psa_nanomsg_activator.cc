@@ -19,95 +19,104 @@
 
 
 #include <stdlib.h>
-
+#include <new>
+#include <iostream>
 #include "celix_api.h"
 #include "pubsub_serializer.h"
 #include "log_helper.h"
 
 #include "pubsub_admin.h"
 #include "pubsub_nanomsg_admin.h"
-#include "../../../shell/shell/include/command.h"
 
-typedef struct psa_nanomsg_activator {
-	log_helper_t *logHelper;
+class LogHelper {
+public:
+    LogHelper(celix_bundle_context_t *ctx) : context{ctx} {
+        if (logHelper_create(context, &logHelper)!= CELIX_SUCCESS) {
+            std::bad_alloc{};
+        }
 
-	pubsub_nanomsg_admin_t *admin;
+    }
+    ~LogHelper() {
+        logHelper_destroy(&logHelper);
+    }
 
-	long serializersTrackerId;
+    LogHelper(const LogHelper &) = delete;
+    LogHelper & operator=(const LogHelper&) = delete;
+    celix_status_t start () {
+        return logHelper_start(logHelper);
+    }
 
-	pubsub_admin_service_t adminService;
-	long adminSvcId;
+    celix_status_t stop () {
+        return logHelper_stop(logHelper);
+    }
 
-	command_service_t cmdSvc;
-	long cmdSvcId;
-} psa_nanomsg_activator_t;
+    log_helper_t *get() {
+        return logHelper;
+    }
+private:
+    celix_bundle_context_t *context;
+    log_helper_t *logHelper{};
 
-int psa_nanomsg_start(psa_nanomsg_activator_t *act, celix_bundle_context_t *ctx) {
-	act->adminSvcId = -1L;
-	act->cmdSvcId = -1L;
-	act->serializersTrackerId = -1L;
+};
 
-	logHelper_create(ctx, &act->logHelper);
-	logHelper_start(act->logHelper);
+class psa_nanomsg_activator {
+public:
+    psa_nanomsg_activator(celix_bundle_context_t *ctx) : context{ctx}, logHelper{context}, admin(context, logHelper.get()) {
+    }
+    psa_nanomsg_activator(const psa_nanomsg_activator&) = delete;
+    psa_nanomsg_activator& operator=(const psa_nanomsg_activator&) = delete;
 
-	act->admin = pubsub_nanoMsgAdmin_create(ctx, act->logHelper);
-	celix_status_t status = act->admin != NULL ? CELIX_SUCCESS : CELIX_BUNDLE_EXCEPTION;
+    ~psa_nanomsg_activator() {
 
-	//track serializers
-	if (status == CELIX_SUCCESS) {
-		celix_service_tracking_options_t opts{};
-		opts.filter.serviceName = PUBSUB_SERIALIZER_SERVICE_NAME;
-		opts.filter.ignoreServiceLanguage = true;
-		opts.callbackHandle = act->admin;
-		opts.addWithProperties = pubsub_nanoMsgAdmin_addSerializerSvc;
-		opts.removeWithProperties = pubsub_nanoMsgAdmin_removeSerializerSvc;
-		act->serializersTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
-	}
+    }
 
-	//register pubsub admin service
-	if (status == CELIX_SUCCESS) {
-		pubsub_admin_service_t *psaSvc = &act->adminService;
-		psaSvc->handle = act->admin;
-		psaSvc->matchPublisher = pubsub_nanoMsgAdmin_matchPublisher;
-		psaSvc->matchSubscriber = pubsub_nanoMsgAdmin_matchSubscriber;
-		psaSvc->matchEndpoint = pubsub_nanoMsgAdmin_matchEndpoint;
-		psaSvc->setupTopicSender = pubsub_nanoMsgAdmin_setupTopicSender;
-		psaSvc->teardownTopicSender = pubsub_nanoMsgAdmin_teardownTopicSender;
-		psaSvc->setupTopicReceiver = pubsub_nanoMsgAdmin_setupTopicReceiver;
-		psaSvc->teardownTopicReceiver = pubsub_nanoMsgAdmin_teardownTopicReceiver;
-		psaSvc->addEndpoint = pubsub_nanoMsgAdmin_addEndpoint;
-		psaSvc->removeEndpoint = pubsub_nanoMsgAdmin_removeEndpoint;
+    celix_status_t  start() {
+        admin.start();
+        auto status = logHelper.start();
 
-		celix_properties_t *props = celix_properties_create();
-		celix_properties_set(props, PUBSUB_ADMIN_SERVICE_TYPE, PUBSUB_NANOMSG_ADMIN_TYPE);
+        return status;
+    }
 
-		act->adminSvcId = celix_bundleContext_registerService(ctx, psaSvc, PUBSUB_ADMIN_SERVICE_NAME, props);
-	}
+    celix_status_t stop() {
+        admin.stop();
+        return logHelper.stop();
+    };
 
-	//register shell command service
-	{
-		act->cmdSvc.handle = act->admin;
-		act->cmdSvc.executeCommand = pubsub_nanoMsgAdmin_executeCommand;
-		celix_properties_t *props = celix_properties_create();
-		celix_properties_set(props, OSGI_SHELL_COMMAND_NAME, "psa_nanomsg");
-		celix_properties_set(props, OSGI_SHELL_COMMAND_USAGE, "psa_nanomsg");
-		celix_properties_set(props, OSGI_SHELL_COMMAND_DESCRIPTION, "Print the information about the TopicSender and TopicReceivers for the ZMQ PSA");
-		act->cmdSvcId = celix_bundleContext_registerService(ctx, &act->cmdSvc, OSGI_SHELL_COMMAND_SERVICE_NAME, props);
-	}
+private:
+    celix_bundle_context_t *context{};
+    LogHelper logHelper;
+	pubsub_nanomsg_admin admin;
 
-	return status;
+
+//    command_service_t cmdSvc{};
+
+//	long cmdSvcId = -1L;
+};
+
+celix_status_t  celix_bundleActivator_create(celix_bundle_context_t *ctx , void **userData) {
+    celix_status_t status = CELIX_SUCCESS;
+    auto data = new  (std::nothrow) psa_nanomsg_activator{ctx};
+    if (data != NULL) {
+        *userData = data;
+    } else {
+        status = CELIX_ENOMEM;
+    }
+    return status;
 }
 
-int psa_nanomsg_stop(psa_nanomsg_activator_t *act, celix_bundle_context_t *ctx) {
-	celix_bundleContext_unregisterService(ctx, act->adminSvcId);
-	celix_bundleContext_unregisterService(ctx, act->cmdSvcId);
-	celix_bundleContext_stopTracker(ctx, act->serializersTrackerId);
-	pubsub_nanoMsgAdmin_destroy(act->admin);
-
-	logHelper_stop(act->logHelper);
-	logHelper_destroy(&act->logHelper);
-
-	return CELIX_SUCCESS;
+celix_status_t celix_bundleActivator_start(void *userData, celix_bundle_context_t *) {
+    auto act = static_cast<psa_nanomsg_activator*>(userData);
+    return act->start();
 }
 
-CELIX_GEN_BUNDLE_ACTIVATOR(psa_nanomsg_activator_t, psa_nanomsg_start, psa_nanomsg_stop);
+celix_status_t celix_bundleActivator_stop(void *userData, celix_bundle_context_t *) {
+    auto act = static_cast<psa_nanomsg_activator*>(userData);
+    return act->stop();
+}
+
+
+celix_status_t celix_bundleActivator_destroy(void *userData, celix_bundle_context_t *) {
+    auto act = static_cast<psa_nanomsg_activator*>(userData);
+    delete act;
+    return CELIX_SUCCESS;
+}

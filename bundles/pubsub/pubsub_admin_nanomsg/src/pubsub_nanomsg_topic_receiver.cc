@@ -373,6 +373,10 @@ static inline void processMsg(pubsub_nanomsg_topic_receiver_t *receiver, const p
     }
 }
 
+struct Message {
+    pubsub_nanmosg_msg_header_t header;
+    char payload[];
+};
 static void* psa_nanomsg_recvThread(void *data) {
     pubsub_nanomsg_topic_receiver_t *receiver = static_cast<pubsub_nanomsg_topic_receiver_t*>(data);
     bool running{};
@@ -381,30 +385,25 @@ static void* psa_nanomsg_recvThread(void *data) {
         running = receiver->recvThread.running;
     }
     while (running) {
-        void * payload = nullptr;
+        Message *msg = nullptr;
         nn_iovec iov[2];
-        iov[0].iov_base = &payload;
+        iov[0].iov_base = &msg;
         iov[0].iov_len = NN_MSG;
 
         nn_msghdr msgHdr;
         memset(&msgHdr, 0, sizeof(msgHdr));
 
         msgHdr.msg_iov = iov;
-        msgHdr.msg_iovlen = 1;//2;
+        msgHdr.msg_iovlen = 1;
 
         msgHdr.msg_control = nullptr;
         msgHdr.msg_controllen = 0;
 
         errno = 0;
         int recvBytes = nn_recvmsg(receiver->nanoMsgSocket, &msgHdr, 0);
-        if (payload && static_cast<unsigned long>(recvBytes) >= sizeof(pubsub_nanmosg_msg_header_t)) {
-            pubsub_nanmosg_msg_header_t *header = static_cast<pubsub_nanmosg_msg_header_t*>(payload);
-            void* msg = ((char*)payload) + sizeof(*header);
-            printf("HEADER: Type %d, major %d, minor %d\n", header->type , (int)header->major, (int)header->minor);
-            fprintf(stderr, "RECEIVED %d bytes\n", recvBytes);
-            processMsg(receiver, header, (char*)msg, recvBytes-sizeof(header));
-
-            nn_freemsg(payload);
+        if (msg && static_cast<unsigned long>(recvBytes) >= sizeof(pubsub_nanmosg_msg_header_t)) {
+            processMsg(receiver, &msg->header, msg->payload, recvBytes-sizeof(msg->header));
+            nn_freemsg(msg);
         } else if (recvBytes >= 0) {
             L_ERROR("[PSA_ZMQ_TR] Error receiving nanmosg msg, size (%d) smaller than header\n", recvBytes);
         } else if (errno == EAGAIN || errno == ETIMEDOUT) {

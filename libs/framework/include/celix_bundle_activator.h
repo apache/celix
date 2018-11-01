@@ -115,7 +115,7 @@ celix_status_t celix_bundleActivator_destroy(void *userData, celix_bundle_contex
 #define CELIX_GEN_BUNDLE_ACTIVATOR(actType, actStart, actStop)                                                         \
 celix_status_t celix_bundleActivator_create(celix_bundle_context_t *ctx __attribute__((unused)), void **userData) {    \
     celix_status_t status = CELIX_SUCCESS;                                                                             \
-    actType *data = (actType*)calloc(1, sizeof(*data));                                                                          \
+    actType *data = (actType*)calloc(1, sizeof(*data));                                                                \
     if (data != NULL) {                                                                                                \
         *userData = data;                                                                                              \
     } else {                                                                                                           \
