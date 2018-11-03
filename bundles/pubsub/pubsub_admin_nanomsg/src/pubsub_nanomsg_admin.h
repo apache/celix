@@ -29,6 +29,8 @@
 #include <pubsub_serializer.h>
 
 #include "../../../shell/shell/include/command.h"
+#include "pubsub_nanomsg_topic_sender.h"
+#include "pubsub_nanomsg_topic_receiver.h"
 
 #define PUBSUB_NANOMSG_ADMIN_TYPE       "zmq"
 #define PUBSUB_NANOMSG_URL_KEY          "zmq.url"
@@ -42,6 +44,13 @@
 #define PUBSUB_NANOMSG_DEFAULT_IP       "127.0.0.1"
 
 //typedef struct pubsub_nanomsg_admin pubsub_nanomsg_admin_t;
+
+template <typename key, typename value>
+struct ProtectedMap {
+    std::mutex mutex{};
+    std::map<key, value> map{};
+};
+
 class pubsub_nanomsg_admin {
 public:
     pubsub_nanomsg_admin(celix_bundle_context_t *ctx, log_helper_t *logHelper);
@@ -106,27 +115,10 @@ private:
         long svcId;
         pubsub_serializer_service_t *svc;
     } psa_nanomsg_serializer_entry_t;
-    struct {
-        std::mutex mutex;
-        std::map<long, psa_nanomsg_serializer_entry_t*> map;
-        //hash_map_t *map; //key = svcId, value = psa_nanomsg_serializer_entry_t*
-    } serializers{};
-
-    struct {
-        std::mutex mutex;
-        hash_map_t *map; //key = scope:topic key, value = pubsub_nanomsg_topic_sender_t*
-    } topicSenders{};
-
-    struct {
-        std::mutex mutex;
-        hash_map_t *map; //key = scope:topic key, value = pubsub_nanomsg_topic_sender_t*
-    } topicReceivers{};
-
-    struct {
-        std::mutex mutex;
-        hash_map_t *map; //key = endpoint uuid, value = celix_properties_t* (endpoint)
-    } discoveredEndpoints{};
-
+    ProtectedMap<long, psa_nanomsg_serializer_entry_t*> serializers{};
+    ProtectedMap<char*, pubsub_nanomsg_topic_sender_t*> topicSenders{};
+    ProtectedMap<char*, pubsub_nanomsg_topic_receiver_t*> topicReceivers{};
+    ProtectedMap<const char*, celix_properties_t *> discoveredEndpoints{};
 };
 
 #ifdef __cplusplus
