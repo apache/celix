@@ -107,6 +107,7 @@ double pubsub_utils_matchPublisher(
 		double sampleScore,
 		double controlScore,
 		double defaultScore,
+		celix_properties_t **outTopicProperties,
 		long *outSerializerSvcId) {
 
 	celix_properties_t *ep = pubsubEndpoint_createFromPublisherTrackerInfo(ctx, bundleId, filter);
@@ -132,8 +133,10 @@ double pubsub_utils_matchPublisher(
 		*outSerializerSvcId = serializerSvcId;
 	}
 
-	if (ep != NULL) {
-		celix_properties_destroy(ep); //TODO improve function to that tmp endpoint is not needed -> parse filter
+	if (outTopicProperties != NULL) {
+		*outTopicProperties = ep;
+	} else if (ep != NULL) {
+		celix_properties_destroy(ep);
 	}
 
 	return score;
@@ -159,6 +162,7 @@ double pubsub_utils_matchSubscriber(
 		double sampleScore,
 		double controlScore,
 		double defaultScore,
+		celix_properties_t **outTopicProperties,
 		long *outSerializerSvcId) {
 
 	pubsub_get_topic_properties_data_t data;
@@ -188,7 +192,9 @@ double pubsub_utils_matchSubscriber(
 		*outSerializerSvcId = serializerSvcId;
 	}
 
-	if (ep != NULL) {
+	if (outTopicProperties != NULL) {
+		*outTopicProperties = ep;
+	} else if (ep != NULL) {
 		celix_properties_destroy(ep);
 	}
 

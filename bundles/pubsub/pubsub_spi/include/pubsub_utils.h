@@ -48,6 +48,7 @@ double pubsub_utils_matchPublisher(
         double sampleScore,
         double controlScore,
         double defaultScore,
+        celix_properties_t **outTopicProperties,
         long *outSerializerSvcId);
 
 double pubsub_utils_matchSubscriber(
@@ -58,6 +59,7 @@ double pubsub_utils_matchSubscriber(
         double sampleScore,
         double controlScore,
         double defaultScore,
+        celix_properties_t **outTopicProperties,
         long *outSerializerSvcId);
 
 bool pubsub_utils_matchEndpoint(

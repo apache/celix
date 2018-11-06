@@ -422,7 +422,7 @@ celix_status_t pubsub_discovery_announceEndpoint(void *handle, const celix_prope
 
     return status;
 }
-celix_status_t pubsub_discovery_removeEndpoint(void *handle, const celix_properties_t *endpoint) {
+celix_status_t pubsub_discovery_revokeEndpoint(void *handle, const celix_properties_t *endpoint) {
     pubsub_discovery_t *disc = handle;
     celix_status_t status = CELIX_SUCCESS;
 

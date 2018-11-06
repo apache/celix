@@ -45,7 +45,7 @@ void subscriber_start(pubsub_receiver_pt client);
 void subscriber_stop(pubsub_receiver_pt client);
 void subscriber_destroy(pubsub_receiver_pt client);
 
-int pubsub_subscriber_recv(void* handle, const char* msgType, unsigned int msgTypeId, void* msg,pubsub_multipart_callbacks_t *callbacks, bool* release);
+int pubsub_subscriber_recv(void* handle, const char* msgType, unsigned int msgTypeId, void* msg, bool* release);
 
 
 #endif /* PUBSUB_SUBSCRIBER_PRIVATE_H_ */

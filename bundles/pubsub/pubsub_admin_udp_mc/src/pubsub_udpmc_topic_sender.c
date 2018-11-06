@@ -79,7 +79,7 @@ typedef struct pubsub_msg{
 static void* psa_udpmc_getPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties);
 static void psa_udpmc_ungetPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties);
 static int psa_udpmc_topicPublicationSend(void* handle, unsigned int msgTypeId, const void *inMsg);
-static bool psa_udpmc_sendMsg(psa_udpmc_bounded_service_entry_t *entry, pubsub_msg_t* msg, bool last, pubsub_release_callback_t *releaseCallback);
+static bool psa_udpmc_sendMsg(psa_udpmc_bounded_service_entry_t *entry, pubsub_msg_t* msg);
 static unsigned int rand_range(unsigned int min, unsigned int max);
 
 pubsub_udpmc_topic_sender_t* pubsub_udpmcTopicSender_create(
@@ -205,7 +205,6 @@ static void* psa_udpmc_getPublisherService(void *handle, const celix_bundle_t *r
             entry->service.handle = entry;
             entry->service.localMsgTypeIdForMsgType = psa_udpmc_localMsgTypeIdForMsgType;
             entry->service.send = psa_udpmc_topicPublicationSend;
-            entry->service.sendMultipart = NULL; //note multipart not supported by MCUDP
             hashMap_put(sender->boundedServices.map, (void*)bndId, entry);
             svc = &entry->service;
         } else {
@@ -277,7 +276,7 @@ static int psa_udpmc_topicPublicationSend(void* handle, unsigned int msgTypeId, 
             msg->payloadSize = serializedOutputLen;
 
 
-            if (psa_udpmc_sendMsg(entry, msg, true, NULL) == false) {
+            if (psa_udpmc_sendMsg(entry, msg) == false) {
                 status = -1;
             }
             free(msg);
@@ -306,7 +305,7 @@ static void delay_first_send_for_late_joiners(){
     }
 }
 
-static bool psa_udpmc_sendMsg(psa_udpmc_bounded_service_entry_t *entry, pubsub_msg_t* msg, bool last, pubsub_release_callback_t *releaseCallback) {
+static bool psa_udpmc_sendMsg(psa_udpmc_bounded_service_entry_t *entry, pubsub_msg_t* msg) {
     const int iovec_len = 3; // header + size + payload
     bool ret = true;
 
@@ -325,9 +324,6 @@ static bool psa_udpmc_sendMsg(psa_udpmc_bounded_service_entry_t *entry, pubsub_m
         ret = false;
     }
 
-    if(releaseCallback) {
-        releaseCallback->release(msg->payload, entry);
-    }
     return ret;
 }
 

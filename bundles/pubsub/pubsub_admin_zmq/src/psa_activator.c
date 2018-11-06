@@ -70,13 +70,13 @@ int psa_zmq_start(psa_zmq_activator_t *act, celix_bundle_context_t *ctx) {
 		psaSvc->handle = act->admin;
 		psaSvc->matchPublisher = pubsub_zmqAdmin_matchPublisher;
 		psaSvc->matchSubscriber = pubsub_zmqAdmin_matchSubscriber;
-		psaSvc->matchEndpoint = pubsub_zmqAdmin_matchEndpoint;
+		psaSvc->matchDiscoveredEndpoint = pubsub_zmqAdmin_matchDiscoveredEndpoint;
 		psaSvc->setupTopicSender = pubsub_zmqAdmin_setupTopicSender;
 		psaSvc->teardownTopicSender = pubsub_zmqAdmin_teardownTopicSender;
 		psaSvc->setupTopicReceiver = pubsub_zmqAdmin_setupTopicReceiver;
 		psaSvc->teardownTopicReceiver = pubsub_zmqAdmin_teardownTopicReceiver;
-		psaSvc->addEndpoint = pubsub_zmqAdmin_addEndpoint;
-		psaSvc->removeEndpoint = pubsub_zmqAdmin_removeEndpoint;
+		psaSvc->addDiscoveredEndpoint = pubsub_zmqAdmin_addDiscoveredEndpoint;
+		psaSvc->removeDiscoveredEndpoint = pubsub_zmqAdmin_removeDiscoveredEndpoint;
 
 		celix_properties_t *props = celix_properties_create();
 		celix_properties_set(props, PUBSUB_ADMIN_SERVICE_TYPE, PUBSUB_ZMQ_ADMIN_TYPE);

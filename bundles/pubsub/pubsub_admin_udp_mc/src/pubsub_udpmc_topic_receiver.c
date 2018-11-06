@@ -396,13 +396,8 @@ static void psa_udpmc_processMsg(pubsub_udpmc_topic_receiver_t *receiver, pubsub
 
                 if (status == CELIX_SUCCESS) {
                     bool release = true;
-                    pubsub_multipart_callbacks_t mp_callbacks;
-                    mp_callbacks.handle = receiver;
-                    mp_callbacks.localMsgTypeIdForMsgType = psa_udpmc_localMsgTypeIdForMsgType;
-                    mp_callbacks.getMultipart = NULL;
-
                     pubsub_subscriber_t *svc = entry->svc;
-                    svc->receive(svc->handle, msgSer->msgName, msg->header.type, msgInst, &mp_callbacks, &release);
+                    svc->receive(svc->handle, msgSer->msgName, msg->header.type, msgInst, &release);
 
                     if(release){
                         msgSer->freeMsg(msgSer,msgInst);

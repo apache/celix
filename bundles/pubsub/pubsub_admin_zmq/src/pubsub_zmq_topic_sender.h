@@ -31,6 +31,7 @@ pubsub_zmq_topic_sender_t* pubsub_zmqTopicSender_create(
         long serializerSvcId,
         pubsub_serializer_service_t *ser,
         const char *bindIP,
+        const char *staticBindUrl,
         unsigned int basePort,
         unsigned int maxPort);
 void pubsub_zmqTopicSender_destroy(pubsub_zmq_topic_sender_t *sender);

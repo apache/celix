@@ -66,38 +66,46 @@ struct pubsub_zmq_topic_receiver {
     struct {
         celix_thread_mutex_t mutex;
         hash_map_t *map; //key = zmq url, value = psa_zmq_requested_connection_entry_t*
+        bool allConnected; //true if all requestedConnectection are connected
     } requestedConnections;
 
     long subscriberTrackerId;
     struct {
         celix_thread_mutex_t mutex;
         hash_map_t *map; //key = bnd id, value = psa_zmq_subscriber_entry_t
+        bool allInitialized;
     } subscribers;
 };
 
 typedef struct psa_zmq_requested_connection_entry {
     char *url;
     bool connected;
+    bool statically; //true if the connection is statically configured through the topic properties.
 } psa_zmq_requested_connection_entry_t;
 
 typedef struct psa_zmq_subscriber_entry {
     int usageCount;
     hash_map_t *msgTypes; //map from serializer svc
     pubsub_subscriber_t *svc;
+    bool initialized; //true if the init function is called through the receive thread
 } psa_zmq_subscriber_entry_t;
 
 
 static void pubsub_zmqTopicReceiver_addSubscriber(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner);
 static void pubsub_zmqTopicReceiver_removeSubscriber(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner);
 static void* psa_zmq_recvThread(void * data);
+static void psa_zmq_connectToAllRequestedConnections(pubsub_zmq_topic_receiver_t *receiver);
+static void psa_zmq_initializeAllSubscribers(pubsub_zmq_topic_receiver_t *receiver);
+
 
 
 pubsub_zmq_topic_receiver_t* pubsub_zmqTopicReceiver_create(celix_bundle_context_t *ctx,
                                                               log_helper_t *logHelper,
                                                               const char *scope,
-                                                                const char *topic,
-                                                                long serializerSvcId,
-                                                                pubsub_serializer_service_t *serializer) {
+                                                              const char *topic,
+                                                              const char *staticConnectUrls,
+                                                              long serializerSvcId,
+                                                              pubsub_serializer_service_t *serializer) {
     pubsub_zmq_topic_receiver_t *receiver = calloc(1, sizeof(*receiver));
     receiver->ctx = ctx;
     receiver->logHelper = logHelper;
@@ -183,6 +191,22 @@ pubsub_zmq_topic_receiver_t* pubsub_zmqTopicReceiver_create(celix_bundle_context
 
         receiver->subscribers.map = hashMap_create(NULL, NULL, NULL, NULL);
         receiver->requestedConnections.map = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
+    }
+
+    if (receiver->zmqSocket != NULL && staticConnectUrls != NULL) {
+        char *urlsCopy = strndup(staticConnectUrls, 1024*1024);
+        char* url;
+        char* save = urlsCopy;
+
+        while ((url = strtok_r(save, " ", &save))) {
+            psa_zmq_requested_connection_entry_t *entry = calloc(1, sizeof(*entry));
+            entry->statically = true;
+            entry->connected = false;
+            entry->url = strndup(url, 1024*1024);
+            hashMap_put(receiver->requestedConnections.map, entry->url, entry);
+            receiver->requestedConnections.allConnected = false;
+        }
+        free(urlsCopy);
     }
 
     //track subscribers
@@ -280,10 +304,12 @@ void pubsub_zmqTopicReceiver_listConnections(pubsub_zmq_topic_receiver_t *receiv
     hash_map_iterator_t iter = hashMapIterator_construct(receiver->requestedConnections.map);
     while (hashMapIterator_hasNext(&iter)) {
         psa_zmq_requested_connection_entry_t *entry = hashMapIterator_nextValue(&iter);
+        char *url = NULL;
+        asprintf(&url, "%s%s", entry->url, entry->statically ? " (static)" : "");
         if (entry->connected) {
-            celix_arrayList_add(connectedUrls, strndup(entry->url, 1024));
+            celix_arrayList_add(connectedUrls, url);
         } else {
-            celix_arrayList_add(unconnectedUrls, strndup(entry->url, 1024));
+            celix_arrayList_add(unconnectedUrls, url);
         }
     }
     celixThreadMutex_unlock(&receiver->requestedConnections.mutex);
@@ -301,16 +327,13 @@ void pubsub_zmqTopicReceiver_connectTo(
         entry = calloc(1, sizeof(*entry));
         entry->url = strndup(url, 1024*1024);
         entry->connected = false;
+        entry->statically = false;
         hashMap_put(receiver->requestedConnections.map, (void*)entry->url, entry);
-    }
-    if (!entry->connected) {
-        if (zsock_connect(receiver->zmqSocket, "%s", url) == 0) {
-            entry->connected = true;
-        } else {
-            L_WARN("[PSA_ZMQ] Error connecting to zmq url %s. (%s)", url, strerror(errno));
-        }
+        receiver->requestedConnections.allConnected = false;
     }
     celixThreadMutex_unlock(&receiver->requestedConnections.mutex);
+
+    psa_zmq_connectToAllRequestedConnections(receiver);
 }
 
 void pubsub_zmqTopicReceiver_disconnectFrom(pubsub_zmq_topic_receiver_t *receiver, const char *url) {
@@ -351,6 +374,7 @@ static void pubsub_zmqTopicReceiver_addSubscriber(void *handle, void *svc, const
         entry = calloc(1, sizeof(*entry));
         entry->usageCount = 1;
         entry->svc = svc;
+        entry->initialized = false;
 
         int rc = receiver->serializer->createSerializerMap(receiver->serializer->handle, (celix_bundle_t*)bnd, &entry->msgTypes);
         if (rc == 0) {
@@ -396,7 +420,7 @@ static inline void processMsgForSubscriberEntry(pubsub_zmq_topic_receiver_t *rec
             celix_status_t status = msgSer->deserialize(msgSer, payload, payloadSize, &deserializedMsg);
             if(status == CELIX_SUCCESS) {
                 bool release = true;
-                svc->receive(svc->handle, msgSer->msgName, msgSer->msgId, deserializedMsg, NULL, &release);
+                svc->receive(svc->handle, msgSer->msgName, msgSer->msgId, deserializedMsg, &release);
                 if (release) {
                     msgSer->freeMsg(msgSer->handle, deserializedMsg);
                 }
@@ -428,7 +452,23 @@ static void* psa_zmq_recvThread(void * data) {
     bool running = receiver->recvThread.running;
     celixThreadMutex_unlock(&receiver->recvThread.mutex);
 
+    celixThreadMutex_lock(&receiver->requestedConnections.mutex);
+    bool allConnected = receiver->requestedConnections.allConnected;
+    celixThreadMutex_unlock(&receiver->requestedConnections.mutex);
+
+    celixThreadMutex_lock(&receiver->subscribers.mutex);
+    bool allInitialized = receiver->subscribers.allInitialized;
+    celixThreadMutex_unlock(&receiver->subscribers.mutex);
+
+
     while (running) {
+        if (!allConnected) {
+            psa_zmq_connectToAllRequestedConnections(receiver);
+        }
+        if (!allInitialized) {
+            psa_zmq_initializeAllSubscribers(receiver);
+        }
+
         zmsg_t *zmsg = zmsg_recv(receiver->zmqSocket);
         if (zmsg != NULL) {
             if (zmsg_size(zmsg) != 3) {
@@ -458,7 +498,62 @@ static void* psa_zmq_recvThread(void * data) {
         celixThreadMutex_lock(&receiver->recvThread.mutex);
         running = receiver->recvThread.running;
         celixThreadMutex_unlock(&receiver->recvThread.mutex);
+
+        celixThreadMutex_lock(&receiver->requestedConnections.mutex);
+        allConnected = receiver->requestedConnections.allConnected;
+        celixThreadMutex_unlock(&receiver->requestedConnections.mutex);
+
+        celixThreadMutex_lock(&receiver->subscribers.mutex);
+        allInitialized = receiver->subscribers.allInitialized;
+        celixThreadMutex_unlock(&receiver->subscribers.mutex);
     } // while
 
     return NULL;
+}
+
+
+static void psa_zmq_connectToAllRequestedConnections(pubsub_zmq_topic_receiver_t *receiver) {
+    celixThreadMutex_lock(&receiver->requestedConnections.mutex);
+    if (!receiver->requestedConnections.allConnected) {
+        bool allConnected = true;
+        hash_map_iterator_t iter = hashMapIterator_construct(receiver->requestedConnections.map);
+        while (hashMapIterator_hasNext(&iter)) {
+            psa_zmq_requested_connection_entry_t *entry = hashMapIterator_nextValue(&iter);
+            if (!entry->connected){
+                if (zsock_connect(receiver->zmqSocket, "%s", entry->url) == 0) {
+                    entry->connected = true;
+                } else {
+                    L_WARN("[PSA_ZMQ] Error connecting to zmq url %s. (%s)", entry->url, strerror(errno));
+                    allConnected = false;
+                }
+            }
+        }
+        receiver->requestedConnections.allConnected = allConnected;
+    }
+    celixThreadMutex_unlock(&receiver->requestedConnections.mutex);
+}
+
+static void psa_zmq_initializeAllSubscribers(pubsub_zmq_topic_receiver_t *receiver) {
+    celixThreadMutex_lock(&receiver->subscribers.mutex);
+    if (!receiver->subscribers.allInitialized) {
+        bool allInitialized = true;
+        hash_map_iterator_t iter = hashMapIterator_construct(receiver->subscribers.map);
+        while (hashMapIterator_hasNext(&iter)) {
+            psa_zmq_subscriber_entry_t *entry = hashMapIterator_nextValue(&iter);
+            if (!entry->initialized) {
+                int rc = 0;
+                if (entry->svc != NULL && entry->svc->init != NULL) {
+                    rc = entry->svc->init(entry->svc->handle);
+                }
+                if (rc == 0) {
+                    entry->initialized = true;
+                } else {
+                    L_WARN("Cannot initialize subscriber svc. Got rc %i", rc);
+                    allInitialized = false;
+                }
+            }
+        }
+        receiver->subscribers.allInitialized = allInitialized;
+    }
+    celixThreadMutex_unlock(&receiver->subscribers.mutex);
 }

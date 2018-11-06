@@ -67,7 +67,7 @@ static celix_status_t psd_start(psd_activator_t *act, celix_bundle_context_t *ct
 
 	act->listenerSvc.handle = act->pubsub_discovery;
 	act->listenerSvc.announceEndpoint = pubsub_discovery_announceEndpoint;
-	act->listenerSvc.removeEndpoint = pubsub_discovery_removeEndpoint;
+	act->listenerSvc.revokeEndpoint = pubsub_discovery_revokeEndpoint;
 
 	//register shell command service
 	//register shell command

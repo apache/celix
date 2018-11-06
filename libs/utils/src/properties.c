@@ -357,7 +357,10 @@ celix_properties_t* celix_properties_copy(const celix_properties_t *properties) 
 }
 
 const char* celix_properties_get(const celix_properties_t *properties, const char *key, const char *defaultValue) {
-	const char* value = hashMap_get((hash_map_t*)properties, (void*)key);
+	const char* value = NULL;
+	if (properties != NULL) {
+		value = hashMap_get((hash_map_t*)properties, (void*)key);
+	}
 	return value == NULL ? defaultValue : value;
 }
 
