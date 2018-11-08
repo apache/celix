@@ -99,5 +99,5 @@ void Phase1Activator::init() {
 }
 
 void Phase1Activator::deinit() {
-    //nothing to do
+    phase1cmp->removeCallbacks();
 }

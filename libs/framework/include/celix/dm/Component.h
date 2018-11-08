@@ -237,6 +237,12 @@ namespace celix { namespace dm {
             int (T::*stop)(),
             int (T::*deinit)()
         );
+        /**
+         * Remove the previously registered callbacks for the component life cycle control
+         *
+         * @return the DM Component reference for chaining (fluent API)
+         */
+        Component<T>& removeCallbacks();
     };
 }}
 

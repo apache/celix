@@ -326,3 +326,12 @@ Component<T>& Component<T>::setCallbacks(
 
     return *this;
 }
+
+template<class T>
+Component<T>& Component<T>::removeCallbacks() {
+
+    component_setCallbacks(this->cComponent(), nullptr, nullptr, nullptr, nullptr);
+
+    return *this;
+}
+
