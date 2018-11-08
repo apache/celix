@@ -439,8 +439,7 @@ celix_status_t pubsub_zmqAdmin_setupTopicReceiver(void *handle, const char *scop
 
     celix_properties_t *newEndpoint = NULL;
 
-    const char *staticConnectUrls = topicProperties != NULL ?
-            celix_properties_get(topicProperties, PUBSUB_ZMQ_STATIC_CONNECT_URLS, NULL) : NULL;
+    const char *staticConnectUrls = celix_properties_get(topicProperties, PUBSUB_ZMQ_STATIC_CONNECT_URLS, NULL);
 
     char *key = pubsubEndpoint_createScopeTopicKey(scope, topic);
     celixThreadMutex_lock(&psa->serializers.mutex);
@@ -640,9 +639,10 @@ celix_status_t pubsub_zmqAdmin_executeCommand(void *handle, char *commandLine __
         const char *scope = pubsub_zmqTopicSender_scope(sender);
         const char *topic = pubsub_zmqTopicSender_topic(sender);
         const char *url = pubsub_zmqTopicSender_url(sender);
+        const char *postUrl = pubsub_zmqTopicSender_isStatic(sender) ? " (static)" : "";
         fprintf(out, "|- Topic Sender %s/%s\n", scope, topic);
         fprintf(out, "   |- serializer type = %s\n", serType);
-        fprintf(out, "   |- url             = %s\n", url);
+        fprintf(out, "   |- url            = %s%s\n", url, postUrl);
     }
     celixThreadMutex_unlock(&psa->topicSenders.mutex);
     celixThreadMutex_unlock(&psa->serializers.mutex);

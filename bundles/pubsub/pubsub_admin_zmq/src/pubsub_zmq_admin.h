@@ -54,7 +54,7 @@
  * The static url which a subscriber should try to connect to.
  * The urls are space separated
  */
-#define PUBSUB_ZMQ_STATIC_CONNECT_URLS    "zmq.static.connect.url"
+#define PUBSUB_ZMQ_STATIC_CONNECT_URLS    "zmq.static.connect.urls"
 
 
 typedef struct pubsub_zmq_admin pubsub_zmq_admin_t;

@@ -39,6 +39,7 @@ void pubsub_zmqTopicSender_destroy(pubsub_zmq_topic_sender_t *sender);
 const char* pubsub_zmqTopicSender_scope(pubsub_zmq_topic_sender_t *sender);
 const char* pubsub_zmqTopicSender_topic(pubsub_zmq_topic_sender_t *sender);
 const char* pubsub_zmqTopicSender_url(pubsub_zmq_topic_sender_t *sender);
+bool pubsub_zmqTopicSender_isStatic(pubsub_zmq_topic_sender_t *sender);
 
 long pubsub_zmqTopicSender_serializerSvcId(pubsub_zmq_topic_sender_t *sender);
 

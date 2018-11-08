@@ -20,96 +20,107 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <constants.h>
+#include <unistd.h>
 
-#include "bundle_activator.h"
-#include "service_tracker.h"
+#include "celix_api.h"
+#include "pubsub/api.h"
+#include "msg.h"
 
-#include "pubsub/subscriber.h"
-#include "pubsub/publisher.h"
-
-static int sut_receive(void *handle, const char *msgType, unsigned int msgTypeId, void *msg, pubsub_multipart_callbacks_t *callbacks, bool *release);
-static int sut_pubAdded(void *handle, service_reference_pt reference, void *service);
-static int sut_pubRemoved(void *handle, service_reference_pt reference, void *service);
-
+static void sut_pubAdded(void *handle, void *service);
+static void sut_pubRemoved(void *handle, void *service);
+static void* sut_sendThread(void *data);
 
 struct activator {
-	pubsub_subscriber_t subSvc;
-	service_registration_pt reg;
+	long pubTrkId;
 
-	service_tracker_pt tracker;
+	pthread_t sendThread;
 
 	pthread_mutex_t mutex;
+	bool running;
 	pubsub_publisher_t* pubSvc;
 };
 
-celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
-	struct activator* act = malloc(sizeof(*act));
-	*userData = act;
-	return CELIX_SUCCESS;
-}
-
-celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
-	struct activator* act = (struct activator*) userData;
-
-	properties_pt props = properties_create();
-	properties_set(props, "pubsub.topic", "ping");
-	act->subSvc.handle = act;
-	act->subSvc.receive = sut_receive;
-	act->reg = NULL;
-	bundleContext_registerService(context, PUBSUB_SUBSCRIBER_SERVICE_NAME, &act->subSvc, props, &act->reg);
+celix_status_t bnd_start(struct activator *act, celix_bundle_context_t *ctx) {
 
 	char filter[512];
-	snprintf(filter, 512, "(&(%s=%s)(%s=%s))", OSGI_FRAMEWORK_OBJECTCLASS, PUBSUB_PUBLISHER_SERVICE_NAME, PUBSUB_PUBLISHER_TOPIC, "pong");
+	snprintf(filter, 512, "(%s=%s)", PUBSUB_PUBLISHER_TOPIC, "ping");
+	celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
+	opts.add = sut_pubAdded;
+	opts.remove = sut_pubRemoved;
+	opts.callbackHandle = act;
+	opts.filter.serviceName = PUBSUB_PUBLISHER_SERVICE_NAME;
+	opts.filter.filter = filter;
+	opts.filter.ignoreServiceLanguage = true;
+	act->pubTrkId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
 
-	service_tracker_customizer_pt customizer = NULL;
-	serviceTrackerCustomizer_create(act, NULL, sut_pubAdded, NULL, sut_pubRemoved, &customizer);
-	serviceTracker_createWithFilter(context, filter, customizer, &act->tracker);
-	serviceTracker_open(act->tracker);
+	act->running = true;
+	pthread_create(&act->sendThread, NULL, sut_sendThread, act);
 
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_stop(void * userData, bundle_context_pt __attribute__((unused)) context) {
-	struct activator* act = userData;
-	serviceTracker_close(act->tracker);
-	return CELIX_SUCCESS;
-}
-
-celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt  __attribute__((unused)) context) {
-	struct activator* act = userData;
-	serviceTracker_destroy(act->tracker);
-	return CELIX_SUCCESS;
-}
-
-static int sut_receive(void *handle, const char *msgType, unsigned int msgTypeId, void *msg, pubsub_multipart_callbacks_t *callbacks, bool *release) {
-	struct activator* act = handle;
-	printf("Received msg '%s', sending back\n", msgType);
+celix_status_t bnd_stop(struct activator *act, celix_bundle_context_t *ctx) {
 	pthread_mutex_lock(&act->mutex);
-	if (act->pubSvc != NULL) {
-		unsigned int sendId = 0;
-		act->pubSvc->localMsgTypeIdForMsgType(act->pubSvc->handle, msgType, &sendId);
-		act->pubSvc->send(act->pubSvc->handle, sendId, msg);
-	}
+	act->running = false;
 	pthread_mutex_unlock(&act->mutex);
+	pthread_join(act->sendThread, NULL);
+	pthread_mutex_destroy(&act->mutex);
+
+	celix_bundleContext_stopTracker(ctx, act->pubTrkId);
 	return CELIX_SUCCESS;
 }
 
-static int sut_pubAdded(void *handle, service_reference_pt reference, void *service) {
+CELIX_GEN_BUNDLE_ACTIVATOR(struct activator, bnd_start, bnd_stop);
+
+static void sut_pubAdded(void *handle, void *service) {
 	struct activator* act = handle;
 	pthread_mutex_lock(&act->mutex);
 	act->pubSvc = service;
 	pthread_mutex_unlock(&act->mutex);
-	return CELIX_SUCCESS;
-
 }
 
-static int sut_pubRemoved(void *handle, service_reference_pt reference, void *service) {
+static void sut_pubRemoved(void *handle, void *service) {
 	struct activator* act = handle;
 	pthread_mutex_lock(&act->mutex);
 	if (act->pubSvc == service) {
 		act->pubSvc = NULL;
 	}
 	pthread_mutex_unlock(&act->mutex);
-	return CELIX_SUCCESS;
 }
 
+static void* sut_sendThread(void *data) {
+	struct activator *act = data;
+	pthread_mutex_lock(&act->mutex);
+	bool running = act->running;
+	pthread_mutex_unlock(&act->mutex);
+
+	unsigned int msgId = 0;
+	msg_t msg;
+	msg.seqNr = 1;
+
+	while (running) {
+		pthread_mutex_lock(&act->mutex);
+
+		if (act->pubSvc != NULL) {
+		    if (msgId == 0) {
+		        act->pubSvc->localMsgTypeIdForMsgType(act->pubSvc->handle, MSG_NAME, &msgId);
+		    }
+
+		    printf("TODO enable send again -> assert fail in zmsg_send");
+			act->pubSvc->send(act->pubSvc->handle, msgId, &msg);
+            if (msg.seqNr % 1000 == 0) {
+                printf("Send %i messages\n", msg.seqNr);
+            }
+
+		    msg.seqNr += 1;
+
+
+            usleep(10000000);
+        }
+
+		running = act->running;
+		pthread_mutex_unlock(&act->mutex);
+	}
+
+	return NULL;
+}

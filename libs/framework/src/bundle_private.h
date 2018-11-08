@@ -27,6 +27,8 @@
 
 
 struct bundle {
+	const char *_symbolicName; //present to make debugging easier
+
 	bundle_context_pt context;
 	struct celix_bundle_activator *activator;
 	bundle_state_e state;

@@ -38,11 +38,42 @@
 #include "log_helper.h"
 
 #define LOGHELPER_ENABLE_STDOUT_FALLBACK_NAME 				"LOGHELPER_ENABLE_STDOUT_FALLBACK"
-#define LOGHELPER_ENABLE_STDOUT_FALLBACK_DEFAULT 			false
+#define LOGHELPER_ENABLE_STDOUT_FALLBACK_DEFAULT 			true
 
 #define LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG_NAME 		"LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG"
 #define LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG_DEFAULT 	false
 
+
+#ifdef __linux__
+//includes for the backtrace function
+#include <execinfo.h>
+#include <stdlib.h>
+#include <stdio.h>
+#endif
+
+#ifdef __linux__
+static char* logHelper_backtrace(void) {
+	void *bbuf[64];
+	int nrOfTraces = backtrace(bbuf, 64);
+	char **lines = backtrace_symbols(bbuf, nrOfTraces);
+
+	char *result = NULL;
+	size_t size = 0;
+	FILE *os = open_memstream(&result, &size);
+	fprintf(os, "Backtrace:\n");
+	for (int i = 0; i < nrOfTraces; ++i) {
+		char *line = lines[i];
+		fprintf(os, "%s\n", line);
+	}
+	free(lines);
+	fclose(os);
+	return result;
+}
+#else
+static void logHelper_logBacktrace(void) {
+	return NULL;
+}
+#endif
 
 struct log_helper {
 	bundle_context_pt bundleContext;
@@ -177,7 +208,12 @@ celix_status_t logHelper_log(log_helper_pt loghelper, log_level_t level, char* m
 	for (; i < arrayList_size(loghelper->logServices); i++) {
 		log_service_pt logService = arrayList_get(loghelper->logServices, i);
 		if (logService != NULL) {
-			(logService->log)(logService->logger, level, msg);
+			(logService->log)(logService->logger, level, msg); //TODO add backtrace to msg if the level is ERROR
+			if (level == OSGI_LOGSERVICE_ERROR) {
+				char *backtrace = logHelper_backtrace();
+				logService->log(logService->logger, level, backtrace);
+				free(backtrace);
+			}
 			logged = true;
 		}
 	}
@@ -206,7 +242,17 @@ celix_status_t logHelper_log(log_helper_pt loghelper, log_level_t level, char* m
         }
 
         if (print) {
-			printf("%s: %s\n", levelStr, msg);
+			if (level == OSGI_LOGSERVICE_ERROR) {
+				fprintf(stderr, "%s: %s\n", levelStr, msg);
+				if (level == OSGI_LOGSERVICE_ERROR) {
+					char *backtrace = logHelper_backtrace();
+					fprintf(stderr, "%s", backtrace);
+					free(backtrace);
+				}
+			} else {
+				printf("%s: %s\n", levelStr, msg);
+			}
+
 		}
     }
 

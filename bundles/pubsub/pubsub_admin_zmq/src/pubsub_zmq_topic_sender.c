@@ -54,6 +54,7 @@ struct pubsub_zmq_topic_sender {
     char *topic;
     char scopeAndTopicFilter[5];
     char *url;
+    bool isStatic;
 
     struct {
         celix_thread_mutex_t mutex;
@@ -179,6 +180,7 @@ pubsub_zmq_topic_sender_t* pubsub_zmqTopicSender_create(
                 L_WARN("Error for zmq_bind using static bind url '%s'. %s", staticBindUrl, strerror(errno));
             } else {
                 sender->url = strndup(staticBindUrl, 1024*1024);
+                sender->isStatic = true;
             }
         } else {
 
@@ -286,6 +288,10 @@ const char* pubsub_zmqTopicSender_topic(pubsub_zmq_topic_sender_t *sender) {
 
 const char* pubsub_zmqTopicSender_url(pubsub_zmq_topic_sender_t *sender) {
     return sender->url;
+}
+
+bool pubsub_zmqTopicSender_isStatic(pubsub_zmq_topic_sender_t *sender) {
+    return sender->isStatic;
 }
 
 void pubsub_zmqTopicSender_connectTo(pubsub_zmq_topic_sender_t *sender, const celix_properties_t *endpoint) {

@@ -37,7 +37,7 @@ function(add_celix_container)
     list(GET ARGN 0 CONTAINER_TARGET)
     list(REMOVE_AT ARGN 0)
 
-    set(OPTIONS COPY CXX)
+    set(OPTIONS COPY CXX GEN_BUNDLES_CONFIG)
     set(ONE_VAL_ARGS GROUP NAME LAUNCHER LAUNCHER_SRC DIR)
     set(MULTI_VAL_ARGS BUNDLES PROPERTIES EMBEDDED_PROPERTIES RUNTIME_PROPERTIES)
     cmake_parse_arguments(CONTAINER "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
@@ -79,9 +79,7 @@ function(add_celix_container)
         get_filename_component(SRC_FILENAME ${CONTAINER_LAUNCHER_SRC} NAME)
         set(LAUNCHER_SRC "${PROJECT_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/${SRC_FILENAME}")
         set(LAUNCHER_ORG "${CONTAINER_LAUNCHER_SRC}")
-        add_custom_command(OUTPUT ${LAUNCHER_SRC}
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${LAUNCHER_ORG} ${LAUNCHER_SRC}
-        )
+        file(GENERATE OUTPUT "${LAUNCHER_SRC}" INPUT "${LAUNCHER_ORG}")
     else () #generate custom launcher
         if (CONTAINER_CXX)
             set(LAUNCHER_SRC "${PROJECT_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/main.cc")
@@ -132,18 +130,37 @@ $<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_EMBEDDED_PROPERTIES>,\\n\
     #generate config.properties. C
     set(CONTAINER_PROPS "${CONTAINER_LOC}/config.properties")
     set(STAGE1_PROPERTIES "${PROJECT_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/container-config-stage1.properties")
-    file(GENERATE 
-        OUTPUT "${STAGE1_PROPERTIES}"
-        CONTENT "$<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_RUNTIME_PROPERTIES>,
+    if (CONTAINER_GEN_BUNDLES_CONFIG)
+        file(GENERATE
+            OUTPUT "${STAGE1_PROPERTIES}"
+            CONTENT "$<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_RUNTIME_PROPERTIES>,
+>
+CELIX_AUTO_START_0=$<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_BUNDLES_LEVEL_0>, >
+CELIX_AUTO_START_1=$<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_BUNDLES_LEVEL_1>, >
+CELIX_AUTO_START_2=$<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_BUNDLES_LEVEL_2>, >
+CELIX_AUTO_START_3=$<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_BUNDLES_LEVEL_3>, >
+CELIX_AUTO_START_4=$<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_BUNDLES_LEVEL_4>, >
+CELIX_AUTO_START_5=$<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_BUNDLES_LEVEL_5>, >
+CELIX_AUTO_START_6=$<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_BUNDLES_LEVEL_6>, >"
+        )
+        file(GENERATE
+            OUTPUT "${CONTAINER_PROPS}"
+            INPUT "${STAGE1_PROPERTIES}"
+        )
+    else ()
+        file(GENERATE
+            OUTPUT "${STAGE1_PROPERTIES}"
+            CONTENT "$<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_RUNTIME_PROPERTIES>,
 >
 "
-    )
-    #Condition is there so that config.properties file will only be generated if there are runtime properties
-    file(GENERATE
-        OUTPUT "${CONTAINER_PROPS}"
-        INPUT "${STAGE1_PROPERTIES}"
-        CONDITION $<NOT:$<STREQUAL:,$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_RUNTIME_PROPERTIES>>>
-    )
+        )
+        #Condition is there so that config.properties file will only be generated if there are runtime properties
+        file(GENERATE
+                OUTPUT "${CONTAINER_PROPS}"
+                INPUT "${STAGE1_PROPERTIES}"
+                CONDITION $<NOT:$<STREQUAL:,$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_RUNTIME_PROPERTIES>>>
+        )
+    endif ()
 
     #needed in the release.sh & run.sh files
     #Setting CELIX_LIB_DIRS, CELIX_BIN_DIR and CELIX_LAUNCHER
@@ -294,7 +311,7 @@ function(celix_container_bundles)
     set(BUNDLES_LIST ${BUNDLES_UNPARSED_ARGUMENTS})
 
     if (NOT DEFINED BUNDLES_LEVEL)
-        set(BUNDLES_LEVEL 1)
+        set(BUNDLES_LEVEL 3)
     endif ()
 
     get_target_property(BUNDLES ${CONTAINER_TARGET} "CONTAINER_BUNDLES_LEVEL_${BUNDLES_LEVEL}")
