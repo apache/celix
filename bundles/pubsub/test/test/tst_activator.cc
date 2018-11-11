@@ -50,7 +50,7 @@ celix_status_t bnd_start(struct activator *act, celix_bundle_context_t *ctx) {
 
     celix_properties_t *props = celix_properties_create();
     celix_properties_set(props, PUBSUB_SUBSCRIBER_TOPIC, "ping");
-    act->subSvc.handle = &g_act;
+    act->subSvc.handle = act;
     act->subSvc.receive = tst_receive;
     act->subSvcId = celix_bundleContext_registerService(ctx, &act->subSvc, PUBSUB_SUBSCRIBER_SERVICE_NAME, props);
 
@@ -68,11 +68,12 @@ celix_status_t bnd_stop(struct activator *act, celix_bundle_context_t *ctx) {
 CELIX_GEN_BUNDLE_ACTIVATOR(struct activator, bnd_start, bnd_stop) ;
 
 
-static int tst_receive(void *handle, const char * /*msgType*/, unsigned int /*msgTypeId*/, void * /*msg*/, bool * /*release*/) {
+static int tst_receive(void *handle, const char * /*msgType*/, unsigned int /*msgTypeId*/, void * /*msg*/, bool *release) {
     struct activator *act = static_cast<struct activator *>(handle);
     pthread_mutex_lock(&act->mutex);
     act->count += 1;
     pthread_mutex_unlock(&act->mutex);
+    *release = true;
     return CELIX_SUCCESS;
 }
 
@@ -92,6 +93,7 @@ TEST_GROUP(PUBSUB_INT_GROUP)
 TEST(PUBSUB_INT_GROUP, recvTest) {
     constexpr int TRIES = 25;
     constexpr int TIMEOUT = 250000;
+    constexpr int MSG_COUNT = 100;
 
     int count = 0;
 
@@ -99,12 +101,12 @@ TEST(PUBSUB_INT_GROUP, recvTest) {
         pthread_mutex_lock(&g_act->mutex);
         count = g_act->count;
         pthread_mutex_unlock(&g_act->mutex);
-        printf("Current msg count is %i\n", count);
-        if (count >= 100) {
+        printf("Current msg count is %i, waiting for at least %i\n", count, MSG_COUNT);
+        if (count >= MSG_COUNT) {
             break;
         }
         usleep(TIMEOUT);
     }
-    CHECK(count >= 100);
+    CHECK(count >= MSG_COUNT);
 
 }

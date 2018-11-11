@@ -84,6 +84,9 @@ TEST(bundle, create) {
 							.ignoreOtherParameters()
 							.andReturnValue(module);
 
+    mock().expectOneCall("module_getSymbolicName")
+            .ignoreOtherParameters();
+
 	mock().expectOneCall("resolver_addModule")
 							.withParameter("module", module);
 
@@ -138,10 +141,10 @@ TEST(bundle, createFromArchive) {
 						.withParameter("module", module)
 						.andReturnValue(version);
 
-	char symbolicName[] = "name";
-	mock().expectOneCall("module_getSymbolicName")
+	const char *sn = "name";
+	mock().expectNCalls(2,"module_getSymbolicName")
 						.withParameter("module", module)
-						.withOutputParameterReturning("symbolicName", &symbolicName, sizeof(symbolicName))
+						.withOutputParameterReturning("symbolicName", &sn, sizeof(sn))
 						.andReturnValue(CELIX_SUCCESS);
 
 	array_list_pt bundles = NULL;
@@ -676,7 +679,7 @@ TEST(bundle, revise) {
 	mock().expectOneCall("module_getVersion")
 			.withParameter("module", (void*)0x01);
 
-	mock().expectOneCall("module_getSymbolicName")
+	mock().expectNCalls(1, "module_getSymbolicName")
 			.withParameter("module", (void*)0x01)
 			.withOutputParameterReturning("symbolicName", &symbolic_name,sizeof(symbolic_name))
 			.andReturnValue(CELIX_ILLEGAL_ARGUMENT);
@@ -746,8 +749,13 @@ TEST(bundle, closeAndDelete) {
 								.ignoreOtherParameters()
 								.andReturnValue(module);
 
-	mock().expectOneCall("resolver_addModule")
-								.withParameter("module", module);
+    mock().expectOneCall("resolver_addModule")
+            .withParameter("module", module);
+
+    const char *sn = NULL;
+	mock().expectOneCall("module_getSymbolicName")
+								.withParameter("module", module)
+                                .withOutputParameterReturning("symbolicName", &sn, sizeof(sn));
 
 	bundle_pt actual = NULL;
 	celix_status_t status = bundle_create(&actual);
@@ -871,7 +879,7 @@ TEST(bundle, refresh) {
 			.withParameter("module", module_new)
 			.andReturnValue(version);
 
-	mock().expectOneCall("module_getSymbolicName")
+	mock().expectNCalls(2, "module_getSymbolicName")
 			.withParameter("module", module_new)
 			.withOutputParameterReturning("symbolicName", &symbolicName, sizeof(char*));
 
@@ -884,7 +892,7 @@ TEST(bundle, refresh) {
 			.withOutputParameterReturning("id", &id2, sizeof(id2));
 
 	//returning same symbolic name for module_new as for module4
-	mock().expectOneCall("module_getSymbolicName")
+	mock().expectNCalls(1, "module_getSymbolicName")
 			.withParameter("module", module4)
 			.withOutputParameterReturning("symbolicName", &symbolicName, sizeof(char*));
 

@@ -8,6 +8,7 @@ int main(int argc, char **argv) {
     celix_framework_t *fw = NULL;
     celixLauncher_launch("config.properties", &fw);
 
+    MemoryLeakWarningPlugin::turnOffNewDeleteOverloads();
     int rc = RUN_ALL_TESTS(argc, argv);
 
     celixLauncher_stop(fw);

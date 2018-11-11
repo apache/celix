@@ -158,8 +158,8 @@ pubsub_zmq_topic_sender_t* pubsub_zmqTopicSender_create(
         }
 #endif
 
-        zsock_t* socket = zsock_new(ZMQ_PUB);
-        if (socket==NULL) {
+        zsock_t* zmqSocket = zsock_new(ZMQ_PUB);
+        if (zmqSocket==NULL) {
 #ifdef BUILD_WITH_ZMQ_SECURITY
             if (pubEP->is_secure) {
 				zcert_destroy(&pub_cert);
@@ -174,15 +174,15 @@ pubsub_zmq_topic_sender_t* pubsub_zmqTopicSender_create(
 	    }
 #endif
 
-        if (staticBindUrl != NULL) {
-            int rv = zsock_bind (socket, "%s", staticBindUrl);
+        if (zmqSocket != NULL && staticBindUrl != NULL) {
+            int rv = zsock_bind (zmqSocket, "%s", staticBindUrl);
             if (rv == -1) {
                 L_WARN("Error for zmq_bind using static bind url '%s'. %s", staticBindUrl, strerror(errno));
             } else {
                 sender->url = strndup(staticBindUrl, 1024*1024);
                 sender->isStatic = true;
             }
-        } else {
+        } else if (zmqSocket != NULL) {
 
             int retry = 0;
             while (sender->url == NULL && retry < ZMQ_BIND_MAX_RETRY) {
@@ -196,17 +196,22 @@ pubsub_zmq_topic_sender_t* pubsub_zmqTopicSender_create(
                 asprintf(&bindUrl, "tcp://0.0.0.0:%u", port);
 
 
-                int rv = zsock_bind(socket, "%s", bindUrl);
+                int rv = zsock_bind(zmqSocket, "%s", bindUrl);
                 if (rv == -1) {
                     L_WARN("Error for zmq_bind using dynamic bind url '%s'. %s", bindUrl, strerror(errno));
                     free(url);
                 } else {
                     sender->url = url;
-                    sender->zmq.socket = socket;
                 }
                 retry++;
                 free(bindUrl);
             }
+        }
+
+        if (sender->url == NULL)  {
+            zsock_destroy(&zmqSocket);
+        } else {
+            sender->zmq.socket = zmqSocket;
         }
     }
 
@@ -409,7 +414,7 @@ static void delay_first_send_for_late_joiners(pubsub_zmq_topic_sender_t *sender)
     static bool firstSend = true;
 
     if(firstSend){
-        L_INFO("PSA_UDP_MC_TP: Delaying first send for late joiners...\n");
+        L_INFO("PSA_ZMQ_TP: Delaying first send for late joiners...\n");
         sleep(FIRST_SEND_DELAY_IN_SECONDS);
         firstSend = false;
     }

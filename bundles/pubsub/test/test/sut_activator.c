@@ -106,7 +106,6 @@ static void* sut_sendThread(void *data) {
 		        act->pubSvc->localMsgTypeIdForMsgType(act->pubSvc->handle, MSG_NAME, &msgId);
 		    }
 
-		    printf("TODO enable send again -> assert fail in zmsg_send");
 			act->pubSvc->send(act->pubSvc->handle, msgId, &msg);
             if (msg.seqNr % 1000 == 0) {
                 printf("Send %i messages\n", msg.seqNr);
@@ -115,12 +114,13 @@ static void* sut_sendThread(void *data) {
 		    msg.seqNr += 1;
 
 
-            usleep(10000000);
+            usleep(10000);
         }
 
 		running = act->running;
 		pthread_mutex_unlock(&act->mutex);
 	}
+    printf("Send %i messages\n", msg.seqNr);
 
-	return NULL;
+    return NULL;
 }
