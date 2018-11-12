@@ -880,10 +880,6 @@ TEST(bundle, refresh) {
 			.withParameter("module", module_new)
 			.andReturnValue(version);
 
-	mock().expectNCalls(1, "module_getSymbolicName")
-			.withParameter("module", module_new)
-			.withOutputParameterReturning("symbolicName", &symbolicName, sizeof(char*));
-
 	mock().expectOneCall("framework_getBundles")
 			.withParameter("framework", framework)
 			.andReturnValue(bundles);
@@ -891,11 +887,6 @@ TEST(bundle, refresh) {
 	mock().expectOneCall("bundleArchive_getId")
 			.withParameter("archive", archive2)
 			.withOutputParameterReturning("id", &id2, sizeof(id2));
-
-	//returning same symbolic name for module_new as for module4
-	mock().expectNCalls(1, "module_getSymbolicName")
-			.withParameter("module", module4)
-			.withOutputParameterReturning("symbolicName", &symbolicName, sizeof(char*));
 
 	//returning different version for module_new as for module4
 	mock().expectOneCall("module_getVersion")
