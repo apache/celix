@@ -39,6 +39,7 @@
 
 typedef struct pubsub_msg_serializer {
 	void* handle;
+
 	unsigned int msgId;
 	const char* msgName;
 	version_pt msgVersion;

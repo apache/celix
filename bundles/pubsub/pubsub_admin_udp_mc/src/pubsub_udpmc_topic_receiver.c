@@ -392,7 +392,7 @@ static void psa_udpmc_processMsg(pubsub_udpmc_topic_receiver_t *receiver, pubsub
 
             if(validVersion){
 
-                celix_status_t status = msgSer->deserialize(msgSer, (const void *) msg->payload, 0, &msgInst);
+                celix_status_t status = msgSer->deserialize(msgSer->handle, (const void *)msg->payload, 0, &msgInst);
 
                 if (status == CELIX_SUCCESS) {
                     bool release = true;
@@ -400,7 +400,7 @@ static void psa_udpmc_processMsg(pubsub_udpmc_topic_receiver_t *receiver, pubsub
                     svc->receive(svc->handle, msgSer->msgName, msg->header.type, msgInst, &release);
 
                     if(release){
-                        msgSer->freeMsg(msgSer,msgInst);
+                        msgSer->freeMsg(msgSer->handle, msgInst);
                     }
                 }
                 else{

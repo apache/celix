@@ -24,8 +24,8 @@
 #include "pubsub_serializer_impl.h"
 
 typedef struct psjs_activator {
-	pubsub_serializer_t* serializer;
-	;
+	pubsub_json_serializer_t* serializer;
+
 	pubsub_serializer_service_t serializerSvc;
 	long serializerSvcId;
 } psjs_activator_t;
@@ -37,8 +37,8 @@ static int psjs_start(psjs_activator_t *act, celix_bundle_context_t *ctx) {
 	if (status == CELIX_SUCCESS) {
 		act->serializerSvc.handle = act->serializer;
 
-		act->serializerSvc.createSerializerMap = (void*)pubsubSerializer_createSerializerMap;
-		act->serializerSvc.destroySerializerMap = (void*)pubsubSerializer_destroySerializerMap;
+		act->serializerSvc.createSerializerMap = pubsubSerializer_createSerializerMap;
+		act->serializerSvc.destroySerializerMap = pubsubSerializer_destroySerializerMap;
 
 		/* Set serializer type */
 		celix_properties_t *props = celix_properties_create();

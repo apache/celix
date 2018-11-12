@@ -29,20 +29,12 @@
 
 #define PUBSUB_JSON_SERIALIZER_TYPE	"json"
 
-typedef struct pubsub_serializer {
-	bundle_context_pt bundle_context;
-	log_helper_pt loghelper;
-} pubsub_serializer_t;
+typedef struct pubsub_json_serializer pubsub_json_serializer_t;
 
-celix_status_t pubsubSerializer_create(bundle_context_pt context, pubsub_serializer_t* *serializer);
-celix_status_t pubsubSerializer_destroy(pubsub_serializer_t* serializer);
+celix_status_t pubsubSerializer_create(bundle_context_pt context, pubsub_json_serializer_t **serializer);
+celix_status_t pubsubSerializer_destroy(pubsub_json_serializer_t* serializer);
 
-celix_status_t pubsubSerializer_createSerializerMap(pubsub_serializer_t* serializer, bundle_pt bundle, hash_map_pt* serializerMap);
-celix_status_t pubsubSerializer_destroySerializerMap(pubsub_serializer_t*, hash_map_pt serializerMap);
-
-/* Start of serializer specific functions */
-celix_status_t pubsubMsgSerializer_serialize(pubsub_msg_serializer_t* msgSerializer, const void* msg, void** out, size_t *outLen);
-celix_status_t pubsubMsgSerializer_deserialize(pubsub_msg_serializer_t* msgSerializer, const void* input, size_t inputLen, void **out);
-void pubsubMsgSerializer_freeMsg(pubsub_msg_serializer_t* msgSerializer, void *msg);
+celix_status_t pubsubSerializer_createSerializerMap(void *handle, bundle_pt bundle, hash_map_pt* serializerMap);
+celix_status_t pubsubSerializer_destroySerializerMap(void *handle, hash_map_pt serializerMap);
 
 #endif /* PUBSUB_SERIALIZER_JSON_H_ */

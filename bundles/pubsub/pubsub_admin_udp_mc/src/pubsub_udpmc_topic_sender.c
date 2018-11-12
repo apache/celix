@@ -255,7 +255,7 @@ static int psa_udpmc_topicPublicationSend(void* handle, unsigned int msgTypeId, 
 
         void* serializedOutput = NULL;
         size_t serializedOutputLen = 0;
-        if (msgSer->serialize(msgSer,inMsg,&serializedOutput, &serializedOutputLen) == CELIX_SUCCESS) {
+        if (msgSer->serialize(msgSer->handle,inMsg,&serializedOutput, &serializedOutputLen) == CELIX_SUCCESS) {
 
             pubsub_msg_header_t *msg_hdr = calloc(1,sizeof(struct pubsub_msg_header));
             strncpy(msg_hdr->topic,entry->parent->topic,MAX_TOPIC_LEN-1);

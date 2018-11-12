@@ -274,6 +274,8 @@ void pubsub_zmqAdmin_removeSerializerSvc(void *handle, void *svc, const celix_pr
 
     celixThreadMutex_lock(&psa->serializers.mutex);
     psa_zmq_serializer_entry_t *entry = hashMap_remove(psa->serializers.map, (void*)svcId);
+    celixThreadMutex_unlock(&psa->serializers.mutex);
+
     if (entry != NULL) {
         celixThreadMutex_lock(&psa->topicSenders.mutex);
         hash_map_iterator_t iter = hashMapIterator_construct(psa->topicSenders.map);
@@ -305,7 +307,6 @@ void pubsub_zmqAdmin_removeSerializerSvc(void *handle, void *svc, const celix_pr
 
         free(entry);
     }
-    celixThreadMutex_unlock(&psa->serializers.mutex);
 }
 
 celix_status_t pubsub_zmqAdmin_matchPublisher(void *handle, long svcRequesterBndId, const celix_filter_t *svcFilter, celix_properties_t **topicProperties, double *outScore, long *outSerializerSvcId) {

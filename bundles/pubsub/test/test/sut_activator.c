@@ -100,7 +100,6 @@ static void* sut_sendThread(void *data) {
 
 	while (running) {
 		pthread_mutex_lock(&act->mutex);
-
 		if (act->pubSvc != NULL) {
 		    if (msgId == 0) {
 		        act->pubSvc->localMsgTypeIdForMsgType(act->pubSvc->handle, MSG_NAME, &msgId);
@@ -113,10 +112,12 @@ static void* sut_sendThread(void *data) {
 
 		    msg.seqNr += 1;
 
-
-            usleep(10000);
         }
+        pthread_mutex_unlock(&act->mutex);
 
+		usleep(10000);
+
+		pthread_mutex_lock(&act->mutex);
 		running = act->running;
 		pthread_mutex_unlock(&act->mutex);
 	}

@@ -33,7 +33,6 @@
 #include "pubsub_zmq_common.h"
 #include "../../pubsub_topology_manager/src/pubsub_topology_manager.h"
 
-//TODO see if block and wakeup (reset) also works
 #define PSA_ZMQ_RECV_TIMEOUT 1000
 
 
@@ -410,6 +409,7 @@ static void pubsub_zmqTopicReceiver_removeSubscriber(void *handle, void *svc, co
 }
 
 static inline void processMsgForSubscriberEntry(pubsub_zmq_topic_receiver_t *receiver, psa_zmq_subscriber_entry_t* entry, const pubsub_zmq_msg_header_t *hdr, const byte* payload, size_t payloadSize) {
+    //NOTE receiver->subscribers.mutex locked
     pubsub_msg_serializer_t* msgSer = hashMap_get(entry->msgTypes, (void*)(uintptr_t)(hdr->type));
     pubsub_subscriber_t *svc = entry->svc;
 
@@ -417,8 +417,8 @@ static inline void processMsgForSubscriberEntry(pubsub_zmq_topic_receiver_t *rec
         void *deserializedMsg = NULL;
         bool validVersion = psa_zmq_checkVersion(msgSer->msgVersion, hdr);
         if (validVersion) {
-            celix_status_t status = msgSer->deserialize(msgSer, payload, payloadSize, &deserializedMsg);
-            if(status == CELIX_SUCCESS) {
+            celix_status_t status = msgSer->deserialize(msgSer->handle, payload, payloadSize, &deserializedMsg);
+            if (status == CELIX_SUCCESS) {
                 bool release = true;
                 svc->receive(svc->handle, msgSer->msgName, msgSer->msgId, deserializedMsg, &release);
                 if (release) {

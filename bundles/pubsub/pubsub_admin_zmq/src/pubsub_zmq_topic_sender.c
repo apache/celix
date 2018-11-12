@@ -385,7 +385,7 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
 
         void *serializedOutput = NULL;
         size_t serializedOutputLen = 0;
-        status = msgSer->serialize(msgSer, inMsg, &serializedOutput, &serializedOutputLen);
+        status = msgSer->serialize(msgSer->handle, inMsg, &serializedOutput, &serializedOutputLen);
         if (status == CELIX_SUCCESS) {
             zmsg_t *msg = zmsg_new();
             //TODO revert to use zmq_msg_init_data (or something like that) for zero copy for the payload

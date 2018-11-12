@@ -68,12 +68,20 @@ celix_status_t bnd_stop(struct activator *act, celix_bundle_context_t *ctx) {
 CELIX_GEN_BUNDLE_ACTIVATOR(struct activator, bnd_start, bnd_stop) ;
 
 
-static int tst_receive(void *handle, const char * /*msgType*/, unsigned int /*msgTypeId*/, void * /*msg*/, bool *release) {
+static int tst_receive(void *handle, const char * /*msgType*/, unsigned int /*msgTypeId*/, void * voidMsg, bool */*release*/) {
     struct activator *act = static_cast<struct activator *>(handle);
+
+    msg_t *msg = static_cast<msg_t*>(voidMsg);
+    static int prevSeqNr = 0;
+    int delta = msg->seqNr - prevSeqNr;
+    if (delta != 1) {
+        fprintf(stderr, "Warning: missing messages. seq jumped from %i to %i\n", prevSeqNr, msg->seqNr);
+    }
+    prevSeqNr = msg->seqNr;
+
     pthread_mutex_lock(&act->mutex);
     act->count += 1;
     pthread_mutex_unlock(&act->mutex);
-    *release = true;
     return CELIX_SUCCESS;
 }
 

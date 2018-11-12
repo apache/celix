@@ -51,25 +51,25 @@ celix_bundle_files(pubsub_tst
     DESTINATION "META-INF/topics/sub"
 )
 
-add_celix_container(pubsub_zmq_tests
-        GEN_BUNDLES_CONFIG #ensures that a config.properties will be created with the launch bundles.
-        LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_runner.cc
-        PROPERTIES
-            LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
-)
-target_link_libraries(pubsub_zmq_tests PRIVATE Celix::framework Celix::pubsub_api ${CPPUTEST_LIBRARIES} ${JANSSON_LIBRARIES} Celix::dfi)
-target_include_directories(pubsub_zmq_tests PRIVATE ${CPPUTEST_INCLUDE_DIR})
-celix_container_bundles(pubsub_zmq_tests
-        Celix::pubsub_serializer_json
-        Celix::pubsub_topology_manager
-        Celix::pubsub_admin_zmq
-        pubsub_sut
-        pubsub_tst
-        Celix::shell
-        Celix::shell_tui
-)
 
 
-add_test(NAME run_pubsub_zmq_tests COMMAND pubsub_zmq_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_zmq_tests,CONTAINER_LOC>)
-SETUP_TARGET_FOR_COVERAGE(pubsub_zmq_tests pubsub_zmq_tests ${CMAKE_BINARY_DIR}/coverage/pubsub/pubsub_zmq)
+if (BUILD_PUBSUB_PSA_ZMQ)
+    add_celix_container(pubsub_zmq_tests
+            GEN_BUNDLES_CONFIG #ensures that a config.properties will be created with the launch bundles.
+            LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_runner.cc
+            DIR ${CMAKE_CURRENT_BINARY_DIR}
+            PROPERTIES
+                LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
+            BUNDLES
+                Celix::pubsub_serializer_json
+                Celix::pubsub_topology_manager
+                Celix::pubsub_admin_zmq
+                pubsub_sut
+                pubsub_tst
+    )
+    target_link_libraries(pubsub_zmq_tests PRIVATE Celix::pubsub_api ${CPPUTEST_LIBRARIES} ${JANSSON_LIBRARIES} Celix::dfi)
+    target_include_directories(pubsub_zmq_tests PRIVATE ${CPPUTEST_INCLUDE_DIR})
+    add_test(NAME run_pubsub_zmq_tests COMMAND pubsub_zmq_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_zmq_tests,CONTAINER_LOC>)
+    SETUP_TARGET_FOR_COVERAGE(pubsub_zmq_tests pubsub_zmq_tests ${CMAKE_BINARY_DIR}/coverage/pubsub/pubsub_zmq)
+endif ()
 
