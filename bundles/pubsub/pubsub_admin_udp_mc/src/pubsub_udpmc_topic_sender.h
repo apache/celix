@@ -31,13 +31,16 @@ pubsub_udpmc_topic_sender_t* pubsub_udpmcTopicSender_create(
         long serializerSvcId,
         pubsub_serializer_service_t *serializer,
         int sendSocket,
-        const char *bindIP);
+        const char *bindIP,
+        const celix_properties_t *topicProperties);
 void pubsub_udpmcTopicSender_destroy(pubsub_udpmc_topic_sender_t *sender);
 
 const char* pubsub_udpmcTopicSender_scope(pubsub_udpmc_topic_sender_t *sender);
 const char* pubsub_udpmcTopicSender_topic(pubsub_udpmc_topic_sender_t *sender);
 const char* pubsub_udpmcTopicSender_socketAddress(pubsub_udpmc_topic_sender_t *sender);
 long pubsub_udpmcTopicSender_socketPort(pubsub_udpmc_topic_sender_t *sender);
+bool pubsub_udpmcTopicSender_isStatic(pubsub_udpmc_topic_sender_t *sender);
+
 
 long pubsub_udpmcTopicSender_serializerSvcId(pubsub_udpmc_topic_sender_t *sender);
 

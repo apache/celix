@@ -46,6 +46,7 @@ struct pubsub_udpmc_topic_sender {
     char *topic;
     char *socketAddress;
     long socketPort;
+    bool staticallyConfigured;
 
     int sendSocket;
     struct sockaddr_in destAddr;
@@ -89,7 +90,8 @@ pubsub_udpmc_topic_sender_t* pubsub_udpmcTopicSender_create(
         long serializerSvcId,
         pubsub_serializer_service_t *serializer,
         int sendSocket,
-        const char *bindIP) {
+        const char *bindIP,
+        const celix_properties_t *topicProperties) {
     pubsub_udpmc_topic_sender_t *sender = calloc(1, sizeof(*sender));
     sender->ctx = ctx;
     sender->serializerSvcId = serializerSvcId;
@@ -100,9 +102,17 @@ pubsub_udpmc_topic_sender_t* pubsub_udpmcTopicSender_create(
     celixThreadMutex_create(&sender->boundedServices.mutex, NULL);
     sender->boundedServices.map = hashMap_create(NULL, NULL, NULL, NULL);
 
+    unsigned int port = rand_range(UDP_BASE_PORT, UDP_MAX_PORT);
+    long configuredPort = celix_properties_getAsLong(topicProperties, PUBSUB_UDPMC_STATIC_BIND_PORT, -1L);
+    if (configuredPort > 0) {
+        port = (unsigned int)configuredPort;
+        sender->staticallyConfigured = true;
+    } else {
+        sender->staticallyConfigured = false;
+    }
+
     //setting up socket for UDPMC TopicSender
     {
-        unsigned int port = rand_range(UDP_BASE_PORT, UDP_MAX_PORT);
         sender->sendSocket = sendSocket;
         sender->destAddr.sin_family = AF_INET;
         sender->destAddr.sin_addr.s_addr = inet_addr(bindIP);
@@ -265,15 +275,15 @@ static int psa_udpmc_topicPublicationSend(void* handle, unsigned int msgTypeId, 
             if (msgSer->msgVersion != NULL){
                 version_getMajor(msgSer->msgVersion, &major);
                 version_getMinor(msgSer->msgVersion, &minor);
-                msg_hdr->major = major;
-                msg_hdr->minor = minor;
+                msg_hdr->major = (unsigned char)major;
+                msg_hdr->minor = (unsigned char)minor;
             }
 
 
             pubsub_msg_t *msg = calloc(1, sizeof(pubsub_msg_t));
             msg->header = msg_hdr;
             msg->payload = (char *) serializedOutput;
-            msg->payloadSize = serializedOutputLen;
+            msg->payloadSize = (unsigned int)serializedOutputLen;
 
 
             if (psa_udpmc_sendMsg(entry, msg) == false) {
@@ -334,4 +344,8 @@ static unsigned int rand_range(unsigned int min, unsigned int max){
 
 long pubsub_udpmcTopicSender_serializerSvcId(pubsub_udpmc_topic_sender_t *sender) {
     return sender->serializerSvcId;
+}
+
+bool pubsub_udpmcTopicSender_isStatic(pubsub_udpmc_topic_sender_t *sender) {
+    return sender->staticallyConfigured;
 }

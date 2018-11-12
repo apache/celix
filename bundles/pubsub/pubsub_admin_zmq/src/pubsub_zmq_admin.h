@@ -22,40 +22,7 @@
 
 #include "celix_api.h"
 #include "log_helper.h"
-
-#define PUBSUB_ZMQ_ADMIN_TYPE       "zmq"
-#define PUBSUB_ZMQ_URL_KEY          "zmq.url"
-
-#define PUBSUB_ZMQ_VERBOSE_KEY      "PSA_ZMQ_VERBOSE"
-#define PUBSUB_ZMQ_VERBOSE_DEFAULT  true
-
-#define PUBSUB_ZMQ_PSA_IP_KEY       "PSA_IP"
-#define PUBSUB_ZMQ_PSA_ITF_KEY		"PSA_INTERFACE"
-#define PUBSUB_ZMQ_NR_THREADS_KEY   "PSA_ZMQ_NR_THREADS"
-
-#define PUBSUB_ZMQ_DEFAULT_IP       "127.0.0.1"
-
-/**
- * Can be set in the topic properties to fix a static bind url
- */
-#define PUBSUB_ZMQ_STATIC_BIND_URL       "zmq.static.bind.url"
-
-/**
- * Can be set in the topic properties to fix a static url used for discovery
- */
-#define PUBSUB_ZMQ_STATIC_DISCOVER_URL       "zmq.static.bind.url"
-
-/**
- * If set true on the endpoint, the zmq TopicSender bind and/or discovery url is statically configured.
- */
-#define PUBSUB_ZMQ_STATIC_CONFIGURED       "zmq.static.configured"
-
-/**
- * The static url which a subscriber should try to connect to.
- * The urls are space separated
- */
-#define PUBSUB_ZMQ_STATIC_CONNECT_URLS    "zmq.static.connect.urls"
-
+#include "pubsub_psa_zmq_constants.h"
 
 typedef struct pubsub_zmq_admin pubsub_zmq_admin_t;
 

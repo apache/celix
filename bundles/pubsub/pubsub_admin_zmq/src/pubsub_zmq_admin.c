@@ -377,9 +377,17 @@ celix_status_t pubsub_zmqAdmin_setupTopicSender(void *handle, const char *scope,
             //if configured use a static discover url
             const char *staticDiscUrl = celix_properties_get(topicProperties, PUBSUB_ZMQ_STATIC_DISCOVER_URL, NULL);
             if (staticDiscUrl != NULL) {
-                celix_properties_get(newEndpoint, PUBSUB_ZMQ_URL_KEY, staticDiscUrl);
+                celix_properties_set(newEndpoint, PUBSUB_ZMQ_URL_KEY, staticDiscUrl);
             }
             celix_properties_setBool(newEndpoint, PUBSUB_ZMQ_STATIC_CONFIGURED, staticBindUrl != NULL || staticDiscUrl != NULL);
+
+            //if url starts with ipc:// constrain discovery to host visibility, else use system visibility
+            const char *u = celix_properties_get(newEndpoint, PUBSUB_ZMQ_URL_KEY, "");
+            if (strncmp("ipc://", u, strlen("ipc://")) == 0) {
+                celix_properties_set(newEndpoint, PUBSUB_ENDPOINT_VISIBILITY, PUBSUB_ENDPOINT_HOST_VISIBLITY);
+            } else {
+                celix_properties_set(newEndpoint, PUBSUB_ENDPOINT_VISIBILITY, PUBSUB_ENDPOINT_SYSTEM_VISIBLITY);
+            }
 
             //if available also set container name
             const char *cn = celix_bundleContext_getProperty(psa->ctx, "CELIX_CONTAINER_NAME", NULL);

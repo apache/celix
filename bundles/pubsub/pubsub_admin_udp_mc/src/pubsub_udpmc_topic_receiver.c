@@ -26,6 +26,7 @@
 #include <assert.h>
 #include <pubsub_endpoint.h>
 #include <arpa/inet.h>
+#include <log_helper.h>
 #include "pubsub_udpmc_topic_receiver.h"
 #include "pubsub_psa_udpmc_constants.h"
 #include "large_udp.h"
@@ -36,8 +37,18 @@
 #define UDP_BUFFER_SIZE         65535
 #define MAX_UDP_SESSIONS        16
 
+#define L_DEBUG(...) \
+    logHelper_log(receiver->logHelper, OSGI_LOGSERVICE_DEBUG, __VA_ARGS__)
+#define L_INFO(...) \
+    logHelper_log(receiver->logHelper, OSGI_LOGSERVICE_INFO, __VA_ARGS__)
+#define L_WARN(...) \
+    logHelper_log(receiver->logHelper, OSGI_LOGSERVICE_WARNING, __VA_ARGS__)
+#define L_ERROR(...) \
+    logHelper_log(receiver->logHelper, OSGI_LOGSERVICE_ERROR, __VA_ARGS__)
+
 struct pubsub_udpmc_topic_receiver {
     celix_bundle_context_t *ctx;
+    log_helper_t *logHelper;
     long serializerSvcId;
     pubsub_serializer_service_t *serializer;
     char *scope;
@@ -55,12 +66,14 @@ struct pubsub_udpmc_topic_receiver {
     struct {
         celix_thread_mutex_t mutex;
         hash_map_t *map; //key = socketAddress, value = psa_udpmc_requested_connection_entry_t*
+        bool allConnected; //true if all requestedConnectection are connected
     } requestedConnections;
 
     long subscriberTrackerId;
     struct {
         celix_thread_mutex_t mutex;
         hash_map_t *map; //key = bnd id, value = psa_udpmc_subscriber_entry_t
+        bool allInitialized;
     } subscribers;
 };
 
@@ -68,14 +81,18 @@ typedef struct psa_udpmc_requested_connection_entry {
     char *key;
     char *socketAddress;
     long socketPort;
-    bool connected;
     int recvSocket;
+
+    bool connected;
+    bool statically; //true if the connection is statically configured through the topic properties.
 } psa_udpmc_requested_connection_entry_t;
 
 typedef struct psa_udpmc_subscriber_entry {
     int usageCount;
     hash_map_t *msgTypes; //map from serializer svc
     pubsub_subscriber_t *svc;
+
+    bool initialized; //true if the init function is called through the receive thread
 } psa_udpmc_subscriber_entry_t;
 
 
@@ -89,16 +106,20 @@ static void pubsub_udpmcTopicReceiver_addSubscriber(void *handle, void *svc, con
 static void pubsub_udpmcTopicReceiver_removeSubscriber(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner);
 static void psa_udpmc_processMsg(pubsub_udpmc_topic_receiver_t *receiver, pubsub_udp_msg_t *msg);
 static void* psa_udpmc_recvThread(void * data);
-
+static void psa_udpmc_connectToAllRequestedConnections(pubsub_udpmc_topic_receiver_t *receiver);
+static void psa_udpmc_initializeAllSubscribers(pubsub_udpmc_topic_receiver_t *receiver);
 
 pubsub_udpmc_topic_receiver_t* pubsub_udpmcTopicReceiver_create(celix_bundle_context_t *ctx,
+                                                                log_helper_t *logHelper,
                                                                 const char *scope,
                                                                 const char *topic,
                                                                 const char *ifIP,
+                                                                const celix_properties_t *topicProperties,
                                                                 long serializerSvcId,
                                                                 pubsub_serializer_service_t *serializer) {
     pubsub_udpmc_topic_receiver_t *receiver = calloc(1, sizeof(*receiver));
     receiver->ctx = ctx;
+    receiver->logHelper = logHelper;
     receiver->serializerSvcId = serializerSvcId;
     receiver->serializer = serializer;
     receiver->scope = strndup(scope, 1024 * 1024);
@@ -114,7 +135,9 @@ pubsub_udpmc_topic_receiver_t* pubsub_udpmcTopicReceiver_create(celix_bundle_con
     celixThreadMutex_create(&receiver->recvThread.mutex, NULL);
 
     receiver->subscribers.map = hashMap_create(NULL, NULL, NULL, NULL);
+    receiver->subscribers.allInitialized = false;
     receiver->requestedConnections.map = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
+    receiver->requestedConnections.allConnected = false;
 
     //track subscribers
     {
@@ -130,6 +153,44 @@ pubsub_udpmc_topic_receiver_t* pubsub_udpmcTopicReceiver_create(celix_bundle_con
         opts.removeWithOwner = pubsub_udpmcTopicReceiver_removeSubscriber;
 
         receiver->subscriberTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
+    }
+
+    const char *staticConnects = celix_properties_get(topicProperties, PUBSUB_UDPMC_STATIC_CONNECT_SOCKET_ADDRESSES, NULL);
+    if (staticConnects != NULL) {
+        char *copy = strndup(staticConnects, 1024*1024);
+        char* addr;
+        char* save = copy;
+
+        while ((addr = strtok_r(save, " ", &save))) {
+            char *colon = strchr(addr, ':');
+            if (colon == NULL) {
+                continue;
+            }
+
+            char *sockAddr = NULL;
+            asprintf(&sockAddr, "%.*s", (int)(colon - addr), addr);
+
+            long sockPort = atol((colon + 1));
+
+            char *key = NULL;
+            asprintf(&key, "%s:%li", sockAddr, sockPort);
+
+
+            if (sockPort > 0) {
+                psa_udpmc_requested_connection_entry_t *entry = calloc(1, sizeof(*entry));
+                entry->key = key;
+                entry->socketAddress = sockAddr;
+                entry->socketPort = sockPort;
+                entry->connected = false;
+                entry->statically = true;
+                hashMap_put(receiver->requestedConnections.map, (void *) entry->key, entry);
+            } else {
+                L_WARN("[PSA_UDPMC_TR] Invalid static socket address %s", addr);
+                free(key);
+                free(sockAddr);
+            }
+        }
+        free(copy);
     }
 
     celixThread_create(&receiver->recvThread.thread, NULL, psa_udpmc_recvThread, receiver);
@@ -205,9 +266,8 @@ void pubsub_udpmcTopicReceiver_connectTo(
         long socketPort) {
     printf("[PSA UDPMC] TopicReceiver %s/%s connect to socket address = %s:%li\n", receiver->scope, receiver->topic, socketAddress, socketPort);
 
-    int len = snprintf(NULL, 0, "%s:%li", socketAddress, socketPort);
-    char *key = calloc((size_t)len+1, sizeof(char));
-    snprintf(key, (size_t)len+1, "%s:%li", socketAddress, socketPort);
+    char *key = NULL;
+    asprintf(&key, "%s:%li", socketAddress, socketPort);
 
     celixThreadMutex_lock(&receiver->requestedConnections.mutex);
     psa_udpmc_requested_connection_entry_t *entry = hashMap_get(receiver->requestedConnections.map, key);
@@ -217,46 +277,15 @@ void pubsub_udpmcTopicReceiver_connectTo(
         entry->socketAddress = strndup(socketAddress, 1024 * 1024);
         entry->socketPort = socketPort;
         entry->connected = false;
+        entry->statically = false;
         hashMap_put(receiver->requestedConnections.map, (void*)entry->key, entry);
+        receiver->requestedConnections.allConnected = false;
     } else {
         free(key);
     }
-    if (!entry->connected) {
-        int rc  = 0;
-        entry->recvSocket = socket(AF_INET, SOCK_DGRAM, 0);
-        if (entry->recvSocket >= 0) {
-            int reuse = 1;
-            rc = setsockopt(entry->recvSocket, SOL_SOCKET, SO_REUSEADDR, (char*) &reuse, sizeof(reuse));
-        }
-        if (entry->recvSocket >= 0 && rc >= 0) {
-            struct ip_mreq mc_addr;
-            mc_addr.imr_multiaddr.s_addr = inet_addr(entry->socketAddress);
-            mc_addr.imr_interface.s_addr = inet_addr(receiver->ifIpAddress);
-            printf("Adding MC %s at interface %s\n", entry->socketAddress, receiver->ifIpAddress);
-            rc = setsockopt(entry->recvSocket, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *) &mc_addr, sizeof(mc_addr));
-        }
-        if (entry->recvSocket >= 0 && rc >= 0) {
-            struct sockaddr_in mcListenAddr;
-            mcListenAddr.sin_family = AF_INET;
-            mcListenAddr.sin_addr.s_addr = INADDR_ANY;
-            mcListenAddr.sin_port = htons((uint16_t )entry->socketPort);
-            rc = bind(entry->recvSocket, (struct sockaddr*)&mcListenAddr, sizeof(mcListenAddr));
-        }
-        if (entry->recvSocket >= 0 && rc >= 0) {
-            struct epoll_event ev;
-            memset(&ev, 0, sizeof(ev));
-            ev.events = EPOLLIN;
-            ev.data.fd = entry->recvSocket;
-            rc = epoll_ctl(receiver->topicEpollFd, EPOLL_CTL_ADD, entry->recvSocket, &ev);
-        }
-
-        if (entry->recvSocket < 0 || rc < 0) {
-            fprintf(stderr, "[PSA UDPMC] Error connecting TopicReceiver %s/%s to %s:%li. (%s)\n", receiver->scope, receiver->topic, socketAddress, socketPort, strerror(errno));
-        } else {
-            entry->connected = true;
-        }
-    }
     celixThreadMutex_unlock(&receiver->requestedConnections.mutex);
+
+    psa_udpmc_connectToAllRequestedConnections(receiver);
 }
 
 void pubsub_udpmcTopicReceiver_disconnectFrom(pubsub_udpmc_topic_receiver_t *receiver, const char *socketAddress, long socketPort) {
@@ -304,6 +333,8 @@ static void pubsub_udpmcTopicReceiver_addSubscriber(void *handle, void *svc, con
         entry = calloc(1, sizeof(*entry));
         entry->usageCount = 1;
         entry->svc = svc;
+        entry->initialized = false;
+        receiver->subscribers.allInitialized = false;
 
         int rc = receiver->serializer->createSerializerMap(receiver->serializer->handle, (celix_bundle_t*)bnd, &entry->msgTypes);
         if (rc == 0) {
@@ -347,7 +378,22 @@ static void* psa_udpmc_recvThread(void * data) {
     bool running = receiver->recvThread.running;
     celixThreadMutex_unlock(&receiver->recvThread.mutex);
 
+    celixThreadMutex_lock(&receiver->requestedConnections.mutex);
+    bool allConnected = receiver->requestedConnections.allConnected;
+    celixThreadMutex_unlock(&receiver->requestedConnections.mutex);
+
+    celixThreadMutex_lock(&receiver->subscribers.mutex);
+    bool allInitialized = receiver->subscribers.allInitialized;
+    celixThreadMutex_unlock(&receiver->subscribers.mutex);
+
     while (running) {
+        if (!allConnected) {
+            psa_udpmc_connectToAllRequestedConnections(receiver);
+        }
+        if (!allInitialized) {
+            psa_udpmc_initializeAllSubscribers(receiver);
+        }
+
         int nfds = epoll_wait(receiver->topicEpollFd, events, MAX_EPOLL_EVENTS, RECV_THREAD_TIMEOUT * 1000);
         int i;
         for(i = 0; i < nfds; i++ ) {
@@ -366,9 +412,18 @@ static void* psa_udpmc_recvThread(void * data) {
                 free(udpMsg);
             }
         }
+
         celixThreadMutex_lock(&receiver->recvThread.mutex);
         running = receiver->recvThread.running;
         celixThreadMutex_unlock(&receiver->recvThread.mutex);
+
+        celixThreadMutex_lock(&receiver->requestedConnections.mutex);
+        allConnected = receiver->requestedConnections.allConnected;
+        celixThreadMutex_unlock(&receiver->requestedConnections.mutex);
+
+        celixThreadMutex_lock(&receiver->subscribers.mutex);
+        allInitialized = receiver->subscribers.allInitialized;
+        celixThreadMutex_unlock(&receiver->subscribers.mutex);
     }
 
     return NULL;
@@ -417,6 +472,102 @@ static void psa_udpmc_processMsg(pubsub_udpmc_topic_receiver_t *receiver, pubsub
             }
 
         }
+    }
+    celixThreadMutex_unlock(&receiver->subscribers.mutex);
+}
+
+void pubsub_udpmcTopicReceiver_listConnections(pubsub_udpmc_topic_receiver_t *receiver, celix_array_list_t *connections) {
+    celixThreadMutex_lock(&receiver->requestedConnections.mutex);
+    hash_map_iterator_t iter = hashMapIterator_construct(receiver->requestedConnections.map);
+    while (hashMapIterator_hasNext(&iter)) {
+        psa_udpmc_requested_connection_entry_t *entry = hashMapIterator_nextValue(&iter);
+        char *url = NULL;
+        const char *post = entry->statically ? " (static)" : "";
+        asprintf(&url, "%s:%li%s", entry->socketAddress, entry->socketPort, post);
+        celix_arrayList_add(connections, url);
+    }
+    celixThreadMutex_unlock(&receiver->requestedConnections.mutex);
+}
+
+static bool psa_udpmc_connectToEntry(pubsub_udpmc_topic_receiver_t *receiver, psa_udpmc_requested_connection_entry_t *entry) {
+    bool connected = true;
+    int rc  = 0;
+    entry->recvSocket = socket(AF_INET, SOCK_DGRAM, 0);
+    if (entry->recvSocket >= 0) {
+        int reuse = 1;
+        rc = setsockopt(entry->recvSocket, SOL_SOCKET, SO_REUSEADDR, (char*) &reuse, sizeof(reuse));
+    }
+    if (entry->recvSocket >= 0 && rc >= 0) {
+        struct ip_mreq mc_addr;
+        mc_addr.imr_multiaddr.s_addr = inet_addr(entry->socketAddress);
+        mc_addr.imr_interface.s_addr = inet_addr(receiver->ifIpAddress);
+        L_INFO("[PSA_UDPMC_TR] Add MC %s at interface %s\n", entry->socketAddress, receiver->ifIpAddress);
+        rc = setsockopt(entry->recvSocket, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *) &mc_addr, sizeof(mc_addr));
+    }
+    if (entry->recvSocket >= 0 && rc >= 0) {
+        struct sockaddr_in mcListenAddr;
+        mcListenAddr.sin_family = AF_INET;
+        mcListenAddr.sin_addr.s_addr = INADDR_ANY;
+        mcListenAddr.sin_port = htons((uint16_t )entry->socketPort);
+        rc = bind(entry->recvSocket, (struct sockaddr*)&mcListenAddr, sizeof(mcListenAddr));
+    }
+    if (entry->recvSocket >= 0 && rc >= 0) {
+        struct epoll_event ev;
+        memset(&ev, 0, sizeof(ev));
+        ev.events = EPOLLIN;
+        ev.data.fd = entry->recvSocket;
+        rc = epoll_ctl(receiver->topicEpollFd, EPOLL_CTL_ADD, entry->recvSocket, &ev);
+    }
+
+    if (entry->recvSocket < 0 || rc < 0) {
+        L_WARN("[PSA UDPMC] Error connecting TopicReceiver %s/%s to %s:%li. (%s)\n", receiver->scope, receiver->topic, entry->socketAddress, entry->socketPort, strerror(errno));
+        connected = false;
+    }
+    return connected;
+}
+
+
+static void psa_udpmc_connectToAllRequestedConnections(pubsub_udpmc_topic_receiver_t *receiver) {
+    celixThreadMutex_lock(&receiver->requestedConnections.mutex);
+    if (!receiver->requestedConnections.allConnected) {
+        bool allConnected = true;
+        hash_map_iterator_t iter = hashMapIterator_construct(receiver->requestedConnections.map);
+        while (hashMapIterator_hasNext(&iter)) {
+            psa_udpmc_requested_connection_entry_t *entry = hashMapIterator_nextValue(&iter);
+            if (!entry->connected){
+                if (psa_udpmc_connectToEntry(receiver, entry)) {
+                    entry->connected = true;
+                } else {
+                    allConnected = false;
+                }
+            }
+        }
+        receiver->requestedConnections.allConnected = allConnected;
+    }
+    celixThreadMutex_unlock(&receiver->requestedConnections.mutex);
+}
+
+static void psa_udpmc_initializeAllSubscribers(pubsub_udpmc_topic_receiver_t *receiver) {
+    celixThreadMutex_lock(&receiver->subscribers.mutex);
+    if (!receiver->subscribers.allInitialized) {
+        bool allInitialized = true;
+        hash_map_iterator_t iter = hashMapIterator_construct(receiver->subscribers.map);
+        while (hashMapIterator_hasNext(&iter)) {
+            psa_udpmc_subscriber_entry_t *entry = hashMapIterator_nextValue(&iter);
+            if (!entry->initialized) {
+                int rc = 0;
+                if (entry->svc != NULL && entry->svc->init != NULL) {
+                    rc = entry->svc->init(entry->svc->handle);
+                }
+                if (rc == 0) {
+                    entry->initialized = true;
+                } else {
+                    L_WARN("Cannot initialize subscriber svc. Got rc %i", rc);
+                    allInitialized = false;
+                }
+            }
+        }
+        receiver->subscribers.allInitialized = allInitialized;
     }
     celixThreadMutex_unlock(&receiver->subscribers.mutex);
 }

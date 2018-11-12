@@ -23,9 +23,6 @@
 #define PUBSUB_PSA_ZMQ_CONSTANTS_H_
 
 
-
-#define PSA_ZMQ_PUBSUB_ADMIN_TYPE	            "zmq"
-
 #define PSA_ZMQ_BASE_PORT                       "PSA_ZMQ_BASE_PORT"
 #define PSA_ZMQ_MAX_PORT                        "PSA_ZMQ_MAX_PORT"
 
@@ -40,11 +37,44 @@
 #define PSA_ZMQ_QOS_CONTROL_SCORE_KEY 		    "PSA_ZMQ_QOS_CONTROL_SCORE"
 #define PSA_ZMQ_DEFAULT_SCORE_KEY 			    "PSA_ZMQ_DEFAULT_SCORE"
 
-#define PSA_ZMQ_DEFAULT_VERBOSE 			    false
-#define PSA_ZMQ_VERBOSE_KEY		 			    "PSA_ZMQ_VERBOSE"
+
+#define PUBSUB_ZMQ_VERBOSE_KEY      "PSA_ZMQ_VERBOSE"
+#define PUBSUB_ZMQ_VERBOSE_DEFAULT  true
+
+#define PUBSUB_ZMQ_PSA_IP_KEY       "PSA_IP"
+#define PUBSUB_ZMQ_PSA_ITF_KEY		"PSA_INTERFACE"
+#define PUBSUB_ZMQ_NR_THREADS_KEY   "PSA_ZMQ_NR_THREADS"
+
+#define PUBSUB_ZMQ_DEFAULT_IP       "127.0.0.1"
+
+#define PUBSUB_ZMQ_ADMIN_TYPE       "zmq"
+
+/**
+ * The ZMQ url key for the topic sender endpoints
+ */
+#define PUBSUB_ZMQ_URL_KEY          "zmq.url"
 
 
-#define PUBSUB_PSA_ZMQ_ENDPOINT_URL_KEY			"pubsub.zmq.url"
 
+/**
+ * Can be set in the topic properties to fix a static bind url
+ */
+#define PUBSUB_ZMQ_STATIC_BIND_URL       "zmq.static.bind.url"
+
+/**
+ * Can be set in the topic properties to fix a static url used for discovery
+ */
+#define PUBSUB_ZMQ_STATIC_DISCOVER_URL       "zmq.static.bind.url"
+
+/**
+ * If set true on the endpoint, the zmq TopicSender bind and/or discovery url is statically configured.
+ */
+#define PUBSUB_ZMQ_STATIC_CONFIGURED       "zmq.static.configured"
+
+/**
+ * The static url which a subscriber should try to connect to.
+ * The urls are space separated
+ */
+#define PUBSUB_ZMQ_STATIC_CONNECT_URLS    "zmq.static.connect.urls"
 
 #endif /* PUBSUB_PSA_ZMQ_CONSTANTS_H_ */

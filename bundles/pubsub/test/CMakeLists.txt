@@ -52,6 +52,23 @@ celix_bundle_files(pubsub_tst
 )
 
 
+add_celix_container(pubsub_udpmc_tests
+        GEN_BUNDLES_CONFIG #ensures that a config.properties will be created with the launch bundles.
+        LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_runner.cc
+        DIR ${CMAKE_CURRENT_BINARY_DIR}
+        PROPERTIES
+            LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
+        BUNDLES
+            Celix::pubsub_serializer_json
+            Celix::pubsub_topology_manager
+            Celix::pubsub_admin_udp_multicast
+            pubsub_sut
+            pubsub_tst
+)
+target_link_libraries(pubsub_udpmc_tests PRIVATE Celix::pubsub_api ${CPPUTEST_LIBRARIES} ${JANSSON_LIBRARIES} Celix::dfi)
+target_include_directories(pubsub_udpmc_tests PRIVATE ${CPPUTEST_INCLUDE_DIR})
+add_test(NAME run_pubsub_udpmc_tests COMMAND pubsub_udpmc_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_udpmc_tests,CONTAINER_LOC>)
+SETUP_TARGET_FOR_COVERAGE(pubsub_udpmc_tests pubsub_udpmc_tests ${CMAKE_BINARY_DIR}/coverage/pubsub/pubsub_udpmc)
 
 if (BUILD_PUBSUB_PSA_ZMQ)
     add_celix_container(pubsub_zmq_tests
@@ -72,4 +89,3 @@ if (BUILD_PUBSUB_PSA_ZMQ)
     add_test(NAME run_pubsub_zmq_tests COMMAND pubsub_zmq_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_zmq_tests,CONTAINER_LOC>)
     SETUP_TARGET_FOR_COVERAGE(pubsub_zmq_tests pubsub_zmq_tests ${CMAKE_BINARY_DIR}/coverage/pubsub/pubsub_zmq)
 endif ()
-

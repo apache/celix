@@ -22,18 +22,8 @@
 
 #include "celix_api.h"
 #include "log_helper.h"
+#include "pubsub_psa_udpmc_constants.h"
 
-#define PUBSUB_UDPMC_ADMIN_TYPE                     "udp_mc"
-#define PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY			"udpmc.socket_address"
-#define PUBSUB_PSA_UDPMC_SOCKET_PORT_KEY            "udpmc.socker_port"
-
-#define PUBSUB_UDPMC_IP_KEY 	                    "PSA_IP"
-#define PUBSUB_UDPMC_ITF_KEY	                    "PSA_INTERFACE"
-#define PUBSUB_UDPMC_MULTICAST_IP_PREFIX_KEY        "PSA_MC_PREFIX"
-#define PUBSUB_UDPMC_VERBOSE_KEY                    "PSA_UDPMC_VERBOSE"
-
-#define PUBSUB_UDPMC_MULTICAST_IP_PREFIX_DEFAULT    "224.100"
-#define PUBSUB_UDPMC_VERBOSE_DEFAULT                true
 
 typedef struct pubsub_udpmc_admin pubsub_udpmc_admin_t;
 
