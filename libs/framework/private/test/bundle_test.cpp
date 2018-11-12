@@ -912,6 +912,8 @@ TEST(bundle, refresh) {
 	mock().expectOneCall("resolver_addModule")
 			.withParameter("module", module_new);
 
+	mock().ignoreOtherCalls();
+
 	LONGS_EQUAL(CELIX_SUCCESS, bundle_refresh(bundle));
 
 	arrayList_destroy(bundle->modules);
