@@ -63,6 +63,8 @@ TEST(bundle_cache, create) {
 	LONGS_EQUAL(CELIX_SUCCESS, bundleCache_create("test-uuid", configuration, &cache));
 
 	LONGS_EQUAL(CELIX_SUCCESS, bundleCache_destroy(&cache));
+
+	celix_properties_destroy(configuration);
 }
 
 TEST(bundle_cache, deleteTree) {

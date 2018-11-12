@@ -169,6 +169,7 @@ TEST(bundle, createFromArchive) {
 	POINTERS_EQUAL(framework, actual->framework);
 
 	arrayList_destroy(actual->modules);
+	free(actual->symbolicName);
 	free(actual);
 
 
@@ -879,7 +880,7 @@ TEST(bundle, refresh) {
 			.withParameter("module", module_new)
 			.andReturnValue(version);
 
-	mock().expectNCalls(2, "module_getSymbolicName")
+	mock().expectNCalls(1, "module_getSymbolicName")
 			.withParameter("module", module_new)
 			.withOutputParameterReturning("symbolicName", &symbolicName, sizeof(char*));
 
