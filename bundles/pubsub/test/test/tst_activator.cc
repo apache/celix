@@ -36,7 +36,7 @@ extern "C" {
 static int tst_receive(void *handle, const char *msgType, unsigned int msgTypeId, void *msg, bool *release);
 
 struct activator {
-    pubsub_subscriber_t subSvc{};
+    pubsub_subscriber_t subSvc;
     long subSvcId;
 
     pthread_mutex_t mutex;
