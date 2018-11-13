@@ -26,8 +26,7 @@
 #include "pubsub/api.h"
 #include "msg.h"
 
-static void sut_pubAdded(void *handle, void *service);
-static void sut_pubRemoved(void *handle, void *service);
+static void sut_pubSet(void *handle, void *service);
 static void* sut_sendThread(void *data);
 
 struct activator {
@@ -45,12 +44,10 @@ celix_status_t bnd_start(struct activator *act, celix_bundle_context_t *ctx) {
 	char filter[512];
 	snprintf(filter, 512, "(%s=%s)", PUBSUB_PUBLISHER_TOPIC, "ping");
 	celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
-	opts.add = sut_pubAdded;
-	opts.remove = sut_pubRemoved;
+	opts.set = sut_pubSet;
 	opts.callbackHandle = act;
 	opts.filter.serviceName = PUBSUB_PUBLISHER_SERVICE_NAME;
 	opts.filter.filter = filter;
-	opts.filter.ignoreServiceLanguage = true;
 	act->pubTrkId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
 
 	act->running = true;
@@ -72,24 +69,16 @@ celix_status_t bnd_stop(struct activator *act, celix_bundle_context_t *ctx) {
 
 CELIX_GEN_BUNDLE_ACTIVATOR(struct activator, bnd_start, bnd_stop);
 
-static void sut_pubAdded(void *handle, void *service) {
+static void sut_pubSet(void *handle, void *service) {
 	struct activator* act = handle;
 	pthread_mutex_lock(&act->mutex);
 	act->pubSvc = service;
 	pthread_mutex_unlock(&act->mutex);
 }
 
-static void sut_pubRemoved(void *handle, void *service) {
-	struct activator* act = handle;
-	pthread_mutex_lock(&act->mutex);
-	if (act->pubSvc == service) {
-		act->pubSvc = NULL;
-	}
-	pthread_mutex_unlock(&act->mutex);
-}
-
 static void* sut_sendThread(void *data) {
 	struct activator *act = data;
+
 	pthread_mutex_lock(&act->mutex);
 	bool running = act->running;
 	pthread_mutex_unlock(&act->mutex);

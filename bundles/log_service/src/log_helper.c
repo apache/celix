@@ -70,7 +70,7 @@ static char* logHelper_backtrace(void) {
 	return result;
 }
 #else
-static char* logHelper_logBacktrace(void) {
+static char* logHelper_backtrace(void) {
 	return NULL;
 }
 #endif
