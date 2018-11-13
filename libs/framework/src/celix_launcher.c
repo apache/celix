@@ -73,8 +73,9 @@ int celixLauncher_launchAndWaitForShutdown(int argc, char *argv[], properties_pt
 	for (int i = 1; i < argc; ++i) {
 		opt = argv[i];
 		// Check whether the user wants some help...
-		if (strncmp("-h", opt, strlen("-h")) == 0 || strncmp("--help", opt, strlen("--help")) == 0) {
+		if (strncmp("-?", opt, strlen("-?")) == 0 || strncmp("-h", opt, strlen("-h")) == 0 || strncmp("--help", opt, strlen("--help")) == 0) {
 			show_usage(argv[0]);
+			celix_properties_destroy(packedConfig);
 			return 0;
 		} else if (strncmp("-p", opt, strlen("-p")) == 0 || strncmp("--props", opt, strlen("--props")) == 0) {
 			showProps = true;

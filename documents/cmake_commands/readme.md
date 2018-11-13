@@ -186,13 +186,14 @@ add_celix_container(<celix_container_name>
 ```
 
 - If the COPY option is provided the selected bundles will be copied in a bundles dir and the generated config.properties will use relative paths to the bundle locations. Default bundles will not be copied and the generated config.properties will use absolute references to the bundle locations.
-- If CXX option is provided the celix container launcher will be build as C++ executable and as result be linked with the required C++ libraries of the used compiler
+- If CXX option is provided the celix container launcher will be build as C++ executable and as result be linked with the required C++ libraries of the used compiler.
+- If USE_CONFIG option is provided a config.properties file will be generated next to the executable. The config.properties contains the configuration for provided BUNDLES and PROPERTIES.
 - If GROUP is provided the celix container will be grouped in the provided group name. 
 - If NAME is provided that name will be used for the celix container dir. Default the Celix container target name will be used.
 - If LAUNCHER is provided that path or target will be used as launcher executable for the Celix container. If no LAUNCHER is not provided the celix executable will be used.
-- If DIR is provided, the specified dir is used instead of `<cmake_build_dir>/deploy` as deploy dir 
-- If BUNDLES is provided the list of bundles will be added the the generated config.properties for startup. Combined with COPY the bundles will also be copied to a bundles dir.
-- If PROPERTIES is provided the list of properties will be appended to the generated config.properties
+- If DIR is provided, the specified dir is used instead of `<cmake_build_dir>/deploy` as deploy dir .
+- If BUNDLES is provided the list of bundles will be added the the generated executable/config.properties for startup. Combined with COPY the bundles will also be copied to a bundles dir.
+- If PROPERTIES is provided the list of properties will be appended to the generated executable/config.properties.
 
 ## celix_container_bundles
 Add the selected bundles to the container.
