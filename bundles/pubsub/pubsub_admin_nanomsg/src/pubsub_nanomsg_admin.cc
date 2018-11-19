@@ -111,7 +111,7 @@ pubsub_nanomsg_admin::~pubsub_nanomsg_admin() {
     {
         std::lock_guard<std::mutex> lock(topicReceivers.mutex);
         for (auto kv: topicReceivers.map) {
-            pubsub_nanoMsgTopicReceiver_destroy(kv.second);
+            delete kv.second;
         }
     }
 
@@ -274,10 +274,10 @@ void pubsub_nanomsg_admin::removeSerializerSvc(void */*svc*/, const celix_proper
             std::lock_guard<std::mutex> receiverLock(topicReceivers.mutex);
             for (auto kv : topicReceivers.map){
                 auto *receiver = kv.second;
-                if (receiver != nullptr && entry->svcId == pubsub_nanoMsgTopicReceiver_serializerSvcId(receiver)) {
+                if (receiver != nullptr && entry->svcId == receiver->serializerSvcId()) {
                     char *key = kv.first;
                     topicReceivers.map.erase(key);
-                    pubsub_nanoMsgTopicReceiver_destroy(receiver);
+                    delete receiver;
                     free(key);
                 }
             }
@@ -409,7 +409,7 @@ celix_status_t pubsub_nanomsg_admin::setupTopicReceiver(const char *scope, const
     celix_properties_t *newEndpoint = nullptr;
 
     char *key = pubsubEndpoint_createScopeTopicKey(scope, topic);
-    pubsub_nanomsg_topic_receiver_t * receiver = nullptr;
+    pubsub::nanomsg::topic_receiver * receiver = nullptr;
     {
         std::lock_guard<std::mutex> serializerLock(serializers.mutex);
         std::lock_guard<std::mutex> topicReceiverLock(topicReceivers.mutex);
@@ -421,7 +421,7 @@ celix_status_t pubsub_nanomsg_admin::setupTopicReceiver(const char *scope, const
             auto kvs = serializers.map.find(serializerSvcId);
             if (kvs != serializers.map.end()) {
                 auto serEntry = kvs->second;
-                receiver = pubsub_nanoMsgTopicReceiver_create(ctx, log, scope, topic, serializerSvcId, serEntry->svc);
+                receiver = new pubsub::nanomsg::topic_receiver(ctx, log, scope, topic, serializerSvcId, serEntry->svc);
             } else {
                 L_ERROR("[PSA_NANOMSG] Cannot find serializer for TopicSender %s/%s", scope, topic);
             }
@@ -471,24 +471,24 @@ celix_status_t pubsub_nanomsg_admin::teardownTopicReceiver(const char *scope, co
     free(key);
     if (entry != topicReceivers.map.end()) {
         char *receiverKey = entry->first;
-        pubsub_nanomsg_topic_receiver_t *receiver = entry->second;
+        pubsub::nanomsg::topic_receiver *receiver = entry->second;
         topicReceivers.map.erase(receiverKey);
 
         free(receiverKey);
-        pubsub_nanoMsgTopicReceiver_destroy(receiver);
+        delete receiver;
     }
 
     celix_status_t  status = CELIX_SUCCESS;
     return status;
 }
 
-celix_status_t pubsub_nanomsg_admin::connectEndpointToReceiver(pubsub_nanomsg_topic_receiver_t *receiver,
+celix_status_t pubsub_nanomsg_admin::connectEndpointToReceiver(pubsub::nanomsg::topic_receiver *receiver,
                                                                     const celix_properties_t *endpoint) {
     //note can be called with discoveredEndpoint.mutex lock
     celix_status_t status = CELIX_SUCCESS;
 
-    const char *scope = pubsub_nanoMsgTopicReceiver_scope(receiver);
-    const char *topic = pubsub_nanoMsgTopicReceiver_topic(receiver);
+    const char *scope = receiver->scope();
+    const char *topic = receiver->topic();
 
     const char *eScope = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_SCOPE, nullptr);
     const char *eTopic = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_NAME, nullptr);
@@ -503,7 +503,7 @@ celix_status_t pubsub_nanomsg_admin::connectEndpointToReceiver(pubsub_nanomsg_to
         if (eScope != nullptr && eTopic != nullptr &&
             strncmp(eScope, scope, 1024 * 1024) == 0 &&
             strncmp(eTopic, topic, 1024 * 1024) == 0) {
-            pubsub_nanoMsgTopicReceiver_connectTo(receiver, url);
+            receiver->connectTo(url);
         }
     }
 
@@ -516,7 +516,7 @@ celix_status_t pubsub_nanomsg_admin::addEndpoint(const celix_properties_t *endpo
     if (type != nullptr && strncmp(PUBSUB_PUBLISHER_ENDPOINT_TYPE, type, strlen(PUBSUB_PUBLISHER_ENDPOINT_TYPE)) == 0) {
         std::lock_guard<std::mutex> threadLock(topicReceivers.mutex);
         for (auto entry: topicReceivers.map) {
-            pubsub_nanomsg_topic_receiver_t *receiver = entry.second;
+            pubsub::nanomsg::topic_receiver *receiver = entry.second;
             connectEndpointToReceiver(receiver, endpoint);
         }
     }
@@ -532,13 +532,13 @@ celix_status_t pubsub_nanomsg_admin::addEndpoint(const celix_properties_t *endpo
 }
 
 
-celix_status_t pubsub_nanomsg_admin::disconnectEndpointFromReceiver(pubsub_nanomsg_topic_receiver_t *receiver,
+celix_status_t pubsub_nanomsg_admin::disconnectEndpointFromReceiver(pubsub::nanomsg::topic_receiver *receiver,
                                                                             const celix_properties_t *endpoint) {
     //note can be called with discoveredEndpoint.mutex lock
     celix_status_t status = CELIX_SUCCESS;
 
-    const char *scope = pubsub_nanoMsgTopicReceiver_scope(receiver);
-    const char *topic = pubsub_nanoMsgTopicReceiver_topic(receiver);
+    const char *scope = receiver->scope();
+    const char *topic = receiver->topic();
 
     const char *eScope = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_SCOPE, nullptr);
     const char *eTopic = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_NAME, nullptr);
@@ -551,7 +551,7 @@ celix_status_t pubsub_nanomsg_admin::disconnectEndpointFromReceiver(pubsub_nanom
         if (eScope != nullptr && eTopic != nullptr &&
             strncmp(eScope, scope, 1024 * 1024) == 0 &&
             strncmp(eTopic, topic, 1024 * 1024) == 0) {
-            pubsub_nanoMsgTopicReceiver_disconnectFrom(receiver, url);
+            receiver->disconnectFrom(url);
         }
     }
 
@@ -564,7 +564,7 @@ celix_status_t pubsub_nanomsg_admin::removeEndpoint(const celix_properties_t *en
     if (type != nullptr && strncmp(PUBSUB_PUBLISHER_ENDPOINT_TYPE, type, strlen(PUBSUB_PUBLISHER_ENDPOINT_TYPE)) == 0) {
         std::lock_guard<std::mutex> topicReceiverLock(topicReceivers.mutex);
         for (auto entry : topicReceivers.map) {
-            pubsub_nanomsg_topic_receiver_t *receiver = entry.second;
+            pubsub::nanomsg::topic_receiver *receiver = entry.second;
             disconnectEndpointFromReceiver(receiver, endpoint);
         }
     }
@@ -605,16 +605,16 @@ celix_status_t pubsub_nanomsg_admin::executeCommand(char *commandLine __attribut
         std::lock_guard<std::mutex> serializerLock(serializers.mutex);
         std::lock_guard<std::mutex> topicReceiverLock(topicReceivers.mutex);
         for (auto entry : topicReceivers.map) {
-            pubsub_nanomsg_topic_receiver_t *receiver = entry.second;
-            long serSvcId = pubsub_nanoMsgTopicReceiver_serializerSvcId(receiver);
+            pubsub::nanomsg::topic_receiver *receiver = entry.second;
+            long serSvcId = receiver->serializerSvcId();
             auto kv =  serializers.map.find(serSvcId);
             const char *serType = kv->second == nullptr ? "!Error!" : kv->second->serType;
-            const char *scope = pubsub_nanoMsgTopicReceiver_scope(receiver);
-            const char *topic = pubsub_nanoMsgTopicReceiver_topic(receiver);
+            const char *scope = receiver->scope();
+            const char *topic = receiver->topic();
 
             std::vector<std::string> connected{};
             std::vector<std::string> unconnected{};
-            pubsub_nanoMsgTopicReceiver_listConnections(receiver, connected, unconnected);
+            receiver->listConnections(connected, unconnected);
 
             fprintf(out, "|- Topic Receiver %s/%s\n", scope, topic);
             fprintf(out, "   |- serializer type = %s\n", serType);

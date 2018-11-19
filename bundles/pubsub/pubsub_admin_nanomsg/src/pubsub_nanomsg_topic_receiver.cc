@@ -109,92 +109,96 @@ static void pubsub_nanoMsgTopicReceiver_removeSubscriber(void *handle, void *svc
 static void* psa_nanomsg_recvThread(void *data);
 
 
-pubsub_nanomsg_topic_receiver_t* pubsub_nanoMsgTopicReceiver_create(celix_bundle_context_t *ctx,
-                                                                    log_helper_t *logHelper, const char *scope,
-                                                                    const char *topic, long serializerSvcId,
-                                                                    pubsub_serializer_service_t *serializer) {
-    pubsub_nanomsg_topic_receiver_t *receiver = static_cast<pubsub_nanomsg_topic_receiver*>(calloc(1, sizeof(*receiver)));
-    receiver->ctx = ctx;
-    receiver->logHelper = logHelper;
-    receiver->serializerSvcId = serializerSvcId;
-    receiver->serializer = serializer;
-    psa_nanomsg_setScopeAndTopicFilter(scope, topic, receiver->scopeAndTopicFilter);
+//pubsub_nanomsg_topic_receiver_t* pubsub_nanoMsgTopicReceiver_create(celix_bundle_context_t *ctx,
+//                                                                    log_helper_t *logHelper, const char *scope,
+//                                                                    const char *topic, long serializerSvcId,
+//                                                                    pubsub_serializer_service_t *serializer) {
+pubsub::nanomsg::topic_receiver::topic_receiver(celix_bundle_context_t *_ctx,
+        log_helper_t *_logHelper,
+        const char *_scope,
+        const char *_topic,
+        long _serializerSvcId,
+        pubsub_serializer_service_t *_serializer) : m_serializerSvcId{_serializerSvcId}, m_scope{_scope}, m_topic{_topic} {
+    //pubsub_nanomsg_topic_receiver_t *receiver = static_cast<pubsub_nanomsg_topic_receiver*>(calloc(1, sizeof(*receiver)));
+    ctx = _ctx;
+    logHelper = _logHelper;
+    serializer = _serializer;
+    psa_nanomsg_setScopeAndTopicFilter(m_scope, m_topic, m_scopeAndTopicFilter);
 
-
-    receiver->nanoMsgSocket = nn_socket(AF_SP, NN_BUS);
-    if (receiver->nanoMsgSocket < 0) {
-        free(receiver);
-        receiver = NULL;
-        L_ERROR("[PSA_NANOMSG] Cannot create TopicReceiver for %s/%s", scope, topic);
+    m_nanoMsgSocket = nn_socket(AF_SP, NN_BUS);
+    if (m_nanoMsgSocket < 0) {
+        // TODO throw error or something
+        //free(receiver);
+        //receiver = NULL;
+        L_ERROR("[PSA_NANOMSG] Cannot create TopicReceiver for %s/%s", m_scope, m_topic);
     } else {
         int timeout = PSA_NANOMSG_RECV_TIMEOUT;
-        if (nn_setsockopt(receiver->nanoMsgSocket , NN_SOL_SOCKET, NN_RCVTIMEO, &timeout,
+        if (nn_setsockopt(m_nanoMsgSocket , NN_SOL_SOCKET, NN_RCVTIMEO, &timeout,
                           sizeof (timeout)) < 0) {
-            free(receiver);
-            receiver = NULL;
-            L_ERROR("[PSA_NANOMSG] Cannot create TopicReceiver for %s/%s, set sockopt RECV_TIMEO failed", scope, topic);
+            // TODO throw error or something
+            //free(receiver);
+            //receiver = NULL;
+            L_ERROR("[PSA_NANOMSG] Cannot create TopicReceiver for %s/%s, set sockopt RECV_TIMEO failed", m_scope, m_topic);
         }
 
         char subscribeFilter[5];
-        psa_nanomsg_setScopeAndTopicFilter(scope, topic, subscribeFilter);
+        psa_nanomsg_setScopeAndTopicFilter(m_scope, m_topic, subscribeFilter);
         //zsock_set_subscribe(receiver->nanoMsgSocket, subscribeFilter);
 
-        receiver->scope = strndup(scope, 1024 * 1024);
-        receiver->topic = strndup(topic, 1024 * 1024);
+        m_scope = strndup(m_scope, 1024 * 1024);
+        m_topic = strndup(m_topic, 1024 * 1024);
 
-        receiver->subscribers.map = hashMap_create(NULL, NULL, NULL, NULL);
-        receiver->requestedConnections.map = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
+        subscribers.map = hashMap_create(NULL, NULL, NULL, NULL);
+        requestedConnections.map = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
 
-        int size = snprintf(NULL, 0, "(%s=%s)", PUBSUB_SUBSCRIBER_TOPIC, topic);
+        int size = snprintf(NULL, 0, "(%s=%s)", PUBSUB_SUBSCRIBER_TOPIC, m_topic);
         char buf[size + 1];
-        snprintf(buf, (size_t) size + 1, "(%s=%s)", PUBSUB_SUBSCRIBER_TOPIC, topic);
+        snprintf(buf, (size_t) size + 1, "(%s=%s)", PUBSUB_SUBSCRIBER_TOPIC, m_topic);
         celix_service_tracking_options_t opts{};
         opts.filter.ignoreServiceLanguage = true;
         opts.filter.serviceName = PUBSUB_SUBSCRIBER_SERVICE_NAME;
         opts.filter.filter = buf;
-        opts.callbackHandle = receiver;
+        opts.callbackHandle = this;
         opts.addWithOwner = pubsub_zmqTopicReceiver_addSubscriber;
         opts.removeWithOwner = pubsub_nanoMsgTopicReceiver_removeSubscriber;
 
-        receiver->subscriberTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
-        receiver->recvThread.running = true;
-        celixThread_create(&receiver->recvThread.thread, NULL, psa_nanomsg_recvThread, receiver);
+        subscriberTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
+        recvThread.running = true;
+        celixThread_create(&recvThread.thread, NULL, psa_nanomsg_recvThread, this);
         std::stringstream namestream;
-        namestream << "NANOMSG TR " << scope << "/" << topic;
-        celixThread_setName(&receiver->recvThread.thread, namestream.str().c_str());
+        namestream << "NANOMSG TR " << m_scope << "/" << m_topic;
+        celixThread_setName(&recvThread.thread, namestream.str().c_str());
     }
-    return receiver;
 }
 
-void pubsub_nanoMsgTopicReceiver_destroy(pubsub_nanomsg_topic_receiver_t *receiver) {
-    if (receiver != NULL) {
+pubsub::nanomsg::topic_receiver::~topic_receiver() {
 
         {
-            std::lock_guard<std::mutex> _lock(receiver->recvThread.mutex);
-            receiver->recvThread.running = false;
+            std::lock_guard<std::mutex> _lock(recvThread.mutex);
+            recvThread.running = false;
         }
-        celixThread_join(receiver->recvThread.thread, NULL);
+        celixThread_join(recvThread.thread, NULL);
 
-        celix_bundleContext_stopTracker(receiver->ctx, receiver->subscriberTrackerId);
+        celix_bundleContext_stopTracker(ctx, subscriberTrackerId);
 
         hash_map_iterator_t iter=hash_map_iterator_t();
         {
-            std::lock_guard<std::mutex> _lock(receiver->subscribers.mutex);
-            iter = hashMapIterator_construct(receiver->subscribers.map);
+            std::lock_guard<std::mutex> _lock(subscribers.mutex);
+            iter = hashMapIterator_construct(subscribers.map);
             while (hashMapIterator_hasNext(&iter)) {
                 psa_nanomsg_subscriber_entry_t *entry = static_cast<psa_nanomsg_subscriber_entry_t*>(hashMapIterator_nextValue(&iter));
                 if (entry != NULL)  {
-                    receiver->serializer->destroySerializerMap(receiver->serializer->handle, entry->msgTypes);
+                    serializer->destroySerializerMap(serializer->handle, entry->msgTypes);
                     free(entry);
                 }
             }
-            hashMap_destroy(receiver->subscribers.map, false, false);
+            hashMap_destroy(subscribers.map, false, false);
         }
 
 
         {
-            std::lock_guard<std::mutex> _lock(receiver->requestedConnections.mutex);
-            iter = hashMapIterator_construct(receiver->requestedConnections.map);
+            std::lock_guard<std::mutex> _lock(requestedConnections.mutex);
+            iter = hashMapIterator_construct(requestedConnections.map);
             while (hashMapIterator_hasNext(&iter)) {
                 psa_nanomsg_requested_connection_entry_t *entry = static_cast<psa_nanomsg_requested_connection_entry_t*>(hashMapIterator_nextValue(&iter));
                 if (entry != NULL) {
@@ -202,37 +206,34 @@ void pubsub_nanoMsgTopicReceiver_destroy(pubsub_nanomsg_topic_receiver_t *receiv
                     free(entry);
                 }
             }
-            hashMap_destroy(receiver->requestedConnections.map, false, false);
+            hashMap_destroy(requestedConnections.map, false, false);
         }
 
         //celixThreadMutex_destroy(&receiver->subscribers.mutex);
         //celixThreadMutex_destroy(&receiver->requestedConnections.mutex);
         //celixThreadMutex_destroy(&receiver->recvThread.mutex);
 
-        nn_close(receiver->nanoMsgSocket);
+        nn_close(m_nanoMsgSocket);
 
-        free(receiver->scope);
-        free(receiver->topic);
-    }
-    free(receiver);
+        free((void*)m_scope);
+        free((void*)m_topic);
 }
 
-const char* pubsub_nanoMsgTopicReceiver_scope(pubsub_nanomsg_topic_receiver_t *receiver) {
-    return receiver->scope;
+const char* pubsub::nanomsg::topic_receiver::scope() const {
+    return m_scope;
 }
-const char* pubsub_nanoMsgTopicReceiver_topic(pubsub_nanomsg_topic_receiver_t *receiver) {
-    return receiver->topic;
-}
-
-long pubsub_nanoMsgTopicReceiver_serializerSvcId(pubsub_nanomsg_topic_receiver_t *receiver) {
-    return receiver->serializerSvcId;
+const char* pubsub::nanomsg::topic_receiver::topic() const {
+    return m_topic;
 }
 
-void pubsub_nanoMsgTopicReceiver_listConnections(pubsub_nanomsg_topic_receiver_t *receiver,
-                                                 std::vector<std::string> &connectedUrls,
+long pubsub::nanomsg::topic_receiver::serializerSvcId() const {
+    return m_serializerSvcId;
+}
+
+void pubsub::nanomsg::topic_receiver::listConnections(std::vector<std::string> &connectedUrls,
                                                  std::vector<std::string> &unconnectedUrls) {
-    std::lock_guard<std::mutex> _lock(receiver->requestedConnections.mutex);
-    hash_map_iterator_t iter = hashMapIterator_construct(receiver->requestedConnections.map);
+    std::lock_guard<std::mutex> _lock(requestedConnections.mutex);
+    hash_map_iterator_t iter = hashMapIterator_construct(requestedConnections.map);
     while (hashMapIterator_hasNext(&iter)) {
         psa_nanomsg_requested_connection_entry_t *entry = static_cast<psa_nanomsg_requested_connection_entry_t *>(hashMapIterator_nextValue(&iter));
         if (entry->connected) {
@@ -244,21 +245,19 @@ void pubsub_nanoMsgTopicReceiver_listConnections(pubsub_nanomsg_topic_receiver_t
 }
 
 
-void pubsub_nanoMsgTopicReceiver_connectTo(
-        pubsub_nanomsg_topic_receiver_t *receiver,
-        const char *url) {
-    L_DEBUG("[PSA_ZMQ] TopicReceiver %s/%s connecting to zmq url %s", receiver->scope, receiver->topic, url);
+void pubsub::nanomsg::topic_receiver::connectTo(const char *url) {
+    L_DEBUG("[PSA_ZMQ] TopicReceiver %s/%s connecting to zmq url %s", m_scope, m_topic, url);
 
-    std::lock_guard<std::mutex> _lock(receiver->requestedConnections.mutex);
-    psa_nanomsg_requested_connection_entry_t *entry = static_cast<psa_nanomsg_requested_connection_entry_t*>(hashMap_get(receiver->requestedConnections.map, url));
+    std::lock_guard<std::mutex> _lock(requestedConnections.mutex);
+    psa_nanomsg_requested_connection_entry_t *entry = static_cast<psa_nanomsg_requested_connection_entry_t*>(hashMap_get(requestedConnections.map, url));
     if (entry == NULL) {
         entry = static_cast<psa_nanomsg_requested_connection_entry_t*>(calloc(1, sizeof(*entry)));
         entry->url = strndup(url, 1024*1024);
         entry->connected = false;
-        hashMap_put(receiver->requestedConnections.map, (void*)entry->url, entry);
+        hashMap_put(requestedConnections.map, (void*)entry->url, entry);
     }
     if (!entry->connected) {
-        int connection_id = nn_connect(receiver->nanoMsgSocket, url);
+        int connection_id = nn_connect(m_nanoMsgSocket, url);
         if (connection_id >= 0) {
             entry->connected = true;
             entry->id = connection_id;
@@ -268,13 +267,13 @@ void pubsub_nanoMsgTopicReceiver_connectTo(
     }
 }
 
-void pubsub_nanoMsgTopicReceiver_disconnectFrom(pubsub_nanomsg_topic_receiver_t *receiver, const char *url) {
-    L_DEBUG("[PSA ZMQ] TopicReceiver %s/%s disconnect from zmq url %s", receiver->scope, receiver->topic, url);
+void pubsub::nanomsg::topic_receiver::disconnectFrom(const char *url) {
+    L_DEBUG("[PSA ZMQ] TopicReceiver %s/%s disconnect from zmq url %s", m_scope, m_topic, url);
 
-    std::lock_guard<std::mutex> _lock(receiver->requestedConnections.mutex);
-    psa_nanomsg_requested_connection_entry_t *entry = static_cast<psa_nanomsg_requested_connection_entry_t*>(hashMap_remove(receiver->requestedConnections.map, url));
+    std::lock_guard<std::mutex> _lock(requestedConnections.mutex);
+    psa_nanomsg_requested_connection_entry_t *entry = static_cast<psa_nanomsg_requested_connection_entry_t*>(hashMap_remove(requestedConnections.map, url));
     if (entry != NULL && entry->connected) {
-        if (nn_shutdown(receiver->nanoMsgSocket, entry->id) == 0) {
+        if (nn_shutdown(m_nanoMsgSocket, entry->id) == 0) {
             entry->connected = false;
         } else {
             L_WARN("[PSA_NANOMSG] Error disconnecting from nanomsg url %s, id %d. (%s)", url, entry->id, strerror(errno));
@@ -287,7 +286,7 @@ void pubsub_nanoMsgTopicReceiver_disconnectFrom(pubsub_nanomsg_topic_receiver_t 
 }
 
 static void pubsub_zmqTopicReceiver_addSubscriber(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *bnd) {
-    pubsub_nanomsg_topic_receiver_t *receiver = static_cast<pubsub_nanomsg_topic_receiver_t*>(handle);
+    pubsub_nanomsg_topic_receiver *receiver = static_cast<pubsub_nanomsg_topic_receiver*>(handle);
 
     long bndId = celix_bundle_getId(bnd);
     const char *subScope = celix_properties_get(props, PUBSUB_SUBSCRIBER_SCOPE, "default");
@@ -318,7 +317,7 @@ static void pubsub_zmqTopicReceiver_addSubscriber(void *handle, void *svc, const
 
 static void pubsub_nanoMsgTopicReceiver_removeSubscriber(void *handle, void */*svc*/,
                                                          const celix_properties_t */*props*/, const celix_bundle_t *bnd) {
-    pubsub_nanomsg_topic_receiver_t *receiver = static_cast<pubsub_nanomsg_topic_receiver_t*>(handle);
+    pubsub_nanomsg_topic_receiver *receiver = static_cast<pubsub_nanomsg_topic_receiver*>(handle);
 
     long bndId = celix_bundle_getId(bnd);
 
@@ -338,7 +337,7 @@ static void pubsub_nanoMsgTopicReceiver_removeSubscriber(void *handle, void */*s
     }
 }
 
-static inline void processMsgForSubscriberEntry(pubsub_nanomsg_topic_receiver_t *receiver, psa_nanomsg_subscriber_entry_t* entry, const pubsub_nanmosg_msg_header_t *hdr, const char* payload, size_t payloadSize) {
+static inline void processMsgForSubscriberEntry(pubsub_nanomsg_topic_receiver *receiver, psa_nanomsg_subscriber_entry_t* entry, const pubsub_nanmosg_msg_header_t *hdr, const char* payload, size_t payloadSize) {
     pubsub_msg_serializer_t* msgSer = static_cast<pubsub_msg_serializer_t*>(hashMap_get(entry->msgTypes, (void*)(uintptr_t)(hdr->type)));
     pubsub_subscriber_t *svc = entry->svc;
 
@@ -362,7 +361,7 @@ static inline void processMsgForSubscriberEntry(pubsub_nanomsg_topic_receiver_t 
     }
 }
 
-static inline void processMsg(pubsub_nanomsg_topic_receiver_t *receiver, const pubsub_nanmosg_msg_header_t *hdr, const char *payload, size_t payloadSize) {
+static inline void processMsg(pubsub_nanomsg_topic_receiver *receiver, const pubsub_nanmosg_msg_header_t *hdr, const char *payload, size_t payloadSize) {
     std::lock_guard<std::mutex> _lock(receiver->subscribers.mutex);
     hash_map_iterator_t iter = hashMapIterator_construct(receiver->subscribers.map);
     while (hashMapIterator_hasNext(&iter)) {
@@ -377,8 +376,9 @@ struct Message {
     pubsub_nanmosg_msg_header_t header;
     char payload[];
 };
+
 static void* psa_nanomsg_recvThread(void *data) {
-    pubsub_nanomsg_topic_receiver_t *receiver = static_cast<pubsub_nanomsg_topic_receiver_t*>(data);
+    pubsub_nanomsg_topic_receiver *receiver = static_cast<pubsub_nanomsg_topic_receiver*>(data);
     bool running{};
     {
         std::lock_guard<std::mutex> _lock(receiver->recvThread.mutex);

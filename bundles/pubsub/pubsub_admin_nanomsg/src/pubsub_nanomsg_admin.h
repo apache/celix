@@ -84,10 +84,10 @@ private:
     celix_status_t executeCommand(char *commandLine __attribute__((unused)), FILE *out,
                                                         FILE *errStream __attribute__((unused)));
 
-    celix_status_t connectEndpointToReceiver(pubsub_nanomsg_topic_receiver_t *receiver,
+    celix_status_t connectEndpointToReceiver(pubsub::nanomsg::topic_receiver *receiver,
                                                                    const celix_properties_t *endpoint);
 
-    celix_status_t disconnectEndpointFromReceiver(pubsub_nanomsg_topic_receiver_t *receiver,
+    celix_status_t disconnectEndpointFromReceiver(pubsub::nanomsg::topic_receiver *receiver,
                                                                         const celix_properties_t *endpoint);
     celix_bundle_context_t *ctx;
     log_helper_t *log;
@@ -117,7 +117,7 @@ private:
     } psa_nanomsg_serializer_entry_t;
     ProtectedMap<long, psa_nanomsg_serializer_entry_t*> serializers{};
     ProtectedMap<char*, pubsub_nanomsg_topic_sender_t*> topicSenders{};
-    ProtectedMap<char*, pubsub_nanomsg_topic_receiver_t*> topicReceivers{};
+    ProtectedMap<char*, pubsub::nanomsg::topic_receiver*> topicReceivers{};
     ProtectedMap<const char*, celix_properties_t *> discoveredEndpoints{};
 };
 
