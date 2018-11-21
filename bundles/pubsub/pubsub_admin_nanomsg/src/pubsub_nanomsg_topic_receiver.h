@@ -16,15 +16,24 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-#ifndef CELIX_PUBSUB_NANOMSG_TOPIC_RECEIVER_H
-#define CELIX_PUBSUB_NANOMSG_TOPIC_RECEIVER_H
+#pragma once
 #include <string>
 #include <vector>
+#include <thread>
+#include <mutex>
 #include "pubsub_serializer.h"
 #include "log_helper.h"
 #include "celix_bundle_context.h"
+#include "pubsub_nanomsg_common.h"
+#include "pubsub/subscriber.h"
 
-//typedef struct pubsub_nanomsg_topic_receiver pubsub_nanomsg_topic_receiver_t;
+typedef struct psa_zmq_subscriber_entry {
+    int usageCount;
+    hash_map_t *msgTypes; //map from serializer svc
+    pubsub_subscriber_t *svc;
+} psa_nanomsg_subscriber_entry_t;
+
+
 namespace pubsub {
     namespace nanomsg {
         class topic_receiver {
@@ -46,7 +55,10 @@ namespace pubsub {
             void listConnections(std::vector<std::string> &connectedUrls, std::vector<std::string> &unconnectedUrls);
             void connectTo(const char *url);
             void disconnectFrom(const char *url);
-        private:
+            void recvThread_exec();
+            void processMsg(const pubsub_nanmosg_msg_header_t *hdr, const char *payload, size_t payloadSize);
+            void processMsgForSubscriberEntry(psa_nanomsg_subscriber_entry_t* entry, const pubsub_nanmosg_msg_header_t *hdr, const char* payload, size_t payloadSize);
+        //private:
             celix_bundle_context_t *ctx{nullptr};
             log_helper_t *logHelper{nullptr};
             long m_serializerSvcId{0};
@@ -58,7 +70,7 @@ namespace pubsub {
             int m_nanoMsgSocket{0};
 
             struct {
-                celix_thread_t thread;
+                std::thread thread;
                 std::mutex mutex;
                 bool running;
             } recvThread{};
@@ -74,22 +86,6 @@ namespace pubsub {
                 hash_map_t *map; //key = bnd id, value = psa_zmq_subscriber_entry_t
             } subscribers{};
         };
-    }}
-//pubsub_nanomsg_topic_receiver_t* pubsub_nanoMsgTopicReceiver_create(celix_bundle_context_t *ctx,
-//                                                                    log_helper_t *logHelper, const char *scope,
-//                                                                    const char *topic, long serializerSvcId,
-//                                                                    pubsub_serializer_service_t *serializer);
-//void pubsub_nanoMsgTopicReceiver_destroy(pubsub_nanomsg_topic_receiver_t *receiver);
+    }
+}
 
-//const char* pubsub_nanoMsgTopicReceiver_scope(pubsub_nanomsg_topic_receiver_t *receiver);
-//const char* pubsub_nanoMsgTopicReceiver_topic(pubsub_nanomsg_topic_receiver_t *receiver);
-
-//long pubsub_nanoMsgTopicReceiver_serializerSvcId(pubsub_nanomsg_topic_receiver_t *receiver);
-//void pubsub_nanoMsgTopicReceiver_listConnections(pubsub_nanomsg_topic_receiver_t *receiver,
-//                                                 std::vector<std::string> &connectedUrls,
-//                                                 std::vector<std::string> &unconnectedUrls);
-
-//void pubsub_nanoMsgTopicReceiver_connectTo(pubsub_nanomsg_topic_receiver_t *receiver, const char *url);
-//void pubsub_nanoMsgTopicReceiver_disconnectFrom(pubsub_nanomsg_topic_receiver_t *receiver, const char *url);
-
-#endif //CELIX_PUBSUB_NANOMSG_TOPIC_RECEIVER_H

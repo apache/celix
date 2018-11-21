@@ -37,14 +37,14 @@
  */
 
 
-struct pubsub_zmq_msg_header {
+struct pubsub_nanomsg_msg_header {
     //header
     unsigned int type;
     unsigned char major;
     unsigned char minor;
 };
 
-typedef struct pubsub_zmq_msg_header pubsub_nanmosg_msg_header_t;
+typedef struct pubsub_nanomsg_msg_header pubsub_nanmosg_msg_header_t;
 
 
 int psa_nanoMsg_localMsgTypeIdForMsgType(void *handle, const char *msgType, unsigned int *msgTypeId);
