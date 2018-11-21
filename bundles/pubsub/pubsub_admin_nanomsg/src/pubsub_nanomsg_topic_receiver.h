@@ -21,6 +21,7 @@
 #include <vector>
 #include <thread>
 #include <mutex>
+#include <map>
 #include "pubsub_serializer.h"
 #include "log_helper.h"
 #include "celix_bundle_context.h"
@@ -33,6 +34,34 @@ typedef struct psa_zmq_subscriber_entry {
     pubsub_subscriber_t *svc;
 } psa_nanomsg_subscriber_entry_t;
 
+typedef struct psa_zmq_requested_connection_entry {
+public:
+    psa_zmq_requested_connection_entry(std::string _url, int _id, bool _connected=false):
+    url{_url}, id{_id}, connected{_connected} {
+    }
+    bool isConnected() const {
+        return connected;
+    }
+
+    int getId() const {
+        return id;
+    }
+
+    void setId(int _id) {
+        id = _id;
+    }
+    void setConnected(bool c) {
+        connected = c;
+    }
+
+    const std::string &getUrl() const {
+        return url;
+    }
+private:
+    std::string url;
+    int id;
+    bool connected;
+} psa_nanomsg_requested_connection_entry_t;
 
 namespace pubsub {
     namespace nanomsg {
@@ -58,7 +87,10 @@ namespace pubsub {
             void recvThread_exec();
             void processMsg(const pubsub_nanmosg_msg_header_t *hdr, const char *payload, size_t payloadSize);
             void processMsgForSubscriberEntry(psa_nanomsg_subscriber_entry_t* entry, const pubsub_nanmosg_msg_header_t *hdr, const char* payload, size_t payloadSize);
-        //private:
+            void addSubscriber(void *svc, const celix_properties_t *props, const celix_bundle_t *bnd);
+            void removeSubscriber(void */*svc*/, const celix_properties_t */*props*/, const celix_bundle_t *bnd);
+
+        private:
             celix_bundle_context_t *ctx{nullptr};
             log_helper_t *logHelper{nullptr};
             long m_serializerSvcId{0};
@@ -77,7 +109,8 @@ namespace pubsub {
 
             struct {
                 std::mutex mutex;
-                hash_map_t *map; //key = zmq url, value = psa_zmq_requested_connection_entry_t*
+                std::map<std::string, psa_nanomsg_requested_connection_entry_t> map;
+                //hash_map_t *map; //key = zmq url, value = psa_zmq_requested_connection_entry_t*
             } requestedConnections{};
 
             long subscriberTrackerId{0};
