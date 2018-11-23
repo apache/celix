@@ -28,18 +28,18 @@
 #include "pubsub_nanomsg_common.h"
 #include "pubsub/subscriber.h"
 
-typedef struct psa_nanomsg_subscriber_entry {
+struct psa_nanomsg_subscriber_entry {
     psa_nanomsg_subscriber_entry(pubsub_subscriber_t *_svc, int _usageCount) :
     svc{_svc}, usageCount{_usageCount} {
     }
     pubsub_subscriber_t *svc{};
     int usageCount;
     hash_map_t *msgTypes{nullptr}; //map from serializer svc
-} psa_nanomsg_subscriber_entry_t;
+};
 
-typedef struct psa_zmq_requested_connection_entry {
+typedef struct psa_nanomsg_requested_connection_entry {
 public:
-    psa_zmq_requested_connection_entry(std::string _url, int _id, bool _connected=false):
+    psa_nanomsg_requested_connection_entry(std::string _url, int _id, bool _connected=false):
     url{_url}, id{_id}, connected{_connected} {
     }
     bool isConnected() const {
@@ -73,23 +73,23 @@ namespace pubsub {
             topic_receiver(celix_bundle_context_t
                            *ctx,
                            log_helper_t *logHelper,
-                           const char *scope,
-                           const char *topic,
+                           const std::string &scope,
+                           const std::string &topic,
                            long serializerSvcId, pubsub_serializer_service_t
                            *serializer);
             topic_receiver(const topic_receiver &) = delete;
             topic_receiver & operator=(const topic_receiver &) = delete;
             ~topic_receiver();
 
-            const char* scope() const;
-            const char* topic() const;
+            std::string scope() const;
+            std::string topic() const;
             long serializerSvcId() const;
             void listConnections(std::vector<std::string> &connectedUrls, std::vector<std::string> &unconnectedUrls);
             void connectTo(const char *url);
             void disconnectFrom(const char *url);
             void recvThread_exec();
             void processMsg(const pubsub_nanmosg_msg_header_t *hdr, const char *payload, size_t payloadSize);
-            void processMsgForSubscriberEntry(psa_nanomsg_subscriber_entry_t* entry, const pubsub_nanmosg_msg_header_t *hdr, const char* payload, size_t payloadSize);
+            void processMsgForSubscriberEntry(psa_nanomsg_subscriber_entry* entry, const pubsub_nanmosg_msg_header_t *hdr, const char* payload, size_t payloadSize);
             void addSubscriber(void *svc, const celix_properties_t *props, const celix_bundle_t *bnd);
             void removeSubscriber(void */*svc*/, const celix_properties_t */*props*/, const celix_bundle_t *bnd);
 
@@ -98,8 +98,8 @@ namespace pubsub {
             log_helper_t *logHelper{nullptr};
             long m_serializerSvcId{0};
             pubsub_serializer_service_t *serializer{nullptr};
-            const char *m_scope{nullptr};
-            const char *m_topic{nullptr};
+            const std::string m_scope{};
+            const std::string m_topic{};
             char m_scopeAndTopicFilter[5];
 
             int m_nanoMsgSocket{0};
@@ -113,14 +113,12 @@ namespace pubsub {
             struct {
                 std::mutex mutex;
                 std::map<std::string, psa_nanomsg_requested_connection_entry_t> map;
-                //hash_map_t *map; //key = zmq url, value = psa_zmq_requested_connection_entry_t*
             } requestedConnections{};
 
             long subscriberTrackerId{0};
             struct {
                 std::mutex mutex;
-                std::map<long, psa_nanomsg_subscriber_entry_t> map;
-                //hash_map_t *map; //key = bnd id, value = psa_zmq_subscriber_entry_t
+                std::map<long, psa_nanomsg_subscriber_entry> map;
             } subscribers{};
         };
     }

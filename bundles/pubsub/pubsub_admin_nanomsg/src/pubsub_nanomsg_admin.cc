@@ -159,7 +159,7 @@ void pubsub_nanomsg_admin::start() {
     };
     adminService.setupTopicReceiver = [](void *handle, const char *scope, const char *topic, long serializerSvcId, celix_properties_t **subscriberEndpoint) {
         auto me = static_cast<pubsub_nanomsg_admin*>(handle);
-        return me->setupTopicReceiver(scope, topic,serializerSvcId, subscriberEndpoint);
+        return me->setupTopicReceiver(std::string(scope), std::string(topic),serializerSvcId, subscriberEndpoint);
     };
 
     adminService.teardownTopicReceiver = [] (void *handle, const char *scope, const char *topic) {
@@ -205,7 +205,7 @@ void pubsub_nanomsg_admin::start() {
     celix_properties_t* shellProps = celix_properties_create();
     celix_properties_set(shellProps, OSGI_SHELL_COMMAND_NAME, "psa_nanomsg");
     celix_properties_set(shellProps, OSGI_SHELL_COMMAND_USAGE, "psa_nanomsg");
-    celix_properties_set(shellProps, OSGI_SHELL_COMMAND_DESCRIPTION, "Print the information about the TopicSender and TopicReceivers for the ZMQ PSA");
+    celix_properties_set(shellProps, OSGI_SHELL_COMMAND_DESCRIPTION, "Print the information about the TopicSender and TopicReceivers for the nanomsg PSA");
     cmdSvcId = celix_bundleContext_registerService(ctx, &cmdSvc, OSGI_SHELL_COMMAND_SERVICE_NAME, shellProps);
 
 }
@@ -275,10 +275,9 @@ void pubsub_nanomsg_admin::removeSerializerSvc(void */*svc*/, const celix_proper
             for (auto kv : topicReceivers.map){
                 auto *receiver = kv.second;
                 if (receiver != nullptr && entry->svcId == receiver->serializerSvcId()) {
-                    char *key = kv.first;
+                    auto key = kv.first;
                     topicReceivers.map.erase(key);
                     delete receiver;
-                    free(key);
                 }
             }
         }
@@ -338,8 +337,6 @@ celix_status_t pubsub_nanomsg_admin::setupTopicSender(const char *scope, const c
     std::lock_guard<std::mutex> topicSenderLock(topicSenders.mutex);
     sender = topicSenders.map.find(key)->second;
     if (sender == nullptr) {
-        //auto *serEntry = static_cast<psa_nanomsg_serializer_entry_t *>(hashMap_get(serializers.map,
-        //                                                                           (void *) serializerSvcId));
         psa_nanomsg_serializer_entry_t *serEntry = nullptr;
         auto kv = serializers.map.find(serializerSvcId);
         if (kv != serializers.map.end()) {
@@ -403,12 +400,12 @@ celix_status_t pubsub_nanomsg_admin::teardownTopicSender(const char *scope, cons
     return status;
 }
 
-celix_status_t pubsub_nanomsg_admin::setupTopicReceiver(const char *scope, const char *topic,
+celix_status_t pubsub_nanomsg_admin::setupTopicReceiver(const std::string &scope, const std::string &topic,
                                                       long serializerSvcId, celix_properties_t **outSubscriberEndpoint) {
 
     celix_properties_t *newEndpoint = nullptr;
 
-    char *key = pubsubEndpoint_createScopeTopicKey(scope, topic);
+    std::string key = pubsubEndpoint_createScopeTopicKey(scope.c_str(), topic.c_str());
     pubsub::nanomsg::topic_receiver * receiver = nullptr;
     {
         std::lock_guard<std::mutex> serializerLock(serializers.mutex);
@@ -423,12 +420,12 @@ celix_status_t pubsub_nanomsg_admin::setupTopicReceiver(const char *scope, const
                 auto serEntry = kvs->second;
                 receiver = new pubsub::nanomsg::topic_receiver(ctx, log, scope, topic, serializerSvcId, serEntry->svc);
             } else {
-                L_ERROR("[PSA_NANOMSG] Cannot find serializer for TopicSender %s/%s", scope, topic);
+                L_ERROR("[PSA_NANOMSG] Cannot find serializer for TopicSender %s/%s", scope.c_str(), topic.c_str());
             }
             if (receiver != nullptr) {
                 const char *psaType = PUBSUB_NANOMSG_ADMIN_TYPE;
                 const char *serType = kvs->second->serType;
-                newEndpoint = pubsubEndpoint_create(fwUUID, scope, topic, PUBSUB_SUBSCRIBER_ENDPOINT_TYPE, psaType,
+                newEndpoint = pubsubEndpoint_create(fwUUID, scope.c_str(), topic.c_str(), PUBSUB_SUBSCRIBER_ENDPOINT_TYPE, psaType,
                                                     serType, nullptr);
                 //if available also set container name
                 const char *cn = celix_bundleContext_getProperty(ctx, "CELIX_CONTAINER_NAME", nullptr);
@@ -438,11 +435,9 @@ celix_status_t pubsub_nanomsg_admin::setupTopicReceiver(const char *scope, const
                 topicReceivers.map[key] = receiver;
             } else {
                 L_ERROR("[PSA NANOMSG] Error creating a TopicReceiver.");
-                free(key);
             }
         } else {
-            free(key);
-            L_ERROR("[PSA_NANOMSG] Cannot setup already existing TopicReceiver for scope/topic %s/%s!", scope, topic);
+            L_ERROR("[PSA_NANOMSG] Cannot setup already existing TopicReceiver for scope/topic %s/%s!", scope.c_str(), topic.c_str());
         }
     }
     if (receiver != nullptr && newEndpoint != nullptr) {
@@ -470,11 +465,10 @@ celix_status_t pubsub_nanomsg_admin::teardownTopicReceiver(const char *scope, co
     auto entry = topicReceivers.map.find(key);
     free(key);
     if (entry != topicReceivers.map.end()) {
-        char *receiverKey = entry->first;
+        auto receiverKey = entry->first;
         pubsub::nanomsg::topic_receiver *receiver = entry->second;
         topicReceivers.map.erase(receiverKey);
 
-        free(receiverKey);
         delete receiver;
     }
 
@@ -487,22 +481,18 @@ celix_status_t pubsub_nanomsg_admin::connectEndpointToReceiver(pubsub::nanomsg::
     //note can be called with discoveredEndpoint.mutex lock
     celix_status_t status = CELIX_SUCCESS;
 
-    const char *scope = receiver->scope();
-    const char *topic = receiver->topic();
+    auto scope = receiver->scope();
+    auto topic = receiver->topic();
 
-    const char *eScope = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_SCOPE, nullptr);
-    const char *eTopic = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_NAME, nullptr);
+    std::string eScope = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_SCOPE, "");
+    std::string eTopic = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_NAME, "");
     const char *url = celix_properties_get(endpoint, PUBSUB_NANOMSG_URL_KEY, nullptr);
 
     if (url == nullptr) {
-//        const char *admin = celix_properties_get(endpoint, PUBSUB_ENDPOINT_ADMIN_TYPE, nullptr);
-//        const char *type = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TYPE, nullptr);
 //        L_WARN("[PSA NANOMSG] Error got endpoint without a nanomsg url (admin: %s, type: %s)", admin , type);
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
-        if (eScope != nullptr && eTopic != nullptr &&
-            strncmp(eScope, scope, 1024 * 1024) == 0 &&
-            strncmp(eTopic, topic, 1024 * 1024) == 0) {
+        if ((eScope == scope) && (eTopic == topic)) {
             receiver->connectTo(url);
         }
     }
@@ -537,20 +527,18 @@ celix_status_t pubsub_nanomsg_admin::disconnectEndpointFromReceiver(pubsub::nano
     //note can be called with discoveredEndpoint.mutex lock
     celix_status_t status = CELIX_SUCCESS;
 
-    const char *scope = receiver->scope();
-    const char *topic = receiver->topic();
+    auto scope = receiver->scope();
+    auto topic = receiver->topic();
 
-    const char *eScope = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_SCOPE, nullptr);
-    const char *eTopic = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_NAME, nullptr);
+    auto eScope = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_SCOPE, "");
+    auto eTopic = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_NAME, "");
     const char *url = celix_properties_get(endpoint, PUBSUB_NANOMSG_URL_KEY, nullptr);
 
     if (url == nullptr) {
         L_WARN("[PSA NANOMSG] Error got endpoint without nanomsg url");
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
-        if (eScope != nullptr && eTopic != nullptr &&
-            strncmp(eScope, scope, 1024 * 1024) == 0 &&
-            strncmp(eTopic, topic, 1024 * 1024) == 0) {
+        if ((eScope == scope) && (eTopic == topic)) {
             receiver->disconnectFrom(url);
         }
     }
@@ -609,14 +597,14 @@ celix_status_t pubsub_nanomsg_admin::executeCommand(char *commandLine __attribut
             long serSvcId = receiver->serializerSvcId();
             auto kv =  serializers.map.find(serSvcId);
             const char *serType = kv->second == nullptr ? "!Error!" : kv->second->serType;
-            const char *scope = receiver->scope();
-            const char *topic = receiver->topic();
+            auto scope = receiver->scope();
+            auto topic = receiver->topic();
 
             std::vector<std::string> connected{};
             std::vector<std::string> unconnected{};
             receiver->listConnections(connected, unconnected);
 
-            fprintf(out, "|- Topic Receiver %s/%s\n", scope, topic);
+            fprintf(out, "|- Topic Receiver %s/%s\n", scope.c_str(), topic.c_str());
             fprintf(out, "   |- serializer type = %s\n", serType);
             for (auto url : connected) {
                 fprintf(out, "   |- connected url   = %s\n", url.c_str());

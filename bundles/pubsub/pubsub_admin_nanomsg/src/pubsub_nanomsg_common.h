@@ -20,6 +20,7 @@
 #ifndef CELIX_PUBSUB_ZMQ_COMMON_H
 #define CELIX_PUBSUB_ZMQ_COMMON_H
 
+#include <string>
 #include <utils.h>
 
 #include "version.h"
@@ -48,7 +49,7 @@ typedef struct pubsub_nanomsg_msg_header pubsub_nanmosg_msg_header_t;
 
 
 int psa_nanoMsg_localMsgTypeIdForMsgType(void *handle, const char *msgType, unsigned int *msgTypeId);
-void psa_nanomsg_setScopeAndTopicFilter(const char *scope, const char *topic, char *filter);
+void psa_nanomsg_setScopeAndTopicFilter(const std::string &scope, const std::string &topic, char *filter);
 
 bool psa_nanomsg_checkVersion(version_pt msgVersion, const pubsub_nanmosg_msg_header_t *hdr);
 

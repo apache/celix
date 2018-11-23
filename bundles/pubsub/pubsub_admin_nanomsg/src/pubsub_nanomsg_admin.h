@@ -74,7 +74,7 @@ private:
                                                         long serializerSvcId, celix_properties_t **publisherEndpoint);
     celix_status_t teardownTopicSender(const char *scope, const char *topic);
 
-    celix_status_t setupTopicReceiver(const char *scope, const char *topic,
+    celix_status_t setupTopicReceiver(const std::string &scope, const std::string &topic,
                                                           long serializerSvcId, celix_properties_t **subscriberEndpoint);
     celix_status_t teardownTopicReceiver(const char *scope, const char *topic);
 
@@ -117,7 +117,7 @@ private:
     } psa_nanomsg_serializer_entry_t;
     ProtectedMap<long, psa_nanomsg_serializer_entry_t*> serializers{};
     ProtectedMap<char*, pubsub_nanomsg_topic_sender_t*> topicSenders{};
-    ProtectedMap<char*, pubsub::nanomsg::topic_receiver*> topicReceivers{};
+    ProtectedMap<std::string, pubsub::nanomsg::topic_receiver*> topicReceivers{};
     ProtectedMap<const char*, celix_properties_t *> discoveredEndpoints{};
 };
 

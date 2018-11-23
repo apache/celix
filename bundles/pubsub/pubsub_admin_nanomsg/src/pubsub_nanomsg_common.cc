@@ -41,15 +41,15 @@ bool psa_nanomsg_checkVersion(version_pt msgVersion, const pubsub_nanmosg_msg_he
     return check;
 }
 
-void psa_nanomsg_setScopeAndTopicFilter(const char *scope, const char *topic, char *filter) {
-    for (int i = 0; i < 5; ++i) {
+void psa_nanomsg_setScopeAndTopicFilter(const std::string &scope, const std::string &topic, char *filter) {
+    for (int i = 0; i < 5; ++i) { // 5 ??
         filter[i] = '\0';
     }
-    if (scope != NULL && strnlen(scope, 3) >= 2)  {
+    if (scope.size() >= 2)  { //3 ??
         filter[0] = scope[0];
         filter[1] = scope[1];
     }
-    if (topic != NULL && strnlen(topic, 3) >= 2)  {
+    if (topic.size() >= 2)  { //3 ??
         filter[2] = topic[0];
         filter[3] = topic[1];
     }
