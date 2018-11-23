@@ -63,13 +63,6 @@
 #define L_ERROR printf
 
 
-
-
-
-//static void pubsub_nanoMsgTopicReceiver_removeSubscriber(void *handle, void *svc, const celix_properties_t *props,
-//                                                         const celix_bundle_t *owner);
-
-
 pubsub::nanomsg::topic_receiver::topic_receiver(celix_bundle_context_t *_ctx,
         log_helper_t *_logHelper,
         const char *_scope,
@@ -103,8 +96,8 @@ pubsub::nanomsg::topic_receiver::topic_receiver(celix_bundle_context_t *_ctx,
         m_scope = strndup(m_scope, 1024 * 1024);
         m_topic = strndup(m_topic, 1024 * 1024);
 
-        subscribers.map = hashMap_create(NULL, NULL, NULL, NULL);
-        std::cout << "#### Creating subscirbers.map!! " << subscribers.map << "\n";
+        //subscribers.map = hashMap_create(NULL, NULL, NULL, NULL);
+        //std::cout << "#### Creating subscirbers.map!! " << subscribers.map << "\n";
         //requestedConnections.map = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
 
         int size = snprintf(NULL, 0, "(%s=%s)", PUBSUB_SUBSCRIBER_TOPIC, m_topic);
@@ -139,38 +132,13 @@ pubsub::nanomsg::topic_receiver::~topic_receiver() {
 
         celix_bundleContext_stopTracker(ctx, subscriberTrackerId);
 
-        hash_map_iterator_t iter=hash_map_iterator_t();
         {
             std::lock_guard<std::mutex> _lock(subscribers.mutex);
-            iter = hashMapIterator_construct(subscribers.map);
-            while (hashMapIterator_hasNext(&iter)) {
-                psa_nanomsg_subscriber_entry_t *entry = static_cast<psa_nanomsg_subscriber_entry_t*>(hashMapIterator_nextValue(&iter));
-                if (entry != NULL)  {
-                    serializer->destroySerializerMap(serializer->handle, entry->msgTypes);
-                    free(entry);
-                }
+            for(auto elem : subscribers.map) {
+                serializer->destroySerializerMap(serializer->handle, elem.second.msgTypes);
             }
-            hashMap_destroy(subscribers.map, false, false);
+            subscribers.map.clear();
         }
-
-
-//        {
-//            std::lock_guard<std::mutex> _lock(requestedConnections.mutex);
-//            iter = hashMapIterator_construct(requestedConnections.map);
-//            while (hashMapIterator_hasNext(&iter)) {
-//                psa_nanomsg_requested_connection_entry_t *entry = static_cast<psa_nanomsg_requested_connection_entry_t*>(hashMapIterator_nextValue(&iter));
-//                if (entry != NULL) {
-//                    free(entry->url);
-//                    free(entry);
-//                }
-//            }
-//            hashMap_destroy(requestedConnections.map, false, false);
-//        }
-
-        //celixThreadMutex_destroy(&receiver->subscribers.mutex);
-        //celixThreadMutex_destroy(&receiver->requestedConnections.mutex);
-        //celixThreadMutex_destroy(&receiver->recvThread.mutex);
-
         nn_close(m_nanoMsgSocket);
 
         free((void*)m_scope);
@@ -211,6 +179,7 @@ void pubsub::nanomsg::topic_receiver::connectTo(const char *url) {
                 std::piecewise_construct,
                 std::forward_as_tuple(std::string(url)),
                 std::forward_as_tuple(url, -1));
+        entry = requestedConnections.map.find(url);
     }
     if (!entry->second.isConnected()) {
         int connection_id = nn_connect(m_nanoMsgSocket, url);
@@ -254,21 +223,26 @@ void pubsub::nanomsg::topic_receiver::addSubscriber(void *svc, const celix_prope
     }
 
     std::lock_guard<std::mutex> _lock(subscribers.mutex);
-    psa_nanomsg_subscriber_entry_t *entry = static_cast<psa_nanomsg_subscriber_entry_t*>(hashMap_get(subscribers.map, (void*)bndId));
-    if (entry != NULL) {
-        entry->usageCount += 1;
+    auto entry = subscribers.map.find(bndId);
+    if (entry != subscribers.map.end()) {
+        entry->second.usageCount += 1;
     } else {
         //new create entry
-        entry = static_cast<psa_nanomsg_subscriber_entry_t*>(calloc(1, sizeof(*entry)));
-        entry->usageCount = 1;
-        entry->svc = static_cast<pubsub_subscriber_t*>(svc);
+        subscribers.map.emplace(std::piecewise_construct,
+                std::forward_as_tuple(bndId),
+                std::forward_as_tuple(static_cast<pubsub_subscriber_t*>(svc), 1));
+        entry = subscribers.map.find(bndId);
+        if (entry == subscribers.map.end()) {
+            std::cerr << "### THIS IS A VERY CRITICAL ERROR!!\n";
+        }
 
-        int rc = serializer->createSerializerMap(serializer->handle, (celix_bundle_t*)bnd, &entry->msgTypes);
+        int rc = serializer->createSerializerMap(serializer->handle, (celix_bundle_t*)bnd, &entry->second.msgTypes);
         if (rc == 0) {
-            hashMap_put(subscribers.map, (void*)bndId, entry);
+            //hashMap_put(subscribers.map, (void*)bndId, entry);
+            //subscribers.map[bndId] = *entry;
         } else {
             L_ERROR("[PSA_NANOMSG] Cannot create msg serializer map for TopicReceiver %s/%s", m_scope, m_topic);
-            free(entry);
+            subscribers.map.erase(bndId);
         }
     }
 }
@@ -278,18 +252,17 @@ void pubsub::nanomsg::topic_receiver::removeSubscriber(void */*svc*/,
     long bndId = celix_bundle_getId(bnd);
 
     std::lock_guard<std::mutex> _lock(subscribers.mutex);
-    psa_nanomsg_subscriber_entry_t *entry = static_cast<psa_nanomsg_subscriber_entry_t*>(hashMap_get(subscribers.map, (void*)bndId));
-    if (entry != NULL) {
-        entry->usageCount -= 1;
-    }
-    if (entry != NULL && entry->usageCount <= 0) {
-        //remove entry
-        hashMap_remove(subscribers.map, (void*)bndId);
-        int rc = serializer->destroySerializerMap(serializer->handle, entry->msgTypes);
-        if (rc != 0) {
-            L_ERROR("[PSA_NANOMSG] Cannot destroy msg serializers map for TopicReceiver %s/%s", m_scope, m_topic);
+    auto entry = subscribers.map.find(bndId);
+    if (entry != subscribers.map.end()) {
+        entry->second.usageCount -= 1;
+        if (entry->second.usageCount <= 0) {
+            //remove entry
+            int rc = serializer->destroySerializerMap(serializer->handle, entry->second.msgTypes);
+            if (rc != 0) {
+                L_ERROR("[PSA_NANOMSG] Cannot destroy msg serializers map for TopicReceiver %s/%s", m_scope, m_topic);
+            }
+            subscribers.map.erase(bndId);
         }
-        free(entry);
     }
 }
 
@@ -319,12 +292,13 @@ void pubsub::nanomsg::topic_receiver::processMsgForSubscriberEntry(psa_nanomsg_s
 
 void pubsub::nanomsg::topic_receiver::processMsg(const pubsub_nanmosg_msg_header_t *hdr, const char *payload, size_t payloadSize) {
     std::lock_guard<std::mutex> _lock(subscribers.mutex);
-    hash_map_iterator_t iter = hashMapIterator_construct(subscribers.map);
-    while (hashMapIterator_hasNext(&iter)) {
-        psa_nanomsg_subscriber_entry_t *entry = static_cast<psa_nanomsg_subscriber_entry_t*>(hashMapIterator_nextValue(&iter));
-        if (entry != NULL) {
-            processMsgForSubscriberEntry(entry, hdr, payload, payloadSize);
-        }
+    //hash_map_iterator_t iter = hashMapIterator_construct(subscribers.map);
+    //while (hashMapIterator_hasNext(&iter)) {
+    for (auto entry : subscribers.map) {
+        //psa_nanomsg_subscriber_entry_t *entry = static_cast<psa_nanomsg_subscriber_entry_t*>(hashMapIterator_nextValue(&iter));
+        //if (entry != NULL) {
+            processMsgForSubscriberEntry(&entry.second, hdr, payload, payloadSize);
+        //}
     }
 }
 

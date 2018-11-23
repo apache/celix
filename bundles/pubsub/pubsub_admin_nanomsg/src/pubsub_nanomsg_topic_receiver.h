@@ -28,10 +28,13 @@
 #include "pubsub_nanomsg_common.h"
 #include "pubsub/subscriber.h"
 
-typedef struct psa_zmq_subscriber_entry {
+typedef struct psa_nanomsg_subscriber_entry {
+    psa_nanomsg_subscriber_entry(pubsub_subscriber_t *_svc, int _usageCount) :
+    svc{_svc}, usageCount{_usageCount} {
+    }
+    pubsub_subscriber_t *svc{};
     int usageCount;
-    hash_map_t *msgTypes; //map from serializer svc
-    pubsub_subscriber_t *svc;
+    hash_map_t *msgTypes{nullptr}; //map from serializer svc
 } psa_nanomsg_subscriber_entry_t;
 
 typedef struct psa_zmq_requested_connection_entry {
@@ -116,7 +119,8 @@ namespace pubsub {
             long subscriberTrackerId{0};
             struct {
                 std::mutex mutex;
-                hash_map_t *map; //key = bnd id, value = psa_zmq_subscriber_entry_t
+                std::map<long, psa_nanomsg_subscriber_entry_t> map;
+                //hash_map_t *map; //key = bnd id, value = psa_zmq_subscriber_entry_t
             } subscribers{};
         };
     }
