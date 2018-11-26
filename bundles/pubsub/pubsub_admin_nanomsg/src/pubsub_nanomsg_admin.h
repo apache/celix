@@ -43,8 +43,6 @@
 
 #define PUBSUB_NANOMSG_DEFAULT_IP       "127.0.0.1"
 
-//typedef struct pubsub_nanomsg_admin pubsub_nanomsg_admin_t;
-
 template <typename key, typename value>
 struct ProtectedMap {
     std::mutex mutex{};
@@ -111,11 +109,16 @@ private:
     bool verbose{};
 
     typedef struct psa_nanomsg_serializer_entry {
+        psa_nanomsg_serializer_entry(const char*_serType, long _svcId, pubsub_serializer_service_t *_svc) :
+            serType{_serType}, svcId{_svcId}, svc{_svc} {
+
+        }
+
         const char *serType;
         long svcId;
         pubsub_serializer_service_t *svc;
     } psa_nanomsg_serializer_entry_t;
-    ProtectedMap<long, psa_nanomsg_serializer_entry_t*> serializers{};
+    ProtectedMap<long, psa_nanomsg_serializer_entry_t> serializers{};
     ProtectedMap<char*, pubsub_nanomsg_topic_sender_t*> topicSenders{};
     ProtectedMap<std::string, pubsub::nanomsg::topic_receiver*> topicReceivers{};
     ProtectedMap<const char*, celix_properties_t *> discoveredEndpoints{};
@@ -131,4 +134,3 @@ extern "C" {
 
 
 #endif //CELIX_PUBSUB_ZMQ_ADMIN_H
-

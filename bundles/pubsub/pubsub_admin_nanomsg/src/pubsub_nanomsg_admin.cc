@@ -32,20 +32,15 @@
 #include "pubsub_utils.h"
 #include "pubsub_nanomsg_admin.h"
 #include "pubsub_psa_nanomsg_constants.h"
-/*
-//#define L_DEBUG(...) \
-//    logHelper_log(psa->log, OSGI_LOGSERVICE_DEBUG, __VA_ARGS__)
-//#define L_INFO(...) \
-//    logHelper_log(psa->log, OSGI_LOGSERVICE_INFO, __VA_ARGS__)
-//#define L_WARN(...) \
-//    logHelper_log(psa->log, OSGI_LOGSERVICE_WARNING, __VA_ARGS__)
-//#define L_ERROR(...) \
-//    logHelper_log(psa->log, OSGI_LOGSERVICE_ERROR, __VA_ARGS__)
-*/
-#define L_DEBUG printf
-#define L_INFO printf
-#define L_WARN printf
-#define L_ERROR printf
+
+#define L_DEBUG(...) \
+    logHelper_log(log, OSGI_LOGSERVICE_DEBUG, __VA_ARGS__)
+#define L_INFO(...) \
+    logHelper_log(log, OSGI_LOGSERVICE_INFO, __VA_ARGS__)
+#define L_WARN(...) \
+    logHelper_log(log, OSGI_LOGSERVICE_WARNING, __VA_ARGS__)
+#define L_ERROR(...) \
+    logHelper_log(log, OSGI_LOGSERVICE_ERROR, __VA_ARGS__)
 
 
 
@@ -125,10 +120,7 @@ pubsub_nanomsg_admin::~pubsub_nanomsg_admin() {
 
     {
         std::lock_guard<std::mutex> lock(serializers.mutex);
-        // todo: do not use pointer but type in map
-        for(auto kv: serializers.map) {
-            free(kv.second);
-        }
+        serializers.map.clear();
     }
 
     free(ipAddress);
@@ -229,11 +221,14 @@ void pubsub_nanomsg_admin::addSerializerSvc(void *svc, const celix_properties_t 
         std::lock_guard<std::mutex> lock(serializers.mutex);
         auto it = serializers.map.find(svcId);
         if (it == serializers.map.end()) {
-            auto entry = static_cast<psa_nanomsg_serializer_entry_t*>(calloc(1, sizeof(psa_nanomsg_serializer_entry_t)));
-            entry->serType = serType;
-            entry->svcId = svcId;
-            entry->svc = static_cast<pubsub_serializer_service_t*>(svc);
-            serializers.map[svcId] = entry;
+            serializers.map.emplace(std::piecewise_construct,
+                    std::forward_as_tuple(svcId),
+                    std::forward_as_tuple(serType, svcId, static_cast<pubsub_serializer_service_t*>(svc)));
+//            auto entry = static_cast<psa_nanomsg_serializer_entry_t*>(calloc(1, sizeof(psa_nanomsg_serializer_entry_t)));
+//            entry->serType = serType;
+//            entry->svcId = svcId;
+//            entry->svc = static_cast<pubsub_serializer_service_t*>(svc);
+//            serializers.map[svcId] = entry;
         }
     }
 }
@@ -250,18 +245,14 @@ void pubsub_nanomsg_admin::removeSerializerSvc(void */*svc*/, const celix_proper
 
     std::lock_guard<std::mutex> lock(serializers.mutex);
 
-    psa_nanomsg_serializer_entry_t* entry = nullptr;
     auto kvsm = serializers.map.find(svcId);
     if (kvsm != serializers.map.end()) {
-        entry = kvsm->second;
-    }
-    serializers.map.erase(svcId);
-    if (entry != nullptr) {
+        auto &entry = kvsm->second;
         {
             std::lock_guard<std::mutex> senderLock(topicSenders.mutex);
                 for (auto kv: topicSenders.map) {
                 auto *sender = kv.second;
-                if (sender != nullptr && entry->svcId == pubsub_nanoMsgTopicSender_serializerSvcId(sender)) {
+                if (sender != nullptr && entry.svcId == pubsub_nanoMsgTopicSender_serializerSvcId(sender)) {
                     char *key = kv.first;
                     topicSenders.map.erase(kv.first);
                     pubsub_nanoMsgTopicSender_destroy(sender);
@@ -274,7 +265,7 @@ void pubsub_nanomsg_admin::removeSerializerSvc(void */*svc*/, const celix_proper
             std::lock_guard<std::mutex> receiverLock(topicReceivers.mutex);
             for (auto kv : topicReceivers.map){
                 auto *receiver = kv.second;
-                if (receiver != nullptr && entry->svcId == receiver->serializerSvcId()) {
+                if (receiver != nullptr && entry.svcId == receiver->serializerSvcId()) {
                     auto key = kv.first;
                     topicReceivers.map.erase(key);
                     delete receiver;
@@ -282,7 +273,6 @@ void pubsub_nanomsg_admin::removeSerializerSvc(void */*svc*/, const celix_proper
             }
         }
 
-        free(entry);
     }
 }
 
@@ -340,7 +330,7 @@ celix_status_t pubsub_nanomsg_admin::setupTopicSender(const char *scope, const c
         psa_nanomsg_serializer_entry_t *serEntry = nullptr;
         auto kv = serializers.map.find(serializerSvcId);
         if (kv != serializers.map.end()) {
-            serEntry = kv->second;
+            serEntry = &kv->second;
         }
         if (serEntry != nullptr) {
             sender = pubsub_nanoMsgTopicSender_create(ctx, log, scope, topic, serializerSvcId, serEntry->svc, ipAddress,
@@ -418,13 +408,13 @@ celix_status_t pubsub_nanomsg_admin::setupTopicReceiver(const std::string &scope
             auto kvs = serializers.map.find(serializerSvcId);
             if (kvs != serializers.map.end()) {
                 auto serEntry = kvs->second;
-                receiver = new pubsub::nanomsg::topic_receiver(ctx, log, scope, topic, serializerSvcId, serEntry->svc);
+                receiver = new pubsub::nanomsg::topic_receiver(ctx, log, scope, topic, serializerSvcId, serEntry.svc);
             } else {
                 L_ERROR("[PSA_NANOMSG] Cannot find serializer for TopicSender %s/%s", scope.c_str(), topic.c_str());
             }
             if (receiver != nullptr) {
                 const char *psaType = PUBSUB_NANOMSG_ADMIN_TYPE;
-                const char *serType = kvs->second->serType;
+                const char *serType = kvs->second.serType;
                 newEndpoint = pubsubEndpoint_create(fwUUID, scope.c_str(), topic.c_str(), PUBSUB_SUBSCRIBER_ENDPOINT_TYPE, psaType,
                                                     serType, nullptr);
                 //if available also set container name
@@ -577,7 +567,7 @@ celix_status_t pubsub_nanomsg_admin::executeCommand(char *commandLine __attribut
             pubsub_nanomsg_topic_sender_t *sender = kvts.second;
             long serSvcId = pubsub_nanoMsgTopicSender_serializerSvcId(sender);
             auto kvs = serializers.map.find(serSvcId);
-            const char *serType = kvs->second == nullptr ? "!Error!" : kvs->second->serType;
+            const char* serType = ( kvs == serializers.map.end() ? "!Error" :  kvs->second.serType);
             const char *scope = pubsub_nanoMsgTopicSender_scope(sender);
             const char *topic = pubsub_nanoMsgTopicSender_topic(sender);
             const char *url = pubsub_nanoMsgTopicSender_url(sender);
@@ -596,7 +586,7 @@ celix_status_t pubsub_nanomsg_admin::executeCommand(char *commandLine __attribut
             pubsub::nanomsg::topic_receiver *receiver = entry.second;
             long serSvcId = receiver->serializerSvcId();
             auto kv =  serializers.map.find(serSvcId);
-            const char *serType = kv->second == nullptr ? "!Error!" : kv->second->serType;
+            const char *serType = (kv == serializers.map.end() ? "!Error!" : kv->second.serType);
             auto scope = receiver->scope();
             auto topic = receiver->topic();
 

@@ -158,7 +158,7 @@ void pubsub::nanomsg::topic_receiver::listConnections(std::vector<std::string> &
 
 
 void pubsub::nanomsg::topic_receiver::connectTo(const char *url) {
-    L_DEBUG("[PSA_ZMQ] TopicReceiver %s/%s connecting to zmq url %s", m_scope.c_str(), m_topic.c_str(), url);
+    L_DEBUG("[PSA_NANOMSG] TopicReceiver %s/%s connecting to nanomsg url %s", m_scope.c_str(), m_topic.c_str(), url);
 
     std::lock_guard<std::mutex> _lock(requestedConnections.mutex);
     auto entry  = requestedConnections.map.find(url);
@@ -181,7 +181,7 @@ void pubsub::nanomsg::topic_receiver::connectTo(const char *url) {
 }
 
 void pubsub::nanomsg::topic_receiver::disconnectFrom(const char *url) {
-    L_DEBUG("[PSA ZMQ] TopicReceiver %s/%s disconnect from zmq url %s", m_scope.c_str(), m_topic.c_str(), url);
+    L_DEBUG("[PSA NANOMSG] TopicReceiver %s/%s disconnect from nanomsg url %s", m_scope.c_str(), m_topic.c_str(), url);
 
     std::lock_guard<std::mutex> _lock(requestedConnections.mutex);
     auto entry = requestedConnections.map.find(url);
@@ -316,13 +316,13 @@ void pubsub::nanomsg::topic_receiver::recvThread_exec() {
             processMsg(&msg->header, msg->payload, recvBytes-sizeof(msg->header));
             nn_freemsg(msg);
         } else if (recvBytes >= 0) {
-            L_ERROR("[PSA_ZMQ_TR] Error receiving nanmosg msg, size (%d) smaller than header\n", recvBytes);
+            L_ERROR("[PSA_NANOMSG_TR] Error receiving nanmosg msg, size (%d) smaller than header\n", recvBytes);
         } else if (errno == EAGAIN || errno == ETIMEDOUT) {
             //nop
         } else if (errno == EINTR) {
-            L_DEBUG("[PSA_ZMQ_TR] zmsg_recv interrupted");
+            L_DEBUG("[PSA_NANOMSG_TR] nn_recvmsg interrupted");
         } else {
-            L_WARN("[PSA_ZMQ_TR] Error receiving zmq message: errno %d: %s\n", errno, strerror(errno));
+            L_WARN("[PSA_NANOMSG_TR] Error receiving nanomessage: errno %d: %s\n", errno, strerror(errno));
         }
     } // while
 

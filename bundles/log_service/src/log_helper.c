@@ -156,7 +156,7 @@ celix_status_t logHelper_destroy(log_helper_pt* loghelper) {
 
 
 
-celix_status_t logHelper_log(log_helper_pt loghelper, log_level_t level, char* message, ... )
+celix_status_t logHelper_log(log_helper_pt loghelper, log_level_t level, const char* message, ... )
 {
     celix_status_t status = CELIX_SUCCESS;
 	va_list listPointer;

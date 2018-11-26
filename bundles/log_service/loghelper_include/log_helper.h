@@ -33,7 +33,7 @@ celix_status_t logHelper_create(bundle_context_pt context, log_helper_pt* log_he
 celix_status_t logHelper_start(log_helper_pt loghelper);
 celix_status_t logHelper_stop(log_helper_pt loghelper);
 celix_status_t logHelper_destroy(log_helper_pt* loghelper);
-celix_status_t logHelper_log(log_helper_pt loghelper, log_level_t level, char* message, ... );
+celix_status_t logHelper_log(log_helper_pt loghelper, log_level_t level, const char* message, ... );
 #ifdef __cplusplus
 }
 #endif
