@@ -39,7 +39,6 @@ class Phase1Activator : public DmActivator {
     Phase1Activator(const Phase1Activator&) = delete;
     Phase1Activator& operator=(const Phase1Activator&) = delete;
     virtual void init();
-    virtual void deinit();
 };
 
 #endif //CELIX_PHASE1ACTIVATOR_H

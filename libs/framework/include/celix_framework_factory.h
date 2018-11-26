@@ -31,7 +31,7 @@ extern "C" {
  * @param config The framework configuration. Can be NULL.
  * @return a started framework or NULL
  */
-framework_t* frameworkFactory_newFramework(properties_t *config);
+celix_framework_t* frameworkFactory_newFramework(celix_properties_t *config);
 
 
 #ifdef __cplusplus

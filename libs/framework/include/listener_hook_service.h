@@ -39,7 +39,7 @@ extern "C" {
 #endif
 
 struct listener_hook_info {
-	bundle_context_pt context;
+	celix_bundle_context_t *context;
 	const char *filter;
 	bool removed;
 };
@@ -47,9 +47,9 @@ struct listener_hook_info {
 struct listener_hook_service {
 	void *handle;
 
-	celix_status_t (*added)(void *hook, array_list_pt listeners);
+	celix_status_t (*added)(void *hook, celix_array_list_t *listeners);
 
-	celix_status_t (*removed)(void *hook, array_list_pt listeners);
+	celix_status_t (*removed)(void *hook, celix_array_list_t *listeners);
 };
 
 #ifdef __cplusplus

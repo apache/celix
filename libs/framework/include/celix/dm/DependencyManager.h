@@ -24,7 +24,7 @@
 
 #include "bundle_context.h"
 #include "celix_bundle_context.h"
-#include "dm_dependency_manager.h"
+#include "celix_dependency_manager.h"
 
 #include <vector>
 #include <mutex>
@@ -36,7 +36,7 @@ namespace celix { namespace dm {
 
     class DependencyManager {
     public:
-        DependencyManager(bundle_context_pt ctx) : context(ctx) {
+        DependencyManager(celix_bundle_context_t *ctx) : context(ctx) {
                 this->cDepMan = celix_bundleContext_getDependencyManager(ctx);
         }
 
@@ -58,8 +58,8 @@ namespace celix { namespace dm {
         DependencyManager(const DependencyManager&) = delete;
         DependencyManager& operator=(const DependencyManager&) = delete;
 
-        bundle_context_pt bundleContext() const { return context; }
-        dm_dependency_manager_pt cDependencyManager() const { return cDepMan; }
+        celix_bundle_context_t* bundleContext() const { return context; }
+        celix_dependency_manager_t *cDependencyManager() const { return cDepMan; }
 
 
         /**
@@ -111,7 +111,7 @@ namespace celix { namespace dm {
                 }
                 for (auto it = toBeStartedComponents.begin(); it != toBeStartedComponents.end(); ++it) {
 
-                        dependencyManager_add(cDepMan, (*it)->cComponent());
+                        celix_dependencyManager_add(cDepMan, (*it)->cComponent());
                         {
                                 std::lock_guard<std::recursive_mutex> lock(componentsMutex);
                                 startedComponents.push_back(std::move(*it));
@@ -131,15 +131,15 @@ namespace celix { namespace dm {
          * Stops the Dependency Manager
          */
         void stop() {
-                dependencyManager_removeAllComponents(cDepMan);
+                celix_dependencyManager_removeAllComponents(cDepMan);
                 queuedComponents.clear();
                 startedComponents.clear();
         }
     private:
-        bundle_context_pt context {nullptr};
+        celix_bundle_context_t *context {nullptr};
         std::vector<std::unique_ptr<BaseComponent>> queuedComponents {};
         std::vector<std::unique_ptr<BaseComponent>> startedComponents {};
-        dm_dependency_manager_pt cDepMan {nullptr};
+        celix_dependency_manager_t* cDepMan {nullptr};
         std::recursive_mutex componentsMutex{};
     };
 

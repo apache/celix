@@ -33,6 +33,7 @@
 #include <uuid/uuid.h>
 #include <assert.h>
 
+#include "celix_dependency_manager.h"
 #include "framework_private.h"
 #include "constants.h"
 #include "resolver.h"
@@ -1176,8 +1177,8 @@ celix_status_t fw_stopBundle(framework_pt framework, bundle_pt bundle, bool reco
                 if (activator->stop != NULL) {
                     status = CELIX_DO_IF(status, activator->stop(activator->userData, context));
                     if (status == CELIX_SUCCESS) {
-                        dm_dependency_manager_t *mng = celix_bundleContext_getDependencyManager(context);
-                        dependencyManager_removeAllComponents(mng);
+                        celix_dependency_manager_t *mng = celix_bundleContext_getDependencyManager(context);
+                        celix_dependencyManager_removeAllComponents(mng);
                     }
                 }
 	        }

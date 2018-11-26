@@ -36,7 +36,7 @@ extern "C" {
  * The activator instance is handle as a void pointer by the framework, the implementation must cast it to the
  * implementation specific type.
  *
- * @param context The execution context of the bundle being started.
+ * @param ctx The execution context of the bundle being started.
  * @param[out] userData A pointer to the specific activator instance used by this bundle.
  *
  * @return Status code indication failure or success:
@@ -44,7 +44,7 @@ extern "C" {
  * 		- Any other status code will mark the bundle as stopped and the framework will remove this
  * 		  bundle's listeners, unregister all services, and release all services used by this bundle.
  */
-ACTIVATOR_EXPORT celix_status_t bundleActivator_create(bundle_context_t *context_ptr, void **userData);
+ACTIVATOR_EXPORT celix_status_t bundleActivator_create(celix_bundle_context_t *ctx, void **userData);
 
 /**
  * Called when this bundle is started so the Framework can perform the bundle-specific activities necessary
@@ -55,14 +55,14 @@ ACTIVATOR_EXPORT celix_status_t bundleActivator_create(bundle_context_t *context
  * This method must complete and return to its caller in a timely manner.
  *
  * @param userData The activator instance to be used.
- * @param context The execution context of the bundle being started.
+ * @param ctx The execution context of the bundle being started.
  *
  * @return Status code indication failure or success:
  * 		- CELIX_SUCCESS when no errors are encountered.
  * 		- Any other status code will mark the bundle as stopped and the framework will remove this
  * 		  bundle's listeners, unregister all services, and release all services used by this bundle.
  */
-ACTIVATOR_EXPORT celix_status_t bundleActivator_start(void *userData, bundle_context_t *context);
+ACTIVATOR_EXPORT celix_status_t bundleActivator_start(void *userData, celix_bundle_context_t *ctx);
 
 /**
  * Called when this bundle is stopped so the Framework can perform the bundle-specific activities necessary
@@ -74,14 +74,14 @@ ACTIVATOR_EXPORT celix_status_t bundleActivator_start(void *userData, bundle_con
  * This method must complete and return to its caller in a timely manner.
  *
  * @param userData The activator instance to be used.
- * @param context The execution context of the bundle being stopped.
+ * @param ctx The execution context of the bundle being stopped.
  *
  * @return Status code indication failure or success:
  * 		- CELIX_SUCCESS when no errors are encountered.
  * 		- Any other status code will mark the bundle as stopped and the framework will remove this
  * 		  bundle's listeners, unregister all services, and release all services used by this bundle.
  */
-ACTIVATOR_EXPORT celix_status_t bundleActivator_stop(void *userData, bundle_context_t *context);
+ACTIVATOR_EXPORT celix_status_t bundleActivator_stop(void *userData, celix_bundle_context_t *ctx);
 
 /**
  * Called when this bundle is stopped so the bundle can destroy the instance of its activator. In general, this
@@ -91,7 +91,7 @@ ACTIVATOR_EXPORT celix_status_t bundleActivator_stop(void *userData, bundle_cont
  * This method must complete and return to its caller in a timely manner.
  *
  * @param userData The activator instance to be used.
- * @param context The execution context of the bundle being stopped.
+ * @param ctx The execution context of the bundle being stopped.
  *
  * @return Status code indication failure or success:
  * 		- CELIX_SUCCESS when no errors are encountered.
@@ -99,7 +99,7 @@ ACTIVATOR_EXPORT celix_status_t bundleActivator_stop(void *userData, bundle_cont
  * 		  bundle's listeners, unregister all services, and release all services used by this bundle.
  */
 ACTIVATOR_EXPORT celix_status_t
-bundleActivator_destroy(void *userData, bundle_context_t* context);
+bundleActivator_destroy(void *userData, celix_bundle_context_t* ctx);
 
 #ifdef __cplusplus
 }

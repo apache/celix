@@ -38,7 +38,7 @@ namespace celix { namespace dm {
 
         DependencyManager& manager() const { return this->mng; }
 
-        bundle_context_pt context() const { return this->ctx; }
+        celix_bundle_context_t* context() const { return this->ctx; }
 
         /**
          * The init of the DM Activator. Should be overridden by the bundle specific DM activator.
@@ -66,7 +66,7 @@ namespace celix { namespace dm {
 
     protected:
         DependencyManager& mng;
-        bundle_context_pt ctx;
+        celix_bundle_context_t *ctx;
     private:
         int start() {
             celix_status_t status = CELIX_SUCCESS;
@@ -82,15 +82,15 @@ namespace celix { namespace dm {
             this->deinit();
 
             // Remove all components
-            dependencyManager_removeAllComponents(this->mng.cDependencyManager());
+            celix_dependencyManager_removeAllComponents(this->mng.cDependencyManager());
 
             return status;
         }
 
-        friend int ::bundleActivator_create(::bundle_context_pt, void**);
-        friend int ::bundleActivator_start(void*, ::bundle_context_pt);
-        friend int ::bundleActivator_stop(void*, ::bundle_context_pt);
-        friend int ::bundleActivator_destroy(void*, ::bundle_context_pt);
+        friend int ::bundleActivator_create(::celix_bundle_context_t*, void**);
+        friend int ::bundleActivator_start(void*, ::celix_bundle_context_t*);
+        friend int ::bundleActivator_stop(void*, ::celix_bundle_context_t*);
+        friend int ::bundleActivator_destroy(void*, ::celix_bundle_context_t*);
     };
 }}
 

@@ -30,7 +30,7 @@
 using namespace celix::dm;
 
 template<class T>
-Component<T>::Component(const bundle_context_pt context, std::string name) : BaseComponent(context, name) {}
+Component<T>::Component(celix_bundle_context_t *context, std::string name) : BaseComponent(context, name) {}
 
 template<class T>
 Component<T>::~Component() {
@@ -42,7 +42,7 @@ template<class I>
 Component<T>& Component<T>::addInterfaceWithName(const std::string serviceName, const std::string version, const Properties properties) {
     if (!serviceName.empty()) {
         //setup c properties
-        properties_pt cProperties = properties_create();
+        celix_properties_t *cProperties = properties_create();
         properties_set(cProperties, CELIX_FRAMEWORK_SERVICE_LANGUAGE, CELIX_FRAMEWORK_SERVICE_CXX_LANGUAGE);
         for (const auto& pair : properties) {
             properties_set(cProperties, (char *) pair.first.c_str(), (char *) pair.second.c_str());
@@ -52,7 +52,7 @@ Component<T>& Component<T>::addInterfaceWithName(const std::string serviceName, 
         I* intfPtr = static_cast<I*>(cmpPtr); //NOTE T should implement I
 
         const char *cVersion = version.empty() ? nullptr : version.c_str();
-        component_addInterface(this->cComponent(), (char *) serviceName.c_str(), (char *) cVersion,
+        celix_dmComponent_addInterface(this->cComponent(), (char *) serviceName.c_str(), (char *) cVersion,
                                intfPtr, cProperties);
     } else {
         std::cerr << "Cannot add interface with a empty name\n";
@@ -78,14 +78,14 @@ template<class T>
 template<class I>
 Component<T>& Component<T>::addCInterface(const I* svc, const std::string serviceName, const std::string version, const Properties properties) {
     static_assert(std::is_pod<I>::value, "Service I must be a 'Plain Old Data' object");
-    properties_pt cProperties = properties_create();
+    celix_properties_t *cProperties = properties_create();
     properties_set(cProperties, CELIX_FRAMEWORK_SERVICE_LANGUAGE, CELIX_FRAMEWORK_SERVICE_C_LANGUAGE);
     for (const auto& pair : properties) {
         properties_set(cProperties, (char*)pair.first.c_str(), (char*)pair.second.c_str());
     }
 
     const char *cVersion = version.empty() ? nullptr : version.c_str();
-    component_addInterface(this->cComponent(), (char*)serviceName.c_str(), (char*)cVersion, svc, cProperties);
+    celix_dmComponent_addInterface(this->cComponent(), (char*)serviceName.c_str(), (char*)cVersion, svc, cProperties);
 
     return *this;
 };
@@ -94,7 +94,7 @@ template<class T>
 template<class I>
 Component<T>& Component<T>::removeCInterface(const I* svc){
     static_assert(std::is_pod<I>::value, "Service I must be a 'Plain Old Data' object");
-    component_removeInterface(this->cComponent(), svc);
+    celix_dmComponent_removeInterface(this->cComponent(), svc);
     return *this;
 };
 
@@ -111,7 +111,7 @@ ServiceDependency<T,I>& Component<T>::createServiceDependency(const std::string 
     }
 #endif
     this->dependencies.push_back(dep);
-    component_addServiceDependency(cComponent(), dep->cServiceDependency());
+    celix_dmComponent_addServiceDependency(cComponent(), dep->cServiceDependency());
     dep->setComponentInstance(&getInstance());
     return *dep;
 }
@@ -137,7 +137,7 @@ CServiceDependency<T,I>& Component<T>::createCServiceDependency(const std::strin
     }
 #endif
     this->dependencies.push_back(dep);
-    component_addServiceDependency(cComponent(), dep->cServiceDependency());
+    celix_dmComponent_addServiceDependency(cComponent(), dep->cServiceDependency());
     dep->setComponentInstance(&getInstance());
     return *dep;
 }
@@ -151,13 +151,13 @@ Component<T>& Component<T>::remove(CServiceDependency<T,I>& dep) {
 }
 
 template<class T>
-Component<T>* Component<T>::create(bundle_context_pt context) {
+Component<T>* Component<T>::create(celix_bundle_context_t *context) {
     std::string name = typeName<T>();
     return Component<T>::create(context, name);
 }
 
 template<class T>
-Component<T>* Component<T>::create(bundle_context_pt context, std::string name) {
+Component<T>* Component<T>::create(celix_bundle_context_t *context, std::string name) {
 #ifdef __EXCEPTIONS
     Component<T>* cmp = new Component<T>{context, name};
 #else
@@ -268,7 +268,7 @@ Component<T>& Component<T>::setCallbacks(
         return 0;
     };
 
-    component_setCallbacks(this->cComponent(), cInit, cStart, cStop, cDeinit);
+    celix_dmComponent_setCallbacks(this->cComponent(), cInit, cStart, cStop, cDeinit);
 
     return *this;
 }
@@ -322,7 +322,7 @@ Component<T>& Component<T>::setCallbacks(
         return 0;
     };
 
-    component_setCallbacks(this->cComponent(), cInit, cStart, cStop, cDeinit);
+    celix_dmComponent_setCallbacks(this->cComponent(), cInit, cStart, cStop, cDeinit);
 
     return *this;
 }
@@ -330,7 +330,7 @@ Component<T>& Component<T>::setCallbacks(
 template<class T>
 Component<T>& Component<T>::removeCallbacks() {
 
-    component_setCallbacks(this->cComponent(), nullptr, nullptr, nullptr, nullptr);
+    celix_dmComponent_setCallbacks(this->cComponent(), nullptr, nullptr, nullptr, nullptr);
 
     return *this;
 }

@@ -43,18 +43,18 @@ celix_status_t embedded_foo();
 
 int main(void) {
 
-	framework_pt framework = NULL;
+	celix_framework_t *framework = NULL;
 
-	properties_pt config = properties_create();
+	celix_properties_t *config = properties_create();
 	int rc = celixLauncher_launchWithProperties(config, &framework);
 
 	if (rc == 0) {
-		bundle_pt fwBundle = NULL;
+		celix_bundle_t *fwBundle = NULL;
 		if(framework_getFrameworkBundle(framework, &fwBundle) == CELIX_SUCCESS){
 
 			if(bundle_start(fwBundle) == CELIX_SUCCESS){
 
-				bundle_context_pt context = NULL;
+				celix_bundle_context_t *context = NULL;
 				bundle_getContext(fwBundle, &context);
 
 				struct foo *f = calloc(1, sizeof(*f));

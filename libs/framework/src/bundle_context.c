@@ -30,7 +30,8 @@
 #include "celix_bundle.h"
 #include "celix_log.h"
 #include "service_tracker.h"
-#include "dm_dependency_manager.h"
+#include "celix_dependency_manager.h"
+#include "dm_dependency_manager_impl.h"
 #include "celix_array_list.h"
 
 static celix_status_t bundleContext_bundleChanged(void *handle, bundle_event_t *event);
@@ -91,8 +92,8 @@ celix_status_t bundleContext_destroy(bundle_context_pt context) {
 	    arrayList_destroy(context->svcRegistrations);
 
 	    if (context->mng != NULL) {
-	        dependencyManager_removeAllComponents(context->mng);
-            dependencyManager_destroy(context->mng);
+	        celix_dependencyManager_removeAllComponents(context->mng);
+            celix_private_dependencyManager_destroy(context->mng);
             context->mng = NULL;
 	    }
 
@@ -506,12 +507,12 @@ void celix_bundleContext_unregisterService(bundle_context_t *ctx, long serviceId
     }
 }
 
-dm_dependency_manager_t* celix_bundleContext_getDependencyManager(bundle_context_t *ctx) {
-    dm_dependency_manager_t* result = NULL;
+celix_dependency_manager_t* celix_bundleContext_getDependencyManager(bundle_context_t *ctx) {
+    celix_dependency_manager_t* result = NULL;
     if (ctx != NULL) {
         celixThreadMutex_lock(&ctx->mutex);
         if (ctx->mng == NULL) {
-            dependencyManager_create(ctx, &ctx->mng);
+            ctx->mng = celix_private_dependencyManager_create(ctx);
         }
         if (ctx->mng == NULL) {
             framework_logIfError(logger, CELIX_BUNDLE_EXCEPTION, NULL, "Cannot create dependency manager");

@@ -35,11 +35,11 @@ extern "C" {
 #include "dm_service_dependency_impl.h"
 #include "dm_event.h"
 
-celix_status_t component_start(dm_component_pt component);
+celix_status_t celix_private_dmComponent_start(celix_dm_component_t *component);
 
-celix_status_t component_stop(dm_component_pt component);
+celix_status_t celix_private_dmComponent_stop(celix_dm_component_t *component);
 
-celix_status_t component_handleEvent(dm_component_pt component, dm_service_dependency_pt dependency, dm_event_pt event);
+celix_status_t celix_private_dmComponent_handleEvent(celix_dm_component_t *component, celix_dm_service_dependency_t *dependency, dm_event_pt event);
 
 #ifdef __cplusplus
 }

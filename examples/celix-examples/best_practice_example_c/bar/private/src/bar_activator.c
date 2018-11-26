@@ -17,7 +17,7 @@
  *under the License.
  */
 
-#include "dm_activator.h"
+#include "celix_api.h"
 #include "bar.h"
 
 #include <stdlib.h>
@@ -35,17 +35,16 @@ static celix_status_t activator_start(activator_t *act, celix_bundle_context_t *
 	if (act->bar == NULL) {
 		status = CELIX_ENOMEM;
 	} else {
-		dm_component_pt cmp = NULL;
-		component_create(ctx, "BAR", &cmp);
-		component_setImplementation(cmp, act->bar);
-		component_addInterface(cmp, EXAMPLE_NAME, EXAMPLE_VERSION, &act->exampleService, NULL);
-		dependencyManager_add(celix_bundleContext_getDependencyManager(ctx), cmp);
+		celix_dm_component_t *cmp = celix_dmComponent_create(ctx, "BAR");
+        celix_dmComponent_setImplementation(cmp, act->bar);
+        celix_dmComponent_addInterface(cmp, EXAMPLE_NAME, EXAMPLE_VERSION, &act->exampleService, NULL);
+		celix_dependencyManager_add(celix_bundleContext_getDependencyManager(ctx), cmp);
 	}
 	return status;
 }
 
 static celix_status_t activator_stop(activator_t *act, celix_bundle_context_t *ctx) {
-	dependencyManager_removeAllComponents(celix_bundleContext_getDependencyManager(ctx));
+	celix_dependencyManager_removeAllComponents(celix_bundleContext_getDependencyManager(ctx));
 	bar_destroy(act->bar);
 	return CELIX_SUCCESS;
 }

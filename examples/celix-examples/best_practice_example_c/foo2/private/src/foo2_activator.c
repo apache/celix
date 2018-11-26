@@ -17,7 +17,7 @@
  *under the License.
  */
 
-#include "dm_activator.h"
+#include "celix_api.h"
 #include "foo2.h"
 
 #include <stdlib.h>
@@ -33,21 +33,19 @@ static celix_status_t activator_start(struct activator *act, celix_bundle_contex
 		status = CELIX_ENOMEM;
 	} else {
 
-		dm_component_pt cmp = NULL;
-		component_create(ctx, "FOO2", &cmp);
-		component_setImplementation(cmp, act->foo);
+		celix_dm_component_t *cmp = celix_dmComponent_create(ctx, "FOO2");
+		celix_dmComponent_setImplementation(cmp, act->foo);
 
 		/*
 		With the component_setCallbacksSafe we register callbacks when a component is started / stopped using a component
 		 with type foo1_t*
 		*/
-		component_setCallbacksSafe(cmp, foo2_t*, NULL, foo2_start, foo2_stop, NULL);
+		CELIX_DMCOMPONENT_SETCALLBACKS(cmp, foo2_t*, NULL, foo2_start, foo2_stop, NULL);
 
-		dm_service_dependency_pt dep = NULL;
-		serviceDependency_create(&dep);
-		serviceDependency_setRequired(dep, false);
-		serviceDependency_setService(dep, EXAMPLE_NAME, EXAMPLE_CONSUMER_RANGE, NULL);
-		serviceDependency_setStrategy(dep, DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND);
+		celix_dm_service_dependency_t *dep = celix_dmServiceDependency_create();
+		celix_dmServiceDependency_setRequired(dep, false);
+		celix_dmServiceDependency_setService(dep, EXAMPLE_NAME, EXAMPLE_CONSUMER_RANGE, NULL);
+		celix_dmServiceDependency_setStrategy(dep, DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND);
 
 		/*
 		With the serviceDependency_setCallbacksSafe we register callbacks when a service
@@ -57,18 +55,20 @@ static celix_status_t activator_start(struct activator *act, celix_bundle_contex
 		service because after removal of the service the memory location of that service
 		could be freed
 		*/
-		serviceDependency_setCallbacksSafe(dep, foo2_t*, const example_t*, NULL, foo2_addExample, NULL,
-										   foo2_removeExample, NULL);
-		component_addServiceDependency(cmp, dep);
+		celix_dm_service_dependency_callback_options_t opts = CELIX_EMPTY_DM_SERVICE_DEPENDENCY_CALLBACK_OPTIONS;
+		opts.add = (void*)foo2_addExample;
+		opts.remove = (void*)foo2_removeExample;
+		celix_dmServiceDependency_setCallbacksWithOptions(dep, &opts);
+		celix_dmComponent_addServiceDependency(cmp, dep);
 
-		dependencyManager_add(celix_bundleContext_getDependencyManager(ctx), cmp);
+		celix_dependencyManager_add(celix_bundleContext_getDependencyManager(ctx), cmp);
 	}
 
 	return status;
 }
 
 static celix_status_t activator_stop(struct activator *act, celix_bundle_context_t *ctx) {
-	dependencyManager_removeAllComponents(celix_bundleContext_getDependencyManager(ctx));
+	celix_dependencyManager_removeAllComponents(celix_bundleContext_getDependencyManager(ctx));
 	foo2_destroy(act->foo);
 	return CELIX_SUCCESS;
 }

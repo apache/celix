@@ -41,11 +41,11 @@
 #include "celix_threads.h"
 #include "service_registry.h"
 
-struct framework {
+struct celix_framework {
 #ifdef WITH_APR
     apr_pool_t *pool;
 #endif
-    struct bundle * bundle;
+    celix_bundle_t *bundle;
     long bundleId; //the bundle id of the framework (normally 0)
     hash_map_pt installRequestMap;
 

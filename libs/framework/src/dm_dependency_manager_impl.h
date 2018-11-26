@@ -16,27 +16,26 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * dm_dependency_manager_impl.h
- *
- *  \date       15 Oct 2015
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
 
 #ifndef CELIX_DM_DEPENDENCY_MANAGER_IMPL_H
 #define CELIX_DM_DEPENDENCY_MANAGER_IMPL_H
+
+#include "celix_array_list.h"
+#include "celix_bundle_context.h"
+#include <pthread.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-
-struct dm_dependency_manager {
-    array_list_pt components;
-
+struct celix_dependency_manager {
+    celix_bundle_context_t *ctx;
+    celix_array_list_t *components;
     pthread_mutex_t mutex;
 };
+
+celix_dependency_manager_t* celix_private_dependencyManager_create(celix_bundle_context_t *context);
+void celix_private_dependencyManager_destroy(celix_dependency_manager_t *manager);
 
 #ifdef __cplusplus
 }

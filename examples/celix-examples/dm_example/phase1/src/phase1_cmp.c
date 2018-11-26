@@ -39,7 +39,7 @@ struct phase1_cmp_struct {
 	celix_thread_t thread;
     bool running;
 	unsigned int counter;
-	dm_component_pt component;
+	celix_dm_component_t *component;
 
 };
 
@@ -54,7 +54,7 @@ phase1_cmp_t *phase1_create(void) {
 	return cmp;
 }
 
-void phase1_setComp(phase1_cmp_t *cmp, dm_component_pt dmCmp) {
+void phase1_setComp(phase1_cmp_t *cmp, celix_dm_component_t *dmCmp) {
 	cmp->component = dmCmp;
 }
 
@@ -95,7 +95,7 @@ static void *phase1_thread(void *data) {
         cmp->counter += 1;
         if (cmp->counter == 2) {
         	static char *runtime_interface = "DUMMY INTERFACE: DO NOT USE\n";
-        	component_addInterface(cmp->component, "RUNTIME_ADDED_INTERFACE", "1.0.0", runtime_interface, NULL);
+            celix_dmComponent_addInterface(cmp->component, "RUNTIME_ADDED_INTERFACE", "1.0.0", runtime_interface, NULL);
         }
         usleep(SLEEPTIME);
     }

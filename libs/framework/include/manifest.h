@@ -36,7 +36,7 @@ extern "C" {
 #endif
 
 struct manifest {
-	properties_pt mainAttributes;
+	celix_properties_t *mainAttributes;
 	hash_map_pt attributes;
 };
 
@@ -50,7 +50,7 @@ FRAMEWORK_EXPORT celix_status_t manifest_destroy(manifest_pt manifest);
 
 FRAMEWORK_EXPORT void manifest_clear(manifest_pt manifest);
 
-FRAMEWORK_EXPORT properties_pt manifest_getMainAttributes(manifest_pt manifest);
+FRAMEWORK_EXPORT celix_properties_t *manifest_getMainAttributes(manifest_pt manifest);
 
 FRAMEWORK_EXPORT celix_status_t manifest_getEntries(manifest_pt manifest, hash_map_pt *map);
 
