@@ -99,20 +99,20 @@ pubsub_nanomsg_admin::~pubsub_nanomsg_admin() {
         std::lock_guard<std::mutex> lock(topicSenders.mutex);
         for (auto kv : topicSenders.map) {
             auto *sender = kv.second;
-            pubsub_nanoMsgTopicSender_destroy(sender);
+            delete (sender);
         }
     }
 
     {
         std::lock_guard<std::mutex> lock(topicReceivers.mutex);
-        for (auto kv: topicReceivers.map) {
+        for (auto &kv: topicReceivers.map) {
             delete kv.second;
         }
     }
 
     {
         std::lock_guard<std::mutex> lock(discoveredEndpoints.mutex);
-        for (auto entry : discoveredEndpoints.map) {
+        for (auto &entry : discoveredEndpoints.map) {
             auto *ep = entry.second;
             celix_properties_destroy(ep);
         }
@@ -252,10 +252,10 @@ void pubsub_nanomsg_admin::removeSerializerSvc(void */*svc*/, const celix_proper
             std::lock_guard<std::mutex> senderLock(topicSenders.mutex);
                 for (auto kv: topicSenders.map) {
                 auto *sender = kv.second;
-                if (sender != nullptr && entry.svcId == pubsub_nanoMsgTopicSender_serializerSvcId(sender)) {
+                if (sender != nullptr && entry.svcId == sender->getSerializerSvcId()) {
                     char *key = kv.first;
                     topicSenders.map.erase(kv.first);
-                    pubsub_nanoMsgTopicSender_destroy(sender);
+                    delete (sender);
                     free(key);
                 }
             }
@@ -263,7 +263,7 @@ void pubsub_nanomsg_admin::removeSerializerSvc(void */*svc*/, const celix_proper
 
         {
             std::lock_guard<std::mutex> receiverLock(topicReceivers.mutex);
-            for (auto kv : topicReceivers.map){
+            for (auto &kv : topicReceivers.map){
                 auto *receiver = kv.second;
                 if (receiver != nullptr && entry.svcId == receiver->serializerSvcId()) {
                     auto key = kv.first;
@@ -322,7 +322,7 @@ celix_status_t pubsub_nanomsg_admin::setupTopicSender(const char *scope, const c
     celix_properties_t *newEndpoint = nullptr;
 
     char *key = pubsubEndpoint_createScopeTopicKey(scope, topic);
-    pubsub_nanomsg_topic_sender_t *sender = nullptr;
+    pubsub::nanomsg::pubsub_nanomsg_topic_sender *sender = nullptr;
     std::lock_guard<std::mutex> serializerLock(serializers.mutex);
     std::lock_guard<std::mutex> topicSenderLock(topicSenders.mutex);
     sender = topicSenders.map.find(key)->second;
@@ -333,7 +333,7 @@ celix_status_t pubsub_nanomsg_admin::setupTopicSender(const char *scope, const c
             serEntry = &kv->second;
         }
         if (serEntry != nullptr) {
-            sender = pubsub_nanoMsgTopicSender_create(ctx, log, scope, topic, serializerSvcId, serEntry->svc, ipAddress,
+            sender = new pubsub::nanomsg::pubsub_nanomsg_topic_sender(ctx, log, scope, topic, serializerSvcId, serEntry->svc, ipAddress,
                                                       basePort, maxPort);
         }
         if (sender != nullptr) {
@@ -341,7 +341,7 @@ celix_status_t pubsub_nanomsg_admin::setupTopicSender(const char *scope, const c
             const char *serType = serEntry->serType;
             newEndpoint = pubsubEndpoint_create(fwUUID, scope, topic, PUBSUB_PUBLISHER_ENDPOINT_TYPE, psaType, serType,
                                                 nullptr);
-            celix_properties_set(newEndpoint, PUBSUB_NANOMSG_URL_KEY, pubsub_nanoMsgTopicSender_url(sender));
+            celix_properties_set(newEndpoint, PUBSUB_NANOMSG_URL_KEY, sender->getUrl());
             //if available also set container name
             const char *cn = celix_bundleContext_getProperty(ctx, "CELIX_CONTAINER_NAME", nullptr);
             if (cn != nullptr) {
@@ -378,10 +378,10 @@ celix_status_t pubsub_nanomsg_admin::teardownTopicSender(const char *scope, cons
     auto kv = topicSenders.map.find(key);
     if (kv != topicSenders.map.end()) {
         char *mapKey = kv->first;
-        pubsub_nanomsg_topic_sender_t *sender = kv->second;
+        pubsub::nanomsg::pubsub_nanomsg_topic_sender *sender = kv->second;
         free(mapKey);
         //TODO disconnect endpoints to sender. note is this needed for a nanomsg topic sender?
-        pubsub_nanoMsgTopicSender_destroy(sender);
+        delete (sender);
     } else {
         L_ERROR("[PSA NANOMSG] Cannot teardown TopicSender with scope/topic %s/%s. Does not exists", scope, topic);
     }
@@ -495,7 +495,7 @@ celix_status_t pubsub_nanomsg_admin::addEndpoint(const celix_properties_t *endpo
 
     if (type != nullptr && strncmp(PUBSUB_PUBLISHER_ENDPOINT_TYPE, type, strlen(PUBSUB_PUBLISHER_ENDPOINT_TYPE)) == 0) {
         std::lock_guard<std::mutex> threadLock(topicReceivers.mutex);
-        for (auto entry: topicReceivers.map) {
+        for (auto &entry: topicReceivers.map) {
             pubsub::nanomsg::topic_receiver *receiver = entry.second;
             connectEndpointToReceiver(receiver, endpoint);
         }
@@ -541,7 +541,7 @@ celix_status_t pubsub_nanomsg_admin::removeEndpoint(const celix_properties_t *en
 
     if (type != nullptr && strncmp(PUBSUB_PUBLISHER_ENDPOINT_TYPE, type, strlen(PUBSUB_PUBLISHER_ENDPOINT_TYPE)) == 0) {
         std::lock_guard<std::mutex> topicReceiverLock(topicReceivers.mutex);
-        for (auto entry : topicReceivers.map) {
+        for (auto &entry : topicReceivers.map) {
             pubsub::nanomsg::topic_receiver *receiver = entry.second;
             disconnectEndpointFromReceiver(receiver, endpoint);
         }
@@ -564,13 +564,13 @@ celix_status_t pubsub_nanomsg_admin::executeCommand(char *commandLine __attribut
         std::lock_guard<std::mutex> serializerLock(serializers.mutex);
         std::lock_guard<std::mutex> topicSenderLock(topicSenders.mutex);
         for (auto kvts: topicSenders.map) {
-            pubsub_nanomsg_topic_sender_t *sender = kvts.second;
-            long serSvcId = pubsub_nanoMsgTopicSender_serializerSvcId(sender);
+            pubsub::nanomsg::pubsub_nanomsg_topic_sender *sender = kvts.second;
+            long serSvcId = sender->getSerializerSvcId();
             auto kvs = serializers.map.find(serSvcId);
             const char* serType = ( kvs == serializers.map.end() ? "!Error" :  kvs->second.serType);
-            const char *scope = pubsub_nanoMsgTopicSender_scope(sender);
-            const char *topic = pubsub_nanoMsgTopicSender_topic(sender);
-            const char *url = pubsub_nanoMsgTopicSender_url(sender);
+            const char *scope = sender->getScope();
+            const char *topic = sender->getTopic();
+            const char *url = sender->getUrl();
             fprintf(out, "|- Topic Sender %s/%s\n", scope, topic);
             fprintf(out, "   |- serializer type = %s\n", serType);
             fprintf(out, "   |- url             = %s\n", url);
@@ -582,7 +582,7 @@ celix_status_t pubsub_nanomsg_admin::executeCommand(char *commandLine __attribut
         fprintf(out, "\nTopic Receivers:\n");
         std::lock_guard<std::mutex> serializerLock(serializers.mutex);
         std::lock_guard<std::mutex> topicReceiverLock(topicReceivers.mutex);
-        for (auto entry : topicReceivers.map) {
+        for (auto &entry : topicReceivers.map) {
             pubsub::nanomsg::topic_receiver *receiver = entry.second;
             long serSvcId = receiver->serializerSvcId();
             auto kv =  serializers.map.find(serSvcId);
@@ -596,10 +596,10 @@ celix_status_t pubsub_nanomsg_admin::executeCommand(char *commandLine __attribut
 
             fprintf(out, "|- Topic Receiver %s/%s\n", scope.c_str(), topic.c_str());
             fprintf(out, "   |- serializer type = %s\n", serType);
-            for (auto url : connected) {
+            for (auto &url : connected) {
                 fprintf(out, "   |- connected url   = %s\n", url.c_str());
             }
-            for (auto url : unconnected) {
+            for (auto &url : unconnected) {
                 fprintf(out, "   |- unconnected url = %s\n", url.c_str());
             }
         }

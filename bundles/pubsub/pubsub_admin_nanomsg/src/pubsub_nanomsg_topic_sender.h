@@ -20,23 +20,63 @@
 #define CELIX_PUBSUB_ZMQ_TOPIC_SENDER_H
 
 #include "celix_bundle_context.h"
+#include <log_helper.h>
+#include <pubsub_serializer.h>
 
-typedef struct pubsub_nanomsg_topic_sender pubsub_nanomsg_topic_sender_t;
+namespace pubsub {
+    namespace nanomsg {
+        class pubsub_nanomsg_topic_sender {
+        public:
+            pubsub_nanomsg_topic_sender(celix_bundle_context_t *_ctx, log_helper_t *_logHelper, const char *_scope,
+                                        const char *_topic, long _serializerSvcId, pubsub_serializer_service_t *_ser,
+                                        const char *_bindIp, unsigned int _basePort, unsigned int _maxPort);
 
-pubsub_nanomsg_topic_sender_t* pubsub_nanoMsgTopicSender_create(celix_bundle_context_t *ctx, log_helper_t *logHelper,
-                                                                const char *scope, const char *topic,
-                                                                long serializerSvcId, pubsub_serializer_service_t *ser,
-                                                                const char *bindIP, unsigned int basePort,
-                                                                unsigned int maxPort);
-void pubsub_nanoMsgTopicSender_destroy(pubsub_nanomsg_topic_sender_t *sender);
+            ~pubsub_nanomsg_topic_sender();
 
-const char* pubsub_nanoMsgTopicSender_scope(pubsub_nanomsg_topic_sender_t *sender);
-const char* pubsub_nanoMsgTopicSender_topic(pubsub_nanomsg_topic_sender_t *sender);
-const char* pubsub_nanoMsgTopicSender_url(pubsub_nanomsg_topic_sender_t *sender);
+            pubsub_nanomsg_topic_sender(const pubsub_nanomsg_topic_sender &) = delete;
 
-long pubsub_nanoMsgTopicSender_serializerSvcId(pubsub_nanomsg_topic_sender_t *sender);
+            const pubsub_nanomsg_topic_sender &operator=(const pubsub_nanomsg_topic_sender &) = delete;
 
-void pubsub_nanoMsgTopicSender_connectTo(pubsub_nanomsg_topic_sender_t *sender, const celix_properties_t *endpoint);
-void pubsub_nanoMsgTopicSender_disconnectFrom(pubsub_nanomsg_topic_sender_t *sender, const celix_properties_t *endpoint);
+            long getSerializerSvcId() const ;
+            const char *getScope() const ;
+            const char *getTopic() const ;
+            const char *getUrl() const;
+
+            void* getPublisherService(const celix_bundle_t *requestingBundle,
+                    const celix_properties_t *svcProperties __attribute__((unused)));
+            void ungetPublisherService(const celix_bundle_t *requestingBundle,
+                        const celix_properties_t *svcProperties __attribute__((unused)));
+            int topicPublicationSend(unsigned int msgTypeId, const void *inMsg);
+            void delay_first_send_for_late_joiners() ;
+
+
+                //private:
+            celix_bundle_context_t *ctx;
+            log_helper_t *logHelper;
+            long serializerSvcId;
+            pubsub_serializer_service_t *serializer;
+
+            char *scope{};
+            char *topic{};
+            char scopeAndTopicFilter[5];
+            char *url{};
+
+            struct {
+                celix_thread_mutex_t mutex;
+                int socket;
+            } nanomsg{};
+
+            struct {
+                long svcId;
+                celix_service_factory_t factory;
+            } publisher{};
+
+            struct {
+                celix_thread_mutex_t mutex{};
+                hash_map_t *map{};  //key = bndId, value = psa_nanomsg_bounded_service_entry_t
+            } boundedServices{};
+        };
+    }
+}
 
 #endif //CELIX_PUBSUB_ZMQ_TOPIC_SENDER_H
