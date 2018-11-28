@@ -341,7 +341,7 @@ celix_status_t pubsub_nanomsg_admin::setupTopicSender(const char *scope, const c
             const char *serType = serEntry->serType;
             newEndpoint = pubsubEndpoint_create(fwUUID, scope, topic, PUBSUB_PUBLISHER_ENDPOINT_TYPE, psaType, serType,
                                                 nullptr);
-            celix_properties_set(newEndpoint, PUBSUB_NANOMSG_URL_KEY, sender->getUrl());
+            celix_properties_set(newEndpoint, PUBSUB_NANOMSG_URL_KEY, sender->getUrl().c_str());
             //if available also set container name
             const char *cn = celix_bundleContext_getProperty(ctx, "CELIX_CONTAINER_NAME", nullptr);
             if (cn != nullptr) {
@@ -568,12 +568,12 @@ celix_status_t pubsub_nanomsg_admin::executeCommand(char *commandLine __attribut
             long serSvcId = sender->getSerializerSvcId();
             auto kvs = serializers.map.find(serSvcId);
             const char* serType = ( kvs == serializers.map.end() ? "!Error" :  kvs->second.serType);
-            const char *scope = sender->getScope();
-            const char *topic = sender->getTopic();
-            const char *url = sender->getUrl();
-            fprintf(out, "|- Topic Sender %s/%s\n", scope, topic);
+            const auto scope = sender->getScope();
+            const auto topic = sender->getTopic();
+            const auto url = sender->getUrl();
+            fprintf(out, "|- Topic Sender %s/%s\n", scope.c_str(), topic.c_str());
             fprintf(out, "   |- serializer type = %s\n", serType);
-            fprintf(out, "   |- url             = %s\n", url);
+            fprintf(out, "   |- url             = %s\n", url.c_str());
         }
     }
 

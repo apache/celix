@@ -72,7 +72,7 @@ pubsub::nanomsg::topic_receiver::topic_receiver(celix_bundle_context_t *_ctx,
     ctx = _ctx;
     logHelper = _logHelper;
     serializer = _serializer;
-    psa_nanomsg_setScopeAndTopicFilter(m_scope, m_topic, m_scopeAndTopicFilter);
+    m_scopeAndTopicFilter = psa_nanomsg_setScopeAndTopicFilter(m_scope, m_topic);
 
     m_nanoMsgSocket = nn_socket(AF_SP, NN_BUS);
     if (m_nanoMsgSocket < 0) {
@@ -86,8 +86,7 @@ pubsub::nanomsg::topic_receiver::topic_receiver(celix_bundle_context_t *_ctx,
             std::bad_alloc{};
         }
 
-        char subscriberFilter[5]; // 5 ??
-        psa_nanomsg_setScopeAndTopicFilter(m_scope, m_topic, subscriberFilter);
+        auto subscriberFilter = psa_nanomsg_setScopeAndTopicFilter(m_scope, m_topic);
 
         int size = snprintf(NULL, 0, "(%s=%s)", PUBSUB_SUBSCRIBER_TOPIC, m_topic.c_str());
         char buf[size + 1];

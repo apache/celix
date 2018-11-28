@@ -100,7 +100,7 @@ namespace pubsub {
             pubsub_serializer_service_t *serializer{nullptr};
             const std::string m_scope{};
             const std::string m_topic{};
-            char m_scopeAndTopicFilter[5];
+            std::string m_scopeAndTopicFilter{};
 
             int m_nanoMsgSocket{0};
 

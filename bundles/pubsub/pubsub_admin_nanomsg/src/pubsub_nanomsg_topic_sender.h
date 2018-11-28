@@ -18,13 +18,37 @@
  */
 #ifndef CELIX_PUBSUB_ZMQ_TOPIC_SENDER_H
 #define CELIX_PUBSUB_ZMQ_TOPIC_SENDER_H
-
+#include <mutex>
+#include <map>
 #include "celix_bundle_context.h"
 #include <log_helper.h>
 #include <pubsub_serializer.h>
+#include <pubsub/publisher.h>
 
 namespace pubsub {
     namespace nanomsg {
+        class pubsub_nanomsg_topic_sender;
+
+        class bounded_service_entry {
+        public:
+            bounded_service_entry(
+                    pubsub::nanomsg::pubsub_nanomsg_topic_sender *_parent,
+                    long _bndId,
+                    log_helper_t* _logHelper) : parent{_parent}, bndId{_bndId}, logHelper{_logHelper} {
+
+            }
+
+            int topicPublicationSend(unsigned int msgTypeId, const void *inMsg);
+
+            pubsub::nanomsg::pubsub_nanomsg_topic_sender *parent{};
+            pubsub_publisher_t service{};
+            long bndId{};
+            hash_map_t *msgTypes{};
+            int getCount{1};
+            log_helper_t *logHelper{};
+        } ;
+
+
         class pubsub_nanomsg_topic_sender {
         public:
             pubsub_nanomsg_topic_sender(celix_bundle_context_t *_ctx, log_helper_t *_logHelper, const char *_scope,
@@ -38,31 +62,30 @@ namespace pubsub {
             const pubsub_nanomsg_topic_sender &operator=(const pubsub_nanomsg_topic_sender &) = delete;
 
             long getSerializerSvcId() const ;
-            const char *getScope() const ;
-            const char *getTopic() const ;
-            const char *getUrl() const;
+            const std::string &getScope() const ;
+            const std::string &getTopic() const ;
+            const std::string &getUrl() const;
 
             void* getPublisherService(const celix_bundle_t *requestingBundle,
-                    const celix_properties_t *svcProperties __attribute__((unused)));
+                                      const celix_properties_t *svcProperties __attribute__((unused)));
             void ungetPublisherService(const celix_bundle_t *requestingBundle,
-                        const celix_properties_t *svcProperties __attribute__((unused)));
+                                       const celix_properties_t *svcProperties __attribute__((unused)));
             int topicPublicationSend(unsigned int msgTypeId, const void *inMsg);
             void delay_first_send_for_late_joiners() ;
 
-
-                //private:
+            //private:
             celix_bundle_context_t *ctx;
             log_helper_t *logHelper;
             long serializerSvcId;
             pubsub_serializer_service_t *serializer;
 
-            char *scope{};
-            char *topic{};
-            char scopeAndTopicFilter[5];
-            char *url{};
+            std::string scope{};
+            std::string topic{};
+            std::string scopeAndTopicFilter{};
+            std::string url{};
 
             struct {
-                celix_thread_mutex_t mutex;
+                std::mutex mutex;
                 int socket;
             } nanomsg{};
 
@@ -72,8 +95,9 @@ namespace pubsub {
             } publisher{};
 
             struct {
-                celix_thread_mutex_t mutex{};
-                hash_map_t *map{};  //key = bndId, value = psa_nanomsg_bounded_service_entry_t
+                std::mutex mutex{};
+                std::map<long, bounded_service_entry> map{};
+                //hash_map_t *map{};  //key = bndId, value = psa_nanomsg_bounded_service_entry_t
             } boundedServices{};
         };
     }
