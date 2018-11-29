@@ -30,7 +30,7 @@
 
 struct psa_nanomsg_subscriber_entry {
     psa_nanomsg_subscriber_entry(pubsub_subscriber_t *_svc, int _usageCount) :
-    svc{_svc}, usageCount{_usageCount} {
+        svc{_svc}, usageCount{_usageCount} {
     }
     pubsub_subscriber_t *svc{};
     int usageCount;
@@ -92,6 +92,7 @@ namespace pubsub {
             void processMsgForSubscriberEntry(psa_nanomsg_subscriber_entry* entry, const pubsub_nanmosg_msg_header_t *hdr, const char* payload, size_t payloadSize);
             void addSubscriber(void *svc, const celix_properties_t *props, const celix_bundle_t *bnd);
             void removeSubscriber(void */*svc*/, const celix_properties_t */*props*/, const celix_bundle_t *bnd);
+            celix_service_tracking_options_t createOptions();
 
         private:
             celix_bundle_context_t *ctx{nullptr};
@@ -100,7 +101,6 @@ namespace pubsub {
             pubsub_serializer_service_t *serializer{nullptr};
             const std::string m_scope{};
             const std::string m_topic{};
-            std::string m_scopeAndTopicFilter{};
 
             int m_nanoMsgSocket{0};
 

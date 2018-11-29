@@ -72,7 +72,6 @@ pubsub::nanomsg::topic_receiver::topic_receiver(celix_bundle_context_t *_ctx,
     ctx = _ctx;
     logHelper = _logHelper;
     serializer = _serializer;
-    m_scopeAndTopicFilter = psa_nanomsg_setScopeAndTopicFilter(m_scope, m_topic);
 
     m_nanoMsgSocket = nn_socket(AF_SP, NN_BUS);
     if (m_nanoMsgSocket < 0) {
@@ -88,26 +87,31 @@ pubsub::nanomsg::topic_receiver::topic_receiver(celix_bundle_context_t *_ctx,
 
         auto subscriberFilter = psa_nanomsg_setScopeAndTopicFilter(m_scope, m_topic);
 
-        int size = snprintf(NULL, 0, "(%s=%s)", PUBSUB_SUBSCRIBER_TOPIC, m_topic.c_str());
-        char buf[size + 1];
-        snprintf(buf, (size_t) size + 1, "(%s=%s)", PUBSUB_SUBSCRIBER_TOPIC, m_topic.c_str());
-        celix_service_tracking_options_t opts{};
-        opts.filter.ignoreServiceLanguage = true;
-        opts.filter.serviceName = PUBSUB_SUBSCRIBER_SERVICE_NAME;
-        opts.filter.filter = buf;
-        opts.callbackHandle = this;
-        opts.addWithOwner = [](void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *svcOwner) {
-            static_cast<topic_receiver*>(handle)->addSubscriber(svc, props, svcOwner);
-        };
-        opts.removeWithOwner = [](void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *svcOwner) {
-            static_cast<topic_receiver*>(handle)->removeSubscriber(svc, props, svcOwner);
-        };
+        auto opts = createOptions();
 
         subscriberTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
         recvThread.running = true;
 
         recvThread.thread = std::thread([this]() {this->recvThread_exec();});
     }
+}
+
+celix_service_tracking_options_t pubsub::nanomsg::topic_receiver::createOptions() {
+    std::stringstream filter_str;
+
+    filter_str << "(" << PUBSUB_SUBSCRIBER_TOPIC << "=" <<  m_topic << ")";
+    celix_service_tracking_options_t opts{};
+    opts.filter.ignoreServiceLanguage = true;
+    opts.filter.serviceName = PUBSUB_SUBSCRIBER_SERVICE_NAME;
+    opts.filter.filter = strdup(filter_str.str().c_str()); // TODO : memory leak ??
+    opts.callbackHandle = this;
+    opts.addWithOwner = [](void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *svcOwner) {
+            static_cast<pubsub::nanomsg::topic_receiver*>(handle)->addSubscriber(svc, props, svcOwner);
+        };
+    opts.removeWithOwner = [](void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *svcOwner) {
+            static_cast<pubsub::nanomsg::topic_receiver*>(handle)->removeSubscriber(svc, props, svcOwner);
+        };
+    return opts;
 }
 
 pubsub::nanomsg::topic_receiver::~topic_receiver() {

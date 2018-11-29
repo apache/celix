@@ -19,7 +19,7 @@
 
 #include <memory.h>
 #include <iostream>
-
+#include <sstream>
 #include <stdlib.h>
 #include <utils.h>
 #include <arpa/inet.h>
@@ -38,18 +38,46 @@
 #define FIRST_SEND_DELAY_IN_SECONDS                 2
 #define NANOMSG_BIND_MAX_RETRY                      10
 
-#define L_DEBUG(...) \
-    logHelper_log(logHelper, OSGI_LOGSERVICE_DEBUG, __VA_ARGS__)
-#define L_INFO(...) \
-    logHelper_log(logHelper, OSGI_LOGSERVICE_INFO, __VA_ARGS__)
-#define L_WARN(...) \
-    logHelper_log(logHelper, OSGI_LOGSERVICE_WARNING, __VA_ARGS__)
-#define L_ERROR(...) \
-    logHelper_log(logHelper, OSGI_LOGSERVICE_ERROR, __VA_ARGS__)
+template <typename T>
+std::stringstream LOG_STREAM(T first) {
+    std::stringstream ss;
+    ss << first;
+    return ss;
+}
 
+template <typename T, typename... Args>
+std::stringstream LOG_STREAM(T first, Args... args) {
+    std::stringstream ss;
+    ss << first << LOG_STREAM(args...).str();
+    return ss;
+}
+
+template <typename... Args>
+void L_DEBUG(log_helper_t *logHelper, Args... args) {
+    std::stringstream ss = LOG_STREAM(args...);
+    logHelper_log(logHelper, OSGI_LOGSERVICE_DEBUG, ss.str().c_str());
+}
+
+template <typename... Args>
+void L_INFO(log_helper_t *logHelper, Args... args) {
+    auto ss = LOG_STREAM(args...);
+    logHelper_log(logHelper, OSGI_LOGSERVICE_INFO, ss.str().c_str());
+}
+
+template <typename... Args>
+void L_WARN(log_helper_t *logHelper, Args... args) {
+    auto ss = LOG_STREAM(args...);
+    logHelper_log(logHelper, OSGI_LOGSERVICE_WARNING, ss.str().c_str());
+}
+
+template <typename... Args>
+void L_ERROR(log_helper_t *logHelper, Args... args) {
+    auto ss = LOG_STREAM(args...);
+    logHelper_log((log_helper_pt)logHelper, OSGI_LOGSERVICE_ERROR, ss.str().c_str());
+}
 
 static unsigned int rand_range(unsigned int min, unsigned int max);
-static void delay_first_send_for_late_joiners(pubsub::nanomsg::pubsub_nanomsg_topic_sender *sender);
+static void delay_first_send_for_late_joiners(log_helper_t* logHelper);
 
 pubsub::nanomsg::pubsub_nanomsg_topic_sender::pubsub_nanomsg_topic_sender(celix_bundle_context_t *_ctx,
                                                          log_helper_t *_logHelper,
@@ -70,8 +98,8 @@ pubsub::nanomsg::pubsub_nanomsg_topic_sender::pubsub_nanomsg_topic_sender(celix_
     scopeAndTopicFilter = psa_nanomsg_setScopeAndTopicFilter(_scope, _topic);
 
     //setting up nanomsg socket for nanomsg TopicSender
-    int socket = nn_socket(AF_SP, NN_BUS);
-    if (socket == -1) {
+    int nnSock = nn_socket(AF_SP, NN_BUS);
+    if (nnSock == -1) {
         perror("Error for nanomsg_socket");
     }
 
@@ -79,23 +107,20 @@ pubsub::nanomsg::pubsub_nanomsg_topic_sender::pubsub_nanomsg_topic_sender(celix_
     while(rv == -1 && retry < NANOMSG_BIND_MAX_RETRY ) {
         /* Randomized part due to same bundle publishing on different topics */
         unsigned int port = rand_range(_basePort,_maxPort);
-        size_t len = (size_t)snprintf(nullptr, 0, "tcp://%s:%u", _bindIp, port) + 1;
-        char *_url = static_cast<char*>(calloc(len, sizeof(char*)));
-        snprintf(_url, len, "tcp://%s:%u", _bindIp, port);
+        std::stringstream _url;
+        _url << "tcp://" << _bindIp << ":" << port;
 
-        len = (size_t)snprintf(nullptr, 0, "tcp://0.0.0.0:%u", port) + 1;
-        char *bindUrl = static_cast<char*>(calloc(len, sizeof(char)));
-        snprintf(bindUrl, len, "tcp://0.0.0.0:%u", port);
-        rv = nn_bind (socket, bindUrl);
+        std::stringstream bindUrl;
+        bindUrl << "tcp://0.0.0.0:" << port;
+
+        rv = nn_bind (nnSock, bindUrl.str().c_str());
         if (rv == -1) {
             perror("Error for nn_bind");
-            free(_url);
         } else {
-            this->url = _url;
-            nanomsg.socket = socket;
+            this->url = _url.str();
+            nanomsg.socket = nnSock;
         }
         retry++;
-        free(bindUrl);
     }
 
     if (!url.empty()) {
@@ -132,7 +157,6 @@ pubsub::nanomsg::pubsub_nanomsg_topic_sender::~pubsub_nanomsg_topic_sender() {
     celix_bundleContext_unregisterService(ctx, publisher.svcId);
 
     nn_close(nanomsg.socket);
-
     std::lock_guard<std::mutex> lock(boundedServices.mutex);
     for  (auto &it: boundedServices.map) {
             serializer->destroySerializerMap(serializer->handle, it.second.msgTypes);
@@ -170,7 +194,7 @@ void* pubsub::nanomsg::pubsub_nanomsg_topic_sender::getPublisherService(const ce
     } else {
         auto entry = boundedServices.map.emplace(std::piecewise_construct,
                                     std::forward_as_tuple(bndId),
-                                    std::forward_as_tuple(this, bndId, logHelper));
+                                    std::forward_as_tuple(scope, topic, bndId, nanomsg.socket, logHelper));
         int rc = serializer->createSerializerMap(serializer->handle, (celix_bundle_t*)requestingBundle, &entry.first->second.msgTypes);
 
         if (rc == 0) {
@@ -179,11 +203,14 @@ void* pubsub::nanomsg::pubsub_nanomsg_topic_sender::getPublisherService(const ce
             entry.first->second.service.send = [](void *handle, unsigned int msgTypeId, const void *msg) {
                 return static_cast<pubsub::nanomsg::bounded_service_entry*>(handle)->topicPublicationSend(msgTypeId, msg);
             };
-            entry.first->second.service.sendMultipart = NULL; //not supported TODO remove
+            entry.first->second.service.sendMultipart = nullptr; //not supported TODO remove
             service = &entry.first->second.service;
         } else {
             boundedServices.map.erase(bndId);
-            L_ERROR("Error creating serializer map for NanoMsg TopicSender %s/%s", scope, topic);
+            auto x =  LOG_STREAM(12, "hallo");
+            logHelper_log(logHelper, OSGI_LOGSERVICE_DEBUG, x.str().c_str());
+            log_helper_pt lh = logHelper;
+            L_ERROR(lh, "Error creating serializer map for NanoMsg TopicSender ", scope, topic);
         }
     }
 
@@ -201,7 +228,7 @@ void pubsub::nanomsg::pubsub_nanomsg_topic_sender::ungetPublisherService(const c
         if (entry->second.getCount == 0) {
             int rc = serializer->destroySerializerMap(serializer->handle, entry->second.msgTypes);
             if (rc != 0) {
-                L_ERROR("Error destroying publisher service, serializer not available / cannot get msg serializer map\n");
+                L_ERROR(logHelper, "Error destroying publisher service, serializer not available / cannot get msg serializer map\n");
             }
             boundedServices.map.erase(bndId);
         }
@@ -210,31 +237,30 @@ void pubsub::nanomsg::pubsub_nanomsg_topic_sender::ungetPublisherService(const c
 
 int pubsub::nanomsg::bounded_service_entry::topicPublicationSend(unsigned int msgTypeId, const void *inMsg) {
     int status;
-    pubsub::nanomsg::pubsub_nanomsg_topic_sender *sender = parent;
-    pubsub_msg_serializer_t* msgSer = static_cast<pubsub_msg_serializer_t*>(hashMap_get(msgTypes, (void*)(uintptr_t)msgTypeId));
+    auto msgSer = static_cast<pubsub_msg_serializer_t*>(hashMap_get(msgTypes, (void*)(uintptr_t)msgTypeId));
 
-    if (msgSer != NULL) {
-        delay_first_send_for_late_joiners(sender);
+    if (msgSer != nullptr) {
+        delay_first_send_for_late_joiners(logHelper);
 
         int major = 0, minor = 0;
 
         pubsub_nanmosg_msg_header_t msg_hdr;// = calloc(1, sizeof(*msg_hdr));
         msg_hdr.type = msgTypeId;
 
-        if (msgSer->msgVersion != NULL) {
+        if (msgSer->msgVersion != nullptr) {
             version_getMajor(msgSer->msgVersion, &major);
             version_getMinor(msgSer->msgVersion, &minor);
             msg_hdr.major = (unsigned char) major;
             msg_hdr.minor = (unsigned char) minor;
         }
 
-        void *serializedOutput = NULL;
+        void *serializedOutput = nullptr;
         size_t serializedOutputLen = 0;
         status = msgSer->serialize(msgSer, inMsg, &serializedOutput, &serializedOutputLen);
         if (status == CELIX_SUCCESS) {
             nn_iovec data[2];
 
-            nn_msghdr msg;
+            nn_msghdr msg{};
             msg.msg_iov = data;
             msg.msg_iovlen = 2;
             msg.msg_iov[0].iov_base = static_cast<void*>(&msg_hdr);
@@ -244,31 +270,34 @@ int pubsub::nanomsg::bounded_service_entry::topicPublicationSend(unsigned int ms
             msg.msg_control = nullptr;
             msg.msg_controllen = 0;
             errno = 0;
-            int rc = nn_sendmsg(sender->nanomsg.socket, &msg, 0 );
+            int rc = nn_sendmsg(nanoMsgSocket, &msg, 0 );
             free(serializedOutput);
             if (rc < 0) {
-                L_WARN("[PSA_ZMQ_TS] Error sending zmsg, rc is %i. %s", rc, strerror(errno));
+                L_WARN(logHelper, "[PSA_ZMQ_TS] Error sending zmsg, rc: ", rc, ", error: ",  strerror(errno));
             } else {
-                L_INFO("[PSA_ZMQ_TS] Send message with size %d\n",  rc);
-                L_INFO("[PSA_ZMQ_TS] Send message ID %d, major %d, minor %d\n",  msg_hdr.type, (int)msg_hdr.major, (int)msg_hdr.minor);
+                L_INFO(logHelper, "[PSA_ZMQ_TS] Send message with size ",  rc, "\n");
+                L_INFO(logHelper, "[PSA_ZMQ_TS] Send message ID ", msg_hdr.type,
+                        " major: ", (int)msg_hdr.major,
+                        " minor: ",  (int)msg_hdr.minor,"\n");
             }
         } else {
-            L_WARN("[PSA_ZMQ_TS] Error serialize message of type %s for scope/topic %s/%s", msgSer->msgName, sender->scope, sender->topic);
+            L_WARN(logHelper, "[PSA_ZMQ_TS] Error serialize message of type ", msgSer->msgName,
+                    " for scope/topic ", scope.c_str(), "/", topic.c_str(),"\n");
         }
     } else {
         status = CELIX_SERVICE_EXCEPTION;
-        L_WARN("[PSA_ZMQ_TS] Error cannot serialize message with msg type id %i for scope/topic %s/%s", msgTypeId, sender->scope, sender->topic);
+        L_WARN(logHelper, "[PSA_ZMQ_TS] Error cannot serialize message with msg type id ", msgTypeId,
+                " for scope/topic ", scope.c_str(), "/", topic.c_str(),"\n");
     }
     return status;
 }
 
-static void delay_first_send_for_late_joiners(pubsub::nanomsg::pubsub_nanomsg_topic_sender *sender) {
+static void delay_first_send_for_late_joiners(log_helper_t* logHelper) {
 
     static bool firstSend = true;
 
     if(firstSend){
-        auto logHelper = sender->logHelper;
-        L_INFO("PSA_UDP_MC_TP: Delaying first send for late joiners...\n");
+        L_INFO(logHelper, "PSA_UDP_MC_TP: Delaying first send for late joiners...\n");
         sleep(FIRST_SEND_DELAY_IN_SECONDS);
         firstSend = false;
     }

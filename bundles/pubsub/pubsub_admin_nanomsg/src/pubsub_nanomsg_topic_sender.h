@@ -27,24 +27,28 @@
 
 namespace pubsub {
     namespace nanomsg {
-        class pubsub_nanomsg_topic_sender;
 
         class bounded_service_entry {
         public:
             bounded_service_entry(
-                    pubsub::nanomsg::pubsub_nanomsg_topic_sender *_parent,
+                    std::string &_scope,
+                    std::string &_topic,
                     long _bndId,
-                    log_helper_t* _logHelper) : parent{_parent}, bndId{_bndId}, logHelper{_logHelper} {
+                    int _nanoMsgSocket,
+                    log_helper_t* _logHelper) : scope{_scope}, topic{_topic}, bndId{_bndId}, nanoMsgSocket{_nanoMsgSocket}, logHelper{_logHelper} {
 
             }
-
+            bounded_service_entry(const bounded_service_entry&) = delete;
+            bounded_service_entry &operator=(const bounded_service_entry&) = delete;
             int topicPublicationSend(unsigned int msgTypeId, const void *inMsg);
 
-            pubsub::nanomsg::pubsub_nanomsg_topic_sender *parent{};
             pubsub_publisher_t service{};
+            std::string scope;
+            std::string topic;
             long bndId{};
             hash_map_t *msgTypes{};
             int getCount{1};
+            int nanoMsgSocket{};
             log_helper_t *logHelper{};
         } ;
 
