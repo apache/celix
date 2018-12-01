@@ -119,9 +119,9 @@ private:
         pubsub_serializer_service_t *svc;
     } psa_nanomsg_serializer_entry_t;
     ProtectedMap<long, psa_nanomsg_serializer_entry_t> serializers{};
-    ProtectedMap<std::string, pubsub::nanomsg::pubsub_nanomsg_topic_sender*> topicSenders{};
+    ProtectedMap<std::string, pubsub::nanomsg::pubsub_nanomsg_topic_sender> topicSenders{};
     ProtectedMap<std::string, pubsub::nanomsg::topic_receiver*> topicReceivers{};
-    ProtectedMap<const char*, celix_properties_t *> discoveredEndpoints{};
+    ProtectedMap<const std::string, celix_properties_t *> discoveredEndpoints{};
 };
 
 #ifdef __cplusplus
