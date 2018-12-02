@@ -24,14 +24,3 @@ add_celix_bundle(dm_example_phase3
 )
 target_include_directories(dm_example_phase3 PRIVATE src)
 target_link_libraries(dm_example_phase3 PRIVATE dm_example_api)
-
-IF(APPLE)
-    target_link_libraries(dm_example_phase3 PRIVATE -Wl,-all_load Celix::dependency_manager_static)
-else()
-    if(ENABLE_ADDRESS_SANITIZER)
-        #With asan there can be undefined symbols
-        target_link_libraries(dm_example_phase3 PRIVATE -Wl,--whole-archive Celix::dependency_manager_static -Wl,--no-whole-archive)
-    else()
-        target_link_libraries(dm_example_phase3 PRIVATE -Wl,--no-undefined -Wl,--whole-archive Celix::dependency_manager_static -Wl,--no-whole-archive)
-    endif()
-ENDIF()
