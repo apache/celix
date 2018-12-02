@@ -19,6 +19,7 @@
 
 #include <vector>
 #include <iostream>
+#include <cstring>
 #include "constants.h"
 #include "celix_properties.h"
 
