@@ -124,7 +124,7 @@ namespace celix { namespace dm {
          */
         template<typename T>
         void destroyComponent(Component<T> &component) {
-            dependencyManager_remove(cDepMan, component.cComponent());
+            celix_dependencyManager_remove(cDepMan, component.cComponent());
         }
 
         /**
