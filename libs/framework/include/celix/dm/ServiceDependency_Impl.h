@@ -59,7 +59,7 @@ CServiceDependency<T,I>& CServiceDependency<T,I>::setAddLanguageFilter(bool addL
 //    if (!this->valid) {
 //        *this;
 //    }
-    serviceDependency_setAddCLanguageFilter(this->cServiceDependency(), addLang);
+    celix_serviceDependency_setAddCLanguageFilter(this->cServiceDependency(), addLang);
     this->setupService();
     return *this;
 };
@@ -182,7 +182,8 @@ void CServiceDependency<T,I>::setupCallbacks() {
         };
     }
     celix_dmServiceDependency_setCallbackHandle(this->cServiceDependency(), this);
-    celix_dm_service_dependency_callback_options_t opts{};
+    celix_dm_service_dependency_callback_options_t opts;
+    std::memset(&opts, 0, sizeof(opts));
     opts.addWithProps = cadd;
     opts.removeWithProps = crem;
     opts.setWithProps = cset;
@@ -438,7 +439,8 @@ void ServiceDependency<T,I>::setupCallbacks() {
     }
 
     celix_dmServiceDependency_setCallbackHandle(this->cServiceDependency(), this);
-    celix_dm_service_dependency_callback_options_t opts{};
+    celix_dm_service_dependency_callback_options_t opts;
+    std::memset(&opts, 0, sizeof(opts));
     opts.setWithProps = cset;
     opts.addWithProps = cadd;
     opts.removeWithProps = crem;
