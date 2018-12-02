@@ -119,7 +119,7 @@ ServiceDependency<T,I>& Component<T>::createServiceDependency(const std::string 
 template<class T>
 template<class I>
 Component<T>& Component<T>::remove(ServiceDependency<T,I>& dep) {
-    component_removeServiceDependency(cComponent(), dep.cServiceDependency());
+    celix_component_removeServiceDependency(cComponent(), dep.cServiceDependency());
     this->dependencies.erase(std::remove(this->dependencies.begin(), this->dependencies.end(), dep));
     return *this;
 }
@@ -145,7 +145,7 @@ CServiceDependency<T,I>& Component<T>::createCServiceDependency(const std::strin
 template<class T>
 template<typename I>
 Component<T>& Component<T>::remove(CServiceDependency<T,I>& dep) {
-    component_removeServiceDependency(cComponent(), dep.cServiceDependency());
+    celix_component_removeServiceDependency(cComponent(), dep.cServiceDependency());
      this->dependencies.erase(std::remove(this->dependencies.begin(), this->dependencies.end(), dep));
     return *this;
 }
