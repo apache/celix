@@ -72,7 +72,7 @@ typedef struct dm_interface_struct {
 struct dm_executor_struct {
     pthread_t runningThread;
     bool runningThreadSet;
-    linked_list_pt workQueue;
+    celix_array_list_t *workQueue;
     pthread_mutex_t mutex;
 };
 
@@ -1334,7 +1334,7 @@ static celix_status_t executor_create(celix_dm_component_t *component __attribut
     if (!*executor) {
         status = CELIX_ENOMEM;
     } else {
-        linkedList_create(&(*executor)->workQueue);
+        (*executor)->workQueue = celix_arrayList_create();
         pthread_mutex_init(&(*executor)->mutex, NULL);
         (*executor)->runningThreadSet = false;
     }
@@ -1346,7 +1346,7 @@ static void executor_destroy(dm_executor_pt executor) {
 
 	if (executor) {
 		pthread_mutex_destroy(&executor->mutex);
-		linkedList_destroy(executor->workQueue);
+		celix_arrayList_destroy(executor->workQueue);
 
 		free(executor);
 	}
@@ -1365,7 +1365,7 @@ static celix_status_t executor_schedule(dm_executor_pt executor, celix_dm_compon
         task->data = data;
 
         pthread_mutex_lock(&executor->mutex);
-        linkedList_addLast(executor->workQueue, task);
+        celix_arrayList_add(executor->workQueue, task);
         pthread_mutex_unlock(&executor->mutex);
     }
 
@@ -1414,28 +1414,28 @@ static celix_status_t executor_runTasks(dm_executor_pt executor, pthread_t curre
     celix_status_t status = CELIX_SUCCESS;
 //    bool execute = false;
 
-    do {
-        dm_executor_task_t *entry = NULL;
-        pthread_mutex_lock(&executor->mutex);
-        while ((entry = linkedList_removeFirst(executor->workQueue)) != NULL) {
-            pthread_mutex_unlock(&executor->mutex);
+    dm_executor_task_t *entry = NULL;
 
-            entry->command(entry->component, entry->data);
+    pthread_mutex_lock(&executor->mutex);
+    int size = celix_arrayList_size(executor->workQueue);
+    celix_array_list_t *localQueue = celix_arrayList_create(); //TODO add reserve or create with cap
+    for (int i = 0; i < size; ++i) {
+        celix_arrayList_add(localQueue, celix_arrayList_get(executor->workQueue, i));
+    }
+    celix_arrayList_clear(executor->workQueue);
+    pthread_mutex_unlock(&executor->mutex);
 
-            pthread_mutex_lock(&executor->mutex);
+    size = celix_arrayList_size(localQueue);
+    for (int i = 0; i < size; ++i) {
+        entry = celix_arrayList_get(localQueue, i);
+        entry->command(entry->component, entry->data);
+        free(entry);
+    }
+    celix_arrayList_destroy(localQueue);
 
-            free(entry);
-        }
-        executor->runningThreadSet = false;
-        pthread_mutex_unlock(&executor->mutex);
-
-//        pthread_mutex_lock(&executor->mutex);
-//        if (executor->runningThread == NULL) {
-//            executor->runningThread = currentThread;
-//            execute = true;
-//        }
-//        pthread_mutex_unlock(&executor->mutex);
-    } while (!linkedList_isEmpty(executor->workQueue)); // && execute
+    pthread_mutex_lock(&executor->mutex);
+    executor->runningThreadSet = false;
+    pthread_mutex_unlock(&executor->mutex);
 
     return status;
 }
