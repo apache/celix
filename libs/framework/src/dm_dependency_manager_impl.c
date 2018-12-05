@@ -60,9 +60,20 @@ celix_status_t celix_dependencyManager_add(celix_dependency_manager_t *manager, 
 celix_status_t celix_dependencyManager_remove(celix_dependency_manager_t *manager, celix_dm_component_t *component) {
 	celix_status_t status;
 
-	celix_arrayList_remove(manager->components, component);
-	status = celix_private_dmComponent_stop(component);
-	component_destroy(component);
+	celix_array_list_entry_t entry;
+	memset(&entry, 0, sizeof(entry));
+	entry.voidPtrVal = component;
+	int index = celix_arrayList_indexOf(manager->components, entry);
+
+	if (index >= 0) {
+        celix_arrayList_removeAt(manager->components, index);
+        status = celix_private_dmComponent_stop(component);
+        component_destroy(component);
+	} else {
+	    fprintf(stderr, "Cannot find component with pointer %p\n", component);
+	    status = CELIX_BUNDLE_EXCEPTION;
+	}
+
 
 	return status;
 }
