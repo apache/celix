@@ -1417,21 +1417,26 @@ static celix_status_t executor_runTasks(dm_executor_pt executor, pthread_t curre
     dm_executor_task_t *entry = NULL;
 
     pthread_mutex_lock(&executor->mutex);
-    int size = celix_arrayList_size(executor->workQueue);
-    celix_array_list_t *localQueue = celix_arrayList_create(); //TODO add reserve or create with cap
-    for (int i = 0; i < size; ++i) {
-        celix_arrayList_add(localQueue, celix_arrayList_get(executor->workQueue, i));
+    if (celix_arrayList_size(executor->workQueue) > 0) {
+	    entry = celix_arrayList_get(executor->workQueue, 0);
+	    celix_arrayList_removeAt(executor->workQueue, 0);
     }
-    celix_arrayList_clear(executor->workQueue);
     pthread_mutex_unlock(&executor->mutex);
 
-    size = celix_arrayList_size(localQueue);
-    for (int i = 0; i < size; ++i) {
-        entry = celix_arrayList_get(localQueue, i);
-        entry->command(entry->component, entry->data);
-        free(entry);
+    while (entry != NULL) {
+	    entry->command(entry->component, entry->data);
+	    free(entry);
+
+	    pthread_mutex_lock(&executor->mutex);
+	    if (celix_arrayList_size(executor->workQueue) > 0) {
+		    entry = celix_arrayList_get(executor->workQueue, 0);
+		    celix_arrayList_removeAt(executor->workQueue, 0);
+	    } else {
+		    entry = NULL;
+	    }
+	    pthread_mutex_unlock(&executor->mutex);
     }
-    celix_arrayList_destroy(localQueue);
+
 
     pthread_mutex_lock(&executor->mutex);
     executor->runningThreadSet = false;
