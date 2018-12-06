@@ -1309,21 +1309,16 @@ celix_status_t celix_dmComponent_setImplementation(celix_dm_component_t *compone
 }
 
 celix_status_t component_getBundleContext(celix_dm_component_t *component, bundle_context_pt *context) {
-    return celix_dmComponent_getBundleContext(component, context);
+    *context = celix_dmComponent_getBundleContext(component);
+    return *context == NULL ? CELIX_BUNDLE_EXCEPTION : CELIX_SUCCESS;
 }
 
-celix_status_t celix_dmComponent_getBundleContext(celix_dm_component_t *component, bundle_context_pt *context) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	if (!component) {
-		status = CELIX_ILLEGAL_ARGUMENT;
+celix_bundle_context_t* celix_dmComponent_getBundleContext(celix_dm_component_t *component) {
+	celix_bundle_context_t *result = NULL;
+	if (component) {
+		result = component->context;
 	}
-
-	if (status == CELIX_SUCCESS) {
-		*context = component->context;
-	}
-
-	return status;
+    return result;
 }
 
 

@@ -116,7 +116,7 @@ const char* celix_dmComponent_getName(celix_dm_component_t *cmp);
 /**
  * Returns bundle context for the bundle where this DM component is part of.
  */
-celix_status_t celix_dmComponent_getBundleContext(celix_dm_component_t *component, celix_bundle_context_t **out);
+celix_bundle_context_t* celix_dmComponent_getBundleContext(celix_dm_component_t *component);
 
 /**
  * Set the component life cycle callbacks.
