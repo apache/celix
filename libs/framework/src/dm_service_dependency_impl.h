@@ -40,25 +40,30 @@ extern "C" {
 #include "dm_service_dependency.h"
 #include "dm_component.h"
 
-struct dm_service_dependency {
-	dm_component_pt component;
+struct celix_dm_service_dependency {
+	celix_dm_component_t *component;
 	bool available;
 	bool instanceBound;
 	bool required;
 	dm_service_dependency_strategy_t strategy;
 
 	void* callbackHandle; //This handle can be set to be used instead of the component implementation
-	service_set_fpt set;
-	service_add_fpt add;
-	service_change_fpt change;
-	service_remove_fpt remove;
-	service_swap_fpt swap;
+	celix_dm_service_update_fp set;
+	celix_dm_service_update_fp add;
+	celix_dm_service_update_fp change;
+	celix_dm_service_update_fp remove;
+	celix_dm_service_swap_fp swap;
 
 	service_set_with_ref_fpt set_with_ref;
 	service_add_with_ref_fpt add_with_ref;
 	service_change_with_ref_fpt change_with_ref;
 	service_remove_with_ref_fpt remove_with_ref;
 	service_swap_with_ref_fpt swap_with_ref;
+
+	celix_dm_service_update_with_props_fp set_with_props;
+	celix_dm_service_update_with_props_fp add_with_props;
+	celix_dm_service_update_with_props_fp rem_with_props;
+	celix_dm_service_swap_with_props_fp swap_with_props;
 
 	const void **autoConfigure;
 	celix_thread_mutex_t lock;
@@ -74,28 +79,28 @@ struct dm_service_dependency {
 	service_tracker_customizer_pt tracker_customizer;
 };
 
-celix_status_t serviceDependency_start(dm_service_dependency_pt dependency);
-celix_status_t serviceDependency_stop(dm_service_dependency_pt dependency);
-celix_status_t serviceDependency_setInstanceBound(dm_service_dependency_pt dependency, bool instanceBound);
-celix_status_t serviceDependency_setAutoConfig(dm_service_dependency_pt dependency, void **autoConfigure);
-celix_status_t serviceDependency_setAvailable(dm_service_dependency_pt dependency, bool available);
+celix_status_t serviceDependency_start(celix_dm_service_dependency_t *dependency);
+celix_status_t serviceDependency_stop(celix_dm_service_dependency_t *dependency);
+celix_status_t serviceDependency_setInstanceBound(celix_dm_service_dependency_t *dependency, bool instanceBound);
+celix_status_t serviceDependency_setAutoConfig(celix_dm_service_dependency_t *dependency, void **autoConfigure);
+celix_status_t serviceDependency_setAvailable(celix_dm_service_dependency_t *dependency, bool available);
 
-celix_status_t serviceDependency_setComponent(dm_service_dependency_pt dependency, dm_component_pt component);
-//celix_status_t serviceDependency_removeComponent(dm_service_dependency_pt dependency, dm_component_pt component);
+celix_status_t serviceDependency_setComponent(celix_dm_service_dependency_t *dependency, celix_dm_component_t *component);
+//celix_status_t serviceDependency_removeComponent(celix_dm_service_dependency_t *dependency, celix_dm_component_t *component);
 
-celix_status_t serviceDependency_invokeSet(dm_service_dependency_pt dependency, dm_event_pt event);
-celix_status_t serviceDependency_invokeAdd(dm_service_dependency_pt dependency, dm_event_pt event);
-celix_status_t serviceDependency_invokeChange(dm_service_dependency_pt dependency, dm_event_pt event);
-celix_status_t serviceDependency_invokeRemove(dm_service_dependency_pt dependency, dm_event_pt event);
-celix_status_t serviceDependency_invokeSwap(dm_service_dependency_pt dependency, dm_event_pt event, dm_event_pt newEvent);
-celix_status_t serviceDependency_isAvailable(dm_service_dependency_pt dependency, bool *available);
-celix_status_t serviceDependency_isRequired(dm_service_dependency_pt dependency, bool *required);
-celix_status_t serviceDependency_isInstanceBound(dm_service_dependency_pt dependency, bool *instanceBound);
-celix_status_t serviceDependency_isAutoConfig(dm_service_dependency_pt dependency, bool *autoConfig);
+celix_status_t serviceDependency_invokeSet(celix_dm_service_dependency_t *dependency, dm_event_pt event);
+celix_status_t serviceDependency_invokeAdd(celix_dm_service_dependency_t *dependency, dm_event_pt event);
+celix_status_t serviceDependency_invokeChange(celix_dm_service_dependency_t *dependency, dm_event_pt event);
+celix_status_t serviceDependency_invokeRemove(celix_dm_service_dependency_t *dependency, dm_event_pt event);
+celix_status_t serviceDependency_invokeSwap(celix_dm_service_dependency_t *dependency, dm_event_pt event, dm_event_pt newEvent);
+celix_status_t serviceDependency_isAvailable(celix_dm_service_dependency_t *dependency, bool *available);
+celix_status_t serviceDependency_isRequired(celix_dm_service_dependency_t *dependency, bool *required);
+celix_status_t serviceDependency_isInstanceBound(celix_dm_service_dependency_t *dependency, bool *instanceBound);
+celix_status_t serviceDependency_isAutoConfig(celix_dm_service_dependency_t *dependency, bool *autoConfig);
 
-celix_status_t serviceDependency_getAutoConfig(dm_service_dependency_pt dependency, const void*** autoConfigure);
-celix_status_t serviceDependency_unlock(dm_service_dependency_pt dependency);
-celix_status_t serviceDependency_lock(dm_service_dependency_pt dependency);
+celix_status_t serviceDependency_getAutoConfig(celix_dm_service_dependency_t *dependency, const void*** autoConfigure);
+celix_status_t serviceDependency_unlock(celix_dm_service_dependency_t *dependency);
+celix_status_t serviceDependency_lock(celix_dm_service_dependency_t *dependency);
 
 #ifdef __cplusplus
 }

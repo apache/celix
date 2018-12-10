@@ -37,7 +37,7 @@ celix_filter_t* filter_create(const char *filterString);
 
 void filter_destroy(celix_filter_t *filter);
 
-celix_status_t filter_match(celix_filter_t *filter, properties_t *properties, bool *result);
+celix_status_t filter_match(celix_filter_t *filter, celix_properties_t *properties, bool *result);
 
 celix_status_t filter_match_filter(celix_filter_t *src, filter_t *dest, bool *result);
 

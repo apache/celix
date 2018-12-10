@@ -42,7 +42,7 @@ struct userData {
 };
 
 
-celix_status_t tracker_added(void*hook, array_list_pt listeners) {
+celix_status_t tracker_added(void*hook, celix_array_list_t *listeners) {
     for(unsigned int i = 0; i < arrayList_size(listeners); i++) {
         listener_hook_info_pt info = arrayList_get(listeners, i);
         printf("Added tracker for service %s\n", info->filter);
@@ -51,7 +51,7 @@ celix_status_t tracker_added(void*hook, array_list_pt listeners) {
     return CELIX_SUCCESS;
 }
 
-celix_status_t tracker_removed(void*hook, array_list_pt listeners) {
+celix_status_t tracker_removed(void*hook, celix_array_list_t *listeners) {
     for(unsigned int i = 0; i < arrayList_size(listeners); i++) {
         listener_hook_info_pt info = arrayList_get(listeners, i);
         printf("Removed tracker for service %s\n", info->filter);
@@ -60,7 +60,7 @@ celix_status_t tracker_removed(void*hook, array_list_pt listeners) {
     return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
+celix_status_t bundleActivator_create(celix_bundle_context_t *context, void **userData) {
 	celix_status_t status = CELIX_SUCCESS;
     *userData = malloc(sizeof(struct userData));
     if (*userData != NULL) {
@@ -71,7 +71,7 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 	return status;
 }
 
-celix_status_t bundleActivator_start(void * handle, bundle_context_pt context) {
+celix_status_t bundleActivator_start(void * handle, celix_bundle_context_t *context) {
 	printf("Starting hook example bundle\n");
     struct userData *userData = (struct userData*)handle;   
     
@@ -116,7 +116,7 @@ celix_status_t bundleActivator_start(void * handle, bundle_context_pt context) {
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_stop(void * handle, bundle_context_pt context) {
+celix_status_t bundleActivator_stop(void * handle, celix_bundle_context_t *context) {
 	printf("Stopping hook example bundle\n");
     struct userData *userData = (struct userData*)handle;   
 
@@ -131,7 +131,7 @@ celix_status_t bundleActivator_stop(void * handle, bundle_context_pt context) {
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_destroy(void * handle, bundle_context_pt context) {
+celix_status_t bundleActivator_destroy(void * handle, celix_bundle_context_t *context) {
     free(handle);
 	return CELIX_SUCCESS;
 }

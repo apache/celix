@@ -30,7 +30,7 @@ struct BundleActivatorData {
     std::unique_ptr<celix::dm::DmActivator> act;
 };
 
-extern "C" celix_status_t bundleActivator_create(bundle_context_pt context, void** userData) {
+extern "C" celix_status_t bundleActivator_create(celix_bundle_context_t *context, void** userData) {
     int status = CELIX_SUCCESS;
 
     BundleActivatorData* data = nullptr;
@@ -52,9 +52,8 @@ extern "C" celix_status_t bundleActivator_create(bundle_context_pt context, void
     if (data == nullptr || data->act == nullptr) {
         status = CELIX_ENOMEM;
         if (data != nullptr) {
-            data->act = nullptr;
+            delete data;
         }
-        delete data;
         *userData = nullptr;
     } else {
         *userData = data;
@@ -62,7 +61,7 @@ extern "C" celix_status_t bundleActivator_create(bundle_context_pt context, void
     return status;
 }
 
-extern "C" celix_status_t bundleActivator_start(void* userData, [[gnu::unused]] bundle_context_pt context) {
+extern "C" celix_status_t bundleActivator_start(void* userData, celix_bundle_context_t *) {
     int status = CELIX_SUCCESS;
     auto* data = static_cast<BundleActivatorData*>(userData);
     if (data != nullptr) {
@@ -71,21 +70,20 @@ extern "C" celix_status_t bundleActivator_start(void* userData, [[gnu::unused]] 
     return status;
 }
 
-extern "C" celix_status_t bundleActivator_stop(void* userData, [[gnu::unused]] bundle_context_pt context) {
+extern "C" celix_status_t bundleActivator_stop(void* userData, celix_bundle_context_t *) {
     int status = CELIX_SUCCESS;
     auto* data = static_cast<BundleActivatorData*>(userData);
     if (data != nullptr) {
         status = data->act->stop();
+        data->act = nullptr;
     }
     return status;
 }
 
-extern "C" celix_status_t bundleActivator_destroy([[gnu::unused]] void* userData,[[gnu::unused]]     bundle_context_pt context ) {
-    int status = CELIX_SUCCESS;
+extern "C" celix_status_t bundleActivator_destroy(void *userData, celix_bundle_context_t* ) {
     auto* data = static_cast<BundleActivatorData*>(userData);
     if (data != nullptr) {
-        data->act = nullptr;
+        delete data;
     }
-    delete data;
-    return status;
+    return CELIX_SUCCESS;
 }

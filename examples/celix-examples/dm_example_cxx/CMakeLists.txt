@@ -38,6 +38,7 @@ add_celix_container("dm_example_cxx"
         dm_example_cxx_phase3_locking
     PROPERTIES
         LOGHELPER_ENABLE_STDOUT_FALLBACK=true
+    USE_CONFIG
 )
 
 

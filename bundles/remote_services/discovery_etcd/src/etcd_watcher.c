@@ -174,10 +174,10 @@ static celix_status_t etcdWatcher_addOwnFramework(etcd_watcher_pt watcher)
         }
     }
 
-	if (etcd_get(localNodePath, &value, &modIndex) != true) {
+	if (etcd_get(localNodePath, &value, &modIndex) != ETCDLIB_RC_OK) {
 		etcd_set(localNodePath, endpoints, ttl, false);
 	}
-	else if (etcd_set(localNodePath, endpoints, ttl, true) == false)  {
+	else if (etcd_set(localNodePath, endpoints, ttl, true) != ETCDLIB_RC_OK)  {
 		logHelper_log(*watcher->loghelper, OSGI_LOGSERVICE_WARNING, "Cannot register local discovery");
     }
     else {

@@ -37,7 +37,7 @@
 static void* foo2_thread(void*);
 
 struct foo2_struct {
-    array_list_pt examples;
+    celix_array_list_t *examples;
     pthread_t thread;
     bool running;
 };

@@ -25,30 +25,44 @@
  * These types are declared in a separate header for forward declaration
  */
 
-typedef struct bundle * bundle_pt;
-typedef struct bundle bundle_t;
-typedef struct bundle celix_bundle_t;
 
+#ifdef ADD_CELIX_DEPRECATED_WARNING
+#define CELIX_DEPRECATED_ATTR __attribute__ ((deprecated))
+#define CELIX_DEPRECATED_ATTR_MSG(msg) __attribute__ ((deprecated(msg)))
+#else
+#define CELIX_DEPRECATED_ATTR
+#define CELIX_DEPRECATED_ATTR_MSG(msg)
+#endif
+
+
+typedef struct celix_framework celix_framework_t;
+typedef struct celix_bundle celix_bundle_t;
+typedef struct celix_bundle_context celix_bundle_context_t;
+typedef struct celix_dependency_manager celix_dependency_manager_t;
+typedef struct celix_dm_component_struct celix_dm_component_t;
+typedef struct celix_dm_service_dependency celix_dm_service_dependency_t;
+
+//deprecated
+typedef struct celix_dependency_manager dm_dependency_manager_t CELIX_DEPRECATED_ATTR;
+typedef struct celix_dependency_manager *dm_dependency_manager_pt CELIX_DEPRECATED_ATTR;
+typedef struct celix_dm_component_struct *dm_component_pt CELIX_DEPRECATED_ATTR;
+typedef struct celix_dm_component_struct dm_component_t CELIX_DEPRECATED_ATTR;
+typedef struct celix_dm_service_dependency *dm_service_dependency_pt CELIX_DEPRECATED_ATTR;
+typedef struct celix_dm_service_dependency dm_service_dependency_t CELIX_DEPRECATED_ATTR;
+
+typedef struct celix_bundle_context *bundle_context_pt CELIX_DEPRECATED_ATTR;
+typedef struct celix_bundle_context bundle_context_t CELIX_DEPRECATED_ATTR;
+typedef struct celix_framework *framework_pt CELIX_DEPRECATED_ATTR;
+typedef struct celix_framework framework_t CELIX_DEPRECATED_ATTR;
+typedef struct celix_bundle * bundle_pt CELIX_DEPRECATED_ATTR;
+typedef struct celix_bundle bundle_t CELIX_DEPRECATED_ATTR;
+
+// will be deprecated in the future
 typedef struct bundleArchive *bundle_archive_pt;
 typedef struct bundleArchive bundle_archive_t;
-
 typedef struct bundleRevision *bundle_revision_pt;
 typedef struct bundleRevision bundle_revision_t;
-
-typedef struct bundleContext *bundle_context_pt;
-typedef struct bundleContext bundle_context_t;
-typedef struct bundleContext celix_bundle_context_t;
-
-typedef struct dm_dependency_manager *dm_dependency_manager_pt;
-typedef struct dm_dependency_manager dm_dependency_manager_t;
-
-typedef struct dm_component_struct *dm_component_pt;
-typedef struct dm_component_struct dm_component_t;
-
-typedef struct dm_service_dependency *dm_service_dependency_pt;
-typedef struct dm_service_dependency dm_service_dependency_t;
-
-typedef struct service_factory *service_factory_pt; //deprecated
+typedef struct service_factory *service_factory_pt;
 typedef struct serviceReference * service_reference_pt;
 
 #endif //CELIX_CELIX_TYPES_H

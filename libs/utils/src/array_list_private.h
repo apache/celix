@@ -29,7 +29,7 @@
 
 #include "array_list.h"
 
-struct celix_arrayList {
+struct celix_array_list {
 	celix_array_list_entry_t* elementData;
 	size_t size;
 	size_t capacity;
@@ -40,7 +40,7 @@ struct celix_arrayList {
 	celix_arrayList_equals_fp  equals;
 };
 
-struct arrayListIterator {
+struct celix_array_list_iterator {
 	array_list_pt list;
 	unsigned int cursor;
 	int lastReturned;

@@ -19,8 +19,6 @@
 #ifndef CELIX_FRAMEWORK_H_
 #define CELIX_FRAMEWORK_H_
 
-typedef struct framework celix_framework_t;
-
 
 #include "celix_types.h"
 #include "celix_properties.h"

@@ -74,7 +74,7 @@ static int websocket_data_handler(struct mg_connection *conn, int bits, char *da
 static celix_status_t activator_start(activator_data_t *data, celix_bundle_context_t *ctx) {
     data->ctx = ctx;
 
-    bundle_t *bnd = celix_bundleContext_getBundle(ctx);
+    celix_bundle_t *bnd = celix_bundleContext_getBundle(ctx);
     data->root = celix_bundle_getEntry(bnd, "resources");
 
     const char *options[] = {

@@ -220,14 +220,16 @@ celix_properties_t* celix_properties_create(void) {
 }
 
 void celix_properties_destroy(celix_properties_t *properties) {
-	hash_map_iterator_pt iter = hashMapIterator_create(properties);
-	while (hashMapIterator_hasNext(iter)) {
-		hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
-		free(hashMapEntry_getKey(entry));
-		free(hashMapEntry_getValue(entry));
+	if (properties != NULL) {
+		hash_map_iterator_pt iter = hashMapIterator_create(properties);
+		while (hashMapIterator_hasNext(iter)) {
+			hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
+			free(hashMapEntry_getKey(entry));
+			free(hashMapEntry_getValue(entry));
+		}
+		hashMapIterator_destroy(iter);
+		hashMap_destroy(properties, false, false);
 	}
-	hashMapIterator_destroy(iter);
-	hashMap_destroy(properties, false, false);
 }
 
 celix_properties_t* celix_properties_load(const char *filename) {
@@ -365,17 +367,19 @@ const char* celix_properties_get(const celix_properties_t *properties, const cha
 }
 
 void celix_properties_set(celix_properties_t *properties, const char *key, const char *value) {
-	hash_map_entry_pt entry = hashMap_getEntry(properties, key);
-	char* oldVal = NULL;
-	char *newVal = value == NULL ? NULL : strndup(value, 1024*1024);
-	if (entry != NULL) {
-		char* oldKey = hashMapEntry_getKey(entry);
-        oldVal = hashMapEntry_getValue(entry);
-		hashMap_put(properties, oldKey, newVal);
-	} else {
-		hashMap_put(properties, strndup(key, 1024*1024), newVal);
+	if (properties != NULL) {
+		hash_map_entry_pt entry = hashMap_getEntry(properties, key);
+		char *oldVal = NULL;
+		char *newVal = value == NULL ? NULL : strndup(value, 1024 * 1024);
+		if (entry != NULL) {
+			char *oldKey = hashMapEntry_getKey(entry);
+			oldVal = hashMapEntry_getValue(entry);
+			hashMap_put(properties, oldKey, newVal);
+		} else {
+			hashMap_put(properties, strndup(key, 1024 * 1024), newVal);
+		}
+		free(oldVal);
 	}
-	free(oldVal);
 }
 
 void celix_properties_unset(celix_properties_t *properties, const char *key) {

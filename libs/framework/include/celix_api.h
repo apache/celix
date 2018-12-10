@@ -38,7 +38,8 @@
 #include "celix_framework_factory.h"
 #include "celix_launcher.h"
 
-#include "dm_dependency_manager.h"
+#include "celix_dependency_manager.h"
+#include "celix_dm_component.h"
 #include "dm_service_dependency.h"
 
 #include "celix_bundle_activator.h"

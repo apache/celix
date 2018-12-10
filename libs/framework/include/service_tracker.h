@@ -45,11 +45,11 @@ typedef struct celix_serviceTracker *service_tracker_pt;
 typedef struct celix_serviceTracker service_tracker_t;
 
 FRAMEWORK_EXPORT celix_status_t
-serviceTracker_create(bundle_context_t *ctx, const char *service, service_tracker_customizer_pt customizer,
+serviceTracker_create(celix_bundle_context_t *ctx, const char *service, service_tracker_customizer_pt customizer,
                       service_tracker_t **tracker);
 
 FRAMEWORK_EXPORT celix_status_t
-serviceTracker_createWithFilter(bundle_context_t *ctx, const char *filter, service_tracker_customizer_pt customizer,
+serviceTracker_createWithFilter(celix_bundle_context_t *ctx, const char *filter, service_tracker_customizer_pt customizer,
                                 service_tracker_t **tracker);
 
 FRAMEWORK_EXPORT celix_status_t serviceTracker_open(service_tracker_t *tracker);
@@ -60,11 +60,11 @@ FRAMEWORK_EXPORT celix_status_t serviceTracker_destroy(service_tracker_t *tracke
 
 FRAMEWORK_EXPORT service_reference_pt serviceTracker_getServiceReference(service_tracker_t *tracker);
 
-FRAMEWORK_EXPORT array_list_pt serviceTracker_getServiceReferences(service_tracker_t *tracker);
+FRAMEWORK_EXPORT celix_array_list_t *serviceTracker_getServiceReferences(service_tracker_t *tracker);
 
 FRAMEWORK_EXPORT void *serviceTracker_getService(service_tracker_t *tracker);
 
-FRAMEWORK_EXPORT array_list_pt serviceTracker_getServices(service_tracker_t *tracker);
+FRAMEWORK_EXPORT celix_array_list_t *serviceTracker_getServices(service_tracker_t *tracker);
 
 FRAMEWORK_EXPORT void *serviceTracker_getServiceByReference(service_tracker_t *tracker, service_reference_pt reference);
 
@@ -83,7 +83,7 @@ FRAMEWORK_EXPORT void serviceTracker_serviceChanged(celix_service_listener_t *li
  * Note that is different from the serviceTracker_create function, because is also starts the service tracker
  */
 celix_service_tracker_t* celix_serviceTracker_create(
-        bundle_context_t *ctx,
+        celix_bundle_context_t *ctx,
         const char *serviceName,
         const char *versionRange,
         const char *filter
@@ -95,7 +95,7 @@ celix_service_tracker_t* celix_serviceTracker_create(
  * Note that is different from the serviceTracker_create function, because is also starts the service tracker
  */
 celix_service_tracker_t* celix_serviceTracker_createWithOptions(
-        bundle_context_t *ctx,
+        celix_bundle_context_t *ctx,
         const celix_service_tracking_options_t *opts
 );
 

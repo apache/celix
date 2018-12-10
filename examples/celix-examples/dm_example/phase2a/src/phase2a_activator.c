@@ -20,8 +20,7 @@
 #include <stdlib.h>
 #include <phase2a_cmp.h>
 
-#include "bundle_activator.h"
-#include "dm_activator.h"
+#include "celix_api.h"
 
 #include "phase1.h"
 #include "phase2.h"
@@ -32,58 +31,48 @@ struct phase2a_activator_struct {
 	phase2_t phase2Serv;
 };
 
-celix_status_t dm_create(bundle_context_pt context, void **userData) {
-	printf("phase2a: dm_create\n");
-	*userData = calloc(1, sizeof(struct phase2a_activator_struct));
-	return *userData != NULL ? CELIX_SUCCESS : CELIX_ENOMEM;
-}
-
-celix_status_t dm_init(void * userData, bundle_context_pt context, dm_dependency_manager_pt manager) {
-	printf("phase2a: dm_init\n");
-    celix_status_t status = CELIX_SUCCESS;
-
-    struct phase2a_activator_struct *act = (struct phase2a_activator_struct *)userData;
-
+static celix_status_t start(struct phase2a_activator_struct *act, celix_bundle_context_t *ctx) {
+	printf("phase2a: start\n");
+	celix_status_t status = CELIX_SUCCESS;
 	act->phase2aCmp = phase2a_create();
 	if (act->phase2aCmp != NULL) {
 
 		act->phase2Serv.handle = act->phase2aCmp;
 		act->phase2Serv.getData = (void *)phase2a_getData;
 
-		properties_pt props = properties_create();
+		celix_properties_t *props = properties_create();
 		properties_set(props, "id", "phase2a");
 
-		dm_component_pt cmp;
-		component_create(context, "PHASE2A_PROCESSING_COMPONENT", &cmp);
-		component_setImplementation(cmp, act->phase2aCmp);
-		component_setCallbacksSafe(cmp, phase2a_cmp_t *, phase2a_init, phase2a_start, phase2a_stop, phase2a_deinit);
-		component_addInterface(cmp, PHASE2_NAME, PHASE2_VERSION, &act->phase2Serv, props);
+		celix_dm_component_t *cmp = celix_dmComponent_create(ctx, "PHASE2A_PROCESSING_COMPONENT");
+		celix_dmComponent_setImplementation(cmp, act->phase2aCmp);
+		CELIX_DMCOMPONENT_SETCALLBACKS(cmp, phase2a_cmp_t *, phase2a_init, phase2a_start, phase2a_stop, phase2a_deinit);
+		celix_dmComponent_addInterface(cmp, PHASE2_NAME, PHASE2_VERSION, &act->phase2Serv, props);
 
 
-		dm_service_dependency_pt dep;
-		serviceDependency_create(&dep);
-		serviceDependency_setService(dep, PHASE1_NAME, PHASE1_RANGE_ALL, NULL);
-        serviceDependency_setCallbacksSafe(dep, phase2a_cmp_t*, const phase1_t*, phase2a_setPhase1, NULL, NULL, NULL, NULL);
-		serviceDependency_setStrategy(dep, DM_SERVICE_DEPENDENCY_STRATEGY_LOCKING);
-		serviceDependency_setRequired(dep, true);
-		component_addServiceDependency(cmp, dep);
+		celix_dm_service_dependency_t *dep = celix_dmServiceDependency_create();
+        celix_dmServiceDependency_setService(dep, PHASE1_NAME, PHASE1_RANGE_ALL, NULL);
+        celix_dmServiceDependency_setCallback(dep, (void*)phase2a_setPhase1);
+        celix_dmServiceDependency_setStrategy(dep, DM_SERVICE_DEPENDENCY_STRATEGY_LOCKING);
+        celix_dmServiceDependency_setRequired(dep, true);
+		celix_dmComponent_addServiceDependency(cmp, dep);
 
-		dependencyManager_add(manager, cmp);
+		celix_dependency_manager_t *mng = celix_bundleContext_getDependencyManager(ctx);
+		celix_dependencyManager_add(mng, cmp);
 	} else {
 		status = CELIX_ENOMEM;
 	}
 
-    return status;
+	return status;
 }
 
-celix_status_t dm_destroy(void * userData, bundle_context_pt context, dm_dependency_manager_pt manager) {
-	printf("phase2a: dm-destroy\n");
-
-	struct phase2a_activator_struct *act = (struct phase2a_activator_struct *)userData;
+static celix_status_t stop(struct phase2a_activator_struct *act, celix_bundle_context_t *ctx) {
+	printf("phase2a: stop\n");
+    celix_dependency_manager_t *mng = celix_bundleContext_getDependencyManager(ctx);
+    celix_dependencyManager_removeAllComponents(mng);
 	if (act->phase2aCmp != NULL) {
 		phase2a_destroy(act->phase2aCmp);
 	}
-	free(act);
-
 	return CELIX_SUCCESS;
 }
+
+CELIX_GEN_BUNDLE_ACTIVATOR(struct phase2a_activator_struct, start, stop)

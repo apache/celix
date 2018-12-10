@@ -39,7 +39,7 @@ struct module {
 	manifest_pt headerMap;
 	char * id;
 
-	struct bundle * bundle;
+	celix_bundle_t *bundle;
 };
 
 module_pt module_create(manifest_pt headerMap, const char * moduleId, bundle_pt bundle) {

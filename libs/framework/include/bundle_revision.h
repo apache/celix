@@ -123,13 +123,13 @@ celix_status_t bundleRevision_getManifest(bundle_revision_pt revision, manifest_
  * Retrieves the handles of the installed libraries for this revision.
  *
  * @param revision The revision to get the manifest for.
- * @param[out] handles array_list_pt containing the handles.
+ * @param[out] handles celix_array_list_t *containing the handles.
  *
  * @return Status code indication failure or success:
  *      - CELIX_SUCCESS when no errors are encountered.
  *      - CELIX_ILLEGAL_ARGUMENT If <code>revision</code> is illegal.
  */
-celix_status_t bundleRevision_getHandles(bundle_revision_pt revision, array_list_pt *handles);
+celix_status_t bundleRevision_getHandles(bundle_revision_pt revision, celix_array_list_t **handles);
 
 #ifdef __cplusplus
 }

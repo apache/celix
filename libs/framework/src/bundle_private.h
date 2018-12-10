@@ -26,10 +26,9 @@
 
 
 
-struct bundle {
-	char *symbolicName; //present to make debugging easier
-
+struct celix_bundle {
 	bundle_context_pt context;
+    char *symbolicName; //for debug
 	struct celix_bundle_activator *activator;
 	bundle_state_e state;
 	void * handle;
@@ -37,7 +36,7 @@ struct bundle {
 	array_list_pt modules;
 	manifest_pt manifest;
 
-	struct framework * framework;
+	celix_framework_t *framework;
 };
 
 #endif /* BUNDLE_PRIVATE_H_ */

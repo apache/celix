@@ -41,9 +41,9 @@ typedef struct module *module_pt;
 extern "C" {
 #endif
 
-module_pt module_create(manifest_pt headerMap, const char *moduleId, bundle_pt bundle);
+module_pt module_create(manifest_pt headerMap, const char *moduleId, celix_bundle_t *bundle);
 
-module_pt module_createFrameworkModule(bundle_pt bundle);
+module_pt module_createFrameworkModule(celix_bundle_t *bundle);
 
 void module_destroy(module_pt module);
 
@@ -67,25 +67,25 @@ FRAMEWORK_EXPORT bool module_isResolved(module_pt module);
 
 FRAMEWORK_EXPORT void module_setResolved(module_pt module);
 
-FRAMEWORK_EXPORT bundle_pt module_getBundle(module_pt module);
+FRAMEWORK_EXPORT celix_bundle_t *module_getBundle(module_pt module);
 
 FRAMEWORK_EXPORT linked_list_pt module_getRequirements(module_pt module);
 
 FRAMEWORK_EXPORT linked_list_pt module_getCapabilities(module_pt module);
 
-FRAMEWORK_EXPORT array_list_pt module_getDependentImporters(module_pt module);
+FRAMEWORK_EXPORT celix_array_list_t *module_getDependentImporters(module_pt module);
 
 FRAMEWORK_EXPORT void module_addDependentImporter(module_pt module, module_pt importer);
 
 FRAMEWORK_EXPORT void module_removeDependentImporter(module_pt module, module_pt importer);
 
-FRAMEWORK_EXPORT array_list_pt module_getDependentRequirers(module_pt module);
+FRAMEWORK_EXPORT celix_array_list_t *module_getDependentRequirers(module_pt module);
 
 FRAMEWORK_EXPORT void module_addDependentRequirer(module_pt module, module_pt requirer);
 
 FRAMEWORK_EXPORT void module_removeDependentRequirer(module_pt module, module_pt requirer);
 
-FRAMEWORK_EXPORT array_list_pt module_getDependents(module_pt module);
+FRAMEWORK_EXPORT celix_array_list_t *module_getDependents(module_pt module);
 
 FRAMEWORK_EXPORT celix_status_t module_getGroup(module_pt module, const char **group);
 

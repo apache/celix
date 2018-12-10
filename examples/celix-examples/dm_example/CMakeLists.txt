@@ -22,7 +22,6 @@ add_subdirectory(phase2a)
 add_subdirectory(phase2b)
 add_subdirectory(phase3)
 
-
 add_celix_container(dm_example
     COPY
     BUNDLES
