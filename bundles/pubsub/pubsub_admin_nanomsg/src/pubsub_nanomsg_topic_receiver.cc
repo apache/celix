@@ -37,7 +37,7 @@
 #include <pubsub/subscriber.h>
 #include <pubsub_constants.h>
 #include <pubsub_endpoint.h>
-#include <log_helper.h>
+#include <LogHelper.h>
 
 #include "pubsub_nanomsg_topic_receiver.h"
 #include "pubsub_psa_nanomsg_constants.h"
@@ -45,7 +45,7 @@
 #include "pubsub_topology_manager.h"
 
 //TODO see if block and wakeup (reset) also works
-#define PSA_NANOMSG_RECV_TIMEOUT 1000
+#define PSA_NANOMSG_RECV_TIMEOUT 100 //100 msec timeout
 
 /*
 #define L_DEBUG(...) \
@@ -57,31 +57,30 @@
 #define L_ERROR(...) \
     logHelper_log(receiver->logHelper, OSGI_LOGSERVICE_ERROR, __VA_ARGS__)
 */
-#define L_DEBUG printf
-#define L_INFO printf
-#define L_WARN printf
-#define L_ERROR printf
+//#define L_DEBUG printf
+//#define L_INFO printf
+//#define L_WARN printf
+//#define L_ERROR printf
 
 
 pubsub::nanomsg::topic_receiver::topic_receiver(celix_bundle_context_t *_ctx,
-        log_helper_t *_logHelper,
+        celix::pubsub::nanomsg::LogHelper& _logHelper,
         const std::string &_scope,
         const std::string &_topic,
         long _serializerSvcId,
-        pubsub_serializer_service_t *_serializer) : m_serializerSvcId{_serializerSvcId}, m_scope{_scope}, m_topic{_topic} {
+        pubsub_serializer_service_t *_serializer) : L{_logHelper}, m_serializerSvcId{_serializerSvcId}, m_scope{_scope}, m_topic{_topic} {
     ctx = _ctx;
-    logHelper = _logHelper;
     serializer = _serializer;
 
     m_nanoMsgSocket = nn_socket(AF_SP, NN_BUS);
     if (m_nanoMsgSocket < 0) {
-        L_ERROR("[PSA_NANOMSG] Cannot create TopicReceiver for %s/%s", m_scope.c_str(), m_topic.c_str());
+        L.ERROR("[PSA_NANOMSG] Cannot create TopicReceiver for scope/topic: ", m_scope.c_str(), "/", m_topic.c_str());
         std::bad_alloc{};
     } else {
         int timeout = PSA_NANOMSG_RECV_TIMEOUT;
         if (nn_setsockopt(m_nanoMsgSocket , NN_SOL_SOCKET, NN_RCVTIMEO, &timeout,
                           sizeof (timeout)) < 0) {
-            L_ERROR("[PSA_NANOMSG] Cannot create TopicReceiver for %s/%s, set sockopt RECV_TIMEO failed", m_scope.c_str(), m_topic.c_str());
+            L.ERROR("[PSA_NANOMSG] Cannot create TopicReceiver for ",m_scope, "/",m_topic, ", set sockopt RECV_TIMEO failed");
             std::bad_alloc{};
         }
 
@@ -91,7 +90,7 @@ pubsub::nanomsg::topic_receiver::topic_receiver(celix_bundle_context_t *_ctx,
 
         subscriberTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
         recvThread.running = true;
-
+        free ((void*)opts.filter.filter);
         recvThread.thread = std::thread([this]() {this->recvThread_exec();});
     }
 }
@@ -161,7 +160,7 @@ void pubsub::nanomsg::topic_receiver::listConnections(std::vector<std::string> &
 
 
 void pubsub::nanomsg::topic_receiver::connectTo(const char *url) {
-    L_DEBUG("[PSA_NANOMSG] TopicReceiver %s/%s connecting to nanomsg url %s", m_scope.c_str(), m_topic.c_str(), url);
+    L.DBG("[PSA_NANOMSG] TopicReceiver ", m_scope, "/", m_topic, " connecting to nanomsg url ", url);
 
     std::lock_guard<std::mutex> _lock(requestedConnections.mutex);
     auto entry  = requestedConnections.map.find(url);
@@ -178,13 +177,13 @@ void pubsub::nanomsg::topic_receiver::connectTo(const char *url) {
             entry->second.setConnected(true);
             entry->second.setId(connection_id);
         } else {
-            L_WARN("[PSA_NANOMSG] Error connecting to NANOMSG url %s. (%s)", url, strerror(errno));
+            L.WARN("[PSA_NANOMSG] Error connecting to NANOMSG url ", url, " (",strerror(errno), ")");
         }
     }
 }
 
 void pubsub::nanomsg::topic_receiver::disconnectFrom(const char *url) {
-    L_DEBUG("[PSA NANOMSG] TopicReceiver %s/%s disconnect from nanomsg url %s", m_scope.c_str(), m_topic.c_str(), url);
+    L.DBG("[PSA NANOMSG] TopicReceiver ", m_scope, "/", m_topic, " disconnect from nanomsg url ", url);
 
     std::lock_guard<std::mutex> _lock(requestedConnections.mutex);
     auto entry = requestedConnections.map.find(url);
@@ -193,8 +192,7 @@ void pubsub::nanomsg::topic_receiver::disconnectFrom(const char *url) {
             if (nn_shutdown(m_nanoMsgSocket, entry->second.getId()) == 0) {
                 entry->second.setConnected(false);
             } else {
-                L_WARN("[PSA_NANOMSG] Error disconnecting from nanomsg url %s, id %d. (%s)", url, entry->second.getId(),
-                       strerror(errno));
+                L.WARN("[PSA_NANOMSG] Error disconnecting from nanomsg url ", url, ", id: ", entry->second.getId(), " (",strerror(errno),")");
             }
         }
         requestedConnections.map.erase(url);
@@ -226,7 +224,7 @@ void pubsub::nanomsg::topic_receiver::addSubscriber(void *svc, const celix_prope
 
         int rc = serializer->createSerializerMap(serializer->handle, (celix_bundle_t*)bnd, &entry->second.msgTypes);
         if (rc != 0) {
-            L_ERROR("[PSA_NANOMSG] Cannot create msg serializer map for TopicReceiver %s/%s", m_scope.c_str(), m_topic.c_str());
+            L.ERROR("[PSA_NANOMSG] Cannot create msg serializer map for TopicReceiver ", m_scope.c_str(), "/", m_topic.c_str());
             subscribers.map.erase(bndId);
         }
     }
@@ -244,7 +242,7 @@ void pubsub::nanomsg::topic_receiver::removeSubscriber(void */*svc*/,
             //remove entry
             int rc = serializer->destroySerializerMap(serializer->handle, entry->second.msgTypes);
             if (rc != 0) {
-                L_ERROR("[PSA_NANOMSG] Cannot destroy msg serializers map for TopicReceiver %s/%s", m_scope.c_str(), m_topic.c_str());
+                L.ERROR("[PSA_NANOMSG] Cannot destroy msg serializers map for TopicReceiver ", m_scope.c_str(), "/",m_topic.c_str(),"\n");
             }
             subscribers.map.erase(bndId);
         }
@@ -267,23 +265,18 @@ void pubsub::nanomsg::topic_receiver::processMsgForSubscriberEntry(psa_nanomsg_s
                     msgSer->freeMsg(msgSer->handle, deserializedMsg);
                 }
             } else {
-                //L_WARN("[PSA_NANOMSG_TR] Cannot deserialize msg type %s for scope/topic %s/%s", msgSer->msgName, scope, topic);
+                L.WARN("[PSA_NANOMSG_TR] Cannot deserialize msg type ", msgSer->msgName , "for scope/topic ", scope(), "/", topic());
             }
         }
     } else {
-        L_WARN("[PSA_NANOMSG_TR] Cannot find serializer for type id %i", hdr->type);
+        L.WARN("[PSA_NANOMSG_TR] Cannot find serializer for type id ", hdr->type);
     }
 }
 
 void pubsub::nanomsg::topic_receiver::processMsg(const pubsub_nanmosg_msg_header_t *hdr, const char *payload, size_t payloadSize) {
     std::lock_guard<std::mutex> _lock(subscribers.mutex);
-    //hash_map_iterator_t iter = hashMapIterator_construct(subscribers.map);
-    //while (hashMapIterator_hasNext(&iter)) {
     for (auto entry : subscribers.map) {
-        //psa_nanomsg_subscriber_entry_t *entry = static_cast<psa_nanomsg_subscriber_entry_t*>(hashMapIterator_nextValue(&iter));
-        //if (entry != NULL) {
-            processMsgForSubscriberEntry(&entry.second, hdr, payload, payloadSize);
-        //}
+        processMsgForSubscriberEntry(&entry.second, hdr, payload, payloadSize);
     }
 }
 
@@ -293,12 +286,7 @@ struct Message {
 };
 
 void pubsub::nanomsg::topic_receiver::recvThread_exec() {
-    bool running{};
-    {
-        std::lock_guard<std::mutex> _lock(recvThread.mutex);
-        running = recvThread.running;
-    }
-    while (running) {
+    while (recvThread.running) {
         Message *msg = nullptr;
         nn_iovec iov[2];
         iov[0].iov_base = &msg;
@@ -319,13 +307,13 @@ void pubsub::nanomsg::topic_receiver::recvThread_exec() {
             processMsg(&msg->header, msg->payload, recvBytes-sizeof(msg->header));
             nn_freemsg(msg);
         } else if (recvBytes >= 0) {
-            L_ERROR("[PSA_NANOMSG_TR] Error receiving nanmosg msg, size (%d) smaller than header\n", recvBytes);
+            L.ERROR("[PSA_NANOMSG_TR] Error receiving nanmosg msg, size (", recvBytes,") smaller than header\n");
         } else if (errno == EAGAIN || errno == ETIMEDOUT) {
-            //nop
+            // no data: go to next cycle
         } else if (errno == EINTR) {
-            L_DEBUG("[PSA_NANOMSG_TR] nn_recvmsg interrupted");
+            L.DBG("[PSA_NANOMSG_TR] nn_recvmsg interrupted");
         } else {
-            L_WARN("[PSA_NANOMSG_TR] Error receiving nanomessage: errno %d: %s\n", errno, strerror(errno));
+            L.WARN("[PSA_NANOMSG_TR] Error receiving nanomessage: errno ", errno, " : ",  strerror(errno), "\n");
         }
     } // while
 

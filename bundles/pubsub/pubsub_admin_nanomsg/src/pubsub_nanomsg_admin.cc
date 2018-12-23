@@ -34,22 +34,12 @@
 #include "pubsub_nanomsg_admin.h"
 #include "pubsub_psa_nanomsg_constants.h"
 
-#define L_DEBUG(...) \
-    logHelper_log(log, OSGI_LOGSERVICE_DEBUG, __VA_ARGS__)
-#define L_INFO(...) \
-    logHelper_log(log, OSGI_LOGSERVICE_INFO, __VA_ARGS__)
-#define L_WARN(...) \
-    logHelper_log(log, OSGI_LOGSERVICE_WARNING, __VA_ARGS__)
-#define L_ERROR(...) \
-    logHelper_log(log, OSGI_LOGSERVICE_ERROR, __VA_ARGS__)
-
-
 
 static celix_status_t nanoMsg_getIpAddress(const char *interface, char **ip);
 
-pubsub_nanomsg_admin::pubsub_nanomsg_admin(celix_bundle_context_t *_ctx, log_helper_t *logHelper):
+pubsub_nanomsg_admin::pubsub_nanomsg_admin(celix_bundle_context_t *_ctx, celix::pubsub::nanomsg::LogHelper& logHelper):
     ctx{_ctx},
-    log{logHelper} {
+    L{logHelper} {
     verbose = celix_bundleContext_getPropertyAsBool(ctx, PUBSUB_NANOMSG_VERBOSE_KEY, PUBSUB_NANOMSG_VERBOSE_DEFAULT);
     fwUUID = celix_bundleContext_getProperty(ctx, OSGI_FRAMEWORK_FRAMEWORK_UUID, nullptr);
 
@@ -70,13 +60,13 @@ pubsub_nanomsg_admin::pubsub_nanomsg_admin(celix_bundle_context_t *_ctx, log_hel
     }
 
     if (ip == nullptr) {
-        L_WARN("[PSA_NANOMSG] Could not determine IP address for PSA, using default ip (%s)", PUBSUB_NANOMSG_DEFAULT_IP);
+        L.WARN("[PSA_NANOMSG] Could not determine IP address for PSA, using default ip (", PUBSUB_NANOMSG_DEFAULT_IP, ")");
         ip = strndup(PUBSUB_NANOMSG_DEFAULT_IP, 1024);
     }
 
     ipAddress = ip;
     if (verbose) {
-        L_INFO("[PSA_NANOMSG] Using %s for service annunciation", ip);
+        L.INFO("[PSA_NANOMSG] Using ", ip, " for service annunciation.");
     }
 
 
@@ -85,7 +75,7 @@ pubsub_nanomsg_admin::pubsub_nanomsg_admin(celix_bundle_context_t *_ctx, log_hel
     basePort = (unsigned int)_basePort;
     maxPort = (unsigned int)_maxPort;
     if (verbose) {
-        L_INFO("[PSA_NANOMSG] Using base till max port: %li till %li", _basePort, _maxPort);
+        L.INFO("[PSA_NANOMSG] Using base till max port: ", _basePort, " till ", _maxPort);
     }
 
 
@@ -214,7 +204,7 @@ void pubsub_nanomsg_admin::addSerializerSvc(void *svc, const celix_properties_t 
     long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
 
     if (serType == nullptr) {
-        L_INFO("[PSA_NANOMSG] Ignoring serializer service without %s property", PUBSUB_SERIALIZER_TYPE_KEY);
+        L.INFO("[PSA_NANOMSG] Ignoring serializer service without ", PUBSUB_SERIALIZER_TYPE_KEY, " property");
         return;
     }
 
@@ -273,7 +263,7 @@ void pubsub_nanomsg_admin::removeSerializerSvc(void */*svc*/, const celix_proper
 
 celix_status_t pubsub_nanomsg_admin::matchPublisher(long svcRequesterBndId, const celix_filter_t *svcFilter,
                                                   double *outScore, long *outSerializerSvcId) {
-    L_DEBUG("[PSA_NANOMSG] pubsub_nanoMsgAdmin_matchPublisher");
+    L.DBG("[PSA_NANOMSG] pubsub_nanoMsgAdmin_matchPublisher");
     celix_status_t  status = CELIX_SUCCESS;
     double score = pubsub_utils_matchPublisher(ctx, svcRequesterBndId, svcFilter->filterStr, PUBSUB_NANOMSG_ADMIN_TYPE,
             qosSampleScore, qosControlScore, defaultScore, outSerializerSvcId);
@@ -285,7 +275,7 @@ celix_status_t pubsub_nanomsg_admin::matchPublisher(long svcRequesterBndId, cons
 celix_status_t pubsub_nanomsg_admin::matchSubscriber(long svcProviderBndId,
                                                    const celix_properties_t *svcProperties, double *outScore,
                                                    long *outSerializerSvcId) {
-    L_DEBUG("[PSA_NANOMSG] pubsub_nanoMsgAdmin_matchSubscriber");
+    L.DBG("[PSA_NANOMSG] pubsub_nanoMsgAdmin_matchSubscriber");
     celix_status_t  status = CELIX_SUCCESS;
     double score = pubsub_utils_matchSubscriber(ctx, svcProviderBndId, svcProperties, PUBSUB_NANOMSG_ADMIN_TYPE,
             qosSampleScore, qosControlScore, defaultScore, outSerializerSvcId);
@@ -296,7 +286,7 @@ celix_status_t pubsub_nanomsg_admin::matchSubscriber(long svcProviderBndId,
 }
 
 celix_status_t pubsub_nanomsg_admin::matchEndpoint(const celix_properties_t *endpoint, bool *outMatch) {
-    L_DEBUG("[PSA_NANOMSG] pubsub_nanoMsgAdmin_matchEndpoint");
+    L.DBG("[PSA_NANOMSG] pubsub_nanoMsgAdmin_matchEndpoint");
     celix_status_t  status = CELIX_SUCCESS;
     bool match = pubsub_utils_matchEndpoint(ctx, endpoint, PUBSUB_NANOMSG_ADMIN_TYPE, nullptr);
     if (outMatch != nullptr) {
@@ -314,45 +304,37 @@ celix_status_t pubsub_nanomsg_admin::setupTopicSender(const char *scope, const c
     //3) Connect existing endpoints
     //4) set outPublisherEndpoint
 
-    celix_properties_t *newEndpoint = nullptr;
-
     char *key = pubsubEndpoint_createScopeTopicKey(scope, topic);
     std::lock_guard<std::mutex> serializerLock(serializers.mutex);
     std::lock_guard<std::mutex> topicSenderLock(topicSenders.mutex);
     auto sender = topicSenders.map.find(key);
     if (sender == topicSenders.map.end()) {
-        psa_nanomsg_serializer_entry_t *serEntry = nullptr;
+        //psa_nanomsg_serializer_entry *serEntry = nullptr;
         auto kv = serializers.map.find(serializerSvcId);
         if (kv != serializers.map.end()) {
-            serEntry = &kv->second;
-        }
-        if (serEntry != nullptr) {
+            auto &serEntry = kv->second;
             auto e = topicSenders.map.emplace(std::piecewise_construct,
                     std::forward_as_tuple(key),
-                    std::forward_as_tuple(ctx, log, scope, topic, serializerSvcId, serEntry->svc, ipAddress,
+                    std::forward_as_tuple(ctx, L, scope, topic, serializerSvcId, serEntry.svc, ipAddress,
                                           basePort, maxPort));
-            const char *psaType = PUBSUB_NANOMSG_ADMIN_TYPE;
-            const char *serType = serEntry->serType;
-            newEndpoint = pubsubEndpoint_create(fwUUID, scope, topic, PUBSUB_PUBLISHER_ENDPOINT_TYPE, psaType, serType,
-                                                nullptr);
+            celix_properties_t *newEndpoint = pubsubEndpoint_create(fwUUID, scope, topic, PUBSUB_PUBLISHER_ENDPOINT_TYPE,
+                    PUBSUB_NANOMSG_ADMIN_TYPE, serEntry.serType, nullptr);
             celix_properties_set(newEndpoint, PUBSUB_NANOMSG_URL_KEY, e.first->second.getUrl().c_str());
             //if available also set container name
             const char *cn = celix_bundleContext_getProperty(ctx, "CELIX_CONTAINER_NAME", nullptr);
             if (cn != nullptr) {
                 celix_properties_set(newEndpoint, "container_name", cn);
             }
+            if (newEndpoint != nullptr && outPublisherEndpoint != nullptr) {
+                *outPublisherEndpoint = newEndpoint;
+            }
         } else {
-            L_ERROR("[PSA NANOMSG] Error creating a TopicSender");
-            free(key);
+            L.ERROR("[PSA NANOMSG] Error creating a TopicSender");
         }
     } else {
-        free(key);
-        L_ERROR("[PSA_NANOMSG] Cannot setup already existing TopicSender for scope/topic %s/%s!", scope, topic);
+        L.ERROR("[PSA_NANOMSG] Cannot setup already existing TopicSender for scope/topic ", scope,"/", topic);
     }
-
-    if (newEndpoint != nullptr && outPublisherEndpoint != nullptr) {
-        *outPublisherEndpoint = newEndpoint;
-    }
+    free(key);
 
     return status;
 }
@@ -365,9 +347,8 @@ celix_status_t pubsub_nanomsg_admin::teardownTopicSender(const char *scope, cons
 
     char *key = pubsubEndpoint_createScopeTopicKey(scope, topic);
     std::lock_guard<std::mutex> topicSenderLock(topicSenders.mutex);
-    ;
     if (topicSenders.map.erase(key) == 0) {
-        L_ERROR("[PSA NANOMSG] Cannot teardown TopicSender with scope/topic %s/%s. Does not exists", scope, topic);
+        L.ERROR("[PSA NANOMSG] Cannot teardown TopicSender with scope/topic ", scope, "/", topic, " Does not exists");
     }
     free(key);
 
@@ -379,7 +360,7 @@ celix_status_t pubsub_nanomsg_admin::setupTopicReceiver(const std::string &scope
 
     celix_properties_t *newEndpoint = nullptr;
 
-    std::string key = pubsubEndpoint_createScopeTopicKey(scope.c_str(), topic.c_str());
+    auto key = pubsubEndpoint_createScopeTopicKey(scope.c_str(), topic.c_str());
     pubsub::nanomsg::topic_receiver * receiver = nullptr;
     {
         std::lock_guard<std::mutex> serializerLock(serializers.mutex);
@@ -392,9 +373,9 @@ celix_status_t pubsub_nanomsg_admin::setupTopicReceiver(const std::string &scope
             auto kvs = serializers.map.find(serializerSvcId);
             if (kvs != serializers.map.end()) {
                 auto serEntry = kvs->second;
-                receiver = new pubsub::nanomsg::topic_receiver(ctx, log, scope, topic, serializerSvcId, serEntry.svc);
+                receiver = new pubsub::nanomsg::topic_receiver(ctx, L, scope, topic, serializerSvcId, serEntry.svc);
             } else {
-                L_ERROR("[PSA_NANOMSG] Cannot find serializer for TopicSender %s/%s", scope.c_str(), topic.c_str());
+                L.ERROR("[PSA_NANOMSG] Cannot find serializer for TopicSender ", scope, "/", topic);
             }
             if (receiver != nullptr) {
                 const char *psaType = PUBSUB_NANOMSG_ADMIN_TYPE;
@@ -408,10 +389,10 @@ celix_status_t pubsub_nanomsg_admin::setupTopicReceiver(const std::string &scope
                 }
                 topicReceivers.map[key] = receiver;
             } else {
-                L_ERROR("[PSA NANOMSG] Error creating a TopicReceiver.");
+                L.ERROR("[PSA NANOMSG] Error creating a TopicReceiver.");
             }
         } else {
-            L_ERROR("[PSA_NANOMSG] Cannot setup already existing TopicReceiver for scope/topic %s/%s!", scope.c_str(), topic.c_str());
+            L.ERROR("[PSA_NANOMSG] Cannot setup already existing TopicReceiver for scope/topic ", scope, "/", topic);
         }
     }
     if (receiver != nullptr && newEndpoint != nullptr) {
@@ -428,7 +409,7 @@ celix_status_t pubsub_nanomsg_admin::setupTopicReceiver(const std::string &scope
     if (newEndpoint != nullptr && outSubscriberEndpoint != nullptr) {
         *outSubscriberEndpoint = newEndpoint;
     }
-
+    free(key);
     celix_status_t  status = CELIX_SUCCESS;
     return status;
 }
@@ -509,7 +490,7 @@ celix_status_t pubsub_nanomsg_admin::disconnectEndpointFromReceiver(pubsub::nano
     const char *url = celix_properties_get(endpoint, PUBSUB_NANOMSG_URL_KEY, nullptr);
 
     if (url == nullptr) {
-        L_WARN("[PSA NANOMSG] Error got endpoint without nanomsg url");
+        L.WARN("[PSA NANOMSG] Error got endpoint without nanomsg url");
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
         if ((eScope == scope) && (eTopic == topic)) {

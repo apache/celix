@@ -23,45 +23,14 @@
 #include <iostream>
 #include "celix_api.h"
 #include "pubsub_serializer.h"
-#include "log_helper.h"
-
+#include "LogHelper.h"
 #include "pubsub_admin.h"
 #include "pubsub_nanomsg_admin.h"
 
-class LogHelper {
-public:
-    LogHelper(celix_bundle_context_t *ctx) : context{ctx} {
-        if (logHelper_create(context, &logHelper)!= CELIX_SUCCESS) {
-            std::bad_alloc{};
-        }
-
-    }
-    ~LogHelper() {
-        logHelper_destroy(&logHelper);
-    }
-
-    LogHelper(const LogHelper &) = delete;
-    LogHelper & operator=(const LogHelper&) = delete;
-    celix_status_t start () {
-        return logHelper_start(logHelper);
-    }
-
-    celix_status_t stop () {
-        return logHelper_stop(logHelper);
-    }
-
-    log_helper_t *get() {
-        return logHelper;
-    }
-private:
-    celix_bundle_context_t *context;
-    log_helper_t *logHelper{};
-
-};
 
 class psa_nanomsg_activator {
 public:
-    psa_nanomsg_activator(celix_bundle_context_t *ctx) : context{ctx}, logHelper{context}, admin(context, logHelper.get()) {
+    psa_nanomsg_activator(celix_bundle_context_t *ctx) : context{ctx}, L{context}, admin(context, L) {
     }
     psa_nanomsg_activator(const psa_nanomsg_activator&) = delete;
     psa_nanomsg_activator& operator=(const psa_nanomsg_activator&) = delete;
@@ -72,19 +41,17 @@ public:
 
     celix_status_t  start() {
         admin.start();
-        auto status = logHelper.start();
-
-        return status;
+        return CELIX_SUCCESS;
     }
 
     celix_status_t stop() {
         admin.stop();
-        return logHelper.stop();
+        return CELIX_SUCCESS;
     };
 
 private:
     celix_bundle_context_t *context{};
-    LogHelper logHelper;
+    celix::pubsub::nanomsg::LogHelper L;
 	pubsub_nanomsg_admin admin;
 
 };

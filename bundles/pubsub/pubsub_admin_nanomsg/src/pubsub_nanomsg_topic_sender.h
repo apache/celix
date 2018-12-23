@@ -35,7 +35,7 @@ namespace pubsub {
                     std::string &_topic,
                     long _bndId,
                     int _nanoMsgSocket,
-                    log_helper_t* _logHelper) : scope{_scope}, topic{_topic}, bndId{_bndId}, nanoMsgSocket{_nanoMsgSocket}, logHelper{_logHelper} {
+                    celix::pubsub::nanomsg::LogHelper& _logHelper) : scope{_scope}, topic{_topic}, bndId{_bndId}, nanoMsgSocket{_nanoMsgSocket}, L{_logHelper} {
 
             }
             bounded_service_entry(const bounded_service_entry&) = delete;
@@ -49,13 +49,14 @@ namespace pubsub {
             hash_map_t *msgTypes{};
             int getCount{1};
             int nanoMsgSocket{};
-            log_helper_t *logHelper{};
+            celix::pubsub::nanomsg::LogHelper L;
         } ;
 
 
         class pubsub_nanomsg_topic_sender {
         public:
-            pubsub_nanomsg_topic_sender(celix_bundle_context_t *_ctx, log_helper_t *_logHelper, const char *_scope,
+            pubsub_nanomsg_topic_sender(celix_bundle_context_t *_ctx,
+                                        celix::pubsub::nanomsg::LogHelper& _logHelper, const char *_scope,
                                         const char *_topic, long _serializerSvcId, pubsub_serializer_service_t *_ser,
                                         const char *_bindIp, unsigned int _basePort, unsigned int _maxPort);
 
@@ -79,7 +80,7 @@ namespace pubsub {
 
             //private:
             celix_bundle_context_t *ctx;
-            log_helper_t *logHelper;
+            celix::pubsub::nanomsg::LogHelper L;
             long serializerSvcId;
             pubsub_serializer_service_t *serializer;
 

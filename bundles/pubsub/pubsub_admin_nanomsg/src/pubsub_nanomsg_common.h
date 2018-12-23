@@ -21,11 +21,12 @@
 #define CELIX_PUBSUB_ZMQ_COMMON_H
 
 #include <string>
+#include <sstream>
 #include <utils.h>
 
 #include "version.h"
 #include "pubsub_common.h"
-
+#include "log_helper.h"
 
 /*
  * NOTE zmq is used by first sending three frames:

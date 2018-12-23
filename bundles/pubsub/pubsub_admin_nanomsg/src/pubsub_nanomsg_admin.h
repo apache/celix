@@ -24,11 +24,10 @@
 #include <map>
 #include <pubsub_admin.h>
 #include "celix_api.h"
-#include "log_helper.h"
 #include "pubsub_nanomsg_topic_receiver.h"
 #include <pubsub_serializer.h>
-
-#include "../../../shell/shell/include/command.h"
+#include "LogHelper.h"
+#include "command.h"
 #include "pubsub_nanomsg_topic_sender.h"
 #include "pubsub_nanomsg_topic_receiver.h"
 
@@ -51,7 +50,7 @@ struct ProtectedMap {
 
 class pubsub_nanomsg_admin {
 public:
-    pubsub_nanomsg_admin(celix_bundle_context_t *ctx, log_helper_t *logHelper);
+    pubsub_nanomsg_admin(celix_bundle_context_t *ctx, celix::pubsub::nanomsg::LogHelper& logHelper);
     pubsub_nanomsg_admin(const pubsub_nanomsg_admin&) = delete;
     pubsub_nanomsg_admin& operator=(const pubsub_nanomsg_admin&) = delete;
     ~pubsub_nanomsg_admin();
@@ -88,7 +87,7 @@ private:
     celix_status_t disconnectEndpointFromReceiver(pubsub::nanomsg::topic_receiver *receiver,
                                                                         const celix_properties_t *endpoint);
     celix_bundle_context_t *ctx;
-    log_helper_t *log;
+    celix::pubsub::nanomsg::LogHelper L;
     pubsub_admin_service_t adminService{};
     long adminSvcId = -1L;
     long cmdSvcId = -1L;
@@ -108,7 +107,8 @@ private:
 
     bool verbose{};
 
-    typedef struct psa_nanomsg_serializer_entry {
+    class psa_nanomsg_serializer_entry {
+    public:
         psa_nanomsg_serializer_entry(const char*_serType, long _svcId, pubsub_serializer_service_t *_svc) :
             serType{_serType}, svcId{_svcId}, svc{_svc} {
 
@@ -117,8 +117,8 @@ private:
         const char *serType;
         long svcId;
         pubsub_serializer_service_t *svc;
-    } psa_nanomsg_serializer_entry_t;
-    ProtectedMap<long, psa_nanomsg_serializer_entry_t> serializers{};
+    };
+    ProtectedMap<long, psa_nanomsg_serializer_entry> serializers{};
     ProtectedMap<std::string, pubsub::nanomsg::pubsub_nanomsg_topic_sender> topicSenders{};
     ProtectedMap<std::string, pubsub::nanomsg::topic_receiver*> topicReceivers{};
     ProtectedMap<const std::string, celix_properties_t *> discoveredEndpoints{};

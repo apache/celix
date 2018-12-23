@@ -23,7 +23,7 @@
 #include <mutex>
 #include <map>
 #include "pubsub_serializer.h"
-#include "log_helper.h"
+#include "LogHelper.h"
 #include "celix_bundle_context.h"
 #include "pubsub_nanomsg_common.h"
 #include "pubsub/subscriber.h"
@@ -72,7 +72,7 @@ namespace pubsub {
         public:
             topic_receiver(celix_bundle_context_t
                            *ctx,
-                           log_helper_t *logHelper,
+                           celix::pubsub::nanomsg::LogHelper& logHelper,
                            const std::string &scope,
                            const std::string &topic,
                            long serializerSvcId, pubsub_serializer_service_t
@@ -96,7 +96,7 @@ namespace pubsub {
 
         private:
             celix_bundle_context_t *ctx{nullptr};
-            log_helper_t *logHelper{nullptr};
+            celix::pubsub::nanomsg::LogHelper L;
             long m_serializerSvcId{0};
             pubsub_serializer_service_t *serializer{nullptr};
             const std::string m_scope{};
