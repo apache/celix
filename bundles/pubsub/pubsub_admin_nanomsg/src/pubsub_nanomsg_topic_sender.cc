@@ -56,7 +56,7 @@ pubsub::nanomsg::pubsub_nanomsg_topic_sender::pubsub_nanomsg_topic_sender(celix_
         scope{_scope},
         topic{_topic}{
 
-    scopeAndTopicFilter = psa_nanomsg_setScopeAndTopicFilter(_scope, _topic);
+    scopeAndTopicFilter = celix::pubsub::nanomsg::setScopeAndTopicFilter(_scope, _topic);
 
     //setting up nanomsg socket for nanomsg TopicSender
     int nnSock = nn_socket(AF_SP, NN_BUS);
@@ -160,7 +160,7 @@ void* pubsub::nanomsg::pubsub_nanomsg_topic_sender::getPublisherService(const ce
 
         if (rc == 0) {
             entry.first->second.service.handle = &entry.first->second;
-            entry.first->second.service.localMsgTypeIdForMsgType = psa_nanoMsg_localMsgTypeIdForMsgType;
+            entry.first->second.service.localMsgTypeIdForMsgType = celix::pubsub::nanomsg::localMsgTypeIdForMsgType;
             entry.first->second.service.send = [](void *handle, unsigned int msgTypeId, const void *msg) {
                 return static_cast<pubsub::nanomsg::bounded_service_entry*>(handle)->topicPublicationSend(msgTypeId, msg);
             };

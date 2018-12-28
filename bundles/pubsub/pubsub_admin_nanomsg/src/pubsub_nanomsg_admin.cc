@@ -248,12 +248,14 @@ void pubsub_nanomsg_admin::removeSerializerSvc(void */*svc*/, const celix_proper
 
         {
             std::lock_guard<std::mutex> receiverLock(topicReceivers.mutex);
-            for (auto &kv : topicReceivers.map){
-                auto *receiver = kv.second;
+            for (auto iter = topicReceivers.map.begin(); iter != topicReceivers.map.end();) {
+                auto *receiver = iter->second;
                 if (receiver != nullptr && entry.svcId == receiver->serializerSvcId()) {
-                    auto key = kv.first;
-                    topicReceivers.map.erase(key);
+                    auto key = iter->first;
+                    topicReceivers.map.erase(iter++);
                     delete receiver;
+                } else {
+                    ++iter;
                 }
             }
         }

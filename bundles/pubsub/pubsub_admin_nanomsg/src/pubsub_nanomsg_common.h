@@ -39,20 +39,19 @@
  */
 
 namespace celix { namespace pubsub { namespace nanomsg {
-struct msg_header {
-    //header
-    unsigned int type;
-    unsigned char major;
-    unsigned char minor;
-};
+    struct msg_header {
+        //header
+        unsigned int type;
+        unsigned char major;
+        unsigned char minor;
+    };
+    int localMsgTypeIdForMsgType(void *handle, const char *msgType, unsigned int *msgTypeId);
+    std::string setScopeAndTopicFilter(const std::string &scope, const std::string &topic);
 
-//typedef struct pubsub_nanomsg_msg_header pubsub_nanmosg_msg_header_t;
-        }}}
+    bool checkVersion(version_pt msgVersion, const celix::pubsub::nanomsg::msg_header *hdr);
 
-int psa_nanoMsg_localMsgTypeIdForMsgType(void *handle, const char *msgType, unsigned int *msgTypeId);
-std::string psa_nanomsg_setScopeAndTopicFilter(const std::string &scope, const std::string &topic);
+}}}
 
-bool psa_nanomsg_checkVersion(version_pt msgVersion, const celix::pubsub::nanomsg::msg_header *hdr);
 
 
 #endif //CELIX_PUBSUB_ZMQ_COMMON_H

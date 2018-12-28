@@ -83,7 +83,7 @@ pubsub::nanomsg::topic_receiver::topic_receiver(celix_bundle_context_t *_ctx,
             std::bad_alloc{};
         }
 
-        auto subscriberFilter = psa_nanomsg_setScopeAndTopicFilter(m_scope, m_topic);
+        auto subscriberFilter = celix::pubsub::nanomsg::setScopeAndTopicFilter(m_scope, m_topic);
 
         auto opts = createOptions();
 
@@ -150,9 +150,9 @@ void pubsub::nanomsg::topic_receiver::listConnections(std::vector<std::string> &
     std::lock_guard<std::mutex> _lock(requestedConnections.mutex);
     for (auto entry : requestedConnections.map) {
         if (entry.second.isConnected()) {
-            connectedUrls.push_back(std::string(entry.second.getUrl()));
+            connectedUrls.emplace_back(entry.second.getUrl());
         } else {
-            unconnectedUrls.push_back(std::string(entry.second.getUrl()));
+            unconnectedUrls.emplace_back(entry.second.getUrl());
         }
     }
 }
@@ -254,7 +254,7 @@ void pubsub::nanomsg::topic_receiver::processMsgForSubscriberEntry(psa_nanomsg_s
 
     if (msgSer!= NULL) {
         void *deserializedMsg = NULL;
-        bool validVersion = psa_nanomsg_checkVersion(msgSer->msgVersion, hdr);
+        bool validVersion = celix::pubsub::nanomsg::checkVersion(msgSer->msgVersion, hdr);
         if (validVersion) {
             celix_status_t status = msgSer->deserialize(msgSer, payload, payloadSize, &deserializedMsg);
             if(status == CELIX_SUCCESS) {

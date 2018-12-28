@@ -304,14 +304,11 @@ static void serviceRegistry_logWarningServiceRegistration(service_registry_pt re
 celix_status_t serviceRegistry_getServiceReference(service_registry_pt registry, bundle_pt owner,
                                                    service_registration_pt registration, service_reference_pt *out) {
 	celix_status_t status = CELIX_SUCCESS;
-    printf("serviceRegistry_getServiceReference1\n");
+
 	if(celixThreadRwlock_writeLock(&registry->lock) == CELIX_SUCCESS) {
-        printf("serviceRegistry_getServiceReference2\n");
 	    status = serviceRegistry_getServiceReference_internal(registry, owner, registration, out);
-        printf("serviceRegistry_getServiceReference3\n");
 	    celixThreadRwlock_unlock(&registry->lock);
 	}
-    printf("serviceRegistry_getServiceReference4\n");
 
 	return status;
 }
@@ -367,10 +364,7 @@ celix_status_t serviceRegistry_getServiceReferences(service_registry_pt registry
 
     celixThreadRwlock_readLock(&registry->lock);
 	iterator = hashMapIterator_create(registry->serviceRegistrations);
-	int loopCnt = 0;
-	printf("### while iterator loop\n");
 	while (status == CELIX_SUCCESS && hashMapIterator_hasNext(iterator)) {
-        printf("### loopCnt %d\n", loopCnt++);
 		array_list_pt regs = (array_list_pt) hashMapIterator_nextValue(iterator);
 		unsigned int regIdx;
 		for (regIdx = 0; (regs != NULL) && regIdx < arrayList_size(regs); regIdx++) {
@@ -406,15 +400,13 @@ celix_status_t serviceRegistry_getServiceReferences(service_registry_pt registry
 			}
 		}
 	}
-    printf("### end iterator loop\n");
     celixThreadRwlock_unlock(&registry->lock);
 	hashMapIterator_destroy(iterator);
 
-    printf("### for loop\n");
     if (status == CELIX_SUCCESS) {
         unsigned int i;
         unsigned int size = arrayList_size(matchingRegistrations);
-        printf("### array size: &%d\n", size);
+
         for (i = 0; i < size; i += 1) {
             service_registration_pt reg = arrayList_get(matchingRegistrations, i);
             service_reference_pt reference = NULL;
@@ -439,7 +431,6 @@ celix_status_t serviceRegistry_getServiceReferences(service_registry_pt registry
         arrayList_destroy(references);
         framework_logIfError(logger, status, NULL, "Cannot get service references");
     }
-    printf("### finished\n");
 
 	return status;
 }
@@ -765,12 +756,11 @@ static celix_status_t serviceRegistry_removeHook(service_registry_pt registry, s
 celix_status_t serviceRegistry_getListenerHooks(service_registry_pt registry, bundle_pt owner, array_list_pt *out) {
 	celix_status_t status;
     array_list_pt result;
-    printf("### serviceRegistry_getListenerHooks1\n");
+
     status = arrayList_create(&result);
     if (status == CELIX_SUCCESS) {
         unsigned int i;
         unsigned size = arrayList_size(registry->listenerHooks);
-        printf("### serviceRegistry_getListenerHooks2\n");
 
         for (i = 0; i < size; i += 1) {
             celixThreadRwlock_readLock(&registry->lock);
@@ -779,21 +769,15 @@ celix_status_t serviceRegistry_getListenerHooks(service_registry_pt registry, bu
                 serviceRegistration_retain(registration);
             }
             celixThreadRwlock_unlock(&registry->lock);
-            printf("### serviceRegistry_getListenerHooks3 %d/%d\n", i, size);
 
             if (registration != NULL) {
                 service_reference_pt reference = NULL;
-                printf("### serviceRegistry_getListenerHooks3.1 %d/%d\n", i, size);
-
                 serviceRegistry_getServiceReference(registry, owner, registration, &reference);
-                printf("### serviceRegistry_getListenerHooks3.2 %d/%d\n", i, size);
                 arrayList_add(result, reference);
                 serviceRegistration_release(registration);
-                printf("### serviceRegistry_getListenerHooks3.3 %d/%d\n", i, size);
             }
         }
     }
-    printf("### serviceRegistry_getListenerHooks4\n");
 
     if (status == CELIX_SUCCESS) {
         *out = result;
@@ -803,7 +787,6 @@ celix_status_t serviceRegistry_getListenerHooks(service_registry_pt registry, bu
         }
         framework_logIfError(logger, status, NULL, "Cannot get listener hooks");
     }
-    printf("### serviceRegistry_getListenerHooks5\n");
 
 	return status;
 }

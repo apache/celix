@@ -20,13 +20,13 @@
 #include <memory.h>
 #include "pubsub_nanomsg_common.h"
 
-int psa_nanoMsg_localMsgTypeIdForMsgType(void *handle __attribute__((unused)), const char *msgType,
+int celix::pubsub::nanomsg::localMsgTypeIdForMsgType(void *handle __attribute__((unused)), const char *msgType,
                                          unsigned int *msgTypeId) {
     *msgTypeId = utils_stringHash(msgType);
     return 0;
 }
 
-bool psa_nanomsg_checkVersion(version_pt msgVersion, const celix::pubsub::nanomsg::msg_header *hdr) {
+bool celix::pubsub::nanomsg::checkVersion(version_pt msgVersion, const celix::pubsub::nanomsg::msg_header *hdr) {
     bool check=false;
     int major=0,minor=0;
 
@@ -41,7 +41,7 @@ bool psa_nanomsg_checkVersion(version_pt msgVersion, const celix::pubsub::nanoms
     return check;
 }
 
-std::string psa_nanomsg_setScopeAndTopicFilter(const std::string &scope, const std::string &topic) {
+std::string celix::pubsub::nanomsg::setScopeAndTopicFilter(const std::string &scope, const std::string &topic) {
     std::string result("");
     if (scope.size() >= 2)  { //3 ??
         result += scope[0];
