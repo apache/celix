@@ -42,7 +42,6 @@ static unsigned int rand_range(unsigned int min, unsigned int max);
 static void delay_first_send_for_late_joiners(celix::pubsub::nanomsg::LogHelper& logHelper);
 
 pubsub::nanomsg::pubsub_nanomsg_topic_sender::pubsub_nanomsg_topic_sender(celix_bundle_context_t *_ctx,
-                                                         celix::pubsub::nanomsg::LogHelper& _logHelper,
                                                          const char *_scope,
                                                          const char *_topic,
                                                          long _serializerSvcId,
@@ -51,7 +50,7 @@ pubsub::nanomsg::pubsub_nanomsg_topic_sender::pubsub_nanomsg_topic_sender(celix_
                                                          unsigned int _basePort,
                                                          unsigned int _maxPort) :
         ctx{_ctx},
-        L{_logHelper},
+        L{ctx, "PSA_ZMQ_TS"},
         serializerSvcId {_serializerSvcId},
         serializer{_ser},
         scope{_scope},
@@ -156,7 +155,7 @@ void* pubsub::nanomsg::pubsub_nanomsg_topic_sender::getPublisherService(const ce
     } else {
         auto entry = boundedServices.map.emplace(std::piecewise_construct,
                                     std::forward_as_tuple(bndId),
-                                    std::forward_as_tuple(scope, topic, bndId, nanomsg.socket, L));
+                                    std::forward_as_tuple(scope, topic, bndId, nanomsg.socket, ctx));
         int rc = serializer->createSerializerMap(serializer->handle, (celix_bundle_t*)requestingBundle, &entry.first->second.msgTypes);
 
         if (rc == 0) {
@@ -203,7 +202,7 @@ int pubsub::nanomsg::bounded_service_entry::topicPublicationSend(unsigned int ms
 
         int major = 0, minor = 0;
 
-        pubsub_nanmosg_msg_header_t msg_hdr{};// = calloc(1, sizeof(*msg_hdr));
+        celix::pubsub::nanomsg::msg_header msg_hdr{};
         msg_hdr.type = msgTypeId;
 
         if (msgSer->msgVersion != nullptr) {

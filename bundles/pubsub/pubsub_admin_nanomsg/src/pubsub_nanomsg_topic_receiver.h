@@ -72,7 +72,6 @@ namespace pubsub {
         public:
             topic_receiver(celix_bundle_context_t
                            *ctx,
-                           celix::pubsub::nanomsg::LogHelper& logHelper,
                            const std::string &scope,
                            const std::string &topic,
                            long serializerSvcId, pubsub_serializer_service_t
@@ -88,8 +87,8 @@ namespace pubsub {
             void connectTo(const char *url);
             void disconnectFrom(const char *url);
             void recvThread_exec();
-            void processMsg(const pubsub_nanmosg_msg_header_t *hdr, const char *payload, size_t payloadSize);
-            void processMsgForSubscriberEntry(psa_nanomsg_subscriber_entry* entry, const pubsub_nanmosg_msg_header_t *hdr, const char* payload, size_t payloadSize);
+            void processMsg(const celix::pubsub::nanomsg::msg_header *hdr, const char *payload, size_t payloadSize);
+            void processMsgForSubscriberEntry(psa_nanomsg_subscriber_entry* entry, const celix::pubsub::nanomsg::msg_header *hdr, const char* payload, size_t payloadSize);
             void addSubscriber(void *svc, const celix_properties_t *props, const celix_bundle_t *bnd);
             void removeSubscriber(void */*svc*/, const celix_properties_t */*props*/, const celix_bundle_t *bnd);
             celix_service_tracking_options_t createOptions();

@@ -38,21 +38,21 @@
  * 3) The actual payload
  */
 
-
-struct pubsub_nanomsg_msg_header {
+namespace celix { namespace pubsub { namespace nanomsg {
+struct msg_header {
     //header
     unsigned int type;
     unsigned char major;
     unsigned char minor;
 };
 
-typedef struct pubsub_nanomsg_msg_header pubsub_nanmosg_msg_header_t;
-
+//typedef struct pubsub_nanomsg_msg_header pubsub_nanmosg_msg_header_t;
+        }}}
 
 int psa_nanoMsg_localMsgTypeIdForMsgType(void *handle, const char *msgType, unsigned int *msgTypeId);
 std::string psa_nanomsg_setScopeAndTopicFilter(const std::string &scope, const std::string &topic);
 
-bool psa_nanomsg_checkVersion(version_pt msgVersion, const pubsub_nanmosg_msg_header_t *hdr);
+bool psa_nanomsg_checkVersion(version_pt msgVersion, const celix::pubsub::nanomsg::msg_header *hdr);
 
 
 #endif //CELIX_PUBSUB_ZMQ_COMMON_H

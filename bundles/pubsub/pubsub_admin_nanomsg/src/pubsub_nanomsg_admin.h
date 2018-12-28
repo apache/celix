@@ -50,7 +50,7 @@ struct ProtectedMap {
 
 class pubsub_nanomsg_admin {
 public:
-    pubsub_nanomsg_admin(celix_bundle_context_t *ctx, celix::pubsub::nanomsg::LogHelper& logHelper);
+    pubsub_nanomsg_admin(celix_bundle_context_t *ctx);
     pubsub_nanomsg_admin(const pubsub_nanomsg_admin&) = delete;
     pubsub_nanomsg_admin& operator=(const pubsub_nanomsg_admin&) = delete;
     ~pubsub_nanomsg_admin();

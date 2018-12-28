@@ -37,9 +37,9 @@
 
 static celix_status_t nanoMsg_getIpAddress(const char *interface, char **ip);
 
-pubsub_nanomsg_admin::pubsub_nanomsg_admin(celix_bundle_context_t *_ctx, celix::pubsub::nanomsg::LogHelper& logHelper):
+pubsub_nanomsg_admin::pubsub_nanomsg_admin(celix_bundle_context_t *_ctx):
     ctx{_ctx},
-    L{logHelper} {
+    L{ctx, "pubsub_nanomsg_admin"} {
     verbose = celix_bundleContext_getPropertyAsBool(ctx, PUBSUB_NANOMSG_VERBOSE_KEY, PUBSUB_NANOMSG_VERBOSE_DEFAULT);
     fwUUID = celix_bundleContext_getProperty(ctx, OSGI_FRAMEWORK_FRAMEWORK_UUID, nullptr);
 
@@ -315,7 +315,7 @@ celix_status_t pubsub_nanomsg_admin::setupTopicSender(const char *scope, const c
             auto &serEntry = kv->second;
             auto e = topicSenders.map.emplace(std::piecewise_construct,
                     std::forward_as_tuple(key),
-                    std::forward_as_tuple(ctx, L, scope, topic, serializerSvcId, serEntry.svc, ipAddress,
+                    std::forward_as_tuple(ctx, scope, topic, serializerSvcId, serEntry.svc, ipAddress,
                                           basePort, maxPort));
             celix_properties_t *newEndpoint = pubsubEndpoint_create(fwUUID, scope, topic, PUBSUB_PUBLISHER_ENDPOINT_TYPE,
                     PUBSUB_NANOMSG_ADMIN_TYPE, serEntry.serType, nullptr);
@@ -373,7 +373,7 @@ celix_status_t pubsub_nanomsg_admin::setupTopicReceiver(const std::string &scope
             auto kvs = serializers.map.find(serializerSvcId);
             if (kvs != serializers.map.end()) {
                 auto serEntry = kvs->second;
-                receiver = new pubsub::nanomsg::topic_receiver(ctx, L, scope, topic, serializerSvcId, serEntry.svc);
+                receiver = new pubsub::nanomsg::topic_receiver(ctx, scope, topic, serializerSvcId, serEntry.svc);
             } else {
                 L.ERROR("[PSA_NANOMSG] Cannot find serializer for TopicSender ", scope, "/", topic);
             }

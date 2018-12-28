@@ -35,7 +35,7 @@ namespace pubsub {
                     std::string &_topic,
                     long _bndId,
                     int _nanoMsgSocket,
-                    celix::pubsub::nanomsg::LogHelper& _logHelper) : scope{_scope}, topic{_topic}, bndId{_bndId}, nanoMsgSocket{_nanoMsgSocket}, L{_logHelper} {
+                    celix_bundle_context_t *_context) : scope{_scope}, topic{_topic}, bndId{_bndId}, nanoMsgSocket{_nanoMsgSocket}, L{_context, "nanomsg_bounded_service_entry"} {
 
             }
             bounded_service_entry(const bounded_service_entry&) = delete;
@@ -56,7 +56,7 @@ namespace pubsub {
         class pubsub_nanomsg_topic_sender {
         public:
             pubsub_nanomsg_topic_sender(celix_bundle_context_t *_ctx,
-                                        celix::pubsub::nanomsg::LogHelper& _logHelper, const char *_scope,
+                                        const char *_scope,
                                         const char *_topic, long _serializerSvcId, pubsub_serializer_service_t *_ser,
                                         const char *_bindIp, unsigned int _basePort, unsigned int _maxPort);
 

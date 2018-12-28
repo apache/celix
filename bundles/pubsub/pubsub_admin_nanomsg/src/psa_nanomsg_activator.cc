@@ -26,39 +26,41 @@
 #include "LogHelper.h"
 #include "pubsub_admin.h"
 #include "pubsub_nanomsg_admin.h"
+namespace celix { namespace pubsub { namespace nanomsg {
+    class Activator {
+    public:
+        Activator(celix_bundle_context_t *ctx) :
+                context{ctx},
+                L{context, std::string("PSA_NANOMSG_ACIVATOR")},
+                admin(context)
+        {
+        }
+        Activator(const Activator&) = delete;
+        Activator& operator=(const Activator&) = delete;
 
+        ~Activator()  = default;
 
-class psa_nanomsg_activator {
-public:
-    psa_nanomsg_activator(celix_bundle_context_t *ctx) : context{ctx}, L{context}, admin(context, L) {
-    }
-    psa_nanomsg_activator(const psa_nanomsg_activator&) = delete;
-    psa_nanomsg_activator& operator=(const psa_nanomsg_activator&) = delete;
+        celix_status_t  start() {
+            admin.start();
+            return CELIX_SUCCESS;
+        }
 
-    ~psa_nanomsg_activator() {
+        celix_status_t stop() {
+            admin.stop();
+            return CELIX_SUCCESS;
+        };
 
-    }
+    private:
+        celix_bundle_context_t *context{};
+        celix::pubsub::nanomsg::LogHelper L;
+        pubsub_nanomsg_admin admin;
 
-    celix_status_t  start() {
-        admin.start();
-        return CELIX_SUCCESS;
-    }
-
-    celix_status_t stop() {
-        admin.stop();
-        return CELIX_SUCCESS;
     };
-
-private:
-    celix_bundle_context_t *context{};
-    celix::pubsub::nanomsg::LogHelper L;
-	pubsub_nanomsg_admin admin;
-
-};
+}}}
 
 celix_status_t  celix_bundleActivator_create(celix_bundle_context_t *ctx , void **userData) {
     celix_status_t status = CELIX_SUCCESS;
-    auto data = new  (std::nothrow) psa_nanomsg_activator{ctx};
+    auto data = new  (std::nothrow) celix::pubsub::nanomsg::Activator{ctx};
     if (data != NULL) {
         *userData = data;
     } else {
@@ -68,18 +70,18 @@ celix_status_t  celix_bundleActivator_create(celix_bundle_context_t *ctx , void 
 }
 
 celix_status_t celix_bundleActivator_start(void *userData, celix_bundle_context_t *) {
-    auto act = static_cast<psa_nanomsg_activator*>(userData);
+    auto act = static_cast<celix::pubsub::nanomsg::Activator*>(userData);
     return act->start();
 }
 
 celix_status_t celix_bundleActivator_stop(void *userData, celix_bundle_context_t *) {
-    auto act = static_cast<psa_nanomsg_activator*>(userData);
+    auto act = static_cast<celix::pubsub::nanomsg::Activator*>(userData);
     return act->stop();
 }
 
 
 celix_status_t celix_bundleActivator_destroy(void *userData, celix_bundle_context_t *) {
-    auto act = static_cast<psa_nanomsg_activator*>(userData);
+    auto act = static_cast<celix::pubsub::nanomsg::Activator*>(userData);
     delete act;
     return CELIX_SUCCESS;
 }

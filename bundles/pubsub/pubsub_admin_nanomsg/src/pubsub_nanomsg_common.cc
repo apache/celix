@@ -26,7 +26,7 @@ int psa_nanoMsg_localMsgTypeIdForMsgType(void *handle __attribute__((unused)), c
     return 0;
 }
 
-bool psa_nanomsg_checkVersion(version_pt msgVersion, const pubsub_nanmosg_msg_header_t *hdr) {
+bool psa_nanomsg_checkVersion(version_pt msgVersion, const celix::pubsub::nanomsg::msg_header *hdr) {
     bool check=false;
     int major=0,minor=0;
 

@@ -64,11 +64,10 @@
 
 
 pubsub::nanomsg::topic_receiver::topic_receiver(celix_bundle_context_t *_ctx,
-        celix::pubsub::nanomsg::LogHelper& _logHelper,
         const std::string &_scope,
         const std::string &_topic,
         long _serializerSvcId,
-        pubsub_serializer_service_t *_serializer) : L{_logHelper}, m_serializerSvcId{_serializerSvcId}, m_scope{_scope}, m_topic{_topic} {
+        pubsub_serializer_service_t *_serializer) : L{_ctx, "NANOMSG_topic_receiver"}, m_serializerSvcId{_serializerSvcId}, m_scope{_scope}, m_topic{_topic} {
     ctx = _ctx;
     serializer = _serializer;
 
@@ -249,7 +248,7 @@ void pubsub::nanomsg::topic_receiver::removeSubscriber(void */*svc*/,
     }
 }
 
-void pubsub::nanomsg::topic_receiver::processMsgForSubscriberEntry(psa_nanomsg_subscriber_entry* entry, const pubsub_nanmosg_msg_header_t *hdr, const char* payload, size_t payloadSize) {
+void pubsub::nanomsg::topic_receiver::processMsgForSubscriberEntry(psa_nanomsg_subscriber_entry* entry, const celix::pubsub::nanomsg::msg_header *hdr, const char* payload, size_t payloadSize) {
     pubsub_msg_serializer_t* msgSer = static_cast<pubsub_msg_serializer_t*>(hashMap_get(entry->msgTypes, (void*)(uintptr_t)(hdr->type)));
     pubsub_subscriber_t *svc = entry->svc;
 
@@ -273,7 +272,7 @@ void pubsub::nanomsg::topic_receiver::processMsgForSubscriberEntry(psa_nanomsg_s
     }
 }
 
-void pubsub::nanomsg::topic_receiver::processMsg(const pubsub_nanmosg_msg_header_t *hdr, const char *payload, size_t payloadSize) {
+void pubsub::nanomsg::topic_receiver::processMsg(const celix::pubsub::nanomsg::msg_header *hdr, const char *payload, size_t payloadSize) {
     std::lock_guard<std::mutex> _lock(subscribers.mutex);
     for (auto entry : subscribers.map) {
         processMsgForSubscriberEntry(&entry.second, hdr, payload, payloadSize);
@@ -281,7 +280,7 @@ void pubsub::nanomsg::topic_receiver::processMsg(const pubsub_nanmosg_msg_header
 }
 
 struct Message {
-    pubsub_nanmosg_msg_header_t header;
+    celix::pubsub::nanomsg::msg_header header;
     char payload[];
 };
 
@@ -303,7 +302,7 @@ void pubsub::nanomsg::topic_receiver::recvThread_exec() {
 
         errno = 0;
         int recvBytes = nn_recvmsg(m_nanoMsgSocket, &msgHdr, 0);
-        if (msg && static_cast<unsigned long>(recvBytes) >= sizeof(pubsub_nanmosg_msg_header_t)) {
+        if (msg && static_cast<unsigned long>(recvBytes) >= sizeof(celix::pubsub::nanomsg::msg_header)) {
             processMsg(&msg->header, msg->payload, recvBytes-sizeof(msg->header));
             nn_freemsg(msg);
         } else if (recvBytes >= 0) {

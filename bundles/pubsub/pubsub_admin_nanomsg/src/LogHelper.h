@@ -15,96 +15,82 @@ limitations under the License.
 #pragma once
 #include <sstream>
 #include "log_helper.h"
-
+#include <mutex>
 namespace celix {
     namespace pubsub {
         namespace nanomsg {
-
-//            template<typename... Args>
-//            void L_DEBUG(log_helper_t *logHelper, Args... args) {
-//                std::stringstream ss = LOG_STREAM(args...);
-//                logHelper_log(logHelper, OSGI_LOGSERVICE_DEBUG, ss.str().c_str());
-//            }
-//
-//            template<typename... Args>
-//            void L_INFO(log_helper_t *logHelper, Args... args) {
-//                auto ss = LOG_STREAM(args...);
-//                logHelper_log(logHelper, OSGI_LOGSERVICE_INFO, ss.str().c_str());
-//            }
-//
-//            template<typename... Args>
-//            void L_WARN(log_helper_t *logHelper, Args... args) {
-//                auto ss = LOG_STREAM(args...);
-//                logHelper_log(logHelper, OSGI_LOGSERVICE_WARNING, ss.str().c_str());
-//            }
-//
-//            template<typename... Args>
-//            void L_ERROR(log_helper_t *logHelper, Args... args) {
-//                auto ss = LOG_STREAM(args...);
-//                logHelper_log((log_helper_pt) logHelper, OSGI_LOGSERVICE_ERROR, ss.str().c_str());
-//            }
-
+            /*
+             * Not that the loghelper is created in the firs log-call. This is because when a log-helper is started
+             * during registration of a service with a service-factory a dead-lock can occur
+             * This prevents it.
+             */
             class LogHelper {
             public:
-                LogHelper(log_helper_t *lh) : _logHelper{lh} {
+                LogHelper(bundle_context_t *_ctx, const std::string& _componentName ) :  ctx{_ctx}, helperCreated{true}, componentName{_componentName}{
                 }
 
-                LogHelper(const LogHelper& ) = default;
-                LogHelper& operator=(const LogHelper&) = default;
+                LogHelper(const LogHelper& ) = delete;
+                LogHelper& operator=(const LogHelper&) = delete;
 
-                LogHelper(bundle_context_pt ctx) :  helperCreated{true} {
-                    logHelper_create(ctx, &_logHelper);
-                    logHelper_start(_logHelper);
-                }
 
                 ~LogHelper() {
-                    if (helperCreated) {
+                    if (helperCreated && _logHelper) {
                         logHelper_stop(_logHelper);
                         logHelper_destroy(&_logHelper);
                     }
+                    std::cerr << "Destroyed loghelper for " << componentName << std::endl;
                 }
                 template<typename... Args>
                 void ERROR(Args... args) {
                     auto ss = LOG_STREAM(args...);
-                    logHelper_log(_logHelper, OSGI_LOGSERVICE_ERROR, ss.str().c_str());
+                    log_string(OSGI_LOGSERVICE_ERROR, ss.str());
                 }
 
                 template<typename... Args>
                 void WARN(Args... args) {
                     auto ss = LOG_STREAM(args...);
-                    logHelper_log(_logHelper, OSGI_LOGSERVICE_WARNING, ss.str().c_str());
+                    log_string(OSGI_LOGSERVICE_WARNING, ss.str());
                 }
 
                 template<typename... Args>
-                void INFO(Args... args) {
+                void INFO(Args... args)  {
                     auto ss = LOG_STREAM(args...);
-                    logHelper_log(_logHelper, OSGI_LOGSERVICE_INFO, ss.str().c_str());
+                    log_string(OSGI_LOGSERVICE_INFO, ss.str());
                 }
 
                 template<typename... Args>
-                void DBG(Args... args) {
+                void DBG(Args... args)  {
                     auto ss = LOG_STREAM(args...);
-                    logHelper_log(_logHelper, OSGI_LOGSERVICE_DEBUG, ss.str().c_str());
+                    log_string(OSGI_LOGSERVICE_DEBUG, ss.str());
                 }
 
             private:
+                bundle_context_t *ctx;
                 bool helperCreated{false};
                 log_helper_t *_logHelper{};
-
+                std::string componentName{};
                 template<typename T>
-                std::stringstream LOG_STREAM(T first) {
+                std::stringstream LOG_STREAM(T first) const {
                     std::stringstream ss;
                     ss << first;
                     return ss;
                 }
 
                 template<typename T, typename... Args>
-                std::stringstream LOG_STREAM(T first, Args... args) {
+                std::stringstream LOG_STREAM(T first, Args... args) const {
                     std::stringstream ss;
-                    ss << first << LOG_STREAM(args...).str();
+                    ss << "[" << componentName << "] " << first << LOG_STREAM(args...).str();
                     return ss;
                 }
 
+                void log_string(log_level_t level, const std::string& msg) {
+                    if (_logHelper == nullptr) {
+                        helperCreated = true;
+                        logHelper_create(ctx, &_logHelper);
+                        logHelper_start(_logHelper);
+                    }
+                    logHelper_log(_logHelper, level, msg.c_str());
+                }
             };
 
         }

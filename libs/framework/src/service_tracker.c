@@ -188,19 +188,21 @@ celix_status_t serviceTracker_open(service_tracker_pt tracker) {
         instance->remove = tracker->remove;
         instance->removeWithProperties = tracker->removeWithProperties;
         instance->removeWithOwner = tracker->removeWithOwner;
-
+        printf("### serviceTracker_open pre\n");
         status = bundleContext_getServiceReferences(tracker->context, NULL, tracker->filter, &initial); //REF COUNT to 1
+        printf("### serviceTracker_open post\n");
 
         tracker->instance = instance;
     } else {
         //already open
     }
     celixThreadRwlock_unlock(&tracker->instanceLock);
-
+    printf("### serviceTracker_open 2\n");
     //TODO add fw call which adds a service listener and return the then valid service references.
     if (status == CELIX_SUCCESS && listener != NULL) { //register service listener
         status = bundleContext_addServiceListener(tracker->context, listener, tracker->filter);
     }
+    printf("### serviceTracker_open 3\n");
     if (status == CELIX_SUCCESS && initial != NULL) {
         service_reference_pt initial_reference;
         unsigned int i;
@@ -211,12 +213,14 @@ celix_status_t serviceTracker_open(service_tracker_pt tracker) {
         }
         arrayList_destroy(initial);
     }
+    printf("### serviceTracker_open 4\n");
 
 	if (status != CELIX_SUCCESS && listener != NULL){
 		free(listener);
 	}
 
 	framework_logIfError(logger, status, NULL, "Cannot open tracker");
+    printf("### serviceTracker_open 5\n");
 
 	return status;
 }
