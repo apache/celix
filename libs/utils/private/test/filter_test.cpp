@@ -155,7 +155,7 @@ TEST(filter, create_misc){
 	get_filter = filter_create(filter_str3);
 	CHECK(get_filter != NULL);
 	LONGS_EQUAL(CELIX_FILTER_OPERAND_SUBSTRING, get_filter->operand)
-	LONGS_EQUAL(2, arrayList_size((array_list_pt) get_filter->children));
+	LONGS_EQUAL(2, celix_arrayList_size((celix_array_list_t*) get_filter->children));
 	filter_destroy(get_filter);
 
 	//test parsing a attribute of 0 length

@@ -43,16 +43,16 @@ namespace celix { namespace dm {
     class BaseServiceDependency {
     protected:
         const bool valid;
-        dm_service_dependency_pt cServiceDep {nullptr};
+        celix_dm_service_dependency_t *cServiceDep {nullptr};
 
         void setDepStrategy(DependencyUpdateStrategy strategy) {
             if (!valid) {
                 return;
             }
             if (strategy == DependencyUpdateStrategy::locking) {
-                serviceDependency_setStrategy(this->cServiceDependency(), DM_SERVICE_DEPENDENCY_STRATEGY_LOCKING);
+                celix_dmServiceDependency_setStrategy(this->cServiceDependency(), DM_SERVICE_DEPENDENCY_STRATEGY_LOCKING);
             } else if (strategy == DependencyUpdateStrategy::suspend) {
-                serviceDependency_setStrategy(this->cServiceDependency(), DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND);
+                celix_dmServiceDependency_setStrategy(this->cServiceDependency(), DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND);
             } else {
                 std::cerr << "Unexpected dependency update strategy. Cannot convert for dm_depdendency\n";
             }
@@ -60,9 +60,9 @@ namespace celix { namespace dm {
     public:
         BaseServiceDependency(bool v)  : valid{v} {
             if (this->valid) {
-                serviceDependency_create(&this->cServiceDep);
+                this->cServiceDep = celix_dmServiceDependency_create();
                 //NOTE using suspend as default strategy
-                serviceDependency_setStrategy(this->cServiceDep,  DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND);
+                celix_dmServiceDependency_setStrategy(this->cServiceDep,  DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND);
             }
         }
 
@@ -79,7 +79,7 @@ namespace celix { namespace dm {
         /**
          * Returns the C DM service dependency
          */
-        dm_service_dependency_pt cServiceDependency() const { return cServiceDep; }
+        celix_dm_service_dependency_t *cServiceDependency() const { return cServiceDep; }
     };
 
     template<class T>
@@ -202,7 +202,7 @@ namespace celix { namespace dm {
         std::function<void(const I* service, Properties&& properties)> removeFp{nullptr};
 
         void setupCallbacks();
-        int invokeCallback(std::function<void(const I*, Properties&&)> fp, service_reference_pt  ref, const void* service);
+        int invokeCallback(std::function<void(const I*, Properties&&)> fp, const celix_properties_t *props, const void* service);
 
         void setupService();
     };
@@ -316,7 +316,7 @@ namespace celix { namespace dm {
 
         void setupService();
         void setupCallbacks();
-        int invokeCallback(std::function<void(I*, Properties&&)> fp, service_reference_pt  ref, const void* service);
+        int invokeCallback(std::function<void(I*, Properties&&)> fp, const celix_properties_t *props, const void* service);
     };
 }}
 

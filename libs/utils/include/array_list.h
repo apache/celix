@@ -31,72 +31,65 @@
 #include "exports.h"
 #include "celix_errno.h"
 #include "stdbool.h"
+#include "celix_array_list.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef union celix_array_list_entry {
-    void *voidPtrVal;
-    int intVal;
-    long int longVal;
-    unsigned int uintVal;
-    unsigned long ulongVal;
-    double doubleVal;
-    float floatVal;
-    bool boolVal;
-    size_t sizeVal;
-} celix_array_list_entry_t;
+#ifdef ADD_CELIX_DEPRECATED_WARNING
+#define CELIX_DEPRECATED_ATTR __attribute__ ((deprecated))
+#else
+#define CELIX_DEPRECATED_ATTR
+#endif
 
-typedef struct celix_arrayList *array_list_pt;
-typedef struct celix_arrayList array_list_t;
+typedef struct celix_array_list *array_list_pt CELIX_DEPRECATED_ATTR;
+typedef struct celix_array_list array_list_t CELIX_DEPRECATED_ATTR;
 
-typedef struct arrayListIterator *array_list_iterator_pt;
-typedef struct arrayListIterator array_list_iterator_t;
+typedef struct celix_array_list_iterator *array_list_iterator_pt;
+typedef struct celix_array_list_iterator array_list_iterator_t;
 
 typedef celix_status_t (*array_list_element_equals_pt)(const void *, const void *, bool *equals);
 
-typedef bool (*celix_arrayList_equals_fp)(celix_array_list_entry_t, celix_array_list_entry_t);
+UTILS_EXPORT celix_status_t arrayList_create(celix_array_list_t **list);
 
-UTILS_EXPORT celix_status_t arrayList_create(array_list_pt *list);
+UTILS_EXPORT celix_status_t arrayList_createWithEquals(array_list_element_equals_pt equals, celix_array_list_t **list);
 
-UTILS_EXPORT celix_status_t arrayList_createWithEquals(array_list_element_equals_pt equals, array_list_pt *list);
+UTILS_EXPORT void arrayList_destroy(celix_array_list_t *list);
 
-UTILS_EXPORT void arrayList_destroy(array_list_pt list);
+UTILS_EXPORT void arrayList_trimToSize(celix_array_list_t *list);
 
-UTILS_EXPORT void arrayList_trimToSize(array_list_pt list);
+UTILS_EXPORT void arrayList_ensureCapacity(celix_array_list_t *list, int capacity);
 
-UTILS_EXPORT void arrayList_ensureCapacity(array_list_pt list, int capacity);
+UTILS_EXPORT unsigned int arrayList_size(celix_array_list_t *list);
 
-UTILS_EXPORT unsigned int arrayList_size(array_list_pt list);
+UTILS_EXPORT bool arrayList_isEmpty(celix_array_list_t *list);
 
-UTILS_EXPORT bool arrayList_isEmpty(array_list_pt list);
+UTILS_EXPORT bool arrayList_contains(celix_array_list_t *list, void *element);
 
-UTILS_EXPORT bool arrayList_contains(array_list_pt list, void *element);
+UTILS_EXPORT int arrayList_indexOf(celix_array_list_t *list, void *element);
 
-UTILS_EXPORT int arrayList_indexOf(array_list_pt list, void *element);
+UTILS_EXPORT int arrayList_lastIndexOf(celix_array_list_t *list, void *element);
 
-UTILS_EXPORT int arrayList_lastIndexOf(array_list_pt list, void *element);
+UTILS_EXPORT void *arrayList_get(celix_array_list_t *list, unsigned int index);
 
-UTILS_EXPORT void *arrayList_get(array_list_pt list, unsigned int index);
+UTILS_EXPORT void *arrayList_set(celix_array_list_t *list, unsigned int index, void *element);
 
-UTILS_EXPORT void *arrayList_set(array_list_pt list, unsigned int index, void *element);
+UTILS_EXPORT bool arrayList_add(celix_array_list_t *list, void *element);
 
-UTILS_EXPORT bool arrayList_add(array_list_pt list, void *element);
+UTILS_EXPORT int arrayList_addIndex(celix_array_list_t *list, unsigned int index, void *element);
 
-UTILS_EXPORT int arrayList_addIndex(array_list_pt list, unsigned int index, void *element);
+UTILS_EXPORT bool arrayList_addAll(celix_array_list_t *list, celix_array_list_t *toAdd);
 
-UTILS_EXPORT bool arrayList_addAll(array_list_pt list, array_list_pt toAdd);
+UTILS_EXPORT void *arrayList_remove(celix_array_list_t *list, unsigned int index);
 
-UTILS_EXPORT void *arrayList_remove(array_list_pt list, unsigned int index);
+UTILS_EXPORT bool arrayList_removeElement(celix_array_list_t *list, void *element);
 
-UTILS_EXPORT bool arrayList_removeElement(array_list_pt list, void *element);
+UTILS_EXPORT void arrayList_clear(celix_array_list_t *list);
 
-UTILS_EXPORT void arrayList_clear(array_list_pt list);
+UTILS_EXPORT celix_array_list_t *arrayList_clone(celix_array_list_t *list);
 
-UTILS_EXPORT array_list_pt arrayList_clone(array_list_pt list);
-
-UTILS_EXPORT array_list_iterator_pt arrayListIterator_create(array_list_pt list);
+UTILS_EXPORT array_list_iterator_pt arrayListIterator_create(celix_array_list_t *list);
 
 UTILS_EXPORT void arrayListIterator_destroy(array_list_iterator_pt iterator);
 

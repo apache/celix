@@ -111,7 +111,7 @@ int main(int argc, char *argv[]) {
 $<JOIN:$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_EMBEDDED_PROPERTIES>,\\n\\
 >\";
 
-    properties_pt packedConfig = properties_loadFromString(config);
+    celix_properties_t *packedConfig = properties_loadFromString(config);
     return celixLauncher_launchAndWaitForShutdown(argc, argv, packedConfig);
 }
 "

@@ -206,7 +206,7 @@ void pubsub_topologyManager_psaRemoved(void * handle, void *svc __attribute__((u
 				celixThreadMutex_unlock(&manager->announceEndpointListeners.mutex);
 			}
 
-			entry->setup = false;
+			entry->needsMatch = true;
 	        entry->selectedSerializerSvcId = -1L;
 	        entry->selectedPsaSvcId = -1L;
 	        if (entry->endpoint != NULL) {
@@ -233,7 +233,7 @@ void pubsub_topologyManager_psaRemoved(void * handle, void *svc __attribute__((u
 				celixThreadMutex_unlock(&manager->announceEndpointListeners.mutex);
 			}
 
-            entry->setup = false;
+            entry->needsMatch = true;
             entry->selectedSerializerSvcId = -1L;
             entry->selectedPsaSvcId = -1L;
             if (entry->endpoint != NULL) {
@@ -283,7 +283,7 @@ void pubsub_topologyManager_subscriberAdded(void * handle, void *svc __attribute
 		entry->usageCount = 1;
 		entry->selectedPsaSvcId = -1L;
 		entry->selectedSerializerSvcId = -1L;
-		entry->setup = false;
+		entry->needsMatch = true;
 		entry->bndId = bndId;
 		entry->subscriberProperties = celix_properties_copy(props);
 		hashMap_put(manager->topicReceivers.map, entry->scopeAndTopicKey, entry);
@@ -403,7 +403,7 @@ void pubsub_topologyManager_publisherTrackerAdded(void *handle, const celix_serv
 		entry->scope = scope; //taking ownership
 		entry->topic = topic; //taking ownership
 		entry->scopeAndTopicKey = scopeAndTopicKey; //taking ownership
-		entry->setup = false;
+		entry->needsMatch = true;
 		entry->publisherFilter = celix_filter_create(info->filter->filterStr);
 		entry->bndId = info->bundleId;
 		hashMap_put(manager->topicSenders.map, entry->scopeAndTopicKey, entry);
@@ -556,9 +556,8 @@ static void pstm_teardownTopicSenders(pubsub_topology_manager_t *manager) {
     while (hashMapIterator_hasNext(&iter)) {
         pstm_topic_receiver_or_sender_entry_t *entry = hashMapIterator_nextValue(&iter);
 
-        if (entry != NULL && entry->usageCount <= 0) {
-            hashMapIterator_remove(&iter);
-            if (manager->verbose) {
+        if (entry != NULL && (entry->usageCount <= 0 || entry->needsMatch)) {
+            if (manager->verbose && entry->endpoint != NULL) {
                 logHelper_log(manager->loghelper, OSGI_LOGSERVICE_DEBUG,
                         "[PSTM] Tearing down TopicSender for scope/topic %s/%s\n", entry->scope, entry->topic);
             }
@@ -578,16 +577,28 @@ static void pstm_teardownTopicSenders(pubsub_topology_manager_t *manager) {
 
 
             //cleanup entry
-            free(entry->scopeAndTopicKey);
-            free(entry->scope);
-            free(entry->topic);
-            if (entry->publisherFilter != NULL) {
-				celix_filter_destroy(entry->publisherFilter);
-			}
-			if (entry->endpoint != NULL) {
-				celix_properties_destroy(entry->endpoint);
-			}
-            free(entry);
+            if (entry->usageCount <= 0) {
+            	//no usage -> remove
+				hashMapIterator_remove(&iter);
+				free(entry->scopeAndTopicKey);
+				free(entry->scope);
+				free(entry->topic);
+				if (entry->publisherFilter != NULL) {
+					celix_filter_destroy(entry->publisherFilter);
+				}
+				if (entry->endpoint != NULL) {
+					celix_properties_destroy(entry->endpoint);
+				}
+				free(entry);
+			} else {
+            	//still usage, setup for new match
+            	if (entry->endpoint != NULL) {
+					celix_properties_destroy(entry->endpoint);
+				}
+            	entry->endpoint = NULL;
+            	entry->selectedPsaSvcId = -1L;
+            	entry->selectedSerializerSvcId = -1L;
+            }
         }
     }
     celixThreadMutex_unlock(&manager->topicSenders.mutex);
@@ -604,10 +615,8 @@ static void pstm_teardownTopicReceivers(pubsub_topology_manager_t *manager) {
     hash_map_iterator_t iter = hashMapIterator_construct(manager->topicReceivers.map);
     while (hashMapIterator_hasNext(&iter)) {
         pstm_topic_receiver_or_sender_entry_t *entry = hashMapIterator_nextValue(&iter);
-        if (entry != NULL && entry->usageCount <= 0) {
-            hashMapIterator_remove(&iter);
-
-            if (manager->verbose) {
+        if (entry != NULL && (entry->usageCount <= 0 || entry->needsMatch)) {
+            if (manager->verbose && entry->endpoint != NULL) {
                 const char *adminType = celix_properties_get(entry->endpoint, PUBSUB_ENDPOINT_ADMIN_TYPE, "!Error!");
                 const char *serType = celix_properties_get(entry->endpoint, PUBSUB_ENDPOINT_SERIALIZER, "!Error!");
                 logHelper_log(manager->loghelper, OSGI_LOGSERVICE_DEBUG,
@@ -628,17 +637,29 @@ static void pstm_teardownTopicReceivers(pubsub_topology_manager_t *manager) {
 				celixThreadMutex_unlock(&manager->announceEndpointListeners.mutex);
 			}
 
-            //cleanup entry
-            free(entry->scopeAndTopicKey);
-            free(entry->scope);
-            free(entry->topic);
-            if (entry->subscriberProperties != NULL) {
-				celix_properties_destroy(entry->subscriberProperties);
-            }
-            if (entry->endpoint != NULL) {
-				celix_properties_destroy(entry->endpoint);
+			if (entry->usageCount <= 0) {
+				//no usage -> remove
+				hashMapIterator_remove(&iter);
+				//cleanup entry
+				free(entry->scopeAndTopicKey);
+				free(entry->scope);
+				free(entry->topic);
+				if (entry->subscriberProperties != NULL) {
+					celix_properties_destroy(entry->subscriberProperties);
+				}
+				if (entry->endpoint != NULL) {
+					celix_properties_destroy(entry->endpoint);
+				}
+				free(entry);
+			} else {
+				//still usage -> setup for rematch
+				if (entry->endpoint != NULL) {
+					celix_properties_destroy(entry->endpoint);
+				}
+				entry->endpoint = NULL;
+				entry->selectedPsaSvcId = -1L;
+				entry->selectedSerializerSvcId = -1L;
 			}
-            free(entry);
         }
     }
     celixThreadMutex_unlock(&manager->topicReceivers.mutex);
@@ -698,8 +719,8 @@ static void pstm_setupTopicSenders(pubsub_topology_manager_t *manager) {
 	hash_map_iterator_t iter = hashMapIterator_construct(manager->topicSenders.map);
 	while (hashMapIterator_hasNext(&iter)) {
 		pstm_topic_receiver_or_sender_entry_t *entry = hashMapIterator_nextValue(&iter);
-		if (entry != NULL && !entry->setup) {
-			//new topic receiver needed, requesting match with current psa
+		if (entry != NULL && entry->needsMatch) {
+			//new topic sender needed, requesting match with current psa
 			double highestScore = PUBSUB_ADMIN_NO_MATCH_SCORE;
 			long serializerSvcId = -1L;
 			long selectedPsaSvcId = -1L;
@@ -727,7 +748,7 @@ static void pstm_setupTopicSenders(pubsub_topology_manager_t *manager) {
 				bool called = celix_bundleContext_useServiceWithId(manager->context, selectedPsaSvcId, PUBSUB_ADMIN_SERVICE_NAME, entry, pstm_setupTopicSenderCallback);
 
 				if (called && entry->endpoint != NULL) {
-					entry->setup = true;
+					entry->needsMatch = false;
 
 					//announce new endpoint through the network
 					celixThreadMutex_lock(&manager->announceEndpointListeners.mutex);
@@ -739,7 +760,7 @@ static void pstm_setupTopicSenders(pubsub_topology_manager_t *manager) {
 				}
 			}
 
-			if (!entry->setup) {
+			if (entry->needsMatch) {
 				logHelper_log(manager->loghelper, OSGI_LOGSERVICE_WARNING, "Cannot setup TopicSender for %s/%s\n", entry->scope, entry->topic);
 			}
 		}
@@ -758,7 +779,7 @@ static void pstm_setupTopicReceivers(pubsub_topology_manager_t *manager) {
 	hash_map_iterator_t iter = hashMapIterator_construct(manager->topicReceivers.map);
 	while (hashMapIterator_hasNext(&iter)) {
 		pstm_topic_receiver_or_sender_entry_t *entry = hashMapIterator_nextValue(&iter);
-		if (!entry->setup) {
+		if (entry->needsMatch) {
 
 			double highestScore = PUBSUB_ADMIN_NO_MATCH_SCORE;
 			long serializerSvcId = -1L;
@@ -791,7 +812,7 @@ static void pstm_setupTopicReceivers(pubsub_topology_manager_t *manager) {
 													 pstm_setupTopicReceiverCallback);
 
 				if (called && entry->endpoint != NULL) {
-				    entry->setup = true;
+				    entry->needsMatch = false;
 					//announce new endpoint through the network
 					celixThreadMutex_lock(&manager->announceEndpointListeners.mutex);
 					for (int i = 0; i < celix_arrayList_size(manager->announceEndpointListeners.list); ++i) {
@@ -804,7 +825,7 @@ static void pstm_setupTopicReceivers(pubsub_topology_manager_t *manager) {
 			}
 
 
-			if (!entry->setup) {
+			if (entry->needsMatch) {
 				logHelper_log(manager->loghelper, OSGI_LOGSERVICE_WARNING, "Cannot setup TopicReceiver for %s/%s\n", entry->scope, entry->topic);
 			}
 		}
@@ -820,9 +841,11 @@ static void* pstm_psaHandlingThread(void *data) {
     celixThreadMutex_unlock(&manager->psaHandling.mutex);
 
     while (running) {
+    	//first teardown -> also if rematch is needed
         pstm_teardownTopicSenders(manager);
         pstm_teardownTopicReceivers(manager);
 
+        //then see if any topic sender/receiver are needed
         pstm_setupTopicSenders(manager);
         pstm_setupTopicReceivers(manager);
 
@@ -877,7 +900,7 @@ celix_status_t pubsub_topologyManager_shellCommand(void *handle, char * commandL
 	iter = hashMapIterator_construct(manager->topicSenders.map);
 	while (hashMapIterator_hasNext(&iter)) {
 		pstm_topic_receiver_or_sender_entry_t *entry = hashMapIterator_nextValue(&iter);
-		if (!entry->setup) {
+		if (entry->endpoint == NULL) {
 			continue;
 		}
 		const char *uuid = celix_properties_get(entry->endpoint, PUBSUB_ENDPOINT_UUID, "!Error!");
@@ -902,7 +925,7 @@ celix_status_t pubsub_topologyManager_shellCommand(void *handle, char * commandL
 	iter = hashMapIterator_construct(manager->topicReceivers.map);
 	while (hashMapIterator_hasNext(&iter)) {
 		pstm_topic_receiver_or_sender_entry_t *entry = hashMapIterator_nextValue(&iter);
-		if (!entry->setup) {
+		if (entry->endpoint == NULL) {
 			continue;
 		}
 		const char *uuid = celix_properties_get(entry->endpoint, PUBSUB_ENDPOINT_UUID, "!Error!");

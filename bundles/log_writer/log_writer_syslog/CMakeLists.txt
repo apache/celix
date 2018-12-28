@@ -38,7 +38,7 @@ if (LOG_WRITER_SYSLOG)
         endif()
     endif()
 
-    target_link_libraries(log_writer_syslog PRIVATE Celix::log_service_ap)
+    target_link_libraries(log_writer_syslog PRIVATE Celix::log_service_api)
 
     install_celix_bundle(log_writer_syslog EXPORT celix)
     add_library(Celix::log_writer_syslog ALIAS log_writer_syslog)

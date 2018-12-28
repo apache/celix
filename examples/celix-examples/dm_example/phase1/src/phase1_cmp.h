@@ -31,7 +31,7 @@
 typedef struct phase1_cmp_struct phase1_cmp_t;
 
 phase1_cmp_t *phase1_create(void);
-void phase1_setComp(phase1_cmp_t *cmp, dm_component_pt dmCmp);
+void phase1_setComp(phase1_cmp_t *cmp, celix_dm_component_t *dmCmp);
 int phase1_init(phase1_cmp_t *cmp);
 int phase1_start(phase1_cmp_t *cmp);
 int phase1_stop(phase1_cmp_t *cmp);

@@ -31,50 +31,48 @@
 
 #include "celix_errno.h"
 #include "array_list.h"
-#include "dm_info.h"
+#include "celix_dm_info.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-
 /**
  * Creates a dependency manager.
  * Caller has ownership.
  */
- //TODO make this private, dep man should always be retrieved from the bundle context
-celix_status_t dependencyManager_create(bundle_context_t *context, dm_dependency_manager_t **manager);
+celix_status_t dependencyManager_create(celix_bundle_context_t *context, celix_dependency_manager_t **manager) CELIX_DEPRECATED_ATTR;
 
 /**
  * Destroys the provided dependency manager
  */
-void dependencyManager_destroy(dm_dependency_manager_t *manager);
+void dependencyManager_destroy(celix_dependency_manager_t *manager) CELIX_DEPRECATED_ATTR;
 
 /**
  * Adds a DM component to the dependency manager
  */
-celix_status_t dependencyManager_add(dm_dependency_manager_t *manager, dm_component_t *component);
+celix_status_t dependencyManager_add(celix_dependency_manager_t *manager, celix_dm_component_t *component)CELIX_DEPRECATED_ATTR;
 
 /**
  * Removes a DM component from the dependency manager and destroys it
  */
-celix_status_t dependencyManager_remove(dm_dependency_manager_t *manager, dm_component_t *component);
+celix_status_t dependencyManager_remove(celix_dependency_manager_t *manager, celix_dm_component_t *component) CELIX_DEPRECATED_ATTR;
 
 /**
  * Removes all DM components from the dependency manager
  */
-celix_status_t dependencyManager_removeAllComponents(dm_dependency_manager_t *manager);
+celix_status_t dependencyManager_removeAllComponents(celix_dependency_manager_t *manager) CELIX_DEPRECATED_ATTR;
 
 /**
  * Create and returns a DM Info struct. Which contains information about the state of the DM components
  * Caller has ownership.
  */
-celix_status_t dependencyManager_getInfo(dm_dependency_manager_t *manager, dm_dependency_manager_info_t **info);
+celix_status_t dependencyManager_getInfo(celix_dependency_manager_t *manager, dm_dependency_manager_info_pt *info) CELIX_DEPRECATED_ATTR;
 
 /**
  * Destroys a DM info struct.
  */
-void dependencyManager_destroyInfo(dm_dependency_manager_t *manager, dm_dependency_manager_info_t *info);
+void dependencyManager_destroyInfo(celix_dependency_manager_t *manager, dm_dependency_manager_info_pt info) CELIX_DEPRECATED_ATTR;
 
 #ifdef __cplusplus
 }

@@ -92,7 +92,9 @@ function rt_run_deployment() {
         echo "  Clearing cache"
         rm -fr .cache
     fi
-    . ./release.sh #run deployment release
+    if [ -e release.sh ] ; then
+        . ./release.sh #run deployment release
+    fi
     echo "  Workdir: ${CONTAINERS_DIR}"
     echo "  Cmd used: '${DEBUG_OPTS} ./${DEPLOYMENT} ${ARGS}'"
     if [ "${USE_TERM}" = "TRUE" ] ; then

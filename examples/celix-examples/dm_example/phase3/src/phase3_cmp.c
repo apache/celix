@@ -38,7 +38,7 @@ struct phase3_cmp_struct {
 	celix_thread_t thread;
     bool running;
 	double currentValue;
-    array_list_pt phase2Services; //phase2_t *
+    celix_array_list_t *phase2Services; //phase2_t *
 };
 
 static void *phase3_thread(void *data);

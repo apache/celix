@@ -62,7 +62,7 @@ celix_status_t bundleActivator_createEPLTracker(struct activator *activator, ser
 	return status;
 }
 
-celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
+celix_status_t bundleActivator_create(celix_bundle_context_t *context, void **userData) {
 	celix_status_t status;
 
 	struct activator* activator = calloc(1,sizeof(struct activator));

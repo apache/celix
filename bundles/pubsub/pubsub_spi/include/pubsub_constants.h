@@ -23,4 +23,19 @@
 #define PUBSUB_ADMIN_TYPE_KEY	   "pubsub.config"
 #define PUBSUB_SERIALIZER_TYPE_KEY "pubsub.serializer.type"
 
+/**
+ * Endpoints with the system visibility should be discoverable through the complete system
+ */
+#define PUBSUB_ENDPOINT_SYSTEM_VISIBLITY     "system"
+
+/**
+ * Endpoints with the system visibility are discoverable for a single host (i.e. IPC)
+ */
+#define PUBSUB_ENDPOINT_HOST_VISIBLITY       "host"
+
+/**
+ * Endpoints which are only visible within a single process
+ */
+#define PUBSUB_ENDPOINT_LOCAL_VISIBLITY      "local"
+
 #endif /* PUBSUB_CONSTANTS_H_ */

@@ -37,7 +37,7 @@ struct userData {
 
 static void *loggerThread(void *userData);
 
-celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
+celix_status_t bundleActivator_create(celix_bundle_context_t *context, void **userData) {
 	celix_status_t status = CELIX_SUCCESS;
     *userData = calloc(1, sizeof(struct userData));
     if (*userData != NULL) {
@@ -50,7 +50,7 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 }
 
 
-celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
+celix_status_t bundleActivator_start(void * userData, celix_bundle_context_t *context) {
 	struct userData * data = (struct userData *) userData;
 	printf("Started log example\n");
     logHelper_start(data->log_helper);
@@ -59,7 +59,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
+celix_status_t bundleActivator_stop(void * userData, celix_bundle_context_t *context) {
 	struct userData * data = (struct userData *) userData;
 	printf("Stopping logger example\n");
 	data->running = false;
@@ -68,7 +68,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
+celix_status_t bundleActivator_destroy(void * userData, celix_bundle_context_t *context) {
     struct userData * data = (struct userData *) userData;
     logHelper_destroy(&data->log_helper);
     free(userData);

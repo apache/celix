@@ -37,6 +37,8 @@ TEST_GROUP(CelixBundleContextBundlesTests) {
     const char * const TEST_BND1_LOC = "simple_test_bundle1.zip";
     const char * const TEST_BND2_LOC = "simple_test_bundle2.zip";
     const char * const TEST_BND3_LOC = "simple_test_bundle3.zip";
+    const char * const TEST_BND4_LOC = "simple_test_bundle4.zip";
+    const char * const TEST_BND5_LOC = "simple_test_bundle5.zip";
 
     void setup() {
         properties = properties_create();
@@ -55,6 +57,20 @@ TEST_GROUP(CelixBundleContextBundlesTests) {
     }
 };
 
+TEST(CelixBundleContextBundlesTests, installBundlesTest) {
+    long bndId = celix_bundleContext_installBundle(ctx, "non-existing.zip", true);
+    CHECK(bndId < 0);
+
+    bndId = celix_bundleContext_installBundle(ctx, TEST_BND1_LOC, true);
+    CHECK(bndId >= 0);
+
+    bndId = celix_bundleContext_installBundle(ctx, TEST_BND4_LOC, true); //not loaded in subdir
+    CHECK(bndId < 0);
+
+    setenv(CELIX_BUNDLES_PATH_NAME, "subdir", true);
+    bndId = celix_bundleContext_installBundle(ctx, TEST_BND4_LOC, true); //subdir now part of CELIX_BUNDLES_PATH
+    CHECK(bndId >= 0);
+}
 
 TEST(CelixBundleContextBundlesTests, useBundlesTest) {
     int count = 0;

@@ -22,7 +22,6 @@ add_subdirectory(phase2a)
 add_subdirectory(phase2b)
 add_subdirectory(phase3)
 
-
 add_celix_container(dm_example
     COPY
     BUNDLES
@@ -34,8 +33,10 @@ add_celix_container(dm_example
         dm_example_phase2a
         dm_example_phase2b
         dm_example_phase3
-    PROPERTIES
+    RUNTIME_PROPERTIES
         LOGHELPER_ENABLE_STDOUT_FALLBACK=true
+        PROP2=val2
+        PROP3=val3
 )
 
 

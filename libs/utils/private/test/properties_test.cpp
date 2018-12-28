@@ -219,3 +219,23 @@ TEST(properties, boolTest) {
 
 	celix_properties_destroy(properties);
 }
+
+TEST(properties, sizeAndIteratorTest) {
+	celix_properties_t *props = celix_properties_create();
+	CHECK_EQUAL(0, celix_properties_size(props));
+	celix_properties_set(props, "a", "1");
+	celix_properties_set(props, "b", "2");
+	CHECK_EQUAL(2, celix_properties_size(props));
+	celix_properties_set(props, "c", "  3  ");
+	celix_properties_set(props, "d", "4");
+	CHECK_EQUAL(4, celix_properties_size(props));
+
+	int count = 0;
+	const char *_key = NULL;
+	CELIX_PROPERTIES_FOR_EACH(props, _key) {
+		count++;
+	}
+	CHECK_EQUAL(4, count);
+
+	celix_properties_destroy(props);
+}

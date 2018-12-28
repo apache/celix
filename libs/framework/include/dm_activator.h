@@ -29,16 +29,20 @@
 #ifndef DM_ACTIVATOR_BASE_H_
 #define DM_ACTIVATOR_BASE_H_
 
-
+#include "celix_types.h"
 #include "bundle_context.h"
 #include "celix_errno.h"
-#include "dm_dependency_manager.h"
+#include "celix_dependency_manager.h"
 #include "dm_component.h"
 #include "dm_service_dependency.h"
 #include "celix_bundle_activator.h"
 
 #ifdef __cplusplus
 extern "C" {
+#endif
+
+#ifdef ADD_CELIX_DEPRECATED_WARNING
+#warning This header is deprecated, use the celix_bundle_activator instead. the Dependency manager can be retreived from the bundle context.
 #endif
 
 /**
@@ -52,13 +56,13 @@ celix_status_t dm_create(bundle_context_pt context, void ** userData);
  * Will be called after the dm_create function.
  * Can be used to specify with use of the provided dependency manager the bundle specific components.
  */
-celix_status_t dm_init(void * userData, bundle_context_pt context, dm_dependency_manager_pt manager);
+celix_status_t dm_init(void * userData, bundle_context_pt context, celix_dependency_manager_t *manager);
 
 /**
  * Should be implemented by a bundle specific DM activator.
  * Should deinitialize and deallocate the undle specific activator struct.
  */
-celix_status_t dm_destroy(void * userData, bundle_context_pt context, dm_dependency_manager_pt manager);
+celix_status_t dm_destroy(void * userData, bundle_context_pt context, celix_dependency_manager_t *manager);
 
 #ifdef __cplusplus
 }

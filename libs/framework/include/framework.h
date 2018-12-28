@@ -27,9 +27,6 @@
 #ifndef FRAMEWORK_H_
 #define FRAMEWORK_H_
 
-typedef struct framework *framework_pt;
-typedef struct framework framework_t;
-
 #include "celix_errno.h"
 #include "framework_exports.h"
 #include "bundle.h"
@@ -41,19 +38,19 @@ extern "C" {
 #endif
 
 // #TODO: Move to FrameworkFactory according the OSGi Spec
-FRAMEWORK_EXPORT celix_status_t framework_create(framework_t **framework, properties_t *config);
+FRAMEWORK_EXPORT celix_status_t framework_create(celix_framework_t **framework, celix_properties_t *config);
 
-FRAMEWORK_EXPORT celix_status_t framework_start(framework_t *framework);
+FRAMEWORK_EXPORT celix_status_t framework_start(celix_framework_t *framework);
 
-FRAMEWORK_EXPORT celix_status_t framework_stop(framework_t *framework);
+FRAMEWORK_EXPORT celix_status_t framework_stop(celix_framework_t *framework);
 
-FRAMEWORK_EXPORT celix_status_t framework_destroy(framework_t *framework);
+FRAMEWORK_EXPORT celix_status_t framework_destroy(celix_framework_t *framework);
 
-FRAMEWORK_EXPORT celix_status_t framework_waitForStop(framework_t *framework);
+FRAMEWORK_EXPORT celix_status_t framework_waitForStop(celix_framework_t *framework);
 
-FRAMEWORK_EXPORT celix_status_t framework_getFrameworkBundle(framework_t *framework, bundle_t **bundle);
+FRAMEWORK_EXPORT celix_status_t framework_getFrameworkBundle(celix_framework_t *framework, celix_bundle_t **bundle);
 
-bundle_context_t* framework_getContext(framework_t *framework);
+celix_bundle_context_t* framework_getContext(celix_framework_t *framework);
 
 #ifdef __cplusplus
 }

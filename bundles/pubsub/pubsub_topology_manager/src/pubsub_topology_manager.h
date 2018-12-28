@@ -84,6 +84,8 @@ typedef struct pstm_discovered_endpoint_entry {
 } pstm_discovered_endpoint_entry_t;
 
 typedef struct pstm_topic_receiver_or_sender_entry {
+	bool needsMatch; //true if a psa needs to be selected or if a new psa has to be considered.
+
 	char *scopeAndTopicKey; //key of the combined value of the scope and topic
 	celix_properties_t *endpoint;
 	char *topic;
@@ -92,7 +94,6 @@ typedef struct pstm_topic_receiver_or_sender_entry {
 	long selectedPsaSvcId;
 	long selectedSerializerSvcId;
 	long bndId;
-	bool setup;
 
 	//for sender entry
 	celix_filter_t *publisherFilter;

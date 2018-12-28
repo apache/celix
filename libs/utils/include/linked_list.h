@@ -32,57 +32,63 @@
 #include "celix_errno.h"
 #include "exports.h"
 
+#ifdef ADD_CELIX_DEPRECATED_WARNING
+#define CELIX_DEPRECATED_ATTR __attribute__ ((deprecated))
+#else
+#define CELIX_DEPRECATED_ATTR
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-typedef struct linked_list_entry *linked_list_entry_pt;
-typedef struct linked_list *linked_list_pt;
+typedef struct linked_list_entry *linked_list_entry_pt; //TODO make deprecated
+typedef struct linked_list *linked_list_pt; //TODO make deprecated
 
-UTILS_EXPORT celix_status_t linkedList_create(linked_list_pt *list);
+UTILS_EXPORT celix_status_t linkedList_create(linked_list_pt *list) CELIX_DEPRECATED_ATTR;
 
-UTILS_EXPORT celix_status_t linkedList_destroy(linked_list_pt list);
+UTILS_EXPORT celix_status_t linkedList_destroy(linked_list_pt list) CELIX_DEPRECATED_ATTR;
 
-UTILS_EXPORT celix_status_t linkedList_clone(linked_list_pt list, linked_list_pt *clone);
+UTILS_EXPORT celix_status_t linkedList_clone(linked_list_pt list, linked_list_pt *clone) CELIX_DEPRECATED_ATTR;
 
-UTILS_EXPORT void *linkedList_getFirst(linked_list_pt list);
+UTILS_EXPORT void *linkedList_getFirst(linked_list_pt list) CELIX_DEPRECATED_ATTR;
 
-UTILS_EXPORT void *linkedList_getLast(linked_list_pt list);
+UTILS_EXPORT void *linkedList_getLast(linked_list_pt list) CELIX_DEPRECATED_ATTR;
 
-UTILS_EXPORT void *linkedList_removeFirst(linked_list_pt list);
+UTILS_EXPORT void *linkedList_removeFirst(linked_list_pt list) CELIX_DEPRECATED_ATTR;
 
-UTILS_EXPORT void *linkedList_removeLast(linked_list_pt list);
+UTILS_EXPORT void *linkedList_removeLast(linked_list_pt list) CELIX_DEPRECATED_ATTR;
 
-UTILS_EXPORT void linkedList_addFirst(linked_list_pt list, void *element);
+UTILS_EXPORT void linkedList_addFirst(linked_list_pt list, void *element) CELIX_DEPRECATED_ATTR;
 
-UTILS_EXPORT void linkedList_addLast(linked_list_pt list, void *element);
+UTILS_EXPORT void linkedList_addLast(linked_list_pt list, void *element) CELIX_DEPRECATED_ATTR;
 
-UTILS_EXPORT bool linkedList_contains(linked_list_pt list, void *element);
+UTILS_EXPORT bool linkedList_contains(linked_list_pt list, void *element) CELIX_DEPRECATED_ATTR;
 
-UTILS_EXPORT int linkedList_size(linked_list_pt list);
+UTILS_EXPORT int linkedList_size(linked_list_pt list) CELIX_DEPRECATED_ATTR;
 
-UTILS_EXPORT bool linkedList_isEmpty(linked_list_pt list);
+UTILS_EXPORT bool linkedList_isEmpty(linked_list_pt list) CELIX_DEPRECATED_ATTR;
 
-UTILS_EXPORT bool linkedList_addElement(linked_list_pt list, void *element);
+UTILS_EXPORT bool linkedList_addElement(linked_list_pt list, void *element) CELIX_DEPRECATED_ATTR;
 
-UTILS_EXPORT bool linkedList_removeElement(linked_list_pt list, void *element);
+UTILS_EXPORT bool linkedList_removeElement(linked_list_pt list, void *element) CELIX_DEPRECATED_ATTR;
 
-UTILS_EXPORT void linkedList_clear(linked_list_pt list);
+UTILS_EXPORT void linkedList_clear(linked_list_pt list) CELIX_DEPRECATED_ATTR;
 
-UTILS_EXPORT void *linkedList_get(linked_list_pt list, int index);
+UTILS_EXPORT void *linkedList_get(linked_list_pt list, int index) CELIX_DEPRECATED_ATTR;
 
-UTILS_EXPORT void *linkedList_set(linked_list_pt list, int index, void *element);
+UTILS_EXPORT void *linkedList_set(linked_list_pt list, int index, void *element) CELIX_DEPRECATED_ATTR;
 
-UTILS_EXPORT void linkedList_addIndex(linked_list_pt list, int index, void *element);
+UTILS_EXPORT void linkedList_addIndex(linked_list_pt list, int index, void *element) CELIX_DEPRECATED_ATTR;
 
-UTILS_EXPORT void *linkedList_removeIndex(linked_list_pt list, int index);
+UTILS_EXPORT void *linkedList_removeIndex(linked_list_pt list, int index) CELIX_DEPRECATED_ATTR;
 
-UTILS_EXPORT linked_list_entry_pt linkedList_entry(linked_list_pt list, int index);
+UTILS_EXPORT linked_list_entry_pt linkedList_entry(linked_list_pt list, int index) CELIX_DEPRECATED_ATTR;
 
-UTILS_EXPORT int linkedList_indexOf(linked_list_pt list, void *element);
+UTILS_EXPORT int linkedList_indexOf(linked_list_pt list, void *element) CELIX_DEPRECATED_ATTR;
 
-UTILS_EXPORT linked_list_entry_pt linkedList_addBefore(linked_list_pt list, void *element, linked_list_entry_pt entry);
+UTILS_EXPORT linked_list_entry_pt linkedList_addBefore(linked_list_pt list, void *element, linked_list_entry_pt entry) CELIX_DEPRECATED_ATTR;
 
-UTILS_EXPORT void *linkedList_removeEntry(linked_list_pt list, linked_list_entry_pt entry);
+UTILS_EXPORT void *linkedList_removeEntry(linked_list_pt list, linked_list_entry_pt entry) CELIX_DEPRECATED_ATTR;
 
 #ifdef __cplusplus
 }

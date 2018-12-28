@@ -770,7 +770,7 @@ long celix_bundleContext_trackServiceTrackers(
  *
  * @return the dependency manager or NULL if unsuccessful.
  */
-dm_dependency_manager_t* celix_bundleContext_getDependencyManager(celix_bundle_context_t *ctx);
+celix_dependency_manager_t* celix_bundleContext_getDependencyManager(celix_bundle_context_t *ctx);
 
 
 /**

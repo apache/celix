@@ -49,7 +49,7 @@
     <category rdf:resource="http://projects.apache.org/category/network-server" />
     <repository>
       <GitRepository>
-        <location rdf:resource="https://git-wip-us.apache.org/repos/asf/celix.git"/>
+        <location rdf:resource="https://gitbox.apache.org/repos/asf/celix.git"/>
         <browse rdf:resource="https://github.com/apache/celix"/>
       </GitRepository>
     </repository>

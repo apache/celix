@@ -53,13 +53,13 @@ typedef struct celix_bundle_context_service_tracker_tracker_entry {
 	void (*remove)(void *handle, const celix_service_tracker_info_t *info);
 } celix_bundle_context_service_tracker_tracker_entry_t;
 
-struct bundleContext {
-	struct framework * framework;
-	struct bundle * bundle;
+struct celix_bundle_context {
+	celix_framework_t *framework;
+	celix_bundle_t *bundle;
 
 	celix_thread_mutex_t mutex; //protects fields below
 	array_list_t *svcRegistrations;
-	dm_dependency_manager_t *mng;
+	celix_dependency_manager_t *mng;
 	long nextTrackerId;
 	hash_map_t *bundleTrackers; //key = trackerId, value = celix_bundle_context_bundle_tracker_entry_t*
 	hash_map_t *serviceTrackers; //key = trackerId, value = celix_service_tracker_t*

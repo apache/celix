@@ -17,7 +17,6 @@
  *under the License.
  */
 
-#include "array_list.h"
 #include "celixbool.h"
 #include "exports.h"
 #include "celix_errno.h"
@@ -30,8 +29,22 @@
 extern "C" {
 #endif
 
+typedef union celix_array_list_entry {
+    void *voidPtrVal;
+    int intVal;
+    long int longVal;
+    unsigned int uintVal;
+    unsigned long ulongVal;
+    double doubleVal;
+    float floatVal;
+    bool boolVal;
+    size_t sizeVal;
+} celix_array_list_entry_t;
 
-typedef struct celix_arrayList celix_array_list_t;
+typedef struct celix_array_list celix_array_list_t;
+
+typedef bool (*celix_arrayList_equals_fp)(celix_array_list_entry_t, celix_array_list_entry_t);
+
 
 celix_array_list_t* celix_arrayList_create();
 

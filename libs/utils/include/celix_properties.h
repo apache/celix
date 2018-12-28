@@ -31,6 +31,7 @@ extern "C" {
 #endif
 
 typedef hash_map_t celix_properties_t;
+typedef hash_map_iterator_t celix_properties_iterator_t;
 
 
 /**********************************************************************************************************************
@@ -69,10 +70,15 @@ void celix_properties_setBool(celix_properties_t *props, const char *key, bool v
 void celix_properties_setDouble(celix_properties_t *props, const char *key, double val);
 double celix_properties_getAsDouble(const celix_properties_t *props, const char *key, double defaultValue);
 
+int celix_properties_size(const celix_properties_t *properties);
+
+celix_properties_iterator_t celix_propertiesIterator_construct(const celix_properties_t *properties);
+bool celix_propertiesIterator_hasNext(celix_properties_iterator_t *iter);
+const char* celix_propertiesIterator_nextKey(celix_properties_iterator_t *iter);
 
 #define CELIX_PROPERTIES_FOR_EACH(props, key) \
-    for(hash_map_iterator_t iter = hashMapIterator_construct(props); \
-        hashMapIterator_hasNext(&iter), (key) = (const char*)hashMapIterator_nextKey(&iter);)
+    for(hash_map_iterator_t iter = celix_propertiesIterator_construct(props); \
+        celix_propertiesIterator_hasNext(&iter), (key) = celix_propertiesIterator_nextKey(&iter);)
 
 
 

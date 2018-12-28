@@ -31,11 +31,11 @@ celix_status_t bundleActivator_start(void *userData, celix_bundle_context_t *ctx
     return dm_init(userData, ctx, mng);
 }
 
-celix_status_t bundleActivator_stop(void * userData __attribute__((unused)), celix_bundle_context_t *ctx __attribute__((unused))) {
-    return CELIX_SUCCESS; //nothing to do (no dm_deinit)
-}
-
-celix_status_t bundleActivator_destroy(void * userData, celix_bundle_context_t *ctx __attribute__((unused))) {
+celix_status_t bundleActivator_stop(void * userData, celix_bundle_context_t *ctx) {
     dm_dependency_manager_t *mng = celix_bundleContext_getDependencyManager(ctx);
     return dm_destroy(userData, ctx, mng);
+}
+
+celix_status_t bundleActivator_destroy(void * userData  __attribute__((unused)), celix_bundle_context_t *ctx __attribute__((unused))) {
+    return CELIX_SUCCESS; //nothing to do
 }

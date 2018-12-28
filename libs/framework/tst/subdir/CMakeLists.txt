@@ -5,9 +5,9 @@
 # to you under the Apache License, Version 2.0 (the
 # "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
-# 
+#
 #   http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing,
 # software distributed under the License is distributed on an
 # "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -16,12 +16,5 @@
 # under the License.
 
 
-add_celix_bundle(dm_example_phase1
-    SYMBOLIC_NAME phase1
-    VERSION 0.0.1
-    SOURCES
-        src/phase1_activator
-        src/phase1_cmp.c
-)
-target_include_directories(dm_example_phase1 PRIVATE src)
-target_link_libraries(dm_example_phase1 PRIVATE dm_example_api)
+add_celix_bundle(simple_test_bundle4 NO_ACTIVATOR VERSION 1.0.0)
+add_celix_bundle(simple_test_bundle5 NO_ACTIVATOR VERSION 1.0.0)

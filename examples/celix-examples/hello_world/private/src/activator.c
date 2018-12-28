@@ -35,7 +35,7 @@ struct userData {
 	char * word;
 };
 
-celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
+celix_status_t bundleActivator_create(celix_bundle_context_t *context, void **userData) {
 	celix_status_t status = CELIX_SUCCESS;
     *userData = malloc(sizeof(struct userData));
     if (*userData != NULL) {
@@ -46,7 +46,7 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 	return status;
 }
 
-celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
+celix_status_t bundleActivator_start(void * userData, celix_bundle_context_t *context) {
 	struct userData * data = (struct userData *) userData;
 	printf("Hello %s\n", data->word);
 
@@ -56,13 +56,13 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
+celix_status_t bundleActivator_stop(void * userData, celix_bundle_context_t *context) {
 	struct userData * data = (struct userData *) userData;
 	printf("Goodbye %s\n", data->word);
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
+celix_status_t bundleActivator_destroy(void * userData, celix_bundle_context_t *context) {
     free(userData);
 	return CELIX_SUCCESS;
 }

@@ -395,7 +395,9 @@ celix_status_t pubsub_discovery_announceEndpoint(void *handle, const celix_prope
     const char *topic = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_NAME, NULL);
     const char *uuid = celix_properties_get(endpoint, PUBSUB_ENDPOINT_UUID, NULL);
 
-    if (valid) {
+    const char *visibility = celix_properties_get(endpoint, PUBSUB_ENDPOINT_VISIBILITY, PUBSUB_ENDPOINT_VISIBILITY_DEFAULT);
+
+    if (valid && strncmp(visibility, PUBSUB_ENDPOINT_SYSTEM_VISIBLITY, strlen(PUBSUB_ENDPOINT_SYSTEM_VISIBLITY)) == 0) {
         pubsub_announce_entry_t *entry = calloc(1, sizeof(*entry));
         clock_gettime(CLOCK_MONOTONIC, &entry->createTime);
         entry->isSet = false;
@@ -410,8 +412,12 @@ celix_status_t pubsub_discovery_announceEndpoint(void *handle, const celix_prope
         celixThreadMutex_lock(&disc->waitMutex);
         celixThreadCondition_broadcast(&disc->waitCond);
         celixThreadMutex_unlock(&disc->waitMutex);
-    } else {
-        printf("[PSD] Error cannot announce endpoint. missing some mandatory properties\n");
+    } else if (valid) {
+        L_DEBUG("[PSD] Ignoring endpoint %s/%s because the visibility is not %s. Configured visibility is %s\n", scope, topic, PUBSUB_ENDPOINT_SYSTEM_VISIBLITY, visibility);
+    }
+
+    if (!valid) {
+        L_ERROR("[PSD] Error cannot announce endpoint. missing some mandatory properties\n");
     }
 
     return status;
@@ -446,17 +452,6 @@ celix_status_t pubsub_discovery_removeEndpoint(void *handle, const celix_propert
 
 static void pubsub_discovery_addDiscoveredEndpoint(pubsub_discovery_t *disc, celix_properties_t *endpoint) {
     const char *uuid = celix_properties_get(endpoint, PUBSUB_ENDPOINT_UUID, NULL);
-    const char *fwUUID = celix_properties_get(endpoint, PUBSUB_ENDPOINT_FRAMEWORK_UUID, NULL);
-
-    //note endpoint should already be check to be valid pubsubEndpoint_isValid
-    assert(uuid != NULL);
-    assert(fwUUID != NULL);
-
-    if (fwUUID != NULL && strncmp(disc->fwUUID, fwUUID, strlen(disc->fwUUID)) == 0) {
-        //own endpoint -> ignore
-        celix_properties_destroy(endpoint);
-        return;
-    }
 
     celixThreadMutex_lock(&disc->discoveredEndpointsMutex);
     bool exists = hashMap_containsKey(disc->discoveredEndpoints, (void*)uuid);
@@ -465,7 +460,6 @@ static void pubsub_discovery_addDiscoveredEndpoint(pubsub_discovery_t *disc, cel
 
     if (!exists) {
         if (disc->verbose) {
-            const char *uuid = celix_properties_get(endpoint, PUBSUB_ENDPOINT_UUID, "!Error!");
             const char *type = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TYPE, "!Error!");
             const char *admin = celix_properties_get(endpoint, PUBSUB_ENDPOINT_ADMIN_TYPE, "!Error!");
             const char *ser = celix_properties_get(endpoint, PUBSUB_SERIALIZER_TYPE_KEY, "!Error!");
@@ -492,20 +486,19 @@ static void pubsub_discovery_removeDiscoveredEndpoint(pubsub_discovery_t *disc, 
     celixThreadMutex_unlock(&disc->discoveredEndpointsMutex);
 
     if (endpoint == NULL) {
-        //NOTE assuming this was a endpoint from this framework -> ignore
+        L_WARN("Cannot find endpoint with uuid %s\n", uuid);
         return;
     }
 
     if (disc->verbose) {
-        const char *uuid = celix_properties_get(endpoint, PUBSUB_ENDPOINT_UUID, "!Error!");
         const char *type = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TYPE, "!Error!");
         const char *admin = celix_properties_get(endpoint, PUBSUB_ENDPOINT_ADMIN_TYPE, "!Error!");
         const char *ser = celix_properties_get(endpoint, PUBSUB_SERIALIZER_TYPE_KEY, "!Error!");
-        printf("[PSD] Removing discovered endpoint %s. type is %s, admin is %s, serializer is %s.\n",
+        L_INFO("[PSD] Removing discovered endpoint %s. type is %s, admin is %s, serializer is %s.\n",
                uuid, type, admin, ser);
     }
 
-    if (exists && endpoint != NULL) {
+    if (exists) {
         celixThreadMutex_lock(&disc->discoveredEndpointsListenersMutex);
         hash_map_iterator_t iter = hashMapIterator_construct(disc->discoveredEndpointsListeners);
         while (hashMapIterator_hasNext(&iter)) {

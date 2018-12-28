@@ -22,20 +22,20 @@
 
 #include "dm_dependency_manager.h"
 
-celix_status_t dependencyManager_removeAllComponents(dm_dependency_manager_t *manager) {
-    mock_c()->actualCall("dependencyManager_removeAllComponents")
-            ->withPointerParameters("manager", manager);
-    return mock_c()->returnValue().value.intValue;
+
+celix_dependency_manager_t* celix_private_dependencyManager_create(celix_bundle_context_t *context) {
+    mock_c()->actualCall("celix_private_dependencyManager_create")
+            ->withPointerParameters("context", context);
+    return mock_c()->returnValue().value.pointerValue;
 }
 
-celix_status_t dependencyManager_create(bundle_context_t *context, dm_dependency_manager_t **manager) {
-    mock_c()->actualCall("dependencyManager_create")
-            ->withPointerParameters("context", context)
-            ->withOutputParameter("manager", (void **) manager);
-    return mock_c()->returnValue().value.intValue;
+void celix_private_dependencyManager_destroy(celix_dependency_manager_t *manager) {
+    mock_c()->actualCall("celix_private_dependencyManager_destroy")
+            ->withPointerParameters("manager", manager);
 }
 
-void dependencyManager_destroy(dm_dependency_manager_t *manager) {
-    mock_c()->actualCall("dependencyManager_destroy")
+celix_status_t celix_dependencyManager_removeAllComponents(celix_dependency_manager_t *manager) {
+    mock_c()->actualCall("celix_dependencyManager_removeAllComponents")
             ->withPointerParameters("manager", manager);
+    return mock_c()->returnValue().value.intValue;
 }

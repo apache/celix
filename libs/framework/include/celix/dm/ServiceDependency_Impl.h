@@ -19,7 +19,9 @@
 
 #include <vector>
 #include <iostream>
+#include <cstring>
 #include "constants.h"
+#include "celix_properties.h"
 
 using namespace celix::dm;
 
@@ -50,7 +52,7 @@ void CServiceDependency<T,I>::setupService() {
     }
     const char* cversion = this->versionRange.empty() ? nullptr : versionRange.c_str();
     const char* cfilter = filter.empty() ? nullptr : filter.c_str();
-    serviceDependency_setService(this->cServiceDependency(), this->name.c_str(), cversion, cfilter);
+    celix_dmServiceDependency_setService(this->cServiceDependency(), this->name.c_str(), cversion, cfilter);
 };
 
 template<class T, typename I>
@@ -58,7 +60,7 @@ CServiceDependency<T,I>& CServiceDependency<T,I>::setAddLanguageFilter(bool addL
 //    if (!this->valid) {
 //        *this;
 //    }
-    serviceDependency_setAddCLanguageFilter(this->cServiceDependency(), addLang);
+    celix_serviceDependency_setAddCLanguageFilter(this->cServiceDependency(), addLang);
     this->setupService();
     return *this;
 };
@@ -68,7 +70,7 @@ CServiceDependency<T,I>& CServiceDependency<T,I>::setRequired(bool req) {
     if (!this->valid) {
         return *this;
     }
-    serviceDependency_setRequired(this->cServiceDependency(), req);
+    celix_dmServiceDependency_setRequired(this->cServiceDependency(), req);
     return *this;
 }
 
@@ -158,49 +160,48 @@ void CServiceDependency<T,I>::setupCallbacks() {
         return;
     }
 
-    int(*cset)(void*, service_reference_pt, const void*) {nullptr};
-    int(*cadd)(void*, service_reference_pt, const void*) {nullptr};
-    int(*crem)(void*, service_reference_pt, const void*) {nullptr};
+    int(*cset)(void*, void *, const celix_properties_t*) {nullptr};
+    int(*cadd)(void*, void *, const celix_properties_t*) {nullptr};
+    int(*crem)(void*, void *, const celix_properties_t*) {nullptr};
 
     if (setFp != nullptr) {
-        cset = [](void* handle, service_reference_pt ref, const void* service) -> int {
+        cset = [](void* handle, void *service, const celix_properties_t *props) -> int {
             auto dep = (CServiceDependency<T,I>*) handle;
-            return dep->invokeCallback(dep->setFp, ref, service);
+            return dep->invokeCallback(dep->setFp, props, service);
         };
     }
     if (addFp != nullptr) {
-        cadd = [](void* handle, service_reference_pt ref, const void* service) -> int {
+        cadd = [](void* handle, void *service, const celix_properties_t *props) -> int {
             auto dep = (CServiceDependency<T,I>*) handle;
-            return dep->invokeCallback(dep->addFp, ref, service);
+            return dep->invokeCallback(dep->addFp, props, service);
         };
     }
     if (removeFp != nullptr) {
-        crem= [](void* handle, service_reference_pt ref, const void* service) -> int {
+        crem= [](void* handle, void *service, const celix_properties_t *props) -> int {
             auto dep = (CServiceDependency<T,I>*) handle;
-            return dep->invokeCallback(dep->removeFp, ref, service);
+            return dep->invokeCallback(dep->removeFp, props, service);
         };
     }
-    serviceDependency_setCallbackHandle(this->cServiceDependency(), this);
-    serviceDependency_setCallbacksWithServiceReference(this->cServiceDependency(), cset, cadd, nullptr, crem, nullptr);
+    celix_dmServiceDependency_setCallbackHandle(this->cServiceDependency(), this);
+    celix_dm_service_dependency_callback_options_t opts;
+    std::memset(&opts, 0, sizeof(opts));
+    opts.addWithProps = cadd;
+    opts.removeWithProps = crem;
+    opts.setWithProps = cset;
+    celix_dmServiceDependency_setCallbacksWithOptions(this->cServiceDependency(), &opts);
 }
 
 template<class T, typename I>
-int CServiceDependency<T,I>::invokeCallback(std::function<void(const I*, Properties&&)> fp, service_reference_pt  ref, const void* service) {
-    service_registration_pt reg {nullptr};
-    properties_pt props {nullptr};
-
+int CServiceDependency<T,I>::invokeCallback(std::function<void(const I*, Properties&&)> fp, const celix_properties_t *props, const void* service) {
     Properties properties {};
     const char* key {nullptr};
     const char* value {nullptr};
 
-    if (ref != nullptr) {
-        serviceReference_getServiceRegistration(ref, &reg);
-        serviceRegistration_getProperties(reg, &props);
-        
+    if (props != nullptr) {
         hash_map_iterator_t iter = hashMapIterator_construct((hash_map_pt)props);
         while(hashMapIterator_hasNext(&iter)) {
             key = (const char*) hashMapIterator_nextKey(&iter);
-            value = properties_get(props, key);
+            value = celix_properties_get(props, key, NULL);
             //std::cout << "got property " << key << "=" << value << "\n";
             properties[key] = value;
         }
@@ -271,7 +272,7 @@ void ServiceDependency<T,I>::setupService() {
         this->modifiedFilter = this->filter;
     }
 
-    serviceDependency_setService(this->cServiceDependency(), n.c_str(), v, this->modifiedFilter.c_str());
+    celix_dmServiceDependency_setService(this->cServiceDependency(), n.c_str(), v, this->modifiedFilter.c_str());
 }
 
 template<class T, class I>
@@ -377,7 +378,7 @@ ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(
 
 template<class T, class I>
 ServiceDependency<T,I>& ServiceDependency<T,I>::setRequired(bool req) {
-    serviceDependency_setRequired(this->cServiceDependency(), req);
+    celix_dmServiceDependency_setRequired(this->cServiceDependency(), req);
     return *this;
 }
 
@@ -388,28 +389,22 @@ ServiceDependency<T,I>& ServiceDependency<T,I>::setStrategy(DependencyUpdateStra
 };
 
 template<class T, class I>
-int ServiceDependency<T,I>::invokeCallback(std::function<void(I*, Properties&&)> fp, service_reference_pt  ref, const void* service) {
-    service_registration_pt reg {nullptr};
-    properties_pt props {nullptr};
+int ServiceDependency<T,I>::invokeCallback(std::function<void(I*, Properties&&)> fp, const celix_properties_t *props, const void* service) {
     I *svc = (I*)service;
 
     Properties properties {};
     const char* key {nullptr};
     const char* value {nullptr};
 
-    if (ref != nullptr) {
-        serviceReference_getServiceRegistration(ref, &reg);
-        serviceRegistration_getProperties(reg, &props);
 	if (props != nullptr) {
             hash_map_iterator_t iter = hashMapIterator_construct((hash_map_pt)props);
             while(hashMapIterator_hasNext(&iter)) {
                 key = (const char*) hashMapIterator_nextKey(&iter);
-                value = properties_get(props, key);
+                value = celix_properties_get(props, key, NULL);
                 //std::cout << "got property " << key << "=" << value << "\n";
                 properties[key] = value;
             }
 	}
-    }
 
     fp(svc, std::move(properties)); //explicit move of lvalue properties.
     return 0;
@@ -421,29 +416,34 @@ void ServiceDependency<T,I>::setupCallbacks() {
         return;
     }
 
-    int(*cset)(void*, service_reference_pt, const void*) {nullptr};
-    int(*cadd)(void*, service_reference_pt, const void*) {nullptr};
-    int(*crem)(void*, service_reference_pt, const void*) {nullptr};
+    int(*cset)(void*, void *, const celix_properties_t*) {nullptr};
+    int(*cadd)(void*, void *, const celix_properties_t*) {nullptr};
+    int(*crem)(void*, void *, const celix_properties_t*) {nullptr};
 
     if (setFp != nullptr) {
-        cset = [](void* handle, service_reference_pt ref, const void* service) -> int {
+        cset = [](void* handle, void *service, const celix_properties_t* props) -> int {
             auto dep = (ServiceDependency<T,I>*) handle;
-            return dep->invokeCallback(dep->setFp, ref, service);
+            return dep->invokeCallback(dep->setFp, props, service);
         };
     }
     if (addFp != nullptr) {
-        cadd = [](void* handle, service_reference_pt ref, const void* service) -> int {
+        cadd = [](void* handle, void *service, const celix_properties_t* props) -> int {
             auto dep = (ServiceDependency<T,I>*) handle;
-            return dep->invokeCallback(dep->addFp, ref, service);
+            return dep->invokeCallback(dep->addFp, props, service);
         };
     }
     if (removeFp != nullptr) {
-        crem = [](void* handle, service_reference_pt ref, const void* service) -> int {
+        crem = [](void* handle, void *service, const celix_properties_t*props) -> int {
             auto dep = (ServiceDependency<T,I>*) handle;
-            return dep->invokeCallback(dep->removeFp, ref, service);
+            return dep->invokeCallback(dep->removeFp, props, service);
         };
     }
 
-    serviceDependency_setCallbackHandle(this->cServiceDependency(), this);
-    serviceDependency_setCallbacksWithServiceReference(this->cServiceDependency(), cset, cadd, nullptr, crem, nullptr);
+    celix_dmServiceDependency_setCallbackHandle(this->cServiceDependency(), this);
+    celix_dm_service_dependency_callback_options_t opts;
+    std::memset(&opts, 0, sizeof(opts));
+    opts.setWithProps = cset;
+    opts.addWithProps = cadd;
+    opts.removeWithProps = crem;
+    celix_dmServiceDependency_setCallbacksWithOptions(this->cServiceDependency(), &opts);
 };
