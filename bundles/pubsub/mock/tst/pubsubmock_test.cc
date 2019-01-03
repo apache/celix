@@ -70,7 +70,7 @@ TEST(pubsubmock, publishermock) {
 
     //set msg
     void *dummyMsg = (void*)0x43; 
-    srv->send(srv->handle, msgId, dummyMsg); //should satify the expectOneCalls 
+    srv->send(srv->handle, msgId, dummyMsg); //should satisfy the expectOneCalls
     //srv->send(srv->handle, msgId, dummyMsg); //enabling this should fail the test
 
 }

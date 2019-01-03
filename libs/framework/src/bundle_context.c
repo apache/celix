@@ -261,8 +261,8 @@ celix_status_t bundleContext_getService(bundle_context_pt context, service_refer
     celix_status_t status = CELIX_SUCCESS;
 
     if (context != NULL && reference != NULL && service_instance != NULL) {
-        /*NOTE argument service_instance should be considerd a 'const void**'. 
-        To ensure backwards compatiblity a cast is made instead.
+        /*NOTE argument service_instance should be considered a 'const void**'.
+        To ensure backwards compatibility a cast is made instead.
         */
 	    status = fw_getService(context->framework, context->bundle, reference, (const void**) service_instance);
     } else {

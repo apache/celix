@@ -67,7 +67,7 @@ static int endpointDiscoveryServer_callback(struct mg_connection *conn);
 static char* format_path(const char* path);
 
 #ifndef ANDROID
-static celix_status_t endpointDiscoveryServer_getIpAdress(char* interface, char** ip);
+static celix_status_t endpointDiscoveryServer_getIpAddress(char* interface, char** ip);
 #endif
 
 celix_status_t endpointDiscoveryServer_create(
@@ -109,12 +109,12 @@ celix_status_t endpointDiscoveryServer_create(
 		const char *interface = NULL;
 
 		bundleContext_getProperty(context, DISCOVERY_SERVER_INTERFACE, &interface);
-		if ((interface != NULL) && (endpointDiscoveryServer_getIpAdress((char*)interface, &detectedIp) != CELIX_SUCCESS)) {
-			logHelper_log(*(*server)->loghelper, OSGI_LOGSERVICE_WARNING, "Could not retrieve IP adress for interface %s", interface);
+		if ((interface != NULL) && (endpointDiscoveryServer_getIpAddress((char*)interface, &detectedIp) != CELIX_SUCCESS)) {
+			logHelper_log(*(*server)->loghelper, OSGI_LOGSERVICE_WARNING, "Could not retrieve IP address for interface %s", interface);
 		}
 
 		if (detectedIp == NULL) {
-			endpointDiscoveryServer_getIpAdress(NULL, &detectedIp);
+			endpointDiscoveryServer_getIpAddress(NULL, &detectedIp);
 		}
 
 		ip = detectedIp;
@@ -277,7 +277,7 @@ celix_status_t endpointDiscoveryServer_removeEndpoint(endpoint_discovery_server_
 
 		hashMap_remove(server->entries, key);
 
-		// we've made this key, see _addEnpoint above...
+		// we've made this key, see _addEndpoint above...
 		free((void*) key);
 	}
 
@@ -421,7 +421,7 @@ static int endpointDiscoveryServer_callback(struct mg_connection* conn) {
 }
 
 #ifndef ANDROID
-static celix_status_t endpointDiscoveryServer_getIpAdress(char* interface, char** ip) {
+static celix_status_t endpointDiscoveryServer_getIpAddress(char* interface, char** ip) {
 	celix_status_t status = CELIX_BUNDLE_EXCEPTION;
 
 	struct ifaddrs *ifaddr, *ifa;

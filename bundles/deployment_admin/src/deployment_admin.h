@@ -42,7 +42,7 @@ struct deployment_admin {
 	char *pollUrl;
 	char *auditlogUrl;
 	unsigned long long auditlogId;
-	unsigned int aditlogSeqNr;
+	unsigned int auditlogSeqNr;
 };
 
 typedef enum {

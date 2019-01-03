@@ -71,7 +71,7 @@ celix_thread_t celixThread_self(void);
 
 int celixThread_equals(celix_thread_t thread1, celix_thread_t thread2);
 
-bool celixThread_initalized(celix_thread_t thread);
+bool celixThread_initialized(celix_thread_t thread);
 
 
 typedef pthread_mutex_t celix_thread_mutex_t;

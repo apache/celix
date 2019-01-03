@@ -397,7 +397,7 @@ celix_status_t pubsub_discovery_announceEndpoint(void *handle, const celix_prope
 
     const char *visibility = celix_properties_get(endpoint, PUBSUB_ENDPOINT_VISIBILITY, PUBSUB_ENDPOINT_VISIBILITY_DEFAULT);
 
-    if (valid && strncmp(visibility, PUBSUB_ENDPOINT_SYSTEM_VISIBLITY, strlen(PUBSUB_ENDPOINT_SYSTEM_VISIBLITY)) == 0) {
+    if (valid && strncmp(visibility, PUBSUB_ENDPOINT_SYSTEM_VISIBILITY, strlen(PUBSUB_ENDPOINT_SYSTEM_VISIBILITY)) == 0) {
         pubsub_announce_entry_t *entry = calloc(1, sizeof(*entry));
         clock_gettime(CLOCK_MONOTONIC, &entry->createTime);
         entry->isSet = false;
@@ -413,7 +413,7 @@ celix_status_t pubsub_discovery_announceEndpoint(void *handle, const celix_prope
         celixThreadCondition_broadcast(&disc->waitCond);
         celixThreadMutex_unlock(&disc->waitMutex);
     } else if (valid) {
-        L_DEBUG("[PSD] Ignoring endpoint %s/%s because the visibility is not %s. Configured visibility is %s\n", scope, topic, PUBSUB_ENDPOINT_SYSTEM_VISIBLITY, visibility);
+        L_DEBUG("[PSD] Ignoring endpoint %s/%s because the visibility is not %s. Configured visibility is %s\n", scope, topic, PUBSUB_ENDPOINT_SYSTEM_VISIBILITY, visibility);
     }
 
     if (!valid) {

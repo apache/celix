@@ -46,7 +46,7 @@ extern "C" {
  *
  * @param argc argc as provided in a main function.
  * @param argv argv as provided in a main function.
- * @param embeddedConfig The optional embbeded config, will be overriden with the config.properties if found.
+ * @param embeddedConfig The optional embedded config, will be overridden with the config.properties if found.
  * @return CELIX_SUCCESS if successful.
  */
 int celixLauncher_launchAndWaitForShutdown(int argc, char *argv[], celix_properties_t *embeddedConfig);

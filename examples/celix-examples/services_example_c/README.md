@@ -43,7 +43,7 @@ The simple provider/consumer example can be executed by launching the
 (build in `${CMAKE_BUILD_DIR}/deploy/services_example/services_example_c`)
 
 In this example the provide bundle only register one calc service. And
-the consumer bundle tries to use this during startup and registerd
+the consumer bundle tries to use this during startup and registered
 a service tracker for the calc service.
 
 Try stopping/starting the provider / consumer bundles (respectively bundle id 3 & 4)
@@ -59,7 +59,7 @@ The dynamic provider/consumer example can be executed by launching the
 The dynamic service provide / consumer example show how the framework copes
 with the dynamic behaviour of services.
 
-This this example the provided dynammically register more and less calc services in a thread.
+This this example the provided dynamically register more and less calc services in a thread.
 The consumer bundle uses these services in a every 5 seconds and print some info.
 
 Hopefully this example will give an idea how services can be safely used and tracked in a dynamic environment.

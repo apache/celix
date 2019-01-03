@@ -92,7 +92,7 @@ int celixThread_equals(celix_thread_t thread1, celix_thread_t thread2) {
     return pthread_equal(thread1.thread, thread2.thread);
 }
 
-bool celixThread_initalized(celix_thread_t thread) {
+bool celixThread_initialized(celix_thread_t thread) {
     return thread.threadInitialized;
 }
 

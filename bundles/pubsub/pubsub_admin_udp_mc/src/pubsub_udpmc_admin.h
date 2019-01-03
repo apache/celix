@@ -25,7 +25,7 @@
 
 #define PUBSUB_UDPMC_ADMIN_TYPE                     "udp_mc"
 #define PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY			"udpmc.socket_address"
-#define PUBSUB_PSA_UDPMC_SOCKET_PORT_KEY            "udpmc.socker_port"
+#define PUBSUB_PSA_UDPMC_SOCKET_PORT_KEY            "udpmc.socket_port"
 
 #define PUBSUB_UDPMC_IP_KEY 	                    "PSA_IP"
 #define PUBSUB_UDPMC_ITF_KEY	                    "PSA_INTERFACE"

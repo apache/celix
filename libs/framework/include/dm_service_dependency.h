@@ -72,7 +72,7 @@ celix_status_t serviceDependency_destroy(celix_dm_service_dependency_t **dep) CE
 celix_status_t serviceDependency_setRequired(celix_dm_service_dependency_t *dependency, bool required) CELIX_DEPRECATED_ATTR;
 
 /**
- * Specify if the servide dependency should add a C language filter for this dependency if no "service.lang" part if found the in the provided filter.
+ * Specify if the service dependency should add a C language filter for this dependency if no "service.lang" part is found the in the provided filter.
  * Default is false
  */
 celix_status_t serviceDependency_setAddCLanguageFilter(celix_dm_service_dependency_t *dependency, bool addCLangFilter) CELIX_DEPRECATED_ATTR;
@@ -108,7 +108,7 @@ celix_status_t serviceDependency_getStrategy(celix_dm_service_dependency_t *depe
 celix_status_t serviceDependency_setService(celix_dm_service_dependency_t *dependency, const char* serviceName, const char* serviceVersionRange, const char* filter) CELIX_DEPRECATED_ATTR;
 
 /**
- * Returns the service depenendy filter.
+ * Returns the service dependency filter.
  */
 celix_status_t serviceDependency_getFilter(celix_dm_service_dependency_t *dependency, const char** filter) CELIX_DEPRECATED_ATTR;
 

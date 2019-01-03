@@ -93,7 +93,7 @@ namespace celix { namespace dm {
         static Component<T>* create(celix_bundle_context_t*);
 
         /**
-         * Wether the component is valid. Invalid component can occurs when no new components can be created and
+         * Whether the component is valid. Invalid component can occurs when no new components can be created and
          * exceptions are not allowed.
          * @return
          */

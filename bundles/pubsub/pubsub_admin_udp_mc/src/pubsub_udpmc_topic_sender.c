@@ -205,7 +205,7 @@ static void* psa_udpmc_getPublisherService(void *handle, const celix_bundle_t *r
             entry->service.handle = entry;
             entry->service.localMsgTypeIdForMsgType = psa_udpmc_localMsgTypeIdForMsgType;
             entry->service.send = psa_udpmc_topicPublicationSend;
-            entry->service.sendMultipart = NULL; //note multipart not supported by MCUDP
+            entry->service.sendMultipart = NULL; //note multipart not supported by UDPMC
             hashMap_put(sender->boundedServices.map, (void*)bndId, entry);
             svc = &entry->service;
         } else {

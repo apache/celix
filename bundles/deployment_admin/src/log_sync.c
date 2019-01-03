@@ -59,7 +59,7 @@ struct log_descriptor {
 typedef struct log_descriptor *log_descriptor_pt;
 
 celix_status_t logSync_queryLog(log_sync_pt logSync, char *targetId, long logId, char **queryReply);
-static size_t logSync_readQeury(void *contents, size_t size, size_t nmemb, void *userp);
+static size_t logSync_readQuery(void *contents, size_t size, size_t nmemb, void *userp);
 static void *logSync_synchronize(void *logSyncP);
 
 celix_status_t logSync_create(char *targetId, log_store_pt store, log_sync_pt *logSync) {
@@ -173,7 +173,7 @@ celix_status_t logSync_queryLog(log_sync_pt logSync, char *targetId, long logId,
 	if (curl) {
 		curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
 		curl_easy_setopt(curl, CURLOPT_URL, query);
-		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, logSync_readQeury);
+		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, logSync_readQuery);
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, &chunk);
 		curl_easy_setopt(curl, CURLOPT_FAILONERROR, true);
 		res = curl_easy_perform(curl);
@@ -190,7 +190,7 @@ celix_status_t logSync_queryLog(log_sync_pt logSync, char *targetId, long logId,
 	return status;
 }
 
-static size_t logSync_readQeury(void *contents, size_t size, size_t nmemb, void *userp) {
+static size_t logSync_readQuery(void *contents, size_t size, size_t nmemb, void *userp) {
 	size_t realsize = size * nmemb;
 	struct MemoryStruct *mem = (struct MemoryStruct *)userp;
 

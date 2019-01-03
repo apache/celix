@@ -306,7 +306,7 @@ void pubsub::nanomsg::topic_receiver::recvThread_exec() {
             processMsg(&msg->header, msg->payload, recvBytes-sizeof(msg->header));
             nn_freemsg(msg);
         } else if (recvBytes >= 0) {
-            L.ERROR("[PSA_NANOMSG_TR] Error receiving nanmosg msg, size (", recvBytes,") smaller than header\n");
+            L.ERROR("[PSA_NANOMSG_TR] Error receiving nanomsg msg, size (", recvBytes,") smaller than header\n");
         } else if (errno == EAGAIN || errno == ETIMEDOUT) {
             // no data: go to next cycle
         } else if (errno == EINTR) {

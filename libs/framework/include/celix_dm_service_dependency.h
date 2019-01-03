@@ -81,7 +81,7 @@ void celix_dmServiceDependency_destroy(celix_dm_service_dependency_t *dep);
 celix_status_t celix_dmServiceDependency_setRequired(celix_dm_service_dependency_t *dependency, bool required);
 
 /**
- * Specify if the servide dependency should add a C language filter for this dependency if no "service.lang" part if found the in the provided filter.
+ * Specify if the service dependency should add a C language filter for this dependency if no "service.lang" part is found the in the provided filter.
  * Default is false
  */
 celix_status_t celix_dmServiceDependency_setAddCLanguageFilter(celix_dm_service_dependency_t *dependency, bool addCLangFilter);
@@ -117,7 +117,7 @@ celix_dm_service_dependency_strategy_t celix_dmServiceDependency_getStrategy(cel
 celix_status_t celix_dmServiceDependency_setService(celix_dm_service_dependency_t *dependency, const char* serviceName, const char* serviceVersionRange, const char* filter);
 
 /**
- * Returns the service depenendy filter.
+ * Returns the service dependency filter.
  */
 const char* celix_dmServiceDependency_getFilter(celix_dm_service_dependency_t *dependency);
 

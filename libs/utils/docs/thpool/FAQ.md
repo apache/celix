@@ -11,13 +11,13 @@ Interestingly using `pthread_exit()` results in much more memory being allocated
 
 ### Why do you use sleep() after calling thpool_destroy()?
 This is needed only in the tests. The reason is that if you call thpool_destroy
-and then exit immedietely, maybe the program will exit before all the threads
+and then exit immediately, maybe the program will exit before all the threads
 had the time to deallocate. In that way it is impossible to check for memory
 leaks.
 
 In production you don't have to worry about this since if you call exit,
-immedietely after you destroyied the pool, the threads will be freed
-anyway by the OS. If you eitherway destroy the pool in the middle of your
+immediately after you destroyed the pool, the threads will be freed
+anyway by the OS. If you either way destroy the pool in the middle of your
 program it doesn't matter again since the program will not exit immediately
 and thus threads will have more than enough time to terminate.
 

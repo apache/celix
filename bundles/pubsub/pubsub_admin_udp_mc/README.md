@@ -29,7 +29,7 @@ fragments are reassembled at the reception side.
 
 ### IP Addresses
 
-To use UDP-multicast 2 IP adresses are needed:
+To use UDP-multicast 2 IP addresses are needed:
 
 1. IP address which is bound to an (ethernet) interface
 2. The multicast address (in the range 224.X.X.X - 239.X.X.X)
@@ -39,7 +39,7 @@ When the PubSubAdmin starts it determines the bound IP address. This is done in 
 1. The first IP number bound to the interface which is set by the "PSA_INTERFACE" property
 2. The interfaces are iterated and the first IP number found is used. (typically this is 127.0.0.1 (localhost)
 
-The  Multicass IP address is determined in the order:
+The multicast IP address is determined in the order:
 
 1. If the `PSA_IP` property is defined, this IP will be used as multicast.
 2. If the `PSA_MC_PREFIX` property, is defined, this property is used as the first 2 numbers of the multicast address extended with the last 2 numbers of the bound IP.
@@ -50,7 +50,7 @@ The  Multicass IP address is determined in the order:
 When a publisher request for a topic a TopicSender is created by a ServiceFactory. This TopicSender uses the multicast address as described above with a random chosen portnumber. The combination of the multicast-IP address with the portnumber and protocol(udp) is the endpoint.  
 This endpoint is published by the PubSubDiscovery within its topic in ETCD (i.e. udp://224.100.10.20:40123).
  
-A subscriber, interested in the topic, is informed by the the ToplogyManager that there is a new endpoint. The TopicReceiver at the subscriber side creates a listening socket based on this endpoint. 
+A subscriber, interested in the topic, is informed by the the TopologyManager that there is a new endpoint. The TopicReceiver at the subscriber side creates a listening socket based on this endpoint.
 
 Now a data-connection is created and data send by the publisher will be received by the subscriber.  
 
@@ -70,8 +70,8 @@ Now a data-connection is created and data send by the publisher will be received
 ## Shortcomings
 
 1. Per topic a random portnr is used for creating an endpoint. It is theoretical possible that for 2 topic the same endpoint is created.
-2. For every message a 32 bit random message ID is generated to discriminate segments of different messages which could be sent at the same time. It is theoretically possible that there are 2 equal message ID's at the same time. But since the mesage ID is valid only during the transmission of a message (maximum some milliseconds with large messages) this is not very plausible.
-3. When sending large messages, these messages are segmented and sent after each other. This could cause UDP-buffer overflows in the kernel. A solution could be to add a delay between sending of the segements but this will introduce extra latency.
+2. For every message a 32 bit random message ID is generated to discriminate segments of different messages which could be sent at the same time. It is theoretically possible that there are 2 equal message ID's at the same time. But since the message ID is valid only during the transmission of a message (maximum some milliseconds with large messages) this is not very plausible.
+3. When sending large messages, these messages are segmented and sent after each other. This could cause UDP-buffer overflows in the kernel. A solution could be to add a delay between sending of the segments but this will introduce extra latency.
 4. A Hash is created, using the message definition, to identify the message type. When 2 messages generate the same hash something will terribly go wrong. A check should be added to prevent this (or another way to identify the message type). This problem is also valid for the other admins.
 
 

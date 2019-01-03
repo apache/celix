@@ -48,7 +48,7 @@ The Dependency Manager consist out of four main parts: `DM (Dependency Manager) 
 
 ### DM Activator
 
-The `DM Activator` implements a "normal" Celix bundle activator and depends on four functions which needs to be implemented by the user of the Depedency Manager:
+The `DM Activator` implements a "normal" Celix bundle activator and depends on four functions which needs to be implemented by the user of the Dependency Manager:
  - `dm_create` : Should be used to allocated and initialize a dm activator structure. If needed this structure can be used to store object during the lifecycle of the bundle.
  - `dm_init` : Should be used to interact with the `Dependency Manager`. Here a user can components, service dependencies and provided services. 
  - `dm_destroy` : Should be used to deinitialize and deallocate objects created in the `dm_create` function.
@@ -56,7 +56,7 @@ The `DM Activator` implements a "normal" Celix bundle activator and depends on f
 
 ### Dependency Manager
 
-The `Dependency Manager` act as an entry point to add or remove DM Components. The `Dependency Manager` is provided to the `dm_init` functoin.
+The `Dependency Manager` act as an entry point to add or remove DM Components. The `Dependency Manager` is provided to the `dm_init` function.
 
 ### DM Component
 

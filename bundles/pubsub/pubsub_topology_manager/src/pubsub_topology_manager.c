@@ -449,7 +449,7 @@ celix_status_t pubsub_topologyManager_addDiscoveredEndpoint(void *handle, const 
     pubsub_topology_manager_t *manager = handle;
 
     const char *uuid = celix_properties_get(endpoint, PUBSUB_ENDPOINT_UUID, NULL);
-    assert(uuid != NULL); //discovery should check if endpoint is valid -> pubsubEndoint_isValid.
+    assert(uuid != NULL); //discovery should check if endpoint is valid -> pubsubEndpoint_isValid.
 
     // 1) See if endpoint is already discovered, if so increase usage count.
     // 1) If not, find matching psa using the matchEndpoint

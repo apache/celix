@@ -336,7 +336,7 @@ static int dynInterface_parseMethods(dyn_interface_type *intf, FILE *stream) {
             }
             if (func != NULL) {
                 dynFunction_destroy(func);
-                //TODO free strIdentier, name
+                //TODO free strIdentifier, name
             }
             break;
         }

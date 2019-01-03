@@ -15,8 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 
-A refining driver is a driver which is able to attache to certained device services and 
-as result publishes differerent - refined - device services.
+A refining driver is a driver which is able to attach to certained device services and
+as result publishes different - refined - device services.
 This example will attach to device services with a "char" device category and publish 
 - for every char device services found - a "word" device services.  
 

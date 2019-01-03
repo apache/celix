@@ -156,7 +156,7 @@ TEST_GROUP(DynClosureTests) {
     }
 };
 
-TEST(DynClosureTests, DynCLosureTest1) {
+TEST(DynClosureTests, DynClosureTest1) {
     //TODO split up
     tests();
 }

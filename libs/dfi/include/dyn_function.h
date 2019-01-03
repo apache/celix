@@ -26,9 +26,9 @@
  * Uses the following schema
  * (Name)([Type]*)Type
  *
- * Dyn fynction argument meta (am) as meta info, with the following possible values
+ * Dyn function argument meta (am) as meta info, with the following possible values
  * am=handle #void pointer for the handle
- * am=pre #output pointer with memory preallocated
+ * am=pre #output pointer with memory pre-allocated
  * am=out #output pointer
  */
 

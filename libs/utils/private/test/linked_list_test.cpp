@@ -238,7 +238,7 @@ TEST(linked_list, removeElement){
 	char * value2 = my_strdup("element2");
 	char * value3 = my_strdup("element3");
 
-	//add 6 elemets
+	//add 6 elements
 	linkedList_addElement(list, NULL);
 	linkedList_addElement(list, value2);
 	linkedList_addElement(list, value);

@@ -71,8 +71,8 @@ celix_status_t discovery_destroy(discovery_pt discovery);
 celix_status_t discovery_start(discovery_pt discovery);
 celix_status_t discovery_stop(discovery_pt discovery);
 
-celix_status_t discovery_endpointAdded(void *handle, endpoint_description_pt endpoint, char *machtedFilter);
-celix_status_t discovery_endpointRemoved(void *handle, endpoint_description_pt endpoint, char *machtedFilter);
+celix_status_t discovery_endpointAdded(void *handle, endpoint_description_pt endpoint, char *matchedFilter);
+celix_status_t discovery_endpointRemoved(void *handle, endpoint_description_pt endpoint, char *matchedFilter);
 
 celix_status_t discovery_endpointListenerAdding(void * handle, service_reference_pt reference, void **service);
 celix_status_t discovery_endpointListenerAdded(void * handle, service_reference_pt reference, void * service);

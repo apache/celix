@@ -128,7 +128,7 @@ sudo make install
 
 ## Running Apache Celix
 
-If Apache Celix is succesfully installed running
+If Apache Celix is successfully installed running
 ```bash
 celix
 ```

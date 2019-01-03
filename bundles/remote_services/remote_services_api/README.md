@@ -2,7 +2,7 @@
 
 The Remote Service Admin (RSA) provides the mechanisms to import and export services when instructed to do so by the Topology Manager. 
 
-To delegate method calls to the actual service implementation, the RSA_SHM and the RSA_HTTP are using "endpoint/proxy" bundles, which has all the knowledge about the marshalling and unmarshalling of data for the service. The RSA_DFI implementation combines a [foreign function interface](https://en.wikipedia.org/wiki/Foreign_function_interface) technique together with manualy created descriptors.  
+To delegate method calls to the actual service implementation, the RSA_SHM and the RSA_HTTP are using "endpoint/proxy" bundles, which has all the knowledge about the marshalling and unmarshalling of data for the service. The RSA_DFI implementation combines a [foreign function interface](https://en.wikipedia.org/wiki/Foreign_function_interface) technique together with manually created descriptors.
 
 Note that this folder contains code commonly used by the RSA implementations and therefore does not include any CMAKE configuration.
 

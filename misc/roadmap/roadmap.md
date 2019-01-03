@@ -117,7 +117,6 @@ and a smaller footprint.
 ## Refactor service registry to a single threaded design (TODO issue)
 Celix currently has some nested lock. It would be preferable to remove these, but this is difficult 
 because they are used to sync events which react on registering/unregistering services. Specially when 
-a unregister/register event leads to other services being registered/unregisterd. One way to deal with 
+a unregister/register event leads to other services being registered/unregistered. One way to deal with 
 this sync problem is to remove it by adding a single thread which handle al interaction between bundles 
 and the service registry.
-

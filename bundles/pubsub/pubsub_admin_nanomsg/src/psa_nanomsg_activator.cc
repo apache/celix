@@ -31,7 +31,7 @@ namespace celix { namespace pubsub { namespace nanomsg {
     public:
         Activator(celix_bundle_context_t *ctx) :
                 context{ctx},
-                L{context, std::string("PSA_NANOMSG_ACIVATOR")},
+                L{context, std::string("PSA_NANOMSG_ACTIVATOR")},
                 admin(context)
         {
         }

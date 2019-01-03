@@ -109,7 +109,7 @@ celix_status_t eventAdmin_findHandlersByTopic(event_admin_pt event_admin, const 
 	if (channel != NULL) {
 		logHelper_log(*event_admin->loghelper, OSGI_LOGSERVICE_INFO, "found channel: %s", topic);
 		if (channel->eventHandlers != NULL && !hashMap_isEmpty(channel->eventHandlers)) {
-			// iterate throught the handlers and add them to the array list for result.
+			// iterate through the handlers and add them to the array list for result.
 			hash_map_iterator_pt hashmap_iterator =  hashMapIterator_create(channel->eventHandlers);
 			while (hashMapIterator_hasNext(hashmap_iterator)) {
 				arrayList_add(event_handlers, (event_handler_service_pt) hashMapIterator_nextValue(hashmap_iterator));

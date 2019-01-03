@@ -55,7 +55,7 @@ struct pubsub_publisher {
     void *handle;
  
     /**
-     * Every msg is identifiable by msg type string. Because masg type string are performance wise not preferable (string compares),
+     * Every msg is identifiable by msg type string. Because msg type string are performance wise not preferable (string compares),
      * a "local" (int / platform dependent) unique id will be generated runtime
      * with use of a distributed key/value store or communication between  participation parties.
      * this is called the local message type id. This local message type id can be requested with the localMsgIdForMsgType method.

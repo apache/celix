@@ -82,7 +82,7 @@ static const char * registry_callback_t_toString(const void* object)
 {
 	char buff[512];
 	registry_callback_t callback = *(registry_callback_t*) object;
-	snprintf(buff, 512, "getUsingBudles: %p, handle: %p, modified: %p, unregister: %p", callback.getUsingBundles, callback.handle, callback.modified, callback.unregister);
+	snprintf(buff, 512, "getUsingBundles: %p, handle: %p, modified: %p, unregister: %p", callback.getUsingBundles, callback.handle, callback.modified, callback.unregister);
 
 	return my_strdup(buff);
 }

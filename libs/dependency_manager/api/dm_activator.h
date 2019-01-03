@@ -51,7 +51,7 @@ celix_status_t dm_init(void * userData, celix_bundle_context_t *ctx, dm_dependen
 
 /**
  * Should be implemented by a bundle specific DM activator.
- * Should deinitialize and deallocate the undle specific activator struct.
+ * Should deinitialize and deallocate the bundle specific activator struct.
  */
 celix_status_t dm_destroy(void * userData, celix_bundle_context_t *ctx, dm_dependency_manager_t *mng);
 

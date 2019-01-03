@@ -66,7 +66,7 @@ celix_status_t bundleCache_destroy(bundle_cache_pt *cache);
 
 /**
  * Recreates and retrieves the list of archives for the given bundle cache.
- * Archives are recreated on the bundle cache memory pool, the list for the results is created on the suplied pool, and is owned by the caller.
+ * Archives are recreated on the bundle cache memory pool, the list for the results is created on the supplied pool, and is owned by the caller.
  *
  * @param cache The cache to recreate archives out
  * @param pool The pool on which the list of archives is created

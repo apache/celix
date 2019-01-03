@@ -493,7 +493,7 @@ celix_status_t managedServiceTracker_asynchUpdated(managed_service_tracker_pt tr
 
 }
 
-/* ========== IMPLEMENTENTATION  ========== */
+/* ========== IMPLEMENTATION  ========== */
 
 /* ---------- public ---------- */
 

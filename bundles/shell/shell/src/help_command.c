@@ -93,7 +93,7 @@ celix_status_t helpCommand_execute(void *_ptr, char *line_str, FILE *out_ptr, FI
                         fprintf(out_ptr, "Usage       : %s\n", usage_str == NULL ? "" : usage_str);
                         fprintf(out_ptr, "Description : %s\n", desc_str == NULL ? "" : desc_str);
                     } else {
-                        fprintf(err_ptr, "Error retreiving help info for command '%s'\n", sub);
+                        fprintf(err_ptr, "Error retrieving help info for command '%s'\n", sub);
                     }
 
                     if (sub_status_desc != CELIX_SUCCESS && status == CELIX_SUCCESS) {

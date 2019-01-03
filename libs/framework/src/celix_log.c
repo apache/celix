@@ -34,7 +34,7 @@ void framework_log(framework_logger_pt logger, framework_log_level_t level, cons
     va_start(listPointer, fmsg);
     vsprintf(msg, fmsg, listPointer);
 
-    //FIXME logger and/or logger->logFucntion can be null. But this solution is not thread safe!
+    //FIXME logger and/or logger->logFunction can be null. But this solution is not thread safe!
     if (logger != NULL && logger->logFunction != NULL) {
         logger->logFunction(level, func, file, line, msg);
     }

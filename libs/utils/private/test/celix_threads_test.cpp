@@ -189,7 +189,7 @@ TEST(celix_thread, exit) {
 	free(status);
 }
 
-//HORIBLE TEST
+//HORRIBLE TEST
 TEST(celix_thread, detach) {
 	int ret;
 
@@ -206,10 +206,10 @@ TEST(celix_thread, self) {
 	CHECK(celixThread_equals(thread, thread2));
 }
 
-TEST(celix_thread, initalized) {
-	CHECK(!celixThread_initalized(thread));
+TEST(celix_thread, initialized) {
+	CHECK(!celixThread_initialized(thread));
 	celixThread_create(&thread, NULL, thread_test_func_detach, NULL);
-	CHECK(celixThread_initalized(thread));
+	CHECK(celixThread_initialized(thread));
 	celixThread_detach(thread);
 }
 
@@ -299,7 +299,7 @@ TEST(celix_thread_mutex, attrSettype) {
 	//test recursive mutex
 	celixThreadMutexAttr_settype(&mu_attr, CELIX_THREAD_MUTEX_RECURSIVE);
 	celixThreadMutex_create(&mu, &mu_attr);
-	//if program doesnt deadlock: succes! also check factorial of 10, for reasons unknown
+	//if program doesnt deadlock: success! also check factorial of 10, for reasons unknown
 	LONGS_EQUAL(3628800, thread_test_func_recur_lock(&mu, 10));
 	celixThreadMutex_destroy(&mu);
 
@@ -516,7 +516,7 @@ static int thread_test_func_recur_lock(celix_thread_mutex_t *mu, int i) {
 
 static void * thread_test_func_kill(void __attribute__((unused)) *arg){
 	int * ret = (int*) malloc(sizeof(*ret));
-	//sleep for a about a minute, or until a kill signal (USR1) is recieved
+	//sleep for a about a minute, or until a kill signal (USR1) is received
 	*ret = usleep(60000000);
 	return ret;
 }

@@ -485,12 +485,12 @@ TEST(RsaShmClientServerTests, TestExport) {
 
 /*
 TEST(RsaShmClientServerTests, TestProxyRemoval) {
-	// test is currenlty failing
+	// test is currently failing
 	// testProxyRemoval();
 }
 
 TEST(RsaShmClientServerTests, TestEndpointRemoval) {
-	// test is currenlty failing
+	// test is currently failing
 	//testEndpointRemoval();
 }
 */

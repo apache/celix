@@ -45,7 +45,7 @@ celix_status_t pubsub_getPubSubInfoFromFilter(const char* filterstr, char **topi
 	const char *objectClass = NULL;
 	celix_filter_t *filter = filter_create(filterstr);
 	if (filter != NULL) {
-		if (filter->operand == CELIX_FILTER_OPERAND_AND) { //only and pubsub filter valid (e.g. (&(objectClass=pubsub_publisher)(topic=exmpl))
+		if (filter->operand == CELIX_FILTER_OPERAND_AND) { //only and pubsub filter valid (e.g. (&(objectClass=pubsub_publisher)(topic=example))
 			array_list_t *attributes = filter->children;
 			unsigned int i;
 			unsigned int size = arrayList_size(attributes);

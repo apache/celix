@@ -111,7 +111,7 @@ celix_status_t deploymentAdmin_create(bundle_context_pt context, deployment_admi
         struct timeval tv;
 		gettimeofday(&tv,NULL);
 		(*admin)->auditlogId =  tv.tv_sec*(uint64_t)1000000+tv.tv_usec;
-        (*admin)->aditlogSeqNr = 0;
+        (*admin)->auditlogSeqNr = 0;
 
 		if ((*admin)->targetIdentification == NULL ) {
 		    fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Target name must be set using \"deployment_admin_identification\"");
@@ -228,7 +228,7 @@ static celix_status_t deploymentAdmin_auditEventTargetPropertiesSet(deployment_a
         char entry[512];
         int entrySize = 0;
 
-        entrySize = snprintf(entry, 512, "%s,%llu,%u,0,%i,%s\n", admin->targetIdentification, admin->auditlogId, admin->aditlogSeqNr++, DEPLOYMENT_ADMIN_AUDIT_EVENT__TARGETPROPERTIES_SET, tags);
+        entrySize = snprintf(entry, 512, "%s,%llu,%u,0,%i,%s\n", admin->targetIdentification, admin->auditlogId, admin->auditlogSeqNr++, DEPLOYMENT_ADMIN_AUDIT_EVENT__TARGETPROPERTIES_SET, tags);
 
         if (entrySize >= 512) {
             status = CELIX_BUNDLE_EXCEPTION;
@@ -247,7 +247,7 @@ static celix_status_t deploymentAdmin_auditEventFrameworkStarted(deployment_admi
     char entry[512];
     int entrySize = 0;
 
-    entrySize = snprintf(entry, 512, "%s,%llu,%u,0,%i\n", admin->targetIdentification, admin->auditlogId, admin->aditlogSeqNr++, DEPLOYMENT_ADMIN_AUDIT_EVENT__FRAMEWORK_STARTED);
+    entrySize = snprintf(entry, 512, "%s,%llu,%u,0,%i\n", admin->targetIdentification, admin->auditlogId, admin->auditlogSeqNr++, DEPLOYMENT_ADMIN_AUDIT_EVENT__FRAMEWORK_STARTED);
 
     if (entrySize >= 512) {
         status = CELIX_BUNDLE_EXCEPTION;
@@ -285,7 +285,7 @@ static void *deploymentAdmin_poll(void *deploymentAdmin) {
 
 				// TODO
                 //      We do not yet support fix packages
-                //		Check string lenght!
+                //		Check string length!
                 // snprintf(request, length, "%s/%s?current=%s", admin->pollUrl, last, admin->current);
                 snprintf(request, length, "%s/%s", admin->pollUrl, last);
 

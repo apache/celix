@@ -82,13 +82,13 @@ extern "C" {
     }
 
     static void testFrameworks(void) {
-        printf("testing startup/shutdown mutiple frameworks\n");
+        printf("testing startup/shutdown multiple frameworks\n");
     }
 
 }
 
 
-TEST_GROUP(CelixMutipleFramworks) {
+TEST_GROUP(CelixMultipleFrameworks) {
     void setup() {
         setupFm();
     }
@@ -98,6 +98,6 @@ TEST_GROUP(CelixMutipleFramworks) {
     }
 };
 
-TEST(CelixMutipleFramworks, testFrameworks) {
+TEST(CelixMultipleFrameworks, testFrameworks) {
     testFrameworks();
 }

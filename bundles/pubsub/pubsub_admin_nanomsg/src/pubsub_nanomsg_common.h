@@ -33,7 +33,7 @@
  * 1) A subscription filter.
  * This is a 5 char string of the first two chars of scope and topic combined and terminated with a '\0'.
  *
- * 2) The pubsub_zmq_msg_header_t is send containg the type id and major/minor version
+ * 2) The pubsub_zmq_msg_header_t is send containing the type id and major/minor version
  *
  * 3) The actual payload
  */

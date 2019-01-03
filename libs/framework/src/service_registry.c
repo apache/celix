@@ -673,7 +673,7 @@ celix_status_t serviceRegistry_getService(service_registry_pt registry, bundle_p
             }
 
             /* NOTE the out argument of sr_getService should be 'const void**'
-               To ensure backwards compatability a cast is made instead.
+               To ensure backwards compatibility a cast is made instead.
             */
             serviceReference_getService(reference, (void **)out);
         } else {
@@ -704,7 +704,7 @@ celix_status_t serviceRegistry_ungetService(service_registry_pt registry, bundle
         subStatus = serviceReference_decreaseUsage(reference, &count);
         if (count == 0) {
             /*NOTE the argument service of sr_getService should be 'const void**'
-              TO ensure backwards compatability a cast is made instead.
+              To ensure backwards compatibility a cast is made instead.
               */
             serviceReference_getService(reference, (void**)&service);
             serviceReference_getServiceRegistration(reference, &reg);

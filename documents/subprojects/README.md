@@ -25,7 +25,7 @@ Apache Celix is organized into several subprojects. The following subproject are
 * [Device Access](../../bundles/device_access/README.md) - An implementation of the OSGi Device Access specification adapted to C.
 * [Etcd library](../../libs/etcdlib/README.md) - A C library that interfaces with ETCD.
 * [Examples](../../examples) - A Selection of examples showing how the framework can be used.
-* [Log Service](../../bundles/log_service/README.md) - An implementation of the OSGi Log Service adapated to C.
+* [Log Service](../../bundles/log_service/README.md) - An implementation of the OSGi Log Service adapted to C.
 * [Log Writer](../../bundles/log_writer/README.md) - A simple log writer for use in combination with the Log Service.
 * [Remote Service Admin](../../bundles/remote_services/README.md) - An implementation of the OSGi Remote Service Admin Service - for several protocols - adapted to C.
 * [Shell](../../bundles/shell/shell/README.md) - A OSGi shell implementation.

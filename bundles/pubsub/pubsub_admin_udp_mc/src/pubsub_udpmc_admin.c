@@ -34,7 +34,7 @@
 
 #define PUBSUB_UDPMC_MC_IP_DEFAULT                     "224.100.1.1"
 #define PUBSUB_UDPMC_SOCKET_ADDRESS_KEY                "udpmc.socket_address"
-#define PUBSUB_UDPMC_SOCKET_PORT_KEY                   "udpmc.socker_port"
+#define PUBSUB_UDPMC_SOCKET_PORT_KEY                   "udpmc.socket_port"
 
 #define L_DEBUG(...) \
     logHelper_log(psa->log, OSGI_LOGSERVICE_DEBUG, __VA_ARGS__)
@@ -79,7 +79,7 @@ struct pubsub_udpmc_admin {
 
 };
 
-typedef struct psa_nanomsg_serializer_entry {
+typedef struct psa_udpmc_serializer_entry {
     const char *serType;
     long svcId;
     pubsub_serializer_service_t *svc;
@@ -443,10 +443,10 @@ static celix_status_t pubsub_udpmcAdmin_connectEndpointToReceiver(pubsub_udpmc_a
     const char *type = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TYPE, NULL);
     const char *eScope = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_SCOPE, NULL);
     const char *eTopic = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_NAME, NULL);
-    const char *sockAdress = celix_properties_get(endpoint, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY, NULL);
+    const char *sockAddress = celix_properties_get(endpoint, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY, NULL);
     long sockPort = celix_properties_getAsLong(endpoint, PUBSUB_PSA_UDPMC_SOCKET_PORT_KEY, -1L);
 
-    if (type == NULL || sockAdress == NULL || sockPort < 0) {
+    if (type == NULL || sockAddress == NULL || sockPort < 0) {
         fprintf(stderr, "[PSA UPDMC] Error got endpoint without udpmc socket address/port or endpoint type");
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
@@ -454,7 +454,7 @@ static celix_status_t pubsub_udpmcAdmin_connectEndpointToReceiver(pubsub_udpmc_a
             strncmp(eScope, scope, 1024 * 1024) == 0 &&
             strncmp(eTopic, topic, 1024 * 1024) == 0 &&
             strncmp(type, PUBSUB_PUBLISHER_ENDPOINT_TYPE, strlen(PUBSUB_PUBLISHER_ENDPOINT_TYPE)) == 0) {
-            pubsub_udpmcTopicReceiver_connectTo(receiver, sockAdress, sockPort);
+            pubsub_udpmcTopicReceiver_connectTo(receiver, sockAddress, sockPort);
         }
     }
 
@@ -492,10 +492,10 @@ static celix_status_t pubsub_udpmcAdmin_disconnectEndpointFromReceiver(pubsub_ud
     const char *type = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TYPE, NULL);
     const char *eScope = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_SCOPE, NULL);
     const char *eTopic = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_NAME, NULL);
-    const char *sockAdress = celix_properties_get(endpoint, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY, NULL);
+    const char *sockAddress = celix_properties_get(endpoint, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY, NULL);
     long sockPort = celix_properties_getAsLong(endpoint, PUBSUB_PSA_UDPMC_SOCKET_PORT_KEY, -1L);
 
-    if (type == NULL || sockAdress == NULL || sockPort < 0) {
+    if (type == NULL || sockAddress == NULL || sockPort < 0) {
         fprintf(stderr, "[PSA UPDMC] Error got endpoint without udpmc socket address/port or endpoint type");
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
@@ -503,7 +503,7 @@ static celix_status_t pubsub_udpmcAdmin_disconnectEndpointFromReceiver(pubsub_ud
             strncmp(eScope, scope, 1024 * 1024) == 0 &&
             strncmp(eTopic, topic, 1024 * 1024) == 0 &&
             strncmp(type, PUBSUB_PUBLISHER_ENDPOINT_TYPE, strlen(PUBSUB_PUBLISHER_ENDPOINT_TYPE)) == 0) {
-            pubsub_udpmcTopicReceiver_disconnectFrom(receiver, sockAdress, sockPort);
+            pubsub_udpmcTopicReceiver_disconnectFrom(receiver, sockAddress, sockPort);
         }
     }
 

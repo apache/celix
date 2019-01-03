@@ -152,7 +152,7 @@ celix_status_t serviceReference_getService(service_reference_pt ref, void **serv
     celix_status_t status = CELIX_SUCCESS;
     celixThreadRwlock_readLock(&ref->lock);
     /*NOTE the service argument should be 'const void**'
-      To ensure backwards compatability a cast is made instead.
+      To ensure backwards compatibility a cast is made instead.
     */
     *service = (const void**) ref->service;
     celixThreadRwlock_unlock(&ref->lock);
@@ -270,7 +270,7 @@ celix_status_t serviceReference_isValid(service_reference_pt ref, bool *result) 
 bool serviceReference_isAssignableTo(service_reference_pt reference __attribute__((unused)), bundle_pt requester __attribute__((unused)), const char* serviceName __attribute__((unused))) {
 	bool allow = true;
 
-	/*NOTE for now always true. It would be nice to be able to do somechecks if the services are really assignable.
+	/*NOTE for now always true. It would be nice to be able to do some checks if the services are really assignable.
 	 */
 
 	return allow;

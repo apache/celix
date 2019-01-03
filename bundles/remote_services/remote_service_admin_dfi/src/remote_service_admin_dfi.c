@@ -109,7 +109,7 @@ static const unsigned int DEFAULT_TIMEOUT = 0;
 static int remoteServiceAdmin_callback(struct mg_connection *conn);
 static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin_pt admin, service_reference_pt reference, properties_pt props, char *interface, endpoint_description_pt *description);
 static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description_pt endpointDescription, char *request, char **reply, int* replyStatus);
-static celix_status_t remoteServiceAdmin_getIpAdress(char* interface, char** ip);
+static celix_status_t remoteServiceAdmin_getIpAddress(char* interface, char** ip);
 static size_t remoteServiceAdmin_readCallback(void *ptr, size_t size, size_t nmemb, void *userp);
 static size_t remoteServiceAdmin_write(void *contents, size_t size, size_t nmemb, void *userp);
 static void remoteServiceAdmin_log(remote_service_admin_pt admin, int level, const char *file, int line, const char *msg, ...);
@@ -153,12 +153,12 @@ celix_status_t remoteServiceAdmin_create(bundle_context_pt context, remote_servi
             const char *interface = NULL;
 
             bundleContext_getProperty(context, "RSA_INTERFACE", &interface);
-            if ((interface != NULL) && (remoteServiceAdmin_getIpAdress((char*)interface, &detectedIp) != CELIX_SUCCESS)) {
-                logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_WARNING, "RSA: Could not retrieve IP adress for interface %s", interface);
+            if ((interface != NULL) && (remoteServiceAdmin_getIpAddress((char*)interface, &detectedIp) != CELIX_SUCCESS)) {
+                logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_WARNING, "RSA: Could not retrieve IP address for interface %s", interface);
             }
 
             if (ip == NULL) {
-                remoteServiceAdmin_getIpAdress(NULL, &detectedIp);
+                remoteServiceAdmin_getIpAddress(NULL, &detectedIp);
             }
 
             ip = detectedIp;
@@ -555,7 +555,7 @@ static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_servic
     return status;
 }
 
-static celix_status_t remoteServiceAdmin_getIpAdress(char* interface, char** ip) {
+static celix_status_t remoteServiceAdmin_getIpAddress(char* interface, char** ip) {
     celix_status_t status = CELIX_BUNDLE_EXCEPTION;
 
     struct ifaddrs *ifaddr, *ifa;

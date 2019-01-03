@@ -119,7 +119,7 @@ celix_status_t tm_addImportScope(void *handle, char *filter) {
         return CELIX_ILLEGAL_ARGUMENT;
     new = filter_create(filter);
     if (new == NULL) {
-        return CELIX_ILLEGAL_ARGUMENT; // filter not parseble
+        return CELIX_ILLEGAL_ARGUMENT; // filter not parsable
     }
     if (celixThreadMutex_lock(&scope->importScopeLock) == CELIX_SUCCESS) {
         int index = arrayList_indexOf(scope->importScopes, new);
@@ -149,7 +149,7 @@ celix_status_t tm_removeImportScope(void *handle, char *filter) {
 
     new = filter_create(filter);
     if (new == NULL) {
-        return CELIX_ILLEGAL_ARGUMENT; // filter not parseble
+        return CELIX_ILLEGAL_ARGUMENT; // filter not parsable
     }
 
     if (celixThreadMutex_lock(&scope->importScopeLock) == CELIX_SUCCESS) {

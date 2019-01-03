@@ -54,7 +54,7 @@ namespace celix { namespace dm {
             } else if (strategy == DependencyUpdateStrategy::suspend) {
                 celix_dmServiceDependency_setStrategy(this->cServiceDependency(), DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND);
             } else {
-                std::cerr << "Unexpected dependency update strategy. Cannot convert for dm_depdendency\n";
+                std::cerr << "Unexpected dependency update strategy. Cannot convert for dm_dependency\n";
             }
         }
     public:
@@ -72,7 +72,7 @@ namespace celix { namespace dm {
         BaseServiceDependency& operator=(const BaseServiceDependency&) = delete;
 
         /**
-         * Wether the service dependency is valid.
+         * Whether the service dependency is valid.
          */
         bool isValid() const { return valid; }
 

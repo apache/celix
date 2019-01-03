@@ -65,7 +65,7 @@ struct shmData {
     celix_thread_mutex_t globalLock;
 };
 
-void* shmAdress;
+void* shmAddress;
 
 static celix_status_t discoveryShm_removeWithIndex(shmData_pt data, int index);
 
@@ -85,7 +85,7 @@ celix_status_t discoveryShm_create(shmData_pt* data) {
         status = CELIX_ENOMEM;
     } else if ((shmData->shmId = shmget(shmKey, DISCOVERY_SHM_MEMSIZE, IPC_CREAT | 0666)) < 0) {
         status = CELIX_BUNDLE_EXCEPTION;
-    } else if ((shmAdress = shmat(shmData->shmId, 0, 0)) == (char*) -1) {
+    } else if ((shmAddress = shmat(shmData->shmId, 0, 0)) == (char*) -1) {
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
         celix_thread_mutexattr_t threadAttr;
@@ -106,8 +106,8 @@ celix_status_t discoveryShm_create(shmData_pt* data) {
         }
 
         if (status == CELIX_SUCCESS) {
-            memcpy(shmAdress, shmData, sizeof(struct shmData));
-            (*data) = shmAdress;
+            memcpy(shmAddress, shmData, sizeof(struct shmData));
+            (*data) = shmAddress;
         }
     }
 
@@ -265,7 +265,7 @@ celix_status_t discoveryShm_detach(shmData_pt data) {
     if (data->numOfEntries == 0) {
         status = discoveryShm_destroy(data);
     }
-    else if (shmdt(shmAdress) == 0) {
+    else if (shmdt(shmAddress) == 0) {
         status = CELIX_SUCCESS;
     }
 

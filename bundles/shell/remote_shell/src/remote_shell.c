@@ -40,7 +40,7 @@
 
 #define RS_PROMPT ("-> ")
 #define RS_WELCOME ("\n---- Apache Celix Remote Shell ----\n---- Type exit to disconnect   ----\n\n-> ")
-#define RS_GOODBYE ("Goobye!\n")
+#define RS_GOODBYE ("Goodbye!\n")
 #define RS_ERROR ("Error executing command!\n")
 #define RS_MAXIMUM_CONNECTIONS_REACHED ("Maximum number of connections  reached. Disconnecting ...\n")
 

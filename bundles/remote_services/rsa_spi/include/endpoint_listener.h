@@ -38,8 +38,8 @@ static const char * const OSGI_ENDPOINT_LISTENER_SCOPE = "endpoint.listener.scop
 
 struct endpoint_listener {
 	void *handle;
-	celix_status_t (*endpointAdded)(void *handle, endpoint_description_pt endpoint, char *machtedFilter);
-	celix_status_t (*endpointRemoved)(void *handle, endpoint_description_pt endpoint, char *machtedFilter);
+	celix_status_t (*endpointAdded)(void *handle, endpoint_description_pt endpoint, char *matchedFilter);
+	celix_status_t (*endpointRemoved)(void *handle, endpoint_description_pt endpoint, char *matchedFilter);
 };
 
 typedef struct endpoint_listener endpoint_listener_t;

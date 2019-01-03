@@ -32,7 +32,7 @@ extern "C" {
 
 
 /*============================================================================
-  MOCK - intialize publisher mock
+  MOCK - initialize publisher mock
   ============================================================================*/
 void pubsub_publisherMock_init(pubsub_publisher_t* srv, void* handle);
   

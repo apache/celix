@@ -93,7 +93,7 @@ TEST(service_registration, create) {
 	registry_callback_t callback;
 	service_registry_pt registry = (service_registry_pt) 0x10;
 	callback.handle = registry;
-	char * name = my_strdup("sevice_name");
+	char * name = my_strdup("service_name");
 	bundle_pt bundle = (bundle_pt) 0x20;
 	unsigned long serviceId = 1UL;
 	void *service = (void *) 0x30;
@@ -127,7 +127,7 @@ TEST(service_registration, createServiceFactory) {
 	registry_callback_t callback;
 	service_registry_pt registry = (service_registry_pt) 0x10;
 	callback.handle = registry;
-	char * name = my_strdup("sevice_name");
+	char * name = my_strdup("service_name");
 	bundle_pt bundle = (bundle_pt) 0x20;
 	unsigned long serviceId = 1UL;
 	void *service = (void *) 0x30;
@@ -157,7 +157,7 @@ TEST(service_registration, createServiceFactory) {
 
 TEST(service_registration, retain_release){
 	registry_callback_t callback;
-	char * name = my_strdup("sevice_name");
+	char * name = my_strdup("service_name");
 	service_registration_pt registration = serviceRegistration_create(callback, NULL, name, 0, NULL, NULL);
 
 	LONGS_EQUAL(1, registration->refCount);
@@ -172,7 +172,7 @@ TEST(service_registration, retain_release){
 
 TEST(service_registration, isValidTrue) {
 	registry_callback_t callback;
-	char * name = my_strdup("sevice_name");
+	char * name = my_strdup("service_name");
 	void *service = (void *) 0x30;
 	service_registration_pt registration = serviceRegistration_create(callback, NULL, name, 0, service, NULL);
 
@@ -186,7 +186,7 @@ TEST(service_registration, isValidTrue) {
 
 TEST(service_registration, isValidFalse) {
 	registry_callback_t callback;
-	char * name = my_strdup("sevice_name");
+	char * name = my_strdup("service_name");
 	service_registration_pt registration = serviceRegistration_create(callback, NULL, name, 0, NULL, NULL);
 
 	bool valid = serviceRegistration_isValid(registration);
@@ -201,7 +201,7 @@ TEST(service_registration, isValidFalse) {
 
 TEST(service_registration, invalidate) {
 	registry_callback_t callback;
-	char * name = my_strdup("sevice_name");
+	char * name = my_strdup("service_name");
 	void *service = (void *) 0x30;
 	service_registration_pt registration = serviceRegistration_create(callback, NULL, name, 0, service, NULL);
 
@@ -219,7 +219,7 @@ TEST(service_registration, unregisterValid) {
 	callback.unregister = ( (callback_unregister_signature)serviceRegistry_unregisterService );
 	service_registry_pt registry = (service_registry_pt) 0x10;
 	callback.handle = registry;
-	char * name = my_strdup("sevice_name");
+	char * name = my_strdup("service_name");
 	bundle_pt bundle = (bundle_pt) 0x20;
 	void *service = (void *) 0x30;
 	service_registration_pt registration = serviceRegistration_create(callback, bundle, name, 0, service, NULL);
@@ -240,7 +240,7 @@ TEST(service_registration, unregisterValid) {
 
 TEST(service_registration, unregisterInvalid) {
 	registry_callback_t callback;
-	char * name = my_strdup("sevice_name");
+	char * name = my_strdup("service_name");
 	bundle_pt bundle = (bundle_pt) 0x10;
 	service_registration_pt registration = serviceRegistration_create(callback, bundle, name, 0, NULL, NULL);
 
@@ -256,7 +256,7 @@ TEST(service_registration, unregisterInvalid) {
 
 TEST(service_registration, getService) {
 	registry_callback_t callback;
-	char * name = my_strdup("sevice_name");
+	char * name = my_strdup("service_name");
 	bundle_pt bundle = (bundle_pt) 0x10;
 	void *service = (void *) 0x20;
 	service_registration_pt registration = serviceRegistration_create(callback, bundle, name, 0, service, NULL);
@@ -272,7 +272,7 @@ TEST(service_registration, getService) {
 
 TEST(service_registration, getServiceFromFactory) {
 	registry_callback_t callback;
-	char * name = my_strdup("sevice_name");
+	char * name = my_strdup("service_name");
 	bundle_pt bundle = (bundle_pt) 0x10;
 	void *service = (void *) 0x30;
 	service_factory_pt factory = (service_factory_pt) malloc(sizeof(*factory));
@@ -298,7 +298,7 @@ TEST(service_registration, getServiceFromFactory) {
 
 TEST(service_registration, ungetServiceFromFactory) {
 	registry_callback_t callback;
-	char * name = my_strdup("sevice_name");
+	char * name = my_strdup("service_name");
 	bundle_pt bundle = (bundle_pt) 0x10;
 	void *service = (void *) 0x30;
 	service_factory_pt factory = (service_factory_pt) malloc(sizeof(*factory));
@@ -326,7 +326,7 @@ TEST(service_registration, ungetServiceFromFactory) {
 
 TEST(service_registration, getProperties) {
 	registry_callback_t callback;
-	char * name = my_strdup("sevice_name");
+	char * name = my_strdup("service_name");
 	service_registration_pt registration = serviceRegistration_create(callback, NULL, name, 5, NULL, NULL);
 
 	properties_pt actual = NULL;
@@ -349,7 +349,7 @@ TEST(service_registration, setProperties){
 	callback.modified = (callback_modified_signature) serviceRegistry_servicePropertiesModified;
 	service_registry_pt registry = (service_registry_pt) 0x10;
 	callback.handle = registry;
-	char * name = my_strdup("sevice_name");
+	char * name = my_strdup("service_name");
 	service_registration_pt registration = serviceRegistration_create(callback, NULL, name, 0, NULL, NULL);
 
 	properties_pt properties = properties_create();
@@ -371,7 +371,7 @@ TEST(service_registration, setProperties){
 
 TEST(service_registration, getServiceName) {
 	registry_callback_t callback;
-	char * name = my_strdup("sevice_name");
+	char * name = my_strdup("service_name");
 	service_registration_pt registration = serviceRegistration_create(callback, NULL, name, 0, NULL, NULL);
 
 	const char *actual = NULL;
@@ -385,7 +385,7 @@ TEST(service_registration, getServiceName) {
 
 TEST(service_registration, getBundle) {
 	registry_callback_t callback;
-	char * name = my_strdup("sevice_name");
+	char * name = my_strdup("service_name");
 	bundle_pt bundle = (bundle_pt) 0x10;
 	service_registration_pt registration = serviceRegistration_create(callback, bundle, name, 0, NULL, NULL);
 
@@ -400,7 +400,7 @@ TEST(service_registration, getBundle) {
 
 TEST(service_registration, getBundleIllegalArgument) {
 	registry_callback_t callback;
-	char * name = my_strdup("sevice_name");
+	char * name = my_strdup("service_name");
 	service_registration_pt registration = serviceRegistration_create(callback, NULL, name, 0, NULL, NULL);
 	bundle_pt actual = (bundle_pt) 0x01;
 

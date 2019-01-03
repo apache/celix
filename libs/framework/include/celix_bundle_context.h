@@ -90,7 +90,7 @@ typedef struct celix_service_registration_options {
 
     /**
      * The required service name. This is used to identify the service. A fully qualified name with a namespace is
-     * advisable to prevent name collision. (e.g. EXAMPLE_PRESURE_SENSOR).
+     * advisable to prevent name collision. (e.g. EXAMPLE_PRESSURE_SENSOR).
      */
     const char *serviceName;
 
@@ -185,7 +185,7 @@ typedef struct celix_service_filter_options {
     const char* serviceName;
 
     /**
-     * The optional version range. If service are registerd with a service version this attribute can be used to
+     * The optional version range. If service are registered with a service version this attribute can be used to
      * only select service with a version in the version range.
      * It uses the maven version range format, e.g. [1.0.0,2.0.0) or [1.1.1], etc.
      */
@@ -512,7 +512,7 @@ typedef struct celix_service_use_options {
     .useWithOwner = NULL}
 
 /**
- * Use the services with the provided service filter optons using the provided callback. The Celix framework will
+ * Use the services with the provided service filter options using the provided callback. The Celix framework will
  * ensure that the targeted service cannot be removed during the callback.
  *
  * The svc is should only be considered valid during the callback.
@@ -531,7 +531,7 @@ bool celix_bundleContext_useServiceWithOptions(
 
 
 /**
- * Use the services with the provided service filter optons using the provided callback. The Celix framework will
+ * Use the services with the provided service filter options using the provided callback. The Celix framework will
  * ensure that the targeted service cannot be removed during the callback.
  *
  * The svc is should only be considered valid during the callback.

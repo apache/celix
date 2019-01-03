@@ -118,7 +118,7 @@ TEST(FrameworkFactory, restartFramework) {
     CHECK(fw != NULL);
 
 
-    /* TODO fix mem leak in restarting framwork
+    /* TODO fix mem leak in restarting framework
     framework_stop(fw);
     framework_start(fw);
     framework_stop(fw);

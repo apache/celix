@@ -26,16 +26,16 @@
 /**
  * Endpoints with the system visibility should be discoverable through the complete system
  */
-#define PUBSUB_ENDPOINT_SYSTEM_VISIBLITY     "system"
+#define PUBSUB_ENDPOINT_SYSTEM_VISIBILITY    "system"
 
 /**
  * Endpoints with the system visibility are discoverable for a single host (i.e. IPC)
  */
-#define PUBSUB_ENDPOINT_HOST_VISIBLITY       "host"
+#define PUBSUB_ENDPOINT_HOST_VISIBILITY      "host"
 
 /**
  * Endpoints which are only visible within a single process
  */
-#define PUBSUB_ENDPOINT_LOCAL_VISIBLITY      "local"
+#define PUBSUB_ENDPOINT_LOCAL_VISIBILITY     "local"
 
 #endif /* PUBSUB_CONSTANTS_H_ */

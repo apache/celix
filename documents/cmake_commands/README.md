@@ -71,7 +71,7 @@ add_celix_bundle(<bundle_target_name>
 - If NAME is provided that will be used as Bundle-Name. Default the bundle target name is used as symbolic name.
 - If SYMBOLIC_NAME is provided that will be used as Bundle-SymbolicName. Default the bundle target name is used as symbolic name.
 - If DESCRIPTION is provided that will be used as Bundle-Description. Default this is empty
-- If VERSION is provided. That will be used for the Bundle-Version. In combination with SOURCES the version will alse be use to set the activator library target property VERSION and SOVERSION.
+- If VERSION is provided. That will be used for the Bundle-Version. In combination with SOURCES the version will also be used to set the activator library target property VERSION and SOVERSION.
 For SOVERSION only the major part is used. Expected scheme is "<major>.<minor>.<path>". Default version is "0.0.0"
 - If PRIVATE_LIBRARIES is provided all provided lib are added to the "Private-Library" manifest statement and added in the root of the bundle. libraries can be cmake library targets or absolute paths to existing libraries.  
 - If EXPORT_LIBRARIES is provided all provided lib are added to the "Export-Library" manifest statement and added in the root of the bundle. libraries can be cmake library targets or absolute paths to existing libraries. This is not yet supported by the celix framework.
@@ -212,7 +212,7 @@ celix_container_bundles(<celix_container_target_name>
 - If the LEVEL is provided this will be used as the bundle run level.
   If no run level is provided run level 1 is used.
   Run levels can be used to control to start order of the bundles.
-  Bundles in run level 0 arre started first and bundles in run level 5
+  Bundles in run level 0 are started first and bundles in run level 5
   are started last.
 
 ## celix_container_properties
@@ -227,7 +227,7 @@ celix_container_properties(<celix_container_target_name>
 )
 ```
 
-## celix_cotainer_embedded_properties
+## celix_container_embedded_properties
 Embeds the provided properties to the target Celix launcher as embedded properties.
 Note that these properties can be overridden by using config.properties.
 

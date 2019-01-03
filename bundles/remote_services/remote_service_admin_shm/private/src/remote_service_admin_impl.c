@@ -266,7 +266,7 @@ celix_status_t remoteServiceAdmin_send(remote_service_admin_pt admin, endpoint_d
 		remoteServiceAdmin_lock(semid, 0);
 
 		/* write method and data */
-		strcpy(ipc->shmBaseAdress, request);
+		strcpy(ipc->shmBaseAddress, request);
 
 		/* Check the status of the send-receive semaphore and reset them if not correct */
 		if (remoteServiceAdmin_getCount(ipc->semId, 1) > 0) {
@@ -283,7 +283,7 @@ celix_status_t remoteServiceAdmin_send(remote_service_admin_pt admin, endpoint_d
 		remoteServiceAdmin_lock(semid, 2);
 
 		/* read reply */
-		*reply = strdup(ipc->shmBaseAdress);
+		*reply = strdup(ipc->shmBaseAddress);
 
 		/* TODO: fix replyStatus */
 		*replyStatus = 0;
@@ -314,7 +314,7 @@ static void * remoteServiceAdmin_receiveFromSharedMemory(void *data) {
 
 				// TODO: align data size
 				char *data = calloc(1024, sizeof(*data));
-				strcpy(data, ipc->shmBaseAdress);
+				strcpy(data, ipc->shmBaseAddress);
 
 				hash_map_iterator_pt iter = hashMapIterator_create(admin->exportedServices);
 
@@ -336,7 +336,7 @@ static void * remoteServiceAdmin_receiveFromSharedMemory(void *data) {
 										if ((strlen(reply) * sizeof(char)) >= RSA_SHM_MEMSIZE) {
 											logHelper_log(admin->loghelper, OSGI_LOGSERVICE_ERROR, "receiveFromSharedMemory : size of message bigger than shared memory message. NOT SENDING.");
 										} else {
-											strcpy(ipc->shmBaseAdress, reply);
+											strcpy(ipc->shmBaseAddress, reply);
 										}
 										free(reply);
 									}
@@ -633,7 +633,7 @@ celix_status_t remoteServiceAdmin_getIpcSegment(remote_service_admin_pt admin, e
 }
 
 celix_status_t remoteServiceAdmin_detachIpcSegment(ipc_segment_pt ipc) {
-	return (shmdt(ipc->shmBaseAdress) != -1) ? CELIX_SUCCESS : CELIX_BUNDLE_EXCEPTION;
+	return (shmdt(ipc->shmBaseAddress) != -1) ? CELIX_SUCCESS : CELIX_BUNDLE_EXCEPTION;
 }
 
 celix_status_t remoteServiceAdmin_deleteIpcSegment(ipc_segment_pt ipc) {
@@ -680,18 +680,18 @@ celix_status_t remoteServiceAdmin_createOrAttachShm(hash_map_pt ipcSegment, remo
 				if ((ipc->shmId = shmget(shmKey, RSA_SHM_MEMSIZE, IPC_CREAT | 0666)) < 0) {
 					logHelper_log(admin->loghelper, OSGI_LOGSERVICE_ERROR, "Creation of shared memory segment failed.");
 					status = CELIX_BUNDLE_EXCEPTION;
-				} else if ((ipc->shmBaseAdress = shmat(ipc->shmId, 0, 0)) == (char *) -1) {
+				} else if ((ipc->shmBaseAddress = shmat(ipc->shmId, 0, 0)) == (char *) -1) {
 					logHelper_log(admin->loghelper, OSGI_LOGSERVICE_ERROR, "Attaching of shared memory segment failed.");
 					status = CELIX_BUNDLE_EXCEPTION;
 				} else {
-					logHelper_log(admin->loghelper, OSGI_LOGSERVICE_INFO, "shared memory segment sucessfully created at %p.", ipc->shmBaseAdress);
+					logHelper_log(admin->loghelper, OSGI_LOGSERVICE_INFO, "shared memory segment successfully created at %p.", ipc->shmBaseAddress);
 				}
 			}
-		} else if ((ipc->shmBaseAdress = shmat(ipc->shmId, 0, 0)) == (char *) -1) {
+		} else if ((ipc->shmBaseAddress = shmat(ipc->shmId, 0, 0)) == (char *) -1) {
 			logHelper_log(admin->loghelper, OSGI_LOGSERVICE_ERROR, "Attaching to shared memory segment failed.");
 			status = CELIX_BUNDLE_EXCEPTION;
 		} else {
-			logHelper_log(admin->loghelper, OSGI_LOGSERVICE_INFO, "sucessfully attached to shared memory at %p.", ipc->shmBaseAdress);
+			logHelper_log(admin->loghelper, OSGI_LOGSERVICE_INFO, "successfully attached to shared memory at %p.", ipc->shmBaseAddress);
 		}
 	}
 

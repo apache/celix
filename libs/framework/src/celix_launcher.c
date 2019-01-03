@@ -52,7 +52,7 @@ static void ignore(int signal);
 
 static int celixLauncher_launchWithConfigAndProps(const char *configFile, framework_pt *framework, properties_pt packedConfig);
 
-static void combine_properties(celix_properties_t *orignal, const celix_properties_t *append);
+static void combine_properties(celix_properties_t *original, const celix_properties_t *append);
 
 #define DEFAULT_CONFIG_FILE "config.properties"
 
@@ -248,11 +248,11 @@ static void show_properties(celix_properties_t *embeddedProps, const char *confi
 	celix_properties_destroy(keys);
 }
 
-static void combine_properties(celix_properties_t *orignal, const celix_properties_t *append) {
-	if (orignal != NULL && append != NULL) {
+static void combine_properties(celix_properties_t *original, const celix_properties_t *append) {
+	if (original != NULL && append != NULL) {
 		const char *key = NULL;
 		CELIX_PROPERTIES_FOR_EACH(append, key) {
-			celix_properties_set(orignal, key, celix_properties_get(append, key, NULL));
+			celix_properties_set(original, key, celix_properties_get(append, key, NULL));
 		}
 	}
 }

@@ -2477,11 +2477,11 @@ static celix_status_t frameworkActivator_stop(void * userData, bundle_context_t 
         fw_log(framework->logger, OSGI_FRAMEWORK_LOG_DEBUG, "FRAMEWORK: Start shutdownthread");
 
         celixThreadMutex_lock(&framework->shutdown.mutex);
-        bool alreadyIntialized = framework->shutdown.initialized;
+        bool alreadyInitialized = framework->shutdown.initialized;
         framework->shutdown.initialized = true;
         celixThreadMutex_unlock(&framework->shutdown.mutex);
 
-        if (!alreadyIntialized) {
+        if (!alreadyInitialized) {
             celixThreadMutex_lock(&framework->dispatcher.mutex);
             framework->dispatcher.active = false;
             celixThreadCondition_broadcast(&framework->dispatcher.cond);

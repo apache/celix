@@ -418,8 +418,8 @@ TEST(hash_map, remove){
 	// Add second entry with null key
 	hashMap_put(map, key2, value2);
 
-	// Remove unexisting entry for map
-	removeKey = my_strdup("unexisting");
+	// Remove non-existing entry for map
+	removeKey = my_strdup("nonexisting");
 	hashMap_remove(map, removeKey);
 	LONGS_EQUAL(2, map->size);
 	CHECK(!hashMap_isEmpty(map));
@@ -431,7 +431,7 @@ TEST(hash_map, remove){
 	LONGS_EQUAL(0, map->size);
 	CHECK(hashMap_isEmpty(map));
 
-	// Remove unexisting entry for empty map
+	// Remove non-existing entry for empty map
 	hashMap_remove(map, removeKey);
 	LONGS_EQUAL(0, map->size);
 	CHECK(hashMap_isEmpty(map));
@@ -592,7 +592,7 @@ TEST(hash_map, entryGetKey){
 	char * get;
 	hash_map_entry_pt entry;
 
-	// Add 2 entrys
+	// Add 2 entries
 	hashMap_put(map, key, value);
 	hashMap_put(map, key2, value2);
 	hashMap_put(map, key3, value3);
@@ -622,7 +622,7 @@ TEST(hash_map, entryGetValue){
 	char * get;
 	hash_map_entry_pt entry;
 
-	// Add 2 entrys
+	// Add 2 entries
 	hashMap_put(map, key, value);
 	hashMap_put(map, key2, value2);
 	hashMap_put(map, key3, value3);
@@ -699,7 +699,7 @@ TEST(hash_map_iterator, remove){
 	char * key3 = my_strdup("key3");
 	char * value3 = my_strdup("value3");
 
-	// Add 3 entrys
+	// Add 3 entries
 	hashMap_put(map, key, value);
 	hashMap_put(map, key2, value2);
 	hashMap_put(map, key3, value3);
@@ -734,7 +734,7 @@ TEST(hash_map_iterator, nextValue){
 	char * value2 = my_strdup("value2");
 	char * getValue;
 
-	// Add 2 entrys
+	// Add 2 entries
 	hashMap_put(map, key, value);
 	hashMap_put(map, key2, value2);
 
@@ -761,7 +761,7 @@ TEST(hash_map_iterator, nextKey){
 	char * value2 = my_strdup("value2");
 	char * getKey;
 
-	// Add 2 entrys
+	// Add 2 entries
 	hashMap_put(map, key, value);
 	hashMap_put(map, key2, value2);
 
@@ -789,7 +789,7 @@ TEST(hash_map_iterator, nextEntry){
 	char * getValue;
 	hash_map_entry_pt get;
 
-	// Add 2 entrys
+	// Add 2 entries
 	hashMap_put(map, key, value);
 	hashMap_put(map, key2, value2);
 
@@ -832,7 +832,7 @@ TEST(hash_map_values, create){
 	char * key2 = my_strdup("key2");
 	char * value2 = my_strdup("value2");
 
-	// Add 2 entrys
+	// Add 2 entries
 	hashMap_put(map, key, value);
 	hashMap_put(map, key2, value2);
 
@@ -852,7 +852,7 @@ TEST(hash_map_values, size){
 	char * key2 = my_strdup("key2");
 	char * value2 = my_strdup("value2");
 
-	// Add 2 entrys
+	// Add 2 entries
 	hashMap_put(map, key, value);
 	hashMap_put(map, key2, value2);
 
@@ -871,7 +871,7 @@ TEST(hash_map_values, remove){
 	char * key2 = my_strdup("key2");
 	char * value2 = my_strdup("value2");
 
-	// Add 2 entrys
+	// Add 2 entries
 	hashMap_put(map, key, value);
 	hashMap_put(map, key2, value2);
 
@@ -902,7 +902,7 @@ TEST(hash_map_values, clear){
 	char * key2 = my_strdup("key2");
 	char * value2 = my_strdup("value2");
 
-	// Add 2 entrys
+	// Add 2 entries
 	hashMap_put(map, key, value);
 	hashMap_put(map, key2, value2);
 
@@ -932,7 +932,7 @@ TEST(hash_map_values, isEmpty){
 	char * key2 = my_strdup("key2");
 	char * value2 = my_strdup("value2");
 
-	// Add 2 entrys
+	// Add 2 entries
 	hashMap_put(map, key, value);
 	hashMap_put(map, key2, value2);
 
@@ -970,7 +970,7 @@ TEST(hash_map_keySet, size){
 
 	LONGS_EQUAL(0, hashMapKeySet_size(key_set));
 
-	// Add 2 entrys
+	// Add 2 entries
 	hashMap_put(map, key, NULL);
 	hashMap_put(map, key2, NULL);
 
@@ -990,7 +990,7 @@ TEST(hash_map_keySet, contains){
 	CHECK(!hashMapKeySet_contains(key_set, key));
 	CHECK(!hashMapKeySet_contains(key_set, key2));
 
-	// Add 2 entrys
+	// Add 2 entries
 	hashMap_put(map, key, NULL);
 
 	CHECK(hashMapKeySet_contains(key_set, key));
@@ -1011,7 +1011,7 @@ TEST(hash_map_keySet, remove){
 
 	key_set = hashMapKeySet_create(map);
 
-	// Add 2 entrys
+	// Add 2 entries
 	hashMap_put(map, key, NULL);
 	hashMap_put(map, key2, NULL);
 
@@ -1036,7 +1036,7 @@ TEST(hash_map_keySet, clear){
 
 	key_set = hashMapKeySet_create(map);
 
-	// Add 2 entrys
+	// Add 2 entries
 	hashMap_put(map, key, NULL);
 	hashMap_put(map, key2, NULL);
 
@@ -1059,7 +1059,7 @@ TEST(hash_map_keySet, isEmpty){
 
 	CHECK(hashMapKeySet_isEmpty(key_set));
 
-	// Add 2 entrys
+	// Add 2 entries
 	hashMap_put(map, key, NULL);
 	hashMap_put(map, key2, NULL);
 
@@ -1095,7 +1095,7 @@ TEST(hash_map_entrySet, size){
 
 	LONGS_EQUAL(0, hashMapEntrySet_size(entry_set));
 
-	// Add 2 entrys
+	// Add 2 entries
 	hashMap_put(map, key, value);
 	hashMap_put(map, key2, value2);
 
@@ -1114,7 +1114,7 @@ TEST(hash_map_entrySet, contains){
 
 	entry_set = hashMapEntrySet_create(map);
 
-	// Add 2 entrys
+	// Add 2 entries
 	hashMap_put(map, key, value);
 	hashMap_put(map, key2, value2);
 
@@ -1134,7 +1134,7 @@ TEST(hash_map_entrySet, remove){
 
 	entry_set = hashMapEntrySet_create(map);
 
-	// Add 2 entrys
+	// Add 2 entries
 	hashMap_put(map, key, value);
 	hashMap_put(map, key2, value2);
 
@@ -1163,7 +1163,7 @@ TEST(hash_map_entrySet, clear){
 
 	entry_set = hashMapEntrySet_create(map);
 
-	// Add 2 entrys
+	// Add 2 entries
 	hashMap_put(map, key, value);
 	hashMap_put(map, key2, value2);
 
@@ -1190,7 +1190,7 @@ TEST(hash_map_entrySet, isEmpty){
 
 	CHECK(hashMapEntrySet_isEmpty(entry_set));
 
-	// Add 2 entrys
+	// Add 2 entries
 	hashMap_put(map, key, value);
 	hashMap_put(map, key2, value2);
 
@@ -1414,7 +1414,7 @@ TEST(hash_map_hash, remove){
 	char * value = my_strdup("value");
 	char * key2 = NULL;
 	char * value2 = my_strdup("value2");
-	char * removeKey = my_strdup("unexisting");
+	char * removeKey = my_strdup("nonexisting");
 
 	hashMap_clear(map, false, false);
 
@@ -1424,7 +1424,7 @@ TEST(hash_map_hash, remove){
 	// Add second entry with null key
 	hashMap_put(map, key2, value2);
 
-	// Remove unexisting entry for map
+	// Remove non-existing entry for map
 	hashMap_remove(map, removeKey);
 	LONGS_EQUAL(2, map->size);
 	CHECK(!hashMap_isEmpty(map));
@@ -1441,8 +1441,8 @@ TEST(hash_map_hash, remove){
 	LONGS_EQUAL(0, map->size);
 	CHECK(hashMap_isEmpty(map));
 
-	// Remove unexisting entry for empty map
-	removeKey = my_strdup("unexisting");
+	// Remove non-existing entry for empty map
+	removeKey = my_strdup("nonexisting");
 	hashMap_remove(map, removeKey);
 	LONGS_EQUAL(0, map->size);
 	CHECK(hashMap_isEmpty(map));

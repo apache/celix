@@ -62,7 +62,7 @@ struct recv_shm_thread {
 struct ipc_segment {
     int semId;
     int shmId;
-    void *shmBaseAdress;
+    void *shmBaseAddress;
 };
 
 struct remote_service_admin {

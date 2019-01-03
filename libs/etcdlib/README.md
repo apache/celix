@@ -20,7 +20,7 @@ etcd is a distributed, consistent key-value store for shared configuration and s
 
 This repository provides a library for etcd for C applications.
 
-Etcdlib can be used as part of Celix but is also useable stand-alone.
+Etcdlib can be used as part of Celix but is also usable stand-alone.
 
 ## Preparing
 The following packages (libraries + headers) should be installed on your system:

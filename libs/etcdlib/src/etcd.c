@@ -40,7 +40,7 @@
 
 #define MAX_OVERHEAD_LENGTH           64
 #define DEFAULT_CURL_TIMEOUT          10
-#define DEFAULT_CURL_CONECTTIMEOUT    10
+#define DEFAULT_CURL_CONNECT_TIMEOUT  10
 
 typedef enum {
 	GET, PUT, DELETE
@@ -241,7 +241,7 @@ int etcd_get_directory(const char* directory, etcd_key_value_callback callback, 
               *modifiedIndex = indexFromHeader;
             }
 		} else {
-			// Error occured, retrieve the index of ETCD from the error code
+			// Error occurred, retrieve the index of ETCD from the error code
 			js_rootnode = json_object_get(js_root, ETCD_JSON_INDEX);
 			if(js_rootnode) {
 				json_int_t index = json_integer_value(js_rootnode);
@@ -586,7 +586,7 @@ static int performRequest(char* url, request_t request, void* reqData, void* rep
 	curl = curl_easy_init();
 	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
 	curl_easy_setopt(curl, CURLOPT_TIMEOUT, DEFAULT_CURL_TIMEOUT);
-	curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, DEFAULT_CURL_CONECTTIMEOUT);
+	curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, DEFAULT_CURL_CONNECT_TIMEOUT);
 	curl_easy_setopt(curl, CURLOPT_URL, url);
 	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);

@@ -34,10 +34,10 @@
 struct calculator {
 };
 
-celix_status_t calculator_create(calculator_pt *calcuator);
-celix_status_t calculator_destroy(calculator_pt *calcuator);
-celix_status_t calculator_add(calculator_pt calcuator, double a, double b, double *result);
-celix_status_t calculator_sub(calculator_pt calcuator, double a, double b, double *result);
-celix_status_t calculator_sqrt(calculator_pt calcuator, double a, double *result);
+celix_status_t calculator_create(calculator_pt *calculator);
+celix_status_t calculator_destroy(calculator_pt *calculator);
+celix_status_t calculator_add(calculator_pt calculator, double a, double b, double *result);
+celix_status_t calculator_sub(calculator_pt calculator, double a, double b, double *result);
+celix_status_t calculator_sqrt(calculator_pt calculator, double a, double *result);
 
 #endif /* CALCULATOR_IMPL_H_ */

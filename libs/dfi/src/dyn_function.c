@@ -80,7 +80,7 @@ int dynFunction_parse(FILE *descriptor, struct types_head *refTypes, dyn_functio
             }
         }
     } else {
-        LOG_ERROR("Error allocationg memory for dyn functipn\n");
+        LOG_ERROR("Error allocating memory for dyn function\n");
         status = MEM_ERROR;
     }
 

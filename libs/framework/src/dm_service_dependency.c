@@ -476,7 +476,7 @@ celix_status_t serviceDependency_invokeSet(celix_dm_service_dependency_t *depend
 
 	serviceReferences = serviceTracker_getServiceReferences(dependency->tracker);
 
-	/* Find the service with the higest ranking */
+	/* Find the service with the highest ranking */
 	for (i = 0; i < arrayList_size(serviceReferences); i++) {
 		service_reference_pt serviceReference = arrayList_get(serviceReferences, i);
 		const char* ranking_value;
