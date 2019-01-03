@@ -73,9 +73,9 @@ When correctly used this strategy removes the need for locking services during u
 
 For more information examples please see
 
-- [The C++ Dependency Manager API](include/celix/dm): The c++ dependency manager header files
-- [Dm C++ example](../examples/dm_example_cxx): A DM C++ example.
-- [Getting Started: Using Services with C++](../documents/getting_started/using_services_with_cxx.md): A introduction how to work with services using the C++ dependency manager
+- [The C++ Dependency Manager API](../../libs/framework/include): The C++ dependency manager header files
+- [Dm C++ example](../../examples/celix-examples/dm_example_cxx): A DM C++ example.
+- [Getting Started: Using Services with C++](../../documents/getting_started/using_services_with_cxx.md): A introduction how to work with services using the C++ dependency manager
 
 ## Using info
 

@@ -135,4 +135,4 @@ celix
 should give the following output:
 "Error: invalid or non-existing configuration file: 'config.properties'.No such file or directory".
 
-For more info how to build your own projects and/or running the Apache Celix examples see [Getting Started](../getting_started/readme.md).
+For more info how to build your own projects and/or running the Apache Celix examples see [Getting Started](../getting_started/README.md).

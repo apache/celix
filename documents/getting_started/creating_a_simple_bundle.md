@@ -26,7 +26,7 @@ If there are any uncertainties or question, don't hesitate to ask your questions
 Some experience with a command line interface (xterm) is expected to be able to follow this guide. 
 
 ## Building and Installing
-For Apache Celix see [Building And Installing](../building/readme.md)
+For Apache Celix see [Building And Installing](../building/README.md)
 
 ## Installing Eclipse CDT
 Download the latest eclipse CDT at [http://www.eclipse.org](http://www.eclipse.org) and install it on your system. For more information on how the install eclipse on your system consult the eclipse documentation. For this getting started guide the luna version of eclipse was used ([linux](http://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/luna/R/eclipse-cpp-luna-R-linux-gtk-x86_64.tar.gz) [mac](http://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/luna/R/eclipse-cpp-luna-R-macosx-cocoa-x86_64.tar.gz)).
@@ -91,8 +91,8 @@ It is a good practice to create a separate CMakeLists.txt file for every bundle 
 
 Create the sub directory:
 
-```CMake
-#Create directory structure for the hello_world bundles
+```bash
+# Create directory structure for the hello_world bundles
 cd ${WS}/myproject
 mkdir -p bundles/HelloWorld_c/src
 mkdir -p bundles/HelloWorld_cxx/src
@@ -315,19 +315,14 @@ Because CLion is a IDE for CMake projects and Apache Celix projects are CMake pr
 
 To run a Celix container just select the target from CLion and press Run.
 
- 
+
 ## Next
 
 The get a complete overview of the available Celix CMake commands see:
- - [Apache Celix - Celix CMake Commands](../cmake_commands/readme.md)
+ - [Apache Celix - Celix CMake Commands](../cmake_commands/README.md)
 
 The idea behind service oriented programming is that functionality is provided and used by abstract service, which hide implementation details.
 For a guide how to provide and use services see
 
 - [Apache Celix - Getting Started Guide: Using Services with C](using_services_with_c.md)
 - [Apache Celix - Getting Started Guide: Using Services with C++](using_services_with_cxx.md)
- 
-
-
-	
-	

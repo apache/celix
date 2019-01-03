@@ -568,4 +568,4 @@ The suspend strategy has the advantage of reducing locks' usage: of course, susp
 
 ## See also
 
-See the [C++ Dependeny Manager](../../libs/dependency_manager_cxx/readme.md) and [C++ Dependency Manager example](../../examples/celix-examples/dm_example_cxx) for more information and a more complex working example.
+See the [C++ Dependency Manager](../../libs/dependency_manager_cxx/README.md) and [C++ Dependency Manager example](../../examples/celix-examples/dm_example_cxx) for more information and a more complex working example.

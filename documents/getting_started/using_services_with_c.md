@@ -110,7 +110,7 @@ The init/deinit function can be used to include (de)initialization which is not 
 ## Code Examples
 
 The next code blocks contains some code examples of components to indicate how to handle service dependencies, how to specify providing services and how to cope with locking/synchronizing.
-The complete example can be found [here](../../examples/services_example_c).
+The complete example can be found [here](../../examples/celix-examples/services_example_c).
 
 The error checking is very minimal in these example to keep the focus on how to interact with services and how to deal with errors in C / Celix.
 
@@ -607,4 +607,4 @@ The suspend strategy has the advantage of reducing locks' usage: of course, susp
 
 ## See also
 
-See the [C Dependeny Manager](../../libs/dependency_manager/readme.md) and [C Dependency Manager example](../../examples/celix-examples/dm_example) for more information and a more complex working example.
+See the [C Dependency Manager](../../libs/dependency_manager/README.md) and [C Dependency Manager example](../../examples/celix-examples/dm_example) for more information and a more complex working example.

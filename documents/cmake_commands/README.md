@@ -100,7 +100,7 @@ celix_bundle_files(<bundle_target>
     [NO_SOURCE_PERMISSIONS] [USE_SOURCE_PERMISSIONS]
     [FILES_MATCHING]
     [[PATTERN <pattern> | REGEX <regex>]
-    [EXCLUDE] [PERMISSIONS permissions...]] [...])
+    [EXCLUDE] [PERMISSIONS permissions...]] [...]
 )
 ```
 
