@@ -264,7 +264,7 @@ void* psd_refresh(void *data) {
                 //only refresh ttl -> no index update -> no watch trigger
                 int rc = etcd_refresh(entry->key, disc->ttlForEntries);
                 if (rc != ETCDLIB_RC_OK) {
-                    L_ERROR("[PSD] Warning: error refreshing etcd key %s\n", entry->key);
+                    L_WARN("[PSD] Warning: error refreshing etcd key %s\n", entry->key);
                     entry->isSet = false;
                     entry->errorCount += 1;
                 } else {
@@ -277,7 +277,7 @@ void* psd_refresh(void *data) {
                     entry->isSet = true;
                     entry->setCount += 1;
                 } else {
-                    L_ERROR("[PSD] Warning: error setting endpoint in etcd for key %s\n", entry->key);
+                    L_WARN("[PSD] Warning: error setting endpoint in etcd for key %s\n", entry->key);
                     entry->errorCount += 1;
                 }
                 free(str);
@@ -545,7 +545,7 @@ celix_properties_t* pubsub_discovery_parseEndpoint(pubsub_discovery_t *disc, con
 
     bool valid = pubsubEndpoint_isValid(props, true, true);
     if (!valid) {
-        L_ERROR("[PSD] Warning retrieved endpoint is not valid\n");
+        L_WARN("[PSD] Warning retrieved endpoint is not valid\n");
         celix_properties_destroy(props);
         props = NULL;
     }
