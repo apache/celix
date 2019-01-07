@@ -103,6 +103,13 @@ FUNCTION(SETUP_TARGET_FOR_COVERAGE _targetname _testrunner _outputname)
     		MESSAGE(FATAL_ERROR "genhtml not found! Aborting...")
     	ENDIF() # NOT GENHTML_PATH
 
+        set(SCAN_DIR ".")
+        if (NOT ARGV3)
+            set(SCAN_DIR ".")
+        else()
+            set(SCAN_DIR "${ARGV3}")
+        endif ()
+
     	# Setup target
       ADD_CUSTOM_TARGET(${_targetname}_coverage
 
@@ -115,8 +122,8 @@ FUNCTION(SETUP_TARGET_FOR_COVERAGE _targetname _testrunner _outputname)
     		# Capturing lcov counters and generating report
     		COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/coverage
     		COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/coverage/${_testrunner}
-    		COMMAND ${LCOV_PATH} --directory . --capture --output-file ${_outputname}.info
-    		COMMAND ${LCOV_PATH} --remove ${_outputname}.info 'mock/*' 'test/*' '/usr/*' --output-file ${_outputname}.info.cleaned
+    		COMMAND ${LCOV_PATH} --directory ${SCAN_DIR} --capture --output-file ${_outputname}.info
+    		COMMAND ${LCOV_PATH} --remove ${_outputname}.info '**/mock/*' '**/test/*' '**/gtest/*' '**/tst/*' '**/celix/gen/*' '**/googletest_project/*' '**/glog/*' '/usr/*' --output-file ${_outputname}.info.cleaned
 
     		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     		COMMENT "Resetting code coverage counters to zero.\nProcessing code coverage counters and generating report."
