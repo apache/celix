@@ -46,6 +46,7 @@ struct pubsub_udpmc_topic_sender {
     char *topic;
     char *socketAddress;
     long socketPort;
+    bool staticallyConfigured;
 
     int sendSocket;
     struct sockaddr_in destAddr;
@@ -79,7 +80,7 @@ typedef struct pubsub_msg{
 static void* psa_udpmc_getPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties);
 static void psa_udpmc_ungetPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties);
 static int psa_udpmc_topicPublicationSend(void* handle, unsigned int msgTypeId, const void *inMsg);
-static bool psa_udpmc_sendMsg(psa_udpmc_bounded_service_entry_t *entry, pubsub_msg_t* msg, bool last, pubsub_release_callback_t *releaseCallback);
+static bool psa_udpmc_sendMsg(psa_udpmc_bounded_service_entry_t *entry, pubsub_msg_t* msg);
 static unsigned int rand_range(unsigned int min, unsigned int max);
 
 pubsub_udpmc_topic_sender_t* pubsub_udpmcTopicSender_create(
@@ -89,7 +90,8 @@ pubsub_udpmc_topic_sender_t* pubsub_udpmcTopicSender_create(
         long serializerSvcId,
         pubsub_serializer_service_t *serializer,
         int sendSocket,
-        const char *bindIP) {
+        const char *bindIP,
+        const celix_properties_t *topicProperties) {
     pubsub_udpmc_topic_sender_t *sender = calloc(1, sizeof(*sender));
     sender->ctx = ctx;
     sender->serializerSvcId = serializerSvcId;
@@ -100,9 +102,17 @@ pubsub_udpmc_topic_sender_t* pubsub_udpmcTopicSender_create(
     celixThreadMutex_create(&sender->boundedServices.mutex, NULL);
     sender->boundedServices.map = hashMap_create(NULL, NULL, NULL, NULL);
 
+    unsigned int port = rand_range(UDP_BASE_PORT, UDP_MAX_PORT);
+    long configuredPort = celix_properties_getAsLong(topicProperties, PUBSUB_UDPMC_STATIC_BIND_PORT, -1L);
+    if (configuredPort > 0) {
+        port = (unsigned int)configuredPort;
+        sender->staticallyConfigured = true;
+    } else {
+        sender->staticallyConfigured = false;
+    }
+
     //setting up socket for UDPMC TopicSender
     {
-        unsigned int port = rand_range(UDP_BASE_PORT, UDP_MAX_PORT);
         sender->sendSocket = sendSocket;
         sender->destAddr.sin_family = AF_INET;
         sender->destAddr.sin_addr.s_addr = inet_addr(bindIP);
@@ -205,7 +215,6 @@ static void* psa_udpmc_getPublisherService(void *handle, const celix_bundle_t *r
             entry->service.handle = entry;
             entry->service.localMsgTypeIdForMsgType = psa_udpmc_localMsgTypeIdForMsgType;
             entry->service.send = psa_udpmc_topicPublicationSend;
-            entry->service.sendMultipart = NULL; //note multipart not supported by UDPMC
             hashMap_put(sender->boundedServices.map, (void*)bndId, entry);
             svc = &entry->service;
         } else {
@@ -256,7 +265,7 @@ static int psa_udpmc_topicPublicationSend(void* handle, unsigned int msgTypeId, 
 
         void* serializedOutput = NULL;
         size_t serializedOutputLen = 0;
-        if (msgSer->serialize(msgSer,inMsg,&serializedOutput, &serializedOutputLen) == CELIX_SUCCESS) {
+        if (msgSer->serialize(msgSer->handle,inMsg,&serializedOutput, &serializedOutputLen) == CELIX_SUCCESS) {
 
             pubsub_msg_header_t *msg_hdr = calloc(1,sizeof(struct pubsub_msg_header));
             strncpy(msg_hdr->topic,entry->parent->topic,MAX_TOPIC_LEN-1);
@@ -266,18 +275,18 @@ static int psa_udpmc_topicPublicationSend(void* handle, unsigned int msgTypeId, 
             if (msgSer->msgVersion != NULL){
                 version_getMajor(msgSer->msgVersion, &major);
                 version_getMinor(msgSer->msgVersion, &minor);
-                msg_hdr->major = major;
-                msg_hdr->minor = minor;
+                msg_hdr->major = (unsigned char)major;
+                msg_hdr->minor = (unsigned char)minor;
             }
 
 
             pubsub_msg_t *msg = calloc(1, sizeof(pubsub_msg_t));
             msg->header = msg_hdr;
             msg->payload = (char *) serializedOutput;
-            msg->payloadSize = serializedOutputLen;
+            msg->payloadSize = (unsigned int)serializedOutputLen;
 
 
-            if (psa_udpmc_sendMsg(entry, msg, true, NULL) == false) {
+            if (psa_udpmc_sendMsg(entry, msg) == false) {
                 status = -1;
             }
             free(msg);
@@ -306,7 +315,7 @@ static void delay_first_send_for_late_joiners(){
     }
 }
 
-static bool psa_udpmc_sendMsg(psa_udpmc_bounded_service_entry_t *entry, pubsub_msg_t* msg, bool last, pubsub_release_callback_t *releaseCallback) {
+static bool psa_udpmc_sendMsg(psa_udpmc_bounded_service_entry_t *entry, pubsub_msg_t* msg) {
     const int iovec_len = 3; // header + size + payload
     bool ret = true;
 
@@ -325,9 +334,6 @@ static bool psa_udpmc_sendMsg(psa_udpmc_bounded_service_entry_t *entry, pubsub_m
         ret = false;
     }
 
-    if(releaseCallback) {
-        releaseCallback->release(msg->payload, entry);
-    }
     return ret;
 }
 
@@ -338,4 +344,8 @@ static unsigned int rand_range(unsigned int min, unsigned int max){
 
 long pubsub_udpmcTopicSender_serializerSvcId(pubsub_udpmc_topic_sender_t *sender) {
     return sender->serializerSvcId;
+}
+
+bool pubsub_udpmcTopicSender_isStatic(pubsub_udpmc_topic_sender_t *sender) {
+    return sender->staticallyConfigured;
 }

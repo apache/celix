@@ -79,9 +79,7 @@ function(add_celix_container)
         get_filename_component(SRC_FILENAME ${CONTAINER_LAUNCHER_SRC} NAME)
         set(LAUNCHER_SRC "${PROJECT_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/${SRC_FILENAME}")
         set(LAUNCHER_ORG "${CONTAINER_LAUNCHER_SRC}")
-        add_custom_command(OUTPUT ${LAUNCHER_SRC}
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${LAUNCHER_ORG} ${LAUNCHER_SRC}
-        )
+        file(GENERATE OUTPUT "${LAUNCHER_SRC}" INPUT "${LAUNCHER_ORG}")
     else () #generate custom launcher
         if (CONTAINER_CXX)
             set(LAUNCHER_SRC "${PROJECT_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/main.cc")
@@ -320,7 +318,7 @@ function(celix_container_bundles)
     set(BUNDLES_LIST ${BUNDLES_UNPARSED_ARGUMENTS})
 
     if (NOT DEFINED BUNDLES_LEVEL)
-        set(BUNDLES_LEVEL 1)
+        set(BUNDLES_LEVEL 3)
     endif ()
 
     get_target_property(BUNDLES ${CONTAINER_TARGET} "CONTAINER_BUNDLES_LEVEL_${BUNDLES_LEVEL}")

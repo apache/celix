@@ -16,17 +16,31 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * celix_log.c
- *
- *  \date       6 Oct 2013
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
 #include <stdarg.h>
 
 #include "celix_errno.h"
 #include "celix_log.h"
+
+#ifdef __linux__
+//includes for the backtrace function
+#include <execinfo.h>
+#include <stdlib.h>
+#endif
+
+#ifdef __linux__
+static void framework_logBacktrace(void) {
+    void *bbuf[64];
+    int nrOfTraces = backtrace(bbuf, 64);
+    char **lines = backtrace_symbols(bbuf, nrOfTraces);
+    for (int i = 0; i < nrOfTraces; ++i) {
+        char *line = lines[i];
+        fprintf(stderr, "%s\n", line);
+    }
+    free(lines);
+}
+#else
+static void framework_logBacktrace(void) {}
+#endif
 
 void framework_log(framework_logger_pt logger, framework_log_level_t level, const char *func, const char *file, int line, const char *fmsg, ...) {
     char msg[512];
@@ -74,7 +88,8 @@ celix_status_t frameworkLogger_log(framework_log_level_t level, const char *func
     }
 
     if (level == OSGI_FRAMEWORK_LOG_ERROR) {
-        printf("%s: %s\n\tat %s(%s:%d)\n", levelStr, msg, func, file, line);
+        fprintf(stderr, "%s: %s\n\tat %s(%s:%d)\n", levelStr, msg, func, file, line);
+        framework_logBacktrace();
     } else {
         printf("%s: %s\n", levelStr, msg);
     }

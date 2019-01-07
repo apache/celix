@@ -33,15 +33,12 @@ typedef struct pubsub_discovered_endpoint_listener pubsub_discovered_endpoint_li
 
 
 
-//Informs the discovery admins to publish info into the network
+//Informs the pubsub discoveries to announce/revoke endpoint
 struct pubsub_announce_endpoint_listener {
 	void *handle;
 
 	celix_status_t (*announceEndpoint)(void *handle, const celix_properties_t *properties);
-	celix_status_t (*removeEndpoint)(void *handle, const celix_properties_t *properties);
-
-	//getCurrentSubscriberEndPoints
-	//getCurrentPublisherEndPoints
+	celix_status_t (*revokeEndpoint)(void *handle, const celix_properties_t *properties);
 };
 
 typedef struct pubsub_announce_endpoint_listener pubsub_announce_endpoint_listener_t;

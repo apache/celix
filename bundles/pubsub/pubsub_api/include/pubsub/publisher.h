@@ -30,7 +30,7 @@
 #include <stdlib.h>
 
 #define PUBSUB_PUBLISHER_SERVICE_NAME           "pubsub.publisher"
-#define PUBSUB_PUBLISHER_SERVICE_VERSION	    "2.0.0"
+#define PUBSUB_PUBLISHER_SERVICE_VERSION	    "3.0.0"
  
 //properties
 #define PUBSUB_PUBLISHER_TOPIC                  "topic"
@@ -38,17 +38,7 @@
 #define PUBSUB_PUBLISHER_CONFIG                 "pubsub.config"
  
 #define PUBSUB_PUBLISHER_SCOPE_DEFAULT			"default"
-//flags
-#define PUBSUB_PUBLISHER_FIRST_MSG  01
-#define PUBSUB_PUBLISHER_PART_MSG   02
-#define PUBSUB_PUBLISHER_LAST_MSG   04
 
-struct pubsub_release_callback_struct {
-    void *handle;
-    void (*release)(char *buf, void *handle);
-};
-typedef struct pubsub_release_callback_struct pubsub_release_callback_t;
-typedef struct pubsub_release_callback_struct* pubsub_release_callback_pt;
  
  
 struct pubsub_publisher {
@@ -70,15 +60,6 @@ struct pubsub_publisher {
      * Returns 0 on success.
      */
     int (*send)(void *handle, unsigned int msgTypeId, const void *msg);
- 
-  
-    /**
-     * sendMultipart is a async function, but the msg can be safely deleted after send returns.
-     * The first (primary) message of a multipart message must have the flag PUBLISHER_PRIMARY_MSG
-     * The last message of a multipart message must have the flag PUBLISHER_LAST_MSG
-     * Returns 0 on success.
-     */
-    int (*sendMultipart)(void *handle, unsigned int msgTypeId, const void *msg, int flags);
  
 };
 typedef struct pubsub_publisher pubsub_publisher_t;

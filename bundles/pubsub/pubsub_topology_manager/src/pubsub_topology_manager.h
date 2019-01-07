@@ -94,6 +94,7 @@ typedef struct pstm_topic_receiver_or_sender_entry {
 	long selectedPsaSvcId;
 	long selectedSerializerSvcId;
 	long bndId;
+	celix_properties_t *topicProperties; //found in META-INF/(pub|sub)/(topic).properties
 
 	//for sender entry
 	celix_filter_t *publisherFilter;
@@ -104,7 +105,6 @@ typedef struct pstm_topic_receiver_or_sender_entry {
 
 celix_status_t pubsub_topologyManager_create(bundle_context_pt context, log_helper_pt logHelper, pubsub_topology_manager_t **manager);
 celix_status_t pubsub_topologyManager_destroy(pubsub_topology_manager_t *manager);
-celix_status_t pubsub_topologyManager_closeImports(pubsub_topology_manager_t *manager);
 
 void pubsub_topologyManager_psaAdded(void *handle, void *svc, const celix_properties_t *props);
 void pubsub_topologyManager_psaRemoved(void *handle, void *svc, const celix_properties_t *props);

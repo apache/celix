@@ -1,9 +1,0 @@
-:header
-type=message
-name=ide
-version=1.0.0
-:annotations
-classname=org.example.Ide
-:types
-:message
-{i shape}

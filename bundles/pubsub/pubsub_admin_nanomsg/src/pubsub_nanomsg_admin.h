@@ -60,19 +60,36 @@ public:
 private:
     void addSerializerSvc(void *svc, const celix_properties_t *props);
     void removeSerializerSvc(void */*svc*/, const celix_properties_t *props);
-    celix_status_t matchPublisher(long svcRequesterBndId, const celix_filter_t *svcFilter,
-                                                      double *score, long *serializerSvcId);
-    celix_status_t matchSubscriber(long svcProviderBndId,
-                                                       const celix_properties_t *svcProperties, double *score,
-                                                       long *serializerSvcId);
+    celix_status_t matchPublisher(
+            long svcRequesterBndId,
+            const celix_filter_t *svcFilter,
+            celix_properties_t **outTopicProperties,
+            double *outScore,
+            long *outsSerializerSvcId);
+    celix_status_t matchSubscriber(
+            long svcProviderBndId,
+            const celix_properties_t *svcProperties,
+            celix_properties_t **outTopicProperties,
+            double *outScope,
+            long *outSerializerSvcId);
     celix_status_t matchEndpoint(const celix_properties_t *endpoint, bool *match);
 
-    celix_status_t setupTopicSender(const char *scope, const char *topic,
-                                                        long serializerSvcId, celix_properties_t **publisherEndpoint);
+    celix_status_t setupTopicSender(
+            const char *scope,
+            const char *topic,
+            const celix_properties_t *topicProperties,
+            long serializerSvcId,
+            celix_properties_t **outPublisherEndpoint);
+
     celix_status_t teardownTopicSender(const char *scope, const char *topic);
 
-    celix_status_t setupTopicReceiver(const std::string &scope, const std::string &topic,
-                                                          long serializerSvcId, celix_properties_t **subscriberEndpoint);
+    celix_status_t setupTopicReceiver(
+            const std::string &scope,
+            const std::string &topic,
+            const celix_properties_t *topicProperties,
+            long serializerSvcId,
+            celix_properties_t **outSubscriberEndpoint);
+
     celix_status_t teardownTopicReceiver(const char *scope, const char *topic);
 
     celix_status_t addEndpoint(const celix_properties_t *endpoint);

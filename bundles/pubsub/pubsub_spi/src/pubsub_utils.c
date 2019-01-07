@@ -148,10 +148,10 @@ celix_properties_t *pubsub_utils_getTopicProperties(const celix_bundle_t *bundle
 
 		if(bundleRoot != NULL){
 
-			asprintf(&topicPropertiesPath, "%s/META-INF/topics/%s/%s.properties", bundleRoot, isPublisher?"pub":"sub", topic);
+			asprintf(&topicPropertiesPath, "%s/META-INF/topics/%s/%s.properties", bundleRoot, isPublisher? "pub":"sub", topic);
 			topic_props = properties_load(topicPropertiesPath);
 			if(topic_props==NULL){
-				printf("PSEP: Could not load properties for %s on topic %s, bundleId=%ld\n", isPublisher?"publication":"subscription", topic,bundleId);
+				printf("PubSub: Could not load properties for %s on topic %s. Searched location %s, bundleId=%ld\n", isPublisher? "publication":"subscription", topic, topicPropertiesPath, bundleId);
 			}
 
 			free(topicPropertiesPath);

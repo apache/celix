@@ -79,7 +79,7 @@ struct pubsub_udpmc_admin {
 
 };
 
-typedef struct psa_udpmc_serializer_entry {
+typedef struct psa_zmq_serializer_entry {
     const char *serType;
     long svcId;
     pubsub_serializer_service_t *svc;
@@ -109,9 +109,7 @@ pubsub_udpmc_admin_t* pubsub_udpmcAdmin_create(celix_bundle_context_t *ctx, log_
     }
 
 
-    const char *mc_prefix = celix_bundleContext_getProperty(ctx,
-            PUBSUB_UDPMC_MULTICAST_IP_PREFIX_KEY,
-            PUBSUB_UDPMC_MULTICAST_IP_PREFIX_DEFAULT);
+    const char *mc_prefix = celix_bundleContext_getProperty(ctx, PUBSUB_UDPMC_MULTICAST_IP_PREFIX_KEY, PUBSUB_UDPMC_MULTICAST_IP_PREFIX_DEFAULT);
     const char *interface = celix_bundleContext_getProperty(ctx, PUBSUB_UDPMC_ITF_KEY, NULL);
     if (udpmc_getIpAddress(interface, &if_ip) != CELIX_SUCCESS) {
         L_WARN("[PSA_UDPMC] Could not retrieve IP address for interface %s", interface);
@@ -234,7 +232,7 @@ void pubsub_udpmcAdmin_destroy(pubsub_udpmc_admin_t *psa) {
     hashMap_destroy(psa->topicReceivers.map, true, false);
 
     celixThreadMutex_destroy(&psa->discoveredEndpoints.mutex);
-    hashMap_destroy(psa->discoveredEndpoints.map, true, false);
+    hashMap_destroy(psa->discoveredEndpoints.map, false, false);
 
     celixThreadMutex_destroy(&psa->serializers.mutex);
     hashMap_destroy(psa->serializers.map, false, false);
@@ -244,23 +242,23 @@ void pubsub_udpmcAdmin_destroy(pubsub_udpmc_admin_t *psa) {
     free(psa);
 }
 
-celix_status_t pubsub_udpmcAdmin_matchPublisher(void *handle, long svcRequesterBndId, const celix_filter_t *svcFilter, double *outScore, long *outSerializerSvcId) {
+celix_status_t pubsub_udpmcAdmin_matchPublisher(void *handle, long svcRequesterBndId, const celix_filter_t *svcFilter, celix_properties_t **topicProperties, double *outScore, long *outSerializerSvcId) {
     pubsub_udpmc_admin_t *psa = handle;
     L_DEBUG("[PSA_UDPMC] pubsub_udpmcAdmin_matchPublisher");
     celix_status_t  status = CELIX_SUCCESS;
     double score = pubsub_utils_matchPublisher(psa->ctx, svcRequesterBndId, svcFilter->filterStr, PUBSUB_UDPMC_ADMIN_TYPE,
-                                                psa->qosSampleScore, psa->qosControlScore, psa->defaultScore, outSerializerSvcId);
+                                                psa->qosSampleScore, psa->qosControlScore, psa->defaultScore, topicProperties, outSerializerSvcId);
     *outScore = score;
 
     return status;
 }
 
-celix_status_t pubsub_udpmcAdmin_matchSubscriber(void *handle, long svcProviderBndId, const celix_properties_t *svcProperties, double *outScore, long *outSerializerSvcId) {
+celix_status_t pubsub_udpmcAdmin_matchSubscriber(void *handle, long svcProviderBndId, const celix_properties_t *svcProperties, celix_properties_t **topicProperties, double *outScore, long *outSerializerSvcId) {
     pubsub_udpmc_admin_t *psa = handle;
     L_DEBUG("[PSA_UDPMC] pubsub_udpmcAdmin_matchSubscriber");
     celix_status_t  status = CELIX_SUCCESS;
     double score = pubsub_utils_matchSubscriber(psa->ctx, svcProviderBndId, svcProperties, PUBSUB_UDPMC_ADMIN_TYPE,
-            psa->qosSampleScore, psa->qosControlScore, psa->defaultScore, outSerializerSvcId);
+            psa->qosSampleScore, psa->qosControlScore, psa->defaultScore, topicProperties, outSerializerSvcId);
     if (outScore != NULL) {
         *outScore = score;
     }
@@ -278,7 +276,7 @@ celix_status_t pubsub_udpmcAdmin_matchEndpoint(void *handle, const celix_propert
     return status;
 }
 
-celix_status_t pubsub_udpmcAdmin_setupTopicSender(void *handle, const char *scope, const char *topic, long serializerSvcId, celix_properties_t **outPublisherEndpoint) {
+celix_status_t pubsub_udpmcAdmin_setupTopicSender(void *handle, const char *scope, const char *topic, const celix_properties_t *topicProps, long serializerSvcId, celix_properties_t **outPublisherEndpoint) {
     pubsub_udpmc_admin_t *psa = handle;
     celix_status_t  status = CELIX_SUCCESS;
 
@@ -296,13 +294,12 @@ celix_status_t pubsub_udpmcAdmin_setupTopicSender(void *handle, const char *scop
     if (sender == NULL) {
         psa_udpmc_serializer_entry_t *serEntry = hashMap_get(psa->serializers.map, (void*)serializerSvcId);
         if (serEntry != NULL) {
-            sender = pubsub_udpmcTopicSender_create(psa->ctx, scope, topic, serializerSvcId, serEntry->svc, psa->sendSocket, psa->mcIpAddress);
+            sender = pubsub_udpmcTopicSender_create(psa->ctx, scope, topic, serializerSvcId, serEntry->svc, psa->sendSocket, psa->mcIpAddress, topicProps);
         }
         if (sender != NULL) {
             const char *psaType = PSA_UDPMC_PUBSUB_ADMIN_TYPE;
             const char *serType = serEntry->serType;
-            newEndpoint = pubsubEndpoint_create(psa->fwUUID, scope, topic,
-                    PUBSUB_PUBLISHER_ENDPOINT_TYPE, psaType, serType, NULL);
+            newEndpoint = pubsubEndpoint_create(psa->fwUUID, scope, topic, PUBSUB_PUBLISHER_ENDPOINT_TYPE, psaType, serType, NULL);
             celix_properties_set(newEndpoint, PUBSUB_UDPMC_SOCKET_ADDRESS_KEY, pubsub_udpmcTopicSender_socketAddress(sender));
             celix_properties_setLong(newEndpoint, PUBSUB_UDPMC_SOCKET_PORT_KEY, pubsub_udpmcTopicSender_socketPort(sender));
             //if available also set container name
@@ -310,6 +307,8 @@ celix_status_t pubsub_udpmcAdmin_setupTopicSender(void *handle, const char *scop
             if (cn != NULL) {
                 celix_properties_set(newEndpoint, "container_name", cn);
             }
+            const char *configuredPort = celix_properties_get(topicProps, PUBSUB_UDPMC_STATIC_BIND_PORT, NULL);
+            celix_properties_setBool(newEndpoint, PUBSUB_UDPMC_STATIC_CONFIGURED, configuredPort != NULL);
             hashMap_put(psa->topicSenders.map, key, sender);
         } else {
             free(key);
@@ -358,7 +357,7 @@ celix_status_t pubsub_udpmcAdmin_teardownTopicSender(void *handle, const char *s
     return status;
 }
 
-celix_status_t pubsub_udpmcAdmin_setupTopicReceiver(void *handle, const char *scope, const char *topic, long serializerSvcId, celix_properties_t **outSubscriberEndpoint) {
+celix_status_t pubsub_udpmcAdmin_setupTopicReceiver(void *handle, const char *scope, const char *topic, const celix_properties_t *topicProps, long serializerSvcId, celix_properties_t **outSubscriberEndpoint) {
     pubsub_udpmc_admin_t *psa = handle;
 
     celix_properties_t *newEndpoint = NULL;
@@ -370,7 +369,7 @@ celix_status_t pubsub_udpmcAdmin_setupTopicReceiver(void *handle, const char *sc
     if (receiver == NULL) {
         psa_udpmc_serializer_entry_t *serEntry = hashMap_get(psa->serializers.map, (void*)serializerSvcId);
         if (serEntry != NULL) {
-            receiver = pubsub_udpmcTopicReceiver_create(psa->ctx, scope, topic, psa->ifIpAddress, serializerSvcId, serEntry->svc);
+            receiver = pubsub_udpmcTopicReceiver_create(psa->ctx, psa->log, scope, topic, psa->ifIpAddress, topicProps, serializerSvcId, serEntry->svc);
         }
         if (receiver != NULL) {
             const char *psaType = PSA_UDPMC_PUBSUB_ADMIN_TYPE;
@@ -446,14 +445,19 @@ static celix_status_t pubsub_udpmcAdmin_connectEndpointToReceiver(pubsub_udpmc_a
     const char *sockAddress = celix_properties_get(endpoint, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY, NULL);
     long sockPort = celix_properties_getAsLong(endpoint, PUBSUB_PSA_UDPMC_SOCKET_PORT_KEY, -1L);
 
-    if (type == NULL || sockAddress == NULL || sockPort < 0) {
-        fprintf(stderr, "[PSA UPDMC] Error got endpoint without udpmc socket address/port or endpoint type");
+    bool publisher = type != NULL && strncmp(PUBSUB_PUBLISHER_ENDPOINT_TYPE, type, strlen(PUBSUB_PUBLISHER_ENDPOINT_TYPE)) == 0;
+
+    if (publisher && (sockAddress == NULL || sockPort < 0)) {
+        L_WARN("[PSA UPDMC] Error got endpoint without udpmc socket address/port or endpoint type. Properties:");
+        const char *key = NULL;
+        CELIX_PROPERTIES_FOR_EACH(endpoint, key) {
+            L_WARN("[PSA UPDMC] |- %s=%s\n", key, celix_properties_get(endpoint, key, NULL));
+        }
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
-        if (eScope != NULL && eTopic != NULL && type != NULL &&
+        if (eScope != NULL && eTopic != NULL && publisher &&
             strncmp(eScope, scope, 1024 * 1024) == 0 &&
-            strncmp(eTopic, topic, 1024 * 1024) == 0 &&
-            strncmp(type, PUBSUB_PUBLISHER_ENDPOINT_TYPE, strlen(PUBSUB_PUBLISHER_ENDPOINT_TYPE)) == 0) {
+            strncmp(eTopic, topic, 1024 * 1024) == 0) {
             pubsub_udpmcTopicReceiver_connectTo(receiver, sockAddress, sockPort);
         }
     }
@@ -492,10 +496,10 @@ static celix_status_t pubsub_udpmcAdmin_disconnectEndpointFromReceiver(pubsub_ud
     const char *type = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TYPE, NULL);
     const char *eScope = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_SCOPE, NULL);
     const char *eTopic = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_NAME, NULL);
-    const char *sockAddress = celix_properties_get(endpoint, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY, NULL);
+    const char *sockAdress = celix_properties_get(endpoint, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY, NULL);
     long sockPort = celix_properties_getAsLong(endpoint, PUBSUB_PSA_UDPMC_SOCKET_PORT_KEY, -1L);
 
-    if (type == NULL || sockAddress == NULL || sockPort < 0) {
+    if (type == NULL || sockAdress == NULL || sockPort < 0) {
         fprintf(stderr, "[PSA UPDMC] Error got endpoint without udpmc socket address/port or endpoint type");
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
@@ -503,7 +507,7 @@ static celix_status_t pubsub_udpmcAdmin_disconnectEndpointFromReceiver(pubsub_ud
             strncmp(eScope, scope, 1024 * 1024) == 0 &&
             strncmp(eTopic, topic, 1024 * 1024) == 0 &&
             strncmp(type, PUBSUB_PUBLISHER_ENDPOINT_TYPE, strlen(PUBSUB_PUBLISHER_ENDPOINT_TYPE)) == 0) {
-            pubsub_udpmcTopicReceiver_disconnectFrom(receiver, sockAddress, sockPort);
+            pubsub_udpmcTopicReceiver_disconnectFrom(receiver, sockAdress, sockPort);
         }
     }
 
@@ -550,9 +554,11 @@ celix_status_t pubsub_udpmcAdmin_executeCommand(void *handle, char *commandLine 
         const char *scope = pubsub_udpmcTopicSender_scope(sender);
         const char *topic = pubsub_udpmcTopicSender_topic(sender);
         const char *sockAddr = pubsub_udpmcTopicSender_socketAddress(sender);
+        long sockPort = pubsub_udpmcTopicSender_socketPort(sender);
+        const char *postAddr = pubsub_udpmcTopicSender_isStatic(sender) ? " (static port)" : "";
         fprintf(out, "|- Topic Sender %s/%s\n", scope, topic);
         fprintf(out, "   |- serializer type = %s\n", serType);
-        fprintf(out, "   |- socket address  = %s\n", sockAddr);
+        fprintf(out, "   |- socket address  = %s:%li%s\n", sockAddr, sockPort, postAddr);
     }
     celixThreadMutex_unlock(&psa->topicSenders.mutex);
     celixThreadMutex_unlock(&psa->serializers.mutex);
@@ -569,14 +575,23 @@ celix_status_t pubsub_udpmcAdmin_executeCommand(void *handle, char *commandLine 
         const char *serType = serEntry == NULL ? "!Error!" : serEntry->serType;
         const char *scope = pubsub_udpmcTopicReceiver_scope(receiver);
         const char *topic = pubsub_udpmcTopicReceiver_topic(receiver);
+        celix_array_list_t *connections = celix_arrayList_create();
+        pubsub_udpmcTopicReceiver_listConnections(receiver, connections);
+
         fprintf(out, "|- Topic Receiver %s/%s\n", scope, topic);
         fprintf(out, "   |- serializer type = %s\n", serType);
+        fprintf(out, "   |- connections (%i):\n", celix_arrayList_size(connections));
+        for (int i = 0 ; i < celix_arrayList_size(connections); ++i) {
+            char *conn = celix_arrayList_get(connections, i);
+            fprintf(out, "      |- address      = %s\n", conn);
+            free(conn);
+        }
+        celix_arrayList_destroy(connections);
     }
     celixThreadMutex_unlock(&psa->topicReceivers.mutex);
     celixThreadMutex_unlock(&psa->serializers.mutex);
     fprintf(out, "\n");
 
-    //TODO topic receivers/senders connection count
 
     return status;
 }

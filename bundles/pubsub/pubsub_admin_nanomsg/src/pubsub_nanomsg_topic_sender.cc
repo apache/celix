@@ -164,7 +164,6 @@ void* pubsub::nanomsg::pubsub_nanomsg_topic_sender::getPublisherService(const ce
             entry.first->second.service.send = [](void *handle, unsigned int msgTypeId, const void *msg) {
                 return static_cast<pubsub::nanomsg::bounded_service_entry*>(handle)->topicPublicationSend(msgTypeId, msg);
             };
-            entry.first->second.service.sendMultipart = nullptr; //not supported TODO remove
             service = &entry.first->second.service;
         } else {
             boundedServices.map.erase(bndId);

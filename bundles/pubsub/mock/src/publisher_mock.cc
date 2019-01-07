@@ -45,24 +45,10 @@ static int pubsub__publisherMock_send(void *handle, unsigned int msgTypeId, cons
 }
 
 /*============================================================================
-  MOCK - mock function for pubsub_publisher->sendMultipart
-  ============================================================================*/
-static int pubsub__publisherMock_sendMultipart(void *handle, unsigned int msgTypeId, const void *msg, int flags) {
-    return mock(PUBSUB_PUBLISHERMOCK_SCOPE)
-        .actualCall(PUBSUB_PUBLISHERMOCK_SEND_MULTIPART_METHOD)
-        .withPointerParameter("handle", handle)
-        .withParameter("msgTypeId", msgTypeId)
-        .withPointerParameter("msg", (void*)msg)
-        .withParameter("flags", flags)
-        .returnIntValue();
-}
-
-/*============================================================================
   MOCK - mock setup for publisher service
   ============================================================================*/
 void pubsub_publisherMock_init(pubsub_publisher_t* srv, void* handle) {
     srv->handle = handle;
     srv->localMsgTypeIdForMsgType = pubsub__publisherMock_localMsgTypeIdForMsgType;
     srv->send = pubsub__publisherMock_send;
-    srv->sendMultipart = pubsub__publisherMock_sendMultipart;
 }

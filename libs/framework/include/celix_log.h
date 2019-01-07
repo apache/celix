@@ -57,7 +57,9 @@ struct framework_logger {
 };
 
 #define fw_log(logger, level, fmsg, args...) framework_log(logger, level, __func__, __FILE__, __LINE__, fmsg, ## args)
+
 #define fw_logCode(logger, level, code, fmsg, args...) framework_logCode(logger, level, __func__, __FILE__, __LINE__, code, fmsg, ## args)
+
 #define framework_logIfError(logger, status, error, fmsg, args...) \
     if (status != CELIX_SUCCESS) { \
         if (error != NULL) { \

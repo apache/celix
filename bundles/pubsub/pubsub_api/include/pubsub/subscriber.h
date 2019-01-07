@@ -30,7 +30,7 @@
 #include <stdbool.h>
 
 #define PUBSUB_SUBSCRIBER_SERVICE_NAME          "pubsub.subscriber"
-#define PUBSUB_SUBSCRIBER_SERVICE_VERSION       "2.0.0"
+#define PUBSUB_SUBSCRIBER_SERVICE_VERSION       "3.0.0"
  
 //properties
 #define PUBSUB_SUBSCRIBER_TOPIC                "topic"
@@ -38,17 +38,15 @@
 #define PUBSUB_SUBSCRIBER_CONFIG               "pubsub.config"
 
 #define PUBSUB_SUBSCRIBER_SCOPE_DEFAULT        "default"
- 
-struct pubsub_multipart_callbacks_struct {
-    void *handle;
-    int (*localMsgTypeIdForMsgType)(void *handle, const char *msgType, unsigned int *msgId);
-    int (*getMultipart)(void *handle, unsigned int msgTypeId, bool retain, void **part);
-};
-typedef struct pubsub_multipart_callbacks_struct pubsub_multipart_callbacks_t;
-typedef struct pubsub_multipart_callbacks_struct* pubsub_multipart_callbacks_pt;
- 
+
 struct pubsub_subscriber_struct {
     void *handle;
+
+    /**
+     * Called to initialize the subscriber with the receiver thread.
+     * Can be used to tweak the receiver thread attributes
+     */
+    int (*init)(void *handle);
      
     /**
      * When a new message for a topic is available the receive will be called.
@@ -64,7 +62,7 @@ struct pubsub_subscriber_struct {
      *
      * this method can be  NULL.
      */
-    int (*receive)(void *handle, const char *msgType, unsigned int msgTypeId, void *msg, pubsub_multipart_callbacks_t *callbacks, bool *release);
+    int (*receive)(void *handle, const char *msgType, unsigned int msgTypeId, void *msg, bool *release);
 
 };
 typedef struct pubsub_subscriber_struct pubsub_subscriber_t;

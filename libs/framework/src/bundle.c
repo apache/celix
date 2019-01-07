@@ -32,7 +32,7 @@ celix_status_t bundle_create(bundle_pt * bundle) {
     celix_status_t status;
     bundle_archive_pt archive = NULL;
 
-	*bundle = (bundle_pt) malloc(sizeof(**bundle));
+	*bundle = (bundle_pt) calloc(1, sizeof(**bundle));
 	if (*bundle == NULL) {
 		return CELIX_ENOMEM;
 	}
@@ -64,7 +64,7 @@ celix_status_t bundle_createFromArchive(bundle_pt * bundle, framework_pt framewo
 	
 	celix_status_t status;
 
-	*bundle = (bundle_pt) malloc(sizeof(**bundle));
+	*bundle = (bundle_pt) calloc(1, (sizeof(**bundle)));
 	if (*bundle == NULL) {
 		return CELIX_ENOMEM;
 	}
@@ -99,6 +99,7 @@ celix_status_t bundle_destroy(bundle_pt bundle) {
 	arrayListIterator_destroy(iter);
 	arrayList_destroy(bundle->modules);
 
+	free(bundle->symbolicName);
 	free(bundle);
 
 	return CELIX_SUCCESS;
@@ -395,6 +396,14 @@ celix_status_t bundle_revise(bundle_pt bundle, const char * location, const char
 celix_status_t bundle_addModule(bundle_pt bundle, module_pt module) {
 	arrayList_add(bundle->modules, module);
 	resolver_addModule(module);
+	if (bundle->symbolicName == NULL) {
+		const char *sn = NULL;
+		module_getSymbolicName(module, &sn);
+		if (sn != NULL) {
+            bundle->symbolicName = strndup(sn, 1024 * 1024);
+        }
+	}
+
 	return CELIX_SUCCESS;
 }
 

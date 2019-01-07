@@ -501,8 +501,7 @@ void celix_bundleContext_unregisterService(bundle_context_t *ctx, long serviceId
         if (found != NULL) {
             serviceRegistration_unregister(found);
         } else {
-            framework_logIfError(logger, CELIX_ILLEGAL_ARGUMENT, NULL,
-                                 "Provided service id is not used to registered using bundleContext_registerCService/registerServiceForLang");
+            framework_logIfError(logger, CELIX_ILLEGAL_ARGUMENT, NULL, "Provided service id (%li) is not used to registered using celix_bundleContext_registerCService/celix_registerServiceForLang". serviceId);
         }
     }
 }

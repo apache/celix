@@ -17,13 +17,12 @@
  *under the License.
  */
 
-#ifndef SYNC_H
-#define SYNC_H
 
-#define SYNC_NAME "sync"
+#ifndef __PUBSUB_API_H_
+#define __PUBSUB_API_H_
 
-typedef struct sync {
-    float nop; //need at least one entry
-} sync_t;
+#include "pubsub/publisher.h"
+#include "pubsub/subscriber.h"
 
-#endif //SYNC_H
+
+#endif //  __PUBSUB_API_H_

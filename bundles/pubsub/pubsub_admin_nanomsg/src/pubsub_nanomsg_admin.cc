@@ -120,40 +120,40 @@ pubsub_nanomsg_admin::~pubsub_nanomsg_admin() {
 
 void pubsub_nanomsg_admin::start() {
     adminService.handle = this;
-    adminService.matchPublisher = [](void *handle, long svcRequesterBndId, const celix_filter_t *svcFilter, double *score, long *serializerSvcId) {
+    adminService.matchPublisher = [](void *handle, long svcRequesterBndId, const celix_filter_t *svcFilter, celix_properties_t **outTopicProperties, double *score, long *serializerSvcId) {
         auto me = static_cast<pubsub_nanomsg_admin*>(handle);
-        return me->matchPublisher(svcRequesterBndId, svcFilter,score, serializerSvcId);
+        return me->matchPublisher(svcRequesterBndId, svcFilter, outTopicProperties, score, serializerSvcId);
     };
-    adminService.matchSubscriber = [](void *handle, long svcProviderBndId, const celix_properties_t *svcProperties, double *score, long *serializerSvcId) {
+    adminService.matchSubscriber = [](void *handle, long svcProviderBndId, const celix_properties_t *svcProperties, celix_properties_t **outTopicProperties, double *score, long *serializerSvcId) {
         auto me = static_cast<pubsub_nanomsg_admin*>(handle);
-        return me->matchSubscriber(svcProviderBndId, svcProperties, score, serializerSvcId);
+        return me->matchSubscriber(svcProviderBndId, svcProperties, outTopicProperties, score, serializerSvcId);
     };
-    adminService.matchEndpoint = [](void *handle, const celix_properties_t *endpoint, bool *match) {
+    adminService.matchDiscoveredEndpoint = [](void *handle, const celix_properties_t *endpoint, bool *match) {
         auto me = static_cast<pubsub_nanomsg_admin*>(handle);
         return me->matchEndpoint(endpoint, match);
     };
-    adminService.setupTopicSender = [](void *handle, const char *scope, const char *topic, long serializerSvcId, celix_properties_t **publisherEndpoint) {
+    adminService.setupTopicSender = [](void *handle, const char *scope, const char *topic, const celix_properties_t *topicProperties, long serializerSvcId, celix_properties_t **publisherEndpoint) {
         auto me = static_cast<pubsub_nanomsg_admin*>(handle);
-        return me->setupTopicSender(scope, topic, serializerSvcId, publisherEndpoint);
+        return me->setupTopicSender(scope, topic, topicProperties, serializerSvcId, publisherEndpoint);
     };
     adminService.teardownTopicSender = [](void *handle, const char *scope, const char *topic) {
         auto me = static_cast<pubsub_nanomsg_admin*>(handle);
         return me->teardownTopicSender(scope, topic);
     };
-    adminService.setupTopicReceiver = [](void *handle, const char *scope, const char *topic, long serializerSvcId, celix_properties_t **subscriberEndpoint) {
+    adminService.setupTopicReceiver = [](void *handle, const char *scope, const char *topic, const celix_properties_t *topicProperties, long serializerSvcId, celix_properties_t **subscriberEndpoint) {
         auto me = static_cast<pubsub_nanomsg_admin*>(handle);
-        return me->setupTopicReceiver(std::string(scope), std::string(topic),serializerSvcId, subscriberEndpoint);
+        return me->setupTopicReceiver(std::string(scope), std::string(topic), topicProperties, serializerSvcId, subscriberEndpoint);
     };
 
     adminService.teardownTopicReceiver = [] (void *handle, const char *scope, const char *topic) {
         auto me = static_cast<pubsub_nanomsg_admin*>(handle);
         return me->teardownTopicReceiver(scope, topic);
     };
-    adminService.addEndpoint = [](void *handle, const celix_properties_t *endpoint) {
+    adminService.addDiscoveredEndpoint = [](void *handle, const celix_properties_t *endpoint) {
         auto me = static_cast<pubsub_nanomsg_admin*>(handle);
         return me->addEndpoint(endpoint);
     };
-    adminService.removeEndpoint = [](void *handle, const celix_properties_t *endpoint) {
+    adminService.removeDiscoveredEndpoint = [](void *handle, const celix_properties_t *endpoint) {
         auto me = static_cast<pubsub_nanomsg_admin*>(handle);
         return me->removeEndpoint(endpoint);
     };
@@ -263,24 +263,27 @@ void pubsub_nanomsg_admin::removeSerializerSvc(void */*svc*/, const celix_proper
     }
 }
 
-celix_status_t pubsub_nanomsg_admin::matchPublisher(long svcRequesterBndId, const celix_filter_t *svcFilter,
+celix_status_t pubsub_nanomsg_admin::matchPublisher(long svcRequesterBndId, const celix_filter_t *svcFilter, celix_properties_t **outTopicProperties,
                                                   double *outScore, long *outSerializerSvcId) {
     L.DBG("[PSA_NANOMSG] pubsub_nanoMsgAdmin_matchPublisher");
     celix_status_t  status = CELIX_SUCCESS;
     double score = pubsub_utils_matchPublisher(ctx, svcRequesterBndId, svcFilter->filterStr, PUBSUB_NANOMSG_ADMIN_TYPE,
-            qosSampleScore, qosControlScore, defaultScore, outSerializerSvcId);
+            qosSampleScore, qosControlScore, defaultScore, outTopicProperties, outSerializerSvcId);
     *outScore = score;
 
     return status;
 }
 
-celix_status_t pubsub_nanomsg_admin::matchSubscriber(long svcProviderBndId,
-                                                   const celix_properties_t *svcProperties, double *outScore,
-                                                   long *outSerializerSvcId) {
+celix_status_t pubsub_nanomsg_admin::matchSubscriber(
+        long svcProviderBndId,
+        const celix_properties_t *svcProperties,
+        celix_properties_t **outTopicProperties,
+        double *outScore,
+        long *outSerializerSvcId) {
     L.DBG("[PSA_NANOMSG] pubsub_nanoMsgAdmin_matchSubscriber");
     celix_status_t  status = CELIX_SUCCESS;
     double score = pubsub_utils_matchSubscriber(ctx, svcProviderBndId, svcProperties, PUBSUB_NANOMSG_ADMIN_TYPE,
-            qosSampleScore, qosControlScore, defaultScore, outSerializerSvcId);
+            qosSampleScore, qosControlScore, defaultScore, outTopicProperties, outSerializerSvcId);
     if (outScore != nullptr) {
         *outScore = score;
     }
@@ -298,6 +301,7 @@ celix_status_t pubsub_nanomsg_admin::matchEndpoint(const celix_properties_t *end
 }
 
 celix_status_t pubsub_nanomsg_admin::setupTopicSender(const char *scope, const char *topic,
+                                                    const celix_properties_t */*topicProperties*/,
                                                     long serializerSvcId, celix_properties_t **outPublisherEndpoint) {
     celix_status_t status = CELIX_SUCCESS;
 
@@ -358,6 +362,7 @@ celix_status_t pubsub_nanomsg_admin::teardownTopicSender(const char *scope, cons
 }
 
 celix_status_t pubsub_nanomsg_admin::setupTopicReceiver(const std::string &scope, const std::string &topic,
+                                                      const celix_properties_t */*topicProperties*/,
                                                       long serializerSvcId, celix_properties_t **outSubscriberEndpoint) {
 
     celix_properties_t *newEndpoint = nullptr;

@@ -41,7 +41,7 @@ if (PUBSUB)
 	if (ENABLE_TESTING)
 		option(BUILD_PUBSUB_TESTS "Enable Tests for PUBSUB" OFF)
 	endif()
-	if (ENABLE_TESTING AND BUILD_PUBSUB_TESTS AND BUILD_PUBSUB_PSA_ZMQ)
+	if (ENABLE_TESTING AND BUILD_PUBSUB_TESTS)
 		add_subdirectory(test)
 	endif()
 

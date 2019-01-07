@@ -16,7 +16,6 @@
 # under the License.
 
 add_subdirectory(pubsub)
-add_subdirectory(mp_pubsub)
 
 find_program(ETCD_CMD NAMES etcd)
 find_program(XTERM_CMD NAMES xterm)
@@ -198,33 +197,6 @@ if (BUILD_PUBSUB_PSA_ZMQ)
     )
     target_link_libraries(pubsub_subscriber2_zmq PRIVATE ${PUBSUB_CONTAINER_LIBS})
 
-    # ZMQ Multipart
-    add_celix_container("pubsub_mp_subscriber_zmq"
-            GROUP "pubsub"
-            BUNDLES
-            Celix::shell
-            Celix::shell_tui
-            Celix::pubsub_serializer_json
-            Celix::pubsub_discovery_etcd
-            Celix::pubsub_topology_manager
-            Celix::pubsub_admin_zmq
-            org.apache.celix.pubsub_subscriber.MpSubscriber
-            )
-    target_link_libraries(pubsub_mp_subscriber_zmq PRIVATE ${PUBSUB_CONTAINER_LIBS})
-
-    add_celix_container("pubsub_mp_publisher_zmq"
-            GROUP "pubsub"
-            BUNDLES
-            Celix::shell
-            Celix::shell_tui
-            Celix::pubsub_serializer_json
-            Celix::pubsub_discovery_etcd
-            Celix::pubsub_topology_manager
-            Celix::pubsub_admin_zmq
-            org.apache.celix.pubsub_publisher.MpPublisher
-            )
-    target_link_libraries(pubsub_mp_publisher_zmq PRIVATE ${PUBSUB_CONTAINER_LIBS})
-
     if (ETCD_CMD AND XTERM_CMD)
         #Runtime starting two bundles using both zmq and upd mc pubsub
         add_celix_runtime(pubsub_rt_zmq_udpmc_combi
@@ -247,18 +219,6 @@ if (BUILD_PUBSUB_PSA_ZMQ)
                 pubsub_publisher
                 pubsub_subscriber_zmq
                 pubsub_subscriber2_zmq
-            COMMANDS
-                etcd
-            USE_TERM
-        )
-
-        #Runtime starting a multipart (multiple message in one send) publish and subscriber for zmq
-        add_celix_runtime(pubsub_rt_multipart_zmq
-            NAME zmq_multipart
-            GROUP pubsub
-            CONTAINERS
-                pubsub_mp_subscriber_zmq
-                pubsub_mp_publisher_zmq
             COMMANDS
                 etcd
             USE_TERM
@@ -338,7 +298,7 @@ if (BUILD_PUBSUB_PSA_NANOMSG)
     if (ETCD_CMD AND XTERM_CMD)
         #Runtime starting a publish and 2 subscribers for zmq
         add_celix_runtime(pubsub_rt_nanomsg
-                NAME zmq
+                NAME nanomsg
                 GROUP pubsub
                 CONTAINERS
                 pubsub_publisher1_nanomsg

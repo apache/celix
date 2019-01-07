@@ -422,7 +422,7 @@ celix_status_t pubsub_discovery_announceEndpoint(void *handle, const celix_prope
 
     return status;
 }
-celix_status_t pubsub_discovery_removeEndpoint(void *handle, const celix_properties_t *endpoint) {
+celix_status_t pubsub_discovery_revokeEndpoint(void *handle, const celix_properties_t *endpoint) {
     pubsub_discovery_t *disc = handle;
     celix_status_t status = CELIX_SUCCESS;
 
@@ -452,10 +452,16 @@ celix_status_t pubsub_discovery_removeEndpoint(void *handle, const celix_propert
 
 static void pubsub_discovery_addDiscoveredEndpoint(pubsub_discovery_t *disc, celix_properties_t *endpoint) {
     const char *uuid = celix_properties_get(endpoint, PUBSUB_ENDPOINT_UUID, NULL);
+    assert(uuid != NULL);
 
     celixThreadMutex_lock(&disc->discoveredEndpointsMutex);
     bool exists = hashMap_containsKey(disc->discoveredEndpoints, (void*)uuid);
-    hashMap_put(disc->discoveredEndpoints, (void*)uuid, endpoint);
+    if (exists) {
+        //if exists -> keep old and free properties
+        celix_properties_destroy(endpoint);
+    } else {
+        hashMap_put(disc->discoveredEndpoints, (void*)uuid, endpoint);
+    }
     celixThreadMutex_unlock(&disc->discoveredEndpointsMutex);
 
     if (!exists) {
@@ -512,7 +518,7 @@ static void pubsub_discovery_removeDiscoveredEndpoint(pubsub_discovery_t *disc, 
 }
 
 celix_properties_t* pubsub_discovery_parseEndpoint(pubsub_discovery_t *disc, const char* etcdValue) {
-    properties_t *props = properties_create();
+    properties_t *props = celix_properties_create();
 
     // etcdValue contains the json formatted string
     json_error_t error;
@@ -528,7 +534,7 @@ celix_properties_t* pubsub_discovery_parseEndpoint(pubsub_discovery_t *disc, con
         while (iter) {
             key = json_object_iter_key(iter);
             value = json_object_iter_value(iter);
-            properties_set(props, key, json_string_value(value));
+            celix_properties_set(props, key, json_string_value(value));
             iter = json_object_iter_next(jsonRoot, iter);
         }
     }

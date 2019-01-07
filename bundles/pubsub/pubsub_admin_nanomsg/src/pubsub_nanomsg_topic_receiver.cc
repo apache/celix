@@ -259,7 +259,7 @@ void pubsub::nanomsg::topic_receiver::processMsgForSubscriberEntry(psa_nanomsg_s
             celix_status_t status = msgSer->deserialize(msgSer, payload, payloadSize, &deserializedMsg);
             if(status == CELIX_SUCCESS) {
                 bool release = false;
-                svc->receive(svc->handle, msgSer->msgName, msgSer->msgId, deserializedMsg, NULL, &release);
+                svc->receive(svc->handle, msgSer->msgName, msgSer->msgId, deserializedMsg, &release);
                 if (release) {
                     msgSer->freeMsg(msgSer->handle, deserializedMsg);
                 }

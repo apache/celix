@@ -38,23 +38,40 @@ extern "C" {
  * present a allocated scope string.
  * The caller is owner of the topic and scope output string.
  */
-celix_status_t pubsub_getPubSubInfoFromFilter(const char *filterstr, char **topic, char **scope);
+celix_status_t pubsub_getPubSubInfoFromFilter(const char* filterstr, char **topic, char **scope);
 
-char *pubsub_getKeysBundleDir(bundle_context_pt ctx);
+char* pubsub_getKeysBundleDir(bundle_context_pt ctx);
 
-double
-pubsub_utils_matchPublisher(celix_bundle_context_t *ctx, long bundleId, const char *filter, const char *adminType,
-                            double sampleScore, double controlScore, double defaultScore, long *outSerializerSvcId);
+double pubsub_utils_matchPublisher(
+        celix_bundle_context_t *ctx,
+        long bundleId,
+        const char *filter,
+        const char *adminType,
+        double sampleScore,
+        double controlScore,
+        double defaultScore,
+        celix_properties_t **outTopicProperties,
+        long *outSerializerSvcId);
 
-double pubsub_utils_matchSubscriber(celix_bundle_context_t *ctx, long svcProviderBundleId,
-                                    const celix_properties_t *svcProperties, const char *adminType, double sampleScore,
-                                    double controlScore, double defaultScore, long *outSerializerSvcId);
+double pubsub_utils_matchSubscriber(
+        celix_bundle_context_t *ctx,
+        long svcProviderBundleId,
+        const celix_properties_t *svcProperties,
+        const char *adminType,
+        double sampleScore,
+        double controlScore,
+        double defaultScore,
+        celix_properties_t **outTopicProperties,
+        long *outSerializerSvcId);
 
-bool pubsub_utils_matchEndpoint(celix_bundle_context_t *ctx, const celix_properties_t *endpoint, const char *adminType,
-                                long *outSerializerSvcId);
+bool pubsub_utils_matchEndpoint(
+        celix_bundle_context_t *ctx,
+        const celix_properties_t *endpoint,
+        const char *adminType,
+        long *outSerializerSvcId);
 
 
-celix_properties_t *pubsub_utils_getTopicProperties(const celix_bundle_t *bundle, const char *topic, bool isPublisher);
+celix_properties_t* pubsub_utils_getTopicProperties(const celix_bundle_t *bundle, const char *topic, bool isPublisher);
 
 #ifdef __cplusplus
 }

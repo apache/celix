@@ -71,13 +71,13 @@ int psa_udpmc_start(psa_udpmc_activator_t *act, celix_bundle_context_t *ctx) {
 		psaSvc->handle = act->admin;
 		psaSvc->matchPublisher = pubsub_udpmcAdmin_matchPublisher;
 		psaSvc->matchSubscriber = pubsub_udpmcAdmin_matchSubscriber;
-		psaSvc->matchEndpoint = pubsub_udpmcAdmin_matchEndpoint;
+		psaSvc->matchDiscoveredEndpoint = pubsub_udpmcAdmin_matchEndpoint;
 		psaSvc->setupTopicSender = pubsub_udpmcAdmin_setupTopicSender;
 		psaSvc->teardownTopicSender = pubsub_udpmcAdmin_teardownTopicSender;
 		psaSvc->setupTopicReceiver = pubsub_udpmcAdmin_setupTopicReceiver;
 		psaSvc->teardownTopicReceiver = pubsub_udpmcAdmin_teardownTopicReceiver;
-		psaSvc->addEndpoint = pubsub_udpmcAdmin_addEndpoint;
-		psaSvc->removeEndpoint = pubsub_udpmcAdmin_removeEndpoint;
+		psaSvc->addDiscoveredEndpoint = pubsub_udpmcAdmin_addEndpoint;
+		psaSvc->removeDiscoveredEndpoint = pubsub_udpmcAdmin_removeEndpoint;
 
 		celix_properties_t *props = celix_properties_create();
 		celix_properties_set(props, PUBSUB_ADMIN_SERVICE_TYPE, PUBSUB_UDPMC_ADMIN_TYPE);

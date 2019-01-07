@@ -103,7 +103,7 @@ celix_status_t celix_bundleActivator_destroy(void *userData, celix_bundle_contex
  * This macro generated the required bundle activator functions. These can be used to more type safe bundle activator
  * entries.
  *
- * The macro will create the following bundle activator functions:
+ * The macro will create the following bundlea activator functions:
  * - bundleActivator_create which allocates a pointer to the provided type.
  * - bundleActivator_start/stop which will call the respectively provided typed start/stop functions.
  * - bundleActivator_destroy will free the allocated for the provided type.

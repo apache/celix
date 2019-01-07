@@ -21,13 +21,16 @@
 
 #include "celix_bundle_context.h"
 #include "pubsub_serializer.h"
+#include "log_helper.h"
 
 typedef struct pubsub_udpmc_topic_receiver pubsub_udpmc_topic_receiver_t;
 
-pubsub_udpmc_topic_receiver_t* pubsub_udpmcTopicReceiver_create(celix_bundle_context_t *ctx, 
+pubsub_udpmc_topic_receiver_t* pubsub_udpmcTopicReceiver_create(celix_bundle_context_t *ctx,
+        log_helper_t *logHelper,
         const char *scope, 
         const char *topic, 
-        const char *ifIP, 
+        const char *ifIP,
+        const celix_properties_t *topicProperties,
         long serializerSvcId,
         pubsub_serializer_service_t *serializer);
 void pubsub_udpmcTopicReceiver_destroy(pubsub_udpmc_topic_receiver_t *receiver);
@@ -35,6 +38,7 @@ void pubsub_udpmcTopicReceiver_destroy(pubsub_udpmc_topic_receiver_t *receiver);
 const char* pubsub_udpmcTopicReceiver_scope(pubsub_udpmc_topic_receiver_t *receiver);
 const char* pubsub_udpmcTopicReceiver_topic(pubsub_udpmc_topic_receiver_t *receiver);
 const char* pubsub_udpmcTopicReceiver_socketAddress(pubsub_udpmc_topic_receiver_t *receiver);
+void pubsub_udpmcTopicReceiver_listConnections(pubsub_udpmc_topic_receiver_t *receiver, celix_array_list_t *connections);
 
 long pubsub_udpmcTopicReceiver_serializerSvcId(pubsub_udpmc_topic_receiver_t *receiver);
 

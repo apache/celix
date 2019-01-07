@@ -16,13 +16,6 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * pubsub_serializer_impl.c
- *
- *  \date       Mar 24, 2017
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -44,11 +37,31 @@
 #define SYSTEM_BUNDLE_ARCHIVE_PATH 		"CELIX_FRAMEWORK_EXTENDER_PATH"
 #define MAX_PATH_LEN    1024
 
+struct pubsub_json_serializer {
+	bundle_context_pt bundle_context;
+	log_helper_pt loghelper;
+};
+
+
+/* Start of serializer specific functions */
+static celix_status_t pubsubMsgSerializer_serialize(void* handle, const void* msg, void** out, size_t *outLen);
+static celix_status_t pubsubMsgSerializer_deserialize(void* handle, const void* input, size_t inputLen, void **out);
+static void pubsubMsgSerializer_freeMsg(void* handle, void *msg);
+
+
+typedef struct pubsub_json_msg_serializer_impl {
+	dyn_message_type *msgType;
+
+	unsigned int msgId;
+	const char* msgName;
+	version_pt msgVersion;
+} pubsub_json_msg_serializer_impl_t;
+
 static char* pubsubSerializer_getMsgDescriptionDir(bundle_pt bundle);
 static void pubsubSerializer_addMsgSerializerFromBundle(const char *root, bundle_pt bundle, hash_map_pt msgTypesMap);
 static void pubsubSerializer_fillMsgSerializerMap(hash_map_pt msgTypesMap,bundle_pt bundle);
 
-celix_status_t pubsubSerializer_create(bundle_context_pt context, pubsub_serializer_t** serializer) {
+celix_status_t pubsubSerializer_create(bundle_context_pt context, pubsub_json_serializer_t** serializer) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	*serializer = calloc(1, sizeof(**serializer));
@@ -69,7 +82,7 @@ celix_status_t pubsubSerializer_create(bundle_context_pt context, pubsub_seriali
 	return status;
 }
 
-celix_status_t pubsubSerializer_destroy(pubsub_serializer_t* serializer) {
+celix_status_t pubsubSerializer_destroy(pubsub_json_serializer_t* serializer) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	logHelper_stop(serializer->loghelper);
@@ -80,8 +93,9 @@ celix_status_t pubsubSerializer_destroy(pubsub_serializer_t* serializer) {
 	return status;
 }
 
-celix_status_t pubsubSerializer_createSerializerMap(pubsub_serializer_t* serializer, bundle_pt bundle, hash_map_pt* serializerMap) {
+celix_status_t pubsubSerializer_createSerializerMap(void *handle, bundle_pt bundle, hash_map_pt* serializerMap) {
 	celix_status_t status = CELIX_SUCCESS;
+	pubsub_json_serializer_t *serializer = handle;
 
 	hash_map_pt map = hashMap_create(NULL, NULL, NULL, NULL);
 
@@ -98,8 +112,9 @@ celix_status_t pubsubSerializer_createSerializerMap(pubsub_serializer_t* seriali
 	return status;
 }
 
-celix_status_t pubsubSerializer_destroySerializerMap(pubsub_serializer_t* serializer, hash_map_pt serializerMap) {
+celix_status_t pubsubSerializer_destroySerializerMap(void* handle __attribute__((unused)), hash_map_pt serializerMap) {
 	celix_status_t status = CELIX_SUCCESS;
+	//pubsub_json_serializer_t *serializer = handle;
 	if (serializerMap == NULL) {
 		return CELIX_ILLEGAL_ARGUMENT;
 	}
@@ -107,9 +122,11 @@ celix_status_t pubsubSerializer_destroySerializerMap(pubsub_serializer_t* serial
 	hash_map_iterator_t iter = hashMapIterator_construct(serializerMap);
 	while (hashMapIterator_hasNext(&iter)) {
 		pubsub_msg_serializer_t* msgSerializer = hashMapIterator_nextValue(&iter);
-		dyn_message_type *dynMsg = (dyn_message_type*)msgSerializer->handle;
+		pubsub_json_msg_serializer_impl_t *impl = msgSerializer->handle;
+		dyn_message_type *dynMsg = impl->msgType;
 		dynMessage_destroy(dynMsg); //note msgSer->name and msgSer->version owned by dynType
 		free(msgSerializer); //also contains the service struct.
+		free(impl);
 	}
 
 	hashMap_destroy(serializerMap, false, false);
@@ -118,12 +135,14 @@ celix_status_t pubsubSerializer_destroySerializerMap(pubsub_serializer_t* serial
 }
 
 
-celix_status_t pubsubMsgSerializer_serialize(pubsub_msg_serializer_t* msgSerializer, const void* msg, void** out, size_t *outLen) {
+celix_status_t pubsubMsgSerializer_serialize(void *handle, const void* msg, void** out, size_t *outLen) {
 	celix_status_t status = CELIX_SUCCESS;
+
+	pubsub_json_msg_serializer_impl_t *impl = handle;
 
 	char *jsonOutput = NULL;
 	dyn_type* dynType = NULL;
-	dyn_message_type *dynMsg = (dyn_message_type*)msgSerializer->handle;
+	dyn_message_type *dynMsg = impl->msgType;
 	dynMessage_getMessageType(dynMsg, &dynType);
 
 	if (jsonSerializer_serialize(dynType, msg, &jsonOutput) != 0){
@@ -138,12 +157,12 @@ celix_status_t pubsubMsgSerializer_serialize(pubsub_msg_serializer_t* msgSeriali
 	return status;
 }
 
-celix_status_t pubsubMsgSerializer_deserialize(pubsub_msg_serializer_t* msgSerializer, const void* input, size_t inputLen, void **out) {
-
+celix_status_t pubsubMsgSerializer_deserialize(void* handle, const void* input, size_t inputLen, void **out) {
 	celix_status_t status = CELIX_SUCCESS;
+	pubsub_json_msg_serializer_impl_t *impl = handle;
 	void *msg = NULL;
 	dyn_type* dynType = NULL;
-	dyn_message_type *dynMsg = (dyn_message_type*)msgSerializer->handle;
+	dyn_message_type *dynMsg = impl->msgType;
 	dynMessage_getMessageType(dynMsg, &dynType);
 
 	if (jsonSerializer_deserialize(dynType, (const char*)input, &msg) != 0) {
@@ -156,9 +175,10 @@ celix_status_t pubsubMsgSerializer_deserialize(pubsub_msg_serializer_t* msgSeria
 	return status;
 }
 
-void pubsubMsgSerializer_freeMsg(pubsub_msg_serializer_t* msgSerializer, void *msg) {
+void pubsubMsgSerializer_freeMsg(void* handle, void *msg) {
+	pubsub_json_msg_serializer_impl_t *impl = handle;
 	dyn_type* dynType = NULL;
-	dyn_message_type *dynMsg = (dyn_message_type*)msgSerializer->handle;
+	dyn_message_type *dynMsg = impl->msgType;
 	dynMessage_getMessageType(dynMsg, &dynType);
 	if (dynType != NULL) {
 		dynType_free(dynType, msg);
@@ -246,12 +266,18 @@ static void pubsubSerializer_addMsgSerializerFromBundle(const char *root, bundle
 
 						unsigned int msgId = utils_stringHash(msgName);
 
-						pubsub_msg_serializer_t *msgSerializer = calloc(1,sizeof(pubsub_msg_serializer_t));
+						pubsub_msg_serializer_t *msgSerializer = calloc(1,sizeof(*msgSerializer));
+						pubsub_json_msg_serializer_impl_t *impl = calloc(1, sizeof(*impl));
 
-						msgSerializer->handle = msgType;
-						msgSerializer->msgId = msgId;
-						msgSerializer->msgName = msgName;
-						msgSerializer->msgVersion = msgVersion;
+						impl->msgType = msgType;
+						impl->msgId = msgId;
+						impl->msgName = msgName;
+						impl->msgVersion = msgVersion;
+
+						msgSerializer->handle = impl;
+						msgSerializer->msgId = impl->msgId;
+						msgSerializer->msgName = impl->msgName;
+						msgSerializer->msgVersion = impl->msgVersion;
 						msgSerializer->serialize = (void*) pubsubMsgSerializer_serialize;
 						msgSerializer->deserialize = (void*) pubsubMsgSerializer_deserialize;
 						msgSerializer->freeMsg = (void*) pubsubMsgSerializer_freeMsg;
@@ -260,6 +286,7 @@ static void pubsubSerializer_addMsgSerializerFromBundle(const char *root, bundle
 						if (clash){
 							printf("Cannot add msg %s. clash in msg id %d!!\n", msgName, msgId);
 							free(msgSerializer);
+							free(impl);
 							dynMessage_destroy(msgType);
 						}
 						else if (msgId != 0){
@@ -268,6 +295,7 @@ static void pubsubSerializer_addMsgSerializerFromBundle(const char *root, bundle
 						}
 						else{
 							printf("Error creating msg serializer\n");
+							free(impl);
 							free(msgSerializer);
 							dynMessage_destroy(msgType);
 						}

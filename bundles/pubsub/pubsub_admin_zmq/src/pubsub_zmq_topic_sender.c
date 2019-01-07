@@ -54,6 +54,7 @@ struct pubsub_zmq_topic_sender {
     char *topic;
     char scopeAndTopicFilter[5];
     char *url;
+    bool isStatic;
 
     struct {
         celix_thread_mutex_t mutex;
@@ -95,6 +96,7 @@ pubsub_zmq_topic_sender_t* pubsub_zmqTopicSender_create(
         long serializerSvcId,
         pubsub_serializer_service_t *ser,
         const char *bindIP,
+        const char *staticBindUrl,
         unsigned int basePort,
         unsigned int maxPort) {
     pubsub_zmq_topic_sender_t *sender = calloc(1, sizeof(*sender));
@@ -156,8 +158,8 @@ pubsub_zmq_topic_sender_t* pubsub_zmqTopicSender_create(
         }
 #endif
 
-        zsock_t* socket = zsock_new(ZMQ_PUB);
-        if (socket==NULL) {
+        zsock_t* zmqSocket = zsock_new(ZMQ_PUB);
+        if (zmqSocket==NULL) {
 #ifdef BUILD_WITH_ZMQ_SECURITY
             if (pubEP->is_secure) {
 				zcert_destroy(&pub_cert);
@@ -172,29 +174,44 @@ pubsub_zmq_topic_sender_t* pubsub_zmqTopicSender_create(
 	    }
 #endif
 
-        int rv = -1, retry=0;
-        while(rv==-1 && retry < ZMQ_BIND_MAX_RETRY ) {
-            /* Randomized part due to same bundle publishing on different topics */
-            unsigned int port = rand_range(basePort,maxPort);
-
-            size_t len = (size_t)snprintf(NULL, 0, "tcp://%s:%u", bindIP, port) + 1;
-            char *url = calloc(len, sizeof(char*));
-            snprintf(url, len, "tcp://%s:%u", bindIP, port);
-
-            len = (size_t)snprintf(NULL, 0, "tcp://0.0.0.0:%u", port) + 1;
-            char *bindUrl = calloc(len, sizeof(char));
-            snprintf(bindUrl, len, "tcp://0.0.0.0:%u", port);
-
-            rv = zsock_bind (socket, "%s", bindUrl);
+        if (zmqSocket != NULL && staticBindUrl != NULL) {
+            int rv = zsock_bind (zmqSocket, "%s", staticBindUrl);
             if (rv == -1) {
-                perror("Error for zmq_bind");
-                free(url);
+                L_WARN("Error for zmq_bind using static bind url '%s'. %s", staticBindUrl, strerror(errno));
             } else {
-                sender->url = url;
-                sender->zmq.socket = socket;
+                sender->url = strndup(staticBindUrl, 1024*1024);
+                sender->isStatic = true;
             }
-            retry++;
-            free(bindUrl);
+        } else if (zmqSocket != NULL) {
+
+            int retry = 0;
+            while (sender->url == NULL && retry < ZMQ_BIND_MAX_RETRY) {
+                /* Randomized part due to same bundle publishing on different topics */
+                unsigned int port = rand_range(basePort, maxPort);
+
+                char *url = NULL;
+                asprintf(&url, "tcp://%s:%u", bindIP, port);
+
+                char *bindUrl = NULL;
+                asprintf(&bindUrl, "tcp://0.0.0.0:%u", port);
+
+
+                int rv = zsock_bind(zmqSocket, "%s", bindUrl);
+                if (rv == -1) {
+                    L_WARN("Error for zmq_bind using dynamic bind url '%s'. %s", bindUrl, strerror(errno));
+                    free(url);
+                } else {
+                    sender->url = url;
+                }
+                retry++;
+                free(bindUrl);
+            }
+        }
+
+        if (sender->url == NULL)  {
+            zsock_destroy(&zmqSocket);
+        } else {
+            sender->zmq.socket = zmqSocket;
         }
     }
 
@@ -278,6 +295,10 @@ const char* pubsub_zmqTopicSender_url(pubsub_zmq_topic_sender_t *sender) {
     return sender->url;
 }
 
+bool pubsub_zmqTopicSender_isStatic(pubsub_zmq_topic_sender_t *sender) {
+    return sender->isStatic;
+}
+
 void pubsub_zmqTopicSender_connectTo(pubsub_zmq_topic_sender_t *sender, const celix_properties_t *endpoint) {
     //TODO subscriber count -> topic info
 }
@@ -305,7 +326,6 @@ static void* psa_zmq_getPublisherService(void *handle, const celix_bundle_t *req
             entry->service.handle = entry;
             entry->service.localMsgTypeIdForMsgType = psa_zmq_localMsgTypeIdForMsgType;
             entry->service.send = psa_zmq_topicPublicationSend;
-            entry->service.sendMultipart = NULL; //not supported TODO remove
             hashMap_put(sender->boundedServices.map, (void*)bndId, entry);
         } else {
             L_ERROR("Error creating serializer map for ZMQ TopicSender %s/%s", sender->scope, sender->topic);
@@ -365,7 +385,7 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
 
         void *serializedOutput = NULL;
         size_t serializedOutputLen = 0;
-        status = msgSer->serialize(msgSer, inMsg, &serializedOutput, &serializedOutputLen);
+        status = msgSer->serialize(msgSer->handle, inMsg, &serializedOutput, &serializedOutputLen);
         if (status == CELIX_SUCCESS) {
             zmsg_t *msg = zmsg_new();
             //TODO revert to use zmq_msg_init_data (or something like that) for zero copy for the payload
@@ -394,7 +414,7 @@ static void delay_first_send_for_late_joiners(pubsub_zmq_topic_sender_t *sender)
     static bool firstSend = true;
 
     if(firstSend){
-        L_INFO("PSA_UDP_MC_TP: Delaying first send for late joiners...\n");
+        L_INFO("PSA_ZMQ_TP: Delaying first send for late joiners...\n");
         sleep(FIRST_SEND_DELAY_IN_SECONDS);
         firstSend = false;
     }
