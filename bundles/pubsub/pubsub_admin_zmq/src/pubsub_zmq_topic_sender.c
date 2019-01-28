@@ -373,15 +373,16 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
 
         int major = 0, minor = 0;
 
-        pubsub_zmq_msg_header_t msg_hdr;// = calloc(1, sizeof(*msg_hdr));
-        msg_hdr.type = msgTypeId;
-
+        pubsub_zmq_msg_header_t msg_hdr;
+        msg_hdr.type = (int)msgTypeId;
         if (msgSer->msgVersion != NULL) {
             version_getMajor(msgSer->msgVersion, &major);
             version_getMinor(msgSer->msgVersion, &minor);
             msg_hdr.major = (unsigned char) major;
             msg_hdr.minor = (unsigned char) minor;
         }
+        unsigned char hdr[6];
+        psa_zmq_encodeHeader(&msg_hdr, hdr, 6);
 
         void *serializedOutput = NULL;
         size_t serializedOutputLen = 0;
@@ -391,7 +392,7 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
             //TODO revert to use zmq_msg_init_data (or something like that) for zero copy for the payload
             //TODO remove socket mutex .. not needed (initialized during creation)
             zmsg_addstr(msg, sender->scopeAndTopicFilter);
-            zmsg_addmem(msg, &msg_hdr, sizeof(msg_hdr));
+            zmsg_addmem(msg, &hdr, 6);
             zmsg_addmem(msg, serializedOutput, serializedOutputLen);
             errno = 0;
             int rc = zmsg_send(&msg, sender->zmq.socket);

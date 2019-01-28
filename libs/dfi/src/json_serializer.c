@@ -215,7 +215,9 @@ static int jsonSerializer_parseAny(dyn_type *type, void *loc, json_t *val) {
             *ul = (uint64_t) json_integer_value(val);
             break;
         case 't' :
-            if (json_is_string(val)) {
+            if (json_is_null(val)) {
+                //nop
+            } else if (json_is_string(val)) {
                 dynType_text_allocAndInit(type, loc, json_string_value(val));
             } else {
                 status = ERROR;

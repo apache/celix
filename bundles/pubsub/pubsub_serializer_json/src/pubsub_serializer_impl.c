@@ -61,6 +61,18 @@ static char* pubsubSerializer_getMsgDescriptionDir(bundle_pt bundle);
 static void pubsubSerializer_addMsgSerializerFromBundle(const char *root, bundle_pt bundle, hash_map_pt msgTypesMap);
 static void pubsubSerializer_fillMsgSerializerMap(hash_map_pt msgTypesMap,bundle_pt bundle);
 
+
+static void dfi_log(void *handle, int level, const char *file, int line, const char *msg, ...) {
+	va_list ap;
+	pubsub_json_serializer_t *serializer = handle;
+	char *logStr = NULL;
+	va_start(ap, msg);
+	vasprintf(&logStr, msg, ap);
+	va_end(ap);
+	logHelper_log(serializer->loghelper, level, "FILE:%s, LINE:%i, MSG:%s", file, line, logStr);
+	free(logStr);
+}
+
 celix_status_t pubsubSerializer_create(bundle_context_pt context, pubsub_json_serializer_t** serializer) {
 	celix_status_t status = CELIX_SUCCESS;
 
@@ -75,6 +87,10 @@ celix_status_t pubsubSerializer_create(bundle_context_pt context, pubsub_json_se
 
 		if (logHelper_create(context, &(*serializer)->loghelper) == CELIX_SUCCESS) {
 			logHelper_start((*serializer)->loghelper);
+			jsonSerializer_logSetup(dfi_log, (*serializer), 1);
+			dynFunction_logSetup(dfi_log, (*serializer), 1);
+			dynType_logSetup(dfi_log, (*serializer), 1);
+			dynCommon_logSetup(dfi_log, (*serializer), 1);
 		}
 
 	}

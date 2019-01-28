@@ -39,7 +39,7 @@
 
 struct pubsub_zmq_msg_header {
     //header
-    unsigned int type;
+    int type;
     unsigned char major;
     unsigned char minor;
 };
@@ -52,5 +52,7 @@ void psa_zmq_setScopeAndTopicFilter(const char* scope, const char *topic, char *
 
 bool psa_zmq_checkVersion(version_pt msgVersion, const pubsub_zmq_msg_header_t *hdr);
 
+celix_status_t psa_zmq_decodeHeader(const unsigned char *data, size_t dataLen, pubsub_zmq_msg_header_t *header);
+celix_status_t psa_zmq_encodeHeader(const pubsub_zmq_msg_header_t *msgHeader, unsigned char *data, size_t dataLen);
 
 #endif //CELIX_PUBSUB_ZMQ_COMMON_H

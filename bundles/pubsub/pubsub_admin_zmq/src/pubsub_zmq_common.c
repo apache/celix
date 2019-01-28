@@ -29,6 +29,11 @@ bool psa_zmq_checkVersion(version_pt msgVersion, const pubsub_zmq_msg_header_t *
     bool check=false;
     int major=0,minor=0;
 
+    if (hdr->major == 0 && hdr->minor == 0) {
+        //no check
+        return true;
+    }
+
     if (msgVersion!=NULL) {
         version_getMajor(msgVersion,&major);
         version_getMinor(msgVersion,&minor);
@@ -52,4 +57,31 @@ void psa_zmq_setScopeAndTopicFilter(const char* scope, const char *topic, char *
         filter[2] = topic[0];
         filter[3] = topic[1];
     }
+}
+
+
+celix_status_t psa_zmq_decodeHeader(const unsigned char *data, size_t dataLen, pubsub_zmq_msg_header_t *header) {
+    int status = CELIX_ILLEGAL_ARGUMENT;
+    if (dataLen == 6) {
+        header->type = ((data[0] << 24) | (data[1] << 16) | (data[2] << 8) | (data[3] << 0));
+        header->major = (unsigned char) data[4];
+        header->minor = (unsigned char) data[5];
+        status = CELIX_SUCCESS;
+    }
+    return status;
+}
+
+celix_status_t psa_zmq_encodeHeader(const pubsub_zmq_msg_header_t *msgHeader, unsigned char *data, size_t dataLen) {
+    int status = CELIX_ILLEGAL_ARGUMENT;
+    if (dataLen == 6) {
+        unsigned int tmp = msgHeader->type & 0xFFFFFFFF;
+        data[0] = (unsigned char)((tmp >> 24) & 0xFF);
+        data[1] = (unsigned char)((tmp >> 16) & 0xFF);
+        data[2] = (unsigned char)((tmp >> 8) & 0xFF);
+        data[3] = (unsigned char)((tmp >> 0) & 0xFF);
+        data[4] = (char)msgHeader->major;
+        data[5] = (char)msgHeader->minor;
+        status = CELIX_SUCCESS;
+    }
+    return status;
 }

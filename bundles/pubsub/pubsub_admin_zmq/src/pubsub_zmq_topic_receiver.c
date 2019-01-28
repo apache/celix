@@ -478,7 +478,9 @@ static void* psa_zmq_recvThread(void * data) {
                 zframe_t *header = zmsg_pop(zmsg); //pubsub_zmq_msg_header_t
                 zframe_t *payload = zmsg_pop(zmsg); //serialized payload
                 if (header != NULL && payload != NULL) {
-                    processMsg(receiver, (pubsub_zmq_msg_header_t*)zframe_data(header), zframe_data(payload), zframe_size(payload));
+                    pubsub_zmq_msg_header_t msgHeader;
+                    psa_zmq_decodeHeader(zframe_data(header), zframe_size(header), &msgHeader);
+                    processMsg(receiver, &msgHeader, zframe_data(payload), zframe_size(payload));
                 }
                 zframe_destroy(&filter);
                 zframe_destroy(&header);
