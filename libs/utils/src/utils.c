@@ -139,3 +139,9 @@ int utils_compareServiceIdsAndRanking(unsigned long servId, long servRank, unsig
 
 	return result;
 }
+
+double celix_difftime(const struct timespec *tBegin, const struct timespec *tEnd) {
+	float diff_s = tEnd->tv_sec - tBegin->tv_sec;
+	float diff_ns = tEnd->tv_nsec - tBegin->tv_nsec;
+	return diff_s + (diff_ns / 1000000000.0);
+}

@@ -19,6 +19,7 @@ add_library(pubsub_spi STATIC
         src/pubsub_utils_match.c
         src/pubsub_endpoint.c
         src/pubsub_utils.c
+		src/pubsub_admin_metrics.c
 )
 set_target_properties(pubsub_spi PROPERTIES OUTPUT_NAME "celix_pubsub_spi")
 target_include_directories(pubsub_spi PUBLIC

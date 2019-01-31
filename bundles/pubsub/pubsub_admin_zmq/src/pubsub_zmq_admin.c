@@ -694,6 +694,34 @@ celix_status_t pubsub_zmqAdmin_executeCommand(void *handle, char *commandLine __
     return status;
 }
 
+pubsub_admin_metrics_t* pubsub_zmqAdmin_metrics(void *handle) {
+    pubsub_zmq_admin_t *psa = handle;
+    pubsub_admin_metrics_t *result = calloc(1, sizeof(*result));
+    snprintf(result->psaType, PUBSUB_AMDIN_METRICS_NAME_MAX, "%s", PUBSUB_ZMQ_ADMIN_TYPE);
+    result->senders = celix_arrayList_create();
+    result->receivers = celix_arrayList_create();
+
+    celixThreadMutex_lock(&psa->topicSenders.mutex);
+    hash_map_iterator_t iter = hashMapIterator_construct(psa->topicSenders.map);
+    while (hashMapIterator_hasNext(&iter)) {
+        pubsub_zmq_topic_sender_t *sender = hashMapIterator_nextValue(&iter);
+        pubsub_admin_sender_metrics_t *metrics = pubsub_zmqTopicSender_metrics(sender);
+        celix_arrayList_add(result->senders, metrics);
+    }
+    celixThreadMutex_unlock(&psa->topicSenders.mutex);
+
+    celixThreadMutex_lock(&psa->topicReceivers.mutex);
+    iter = hashMapIterator_construct(psa->topicReceivers.map);
+    while (hashMapIterator_hasNext(&iter)) {
+        pubsub_zmq_topic_receiver_t *receiver = hashMapIterator_nextValue(&iter);
+        pubsub_admin_receiver_metrics_t *metrics = pubsub_zmqTopicReceiver_metrics(receiver);
+        celix_arrayList_add(result->receivers, metrics);
+    }
+    celixThreadMutex_unlock(&psa->topicReceivers.mutex);
+
+    return result;
+}
+
 #ifndef ANDROID
 static celix_status_t zmq_getIpAddress(const char* interface, char** ip) {
     celix_status_t status = CELIX_BUNDLE_EXCEPTION;

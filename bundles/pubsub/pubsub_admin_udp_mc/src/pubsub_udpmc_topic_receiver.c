@@ -97,8 +97,9 @@ typedef struct psa_udpmc_subscriber_entry {
 
 
 typedef struct pubsub_msg{
-    pubsub_msg_header_t *header;
-    char* payload;
+    int typeid;
+    char major;
+    char minor;
     unsigned int payloadSize;
 } pubsub_msg_t;
 
@@ -437,13 +438,13 @@ static void psa_udpmc_processMsg(pubsub_udpmc_topic_receiver_t *receiver, pubsub
 
         pubsub_msg_serializer_t *msgSer = NULL;
         if (entry->msgTypes != NULL) {
-            msgSer = hashMap_get(entry->msgTypes, (void *) (uintptr_t) msg->header.type);
+            msgSer = hashMap_get(entry->msgTypes, (void *) (uintptr_t) msg->typeid);
         }
         if (msgSer == NULL) {
-            printf("[PSA_UDPMC] Serializer not available for message %d.\n",msg->header.type);
+            printf("[PSA_UDPMC] Serializer not available for message %d.\n",msg->typeid);
         } else{
             void *msgInst = NULL;
-            bool validVersion = psa_udpmc_checkVersion(msgSer->msgVersion, &msg->header);
+            bool validVersion = psa_udpmc_checkVersion(msgSer->msgVersion, msg);
 
             if(validVersion){
 
@@ -452,7 +453,7 @@ static void psa_udpmc_processMsg(pubsub_udpmc_topic_receiver_t *receiver, pubsub
                 if (status == CELIX_SUCCESS) {
                     bool release = true;
                     pubsub_subscriber_t *svc = entry->svc;
-                    svc->receive(svc->handle, msgSer->msgName, msg->header.type, msgInst, &release);
+                    svc->receive(svc->handle, msgSer->msgName, msg->typeid, msgInst, &release);
 
                     if(release){
                         msgSer->freeMsg(msgSer->handle, msgInst);
@@ -468,7 +469,7 @@ static void psa_udpmc_processMsg(pubsub_udpmc_topic_receiver_t *receiver, pubsub
                 version_getMajor(msgSer->msgVersion,&major);
                 version_getMinor(msgSer->msgVersion,&minor);
                 printf("[PSA_UDPMC] Version mismatch for primary message '%s' (have %d.%d, received %u.%u). NOT sending any part of the whole message.\n",
-                       msgSer->msgName,major,minor,msg->header.major,msg->header.minor);
+                       msgSer->msgName,major,minor,msg->major, msg->minor);
             }
 
         }

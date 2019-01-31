@@ -24,7 +24,6 @@
 #include "celix_filter.h"
 #include "filter.h"
 
-#include "pubsub_common.h"
 #include "pubsub/publisher.h"
 #include "pubsub_utils.h"
 

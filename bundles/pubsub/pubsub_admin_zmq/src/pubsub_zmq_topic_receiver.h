@@ -19,6 +19,7 @@
 #ifndef CELIX_PUBSUB_ZMQ_TOPIC_RECEIVER_H
 #define CELIX_PUBSUB_ZMQ_TOPIC_RECEIVER_H
 
+#include <pubsub_admin_metrics.h>
 #include "celix_bundle_context.h"
 
 typedef struct pubsub_zmq_topic_receiver pubsub_zmq_topic_receiver_t;
@@ -40,5 +41,9 @@ void pubsub_zmqTopicReceiver_listConnections(pubsub_zmq_topic_receiver_t *receiv
 
 void pubsub_zmqTopicReceiver_connectTo(pubsub_zmq_topic_receiver_t *receiver, const char *url);
 void pubsub_zmqTopicReceiver_disconnectFrom(pubsub_zmq_topic_receiver_t *receiver, const char *url);
+
+
+pubsub_admin_receiver_metrics_t* pubsub_zmqTopicReceiver_metrics(pubsub_zmq_topic_receiver_t *receiver);
+
 
 #endif //CELIX_PUBSUB_ZMQ_TOPIC_RECEIVER_H

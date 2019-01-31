@@ -55,6 +55,8 @@ UTILS_EXPORT celix_status_t thread_equalsSelf(celix_thread_t thread, bool *equal
 
 UTILS_EXPORT celix_status_t utils_isNumeric(const char *number, bool *ret);
 
+UTILS_EXPORT double celix_difftime(const struct timespec *tBegin, const struct timespec *tEnd);
+
 #ifdef __cplusplus
 }
 #endif
