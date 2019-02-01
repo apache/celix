@@ -37,6 +37,10 @@
 
 #define PSA_ZMQ_RECV_TIMEOUT 1000
 
+#ifndef UUID_STR_LEN
+#define UUID_STR_LEN	37
+#endif
+
 
 #define L_DEBUG(...) \
     logHelper_log(receiver->logHelper, OSGI_LOGSERVICE_DEBUG, __VA_ARGS__)

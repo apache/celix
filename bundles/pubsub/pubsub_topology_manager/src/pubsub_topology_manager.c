@@ -42,6 +42,10 @@
 
 #define PSTM_PSA_HANDLING_SLEEPTIME_IN_SECONDS       30L
 
+#ifndef UUID_STR_LEN
+#define UUID_STR_LEN	37
+#endif
+
 static void *pstm_psaHandlingThread(void *data);
 
 celix_status_t pubsub_topologyManager_create(bundle_context_pt context, log_helper_pt logHelper, pubsub_topology_manager_t **out) {
