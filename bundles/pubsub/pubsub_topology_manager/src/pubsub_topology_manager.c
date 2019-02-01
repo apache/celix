@@ -25,6 +25,7 @@
 #include <pubsub_utils.h>
 #include <assert.h>
 #include <pubsub_admin_metrics.h>
+#include <uuid/uuid.h>
 
 #include "hash_map.h"
 #include "celix_array_list.h"
@@ -1090,6 +1091,11 @@ static celix_status_t pubsub_topologyManager_topology(pubsub_topology_manager_t 
     return CELIX_SUCCESS;
 }
 
+static void fetchBundleName(void *handle, const bundle_t *bundle) {
+    const char **out = handle;
+    *out = celix_bundle_getSymbolicName(bundle);
+}
+
 static celix_status_t pubsub_topologyManager_metrics(pubsub_topology_manager_t *manager, char *commandLine __attribute__((unused)), FILE *os, FILE *errorStream __attribute__((unused))) {
     celix_array_list_t *psaMetrics = celix_arrayList_create();
     celixThreadMutex_lock(&manager->psaMetrics.mutex);
@@ -1111,7 +1117,9 @@ static celix_status_t pubsub_topologyManager_metrics(pubsub_topology_manager_t *
                 if (sm->msgMetrics[j].nrOfMessagesSend == 0 && sm->msgMetrics[j].nrOfMessagesSendFailed == 0 && sm->msgMetrics[j].nrOfSerializationErrors == 0) {
                     continue;
                 }
-                fprintf(os, "   |- Message & Bundle %s/%li:\n", sm->msgMetrics[j].typeFqn, sm->msgMetrics->bndId);
+                const char *bndName = NULL;
+                celix_bundleContext_useBundle(manager->context, sm->msgMetrics->bndId, &bndName, fetchBundleName);
+                fprintf(os, "   |- Message '%s' from bundle '%s' (%li):\n", sm->msgMetrics[j].typeFqn, bndName, sm->msgMetrics->bndId);
                 fprintf(os, "      |- msg type = %i\n", sm->msgMetrics[j].typeId);
                 fprintf(os, "      |- send count = %li\n", sm->msgMetrics[j].nrOfMessagesSend);
                 fprintf(os, "      |- fail count = %li\n", sm->msgMetrics[j].nrOfMessagesSendFailed);
@@ -1133,7 +1141,7 @@ static celix_status_t pubsub_topologyManager_metrics(pubsub_topology_manager_t *
                     }
                     char uuidStr[UUID_STR_LEN+1];
                     uuid_unparse(rm->msgTypes[j].origins[m].originUUID, uuidStr);
-                    fprintf(os, "   |- Message & Origin %s/%s:\n", rm->msgTypes[j].typeFqn, uuidStr);
+                    fprintf(os, "   |- Message '%s' from framework UUID %s:\n", rm->msgTypes[j].typeFqn, uuidStr);
                     fprintf(os, "      |- msg type = %i\n", rm->msgTypes[j].typeId);
                     fprintf(os, "      |- receive count = %li\n", rm->msgTypes[j].origins[m].nrOfMessagesReceived);
                     fprintf(os, "      |- serialization error = %li\n", rm->msgTypes[j].origins[m].nrOfSerializationErrors);
@@ -1155,8 +1163,8 @@ static celix_status_t pubsub_topologyManager_metrics(pubsub_topology_manager_t *
 celix_status_t pubsub_topologyManager_shellCommand(void *handle, char *commandLine, FILE *os, FILE *errorStream) {
     pubsub_topology_manager_t *manager = handle;
 
-    static const char * topCmd = "pstm topology";
-    static const char * metricsCmd = "pstm metrics";
+    static const char * topCmd = "pstm t"; //"topology";
+    static const char * metricsCmd = "pstm m"; //"metrics"
 
     if (strncmp(commandLine, topCmd, strlen(topCmd)) == 0) {
         return pubsub_topologyManager_topology(manager, commandLine, os, errorStream);

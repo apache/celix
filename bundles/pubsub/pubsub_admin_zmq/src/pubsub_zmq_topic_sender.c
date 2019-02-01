@@ -468,16 +468,15 @@ pubsub_admin_sender_metrics_t* pubsub_zmqTopicSender_metrics(pubsub_zmq_topic_se
     return result;
 }
 
-//static void psa_zmq_freeMsg(void *msg, void *hint __attribute__((unused))) {
-//    free(msg);
-//}
+static void psa_zmq_freeMsg(void *msg, void *hint __attribute__((unused))) {
+    free(msg);
+}
 
 static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, const void *inMsg) {
     int status = CELIX_SUCCESS;
     psa_zmq_bounded_service_entry_t *bound = handle;
     pubsub_zmq_topic_sender_t *sender = bound->parent;
     bool monitor = sender->metricsEnabled;
-    unsigned char hdr[48];
 
     psa_zmq_send_msg_entry_t *entry = hashMap_get(bound->msgEntries, (void*)(uintptr_t)(msgTypeId));
 
@@ -522,37 +521,43 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
                 }
                 msg_hdr.seqNr = entry->seqNr++;
             }
+            unsigned char *hdr = calloc(sizeof(pubsub_zmq_msg_header_t), sizeof(unsigned char));
             psa_zmq_encodeHeader(&msg_hdr, hdr, sizeof(pubsub_zmq_msg_header_t));
 
             errno = 0;
+            bool sendOk;
 
-            zmsg_t *msg = zmsg_new();
-            zmsg_addstr(msg, sender->scopeAndTopicFilter);
-            zmsg_addmem(msg, &hdr, sizeof(pubsub_zmq_msg_header_t));
-            zmsg_addmem(msg, serializedOutput, serializedOutputLen);
-            int rc = zmsg_send(&msg, sender->zmq.socket);
-            free(serializedOutput);
+//            zmsg_t *msg = zmsg_new();
+//            zmsg_addstr(msg, sender->scopeAndTopicFilter);
+//            zmsg_addmem(msg, hdr, sizeof(pubsub_zmq_msg_header_t));
+//            zmsg_addmem(msg, serializedOutput, serializedOutputLen);
+//            int rc = zmsg_send(&msg, sender->zmq.socket);
+//            sendOk = rc == 0;
+//            free(serializedOutput);
+//            free(hdr);
 
-//            zmq_msg_t msg1; //filter
-//            zmq_msg_t msg2; //header
-//            zmq_msg_t msg3; //payload
-//            zmq_msg_init_data(&msg1, sender->scopeAndTopicFilter, 4, NULL, bound);
-//            zmq_msg_init_data(&msg2, hdr, sizeof(pubsub_zmq_msg_header_t), NULL, bound);
-//            zmq_msg_init_data(&msg3, serializedOutput, serializedOutputLen, psa_zmq_freeMsg, bound);
-//            int rc = zmq_msg_send(&msg1, sender->zmq.socket, ZMQ_SNDMORE);
-//            if (rc == 0) {
-//                rc = zmq_msg_send(&msg2, sender->zmq.socket, ZMQ_SNDMORE);
-//            }
-//            if (rc == 0) {
-//                rc = zmq_msg_send(&msg3, sender->zmq.socket, 0);
-//            }
+            zmq_msg_t msg1; //filter
+            zmq_msg_t msg2; //header
+            zmq_msg_t msg3; //payload
+            zmq_msg_init_data(&msg1, sender->scopeAndTopicFilter, 4, NULL, bound);
+            zmq_msg_init_data(&msg2, hdr, sizeof(pubsub_zmq_msg_header_t), psa_zmq_freeMsg, bound);
+            zmq_msg_init_data(&msg3, serializedOutput, serializedOutputLen, psa_zmq_freeMsg, bound);
+            void *socket = zsock_resolve(sender->zmq.socket);
+            int rc = zmq_msg_send(&msg1, socket, ZMQ_SNDMORE);
+            if (rc > 0) {
+                rc = zmq_msg_send(&msg2, socket, ZMQ_SNDMORE);
+            }
+            if (rc > 0) {
+                rc = zmq_msg_send(&msg3, socket, 0);
+            }
+            sendOk = rc > 0;
 
 
             if (monitor) {
                 //unlock send
                 entry->sendLock = 0;
             }
-            if (rc == 0) {
+            if (sendOk) {
                 sendCountUpdate = 1;
             } else {
                 sendErrorUpdate = 1;

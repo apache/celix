@@ -56,7 +56,7 @@ void subscriber_destroy(pubsub_receiver_pt subscriber){
 int pubsub_subscriber_recv(void* handle, const char* msgType, unsigned int msgTypeId, void* msg, bool* release){
 
 	location_t place = (location_t)msg;
-	printf("Recv (%s): [%f, %f] (%s, %s, %s, %s)\n", msgType, place->position.lat, place->position.lon, place->name, place->description, place->extra, place->data);
+	printf("Recv (%s): [%f, %f] (%s, %s, %s, len data %li)\n", msgType, place->position.lat, place->position.lon, place->name, place->description, place->extra, (long)(strlen(place->data) + 1));
 
 	return 0;
 

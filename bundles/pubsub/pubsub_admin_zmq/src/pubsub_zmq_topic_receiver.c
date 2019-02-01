@@ -595,7 +595,9 @@ static void* psa_zmq_recvThread(void * data) {
                 zframe_t *filter = zmsg_pop(zmsg); //char[5] filter
                 zframe_t *header = zmsg_pop(zmsg); //pubsub_zmq_msg_header_t
                 zframe_t *payload = zmsg_pop(zmsg); //serialized payload
-                if (header != NULL && payload != NULL) {
+                if (filter != NULL && strncmp(receiver->scopeAndTopicFilter, (char*)zframe_data(filter), zframe_size(filter)) != 0 ) {
+                    L_ERROR("[PSA_ZMQ_TR] Invalid ZQM filter, Found '%4s'. Expected %s\n", (char*)zframe_data(filter), receiver->scopeAndTopicFilter);
+                } else if (header != NULL && payload != NULL) {
                     struct timespec receiveTime;
                     clock_gettime(CLOCK_REALTIME, &receiveTime);
                     pubsub_zmq_msg_header_t msgHeader;

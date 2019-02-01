@@ -76,7 +76,7 @@ static int readLong(const unsigned char *data, int offset, int64_t *val) {
             ((int64_t)data[offset+6] << 8 ) |
             ((int64_t)data[offset+7] << 0 )
     );
-    return offset + 4;
+    return offset + 8;
 }
 
 celix_status_t psa_zmq_decodeHeader(const unsigned char *data, size_t dataLen, pubsub_zmq_msg_header_t *header) {
