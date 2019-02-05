@@ -16,6 +16,10 @@
 # under the License.
 celix_subproject(RSA_REMOTE_SERVICE_ADMIN_SHM "Option to enable building the Remote Service Admin Service SHM bundle" OFF)
 if (RSA_REMOTE_SERVICE_ADMIN_SHM)
+
+        find_package(UUID REQUIRED)
+
+
 	link_directories("/opt/local/lib")
 	include_directories("/opt/local/include")
 	include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
@@ -28,6 +32,7 @@ if (RSA_REMOTE_SERVICE_ADMIN_SHM)
 	include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin_shm/public/include")
 	include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin_shm/private/include")
 	include_directories("${PROJECT_SOURCE_DIR}/remote_services/endpoint_listener/public/include")
+	include_directories(${UUID_INCLUDE_DIRS})
 
 	add_celix_bundle(remote_service_admin_shm
         VERSION 0.9.0

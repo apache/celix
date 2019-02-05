@@ -45,9 +45,9 @@ target_include_directories(framework PUBLIC
 )
 target_include_directories(framework PRIVATE src)
 target_include_directories(framework SYSTEM PRIVATE 
-        ${ZLIB_INCLUDE_DIR}
-        ${CURL_INCLUDE_DIR}
-        ${UUID_INCLUDE_DIR}
+	${ZLIB_INCLUDE_DIRS}
+	${CURL_INCLUDE_DIRS}
+	${UUID_INCLUDE_DIRS}
 )
 target_compile_definitions(framework PRIVATE -DUSE_FILE32API)
 
