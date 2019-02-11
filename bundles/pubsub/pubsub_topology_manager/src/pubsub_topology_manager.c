@@ -1146,7 +1146,7 @@ static celix_status_t pubsub_topologyManager_metrics(pubsub_topology_manager_t *
                     char uuidStr[UUID_STR_LEN+1];
                     uuid_unparse(rm->msgTypes[j].origins[m].originUUID, uuidStr);
                     fprintf(os, "   |- Message '%s' from framework UUID %s:\n", rm->msgTypes[j].typeFqn, uuidStr);
-                    fprintf(os, "      |- msg type = %i\n", rm->msgTypes[j].typeId);
+                    fprintf(os, "      |- msg type = 0x%X\n", rm->msgTypes[j].typeId);
                     fprintf(os, "      |- receive count = %li\n", rm->msgTypes[j].origins[m].nrOfMessagesReceived);
                     fprintf(os, "      |- serialization error = %li\n", rm->msgTypes[j].origins[m].nrOfSerializationErrors);
                     fprintf(os, "      |- missing seq numbers = %li\n", rm->msgTypes[j].origins[m].nrOfMissingSeqNumbers);
