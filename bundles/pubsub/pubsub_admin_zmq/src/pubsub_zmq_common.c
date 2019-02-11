@@ -60,12 +60,12 @@ void psa_zmq_setScopeAndTopicFilter(const char* scope, const char *topic, char *
     }
 }
 
-static int readInt(const unsigned char *data, int offset, int32_t *val) {
+static int readInt(const unsigned char *data, int offset, uint32_t *val) {
     *val = ((data[offset+0] << 24) | (data[offset+1] << 16) | (data[offset+2] << 8) | (data[offset+3] << 0));
     return offset + 4;
 }
 
-static int readLong(const unsigned char *data, int offset, int64_t *val) {
+static int readLong(const unsigned char *data, int offset, uint64_t *val) {
     *val = (
             ((int64_t)data[offset+0] << 56) |
             ((int64_t)data[offset+1] << 48) |

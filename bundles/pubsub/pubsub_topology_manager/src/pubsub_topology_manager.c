@@ -1124,7 +1124,7 @@ static celix_status_t pubsub_topologyManager_metrics(pubsub_topology_manager_t *
                 const char *bndName = NULL;
                 celix_bundleContext_useBundle(manager->context, sm->msgMetrics->bndId, &bndName, fetchBundleName);
                 fprintf(os, "   |- Message '%s' from bundle '%s' (%li):\n", sm->msgMetrics[j].typeFqn, bndName, sm->msgMetrics->bndId);
-                fprintf(os, "      |- msg type = %i\n", sm->msgMetrics[j].typeId);
+                fprintf(os, "      |- msg type = 0x%X\n", sm->msgMetrics[j].typeId);
                 fprintf(os, "      |- send count = %li\n", sm->msgMetrics[j].nrOfMessagesSend);
                 fprintf(os, "      |- fail count = %li\n", sm->msgMetrics[j].nrOfMessagesSendFailed);
                 fprintf(os, "      |- serialization failed = %li\n", sm->msgMetrics[j].nrOfSerializationErrors);

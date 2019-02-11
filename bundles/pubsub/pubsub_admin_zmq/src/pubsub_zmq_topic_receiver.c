@@ -90,19 +90,19 @@ typedef struct psa_zmq_requested_connection_entry {
 } psa_zmq_requested_connection_entry_t;
 
 typedef struct psa_zmq_subscriber_metrics_entry_t {
-    int msgTypeId;
+    unsigned int msgTypeId;
     uuid_t origin;
 
-    long nrOfMessagesReceived;
-    long nrOfSerializationErrors;
+    unsigned long nrOfMessagesReceived;
+    unsigned long nrOfSerializationErrors;
     struct timespec lastMessageReceived;
     double averageTimeBetweenMessagesInSeconds;
     double averageSerializationTimeInSeconds;
     double averageDelayInSeconds;
     double maxDelayInSeconds;
     double minDelayInSeconds;
-    int lastSeqNr;
-    long nrOfMissingSeqNumbers;
+    unsigned int lastSeqNr;
+    unsigned long nrOfMissingSeqNumbers;
 } psa_zmq_subscriber_metrics_entry_t;
 
 typedef struct psa_zmq_subscriber_entry {
@@ -495,7 +495,7 @@ static inline void processMsgForSubscriberEntry(pubsub_zmq_topic_receiver_t *rec
             }
         }
     } else {
-        L_WARN("[PSA_ZMQ_TR] Cannot find serializer for type id %i", hdr->type);
+        L_WARN("[PSA_ZMQ_TR] Cannot find serializer for type id 0x%X", hdr->type);
     }
 
     if (msgSer != NULL && monitor) {
@@ -673,19 +673,23 @@ pubsub_admin_receiver_metrics_t* pubsub_zmqTopicReceiver_metrics(pubsub_zmq_topi
                 psa_zmq_subscriber_metrics_entry_t *metrics = hashMapIterator_nextValue(&iter3);
                 result->msgTypes[i].typeId = metrics->msgTypeId;
                 pubsub_msg_serializer_t *msgSer = hashMap_get(entry->msgTypes, (void*)(uintptr_t)metrics->msgTypeId);
-                snprintf(result->msgTypes[i].typeFqn, PUBSUB_AMDIN_METRICS_NAME_MAX, "%s", msgSer->msgName);
-                uuid_copy(result->msgTypes[i].origins[k].originUUID, metrics->origin);
-                result->msgTypes[i].origins[k].nrOfMessagesReceived = metrics->nrOfMessagesReceived;
-                result->msgTypes[i].origins[k].nrOfSerializationErrors = metrics->nrOfSerializationErrors;
-                result->msgTypes[i].origins[k].averageDelayInSeconds = metrics->averageDelayInSeconds;
-                result->msgTypes[i].origins[k].maxDelayInSeconds = metrics->maxDelayInSeconds;
-                result->msgTypes[i].origins[k].minDelayInSeconds = metrics->minDelayInSeconds;
-                result->msgTypes[i].origins[k].averageTimeBetweenMessagesInSeconds = metrics->averageTimeBetweenMessagesInSeconds;
-                result->msgTypes[i].origins[k].averageSerializationTimeInSeconds = metrics->averageSerializationTimeInSeconds;
-                result->msgTypes[i].origins[k].lastMessageReceived = metrics->lastMessageReceived;
-                result->msgTypes[i].origins[k].nrOfMissingSeqNumbers = metrics->nrOfMissingSeqNumbers;
+		if (msgSer) {
+                    snprintf(result->msgTypes[i].typeFqn, PUBSUB_AMDIN_METRICS_NAME_MAX, "%s", msgSer->msgName);
+                    uuid_copy(result->msgTypes[i].origins[k].originUUID, metrics->origin);
+                    result->msgTypes[i].origins[k].nrOfMessagesReceived = metrics->nrOfMessagesReceived;
+                    result->msgTypes[i].origins[k].nrOfSerializationErrors = metrics->nrOfSerializationErrors;
+                    result->msgTypes[i].origins[k].averageDelayInSeconds = metrics->averageDelayInSeconds;
+                    result->msgTypes[i].origins[k].maxDelayInSeconds = metrics->maxDelayInSeconds;
+                    result->msgTypes[i].origins[k].minDelayInSeconds = metrics->minDelayInSeconds;
+                    result->msgTypes[i].origins[k].averageTimeBetweenMessagesInSeconds = metrics->averageTimeBetweenMessagesInSeconds;
+                    result->msgTypes[i].origins[k].averageSerializationTimeInSeconds = metrics->averageSerializationTimeInSeconds;
+                    result->msgTypes[i].origins[k].lastMessageReceived = metrics->lastMessageReceived;
+                    result->msgTypes[i].origins[k].nrOfMissingSeqNumbers = metrics->nrOfMissingSeqNumbers;
 
-                k += 1;
+                    k += 1;
+                } else {
+                    L_WARN("[PSA_ZMQ]: Error cannot find key 0x%X in msg map during metrics collection!\n", metrics->msgTypeId);
+                }
             }
             i +=1 ;
         }

@@ -38,13 +38,13 @@
 
 
 struct pubsub_zmq_msg_header {
-    int32_t type; //msg type id (hash of fqn)
-    int8_t major;
-    int8_t minor;
-    int32_t seqNr;
+    uint32_t type; //msg type id (hash of fqn)
+    uint8_t major;
+    uint8_t minor;
+    uint32_t seqNr;
     unsigned char originUUID[16];
-    int64_t sendtimeSeconds; //seconds since epoch
-    int64_t sendTimeNanoseconds; //ns since epoch
+    uint64_t sendtimeSeconds; //seconds since epoch
+    uint64_t sendTimeNanoseconds; //ns since epoch
 };
 
 typedef struct pubsub_zmq_msg_header pubsub_zmq_msg_header_t;
