@@ -31,10 +31,10 @@
 typedef struct pubsub_admin_sender_msg_type_metrics {
 	long bndId;
 	char typeFqn[PUBSUB_AMDIN_METRICS_NAME_MAX];
-	int typeId;
-	long nrOfMessagesSend;
-	long nrOfMessagesSendFailed;
-	long nrOfSerializationErrors;
+	unsigned int typeId;
+	unsigned long nrOfMessagesSend;
+	unsigned long nrOfMessagesSendFailed;
+	unsigned long nrOfSerializationErrors;
 	struct timespec lastMessageSend;
 	double averageTimeBetweenMessagesInSeconds;
 	double averageSerializationTimeInSeconds;
@@ -43,24 +43,24 @@ typedef struct pubsub_admin_sender_msg_type_metrics {
 typedef struct pubsub_admin_sender_metrics {
 	char scope[PUBSUB_AMDIN_METRICS_NAME_MAX];
 	char topic[PUBSUB_AMDIN_METRICS_NAME_MAX];
-	long nrOfUnknownMessagesRetrieved;
-	int nrOfmsgMetrics;
+	unsigned long nrOfUnknownMessagesRetrieved;
+	unsigned int nrOfmsgMetrics;
 	pubsub_admin_sender_msg_type_metrics_t *msgMetrics; //size = nrOfMessageTypes
 } pubsub_admin_sender_metrics_t;
 
 typedef struct pubsub_admin_receiver_metrics {
 	char scope[PUBSUB_AMDIN_METRICS_NAME_MAX];
 	char topic[PUBSUB_AMDIN_METRICS_NAME_MAX];
-	long nrOfMsgTypes;
+	unsigned long nrOfMsgTypes;
 	struct {
-		int typeId;
+		unsigned int typeId;
 		char typeFqn[PUBSUB_AMDIN_METRICS_NAME_MAX];
 		int nrOfOrigins;
 		struct {
 			uuid_t originUUID;
-			long nrOfMessagesReceived;
-			long nrOfSerializationErrors;
-			long nrOfMissingSeqNumbers;
+			unsigned long nrOfMessagesReceived;
+			unsigned long nrOfSerializationErrors;
+			unsigned long nrOfMissingSeqNumbers;
 			struct timespec lastMessageReceived;
 			double averageTimeBetweenMessagesInSeconds;
 			double averageSerializationTimeInSeconds;
