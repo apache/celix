@@ -85,11 +85,16 @@ if (FRAMEWORK)
     if (ENABLE_TESTING)
         find_package(CppUTest REQUIRED)
         include_directories(${CPPUTEST_INCLUDE_DIR})
+
+        find_package(Gtest REQUIRED)
+        include_directories(${GTEST_INCLUDE_DIR})
+
         add_subdirectory(tst)
     endif()
 
+set(ENABLE_TESTING ON)
+set(FRAMEWORK_TESTS ON)
 
-	celix_subproject(FRAMEWORK_TESTS "Option to build the framework tests" "OFF" DEPS)
     if (ENABLE_TESTING AND FRAMEWORK_TESTS)
     	find_package(CppUTest REQUIRED)
     	
@@ -159,7 +164,11 @@ if (FRAMEWORK)
             private/src/celix_errorcodes.c
             private/mock/celix_log_mock.c)
         target_link_libraries(bundle_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils pthread)
-	    
+
+	    add_executable(thing_test
+          private/test/thing_test.cpp)
+        target_link_libraries(thing_test ${GTEST_LIBRARY} celix_utils pthread)
+
         add_executable(capability_test 
             private/test/capability_test.cpp
             private/mock/attribute_mock.c
