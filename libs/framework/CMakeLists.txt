@@ -34,9 +34,8 @@ set(SOURCES
         src/celix_log.c src/celix_launcher.c
         src/celix_framework_factory.c
         src/dm_dependency_manager_impl.c src/dm_component_impl.c
-        src/dm_service_dependency.c src/dm_event.c
-        ${IO}
-)
+        src/dm_service_dependency.c src/dm_event.c src/celix_library_loader.c
+        ${IO})
 add_library(framework SHARED ${SOURCES})
 set_target_properties(framework PROPERTIES OUTPUT_NAME "celix_framework")
 target_include_directories(framework PUBLIC
@@ -49,12 +48,15 @@ target_include_directories(framework SYSTEM PRIVATE
 	${CURL_INCLUDE_DIRS}
 	${UUID_INCLUDE_DIRS}
 )
-target_compile_definitions(framework PRIVATE -DUSE_FILE32API)
+
+target_compile_options(framework PRIVATE -DUSE_FILE32API)
 
 set_target_properties(framework PROPERTIES "SOVERSION" 2)
 
-if(NOT APPLE)
-  set(UUID ${UUID_LIBRARY})
+if (APPLE)
+  #Queue ? target_compile_options(framework PRIVATE -D_POSIX_SOURCE)
+else ()
+  set(UUID ${UUID_LIBRARIES})
 endif()
 target_link_libraries(framework PUBLIC Celix::utils)
 target_link_libraries(framework PRIVATE ${UUID} ${ZLIB_LIBRARY} ${CURL_LIBRARIES})

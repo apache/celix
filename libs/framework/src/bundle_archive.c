@@ -16,13 +16,7 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * bundle_archive.c
- *
- *  \date       Aug 8, 2010
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
+
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,7 +25,9 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <unistd.h>
+#include <string.h>
 
+#include "celix_utils_api.h"
 #include "bundle_archive.h"
 #include "linked_list_iterator.h"
 
@@ -76,7 +72,7 @@ celix_status_t bundleArchive_createSystemBundleArchive(bundle_archive_pt *bundle
 			status = linkedList_create(&archive->revisions);
 			if (status == CELIX_SUCCESS) {
 				archive->id = 0L;
-				archive->location = strdup("System Bundle");
+				archive->location = strndup("System Bundle", 1024);
 				archive->archiveRoot = NULL;
 				archive->archiveRootDir = NULL;
 				archive->refreshCount = -1;

@@ -525,17 +525,11 @@ static inline void processMsgForSubscriberEntry(pubsub_zmq_topic_receiver_t *rec
         }
         metrics->lastMessageReceived = *receiveTime;
 
-        if (hdr->seqNr >= 0) {
-            if (metrics->lastSeqNr >= 0) {
-                int incr = hdr->seqNr - metrics->lastSeqNr;
-                if (incr > 1) {
-                    metrics->nrOfMissingSeqNumbers += (incr - 1);
-                    L_WARN("Missing message seq nr went from %i to %i", metrics->lastSeqNr, hdr->seqNr);
-                }
-            }
-            metrics->lastSeqNr = hdr->seqNr;
-        } else {
-            //nop. seqNr < 0, means monitoring on sending side is disabled.
+
+        int incr = hdr->seqNr - metrics->lastSeqNr;
+        if (incr > 1) {
+            metrics->nrOfMissingSeqNumbers += (incr - 1);
+            L_WARN("Missing message seq nr went from %i to %i", metrics->lastSeqNr, hdr->seqNr);
         }
 
         struct timespec sendTime;

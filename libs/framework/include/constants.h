@@ -77,6 +77,9 @@ static const char *const OSGI_FRAMEWORK_FRAMEWORK_UUID = "org.osgi.framework.uui
 static const char *const CELIX_BUNDLES_PATH_NAME = "CELIX_BUNDLES_PATH";
 static const char *const CELIX_BUNDLES_PATH_DEFAULT = "bundles";
 
+static const char *const CELIX_LOAD_BUNDLES_WITH_NODELETE = "CELIX_LOAD_BUNDLES_WITH_NODELETE";
+static const bool CELIX_LOAD_BUNDLES_WITH_NODELETE_DEFAULT = false;
+
 #define CELIX_AUTO_START_0 "CELIX_AUTO_START_0"
 #define CELIX_AUTO_START_1 "CELIX_AUTO_START_1"
 #define CELIX_AUTO_START_2 "CELIX_AUTO_START_2"

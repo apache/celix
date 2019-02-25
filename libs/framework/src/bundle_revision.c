@@ -29,6 +29,8 @@
 #include <sys/stat.h>
 #include <archive.h>
 #include <string.h>
+#include <sys/stat.h>
+
 
 #include "bundle_revision_private.h"
 
