@@ -49,7 +49,7 @@ IF (ANDROID)
     set(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -Wall ${CMAKE_C_FLAGS}")
 ELSE ()
     set(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -Wall -Werror -fPIC ${CMAKE_C_FLAGS}") #TODO add -Wextra
-    set(CMAKE_CXX_FLAGS "-std=c++11 -Wall -Werror -Wextra -Weffc++ -fno-rtti -fno-exceptions ${CMAKE_CXX_FLAGS}")
+    set(CMAKE_CXX_FLAGS "-std=c++11 -Wall -fpermissive -Wextra -Weffc++ -fno-rtti -fno-exceptions ${CMAKE_CXX_FLAGS}")
     set(CMAKE_C_FLAGS_DEBUG "-g -DDEBUG ${CMAKE_C_FLAGS}")
     set(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG ${CMAKE_CXX_FLAGS}")
 ENDIF()

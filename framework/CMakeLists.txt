@@ -169,6 +169,15 @@ set(FRAMEWORK_TESTS ON)
           private/test/thing_test.cpp)
         target_link_libraries(thing_test ${GTEST_LIBRARY} celix_utils pthread)
 
+	    add_executable(filter_gtest
+          private/test/filter_gtest.cpp
+          private/src/filter.c
+          private/include/filter_private.h
+          private/src/celix_errorcodes.c
+          private/mock/celix_log_mock.c)
+        target_link_libraries(filter_gtest ${GTEST_LIBRARY} ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils pthread)
+
+
         add_executable(capability_test 
             private/test/capability_test.cpp
             private/mock/attribute_mock.c
