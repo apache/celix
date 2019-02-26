@@ -110,6 +110,10 @@ Now install GMock and import it into the project, same issues are current here.
 
 Pick out a suitable testfile which at least does mocking and re-implement it with Gtest+Gmock
 
+4. make-test Set-up `make test`
+
+Running the tests should be done using `make test` just like it is done now for CppUTest
+
 
 ## What we've done
 
