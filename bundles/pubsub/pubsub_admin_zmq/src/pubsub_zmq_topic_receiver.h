@@ -28,7 +28,7 @@ pubsub_zmq_topic_receiver_t* pubsub_zmqTopicReceiver_create(celix_bundle_context
         log_helper_t *logHelper,
         const char *scope, 
         const char *topic,
-        const char *staticConnectUrls,
+        const celix_properties_t *topicProperties,
         long serializerSvcId,
         pubsub_serializer_service_t *serializer);
 void pubsub_zmqTopicReceiver_destroy(pubsub_zmq_topic_receiver_t *receiver);

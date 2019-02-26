@@ -84,4 +84,17 @@
  */
 #define PUBSUB_ZMQ_STATIC_CONNECT_URLS    "zmq.static.connect.urls"
 
+/**
+ * Realtime thread prio and scheduling information. This is used to setup the thread prio/sched of the
+ * internal ZMQ threads.
+ */
+#define PUBSUB_ZMQ_THREAD_REALTIME_PRIO    "thread.realtime.prio"
+#define PUBSUB_ZMQ_THREAD_REALTIME_SHED    "thread.realtime.shed"
+
+/**
+ * High Water Mark option. See ZMQ doc for more information
+ * Note expected type is long
+ */
+#define PUBSUB_ZMQ_HWM                      "zmq.hwm"
+
 #endif /* PUBSUB_PSA_ZMQ_CONSTANTS_H_ */

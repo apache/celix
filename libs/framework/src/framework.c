@@ -1042,7 +1042,7 @@ celix_status_t framework_updateBundle(framework_pt framework, bundle_pt bundle, 
         int i;
 	    for (i = arrayList_size(handles) - 1; i >= 0; i--) {
 	        void* handle = arrayList_get(handles, i);
-	        fw_closeLibrary(handle);
+	        celix_libloader_close(handle);
 	    }
     }
 
@@ -1237,8 +1237,8 @@ celix_status_t fw_uninstallBundle(framework_pt framework, bundle_pt bundle) {
 	status = CELIX_DO_IF(status, bundleRevision_getHandles(revision, &handles));
 	if(handles != NULL){
 		for (int i = arrayList_size(handles) - 1; i >= 0; i--) {
-			void *handle = arrayList_get(handles, i);
-			fw_closeLibrary(handle);
+			celix_library_handle_t *handle = arrayList_get(handles, i);
+			celix_libloader_close(handle);
 		}
 	}
 
@@ -2541,7 +2541,7 @@ static celix_status_t framework_loadLibraries(framework_pt framework, const char
             *activatorHandle = handle;
         }
         else if(handle!=NULL){
-            fw_closeLibrary(handle);
+            celix_libloader_close(handle);
         }
 
         token = strtok_r(NULL, ",", &last);

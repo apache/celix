@@ -22,17 +22,17 @@
 #include <dlfcn.h>
 
 celix_library_handle_t* celix_libloader_open(celix_bundle_context_t *ctx, const char *libPath) {
-    bool noDelete;
 #if defined(DEBUG) && !defined(ANDROID)
-    ctx = ctx; //use arg
-    noDelete = true;
+    bool def = true;
 #else
-    bool noDelete = celix_bundleContext_getPropertyAsBool(ctx, CELIX_LOAD_BUNDLES_WITH_NODELETE, CELIX_LOAD_BUNDLES_WITH_NODELETE_DEFAULT);
+    bool def = false;
 #endif
+    bool noDelete = celix_bundleContext_getPropertyAsBool(ctx, CELIX_LOAD_BUNDLES_WITH_NODELETE, def);
     if (noDelete) {
         return dlopen(libPath, RTLD_LAZY|RTLD_LOCAL|RTLD_NODELETE);
+    } else {
+        return dlopen(libPath, RTLD_LAZY|RTLD_LOCAL);
     }
-    return dlopen(libPath, RTLD_LAZY|RTLD_LOCAL);
 }
 
 
