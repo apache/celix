@@ -185,7 +185,8 @@ if (ENABLE_TESTING AND FRAMEWORK_TESTS)
         private/mock/service_tracker_stub.c
         src/celix_errorcodes.c
         private/mock/celix_log_mock.c
-        src/framework.c)
+        src/framework.c
+        src/celix_library_loader.c)
     target_link_libraries(framework_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} ${UUID} Celix::utils pthread dl)
 
     add_executable(manifest_parser_test

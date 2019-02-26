@@ -361,3 +361,11 @@ celix_array_list_t* celix_bundleContext_findServicesWithOptions(celix_bundle_con
 			->withConstPointerParameters("opts", opts);
 	return mock_c()->returnValue().value.pointerValue;
 }
+
+bool celix_bundleContext_getPropertyAsBool(celix_bundle_context_t *ctx, const char *key, bool defaultValue) {
+	mock_c()->actualCall("celix_bundleContext_getPropertyAsBool")
+			->withPointerParameters("ctx", ctx)
+			->withStringParameters("key", key)
+			->withBoolParameters("defaultValue", defaultValue);
+	return mock_c()->returnValue().value.boolValue;
+}
