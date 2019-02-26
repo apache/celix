@@ -65,5 +65,11 @@ Johan 2h
 8.  running code?
 Johan 1h
 ## Overall experience
-What are your main take-aways from this project? What did you learn?
-Is there something special you want to mention here?
+
+This was our first assignment whose project used C/C++ as its main development languages, that turned out to be a major pain point.
+Because of the different tooling (CMake/make contra Gradle or Maven) we had some initial issues setting things up for development.
+The assignment also reinforced our belief that the initial install/build/test instructions of a project needs to be there and they need to be as
+simple and painless as possible, at least for hobbyists. It's probably less of an issue if a software engineer takes some time setting up a project,
+however if a team needs to evaluate several projects and pick one to use then we can see issues with building one project will put it behind the others.
+x
+Overall this went OK, a lot of what we did are hacks because we struggled with the project because of a lack of documentation and lack of communication channels (none of us are very experienced with mailing lists).
