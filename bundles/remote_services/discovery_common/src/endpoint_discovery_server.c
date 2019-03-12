@@ -187,7 +187,7 @@ celix_status_t endpointDiscoveryServer_create(
 			port_counter++;
 			snprintf(&newPort[0], 10,  "%ld", (currentPort+1));
 
-			logHelper_log(discovery->loghelper, OSGI_LOGSERVICE_ERROR, "Error while starting discovery server on port %s - retrying on port %s...", port, newPort);
+			logHelper_log(discovery->loghelper, OSGI_LOGSERVICE_WARNING, "Error while starting discovery server on port %s - retrying on port %s...", port, newPort);
 			port = newPort;
 
 		}

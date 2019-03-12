@@ -16,13 +16,7 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * remote_service_admin_impl.c
- *
- *  \date       May 21, 2015
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -45,6 +39,9 @@
 #include "remote_constants.h"
 #include "constants.h"
 #include "civetweb.h"
+
+#include "remote_service_admin_dfi_constants.h"
+#include "celix_bundle_context.h"
 
 // defines how often the webserver is restarted (with an increased port number)
 #define MAX_NUMBER_OF_RESTARTS 	5
@@ -73,6 +70,8 @@ struct remote_service_admin {
     char *ip;
 
     struct mg_context *ctx;
+
+    FILE *logFile;
 };
 
 struct post {
@@ -97,13 +96,6 @@ static const char *data_response_headers =
 static const char *no_content_response_headers =
         "HTTP/1.1 204 OK\r\n";
 
-// TODO do we need to specify a non-Amdatu specific configuration type?!
-static const char * const CONFIGURATION_TYPE = "org.amdatu.remote.admin.http";
-static const char * const ENDPOINT_URL = "org.amdatu.remote.admin.http.url";
-
-static const char *DEFAULT_PORT = "8888";
-static const char *DEFAULT_IP = "127.0.0.1";
-
 static const unsigned int DEFAULT_TIMEOUT = 0;
 
 static int remoteServiceAdmin_callback(struct mg_connection *conn);
@@ -122,10 +114,6 @@ celix_status_t remoteServiceAdmin_create(bundle_context_pt context, remote_servi
     if (!*admin) {
         status = CELIX_ENOMEM;
     } else {
-        unsigned int port_counter = 0;
-        const char *port = NULL;
-        const char *ip = NULL;
-        char *detectedIp = NULL;
         (*admin)->context = context;
         (*admin)->exportedServices = hashMap_create(NULL, NULL, NULL, NULL);
          arrayList_create(&(*admin)->importedServices);
@@ -143,34 +131,21 @@ celix_status_t remoteServiceAdmin_create(bundle_context_pt context, remote_servi
             jsonRpc_logSetup((void *)remoteServiceAdmin_log, *admin, 1);
         }
 
-        bundleContext_getProperty(context, "RSA_PORT", &port);
-        if (port == NULL) {
-            port = (char *)DEFAULT_PORT;
+        long port = celix_bundleContext_getPropertyAsLong(context, RSA_PORT_KEY, RSA_PORT_DEFAULT);
+        const char *ip = celix_bundleContext_getProperty(context, RSA_IP_KEY, RSA_IP_DEFAULT);
+        const char *interface = celix_bundleContext_getProperty(context, RSA_INTERFACE_KEY, NULL);
+
+        char *detectedIp = NULL;
+        if ((interface != NULL) && (remoteServiceAdmin_getIpAddress((char*)interface, &detectedIp) != CELIX_SUCCESS)) {
+            logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_WARNING, "RSA: Could not retrieve IP address for interface %s", interface);
         }
-
-        bundleContext_getProperty(context, "RSA_IP", &ip);
-        if (ip == NULL) {
-            const char *interface = NULL;
-
-            bundleContext_getProperty(context, "RSA_INTERFACE", &interface);
-            if ((interface != NULL) && (remoteServiceAdmin_getIpAddress((char*)interface, &detectedIp) != CELIX_SUCCESS)) {
-                logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_WARNING, "RSA: Could not retrieve IP address for interface %s", interface);
-            }
-
-            if (ip == NULL) {
-                remoteServiceAdmin_getIpAddress(NULL, &detectedIp);
-            }
-
+        if (detectedIp != NULL) {
             ip = detectedIp;
         }
 
         if (ip != NULL) {
-            logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_INFO, "RSA: Using %s for service annunciation", ip);
+            logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_DEBUG, "RSA: Using %s for service annunciation", ip);
             (*admin)->ip = strdup(ip);
-        }
-        else {
-            logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_WARNING, "RSA: No IP address for service annunciation set. Using %s", DEFAULT_IP);
-            (*admin)->ip = strdup((char*) DEFAULT_IP);
         }
 
         if (detectedIp != NULL) {
@@ -183,35 +158,38 @@ celix_status_t remoteServiceAdmin_create(bundle_context_pt context, remote_servi
         callbacks.begin_request = remoteServiceAdmin_callback;
 
         char newPort[10];
+        snprintf(newPort, 10, "%li", port);
 
+        unsigned int port_counter = 0;
         do {
 
-            const char *options[] = { "listening_ports", port, "num_threads", "5", NULL};
+            const char *options[] = { "listening_ports", newPort, "num_threads", "5", NULL};
 
             (*admin)->ctx = mg_start(&callbacks, (*admin), options);
 
             if ((*admin)->ctx != NULL) {
-                logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_INFO, "RSA: Start webserver: %s", port);
-                (*admin)->port = strdup(port);
+                logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_INFO, "RSA: Start webserver: %s", newPort);
+                (*admin)->port = strdup(newPort);
 
+            } else {
+                logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_ERROR, "Error while starting rsa server on port %s - retrying on port %li...", newPort, port + port_counter);
+                snprintf(newPort, 10,  "%li", port + port_counter++);
             }
-            else {
-            	errno = 0;
-                char* endptr = (char*)port;
-                int currentPort = strtol(port, &endptr, 10);
+        } while (((*admin)->ctx == NULL) && (port_counter < MAX_NUMBER_OF_RESTARTS));
 
-                if (*endptr || errno != 0) {
-                    currentPort = strtol(DEFAULT_PORT, NULL, 10);
-                }
+    }
 
-                port_counter++;
-                snprintf(&newPort[0], 6,  "%d", (currentPort+1));
-
-                logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_ERROR, "Error while starting rsa server on port %s - retrying on port %s...", port, newPort);
-                port = newPort;
+    bool logCalls = celix_bundleContext_getPropertyAsBool(context, RSA_LOG_CALLS_KEY, RSA_LOG_CALLS_DEFAULT);
+    if (logCalls) {
+        const char *f = celix_bundleContext_getProperty(context, RSA_LOG_CALLS_FILE_KEY, RSA_LOG_CALLS_FILE_DEFAULT);
+        if (strncmp(f, "stdout", strlen("stdout")) == 0) {
+            (*admin)->logFile = stdout;
+        } else {
+            (*admin)->logFile = fopen(f, "w");
+            if ( (*admin)->logFile == NULL) {
+                logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_WARNING, "Error opening file '%s' for logging calls. %s", f, strerror(errno));
             }
-        } while(((*admin)->ctx == NULL) && (port_counter < MAX_NUMBER_OF_RESTARTS));
-
+        }
     }
 
     return status;
@@ -222,11 +200,13 @@ celix_status_t remoteServiceAdmin_destroy(remote_service_admin_pt *admin)
 {
     celix_status_t status = CELIX_SUCCESS;
 
+    if ( (*admin)->logFile != NULL && (*admin)->logFile != stdout) {
+        fclose((*admin)->logFile);
+    }
+
     free((*admin)->ip);
     free((*admin)->port);
     free(*admin);
-
-    //TODO destroy exports/imports
 
     *admin = NULL;
 
@@ -424,7 +404,7 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
 
         remoteServiceAdmin_createEndpointDescription(admin, reference, properties, (char*)interface, &endpoint);
         //TODO precheck if descriptor exists
-        status = exportRegistration_create(admin->loghelper, reference, endpoint, admin->context, &registration);
+        status = exportRegistration_create(admin->loghelper, reference, endpoint, admin->context, admin->logFile, &registration);
         if (status == CELIX_SUCCESS) {
             status = exportRegistration_start(registration);
             if (status == CELIX_SUCCESS) {
@@ -523,8 +503,8 @@ static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_servic
     properties_set(endpointProperties, (char*) OSGI_RSA_ENDPOINT_SERVICE_ID, serviceId);
     properties_set(endpointProperties, (char*) OSGI_RSA_ENDPOINT_ID, endpoint_uuid);
     properties_set(endpointProperties, (char*) OSGI_RSA_SERVICE_IMPORTED, "true");
-    properties_set(endpointProperties, (char*) OSGI_RSA_SERVICE_IMPORTED_CONFIGS, (char*) CONFIGURATION_TYPE);
-    properties_set(endpointProperties, (char*) ENDPOINT_URL, url);
+    properties_set(endpointProperties, (char*) OSGI_RSA_SERVICE_IMPORTED_CONFIGS, (char*) RSA_DFI_CONFIGURATION_TYPE);
+    properties_set(endpointProperties, (char*) RSA_DFI_ENDPOINT_URL, url);
 
     if (props != NULL) {
         hash_map_iterator_pt propIter = hashMapIterator_create(props);
@@ -620,7 +600,7 @@ celix_status_t remoteServiceAdmin_importService(remote_service_admin_pt admin, e
     logHelper_log(admin->loghelper, OSGI_LOGSERVICE_INFO, "Registering service factory (proxy) for service '%s'\n", objectClass);
 
     if (objectClass != NULL) {
-        status = importRegistration_create(admin->context, endpointDescription, objectClass, serviceVersion, &import);
+        status = importRegistration_create(admin->context, endpointDescription, objectClass, serviceVersion, admin->logFile, &import);
     }
     if (status == CELIX_SUCCESS && import != NULL) {
         importRegistration_setSendFn(import, (send_func_type) remoteServiceAdmin_send, admin);
@@ -675,7 +655,7 @@ static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description
     get.size = 0;
     get.writeptr = malloc(1);
 
-    char *serviceUrl = (char*)properties_get(endpointDescription->properties, (char*) ENDPOINT_URL);
+    char *serviceUrl = (char*)properties_get(endpointDescription->properties, (char*) RSA_DFI_ENDPOINT_URL);
     char url[256];
     snprintf(url, 256, "%s", serviceUrl);
 

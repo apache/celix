@@ -19,4 +19,5 @@ celix_status_t importRegistration_getImportReference(import_registration_pt regi
 celix_status_t importReference_getImportedEndpoint(import_reference_pt reference);
 celix_status_t importReference_getImportedService(import_reference_pt reference);
 
+
 #endif //CELIX_IMPORT_REGISTRATION_H

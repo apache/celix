@@ -16,13 +16,7 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * remote_service_admin_http_impl.h
- *
- *  \date       Sep 30, 2011
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
+
 
 #ifndef REMOTE_SERVICE_ADMIN_HTTP_IMPL_H_
 #define REMOTE_SERVICE_ADMIN_HTTP_IMPL_H_
@@ -31,7 +25,11 @@
 #include "bundle_context.h"
 #include "endpoint_description.h"
 
-//typedef struct remote_service_admin *remote_service_admin_pt;
+
+//forward declaration
+typedef struct remote_service_admin *remote_service_admin_pt;
+typedef struct export_registration *export_registration_pt;
+typedef struct export_reference *export_reference_pt;
 
 celix_status_t remoteServiceAdmin_create(bundle_context_pt context, remote_service_admin_pt *admin);
 celix_status_t remoteServiceAdmin_destroy(remote_service_admin_pt *admin);

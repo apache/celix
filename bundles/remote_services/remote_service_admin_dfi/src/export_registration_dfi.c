@@ -46,12 +46,14 @@ struct export_registration {
 
     //TODO add tracker and lock
     bool closed;
+
+    FILE *logFile;
 };
 
 static void exportRegistration_addServ(export_registration_pt reg, service_reference_pt ref, void *service);
 static void exportRegistration_removeServ(export_registration_pt reg, service_reference_pt ref, void *service);
 
-celix_status_t exportRegistration_create(log_helper_pt helper, service_reference_pt reference, endpoint_description_pt endpoint, bundle_context_pt context, export_registration_pt *out) {
+celix_status_t exportRegistration_create(log_helper_pt helper, service_reference_pt reference, endpoint_description_pt endpoint, bundle_context_pt context, FILE *logFile, export_registration_pt *out) {
     celix_status_t status = CELIX_SUCCESS;
 
     const char *servId = NULL;
@@ -74,6 +76,8 @@ celix_status_t exportRegistration_create(log_helper_pt helper, service_reference
         reg->exportReference.endpoint = endpoint;
         reg->exportReference.reference = reference;
         reg->closed = false;
+        reg->logFile = logFile;
+        reg->servId = strndup(servId, 1024);
 
         celixThreadMutex_create(&reg->mutex, NULL);
     }
@@ -141,12 +145,20 @@ celix_status_t exportRegistration_create(log_helper_pt helper, service_reference
 celix_status_t exportRegistration_call(export_registration_pt export, char *data, int datalength, char **responseOut, int *responseLength) {
     int status = CELIX_SUCCESS;
 
-    //printf("calling for '%s'\n");
-
     *responseLength = -1;
     celixThreadMutex_lock(&export->mutex);
     status = jsonRpc_call(export->intf, export->service, data, responseOut);
     celixThreadMutex_unlock(&export->mutex);
+
+    //printf("calling for '%s'\n");
+    if (export->logFile != NULL) {
+        static int callCount = 0;
+        char *name = NULL;
+        dynInterface_getName(export->intf, &name);
+        fprintf(export->logFile, "REMOTE CALL %i\n\tservice=%s\n\tservice_id=%s\n\trequest_payload=%s\n\tstatus=%i\n", callCount, name, export->servId, data, status);
+        fflush(export->logFile);
+        callCount += 1;
+    }
 
     return status;
 }
@@ -166,6 +178,9 @@ void exportRegistration_destroy(export_registration_pt reg) {
         }
         if (reg->tracker != NULL) {
             serviceTracker_destroy(reg->tracker);
+        }
+        if (reg->servId != NULL) {
+            free(reg->servId);
         }
         celixThreadMutex_destroy(&reg->mutex);
 
@@ -246,6 +261,3 @@ celix_status_t exportReference_getExportedService(export_reference_pt reference,
     *ref = reference->reference;
     return status;
 }
-
-
-
