@@ -26,7 +26,9 @@
 #include "endpoint_description.h"
 #include "export_registration_dfi.h"
 
-typedef struct remote_service_admin *remote_service_admin_pt;
+#include "remote_service_admin.h" //service typedef and remote_service_admin_pt typedef
+
+//typedef struct remote_service_admin *remote_service_admin_pt;
 
 celix_status_t remoteServiceAdmin_create(bundle_context_pt context, remote_service_admin_pt *admin);
 celix_status_t remoteServiceAdmin_destroy(remote_service_admin_pt *admin);

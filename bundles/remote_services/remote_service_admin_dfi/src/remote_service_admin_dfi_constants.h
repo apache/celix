@@ -20,7 +20,7 @@
 #ifndef CELIX_REMOTE_SERVICE_ADMIN_DFI_CONSTANTS_H
 #define CELIX_REMOTE_SERVICE_ADMIN_DFI_CONSTANTS_H
 
-#define RSA_PORT_KEY                "RSA_PORT"
+#define RSA_PORT_KEY                    "RSA_PORT"
 #define RSA_PORT_DEFAULT                8888
 
 #define RSA_IP_KEY                      "RSA_IP"

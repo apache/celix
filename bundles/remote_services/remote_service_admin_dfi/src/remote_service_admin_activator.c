@@ -16,13 +16,6 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * remote_service_admin_activator.c
- *
- *  \date       Sep 30, 2011
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
 #include <stdlib.h>
 #include <remote_service_admin.h>
 
