@@ -50,7 +50,7 @@
 #define L_ERROR(...) \
     logHelper_log(disc->logHelper, OSGI_LOGSERVICE_ERROR, __VA_ARGS__)
 
-static celix_properties_t* pubsub_discovery_parseEndpoint(pubsub_discovery_t *disc, const char *value);
+static celix_properties_t* pubsub_discovery_parseEndpoint(pubsub_discovery_t *disc, const char *key, const char *value);
 static char* pubsub_discovery_createJsonEndpoint(const celix_properties_t *props);
 static void pubsub_discovery_addDiscoveredEndpoint(pubsub_discovery_t *disc, celix_properties_t *endpoint);
 static void pubsub_discovery_removeDiscoveredEndpoint(pubsub_discovery_t *disc, const char *uuid);
@@ -121,9 +121,9 @@ celix_status_t pubsub_discovery_destroy(pubsub_discovery_t *ps_discovery) {
 }
 
 
-static void psd_etcdReadCallback(const char *key __attribute__((unused)), const char *value, void* arg) {
+static void psd_etcdReadCallback(const char *key, const char *value, void* arg) {
     pubsub_discovery_t *disc = arg;
-    celix_properties_t *props = pubsub_discovery_parseEndpoint(disc, value);
+    celix_properties_t *props = pubsub_discovery_parseEndpoint(disc, key, value);
     if (props != NULL) {
         pubsub_discovery_addDiscoveredEndpoint(disc, props);
     }
@@ -155,7 +155,7 @@ static void psd_watchForChange(pubsub_discovery_t *disc, bool *connectedPtr, lon
         //TODO add interruptable etcd_wait -> which returns a handle to interrupt and a can be used for a wait call
         int rc = etcd_watch(disc->pubsubPath, watchIndex, &action, NULL, &value, &readKey, mIndex);
         if (rc == ETCDLIB_RC_ERROR) {
-            printf("[PSD] Error communicating with etcd. rc is %i, action value is %s\n", rc, action);
+            L_ERROR("[PSD] Communicating with etcd. rc is %i, action value is %s\n", rc, action);
             *connectedPtr = false;
         } else if (rc == ETCDLIB_RC_TIMEOUT || action == NULL) {
             //nop
@@ -163,7 +163,7 @@ static void psd_watchForChange(pubsub_discovery_t *disc, bool *connectedPtr, lon
             if (strncmp(ETCDLIB_ACTION_CREATE, action, strlen(ETCDLIB_ACTION_CREATE)) == 0 ||
                        strncmp(ETCDLIB_ACTION_SET, action, strlen(ETCDLIB_ACTION_SET)) == 0 ||
                        strncmp(ETCDLIB_ACTION_UPDATE, action, strlen(ETCDLIB_ACTION_UPDATE)) == 0) {
-                celix_properties_t *props = pubsub_discovery_parseEndpoint(disc, value);
+                celix_properties_t *props = pubsub_discovery_parseEndpoint(disc, readKey, value);
                 if (props != NULL) {
                     pubsub_discovery_addDiscoveredEndpoint(disc, props);
                 }
@@ -264,7 +264,7 @@ void* psd_refresh(void *data) {
                 //only refresh ttl -> no index update -> no watch trigger
                 int rc = etcd_refresh(entry->key, disc->ttlForEntries);
                 if (rc != ETCDLIB_RC_OK) {
-                    L_WARN("[PSD] Warning: error refreshing etcd key %s\n", entry->key);
+                    L_WARN("[PSD] Warning: Cannot refresh etcd key %s\n", entry->key);
                     entry->isSet = false;
                     entry->errorCount += 1;
                 } else {
@@ -277,7 +277,7 @@ void* psd_refresh(void *data) {
                     entry->isSet = true;
                     entry->setCount += 1;
                 } else {
-                    L_WARN("[PSD] Warning: error setting endpoint in etcd for key %s\n", entry->key);
+                    L_WARN("[PSD] Warning: Cannot set endpoint in etcd for key %s\n", entry->key);
                     entry->errorCount += 1;
                 }
                 free(str);
@@ -434,7 +434,7 @@ celix_status_t pubsub_discovery_revokeEndpoint(void *handle, const celix_propert
         entry = hashMap_remove(disc->announcedEndpoints, uuid);
         celixThreadMutex_unlock(&disc->announcedEndpointsMutex);
     } else {
-        printf("[PSD] Error cannot remove announced endpoint. missing endpoint uuid property\n");
+        L_WARN("[PSD] Cannot remove announced endpoint. missing endpoint uuid property\n");
     }
 
     if (entry != NULL) {
@@ -469,7 +469,7 @@ static void pubsub_discovery_addDiscoveredEndpoint(pubsub_discovery_t *disc, cel
             const char *type = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TYPE, "!Error!");
             const char *admin = celix_properties_get(endpoint, PUBSUB_ENDPOINT_ADMIN_TYPE, "!Error!");
             const char *ser = celix_properties_get(endpoint, PUBSUB_SERIALIZER_TYPE_KEY, "!Error!");
-            printf("[PSD] Adding discovered endpoint %s. type is %s, admin is %s, serializer is %s.\n",
+            L_INFO("[PSD] Adding discovered endpoint %s. type is %s, admin is %s, serializer is %s.\n",
                    uuid, type, admin, ser);
         }
 
@@ -513,11 +513,11 @@ static void pubsub_discovery_removeDiscoveredEndpoint(pubsub_discovery_t *disc, 
         }
         celixThreadMutex_unlock(&disc->discoveredEndpointsListenersMutex);
     } else {
-        L_ERROR("[PSD] Warning unexpected remove from non existing endpoint (uuid is %s)\n", uuid);
+        L_WARN("[PSD] Warning unexpected remove from non existing endpoint (uuid is %s)\n", uuid);
     }
 }
 
-celix_properties_t* pubsub_discovery_parseEndpoint(pubsub_discovery_t *disc, const char* etcdValue) {
+celix_properties_t* pubsub_discovery_parseEndpoint(pubsub_discovery_t *disc, const char *key, const char* etcdValue) {
     properties_t *props = celix_properties_create();
 
     // etcdValue contains the json formatted string
@@ -545,7 +545,8 @@ celix_properties_t* pubsub_discovery_parseEndpoint(pubsub_discovery_t *disc, con
 
     bool valid = pubsubEndpoint_isValid(props, true, true);
     if (!valid) {
-        L_WARN("[PSD] Warning retrieved endpoint is not valid\n");
+        L_WARN("[PSD] Retrieved endpoint '%s' is not valid\n", key);
+        L_DEBUG("[PSD] Key %s: %s\n", key, etcdValue);
         celix_properties_destroy(props);
         props = NULL;
     }

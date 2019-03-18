@@ -29,7 +29,6 @@
 
 #include <jansson.h>
 #include "json_serializer.h"
-#include "remote_service_admin.h"
 
 #include "import_registration_dfi.h"
 #include "export_registration_dfi.h"

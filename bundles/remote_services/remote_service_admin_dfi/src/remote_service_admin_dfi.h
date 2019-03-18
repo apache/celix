@@ -24,12 +24,9 @@
 
 #include "bundle_context.h"
 #include "endpoint_description.h"
+#include "export_registration_dfi.h"
 
-
-//forward declaration
 typedef struct remote_service_admin *remote_service_admin_pt;
-typedef struct export_registration *export_registration_pt;
-typedef struct export_reference *export_reference_pt;
 
 celix_status_t remoteServiceAdmin_create(bundle_context_pt context, remote_service_admin_pt *admin);
 celix_status_t remoteServiceAdmin_destroy(remote_service_admin_pt *admin);

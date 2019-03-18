@@ -20,10 +20,14 @@ limitations under the License.
 The Celix Discovery ETCD bundles realizes OSGi services discovery based on [etcd](https://github.com/coreos/etcd).
 
 ###### Properties
-    DISCOVERY_ETCD_ROOT_PATH             used path (default: discovery)
-    DEFAULT_ETCD_SERVER_IP               ip address of the etcd server (default: 127.0.0.1)
-    DEFAULT_ETCD_SERVER_PORT             port of the etcd server  (default: 2379)
-    DEFAULT_ETCD_TTL                     time-to-live for etcd entries in seconds (default: 30)
+    DISCOVERY_ETCD_ROOT_PATH            Used path to announce and find discovery entpoints (default: discovery)
+    DISCOVERY_ETCD_SERVER_IP            ip address of the etcd server (default: 127.0.0.1)
+    DISCOVERY_ETCD_SERVER_PORT          port of the etcd server  (default: 2379)
+    DISCOVERY_ETCD_TTL                  time-to-live for etcd entries in seconds (default: 30)
+    
+    DISCOVERY_CFG_SERVER_IP             The host to use/announce for this framewokr discovery endpoint. Default "127.0.0.1"
+    DISCOVERY_CFG_SERVER_PORT           The port to use/announce for this framework endpoint endpoint. Default 9999
+    DISCOVERY_CFG_SERVER_PATH           The path to use for this framework discovery endpoint.Default "/org.apache.celix.discovery.etcd"
 
 ###### CMake option
     BUILD_RSA_DISCOVERY_ETCD=ON

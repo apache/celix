@@ -26,8 +26,8 @@ Libffi is configured using descriptor files in the bundles.
     RSA_IP                      The RSA ip address to use for discovery (default 127.0.0.1)
     RSA_INTERFACE               If specified, the ip adress of interface (i.g. eth0) will be used.
     
-    RSA_LOG_CALLS              If set to true, the RSA will Log calls info (including serialized data) to the file in RSA_DUMP_CALLS_FILE. Default is false.
-    RSA_LOG_CALLS_FILE         If RSA_DUMP_CALLS is enabled to file to dump to (starting rsa will truncate file). Default is stdout.          
+    RSA_LOG_CALLS              If set to true, the RSA will Log calls info (including serialized data) to the file in RSA_LOG_CALLS_FILE. Default is false.
+    RSA_LOG_CALLS_FILE         If RSA_LOG_CALLS is enabled to file to log to (starting rsa will truncate file). Default is stdout.          
 
 ###### CMake option
     RSA_REMOTE_SERVICE_ADMIN_DFI=ON

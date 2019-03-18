@@ -16,15 +16,12 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * activator.c
- *
- *  \date       Jan 15, 2016
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
+
 #include <stdlib.h>
 #include <string.h>
+#include <zconf.h>
+#include <stdio.h>
+#include <unistd.h>
 
 #include "bundle_context.h"
 #include "bundle_activator.h"
@@ -61,6 +58,12 @@ static celix_status_t activator_removeShellService(void *handle, service_referen
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	celix_status_t status = CELIX_SUCCESS;
+
+	//Check if tty exists
+	if (!isatty(fileno(stdin))) {
+        printf("[Shell TUI] no tty connected. Shell TUI will not activate.\n");
+        return status;
+	}
 
     shell_tui_activator_t* activator = calloc(1, sizeof(*activator));
 
@@ -100,12 +103,13 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
-
     shell_tui_activator_t* act = (shell_tui_activator_t*) userData;
 
-    act->currentSvc = NULL;
-    serviceTracker_open(act->tracker);
-    shellTui_start(act->shellTui);
+    if (act != NULL) {
+        act->currentSvc = NULL;
+        serviceTracker_open(act->tracker);
+        shellTui_start(act->shellTui);
+    }
 
 	return status;
 }
@@ -125,9 +129,11 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
     shell_tui_activator_t* act = (shell_tui_activator_t*) userData;
 
-    shellTui_destroy(act->shellTui);
-    serviceTracker_destroy(act->tracker);
-	free(act);
+    if (act != NULL) {
+        shellTui_destroy(act->shellTui);
+        serviceTracker_destroy(act->tracker);
+        free(act);
+    }
 
 	return CELIX_SUCCESS;
 }
