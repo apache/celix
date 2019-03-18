@@ -80,20 +80,22 @@
 
 /**
  * The static url which a subscriber should try to connect to.
- * The urls are space separated
+ * The urls are space separated.
+ * Can be set in the topic properties.
  */
 #define PUBSUB_ZMQ_STATIC_CONNECT_URLS    "zmq.static.connect.urls"
 
 /**
  * Realtime thread prio and scheduling information. This is used to setup the thread prio/sched of the
  * internal ZMQ threads.
+ * Can be set in the topic properties.
  */
 #define PUBSUB_ZMQ_THREAD_REALTIME_PRIO    "thread.realtime.prio"
 #define PUBSUB_ZMQ_THREAD_REALTIME_SHED    "thread.realtime.shed"
 
 /**
  * High Water Mark option. See ZMQ doc for more information
- * Note expected type is long
+ * Note expected type is longs
  */
 #define PUBSUB_ZMQ_HWM                      "zmq.hwm"
 
