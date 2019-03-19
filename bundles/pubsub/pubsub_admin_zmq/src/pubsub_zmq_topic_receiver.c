@@ -740,26 +740,43 @@ static void psa_zmq_initializeAllSubscribers(pubsub_zmq_topic_receiver_t *receiv
 }
 
 static void psa_zmq_setupZmqContext(pubsub_zmq_topic_receiver_t *receiver, const celix_properties_t *topicProperties) {
-    long prio = celix_properties_getAsLong(topicProperties, PUBSUB_ZMQ_THREAD_REALTIME_PRIO, -1L);
-    if (prio > 0 && prio < 100) {
-        zmq_ctx_set(receiver->zmqCtx, ZMQ_THREAD_PRIORITY, (int)prio);
+    //NOTE. ZMQ will abort when performing a sched_setscheduler without permission.
+    //As result permission has to be checked first.
+    //TODO update this to use cap_get_pid and cap-get_flag instead of check user is root (note adds dep to -lcap)
+    bool gotPermission = false;
+    if (getuid() == 0) {
+        gotPermission = true;
     }
 
-    const char *shed = celix_properties_get(topicProperties, PUBSUB_ZMQ_THREAD_REALTIME_SHED, NULL);
-    if (shed != NULL) {
+
+    long prio = celix_properties_getAsLong(topicProperties, PUBSUB_ZMQ_THREAD_REALTIME_PRIO, -1L);
+    if (prio > 0 && prio < 100) {
+        if (gotPermission) {
+            zmq_ctx_set(receiver->zmqCtx, ZMQ_THREAD_PRIORITY, (int) prio);
+        } else {
+            L_INFO("Skipping configuration of thread prio to %i. No permission\n", (int)prio);
+        }
+    }
+
+    const char *sched = celix_properties_get(topicProperties, PUBSUB_ZMQ_THREAD_REALTIME_SHED, NULL);
+    if (sched != NULL) {
         int policy = ZMQ_THREAD_SCHED_POLICY_DFLT;
-        if (strncmp("SCHED_OTHER", shed, 16) == 0) {
+        if (strncmp("SCHED_OTHER", sched, 16) == 0) {
             policy = SCHED_OTHER;
-        } else if (strncmp("SCHED_BATCH", shed, 16) == 0) {
+        } else if (strncmp("SCHED_BATCH", sched, 16) == 0) {
             policy = SCHED_BATCH;
-        } else if (strncmp("SCHED_IDLE", shed, 16) == 0) {
+        } else if (strncmp("SCHED_IDLE", sched, 16) == 0) {
             policy = SCHED_IDLE;
-        } else if (strncmp("SCHED_FIFO", shed, 16) == 0) {
+        } else if (strncmp("SCHED_FIFO", sched, 16) == 0) {
             policy = SCHED_FIFO;
-        } else if (strncmp("SCHED_RR", shed, 16) == 0) {
+        } else if (strncmp("SCHED_RR", sched, 16) == 0) {
             policy = SCHED_RR;
         }
-        zmq_ctx_set(receiver->zmqCtx, ZMQ_THREAD_SCHED_POLICY, policy);
+        if (gotPermission) {
+            zmq_ctx_set(receiver->zmqCtx, ZMQ_THREAD_SCHED_POLICY, policy);
+        } else {
+            L_INFO("Skipping configuration of thread scheduling to %s. No permission\n", sched);
+        }
     }
 }
 
