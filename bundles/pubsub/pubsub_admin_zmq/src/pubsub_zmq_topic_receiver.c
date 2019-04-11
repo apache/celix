@@ -758,7 +758,7 @@ static void psa_zmq_setupZmqContext(pubsub_zmq_topic_receiver_t *receiver, const
         }
     }
 
-    const char *sched = celix_properties_get(topicProperties, PUBSUB_ZMQ_THREAD_REALTIME_SHED, NULL);
+    const char *sched = celix_properties_get(topicProperties, PUBSUB_ZMQ_THREAD_REALTIME_SCHED, NULL);
     if (sched != NULL) {
         int policy = ZMQ_THREAD_SCHED_POLICY_DFLT;
         if (strncmp("SCHED_OTHER", sched, 16) == 0) {

@@ -91,7 +91,7 @@
  * Can be set in the topic properties.
  */
 #define PUBSUB_ZMQ_THREAD_REALTIME_PRIO    "thread.realtime.prio"
-#define PUBSUB_ZMQ_THREAD_REALTIME_SHED    "thread.realtime.shed"
+#define PUBSUB_ZMQ_THREAD_REALTIME_SCHED   "thread.realtime.sched"
 
 /**
  * High Water Mark option. See ZMQ doc for more information
