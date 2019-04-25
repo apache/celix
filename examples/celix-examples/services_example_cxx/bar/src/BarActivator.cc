@@ -19,14 +19,12 @@
 
 #include "Bar.h"
 #include "BarActivator.h"
+#include <celix_bundle_activator.h>
 
 using namespace celix::dm;
 
-DmActivator* DmActivator::create(DependencyManager& mng) {
-    return new BarActivator(mng);
-}
 
-void BarActivator::init() {
+BarActivator::BarActivator(std::shared_ptr<DependencyManager> mng) {
     auto bar = std::unique_ptr<Bar>{new Bar{}};
 
     Properties props;
@@ -41,8 +39,10 @@ void BarActivator::init() {
         return bar->cMethod(arg1, arg2, out);
     };
 
-    mng.createComponent(std::move(bar))  //using a pointer a instance. Also supported is lazy initialization (default constructor needed) or a rvalue reference (move)
+    mng->createComponent(std::move(bar))  //using a pointer a instance. Also supported is lazy initialization (default constructor needed) or a rvalue reference (move)
         .addInterface<IAnotherExample>(IANOTHER_EXAMPLE_VERSION, props)
         .addCInterface(&this->cExample, EXAMPLE_NAME, EXAMPLE_VERSION, cProps)
         .setCallbacks(&Bar::init, &Bar::start, &Bar::stop, &Bar::deinit);
 }
+
+CELIX_GEN_CXX_BUNDLE_ACTIVATOR(BarActivator)

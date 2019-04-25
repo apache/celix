@@ -15,16 +15,15 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_celix_bundle(hook_example
-    BUNDLE_SYMBOLICNAME "Hook_Example"
+add_celix_bundle(track_tracker_example
     VERSION "1.0.0"
     SOURCES
-        src/activator
+        src/activator.c
 )
 
-add_celix_container(hook_service_example
+add_celix_container(track_tracker_example_cnt
     BUNDLES
         Celix::shell
         Celix::shell_tui
-        hook_example
+        track_tracker_example
 )

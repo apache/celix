@@ -22,21 +22,19 @@
 #include "Phase3LockingActivator.h"
 
 #include <memory>
+#include <celix_bundle_activator.h>
 
 using namespace celix::dm;
 
-
-DmActivator* DmActivator::create(DependencyManager& mng) {
-    return new Phase3LockingActivator(mng);
-}
-
-void Phase3LockingActivator::init() {
+Phase3LockingActivator::Phase3LockingActivator(std::shared_ptr<DependencyManager> mng) {
     auto inst = std::shared_ptr<Phase3LockingCmp> {new Phase3LockingCmp {}};
 
-    Component<Phase3LockingCmp>& cmp = mng.createComponent<Phase3LockingCmp>(inst)  //set inst using a shared ptr
+    Component<Phase3LockingCmp>& cmp = mng->createComponent<Phase3LockingCmp>(inst)  //set inst using a shared ptr
         .setCallbacks(nullptr, &Phase3LockingCmp::start, &Phase3LockingCmp::stop, nullptr);
 
     cmp.createServiceDependency<IPhase2>()
             .setStrategy(DependencyUpdateStrategy::locking)
             .setCallbacks(&Phase3LockingCmp::addPhase2, &Phase3LockingCmp::removePhase2);
 }
+
+CELIX_GEN_CXX_BUNDLE_ACTIVATOR(Phase3LockingActivator)

@@ -20,18 +20,16 @@
 
 #include "Phase3Cmp.h"
 #include "Phase3Activator.h"
+#include <celix_bundle_activator.h>
 
 using namespace celix::dm;
 
-
-DmActivator* DmActivator::create(DependencyManager& mng) {
-    return new Phase3Activator(mng);
-}
-
-void Phase3Activator::init() {
-    Phase3BaseActivator::init();
+Phase3Activator::Phase3Activator(std::shared_ptr<DependencyManager> mng) : Phase3BaseActivator{mng} {
     cmp.createServiceDependency<IPhase2>()
              .setRequired(false)
              .setFilter("(&(name=phase2a)(non-existing=*))")
              .setCallbacks(&Phase3Cmp::setPhase2a);
 }
+
+
+CELIX_GEN_CXX_BUNDLE_ACTIVATOR(Phase3Activator)

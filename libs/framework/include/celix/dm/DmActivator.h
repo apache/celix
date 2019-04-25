@@ -28,7 +28,7 @@
 
 namespace celix { namespace dm {
 
-    class DmActivator {
+    class __attribute__((deprecated)) DmActivator {
     public:
         DmActivator(DependencyManager& m) : mng(m), ctx{m.bundleContext()}  {}
         virtual ~DmActivator() = default;

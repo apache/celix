@@ -1166,6 +1166,9 @@ celix_status_t fw_stopBundle(framework_pt framework, bundle_pt bundle, bool reco
                 }
 
                 status = CELIX_DO_IF(status, framework_setBundleStateAndNotify(framework, bundle, OSGI_FRAMEWORK_BUNDLE_RESOLVED));
+            } else if (bndId == 0) {
+                //framework bundle
+                celix_serviceTracker_syncForContext(framework->bundle->context);
             }
 	    }
 

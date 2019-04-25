@@ -26,13 +26,3 @@ add_celix_bundle(dm_example_cxx_phase3_locking
 target_include_directories(dm_example_cxx_phase3_locking PRIVATE src)
 target_link_libraries(dm_example_cxx_phase3_locking PRIVATE dm_example_cxx_api pthread)
 
-IF(APPLE)
-    target_link_libraries(dm_example_cxx_phase3_locking PRIVATE -Wl,-all_load Celix::dependency_manager_cxx_static)
-else()
-    if(ENABLE_ADDRESS_SANITIZER)
-        #With asan there can be undefined symbols
-        target_link_libraries(dm_example_cxx_phase3_locking PRIVATE -Wl,--whole-archive Celix::dependency_manager_cxx_static -Wl,--no-whole-archive)
-    else()
-        target_link_libraries(dm_example_cxx_phase3_locking PRIVATE -Wl,--no-undefined -Wl,--whole-archive Celix::dependency_manager_cxx_static -Wl,--no-whole-archive)
-    endif()
-endif()

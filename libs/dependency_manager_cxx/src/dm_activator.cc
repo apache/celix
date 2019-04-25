@@ -25,6 +25,9 @@
 #include "bundle_activator.h"
 
 
+/**
+ * Deprecated. Use the CELIX_GEN_CXX_BUNDLE_ACTIVATOR marco from celix_bundle_activator.h instead
+ */
 struct BundleActivatorData {
     DependencyManager mng;
     std::unique_ptr<celix::dm::DmActivator> act;

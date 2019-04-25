@@ -17,27 +17,20 @@
  * under the License.
  */
 
-#include "Foo.h"
-#include "FooActivator.h"
+#ifndef BAR_ACTIVATOR_H
+#define BAR_ACTIVATOR_H
+
+#include "celix/dm/DependencyManager.h"
+#include "example.h"
 
 using namespace celix::dm;
 
-DmActivator* DmActivator::create(DependencyManager& mng) {
-    return new FooActivator(mng);
-}
+class BarActivator  {
+private:
+    example_t cExample {nullptr, nullptr};
+public:
+    BarActivator(std::shared_ptr<DependencyManager> mng);
 
-void FooActivator::init() {
+};
 
-    Component<Foo>& cmp = mng.createComponent<Foo>()
-        .setCallbacks(nullptr, &Foo::start, &Foo::stop, nullptr);
-
-    cmp.createServiceDependency<IAnotherExample>()
-            .setRequired(true)
-            .setVersionRange(IANOTHER_EXAMPLE_CONSUMER_RANGE)
-            .setCallbacks(&Foo::setAnotherExample);
-
-    cmp.createCServiceDependency<example_t>(EXAMPLE_NAME)
-            .setRequired(false)
-            .setVersionRange(EXAMPLE_CONSUMER_RANGE)
-            .setCallbacks(&Foo::setExample);
-}
+#endif //BAR_ACTIVATOR_H

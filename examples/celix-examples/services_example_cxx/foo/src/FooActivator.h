@@ -17,18 +17,16 @@
  * under the License.
  */
 
-#ifndef BAZ_ACTIVATOR_H
-#define BAZ_ACTIVATOR_H
+#ifndef FOO_ACTIVATOR_H
+#define FOO_ACTIVATOR_H
 
-#include "celix/dm/DmActivator.h"
+#include "celix/dm/DependencyManager.h"
 
 using namespace celix::dm;
 
-class BazActivator : public DmActivator {
-private:
+class FooActivator  {
 public:
-    BazActivator(DependencyManager& mng) : DmActivator(mng) {}
-    virtual void init() override;
+    FooActivator(std::shared_ptr<DependencyManager> mng);
 };
 
-#endif //BAZ_ACTIVATOR_H
+#endif //FOO_ACTIVATOR_H

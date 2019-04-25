@@ -19,16 +19,13 @@
 
 #include "Baz.h"
 #include "BazActivator.h"
+#include <celix_bundle_activator.h>
 
 using namespace celix::dm;
 
-DmActivator* DmActivator::create(DependencyManager& mng) {
-    return new BazActivator(mng);
-}
+BazActivator::BazActivator(std::shared_ptr<DependencyManager> mng) {
 
-void BazActivator::init() {
-
-    Component<Baz>& cmp = mng.createComponent<Baz>()
+    Component<Baz>& cmp = mng->createComponent<Baz>()
         .setCallbacks(nullptr, &Baz::start, &Baz::stop, nullptr);
 
     cmp.createServiceDependency<IAnotherExample>()
@@ -43,3 +40,5 @@ void BazActivator::init() {
             .setVersionRange(EXAMPLE_CONSUMER_RANGE)
             .setCallbacks(&Baz::addExample, &Baz::removeExample);
 }
+
+CELIX_GEN_CXX_BUNDLE_ACTIVATOR(BazActivator)
