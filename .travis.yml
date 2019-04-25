@@ -24,10 +24,10 @@ matrix:
        - os: linux
          dist: trusty
          compiler: clang
-         #       - os: osx
-         #osx_image: xcode7.3
-         #compiler: clang
-         #env: MACOSX_DEPLOYMENT_TARGET=10.11
+       - os: osx
+         osx_image: xcode7.3
+         compiler: clang
+         env: MACOSX_DEPLOYMENT_TARGET=10.11
        - os: linux
          dist: trusty
          compiler: gcc

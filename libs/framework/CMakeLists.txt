@@ -19,10 +19,6 @@ find_package(ZLIB REQUIRED)
 find_package(UUID REQUIRED)
 find_package(CURL REQUIRED)
 
-if(WIN32)
-    set(IO src/iowin32.c)
-endif(WIN32)
-
 set(SOURCES
         src/attribute.c src/bundle.c src/bundle_archive.c src/bundle_cache.c
         src/bundle_context.c src/bundle_revision.c src/capability.c src/celix_errorcodes.c
@@ -35,29 +31,15 @@ set(SOURCES
         src/celix_framework_factory.c
         src/dm_dependency_manager_impl.c src/dm_component_impl.c
         src/dm_service_dependency.c src/dm_event.c src/celix_library_loader.c
-        ${IO})
+)
 add_library(framework SHARED ${SOURCES})
 set_target_properties(framework PROPERTIES OUTPUT_NAME "celix_framework")
-target_include_directories(framework PUBLIC
+target_include_directories(framework PUBLIC 
         $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
         $<INSTALL_INTERFACE:include/celix>
 )
-target_include_directories(framework PRIVATE src)
-target_include_directories(framework SYSTEM PRIVATE 
-	${ZLIB_INCLUDE_DIRS}
-	${CURL_INCLUDE_DIRS}
-	${UUID_INCLUDE_DIRS}
-)
-
 target_compile_options(framework PRIVATE -DUSE_FILE32API)
-
 set_target_properties(framework PROPERTIES "SOVERSION" 2)
-
-if (APPLE)
-  #Queue ? target_compile_options(framework PRIVATE -D_POSIX_SOURCE)
-else ()
-  set(UUID ${UUID_LIBRARIES})
-endif()
 target_link_libraries(framework PUBLIC Celix::utils)
 target_link_libraries(framework PRIVATE ${UUID} ${ZLIB_LIBRARY} ${CURL_LIBRARIES})
 
