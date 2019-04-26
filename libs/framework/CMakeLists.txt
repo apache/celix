@@ -19,6 +19,11 @@ find_package(ZLIB REQUIRED)
 find_package(UUID REQUIRED)
 find_package(CURL REQUIRED)
 
+if(NOT UUID_LIBRARY)
+    #i.e. not found for OSX
+    set(UUID_LIBRARY "")
+endif()
+
 set(SOURCES
         src/attribute.c src/bundle.c src/bundle_archive.c src/bundle_cache.c
         src/bundle_context.c src/bundle_revision.c src/capability.c src/celix_errorcodes.c
