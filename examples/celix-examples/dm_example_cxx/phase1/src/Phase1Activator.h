@@ -20,7 +20,7 @@
 #ifndef CELIX_PHASE1ACTIVATOR_H
 #define CELIX_PHASE1ACTIVATOR_H
 
-#include "celix/dm/DmActivator.h"
+#include "celix/dm/DependencyManager.h"
 #include "command.h"
 
 using namespace celix::dm;
