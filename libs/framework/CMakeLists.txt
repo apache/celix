@@ -41,7 +41,7 @@ target_include_directories(framework PUBLIC
 target_compile_options(framework PRIVATE -DUSE_FILE32API)
 set_target_properties(framework PROPERTIES "SOVERSION" 2)
 target_link_libraries(framework PUBLIC Celix::utils)
-target_link_libraries(framework PRIVATE ${UUID} ${ZLIB_LIBRARY} ${CURL_LIBRARIES})
+target_link_libraries(framework PRIVATE ${UUID_LIBRARY} ${ZLIB_LIBRARY} ${CURL_LIBRARIES})
 
 install(TARGETS framework EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework)
 install(DIRECTORY include/ DESTINATION include/celix COMPONENT framework)
@@ -169,7 +169,7 @@ if (ENABLE_TESTING AND FRAMEWORK_TESTS)
         private/mock/celix_log_mock.c
         src/framework.c
         src/celix_library_loader.c)
-    target_link_libraries(framework_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} ${UUID} Celix::utils pthread dl)
+    target_link_libraries(framework_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} ${UUID_LIBRARY} Celix::utils pthread dl)
 
     add_executable(manifest_parser_test
         private/test/manifest_parser_test.cpp

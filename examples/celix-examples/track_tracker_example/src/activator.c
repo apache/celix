@@ -92,7 +92,6 @@ celix_status_t activator_start(activator_data_t* act, celix_bundle_context_t *ct
 
 celix_status_t activator_stop(activator_data_t* act, celix_bundle_context_t *ctx) {
     celix_bundleContext_unregisterService(ctx, act->svcId);
-    usleep(1000);
     celix_bundleContext_stopTracker(ctx, act->calcTrk1);
     celix_bundleContext_stopTracker(ctx, act->calcTrk2);
     usleep(1000);

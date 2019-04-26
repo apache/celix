@@ -769,7 +769,6 @@ celix_service_tracker_t* celix_serviceTracker_createWithOptions(
             }
 
 
-            //TODO open on other thread?
             serviceTracker_open(tracker);
         }
     } else {
