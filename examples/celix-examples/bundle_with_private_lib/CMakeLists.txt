@@ -15,6 +15,25 @@
 # specific language governing permissions and limitations
 # under the License.
 
+add_library(tlib SHARED
+        tlib/src/test.c
+)
+target_include_directories(tlib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/tlib/include)
+set_library_version(tlib "4.3.2") # sets target propery VERSION to 4.3.2 and SOVERSION to 4
 
-add_executable(embedding src/main)
-target_link_libraries(embedding Celix::framework )
+add_celix_bundle(hellotest
+    VERSION "1.2"
+    SOURCES
+        src/activator.c
+)
+celix_bundle_headers(hellotest
+    "X-WebContent: web"
+    "X-MediaType: application/json"
+)
+celix_bundle_private_libs(hellotest tlib)
+
+add_celix_container(hello_world_test_cnt
+    BUNDLES
+        hellotest
+)
+

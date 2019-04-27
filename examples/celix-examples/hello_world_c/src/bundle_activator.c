@@ -17,36 +17,23 @@
  *under the License.
  */
 
-#ifndef CELIX_CELIX_API_H_
-#define CELIX_CELIX_API_H_
 
-#include "properties.h"
-#include "array_list.h"
-#include "constants.h"
-#include "bundle.h"
-#include "bundle_context.h"
-#include "framework.h"
+#include <celix_api.h>
 
-#include "celix_properties.h"
-#include "celix_array_list.h"
-//#include "celix_constants.h"
-#include "celix_utils_api.h"
-#include "celix_bundle.h"
-#include "celix_bundle_context.h"
-
-#include "celix_framework.h"
-#include "celix_framework_factory.h"
-#include "celix_launcher.h"
-
-#include "celix_dependency_manager.h"
-#include "celix_dm_component.h"
-#include "dm_service_dependency.h"
-
-#include "celix_bundle_activator.h"
-
-#ifdef __cplusplus
-#include "celix/dm/DependencyManager.h"
-#endif
+typedef struct activator_data {
+    /*intentional empty*/
+} activator_data_t;
 
 
-#endif //CELIX_CELIX_API_H_
+
+static celix_status_t activator_start(activator_data_t *data, celix_bundle_context_t *ctx) {
+    printf("Hello world from C bundle with id %li\n", celix_bundle_getId(celix_bundleContext_getBundle(ctx)));
+    return CELIX_SUCCESS;
+}
+
+static celix_status_t activator_stop(activator_data_t *data, celix_bundle_context_t *ctx) {
+    printf("Goodbye world from C bundle with id %li\n", celix_bundle_getId(celix_bundleContext_getBundle(ctx)));
+    return CELIX_SUCCESS;
+}
+
+CELIX_GEN_BUNDLE_ACTIVATOR(activator_data_t, activator_start, activator_stop)

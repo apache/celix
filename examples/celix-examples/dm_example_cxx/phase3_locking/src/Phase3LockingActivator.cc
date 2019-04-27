@@ -22,7 +22,7 @@
 #include "Phase3LockingActivator.h"
 
 #include <memory>
-#include <celix_bundle_activator.h>
+#include <celix_api.h>
 
 using namespace celix::dm;
 

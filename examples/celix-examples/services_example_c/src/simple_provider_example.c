@@ -21,8 +21,7 @@
 #include <stdlib.h>
 
 #include "example_calc.h"
-#include "celix_bundle_activator.h"
-#include "constants.h"
+#include <celix_api.h>
 
 typedef struct activator_data {
     example_calc_t svc;

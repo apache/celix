@@ -18,7 +18,7 @@
  */
 
 #include <IName.h>
-#include <celix_bundle_activator.h>
+#include <celix_api.h>
 #include "Phase2Cmp.h"
 #include "Phase2Activator.h"
 #include "log_service.h"

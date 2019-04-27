@@ -17,36 +17,12 @@
  *under the License.
  */
 
-#ifndef CELIX_CELIX_API_H_
-#define CELIX_CELIX_API_H_
+#include <stdio.h>
+#include <dlfcn.h>
 
-#include "properties.h"
-#include "array_list.h"
-#include "constants.h"
-#include "bundle.h"
-#include "bundle_context.h"
-#include "framework.h"
-
-#include "celix_properties.h"
-#include "celix_array_list.h"
-//#include "celix_constants.h"
-#include "celix_utils_api.h"
-#include "celix_bundle.h"
-#include "celix_bundle_context.h"
-
-#include "celix_framework.h"
-#include "celix_framework_factory.h"
-#include "celix_launcher.h"
-
-#include "celix_dependency_manager.h"
-#include "celix_dm_component.h"
-#include "dm_service_dependency.h"
-
-#include "celix_bundle_activator.h"
-
-#ifdef __cplusplus
-#include "celix/dm/DependencyManager.h"
-#endif
-
-
-#endif //CELIX_CELIX_API_H_
+void doo(const char *bndName)
+{
+    Dl_info info;
+    dladdr(doo, &info);
+    printf("Hello from lib @ '%s' called by bundle '%s'\n", info.dli_fname, bndName);
+}

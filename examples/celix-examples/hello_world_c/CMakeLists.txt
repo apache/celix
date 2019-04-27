@@ -5,9 +5,9 @@
 # to you under the Apache License, Version 2.0 (the
 # "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
-# 
+#
 #   http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing,
 # software distributed under the License is distributed on an
 # "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -15,6 +15,14 @@
 # specific language governing permissions and limitations
 # under the License.
 
+add_celix_bundle(hello_world_c
+    VERSION 1.0.0
+    SOURCES src/bundle_activator.c
+)
 
-add_executable(embedding src/main)
-target_link_libraries(embedding Celix::framework )
+add_celix_container(hello_world_c_container
+    BUNDLES
+        Celix::shell
+        Celix::shell_tui
+        hello_world_c
+)

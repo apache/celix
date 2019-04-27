@@ -27,6 +27,7 @@ matrix:
        - os: osx
          osx_image: xcode10.2
          compiler: clang
+         env: MACOSX_DEPLOYMENT_TARGET=10.14
        - os: linux
          dist: trusty
          compiler: gcc

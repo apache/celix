@@ -17,9 +17,10 @@
  * under the License.
  */
 
+#include <celix_api.h>
+
 #include "Bar.h"
 #include "BarActivator.h"
-#include <celix_bundle_activator.h>
 
 using namespace celix::dm;
 

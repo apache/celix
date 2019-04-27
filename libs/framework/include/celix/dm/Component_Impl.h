@@ -101,15 +101,11 @@ Component<T>& Component<T>::removeCInterface(const I* svc){
 template<class T>
 template<class I>
 ServiceDependency<T,I>& Component<T>::createServiceDependency(const std::string name) {
-#ifdef __EXCEPTIONS
-    auto dep = std::shared_ptr<ServiceDependency<T,I>> {new ServiceDependency<T,I>(name)};
-#else
     static ServiceDependency<T,I> invalidDep{std::string{}, false};
-    auto dep = std::shared_ptr<ServiceDependency<T,I>> {new(std::nothrow) ServiceDependency<T,I>(name)};
+    auto dep = std::shared_ptr<ServiceDependency<T,I>> {new ServiceDependency<T,I>(name)};
     if (dep == nullptr) {
         return invalidDep;
     }
-#endif
     this->dependencies.push_back(dep);
     celix_dmComponent_addServiceDependency(cComponent(), dep->cServiceDependency());
     dep->setComponentInstance(&getInstance());
@@ -127,15 +123,11 @@ Component<T>& Component<T>::remove(ServiceDependency<T,I>& dep) {
 template<class T>
 template<typename I>
 CServiceDependency<T,I>& Component<T>::createCServiceDependency(const std::string name) {
-#ifdef __EXCEPTIONS
-    auto dep = std::shared_ptr<CServiceDependency<T,I>> {new CServiceDependency<T,I>(name)};
-#else
     static CServiceDependency<T,I> invalidDep{std::string{}, false};
-    auto dep = std::shared_ptr<CServiceDependency<T,I>> {new(std::nothrow) CServiceDependency<T,I>(name)};
+    auto dep = std::shared_ptr<CServiceDependency<T,I>> {new CServiceDependency<T,I>(name)};
     if (dep == nullptr) {
         return invalidDep;
     }
-#endif
     this->dependencies.push_back(dep);
     celix_dmComponent_addServiceDependency(cComponent(), dep->cServiceDependency());
     dep->setComponentInstance(&getInstance());
@@ -158,15 +150,11 @@ Component<T>* Component<T>::create(celix_bundle_context_t *context) {
 
 template<class T>
 Component<T>* Component<T>::create(celix_bundle_context_t *context, std::string name) {
-#ifdef __EXCEPTIONS
-    Component<T>* cmp = new Component<T>{context, name};
-#else
     static Component<T> invalid{nullptr, std::string{}};
-    Component<T>* cmp = new(std::nothrow) Component<T>(context, name);
+    Component<T>* cmp = new Component<T>(context, name);
     if (cmp == nullptr) {
         cmp = &invalid;
     }
-#endif
     return cmp;
 }
 
@@ -183,12 +171,7 @@ T& Component<T>::getInstance() {
         return *this->sharedInstance;
     } else {
         if (this->instance.get() == nullptr) {
-#ifdef __EXCEPTIONS
             this->instance = std::unique_ptr<T> {new T()};
-#else
-            this->instance = std::unique_ptr<T> {new(std::nothrow) T()};
-
-#endif
         }
         return *this->instance;
     }

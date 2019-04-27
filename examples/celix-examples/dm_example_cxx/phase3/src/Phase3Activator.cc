@@ -20,7 +20,7 @@
 
 #include "Phase3Cmp.h"
 #include "Phase3Activator.h"
-#include <celix_bundle_activator.h>
+#include <celix_api.h>
 
 using namespace celix::dm;
 

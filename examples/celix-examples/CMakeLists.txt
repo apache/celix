@@ -23,24 +23,23 @@ endif ()
 if (EXAMPLES)
     add_definitions(-DADD_CELIX_DEPRECATED_WARNING) #ensure that no deprecated api is used in the examples
 
-    add_subdirectory(bundle_example_c)
-
-    add_subdirectory(hello_world)
-    add_subdirectory(hello_world_test)
-
-    add_subdirectory(services_example_c)
-
-    add_subdirectory(best_practice_example_c)
-    add_subdirectory(services_example_cxx)
+    add_subdirectory(hello_world_c)
+    add_subdirectory(hello_world_cxx)
 
     add_subdirectory(dm_example)
     add_subdirectory(dm_example_cxx)
 
+    add_subdirectory(services_example_c)
+    add_subdirectory(services_example_cxx)
+
+    #TODO refactor export_import
+    #add_subdirectory(export_import)
     if (NOT ANDROID)
         add_subdirectory(civetweb)
     endif()
     add_subdirectory(embedding)
     add_subdirectory(track_tracker_example)
     add_subdirectory(log_service_example)
+    add_subdirectory(bundle_with_private_lib)
 
 endif(EXAMPLES)

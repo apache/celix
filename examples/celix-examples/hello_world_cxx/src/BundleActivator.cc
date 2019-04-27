@@ -17,36 +17,29 @@
  *under the License.
  */
 
-#ifndef CELIX_CELIX_API_H_
-#define CELIX_CELIX_API_H_
+#include <memory>
+#include <iostream>
 
-#include "properties.h"
-#include "array_list.h"
-#include "constants.h"
-#include "bundle.h"
-#include "bundle_context.h"
-#include "framework.h"
+#include <celix_api.h>
 
-#include "celix_properties.h"
-#include "celix_array_list.h"
-//#include "celix_constants.h"
-#include "celix_utils_api.h"
-#include "celix_bundle.h"
-#include "celix_bundle_context.h"
+namespace /*anon*/ {
 
-#include "celix_framework.h"
-#include "celix_framework_factory.h"
-#include "celix_launcher.h"
+    class BundleActivator {
+    public:
+        BundleActivator(std::shared_ptr<celix::dm::DependencyManager> _mng) : mng{_mng} {
+            celix_bundle_context_t *ctx = mng->bundleContext();
+            celix_bundle_t *bnd = celix_bundleContext_getBundle(ctx);
+            bndId = celix_bundle_getId(bnd);
+            std::cout << "Hello world from C++ bundle with id " << bndId << std::endl;
+        }
+        ~BundleActivator() {
+            std::cout << "Goodbye world from C++ bundle with id " << bndId << std::endl;
+        }
+    private:
+        std::shared_ptr<celix::dm::DependencyManager> mng;
+        long bndId;
+    };
 
-#include "celix_dependency_manager.h"
-#include "celix_dm_component.h"
-#include "dm_service_dependency.h"
+}
 
-#include "celix_bundle_activator.h"
-
-#ifdef __cplusplus
-#include "celix/dm/DependencyManager.h"
-#endif
-
-
-#endif //CELIX_CELIX_API_H_
+CELIX_GEN_CXX_BUNDLE_ACTIVATOR(BundleActivator)

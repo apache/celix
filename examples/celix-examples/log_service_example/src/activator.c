@@ -16,70 +16,58 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * activator.c
- *
- *  \date       Sep 11, 2017
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
-#include "bundle_activator.h"
+
+#include <celix_api.h>
 #include "log_helper.h"
 
-struct userData {
+typedef struct user_data {
 	pthread_t logger_thread;
+	pthread_mutex_t lock;
 	bool running;
 	log_helper_pt log_helper;
-};
+} user_data_t;
 
 static void *loggerThread(void *userData);
 
-celix_status_t bundleActivator_create(celix_bundle_context_t *context, void **userData) {
-	celix_status_t status = CELIX_SUCCESS;
-    *userData = calloc(1, sizeof(struct userData));
-    if (*userData != NULL) {
-        struct userData * data = (struct userData *) *userData;
-        status = logHelper_create(context, &data->log_helper);
-	} else {
-		status = CELIX_START_ERROR;
+celix_status_t activator_start(user_data_t *data, celix_bundle_context_t *ctx) {
+	celix_status_t status = logHelper_create(ctx, &data->log_helper);
+	if (status == CELIX_SUCCESS) {
+		logHelper_start(data->log_helper);
+		data->running = true;
+		pthread_mutex_init(&data->lock, NULL);
+		pthread_create(&data->logger_thread, NULL, loggerThread, data);
 	}
 	return status;
 }
 
-
-celix_status_t bundleActivator_start(void * userData, celix_bundle_context_t *context) {
-	struct userData * data = (struct userData *) userData;
-	printf("Started log example\n");
-    logHelper_start(data->log_helper);
-	data->running = true;
-    pthread_create(&data->logger_thread, NULL, loggerThread, data);
+celix_status_t activator_stop(user_data_t *data, celix_bundle_context_t *ctx __attribute__((unused))) {
+    pthread_mutex_lock(&data->lock);
+    data->running = false;
+    pthread_mutex_unlock(&data->lock);
+    pthread_join(data->logger_thread, NULL);
+	logHelper_stop(data->log_helper);
+	logHelper_destroy(&data->log_helper);
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_stop(void * userData, celix_bundle_context_t *context) {
-	struct userData * data = (struct userData *) userData;
-	printf("Stopping logger example\n");
-	data->running = false;
-	pthread_join(data->logger_thread, NULL);
-    logHelper_stop(data->log_helper);
-	return CELIX_SUCCESS;
-}
-
-celix_status_t bundleActivator_destroy(void * userData, celix_bundle_context_t *context) {
-    struct userData * data = (struct userData *) userData;
-    logHelper_destroy(&data->log_helper);
-    free(userData);
-	return CELIX_SUCCESS;
-}
 
 static void *loggerThread(void *userData) {
-    struct userData * data = (struct userData *) userData;
-    while (data->running) {
-        logHelper_log(data->log_helper, OSGI_LOGSERVICE_INFO, "My log message");
-        sleep(1);
-    }
-    return NULL;
+	user_data_t *data = userData;
+
+    bool running = true;
+	while (running) {
+		logHelper_log(data->log_helper, OSGI_LOGSERVICE_INFO, "My log message");
+		sleep(1);
+        pthread_mutex_lock(&data->lock);
+        running = data->running;
+        pthread_mutex_unlock(&data->lock);
+	}
+	return NULL;
 }
+
+CELIX_GEN_BUNDLE_ACTIVATOR(user_data_t, activator_start, activator_stop)
+

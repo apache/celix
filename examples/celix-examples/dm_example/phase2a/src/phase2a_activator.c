@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <phase2a_cmp.h>
 
-#include "celix_api.h"
+#include <celix_api.h>
 
 #include "phase1.h"
 #include "phase2.h"
@@ -31,7 +31,7 @@ struct phase2a_activator_struct {
 	phase2_t phase2Serv;
 };
 
-static celix_status_t start(struct phase2a_activator_struct *act, celix_bundle_context_t *ctx) {
+static celix_status_t activator_start(struct phase2a_activator_struct *act, celix_bundle_context_t *ctx) {
 	printf("phase2a: start\n");
 	celix_status_t status = CELIX_SUCCESS;
 	act->phase2aCmp = phase2a_create();
@@ -65,7 +65,7 @@ static celix_status_t start(struct phase2a_activator_struct *act, celix_bundle_c
 	return status;
 }
 
-static celix_status_t stop(struct phase2a_activator_struct *act, celix_bundle_context_t *ctx) {
+static celix_status_t activator_stop(struct phase2a_activator_struct *act, celix_bundle_context_t *ctx) {
 	printf("phase2a: stop\n");
     celix_dependency_manager_t *mng = celix_bundleContext_getDependencyManager(ctx);
     celix_dependencyManager_removeAllComponents(mng);
@@ -75,4 +75,4 @@ static celix_status_t stop(struct phase2a_activator_struct *act, celix_bundle_co
 	return CELIX_SUCCESS;
 }
 
-CELIX_GEN_BUNDLE_ACTIVATOR(struct phase2a_activator_struct, start, stop)
+CELIX_GEN_BUNDLE_ACTIVATOR(struct phase2a_activator_struct, activator_start, activator_stop)

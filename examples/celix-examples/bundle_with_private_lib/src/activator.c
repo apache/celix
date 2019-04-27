@@ -17,36 +17,30 @@
  *under the License.
  */
 
-#ifndef CELIX_CELIX_API_H_
-#define CELIX_CELIX_API_H_
+#include <stdlib.h>
+#include <stdio.h>
 
-#include "properties.h"
-#include "array_list.h"
-#include "constants.h"
-#include "bundle.h"
-#include "bundle_context.h"
-#include "framework.h"
-
-#include "celix_properties.h"
-#include "celix_array_list.h"
-//#include "celix_constants.h"
-#include "celix_utils_api.h"
-#include "celix_bundle.h"
-#include "celix_bundle_context.h"
-
-#include "celix_framework.h"
-#include "celix_framework_factory.h"
-#include "celix_launcher.h"
-
-#include "celix_dependency_manager.h"
-#include "celix_dm_component.h"
-#include "dm_service_dependency.h"
-
-#include "celix_bundle_activator.h"
-
-#ifdef __cplusplus
-#include "celix/dm/DependencyManager.h"
-#endif
+#include <celix_api.h>
+#include <test.h>
 
 
-#endif //CELIX_CELIX_API_H_
+struct userData {
+	const char * word;
+};
+
+static celix_status_t activator_start(struct userData *data, celix_bundle_context_t *ctx) {
+	data->word = "Import";
+	const char *bndName = celix_bundle_getSymbolicName(celix_bundleContext_getBundle(ctx));
+	printf("Hello %s\n", data->word);
+	doo(bndName);
+	return CELIX_SUCCESS;
+}
+
+static celix_status_t activator_stop(struct userData *data, celix_bundle_context_t *ctx __attribute__((unused))) {
+	printf("Goodbye %s\n", data->word);
+	return CELIX_SUCCESS;
+}
+
+
+
+CELIX_GEN_BUNDLE_ACTIVATOR(struct userData, activator_start, activator_stop)
