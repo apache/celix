@@ -27,17 +27,17 @@ namespace /*anon*/ {
     class BundleActivator {
     public:
         BundleActivator(std::shared_ptr<celix::dm::DependencyManager> _mng) : mng{_mng} {
-            celix_bundle_context_t *ctx = mng->bundleContext();
-            celix_bundle_t *bnd = celix_bundleContext_getBundle(ctx);
-            bndId = celix_bundle_getId(bnd);
-            std::cout << "Hello world from C++ bundle with id " << bndId << std::endl;
+            std::cout << "Hello world from C++ bundle with id " << bndId() << std::endl;
         }
         ~BundleActivator() {
-            std::cout << "Goodbye world from C++ bundle with id " << bndId << std::endl;
+            std::cout << "Goodbye world from C++ bundle with id " << bndId() << std::endl;
         }
     private:
+        long bndId() const {
+            return celix_bundle_getId(celix_bundleContext_getBundle(mng->bundleContext()));
+        }
+
         std::shared_ptr<celix::dm::DependencyManager> mng;
-        long bndId;
     };
 
 }
