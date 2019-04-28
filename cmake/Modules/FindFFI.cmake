@@ -34,9 +34,9 @@ if (PkgConfig_FOUND)
 
     #use found LIBFFI pkg config info to search for the abs path fo the libffi lib.
     #Note that the abs path info  is not present in the pkg-config results (only the -l and -L arguments)
-    find_library(FFI_ABS_LIB NAMES ffi PATHS ${LIBFFI_LIBRARY_DIRS} NO_DEFAULT_PATH NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_SYSTEM_PATH)
+    find_library(FFI_ABS_LIB NAMES ffi PATHS ${LIBFFI_LIBRARY_DIRS} ${LIBFFI_LIBDIR} NO_DEFAULT_PATH NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH NO_CMAKE_SYSTEM_PATH)
     if (NOT FFI_ABS_LIB)
-        message(FATAL_ERROR "Cannot find abs path of libffi based on pkgconfig results")
+	    message(FATAL_ERROR "Cannot find abs path of libffi based on pkgconfig results. Tried to find libffi @ '${LIBFFI_LIBRARY_DIRS}' and '${LIBFFI_LIBDIR}'")
     endif ()
 
     add_library(ffi::lib SHARED IMPORTED)
