@@ -17,9 +17,13 @@ limitations under the License.
 
 # Intro
 
-This example show how services can be provided and consumer by bundles.
+These examples shows howto create and interact with services by example.
 
-The example uses the `celix_bundleContext_registerService` to provide
+In both examples there is a provider and consumer bundle.
+The provider bundle creates services and registers them to the Celix framework so that these services are available for use (provide).
+And the consumer bundle request the services from the Celix framework and uses (consumes) them.
+
+The examples use the `celix_bundleContext_registerService` to provide
 services and uses a combination of `celix_bundleContext_useService`,
 `celix_bundleContext_useServices` and `celix_bundleContext_trackServices`
 to consume services.
@@ -42,12 +46,25 @@ The simple provider/consumer example can be executed by launching the
 `services_example_c` executable target
 (build in `${CMAKE_BUILD_DIR}/deploy/services_example/services_example_c`)
 
-In this example the provide bundle only register one calc service. And
+In this example the provider bundle only register one calc service. And
 the consumer bundle tries to use this during startup and registered
 a service tracker for the calc service.
 
-Try stopping/starting the provider / consumer bundles (respectively bundle id 3 & 4)
-to see how this work runtime. E.g. use `stop 3`, `stop 4`, `start 3`, `start 4` in different combinations.
+```ditaa
++----------------------+                  +------------------------+
+|                      |                  |                        |
+|                      |                  |                        |
+|   provider_example   |   example_calc   |    consumer_example    |
+|                      +--------O)--------+                        |
+|       <bundle>       |                  |       <bundle>         |
+|                      |                  |                        |
+|                      |                  |                        |
++----------------------+                  +------------------------+
+```
+
+Try stopping/starting the provider/consumer bundles (respectively bundle id 3 & 4) using the interactive shell
+to see how this works at runtime. 
+I.e. type `stop 3`, `stop 4`, `start 3`, `start 4` in different combinations.
 
 
 # Dynamic Service Provider & Consumer Example
@@ -62,5 +79,5 @@ with the dynamic behaviour of services.
 This this example the provided dynamically register more and less calc services in a thread.
 The consumer bundle uses these services in a every 5 seconds and print some info.
 
-Hopefully this example will give an idea how services can be safely used and tracked in a dynamic environment.
+This example should give an idea how services can be safely used and tracked in a dynamic environment.
 
