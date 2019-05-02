@@ -43,6 +43,7 @@
 #include "dm_service_dependency.h"
 
 #include "celix_bundle_activator.h"
+#include "celix_framework_factory.h"
 
 #ifdef __cplusplus
 #include "celix/dm/DependencyManager.h"

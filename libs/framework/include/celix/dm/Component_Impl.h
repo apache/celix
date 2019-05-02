@@ -77,7 +77,7 @@ Component<T>& Component<T>::addInterface(const std::string version, const Proper
 template<class T>
 template<class I>
 Component<T>& Component<T>::addCInterface(const I* svc, const std::string serviceName, const std::string version, const Properties properties) {
-    static_assert(std::is_pod<I>::value, "Service I must be a 'Plain Old Data' object");
+    static_assert(std::is_standard_layout<I>::value, "Service I must be an object with a standard layout");
     celix_properties_t *cProperties = properties_create();
     properties_set(cProperties, CELIX_FRAMEWORK_SERVICE_LANGUAGE, CELIX_FRAMEWORK_SERVICE_C_LANGUAGE);
     for (const auto& pair : properties) {
@@ -93,7 +93,7 @@ Component<T>& Component<T>::addCInterface(const I* svc, const std::string servic
 template<class T>
 template<class I>
 Component<T>& Component<T>::removeCInterface(const I* svc){
-    static_assert(std::is_pod<I>::value, "Service I must be a 'Plain Old Data' object");
+    static_assert(std::is_standard_layout<I>::value, "Service I must be an object with a standard layout");
     celix_dmComponent_removeInterface(this->cComponent(), svc);
     return *this;
 };

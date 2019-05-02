@@ -31,7 +31,13 @@ extern "C" {
  * @param config The framework configuration. Can be NULL.
  * @return a started framework or NULL
  */
-celix_framework_t* frameworkFactory_newFramework(celix_properties_t *config);
+celix_framework_t* celix_frameworkFactory_createFramework(celix_properties_t *config);
+
+/**
+ * Stop and destroys a Celix framework
+ * Note that this call block till the Celix framework is stopped
+ */
+void celix_frameworkFactory_destroyFramework(celix_framework_t *fw);
 
 
 #ifdef __cplusplus

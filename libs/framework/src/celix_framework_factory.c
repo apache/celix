@@ -19,7 +19,7 @@
 
 #include "celix_framework_factory.h"
 
-framework_t* frameworkFactory_newFramework(properties_t *config) {
+framework_t* celix_frameworkFactory_createFramework(properties_t *config) {
     framework_t* fw = NULL;
 
     if (config == NULL) {
@@ -37,4 +37,12 @@ framework_t* frameworkFactory_newFramework(properties_t *config) {
         }
     }
     return fw;
+}
+
+void celix_frameworkFactory_destroyFramework(celix_framework_t *fw) {
+    if (fw != NULL) {
+        framework_stop(fw);
+        framework_waitForStop(fw);
+        framework_destroy(fw);
+    }
 }
