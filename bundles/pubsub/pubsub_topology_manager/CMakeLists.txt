@@ -15,6 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 
+find_package(UUID REQUIRED)
+
 add_celix_bundle(celix_pubsub_topology_manager
     BUNDLE_SYMBOLICNAME "apache_celix_pubsub_topology_manager"
     VERSION "1.0.0"
@@ -25,6 +27,8 @@ add_celix_bundle(celix_pubsub_topology_manager
     	src/pubsub_topology_manager.h
 )
 target_link_libraries(celix_pubsub_topology_manager PRIVATE Celix::framework Celix::log_helper Celix::pubsub_spi Celix::shell_api)
+target_include_directories(celix_pubsub_topology_manager PRIVATE ${UUID_INCLUDE_DIRS})
+
 get_target_property(DESC Celix::pubsub_spi TOPIC_INFO_DESCRIPTOR)
 celix_bundle_files(celix_pubsub_topology_manager
 	${DESC}
