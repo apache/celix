@@ -37,6 +37,7 @@
 typedef struct import_registration_factory import_registration_factory_t;
 typedef import_registration_factory_t* import_registration_factory_pt;
 
+//TODO refactor remote_service_admin_pt usage to void *handle;
 typedef struct remote_service_admin remote_service_admin_t;
 typedef remote_service_admin_t* remote_service_admin_pt;
 

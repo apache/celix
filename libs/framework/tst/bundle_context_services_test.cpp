@@ -47,14 +47,12 @@ TEST_GROUP(CelixBundleContextServicesTests) {
         properties_set(properties, "org.osgi.framework.storage.clean", "onFirstInit");
         properties_set(properties, "org.osgi.framework.storage", ".cacheBundleContextTestFramework");
 
-        fw = frameworkFactory_newFramework(properties);
+        fw = celix_frameworkFactory_createFramework(properties);
         ctx = framework_getContext(fw);
     }
 
     void teardown() {
-        framework_stop(fw);
-        framework_waitForStop(fw);
-        framework_destroy(fw);
+        celix_frameworkFactory_destroyFramework(fw);
     }
 };
 
@@ -294,8 +292,7 @@ TEST(CelixBundleContextServicesTests, servicesTrackerInvalidArgsTest) {
     CHECK(trackerId < 0); //required ctx and opts missing
     trackerId = celix_bundleContext_trackServicesWithOptions(ctx, NULL);
     CHECK(trackerId < 0); //required opts missing
-    celix_service_tracking_options_t opts;
-    memset(&opts, 0, sizeof(opts));
+    celix_service_tracking_options_t opts{};
     trackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
     CHECK(trackerId < 0); //required opts->serviceName missing
     opts.filter.serviceName = "calc";
@@ -360,8 +357,7 @@ TEST(CelixBundleContextServicesTests, servicesTrackerTestWithProperties) {
 
     long svcId1 = celix_bundleContext_registerService(ctx, (void*)0x100, "calc", NULL);
 
-    celix_service_tracking_options_t opts;
-    memset(&opts, 0, sizeof(opts));
+    celix_service_tracking_options_t opts{};
     opts.filter.serviceName = "calc";
     opts.callbackHandle = &count;
     opts.addWithProperties = add;
@@ -400,8 +396,7 @@ TEST(CelixBundleContextServicesTests, servicesTrackerTestWithOwner) {
 
     long svcId1 = celix_bundleContext_registerService(ctx, (void*)0x100, "calc", NULL);
 
-    celix_service_tracking_options_t opts;
-    memset(&opts, 0, sizeof(opts));
+    celix_service_tracking_options_t opts{};
     opts.filter.serviceName = "calc";
     opts.callbackHandle = &count;
     opts.addWithOwner = add;
@@ -555,8 +550,7 @@ TEST(CelixBundleContextServicesTests, servicesTrackerSetTest) {
     long svcId2 = celix_bundleContext_registerService(ctx, svc2, "NA", NULL);
 
     //starting tracker should lead to first set call
-    celix_service_tracking_options_t opts;
-    memset(&opts, 0, sizeof(opts));
+    celix_service_tracking_options_t opts{};
     opts.callbackHandle = (void*)&count;
     opts.filter.serviceName = "NA";
     opts.set = set;
@@ -647,7 +641,7 @@ TEST(CelixBundleContextServicesTests, findServicesTest) {
 
     celix_bundleContext_unregisterService(ctx, svcId1);
 
-    celix_service_filter_options_t opts = CELIX_EMPTY_SERVICE_FILTER_OPTIONS;
+    celix_service_filter_options_t opts{};
     opts.serviceName = "example";
     foundId = celix_bundleContext_findServiceWithOptions(ctx, &opts);
     CHECK_EQUAL(foundId, svcId2); //only one left

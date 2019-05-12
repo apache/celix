@@ -20,15 +20,13 @@
 #ifndef CELIX_PHASE2AACTIVATOR_H
 #define CELIX_PHASE2AACTIVATOR_H
 
-#include "celix/dm/DmActivator.h"
+#include "celix/dm/DependencyManager.h"
 
 using namespace celix::dm;
 
-class Phase2Activator : public DmActivator {
+class Phase2Activator {
 public:
-    Phase2Activator(DependencyManager& mng) : DmActivator(mng) {}
-    virtual void init();
-    virtual void deinit();
+    Phase2Activator(std::shared_ptr<DependencyManager> mng);
 };
 
 #endif //CELIX_PHASE2AACTIVATOR_H

@@ -33,7 +33,6 @@
 #include "celix_errno.h"
 #include "celix_log.h"
 
-#include "pubsub_common.h"
 #include "pubsub_endpoint.h"
 #include "constants.h"
 

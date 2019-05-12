@@ -27,7 +27,7 @@
 
 typedef void (*send_func_type)(void *handle, endpoint_description_pt endpointDescription, char *request, char **reply, int* replyStatus);
 
-celix_status_t importRegistration_create(bundle_context_pt context, endpoint_description_pt description, const char *classObject, const char* serviceVersion,
+celix_status_t importRegistration_create(bundle_context_pt context, endpoint_description_pt description, const char *classObject, const char* serviceVersion, FILE *logFile,
                                          import_registration_pt *import);
 celix_status_t importRegistration_close(import_registration_pt import);
 void importRegistration_destroy(import_registration_pt import);

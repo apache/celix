@@ -26,6 +26,8 @@
 #include "dyn_interface.h"
 #include "import_registration.h"
 #include "import_registration_dfi.h"
+#include "remote_service_admin_dfi.h"
+#include "remote_service_admin_dfi_constants.h"
 
 struct import_registration {
     bundle_context_pt context;
@@ -42,6 +44,8 @@ struct import_registration {
 
     hash_map_pt proxies; //key -> bundle, value -> service_proxy
     celix_thread_mutex_t proxiesMutex; //protects proxies
+
+    FILE *logFile;
 };
 
 struct service_proxy {
@@ -55,9 +59,10 @@ static celix_status_t importRegistration_createProxy(import_registration_pt impo
 static void importRegistration_proxyFunc(void *userData, void *args[], void *returnVal);
 static void importRegistration_destroyProxy(struct service_proxy *proxy);
 static void importRegistration_clearProxies(import_registration_pt import);
+static const char* importRegistration_getUrl(import_registration_pt reg);
+static const char* importRegistration_getServiceName(import_registration_pt reg);
 
-celix_status_t importRegistration_create(bundle_context_pt context, endpoint_description_pt endpoint, const char *classObject, const char* serviceVersion,
-                                         import_registration_pt *out) {
+celix_status_t importRegistration_create(bundle_context_pt context, endpoint_description_pt endpoint, const char *classObject, const char* serviceVersion, FILE *logFile, import_registration_pt *out) {
     celix_status_t status = CELIX_SUCCESS;
     import_registration_pt reg = calloc(1, sizeof(*reg));
 
@@ -78,15 +83,16 @@ celix_status_t importRegistration_create(bundle_context_pt context, endpoint_des
         reg->factory->handle = reg;
         reg->factory->getService = (void *)importRegistration_getService;
         reg->factory->ungetService = (void *)importRegistration_ungetService;
+        reg->logFile = logFile;
     } else {
         status = CELIX_ENOMEM;
     }
 
+
     if (status == CELIX_SUCCESS) {
         //printf("IMPORT REGISTRATION IS %p\n", reg);
         *out = reg;
-    }
-    else{
+    } else {
     	importRegistration_destroy(reg);
     }
 
@@ -324,6 +330,15 @@ static void importRegistration_proxyFunc(void *userData, void *args[], void *ret
 
         *(int *) returnVal = rc;
 
+        if (import->logFile != NULL) {
+            static int callCount = 0;
+            const char *url = importRegistration_getUrl(import);
+            const char *svcName = importRegistration_getServiceName(import);
+            fprintf(import->logFile, "REMOTE CALL NR %i\n\turl=%s\n\tservice=%s\n\tpayload=%s\n\treturn_code=%i\n\treply=%s\n",
+                                       callCount, url, svcName, invokeRequest, rc, reply);
+            fflush(import->logFile);
+            callCount += 1;
+        }
         free(invokeRequest); //Allocated by json_dumps in jsonRpc_prepareInvokeRequest
         free(reply); //Allocated by json_dumps in remoteServiceAdmin_send through curl call
     }
@@ -399,4 +414,12 @@ celix_status_t importReference_getImportedEndpoint(import_reference_pt reference
 celix_status_t importReference_getImportedService(import_reference_pt reference) {
     celix_status_t status = CELIX_SUCCESS;
     return status;
+}
+
+static const char* importRegistration_getUrl(import_registration_pt reg) {
+    return celix_properties_get(reg->endpoint->properties, RSA_DFI_ENDPOINT_URL, "!Error!");
+}
+
+static const char* importRegistration_getServiceName(import_registration_pt reg) {
+    return reg->endpoint->service;
 }

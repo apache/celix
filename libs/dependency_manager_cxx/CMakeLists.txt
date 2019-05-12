@@ -20,6 +20,7 @@ add_library(dependency_manager_cxx_static STATIC
 )
 set_target_properties(dependency_manager_cxx_static PROPERTIES OUTPUT_NAME "celix_dependency_manager_cxx_static")
 target_compile_options(dependency_manager_cxx_static PRIVATE -fPIC)
+target_compile_options(dependency_manager_cxx_static PRIVATE -Wno-deprecated-declarations)
 if (APPLE)
     target_link_libraries(dependency_manager_cxx_static Celix::framework "-undefined dynamic_lookup")
 else()

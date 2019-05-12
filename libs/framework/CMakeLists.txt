@@ -19,9 +19,10 @@ find_package(ZLIB REQUIRED)
 find_package(UUID REQUIRED)
 find_package(CURL REQUIRED)
 
-if(WIN32)
-    set(IO src/iowin32.c)
-endif(WIN32)
+if(NOT UUID_LIBRARY)
+    #i.e. not found for OSX
+    set(UUID_LIBRARY "")
+endif()
 
 set(SOURCES
         src/attribute.c src/bundle.c src/bundle_archive.c src/bundle_cache.c
@@ -34,31 +35,19 @@ set(SOURCES
         src/celix_log.c src/celix_launcher.c
         src/celix_framework_factory.c
         src/dm_dependency_manager_impl.c src/dm_component_impl.c
-        src/dm_service_dependency.c src/dm_event.c
-        ${IO}
+        src/dm_service_dependency.c src/dm_event.c src/celix_library_loader.c
 )
 add_library(framework SHARED ${SOURCES})
 set_target_properties(framework PROPERTIES OUTPUT_NAME "celix_framework")
-target_include_directories(framework PUBLIC
+target_include_directories(framework PUBLIC 
         $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
         $<INSTALL_INTERFACE:include/celix>
 )
-target_include_directories(framework PRIVATE src)
-target_include_directories(framework SYSTEM PRIVATE 
-        ${ZLIB_INCLUDE_DIR}
-        ${CURL_INCLUDE_DIR}
-        ${UUID_INCLUDE_DIR}
-)
-target_compile_definitions(framework PRIVATE -DUSE_FILE32API)
-
+target_compile_options(framework PRIVATE -DUSE_FILE32API)
 set_target_properties(framework PROPERTIES "SOVERSION" 2)
-
-if(NOT APPLE)
-  set(UUID ${UUID_LIBRARY})
-endif()
 target_link_libraries(framework PUBLIC Celix::utils)
-target_link_libraries(framework PRIVATE ${UUID} ${ZLIB_LIBRARY} ${CURL_LIBRARIES})
-
+target_link_libraries(framework PRIVATE ${UUID_LIBRARY} ${ZLIB_LIBRARY} ${CURL_LIBRARIES})
+target_include_directories(framework PRIVATE ${CURL_INCLUDE_DIR} ${UUID_INCLUDE_DIRS})
 install(TARGETS framework EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework)
 install(DIRECTORY include/ DESTINATION include/celix COMPONENT framework)
 
@@ -183,8 +172,9 @@ if (ENABLE_TESTING AND FRAMEWORK_TESTS)
         private/mock/service_tracker_stub.c
         src/celix_errorcodes.c
         private/mock/celix_log_mock.c
-        src/framework.c)
-    target_link_libraries(framework_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} ${UUID} Celix::utils pthread dl)
+        src/framework.c
+        src/celix_library_loader.c)
+    target_link_libraries(framework_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} ${UUID_LIBRARY} Celix::utils pthread dl)
 
     add_executable(manifest_parser_test
         private/test/manifest_parser_test.cpp

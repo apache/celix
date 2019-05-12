@@ -20,6 +20,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 	find_package(ZMQ REQUIRED)
 	find_package(CZMQ REQUIRED)
 	find_package(Jansson REQUIRED)
+	find_package(UUID REQUIRED)
 
 	if (BUILD_ZMQ_SECURITY)
 		add_definitions(-DBUILD_WITH_ZMQ_SECURITY=1)
@@ -53,6 +54,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 		${ZMQ_INCLUDE_DIR}
 		${CZMQ_INCLUDE_DIR}
 		${JANSSON_INCLUDE_DIR}
+		${UUID_INCLUDE_DIRS}
 		src
 	)
 

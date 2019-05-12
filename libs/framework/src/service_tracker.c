@@ -19,8 +19,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include <service_reference_private.h>
-#include <framework_private.h>
+#include "service_reference_private.h"
+#include "framework_private.h"
 #include <assert.h>
 
 #include "service_tracker_private.h"
@@ -769,7 +769,6 @@ celix_service_tracker_t* celix_serviceTracker_createWithOptions(
             }
 
 
-            //TODO open on other thread?
             serviceTracker_open(tracker);
         }
     } else {

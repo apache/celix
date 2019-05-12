@@ -347,7 +347,6 @@ function(celix_bundle_libs)
             list(APPEND DEPS ${OUT}) 
         elseif (TARGET ${LIB})
             get_target_property(TARGET_TYPE ${LIB} TYPE)
-            #Assuming target
             #NOTE add_custom_command does not support generator expression in OUTPUT value (e.g. $<TARGET_FILE:${LIB}>)
             #Using a two step approach to be able to use add_custom_command instead of add_custom_target
             set(OUT "${BUNDLE_GEN_DIR}/lib-${LIBID}-copy-timestamp")

@@ -21,10 +21,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <constants.h>
+
+#include <celix_api.h>
 
 #include "example_calc.h"
-#include "celix_bundle_activator.h"
+
 
 typedef struct activator_data {
     celix_bundle_context_t *ctx;

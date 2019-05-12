@@ -22,7 +22,7 @@
 
 using namespace celix::dm;
 
-void Phase3BaseActivator::init() {
+Phase3BaseActivator::Phase3BaseActivator(std::shared_ptr<DependencyManager> mng) : cmp(mng->createComponent<Phase3Cmp>()) {
     cmp.setCallbacks(nullptr, &Phase3Cmp::start, &Phase3Cmp::stop, nullptr);
 
     cmp.createServiceDependency<IPhase2>()

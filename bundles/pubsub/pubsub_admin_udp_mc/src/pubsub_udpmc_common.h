@@ -23,17 +23,18 @@
 #include <utils.h>
 
 #include "version.h"
-#include "pubsub_common.h"
 
 typedef struct pubsub_udp_msg {
-    struct pubsub_msg_header header;
+    int typeid;
+    char major;
+    char minor;
     unsigned int payloadSize;
-    char payload[];
+    unsigned char *payload;
 } pubsub_udp_msg_t;
 
 int psa_udpmc_localMsgTypeIdForMsgType(void* handle __attribute__((unused)), const char* msgType, unsigned int* msgTypeId);
 
-bool psa_udpmc_checkVersion(version_pt msgVersion, pubsub_msg_header_t *hdr);
+bool psa_udpmc_checkVersion(version_pt msgVersion, pubsub_udp_msg_t *msg);
 
 
 #endif //CELIX_PUBSUB_UDPMC_COMMON_H

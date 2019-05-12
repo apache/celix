@@ -24,12 +24,14 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <sys/errno.h>
 
 #include "bundle_cache_private.h"
 #include "bundle_archive.h"
 #include "constants.h"
 #include "celix_log.h"
 #include "celix_properties.h"
+#include "celix_utils_api.h"
 
 static celix_status_t bundleCache_deleteTree(bundle_cache_pt cache, char * directory, bool root);
 

@@ -23,7 +23,6 @@
 #include <pubsub_constants.h>
 #include <pubsub/publisher.h>
 #include <utils.h>
-#include <pubsub_common.h>
 #include <zconf.h>
 #include <arpa/inet.h>
 #include "pubsub_udpmc_topic_sender.h"
@@ -71,16 +70,10 @@ typedef struct psa_udpmc_bounded_service_entry {
     largeUdp_pt largeUdpHandle;
 } psa_udpmc_bounded_service_entry_t;
 
-typedef struct pubsub_msg{
-    pubsub_msg_header_t *header;
-    char* payload;
-    unsigned int payloadSize;
-} pubsub_msg_t;
-
 static void* psa_udpmc_getPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties);
 static void psa_udpmc_ungetPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties);
 static int psa_udpmc_topicPublicationSend(void* handle, unsigned int msgTypeId, const void *inMsg);
-static bool psa_udpmc_sendMsg(psa_udpmc_bounded_service_entry_t *entry, pubsub_msg_t* msg);
+static bool psa_udpmc_sendMsg(psa_udpmc_bounded_service_entry_t *entry, pubsub_udp_msg_t* msg);
 static unsigned int rand_range(unsigned int min, unsigned int max);
 
 pubsub_udpmc_topic_sender_t* pubsub_udpmcTopicSender_create(
@@ -267,22 +260,19 @@ static int psa_udpmc_topicPublicationSend(void* handle, unsigned int msgTypeId, 
         size_t serializedOutputLen = 0;
         if (msgSer->serialize(msgSer->handle,inMsg,&serializedOutput, &serializedOutputLen) == CELIX_SUCCESS) {
 
-            pubsub_msg_header_t *msg_hdr = calloc(1,sizeof(struct pubsub_msg_header));
-            strncpy(msg_hdr->topic,entry->parent->topic,MAX_TOPIC_LEN-1);
-            msg_hdr->type = msgTypeId;
+            pubsub_udp_msg_t *msg = calloc(1, sizeof(*msg));
+            msg->typeid = msgTypeId;
 
 
             if (msgSer->msgVersion != NULL){
                 version_getMajor(msgSer->msgVersion, &major);
                 version_getMinor(msgSer->msgVersion, &minor);
-                msg_hdr->major = (unsigned char)major;
-                msg_hdr->minor = (unsigned char)minor;
+                msg->major = (unsigned char)major;
+                msg->minor = (unsigned char)minor;
             }
 
 
-            pubsub_msg_t *msg = calloc(1, sizeof(pubsub_msg_t));
-            msg->header = msg_hdr;
-            msg->payload = (char *) serializedOutput;
+            msg->payload = (unsigned char*) serializedOutput;
             msg->payloadSize = (unsigned int)serializedOutputLen;
 
 
@@ -290,7 +280,6 @@ static int psa_udpmc_topicPublicationSend(void* handle, unsigned int msgTypeId, 
                 status = -1;
             }
             free(msg);
-            free(msg_hdr);
             free(serializedOutput);
         } else {
             printf("[PSA_UDPMC/TopicSender] Serialization of msg type id %d failed\n", msgTypeId);
@@ -315,13 +304,13 @@ static void delay_first_send_for_late_joiners(){
     }
 }
 
-static bool psa_udpmc_sendMsg(psa_udpmc_bounded_service_entry_t *entry, pubsub_msg_t* msg) {
+static bool psa_udpmc_sendMsg(psa_udpmc_bounded_service_entry_t *entry, pubsub_udp_msg_t* msg) {
     const int iovec_len = 3; // header + size + payload
     bool ret = true;
 
     struct iovec msg_iovec[iovec_len];
-    msg_iovec[0].iov_base = msg->header;
-    msg_iovec[0].iov_len = sizeof(*msg->header);
+    msg_iovec[0].iov_base = msg;
+    msg_iovec[0].iov_len = sizeof(*msg);
     msg_iovec[1].iov_base = &msg->payloadSize;
     msg_iovec[1].iov_len = sizeof(msg->payloadSize);
     msg_iovec[2].iov_base = msg->payload;

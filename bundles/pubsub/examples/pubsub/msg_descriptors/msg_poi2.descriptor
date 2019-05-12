@@ -5,6 +5,6 @@ version=1.0.0
 :annotations
 classname=org.example.PointOfInterest
 :types
-location={DD lat long}
+location={DD lat lon}
 :message
 {llocation;tttt location name description extra data}

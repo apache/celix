@@ -17,9 +17,12 @@
 
 set(MEMSTREAM_SOURCES )
 set(MEMSTREAM_INCLUDES )
-if (APPLE OR ANDROID)
-    set(MEMSTREAM_SOURCES src/memstream/open_memstream.c  src/memstream/fmemopen.c)
-    set(MEMSTREAM_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/include/memstream)
+include(CheckFunctionExists)
+#check_function_exists(fmemopen FMEMOPEN_EXISTS)
+check_function_exists(open_memstream OPEN_MEMSTREAM_EXISTS)
+if (NOT OPEN_MEMSTREAM_EXISTS)
+    set(MEMSTREAM_SOURCES src/memstream/open_memstream.c  src/memstream/fmemopen.c ${MEMSTREAM_SOURCES})
+    set(MEMSTREAM_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/include/memstream ${MEMSTREAM_INCLUDE_DIR})
     install(DIRECTORY include/memstream/ DESTINATION include/celix/memstream COMPONENT framework)
 endif()
 
@@ -38,6 +41,10 @@ add_library(utils SHARED
     ${MEMSTREAM_SOURCES}
 )
 set_target_properties(utils PROPERTIES OUTPUT_NAME "celix_utils")
+
+if (NOT OPEN_MEMSTREAM_EXISTS)
+    target_compile_definitions(utils PUBLIC -DNO_MEMSTREAM_AVAILABLE)
+endif ()
 
 if (ANDROID)
     target_compile_definitions(utils PRIVATE -DUSE_FILE32API)

@@ -23,6 +23,7 @@
 #include <string.h>
 #include <celix_bundle_activator.h>
 #include <pubsub_admin.h>
+#include <pubsub_admin_metrics.h>
 
 #include "celix_api.h"
 
@@ -40,6 +41,7 @@ typedef struct pstm_activator {
 	long pubsubAdminTrackerId;
 	long pubsubSubscribersTrackerId;
 	long pubsubPublishServiceTrackerId;
+	long pubsubPSAMetricsTrackerId;
 
 	pubsub_discovered_endpoint_listener_t discListenerSvc;
 	long discListenerSvcId;
@@ -61,6 +63,7 @@ static int pstm_start(pstm_activator_t *act, celix_bundle_context_t *ctx) {
 	act->pubsubAdminTrackerId = -1L;
 	act->pubsubDiscoveryTrackerId = -1L;
 	act->pubsubPublishServiceTrackerId = -1L;
+	act->pubsubPSAMetricsTrackerId = -1L;
 	act->shellCmdSvcId = -1L;
 
 	logHelper_create(ctx, &act->loghelper);
@@ -110,6 +113,15 @@ static int pstm_start(pstm_activator_t *act, celix_bundle_context_t *ctx) {
 																					  pubsub_topologyManager_publisherTrackerRemoved);
 	}
 
+	if (status == CELIX_SUCCESS) {
+		celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
+		opts.callbackHandle = act->manager;
+		opts.addWithProperties = pubsub_topologyManager_addMetricsService;
+		opts.removeWithProperties = pubsub_topologyManager_removeMetricsService;
+		opts.filter.serviceName = PUBSUB_ADMIN_METRICS_SERVICE_NAME;
+		act->pubsubPSAMetricsTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
+	}
+
 	//register discovered endpoints listener service (called by pubsub discovery components)
 	if (status == CELIX_SUCCESS) {
 		act->discListenerSvc.handle = act->manager;
@@ -124,7 +136,7 @@ static int pstm_start(pstm_activator_t *act, celix_bundle_context_t *ctx) {
 		act->shellCmdSvc.executeCommand = pubsub_topologyManager_shellCommand;
 		celix_properties_t *props = celix_properties_create();
 		properties_set(props, OSGI_SHELL_COMMAND_NAME, "pstm");
-		properties_set(props, OSGI_SHELL_COMMAND_USAGE, "pstm"); //TODO add search topic/scope option
+		properties_set(props, OSGI_SHELL_COMMAND_USAGE, "pstm [topology|metrics]"); //TODO add search topic/scope option
 		properties_set(props, OSGI_SHELL_COMMAND_DESCRIPTION, "pubsub_topology_info: Overview of Topology information for PubSub");
 		act->shellCmdSvcId = celix_bundleContext_registerService(ctx, &act->shellCmdSvc, OSGI_SHELL_COMMAND_SERVICE_NAME, props);
 	}
@@ -147,6 +159,7 @@ static int pstm_stop(pstm_activator_t *act, celix_bundle_context_t *ctx) {
 	celix_bundleContext_stopTracker(ctx, act->pubsubDiscoveryTrackerId);
 	celix_bundleContext_stopTracker(ctx, act->pubsubAdminTrackerId);
 	celix_bundleContext_stopTracker(ctx, act->pubsubPublishServiceTrackerId);
+	celix_bundleContext_stopTracker(ctx, act->pubsubPSAMetricsTrackerId);
 	celix_bundleContext_unregisterService(ctx, act->discListenerSvcId);
 	celix_bundleContext_unregisterService(ctx, act->shellCmdSvcId);
 

@@ -18,6 +18,7 @@
  */
 
 #include <IName.h>
+#include <celix_api.h>
 #include "Phase2Cmp.h"
 #include "Phase2Activator.h"
 #include "log_service.h"
@@ -25,17 +26,12 @@
 using namespace celix::dm;
 
 
-DmActivator* DmActivator::create(DependencyManager& mng) {
-    return new Phase2Activator(mng);
-}
-
-
-void Phase2Activator::init() {
+Phase2Activator::Phase2Activator(std::shared_ptr<celix::dm::DependencyManager> mng) {
 
     Properties props {};
     props["name"] = "phase2a";
 
-    Component<Phase2Cmp>& cmp = mng.createComponent<Phase2Cmp>()
+    Component<Phase2Cmp>& cmp = mng->createComponent<Phase2Cmp>()
             .setInstance(Phase2Cmp())
             .addInterface<IPhase2>(IPHASE2_VERSION, props);
 
@@ -52,6 +48,4 @@ void Phase2Activator::init() {
             .setCallbacks(&Phase2Cmp::setLogService);
 }
 
-void Phase2Activator::deinit() {
-
-}
+CELIX_GEN_CXX_BUNDLE_ACTIVATOR(Phase2Activator)

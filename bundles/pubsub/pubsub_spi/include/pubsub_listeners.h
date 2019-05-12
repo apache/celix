@@ -22,6 +22,9 @@
 
 #include "celix_properties.h"
 
+
+#define PUBSUB_DISCOVERED_ENDPOINT_LISTENER_SERVICE "pubsub_discovered_endpoint_listener [version 1.0]"
+
 //Informs the topology manager that pub/sub endpoints are discovered in the network
 struct pubsub_discovered_endpoint_listener {
 	void *handle;
@@ -32,6 +35,8 @@ struct pubsub_discovered_endpoint_listener {
 typedef struct pubsub_discovered_endpoint_listener pubsub_discovered_endpoint_listener_t;
 
 
+
+#define PUBSUB_ANNOUNCE_ENDPOINT_LISTENER_SERVICE "pubsub_announce_endpoint_listener [version 1.0]"
 
 //Informs the pubsub discoveries to announce/revoke endpoint
 struct pubsub_announce_endpoint_listener {

@@ -68,7 +68,7 @@ static void* send_thread(void* arg){
 
 	place->name = name;
 	place->description = desc;
-	place->extra = "DONT PANIC";
+	place->extra = "extra value";
 	printf("TOPIC : %s\n",st_struct->topic);
 	unsigned int msgId = 0;
 	if( publish_svc->localMsgTypeIdForMsgType(publish_svc->handle,st_struct->topic,&msgId) == 0 ){
@@ -81,6 +81,7 @@ static void* send_thread(void* arg){
 			for(int i = 0; i < (nr_char-1); i++) {
 				place->data[i] = i%10 + '0';
 			}
+			place->data[nr_char-1] = '\0';
 			if(publish_svc->send) {
 				if(publish_svc->send(publish_svc->handle,msgId,place)==0){
 					printf("Sent %s [%f, %f] (%s, %s) data len = %d\n",st_struct->topic, place->position.lat, place->position.lon,place->name,place->description, nr_char);

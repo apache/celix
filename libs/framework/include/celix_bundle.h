@@ -56,6 +56,8 @@ char* celix_bundle_getEntry(const celix_bundle_t* bnd, const char *path);
 
 const char* celix_bundle_getGroup(const celix_bundle_t *bnd);
 
+const char* celix_bundle_getSymbolicName(const celix_bundle_t *bnd);
+
 
 #ifdef __cplusplus
 }

@@ -18,14 +18,14 @@
  */
 
 
-#include "celix_bundle_activator.h"
-#include "celix_bundle.h"
-#include "shell.h"
-#include "celix_utils_api.h" //for open_memstream for APPLE,BSD,ANDROID
 
-#include <civetweb.h>
 #include <string.h>
 #include <stdio.h>
+
+
+#include <celix_api.h>
+#include <shell.h>
+#include <civetweb.h>
 
 
 typedef struct activator_data {

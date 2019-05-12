@@ -24,6 +24,8 @@
 #include <celix_api.h>
 #include <pubsub_utils.h>
 #include <assert.h>
+#include <pubsub_admin_metrics.h>
+#include <uuid/uuid.h>
 
 #include "hash_map.h"
 #include "celix_array_list.h"
@@ -39,6 +41,10 @@
 #include "../../pubsub_admin_udp_mc/src/pubsub_udpmc_topic_sender.h"
 
 #define PSTM_PSA_HANDLING_SLEEPTIME_IN_SECONDS       30L
+
+#ifndef UUID_STR_LEN
+#define UUID_STR_LEN	37
+#endif
 
 static void *pstm_psaHandlingThread(void *data);
 
@@ -65,6 +71,7 @@ celix_status_t pubsub_topologyManager_create(bundle_context_pt context, log_help
     status |= celixThreadMutex_create(&manager->announceEndpointListeners.mutex, NULL);
     status |= celixThreadMutex_create(&manager->topicReceivers.mutex, NULL);
     status |= celixThreadMutex_create(&manager->topicSenders.mutex, NULL);
+    status |= celixThreadMutex_create(&manager->psaMetrics.mutex, NULL);
     status |= celixThreadMutex_create(&manager->psaHandling.mutex, NULL);
 
     status |= celixThreadCondition_init(&manager->psaHandling.cond, NULL);
@@ -73,6 +80,7 @@ celix_status_t pubsub_topologyManager_create(bundle_context_pt context, log_help
     manager->announceEndpointListeners.list = celix_arrayList_create();
     manager->pubsubadmins.map = hashMap_create(NULL, NULL, NULL, NULL);
     manager->topicReceivers.map = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
+    manager->psaMetrics.map = hashMap_create(NULL, NULL, NULL, NULL);
     manager->topicSenders.map = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
 
     manager->loghelper = logHelper;
@@ -158,6 +166,9 @@ celix_status_t pubsub_topologyManager_destroy(pubsub_topology_manager_t *manager
 
     celixThreadMutex_destroy(&manager->announceEndpointListeners.mutex);
     celix_arrayList_destroy(manager->announceEndpointListeners.list);
+
+    celixThreadMutex_destroy(&manager->psaMetrics.mutex);
+    hashMap_destroy(manager->psaMetrics.map, false, false);
 
     free(manager);
 
@@ -931,11 +942,24 @@ static void *pstm_psaHandlingThread(void *data) {
     return NULL;
 }
 
-
-celix_status_t pubsub_topologyManager_shellCommand(void *handle, char *commandLine __attribute__((unused)), FILE *os, FILE *errorStream __attribute__((unused))) {
+void pubsub_topologyManager_addMetricsService(void * handle, void *svc, const celix_properties_t *props) {
     pubsub_topology_manager_t *manager = handle;
-    //TODO add support for searching based on scope and topic
+    long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
+    celixThreadMutex_lock(&manager->psaMetrics.mutex);
+    hashMap_put(manager->psaMetrics.map, (void*)svcId, svc);
+    celixThreadMutex_unlock(&manager->psaMetrics.mutex);
+}
 
+void pubsub_topologyManager_removeMetricsService(void * handle, void *svc, const celix_properties_t *props) {
+    pubsub_topology_manager_t *manager = handle;
+    long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
+    celixThreadMutex_lock(&manager->psaMetrics.mutex);
+    hashMap_remove(manager->psaMetrics.map, (void*)svcId);
+    celixThreadMutex_unlock(&manager->psaMetrics.mutex);
+}
+
+
+static celix_status_t pubsub_topologyManager_topology(pubsub_topology_manager_t *manager, char *commandLine __attribute__((unused)), FILE *os, FILE *errorStream __attribute__((unused))) {
     fprintf(os, "\n");
 
     fprintf(os, "Discovered Endpoints: \n");
@@ -1069,4 +1093,88 @@ celix_status_t pubsub_topologyManager_shellCommand(void *handle, char *commandLi
 
 
     return CELIX_SUCCESS;
+}
+
+static void fetchBundleName(void *handle, const bundle_t *bundle) {
+    const char **out = handle;
+    *out = celix_bundle_getSymbolicName(bundle);
+}
+
+static celix_status_t pubsub_topologyManager_metrics(pubsub_topology_manager_t *manager, char *commandLine __attribute__((unused)), FILE *os, FILE *errorStream __attribute__((unused))) {
+    celix_array_list_t *psaMetrics = celix_arrayList_create();
+    celixThreadMutex_lock(&manager->psaMetrics.mutex);
+    hash_map_iterator_t iter = hashMapIterator_construct(manager->psaMetrics.map);
+    while (hashMapIterator_hasNext(&iter)) {
+        pubsub_admin_metrics_service_t *svc = hashMapIterator_nextValue(&iter);
+        pubsub_admin_metrics_t *m = svc->metrics(svc->handle);
+        celix_arrayList_add(psaMetrics, m);
+    }
+    celixThreadMutex_unlock(&manager->psaMetrics.mutex);
+
+    for (int i = 0; i < celix_arrayList_size(psaMetrics); ++i) {
+        pubsub_admin_metrics_t *metrics = celix_arrayList_get(psaMetrics, i);
+        fprintf(os, "Metric for PSA %s:\n", metrics->psaType);
+        for (int k = 0; k < celix_arrayList_size(metrics->senders); ++k) {
+            pubsub_admin_sender_metrics_t *sm = celix_arrayList_get(metrics->senders, k);
+            fprintf(os, "|- Topic Sender %s/%s\n", sm->scope, sm->topic);
+            for (int j = 0; j < sm->nrOfmsgMetrics; ++j) {
+                if (sm->msgMetrics[j].nrOfMessagesSend == 0 && sm->msgMetrics[j].nrOfMessagesSendFailed == 0 && sm->msgMetrics[j].nrOfSerializationErrors == 0) {
+                    continue;
+                }
+                const char *bndName = NULL;
+                celix_bundleContext_useBundle(manager->context, sm->msgMetrics->bndId, &bndName, fetchBundleName);
+                fprintf(os, "   |- Message '%s' from bundle '%s' (%li):\n", sm->msgMetrics[j].typeFqn, bndName, sm->msgMetrics->bndId);
+                fprintf(os, "      |- msg type = 0x%X\n", sm->msgMetrics[j].typeId);
+                fprintf(os, "      |- send count = %li\n", sm->msgMetrics[j].nrOfMessagesSend);
+                fprintf(os, "      |- fail count = %li\n", sm->msgMetrics[j].nrOfMessagesSendFailed);
+                fprintf(os, "      |- serialization failed = %li\n", sm->msgMetrics[j].nrOfSerializationErrors);
+                fprintf(os, "      |- average serialization time = %f s\n", sm->msgMetrics[j].averageSerializationTimeInSeconds);
+                fprintf(os, "      |- average time between messages = %f s\n", sm->msgMetrics[j].averageTimeBetweenMessagesInSeconds);
+                //TODO last msg send
+            }
+        }
+        for (int k = 0; k < celix_arrayList_size(metrics->receivers); ++k) {
+            pubsub_admin_receiver_metrics_t *rm = celix_arrayList_get(metrics->receivers, k);
+            fprintf(os, "|- Topic Receiver %s/%s:\n", rm->scope, rm->topic);
+            for (int j = 0; j < rm->nrOfMsgTypes; ++j) {
+                int nrOfOrigins = rm->msgTypes[j].nrOfOrigins;
+                for (int m = 0; m < nrOfOrigins; ++m) {
+                    long nrOfMessageReceived = rm->msgTypes[j].origins[m].nrOfMessagesReceived;
+                    if (nrOfMessageReceived == 0) {
+                        continue;
+                    }
+                    char uuidStr[UUID_STR_LEN+1];
+                    uuid_unparse(rm->msgTypes[j].origins[m].originUUID, uuidStr);
+                    fprintf(os, "   |- Message '%s' from framework UUID %s:\n", rm->msgTypes[j].typeFqn, uuidStr);
+                    fprintf(os, "      |- msg type = 0x%X\n", rm->msgTypes[j].typeId);
+                    fprintf(os, "      |- receive count = %li\n", rm->msgTypes[j].origins[m].nrOfMessagesReceived);
+                    fprintf(os, "      |- serialization error = %li\n", rm->msgTypes[j].origins[m].nrOfSerializationErrors);
+                    fprintf(os, "      |- missing seq numbers = %li\n", rm->msgTypes[j].origins[m].nrOfMissingSeqNumbers);
+                    fprintf(os, "      |- average delay = %fs\n", rm->msgTypes[j].origins[m].averageDelayInSeconds);
+                    fprintf(os, "      |- max delay = %fs\n", rm->msgTypes[j].origins[m].maxDelayInSeconds);
+                    fprintf(os, "      |- min delay = %fs\n", rm->msgTypes[j].origins[m].minDelayInSeconds);
+                    fprintf(os, "      |- average serialization time = %fs\n", rm->msgTypes[j].origins[m].averageSerializationTimeInSeconds);
+                    fprintf(os, "      |- average time between messages time = %fs\n", rm->msgTypes[j].origins[m].averageTimeBetweenMessagesInSeconds);
+                }
+            }
+        }
+        pubsub_freePubSubAdminMetrics(metrics);
+    }
+    celix_arrayList_destroy(psaMetrics);
+    return CELIX_SUCCESS;
+}
+
+celix_status_t pubsub_topologyManager_shellCommand(void *handle, char *commandLine, FILE *os, FILE *errorStream) {
+    pubsub_topology_manager_t *manager = handle;
+
+    static const char * topCmd = "pstm t"; //"topology";
+    static const char * metricsCmd = "pstm m"; //"metrics"
+
+    if (strncmp(commandLine, topCmd, strlen(topCmd)) == 0) {
+        return pubsub_topologyManager_topology(manager, commandLine, os, errorStream);
+    } else if (strncmp(commandLine, metricsCmd, strlen(metricsCmd)) == 0) {
+        return pubsub_topologyManager_metrics(manager, commandLine, os, errorStream);
+    } else { //default
+        return pubsub_topologyManager_topology(manager, commandLine, os, errorStream);
+    }
 }

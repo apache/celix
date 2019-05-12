@@ -29,7 +29,6 @@
 #include "constants.h"
 #include "celix_log.h"
 
-#include "pubsub_common.h"
 #include "pubsub_listeners.h"
 #include "pubsub_discovery_impl.h"
 

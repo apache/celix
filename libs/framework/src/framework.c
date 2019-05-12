@@ -23,13 +23,6 @@
 #include <string.h>
 #include <unistd.h>
 #include "celixbool.h"
-
-#ifdef _WIN32
-#include <winbase.h>
-#include <windows.h>
-#else
-#include <dlfcn.h>
-#endif
 #include <uuid/uuid.h>
 #include <assert.h>
 
@@ -46,6 +39,7 @@
 #include "celix_bundle_context.h"
 #include "bundle_context_private.h"
 #include "service_tracker.h"
+#include "celix_library_loader.h"
 
 typedef celix_status_t (*create_function_fp)(bundle_context_t *context, void **userData);
 typedef celix_status_t (*start_function_fp)(void *userData, bundle_context_t *context);
@@ -314,43 +308,6 @@ static void framework_loggerInit(void) {
     logger->logFunction = frameworkLogger_log;
 }
 
-/* Note: RTLD_NODELETE flag is needed in order to obtain a readable valgrind output.
- * Valgrind output is written when the application terminates, so symbols resolving
- * is impossible if dlopened libraries are unloaded before the application ends.
- * RTLD_NODELETE closes the dynamic library but does not unload it from the memory space,
- * so that symbols will be available until the application terminates.
- * On the other hand, since the memory mapping is not destroyed after dlclose, calling again
- * dlopen for the same library clashes with the previous mapping: this breaks the memory layout
- * in case the user, for example, uninstall (dlclose) and install the bundle again (dlopen)
- * So, RTLD_NODELETE should be used only for debugging purposes.
- * Refer to dlopen manpage for additional details about libraries dynamic loading.
- */
-#ifdef _WIN32
-    #define handle_t HMODULE
-    #define fw_openLibrary(path) LoadLibrary(path)
-    #define fw_closeLibrary(handle) FreeLibrary(handle)
-
-    #define fw_getSymbol(handle, name) GetProcAddress(handle, name)
-
-    #define fw_getLastError() GetLastError()
-
-    HMODULE fw_getCurrentModule() {
-        HMODULE hModule = NULL;
-        GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPCTSTR)fw_getCurrentModule, &hModule);
-        return hModule;
-    }
-#else
-    #define handle_t void *
-    #if defined(DEBUG) && !defined(ANDROID)
-	#define fw_openLibrary(path) dlopen(path, RTLD_LAZY|RTLD_LOCAL|RTLD_NODELETE)
-    #else
-	#define fw_openLibrary(path) dlopen(path, RTLD_LAZY|RTLD_LOCAL)
-    #endif
-    #define fw_closeLibrary(handle) dlclose(handle)
-    #define fw_getSymbol(handle, name) dlsym(handle, name)
-    #define fw_getLastError() dlerror()
-#endif
-
 celix_status_t framework_create(framework_pt *framework, properties_pt config) {
     celix_status_t status = CELIX_SUCCESS;
 
@@ -452,8 +409,8 @@ celix_status_t framework_destroy(framework_pt framework) {
                 status = CELIX_DO_IF(status, bundleRevision_getHandles(revision, &handles));
                 if (handles != NULL) {
                     for (int i = arrayList_size(handles) - 1; i >= 0; i--) {
-                        void *handle = arrayList_get(handles, i);
-                        fw_closeLibrary(handle);
+                        celix_library_handle_t *handle = arrayList_get(handles, i);
+                        celix_libloader_close(handle);
                     }
                 }
             }
@@ -979,21 +936,21 @@ celix_status_t fw_startBundle(framework_pt framework, bundle_pt bundle, int opti
                     } else {
                         void * userData = NULL;
                         bundle_context_t *context;
-                        create_function_fp create = (create_function_fp) fw_getSymbol((handle_t) bundle_getHandle(bundle), OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_CREATE);
+                        create_function_fp create = (create_function_fp) celix_libloader_getSymbol((celix_library_handle_t*) bundle_getHandle(bundle), OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_CREATE);
                         if (create == NULL) {
-                            create = fw_getSymbol(bundle_getHandle(bundle), OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_CREATE);
+                            create = celix_libloader_getSymbol(bundle_getHandle(bundle), OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_CREATE);
                         }
-                        start_function_fp start = (start_function_fp) fw_getSymbol((handle_t) bundle_getHandle(bundle), OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_START);
+                        start_function_fp start = (start_function_fp) celix_libloader_getSymbol((celix_library_handle_t*) bundle_getHandle(bundle), OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_START);
                         if (start == NULL) {
-                            start = (start_function_fp) fw_getSymbol((handle_t) bundle_getHandle(bundle), OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_START);
+                            start = (start_function_fp) celix_libloader_getSymbol((celix_library_handle_t*) bundle_getHandle(bundle), OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_START);
                         }
-                        stop_function_fp stop = (stop_function_fp) fw_getSymbol((handle_t) bundle_getHandle(bundle), OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_STOP);
+                        stop_function_fp stop = (stop_function_fp) celix_libloader_getSymbol((celix_library_handle_t*) bundle_getHandle(bundle), OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_STOP);
                         if (stop == NULL) {
-                            stop = (stop_function_fp) fw_getSymbol((handle_t) bundle_getHandle(bundle), OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_STOP);
+                            stop = (stop_function_fp) celix_libloader_getSymbol((celix_library_handle_t*) bundle_getHandle(bundle), OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_STOP);
                         }
-                        destroy_function_fp destroy = (destroy_function_fp) fw_getSymbol((handle_t) bundle_getHandle(bundle), OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_DESTROY);
+                        destroy_function_fp destroy = (destroy_function_fp) celix_libloader_getSymbol((celix_library_handle_t*) bundle_getHandle(bundle), OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_DESTROY);
                         if (destroy == NULL) {
-                            destroy = (destroy_function_fp) fw_getSymbol((handle_t) bundle_getHandle(bundle), OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_DESTROY);
+                            destroy = (destroy_function_fp) celix_libloader_getSymbol((celix_library_handle_t*) bundle_getHandle(bundle), OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_DESTROY);
                         }
 
                         activator->create = create;
@@ -1085,7 +1042,7 @@ celix_status_t framework_updateBundle(framework_pt framework, bundle_pt bundle, 
         int i;
 	    for (i = arrayList_size(handles) - 1; i >= 0; i--) {
 	        void* handle = arrayList_get(handles, i);
-	        fw_closeLibrary(handle);
+	        celix_libloader_close(handle);
 	    }
     }
 
@@ -1209,6 +1166,9 @@ celix_status_t fw_stopBundle(framework_pt framework, bundle_pt bundle, bool reco
                 }
 
                 status = CELIX_DO_IF(status, framework_setBundleStateAndNotify(framework, bundle, OSGI_FRAMEWORK_BUNDLE_RESOLVED));
+            } else if (bndId == 0) {
+                //framework bundle
+                celix_serviceTracker_syncForContext(framework->bundle->context);
             }
 	    }
 
@@ -1280,8 +1240,8 @@ celix_status_t fw_uninstallBundle(framework_pt framework, bundle_pt bundle) {
 	status = CELIX_DO_IF(status, bundleRevision_getHandles(revision, &handles));
 	if(handles != NULL){
 		for (int i = arrayList_size(handles) - 1; i >= 0; i--) {
-			void *handle = arrayList_get(handles, i);
-			fw_closeLibrary(handle);
+			celix_library_handle_t *handle = arrayList_get(handles, i);
+			celix_libloader_close(handle);
 		}
 	}
 
@@ -2507,7 +2467,7 @@ static celix_status_t frameworkActivator_destroy(void * userData, bundle_context
 static celix_status_t framework_loadBundleLibraries(framework_pt framework, bundle_pt bundle) {
     celix_status_t status = CELIX_SUCCESS;
 
-    handle_t handle = NULL;
+    celix_library_handle_t* handle = NULL;
     bundle_archive_pt archive = NULL;
     bundle_revision_pt revision = NULL;
     manifest_pt manifest = NULL;
@@ -2537,7 +2497,7 @@ static celix_status_t framework_loadBundleLibraries(framework_pt framework, bund
             bundle_setHandle(bundle, handle);
         }
         else if(handle != NULL){
-            fw_closeLibrary(handle);
+            celix_libloader_close(handle);
         }
     }
 
@@ -2584,7 +2544,7 @@ static celix_status_t framework_loadLibraries(framework_pt framework, const char
             *activatorHandle = handle;
         }
         else if(handle!=NULL){
-            fw_closeLibrary(handle);
+            celix_libloader_close(handle);
         }
 
         token = strtok_r(NULL, ",", &last);
@@ -2598,7 +2558,7 @@ static celix_status_t framework_loadLibraries(framework_pt framework, const char
 
 static celix_status_t framework_loadLibrary(framework_pt framework, const char *library, bundle_archive_pt archive, void **handle) {
     celix_status_t status = CELIX_SUCCESS;
-    char *error = NULL;
+    const char *error = NULL;
 
 #ifdef __linux__
     char * library_prefix = "lib";
@@ -2632,9 +2592,11 @@ static celix_status_t framework_loadLibrary(framework_pt framework, const char *
         error = "library path is too long";
         status = CELIX_FRAMEWORK_EXCEPTION;
     } else {
-        *handle = fw_openLibrary(libraryPath);
+        celix_bundle_context_t *fwCtx = NULL;
+        bundle_getContext(framework->bundle, &fwCtx);
+        *handle = celix_libloader_open(fwCtx, libraryPath);
         if (*handle == NULL) {
-            error = fw_getLastError();
+            error = celix_libloader_getLastError();
             status =  CELIX_BUNDLE_EXCEPTION;
         } else {
             bundle_revision_pt revision = NULL;

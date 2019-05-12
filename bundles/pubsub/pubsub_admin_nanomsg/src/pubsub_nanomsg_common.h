@@ -25,7 +25,6 @@
 #include <utils.h>
 
 #include "version.h"
-#include "pubsub_common.h"
 #include "log_helper.h"
 
 /*

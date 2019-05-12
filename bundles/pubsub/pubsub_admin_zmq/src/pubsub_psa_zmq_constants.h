@@ -38,6 +38,13 @@
 #define PSA_ZMQ_DEFAULT_SCORE_KEY 			    "PSA_ZMQ_DEFAULT_SCORE"
 
 
+#define PSA_ZMQ_METRICS_ENABLED "PSA_ZMQ_METRICS_ENABLED"
+#define PSA_ZMQ_DEFAULT_METRICS_ENABLED true
+
+#define PSA_ZMQ_ZEROCOPY_ENABLED "PSA_ZMQ_ZEROCOPY_ENABLED"
+#define PSA_ZMQ_DEFAULT_ZEROCOPY_ENABLED false
+
+
 #define PUBSUB_ZMQ_VERBOSE_KEY      "PSA_ZMQ_VERBOSE"
 #define PUBSUB_ZMQ_VERBOSE_DEFAULT  true
 
@@ -73,8 +80,23 @@
 
 /**
  * The static url which a subscriber should try to connect to.
- * The urls are space separated
+ * The urls are space separated.
+ * Can be set in the topic properties.
  */
 #define PUBSUB_ZMQ_STATIC_CONNECT_URLS    "zmq.static.connect.urls"
+
+/**
+ * Realtime thread prio and scheduling information. This is used to setup the thread prio/sched of the
+ * internal ZMQ threads.
+ * Can be set in the topic properties.
+ */
+#define PUBSUB_ZMQ_THREAD_REALTIME_PRIO    "thread.realtime.prio"
+#define PUBSUB_ZMQ_THREAD_REALTIME_SCHED   "thread.realtime.sched"
+
+/**
+ * High Water Mark option. See ZMQ doc for more information
+ * Note expected type is longs
+ */
+#define PUBSUB_ZMQ_HWM                      "zmq.hwm"
 
 #endif /* PUBSUB_PSA_ZMQ_CONSTANTS_H_ */

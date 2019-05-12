@@ -20,6 +20,7 @@
 #ifndef CELIX_PUBSUB_ZMQ_ADMIN_H
 #define CELIX_PUBSUB_ZMQ_ADMIN_H
 
+#include <pubsub_admin_metrics.h>
 #include "celix_api.h"
 #include "log_helper.h"
 #include "pubsub_psa_zmq_constants.h"
@@ -46,6 +47,8 @@ void pubsub_zmqAdmin_addSerializerSvc(void *handle, void *svc, const celix_prope
 void pubsub_zmqAdmin_removeSerializerSvc(void *handle, void *svc, const celix_properties_t *props);
 
 celix_status_t pubsub_zmqAdmin_executeCommand(void *handle, char *commandLine, FILE *outStream, FILE *errStream);
+
+pubsub_admin_metrics_t* pubsub_zmqAdmin_metrics(void *handle);
 
 #endif //CELIX_PUBSUB_ZMQ_ADMIN_H
 

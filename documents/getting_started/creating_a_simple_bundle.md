@@ -84,10 +84,10 @@ This CMakeLists.txt file, sets up the following:
 	* The Celix package should be searched, configured and that the Celix package is required. 
 	* For all build targets in this CMakeLists.txt file or any sub directory CMakeLists.txt files the Apache Celix headers directory should be included.
 * Part 4
-	* The CMakelists.txt file in the subdirectory bundles/hello_world and/or bundles/HelloWorld should also be processed.
+	* The CMakelists.txt file in the subdirectory bundles/export_import and/or bundles/HelloWorld should also be processed.
 	
 
-It is a good practice to create a separate CMakeLists.txt file for every bundle you want to build. For the hello_world bundle a CMakeLists.txt file should be created in the bundles/hello_world sub directory.
+It is a good practice to create a separate CMakeLists.txt file for every bundle you want to build. For the export_import bundle a CMakeLists.txt file should be created in the bundles/export_import sub directory.
 
 Create the sub directory:
 

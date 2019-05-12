@@ -87,15 +87,13 @@ TEST_GROUP(FrameworkFactory) {
 
 
 TEST(FrameworkFactory, testFactoryCreate) {
-    framework_t* fw = frameworkFactory_newFramework(NULL);
+    framework_t* fw = celix_frameworkFactory_createFramework(NULL);
     CHECK(fw != NULL);
-    framework_stop(fw);
-    framework_waitForStop(fw);
-    framework_destroy(fw); //note stop, wait and then destroy is needed .. combine ?
+    celix_frameworkFactory_destroyFramework(fw);
 }
 
 TEST(FrameworkFactory, testFactoryCreateAndToManyStartAndStops) {
-    framework_t* fw = frameworkFactory_newFramework(NULL);
+    framework_t* fw = celix_frameworkFactory_createFramework(NULL);
     CHECK(fw != NULL);
 
     framework_start(fw); //should already be done by frameworkFactory_newFramework();
@@ -114,7 +112,7 @@ TEST(FrameworkFactory, testFactoryCreateAndToManyStartAndStops) {
 }
 
 TEST(FrameworkFactory, restartFramework) {
-    framework_t* fw = frameworkFactory_newFramework(NULL);
+    framework_t* fw = celix_frameworkFactory_createFramework(NULL);
     CHECK(fw != NULL);
 
 

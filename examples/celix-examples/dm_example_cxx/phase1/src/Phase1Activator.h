@@ -20,7 +20,7 @@
 #ifndef CELIX_PHASE1ACTIVATOR_H
 #define CELIX_PHASE1ACTIVATOR_H
 
-#include "celix/dm/DmActivator.h"
+#include "celix/dm/DependencyManager.h"
 #include "command.h"
 
 using namespace celix::dm;
@@ -28,17 +28,17 @@ struct DummyService {
     void *handle;
 };
 
-class Phase1Activator : public DmActivator {
+class Phase1Activator {
+public:
+    Phase1Activator(std::shared_ptr<celix::dm::DependencyManager> mng);
+    Phase1Activator(const Phase1Activator&) = delete;
+    Phase1Activator& operator=(const Phase1Activator&) = delete;
+private:
     command_service_t cmd {nullptr, nullptr};
     command_service_t addCmd {nullptr, nullptr};
     command_service_t removeCmd {nullptr, nullptr};
     Component<Phase1Cmp> *phase1cmp{nullptr};
     DummyService *dummySvc{new DummyService};
-    public:
-    Phase1Activator(DependencyManager& mng) : DmActivator(mng) {}
-    Phase1Activator(const Phase1Activator&) = delete;
-    Phase1Activator& operator=(const Phase1Activator&) = delete;
-    virtual void init();
 };
 
 #endif //CELIX_PHASE1ACTIVATOR_H

@@ -16,16 +16,10 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * activator.c
- *
- *  \date       Oct 29, 2015
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
+
 #include <stdlib.h>
 
-#include "celix_api.h"
+#include <celix_api.h>
 
 #include "phase2.h"
 #include "phase3_cmp.h"
@@ -34,7 +28,7 @@ struct phase3_activator_struct {
     phase3_cmp_t *phase3Cmp;
 };
 
-static celix_status_t start(struct phase3_activator_struct *act, celix_bundle_context_t *ctx) {
+static celix_status_t activator_start(struct phase3_activator_struct *act, celix_bundle_context_t *ctx) {
 	celix_status_t status = CELIX_SUCCESS;
 	printf("phase3: start\n");
 	act->phase3Cmp = phase3_create();
@@ -63,7 +57,7 @@ static celix_status_t start(struct phase3_activator_struct *act, celix_bundle_co
 
 }
 
-static celix_status_t stop(struct phase3_activator_struct *act, celix_bundle_context_t *ctx) {
+static celix_status_t activator_stop(struct phase3_activator_struct *act, celix_bundle_context_t *ctx) {
 	celix_status_t status = CELIX_SUCCESS;
 	printf("phase3: stop\n");
 	celix_dependency_manager_t *mng = celix_bundleContext_getDependencyManager(ctx);
@@ -75,4 +69,4 @@ static celix_status_t stop(struct phase3_activator_struct *act, celix_bundle_con
 }
 
 
-CELIX_GEN_BUNDLE_ACTIVATOR(struct phase3_activator_struct, start, stop);
+CELIX_GEN_BUNDLE_ACTIVATOR(struct phase3_activator_struct, activator_start, activator_stop);

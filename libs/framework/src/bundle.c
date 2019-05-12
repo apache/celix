@@ -630,3 +630,13 @@ const char* celix_bundle_getGroup(const celix_bundle_t *bnd) {
 	}
 	return result;
 }
+
+const char* celix_bundle_getSymbolicName(const celix_bundle_t *bnd) {
+	const char *result = NULL;
+	module_pt mod = NULL;
+	bundle_getCurrentModule((bundle_pt)bnd, &mod);
+	if (mod != NULL) {
+		module_getSymbolicName(mod, &result);
+	}
+	return result;
+}

@@ -16,7 +16,6 @@
 # under the License.
 
 add_subdirectory(api)
-
 add_subdirectory(phase1)
 add_subdirectory(phase2a)
 add_subdirectory(phase2b)

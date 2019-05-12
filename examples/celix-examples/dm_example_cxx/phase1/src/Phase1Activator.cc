@@ -20,6 +20,7 @@
 #include "Phase1Cmp.h"
 #include "Phase1Activator.h"
 #include "IPhase2.h"
+#include <celix_api.h>
 
 using namespace celix::dm;
 
@@ -27,10 +28,6 @@ using namespace celix::dm;
  * For the C service a service struct in initialized and registered
  * For the C++ service the object itself is used
  */
-
-DmActivator* DmActivator::create(DependencyManager& mng) {
-    return new Phase1Activator(mng);
-}
 
 struct InvalidCServ {
     virtual ~InvalidCServ() = default;
@@ -40,7 +37,7 @@ struct InvalidCServ {
     virtual void baz(double __attribute__((unused)) arg) {} //not a valid pod
 };
 
-void Phase1Activator::init() {
+Phase1Activator::Phase1Activator(std::shared_ptr<celix::dm::DependencyManager> mng) {
     auto cmp = std::shared_ptr<Phase1Cmp>(new Phase1Cmp());
 
     Properties cmdProps;
@@ -86,14 +83,18 @@ void Phase1Activator::init() {
     auto tst = std::unique_ptr<InvalidCServ>(new InvalidCServ{});
     tst->handle = cmp.get();
 
+    phase1cmp = &mng->createComponent(cmp);  //using a pointer a instance. Also supported is lazy initialization (default constructor needed) or a rvalue reference (move)
 
-    phase1cmp = &mng.createComponent(cmp)  //using a pointer a instance. Also supported is lazy initialization (default constructor needed) or a rvalue reference (move)
-        .addInterface<IPhase1>(IPHASE1_VERSION)
-        //.addInterface<IPhase2>() -> Compile error (static assert), because Phase1Cmp does not implement IPhase2
-        .addCInterface(&cmd, OSGI_SHELL_COMMAND_SERVICE_NAME, "", cmdProps)
-        .addCInterface(&addCmd, OSGI_SHELL_COMMAND_SERVICE_NAME, "", addProps)
-        .addCInterface(&removeCmd, OSGI_SHELL_COMMAND_SERVICE_NAME, "", removeProps)
-        //.addCInterface(tst.get(), "TEST_SRV") -> Compile error (static assert), because InvalidCServ is not a pod
-        .addInterface<srv::info::IName>(INAME_VERSION)
-        .setCallbacks(&Phase1Cmp::init, &Phase1Cmp::start, &Phase1Cmp::stop, &Phase1Cmp::deinit);
+    phase1cmp->addInterface<IPhase1>(IPHASE1_VERSION)
+                    //.addInterface<IPhase2>() -> Compile error (static assert), because Phase1Cmp does not implement IPhase2
+            .addCInterface(&cmd, OSGI_SHELL_COMMAND_SERVICE_NAME, "", cmdProps)
+            .addCInterface(&addCmd, OSGI_SHELL_COMMAND_SERVICE_NAME, "", addProps)
+            .addCInterface(&removeCmd, OSGI_SHELL_COMMAND_SERVICE_NAME, "", removeProps)
+                    //.addCInterface(tst.get(), "TEST_SRV") -> Compile error (static assert), because InvalidCServ is not a pod
+            .addInterface<srv::info::IName>(INAME_VERSION)
+            .setCallbacks(&Phase1Cmp::init, &Phase1Cmp::start, &Phase1Cmp::stop, &Phase1Cmp::deinit);
+
+
 }
+
+CELIX_GEN_CXX_BUNDLE_ACTIVATOR(Phase1Activator)

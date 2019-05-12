@@ -26,8 +26,8 @@ using namespace celix::dm;
 
 class Phase3Activator : public Phase3BaseActivator {
 public:
-    Phase3Activator(DependencyManager& mng) : Phase3BaseActivator(mng) {}
-    virtual void init();
+    Phase3Activator(std::shared_ptr<DependencyManager> mng);
+    virtual ~Phase3Activator() = default;
 };
 
 #endif //CELIX_PHASE2AACTIVATOR_H

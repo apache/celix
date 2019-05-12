@@ -20,14 +20,13 @@
 #ifndef CELIX_PHASE3LOCKINGACTIVATOR_H
 #define CELIX_PHASE3LOCKINGACTIVATOR_H
 
-#include "celix/dm/DmActivator.h"
+#include <celix/dm/DependencyManager.h>
 
 using namespace celix::dm;
 
-class Phase3LockingActivator : public DmActivator {
+class Phase3LockingActivator {
 public:
-    Phase3LockingActivator(DependencyManager& mng) : DmActivator(mng) {}
-    virtual void init();
+    Phase3LockingActivator(std::shared_ptr<DependencyManager> mng);
 };
 
 #endif //CELIX_PHASE3LOCKINGAACTIVATOR_H

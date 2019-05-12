@@ -15,27 +15,11 @@
 # specific language governing permissions and limitations
 # under the License.
 
-include_directories(
-        private/include
-)
-
 add_celix_bundle(baz_cxx
     SYMBOLIC_NAME Baz
     VERSION 1.0.0
     SOURCES
-        private/src/Baz.cc
-        private/src/BazActivator.cc
+        src/Baz.cc
+        src/BazActivator.cc
 )
-
-target_compile_options(baz_cxx PUBLIC -Wall -Wextra -Weffc++ -Werror)
-
-IF(APPLE)
-    target_link_libraries(baz_cxx PRIVATE  -Wl,-all_load  dependency_manager_cxx_static)
-else()
-    if(ENABLE_ADDRESS_SANITIZER)
-        #With asan there can be undefined symbols
-        target_link_libraries(baz_cxx PRIVATE -Wl,--whole-archive  dependency_manager_cxx_static -Wl,--no-whole-archive)
-    else()
-        target_link_libraries(baz_cxx PRIVATE -Wl,--no-undefined -Wl,--whole-archive  dependency_manager_cxx_static -Wl,--no-whole-archive)
-    endif()
-endif()
+target_link_libraries(baz_cxx PRIVATE services_example_cxx_api)

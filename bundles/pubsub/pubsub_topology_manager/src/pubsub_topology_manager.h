@@ -27,7 +27,6 @@
 #include "command.h"
 #include "celix_bundle_context.h"
 
-#include "pubsub_common.h"
 #include "pubsub_endpoint.h"
 #include "pubsub/publisher.h"
 #include "pubsub/subscriber.h"
@@ -63,6 +62,11 @@ typedef struct pubsub_topology_manager {
 		celix_thread_mutex_t mutex;
 		celix_array_list_t *list; //<pubsub_announce_endpoint_listener_t*>
 	} announceEndpointListeners;
+
+	struct {
+		celix_thread_mutex_t mutex;
+		hash_map_t *map; //key = svcId, value = pubsub_admin_metrics_service_t*
+	} psaMetrics;
 
 	struct {
 		celix_thread_t thread;
@@ -122,5 +126,8 @@ celix_status_t pubsub_topologyManager_addDiscoveredEndpoint(void *handle, const 
 celix_status_t pubsub_topologyManager_removeDiscoveredEndpoint(void *handle, const celix_properties_t *properties);
 
 celix_status_t pubsub_topologyManager_shellCommand(void *handle, char * commandLine, FILE *outStream, FILE *errorStream);
+
+void pubsub_topologyManager_addMetricsService(void * handle, void *svc, const celix_properties_t *props);
+void pubsub_topologyManager_removeMetricsService(void * handle, void *svc, const celix_properties_t *props);
 
 #endif /* PUBSUB_TOPOLOGY_MANAGER_H_ */

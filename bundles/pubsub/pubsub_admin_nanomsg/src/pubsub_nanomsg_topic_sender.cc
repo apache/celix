@@ -30,7 +30,6 @@
 
 
 #include <pubsub_constants.h>
-#include <pubsub_common.h>
 #include "pubsub_nanomsg_topic_sender.h"
 #include "pubsub_psa_nanomsg_constants.h"
 #include "pubsub_nanomsg_common.h"

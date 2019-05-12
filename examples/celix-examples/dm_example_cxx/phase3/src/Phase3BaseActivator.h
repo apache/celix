@@ -20,14 +20,14 @@
 #ifndef CELIX_PHASE3BASEACTIVATOR_H
 #define CELIX_PHASE3BASEACTIVATOR_H
 
-#include "celix/dm/DmActivator.h"
+#include "celix/dm/DependencyManager.h"
 
 using namespace celix::dm;
 
-class Phase3BaseActivator : public DmActivator {
+class Phase3BaseActivator  {
 public:
-    Phase3BaseActivator(DependencyManager& mng) : DmActivator(mng), cmp(mng.createComponent<Phase3Cmp>()) {}
-    void init();
+    Phase3BaseActivator(std::shared_ptr<DependencyManager> mng);
+    virtual ~Phase3BaseActivator() = default;
 protected:
     celix::dm::Component<Phase3Cmp>& cmp;
 };

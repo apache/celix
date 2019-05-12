@@ -218,6 +218,11 @@ static void* shellTui_runnable(void *data) {
                 } else {
                     shellTui_parseInput(shellTui, &ctx);
                 }
+
+                if (!isatty(STDIN_FILENO)) {
+                    //not connected to a tty anymore. sleep for 1 sec
+                    usleep(10000000);
+                }
             }
         }
     }

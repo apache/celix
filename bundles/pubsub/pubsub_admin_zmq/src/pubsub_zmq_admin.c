@@ -447,8 +447,6 @@ celix_status_t pubsub_zmqAdmin_setupTopicReceiver(void *handle, const char *scop
 
     celix_properties_t *newEndpoint = NULL;
 
-    const char *staticConnectUrls = celix_properties_get(topicProperties, PUBSUB_ZMQ_STATIC_CONNECT_URLS, NULL);
-
     char *key = pubsubEndpoint_createScopeTopicKey(scope, topic);
     celixThreadMutex_lock(&psa->serializers.mutex);
     celixThreadMutex_lock(&psa->topicReceivers.mutex);
@@ -456,7 +454,7 @@ celix_status_t pubsub_zmqAdmin_setupTopicReceiver(void *handle, const char *scop
     if (receiver == NULL) {
         psa_zmq_serializer_entry_t *serEntry = hashMap_get(psa->serializers.map, (void*)serializerSvcId);
         if (serEntry != NULL) {
-            receiver = pubsub_zmqTopicReceiver_create(psa->ctx, psa->log, scope, topic, staticConnectUrls, serializerSvcId, serEntry->svc);
+            receiver = pubsub_zmqTopicReceiver_create(psa->ctx, psa->log, scope, topic, topicProperties, serializerSvcId, serEntry->svc);
         } else {
             L_ERROR("[PSA_ZMQ] Cannot find serializer for TopicSender %s/%s", scope, topic);
         }
@@ -692,6 +690,34 @@ celix_status_t pubsub_zmqAdmin_executeCommand(void *handle, char *commandLine __
     fprintf(out, "\n");
 
     return status;
+}
+
+pubsub_admin_metrics_t* pubsub_zmqAdmin_metrics(void *handle) {
+    pubsub_zmq_admin_t *psa = handle;
+    pubsub_admin_metrics_t *result = calloc(1, sizeof(*result));
+    snprintf(result->psaType, PUBSUB_AMDIN_METRICS_NAME_MAX, "%s", PUBSUB_ZMQ_ADMIN_TYPE);
+    result->senders = celix_arrayList_create();
+    result->receivers = celix_arrayList_create();
+
+    celixThreadMutex_lock(&psa->topicSenders.mutex);
+    hash_map_iterator_t iter = hashMapIterator_construct(psa->topicSenders.map);
+    while (hashMapIterator_hasNext(&iter)) {
+        pubsub_zmq_topic_sender_t *sender = hashMapIterator_nextValue(&iter);
+        pubsub_admin_sender_metrics_t *metrics = pubsub_zmqTopicSender_metrics(sender);
+        celix_arrayList_add(result->senders, metrics);
+    }
+    celixThreadMutex_unlock(&psa->topicSenders.mutex);
+
+    celixThreadMutex_lock(&psa->topicReceivers.mutex);
+    iter = hashMapIterator_construct(psa->topicReceivers.map);
+    while (hashMapIterator_hasNext(&iter)) {
+        pubsub_zmq_topic_receiver_t *receiver = hashMapIterator_nextValue(&iter);
+        pubsub_admin_receiver_metrics_t *metrics = pubsub_zmqTopicReceiver_metrics(receiver);
+        celix_arrayList_add(result->receivers, metrics);
+    }
+    celixThreadMutex_unlock(&psa->topicReceivers.mutex);
+
+    return result;
 }
 
 #ifndef ANDROID

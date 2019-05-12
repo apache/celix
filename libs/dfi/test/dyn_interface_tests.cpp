@@ -30,7 +30,7 @@ extern "C" {
 #include "dyn_common.h"
 #include "dyn_interface.h"
 
-#if defined(BSD) || defined(__APPLE__) 
+#if NO_MEMSTREAM_AVAILABLE
 #include "open_memstream.h"
 #include "fmemopen.h"
 #endif

@@ -22,11 +22,12 @@
 #include <mutex>
 #include <condition_variable>
 
-#include <CppUTest/TestHarness.h>
-#include <CppUTest/CommandLineTestRunner.h>
 #include <zconf.h>
 
 #include "celix_api.h"
+
+#include <CppUTest/TestHarness.h>
+#include <CppUTest/CommandLineTestRunner.h>
 
 
 TEST_GROUP(CelixBundleContextBundlesTests) {
@@ -46,14 +47,12 @@ TEST_GROUP(CelixBundleContextBundlesTests) {
         properties_set(properties, "org.osgi.framework.storage.clean", "onFirstInit");
         properties_set(properties, "org.osgi.framework.storage", ".cacheBundleContextTestFramework");
 
-        fw = frameworkFactory_newFramework(properties);
+        fw = celix_frameworkFactory_createFramework(properties);
         ctx = framework_getContext(fw);
     }
 
     void teardown() {
-        framework_stop(fw);
-        framework_waitForStop(fw);
-        framework_destroy(fw);
+        celix_frameworkFactory_destroyFramework(fw);
     }
 };
 
