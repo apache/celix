@@ -69,7 +69,9 @@ pubsub_discovery_t* pubsub_discovery_create(bundle_context_pt context, log_helpe
     pthread_mutex_init(&disc->waitMutex, NULL);
     pthread_condattr_t attr;
     pthread_condattr_init(&attr);
+#ifdef SP_HAVE_PTHREAD_CONDATTR_SETCLOCK
     pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
+#endif
     pthread_cond_init(&disc->waitCond, &attr);
     celixThreadMutex_create(&disc->runningMutex, NULL);
     disc->running = true;

@@ -27,7 +27,11 @@ add_celix_bundle(celix_pubsub_topology_manager
     	src/pubsub_topology_manager.h
 )
 target_link_libraries(celix_pubsub_topology_manager PRIVATE Celix::framework Celix::log_helper Celix::pubsub_spi Celix::shell_api)
-target_include_directories(celix_pubsub_topology_manager PRIVATE ${UUID_INCLUDE_DIRS})
+# cmake find package UUID set the wrong include dir for OSX
+if (NOT APPLE)
+	target_include_directories(celix_pubsub_topology_manager PRIVATE ${UUID_INCLUDE_DIRS})
+endif()
+
 
 get_target_property(DESC Celix::pubsub_spi TOPIC_INFO_DESCRIPTOR)
 celix_bundle_files(celix_pubsub_topology_manager

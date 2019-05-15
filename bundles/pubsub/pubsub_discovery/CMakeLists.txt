@@ -15,8 +15,14 @@
 # specific language governing permissions and limitations
 # under the License.
 
+include(CheckSymbolExists)
 find_package(CURL REQUIRED)
 find_package(Jansson REQUIRED)
+
+CHECK_SYMBOL_EXISTS (pthread_condattr_setclock "pthread.h" SP_HAVE_PTHREAD_CONDATTR_SETCLOCK)
+if (SP_HAVE_PTHREAD_CONDATTR_SETCLOCK)
+	add_definitions (-DSP_HAVE_PTHREAD_CONDATTR_SETCLOCK)
+endif ()
 
 add_celix_bundle(celix_pubsub_discovery_etcd
     BUNDLE_SYMBOLICNAME "apache_celix_pubsub_discovery_etcd"

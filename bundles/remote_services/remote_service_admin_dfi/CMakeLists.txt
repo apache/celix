@@ -40,7 +40,10 @@ if (RSA_REMOTE_SERVICE_ADMIN_DFI)
     celix_bundle_private_libs(rsa_dfi Celix::dfi)
     target_include_directories(rsa_dfi PRIVATE $<TARGET_PROPERTY:Celix::civetweb,INCLUDE_DIRECTORIES>)
     #target_include_directories(rsa_dfi SYSTEM PRIVATE ${CURL_INCLUDE_DIRS} ${JANSSON_INCLUDE_DIRS} ${UUID_INCLUDE_DIRS})
-    target_include_directories(rsa_dfi PRIVATE ${JANSSON_INCLUDE_DIRS} ${UUID_INCLUDE_DIRS})
+    target_include_directories(rsa_dfi PRIVATE ${JANSSON_INCLUDE_DIRS})
+    if (NOT APPLE)
+        target_include_directories(rsa_dfi SYSTEM PRIVATE ${UUID_INCLUDE_DIRS})
+    endif()
     target_link_libraries(rsa_dfi PRIVATE
             Celix::dfi
             Celix::log_helper

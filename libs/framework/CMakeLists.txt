@@ -49,7 +49,7 @@ target_link_libraries(framework PUBLIC Celix::utils)
 target_link_libraries(framework PRIVATE ${UUID_LIBRARY} ${ZLIB_LIBRARY} ${CURL_LIBRARIES})
 target_include_directories(framework PRIVATE ${CURL_INCLUDE_DIR})
 
-# find package UUID include dir points to wrong directory for OSX
+# cmake find package UUID set the wrong include dir for OSX
 if (NOT APPLE)
   target_include_directories(framework PRIVATE ${UUID_INCLUDE_DIRS})
 endif()
