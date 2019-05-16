@@ -22,6 +22,7 @@ find_package(CURL REQUIRED)
 if(NOT UUID_LIBRARY)
     #i.e. not found for OSX
     set(UUID_LIBRARY "")
+    set(UUID_INCLUDE_DIRS "")
 endif()
 
 set(SOURCES
@@ -47,12 +48,7 @@ target_compile_options(framework PRIVATE -DUSE_FILE32API)
 set_target_properties(framework PROPERTIES "SOVERSION" 2)
 target_link_libraries(framework PUBLIC Celix::utils)
 target_link_libraries(framework PRIVATE ${UUID_LIBRARY} ${ZLIB_LIBRARY} ${CURL_LIBRARIES})
-target_include_directories(framework PRIVATE ${CURL_INCLUDE_DIR})
-
-# cmake find package UUID set the wrong include dir for OSX
-if (NOT APPLE)
-  target_include_directories(framework PRIVATE ${UUID_INCLUDE_DIRS})
-endif()
+target_include_directories(framework PRIVATE ${CURL_INCLUDE_DIR} ${UUID_INCLUDE_DIRS})
 
 install(TARGETS framework EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework)
 install(DIRECTORY include/ DESTINATION include/celix COMPONENT framework)
