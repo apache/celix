@@ -22,6 +22,12 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 	find_package(Jansson REQUIRED)
 	find_package(UUID REQUIRED)
 
+	if(NOT UUID_LIBRARY)
+		#i.e. not found for OSX
+		set(UUID_LIBRARY "")
+		set(UUID_INCLUDE_DIRS "")
+	endif()
+
 	if (BUILD_ZMQ_SECURITY)
 		add_definitions(-DBUILD_WITH_ZMQ_SECURITY=1)
 

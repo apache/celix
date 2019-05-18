@@ -24,6 +24,12 @@ if (RSA_REMOTE_SERVICE_ADMIN_DFI)
     find_package(Jansson REQUIRED)
     find_package(UUID REQUIRED)
 
+    if(NOT UUID_LIBRARY)
+        #i.e. not found for OSX
+        set(UUID_LIBRARY "")
+        set(UUID_INCLUDE_DIRS "")
+    endif()
+
     add_celix_bundle(rsa_dfi
             VERSION 0.9.0
             SYMBOLIC_NAME "apache_celix_remote_service_admin_dfi"
