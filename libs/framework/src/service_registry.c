@@ -656,34 +656,40 @@ celix_status_t serviceRegistry_getService(service_registry_pt registry, bundle_p
 	service_registration_pt registration = NULL;
     size_t count = 0;
     const void *service = NULL;
+    bool valid = false;
     reference_status_t refStatus;
-
 
 
     celixThreadRwlock_readLock(&registry->lock);
     serviceRegistry_checkReference(registry, reference, &refStatus);
     if (refStatus == REF_ACTIVE) {
         serviceReference_getServiceRegistration(reference, &registration);
-
-        if (serviceRegistration_isValid(registration)) {
+        valid = serviceRegistration_isValid(registration);
+        if (valid) {
+            serviceRegistration_retain(registration);
             serviceReference_increaseUsage(reference, &count);
-            if (count == 1) {
-                serviceRegistration_getService(registration, bundle, &service);
-                serviceReference_setService(reference, service);
-            }
-
-            /* NOTE the out argument of sr_getService should be 'const void**'
-               To ensure backwards compatibility a cast is made instead.
-            */
-            serviceReference_getService(reference, (void **)out);
         } else {
             *out = NULL; //invalid service registration
         }
-    } else {
-        serviceRegistry_logIllegalReference(registry, reference, refStatus);
-        status = CELIX_BUNDLE_EXCEPTION;
     }
     celixThreadRwlock_unlock(&registry->lock);
+
+    if (valid && refStatus == REF_ACTIVE) {
+        if (count == 1) {
+            serviceRegistration_getService(registration, bundle, &service);
+            serviceReference_setService(reference, service);
+        }
+
+        /* NOTE the out argument of sr_getService should be 'const void**'
+           To ensure backwards compatibility a cast is made instead.
+        */
+        serviceReference_getService(reference, (void **)out);
+    } else {
+        if (refStatus != REF_ACTIVE) {
+            serviceRegistry_logIllegalReference(registry, reference, refStatus);
+        }
+        status = CELIX_BUNDLE_EXCEPTION;
+    }
 
 	return status;
 }
