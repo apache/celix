@@ -874,6 +874,8 @@ TEST(service_registry, getService) {
 	mock()
 			.expectOneCall("serviceRegistration_retain")
 			.withParameter("registration", registration);
+    mock().expectOneCall("serviceRegistration_release")
+            .ignoreOtherParameters();
 
 	actual = (void*) 0x666;//generic non null pointer value
 	serviceRegistry_getService(registry, bundle, reference, &actual);
