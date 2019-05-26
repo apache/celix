@@ -678,6 +678,7 @@ celix_status_t serviceRegistry_getService(service_registry_pt registry, bundle_p
         if (count == 1) {
             serviceRegistration_getService(registration, bundle, &service);
             serviceReference_setService(reference, service);
+            serviceRegistration_release(registration);
         }
 
         /* NOTE the out argument of sr_getService should be 'const void**'
