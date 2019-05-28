@@ -16,13 +16,6 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * log_listener.h
- *
- *  \date       Jul 4, 2011
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
 
 #ifndef LOG_LISTENER_H_
 #define LOG_LISTENER_H_
@@ -32,12 +25,11 @@
 
 struct log_listener {
     void *handle;
-    celix_status_t (*logged)(struct log_listener *listener, log_entry_pt entry);
+    celix_status_t (*logged)(void *handle, log_entry_t *entry);
 };
 
 typedef struct log_listener log_listener_t;
-typedef log_listener_t* log_listener_pt;
+typedef struct log_listener *log_listener_pt;
 
-celix_status_t logListener_logged(log_listener_pt listener, log_entry_pt entry);
 
 #endif /* LOG_LISTENER_H_ */

@@ -77,16 +77,16 @@ function(add_celix_container)
         endif()
     elseif (CONTAINER_LAUNCHER_SRC)
         get_filename_component(SRC_FILENAME ${CONTAINER_LAUNCHER_SRC} NAME)
-        set(LAUNCHER_SRC "${PROJECT_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/${SRC_FILENAME}")
+        set(LAUNCHER_SRC "${CMAKE_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/${SRC_FILENAME}")
         set(LAUNCHER_ORG "${CONTAINER_LAUNCHER_SRC}")
         file(GENERATE OUTPUT "${LAUNCHER_SRC}" INPUT "${LAUNCHER_ORG}")
     else () #generate custom launcher
         if (CONTAINER_CXX)
-            set(LAUNCHER_SRC "${PROJECT_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/main.cc")
+            set(LAUNCHER_SRC "${CMAKE_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/main.cc")
         else()
-            set(LAUNCHER_SRC "${PROJECT_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/main.c")
+            set(LAUNCHER_SRC "${CMAKE_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/main.c")
         endif()
-        set(STAGE1_LAUNCHER_SRC "${PROJECT_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/main.stage1.c")
+        set(STAGE1_LAUNCHER_SRC "${CMAKE_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/main.stage1.c")
 
         file(GENERATE
                 OUTPUT "${STAGE1_LAUNCHER_SRC}"
@@ -129,7 +129,7 @@ $<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_EMBEDDED_PROPERTIES>,\\n\
 
     #generate config.properties. C
     set(CONTAINER_PROPS "${CONTAINER_LOC}/config.properties")
-    set(STAGE1_PROPERTIES "${PROJECT_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/container-config-stage1.properties")
+    set(STAGE1_PROPERTIES "${CMAKE_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/container-config-stage1.properties")
     if (CONTAINER_USE_CONFIG)
         file(GENERATE
                 OUTPUT "${STAGE1_PROPERTIES}"

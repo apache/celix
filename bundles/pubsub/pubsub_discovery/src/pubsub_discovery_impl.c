@@ -97,6 +97,11 @@ celix_status_t pubsub_discovery_destroy(pubsub_discovery_t *ps_discovery) {
 
     //note cleanup done in stop
     celixThreadMutex_lock(&ps_discovery->discoveredEndpointsMutex);
+    hash_map_iterator_t iter = hashMapIterator_construct(ps_discovery->discoveredEndpoints);
+    while (hashMapIterator_hasNext(&iter)) {
+        celix_properties_t *props = hashMapIterator_nextValue(&iter);
+        celix_properties_destroy(props);
+    }
     hashMap_destroy(ps_discovery->discoveredEndpoints, false, false);
     celixThreadMutex_unlock(&ps_discovery->discoveredEndpointsMutex);
     celixThreadMutex_destroy(&ps_discovery->discoveredEndpointsMutex);
@@ -489,7 +494,6 @@ static void pubsub_discovery_addDiscoveredEndpoint(pubsub_discovery_t *disc, cel
 
 static void pubsub_discovery_removeDiscoveredEndpoint(pubsub_discovery_t *disc, const char *uuid) {
     celixThreadMutex_lock(&disc->discoveredEndpointsMutex);
-    bool exists = hashMap_containsKey(disc->discoveredEndpoints, (void*)uuid);
     celix_properties_t *endpoint = hashMap_remove(disc->discoveredEndpoints, (void*)uuid);
     celixThreadMutex_unlock(&disc->discoveredEndpointsMutex);
 
@@ -506,7 +510,7 @@ static void pubsub_discovery_removeDiscoveredEndpoint(pubsub_discovery_t *disc, 
                uuid, type, admin, ser);
     }
 
-    if (exists) {
+    if (endpoint != NULL) {
         celixThreadMutex_lock(&disc->discoveredEndpointsListenersMutex);
         hash_map_iterator_t iter = hashMapIterator_construct(disc->discoveredEndpointsListeners);
         while (hashMapIterator_hasNext(&iter)) {
@@ -514,6 +518,8 @@ static void pubsub_discovery_removeDiscoveredEndpoint(pubsub_discovery_t *disc, 
             listener->removeDiscoveredEndpoint(listener->handle, endpoint);
         }
         celixThreadMutex_unlock(&disc->discoveredEndpointsListenersMutex);
+
+        celix_properties_destroy(endpoint);
     } else {
         L_WARN("[PSD] Warning unexpected remove from non existing endpoint (uuid is %s)\n", uuid);
     }

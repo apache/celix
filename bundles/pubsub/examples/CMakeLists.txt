@@ -132,8 +132,8 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 
     # ZMQ
     add_celix_container("pubsub_zmq"
-            GROUP "pubsub"
-            BUNDLES
+        GROUP "pubsub"
+        BUNDLES
             Celix::shell
             Celix::shell_tui
             Celix::pubsub_serializer_json
@@ -142,11 +142,13 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             Celix::pubsub_admin_zmq
             celix_pubsub_poi_publisher
             celix_pubsub_poi_subscriber
-            )
+        PROPERTIES
+            PSA_ZMQ_ZEROCOPY_ENABLED=true
+    )
     target_link_libraries(pubsub_zmq PRIVATE ${PUBSUB_CONTAINER_LIBS})
 
     add_celix_container("pubsub_publisher_zmq"
-         GROUP "pubsub"
+        GROUP "pubsub"
         BUNDLES
             Celix::shell
             Celix::shell_tui
@@ -160,6 +162,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             PSA_ZMQ_VERBOSE=true
             PUBSUB_ETCD_DISCOVERY_VERBOSE=true
             PUBSUB_TOPOLOGY_MANAGER_VERBOSE=true
+            PSA_ZMQ_ZEROCOPY_ENABLED=false
     )
     target_link_libraries(pubsub_publisher_zmq PRIVATE ${PUBSUB_CONTAINER_LIBS})
 
