@@ -26,25 +26,25 @@
 typedef struct celix_logwriter_activator {
     celix_log_writer_t *writer;
 	long svcTracker;
-	log_listener_t *listener;
+	log_listener_t listener;
 } celix_logwriter_activator_t;
 
 static void addSvc(void *handle, void *svc) {
     celix_logwriter_activator_t *act = handle;
 	log_reader_service_t *reader = svc;
-	reader->addLogListener(reader->reader, act->listener);
+	reader->addLogListener(reader->reader, &act->listener);
 }
 
 static void remSvc(void *handle, void *svc) {
     celix_logwriter_activator_t *act = handle;
 	log_reader_service_t *reader = svc;
-    reader->removeLogListener(reader->reader, act->listener);
+    reader->removeLogListener(reader->reader, &act->listener);
 }
 
 static celix_status_t logWriterActivator_start(celix_logwriter_activator_t *act, celix_bundle_context_t *ctx) {
     act->writer = celix_logWriter_create(ctx);
-	act->listener->handle = act->writer;
-	act->listener->logged = (void*)celix_logWriter_logged;
+	act->listener.handle = act->writer;
+	act->listener.logged = (void*)celix_logWriter_logged;
 	act->svcTracker = -1L;
 	if (act->writer != NULL) {
 		celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;

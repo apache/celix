@@ -27,5 +27,5 @@ target_link_libraries(log_service_example PRIVATE Celix::log_service_api Celix::
 
 add_celix_container(log_example
     GROUP log_service
-    BUNDLES log_service_example Celix::log_service Celix::shell Celix::shell_tui
+    BUNDLES log_service_example Celix::log_service Celix::shell Celix::shell_tui Celix::log_writer_stdout
 )
