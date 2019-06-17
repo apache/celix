@@ -40,8 +40,10 @@
 
 
 #define DISCOVERY_POLL_INTERVAL "DISCOVERY_CFG_POLL_INTERVAL"
-#define DEFAULT_POLL_INTERVAL "10"
+#define DEFAULT_POLL_INTERVAL "10" // seconds
 
+#define DISCOVERY_POLL_TIMEOUT "DISCOVERY_CFG_POLL_TIMEOUT"
+#define DEFAULT_POLL_TIMEOUT "10" // seconds
 
 static void *endpointDiscoveryPoller_performPeriodicPoll(void *data);
 celix_status_t endpointDiscoveryPoller_poll(endpoint_discovery_poller_pt poller, char *url, array_list_pt currentEndpoints);
@@ -72,6 +74,12 @@ celix_status_t endpointDiscoveryPoller_create(discovery_pt discovery, bundle_con
 		interval = DEFAULT_POLL_INTERVAL;
 	}
 
+	const char* timeout = NULL;
+	status = bundleContext_getProperty(context, DISCOVERY_POLL_TIMEOUT, &timeout);
+	if (!timeout) {
+		timeout = DEFAULT_POLL_TIMEOUT;
+	}
+
 	const char* endpointsProp = NULL;
 	status = bundleContext_getProperty(context, DISCOVERY_POLL_ENDPOINTS, &endpointsProp);
 	if (!endpointsProp) {
@@ -81,6 +89,7 @@ celix_status_t endpointDiscoveryPoller_create(discovery_pt discovery, bundle_con
 	char* endpoints = strdup(endpointsProp);
 
 	(*poller)->poll_interval = atoi(interval);
+	(*poller)->poll_timeout = atoi(timeout);
 	(*poller)->discovery = discovery;
 	(*poller)->running = false;
 	(*poller)->entries = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
@@ -358,7 +367,7 @@ static celix_status_t endpointDiscoveryPoller_getEndpoints(endpoint_discovery_po
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, endpointDiscoveryPoller_writeMemory);
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
 		curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 5L);
-		curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10L);
+		curl_easy_setopt(curl, CURLOPT_TIMEOUT, poller->poll_timeout);
 		res = curl_easy_perform(curl);
 
 		curl_easy_cleanup(curl);

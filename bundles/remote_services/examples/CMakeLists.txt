@@ -48,15 +48,27 @@ if (RSA_EXAMPLES)
         add_celix_container(remote-services-dfi
             NAME "server"
             GROUP "remote-services/remote-services-dfi"
-            BUNDLES Celix::rsa_discovery_etcd Celix::rsa_topology_manager Celix::rsa_dfi calculator Celix::shell Celix::shell_tui Celix::log_service Celix::log_writer_stdout
+            BUNDLES
+                Celix::rsa_discovery_etcd
+                Celix::rsa_topology_manager
+                Celix::rsa_dfi calculator
+                Celix::shell
+                Celix::shell_tui
+                Celix::log_service
+                Celix::log_writer_stdout
         )
 
-        add_celix_container("remote-services-dfi-client"
+        add_celix_container(remote-services-dfi-client
             NAME "client"
             GROUP "remote-services/remote-services-dfi"
-            BUNDLES Celix::rsa_topology_manager Celix::rsa_dfi Celix::shell Celix::shell_tui Celix::log_service Celix::log_writer_stdout calculator_shell Celix::rsa_discovery_etcd
+            BUNDLES
+                Celix::rsa_topology_manager
+                Celix::rsa_dfi Celix::shell
+                Celix::shell_tui
+                Celix::log_service
+                Celix::log_writer_stdout
+                calculator_shell
+                Celix::rsa_discovery_etcd
         )
     endif ()
 endif (RSA_EXAMPLES)
-
-
