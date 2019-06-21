@@ -6,3 +6,4 @@ DISCOVERY_CFG_POLL_ENDPOINTS=http://127.0.0.1:50992/org.apache.celix.discovery.c
 org.osgi.framework.storage.clean=onFirstInit
 org.osgi.framework.storage=.cacheClient
 DISCOVERY_CFG_POLL_INTERVAL=1
+DISCOVERY_CFG_POLL_TIMEOUT=5

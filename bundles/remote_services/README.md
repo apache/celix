@@ -80,6 +80,7 @@ Provides a service discovery with preconfigured discovery endpoints, allowing a 
 |--|--|
 | **Configuration** | `DISCOVERY_CFG_POLL_ENDPOINTS`: defines a comma-separated list of discovery endpoints that should be used to query for remote services. Defaults to `http://localhost:9999/org.apache.celix.discovery.configured`; |
 | | `DISCOVERY_CFG_POLL_INTERVAL`: defines the interval (in seconds) in which the discovery endpoints should be polled. Defaults to `10` seconds. |
+| | `DISCOVERY_CFG_POLL_TIMEOUT`: defines the maximum time (in seconds) a request of the discovery endpoint poller may take. Defaults to `10` seconds. |
 | | `DISCOVERY_CFG_SERVER_PORT`: defines the port on which the HTTP server should listen for incoming requests from other configured discovery endpoints. Defaults to port `9999`; |
 | | `DISCOVERY_CFG_SERVER_PATH`: defines the path on which the HTTP server should accept requests from other configured discovery endpoints. Defaults to `/org.apache.celix.discovery.configured`. |
 
