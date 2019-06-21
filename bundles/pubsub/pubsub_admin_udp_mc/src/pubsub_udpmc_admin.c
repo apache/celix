@@ -500,7 +500,7 @@ static celix_status_t pubsub_udpmcAdmin_disconnectEndpointFromReceiver(pubsub_ud
     long sockPort = celix_properties_getAsLong(endpoint, PUBSUB_PSA_UDPMC_SOCKET_PORT_KEY, -1L);
 
     if (type == NULL || sockAdress == NULL || sockPort < 0) {
-        fprintf(stderr, "[PSA UPDMC] Error got endpoint without udpmc socket address/port or endpoint type");
+        fprintf(stderr, "[PSA UPDMC] Error got endpoint without udpmc socket address/port or endpoint type\n");
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
         if (eScope != NULL && eTopic != NULL && type != NULL &&

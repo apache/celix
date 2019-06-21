@@ -34,7 +34,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 		find_package(OpenSSL 1.1.0 REQUIRED)
 		include_directories("${OPENSSL_INCLUDE_DIR}")
 
-		set (ZMQ_CRYPTO_C "private/src/zmq_crypto.c")
+		set (ZMQ_CRYPTO_C "src/zmq_crypto.c")
 	endif()
 
 	add_celix_bundle(celix_pubsub_admin_zmq
