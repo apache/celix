@@ -53,7 +53,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 	set_target_properties(celix_pubsub_admin_zmq PROPERTIES INSTALL_RPATH "$ORIGIN")
 	target_link_libraries(celix_pubsub_admin_zmq PRIVATE
 			Celix::pubsub_spi
-			Celix::framework Celix::dfi Celix::log_helper
+			Celix::framework Celix::dfi Celix::log_helper Celix::utils
 			${ZMQ_LIBRARIES} ${CZMQ_LIBRARIES} ${OPENSSL_CRYPTO_LIBRARY}
 	)
 	target_include_directories(celix_pubsub_admin_zmq PRIVATE

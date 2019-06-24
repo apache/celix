@@ -25,6 +25,7 @@
 #include <ifaddrs.h>
 #include <pubsub_endpoint.h>
 #include <pubsub_serializer.h>
+#include <ip_utils.h>
 
 #include "pubsub_utils.h"
 #include "pubsub_udpmc_admin.h"
@@ -103,21 +104,37 @@ pubsub_udpmc_admin_t* pubsub_udpmcAdmin_create(celix_bundle_context_t *ctx, log_
     char *if_ip = NULL;
     int sendSocket = -1;
 
-    const char *mcIpProp = celix_bundleContext_getProperty(ctx,PUBSUB_UDPMC_IP_KEY , NULL);
+    const char *mcIpProp = celix_bundleContext_getProperty(ctx, PUBSUB_UDPMC_IP_KEY, NULL);
     if(mcIpProp != NULL) {
-        mc_ip = strdup(mcIpProp);
+        if (strchr(mcIpProp, '/') != NULL) {
+            // IP with subnet prefix specified
+            char *found_if_ip = calloc(16, sizeof(char));
+            celix_status_t ip_status = ipUtils_findIpBySubnet(mcIpProp, &found_if_ip);
+            if (ip_status == CELIX_SUCCESS) {
+                if (found_if_ip != NULL)
+                    if_ip = strndup(found_if_ip, 16);
+                else
+                    L_WARN("Could not find interface for requested subnet %s", mcIpProp);
+            } else {
+                L_ERROR("Error while searching for available network interface for subnet %s", mcIpProp);
+            }
+            free(found_if_ip);
+        } else {
+            // IP address specified
+            mc_ip = strndup(mcIpProp, 1024);
+        }
     }
 
 
     const char *mc_prefix = celix_bundleContext_getProperty(ctx, PUBSUB_UDPMC_MULTICAST_IP_PREFIX_KEY, PUBSUB_UDPMC_MULTICAST_IP_PREFIX_DEFAULT);
     const char *interface = celix_bundleContext_getProperty(ctx, PUBSUB_UDPMC_ITF_KEY, NULL);
-    if (udpmc_getIpAddress(interface, &if_ip) != CELIX_SUCCESS) {
+    if (!if_ip && udpmc_getIpAddress(interface, &if_ip) != CELIX_SUCCESS) {
         L_WARN("[PSA_UDPMC] Could not retrieve IP address for interface %s", interface);
     } else if (psa->verbose) {
         L_INFO("[PSA_UDPMC] Using IP address %s", if_ip);
     }
 
-    if(if_ip && sscanf(if_ip, "%i.%i.%i.%i", &b0, &b1, &b2, &b3) != 4) {
+    if (if_ip && sscanf(if_ip, "%i.%i.%i.%i", &b0, &b1, &b2, &b3) != 4) {
         logHelper_log(psa->log, OSGI_LOGSERVICE_WARNING, "[PSA_UDPMC] Could not parse IP address %s", if_ip);
         b2 = 1;
         b3 = 1;
@@ -126,12 +143,12 @@ pubsub_udpmc_admin_t* pubsub_udpmcAdmin_create(celix_bundle_context_t *ctx, log_
     asprintf(&mc_ip, "%s.%d.%d",mc_prefix, b2, b3);
 
     sendSocket = socket(AF_INET, SOCK_DGRAM, 0);
-    if(sendSocket == -1) {
+    if (sendSocket == -1) {
         L_ERROR("[PSA_UDPMC] Error creating socket: %s", strerror(errno));
     } else {
         char loop = 1;
         int rc = setsockopt(sendSocket, IPPROTO_IP, IP_MULTICAST_LOOP, &loop, sizeof(loop));
-        if(rc != 0) {
+        if (rc != 0) {
             L_ERROR("[PSA_UDPMC] Error setsockopt(IP_MULTICAST_LOOP): %s", strerror(errno));
         }
         if (rc == 0) {

@@ -24,6 +24,3 @@ Celix Utils contains several useful containers/lists implementation used with th
     Hash Map
     Linked List
     Thread Pool
-
-###### CMake option
-    BUILD_UTILS=ON
