@@ -80,7 +80,7 @@ struct pubsub_udpmc_admin {
 
 };
 
-typedef struct psa_zmq_serializer_entry {
+typedef struct psa_udpmc_serializer_entry {
     const char *serType;
     long svcId;
     pubsub_serializer_service_t *svc;
@@ -620,7 +620,7 @@ void pubsub_udpmcAdmin_addSerializerSvc(void *handle, void *svc, const celix_pro
     long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
 
     if (serType == NULL) {
-        L_INFO("[PSA_ZMQ] Ignoring serializer service without %s property", PUBSUB_SERIALIZER_TYPE_KEY);
+        L_INFO("[PSA_UDPMC] Ignoring serializer service without %s property", PUBSUB_SERIALIZER_TYPE_KEY);
         return;
     }
 
