@@ -100,6 +100,11 @@ celix_status_t version_destroy(version_pt version) {
 celix_status_t version_createVersionFromString(const char * versionStr, version_pt *version) {
 	celix_status_t status = CELIX_SUCCESS;
 
+	if (versionStr == NULL) {
+		*version = NULL;
+		return status;
+	}
+
 	int major = 0;
 	int minor = 0;
 	int micro = 0;
@@ -251,10 +256,8 @@ celix_status_t version_isCompatible(version_pt user, version_pt provider, bool* 
     bool result = false;
 
     if (user == NULL || provider == NULL) {
-        return CELIX_ILLEGAL_ARGUMENT;
-    }
-
-    if (user->major == provider->major) {
+        result = true; // When no version defined, always respond as compatible
+    } else if (user->major == provider->major) {
         result = (provider->minor >= user->minor);
     }
 
