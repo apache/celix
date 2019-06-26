@@ -21,7 +21,7 @@
 #define PUBSUB_ADMIN_METRICS_H_
 
 #include <uuid/uuid.h>
-
+#include <sys/time.h>
 #include "celix_array_list.h"
 
 #define PUBSUB_ADMIN_METRICS_SERVICE_NAME	"pubsub_admin_metrics [version 1.0]"

@@ -17,7 +17,11 @@
  *under the License.
  */
 
+#if defined(__MACH__)
+#include <stdlib.h>
+#else
 #include <malloc.h>
+#endif
 #include <pubsub_admin_metrics.h>
 #include "pubsub_admin_metrics.h"
 

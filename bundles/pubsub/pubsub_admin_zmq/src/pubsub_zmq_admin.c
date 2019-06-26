@@ -26,6 +26,7 @@
 #include <pubsub_endpoint.h>
 #include <czmq.h>
 #include <pubsub_serializer.h>
+#include <ip_utils.h>
 
 #include "pubsub_utils.h"
 #include "pubsub_zmq_admin.h"
@@ -102,11 +103,23 @@ pubsub_zmq_admin_t* pubsub_zmqAdmin_create(celix_bundle_context_t *ctx, log_help
     char *ip = NULL;
     const char *confIp = celix_bundleContext_getProperty(ctx, PUBSUB_ZMQ_PSA_IP_KEY , NULL);
     if (confIp != NULL) {
-        ip = strndup(confIp, 1024);
-    }
-
-    if (ip == NULL) {
-        //TODO try to get ip from subnet (CIDR)
+        if (strchr(confIp, '/') != NULL) {
+            // IP with subnet prefix specified
+            char *found_if_ip = calloc(16, sizeof(char));
+            celix_status_t ip_status = ipUtils_findIpBySubnet(confIp, &found_if_ip);
+            if (ip_status == CELIX_SUCCESS) {
+                if (found_if_ip != NULL)
+                    ip = strndup(found_if_ip, 16);
+                else
+                    L_WARN("Could not find interface for requested subnet %s", confIp);
+            } else {
+                L_ERROR("Error while searching for available network interface for subnet %s", confIp);
+            }
+            free(found_if_ip);
+        } else {
+            // IP address specified
+            ip = strndup(confIp, 1024);
+        }
     }
 
     if (ip == NULL) {

@@ -16,97 +16,84 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * help_command.c
- *
- *  \date       Aug 20, 2010
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
 
-#include "array_list.h"
-#include "bundle_context.h"
+#include "celix_api.h"
 #include "shell.h"
 #include "std_commands.h"
 
-celix_status_t helpCommand_execute(void *_ptr, char *line_str, FILE *out_ptr, FILE *err_ptr) {
-	celix_status_t status = CELIX_SUCCESS;
+struct print_handle {
+    char *cmdLine;
+    FILE *out;
+    FILE *err;
+};
 
-	bundle_context_pt context_ptr = _ptr;
-	service_reference_pt shell_service_reference_ptr = NULL;
-	shell_service_pt shell_ptr = NULL;
+static void printHelp(void *handle, void *svc) {
+    shell_service_t *shell = svc;
+    struct print_handle *p = handle;
+    char *cmdLine = p->cmdLine;
+    FILE *out = p->out;
+    FILE *err = p->err;
 
-	if (!context_ptr || !line_str || !out_ptr || !err_ptr) {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	}
+    uint32_t out_len = 256;
+    char *sub = NULL;
+    char *save_ptr = NULL;
+    char out_str[out_len];
 
-	if (status == CELIX_SUCCESS) {
-		status = bundleContext_getServiceReference(context_ptr, (char *) OSGI_SHELL_SERVICE_NAME, &shell_service_reference_ptr);
-	}
+    memset(out_str, 0, sizeof(out_str));
 
-	if (status == CELIX_SUCCESS) {
-		status = bundleContext_getService(context_ptr, shell_service_reference_ptr, (void **) &shell_ptr);
-	}
+    strtok_r(cmdLine, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
+    sub = strtok_r(NULL, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
 
-	if (status == CELIX_SUCCESS) {
-        uint32_t out_len = 256;
-        char *sub = NULL;
-        char *save_ptr = NULL;
-        char out_str[out_len];
+    if (sub == NULL) {
+        unsigned int i;
+        array_list_pt commands = NULL;
 
-        memset(out_str, 0, sizeof(out_str));
+        shell->getCommands(shell->shell, &commands);
+        for (i = 0; i < arrayList_size(commands); i++) {
+            char *name = arrayList_get(commands, i);
+            fprintf(out, "%s\n", name);
+        }
+        fprintf(out, "\nUse 'help <command-name>' for more information.\n");
+        arrayList_destroy(commands);
+    } else {
+        celix_status_t sub_status_desc;
+        celix_status_t sub_status_usage;
+        int i;
+        celix_array_list_t *commands = NULL;
+        shell->getCommands(shell->shell, &commands);
+        for (i = 0; i < arrayList_size(commands); i++) {
+            char *name = arrayList_get(commands, i);
+            if (strcmp(sub, name) == 0) {
+                char *usage_str = NULL;
+                char *desc_str = NULL;
 
-        strtok_r(line_str, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
-        sub = strtok_r(NULL, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
+                sub_status_desc = shell->getCommandDescription(shell->shell, name, &desc_str);
+                sub_status_usage = shell->getCommandUsage(shell->shell, name, &usage_str);
 
-        if (sub == NULL) {
-            unsigned int i;
-            array_list_pt commands = NULL;
-
-            status = shell_ptr->getCommands(shell_ptr->shell, &commands);
-            for (i = 0; i < arrayList_size(commands); i++) {
-                char *name = arrayList_get(commands, i);
-                fprintf(out_ptr, "%s\n", name);
-            }
-            fprintf(out_ptr, "\nUse 'help <command-name>' for more information.\n");
-            arrayList_destroy(commands);
-        } else {
-            celix_status_t sub_status_desc;
-            celix_status_t sub_status_usage;
-            int i;
-            array_list_pt commands = NULL;
-            shell_ptr->getCommands(shell_ptr->shell, &commands);
-            for (i = 0; i < arrayList_size(commands); i++) {
-                char *name = arrayList_get(commands, i);
-                if (strcmp(sub, name) == 0) {
-                    char *usage_str = NULL;
-                    char *desc_str = NULL;
-
-                    sub_status_desc = shell_ptr->getCommandDescription(shell_ptr->shell, name, &desc_str);
-                    sub_status_usage = shell_ptr->getCommandUsage(shell_ptr->shell, name, &usage_str);
-
-                    if (sub_status_usage == CELIX_SUCCESS && sub_status_desc == CELIX_SUCCESS) {
-                        fprintf(out_ptr, "Command     : %s\n", name);
-                        fprintf(out_ptr, "Usage       : %s\n", usage_str == NULL ? "" : usage_str);
-                        fprintf(out_ptr, "Description : %s\n", desc_str == NULL ? "" : desc_str);
-                    } else {
-                        fprintf(err_ptr, "Error retrieving help info for command '%s'\n", sub);
-                    }
-
-                    if (sub_status_desc != CELIX_SUCCESS && status == CELIX_SUCCESS) {
-                        status = sub_status_desc;
-                    }
-                    if (sub_status_usage != CELIX_SUCCESS && status == CELIX_SUCCESS) {
-                        status = sub_status_usage;
-                    }
+                if (sub_status_usage == CELIX_SUCCESS && sub_status_desc == CELIX_SUCCESS) {
+                    fprintf(out, "Command     : %s\n", name);
+                    fprintf(out, "Usage       : %s\n", usage_str == NULL ? "" : usage_str);
+                    fprintf(out, "Description : %s\n", desc_str == NULL ? "" : desc_str);
+                } else {
+                    fprintf(err, "Error retrieving help info for command '%s'\n", sub);
                 }
             }
-            arrayList_destroy(commands);
         }
+        celix_arrayList_destroy(commands);
     }
+}
 
+celix_status_t helpCommand_execute(void *handle, char *cmdLine, FILE *out, FILE *err) {
+	celix_status_t status = CELIX_SUCCESS;
+	celix_bundle_context_t *ctx = handle;
+	struct print_handle printHandle;
+    printHandle.cmdLine = cmdLine;
+    printHandle.out = out;
+    printHandle.err = err;
+	celix_bundleContext_useService(ctx, OSGI_SHELL_SERVICE_NAME, &printHandle, printHelp);
     return status;
 }

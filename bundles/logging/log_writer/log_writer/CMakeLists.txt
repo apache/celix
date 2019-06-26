@@ -16,9 +16,9 @@
 # under the License.
 
 add_library(log_writer_common STATIC
-		src/log_writer.c
 		src/log_writer_activator.c
 )
 target_include_directories(log_writer_common PRIVATE src)
 target_include_directories(log_writer_common PUBLIC include)
 target_link_libraries(log_writer_common PUBLIC Celix::log_service_api Celix::framework)
+

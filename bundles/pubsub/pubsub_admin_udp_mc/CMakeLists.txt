@@ -34,7 +34,7 @@ target_include_directories(celix_pubsub_admin_udp_multicast PRIVATE
 		${JANSSON_INCLUDE_DIR}
 )
 set_target_properties(celix_pubsub_admin_udp_multicast PROPERTIES INSTALL_RPATH "$ORIGIN")
-target_link_libraries(celix_pubsub_admin_udp_multicast PRIVATE Celix::pubsub_spi Celix::framework Celix::dfi Celix::log_helper)
+target_link_libraries(celix_pubsub_admin_udp_multicast PRIVATE Celix::pubsub_spi Celix::framework Celix::dfi Celix::log_helper Celix::utils)
 
 install_celix_bundle(celix_pubsub_admin_udp_multicast EXPORT celix COMPONENT pubsub)
 

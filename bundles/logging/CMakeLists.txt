@@ -15,12 +15,5 @@
 # specific language governing permissions and limitations
 # under the License.
 
-cosgi.auto.start.1=@rsa_bundle_file@ @calc_bundle_file@ @discovery_shm_bundle_file@ @topology_manager_bundle_file@
-LOGHELPER_ENABLE_STDOUT_FALLBACK=true
-ENDPOINTS=@server_endpoints@
-RSA_PORT=50882
-DISCOVERY_CFG_SERVER_PORT=50994
-org.osgi.framework.storage.clean=onFirstInit
-org.osgi.framework.storage=.cacheServer
-DISCOVERY_CFG_POLL_INTERVAL=1
-DISCOVERY_CFG_POLL_TIMEOUT=5
+add_subdirectory(log_writer)
+add_subdirectory(log_service)

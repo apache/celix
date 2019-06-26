@@ -16,13 +16,7 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * log_service.h
- *
- *  \date       Jun 22, 2011
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
+
 
 #ifndef LOG_SERVICE_H_
 #define LOG_SERVICE_H_

@@ -16,53 +16,35 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * log_writer_syslog.c
- *
- *  \date       Mar 7, 2011
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
+
 #include <stdlib.h>
 #include <stdio.h>
 
 #include "celix_errno.h"
 #include "celixbool.h"
 
-#include "log_writer.h"
+#include "celix_log_writer.h"
 #include "log_listener.h"
 
 #include "module.h"
 #include "bundle.h"
 
-#include <syslog.h>
+struct celix_log_writer {
+    //empty
+};
 
-celix_status_t logListener_logged(log_listener_pt listener, log_entry_pt entry)
-{
+celix_log_writer_t* celix_logWriter_create(celix_bundle_context_t *ctx __attribute__((unused))) { return NULL; }
+void celix_logWriter_destroy(celix_log_writer_t *writer __attribute__((unused))) {/*nop*/}
+celix_status_t celix_logWriter_logged(celix_log_writer_t *writer __attribute__((unused)), log_entry_t *entry) {
+
 	celix_status_t status = CELIX_SUCCESS;
 
-	int sysLogLvl = -1;
-
-	switch(entry->level)
-	{
-		case 0x00000001: /*OSGI_LOGSERVICE_ERROR */
-			sysLogLvl = LOG_MAKEPRI(LOG_FAC(LOG_USER), LOG_ERR);
-			break;
-		case 0x00000002: /* OSGI_LOGSERVICE_WARNING */
-			sysLogLvl = LOG_MAKEPRI(LOG_FAC(LOG_USER), LOG_WARNING);
-			break;
-		case 0x00000003: /* OSGI_LOGSERVICE_INFO */
-			sysLogLvl = LOG_MAKEPRI(LOG_FAC(LOG_USER), LOG_INFO);
-			break;
-		case 0x00000004: /* OSGI_LOGSERVICE_DEBUG */
-			sysLogLvl = LOG_MAKEPRI(LOG_FAC(LOG_USER), LOG_DEBUG);
-			break;
-		default:		/* OSGI_LOGSERVICE_INFO */
-			sysLogLvl = LOG_MAKEPRI(LOG_FAC(LOG_USER), LOG_INFO);
-			break;
-	}
-
-	syslog(sysLogLvl, "[%s]: %s", entry->bundleSymbolicName, entry->message);
+    if (!entry) {
+        status = CELIX_ILLEGAL_ARGUMENT;
+    } else {
+		printf("LogWriter: %s from %s\n", entry->message, entry->bundleSymbolicName);
+    }
 
     return status;
 }
+

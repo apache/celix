@@ -16,34 +16,18 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * log_writer_stdout.c
- *
- *  \date       Mar 7, 2011
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
-#include <stdlib.h>
-#include <stdio.h>
 
-#include "celix_errno.h"
-#include "celixbool.h"
+#ifndef CELIX_LOG_WRITER_H_
+#define CELIX_LOG_WRITER_H_
 
-#include "log_writer.h"
+
+#include "celix_api.h"
 #include "log_listener.h"
 
-#include "module.h"
-#include "bundle.h"
+typedef struct celix_log_writer celix_log_writer_t; //opaque pointer
 
-celix_status_t logListener_logged(log_listener_pt listener, log_entry_pt entry) {
-	celix_status_t status = CELIX_SUCCESS;
+celix_log_writer_t* celix_logWriter_create(celix_bundle_context_t *ctx);
+void celix_logWriter_destroy(celix_log_writer_t *writer);
+celix_status_t celix_logWriter_logged(celix_log_writer_t *writer, log_entry_t *entry);
 
-    if (!entry) {
-        status = CELIX_ILLEGAL_ARGUMENT;
-    } else {
-		printf("LogWriter: %s from %s\n", entry->message, entry->bundleSymbolicName);
-    }
-
-    return status;
-}
-
+#endif /* CELIX_LOG_WRITER_H_ */

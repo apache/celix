@@ -52,7 +52,7 @@ struct pubsub_zmq_topic_sender {
     pubsub_serializer_service_t *serializer;
     uuid_t fwUUID;
     bool metricsEnabled;
-    bool zeroCopyEnabled; //TODO tmp, when zero copy is stable remove option
+    bool zeroCopyEnabled;
 
     char *scope;
     char *topic;
@@ -81,12 +81,12 @@ typedef struct psa_zmq_send_msg_entry {
     pubsub_zmq_msg_header_t header; //partially filled header (only seqnr and time needs to be updated per send)
     pubsub_msg_serializer_t *msgSer;
     celix_thread_mutex_t sendLock; //protects send & Seqnr
-    int seqNr;
+    unsigned int seqNr;
     struct {
         celix_thread_mutex_t mutex; //protects entries in struct
-        long nrOfMessagesSend;
-        long nrOfMessagesSendFailed;
-        long nrOfSerializationErrors;
+        unsigned long nrOfMessagesSend;
+        unsigned long nrOfMessagesSendFailed;
+        unsigned long nrOfSerializationErrors;
         struct timespec lastMessageSend;
         double averageTimeBetweenMessagesInSeconds;
         double averageSerializationTimeInSeconds;
@@ -336,12 +336,12 @@ bool pubsub_zmqTopicSender_isStatic(pubsub_zmq_topic_sender_t *sender) {
     return sender->isStatic;
 }
 
-void pubsub_zmqTopicSender_connectTo(pubsub_zmq_topic_sender_t *sender, const celix_properties_t *endpoint) {
-    //TODO subscriber count -> topic info
+void pubsub_zmqTopicSender_connectTo(pubsub_zmq_topic_sender_t *sender  __attribute__((unused)), const celix_properties_t *endpoint __attribute__((unused))) {
+    /*nop*/
 }
 
-void pubsub_zmqTopicSender_disconnectFrom(pubsub_zmq_topic_sender_t *sender, const celix_properties_t *endpoint) {
-    //TODO
+void pubsub_zmqTopicSender_disconnectFrom(pubsub_zmq_topic_sender_t *sender __attribute__((unused)), const celix_properties_t *endpoint __attribute__((unused))) {
+    /*nop*/
 }
 
 static void* psa_zmq_getPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties __attribute__((unused))) {
@@ -372,8 +372,8 @@ static void* psa_zmq_getPublisherService(void *handle, const celix_bundle_t *req
                 int minor;
                 version_getMajor(sendEntry->msgSer->msgVersion, &major);
                 version_getMinor(sendEntry->msgSer->msgVersion, &minor);
-                sendEntry->header.major = (int8_t)major;
-                sendEntry->header.minor = (int8_t)minor;
+                sendEntry->header.major = (uint8_t)major;
+                sendEntry->header.minor = (uint8_t)minor;
                 uuid_copy(sendEntry->header.originUUID, sender->fwUUID);
                 celixThreadMutex_create(&sendEntry->metrics.mutex, NULL);
                 hashMap_put(entry->msgEntries, key, sendEntry);
@@ -510,17 +510,16 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
         if (status == CELIX_SUCCESS /*ser ok*/) {
             unsigned char *hdr = calloc(sizeof(pubsub_zmq_msg_header_t), sizeof(unsigned char));
 
-            //TODO refactor, is the mutex really needed?
             celixThreadMutex_lock(&entry->sendLock);
 
             pubsub_zmq_msg_header_t msg_hdr = entry->header;
-            msg_hdr.seqNr = -1;
+            msg_hdr.seqNr = 0;
             msg_hdr.sendtimeSeconds = 0;
             msg_hdr.sendTimeNanoseconds = 0;
             if (monitor) {
                 clock_gettime(CLOCK_REALTIME, &sendTime);
-                msg_hdr.sendtimeSeconds = (int64_t) sendTime.tv_sec;
-                msg_hdr.sendTimeNanoseconds = (int64_t) sendTime.tv_nsec;
+                msg_hdr.sendtimeSeconds = (uint64_t) sendTime.tv_sec;
+                msg_hdr.sendTimeNanoseconds = (uint64_t) sendTime.tv_nsec;
                 msg_hdr.seqNr = entry->seqNr++;
             }
             psa_zmq_encodeHeader(&msg_hdr, hdr, sizeof(pubsub_zmq_msg_header_t));
@@ -532,17 +531,36 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
                 zmq_msg_t msg1; //filter
                 zmq_msg_t msg2; //header
                 zmq_msg_t msg3; //payload
-                zmq_msg_init_data(&msg1, sender->scopeAndTopicFilter, 4, NULL, bound);
-                zmq_msg_init_data(&msg2, hdr, sizeof(pubsub_zmq_msg_header_t), psa_zmq_freeMsg, bound);
-                zmq_msg_init_data(&msg3, serializedOutput, serializedOutputLen, psa_zmq_freeMsg, bound);
                 void *socket = zsock_resolve(sender->zmq.socket);
+
+                zmq_msg_init_data(&msg1, sender->scopeAndTopicFilter, 4, NULL, bound);
+                //send filter
                 int rc = zmq_msg_send(&msg1, socket, ZMQ_SNDMORE);
+                if (rc == -1) {
+                    L_WARN("Error sending filter msg. %s", strerror(errno));
+                    zmq_msg_close(&msg1);
+                }
+
+                //send header
                 if (rc > 0) {
+                    zmq_msg_init_data(&msg2, hdr, sizeof(pubsub_zmq_msg_header_t), psa_zmq_freeMsg, bound);
                     rc = zmq_msg_send(&msg2, socket, ZMQ_SNDMORE);
+                    if (rc == -1) {
+                        L_WARN("Error sending header msg. %s", strerror(errno));
+                        zmq_msg_close(&msg2);
+                    }
                 }
+
+
                 if (rc > 0) {
+                    zmq_msg_init_data(&msg3, serializedOutput, serializedOutputLen, psa_zmq_freeMsg, bound);
                     rc = zmq_msg_send(&msg3, socket, 0);
+                    if (rc == -1) {
+                        L_WARN("Error sending payload msg. %s", strerror(errno));
+                        zmq_msg_close(&msg3);
+                    }
                 }
+
                 sendOk = rc > 0;
             } else {
                 zmsg_t *msg = zmsg_new();
@@ -553,6 +571,9 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
                 sendOk = rc == 0;
                 free(serializedOutput);
                 free(hdr);
+                if (!sendOk) {
+                    zmsg_destroy(&msg); //if send was not ok, no owner change -> destroy msg
+                }
             }
 
             celixThreadMutex_unlock(&entry->sendLock);

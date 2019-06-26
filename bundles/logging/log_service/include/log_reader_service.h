@@ -16,13 +16,6 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * log_reader_service.h
- *
- *  \date       Jun 26, 2011
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
 
 #ifndef LOG_READER_SERVICE_H_
 #define LOG_READER_SERVICE_H_
@@ -40,11 +33,12 @@ typedef log_reader_data_t* log_reader_data_pt;
 struct log_reader_service {
     log_reader_data_pt reader;
     celix_status_t (*getLog)(log_reader_data_pt reader, linked_list_pt *list);
-    celix_status_t (*addLogListener)(log_reader_data_pt reader, log_listener_pt listener);
-    celix_status_t (*removeLogListener)(log_reader_data_pt reader, log_listener_pt listener);
+    celix_status_t (*addLogListener)(log_reader_data_pt reader, log_listener_t *listener);
+    celix_status_t (*removeLogListener)(log_reader_data_pt reader, log_listener_t *listener);
     celix_status_t (*removeAllLogListener)(log_reader_data_pt reader);
 };
 
 typedef struct log_reader_service * log_reader_service_pt;
+typedef struct log_reader_service log_reader_service_t;
 
 #endif /* LOG_READER_SERVICE_H_ */
