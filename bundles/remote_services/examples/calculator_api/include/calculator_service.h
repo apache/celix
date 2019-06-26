@@ -20,15 +20,15 @@
  * calculator_service.h
  *
  *  \date       Oct 5, 2011
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
+ *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
+ *  \copyright  Apache License, Version 2.0
  */
 
 #ifndef CALCULATOR_SERVICE_H_
 #define CALCULATOR_SERVICE_H_
 
-#define CALCULATOR_SERVICE "org.apache.celix.calc.api.Calculator"
-
+#define CALCULATOR_SERVICE              "org.apache.celix.calc.api.Calculator"
+#define CALCULATOR_CONFIGURATION_TYPE	"org.amdatu.remote.admin.http"
 
 typedef struct calculator *calculator_pt;
 
@@ -38,16 +38,16 @@ typedef struct calculator_service *calculator_service_pt;
  * The calculator service definition corresponds to the following Java interface:
  *
  * interface Calculator {
- * 	 double add(double a, double b);
- * 	 double sub(double a, double b);
- * 	 double sqrt(double a);
+ *      double add(double a, double b);
+ *      double sub(double a, double b);
+ *      double sqrt(double a);
  * }
  */
 struct calculator_service {
-	calculator_pt calculator;
-	int (*add)(calculator_pt calculator, double a, double b, double *result);
-	int (*sub)(calculator_pt calculator, double a, double b, double *result);
-  int (*sqrt)(calculator_pt calculator, double a, double *result);
+    calculator_pt calculator;
+    int (*add)(calculator_pt calculator, double a, double b, double *result);
+    int (*sub)(calculator_pt calculator, double a, double b, double *result);
+	int (*sqrt)(calculator_pt calculator, double a, double *result);
 };
 
 

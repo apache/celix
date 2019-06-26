@@ -203,7 +203,7 @@ celix_status_t topologyManager_rsaAdding(void * handle, service_reference_pt ref
 celix_status_t topologyManager_rsaAdded(void * handle, service_reference_pt reference, void * service) {
 	celix_status_t status;
 	topology_manager_pt manager = (topology_manager_pt) handle;
-	properties_pt serviceProperties = NULL;
+	celix_properties_t *serviceProperties = NULL;
 	remote_service_admin_service_pt rsa = (remote_service_admin_service_pt) service;
 	logHelper_log(manager->loghelper, OSGI_LOGSERVICE_INFO, "TOPOLOGY_MANAGER: Added RSA");
 
@@ -418,7 +418,7 @@ celix_status_t topologyManager_exportScopeChanged(void *handle, char *filterStr)
 	service_registration_pt reg = NULL;
 	const char* serviceId = NULL;
 	bool found;
-	properties_pt props;
+	celix_properties_t *props;
 	filter_pt filter = filter_create(filterStr);
 
 	if (filter == NULL) {
@@ -603,7 +603,7 @@ celix_status_t topologyManager_removeImportedService(void *handle, endpoint_desc
 
 celix_status_t topologyManager_addExportedService(topology_manager_pt manager, service_reference_pt reference, char *serviceId) {
 	celix_status_t status = CELIX_SUCCESS;
-	properties_pt serviceProperties = NULL;
+	celix_properties_t *serviceProperties = NULL;
 
 	logHelper_log(manager->loghelper, OSGI_LOGSERVICE_INFO, "TOPOLOGY_MANAGER: Add exported service (%s).", serviceId);
 

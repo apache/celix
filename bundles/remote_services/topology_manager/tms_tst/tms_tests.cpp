@@ -298,7 +298,7 @@ extern "C" {
 
         json_t *js_root;
         json_error_t error;
-        properties_pt properties;
+        celix_properties_t *properties;
 
         *nr_exported = 0;
         *nr_imported = 0;
@@ -324,16 +324,16 @@ extern "C" {
 
                             properties=properties_create();
                             if (js_serviceZone != NULL) {
-                                properties_set(properties, (char*)JSON_SERVICE_ZONE,
-                                                           (char*)json_string_value(js_serviceZone));
+                                celix_properties_set(properties, (char*)JSON_SERVICE_ZONE,
+                                                                 (char*)json_string_value(js_serviceZone));
                             }
                             if (js_key1 != NULL) {
-                                properties_set(properties, (char*)JSON_SERVICE_KEY1,
-                                                           (char*)json_string_value(js_key1));
+                                celix_properties_set(properties, (char*)JSON_SERVICE_KEY1,
+                                                                 (char*)json_string_value(js_key1));
                             }
                             if (js_key2 != NULL) {
-                                properties_set(properties, (char*)JSON_SERVICE_KEY2,
-                                                           (char*)json_string_value(js_key2));
+                                celix_properties_set(properties, (char*)JSON_SERVICE_KEY2,
+                                                                 (char*)json_string_value(js_key2));
                             }
 
                             added = tmScopeService->addExportScope(tmScopeService->handle, (char*)json_string_value(js_filter), properties);
@@ -396,7 +396,7 @@ extern "C" {
         CHECK_EQUAL(1, arrayList_size(epList));
         for (unsigned int i = 0; i < arrayList_size(epList); i++) {
             endpoint_description_pt ep = (endpoint_description_pt) arrayList_get(epList, i);
-            properties_pt props = ep->properties;
+            celix_properties_t *props = ep->properties;
             hash_map_entry_pt entry = hashMap_getEntry(props, (void*)"key2");
             char* value = (char*) hashMapEntry_getValue(entry);
             STRCMP_EQUAL("inaetics", value);
@@ -432,7 +432,7 @@ extern "C" {
         CHECK_EQUAL(1, arrayList_size(epList));
         for (unsigned int i = 0; i < arrayList_size(epList); i++) {
             endpoint_description_pt ep = (endpoint_description_pt) arrayList_get(epList, i);
-            properties_pt props = ep->properties;
+            celix_properties_t *props = ep->properties;
             hash_map_entry_pt entry = hashMap_getEntry(props, (void*)"key2");
             char* value = (char*) hashMapEntry_getValue(entry);
             STRCMP_EQUAL("inaetics", value);
@@ -456,7 +456,7 @@ extern "C" {
         CHECK_EQUAL(1, arrayList_size(epList));
         for (unsigned int i = 0; i < arrayList_size(epList); i++) {
             endpoint_description_pt ep = (endpoint_description_pt) arrayList_get(epList, i);
-            properties_pt props = ep->properties;
+            celix_properties_t *props = ep->properties;
             hash_map_entry_pt entry = hashMap_getEntry(props, (void *)"key2");
             char* value = (char*) hashMapEntry_getValue(entry);
             STRCMP_EQUAL("inaetics", value);
@@ -481,7 +481,7 @@ extern "C" {
         CHECK_EQUAL(1, arrayList_size(epList));
         for (unsigned int i = 0; i < arrayList_size(epList); i++) {
             endpoint_description_pt ep = (endpoint_description_pt) arrayList_get(epList, i);
-            properties_pt props = ep->properties;
+            celix_properties_t *props = ep->properties;
             hash_map_entry_pt entry = hashMap_getEntry(props, (void*)"zone");
             char* value = (char*) hashMapEntry_getValue(entry);
             STRCMP_EQUAL("inaetics", value);
@@ -505,13 +505,13 @@ extern "C" {
 
         endpoint_description_pt endpoint = NULL;
 
-        properties_pt props = properties_create();
-        properties_set(props, (char *)OSGI_RSA_ENDPOINT_SERVICE_ID, (char *)"42");
-        properties_set(props, (char *)OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, (char *)"eec5404d-51d0-47ef-8d86-c825a8beda42");
-        properties_set(props, (char *)OSGI_RSA_ENDPOINT_ID, (char *)"eec5404d-51d0-47ef-8d86-c825a8beda42-42");
-        properties_set(props, (char *)OSGI_FRAMEWORK_OBJECTCLASS,(char *)"org.apache.celix.test.MyBundle");
-        properties_set(props, (char *)"service.version",(char *)"1.0.0"); //TODO find out standard in osgi spec
-        properties_set(props, (char *)"zone", (char *)"thales");
+        celix_properties_t *props = celix_properties_create();
+        celix_properties_set(props, (char *)OSGI_RSA_ENDPOINT_SERVICE_ID, (char *)"42");
+        celix_properties_set(props, (char *)OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, (char *)"eec5404d-51d0-47ef-8d86-c825a8beda42");
+        celix_properties_set(props, (char *)OSGI_RSA_ENDPOINT_ID, (char *)"eec5404d-51d0-47ef-8d86-c825a8beda42-42");
+        celix_properties_set(props, (char *)OSGI_FRAMEWORK_OBJECTCLASS,(char *)"org.apache.celix.test.MyBundle");
+        celix_properties_set(props, (char *)"service.version",(char *)"1.0.0"); //TODO find out standard in osgi spec
+        celix_properties_set(props, (char *)"zone", (char *)"thales");
 
         rc = endpointDescription_create(props, &endpoint);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
@@ -547,13 +547,13 @@ extern "C" {
 
         endpoint_description_pt endpoint = NULL;
 
-        properties_pt props = properties_create();
-        properties_set(props, (char *)OSGI_RSA_ENDPOINT_SERVICE_ID, (char *)"42");
-        properties_set(props, (char *)OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, (char *)"eec5404d-51d0-47ef-8d86-c825a8beda42");
-        properties_set(props, (char *)OSGI_RSA_ENDPOINT_ID, (char *)"eec5404d-51d0-47ef-8d86-c825a8beda42-42");
-        properties_set(props, (char *)OSGI_FRAMEWORK_OBJECTCLASS,(char *)"org.apache.celix.test.MyBundle");
-        properties_set(props, (char *)"service.version",(char *)"1.0.0"); //TODO find out standard in osgi spec
-        properties_set(props, (char *)"zone", (char *)"thales");
+        celix_properties_t *props = celix_properties_create();
+        celix_properties_set(props, (char *)OSGI_RSA_ENDPOINT_SERVICE_ID, (char *)"42");
+        celix_properties_set(props, (char *)OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, (char *)"eec5404d-51d0-47ef-8d86-c825a8beda42");
+        celix_properties_set(props, (char *)OSGI_RSA_ENDPOINT_ID, (char *)"eec5404d-51d0-47ef-8d86-c825a8beda42-42");
+        celix_properties_set(props, (char *)OSGI_FRAMEWORK_OBJECTCLASS,(char *)"org.apache.celix.test.MyBundle");
+        celix_properties_set(props, (char *)"service.version",(char *)"1.0.0"); //TODO find out standard in osgi spec
+        celix_properties_set(props, (char *)"zone", (char *)"thales");
 
         rc = endpointDescription_create(props, &endpoint);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
@@ -588,13 +588,13 @@ extern "C" {
 
         endpoint_description_pt endpoint = NULL;
 
-        properties_pt props = properties_create();
-        properties_set(props, (char *)OSGI_RSA_ENDPOINT_SERVICE_ID, (char *)"42");
-        properties_set(props, (char *)OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, (char *)"eec5404d-51d0-47ef-8d86-c825a8beda42");
-        properties_set(props, (char *)OSGI_RSA_ENDPOINT_ID, (char *)"eec5404d-51d0-47ef-8d86-c825a8beda42-42");
-        properties_set(props, (char *)OSGI_FRAMEWORK_OBJECTCLASS,(char *)"org.apache.celix.test.MyBundle");
-        properties_set(props, (char *)"service.version",(char *)"1.0.0"); //TODO find out standard in osgi spec
-        properties_set(props, (char *)"zone", (char *)"thales");
+        celix_properties_t *props = celix_properties_create();
+        celix_properties_set(props, (char *)OSGI_RSA_ENDPOINT_SERVICE_ID, (char *)"42");
+        celix_properties_set(props, (char *)OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, (char *)"eec5404d-51d0-47ef-8d86-c825a8beda42");
+        celix_properties_set(props, (char *)OSGI_RSA_ENDPOINT_ID, (char *)"eec5404d-51d0-47ef-8d86-c825a8beda42-42");
+        celix_properties_set(props, (char *)OSGI_FRAMEWORK_OBJECTCLASS,(char *)"org.apache.celix.test.MyBundle");
+        celix_properties_set(props, (char *)"service.version",(char *)"1.0.0"); //TODO find out standard in osgi spec
+        celix_properties_set(props, (char *)"zone", (char *)"thales");
 
         rc = endpointDescription_create(props, &endpoint);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
@@ -629,13 +629,13 @@ extern "C" {
 
         endpoint_description_pt endpoint = NULL;
 
-        properties_pt props = properties_create();
-        properties_set(props, (char *)OSGI_RSA_ENDPOINT_SERVICE_ID, (char *)"42");
-        properties_set(props, (char *)OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, (char *)"eec5404d-51d0-47ef-8d86-c825a8beda42");
-        properties_set(props, (char *)OSGI_RSA_ENDPOINT_ID, (char *)"eec5404d-51d0-47ef-8d86-c825a8beda42-42");
-        properties_set(props, (char *)OSGI_FRAMEWORK_OBJECTCLASS,(char *)"org.apache.celix.test.MyBundle");
-        properties_set(props, (char *)"service.version",(char *)"1.0.0"); //TODO find out standard in osgi spec
-        properties_set(props, (char *)"zone", (char *)"thales");
+        celix_properties_t *props = celix_properties_create();
+        celix_properties_set(props, (char *)OSGI_RSA_ENDPOINT_SERVICE_ID, (char *)"42");
+        celix_properties_set(props, (char *)OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, (char *)"eec5404d-51d0-47ef-8d86-c825a8beda42");
+        celix_properties_set(props, (char *)OSGI_RSA_ENDPOINT_ID, (char *)"eec5404d-51d0-47ef-8d86-c825a8beda42-42");
+        celix_properties_set(props, (char *)OSGI_FRAMEWORK_OBJECTCLASS,(char *)"org.apache.celix.test.MyBundle");
+        celix_properties_set(props, (char *)"service.version",(char *)"1.0.0"); //TODO find out standard in osgi spec
+        celix_properties_set(props, (char *)"zone", (char *)"thales");
 
         rc = endpointDescription_create(props, &endpoint);
         CHECK_EQUAL(CELIX_SUCCESS, rc);

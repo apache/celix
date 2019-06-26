@@ -27,7 +27,7 @@
 #include "filter.h"
 
 struct scope_item {
-    properties_pt props;
+    celix_properties_t *props;
 };
 
 struct scope {
@@ -48,10 +48,10 @@ static celix_status_t import_equal(const void *, const void *, bool *equals);
  * SERVICES
  */
 
-celix_status_t tm_addExportScope(void *handle, char *filter, properties_pt props) {
+celix_status_t tm_addExportScope(void *handle, char *filter, celix_properties_t *props) {
     celix_status_t status = CELIX_SUCCESS;
     scope_pt scope = (scope_pt) handle;
-    properties_pt present;
+    celix_properties_t *present;
 
     if (handle == NULL)
         return CELIX_ILLEGAL_ARGUMENT;
@@ -62,7 +62,7 @@ celix_status_t tm_addExportScope(void *handle, char *filter, properties_pt props
         // If part of the new filter is already present in any of the filters in exportScopes
         // we have to assure that the new filter defines other property keys than the property keys
         // in the already defined filter!
-        present = (properties_pt) hashMap_get(scope->exportScopes, filter);
+        present = (celix_properties_t *) hashMap_get(scope->exportScopes, filter);
         if (present == NULL) {
             struct scope_item *item = calloc(1, sizeof(*item));
             if (item == NULL) {
@@ -73,7 +73,7 @@ celix_status_t tm_addExportScope(void *handle, char *filter, properties_pt props
             }
         } else {
             // don't allow the same filter twice
-            properties_destroy(props);
+            celix_properties_destroy(props);
             status = CELIX_ILLEGAL_ARGUMENT;
         }
         celixThreadMutex_unlock(&scope->exportScopeLock);
@@ -98,7 +98,7 @@ celix_status_t tm_removeExportScope(void *handle, char *filter) {
         if (present == NULL) {
             status = CELIX_ILLEGAL_ARGUMENT;
         } else {
-            properties_destroy(present->props);
+            celix_properties_destroy(present->props);
             hashMap_remove(scope->exportScopes, filter); // frees also the item!
         }
         celixThreadMutex_unlock(&scope->exportScopeLock);
@@ -210,7 +210,7 @@ celix_status_t scope_scopeDestroy(scope_pt scope) {
         while (hashMapIterator_hasNext(iter)) {
             hash_map_entry_pt scopedEntry = hashMapIterator_nextEntry(iter);
             struct scope_item *item = (struct scope_item*) hashMapEntry_getValue(scopedEntry);
-            properties_destroy(item->props);
+            celix_properties_destroy(item->props);
         }
         hashMapIterator_destroy(iter);
         hashMap_destroy(scope->exportScopes, true, true); // free keys, free values
@@ -267,16 +267,16 @@ bool scope_allowImport(scope_pt scope, endpoint_description_pt endpoint) {
     return allowImport;
 }
 
-celix_status_t scope_getExportProperties(scope_pt scope, service_reference_pt reference, properties_pt *props) {
+celix_status_t scope_getExportProperties(scope_pt scope, service_reference_pt reference, celix_properties_t **props) {
     celix_status_t status = CELIX_SUCCESS;
     unsigned int size = 0;
     char **keys;
     bool found = false;
 
     *props = NULL;
-    properties_pt serviceProperties = properties_create();  // GB: not sure if a copy is needed
-                                                            // or serviceReference_getProperties() is
-                                                            // is acceptable
+    celix_properties_t *serviceProperties = celix_properties_create();  // GB: not sure if a copy is needed
+                                                                        // or serviceReference_getProperties() is
+                                                                        // is acceptable
 
     serviceReference_getPropertyKeys(reference, &keys, &size);
     for (int i = 0; i < size; i++) {
@@ -286,7 +286,7 @@ celix_status_t scope_getExportProperties(scope_pt scope, service_reference_pt re
         if (serviceReference_getProperty(reference, key, &value) == CELIX_SUCCESS) {
 //        		&& strcmp(key, (char*) OSGI_RSA_SERVICE_EXPORTED_INTERFACES) != 0
 //        		&& strcmp(key, (char*) OSGI_FRAMEWORK_OBJECTCLASS) != 0) {
-            properties_set(serviceProperties, key, value);
+            celix_properties_set(serviceProperties, key, value);
         }
 
     }
@@ -312,7 +312,7 @@ celix_status_t scope_getExportProperties(scope_pt scope, service_reference_pt re
             filter_destroy(filter);
         }
         hashMapIterator_destroy(scopedPropIter);
-        properties_destroy(serviceProperties);
+        celix_properties_destroy(serviceProperties);
 
         celixThreadMutex_unlock(&(scope->exportScopeLock));
     }

@@ -33,9 +33,9 @@
 #include "remote_constants.h"
 #include "constants.h"
 
-static celix_status_t endpointDescription_verifyLongProperty(properties_pt properties, char *propertyName, unsigned long *longProperty);
+static celix_status_t endpointDescription_verifyLongProperty(celix_properties_t *properties, char *propertyName, unsigned long *longProperty);
 
-celix_status_t endpointDescription_create(properties_pt properties, endpoint_description_pt *endpointDescription) {
+celix_status_t endpointDescription_create(celix_properties_t *properties, endpoint_description_pt *endpointDescription) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	unsigned long serviceId = 0UL;
@@ -47,9 +47,9 @@ celix_status_t endpointDescription_create(properties_pt properties, endpoint_des
 	endpoint_description_pt ep = calloc(1,sizeof(*ep));
 
     ep->properties = properties;
-    ep->frameworkUUID = (char*)properties_get(properties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID);
-    ep->id = (char*)properties_get(properties, OSGI_RSA_ENDPOINT_ID);
-    ep->service = strndup(properties_get(properties, OSGI_FRAMEWORK_OBJECTCLASS), 1024*10);
+    ep->frameworkUUID = (char*)celix_properties_get(properties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, NULL);
+    ep->id = (char*)celix_properties_get(properties, OSGI_RSA_ENDPOINT_ID, NULL);
+    ep->service = strndup(celix_properties_get(properties, OSGI_FRAMEWORK_OBJECTCLASS, NULL), 1024*10);
     ep->serviceId = serviceId;
 
     if (!(ep->frameworkUUID) || !(ep->id) || !(ep->service) ) {
@@ -58,31 +58,31 @@ celix_status_t endpointDescription_create(properties_pt properties, endpoint_des
     }
 
     if(status == CELIX_SUCCESS){
-	*endpointDescription = ep;
+        *endpointDescription = ep;
     }
     else{
-	*endpointDescription = NULL;
-	free(ep);
+        *endpointDescription = NULL;
+        free(ep);
     }
 
     return status;
 }
 
 celix_status_t endpointDescription_destroy(endpoint_description_pt description) {
-    properties_destroy(description->properties);
+    celix_properties_destroy(description->properties);
     free(description->service);
     free(description);
     return CELIX_SUCCESS;
 }
 
-static celix_status_t endpointDescription_verifyLongProperty(properties_pt properties, char *propertyName, unsigned long *longProperty) {
+static celix_status_t endpointDescription_verifyLongProperty(celix_properties_t *properties, char *propertyName, unsigned long *longProperty) {
     celix_status_t status = CELIX_SUCCESS;
 
-    const char *value = properties_get(properties, propertyName);
+    const char *value = celix_properties_get(properties, propertyName, NULL);
     if (value == NULL) {
         *longProperty = 0UL;
     } else {
-        *longProperty = strtoul(value,NULL,10);
+        *longProperty = strtoul(value, NULL, 10);
     }
 
     return status;
