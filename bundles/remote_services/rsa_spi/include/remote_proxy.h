@@ -34,7 +34,7 @@
 #define OSGI_RSA_REMOTE_PROXY_TIMEOUT   "remote_proxy_timeout"
 
 typedef celix_status_t (*sendToHandle)(remote_service_admin_pt remote_service_admin_ptr, endpoint_description_pt endpointDescription, char *request, char **reply, int* replyStatus);
-typedef celix_status_t (*createProxyService)(void *handle, endpoint_description_pt endpointDescription, remote_service_admin_pt rsa, sendToHandle sendToCallback, properties_pt properties, void **service);
+typedef celix_status_t (*createProxyService)(void *handle, endpoint_description_pt endpointDescription, remote_service_admin_pt rsa, sendToHandle sendToCallback, celix_properties_t *properties, void **service);
 typedef celix_status_t (*destroyProxyService)(void *handle, void *service);
 
 typedef struct remote_proxy_factory *remote_proxy_factory_pt;
@@ -45,7 +45,7 @@ struct remote_proxy_factory {
 	char *service;
 
 	remote_proxy_factory_service_pt remote_proxy_factory_service_ptr;
-	properties_pt properties;
+	celix_properties_t *properties;
 	service_registration_pt registration;
 
 	hash_map_pt proxy_instances;

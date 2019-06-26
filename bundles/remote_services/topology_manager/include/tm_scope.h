@@ -34,7 +34,7 @@
 
 struct tm_scope_service {
     void *handle;	// scope_pt
-    celix_status_t (*addExportScope)(void *handle, char *filter, properties_pt props);
+    celix_status_t (*addExportScope)(void *handle, char *filter, celix_properties_t *props);
     celix_status_t (*removeExportScope)(void *handle, char *filter);
     celix_status_t (*addImportScope)(void *handle, char *filter);
     celix_status_t (*removeImportScope)(void *handle, char *filter);

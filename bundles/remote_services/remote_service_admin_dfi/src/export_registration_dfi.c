@@ -105,18 +105,18 @@ celix_status_t exportRegistration_create(log_helper_pt helper, service_reference
             status = CELIX_BUNDLE_EXCEPTION;
             logHelper_log(helper, OSGI_LOGSERVICE_WARNING, "RSA: Error parsing service descriptor.");
         }
-        else{
+        else {
             /* Add the interface version as a property in the properties_map */
             char* intfVersion = NULL;
             dynInterface_getVersionString(reg->intf, &intfVersion);
-            const char *serviceVersion = properties_get(endpoint->properties,(char*) CELIX_FRAMEWORK_SERVICE_VERSION);
-            if(serviceVersion!=NULL){
-            	if(strcmp(serviceVersion,intfVersion)!=0){
-            		logHelper_log(helper, OSGI_LOGSERVICE_WARNING, "Service version (%s) and interface version from the descriptor (%s) are not the same!",serviceVersion,intfVersion);
-            	}
+            const char *serviceVersion = celix_properties_get(endpoint->properties,(char*) CELIX_FRAMEWORK_SERVICE_VERSION, NULL);
+            if (serviceVersion != NULL) {
+                if(strcmp(serviceVersion,intfVersion)!=0){
+                    logHelper_log(helper, OSGI_LOGSERVICE_WARNING, "Service version (%s) and interface version from the descriptor (%s) are not the same!",serviceVersion,intfVersion);
+                }
             }
             else{
-            	properties_set(endpoint->properties, (char*) CELIX_FRAMEWORK_SERVICE_VERSION, intfVersion);
+                celix_properties_set(endpoint->properties, (char*) CELIX_FRAMEWORK_SERVICE_VERSION, intfVersion);
             }
         }
     } 
