@@ -1,12 +1,12 @@
 {
 "exportServices": [
 {
-"filter": "(&(objectClass=org.apache.celix.calc.api.Calculator2)(module=Calc))",
+"filter": "(&(objectClass=org.apache.celix.calc.api.Calculator)(module=Calc))",
 "zone": "thales",
 "key1": "value1"
 },
 {
-"filter": "(&(objectClass=org.apache.celix.calc.api.Calculator2)(module=Calc))",
+"filter": "(&(objectClass=org.apache.celix.calc.api.Calculator)(module=Calc))",
 "zone": "same_property_name_so_shall_give_Error"
 },
 {

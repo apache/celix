@@ -388,11 +388,11 @@ extern "C" {
 
         printf("\nBegin: %s\n", __func__);
         scopeInit("scope.json", &nr_exported, &nr_imported);
-        CHECK_EQUAL(1, nr_exported);
+        CHECK_EQUAL(2, nr_exported);
         CHECK_EQUAL(0, nr_imported);
 
         discMock->getEPDescriptors(discMock->handle, &epList);
-        // We export two services: Calculator and Calculator2, but only 1 has DFI bundle info
+        // We export one service: Calculator, which has DFI bundle info
         CHECK_EQUAL(1, arrayList_size(epList));
         for (unsigned int i = 0; i < arrayList_size(epList); i++) {
             endpoint_description_pt ep = (endpoint_description_pt) arrayList_get(epList, i);
@@ -425,10 +425,10 @@ extern "C" {
         array_list_pt epList;
         printf("\nBegin: %s\n", __func__);
         scopeInit("scope2.json", &nr_exported, &nr_imported);
-        CHECK_EQUAL(2, nr_exported);
+        CHECK_EQUAL(3, nr_exported);
         CHECK_EQUAL(1, nr_imported);
         discMock->getEPDescriptors(discMock->handle, &epList);
-        // We export two services: Calculator and Calculator2, but only 1 has DFI bundle info
+        // We export one service: Calculator, which has DFI bundle info
         CHECK_EQUAL(1, arrayList_size(epList));
         for (unsigned int i = 0; i < arrayList_size(epList); i++) {
             endpoint_description_pt ep = (endpoint_description_pt) arrayList_get(epList, i);
@@ -450,9 +450,10 @@ extern "C" {
         array_list_pt epList;
         printf("\nBegin: %s\n", __func__);
         scopeInit("scope3.json", &nr_exported, &nr_imported);
-        CHECK_EQUAL(2, nr_exported);
+        CHECK_EQUAL(3, nr_exported);
+        CHECK_EQUAL(1, nr_imported);
         discMock->getEPDescriptors(discMock->handle, &epList);
-        // We export two services: Calculator and Calculator2, but only 1 has DFI bundle info
+        // We export one service: Calculator, which has DFI bundle info
         CHECK_EQUAL(1, arrayList_size(epList));
         for (unsigned int i = 0; i < arrayList_size(epList); i++) {
             endpoint_description_pt ep = (endpoint_description_pt) arrayList_get(epList, i);
