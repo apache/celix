@@ -66,7 +66,7 @@ extern "C" {
         rc = bundleContext_getService(context, rsaRef, (void **)&rsa);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
 
-        rc = bundleContext_getServiceReference(context, (char *)CALCULATOR2_SERVICE, &calcRef);
+        rc = bundleContext_getServiceReference(context, (char *)CALCULATOR_SERVICE, &calcRef);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
         CHECK(calcRef != NULL);
 

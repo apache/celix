@@ -41,11 +41,7 @@ void subCommand_execute(bundle_context_pt context, char *line, FILE *out, FILE *
 
     status = bundleContext_getServiceReference(context, (char *) CALCULATOR_SERVICE, &calculatorService);
     if (calculatorService == NULL) {
-        fprintf(err, "SUB: Cannot get reference for %s. Trying to get one for %s\n", CALCULATOR_SERVICE, CALCULATOR2_SERVICE);
-        status = bundleContext_getServiceReference(context, (char *) CALCULATOR2_SERVICE, &calculatorService);
-        if (calculatorService == NULL) {
-            fprintf(err, "SUB: Cannot get reference even for %s.\n", CALCULATOR2_SERVICE);
-        }
+        fprintf(err, "SUB: Cannot get reference for %s\n", CALCULATOR_SERVICE);
     }
     if (status == CELIX_SUCCESS) {
     	char *token = line;

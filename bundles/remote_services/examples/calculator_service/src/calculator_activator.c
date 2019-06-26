@@ -37,7 +37,6 @@ struct activator {
 	calculator_service_pt service;
 
 	service_registration_pt calculatorReg;
-	service_registration_pt calculatorReg2;
 };
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
@@ -49,7 +48,6 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 		status = CELIX_ENOMEM;
 	} else {
 		activator->calculatorReg = NULL;
-		activator->calculatorReg2 = NULL;
 
 		*userData = activator;
 	}
@@ -60,7 +58,6 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
 	struct activator *activator = userData;
-	properties_pt properties = NULL;
 
 	status = calculator_create(&activator->calculator);
 	if (status == CELIX_SUCCESS) {
@@ -73,14 +70,9 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 			activator->service->sub = calculator_sub;
 			activator->service->sqrt = calculator_sqrt;
 
-			properties = properties_create();
-			properties_set(properties, (char *) OSGI_RSA_SERVICE_EXPORTED_INTERFACES, (char *) CALCULATOR_SERVICE);
-
-			bundleContext_registerService(context, (char *) CALCULATOR_SERVICE, activator->service, properties, &activator->calculatorReg);
-
-			properties_pt properties2 = properties_create();
-			properties_set(properties2, (char *) OSGI_RSA_SERVICE_EXPORTED_INTERFACES, (char *) CALCULATOR2_SERVICE);
-			bundleContext_registerService(context, CALCULATOR2_SERVICE, activator->service, properties2, &activator->calculatorReg2);
+			celix_properties_t *properties = celix_properties_create();
+			celix_properties_set(properties, OSGI_RSA_SERVICE_EXPORTED_INTERFACES, CALCULATOR_SERVICE);
+			bundleContext_registerService(context, CALCULATOR_SERVICE, activator->service, properties, &activator->calculatorReg);
 		}
 	}
 
@@ -92,7 +84,6 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 	struct activator *activator = userData;
 
 	serviceRegistration_unregister(activator->calculatorReg);
-	serviceRegistration_unregister(activator->calculatorReg2);
 
 	free(activator->service);
 
