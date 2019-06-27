@@ -57,7 +57,7 @@ if (RSA_EXAMPLES)
                 Celix::log_service
                 Celix::log_writer_stdout
             PROPERTIES
-                RSA_PORT=8888
+                RSA_PORT=18888
         )
 
         add_celix_container(remote-services-dfi-client
@@ -72,7 +72,7 @@ if (RSA_EXAMPLES)
                 calculator_shell
                 Celix::rsa_discovery_etcd
             PROPERTIES
-                RSA_PORT=8889
+                RSA_PORT=28888
         )
     endif ()
 endif (RSA_EXAMPLES)

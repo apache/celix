@@ -72,6 +72,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 
 			celix_properties_t *properties = celix_properties_create();
 			celix_properties_set(properties, OSGI_RSA_SERVICE_EXPORTED_INTERFACES, CALCULATOR_SERVICE);
+			celix_properties_set(properties, OSGI_RSA_SERVICE_EXPORTED_CONFIGS, CALCULATOR_CONFIGURATION_TYPE);
 			bundleContext_registerService(context, CALCULATOR_SERVICE, activator->service, properties, &activator->calculatorReg);
 		}
 	}
