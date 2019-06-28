@@ -21,27 +21,28 @@
 #define PUBSUB_PSA_UDPMC_CONSTANTS_H_
 
 
-#define PSA_UDPMC_PUBSUB_ADMIN_TYPE	            "udp_mc"
+#define PSA_UDPMC_PUBSUB_ADMIN_TYPE                 "udp_mc"
 
-#define PSA_UDPMC_DEFAULT_QOS_SAMPLE_SCORE 		70
-#define PSA_UDPMC_DEFAULT_QOS_CONTROL_SCORE 	30
-#define PSA_UDPMC_DEFAULT_SCORE 				50
+#define PSA_UDPMC_DEFAULT_QOS_SAMPLE_SCORE          70
+#define PSA_UDPMC_DEFAULT_QOS_CONTROL_SCORE         30
+#define PSA_UDPMC_DEFAULT_SCORE                     50
 
-#define PSA_UDPMC_QOS_SAMPLE_SCORE_KEY 			"PSA_UDPMC_QOS_SAMPLE_SCORE"
-#define PSA_UDPMC_QOS_CONTROL_SCORE_KEY 		"PSA_UDPMC_QOS_CONTROL_SCORE"
-#define PSA_UDPMC_DEFAULT_SCORE_KEY 			"PSA_UDPMC_DEFAULT_SCORE"
+#define PSA_UDPMC_QOS_SAMPLE_SCORE_KEY              "PSA_UDPMC_QOS_SAMPLE_SCORE"
+#define PSA_UDPMC_QOS_CONTROL_SCORE_KEY             "PSA_UDPMC_QOS_CONTROL_SCORE"
+#define PSA_UDPMC_DEFAULT_SCORE_KEY                 "PSA_UDPMC_DEFAULT_SCORE"
 
 
 #define PUBSUB_UDPMC_ADMIN_TYPE                     "udp_mc"
-#define PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY			"udpmc.socket_address"
-#define PUBSUB_PSA_UDPMC_SOCKET_PORT_KEY            "udpmc.socker_port"
+#define PUBSUB_UDPMC_SOCKET_ADDRESS_KEY             "udpmc.socket_address"
+#define PUBSUB_UDPMC_SOCKET_PORT_KEY                "udpmc.socket_port"
 
-#define PUBSUB_UDPMC_IP_KEY 	                    "PSA_IP"
-#define PUBSUB_UDPMC_ITF_KEY	                    "PSA_INTERFACE"
+#define PUBSUB_UDPMC_IP_KEY                         "PSA_IP"
+#define PUBSUB_UDPMC_ITF_KEY                        "PSA_INTERFACE"
 #define PUBSUB_UDPMC_MULTICAST_IP_PREFIX_KEY        "PSA_MC_PREFIX"
 #define PUBSUB_UDPMC_VERBOSE_KEY                    "PSA_UDPMC_VERBOSE"
 
 #define PUBSUB_UDPMC_MULTICAST_IP_PREFIX_DEFAULT    "224.100"
+#define PUBSUB_UDPMC_MULTICAST_IP_DEFAULT           "224.100.1.1"
 #define PUBSUB_UDPMC_VERBOSE_DEFAULT                true
 
 /**
