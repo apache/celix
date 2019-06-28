@@ -95,13 +95,11 @@ typedef struct psa_udpmc_subscriber_entry {
     bool initialized; //true if the init function is called through the receive thread
 } psa_udpmc_subscriber_entry_t;
 
-
-typedef struct pubsub_msg{
-    int typeid;
-    char major;
-    char minor;
+typedef struct pubsub_udp_msg {
+    pubsub_udp_msg_header_t header;
     unsigned int payloadSize;
-} pubsub_msg_t;
+    char payload[];
+} pubsub_udp_msg_t;
 
 static void pubsub_udpmcTopicReceiver_addSubscriber(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner);
 static void pubsub_udpmcTopicReceiver_removeSubscriber(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner);
@@ -261,10 +259,7 @@ long pubsub_udpmcTopicReceiver_serializerSvcId(pubsub_udpmc_topic_receiver_t *re
     return receiver->serializerSvcId;
 }
 
-void pubsub_udpmcTopicReceiver_connectTo(
-        pubsub_udpmc_topic_receiver_t *receiver,
-        const char *socketAddress,
-        long socketPort) {
+void pubsub_udpmcTopicReceiver_connectTo(pubsub_udpmc_topic_receiver_t *receiver, const char *socketAddress, long socketPort) {
     printf("[PSA UDPMC] TopicReceiver %s/%s connect to socket address = %s:%li\n", receiver->scope, receiver->topic, socketAddress, socketPort);
 
     char *key = NULL;
@@ -397,13 +392,13 @@ static void* psa_udpmc_recvThread(void * data) {
 
         int nfds = epoll_wait(receiver->topicEpollFd, events, MAX_EPOLL_EVENTS, RECV_THREAD_TIMEOUT * 1000);
         int i;
-        for(i = 0; i < nfds; i++ ) {
+        for (i = 0; i < nfds; i++ ) {
             unsigned int index;
             unsigned int size;
-            if(largeUdp_dataAvailable(receiver->largeUdpHandle, events[i].data.fd, &index, &size) == true) {
+            if (largeUdp_dataAvailable(receiver->largeUdpHandle, events[i].data.fd, &index, &size) == true) {
                 // Handle data
                 pubsub_udp_msg_t *udpMsg = NULL;
-                if(largeUdp_read(receiver->largeUdpHandle, index, (void**)&udpMsg, size) != 0) {
+                if (largeUdp_read(receiver->largeUdpHandle, index, (void**) &udpMsg, size) != 0) {
                     printf("[PSA_UDPMC]: ERROR largeUdp_read with index %d\n", index);
                     continue;
                 }
@@ -438,38 +433,35 @@ static void psa_udpmc_processMsg(pubsub_udpmc_topic_receiver_t *receiver, pubsub
 
         pubsub_msg_serializer_t *msgSer = NULL;
         if (entry->msgTypes != NULL) {
-            msgSer = hashMap_get(entry->msgTypes, (void *) (uintptr_t) msg->typeid);
+            msgSer = hashMap_get(entry->msgTypes, (void *) (uintptr_t) msg->header.type);
         }
         if (msgSer == NULL) {
-            printf("[PSA_UDPMC] Serializer not available for message %d.\n",msg->typeid);
-        } else{
+            printf("[PSA_UDPMC] Serializer not available for message %d.\n", msg->header.type);
+        } else {
             void *msgInst = NULL;
-            bool validVersion = psa_udpmc_checkVersion(msgSer->msgVersion, msg);
+            bool validVersion = psa_udpmc_checkVersion(msgSer->msgVersion, &msg->header);
 
-            if(validVersion){
-
+            if (validVersion) {
                 celix_status_t status = msgSer->deserialize(msgSer->handle, (const void *)msg->payload, 0, &msgInst);
 
                 if (status == CELIX_SUCCESS) {
                     bool release = true;
                     pubsub_subscriber_t *svc = entry->svc;
-                    svc->receive(svc->handle, msgSer->msgName, msg->typeid, msgInst, &release);
+                    svc->receive(svc->handle, msgSer->msgName, msg->header.type, msgInst, &release);
 
-                    if(release){
+                    if (release) {
                         msgSer->freeMsg(msgSer->handle, msgInst);
                     }
-                }
-                else{
+                } else {
                     printf("[PSA_UDPMC] Cannot deserialize msgType %s.\n",msgSer->msgName);
                 }
 
-            }
-            else{
-                int major=0,minor=0;
+            } else {
+                int major = 0, minor = 0;
                 version_getMajor(msgSer->msgVersion,&major);
                 version_getMinor(msgSer->msgVersion,&minor);
                 printf("[PSA_UDPMC] Version mismatch for primary message '%s' (have %d.%d, received %u.%u). NOT sending any part of the whole message.\n",
-                       msgSer->msgName,major,minor,msg->major, msg->minor);
+                       msgSer->msgName,major,minor,msg->header.major,msg->header.minor);
             }
 
         }
@@ -535,10 +527,11 @@ static void psa_udpmc_connectToAllRequestedConnections(pubsub_udpmc_topic_receiv
         hash_map_iterator_t iter = hashMapIterator_construct(receiver->requestedConnections.map);
         while (hashMapIterator_hasNext(&iter)) {
             psa_udpmc_requested_connection_entry_t *entry = hashMapIterator_nextValue(&iter);
-            if (!entry->connected){
+            if (!entry->connected) {
                 if (psa_udpmc_connectToEntry(receiver, entry)) {
                     entry->connected = true;
                 } else {
+                    L_WARN("[PSA_UDPMC_TR] Error connecting to address %s. (%s)", entry->socketAddress, strerror(errno));
                     allConnected = false;
                 }
             }

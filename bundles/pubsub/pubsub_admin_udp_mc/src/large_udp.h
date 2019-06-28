@@ -20,19 +20,20 @@
  * large_udp.h
  *
  *  \date       Mar 1, 2016
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
+ *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
+ *  \copyright  Apache License, Version 2.0
  */
 
 #ifndef _LARGE_UDP_H_
 #define _LARGE_UDP_H_
+
 #include <stdbool.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-typedef struct largeUdp  *largeUdp_pt;
+typedef struct largeUdp *largeUdp_pt;
 
 largeUdp_pt largeUdp_create(unsigned int maxNrUdpReceptions);
 void largeUdp_destroy(largeUdp_pt handle);

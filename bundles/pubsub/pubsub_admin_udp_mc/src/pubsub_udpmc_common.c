@@ -24,15 +24,16 @@ int psa_udpmc_localMsgTypeIdForMsgType(void* handle __attribute__((unused)), con
     return 0;
 }
 
-bool psa_udpmc_checkVersion(version_pt msgVersion, pubsub_udp_msg_t *msg) {
-    bool check=false;
-    int major=0,minor=0;
+bool psa_udpmc_checkVersion(version_pt msgVersion, pubsub_udp_msg_header_t *hdr) {
+    bool check = false;
 
-    if(msgVersion!=NULL){
+    if (msgVersion != NULL) {
+        int major = 0, minor = 0;
         version_getMajor(msgVersion,&major);
         version_getMinor(msgVersion,&minor);
-        if(msg->major==((unsigned char)major)){ /* Different major means incompatible */
-            check = (msg->minor>=((unsigned char)minor)); /* Compatible only if the provider has a minor equals or greater (means compatible update) */
+
+        if (hdr->major == ((unsigned char) major)) { /* Different major means incompatible */
+            check = (hdr->minor >= ((unsigned char) minor)); /* Compatible only if the provider has a minor equals or greater (means compatible update) */
         }
     }
 

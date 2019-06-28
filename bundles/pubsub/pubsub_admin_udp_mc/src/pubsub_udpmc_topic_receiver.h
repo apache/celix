@@ -42,10 +42,7 @@ void pubsub_udpmcTopicReceiver_listConnections(pubsub_udpmc_topic_receiver_t *re
 
 long pubsub_udpmcTopicReceiver_serializerSvcId(pubsub_udpmc_topic_receiver_t *receiver);
 
-void pubsub_udpmcTopicReceiver_connectTo(
-        pubsub_udpmc_topic_receiver_t *receiver,
-        const char *socketAddress,
-        long socketPort);
+void pubsub_udpmcTopicReceiver_connectTo(pubsub_udpmc_topic_receiver_t *receiver, const char *socketAddress, long socketPort);
 void pubsub_udpmcTopicReceiver_disconnectFrom(pubsub_udpmc_topic_receiver_t *receiver, const char *socketAddress, long socketPort);
 
 #endif //CELIX_PUBSUB_UDPMC_TOPIC_RECEIVER_H
