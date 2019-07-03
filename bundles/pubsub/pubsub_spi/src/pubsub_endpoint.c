@@ -92,7 +92,7 @@ celix_properties_t* pubsubEndpoint_create(
         const char* adminType,
         const char *serType,
         celix_properties_t *topic_props) {
-	celix_properties_t *ep = properties_create();
+	celix_properties_t *ep = celix_properties_create();
 	pubsubEndpoint_setFields(ep, fwUUID, scope, topic, pubsubType, adminType, serType, topic_props);
 	if (!pubsubEndpoint_isValid(ep, true, true)) {
 	    celix_properties_destroy(ep);
@@ -114,7 +114,7 @@ static void retrieveTopicProperties(void *handle, const celix_bundle_t *bnd) {
 }
 
 celix_properties_t* pubsubEndpoint_createFromSubscriberSvc(bundle_context_t* ctx, long bundleId, const celix_properties_t *svcProps) {
-    celix_properties_t *ep = properties_create();
+    celix_properties_t *ep = celix_properties_create();
 
 	const char* fwUUID = celix_bundleContext_getProperty(ctx, OSGI_FRAMEWORK_FRAMEWORK_UUID, NULL);
 	const char* scope = celix_properties_get(svcProps,  PUBSUB_SUBSCRIBER_SCOPE, PUBSUB_SUBSCRIBER_SCOPE_DEFAULT);
