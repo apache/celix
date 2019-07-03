@@ -15,20 +15,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-## Device Access
+# Base driver
 
-The Device Access contains a for Celix adapted implementation of the OSGi Compendium Device Access Specification.
+The base driver is a "special" driver that will not be loaded by the device manager.
+Normally the device manager will load drivers if it find device which are idle... But before that can happen 
+at least one device should exists. This is the role of a base driver and it should function like a "normal" OSGi
+bundle which registers a device service.
 
-## Properties
-    DRIVER_LOCATOR_PATH     Path to the directory containing the driver bundles, defaults to "drivers".
-                            The Driver Locator uses this path to find drivers.
-
-## CMake option
-    BUILD_DEVICE_ACCESS=ON
-
-## Using info
-
-If the Celix Device Access is installed, 'find_package(Celix)' will set:
- - The `Celix::device_access_api` interface (i.e. headers only) library target
- - The `Celix::device_manager` bundle target
- - The `Celix::driver_locator` bundle target
+In this example the base driver will provide two device service with a DEVICE_CATEGORY of "char".
