@@ -74,9 +74,9 @@ static celix_status_t psd_start(psd_activator_t *act, celix_bundle_context_t *ct
 		act->cmdSvc.handle = act->pubsub_discovery;
 		act->cmdSvc.executeCommand = pubsub_discovery_executeCommand;
 		celix_properties_t *props = celix_properties_create();
-		properties_set(props, OSGI_SHELL_COMMAND_NAME, "psd_etcd");
-		properties_set(props, OSGI_SHELL_COMMAND_USAGE, "psd_etcd"); //TODO add search topic/scope option
-		properties_set(props, OSGI_SHELL_COMMAND_DESCRIPTION, "Overview of discovered/announced endpoints from/to ETCD");
+		celix_properties_set(props, OSGI_SHELL_COMMAND_NAME, "psd_etcd");
+		celix_properties_set(props, OSGI_SHELL_COMMAND_USAGE, "psd_etcd"); //TODO add search topic/scope option
+		celix_properties_set(props, OSGI_SHELL_COMMAND_DESCRIPTION, "Overview of discovered/announced endpoints from/to ETCD");
 		act->cmdSvcId = celix_bundleContext_registerService(ctx, &act->cmdSvc, OSGI_SHELL_COMMAND_SERVICE_NAME, props);
 	}
 
