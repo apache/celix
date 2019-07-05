@@ -15,11 +15,15 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_subdirectory(config_admin)
-add_subdirectory(device_access)
-add_subdirectory(deployment_admin)
-add_subdirectory(remote_services)
-add_subdirectory(shell)
-add_subdirectory(http_admin)
-add_subdirectory(logging)
-add_subdirectory(pubsub)
+celix_subproject(HTTP_ADMIN "Service to use a HTTP server with websocket support" ON DEPS UTILS)
+if (HTTP_ADMIN)
+
+    add_subdirectory(http_admin_api)
+    add_subdirectory(civetweb)
+    add_subdirectory(http_admin)
+
+    if (ENABLE_TESTING)
+        add_subdirectory(test)
+    endif (ENABLE_TESTING)
+
+endif (HTTP_ADMIN)

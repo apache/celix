@@ -86,8 +86,8 @@ A million repetitions of "a"
   34AA973C D4C4DAA4 F61EEB2B DBAD2731 6534016F
 */
 
-#include <string.h>
 #include <stdint.h>
+#include <string.h>
 
 typedef struct {
 	uint32_t state[5];
@@ -116,7 +116,7 @@ blk0(CHAR64LONG16 *block, int i)
 	if ((*((uint8_t *)(&n))) == 1) {
 		/* little endian / intel byte order */
 		block->l[i] = (rol(block->l[i], 24) & 0xFF00FF00)
-		              | (rol(block->l[i], 8) & 0x00FF00FF);
+					  | (rol(block->l[i], 8) & 0x00FF00FF);
 	}
 	return block->l[i];
 }
@@ -302,8 +302,8 @@ SHA1_Final(unsigned char *digest, SHA_CTX *context)
 
 	for (i = 0; i < 8; i++) {
 		finalcount[i] =
-		    (uint8_t)((context->count[(i >= 4 ? 0 : 1)] >> ((3 - (i & 3)) * 8))
-		              & 255); /* Endian independent */
+				(uint8_t)((context->count[(i >= 4 ? 0 : 1)] >> ((3 - (i & 3)) * 8))
+						  & 255); /* Endian independent */
 	}
 	SHA1_Update(context, (uint8_t *)"\x80", 1);
 	while ((context->count[0] & 504) != 448) {
@@ -312,7 +312,7 @@ SHA1_Final(unsigned char *digest, SHA_CTX *context)
 	SHA1_Update(context, finalcount, 8); /* Should cause a SHA1_Transform() */
 	for (i = 0; i < SHA1_DIGEST_SIZE; i++) {
 		digest[i] =
-		    (uint8_t)((context->state[i >> 2] >> ((3 - (i & 3)) * 8)) & 255);
+				(uint8_t)((context->state[i >> 2] >> ((3 - (i & 3)) * 8)) & 255);
 	}
 
 	/* Wipe variables */

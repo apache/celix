@@ -15,11 +15,11 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_subdirectory(config_admin)
-add_subdirectory(device_access)
-add_subdirectory(deployment_admin)
-add_subdirectory(remote_services)
-add_subdirectory(shell)
-add_subdirectory(http_admin)
-add_subdirectory(logging)
-add_subdirectory(pubsub)
+CELIX_CONTAINER_NAME=http_websocket_tests
+CELIX_BUNDLES_PATH=bundles
+
+CELIX_AUTO_START_3=@http_admin_service_cmp@ @http_admin_sut_cmp@ @http_admin_tst_cmp@
+
+USE_WEBSOCKETS=@use_websockets@
+LISTENING_PORTS=@listening_ports@
+LOGHELPER_STD_OUT_FALLBACK_INCLUDE_DEBUG=@loghelper_std_out_fallback_incl_debug@
