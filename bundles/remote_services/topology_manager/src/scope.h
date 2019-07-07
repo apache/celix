@@ -97,7 +97,7 @@ bool scope_allowImport(scope_pt scope, endpoint_description_pt endpoint);
  * \return CELIX_SUCCESS
  *
  */
-celix_status_t scope_getExportProperties(scope_pt scope, service_reference_pt reference, properties_pt *props);
+celix_status_t scope_getExportProperties(scope_pt scope, service_reference_pt reference, celix_properties_t **props);
 
 /* \brief  add restricted scope for specified exported service
  *
@@ -109,7 +109,7 @@ celix_status_t scope_getExportProperties(scope_pt scope, service_reference_pt re
  *         CELIX_ILLEGAL_ARGUMENT if service scope is already restricted before
  *
  */
-celix_status_t tm_addExportScope(void *handle, char *filter, properties_pt props);
+celix_status_t tm_addExportScope(void *handle, char *filter, celix_properties_t *props);
 
 /* \brief  remove restricted scope for specified exported service
  *

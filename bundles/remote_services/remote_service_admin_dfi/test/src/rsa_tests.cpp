@@ -36,6 +36,7 @@ extern "C" {
 #include "remote_service_admin.h"
 #include "calculator_service.h"
 
+#define TST_CONFIGURATION_TYPE "org.amdatu.remote.admin.http"
 
     static framework_pt framework = NULL;
     static bundle_context_pt context = NULL;
@@ -66,7 +67,7 @@ extern "C" {
         rc = bundleContext_getService(context, rsaRef, (void **)&rsa);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
 
-        rc = bundleContext_getServiceReference(context, (char *)CALCULATOR2_SERVICE, &calcRef);
+        rc = bundleContext_getServiceReference(context, (char *)CALCULATOR_SERVICE, &calcRef);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
         CHECK(calcRef != NULL);
 
@@ -147,12 +148,12 @@ extern "C" {
         import_registration_pt reg = NULL;
         endpoint_description_pt endpoint = NULL;
 
-        properties_pt props = properties_create();
-        properties_set(props, (char *)OSGI_RSA_ENDPOINT_SERVICE_ID, (char *)"42");
-        properties_set(props, (char *)OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, (char *)"eec5404d-51d0-47ef-8d86-c825a8beda42");
-        properties_set(props, (char *)OSGI_RSA_ENDPOINT_ID, (char *)"eec5404d-51d0-47ef-8d86-c825a8beda42-42");
-        properties_set(props, (char *)OSGI_FRAMEWORK_OBJECTCLASS,(char *)"org.apache.celix.Example");
-        properties_set(props, (char *)"service.version",(char *)"1.0.0"); //TODO find out standard in osgi spec
+        celix_properties_t *props = celix_properties_create();
+        celix_properties_set(props, OSGI_RSA_ENDPOINT_SERVICE_ID, "42");
+        celix_properties_set(props, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, "eec5404d-51d0-47ef-8d86-c825a8beda42");
+        celix_properties_set(props, OSGI_RSA_ENDPOINT_ID, "eec5404d-51d0-47ef-8d86-c825a8beda42-42");
+        celix_properties_set(props, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, TST_CONFIGURATION_TYPE);
+        celix_properties_set(props, OSGI_FRAMEWORK_OBJECTCLASS, "org.apache.celix.Example");
 
         rc = endpointDescription_create(props, &endpoint);
         CHECK_EQUAL(CELIX_SUCCESS, rc);

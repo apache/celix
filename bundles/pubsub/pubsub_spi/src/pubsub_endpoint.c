@@ -1,20 +1,20 @@
 /**
- *Licensed to the Apache Software Foundation (ASF) under one
- *or more contributor license agreements.  See the NOTICE file
- *distributed with this work for additional information
- *regarding copyright ownership.  The ASF licenses this file
- *to you under the Apache License, Version 2.0 (the
- *"License"); you may not use this file except in compliance
- *with the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- *Unless required by applicable law or agreed to in writing,
- *software distributed under the License is distributed on an
- *"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- *specific language governing permissions and limitations
- *under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 /*
  * endpoint_description.c
@@ -92,7 +92,7 @@ celix_properties_t* pubsubEndpoint_create(
         const char* adminType,
         const char *serType,
         celix_properties_t *topic_props) {
-	celix_properties_t *ep = properties_create();
+	celix_properties_t *ep = celix_properties_create();
 	pubsubEndpoint_setFields(ep, fwUUID, scope, topic, pubsubType, adminType, serType, topic_props);
 	if (!pubsubEndpoint_isValid(ep, true, true)) {
 	    celix_properties_destroy(ep);
@@ -114,7 +114,7 @@ static void retrieveTopicProperties(void *handle, const celix_bundle_t *bnd) {
 }
 
 celix_properties_t* pubsubEndpoint_createFromSubscriberSvc(bundle_context_t* ctx, long bundleId, const celix_properties_t *svcProps) {
-    celix_properties_t *ep = properties_create();
+    celix_properties_t *ep = celix_properties_create();
 
 	const char* fwUUID = celix_bundleContext_getProperty(ctx, OSGI_FRAMEWORK_FRAMEWORK_UUID, NULL);
 	const char* scope = celix_properties_get(svcProps,  PUBSUB_SUBSCRIBER_SCOPE, PUBSUB_SUBSCRIBER_SCOPE_DEFAULT);

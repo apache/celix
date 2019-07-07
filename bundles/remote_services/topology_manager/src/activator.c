@@ -196,10 +196,10 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 
 	logHelper_log(activator->loghelper, OSGI_LOGSERVICE_INFO, "TOPOLOGY_MANAGER: endpoint listener scope is %s", scope);
 
-	properties_pt props = properties_create();
-	properties_set(props, (char *) OSGI_ENDPOINT_LISTENER_SCOPE, scope);
+	celix_properties_t *props = celix_properties_create();
+	celix_properties_set(props, (char *) OSGI_ENDPOINT_LISTENER_SCOPE, scope);
 
-	// We can release the scope, as properties_set makes a copy of the key & value...
+	// We can release the scope, as celix_properties_set makes a copy of the key & value...
 	free(scope);
 
 	bundleContext_registerService(context, (char *) OSGI_ENDPOINT_LISTENER_SERVICE, endpointListener, props, &activator->endpointListenerService);

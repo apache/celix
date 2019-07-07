@@ -1,22 +1,21 @@
 /**
- *Licensed to the Apache Software Foundation (ASF) under one
- *or more contributor license agreements.  See the NOTICE file
- *distributed with this work for additional information
- *regarding copyright ownership.  The ASF licenses this file
- *to you under the Apache License, Version 2.0 (the
- *"License"); you may not use this file except in compliance
- *with the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- *Unless required by applicable law or agreed to in writing,
- *software distributed under the License is distributed on an
- *"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- *specific language governing permissions and limitations
- *under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
-
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,7 +28,6 @@
 
 #include "log_service.h"
 #include "log_helper.h"
-
 
 #include "pubsub_topology_manager.h"
 #include "pubsub_listeners.h"
@@ -135,9 +133,9 @@ static int pstm_start(pstm_activator_t *act, celix_bundle_context_t *ctx) {
 		act->shellCmdSvc.handle = act->manager;
 		act->shellCmdSvc.executeCommand = pubsub_topologyManager_shellCommand;
 		celix_properties_t *props = celix_properties_create();
-		properties_set(props, OSGI_SHELL_COMMAND_NAME, "pstm");
-		properties_set(props, OSGI_SHELL_COMMAND_USAGE, "pstm [topology|metrics]"); //TODO add search topic/scope option
-		properties_set(props, OSGI_SHELL_COMMAND_DESCRIPTION, "pubsub_topology_info: Overview of Topology information for PubSub");
+		celix_properties_set(props, OSGI_SHELL_COMMAND_NAME, "pstm");
+		celix_properties_set(props, OSGI_SHELL_COMMAND_USAGE, "pstm [topology|metrics]"); //TODO add search topic/scope option
+		celix_properties_set(props, OSGI_SHELL_COMMAND_DESCRIPTION, "pubsub_topology_info: Overview of Topology information for PubSub");
 		act->shellCmdSvcId = celix_bundleContext_registerService(ctx, &act->shellCmdSvc, OSGI_SHELL_COMMAND_SERVICE_NAME, props);
 	}
 
@@ -146,8 +144,8 @@ static int pstm_start(pstm_activator_t *act, celix_bundle_context_t *ctx) {
 	//2) on add indicate that topic/senders should be reevaluated.
 
 	/* NOTE: Enable those line in order to remotely expose the topic_info service
-	properties_pt props = properties_create();
-	properties_set(props, (char *) OSGI_RSA_SERVICE_EXPORTED_INTERFACES, (char *) PUBSUB_TOPIC_INFO_SERVICE);
+	celix_properties_t *props = celix_properties_create();
+	celix_properties_set(props, OSGI_RSA_SERVICE_EXPORTED_INTERFACES, PUBSUB_TOPIC_INFO_SERVICE);
 	status += bundleContext_registerService(context, (char *) PUBSUB_TOPIC_INFO_SERVICE, activator->topicInfo, props, &activator->topicInfoService);
 	*/
 

@@ -1,20 +1,20 @@
 /**
- *Licensed to the Apache Software Foundation (ASF) under one
- *or more contributor license agreements.  See the NOTICE file
- *distributed with this work for additional information
- *regarding copyright ownership.  The ASF licenses this file
- *to you under the Apache License, Version 2.0 (the
- *"License"); you may not use this file except in compliance
- *with the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- *Unless required by applicable law or agreed to in writing,
- *software distributed under the License is distributed on an
- *"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- *specific language governing permissions and limitations
- *under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 
 #include <memory.h>
@@ -33,16 +33,13 @@
 #include "pubsub_udpmc_topic_sender.h"
 #include "pubsub_udpmc_topic_receiver.h"
 
-#define PUBSUB_UDPMC_MC_IP_DEFAULT                     "224.100.1.1"
-#define PUBSUB_UDPMC_SOCKET_ADDRESS_KEY                "udpmc.socket_address"
-#define PUBSUB_UDPMC_SOCKET_PORT_KEY                   "udpmc.socket_port"
 
 #define L_DEBUG(...) \
     logHelper_log(psa->log, OSGI_LOGSERVICE_DEBUG, __VA_ARGS__)
 #define L_INFO(...) \
-    logHelper_log(psa->log, OSGI_LOGSERVICE_INFO, __VA_ARGS__);
+    logHelper_log(psa->log, OSGI_LOGSERVICE_INFO, __VA_ARGS__)
 #define L_WARN(...) \
-    logHelper_log(psa->log, OSGI_LOGSERVICE_WARNING, __VA_ARGS__);
+    logHelper_log(psa->log, OSGI_LOGSERVICE_WARNING, __VA_ARGS__)
 #define L_ERROR(...) \
     logHelper_log(psa->log, OSGI_LOGSERVICE_ERROR, __VA_ARGS__)
 
@@ -105,7 +102,7 @@ pubsub_udpmc_admin_t* pubsub_udpmcAdmin_create(celix_bundle_context_t *ctx, log_
     int sendSocket = -1;
 
     const char *mcIpProp = celix_bundleContext_getProperty(ctx, PUBSUB_UDPMC_IP_KEY, NULL);
-    if(mcIpProp != NULL) {
+    if (mcIpProp != NULL) {
         if (strchr(mcIpProp, '/') != NULL) {
             // IP with subnet prefix specified
             char *found_if_ip = calloc(16, sizeof(char));
@@ -178,7 +175,7 @@ pubsub_udpmc_admin_t* pubsub_udpmcAdmin_create(celix_bundle_context_t *ctx, log_
     if (mc_ip != NULL) {
         psa->mcIpAddress = mc_ip;
     } else {
-        psa->mcIpAddress = strdup(PUBSUB_UDPMC_MC_IP_DEFAULT);
+        psa->mcIpAddress = strdup(PUBSUB_UDPMC_MULTICAST_IP_DEFAULT);
     }
     if (psa->verbose) {
         L_INFO("[PSA_UDPMC] Using %s for service annunciation", psa->mcIpAddress);
@@ -459,8 +456,8 @@ static celix_status_t pubsub_udpmcAdmin_connectEndpointToReceiver(pubsub_udpmc_a
     const char *type = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TYPE, NULL);
     const char *eScope = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_SCOPE, NULL);
     const char *eTopic = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_NAME, NULL);
-    const char *sockAddress = celix_properties_get(endpoint, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY, NULL);
-    long sockPort = celix_properties_getAsLong(endpoint, PUBSUB_PSA_UDPMC_SOCKET_PORT_KEY, -1L);
+    const char *sockAddress = celix_properties_get(endpoint, PUBSUB_UDPMC_SOCKET_ADDRESS_KEY, NULL);
+    long sockPort = celix_properties_getAsLong(endpoint, PUBSUB_UDPMC_SOCKET_PORT_KEY, -1L);
 
     bool publisher = type != NULL && strncmp(PUBSUB_PUBLISHER_ENDPOINT_TYPE, type, strlen(PUBSUB_PUBLISHER_ENDPOINT_TYPE)) == 0;
 
@@ -513,11 +510,11 @@ static celix_status_t pubsub_udpmcAdmin_disconnectEndpointFromReceiver(pubsub_ud
     const char *type = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TYPE, NULL);
     const char *eScope = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_SCOPE, NULL);
     const char *eTopic = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_NAME, NULL);
-    const char *sockAdress = celix_properties_get(endpoint, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY, NULL);
-    long sockPort = celix_properties_getAsLong(endpoint, PUBSUB_PSA_UDPMC_SOCKET_PORT_KEY, -1L);
+    const char *sockAdress = celix_properties_get(endpoint, PUBSUB_UDPMC_SOCKET_ADDRESS_KEY, NULL);
+    long sockPort = celix_properties_getAsLong(endpoint, PUBSUB_UDPMC_SOCKET_PORT_KEY, -1L);
 
     if (type == NULL || sockAdress == NULL || sockPort < 0) {
-        fprintf(stderr, "[PSA UPDMC] Error got endpoint without udpmc socket address/port or endpoint type\n");
+        L_WARN("[PSA UPDMC] Error disconnecting from endpoint without udpmc socket address/port or endpoint type.");
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
         if (eScope != NULL && eTopic != NULL && type != NULL &&

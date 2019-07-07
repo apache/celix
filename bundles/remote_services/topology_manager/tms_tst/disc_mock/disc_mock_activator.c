@@ -80,9 +80,9 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
     sprintf(scope, "(&(%s=*)(%s=%s))", OSGI_FRAMEWORK_OBJECTCLASS, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
     scope[len] = 0;
 
-    properties_pt props = properties_create();
-    properties_set(props, "DISCOVERY", "true");
-    properties_set(props, (char *) OSGI_ENDPOINT_LISTENER_SCOPE, scope);
+    celix_properties_t *props = celix_properties_create();
+    celix_properties_set(props, "DISCOVERY", "true");
+    celix_properties_set(props, (char *) OSGI_ENDPOINT_LISTENER_SCOPE, scope);
 
     if (status == CELIX_SUCCESS) {
         endpoint_listener_pt endpointListener = calloc(1, sizeof(struct endpoint_listener));
@@ -101,7 +101,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
             }
         }
     }
-    // We can release the scope, as properties_set makes a copy of the key & value...
+    // We can release the scope, as celix_properties_set makes a copy of the key & value...
     free(scope);
 
     return status;

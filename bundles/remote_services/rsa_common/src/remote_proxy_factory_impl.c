@@ -33,7 +33,7 @@
 typedef struct proxy_instance {
 	service_registration_pt registration_ptr;
 	void *service;
-	properties_pt properties;
+	celix_properties_t *properties;
 } *proxy_instance_pt;
 
 static celix_status_t remoteProxyFactory_registerProxyService(remote_proxy_factory_pt remote_proxy_factory_ptr, endpoint_description_pt endpointDescription, remote_service_admin_pt rsa, sendToHandle sendToCallback);
@@ -104,11 +104,11 @@ celix_status_t remoteProxyFactory_register(remote_proxy_factory_pt remote_proxy_
 		remote_proxy_factory_ptr->remote_proxy_factory_service_ptr->registerProxyService = remoteProxyFactory_registerProxyService;
 		remote_proxy_factory_ptr->remote_proxy_factory_service_ptr->unregisterProxyService = remoteProxyFactory_unregisterProxyService;
 
-		remote_proxy_factory_ptr->properties = properties_create();
+		remote_proxy_factory_ptr->properties = celix_properties_create();
 		if (!remote_proxy_factory_ptr->properties) {
 			status = CELIX_BUNDLE_EXCEPTION;
 		} else {
-			properties_set(remote_proxy_factory_ptr->properties, "proxy.interface", remote_proxy_factory_ptr->service);
+			celix_properties_set(remote_proxy_factory_ptr->properties, "proxy.interface", remote_proxy_factory_ptr->service);
 		}
 	}
 
@@ -146,7 +146,7 @@ celix_status_t remoteProxyFactory_unregister(remote_proxy_factory_pt remote_prox
 			remote_proxy_factory_ptr->properties = NULL;
 		}
 		if (remote_proxy_factory_ptr->properties) {
-			properties_destroy(remote_proxy_factory_ptr->properties);
+			celix_properties_destroy(remote_proxy_factory_ptr->properties);
 		}
 		if (remote_proxy_factory_ptr->remote_proxy_factory_service_ptr) {
 			free(remote_proxy_factory_ptr->remote_proxy_factory_service_ptr);
@@ -173,7 +173,7 @@ static celix_status_t remoteProxyFactory_registerProxyService(remote_proxy_facto
 	}
 
 	if (status == CELIX_SUCCESS) {
-		proxy_instance_ptr->properties = properties_create();
+		proxy_instance_ptr->properties = celix_properties_create();
 		if (!proxy_instance_ptr->properties) {
 			status = CELIX_ENOMEM;
 		}
@@ -184,7 +184,7 @@ static celix_status_t remoteProxyFactory_registerProxyService(remote_proxy_facto
 	}
 
 	if (status == CELIX_SUCCESS) {
-		properties_set(proxy_instance_ptr->properties, "proxy.interface", remote_proxy_factory_ptr->service);
+		celix_properties_set(proxy_instance_ptr->properties, "proxy.interface", remote_proxy_factory_ptr->service);
 
 		hash_map_iterator_pt iter = hashMapIterator_create(endpointDescription->properties);
 		while (hashMapIterator_hasNext(iter)) {
@@ -192,7 +192,7 @@ static celix_status_t remoteProxyFactory_registerProxyService(remote_proxy_facto
 			char *key = hashMapEntry_getKey(entry);
 			char *value = hashMapEntry_getValue(entry);
 
-			properties_set(proxy_instance_ptr->properties, key, value);
+			celix_properties_set(proxy_instance_ptr->properties, key, value);
 		}
 		hashMapIterator_destroy(iter);
 	}
@@ -208,7 +208,7 @@ static celix_status_t remoteProxyFactory_registerProxyService(remote_proxy_facto
 	if(status!=CELIX_SUCCESS){
 		if(proxy_instance_ptr != NULL){
 			if(proxy_instance_ptr->properties != NULL){
-				properties_destroy(proxy_instance_ptr->properties);
+				celix_properties_destroy(proxy_instance_ptr->properties);
 			}
 			free(proxy_instance_ptr);
 		}
@@ -241,7 +241,7 @@ static celix_status_t remoteProxyFactory_unregisterProxyService(remote_proxy_fac
 			status = remote_proxy_factory_ptr->destroy_proxy_service_ptr(remote_proxy_factory_ptr->handle, proxy_instance_ptr->service);
 		}
 		if (proxy_instance_ptr->properties) {
-			properties_destroy(proxy_instance_ptr->properties);
+			celix_properties_destroy(proxy_instance_ptr->properties);
 		}
         free(proxy_instance_ptr);
 	}

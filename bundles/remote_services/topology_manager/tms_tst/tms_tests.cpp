@@ -62,6 +62,8 @@ extern "C" {
 #define JSON_SERVICE_KEY1     "key1"
 #define JSON_SERVICE_KEY2     "key2"
 
+#define TST_CONFIGURATION_TYPE "org.amdatu.remote.admin.http"
+
     static framework_pt framework = NULL;
     static bundle_context_pt context = NULL;
 
@@ -110,7 +112,7 @@ extern "C" {
         rc = bundleContext_getService(context, scopeServiceRef, (void **)&tmScopeService);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
 
-        rc = bundleContext_getServiceReference(context, (char *)CALCULATOR2_SERVICE, &calcRef);
+        rc = bundleContext_getServiceReference(context, (char *)CALCULATOR_SERVICE, &calcRef);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
         CHECK(calcRef != NULL);
 
@@ -298,7 +300,7 @@ extern "C" {
 
         json_t *js_root;
         json_error_t error;
-        properties_pt properties;
+        celix_properties_t *properties;
 
         *nr_exported = 0;
         *nr_imported = 0;
@@ -322,18 +324,18 @@ extern "C" {
                             json_t* js_key1 = json_object_get(js_service, JSON_SERVICE_KEY1);
                             json_t* js_key2 = json_object_get(js_service, JSON_SERVICE_KEY2);
 
-                            properties=properties_create();
+                            properties = celix_properties_create();
                             if (js_serviceZone != NULL) {
-                                properties_set(properties, (char*)JSON_SERVICE_ZONE,
-                                                           (char*)json_string_value(js_serviceZone));
+                                celix_properties_set(properties, (char*)JSON_SERVICE_ZONE,
+                                                                 (char*)json_string_value(js_serviceZone));
                             }
                             if (js_key1 != NULL) {
-                                properties_set(properties, (char*)JSON_SERVICE_KEY1,
-                                                           (char*)json_string_value(js_key1));
+                                celix_properties_set(properties, (char*)JSON_SERVICE_KEY1,
+                                                                 (char*)json_string_value(js_key1));
                             }
                             if (js_key2 != NULL) {
-                                properties_set(properties, (char*)JSON_SERVICE_KEY2,
-                                                           (char*)json_string_value(js_key2));
+                                celix_properties_set(properties, (char*)JSON_SERVICE_KEY2,
+                                                                 (char*)json_string_value(js_key2));
                             }
 
                             added = tmScopeService->addExportScope(tmScopeService->handle, (char*)json_string_value(js_filter), properties);
@@ -388,15 +390,15 @@ extern "C" {
 
         printf("\nBegin: %s\n", __func__);
         scopeInit("scope.json", &nr_exported, &nr_imported);
-        CHECK_EQUAL(1, nr_exported);
+        CHECK_EQUAL(2, nr_exported);
         CHECK_EQUAL(0, nr_imported);
 
         discMock->getEPDescriptors(discMock->handle, &epList);
-        // We export two services: Calculator and Calculator2, but only 1 has DFI bundle info
+        // We export one service: Calculator, which has DFI bundle info
         CHECK_EQUAL(1, arrayList_size(epList));
         for (unsigned int i = 0; i < arrayList_size(epList); i++) {
             endpoint_description_pt ep = (endpoint_description_pt) arrayList_get(epList, i);
-            properties_pt props = ep->properties;
+            celix_properties_t *props = ep->properties;
             hash_map_entry_pt entry = hashMap_getEntry(props, (void*)"key2");
             char* value = (char*) hashMapEntry_getValue(entry);
             STRCMP_EQUAL("inaetics", value);
@@ -425,14 +427,14 @@ extern "C" {
         array_list_pt epList;
         printf("\nBegin: %s\n", __func__);
         scopeInit("scope2.json", &nr_exported, &nr_imported);
-        CHECK_EQUAL(2, nr_exported);
+        CHECK_EQUAL(3, nr_exported);
         CHECK_EQUAL(1, nr_imported);
         discMock->getEPDescriptors(discMock->handle, &epList);
-        // We export two services: Calculator and Calculator2, but only 1 has DFI bundle info
+        // We export one service: Calculator, which has DFI bundle info
         CHECK_EQUAL(1, arrayList_size(epList));
         for (unsigned int i = 0; i < arrayList_size(epList); i++) {
             endpoint_description_pt ep = (endpoint_description_pt) arrayList_get(epList, i);
-            properties_pt props = ep->properties;
+            celix_properties_t *props = ep->properties;
             hash_map_entry_pt entry = hashMap_getEntry(props, (void*)"key2");
             char* value = (char*) hashMapEntry_getValue(entry);
             STRCMP_EQUAL("inaetics", value);
@@ -450,13 +452,14 @@ extern "C" {
         array_list_pt epList;
         printf("\nBegin: %s\n", __func__);
         scopeInit("scope3.json", &nr_exported, &nr_imported);
-        CHECK_EQUAL(2, nr_exported);
+        CHECK_EQUAL(3, nr_exported);
+        CHECK_EQUAL(1, nr_imported);
         discMock->getEPDescriptors(discMock->handle, &epList);
-        // We export two services: Calculator and Calculator2, but only 1 has DFI bundle info
+        // We export one service: Calculator, which has DFI bundle info
         CHECK_EQUAL(1, arrayList_size(epList));
         for (unsigned int i = 0; i < arrayList_size(epList); i++) {
             endpoint_description_pt ep = (endpoint_description_pt) arrayList_get(epList, i);
-            properties_pt props = ep->properties;
+            celix_properties_t *props = ep->properties;
             hash_map_entry_pt entry = hashMap_getEntry(props, (void *)"key2");
             char* value = (char*) hashMapEntry_getValue(entry);
             STRCMP_EQUAL("inaetics", value);
@@ -481,7 +484,7 @@ extern "C" {
         CHECK_EQUAL(1, arrayList_size(epList));
         for (unsigned int i = 0; i < arrayList_size(epList); i++) {
             endpoint_description_pt ep = (endpoint_description_pt) arrayList_get(epList, i);
-            properties_pt props = ep->properties;
+            celix_properties_t *props = ep->properties;
             hash_map_entry_pt entry = hashMap_getEntry(props, (void*)"zone");
             char* value = (char*) hashMapEntry_getValue(entry);
             STRCMP_EQUAL("inaetics", value);
@@ -505,13 +508,14 @@ extern "C" {
 
         endpoint_description_pt endpoint = NULL;
 
-        properties_pt props = properties_create();
-        properties_set(props, (char *)OSGI_RSA_ENDPOINT_SERVICE_ID, (char *)"42");
-        properties_set(props, (char *)OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, (char *)"eec5404d-51d0-47ef-8d86-c825a8beda42");
-        properties_set(props, (char *)OSGI_RSA_ENDPOINT_ID, (char *)"eec5404d-51d0-47ef-8d86-c825a8beda42-42");
-        properties_set(props, (char *)OSGI_FRAMEWORK_OBJECTCLASS,(char *)"org.apache.celix.test.MyBundle");
-        properties_set(props, (char *)"service.version",(char *)"1.0.0"); //TODO find out standard in osgi spec
-        properties_set(props, (char *)"zone", (char *)"thales");
+        celix_properties_t *props = celix_properties_create();
+        celix_properties_set(props, OSGI_RSA_ENDPOINT_SERVICE_ID, "42");
+        celix_properties_set(props, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, "eec5404d-51d0-47ef-8d86-c825a8beda42");
+        celix_properties_set(props, OSGI_RSA_ENDPOINT_ID, "eec5404d-51d0-47ef-8d86-c825a8beda42-42");
+        celix_properties_set(props, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, TST_CONFIGURATION_TYPE);
+        celix_properties_set(props, OSGI_FRAMEWORK_OBJECTCLASS, "org.apache.celix.test.MyBundle");
+        celix_properties_set(props, "service.version", "1.0.0"); //TODO find out standard in osgi spec
+        celix_properties_set(props, "zone", "thales");
 
         rc = endpointDescription_create(props, &endpoint);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
@@ -547,13 +551,14 @@ extern "C" {
 
         endpoint_description_pt endpoint = NULL;
 
-        properties_pt props = properties_create();
-        properties_set(props, (char *)OSGI_RSA_ENDPOINT_SERVICE_ID, (char *)"42");
-        properties_set(props, (char *)OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, (char *)"eec5404d-51d0-47ef-8d86-c825a8beda42");
-        properties_set(props, (char *)OSGI_RSA_ENDPOINT_ID, (char *)"eec5404d-51d0-47ef-8d86-c825a8beda42-42");
-        properties_set(props, (char *)OSGI_FRAMEWORK_OBJECTCLASS,(char *)"org.apache.celix.test.MyBundle");
-        properties_set(props, (char *)"service.version",(char *)"1.0.0"); //TODO find out standard in osgi spec
-        properties_set(props, (char *)"zone", (char *)"thales");
+        celix_properties_t *props = celix_properties_create();
+        celix_properties_set(props, OSGI_RSA_ENDPOINT_SERVICE_ID, "42");
+        celix_properties_set(props, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, "eec5404d-51d0-47ef-8d86-c825a8beda42");
+        celix_properties_set(props, OSGI_RSA_ENDPOINT_ID, "eec5404d-51d0-47ef-8d86-c825a8beda42-42");
+        celix_properties_set(props, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, TST_CONFIGURATION_TYPE);
+        celix_properties_set(props, OSGI_FRAMEWORK_OBJECTCLASS, "org.apache.celix.test.MyBundle");
+        celix_properties_set(props, "service.version", "1.0.0"); //TODO find out standard in osgi spec
+        celix_properties_set(props, "zone", "thales");
 
         rc = endpointDescription_create(props, &endpoint);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
@@ -588,13 +593,14 @@ extern "C" {
 
         endpoint_description_pt endpoint = NULL;
 
-        properties_pt props = properties_create();
-        properties_set(props, (char *)OSGI_RSA_ENDPOINT_SERVICE_ID, (char *)"42");
-        properties_set(props, (char *)OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, (char *)"eec5404d-51d0-47ef-8d86-c825a8beda42");
-        properties_set(props, (char *)OSGI_RSA_ENDPOINT_ID, (char *)"eec5404d-51d0-47ef-8d86-c825a8beda42-42");
-        properties_set(props, (char *)OSGI_FRAMEWORK_OBJECTCLASS,(char *)"org.apache.celix.test.MyBundle");
-        properties_set(props, (char *)"service.version",(char *)"1.0.0"); //TODO find out standard in osgi spec
-        properties_set(props, (char *)"zone", (char *)"thales");
+        celix_properties_t *props = celix_properties_create();
+        celix_properties_set(props, OSGI_RSA_ENDPOINT_SERVICE_ID, "42");
+        celix_properties_set(props, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, "eec5404d-51d0-47ef-8d86-c825a8beda42");
+        celix_properties_set(props, OSGI_RSA_ENDPOINT_ID, "eec5404d-51d0-47ef-8d86-c825a8beda42-42");
+        celix_properties_set(props, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, TST_CONFIGURATION_TYPE);
+        celix_properties_set(props, OSGI_FRAMEWORK_OBJECTCLASS, "org.apache.celix.test.MyBundle");
+        celix_properties_set(props, "service.version", "1.0.0"); //TODO find out standard in osgi spec
+        celix_properties_set(props, "zone", "thales");
 
         rc = endpointDescription_create(props, &endpoint);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
@@ -629,13 +635,14 @@ extern "C" {
 
         endpoint_description_pt endpoint = NULL;
 
-        properties_pt props = properties_create();
-        properties_set(props, (char *)OSGI_RSA_ENDPOINT_SERVICE_ID, (char *)"42");
-        properties_set(props, (char *)OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, (char *)"eec5404d-51d0-47ef-8d86-c825a8beda42");
-        properties_set(props, (char *)OSGI_RSA_ENDPOINT_ID, (char *)"eec5404d-51d0-47ef-8d86-c825a8beda42-42");
-        properties_set(props, (char *)OSGI_FRAMEWORK_OBJECTCLASS,(char *)"org.apache.celix.test.MyBundle");
-        properties_set(props, (char *)"service.version",(char *)"1.0.0"); //TODO find out standard in osgi spec
-        properties_set(props, (char *)"zone", (char *)"thales");
+        celix_properties_t *props = celix_properties_create();
+        celix_properties_set(props, OSGI_RSA_ENDPOINT_SERVICE_ID, "42");
+        celix_properties_set(props, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, "eec5404d-51d0-47ef-8d86-c825a8beda42");
+        celix_properties_set(props, OSGI_RSA_ENDPOINT_ID, "eec5404d-51d0-47ef-8d86-c825a8beda42-42");
+        celix_properties_set(props, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, TST_CONFIGURATION_TYPE);
+        celix_properties_set(props, OSGI_FRAMEWORK_OBJECTCLASS, "org.apache.celix.test.MyBundle");
+        celix_properties_set(props, "service.version", "1.0.0"); //TODO find out standard in osgi spec
+        celix_properties_set(props, "zone", "thales");
 
         rc = endpointDescription_create(props, &endpoint);
         CHECK_EQUAL(CELIX_SUCCESS, rc);

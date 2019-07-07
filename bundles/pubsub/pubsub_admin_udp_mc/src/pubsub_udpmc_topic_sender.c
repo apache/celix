@@ -1,20 +1,20 @@
 /**
- *Licensed to the Apache Software Foundation (ASF) under one
- *or more contributor license agreements.  See the NOTICE file
- *distributed with this work for additional information
- *regarding copyright ownership.  The ASF licenses this file
- *to you under the Apache License, Version 2.0 (the
- *"License"); you may not use this file except in compliance
- *with the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- *Unless required by applicable law or agreed to in writing,
- *software distributed under the License is distributed on an
- *"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- *specific language governing permissions and limitations
- *under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 
 #include <pubsub_serializer.h>
@@ -30,11 +30,11 @@
 #include "large_udp.h"
 #include "pubsub_udpmc_common.h"
 
-#define FIRST_SEND_DELAY_IN_SECONDS             2
+#define FIRST_SEND_DELAY_IN_SECONDS     2
 
 //TODO make configurable
-#define UDP_BASE_PORT	                        49152
-#define UDP_MAX_PORT	                        65000
+#define UDP_BASE_PORT                   49152
+#define UDP_MAX_PORT                    65000
 
 
 struct pubsub_udpmc_topic_sender {
@@ -69,6 +69,12 @@ typedef struct psa_udpmc_bounded_service_entry {
     int getCount;
     largeUdp_pt largeUdpHandle;
 } psa_udpmc_bounded_service_entry_t;
+
+typedef struct pubsub_msg {
+    pubsub_udp_msg_header_t *header;
+    unsigned int payloadSize;
+    char *payload;
+} pubsub_udp_msg_t;
 
 static void* psa_udpmc_getPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties);
 static void psa_udpmc_ungetPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties);
@@ -254,50 +260,49 @@ static int psa_udpmc_topicPublicationSend(void* handle, unsigned int msgTypeId, 
     }
 
     if (msgSer != NULL) {
-        int major=0, minor=0;
-
         void* serializedOutput = NULL;
         size_t serializedOutputLen = 0;
-        if (msgSer->serialize(msgSer->handle,inMsg,&serializedOutput, &serializedOutputLen) == CELIX_SUCCESS) {
 
-            pubsub_udp_msg_t *msg = calloc(1, sizeof(*msg));
-            msg->typeid = msgTypeId;
+        if (msgSer->serialize(msgSer->handle, inMsg, &serializedOutput, &serializedOutputLen) == CELIX_SUCCESS) {
+            pubsub_udp_msg_header_t *msg_hdr = calloc(1, sizeof(*msg_hdr));
+            msg_hdr->type = msgTypeId;
 
-
-            if (msgSer->msgVersion != NULL){
+            if (msgSer->msgVersion != NULL) {
+                int major = 0, minor = 0;
                 version_getMajor(msgSer->msgVersion, &major);
                 version_getMinor(msgSer->msgVersion, &minor);
-                msg->major = (unsigned char)major;
-                msg->minor = (unsigned char)minor;
+                msg_hdr->major = (unsigned char) major;
+                msg_hdr->minor = (unsigned char) minor;
             }
 
-
-            msg->payload = (unsigned char*) serializedOutput;
-            msg->payloadSize = (unsigned int)serializedOutputLen;
-
+            pubsub_udp_msg_t *msg = calloc(1, sizeof(*msg));
+            msg->header = msg_hdr;
+            msg->payload = (char *) serializedOutput;
+            msg->payloadSize = (unsigned int) serializedOutputLen;
 
             if (psa_udpmc_sendMsg(entry, msg) == false) {
                 status = -1;
             }
             free(msg);
+            free(msg_hdr);
             free(serializedOutput);
         } else {
             printf("[PSA_UDPMC/TopicSender] Serialization of msg type id %d failed\n", msgTypeId);
-            status=-1;
+            status = -1;
         }
 
     } else {
         printf("[PSA_UDPMC/TopicSender] No msg serializer available for msg type id %d\n", msgTypeId);
-        status=-1;
+        status = -1;
     }
     return status;
 }
 
-static void delay_first_send_for_late_joiners(){
+static void delay_first_send_for_late_joiners() {
 
     static bool firstSend = true;
 
-    if(firstSend){
+    if (firstSend) {
         printf("PSA_UDP_MC_TP: Delaying first send for late joiners...\n");
         sleep(FIRST_SEND_DELAY_IN_SECONDS);
         firstSend = false;
@@ -309,8 +314,8 @@ static bool psa_udpmc_sendMsg(psa_udpmc_bounded_service_entry_t *entry, pubsub_u
     bool ret = true;
 
     struct iovec msg_iovec[iovec_len];
-    msg_iovec[0].iov_base = msg;
-    msg_iovec[0].iov_len = sizeof(*msg);
+    msg_iovec[0].iov_base = msg->header;
+    msg_iovec[0].iov_len = sizeof(*msg->header);
     msg_iovec[1].iov_base = &msg->payloadSize;
     msg_iovec[1].iov_len = sizeof(msg->payloadSize);
     msg_iovec[2].iov_base = msg->payload;
@@ -318,7 +323,7 @@ static bool psa_udpmc_sendMsg(psa_udpmc_bounded_service_entry_t *entry, pubsub_u
 
     delay_first_send_for_late_joiners();
 
-    if(largeUdp_sendmsg(entry->largeUdpHandle, entry->parent->sendSocket, msg_iovec, iovec_len, 0, &entry->parent->destAddr, sizeof(entry->parent->destAddr)) == -1) {
+    if (largeUdp_sendmsg(entry->largeUdpHandle, entry->parent->sendSocket, msg_iovec, iovec_len, 0, &entry->parent->destAddr, sizeof(entry->parent->destAddr)) == -1) {
         perror("send_pubsub_msg:sendSocket");
         ret = false;
     }
@@ -326,7 +331,7 @@ static bool psa_udpmc_sendMsg(psa_udpmc_bounded_service_entry_t *entry, pubsub_u
     return ret;
 }
 
-static unsigned int rand_range(unsigned int min, unsigned int max){
+static unsigned int rand_range(unsigned int min, unsigned int max) {
     double scaled = ((double)random())/((double)RAND_MAX);
     return (unsigned int)((max-min+1)*scaled + min);
 }
