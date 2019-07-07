@@ -18,38 +18,93 @@
 find_package(CppUTest REQUIRED)
 find_package(Jansson REQUIRED)
 
+add_celix_bundle(pubsub_endpoint_sut
+        #"Vanilla" bundle which is under test
+        SOURCES
+        test/sut_endpoint_activator.c
+        VERSION 1.0.0
+        )
+target_include_directories(pubsub_endpoint_sut PRIVATE test)
+target_link_libraries(pubsub_endpoint_sut PRIVATE Celix::pubsub_api)
+celix_bundle_files(pubsub_endpoint_sut
+        meta_data/msg.descriptor
+        DESTINATION "META-INF/descriptors"
+        )
+celix_bundle_files(pubsub_endpoint_sut
+        meta_data/ping2.properties
+        DESTINATION "META-INF/topics/pub"
+        )
+
+add_celix_bundle(pubsub_endpoint_tst
+        #Test bundle containing cpputests and uses celix_test_runner launcher instead of the celix launcher
+        SOURCES
+        test/tst_endpoint_activator.cc
+        VERSION 1.0.0
+        )
+target_link_libraries(pubsub_endpoint_tst PRIVATE Celix::framework Celix::pubsub_api)
+celix_bundle_files(pubsub_endpoint_tst
+        meta_data/msg.descriptor
+        DESTINATION "META-INF/descriptors"
+        )
+celix_bundle_files(pubsub_endpoint_tst
+        meta_data/ping2.properties
+        DESTINATION "META-INF/topics/sub"
+        )
+
+
+add_celix_bundle(pubsub_loopback
+        #"Vanilla" bundle which is under test
+        SOURCES
+        test/loopback_activator.c
+        VERSION 1.0.0
+        )
+target_include_directories(pubsub_loopback PRIVATE test)
+target_link_libraries(pubsub_loopback PRIVATE Celix::pubsub_api)
+celix_bundle_files(pubsub_loopback
+        meta_data/msg.descriptor
+        DESTINATION "META-INF/descriptors"
+        )
+celix_bundle_files(pubsub_loopback
+        meta_data/pong2.properties
+        DESTINATION "META-INF/topics/pub"
+        )
+celix_bundle_files(pubsub_loopback
+        meta_data/pong2.properties
+        DESTINATION "META-INF/topics/sub"
+        )
+
 add_celix_bundle(pubsub_sut
-    #"Vanilla" bundle which is under test
-    SOURCES
+        #"Vanilla" bundle which is under test
+        SOURCES
         test/sut_activator.c
-    VERSION 1.0.0
-)
+        VERSION 1.0.0
+        )
 target_include_directories(pubsub_sut PRIVATE test)
 target_link_libraries(pubsub_sut PRIVATE Celix::pubsub_api)
 celix_bundle_files(pubsub_sut
-    meta_data/msg.descriptor
-    DESTINATION "META-INF/descriptors"
-)
+        meta_data/msg.descriptor
+        DESTINATION "META-INF/descriptors"
+        )
 celix_bundle_files(pubsub_sut
-    meta_data/ping.properties
-    DESTINATION "META-INF/topics/pub"
-)
+        meta_data/ping.properties
+        DESTINATION "META-INF/topics/pub"
+        )
 
 add_celix_bundle(pubsub_tst
-    #Test bundle containing cpputests and uses celix_test_runner launcher instead of the celix launcher
-    SOURCES
+        #Test bundle containing cpputests and uses celix_test_runner launcher instead of the celix launcher
+        SOURCES
         test/tst_activator.cc
-    VERSION 1.0.0
-)
+        VERSION 1.0.0
+        )
 target_link_libraries(pubsub_tst PRIVATE Celix::framework Celix::pubsub_api)
 celix_bundle_files(pubsub_tst
-    meta_data/msg.descriptor
-    DESTINATION "META-INF/descriptors"
-)
+        meta_data/msg.descriptor
+        DESTINATION "META-INF/descriptors"
+        )
 celix_bundle_files(pubsub_tst
-    meta_data/ping.properties
-    DESTINATION "META-INF/topics/sub"
-)
+        meta_data/ping.properties
+        DESTINATION "META-INF/topics/sub"
+        )
 
 
 add_celix_container(pubsub_udpmc_tests
@@ -57,19 +112,61 @@ add_celix_container(pubsub_udpmc_tests
         LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_runner.cc
         DIR ${CMAKE_CURRENT_BINARY_DIR}
         PROPERTIES
-            LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
+        LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
         BUNDLES
-            Celix::pubsub_serializer_json
-            Celix::pubsub_topology_manager
-            Celix::pubsub_admin_udp_multicast
-            pubsub_sut
-            pubsub_tst
-)
+        Celix::pubsub_serializer_json
+        Celix::pubsub_topology_manager
+        Celix::pubsub_admin_udp_multicast
+        pubsub_sut
+        pubsub_tst
+        )
 target_link_libraries(pubsub_udpmc_tests PRIVATE Celix::pubsub_api ${CPPUTEST_LIBRARIES} ${JANSSON_LIBRARIES} Celix::dfi)
 target_include_directories(pubsub_udpmc_tests PRIVATE ${CPPUTEST_INCLUDE_DIR})
 message(WARNING "TODO fix issues with UDPMC and reanble test again")
 #add_test(NAME pubsub_udpmc_tests COMMAND pubsub_udpmc_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_udpmc_tests,CONTAINER_LOC>)
 #SETUP_TARGET_FOR_COVERAGE(pubsub_udpmc_tests_cov pubsub_udpmc_tests ${CMAKE_BINARY_DIR}/coverage/pubsub_udpmc_tests/pubsub_udpmc_tests ..)
+
+add_celix_container(pubsub_tcp_tests
+        USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
+        LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_runner.cc
+        DIR ${CMAKE_CURRENT_BINARY_DIR}
+        PROPERTIES
+        LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
+        BUNDLES
+        Celix::shell
+        Celix::shell_tui
+        Celix::pubsub_serializer_json
+        Celix::pubsub_topology_manager
+        Celix::pubsub_admin_tcp
+        pubsub_sut
+        pubsub_tst
+        )
+target_link_libraries(pubsub_tcp_tests PRIVATE Celix::pubsub_api ${CPPUTEST_LIBRARIES} ${JANSSON_LIBRARIES} Celix::dfi)
+target_include_directories(pubsub_tcp_tests PRIVATE ${CPPUTEST_INCLUDE_DIR})
+add_test(NAME pubsub_tcp_tests COMMAND pubsub_tcp_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_tcp_tests,CONTAINER_LOC>)
+SETUP_TARGET_FOR_COVERAGE(pubsub_tcp_tests_cov pubsub_tcp_tests ${CMAKE_BINARY_DIR}/coverage/pubsub_tcp_tests/pubsub_tcp_tests ..)
+
+
+add_celix_container(pubsub_tcp_endpoint_tests
+        USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
+        LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_runner.cc
+        DIR ${CMAKE_CURRENT_BINARY_DIR}
+        PROPERTIES
+        LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
+        BUNDLES
+        Celix::shell
+        Celix::shell_tui
+        Celix::pubsub_serializer_json
+        Celix::pubsub_topology_manager
+        Celix::pubsub_admin_tcp
+        pubsub_loopback
+        pubsub_endpoint_sut
+        pubsub_endpoint_tst
+        )
+target_link_libraries(pubsub_tcp_endpoint_tests PRIVATE Celix::pubsub_api ${CPPUTEST_LIBRARIES} ${JANSSON_LIBRARIES} Celix::dfi)
+target_include_directories(pubsub_tcp_endpoint_tests PRIVATE ${CPPUTEST_INCLUDE_DIR})
+add_test(NAME pubsub_tcp_endpoint_tests COMMAND pubsub_tcp_endpoint_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_tcp_endpoint_tests,CONTAINER_LOC>)
+SETUP_TARGET_FOR_COVERAGE(pubsub_tcp_endpoint_tests_cov pubsub_tcp_endpoint_tests ${CMAKE_BINARY_DIR}/coverage/pubsub_tcp_endpoint_tests/pubsub_tcp_endpoint_tests ..)
 
 if (BUILD_PUBSUB_PSA_ZMQ)
     add_celix_container(pubsub_zmq_tests
@@ -77,14 +174,14 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_runner.cc
             DIR ${CMAKE_CURRENT_BINARY_DIR}
             PROPERTIES
-                LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
+            LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
             BUNDLES
-                Celix::pubsub_serializer_json
-                Celix::pubsub_topology_manager
-                Celix::pubsub_admin_zmq
-                pubsub_sut
-                pubsub_tst
-    )
+            Celix::pubsub_serializer_json
+            Celix::pubsub_topology_manager
+            Celix::pubsub_admin_zmq
+            pubsub_sut
+            pubsub_tst
+            )
     target_link_libraries(pubsub_zmq_tests PRIVATE Celix::pubsub_api ${CPPUTEST_LIBRARIES} ${JANSSON_LIBRARIES} Celix::dfi)
     target_include_directories(pubsub_zmq_tests PRIVATE ${CPPUTEST_INCLUDE_DIR})
     add_test(NAME pubsub_zmq_tests COMMAND pubsub_zmq_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_zmq_tests,CONTAINER_LOC>)
@@ -96,15 +193,15 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_runner.cc
             DIR ${CMAKE_CURRENT_BINARY_DIR}
             PROPERTIES
-                LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
-                PSA_ZMQ_ZEROCOPY_ENABLED=true
+            LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
+            PSA_ZMQ_ZEROCOPY_ENABLED=true
             BUNDLES
-                Celix::pubsub_serializer_json
-                Celix::pubsub_topology_manager
-                Celix::pubsub_admin_zmq
-                pubsub_sut
-                pubsub_tst
-    )
+            Celix::pubsub_serializer_json
+            Celix::pubsub_topology_manager
+            Celix::pubsub_admin_zmq
+            pubsub_sut
+            pubsub_tst
+            )
     target_link_libraries(pubsub_zmq_zerocopy_tests PRIVATE Celix::pubsub_api ${CPPUTEST_LIBRARIES} ${JANSSON_LIBRARIES} Celix::dfi)
     target_include_directories(pubsub_zmq_zerocopy_tests PRIVATE ${CPPUTEST_INCLUDE_DIR})
     add_test(NAME pubsub_zmq_zerocopy_tests COMMAND pubsub_zmq_zerocopy_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_zmq_zerocopy_tests,CONTAINER_LOC>)
