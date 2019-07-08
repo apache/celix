@@ -368,13 +368,13 @@ void pubsub_tcpTopicReceiver_connectTo(
 }
 
 void pubsub_tcpTopicReceiver_disconnectFrom(pubsub_tcp_topic_receiver_t *receiver, const char *url) {
-  L_DEBUG("[PSA ZMQ] TopicReceiver %s/%s disconnect from zmq url %s", receiver->scope, receiver->topic, url);
+  L_DEBUG("[PSA TCP] TopicReceiver %s/%s disconnect from tcp url %s", receiver->scope, receiver->topic, url);
 
   celixThreadMutex_lock(&receiver->requestedConnections.mutex);
   psa_tcp_requested_connection_entry_t *entry = hashMap_remove(receiver->requestedConnections.map, url);
   if (entry != NULL) {
     int rc = pubsub_tcpHandler_closeConnection(receiver->socketHandler, entry->url);
-    if (rc < 0) L_WARN("[PSA_ZMQ] Error disconnecting from zmq url %s. (%s)", url, strerror(errno));
+    if (rc < 0) L_WARN("[PSA_TCP] Error disconnecting from tcp url %s. (%s)", url, strerror(errno));
   }
   if (entry != NULL) {
     free(entry->url);
