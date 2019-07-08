@@ -304,6 +304,8 @@ void pubsub_tcpTopicReceiver_destroy(pubsub_tcp_topic_receiver_t *receiver) {
     celixThreadMutex_destroy(&receiver->requestedConnections.mutex);
     celixThreadMutex_destroy(&receiver->thread.mutex);
 
+    pubsub_tcpHandler_addMessageHandler(receiver->socketHandler, NULL, NULL);
+    pubsub_tcpHandler_addConnectionCallback(receiver->socketHandler, NULL, NULL, NULL);
     if ((receiver->socketHandler)&&(receiver->sharedSocketHandler == NULL)) {
       pubsub_tcpHandler_destroy(receiver->socketHandler);
       receiver->socketHandler = NULL;
@@ -708,7 +710,7 @@ static void psa_tcp_connectHandler(void *handle, const char *url, bool lock) {
 
 static void psa_tcp_disConnectHandler(void *handle, const char *url) {
   pubsub_tcp_topic_receiver_t *receiver = handle;
-  L_DEBUG("[PSA ZMQ] TopicReceiver %s/%s disconnect from tcp url %s", receiver->scope, receiver->topic, url);
+  L_DEBUG("[PSA TCP] TopicReceiver %s/%s disconnect from tcp url %s", receiver->scope, receiver->topic, url);
   celixThreadMutex_lock(&receiver->requestedConnections.mutex);
   psa_tcp_requested_connection_entry_t *entry = hashMap_remove(receiver->requestedConnections.map, url);
   if (entry != NULL) {

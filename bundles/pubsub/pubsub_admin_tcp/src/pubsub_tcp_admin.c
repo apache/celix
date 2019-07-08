@@ -161,8 +161,16 @@ void pubsub_tcpAdmin_destroy(pubsub_tcp_admin_t *psa) {
         return;
     }
 
+    celixThreadMutex_lock(&psa->endpointStore.mutex);
+    hash_map_iterator_t iter = hashMapIterator_construct(psa->endpointStore.map);
+    while (hashMapIterator_hasNext(&iter)) {
+      pubsub_tcpHandler_t* tcpHandler = hashMapIterator_nextValue(&iter);
+      pubsub_tcpHandler_destroy(tcpHandler);
+    }
+    celixThreadMutex_unlock(&psa->endpointStore.mutex);
+
     celixThreadMutex_lock(&psa->topicSenders.mutex);
-    hash_map_iterator_t iter = hashMapIterator_construct(psa->topicSenders.map);
+    iter = hashMapIterator_construct(psa->topicSenders.map);
     while (hashMapIterator_hasNext(&iter)) {
         pubsub_tcp_topic_sender_t *sender = hashMapIterator_nextValue(&iter);
         pubsub_tcpTopicSender_destroy(sender);
@@ -194,14 +202,6 @@ void pubsub_tcpAdmin_destroy(pubsub_tcp_admin_t *psa) {
     celixThreadMutex_unlock(&psa->serializers.mutex);
 
     //note assuming al psa register services and service tracker are removed.
-    celixThreadMutex_lock(&psa->endpointStore.mutex);
-    iter = hashMapIterator_construct(psa->endpointStore.map);
-    while (hashMapIterator_hasNext(&iter)) {
-      pubsub_tcpHandler_t* tcpHandler = hashMapIterator_nextValue(&iter);
-      pubsub_tcpHandler_destroy(tcpHandler);
-    }
-    celixThreadMutex_unlock(&psa->endpointStore.mutex);
-
     celixThreadMutex_destroy(&psa->endpointStore.mutex);
     hashMap_destroy(psa->endpointStore.map, true, false);
 
