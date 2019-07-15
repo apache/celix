@@ -236,6 +236,11 @@ void destroyServiceNode(service_tree_node_t *node, int *tree_item_count, int *tr
                 node->next->prev = node->prev;
             }
 
+            //Set new next pointer if a previous is present
+            if(node->prev != NULL) {
+                node->prev->next = node->next;
+            }
+
             free(node->svc_data->sub_uri);
             free(node->svc_data);
             free(node);
