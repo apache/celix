@@ -188,7 +188,7 @@ static void http_admin_stopBundle(void *data, const celix_bundle_t *bundle) {
 
     //Remove all aliases which are connected to this bundle
     unsigned int size = arrayList_size(act->aliasList);
-    for(unsigned int i = (size - 1); (i >= 0 && i < size); i--) {
+    for (unsigned int i = (size - 1); i < size; i--) {
         http_alias_t *alias = arrayList_get(act->aliasList, i);
         if(alias->bundle_id == bundle_id) {
             remove(alias->alias_path); //Delete alias in cache directory
@@ -282,7 +282,7 @@ static int http_admin_stop(http_admin_activator_t *act, celix_bundle_context_t *
 
     //Destroy alias map by removing symbolic links first.
     unsigned int size = arrayList_size(act->aliasList);
-    for(unsigned int i = (size - 1); (i >= 0 && i < size); i--) {
+    for (unsigned int i = (size - 1); i < size; i--) {
         http_alias_t *alias = arrayList_get(act->aliasList, i);
         remove(alias->alias_path); //Delete alias in cache directory
         free(alias->alias_path);
