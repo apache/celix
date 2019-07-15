@@ -89,7 +89,8 @@ void createAliasesSymlink(const char *aliases, const char *admin_root, const cha
             int i;
             char *alias_path;
             char *bnd_resource_path;
-            char *cwd = get_current_dir_name();
+            char cwdBuf[1024] = {0};
+            char *cwd = getcwd(cwdBuf, sizeof(cwdBuf));
 
             while(isspace(*token)) token++; //skip spaces at beginning
             for (i = (int)(strlen(token) - 1); (isspace(token[i])); i--); //skip spaces at end
@@ -126,7 +127,6 @@ void createAliasesSymlink(const char *aliases, const char *admin_root, const cha
             }
 
             free(bnd_resource_path);
-            free(cwd);
             token = strtok_r(NULL, ",", &save_ptr);
         }
         free(alias_cpy);
