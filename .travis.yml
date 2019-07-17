@@ -49,11 +49,11 @@ before_script:
     - tar -xzvf /tmp/cpputest.tar.gz -C /tmp
     - if [ "$CC" = "clang" ]; then export CXX="clang++"; fi && cd /tmp/cpputest-* && ./configure --prefix=/usr/local && make && sudo make install && cd -
     - cd /tmp/cpputest-* && ./configure --prefix=/usr/local && make && sudo make install && cd -
-    - wget https://github.com/zeromq/libzmq/releases/download/v4.2.1/zeromq-4.2.1.tar.gz -O /tmp/zeromq.tar.gz
+    - wget https://github.com/zeromq/libzmq/releases/download/v4.3.1/zeromq-4.3.1.tar.gz -O /tmp/zeromq.tar.gz
     - tar -xzvf /tmp/zeromq.tar.gz -C /tmp && cd /tmp/zeromq-* && mkdir build && cd build
     - if [ "$TRAVIS_OS_NAME" = "linux" ] &&  [ -z "$ANDROID" ]; then cmake -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_CURVE=ON .. && make && sudo make install; fi 
     - cd $TRAVIS_BUILD_DIR
-    - wget https://github.com/zeromq/czmq/releases/download/v4.0.2/czmq-4.0.2.tar.gz -O /tmp/czmq.tar.gz
+    - wget https://github.com/zeromq/czmq/releases/download/v4.2.0/czmq-4.2.0.tar.gz -O /tmp/czmq.tar.gz
     - tar -xzvf /tmp/czmq.tar.gz -C /tmp && cd /tmp/czmq-* && mkdir build && cd build
     - if [ "$TRAVIS_OS_NAME" = "linux" ] &&  [ -z "$ANDROID" ]; then cmake -DCMAKE_INSTALL_PREFIX=/usr/local .. && make && sudo make install; fi
     - cd $TRAVIS_BUILD_DIR
@@ -76,7 +76,8 @@ before_script:
         -DBUILD_REMOTE_SHELL=ON \
         -DBUILD_SHELL=ON \
         -DBUILD_SHELL_TUI=ON -DBUILD_DEVICE_ACCESS=ON \
-        -DBUILD_DEVICE_ACCESS_EXAMPLE=ON "
+        -DBUILD_DEVICE_ACCESS_EXAMPLE=ON \
+        -DBUILD_HTTP_ADMIN=ON "
     - export BUILD_OPTIONS_LINUX=" \
         -DBUILD_RSA_REMOTE_SERVICE_ADMIN_SHM=ON \
         -DBUILD_PUBSUB=ON \

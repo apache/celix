@@ -43,7 +43,7 @@
 #define PSTM_PSA_HANDLING_SLEEPTIME_IN_SECONDS       30L
 
 #ifndef UUID_STR_LEN
-#define UUID_STR_LEN	37
+#define UUID_STR_LEN    37
 #endif
 
 static void *pstm_psaHandlingThread(void *data);
@@ -214,8 +214,8 @@ void pubsub_topologyManager_psaAdded(void *handle, void *svc, const celix_proper
     if (needsRematchCount > 0) {
         logHelper_log(manager->loghelper, OSGI_LOGSERVICE_INFO,
                       "A PSA is added after at least one active publisher/provided. \
-				It is preferred that all PSA are started before publiser/subscriber are started!\n\
-				Current topic/sender count is %i", needsRematchCount);
+                It is preferred that all PSA are started before publiser/subscriber are started!\n\
+                Current topic/sender count is %i", needsRematchCount);
     }
 
 }

@@ -1,28 +1,29 @@
 /**
- *Licensed to the Apache Software Foundation (ASF) under one
- *or more contributor license agreements.  See the NOTICE file
- *distributed with this work for additional information
- *regarding copyright ownership.  The ASF licenses this file
- *to you under the Apache License, Version 2.0 (the
- *"License"); you may not use this file except in compliance
- *with the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- *Unless required by applicable law or agreed to in writing,
- *software distributed under the License is distributed on an
- *"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- *specific language governing permissions and limitations
- *under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 /*
  * publisher.c
  *
  *  \date       Oct 29, 2015
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
+ *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
+ *  \copyright  Apache License, Version 2.0
  */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -35,38 +36,38 @@
 #define SLEEPTIME 2000000
 
 struct phase3_cmp_struct {
-	celix_thread_t thread;
+    celix_thread_t thread;
     bool running;
-	double currentValue;
+    double currentValue;
     celix_array_list_t *phase2Services; //phase2_t *
 };
 
 static void *phase3_thread(void *data);
 
 phase3_cmp_t *phase3_create() {
-	phase3_cmp_t *cmp = calloc(1, sizeof(*cmp));
-	if (cmp != NULL) {
-		cmp->currentValue = 0.0;
+    phase3_cmp_t *cmp = calloc(1, sizeof(*cmp));
+    if (cmp != NULL) {
+        cmp->currentValue = 0.0;
         cmp->running = false;
         arrayList_create(&cmp->phase2Services);
-	}
-	return cmp;
+    }
+    return cmp;
 }
 
 int phase3_init(phase3_cmp_t *cmp) {
-	printf("init phase3\n");
+    printf("init phase3\n");
     return 0;
 }
 
 int phase3_start(phase3_cmp_t *cmp) {
-	printf("start phase3\n");
+    printf("start phase3\n");
     cmp->running = true;
     celixThread_create(&cmp->thread, NULL, phase3_thread, cmp);
     return 0;
 }
 
 int phase3_stop(phase3_cmp_t *cmp) {
-	printf("stop phase3\n");
+    printf("stop phase3\n");
     cmp->running = false;
     celixThread_kill(cmp->thread, SIGUSR1);
     celixThread_join(cmp->thread, NULL);
@@ -81,7 +82,7 @@ int phase3_deinit(phase3_cmp_t *cmp) {
 void phase3_destroy(phase3_cmp_t *cmp) {
     arrayList_destroy(cmp->phase2Services);
     free(cmp);
-	printf("destroy phase3\n");
+    printf("destroy phase3\n");
 }
 
 int phase3_addPhase2(phase3_cmp_t *cmp, const phase2_t* phase2) {

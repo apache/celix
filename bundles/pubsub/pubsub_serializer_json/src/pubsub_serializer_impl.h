@@ -27,7 +27,7 @@
 
 #include "pubsub_serializer.h"
 
-#define PUBSUB_JSON_SERIALIZER_TYPE	"json"
+#define PUBSUB_JSON_SERIALIZER_TYPE "json"
 
 typedef struct pubsub_json_serializer pubsub_json_serializer_t;
 

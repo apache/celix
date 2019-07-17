@@ -236,7 +236,7 @@ void pubsub_nanomsg_admin::removeSerializerSvc(void */*svc*/, const celix_proper
         auto &entry = kvsm->second;
         {
             std::lock_guard<std::mutex> senderLock(topicSenders.mutex);
-            for(auto it = topicSenders.map.begin(); it != topicSenders.map.end(); /*nothing*/) {
+            for (auto it = topicSenders.map.begin(); it != topicSenders.map.end(); /*nothing*/) {
                 auto &sender = it->second;
                 if (entry.svcId == sender.getSerializerSvcId()) {
                     it = topicSenders.map.erase(it);

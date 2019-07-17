@@ -17,18 +17,18 @@
 
 if (BUILD_ZMQ_SECURITY)
 
-	find_package(ZMQ REQUIRED)
-	find_package(CZMQ REQUIRED)
-	find_package(OpenSSL 1.1.0 REQUIRED)
-	
-	include_directories("${ZMQ_INCLUDE_DIR}")
-	include_directories("${CZMQ_INCLUDE_DIR}")
-	include_directories("${OPENSSL_INCLUDE_DIR}")
-	
-	add_executable(makecert makecert.c)
-	target_link_libraries(makecert ${CZMQ_LIBRARIES})
-	
-	add_executable(ed_file ed_file.c)
-	target_link_libraries(ed_file ${ZMQ_LIBRARIES} ${CZMQ_LIBRARIES} ${OPENSSL_CRYPTO_LIBRARY})
+    find_package(ZMQ REQUIRED)
+    find_package(CZMQ REQUIRED)
+    find_package(OpenSSL 1.1.0 REQUIRED)
+    
+    include_directories("${ZMQ_INCLUDE_DIR}")
+    include_directories("${CZMQ_INCLUDE_DIR}")
+    include_directories("${OPENSSL_INCLUDE_DIR}")
+    
+    add_executable(makecert makecert.c)
+    target_link_libraries(makecert ${CZMQ_LIBRARIES})
+    
+    add_executable(ed_file ed_file.c)
+    target_link_libraries(ed_file ${ZMQ_LIBRARIES} ${CZMQ_LIBRARIES} ${OPENSSL_CRYPTO_LIBRARY})
 
 endif()

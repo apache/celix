@@ -20,7 +20,7 @@
 #ifndef PUBSUB_CONSTANTS_H_
 #define PUBSUB_CONSTANTS_H_
 
-#define PUBSUB_ADMIN_TYPE_KEY	   "pubsub.config"
+#define PUBSUB_ADMIN_TYPE_KEY      "pubsub.config"
 #define PUBSUB_SERIALIZER_TYPE_KEY "pubsub.serializer"
 
 /**

@@ -15,23 +15,24 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(civetweb_static STATIC
-        civetweb/civetweb.c
-)
-target_include_directories(civetweb_static PUBLIC SYSTEM civetweb)
-target_compile_options(civetweb_static PRIVATE -w -DUSE_WEBSOCKET)
-
 add_celix_bundle(embedded_civetweb
     VERSION 1.0.0
     SOURCES src/bundle_activator.c
 )
-target_link_libraries(embedded_civetweb PRIVATE Celix::shell_api)
-celix_bundle_private_libs(embedded_civetweb civetweb_static)
+target_link_libraries(embedded_civetweb PRIVATE Celix::shell_api Celix::http_admin_api)
+celix_bundle_private_libs(embedded_civetweb civetweb_shared)
 celix_bundle_add_dir(embedded_civetweb resources)
+celix_bundle_headers(embedded_civetweb
+        "X-Web-Resource: /shellsocket$<SEMICOLON>/resources"
+)
 
 add_celix_container(civetweb_example
     BUNDLES
         Celix::shell
         Celix::shell_tui
+        Celix::http_admin_service
         embedded_civetweb
+    PROPERTIES
+        USE_WEBSOCKETS=true
+        LISTENING_PORTS=8081
 )

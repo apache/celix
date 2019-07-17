@@ -19,31 +19,31 @@ add_celix_bundle(celix_pubsub_poi_publisher
     SYMBOLIC_NAME "apache_celix_pubsub_poi_publisher"
     VERSION "1.0.0"
     SOURCES 
-    	private/src/ps_pub_activator.c
-    	private/src/pubsub_publisher.c
+        private/src/ps_pub_activator.c
+        private/src/pubsub_publisher.c
 )
 
 target_link_libraries(celix_pubsub_poi_publisher PRIVATE Celix::framework Celix::pubsub_api)
 target_include_directories(celix_pubsub_poi_publisher PRIVATE private/include)
 
 celix_bundle_files(celix_pubsub_poi_publisher
-		${PROJECT_SOURCE_DIR}/bundles/pubsub/examples/pubsub/msg_descriptors/msg_poi1.descriptor
-		${PROJECT_SOURCE_DIR}/bundles/pubsub/examples/pubsub/msg_descriptors/msg_poi2.descriptor
+        ${PROJECT_SOURCE_DIR}/bundles/pubsub/examples/pubsub/msg_descriptors/msg_poi1.descriptor
+        ${PROJECT_SOURCE_DIR}/bundles/pubsub/examples/pubsub/msg_descriptors/msg_poi2.descriptor
     DESTINATION "META-INF/descriptors"
 )
 
 celix_bundle_files(celix_pubsub_poi_publisher
-		${PROJECT_SOURCE_DIR}/bundles/pubsub/examples/pubsub/msg_descriptors/poi1.properties
-		${PROJECT_SOURCE_DIR}/bundles/pubsub/examples/pubsub/msg_descriptors/poi2.properties
+        ${PROJECT_SOURCE_DIR}/bundles/pubsub/examples/pubsub/msg_descriptors/poi1.properties
+        ${PROJECT_SOURCE_DIR}/bundles/pubsub/examples/pubsub/msg_descriptors/poi2.properties
     DESTINATION "META-INF/topics/pub"
 )
 
 celix_bundle_files(celix_pubsub_poi_publisher
-		${PROJECT_SOURCE_DIR}/bundles/pubsub/examples/keys/publisher
+        ${PROJECT_SOURCE_DIR}/bundles/pubsub/examples/keys/publisher
     DESTINATION "META-INF/keys"
 )
 
 celix_bundle_files(celix_pubsub_poi_publisher
-		${PROJECT_SOURCE_DIR}/bundles/pubsub/examples/keys/subscriber/public
+        ${PROJECT_SOURCE_DIR}/bundles/pubsub/examples/keys/subscriber/public
     DESTINATION "META-INF/keys/subscriber"
 )
