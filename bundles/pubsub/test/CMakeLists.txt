@@ -149,7 +149,11 @@ SETUP_TARGET_FOR_COVERAGE(pubsub_tcp_tests_cov pubsub_tcp_tests ${CMAKE_BINARY_D
 
 add_celix_container(pubsub_tcp_endpoint_tests
         USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
+<<<<<<< HEAD
         LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_endpoint_runner.cc
+=======
+        LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_runner.cc
+>>>>>>> develop
         DIR ${CMAKE_CURRENT_BINARY_DIR}
         PROPERTIES
         LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true

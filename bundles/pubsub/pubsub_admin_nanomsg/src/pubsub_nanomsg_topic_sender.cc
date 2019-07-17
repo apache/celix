@@ -64,7 +64,7 @@ pubsub::nanomsg::pubsub_nanomsg_topic_sender::pubsub_nanomsg_topic_sender(celix_
     }
 
     int rv = -1, retry=0;
-    while(rv == -1 && retry < NANOMSG_BIND_MAX_RETRY ) {
+    while (rv == -1 && retry < NANOMSG_BIND_MAX_RETRY ) {
         /* Randomized part due to same bundle publishing on different topics */
         unsigned int port = rand_range(_basePort,_maxPort);
         std::stringstream _url;
@@ -252,14 +252,14 @@ static void delay_first_send_for_late_joiners(celix::pubsub::nanomsg::LogHelper&
 
     static bool firstSend = true;
 
-    if(firstSend){
+    if (firstSend) {
         logHelper.INFO("PSA_UDP_MC_TP: Delaying first send for late joiners...\n");
         sleep(FIRST_SEND_DELAY_IN_SECONDS);
         firstSend = false;
     }
 }
 
-static unsigned int rand_range(unsigned int min, unsigned int max){
+static unsigned int rand_range(unsigned int min, unsigned int max) {
     double scaled = ((double)random())/((double)RAND_MAX);
     return (unsigned int)((max-min+1)*scaled + min);
 }

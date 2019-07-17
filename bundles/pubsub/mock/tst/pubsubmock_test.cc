@@ -35,8 +35,8 @@ static void* mockHandle = (void*)0x42;
 
 TEST_GROUP(pubsubmock) {
     void setup(void) {
-    	//setup mock
-    	pubsub_publisherMock_init(&mockSrv, mockHandle);
+        //setup mock
+        pubsub_publisherMock_init(&mockSrv, mockHandle);
     }
 
     void teardown() {
@@ -51,8 +51,8 @@ TEST(pubsubmock, publishermock) {
 
     mock(PUBSUB_PUBLISHERMOCK_SCOPE).expectOneCall(PUBSUB_PUBLISHERMOCK_LOCAL_MSG_TYPE_ID_FOR_MSG_TYPE_METHOD)
         .withParameter("handle", mockHandle)
-	.withParameter("msgType", mockFqn)
-	.withOutputParameterReturning("msgTypeId", &mockOutputTypeId, sizeof(mockOutputTypeId));
+    .withParameter("msgType", mockFqn)
+    .withOutputParameterReturning("msgTypeId", &mockOutputTypeId, sizeof(mockOutputTypeId));
 
     mock(PUBSUB_PUBLISHERMOCK_SCOPE).expectOneCall(PUBSUB_PUBLISHERMOCK_SEND_METHOD)
         .withParameter("handle", mockHandle)

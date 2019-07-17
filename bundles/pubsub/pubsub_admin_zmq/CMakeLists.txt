@@ -17,54 +17,54 @@
 
 if (BUILD_PUBSUB_PSA_ZMQ)
 
-	find_package(ZMQ REQUIRED)
-	find_package(CZMQ REQUIRED)
-	find_package(Jansson REQUIRED)
-	find_package(UUID REQUIRED)
+    find_package(ZMQ REQUIRED)
+    find_package(CZMQ REQUIRED)
+    find_package(Jansson REQUIRED)
+    find_package(UUID REQUIRED)
 
-	if(NOT UUID_LIBRARY)
-		#i.e. not found for OSX
-		set(UUID_LIBRARY "")
-		set(UUID_INCLUDE_DIRS "")
-	endif()
+    if(NOT UUID_LIBRARY)
+        #i.e. not found for OSX
+        set(UUID_LIBRARY "")
+        set(UUID_INCLUDE_DIRS "")
+    endif()
 
-	if (BUILD_ZMQ_SECURITY)
-		add_definitions(-DBUILD_WITH_ZMQ_SECURITY=1)
+    if (BUILD_ZMQ_SECURITY)
+        add_definitions(-DBUILD_WITH_ZMQ_SECURITY=1)
 
-		find_package(OpenSSL 1.1.0 REQUIRED)
-		include_directories("${OPENSSL_INCLUDE_DIR}")
+        find_package(OpenSSL 1.1.0 REQUIRED)
+        include_directories("${OPENSSL_INCLUDE_DIR}")
 
-		set (ZMQ_CRYPTO_C "src/zmq_crypto.c")
-	endif()
+        set (ZMQ_CRYPTO_C "src/zmq_crypto.c")
+    endif()
 
-	add_celix_bundle(celix_pubsub_admin_zmq
-		BUNDLE_SYMBOLICNAME "apache_celix_pubsub_admin_zmq"
-		VERSION "1.0.0"
-		GROUP "Celix/PubSub"
-		SOURCES
-			src/psa_activator.c
-			src/pubsub_zmq_admin.c
-			src/pubsub_zmq_topic_sender.c
-			src/pubsub_zmq_topic_receiver.c
-			src/pubsub_zmq_common.c
-			${ZMQ_CRYPTO_C}
-	)
+    add_celix_bundle(celix_pubsub_admin_zmq
+        BUNDLE_SYMBOLICNAME "apache_celix_pubsub_admin_zmq"
+        VERSION "1.0.0"
+        GROUP "Celix/PubSub"
+        SOURCES
+            src/psa_activator.c
+            src/pubsub_zmq_admin.c
+            src/pubsub_zmq_topic_sender.c
+            src/pubsub_zmq_topic_receiver.c
+            src/pubsub_zmq_common.c
+            ${ZMQ_CRYPTO_C}
+    )
 
-	set_target_properties(celix_pubsub_admin_zmq PROPERTIES INSTALL_RPATH "$ORIGIN")
-	target_link_libraries(celix_pubsub_admin_zmq PRIVATE
-			Celix::pubsub_spi
-			Celix::framework Celix::dfi Celix::log_helper Celix::utils
-			${ZMQ_LIBRARIES} ${CZMQ_LIBRARIES} ${OPENSSL_CRYPTO_LIBRARY}
-	)
-	target_include_directories(celix_pubsub_admin_zmq PRIVATE
-		${ZMQ_INCLUDE_DIR}
-		${CZMQ_INCLUDE_DIR}
-		${JANSSON_INCLUDE_DIR}
-		${UUID_INCLUDE_DIRS}
-		src
-	)
+    set_target_properties(celix_pubsub_admin_zmq PROPERTIES INSTALL_RPATH "$ORIGIN")
+    target_link_libraries(celix_pubsub_admin_zmq PRIVATE
+            Celix::pubsub_spi
+            Celix::framework Celix::dfi Celix::log_helper Celix::utils
+            ${ZMQ_LIBRARIES} ${CZMQ_LIBRARIES} ${OPENSSL_CRYPTO_LIBRARY}
+    )
+    target_include_directories(celix_pubsub_admin_zmq PRIVATE
+        ${ZMQ_INCLUDE_DIR}
+        ${CZMQ_INCLUDE_DIR}
+        ${JANSSON_INCLUDE_DIR}
+        ${UUID_INCLUDE_DIRS}
+        src
+    )
 
-	install_celix_bundle(celix_pubsub_admin_zmq EXPORT celix COMPONENT pubsub)
-	target_link_libraries(celix_pubsub_admin_zmq PRIVATE Celix::shell_api)
-	add_library(Celix::pubsub_admin_zmq ALIAS celix_pubsub_admin_zmq)
+    install_celix_bundle(celix_pubsub_admin_zmq EXPORT celix COMPONENT pubsub)
+    target_link_libraries(celix_pubsub_admin_zmq PRIVATE Celix::shell_api)
+    add_library(Celix::pubsub_admin_zmq ALIAS celix_pubsub_admin_zmq)
 endif()

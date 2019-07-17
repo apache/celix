@@ -20,8 +20,8 @@
  * zmq_crypto.h
  *
  *  \date       Dec 2, 2016
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
+ *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
+ *  \copyright  Apache License, Version 2.0
  */
 
 #ifndef ZMQ_CRYPTO_H_

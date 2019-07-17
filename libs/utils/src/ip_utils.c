@@ -20,8 +20,8 @@
  * ip_utils.c
  *
  *  \date       Jun 24, 2019
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
+ *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
+ *  \copyright  Apache License, Version 2.0
  */
 
 #include "ip_utils.h"

@@ -38,7 +38,7 @@
 #define PSA_ZMQ_RECV_TIMEOUT 1000
 
 #ifndef UUID_STR_LEN
-#define UUID_STR_LEN	37
+#define UUID_STR_LEN 37
 #endif
 
 
@@ -145,7 +145,7 @@ pubsub_zmq_topic_receiver_t* pubsub_zmqTopicReceiver_create(celix_bundle_context
 
 #ifdef BUILD_WITH_ZMQ_SECURITY
     char* keys_bundle_dir = pubsub_getKeysBundleDir(bundle_context);
-    if (keys_bundle_dir == NULL){
+    if (keys_bundle_dir == NULL) {
         return CELIX_SERVICE_EXCEPTION;
     }
 
@@ -166,13 +166,13 @@ pubsub_zmq_topic_receiver_t* pubsub_zmqTopicReceiver_create(celix_bundle_context
     printf("PSA_ZMQ_PSA_ZMQ_TS: Loading publisher key '%s'\n", pub_cert_path);
 
     zcert_t* sub_cert = get_zcert_from_encoded_file((char *) keys_file_path, (char *) keys_file_name, sub_cert_path);
-    if (sub_cert == NULL){
+    if (sub_cert == NULL) {
         printf("PSA_ZMQ_PSA_ZMQ_TS: Cannot load key '%s'\n", sub_cert_path);
         return CELIX_SERVICE_EXCEPTION;
     }
 
     zcert_t* pub_cert = zcert_load(pub_cert_path);
-    if (pub_cert == NULL){
+    if (pub_cert == NULL) {
         zcert_destroy(&sub_cert);
         printf("PSA_ZMQ_PSA_ZMQ_TS: Cannot load key '%s'\n", pub_cert_path);
         return CELIX_SERVICE_EXCEPTION;
@@ -586,7 +586,7 @@ static void* psa_zmq_recvThread(void * data) {
         zmsg_t *zmsg = zmsg_recv(receiver->zmqSock);
         if (zmsg != NULL) {
             if (zmsg_size(zmsg) != 3) {
-                L_WARN("[PSA_ZMQ_TR] Always expecting 2 frames per zmsg (header + payload), got %i frames", (int)zmsg_size(zmsg));
+                L_WARN("[PSA_ZMQ_TR] Always expecting 3 frames per zmsg (filter + header + payload), got %i frames", (int)zmsg_size(zmsg));
             } else {
                 zframe_t *filter = zmsg_pop(zmsg); //char[5] filter
                 zframe_t *header = zmsg_pop(zmsg); //pubsub_zmq_msg_header_t
@@ -665,7 +665,7 @@ pubsub_admin_receiver_metrics_t* pubsub_zmqTopicReceiver_metrics(pubsub_zmq_topi
                 psa_zmq_subscriber_metrics_entry_t *metrics = hashMapIterator_nextValue(&iter3);
                 result->msgTypes[i].typeId = metrics->msgTypeId;
                 pubsub_msg_serializer_t *msgSer = hashMap_get(entry->msgTypes, (void*)(uintptr_t)metrics->msgTypeId);
-		if (msgSer) {
+                if (msgSer) {
                     snprintf(result->msgTypes[i].typeFqn, PUBSUB_AMDIN_METRICS_NAME_MAX, "%s", msgSer->msgName);
                     uuid_copy(result->msgTypes[i].origins[k].originUUID, metrics->origin);
                     result->msgTypes[i].origins[k].nrOfMessagesReceived = metrics->nrOfMessagesReceived;
@@ -700,7 +700,7 @@ static void psa_zmq_connectToAllRequestedConnections(pubsub_zmq_topic_receiver_t
         hash_map_iterator_t iter = hashMapIterator_construct(receiver->requestedConnections.map);
         while (hashMapIterator_hasNext(&iter)) {
             psa_zmq_requested_connection_entry_t *entry = hashMapIterator_nextValue(&iter);
-            if (!entry->connected){
+            if (!entry->connected) {
                 if (zmq_connect(receiver->zmqSock, entry->url) == 0) {
                     entry->connected = true;
                 } else {

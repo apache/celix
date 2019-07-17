@@ -243,7 +243,7 @@ void pubsub_zmqAdmin_destroy(pubsub_zmq_admin_t *psa) {
     celixThreadMutex_destroy(&psa->serializers.mutex);
     hashMap_destroy(psa->serializers.map, false, false);
 
-    if (psa->zmq_auth != NULL){
+    if (psa->zmq_auth != NULL) {
         zactor_destroy(&psa->zmq_auth);
     }
 

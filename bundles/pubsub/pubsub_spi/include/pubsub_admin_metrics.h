@@ -24,59 +24,59 @@
 #include <sys/time.h>
 #include "celix_array_list.h"
 
-#define PUBSUB_ADMIN_METRICS_SERVICE_NAME	"pubsub_admin_metrics [version 1.0]"
+#define PUBSUB_ADMIN_METRICS_SERVICE_NAME   "pubsub_admin_metrics [version 1.0]"
 
-#define PUBSUB_AMDIN_METRICS_NAME_MAX   1024
+#define PUBSUB_AMDIN_METRICS_NAME_MAX       1024
 
 typedef struct pubsub_admin_sender_msg_type_metrics {
-	long bndId;
-	char typeFqn[PUBSUB_AMDIN_METRICS_NAME_MAX];
-	unsigned int typeId;
-	unsigned long nrOfMessagesSend;
-	unsigned long nrOfMessagesSendFailed;
-	unsigned long nrOfSerializationErrors;
-	struct timespec lastMessageSend;
-	double averageTimeBetweenMessagesInSeconds;
-	double averageSerializationTimeInSeconds;
+    long bndId;
+    char typeFqn[PUBSUB_AMDIN_METRICS_NAME_MAX];
+    unsigned int typeId;
+    unsigned long nrOfMessagesSend;
+    unsigned long nrOfMessagesSendFailed;
+    unsigned long nrOfSerializationErrors;
+    struct timespec lastMessageSend;
+    double averageTimeBetweenMessagesInSeconds;
+    double averageSerializationTimeInSeconds;
 } pubsub_admin_sender_msg_type_metrics_t;
 
 typedef struct pubsub_admin_sender_metrics {
-	char scope[PUBSUB_AMDIN_METRICS_NAME_MAX];
-	char topic[PUBSUB_AMDIN_METRICS_NAME_MAX];
-	unsigned long nrOfUnknownMessagesRetrieved;
-	unsigned int nrOfmsgMetrics;
-	pubsub_admin_sender_msg_type_metrics_t *msgMetrics; //size = nrOfMessageTypes
+    char scope[PUBSUB_AMDIN_METRICS_NAME_MAX];
+    char topic[PUBSUB_AMDIN_METRICS_NAME_MAX];
+    unsigned long nrOfUnknownMessagesRetrieved;
+    unsigned int nrOfmsgMetrics;
+    pubsub_admin_sender_msg_type_metrics_t *msgMetrics; //size = nrOfMessageTypes
 } pubsub_admin_sender_metrics_t;
 
 typedef struct pubsub_admin_receiver_metrics {
-	char scope[PUBSUB_AMDIN_METRICS_NAME_MAX];
-	char topic[PUBSUB_AMDIN_METRICS_NAME_MAX];
-	unsigned long nrOfMsgTypes;
-	struct {
-		unsigned int typeId;
-		char typeFqn[PUBSUB_AMDIN_METRICS_NAME_MAX];
-		int nrOfOrigins;
-		struct {
-			uuid_t originUUID;
-			unsigned long nrOfMessagesReceived;
-			unsigned long nrOfSerializationErrors;
-			unsigned long nrOfMissingSeqNumbers;
-			struct timespec lastMessageReceived;
-			double averageTimeBetweenMessagesInSeconds;
-			double averageSerializationTimeInSeconds;
-			double averageDelayInSeconds;
-			double minDelayInSeconds;
-			double maxDelayInSeconds;
-		} *origins;
-	} *msgTypes;
+    char scope[PUBSUB_AMDIN_METRICS_NAME_MAX];
+    char topic[PUBSUB_AMDIN_METRICS_NAME_MAX];
+    unsigned long nrOfMsgTypes;
+    struct {
+        unsigned int typeId;
+        char typeFqn[PUBSUB_AMDIN_METRICS_NAME_MAX];
+        int nrOfOrigins;
+        struct {
+            uuid_t originUUID;
+            unsigned long nrOfMessagesReceived;
+            unsigned long nrOfSerializationErrors;
+            unsigned long nrOfMissingSeqNumbers;
+            struct timespec lastMessageReceived;
+            double averageTimeBetweenMessagesInSeconds;
+            double averageSerializationTimeInSeconds;
+            double averageDelayInSeconds;
+            double minDelayInSeconds;
+            double maxDelayInSeconds;
+        } *origins;
+    } *msgTypes;
 } pubsub_admin_receiver_metrics_t;
 
 
 typedef struct pubsub_admin_metrics {
-	char psaType[PUBSUB_AMDIN_METRICS_NAME_MAX];
+    char psaType[PUBSUB_AMDIN_METRICS_NAME_MAX];
 
-	celix_array_list_t *senders; //entry type = pubsub_admin_sender_metrics_t
-	celix_array_list_t *receivers;//entry type = pubsub_admin_receiver_metrics_t
+    celix_array_list_t *senders; //entry type = pubsub_admin_sender_metrics_t
+    celix_array_list_t *receivers;//entry type = pubsub_admin_receiver_metrics_t
 
 } pubsub_admin_metrics_t;
 
@@ -86,15 +86,15 @@ typedef struct pubsub_admin_metrics {
  * Expected service properties: PUBSUB_ADMIN_SERVICE_TYPE
  */
 struct pubsub_admin_metrics_service {
-	void *handle;
+    void *handle;
 
-	/**
-	 * Creates a metrics struct for the PSA. The caller is owner of the data and
-	 * should use pubsub_freePubSubAdminMetrics (part of pubsub_spi) to release the data.
-	 * @param handle
-	 * @return The metrics or NULL if no metrics can be created.
-	 */
-	pubsub_admin_metrics_t* (*metrics)(void *handle);
+    /**
+     * Creates a metrics struct for the PSA. The caller is owner of the data and
+     * should use pubsub_freePubSubAdminMetrics (part of pubsub_spi) to release the data.
+     * @param handle
+     * @return The metrics or NULL if no metrics can be created.
+     */
+    pubsub_admin_metrics_t* (*metrics)(void *handle);
 };
 
 void pubsub_freePubSubAdminMetrics(pubsub_admin_metrics_t *metrics);

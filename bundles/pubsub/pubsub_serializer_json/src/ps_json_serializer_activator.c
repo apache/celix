@@ -24,36 +24,36 @@
 #include "pubsub_serializer_impl.h"
 
 typedef struct psjs_activator {
-	pubsub_json_serializer_t* serializer;
+    pubsub_json_serializer_t* serializer;
 
-	pubsub_serializer_service_t serializerSvc;
-	long serializerSvcId;
+    pubsub_serializer_service_t serializerSvc;
+    long serializerSvcId;
 } psjs_activator_t;
 
 static int psjs_start(psjs_activator_t *act, celix_bundle_context_t *ctx) {
-	act->serializerSvcId = -1L;
+    act->serializerSvcId = -1L;
 
-	celix_status_t status = pubsubSerializer_create(ctx, &(act->serializer));
-	if (status == CELIX_SUCCESS) {
-		act->serializerSvc.handle = act->serializer;
+    celix_status_t status = pubsubSerializer_create(ctx, &(act->serializer));
+    if (status == CELIX_SUCCESS) {
+        act->serializerSvc.handle = act->serializer;
 
-		act->serializerSvc.createSerializerMap = pubsubSerializer_createSerializerMap;
-		act->serializerSvc.destroySerializerMap = pubsubSerializer_destroySerializerMap;
+        act->serializerSvc.createSerializerMap = pubsubSerializer_createSerializerMap;
+        act->serializerSvc.destroySerializerMap = pubsubSerializer_destroySerializerMap;
 
-		/* Set serializer type */
-		celix_properties_t *props = celix_properties_create();
-		celix_properties_set(props, PUBSUB_SERIALIZER_TYPE_KEY, PUBSUB_JSON_SERIALIZER_TYPE);
+        /* Set serializer type */
+        celix_properties_t *props = celix_properties_create();
+        celix_properties_set(props, PUBSUB_SERIALIZER_TYPE_KEY, PUBSUB_JSON_SERIALIZER_TYPE);
 
-		act->serializerSvcId = celix_bundleContext_registerService(ctx, &act->serializerSvc, PUBSUB_SERIALIZER_SERVICE_NAME, props);
-	}
-	return status;
+        act->serializerSvcId = celix_bundleContext_registerService(ctx, &act->serializerSvc, PUBSUB_SERIALIZER_SERVICE_NAME, props);
+    }
+    return status;
 }
 
 static int psjs_stop(psjs_activator_t *act, celix_bundle_context_t *ctx) {
-	celix_bundleContext_unregisterService(ctx, act->serializerSvcId);
-	act->serializerSvcId = -1L;
-	pubsubSerializer_destroy(act->serializer);
-	return CELIX_SUCCESS;
+    celix_bundleContext_unregisterService(ctx, act->serializerSvcId);
+    act->serializerSvcId = -1L;
+    pubsubSerializer_destroy(act->serializer);
+    return CELIX_SUCCESS;
 }
 
 CELIX_GEN_BUNDLE_ACTIVATOR(psjs_activator_t, psjs_start, psjs_stop)

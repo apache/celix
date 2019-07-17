@@ -38,7 +38,7 @@ bool psa_zmq_checkVersion(version_pt msgVersion, const pubsub_zmq_msg_header_t *
     if (msgVersion!=NULL) {
         version_getMajor(msgVersion,&major);
         version_getMinor(msgVersion,&minor);
-        if(hdr->major==((unsigned char)major)){ /* Different major means incompatible */
+        if (hdr->major==((unsigned char)major)) { /* Different major means incompatible */
             check = (hdr->minor>=((unsigned char)minor)); /* Compatible only if the provider has a minor equals or greater (means compatible update) */
         }
     }

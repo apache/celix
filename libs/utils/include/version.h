@@ -1,27 +1,27 @@
 /**
- *Licensed to the Apache Software Foundation (ASF) under one
- *or more contributor license agreements.  See the NOTICE file
- *distributed with this work for additional information
- *regarding copyright ownership.  The ASF licenses this file
- *to you under the Apache License, Version 2.0 (the
- *"License"); you may not use this file except in compliance
- *with the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- *Unless required by applicable law or agreed to in writing,
- *software distributed under the License is distributed on an
- *"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- *specific language governing permissions and limitations
- *under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 /*
  * version.h
  *
  *  \date       Jul 12, 2010
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
+ *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
+ *  \copyright  Apache License, Version 2.0
  */
 
 #ifndef VERSION_H_
@@ -50,10 +50,10 @@ typedef struct version *version_pt;
  *        the empty string.
  * @param version The created version_pt
  * @return Status code indication failure or success:
- * 		- CELIX_SUCCESS when no errors are encountered.
- * 		- CELIX_ENOMEM If allocating memory for <code>version</code> failed.
- * 		- CELIX_ILLEGAL_ARGUMENT If the numerical components are negative
- * 		  or the qualifier string is invalid.
+ *         - CELIX_SUCCESS when no errors are encountered.
+ *         - CELIX_ENOMEM If allocating memory for <code>version</code> failed.
+ *         - CELIX_ILLEGAL_ARGUMENT If the numerical components are negative
+ *           or the qualifier string is invalid.
  */
 celix_status_t version_createVersion(int major, int minor, int micro, char *qualifier, version_pt *version);
 
@@ -65,10 +65,10 @@ celix_status_t version_destroy(version_pt version);
  * @param version The version to clone
  * @param clone The cloned version
  * @return Status code indication failure or success:
- * 		- CELIX_SUCCESS when no errors are encountered.
- * 		- CELIX_ENOMEM If allocating memory for <code>version</code> failed.
- * 		- CELIX_ILLEGAL_ARGUMENT If the numerical components are negative
- * 		  or the qualifier string is invalid.
+ *         - CELIX_SUCCESS when no errors are encountered.
+ *         - CELIX_ENOMEM If allocating memory for <code>version</code> failed.
+ *         - CELIX_ILLEGAL_ARGUMENT If the numerical components are negative
+ *           or the qualifier string is invalid.
  */
 celix_status_t version_clone(version_pt version, version_pt *clone);
 
@@ -93,10 +93,10 @@ celix_status_t version_clone(version_pt version, version_pt *clone);
  * @param versionStr String representation of the version identifier.
  * @param version The created version_pt
  * @return Status code indication failure or success:
- * 		- CELIX_SUCCESS when no errors are encountered.
- * 		- CELIX_ENOMEM If allocating memory for <code>version</code> failed.
- * 		- CELIX_ILLEGAL_ARGUMENT If the numerical components are negative,
- * 		  	the qualifier string is invalid or <code>versionStr</code> is improperly formatted.
+ *         - CELIX_SUCCESS when no errors are encountered.
+ *         - CELIX_ENOMEM If allocating memory for <code>version</code> failed.
+ *         - CELIX_ILLEGAL_ARGUMENT If the numerical components are negative,
+ *               the qualifier string is invalid or <code>versionStr</code> is improperly formatted.
  */
 celix_status_t version_createVersionFromString(const char *versionStr, version_pt *version);
 
@@ -105,10 +105,10 @@ celix_status_t version_createVersionFromString(const char *versionStr, version_p
  *
  * @param version The created version_pt
  * @return Status code indication failure or success:
- * 		- CELIX_SUCCESS when no errors are encountered.
- * 		- CELIX_ENOMEM If allocating memory for <code>version</code> failed.
- * 		- CELIX_ILLEGAL_ARGUMENT If the numerical components are negative,
- * 		  	the qualifier string is invalid or <code>versionStr</code> is improperly formatted.
+ *         - CELIX_SUCCESS when no errors are encountered.
+ *         - CELIX_ENOMEM If allocating memory for <code>version</code> failed.
+ *         - CELIX_ILLEGAL_ARGUMENT If the numerical components are negative,
+ *               the qualifier string is invalid or <code>versionStr</code> is improperly formatted.
  */
 celix_status_t version_createEmptyVersion(version_pt *version);
 
@@ -143,7 +143,7 @@ celix_status_t version_getQualifier(version_pt version, const char **qualifier);
  * @param result A negative integer, zero, or a positive integer if <code>version</code> is
  *         less than, equal to, or greater than the <code>compare</code>.
  * @return Status code indication failure or success:
- * 		- CELIX_SUCCESS when no errors are encountered.
+ *         - CELIX_SUCCESS when no errors are encountered.
  */
 celix_status_t version_compareTo(version_pt version, version_pt compare, int *result);
 
@@ -159,7 +159,7 @@ celix_status_t version_compareTo(version_pt version, version_pt compare, int *re
  * @param version The <code>version_pt</code> to get the string representation from.
  * @param string Pointer to the string (char *) in which the result will be placed.
  * @return Status code indication failure or success:
- * 		- CELIX_SUCCESS when no errors are encountered.
+ *         - CELIX_SUCCESS when no errors are encountered.
  */
 celix_status_t version_toString(version_pt version, char **string);
 
@@ -175,7 +175,7 @@ celix_status_t version_toString(version_pt version, char **string);
  * @param version The reference provider <code>version_pt</code> .
  * @param Boolean indicating if the versions are compatible
  * @return Status code indication failure or success:
- * 		- CELIX_SUCCESS when no errors are encountered.
+ *         - CELIX_SUCCESS when no errors are encountered.
  */
 celix_status_t version_isCompatible(version_pt user, version_pt provider, bool *isCompatible);
 

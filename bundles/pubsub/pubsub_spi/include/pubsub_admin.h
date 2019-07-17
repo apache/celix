@@ -20,8 +20,8 @@
  * pubsub_admin.h
  *
  *  \date       Sep 30, 2011
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
+ *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
+ *  \copyright  Apache License, Version 2.0
  */
 
 #ifndef PUBSUB_ADMIN_H_
@@ -31,33 +31,33 @@
 #include "celix_bundle.h"
 #include "celix_filter.h"
 
-#define PUBSUB_ADMIN_SERVICE_NAME		"pubsub_admin"
-#define PUBSUB_ADMIN_SERVICE_VERSION	"3.0.0"
-#define PUBSUB_ADMIN_SERVICE_RANGE		"[3,4)"
+#define PUBSUB_ADMIN_SERVICE_NAME       "pubsub_admin"
+#define PUBSUB_ADMIN_SERVICE_VERSION    "3.0.0"
+#define PUBSUB_ADMIN_SERVICE_RANGE      "[3,4)"
 
 //expected service properties
-#define PUBSUB_ADMIN_SERVICE_TYPE		"psa_type"
+#define PUBSUB_ADMIN_SERVICE_TYPE       "psa_type"
 
-#define PUBSUB_ADMIN_FULL_MATCH_SCORE	100.0F
-#define PUBSUB_ADMIN_NO_MATCH_SCORE	    0.0F
+#define PUBSUB_ADMIN_FULL_MATCH_SCORE   100.0F
+#define PUBSUB_ADMIN_NO_MATCH_SCORE     0.0F
 
 struct pubsub_admin_service {
-	void *handle;
+    void *handle;
 
-	celix_status_t (*matchPublisher)(void *handle, long svcRequesterBndId, const celix_filter_t *svcFilter, celix_properties_t **outTopicProperties, double *outScopre, long *outSerializerSvcId);
-	celix_status_t (*matchSubscriber)(void *handle, long svcProviderBndId, const celix_properties_t *svcProperties, celix_properties_t **outTopicProperties, double *outScore, long *outSerializerSvcId);
-	celix_status_t (*matchDiscoveredEndpoint)(void *handle, const celix_properties_t *endpoint, bool *match);
+    celix_status_t (*matchPublisher)(void *handle, long svcRequesterBndId, const celix_filter_t *svcFilter, celix_properties_t **outTopicProperties, double *outScopre, long *outSerializerSvcId);
+    celix_status_t (*matchSubscriber)(void *handle, long svcProviderBndId, const celix_properties_t *svcProperties, celix_properties_t **outTopicProperties, double *outScore, long *outSerializerSvcId);
+    celix_status_t (*matchDiscoveredEndpoint)(void *handle, const celix_properties_t *endpoint, bool *match);
 
-	//note endpoint is owned by caller
-	celix_status_t (*setupTopicSender)(void *handle, const char *scope, const char *topic, const celix_properties_t *topicProperties, long serializerSvcId, celix_properties_t **publisherEndpoint);
-	celix_status_t (*teardownTopicSender)(void *handle, const char *scope, const char *topic);
+    //note endpoint is owned by caller
+    celix_status_t (*setupTopicSender)(void *handle, const char *scope, const char *topic, const celix_properties_t *topicProperties, long serializerSvcId, celix_properties_t **publisherEndpoint);
+    celix_status_t (*teardownTopicSender)(void *handle, const char *scope, const char *topic);
 
-	//note endpoint is owned by caller
-	celix_status_t (*setupTopicReceiver)(void *handle, const char *scope, const char *topic, const celix_properties_t *topicProperties, long serializerSvcId, celix_properties_t **subscriberEndpoint);
-	celix_status_t (*teardownTopicReceiver)(void *handle, const char *scope, const char *topic);
+    //note endpoint is owned by caller
+    celix_status_t (*setupTopicReceiver)(void *handle, const char *scope, const char *topic, const celix_properties_t *topicProperties, long serializerSvcId, celix_properties_t **subscriberEndpoint);
+    celix_status_t (*teardownTopicReceiver)(void *handle, const char *scope, const char *topic);
 
-	celix_status_t (*addDiscoveredEndpoint)(void *handle, const celix_properties_t *endpoint);
-	celix_status_t (*removeDiscoveredEndpoint)(void *handle, const celix_properties_t *endpoint);
+    celix_status_t (*addDiscoveredEndpoint)(void *handle, const celix_properties_t *endpoint);
+    celix_status_t (*removeDiscoveredEndpoint)(void *handle, const celix_properties_t *endpoint);
 };
 
 typedef struct pubsub_admin_service pubsub_admin_service_t;

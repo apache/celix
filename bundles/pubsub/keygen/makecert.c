@@ -20,36 +20,35 @@
  * makecert.c
  *
  *  \date       Dec 2, 2016
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
+ *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
+ *  \copyright  Apache License, Version 2.0
  */
 
 #include <string.h>
 
 #include "czmq.h"
 
-int main (int argc, const char * argv[])
-{
+int main (int argc, const char * argv[]) {
 
-	const char * cert_name_public = "certificate.pub";
-	const char * cert_name_secret = "certificate.key";
-	if (argc == 3 && strcmp(argv[1], argv[2]) != 0){
-		cert_name_public = argv[1];
-		cert_name_secret = argv[2];
-	}
+    const char * cert_name_public = "certificate.pub";
+    const char * cert_name_secret = "certificate.key";
+    if (argc == 3 && strcmp(argv[1], argv[2]) != 0) {
+        cert_name_public = argv[1];
+        cert_name_secret = argv[2];
+    }
 
-	zcert_t * cert = zcert_new();
+    zcert_t * cert = zcert_new();
 
-	char *timestr = zclock_timestr ();
-	zcert_set_meta (cert, "date-created", timestr);
-	free (timestr);
+    char *timestr = zclock_timestr ();
+    zcert_set_meta (cert, "date-created", timestr);
+    free (timestr);
 
-	zcert_save_public(cert, cert_name_public);
-	zcert_save_secret(cert, cert_name_secret);
-	zcert_print (cert);
-	printf("\n");
-	printf("I: CURVE certificate created in %s and %s\n", cert_name_public, cert_name_secret);
-	zcert_destroy (&cert);
+    zcert_save_public(cert, cert_name_public);
+    zcert_save_secret(cert, cert_name_secret);
+    zcert_print (cert);
+    printf("\n");
+    printf("I: CURVE certificate created in %s and %s\n", cert_name_public, cert_name_secret);
+    zcert_destroy (&cert);
 
-	return 0;
+    return 0;
 }

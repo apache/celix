@@ -20,33 +20,33 @@
  * poi.h
  *
  *  \date       Nov 12, 2015
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
+ *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
+ *  \copyright  Apache License, Version 2.0
  */
 
 #ifndef POI_H_
 #define POI_H_
 
-#define MIN_LAT	-90.0F
-#define MAX_LAT	 90.0F
-#define MIN_LON	-180.0F
-#define MAX_LON	 180.0F
+#define MIN_LAT -90.0F
+#define MAX_LAT  90.0F
+#define MIN_LON -180.0F
+#define MAX_LON  180.0F
 
-#define MSG_POI_NAME	"poi" //Has to match the message name in the msg descriptor!
+#define MSG_POI_NAME "poi" //Has to match the message name in the msg descriptor!
 
 struct poi{
-	double lat;
-	double lon;
+    double lat;
+    double lon;
 };
 
 typedef struct poi1 poi1_t;
 
 struct location{
-	struct poi position;
-	char* name;
-	char* description;
-	char* extra;
-	char* data;
+    struct poi position;
+    char* name;
+    char* description;
+    char* extra;
+    char* data;
 };
 
 typedef struct location* location_t;

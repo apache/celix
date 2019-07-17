@@ -89,13 +89,13 @@ static int tst_receive(void *handle, const char * /*msgType*/, unsigned int /*ms
 
 TEST_GROUP(PUBSUB_INT_GROUP)
 {
-	void setup() {
-	    //nop
-	}
+    void setup() {
+        //nop
+    }
 
-	void teardown() {
-		//nop
-	}
+    void teardown() {
+        //nop
+    }
 };
 
 TEST(PUBSUB_INT_GROUP, recvTest) {

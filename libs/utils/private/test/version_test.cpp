@@ -39,317 +39,317 @@ framework_logger_pt logger = (framework_logger_pt) 0x666;
 }
 
 int main(int argc, char** argv) {
-	return RUN_ALL_TESTS(argc, argv);
+    return RUN_ALL_TESTS(argc, argv);
 }
 
 static char* my_strdup(const char* s){
-	if(s==NULL){
-		return NULL;
-	}
+    if (s == NULL) {
+        return NULL;
+    }
 
-	size_t len = strlen(s);
+    size_t len = strlen(s);
 
-	char *d = (char*) calloc (len + 1,sizeof(char));
+    char *d = (char *) calloc(len + 1, sizeof(char));
 
-	if (d == NULL){
-		return NULL;
-	}
+    if (d == NULL) {
+        return NULL;
+    }
 
-	strncpy (d,s,len);
-	return d;
+    strncpy(d,s,len);
+    return d;
 }
 
 TEST_GROUP(version) {
 
-	void setup(void) {
-	}
+    void setup(void) {
+    }
 
-	void teardown() {
-		mock().checkExpectations();
-		mock().clear();
-	}
+    void teardown() {
+        mock().checkExpectations();
+        mock().clear();
+    }
 
 };
 
 
 TEST(version, create) {
-	version_pt version = NULL;
-	char * str;
+    version_pt version = NULL;
+    char * str;
 
-//	str = my_strdup("abc");
-//	status = version_createVersion(1, 2, 3, str, &version);
-//	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
+//    str = my_strdup("abc");
+//    status = version_createVersion(1, 2, 3, str, &version);
+//    LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
 
-	str = my_strdup("abc");
-	LONGS_EQUAL(CELIX_SUCCESS, version_createVersion(1, 2, 3, str, &version));
-	CHECK_C(version != NULL);
+    str = my_strdup("abc");
+    LONGS_EQUAL(CELIX_SUCCESS, version_createVersion(1, 2, 3, str, &version));
+    CHECK_C(version != NULL);
     LONGS_EQUAL(1, version->major);
-	LONGS_EQUAL(2, version->minor);
-	LONGS_EQUAL(3, version->micro);
-	STRCMP_EQUAL("abc", version->qualifier);
+    LONGS_EQUAL(2, version->minor);
+    LONGS_EQUAL(3, version->micro);
+    STRCMP_EQUAL("abc", version->qualifier);
 
-	version_destroy(version);
-	version = NULL;
-	LONGS_EQUAL(CELIX_SUCCESS, version_createVersion(1, 2, 3, NULL, &version));
-	CHECK_C(version != NULL);
-	LONGS_EQUAL(1, version->major);
-	LONGS_EQUAL(2, version->minor);
-	LONGS_EQUAL(3, version->micro);
-	STRCMP_EQUAL("", version->qualifier);
+    version_destroy(version);
+    version = NULL;
+    LONGS_EQUAL(CELIX_SUCCESS, version_createVersion(1, 2, 3, NULL, &version));
+    CHECK_C(version != NULL);
+    LONGS_EQUAL(1, version->major);
+    LONGS_EQUAL(2, version->minor);
+    LONGS_EQUAL(3, version->micro);
+    STRCMP_EQUAL("", version->qualifier);
 
-	version_destroy(version);
-	version = NULL;
-	free(str);
-	str = my_strdup("abc");
-	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, version_createVersion(-1, -2, -3, str, &version));
+    version_destroy(version);
+    version = NULL;
+    free(str);
+    str = my_strdup("abc");
+    LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, version_createVersion(-1, -2, -3, str, &version));
 
-	version_destroy(version);
-	version = NULL;
-	free(str);
-	str = my_strdup("abc|xyz");
-	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, version_createVersion(1, 2, 3, str, &version));
+    version_destroy(version);
+    version = NULL;
+    free(str);
+    str = my_strdup("abc|xyz");
+    LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, version_createVersion(1, 2, 3, str, &version));
 
-	version_destroy(version);
-	free(str);
+    version_destroy(version);
+    free(str);
 }
 
 TEST(version, clone) {
-	version_pt version = NULL, clone = NULL;
-	char * str;
+    version_pt version = NULL, clone = NULL;
+    char * str;
 
-	str = my_strdup("abc");
-	LONGS_EQUAL(CELIX_SUCCESS, version_createVersion(1, 2, 3, str, &version));
-	LONGS_EQUAL(CELIX_SUCCESS, version_clone(version, &clone));
-	CHECK_C(version != NULL);
+    str = my_strdup("abc");
+    LONGS_EQUAL(CELIX_SUCCESS, version_createVersion(1, 2, 3, str, &version));
+    LONGS_EQUAL(CELIX_SUCCESS, version_clone(version, &clone));
+    CHECK_C(version != NULL);
     LONGS_EQUAL(1, clone->major);
-	LONGS_EQUAL(2, clone->minor);
-	LONGS_EQUAL(3, clone->micro);
-	STRCMP_EQUAL("abc", clone->qualifier);
+    LONGS_EQUAL(2, clone->minor);
+    LONGS_EQUAL(3, clone->micro);
+    STRCMP_EQUAL("abc", clone->qualifier);
 
-	version_destroy(clone);
-	version_destroy(version);
-	free(str);
+    version_destroy(clone);
+    version_destroy(version);
+    free(str);
 }
 
 TEST(version, createFromString) {
-	version_pt version = NULL;
-	celix_status_t status = CELIX_SUCCESS;
-	char * str;
+    version_pt version = NULL;
+    celix_status_t status = CELIX_SUCCESS;
+    char * str;
 
-	str = my_strdup("1");
-	LONGS_EQUAL(CELIX_SUCCESS, version_createVersionFromString(str, &version));
-	CHECK_C(version != NULL);
-	LONGS_EQUAL(1, version->major);
-
-	version_destroy(version);
-
-	free(str);
-	str = my_strdup("a");
-	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, version_createVersionFromString(str, &version));
-
-	free(str);
-	str = my_strdup("1.a");
-	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, version_createVersionFromString(str, &version));
-
-	free(str);
-	str = my_strdup("1.1.a");
-	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, version_createVersionFromString(str, &version));
-
-	free(str);
-	str = my_strdup("-1");
-	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, version_createVersionFromString(str, &version));
-
-	free(str);
-	str = my_strdup("1.2");
-	version = NULL;
-	LONGS_EQUAL(CELIX_SUCCESS, version_createVersionFromString(str, &version));
-	CHECK_C(version != NULL);
-	LONGS_EQUAL(1, version->major);
-	LONGS_EQUAL(2, version->minor);
-
-	version_destroy(version);
-
-	free(str);
-	str = my_strdup("1.2.3");
-	version = NULL;
-	status = version_createVersionFromString(str, &version);
-	LONGS_EQUAL(CELIX_SUCCESS, status);
-	CHECK_C(version != NULL);
-	LONGS_EQUAL(1, version->major);
-	LONGS_EQUAL(2, version->minor);
-	LONGS_EQUAL(3, version->micro);
-
-	version_destroy(version);
-	free(str);
-	str = my_strdup("1.2.3.abc");
-	version = NULL;
-	status = version_createVersionFromString(str, &version);
-	LONGS_EQUAL(CELIX_SUCCESS, status);
-	CHECK_C(version != NULL);
+    str = my_strdup("1");
+    LONGS_EQUAL(CELIX_SUCCESS, version_createVersionFromString(str, &version));
+    CHECK_C(version != NULL);
     LONGS_EQUAL(1, version->major);
-	LONGS_EQUAL(2, version->minor);
-	LONGS_EQUAL(3, version->micro);
-	STRCMP_EQUAL("abc", version->qualifier);
 
-	version_destroy(version);
-	free(str);
-	str = my_strdup("1.2.3.abc_xyz");
-	version = NULL;
-	status = version_createVersionFromString(str, &version);
-	LONGS_EQUAL(CELIX_SUCCESS, status);
-	CHECK_C(version != NULL);
+    version_destroy(version);
+
+    free(str);
+    str = my_strdup("a");
+    LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, version_createVersionFromString(str, &version));
+
+    free(str);
+    str = my_strdup("1.a");
+    LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, version_createVersionFromString(str, &version));
+
+    free(str);
+    str = my_strdup("1.1.a");
+    LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, version_createVersionFromString(str, &version));
+
+    free(str);
+    str = my_strdup("-1");
+    LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, version_createVersionFromString(str, &version));
+
+    free(str);
+    str = my_strdup("1.2");
+    version = NULL;
+    LONGS_EQUAL(CELIX_SUCCESS, version_createVersionFromString(str, &version));
+    CHECK_C(version != NULL);
     LONGS_EQUAL(1, version->major);
-	LONGS_EQUAL(2, version->minor);
-	LONGS_EQUAL(3, version->micro);
-	STRCMP_EQUAL("abc_xyz", version->qualifier);
+    LONGS_EQUAL(2, version->minor);
 
-	version_destroy(version);
-	free(str);
-	str = my_strdup("1.2.3.abc-xyz");
-	version = NULL;
-	status = version_createVersionFromString(str, &version);
-	LONGS_EQUAL(CELIX_SUCCESS, status);
-	CHECK_C(version != NULL);
+    version_destroy(version);
+
+    free(str);
+    str = my_strdup("1.2.3");
+    version = NULL;
+    status = version_createVersionFromString(str, &version);
+    LONGS_EQUAL(CELIX_SUCCESS, status);
+    CHECK_C(version != NULL);
     LONGS_EQUAL(1, version->major);
-	LONGS_EQUAL(2, version->minor);
-	LONGS_EQUAL(3, version->micro);
-	STRCMP_EQUAL("abc-xyz", version->qualifier);
+    LONGS_EQUAL(2, version->minor);
+    LONGS_EQUAL(3, version->micro);
 
-	version_destroy(version);
-	free(str);
-	str = my_strdup("1.2.3.abc|xyz");
-	status = version_createVersionFromString(str, &version);
-	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
+    version_destroy(version);
+    free(str);
+    str = my_strdup("1.2.3.abc");
+    version = NULL;
+    status = version_createVersionFromString(str, &version);
+    LONGS_EQUAL(CELIX_SUCCESS, status);
+    CHECK_C(version != NULL);
+    LONGS_EQUAL(1, version->major);
+    LONGS_EQUAL(2, version->minor);
+    LONGS_EQUAL(3, version->micro);
+    STRCMP_EQUAL("abc", version->qualifier);
 
-	free(str);
+    version_destroy(version);
+    free(str);
+    str = my_strdup("1.2.3.abc_xyz");
+    version = NULL;
+    status = version_createVersionFromString(str, &version);
+    LONGS_EQUAL(CELIX_SUCCESS, status);
+    CHECK_C(version != NULL);
+    LONGS_EQUAL(1, version->major);
+    LONGS_EQUAL(2, version->minor);
+    LONGS_EQUAL(3, version->micro);
+    STRCMP_EQUAL("abc_xyz", version->qualifier);
+
+    version_destroy(version);
+    free(str);
+    str = my_strdup("1.2.3.abc-xyz");
+    version = NULL;
+    status = version_createVersionFromString(str, &version);
+    LONGS_EQUAL(CELIX_SUCCESS, status);
+    CHECK_C(version != NULL);
+    LONGS_EQUAL(1, version->major);
+    LONGS_EQUAL(2, version->minor);
+    LONGS_EQUAL(3, version->micro);
+    STRCMP_EQUAL("abc-xyz", version->qualifier);
+
+    version_destroy(version);
+    free(str);
+    str = my_strdup("1.2.3.abc|xyz");
+    status = version_createVersionFromString(str, &version);
+    LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
+
+    free(str);
 }
 
 TEST(version, createEmptyVersion) {
-	version_pt version = NULL;
-	celix_status_t status = CELIX_SUCCESS;
+    version_pt version = NULL;
+    celix_status_t status = CELIX_SUCCESS;
 
-	status = version_createEmptyVersion(&version);
-	LONGS_EQUAL(CELIX_SUCCESS, status);
-	CHECK_C(version != NULL);
+    status = version_createEmptyVersion(&version);
+    LONGS_EQUAL(CELIX_SUCCESS, status);
+    CHECK_C(version != NULL);
     LONGS_EQUAL(0, version->major);
-	LONGS_EQUAL(0, version->minor);
-	LONGS_EQUAL(0, version->micro);
-	STRCMP_EQUAL("", version->qualifier);
+    LONGS_EQUAL(0, version->minor);
+    LONGS_EQUAL(0, version->micro);
+    STRCMP_EQUAL("", version->qualifier);
 
-	version_destroy(version);
+    version_destroy(version);
 }
 
 TEST(version, getters) {
-	version_pt version = NULL;
-	celix_status_t status = CELIX_SUCCESS;
-	char * str;
-	int major, minor, micro;
-	char *qualifier;
+    version_pt version = NULL;
+    celix_status_t status = CELIX_SUCCESS;
+    char * str;
+    int major, minor, micro;
+    char *qualifier;
 
-	str = my_strdup("abc");
-	status = version_createVersion(1, 2, 3, str, &version);
-	LONGS_EQUAL(CELIX_SUCCESS, status);
-	CHECK_C(version != NULL);
+    str = my_strdup("abc");
+    status = version_createVersion(1, 2, 3, str, &version);
+    LONGS_EQUAL(CELIX_SUCCESS, status);
+    CHECK_C(version != NULL);
 
-	version_getMajor(version, &major);
+    version_getMajor(version, &major);
     LONGS_EQUAL(1, major);
 
     version_getMinor(version, &minor);
-	LONGS_EQUAL(2, minor);
+    LONGS_EQUAL(2, minor);
 
-	version_getMicro(version, &micro);
-	LONGS_EQUAL(3, micro);
+    version_getMicro(version, &micro);
+    LONGS_EQUAL(3, micro);
 
-	version_getQualifier(version, &qualifier);
-	STRCMP_EQUAL("abc", qualifier);
+    version_getQualifier(version, &qualifier);
+    STRCMP_EQUAL("abc", qualifier);
 
-	version_destroy(version);
-	free(str);
+    version_destroy(version);
+    free(str);
 }
 
 TEST(version, compare) {
-	version_pt version = NULL, compare = NULL;
-	celix_status_t status = CELIX_SUCCESS;
-	char * str;
-	int result;
+    version_pt version = NULL, compare = NULL;
+    celix_status_t status = CELIX_SUCCESS;
+    char * str;
+    int result;
 
-	// Base version to compare
-	str = my_strdup("abc");
-	status = version_createVersion(1, 2, 3, str, &version);
-	LONGS_EQUAL(CELIX_SUCCESS, status);
-	CHECK_C(version != NULL);
+    // Base version to compare
+    str = my_strdup("abc");
+    status = version_createVersion(1, 2, 3, str, &version);
+    LONGS_EQUAL(CELIX_SUCCESS, status);
+    CHECK_C(version != NULL);
 
-	// Compare equality
-	free(str);
-	str = my_strdup("abc");
-	compare = NULL;
-	status = version_createVersion(1, 2, 3, str, &compare);
-	LONGS_EQUAL(CELIX_SUCCESS, status);
-	CHECK_C(version != NULL);
-	status = version_compareTo(version, compare, &result);
-	LONGS_EQUAL(CELIX_SUCCESS, status);
-	LONGS_EQUAL(0, result);
+    // Compare equality
+    free(str);
+    str = my_strdup("abc");
+    compare = NULL;
+    status = version_createVersion(1, 2, 3, str, &compare);
+    LONGS_EQUAL(CELIX_SUCCESS, status);
+    CHECK_C(version != NULL);
+    status = version_compareTo(version, compare, &result);
+    LONGS_EQUAL(CELIX_SUCCESS, status);
+    LONGS_EQUAL(0, result);
 
-	// Compare against a higher version
-	free(str);
-	str = my_strdup("bcd");
-	version_destroy(compare);
-	compare = NULL;
-	status = version_createVersion(1, 2, 3, str, &compare);
-	LONGS_EQUAL(CELIX_SUCCESS, status);
-	CHECK_C(version != NULL);
-	status = version_compareTo(version, compare, &result);
-	LONGS_EQUAL(CELIX_SUCCESS, status);
-	CHECK(result < 0);
+    // Compare against a higher version
+    free(str);
+    str = my_strdup("bcd");
+    version_destroy(compare);
+    compare = NULL;
+    status = version_createVersion(1, 2, 3, str, &compare);
+    LONGS_EQUAL(CELIX_SUCCESS, status);
+    CHECK_C(version != NULL);
+    status = version_compareTo(version, compare, &result);
+    LONGS_EQUAL(CELIX_SUCCESS, status);
+    CHECK(result < 0);
 
-	// Compare againts a lower version
-	free(str);
-	str = my_strdup("abc");
-	version_destroy(compare);
-	compare = NULL;
-	status = version_createVersion(1, 1, 3, str, &compare);
-	LONGS_EQUAL(CELIX_SUCCESS, status);
-	CHECK_C(version != NULL);
-	status = version_compareTo(version, compare, &result);
-	LONGS_EQUAL(CELIX_SUCCESS, status);
-	CHECK(result > 0);
+    // Compare againts a lower version
+    free(str);
+    str = my_strdup("abc");
+    version_destroy(compare);
+    compare = NULL;
+    status = version_createVersion(1, 1, 3, str, &compare);
+    LONGS_EQUAL(CELIX_SUCCESS, status);
+    CHECK_C(version != NULL);
+    status = version_compareTo(version, compare, &result);
+    LONGS_EQUAL(CELIX_SUCCESS, status);
+    CHECK(result > 0);
 
-	version_destroy(compare);
-	version_destroy(version);
-	free(str);
+    version_destroy(compare);
+    version_destroy(version);
+    free(str);
 }
 
 TEST(version, toString) {
-	version_pt version = NULL;
-	celix_status_t status = CELIX_SUCCESS;
-	char * str;
-	char *result = NULL;
+    version_pt version = NULL;
+    celix_status_t status = CELIX_SUCCESS;
+    char * str;
+    char *result = NULL;
 
-	str = my_strdup("abc");
-	status = version_createVersion(1, 2, 3, str, &version);
-	LONGS_EQUAL(CELIX_SUCCESS, status);
-	CHECK_C(version != NULL);
+    str = my_strdup("abc");
+    status = version_createVersion(1, 2, 3, str, &version);
+    LONGS_EQUAL(CELIX_SUCCESS, status);
+    CHECK_C(version != NULL);
 
-	status = version_toString(version, &result);
-	LONGS_EQUAL(CELIX_SUCCESS, status);
-	CHECK_C(result != NULL);
-	STRCMP_EQUAL("1.2.3.abc", result);
-	free(result);
+    status = version_toString(version, &result);
+    LONGS_EQUAL(CELIX_SUCCESS, status);
+    CHECK_C(result != NULL);
+    STRCMP_EQUAL("1.2.3.abc", result);
+    free(result);
 
-	version_destroy(version);
-	version = NULL;
-	status = version_createVersion(1, 2, 3, NULL, &version);
-	LONGS_EQUAL(CELIX_SUCCESS, status);
-	CHECK_C(version != NULL);
+    version_destroy(version);
+    version = NULL;
+    status = version_createVersion(1, 2, 3, NULL, &version);
+    LONGS_EQUAL(CELIX_SUCCESS, status);
+    CHECK_C(version != NULL);
 
-	status = version_toString(version, &result);
-	LONGS_EQUAL(CELIX_SUCCESS, status);
-	CHECK_C(result != NULL);
-	STRCMP_EQUAL("1.2.3", result);
+    status = version_toString(version, &result);
+    LONGS_EQUAL(CELIX_SUCCESS, status);
+    CHECK_C(result != NULL);
+    STRCMP_EQUAL("1.2.3", result);
 
-	version_destroy(version);
-	free(result);
-	free(str);
+    version_destroy(version);
+    free(result);
+    free(str);
 }
 
 TEST(version,semanticCompatibility) {

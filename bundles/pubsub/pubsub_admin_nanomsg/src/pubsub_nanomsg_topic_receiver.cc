@@ -124,7 +124,7 @@ pubsub::nanomsg::topic_receiver::~topic_receiver() {
 
         {
             std::lock_guard<std::mutex> _lock(subscribers.mutex);
-            for(auto elem : subscribers.map) {
+            for (auto elem : subscribers.map) {
                 serializer->destroySerializerMap(serializer->handle, elem.second.msgTypes);
             }
             subscribers.map.clear();
@@ -257,7 +257,7 @@ void pubsub::nanomsg::topic_receiver::processMsgForSubscriberEntry(psa_nanomsg_s
         bool validVersion = celix::pubsub::nanomsg::checkVersion(msgSer->msgVersion, hdr);
         if (validVersion) {
             celix_status_t status = msgSer->deserialize(msgSer, payload, payloadSize, &deserializedMsg);
-            if(status == CELIX_SUCCESS) {
+            if (status == CELIX_SUCCESS) {
                 bool release = false;
                 svc->receive(svc->handle, msgSer->msgName, msgSer->msgId, deserializedMsg, &release);
                 if (release) {

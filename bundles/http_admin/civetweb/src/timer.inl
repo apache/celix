@@ -17,15 +17,20 @@ struct ttimer {
 };
 
 struct ttimers {
-	pthread_t threadid;               /* Timer thread ID */
-	pthread_mutex_t mutex;            /* Protects timer lists */
-	struct ttimer timers[MAX_TIMERS]; /* List of timers */
-	unsigned timer_count;             /* Current size of timer list */
+	pthread_t threadid;      /* Timer thread ID */
+	pthread_mutex_t mutex;   /* Protects timer lists */
+	struct ttimer *timers;   /* List of timers */
+	unsigned timer_count;    /* Current size of timer list */
+	unsigned timer_capacity; /* Capacity of timer list */
+#if defined(_WIN32)
+	DWORD last_tick;
+	uint64_t now_tick64;
+#endif
 };
 
 
 TIMER_API double
-timer_getcurrenttime(void)
+timer_getcurrenttime(struct mg_context *ctx)
 {
 #if defined(_WIN32)
 	/* GetTickCount returns milliseconds since system start as
@@ -34,17 +39,21 @@ timer_getcurrenttime(void)
 	 * by adding the 32 bit difference since the last call to a
 	 * 64 bit counter. This algorithm will only work, if this
 	 * function is called at least once every 7 weeks. */
-	static DWORD last_tick;
-	static uint64_t now_tick64;
-
+	uint64_t now_tick64 = 0;
 	DWORD now_tick = GetTickCount();
 
-	now_tick64 += ((DWORD)(now_tick - last_tick));
-	last_tick = now_tick;
+	if (ctx->timers) {
+		pthread_mutex_lock(&ctx->timers->mutex);
+		ctx->timers->now_tick64 += now_tick - ctx->timers->last_tick;
+		now_tick64 = ctx->timers->now_tick64;
+		ctx->timers->last_tick = now_tick;
+		pthread_mutex_unlock(&ctx->timers->mutex);
+	}
 	return (double)now_tick64 * 1.0E-3;
 #else
 	struct timespec now_ts;
 
+	(void)ctx;
 	clock_gettime(CLOCK_MONOTONIC, &now_ts);
 	return (double)now_ts.tv_sec + (double)now_ts.tv_nsec * 1.0E-9;
 #endif
@@ -53,21 +62,20 @@ timer_getcurrenttime(void)
 
 TIMER_API int
 timer_add(struct mg_context *ctx,
-          double next_time,
-          double period,
-          int is_relative,
-          taction action,
-          void *arg)
+		  double next_time,
+		  double period,
+		  int is_relative,
+		  taction action,
+		  void *arg)
 {
-	unsigned u, v;
 	int error = 0;
 	double now;
 
-	if (ctx->stop_flag) {
-		return 0;
+	if (!ctx->timers) {
+		return 1;
 	}
 
-	now = timer_getcurrenttime();
+	now = timer_getcurrenttime(ctx);
 
 	/* HCP24: if is_relative = 0 and next_time < now
 	 *        action will be called so fast as possible
@@ -79,7 +87,7 @@ timer_add(struct mg_context *ctx,
 	 *        if next_time < now then we set next_time = now.
 	 *        The first callback will be so fast as possible (now)
 	 *        but the next callback on period
-	*/
+	 */
 	if (is_relative) {
 		next_time += now;
 	}
@@ -92,19 +100,27 @@ timer_add(struct mg_context *ctx,
 	pthread_mutex_lock(&ctx->timers->mutex);
 	if (ctx->timers->timer_count == MAX_TIMERS) {
 		error = 1;
-	} else {
+	} else if (ctx->timers->timer_count == ctx->timers->timer_capacity) {
+		unsigned capacity = (ctx->timers->timer_capacity * 2) + 1;
+		struct ttimer *timers =
+				(struct ttimer *)mg_realloc_ctx(ctx->timers->timers,
+												capacity * sizeof(struct ttimer),
+												ctx);
+		if (timers) {
+			ctx->timers->timers = timers;
+			ctx->timers->timer_capacity = capacity;
+		} else {
+			error = 1;
+		}
+	}
+	if (!error) {
 		/* Insert new timer into a sorted list. */
 		/* The linear list is still most efficient for short lists (small
 		 * number of timers) - if there are many timers, different
 		 * algorithms will work better. */
-		for (u = 0; u < ctx->timers->timer_count; u++) {
-			if (ctx->timers->timers[u].time > next_time) {
-				/* HCP24: moving all timers > next_time */
-				for (v = ctx->timers->timer_count; v > u; v--) {
-					ctx->timers->timers[v] = ctx->timers->timers[v - 1];
-				}
-				break;
-			}
+		unsigned u = ctx->timers->timer_count;
+		for (; (u > 0) && (ctx->timers->timers[u - 1].time > next_time); u--) {
+			ctx->timers->timers[u] = ctx->timers->timers[u - 1];
 		}
 		ctx->timers->timers[u].time = next_time;
 		ctx->timers->timers[u].period = period;
@@ -133,12 +149,12 @@ timer_thread_run(void *thread_func_param)
 		ctx->callbacks.init_thread(ctx, 2);
 	}
 
-	d = timer_getcurrenttime();
+	d = timer_getcurrenttime(ctx);
 
 	while (ctx->stop_flag == 0) {
 		pthread_mutex_lock(&ctx->timers->mutex);
 		if ((ctx->timers->timer_count > 0)
-		    && (d >= ctx->timers->timers[0].time)) {
+			&& (d >= ctx->timers->timers[0].time)) {
 			t = ctx->timers->timers[0];
 			for (u = 1; u < ctx->timers->timer_count; u++) {
 				ctx->timers->timers[u - 1] = ctx->timers->timers[u];
@@ -164,12 +180,8 @@ timer_thread_run(void *thread_func_param)
 		usleep(10000);
 #endif
 
-		d = timer_getcurrenttime();
+		d = timer_getcurrenttime(ctx);
 	}
-
-	pthread_mutex_lock(&ctx->timers->mutex);
-	ctx->timers->timer_count = 0;
-	pthread_mutex_unlock(&ctx->timers->mutex);
 }
 
 
@@ -201,24 +213,32 @@ timers_init(struct mg_context *ctx)
 {
 	/* Initialize timers data structure */
 	ctx->timers =
-	    (struct ttimers *)mg_calloc_ctx(sizeof(struct ttimers), 1, ctx);
+			(struct ttimers *)mg_calloc_ctx(sizeof(struct ttimers), 1, ctx);
 
 	if (!ctx->timers) {
 		return -1;
 	}
+	ctx->timers->timers = NULL;
 
 	/* Initialize mutex */
 	if (0 != pthread_mutex_init(&ctx->timers->mutex, NULL)) {
-		mg_free((void *)(ctx->timers));
+		mg_free(ctx->timers);
+		ctx->timers = NULL;
 		return -1;
 	}
 
 	/* For some systems timer_getcurrenttime does some initialization
 	 * during the first call. Call it once now, ignore the result. */
-	(void)timer_getcurrenttime();
+	(void)timer_getcurrenttime(ctx);
 
 	/* Start timer thread */
-	mg_start_thread_with_id(timer_thread, ctx, &ctx->timers->threadid);
+	if (mg_start_thread_with_id(timer_thread, ctx, &ctx->timers->threadid)
+		!= 0) {
+		(void)pthread_mutex_destroy(&ctx->timers->mutex);
+		mg_free(ctx->timers);
+		ctx->timers = NULL;
+		return -1;
+	}
 
 	return 0;
 }
@@ -228,17 +248,11 @@ TIMER_API void
 timers_exit(struct mg_context *ctx)
 {
 	if (ctx->timers) {
-		pthread_mutex_lock(&ctx->timers->mutex);
-		ctx->timers->timer_count = 0;
-
 		mg_join_thread(ctx->timers->threadid);
-
-		/* TODO: Do we really need to unlock the mutex, before
-		 * destroying it, if it's destroyed by the thread currently
-		 * owning the mutex? */
-		pthread_mutex_unlock(&ctx->timers->mutex);
 		(void)pthread_mutex_destroy(&ctx->timers->mutex);
+		mg_free(ctx->timers->timers);
 		mg_free(ctx->timers);
+		ctx->timers = NULL;
 	}
 }
 

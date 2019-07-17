@@ -38,7 +38,7 @@ extern "C"
 }
 
 int main(int argc, char** argv) {
-	return RUN_ALL_TESTS(argc, argv);
+    return RUN_ALL_TESTS(argc, argv);
 }
 
 static char* my_strdup(const char* s){
@@ -59,17 +59,17 @@ static char* my_strdup(const char* s){
 }
 
 TEST_GROUP(ip_utils) {
-	void setup(void) {
-	}
+    void setup(void) {
+    }
 
-	void teardown() {
-	}
+    void teardown() {
+    }
 };
 
 TEST(ip_utils, ipToUnsignedInt){
-	char *ip = my_strdup("192.168.1.64");
+    char *ip = my_strdup("192.168.1.64");
 
-	unsigned int expected = 3232235840;
+    unsigned int expected = 3232235840;
     unsigned int actual = ipUtils_ipToUnsignedInt(ip);
     UNSIGNED_LONGS_EQUAL(expected, actual);
 

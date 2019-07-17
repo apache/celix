@@ -20,8 +20,8 @@
  * publisher.h
  *
  *  \date       Jan 7, 2016
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
+ *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
+ *  \copyright  Apache License, Version 2.0
  */
 
 #ifndef __PUBSUB_PUBLISHER_H_
@@ -30,14 +30,14 @@
 #include <stdlib.h>
 
 #define PUBSUB_PUBLISHER_SERVICE_NAME           "pubsub.publisher"
-#define PUBSUB_PUBLISHER_SERVICE_VERSION	    "3.0.0"
+#define PUBSUB_PUBLISHER_SERVICE_VERSION        "3.0.0"
  
 //properties
 #define PUBSUB_PUBLISHER_TOPIC                  "topic"
 #define PUBSUB_PUBLISHER_SCOPE                  "scope"
 #define PUBSUB_PUBLISHER_CONFIG                 "pubsub.config"
  
-#define PUBSUB_PUBLISHER_SCOPE_DEFAULT			"default"
+#define PUBSUB_PUBLISHER_SCOPE_DEFAULT          "default"
 
  
  

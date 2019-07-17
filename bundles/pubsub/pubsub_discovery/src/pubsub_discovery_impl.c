@@ -526,7 +526,7 @@ static void pubsub_discovery_removeDiscoveredEndpoint(pubsub_discovery_t *disc, 
 }
 
 celix_properties_t* pubsub_discovery_parseEndpoint(pubsub_discovery_t *disc, const char *key, const char* etcdValue) {
-    properties_t *props = celix_properties_create();
+    celix_properties_t *props = celix_properties_create();
 
     // etcdValue contains the json formatted string
     json_error_t error;

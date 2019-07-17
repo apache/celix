@@ -20,8 +20,8 @@
  * pubsub_publisher.c
  *
  *  \date       Sep 21, 2010
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
+ *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
+ *  \copyright  Apache License, Version 2.0
  */
 
 #include <stdlib.h>
@@ -38,132 +38,131 @@
 
 static bool stop=false;
 
-static double randCoordinate(double min, double max){
+static double randCoordinate(double min, double max) {
 
-	double ret = min + (((double)random()) / (((double)RAND_MAX)/(max-min))) ;
+    double ret = min + (((double)random()) / (((double)RAND_MAX)/(max-min))) ;
 
-	return ret;
+    return ret;
 
 }
 
-static void* send_thread(void* arg){
+static void* send_thread(void* arg) {
 
-	send_thread_struct_pt st_struct = (send_thread_struct_pt)arg;
+    send_thread_struct_pt st_struct = (send_thread_struct_pt)arg;
 
-	pubsub_publisher_pt publish_svc = (pubsub_publisher_pt)st_struct->service;
-	pubsub_sender_pt publisher = (pubsub_sender_pt)st_struct->publisher;
+    pubsub_publisher_pt publish_svc = (pubsub_publisher_pt)st_struct->service;
+    pubsub_sender_pt publisher = (pubsub_sender_pt)st_struct->publisher;
 
-	char fwUUID[9];
-	memset(fwUUID,0,9);
-	memcpy(fwUUID,publisher->ident,8);
+    char fwUUID[9];
+    memset(fwUUID,0,9);
+    memcpy(fwUUID,publisher->ident,8);
 
-	//poi_t point = calloc(1,sizeof(*point));
-	location_t place = calloc(1,sizeof(*place));
+    //poi_t point = calloc(1,sizeof(*point));
+    location_t place = calloc(1,sizeof(*place));
 
-	char* desc = calloc(64,sizeof(char));
-	snprintf(desc,64,"fw-%s [TID=%lu]", fwUUID, (unsigned long)pthread_self());
+    char* desc = calloc(64,sizeof(char));
+    snprintf(desc,64,"fw-%s [TID=%lu]", fwUUID, (unsigned long)pthread_self());
 
-	char* name = calloc(64,sizeof(char));
-	snprintf(name,64,"Bundle#%ld",publisher->bundleId);
+    char* name = calloc(64,sizeof(char));
+    snprintf(name,64,"Bundle#%ld",publisher->bundleId);
 
-	place->name = name;
-	place->description = desc;
-	place->extra = "extra value";
-	printf("TOPIC : %s\n",st_struct->topic);
-	unsigned int msgId = 0;
-	if( publish_svc->localMsgTypeIdForMsgType(publish_svc->handle,st_struct->topic,&msgId) == 0 ){
+    place->name = name;
+    place->description = desc;
+    place->extra = "extra value";
+    printf("TOPIC : %s\n",st_struct->topic);
+    unsigned int msgId = 0;
+    if (publish_svc->localMsgTypeIdForMsgType(publish_svc->handle,st_struct->topic,&msgId) == 0) {
 
-		while(stop==false){
-			place->position.lat = randCoordinate(MIN_LAT,MAX_LAT);
-			place->position.lon = randCoordinate(MIN_LON,MAX_LON);
-			int nr_char = (int)randCoordinate(5,100000);
-			place->data = calloc(nr_char, 1);
-			for(int i = 0; i < (nr_char-1); i++) {
-				place->data[i] = i%10 + '0';
-			}
-			place->data[nr_char-1] = '\0';
-			if(publish_svc->send) {
-				if(publish_svc->send(publish_svc->handle,msgId,place)==0){
-					printf("Sent %s [%f, %f] (%s, %s) data len = %d\n",st_struct->topic, place->position.lat, place->position.lon,place->name,place->description, nr_char);
-				}
-			} else {
-				printf("No send for %s\n", st_struct->topic);
-			}
+        while (stop == false) {
+            place->position.lat = randCoordinate(MIN_LAT,MAX_LAT);
+            place->position.lon = randCoordinate(MIN_LON,MAX_LON);
+            int nr_char = (int)randCoordinate(5,100000);
+            place->data = calloc(nr_char, 1);
+            for (int i = 0; i < (nr_char-1); i++) {
+                place->data[i] = i%10 + '0';
+            }
+            place->data[nr_char-1] = '\0';
+            if (publish_svc->send) {
+                if (publish_svc->send(publish_svc->handle,msgId,place) == 0) {
+                    printf("Sent %s [%f, %f] (%s, %s) data len = %d\n",st_struct->topic, place->position.lat, place->position.lon,place->name,place->description, nr_char);
+                }
+            } else {
+                printf("No send for %s\n", st_struct->topic);
+            }
 
-			free(place->data);
-			sleep(2);
-		}
-	}
-	else{
-		printf("PUBLISHER: Cannot retrieve msgId for message '%s'\n",MSG_POI_NAME);
-	}
+            free(place->data);
+            sleep(2);
+        }
+    } else {
+        printf("PUBLISHER: Cannot retrieve msgId for message '%s'\n",MSG_POI_NAME);
+    }
 
-	free(place->description);
-	free(place->name);
-	free(place);
+    free(place->description);
+    free(place->name);
+    free(place);
 
-	free(st_struct);
+    free(st_struct);
 
 
-	return NULL;
+    return NULL;
 
 }
 
 pubsub_sender_pt publisher_create(array_list_pt trackers,const char* ident,long bundleId) {
-	pubsub_sender_pt publisher = malloc(sizeof(*publisher));
+    pubsub_sender_pt publisher = malloc(sizeof(*publisher));
 
-	publisher->trackers = trackers;
-	publisher->ident = ident;
-	publisher->bundleId = bundleId;
-	publisher->tid_map = hashMap_create(NULL, NULL, NULL, NULL);
+    publisher->trackers = trackers;
+    publisher->ident = ident;
+    publisher->bundleId = bundleId;
+    publisher->tid_map = hashMap_create(NULL, NULL, NULL, NULL);
 
-	return publisher;
+    return publisher;
 }
 
 void publisher_start(pubsub_sender_pt client) {
-	printf("PUBLISHER: starting up...\n");
+    printf("PUBLISHER: starting up...\n");
 }
 
 void publisher_stop(pubsub_sender_pt client) {
-	printf("PUBLISHER: stopping...\n");
+    printf("PUBLISHER: stopping...\n");
 }
 
 void publisher_destroy(pubsub_sender_pt client) {
-	hashMap_destroy(client->tid_map, false, false);
-	client->trackers = NULL;
-	client->ident = NULL;
-	free(client);
+    hashMap_destroy(client->tid_map, false, false);
+    client->trackers = NULL;
+    client->ident = NULL;
+    free(client);
 }
 
 void publisher_publishSvcAdded(void * handle, void *svc, const celix_properties_t *props) {
-	pubsub_publisher_pt publish_svc = (pubsub_publisher_pt)svc;
-	pubsub_sender_pt manager = (pubsub_sender_pt)handle;
+    pubsub_publisher_pt publish_svc = (pubsub_publisher_pt)svc;
+    pubsub_sender_pt manager = (pubsub_sender_pt)handle;
 
-	printf("PUBLISHER: new publish service exported (%s).\n",manager->ident);
+    printf("PUBLISHER: new publish service exported (%s).\n",manager->ident);
 
-	send_thread_struct_pt data = calloc(1,sizeof(struct send_thread_struct));
-	data->service = publish_svc;
-	data->publisher = manager;
-	data->topic = celix_properties_get(props, PUBSUB_PUBLISHER_TOPIC, "!ERROR!");
-	celix_thread_t *tid = malloc(sizeof(*tid));
-	stop=false;
-	celixThread_create(tid,NULL,send_thread,(void*)data);
-	hashMap_put(manager->tid_map, publish_svc, tid);
+    send_thread_struct_pt data = calloc(1,sizeof(struct send_thread_struct));
+    data->service = publish_svc;
+    data->publisher = manager;
+    data->topic = celix_properties_get(props, PUBSUB_PUBLISHER_TOPIC, "!ERROR!");
+    celix_thread_t *tid = malloc(sizeof(*tid));
+    stop=false;
+    celixThread_create(tid,NULL,send_thread,(void*)data);
+    hashMap_put(manager->tid_map, publish_svc, tid);
 }
 
 void publisher_publishSvcRemoved(void * handle, void *svc, const celix_properties_t *props) {
-	pubsub_sender_pt manager = (pubsub_sender_pt)handle;
-	celix_thread_t *tid = hashMap_get(manager->tid_map, svc);
+    pubsub_sender_pt manager = (pubsub_sender_pt)handle;
+    celix_thread_t *tid = hashMap_get(manager->tid_map, svc);
 
 #if defined(__APPLE__) && defined(__MACH__)
-	uint64_t threadid;
-	pthread_threadid_np(tid->thread, &threadid);
-	printf("PUBLISHER: publish service unexporting (%s) %llu!\n",manager->ident, threadid);
+    uint64_t threadid;
+    pthread_threadid_np(tid->thread, &threadid);
+    printf("PUBLISHER: publish service unexporting (%s) %llu!\n",manager->ident, threadid);
 #else
-	printf("PUBLISHER: publish service unexporting (%s) %li!\n",manager->ident, tid->thread);
+    printf("PUBLISHER: publish service unexporting (%s) %li!\n",manager->ident, tid->thread);
 #endif
 
-	stop=true;
-	celixThread_join(*tid,NULL);
-	free(tid);
+    stop=true;
+    celixThread_join(*tid,NULL);
+    free(tid);
 }

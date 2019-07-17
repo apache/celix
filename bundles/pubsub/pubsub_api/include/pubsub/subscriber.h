@@ -20,8 +20,8 @@
  * subscriber.h
  *
  *  \date       Jan 7, 2016
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
+ *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
+ *  \copyright  Apache License, Version 2.0
  */
 
 #ifndef __PUBSUB_SUBSCRIBER_H_
