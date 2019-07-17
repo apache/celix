@@ -17,35 +17,35 @@
 
 if (BUILD_PUBSUB_PSA_NANOMSG)
 
-	find_package(NanoMsg REQUIRED)
-	find_package(Jansson REQUIRED)
+    find_package(NanoMsg REQUIRED)
+    find_package(Jansson REQUIRED)
 
-	add_celix_bundle(celix_pubsub_admin_nanomsg
-		BUNDLE_SYMBOLICNAME "apache_celix_pubsub_admin_nanomsg"
-		VERSION "1.0.0"
-		GROUP "Celix/PubSub"
-		SOURCES
-			src/psa_nanomsg_activator.cc
-			src/pubsub_nanomsg_admin.cc
-			src/pubsub_nanomsg_topic_sender.cc
-			src/pubsub_nanomsg_topic_receiver.cc
-			src/pubsub_nanomsg_common.cc
-	)
+    add_celix_bundle(celix_pubsub_admin_nanomsg
+        BUNDLE_SYMBOLICNAME "apache_celix_pubsub_admin_nanomsg"
+        VERSION "1.0.0"
+        GROUP "Celix/PubSub"
+        SOURCES
+            src/psa_nanomsg_activator.cc
+            src/pubsub_nanomsg_admin.cc
+            src/pubsub_nanomsg_topic_sender.cc
+            src/pubsub_nanomsg_topic_receiver.cc
+            src/pubsub_nanomsg_common.cc
+    )
 
-	set_target_properties(celix_pubsub_admin_nanomsg PROPERTIES INSTALL_RPATH "$ORIGIN")
-	target_link_libraries(celix_pubsub_admin_nanomsg PRIVATE
-			Celix::pubsub_spi
-			Celix::framework Celix::dfi Celix::log_helper
-			${NANOMSG_LIBRARIES}
-	)
-	target_include_directories(celix_pubsub_admin_nanomsg PRIVATE
-		${NANOMSG_INCLUDE_DIR}
-		${JANSSON_INCLUDE_DIR}
-		src
-		../pubsub_topology_manager/src
-	)
+    set_target_properties(celix_pubsub_admin_nanomsg PROPERTIES INSTALL_RPATH "$ORIGIN")
+    target_link_libraries(celix_pubsub_admin_nanomsg PRIVATE
+            Celix::pubsub_spi
+            Celix::framework Celix::dfi Celix::log_helper
+            ${NANOMSG_LIBRARIES}
+    )
+    target_include_directories(celix_pubsub_admin_nanomsg PRIVATE
+        ${NANOMSG_INCLUDE_DIR}
+        ${JANSSON_INCLUDE_DIR}
+        src
+        ../pubsub_topology_manager/src
+    )
 
-	install_celix_bundle(celix_pubsub_admin_nanomsg EXPORT celix COMPONENT pubsub)
-	target_link_libraries(celix_pubsub_admin_nanomsg PRIVATE Celix::shell_api)
-	add_library(Celix::pubsub_admin_nanomsg ALIAS celix_pubsub_admin_nanomsg)
+    install_celix_bundle(celix_pubsub_admin_nanomsg EXPORT celix COMPONENT pubsub)
+    target_link_libraries(celix_pubsub_admin_nanomsg PRIVATE Celix::shell_api)
+    add_library(Celix::pubsub_admin_nanomsg ALIAS celix_pubsub_admin_nanomsg)
 endif()

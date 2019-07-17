@@ -33,74 +33,74 @@
 #include "pubsub_discovery_impl.h"
 
 typedef struct psd_activator {
-	pubsub_discovery_t *pubsub_discovery;
+    pubsub_discovery_t *pubsub_discovery;
 
-	long publishAnnounceSvcTrackerId;
-	//service_tracker_pt pstmPublishersTracker;
+    long publishAnnounceSvcTrackerId;
+    //service_tracker_pt pstmPublishersTracker;
 
-	pubsub_announce_endpoint_listener_t listenerSvc;
-	long listenerSvcId;
+    pubsub_announce_endpoint_listener_t listenerSvc;
+    long listenerSvcId;
 
-	command_service_t cmdSvc;
-	long cmdSvcId;
+    command_service_t cmdSvc;
+    long cmdSvcId;
 
-	log_helper_t *loghelper;
+    log_helper_t *loghelper;
 } psd_activator_t;
 
 static celix_status_t psd_start(psd_activator_t *act, celix_bundle_context_t *ctx) {
-	celix_status_t status;
+    celix_status_t status;
 
-	logHelper_create(ctx, &act->loghelper);
-	logHelper_start(act->loghelper);
+    logHelper_create(ctx, &act->loghelper);
+    logHelper_start(act->loghelper);
 
-	act->pubsub_discovery = pubsub_discovery_create(ctx, act->loghelper);
-	// pubsub_discovery_start needs to be first to initialize
-	status = pubsub_discovery_start(act->pubsub_discovery);
+    act->pubsub_discovery = pubsub_discovery_create(ctx, act->loghelper);
+    // pubsub_discovery_start needs to be first to initialize
+    status = pubsub_discovery_start(act->pubsub_discovery);
 
-	celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
-	opts.filter.serviceName = PUBSUB_DISCOVERED_ENDPOINT_LISTENER_SERVICE;
-	opts.callbackHandle = act->pubsub_discovery;
-	opts.addWithOwner = pubsub_discovery_discoveredEndpointsListenerAdded;
-	opts.removeWithOwner = pubsub_discovery_discoveredEndpointsListenerRemoved;
-	act->publishAnnounceSvcTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
+    celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
+    opts.filter.serviceName = PUBSUB_DISCOVERED_ENDPOINT_LISTENER_SERVICE;
+    opts.callbackHandle = act->pubsub_discovery;
+    opts.addWithOwner = pubsub_discovery_discoveredEndpointsListenerAdded;
+    opts.removeWithOwner = pubsub_discovery_discoveredEndpointsListenerRemoved;
+    act->publishAnnounceSvcTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
 
-	act->listenerSvc.handle = act->pubsub_discovery;
-	act->listenerSvc.announceEndpoint = pubsub_discovery_announceEndpoint;
-	act->listenerSvc.revokeEndpoint = pubsub_discovery_revokeEndpoint;
+    act->listenerSvc.handle = act->pubsub_discovery;
+    act->listenerSvc.announceEndpoint = pubsub_discovery_announceEndpoint;
+    act->listenerSvc.revokeEndpoint = pubsub_discovery_revokeEndpoint;
 
-	//register shell command service
-	//register shell command
-	if (status == CELIX_SUCCESS) {
-		act->cmdSvc.handle = act->pubsub_discovery;
-		act->cmdSvc.executeCommand = pubsub_discovery_executeCommand;
-		celix_properties_t *props = celix_properties_create();
-		celix_properties_set(props, OSGI_SHELL_COMMAND_NAME, "psd_etcd");
-		celix_properties_set(props, OSGI_SHELL_COMMAND_USAGE, "psd_etcd"); //TODO add search topic/scope option
-		celix_properties_set(props, OSGI_SHELL_COMMAND_DESCRIPTION, "Overview of discovered/announced endpoints from/to ETCD");
-		act->cmdSvcId = celix_bundleContext_registerService(ctx, &act->cmdSvc, OSGI_SHELL_COMMAND_SERVICE_NAME, props);
-	}
+    //register shell command service
+    //register shell command
+    if (status == CELIX_SUCCESS) {
+        act->cmdSvc.handle = act->pubsub_discovery;
+        act->cmdSvc.executeCommand = pubsub_discovery_executeCommand;
+        celix_properties_t *props = celix_properties_create();
+        celix_properties_set(props, OSGI_SHELL_COMMAND_NAME, "psd_etcd");
+        celix_properties_set(props, OSGI_SHELL_COMMAND_USAGE, "psd_etcd"); //TODO add search topic/scope option
+        celix_properties_set(props, OSGI_SHELL_COMMAND_DESCRIPTION, "Overview of discovered/announced endpoints from/to ETCD");
+        act->cmdSvcId = celix_bundleContext_registerService(ctx, &act->cmdSvc, OSGI_SHELL_COMMAND_SERVICE_NAME, props);
+    }
 
-	if (status == CELIX_SUCCESS) {
-		act->listenerSvcId = celix_bundleContext_registerService(ctx, &act->listenerSvc, PUBSUB_ANNOUNCE_ENDPOINT_LISTENER_SERVICE, NULL);
-	} else {
-		act->listenerSvcId = -1L;
-	}
+    if (status == CELIX_SUCCESS) {
+        act->listenerSvcId = celix_bundleContext_registerService(ctx, &act->listenerSvc, PUBSUB_ANNOUNCE_ENDPOINT_LISTENER_SERVICE, NULL);
+    } else {
+        act->listenerSvcId = -1L;
+    }
 
-	return status;
+    return status;
 }
 
 static celix_status_t psd_stop(psd_activator_t *act, celix_bundle_context_t *ctx) {
-	celix_bundleContext_stopTracker(ctx, act->publishAnnounceSvcTrackerId);
-	celix_bundleContext_unregisterService(ctx, act->listenerSvcId);
-	celix_bundleContext_unregisterService(ctx, act->cmdSvcId);
+    celix_bundleContext_stopTracker(ctx, act->publishAnnounceSvcTrackerId);
+    celix_bundleContext_unregisterService(ctx, act->listenerSvcId);
+    celix_bundleContext_unregisterService(ctx, act->cmdSvcId);
 
-	celix_status_t status = pubsub_discovery_stop(act->pubsub_discovery);
-	pubsub_discovery_destroy(act->pubsub_discovery);
+    celix_status_t status = pubsub_discovery_stop(act->pubsub_discovery);
+    pubsub_discovery_destroy(act->pubsub_discovery);
 
-	logHelper_stop(act->loghelper);
-	logHelper_destroy(&act->loghelper);
+    logHelper_stop(act->loghelper);
+    logHelper_destroy(&act->loghelper);
 
-	return status;
+    return status;
 }
 
 

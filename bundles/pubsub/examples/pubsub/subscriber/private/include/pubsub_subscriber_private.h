@@ -20,8 +20,8 @@
  * pubsub_subscriber_private.h
  *
  *  \date       Sep 21, 2010
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
+ *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
+ *  \copyright  Apache License, Version 2.0
  */
 
 #ifndef PUBSUB_SUBSCRIBER_PRIVATE_H_
@@ -35,7 +35,7 @@
 #include "pubsub/subscriber.h"
 
 struct pubsub_receiver {
-	char * name;
+    char *name;
 };
 
 typedef struct pubsub_receiver* pubsub_receiver_pt;

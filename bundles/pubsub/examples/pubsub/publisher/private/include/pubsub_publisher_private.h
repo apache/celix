@@ -25,18 +25,18 @@
 #include "pubsub/publisher.h"
 
 struct pubsub_sender {
-	array_list_pt trackers;
-	const char *ident;
-	hash_map_pt tid_map; //service -> tid
-	long bundleId;
+    array_list_pt trackers;
+    const char *ident;
+    hash_map_pt tid_map; //service -> tid
+    long bundleId;
 };
 
 typedef struct pubsub_sender * pubsub_sender_pt;
 
 typedef struct send_thread_struct{
-	pubsub_publisher_pt service;
-	pubsub_sender_pt publisher;
-	const char *topic;
+    pubsub_publisher_pt service;
+    pubsub_sender_pt publisher;
+    const char *topic;
 } *send_thread_struct_pt;
 
 pubsub_sender_pt publisher_create(array_list_pt trackers, const char* ident,long bundleId);

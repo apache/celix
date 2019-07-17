@@ -136,17 +136,17 @@ pubsub_zmq_topic_sender_t* pubsub_zmqTopicSender_create(
     //setting up zmq socket for ZMQ TopicSender
     {
 #ifdef BUILD_WITH_ZMQ_SECURITY
-        char* secure_topics = NULL;
-    	bundleContext_getProperty(bundle_context, "SECURE_TOPICS", (const char **) &secure_topics);
+        char *secure_topics = NULL;
+        bundleContext_getProperty(bundle_context, "SECURE_TOPICS", (const char **) &secure_topics);
 
-        if (secure_topics){
+        if (secure_topics) {
             array_list_pt secure_topics_list = pubsub_getTopicsFromString(secure_topics);
 
             int i;
             int secure_topics_size = arrayList_size(secure_topics_list);
-            for (i = 0; i < secure_topics_size; i++){
+            for (i = 0; i < secure_topics_size; i++) {
                 char* top = arrayList_get(secure_topics_list, i);
-                if (strcmp(pubEP->topic, top) == 0){
+                if (strcmp(pubEP->topic, top) == 0) {
                     printf("PSA_ZMQ_TP: Secure topic: '%s'\n", top);
                     pubEP->is_secure = true;
                 }
@@ -158,9 +158,9 @@ pubsub_zmq_topic_sender_t* pubsub_zmqTopicSender_create(
         }
 
         zcert_t* pub_cert = NULL;
-        if (pubEP->is_secure){
+        if (pubEP->is_secure) {
             char* keys_bundle_dir = pubsub_getKeysBundleDir(bundle_context);
-            if (keys_bundle_dir == NULL){
+            if (keys_bundle_dir == NULL) {
                 return CELIX_SERVICE_EXCEPTION;
             }
 
@@ -177,7 +177,7 @@ pubsub_zmq_topic_sender_t* pubsub_zmqTopicSender_create(
             printf("PSA_ZMQ_TP: Loading key '%s'\n", cert_path);
 
             pub_cert = get_zcert_from_encoded_file((char *) keys_file_path, (char *) keys_file_name, cert_path);
-            if (pub_cert == NULL){
+            if (pub_cert == NULL) {
                 printf("PSA_ZMQ_TP: Cannot load key '%s'\n", cert_path);
                 printf("PSA_ZMQ_TP: Topic '%s' NOT SECURED !\n", pubEP->topic);
                 pubEP->is_secure = false;
@@ -189,16 +189,16 @@ pubsub_zmq_topic_sender_t* pubsub_zmqTopicSender_create(
         if (zmqSocket==NULL) {
 #ifdef BUILD_WITH_ZMQ_SECURITY
             if (pubEP->is_secure) {
-				zcert_destroy(&pub_cert);
-			}
+                zcert_destroy(&pub_cert);
+            }
 #endif
             perror("Error for zmq_socket");
         }
 #ifdef BUILD_WITH_ZMQ_SECURITY
         if (pubEP->is_secure) {
-		    zcert_apply (pub_cert, socket); // apply certificate to socket
-		    zsock_set_curve_server (socket, true); // setup the publisher's socket to use the curve functions
-	    }
+            zcert_apply (pub_cert, socket); // apply certificate to socket
+            zsock_set_curve_server (socket, true); // setup the publisher's socket to use the curve functions
+        }
 #endif
 
         if (zmqSocket != NULL && staticBindUrl != NULL) {
@@ -624,14 +624,14 @@ static void delay_first_send_for_late_joiners(pubsub_zmq_topic_sender_t *sender)
 
     static bool firstSend = true;
 
-    if(firstSend){
+    if (firstSend) {
         L_INFO("PSA_ZMQ_TP: Delaying first send for late joiners...\n");
         sleep(FIRST_SEND_DELAY_IN_SECONDS);
         firstSend = false;
     }
 }
 
-static unsigned int rand_range(unsigned int min, unsigned int max){
+static unsigned int rand_range(unsigned int min, unsigned int max) {
     double scaled = ((double)random())/((double)RAND_MAX);
     return (unsigned int)((max-min+1)*scaled + min);
 }

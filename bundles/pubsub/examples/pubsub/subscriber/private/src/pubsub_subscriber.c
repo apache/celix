@@ -20,8 +20,8 @@
  * pubsub_subscriber.c
  *
  *  \date       Sep 21, 2010
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
+ *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
+ *  \copyright  Apache License, Version 2.0
  */
 
 #include <stdlib.h>
@@ -31,33 +31,33 @@
 #include "pubsub_subscriber_private.h"
 
 pubsub_receiver_pt subscriber_create(char* topics) {
-	pubsub_receiver_pt sub = calloc(1,sizeof(*sub));
-	sub->name = strdup(topics);
-	return sub;
+    pubsub_receiver_pt sub = calloc(1,sizeof(*sub));
+    sub->name = strdup(topics);
+    return sub;
 }
 
 
-void subscriber_start(pubsub_receiver_pt subscriber){
-	printf("Subscriber started...\n");
+void subscriber_start(pubsub_receiver_pt subscriber) {
+    printf("Subscriber started...\n");
 }
 
-void subscriber_stop(pubsub_receiver_pt subscriber){
-	printf("Subscriber stopped...\n");
+void subscriber_stop(pubsub_receiver_pt subscriber) {
+    printf("Subscriber stopped...\n");
 }
 
-void subscriber_destroy(pubsub_receiver_pt subscriber){
-	if(subscriber->name!=NULL){
-		free(subscriber->name);
-	}
-	subscriber->name=NULL;
-	free(subscriber);
+void subscriber_destroy(pubsub_receiver_pt subscriber) {
+    if (subscriber->name != NULL) {
+        free(subscriber->name);
+    }
+    subscriber->name=NULL;
+    free(subscriber);
 }
 
-int pubsub_subscriber_recv(void* handle, const char* msgType, unsigned int msgTypeId, void* msg, bool* release){
+int pubsub_subscriber_recv(void* handle, const char* msgType, unsigned int msgTypeId, void* msg, bool* release) {
 
-	location_t place = (location_t)msg;
-	printf("Recv (%s): [%f, %f] (%s, %s, %s, len data %li)\n", msgType, place->position.lat, place->position.lon, place->name, place->description, place->extra, (long)(strlen(place->data) + 1));
+    location_t place = (location_t)msg;
+    printf("Recv (%s): [%f, %f] (%s, %s, %s, len data %li)\n", msgType, place->position.lat, place->position.lon, place->name, place->description, place->extra, (long)(strlen(place->data) + 1));
 
-	return 0;
+    return 0;
 
 }

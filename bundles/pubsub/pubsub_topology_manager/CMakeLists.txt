@@ -18,26 +18,26 @@
 find_package(UUID REQUIRED)
 
 if(NOT UUID_LIBRARY)
-	#i.e. not found for OSX
-	set(UUID_LIBRARY "")
-	set(UUID_INCLUDE_DIRS "")
+    #i.e. not found for OSX
+    set(UUID_LIBRARY "")
+    set(UUID_INCLUDE_DIRS "")
 endif()
 
 add_celix_bundle(celix_pubsub_topology_manager
     BUNDLE_SYMBOLICNAME "apache_celix_pubsub_topology_manager"
     VERSION "1.0.0"
-	GROUP "Celix/PubSub"
+    GROUP "Celix/PubSub"
     SOURCES
-    	src/pstm_activator.c
-    	src/pubsub_topology_manager.c
-    	src/pubsub_topology_manager.h
+        src/pstm_activator.c
+        src/pubsub_topology_manager.c
+        src/pubsub_topology_manager.h
 )
 target_link_libraries(celix_pubsub_topology_manager PRIVATE Celix::framework Celix::log_helper Celix::pubsub_spi Celix::shell_api)
 target_include_directories(celix_pubsub_topology_manager PRIVATE ${UUID_INCLUDE_DIRS})
 
 get_target_property(DESC Celix::pubsub_spi TOPIC_INFO_DESCRIPTOR)
 celix_bundle_files(celix_pubsub_topology_manager
-	${DESC}
+    ${DESC}
     DESTINATION "META-INF/descriptors/services"
 )
 
