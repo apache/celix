@@ -586,7 +586,7 @@ static void* psa_zmq_recvThread(void * data) {
         zmsg_t *zmsg = zmsg_recv(receiver->zmqSock);
         if (zmsg != NULL) {
             if (zmsg_size(zmsg) != 3) {
-                L_WARN("[PSA_ZMQ_TR] Always expecting 2 frames per zmsg (header + payload), got %i frames", (int)zmsg_size(zmsg));
+                L_WARN("[PSA_ZMQ_TR] Always expecting 3 frames per zmsg (filter + header + payload), got %i frames", (int)zmsg_size(zmsg));
             } else {
                 zframe_t *filter = zmsg_pop(zmsg); //char[5] filter
                 zframe_t *header = zmsg_pop(zmsg); //pubsub_zmq_msg_header_t
