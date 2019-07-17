@@ -1,27 +1,27 @@
 /**
- *Licensed to the Apache Software Foundation (ASF) under one
- *or more contributor license agreements.  See the NOTICE file
- *distributed with this work for additional information
- *regarding copyright ownership.  The ASF licenses this file
- *to you under the Apache License, Version 2.0 (the
- *"License"); you may not use this file except in compliance
- *with the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- *Unless required by applicable law or agreed to in writing,
- *software distributed under the License is distributed on an
- *"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- *specific language governing permissions and limitations
- *under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 /*
  * hash_map.h
  *
  *  \date       Jul 21, 2010
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
+ *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
+ *  \copyright  Apache License, Version 2.0
  */
 
 #ifndef HASH_MAP_H_
@@ -41,11 +41,11 @@ typedef struct hashMap* hash_map_pt;
 typedef struct hashMap hash_map_t;
 
 struct hashMapIterator {
-	hash_map_pt map;
-	hash_map_entry_pt next;
-	hash_map_entry_pt current;
-	int expectedModCount;
-	int index;
+    hash_map_pt map;
+    hash_map_entry_pt next;
+    hash_map_entry_pt current;
+    int expectedModCount;
+    int index;
 };
 
 typedef struct hashMapIterator hash_map_iterator_t;
@@ -56,8 +56,8 @@ typedef struct hashMapValues *hash_map_values_pt;
 typedef struct hashMapEntrySet *hash_map_entry_set_pt;
 
 UTILS_EXPORT hash_map_pt hashMap_create(unsigned int (*keyHash)(const void *), unsigned int (*valueHash)(const void *),
-										int (*keyEquals)(const void *, const void *),
-										int (*valueEquals)(const void *, const void *));
+                                        int (*keyEquals)(const void *, const void *),
+                                        int (*valueEquals)(const void *, const void *));
 
 UTILS_EXPORT void hashMap_destroy(hash_map_pt map, bool freeKeys, bool freeValues);
 

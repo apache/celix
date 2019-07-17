@@ -213,7 +213,7 @@ TEST(filter, match_comparators){
     CHECK_FALSE(result);
 
     //cleanup
-    properties_destroy(props);
+    celix_properties_destroy(props);
     celix_filter_destroy(filter);
     free(filter_str);
     free(key);
@@ -422,7 +422,7 @@ TEST(filter, match_operators){
     CHECK_FALSE(result);
 
     //cleanup
-    properties_destroy(props);
+    celix_properties_destroy(props);
     celix_filter_destroy(filter);
     free(filter_str);
     free(key);
