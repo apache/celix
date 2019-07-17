@@ -53,7 +53,6 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
     struct subscriberActivator * act = (struct subscriberActivator *) userData;
 
-
     pubsub_subscriber_pt subsvc = calloc(1,sizeof(*subsvc));
     pubsub_receiver_pt sub = subscriber_create(SUB_NAME);
     subsvc->handle = sub;
@@ -69,7 +68,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 #ifdef USE_SCOPE
         char *scope;
         asprintf(&scope, "my_scope_%d", i);
-        celix_properties_set(props,SUBSCRIBER_SCOPE,scope);
+        celix_properties_set(props, PUBSUB_SUBSCRIBER_SCOPE, scope);
         free(scope);
 #endif
         service_registration_pt reg = NULL;
