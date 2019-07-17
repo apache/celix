@@ -38,48 +38,48 @@
 
 
 celix_status_t pubsub_getPubSubInfoFromFilter(const char* filterstr, char **topicOut, char **scopeOut) {
-    celix_status_t status = CELIX_SUCCESS;
-    const char *topic = NULL;
-    const char *scope = NULL;
-    const char *objectClass = NULL;
-    celix_filter_t *filter = celix_filter_create(filterstr);
-    if (filter != NULL) {
-        if (filter->operand == CELIX_FILTER_OPERAND_AND) { //only and pubsub filter valid (e.g. (&(objectClass=pubsub_publisher)(topic=example))
-            array_list_t *attributes = filter->children;
-            unsigned int i;
-            unsigned int size = arrayList_size(attributes);
-            for (i = 0; i < size; ++i) {
-                filter_t *attr = arrayList_get(attributes, i);
-                if (attr->operand == CELIX_FILTER_OPERAND_EQUAL) {
-                    if (strncmp(OSGI_FRAMEWORK_OBJECTCLASS, attr->attribute, 128) == 0) {
-                        objectClass = attr->value;
-                    } else if (strncmp(PUBSUB_PUBLISHER_TOPIC, attr->attribute, 128) == 0) {
-                        topic = attr->value;
-                    } else if (strncmp(PUBSUB_PUBLISHER_SCOPE, attr->attribute, 128) == 0) {
-                        scope = attr->value;
-                    }
-                }
-            }
-        }
-    }
+	celix_status_t status = CELIX_SUCCESS;
+	const char *topic = NULL;
+	const char *scope = NULL;
+	const char *objectClass = NULL;
+	celix_filter_t *filter = filter_create(filterstr);
+	if (filter != NULL) {
+		if (filter->operand == CELIX_FILTER_OPERAND_AND) { //only and pubsub filter valid (e.g. (&(objectClass=pubsub_publisher)(topic=example))
+			array_list_t *attributes = filter->children;
+			unsigned int i;
+			unsigned int size = arrayList_size(attributes);
+			for (i = 0; i < size; ++i) {
+				filter_t *attr = arrayList_get(attributes, i);
+				if (attr->operand == CELIX_FILTER_OPERAND_EQUAL) {
+					if (strncmp(OSGI_FRAMEWORK_OBJECTCLASS, attr->attribute, 128) == 0) {
+						objectClass = attr->value;
+					} else if (strncmp(PUBSUB_PUBLISHER_TOPIC, attr->attribute, 128) == 0) {
+						topic = attr->value;
+					} else if (strncmp(PUBSUB_PUBLISHER_SCOPE, attr->attribute, 128) == 0) {
+						scope = attr->value;
+					}
+				}
+			}
+		}
+	}
 
-    if (topic != NULL && objectClass != NULL && strncmp(objectClass, PUBSUB_PUBLISHER_SERVICE_NAME, 128) == 0) {
-        //NOTE topic must be present, scope can be present in the filter.
-        *topicOut = strdup(topic);
+	if (topic != NULL && objectClass != NULL && strncmp(objectClass, PUBSUB_PUBLISHER_SERVICE_NAME, 128) == 0) {
+		//NOTE topic must be present, scope can be present in the filter.
+		*topicOut = strdup(topic);
                 if (scope != NULL) {
-            *scopeOut = strdup(scope);
-        } else {
-            *scopeOut = NULL;
-        }
-    } else {
-        *topicOut = NULL;
-        *scopeOut = NULL;
-    }
+		    *scopeOut = strdup(scope);
+		} else {
+		    *scopeOut = NULL;
+		}
+	} else {
+		*topicOut = NULL;
+		*scopeOut = NULL;
+	}
 
-    if (filter != NULL) {
+	if (filter != NULL) {
              filter_destroy(filter);
         }
-    return status;
+	return status;
 }
 
 
@@ -91,72 +91,72 @@ celix_status_t pubsub_getPubSubInfoFromFilter(const char* filterstr, char **topi
  */
 char* pubsub_getKeysBundleDir(bundle_context_pt ctx)
 {
-    array_list_pt bundles = NULL;
-    bundleContext_getBundles(ctx, &bundles);
-    int nrOfBundles = arrayList_size(bundles);
-    long bundle_id = -1;
-    char* result = NULL;
+	array_list_pt bundles = NULL;
+	bundleContext_getBundles(ctx, &bundles);
+	int nrOfBundles = arrayList_size(bundles);
+	long bundle_id = -1;
+	char* result = NULL;
 
-    for (int i = 0; i < nrOfBundles; i++) {
-        bundle_pt b = arrayList_get(bundles, i);
+	for (int i = 0; i < nrOfBundles; i++){
+		bundle_pt b = arrayList_get(bundles, i);
 
-        /* Skip bundle 0 (framework bundle) since it has no path nor revisions */
-        bundle_getBundleId(b, &bundle_id);
-        if (bundle_id == 0) {
-            continue;
-        }
+		/* Skip bundle 0 (framework bundle) since it has no path nor revisions */
+		bundle_getBundleId(b, &bundle_id);
+		if(bundle_id==0){
+			continue;
+		}
 
-        char* dir = NULL;
-        bundle_getEntry(b, ".", &dir);
+		char* dir = NULL;
+		bundle_getEntry(b, ".", &dir);
 
-        char cert_dir[MAX_KEYBUNDLE_LENGTH];
-        snprintf(cert_dir, MAX_KEYBUNDLE_LENGTH, "%s/META-INF/keys", dir);
+		char cert_dir[MAX_KEYBUNDLE_LENGTH];
+		snprintf(cert_dir, MAX_KEYBUNDLE_LENGTH, "%s/META-INF/keys", dir);
 
-        struct stat s;
-        int err = stat(cert_dir, &s);
-        if (err != -1) {
-            if (S_ISDIR(s.st_mode)) {
-                result = dir;
-                break;
-            }
-        }
+		struct stat s;
+		int err = stat(cert_dir, &s);
+		if (err != -1){
+			if (S_ISDIR(s.st_mode)){
+				result = dir;
+				break;
+			}
+		}
 
-        free(dir);
-    }
+		free(dir);
+	}
 
-    arrayList_destroy(bundles);
+	arrayList_destroy(bundles);
 
-    return result;
+	return result;
 }
 
 celix_properties_t *pubsub_utils_getTopicProperties(const celix_bundle_t *bundle, const char *topic, bool isPublisher) {
 
-    celix_properties_t *topic_props = NULL;
+	celix_properties_t *topic_props = NULL;
 
-    bool isSystemBundle = false;
-    bundle_isSystemBundle((bundle_pt)bundle, &isSystemBundle);
-    long bundleId = -1;
-    bundle_isSystemBundle((bundle_pt)bundle, &isSystemBundle);
-    bundle_getBundleId((bundle_pt)bundle,&bundleId);
+	bool isSystemBundle = false;
+	bundle_isSystemBundle((bundle_pt)bundle, &isSystemBundle);
+	long bundleId = -1;
+	bundle_isSystemBundle((bundle_pt)bundle, &isSystemBundle);
+	bundle_getBundleId((bundle_pt)bundle,&bundleId);
 
-    if (isSystemBundle == false) {
+	if(isSystemBundle == false) {
 
-        char *bundleRoot = NULL;
-        char* topicPropertiesPath = NULL;
-        bundle_getEntry((bundle_pt)bundle, ".", &bundleRoot);
+		char *bundleRoot = NULL;
+		char* topicPropertiesPath = NULL;
+		bundle_getEntry((bundle_pt)bundle, ".", &bundleRoot);
 
-        if (bundleRoot != NULL) {
+		if(bundleRoot != NULL){
 
-            asprintf(&topicPropertiesPath, "%s/META-INF/topics/%s/%s.properties", bundleRoot, isPublisher? "pub":"sub", topic);
-            topic_props = celix_properties_load(topicPropertiesPath);
-            if (topic_props == NULL) {
-                printf("PubSub: Could not load properties for %s on topic %s. Searched location %s, bundleId=%ld\n", isPublisher? "publication":"subscription", topic, topicPropertiesPath, bundleId);
-            }
+			asprintf(&topicPropertiesPath, "%s/META-INF/topics/%s/%s.properties", bundleRoot, isPublisher? "pub":"sub", topic);
+			topic_props = properties_load(topicPropertiesPath);
+			if(topic_props==NULL){
+				printf("PubSub: Could not load properties for %s on topic %s. Searched location %s, bundleId=%ld\n", isPublisher? "publication":"subscription", topic, topicPropertiesPath, bundleId);
+			}
 
-            free(topicPropertiesPath);
-            free(bundleRoot);
-        }
-    }
+			free(topicPropertiesPath);
+			free(bundleRoot);
+		}
+	}
 
-    return topic_props;
+	return topic_props;
 }

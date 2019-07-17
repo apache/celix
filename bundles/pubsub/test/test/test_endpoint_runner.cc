@@ -28,7 +28,7 @@ int main(int argc, char **argv) {
     celixLauncher_launch("config.properties", &fw);
 
     MemoryLeakWarningPlugin::turnOffNewDeleteOverloads();
-    usleep(5000000);
+    usleep(1000000);
     int rc = RUN_ALL_TESTS(argc, argv);
 
     celixLauncher_stop(fw);
