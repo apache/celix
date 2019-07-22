@@ -110,7 +110,10 @@ etcdlib_t* etcdlib_create(const char* server, int port, int flags) {
 }
 
 void etcdlib_destroy(etcdlib_t *etcdlib) {
-	free(etcdlib);
+    if (etcdlib != NULL) {
+        free(etcdlib->host);
+    }
+    free(etcdlib);
 }
 
 int etcd_get(const char* key, char** value, int* modifiedIndex) {

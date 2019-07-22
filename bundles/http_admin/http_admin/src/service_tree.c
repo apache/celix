@@ -92,7 +92,7 @@ bool addServiceNode(service_tree_t *svc_tree, const char *uri, void *svc) {
     service_node_data_t *current_data = current->svc_data;
     while (req_uri != NULL) {
         char *tmp_save_ptr = save_ptr;
-        char *next_token = strtok_r(uri_cpy, "/", &tmp_save_ptr);
+        char *next_token = strtok_r(NULL, "/", &tmp_save_ptr);
         bool is_last_entry = next_token == NULL;
         if (strcmp(current_data->sub_uri, req_uri) == 0) {
             if (is_last_entry) {
@@ -113,7 +113,7 @@ bool addServiceNode(service_tree_t *svc_tree, const char *uri, void *svc) {
                 //Parent has no sub URIs registered yet
                 req_uri = strtok_r(NULL, "/", &save_ptr);
                 tmp_save_ptr = save_ptr;
-                next_token = strtok_r(uri_cpy, "/", &tmp_save_ptr);
+                next_token = strtok_r(NULL, "/", &tmp_save_ptr);
                 is_last_entry = next_token == NULL;
                 service_tree_node_t *node = createServiceNode(current, NULL, NULL, NULL,
                                                               req_uri, (is_last_entry ? svc : NULL));
