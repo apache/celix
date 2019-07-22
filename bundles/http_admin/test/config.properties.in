@@ -18,7 +18,7 @@
 CELIX_CONTAINER_NAME=http_websocket_tests
 CELIX_BUNDLES_PATH=bundles
 
-CELIX_AUTO_START_3=@http_admin_service_cmp@ @http_admin_sut_cmp@ @http_admin_tst_cmp@
+CELIX_AUTO_START_3=@http_admin_service_cmp@ @http_admin_sut_cmp@
 
 USE_WEBSOCKETS=@use_websockets@
 LISTENING_PORTS=@listening_ports@

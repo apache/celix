@@ -77,7 +77,7 @@ bool addServiceNode(service_tree_t *svc_tree, const char *uri, void *svc) {
     } else if(svc_tree->root_node == NULL) { //No service yet added
         uri_cpy = strdup(uri);
         req_uri = strtok_r(uri_cpy, "/", &save_ptr);
-        svc_tree->root_node = createServiceNode(NULL, NULL, NULL, NULL, req_uri, (strcmp(save_ptr, "") == 0 ? svc : NULL));
+        svc_tree->root_node = createServiceNode(NULL, NULL, NULL, NULL, req_uri, (strcmp(req_uri, "") == 0 ? svc : NULL));
         svc_tree->tree_node_count = 1;
         uri_exists = false;
     } else if(strcmp(svc_tree->root_node->svc_data->sub_uri, "root") == 0){
@@ -91,7 +91,9 @@ bool addServiceNode(service_tree_t *svc_tree, const char *uri, void *svc) {
     service_tree_node_t *current = svc_tree->root_node;
     service_node_data_t *current_data = current->svc_data;
     while (req_uri != NULL) {
-        bool is_last_entry = (strcmp(save_ptr, "") == 0);
+        char *tmp_save_ptr = save_ptr;
+        char *next_token = strtok_r(uri_cpy, "/", &tmp_save_ptr);
+        bool is_last_entry = next_token == NULL;
         if (strcmp(current_data->sub_uri, req_uri) == 0) {
             if (is_last_entry) {
                 //Entry already exists/added in tree
@@ -110,7 +112,9 @@ bool addServiceNode(service_tree_t *svc_tree, const char *uri, void *svc) {
             } else {
                 //Parent has no sub URIs registered yet
                 req_uri = strtok_r(NULL, "/", &save_ptr);
-                is_last_entry = (strcmp(save_ptr, "") == 0);
+                tmp_save_ptr = save_ptr;
+                next_token = strtok_r(uri_cpy, "/", &tmp_save_ptr);
+                is_last_entry = next_token == NULL;
                 service_tree_node_t *node = createServiceNode(current, NULL, NULL, NULL,
                                                               req_uri, (is_last_entry ? svc : NULL));
                 current->children = node;
@@ -302,7 +306,7 @@ service_tree_node_t *findServiceNodeInTree(service_tree_t *svc_tree, const char 
                 current = current->children;
                 while(current != NULL) {
                     //Match for current sub URI with URI token
-                    if(strcmp(current->svc_data->sub_uri, uri_token) == 0) {
+                    if (current->svc_data->sub_uri != NULL && strcmp(current->svc_data->sub_uri, uri_token) == 0) {
                         //Save current node to comply with OSGI Http Whiteboard Specification
                         if(current->svc_data->service != NULL) {
                             found_node = current;
@@ -320,7 +324,7 @@ service_tree_node_t *findServiceNodeInTree(service_tree_t *svc_tree, const char 
                     }
                 }
                 //No more tokens left, save this node when a service is present
-            } else if(uri_token == NULL && current->svc_data->service != NULL) {
+            } else if (uri_token == NULL && current->svc_data->service != NULL) {
                 found_node = current;
             }
             //Else we haven't found a node that complies with the requested URI...

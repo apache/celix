@@ -26,22 +26,20 @@ add_celix_bundle(http_admin_sut
 )
 target_include_directories(http_admin_sut PRIVATE test)
 target_link_libraries(http_admin_sut PRIVATE Celix::http_admin_api)
-celix_bundle_private_libs(http_admin_sut civetweb_shared)
-
-add_celix_bundle(http_admin_tst
-    #Test bundle containing cpputests and uses celix_test_runner launcher instead of the celix launcher
-    SOURCES
-        test/http_websocket_tests.cc
-    VERSION 1.0.0
-)
-target_link_libraries(http_admin_tst PRIVATE Celix::framework Celix::http_admin_api)
-target_include_directories(http_admin_tst PRIVATE ${CPPUTEST_INCLUDE_DIR})
-celix_bundle_private_libs(http_admin_tst civetweb_shared)
-
-celix_bundle_add_dir(http_admin_tst docroot DESTINATION ".")
-celix_bundle_headers(http_admin_tst
+celix_bundle_add_dir(http_admin_sut docroot DESTINATION ".")
+celix_bundle_headers(http_admin_sut
         "X-Web-Resource: /alias$<SEMICOLON>/docroot/foo/bar, /socket_alias$<SEMICOLON>/docroot/foo/bar"
 )
+
+#add_celix_bundle(http_admin_tst
+#    #Test bundle containing cpputests and uses celix_test_runner launcher instead of the celix launcher
+#    SOURCES
+#        test/http_websocket_tests.cc
+#    VERSION 1.0.0
+#)
+#target_link_libraries(http_admin_tst PRIVATE Celix::framework Celix::http_admin_api)
+#target_include_directories(http_admin_tst PRIVATE ${CPPUTEST_INCLUDE_DIR})
+#celix_bundle_private_libs(http_admin_tst civetweb_shared)
 
 
 add_celix_container(http_websocket_tests
@@ -52,8 +50,9 @@ add_celix_container(http_websocket_tests
         BUNDLES
             Celix::http_admin_service
             http_admin_sut
-            http_admin_tst
+#            http_admin_tst
 )
+target_sources(http_websocket_tests PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/test/http_websocket_tests.cc)
 target_link_libraries(http_websocket_tests PRIVATE Celix::http_admin_api ${CPPUTEST_LIBRARIES})
 target_include_directories(http_websocket_tests PRIVATE ${CPPUTEST_INCLUDE_DIR})
 
@@ -62,7 +61,7 @@ SETUP_TARGET_FOR_COVERAGE(http_websocket_tests http_websocket_tests ${CMAKE_BINA
 
 get_target_property(http_admin_service_cmp Celix::http_admin_service BUNDLE_FILE)
 get_target_property(http_admin_sut_cmp http_admin_sut BUNDLE_FILE)
-get_target_property(http_admin_tst_cmp http_admin_tst BUNDLE_FILE)
+#get_target_property(http_admin_tst_cmp http_admin_tst BUNDLE_FILE)
 set(loghelper_std_out_fallback_incl_debug true)
 set(use_websockets true)
 set(listening_ports 65536) #Set invalid port to test range functionality

@@ -42,12 +42,18 @@
 #define DEFAULT_CURL_TIMEOUT          10
 #define DEFAULT_CURL_CONNECT_TIMEOUT  10
 
+struct etcdlib_struct {
+	char *host;
+	int port;
+};
+
 typedef enum {
 	GET, PUT, DELETE
 } request_t;
 
-static const char* etcd_server;
-static int etcd_port = 0;
+#define MAX_GLOBAL_HOSTNAME 128
+static char g_etcdlib_host[MAX_GLOBAL_HOSTNAME];
+static etcdlib_t g_etcdlib;
 
 struct MemoryStruct {
 	char *memory;
@@ -72,8 +78,15 @@ static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, voi
  */
 int etcd_init(const char* server, int port, int flags) {
 	int status = 0;
-	etcd_server = server;
-	etcd_port = port;
+	int needed = snprintf(g_etcdlib_host, MAX_GLOBAL_HOSTNAME, "%s", server);
+	if (needed > MAX_GLOBAL_HOSTNAME) {
+		fprintf(stderr, "Cannot init global etcdlib with '%s'. hostname len exceeds max (%i)", server, MAX_GLOBAL_HOSTNAME);
+		g_etcdlib.host = NULL;
+		g_etcdlib.port = 0;
+	} else {
+		g_etcdlib.host = g_etcdlib_host;
+		g_etcdlib.port = port;
+	}
 
 	if ((flags & ETCDLIB_NO_CURL_INITIALIZATION) == 0) {
 		//NO_CURL_INITIALIZATION flag not set
@@ -83,11 +96,28 @@ int etcd_init(const char* server, int port, int flags) {
 	return status;
 }
 
+etcdlib_t* etcdlib_create(const char* server, int port, int flags) {
+	if ((flags & ETCDLIB_NO_CURL_INITIALIZATION) == 0) {
+		//NO_CURL_INITIALIZATION flag not set
+		curl_global_init(CURL_GLOBAL_ALL);
+	}
 
-/**
- * etcd_get
- */
+	etcdlib_t *lib = malloc(sizeof(*lib));
+	lib->host = strndup(server, 1024 * 1024 * 10);
+	lib->port = port;
+
+	return lib;
+}
+
+void etcdlib_destroy(etcdlib_t *etcdlib) {
+	free(etcdlib);
+}
+
 int etcd_get(const char* key, char** value, int* modifiedIndex) {
+	return etcdlib_get(&g_etcdlib, key, value, modifiedIndex);
+}
+
+int etcdlib_get(const etcdlib_t *etcdlib, const char* key, char** value, int* modifiedIndex) {
 	json_t *js_root = NULL;
 	json_t *js_node = NULL;
 	json_t *js_value = NULL;
@@ -103,7 +133,7 @@ int etcd_get(const char* key, char** value, int* modifiedIndex) {
 
 	int retVal = ETCDLIB_RC_ERROR;
 	char *url;
-	asprintf(&url, "http://%s:%d/v2/keys/%s", etcd_server, etcd_port, key);
+	asprintf(&url, "http://%s:%d/v2/keys/%s", etcdlib->host, etcdlib->port, key);
 	res = performRequest(url, GET, NULL, (void *) &reply);
 	free(url);
 
@@ -147,7 +177,7 @@ int etcd_get(const char* key, char** value, int* modifiedIndex) {
 }
 
 
-static int etcd_get_recursive_values(json_t* js_root, etcd_key_value_callback callback, void *arg, json_int_t *mod_index) {
+static int etcd_get_recursive_values(json_t* js_root, etcdlib_key_value_callback callback, void *arg, json_int_t *mod_index) {
 	json_t *js_nodes;
 	if ((js_nodes = json_object_get(js_root, ETCD_JSON_NODES)) != NULL) {
 		// subarray
@@ -202,10 +232,14 @@ static long long etcd_get_current_index(const char* headerData) {
     }
     return index;
 }
-/**
- * etcd_get_directory
- */
-int etcd_get_directory(const char* directory, etcd_key_value_callback callback, void* arg, long long* modifiedIndex) {
+
+
+int etcd_get_directory(const char* directory, etcdlib_key_value_callback callback, void* arg, long long* modifiedIndex) {
+	return etcdlib_get_directory(&g_etcdlib, directory, callback, arg, modifiedIndex);
+}
+
+int etcdlib_get_directory(const etcdlib_t *etcdlib, const char* directory, etcdlib_key_value_callback callback, void *arg, long long* modifiedIndex) {
+
 	json_t* js_root = NULL;
 	json_t* js_rootnode = NULL;
 
@@ -221,7 +255,7 @@ int etcd_get_directory(const char* directory, etcd_key_value_callback callback, 
 	int retVal = ETCDLIB_RC_OK;
 	char *url;
 
-	asprintf(&url, "http://%s:%d/v2/keys/%s?recursive=true", etcd_server, etcd_port, directory);
+	asprintf(&url, "http://%s:%d/v2/keys/%s?recursive=true", etcdlib->host, etcdlib->port, directory);
 
 	res = performRequest(url, GET, NULL, (void*) &reply);
 	free(url);
@@ -269,6 +303,11 @@ int etcd_get_directory(const char* directory, etcd_key_value_callback callback, 
 }
 
 int etcd_set(const char* key, const char* value, int ttl, bool prevExist) {
+	return etcdlib_set(&g_etcdlib, key, value, ttl, prevExist);
+}
+
+int etcdlib_set(const etcdlib_t *etcdlib, const char* key, const char* value, int ttl, bool prevExist) {
+
 	json_error_t error;
 	json_t* js_root = NULL;
 	json_t* js_node = NULL;
@@ -291,7 +330,7 @@ int etcd_set(const char* key, const char* value, int ttl, bool prevExist) {
 	reply.header = NULL; /* will be grown as needed by the realloc above */
 	reply.headerSize = 0; /* no data at this point */
 
-	asprintf(&url, "http://%s:%d/v2/keys/%s", etcd_server, etcd_port, key);
+	asprintf(&url, "http://%s:%d/v2/keys/%s", etcdlib->host, etcdlib->port, key);
 
 	requestPtr += snprintf(requestPtr, req_len, "value=%s", value);
 	if (ttl > 0) {
@@ -336,6 +375,10 @@ int etcd_set(const char* key, const char* value, int ttl, bool prevExist) {
 
 
 int etcd_refresh(const char* key, int ttl) {
+	return etcdlib_refresh(&g_etcdlib, key, ttl);
+}
+
+int etcdlib_refresh(const etcdlib_t *etcdlib, const char *key, int ttl) {
 	int retVal = ETCDLIB_RC_ERROR;
 	char *url;
 	size_t req_len = MAX_OVERHEAD_LENGTH;
@@ -354,7 +397,7 @@ int etcd_refresh(const char* key, int ttl) {
     reply.header = NULL; /* will be grown as needed by the realloc above */
     reply.headerSize = 0; /* no data at this point */
 
-	asprintf(&url, "http://%s:%d/v2/keys/%s", etcd_server, etcd_port, key);
+	asprintf(&url, "http://%s:%d/v2/keys/%s", etcdlib->host, etcdlib->port, key);
 	snprintf(request, req_len, "ttl=%d;prevExists=true;refresh=true", ttl);
 
 	res = performRequest(url, PUT, request, (void*) &reply);
@@ -387,13 +430,14 @@ int etcd_refresh(const char* key, int ttl) {
 	return retVal;
 }
 
-/**
- * etcd_set_with_check
- */
 int etcd_set_with_check(const char* key, const char* value, int ttl, bool always_write) {
+	return etcdlib_set_with_check(&g_etcdlib, key, value, ttl, always_write);
+}
+
+int etcdlib_set_with_check(const etcdlib_t *etcdlib, const char* key, const char* value, int ttl, bool always_write) {
 	char *etcd_value;
 	int result = 0;
-	if (etcd_get(key, &etcd_value, NULL) == 0) {
+	if (etcdlib_get(etcdlib, key, &etcd_value, NULL) == 0) {
 		if(etcd_value!=NULL){
 			if (strcmp(etcd_value, value) != 0) {
 				fprintf(stderr, "[ETCDLIB] WARNING: value already exists and is different\n");
@@ -406,16 +450,19 @@ int etcd_set_with_check(const char* key, const char* value, int ttl, bool always
 		}
 	}
 	if(always_write || !result) {
-		result = etcd_set(key, value, ttl, false);
+		result = etcdlib_set(etcdlib, key, value, ttl, false);
 	}
 	return result;
 }
 
 
-/**
- * etcd_watch
- */
+
 int etcd_watch(const char* key, long long index, char** action, char** prevValue, char** value, char** rkey, long long* modifiedIndex) {
+	return etcdlib_watch(&g_etcdlib, key, index, action, prevValue, value, rkey, modifiedIndex);
+}
+
+int etcdlib_watch(const etcdlib_t *etcdlib, const char* key, long long index, char** action, char** prevValue, char** value, char** rkey, long long* modifiedIndex) {
+
 	json_error_t error;
 	json_t* js_root = NULL;
 	json_t* js_node = NULL;
@@ -436,9 +483,9 @@ int etcd_watch(const char* key, long long index, char** action, char** prevValue
     reply.headerSize = 0; /* no data at this point */
 
 	if (index != 0)
-		asprintf(&url, "http://%s:%d/v2/keys/%s?wait=true&recursive=true&waitIndex=%lld", etcd_server, etcd_port, key, index);
+		asprintf(&url, "http://%s:%d/v2/keys/%s?wait=true&recursive=true&waitIndex=%lld", etcdlib->host, etcdlib->port, key, index);
 	else
-		asprintf(&url, "http://%s:%d/v2/keys/%s?wait=true&recursive=true", etcd_server, etcd_port, key);
+		asprintf(&url, "http://%s:%d/v2/keys/%s?wait=true&recursive=true", etcdlib->host, etcdlib->port, key);
 	res = performRequest(url, GET, NULL, (void*) &reply);
 	if(url)
 		free(url);
@@ -500,10 +547,13 @@ int etcd_watch(const char* key, long long index, char** action, char** prevValue
 	return retVal;
 }
 
-/**
- * etcd_del
- */
+
 int etcd_del(const char* key) {
+	return etcdlib_del(&g_etcdlib, key);
+}
+
+int etcdlib_del(const etcdlib_t *etcdlib, const char* key) {
+
 	json_error_t error;
 	json_t* js_root = NULL;
 	json_t* js_node = NULL;
@@ -517,7 +567,7 @@ int etcd_del(const char* key) {
     reply.header = NULL; /* will be grown as needed by the realloc above */
     reply.headerSize = 0; /* no data at this point */
 
-	asprintf(&url, "http://%s:%d/v2/keys/%s?recursive=true", etcd_server, etcd_port, key);
+	asprintf(&url, "http://%s:%d/v2/keys/%s?recursive=true", etcdlib->host, etcdlib->port, key);
 	res = performRequest(url, DELETE, NULL, (void*) &reply);
 	free(url);
 
