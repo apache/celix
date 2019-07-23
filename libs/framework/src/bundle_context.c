@@ -625,10 +625,12 @@ static void bundleContext_cleanupBundleTrackers(bundle_context_t *ctx) {
 }
 
 static void bundleContext_cleanupServiceTrackers(bundle_context_t *ctx) {
-    hash_map_iterator_t iter = hashMapIterator_construct(ctx->serviceTrackers);
-    while (hashMapIterator_hasNext(&iter)) {
-        celix_service_tracker_t *tracker = hashMapIterator_nextValue(&iter);
-        celix_serviceTracker_destroy(tracker);
+    if(hashMap_size(ctx->serviceTrackers) > 0) {
+        module_pt module;
+        const char *symbolicName;
+        bundle_getCurrentModule(ctx->bundle, &module);
+        module_getSymbolicName(module, &symbolicName);
+        fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "Dangling service tracker(s) for bundle %s.", symbolicName);
     }
     hashMap_destroy(ctx->serviceTrackers, false, false);
 }
