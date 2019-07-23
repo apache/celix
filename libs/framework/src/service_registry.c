@@ -99,7 +99,7 @@ celix_status_t serviceRegistry_destroy(service_registry_pt registry) {
     if (size > 0) {
         fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "%i bundles with dangling service registration\n");
         hash_map_iterator_t iter = hashMapIterator_construct(registry->serviceRegistrations);
-        while (hashMapIterator_nextValue(&iter)) {
+        while (hashMapIterator_hasNext(&iter)) {
             hash_map_entry_t *entry = hashMapIterator_nextEntry(&iter);
             bundle_t *bnd = hashMapEntry_getKey(entry);
             celix_array_list_t *registrations = hashMapEntry_getValue(entry);
