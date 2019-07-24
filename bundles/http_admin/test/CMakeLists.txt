@@ -48,7 +48,7 @@ add_celix_container(http_websocket_tests
         PROPERTIES
             LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
         BUNDLES
-            Celix::http_admin_service
+            Celix::http_admin
             http_admin_sut
 #            http_admin_tst
 )
@@ -59,7 +59,7 @@ target_include_directories(http_websocket_tests PRIVATE ${CPPUTEST_INCLUDE_DIR})
 add_test(NAME http_websocket_tests COMMAND http_websocket_tests WORKING_DIRECTORY $<TARGET_PROPERTY:http_websocket_tests,CONTAINER_LOC>)
 SETUP_TARGET_FOR_COVERAGE(http_websocket_tests http_websocket_tests ${CMAKE_BINARY_DIR}/coverage/http_websocket_tests/http_websocket_tests ..)
 
-get_target_property(http_admin_service_cmp Celix::http_admin_service BUNDLE_FILE)
+get_target_property(http_admin_service_cmp Celix::http_admin BUNDLE_FILE)
 get_target_property(http_admin_sut_cmp http_admin_sut BUNDLE_FILE)
 #get_target_property(http_admin_tst_cmp http_admin_tst BUNDLE_FILE)
 set(loghelper_std_out_fallback_incl_debug true)
