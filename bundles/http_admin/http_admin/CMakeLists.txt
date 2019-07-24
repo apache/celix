@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_celix_bundle(http_admin_service
+add_celix_bundle(http_admin
     SOURCES
         src/http_admin
         src/websocket_admin
@@ -26,14 +26,14 @@ add_celix_bundle(http_admin_service
     GROUP "Celix/HTTP_admin"
     NAME "Apache Celix HTTP Admin"
 )
-target_include_directories(http_admin_service PRIVATE src)
+target_include_directories(http_admin PRIVATE src)
 
-target_link_libraries(http_admin_service PUBLIC Celix::http_admin_api)
-celix_bundle_private_libs(http_admin_service civetweb_shared)
+target_link_libraries(http_admin PUBLIC Celix::http_admin_api)
+celix_bundle_private_libs(http_admin civetweb_shared)
 file(MAKE_DIRECTORY resources)
-celix_bundle_add_dir(http_admin_service resources/ DESTINATION root/)
+celix_bundle_add_dir(http_admin resources/ DESTINATION root/)
 
 
-install_celix_bundle(http_admin_service EXPORT celix COMPONENT http_admin_service)
+install_celix_bundle(http_admin EXPORT celix COMPONENT http_admin)
 #Setup target aliases to match external usage
-add_library(Celix::http_admin_service ALIAS http_admin_service)
+add_library(Celix::http_admin ALIAS http_admin)

@@ -19,26 +19,10 @@
 
 function docReady() {
     var host = window.location.host;
-    var shellSocket = new WebSocket("ws://" + host + "/shellsocket");
+    var shellSocket = new WebSocket("ws://" + host + "/hello/socket");
 
     shellSocket.onmessage = function (event) {
-        document.getElementById("console_output").value = event.data;
+        console.log(event);
+        document.getElementById("reply_result").innerHTML = event.data;
     };
-    shellSocket.onopen = function (event) {
-        shellSocket.send("lb");
-    };
-
-    document.getElementById("command_button").onclick = function() {
-        input = document.getElementById("command_input").value;
-    document.getElementById("command_input").value = "";
-        shellSocket.send(input);
-    };
-
-    var input = document.getElementById("command_input");
-    input.addEventListener("keyup", function(event) {
-        event.preventDefault();
-        if (event.key === "Enter") {
-            document.getElementById("command_button").click();
-        }
-    });
 }

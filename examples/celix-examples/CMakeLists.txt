@@ -34,9 +34,8 @@ if (EXAMPLES)
 
     #TODO refactor export_import
     #add_subdirectory(export_import)
-    if (NOT ANDROID)
-        add_subdirectory(civetweb)
-    endif()
+
+    add_subdirectory(http_example)
     add_subdirectory(embedding)
     add_subdirectory(track_tracker_example)
     add_subdirectory(log_service_example)

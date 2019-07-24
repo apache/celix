@@ -213,7 +213,7 @@ static int http_admin_start(http_admin_activator_t *act, celix_bundle_context_t 
     }
 
     const char *prop_doc_root = act->root;
-    bool prop_use_websockets = celix_bundleContext_getPropertyAsBool(ctx, "USE_WEBSOCKETS", false);
+    bool prop_use_websockets = celix_bundleContext_getPropertyAsBool(ctx, "USE_WEBSOCKETS", true);
     const char *prop_port = celix_bundleContext_getProperty(ctx, "LISTENING_PORTS", "8080");
     const char *prop_timeout = celix_bundleContext_getProperty(ctx, "WEBSOCKET_TIMEOUT_MS", "3600000");
     long prop_port_min = celix_bundleContext_getPropertyAsLong(ctx, "PORT_RANGE_MIN", 8000);

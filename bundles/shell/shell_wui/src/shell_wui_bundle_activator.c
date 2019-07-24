@@ -26,12 +26,12 @@
 
 #include "http_admin/api.h"
 
-typedef struct activator_data {
+typedef struct shell_wui_activator_data {
     celix_bundle_context_t *ctx;
 
     celix_websocket_service_t sockSvc;
     long sockSvcId;
-} activator_data_t;
+} shell_wui_activator_data_t;
 
 struct use_shell_arg {
     char *command;
@@ -50,7 +50,7 @@ static void useShell(void *handle, void *svc) {
 };
 
 static int websocket_data_handler(struct mg_connection *conn, int bits, char *data, size_t data_len, void *handle) {
-    activator_data_t *act = handle;
+    shell_wui_activator_data_t *act = handle;
     struct use_shell_arg arg;
     arg.conn = conn;
 
@@ -62,7 +62,8 @@ static int websocket_data_handler(struct mg_connection *conn, int bits, char *da
 
     bool called = celix_bundleContext_useService(act->ctx, OSGI_SHELL_SERVICE_NAME, &arg, useShell);
     if (!called) {
-        fprintf(stderr, "No shell available!\n");
+        const char *msg = "No shell available!";
+        mg_websocket_write(conn, MG_WEBSOCKET_OPCODE_TEXT, msg , strlen(msg));
     }
 
     free(arg.command);
@@ -70,11 +71,11 @@ static int websocket_data_handler(struct mg_connection *conn, int bits, char *da
 }
 
 
-static celix_status_t activator_start(activator_data_t *data, celix_bundle_context_t *ctx) {
+static celix_status_t shellWui_activator_start(shell_wui_activator_data_t *data, celix_bundle_context_t *ctx) {
     data->ctx = ctx;
 
     celix_properties_t *props = celix_properties_create();
-    celix_properties_set(props, WEBSOCKET_ADMIN_URI, "/shellsocket");
+    celix_properties_set(props, WEBSOCKET_ADMIN_URI, "/shell/socket");
     data->sockSvc.handle = data;
     data->sockSvc.data = websocket_data_handler;
     data->sockSvcId = celix_bundleContext_registerService(ctx, &data->sockSvc, WEBSOCKET_ADMIN_SERVICE_NAME, props);
@@ -82,11 +83,11 @@ static celix_status_t activator_start(activator_data_t *data, celix_bundle_conte
     return CELIX_SUCCESS;
 }
 
-static celix_status_t activator_stop(activator_data_t *data, celix_bundle_context_t *ctx) {
+static celix_status_t shellWui_activator_stop(shell_wui_activator_data_t *data, celix_bundle_context_t *ctx) {
 
     celix_bundleContext_unregisterService(ctx, data->sockSvcId);
 
     return CELIX_SUCCESS;
 }
 
-CELIX_GEN_BUNDLE_ACTIVATOR(activator_data_t, activator_start, activator_stop)
+CELIX_GEN_BUNDLE_ACTIVATOR(shell_wui_activator_data_t, shellWui_activator_start, shellWui_activator_stop)

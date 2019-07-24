@@ -212,7 +212,7 @@ static celix_status_t bundleCache_deleteTree(bundle_cache_pt cache, char * direc
 				char subdir[512];
 				snprintf(subdir, sizeof(subdir), "%s/%s", directory, dent->d_name);
 
-				if (stat(subdir, &st) == 0) {
+				if (lstat(subdir, &st) == 0) {
 					if (S_ISDIR (st.st_mode)) {
 						status = bundleCache_deleteTree(cache, subdir, false);
 					} else {
@@ -242,7 +242,8 @@ static celix_status_t bundleCache_deleteTree(bundle_cache_pt cache, char * direc
 
     if (!root) {
         //note root dir can be non existing
-        framework_logIfError(logger, status, NULL, "Failed to delete tree at dir '%s'", directory);
+        char *err = errno == 0 ? "" : strerror(errno);
+        framework_logIfError(logger, status, NULL, "Failed to delete tree at dir '%s'. %s", directory, err);
     }
 
 	return status;
