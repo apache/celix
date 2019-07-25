@@ -114,6 +114,7 @@ if (ENABLE_TESTING AND FRAMEWORK_TESTS)
         src/service_tracker.c #TODO make mock for svc tracker
         src/service_tracker_customizer.c
         src/bundle_context.c
+        src/module.c
         src/celix_errorcodes.c
         private/mock/dm_dependency_manager_mock.c
         private/mock/celix_log_mock.c)
