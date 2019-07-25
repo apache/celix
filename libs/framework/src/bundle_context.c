@@ -33,6 +33,7 @@
 #include "celix_dependency_manager.h"
 #include "dm_dependency_manager_impl.h"
 #include "celix_array_list.h"
+#include "module.h"
 
 static celix_status_t bundleContext_bundleChanged(void *handle, bundle_event_t *event);
 static void bundleContext_cleanupBundleTrackers(bundle_context_t *ct);
