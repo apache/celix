@@ -1,20 +1,20 @@
 /**
- *Licensed to the Apache Software Foundation (ASF) under one
- *or more contributor license agreements.  See the NOTICE file
- *distributed with this work for additional information
- *regarding copyright ownership.  The ASF licenses this file
- *to you under the Apache License, Version 2.0 (the
- *"License"); you may not use this file except in compliance
- *with the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- *Unless required by applicable law or agreed to in writing,
- *software distributed under the License is distributed on an
- *"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- *specific language governing permissions and limitations
- *under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 
 #include <memory.h>
@@ -112,33 +112,33 @@ void psa_tcp_setupTcpContext(log_helper_t *logHelper, celix_thread_t *thread, co
   //TODO update this to use cap_get_pid and cap-get_flag instead of check user is root (note adds dep to -lcap)
   bool gotPermission = false;
   if (getuid() == 0) {
-    gotPermission = true;
+      gotPermission = true;
   }
 
   long prio = celix_properties_getAsLong(topicProperties, PUBSUB_TCP_THREAD_REALTIME_PRIO, -1L);
   const char *sched = celix_properties_get(topicProperties, PUBSUB_TCP_THREAD_REALTIME_SCHED, NULL);
   if (sched != NULL) {
-    int policy = SCHED_OTHER;
-    if (strncmp("SCHED_OTHER", sched, 16) == 0) {
-      policy = SCHED_OTHER;
-    } else if (strncmp("SCHED_BATCH", sched, 16) == 0) {
-      policy = SCHED_BATCH;
-    } else if (strncmp("SCHED_IDLE", sched, 16) == 0) {
-      policy = SCHED_IDLE;
-    } else if (strncmp("SCHED_FIFO", sched, 16) == 0) {
-      policy = SCHED_FIFO;
-    } else if (strncmp("SCHED_RR", sched, 16) == 0) {
-      policy = SCHED_RR;
-    }
-    if (gotPermission) {
-      if (prio > 0 && prio < 100) {
-        struct sched_param sch;
-        bzero(&sch, sizeof(struct sched_param));
-        sch.sched_priority = prio;
-        pthread_setschedparam(thread->thread, policy, &sch);
-      } else {
-        logHelper_log(logHelper, OSGI_LOGSERVICE_INFO, "Skipping configuration of thread prio to %i and thread scheduling to %s. No permission\n", (int) prio, sched);
+      int policy = SCHED_OTHER;
+      if (strncmp("SCHED_OTHER", sched, 16) == 0) {
+          policy = SCHED_OTHER;
+      } else if (strncmp("SCHED_BATCH", sched, 16) == 0) {
+          policy = SCHED_BATCH;
+      } else if (strncmp("SCHED_IDLE", sched, 16) == 0) {
+          policy = SCHED_IDLE;
+      } else if (strncmp("SCHED_FIFO", sched, 16) == 0) {
+          policy = SCHED_FIFO;
+      } else if (strncmp("SCHED_RR", sched, 16) == 0) {
+          policy = SCHED_RR;
       }
-    }
+      if (gotPermission) {
+          if (prio > 0 && prio < 100) {
+              struct sched_param sch;
+              bzero(&sch, sizeof(struct sched_param));
+              sch.sched_priority = prio;
+              pthread_setschedparam(thread->thread, policy, &sch);
+          } else {
+              logHelper_log(logHelper, OSGI_LOGSERVICE_INFO, "Skipping configuration of thread prio to %i and thread scheduling to %s. No permission\n", (int) prio, sched);
+          }
+      }
   }
 }
