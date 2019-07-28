@@ -44,7 +44,7 @@ UTILS_EXPORT unsigned int ipUtils_prefixToBitmask(unsigned int prefix);
 
 UTILS_EXPORT int ipUtils_netmaskToPrefix(const char *netmask);
 
-UTILS_EXPORT celix_status_t ipUtils_findIpBySubnet(const char *ipWithPrefix, char **ip);
+UTILS_EXPORT char *ipUtils_findIpBySubnet(const char *ipWithPrefix);
 
 #ifdef __cplusplus
 }

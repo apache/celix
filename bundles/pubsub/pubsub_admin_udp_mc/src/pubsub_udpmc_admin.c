@@ -105,17 +105,10 @@ pubsub_udpmc_admin_t* pubsub_udpmcAdmin_create(celix_bundle_context_t *ctx, log_
     if (mcIpProp != NULL) {
         if (strchr(mcIpProp, '/') != NULL) {
             // IP with subnet prefix specified
-            char *found_if_ip = calloc(16, sizeof(char));
-            celix_status_t ip_status = ipUtils_findIpBySubnet(mcIpProp, &found_if_ip);
-            if (ip_status == CELIX_SUCCESS) {
-                if (found_if_ip != NULL)
-                    if_ip = strndup(found_if_ip, 16);
-                else
-                    L_WARN("[PSA_UDPMC] Could not find interface for requested subnet %s", mcIpProp);
-            } else {
-                L_ERROR("[PSA_UDPMC] Error while searching for available network interface for subnet %s", mcIpProp);
+            if_ip = ipUtils_findIpBySubnet(mcIpProp);
+            if (if_ip == NULL) {
+                L_WARN("[PSA_UDPMC] Could not find interface for requested subnet %s", mcIpProp);
             }
-            free(found_if_ip);
         } else {
             // IP address specified
             mc_ip = strndup(mcIpProp, 1024);

@@ -97,14 +97,13 @@ int ipUtils_netmaskToPrefix(const char *netmask) {
 
 /** Finds an IP of the available network interfaces of the machine by specifying an CIDR subnet.
  *
- * @param ipWithPrefix  [in] IP with prefix, e.g. 192.168.1.0/24
- * @param ip            [out] In case a matching interface could be found, an allocated string containing the IP of the
- *                      interface will be set, e.g. 192.168.1.16. Memory for the new string can be freed with free().
- *                      When no matching interface is found NULL will be set.
- * @return              CELIX_SUCCESS for success. Otherwise an error status from celix_errno.h will be set.
+ * @param ipWithPrefix  IP with prefix, e.g. 192.168.1.0/24
+ * @return ip           In case a matching interface could be found, an allocated string containing the IP of the
+ *                      interface will be returned, e.g. 192.168.1.16. Memory for the new string can be freed with free().
+ *                      When no matching interface is found NULL will be returned.
  */
-celix_status_t ipUtils_findIpBySubnet(const char *ipWithPrefix, char **ip) {
-    celix_status_t status = CELIX_SUCCESS;
+char *ipUtils_findIpBySubnet(const char *ipWithPrefix) {
+    char *ip = NULL;
 
     char *input = strndup(ipWithPrefix, 19); // Make a copy as otherwise strtok_r manipulates the input string
 
@@ -147,17 +146,16 @@ celix_status_t ipUtils_findIpBySubnet(const char *ipWithPrefix, char **ip) {
         unsigned int ifIpAsUint = ipUtils_ipToUnsignedInt(if_addr);
         int ifPrefix = ipUtils_netmaskToPrefix(if_netmask);
         if (ifPrefix == -1) {
-            status = CELIX_ILLEGAL_ARGUMENT;
             break;
         }
 
         if (ifIpAsUint >= ipRangeStart && ifIpAsUint <= ipRangeStop && inputPrefix >= ifPrefix) {
-            *ip = strndup(if_addr, 1024);
+            ip = strndup(if_addr, 1024);
             break;
         }
     }
     freeifaddrs(ifap);
     free(input);
 
-    return status;
+    return ip;
 }

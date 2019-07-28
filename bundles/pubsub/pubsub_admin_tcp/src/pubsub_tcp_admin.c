@@ -105,17 +105,10 @@ pubsub_tcp_admin_t* pubsub_tcpAdmin_create(celix_bundle_context_t *ctx, log_help
     if (confIp != NULL) {
         if (strchr(confIp, '/') != NULL) {
             // IP with subnet prefix specified
-            char *found_if_ip = calloc(16, sizeof(char));
-            celix_status_t ip_status = ipUtils_findIpBySubnet(confIp, &found_if_ip);
-            if (ip_status == CELIX_SUCCESS) {
-                if (found_if_ip != NULL)
-                    ip = strndup(found_if_ip, 16);
-                else
-                    L_WARN("[PSA_TCP] Could not find interface for requested subnet %s", confIp);
-            } else {
-                L_ERROR("[PSA_TCP] Error while searching for available network interface for subnet %s", confIp);
+            ip = ipUtils_findIpBySubnet(confIp);
+            if (ip == NULL) {
+                L_WARN("[PSA_TCP] Could not find interface for requested subnet %s", confIp);
             }
-            free(found_if_ip);
         } else {
             // IP address specified
             ip = strndup(confIp, 1024);
