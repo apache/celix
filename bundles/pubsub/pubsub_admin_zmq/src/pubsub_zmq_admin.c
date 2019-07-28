@@ -48,8 +48,8 @@ struct pubsub_zmq_admin {
     log_helper_t *log;
     const char *fwUUID;
 
-    char* ipAddress;
-    zactor_t* zmq_auth;
+    char *ipAddress;
+    zactor_t *zmq_auth;
 
     unsigned int basePort;
     unsigned int maxPort;
@@ -111,9 +111,9 @@ pubsub_zmq_admin_t* pubsub_zmqAdmin_create(celix_bundle_context_t *ctx, log_help
                 if (found_if_ip != NULL)
                     ip = strndup(found_if_ip, 16);
                 else
-                    L_WARN("Could not find interface for requested subnet %s", confIp);
+                    L_WARN("[PSA_ZMQ] Could not find interface for requested subnet %s", confIp);
             } else {
-                L_ERROR("Error while searching for available network interface for subnet %s", confIp);
+                L_ERROR("[PSA_ZMQ] Error while searching for available network interface for subnet %s", confIp);
             }
             free(found_if_ip);
         } else {

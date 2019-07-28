@@ -111,9 +111,9 @@ pubsub_udpmc_admin_t* pubsub_udpmcAdmin_create(celix_bundle_context_t *ctx, log_
                 if (found_if_ip != NULL)
                     if_ip = strndup(found_if_ip, 16);
                 else
-                    L_WARN("Could not find interface for requested subnet %s", mcIpProp);
+                    L_WARN("[PSA_UDPMC] Could not find interface for requested subnet %s", mcIpProp);
             } else {
-                L_ERROR("Error while searching for available network interface for subnet %s", mcIpProp);
+                L_ERROR("[PSA_UDPMC] Error while searching for available network interface for subnet %s", mcIpProp);
             }
             free(found_if_ip);
         } else {
