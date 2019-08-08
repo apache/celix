@@ -36,8 +36,6 @@
 
 #include "pubsub_publisher_private.h"
 
-static bool stop=false;
-
 static double randCoordinate(double min, double max) {
 
     double ret = min + (((double)random()) / (((double)RAND_MAX)/(max-min))) ;
@@ -73,7 +71,7 @@ static void* send_thread(void* arg) {
     unsigned int msgId = 0;
     if (publish_svc->localMsgTypeIdForMsgType(publish_svc->handle,st_struct->topic,&msgId) == 0) {
 
-        while (stop == false) {
+        while (publisher->stop == false) {
             place->position.lat = randCoordinate(MIN_LAT,MAX_LAT);
             place->position.lon = randCoordinate(MIN_LON,MAX_LON);
             int nr_char = (int)randCoordinate(5,100000);
@@ -83,7 +81,7 @@ static void* send_thread(void* arg) {
             }
             place->data[nr_char-1] = '\0';
             if (publish_svc->send) {
-                if (publish_svc->send(publish_svc->handle,msgId,place) == 0) {
+                if (publish_svc->send(publish_svc->handle, msgId,place) == 0) {
                     printf("Sent %s [%f, %f] (%s, %s) data len = %d\n",st_struct->topic, place->position.lat, place->position.lon,place->name,place->description, nr_char);
                 }
             } else {
@@ -96,7 +94,6 @@ static void* send_thread(void* arg) {
     } else {
         printf("PUBLISHER: Cannot retrieve msgId for message '%s'\n",MSG_POI_NAME);
     }
-
     free(place->description);
     free(place->name);
     free(place);
@@ -115,7 +112,7 @@ pubsub_sender_pt publisher_create(array_list_pt trackers,const char* ident,long 
     publisher->ident = ident;
     publisher->bundleId = bundleId;
     publisher->tid_map = hashMap_create(NULL, NULL, NULL, NULL);
-
+    publisher->stop = false;
     return publisher;
 }
 
@@ -137,15 +134,13 @@ void publisher_destroy(pubsub_sender_pt client) {
 void publisher_publishSvcAdded(void * handle, void *svc, const celix_properties_t *props) {
     pubsub_publisher_pt publish_svc = (pubsub_publisher_pt)svc;
     pubsub_sender_pt manager = (pubsub_sender_pt)handle;
-
+    manager->stop = false;
     printf("PUBLISHER: new publish service exported (%s).\n",manager->ident);
-
     send_thread_struct_pt data = calloc(1,sizeof(struct send_thread_struct));
     data->service = publish_svc;
     data->publisher = manager;
     data->topic = celix_properties_get(props, PUBSUB_PUBLISHER_TOPIC, "!ERROR!");
     celix_thread_t *tid = malloc(sizeof(*tid));
-    stop=false;
     celixThread_create(tid,NULL,send_thread,(void*)data);
     hashMap_put(manager->tid_map, publish_svc, tid);
 }
@@ -153,7 +148,7 @@ void publisher_publishSvcAdded(void * handle, void *svc, const celix_properties_
 void publisher_publishSvcRemoved(void * handle, void *svc, const celix_properties_t *props) {
     pubsub_sender_pt manager = (pubsub_sender_pt)handle;
     celix_thread_t *tid = hashMap_get(manager->tid_map, svc);
-
+    manager->stop = true;
 #if defined(__APPLE__) && defined(__MACH__)
     uint64_t threadid;
     pthread_threadid_np(tid->thread, &threadid);
@@ -162,7 +157,6 @@ void publisher_publishSvcRemoved(void * handle, void *svc, const celix_propertie
     printf("PUBLISHER: publish service unexporting (%s) %li!\n",manager->ident, tid->thread);
 #endif
 
-    stop=true;
     celixThread_join(*tid,NULL);
     free(tid);
 }

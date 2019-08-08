@@ -29,6 +29,7 @@ struct pubsub_sender {
     const char *ident;
     hash_map_pt tid_map; //service -> tid
     long bundleId;
+    bool stop;
 };
 
 typedef struct pubsub_sender * pubsub_sender_pt;

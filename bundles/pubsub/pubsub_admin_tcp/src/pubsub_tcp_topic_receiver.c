@@ -131,7 +131,7 @@ static void psa_tcp_initializeAllSubscribers(pubsub_tcp_topic_receiver_t *receiv
 
 static void processMsg(void *handle, const pubsub_tcp_msg_header_t *hdr, const unsigned char *payload, size_t payloadSize, struct timespec *receiveTime);
 static void psa_tcp_connectHandler(void *handle, const char *url, bool lock);
-static void psa_tcp_disConnectHandler(void *handle, const char *url);
+static void psa_tcp_disConnectHandler(void *handle, const char *url, bool lock);
 
 
 pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context_t *ctx,
@@ -206,19 +206,21 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
     receiver->requestedConnections.allConnected = false;
 
     if ((staticConnectUrls != NULL) && (receiver->socketHandler != NULL) && (staticBindUrl == NULL)) {
-        char *urlsCopy = strndup(staticConnectUrls, 1024 * 1024);
-        char *url;
-        char *save = urlsCopy;
-        while ((url = strtok_r(save, " ", &save))) {
-            psa_tcp_requested_connection_entry_t *entry = calloc(1, sizeof(*entry));
-            entry->statically = true;
-            entry->connected = false;
-            entry->url = strndup(url, 1024 * 1024);
-            entry->parent = receiver;
-            hashMap_put(receiver->requestedConnections.map, entry->url, entry);
-        }
-        free(urlsCopy);
+      char *urlsCopy = strndup(staticConnectUrls, 1024 * 1024);
+      char *url;
+      char *save = urlsCopy;
+      while ((url = strtok_r(save, " ", &save))) {
+        psa_tcp_requested_connection_entry_t *entry = calloc(1, sizeof(*entry));
+        entry->statically = true;
+        entry->connected = false;
+        entry->url = strndup(url, 1024 * 1024);
+        entry->parent = receiver;
+        hashMap_put(receiver->requestedConnections.map, entry->url, entry);
+      }
+      free(urlsCopy);
+    }
 
+    if ((receiver->socketHandler != NULL) && (staticBindUrl == NULL)) {
         // Configure Receiver thread
         receiver->thread.running = true;
         celixThread_create(&receiver->thread.thread, NULL, psa_tcp_recvThread, receiver);
@@ -258,7 +260,7 @@ void pubsub_tcpTopicReceiver_destroy(pubsub_tcp_topic_receiver_t *receiver) {
 
 
         celixThreadMutex_lock(&receiver->thread.mutex);
-        if (!receiver->thread.running) {
+        if (receiver->thread.running) {
             receiver->thread.running = false;
             celixThreadMutex_unlock(&receiver->thread.mutex);
             celixThread_join(receiver->thread.thread, NULL);
@@ -373,7 +375,7 @@ void pubsub_tcpTopicReceiver_disconnectFrom(pubsub_tcp_topic_receiver_t *receive
     celixThreadMutex_lock(&receiver->requestedConnections.mutex);
     psa_tcp_requested_connection_entry_t *entry = hashMap_remove(receiver->requestedConnections.map, url);
     if (entry != NULL) {
-        int rc = pubsub_tcpHandler_closeConnection(receiver->socketHandler, entry->url);
+        int rc = pubsub_tcpHandler_disconnect(receiver->socketHandler, entry->url);
         if (rc < 0) L_WARN("[PSA_TCP] Error disconnecting from tcp url %s. (%s)", url, strerror(errno));
     }
     if (entry != NULL) {
@@ -677,7 +679,7 @@ static void psa_tcp_connectToAllRequestedConnections(pubsub_tcp_topic_receiver_t
             if (!entry->connected) {
                 entry->fd = pubsub_tcpHandler_connect(entry->parent->socketHandler, entry->url);
                 if (entry->fd < 0) {
-                    L_WARN("[PSA_TCP] Error connecting to tcp url %s\n", entry->url);
+                    //L_WARN("[PSA_TCP] Error connecting to tcp url %s\n", entry->url);
                     allConnected = false;
                 }
             }
@@ -704,16 +706,16 @@ static void psa_tcp_connectHandler(void *handle, const char *url, bool lock) {
     if (lock) celixThreadMutex_unlock(&receiver->requestedConnections.mutex);
 }
 
-static void psa_tcp_disConnectHandler(void *handle, const char *url) {
+static void psa_tcp_disConnectHandler(void *handle, const char *url, bool lock) {
     pubsub_tcp_topic_receiver_t *receiver = handle;
     L_DEBUG("[PSA TCP] TopicReceiver %s/%s disconnect from tcp url %s", receiver->scope, receiver->topic, url);
-    celixThreadMutex_lock(&receiver->requestedConnections.mutex);
+    if (lock) celixThreadMutex_lock(&receiver->requestedConnections.mutex);
     psa_tcp_requested_connection_entry_t *entry = hashMap_remove(receiver->requestedConnections.map, url);
     if (entry != NULL) {
         free(entry->url);
         free(entry);
     }
-    celixThreadMutex_unlock(&receiver->requestedConnections.mutex);
+    if (lock) celixThreadMutex_unlock(&receiver->requestedConnections.mutex);
 }
 
 

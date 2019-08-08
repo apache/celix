@@ -33,6 +33,7 @@
 #include "pubsub_endpoint.h"
 #include <uuid/uuid.h>
 #include <constants.h>
+#include <signal.h>
 
 #define FIRST_SEND_DELAY_IN_SECONDS             2
 #define TCP_BIND_MAX_RETRY                      10
@@ -61,10 +62,6 @@ struct pubsub_tcp_topic_sender {
     char scopeAndTopicFilter[5];
     char *url;
     bool isStatic;
-
-    struct {
-        celix_thread_mutex_t mutex;
-    } tcp;
 
     struct {
         celix_thread_t thread;
@@ -198,7 +195,7 @@ pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
                 char *url = NULL;
                 asprintf(&url, "tcp://%s:%u", bindIP, port);
                 char *bindUrl = NULL;
-                asprintf(&bindUrl, "tcp://0.0.0.0:%u", port);
+                asprintf(&bindUrl, "tcp://127.0.0.1:%u", port);
                 int rv = pubsub_tcpHandler_listen(sender->socketHandler, bindUrl);
                 if (rv == -1) {
                     L_WARN("Error for tcp_bind using dynamic bind url '%s'. %s", bindUrl, strerror(errno));
@@ -217,7 +214,6 @@ pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
         sender->topic = strndup(topic, 1024 * 1024);
 
         celixThreadMutex_create(&sender->boundedServices.mutex, NULL);
-        celixThreadMutex_create(&sender->tcp.mutex, NULL);
         celixThreadMutex_create(&sender->thread.mutex, NULL);
         sender->boundedServices.map = hashMap_create(NULL, NULL, NULL, NULL);
     }
@@ -262,7 +258,7 @@ pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
 void pubsub_tcpTopicSender_destroy(pubsub_tcp_topic_sender_t *sender) {
     if (sender != NULL) {
         celixThreadMutex_lock(&sender->thread.mutex);
-        if (!sender->thread.running) {
+        if (sender->thread.running) {
             sender->thread.running = false;
             celixThreadMutex_unlock(&sender->thread.mutex);
             celixThread_join(sender->thread.thread, NULL);
@@ -288,7 +284,7 @@ void pubsub_tcpTopicSender_destroy(pubsub_tcp_topic_sender_t *sender) {
         hashMap_destroy(sender->boundedServices.map, false, false);
         celixThreadMutex_unlock(&sender->boundedServices.mutex);
         celixThreadMutex_destroy(&sender->boundedServices.mutex);
-        celixThreadMutex_destroy(&sender->tcp.mutex);
+        celixThreadMutex_destroy(&sender->thread.mutex);
 
         if ((sender->socketHandler) && (sender->sharedSocketHandler == NULL)) {
             pubsub_tcpHandler_destroy(sender->socketHandler);
@@ -504,8 +500,7 @@ static int psa_tcp_topicPublicationSend(void *handle, unsigned int msgTypeId, co
         }
 
         if (status == CELIX_SUCCESS /*ser ok*/) {
-            //TODO refactor, is the mutex really needed?
-            celixThreadMutex_lock(&entry->sendLock);
+            //celixThreadMutex_lock(&entry->sendLock);
             pubsub_tcp_msg_header_t msg_hdr = entry->header;
             msg_hdr.seqNr = -1;
             msg_hdr.sendtimeSeconds = 0;
@@ -528,7 +523,7 @@ static int psa_tcp_topicPublicationSend(void *handle, unsigned int msgTypeId, co
                 free(serializedOutput);
             }
 
-            celixThreadMutex_unlock(&entry->sendLock);
+            //celixThreadMutex_unlock(&entry->sendLock);
             if (sendOk) {
                 sendCountUpdate = 1;
             } else {
