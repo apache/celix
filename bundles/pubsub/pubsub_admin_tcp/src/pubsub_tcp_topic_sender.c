@@ -195,7 +195,7 @@ pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
                 char *url = NULL;
                 asprintf(&url, "tcp://%s:%u", bindIP, port);
                 char *bindUrl = NULL;
-                asprintf(&bindUrl, "tcp://127.0.0.1:%u", port);
+                asprintf(&bindUrl, "tcp://0.0.0.0:%u", port);
                 int rv = pubsub_tcpHandler_listen(sender->socketHandler, bindUrl);
                 if (rv == -1) {
                     L_WARN("Error for tcp_bind using dynamic bind url '%s'. %s", bindUrl, strerror(errno));
