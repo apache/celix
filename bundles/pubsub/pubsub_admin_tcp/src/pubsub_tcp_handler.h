@@ -47,14 +47,13 @@ typedef struct pubsub_tcpHandler  pubsub_tcpHandler_t;
 typedef struct pubsub_tcpHandler *pubsub_tcpHandler_pt;
 typedef void (*pubsub_tcpHandler_processMessage_callback_t)(void* payload, const pubsub_tcp_msg_header_t* header, const unsigned char * buffer, size_t size, struct timespec *receiveTime);
 typedef void (*pubsub_tcpHandler_connectMessage_callback_t)(void* payload, const char *url, bool lock);
-typedef void (*pubsub_tcpHandler_disconnectMessage_callback_t)(void* payload, const char *url);
 
 pubsub_tcpHandler_pt pubsub_tcpHandler_create(log_helper_t *logHelper);
 void pubsub_tcpHandler_destroy(pubsub_tcpHandler_pt handle);
 int pubsub_tcpHandler_open(pubsub_tcpHandler_pt handle, char* url);
 int pubsub_tcpHandler_close(pubsub_tcpHandler_pt handle);
 int pubsub_tcpHandler_connect(pubsub_tcpHandler_pt handle, char* url);
-int pubsub_tcpHandler_closeConnection(pubsub_tcpHandler_pt handle, char* url);
+int pubsub_tcpHandler_disconnect(pubsub_tcpHandler_pt handle, char* url);
 int pubsub_tcpHandler_listen(pubsub_tcpHandler_pt handle, char* url);
 
 int pubsub_tcpHandler_createReceiveBufferStore(pubsub_tcpHandler_pt handle, unsigned int maxNofBuffers, unsigned int bufferSize);
@@ -65,7 +64,7 @@ int pubsub_tcpHandler_read(pubsub_tcpHandler_pt handle, unsigned int index, pubs
 int pubsub_tcpHandler_handler(pubsub_tcpHandler_pt handle);
 int pubsub_tcpHandler_write(pubsub_tcpHandler_pt handle, pubsub_tcp_msg_header_t* header, void* buffer, unsigned int size, int flags);
 int pubsub_tcpHandler_addMessageHandler(pubsub_tcpHandler_pt handle, void* payload, pubsub_tcpHandler_processMessage_callback_t processMessageCallback);
-int pubsub_tcpHandler_addConnectionCallback(pubsub_tcpHandler_pt handle, void* payload, pubsub_tcpHandler_connectMessage_callback_t connectMessageCallback, pubsub_tcpHandler_disconnectMessage_callback_t disconnectMessageCallback);
+int pubsub_tcpHandler_addConnectionCallback(pubsub_tcpHandler_pt handle, void* payload, pubsub_tcpHandler_connectMessage_callback_t connectMessageCallback, pubsub_tcpHandler_connectMessage_callback_t disconnectMessageCallback);
 
 const char* pubsub_tcpHandler_url(pubsub_tcpHandler_pt handle);
 void pubsub_tcpHandler_setUrlInfo(char *url, pubsub_tcpHandler_url_t *url_info);

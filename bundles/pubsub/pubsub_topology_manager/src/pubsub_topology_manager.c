@@ -225,6 +225,22 @@ void pubsub_topologyManager_psaRemoved(void *handle, void *svc __attribute__((un
     //pubsub_admin_service_t *psa = (pubsub_admin_service_t*) svc;
     long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
 
+    // Remove the svcId from the hashmap, because the service is not available
+    celixThreadMutex_lock(&manager->pubsubadmins.mutex);
+    hashMap_remove(manager->pubsubadmins.map, (void *)svcId);
+    celixThreadMutex_unlock(&manager->pubsubadmins.mutex);
+
+    // Remove the svcId from the discovered endpoint, because the service is not available
+    celixThreadMutex_lock(&manager->discoveredEndpoints.mutex);
+    hash_map_iterator_t iter_endpoint = hashMapIterator_construct(manager->discoveredEndpoints.map);
+    while (hashMapIterator_hasNext(&iter_endpoint)) {
+        pstm_discovered_endpoint_entry_t *entry = hashMapIterator_nextValue(&iter_endpoint);
+        if (entry != NULL && entry->selectedPsaSvcId > 0 && entry->selectedPsaSvcId == svcId) {
+            entry->selectedPsaSvcId = -1L; //NOTE not selected a psa anymore
+        }
+    }
+    celixThreadMutex_unlock(&manager->discoveredEndpoints.mutex);
+
     //NOTE psa shutdown will teardown topic receivers / topic senders
     //de-setup all topic receivers/senders for the removed psa.
     //the next psaHandling run will try to find new psa.
