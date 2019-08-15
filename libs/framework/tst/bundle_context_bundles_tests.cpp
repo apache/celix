@@ -31,9 +31,9 @@
 
 
 TEST_GROUP(CelixBundleContextBundlesTests) {
-    framework_t* fw = NULL;
-    bundle_context_t *ctx = NULL;
-    properties_t *properties = NULL;
+    framework_t* fw = nullptr;
+    bundle_context_t *ctx = nullptr;
+    properties_t *properties = nullptr;
 
     const char * const TEST_BND1_LOC = "simple_test_bundle1.zip";
     const char * const TEST_BND2_LOC = "simple_test_bundle2.zip";
@@ -158,7 +158,7 @@ TEST(CelixBundleContextBundlesTests, trackBundlesTest) {
 
     auto started = [](void *handle, const bundle_t *bnd) {
         struct data *d = static_cast<struct data*>(handle);
-        CHECK(bnd != NULL);
+        CHECK(bnd != nullptr);
         d->mutex.lock();
         d->count += 1;
         d->cond.notify_all();
@@ -166,7 +166,7 @@ TEST(CelixBundleContextBundlesTests, trackBundlesTest) {
     };
     auto stopped = [](void *handle, const bundle_t *bnd) {
         struct data *d = static_cast<struct data*>(handle);
-        CHECK(bnd != NULL);
+        CHECK(bnd != nullptr);
         d->mutex.lock();
         d->count -= 1;
         d->cond.notify_all();
@@ -242,7 +242,7 @@ TEST(CelixBundleContextBundlesTests, useBundlesConcurrentTest) {
     struct data data{};
 
     auto use = [](void *handle, const bundle_t *bnd) {
-        CHECK(bnd != NULL);
+        CHECK(bnd != nullptr);
 
         struct data *d = static_cast<struct data*>(handle);
 

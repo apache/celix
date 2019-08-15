@@ -840,7 +840,7 @@ bool celix_bundleContext_useServiceWithOptions(
             if (opts->useWithOwner != NULL) {
 
             }
-            called = celix_serviceTracker_useHighestRankingService(trk, opts->filter.serviceName, opts->callbackHandle, opts->use, opts->useWithProperties, opts->useWithOwner);
+            called = celix_serviceTracker_useHighestRankingService(trk, opts->filter.serviceName, opts->waitTimeoutInSeconds, opts->callbackHandle, opts->use, opts->useWithProperties, opts->useWithOwner);
             celix_serviceTracker_destroy(trk);
         }
     }

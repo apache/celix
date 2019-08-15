@@ -27,19 +27,22 @@
 #ifndef CELIX_HTTP_ADMIN_H
 #define CELIX_HTTP_ADMIN_H
 
-#include "bundle_context.h"
+#include "celix_bundle_context.h"
 #include "civetweb.h"
 
 typedef struct http_admin_manager http_admin_manager_t;
 
 
-http_admin_manager_t *httpAdmin_create(bundle_context_pt context, const char **svr_opts);
+http_admin_manager_t *httpAdmin_create(celix_bundle_context_t *context, char *root /*note takes over ownership*/, const char **svr_opts);
 void httpAdmin_destroy(http_admin_manager_t *admin);
 
 struct mg_context *httpAdmin_getServerContext(const http_admin_manager_t *admin);
 
 void http_admin_addHttpService(void *handle, void *svc, const celix_properties_t *props);
 void http_admin_removeHttpService(void *handle, void *svc, const celix_properties_t *props);
+
+void http_admin_startBundle(void *data, const celix_bundle_t *bundle);
+void http_admin_stopBundle(void *data, const celix_bundle_t *bundle);
 
 
 #endif //CELIX_HTTP_ADMIN_H

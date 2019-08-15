@@ -24,6 +24,7 @@
 #include <zconf.h>
 #include <string.h>
 #include <map>
+#include <future>
 
 #include "celix_api.h"
 #include "celix_framework_factory.h"
@@ -37,9 +38,9 @@
 
 
 TEST_GROUP(CelixBundleContextServicesTests) {
-    framework_t* fw = NULL;
-    bundle_context_t *ctx = NULL;
-    properties_t *properties = NULL;
+    framework_t* fw = nullptr;
+    bundle_context_t *ctx = nullptr;
+    properties_t *properties = nullptr;
 
     void setup() {
         properties = properties_create();
@@ -67,7 +68,7 @@ TEST(CelixBundleContextServicesTests, registerService) {
         return n * 42;
     };
 
-    long svcId = celix_bundleContext_registerService(ctx, &svc, calcName, NULL);
+    long svcId = celix_bundleContext_registerService(ctx, &svc, calcName, nullptr);
     CHECK(svcId >= 0);
     celix_bundleContext_unregisterService(ctx, svcId);
 };
@@ -90,17 +91,17 @@ TEST(CelixBundleContextServicesTests, registerMultipleAndUseServices) {
         return n * 42;
     };
 
-    long svcId1 = celix_bundleContext_registerService(ctx, &svc, calcName, NULL);
+    long svcId1 = celix_bundleContext_registerService(ctx, &svc, calcName, nullptr);
     CHECK(svcId1 >= 0);
 
-    long svcId2 = celix_bundleContext_registerService(ctx, &svc, calcName, NULL);
+    long svcId2 = celix_bundleContext_registerService(ctx, &svc, calcName, nullptr);
     CHECK(svcId2 >= 0);
 
-    long svcId3 = celix_bundleContext_registerService(ctx, &svc, calcName, NULL);
+    long svcId3 = celix_bundleContext_registerService(ctx, &svc, calcName, nullptr);
     CHECK(svcId3 >= 0);
 
     auto use = [](void *handle, void *svc) {
-        CHECK(svc != NULL);
+        CHECK(svc != nullptr);
         int *total =  static_cast<int*>(handle);
         struct calc *calc = static_cast<struct calc*>(svc);
         int tmp = calc->calc(1);
@@ -137,12 +138,12 @@ TEST(CelixBundleContextServicesTests, registerAndUseService) {
         return n * 42;
     };
 
-    long svcId = celix_bundleContext_registerService(ctx, &svc, calcName, NULL);
+    long svcId = celix_bundleContext_registerService(ctx, &svc, calcName, nullptr);
     CHECK(svcId >= 0);
 
     int result = 0;
     bool called = celix_bundleContext_useServiceWithId(ctx, svcId, calcName, &result, [](void *handle, void *svc) {
-        CHECK(svc != NULL);
+        CHECK(svc != nullptr);
         int *result =  static_cast<int*>(handle);
         struct calc *calc = static_cast<struct calc*>(svc);
         int tmp = calc->calc(2);
@@ -165,6 +166,39 @@ TEST(CelixBundleContextServicesTests, registerAndUseService) {
     celix_bundleContext_unregisterService(ctx, svcId);
 };
 
+TEST(CelixBundleContextServicesTests, registerAndUseServiceWithTimeout) {
+    struct calc {
+        int (*calc)(int);
+    };
+
+    const char *calcName = "calc";
+    struct calc svc;
+    svc.calc = [](int n) -> int {
+        return n * 42;
+    };
+
+    celix_service_use_options_t opts{};
+    opts.filter.serviceName = "calc";
+
+    bool called = celix_bundleContext_useServiceWithOptions(ctx, &opts);
+    CHECK(!called); //service not avail.
+
+    std::future<bool> result{std::async([&]{
+        opts.waitTimeoutInSeconds = 5.0;
+        bool calledAsync = celix_bundleContext_useServiceWithOptions(ctx, &opts);
+        return calledAsync;
+    })};
+
+    long svcId = celix_bundleContext_registerService(ctx, &svc, calcName, nullptr);
+    CHECK(svcId >= 0);
+
+
+    CHECK(result.get()); //should return true after waiting for the registered service.
+
+
+    celix_bundleContext_unregisterService(ctx, svcId);
+}
+
 TEST(CelixBundleContextServicesTests, registerAndUseWithForcedRaceCondition) {
     struct calc {
         int (*calc)(int);
@@ -176,7 +210,7 @@ TEST(CelixBundleContextServicesTests, registerAndUseWithForcedRaceCondition) {
         return n * 42;
     };
 
-    long svcId = celix_bundleContext_registerService(ctx, &svc, calcName, NULL);
+    long svcId = celix_bundleContext_registerService(ctx, &svc, calcName, nullptr);
     CHECK(svcId >= 0);
 
     struct sync {
@@ -190,7 +224,7 @@ TEST(CelixBundleContextServicesTests, registerAndUseWithForcedRaceCondition) {
     struct sync callInfo{};
 
     auto use = [](void *handle, void *svc) {
-        CHECK(svc != NULL);
+        CHECK(svc != nullptr);
 
         struct sync *h = static_cast<struct sync*>(handle);
 
@@ -248,12 +282,12 @@ TEST(CelixBundleContextServicesTests, registerAndUseWithForcedRaceCondition) {
 TEST(CelixBundleContextServicesTests, servicesTrackerTest) {
     int count = 0;
     auto add = [](void *handle, void *svc) {
-        CHECK(svc != NULL);
+        CHECK(svc != nullptr);
         int *c = static_cast<int*>(handle);
         *c += 1;
     };
     auto remove = [](void *handle, void *svc) {
-        CHECK(svc != NULL);
+        CHECK(svc != nullptr);
         int *c = static_cast<int*>(handle);
         *c -= 1;
     };
@@ -262,11 +296,11 @@ TEST(CelixBundleContextServicesTests, servicesTrackerTest) {
     CHECK(trackerId > 0);
     CHECK_EQUAL(0, count);
 
-    long svcId1 = celix_bundleContext_registerService(ctx, (void*)0x100, "calc", NULL);
+    long svcId1 = celix_bundleContext_registerService(ctx, (void*)0x100, "calc", nullptr);
     CHECK(svcId1 > 0);
     CHECK_EQUAL(1, count);
 
-    long svcId2 = celix_bundleContext_registerService(ctx, (void*)0x200, "calc", NULL);
+    long svcId2 = celix_bundleContext_registerService(ctx, (void*)0x200, "calc", nullptr);
     CHECK(svcId2 > 0);
     CHECK_EQUAL(2, count);
 
@@ -278,19 +312,19 @@ TEST(CelixBundleContextServicesTests, servicesTrackerTest) {
 }
 
 TEST(CelixBundleContextServicesTests, servicesTrackerInvalidArgsTest) {
-    long trackerId = celix_bundleContext_trackServices(NULL, NULL, NULL, NULL, NULL);
+    long trackerId = celix_bundleContext_trackServices(nullptr, nullptr, nullptr, nullptr, nullptr);
     CHECK(trackerId < 0); //required ctx and service name missing
-    trackerId = celix_bundleContext_trackServices(ctx, NULL, NULL, NULL, NULL);
+    trackerId = celix_bundleContext_trackServices(ctx, nullptr, nullptr, nullptr, nullptr);
     CHECK(trackerId < 0); //required service name missing
-    trackerId = celix_bundleContext_trackServices(ctx, "calc", NULL, NULL, NULL);
+    trackerId = celix_bundleContext_trackServices(ctx, "calc", nullptr, nullptr, nullptr);
     CHECK(trackerId >= 0); //valid
     celix_bundleContext_stopTracker(ctx, trackerId);
 
 
     //opts
-    trackerId = celix_bundleContext_trackServicesWithOptions(NULL, NULL);
+    trackerId = celix_bundleContext_trackServicesWithOptions(nullptr, nullptr);
     CHECK(trackerId < 0); //required ctx and opts missing
-    trackerId = celix_bundleContext_trackServicesWithOptions(ctx, NULL);
+    trackerId = celix_bundleContext_trackServicesWithOptions(ctx, nullptr);
     CHECK(trackerId < 0); //required opts missing
     celix_service_tracking_options_t opts{};
     trackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
@@ -304,18 +338,18 @@ TEST(CelixBundleContextServicesTests, servicesTrackerInvalidArgsTest) {
 TEST(CelixBundleContextServicesTests, servicesTrackerTestWithAlreadyRegisteredServices) {
     int count = 0;
     auto add = [](void *handle, void *svc) {
-        CHECK(svc != NULL);
+        CHECK(svc != nullptr);
         int *c = static_cast<int*>(handle);
         *c += 1;
     };
     auto remove = [](void *handle, void *svc) {
-        CHECK(svc != NULL);
+        CHECK(svc != nullptr);
         int *c = static_cast<int*>(handle);
         *c -= 1;
     };
 
-    long svcId1 = celix_bundleContext_registerService(ctx, (void*)0x010, "calc", NULL);
-    long svcId2 = celix_bundleContext_registerService(ctx, (void*)0x020, "calc", NULL);
+    long svcId1 = celix_bundleContext_registerService(ctx, (void*)0x010, "calc", nullptr);
+    long svcId2 = celix_bundleContext_registerService(ctx, (void*)0x020, "calc", nullptr);
 
 
 
@@ -323,11 +357,11 @@ TEST(CelixBundleContextServicesTests, servicesTrackerTestWithAlreadyRegisteredSe
     CHECK(trackerId > 0);
     CHECK_EQUAL(2, count);
 
-    long svcId3 = celix_bundleContext_registerService(ctx, (void*)0x100, "calc", NULL);
+    long svcId3 = celix_bundleContext_registerService(ctx, (void*)0x100, "calc", nullptr);
     CHECK(svcId1 > 0);
     CHECK_EQUAL(3, count);
 
-    long svcId4 = celix_bundleContext_registerService(ctx, (void*)0x200, "calc", NULL);
+    long svcId4 = celix_bundleContext_registerService(ctx, (void*)0x200, "calc", nullptr);
     CHECK(svcId2 > 0);
     CHECK_EQUAL(4, count);
 
@@ -343,19 +377,19 @@ TEST(CelixBundleContextServicesTests, servicesTrackerTestWithAlreadyRegisteredSe
 TEST(CelixBundleContextServicesTests, servicesTrackerTestWithProperties) {
     int count = 0;
     auto add = [](void *handle, void *svc, const properties_t *props) {
-        CHECK(svc != NULL);
-        STRCMP_EQUAL("C", celix_properties_get(props, CELIX_FRAMEWORK_SERVICE_LANGUAGE, NULL));
+        CHECK(svc != nullptr);
+        STRCMP_EQUAL("C", celix_properties_get(props, CELIX_FRAMEWORK_SERVICE_LANGUAGE, nullptr));
         int *c = static_cast<int*>(handle);
         *c += 1;
     };
     auto remove = [](void *handle, void *svc, const properties_t *props) {
-        CHECK(svc != NULL);
-        STRCMP_EQUAL("C", celix_properties_get(props, CELIX_FRAMEWORK_SERVICE_LANGUAGE, NULL));
+        CHECK(svc != nullptr);
+        STRCMP_EQUAL("C", celix_properties_get(props, CELIX_FRAMEWORK_SERVICE_LANGUAGE, nullptr));
         int *c = static_cast<int*>(handle);
         *c -= 1;
     };
 
-    long svcId1 = celix_bundleContext_registerService(ctx, (void*)0x100, "calc", NULL);
+    long svcId1 = celix_bundleContext_registerService(ctx, (void*)0x100, "calc", nullptr);
 
     celix_service_tracking_options_t opts{};
     opts.filter.serviceName = "calc";
@@ -366,7 +400,7 @@ TEST(CelixBundleContextServicesTests, servicesTrackerTestWithProperties) {
     CHECK(trackerId > 0);
     CHECK_EQUAL(1, count);
 
-    long svcId2 = celix_bundleContext_registerService(ctx, (void*)0x200, "calc", NULL);
+    long svcId2 = celix_bundleContext_registerService(ctx, (void*)0x200, "calc", nullptr);
     CHECK(svcId1 > 0);
     CHECK_EQUAL(2, count);
 
@@ -380,21 +414,21 @@ TEST(CelixBundleContextServicesTests, servicesTrackerTestWithProperties) {
 TEST(CelixBundleContextServicesTests, servicesTrackerTestWithOwner) {
     int count = 0;
     auto add = [](void *handle, void *svc, const properties_t *props, const bundle_t *svcOwner) {
-        CHECK(svc != NULL);
-        STRCMP_EQUAL("C", celix_properties_get(props, CELIX_FRAMEWORK_SERVICE_LANGUAGE, NULL));
+        CHECK(svc != nullptr);
+        STRCMP_EQUAL("C", celix_properties_get(props, CELIX_FRAMEWORK_SERVICE_LANGUAGE, nullptr));
         CHECK(celix_bundle_getId(svcOwner) >= 0);
         int *c = static_cast<int*>(handle);
         *c += 1;
     };
     auto remove = [](void *handle, void *svc, const properties_t *props, const bundle_t *svcOwner) {
-        CHECK(svc != NULL);
-        STRCMP_EQUAL("C", celix_properties_get(props, CELIX_FRAMEWORK_SERVICE_LANGUAGE, NULL));
+        CHECK(svc != nullptr);
+        STRCMP_EQUAL("C", celix_properties_get(props, CELIX_FRAMEWORK_SERVICE_LANGUAGE, nullptr));
         CHECK(celix_bundle_getId(svcOwner) >= 0);
         int *c = static_cast<int*>(handle);
         *c -= 1;
     };
 
-    long svcId1 = celix_bundleContext_registerService(ctx, (void*)0x100, "calc", NULL);
+    long svcId1 = celix_bundleContext_registerService(ctx, (void*)0x100, "calc", nullptr);
 
     celix_service_tracking_options_t opts{};
     opts.filter.serviceName = "calc";
@@ -405,7 +439,7 @@ TEST(CelixBundleContextServicesTests, servicesTrackerTestWithOwner) {
     CHECK(trackerId > 0);
     CHECK_EQUAL(1, count);
 
-    long svcId2 = celix_bundleContext_registerService(ctx, (void*)0x200, "calc", NULL);
+    long svcId2 = celix_bundleContext_registerService(ctx, (void*)0x200, "calc", nullptr);
     CHECK(svcId1 > 0);
     CHECK_EQUAL(2, count);
 
@@ -439,7 +473,7 @@ TEST(CelixBundleContextServicesTests, serviceTrackerWithRaceConditionTest) {
     struct data data{};
 
     auto add = [](void *handle, void *svc) {
-        CHECK(svc != NULL);
+        CHECK(svc != nullptr);
 
         struct data *d = static_cast<struct data*>(handle);
 
@@ -458,7 +492,7 @@ TEST(CelixBundleContextServicesTests, serviceTrackerWithRaceConditionTest) {
     };
 
     auto remove = [](void *handle, void *svc) {
-        CHECK(svc != NULL);
+        CHECK(svc != nullptr);
 
         struct data *d = static_cast<struct data*>(handle);
 
@@ -473,7 +507,7 @@ TEST(CelixBundleContextServicesTests, serviceTrackerWithRaceConditionTest) {
     long trackerId = celix_bundleContext_trackServices(ctx, calcName, &data, add, remove);
 
     std::thread registerThread{[&]{
-        long id = celix_bundleContext_registerService(ctx, &svc, calcName, NULL);
+        long id = celix_bundleContext_registerService(ctx, &svc, calcName, nullptr);
         std::cout << "registered service with id " << id << std::endl;
         std::lock_guard<std::mutex> lock{data.mutex};
         data.svcId = id;
@@ -528,7 +562,7 @@ TEST(CelixBundleContextServicesTests, servicesTrackerSetTest) {
     void *svc4 = (void*)0x400; //5 ranking
 
     auto set = [](void *handle, void *svc) {
-        CHECK(svc != NULL);
+        CHECK(svc != nullptr);
         static int callCount = 0;
         callCount += 1;
         if (callCount == 1) {
@@ -546,8 +580,8 @@ TEST(CelixBundleContextServicesTests, servicesTrackerSetTest) {
         *c = callCount;
     };
 
-    long svcId1 = celix_bundleContext_registerService(ctx, svc1, "NA", NULL);
-    long svcId2 = celix_bundleContext_registerService(ctx, svc2, "NA", NULL);
+    long svcId1 = celix_bundleContext_registerService(ctx, svc1, "NA", nullptr);
+    long svcId2 = celix_bundleContext_registerService(ctx, svc2, "NA", nullptr);
 
     //starting tracker should lead to first set call
     celix_service_tracking_options_t opts{};
@@ -603,7 +637,7 @@ TEST(CelixBundleContextServicesTests, serviceFactoryTest) {
         *c += 1;
     };
 
-    long facId = celix_bundleContext_registerServiceFactory(ctx, &fac, name, NULL);
+    long facId = celix_bundleContext_registerServiceFactory(ctx, &fac, name, nullptr);
     CHECK_TRUE(facId >= 0);
 
 
@@ -622,8 +656,8 @@ TEST(CelixBundleContextServicesTests, serviceFactoryTest) {
 }
 
 TEST(CelixBundleContextServicesTests, findServicesTest) {
-    long svcId1 = celix_bundleContext_registerService(ctx, (void*)0x100, "example", NULL);
-    long svcId2 = celix_bundleContext_registerService(ctx, (void*)0x100, "example", NULL);
+    long svcId1 = celix_bundleContext_registerService(ctx, (void*)0x100, "example", nullptr);
+    long svcId2 = celix_bundleContext_registerService(ctx, (void*)0x100, "example", nullptr);
 
     long foundId = celix_bundleContext_findService(ctx, "non existing service name");
     CHECK_EQUAL(-1L, foundId);
@@ -670,15 +704,15 @@ TEST(CelixBundleContextServicesTests, trackServiceTrackerTest) {
     CHECK_TRUE(trackerId >= 0);
     CHECK_EQUAL(0, count);
 
-    long tracker2 = celix_bundleContext_trackService(ctx, "example", NULL, NULL);
+    long tracker2 = celix_bundleContext_trackService(ctx, "example", nullptr, nullptr);
     CHECK_TRUE(tracker2 >= 0);
     CHECK_EQUAL(1, count);
 
-    long tracker3 = celix_bundleContext_trackServices(ctx, "example", NULL, NULL, NULL);
+    long tracker3 = celix_bundleContext_trackServices(ctx, "example", nullptr, nullptr, nullptr);
     CHECK_TRUE(tracker3 >= 0);
     CHECK_EQUAL(2, count);
 
-    long tracker4 = celix_bundleContext_trackServices(ctx, "no-match", NULL, NULL, NULL);
+    long tracker4 = celix_bundleContext_trackServices(ctx, "no-match", nullptr, nullptr, nullptr);
     CHECK_TRUE(tracker4 >= 0);
     CHECK_EQUAL(2, count);
 

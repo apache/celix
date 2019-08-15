@@ -489,6 +489,13 @@ typedef struct celix_service_use_options {
     celix_service_filter_options_t filter OPTS_INIT;
 
     /**
+     * An optional timeout (in seconds), if > 0 the use service call will block untill the timeout is expired or
+     * when at least one service is found.
+     * Default (0)
+     */
+     double waitTimeoutInSeconds OPTS_INIT;
+
+    /**
      * The optional callback pointer used in all the provided callback function (set, add, remove, setWithProperties, etc).
      */
     void *callbackHandle OPTS_INIT;
@@ -523,6 +530,7 @@ typedef struct celix_service_use_options {
     .filter.versionRange = NULL, \
     .filter.filter = NULL, \
     .filter.serviceLanguage = NULL, \
+    .waitTimeoutInSeconds = 0.0F, \
     .callbackHandle = NULL, \
     .use = NULL, \
     .useWithProperties = NULL, \

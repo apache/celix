@@ -20,6 +20,6 @@ CELIX_BUNDLES_PATH=bundles
 
 CELIX_AUTO_START_3=@http_admin_service_cmp@ @http_admin_sut_cmp@
 
-USE_WEBSOCKETS=@use_websockets@
-LISTENING_PORTS=@listening_ports@
+CELIX_HTTP_ADMIN_USE_WEBSOCKETS=@use_websockets@
+CELIX_HTTP_ADMIN_LISTENING_PORTS=@listening_ports@
 LOGHELPER_STD_OUT_FALLBACK_INCLUDE_DEBUG=@loghelper_std_out_fallback_incl_debug@

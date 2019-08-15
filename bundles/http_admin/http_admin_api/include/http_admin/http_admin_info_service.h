@@ -31,13 +31,23 @@
 
 #define HTTP_ADMIN_INFO_SERVICE_NAME "http_admin_info_service"
 
-//Properties
+/**
+ * Listening port of the HTTP Admin
+ */
 #define HTTP_ADMIN_INFO_PORT         "http_admin_port"
+
+/**
+ * available resources found by the HTTP Admin. Entries are comma separated.
+ * Only present if there are available resources.
+ */
+#define HTTP_ADMIN_INFO_RESOURCE_URLS    "http_admin_resource_urls"
 
 /*
  * Marker interface
  * Mandatory properties:
  *      - http_admin_port
+ * Optional properties:
+ *      - http_admin_resource_urls
  *
  */
 struct celix_http_info_service {

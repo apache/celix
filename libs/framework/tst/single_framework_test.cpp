@@ -31,8 +31,8 @@ extern "C" {
 #include "celix_framework_factory.h"
 
 
-    static framework_pt framework = NULL;
-    static bundle_context_pt context = NULL;
+    static framework_pt framework = nullptr;
+    static bundle_context_pt context = nullptr;
 
     static void setupFm(void) {
         int rc = 0;
@@ -40,7 +40,7 @@ extern "C" {
         rc = celixLauncher_launch("config.properties", &framework);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
 
-        bundle_pt bundle = NULL;
+        bundle_pt bundle = nullptr;
         rc = framework_getFrameworkBundle(framework, &bundle);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
 
@@ -54,8 +54,8 @@ extern "C" {
         celixLauncher_waitForShutdown(framework);
         celixLauncher_destroy(framework);
 
-        context = NULL;
-        framework = NULL;
+        context = nullptr;
+        framework = nullptr;
     }
 
     static void testFramework(void) {
@@ -87,14 +87,14 @@ TEST_GROUP(FrameworkFactory) {
 
 
 TEST(FrameworkFactory, testFactoryCreate) {
-    framework_t* fw = celix_frameworkFactory_createFramework(NULL);
-    CHECK(fw != NULL);
+    framework_t* fw = celix_frameworkFactory_createFramework(nullptr);
+    CHECK(fw != nullptr);
     celix_frameworkFactory_destroyFramework(fw);
 }
 
 TEST(FrameworkFactory, testFactoryCreateAndToManyStartAndStops) {
-    framework_t* fw = celix_frameworkFactory_createFramework(NULL);
-    CHECK(fw != NULL);
+    framework_t* fw = celix_frameworkFactory_createFramework(nullptr);
+    CHECK(fw != nullptr);
 
     framework_start(fw); //should already be done by frameworkFactory_newFramework();
     framework_start(fw);
@@ -112,8 +112,8 @@ TEST(FrameworkFactory, testFactoryCreateAndToManyStartAndStops) {
 }
 
 TEST(FrameworkFactory, restartFramework) {
-    framework_t* fw = celix_frameworkFactory_createFramework(NULL);
-    CHECK(fw != NULL);
+    framework_t* fw = celix_frameworkFactory_createFramework(nullptr);
+    CHECK(fw != nullptr);
 
 
     /* TODO fix mem leak in restarting framework

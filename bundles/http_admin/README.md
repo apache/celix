@@ -40,11 +40,12 @@ celix_bundle_add_dir(<TARGET> <Document root of bundle> DESTINATION ".")
 ```
 
 ### Celix supported config.properties
-    LISTENING_PORTS                 default = 8080, can be multiple ports divided by a comma
-    PORT_RANGE_MIN                  default = 8000
-    PORT_RANGE_MAX                  default = 9000
-    USE_WEBSOCKETS                  default = false
-    WEBSOCKET_TIMEOUT_MS            default = 3600000
+    CELIX_TTP_ADMIN_LISTENING_PORTS                  default = 8080, can be multiple ports divided by a comma
+    CELIX_HTTP_ADMIN_PORT_RANGE_MIN                  default = 8000
+    CELIX_HTTP_ADMIN_PORT_RANGE_MAX                  default = 9000
+    CELIX_HTTP_ADMIN_USE_WEBSOCKETS                  default = true
+    CELIX_HTTP_ADMIN_WEBSOCKET_TIMEOUT_MS            default = 3600000
+    CELIX_HTTP_ADMIN_NUM_THREADS                     default = 1
 
 ## CMake option
     BUILD_HTTP_ADMIN=ON
