@@ -17,8 +17,5 @@ limitations under the License.
 
 # TODO integrate dep man into framework
 
+- Update documentetion for CELIX_GEN_BUNDLE_ACTIVATOR usage and removal of dep manager libs  / shell_dm
 - Move documentation
-- Move dummy targets
-- Deprecate the Celix::dm_shell, Celix::dependency_manager_static
-and Celix::dependency_manager_so targets. (how?)
-- Eventually remove the deprecated dm targets

@@ -29,7 +29,7 @@ class BarActivator  {
 private:
     example_t cExample {nullptr, nullptr};
 public:
-    BarActivator(std::shared_ptr<DependencyManager> mng);
+    explicit BarActivator(std::shared_ptr<DependencyManager> mng);
 
 };
 
