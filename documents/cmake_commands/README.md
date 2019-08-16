@@ -216,12 +216,6 @@ The 'add_celix_container' Celix CMake command can be used to create Celix contai
 Celix containers are executables preconfigured with configuration properties and bundles to run.    
 
 ## add_celix_container
-Add a Celix container, consisting out of a selection of bundles and a simple Celix launcher.
-Celix containers can be used to run/test a selection of bundles in the celix framework.
-A Celix container can be found in `<cmake_build_dir>/deploy[/<group_name>]/<celix_container_name>`. 
-Use the `<celix_container_name>` executable to run deployments.
-
-```CMake
 Add a Celix container, consisting out of a selection of bundles and a Celix launcher.
 Celix containers can be used to run/test a selection of bundles in the celix framework.
 A Celix container will be build in `<cmake_build_dir>/deploy[/<group_name>]/<celix_container_name>`.
