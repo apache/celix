@@ -355,7 +355,6 @@ static void httpAdmin_updateInfoSvc(http_admin_manager_t *admin) {
     char *resources_urls = NULL;
     size_t resources_urls_size;
     FILE *stream = open_memstream(&resources_urls, &resources_urls_size);
-    fprintf(stream , "");
 
     unsigned int size = arrayList_size(admin->aliasList);
     for (unsigned int i = 0; i < size; ++i) {
@@ -371,7 +370,7 @@ static void httpAdmin_updateInfoSvc(http_admin_manager_t *admin) {
 
     celix_properties_t *properties = celix_properties_create();
     celix_properties_set(properties, HTTP_ADMIN_INFO_PORT, ports);
-    if (strncmp("", resources_urls, 1) != 0) {
+    if (resources_urls_size > 1) {
         celix_properties_set(properties, HTTP_ADMIN_INFO_RESOURCE_URLS, resources_urls);
     }
     admin->infoSvcId = celix_bundleContext_registerService(admin->context, &admin->infoSvc, HTTP_ADMIN_INFO_SERVICE_NAME, properties);
