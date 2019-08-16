@@ -355,7 +355,6 @@ static void httpAdmin_updateInfoSvc(http_admin_manager_t *admin) {
     char *resources_urls = NULL;
     size_t resources_urls_size;
     FILE *stream = open_memstream(&resources_urls, &resources_urls_size);
-    fprintf(stream , "");
 
     unsigned int size = arrayList_size(admin->aliasList);
     for (unsigned int i = 0; i < size; ++i) {

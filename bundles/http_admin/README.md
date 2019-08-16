@@ -40,7 +40,7 @@ celix_bundle_add_dir(<TARGET> <Document root of bundle> DESTINATION ".")
 ```
 
 ### Celix supported config.properties
-    CELIX_TTP_ADMIN_LISTENING_PORTS                  default = 8080, can be multiple ports divided by a comma
+    CELIX_HTTP_ADMIN_LISTENING_PORTS                 default = 8080, can be multiple ports divided by a comma
     CELIX_HTTP_ADMIN_PORT_RANGE_MIN                  default = 8000
     CELIX_HTTP_ADMIN_PORT_RANGE_MAX                  default = 9000
     CELIX_HTTP_ADMIN_USE_WEBSOCKETS                  default = true
