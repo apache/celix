@@ -87,6 +87,11 @@ static celix_status_t udpmc_getIpAddress(const char* interface, char** ip);
 static celix_status_t pubsub_udpmcAdmin_connectEndpointToReceiver(pubsub_udpmc_admin_t* psa, pubsub_udpmc_topic_receiver_t *receiver, const celix_properties_t *endpoint);
 static celix_status_t pubsub_udpmcAdmin_disconnectEndpointFromReceiver(pubsub_udpmc_admin_t* psa, pubsub_udpmc_topic_receiver_t *receiver, const celix_properties_t *endpoint);
 
+static bool pubsub_udpmcAdmin_endpointIsPublisher(const celix_properties_t *endpoint) {
+    const char *type = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TYPE, NULL);
+    return type != NULL && strncmp(PUBSUB_PUBLISHER_ENDPOINT_TYPE, type, strlen(PUBSUB_PUBLISHER_ENDPOINT_TYPE)) == 0;
+}
+
 
 pubsub_udpmc_admin_t* pubsub_udpmcAdmin_create(celix_bundle_context_t *ctx, log_helper_t *logHelper) {
     pubsub_udpmc_admin_t *psa = calloc(1, sizeof(*psa));
@@ -405,7 +410,9 @@ celix_status_t pubsub_udpmcAdmin_setupTopicReceiver(void *handle, const char *sc
         hash_map_iterator_t iter = hashMapIterator_construct(psa->discoveredEndpoints.map);
         while (hashMapIterator_hasNext(&iter)) {
             celix_properties_t *endpoint = hashMapIterator_nextValue(&iter);
-            pubsub_udpmcAdmin_connectEndpointToReceiver(psa, receiver, endpoint);
+            if (pubsub_udpmcAdmin_endpointIsPublisher(endpoint)) {
+                pubsub_udpmcAdmin_connectEndpointToReceiver(psa, receiver, endpoint);
+            }
         }
         celixThreadMutex_unlock(&psa->discoveredEndpoints.mutex);
     }
@@ -443,18 +450,10 @@ static celix_status_t pubsub_udpmcAdmin_connectEndpointToReceiver(pubsub_udpmc_a
     //note can be called with discoveredEndpoint.mutex lock
     celix_status_t status = CELIX_SUCCESS;
 
-    const char *scope = pubsub_udpmcTopicReceiver_scope(receiver);
-    const char *topic = pubsub_udpmcTopicReceiver_topic(receiver);
-
-    const char *type = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TYPE, NULL);
-    const char *eScope = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_SCOPE, NULL);
-    const char *eTopic = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_NAME, NULL);
     const char *sockAddress = celix_properties_get(endpoint, PUBSUB_UDPMC_SOCKET_ADDRESS_KEY, NULL);
     long sockPort = celix_properties_getAsLong(endpoint, PUBSUB_UDPMC_SOCKET_PORT_KEY, -1L);
 
-    bool publisher = type != NULL && strncmp(PUBSUB_PUBLISHER_ENDPOINT_TYPE, type, strlen(PUBSUB_PUBLISHER_ENDPOINT_TYPE)) == 0;
-
-    if (publisher && (sockAddress == NULL || sockPort < 0)) {
+    if (sockAddress == NULL || sockPort < 0) {
         L_WARN("[PSA UPDMC] Error got endpoint without udpmc socket address/port or endpoint type. Properties:");
         const char *key = NULL;
         CELIX_PROPERTIES_FOR_EACH(endpoint, key) {
@@ -462,9 +461,24 @@ static celix_status_t pubsub_udpmcAdmin_connectEndpointToReceiver(pubsub_udpmc_a
         }
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
-        if (eScope != NULL && eTopic != NULL && publisher &&
-            strncmp(eScope, scope, 1024 * 1024) == 0 &&
-            strncmp(eTopic, topic, 1024 * 1024) == 0) {
+        const char *scope = pubsub_udpmcTopicReceiver_scope(receiver);
+        const char *topic = pubsub_udpmcTopicReceiver_topic(receiver);
+        const char *serializer = NULL;
+        long serializerSvcId = pubsub_udpmcTopicReceiver_serializerSvcId(receiver);
+        psa_udpmc_serializer_entry_t *serializerEntry = hashMap_get(psa->serializers.map, (void*)serializerSvcId);
+        if (serializerEntry != NULL) {
+            serializer = serializerEntry->serType;
+        }
+
+        const char *eScope = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_SCOPE, NULL);
+        const char *eTopic = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_NAME, NULL);
+        const char *eSerializer = celix_properties_get(endpoint, PUBSUB_ENDPOINT_SERIALIZER, NULL);
+
+        if (scope != NULL && topic != NULL && serializer != NULL
+                        && eScope != NULL && eTopic != NULL && eSerializer != NULL
+                        && strncmp(eScope, scope, 1024*1024) == 0
+                        && strncmp(eTopic, topic, 1024*1024) == 0
+                        && strncmp(eSerializer, serializer, 1024*1024) == 0) {
             pubsub_udpmcTopicReceiver_connectTo(receiver, sockAddress, sockPort);
         }
     }
@@ -474,13 +488,16 @@ static celix_status_t pubsub_udpmcAdmin_connectEndpointToReceiver(pubsub_udpmc_a
 
 celix_status_t pubsub_udpmcAdmin_addEndpoint(void *handle, const celix_properties_t *endpoint) {
     pubsub_udpmc_admin_t *psa = handle;
-    celixThreadMutex_lock(&psa->topicReceivers.mutex);
-    hash_map_iterator_t iter = hashMapIterator_construct(psa->topicReceivers.map);
-    while (hashMapIterator_hasNext(&iter)) {
-        pubsub_udpmc_topic_receiver_t *receiver = hashMapIterator_nextValue(&iter);
-        pubsub_udpmcAdmin_connectEndpointToReceiver(psa, receiver, endpoint);
+
+    if (pubsub_udpmcAdmin_endpointIsPublisher(endpoint)) {
+        celixThreadMutex_lock(&psa->topicReceivers.mutex);
+        hash_map_iterator_t iter = hashMapIterator_construct(psa->topicReceivers.map);
+        while (hashMapIterator_hasNext(&iter)) {
+            pubsub_udpmc_topic_receiver_t *receiver = hashMapIterator_nextValue(&iter);
+            pubsub_udpmcAdmin_connectEndpointToReceiver(psa, receiver, endpoint);
+        }
+        celixThreadMutex_unlock(&psa->topicReceivers.mutex);
     }
-    celixThreadMutex_unlock(&psa->topicReceivers.mutex);
 
     celixThreadMutex_lock(&psa->discoveredEndpoints.mutex);
     celix_properties_t *cpy = celix_properties_copy(endpoint);
@@ -497,12 +514,7 @@ static celix_status_t pubsub_udpmcAdmin_disconnectEndpointFromReceiver(pubsub_ud
     //note can be called with discoveredEndpoint.mutex lock
     celix_status_t status = CELIX_SUCCESS;
 
-    const char *scope = pubsub_udpmcTopicReceiver_scope(receiver);
-    const char *topic = pubsub_udpmcTopicReceiver_topic(receiver);
-
     const char *type = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TYPE, NULL);
-    const char *eScope = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_SCOPE, NULL);
-    const char *eTopic = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_NAME, NULL);
     const char *sockAdress = celix_properties_get(endpoint, PUBSUB_UDPMC_SOCKET_ADDRESS_KEY, NULL);
     long sockPort = celix_properties_getAsLong(endpoint, PUBSUB_UDPMC_SOCKET_PORT_KEY, -1L);
 
@@ -510,12 +522,7 @@ static celix_status_t pubsub_udpmcAdmin_disconnectEndpointFromReceiver(pubsub_ud
         L_WARN("[PSA UPDMC] Error disconnecting from endpoint without udpmc socket address/port or endpoint type.");
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
-        if (eScope != NULL && eTopic != NULL && type != NULL &&
-            strncmp(eScope, scope, 1024 * 1024) == 0 &&
-            strncmp(eTopic, topic, 1024 * 1024) == 0 &&
-            strncmp(type, PUBSUB_PUBLISHER_ENDPOINT_TYPE, strlen(PUBSUB_PUBLISHER_ENDPOINT_TYPE)) == 0) {
-            pubsub_udpmcTopicReceiver_disconnectFrom(receiver, sockAdress, sockPort);
-        }
+        pubsub_udpmcTopicReceiver_disconnectFrom(receiver, sockAdress, sockPort);
     }
 
     return status;
@@ -523,13 +530,16 @@ static celix_status_t pubsub_udpmcAdmin_disconnectEndpointFromReceiver(pubsub_ud
 
 celix_status_t pubsub_udpmcAdmin_removeEndpoint(void *handle, const celix_properties_t *endpoint) {
     pubsub_udpmc_admin_t *psa = handle;
-    celixThreadMutex_lock(&psa->topicReceivers.mutex);
-    hash_map_iterator_t iter = hashMapIterator_construct(psa->topicReceivers.map);
-    while (hashMapIterator_hasNext(&iter)) {
-        pubsub_udpmc_topic_receiver_t *receiver = hashMapIterator_nextValue(&iter);
-        pubsub_udpmcAdmin_disconnectEndpointFromReceiver(psa, receiver, endpoint);
+
+    if (pubsub_udpmcAdmin_endpointIsPublisher(endpoint)) {
+        celixThreadMutex_lock(&psa->topicReceivers.mutex);
+        hash_map_iterator_t iter = hashMapIterator_construct(psa->topicReceivers.map);
+        while (hashMapIterator_hasNext(&iter)) {
+            pubsub_udpmc_topic_receiver_t *receiver = hashMapIterator_nextValue(&iter);
+            pubsub_udpmcAdmin_disconnectEndpointFromReceiver(psa, receiver, endpoint);
+        }
+        celixThreadMutex_unlock(&psa->topicReceivers.mutex);
     }
-    celixThreadMutex_unlock(&psa->topicReceivers.mutex);
 
     celixThreadMutex_lock(&psa->discoveredEndpoints.mutex);
     const char *uuid = celix_properties_get(endpoint, PUBSUB_ENDPOINT_UUID, NULL);
