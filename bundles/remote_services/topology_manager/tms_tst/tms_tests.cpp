@@ -83,7 +83,6 @@ extern "C" {
     static service_reference_pt eplRef = NULL;
     static endpoint_listener_pt eplService = NULL; // actually this is the topology manager
 
-
     static void setupFm(void) {
         int rc = 0;
         rc = celixLauncher_launch("config.properties", &framework);
@@ -123,9 +122,12 @@ extern "C" {
 
         rc = bundleContext_getService(context, discRef, (void **)&discMock);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
+
+        printf("==> Finished setup.\n");
     }
 
     static void teardownFm(void) {
+        printf("==> Starting teardown.\n");
         int rc = 0;
 
         rc = bundleContext_ungetService(context, scopeServiceRef, NULL);
@@ -260,35 +262,34 @@ extern "C" {
         framework = NULL;
     }
 
-
     /// \TEST_CASE_ID{1}
     /// \TEST_CASE_TITLE{Test register scope service}
     /// \TEST_CASE_REQ{REQ-1}
     /// \TEST_CASE_DESC Checks if 3 bundles are installed after the framework setup
     static void testBundles(void) {
     	printf("Begin: %s\n", __func__);
-            array_list_pt bundles = NULL;
+        array_list_pt bundles = NULL;
 
-            int rc = bundleContext_getBundles(context, &bundles);
-            CHECK_EQUAL(0, rc);
-            CHECK_EQUAL(5, arrayList_size(bundles)); //framework, scopeService & calc & rsa
+        int rc = bundleContext_getBundles(context, &bundles);
+        CHECK_EQUAL(0, rc);
+        CHECK_EQUAL(5, arrayList_size(bundles)); //framework, scopeService & calc & rsa
 
-            /*
-            int size = arrayList_size(bundles);
-            int i;
-            for (i = 0; i < size; i += 1) {
-                bundle_pt bundle = NULL;
-                module_pt module = NULL;
-                char *name = NULL;
+        /*
+           int size = arrayList_size(bundles);
+           int i;
+           for (i = 0; i < size; i += 1) {
+           bundle_pt bundle = NULL;
+           module_pt module = NULL;
+           char *name = NULL;
 
-                bundle = (bundle_pt) arrayList_get(bundles, i);
-                bundle_getCurrentModule(bundle, &module);
-                module_getSymbolicName(module, &name);
-                printf("got bundle with symbolic name '%s'", name);
-            }*/
+           bundle = (bundle_pt) arrayList_get(bundles, i);
+           bundle_getCurrentModule(bundle, &module);
+           module_getSymbolicName(module, &name);
+           printf("got bundle with symbolic name '%s'", name);
+           }*/
 
-            arrayList_destroy(bundles);
-        	printf("End: %s\n", __func__);
+        arrayList_destroy(bundles);
+        printf("End: %s\n", __func__);
     }
 
     static void scopeInit(const char *fileName, int *nr_exported, int *nr_imported)
@@ -657,7 +658,6 @@ extern "C" {
 
         printf("End: %s\n", __func__);
     }
-
 }
 
 TEST_GROUP(topology_manager_scoped_export) {

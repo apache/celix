@@ -17,36 +17,11 @@
  *under the License.
  */
 #include "dyn_function.h"
+#include "dyn_function_common.h"
 
 #include <strings.h>
 #include <stdlib.h>
 #include <ffi.h>
-
-#include "dyn_common.h"
-
-struct _dyn_function_type {
-    char *name;
-    struct types_head *refTypes; //NOTE not owned
-    TAILQ_HEAD(,_dyn_function_argument_type) arguments;
-    ffi_type **ffiArguments;
-    dyn_type *funcReturn;
-    ffi_cif cif;
-
-    //closure part
-    ffi_closure *ffiClosure;
-    void (*fn)(void);
-    void *userData;
-    void (*bind)(void *userData, void *args[], void *ret);
-};
-
-typedef struct _dyn_function_argument_type dyn_function_argument_type;
-struct _dyn_function_argument_type {
-    int index;
-    char *name;
-    enum dyn_function_argument_meta argumentMeta;
-    dyn_type *type;
-    TAILQ_ENTRY(_dyn_function_argument_type) entries;
-};
 
 static const int OK = 0;
 static const int MEM_ERROR = 1;
@@ -59,7 +34,7 @@ static int dynFunction_initCif(dyn_function_type *dynFunc);
 static int dynFunction_parseDescriptor(dyn_function_type *dynFunc, FILE *descriptor);
 static void dynFunction_ffiBind(ffi_cif *cif, void *ret, void *args[], void *userData);
 
-extern ffi_type * dynType_ffiType(dyn_type *type);
+ffi_type * dynType_ffiType(dyn_type *type);
 
 int dynFunction_parse(FILE *descriptor, struct types_head *refTypes, dyn_function_type **out) {
     int status = OK;

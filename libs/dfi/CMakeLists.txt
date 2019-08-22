@@ -20,9 +20,13 @@ find_package(Jansson REQUIRED)
 
 set(SOURCES
 	src/dyn_common.c
+	src/dyn_type_common.c
 	src/dyn_type.c
+	src/dyn_avpr_type.c
 	src/dyn_function.c
+	src/dyn_avpr_function.c
 	src/dyn_interface.c
+	src/dyn_avpr_interface.c
 	src/dyn_message.c
 	src/json_serializer.c
 	src/json_rpc.c
@@ -52,21 +56,24 @@ add_library(Celix::dfi ALIAS dfi)
 
 if (ENABLE_TESTING)
     find_package(CppUTest REQUIRED)
-        
-    include_directories(${CPPUTEST_INCLUDE_DIR})
 
 	add_executable(test_dfi
-		test/dyn_type_tests.cpp
-		test/dyn_function_tests.cpp
-		test/dyn_closure_tests.cpp
-		test/dyn_interface_tests.cpp
-		test/dyn_message_tests.cpp
-		test/json_serializer_tests.cpp
-		test/json_rpc_tests.cpp
+        test/dyn_avpr_tests.cpp
+        test/dyn_type_tests.cpp
+        test/dyn_function_tests.cpp
+        test/dyn_closure_tests.cpp
+        test/dyn_avpr_function_tests.cpp
+        test/dyn_interface_tests.cpp
+        test/dyn_avpr_interface_tests.cpp
+        test/dyn_message_tests.cpp
+        test/json_serializer_tests.cpp
+        test/json_rpc_tests.cpp
+        test/json_rpc_avpr_tests.cpp
 		test/run_tests.cpp
 	)
-	target_link_libraries(test_dfi PRIVATE Celix::dfi Celix::utils ffi::lib ${CPPUTEST_LIBRARY})
-	target_include_directories(test_dfi PRIVATE ffi::lib)
+
+    target_link_libraries(test_dfi PRIVATE Celix::dfi Celix::utils ${FFI_LIBRARIES} ${JANSSON_LIBRARY} ${CPPUTEST_LIBRARIES})
+    target_include_directories(test_dfi PRIVATE ${FFI_INCLUDE_DIRS} ${JANSSON_INCLUDE_DIRS})
 
     file(COPY ${CMAKE_CURRENT_LIST_DIR}/test/schemas DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
     file(COPY ${CMAKE_CURRENT_LIST_DIR}/test/descriptors DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

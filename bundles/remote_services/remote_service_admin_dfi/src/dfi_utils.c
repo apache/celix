@@ -106,3 +106,26 @@ celix_status_t dfi_findDescriptor(bundle_context_pt context, bundle_pt bundle, c
 
     return status;
 }
+
+celix_status_t dfi_findAvprDescriptor(bundle_context_pt context, bundle_pt bundle, const char *name, FILE **out) {
+    celix_status_t  status;
+    char fileName[128];
+
+    snprintf(fileName, 128, "%s.avpr", name);
+
+    long id;
+    status = bundle_getBundleId(bundle, &id);
+
+    if (status == CELIX_SUCCESS) {
+        if (id == 0) {
+            //framework bundle
+            status = dfi_findFileForFramework(context, fileName, out);
+        } else {
+            //normal bundle
+            status = dfi_findFileForBundle(bundle, fileName, out);
+        }
+    }
+
+    return status;
+}
+

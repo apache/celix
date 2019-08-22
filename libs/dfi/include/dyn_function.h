@@ -35,6 +35,7 @@
 typedef struct _dyn_function_type dyn_function_type;
 
 DFI_SETUP_LOG_HEADER(dynFunction);
+DFI_SETUP_LOG_HEADER(dynAvprFunction);
 
 enum dyn_function_argument_meta {
     DYN_FUNCTION_ARGUMENT_META__STD = 0,
@@ -56,5 +57,9 @@ int dynFunction_call(dyn_function_type *dynFunc, void(*fn)(void), void *returnVa
 
 int dynFunction_createClosure(dyn_function_type *func, void (*bind)(void *, void **, void*), void *userData, void(**fn)(void));
 int dynFunction_getFnPointer(dyn_function_type *func, void (**fn)(void));
+
+// Avpr parsing
+dyn_function_type * dynFunction_parseAvprWithStr(const char * avpr, const char * fqn);
+dyn_function_type * dynFunction_parseAvpr(FILE * avprStream, const char * fqn);
 
 #endif

@@ -23,20 +23,15 @@
 
 #include "dyn_common.h"
 #include "dyn_type.h"
-#include "dyn_interface.h"
+#include "dyn_interface_common.h"
 
 DFI_SETUP_LOG(dynInterface);
 
-struct _dyn_interface_type {
-    struct namvals_head header;
-    struct namvals_head annotations;
-    struct types_head types;
-    struct methods_head methods;
-    version_pt version;
-};
-
 static const int OK = 0;
 static const int ERROR = 1;
+
+// Also export for dyn_avpr_interface
+int dynInterface_checkInterface(dyn_interface_type *intf);
 
 static int dynInterface_parseSection(dyn_interface_type *intf, FILE *stream);
 static int dynInterface_parseAnnotations(dyn_interface_type *intf, FILE *stream);
@@ -44,7 +39,6 @@ static int dynInterface_parseTypes(dyn_interface_type *intf, FILE *stream);
 static int dynInterface_parseMethods(dyn_interface_type *intf, FILE *stream);
 static int dynInterface_parseHeader(dyn_interface_type *intf, FILE *stream);
 static int dynInterface_parseNameValueSection(dyn_interface_type *intf, FILE *stream, struct namvals_head *head);
-static int dynInterface_checkInterface(dyn_interface_type *intf);
 static int dynInterface_getEntryForHead(struct namvals_head *head, const char *name, char **value);
 
 int dynInterface_parse(FILE *descriptor, dyn_interface_type **out) {
@@ -99,7 +93,7 @@ int dynInterface_parse(FILE *descriptor, dyn_interface_type **out) {
     return status;
 }
 
-static int dynInterface_checkInterface(dyn_interface_type *intf) {
+int dynInterface_checkInterface(dyn_interface_type *intf) {
     int status = OK;
 
     //check header section

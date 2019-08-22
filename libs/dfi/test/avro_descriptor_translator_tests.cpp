@@ -178,3 +178,4 @@ TEST(AvroDescTranslatorTest, invalid1) {
 TEST(AvroDescTranslatorTest, invalid2) {
     invalid("schemas/invalid2.avpr");
 }
+

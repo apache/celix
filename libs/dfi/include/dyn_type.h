@@ -58,6 +58,10 @@
  * P untyped pointer (void *)
  * t char* string
  * N native int
+ * E enum (int) + meta infos #EnumName=#EnumValue (e.g. #e1=v1;#e2=v2;E)
+ *
+ * < Array //TODO
+ * <(size)[Type] //TODO 
  *
  * ComplexTypes (Struct)
  * {[Type]+ [(Name)(SPACE)]+}
@@ -71,6 +75,7 @@
  * TypeDef 
  * T(Name)=Type;
  *
+ * #OMG style sequence. Struct with uint32_t cap, uint32_t len and a <itemtype> buf[] fields.
  * SequenceType
  * [(Type)
  *
@@ -112,8 +117,16 @@ struct complex_type_entry {
     TAILQ_ENTRY(complex_type_entry) entries;
 };
 
+TAILQ_HEAD(meta_properties_head, meta_entry);
+struct meta_entry {
+    char *name;
+    char *value;
+    TAILQ_ENTRY(meta_entry) entries;
+};
+
 //logging
 DFI_SETUP_LOG_HEADER(dynType);
+DFI_SETUP_LOG_HEADER(dynAvprType);
 
 //generic
 int dynType_parse(FILE *descriptorStream, const char *name, struct types_head *refTypes, dyn_type **type);
@@ -128,6 +141,8 @@ size_t dynType_size(dyn_type *type);
 int dynType_type(dyn_type *type);
 int dynType_descriptorType(dyn_type *type);
 const char * dynType_getMetaInfo(dyn_type *type, const char *name);
+int dynType_metaEntries(dyn_type *type, struct meta_properties_head **entries);
+const char * dynType_getName(dyn_type *type);
 
 //complexType
 int dynType_complex_indexForName(dyn_type *type, const char *name);
@@ -151,5 +166,9 @@ int dynType_text_allocAndInit(dyn_type *type, void *textLoc, const char *value);
 
 //simple
 void dynType_simple_setValue(dyn_type *type, void *inst, void *in);
+
+// avpr parsing
+dyn_type * dynType_parseAvpr(FILE *avprStream, const char *fqn);
+dyn_type * dynType_parseAvprWithStr(const char *avpr, const char *fqn);
 
 #endif
