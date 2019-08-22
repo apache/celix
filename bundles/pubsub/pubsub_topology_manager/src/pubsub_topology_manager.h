@@ -1,20 +1,20 @@
 /**
- *Licensed to the Apache Software Foundation (ASF) under one
- *or more contributor license agreements.  See the NOTICE file
- *distributed with this work for additional information
- *regarding copyright ownership.  The ASF licenses this file
- *to you under the Apache License, Version 2.0 (the
- *"License"); you may not use this file except in compliance
- *with the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- *Unless required by applicable law or agreed to in writing,
- *software distributed under the License is distributed on an
- *"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- *specific language governing permissions and limitations
- *under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 
 
@@ -31,80 +31,80 @@
 #include "pubsub/publisher.h"
 #include "pubsub/subscriber.h"
 
-#define PUBSUB_TOPOLOGY_MANAGER_VERBOSE_KEY 		"PUBSUB_TOPOLOGY_MANAGER_VERBOSE"
-#define PUBSUB_TOPOLOGY_MANAGER_DEFAULT_VERBOSE		false
+#define PUBSUB_TOPOLOGY_MANAGER_VERBOSE_KEY         "PUBSUB_TOPOLOGY_MANAGER_VERBOSE"
+#define PUBSUB_TOPOLOGY_MANAGER_DEFAULT_VERBOSE     false
 
 
 typedef struct pubsub_topology_manager {
-	bundle_context_pt context;
+    bundle_context_pt context;
 
-	struct {
-		celix_thread_mutex_t mutex;
-		hash_map_t *map; //key = svcId, value = pubsub_admin_t*
-	} pubsubadmins;
+    struct {
+        celix_thread_mutex_t mutex;
+        hash_map_t *map; //key = svcId, value = pubsub_admin_t*
+    } pubsubadmins;
 
-	struct {
-		celix_thread_mutex_t mutex;
-		hash_map_t *map; //key = uuid , value = pstm_discovered_endpoint_entry_t
-	} discoveredEndpoints;
+    struct {
+        celix_thread_mutex_t mutex;
+        hash_map_t *map; //key = uuid , value = pstm_discovered_endpoint_entry_t
+    } discoveredEndpoints;
 
-	struct {
-		celix_thread_mutex_t mutex;
-		hash_map_t *map; //key = scope/topic key, value = pstm_topic_receiver_or_sender_entry_t*
-	} topicReceivers;
+    struct {
+        celix_thread_mutex_t mutex;
+        hash_map_t *map; //key = scope/topic key, value = pstm_topic_receiver_or_sender_entry_t*
+    } topicReceivers;
 
-	struct {
-		celix_thread_mutex_t mutex;
-		hash_map_t *map; //key = scope/topic key, value = pstm_topic_receiver_or_sender_entry_t*
-	} topicSenders;
+    struct {
+        celix_thread_mutex_t mutex;
+        hash_map_t *map; //key = scope/topic key, value = pstm_topic_receiver_or_sender_entry_t*
+    } topicSenders;
 
-	struct {
-		celix_thread_mutex_t mutex;
-		celix_array_list_t *list; //<pubsub_announce_endpoint_listener_t*>
-	} announceEndpointListeners;
+    struct {
+        celix_thread_mutex_t mutex;
+        celix_array_list_t *list; //<pubsub_announce_endpoint_listener_t*>
+    } announceEndpointListeners;
 
-	struct {
-		celix_thread_mutex_t mutex;
-		hash_map_t *map; //key = svcId, value = pubsub_admin_metrics_service_t*
-	} psaMetrics;
+    struct {
+        celix_thread_mutex_t mutex;
+        hash_map_t *map; //key = svcId, value = pubsub_admin_metrics_service_t*
+    } psaMetrics;
 
-	struct {
-		celix_thread_t thread;
-		celix_thread_mutex_t mutex; //protect running and condition
-		celix_thread_cond_t cond;
-		bool running;
-	} psaHandling;
+    struct {
+        celix_thread_t thread;
+        celix_thread_mutex_t mutex; //protect running and condition
+        celix_thread_cond_t cond;
+        bool running;
+    } psaHandling;
 
-	log_helper_pt loghelper;
+    log_helper_pt loghelper;
 
-	bool verbose;
+    bool verbose;
 } pubsub_topology_manager_t;
 
 typedef struct pstm_discovered_endpoint_entry {
-	const char *uuid;
-	long selectedPsaSvcId; // -1L, indicates no selected psa
-	int usageCount; //note that discovered endpoints can be found multiple times by different pubsub discovery components
-	celix_properties_t *endpoint;
+    const char *uuid;
+    long selectedPsaSvcId; // -1L, indicates no selected psa
+    int usageCount; //note that discovered endpoints can be found multiple times by different pubsub discovery components
+    celix_properties_t *endpoint;
 } pstm_discovered_endpoint_entry_t;
 
 typedef struct pstm_topic_receiver_or_sender_entry {
-	bool needsMatch; //true if a psa needs to be selected or if a new psa has to be considered.
+    bool needsMatch; //true if a psa needs to be selected or if a new psa has to be considered.
 
-	char *scopeAndTopicKey; //key of the combined value of the scope and topic
-	celix_properties_t *endpoint;
-	char *topic;
-	char *scope;
-	int usageCount; //nr of subscriber service for the topic receiver (matching scope & topic)
-	long selectedPsaSvcId;
-	long selectedSerializerSvcId;
-	long bndId;
-	celix_properties_t *topicProperties; //found in META-INF/(pub|sub)/(topic).properties
+    char *scopeAndTopicKey; //key of the combined value of the scope and topic
+    celix_properties_t *endpoint;
+    char *topic;
+    char *scope;
+    int usageCount; //nr of subscriber service for the topic receiver (matching scope & topic)
+    long selectedPsaSvcId;
+    long selectedSerializerSvcId;
+    long bndId;
+    celix_properties_t *topicProperties; //found in META-INF/(pub|sub)/(topic).properties
 
-	//for sender entry
-	celix_filter_t *publisherFilter;
+    //for sender entry
+    celix_filter_t *publisherFilter;
 
-	//for receiver entry
-	celix_properties_t *subscriberProperties;
+    //for receiver entry
+    celix_properties_t *subscriberProperties;
 } pstm_topic_receiver_or_sender_entry_t;
 
 celix_status_t pubsub_topologyManager_create(bundle_context_pt context, log_helper_pt logHelper, pubsub_topology_manager_t **manager);

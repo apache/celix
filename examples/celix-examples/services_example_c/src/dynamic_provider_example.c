@@ -1,20 +1,20 @@
 /**
- *Licensed to the Apache Software Foundation (ASF) under one
- *or more contributor license agreements.  See the NOTICE file
- *distributed with this work for additional information
- *regarding copyright ownership.  The ASF licenses this file
- *to you under the Apache License, Version 2.0 (the
- *"License"); you may not use this file except in compliance
- *with the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- *Unless required by applicable law or agreed to in writing,
- *software distributed under the License is distributed on an
- *"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- *specific language governing permissions and limitations
- *under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 
 #include <unistd.h>
@@ -63,7 +63,7 @@ void * run(void *handle) {
     bool up = true;
     while (isRunning(data)) {
         if (up) {
-            celix_properties_t *props = properties_create();
+            celix_properties_t *props = celix_properties_create();
             celix_properties_setLong(props, OSGI_FRAMEWORK_SERVICE_RANKING, rand());
             data->svcIds[i++] = celix_bundleContext_registerService(data->ctx, &data->svc, EXAMPLE_CALC_NAME, props);
         } else { //down
@@ -101,14 +101,14 @@ static celix_status_t activator_start(activator_data_t *data, celix_bundle_conte
     }
 
     pthread_create(&data->thread, NULL, run ,data);
-	return CELIX_SUCCESS;
+    return CELIX_SUCCESS;
 }
 
 static celix_status_t activator_stop(activator_data_t *data, celix_bundle_context_t *ctx __attribute__((unused))) {
     setRunning(data, false);
     pthread_join(data->thread, NULL);
     pthread_mutex_destroy(&data->mutex);
-	return CELIX_SUCCESS;
+    return CELIX_SUCCESS;
 }
 
 CELIX_GEN_BUNDLE_ACTIVATOR(activator_data_t, activator_start, activator_stop)

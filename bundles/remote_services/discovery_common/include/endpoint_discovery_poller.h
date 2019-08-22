@@ -43,6 +43,8 @@ struct endpoint_discovery_poller {
     celix_thread_t pollerThread;
 
     unsigned int poll_interval;
+    unsigned int poll_timeout;
+
     volatile bool running;
 };
 

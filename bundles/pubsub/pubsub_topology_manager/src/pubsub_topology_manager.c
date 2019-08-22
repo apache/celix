@@ -1,20 +1,20 @@
 /**
- *Licensed to the Apache Software Foundation (ASF) under one
- *or more contributor license agreements.  See the NOTICE file
- *distributed with this work for additional information
- *regarding copyright ownership.  The ASF licenses this file
- *to you under the Apache License, Version 2.0 (the
- *"License"); you may not use this file except in compliance
- *with the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- *Unless required by applicable law or agreed to in writing,
- *software distributed under the License is distributed on an
- *"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- *specific language governing permissions and limitations
- *under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 
 #include <stdio.h>
@@ -43,7 +43,7 @@
 #define PSTM_PSA_HANDLING_SLEEPTIME_IN_SECONDS       30L
 
 #ifndef UUID_STR_LEN
-#define UUID_STR_LEN	37
+#define UUID_STR_LEN    37
 #endif
 
 static void *pstm_psaHandlingThread(void *data);
@@ -214,8 +214,8 @@ void pubsub_topologyManager_psaAdded(void *handle, void *svc, const celix_proper
     if (needsRematchCount > 0) {
         logHelper_log(manager->loghelper, OSGI_LOGSERVICE_INFO,
                       "A PSA is added after at least one active publisher/provided. \
-				It is preferred that all PSA are started before publiser/subscriber are started!\n\
-				Current topic/sender count is %i", needsRematchCount);
+                It is preferred that all PSA are started before publiser/subscriber are started!\n\
+                Current topic/sender count is %i", needsRematchCount);
     }
 
 }
@@ -224,6 +224,22 @@ void pubsub_topologyManager_psaRemoved(void *handle, void *svc __attribute__((un
     pubsub_topology_manager_t *manager = handle;
     //pubsub_admin_service_t *psa = (pubsub_admin_service_t*) svc;
     long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
+
+    // Remove the svcId from the hashmap, because the service is not available
+    celixThreadMutex_lock(&manager->pubsubadmins.mutex);
+    hashMap_remove(manager->pubsubadmins.map, (void *)svcId);
+    celixThreadMutex_unlock(&manager->pubsubadmins.mutex);
+
+    // Remove the svcId from the discovered endpoint, because the service is not available
+    celixThreadMutex_lock(&manager->discoveredEndpoints.mutex);
+    hash_map_iterator_t iter_endpoint = hashMapIterator_construct(manager->discoveredEndpoints.map);
+    while (hashMapIterator_hasNext(&iter_endpoint)) {
+        pstm_discovered_endpoint_entry_t *entry = hashMapIterator_nextValue(&iter_endpoint);
+        if (entry != NULL && entry->selectedPsaSvcId > 0 && entry->selectedPsaSvcId == svcId) {
+            entry->selectedPsaSvcId = -1L; //NOTE not selected a psa anymore
+        }
+    }
+    celixThreadMutex_unlock(&manager->discoveredEndpoints.mutex);
 
     //NOTE psa shutdown will teardown topic receivers / topic senders
     //de-setup all topic receivers/senders for the removed psa.

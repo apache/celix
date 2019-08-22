@@ -1,24 +1,24 @@
 /**
- *Licensed to the Apache Software Foundation (ASF) under one
- *or more contributor license agreements.  See the NOTICE file
- *distributed with this work for additional information
- *regarding copyright ownership.  The ASF licenses this file
- *to you under the Apache License, Version 2.0 (the
- *"License"); you may not use this file except in compliance
- *with the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- *Unless required by applicable law or agreed to in writing,
- *software distributed under the License is distributed on an
- *"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- *specific language governing permissions and limitations
- *under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 
-#ifndef CELIX_PUBSUB_ZMQ_ADMIN_H
-#define CELIX_PUBSUB_ZMQ_ADMIN_H
+#ifndef CELIX_PUBSUB_NANOMSG_ADMIN_H
+#define CELIX_PUBSUB_NANOMSG_ADMIN_H
 
 #include <mutex>
 #include <map>
@@ -31,14 +31,14 @@
 #include "pubsub_nanomsg_topic_sender.h"
 #include "pubsub_nanomsg_topic_receiver.h"
 
-#define PUBSUB_NANOMSG_ADMIN_TYPE       "zmq"
-#define PUBSUB_NANOMSG_URL_KEY          "zmq.url"
+#define PUBSUB_NANOMSG_ADMIN_TYPE       "nanomsg"
+#define PUBSUB_NANOMSG_URL_KEY          "nanomsg.url"
 
-#define PUBSUB_NANOMSG_VERBOSE_KEY      "PSA_ZMQ_VERBOSE"
+#define PUBSUB_NANOMSG_VERBOSE_KEY      "PSA_NANOMSG_VERBOSE"
 #define PUBSUB_NANOMSG_VERBOSE_DEFAULT  true
 
 #define PUBSUB_NANOMSG_PSA_IP_KEY       "PSA_IP"
-#define PUBSUB_NANOMSG_PSA_ITF_KEY		"PSA_INTERFACE"
+#define PUBSUB_NANOMSG_PSA_ITF_KEY      "PSA_INTERFACE"
 
 #define PUBSUB_NANOMSG_DEFAULT_IP       "127.0.0.1"
 
@@ -150,4 +150,4 @@ extern "C" {
 #endif
 
 
-#endif //CELIX_PUBSUB_ZMQ_ADMIN_H
+#endif //CELIX_PUBSUB_NANOMSG_ADMIN_H

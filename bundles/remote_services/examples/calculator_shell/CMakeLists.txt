@@ -32,5 +32,3 @@ celix_bundle_files(calculator_shell
     #src/org.apache.celix.calc.api.Calculator2.descriptor ##Use this descriptor in case you want to try out versioning!
     DESTINATION .
 )
-
-

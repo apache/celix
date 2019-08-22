@@ -1,7 +1,7 @@
 {
 "exportServices": [
 {
-"filter": "(objectClass=org.apache.celix.calc.api.Calculator2)",
+"filter": "(objectClass=org.apache.celix.calc.api.Calculator)",
 "zone": "thales"
 },
 {

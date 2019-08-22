@@ -43,6 +43,8 @@
 #include "endpoint_discovery_poller.h"
 
 struct etcd_watcher {
+	etcdlib_t *etcdlib;
+
     discovery_pt discovery;
     log_helper_pt* loghelper;
     hash_map_pt entries;
@@ -120,14 +122,14 @@ static void add_node(const char *key, const char *value, void* arg) {
  * returns the modifiedIndex of the last modified
  * discovery endpoint (see etcd documentation).
  */
-static celix_status_t etcdWatcher_addAlreadyExistingWatchpoints(discovery_pt discovery, long long* highestModified) {
+static celix_status_t etcdWatcher_addAlreadyExistingWatchpoints(etcd_watcher_pt watcher, discovery_pt discovery, long long* highestModified) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	char rootPath[MAX_ROOTNODE_LENGTH];
 	status = etcdWatcher_getRootPath(discovery->context, rootPath);
 
 	if (status == CELIX_SUCCESS) {
-		if(etcd_get_directory(rootPath, add_node, discovery, highestModified)) {
+		if(etcdlib_get_directory(watcher->etcdlib, rootPath, add_node, discovery, highestModified)) {
 			    status = CELIX_ILLEGAL_ARGUMENT;
 		}
 	}
@@ -174,10 +176,10 @@ static celix_status_t etcdWatcher_addOwnFramework(etcd_watcher_pt watcher)
         }
     }
 
-	if (etcd_get(localNodePath, &value, &modIndex) != ETCDLIB_RC_OK) {
-		etcd_set(localNodePath, endpoints, ttl, false);
+	if (etcdlib_get(watcher->etcdlib, localNodePath, &value, &modIndex) != ETCDLIB_RC_OK) {
+		etcdlib_set(watcher->etcdlib, localNodePath, endpoints, ttl, false);
 	}
-	else if (etcd_set(localNodePath, endpoints, ttl, true) != ETCDLIB_RC_OK)  {
+	else if (etcdlib_set(watcher->etcdlib, localNodePath, endpoints, ttl, true) != ETCDLIB_RC_OK)  {
 		logHelper_log(*watcher->loghelper, OSGI_LOGSERVICE_WARNING, "Cannot register local discovery");
     }
     else {
@@ -254,7 +256,7 @@ static void* etcdWatcher_run(void* data) {
 
 	bundle_context_pt context = watcher->discovery->context;
 
-	etcdWatcher_addAlreadyExistingWatchpoints(watcher->discovery, &highestModified);
+	etcdWatcher_addAlreadyExistingWatchpoints(watcher, watcher->discovery, &highestModified);
 	etcdWatcher_getRootPath(context, rootPath);
 
 	while (watcher->running) {
@@ -265,7 +267,7 @@ static void* etcdWatcher_run(void* data) {
 		char *action = NULL;
 		long long modIndex;
 
-        if (etcd_watch(rootPath, highestModified + 1, &action, &preValue, &value, &rkey, &modIndex) == 0 && action != NULL) {
+        if (etcdlib_watch(watcher->etcdlib, rootPath, highestModified + 1, &action, &preValue, &value, &rkey, &modIndex) == 0 && action != NULL) {
 			if (strcmp(action, "set") == 0) {
 				etcdWatcher_addEntry(watcher, rkey, value);
 			} else if (strcmp(action, "delete") == 0) {
@@ -343,7 +345,8 @@ celix_status_t etcdWatcher_create(discovery_pt discovery, bundle_context_pt cont
 		}
 	}
 
-	if (etcd_init((char*) etcd_server, etcd_port, CURL_GLOBAL_DEFAULT) != 0) {
+	(*watcher)->etcdlib = etcdlib_create(etcd_server, etcd_port, CURL_GLOBAL_DEFAULT);
+	if ((*watcher)->etcdlib == NULL) {
 		status = CELIX_BUNDLE_EXCEPTION;
 	} else {
 		status = CELIX_SUCCESS;
@@ -381,7 +384,7 @@ celix_status_t etcdWatcher_destroy(etcd_watcher_pt watcher) {
 	// register own framework
 	status = etcdWatcher_getLocalNodePath(watcher->discovery->context, localNodePath);
 
-	if (status != CELIX_SUCCESS || etcd_del(localNodePath) == false)
+	if (status != CELIX_SUCCESS || etcdlib_del(watcher->etcdlib, localNodePath) == false)
 	{
 		logHelper_log(*watcher->loghelper, OSGI_LOGSERVICE_WARNING, "Cannot remove local discovery registration.");
 	}
@@ -389,6 +392,8 @@ celix_status_t etcdWatcher_destroy(etcd_watcher_pt watcher) {
 	watcher->loghelper = NULL;
 
 	hashMap_destroy(watcher->entries, true, true);
+
+	etcdlib_destroy(watcher->etcdlib);
 
 	free(watcher);
 

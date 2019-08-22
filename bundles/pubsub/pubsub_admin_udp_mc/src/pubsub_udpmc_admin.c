@@ -1,20 +1,20 @@
 /**
- *Licensed to the Apache Software Foundation (ASF) under one
- *or more contributor license agreements.  See the NOTICE file
- *distributed with this work for additional information
- *regarding copyright ownership.  The ASF licenses this file
- *to you under the Apache License, Version 2.0 (the
- *"License"); you may not use this file except in compliance
- *with the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- *Unless required by applicable law or agreed to in writing,
- *software distributed under the License is distributed on an
- *"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- *specific language governing permissions and limitations
- *under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 
 #include <memory.h>
@@ -25,6 +25,7 @@
 #include <ifaddrs.h>
 #include <pubsub_endpoint.h>
 #include <pubsub_serializer.h>
+#include <ip_utils.h>
 
 #include "pubsub_utils.h"
 #include "pubsub_udpmc_admin.h"
@@ -32,16 +33,13 @@
 #include "pubsub_udpmc_topic_sender.h"
 #include "pubsub_udpmc_topic_receiver.h"
 
-#define PUBSUB_UDPMC_MC_IP_DEFAULT                     "224.100.1.1"
-#define PUBSUB_UDPMC_SOCKET_ADDRESS_KEY                "udpmc.socket_address"
-#define PUBSUB_UDPMC_SOCKET_PORT_KEY                   "udpmc.socket_port"
 
 #define L_DEBUG(...) \
     logHelper_log(psa->log, OSGI_LOGSERVICE_DEBUG, __VA_ARGS__)
 #define L_INFO(...) \
-    logHelper_log(psa->log, OSGI_LOGSERVICE_INFO, __VA_ARGS__);
+    logHelper_log(psa->log, OSGI_LOGSERVICE_INFO, __VA_ARGS__)
 #define L_WARN(...) \
-    logHelper_log(psa->log, OSGI_LOGSERVICE_WARNING, __VA_ARGS__);
+    logHelper_log(psa->log, OSGI_LOGSERVICE_WARNING, __VA_ARGS__)
 #define L_ERROR(...) \
     logHelper_log(psa->log, OSGI_LOGSERVICE_ERROR, __VA_ARGS__)
 
@@ -79,7 +77,7 @@ struct pubsub_udpmc_admin {
 
 };
 
-typedef struct psa_zmq_serializer_entry {
+typedef struct psa_udpmc_serializer_entry {
     const char *serType;
     long svcId;
     pubsub_serializer_service_t *svc;
@@ -88,6 +86,11 @@ typedef struct psa_zmq_serializer_entry {
 static celix_status_t udpmc_getIpAddress(const char* interface, char** ip);
 static celix_status_t pubsub_udpmcAdmin_connectEndpointToReceiver(pubsub_udpmc_admin_t* psa, pubsub_udpmc_topic_receiver_t *receiver, const celix_properties_t *endpoint);
 static celix_status_t pubsub_udpmcAdmin_disconnectEndpointFromReceiver(pubsub_udpmc_admin_t* psa, pubsub_udpmc_topic_receiver_t *receiver, const celix_properties_t *endpoint);
+
+static bool pubsub_udpmcAdmin_endpointIsPublisher(const celix_properties_t *endpoint) {
+    const char *type = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TYPE, NULL);
+    return type != NULL && strncmp(PUBSUB_PUBLISHER_ENDPOINT_TYPE, type, strlen(PUBSUB_PUBLISHER_ENDPOINT_TYPE)) == 0;
+}
 
 
 pubsub_udpmc_admin_t* pubsub_udpmcAdmin_create(celix_bundle_context_t *ctx, log_helper_t *logHelper) {
@@ -103,21 +106,30 @@ pubsub_udpmc_admin_t* pubsub_udpmcAdmin_create(celix_bundle_context_t *ctx, log_
     char *if_ip = NULL;
     int sendSocket = -1;
 
-    const char *mcIpProp = celix_bundleContext_getProperty(ctx,PUBSUB_UDPMC_IP_KEY , NULL);
-    if(mcIpProp != NULL) {
-        mc_ip = strdup(mcIpProp);
+    const char *mcIpProp = celix_bundleContext_getProperty(ctx, PUBSUB_UDPMC_IP_KEY, NULL);
+    if (mcIpProp != NULL) {
+        if (strchr(mcIpProp, '/') != NULL) {
+            // IP with subnet prefix specified
+            if_ip = ipUtils_findIpBySubnet(mcIpProp);
+            if (if_ip == NULL) {
+                L_WARN("[PSA_UDPMC] Could not find interface for requested subnet %s", mcIpProp);
+            }
+        } else {
+            // IP address specified
+            mc_ip = strndup(mcIpProp, 1024);
+        }
     }
 
 
     const char *mc_prefix = celix_bundleContext_getProperty(ctx, PUBSUB_UDPMC_MULTICAST_IP_PREFIX_KEY, PUBSUB_UDPMC_MULTICAST_IP_PREFIX_DEFAULT);
     const char *interface = celix_bundleContext_getProperty(ctx, PUBSUB_UDPMC_ITF_KEY, NULL);
-    if (udpmc_getIpAddress(interface, &if_ip) != CELIX_SUCCESS) {
+    if (!if_ip && udpmc_getIpAddress(interface, &if_ip) != CELIX_SUCCESS) {
         L_WARN("[PSA_UDPMC] Could not retrieve IP address for interface %s", interface);
     } else if (psa->verbose) {
         L_INFO("[PSA_UDPMC] Using IP address %s", if_ip);
     }
 
-    if(if_ip && sscanf(if_ip, "%i.%i.%i.%i", &b0, &b1, &b2, &b3) != 4) {
+    if (if_ip && sscanf(if_ip, "%i.%i.%i.%i", &b0, &b1, &b2, &b3) != 4) {
         logHelper_log(psa->log, OSGI_LOGSERVICE_WARNING, "[PSA_UDPMC] Could not parse IP address %s", if_ip);
         b2 = 1;
         b3 = 1;
@@ -126,12 +138,12 @@ pubsub_udpmc_admin_t* pubsub_udpmcAdmin_create(celix_bundle_context_t *ctx, log_
     asprintf(&mc_ip, "%s.%d.%d",mc_prefix, b2, b3);
 
     sendSocket = socket(AF_INET, SOCK_DGRAM, 0);
-    if(sendSocket == -1) {
+    if (sendSocket == -1) {
         L_ERROR("[PSA_UDPMC] Error creating socket: %s", strerror(errno));
     } else {
         char loop = 1;
         int rc = setsockopt(sendSocket, IPPROTO_IP, IP_MULTICAST_LOOP, &loop, sizeof(loop));
-        if(rc != 0) {
+        if (rc != 0) {
             L_ERROR("[PSA_UDPMC] Error setsockopt(IP_MULTICAST_LOOP): %s", strerror(errno));
         }
         if (rc == 0) {
@@ -161,7 +173,7 @@ pubsub_udpmc_admin_t* pubsub_udpmcAdmin_create(celix_bundle_context_t *ctx, log_
     if (mc_ip != NULL) {
         psa->mcIpAddress = mc_ip;
     } else {
-        psa->mcIpAddress = strdup(PUBSUB_UDPMC_MC_IP_DEFAULT);
+        psa->mcIpAddress = strdup(PUBSUB_UDPMC_MULTICAST_IP_DEFAULT);
     }
     if (psa->verbose) {
         L_INFO("[PSA_UDPMC] Using %s for service annunciation", psa->mcIpAddress);
@@ -398,7 +410,9 @@ celix_status_t pubsub_udpmcAdmin_setupTopicReceiver(void *handle, const char *sc
         hash_map_iterator_t iter = hashMapIterator_construct(psa->discoveredEndpoints.map);
         while (hashMapIterator_hasNext(&iter)) {
             celix_properties_t *endpoint = hashMapIterator_nextValue(&iter);
-            pubsub_udpmcAdmin_connectEndpointToReceiver(psa, receiver, endpoint);
+            if (pubsub_udpmcAdmin_endpointIsPublisher(endpoint)) {
+                pubsub_udpmcAdmin_connectEndpointToReceiver(psa, receiver, endpoint);
+            }
         }
         celixThreadMutex_unlock(&psa->discoveredEndpoints.mutex);
     }
@@ -436,18 +450,10 @@ static celix_status_t pubsub_udpmcAdmin_connectEndpointToReceiver(pubsub_udpmc_a
     //note can be called with discoveredEndpoint.mutex lock
     celix_status_t status = CELIX_SUCCESS;
 
-    const char *scope = pubsub_udpmcTopicReceiver_scope(receiver);
-    const char *topic = pubsub_udpmcTopicReceiver_topic(receiver);
+    const char *sockAddress = celix_properties_get(endpoint, PUBSUB_UDPMC_SOCKET_ADDRESS_KEY, NULL);
+    long sockPort = celix_properties_getAsLong(endpoint, PUBSUB_UDPMC_SOCKET_PORT_KEY, -1L);
 
-    const char *type = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TYPE, NULL);
-    const char *eScope = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_SCOPE, NULL);
-    const char *eTopic = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_NAME, NULL);
-    const char *sockAddress = celix_properties_get(endpoint, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY, NULL);
-    long sockPort = celix_properties_getAsLong(endpoint, PUBSUB_PSA_UDPMC_SOCKET_PORT_KEY, -1L);
-
-    bool publisher = type != NULL && strncmp(PUBSUB_PUBLISHER_ENDPOINT_TYPE, type, strlen(PUBSUB_PUBLISHER_ENDPOINT_TYPE)) == 0;
-
-    if (publisher && (sockAddress == NULL || sockPort < 0)) {
+    if (sockAddress == NULL || sockPort < 0) {
         L_WARN("[PSA UPDMC] Error got endpoint without udpmc socket address/port or endpoint type. Properties:");
         const char *key = NULL;
         CELIX_PROPERTIES_FOR_EACH(endpoint, key) {
@@ -455,9 +461,24 @@ static celix_status_t pubsub_udpmcAdmin_connectEndpointToReceiver(pubsub_udpmc_a
         }
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
-        if (eScope != NULL && eTopic != NULL && publisher &&
-            strncmp(eScope, scope, 1024 * 1024) == 0 &&
-            strncmp(eTopic, topic, 1024 * 1024) == 0) {
+        const char *scope = pubsub_udpmcTopicReceiver_scope(receiver);
+        const char *topic = pubsub_udpmcTopicReceiver_topic(receiver);
+        const char *serializer = NULL;
+        long serializerSvcId = pubsub_udpmcTopicReceiver_serializerSvcId(receiver);
+        psa_udpmc_serializer_entry_t *serializerEntry = hashMap_get(psa->serializers.map, (void*)serializerSvcId);
+        if (serializerEntry != NULL) {
+            serializer = serializerEntry->serType;
+        }
+
+        const char *eScope = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_SCOPE, NULL);
+        const char *eTopic = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_NAME, NULL);
+        const char *eSerializer = celix_properties_get(endpoint, PUBSUB_ENDPOINT_SERIALIZER, NULL);
+
+        if (scope != NULL && topic != NULL && serializer != NULL
+                        && eScope != NULL && eTopic != NULL && eSerializer != NULL
+                        && strncmp(eScope, scope, 1024*1024) == 0
+                        && strncmp(eTopic, topic, 1024*1024) == 0
+                        && strncmp(eSerializer, serializer, 1024*1024) == 0) {
             pubsub_udpmcTopicReceiver_connectTo(receiver, sockAddress, sockPort);
         }
     }
@@ -467,13 +488,16 @@ static celix_status_t pubsub_udpmcAdmin_connectEndpointToReceiver(pubsub_udpmc_a
 
 celix_status_t pubsub_udpmcAdmin_addEndpoint(void *handle, const celix_properties_t *endpoint) {
     pubsub_udpmc_admin_t *psa = handle;
-    celixThreadMutex_lock(&psa->topicReceivers.mutex);
-    hash_map_iterator_t iter = hashMapIterator_construct(psa->topicReceivers.map);
-    while (hashMapIterator_hasNext(&iter)) {
-        pubsub_udpmc_topic_receiver_t *receiver = hashMapIterator_nextValue(&iter);
-        pubsub_udpmcAdmin_connectEndpointToReceiver(psa, receiver, endpoint);
+
+    if (pubsub_udpmcAdmin_endpointIsPublisher(endpoint)) {
+        celixThreadMutex_lock(&psa->topicReceivers.mutex);
+        hash_map_iterator_t iter = hashMapIterator_construct(psa->topicReceivers.map);
+        while (hashMapIterator_hasNext(&iter)) {
+            pubsub_udpmc_topic_receiver_t *receiver = hashMapIterator_nextValue(&iter);
+            pubsub_udpmcAdmin_connectEndpointToReceiver(psa, receiver, endpoint);
+        }
+        celixThreadMutex_unlock(&psa->topicReceivers.mutex);
     }
-    celixThreadMutex_unlock(&psa->topicReceivers.mutex);
 
     celixThreadMutex_lock(&psa->discoveredEndpoints.mutex);
     celix_properties_t *cpy = celix_properties_copy(endpoint);
@@ -490,25 +514,15 @@ static celix_status_t pubsub_udpmcAdmin_disconnectEndpointFromReceiver(pubsub_ud
     //note can be called with discoveredEndpoint.mutex lock
     celix_status_t status = CELIX_SUCCESS;
 
-    const char *scope = pubsub_udpmcTopicReceiver_scope(receiver);
-    const char *topic = pubsub_udpmcTopicReceiver_topic(receiver);
-
     const char *type = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TYPE, NULL);
-    const char *eScope = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_SCOPE, NULL);
-    const char *eTopic = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_NAME, NULL);
-    const char *sockAdress = celix_properties_get(endpoint, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY, NULL);
-    long sockPort = celix_properties_getAsLong(endpoint, PUBSUB_PSA_UDPMC_SOCKET_PORT_KEY, -1L);
+    const char *sockAdress = celix_properties_get(endpoint, PUBSUB_UDPMC_SOCKET_ADDRESS_KEY, NULL);
+    long sockPort = celix_properties_getAsLong(endpoint, PUBSUB_UDPMC_SOCKET_PORT_KEY, -1L);
 
     if (type == NULL || sockAdress == NULL || sockPort < 0) {
-        fprintf(stderr, "[PSA UPDMC] Error got endpoint without udpmc socket address/port or endpoint type");
+        L_WARN("[PSA UPDMC] Error disconnecting from endpoint without udpmc socket address/port or endpoint type.");
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
-        if (eScope != NULL && eTopic != NULL && type != NULL &&
-            strncmp(eScope, scope, 1024 * 1024) == 0 &&
-            strncmp(eTopic, topic, 1024 * 1024) == 0 &&
-            strncmp(type, PUBSUB_PUBLISHER_ENDPOINT_TYPE, strlen(PUBSUB_PUBLISHER_ENDPOINT_TYPE)) == 0) {
-            pubsub_udpmcTopicReceiver_disconnectFrom(receiver, sockAdress, sockPort);
-        }
+        pubsub_udpmcTopicReceiver_disconnectFrom(receiver, sockAdress, sockPort);
     }
 
     return status;
@@ -516,13 +530,16 @@ static celix_status_t pubsub_udpmcAdmin_disconnectEndpointFromReceiver(pubsub_ud
 
 celix_status_t pubsub_udpmcAdmin_removeEndpoint(void *handle, const celix_properties_t *endpoint) {
     pubsub_udpmc_admin_t *psa = handle;
-    celixThreadMutex_lock(&psa->topicReceivers.mutex);
-    hash_map_iterator_t iter = hashMapIterator_construct(psa->topicReceivers.map);
-    while (hashMapIterator_hasNext(&iter)) {
-        pubsub_udpmc_topic_receiver_t *receiver = hashMapIterator_nextValue(&iter);
-        pubsub_udpmcAdmin_disconnectEndpointFromReceiver(psa, receiver, endpoint);
+
+    if (pubsub_udpmcAdmin_endpointIsPublisher(endpoint)) {
+        celixThreadMutex_lock(&psa->topicReceivers.mutex);
+        hash_map_iterator_t iter = hashMapIterator_construct(psa->topicReceivers.map);
+        while (hashMapIterator_hasNext(&iter)) {
+            pubsub_udpmc_topic_receiver_t *receiver = hashMapIterator_nextValue(&iter);
+            pubsub_udpmcAdmin_disconnectEndpointFromReceiver(psa, receiver, endpoint);
+        }
+        celixThreadMutex_unlock(&psa->topicReceivers.mutex);
     }
-    celixThreadMutex_unlock(&psa->topicReceivers.mutex);
 
     celixThreadMutex_lock(&psa->discoveredEndpoints.mutex);
     const char *uuid = celix_properties_get(endpoint, PUBSUB_ENDPOINT_UUID, NULL);
@@ -603,7 +620,7 @@ void pubsub_udpmcAdmin_addSerializerSvc(void *handle, void *svc, const celix_pro
     long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
 
     if (serType == NULL) {
-        L_INFO("[PSA_ZMQ] Ignoring serializer service without %s property", PUBSUB_SERIALIZER_TYPE_KEY);
+        L_INFO("[PSA_UDPMC] Ignoring serializer service without %s property", PUBSUB_SERIALIZER_TYPE_KEY);
         return;
     }
 

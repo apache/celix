@@ -1,20 +1,20 @@
 /**
- *Licensed to the Apache Software Foundation (ASF) under one
- *or more contributor license agreements.  See the NOTICE file
- *distributed with this work for additional information
- *regarding copyright ownership.  The ASF licenses this file
- *to you under the Apache License, Version 2.0 (the
- *"License"); you may not use this file except in compliance
- *with the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- *Unless required by applicable law or agreed to in writing,
- *software distributed under the License is distributed on an
- *"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- *specific language governing permissions and limitations
- *under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 
 #ifndef PUBSUB_SERIALIZER_SERVICE_H_
@@ -33,28 +33,28 @@
  * the extender pattern.
  */
 
-#define PUBSUB_SERIALIZER_SERVICE_NAME		"pubsub_serializer"
-#define PUBSUB_SERIALIZER_SERVICE_VERSION	"1.0.0"
-#define PUBSUB_SERIALIZER_SERVICE_RANGE		"[1,2)"
+#define PUBSUB_SERIALIZER_SERVICE_NAME      "pubsub_serializer"
+#define PUBSUB_SERIALIZER_SERVICE_VERSION   "1.0.0"
+#define PUBSUB_SERIALIZER_SERVICE_RANGE     "[1,2)"
 
 typedef struct pubsub_msg_serializer {
-	void* handle;
+    void* handle;
 
-	unsigned int msgId;
-	const char* msgName;
-	version_pt msgVersion;
+    unsigned int msgId;
+    const char* msgName;
+    version_pt msgVersion;
 
-	celix_status_t (*serialize)(void* handle, const void* input, void** out, size_t* outLen);
-	celix_status_t (*deserialize)(void* handle, const void* input, size_t inputLen, void** out); //note inputLen can be 0 if predefined size is not needed
-	void (*freeMsg)(void* handle, void* msg);
+    celix_status_t (*serialize)(void* handle, const void* input, void** out, size_t* outLen);
+    celix_status_t (*deserialize)(void* handle, const void* input, size_t inputLen, void** out); //note inputLen can be 0 if predefined size is not needed
+    void (*freeMsg)(void* handle, void* msg);
 
 } pubsub_msg_serializer_t;
 
 typedef struct pubsub_serializer_service {
-	void* handle;
+    void* handle;
 
-	celix_status_t (*createSerializerMap)(void* handle, celix_bundle_t *bundle, hash_map_pt* serializerMap);
-	celix_status_t (*destroySerializerMap)(void* handle, hash_map_pt serializerMap);
+    celix_status_t (*createSerializerMap)(void* handle, celix_bundle_t *bundle, hash_map_pt* serializerMap);
+    celix_status_t (*destroySerializerMap)(void* handle, hash_map_pt serializerMap);
 
 } pubsub_serializer_service_t;
 

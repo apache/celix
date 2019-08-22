@@ -26,7 +26,7 @@ using namespace celix::dm;
 
 class BazActivator  {
 public:
-    BazActivator(std::shared_ptr<DependencyManager> mng);
+    explicit BazActivator(std::shared_ptr<DependencyManager> mng);
 };
 
 #endif //BAZ_ACTIVATOR_H

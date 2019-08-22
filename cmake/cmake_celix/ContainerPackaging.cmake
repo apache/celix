@@ -33,6 +33,86 @@ function(add_deploy)
     message(DEPRECATION "deploy_bundles_dir is depecrated, use celix_container_bundles_dir instead.")
     add_celix_container(${ARGN})
 endfunction()
+
+#[[
+Add a Celix container, consisting out of a selection of bundles and a Celix launcher.
+Celix containers can be used to run/test a selection of bundles in the celix framework.
+A Celix container will be build in `<cmake_build_dir>/deploy[/<group_name>]/<celix_container_name>`.
+Use the `<celix_container_name>` executable to run the containers.
+
+There are three variants of 'add_celix_container':
+- If no launcher is specified a custom Celix launcher will be generated. This launcher also contains the configured properties.
+- If a LAUNCHER_SRC is provided a Celix launcher will be build using the provided sources. Additional sources can be added with the
+  CMake 'target_sources' command.
+- If a LAUNCHER (absolute path to a executable of CMake `add_executable` target) is provided that will be used as Celix launcher.
+
+Creating a Celix containers using 'add_celix_container' will lead to a CMake executable target (expect if a LAUNCHER is used).
+These targets can be used to run/debug Celix containers from a IDE (if the IDE supports CMake).
+
+Optional Arguments:
+- COPY: With this option the used bundles are copied to the container build dir in the 'bundles' dir.
+  A additional result of this is that the configured references to the bundles are then relative instead of absolute.
+- CXX: With this option the generated Celix launcher (if used) will be a C++ source instead of a C source.
+  A additional result of this is that Celix launcher is also linked against stdlibc++.
+- USE_CONFIG: With this option config properties are generated in a 'config.properties' instead of embedded in the Celix launcher.
+- GROUP: If configured the build location will be prefixed the GROUP. Default is empty.
+- NAME: The name of the executable. Default is <celix_container_name>. Only useful for generated/LAUNCHER_SRC Celix launchers.
+- DIR: The base build directory of the Celix container. Default is `<cmake_build_dir>/deploy`.
+- BUNDLES: A list of bundles to configured for the Celix container to install and start.
+  These bundle will be configured for run level 3. See 'celix_container_bundles' for more info.
+- PROPERTIES: A list of configuration properties, these can be used to configure the Celix framework and/or bundles.
+  Normally this will be EMBEDED_PROPERTIES, but if the USE_CONFIG option is used this will be RUNTIME_PROPERTIES.
+  See the framework library or bundles documentation about the available configuration options.
+- EMBEDDED_PROPERTIES: A list of configuration properties which will be used in the generated Celix launcher.
+- RUNTIME_PROPERTIES: A list of configuration properties which will be used in the generated config.properties file.
+
+```CMake
+add_celix_container(<celix_container_name>
+    [COPY]
+    [CXX]
+    [USE_CONFIG]
+    [GROUP group_name]
+    [NAME celix_container_name]
+    [DIR dir]
+    [BUNDLES <bundle1> <bundle2> ...]
+    [PROPERTIES "prop1=val1" "prop2=val2" ...]
+    [EMBEDDED_PROPERTIES "prop1=val1" "prop2=val2" ...]
+    [RUNTIME_PROPERTIES "prop1=val1" "prop2=val2" ...]
+)
+```
+
+```CMake
+add_celix_container(<celix_container_name>
+    LAUNCHER launcher
+    [COPY]
+    [CXX]
+    [USE_CONFIG]
+    [GROUP group_name]
+    [NAME celix_container_name]
+    [DIR dir]
+    [BUNDLES <bundle1> <bundle2> ...]
+    [PROPERTIES "prop1=val1" "prop2=val2" ...]
+    [EMBEDDED_PROPERTIES "prop1=val1" "prop2=val2" ...]
+    [RUNTIME_PROPERTIES "prop1=val1" "prop2=val2" ...]
+)
+```
+
+```CMake
+add_celix_container(<celix_container_name>
+    LAUNCHER_SRC launcher_src
+    [COPY]
+    [CXX]
+    [USE_CONFIG]
+    [GROUP group_name]
+    [NAME celix_container_name]
+    [DIR dir]
+    [BUNDLES <bundle1> <bundle2> ...]
+    [PROPERTIES "prop1=val1" "prop2=val2" ...]
+    [EMBEDDED_PROPERTIES "prop1=val1" "prop2=val2" ...]
+    [RUNTIME_PROPERTIES "prop1=val1" "prop2=val2" ...]
+)
+```
+]]
 function(add_celix_container)
     list(GET ARGN 0 CONTAINER_TARGET)
     list(REMOVE_AT ARGN 0)
@@ -232,6 +312,19 @@ function(deploy_bundles_dir)
     message(DEPRECATION "deploy_bundles_dir is depecrated, use celix_container_bundles_dir instead.")
     celix_container_bundles_dir(${ARGN})
 endfunction()
+
+#[[
+Copy the specified bundles to a specified dir in the container build dir.
+
+```CMake
+celix_container_bundles_dir(<celix_container_target_name>
+    DIR_NAME dir_name
+    BUNDLES
+        bundle1
+        bundle2
+        ...
+)
+]]
 function(celix_container_bundles_dir)
     list(GET ARGN 0 CONTAINER_TARGET)
     list(REMOVE_AT ARGN 0)
@@ -305,6 +398,29 @@ function(deploy_bundles)
     message(DEPRECATION "deploy_bundles is depecrated, use celix_container_bundles instead.")
     celix_container_bundles(${ARGN})
 endfunction()
+
+#[[
+Add the selected bundles to the Celix container. These bundles are (if configured) copied to the container build dir and
+are added to the configuration properties so that they are installed and started when the Celix container executed.
+
+The Celix framework support 7 (0 - 6) run levels. Run levels can be used to control the start and stop order of bundles.
+Bundles in run level 0 are started first and bundles in run level 6 are started last.
+When stopping bundles in run level 6 are stopped first and bundles in run level 0 are stopped last.
+Within a run level the order of configured decides the start order; bundles added earlier are started first.
+
+
+Optional Arguments:
+- LEVEL: The run level for the added bundles. Default is 3.
+
+```CMake
+celix_container_bundles(<celix_container_target_name>
+    [LEVEL (0..5)]
+    bundle1
+    bundle2
+    ...
+)
+```
+]]
 function(celix_container_bundles)
     #0 is container TARGET
     #1..n is bundles
@@ -379,6 +495,19 @@ endfunction()
 function(deploy_properties)
     celix_container_runtime_properties(${ARGN})
 endfunction()
+
+#[[
+Add the provided properties to the target Celix container config properties.
+These properties will be added to the config.properties in the container build dir.
+
+```CMake
+celix_container_runtime_properties(<celix_container_target_name>
+    "prop1=val1"
+    "prop2=val2"
+    ...
+)
+```
+]]
 function(celix_container_runtime_properties)
     #0 is container TARGET
     #1..n is bundles
@@ -398,6 +527,19 @@ function(deploy_embedded_properties)
     message(DEPRECATION "deploy_embedded_properties is depecrated, use celix_container_embedded_properties instead.")
     celix_container_embedded_properties(${ARGN})
 endfunction()
+
+#[[
+Add the provided properties to the target Celix container config properties.
+These properties will be embedded into the generated Celix launcher.
+
+```CMake
+celix_container_embedded_properties(<celix_container_target_name>
+    "prop1=val1"
+    "prop2=val2"
+    ...
+)
+```
+]]
 function(celix_container_embedded_properties)
     #0 is container TARGET
     #1..n is bundles
@@ -413,6 +555,19 @@ function(celix_container_embedded_properties)
     set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_EMBEDDED_PROPERTIES" "${PROPS}")
 endfunction()
 
+#[[
+Add the provided properties to the target Celix container config properties.
+If the USE_CONFIG option is used these configuration properties will be added to the 'config.properties' file else
+these will be embedded into the generated Celix launcher.
+
+```CMake
+celix_container_properties(<celix_container_target_name>
+    "prop1=val1"
+    "prop2=val2"
+    ...
+)
+```
+]]
 function(celix_container_properties)
     get_target_property(USE_CNF ${CONTAINER_TARGET} "CONTAINER_USE_CONFIG")
     if (USE_CNF)

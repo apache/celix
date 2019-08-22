@@ -31,16 +31,19 @@
 
 #include <pthread.h>
 
+static etcdlib_t *etcdlib;
+
 int simplewritetest() {
 	int res = 0;
 	char*value = NULL;
-	etcd_set("simplekey", "testvalue", 5, false);
-	etcd_get("simplekey", &value, NULL);
+	etcdlib_set(etcdlib, "simplekey", "testvalue", 5, false);
+	etcdlib_get(etcdlib, "simplekey", &value, NULL);
 	if (value && strcmp(value, "testvalue")) {
 		printf("etcdlib test error: expected testvalue got %s\n", value);
 		res = -1;
 	}
 	free(value);
+	etcdlib_destroy(etcdlib);
 	return res;
 }
 
@@ -54,7 +57,7 @@ void* waitForChange(void*arg) {
 
 	printf("Watching for index %d\n", *idx);
 
-	if(etcd_watch("hier/ar", *idx, &action, &prevValue, &value, &rkey, &modifiedIndex) == 0){
+	if(etcdlib_watch(etcdlib, "hier/ar", *idx, &action, &prevValue, &value, &rkey, &modifiedIndex) == 0){
 		printf(" New value from watch : [%s]%s => %s\n", rkey, prevValue, value);
 		if(action != NULL) free(action);
 		if(prevValue != NULL) free(prevValue);
@@ -69,7 +72,7 @@ void* waitForChange(void*arg) {
 	value = NULL;
 	rkey = NULL;
 
-	if(etcd_watch("hier/ar", *idx, &action, &prevValue, &value, &rkey, &modifiedIndex) == 0){
+	if(etcdlib_watch(etcdlib, "hier/ar", *idx, &action, &prevValue, &value, &rkey, &modifiedIndex) == 0){
 		printf(" New value from watch : [%s]%s => %s\n", rkey, prevValue, value);
 		if(action != NULL) free(action);
 		if(prevValue != NULL) free(prevValue);
@@ -83,18 +86,18 @@ int waitforchangetest() {
 	int res = 0;
 	char*value = NULL;
 
-	etcd_set("hier/ar/chi/cal", "testvalue1", 5, false);
+	etcdlib_set(etcdlib, "hier/ar/chi/cal", "testvalue1", 5, false);
 
 	int index;
-	etcd_get("hier/ar/chi/cal", &value, &index);
+	etcdlib_get(etcdlib, "hier/ar/chi/cal", &value, &index);
 	free(value);
 	pthread_t waitThread;
 	index++;
 	pthread_create(&waitThread, NULL, waitForChange, &index);
 	sleep(1);
-	etcd_set("hier/ar/chi/cal", "testvalue2", 5, false);
+	etcdlib_set(etcdlib, "hier/ar/chi/cal", "testvalue2", 5, false);
 	sleep(1);
-	etcd_set("hier/ar/chi/cal", "testvalue3", 5, false);
+	etcdlib_set(etcdlib, "hier/ar/chi/cal", "testvalue3", 5, false);
 	void *resVal = NULL;
 	pthread_join(waitThread, &resVal);
 	if(resVal == NULL || strcmp((char*)resVal,"testvalue3" ) != 0) {
@@ -106,7 +109,7 @@ int waitforchangetest() {
 }
 
 int main (void) {
-	etcd_init("localhost", 2379, 0);
+	etcdlib = etcdlib_create("localhost", 2379, 0);
 
 //	long long index = 0;
 //	char* action;
@@ -139,6 +142,8 @@ int main (void) {
 
 	int res = simplewritetest(); if(res) return res; else printf("simplewrite test success\n");
 	res = waitforchangetest(); if(res) return res;else printf("waitforchange1 test success\n");
+
+	etcdlib_destroy(etcdlib);
 
 	return 0;
 }

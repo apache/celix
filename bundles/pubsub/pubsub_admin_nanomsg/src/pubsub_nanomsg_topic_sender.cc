@@ -1,20 +1,20 @@
 /**
- *Licensed to the Apache Software Foundation (ASF) under one
- *or more contributor license agreements.  See the NOTICE file
- *distributed with this work for additional information
- *regarding copyright ownership.  The ASF licenses this file
- *to you under the Apache License, Version 2.0 (the
- *"License"); you may not use this file except in compliance
- *with the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- *Unless required by applicable law or agreed to in writing,
- *software distributed under the License is distributed on an
- *"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- *specific language governing permissions and limitations
- *under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 
 #include <memory.h>
@@ -49,7 +49,7 @@ pubsub::nanomsg::pubsub_nanomsg_topic_sender::pubsub_nanomsg_topic_sender(celix_
                                                          unsigned int _basePort,
                                                          unsigned int _maxPort) :
         ctx{_ctx},
-        L{ctx, "PSA_ZMQ_TS"},
+        L{ctx, "PSA_NANOMSG_TS"},
         serializerSvcId {_serializerSvcId},
         serializer{_ser},
         scope{_scope},
@@ -64,7 +64,7 @@ pubsub::nanomsg::pubsub_nanomsg_topic_sender::pubsub_nanomsg_topic_sender(celix_
     }
 
     int rv = -1, retry=0;
-    while(rv == -1 && retry < NANOMSG_BIND_MAX_RETRY ) {
+    while (rv == -1 && retry < NANOMSG_BIND_MAX_RETRY ) {
         /* Randomized part due to same bundle publishing on different topics */
         unsigned int port = rand_range(_basePort,_maxPort);
         std::stringstream _url;
@@ -229,20 +229,20 @@ int pubsub::nanomsg::bounded_service_entry::topicPublicationSend(unsigned int ms
             int rc = nn_sendmsg(nanoMsgSocket, &msg, 0 );
             free(serializedOutput);
             if (rc < 0) {
-                L.WARN("[PSA_ZMQ_TS] Error sending zmsg, rc: ", rc, ", error: ",  strerror(errno));
+                L.WARN("[PSA_NANOMSG_TS] Error sending zmsg, rc: ", rc, ", error: ",  strerror(errno));
             } else {
-                L.INFO("[PSA_ZMQ_TS] Send message with size ",  rc, "\n");
-                L.INFO("[PSA_ZMQ_TS] Send message ID ", msg_hdr.type,
+                L.INFO("[PSA_NANOMSG_TS] Send message with size ",  rc, "\n");
+                L.INFO("[PSA_NANOMSG_TS] Send message ID ", msg_hdr.type,
                         " major: ", (int)msg_hdr.major,
                         " minor: ",  (int)msg_hdr.minor,"\n");
             }
         } else {
-            L.WARN("[PSA_ZMQ_TS] Error serialize message of type ", msgSer->msgName,
+            L.WARN("[PSA_NANOMSG_TS] Error serialize message of type ", msgSer->msgName,
                     " for scope/topic ", scope.c_str(), "/", topic.c_str(),"\n");
         }
     } else {
         status = CELIX_SERVICE_EXCEPTION;
-        L.WARN("[PSA_ZMQ_TS] Error cannot serialize message with msg type id ", msgTypeId,
+        L.WARN("[PSA_NANOMSG_TS] Error cannot serialize message with msg type id ", msgTypeId,
                 " for scope/topic ", scope.c_str(), "/", topic.c_str(),"\n");
     }
     return status;
@@ -252,14 +252,14 @@ static void delay_first_send_for_late_joiners(celix::pubsub::nanomsg::LogHelper&
 
     static bool firstSend = true;
 
-    if(firstSend){
+    if (firstSend) {
         logHelper.INFO("PSA_UDP_MC_TP: Delaying first send for late joiners...\n");
         sleep(FIRST_SEND_DELAY_IN_SECONDS);
         firstSend = false;
     }
 }
 
-static unsigned int rand_range(unsigned int min, unsigned int max){
+static unsigned int rand_range(unsigned int min, unsigned int max) {
     double scaled = ((double)random())/((double)RAND_MAX);
     return (unsigned int)((max-min+1)*scaled + min);
 }

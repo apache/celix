@@ -37,6 +37,7 @@ add_library(utils SHARED
     src/thpool.c
     src/properties.c
     src/utils.c
+    src/ip_utils.c
     src/filter.c
     ${MEMSTREAM_SOURCES}
 )
@@ -92,6 +93,7 @@ if (ENABLE_TESTING AND UTILS-TESTS)
 
     add_executable(celix_threads_test private/test/celix_threads_test.cpp)
     target_link_libraries(celix_threads_test Celix::utils ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} pthread)
+
     add_executable(linked_list_test private/test/linked_list_test.cpp)
     target_link_libraries(linked_list_test  Celix::utils ${CPPUTEST_LIBRARY} pthread)
 
@@ -105,6 +107,9 @@ if (ENABLE_TESTING AND UTILS-TESTS)
     add_executable(utils_test private/test/utils_test.cpp)
     target_link_libraries(utils_test ${CPPUTEST_LIBRARY}  Celix::utils pthread)
 
+    add_executable(ip_utils_test private/test/ip_utils_test.cpp)
+    target_link_libraries(ip_utils_test ${CPPUTEST_LIBRARY}  Celix::utils pthread)
+
     add_executable(filter_test private/test/filter_test.cpp)
     target_link_libraries(filter_test ${CPPUTEST_LIBRARY}  Celix::utils pthread)
 
@@ -117,6 +122,7 @@ if (ENABLE_TESTING AND UTILS-TESTS)
     add_test(NAME run_linked_list_test COMMAND linked_list_test)
     add_test(NAME run_properties_test COMMAND properties_test)
     add_test(NAME run_utils_test COMMAND utils_test)
+    add_test(NAME run_ip_utils_test COMMAND ip_utils_test)
     add_test(NAME filter_test COMMAND filter_test)
 
     SETUP_TARGET_FOR_COVERAGE(array_list_test array_list_test ${CMAKE_BINARY_DIR}/coverage/array_list_test/array_list_test)
@@ -126,5 +132,6 @@ if (ENABLE_TESTING AND UTILS-TESTS)
     SETUP_TARGET_FOR_COVERAGE(linked_list_test linked_list_test ${CMAKE_BINARY_DIR}/coverage/linked_list_test/linked_list_test)
     SETUP_TARGET_FOR_COVERAGE(properties_test properties_test ${CMAKE_BINARY_DIR}/coverage/properties_test/properties_test)
     SETUP_TARGET_FOR_COVERAGE(utils_test utils_test ${CMAKE_BINARY_DIR}/coverage/utils_test/utils_test)
+    SETUP_TARGET_FOR_COVERAGE(ip_utils_test ip_utils_test ${CMAKE_BINARY_DIR}/coverage/ip_utils_test/ip_utils_test)
 
 endif(ENABLE_TESTING AND UTILS-TESTS)

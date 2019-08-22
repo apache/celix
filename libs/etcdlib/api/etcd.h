@@ -17,31 +17,15 @@
  *under the License.
  */
 
-#ifndef ETCDLIB_H_
-#define ETCDLIB_H_
+#ifndef ETCDLIB_GLOBAL_H_
+#define ETCDLIB_GLOBAL_H_
 
-#include <stdbool.h>
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
-/*
- * If set etcdlib will _not_ initialize curl
- * using curl_global_init. Note that 
- * curl_global_init can be called multiple
- * times, but is _not_ thread-safe.
- */
-#define ETCDLIB_NO_CURL_INITIALIZATION (1)
-
-#define ETCDLIB_ACTION_CREATE   "create"
-#define ETCDLIB_ACTION_GET      "get"
-#define ETCDLIB_ACTION_SET      "set"
-#define ETCDLIB_ACTION_UPDATE   "update"
-#define ETCDLIB_ACTION_DELETE   "delete"
-#define ETCDLIB_ACTION_EXPIRE   "expire"
-
-#define ETCDLIB_RC_OK           0
-#define ETCDLIB_RC_ERROR        1
-#define ETCDLIB_RC_TIMEOUT      2
-
-typedef void (*etcd_key_value_callback) (const char *key, const char *value, void* arg);
+#include "etcdlib.h"
 
 /**
  * @desc Initialize the ETCD-LIB  with the server/port where Etcd can be reached.
@@ -50,6 +34,7 @@ typedef void (*etcd_key_value_callback) (const char *key, const char *value, voi
  * @param int flags. bitwise flags to control etcdlib initialization. 
  * @return 0 on success, non zero otherwise.
  */
+//__attribute__((deprecated("use etcdlib_create instead")))
 int etcd_init(const char* server, int port, int flags);
 
 /**
@@ -59,6 +44,7 @@ int etcd_init(const char* server, int port, int flags);
  * @param int* modifiedIndex. If not NULL the Etcd-index of the last modified value.
  * @return 0 on success, non zero otherwise
  */
+//__attribute__((deprecated("use etcdlib_get instead")))
 int etcd_get(const char* key, char** value, int* modifiedIndex);
 
 /**
@@ -69,7 +55,8 @@ int etcd_get(const char* key, char** value, int* modifiedIndex);
  * @param int* modifiedIndex. If not NULL the Etcd-index of the last modified value.
  * @return 0 on success, non zero otherwise
  */
-int etcd_get_directory(const char* directory, etcd_key_value_callback callback, void *arg, long long* modifiedIndex);
+//__attribute__((deprecated("use etcdlib_get_directory instead")))
+int etcd_get_directory(const char* directory, etcdlib_key_value_callback callback, void *arg, long long* modifiedIndex);
 
 /**
  * @desc Setting an Etcd-key/value
@@ -79,6 +66,7 @@ int etcd_get_directory(const char* directory, etcd_key_value_callback callback, 
  * @param bool prevExist. If true the value is only set when the key already exists, if false it is always set
  * @return 0 on success, non zero otherwise
  */
+//__attribute__((deprecated("use etcdlib_set instead")))
 int etcd_set(const char* key, const char* value, int ttl, bool prevExist);
 
 /**
@@ -87,6 +75,7 @@ int etcd_set(const char* key, const char* value, int ttl, bool prevExist);
  * @param ttl the ttl value to use.
  * @return 0 on success, non zero otherwise.
  */
+//__attribute__((deprecated("use etcdlib_refesh instead")))
 int etcd_refresh(const char *key, int ttl);
 
 /**
@@ -97,6 +86,7 @@ int etcd_refresh(const char *key, int ttl);
  * @param bool always_write. If true the value is written, if false only when the given value is equal to the value in etcd.
  * @return 0 on success, non zero otherwise
  */
+//__attribute__((deprecated("use etcdlib_set_with_check instead")))
 int etcd_set_with_check(const char* key, const char* value, int ttl, bool always_write);
 
 /**
@@ -104,6 +94,7 @@ int etcd_set_with_check(const char* key, const char* value, int ttl, bool always
  * @param const char* key. The Etcd-key (Note: a leading '/' should be avoided)
  * @return 0 on success, non zero otherwise
  */
+//__attribute__((deprecated("use etcdlib_del instead")))
 int etcd_del(const char* key);
 
 /**
@@ -117,6 +108,11 @@ int etcd_del(const char* key);
  * @param long long* modifiedIndex. If not NULL, the index of the modification is written.
  * @return ETCDLIB_RC_OK (0) on success, non zero otherwise. Note that a timeout is signified by a ETCDLIB_RC_TIMEOUT return code.
  */
+//__attribute__((deprecated("use etcdlib_watch instead")))
 int etcd_watch(const char* key, long long index, char** action, char** prevValue, char** value, char** rkey, long long* modifiedIndex);
 
-#endif /*ETCDLIB_H_ */
+#ifdef __cplusplus
+}
+#endif
+
+#endif /*ETCDLIB_GLOBAL_H_ */

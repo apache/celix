@@ -53,7 +53,7 @@ static celix_status_t remoteServiceAdmin_unlock(int semId, int semNr);
 static int remoteServiceAdmin_getCount(int semId, int semNr);
 
 celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin, export_registration_pt registration, service_reference_pt reference, char *interface);
-celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin_pt admin, service_reference_pt reference, properties_pt endpointProperties, char *interface, endpoint_description_pt *description);
+celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin_pt admin, service_reference_pt reference, celix_properties_t *endpointProperties, char *interface, endpoint_description_pt *description);
 
 celix_status_t remoteServiceAdmin_createOrAttachShm(hash_map_pt ipcSegment, remote_service_admin_pt admin, endpoint_description_pt endpointDescription, bool createIfNotFound);
 celix_status_t remoteServiceAdmin_getIpcSegment(remote_service_admin_pt admin, endpoint_description_pt endpointDescription, ipc_segment_pt* ipc);
@@ -456,7 +456,7 @@ celix_status_t remoteServiceAdmin_removeSharedIdentityFiles(remote_service_admin
 	return retVal;
 }
 
-celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, char *serviceId, properties_pt properties, array_list_pt *registrations) {
+celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, char *serviceId, celix_properties_t *properties, array_list_pt *registrations) {
 	celix_status_t status = CELIX_SUCCESS;
 	arrayList_create(registrations);
 
@@ -646,7 +646,7 @@ celix_status_t remoteServiceAdmin_createOrAttachShm(hash_map_pt ipcSegment, remo
 	/* setup ipc sehment */
 	ipc_segment_pt ipc = NULL;
 
-	properties_pt endpointProperties = endpointDescription->properties;
+	celix_properties_t *endpointProperties = endpointDescription->properties;
 
 	char *shmPath = NULL;
 	char *shmFtokId = NULL;
@@ -726,7 +726,7 @@ celix_status_t remoteServiceAdmin_createOrAttachShm(hash_map_pt ipcSegment, remo
 
 celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin, export_registration_pt registration, service_reference_pt reference, char *interface) {
 	celix_status_t status = CELIX_SUCCESS;
-	properties_pt endpointProperties = properties_create();
+	celix_properties_t *endpointProperties = celix_properties_create();
 
 	unsigned int size = 0;
 	char **keys;
@@ -737,7 +737,7 @@ celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin,
 		const char *value = NULL;
 
 		if (serviceReference_getProperty(reference, key, &value) == CELIX_SUCCESS && strcmp(key, (char*) OSGI_RSA_SERVICE_EXPORTED_INTERFACES) != 0 && strcmp(key, (char*) OSGI_FRAMEWORK_OBJECTCLASS) != 0) {
-			properties_set(endpointProperties, key, value);
+			celix_properties_set(endpointProperties, key, value);
 		}
 	}
 
@@ -753,36 +753,36 @@ celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin,
 	uuid_unparse_lower(endpoint_uid, endpoint_uuid);
 
 	bundleContext_getProperty(admin->context, OSGI_FRAMEWORK_FRAMEWORK_UUID, &uuid);
-	properties_set(endpointProperties, (char*) OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
-	properties_set(endpointProperties, (char*) OSGI_FRAMEWORK_OBJECTCLASS, interface);
-	properties_set(endpointProperties, (char*) OSGI_RSA_ENDPOINT_SERVICE_ID, serviceId);
-	properties_set(endpointProperties, (char*) OSGI_RSA_ENDPOINT_ID, endpoint_uuid);
-	properties_set(endpointProperties, (char*) OSGI_RSA_SERVICE_IMPORTED, "true");
-	//    properties_set(endpointProperties, (char*) OSGI_RSA_SERVICE_IMPORTED_CONFIGS, (char*) CONFIGURATION_TYPE);
+	celix_properties_set(endpointProperties, (char*) OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
+	celix_properties_set(endpointProperties, (char*) OSGI_FRAMEWORK_OBJECTCLASS, interface);
+	celix_properties_set(endpointProperties, (char*) OSGI_RSA_ENDPOINT_SERVICE_ID, serviceId);
+	celix_properties_set(endpointProperties, (char*) OSGI_RSA_ENDPOINT_ID, endpoint_uuid);
+	celix_properties_set(endpointProperties, (char*) OSGI_RSA_SERVICE_IMPORTED, "true");
+//    celix_properties_set(endpointProperties, (char*) OSGI_RSA_SERVICE_IMPORTED_CONFIGS, (char*) CONFIGURATION_TYPE);
 
-	if (properties_get(endpointProperties, (char *) RSA_SHM_PATH_PROPERTYNAME) == NULL) {
+	if (celix_properties_get(endpointProperties, (char *) RSA_SHM_PATH_PROPERTYNAME, NULL) == NULL) {
 		char sharedIdentifierFile[RSA_FILEPATH_LENGTH];
 
 		if (remoteServiceAdmin_getSharedIdentifierFile(admin, (char*)uuid, interface, sharedIdentifierFile) == CELIX_SUCCESS) {
-			properties_set(endpointProperties, RSA_SHM_PATH_PROPERTYNAME, sharedIdentifierFile);
+			celix_properties_set(endpointProperties, RSA_SHM_PATH_PROPERTYNAME, sharedIdentifierFile);
 		} else {
-			properties_set(endpointProperties, (char *) RSA_SHM_PATH_PROPERTYNAME, (char *) RSA_SHM_DEFAULTPATH);
+			celix_properties_set(endpointProperties, (char *) RSA_SHM_PATH_PROPERTYNAME, (char *) RSA_SHM_DEFAULTPATH);
 		}
 	}
-	if (properties_get(endpointProperties, (char *) RSA_SHM_FTOK_ID_PROPERTYNAME) == NULL) {
-		properties_set(endpointProperties, (char *) RSA_SHM_FTOK_ID_PROPERTYNAME, (char *) RSA_SHM_DEFAULT_FTOK_ID);
+	if (celix_properties_get(endpointProperties, (char *) RSA_SHM_FTOK_ID_PROPERTYNAME, NULL) == NULL) {
+		celix_properties_set(endpointProperties, (char *) RSA_SHM_FTOK_ID_PROPERTYNAME, (char *) RSA_SHM_DEFAULT_FTOK_ID);
 	}
-	if (properties_get(endpointProperties, (char *) RSA_SEM_PATH_PROPERTYNAME) == NULL) {
+	if (celix_properties_get(endpointProperties, (char *) RSA_SEM_PATH_PROPERTYNAME, NULL) == NULL) {
 		char sharedIdentifierFile[RSA_FILEPATH_LENGTH];
 
 		if (remoteServiceAdmin_getSharedIdentifierFile(admin, (char*)uuid, interface, sharedIdentifierFile) == CELIX_SUCCESS) {
-			properties_set(endpointProperties, (char *) RSA_SEM_PATH_PROPERTYNAME, sharedIdentifierFile);
+			celix_properties_set(endpointProperties, (char *) RSA_SEM_PATH_PROPERTYNAME, sharedIdentifierFile);
 		} else {
-			properties_set(endpointProperties, (char *) RSA_SEM_PATH_PROPERTYNAME, (char *) RSA_SEM_DEFAULTPATH);
+			celix_properties_set(endpointProperties, (char *) RSA_SEM_PATH_PROPERTYNAME, (char *) RSA_SEM_DEFAULTPATH);
 		}
 	}
-	if (properties_get(endpointProperties, (char *) RSA_SEM_FTOK_ID_PROPERTYNAME) == NULL) {
-		properties_set(endpointProperties, (char *) RSA_SEM_FTOK_ID_PROPERTYNAME, (char *) RSA_SEM_DEFAULT_FTOK_ID);
+	if (celix_properties_get(endpointProperties, (char *) RSA_SEM_FTOK_ID_PROPERTYNAME, NULL) == NULL) {
+		celix_properties_set(endpointProperties, (char *) RSA_SEM_FTOK_ID_PROPERTYNAME, (char *) RSA_SEM_DEFAULT_FTOK_ID);
 	}
 
 	endpoint_description_pt endpointDescription = NULL;
@@ -796,7 +796,7 @@ celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin,
 	return status;
 }
 
-celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin_pt admin, service_reference_pt reference, properties_pt endpointProperties, char *interface, endpoint_description_pt *description) {
+celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin_pt admin, service_reference_pt reference, celix_properties_t *endpointProperties, char *interface, endpoint_description_pt *description) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	*description = calloc(1, sizeof(**description));
@@ -805,11 +805,11 @@ celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin
 	} else {
 		if (status == CELIX_SUCCESS) {
 			(*description)->properties = endpointProperties;
-			(*description)->frameworkUUID = (char*)properties_get(endpointProperties, (char*) OSGI_RSA_ENDPOINT_FRAMEWORK_UUID);
+			(*description)->frameworkUUID = (char*)celix_properties_get(endpointProperties, (char*) OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, NULL);
 			const char *serviceId = NULL;
 			serviceReference_getProperty(reference, (char*)OSGI_FRAMEWORK_SERVICE_ID, &serviceId);
 			(*description)->serviceId = strtoull(serviceId, NULL, 0);
-			(*description)->id = (char*)properties_get(endpointProperties, (char*) OSGI_RSA_ENDPOINT_ID);
+			(*description)->id = (char*)celix_properties_get(endpointProperties, (char*) OSGI_RSA_ENDPOINT_ID, NULL);
 			(*description)->service = strndup(interface, 1024*10);
 		}
 	}
@@ -820,7 +820,7 @@ celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin
 celix_status_t remoteServiceAdmin_destroyEndpointDescription(endpoint_description_pt *description) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	properties_destroy((*description)->properties);
+	celix_properties_destroy((*description)->properties);
 	free((*description)->service);
 	free(*description);
 

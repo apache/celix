@@ -1,20 +1,20 @@
 /**
- *Licensed to the Apache Software Foundation (ASF) under one
- *or more contributor license agreements.  See the NOTICE file
- *distributed with this work for additional information
- *regarding copyright ownership.  The ASF licenses this file
- *to you under the Apache License, Version 2.0 (the
- *"License"); you may not use this file except in compliance
- *with the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- *Unless required by applicable law or agreed to in writing,
- *software distributed under the License is distributed on an
- *"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- *specific language governing permissions and limitations
- *under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 
 #include <memory.h>
@@ -26,6 +26,7 @@
 #include <pubsub_endpoint.h>
 #include <czmq.h>
 #include <pubsub_serializer.h>
+#include <ip_utils.h>
 
 #include "pubsub_utils.h"
 #include "pubsub_zmq_admin.h"
@@ -47,8 +48,8 @@ struct pubsub_zmq_admin {
     log_helper_t *log;
     const char *fwUUID;
 
-    char* ipAddress;
-    zactor_t* zmq_auth;
+    char *ipAddress;
+    zactor_t *zmq_auth;
 
     unsigned int basePort;
     unsigned int maxPort;
@@ -91,6 +92,10 @@ static celix_status_t zmq_getIpAddress(const char* interface, char** ip);
 static celix_status_t pubsub_zmqAdmin_connectEndpointToReceiver(pubsub_zmq_admin_t* psa, pubsub_zmq_topic_receiver_t *receiver, const celix_properties_t *endpoint);
 static celix_status_t pubsub_zmqAdmin_disconnectEndpointFromReceiver(pubsub_zmq_admin_t* psa, pubsub_zmq_topic_receiver_t *receiver, const celix_properties_t *endpoint);
 
+static bool pubsub_zmqAdmin_endpointIsPublisher(const celix_properties_t *endpoint) {
+    const char *type = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TYPE, NULL);
+    return type != NULL && strncmp(PUBSUB_PUBLISHER_ENDPOINT_TYPE, type, strlen(PUBSUB_PUBLISHER_ENDPOINT_TYPE)) == 0;
+}
 
 pubsub_zmq_admin_t* pubsub_zmqAdmin_create(celix_bundle_context_t *ctx, log_helper_t *logHelper) {
     pubsub_zmq_admin_t *psa = calloc(1, sizeof(*psa));
@@ -102,11 +107,16 @@ pubsub_zmq_admin_t* pubsub_zmqAdmin_create(celix_bundle_context_t *ctx, log_help
     char *ip = NULL;
     const char *confIp = celix_bundleContext_getProperty(ctx, PUBSUB_ZMQ_PSA_IP_KEY , NULL);
     if (confIp != NULL) {
-        ip = strndup(confIp, 1024);
-    }
-
-    if (ip == NULL) {
-        //TODO try to get ip from subnet (CIDR)
+        if (strchr(confIp, '/') != NULL) {
+            // IP with subnet prefix specified
+            ip = ipUtils_findIpBySubnet(confIp);
+            if (ip == NULL) {
+                L_WARN("[PSA_ZMQ] Could not find interface for requested subnet %s", confIp);
+            }
+        } else {
+            // IP address specified
+            ip = strndup(confIp, 1024);
+        }
     }
 
     if (ip == NULL) {
@@ -230,7 +240,7 @@ void pubsub_zmqAdmin_destroy(pubsub_zmq_admin_t *psa) {
     celixThreadMutex_destroy(&psa->serializers.mutex);
     hashMap_destroy(psa->serializers.map, false, false);
 
-    if (psa->zmq_auth != NULL){
+    if (psa->zmq_auth != NULL) {
         zactor_destroy(&psa->zmq_auth);
     }
 
@@ -485,8 +495,7 @@ celix_status_t pubsub_zmqAdmin_setupTopicReceiver(void *handle, const char *scop
         hash_map_iterator_t iter = hashMapIterator_construct(psa->discoveredEndpoints.map);
         while (hashMapIterator_hasNext(&iter)) {
             celix_properties_t *endpoint = hashMapIterator_nextValue(&iter);
-            const char *type = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TYPE, NULL);
-            if (type != NULL && strncmp(PUBSUB_PUBLISHER_ENDPOINT_TYPE, type, strlen(PUBSUB_PUBLISHER_ENDPOINT_TYPE)) == 0) {
+            if (pubsub_zmqAdmin_endpointIsPublisher(endpoint)) {
                 pubsub_zmqAdmin_connectEndpointToReceiver(psa, receiver, endpoint);
             }
         }
@@ -526,11 +535,6 @@ static celix_status_t pubsub_zmqAdmin_connectEndpointToReceiver(pubsub_zmq_admin
     //note can be called with discoveredEndpoint.mutex lock
     celix_status_t status = CELIX_SUCCESS;
 
-    const char *scope = pubsub_zmqTopicReceiver_scope(receiver);
-    const char *topic = pubsub_zmqTopicReceiver_topic(receiver);
-
-    const char *eScope = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_SCOPE, NULL);
-    const char *eTopic = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_NAME, NULL);
     const char *url = celix_properties_get(endpoint, PUBSUB_ZMQ_URL_KEY, NULL);
 
     if (url == NULL) {
@@ -539,9 +543,24 @@ static celix_status_t pubsub_zmqAdmin_connectEndpointToReceiver(pubsub_zmq_admin
         L_WARN("[PSA ZMQ] Error got endpoint without a zmq url (admin: %s, type: %s)", admin , type);
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
-        if (eScope != NULL && eTopic != NULL &&
-            strncmp(eScope, scope, 1024 * 1024) == 0 &&
-            strncmp(eTopic, topic, 1024 * 1024) == 0) {
+        const char *scope = pubsub_zmqTopicReceiver_scope(receiver);
+        const char *topic = pubsub_zmqTopicReceiver_topic(receiver);
+        const char *serializer = NULL;
+        long serializerSvcId = pubsub_zmqTopicReceiver_serializerSvcId(receiver);
+        psa_zmq_serializer_entry_t *serializerEntry = hashMap_get(psa->serializers.map, (void*)serializerSvcId);
+        if (serializerEntry != NULL) {
+            serializer = serializerEntry->serType;
+        }
+
+        const char *eScope = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_SCOPE, NULL);
+        const char *eTopic = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_NAME, NULL);
+        const char *eSerializer = celix_properties_get(endpoint, PUBSUB_ENDPOINT_SERIALIZER, NULL);
+
+        if (scope != NULL && topic != NULL && serializer != NULL
+                        && eScope != NULL && eTopic != NULL && eSerializer != NULL
+                        && strncmp(eScope, scope, 1024*1024) == 0
+                        && strncmp(eTopic, topic, 1024*1024) == 0
+                        && strncmp(eSerializer, serializer, 1024*1024) == 0) {
             pubsub_zmqTopicReceiver_connectTo(receiver, url);
         }
     }
@@ -552,9 +571,7 @@ static celix_status_t pubsub_zmqAdmin_connectEndpointToReceiver(pubsub_zmq_admin
 celix_status_t pubsub_zmqAdmin_addDiscoveredEndpoint(void *handle, const celix_properties_t *endpoint) {
     pubsub_zmq_admin_t *psa = handle;
 
-    const char *type = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TYPE, NULL);
-
-    if (type != NULL && strncmp(PUBSUB_PUBLISHER_ENDPOINT_TYPE, type, strlen(PUBSUB_PUBLISHER_ENDPOINT_TYPE)) == 0) {
+    if (pubsub_zmqAdmin_endpointIsPublisher(endpoint)) {
         celixThreadMutex_lock(&psa->topicReceivers.mutex);
         hash_map_iterator_t iter = hashMapIterator_construct(psa->topicReceivers.map);
         while (hashMapIterator_hasNext(&iter)) {
@@ -579,22 +596,13 @@ static celix_status_t pubsub_zmqAdmin_disconnectEndpointFromReceiver(pubsub_zmq_
     //note can be called with discoveredEndpoint.mutex lock
     celix_status_t status = CELIX_SUCCESS;
 
-    const char *scope = pubsub_zmqTopicReceiver_scope(receiver);
-    const char *topic = pubsub_zmqTopicReceiver_topic(receiver);
-
-    const char *eScope = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_SCOPE, NULL);
-    const char *eTopic = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_NAME, NULL);
     const char *url = celix_properties_get(endpoint, PUBSUB_ZMQ_URL_KEY, NULL);
 
     if (url == NULL) {
         L_WARN("[PSA ZMQ] Error got endpoint without zmq url");
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
-        if (eScope != NULL && eTopic != NULL &&
-            strncmp(eScope, scope, 1024 * 1024) == 0 &&
-            strncmp(eTopic, topic, 1024 * 1024) == 0) {
-            pubsub_zmqTopicReceiver_disconnectFrom(receiver, url);
-        }
+        pubsub_zmqTopicReceiver_disconnectFrom(receiver, url);
     }
 
     return status;
@@ -603,9 +611,7 @@ static celix_status_t pubsub_zmqAdmin_disconnectEndpointFromReceiver(pubsub_zmq_
 celix_status_t pubsub_zmqAdmin_removeDiscoveredEndpoint(void *handle, const celix_properties_t *endpoint) {
     pubsub_zmq_admin_t *psa = handle;
 
-    const char *type = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TYPE, NULL);
-
-    if (type != NULL && strncmp(PUBSUB_PUBLISHER_ENDPOINT_TYPE, type, strlen(PUBSUB_PUBLISHER_ENDPOINT_TYPE)) == 0) {
+    if (pubsub_zmqAdmin_endpointIsPublisher(endpoint)) {
         celixThreadMutex_lock(&psa->topicReceivers.mutex);
         hash_map_iterator_t iter = hashMapIterator_construct(psa->topicReceivers.map);
         while (hashMapIterator_hasNext(&iter)) {

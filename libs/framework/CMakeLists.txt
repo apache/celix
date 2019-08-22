@@ -108,6 +108,7 @@ if (ENABLE_TESTING AND FRAMEWORK_TESTS)
         src/service_tracker.c #TODO make mock for svc tracker
         src/service_tracker_customizer.c
         src/bundle_context.c
+        private/mock/module_mock.c
         src/celix_errorcodes.c
         private/mock/dm_dependency_manager_mock.c
         private/mock/celix_log_mock.c)
@@ -280,11 +281,10 @@ if (ENABLE_TESTING AND FRAMEWORK_TESTS)
 #            private/mock/celix_log_mock.c)
 #        target_link_libraries(service_tracker_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} Celix::utils pthread)
 
-
     add_executable(wire_test
-       private/mock/requirement_mock.c
-       private/mock/capability_mock.c
-       private/mock/module_mock.c
+        private/mock/requirement_mock.c
+        private/mock/capability_mock.c
+        private/mock/module_mock.c
         src/celix_errorcodes.c
         private/mock/celix_log_mock.c
         src/wire.c
@@ -294,51 +294,48 @@ if (ENABLE_TESTING AND FRAMEWORK_TESTS)
     configure_file(private/resources-test/manifest_sections.txt ${CMAKE_CURRENT_BINARY_DIR}/resources-test/manifest_sections.txt COPYONLY)
     configure_file(private/resources-test/manifest.txt ${CMAKE_CURRENT_BINARY_DIR}/resources-test/manifest.txt COPYONLY)
 
-    #set_target_properties(wire_test PROPERTIES COMPILE_FLAGS "-include ${CPPUTEST_INCLUDE_DIR}/CppUTest/MemoryLeakDetectorMallocMacros.h -include ${CPPUTEST_INCLUDE_DIR}/CppUTest/MemoryLeakDetectorNewMacros.h")
+#    set_target_properties(wire_test PROPERTIES COMPILE_FLAGS "-include ${CPPUTEST_INCLUDE_DIR}/CppUTest/MemoryLeakDetectorMallocMacros.h -include ${CPPUTEST_INCLUDE_DIR}/CppUTest/MemoryLeakDetectorNewMacros.h")
 
     add_test(NAME attribute_test COMMAND attribute_test)
-#        add_test(NAME bundle_archive_test COMMAND bundle_archive_test)
+#    add_test(NAME bundle_archive_test COMMAND bundle_archive_test)
     add_test(NAME bundle_cache_test COMMAND bundle_cache_test)
     add_test(NAME bundle_context_test COMMAND bundle_context_test)
     add_test(NAME bundle_revision_test  COMMAND bundle_revision_test)
     add_test(NAME bundle_test COMMAND bundle_test)
     add_test(NAME capability_test COMMAND capability_test)
     add_test(NAME celix_errorcodes_test COMMAND celix_errorcodes_test)
-    add_test(NAME filter_test COMMAND filter_test)
     add_test(NAME framework_test COMMAND framework_test)
     add_test(NAME manifest_parser_test COMMAND manifest_parser_test)
     add_test(NAME manifest_test COMMAND manifest_test)
-#        add_test(NAME module_test COMMAND module_test)
+#    add_test(NAME module_test COMMAND module_test)
     add_test(NAME requirement_test COMMAND requirement_test)
-#        add_test(NAME resolver_test COMMAND resolver_test)
+#    add_test(NAME resolver_test COMMAND resolver_test)
     add_test(NAME service_reference_test COMMAND service_reference_test)
     add_test(NAME service_registration_test COMMAND service_registration_test)
     add_test(NAME service_registry_test COMMAND service_registry_test)
     add_test(NAME service_tracker_customizer_test COMMAND service_tracker_customizer_test)
-#        add_test(NAME service_tracker_test COMMAND service_tracker_test)
-add_test(NAME wire_test COMMAND wire_test)
+#    add_test(NAME service_tracker_test COMMAND service_tracker_test)
+    add_test(NAME wire_test COMMAND wire_test)
 
-SETUP_TARGET_FOR_COVERAGE(attribute_test attribute_test ${CMAKE_BINARY_DIR}/coverage/attribute_test/attribute_test)
-#        SETUP_TARGET_FOR_COVERAGE(bundle_archive_test bundle_archive_test ${CMAKE_BINARY_DIR}/coverage/bundle_archive_test/bundle_archive_test)
+    SETUP_TARGET_FOR_COVERAGE(attribute_test attribute_test ${CMAKE_BINARY_DIR}/coverage/attribute_test/attribute_test)
+#    SETUP_TARGET_FOR_COVERAGE(bundle_archive_test bundle_archive_test ${CMAKE_BINARY_DIR}/coverage/bundle_archive_test/bundle_archive_test)
     SETUP_TARGET_FOR_COVERAGE(bundle_cache_test bundle_cache_test ${CMAKE_BINARY_DIR}/coverage/bundle_cache_test/bundle_cache_test)
     SETUP_TARGET_FOR_COVERAGE(bundle_context_test bundle_context_test ${CMAKE_BINARY_DIR}/coverage/bundle_context_test/bundle_context_test)
     SETUP_TARGET_FOR_COVERAGE(bundle_revision_test bundle_revision_test ${CMAKE_BINARY_DIR}/coverage/bundle_revision_test/bundle_revision_test)
     SETUP_TARGET_FOR_COVERAGE(bundle_test bundle_test ${CMAKE_BINARY_DIR}/coverage/bundle_test/bundle_test)
     SETUP_TARGET_FOR_COVERAGE(capability_test capability_test ${CMAKE_BINARY_DIR}/coverage/capability_test/capability_test)
     SETUP_TARGET_FOR_COVERAGE(celix_errorcodes_test celix_errorcodes_test ${CMAKE_BINARY_DIR}/coverage/celix_errorcodes_test/celix_errorcodes_test)
-    SETUP_TARGET_FOR_COVERAGE(filter_test filter_test ${CMAKE_BINARY_DIR}/coverage/filter_test/filter_test)
     SETUP_TARGET_FOR_COVERAGE(framework_test framework_test ${CMAKE_BINARY_DIR}/coverage/framework_test/framework_test)
     SETUP_TARGET_FOR_COVERAGE(manifest_parser_test manifest_parser_test ${CMAKE_BINARY_DIR}/coverage/manifest_parser_test/manifest_parser_test)
     SETUP_TARGET_FOR_COVERAGE(manifest_test manifest_test ${CMAKE_BINARY_DIR}/coverage/manifest_test/manifest_test)
-#        SETUP_TARGET_FOR_COVERAGE(module_test module_test ${CMAKE_BINARY_DIR}/coverage/module_test/module_test)
+#    SETUP_TARGET_FOR_COVERAGE(module_test module_test ${CMAKE_BINARY_DIR}/coverage/module_test/module_test)
     SETUP_TARGET_FOR_COVERAGE(requirement_test requirement_test ${CMAKE_BINARY_DIR}/coverage/requirement_test/requirement_test)
-#        SETUP_TARGET_FOR_COVERAGE(resolver_test resolver_test ${CMAKE_BINARY_DIR}/coverage/resolver_test/resolver_test)
+#    SETUP_TARGET_FOR_COVERAGE(resolver_test resolver_test ${CMAKE_BINARY_DIR}/coverage/resolver_test/resolver_test)
     SETUP_TARGET_FOR_COVERAGE(service_reference_test service_reference_test ${CMAKE_BINARY_DIR}/coverage/service_reference_test/service_reference_test)
     SETUP_TARGET_FOR_COVERAGE(service_registration_test service_registration_test ${CMAKE_BINARY_DIR}/coverage/service_registration_test/service_registration_test)
     SETUP_TARGET_FOR_COVERAGE(service_registry_test service_registry_test ${CMAKE_BINARY_DIR}/coverage/service_registry_test/service_registry_test)
     SETUP_TARGET_FOR_COVERAGE(service_tracker_customizer_test service_tracker_customizer_test ${CMAKE_BINARY_DIR}/coverage/service_tracker_customizer_test/service_tracker_customizer_test)
-#        SETUP_TARGET_FOR_COVERAGE(service_tracker_test service_tracker_test ${CMAKE_BINARY_DIR}/coverage/service_tracker_test/service_tracker_test)
+#    SETUP_TARGET_FOR_COVERAGE(service_tracker_test service_tracker_test ${CMAKE_BINARY_DIR}/coverage/service_tracker_test/service_tracker_test)
     SETUP_TARGET_FOR_COVERAGE(wire_test wire_test ${CMAKE_BINARY_DIR}/coverage/wire_test/wire_test)
 
 endif (ENABLE_TESTING AND FRAMEWORK_TESTS)
-

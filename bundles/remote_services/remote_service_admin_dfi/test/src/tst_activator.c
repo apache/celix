@@ -57,7 +57,7 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **out) {
 		act->serv.test = test;
 
 		status = serviceTrackerCustomizer_create(act, NULL, addCalc, NULL, removeCalc, &act->cust);
-		status = CELIX_DO_IF(status, serviceTracker_create(context, CALCULATOR2_SERVICE, act->cust, &act->tracker));
+		status = CELIX_DO_IF(status, serviceTracker_create(context, CALCULATOR_SERVICE, act->cust, &act->tracker));
 
 	} else {
 		status = CELIX_ENOMEM;

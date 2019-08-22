@@ -1,20 +1,20 @@
 /**
- *Licensed to the Apache Software Foundation (ASF) under one
- *or more contributor license agreements.  See the NOTICE file
- *distributed with this work for additional information
- *regarding copyright ownership.  The ASF licenses this file
- *to you under the Apache License, Version 2.0 (the
- *"License"); you may not use this file except in compliance
- *with the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- *Unless required by applicable law or agreed to in writing,
- *software distributed under the License is distributed on an
- *"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- *specific language governing permissions and limitations
- *under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 
 #include <string>
@@ -45,8 +45,17 @@ pubsub_nanomsg_admin::pubsub_nanomsg_admin(celix_bundle_context_t *_ctx):
 
     char *ip = nullptr;
     const char *confIp = celix_bundleContext_getProperty(ctx, PUBSUB_NANOMSG_PSA_IP_KEY , nullptr);
-    if (confIp != nullptr) {
-        ip = strndup(confIp, 1024);
+    if (confIp != NULL) {
+        if (strchr(confIp, '/') != NULL) {
+            // IP with subnet prefix specified
+            ip = ipUtils_findIpBySubnet(confIp);
+            if (ip == NULL) {
+                L_WARN("[PSA_NANOMSG] Could not find interface for requested subnet %s", confIp);
+            }
+        } else {
+            // IP address specified
+            ip = strndup(confIp, 1024);
+        }
     }
 
     if (ip == nullptr) {
@@ -236,7 +245,7 @@ void pubsub_nanomsg_admin::removeSerializerSvc(void */*svc*/, const celix_proper
         auto &entry = kvsm->second;
         {
             std::lock_guard<std::mutex> senderLock(topicSenders.mutex);
-            for(auto it = topicSenders.map.begin(); it != topicSenders.map.end(); /*nothing*/) {
+            for (auto it = topicSenders.map.begin(); it != topicSenders.map.end(); /*nothing*/) {
                 auto &sender = it->second;
                 if (entry.svcId == sender.getSerializerSvcId()) {
                     it = topicSenders.map.erase(it);

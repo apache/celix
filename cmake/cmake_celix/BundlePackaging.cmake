@@ -52,8 +52,6 @@ macro(extract_version_parts VERSION MAJOR MINOR PATCH)
     if (CMAKE_MATCH_3)
         set(PATCH ${CMAKE_MATCH_3})
     endif()
-
-    #TODO add support qualifier 
 endmacro()
 
 function(set_library_version TARGET VERSION) 
@@ -95,12 +93,71 @@ function(add_bundle)
     message(DEPRECATION "add_bundle is deprecated, use add_celix_bundle instead.")
     add_celix_bundle(${ARGN})
 endfunction()
+
+#[[
+Add a Celix bundle to the project.  There are three variants:
+- With SOURCES the bundle will be created using a list of sources files as input for the bundle activator library.
+- With ACTIVATOR the bundle will be created using the library target or absolute path to existing library as activator library.
+- With the NO_ACTIVATOR option will create a bundle without a activator (i.e. a pure resource bundle).
+
+Optional arguments are:
+- NAME: The (human readable) name of the bundle. This will be used as Bundle-Name manifest entry. Default is the  <bundle_target_name>.
+- SYMBOLIC_NAME: The symbolic name of the bundle. This will be used as Bundle-SymbolicName manifest entry. Default is the <bundle_target_name>.
+- DESCRIPTION: The description of the bundle. This will be used as Bundle-Description manifest entry. Default this is empty.
+- GROUP: The group the bundle is part of. This will be used as Bundle-Group manifest entry. Default this is empty (no group).
+- VERSION: The bundle version. This will be used for the Bundle-Version manifest entry. In combination with SOURCES the version will also be used to set the activator library target property VERSION and SOVERSION.
+  For SOVERSION only the major part is used. Expected scheme is "<major>.<minor>.<path>". Default version is "0.0.0"
+- FILENAME: The filename of the bundle file. Default is <bundle_target_name>.zip.
+- PRIVATE_LIBRARIES: private libraries to be included in the bundle. Specified libraries are added to the "Private-Library" manifest statement and added in the root of the bundle. libraries can be cmake library targets or absolute paths to existing libraries.
+- HEADERS: Additional headers values that are appended to the bundle manifest.
+
+```CMake
+add_celix_bundle(<bundle_target_name>
+        SOURCES source1 source2 ...
+        [NAME bundle_name]
+        [SYMBOLIC_NAME bundle_symbolic_name]
+        [DESCRIPTION bundle_description]
+        [GROUP bundle_group]
+        [VERSION bundle_version]
+        [FILENAME bundle_filename]
+        [PRIVATE_LIBRARIES private_lib1 private_lib2 ...]
+        [HEADERS "header1: header1_value" "header2: header2_value" ...]
+)
+```
+
+```CMake
+add_celix_bundle(<bundle_target_name>
+        ACTIVATOR <activator_lib>
+        [NAME bundle_name]
+        [SYMBOLIC_NAME bundle_symbolic_name]
+        [DESCRIPTION bundle_description]
+        [GROUP bundle_group]
+        [VERSION bundle_version]
+        [FILENAME bundle_filename]
+        [PRIVATE_LIBRARIES private_lib1 private_lib2 ...]
+        [HEADERS "header1: header1_value" "header2: header2_value" ...]
+)
+```
+
+```CMake
+add_celix_bundle(<bundle_target_name>
+        NO_ACTIVATOR
+        [NAME bundle_name]
+        [SYMBOLIC_NAME bundle_symbolic_name]
+        [DESCRIPTION bundle_description]
+        [GROUP bundle_group]
+        [VERSION bundle_version]
+        [FILENAME bundle_filename]
+        [PRIVATE_LIBRARIES private_lib1 private_lib2 ...]
+        [HEADERS "header1: header1_value" "header2: header2_value" ...]
+)
+]]
 function(add_celix_bundle)
     list(GET ARGN 0 BUNDLE_TARGET_NAME)
     list(REMOVE_AT ARGN 0)
 
     set(OPTIONS NO_ACTIVATOR)
-    set(ONE_VAL_ARGS VERSION ACTIVATOR SYMBOLIC_NAME NAME DESCRIPTION FILE_NAME GROUP)
+    set(ONE_VAL_ARGS VERSION ACTIVATOR SYMBOLIC_NAME NAME DESCRIPTION FILENAME GROUP)
     set(MULTI_VAL_ARGS SOURCES PRIVATE_LIBRARIES EXPORT_LIBRARIES IMPORT_LIBRARIES HEADERS)
     cmake_parse_arguments(BUNDLE "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
 
@@ -300,6 +357,16 @@ function(bundle_private_libs)
     message(DEPRECATION "bundle_private_libs is deprecated, use celix_bundle_private_libs instead.")
     celix_bundle_private_libs(${ARGN})
 endfunction()
+
+#[[
+Add libraries to a bundle. The libraries should be cmake library targets or an absolute path to an existing library.
+
+The libraries will be copied into the bundle zip and activator library will be linked (PRIVATE) against them.
+
+celix_bundle_private_libs(<bundle_target>
+    lib1 lib2 ...
+)
+]]
 function(celix_bundle_private_libs)
     list(GET ARGN 0 BUNDLE)
     list(REMOVE_AT ARGN 0)
@@ -390,6 +457,7 @@ function(bundle_import_libs)
     message(DEPRECATION "bundle_import_libs is deprecated, use celix_bundle_import_libs instead.")
     celix_bundle_import_libs(${ARGN})
 endfunction()
+
 function(celix_bundle_import_libs)
     #0 is bundle TARGET
     #2..n is import libs
@@ -420,7 +488,24 @@ function(bundle_files)
     message(DEPRECATION "bundle_files is deprecated, use celix_bundle_files instead.")
     celix_bundle_files(${ARGN})
 endfunction()
-#Note with celix_bundle_files, files are copied cmake generation time. Updates are not copied !!
+
+#[[
+Add files to the target bundle. DESTINATION is relative to the bundle archive root.
+The rest of the command is conform file(COPY ...) cmake command.
+See cmake file(COPY ...) command for more info.
+
+Note with celix_bundle_files, files are copied cmake generation time. Updates are not copied !!
+
+celix_bundle_files(<bundle_target>
+    files... DESTINATION <dir>
+    [FILE_PERMISSIONS permissions...]
+    [DIRECTORY_PERMISSIONS permissions...]
+    [NO_SOURCE_PERMISSIONS] [USE_SOURCE_PERMISSIONS]
+    [FILES_MATCHING]
+    [[PATTERN <pattern> | REGEX <regex>]
+    [EXCLUDE] [PERMISSIONS permissions...] [...]
+)
+]]
 function(celix_bundle_files)
     #0 is bundle TARGET
     list(GET ARGN 0 BUNDLE)
@@ -529,8 +614,8 @@ function(celix_bundle_add_files)
     add_custom_command(OUTPUT ${TIMESTAMP}
             COMMAND ${CMAKE_COMMAND} -E touch ${TIMESTAMP}
             COMMAND ${CMAKE_COMMAND} -P ${COPY_CMAKE_SCRIPT}
-	    DEPENDS ${COPY_FILES}
-	    COMMENT "Copying files to ${DESTINATION}"
+	        DEPENDS ${COPY_FILES}
+	        COMMENT "Copying files to ${DESTINATION}"
     )
 
     get_target_property(DEPS ${BUNDLE} "BUNDLE_DEPEND_TARGETS")
@@ -542,6 +627,16 @@ function(bundle_headers)
     message(DEPRECATION "bundle_headers is deprecated, use celix_bundle_headers instead.")
     celix_bundle_headers(${ARGN})
 endfunction()
+
+#[[
+Append the provided headers to the target bundle manifest.
+
+celix_bundle_headers(<bundle_target>
+    "header1: header1_value"
+    "header2: header2_value"
+    ...
+)
+]]
 function(celix_bundle_headers)
     #0 is bundle TARGET
     #1..n is header name / header value
@@ -561,10 +656,19 @@ function(bundle_symbolic_name)
     message(DEPRECATION "bundle_symbolic_name is deprecated, use celix_bundle_symbolic_name instead.")
     celix_bundle_symbolic_name(${ARGN})
 endfunction()
+
+#[[
+Set bundle symbolic name
+celix_bundle_symbolic_name(<bundle_target> symbolic_name)
+]]
 function(celix_bundle_symbolic_name BUNDLE SYMBOLIC_NAME)
     set_target_properties(${BUNDLE} PROPERTIES "BUNDLE_SYMBOLIC_NAME" ${SYMBOLIC_NAME})
 endfunction()
 
+#[[
+Set bundle group.
+celix_bundle_group(<bundle_target> bundle group)
+]]
 function(celix_bundle_group BUNDLE GROUP)
     set_target_properties(${BUNDLE} PROPERTIES "BUNDLE_GROUP" ${GROUP})
 endfunction()
@@ -573,6 +677,11 @@ function(bundle_name)
     message(DEPRECATION "bundle_name is deprecated, use celix_bundle_name instead.")
     celix_bundle_symbolic_name(${ARGN})
 endfunction()
+
+#[[
+Set bundle name
+celix_bundle_name(<bundle_target> name)
+]]
 function(celix_bundle_name BUNDLE NAME)
     set_target_properties(${BUNDLE} PROPERTIES "BUNDLE_NAME" ${NAME})
 endfunction()
@@ -581,6 +690,11 @@ function(bundle_version)
     message(DEPRECATION "bundle_version is deprecated, use celix_bundle_version instead.")
     celix_bundle_symbolic_name(${ARGN})
 endfunction()
+
+#[[
+Set bundle version
+celix_bundle_version(<bundle_target> version)
+]]
 function(celix_bundle_version BUNDLE VERSION)
     set_target_properties(${BUNDLE} PROPERTIES "BUNDLE_VERSION" ${VERSION})
 endfunction()
@@ -589,6 +703,11 @@ function(bundle_description)
     message(DEPRECATION "bundle_description is deprecated, use celix_bundle_description instead.")
     celix_bundle_symbolic_name(${ARGN})
 endfunction()
+
+#[[
+Set bundle description
+celix_bundle_description(<bundle_target> description)
+]]
 function(celix_bundle_description BUNDLE DESC)
     set_target_properties(${BUNDLE} PROPERTIES "BUNDLE_DESCRIPTION" ${DESC})
 endfunction()
@@ -597,6 +716,29 @@ function(install_bundle)
     message(DEPRECATION "install_bundle is deprecated, use install_celix_bundle instead.")
     install_celix_bundle(${ARGN})
 endfunction()
+
+#[[
+Install bundle when 'make install' is executed.
+Bundles are installed at `<install-prefix>/share/<project_name>/bundles`.
+Headers are installed at `<install-prefix>/include/<project_name>/<bundle_name>`
+Resources are installed at `<install-prefix>/shared/<project_name>/<bundle_name>`
+
+Optional arguments:
+- EXPORT: Associates the installed bundle with a export_name.
+  The export name can be used to generate a CelixTargets.cmake file (see install_celix_bundle_targets)
+- PROJECT_NAME: The project name for installing. Default is the cmake project name.
+- BUNDLE_NAME: The bundle name used when installing headers/resources. Default is the bundle target name.
+- HEADERS: A list of headers to install for the bundle.
+- RESOURCES: A list of resources to install for the bundle.
+
+install_celix_bundle(<bundle_target>
+    [EXPORT] export_name
+    [PROJECT_NAME] project_name
+    [BUNDLE_NAME] bundle_name
+    [HEADERS header_file1 header_file2 ...]
+    [RESOURCES resource1 resource2 ...]
+)
+]]
 function(install_celix_bundle)
     #0 is bundle TARGET
     list(GET ARGN 0 BUNDLE)
@@ -641,6 +783,28 @@ function(install_celix_bundle)
 
 endfunction()
 
+
+#[[
+Generate and install a Celix Targets cmake file which contains CMake commands to create imported targets for the bundles
+install using the provided <export_name>. These imported CMake targets can be used in in CMake project using the installed
+bundles.
+
+Optional Arguments:
+- FILE: The Celix Targets cmake filename to used. Default is <export_name>BundleTargets.cmake
+- PROJECT_NAME: The project name to used for the share location. Default is the cmake project name.
+- DESTINATION: The (relative) location to install the Celix Targets cmake file to. Default is share/<PROJECT_NAME>/cmake.
+
+install_celix_targets(<export_name>
+    NAMESPACE <namespace>
+    [FILE <celix_target_filename>]
+    [PROJECT_NAME <project_name>]
+    [DESTINATION <celix_targets_destination>]
+)
+
+Example:
+install_celix_targets(celix NAMESPACE Celix:: DESTINATION share/celix/cmake FILE CelixTargets.cmake)
+]]
+
 function(install_celix_bundle_targets)
     #0 is the export name
     list(GET ARGN 0 EXPORT_NAME)
@@ -656,6 +820,10 @@ function(install_celix_bundle_targets)
     if (NOT DEFINED EXPORT_BUNDLES)
         message(FATAL_ERROR "Export ${EXPORT_NAME} not defined. Did you forgot to use a install_celix_bundle with the 'EXPORT ${EXPORT_NAME}' option?")
     endif ()
+    if (NOT DEFINED EXPORT_NAMESPACE)
+        message(FATAL_ERROR "Please provide a namespace used for the generated cmake targets.")
+    endif ()
+
 
     if (NOT DEFINED EXPORT_FILE)
         set(EXPORT_FILE ${EXPORT_NAME}BundleTargets.cmake)

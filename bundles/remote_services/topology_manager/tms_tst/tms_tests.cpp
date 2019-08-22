@@ -62,6 +62,8 @@ extern "C" {
 #define JSON_SERVICE_KEY1     "key1"
 #define JSON_SERVICE_KEY2     "key2"
 
+#define TST_CONFIGURATION_TYPE "org.amdatu.remote.admin.http"
+
     static framework_pt framework = NULL;
     static bundle_context_pt context = NULL;
 
@@ -109,7 +111,7 @@ extern "C" {
         rc = bundleContext_getService(context, scopeServiceRef, (void **)&tmScopeService);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
 
-        rc = bundleContext_getServiceReference(context, (char *)CALCULATOR2_SERVICE, &calcRef);
+        rc = bundleContext_getServiceReference(context, (char *)CALCULATOR_SERVICE, &calcRef);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
         CHECK(calcRef != NULL);
 
@@ -267,114 +269,113 @@ extern "C" {
     /// \TEST_CASE_REQ{REQ-1}
     /// \TEST_CASE_DESC Checks if 3 bundles are installed after the framework setup
     static void testBundles(void) {
-    	printf("Begin: %s\n", __func__);
-        array_list_pt bundles = NULL;
+        printf("Begin: %s\n", __func__);
+            array_list_pt bundles = NULL;
 
-        int rc = bundleContext_getBundles(context, &bundles);
-        CHECK_EQUAL(0, rc);
-        CHECK_EQUAL(5, arrayList_size(bundles)); //framework, scopeService & calc & rsa
+            int rc = bundleContext_getBundles(context, &bundles);
+            CHECK_EQUAL(0, rc);
+            CHECK_EQUAL(5, arrayList_size(bundles)); //framework, scopeService & calc & rsa
 
-        /*
-           int size = arrayList_size(bundles);
-           int i;
-           for (i = 0; i < size; i += 1) {
-           bundle_pt bundle = NULL;
-           module_pt module = NULL;
-           char *name = NULL;
+            /*
+            int size = arrayList_size(bundles);
+            int i;
+            for (i = 0; i < size; i += 1) {
+                bundle_pt bundle = NULL;
+                module_pt module = NULL;
+                char *name = NULL;
 
-           bundle = (bundle_pt) arrayList_get(bundles, i);
-           bundle_getCurrentModule(bundle, &module);
-           module_getSymbolicName(module, &name);
-           printf("got bundle with symbolic name '%s'", name);
-           }*/
+                bundle = (bundle_pt) arrayList_get(bundles, i);
+                bundle_getCurrentModule(bundle, &module);
+                module_getSymbolicName(module, &name);
+                printf("got bundle with symbolic name '%s'", name);
+            }*/
 
-        arrayList_destroy(bundles);
-        printf("End: %s\n", __func__);
+            arrayList_destroy(bundles);
+            printf("End: %s\n", __func__);
     }
 
     static void scopeInit(const char *fileName, int *nr_exported, int *nr_imported)
     {
-    	celix_status_t	status = CELIX_SUCCESS;
-    	celix_status_t  added;
+        celix_status_t status = CELIX_SUCCESS;
+        celix_status_t added;
 
         json_t *js_root;
         json_error_t error;
-        properties_pt properties;
+        celix_properties_t *properties;
 
         *nr_exported = 0;
         *nr_imported = 0;
         js_root = json_load_file(fileName, 0, &error);
-        if (js_root != NULL)
-        {
+
+        if (js_root != NULL) {
             json_t *js_exportServices = json_object_get(js_root, JSON_EXPORT_SERVICES);
             json_t *js_importServices = json_object_get(js_root, JSON_IMPORT_SERVICES);
 
             if (js_exportServices != NULL)  {
-                 if (json_is_array(js_exportServices)) {
-                     int i = 0;
-                     int size = json_array_size(js_exportServices);
+                if (json_is_array(js_exportServices)) {
+                    int i = 0;
+                    int size = json_array_size(js_exportServices);
 
-                     for (; i < size; ++i) {
-                         json_t* js_service = json_array_get(js_exportServices, i);
+                    for (; i < size; ++i) {
+                        json_t* js_service = json_array_get(js_exportServices, i);
 
-                         if (json_is_object(js_service)) {
-                        	 json_t* js_filter = json_object_get(js_service, JSON_SERVICE_NAME);
-                        	 json_t* js_serviceZone = json_object_get(js_service, JSON_SERVICE_ZONE);
-                        	 json_t* js_key1 = json_object_get(js_service, JSON_SERVICE_KEY1);
-                        	 json_t* js_key2 = json_object_get(js_service, JSON_SERVICE_KEY2);
+                        if (json_is_object(js_service)) {
+                            json_t* js_filter = json_object_get(js_service, JSON_SERVICE_NAME);
+                            json_t* js_serviceZone = json_object_get(js_service, JSON_SERVICE_ZONE);
+                            json_t* js_key1 = json_object_get(js_service, JSON_SERVICE_KEY1);
+                            json_t* js_key2 = json_object_get(js_service, JSON_SERVICE_KEY2);
 
-                             properties=properties_create();
-                             if (js_serviceZone != NULL) {
-                        	     properties_set(properties, (char*)JSON_SERVICE_ZONE,
-                        		    	                    (char*)json_string_value(js_serviceZone));
-			     }
-                             if (js_key1 != NULL) {
-                        	     properties_set(properties, (char*)JSON_SERVICE_KEY1,
-                        		    	 	 	  	 	    (char*)json_string_value(js_key1));
-			     }
-                             if (js_key2 != NULL) {
-                                 properties_set(properties, (char*)JSON_SERVICE_KEY2,
-                                    	 	 	  	 	    (char*)json_string_value(js_key2));
-			     }
+                            properties = celix_properties_create();
+                            if (js_serviceZone != NULL) {
+                                celix_properties_set(properties, (char*)JSON_SERVICE_ZONE,
+                                                                 (char*)json_string_value(js_serviceZone));
+                            }
+                            if (js_key1 != NULL) {
+                                celix_properties_set(properties, (char*)JSON_SERVICE_KEY1,
+                                                                 (char*)json_string_value(js_key1));
+                            }
+                            if (js_key2 != NULL) {
+                                celix_properties_set(properties, (char*)JSON_SERVICE_KEY2,
+                                                                 (char*)json_string_value(js_key2));
+                            }
 
-                        	 added = tmScopeService->addExportScope(tmScopeService->handle, (char*)json_string_value(js_filter), properties);
-                             if (added == CELIX_SUCCESS) {
-                            	 (*nr_exported)++;
-                             }
+                            added = tmScopeService->addExportScope(tmScopeService->handle, (char*)json_string_value(js_filter), properties);
+                            if (added == CELIX_SUCCESS) {
+                                (*nr_exported)++;
+                            }
                          }
                      }
                  }
              }
 
-             if (js_importServices != NULL)  {
-                 if (json_is_array(js_importServices)) {
-                     int i = 0;
-                     int size = json_array_size(js_importServices);
+            if (js_importServices != NULL)  {
+                if (json_is_array(js_importServices)) {
+                    int i = 0;
+                    int size = json_array_size(js_importServices);
 
-                     for (; i < size; ++i) {
-                         json_t* js_service = json_array_get(js_importServices, i);
+                    for (; i < size; ++i) {
+                        json_t* js_service = json_array_get(js_importServices, i);
 
-                         if (json_is_object(js_service)) {
-                        	 json_t* js_filter = json_object_get(js_service, JSON_SERVICE_NAME);
+                        if (json_is_object(js_service)) {
+                            json_t* js_filter = json_object_get(js_service, JSON_SERVICE_NAME);
 
-                        	 added = tmScopeService->addImportScope(tmScopeService->handle, (char*)json_string_value(js_filter));
-                             if (added == CELIX_SUCCESS) {
-                            	 (*nr_imported)++;
-                             }
-                         }
-                     }
-                 }
-             }
+                            added = tmScopeService->addImportScope(tmScopeService->handle, (char*)json_string_value(js_filter));
+                            if (added == CELIX_SUCCESS) {
+                                (*nr_imported)++;
+                            }
+                        }
+                    }
+                }
+            }
 
-
-        	json_decref(js_root);
+            json_decref(js_root);
         }
         else
         {
-        	printf("File error: %s\n", error.text);
-        	printf("File error: source %s\n", error.source);
-        	printf("File error: line %d position %d\n", error.line, error.position);
-        	status = CELIX_FILE_IO_EXCEPTION;
+            printf("File error: %s\n", error.text);
+            printf("File error: source %s\n", error.source);
+            printf("File error: line %d position %d\n", error.line, error.position);
+            status = CELIX_FILE_IO_EXCEPTION;
         }
         CHECK_EQUAL(CELIX_SUCCESS, status);
     }
@@ -384,35 +385,35 @@ extern "C" {
     /// \TEST_CASE_REQ{REQ-2}
     /// \TEST_CASE_DESC Checks if scopes can be added, but not twice
     static void testScope(void) {
-    	int nr_exported;
-    	int nr_imported;
-    	array_list_pt epList;
+        int nr_exported;
+        int nr_imported;
+        array_list_pt epList;
 
-    	printf("\nBegin: %s\n", __func__);
+        printf("\nBegin: %s\n", __func__);
         scopeInit("scope.json", &nr_exported, &nr_imported);
-        CHECK_EQUAL(1, nr_exported);
+        CHECK_EQUAL(2, nr_exported);
         CHECK_EQUAL(0, nr_imported);
 
         discMock->getEPDescriptors(discMock->handle, &epList);
-        // We export two services: Calculator and Calculator2, but only 1 has DFI bundle info
+        // We export one service: Calculator, which has DFI bundle info
         CHECK_EQUAL(1, arrayList_size(epList));
         for (unsigned int i = 0; i < arrayList_size(epList); i++) {
-        	endpoint_description_pt ep = (endpoint_description_pt) arrayList_get(epList, i);
-        	properties_pt props = ep->properties;
-        	hash_map_entry_pt entry = hashMap_getEntry(props, (void*)"key2");
-        	char* value = (char*) hashMapEntry_getValue(entry);
-        	STRCMP_EQUAL("inaetics", value);
-        	/*
-        	printf("Service: %s ", ep->service);
-        	hash_map_iterator_pt iter = hashMapIterator_create(props);
-        	while (hashMapIterator_hasNext(iter)) {
-        		hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
-        		printf("%s - %s\n", (char*)hashMapEntry_getKey(entry),
-        						   (char*)hashMapEntry_getValue(entry));
-        	}
-        	printf("\n");
-        	hashMapIterator_destroy(iter);
-        	*/
+            endpoint_description_pt ep = (endpoint_description_pt) arrayList_get(epList, i);
+            celix_properties_t *props = ep->properties;
+            hash_map_entry_pt entry = hashMap_getEntry(props, (void*)"key2");
+            char* value = (char*) hashMapEntry_getValue(entry);
+            STRCMP_EQUAL("inaetics", value);
+            /*
+            printf("Service: %s ", ep->service);
+            hash_map_iterator_pt iter = hashMapIterator_create(props);
+            while (hashMapIterator_hasNext(iter)) {
+                hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
+                printf("%s - %s\n", (char*)hashMapEntry_getKey(entry),
+                                   (char*)hashMapEntry_getValue(entry));
+            }
+            printf("\n");
+            hashMapIterator_destroy(iter);
+            */
         }
         printf("End: %s\n", __func__);
     }
@@ -422,22 +423,22 @@ extern "C" {
     /// \TEST_CASE_REQ{REQ-3}
     /// \TEST_CASE_DESC Checks if scopes can be added, but not twice
     static void testScope2(void) {
-    	int nr_exported;
-    	int nr_imported;
-    	array_list_pt epList;
-    	printf("\nBegin: %s\n", __func__);
+        int nr_exported;
+        int nr_imported;
+        array_list_pt epList;
+        printf("\nBegin: %s\n", __func__);
         scopeInit("scope2.json", &nr_exported, &nr_imported);
-        CHECK_EQUAL(2, nr_exported);
+        CHECK_EQUAL(3, nr_exported);
         CHECK_EQUAL(1, nr_imported);
         discMock->getEPDescriptors(discMock->handle, &epList);
-        // We export two services: Calculator and Calculator2, but only 1 has DFI bundle info
+        // We export one service: Calculator, which has DFI bundle info
         CHECK_EQUAL(1, arrayList_size(epList));
         for (unsigned int i = 0; i < arrayList_size(epList); i++) {
-        	endpoint_description_pt ep = (endpoint_description_pt) arrayList_get(epList, i);
-        	properties_pt props = ep->properties;
-        	hash_map_entry_pt entry = hashMap_getEntry(props, (void*)"key2");
-        	char* value = (char*) hashMapEntry_getValue(entry);
-        	STRCMP_EQUAL("inaetics", value);
+            endpoint_description_pt ep = (endpoint_description_pt) arrayList_get(epList, i);
+            celix_properties_t *props = ep->properties;
+            hash_map_entry_pt entry = hashMap_getEntry(props, (void*)"key2");
+            char* value = (char*) hashMapEntry_getValue(entry);
+            STRCMP_EQUAL("inaetics", value);
         }
         printf("End: %s\n", __func__);
     }
@@ -447,21 +448,22 @@ extern "C" {
     /// \TEST_CASE_REQ{REQ-4}
     /// \TEST_CASE_DESC Checks if scopes can be added, but not twice
     static void testScope3(void) {
-    	int nr_exported;
-    	int nr_imported;
-    	array_list_pt epList;
-    	printf("\nBegin: %s\n", __func__);
+        int nr_exported;
+        int nr_imported;
+        array_list_pt epList;
+        printf("\nBegin: %s\n", __func__);
         scopeInit("scope3.json", &nr_exported, &nr_imported);
-        CHECK_EQUAL(2, nr_exported);
+        CHECK_EQUAL(3, nr_exported);
+        CHECK_EQUAL(1, nr_imported);
         discMock->getEPDescriptors(discMock->handle, &epList);
-        // We export two services: Calculator and Calculator2, but only 1 has DFI bundle info
+        // We export one service: Calculator, which has DFI bundle info
         CHECK_EQUAL(1, arrayList_size(epList));
         for (unsigned int i = 0; i < arrayList_size(epList); i++) {
-        	endpoint_description_pt ep = (endpoint_description_pt) arrayList_get(epList, i);
-        	properties_pt props = ep->properties;
-        	hash_map_entry_pt entry = hashMap_getEntry(props, (void *)"key2");
-        	char* value = (char*) hashMapEntry_getValue(entry);
-        	STRCMP_EQUAL("inaetics", value);
+            endpoint_description_pt ep = (endpoint_description_pt) arrayList_get(epList, i);
+            celix_properties_t *props = ep->properties;
+            hash_map_entry_pt entry = hashMap_getEntry(props, (void *)"key2");
+            char* value = (char*) hashMapEntry_getValue(entry);
+            STRCMP_EQUAL("inaetics", value);
         }
         printf("End: %s\n", __func__);
     }
@@ -472,49 +474,49 @@ extern "C" {
     /// \TEST_CASE_DESC Invalid input file, two partly matching filters with same key name
     /*
     static void testScope4(void) {
-    	int nr_exported;
-    	int nr_imported;
-    	array_list_pt epList;
-    	printf("\nBegin: %s\n", __func__);
+        int nr_exported;
+        int nr_imported;
+        array_list_pt epList;
+        printf("\nBegin: %s\n", __func__);
         scopeInit("scope4.json", &nr_exported, &nr_imported);
         CHECK_EQUAL(2, nr_exported);
         discMock->getEPDescriptors(discMock->handle, &epList);
         // We export two services: Calculator and Calculator2, but only 1 has DFI bundle info
         CHECK_EQUAL(1, arrayList_size(epList));
         for (unsigned int i = 0; i < arrayList_size(epList); i++) {
-        	endpoint_description_pt ep = (endpoint_description_pt) arrayList_get(epList, i);
-        	properties_pt props = ep->properties;
-        	hash_map_entry_pt entry = hashMap_getEntry(props, (void*)"zone");
-        	char* value = (char*) hashMapEntry_getValue(entry);
-        	STRCMP_EQUAL("inaetics", value);
-        	CHECK_TRUE((entry == NULL));
+            endpoint_description_pt ep = (endpoint_description_pt) arrayList_get(epList, i);
+            celix_properties_t *props = ep->properties;
+            hash_map_entry_pt entry = hashMap_getEntry(props, (void*)"zone");
+            char* value = (char*) hashMapEntry_getValue(entry);
+            STRCMP_EQUAL("inaetics", value);
+            CHECK_TRUE((entry == NULL));
         }
         printf("End: %s\n", __func__);
     }*/
-
 
     /// \TEST_CASE_ID{6}
     /// \TEST_CASE_TITLE{Test import scope}
     /// \TEST_CASE_REQ{REQ-3}
     /// \TEST_CASE_DESC Checks if import succeeds if there is no import scope defined
     static void testImportScope(void) {
-    	int nr_exported;
-    	int nr_imported;
-    	printf("\nBegin: %s\n", __func__);
+        int nr_exported;
+        int nr_imported;
+        printf("\nBegin: %s\n", __func__);
 
-    	scopeInit("scope.json", &nr_exported, &nr_imported);
-    	CHECK_EQUAL(0, nr_imported);
+        scopeInit("scope.json", &nr_exported, &nr_imported);
+        CHECK_EQUAL(0, nr_imported);
         int rc = 0;
 
         endpoint_description_pt endpoint = NULL;
 
-        properties_pt props = properties_create();
-        properties_set(props, (char *)OSGI_RSA_ENDPOINT_SERVICE_ID, (char *)"42");
-        properties_set(props, (char *)OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, (char *)"eec5404d-51d0-47ef-8d86-c825a8beda42");
-        properties_set(props, (char *)OSGI_RSA_ENDPOINT_ID, (char *)"eec5404d-51d0-47ef-8d86-c825a8beda42-42");
-        properties_set(props, (char *)OSGI_FRAMEWORK_OBJECTCLASS,(char *)"org.apache.celix.test.MyBundle");
-        properties_set(props, (char *)"service.version",(char *)"1.0.0"); //TODO find out standard in osgi spec
-        properties_set(props, (char *)"zone", (char *)"thales");
+        celix_properties_t *props = celix_properties_create();
+        celix_properties_set(props, OSGI_RSA_ENDPOINT_SERVICE_ID, "42");
+        celix_properties_set(props, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, "eec5404d-51d0-47ef-8d86-c825a8beda42");
+        celix_properties_set(props, OSGI_RSA_ENDPOINT_ID, "eec5404d-51d0-47ef-8d86-c825a8beda42-42");
+        celix_properties_set(props, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, TST_CONFIGURATION_TYPE);
+        celix_properties_set(props, OSGI_FRAMEWORK_OBJECTCLASS, "org.apache.celix.test.MyBundle");
+        celix_properties_set(props, "service.version", "1.0.0"); //TODO find out standard in osgi spec
+        celix_properties_set(props, "zone", "thales");
 
         rc = endpointDescription_create(props, &endpoint);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
@@ -550,13 +552,14 @@ extern "C" {
 
         endpoint_description_pt endpoint = NULL;
 
-        properties_pt props = properties_create();
-        properties_set(props, (char *)OSGI_RSA_ENDPOINT_SERVICE_ID, (char *)"42");
-        properties_set(props, (char *)OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, (char *)"eec5404d-51d0-47ef-8d86-c825a8beda42");
-        properties_set(props, (char *)OSGI_RSA_ENDPOINT_ID, (char *)"eec5404d-51d0-47ef-8d86-c825a8beda42-42");
-        properties_set(props, (char *)OSGI_FRAMEWORK_OBJECTCLASS,(char *)"org.apache.celix.test.MyBundle");
-        properties_set(props, (char *)"service.version",(char *)"1.0.0"); //TODO find out standard in osgi spec
-        properties_set(props, (char *)"zone", (char *)"thales");
+        celix_properties_t *props = celix_properties_create();
+        celix_properties_set(props, OSGI_RSA_ENDPOINT_SERVICE_ID, "42");
+        celix_properties_set(props, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, "eec5404d-51d0-47ef-8d86-c825a8beda42");
+        celix_properties_set(props, OSGI_RSA_ENDPOINT_ID, "eec5404d-51d0-47ef-8d86-c825a8beda42-42");
+        celix_properties_set(props, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, TST_CONFIGURATION_TYPE);
+        celix_properties_set(props, OSGI_FRAMEWORK_OBJECTCLASS, "org.apache.celix.test.MyBundle");
+        celix_properties_set(props, "service.version", "1.0.0"); //TODO find out standard in osgi spec
+        celix_properties_set(props, "zone", "thales");
 
         rc = endpointDescription_create(props, &endpoint);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
@@ -576,7 +579,6 @@ extern "C" {
         printf("End: %s\n", __func__);
     }
 
-
     /// \TEST_CASE_ID{8}
     /// \TEST_CASE_TITLE{Test import scope block}
     /// \TEST_CASE_REQ{REQ-3}
@@ -592,13 +594,14 @@ extern "C" {
 
         endpoint_description_pt endpoint = NULL;
 
-        properties_pt props = properties_create();
-        properties_set(props, (char *)OSGI_RSA_ENDPOINT_SERVICE_ID, (char *)"42");
-        properties_set(props, (char *)OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, (char *)"eec5404d-51d0-47ef-8d86-c825a8beda42");
-        properties_set(props, (char *)OSGI_RSA_ENDPOINT_ID, (char *)"eec5404d-51d0-47ef-8d86-c825a8beda42-42");
-        properties_set(props, (char *)OSGI_FRAMEWORK_OBJECTCLASS,(char *)"org.apache.celix.test.MyBundle");
-        properties_set(props, (char *)"service.version",(char *)"1.0.0"); //TODO find out standard in osgi spec
-        properties_set(props, (char *)"zone", (char *)"thales");
+        celix_properties_t *props = celix_properties_create();
+        celix_properties_set(props, OSGI_RSA_ENDPOINT_SERVICE_ID, "42");
+        celix_properties_set(props, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, "eec5404d-51d0-47ef-8d86-c825a8beda42");
+        celix_properties_set(props, OSGI_RSA_ENDPOINT_ID, "eec5404d-51d0-47ef-8d86-c825a8beda42-42");
+        celix_properties_set(props, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, TST_CONFIGURATION_TYPE);
+        celix_properties_set(props, OSGI_FRAMEWORK_OBJECTCLASS, "org.apache.celix.test.MyBundle");
+        celix_properties_set(props, "service.version", "1.0.0"); //TODO find out standard in osgi spec
+        celix_properties_set(props, "zone", "thales");
 
         rc = endpointDescription_create(props, &endpoint);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
@@ -618,7 +621,7 @@ extern "C" {
         printf("End: %s\n", __func__);
     }
 
-    /// \TEST_CASE_ID{8}
+    /// \TEST_CASE_ID{9}
     /// \TEST_CASE_TITLE{Test import scope block}
     /// \TEST_CASE_REQ{REQ-3}
     /// \TEST_CASE_DESC Checks if import fails with non matching import scope defined
@@ -633,13 +636,14 @@ extern "C" {
 
         endpoint_description_pt endpoint = NULL;
 
-        properties_pt props = properties_create();
-        properties_set(props, (char *)OSGI_RSA_ENDPOINT_SERVICE_ID, (char *)"42");
-        properties_set(props, (char *)OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, (char *)"eec5404d-51d0-47ef-8d86-c825a8beda42");
-        properties_set(props, (char *)OSGI_RSA_ENDPOINT_ID, (char *)"eec5404d-51d0-47ef-8d86-c825a8beda42-42");
-        properties_set(props, (char *)OSGI_FRAMEWORK_OBJECTCLASS,(char *)"org.apache.celix.test.MyBundle");
-        properties_set(props, (char *)"service.version",(char *)"1.0.0"); //TODO find out standard in osgi spec
-        properties_set(props, (char *)"zone", (char *)"thales");
+        celix_properties_t *props = celix_properties_create();
+        celix_properties_set(props, OSGI_RSA_ENDPOINT_SERVICE_ID, "42");
+        celix_properties_set(props, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, "eec5404d-51d0-47ef-8d86-c825a8beda42");
+        celix_properties_set(props, OSGI_RSA_ENDPOINT_ID, "eec5404d-51d0-47ef-8d86-c825a8beda42-42");
+        celix_properties_set(props, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, TST_CONFIGURATION_TYPE);
+        celix_properties_set(props, OSGI_FRAMEWORK_OBJECTCLASS, "org.apache.celix.test.MyBundle");
+        celix_properties_set(props, "service.version", "1.0.0"); //TODO find out standard in osgi spec
+        celix_properties_set(props, "zone", "thales");
 
         rc = endpointDescription_create(props, &endpoint);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
@@ -661,73 +665,66 @@ extern "C" {
 }
 
 TEST_GROUP(topology_manager_scoped_export) {
-	void setup(void) {
-		setupFm();
-	}
+    void setup(void) {
+        setupFm();
+    }
 
-	void teardown() {
-		teardownFm();
-	}
+    void teardown() {
+        teardownFm();
+    }
 };
 
 TEST_GROUP(topology_manager_scoped_import) {
-	void setup(void) {
-		setupFmImport();
-	}
+    void setup(void) {
+        setupFmImport();
+    }
 
-	void teardown() {
-		teardownFmImport();
-	}
+    void teardown() {
+        teardownFmImport();
+    }
 };
 
 // Test9
 TEST(topology_manager_scoped_import, scope_import_multiple) {
-	testImportScopeMultiple();
-
+    testImportScopeMultiple();
 }
 
 // Test8
 TEST(topology_manager_scoped_import, scope_import_fail) {
-	testImportScopeFail();
-
+    testImportScopeFail();
 }
 
 // Test7
 TEST(topology_manager_scoped_import, scope_import_match) {
-	testImportScopeMatch();
-
+    testImportScopeMatch();
 }
 
 // Test6
 TEST(topology_manager_scoped_import, scope_import) {
-	testImportScope();
-
+    testImportScope();
 }
 
 // Test5
 /*
 TODO: NYI
 TEST(topology_manager_scoped_export, scope_init4) {
-	testScope4();
+    testScope4();
 }
 */
 
 // Test4
 TEST(topology_manager_scoped_export, scope_init3) {
-	testScope3();
-
+    testScope3();
 }
 
 // Test3
 TEST(topology_manager_scoped_export, scope_init2) {
-	testScope2();
-
+    testScope2();
 }
 
 // Test2
 TEST(topology_manager_scoped_export, scope_init) {
-	testScope();
-
+    testScope();
 }
 
 // Test1
