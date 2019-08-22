@@ -54,8 +54,8 @@ set(CELIX_MAJOR "2")
 set(CELIX_MINOR "2")
 set(CELIX_MICRO "0")
 
-option(ENABLE_TESTING "Enables unit/bundle testing" TRUE)
-message("is testing enabled?" ${ENABLE_TESTING})
+option(ENABLE_TESTING "Enables unit/bundle testing" FALSE)
+
 if (ENABLE_TESTING)
 	enable_testing()
 endif()
