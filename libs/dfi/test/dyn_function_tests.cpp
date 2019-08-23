@@ -260,11 +260,10 @@ TEST(DynFunctionTests, DynFuncAccTest) {
     test_access_functions();
 }
 
-/*
+
 TEST(DynFunctionTests, DynFuncTest3) {
     test_example3();
 }
-*/
 
 TEST(DynFunctionTests, DynFuncTest4) {
     test_example4();
