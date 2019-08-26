@@ -141,7 +141,7 @@ extern "C" {
 
     static int testExample3(void *ptr, double a, double *out) {
         double *b = (double *)ptr;
-        CHECK_EQUAL(2.0, *b)
+        CHECK_EQUAL(2.0, *b);
         CHECK_EQUAL(a, 2.0);
         *out = *b * a;
         return 0;
@@ -260,11 +260,9 @@ TEST(DynFunctionTests, DynFuncAccTest) {
     test_access_functions();
 }
 
-/*
 TEST(DynFunctionTests, DynFuncTest3) {
     test_example3();
 }
-*/
 
 TEST(DynFunctionTests, DynFuncTest4) {
     test_example4();

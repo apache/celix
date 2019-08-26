@@ -17,7 +17,7 @@
  *under the License.
  */
 #include <CppUTest/TestHarness.h>
-#include "CppUTest/CommandLineTestRunner.h"                                                                                                                                                                        
+#include "CppUTest/CommandLineTestRunner.h"
 
 extern "C" {
 #include <stdio.h>
@@ -660,7 +660,7 @@ static void check_example8(void *data) {
 	CHECK_EQUAL(4,ex->b);
 	CHECK_EQUAL(8,ex->c);
 	//error on mac CHECK_EQUAL(16,ex->d);
-    CHECK(16 == ex->d)
+    CHECK(16 == ex->d);
 	CHECK_EQUAL(32,ex->e);
 }
 

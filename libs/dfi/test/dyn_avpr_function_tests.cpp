@@ -18,7 +18,7 @@
  */
 
 #include <CppUTest/TestHarness.h>
-#include "CppUTest/CommandLineTestRunner.h"                                                                                                                                                                        
+#include "CppUTest/CommandLineTestRunner.h"
 
 extern "C" {
     #include <stdio.h>
@@ -390,10 +390,10 @@ static int avpr_example5(__attribute__((unused)) void* handle, struct tst_seq se
     return 0;
 }
 
-
 TEST(DynAvprFunctionTests, Example5) {
     auto fp = (void(*)()) avpr_example5;
     dyn_function_type * dynFunc = dynFunction_parseAvprWithStr(theAvprFile, "test.dt.seqFunc");
+
     CHECK(dynFunc != nullptr);
 
     int handle = 0;
@@ -409,9 +409,11 @@ TEST(DynAvprFunctionTests, Example5) {
     args[0] = &handle_ptr;
     args[1] = &seq;
     args[2] = &out_ptr;
+    int retArg = 1;
 
-    int rc = dynFunction_call(dynFunc, fp, nullptr, args);
+    int rc = dynFunction_call(dynFunc, fp, &retArg, args);
     CHECK_EQUAL(0, rc);
+    CHECK_EQUAL(0, retArg);
 
     dynFunction_destroy(dynFunc);
 }
@@ -485,7 +487,7 @@ TEST(DynAvprFunctionTests, Example7) {
     buf[0] = 1.101;
     buf[1] = 2.202;
     double_seq s_seq {2, 2, buf};
-    
+
     double out = 0.0;
     double *out_ptr = &out;
 
