@@ -129,6 +129,16 @@ const char* theTestCase = "{ \
                     \"type\" : \"enum\", \
                     \"name\" : \"EnumWithoutValue\", \
                     \"symbols\" : [\"A\", \"B\"]\
+		  }, { \
+                    \"type\" : \"record\", \
+                    \"name\" : \"Anne\", \
+                    \"alias\" : \"CoolType\", \
+                    \"MsgId\" : 1000, \
+                    \"Invalid\" : {}, \
+                    \"fields\" : [ {\
+                        \"name\" : \"data\", \
+                        \"type\" :\"test.dt.double\" \
+                    } ]\
                   }, { \
                     \"type\" : \"record\", \
                     \"namespace\" : \"N\", \
@@ -432,6 +442,31 @@ TEST(DynAvprAssignTests, AssignArrayTest) {
 
     dynType_free(type, s);
     test_version(type, "1.1.9");
+    dynType_destroy(type);
+}
+
+TEST(DynAvprAssignTests, AnnotationTest) {
+    dyn_type* type = dynType_parseAvprWithStr(theTestCase, "test.dt.Anne");
+    CHECK(type != nullptr);
+
+    // get value for meta entry
+    struct meta_entry *entry = nullptr;
+    struct meta_properties_head *entries = nullptr;
+    CHECK_EQUAL(0, dynType_metaEntries(type, &entries));
+    CHECK_FALSE(TAILQ_EMPTY(entries));
+
+    const std::string msg_id_entry {"MsgId"};
+    bool compared = false;
+
+    TAILQ_FOREACH(entry, entries, entries) {
+        printf("Got an entry: %s\n", entry->name);
+        if (msg_id_entry == entry->name) {
+            STRCMP_EQUAL("1000", entry->value);
+            compared = true;
+        }
+    }
+    CHECK_TRUE_TEXT(compared, "Expect a comparison, otherwise no msg id entry available");
+
     dynType_destroy(type);
 }
 
