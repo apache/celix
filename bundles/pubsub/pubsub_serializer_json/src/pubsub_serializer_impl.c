@@ -37,6 +37,14 @@
 #define SYSTEM_BUNDLE_ARCHIVE_PATH  "CELIX_FRAMEWORK_EXTENDER_PATH"
 #define MAX_PATH_LEN    1024
 
+typedef enum
+{
+    FIT_INVALID = 0,
+    FIT_DESCRIPTOR = 1,
+    FIT_AVPR = 2
+}
+FILE_INPUT_TYPE;
+
 struct pubsub_json_serializer {
     bundle_context_pt bundle_context;
     log_helper_pt loghelper;
@@ -47,10 +55,12 @@ struct pubsub_json_serializer {
 static celix_status_t pubsubMsgSerializer_serialize(void* handle, const void* msg, void** out, size_t *outLen);
 static celix_status_t pubsubMsgSerializer_deserialize(void* handle, const void* input, size_t inputLen, void **out);
 static void pubsubMsgSerializer_freeMsg(void* handle, void *msg);
-
+static FILE* openFileStream(FILE_INPUT_TYPE file_input_type, const char* filename, const char* root, /*output*/ char* avpr_fqn, /*output*/ char* path);
+static FILE_INPUT_TYPE getFileInputType(const char* filename);
+static bool readPropertiesFile(const char* properties_file_name, const char* root, /*output*/ char* avpr_fqn, /*output*/ char* path);
 
 typedef struct pubsub_json_msg_serializer_impl {
-    dyn_message_type *msgType;
+    dyn_type *type;
 
     unsigned int msgId;
     const char* msgName;
@@ -61,6 +71,8 @@ static char* pubsubSerializer_getMsgDescriptionDir(bundle_pt bundle);
 static void pubsubSerializer_addMsgSerializerFromBundle(const char *root, bundle_pt bundle, hash_map_pt msgTypesMap);
 static void pubsubSerializer_fillMsgSerializerMap(hash_map_pt msgTypesMap,bundle_pt bundle);
 
+static int pubsubMsgSerializer_convert_descriptor(FILE* file_ptr, pubsub_msg_serializer_t* serializer);
+static int pubsubMsgSerializer_convert_avpr(FILE* file_ptr, pubsub_msg_serializer_t* serializer, const char* fqn);
 
 static void dfi_log(void *handle, int level, const char *file, int line, const char *msg, ...) {
     va_list ap;
@@ -139,8 +151,7 @@ celix_status_t pubsubSerializer_destroySerializerMap(void* handle __attribute__(
     while (hashMapIterator_hasNext(&iter)) {
         pubsub_msg_serializer_t* msgSerializer = hashMapIterator_nextValue(&iter);
         pubsub_json_msg_serializer_impl_t *impl = msgSerializer->handle;
-        dyn_message_type *dynMsg = impl->msgType;
-        dynMessage_destroy(dynMsg); //note msgSer->name and msgSer->version owned by dynType
+        dynType_destroy(impl->type);
         free(msgSerializer); //also contains the service struct.
         free(impl);
     }
@@ -157,9 +168,7 @@ celix_status_t pubsubMsgSerializer_serialize(void *handle, const void* msg, void
     pubsub_json_msg_serializer_impl_t *impl = handle;
 
     char *jsonOutput = NULL;
-    dyn_type* dynType = NULL;
-    dyn_message_type *dynMsg = impl->msgType;
-    dynMessage_getMessageType(dynMsg, &dynType);
+    dyn_type* dynType = impl->type;
 
     if (jsonSerializer_serialize(dynType, msg, &jsonOutput) != 0) {
         status = CELIX_BUNDLE_EXCEPTION;
@@ -177,9 +186,7 @@ celix_status_t pubsubMsgSerializer_deserialize(void* handle, const void* input, 
     celix_status_t status = CELIX_SUCCESS;
     pubsub_json_msg_serializer_impl_t *impl = handle;
     void *msg = NULL;
-    dyn_type* dynType = NULL;
-    dyn_message_type *dynMsg = impl->msgType;
-    dynMessage_getMessageType(dynMsg, &dynType);
+    dyn_type* dynType = impl->type;
 
     if (jsonSerializer_deserialize(dynType, (const char*)input, &msg) != 0) {
         status = CELIX_BUNDLE_EXCEPTION;
@@ -193,9 +200,7 @@ celix_status_t pubsubMsgSerializer_deserialize(void* handle, const void* input, 
 
 void pubsubMsgSerializer_freeMsg(void* handle, void *msg) {
     pubsub_json_msg_serializer_impl_t *impl = handle;
-    dyn_type* dynType = NULL;
-    dyn_message_type *dynMsg = impl->msgType;
-    dynMessage_getMessageType(dynMsg, &dynType);
+    dyn_type* dynType = impl->type;
     if (dynType != NULL) {
         dynType_free(dynType, msg);
     }
@@ -249,88 +254,222 @@ static char* pubsubSerializer_getMsgDescriptionDir(bundle_pt bundle)
 
 static void pubsubSerializer_addMsgSerializerFromBundle(const char *root, bundle_pt bundle, hash_map_pt msgSerializers)
 {
+    char fqn[MAX_PATH_LEN];
     char path[MAX_PATH_LEN];
-    struct dirent *entry = NULL;
-    DIR *dir = opendir(root);
+    const char* entry_name = NULL;
+    FILE_INPUT_TYPE fileInputType;
+    FILE* stream = NULL;
 
+    const struct dirent *entry = NULL;
+    DIR* dir = opendir(root);
     if (dir) {
         entry = readdir(dir);
     }
 
-    while (entry != NULL) {
-
-        if (strstr(entry->d_name, ".descriptor") != NULL) {
-
-            printf("DMU: Parsing entry '%s'\n", entry->d_name);
-
-            snprintf(path, MAX_PATH_LEN, "%s/%s", root, entry->d_name);
-            FILE *stream = fopen(path,"r");
-
-            if (stream != NULL) {
-                dyn_message_type* msgType = NULL;
-
-                int rc = dynMessage_parse(stream, &msgType);
-                if (rc == 0 && msgType != NULL) {
-
-                    char* msgName = NULL;
-                    rc += dynMessage_getName(msgType,&msgName);
-
-                    version_pt msgVersion = NULL;
-                    rc += dynMessage_getVersion(msgType, &msgVersion);
-
-                    if (rc == 0 && msgName != NULL && msgVersion != NULL) {
-
-                        unsigned int msgId = utils_stringHash(msgName);
-
-                        pubsub_msg_serializer_t *msgSerializer = calloc(1,sizeof(*msgSerializer));
-                        pubsub_json_msg_serializer_impl_t *impl = calloc(1, sizeof(*impl));
-
-                        impl->msgType = msgType;
-                        impl->msgId = msgId;
-                        impl->msgName = msgName;
-                        impl->msgVersion = msgVersion;
-
-                        msgSerializer->handle = impl;
-                        msgSerializer->msgId = impl->msgId;
-                        msgSerializer->msgName = impl->msgName;
-                        msgSerializer->msgVersion = impl->msgVersion;
-                        msgSerializer->serialize = (void*) pubsubMsgSerializer_serialize;
-                        msgSerializer->deserialize = (void*) pubsubMsgSerializer_deserialize;
-                        msgSerializer->freeMsg = (void*) pubsubMsgSerializer_freeMsg;
-
-                        bool clash = hashMap_containsKey(msgSerializers, (void*)(uintptr_t)msgId);
-                        if (clash) {
-                            printf("Cannot add msg %s. clash in msg id %d!!\n", msgName, msgId);
-                            free(msgSerializer);
-                            free(impl);
-                            dynMessage_destroy(msgType);
-                        } else if (msgId != 0) {
-                            printf("Adding %u : %s\n", msgId, msgName);
-                            hashMap_put(msgSerializers, (void*)(uintptr_t)msgId, msgSerializer);
-                        } else {
-                            printf("Error creating msg serializer\n");
-                            free(impl);
-                            free(msgSerializer);
-                            dynMessage_destroy(msgType);
-                        }
-
-                    } else {
-                        printf("Cannot retrieve name and/or version from msg\n");
-                    }
-
-                } else {
-                    printf("DMU: cannot parse message from descriptor %s\n.",path);
-                }
-                fclose(stream);
-            } else {
-                printf("DMU: cannot open descriptor file %s\n.",path);
-            }
-
+    for (; entry != NULL; entry = readdir(dir)) {
+        entry_name = entry->d_name;
+        printf("DMU: Parsing entry '%s'\n", entry_name);
+        fileInputType = getFileInputType(entry_name);
+        stream = openFileStream(fileInputType, entry_name, root, /*out*/fqn, /*out*/path);
+        if (!stream) {
+            printf("DMU: Cannot open descriptor file: '%s'.\n", path);
+            continue; // Go to next entry in directory
         }
-        entry = readdir(dir);
+
+        pubsub_json_msg_serializer_impl_t *impl = calloc(1, sizeof(*impl));
+        pubsub_msg_serializer_t *msgSerializer = calloc(1,sizeof(*msgSerializer));
+        msgSerializer->handle = impl;
+
+        int translation_result = -1;
+        if (fileInputType == FIT_DESCRIPTOR) {
+            translation_result = pubsubMsgSerializer_convert_descriptor(stream, msgSerializer);
+        }
+        else if (fileInputType == FIT_AVPR) {
+            translation_result = pubsubMsgSerializer_convert_avpr(stream, msgSerializer, fqn);
+        }
+        fclose(stream);
+
+        if (translation_result != 0) {
+            printf("DMU: could not create serializer for '%s'\n", entry_name);
+            free(impl);
+            free(msgSerializer);
+            continue;
+        }
+
+        // serializer has been constructed, try to put in the map
+        if (hashMap_containsKey(msgSerializers, (void *) (uintptr_t) msgSerializer->msgId)) {
+            printf("Cannot add msg %s. clash in msg id %d!!\n", msgSerializer->msgName, msgSerializer->msgId);
+            dynType_destroy(impl->type);
+            free(msgSerializer);
+            free(impl);
+        } else if (msgSerializer->msgId == 0) {
+            printf("Cannot add msg %s. clash in msg id %d!!\n", msgSerializer->msgName, msgSerializer->msgId);
+            dynType_destroy(impl->type);
+            free(msgSerializer);
+            free(impl);
+        }
+        else {
+            hashMap_put(msgSerializers, (void *) (uintptr_t) msgSerializer->msgId, msgSerializer);
+        }
     }
 
     if (dir) {
         closedir(dir);
     }
+}
+static FILE* openFileStream(FILE_INPUT_TYPE file_input_type, const char* filename, const char* root, char* avpr_fqn, char* path) {
+    FILE* result = NULL;
+    memset(path, 0, MAX_PATH_LEN);
+    switch (file_input_type) {
+        case FIT_INVALID:
+            snprintf(path, MAX_PATH_LEN, "Because %s is not a valid file", filename);
+            break;
+
+        case FIT_DESCRIPTOR:
+            snprintf(path, MAX_PATH_LEN, "%s/%s", root, filename);
+            result = fopen(path, "r");
+            break;
+
+        case FIT_AVPR:
+            if (readPropertiesFile(filename, root, avpr_fqn, path)) {
+                result = fopen(path, "r");
+            }
+            break;
+
+        default:
+            printf("DMU: Unknown file input type, returning NULL!\n");
+            break;
+    }
+
+    return result;
+}
+
+static FILE_INPUT_TYPE getFileInputType(const char* filename) {
+    if (strstr(filename, ".descriptor")) {
+        return FIT_DESCRIPTOR;
+    }
+    else if (strstr(filename, ".properties")) {
+        return FIT_AVPR;
+    }
+    else {
+        return FIT_INVALID;
+    }
+}
+
+static bool readPropertiesFile(const char* properties_file_name, const char* root, char* avpr_fqn, char* path) {
+    snprintf(path, MAX_PATH_LEN, "%s/%s", root, properties_file_name); // use path to create path to properties file
+    FILE *properties = fopen(path, "r");
+    if (!properties) {
+        printf("DMU: Could not find or open %s as a properties file in %s\n", properties_file_name, root);
+        return false;
+    }
+
+    *avpr_fqn = '\0';
+    *path = '\0'; //re-use path to create path to avpr file
+    char *p_line = malloc(MAX_PATH_LEN);
+    size_t line_len = MAX_PATH_LEN;
+    while (getline(&p_line, &line_len, properties) >= 0) {
+        if (strncmp(p_line, "fqn=", strlen("fqn=")) == 0) {
+            snprintf(avpr_fqn, MAX_PATH_LEN, "%s", (p_line + strlen("fqn=")));
+            avpr_fqn[strcspn(avpr_fqn, "\n")] = 0;
+        }
+        else if (strncmp(p_line, "avpr=", strlen("avpr=")) == 0) {
+            snprintf(path, MAX_PATH_LEN, "%s/%s", root, (p_line + strlen("avpr=")));
+            path[strcspn(path, "\n")] = 0;
+        }
+    }
+    free(p_line);
+    fclose(properties);
+
+    if (*avpr_fqn == '\0') {
+        printf("CMU: File %s does not contain a fully qualified name for the parser\n", properties_file_name);
+        return false;
+    }
+
+    if (*path == '\0') {
+        printf("CMU: File %s does not contain a location for the avpr file\n", properties_file_name);
+        return false;
+    }
+
+    return true;
+}
+
+static int pubsubMsgSerializer_convert_descriptor(FILE* file_ptr, pubsub_msg_serializer_t* serializer) {
+    dyn_message_type* msgType = NULL;
+    int rc = dynMessage_parse(file_ptr, &msgType);
+    if (rc != 0 || msgType == NULL) {
+        printf("DMU: cannot parse message from descriptor.\n");
+        return -1;
+    }
+
+    char* msgName = NULL;
+    rc += dynMessage_getName(msgType, &msgName);
+
+    version_pt msgVersion = NULL;
+    rc += dynMessage_getVersion(msgType, &msgVersion);
+
+    if (rc != 0 || msgName == NULL || msgVersion == NULL) {
+        printf("DMU: cannot retrieve name and/or version from msg\n");
+        return -1;
+    }
+
+    dyn_type * type = NULL;
+    dynMessage_getMessageType(msgType, &type);
+
+    unsigned int msgId = utils_stringHash(msgName);
+    pubsub_json_msg_serializer_impl_t * handle = (pubsub_json_msg_serializer_impl_t*)serializer->handle;
+    handle->type = type;
+    handle->msgId = msgId;
+    handle->msgName = msgName;
+    handle->msgVersion = msgVersion;
+
+    serializer->msgId = handle->msgId;
+    serializer->msgName = handle->msgName;
+    serializer->msgVersion = handle->msgVersion;
+
+    serializer->serialize = (void*) pubsubMsgSerializer_serialize;
+    serializer->deserialize = (void*) pubsubMsgSerializer_deserialize;
+    serializer->freeMsg = (void*) pubsubMsgSerializer_freeMsg;
+
+    return 0;
+}
+
+static int pubsubMsgSerializer_convert_avpr(FILE* file_ptr, pubsub_msg_serializer_t* serializer, const char* fqn) {
+    if (!file_ptr || !fqn || !serializer) return -2;
+    dyn_type* type = dynType_parseAvpr(file_ptr, fqn);
+
+    if (!type) {
+        printf("DMU: cannot parse avpr file for '%s'\n", fqn);
+        return -1;
+    }
+
+    const char* msgName = dynType_getName(type);
+
+    version_pt msgVersion = NULL;
+    celix_status_t s = version_createVersionFromString(dynType_getMetaInfo(type, "version"), &msgVersion);
+
+    if (s != CELIX_SUCCESS || !msgName) {
+        printf("DMU: cannot retrieve name and/or version from msg\n");
+        if (s == CELIX_SUCCESS) {
+            version_destroy(msgVersion);
+        }
+        return -1;
+    }
+
+    unsigned int msgId = utils_stringHash(msgName);
+    pubsub_json_msg_serializer_impl_t * handle = (pubsub_json_msg_serializer_impl_t*) serializer->handle;
+    handle->type = type;
+    handle->msgId = msgId;
+    handle->msgName = msgName;
+    handle->msgVersion = msgVersion;
+
+    serializer->msgId = handle->msgId;
+    serializer->msgName = handle->msgName;
+    serializer->msgVersion = handle->msgVersion;
+
+    serializer->serialize = (void*) pubsubMsgSerializer_serialize;
+    serializer->deserialize = (void*) pubsubMsgSerializer_deserialize;
+    serializer->freeMsg = (void*) pubsubMsgSerializer_freeMsg;
+
+    return 0;
 }
