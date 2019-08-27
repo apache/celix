@@ -80,6 +80,7 @@ static inline int dynAvprType_fixedTypeToFfi(json_t const * const simple_obj, ff
 static char * dynAvprType_createFqnFromJson(json_t const * const jsonObject, const char * namespace);
 static inline enum JsonTypeType dynAvprType_getType(json_t const * const json_type);
 static inline void dynAvprType_createVersionMetaEntry(dyn_type * type, json_t const * const root, json_t const * const array_object, const char* parent_ns);
+static inline void dynAvprType_createAnnotationEntries(dyn_type * type, json_t const * const array_object, const char* parent_ns);
 
 // fqn = fully qualified name
 dyn_type * dynType_parseAvpr(FILE* avprStream, const char *fqn) {
@@ -161,8 +162,11 @@ dyn_type * dynAvprType_parseFromJson(json_t * const root, const char * fqn) {
 
     // Add version as a meta entry
     if (valid) {
-        LOG_DEBUG("parseAvpr: Parsing successful, adding version entry");
+    	LOG_DEBUG("parseAvpr: Parsing successful, adding version entry and annotations");
         dynAvprType_createVersionMetaEntry(type, root, typesArrayObject, parent_ns);
+        // Add any other annotation fields that are not in [type, name, fields, version, alias]
+        dynAvprType_createAnnotationEntries(type, typesArrayObject, parent_ns);
+
     }
 
     if (valid) {
@@ -931,4 +935,53 @@ static inline void dynAvprType_createVersionMetaEntry(dyn_type * type, json_t co
 
     // Insert into type
     TAILQ_INSERT_TAIL(&type->metaProperties, m_entry, entries);
+}
+
+static inline void dynAvprType_createAnnotationEntries(dyn_type * type, json_t const * const array_object, const char* parent_ns) {
+    json_t const * json_type = dynAvprType_findType(dynType_getName(type), array_object, parent_ns);
+    const char* const not_of_interest[5] = {"type", "name", "fields", "version", "alias"};
+    const char* key;
+    json_t const * value;
+    json_object_foreach((json_t*)json_type, key, value) {
+        if (! ( strcmp(key, not_of_interest[0]) == 0
+             || strcmp(key, not_of_interest[1]) == 0
+             || strcmp(key, not_of_interest[2]) == 0
+             || strcmp(key, not_of_interest[3]) == 0
+             || strcmp(key, not_of_interest[4]) == 0))
+        {
+            struct meta_entry * m_entry = dynAvprType_createMetaEntry(key);
+
+            switch (json_typeof(value)) {
+                case JSON_STRING:
+                    m_entry->value = strndup(json_string_value(value), STR_LENGTH);
+                    break;
+                case JSON_INTEGER:
+                    asprintf(&m_entry->value, "%" JSON_INTEGER_FORMAT, json_integer_value(value));
+                    break;
+                case JSON_REAL:
+                    asprintf(&m_entry->value, "%f", json_real_value(value));
+                    break;
+                case JSON_TRUE:
+                    m_entry->value = strdup("true");
+                    break;
+                case JSON_FALSE:
+                    m_entry->value = strdup("false");
+                    break;
+                case JSON_NULL:
+                    m_entry->value = strdup("null");
+                    break;
+                case JSON_OBJECT:
+                    /* fall through */
+                case JSON_ARRAY:
+                    /* fall through */
+                default:
+                    LOG_WARNING("createAnnotationEntries: encountered an annotation of an unknown type : %s", key);
+                    free(m_entry->name);
+                    free(m_entry);
+                    continue; // Do not add the invalid entry as a meta-entry
+            }
+
+            TAILQ_INSERT_TAIL(&type->metaProperties, m_entry, entries);
+        }
+    }
 }
