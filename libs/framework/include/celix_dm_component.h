@@ -142,6 +142,8 @@ celix_status_t celix_dmComponent_setCallbacks(celix_dm_component_t *component, c
  */
 celix_status_t celix_dmComponent_getComponentInfo(celix_dm_component_t *component, dm_component_info_pt *info);
 
+bool celix_dmComponent_isActive(celix_dm_component_t *component);
+
 /**
  * Destroys a DM Component info struct.
  */

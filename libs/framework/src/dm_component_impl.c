@@ -1533,3 +1533,9 @@ void celix_dmComponent_destroyComponentInfo(dm_component_info_pt info) {
     }
     free(info);
 }
+
+bool celix_dmComponent_isActive(celix_dm_component_t *component) {
+    pthread_mutex_lock(&component->mutex);
+    return component->active;
+    pthread_mutex_unlock(&component->mutex);
+}
