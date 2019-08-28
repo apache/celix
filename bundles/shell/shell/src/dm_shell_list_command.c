@@ -29,15 +29,18 @@ static const char * const WARNING_COLOR = "\033[93m";
 static const char * const NOK_COLOR = "\033[91m";
 static const char * const END_COLOR = "\033[m";
 
-static void parseCommandLine(const char*line, celix_array_list_t **requestedBundleIds, bool *fullInfo, FILE *err) {
+static void parseCommandLine(const char*line, celix_array_list_t **requestedBundleIds, bool *fullInfo, bool *wtf, FILE *err) {
     *fullInfo = false;
+    *wtf = false;
     char *str = strdup(line);
     // skip first argument since this is the command
     strtok(str," ");
     char* tok = strtok(NULL," ");
     *requestedBundleIds = celix_arrayList_create();
     while (tok) {
-        if (tok[0] == 'f') { // f or full argument => show full info
+        if (strncmp("wtf", tok, strlen("wtf")) == 0) {
+            *wtf = true;
+        } else if (tok[0] == 'f') { // f or full argument => show full info
             *fullInfo = true;
         } else if ( (tok[0] >= '0') && (tok[0] <= '9')) { // bundle id
             long id = strtol(tok, NULL, 10);
@@ -50,15 +53,15 @@ static void parseCommandLine(const char*line, celix_array_list_t **requestedBund
     free (str);
 }
 
-static void printFullInfo(FILE *out, bool colors, dm_component_info_pt compInfo) {
+static void printFullInfo(FILE *out, bool colors, long bundleId, dm_component_info_pt compInfo) {
     const char *startColors = "";
     const char *endColors = "";
     if (colors) {
         startColors = compInfo->active ? OK_COLOR : NOK_COLOR;
         endColors = END_COLOR;
     }
-    fprintf(out, "Component: Name=%s\n|- ID=%s, %sActive=%s%s, State=%s\n", compInfo->name, compInfo->id,
-            startColors, compInfo->active ? "true " : "false", endColors, compInfo->state);
+    fprintf(out, "Component: Name=%s\n|- ID=%s, %sActive=%s%s, State=%s, Bundle=%li\n", compInfo->name, compInfo->id,
+            startColors, compInfo->active ? "true " : "false", endColors, compInfo->state, bundleId);
     fprintf(out, "|- Interfaces (%d):\n", arrayList_size(compInfo->interfaces));
     for (unsigned int interfCnt = 0; interfCnt < arrayList_size(compInfo->interfaces); interfCnt++) {
         dm_interface_info_pt intfInfo = arrayList_get(compInfo->interfaces, interfCnt);
@@ -94,15 +97,15 @@ static void printFullInfo(FILE *out, bool colors, dm_component_info_pt compInfo)
 
 }
 
-static void printBasicInfo(FILE *out, bool colors, dm_component_info_pt compInfo) {
+static void printBasicInfo(FILE *out, bool colors, long bundleId, dm_component_info_pt compInfo) {
     const char *startColors = "";
     const char *endColors = "";
     if (colors) {
         startColors = compInfo->active ? OK_COLOR : NOK_COLOR;
         endColors = END_COLOR;
     }
-    fprintf(out, "Component: Name=%s, ID=%s, %sActive=%s%s, State=%s\n", compInfo->name, compInfo->id,
-            startColors, compInfo->active ? "true " : "false", endColors, compInfo->state);
+    fprintf(out, "Component: Name=%s, ID=%s, %sActive=%s%s, State=%s, Bundle=%li\n", compInfo->name, compInfo->id,
+            startColors, compInfo->active ? "true " : "false", endColors, compInfo->state, bundleId);
 
 }
 
@@ -110,13 +113,12 @@ static void dm_printInfo(FILE *out, bool useColors, bool fullInfo, celix_depende
     if (info != NULL) {
         int size = celix_arrayList_size(info->components);
         if (size > 0) {
-            fprintf(out, "[Bundle: %ld]\n", info->bndId);
             for (unsigned int cmpCnt = 0; cmpCnt < size; cmpCnt++) {
                 dm_component_info_pt compInfo = celix_arrayList_get(info->components, cmpCnt);
                 if (fullInfo) {
-                    printFullInfo(out, useColors, compInfo);
+                    printFullInfo(out, useColors, info->bndId, compInfo);
                 } else {
-                    printBasicInfo(out, useColors, compInfo);
+                    printBasicInfo(out, useColors, info->bndId, compInfo);
                 }
             }
             fprintf(out, "\n");
@@ -134,9 +136,30 @@ celix_status_t dmListCommand_execute(void* handle, char * line, FILE *out, FILE 
 
     celix_array_list_t *bundleIds = NULL;
     bool fullInfo = false;
-    parseCommandLine(line, &bundleIds, &fullInfo, err);
+    bool wtf = false;
+    parseCommandLine(line, &bundleIds, &fullInfo, &wtf, err);
 
-    if (celix_arrayList_size(bundleIds) == 0) {
+    if (wtf) {
+        //only print dm that are not active
+        bool allActive = true;
+        int nrOfComponents = 0;
+        celix_array_list_t *infos = celix_dependencyManager_createInfos(mng);
+        for (int i = 0; i < celix_arrayList_size(infos); ++i) {
+            celix_dependency_manager_info_t *info = celix_arrayList_get(infos, i);
+            for (int k = 0; k < celix_arrayList_size(info->components); ++k) {
+                celix_dm_component_info_t *cmpInfo = celix_arrayList_get(info->components, k);
+                nrOfComponents += 1;
+                if (!cmpInfo->active) {
+                    allActive = false;
+                    printFullInfo(out, useColors, info->bndId, cmpInfo);
+                }
+            }
+        }
+        celix_dependencyManager_destroyInfos(mng, infos);
+        if (allActive) {
+            fprintf(out, "No problem all %i dependency manager components are active\n", nrOfComponents);
+        }
+    } else if (celix_arrayList_size(bundleIds) == 0) {
         celix_array_list_t *infos = celix_dependencyManager_createInfos(mng);
         for (int i = 0; i < celix_arrayList_size(infos); ++i) {
             celix_dependency_manager_info_t *info = celix_arrayList_get(infos, i);

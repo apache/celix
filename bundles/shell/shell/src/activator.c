@@ -145,7 +145,7 @@ celix_status_t bundleActivator_create(bundle_context_pt context_ptr, void **_ppt
                         .exec = dmListCommand_execute,
                         .name = "dm",
                         .description = "Gives an overview of the component managed by a dependency manager.",
-                        .usage = "dm [f|full] [<Bundle ID> [<Bundle ID> [...]]]"
+                        .usage = "dm [wtf] [f|full] [<Bundle ID> [<Bundle ID> [...]]]"
                 };
         instance_ptr->std_commands[10] =
                 (struct command) { NULL, NULL, NULL, NULL, NULL, NULL, -1L }; /*marker for last element*/
