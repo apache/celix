@@ -56,16 +56,22 @@ install(DIRECTORY include/ DESTINATION include/celix COMPONENT framework)
 #Alias setup to match external usage
 add_library(Celix::framework ALIAS framework)
 
+
 if (ENABLE_TESTING)
     find_package(CppUTest REQUIRED)
+    include_directories(${CPPUTEST_INCLUDE_DIR})
     add_subdirectory(tst)
 endif()
+
 
 celix_subproject(FRAMEWORK_TESTS "Option to build the framework tests" "OFF" DEPS)
 if (ENABLE_TESTING AND FRAMEWORK_TESTS)
     find_package(CppUTest REQUIRED)
 
+    include_directories(${CPPUTEST_INCLUDE_DIR})
+    include_directories(${CPPUTEST_EXT_INCLUDE_DIR})
     include_directories(include src)
+
 
     add_executable(attribute_test
         private/test/attribute_test.cpp
