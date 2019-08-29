@@ -51,7 +51,7 @@ if (RSA_REMOTE_SERVICE_ADMIN_DFI)
             Celix::dfi
             Celix::log_helper
             Celix::rsa_common
-            ${CURL_LIBRARIES} ${JANSSON_LIBRARIES})
+            ${CURL_LIBRARY} ${JANSSON_LIBRARIES})
 
     if (ENABLE_TESTING)
         add_subdirectory(test)
