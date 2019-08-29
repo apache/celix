@@ -35,8 +35,8 @@ set(SOURCES
 add_library(dfi SHARED ${SOURCES})
 set_target_properties(dfi PROPERTIES OUTPUT_NAME "celix_dfi")
 target_include_directories(dfi PUBLIC
-		$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
-		$<INSTALL_INTERFACE:include/celix/dfi>
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
+	$<INSTALL_INTERFACE:include/celix/dfi>
 )
 
 target_include_directories(dfi SYSTEM PRIVATE
