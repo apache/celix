@@ -33,19 +33,19 @@ static const char * PUB_TOPICS[] = {
 };
 
 struct publisherActivator {
-    pubsub_sender_pt client;
+    pubsub_sender_t *client;
     array_list_pt trackerList;//List<service_tracker_pt>
 };
 
 static int pub_start(struct publisherActivator *act, celix_bundle_context_t *ctx) {
     const char *fwUUID = celix_bundleContext_getProperty(ctx,OSGI_FRAMEWORK_FRAMEWORK_UUID, NULL);
-    if (fwUUID==NULL) {
+    if (fwUUID == NULL) {
         printf("PUBLISHER: Cannot retrieve fwUUID.\n");
         return CELIX_INVALID_BUNDLE_CONTEXT;
     }
 
 
-    bundle_t *bnd = celix_bundleContext_getBundle(ctx);
+    celix_bundle_t *bnd = celix_bundleContext_getBundle(ctx);
     long bundleId = celix_bundle_getId(bnd);
 
     act->trackerList = celix_arrayList_create();

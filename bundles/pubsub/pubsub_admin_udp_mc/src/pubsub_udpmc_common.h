@@ -31,8 +31,6 @@ typedef struct pubsub_udp_msg_header {
 } pubsub_udp_msg_header_t;
 
 
-int psa_udpmc_localMsgTypeIdForMsgType(void* handle __attribute__((unused)), const char* msgType, unsigned int* msgTypeId);
-
 bool psa_udpmc_checkVersion(version_pt msgVersion, pubsub_udp_msg_header_t *hdr);
 
 

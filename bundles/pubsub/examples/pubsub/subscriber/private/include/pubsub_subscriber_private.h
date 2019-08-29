@@ -38,12 +38,12 @@ struct pubsub_receiver {
     char *name;
 };
 
-typedef struct pubsub_receiver* pubsub_receiver_pt;
+typedef struct pubsub_receiver pubsub_receiver_t;
 
-pubsub_receiver_pt subscriber_create(char* topics);
-void subscriber_start(pubsub_receiver_pt client);
-void subscriber_stop(pubsub_receiver_pt client);
-void subscriber_destroy(pubsub_receiver_pt client);
+pubsub_receiver_t* subscriber_create(char* topics);
+void subscriber_start(pubsub_receiver_t* client);
+void subscriber_stop(pubsub_receiver_t* client);
+void subscriber_destroy(pubsub_receiver_t* client);
 
 int pubsub_subscriber_recv(void* handle, const char* msgType, unsigned int msgTypeId, void* msg, bool* release);
 

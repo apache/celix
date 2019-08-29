@@ -19,11 +19,6 @@
 
 #include "pubsub_udpmc_common.h"
 
-int psa_udpmc_localMsgTypeIdForMsgType(void* handle __attribute__((unused)), const char* msgType, unsigned int* msgTypeId) {
-    *msgTypeId = utils_stringHash(msgType);
-    return 0;
-}
-
 bool psa_udpmc_checkVersion(version_pt msgVersion, pubsub_udp_msg_header_t *hdr) {
     bool check = false;
 
