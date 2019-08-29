@@ -19,8 +19,6 @@ jobs:
     - name: Test
       run: |
         make test
-
-jobs:
    build_and_test_with_asan:
     name: Build and test with address sanitizer
     runs-on: ubuntu-18.04
