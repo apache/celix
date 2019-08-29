@@ -16,7 +16,6 @@ jobs:
         cd build
         cmake ${CMAKE_BUILD_OPTIONS} ..
         make -J
-    steps:
     - name: Test
       run: |
         make test
@@ -35,7 +34,6 @@ jobs:
         cd build
         cmake ${CMAKE_BUILD_OPTIONS} ..
         make -J
-    steps:
     - name: Test
       run: |
         make test -DENABLE_ADDRESS_SANITIZER=ON
