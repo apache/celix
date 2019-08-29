@@ -1,0 +1,42 @@
+name: Build and Test Celix CI
+
+on: [push, pull_request]
+
+jobs:
+  build_and_test:
+    name: Build And test
+    runs-on: ubuntu-18.04, or ubuntu-16.04, macOS-10.14
+    
+    steps:
+    - name: Build
+      env:
+        CMAKE_BUILD_OPTIONS: -DBUILD_PUBSUB=ON
+      run: |
+        mkdir build
+        cd build
+        cmake ${CMAKE_BUILD_OPTIONS} ..
+        make -J
+    steps:
+    - name: Test
+      run: |
+        make test
+
+jobs:
+   build_and_test_with_asan:
+    name: Build and test with address sanitizer
+    runs-on: ubuntu-18.04
+    
+    steps:
+    - name: Build
+      env:
+        CMAKE_BUILD_OPTIONS: -DBUILD_PUBSUB=ON
+      run: |
+        mkdir build
+        cd build
+        cmake ${CMAKE_BUILD_OPTIONS} ..
+        make -J
+    steps:
+    - name: Test
+      run: |
+        make test -DENABLE_ADDRESS_SANITIZER=ON
+        make test
