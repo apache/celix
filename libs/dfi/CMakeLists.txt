@@ -73,7 +73,7 @@ if (ENABLE_TESTING)
 	)
 
     target_link_libraries(test_dfi PRIVATE Celix::dfi Celix::utils ${FFI_LIBRARIES} ${JANSSON_LIBRARY} ${CPPUTEST_LIBRARIES})
-    target_include_directories(test_dfi PRIVATE ${FFI_INCLUDE_DIRS} ${JANSSON_INCLUDE_DIRS})
+    target_include_directories(test_dfi PRIVATE ${FFI_INCLUDE_DIR} ${JANSSON_INCLUDE_DIRS})
 
     file(COPY ${CMAKE_CURRENT_LIST_DIR}/test/schemas DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
     file(COPY ${CMAKE_CURRENT_LIST_DIR}/test/descriptors DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
