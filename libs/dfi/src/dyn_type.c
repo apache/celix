@@ -24,9 +24,15 @@
 #include <errno.h>
 #include <ffi.h>
 
+#include "dyn_type_common.h"
 #include "dyn_common.h"
 
 DFI_SETUP_LOG(dynType)
+
+static const int OK = 0;
+static const int ERROR = 1;
+static const int MEM_ERROR = 2;
+static const int PARSE_ERROR = 3;
 
 static int dynType_parseWithStream(FILE *stream, const char *name, dyn_type *parent, struct types_head *refTypes, dyn_type **result);
 static void dynType_clear(dyn_type *type);
@@ -38,7 +44,6 @@ ffi_type * dynType_ffiType(dyn_type *type);
 static struct type_entry *dynType_allocTypeEntry(void);
 
 static ffi_type * dynType_ffiTypeFor(int c);
-static dyn_type * dynType_findType(dyn_type *type, char *name);
 static int dynType_parseAny(FILE *stream, dyn_type *type);
 static int dynType_parseComplex(FILE *stream, dyn_type *type);
 static int dynType_parseNestedType(FILE *stream, dyn_type *type);
@@ -47,13 +52,13 @@ static int dynType_parseRefByValue(FILE *stream, dyn_type *type);
 static int dynType_parseSequence(FILE *stream, dyn_type *type);
 static int dynType_parseSimple(int c, dyn_type *type);
 static int dynType_parseTypedPointer(FILE *stream, dyn_type *type);
-static void dynType_prepCif(ffi_type *type);
 static unsigned short dynType_getOffset(dyn_type *type, int index);
 
 static void dynType_printAny(char *name, dyn_type *type, int depth, FILE *stream);
 static void dynType_printComplex(char *name, dyn_type *type, int depth, FILE *stream);
 static void dynType_printSequence(char *name, dyn_type *type, int depth, FILE *stream);
 static void dynType_printSimple(char *name, dyn_type *type, int depth, FILE *stream);
+static void dynType_printEnum(char *name, dyn_type *type, int depth, FILE *stream);
 static void dynType_printTypedPointer(char *name, dyn_type *type, int depth, FILE *stream);
 static void dynType_printDepth(int depth, FILE *stream);
 
@@ -62,6 +67,7 @@ static void dynType_printComplexType(dyn_type *type, FILE *stream);
 static void dynType_printSimpleType(dyn_type *type, FILE *stream);
 
 static int dynType_parseText(FILE *stream, dyn_type *type);
+static int dynType_parseEnum(FILE *stream, dyn_type *type);
 void dynType_freeComplexType(dyn_type *type, void *loc);
 void dynType_deepFree(dyn_type *type, void *loc, bool alsoDeleteSelf);
 void dynType_freeSequenceType(dyn_type *type, void *seqLoc);
@@ -73,47 +79,6 @@ struct generic_sequence {
     uint32_t len;
     void *buf;
 };
-
-TAILQ_HEAD(meta_properties_head, meta_entry);
-struct meta_entry {
-    char *name;
-    char *value;
-    TAILQ_ENTRY(meta_entry) entries;
-};
-
-
-struct _dyn_type {
-    char *name;
-    char descriptor;
-    int type;
-    ffi_type *ffiType;
-    dyn_type *parent;
-    struct types_head *referenceTypes; //NOTE: not owned
-    struct types_head nestedTypesHead;
-    struct meta_properties_head metaProperties;
-    union {
-        struct {
-            struct complex_type_entries_head entriesHead;
-            ffi_type structType; //dyn_type.ffiType points to this
-            dyn_type **types; //based on entriesHead for fast access
-        } complex;
-        struct {
-            ffi_type seqType; //dyn_type.ffiType points to this
-            dyn_type *itemType;
-        } sequence;
-        struct {
-            dyn_type *typedType;
-        } typedPointer;
-        struct {
-            dyn_type *ref;
-        } ref;
-    };
-};
-
-static const int OK = 0;
-static const int ERROR = 1;
-static const int MEM_ERROR = 2;
-static const int PARSE_ERROR = 3;
 
 int dynType_parse(FILE *descriptorStream, const char *name, struct types_head *refTypes, dyn_type **type) {
     return dynType_parseWithStream(descriptorStream, name, NULL, refTypes, type);
@@ -199,6 +164,9 @@ static int dynType_parseAny(FILE *stream, dyn_type *type) {
         case 't' :
             status = dynType_parseText(stream, type);
             break;
+        case 'E' :
+            status = dynType_parseEnum(stream, type);
+            break;
         case '#' :
             status = dynType_parseMetaInfo(stream, type);
             if (status == OK) {
@@ -261,6 +229,14 @@ static int dynType_parseText(FILE *stream, dyn_type *type) {
     return status;
 }
 
+static int dynType_parseEnum(FILE *stream, dyn_type *type) {
+    int status = OK;
+    type->ffiType = &ffi_type_sint32;
+    type->descriptor = 'E';
+    type->type = DYN_TYPE_SIMPLE;
+    return status;
+}
+
 static int dynType_parseComplex(FILE *stream, dyn_type *type) {
     int status = OK;
     type->type = DYN_TYPE_COMPLEX;
@@ -296,7 +272,7 @@ static int dynType_parseComplex(FILE *stream, dyn_type *type) {
         c = fgetc(stream);
     }
 
-
+// loop over names
     if (status == OK) {
         entry = TAILQ_FIRST(&type->complex.entriesHead);
         char *name = NULL;
@@ -506,13 +482,6 @@ static int dynType_parseTypedPointer(FILE *stream, dyn_type *type) {
     status = dynType_parseWithStream(stream, NULL, type, NULL, &type->typedPointer.typedType);
 
     return status;
-}
-
-static void dynType_prepCif(ffi_type *type) {
-    ffi_cif cif;
-    ffi_type *args[1];
-    args[0] = type;
-    ffi_prep_cif(&cif, FFI_DEFAULT_ABI, 1, &ffi_type_uint, args);
 }
 
 void dynType_destroy(dyn_type *type) {
@@ -824,7 +793,6 @@ void dynType_simple_setValue(dyn_type *type, void *inst, void *in) {
     memcpy(inst, in, size);
 }
 
-
 int dynType_descriptorType(dyn_type *type) {
     return type->descriptor;
 }
@@ -842,15 +810,13 @@ const char * dynType_getMetaInfo(dyn_type *type, const char *name) {
     return result;
 }
 
-ffi_type *dynType_ffiType(dyn_type *type) {
-    if (type->type == DYN_TYPE_REF) {
-        if (type->ref.ref == NULL) {
-            LOG_ERROR("Error. Ref for %s is not (yet) initialized", type->name);
-            return NULL;
-        }
-        return type->ref.ref->ffiType;
-    }
-    return type->ffiType;
+int dynType_metaEntries(dyn_type *type, struct meta_properties_head **entries) {
+    *entries = &type->metaProperties;
+    return OK;
+}
+
+const char * dynType_getName(dyn_type *type) {
+    return type->name;
 }
 
 static ffi_type * dynType_ffiTypeFor(int c) {
@@ -887,7 +853,7 @@ static ffi_type * dynType_ffiTypeFor(int c) {
             type = &ffi_type_sint64;
             break;
         case 'j' :
-            type = &ffi_type_sint64;
+            type = &ffi_type_uint64;
             break;
         case 'N' :
             type = &ffi_type_sint;
@@ -900,38 +866,6 @@ static ffi_type * dynType_ffiTypeFor(int c) {
             break;
     }
     return type;
-}
-
-static dyn_type * dynType_findType(dyn_type *type, char *name) {
-    dyn_type *result = NULL;
-
-    struct type_entry *entry = NULL;
-    if (type->referenceTypes != NULL) {
-        TAILQ_FOREACH(entry, type->referenceTypes, entries) {
-            LOG_DEBUG("checking ref type '%s' with name '%s'", entry->type->name, name);
-            if (strcmp(name, entry->type->name) == 0) {
-                result = entry->type;
-                break;
-            }
-        }
-    }
-
-    if (result == NULL) {
-        struct type_entry *nEntry = NULL;
-        TAILQ_FOREACH(nEntry, &type->nestedTypesHead, entries) {
-            LOG_DEBUG("checking nested type '%s' with name '%s'", nEntry->type->name, name);
-            if (strcmp(name, nEntry->type->name) == 0) {
-                result = nEntry->type;
-                break;
-            }
-        }
-    }
-
-    if (result == NULL && type->parent != NULL) {
-        result = dynType_findType(type->parent, name);
-    }
-
-    return result;
 }
 
 static unsigned short dynType_getOffset(dyn_type *type, int index) {
@@ -1037,7 +971,7 @@ static void dynType_printAny(char *name, dyn_type *type, int depth, FILE *stream
             dynType_printTypedPointer(name, toPrint, depth, stream);
             break;
         default :
-            fprintf(stream, "TODO Unsupported type %i\n", toPrint->type);
+            fprintf(stream, "TODO Unsupported type %d\n", toPrint->type);
             break;
     }
 }
@@ -1076,8 +1010,23 @@ static void dynType_printSequence(char *name, dyn_type *type, int depth, FILE *s
 }
 
 static void dynType_printSimple(char *name, dyn_type *type, int depth, FILE *stream) {
+    if (type->descriptor != 'E') {
+        dynType_printDepth(depth, stream);
+        fprintf(stream, "%s: simple type, size is %zu, alignment is %i, descriptor is '%c'.\n", name, type->ffiType->size, type->ffiType->alignment, type->descriptor);
+    }
+    else {
+        dynType_printEnum(name, type, depth, stream);
+    }
+}
+
+static void dynType_printEnum(char *name, dyn_type *type, int depth, FILE *stream) {
     dynType_printDepth(depth, stream);
-    fprintf(stream, "%s: simple type, size is %zu, alignment is %i, descriptor is '%c'.\n", name, type->ffiType->size, type->ffiType->alignment, type->descriptor);
+    fprintf(stream, "%s: enum type, size is %zu, alignment is %i, descriptor is '%c'. values:", name, type->ffiType->size, type->ffiType->alignment, type->descriptor);
+    struct meta_entry * m_entry;
+    TAILQ_FOREACH(m_entry, &type->metaProperties, entries) {
+        fprintf(stream, " (\"%s\":\"%s\")", m_entry->name, m_entry->value);
+    }
+    fprintf(stream, "\n");
 }
 
 static void dynType_printTypedPointer(char *name, dyn_type *type, int depth, FILE *stream) {

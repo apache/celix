@@ -80,20 +80,20 @@ if (ENABLE_TESTING AND FRAMEWORK_TESTS)
         private/mock/celix_log_mock.c)
     target_link_libraries(attribute_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} Celix::utils pthread)
 
-#        add_executable(bundle_archive_test 
-#            private/mock/celix_log_mock.c
-#            private/test/bundle_archive_test.cpp
-#            src/bundle_revision.c
-#            src/manifest.c
-#            src/miniunz.c
-#            src/unzip.c
-#            src/ioapi.c
-#            src/properties.c
-#            src/bundle_archive.c
-#            src/celix_errorcodes.c
-#            src/utils.c)
-#        target_link_libraries(bundle_archive_test Celix::utils ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} ${ZLIB_LIBRARY} pthread)
-
+#    add_executable(bundle_archive_test
+#        private/mock/celix_log_mock.c
+#        private/test/bundle_archive_test.cpp #TODO: fix? contains invalid casts
+#        src/bundle_revision.c
+#        src/manifest.c
+#        src/miniunz.c
+#        src/unzip.c
+#        src/ioapi.c
+#        # src/properties.c
+#        src/bundle_archive.c
+#        src/celix_errorcodes.c
+#        # src/utils.c
+#        )
+#    target_link_libraries(bundle_archive_test Celix::utils ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} ${ZLIB_LIBRARY} pthread)
 
     add_executable(bundle_cache_test
         private/test/bundle_cache_test.cpp
@@ -200,17 +200,18 @@ if (ENABLE_TESTING AND FRAMEWORK_TESTS)
         private/mock/celix_log_mock.c)
     target_link_libraries(manifest_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} Celix::utils pthread)
 
-#        add_executable(module_test 
-#            private/test/module_test.cpp
-#            private/mock/bundle_mock.c
-#            private/mock/version_mock.c
-#            private/mock/manifest_mock.c
-#            private/mock/manifest_parser_mock.c
-#            private/mock/capability_mock.c
-#            private/mock/requirement_mock.c
-#            private/mock/wire_mock.c
-#            src/module.c)
-#        target_link_libraries(module_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} Celix::utils pthread)
+#    add_executable(module_test
+#        private/test/module_test.cpp # TODO: fix invalid conversions from char ** to const char**
+#        private/mock/bundle_mock.c
+#        private/mock/version_mock.c
+#        private/mock/manifest_mock.c
+#        private/mock/manifest_parser_mock.c
+#        private/mock/capability_mock.c
+#        private/mock/requirement_mock.c
+#        private/mock/wire_mock.c
+#        src/module.c)
+#    target_link_libraries(module_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} Celix::utils pthread)
+#    target_include_directories(module_test SYSTEM ${CPPUTEST_INCLUDE_DIR})
 
     add_executable(requirement_test
         private/test/requirement_test.cpp
@@ -222,19 +223,19 @@ if (ENABLE_TESTING AND FRAMEWORK_TESTS)
         private/mock/celix_log_mock.c)
     target_link_libraries(requirement_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} Celix::utils pthread)
 
-#        add_executable(resolver_test 
-#            private/test/resolver_test.cpp
-#            private/mock/bundle_mock.c
-#            private/mock/requirement_mock.c
-#            private/mock/capability_mock.c
-#            private/mock/manifest_parser_mock.c
-#            private/mock/version_mock.c
-#            src/wire.c
-#            src/module.c
-#            src/resolver.c
-#            src/celix_errorcodes.c
-#            private/mock/celix_log_mock.c)
-#        target_link_libraries(resolver_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} Celix::utils pthread)
+#    add_executable(resolver_test
+#        private/test/resolver_test.cpp #TODO: fix missing include
+#        private/mock/bundle_mock.c
+#        private/mock/requirement_mock.c
+#        private/mock/capability_mock.c
+#        private/mock/manifest_parser_mock.c
+#        private/mock/version_mock.c
+#        src/wire.c
+#        src/module.c
+#        src/resolver.c
+#        src/celix_errorcodes.c
+#        private/mock/celix_log_mock.c)
+#    target_link_libraries(resolver_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} Celix::utils pthread)
 
     add_executable(service_reference_test
         private/test/service_reference_test.cpp
@@ -253,7 +254,6 @@ if (ENABLE_TESTING AND FRAMEWORK_TESTS)
         src/celix_errorcodes.c
         private/mock/celix_log_mock.c)
     target_link_libraries(service_registration_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} Celix::utils pthread)
-
 
     add_executable(service_registry_test
         private/test/service_registry_test.cpp

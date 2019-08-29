@@ -208,18 +208,19 @@ static celix_status_t importRegistration_createProxy(import_registration_pt impo
     dyn_interface_type* intf = NULL;
     FILE *descriptor = NULL;
 
-    status = dfi_findDescriptor(import->context, bundle, import->classObject, &descriptor);
+    status = dfi_findAvprDescriptor(import->context, bundle, import->classObject, &descriptor);
 
     if (status != CELIX_SUCCESS || descriptor == NULL) {
         //TODO use log helper logHelper_log(helper, OSGI_LOGSERVICE_ERROR, "Cannot find/open descriptor for '%s'", import->classObject);
-        fprintf(stderr, "RSA_DFI: Cannot find/open descriptor for '%s'", import->classObject);
+        fprintf(stdout, "RSA_DFI: Cannot find/open descriptor for '%s'", import->classObject);
         return CELIX_BUNDLE_EXCEPTION;
     }
 
     if (status == CELIX_SUCCESS) {
-        int rc = dynInterface_parse(descriptor, &intf);
+        intf = dynInterface_parseAvpr(descriptor);
         fclose(descriptor);
-        if (rc != 0 || intf==NULL) {
+        if (!intf) {
+            fprintf(stderr, "RSA_DFI: Cannot parse descriptor for '%s'", import->classObject);
             return CELIX_BUNDLE_EXCEPTION;
         }
     }

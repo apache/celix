@@ -16,16 +16,24 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-#ifndef DFI_UTILS_H_
-#define DFI_UTILS_H_
 
-#include "bundle.h"
-#include "bundle_context.h"
-#include <stdio.h>
-#include "celix_errno.h"
+#ifndef _DYN_INTERFACE_COMMON_H_
+#define _DYN_INTERFACE_COMMON_H_
 
+#include "dyn_interface.h"
 
-celix_status_t dfi_findDescriptor(bundle_context_pt context, bundle_pt bundle, const char *name, FILE **out);
-celix_status_t dfi_findAvprDescriptor(bundle_context_pt context, bundle_pt bundle, const char *name, FILE **out);
+#include <strings.h>
+#include <stdlib.h>
+#include <ffi.h>
+
+#include "dyn_common.h"
+
+struct _dyn_interface_type {
+    struct namvals_head header;
+    struct namvals_head annotations;
+    struct types_head types;
+    struct methods_head methods;
+    version_pt version;
+};
 
 #endif

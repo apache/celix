@@ -205,3 +205,4 @@ TEST(DynInterfaceTests, test2) {
 TEST(DynInterfaceTests, testInvalid) {
     testInvalid();
 }
+

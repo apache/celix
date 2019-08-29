@@ -85,7 +85,6 @@ extern "C" {
     static service_reference_pt eplRef = NULL;
     static endpoint_listener_pt eplService = NULL; // actually this is the topology manager
 
-
     static void setupFm(void) {
         int rc = 0;
         rc = celixLauncher_launch("config.properties", &framework);
@@ -125,9 +124,12 @@ extern "C" {
 
         rc = bundleContext_getService(context, discRef, (void **)&discMock);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
+
+        printf("==> Finished setup.\n");
     }
 
     static void teardownFm(void) {
+        printf("==> Starting teardown.\n");
         int rc = 0;
 
         rc = bundleContext_ungetService(context, scopeServiceRef, NULL);
@@ -261,7 +263,6 @@ extern "C" {
         context = NULL;
         framework = NULL;
     }
-
 
     /// \TEST_CASE_ID{1}
     /// \TEST_CASE_TITLE{Test register scope service}
@@ -661,7 +662,6 @@ extern "C" {
 
         printf("End: %s\n", __func__);
     }
-
 }
 
 TEST_GROUP(topology_manager_scoped_export) {

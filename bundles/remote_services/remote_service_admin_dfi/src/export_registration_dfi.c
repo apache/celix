@@ -90,7 +90,7 @@ celix_status_t exportRegistration_create(log_helper_pt helper, service_reference
 
     FILE *descriptor = NULL;
     if (status == CELIX_SUCCESS) {
-        status = dfi_findDescriptor(context, bundle, exports, &descriptor);
+        status = dfi_findAvprDescriptor(context, bundle, exports, &descriptor);
     }
 
     if (status != CELIX_SUCCESS || descriptor == NULL) {
@@ -99,11 +99,12 @@ celix_status_t exportRegistration_create(log_helper_pt helper, service_reference
     }
 
     if (status == CELIX_SUCCESS) {
-        int rc = dynInterface_parse(descriptor, &reg->intf);
+        reg->intf = dynInterface_parseAvpr(descriptor);
+
         fclose(descriptor);
-        if (rc != 0) {
+        if (!reg->intf) {
             status = CELIX_BUNDLE_EXCEPTION;
-            logHelper_log(helper, OSGI_LOGSERVICE_WARNING, "RSA: Error parsing service descriptor.");
+            logHelper_log(helper, OSGI_LOGSERVICE_WARNING, "RSA: Error parsing service descriptor for '%s'", exports);
         }
         else {
             /* Add the interface version as a property in the properties_map */

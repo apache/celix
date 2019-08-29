@@ -51,6 +51,8 @@ int dynMessage_getHeaderEntry(dyn_message_type *msg, const char *name, char **va
 int dynMessage_getAnnotationEntry(dyn_message_type *msg, const char *name, char **value);
 int dynMessage_getMessageType(dyn_message_type *msg, dyn_type **type);
 
-
+// avpr parsing
+dyn_message_type * dynMessage_parseAvpr(FILE *avprDescriptorStream, const char *fqn);
+dyn_message_type * dynMessage_parseAvprWithStr(const char *avprDescriptor, const char *fqn);
 
 #endif

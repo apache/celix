@@ -27,6 +27,7 @@
 #include "version.h"
 
 DFI_SETUP_LOG_HEADER(dynInterface);
+DFI_SETUP_LOG_HEADER(dynAvprInterface);
 
 /* Description string
  *
@@ -62,5 +63,8 @@ int dynInterface_getAnnotationEntry(dyn_interface_type *intf, const char *name, 
 int dynInterface_methods(dyn_interface_type *intf, struct methods_head **list);
 int dynInterface_nrOfMethods(dyn_interface_type *intf);
 
+// Avpr parsing
+dyn_interface_type * dynInterface_parseAvprWithStr(const char * avpr);
+dyn_interface_type * dynInterface_parseAvpr(FILE * avprStream);
 
 #endif
