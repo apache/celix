@@ -50,7 +50,7 @@ if (DEPLOYMENT_ADMIN)
     )
 
     target_compile_definitions(deployment_admin PRIVATE -DUSE_FILE32API)
-    target_link_libraries(deployment_admin PRIVATE ${CURL_LIBRARIES} ${UUID_LIBRARY} ${ZLIB_LIBRARIES} deployment_admin_api)
+    target_link_libraries(deployment_admin PRIVATE ${CURL_LIBRARY} ${UUID_LIBRARY} ${ZLIB_LIBRARIES} deployment_admin_api)
     target_include_directories(deployment_admin PRIVATE ${CURL_INCLUDE_DIRS})
 
     install(TARGETS deployment_admin_api EXPORT celix COMPONENT deployment_admin)
