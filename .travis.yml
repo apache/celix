@@ -42,7 +42,7 @@ matrix:
 
 before_install:
   - if [ "$TRAVIS_OS_NAME" = "linux" ] &&  [ -z "$ANDROID" ]; then sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y && sudo apt-get -qq update && sudo apt-get install -y uuid-dev libxml2-dev lcov libffi-dev gcc-4.8 g++-4.8; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew update && brew install lcov libffi zeromq czmq && brew link --force libffi; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew update && brew install lcov libffi zeromq czmq openssl && brew link --force libffi; fi
 
 before_script:
     - wget https://github.com/cpputest/cpputest/releases/download/v3.8/cpputest-3.8.tar.gz -O /tmp/cpputest.tar.gz
