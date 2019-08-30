@@ -26,6 +26,7 @@ project (Celix C CXX)
 
 include(cmake/celix_project/CelixProject.cmake)
 include(cmake/cmake_celix/UseCelix.cmake)
+include(cmake/celix_project/AddOpenSSL.cmake)
 
 # see https://public.kitware.com/Bug/view.php?id=15696
 IF (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} EQUAL 3.3 AND ${CMAKE_GENERATOR} STREQUAL "Unix Makefiles")
