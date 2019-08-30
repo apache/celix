@@ -26,6 +26,7 @@ if (NOT TARGET OpenSSL::SSL)
         IMPORTED_LOCATION "/usr/lib/openssl/libssl.so"
         INTERFACE_INCLUDE_DIRECTORIES "/usr/include/openssl"
     )
+    set(OPENSSL_ROOT_DIR "/usr/lib/openssl")
 endif()
 
 if (NOT TARGET OpenSSL::Crypto)
@@ -34,4 +35,5 @@ if (NOT TARGET OpenSSL::Crypto)
         IMPORTED_LOCATION "/usr/lib/openssl/libcrypto.so"
         INTERFACE_INCLUDE_DIRECTORIES "/usr/include/openssl"
     )
+    set(OPENSSL_ROOT_DIR "/usr/lib/openssl")
 endif()
