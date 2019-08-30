@@ -21,7 +21,7 @@
 # )
 
 if (NOT TARGET OpenSSL::SSL)
-    add_library(OpenSSL::SSL IMPORTED GLOBAL)
+    add_library(OpenSSL::SSL GLOBAL)
     set_target_properties(OpenSSL::SSL PROPERTIES
         IMPORTED_LOCATION "/usr/lib/openssl/libssl.so"
         INTERFACE_INCLUDE_DIRECTORIES "/usr/include/openssl"
@@ -30,7 +30,7 @@ if (NOT TARGET OpenSSL::SSL)
 endif()
 
 if (NOT TARGET OpenSSL::Crypto)
-    add_library(OpenSSL::Crypto IMPORTED GLOBAL)
+    add_library(OpenSSL::Crypto GLOBAL)
     set_target_properties(OpenSSL::Crypto PROPERTIES
         IMPORTED_LOCATION "/usr/lib/openssl/libcrypto.so"
         INTERFACE_INCLUDE_DIRECTORIES "/usr/include/openssl"
