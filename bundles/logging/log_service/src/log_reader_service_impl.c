@@ -31,13 +31,13 @@
 #include "celixbool.h"
 
 struct log_reader_data {
-    log_pt log;
+    log_t *log;
 };
 
-celix_status_t logReaderService_create(log_pt log, log_reader_data_pt *reader) {
+celix_status_t logReaderService_create(log_t *log, log_reader_data_t **reader) {
     celix_status_t status = CELIX_SUCCESS;
 
-    *reader = (log_reader_data_pt) calloc(1, sizeof(**reader));
+    *reader = (log_reader_data_t *) calloc(1, sizeof(**reader));
 
     if (*reader == NULL) {
         status = CELIX_ENOMEM;
@@ -48,7 +48,7 @@ celix_status_t logReaderService_create(log_pt log, log_reader_data_pt *reader) {
     return status;
 }
 
-celix_status_t logReaderService_destroy(log_reader_data_pt *reader) {
+celix_status_t logReaderService_destroy(log_reader_data_t **reader) {
     celix_status_t status = CELIX_SUCCESS;
 
     free(*reader);
@@ -59,7 +59,7 @@ celix_status_t logReaderService_destroy(log_reader_data_pt *reader) {
 
 
 
-celix_status_t logReaderService_getLog(log_reader_data_pt reader, linked_list_pt *list) {
+celix_status_t logReaderService_getLog(log_reader_data_t *reader, linked_list_pt *list) {
     celix_status_t status = CELIX_SUCCESS;
 
     status = log_getEntries(reader->log, list);
@@ -67,15 +67,15 @@ celix_status_t logReaderService_getLog(log_reader_data_pt reader, linked_list_pt
     return status;
 }
 
-celix_status_t logReaderService_addLogListener(log_reader_data_pt reader, log_listener_pt listener) {
+celix_status_t logReaderService_addLogListener(log_reader_data_t *reader, log_listener_t *listener) {
     return log_addLogListener(reader->log, listener);
 }
 
-celix_status_t logReaderService_removeLogListener(log_reader_data_pt reader, log_listener_pt listener) {
+celix_status_t logReaderService_removeLogListener(log_reader_data_t *reader, log_listener_t *listener) {
     return log_removeLogListener(reader->log, listener);
 }
 
-celix_status_t logReaderService_removeAllLogListener(log_reader_data_pt reader) {
+celix_status_t logReaderService_removeAllLogListener(log_reader_data_t *reader) {
     return log_removeAllLogListener(reader->log);
 }
 

@@ -50,7 +50,7 @@
 
 
 struct shm_watcher {
-    shmData_pt shmData;
+    shmData_t *shmData;
     celix_thread_t watcherThread;
     celix_thread_mutex_t watcherLock;
 
@@ -66,7 +66,7 @@ static celix_status_t discoveryShmWatcher_getRootPath(char* rootNode) {
     return status;
 }
 
-static celix_status_t discoveryShmWatcher_getLocalNodePath(bundle_context_pt context, char* localNodePath) {
+static celix_status_t discoveryShmWatcher_getLocalNodePath(celix_bundle_context_t *context, char* localNodePath) {
     celix_status_t status;
     char rootPath[MAX_ROOTNODE_LENGTH];
     const char* uuid = NULL;
@@ -89,9 +89,9 @@ static celix_status_t discoveryShmWatcher_getLocalNodePath(bundle_context_pt con
 }
 
 /* retrieves all endpoints from shm and syncs them with the ones already available */
-static celix_status_t discoveryShmWatcher_syncEndpoints(discovery_pt discovery) {
+static celix_status_t discoveryShmWatcher_syncEndpoints(discovery_t *discovery) {
     celix_status_t status = CELIX_SUCCESS;
-    shm_watcher_pt watcher = discovery->pImpl->watcher;
+    shm_watcher_t *watcher = discovery->pImpl->watcher;
     char** shmKeyArr = calloc(SHM_DATA_MAX_ENTRIES, sizeof(*shmKeyArr));
     array_list_pt registeredKeyArr = NULL;
 
@@ -155,8 +155,8 @@ static celix_status_t discoveryShmWatcher_syncEndpoints(discovery_pt discovery) 
 }
 
 static void* discoveryShmWatcher_run(void* data) {
-    discovery_pt discovery = (discovery_pt) data;
-    shm_watcher_pt watcher = discovery->pImpl->watcher;
+    discovery_t *discovery = (discovery_t *) data;
+    shm_watcher_t *watcher = discovery->pImpl->watcher;
     char localNodePath[MAX_LOCALNODE_LENGTH];
     char url[MAX_LOCALNODE_LENGTH];
 
@@ -181,9 +181,9 @@ static void* discoveryShmWatcher_run(void* data) {
     return NULL;
 }
 
-celix_status_t discoveryShmWatcher_create(discovery_pt discovery) {
+celix_status_t discoveryShmWatcher_create(discovery_t *discovery) {
     celix_status_t status = CELIX_SUCCESS;
-    shm_watcher_pt watcher = NULL;
+    shm_watcher_t *watcher = NULL;
 
     watcher = calloc(1, sizeof(*watcher));
 
@@ -223,9 +223,9 @@ celix_status_t discoveryShmWatcher_create(discovery_pt discovery) {
     return status;
 }
 
-celix_status_t discoveryShmWatcher_destroy(discovery_pt discovery) {
+celix_status_t discoveryShmWatcher_destroy(discovery_t *discovery) {
     celix_status_t status;
-    shm_watcher_pt watcher = discovery->pImpl->watcher;
+    shm_watcher_t *watcher = discovery->pImpl->watcher;
     char localNodePath[MAX_LOCALNODE_LENGTH];
 
     celixThreadMutex_lock(&watcher->watcherLock);

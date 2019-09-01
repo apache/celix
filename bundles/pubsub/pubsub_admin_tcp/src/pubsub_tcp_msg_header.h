@@ -29,6 +29,5 @@ typedef struct pubsub_tcp_msg_header {
     uint64_t sendtimeSeconds; //seconds since epoch
     uint64_t sendTimeNanoseconds; //ns since epoch
 } pubsub_tcp_msg_header_t;
-typedef struct pubsub_tcp_msg_header  *pubsub_tcp_msg_header_pt;
 
 #endif

@@ -46,8 +46,8 @@ typedef enum
 FILE_INPUT_TYPE;
 
 struct pubsub_json_serializer {
-    bundle_context_pt bundle_context;
-    log_helper_pt loghelper;
+    celix_bundle_context_t *bundle_context;
+    log_helper_t *loghelper;
 };
 
 
@@ -85,7 +85,7 @@ static void dfi_log(void *handle, int level, const char *file, int line, const c
     free(logStr);
 }
 
-celix_status_t pubsubSerializer_create(bundle_context_pt context, pubsub_json_serializer_t** serializer) {
+celix_status_t pubsubSerializer_create(celix_bundle_context_t *context, pubsub_json_serializer_t** serializer) {
     celix_status_t status = CELIX_SUCCESS;
 
     *serializer = calloc(1, sizeof(**serializer));
@@ -231,7 +231,7 @@ static char* pubsubSerializer_getMsgDescriptionDir(celix_bundle_t *bundle) {
     bundle_isSystemBundle(bundle, &isSystemBundle);
 
     if (isSystemBundle == true) {
-        bundle_context_pt context;
+        celix_bundle_context_t *context;
         bundle_getContext(bundle, &context);
 
         const char *prop = NULL;

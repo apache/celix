@@ -31,18 +31,18 @@
 #include "log_entry.h"
 #include "log_listener.h"
 
-typedef struct log * log_pt;
+typedef struct log log_t;
 
-celix_status_t log_create(int max_size, bool store_debug, log_pt *logger);
-celix_status_t log_destroy(log_pt logger);
-celix_status_t log_addEntry(log_pt log, log_entry_pt entry);
-celix_status_t log_getEntries(log_pt log, linked_list_pt *list);
+celix_status_t log_create(int max_size, bool store_debug, log_t **logger);
+celix_status_t log_destroy(log_t *logger);
+celix_status_t log_addEntry(log_t *log, log_entry_t *entry);
+celix_status_t log_getEntries(log_t *log, linked_list_pt *list);
 
-celix_status_t log_bundleChanged(void *listener, bundle_event_pt event);
+celix_status_t log_bundleChanged(void *listener, celix_bundle_event_t *event);
 celix_status_t log_frameworkEvent(void *listener, framework_event_pt event);
 
-celix_status_t log_addLogListener(log_pt logger, log_listener_pt listener);
-celix_status_t log_removeLogListener(log_pt logger, log_listener_pt listener);
-celix_status_t log_removeAllLogListener(log_pt logger);
+celix_status_t log_addLogListener(log_t *logger, log_listener_t *listener);
+celix_status_t log_removeLogListener(log_t *logger, log_listener_t *listener);
+celix_status_t log_removeAllLogListener(log_t *logger);
 
 #endif /* LOG_H_ */

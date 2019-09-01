@@ -38,19 +38,19 @@
 #include "remote_constants.h"
 
 struct activator {
-	bundle_context_pt context;
-	discovery_pt discovery;
-	log_helper_pt loghelper;
+	celix_bundle_context_t *context;
+	discovery_t *discovery;
+	log_helper_t *loghelper;
 
-	service_tracker_pt endpointListenerTracker;
-	endpoint_listener_pt endpointListener;
-	service_registration_pt endpointListenerService;
+	service_tracker_t *endpointListenerTracker;
+	endpoint_listener_t *endpointListener;
+	service_registration_t *endpointListenerService;
 };
 
-celix_status_t bundleActivator_createEPLTracker(struct activator *activator, service_tracker_pt *tracker) {
+celix_status_t bundleActivator_createEPLTracker(struct activator *activator, service_tracker_t **tracker) {
 	celix_status_t status;
 
-	service_tracker_customizer_pt customizer = NULL;
+	service_tracker_customizer_t *customizer = NULL;
 
 	status = serviceTrackerCustomizer_create(activator->discovery, discovery_endpointListenerAdding, discovery_endpointListenerAdded, discovery_endpointListenerModified,
 			discovery_endpointListenerRemoved, &customizer);
@@ -91,7 +91,7 @@ celix_status_t bundleActivator_create(celix_bundle_context_t *context, void **us
 	return status;
 }
 
-celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
+celix_status_t bundleActivator_start(void * userData, celix_bundle_context_t *context) {
 	celix_status_t status;
 	struct activator *activator = userData;
 	const char *uuid = NULL;
@@ -128,7 +128,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	}
 
 	if (status == CELIX_SUCCESS) {
-		endpoint_listener_pt endpointListener = calloc(1, sizeof(struct endpoint_listener));
+		endpoint_listener_t *endpointListener = calloc(1, sizeof(struct endpoint_listener));
 
 		if (endpointListener) {
 			endpointListener->handle = activator->discovery;
@@ -148,7 +148,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
+celix_status_t bundleActivator_stop(void * userData, celix_bundle_context_t *context) {
 	celix_status_t status;
 	struct activator *activator = userData;
 
@@ -164,7 +164,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 	return status;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
+celix_status_t bundleActivator_destroy(void * userData, celix_bundle_context_t *context) {
 	celix_status_t status;
 	struct activator *activator = userData;
 

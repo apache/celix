@@ -36,7 +36,7 @@
 #include "log_helper.h"
 
 struct device_manager_bundle_instance {
-	log_helper_pt loghelper;
+	log_helper_t *loghelper;
 	bundle_context_pt context;
 	device_manager_pt deviceManager;
 	service_tracker_pt driverLocatorTracker;

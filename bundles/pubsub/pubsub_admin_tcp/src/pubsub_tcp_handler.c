@@ -85,7 +85,7 @@ typedef struct pubsub_tcpBufferPartList {
   pubsub_tcp_msg_header_t default_header;
   unsigned int bufferSize;
   char *buffer;
-} *pubsub_tcpBufferPartList_pt;
+} pubsub_tcpBufferPartList_t;
 
 
 typedef struct psa_tcp_connection_entry {
@@ -95,16 +95,16 @@ typedef struct psa_tcp_connection_entry {
   socklen_t len;
 } psa_tcp_connection_entry_t;
 
-static inline int pubsub_tcpHandler_setInAddr(pubsub_tcpHandler_pt handle, const char *hostname, int port, struct sockaddr_in *inp);
-static inline int pubsub_tcpHandler_closeConnectionEntry(pubsub_tcpHandler_pt handle, psa_tcp_connection_entry_t *entry, bool lock);
-static inline int pubsub_tcpHandler_closeConnection(pubsub_tcpHandler_pt handle, int fd);
+static inline int pubsub_tcpHandler_setInAddr(pubsub_tcpHandler_t *handle, const char *hostname, int port, struct sockaddr_in *inp);
+static inline int pubsub_tcpHandler_closeConnectionEntry(pubsub_tcpHandler_t *handle, psa_tcp_connection_entry_t *entry, bool lock);
+static inline int pubsub_tcpHandler_closeConnection(pubsub_tcpHandler_t *handle, int fd);
 
 
 //
 // Create a handle
 //
-pubsub_tcpHandler_pt pubsub_tcpHandler_create(log_helper_t *logHelper) {
-    pubsub_tcpHandler_pt handle = calloc(sizeof(*handle), 1);
+pubsub_tcpHandler_t *pubsub_tcpHandler_create(log_helper_t *logHelper) {
+    pubsub_tcpHandler_t *handle = calloc(sizeof(*handle), 1);
     if (handle != NULL) {
         handle->fd = -1;
         handle->efd = epoll_create1(0);
@@ -125,7 +125,7 @@ pubsub_tcpHandler_pt pubsub_tcpHandler_create(log_helper_t *logHelper) {
 //
 // Destroys the handle
 //
-void pubsub_tcpHandler_destroy(pubsub_tcpHandler_pt handle) {
+void pubsub_tcpHandler_destroy(pubsub_tcpHandler_t *handle) {
     printf("### Destroying BufferHandler TCP\n");
     if (handle != NULL) {
         celixThreadRwlock_writeLock(&handle->dbLock);
@@ -147,7 +147,7 @@ void pubsub_tcpHandler_destroy(pubsub_tcpHandler_pt handle) {
             int listSize = arrayList_size(handle->bufferLists);
             int i;
             for (i = 0; i < listSize; i++) {
-                pubsub_tcpBufferPartList_pt item = arrayList_get(handle->bufferLists, i);
+                pubsub_tcpBufferPartList_t *item = arrayList_get(handle->bufferLists, i);
                 if (item) {
                     if (item->buffer) {
                         free(item->buffer);
@@ -167,7 +167,7 @@ void pubsub_tcpHandler_destroy(pubsub_tcpHandler_pt handle) {
 
 // Destroys the handle
 //
-int pubsub_tcpHandler_open(pubsub_tcpHandler_pt handle, char *url) {
+int pubsub_tcpHandler_open(pubsub_tcpHandler_t *handle, char *url) {
     int rc = 0;
     celixThreadRwlock_readLock(&handle->dbLock);
     int fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -209,7 +209,7 @@ int pubsub_tcpHandler_open(pubsub_tcpHandler_pt handle, char *url) {
 
 // Destroys the handle
 //
-int pubsub_tcpHandler_close(pubsub_tcpHandler_pt handle) {
+int pubsub_tcpHandler_close(pubsub_tcpHandler_t *handle) {
     int rc = 0;
     if (handle != NULL) {
         celixThreadRwlock_writeLock(&handle->dbLock);
@@ -234,7 +234,7 @@ int pubsub_tcpHandler_close(pubsub_tcpHandler_pt handle) {
     return rc;
 }
 
-int pubsub_tcpHandler_connect(pubsub_tcpHandler_pt handle, char *url) {
+int pubsub_tcpHandler_connect(pubsub_tcpHandler_t *handle, char *url) {
     pubsub_tcpHandler_url_t url_info;
     pubsub_tcpHandler_setUrlInfo(url, &url_info);
     psa_tcp_connection_entry_t *entry = NULL;
@@ -295,7 +295,7 @@ int pubsub_tcpHandler_connect(pubsub_tcpHandler_pt handle, char *url) {
 
 // Destroys the handle
 //
-int pubsub_tcpHandler_disconnect(pubsub_tcpHandler_pt handle, char *url) {
+int pubsub_tcpHandler_disconnect(pubsub_tcpHandler_t *handle, char *url) {
     int rc = 0;
     if (handle != NULL) {
         celixThreadRwlock_writeLock(&handle->dbLock);
@@ -309,8 +309,7 @@ int pubsub_tcpHandler_disconnect(pubsub_tcpHandler_pt handle, char *url) {
 
 // Destroys the handle
 //
-static inline
-int pubsub_tcpHandler_closeConnectionEntry(pubsub_tcpHandler_pt handle, psa_tcp_connection_entry_t *entry, bool lock) {
+static inline int pubsub_tcpHandler_closeConnectionEntry(pubsub_tcpHandler_t *handle, psa_tcp_connection_entry_t *entry, bool lock) {
     int rc = 0;
     if (handle != NULL && entry != NULL) {
         fprintf(stdout, "[TCP Socket] Close connection to url: %s: \n", entry->url);
@@ -338,8 +337,7 @@ int pubsub_tcpHandler_closeConnectionEntry(pubsub_tcpHandler_pt handle, psa_tcp_
 
 // Destroys the handle
 //
-static inline
-int pubsub_tcpHandler_closeConnection(pubsub_tcpHandler_pt handle, int fd) {
+static inline int pubsub_tcpHandler_closeConnection(pubsub_tcpHandler_t *handle, int fd) {
     int rc = 0;
     if (handle != NULL) {
         bool use_handle_fd = false;
@@ -363,7 +361,7 @@ int pubsub_tcpHandler_closeConnection(pubsub_tcpHandler_pt handle, int fd) {
     return rc;
 }
 
-int pubsub_tcpHandler_listen(pubsub_tcpHandler_pt handle, char *url) {
+int pubsub_tcpHandler_listen(pubsub_tcpHandler_t *handle, char *url) {
     handle->fd = pubsub_tcpHandler_open(handle, url);
     handle->url = strndup(url, 1024 * 1024);
     int rc = handle->fd;
@@ -409,7 +407,7 @@ int pubsub_tcpHandler_listen(pubsub_tcpHandler_pt handle, char *url) {
 }
 
 
-int pubsub_tcpHandler_setInAddr(pubsub_tcpHandler_pt handle, const char *hostname, int port, struct sockaddr_in *inp) {
+int pubsub_tcpHandler_setInAddr(pubsub_tcpHandler_t *handle, const char *hostname, int port, struct sockaddr_in *inp) {
     struct hostent *hp;
     bzero(inp, sizeof(struct sockaddr_in)); // zero the struct
     if (hostname == 0 || hostname[0] == 0) {
@@ -470,7 +468,7 @@ void pubsub_tcpHandler_free_setUrlInfo(pubsub_tcpHandler_url_t *url_info) {
 }
 
 
-int pubsub_tcpHandler_createReceiveBufferStore(pubsub_tcpHandler_pt handle, unsigned int maxNofBuffers,
+int pubsub_tcpHandler_createReceiveBufferStore(pubsub_tcpHandler_t *handle, unsigned int maxNofBuffers,
                                                unsigned int bufferSize) {
     if (handle != NULL) {
         int i = 0;
@@ -479,7 +477,7 @@ int pubsub_tcpHandler_createReceiveBufferStore(pubsub_tcpHandler_pt handle, unsi
             return -1;
         }
         for (i = 0; i < maxNofBuffers; i++) {
-            pubsub_tcpBufferPartList_pt item = calloc(1, sizeof(struct pubsub_tcpBufferPartList));
+            pubsub_tcpBufferPartList_t *item = calloc(1, sizeof(struct pubsub_tcpBufferPartList));
             item->buffer = calloc(sizeof(char), bufferSize);
             item->bufferSize = bufferSize;
             arrayList_add(handle->bufferLists, item);
@@ -489,7 +487,7 @@ int pubsub_tcpHandler_createReceiveBufferStore(pubsub_tcpHandler_pt handle, unsi
     return 0;
 }
 
-void pubsub_tcpHandler_setTimeout(pubsub_tcpHandler_pt handle, unsigned int timeout) {
+void pubsub_tcpHandler_setTimeout(pubsub_tcpHandler_t *handle, unsigned int timeout) {
     if (handle != NULL) {
         celixThreadRwlock_writeLock(&handle->dbLock);
         handle->timeout = timeout;
@@ -502,7 +500,7 @@ void pubsub_tcpHandler_setTimeout(pubsub_tcpHandler_pt handle, unsigned int time
 // Reads data from the filedescriptor which has date (determined by epoll()) and stores it in the internal structure
 // If the message is completely reassembled true is returned and the index and size have valid values
 //
-int pubsub_tcpHandler_dataAvailable(pubsub_tcpHandler_pt handle, int fd, unsigned int *index, unsigned int *size) {
+int pubsub_tcpHandler_dataAvailable(pubsub_tcpHandler_t *handle, int fd, unsigned int *index, unsigned int *size) {
     celixThreadRwlock_writeLock(&handle->dbLock);
     if (handle->bufferLists == NULL) {
         int nbytes = recv(fd, &handle->default_buffer, handle->default_bufferSize, MSG_PEEK);
@@ -510,7 +508,7 @@ int pubsub_tcpHandler_dataAvailable(pubsub_tcpHandler_pt handle, int fd, unsigne
         return nbytes;
     }
     int listSize = arrayList_size(handle->bufferLists);
-    pubsub_tcpBufferPartList_pt item = arrayList_get(handle->bufferLists, handle->bufferIdx);
+    pubsub_tcpBufferPartList_t *item = arrayList_get(handle->bufferLists, handle->bufferIdx);
     if (!handle->bypassHeader) {
         // Only read the header, we don't know yet where to store the payload
         int nbytes = recv(fd, item->buffer, sizeof(pubsub_tcp_msg_header_t) + sizeof(unsigned int), MSG_PEEK);
@@ -548,12 +546,11 @@ int pubsub_tcpHandler_dataAvailable(pubsub_tcpHandler_pt handle, int fd, unsigne
 //
 // Read out the message which is indicated available by the largeUdp_dataAvailable function
 //
-int
-pubsub_tcpHandler_read(pubsub_tcpHandler_pt handle, unsigned int index, pubsub_tcp_msg_header_t **header,
-                       void **buffer, unsigned int size) {
+int pubsub_tcpHandler_read(pubsub_tcpHandler_t *handle, unsigned int index, pubsub_tcp_msg_header_t **header,
+                           void **buffer, unsigned int size) {
     int result = 0;
     celixThreadRwlock_readLock(&handle->dbLock);
-    pubsub_tcpBufferPartList_pt item = arrayList_get(handle->bufferLists, index);
+    pubsub_tcpBufferPartList_t *item = arrayList_get(handle->bufferLists, index);
     if (item) {
         if (handle->bypassHeader) {
             *header = &item->default_header;
@@ -573,7 +570,7 @@ pubsub_tcpHandler_read(pubsub_tcpHandler_pt handle, unsigned int index, pubsub_t
     return result;
 }
 
-int pubsub_tcpHandler_addMessageHandler(pubsub_tcpHandler_pt handle, void *payload,
+int pubsub_tcpHandler_addMessageHandler(pubsub_tcpHandler_t *handle, void *payload,
                                         pubsub_tcpHandler_processMessage_callback_t processMessageCallback) {
     int result = 0;
     celixThreadRwlock_writeLock(&handle->dbLock);
@@ -583,7 +580,7 @@ int pubsub_tcpHandler_addMessageHandler(pubsub_tcpHandler_pt handle, void *paylo
     return result;
 }
 
-int pubsub_tcpHandler_addConnectionCallback(pubsub_tcpHandler_pt handle, void *payload,
+int pubsub_tcpHandler_addConnectionCallback(pubsub_tcpHandler_t *handle, void *payload,
                                             pubsub_tcpHandler_connectMessage_callback_t connectMessageCallback,
                                             pubsub_tcpHandler_connectMessage_callback_t disconnectMessageCallback) {
     int result = 0;
@@ -599,7 +596,7 @@ int pubsub_tcpHandler_addConnectionCallback(pubsub_tcpHandler_pt handle, void *p
 //
 // Write large data to TCP. .
 //
-int pubsub_tcpHandler_write(pubsub_tcpHandler_pt handle, pubsub_tcp_msg_header_t *header, void *buffer,
+int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_tcp_msg_header_t *header, void *buffer,
                             unsigned int size, int flags) {
     celixThreadRwlock_readLock(&handle->dbLock);
     int result = 0;
@@ -656,11 +653,11 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_pt handle, pubsub_tcp_msg_header_t
     return (result == 0 ? written : result);
 }
 
-const char *pubsub_tcpHandler_url(pubsub_tcpHandler_pt handle) {
+const char *pubsub_tcpHandler_url(pubsub_tcpHandler_t *handle) {
     return handle->url;
 }
 
-int pubsub_tcpHandler_handler(pubsub_tcpHandler_pt handle) {
+int pubsub_tcpHandler_handler(pubsub_tcpHandler_t *handle) {
     int rc = 0;
     if (handle->efd >= 0) {
         struct epoll_event events[MAX_EPOLL_EVENTS];

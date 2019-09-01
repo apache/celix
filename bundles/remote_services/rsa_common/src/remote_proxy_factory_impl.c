@@ -31,17 +31,17 @@
 #include "remote_proxy.h"
 
 typedef struct proxy_instance {
-	service_registration_pt registration_ptr;
+	service_registration_t *registration_ptr;
 	void *service;
 	celix_properties_t *properties;
 } *proxy_instance_pt;
 
-static celix_status_t remoteProxyFactory_registerProxyService(remote_proxy_factory_pt remote_proxy_factory_ptr, endpoint_description_pt endpointDescription, remote_service_admin_pt rsa, sendToHandle sendToCallback);
-static celix_status_t remoteProxyFactory_unregisterProxyService(remote_proxy_factory_pt remote_proxy_factory_ptr, endpoint_description_pt endpointDescription);
+static celix_status_t remoteProxyFactory_registerProxyService(remote_proxy_factory_t *remote_proxy_factory_ptr, endpoint_description_t *endpointDescription, remote_service_admin_t *rsa, sendToHandle sendToCallback);
+static celix_status_t remoteProxyFactory_unregisterProxyService(remote_proxy_factory_t *remote_proxy_factory_ptr, endpoint_description_t *endpointDescription);
 
-celix_status_t remoteProxyFactory_create(bundle_context_pt context, char *service, void *handle,
+celix_status_t remoteProxyFactory_create(celix_bundle_context_t *context, char *service, void *handle,
 		createProxyService create, destroyProxyService destroy,
-		remote_proxy_factory_pt *remote_proxy_factory_ptr) {
+		remote_proxy_factory_t **remote_proxy_factory_ptr) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	*remote_proxy_factory_ptr = calloc(1, sizeof(**remote_proxy_factory_ptr));
@@ -68,7 +68,7 @@ celix_status_t remoteProxyFactory_create(bundle_context_pt context, char *servic
 	return status;
 }
 
-celix_status_t remoteProxyFactory_destroy(remote_proxy_factory_pt *remote_proxy_factory_ptr) {
+celix_status_t remoteProxyFactory_destroy(remote_proxy_factory_t **remote_proxy_factory_ptr) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (!*remote_proxy_factory_ptr) {
@@ -91,7 +91,7 @@ celix_status_t remoteProxyFactory_destroy(remote_proxy_factory_pt *remote_proxy_
 	return status;
 }
 
-celix_status_t remoteProxyFactory_register(remote_proxy_factory_pt remote_proxy_factory_ptr) {
+celix_status_t remoteProxyFactory_register(remote_proxy_factory_t *remote_proxy_factory_ptr) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	remote_proxy_factory_ptr->remote_proxy_factory_service_ptr = calloc(1, sizeof(*remote_proxy_factory_ptr->remote_proxy_factory_service_ptr));
@@ -120,7 +120,7 @@ celix_status_t remoteProxyFactory_register(remote_proxy_factory_pt remote_proxy_
 	return status;
 }
 
-celix_status_t remoteProxyFactory_unregister(remote_proxy_factory_pt remote_proxy_factory_ptr) {
+celix_status_t remoteProxyFactory_unregister(remote_proxy_factory_t *remote_proxy_factory_ptr) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (!remote_proxy_factory_ptr) {
@@ -157,7 +157,7 @@ celix_status_t remoteProxyFactory_unregister(remote_proxy_factory_pt remote_prox
 }
 
 
-static celix_status_t remoteProxyFactory_registerProxyService(remote_proxy_factory_pt remote_proxy_factory_ptr, endpoint_description_pt endpointDescription, remote_service_admin_pt rsa, sendToHandle sendToCallback) {
+static celix_status_t remoteProxyFactory_registerProxyService(remote_proxy_factory_t *remote_proxy_factory_ptr, endpoint_description_t *endpointDescription, remote_service_admin_t *rsa, sendToHandle sendToCallback) {
 	celix_status_t status = CELIX_SUCCESS;
 	proxy_instance_pt proxy_instance_ptr = NULL;
 
@@ -217,7 +217,7 @@ static celix_status_t remoteProxyFactory_registerProxyService(remote_proxy_facto
 	return status;
 }
 
-static celix_status_t remoteProxyFactory_unregisterProxyService(remote_proxy_factory_pt remote_proxy_factory_ptr, endpoint_description_pt endpointDescription) {
+static celix_status_t remoteProxyFactory_unregisterProxyService(remote_proxy_factory_t *remote_proxy_factory_ptr, endpoint_description_t *endpointDescription) {
 	celix_status_t status = CELIX_SUCCESS;
 	proxy_instance_pt proxy_instance_ptr = NULL;
 

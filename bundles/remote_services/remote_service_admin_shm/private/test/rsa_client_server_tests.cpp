@@ -44,14 +44,14 @@ extern "C" {
 	#define CALCULATOR_ENDPOINT   	"apache_celix_remoting_calculator_endpoint"
 
 	static framework_pt	serverFramework = NULL;
-	static bundle_context_pt serverContext = NULL;
+	static celix_bundle_context_t *serverContext = NULL;
 
 	static framework_pt clientFramework = NULL;
-	static bundle_context_pt clientContext = NULL;
+	static celix_bundle_context_t *clientContext = NULL;
 
 	static void setupFm(void) {
 		int rc = 0;
-		bundle_pt bundle = NULL;
+		celix_bundle_t *bundle = NULL;
 
 		//server
 		rc = celixLauncher_launch("server.properties", &serverFramework);
@@ -94,7 +94,7 @@ extern "C" {
 	static void test1(void) {
 		celix_status_t status;
 		service_reference_pt ref = NULL;
-		calculator_service_pt calcService = NULL;
+		calculator_service_t *calcService = NULL;
 		int retries = 6;
 
         while (ref == NULL && retries > 0) {
@@ -156,7 +156,7 @@ extern "C" {
 		return status;
 	}
 
-	static celix_status_t getSpecifiedBundles(bundle_context_pt context, array_list_pt bundleNames, array_list_pt retrievedBundles) {
+	static celix_status_t getSpecifiedBundles(celix_bundle_context_t *context, array_list_pt bundleNames, array_list_pt retrievedBundles) {
 		celix_status_t status;
 		array_list_pt bundles = NULL;
 
@@ -170,7 +170,7 @@ extern "C" {
 				module_pt module = NULL;
 				const char *name = NULL;
 
-				bundle_pt bundle = (bundle_pt) arrayList_get(bundles, i);
+				celix_bundle_t *bundle = (celix_bundle_t *) arrayList_get(bundles, i);
 
 				status = bundle_getCurrentModule(bundle, &module);
 
@@ -213,14 +213,14 @@ extern "C" {
 		return status;
 	}
 
-	static celix_status_t stopStartPermutation(bundle_context_pt context, long* permutation, int size) {
+	static celix_status_t stopStartPermutation(celix_bundle_context_t *context, long* permutation, int size) {
 		celix_status_t status = CELIX_SUCCESS;
 		int y = 0;
 
 		printf("Test stop/start permutation: ");
 
 		for (y = 0; (y < size) && (status == CELIX_SUCCESS); y++) {
-			bundle_pt bundle = NULL;
+			celix_bundle_t *bundle = NULL;
 
 			status = bundleContext_getBundleById(context, permutation[y], &bundle);
 
@@ -241,7 +241,7 @@ extern "C" {
 		// stop all bundles
 		if (status == CELIX_SUCCESS) {
 			for (y = 0; (y < size) && (status == CELIX_SUCCESS); y++) {
-				bundle_pt bundle = NULL;
+				celix_bundle_t *bundle = NULL;
 
 				status = bundleContext_getBundleById(context, permutation[y], &bundle);
 
@@ -255,7 +255,7 @@ extern "C" {
 		// verify stop state
 		if (status == CELIX_SUCCESS) {
 			for (y = 0; (y < size) && (status == CELIX_SUCCESS); y++) {
-				bundle_pt bundle = NULL;
+				celix_bundle_t *bundle = NULL;
 
 				status = bundleContext_getBundleById(context, permutation[y], &bundle);
 
@@ -275,7 +275,7 @@ extern "C" {
 		if (status == CELIX_SUCCESS) {
 
 			for (y = 0; (y < size) && (status == CELIX_SUCCESS); y++) {
-				bundle_pt bundle = NULL;
+				celix_bundle_t *bundle = NULL;
 
 				status = bundleContext_getBundleById(context, permutation[y], &bundle);
 
@@ -289,7 +289,7 @@ extern "C" {
 		// verify started state
 		if (status == CELIX_SUCCESS) {
 			for (y = 0; (y < size) && (status == CELIX_SUCCESS); y++) {
-				bundle_pt bundle = NULL;
+				celix_bundle_t *bundle = NULL;
 
 				status = bundleContext_getBundleById(context, permutation[y], &bundle);
 
@@ -400,7 +400,7 @@ extern "C" {
 	/*
 	static void testProxyRemoval(void) {
 		celix_status_t status;
-		bundle_pt bundle = NULL;
+		celix_bundle_t *bundle = NULL;
 		array_list_pt bundleNames = NULL;
 		array_list_pt proxyBundle = NULL;
 		service_reference_pt ref = NULL;
@@ -431,7 +431,7 @@ extern "C" {
 	/*
 	static void testEndpointRemoval(void) {
 		celix_status_t status;
-		bundle_pt bundle = NULL;
+		celix_bundle_t *bundle = NULL;
 		array_list_pt bundleNames = NULL;
 		array_list_pt endpointBundle = NULL;
 		service_reference_pt ref = NULL;

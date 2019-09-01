@@ -36,7 +36,7 @@
 
 
 typedef struct pubsub_topology_manager {
-    bundle_context_pt context;
+    celix_bundle_context_t *context;
 
     struct {
         celix_thread_mutex_t mutex;
@@ -75,7 +75,7 @@ typedef struct pubsub_topology_manager {
         bool running;
     } psaHandling;
 
-    log_helper_pt loghelper;
+    log_helper_t *loghelper;
 
     bool verbose;
 } pubsub_topology_manager_t;
@@ -107,7 +107,7 @@ typedef struct pstm_topic_receiver_or_sender_entry {
     celix_properties_t *subscriberProperties;
 } pstm_topic_receiver_or_sender_entry_t;
 
-celix_status_t pubsub_topologyManager_create(bundle_context_pt context, log_helper_pt logHelper, pubsub_topology_manager_t **manager);
+celix_status_t pubsub_topologyManager_create(celix_bundle_context_t *context, log_helper_t *logHelper, pubsub_topology_manager_t **manager);
 celix_status_t pubsub_topologyManager_destroy(pubsub_topology_manager_t *manager);
 
 void pubsub_topologyManager_psaAdded(void *handle, void *svc, const celix_properties_t *props);

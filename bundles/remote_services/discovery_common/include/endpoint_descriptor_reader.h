@@ -31,12 +31,12 @@
 #include "celix_errno.h"
 #include "array_list.h"
 
-typedef struct endpoint_descriptor_reader *endpoint_descriptor_reader_pt;
+typedef struct endpoint_descriptor_reader endpoint_descriptor_reader_t;
 
-celix_status_t endpointDescriptorReader_create(endpoint_discovery_poller_pt poller, endpoint_descriptor_reader_pt *reader);
-celix_status_t endpointDescriptorReader_destroy(endpoint_descriptor_reader_pt reader);
+celix_status_t endpointDescriptorReader_create(endpoint_discovery_poller_t *poller, endpoint_descriptor_reader_t * *reader);
+celix_status_t endpointDescriptorReader_destroy(endpoint_descriptor_reader_t * reader);
 
-celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader_pt reader, char *document, array_list_pt *endpoints);
+celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader_t * reader, char *document, array_list_pt *endpoints);
 
 
 #endif /* ENDPOINT_DESCRIPTOR_READER_H_ */

@@ -38,15 +38,15 @@ extern "C" {
 #include "remote_service_admin.h"
 #include "calculator_service.h"
 
-    static framework_pt serverFramework = NULL;
-    static bundle_context_pt serverContext = NULL;
+    static celix_framework_t *serverFramework = NULL;
+    static celix_bundle_context_t *serverContext = NULL;
 
-    static framework_pt clientFramework = NULL;
-    static bundle_context_pt clientContext = NULL;
+    static celix_framework_t *clientFramework = NULL;
+    static celix_bundle_context_t *clientContext = NULL;
 
     static void setupFm(void) {
         int rc = 0;
-        bundle_pt bundle = NULL;
+        celix_bundle_t *bundle = NULL;
 
         //server
         rc = celixLauncher_launch("server.properties", &serverFramework);
@@ -90,7 +90,7 @@ extern "C" {
     static void test1(void) {
         celix_status_t rc;
         service_reference_pt ref = NULL;
-        tst_service_pt tst = NULL;
+        tst_service_t *tst = NULL;
         int retries = 4;
 
         while (ref == NULL && retries > 0) {

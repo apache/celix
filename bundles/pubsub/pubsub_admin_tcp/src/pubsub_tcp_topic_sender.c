@@ -54,8 +54,8 @@ struct pubsub_tcp_topic_sender {
     pubsub_serializer_service_t *serializer;
     uuid_t fwUUID;
     bool metricsEnabled;
-    pubsub_tcpHandler_pt socketHandler;
-    pubsub_tcpHandler_pt sharedSocketHandler;
+    pubsub_tcpHandler_t *socketHandler;
+    pubsub_tcpHandler_t *sharedSocketHandler;
 
     char *scope;
     char *topic;
@@ -160,7 +160,7 @@ pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
     if (staticConnectUrls != NULL || (isEndPointTypeServer && staticBindUrl != NULL)) {
         celixThreadMutex_lock(&endPointStore->mutex);
         sender->sharedSocketHandler = sender->socketHandler;
-        pubsub_tcpHandler_pt entry = hashMap_get(endPointStore->map, staticConnectUrls);
+        pubsub_tcpHandler_t *entry = hashMap_get(endPointStore->map, staticConnectUrls);
         if (entry == NULL) {
             entry = sender->socketHandler;
             hashMap_put(endPointStore->map, (void *) (isEndPointTypeClient ? staticConnectUrls : staticBindUrl), entry);

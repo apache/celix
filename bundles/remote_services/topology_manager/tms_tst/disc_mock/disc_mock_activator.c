@@ -32,10 +32,10 @@
 #include "constants.h"
 #include "remote_constants.h"
 
-celix_status_t discovery_endpointAdded(void *handle, endpoint_description_pt endpoint, char *matchedFilter);
-celix_status_t discovery_endpointRemoved(void *handle, endpoint_description_pt endpoint, char *matchedFilter);
+celix_status_t discovery_endpointAdded(void *handle, endpoint_description_t *endpoint, char *matchedFilter);
+celix_status_t discovery_endpointRemoved(void *handle, endpoint_description_t *endpoint, char *matchedFilter);
 
-celix_status_t bundleActivator_create(bundle_context_pt context, void **out) {
+celix_status_t bundleActivator_create(celix_bundle_context_t *context, void **out) {
     celix_status_t status = CELIX_SUCCESS;
     struct disc_mock_activator *act = calloc(1, sizeof(*act));
     if (act != NULL) {
@@ -57,7 +57,7 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **out) {
     return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
+celix_status_t bundleActivator_start(void * userData, celix_bundle_context_t *context) {
     celix_status_t status;
     struct disc_mock_activator * act = userData;
     const char *uuid = NULL;
@@ -85,7 +85,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
     celix_properties_set(props, (char *) OSGI_ENDPOINT_LISTENER_SCOPE, scope);
 
     if (status == CELIX_SUCCESS) {
-        endpoint_listener_pt endpointListener = calloc(1, sizeof(struct endpoint_listener));
+        endpoint_listener_t *endpointListener = calloc(1, sizeof(struct endpoint_listener));
 
         if (endpointListener) {
             endpointListener->handle = act;
@@ -107,7 +107,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
     return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
+celix_status_t bundleActivator_stop(void * userData, celix_bundle_context_t *context) {
     celix_status_t status;
     struct disc_mock_activator * act = userData;
 
@@ -116,7 +116,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
     return status;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
+celix_status_t bundleActivator_destroy(void * userData, celix_bundle_context_t *context) {
     struct disc_mock_activator *act = userData;
     if (act != NULL) {
         discMockService_destroy(act->serv);
@@ -128,7 +128,7 @@ celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt contex
     return CELIX_SUCCESS;
 }
 
-celix_status_t discovery_endpointAdded(void *handle, endpoint_description_pt endpoint, char *matchedFilter) {
+celix_status_t discovery_endpointAdded(void *handle, endpoint_description_t *endpoint, char *matchedFilter) {
     celix_status_t status = CELIX_SUCCESS;
     struct disc_mock_activator *act = handle;
 
@@ -138,7 +138,7 @@ celix_status_t discovery_endpointAdded(void *handle, endpoint_description_pt end
     return status;
 }
 
-celix_status_t discovery_endpointRemoved(void *handle, endpoint_description_pt endpoint, char *matchedFilter) {
+celix_status_t discovery_endpointRemoved(void *handle, endpoint_description_t *endpoint, char *matchedFilter) {
     celix_status_t status  = CELIX_SUCCESS;
     struct disc_mock_activator *act = handle;
     printf("%s\n", __func__);

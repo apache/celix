@@ -49,14 +49,14 @@ struct device_manager {
 	hash_map_pt drivers;
 	array_list_pt locators;
 	driver_selector_service_pt selector;
-	log_helper_pt loghelper;
+	log_helper_t *loghelper;
 };
 
 static celix_status_t deviceManager_attachAlgorithm(device_manager_pt manager, service_reference_pt ref, void *service);
 static celix_status_t deviceManager_getIdleDevices(device_manager_pt manager, array_list_pt *idleDevices);
 static celix_status_t deviceManager_isDriverBundle(device_manager_pt manager, bundle_pt bundle, bool *isDriver);
 
-celix_status_t deviceManager_create(bundle_context_pt context, log_helper_pt logHelper, device_manager_pt *manager) {
+celix_status_t deviceManager_create(bundle_context_pt context, log_helper_t *logHelper, device_manager_pt *manager) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	*manager = calloc(1, sizeof(**manager));

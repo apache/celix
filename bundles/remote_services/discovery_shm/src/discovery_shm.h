@@ -41,16 +41,16 @@
 // we currently support 64 separate discovery instances
 #define SHM_DATA_MAX_ENTRIES		64
 
-typedef struct shmData* shmData_pt;
+typedef struct shmData shmData_t;
 
 /* creates a new shared memory block */
-celix_status_t discoveryShm_create(shmData_pt* data);
-celix_status_t discoveryShm_attach(shmData_pt* data);
-celix_status_t discoveryShm_set(shmData_pt data, char *key, char* value);
-celix_status_t discoveryShm_get(shmData_pt data, char* key, char* value);
-celix_status_t discoveryShm_getKeys(shmData_pt data, char** keys, int* size);
-celix_status_t discoveryShm_remove(shmData_pt data, char* key);
-celix_status_t discoveryShm_detach(shmData_pt data);
-celix_status_t discoveryShm_destroy(shmData_pt data);
+celix_status_t discoveryShm_create(shmData_t **data);
+celix_status_t discoveryShm_attach(shmData_t **data);
+celix_status_t discoveryShm_set(shmData_t *data, char *key, char* value);
+celix_status_t discoveryShm_get(shmData_t *data, char* key, char* value);
+celix_status_t discoveryShm_getKeys(shmData_t *data, char** keys, int* size);
+celix_status_t discoveryShm_remove(shmData_t *data, char* key);
+celix_status_t discoveryShm_detach(shmData_t *data);
+celix_status_t discoveryShm_destroy(shmData_t *data);
 
 #endif

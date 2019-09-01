@@ -48,7 +48,7 @@
 #include "endpoint_discovery_poller.h"
 #include "endpoint_discovery_server.h"
 
-celix_status_t discovery_create(bundle_context_pt context, discovery_t** out) {
+celix_status_t discovery_create(celix_bundle_context_t *context, discovery_t** out) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	discovery_t* discovery = calloc(1, sizeof(*discovery));
@@ -83,7 +83,7 @@ celix_status_t discovery_create(bundle_context_pt context, discovery_t** out) {
 
 
 
-celix_status_t discovery_destroy(discovery_pt discovery) {
+celix_status_t discovery_destroy(discovery_t *discovery) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	discovery->context = NULL;
@@ -116,7 +116,7 @@ celix_status_t discovery_destroy(discovery_pt discovery) {
 	return status;
 }
 
-celix_status_t discovery_start(discovery_pt discovery) {
+celix_status_t discovery_start(discovery_t *discovery) {
     celix_status_t status;
 
     status = endpointDiscoveryPoller_create(discovery, discovery->context, DEFAULT_POLL_ENDPOINTS, &discovery->poller);
@@ -131,7 +131,7 @@ celix_status_t discovery_start(discovery_pt discovery) {
     return status;
 }
 
-celix_status_t discovery_stop(discovery_pt discovery) {
+celix_status_t discovery_stop(discovery_t *discovery) {
 	celix_status_t status;
 
     status = discoveryShmWatcher_destroy(discovery);
@@ -150,7 +150,7 @@ celix_status_t discovery_stop(discovery_pt discovery) {
         iter = hashMapIterator_create(discovery->discoveredServices);
         while (hashMapIterator_hasNext(iter)) {
             hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
-            endpoint_description_pt endpoint = hashMapEntry_getValue(entry);
+            endpoint_description_t *endpoint = hashMapEntry_getValue(entry);
 
             discovery_informEndpointListeners(discovery, endpoint, false);
         }

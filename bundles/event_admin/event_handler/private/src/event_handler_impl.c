@@ -31,7 +31,7 @@
 struct event_handler {
 	event_admin_service_pt event_admin_service;
 	bundle_context_pt context;
-	log_helper_pt loghelper;
+	log_helper_t *loghelper;
 
 };
 

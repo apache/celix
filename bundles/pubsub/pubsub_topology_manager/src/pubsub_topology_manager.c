@@ -48,7 +48,7 @@
 
 static void *pstm_psaHandlingThread(void *data);
 
-celix_status_t pubsub_topologyManager_create(bundle_context_pt context, log_helper_pt logHelper, pubsub_topology_manager_t **out) {
+celix_status_t pubsub_topologyManager_create(celix_bundle_context_t *context, log_helper_t *logHelper, pubsub_topology_manager_t **out) {
     celix_status_t status = CELIX_SUCCESS;
 
     pubsub_topology_manager_t *manager = calloc(1, sizeof(*manager));

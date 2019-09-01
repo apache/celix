@@ -20,8 +20,8 @@
 #ifndef BUNDLE_LISTENER_H_
 #define BUNDLE_LISTENER_H_
 
-typedef struct bundle_listener *bundle_listener_pt;
 typedef struct bundle_listener bundle_listener_t;
+typedef struct bundle_listener *bundle_listener_pt; // TODO: Deprecate
 
 #include "celix_errno.h"
 #include "bundle_event.h"

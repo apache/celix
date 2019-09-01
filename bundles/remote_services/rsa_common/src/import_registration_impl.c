@@ -35,7 +35,7 @@
 #include "remote_service_admin_impl.h"
 
 struct import_reference {
-	endpoint_description_pt endpoint;
+	endpoint_description_t *endpoint;
 	service_reference_pt reference;
 };
 
@@ -46,7 +46,7 @@ celix_status_t importRegistration_proxyFactoryAdded(void * handle, service_refer
 celix_status_t importRegistration_proxyFactoryModified(void * handle, service_reference_pt reference, void *service);
 celix_status_t importRegistration_proxyFactoryRemoved(void * handle, service_reference_pt reference, void *service);
 
-celix_status_t importRegistration_create(endpoint_description_pt endpoint, remote_service_admin_pt rsa, sendToHandle sendToCallback, bundle_context_pt context, import_registration_pt *registration) {
+celix_status_t importRegistration_create(endpoint_description_t *endpoint, remote_service_admin_t *rsa, sendToHandle sendToCallback, celix_bundle_context_t *context, import_registration_t **registration) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	*registration = calloc(1, sizeof(**registration));
@@ -65,7 +65,7 @@ celix_status_t importRegistration_create(endpoint_description_pt endpoint, remot
 	return status;
 }
 
-celix_status_t importRegistration_destroy(import_registration_pt registration)
+celix_status_t importRegistration_destroy(import_registration_t *registration)
 {
 	free(registration);
 
@@ -73,7 +73,7 @@ celix_status_t importRegistration_destroy(import_registration_pt registration)
 }
 
 
-celix_status_t importRegistrationFactory_create(log_helper_pt helper, char* serviceName, bundle_context_pt context, import_registration_factory_pt *registration_factory) {
+celix_status_t importRegistrationFactory_create(log_helper_t *helper, char* serviceName, celix_bundle_context_t *context, import_registration_factory_t **registration_factory) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	*registration_factory = calloc(1, sizeof(**registration_factory));
@@ -93,7 +93,7 @@ celix_status_t importRegistrationFactory_create(log_helper_pt helper, char* serv
 
 
 
-celix_status_t importRegistrationFactory_destroy(import_registration_factory_pt* registration_factory) {
+celix_status_t importRegistrationFactory_destroy(import_registration_factory_t **registration_factory) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (*registration_factory != NULL)
@@ -112,7 +112,7 @@ celix_status_t importRegistrationFactory_destroy(import_registration_factory_pt*
 }
 
 
-celix_status_t importRegistrationFactory_open(import_registration_factory_pt registration_factory)
+celix_status_t importRegistrationFactory_open(import_registration_factory_t *registration_factory)
 {
 	celix_status_t status;
 
@@ -141,7 +141,7 @@ celix_status_t importRegistrationFactory_open(import_registration_factory_pt reg
 	return status;
 }
 
-celix_status_t importRegistrationFactory_close(import_registration_factory_pt registration_factory)
+celix_status_t importRegistrationFactory_close(import_registration_factory_t *registration_factory)
 {
 	celix_status_t status = CELIX_SUCCESS;
 
@@ -158,9 +158,9 @@ celix_status_t importRegistrationFactory_close(import_registration_factory_pt re
 }
 
 
-celix_status_t importRegistration_createProxyFactoryTracker(import_registration_factory_pt registration_factory, service_tracker_pt *tracker) {
+celix_status_t importRegistration_createProxyFactoryTracker(import_registration_factory_t *registration_factory, service_tracker_t **tracker) {
 	celix_status_t status;
-	service_tracker_customizer_pt customizer = NULL;
+	service_tracker_customizer_t *customizer = NULL;
 
 	status = serviceTrackerCustomizer_create(registration_factory, importRegistration_proxyFactoryAdding, importRegistration_proxyFactoryAdded, importRegistration_proxyFactoryModified, importRegistration_proxyFactoryRemoved, &customizer);
 
@@ -181,7 +181,7 @@ celix_status_t importRegistration_createProxyFactoryTracker(import_registration_
 
 celix_status_t importRegistration_proxyFactoryAdding(void * handle, service_reference_pt reference, void **service) {
 	celix_status_t status = CELIX_SUCCESS;
-	import_registration_factory_pt registration_factory = (import_registration_factory_pt) handle;
+	import_registration_factory_t *registration_factory = (import_registration_factory_t *) handle;
 
 	bundleContext_getService(registration_factory->context, reference, service);
 
@@ -191,8 +191,8 @@ celix_status_t importRegistration_proxyFactoryAdding(void * handle, service_refe
 celix_status_t importRegistration_proxyFactoryAdded(void * handle, service_reference_pt reference, void *service) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	import_registration_factory_pt registration_factory = (import_registration_factory_pt) handle;
-	registration_factory->trackedFactory = (remote_proxy_factory_service_pt) service;
+	import_registration_factory_t *registration_factory = (import_registration_factory_t *) handle;
+	registration_factory->trackedFactory = (remote_proxy_factory_service_t *) service;
 
 	return status;
 }
@@ -206,7 +206,7 @@ celix_status_t importRegistration_proxyFactoryModified(void * handle, service_re
 celix_status_t importRegistration_proxyFactoryRemoved(void * handle, service_reference_pt reference, void *service) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	import_registration_factory_pt registration_factory = (import_registration_factory_pt) handle;
+	import_registration_factory_t *registration_factory = (import_registration_factory_t *) handle;
 	registration_factory->trackedFactory = NULL;
 
 	return status;
@@ -214,7 +214,7 @@ celix_status_t importRegistration_proxyFactoryRemoved(void * handle, service_ref
 
 
 
-celix_status_t importRegistrationFactory_install(log_helper_pt helper, char* serviceName, bundle_context_pt context, import_registration_factory_pt *registration_factory)
+celix_status_t importRegistrationFactory_install(log_helper_t *helper, char* serviceName, celix_bundle_context_t *context, import_registration_factory_t **registration_factory)
 {
 	celix_status_t status;
 
@@ -238,13 +238,13 @@ celix_status_t importRegistrationFactory_install(log_helper_pt helper, char* ser
 
 
 
-celix_status_t importRegistration_getException(import_registration_pt registration) {
+celix_status_t importRegistration_getException(import_registration_t *registration) {
 	celix_status_t status = CELIX_SUCCESS;
 	return status;
 }
 
 
-celix_status_t importRegistration_getImportReference(import_registration_pt registration, import_reference_pt *reference) {
+celix_status_t importRegistration_getImportReference(import_registration_t *registration, import_reference_t **reference) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (registration->importReference == NULL) {
@@ -262,12 +262,12 @@ celix_status_t importRegistration_getImportReference(import_registration_pt regi
 	return status;
 }
 
-celix_status_t importReference_getImportedEndpoint(import_reference_pt reference) {
+celix_status_t importReference_getImportedEndpoint(import_reference_t *reference) {
 	celix_status_t status = CELIX_SUCCESS;
 	return status;
 }
 
-celix_status_t importReference_getImportedService(import_reference_pt reference) {
+celix_status_t importReference_getImportedService(import_reference_t *reference) {
 	celix_status_t status = CELIX_SUCCESS;
 	return status;
 }

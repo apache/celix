@@ -35,40 +35,37 @@
 #define OSGI_RSA_REMOTE_SERVICE_ADMIN "remote_service_admin"
 
 typedef struct import_registration_factory import_registration_factory_t;
-typedef import_registration_factory_t* import_registration_factory_pt;
 
-//TODO refactor remote_service_admin_pt usage to void *handle;
+//TODO refactor remote_service_admin_t* usage to void *handle;
 typedef struct remote_service_admin remote_service_admin_t;
-typedef remote_service_admin_t* remote_service_admin_pt;
 
 struct remote_service_admin_service {
-	remote_service_admin_pt admin;
-	celix_status_t (*exportService)(remote_service_admin_pt admin, char *serviceId, celix_properties_t *properties, array_list_pt *registrations);
-	celix_status_t (*removeExportedService)(remote_service_admin_pt admin, export_registration_pt registration);
-	celix_status_t (*getExportedServices)(remote_service_admin_pt admin, array_list_pt *services);
-	celix_status_t (*getImportedEndpoints)(remote_service_admin_pt admin, array_list_pt *services);
-	celix_status_t (*importService)(remote_service_admin_pt admin, endpoint_description_pt endpoint, import_registration_pt *registration);
+	remote_service_admin_t *admin;
+	celix_status_t (*exportService)(remote_service_admin_t *admin, char *serviceId, celix_properties_t *properties, array_list_pt *registrations);
+	celix_status_t (*removeExportedService)(remote_service_admin_t *admin, export_registration_t *registration);
+	celix_status_t (*getExportedServices)(remote_service_admin_t *admin, array_list_pt *services);
+	celix_status_t (*getImportedEndpoints)(remote_service_admin_t *admin, array_list_pt *services);
+	celix_status_t (*importService)(remote_service_admin_t *admin, endpoint_description_t *endpoint, import_registration_t **registration);
 
-	celix_status_t (*exportReference_getExportedEndpoint)(export_reference_pt reference, endpoint_description_pt *endpoint);
-	celix_status_t (*exportReference_getExportedService)(export_reference_pt reference, service_reference_pt *service);
+	celix_status_t (*exportReference_getExportedEndpoint)(export_reference_t *reference, endpoint_description_t **endpoint);
+	celix_status_t (*exportReference_getExportedService)(export_reference_t *reference, service_reference_pt *service);
 
-	celix_status_t (*exportRegistration_close)(remote_service_admin_pt admin, export_registration_pt registration);
-	celix_status_t (*exportRegistration_getException)(export_registration_pt registration);
-	celix_status_t (*exportRegistration_getExportReference)(export_registration_pt registration, export_reference_pt *reference);
-	celix_status_t (*exportRegistration_freeExportReference)(export_reference_pt *reference);
-	celix_status_t (*exportRegistration_getEndpointDescription)(export_registration_pt registration, endpoint_description_pt endpointDescription);
+	celix_status_t (*exportRegistration_close)(remote_service_admin_t *admin, export_registration_t *registration);
+	celix_status_t (*exportRegistration_getException)(export_registration_t *registration);
+	celix_status_t (*exportRegistration_getExportReference)(export_registration_t *registration, export_reference_t **reference);
+	celix_status_t (*exportRegistration_freeExportReference)(export_reference_t **reference);
+	celix_status_t (*exportRegistration_getEndpointDescription)(export_registration_t *registration, endpoint_description_t *endpointDescription);
 
-	celix_status_t (*importReference_getImportedEndpoint)(import_reference_pt reference);
-	celix_status_t (*importReference_getImportedService)(import_reference_pt reference);
+	celix_status_t (*importReference_getImportedEndpoint)(import_reference_t *reference);
+	celix_status_t (*importReference_getImportedService)(import_reference_t *reference);
 
-	celix_status_t (*importRegistration_close)(remote_service_admin_pt admin, import_registration_pt registration);
-	celix_status_t (*importRegistration_getException)(import_registration_pt registration);
-	celix_status_t (*importRegistration_getImportReference)(import_registration_pt registration, import_reference_pt *reference);
+	celix_status_t (*importRegistration_close)(remote_service_admin_t *admin, import_registration_t *registration);
+	celix_status_t (*importRegistration_getException)(import_registration_t *registration);
+	celix_status_t (*importRegistration_getImportReference)(import_registration_t *registration, import_reference_t **reference);
 
 };
 
 typedef struct remote_service_admin_service remote_service_admin_service_t;
-typedef remote_service_admin_service_t* remote_service_admin_service_pt;
 
 
 #endif /* REMOTE_SERVICE_ADMIN_H_ */

@@ -43,14 +43,14 @@ struct subscriberActivator {
     pubsub_subscriber_t *subsvc;
 };
 
-celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
+celix_status_t bundleActivator_create(celix_bundle_context_t *context, void **userData) {
     struct subscriberActivator * act = calloc(1,sizeof(struct subscriberActivator));
     *userData = act;
     arrayList_create(&(act->registrationList));
     return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
+celix_status_t bundleActivator_start(void * userData, celix_bundle_context_t *context) {
     struct subscriberActivator * act = (struct subscriberActivator *) userData;
 
     pubsub_subscriber_t *subsvc = calloc(1,sizeof(*subsvc));
@@ -81,7 +81,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
     return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
+celix_status_t bundleActivator_stop(void * userData, celix_bundle_context_t *context) {
     struct subscriberActivator * act = (struct subscriberActivator *) userData;
 
     int i;
@@ -96,7 +96,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
     return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
+celix_status_t bundleActivator_destroy(void * userData, celix_bundle_context_t *context) {
 
     struct subscriberActivator * act = (struct subscriberActivator *) userData;
 

@@ -1,27 +1,27 @@
 /**
- *Licensed to the Apache Software Foundation (ASF) under one
- *or more contributor license agreements.  See the NOTICE file
- *distributed with this work for additional information
- *regarding copyright ownership.  The ASF licenses this file
- *to you under the Apache License, Version 2.0 (the
- *"License"); you may not use this file except in compliance
- *with the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- *Unless required by applicable law or agreed to in writing,
- *software distributed under the License is distributed on an
- *"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- *specific language governing permissions and limitations
- *under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 /*
  * remote_service_admin_shm_impl.h
  *
  *  \date       Sep 30, 2011
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
+ *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
+ *  \copyright  Apache License, Version 2.0
  */
 
 #ifndef REMOTE_SERVICE_ADMIN_SHM_IMPL_H_
@@ -55,8 +55,8 @@ union semun {
 };
 
 struct recv_shm_thread {
-    remote_service_admin_pt admin;
-    endpoint_description_pt endpointDescription;
+    remote_service_admin_t *admin;
+    endpoint_description_t *endpointDescription;
 };
 
 struct ipc_segment {
@@ -66,8 +66,8 @@ struct ipc_segment {
 };
 
 struct remote_service_admin {
-    bundle_context_pt context;
-    log_helper_pt loghelper;
+    celix_bundle_context_t *context;
+    log_helper_t *loghelper;
 
     celix_thread_mutex_t exportedServicesLock;
     hash_map_pt exportedServices;
@@ -87,6 +87,6 @@ struct remote_service_admin {
 typedef struct recv_shm_thread *recv_shm_thread_pt;
 typedef struct ipc_segment *ipc_segment_pt;
 
-celix_status_t remoteServiceAdmin_stop(remote_service_admin_pt admin);
+celix_status_t remoteServiceAdmin_stop(remote_service_admin_t *admin);
 
 #endif /* REMOTE_SERVICE_ADMIN_SHM_IMPL_H_ */

@@ -16,9 +16,9 @@
 # under the License.
 
 add_celix_bundle(calculator
-	SOURCES
-		src/calculator_impl
-		src/calculator_activator
+    SOURCES
+        src/calculator_impl
+        src/calculator_activator
     SYMBOLIC_NAME "apache_celix_remoting_calculator_impl"
     VERSION 0.0.1
 )

@@ -33,7 +33,7 @@
 #include "shell_mediator.h"
 
 struct remote_shell {
-	log_helper_pt* loghelper;
+	log_helper_t **loghelper;
 	shell_mediator_pt mediator;
 	celix_thread_mutex_t mutex;
 	int maximumConnections;
