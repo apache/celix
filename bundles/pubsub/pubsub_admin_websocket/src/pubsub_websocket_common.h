@@ -46,7 +46,6 @@ struct pubsub_websocket_msg {
 
 typedef struct pubsub_websocket_msg pubsub_websocket_msg_t;
 
-int psa_websocket_localMsgTypeIdForMsgType(void* handle, const char* msgType, unsigned int* msgTypeId);
 void psa_websocket_setScopeAndTopicFilter(const char* scope, const char *topic, char *filter);
 char *psa_websocket_createURI(const char *scope, const char *topic);
 

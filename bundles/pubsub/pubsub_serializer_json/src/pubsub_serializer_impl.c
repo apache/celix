@@ -67,12 +67,12 @@ typedef struct pubsub_json_msg_serializer_impl {
     version_pt msgVersion;
 } pubsub_json_msg_serializer_impl_t;
 
-static char* pubsubSerializer_getMsgDescriptionDir(bundle_pt bundle);
-static void pubsubSerializer_addMsgSerializerFromBundle(const char *root, bundle_pt bundle, hash_map_pt msgTypesMap);
-static void pubsubSerializer_fillMsgSerializerMap(hash_map_pt msgTypesMap,bundle_pt bundle);
+static char* pubsubSerializer_getMsgDescriptionDir(celix_bundle_t *bundle);
+static void pubsubSerializer_addMsgSerializerFromBundle(const char *root, celix_bundle_t *bundle, hash_map_pt msgSerializers);
+static void pubsubSerializer_fillMsgSerializerMap(hash_map_pt msgSerializers,celix_bundle_t *bundle);
 
-static int pubsubMsgSerializer_convert_descriptor(FILE* file_ptr, pubsub_msg_serializer_t* serializer);
-static int pubsubMsgSerializer_convert_avpr(FILE* file_ptr, pubsub_msg_serializer_t* serializer, const char* fqn);
+static int pubsubMsgSerializer_convertDescriptor(FILE* file_ptr, pubsub_msg_serializer_t* serializer);
+static int pubsubMsgSerializer_convertAvpr(FILE* file_ptr, pubsub_msg_serializer_t* serializer, const char* fqn);
 
 static void dfi_log(void *handle, int level, const char *file, int line, const char *msg, ...) {
     va_list ap;
@@ -121,7 +121,7 @@ celix_status_t pubsubSerializer_destroy(pubsub_json_serializer_t* serializer) {
     return status;
 }
 
-celix_status_t pubsubSerializer_createSerializerMap(void *handle, bundle_pt bundle, hash_map_pt* serializerMap) {
+celix_status_t pubsubSerializer_createSerializerMap(void *handle, celix_bundle_t *bundle, hash_map_pt* serializerMap) {
     celix_status_t status = CELIX_SUCCESS;
     pubsub_json_serializer_t *serializer = handle;
 
@@ -207,7 +207,7 @@ void pubsubMsgSerializer_freeMsg(void* handle, void *msg) {
 }
 
 
-static void pubsubSerializer_fillMsgSerializerMap(hash_map_pt msgSerializers, bundle_pt bundle) {
+static void pubsubSerializer_fillMsgSerializerMap(hash_map_pt msgSerializers, celix_bundle_t *bundle) {
     char* root = NULL;
     char* metaInfPath = NULL;
 
@@ -224,8 +224,7 @@ static void pubsubSerializer_fillMsgSerializerMap(hash_map_pt msgSerializers, bu
     }
 }
 
-static char* pubsubSerializer_getMsgDescriptionDir(bundle_pt bundle)
-{
+static char* pubsubSerializer_getMsgDescriptionDir(celix_bundle_t *bundle) {
     char *root = NULL;
 
     bool isSystemBundle = false;
@@ -251,9 +250,7 @@ static char* pubsubSerializer_getMsgDescriptionDir(bundle_pt bundle)
     return root;
 }
 
-
-static void pubsubSerializer_addMsgSerializerFromBundle(const char *root, bundle_pt bundle, hash_map_pt msgSerializers)
-{
+static void pubsubSerializer_addMsgSerializerFromBundle(const char *root, celix_bundle_t *bundle, hash_map_pt msgSerializers) {
     char fqn[MAX_PATH_LEN];
     char path[MAX_PATH_LEN];
     const char* entry_name = NULL;
@@ -282,10 +279,10 @@ static void pubsubSerializer_addMsgSerializerFromBundle(const char *root, bundle
 
         int translation_result = -1;
         if (fileInputType == FIT_DESCRIPTOR) {
-            translation_result = pubsubMsgSerializer_convert_descriptor(stream, msgSerializer);
+            translation_result = pubsubMsgSerializer_convertDescriptor(stream, msgSerializer);
         }
         else if (fileInputType == FIT_AVPR) {
-            translation_result = pubsubMsgSerializer_convert_avpr(stream, msgSerializer, fqn);
+            translation_result = pubsubMsgSerializer_convertAvpr(stream, msgSerializer, fqn);
         }
         fclose(stream);
 
@@ -317,6 +314,7 @@ static void pubsubSerializer_addMsgSerializerFromBundle(const char *root, bundle
         closedir(dir);
     }
 }
+
 static FILE* openFileStream(FILE_INPUT_TYPE file_input_type, const char* filename, const char* root, char* avpr_fqn, char* path) {
     FILE* result = NULL;
     memset(path, 0, MAX_PATH_LEN);
@@ -394,15 +392,15 @@ static bool readPropertiesFile(const char* properties_file_name, const char* roo
     return true;
 }
 
-static int pubsubMsgSerializer_convert_descriptor(FILE* file_ptr, pubsub_msg_serializer_t* serializer) {
-    dyn_message_type* msgType = NULL;
+static int pubsubMsgSerializer_convertDescriptor(FILE* file_ptr, pubsub_msg_serializer_t* serializer) {
+    dyn_message_type *msgType = NULL;
     int rc = dynMessage_parse(file_ptr, &msgType);
     if (rc != 0 || msgType == NULL) {
         printf("DMU: cannot parse message from descriptor.\n");
         return -1;
     }
 
-    char* msgName = NULL;
+    char *msgName = NULL;
     rc += dynMessage_getName(msgType, &msgName);
 
     version_pt msgVersion = NULL;
@@ -413,11 +411,25 @@ static int pubsubMsgSerializer_convert_descriptor(FILE* file_ptr, pubsub_msg_ser
         return -1;
     }
 
-    dyn_type * type = NULL;
+    dyn_type *type = NULL;
     dynMessage_getMessageType(msgType, &type);
 
-    unsigned int msgId = utils_stringHash(msgName);
-    pubsub_json_msg_serializer_impl_t * handle = (pubsub_json_msg_serializer_impl_t*)serializer->handle;
+    unsigned int msgId = 0;
+
+    char *msgIdStr = NULL;
+    int rv = dynMessage_getAnnotationEntry(msgType, "msgId", &msgIdStr);
+    if (rv == CELIX_SUCCESS && msgIdStr != NULL) {
+        // custom msg id passed, use it
+        long customMsgId = strtol(msgIdStr, NULL, 10);
+        if (customMsgId > 0)
+            msgId = (unsigned int) customMsgId;
+    }
+
+    if (msgId == 0) {
+        msgId = utils_stringHash(msgName);
+    }
+
+    pubsub_json_msg_serializer_impl_t *handle = (pubsub_json_msg_serializer_impl_t*)serializer->handle;
     handle->type = type;
     handle->msgId = msgId;
     handle->msgName = msgName;
@@ -434,16 +446,16 @@ static int pubsubMsgSerializer_convert_descriptor(FILE* file_ptr, pubsub_msg_ser
     return 0;
 }
 
-static int pubsubMsgSerializer_convert_avpr(FILE* file_ptr, pubsub_msg_serializer_t* serializer, const char* fqn) {
+static int pubsubMsgSerializer_convertAvpr(FILE* file_ptr, pubsub_msg_serializer_t* serializer, const char* fqn) {
     if (!file_ptr || !fqn || !serializer) return -2;
-    dyn_type* type = dynType_parseAvpr(file_ptr, fqn);
+    dyn_type *type = dynType_parseAvpr(file_ptr, fqn);
 
     if (!type) {
         printf("DMU: cannot parse avpr file for '%s'\n", fqn);
         return -1;
     }
 
-    const char* msgName = dynType_getName(type);
+    const char *msgName = dynType_getName(type);
 
     version_pt msgVersion = NULL;
     celix_status_t s = version_createVersionFromString(dynType_getMetaInfo(type, "version"), &msgVersion);
@@ -456,8 +468,20 @@ static int pubsubMsgSerializer_convert_avpr(FILE* file_ptr, pubsub_msg_serialize
         return -1;
     }
 
-    unsigned int msgId = utils_stringHash(msgName);
-    pubsub_json_msg_serializer_impl_t * handle = (pubsub_json_msg_serializer_impl_t*) serializer->handle;
+    unsigned int msgId = 0;
+    const char *msgIdStr = dynType_getMetaInfo(type, "msgId");
+    if (msgIdStr != NULL) {
+        // custom msg id passed, use it
+        long customMsgId = strtol(msgIdStr, NULL, 10);
+        if (customMsgId > 0)
+            msgId = (unsigned int) customMsgId;
+    }
+
+    if (msgId == 0) {
+        msgId = utils_stringHash(msgName);
+    }
+
+    pubsub_json_msg_serializer_impl_t *handle = (pubsub_json_msg_serializer_impl_t*) serializer->handle;
     handle->type = type;
     handle->msgId = msgId;
     handle->msgName = msgName;

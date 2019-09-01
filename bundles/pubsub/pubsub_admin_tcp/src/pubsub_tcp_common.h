@@ -46,7 +46,6 @@ typedef struct pubsub_tcp_endPointStore{
  */
 
 
-int psa_tcp_localMsgTypeIdForMsgType(void* handle, const char* msgType, unsigned int* msgTypeId);
 void psa_tcp_setScopeAndTopicFilter(const char* scope, const char *topic, char *filter);
 bool psa_tcp_checkVersion(version_pt msgVersion, const pubsub_tcp_msg_header_t *hdr);
 void psa_tcp_setupTcpContext(log_helper_t *logHelper, celix_thread_t *thread, const celix_properties_t *topicProperties);

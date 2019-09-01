@@ -22,11 +22,6 @@
 #include <stdio.h>
 #include "pubsub_websocket_common.h"
 
-int psa_websocket_localMsgTypeIdForMsgType(void* handle __attribute__((unused)), const char* msgType, unsigned int* msgTypeId) {
-    *msgTypeId = utils_stringHash(msgType);
-    return 0;
-}
-
 bool psa_websocket_checkVersion(version_pt msgVersion, const pubsub_websocket_msg_header_t *hdr) {
     bool check=false;
     int major=0,minor=0;
