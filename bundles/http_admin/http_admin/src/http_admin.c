@@ -123,7 +123,11 @@ void httpAdmin_destroy(http_admin_manager_t *admin) {
     unsigned int size = arrayList_size(admin->aliasList);
     for (unsigned int i = (size - 1); i < size; i--) {
         http_alias_t *alias = arrayList_get(admin->aliasList, i);
-        remove(alias->alias_path); //Delete alias in cache directory
+
+        //Delete alias in cache directory
+        if (remove(alias->alias_path) < 0)
+            fprintf(stdout, "remove of %s failed\n", alias->alias_path);
+
         free(alias->url);
         free(alias->alias_path);
         free(alias);
