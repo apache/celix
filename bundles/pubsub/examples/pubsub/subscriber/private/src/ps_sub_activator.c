@@ -40,7 +40,7 @@ static const char * SUB_TOPICS[] = {
 
 struct subscriberActivator {
     array_list_pt registrationList; //List<service_registration_pt>
-    pubsub_subscriber_pt subsvc;
+    pubsub_subscriber_t *subsvc;
 };
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
@@ -53,8 +53,8 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
     struct subscriberActivator * act = (struct subscriberActivator *) userData;
 
-    pubsub_subscriber_pt subsvc = calloc(1,sizeof(*subsvc));
-    pubsub_receiver_pt sub = subscriber_create(SUB_NAME);
+    pubsub_subscriber_t *subsvc = calloc(1,sizeof(*subsvc));
+    pubsub_receiver_t *sub = subscriber_create(SUB_NAME);
     subsvc->handle = sub;
     subsvc->receive = pubsub_subscriber_recv;
 
@@ -76,7 +76,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
         arrayList_add(act->registrationList,reg);
     }
 
-    subscriber_start((pubsub_receiver_pt)act->subsvc->handle);
+    subscriber_start((pubsub_receiver_t *) act->subsvc->handle);
 
     return CELIX_SUCCESS;
 }
@@ -91,7 +91,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 
     }
 
-    subscriber_stop((pubsub_receiver_pt)act->subsvc->handle);
+    subscriber_stop((pubsub_receiver_t *) act->subsvc->handle);
 
     return CELIX_SUCCESS;
 }
@@ -101,7 +101,7 @@ celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt contex
     struct subscriberActivator * act = (struct subscriberActivator *) userData;
 
     act->subsvc->receive = NULL;
-    subscriber_destroy((pubsub_receiver_pt)act->subsvc->handle);
+    subscriber_destroy((pubsub_receiver_t *) act->subsvc->handle);
     act->subsvc->handle = NULL;
     free(act->subsvc);
     act->subsvc = NULL;

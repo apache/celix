@@ -89,8 +89,7 @@ celix_status_t pubsub_getPubSubInfoFromFilter(const char* filterstr, char **topi
  *
  * Caller is responsible for freeing the object
  */
-char* pubsub_getKeysBundleDir(bundle_context_pt ctx)
-{
+char* pubsub_getKeysBundleDir(celix_bundle_context_t *ctx) {
     array_list_pt bundles = NULL;
     bundleContext_getBundles(ctx, &bundles);
     int nrOfBundles = arrayList_size(bundles);
@@ -98,7 +97,7 @@ char* pubsub_getKeysBundleDir(bundle_context_pt ctx)
     char* result = NULL;
 
     for (int i = 0; i < nrOfBundles; i++) {
-        bundle_pt b = arrayList_get(bundles, i);
+        celix_bundle_t *b = arrayList_get(bundles, i);
 
         /* Skip bundle 0 (framework bundle) since it has no path nor revisions */
         bundle_getBundleId(b, &bundle_id);
@@ -130,23 +129,20 @@ char* pubsub_getKeysBundleDir(bundle_context_pt ctx)
 }
 
 celix_properties_t *pubsub_utils_getTopicProperties(const celix_bundle_t *bundle, const char *topic, bool isPublisher) {
-
     celix_properties_t *topic_props = NULL;
 
     bool isSystemBundle = false;
-    bundle_isSystemBundle((bundle_pt)bundle, &isSystemBundle);
+    bundle_isSystemBundle((celix_bundle_t *)bundle, &isSystemBundle);
     long bundleId = -1;
-    bundle_isSystemBundle((bundle_pt)bundle, &isSystemBundle);
-    bundle_getBundleId((bundle_pt)bundle,&bundleId);
+    bundle_isSystemBundle((celix_bundle_t *)bundle, &isSystemBundle);
+    bundle_getBundleId((celix_bundle_t *)bundle,&bundleId);
 
     if (isSystemBundle == false) {
-
         char *bundleRoot = NULL;
-        char* topicPropertiesPath = NULL;
-        bundle_getEntry((bundle_pt)bundle, ".", &bundleRoot);
+        char *topicPropertiesPath = NULL;
+        bundle_getEntry((celix_bundle_t *)bundle, ".", &bundleRoot);
 
         if (bundleRoot != NULL) {
-
             asprintf(&topicPropertiesPath, "%s/META-INF/topics/%s/%s.properties", bundleRoot, isPublisher? "pub":"sub", topic);
             topic_props = celix_properties_load(topicPropertiesPath);
             if (topic_props == NULL) {

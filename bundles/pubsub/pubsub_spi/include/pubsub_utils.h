@@ -40,7 +40,7 @@ extern "C" {
  */
 celix_status_t pubsub_getPubSubInfoFromFilter(const char* filterstr, char **topic, char **scope);
 
-char* pubsub_getKeysBundleDir(bundle_context_pt ctx);
+char* pubsub_getKeysBundleDir(celix_bundle_context_t *ctx);
 
 double pubsub_utils_matchPublisher(
         celix_bundle_context_t *ctx,

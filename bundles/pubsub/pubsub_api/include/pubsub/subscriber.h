@@ -66,7 +66,6 @@ struct pubsub_subscriber_struct {
 
 };
 typedef struct pubsub_subscriber_struct pubsub_subscriber_t;
-typedef struct pubsub_subscriber_struct* pubsub_subscriber_pt;
 
 
 #endif //  __PUBSUB_SUBSCRIBER_H_
