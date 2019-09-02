@@ -34,7 +34,7 @@ target_include_directories(celix_pubsub_discovery_etcd SYSTEM PRIVATE
 target_link_libraries(celix_pubsub_discovery_etcd PRIVATE
         Celix::pubsub_spi Celix::framework Celix::etcdlib_static
         Celix::shell_api Celix::log_helper
-        ${CURL_LIBRARIES} ${JANSSON_LIBRARIES})
+        ${CURL_LIBRARY} ${JANSSON_LIBRARIES})
 
 install_celix_bundle(celix_pubsub_discovery_etcd EXPORT celix COMPONENT pubsub)
 

@@ -5,9 +5,9 @@
 # to you under the Apache License, Version 2.0 (the
 # "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
-# 
+#
 #   http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing,
 # software distributed under the License is distributed on an
 # "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -32,11 +32,14 @@ IF (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} EQUAL 3.3 AND ${CMAKE_GENERATO
     message( FATAL_ERROR "Building Celix using CMake 3.3 and makefiles is not supported due to a bug in the Makefile Generator (see Bug 15696). Please change the used CMake version - both, CMake 3.2 and CMake 3.4 are working fine. Or use a different generator (e.g. Ninja)." )
 ENDIF()
 
+set(ENABLE_W_ERROR ON)
+set(ENABLE_MORE_WARNINGS OFF)
+
 IF (ANDROID)
     set(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -Wall ${CMAKE_C_FLAGS}")
 ELSE ()
-    set(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -Wall -Werror -fPIC ${CMAKE_C_FLAGS}") #TODO add -Wextra
-    set(CMAKE_CXX_FLAGS "-std=c++11 -Wall -Werror -Wextra -Weffc++ -fno-rtti -fno-exceptions ${CMAKE_CXX_FLAGS}")
+    set(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -Wall -Werror -fPIC ${CMAKE_C_FLAGS}")
+    set(CMAKE_CXX_FLAGS "-std=c++11 -Wall -Wextra -Weffc++ -fno-rtti -fno-exceptions ${CMAKE_CXX_FLAGS}")
     set(CMAKE_C_FLAGS_DEBUG "-g -DDEBUG ${CMAKE_C_FLAGS}")
     set(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG ${CMAKE_CXX_FLAGS}")
 ENDIF()
@@ -49,6 +52,33 @@ ELSE ()
     set(CMAKE_EXE_LINKER_FLAGS "-pthread ${CMAKE_EXE_LINKER_FLAGS}")
 ENDIF()
 
+if(ENABLE_W_ERROR)
+    set(CMAKE_CXX_FLAGS "-Werror ${CMAKE_CXX_FLAGS_DEBUG}")
+endif()
+
+if (ENABLE_MORE_WARNINGS)
+    if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+        if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4)
+            set(CMAKE_CXX_FLAGS "-Wlogical-op -Wold-style-cast -Wuseless-cast -Wdouble-promotion -Wshadow -Wformat=2 ${CMAKE_CXX_FLAGS}")
+        endif()
+        if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 6)
+            set(CMAKE_CXX_FLAGS "-Wduplicated-cond -Wnull-dereference ${CMAKE_CXX_FLAGS}")
+        endif()
+        if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 7)
+            set(CMAKE_CXX_FLAGS "-Wrestrict -Wduplicated-branches ${CMAKE_CXX_FLAGS}")
+        endif()
+    endif()
+
+    if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+        if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 3.5)
+            set(CMAKE_CXX_FLAGS "-Wlogical-op -Wold-style-cast -Wshadow -Wformat=2 -Wnull-dereference ${CMAKE_CXX_FLAGS}")
+        endif()
+        if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4)
+            set(CMAKE_CXX_FLAGS "-Wold-style-cast -Wuseless-cast ${CMAKE_CXX_FLAGS}")
+        endif()
+    endif()
+endif()
+
 # Set version for the framework package/release
 set(CELIX_MAJOR "2")
 set(CELIX_MINOR "2")
@@ -57,7 +87,7 @@ set(CELIX_MICRO "0")
 option(ENABLE_TESTING "Enables unit/bundle testing" FALSE)
 
 if (ENABLE_TESTING)
-	enable_testing()
+    enable_testing()
 endif()
 
 # Default bundle version

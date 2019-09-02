@@ -34,7 +34,7 @@ add_executable(test_rsa_dfi
     src/rsa_client_server_tests.cpp
 )
 target_include_directories(test_rsa_dfi PRIVATE src)
-target_link_libraries(test_rsa_dfi PRIVATE ${CURL_LIBRARIES} ${CPPUTEST_LIBRARY}
+target_link_libraries(test_rsa_dfi PRIVATE ${CURL_LIBRARY} ${CPPUTEST_LIBRARY}
         Celix::framework
         Celix::rsa_common
         calculator_api)
