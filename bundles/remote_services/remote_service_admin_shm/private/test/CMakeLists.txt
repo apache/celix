@@ -35,7 +35,7 @@ add_executable(test_rsa_shm
 
     ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/endpoint_description.c
 )
-target_link_libraries(test_rsa_shm celix_framework celix_utils ${CURL_LIBRARIES} ${CPPUTEST_LIBRARY})
+target_link_libraries(test_rsa_shm celix_framework celix_utils ${CURL_LIBRARY} ${CPPUTEST_LIBRARY})
 
 get_property(rsa_bundle_file TARGET remote_service_admin_shm PROPERTY BUNDLE_FILE)
 get_property(calc_bundle_file TARGET calculator PROPERTY BUNDLE_FILE)
