@@ -73,11 +73,14 @@ if (ENABLE_MORE_WARNINGS)
             set(CMAKE_CXX_EXTRA_FLAGS "-Wold-style-cast -Wuseless-cast ${CMAKE_CXX_EXTRA_FLAGS}")
         endif()
     endif()
+    
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_EXTRA_FLAGS} ${CMAKE_CXX_FLAGS}")
+    set(CMAKE_CXX_FLAGS_DEBUG "-Werror ${CMAKE_CXX_EXTRA_FLAGS} ${CMAKE_CXX_FLAGS_DEBUG}")
 endif()
 
 if(ENABLE_W_ERROR)
-    set(CMAKE_CXX_FLAGS "-Werror ${CMAKE_CXX_EXTRA_FLAGS} ${CMAKE_CXX_FLAGS}")
-    set(CMAKE_CXX_FLAGS_DEBUG "-Werror ${CMAKE_CXX_EXTRA_FLAGS} ${CMAKE_CXX_FLAGS_DEBUG}")
+    set(CMAKE_CXX_FLAGS "-Werror ${CMAKE_CXX_FLAGS}")
+    set(CMAKE_CXX_FLAGS_DEBUG "-Werror ${CMAKE_CXX_FLAGS_DEBUG}")
 endif()
 
 # Set version for the framework package/release
