@@ -18,10 +18,10 @@
 
 # - Try to find OpenSSL
 # Once done this will define
-#  OPENSSL_FOUND - System has Jansson
-#  OPENSSL_INCLUDE_DIRS - The Jansson include directories
-#  OPENSSL_LIBRARIES - The libraries needed to use Jansson
-#  OPENSSL_DEFINITIONS - Compiler switches required for using Jansson
+#  OPENSSL_FOUND - System has OpenSSL
+#  OPENSSL_INCLUDE_DIRS - The OpenSSL include directories
+#  OPENSSL_LIBRARIES - The libraries needed to use OpenSSL
+#  OPENSSL_DEFINITIONS - Compiler switches required for using OpenSSL
 
 find_path(OPENSSL_INCLUDE_DIR ssl.h crypto.h
           /usr/include/openssl
