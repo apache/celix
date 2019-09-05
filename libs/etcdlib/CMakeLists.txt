@@ -57,7 +57,7 @@ target_include_directories(etcdlib SYSTEM PRIVATE
 
 set_target_properties(etcdlib PROPERTIES SOVERSION 1)
 set_target_properties(etcdlib PROPERTIES VERSION 1.0.0)
-target_link_libraries(etcdlib PRIVATE ${CURL_LIBRARY} ${JANSSON_LIBRARIES})
+target_link_libraries(etcdlib PRIVATE ${CURL_LIBRARY} ${JANSSON_LIBRARIES} ${OPENSSL_LIBRARY})
 
 add_library(etcdlib_static STATIC
     src/etcd.c
@@ -70,7 +70,6 @@ target_include_directories(etcdlib_static PRIVATE src)
 target_include_directories(etcdlib_static SYSTEM PRIVATE 
     ${CURL_INCLUDE_DIRS}
     ${JANSSON_INCLUDE_DIRS}
-    ${OPENSSL_LIBRARY}
 )
 set_target_properties(etcdlib_static PROPERTIES "SOVERSION" 1)
 target_link_libraries(etcdlib_static PRIVATE ${CURL_LIBRARY} ${JANSSON_LIBRARY})
