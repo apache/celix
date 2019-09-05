@@ -32,12 +32,11 @@
 #include "log_helper.h"
 
 typedef struct endpoint_discovery_poller endpoint_discovery_poller_t;
-typedef struct endpoint_discovery_poller *endpoint_discovery_poller_pt;
 
 struct endpoint_discovery_poller {
-    discovery_pt discovery;
+    discovery_t *discovery;
     hash_map_pt entries;
-    log_helper_pt* loghelper;
+    log_helper_t **loghelper;
 
     celix_thread_mutex_t pollerLock;
     celix_thread_t pollerThread;
@@ -48,12 +47,12 @@ struct endpoint_discovery_poller {
     volatile bool running;
 };
 
-celix_status_t endpointDiscoveryPoller_create(discovery_pt discovery, bundle_context_pt context, const char* defaultPollEndpoints, endpoint_discovery_poller_pt *poller);
-celix_status_t endpointDiscoveryPoller_destroy(endpoint_discovery_poller_pt poller);
+celix_status_t endpointDiscoveryPoller_create(discovery_t *discovery, celix_bundle_context_t *context, const char* defaultPollEndpoints, endpoint_discovery_poller_t **poller);
+celix_status_t endpointDiscoveryPoller_destroy(endpoint_discovery_poller_t *poller);
 
-celix_status_t endpointDiscoveryPoller_addDiscoveryEndpoint(endpoint_discovery_poller_pt poller, char *url);
-celix_status_t endpointDiscoveryPoller_removeDiscoveryEndpoint(endpoint_discovery_poller_pt poller, char *url);
+celix_status_t endpointDiscoveryPoller_addDiscoveryEndpoint(endpoint_discovery_poller_t *poller, char *url);
+celix_status_t endpointDiscoveryPoller_removeDiscoveryEndpoint(endpoint_discovery_poller_t *poller, char *url);
 
-celix_status_t endpointDiscoveryPoller_getDiscoveryEndpoints(endpoint_discovery_poller_pt poller, array_list_pt urls);
+celix_status_t endpointDiscoveryPoller_getDiscoveryEndpoints(endpoint_discovery_poller_t *poller, array_list_pt urls);
 
 #endif /* ENDPOINT_DISCOVERY_POLLER_H_ */

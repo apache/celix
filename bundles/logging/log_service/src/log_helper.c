@@ -76,8 +76,8 @@ static char* logHelper_backtrace(void) {
 #endif
 
 struct log_helper {
-	bundle_context_pt bundleContext;
-    service_tracker_pt logServiceTracker;
+	celix_bundle_context_t *bundleContext;
+	celix_service_tracker_t *logServiceTracker;
 	celix_thread_mutex_t logListLock;
 	array_list_pt logServices;
 	bool stdOutFallback;
@@ -88,7 +88,7 @@ celix_status_t logHelper_logServiceAdded(void *handle, service_reference_pt refe
 celix_status_t logHelper_logServiceRemoved(void *handle, service_reference_pt reference, void *service);
 
 
-celix_status_t logHelper_create(bundle_context_pt context, log_helper_pt* loghelper)
+celix_status_t logHelper_create(bundle_context_pt context, log_helper_t **loghelper)
 {
 	celix_status_t status = CELIX_SUCCESS;
 
@@ -114,7 +114,7 @@ celix_status_t logHelper_create(bundle_context_pt context, log_helper_pt* loghel
 	return status;
 }
 
-celix_status_t logHelper_start(log_helper_pt loghelper)
+celix_status_t logHelper_start(log_helper_t *loghelper)
 {
 	celix_status_t status;
 	service_tracker_customizer_pt logTrackerCustomizer = NULL;
@@ -137,7 +137,7 @@ celix_status_t logHelper_start(log_helper_pt loghelper)
 
 celix_status_t logHelper_logServiceAdded(void *handle, service_reference_pt reference, void *service)
 {
-	log_helper_pt loghelper = handle;
+	log_helper_t *loghelper = handle;
 
 	pthread_mutex_lock(&loghelper->logListLock);
 	arrayList_add(loghelper->logServices, service);
@@ -148,7 +148,7 @@ celix_status_t logHelper_logServiceAdded(void *handle, service_reference_pt refe
 
 celix_status_t logHelper_logServiceRemoved(void *handle, service_reference_pt reference, void *service)
 {
-	log_helper_pt loghelper = handle;
+	log_helper_t *loghelper = handle;
 
 	pthread_mutex_lock(&loghelper->logListLock);
 	arrayList_removeElement(loghelper->logServices, service);
@@ -158,7 +158,7 @@ celix_status_t logHelper_logServiceRemoved(void *handle, service_reference_pt re
 }
 
 
-celix_status_t logHelper_stop(log_helper_pt loghelper) {
+celix_status_t logHelper_stop(log_helper_t *loghelper) {
 	celix_status_t status;
 
     status = serviceTracker_close(loghelper->logServiceTracker);
@@ -166,7 +166,7 @@ celix_status_t logHelper_stop(log_helper_pt loghelper) {
     return status;
 }
 
-celix_status_t logHelper_destroy(log_helper_pt* loghelper) {
+celix_status_t logHelper_destroy(log_helper_t **loghelper) {
         celix_status_t status = CELIX_SUCCESS;
 
         if((*loghelper)->logServiceTracker){
@@ -187,7 +187,7 @@ celix_status_t logHelper_destroy(log_helper_pt* loghelper) {
 
 
 
-celix_status_t logHelper_log(log_helper_pt loghelper, log_level_t level, const char* message, ... )
+celix_status_t logHelper_log(log_helper_t *loghelper, log_level_t level, const char* message, ... )
 {
     celix_status_t status = CELIX_SUCCESS;
 	va_list listPointer;
@@ -206,7 +206,7 @@ celix_status_t logHelper_log(log_helper_pt loghelper, log_level_t level, const c
 
 	int i = 0;
 	for (; i < arrayList_size(loghelper->logServices); i++) {
-		log_service_pt logService = arrayList_get(loghelper->logServices, i);
+		log_service_t *logService = arrayList_get(loghelper->logServices, i);
 		if (logService != NULL) {
 			(logService->log)(logService->logger, level, msg); //TODO add backtrace to msg if the level is ERROR
 			if (level == OSGI_LOGSERVICE_ERROR) {

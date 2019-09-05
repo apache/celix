@@ -32,18 +32,18 @@
 #define BUNDLE_STORE_PROPERTY_NAME "ENDPOINTS"
 #define DEFAULT_BUNDLE_STORE "endpoints"
 
-celix_status_t remoteServiceAdmin_create(bundle_context_pt context, remote_service_admin_pt *admin);
-celix_status_t remoteServiceAdmin_destroy(remote_service_admin_pt *admin);
+celix_status_t remoteServiceAdmin_create(celix_bundle_context_t *context, remote_service_admin_t **admin);
+celix_status_t remoteServiceAdmin_destroy(remote_service_admin_t **admin);
 
-celix_status_t remoteServiceAdmin_send(remote_service_admin_pt rsa, endpoint_description_pt endpointDescription, char *methodSignature, char **reply, int* replyStatus);
+celix_status_t remoteServiceAdmin_send(remote_service_admin_t *rsa, endpoint_description_t *endpointDescription, char *methodSignature, char **reply, int* replyStatus);
 
-celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, char *serviceId, celix_properties_t *properties, array_list_pt *registrations);
-celix_status_t remoteServiceAdmin_removeExportedService(remote_service_admin_pt admin, export_registration_pt registration);
-celix_status_t remoteServiceAdmin_getExportedServices(remote_service_admin_pt admin, array_list_pt *services);
-celix_status_t remoteServiceAdmin_getImportedEndpoints(remote_service_admin_pt admin, array_list_pt *services);
-celix_status_t remoteServiceAdmin_importService(remote_service_admin_pt admin, endpoint_description_pt endpoint, import_registration_pt *registration);
-celix_status_t remoteServiceAdmin_removeImportedService(remote_service_admin_pt admin, import_registration_pt registration);
+celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *admin, char *serviceId, celix_properties_t *properties, array_list_pt *registrations);
+celix_status_t remoteServiceAdmin_removeExportedService(remote_service_admin_t *admin, export_registration_t *registration);
+celix_status_t remoteServiceAdmin_getExportedServices(remote_service_admin_t *admin, array_list_pt *services);
+celix_status_t remoteServiceAdmin_getImportedEndpoints(remote_service_admin_t *admin, array_list_pt *services);
+celix_status_t remoteServiceAdmin_importService(remote_service_admin_t *admin, endpoint_description_t *endpoint, import_registration_t **registration);
+celix_status_t remoteServiceAdmin_removeImportedService(remote_service_admin_t *admin, import_registration_t *registration);
 
-celix_status_t remoteServiceAdmin_destroyEndpointDescription(endpoint_description_pt *description);
+celix_status_t remoteServiceAdmin_destroyEndpointDescription(endpoint_description_t **description);
 
 #endif /* REMOTE_SERVICE_ADMIN_IMPL_H_ */

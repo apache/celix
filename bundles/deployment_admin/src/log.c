@@ -36,7 +36,7 @@ struct log {
 	log_store_pt logStore;
 };
 
-celix_status_t log_create(log_store_pt store, log_pt *log) {
+celix_status_t log_create(log_store_pt store, log_t **log) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	*log = calloc(1, sizeof(**log));
@@ -49,12 +49,12 @@ celix_status_t log_create(log_store_pt store, log_pt *log) {
 	return status;
 }
 
-celix_status_t log_destroy(log_pt *log) {
+celix_status_t log_destroy(log_t **log) {
 	free(*log);
 	return CELIX_SUCCESS;
 }
 
-celix_status_t log_log(log_pt log, unsigned int type, properties_pt properties) {
+celix_status_t log_log(log_t *log, unsigned int type, properties_pt properties) {
 	celix_status_t status;
 
 	log_event_pt event = NULL;

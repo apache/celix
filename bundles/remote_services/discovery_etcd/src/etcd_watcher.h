@@ -32,10 +32,9 @@
 #include "endpoint_discovery_poller.h"
 
 typedef struct etcd_watcher etcd_watcher_t;
-typedef struct etcd_watcher *etcd_watcher_pt;
 
-celix_status_t etcdWatcher_create(discovery_pt discovery,  bundle_context_pt context, etcd_watcher_pt *watcher);
-celix_status_t etcdWatcher_destroy(etcd_watcher_pt watcher);
+celix_status_t etcdWatcher_create(discovery_t *discovery,  celix_bundle_context_t *context, etcd_watcher_t **watcher);
+celix_status_t etcdWatcher_destroy(etcd_watcher_t *watcher);
 
 
 #endif /* ETCD_WATCHER_H_ */

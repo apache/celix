@@ -60,8 +60,8 @@ struct pubsub_tcp_topic_receiver {
     char *topic;
     char scopeAndTopicFilter[5];
     bool metricsEnabled;
-    pubsub_tcpHandler_pt socketHandler;
-    pubsub_tcpHandler_pt sharedSocketHandler;
+    pubsub_tcpHandler_t *socketHandler;
+    pubsub_tcpHandler_t *sharedSocketHandler;
 
     struct {
         celix_thread_t thread;
@@ -172,7 +172,7 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
     /* When it's an endpoint share the socket with the receiver */
     if (staticBindUrl != NULL || (isEndPointTypeClient && staticConnectUrls != NULL)) {
         celixThreadMutex_lock(&receiver->thread.mutex);
-        pubsub_tcpHandler_pt entry = hashMap_get(endPointStore->map, (isEndPointTypeServer) ? staticBindUrl : staticConnectUrls);
+        pubsub_tcpHandler_t *entry = hashMap_get(endPointStore->map, (isEndPointTypeServer) ? staticBindUrl : staticConnectUrls);
         if (entry != NULL) {
             receiver->socketHandler = entry;
             receiver->sharedSocketHandler = entry;

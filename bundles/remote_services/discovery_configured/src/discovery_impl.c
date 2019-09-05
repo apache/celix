@@ -37,7 +37,7 @@
 #include "discovery_impl.h"
 
 
-celix_status_t discovery_create(bundle_context_pt context, discovery_pt *discovery) {
+celix_status_t discovery_create(celix_bundle_context_t *context, discovery_t **discovery) {
 	celix_status_t status;
 
 	*discovery = malloc(sizeof(struct discovery));
@@ -61,7 +61,7 @@ celix_status_t discovery_create(bundle_context_pt context, discovery_pt *discove
 	return status;
 }
 
-celix_status_t discovery_start(discovery_pt discovery) {
+celix_status_t discovery_start(discovery_t *discovery) {
     celix_status_t status;
 
 	logHelper_start(discovery->loghelper);
@@ -79,7 +79,7 @@ celix_status_t discovery_start(discovery_pt discovery) {
     return status;
 }
 
-celix_status_t discovery_stop(discovery_pt discovery) {
+celix_status_t discovery_stop(discovery_t *discovery) {
 	celix_status_t status;
 
 	status = endpointDiscoveryServer_destroy(discovery->server);
@@ -90,7 +90,7 @@ celix_status_t discovery_stop(discovery_pt discovery) {
 	return status;
 }
 
-celix_status_t discovery_destroy(discovery_pt discovery) {
+celix_status_t discovery_destroy(discovery_t *discovery) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	discovery->context = NULL;

@@ -35,7 +35,7 @@
 
 static celix_status_t endpointDescription_verifyLongProperty(celix_properties_t *properties, char *propertyName, unsigned long *longProperty);
 
-celix_status_t endpointDescription_create(celix_properties_t *properties, endpoint_description_pt *endpointDescription) {
+celix_status_t endpointDescription_create(celix_properties_t *properties, endpoint_description_t **endpointDescription) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	unsigned long serviceId = 0UL;
@@ -44,7 +44,7 @@ celix_status_t endpointDescription_create(celix_properties_t *properties, endpoi
 		return status;
 	}
 
-	endpoint_description_pt ep = calloc(1,sizeof(*ep));
+	endpoint_description_t *ep = calloc(1,sizeof(*ep));
 
     ep->properties = properties;
     ep->frameworkUUID = (char*)celix_properties_get(properties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, NULL);
@@ -68,7 +68,7 @@ celix_status_t endpointDescription_create(celix_properties_t *properties, endpoi
     return status;
 }
 
-celix_status_t endpointDescription_destroy(endpoint_description_pt description) {
+celix_status_t endpointDescription_destroy(endpoint_description_t *description) {
     celix_properties_destroy(description->properties);
     free(description->service);
     free(description);

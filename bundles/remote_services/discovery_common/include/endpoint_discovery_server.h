@@ -19,9 +19,9 @@
 /*
  * endpoint_discovery_server.h
  *
- * \date		Aug 12, 2014
- * \author		<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- * \copyright	Apache License, Version 2.0
+ * \date      Aug 12, 2014
+ * \author    <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
+ * \copyright Apache License, Version 2.0
  */
 
 #ifndef ENDPOINT_DISCOVERY_SERVER_H_
@@ -31,7 +31,6 @@
 #include "discovery_type.h"
 
 typedef struct endpoint_discovery_server endpoint_discovery_server_t;
-typedef struct endpoint_discovery_server *endpoint_discovery_server_pt;
 
 /**
  * Creates and starts a new instance of an endpoint discovery server.
@@ -42,12 +41,12 @@ typedef struct endpoint_discovery_server *endpoint_discovery_server_pt;
  * @return CELIX_SUCCESS when successful.
  */
 celix_status_t endpointDiscoveryServer_create(
-        discovery_pt discovery,
-        bundle_context_pt context,
-        const char* defaultServerPath,
-        const char* defaultServerPort,
-        const char* defaultServerIp,
-        endpoint_discovery_server_pt *server);
+        discovery_t *discovery,
+        celix_bundle_context_t *context,
+        const char *defaultServerPath,
+        const char *defaultServerPort,
+        const char *defaultServerIp,
+        endpoint_discovery_server_t **server);
 
 /**
  * Stops and destroys a given instance of an endpoint discovery server.
@@ -55,7 +54,7 @@ celix_status_t endpointDiscoveryServer_create(
  * @param server [in] the pointer to the instance to destroy.
  * @return CELIX_SUCCESS when successful.
  */
-celix_status_t endpointDiscoveryServer_destroy(endpoint_discovery_server_pt server);
+celix_status_t endpointDiscoveryServer_destroy(endpoint_discovery_server_t *server);
 
 /**
  * Adds a given endpoint description to expose through the given discovery server.
@@ -64,7 +63,7 @@ celix_status_t endpointDiscoveryServer_destroy(endpoint_discovery_server_pt serv
  * @param endpoint [in] the endpoint description to expose.
  * @return CELIX_SUCCESS when successful.
  */
-celix_status_t endpointDiscoveryServer_addEndpoint(endpoint_discovery_server_pt server, endpoint_description_pt endpoint);
+celix_status_t endpointDiscoveryServer_addEndpoint(endpoint_discovery_server_t *server, endpoint_description_t *endpoint);
 
 /**
  * Removes a given endpoint description from exposure through the given discovery server.
@@ -73,7 +72,7 @@ celix_status_t endpointDiscoveryServer_addEndpoint(endpoint_discovery_server_pt 
  * @param endpoint [in] the endpoint description to remove.
  * @return CELIX_SUCCESS when successful.
  */
-celix_status_t endpointDiscoveryServer_removeEndpoint( endpoint_discovery_server_pt server, endpoint_description_pt endpoint);
+celix_status_t endpointDiscoveryServer_removeEndpoint(endpoint_discovery_server_t *server, endpoint_description_t *endpoint);
 
 /**
  * Returns the url, which is used by the discovery server to announce the endpoints
@@ -82,7 +81,7 @@ celix_status_t endpointDiscoveryServer_removeEndpoint( endpoint_discovery_server
  * @param url [out] url which is used to announce the endpoints.
  * @return CELIX_SUCCESS when successful.
  */
-celix_status_t endpointDiscoveryServer_getUrl(endpoint_discovery_server_pt server, char* url);
+celix_status_t endpointDiscoveryServer_getUrl(endpoint_discovery_server_t *server, char* url);
 
 
 #endif /* ENDPOINT_DISCOVERY_SERVER_H_ */

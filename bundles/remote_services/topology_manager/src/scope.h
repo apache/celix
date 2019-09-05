@@ -85,7 +85,7 @@ void scope_setImportScopeChangedCallback(scope_pt scope, celix_status_t (*change
  * \return true import allowed
  *         false import not allowed
  */
-bool scope_allowImport(scope_pt scope, endpoint_description_pt endpoint);
+bool scope_allowImport(scope_pt scope, endpoint_description_t *endpoint);
 
 /* \brief  Test if scope allows import of service
  *

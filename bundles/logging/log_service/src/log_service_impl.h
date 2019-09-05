@@ -30,10 +30,10 @@
 #include "log_service.h"
 #include "log.h"
 
-celix_status_t logService_create(log_pt log, bundle_pt bundle, log_service_data_pt *logger);
-celix_status_t logService_destroy(log_service_data_pt *logger);
-celix_status_t logService_log(log_service_data_pt logger, log_level_t level, char * message);
-celix_status_t logService_logSr(log_service_data_pt logger, service_reference_pt reference, log_level_t level, char * message);
+celix_status_t logService_create(log_t *log, celix_bundle_t *bundle, log_service_data_t **logger);
+celix_status_t logService_destroy(log_service_data_t **logger);
+celix_status_t logService_log(log_service_data_t *logger, log_level_t level, char * message);
+celix_status_t logService_logSr(log_service_data_t *logger, service_reference_pt reference, log_level_t level, char * message);
 
 
 #endif /* LOG_SERVICE_IMPL_H_ */

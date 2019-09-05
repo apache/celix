@@ -54,7 +54,7 @@ struct pubsub_udpmc_topic_receiver {
     char *scope;
     char *topic;
     char* ifIpAddress;
-    largeUdp_pt largeUdpHandle;
+    largeUdp_t *largeUdpHandle;
     int topicEpollFd; // EPOLL filedescriptor where the sockets are registered.
 
     struct {

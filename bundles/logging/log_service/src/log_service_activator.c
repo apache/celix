@@ -43,23 +43,23 @@
 #define STORE_DEBUG_PROPERTY "CELIX_LOG_STORE_DEBUG"
 
 struct logActivator {
-    bundle_context_pt bundleContext;
-    service_registration_pt logServiceFactoryReg;
-    service_registration_pt logReaderServiceReg;
+    celix_bundle_context_t *bundleContext;
+    service_registration_t *logServiceFactoryReg;
+    service_registration_t *logReaderServiceReg;
 
-    bundle_listener_pt bundleListener;
-    framework_listener_pt frameworkListener;
+    bundle_listener_t *bundleListener;
+    framework_listener_t *frameworkListener;
 
-    log_pt logger;
+    log_t *logger;
     service_factory_pt factory;
-    log_reader_data_pt reader;
-    log_reader_service_pt reader_service;
+    log_reader_data_t *reader;
+    log_reader_service_t *reader_service;
 };
 
 static celix_status_t bundleActivator_getMaxSize(struct logActivator *activator, int *max_size);
 static celix_status_t bundleActivator_getStoreDebug(struct logActivator *activator, bool *store_debug);
 
-celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
+celix_status_t bundleActivator_create(celix_bundle_context_t *context, void **userData) {
     celix_status_t status = CELIX_SUCCESS;
 	struct logActivator * activator = NULL;
 
@@ -83,7 +83,7 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
     return status;
 }
 
-celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
+celix_status_t bundleActivator_start(void * userData, celix_bundle_context_t *context) {
     struct logActivator * activator = (struct logActivator *) userData;
     celix_status_t status = CELIX_SUCCESS;
 
@@ -108,8 +108,8 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 
     logFactory_create(activator->logger, &activator->factory);
 
-	properties_pt props = properties_create();
-	properties_set(props, CELIX_FRAMEWORK_SERVICE_LANGUAGE, CELIX_FRAMEWORK_SERVICE_C_LANGUAGE);
+	celix_properties_t *props = celix_properties_create();
+	celix_properties_set(props, CELIX_FRAMEWORK_SERVICE_LANGUAGE, CELIX_FRAMEWORK_SERVICE_C_LANGUAGE);
 
 
 	bundleContext_registerServiceFactory(context, (char *) OSGI_LOGSERVICE_NAME, activator->factory, props, &activator->logServiceFactoryReg);
@@ -123,15 +123,15 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
     activator->reader_service->removeLogListener = logReaderService_removeLogListener;
     activator->reader_service->removeAllLogListener = logReaderService_removeAllLogListener;
 
-	props = properties_create();
-	properties_set(props, CELIX_FRAMEWORK_SERVICE_LANGUAGE, CELIX_FRAMEWORK_SERVICE_C_LANGUAGE);
+	props = celix_properties_create();
+	celix_properties_set(props, CELIX_FRAMEWORK_SERVICE_LANGUAGE, CELIX_FRAMEWORK_SERVICE_C_LANGUAGE);
 
     bundleContext_registerService(context, (char *) OSGI_LOGSERVICE_READER_SERVICE_NAME, activator->reader_service, props, &activator->logReaderServiceReg);
 
     return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
+celix_status_t bundleActivator_stop(void * userData, celix_bundle_context_t *context) {
 	struct logActivator * activator = (struct logActivator *) userData;
 
 	serviceRegistration_unregister(activator->logReaderServiceReg);
@@ -155,7 +155,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
     return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
+celix_status_t bundleActivator_destroy(void * userData, celix_bundle_context_t *context) {
 	struct logActivator * activator = (struct logActivator *) userData;
 
 	free(activator);

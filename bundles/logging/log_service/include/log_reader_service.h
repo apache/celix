@@ -28,17 +28,16 @@
 static const char * const OSGI_LOGSERVICE_READER_SERVICE_NAME = "log_reader_service";
 
 typedef struct log_reader_data log_reader_data_t;
-typedef log_reader_data_t* log_reader_data_pt;
 
 struct log_reader_service {
-    log_reader_data_pt reader;
-    celix_status_t (*getLog)(log_reader_data_pt reader, linked_list_pt *list);
-    celix_status_t (*addLogListener)(log_reader_data_pt reader, log_listener_t *listener);
-    celix_status_t (*removeLogListener)(log_reader_data_pt reader, log_listener_t *listener);
-    celix_status_t (*removeAllLogListener)(log_reader_data_pt reader);
+    log_reader_data_t *reader;
+    celix_status_t (*getLog)(log_reader_data_t *reader, linked_list_pt *list);
+    celix_status_t (*addLogListener)(log_reader_data_t *reader, log_listener_t *listener);
+    celix_status_t (*removeLogListener)(log_reader_data_t *reader, log_listener_t *listener);
+    celix_status_t (*removeAllLogListener)(log_reader_data_t *reader);
 };
 
-typedef struct log_reader_service * log_reader_service_pt;
 typedef struct log_reader_service log_reader_service_t;
+typedef struct log_reader_service *log_reader_service_pt CELIX_DEPRECATED_ATTR;
 
 #endif /* LOG_READER_SERVICE_H_ */

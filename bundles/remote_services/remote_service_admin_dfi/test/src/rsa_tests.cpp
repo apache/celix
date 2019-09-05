@@ -39,13 +39,13 @@ extern "C" {
 #define TST_CONFIGURATION_TYPE "org.amdatu.remote.admin.http"
 
     static framework_pt framework = NULL;
-    static bundle_context_pt context = NULL;
+    static celix_bundle_context_t *context = NULL;
 
     static service_reference_pt rsaRef = NULL;
-    static remote_service_admin_service_pt rsa = NULL;
+    static remote_service_admin_service_t *rsa = NULL;
 
     static service_reference_pt calcRef = NULL;
-    static calculator_service_pt calc = NULL;
+    static calculator_service_t *calc = NULL;
 
     static void setupFm(void) {
         int rc = 0;
@@ -53,7 +53,7 @@ extern "C" {
         rc = celixLauncher_launch("config.properties", &framework);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
 
-        bundle_pt bundle = NULL;
+        celix_bundle_t *bundle = NULL;
         rc = framework_getFrameworkBundle(framework, &bundle);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
 
@@ -138,15 +138,15 @@ extern "C" {
 
         CHECK_EQUAL(1, arrayList_size(regs));
 
-        rc = rsa->exportRegistration_close(rsa->admin,(export_registration_pt)(arrayList_get(regs,0)));
+        rc = rsa->exportRegistration_close(rsa->admin,(export_registration_t *)(arrayList_get(regs,0)));
         CHECK_EQUAL(CELIX_SUCCESS, rc);
 
     }
 
     static void testImportService(void) {
         int rc = 0;
-        import_registration_pt reg = NULL;
-        endpoint_description_pt endpoint = NULL;
+        import_registration_t *reg = NULL;
+        endpoint_description_t *endpoint = NULL;
 
         celix_properties_t *props = celix_properties_create();
         celix_properties_set(props, OSGI_RSA_ENDPOINT_SERVICE_ID, "42");
@@ -192,11 +192,11 @@ extern "C" {
         int size = arrayList_size(bundles);
         int i;
         for (i = 0; i < size; i += 1) {
-            bundle_pt bundle = NULL;
+            celix_bundle_t *bundle = NULL;
             module_pt module = NULL;
             char *name = NULL;
 
-            bundle = (bundle_pt) arrayList_get(bundles, i);
+            bundle = (celix_bundle_t *) arrayList_get(bundles, i);
             bundle_getCurrentModule(bundle, &module);
             module_getSymbolicName(module, &name);
             printf("got bundle with symbolic name '%s'", name);

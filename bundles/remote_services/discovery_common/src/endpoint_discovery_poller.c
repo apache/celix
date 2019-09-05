@@ -46,14 +46,14 @@
 #define DEFAULT_POLL_TIMEOUT "10" // seconds
 
 static void *endpointDiscoveryPoller_performPeriodicPoll(void *data);
-celix_status_t endpointDiscoveryPoller_poll(endpoint_discovery_poller_pt poller, char *url, array_list_pt currentEndpoints);
-static celix_status_t endpointDiscoveryPoller_getEndpoints(endpoint_discovery_poller_pt poller, char *url, array_list_pt *updatedEndpoints);
+celix_status_t endpointDiscoveryPoller_poll(endpoint_discovery_poller_t *poller, char *url, array_list_pt currentEndpoints);
+static celix_status_t endpointDiscoveryPoller_getEndpoints(endpoint_discovery_poller_t *poller, char *url, array_list_pt *updatedEndpoints);
 static celix_status_t endpointDiscoveryPoller_endpointDescriptionEquals(const void *endpointPtr, const void *comparePtr, bool *equals);
 
 /**
  * Allocates memory and initializes a new endpoint_discovery_poller instance.
  */
-celix_status_t endpointDiscoveryPoller_create(discovery_pt discovery, bundle_context_pt context, const char* defaultPollEndpoints, endpoint_discovery_poller_pt *poller) {
+celix_status_t endpointDiscoveryPoller_create(discovery_t *discovery, celix_bundle_context_t *context, const char* defaultPollEndpoints, endpoint_discovery_poller_t **poller) {
 	celix_status_t status;
 
 	*poller = malloc(sizeof(struct endpoint_discovery_poller));
@@ -124,7 +124,7 @@ celix_status_t endpointDiscoveryPoller_create(discovery_pt discovery, bundle_con
 /**
  * Destroys and frees up memory for a given endpoint_discovery_poller struct.
  */
-celix_status_t endpointDiscoveryPoller_destroy(endpoint_discovery_poller_pt poller) {
+celix_status_t endpointDiscoveryPoller_destroy(endpoint_discovery_poller_t *poller) {
 	celix_status_t status;
 
 	poller->running = false;
@@ -160,7 +160,7 @@ celix_status_t endpointDiscoveryPoller_destroy(endpoint_discovery_poller_pt poll
 }
 
 
-celix_status_t endpointDiscoveryPoller_getDiscoveryEndpoints(endpoint_discovery_poller_pt poller, array_list_pt urls) {
+celix_status_t endpointDiscoveryPoller_getDiscoveryEndpoints(endpoint_discovery_poller_t *poller, array_list_pt urls) {
 	celixThreadMutex_lock(&(poller)->pollerLock);
 
 	hash_map_iterator_pt iterator = hashMapIterator_create(poller->entries);
@@ -181,7 +181,7 @@ celix_status_t endpointDiscoveryPoller_getDiscoveryEndpoints(endpoint_discovery_
 /**
  * Adds a new endpoint URL to the list of polled endpoints.
  */
-celix_status_t endpointDiscoveryPoller_addDiscoveryEndpoint(endpoint_discovery_poller_pt poller, char *url) {
+celix_status_t endpointDiscoveryPoller_addDiscoveryEndpoint(endpoint_discovery_poller_t *poller, char *url) {
 	celix_status_t status;
 
 	status = celixThreadMutex_lock(&(poller)->pollerLock);
@@ -209,7 +209,7 @@ celix_status_t endpointDiscoveryPoller_addDiscoveryEndpoint(endpoint_discovery_p
 /**
  * Removes an endpoint URL from the list of polled endpoints.
  */
-celix_status_t endpointDiscoveryPoller_removeDiscoveryEndpoint(endpoint_discovery_poller_pt poller, char *url) {
+celix_status_t endpointDiscoveryPoller_removeDiscoveryEndpoint(endpoint_discovery_poller_t *poller, char *url) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (celixThreadMutex_lock(&poller->pollerLock) != CELIX_SUCCESS) {
@@ -228,7 +228,7 @@ celix_status_t endpointDiscoveryPoller_removeDiscoveryEndpoint(endpoint_discover
 
 			if (entries != NULL) {
 				for (unsigned int i = arrayList_size(entries); i > 0; i--) {
-					endpoint_description_pt endpoint = arrayList_get(entries, i - 1);
+					endpoint_description_t *endpoint = arrayList_get(entries, i - 1);
 					discovery_removeDiscoveredEndpoint(poller->discovery, endpoint);
 					arrayList_remove(entries, i - 1);
 					endpointDescription_destroy(endpoint);
@@ -247,7 +247,7 @@ celix_status_t endpointDiscoveryPoller_removeDiscoveryEndpoint(endpoint_discover
 
 
 
-celix_status_t endpointDiscoveryPoller_poll(endpoint_discovery_poller_pt poller, char *url, array_list_pt currentEndpoints) {
+celix_status_t endpointDiscoveryPoller_poll(endpoint_discovery_poller_t *poller, char *url, array_list_pt currentEndpoints) {
 	celix_status_t status;
 	array_list_pt updatedEndpoints = NULL;
 
@@ -258,7 +258,7 @@ celix_status_t endpointDiscoveryPoller_poll(endpoint_discovery_poller_pt poller,
 	if (status == CELIX_SUCCESS) {
 		if (updatedEndpoints != NULL) {
 			for (unsigned int i = arrayList_size(currentEndpoints); i > 0; i--) {
-				endpoint_description_pt endpoint = arrayList_get(currentEndpoints, i - 1);
+				endpoint_description_t *endpoint = arrayList_get(currentEndpoints, i - 1);
 
 				if (!arrayList_contains(updatedEndpoints, endpoint)) {
 					status = discovery_removeDiscoveredEndpoint(poller->discovery, endpoint);
@@ -268,7 +268,7 @@ celix_status_t endpointDiscoveryPoller_poll(endpoint_discovery_poller_pt poller,
 			}
 
 			for (int i = arrayList_size(updatedEndpoints); i > 0; i--) {
-				endpoint_description_pt endpoint = arrayList_remove(updatedEndpoints, 0);
+				endpoint_description_t *endpoint = arrayList_remove(updatedEndpoints, 0);
 
 				if (!arrayList_contains(currentEndpoints, endpoint)) {
 					arrayList_add(currentEndpoints, endpoint);
@@ -289,7 +289,7 @@ celix_status_t endpointDiscoveryPoller_poll(endpoint_discovery_poller_pt poller,
 }
 
 static void *endpointDiscoveryPoller_performPeriodicPoll(void *data) {
-	endpoint_discovery_poller_pt poller = (endpoint_discovery_poller_pt) data;
+	endpoint_discovery_poller_t *poller = (endpoint_discovery_poller_t *) data;
 
 	useconds_t interval = (useconds_t) (poller->poll_interval * 1000000L);
 
@@ -347,7 +347,7 @@ static size_t endpointDiscoveryPoller_writeMemory(void *contents, size_t size, s
 	return realsize;
 }
 
-static celix_status_t endpointDiscoveryPoller_getEndpoints(endpoint_discovery_poller_pt poller, char *url, array_list_pt *updatedEndpoints) {
+static celix_status_t endpointDiscoveryPoller_getEndpoints(endpoint_discovery_poller_t *poller, char *url, array_list_pt *updatedEndpoints) {
 	celix_status_t status = CELIX_SUCCESS;
 
 
@@ -375,7 +375,7 @@ static celix_status_t endpointDiscoveryPoller_getEndpoints(endpoint_discovery_po
 
 	// process endpoints file
 	if (res == CURLE_OK) {
-		endpoint_descriptor_reader_pt reader = NULL;
+		endpoint_descriptor_reader_t *reader = NULL;
 
 		status = endpointDescriptorReader_create(poller, &reader);
 		if (status == CELIX_SUCCESS) {
@@ -398,8 +398,8 @@ static celix_status_t endpointDiscoveryPoller_getEndpoints(endpoint_discovery_po
 }
 
 static celix_status_t endpointDiscoveryPoller_endpointDescriptionEquals(const void *endpointPtr, const void *comparePtr, bool *equals) {
-	endpoint_description_pt endpoint = (endpoint_description_pt) endpointPtr;
-	endpoint_description_pt compare = (endpoint_description_pt) comparePtr;
+	endpoint_description_t *endpoint = (endpoint_description_t *) endpointPtr;
+	endpoint_description_t *compare = (endpoint_description_t *) comparePtr;
 
 	if (strcmp(endpoint->id, compare->id) == 0) {
 		*equals = true;

@@ -19,26 +19,25 @@
 /*
  * event_handler_activator.c
  *
- * Created on: Jul 9, 2013
- * \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- * \copyright	Apache License, Version 2.0
+ * \date        Jul 9, 2013
+ * \author      <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
+ * \copyright   Apache License, Version 2.0
  */
+
 #include <stdlib.h>
-
-
 
 #include "event_handler_impl.h"
 
 static const char * const EVENT_HANDLER_NAME = "demo";
 struct activator {
-	event_handler_service_pt event_handler_service;
-	service_registration_pt registration;
-	service_tracker_pt eventAdminTracker;
+    event_handler_service_pt event_handler_service;
+    service_registration_pt registration;
+    service_tracker_pt eventAdminTracker;
 };
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
-	celix_status_t status = CELIX_SUCCESS;
-	struct activator *activator;
+    celix_status_t status = CELIX_SUCCESS;
+    struct activator *activator;
 
     activator = calloc(1, sizeof(*activator));
     activator->registration = NULL;
@@ -55,8 +54,8 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
         } else {
             event_handler_service->event_handler = event_handler;
             event_handler_service->handle_event = eventHandlerHandleEvent;
-		}
-	}
+        }
+    }
     activator->event_handler_service = event_handler_service;
 
 
@@ -64,15 +63,15 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 }
 
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
-	celix_status_t status = CELIX_SUCCESS;
-	struct activator *activator = userData;
+    celix_status_t status = CELIX_SUCCESS;
+    struct activator *activator = userData;
 
-	properties_pt properties = NULL;
-	properties = properties_create();
+    properties_pt properties = NULL;
+    properties = properties_create();
     properties_set(properties, (char *) EVENT_HANDLER_SERVICE, (const char *) EVENT_HANDLER_NAME);
     properties_set(properties, (char *) EVENT_TOPIC, (const char *) "log/error/eventpublishers/event");
 
-	event_handler_service_pt event_handler_service = activator->event_handler_service;
+    event_handler_service_pt event_handler_service = activator->event_handler_service;
     bundleContext_registerService(context, (const char *) EVENT_HANDLER_SERVICE, event_handler_service, properties,
                                   &activator->registration);
 
@@ -84,21 +83,21 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
         activator->eventAdminTracker = tracker;
         serviceTracker_open(tracker);
     }*/
-	return status;
+    return status;
 }
 
 celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
-	celix_status_t status = CELIX_SUCCESS;
+    celix_status_t status = CELIX_SUCCESS;
     struct activator *data = userData;
     serviceRegistration_unregister(data->registration);
     //serviceTracker_close(data->tracker);
     //status = logHelper_stop(data->loghelper);
     //logHelper_destroy(&data->loghelper);
-	return status;
+    return status;
 }
 
 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
-	celix_status_t status = CELIX_SUCCESS;
-	return status;
+    celix_status_t status = CELIX_SUCCESS;
+    return status;
 }

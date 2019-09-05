@@ -23,8 +23,8 @@
 
 #include "celixbool.h"
 
-typedef struct serviceRegistration * service_registration_pt;
 typedef struct serviceRegistration service_registration_t;
+typedef struct serviceRegistration *service_registration_pt; // TODO: Deprecate
 
 
 #include "array_list.h"

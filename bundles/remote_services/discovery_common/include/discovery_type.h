@@ -20,8 +20,7 @@
 #ifndef DISCOVERY_TYPE_H_
 #define DISCOVERY_TYPE_H_
 
-typedef struct discovery  discovery_t;
-typedef struct discovery* discovery_pt;
+typedef struct discovery discovery_t;
 typedef struct discovery_impl discovery_impl_t;
 
 #endif //DISCOVERY_TYPE_H_

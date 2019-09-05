@@ -69,7 +69,7 @@ typedef struct psa_udpmc_bounded_service_entry {
     hash_map_t *msgTypes;
     hash_map_t *msgTypeIds;
     int getCount;
-    largeUdp_pt largeUdpHandle;
+    largeUdp_t *largeUdpHandle;
 } psa_udpmc_bounded_service_entry_t;
 
 typedef struct pubsub_msg {

@@ -30,10 +30,10 @@
 #include "celix_errno.h"
 #include "array_list.h"
 
-typedef struct endpoint_descriptor_writer *endpoint_descriptor_writer_pt;
+typedef struct endpoint_descriptor_writer endpoint_descriptor_writer_t;
 
-celix_status_t endpointDescriptorWriter_create(endpoint_descriptor_writer_pt *writer);
-celix_status_t endpointDescriptorWriter_destroy(endpoint_descriptor_writer_pt writer);
-celix_status_t endpointDescriptorWriter_writeDocument(endpoint_descriptor_writer_pt writer, array_list_pt endpoints, char **document);
+celix_status_t endpointDescriptorWriter_create(endpoint_descriptor_writer_t **writer);
+celix_status_t endpointDescriptorWriter_destroy(endpoint_descriptor_writer_t *writer);
+celix_status_t endpointDescriptorWriter_writeDocument(endpoint_descriptor_writer_t *writer, array_list_pt endpoints, char **document);
 
 #endif /* ENDPOINT_DESCRIPTOR_WRITER_H_ */

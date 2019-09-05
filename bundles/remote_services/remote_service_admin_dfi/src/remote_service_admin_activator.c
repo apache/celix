@@ -28,12 +28,12 @@
 #include "import_registration_dfi.h"
 
 struct activator {
-	remote_service_admin_pt admin;
-	remote_service_admin_service_pt adminService;
-	service_registration_pt registration;
+	remote_service_admin_t *admin;
+	remote_service_admin_service_t *adminService;
+	service_registration_t *registration;
 };
 
-celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
+celix_status_t bundleActivator_create(celix_bundle_context_t *context, void **userData) {
 	celix_status_t status = CELIX_SUCCESS;
 	struct activator *activator;
 
@@ -50,10 +50,10 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 	return status;
 }
 
-celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
+celix_status_t bundleActivator_start(void * userData, celix_bundle_context_t *context) {
 	celix_status_t status = CELIX_SUCCESS;
 	struct activator *activator = userData;
-	remote_service_admin_service_pt remoteServiceAdmin = NULL;
+	remote_service_admin_service_t *remoteServiceAdmin = NULL;
 
 	status = remoteServiceAdmin_create(context, &activator->admin);
 	if (status == CELIX_SUCCESS) {
@@ -90,7 +90,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
+celix_status_t bundleActivator_stop(void * userData, celix_bundle_context_t *context) {
     celix_status_t status = CELIX_SUCCESS;
     struct activator *activator = userData;
 
@@ -105,7 +105,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
     return status;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
+celix_status_t bundleActivator_destroy(void * userData, celix_bundle_context_t *context) {
 	celix_status_t status = CELIX_SUCCESS;
 	struct activator *activator = userData;
 

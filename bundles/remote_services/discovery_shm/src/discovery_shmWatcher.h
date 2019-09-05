@@ -32,10 +32,9 @@
 #include "endpoint_discovery_poller.h"
 
 typedef struct shm_watcher shm_watcher_t;
-typedef struct shm_watcher *shm_watcher_pt;
 
-celix_status_t discoveryShmWatcher_create(discovery_pt discovery);
-celix_status_t discoveryShmWatcher_destroy(discovery_pt discovery);
+celix_status_t discoveryShmWatcher_create(discovery_t *discovery);
+celix_status_t discoveryShmWatcher_destroy(discovery_t *discovery);
 
 
 #endif /* DISCOVERY_SHM_WATCHER_H_ */

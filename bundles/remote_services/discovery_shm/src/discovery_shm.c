@@ -67,7 +67,7 @@ struct shmData {
 
 void* shmAddress;
 
-static celix_status_t discoveryShm_removeWithIndex(shmData_pt data, int index);
+static celix_status_t discoveryShm_removeWithIndex(shmData_t *data, int index);
 
 /* returns the ftok key to identify shared memory*/
 static key_t discoveryShm_getKey() {
@@ -75,10 +75,10 @@ static key_t discoveryShm_getKey() {
 }
 
 /* creates a new shared memory block */
-celix_status_t discoveryShm_create(shmData_pt* data) {
+celix_status_t discoveryShm_create(shmData_t **data) {
     celix_status_t status;
 
-    shmData_pt shmData = calloc(1, sizeof(*shmData));
+    shmData_t *shmData = calloc(1, sizeof(*shmData));
     key_t shmKey = discoveryShm_getKey();
 
     if (!shmData) {
@@ -116,7 +116,7 @@ celix_status_t discoveryShm_create(shmData_pt* data) {
     return status;
 }
 
-celix_status_t discoveryShm_attach(shmData_pt* data) {
+celix_status_t discoveryShm_attach(shmData_t **data) {
     celix_status_t status = CELIX_SUCCESS;
     key_t shmKey = ftok(DISCOVERY_SHM_FILENAME, DISCOVERY_SHM_FTOK_ID);
     int shmId = -1;
@@ -137,7 +137,7 @@ celix_status_t discoveryShm_attach(shmData_pt* data) {
     return status;
 }
 
-static celix_status_t discoveryShm_getwithIndex(shmData_pt data, char* key, char* value, int* index) {
+static celix_status_t discoveryShm_getwithIndex(shmData_t *data, char* key, char* value, int* index) {
     celix_status_t status = CELIX_BUNDLE_EXCEPTION;
     time_t currentTime = time(NULL);
     unsigned int i;
@@ -161,7 +161,7 @@ static celix_status_t discoveryShm_getwithIndex(shmData_pt data, char* key, char
     return status;
 }
 
-celix_status_t discoveryShm_getKeys(shmData_pt data, char** keys, int* size) {
+celix_status_t discoveryShm_getKeys(shmData_t *data, char** keys, int* size) {
     celix_status_t status;
 
     status = celixThreadMutex_lock(&data->globalLock);
@@ -184,7 +184,7 @@ celix_status_t discoveryShm_getKeys(shmData_pt data, char** keys, int* size) {
     return status;
 }
 
-celix_status_t discoveryShm_set(shmData_pt data, char *key, char* value) {
+celix_status_t discoveryShm_set(shmData_t *data, char *key, char* value) {
     celix_status_t status;
     int index = -1;
 
@@ -215,7 +215,7 @@ celix_status_t discoveryShm_set(shmData_pt data, char *key, char* value) {
     return status;
 }
 
-celix_status_t discoveryShm_get(shmData_pt data, char* key, char* value) {
+celix_status_t discoveryShm_get(shmData_t *data, char* key, char* value) {
     celix_status_t status;
 
     status = celixThreadMutex_lock(&data->globalLock);
@@ -229,7 +229,7 @@ celix_status_t discoveryShm_get(shmData_pt data, char* key, char* value) {
     return status;
 }
 
-static celix_status_t discoveryShm_removeWithIndex(shmData_pt data, int index) {
+static celix_status_t discoveryShm_removeWithIndex(shmData_t *data, int index) {
     celix_status_t status = CELIX_SUCCESS;
 
     data->numOfEntries--;
@@ -240,7 +240,7 @@ static celix_status_t discoveryShm_removeWithIndex(shmData_pt data, int index) {
     return status;
 }
 
-celix_status_t discoveryShm_remove(shmData_pt data, char* key) {
+celix_status_t discoveryShm_remove(shmData_t *data, char* key) {
     celix_status_t status;
     int index = -1;
 
@@ -259,7 +259,7 @@ celix_status_t discoveryShm_remove(shmData_pt data, char* key) {
     return status;
 }
 
-celix_status_t discoveryShm_detach(shmData_pt data) {
+celix_status_t discoveryShm_detach(shmData_t *data) {
     celix_status_t status = CELIX_BUNDLE_EXCEPTION;
 
     if (data->numOfEntries == 0) {
@@ -272,7 +272,7 @@ celix_status_t discoveryShm_detach(shmData_pt data) {
     return status;
 }
 
-celix_status_t discoveryShm_destroy(shmData_pt data) {
+celix_status_t discoveryShm_destroy(shmData_t *data) {
     celix_status_t status = CELIX_BUNDLE_EXCEPTION;
 
     if (shmctl(data->shmId, IPC_RMID, 0) == 0) {

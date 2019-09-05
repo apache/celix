@@ -54,7 +54,7 @@ typedef struct udpPartList {
     unsigned int msg_size;
     unsigned int nrPartsRemaining;
     char *data;
-} *udpPartList_pt;
+} udpPartList_t;
 
 
 typedef struct msg_part_header {
@@ -73,10 +73,10 @@ typedef struct msg_part_header {
 //
 // Create a handle
 //
-largeUdp_pt largeUdp_create(unsigned int maxNrUdpReceptions)
+largeUdp_t *largeUdp_create(unsigned int maxNrUdpReceptions)
 {
     printf("## Creating large UDP\n");
-    largeUdp_pt handle = calloc(sizeof(*handle), 1);
+    largeUdp_t *handle = calloc(sizeof(*handle), 1);
     if (handle != NULL) {
         handle->maxNrLists = maxNrUdpReceptions;
         if (arrayList_create(&handle->udpPartLists) != CELIX_SUCCESS) {
@@ -92,7 +92,7 @@ largeUdp_pt largeUdp_create(unsigned int maxNrUdpReceptions)
 //
 // Destroys the handle
 //
-void largeUdp_destroy(largeUdp_pt handle)
+void largeUdp_destroy(largeUdp_t *handle)
 {
     printf("### Destroying large UDP\n");
     if (handle != NULL) {
@@ -100,7 +100,7 @@ void largeUdp_destroy(largeUdp_pt handle)
         int nrUdpLists = arrayList_size(handle->udpPartLists);
         int i;
         for (i=0; i < nrUdpLists; i++) {
-            udpPartList_pt udpPartList = arrayList_remove(handle->udpPartLists, i);
+            udpPartList_t *udpPartList = arrayList_remove(handle->udpPartLists, i);
             if (udpPartList) {
                 if (udpPartList->data) {
                     free(udpPartList->data);
@@ -120,7 +120,7 @@ void largeUdp_destroy(largeUdp_pt handle)
 //
 // Write large data to UDP. This function splits the data in chunks and sends these chunks with a header over UDP.
 //
-int largeUdp_sendmsg(largeUdp_pt handle, int fd, struct iovec *largeMsg_iovec, int len, int flags, struct sockaddr_in *dest_addr, size_t addrlen)
+int largeUdp_sendmsg(largeUdp_t *handle, int fd, struct iovec *largeMsg_iovec, int len, int flags, struct sockaddr_in *dest_addr, size_t addrlen)
 {
     int n;
     int result = 0;
@@ -193,7 +193,7 @@ int largeUdp_sendmsg(largeUdp_pt handle, int fd, struct iovec *largeMsg_iovec, i
 //
 // Write large data to UDP. This function splits the data in chunks and sends these chunks with a header over UDP.
 //
-int largeUdp_sendto(largeUdp_pt handle, int fd, void *buf, size_t count, int flags, struct sockaddr_in *dest_addr, size_t addrlen)
+int largeUdp_sendto(largeUdp_t *handle, int fd, void *buf, size_t count, int flags, struct sockaddr_in *dest_addr, size_t addrlen)
 {
     int n;
     int nr_buffers = (count / MAX_PART_SIZE) + 1;
@@ -241,7 +241,7 @@ int largeUdp_sendto(largeUdp_pt handle, int fd, void *buf, size_t count, int fla
 // Reads data from the filedescriptor which has date (determined by epoll()) and stores it in the internal structure
 // If the message is completely reassembled true is returned and the index and size have valid values
 //
-bool largeUdp_dataAvailable(largeUdp_pt handle, int fd, unsigned int *index, unsigned int *size) {
+bool largeUdp_dataAvailable(largeUdp_t *handle, int fd, unsigned int *index, unsigned int *size) {
     msg_part_header_t header;
     int result = false;
     // Only read the header, we don't know yet where to store the payload
@@ -269,7 +269,7 @@ bool largeUdp_dataAvailable(largeUdp_pt handle, int fd, unsigned int *index, uns
     int i;
     bool found = false;
     for (i = 0; i < nrUdpLists; i++) {
-        udpPartList_pt udpPartList = arrayList_get(handle->udpPartLists, i);
+        udpPartList_t *udpPartList = arrayList_get(handle->udpPartLists, i);
         if (udpPartList->msg_ident == header.msg_ident) {
             found = true;
 
@@ -305,7 +305,7 @@ bool largeUdp_dataAvailable(largeUdp_pt handle, int fd, unsigned int *index, uns
     }
 
     if (found == false) {
-        udpPartList_pt udpPartList = NULL;
+        udpPartList_t *udpPartList = NULL;
         if (nrUdpLists == handle->maxNrLists) {
             // remove list at index 0
             udpPartList = arrayList_remove(handle->udpPartLists, 0);
@@ -348,12 +348,12 @@ bool largeUdp_dataAvailable(largeUdp_pt handle, int fd, unsigned int *index, uns
 //
 // Read out the message which is indicated available by the largeUdp_dataAvailable function
 //
-int largeUdp_read(largeUdp_pt handle, unsigned int index, void ** buffer, unsigned int size)
+int largeUdp_read(largeUdp_t *handle, unsigned int index, void ** buffer, unsigned int size)
 {
     int result = 0;
     pthread_mutex_lock(&handle->dbLock);
 
-    udpPartList_pt udpPartList = arrayList_remove(handle->udpPartLists, index);
+    udpPartList_t *udpPartList = arrayList_remove(handle->udpPartLists, index);
     if (udpPartList) {
         *buffer = udpPartList->data;
         free(udpPartList);
