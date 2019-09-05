@@ -1,0 +1,107 @@
+name: Celix
+
+on: [push, pull_request]
+
+jobs:
+  Build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-18.04, ubuntu-16.04, macOS-10.14]
+        compiler: [gcc, clang]
+        include:
+          - os: ubuntu-18.04
+            compiler: gcc
+            sanitize: true
+    timeout-minutes: 120
+    steps:
+    - uses: actions/checkout@master
+    - name: Install dependencies
+      run: |
+        if [[ "${{ matrix.os }}" == "ubuntu"* ]]; then
+          sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
+          sudo apt-get -qq update
+          sudo apt-get install -y uuid-dev libxml2-dev lcov libffi-dev libcurl4-openssl-dev gcc-4.8 g++-4.8
+        fi
+        if [[ "${{ matrix.os }}" == "macOS"* ]]; then
+          brew update
+          brew install lcov libffi zeromq czmq openssl
+          brew link --force libffi
+          brew unlink openssl && brew link openssl --force
+        fi
+        wget https://github.com/cpputest/cpputest/releases/download/v3.8/cpputest-3.8.tar.gz -O /tmp/cpputest.tar.gz
+        tar -xzvf /tmp/cpputest.tar.gz -C /tmp
+        cd /tmp/cpputest-* && ./configure --prefix=/usr/local && make && sudo make install && cd -
+        if [[ "${{ matrix.os }}" == "ubuntu"* ]]; then
+          wget https://github.com/zeromq/libzmq/releases/download/v4.3.1/zeromq-4.3.1.tar.gz -O /tmp/zeromq.tar.gz
+          tar -xzvf /tmp/zeromq.tar.gz -C /tmp && cd /tmp/zeromq-* && mkdir build && cd build
+          cmake -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_CURVE=ON .. && make && sudo make install
+          wget https://github.com/zeromq/czmq/releases/download/v4.2.0/czmq-4.2.0.tar.gz -O /tmp/czmq.tar.gz
+          tar -xzvf /tmp/czmq.tar.gz -C /tmp && cd /tmp/czmq-* && mkdir build && cd build
+          cmake -DCMAKE_INSTALL_PREFIX=/usr/local .. && make && sudo make install
+        fi
+        cd /tmp && git clone https://github.com/akheron/jansson.git jansson-build
+        cd jansson-build && git checkout 2.7
+        cmake -DJANSSON_BUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=/usr/local . && make && sudo make install
+        cd $GITHUB_WORKSPACE
+    - name: Build
+      env:
+        CC: ${{ matrix.compiler }}
+        BUILD_OPTIONS: |
+          -DBUILD_DEPLOYMENT_ADMIN=ON
+          -DBUILD_DEPENDENCY_MANAGER=ON
+          -DBUILD_EXAMPLES=ON -DBUILD_LOG_SERVICE=ON
+          -DBUILD_LOG_WRITER=ON
+          -DBUILD_REMOTE_SERVICE_ADMIN=OFF
+          -DBUILD_RSA_REMOTE_SERVICE_ADMIN_DFI=OFF
+          -DBUILD_RSA_DISCOVERY_CONFIGURED=ON
+          -DBUILD_RSA_DISCOVERY_ETCD=ON
+          -DBUILD_RSA_EXAMPLES=ON
+          -DBUILD_REMOTE_SHELL=ON
+          -DBUILD_SHELL=ON
+          -DBUILD_SHELL_TUI=ON -DBUILD_DEVICE_ACCESS=ON
+          -DBUILD_DEVICE_ACCESS_EXAMPLE=ON
+          -DBUILD_HTTP_ADMIN=ON
+        BUILD_OPTIONS_LINUX: |
+          -DBUILD_RSA_REMOTE_SERVICE_ADMIN_SHM=ON
+          -DBUILD_PUBSUB=ON
+          -DBUILD_PUBSUB_PSA_ZMQ=ON
+          -DBUILD_PUBSUB_TESTS=ON
+          -DBUILD_RSA_DISCOVERY_SHM=ON
+        BUILD_OPTIONS_OSX: |
+          -DBUILD_RSA_REMOTE_SERVICE_ADMIN_SHM=OFF
+          -DBUILD_PUBSUB=OFF
+          -DBUILD_RSA_DISCOVERY_SHM=OFF
+        BUILD_OPTIONS_SANITIZE: |
+          -DENABLE_ADDRESS_SANITIZER=ON
+      run: |
+        mkdir build install
+        cd build
+        if [[ "${{ matrix.sanitize }}" == "true" ]]; then
+          export BUILD_OPTIONS="${BUILD_OPTIONS} ${BUILD_OPTIONS_SANITIZE}"
+        fi
+        if [[ "${{ matrix.os }}" == "ubuntu"* ]]; then
+          cmake -DCMAKE_BUILD_TYPE=Debug ${BUILD_OPTIONS} ${BUILD_OPTIONS_LINUX} \
+              -DBUILD_FRAMEWORK_TESTS=ON \
+              -DBUILD_UTILS-TESTS=ON \
+              -DENABLE_TESTING=ON ${BUILD_OPTS} \
+              -DCMAKE_INSTALL_PREFIX=../install ..
+        fi
+        if [[ "${{ matrix.os }}" == "macOS"* ]]; then
+          cmake -DCMAKE_BUILD_TYPE=Debug ${BUILD_OPTIONS} ${BUILD_OPTIONS_OSX} \
+              -DBUILD_FRAMEWORK_TESTS=ON \
+              -DBUILD_UTILS-TESTS=ON \
+              -DENABLE_TESTING=ON \
+              -DFFI_INCLUDE_DIR=/usr/local/opt/libffi/lib/libffi-3.2.1/include \
+              -DFFI_LIBRARY=/usr/local/opt/libffi/lib/libffi.dylib \
+              ${BUILD_OPTS} \
+              -DCMAKE_INSTALL_PREFIX=../install ..
+        fi
+        make all && make deploy && make install
+    - name: Test
+      run: |
+        cd $GITHUB_WORKSPACE/build
+        export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH:$(pwd)/utils:$(pwd)/framework:$(pwd)/dfi
+        make test ARGS="-V"
+
