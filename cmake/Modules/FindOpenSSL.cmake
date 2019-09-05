@@ -25,10 +25,12 @@
 
 find_path(OPENSSL_INCLUDE_DIR ssl.h crypto.h
           /usr/include/openssl
-          /usr/local/include/openssl )
+          /usr/local/include/openssl 
+          /usr/local/opt/openssl/include/openssl
+          ${OPENSSL_DIR}/include/openssl)
 
 find_library(OPENSSL_LIBRARY NAMES ssl
-             PATHS /usr/lib /usr/local/lib )
+             PATHS /usr/lib /usr/local/lib  /usr/local/opt/openssl/lib ${OPENSSL_DIR}/lib)
 
 set(OPENSSL_LIBRARIES ${OPENSSL_LIBRARY} )
 set(OPENSSL_INCLUDE_DIRS ${OPENSSL_INCLUDE_DIR} )
