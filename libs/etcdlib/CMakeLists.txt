@@ -70,10 +70,10 @@ target_include_directories(etcdlib_static PRIVATE src)
 target_include_directories(etcdlib_static SYSTEM PRIVATE 
     ${CURL_INCLUDE_DIRS}
     ${JANSSON_INCLUDE_DIRS}
-    OpenSSL::SSL OpenSSL::Crypto
+    ${OPENSSL_LIBRARY}
 )
 set_target_properties(etcdlib_static PROPERTIES "SOVERSION" 1)
-target_link_libraries(etcdlib_static PRIVATE ${CURL_LIBRARY} ${JANSSON_LIBRARY} ${OPENSSL_LIBRARY})
+target_link_libraries(etcdlib_static PRIVATE ${CURL_LIBRARY} ${JANSSON_LIBRARY})
 
 add_executable(etcdlib_test ${CMAKE_CURRENT_SOURCE_DIR}/test/etcdlib_test.c)
 target_link_libraries(etcdlib_test PRIVATE etcdlib_static ${CURL_LIBRARY} ${JANSSON_LIBRARY} ${OPENSSL_LIBRARY})
