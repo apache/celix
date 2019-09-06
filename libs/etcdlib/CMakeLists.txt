@@ -40,6 +40,7 @@ endif ()
 
 find_package(CURL REQUIRED)
 find_package(Jansson REQUIRED)
+find_package(OpenSSL REQUIRED)
 
 add_library(etcdlib SHARED
     src/etcd.c
@@ -56,7 +57,7 @@ target_include_directories(etcdlib SYSTEM PRIVATE
 
 set_target_properties(etcdlib PROPERTIES SOVERSION 1)
 set_target_properties(etcdlib PROPERTIES VERSION 1.0.0)
-target_link_libraries(etcdlib PRIVATE ${CURL_LIBRARY} ${JANSSON_LIBRARIES})
+target_link_libraries(etcdlib PRIVATE ${CURL_LIBRARY} ${JANSSON_LIBRARIES} ${OPENSSL_LIBRARY})
 
 add_library(etcdlib_static STATIC
     src/etcd.c
@@ -74,7 +75,7 @@ set_target_properties(etcdlib_static PROPERTIES "SOVERSION" 1)
 target_link_libraries(etcdlib_static PRIVATE ${CURL_LIBRARY} ${JANSSON_LIBRARY})
 
 add_executable(etcdlib_test ${CMAKE_CURRENT_SOURCE_DIR}/test/etcdlib_test.c)
-target_link_libraries(etcdlib_test PRIVATE etcdlib_static ${CURL_LIBRARY} ${JANSSON_LIBRARY})
+target_link_libraries(etcdlib_test PRIVATE etcdlib_static ${CURL_LIBRARY} ${JANSSON_LIBRARY} ${OPENSSL_LIBRARY})
 
 #TODO install etcdlib_static. For now left out, because the imported target leaks library paths
 install(DIRECTORY api/ DESTINATION include/etcdlib COMPONENT ${ETCDLIB_CMP})
