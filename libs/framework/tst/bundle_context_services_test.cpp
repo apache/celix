@@ -185,10 +185,11 @@ TEST(CelixBundleContextServicesTests, registerAndUseServiceWithTimeout) {
 
     std::future<bool> result{std::async([&]{
         opts.waitTimeoutInSeconds = 5.0;
+        printf("Trying to call calc with timeout of %f\n", opts.waitTimeoutInSeconds);
         bool calledAsync = celix_bundleContext_useServiceWithOptions(ctx, &opts);
+        printf("returned from use service with timeout. calc called %s.\n", calledAsync ? "true" : "false");
         return calledAsync;
     })};
-
     long svcId = celix_bundleContext_registerService(ctx, &svc, calcName, nullptr);
     CHECK(svcId >= 0);
 
@@ -197,6 +198,17 @@ TEST(CelixBundleContextServicesTests, registerAndUseServiceWithTimeout) {
 
 
     celix_bundleContext_unregisterService(ctx, svcId);
+
+
+    //check if timeout is triggered
+    std::future<bool> result2{std::async([&]{
+        opts.waitTimeoutInSeconds = 0.5;
+        printf("Trying to call calc with timeout of %f\n", opts.waitTimeoutInSeconds);
+        bool calledAsync = celix_bundleContext_useServiceWithOptions(ctx, &opts);
+        printf("returned from use service with timeout. calc called %s.\n", calledAsync ? "true" : "false");
+        return calledAsync;
+    })};
+    CHECK(!result2.get());
 }
 
 TEST(CelixBundleContextServicesTests, registerAndUseWithForcedRaceCondition) {
