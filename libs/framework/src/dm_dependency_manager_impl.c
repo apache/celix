@@ -169,19 +169,39 @@ static void celix_dm_allComponentsActiveCallback(void *handle, const celix_bundl
 	celix_bundle_context_t *context = NULL;
 	bundle_getContext((celix_bundle_t*)bnd, &context);
 	celix_dependency_manager_t *mng = celix_bundleContext_getDependencyManager(context);
-	int size = celix_arrayList_size(mng->components);
-	for (int i = 0; i < size; i += 1) {
-		celix_dm_component_t *cmp = celix_arrayList_get(mng->components, i);
-		if (!celix_dmComponent_isActive(cmp)) {
-			*allActivePtr = false;
-		}
-	}
+    bool allActive = celix_dependencyManager_areComponentsActive(mng);
+    if (!allActive) {
+        *allActivePtr = false;
+    }
+    celixThreadMutex_lock(&mng->mutex);
 }
 
 bool celix_dependencyManager_allComponentsActive(celix_dependency_manager_t *manager) {
 	bool allActive = true;
 	celix_bundleContext_useBundles(manager->ctx, &allActive, celix_dm_allComponentsActiveCallback);
 	return allActive;
+}
+
+size_t celix_dependencyManager_nrOfComponents(celix_dependency_manager_t *mng) {
+    celixThreadMutex_lock(&mng->mutex);
+    size_t nr = (size_t)celix_arrayList_size(mng->components);
+    celixThreadMutex_unlock(&mng->mutex);
+    return nr;
+}
+
+bool celix_dependencyManager_areComponentsActive(celix_dependency_manager_t *mng) {
+    bool allActive = true;
+    celixThreadMutex_lock(&mng->mutex);
+    int size = celix_arrayList_size(mng->components);
+    for (int i = 0; i < size; i += 1) {
+        celix_dm_component_t *cmp = celix_arrayList_get(mng->components, i);
+        if (!celix_dmComponent_isActive(cmp)) {
+            allActive = false;
+            break;
+        }
+    }
+    celixThreadMutex_unlock(&mng->mutex);
+    return allActive;
 }
 
 void celix_dependencyManager_destroyInfo(celix_dependency_manager_t *manager __attribute__((unused)), celix_dependency_manager_info_t *info) {

@@ -27,6 +27,7 @@ add_executable(test_framework
     multiple_frameworks_test.cpp
     bundle_context_bundles_tests.cpp
     bundle_context_services_test.cpp
+    dm_tests.cpp
 )
 
 target_link_libraries(test_framework Celix::framework ${CURL_LIBRARIES} ${CPPUTEST_LIBRARY})
