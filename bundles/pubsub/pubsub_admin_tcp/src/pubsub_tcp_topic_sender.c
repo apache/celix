@@ -188,9 +188,14 @@ pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
                 /* Randomized part due to same bundle publishing on different topics */
                 unsigned int port = rand_range(basePort, maxPort);
                 char *url = NULL;
-                asprintf(&url, "tcp://%s:%u", bindIP, port);
                 char *bindUrl = NULL;
-                asprintf(&bindUrl, "tcp://0.0.0.0:%u", port);
+                if(bindIP == NULL) {
+                    asprintf(&bindUrl, "tcp://0.0.0.0:%u", port);
+                } else {
+                    asprintf(&bindUrl, "tcp://%s:%u", bindIP, port);
+                }
+
+                asprintf(&url, "tcp://%s:%u", bindIP, port);
                 int rv = pubsub_tcpHandler_listen(sender->socketHandler, bindUrl);
                 if (rv == -1) {
                     L_WARN("Error for tcp_bind using dynamic bind url '%s'. %s", bindUrl, strerror(errno));
