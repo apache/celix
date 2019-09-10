@@ -37,9 +37,9 @@
 #include "endpoint_discovery_server.h"
 
 
-celix_status_t discovery_endpointAdded(void *handle, endpoint_description_pt endpoint, char *matchedFilter) {
+celix_status_t discovery_endpointAdded(void *handle, endpoint_description_t *endpoint, char *matchedFilter) {
 	celix_status_t status;
-	discovery_pt discovery = handle;
+	discovery_t *discovery = handle;
 
 	logHelper_log(discovery->loghelper, OSGI_LOGSERVICE_INFO, "Endpoint for %s, with filter \"%s\" added...", endpoint->service, matchedFilter);
 
@@ -48,9 +48,9 @@ celix_status_t discovery_endpointAdded(void *handle, endpoint_description_pt end
 	return status;
 }
 
-celix_status_t discovery_endpointRemoved(void *handle, endpoint_description_pt endpoint, char *matchedFilter) {
+celix_status_t discovery_endpointRemoved(void *handle, endpoint_description_t *endpoint, char *matchedFilter) {
 	celix_status_t status;
-	discovery_pt discovery = handle;
+	discovery_t *discovery = handle;
 
 	logHelper_log(discovery->loghelper, OSGI_LOGSERVICE_INFO, "Endpoint for %s, with filter \"%s\" removed...", endpoint->service, matchedFilter);
 
@@ -61,7 +61,7 @@ celix_status_t discovery_endpointRemoved(void *handle, endpoint_description_pt e
 
 celix_status_t discovery_endpointListenerAdding(void* handle, service_reference_pt reference, void** service) {
 	celix_status_t status = CELIX_SUCCESS;
-	discovery_pt discovery = handle;
+	discovery_t *discovery = handle;
 
 	bundleContext_getService(discovery->context, reference, service);
 
@@ -70,14 +70,14 @@ celix_status_t discovery_endpointListenerAdding(void* handle, service_reference_
 
 celix_status_t discovery_endpointListenerAdded(void* handle, service_reference_pt reference, void* service) {
 	celix_status_t status = CELIX_SUCCESS;
-	discovery_pt discovery = handle;
+	discovery_t *discovery = handle;
 
 	const char *discoveryListener = NULL;
 	serviceReference_getProperty(reference, "DISCOVERY", &discoveryListener);
 	const char *scope = NULL;
 	serviceReference_getProperty(reference, OSGI_ENDPOINT_LISTENER_SCOPE, &scope);
 
-	filter_pt filter = filter_create(scope);
+	celix_filter_t *filter = celix_filter_create(scope);
 
 	if (discoveryListener != NULL && strcmp(discoveryListener, "true") == 0) {
 		logHelper_log(discovery->loghelper, OSGI_LOGSERVICE_INFO, "EndpointListener Ignored - Discovery listener");
@@ -86,12 +86,12 @@ celix_status_t discovery_endpointListenerAdded(void* handle, service_reference_p
 
 		hash_map_iterator_pt iter = hashMapIterator_create(discovery->discoveredServices);
 		while (hashMapIterator_hasNext(iter)) {
-			endpoint_description_pt endpoint = hashMapIterator_nextValue(iter);
+			endpoint_description_t *endpoint = hashMapIterator_nextValue(iter);
 
 			bool matchResult = false;
 			filter_match(filter, endpoint->properties, &matchResult);
 			if (matchResult) {
-				endpoint_listener_pt listener = service;
+				endpoint_listener_t *listener = service;
 
 				logHelper_log(discovery->loghelper, OSGI_LOGSERVICE_INFO, "EndpointListener Added - Add Scope");
 
@@ -109,7 +109,7 @@ celix_status_t discovery_endpointListenerAdded(void* handle, service_reference_p
 		celixThreadMutex_unlock(&discovery->listenerReferencesMutex);
 	}
 
-	filter_destroy(filter);
+	celix_filter_destroy(filter);
 
 	return status;
 }
@@ -127,7 +127,7 @@ celix_status_t discovery_endpointListenerModified(void * handle, service_referen
 
 celix_status_t discovery_endpointListenerRemoved(void * handle, service_reference_pt reference, void * service) {
     celix_status_t status;
-    discovery_pt discovery = handle;
+    discovery_t *discovery = handle;
 
     status = celixThreadMutex_lock(&discovery->listenerReferencesMutex);
 
@@ -144,7 +144,7 @@ celix_status_t discovery_endpointListenerRemoved(void * handle, service_referenc
 	return status;
 }
 
-celix_status_t discovery_informEndpointListeners(discovery_pt discovery, endpoint_description_pt endpoint, bool endpointAdded) {
+celix_status_t discovery_informEndpointListeners(discovery_t *discovery, endpoint_description_t *endpoint, bool endpointAdded) {
 	celix_status_t status;
 
 	// Inform listeners of new endpoint
@@ -157,31 +157,27 @@ celix_status_t discovery_informEndpointListeners(discovery_pt discovery, endpoin
                 hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
 
                 service_reference_pt reference = hashMapEntry_getKey(entry);
-                endpoint_listener_pt listener = NULL;
+                endpoint_listener_t *listener = NULL;
 
                 const char* scope = NULL;
                 serviceReference_getProperty(reference, OSGI_ENDPOINT_LISTENER_SCOPE, &scope);
 
-                filter_pt filter = filter_create(scope);
-                bool matchResult = false;
+                celix_filter_t *filter = celix_filter_create(scope);
+                bool matchResult = celix_filter_match(filter, endpoint->properties);
+                if (matchResult) {
+                    bundleContext_getService(discovery->context, reference, (void **) &listener);
+                    if (endpointAdded) {
+                        logHelper_log(discovery->loghelper, OSGI_LOGSERVICE_INFO, "Adding service (%s)", endpoint->service);
 
-                status = filter_match(filter, endpoint->properties, &matchResult);
-                if (status == CELIX_SUCCESS) {
-                    if (matchResult) {
-                        bundleContext_getService(discovery->context, reference, (void **) &listener);
-                        if (endpointAdded) {
-                            logHelper_log(discovery->loghelper, OSGI_LOGSERVICE_INFO, "Adding service (%s)", endpoint->service);
+                        listener->endpointAdded(listener->handle, endpoint, (char*)scope);
+                    } else {
+                        logHelper_log(discovery->loghelper, OSGI_LOGSERVICE_INFO, "Removing service (%s)", endpoint->service);
 
-                            listener->endpointAdded(listener->handle, endpoint, (char*)scope);
-                        } else {
-                            logHelper_log(discovery->loghelper, OSGI_LOGSERVICE_INFO, "Removing service (%s)", endpoint->service);
-
-                            listener->endpointRemoved(listener->handle, endpoint, (char*)scope);
-                        }
+                        listener->endpointRemoved(listener->handle, endpoint, (char*)scope);
                     }
-
-                    filter_destroy(filter);
                 }
+
+                celix_filter_destroy(filter);
             }
             hashMapIterator_destroy(iter);
         }
@@ -192,7 +188,7 @@ celix_status_t discovery_informEndpointListeners(discovery_pt discovery, endpoin
 	return status;
 }
 
-celix_status_t discovery_addDiscoveredEndpoint(discovery_pt discovery, endpoint_description_pt endpoint) {
+celix_status_t discovery_addDiscoveredEndpoint(discovery_t *discovery, endpoint_description_t *endpoint) {
 	celix_status_t status;
 
 	status = celixThreadMutex_lock(&discovery->discoveredServicesMutex);
@@ -215,7 +211,7 @@ celix_status_t discovery_addDiscoveredEndpoint(discovery_pt discovery, endpoint_
 	return status;
 }
 
-celix_status_t discovery_removeDiscoveredEndpoint(discovery_pt discovery, endpoint_description_pt endpoint) {
+celix_status_t discovery_removeDiscoveredEndpoint(discovery_t *discovery, endpoint_description_t *endpoint) {
 	celix_status_t status;
 
 	status = celixThreadMutex_lock(&discovery->discoveredServicesMutex);

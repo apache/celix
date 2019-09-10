@@ -251,3 +251,4 @@ TEST(DynMessageTests, msg_test4) {
 TEST(DynMessageTests, msg_invalid) {
 	msg_invalid();
 }
+

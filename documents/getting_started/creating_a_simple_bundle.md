@@ -65,7 +65,6 @@ SET(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG")
 #Note. If celix is not installed in /usr/local dir, change the location accordingly.
 set(CMAKE_MODULE_PATH  ${CMAKE_MODULE_PATH} "/usr/local/share/celix/cmake/modules")
 find_package(CELIX REQUIRED)
-include_directories(${CELIX_INCLUDE_DIRS})
 
 #Part 4. Choose C, C++ or both
 add_subdirectory(bundles/HelloWorld_c) #C
@@ -96,7 +95,6 @@ Create the sub directory:
 cd ${WS}/myproject
 mkdir -p bundles/HelloWorld_c/src
 mkdir -p bundles/HelloWorld_cxx/src
-mkdir -p bundles/HelloWorld_cxx/include
 ```
 
 
@@ -110,12 +108,6 @@ add_celix_bundle(HelloWorld_c
 	SOURCES
         src/HelloWorld_activator.c
 )	
-
-if(APPLE)
-    target_link_libraries(HelloWorld_c ${CELIX_LIBRARIES} -Wl,-all_load ${CELIX_DM_STATIC_LIB})
-else()  
-    target_link_libraries(HelloWorld_c -Wl,--no-undefined -Wl,--whole-archive ${CELIX_DM_STATIC_LIB} -Wl,--no-whole-archive ${CELIX_LIBRARIES})
-endif()
 ```
 
 And/or the following CMakeLists.txt for the C++ bundle:
@@ -128,97 +120,70 @@ add_celix_bundle(HelloWorld_cxx
 	SOURCES
         src/HelloWorldActivator.cc
 )
-target_include_directories(HelloWorld_cxx PRIVATE include)
-
-IF(APPLE)
-    target_link_libraries(HelloWorld_cxx ${CELIX_LIBRARIES} -Wl,-all_load ${CELIX_DM_STATIC_CXX_LIB})
-else()
-    target_link_libraries(HelloWorld_cxx -Wl,--no-undefined -Wl,--whole-archive ${CELIX_DM_STATIC_CXX_LIB} -Wl,--no-whole-archive ${CELIX_LIBRARIES})
-endif()
 ```
 	
-These CMakeLists.txt files declare that the bundles should be build based on the build result (shared library) of the declared sources (in this case the `private/src/hello_world_activator.c` or `private/src/HelloWorldActivator.cc` source). 
+These CMakeLists.txt files declare that the bundles should be build based on the build result (shared library) of the declared sources (in this case the `src/hello_world_activator.c` or `src/HelloWorldActivator.cc` source). 
 The `add_celix_bundle` CMake function is an Apache Celix specific CMake extension. 
-The library used for the bundle will also be linked against the dependency manager static library. 
-
 
 The Celix framework will install the bundle, load the bundle shared library and call the bundle activator entry symbols. These entries need to be programmed by the user. 
-Note that in these examples we use the dependency manager libraries (C and C++ version) instead of developing a "vanilla" bundle activator; 
-The dependency manager uses a higher abstraction and is more simple to understand and maintain, but not part of the OSGi standard.
+Note that in these examples we use the CELIX_GEN_BUNDLE_ACTIVATOR and CELIX_GEN_CXX_BUNDLE_ACTIVATOR 
+to generate the bundle activator functions (and as result the symbols needed for the Celix framework); although not necessary, this prevents the need for writing some boiler plating code. 
 
 The C Bundle Activator:
 ```C
 //${WS}/myproject/bundles/hello_world/src/HelloWorld_activator.c
-#include <stdlib.h>
 #include <stdio.h>
+#include <celix_api.h>
 
-#include "dm_activator.h"
+typedef struct activator_data {
+    /*intentional empty*/
+} activator_data_t;
 
 
-struct userData {
-	    char * word;
-};
 
-celix_status_t dm_create(bundle_context_pt context, void **out) {
-	celix_status_t status = CELIX_SUCCESS;
-    struct userData* result = calloc(1, sizeof(*result));
-	if (result != NULL) {
-            result->word = "C World";
-            *out = result;
-    } else {
-            status = CELIX_START_ERROR;
-    }
-    return status;
-}
-
-celix_status_t dm_init(void* userData, bundle_context_pt context, dm_dependency_manager_pt manager) {
-    struct userData* data = (struct userData *) userData;
-    printf("Hello %s\n", data->word);
+static celix_status_t activator_start(activator_data_t *data, celix_bundle_context_t *ctx) {
+    printf("Hello world from C bundle with id %li\n", celix_bundle_getId(celix_bundleContext_getBundle(ctx)));
     return CELIX_SUCCESS;
 }
 
-celix_status_t dm_destroy(void* userData, bundle_context_pt context, dm_dependency_manager_pt manager) {
-    free(userData);
+static celix_status_t activator_stop(activator_data_t *data, celix_bundle_context_t *ctx) {
+    printf("Goodbye world from C bundle with id %li\n", celix_bundle_getId(celix_bundleContext_getBundle(ctx)));
     return CELIX_SUCCESS;
 }
+
+CELIX_GEN_BUNDLE_ACTIVATOR(activator_data_t, activator_start, activator_stop)
 ```
 	
-The C++ Bundle Activator (header + source):
-```C++
-//${WS}/myproject/bundles/HelloWorld/include/HelloWorldActivator.h
-#ifndef HELLOWORLDACTIVATOR_H_
-#define HELLOWORLDACTIVATOR_H_
-
-#include "celix/dm/DmActivator.h"
-
-class HelloWorldActivator : public celix::dm::DmActivator {
-private:
-    const std::string word {"C++ World"};
-public:
-    HelloWorldActivator(celix::dm::DependencyManager& mng) : DmActivator {mng} {}
-    virtual void init();
-    virtual void deinit();
-};
-
-#endif //HELLOWORLDACTIVATOR_H_
-```
+The C++ Bundle Activator:
 
 ```C++
 //${WS}/myproject/bundles/HelloWorld/private/src/HelloWorldActivator.cc
-#include "HelloWorldActivator.h"
+#include <memory>
 #include <iostream>
 
-DmActivator* DmActivator::create(celix::dm::DependencyManager& mng) {
-    return new HelloWorldActivator(mng);
+#include <celix_api.h>
+
+namespace /*anon*/ {
+
+    class BundleActivator {
+    public:
+        BundleActivator(std::shared_ptr<celix::dm::DependencyManager> _mng) : mng{_mng} {
+            std::cout << "Hello world from C++ bundle with id " << bndId() << std::endl;
+        }
+        ~BundleActivator() {
+            std::cout << "Goodbye world from C++ bundle with id " << bndId() << std::endl;
+        }
+    private:
+        long bndId() const {
+            return celix_bundle_getId(celix_bundleContext_getBundle(mng->bundleContext()));
+        }
+
+        std::shared_ptr<celix::dm::DependencyManager> mng;
+    };
+
 }
 
-void HelloWorldActivator::init() {
-    std::cout << "Hello " << this->word << "\n";
-}
-
-void HelloWorldActivator::deinit() {
-    //nothing to do
-}
+CELIX_GEN_CXX_BUNDLE_ACTIVATOR(BundleActivator)
 ```
 	
 ### Building
@@ -252,9 +217,8 @@ To create a deployment for the hello world bundles two things are needed:
 add_celix_container(myproject
     CXX 
     BUNDLES 
-	    ${CELIX_BUNDLES_DIR}/shell.zip 
-	    ${CELIX_BUNDLES_DIR}/shell_tui.zip
-	    ${CELIX_BUNDLES_DIR}/dm_shell.zip 
+        Celix::shell
+        Celix::shell_tui
 	    HelloWorld_c #C bundle
 	    HelloWorld_cxx #C++ bundle
 )		

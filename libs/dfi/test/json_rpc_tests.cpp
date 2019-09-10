@@ -47,13 +47,13 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
 
 
     void prepareTest(void) {
-        dyn_function_type *dynFunc = NULL;
-        int rc = dynFunction_parseWithStr("add(#am=handle;PDD#am=pre;*D)N", NULL, &dynFunc);
+        dyn_function_type *dynFunc = nullptr;
+        int rc = dynFunction_parseWithStr("add(#am=handle;PDD#am=pre;*D)N", nullptr, &dynFunc);
         CHECK_EQUAL(0, rc);
 
-        char *result = NULL;
+        char *result = nullptr;
 
-        void *handle = NULL;
+        void *handle = nullptr;
         double arg1 = 1.0;
         double arg2 = 2.0;
 
@@ -76,8 +76,8 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
     }
 
     void handleTestPre(void) {
-        dyn_function_type *dynFunc = NULL;
-        int rc = dynFunction_parseWithStr("add(#am=handle;PDD#am=pre;*D)N", NULL, &dynFunc);
+        dyn_function_type *dynFunc = nullptr;
+        int rc = dynFunction_parseWithStr("add(#am=handle;PDD#am=pre;*D)N", nullptr, &dynFunc);
         CHECK_EQUAL(0, rc);
 
         const char *reply = "{\"r\":2.2}";
@@ -119,12 +119,12 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
 
 
     int stats(void*, struct tst_seq input, struct tst_StatsResult **out) {
-        assert(out != NULL);
-        assert(*out == NULL);
+        assert(out != nullptr);
+        assert(*out == nullptr);
         double total = 0.0;
         unsigned int count = 0;
-        double max = DBL_MIN;
-        double min = DBL_MAX;
+        auto max = DBL_MIN;
+        auto min = DBL_MAX;
 
         unsigned int i;
         for (i = 0; i<input.len; i += 1) {
@@ -138,13 +138,13 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
             }
         }
 
-        struct tst_StatsResult *result = (struct tst_StatsResult *) calloc(1, sizeof(*result));
-        if(count>0){
-		result->average = total / count;
+        auto result = static_cast<tst_StatsResult *>(calloc(1, sizeof(tst_StatsResult)));
+        if(count>0) {
+		    result->average = total / count;
         }
         result->min = min;
         result->max = max;
-        double *buf = (double *)calloc(input.len, sizeof(double));
+        auto buf = static_cast<double *>(calloc(input.len, sizeof(double)));
         memcpy(buf, input.buf, input.len * sizeof(double));
         result->input.len = input.len;
         result->input.cap = input.len;
@@ -179,21 +179,17 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
     };
 
     void callTestPreAllocated(void) {
-        dyn_interface_type *intf = NULL;
+        dyn_interface_type *intf = nullptr;
         FILE *desc = fopen("descriptors/example1.descriptor", "r");
-        CHECK(desc != NULL);
+        CHECK(desc != nullptr);
         int rc = dynInterface_parse(desc, &intf);
         CHECK_EQUAL(0, rc);
         fclose(desc);
 
-        char *result = NULL;
+        char *result = nullptr;
+        tst_serv serv {nullptr, add, nullptr, nullptr, nullptr};
 
-        struct tst_serv serv;
-        serv.handle = NULL;
-        serv.add = add;
-
-
-        rc = jsonRpc_call(intf, &serv, "{\"m\":\"add(DD)D\", \"a\": [1.0,2.0]}", &result);
+        rc = jsonRpc_call(intf, &serv, R"({"m":"add(DD)D", "a": [1.0,2.0]})", &result);
         CHECK_EQUAL(0, rc);
         STRCMP_CONTAINS("3.0", result);
 
@@ -202,20 +198,17 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
     }
 
     void callTestOutput(void) {
-        dyn_interface_type *intf = NULL;
+        dyn_interface_type *intf = nullptr;
         FILE *desc = fopen("descriptors/example1.descriptor", "r");
-        CHECK(desc != NULL);
+        CHECK(desc != nullptr);
         int rc = dynInterface_parse(desc, &intf);
         CHECK_EQUAL(0, rc);
         fclose(desc);
 
-        char *result = NULL;
+        char *result = nullptr;
+        tst_serv serv {nullptr, nullptr, nullptr, nullptr, stats};
 
-        struct tst_serv serv;
-        serv.handle = NULL;
-        serv.stats = stats;
-
-        rc = jsonRpc_call(intf, &serv, "{\"m\":\"stats([D)LStatsResult;\", \"a\": [[1.0,2.0]]}", &result);
+        rc = jsonRpc_call(intf, &serv, R"({"m":"stats([D)LStatsResult;", "a": [[1.0,2.0]]})", &result);
         CHECK_EQUAL(0, rc);
         STRCMP_CONTAINS("1.5", result); //avg
 
@@ -224,33 +217,33 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
     }
 
     void handleTestOut(void) {
-        dyn_interface_type *intf = NULL;
+        dyn_interface_type *intf = nullptr;
         FILE *desc = fopen("descriptors/example1.descriptor", "r");
-        CHECK(desc != NULL);
+        CHECK(desc != nullptr);
         int rc = dynInterface_parse(desc, &intf);
         CHECK_EQUAL(0, rc);
         fclose(desc);
 
         struct methods_head *head;
         dynInterface_methods(intf, &head);
-        dyn_function_type *func = NULL;
-        struct method_entry *entry = NULL;
+        dyn_function_type *func = nullptr;
+        struct method_entry *entry = nullptr;
         TAILQ_FOREACH(entry, head, entries) {
             if (strcmp(entry->name, "stats") == 0) {
                 func = entry->dynFunc;
                 break;
             }
         }
-        CHECK(func != NULL);
+        CHECK(func != nullptr);
 
-        const char *reply = "{\"r\":{\"input\":[1.0,2.0],\"max\":2.0,\"average\":1.5,\"min\":1.0}}";
+        const char *reply = R"({"r":{"input":[1.0,2.0],"max":2.0,"average":1.5,"min":1.0}})";
 
         void *args[3];
-        args[0] = NULL;
-        args[1] = NULL;
-        args[2] = NULL;
+        args[0] = nullptr;
+        args[1] = nullptr;
+        args[2] = nullptr;
 
-        struct tst_StatsResult *result = NULL;
+        struct tst_StatsResult *result = nullptr;
         void *out = &result;
         args[2] = &out;
 
@@ -263,36 +256,36 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
         dynInterface_destroy(intf);
     }
 
-    static void handleTestOutputSequence(void) {
-        dyn_interface_type *intf = NULL;
+    static void handleTestOutputSequence() {
+        dyn_interface_type *intf = nullptr;
         FILE *desc = fopen("descriptors/example2.descriptor", "r");
-        CHECK(desc != NULL);
+        CHECK(desc != nullptr);
         int rc = dynInterface_parse(desc, &intf);
         CHECK_EQUAL(0, rc);
         fclose(desc);
 
         struct methods_head *head;
         dynInterface_methods(intf, &head);
-        dyn_function_type *func = NULL;
-        struct method_entry *entry = NULL;
+        dyn_function_type *func = nullptr;
+        struct method_entry *entry = nullptr;
         TAILQ_FOREACH(entry, head, entries) {
             if (strcmp(entry->name, "example1") == 0) {
                 func = entry->dynFunc;
                 break;
             }
         }
-        CHECK(func != NULL);
+        CHECK(func != nullptr);
 
         //dyn_type *arg = dynFunction_argumentTypeForIndex(func, 1);
         //dynType_print(arg, stdout);
 
-        const char *reply = "{\"r\":[{\"a\":1.0,\"b\":1.5},{\"a\":2.0,\"b\":2.5}]}";
+        const char *reply = R"({"r":[{"a":1.0,"b":1.5},{"a":2.0,"b":2.5}]})";
 
         void *args[2];
-        args[0] = NULL;
-        args[1] = NULL;
+        args[0] = nullptr;
+        args[1] = nullptr;
 
-        struct item_seq *result = NULL;
+        struct item_seq *result = nullptr;
         void *out = &result;
         args[1] = &out;
 
@@ -318,20 +311,17 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
 
 
     void callTestOutChar(void) {
-        dyn_interface_type *intf = NULL;
+        dyn_interface_type *intf = nullptr;
         FILE *desc = fopen("descriptors/example4.descriptor", "r");
-        CHECK(desc != NULL);
+        CHECK(desc != nullptr);
         int rc = dynInterface_parse(desc, &intf);
         CHECK_EQUAL(0, rc);
         fclose(desc);
 
-        char *result = NULL;
+        char *result = nullptr;
+        tst_serv_example4 serv {nullptr, getName_example4};
 
-        struct tst_serv_example4 serv;
-        serv.handle = NULL;
-        serv.getName_example4 = getName_example4;
-
-        rc = jsonRpc_call(intf, &serv, "{\"m\":\"getName(V)t\", \"a\": []}", &result);
+        rc = jsonRpc_call(intf, &serv, R"({"m": "getName(V)t", "a": []})", &result);
         CHECK_EQUAL(0, rc);
 
         STRCMP_CONTAINS("allocatedInFunction", result);
@@ -342,17 +332,17 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
 
 
     void handleTestOutChar(void) {
-        dyn_interface_type *intf = NULL;
+        dyn_interface_type *intf = nullptr;
         FILE *desc = fopen("descriptors/example4.descriptor", "r");
-        CHECK(desc != NULL);
+        CHECK(desc != nullptr);
         int rc = dynInterface_parse(desc, &intf);
         CHECK_EQUAL(0, rc);
         fclose(desc);
 
         struct methods_head *head;
         dynInterface_methods(intf, &head);
-        dyn_function_type *func = NULL;
-        struct method_entry *entry = NULL;
+        dyn_function_type *func = nullptr;
+        struct method_entry *entry = nullptr;
         TAILQ_FOREACH(entry, head, entries) {
             if (strcmp(entry->name, "getName") == 0) {
                 func = entry->dynFunc;
@@ -360,18 +350,18 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
             }
         }
 
-        CHECK(func != NULL);
+        CHECK(func != nullptr);
 
-        const char *reply = "{\"r\": \"this is a test string\" }";
-        char *result = NULL;
+        const char *reply = R"({"r": "this is a test string"})";
+        char *result = nullptr;
         void *out = &result;
 
         void *args[2];
-        args[0] = NULL;
+        args[0] = nullptr;
         args[1] = &out;
 
-        if(func!=NULL){ // Check needed just to satisfy Coverity
-		rc = jsonRpc_handleReply(func, reply, args);
+        if (func != nullptr) { // Check needed just to satisfy Coverity
+		     jsonRpc_handleReply(func, reply, args);
         }
 
         STRCMP_EQUAL("this is a test string", result);
@@ -379,20 +369,17 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
         free(result);
         dynInterface_destroy(intf);
     }
-
-
 }
 
 TEST_GROUP(JsonRpcTests) {
-    void setup() {
+    void setup() override {
         int lvl = 1;
-        dynCommon_logSetup(stdLog, NULL, lvl);
-        dynType_logSetup(stdLog, NULL,lvl);
-        dynFunction_logSetup(stdLog, NULL,lvl);
-        dynInterface_logSetup(stdLog, NULL,lvl);
-        jsonSerializer_logSetup(stdLog, NULL, lvl);
-        jsonRpc_logSetup(stdLog, NULL, lvl);
-
+        dynCommon_logSetup(stdLog, nullptr, lvl);
+        dynType_logSetup(stdLog, nullptr,lvl);
+        dynFunction_logSetup(stdLog, nullptr,lvl);
+        dynInterface_logSetup(stdLog, nullptr,lvl);
+        jsonSerializer_logSetup(stdLog, nullptr, lvl);
+        jsonRpc_logSetup(stdLog, nullptr, lvl);
     }
 };
 
@@ -420,8 +407,6 @@ TEST(JsonRpcTests, callOut) {
 TEST(JsonRpcTests, handleOutSeq) {
     handleTestOutputSequence();
 }
-
-
 
 TEST(JsonRpcTests, callTestOutChar) {
     callTestOutChar();

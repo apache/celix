@@ -247,7 +247,7 @@ static celix_status_t import_equal(const void *src, const void *dest, bool *equa
     return status;
 }
 
-bool scope_allowImport(scope_pt scope, endpoint_description_pt endpoint) {
+bool scope_allowImport(scope_pt scope, endpoint_description_t *endpoint) {
     bool allowImport = false;
     array_list_iterator_pt iter;
 

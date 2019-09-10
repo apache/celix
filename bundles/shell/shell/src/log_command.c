@@ -31,9 +31,9 @@
 #include "log_reader_service.h"
 #include "linked_list_iterator.h"
 
-celix_status_t logCommand_levelAsString(bundle_context_pt context, log_level_t level, char **string);
+celix_status_t logCommand_levelAsString(celix_bundle_context_t *context, log_level_t level, char **string);
 
-void logCommand_execute(bundle_context_pt context, char *line, FILE *outStream, FILE *errStream) {
+void logCommand_execute(celix_bundle_context_t *context, char *line, FILE *outStream, FILE *errStream) {
     celix_status_t status;
     service_reference_pt readerService = NULL;
 
@@ -41,14 +41,13 @@ void logCommand_execute(bundle_context_pt context, char *line, FILE *outStream, 
     if (status != CELIX_SUCCESS || readerService != NULL) {
         linked_list_pt list = NULL;
         linked_list_iterator_pt iter = NULL;
-        log_reader_service_pt reader = NULL;
-
+        log_reader_service_t *reader = NULL;
 
 		bundleContext_getService(context, readerService, (void **) &reader);
 		reader->getLog(reader->reader, &list);
 		iter = linkedListIterator_create(list, 0);
 		while (linkedListIterator_hasNext(iter)) {
-			log_entry_pt entry = linkedListIterator_next(iter);
+			log_entry_t *entry = linkedListIterator_next(iter);
 			char time[20];
 			char *level = NULL;
 			char errorString[256];
@@ -73,7 +72,7 @@ void logCommand_execute(bundle_context_pt context, char *line, FILE *outStream, 
     }
 }
 
-celix_status_t logCommand_levelAsString(bundle_context_pt context, log_level_t level, char **string) {
+celix_status_t logCommand_levelAsString(celix_bundle_context_t *context, log_level_t level, char **string) {
 	switch (level) {
 	case OSGI_LOGSERVICE_ERROR:
 		*string = "ERROR";

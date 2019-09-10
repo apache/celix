@@ -29,7 +29,8 @@
 #ifndef FRAMEWORK_LISTENER_H_
 #define FRAMEWORK_LISTENER_H_
 
-typedef struct framework_listener *framework_listener_pt;
+typedef struct framework_listener framework_listener_t;
+typedef struct framework_listener *framework_listener_pt; // TODO: Deprecate
 
 #include "celix_errno.h"
 #include "framework_event.h"

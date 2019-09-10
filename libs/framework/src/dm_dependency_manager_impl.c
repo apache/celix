@@ -164,6 +164,25 @@ celix_array_list_t * celix_dependencyManager_createInfos(celix_dependency_manage
 	return infos;
 }
 
+static void celix_dm_allComponentsActiveCallback(void *handle, const celix_bundle_t *bnd) {
+	bool *allActivePtr = handle;
+	celix_bundle_context_t *context = NULL;
+	bundle_getContext((celix_bundle_t*)bnd, &context);
+	celix_dependency_manager_t *mng = celix_bundleContext_getDependencyManager(context);
+	int size = celix_arrayList_size(mng->components);
+	for (int i = 0; i < size; i += 1) {
+		celix_dm_component_t *cmp = celix_arrayList_get(mng->components, i);
+		if (!celix_dmComponent_isActive(cmp)) {
+			*allActivePtr = false;
+		}
+	}
+}
+
+bool celix_dependencyManager_allComponentsActive(celix_dependency_manager_t *manager) {
+	bool allActive = true;
+	celix_bundleContext_useBundles(manager->ctx, &allActive, celix_dm_allComponentsActiveCallback);
+	return allActive;
+}
 
 void celix_dependencyManager_destroyInfo(celix_dependency_manager_t *manager __attribute__((unused)), celix_dependency_manager_info_t *info) {
 	for (int i = 0; i < celix_arrayList_size(info->components); i += 1) {

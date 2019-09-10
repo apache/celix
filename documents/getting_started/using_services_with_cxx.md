@@ -28,6 +28,7 @@ To start of, C++ service in Celix are just (abstract) classes.
 
 In the following example there also a projected default constructor and destructor to ensure no instantiation / deletion of the service is possible:
 ```C++
+//IAnotherExample.h
 #ifndef IANOTHER_EXAMPLE_H
 #define IANOTHER_EXAMPLE_H
 
@@ -149,8 +150,8 @@ The Bar example is a simple component providing the C `example` service and C++ 
  
 Note that the `Bar` component is just a plain old C++ object and does need to implement any specific Celix interfaces. 
 
-The `BarActivator` is the entry point for a C++ bundle. It must implement the `DmActivator::create` method so that C++ Dependency manager can create a instance `DmActivator` without needing to known the subclass. 
-It should also override the `DmActivator::init` to be able to declaratively program components and their provided service and service dependencies.
+The `BarActivator` is the entry point for a C++ bundle. It must implement the bundle activator functions so that the framework can start the bundles. 
+It also used the C++ Dependency manager to declarative program components and their provided service and service dependencies.
 
 The C++ Dependency Manager can use C++ member function pointers to control the component lifecycle (`init`, `start`, `stop` and `deinit`)  
 
@@ -181,20 +182,19 @@ public:
 
 ```C++
 //BarActivator.h
-#ifndef BAR_ACTIVATOR_H
+##ifndef BAR_ACTIVATOR_H
 #define BAR_ACTIVATOR_H
 
-#include "celix/dm/DmActivator.h"
+#include "celix/dm/DependencyManager.h"
 #include "example.h"
 
 using namespace celix::dm;
 
-class BarActivator : public DmActivator {
+class BarActivator  {
 private:
     example_t cExample {nullptr, nullptr};
 public:
-    BarActivator(DependencyManager& mng) : DmActivator(mng) {}
-    virtual void init() override;
+    explicit BarActivator(std::shared_ptr<DependencyManager> mng);
 };
 
 #endif //BAR_ACTIVATOR_H
@@ -235,17 +235,16 @@ int Bar::cMethod(int arg1, double arg2, double *out) {
 
 ```C++
 //BarActivator.cc
+#include <celix_api.h>
+
 #include "Bar.h"
 #include "BarActivator.h"
 
 using namespace celix::dm;
 
-DmActivator* DmActivator::create(DependencyManager& mng) {
-    return new BarActivator(mng);
-}
 
-void BarActivator::init() {
-    std::shared_ptr<Bar> bar = std::shared_ptr<Bar>{new Bar{}};
+BarActivator::BarActivator(std::shared_ptr<DependencyManager> mng) {
+    auto bar = std::unique_ptr<Bar>{new Bar{}};
 
     Properties props;
     props["meta.info.key"] = "meta.info.value";
@@ -259,11 +258,13 @@ void BarActivator::init() {
         return bar->cMethod(arg1, arg2, out);
     };
 
-    mng.createComponent(bar)  //using a pointer a instance. Also supported is lazy initialization (default constructor needed) or a rvalue reference (move)
+    mng->createComponent(std::move(bar))  //using a pointer a instance. Also supported is lazy initialization (default constructor needed) or a rvalue reference (move)
         .addInterface<IAnotherExample>(IANOTHER_EXAMPLE_VERSION, props)
         .addCInterface(&this->cExample, EXAMPLE_NAME, EXAMPLE_VERSION, cProps)
         .setCallbacks(&Bar::init, &Bar::start, &Bar::stop, &Bar::deinit);
 }
+
+CELIX_GEN_CXX_BUNDLE_ACTIVATOR(BarActivator)
 ```
 
 ### Foo Example
@@ -288,6 +289,9 @@ public:
     Foo() = default;
     virtual ~Foo() = default;
 
+    Foo(const Foo&) = delete;
+    Foo& operator=(const Foo&) = delete;
+
     void start();
     void stop();
 
@@ -305,15 +309,13 @@ public:
 #ifndef FOO_ACTIVATOR_H
 #define FOO_ACTIVATOR_H
 
-#include "celix/dm/DmActivator.h"
+#include "celix/dm/DependencyManager.h"
 
 using namespace celix::dm;
 
-class FooActivator : public DmActivator {
-private:
+class FooActivator  {
 public:
-    FooActivator(DependencyManager& mng) : DmActivator(mng) {}
-    virtual void init() override;
+    explicit FooActivator(std::shared_ptr<DependencyManager> mng);
 };
 
 #endif //FOO_ACTIVATOR_H
@@ -368,16 +370,13 @@ void Foo::poll() {
 //FooActivator.cc
 #include "Foo.h"
 #include "FooActivator.h"
+#include <celix_api.h>
 
 using namespace celix::dm;
 
-DmActivator* DmActivator::create(DependencyManager& mng) {
-    return new FooActivator(mng);
-}
+FooActivator::FooActivator(std::shared_ptr<DependencyManager> mng) {
 
-void FooActivator::init() {
-
-    Component<Foo>& cmp = mng.createComponent<Foo>()
+    Component<Foo>& cmp = mng->createComponent<Foo>()
         .setCallbacks(nullptr, &Foo::start, &Foo::stop, nullptr);
 
     cmp.createServiceDependency<IAnotherExample>()
@@ -390,6 +389,8 @@ void FooActivator::init() {
             .setVersionRange(EXAMPLE_CONSUMER_RANGE)
             .setCallbacks(&Foo::setExample);
 }
+
+CELIX_GEN_CXX_BUNDLE_ACTIVATOR(FooActivator)
 ```
 
 ### Baz Example
@@ -442,15 +443,13 @@ public:
 #ifndef BAZ_ACTIVATOR_H
 #define BAZ_ACTIVATOR_H
 
-#include "celix/dm/DmActivator.h"
+#include "celix/dm/DependencyManager.h"
 
 using namespace celix::dm;
 
-class BazActivator : public DmActivator {
-private:
+class BazActivator  {
 public:
-    BazActivator(DependencyManager& mng) : DmActivator(mng) {}
-    virtual void init() override;
+    explicit BazActivator(std::shared_ptr<DependencyManager> mng);
 };
 
 #endif //BAZ_ACTIVATOR_H
@@ -529,16 +528,13 @@ void Baz::poll() {
 //BazActivator.cc
 #include "Baz.h"
 #include "BazActivator.h"
+#include <celix_api.h>
 
 using namespace celix::dm;
 
-DmActivator* DmActivator::create(DependencyManager& mng) {
-    return new BazActivator(mng);
-}
+BazActivator::BazActivator(std::shared_ptr<DependencyManager> mng) {
 
-void BazActivator::init() {
-
-    Component<Baz>& cmp = mng.createComponent<Baz>()
+    Component<Baz>& cmp = mng->createComponent<Baz>()
         .setCallbacks(nullptr, &Baz::start, &Baz::stop, nullptr);
 
     cmp.createServiceDependency<IAnotherExample>()
@@ -553,6 +549,8 @@ void BazActivator::init() {
             .setVersionRange(EXAMPLE_CONSUMER_RANGE)
             .setCallbacks(&Baz::addExample, &Baz::removeExample);
 }
+
+CELIX_GEN_CXX_BUNDLE_ACTIVATOR(BazActivator)
 ```
 
 ## Locking and Suspending

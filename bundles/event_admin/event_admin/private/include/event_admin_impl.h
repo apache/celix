@@ -1,31 +1,32 @@
 /**
- *Licensed to the Apache Software Foundation (ASF) under one
- *or more contributor license agreements.  See the NOTICE file
- *distributed with this work for additional information
- *regarding copyright ownership.  The ASF licenses this file
- *to you under the Apache License, Version 2.0 (the
- *"License"); you may not use this file except in compliance
- *with the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- *Unless required by applicable law or agreed to in writing,
- *software distributed under the License is distributed on an
- *"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- *specific language governing permissions and limitations
- *under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 /*
  * event_admin_impl.h
  *
- *  \Created on: Jul 16, 2013
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
+ *  \date       Jul 16, 2013
+ *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
+ *  \copyright  Apache License, Version 2.0
  */
 
 #ifndef EVENT_ADMIN_IMPL_H_
 #define EVENT_ADMIN_IMPL_H_
+
 #include <string.h>
 #include "celix_errno.h"
 #include "bundle_context.h"
@@ -43,19 +44,18 @@
 #include "log_helper.h"
 
 struct event_admin {
-        hash_map_pt channels;
-        array_list_pt event_handlers;
-        bundle_context_pt context;
-        log_helper_pt *loghelper;
+    hash_map_pt channels;
+    array_list_pt event_handlers;
+    bundle_context_pt context;
+    log_helper_t **loghelper;
 };
-typedef struct channel *channel_t;
-struct channel {
-        char *topic;
-        hash_map_pt eventHandlers;///array list containing all listeners subscribed to the channel
-       // hash_map_pt channels;
-       // apr_thread_mutex_t *channelLock;
 
-};
+typedef struct channel {
+    char *topic;
+    hash_map_pt eventHandlers;///array list containing all listeners subscribed to the channel
+    // hash_map_pt channels;
+    // apr_thread_mutex_t *channelLock;
+} channel_t;
 /**
  * @desc Create event an event admin and put it in the event_admin parameter.
  * @param apr_pool_t *pool. Pointer to the apr pool
@@ -108,10 +108,10 @@ celix_status_t eventAdmin_findHandlersByTopic(event_admin_pt event_admin, const 
  * @desc apr_pool_t *pool. a memory pool pointer.
  * @desc event_handler_service_pt event_handler_service. The handler
  * @desc char *topic the topic
- * @desc channel_t *channel. the top level channel.
+ * @desc channel_t **channel. the top level channel.
  */
 celix_status_t eventAdmin_createEventChannelsByEventHandler(event_handler_service_pt event_handler_service,
-                                                            const char *topic, channel_t *channel);
+                                                            const char *topic, channel_t **channel);
 /**
  * @desc mutex functions for the channels
  * @param event_admin_pt event_admin. the event admin instance.

@@ -27,6 +27,6 @@ struct tst_service {
     int (*test)(void *handle);
 };
 
-typedef struct tst_service *tst_service_pt;
+typedef struct tst_service tst_service_t;
 
 #endif //CELIX_TST_SERVICE_H

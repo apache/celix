@@ -35,20 +35,20 @@
 
 
 struct activator {
-	bundle_context_pt context;
+	celix_bundle_context_t *context;
 	struct tst_service serv;
-	service_registration_pt  reg;
+	service_registration_t * reg;
 
-	service_tracker_customizer_pt cust;
-	service_tracker_pt tracker;
-	calculator_service_pt calc;
+	service_tracker_customizer_t *cust;
+	service_tracker_t *tracker;
+	calculator_service_t *calc;
 };
 
 static celix_status_t addCalc(void * handle, service_reference_pt reference, void * service);
 static celix_status_t removeCalc(void * handle, service_reference_pt reference, void * service);
 static int test(void *handle);
 
-celix_status_t bundleActivator_create(bundle_context_pt context, void **out) {
+celix_status_t bundleActivator_create(celix_bundle_context_t *context, void **out) {
 	celix_status_t status = CELIX_SUCCESS;
 	struct activator *act = calloc(1, sizeof(*act));
 	if (act != NULL) {
@@ -97,7 +97,7 @@ static celix_status_t removeCalc(void * handle, service_reference_pt reference, 
 
 }
 
-celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
+celix_status_t bundleActivator_start(void * userData, celix_bundle_context_t *context) {
     celix_status_t status = CELIX_SUCCESS;
 	struct activator * act = userData;
 
@@ -111,7 +111,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 }
 
 
-celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
+celix_status_t bundleActivator_stop(void * userData, celix_bundle_context_t *context) {
     celix_status_t status = CELIX_SUCCESS;
 	struct activator * act = userData;
 
@@ -121,7 +121,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 	return status;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
+celix_status_t bundleActivator_destroy(void * userData, celix_bundle_context_t *context) {
 	struct activator *act = userData;
 	if (act != NULL) {
 		if (act->tracker != NULL) {

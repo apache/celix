@@ -88,6 +88,7 @@ TEST_GROUP(DynTypeTests) {
 #define EX14 "{DD{FF{JJ}{II*{ss}}}}"  //unnamed fields
 #define EX15 "Tsample={jDD time val1 val2};Tresult={jDlsample; time result sample};Lresult;"
 #define EX16 "Tpoi={BDD id lat lon};Lpoi;"
+#define EX17 "{#v1=0;#v2=1;E#v1=9;#v2=10;E enum1 enum2}"
 
 #define CREATE_EXAMPLES_TEST(DESC) \
     TEST(DynTypeTests, ParseTestExample ## DESC) { \
@@ -110,6 +111,7 @@ CREATE_EXAMPLES_TEST(EX13)
 CREATE_EXAMPLES_TEST(EX14)
 CREATE_EXAMPLES_TEST(EX15)
 CREATE_EXAMPLES_TEST(EX16)
+CREATE_EXAMPLES_TEST(EX17)
 
 TEST(DynTypeTests, ParseRandomGarbageTest) {
     /*
@@ -295,3 +297,12 @@ TEST(DynTypeTests, SequenceWithPointerTest) {
     dynType_destroy(type);
 }
 
+TEST(DynTypeTests, EnumTest) {
+    dyn_type *type = NULL;
+    int rc = 0;
+    rc = dynType_parseWithStr("{#v1=0;#v2=1;E#v1=9;#v2=10;E enum1 enum2}", NULL, NULL, &type);
+    CHECK_EQUAL(0, rc);
+
+    dynType_print(type, stdout);
+    dynType_destroy(type);
+}

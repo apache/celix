@@ -98,6 +98,7 @@ typedef struct psa_zmq_bounded_service_entry {
     pubsub_publisher_t service;
     long bndId;
     hash_map_t *msgTypes; //key = msg type id, value = pubsub_msg_serializer_t
+    hash_map_t *msgTypeIds; //key = msg name, value = msg type id
     hash_map_t *msgEntries; //key = msg type id, value = psa_zmq_send_msg_entry_t
     int getCount;
 } psa_zmq_bounded_service_entry_t;
@@ -344,6 +345,12 @@ void pubsub_zmqTopicSender_disconnectFrom(pubsub_zmq_topic_sender_t *sender __at
     /*nop*/
 }
 
+static int psa_zmq_localMsgTypeIdForMsgType(void* handle, const char* msgType, unsigned int* msgTypeId) {
+    psa_zmq_bounded_service_entry_t *entry = (psa_zmq_bounded_service_entry_t *) handle;
+    *msgTypeId = (unsigned int)(uintptr_t) hashMap_get(entry->msgTypeIds, msgType);
+    return 0;
+}
+
 static void* psa_zmq_getPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties __attribute__((unused))) {
     pubsub_zmq_topic_sender_t *sender = handle;
     long bndId = celix_bundle_getId(requestingBundle);
@@ -358,6 +365,7 @@ static void* psa_zmq_getPublisherService(void *handle, const celix_bundle_t *req
         entry->parent = sender;
         entry->bndId = bndId;
         entry->msgEntries = hashMap_create(NULL, NULL, NULL, NULL);
+        entry->msgTypeIds = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
 
         int rc = sender->serializer->createSerializerMap(sender->serializer->handle, (celix_bundle_t*)requestingBundle, &entry->msgTypes);
         if (rc == 0) {
@@ -377,6 +385,7 @@ static void* psa_zmq_getPublisherService(void *handle, const celix_bundle_t *req
                 uuid_copy(sendEntry->header.originUUID, sender->fwUUID);
                 celixThreadMutex_create(&sendEntry->metrics.mutex, NULL);
                 hashMap_put(entry->msgEntries, key, sendEntry);
+                hashMap_put(entry->msgTypeIds, strndup(sendEntry->msgSer->msgName, 1024), (void *)(uintptr_t) sendEntry->msgSer->msgId);
             }
             entry->service.handle = entry;
             entry->service.localMsgTypeIdForMsgType = psa_zmq_localMsgTypeIdForMsgType;
@@ -385,9 +394,6 @@ static void* psa_zmq_getPublisherService(void *handle, const celix_bundle_t *req
         } else {
             L_ERROR("Error creating serializer map for ZMQ TopicSender %s/%s", sender->scope, sender->topic);
         }
-
-
-
     }
     celixThreadMutex_unlock(&sender->boundedServices.mutex);
 
@@ -419,6 +425,7 @@ static void psa_zmq_ungetPublisherService(void *handle, const celix_bundle_t *re
         }
         hashMap_destroy(entry->msgEntries, false, false);
 
+        hashMap_destroy(entry->msgTypeIds, true, false);
         free(entry);
     }
     celixThreadMutex_unlock(&sender->boundedServices.mutex);

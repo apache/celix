@@ -131,9 +131,16 @@ namespace celix { namespace dm {
          * Stops the Dependency Manager
          */
         void stop() {
-                celix_dependencyManager_removeAllComponents(cDepMan);
-                queuedComponents.clear();
-                startedComponents.clear();
+            std::vector<std::unique_ptr<BaseComponent>> clearStarted{};
+            std::vector<std::unique_ptr<BaseComponent>> clearQueued{};
+            celix_dependencyManager_removeAllComponents(cDepMan);
+            {
+                std::lock_guard<std::recursive_mutex> lock(componentsMutex);
+                std::swap(startedComponents, clearStarted);
+                std::swap(queuedComponents, clearQueued);
+            }
+            clearStarted.clear();
+            clearQueued.clear();
         }
     private:
         celix_bundle_context_t *context {nullptr};

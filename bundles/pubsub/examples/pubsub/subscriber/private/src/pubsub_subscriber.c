@@ -30,22 +30,22 @@
 #include "poi.h"
 #include "pubsub_subscriber_private.h"
 
-pubsub_receiver_pt subscriber_create(char* topics) {
-    pubsub_receiver_pt sub = calloc(1,sizeof(*sub));
+pubsub_receiver_t* subscriber_create(char* topics) {
+    pubsub_receiver_t *sub = calloc(1,sizeof(*sub));
     sub->name = strdup(topics);
     return sub;
 }
 
 
-void subscriber_start(pubsub_receiver_pt subscriber) {
+void subscriber_start(pubsub_receiver_t *subscriber) {
     printf("Subscriber started...\n");
 }
 
-void subscriber_stop(pubsub_receiver_pt subscriber) {
+void subscriber_stop(pubsub_receiver_t *subscriber) {
     printf("Subscriber stopped...\n");
 }
 
-void subscriber_destroy(pubsub_receiver_pt subscriber) {
+void subscriber_destroy(pubsub_receiver_t *subscriber) {
     if (subscriber->name != NULL) {
         free(subscriber->name);
     }
@@ -54,10 +54,8 @@ void subscriber_destroy(pubsub_receiver_pt subscriber) {
 }
 
 int pubsub_subscriber_recv(void* handle, const char* msgType, unsigned int msgTypeId, void* msg, bool* release) {
-
     location_t place = (location_t)msg;
     printf("Recv (%s): [%f, %f] (%s, %s, %s, len data %li)\n", msgType, place->position.lat, place->position.lon, place->name, place->description, place->extra, (long)(strlen(place->data) + 1));
 
     return 0;
-
 }

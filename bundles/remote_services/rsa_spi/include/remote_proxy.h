@@ -33,20 +33,20 @@
 #define OSGI_RSA_REMOTE_PROXY_FACTORY 	"remote_proxy_factory"
 #define OSGI_RSA_REMOTE_PROXY_TIMEOUT   "remote_proxy_timeout"
 
-typedef celix_status_t (*sendToHandle)(remote_service_admin_pt remote_service_admin_ptr, endpoint_description_pt endpointDescription, char *request, char **reply, int* replyStatus);
-typedef celix_status_t (*createProxyService)(void *handle, endpoint_description_pt endpointDescription, remote_service_admin_pt rsa, sendToHandle sendToCallback, celix_properties_t *properties, void **service);
+typedef celix_status_t (*sendToHandle)(remote_service_admin_t *remote_service_admin_ptr, endpoint_description_t *endpointDescription, char *request, char **reply, int* replyStatus);
+typedef celix_status_t (*createProxyService)(void *handle, endpoint_description_t *endpointDescription, remote_service_admin_t *rsa, sendToHandle sendToCallback, celix_properties_t *properties, void **service);
 typedef celix_status_t (*destroyProxyService)(void *handle, void *service);
 
-typedef struct remote_proxy_factory *remote_proxy_factory_pt;
-typedef struct remote_proxy_factory_service *remote_proxy_factory_service_pt;
+typedef struct remote_proxy_factory remote_proxy_factory_t;
+typedef struct remote_proxy_factory_service remote_proxy_factory_service_t;
 
 struct remote_proxy_factory {
-	bundle_context_pt context_ptr;
+	celix_bundle_context_t *context_ptr;
 	char *service;
 
-	remote_proxy_factory_service_pt remote_proxy_factory_service_ptr;
+	remote_proxy_factory_service_t *remote_proxy_factory_service_ptr;
 	celix_properties_t *properties;
-	service_registration_pt registration;
+	service_registration_t *registration;
 
 	hash_map_pt proxy_instances;
 
@@ -57,18 +57,18 @@ struct remote_proxy_factory {
 };
 
 struct remote_proxy_factory_service {
-	remote_proxy_factory_pt factory;
-	celix_status_t (*registerProxyService)(remote_proxy_factory_pt proxyFactoryService, endpoint_description_pt endpoint, remote_service_admin_pt remote_service_admin_ptr, sendToHandle callback);
-	celix_status_t (*unregisterProxyService)(remote_proxy_factory_pt proxyFactoryService, endpoint_description_pt endpoint);
+	remote_proxy_factory_t *factory;
+	celix_status_t (*registerProxyService)(remote_proxy_factory_t *proxyFactoryService, endpoint_description_t *endpoint, remote_service_admin_t *remote_service_admin_ptr, sendToHandle callback);
+	celix_status_t (*unregisterProxyService)(remote_proxy_factory_t *proxyFactoryService, endpoint_description_t *endpoint);
 };
 
-celix_status_t remoteProxyFactory_create(bundle_context_pt context, char *service, void *handle,
+celix_status_t remoteProxyFactory_create(celix_bundle_context_t *context, char *service, void *handle,
 		createProxyService create, destroyProxyService destroy,
-		remote_proxy_factory_pt *remote_proxy_factory_ptr);
-celix_status_t remoteProxyFactory_destroy(remote_proxy_factory_pt *remote_proxy_factory_ptr);
+		remote_proxy_factory_t **remote_proxy_factory_ptr);
+celix_status_t remoteProxyFactory_destroy(remote_proxy_factory_t **remote_proxy_factory_ptr);
 
-celix_status_t remoteProxyFactory_register(remote_proxy_factory_pt remote_proxy_factory_ptr);
-celix_status_t remoteProxyFactory_unregister(remote_proxy_factory_pt remote_proxy_factory_ptr);
+celix_status_t remoteProxyFactory_register(remote_proxy_factory_t *remote_proxy_factory_ptr);
+celix_status_t remoteProxyFactory_unregister(remote_proxy_factory_t *remote_proxy_factory_ptr);
 
 
 

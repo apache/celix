@@ -28,7 +28,7 @@ typedef struct user_data {
     pthread_t logger_thread;
     pthread_mutex_t lock;
     bool running;
-    log_helper_pt log_helper;
+    log_helper_t *log_helper;
 } user_data_t;
 
 static void *loggerThread(void *userData);

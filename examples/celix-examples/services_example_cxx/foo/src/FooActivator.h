@@ -26,7 +26,7 @@ using namespace celix::dm;
 
 class FooActivator  {
 public:
-    FooActivator(std::shared_ptr<DependencyManager> mng);
+    explicit FooActivator(std::shared_ptr<DependencyManager> mng);
 };
 
 #endif //FOO_ACTIVATOR_H

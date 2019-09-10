@@ -23,17 +23,19 @@
 
 #include "bundle_context.h"
 #include "log_service.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-typedef struct log_helper log_helper_t;
-typedef struct log_helper* log_helper_pt;
 
-celix_status_t logHelper_create(celix_bundle_context_t *context, log_helper_pt* log_helper);
-celix_status_t logHelper_start(log_helper_pt loghelper);
-celix_status_t logHelper_stop(log_helper_pt loghelper);
-celix_status_t logHelper_destroy(log_helper_pt* loghelper);
-celix_status_t logHelper_log(log_helper_pt loghelper, log_level_t level, const char* message, ... );
+typedef struct log_helper log_helper_t;
+
+celix_status_t logHelper_create(celix_bundle_context_t *context, log_helper_t **log_helper);
+celix_status_t logHelper_start(log_helper_t *loghelper);
+celix_status_t logHelper_stop(log_helper_t *loghelper);
+celix_status_t logHelper_destroy(log_helper_t **loghelper);
+celix_status_t logHelper_log(log_helper_t *loghelper, log_level_t level, const char* message, ... );
+
 #ifdef __cplusplus
 }
 #endif

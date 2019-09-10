@@ -24,11 +24,11 @@ include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
 
 add_celix_bundle(event_handler
     VERSION 0.0.0
-	GROUP "Celix/EventAdmin"
-	SOURCES 
-		private/src/event_handler_activator.c
-		private/src/event_handler_impl.c
-		${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
+    GROUP "Celix/EventAdmin"
+    SOURCES 
+        private/src/event_handler_activator.c
+        private/src/event_handler_impl.c
+        ${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
 )
 
 install_celix_bundle(event_handler)

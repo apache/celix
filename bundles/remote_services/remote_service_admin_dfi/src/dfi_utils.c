@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-static celix_status_t dfi_findFileForFramework(bundle_context_pt context, const char *fileName, FILE **out) {
+static celix_status_t dfi_findFileForFramework(celix_bundle_context_t *context, const char *fileName, FILE **out) {
     celix_status_t  status;
 
     char pwd[1024];
@@ -48,7 +48,7 @@ static celix_status_t dfi_findFileForFramework(bundle_context_pt context, const 
     return status;
 }
 
-static celix_status_t dfi_findFileForBundle(bundle_pt bundle, const char *fileName, FILE **out) {
+static celix_status_t dfi_findFileForBundle(celix_bundle_t *bundle, const char *fileName, FILE **out) {
     celix_status_t  status;
 
     //Checking if descriptor is in root dir of bundle
@@ -85,7 +85,7 @@ static celix_status_t dfi_findFileForBundle(bundle_pt bundle, const char *fileNa
     return status;
 }
 
-celix_status_t dfi_findDescriptor(bundle_context_pt context, bundle_pt bundle, const char *name, FILE **out) {
+celix_status_t dfi_findDescriptor(celix_bundle_context_t *context, celix_bundle_t *bundle, const char *name, FILE **out) {
     celix_status_t  status;
     char fileName[128];
 
@@ -106,3 +106,26 @@ celix_status_t dfi_findDescriptor(bundle_context_pt context, bundle_pt bundle, c
 
     return status;
 }
+
+celix_status_t dfi_findAvprDescriptor(celix_bundle_context_t *context, celix_bundle_t *bundle, const char *name, FILE **out) {
+    celix_status_t  status;
+    char fileName[128];
+
+    snprintf(fileName, 128, "%s.avpr", name);
+
+    long id;
+    status = bundle_getBundleId(bundle, &id);
+
+    if (status == CELIX_SUCCESS) {
+        if (id == 0) {
+            //framework bundle
+            status = dfi_findFileForFramework(context, fileName, out);
+        } else {
+            //normal bundle
+            status = dfi_findFileForBundle(bundle, fileName, out);
+        }
+    }
+
+    return status;
+}
+

@@ -33,14 +33,14 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-typedef struct largeUdp *largeUdp_pt;
+typedef struct largeUdp largeUdp_t;
 
-largeUdp_pt largeUdp_create(unsigned int maxNrUdpReceptions);
-void largeUdp_destroy(largeUdp_pt handle);
+largeUdp_t *largeUdp_create(unsigned int maxNrUdpReceptions);
+void largeUdp_destroy(largeUdp_t *handle);
 
-int largeUdp_sendto(largeUdp_pt handle, int fd, void *buf, size_t count, int flags, struct sockaddr_in *dest_addr, size_t addrlen);
-int largeUdp_sendmsg(largeUdp_pt handle, int fd, struct iovec *largeMsg_iovec, int len, int flags, struct sockaddr_in *dest_addr, size_t addrlen);
-bool largeUdp_dataAvailable(largeUdp_pt handle, int fd, unsigned int *index, unsigned int *size);
-int largeUdp_read(largeUdp_pt handle, unsigned int index, void ** buffer, unsigned int size);
+int largeUdp_sendto(largeUdp_t *handle, int fd, void *buf, size_t count, int flags, struct sockaddr_in *dest_addr, size_t addrlen);
+int largeUdp_sendmsg(largeUdp_t *handle, int fd, struct iovec *largeMsg_iovec, int len, int flags, struct sockaddr_in *dest_addr, size_t addrlen);
+bool largeUdp_dataAvailable(largeUdp_t *handle, int fd, unsigned int *index, unsigned int *size);
+int largeUdp_read(largeUdp_t *handle, unsigned int index, void ** buffer, unsigned int size);
 
 #endif /* _LARGE_UDP_H_ */

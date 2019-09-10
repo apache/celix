@@ -137,7 +137,7 @@ celix_status_t deploymentAdmin_create(bundle_context_pt context, deployment_admi
 			(*admin)->auditlogUrl = strdup(auditlogUrl);
 
 //				log_store_pt store = NULL;
-//				log_pt log = NULL;
+//				log_t *log = NULL;
 //				log_sync_pt sync = NULL;
 //				logStore_create(subpool, &store);
 //				log_create(subpool, store, &log);

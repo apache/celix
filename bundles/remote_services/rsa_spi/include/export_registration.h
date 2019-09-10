@@ -24,15 +24,15 @@
 #include "endpoint_description.h"
 #include "service_reference.h"
 
-typedef struct export_registration *export_registration_pt;
+typedef struct export_registration export_registration_t;
 
-typedef struct export_reference *export_reference_pt;
+typedef struct export_reference export_reference_t;
 
-celix_status_t exportRegistration_close(export_registration_pt registration);
-celix_status_t exportRegistration_getException(export_registration_pt registration);
-celix_status_t exportRegistration_getExportReference(export_registration_pt registration, export_reference_pt *reference);
+celix_status_t exportRegistration_close(export_registration_t *registration);
+celix_status_t exportRegistration_getException(export_registration_t *registration);
+celix_status_t exportRegistration_getExportReference(export_registration_t *registration, export_reference_t **reference);
 
-celix_status_t exportReference_getExportedEndpoint(export_reference_pt reference, endpoint_description_pt *endpoint);
-celix_status_t exportReference_getExportedService(export_reference_pt reference, service_reference_pt *service);
+celix_status_t exportReference_getExportedEndpoint(export_reference_t *reference, endpoint_description_t **endpoint);
+celix_status_t exportReference_getExportedService(export_reference_t *reference, service_reference_pt *service);
 
 #endif //CELIX_EXPORT_REGISTRATION_H

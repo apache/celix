@@ -43,16 +43,16 @@
 #include "endpoint_discovery_poller.h"
 
 struct etcd_watcher {
-	etcdlib_t *etcdlib;
+    etcdlib_t *etcdlib;
 
-    discovery_pt discovery;
-    log_helper_pt* loghelper;
+    discovery_t *discovery;
+    log_helper_t **loghelper;
     hash_map_pt entries;
 
-	celix_thread_mutex_t watcherLock;
-	celix_thread_t watcherThread;
+    celix_thread_mutex_t watcherLock;
+    celix_thread_t watcherThread;
 
-	volatile bool running;
+    volatile bool running;
 };
 
 
@@ -75,7 +75,7 @@ struct etcd_watcher {
 
 
 // note that the rootNode shouldn't have a leading slash
-static celix_status_t etcdWatcher_getRootPath(bundle_context_pt context, char* rootNode) {
+static celix_status_t etcdWatcher_getRootPath(celix_bundle_context_t *context, char* rootNode) {
 	celix_status_t status = CELIX_SUCCESS;
 	const char* rootPath = NULL;
 
@@ -89,7 +89,7 @@ static celix_status_t etcdWatcher_getRootPath(bundle_context_pt context, char* r
 	return status;
 }
 
-static celix_status_t etcdWatcher_getLocalNodePath(bundle_context_pt context, char* localNodePath) {
+static celix_status_t etcdWatcher_getLocalNodePath(celix_bundle_context_t *context, char* localNodePath) {
 	celix_status_t status = CELIX_SUCCESS;
 	char rootPath[MAX_ROOTNODE_LENGTH];
     const char* uuid = NULL;
@@ -111,7 +111,7 @@ static celix_status_t etcdWatcher_getLocalNodePath(bundle_context_pt context, ch
 }
 
 static void add_node(const char *key, const char *value, void* arg) {
-	discovery_pt discovery = (discovery_pt) arg;
+	discovery_t *discovery = (discovery_t *) arg;
 	endpointDiscoveryPoller_addDiscoveryEndpoint(discovery->poller, (char *) value);
 }
 
@@ -122,7 +122,7 @@ static void add_node(const char *key, const char *value, void* arg) {
  * returns the modifiedIndex of the last modified
  * discovery endpoint (see etcd documentation).
  */
-static celix_status_t etcdWatcher_addAlreadyExistingWatchpoints(etcd_watcher_pt watcher, discovery_pt discovery, long long* highestModified) {
+static celix_status_t etcdWatcher_addAlreadyExistingWatchpoints(etcd_watcher_t *watcher, discovery_t *discovery, long long* highestModified) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	char rootPath[MAX_ROOTNODE_LENGTH];
@@ -138,7 +138,7 @@ static celix_status_t etcdWatcher_addAlreadyExistingWatchpoints(etcd_watcher_pt 
 }
 
 
-static celix_status_t etcdWatcher_addOwnFramework(etcd_watcher_pt watcher)
+static celix_status_t etcdWatcher_addOwnFramework(etcd_watcher_t *watcher)
 {
     celix_status_t status = CELIX_BUNDLE_EXCEPTION;
     char localNodePath[MAX_LOCALNODE_LENGTH];
@@ -149,8 +149,8 @@ static celix_status_t etcdWatcher_addOwnFramework(etcd_watcher_pt watcher)
     const char* ttlStr = NULL;
     int ttl;
 
-	bundle_context_pt context = watcher->discovery->context;
-	endpoint_discovery_server_pt server = watcher->discovery->server;
+	celix_bundle_context_t *context = watcher->discovery->context;
+	endpoint_discovery_server_t *server = watcher->discovery->server;
 
     // register own framework
     if ((status = etcdWatcher_getLocalNodePath(context, localNodePath)) != CELIX_SUCCESS) {
@@ -194,9 +194,9 @@ static celix_status_t etcdWatcher_addOwnFramework(etcd_watcher_pt watcher)
 
 
 
-static celix_status_t etcdWatcher_addEntry(etcd_watcher_pt watcher, char* key, char* value) {
+static celix_status_t etcdWatcher_addEntry(etcd_watcher_t *watcher, char* key, char* value) {
 	celix_status_t status = CELIX_BUNDLE_EXCEPTION;
-	endpoint_discovery_poller_pt poller = watcher->discovery->poller;
+	endpoint_discovery_poller_t *poller = watcher->discovery->poller;
 
 	if (!hashMap_containsKey(watcher->entries, key)) {
 		status = endpointDiscoveryPoller_addDiscoveryEndpoint(poller, value);
@@ -209,9 +209,9 @@ static celix_status_t etcdWatcher_addEntry(etcd_watcher_pt watcher, char* key, c
 	return status;
 }
 
-static celix_status_t etcdWatcher_removeEntry(etcd_watcher_pt watcher, char* key, char* value) {
+static celix_status_t etcdWatcher_removeEntry(etcd_watcher_t *watcher, char* key, char* value) {
 	celix_status_t status = CELIX_BUNDLE_EXCEPTION;
-	endpoint_discovery_poller_pt poller = watcher->discovery->poller;
+	endpoint_discovery_poller_t *poller = watcher->discovery->poller;
 
 	hash_map_entry_pt entry = hashMap_getEntry(watcher->entries, key);
 
@@ -249,12 +249,12 @@ static celix_status_t etcdWatcher_removeEntry(etcd_watcher_pt watcher, char* key
  * changing discovery endpoint information within etcd.
  */
 static void* etcdWatcher_run(void* data) {
-	etcd_watcher_pt watcher = (etcd_watcher_pt) data;
+	etcd_watcher_t *watcher = (etcd_watcher_t *) data;
 	time_t timeBeforeWatch = time(NULL);
 	char rootPath[MAX_ROOTNODE_LENGTH];
 	long long highestModified = 0;
 
-	bundle_context_pt context = watcher->discovery->context;
+	celix_bundle_context_t *context = watcher->discovery->context;
 
 	etcdWatcher_addAlreadyExistingWatchpoints(watcher, watcher->discovery, &highestModified);
 	etcdWatcher_getRootPath(context, rootPath);
@@ -304,8 +304,7 @@ static void* etcdWatcher_run(void* data) {
  * the ectdWatcher needs to have access to the endpoint_discovery_poller and therefore is only
  * allowed to be created after the endpoint_discovery_poller
  */
-celix_status_t etcdWatcher_create(discovery_pt discovery, bundle_context_pt context,
-		etcd_watcher_pt *watcher)
+celix_status_t etcdWatcher_create(discovery_t *discovery, celix_bundle_context_t *context, etcd_watcher_t **watcher)
 {
 	celix_status_t status = CELIX_SUCCESS;
 
@@ -371,7 +370,7 @@ celix_status_t etcdWatcher_create(discovery_pt discovery, bundle_context_pt cont
 }
 
 
-celix_status_t etcdWatcher_destroy(etcd_watcher_pt watcher) {
+celix_status_t etcdWatcher_destroy(etcd_watcher_t *watcher) {
 	celix_status_t status = CELIX_SUCCESS;
 	char localNodePath[MAX_LOCALNODE_LENGTH];
 

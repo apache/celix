@@ -54,7 +54,7 @@ struct pubsub_udpmc_topic_receiver {
     char *scope;
     char *topic;
     char* ifIpAddress;
-    largeUdp_pt largeUdpHandle;
+    largeUdp_t *largeUdpHandle;
     int topicEpollFd; // EPOLL filedescriptor where the sockets are registered.
 
     struct {
@@ -458,8 +458,8 @@ static void psa_udpmc_processMsg(pubsub_udpmc_topic_receiver_t *receiver, pubsub
 
             } else {
                 int major = 0, minor = 0;
-                version_getMajor(msgSer->msgVersion,&major);
-                version_getMinor(msgSer->msgVersion,&minor);
+                version_getMajor(msgSer->msgVersion, &major);
+                version_getMinor(msgSer->msgVersion, &minor);
                 printf("[PSA_UDPMC] Version mismatch for primary message '%s' (have %d.%d, received %u.%u). NOT sending any part of the whole message.\n",
                        msgSer->msgName,major,minor,msg->header.major,msg->header.minor);
             }

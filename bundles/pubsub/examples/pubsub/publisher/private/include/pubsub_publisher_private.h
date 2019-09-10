@@ -29,22 +29,23 @@ struct pubsub_sender {
     const char *ident;
     hash_map_pt tid_map; //service -> tid
     long bundleId;
+    bool stop;
 };
+typedef struct pubsub_sender pubsub_sender_t;
 
-typedef struct pubsub_sender * pubsub_sender_pt;
-
-typedef struct send_thread_struct{
-    pubsub_publisher_pt service;
-    pubsub_sender_pt publisher;
+struct send_thread_struct {
+    pubsub_publisher_t *service;
+    pubsub_sender_t *publisher;
     const char *topic;
-} *send_thread_struct_pt;
+};
+typedef struct send_thread_struct send_thread_struct_t;
 
-pubsub_sender_pt publisher_create(array_list_pt trackers, const char* ident,long bundleId);
+pubsub_sender_t* publisher_create(array_list_pt trackers, const char* ident,long bundleId);
 
-void publisher_start(pubsub_sender_pt client);
-void publisher_stop(pubsub_sender_pt client);
+void publisher_start(pubsub_sender_t *client);
+void publisher_stop(pubsub_sender_t *client);
 
-void publisher_destroy(pubsub_sender_pt client);
+void publisher_destroy(pubsub_sender_t *client);
 
 void publisher_publishSvcAdded(void * handle, void *svc, const celix_properties_t *props);
 void publisher_publishSvcRemoved(void * handle, void *svc, const celix_properties_t *props);

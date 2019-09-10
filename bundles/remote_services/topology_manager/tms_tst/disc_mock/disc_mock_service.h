@@ -26,31 +26,27 @@
 
 #define DISC_MOCK_SERVICE_NAME "disc_mock_service"
 
-struct disc_mock_service {
-    void *handle;// disc_mock_activator_pt
+typedef struct disc_mock_service {
+    void *handle;// disc_mock_activator_t*
     celix_status_t (*getEPDescriptors)(void *handle, array_list_pt *descrList);
-};
+} disc_mock_service_t;
 
-typedef struct disc_mock_service *disc_mock_service_pt;
 
 struct disc_mock_activator {
-	bundle_context_pt context;
-	disc_mock_service_pt serv;
-	service_registration_pt  reg;
+	celix_bundle_context_t *context;
+	disc_mock_service_t *serv;
+	service_registration_t * reg;
 
-//	service_tracker_customizer_pt cust;
-//	service_tracker_pt tracker;
-    endpoint_listener_pt endpointListener;
-    service_registration_pt endpointListenerService;
+//	service_tracker_customizer_t *cust;
+//	service_tracker_t *tracker;
+    endpoint_listener_t *endpointListener;
+    service_registration_t *endpointListenerService;
 
     array_list_pt endpointList;
 };
 
 
-
-
-
-celix_status_t discMockService_create(void *handle, disc_mock_service_pt *serv);
-celix_status_t discMockService_destroy(disc_mock_service_pt serv);
+celix_status_t discMockService_create(void *handle, disc_mock_service_t **serv);
+celix_status_t discMockService_destroy(disc_mock_service_t *serv);
 
 #endif //CELIX_TST_SERVICE_H

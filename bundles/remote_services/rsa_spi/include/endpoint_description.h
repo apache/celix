@@ -41,10 +41,9 @@ struct endpoint_description {
 };
 
 typedef struct endpoint_description endpoint_description_t;
-typedef endpoint_description_t* endpoint_description_pt;
 
-celix_status_t endpointDescription_create(celix_properties_t *properties, endpoint_description_pt *endpointDescription);
-celix_status_t endpointDescription_destroy(endpoint_description_pt description);
+celix_status_t endpointDescription_create(celix_properties_t *properties, endpoint_description_t **endpointDescription);
+celix_status_t endpointDescription_destroy(endpoint_description_t *description);
 
 
 #endif /* ENDPOINT_DESCRIPTION_H_ */

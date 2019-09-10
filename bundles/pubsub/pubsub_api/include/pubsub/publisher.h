@@ -43,7 +43,7 @@
  
 struct pubsub_publisher {
     void *handle;
- 
+
     /**
      * Every msg is identifiable by msg type string. Because msg type string are performance wise not preferable (string compares),
      * a "local" (int / platform dependent) unique id will be generated runtime
@@ -54,7 +54,7 @@ struct pubsub_publisher {
      * Returns 0 on success.
      */
     int (*localMsgTypeIdForMsgType)(void *handle, const char *msgType, unsigned int *msgTypeId);
-  
+
     /**
      * send is a async function, but the msg can be safely deleted after send returns.
      * Returns 0 on success.
@@ -63,6 +63,5 @@ struct pubsub_publisher {
  
 };
 typedef struct pubsub_publisher pubsub_publisher_t;
-typedef struct pubsub_publisher* pubsub_publisher_pt;
 
 #endif // __PUBSUB_PUBLISHER_H_

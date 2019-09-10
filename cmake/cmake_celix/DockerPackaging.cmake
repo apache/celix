@@ -40,12 +40,95 @@ if (NOT TARGET celix-build-docker-images)
 endif ()
 #####
 
+#[[
+Adds a docker target dir, containing a all the required executables,
+libraries, filesystem files and selected bundles needed to run a Apache Celix framework in a docker container.
+
+The 'add_celix_docker' target is a executable target and can be used to link libraries which are needed in the docker image.
+
+The docker dir can be found in `<cmake_build_dir>/docker[/<group_name>]/<docker_name>`.
+
+The docker directories are build with the target `celix-build-docker-dirs`, this does not create the
+docker images and can also be executed on systems without docker. The `celix-build-docker-dirs` is trigger
+with `make all`.
+
+The docker images are build with the target `celix-build-docker-images`. For this to work docker needs te installed
+and the user executing the `celix-build-docker-images` should have right to create docker images.
+The `celix-build-docker-images` is not triggered with `make all`
+
+There are three variants of 'add_celix_docker':
+- If no launcher is specified a custom Celix launcher will be generated. This launcher also contains the configured properties.
+- If a LAUNCHER_SRC is provided a Celix launcher will be build using the provided sources. Additional sources can be added with the
+  CMake 'target_sources' command.
+- If a LAUNCHER (absolute path to a executable of CMake `add_executable` target) is provided that will be used as Celix launcher.
+
+Optional arguments:
+- CXX: With this option the generated Celix launcher (if used) will be a C++ source instead of a C source.
+  A additional result of this is that Celix launcher is also linked against stdlibc++.
+- GROUP: If configured the build location will be prefixed the GROUP. Default is empty.
+- NAME: The name of the executable. Default is <docker_target_name>. Only useful for generated/LAUNCHER_SRC Celix launchers.
+- FROM: Configured the docker image base. Default is scratch.
+  If configured a minimal filesystem will not be created!
+- BUNDLES_DIR: Configures the directory where are all the bundles are copied. Default is /bundles.
+- WORKDIR: Configures the workdir of the docker image. Default is /root.
+- IMAGE_NAME: Configure the image name. Default is NAME.
+- BUNDLES: Configures the used bundles. These bundles are configured for run level 3. see 'celix_docker_bundles' for more info.
+- PROPERTIES: Configure configuration properties.
+- INSTRUCTIONS: Additional dockker instruction to add the the generated Dockerfile.
+
+```CMake
+add_celix_docker(<docker_target_name>
+    [CXX]
+    [GROUP group_name]
+    [NAME deploy_name]
+    [FROM docker_from_image]
+    [BUNDLES_DIR bundle_dir_in_docker_image]
+    [WORKDIR workdir_in_docker_image]
+    [IMAGE_NAME docker_image_name]
+    [BUNDLES <bundle1> <bundle2> ...]
+    [PROPERTIES "prop1=val1" "prop2=val2" ...]
+    [INSTRUCTIONS "instr1" "instr2" ...]
+)
+```
+
+```CMake
+add_celix_docker(<docker_target_name>
+    LAUNCHER_SRC launcher_src
+    [CXX]
+    [GROUP group_name]
+    [NAME deploy_name]
+    [FROM docker_from_image]
+    [BUNDLES_DIR bundle_dir_in_docker_image]
+    [WORKDIR workdir_in_docker_image]
+    [IMAGE_NAME docker_image_name]
+    [BUNDLES <bundle1> <bundle2> ...]
+    [PROPERTIES "prop1=val1" "prop2=val2" ...]
+    [INSTRUCTIONS "instr1" "instr2" ...]
+)
+```
+
+```CMake
+add_celix_docker(<docker_target_name>
+    LAUNCHER launcher
+    [CXX]
+    [GROUP group_name]
+    [NAME deploy_name]
+    [FROM docker_from_image]
+    [BUNDLES_DIR bundle_dir_in_docker_image]
+    [WORKDIR workdir_in_docker_image]
+    [IMAGE_NAME docker_image_name]
+    [BUNDLES <bundle1> <bundle2> ...]
+    [PROPERTIES "prop1=val1" "prop2=val2" ...]
+    [INSTRUCTIONS "instr1" "instr2" ...]
+)
+```
+]]
 function(add_celix_docker)
     list(GET ARGN 0 DOCKER_TARGET)
     list(REMOVE_AT ARGN 0)
 
     set(OPTIONS CXX)
-    set(ONE_VAL_ARGS GROUP NAME FROM BUNDLES_DIR WORKDIR IMAGE_NAME)
+    set(ONE_VAL_ARGS GROUP NAME FROM BUNDLES_DIR WORKDIR IMAGE_NAME LAUNCHER LAUNCHER_SRC)
     set(MULTI_VAL_ARGS BUNDLES PROPERTIES INSTRUCTIONS)
     cmake_parse_arguments(DOCKER "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
 
@@ -209,7 +292,7 @@ $<JOIN:$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_PROPERTIES>,
     )
 
     if (DOCKER_BUNDLES)
-        celix_docker_bundles(${DOCKER_TARGET} LEVEL 1 ${DOCKER_BUNDLES})
+        celix_docker_bundles(${DOCKER_TARGET} LEVEL 3 ${DOCKER_BUNDLES})
     endif()
     if (DOCKER_PROPERTIES)
         celix_docker_properties(${DOCKER_TARGET} ${DOCKER_PROPERTIES})
@@ -231,6 +314,28 @@ $<JOIN:$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_PROPERTIES>,
 
 endfunction()
 
+#[[
+Add the selected bundles to the Celix docker image. These bundles are copied to the docker build dir and
+are added to the configuration properties so that they are installed and started when the Celix docker container is created and started.
+
+The Celix framework support 7 (0 - 6) run levels. Run levels can be used to control the start and stop order of bundles.
+Bundles in run level 0 are started first and bundles in run level 6 are started last.
+When stopping bundles in run level 6 are stopped first and bundles in run level 0 are stopped last.
+Within a run level the order of configured decides the start order; bundles added earlier are started first.
+
+
+Optional Arguments:
+- LEVEL: The run level for the added bundles. Default is 3.
+
+```CMake
+celix_docker_bundles(<celix_container_target_name>
+    [LEVEL (0..5)]
+    bundle1
+    bundle2
+    ...
+)
+```
+]]
 function(celix_docker_bundles)
     #0 is docker TARGET
     #1..n is bundles
@@ -244,7 +349,7 @@ function(celix_docker_bundles)
     set(BUNDLES_LIST ${BUNDLES_UNPARSED_ARGUMENTS})
 
     if (NOT DEFINED BUNDLES_LEVEL)
-        set(BUNDLES_LEVEL 1)
+        set(BUNDLES_LEVEL 3)
     endif ()
 
     get_target_property(BUNDLES ${DOCKER_TARGET} "DOCKER_BUNDLES_LEVEL_${BUNDLES_LEVEL}")
@@ -307,6 +412,18 @@ function(celix_docker_bundles)
     set_target_properties(${DOCKER_TARGET} PROPERTIES "DOCKER_DEPS" "${DEPS}")
 endfunction()
 
+#[[
+Same as `celix_container_properties`, but then for the celix container
+in the docker image.
+
+```CMake
+celix_docker_properties(<docker_target_name>
+    "prop1=val1"
+    "prop2=val2"
+    ...
+)
+```
+]]
 function(celix_docker_properties)
     #0 is docker TARGET
     #1..n is properties
@@ -322,6 +439,18 @@ function(celix_docker_properties)
     set_target_properties(${DOCKER_TARGET} PROPERTIES "DOCKER_PROPERTIES" "${PROPS}")
 endfunction()
 
+#[[
+Same as `celix_container_embedded_properties`, but then for the celix container
+in the docker image.
+
+```CMake
+celix_docker_embedded_properties(<docker_target_name>
+    "prop1=val1"
+    "prop2=val2"
+    ...
+)
+```
+]]
 function(celix_docker_embedded_properties)
     #0 is docker TARGET
     #1..n is properties
@@ -337,6 +466,18 @@ function(celix_docker_embedded_properties)
     set_target_properties(${DOCKER_TARGET} PROPERTIES "DOCKER_EMBEDDED_PROPERTIES" "${PROPS}")
 endfunction()
 
+#[[
+Add the provided docker instruction to the end of the generated
+Dockerfile.
+
+```CMake
+celix_docker_instructions(<docker_target_name>
+    "instruction1"
+    "instruction2"
+    ...
+)
+```
+]]
 function(celix_docker_instructions)
     #0 is docker TARGET
     #1..n is instructions

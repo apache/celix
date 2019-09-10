@@ -31,21 +31,21 @@ extern "C" {
 #include "celix_launcher.h"
 #include "framework.h"
 
-    static framework_pt serverFramework = NULL;
-    static bundle_context_pt serverContext = NULL;
+    static framework_pt serverFramework = nullptr;
+    static bundle_context_pt serverContext = nullptr;
 
-    static framework_pt clientFramework = NULL;
-    static bundle_context_pt clientContext = NULL;
+    static framework_pt clientFramework = nullptr;
+    static bundle_context_pt clientContext = nullptr;
 
     static void setupFm(void) {
         int rc = 0;
-        bundle_pt bundle = NULL;
+        bundle_pt bundle = nullptr;
 
         //server
         rc = celixLauncher_launch("framework1.properties", &serverFramework);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
 
-        bundle = NULL;
+        bundle = nullptr;
         rc = framework_getFrameworkBundle(serverFramework, &bundle);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
 
@@ -57,7 +57,7 @@ extern "C" {
         rc = celixLauncher_launch("framework2.properties", &clientFramework);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
 
-        bundle = NULL;
+        bundle = nullptr;
         rc = framework_getFrameworkBundle(clientFramework, &bundle);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
 
@@ -75,10 +75,10 @@ extern "C" {
         celixLauncher_waitForShutdown(clientFramework);
         celixLauncher_destroy(clientFramework);
 
-        serverContext = NULL;
-        serverFramework = NULL;
-        clientContext = NULL;
-        clientFramework = NULL;
+        serverContext = nullptr;
+        serverFramework = nullptr;
+        clientContext = nullptr;
+        clientFramework = nullptr;
     }
 
     static void testFrameworks(void) {

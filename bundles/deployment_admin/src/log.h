@@ -33,10 +33,10 @@
 #include "bundle_event.h"
 #include "framework_event.h"
 
-typedef struct log *log_pt;
+typedef struct log log_t;
 
-celix_status_t log_create(log_store_pt store, log_pt *log);
-celix_status_t log_log(log_pt log, unsigned int type, properties_pt properties);
+celix_status_t log_create(log_store_pt store, log_t **log);
+celix_status_t log_log(log_t *log, unsigned int type, properties_pt properties);
 
 celix_status_t log_bundleChanged(void * listener, bundle_event_pt event);
 celix_status_t log_frameworkEvent(void * listener, framework_event_pt event);

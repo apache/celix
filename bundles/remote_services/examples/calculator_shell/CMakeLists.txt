@@ -28,7 +28,7 @@ target_include_directories(calculator_shell PRIVATE src)
 target_link_libraries(calculator_shell PRIVATE Celix::shell_api calculator_api)
 
 celix_bundle_files(calculator_shell
-    ../calculator_api/include/org.apache.celix.calc.api.Calculator.descriptor
-    #src/org.apache.celix.calc.api.Calculator.descriptor ##Use this descriptor in case you want to try out versioning!
+    ../calculator_api/include/org.apache.celix.calc.api.Calculator.avpr
+    #src/org.apache.celix.calc.api.Calculator2.descriptor ##Use this descriptor in case you want to try out versioning!
     DESTINATION .
 )

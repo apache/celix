@@ -23,11 +23,9 @@ if (CPPUTEST_FOUND)
     add_library(pubsub_mock STATIC
             src/publisher_mock.cc
     )
-    target_include_directories(pubsub_mock PUBLIC api)
     target_link_libraries(pubsub_mock PRIVATE Celix::pubsub_spi ${CPPUTEST_LIBRARY})
-    target_include_directories(pubsub_mock SYSTEM PRIVATE 
-        ${CPPUTEST_INCLUDE_DIR}
-    )
+    target_include_directories(pubsub_mock PUBLIC api)
+    target_include_directories(pubsub_mock SYSTEM PRIVATE ${CPPUTEST_INCLUDE_DIR})
 
     if (ENABLE_TESTING)
         add_executable(pubsubmock_test

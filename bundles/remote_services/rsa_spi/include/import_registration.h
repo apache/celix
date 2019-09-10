@@ -24,16 +24,16 @@
 #include "endpoint_description.h"
 #include "service_reference.h"
 
-typedef struct import_registration *import_registration_pt;
+typedef struct import_registration import_registration_t;
 
-typedef struct import_reference *import_reference_pt;
+typedef struct import_reference import_reference_t;
 
-celix_status_t importRegistration_close(import_registration_pt registration);
-celix_status_t importRegistration_getException(import_registration_pt registration);
-celix_status_t importRegistration_getImportReference(import_registration_pt registration, import_reference_pt *reference);
+celix_status_t importRegistration_close(import_registration_t *registration);
+celix_status_t importRegistration_getException(import_registration_t *registration);
+celix_status_t importRegistration_getImportReference(import_registration_t *registration, import_reference_t **reference);
 
-celix_status_t importReference_getImportedEndpoint(import_reference_pt reference);
-celix_status_t importReference_getImportedService(import_reference_pt reference);
+celix_status_t importReference_getImportedEndpoint(import_reference_t *reference);
+celix_status_t importReference_getImportedService(import_reference_t *reference);
 
 
 #endif //CELIX_IMPORT_REGISTRATION_H

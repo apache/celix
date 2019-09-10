@@ -26,7 +26,7 @@
 
 static const char * const OSGI_LOGSERVICE_NAME = "log_service";
 
-typedef struct log_service_data *log_service_data_pt;
+typedef struct log_service_data log_service_data_t;
 
 enum log_level
 {
@@ -39,13 +39,13 @@ enum log_level
 typedef enum log_level log_level_t;
 
 struct log_service {
-    log_service_data_pt logger;
-    celix_status_t (*log)(log_service_data_pt logger, log_level_t level, char * message);
-    celix_status_t (*logSr)(log_service_data_pt logger, service_reference_pt reference, log_level_t level, char * message);
+    log_service_data_t *logger;
+    celix_status_t (*log)(log_service_data_t *logger, log_level_t level, char *message);
+    celix_status_t (*logSr)(log_service_data_t *logger, service_reference_pt reference, log_level_t level, char *message);
 };
 
 typedef struct log_service log_service_t;
-typedef log_service_t* log_service_pt;
+typedef struct log_service *log_service_pt CELIX_DEPRECATED_ATTR;
 
 
 

@@ -31,10 +31,10 @@
 
 typedef struct pubsub_json_serializer pubsub_json_serializer_t;
 
-celix_status_t pubsubSerializer_create(bundle_context_pt context, pubsub_json_serializer_t **serializer);
+celix_status_t pubsubSerializer_create(celix_bundle_context_t *context, pubsub_json_serializer_t **serializer);
 celix_status_t pubsubSerializer_destroy(pubsub_json_serializer_t* serializer);
 
-celix_status_t pubsubSerializer_createSerializerMap(void *handle, bundle_pt bundle, hash_map_pt* serializerMap);
+celix_status_t pubsubSerializer_createSerializerMap(void *handle, celix_bundle_t *bundle, hash_map_pt* serializerMap);
 celix_status_t pubsubSerializer_destroySerializerMap(void *handle, hash_map_pt serializerMap);
 
 #endif /* PUBSUB_SERIALIZER_JSON_H_ */

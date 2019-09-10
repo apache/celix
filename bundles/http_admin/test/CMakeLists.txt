@@ -52,7 +52,7 @@ add_celix_container(http_websocket_tests
             http_admin_sut
 #            http_admin_tst
 )
-target_sources(http_websocket_tests PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/test/http_websocket_tests.cc)
+target_sources(http_websocket_tests PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/test/http_websocket_tests.cc ${CMAKE_CURRENT_SOURCE_DIR}/test/http_admin_info_tests.cc)
 target_link_libraries(http_websocket_tests PRIVATE Celix::http_admin_api ${CPPUTEST_LIBRARIES})
 target_include_directories(http_websocket_tests PRIVATE ${CPPUTEST_INCLUDE_DIR})
 

@@ -43,7 +43,7 @@
 #define DEFAULT_REMOTE_SHELL_TELNET_MAXCONN 		2
 
 struct bundle_instance {
-	log_helper_pt loghelper;
+	log_helper_t *loghelper;
 	shell_mediator_pt shellMediator;
 	remote_shell_pt remoteShell;
 	connection_listener_pt connectionListener;

@@ -44,12 +44,10 @@ typedef struct pstm_activator {
     pubsub_discovered_endpoint_listener_t discListenerSvc;
     long discListenerSvcId;
 
-
     command_service_t shellCmdSvc;
     long shellCmdSvcId;
 
-
-    log_helper_pt loghelper;
+    log_helper_t *loghelper;
 } pstm_activator_t;
 
 

@@ -65,33 +65,32 @@ extern "C" {
 #define TST_CONFIGURATION_TYPE "org.amdatu.remote.admin.http"
 
     static framework_pt framework = NULL;
-    static bundle_context_pt context = NULL;
+    static celix_bundle_context_t *context = NULL;
 
     static service_reference_pt scopeServiceRef = NULL;
     static tm_scope_service_pt tmScopeService = NULL;
 
     static service_reference_pt calcRef = NULL;
-    static calculator_service_pt calc = NULL;
+    static calculator_service_t *calc = NULL;
 
     static service_reference_pt rsaRef = NULL;
-    static remote_service_admin_service_pt rsa = NULL;
+    static remote_service_admin_service_t *rsa = NULL;
 
     static service_reference_pt discRef = NULL;
-    static disc_mock_service_pt discMock = NULL;
+    static disc_mock_service_t *discMock = NULL;
 
     static service_reference_pt testRef = NULL;
-    static tst_service_pt testImport = NULL;
+    static tst_service_t *testImport = NULL;
 
     static service_reference_pt eplRef = NULL;
-    static endpoint_listener_pt eplService = NULL; // actually this is the topology manager
-
+    static endpoint_listener_t *eplService = NULL; // actually this is the topology manager
 
     static void setupFm(void) {
         int rc = 0;
         rc = celixLauncher_launch("config.properties", &framework);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
 
-        bundle_pt bundle = NULL;
+        celix_bundle_t *bundle = NULL;
         rc = framework_getFrameworkBundle(framework, &bundle);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
 
@@ -125,9 +124,12 @@ extern "C" {
 
         rc = bundleContext_getService(context, discRef, (void **)&discMock);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
+
+        printf("==> Finished setup.\n");
     }
 
     static void teardownFm(void) {
+        printf("==> Starting teardown.\n");
         int rc = 0;
 
         rc = bundleContext_ungetService(context, scopeServiceRef, NULL);
@@ -179,7 +181,7 @@ extern "C" {
         rc = celixLauncher_launch("config_import.properties", &framework);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
 
-        bundle_pt bundle = NULL;
+        celix_bundle_t *bundle = NULL;
         rc = framework_getFrameworkBundle(framework, &bundle);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
 
@@ -262,7 +264,6 @@ extern "C" {
         framework = NULL;
     }
 
-
     /// \TEST_CASE_ID{1}
     /// \TEST_CASE_TITLE{Test register scope service}
     /// \TEST_CASE_REQ{REQ-1}
@@ -279,11 +280,11 @@ extern "C" {
             int size = arrayList_size(bundles);
             int i;
             for (i = 0; i < size; i += 1) {
-                bundle_pt bundle = NULL;
+                celix_bundle_t *bundle = NULL;
                 module_pt module = NULL;
                 char *name = NULL;
 
-                bundle = (bundle_pt) arrayList_get(bundles, i);
+                bundle = (celix_bundle_t *) arrayList_get(bundles, i);
                 bundle_getCurrentModule(bundle, &module);
                 module_getSymbolicName(module, &name);
                 printf("got bundle with symbolic name '%s'", name);
@@ -397,7 +398,7 @@ extern "C" {
         // We export one service: Calculator, which has DFI bundle info
         CHECK_EQUAL(1, arrayList_size(epList));
         for (unsigned int i = 0; i < arrayList_size(epList); i++) {
-            endpoint_description_pt ep = (endpoint_description_pt) arrayList_get(epList, i);
+            endpoint_description_t *ep = (endpoint_description_t *) arrayList_get(epList, i);
             celix_properties_t *props = ep->properties;
             hash_map_entry_pt entry = hashMap_getEntry(props, (void*)"key2");
             char* value = (char*) hashMapEntry_getValue(entry);
@@ -433,7 +434,7 @@ extern "C" {
         // We export one service: Calculator, which has DFI bundle info
         CHECK_EQUAL(1, arrayList_size(epList));
         for (unsigned int i = 0; i < arrayList_size(epList); i++) {
-            endpoint_description_pt ep = (endpoint_description_pt) arrayList_get(epList, i);
+            endpoint_description_t *ep = (endpoint_description_t *) arrayList_get(epList, i);
             celix_properties_t *props = ep->properties;
             hash_map_entry_pt entry = hashMap_getEntry(props, (void*)"key2");
             char* value = (char*) hashMapEntry_getValue(entry);
@@ -458,7 +459,7 @@ extern "C" {
         // We export one service: Calculator, which has DFI bundle info
         CHECK_EQUAL(1, arrayList_size(epList));
         for (unsigned int i = 0; i < arrayList_size(epList); i++) {
-            endpoint_description_pt ep = (endpoint_description_pt) arrayList_get(epList, i);
+            endpoint_description_t *ep = (endpoint_description_t *) arrayList_get(epList, i);
             celix_properties_t *props = ep->properties;
             hash_map_entry_pt entry = hashMap_getEntry(props, (void *)"key2");
             char* value = (char*) hashMapEntry_getValue(entry);
@@ -483,7 +484,7 @@ extern "C" {
         // We export two services: Calculator and Calculator2, but only 1 has DFI bundle info
         CHECK_EQUAL(1, arrayList_size(epList));
         for (unsigned int i = 0; i < arrayList_size(epList); i++) {
-            endpoint_description_pt ep = (endpoint_description_pt) arrayList_get(epList, i);
+            endpoint_description_t *ep = (endpoint_description_t *) arrayList_get(epList, i);
             celix_properties_t *props = ep->properties;
             hash_map_entry_pt entry = hashMap_getEntry(props, (void*)"zone");
             char* value = (char*) hashMapEntry_getValue(entry);
@@ -506,7 +507,7 @@ extern "C" {
         CHECK_EQUAL(0, nr_imported);
         int rc = 0;
 
-        endpoint_description_pt endpoint = NULL;
+        endpoint_description_t *endpoint = NULL;
 
         celix_properties_t *props = celix_properties_create();
         celix_properties_set(props, OSGI_RSA_ENDPOINT_SERVICE_ID, "42");
@@ -549,7 +550,7 @@ extern "C" {
         CHECK_EQUAL(1, nr_imported);
         int rc = 0;
 
-        endpoint_description_pt endpoint = NULL;
+        endpoint_description_t *endpoint = NULL;
 
         celix_properties_t *props = celix_properties_create();
         celix_properties_set(props, OSGI_RSA_ENDPOINT_SERVICE_ID, "42");
@@ -591,7 +592,7 @@ extern "C" {
         CHECK_EQUAL(1, nr_imported);
         int rc = 0;
 
-        endpoint_description_pt endpoint = NULL;
+        endpoint_description_t *endpoint = NULL;
 
         celix_properties_t *props = celix_properties_create();
         celix_properties_set(props, OSGI_RSA_ENDPOINT_SERVICE_ID, "42");
@@ -633,7 +634,7 @@ extern "C" {
         CHECK_EQUAL(2, nr_imported);
         int rc = 0;
 
-        endpoint_description_pt endpoint = NULL;
+        endpoint_description_t *endpoint = NULL;
 
         celix_properties_t *props = celix_properties_create();
         celix_properties_set(props, OSGI_RSA_ENDPOINT_SERVICE_ID, "42");
@@ -661,7 +662,6 @@ extern "C" {
 
         printf("End: %s\n", __func__);
     }
-
 }
 
 TEST_GROUP(topology_manager_scoped_export) {

@@ -24,15 +24,19 @@
  *  \copyright	Apache License, Version 2.0
  */
 
-#include "celix_api.h"
+#include <unistd.h>
 
+#include "celix_api.h"
 
 #include <CppUTest/TestHarness.h>
 #include <CppUTest/CommandLineTestRunner.h>
 
+celix_framework_t *fw = nullptr;
+
+
 int main(int argc, char **argv) {
-    celix_framework_t *fw = NULL;
     celixLauncher_launch("config.properties", &fw);
+    //usleep(1000000);
 
     MemoryLeakWarningPlugin::turnOffNewDeleteOverloads();
     int rc = RUN_ALL_TESTS(argc, argv);

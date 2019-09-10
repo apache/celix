@@ -30,9 +30,9 @@
 #define CALCULATOR_SERVICE              "org.apache.celix.calc.api.Calculator"
 #define CALCULATOR_CONFIGURATION_TYPE   "org.amdatu.remote.admin.http"
 
-typedef struct calculator *calculator_pt;
+typedef struct calculator calculator_t;
 
-typedef struct calculator_service *calculator_service_pt;
+typedef struct calculator_service calculator_service_t;
 
 /*
  * The calculator service definition corresponds to the following Java interface:
@@ -44,10 +44,10 @@ typedef struct calculator_service *calculator_service_pt;
  * }
  */
 struct calculator_service {
-    calculator_pt calculator;
-    int (*add)(calculator_pt calculator, double a, double b, double *result);
-    int (*sub)(calculator_pt calculator, double a, double b, double *result);
-    int (*sqrt)(calculator_pt calculator, double a, double *result);
+    calculator_t *calculator;
+    int (*add)(calculator_t *calculator, double a, double b, double *result);
+    int (*sub)(calculator_t *calculator, double a, double b, double *result);
+    int (*sqrt)(calculator_t *calculator, double a, double *result);
 };
 
 

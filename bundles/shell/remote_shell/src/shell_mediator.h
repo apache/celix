@@ -35,8 +35,7 @@
 #include <shell.h>
 
 struct shell_mediator {
-
-	log_helper_pt loghelper;
+	log_helper_t *loghelper;
 	bundle_context_pt context;
 	service_tracker_pt tracker;
 	celix_thread_mutex_t mutex;

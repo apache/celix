@@ -37,12 +37,12 @@
 
 struct endpoint_descriptor_reader {
     xmlTextReaderPtr reader;
-    log_helper_pt* loghelper;
+    log_helper_t **loghelper;
 };
 
 static valueType valueTypeFromString(char *name);
 
-celix_status_t endpointDescriptorReader_create(endpoint_discovery_poller_pt poller, endpoint_descriptor_reader_pt *reader) {
+celix_status_t endpointDescriptorReader_create(endpoint_discovery_poller_t *poller, endpoint_descriptor_reader_t **reader) {
     celix_status_t status = CELIX_SUCCESS;
 
     *reader = malloc(sizeof(**reader));
@@ -56,7 +56,7 @@ celix_status_t endpointDescriptorReader_create(endpoint_discovery_poller_pt poll
     return status;
 }
 
-celix_status_t endpointDescriptorReader_destroy(endpoint_descriptor_reader_pt reader) {
+celix_status_t endpointDescriptorReader_destroy(endpoint_descriptor_reader_t *reader) {
     celix_status_t status = CELIX_SUCCESS;
 
     reader->loghelper = NULL;
@@ -89,7 +89,7 @@ void endpointDescriptorReader_addMultiValuedProperty(celix_properties_t *propert
     }
 }
 
-celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader_pt reader, char *document, array_list_pt *endpoints) {
+celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader_t *reader, char *document, array_list_pt *endpoints) {
     celix_status_t status = CELIX_SUCCESS;
 
     reader->reader = xmlReaderForMemory(document, (int) strlen(document), NULL, "UTF-8", 0);
@@ -197,7 +197,7 @@ celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader
                         inXml = false;
                     }
                 } else if (xmlStrcmp(localname, ENDPOINT_DESCRIPTION) == 0) {
-                    endpoint_description_pt endpointDescription = NULL;
+                    endpoint_description_t *endpointDescription = NULL;
                     // Completely parsed endpoint description, add it to our list of results...
                     if(endpointDescription_create(endpointProperties, &endpointDescription) == CELIX_SUCCESS){
                         arrayList_add(endpointDescriptions, endpointDescription);

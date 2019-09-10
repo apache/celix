@@ -32,7 +32,7 @@
 
 typedef struct device_manager *device_manager_pt;
 
-celix_status_t deviceManager_create(bundle_context_pt context, log_helper_pt logHelper, device_manager_pt *manager);
+celix_status_t deviceManager_create(bundle_context_pt context, log_helper_t *logHelper, device_manager_pt *manager);
 celix_status_t deviceManager_destroy(device_manager_pt manager);
 
 celix_status_t deviceManager_matchAttachDriver(device_manager_pt manager, driver_loader_pt loader,

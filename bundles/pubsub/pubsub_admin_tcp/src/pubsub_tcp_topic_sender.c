@@ -33,6 +33,7 @@
 #include "pubsub_endpoint.h"
 #include <uuid/uuid.h>
 #include <constants.h>
+#include <signal.h>
 
 #define FIRST_SEND_DELAY_IN_SECONDS             2
 #define TCP_BIND_MAX_RETRY                      10
@@ -53,18 +54,14 @@ struct pubsub_tcp_topic_sender {
     pubsub_serializer_service_t *serializer;
     uuid_t fwUUID;
     bool metricsEnabled;
-    pubsub_tcpHandler_pt socketHandler;
-    pubsub_tcpHandler_pt sharedSocketHandler;
+    pubsub_tcpHandler_t *socketHandler;
+    pubsub_tcpHandler_t *sharedSocketHandler;
 
     char *scope;
     char *topic;
     char scopeAndTopicFilter[5];
     char *url;
     bool isStatic;
-
-    struct {
-        celix_thread_mutex_t mutex;
-    } tcp;
 
     struct {
         celix_thread_t thread;
@@ -104,22 +101,17 @@ typedef struct psa_tcp_bounded_service_entry {
     pubsub_publisher_t service;
     long bndId;
     hash_map_t *msgTypes; //key = msg type id, value = pubsub_msg_serializer_t
+    hash_map_t *msgTypeIds; // key = msg name, value = msg type id
     hash_map_t *msgEntries; //key = msg type id, value = psa_tcp_send_msg_entry_t
     int getCount;
 } psa_tcp_bounded_service_entry_t;
 
-static void *psa_tcp_getPublisherService(void *handle, const celix_bundle_t *requestingBundle,
-                                         const celix_properties_t *svcProperties);
-
-static void psa_tcp_ungetPublisherService(void *handle, const celix_bundle_t *requestingBundle,
-                                          const celix_properties_t *svcProperties);
-
+static int psa_tcp_localMsgTypeIdForMsgType(void *handle, const char *msgType, unsigned int *msgTypeId);
+static void *psa_tcp_getPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties);
+static void psa_tcp_ungetPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties);
 static unsigned int rand_range(unsigned int min, unsigned int max);
-
 static void delay_first_send_for_late_joiners(pubsub_tcp_topic_sender_t *sender);
-
 static void *psa_tcp_sendThread(void *data);
-
 static int psa_tcp_topicPublicationSend(void *handle, unsigned int msgTypeId, const void *msg);
 
 pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
@@ -168,7 +160,7 @@ pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
     if (staticConnectUrls != NULL || (isEndPointTypeServer && staticBindUrl != NULL)) {
         celixThreadMutex_lock(&endPointStore->mutex);
         sender->sharedSocketHandler = sender->socketHandler;
-        pubsub_tcpHandler_pt entry = hashMap_get(endPointStore->map, staticConnectUrls);
+        pubsub_tcpHandler_t *entry = hashMap_get(endPointStore->map, staticConnectUrls);
         if (entry == NULL) {
             entry = sender->socketHandler;
             hashMap_put(endPointStore->map, (void *) (isEndPointTypeClient ? staticConnectUrls : staticBindUrl), entry);
@@ -217,7 +209,6 @@ pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
         sender->topic = strndup(topic, 1024 * 1024);
 
         celixThreadMutex_create(&sender->boundedServices.mutex, NULL);
-        celixThreadMutex_create(&sender->tcp.mutex, NULL);
         celixThreadMutex_create(&sender->thread.mutex, NULL);
         sender->boundedServices.map = hashMap_create(NULL, NULL, NULL, NULL);
     }
@@ -262,7 +253,7 @@ pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
 void pubsub_tcpTopicSender_destroy(pubsub_tcp_topic_sender_t *sender) {
     if (sender != NULL) {
         celixThreadMutex_lock(&sender->thread.mutex);
-        if (!sender->thread.running) {
+        if (sender->thread.running) {
             sender->thread.running = false;
             celixThreadMutex_unlock(&sender->thread.mutex);
             celixThread_join(sender->thread.thread, NULL);
@@ -288,7 +279,7 @@ void pubsub_tcpTopicSender_destroy(pubsub_tcp_topic_sender_t *sender) {
         hashMap_destroy(sender->boundedServices.map, false, false);
         celixThreadMutex_unlock(&sender->boundedServices.mutex);
         celixThreadMutex_destroy(&sender->boundedServices.mutex);
-        celixThreadMutex_destroy(&sender->tcp.mutex);
+        celixThreadMutex_destroy(&sender->thread.mutex);
 
         if ((sender->socketHandler) && (sender->sharedSocketHandler == NULL)) {
             pubsub_tcpHandler_destroy(sender->socketHandler);
@@ -330,6 +321,12 @@ void pubsub_tcpTopicSender_disconnectFrom(pubsub_tcp_topic_sender_t *sender, con
     //TODO
 }
 
+static int psa_tcp_localMsgTypeIdForMsgType(void *handle, const char *msgType, unsigned int *msgTypeId) {
+    psa_tcp_bounded_service_entry_t *entry = (psa_tcp_bounded_service_entry_t *) handle;
+    *msgTypeId = (unsigned int)(uintptr_t) hashMap_get(entry->msgTypeIds, msgType);
+    return 0;
+}
+
 static void *psa_tcp_getPublisherService(void *handle, const celix_bundle_t *requestingBundle,
                                          const celix_properties_t *svcProperties __attribute__((unused))) {
     pubsub_tcp_topic_sender_t *sender = handle;
@@ -345,9 +342,9 @@ static void *psa_tcp_getPublisherService(void *handle, const celix_bundle_t *req
         entry->parent = sender;
         entry->bndId = bndId;
         entry->msgEntries = hashMap_create(NULL, NULL, NULL, NULL);
+        entry->msgTypeIds = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
 
-        int rc = sender->serializer->createSerializerMap(sender->serializer->handle, (celix_bundle_t *) requestingBundle,
-                                                         &entry->msgTypes);
+        int rc = sender->serializer->createSerializerMap(sender->serializer->handle, (celix_bundle_t *) requestingBundle, &entry->msgTypes);
         if (rc == 0) {
             hash_map_iterator_t iter = hashMapIterator_construct(entry->msgTypes);
             while (hashMapIterator_hasNext(&iter)) {
@@ -365,6 +362,7 @@ static void *psa_tcp_getPublisherService(void *handle, const celix_bundle_t *req
                 uuid_copy(sendEntry->header.originUUID, sender->fwUUID);
                 celixThreadMutex_create(&sendEntry->metrics.mutex, NULL);
                 hashMap_put(entry->msgEntries, key, sendEntry);
+                hashMap_put(entry->msgTypeIds, strndup(sendEntry->msgSer->msgName, 1024), (void *)(uintptr_t) sendEntry->msgSer->msgId);
             }
             entry->service.handle = entry;
             entry->service.localMsgTypeIdForMsgType = psa_tcp_localMsgTypeIdForMsgType;
@@ -404,6 +402,8 @@ static void psa_tcp_ungetPublisherService(void *handle, const celix_bundle_t *re
             free(msgEntry);
         }
         hashMap_destroy(entry->msgEntries, false, false);
+
+        hashMap_destroy(entry->msgTypeIds, true, false);
         free(entry);
     }
     celixThreadMutex_unlock(&sender->boundedServices.mutex);
@@ -504,8 +504,7 @@ static int psa_tcp_topicPublicationSend(void *handle, unsigned int msgTypeId, co
         }
 
         if (status == CELIX_SUCCESS /*ser ok*/) {
-            //TODO refactor, is the mutex really needed?
-            celixThreadMutex_lock(&entry->sendLock);
+            //celixThreadMutex_lock(&entry->sendLock);
             pubsub_tcp_msg_header_t msg_hdr = entry->header;
             msg_hdr.seqNr = -1;
             msg_hdr.sendtimeSeconds = 0;
@@ -528,7 +527,7 @@ static int psa_tcp_topicPublicationSend(void *handle, unsigned int msgTypeId, co
                 free(serializedOutput);
             }
 
-            celixThreadMutex_unlock(&entry->sendLock);
+            //celixThreadMutex_unlock(&entry->sendLock);
             if (sendOk) {
                 sendCountUpdate = 1;
             } else {

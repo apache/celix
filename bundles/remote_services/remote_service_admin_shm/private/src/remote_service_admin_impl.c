@@ -52,19 +52,19 @@ static celix_status_t remoteServiceAdmin_lock(int semId, int semNr);
 static celix_status_t remoteServiceAdmin_unlock(int semId, int semNr);
 static int remoteServiceAdmin_getCount(int semId, int semNr);
 
-celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin, export_registration_pt registration, service_reference_pt reference, char *interface);
-celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin_pt admin, service_reference_pt reference, celix_properties_t *endpointProperties, char *interface, endpoint_description_pt *description);
+celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_t *admin, export_registration_t *registration, service_reference_pt reference, char *interface);
+celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin_t *admin, service_reference_pt reference, celix_properties_t *endpointProperties, char *interface, endpoint_description_t **description);
 
-celix_status_t remoteServiceAdmin_createOrAttachShm(hash_map_pt ipcSegment, remote_service_admin_pt admin, endpoint_description_pt endpointDescription, bool createIfNotFound);
-celix_status_t remoteServiceAdmin_getIpcSegment(remote_service_admin_pt admin, endpoint_description_pt endpointDescription, ipc_segment_pt* ipc);
+celix_status_t remoteServiceAdmin_createOrAttachShm(hash_map_pt ipcSegment, remote_service_admin_t *admin, endpoint_description_t *endpointDescription, bool createIfNotFound);
+celix_status_t remoteServiceAdmin_getIpcSegment(remote_service_admin_t *admin, endpoint_description_t *endpointDescription, ipc_segment_pt* ipc);
 celix_status_t remoteServiceAdmin_detachIpcSegment(ipc_segment_pt ipc);
 celix_status_t remoteServiceAdmin_deleteIpcSegment(ipc_segment_pt ipc);
 
-celix_status_t remoteServiceAdmin_getSharedIdentifierFile(remote_service_admin_pt admin, char *fwUuid, char* servicename, char* outFile);
-celix_status_t remoteServiceAdmin_removeSharedIdentityFile(remote_service_admin_pt admin, char *fwUuid, char* servicename);
-celix_status_t remoteServiceAdmin_removeSharedIdentityFiles(remote_service_admin_pt admin);
+celix_status_t remoteServiceAdmin_getSharedIdentifierFile(remote_service_admin_t *admin, char *fwUuid, char* servicename, char* outFile);
+celix_status_t remoteServiceAdmin_removeSharedIdentityFile(remote_service_admin_t *admin, char *fwUuid, char* servicename);
+celix_status_t remoteServiceAdmin_removeSharedIdentityFiles(remote_service_admin_t *admin);
 
-celix_status_t remoteServiceAdmin_create(bundle_context_pt context, remote_service_admin_pt *admin) {
+celix_status_t remoteServiceAdmin_create(celix_bundle_context_t *context, remote_service_admin_t **admin) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	*admin = calloc(1, sizeof(**admin));
@@ -88,7 +88,7 @@ celix_status_t remoteServiceAdmin_create(bundle_context_pt context, remote_servi
 	return status;
 }
 
-celix_status_t remoteServiceAdmin_destroy(remote_service_admin_pt* admin) {
+celix_status_t remoteServiceAdmin_destroy(remote_service_admin_t **admin) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	hashMap_destroy((*admin)->exportedServices, false, false);
@@ -105,7 +105,7 @@ celix_status_t remoteServiceAdmin_destroy(remote_service_admin_pt* admin) {
 	return status;
 }
 
-celix_status_t remoteServiceAdmin_stop(remote_service_admin_pt admin) {
+celix_status_t remoteServiceAdmin_stop(remote_service_admin_t *admin) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	celixThreadMutex_lock(&admin->exportedServicesLock);
@@ -115,7 +115,7 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_pt admin) {
 		array_list_pt exports = hashMapIterator_nextValue(iter);
 		int i;
 		for (i = 0; i < arrayList_size(exports); i++) {
-			export_registration_pt export = arrayList_get(exports, i);
+			export_registration_t *export = arrayList_get(exports, i);
 			exportRegistration_stopTracking(export);
 		}
 	}
@@ -129,13 +129,13 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_pt admin) {
 		hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
 
 		char* service = hashMapEntry_getKey(entry);
-		import_registration_factory_pt importFactory = hashMapEntry_getValue(entry);
+		import_registration_factory_t *importFactory = hashMapEntry_getValue(entry);
 
 		if (importFactory != NULL) {
 
 			int i;
 			for (i = 0; i < arrayList_size(importFactory->registrations); i++) {
-				import_registration_pt importRegistration = arrayList_get(importFactory->registrations, i);
+				import_registration_t *importRegistration = arrayList_get(importFactory->registrations, i);
 
 				if (importFactory->trackedFactory != NULL) {
 					importFactory->trackedFactory->unregisterProxyService(importFactory->trackedFactory->factory, importRegistration->endpointDescription);
@@ -255,7 +255,7 @@ static celix_status_t remoteServiceAdmin_unlock(int semId, int semNr) {
 	return status;
 }
 
-celix_status_t remoteServiceAdmin_send(remote_service_admin_pt admin, endpoint_description_pt recpEndpoint, char *request, char **reply, int *replyStatus) {
+celix_status_t remoteServiceAdmin_send(remote_service_admin_t *admin, endpoint_description_t *recpEndpoint, char *request, char **reply, int *replyStatus) {
 	celix_status_t status = CELIX_SUCCESS;
 	ipc_segment_pt ipc = NULL;
 
@@ -301,8 +301,8 @@ celix_status_t remoteServiceAdmin_send(remote_service_admin_pt admin, endpoint_d
 static void * remoteServiceAdmin_receiveFromSharedMemory(void *data) {
 	recv_shm_thread_pt thread_data = data;
 
-	remote_service_admin_pt admin = thread_data->admin;
-	endpoint_description_pt exportedEndpointDesc = thread_data->endpointDescription;
+	remote_service_admin_t *admin = thread_data->admin;
+	endpoint_description_t *exportedEndpointDesc = thread_data->endpointDescription;
 
 	ipc_segment_pt ipc;
 
@@ -324,7 +324,7 @@ static void * remoteServiceAdmin_receiveFromSharedMemory(void *data) {
 					int expIt = 0;
 
 					for (expIt = 0; expIt < arrayList_size(exports); expIt++) {
-						export_registration_pt export = arrayList_get(exports, expIt);
+						export_registration_t *export = arrayList_get(exports, expIt);
 
 						if ((strcmp(exportedEndpointDesc->service, export->endpointDescription->service) == 0) && (export->endpoint != NULL)) {
 							char *reply = NULL;
@@ -359,7 +359,7 @@ static void * remoteServiceAdmin_receiveFromSharedMemory(void *data) {
 	return NULL;
 }
 
-celix_status_t remoteServiceAdmin_getSharedIdentifierFile(remote_service_admin_pt admin, char *fwUuid, char* servicename, char* outFile) {
+celix_status_t remoteServiceAdmin_getSharedIdentifierFile(remote_service_admin_t *admin, char *fwUuid, char* servicename, char* outFile) {
 	celix_status_t status = CELIX_SUCCESS;
 	snprintf(outFile, RSA_FILEPATH_LENGTH, "%s/%s/%s", P_tmpdir, fwUuid, servicename);
 
@@ -386,7 +386,7 @@ celix_status_t remoteServiceAdmin_getSharedIdentifierFile(remote_service_admin_p
 	return status;
 }
 
-celix_status_t remoteServiceAdmin_removeSharedIdentityFile(remote_service_admin_pt admin, char *fwUuid, char* servicename) {
+celix_status_t remoteServiceAdmin_removeSharedIdentityFile(remote_service_admin_t *admin, char *fwUuid, char* servicename) {
 	celix_status_t status = CELIX_SUCCESS;
 	char tmpPath[RSA_FILEPATH_LENGTH];
 	int retVal = 0;
@@ -405,7 +405,7 @@ celix_status_t remoteServiceAdmin_removeSharedIdentityFile(remote_service_admin_
 	return status;
 }
 
-celix_status_t remoteServiceAdmin_removeSharedIdentityFiles(remote_service_admin_pt admin) {
+celix_status_t remoteServiceAdmin_removeSharedIdentityFiles(remote_service_admin_t *admin) {
 	char tmpDir[RSA_FILEPATH_LENGTH];
 	const char* fwUuid = NULL;
 	bundleContext_getProperty(admin->context, OSGI_FRAMEWORK_FRAMEWORK_UUID, &fwUuid);
@@ -456,7 +456,7 @@ celix_status_t remoteServiceAdmin_removeSharedIdentityFiles(remote_service_admin
 	return retVal;
 }
 
-celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, char *serviceId, celix_properties_t *properties, array_list_pt *registrations) {
+celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *admin, char *serviceId, celix_properties_t *properties, array_list_pt *registrations) {
 	celix_status_t status = CELIX_SUCCESS;
 	arrayList_create(registrations);
 
@@ -519,7 +519,7 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
 			int iter = 0;
 			for (iter = 0; iter < arrayList_size(interfaces); iter++) {
 				char *interface = arrayList_get(interfaces, iter);
-				export_registration_pt registration = NULL;
+				export_registration_t *registration = NULL;
 
 				exportRegistration_create(admin->loghelper, reference, NULL, admin, admin->context, &registration);
 				arrayList_add(*registrations, registration);
@@ -565,11 +565,11 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
 	return status;
 }
 
-celix_status_t remoteServiceAdmin_removeExportedService(remote_service_admin_pt admin, export_registration_pt registration) {
+celix_status_t remoteServiceAdmin_removeExportedService(remote_service_admin_t *admin, export_registration_t *registration) {
 	celix_status_t status;
 	ipc_segment_pt ipc = NULL;
 
-	export_reference_pt ref = NULL;
+	export_reference_t *ref = NULL;
 	status = exportRegistration_getExportReference(registration, &ref);
 
 	if (status == CELIX_SUCCESS) {
@@ -626,7 +626,7 @@ celix_status_t remoteServiceAdmin_removeExportedService(remote_service_admin_pt 
 	return status;
 }
 
-celix_status_t remoteServiceAdmin_getIpcSegment(remote_service_admin_pt admin, endpoint_description_pt endpointDescription, ipc_segment_pt* ipc) {
+celix_status_t remoteServiceAdmin_getIpcSegment(remote_service_admin_t *admin, endpoint_description_t *endpointDescription, ipc_segment_pt* ipc) {
 	(*ipc) = (hashMap_containsKey(admin->importedIpcSegment, endpointDescription) == true) ? hashMap_get(admin->importedIpcSegment, endpointDescription) : NULL;
 
 	return (*ipc != NULL) ? CELIX_SUCCESS : CELIX_ILLEGAL_ARGUMENT;
@@ -640,7 +640,7 @@ celix_status_t remoteServiceAdmin_deleteIpcSegment(ipc_segment_pt ipc) {
 	return ((semctl(ipc->semId, 1 /*ignored*/, IPC_RMID) != -1) && (shmctl(ipc->shmId, IPC_RMID, 0) != -1)) ? CELIX_SUCCESS : CELIX_BUNDLE_EXCEPTION;
 }
 
-celix_status_t remoteServiceAdmin_createOrAttachShm(hash_map_pt ipcSegment, remote_service_admin_pt admin, endpoint_description_pt endpointDescription, bool createIfNotFound) {
+celix_status_t remoteServiceAdmin_createOrAttachShm(hash_map_pt ipcSegment, remote_service_admin_t *admin, endpoint_description_t *endpointDescription, bool createIfNotFound) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	/* setup ipc sehment */
@@ -724,7 +724,7 @@ celix_status_t remoteServiceAdmin_createOrAttachShm(hash_map_pt ipcSegment, remo
 	return status;
 }
 
-celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin, export_registration_pt registration, service_reference_pt reference, char *interface) {
+celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_t *admin, export_registration_t *registration, service_reference_pt reference, char *interface) {
 	celix_status_t status = CELIX_SUCCESS;
 	celix_properties_t *endpointProperties = celix_properties_create();
 
@@ -785,7 +785,7 @@ celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin,
 		celix_properties_set(endpointProperties, (char *) RSA_SEM_FTOK_ID_PROPERTYNAME, (char *) RSA_SEM_DEFAULT_FTOK_ID);
 	}
 
-	endpoint_description_pt endpointDescription = NULL;
+	endpoint_description_t *endpointDescription = NULL;
 	remoteServiceAdmin_createEndpointDescription(admin, reference, endpointProperties, interface, &endpointDescription);
 	exportRegistration_setEndpointDescription(registration, endpointDescription);
 
@@ -796,7 +796,7 @@ celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin,
 	return status;
 }
 
-celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin_pt admin, service_reference_pt reference, celix_properties_t *endpointProperties, char *interface, endpoint_description_pt *description) {
+celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin_t *admin, service_reference_pt reference, celix_properties_t *endpointProperties, char *interface, endpoint_description_t **description) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	*description = calloc(1, sizeof(**description));
@@ -817,7 +817,7 @@ celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin
 	return status;
 }
 
-celix_status_t remoteServiceAdmin_destroyEndpointDescription(endpoint_description_pt *description) {
+celix_status_t remoteServiceAdmin_destroyEndpointDescription(endpoint_description_t **description) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	celix_properties_destroy((*description)->properties);
@@ -827,24 +827,24 @@ celix_status_t remoteServiceAdmin_destroyEndpointDescription(endpoint_descriptio
 	return status;
 }
 
-celix_status_t remoteServiceAdmin_getExportedServices(remote_service_admin_pt admin, array_list_pt *services) {
+celix_status_t remoteServiceAdmin_getExportedServices(remote_service_admin_t *admin, array_list_pt *services) {
 	celix_status_t status = CELIX_SUCCESS;
 	return status;
 }
 
-celix_status_t remoteServiceAdmin_getImportedEndpoints(remote_service_admin_pt admin, array_list_pt *services) {
+celix_status_t remoteServiceAdmin_getImportedEndpoints(remote_service_admin_t *admin, array_list_pt *services) {
 	celix_status_t status = CELIX_SUCCESS;
 	return status;
 }
 
-celix_status_t remoteServiceAdmin_importService(remote_service_admin_pt admin, endpoint_description_pt endpointDescription, import_registration_pt *registration) {
+celix_status_t remoteServiceAdmin_importService(remote_service_admin_t *admin, endpoint_description_t *endpointDescription, import_registration_t **registration) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	logHelper_log(admin->loghelper, OSGI_LOGSERVICE_INFO, "RSA: Import service %s", endpointDescription->service);
 
 	celixThreadMutex_lock(&admin->importedServicesLock);
 
-	import_registration_factory_pt registration_factory = (import_registration_factory_pt) hashMap_get(admin->importedServices, endpointDescription->service);
+	import_registration_factory_t *registration_factory = (import_registration_factory_t *) hashMap_get(admin->importedServices, endpointDescription->service);
 
 	// check whether we already have a registration_factory registered in the hashmap
 	if (registration_factory == NULL) {
@@ -874,7 +874,7 @@ celix_status_t remoteServiceAdmin_importService(remote_service_admin_pt admin, e
 	return status;
 }
 
-celix_status_t remoteServiceAdmin_removeImportedService(remote_service_admin_pt admin, import_registration_pt registration) {
+celix_status_t remoteServiceAdmin_removeImportedService(remote_service_admin_t *admin, import_registration_t *registration) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (registration != NULL) {
@@ -882,8 +882,8 @@ celix_status_t remoteServiceAdmin_removeImportedService(remote_service_admin_pt 
 		celixThreadMutex_lock(&admin->importedServicesLock);
 
 		ipc_segment_pt ipc = NULL;
-		endpoint_description_pt endpointDescription = (endpoint_description_pt) registration->endpointDescription;
-		import_registration_factory_pt registration_factory = (import_registration_factory_pt) hashMap_get(admin->importedServices, endpointDescription->service);
+		endpoint_description_t *endpointDescription = (endpoint_description_t *) registration->endpointDescription;
+		import_registration_factory_t *registration_factory = (import_registration_factory_t *) hashMap_get(admin->importedServices, endpointDescription->service);
 
 		// detach from IPC
 		if (remoteServiceAdmin_getIpcSegment(admin, endpointDescription, &ipc) != CELIX_SUCCESS) {

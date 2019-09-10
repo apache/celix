@@ -20,8 +20,8 @@
  * discovery_impl.c
  *
  * \date        Aug 8, 2014
- * \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- * \copyright	Apache License, Version 2.0
+ * \author      <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
+ * \copyright   Apache License, Version 2.0
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -50,143 +50,143 @@
 
 
 
-celix_status_t discovery_create(bundle_context_pt context, discovery_t** out) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	discovery_t* discovery = calloc(1, sizeof(*discovery));
-	discovery_impl_t* pImpl = calloc(1, sizeof(*pImpl));
-
-	if (discovery != NULL && pImpl != NULL) {
-		discovery->pImpl = pImpl;
-		discovery->context = context;
-		discovery->poller = NULL;
-		discovery->server = NULL;
-
-		discovery->listenerReferences = hashMap_create(serviceReference_hashCode, NULL, serviceReference_equals2,
-														  NULL);
-		discovery->discoveredServices = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
-
-		status = celixThreadMutex_create(&discovery->listenerReferencesMutex, NULL);
-		status = celixThreadMutex_create(&discovery->discoveredServicesMutex, NULL);
-
-		logHelper_create(context, &discovery->loghelper);
-	} else {
-		status = CELIX_ENOMEM;
-		free(discovery);
-		free(pImpl);
-	}
-
-	if (status == CELIX_SUCCESS) {
-		*out = discovery;
-	}
-
-	return status;
-}
-
-
-
-celix_status_t discovery_destroy(discovery_pt discovery) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	discovery->context = NULL;
-	discovery->poller = NULL;
-	discovery->server = NULL;
-
-	celixThreadMutex_lock(&discovery->discoveredServicesMutex);
-
-	hashMap_destroy(discovery->discoveredServices, false, false);
-	discovery->discoveredServices = NULL;
-
-	celixThreadMutex_unlock(&discovery->discoveredServicesMutex);
-
-	celixThreadMutex_destroy(&discovery->discoveredServicesMutex);
-
-	celixThreadMutex_lock(&discovery->listenerReferencesMutex);
-
-	hashMap_destroy(discovery->listenerReferences, false, false);
-	discovery->listenerReferences = NULL;
-
-	celixThreadMutex_unlock(&discovery->listenerReferencesMutex);
-
-	celixThreadMutex_destroy(&discovery->listenerReferencesMutex);
-
-	logHelper_destroy(&discovery->loghelper);
-
-	free(discovery);
-
-	return status;
-}
-
-celix_status_t discovery_start(discovery_pt discovery) {
+celix_status_t discovery_create(celix_bundle_context_t *context, discovery_t** out) {
     celix_status_t status = CELIX_SUCCESS;
-	const char *port = NULL;
-	const char *path = NULL;
 
-	logHelper_start(discovery->loghelper);
+    discovery_t* discovery = calloc(1, sizeof(*discovery));
+    discovery_impl_t* pImpl = calloc(1, sizeof(*pImpl));
 
-	bundleContext_getProperty(discovery->context, DISCOVERY_SERVER_PORT, &port);
-	if (port == NULL) {
-		port = DEFAULT_SERVER_PORT;
-	}
+    if (discovery != NULL && pImpl != NULL) {
+        discovery->pImpl = pImpl;
+        discovery->context = context;
+        discovery->poller = NULL;
+        discovery->server = NULL;
 
-	bundleContext_getProperty(discovery->context, DISCOVERY_SERVER_PATH, &path);
-	if (path == NULL) {
-		path = DEFAULT_SERVER_PATH;
-	}
+        discovery->listenerReferences = hashMap_create(serviceReference_hashCode, NULL, serviceReference_equals2,
+                                                          NULL);
+        discovery->discoveredServices = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
+
+        status = celixThreadMutex_create(&discovery->listenerReferencesMutex, NULL);
+        status = celixThreadMutex_create(&discovery->discoveredServicesMutex, NULL);
+
+        logHelper_create(context, &discovery->loghelper);
+    } else {
+        status = CELIX_ENOMEM;
+        free(discovery);
+        free(pImpl);
+    }
+
+    if (status == CELIX_SUCCESS) {
+        *out = discovery;
+    }
+
+    return status;
+}
+
+
+
+celix_status_t discovery_destroy(discovery_t *discovery) {
+    celix_status_t status = CELIX_SUCCESS;
+
+    discovery->context = NULL;
+    discovery->poller = NULL;
+    discovery->server = NULL;
+
+    celixThreadMutex_lock(&discovery->discoveredServicesMutex);
+
+    hashMap_destroy(discovery->discoveredServices, false, false);
+    discovery->discoveredServices = NULL;
+
+    celixThreadMutex_unlock(&discovery->discoveredServicesMutex);
+
+    celixThreadMutex_destroy(&discovery->discoveredServicesMutex);
+
+    celixThreadMutex_lock(&discovery->listenerReferencesMutex);
+
+    hashMap_destroy(discovery->listenerReferences, false, false);
+    discovery->listenerReferences = NULL;
+
+    celixThreadMutex_unlock(&discovery->listenerReferencesMutex);
+
+    celixThreadMutex_destroy(&discovery->listenerReferencesMutex);
+
+    logHelper_destroy(&discovery->loghelper);
+
+    free(discovery);
+
+    return status;
+}
+
+celix_status_t discovery_start(discovery_t *discovery) {
+    celix_status_t status = CELIX_SUCCESS;
+    const char *port = NULL;
+    const char *path = NULL;
+
+    logHelper_start(discovery->loghelper);
+
+    bundleContext_getProperty(discovery->context, DISCOVERY_SERVER_PORT, &port);
+    if (port == NULL) {
+        port = DEFAULT_SERVER_PORT;
+    }
+
+    bundleContext_getProperty(discovery->context, DISCOVERY_SERVER_PATH, &path);
+    if (path == NULL) {
+        path = DEFAULT_SERVER_PATH;
+    }
 
     status = endpointDiscoveryPoller_create(discovery, discovery->context, DEFAULT_POLL_ENDPOINTS, &discovery->poller);
     if (status != CELIX_SUCCESS) {
-    	return CELIX_BUNDLE_EXCEPTION;
+        return CELIX_BUNDLE_EXCEPTION;
     }
 
     status = endpointDiscoveryServer_create(discovery, discovery->context, DEFAULT_SERVER_PATH, DEFAULT_SERVER_PORT, DEFAULT_SERVER_IP, &discovery->server);
     if (status != CELIX_SUCCESS) {
-		return CELIX_BUNDLE_EXCEPTION;
+        return CELIX_BUNDLE_EXCEPTION;
     }
 
     status = etcdWatcher_create(discovery, discovery->context, &discovery->pImpl->watcher);
     if (status != CELIX_SUCCESS) {
-    	return CELIX_BUNDLE_EXCEPTION;
+        return CELIX_BUNDLE_EXCEPTION;
     }
     return status;
 }
 
-celix_status_t discovery_stop(discovery_pt discovery) {
-	celix_status_t status;
+celix_status_t discovery_stop(discovery_t *discovery) {
+    celix_status_t status;
 
-	status = etcdWatcher_destroy(discovery->pImpl->watcher);
-	if (status != CELIX_SUCCESS) {
-		return CELIX_BUNDLE_EXCEPTION;
-	}
+    status = etcdWatcher_destroy(discovery->pImpl->watcher);
+    if (status != CELIX_SUCCESS) {
+        return CELIX_BUNDLE_EXCEPTION;
+    }
 
-	status = endpointDiscoveryServer_destroy(discovery->server);
-	if (status != CELIX_SUCCESS) {
-		return CELIX_BUNDLE_EXCEPTION;
-	}
+    status = endpointDiscoveryServer_destroy(discovery->server);
+    if (status != CELIX_SUCCESS) {
+        return CELIX_BUNDLE_EXCEPTION;
+    }
 
-	status = endpointDiscoveryPoller_destroy(discovery->poller);
-	if (status != CELIX_SUCCESS) {
-		return CELIX_BUNDLE_EXCEPTION;
-	}
-	hash_map_iterator_pt iter;
+    status = endpointDiscoveryPoller_destroy(discovery->poller);
+    if (status != CELIX_SUCCESS) {
+        return CELIX_BUNDLE_EXCEPTION;
+    }
+    hash_map_iterator_pt iter;
 
-	celixThreadMutex_lock(&discovery->discoveredServicesMutex);
+    celixThreadMutex_lock(&discovery->discoveredServicesMutex);
 
-	iter = hashMapIterator_create(discovery->discoveredServices);
-	while (hashMapIterator_hasNext(iter)) {
-		hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
-		endpoint_description_pt endpoint = hashMapEntry_getValue(entry);
+    iter = hashMapIterator_create(discovery->discoveredServices);
+    while (hashMapIterator_hasNext(iter)) {
+        hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
+        endpoint_description_t *endpoint = hashMapEntry_getValue(entry);
 
-		discovery_informEndpointListeners(discovery, endpoint, false);
-	}
-	hashMapIterator_destroy(iter);
+        discovery_informEndpointListeners(discovery, endpoint, false);
+    }
+    hashMapIterator_destroy(iter);
 
-	celixThreadMutex_unlock(&discovery->discoveredServicesMutex);
+    celixThreadMutex_unlock(&discovery->discoveredServicesMutex);
 
 
-	logHelper_stop(discovery->loghelper);
+    logHelper_stop(discovery->loghelper);
 
-	return status;
+    return status;
 }
 
 

@@ -17,18 +17,16 @@
  * under the License.
  */
 
+#include "pubsub_tcp_common.h"
+
 #include <memory.h>
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <unistd.h>
-#include "pubsub_psa_tcp_constants.h"
-#include "pubsub_tcp_common.h"
 
-int psa_tcp_localMsgTypeIdForMsgType(void* handle __attribute__((unused)), const char* msgType, unsigned int* msgTypeId) {
-    *msgTypeId = utils_stringHash(msgType);
-    return 0;
-}
+#include "pubsub_psa_tcp_constants.h"
 
 bool psa_tcp_checkVersion(version_pt msgVersion, const pubsub_tcp_msg_header_t *hdr) {
     bool check=false;

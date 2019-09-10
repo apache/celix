@@ -1,0 +1,44 @@
+{
+    "protocol" : "Calculator",
+    "namespace" : "org.apache.celix.calc.api",
+    "version" : "1.3.0",
+    "types" : [ {
+        "type" : "fixed",
+        "name" : "Double",
+        "alias": "double",
+        "size" : 8
+    } ] ,
+    "messages" : {
+        "add" : {
+                "index" : 0,
+                "request" : [ {
+                                "name" : "arg1",
+                                "type" : "Double"
+                            } , {
+                                "name" : "arg2",
+                                "type" : "Double"
+                            } ],
+                "response" : "Double"
+            },
+        "sub" : {
+                "index" : 1,
+                "request" : [ {
+                                "name" : "arg1",
+                                "type" : "Double"
+                            } , {
+                                "name" : "arg2",
+                                "type" : "Double"
+                            } ],
+                "response" : "Double"
+            },
+        "sqrt" : {
+                "index" : 2,
+                "request" : [ {
+                                "name" : "arg",
+                                "type" : "Double"
+                            } ],
+                "response" : "Double"
+            }
+        }
+}
+

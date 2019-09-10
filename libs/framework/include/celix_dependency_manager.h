@@ -70,6 +70,11 @@ celix_dependency_manager_info_t* celix_dependencyManager_createInfo(celix_depend
 celix_array_list_t * /*celix_dependency_manager_info_t entries*/ celix_dependencyManager_createInfos(celix_dependency_manager_t *manager);
 
 /**
+ * Check if all components - for all bundles - are active (all required dependencies resolved).
+ */
+bool celix_dependencyManager_allComponentsActive(celix_dependency_manager_t *manager);
+
+/**
  * Destroys a DM info struct.
  */
 void celix_dependencyManager_destroyInfo(celix_dependency_manager_t *manager, celix_dependency_manager_info_t *info);

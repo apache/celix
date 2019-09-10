@@ -36,7 +36,7 @@
 struct driver_matcher {
 	hash_map_pt attributes;
 	array_list_pt matches;
-	log_helper_pt loghelper;
+	log_helper_t *loghelper;
 
 	bundle_context_pt context;
 };

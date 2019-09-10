@@ -25,6 +25,7 @@
 #include "celix_errno.h"
 
 
-celix_status_t dfi_findDescriptor(bundle_context_pt context, bundle_pt bundle, const char *name, FILE **out);
+celix_status_t dfi_findDescriptor(celix_bundle_context_t *context, celix_bundle_t *bundle, const char *name, FILE **out);
+celix_status_t dfi_findAvprDescriptor(celix_bundle_context_t *context, celix_bundle_t *bundle, const char *name, FILE **out);
 
 #endif

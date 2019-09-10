@@ -56,7 +56,7 @@ static void pubsub_discovery_addDiscoveredEndpoint(pubsub_discovery_t *disc, cel
 static void pubsub_discovery_removeDiscoveredEndpoint(pubsub_discovery_t *disc, const char *uuid);
 
 /* Discovery activator functions */
-pubsub_discovery_t* pubsub_discovery_create(bundle_context_pt context, log_helper_t *logHelper) {
+pubsub_discovery_t* pubsub_discovery_create(celix_bundle_context_t *context, log_helper_t *logHelper) {
     pubsub_discovery_t *disc = calloc(1, sizeof(*disc));
     disc->logHelper = logHelper;
     disc->context = context;

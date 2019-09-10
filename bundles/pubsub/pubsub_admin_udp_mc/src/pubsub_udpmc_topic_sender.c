@@ -18,6 +18,7 @@
  */
 
 #include <pubsub_serializer.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <memory.h>
 #include <pubsub_constants.h>
@@ -66,8 +67,9 @@ typedef struct psa_udpmc_bounded_service_entry {
     pubsub_publisher_t service;
     long bndId;
     hash_map_t *msgTypes;
+    hash_map_t *msgTypeIds;
     int getCount;
-    largeUdp_pt largeUdpHandle;
+    largeUdp_t *largeUdpHandle;
 } psa_udpmc_bounded_service_entry_t;
 
 typedef struct pubsub_msg {
@@ -76,6 +78,7 @@ typedef struct pubsub_msg {
     char *payload;
 } pubsub_udp_msg_t;
 
+static int psa_udpmc_localMsgTypeIdForMsgType(void* handle, const char* msgType, unsigned int* msgTypeId);
 static void* psa_udpmc_getPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties);
 static void psa_udpmc_ungetPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties);
 static int psa_udpmc_topicPublicationSend(void* handle, unsigned int msgTypeId, const void *inMsg);
@@ -192,6 +195,12 @@ void pubsub_udpmcTopicSender_disconnectFrom(pubsub_udpmc_topic_sender_t *sender,
     //TODO
 }
 
+static int psa_udpmc_localMsgTypeIdForMsgType(void *handle, const char *msgType, unsigned int *msgTypeId) {
+    psa_udpmc_bounded_service_entry_t *entry = (psa_udpmc_bounded_service_entry_t *) handle;
+    *msgTypeId = (unsigned int)(uintptr_t) hashMap_get(entry->msgTypeIds, msgType);
+    return 0;
+}
+
 static void* psa_udpmc_getPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties __attribute__((unused))) {
     pubsub_udpmc_topic_sender_t *sender = handle;
     long bndId = celix_bundle_getId(requestingBundle);
@@ -208,9 +217,16 @@ static void* psa_udpmc_getPublisherService(void *handle, const celix_bundle_t *r
         entry->parent = sender;
         entry->bndId = bndId;
         entry->largeUdpHandle = largeUdp_create(1);
+        entry->msgTypeIds = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
 
         int rc = sender->serializer->createSerializerMap(sender->serializer->handle, (celix_bundle_t*)requestingBundle, &entry->msgTypes);
         if (rc == 0) {
+            hash_map_iterator_t iter = hashMapIterator_construct(entry->msgTypes);
+            while (hashMapIterator_hasNext(&iter)) {
+                pubsub_msg_serializer_t *msgSer  = hashMapIterator_nextValue(&iter);
+                hashMap_put(entry->msgTypeIds, strndup(msgSer->msgName, 1024), (void *)(uintptr_t) msgSer->msgId);
+            }
+
             entry->service.handle = entry;
             entry->service.localMsgTypeIdForMsgType = psa_udpmc_localMsgTypeIdForMsgType;
             entry->service.send = psa_udpmc_topicPublicationSend;
@@ -244,6 +260,7 @@ static void psa_udpmc_ungetPublisherService(void *handle, const celix_bundle_t *
             fprintf(stderr, "Error destroying publisher service, serializer not available / cannot get msg serializer map\n");
         }
 
+        hashMap_destroy(entry->msgTypeIds, true, false);
         largeUdp_destroy(entry->largeUdpHandle);
         free(entry);
     }

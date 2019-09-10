@@ -48,7 +48,7 @@ struct event_publisher {
 	bool eventAdminAdded;
 	celix_thread_t sender;
 	bundle_context_pt context;
-	log_helper_pt loghelper;
+	log_helper_t *loghelper;
 };
 /**
  * @desc create the event publisher

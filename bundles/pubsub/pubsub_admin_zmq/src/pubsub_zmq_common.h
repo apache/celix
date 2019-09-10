@@ -50,7 +50,6 @@ struct pubsub_zmq_msg_header {
 typedef struct pubsub_zmq_msg_header pubsub_zmq_msg_header_t;
 
 
-int psa_zmq_localMsgTypeIdForMsgType(void* handle, const char* msgType, unsigned int* msgTypeId);
 void psa_zmq_setScopeAndTopicFilter(const char* scope, const char *topic, char *filter);
 
 bool psa_zmq_checkVersion(version_pt msgVersion, const pubsub_zmq_msg_header_t *hdr);

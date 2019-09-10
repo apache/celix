@@ -29,7 +29,7 @@ struct log_listener {
 };
 
 typedef struct log_listener log_listener_t;
-typedef struct log_listener *log_listener_pt;
+typedef struct log_listener *log_listener_pt CELIX_DEPRECATED_ATTR;
 
 
 #endif /* LOG_LISTENER_H_ */
