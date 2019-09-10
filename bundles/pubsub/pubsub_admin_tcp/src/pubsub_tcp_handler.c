@@ -451,7 +451,7 @@ void pubsub_tcpHandler_setUrlInfo(char *url, pubsub_tcpHandler_url_t *url_info) 
             url_info->hostname = strtok(strdup(hostname), ":");
             if (port) {
                 port += 1;
-                unsigned int portDigits = (unsigned) atoi(port);
+                unsigned int portDigits = (unsigned int) atoi(port);
                 if (portDigits != 0) url_info->portnr = portDigits;
             }
             free(hostname);
