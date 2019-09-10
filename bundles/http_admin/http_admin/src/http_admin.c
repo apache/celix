@@ -173,7 +173,7 @@ void http_admin_removeHttpService(void *handle, void *svc __attribute__((unused)
         node = findServiceNodeInTree(&admin->http_svc_tree, uri);
 
         if(node != NULL){
-            destroyServiceNode(node, &admin->http_svc_tree.tree_node_count, &admin->http_svc_tree.tree_svc_count);
+            destroyServiceNode(&admin->http_svc_tree, node, &admin->http_svc_tree.tree_node_count, &admin->http_svc_tree.tree_svc_count);
         } else {
             printf("Couldn't remove HTTP service with URI: %s, it doesn't exist\n", uri);
         }

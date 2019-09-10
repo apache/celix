@@ -156,7 +156,7 @@ void destroyChildrenFromServiceNode(service_tree_node_t *parent, int *tree_item_
         while(child != NULL) {
             if (child->children != NULL) {
                 //Delete children first
-                destroyChildrenFromServiceNode(parent->children, tree_item_count, tree_svc_count);
+                destroyChildrenFromServiceNode(child, tree_item_count, tree_svc_count);
 
             } else {
                 //Delete child first
@@ -177,28 +177,7 @@ void destroyChildrenFromServiceNode(service_tree_node_t *parent, int *tree_item_
     }
 }
 
-void destroyServiceNodeTree(service_tree_node_t *node, int *tree_item_count, int *tree_svc_count) {
-    if(node != NULL && tree_item_count != NULL && tree_svc_count != NULL) {
-        service_tree_node_t *current = node;
-
-        destroyChildrenFromServiceNode(current, tree_item_count, tree_svc_count);
-
-        while (current->next != NULL) {
-            destroyChildrenFromServiceNode(current->next, tree_item_count, tree_svc_count);
-            current = current->next;
-        }
-
-        if(node->svc_data != NULL) {
-            //Decrement service count if a service was present
-            if(node->svc_data->service != NULL) (*tree_svc_count)--;
-            free(node->svc_data->sub_uri);
-            free(node->svc_data);
-        }
-        free(node);
-    }
-}
-
-void destroyServiceNode(service_tree_node_t *node, int *tree_item_count, int *tree_svc_count) {
+void destroyServiceNode(service_tree_t *svc_tree, service_tree_node_t *node, int *tree_item_count, int *tree_svc_count) {
     if(node != NULL && tree_item_count != NULL && tree_svc_count != NULL) {
         bool has_underlaying_services = false;
 
@@ -235,6 +214,11 @@ void destroyServiceNode(service_tree_node_t *node, int *tree_item_count, int *tr
                 node->parent->children = node->next;
             }
 
+            //If current node to delete is the root node, set new root node pointer
+            if(svc_tree->root_node == node) {
+                svc_tree->root_node = node->next;
+            }
+
             //Set new previous pointer for the next node if present.
             if(node->next != NULL) {
                 node->next->prev = node->prev;
@@ -255,10 +239,27 @@ void destroyServiceNode(service_tree_node_t *node, int *tree_item_count, int *tr
 
 void destroyServiceTree(service_tree_t *svc_tree) {
     if(svc_tree != NULL) {
-        if(svc_tree->tree_node_count > 0) {
-            destroyServiceNodeTree(svc_tree->root_node, &svc_tree->tree_node_count, &svc_tree->tree_svc_count);
+        if(svc_tree->tree_node_count > 0 && svc_tree->root_node != NULL) {
+            service_tree_node_t *current = svc_tree->root_node;
+
+            while(current != NULL) {
+                destroyChildrenFromServiceNode(current, &svc_tree->tree_node_count, &svc_tree->tree_svc_count);
+
+                service_tree_node_t *next = current->next;
+                if(current->svc_data != NULL) {
+                    if(current->svc_data->service != NULL) svc_tree->tree_svc_count--;
+                    free(current->svc_data->sub_uri);
+                    free(current->svc_data);
+                }
+                free(current);
+
+                //Iterate to next node in similar level as root node
+                current = next;
+            }
+
             svc_tree->tree_node_count = 0;
             svc_tree->tree_svc_count = 0;
+            svc_tree->root_node = NULL;
         }
     }
 }
