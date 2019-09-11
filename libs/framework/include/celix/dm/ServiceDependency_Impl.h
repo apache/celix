@@ -400,7 +400,7 @@ int ServiceDependency<T,I>::invokeCallback(std::function<void(I*, Properties&&)>
             hash_map_iterator_t iter = hashMapIterator_construct((hash_map_pt)props);
             while(hashMapIterator_hasNext(&iter)) {
                 key = (const char*) hashMapIterator_nextKey(&iter);
-                value = celix_properties_get(props, key, NULL);
+                value = celix_properties_get(props, key, "");
                 //std::cout << "got property " << key << "=" << value << "\n";
                 properties[key] = value;
             }
