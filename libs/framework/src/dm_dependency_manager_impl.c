@@ -173,7 +173,6 @@ static void celix_dm_allComponentsActiveCallback(void *handle, const celix_bundl
     if (!allActive) {
         *allActivePtr = false;
     }
-    celixThreadMutex_lock(&mng->mutex);
 }
 
 bool celix_dependencyManager_allComponentsActive(celix_dependency_manager_t *manager) {
