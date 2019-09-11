@@ -63,7 +63,7 @@ struct framework_logger {
 #define framework_logIfError(logger, status, error, fmsg, args...) \
     if (status != CELIX_SUCCESS) { \
         if (error != NULL) { \
-            fw_logCode(logger, OSGI_FRAMEWORK_LOG_ERROR, status, #fmsg";\n Cause: %s", ## args, error); \
+            fw_logCode(logger, OSGI_FRAMEWORK_LOG_ERROR, status, #fmsg";\n Cause: %s", ## args, (char*) error); \
         } else { \
             fw_logCode(logger, OSGI_FRAMEWORK_LOG_ERROR, status, #fmsg, ## args); \
         } \
