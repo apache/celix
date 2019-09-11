@@ -18,6 +18,7 @@
 celix_subproject(RSA_DISCOVERY_ETCD "Option to enable building the Discovery (ETCD) bundle" ON)
 if (RSA_DISCOVERY_ETCD)
 	find_package(CURL REQUIRED)
+	find_package(OpenSSL REQUIRED)
 	find_package(LibXml2 REQUIRED)
 	find_package(Jansson REQUIRED)
     
@@ -43,7 +44,7 @@ if (RSA_DISCOVERY_ETCD)
 			${JANSSON_INCLUDE_DIR}
 			${LIBXML2_INCLUDE_DIR}
 	)
-	target_link_libraries(rsa_discovery_etcd PRIVATE ${CURL_LIBRARY} ${LIBXML2_LIBRARIES} ${JANSSON_LIBRARIES})
+	target_link_libraries(rsa_discovery_etcd PRIVATE ${CURL_LIBRARY} ${LIBXML2_LIBRARIES} ${JANSSON_LIBRARIES} ${OPENSSL_LIBRARY})
 
 	install_celix_bundle(rsa_discovery_etcd EXPORT celix COMPONENT rsa)
 	#Setup target aliases to match external usage
