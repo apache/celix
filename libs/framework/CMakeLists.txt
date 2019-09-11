@@ -47,8 +47,8 @@ target_include_directories(framework PUBLIC
 )
 target_compile_options(framework PRIVATE -DUSE_FILE32API)
 set_target_properties(framework PROPERTIES "SOVERSION" 2)
-target_link_libraries(framework PUBLIC Celix::utils ${OPENSSL_LIBRARY})
-target_link_libraries(framework PRIVATE ${UUID_LIBRARY} ${ZLIB_LIBRARY} ${CURL_LIBRARY})
+target_link_libraries(framework PUBLIC Celix::utils)
+target_link_libraries(framework PRIVATE ${UUID_LIBRARY} ${ZLIB_LIBRARY} ${CURL_LIBRARY} ${OPENSSL_LIBRARIES})
 target_include_directories(framework PRIVATE ${CURL_INCLUDE_DIR} ${UUID_INCLUDE_DIRS})
 
 install(TARGETS framework EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework)
