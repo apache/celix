@@ -717,7 +717,7 @@ static void psa_tcp_disConnectHandler(void *handle, const char *url, bool lock) 
     pubsub_tcp_topic_receiver_t *receiver = handle;
     L_DEBUG("[PSA TCP] TopicReceiver %s/%s disconnect from tcp url %s", receiver->scope, receiver->topic, url);
     if (lock) celixThreadMutex_lock(&receiver->requestedConnections.mutex);
-    psa_tcp_requested_connection_entry_t *entry = hashMap_remove(receiver->requestedConnections.map, url);
+    psa_tcp_requested_connection_entry_t *entry = hashMap_get(receiver->requestedConnections.map, url);
     if (entry != NULL) {
       entry->connected = false;
       receiver->requestedConnections.allConnected = false;
