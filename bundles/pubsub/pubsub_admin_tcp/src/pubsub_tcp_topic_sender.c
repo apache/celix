@@ -138,8 +138,13 @@ pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
     if (uuid != NULL) {
         uuid_parse(uuid, sender->fwUUID);
     }
-    sender->metricsEnabled = celix_bundleContext_getPropertyAsBool(ctx, PSA_TCP_METRICS_ENABLED, PSA_TCP_DEFAULT_METRICS_ENABLED);
-
+    sender->metricsEnabled   = celix_bundleContext_getPropertyAsBool(ctx, PSA_TCP_METRICS_ENABLED, PSA_TCP_DEFAULT_METRICS_ENABLED);
+    if (topicProperties != NULL) {
+        bool bypassHeader = celix_properties_getAsBool((celix_properties_t *) topicProperties, PUBSUB_TCP_BYPASS_HEADER, PUBSUB_TCP_DEFAULT_BYPASS_HEADER);
+        long msgIdOffset  = celix_properties_getAsLong(topicProperties, PUBSUB_TCP_MESSAGE_ID_OFFSET, PUBSUB_TCP_DEFAULT_MESSAGE_ID_OFFSET);
+        long msgIdSize    = celix_properties_getAsLong(topicProperties, PUBSUB_TCP_MESSAGE_ID_SIZE,   PUBSUB_TCP_DEFAULT_MESSAGE_ID_SIZE);
+        pubsub_tcpHandler_setBypassHeader(sender->socketHandler, bypassHeader, (unsigned int)msgIdOffset, (unsigned int)msgIdSize);
+    }
     /* Check if it's a static endpoint */
     bool isEndPointTypeClient = false;
     bool isEndPointTypeServer = false;
@@ -188,23 +193,16 @@ pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
                 /* Randomized part due to same bundle publishing on different topics */
                 unsigned int port = rand_range(basePort, maxPort);
                 char *url = NULL;
-                char *bindUrl = NULL;
-                if(bindIP == NULL) {
-                    asprintf(&bindUrl, "tcp://0.0.0.0:%u", port);
-                } else {
-                    asprintf(&bindUrl, "tcp://%s:%u", bindIP, port);
-                }
-
-                asprintf(&url, "tcp://%s:%u", bindIP, port);
-                int rv = pubsub_tcpHandler_listen(sender->socketHandler, bindUrl);
+                if (bindIP == NULL) asprintf(&url, "tcp://0.0.0.0:%u", port);
+                else asprintf(&url, "tcp://%s:%u", bindIP, port);
+                int rv = pubsub_tcpHandler_listen(sender->socketHandler, url);
                 if (rv == -1) {
-                    L_WARN("Error for tcp_bind using dynamic bind url '%s'. %s", bindUrl, strerror(errno));
+                    L_WARN("Error for tcp_bind using dynamic bind url '%s'. %s", url, strerror(errno));
                     free(url);
                 } else {
                     sender->url = url;
                 }
                 retry++;
-                free(bindUrl);
             }
         }
     }

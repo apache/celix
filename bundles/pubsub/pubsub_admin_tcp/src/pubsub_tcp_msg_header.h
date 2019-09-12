@@ -20,14 +20,21 @@
 #ifndef PUBSUB_PSA_TCP_MSG_HEADER_H_
 #define PUBSUB_PSA_TCP_MSG_HEADER_H_
 
+#define MARKER_START_PATTERN       (0x56781234)
+#define MARKER_END_PATTERN         (0x67812345)
+
 typedef struct pubsub_tcp_msg_header {
-    uint32_t type; //msg type id (hash of fqn)
-    uint32_t seqNr;
-    uint8_t major;
-    uint8_t minor;
-    unsigned char originUUID[16];
-    uint64_t sendtimeSeconds; //seconds since epoch
-    uint64_t sendTimeNanoseconds; //ns since epoch
+  uint32_t marker_start;
+  uint32_t type; //msg type id (hash of fqn)
+  uint32_t seqNr;
+  uint8_t  major;
+  uint8_t  minor;
+  uint16_t padding;
+  unsigned char originUUID[16];
+  uint64_t sendtimeSeconds; //seconds since epoch
+  uint64_t sendTimeNanoseconds; //ns since epoch
+  uint32_t bufferSize; //Size of the buffer
+  uint32_t marker_end;
 } pubsub_tcp_msg_header_t;
 
 #endif
