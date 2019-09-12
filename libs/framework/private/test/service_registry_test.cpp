@@ -1003,23 +1003,10 @@ TEST(service_registry, getListenerHooks) {
 	hashMap_put(usages, (void*)registration->serviceId, reference);
 	hashMap_put(registry->serviceReferences, bundle, usages);
 
-	mock()
-		.expectOneCall("serviceRegistration_retain")
-		.withParameter("registration", registration);
-	mock()
-		.expectOneCall("serviceReference_retain")
-		.withParameter("ref", reference);
-	mock()
-		.expectOneCall("serviceRegistration_release")
-		.withParameter("registration", registration);
-
-	array_list_pt hooks = NULL;
-	serviceRegistry_getListenerHooks(registry, bundle, &hooks);
-	LONGS_EQUAL(1, arrayList_size(hooks));
-	POINTERS_EQUAL(reference, arrayList_get(hooks, 0));
+    size_t nrOfHooks = serviceRegistry_nrOfHooks(registry);
+	LONGS_EQUAL(1, nrOfHooks);
 
 	hashMap_destroy(usages, false, false);
-	arrayList_destroy(hooks);
 	arrayList_remove(registry->listenerHooks, 0);
 	free(registration);
 	serviceRegistry_destroy(registry);

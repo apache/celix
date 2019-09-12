@@ -93,7 +93,9 @@ serviceRegistry_ungetService(service_registry_pt registry, celix_bundle_t *bundl
 
 celix_status_t serviceRegistry_clearReferencesFor(service_registry_pt registry, celix_bundle_t *bundle);
 
-celix_status_t serviceRegistry_getListenerHooks(service_registry_pt registry, celix_bundle_t *bundle, celix_array_list_t **hooks);
+void serviceRegistry_callHooksForListenerFilter(service_registry_pt registry, celix_bundle_t *owner, const char *filter, bool removed);
+
+size_t serviceRegistry_nrOfHooks(service_registry_pt registry);
 
 celix_status_t
 serviceRegistry_servicePropertiesModified(service_registry_pt registry, service_registration_pt registration,

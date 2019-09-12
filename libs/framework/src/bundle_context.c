@@ -84,8 +84,6 @@ celix_status_t bundleContext_destroy(bundle_context_pt context) {
 	    bundleContext_cleanupServiceTrackers(context);
         bundleContext_cleanupServiceTrackerTrackers(context);
 
-        //TODO cleanup service registrations
-
 	    //NOTE still present service registrations will be cleared during bundle stop in the
 	    //service registry (serviceRegistry_clearServiceRegistrations).
         celixThreadMutex_unlock(&context->mutex);
@@ -572,8 +570,6 @@ long celix_bundleContext_trackBundlesWithOptions(
         trackerId = entry->trackerId;
 
         //loop through all already installed bundles.
-        // FIXME there is a race condition between installing the listener and looping through the started bundles.
-        // NOTE move this to the framework, so that the framework can ensure locking to ensure not bundles is missed.
         if (entry->opts.onStarted != NULL) {
             celix_framework_useBundles(ctx->framework, entry->opts.includeFrameworkBundle, entry->opts.callbackHandle, entry->opts.onStarted);
         }
@@ -758,7 +754,7 @@ bool celix_bundleContext_stopBundle(celix_bundle_context_t *ctx, long bundleId) 
 
 static void bundleContext_uninstallBundleCallback(void *handle, const bundle_t *c_bnd) {
     bool *uninstalled = handle;
-    bundle_t *bnd = (bundle_t*)c_bnd; //TODO use mute-able variant ??
+    bundle_t *bnd = (bundle_t*)c_bnd;
     if (celix_bundle_getState(bnd) == OSGI_FRAMEWORK_BUNDLE_ACTIVE) {
         bundle_stop(bnd);
     }

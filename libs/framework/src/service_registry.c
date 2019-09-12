@@ -760,42 +760,63 @@ static celix_status_t serviceRegistry_removeHook(service_registry_pt registry, s
 	return status;
 }
 
-celix_status_t serviceRegistry_getListenerHooks(service_registry_pt registry, bundle_pt owner, array_list_pt *out) {
-	celix_status_t status;
-    array_list_pt result;
+void serviceRegistry_callHooksForListenerFilter(service_registry_pt registry, celix_bundle_t *owner, const char *filter, bool removed) {
+    celix_bundle_context_t *ctx;
+    bundle_getContext(owner, &ctx);
 
-    status = arrayList_create(&result);
-    if (status == CELIX_SUCCESS) {
-        unsigned int i;
-        unsigned size = arrayList_size(registry->listenerHooks);
+    struct listener_hook_info info;
+    info.context = ctx;
+    info.removed = removed;
+    info.filter = filter;
+    celix_array_list_t *infos = celix_arrayList_create();
+    celix_arrayList_add(infos, &info);
 
-        for (i = 0; i < size; i += 1) {
-            celixThreadRwlock_readLock(&registry->lock);
-            service_registration_pt registration = arrayList_get(registry->listenerHooks, i);
-            if (registration != NULL) {
-                serviceRegistration_retain(registration);
-            }
-            celixThreadRwlock_unlock(&registry->lock);
+    celix_array_list_t *hookRegistrations = celix_arrayList_create();
 
-            if (registration != NULL) {
-                service_reference_pt reference = NULL;
-                serviceRegistry_getServiceReference(registry, owner, registration, &reference);
-                arrayList_add(result, reference);
-                serviceRegistration_release(registration);
-            }
+    celixThreadRwlock_readLock(&registry->lock);
+    unsigned size = arrayList_size(registry->listenerHooks);
+    for (int i = 0; i < size; ++i) {
+        service_registration_pt registration = arrayList_get(registry->listenerHooks, i);
+        if (registration != NULL) {
+            serviceRegistration_retain(registration);
+            celix_arrayList_add(hookRegistrations, registration);
         }
     }
+    celixThreadRwlock_unlock(&registry->lock);
 
-    if (status == CELIX_SUCCESS) {
-        *out = result;
-    } else {
-        if (result != NULL) {
-            arrayList_destroy(result);
+    for (int i = 0; i < arrayList_size(hookRegistrations); ++i) {
+        service_registration_pt reg = celix_arrayList_get(hookRegistrations, i);
+        service_reference_pt ref;
+        serviceRegistry_getServiceReference(registry, owner, reg, &ref);
+
+        listener_hook_service_pt hook = NULL;
+        celix_status_t status = serviceRegistry_getService(registry, owner, ref, (const void **) &hook);
+
+        if (status == CELIX_SUCCESS && hook != NULL) {
+            if (removed) {
+                hook->removed(hook->handle, infos);
+            } else {
+                hook->added(hook->handle, infos);
+            }
+
+            bool ungetResult = false;
+            serviceRegistry_ungetService(registry, owner, ref, &ungetResult);
+            serviceRegistry_ungetServiceReference(registry, owner, ref);
+        } else {
+            fw_logCode(logger, OSGI_FRAMEWORK_LOG_ERROR, status, "Could not retrieve hook service.");
         }
-        framework_logIfError(logger, status, NULL, "Cannot get listener hooks");
-    }
 
-	return status;
+        serviceRegistration_release(reg);
+    }
+    celix_arrayList_destroy(hookRegistrations);
+    celix_arrayList_destroy(infos);
+}
+
+size_t serviceRegistry_nrOfHooks(service_registry_pt registry) {
+    celixThreadRwlock_readLock(&registry->lock);
+    unsigned size = arrayList_size(registry->listenerHooks);
+    celixThreadRwlock_unlock(&registry->lock);
+    return (size_t) size;
 }
 
 celix_status_t serviceRegistry_servicePropertiesModified(service_registry_pt registry, service_registration_pt registration, properties_pt oldprops) {
