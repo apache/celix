@@ -46,7 +46,7 @@
 #define IP_HEADER_SIZE  20
 #define TCP_HEADER_SIZE 20
 #define MAX_EPOLL_EVENTS   64
-#define MAX_MSG_VECTOR_LEN 256
+#define MAX_MSG_VECTOR_LEN 64
 
 #define L_DEBUG(...) \
     logHelper_log(handle->logHelper, OSGI_LOGSERVICE_DEBUG, __VA_ARGS__)
@@ -216,74 +216,68 @@ int pubsub_tcpHandler_close(pubsub_tcpHandler_t *handle) {
 }
 
 int pubsub_tcpHandler_connect(pubsub_tcpHandler_t *handle, char *url) {
-    pubsub_tcpHandler_url_t url_info;
-    pubsub_tcpHandler_setUrlInfo(url, &url_info);
-    psa_tcp_connection_entry_t *entry = NULL;
-    int fd = pubsub_tcpHandler_open(handle, NULL);
-    celixThreadRwlock_writeLock(&handle->dbLock);
-    int rc = fd;
-    struct sockaddr_in addr; // connector's address information
-    if (rc >= 0) {
-        rc = pubsub_tcpHandler_setInAddr(handle, url_info.hostname, url_info.portnr, &addr);
-        if (rc < 0) {
-            L_ERROR("[TCP Socket] Cannot create url\n");
-            close(fd);
-        }
-    }
-    if (rc >= 0) {
-        rc = connect(fd, (struct sockaddr *) &addr, sizeof(struct sockaddr));
-        if (rc < 0) {
-            L_ERROR("[TCP Socket] Cannot connect to %s:%d: err: %s\n", url_info.hostname, url_info.portnr,strerror(errno));
-            close(fd);
-            errno = 0;
-        } else {
-            struct sockaddr_in sin;
-            socklen_t len = sizeof(sin);
-            entry = calloc(1, sizeof(*entry));
-            entry->url = strndup(url, 1024 * 1024);
-            entry->fd = fd;
-            if (getsockname(fd, (struct sockaddr *) &sin, &len) < 0) {
-                L_ERROR("[TCP Socket] getsockname %s\n", strerror(errno));
-                errno = 0;
-            } else if (handle->url == NULL) {
-                char *address = inet_ntoa(sin.sin_addr);
-                unsigned int port = ntohs(sin.sin_port);
-                asprintf(&handle->url, "tcp://%s:%u", address, port);
+    int rc = 0;
+    psa_tcp_connection_entry_t *entry = hashMap_get(handle->url_map, url);
+    if (entry == NULL) {
+        pubsub_tcpHandler_url_t url_info;
+        pubsub_tcpHandler_setUrlInfo(url, &url_info);
+        int fd = pubsub_tcpHandler_open(handle, NULL);
+        celixThreadRwlock_writeLock(&handle->dbLock);
+        rc = fd;
+        struct sockaddr_in addr; // connector's address information
+        if (rc >= 0) {
+            rc = pubsub_tcpHandler_setInAddr(handle, url_info.hostname, url_info.portnr, &addr);
+            if (rc < 0) {
+                L_ERROR("[TCP Socket] Cannot create url\n");
+                close(fd);
             }
         }
-    }
-    if (rc >= 0) {
-      //rc = pubsub_tcpHandler_makeNonBlocking(handle, entry->fd);
-      if (rc < 0) {
-        close(entry->fd);
-        free(entry->url);
-        free(entry);
-        L_ERROR("[TCP Socket] Cannot create epoll %s\n",strerror(errno));
-        errno = 0;
-        entry = NULL;
-      }
-    }
-    if ( (rc >= 0)&& (entry)) {
-        struct epoll_event event;
-        bzero(&event, sizeof(struct epoll_event)); // zero the struct
-        event.events = EPOLLIN | EPOLLRDHUP | EPOLLERR | EPOLLOUT;
-        event.data.fd = entry->fd;
-        rc = epoll_ctl(handle->efd, EPOLL_CTL_ADD, entry->fd, &event);
-        if (rc < 0) {
-            close(entry->fd);
-            free(entry->url);
-            free(entry);
-            L_ERROR("[TCP Socket] Cannot create epoll %s\n",strerror(errno));
-            errno = 0;
-            entry = NULL;
+        if (rc >= 0) {
+            rc = connect(fd, (struct sockaddr *) &addr, sizeof(struct sockaddr));
+            if (rc < 0) {
+                L_ERROR("[TCP Socket] Cannot connect to %s:%d: err: %s\n", url_info.hostname, url_info.portnr,
+                        strerror(errno));
+                close(fd);
+                errno = 0;
+            } else {
+                struct sockaddr_in sin;
+                socklen_t len = sizeof(sin);
+                entry = calloc(1, sizeof(*entry));
+                entry->url = strndup(url, 1024 * 1024);
+                entry->fd = fd;
+                if (getsockname(fd, (struct sockaddr *) &sin, &len) < 0) {
+                    L_ERROR("[TCP Socket] getsockname %s\n", strerror(errno));
+                    errno = 0;
+                } else if (handle->url == NULL) {
+                    char *address = inet_ntoa(sin.sin_addr);
+                    unsigned int port = ntohs(sin.sin_port);
+                    asprintf(&handle->url, "tcp://%s:%u", address, port);
+                }
+            }
         }
+        if ((rc >= 0) && (entry)) {
+            struct epoll_event event;
+            bzero(&event, sizeof(struct epoll_event)); // zero the struct
+            event.events = EPOLLIN | EPOLLRDHUP | EPOLLERR | EPOLLOUT;
+            event.data.fd = entry->fd;
+            rc = epoll_ctl(handle->efd, EPOLL_CTL_ADD, entry->fd, &event);
+            if (rc < 0) {
+                close(entry->fd);
+                free(entry->url);
+                free(entry);
+                L_ERROR("[TCP Socket] Cannot create epoll %s\n", strerror(errno));
+                errno = 0;
+                entry = NULL;
+            }
+        }
+        if ((rc >= 0) && (entry)) {
+            if (handle->connectMessageCallback)
+                handle->connectMessageCallback(handle->connectPayload, entry->url, false);
+            hashMap_put(handle->url_map, entry->url, entry);
+            hashMap_put(handle->fd_map, (void *) (intptr_t) entry->fd, entry);
+        }
+        pubsub_tcpHandler_free_setUrlInfo(&url_info);
     }
-    if ((rc >= 0) && (entry)) {
-        if (handle->connectMessageCallback) handle->connectMessageCallback(handle->connectPayload, entry->url, false);
-        hashMap_put(handle->url_map, entry->url, entry);
-        hashMap_put(handle->fd_map, (void *) (intptr_t) entry->fd, entry);
-    }
-    pubsub_tcpHandler_free_setUrlInfo(&url_info);
     celixThreadRwlock_unlock(&handle->dbLock);
     return rc;
 }
@@ -543,25 +537,25 @@ int pubsub_tcpHandler_dataAvailable(pubsub_tcpHandler_t *handle, int fd, unsigne
     // Read message buffer
     int nbytes = recv(fd, handle->buffer, handle->bufferSize, 0);
     if (nbytes <= 0) {
-      if (nbytes < 0) {
-        L_ERROR("[TCP Socket] read error %s\n", strerror(errno));
-        errno = 0;
-      }
-      celixThreadRwlock_unlock(&handle->dbLock);
-      return nbytes;
+        if (nbytes < 0) {
+            L_ERROR("[TCP Socket] read error %s\n", strerror(errno));
+            errno = 0;
+        }
+        celixThreadRwlock_unlock(&handle->dbLock);
+        return nbytes;
     }
     if (!handle->bypassHeader) {
-      pubsub_tcp_msg_header_t* pHeader = (pubsub_tcp_msg_header_t*) handle->buffer;
-      if (!header_error && ((pHeader->marker_start != MARKER_START_PATTERN) || (pHeader->marker_end != MARKER_END_PATTERN))) {
-        L_ERROR("[TCP Socket] Marker (%d)  start: 0x%08X != 0x%08X stop: start: 0x%08X != 0x%08X errno: %s\n", handle->readSeqNr, pHeader->marker_start, MARKER_START_PATTERN, pHeader->marker_end, MARKER_END_PATTERN, strerror(errno));
-        header_error = true;
-      } else {
-          nbytes -= sizeof(pubsub_tcp_msg_header_t);
-          if (nbytes < 0) L_ERROR("[TCP Socket] incomplete message\n");
-      }
-      if (!header_error) {
-          handle->readSeqNr = pHeader->seqNr;
-      }
+        pubsub_tcp_msg_header_t* pHeader = (pubsub_tcp_msg_header_t*) handle->buffer;
+        if (!header_error && ((pHeader->marker_start != MARKER_START_PATTERN) || (pHeader->marker_end != MARKER_END_PATTERN))) {
+            L_ERROR("[TCP Socket] Marker (%d)  start: 0x%08X != 0x%08X stop: start: 0x%08X != 0x%08X errno: %s\n", handle->readSeqNr, pHeader->marker_start, MARKER_START_PATTERN, pHeader->marker_end, MARKER_END_PATTERN, strerror(errno));
+            header_error = true;
+        } else {
+            nbytes -= sizeof(pubsub_tcp_msg_header_t);
+            if (nbytes < 0) L_ERROR("[TCP Socket] incomplete message\n");
+        }
+        if (!header_error) {
+            handle->readSeqNr = pHeader->seqNr;
+        }
     }
     *index = 0;
     *size = nbytes;
@@ -678,9 +672,7 @@ int pubsub_tcpHandler_handler(pubsub_tcpHandler_t *handle) {
     if (handle->efd >= 0) {
         struct epoll_event events[MAX_EPOLL_EVENTS];
         int nof_events = 0;
-        //do {
-          nof_events = epoll_wait(handle->efd, events, MAX_EPOLL_EVENTS, handle->timeout);
-        //} while (errno == EINTR);
+        nof_events = epoll_wait(handle->efd, events, MAX_EPOLL_EVENTS, handle->timeout);
         if (nof_events < 0) {
           L_ERROR("[TCP Socket] Cannot create epoll wait (%d) %s\n", nof_events, strerror(errno));
           errno = 0;
@@ -732,12 +724,12 @@ int pubsub_tcpHandler_handler(pubsub_tcpHandler_t *handle) {
                 unsigned int size = 0;
                 rc = pubsub_tcpHandler_dataAvailable(handle, events[i].data.fd, &index, &size);
                 if (rc <= 0) {
-                  if (rc == 0) pubsub_tcpHandler_closeConnection(handle, events[i].data.fd);
-                  continue;
+                    if (rc == 0) pubsub_tcpHandler_closeConnection(handle, events[i].data.fd);
+                    continue;
                 }
                 // Handle data
-                pubsub_tcp_msg_header_t *msgHeader = NULL;
                 void *buffer = NULL;
+                pubsub_tcp_msg_header_t *msgHeader = NULL;
                 rc = pubsub_tcpHandler_read(handle, index, &msgHeader, &buffer, size);
                 if (rc != 0) {
                     L_ERROR("[TCP Socket]: ERROR read with index %d\n", index);
