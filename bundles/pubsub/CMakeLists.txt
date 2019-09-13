@@ -39,7 +39,7 @@ if (PUBSUB)
     add_subdirectory(mock)
 
     add_subdirectory(examples)
-    add_subdirectory(test)
+
     if (ENABLE_TESTING)
         option(BUILD_PUBSUB_TESTS "Enable Tests for PUBSUB" OFF)
     endif()
