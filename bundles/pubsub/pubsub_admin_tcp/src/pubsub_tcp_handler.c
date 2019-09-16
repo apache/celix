@@ -120,7 +120,7 @@ pubsub_tcpHandler_t *pubsub_tcpHandler_create(log_helper_t *logHelper) {
         handle->efd = epoll_create1(0);
         handle->url_map = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
         handle->fd_map = hashMap_create(NULL, NULL, NULL, NULL);
-        handle->timeout = 1000; // default 1 sec
+        handle->timeout = 2000; // default 2 sec
         handle->logHelper = logHelper;
         handle->msgIdOffset = 0;
         handle->msgIdSize = 4;
@@ -446,7 +446,7 @@ int pubsub_tcpHandler_listen(pubsub_tcpHandler_t *handle, char *url) {
     if ((rc >= 0) && (handle->efd >= 0)) {
         struct epoll_event event;
         bzero(&event, sizeof(event)); // zero the struct
-        event.events = EPOLLIN | EPOLLRDHUP | EPOLLERR ;
+        event.events = EPOLLIN | EPOLLRDHUP | EPOLLERR;
         event.data.fd = fd;
         rc = epoll_ctl(handle->efd, EPOLL_CTL_ADD, fd, &event);
         if (rc < 0) {
@@ -561,8 +561,6 @@ int pubsub_tcpHandler_dataAvailable(pubsub_tcpHandler_t *handle, int fd, unsigne
     psa_tcp_connection_entry_t *entry = NULL;
     if (fd == handle->own.fd) entry = &handle->own;
     else entry = hashMap_get(handle->fd_map, (void *) (intptr_t) fd);
-    int bufSize1 = hashMap_size(handle->fd_map);
-    int bufSize2 = hashMap_size(handle->url_map);
     // Find FD entry
     if (entry == NULL) {
         celixThreadRwlock_unlock(&handle->dbLock);
@@ -628,10 +626,10 @@ int pubsub_tcpHandler_dataAvailable(pubsub_tcpHandler_t *handle, int fd, unsigne
                 // Header is found, read the data from the socket, update state to READ_STATE_DATA
                 int buffer_size = pHeader->bufferSize + entry->bufferReadSize;
                 // When buffer is not big enough, reallocate buffer
-                if (buffer_size > handle->bufferSize) {
+                if (buffer_size > entry->bufferSize) {
                     entry->buffer = realloc(entry->buffer, buffer_size);
                     entry->bufferSize = buffer_size;
-                    L_WARN("[TCP Socket: %d (%d,%d), url: %s] realloc read buffer: (%d, %d) \n", entry->fd, bufSize1, bufSize2, entry->url, entry->bufferSize, buffer_size);
+                    //L_WARN("[TCP Socket: %d, url: %s,  realloc read buffer: (%d, %d) \n", entry->fd, entry->url, entry->bufferSize, buffer_size);
                 }
                 // Set data read size
                 entry->expectedReadSize = pHeader->bufferSize;
@@ -824,6 +822,7 @@ int pubsub_tcpHandler_handler(pubsub_tcpHandler_t *handle) {
                     pubsub_tcpHandler_setupEntry(entry, fd, url, MAX_DEFAULT_BUFFER_SIZE);
                     entry->addr = their_addr;
                     entry->len  = len;
+                    entry->connected = false;
                     event.events = EPOLLIN | EPOLLRDHUP | EPOLLERR | EPOLLOUT;
                     event.data.fd = entry->fd;
                     // Register Read to epoll
@@ -833,9 +832,6 @@ int pubsub_tcpHandler_handler(pubsub_tcpHandler_t *handle) {
                         free(entry);
                         L_ERROR("[TCP Socket] Cannot create epoll\n");
                     } else {
-                        // tell sender that an receiver is connected
-                        if (handle->connectMessageCallback)
-                            handle->connectMessageCallback(handle->connectPayload, entry->url, true);
                         hashMap_put(handle->fd_map, (void *) (intptr_t) entry->fd, entry);
                         hashMap_put(handle->url_map, entry->url, entry);
                         L_INFO("[TCP Socket] New connection to url: %s: \n", url);
@@ -889,12 +885,13 @@ int pubsub_tcpHandler_handler(pubsub_tcpHandler_t *handle) {
                 celixThreadRwlock_readLock(&handle->dbLock);
                 psa_tcp_connection_entry_t *entry = hashMap_get(handle->fd_map, (void *) (intptr_t) events[i].data.fd);
                 if (entry)
-                  if ((!entry->connected) && (handle->connectMessageCallback)) {
-                      handle->connectMessageCallback(handle->connectPayload, entry->url, false);
+                  if ((!entry->connected)) {
+                      // tell sender that an receiver is connected
+                      if (handle->connectMessageCallback) handle->connectMessageCallback(handle->connectPayload, entry->url, false);
                       entry->connected = true;
                       struct epoll_event event;
                       bzero(&event, sizeof(event)); // zero the struct
-                      event.events = EPOLLIN | EPOLLRDHUP | EPOLLERR | EPOLLOUT;
+                      event.events = EPOLLIN | EPOLLRDHUP | EPOLLERR;
                       event.data.fd = events[i].data.fd;
                       // Register Modify epoll
                       rc = epoll_ctl(handle->efd, EPOLL_CTL_MOD, events[i].data.fd, &event);
