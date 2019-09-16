@@ -16,13 +16,6 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * bundle_context_private.h
- *
- *  \date       Feb 12, 2013
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
 
 
 #ifndef BUNDLE_CONTEXT_PRIVATE_H_

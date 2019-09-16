@@ -264,6 +264,7 @@ TEST(service_registry, registerServiceListenerHook) {
 	char * serviceName = my_strdup(OSGI_FRAMEWORK_LISTENER_HOOK_SERVICE_NAME);
 	void *service = (void *) 0x20;
 	service_registration_pt reg = (service_registration_pt) 0x30;
+	long svcId = 11;
 
 	mock()
 		.expectOneCall("serviceRegistration_create")
@@ -281,11 +282,17 @@ TEST(service_registry, registerServiceListenerHook) {
 			.withParameter("registration", reg)
 			.withParameter("oldprops", (void*)NULL);
 
+    mock().expectOneCall("serviceRegistration_getServiceId")
+            .withParameter("registration", reg)
+            .andReturnValue(svcId);
+
 	service_registration_pt registration = NULL;
 	serviceRegistry_registerService(registry, bundle, serviceName, service, NULL, &registration);
 	POINTERS_EQUAL(reg, registration);
 	LONGS_EQUAL(1, arrayList_size(registry->listenerHooks));
-	POINTERS_EQUAL(reg, arrayList_get(registry->listenerHooks, 0));
+
+	auto* entry = (celix_service_registry_listener_hook_entry_t*)celix_arrayList_get(registry->listenerHooks, 0);
+	POINTERS_EQUAL(svcId, entry->svcId);
 
 	//cleanup
 	array_list_pt destroy_this = (array_list_pt) hashMap_remove(registry->serviceRegistrations, bundle);
@@ -313,6 +320,7 @@ TEST(service_registry, unregisterService) {
 	hashMap_put(references, (void*)registration->serviceId, reference);
 	hashMap_put(registry->serviceReferences, bundle, references);
 	properties_pt properties = (properties_pt) 0x40;
+	long svcId = 12;
 
 	mock()
 		.expectOneCall("serviceRegistration_getProperties")
@@ -325,12 +333,17 @@ TEST(service_registry, unregisterService) {
 		.withParameter("key", (char *)OSGI_FRAMEWORK_OBJECTCLASS)
 		.andReturnValue((char*)OSGI_FRAMEWORK_LISTENER_HOOK_SERVICE_NAME);
 
+    mock().expectOneCall("serviceRegistration_getServiceId")
+            .withParameter("registration", registration)
+            .andReturnValue(svcId);
+
 	mock()
 		.expectOneCall("serviceRegistryTest_serviceChanged")
 		.withParameter("framework", framework)
 		.withParameter("eventType", OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING)
 		.withParameter("registration", registration)
 		.withParameter("oldprops", (void*) NULL);
+
 	mock()
 		.expectOneCall("serviceReference_invalidate")
 		.withParameter("reference", reference);
@@ -1003,23 +1016,10 @@ TEST(service_registry, getListenerHooks) {
 	hashMap_put(usages, (void*)registration->serviceId, reference);
 	hashMap_put(registry->serviceReferences, bundle, usages);
 
-	mock()
-		.expectOneCall("serviceRegistration_retain")
-		.withParameter("registration", registration);
-	mock()
-		.expectOneCall("serviceReference_retain")
-		.withParameter("ref", reference);
-	mock()
-		.expectOneCall("serviceRegistration_release")
-		.withParameter("registration", registration);
-
-	array_list_pt hooks = NULL;
-	serviceRegistry_getListenerHooks(registry, bundle, &hooks);
-	LONGS_EQUAL(1, arrayList_size(hooks));
-	POINTERS_EQUAL(reference, arrayList_get(hooks, 0));
+    size_t nrOfHooks = serviceRegistry_nrOfHooks(registry);
+	LONGS_EQUAL(1, nrOfHooks);
 
 	hashMap_destroy(usages, false, false);
-	arrayList_destroy(hooks);
 	arrayList_remove(registry->listenerHooks, 0);
 	free(registration);
 	serviceRegistry_destroy(registry);

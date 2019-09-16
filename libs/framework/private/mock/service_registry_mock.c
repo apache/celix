@@ -182,3 +182,15 @@ celix_serviceRegistry_registerServiceFactory(
 			->withOutputParameter("registration", registration);
 	return mock_c()->returnValue().value.intValue;
 }
+
+void serviceRegistry_callHooksForListenerFilter(
+        service_registry_pt registry,
+        celix_bundle_t *owner,
+        const char *filter,
+        bool removed) {
+    mock_c()->actualCall("serviceRegistry_callHooksForListenerFilter")
+            ->withPointerParameters("registry", registry)
+            ->withPointerParameters("owner", owner)
+            ->withStringParameters("filter", filter)
+            ->withBoolParameters("removed", removed);
+}

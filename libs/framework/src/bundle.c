@@ -274,7 +274,6 @@ celix_status_t bundle_update(bundle_pt bundle, const char *inputFile) {
 		status = bundle_isSystemBundle(bundle, &systemBundle);
 		if (status == CELIX_SUCCESS) {
 			if (systemBundle) {
-				// #TODO: Support framework update
 				status = CELIX_BUNDLE_EXCEPTION;
 			} else {
 				status = framework_updateBundle(bundle->framework, bundle, inputFile);
@@ -461,8 +460,6 @@ celix_status_t bundle_closeAndDelete(bundle_pt bundle) {
 
 celix_status_t bundle_closeRevisions(bundle_pt bundle) {
     celix_status_t status = CELIX_SUCCESS;
-
-    // TODO implement this
     return status;
 }
 

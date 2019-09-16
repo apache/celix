@@ -42,7 +42,6 @@ celix_status_t bundleRevision_create(const char *root, const char *location, lon
     if (!revision) {
     	status = CELIX_ENOMEM;
     } else {
-    	// TODO: This overwrites an existing revision, is this supposed to happen?
         int state = mkdir(root, S_IRWXU);
         if ((state != 0) && (errno != EEXIST)) {
             free(revision);
@@ -51,7 +50,6 @@ celix_status_t bundleRevision_create(const char *root, const char *location, lon
             if (inputFile != NULL) {
                 status = extractBundle(inputFile, root);
             } else if (strcmp(location, "inputstream:") != 0) {
-            	// TODO how to handle this correctly?
             	// If location != inputstream, extract it, else ignore it and assume this is a cache entry.
                 status = extractBundle(location, root);
             }
