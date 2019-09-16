@@ -16,20 +16,9 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * listener_hook_service.h
- *
- *  \date       Oct 28, 2011
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
 
 #ifndef LISTENER_HOOK_SERVICE_H_
 #define LISTENER_HOOK_SERVICE_H_
-
-
-typedef struct listener_hook_info *listener_hook_info_pt;
-typedef struct listener_hook_service *listener_hook_service_pt;
 
 #include "bundle_context.h"
 
@@ -37,6 +26,12 @@ typedef struct listener_hook_service *listener_hook_service_pt;
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+
+typedef struct listener_hook_info *listener_hook_info_pt;
+typedef struct listener_hook_info celix_listener_hook_info_t;
+typedef struct listener_hook_service *listener_hook_service_pt;
+typedef struct listener_hook_service celix_listener_hook_service_t;
 
 struct listener_hook_info {
 	celix_bundle_context_t *context;
@@ -47,9 +42,19 @@ struct listener_hook_info {
 struct listener_hook_service {
 	void *handle;
 
-	celix_status_t (*added)(void *hook, celix_array_list_t *listeners);
+	/**
+	 * Called when a new service listener / service tracker is added.
+	 * @param handle The service handle.
+	 * @param listeners A list of celix_listener_hook_info_t* entries.
+	 */
+	celix_status_t (*added)(void *handle, celix_array_list_t *listeners);
 
-	celix_status_t (*removed)(void *hook, celix_array_list_t *listeners);
+    /**
+     * Called when a service listener / service tracker is removed.
+     * @param handle The service handle.
+     * @param listeners A list of celix_listener_hook_info_t* entries.
+     */
+	celix_status_t (*removed)(void *handle, celix_array_list_t *listeners);
 };
 
 #ifdef __cplusplus

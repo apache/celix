@@ -30,6 +30,8 @@
 
 #include "registry_callback_private.h"
 #include "service_registry.h"
+#include "listener_hook_service.h"
+#include "service_reference.h"
 
 struct celix_serviceRegistry {
 	framework_pt framework;
@@ -44,10 +46,18 @@ struct celix_serviceRegistry {
 	serviceChanged_function_pt serviceChanged;
 	unsigned long currentServiceId;
 
-	array_list_pt listenerHooks;
+	array_list_pt listenerHooks; //celix_service_registry_listener_hook_entry_t*
 
 	celix_thread_rwlock_t lock;
 };
+
+typedef struct celix_service_registry_listener_hook_entry {
+    long svcId;
+    celix_listener_hook_service_t *hook;
+    celix_thread_mutex_t mutex; //protects below
+    celix_thread_cond_t cond;
+    unsigned int count;
+} celix_service_registry_listener_hook_entry_t;
 
 typedef enum reference_status_enum {
 	REF_ACTIVE,
