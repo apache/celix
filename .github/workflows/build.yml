@@ -16,7 +16,8 @@ jobs:
             sanitize: true
     timeout-minutes: 120
     steps:
-    - uses: actions/checkout@master
+    - name: Checkout source code
+      uses: actions/checkout@master
     - name: Install dependencies
       run: |
         if [[ "${{ matrix.os }}" == "ubuntu"* ]]; then
