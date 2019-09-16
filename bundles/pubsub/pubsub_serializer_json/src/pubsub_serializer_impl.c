@@ -60,7 +60,7 @@ static FILE_INPUT_TYPE getFileInputType(const char* filename);
 static bool readPropertiesFile(const char* properties_file_name, const char* root, /*output*/ char* avpr_fqn, /*output*/ char* path);
 
 typedef struct pubsub_json_msg_serializer_impl {
-    dyn_type *type;
+    dyn_message_type *msgType;
 
     unsigned int msgId;
     const char* msgName;
@@ -151,7 +151,7 @@ celix_status_t pubsubSerializer_destroySerializerMap(void* handle __attribute__(
     while (hashMapIterator_hasNext(&iter)) {
         pubsub_msg_serializer_t* msgSerializer = hashMapIterator_nextValue(&iter);
         pubsub_json_msg_serializer_impl_t *impl = msgSerializer->handle;
-        dynType_destroy(impl->type);
+        dynMessage_destroy(impl->msgType);
         free(msgSerializer); //also contains the service struct.
         free(impl);
     }
@@ -168,7 +168,8 @@ celix_status_t pubsubMsgSerializer_serialize(void *handle, const void* msg, void
     pubsub_json_msg_serializer_impl_t *impl = handle;
 
     char *jsonOutput = NULL;
-    dyn_type* dynType = impl->type;
+    dyn_type* dynType;
+    dynMessage_getMessageType(impl->msgType, &dynType);
 
     if (jsonSerializer_serialize(dynType, msg, &jsonOutput) != 0) {
         status = CELIX_BUNDLE_EXCEPTION;
@@ -186,7 +187,8 @@ celix_status_t pubsubMsgSerializer_deserialize(void* handle, const void* input, 
     celix_status_t status = CELIX_SUCCESS;
     pubsub_json_msg_serializer_impl_t *impl = handle;
     void *msg = NULL;
-    dyn_type* dynType = impl->type;
+    dyn_type* dynType;
+    dynMessage_getMessageType(impl->msgType, &dynType);
 
     if (jsonSerializer_deserialize(dynType, (const char*)input, &msg) != 0) {
         status = CELIX_BUNDLE_EXCEPTION;
@@ -200,8 +202,9 @@ celix_status_t pubsubMsgSerializer_deserialize(void* handle, const void* input, 
 
 void pubsubMsgSerializer_freeMsg(void* handle, void *msg) {
     pubsub_json_msg_serializer_impl_t *impl = handle;
-    dyn_type* dynType = impl->type;
-    if (dynType != NULL) {
+    if (impl->msgType != NULL) {
+        dyn_type* dynType;
+        dynMessage_getMessageType(impl->msgType, &dynType);
         dynType_free(dynType, msg);
     }
 }
@@ -296,12 +299,12 @@ static void pubsubSerializer_addMsgSerializerFromBundle(const char *root, celix_
         // serializer has been constructed, try to put in the map
         if (hashMap_containsKey(msgSerializers, (void *) (uintptr_t) msgSerializer->msgId)) {
             printf("Cannot add msg %s. clash in msg id %d!!\n", msgSerializer->msgName, msgSerializer->msgId);
-            dynType_destroy(impl->type);
+            dynMessage_destroy(impl->msgType);
             free(msgSerializer);
             free(impl);
         } else if (msgSerializer->msgId == 0) {
             printf("Cannot add msg %s. clash in msg id %d!!\n", msgSerializer->msgName, msgSerializer->msgId);
-            dynType_destroy(impl->type);
+            dynMessage_destroy(impl->msgType);
             free(msgSerializer);
             free(impl);
         }
@@ -430,7 +433,7 @@ static int pubsubMsgSerializer_convertDescriptor(FILE* file_ptr, pubsub_msg_seri
     }
 
     pubsub_json_msg_serializer_impl_t *handle = (pubsub_json_msg_serializer_impl_t*)serializer->handle;
-    handle->type = type;
+    handle->msgType = msgType;
     handle->msgId = msgId;
     handle->msgName = msgName;
     handle->msgVersion = msgVersion;
@@ -448,12 +451,15 @@ static int pubsubMsgSerializer_convertDescriptor(FILE* file_ptr, pubsub_msg_seri
 
 static int pubsubMsgSerializer_convertAvpr(FILE* file_ptr, pubsub_msg_serializer_t* serializer, const char* fqn) {
     if (!file_ptr || !fqn || !serializer) return -2;
-    dyn_type *type = dynType_parseAvpr(file_ptr, fqn);
+    dyn_message_type* msgType = dynMessage_parseAvpr(file_ptr, fqn);
 
-    if (!type) {
+    if (!msgType) {
         printf("DMU: cannot parse avpr file for '%s'\n", fqn);
         return -1;
     }
+
+    dyn_type* type;
+    dynMessage_getMessageType(msgType, &type);
 
     const char *msgName = dynType_getName(type);
 
@@ -482,7 +488,7 @@ static int pubsubMsgSerializer_convertAvpr(FILE* file_ptr, pubsub_msg_serializer
     }
 
     pubsub_json_msg_serializer_impl_t *handle = (pubsub_json_msg_serializer_impl_t*) serializer->handle;
-    handle->type = type;
+    handle->msgType = msgType;
     handle->msgId = msgId;
     handle->msgName = msgName;
     handle->msgVersion = msgVersion;
