@@ -30,9 +30,9 @@
 #define PSA_TCP_DEFAULT_BASE_PORT               5501
 #define PSA_TCP_DEFAULT_MAX_PORT                6000
 
-#define PSA_TCP_DEFAULT_MAX_RECV_SESSIONS       16
-#define PSA_TCP_DEFAULT_RECV_BUFFER_SIZE        6500000
-#define PSA_TCP_DEFAULT_TIMEOUT                 500
+#define PSA_TCP_DEFAULT_MAX_RECV_SESSIONS       1
+#define PSA_TCP_DEFAULT_RECV_BUFFER_SIZE        1024
+#define PSA_TCP_DEFAULT_TIMEOUT                 2000
 
 #define PSA_TCP_DEFAULT_QOS_SAMPLE_SCORE        30
 #define PSA_TCP_DEFAULT_QOS_CONTROL_SCORE       70
@@ -92,6 +92,21 @@
 
 #define PUBSUB_TCP_STATIC_ENDPOINT_TYPE_SERVER  "server"
 #define PUBSUB_TCP_STATIC_ENDPOINT_TYPE_CLIENT  "client"
+
+
+/**
+ * The TCP admin supports send message without pubsub header.
+ * In this case a message_id must be part of the message to be able to distinguish
+ * the different messages. The location of the message ID is configured with PUBSUB_TCP_MESSAGE_ID_OFFSET.
+ * The size of the message ID in bytes is specified with PUBSUB_TCP_MESSAGE_ID_SIZE
+ * The properties can be set in the topic properties.
+ */
+#define PUBSUB_TCP_BYPASS_HEADER          "tcp.static.bypass.header"
+#define PUBSUB_TCP_DEFAULT_BYPASS_HEADER  false
+#define PUBSUB_TCP_MESSAGE_ID_OFFSET      "tcp.static.message_id.offset"
+#define PUBSUB_TCP_DEFAULT_MESSAGE_ID_OFFSET 0
+#define PUBSUB_TCP_MESSAGE_ID_SIZE        "tcp.static.message_id.size"
+#define PUBSUB_TCP_DEFAULT_MESSAGE_ID_SIZE   4
 
 /**
  * Realtime thread prio and scheduling information. This is used to setup the thread prio/sched of the
