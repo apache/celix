@@ -107,6 +107,7 @@ static inline int pubsub_tcpHandler_setInAddr(pubsub_tcpHandler_t *handle, const
 static inline int pubsub_tcpHandler_closeConnectionEntry(pubsub_tcpHandler_t *handle, psa_tcp_connection_entry_t *entry, bool lock);
 static inline int pubsub_tcpHandler_closeConnection(pubsub_tcpHandler_t *handle, int fd);
 static inline int pubsub_tcpHandler_makeNonBlocking(pubsub_tcpHandler_t *handle, int fd);
+//static inline int pubsub_tcpHandler_makeBlocking(pubsub_tcpHandler_t *handle, int fd);
 static inline void pubsub_tcpHandler_setupEntry(psa_tcp_connection_entry_t* entry, int fd, char *url, unsigned int bufferSize);
 static inline void pubsub_tcpHandler_freeEntry(psa_tcp_connection_entry_t* entry);
 
@@ -407,6 +408,7 @@ int pubsub_tcpHandler_makeNonBlocking(pubsub_tcpHandler_t *handle, int fd) {
   return rc;
 }
 
+#ifdef USE_BLOCKING
 static inline
 int pubsub_tcpHandler_makeBlocking(pubsub_tcpHandler_t *handle, int fd) {
     int rc = 0;
@@ -421,6 +423,7 @@ int pubsub_tcpHandler_makeBlocking(pubsub_tcpHandler_t *handle, int fd) {
     }
     return rc;
 }
+#endif
 
 int pubsub_tcpHandler_listen(pubsub_tcpHandler_t *handle, char *url) {
     int fd = pubsub_tcpHandler_open(handle, url);
