@@ -25,7 +25,7 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
-#include <constants.h>
+#include "celix_constants.h"
 #include <stdint.h>
 #include <utils.h>
 #include <assert.h>

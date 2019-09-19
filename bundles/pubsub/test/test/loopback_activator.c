@@ -19,7 +19,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <constants.h>
+#include "celix_constants.h"
 #include <unistd.h>
 
 #include "celix_api.h"

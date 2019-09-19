@@ -30,7 +30,7 @@
 #include "celixbool.h"
 #include "topology_manager.h"
 #include "bundle_context.h"
-#include "constants.h"
+#include "celix_constants.h"
 #include "bundle.h"
 #include "remote_service_admin.h"
 #include "remote_constants.h"

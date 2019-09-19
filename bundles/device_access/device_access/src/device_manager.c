@@ -24,7 +24,7 @@
  *  \copyright	Apache License, Version 2.0
  */
 #include <stdlib.h>
-#include <constants.h>
+#include "celix_constants.h"
 #include <string.h>
 
 #include "device_manager.h"

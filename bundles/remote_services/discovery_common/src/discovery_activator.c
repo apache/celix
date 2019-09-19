@@ -31,7 +31,7 @@
 
 #include "bundle_activator.h"
 #include "service_tracker.h"
-#include "constants.h"
+#include "celix_constants.h"
 
 #include "log_helper.h"
 #include "discovery.h"

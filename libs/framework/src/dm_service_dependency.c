@@ -30,7 +30,7 @@
 #include <limits.h>
 #include <assert.h>
 
-#include "constants.h"
+#include "celix_constants.h"
 
 #include "dm_service_dependency_impl.h"
 #include "dm_component_impl.h"

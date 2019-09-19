@@ -28,7 +28,7 @@
 
 #include "celix_dependency_manager.h"
 #include "framework_private.h"
-#include "constants.h"
+#include "celix_constants.h"
 #include "resolver.h"
 #include "utils.h"
 #include "linked_list_iterator.h"

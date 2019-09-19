@@ -30,7 +30,7 @@
 
 #include "bundle_activator.h"
 #include "bundle_context.h"
-#include "constants.h"
+#include "celix_constants.h"
 
 #include "bonjour_shell.h"
 

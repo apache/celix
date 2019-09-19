@@ -35,7 +35,7 @@
 extern "C" {
 #include "service_reference_private.h"
 #include "service_reference.h"
-#include "constants.h"
+#include "celix_constants.h"
 #include "celix_log.h"
 #include "service_registry.h"
 #include "CppUTestExt/MockSupport_c.h"

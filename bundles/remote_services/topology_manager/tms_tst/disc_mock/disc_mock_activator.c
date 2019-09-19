@@ -29,7 +29,7 @@
 #include "celix_errno.h"
 
 #include "disc_mock_service.h"
-#include "constants.h"
+#include "celix_constants.h"
 #include "remote_constants.h"
 
 celix_status_t discovery_endpointAdded(void *handle, endpoint_description_t *endpoint, char *matchedFilter);

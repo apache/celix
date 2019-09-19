@@ -20,7 +20,7 @@
 #include <vector>
 #include <iostream>
 #include <cstring>
-#include "constants.h"
+#include "celix_constants.h"
 #include "celix_properties.h"
 
 using namespace celix::dm;

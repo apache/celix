@@ -32,7 +32,7 @@
 
 
 #include "celix_log.h"
-#include "constants.h"
+#include "celix_constants.h"
 #include "discovery_impl.h"
 
 #include "discovery_shm.h"

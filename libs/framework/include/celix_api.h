@@ -22,7 +22,7 @@
 
 #include "properties.h"
 #include "array_list.h"
-#include "constants.h"
+#include "celix_constants.h"
 #include "bundle.h"
 #include "bundle_context.h"
 #include "framework.h"

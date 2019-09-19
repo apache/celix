@@ -26,7 +26,7 @@
 
 #include "celix_bundle_context.h"
 #include "celix_bundle_activator.h"
-#include "constants.h"
+#include "celix_constants.h"
 #include "celix_log.h"
 
 #include "pubsub_listeners.h"

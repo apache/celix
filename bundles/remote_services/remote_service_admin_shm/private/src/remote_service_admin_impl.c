@@ -41,7 +41,7 @@
 #include "export_registration_impl.h"
 #include "import_registration_impl.h"
 #include "remote_constants.h"
-#include "constants.h"
+#include "celix_constants.h"
 #include "utils.h"
 #include "bundle_context.h"
 #include "bundle.h"

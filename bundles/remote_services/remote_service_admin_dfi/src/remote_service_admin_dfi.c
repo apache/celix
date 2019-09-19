@@ -37,7 +37,7 @@
 #include "json_rpc.h"
 
 #include "remote_constants.h"
-#include "constants.h"
+#include "celix_constants.h"
 #include "civetweb.h"
 
 #include "remote_service_admin_dfi_constants.h"

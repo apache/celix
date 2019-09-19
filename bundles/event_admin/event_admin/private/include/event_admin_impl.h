@@ -30,7 +30,7 @@
 #include <string.h>
 #include "celix_errno.h"
 #include "bundle_context.h"
-#include "constants.h"
+#include "celix_constants.h"
 #include "event_constants.h"
 #include "event_admin.h"
 #include "event_handler.h"

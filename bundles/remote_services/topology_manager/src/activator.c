@@ -28,7 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "constants.h"
+#include "celix_constants.h"
 #include "bundle_activator.h"
 #include "service_tracker.h"
 #include "service_registration.h"

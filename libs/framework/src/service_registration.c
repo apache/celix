@@ -29,7 +29,7 @@
 #include <assert.h>
 
 #include "service_registration_private.h"
-#include "constants.h"
+#include "celix_constants.h"
 
 static celix_status_t serviceRegistration_initializeProperties(service_registration_pt registration, properties_pt properties);
 static celix_status_t serviceRegistration_createInternal(registry_callback_t callback, bundle_pt bundle, const char* serviceName, unsigned long serviceId,

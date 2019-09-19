@@ -36,7 +36,7 @@
 /* celix.utils */
 #include "hash_map.h"
 /* celix.framework */
-#include "constants.h"
+#include "celix_constants.h"
 #include "properties.h"
 #include "utils.h"
 #include "service_reference.h"

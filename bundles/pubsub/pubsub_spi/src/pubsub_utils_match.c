@@ -28,7 +28,7 @@
 #include "pubsub_admin.h"
 
 #include "pubsub_utils.h"
-#include "constants.h"
+#include "celix_constants.h"
 
 static double getPSAScore(const char *requested_admin, const char *request_qos, const char *adminType, double sampleScore, double controlScore, double defaultScore) {
     double score;

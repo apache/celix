@@ -26,7 +26,7 @@
  */
 
 #include <stdlib.h>
-#include <constants.h>
+#include "celix_constants.h"
 #include <utils.h>
 
 #include "dm_event.h"

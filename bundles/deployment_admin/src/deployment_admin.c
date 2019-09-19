@@ -44,7 +44,7 @@
 #include "deployment_admin.h"
 #include "celix_errno.h"
 #include "bundle_context.h"
-#include "constants.h"
+#include "celix_constants.h"
 #include "deployment_package.h"
 #include "bundle.h"
 #include "utils.h"

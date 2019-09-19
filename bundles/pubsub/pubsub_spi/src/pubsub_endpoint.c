@@ -34,7 +34,7 @@
 #include "celix_log.h"
 
 #include "pubsub_endpoint.h"
-#include "constants.h"
+#include "celix_constants.h"
 
 #include "pubsub_utils.h"
 
