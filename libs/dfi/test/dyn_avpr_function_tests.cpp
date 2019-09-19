@@ -176,7 +176,7 @@ const char* theAvprFile = "{ \
                     \"infoFunc\" : {\
                         \"request\" : [ {\
                                 \"name\" : \"arg1\", \
-                                \"type\" : \"Sint\" \
+                                \"type\" : \"int\" \
                             } ],\
                         \"response\" : \"Double\" \
                     }, \
@@ -202,7 +202,7 @@ const char* theAvprFile = "{ \
                     }, \
                     \"stringOutFunc\" : {\
                         \"request\" : [ ],\
-                        \"response\" : \"String\" \
+                        \"response\" : \"string\" \
                     }, \
                     \"structStringOutFunc\" : {\
                         \"request\" : [ ],\

@@ -42,7 +42,7 @@ enum JsonTypeType {INVALID=0, SIMPLE=1, ARRAY=2, REFERENCE=3, SELF_REFERENCE=4};
 dyn_type * dynAvprType_parseFromJson(json_t * const root, const char * fqn);
 dyn_type * dynAvprType_createNestedForFunction(dyn_type * store_type, const char* fqn);
 dyn_type * dynAvprType_parseFromTypedJson(json_t * const root, json_t const * const type_entry, const char * namespace);
-void dynAvprType_constructFqn(char* destination, int size, const char* possibleFqn, const char* ns);
+void dynAvprType_constructFqn(char *destination, size_t size, const char *possibleFqn, const char *ns);
 
 // Any
 static json_t const * dynAvprType_findType(char const * const fqn, json_t const * const array_object, const char * ns);
@@ -50,16 +50,16 @@ static dyn_type * dynAvprType_parseAny(dyn_type * root, dyn_type * parent, json_
 static dyn_type * dynAvprType_initializeType(dyn_type * parent);
 
 // Record
-static dyn_type * dynAvprType_parseRecord(dyn_type * root, dyn_type * parent, json_t const * const record_obj, json_t const * const array_object, const char* parent_ns, dyn_type * ref_type);
+static dyn_type * dynAvprType_parseRecord(dyn_type * root, dyn_type * parent, json_t const * const record_obj, json_t const * const array_object, const char* parent_ns);
 static inline dyn_type * dynAvprType_prepareRecord(dyn_type * parent, json_t const ** fields, json_t const * const record_obj);
 static inline bool dynAvprType_finalizeRecord(dyn_type * type, const size_t size);
-static inline struct complex_type_entry* dynAvprType_prepareRecordEntry(dyn_type * parent, json_t const * const entry_object);
-static inline struct complex_type_entry * dynAvprType_parseRecordEntry(dyn_type * root, dyn_type * parent, json_t const * const entry_object, json_t const * const array_object, const char * fqn_parent, const char * parent_ns, const char * record_ns, dyn_type * ref_type);
+static inline struct complex_type_entry *dynAvprType_prepareRecordEntry(json_t const *const entry_object);
+static inline struct complex_type_entry *dynAvprType_parseRecordEntry(dyn_type *root, dyn_type *parent, json_t const *const entry_object, json_t const *const array_object, const char *fqn_parent, const char *parent_ns, const char *record_ns);
 static inline enum JsonTypeType dynAvprType_getRecordEntryType(json_t const * const entry_object, const char * fqn_parent, char * name_buffer, const char * namespace);
 
 // Reference
 static dyn_type * dynAvprType_parseReference(dyn_type * root, const char * name_buffer, json_t const * const array_object, const char * parent_ns);
-static dyn_type * dynAvprType_parseSelfReference(dyn_type * root, dyn_type * parent, const char * name_buffer, json_t const * const array_object, const char * parent_ns, dyn_type * ref_type);
+static dyn_type * dynAvprType_parseSelfReference(dyn_type * parent);
 static dyn_type * dynAvprType_initializeReferenceType(dyn_type * type_pointer);
 static inline struct type_entry * dynAvprType_prepareNestedEntry(dyn_type * const parent, const char * fqn, bool allocate);
 
@@ -74,7 +74,11 @@ static dyn_type * dynAvprType_parseArray(dyn_type * root, dyn_type * parent, jso
 
 // Fixed
 static dyn_type * dynAvprType_parseFixed(dyn_type * parent, json_t const * const fixed_object, const char * parent_ns);
-static inline int dynAvprType_fixedTypeToFfi(json_t const * const simple_obj, ffi_type ** output_ffi_type);
+static inline char dynAvprType_fixedTypeToFfi(json_t const * const simple_obj, ffi_type ** output_ffi_type);
+
+// Simple
+static dyn_type * dynAvprType_createSimpleTypeFromName(dyn_type * parent, const char * type_name);
+static dyn_type * dynAvprType_createSimpleType(dyn_type * parent, char kind, const char * name);
 
 // General
 static char * dynAvprType_createFqnFromJson(json_t const * const jsonObject, const char * namespace);
@@ -232,14 +236,19 @@ dyn_type * dynAvprType_parseFromTypedJson(json_t * const root, json_t const * co
     char name_buffer[FQN_SIZE];
     switch (elType) {
         case SIMPLE:
-            dynAvprType_constructFqn(name_buffer, FQN_SIZE, json_string_value(type_entry), namespace);
-            ret_type = dynAvprType_parseFromJson(root, name_buffer);
+            // Check if it is an internal type
+            ret_type = dynAvprType_createSimpleTypeFromName(NULL, json_string_value(type_entry));
+            // Otherwise full parsing
+            if (!ret_type) {
+                dynAvprType_constructFqn(name_buffer, FQN_SIZE, json_string_value(type_entry), namespace);
+                ret_type = dynAvprType_parseFromJson(root, name_buffer);
+            }
             break;
 
         case ARRAY:
             ret_type = dynAvprType_parseArray(ret_type, NULL, type_entry, json_object_get(root, "types"), name_buffer, namespace, namespace);
             if (!ret_type) {
-                LOG_ERROR("Error allocating memory for type");
+                LOG_ERROR("Error parsing array");
                 return NULL;
             }
             break;
@@ -256,27 +265,47 @@ dyn_type * dynAvprType_parseFromTypedJson(json_t * const root, json_t const * co
     return ret_type;
 }
 
-void dynAvprType_constructFqn(char* destination, int size, const char* possibleFqn, const char* ns) {
+void dynAvprType_constructFqn(char *destination, size_t size, const char *possibleFqn, const char *ns) {
     const bool isAlreadyFqn = strchr(possibleFqn, '.') != NULL;
     snprintf(destination, size, "%s%s%s", isAlreadyFqn ? "" : ns, isAlreadyFqn ? "" : ".", possibleFqn);
 }
 
 static dyn_type * dynAvprType_parseAny(dyn_type * root, dyn_type * parent, json_t const * const jsonObject, json_t const * const array_object, const char * parent_ns) {
+    dyn_type * type = NULL;
+
     if (!jsonObject) {
         LOG_WARNING("Any: Received NULL, type not found, nothing to parse");
         return NULL;
     }
 
+    // Check if type has an alias and try to find associated
+    const char* alias = json_string_value(json_object_get(jsonObject, "alias"));
+    if (alias) {
+        type = dynAvprType_createSimpleTypeFromName(parent, alias);
+
+        if (type) {
+            return type;
+        }
+
+        LOG_DEBUG("Did not find alias under internal types, looking for custom types");
+        char buffer[FQN_SIZE];
+        dynAvprType_constructFqn(buffer, FQN_SIZE, alias, parent_ns);
+        type = dynAvprType_parseAny(root, parent, dynAvprType_findType(buffer, array_object, parent_ns), array_object, parent_ns);
+        if (type) {
+            return type;
+        }
+    }
+
+    // No (valid) alias, build type based on name
     const char* type_name = json_string_value(json_object_get(jsonObject, "type"));
     if (!type_name) {
         LOG_ERROR("Any: \"type\" entry is not a string or does not exist");
         return NULL;
     }
 
-    dyn_type * type = NULL;
     LOG_DEBUG("Any: Parsing a %s", type_name);
     if (strcmp(type_name, "record") == 0) {
-        type = dynAvprType_parseRecord(root, parent, jsonObject, array_object, parent_ns, NULL);
+        type = dynAvprType_parseRecord(root, parent, jsonObject, array_object, parent_ns);
     }
     else if (strcmp(type_name, "fixed") == 0) {
         type = dynAvprType_parseFixed(parent, jsonObject, parent_ns);
@@ -285,7 +314,11 @@ static dyn_type * dynAvprType_parseAny(dyn_type * root, dyn_type * parent, json_
         type = dynAvprType_parseEnum(parent, jsonObject, parent_ns);
     }
     else {
-        LOG_ERROR("Any: Unrecognized type: %s", type_name);
+        type = dynAvprType_createSimpleTypeFromName(parent, type_name);
+
+        if (!type) {
+            LOG_ERROR("Any: Unrecognized type: %s", type_name);
+        }
     }
 
     return type;
@@ -299,7 +332,7 @@ static dyn_type * dynAvprType_initializeType(dyn_type * parent) {
     return type;
 }
 
-static dyn_type * dynAvprType_parseRecord(dyn_type * root, dyn_type * parent, json_t const * const record_obj, json_t const * const array_object, const char * parent_ns, dyn_type * ref_type) {
+static dyn_type * dynAvprType_parseRecord(dyn_type * root, dyn_type * parent, json_t const * const record_obj, json_t const * const array_object, const char * parent_ns) {
     json_t const * fields = NULL;
     dyn_type * type = dynAvprType_prepareRecord(parent, &fields, record_obj); // also sets fields correctly
     if (!type) {
@@ -333,7 +366,7 @@ static dyn_type * dynAvprType_parseRecord(dyn_type * root, dyn_type * parent, js
     json_array_foreach(fields, counter, element) {
         LOG_DEBUG("Record: parsing field [%s](%s) at %d", json_string_value(json_object_get(element, "type")), json_string_value(json_object_get(element, "name")), counter);
 
-        struct complex_type_entry * entry = dynAvprType_parseRecordEntry(root, type, element, array_object, fqn_buffer, parent_ns, record_ns, ref_type);
+        struct complex_type_entry * entry = dynAvprType_parseRecordEntry(root, type, element, array_object, fqn_buffer, parent_ns, record_ns);
         if (!entry) {
             LOG_ERROR("Record: Parsing record entry %d failed", counter);
             dynType_destroy(type);
@@ -394,40 +427,45 @@ static inline bool dynAvprType_finalizeRecord(dyn_type * type, const size_t size
     return true;
 }
 
-static inline struct complex_type_entry * dynAvprType_parseRecordEntry(dyn_type * root, dyn_type * parent, json_t const * const entry_object, json_t const * const array_object, const char * fqn_parent, const char * parent_ns, const char * record_ns, dyn_type * ref_type) {
-    struct complex_type_entry *entry = dynAvprType_prepareRecordEntry(parent, entry_object);
+static inline struct complex_type_entry *dynAvprType_parseRecordEntry(dyn_type *root, dyn_type *parent, json_t const *const entry_object, json_t const *const array_object, const char *fqn_parent, const char *parent_ns, const char *record_ns) {
+    struct complex_type_entry *entry = dynAvprType_prepareRecordEntry(entry_object);
     if (!entry) {
         return NULL;
     }
 
-    char name_buffer[FQN_SIZE];
-    switch (dynAvprType_getRecordEntryType(entry_object, fqn_parent, name_buffer, record_ns)) {
-        case SIMPLE:
+    entry->type = dynAvprType_createSimpleTypeFromName(parent, json_string_value(json_object_get(entry_object, "type")));
+
+    // If it was not a simple type, do full parsing
+    if (!entry->type) {
+        char name_buffer[FQN_SIZE];
+        switch (dynAvprType_getRecordEntryType(entry_object, fqn_parent, name_buffer, record_ns)) {
+            case SIMPLE:
                 LOG_DEBUG("RecordEntry: Looking for type: %s", name_buffer);
                 entry->type = dynAvprType_parseAny(root, parent, dynAvprType_findType(name_buffer, array_object, parent_ns), array_object, parent_ns);
                 break;
 
-        case REFERENCE:
+            case REFERENCE:
                 LOG_DEBUG("RecordEntry: Found a ptr type, creating a reference %s", name_buffer);
                 entry->type = dynAvprType_parseReference(root, name_buffer, array_object, parent_ns);
                 break;
 
-        case SELF_REFERENCE:
+            case SELF_REFERENCE:
                 LOG_DEBUG("RecordEntry: Creating a self_reference for %s", name_buffer);
-                entry->type = dynAvprType_parseSelfReference(root, parent, name_buffer, array_object, parent_ns, ref_type);
+                entry->type = dynAvprType_parseSelfReference(parent);
                 break;
 
-        case ARRAY:
+            case ARRAY:
                 LOG_DEBUG("RecordEntry: Parsing array: %s", name_buffer);
                 entry->type = dynAvprType_parseArray(root, parent, json_object_get(entry_object, "type"), array_object, name_buffer, parent_ns, record_ns);
                 break;
 
-        case INVALID:
-            /* fall through */
-        default:
+            case INVALID:
+                /* fall through */
+            default:
                 LOG_ERROR("RecordEntry: Illegal record entry for %s", json_string_value(json_object_get(entry_object, "name")));
                 entry->type = NULL;
                 break;
+        }
     }
 
     if (entry->type) {
@@ -440,7 +478,7 @@ static inline struct complex_type_entry * dynAvprType_parseRecordEntry(dyn_type 
     }
 }
 
-static inline struct complex_type_entry* dynAvprType_prepareRecordEntry(dyn_type * parent, json_t const * const entry_object) {
+static inline struct complex_type_entry *dynAvprType_prepareRecordEntry(json_t const *const entry_object) {
     struct complex_type_entry *entry = NULL;
 
     const char * entry_name = json_string_value(json_object_get(entry_object, "name"));
@@ -467,7 +505,8 @@ static inline enum JsonTypeType dynAvprType_getRecordEntryType(json_t const * co
         dynAvprType_constructFqn(name_buffer, FQN_SIZE, json_string_value(json_type), namespace);
         if (strcmp(name_buffer, fqn_parent) == 0) {
             elType = SELF_REFERENCE;
-        } else if (json_is_true(json_object_get(entry_object, "ptr"))) {
+        }
+        else if (json_is_true(json_object_get(entry_object, "ptr"))) {
             elType = REFERENCE;
         }
     }
@@ -515,17 +554,11 @@ static dyn_type * dynAvprType_parseReference(dyn_type * root, const char * name_
     bool success = true;
     struct type_entry *entry = dynAvprType_prepareNestedEntry(root, name_buffer, true);
     dyn_type * tmp = entry->type;
-    if (!entry) {
-        LOG_ERROR("Reference: could not create nested entry");
-        success = false;
-    }
 
-    if (success) {
-        entry->type = dynAvprType_parseAny(root, NULL, refType, array_object, parent_ns); 
-        if (!entry->type) {
-            free(entry);
-            success = false;
-        }
+    entry->type = dynAvprType_parseAny(root, NULL, refType, array_object, parent_ns);
+    if (!entry->type) {
+        free(entry);
+        success = false;
     }
 
     free(tmp->name);
@@ -543,7 +576,7 @@ static dyn_type * dynAvprType_parseReference(dyn_type * root, const char * name_
     }
 }
 
-static dyn_type * dynAvprType_parseSelfReference(dyn_type * root, dyn_type * parent, const char * name_buffer, json_t const * const array_object, const char * parent_ns, dyn_type * ref_type) {
+static dyn_type * dynAvprType_parseSelfReference(dyn_type * parent) {
     dyn_type * type = dynAvprType_initializeType(parent);
     if (!type) {
         return NULL;
@@ -683,7 +716,7 @@ static inline bool dynAvprType_metaEntrySetValue(struct meta_entry * meta_entry_
         dynAvprType_parseEnumValue(&meta_entry_ptr->value);
     }
     else {
-        const int bufsize = sizeof(index) * CHAR_BIT + 1;
+        const size_t bufsize = sizeof(index) * CHAR_BIT + 1;
         meta_entry_ptr->value = calloc(bufsize, sizeof(char));
 
         snprintf(meta_entry_ptr->value, bufsize, "%lu", index);
@@ -715,9 +748,9 @@ static inline void dynAvprType_parseEnumValue(char** enumvalue) {
     }
 }
 
-static ffi_type *seq_types[] = {&ffi_type_uint32, &ffi_type_uint32, &ffi_type_pointer, NULL};
+static ffi_type* seq_types[] = {&ffi_type_uint32, &ffi_type_uint32, &ffi_type_pointer, NULL};
 
-static dyn_type * dynAvprType_parseArray(dyn_type * root, dyn_type * parent, json_t const * const array_entry_obj, json_t const * const array_object, char * name_buffer, const char * parent_ns, const char * record_ns) {
+static dyn_type* dynAvprType_parseArray(dyn_type * root, dyn_type * parent, json_t const * const array_entry_obj, json_t const * const array_object, char * name_buffer, const char * parent_ns, const char * record_ns) {
     dyn_type * type = dynAvprType_initializeType(parent);
     if (!type) {
         return NULL;
@@ -739,9 +772,14 @@ static dyn_type * dynAvprType_parseArray(dyn_type * root, dyn_type * parent, jso
         type->sequence.itemType = dynAvprType_parseArray(root, type, nested_array_object, array_object, name_buffer, parent_ns, record_ns);
     }
     else if (json_is_string(itemsEntry)) { // is a named item?
-        LOG_DEBUG("ParseArray: Found type, parsing");
-        dynAvprType_constructFqn(name_buffer, FQN_SIZE, json_string_value(itemsEntry), record_ns);
-        type->sequence.itemType = dynAvprType_parseAny(root, type, dynAvprType_findType(name_buffer, array_object, parent_ns), array_object, parent_ns);
+        LOG_DEBUG("ParseArray: Found type \"%s\", parsing", json_string_value(itemsEntry));
+        type->sequence.itemType = dynAvprType_createSimpleTypeFromName(type, json_string_value(itemsEntry));
+        if (!type->sequence.itemType) {
+            LOG_DEBUG("ParseArray: Was not a simple type, doing full parse");
+            dynAvprType_constructFqn(name_buffer, FQN_SIZE, json_string_value(itemsEntry), record_ns);
+            type->sequence.itemType = dynAvprType_parseAny(root, type, dynAvprType_findType(name_buffer, array_object, parent_ns), array_object, parent_ns);
+        }
+
     }
     else {
         LOG_ERROR("ParseArray: Unrecognized array structure: \"items\" is neither a nested array nor a type");
@@ -766,7 +804,7 @@ static dyn_type * dynAvprType_parseFixed(dyn_type * parent, json_t const * const
     }
 
     ffi_type * ffiType = NULL;
-    int descriptor = dynAvprType_fixedTypeToFfi(fixed_object, &ffiType);
+    char descriptor = dynAvprType_fixedTypeToFfi(fixed_object, &ffiType);
 
     if (!ffiType || descriptor == '0') {
         LOG_ERROR("Invalid simple type, received wrong ffi type!");
@@ -792,80 +830,129 @@ static dyn_type * dynAvprType_parseFixed(dyn_type * parent, json_t const * const
     return type;
 }
 
-static inline int dynAvprType_fixedTypeToFfi(json_t const * const simple_obj, ffi_type ** output_ffi_type) {
-    const int size = json_integer_value(json_object_get(simple_obj, "size"));
+static inline char dynAvprType_fixedTypeToFfi(json_t const * const simple_obj, ffi_type ** output_ffi_type) {
+    const json_int_t size = json_integer_value(json_object_get(simple_obj, "size"));
     const bool sign = json_is_true(json_object_get(simple_obj, "signed"));
-    const char * alias = json_string_value(json_object_get(simple_obj, "alias"));
-    const int s_size = sign ? size : -size;
+    const json_int_t s_size = sign ? size : -size;
+    LOG_DEBUG("Simple fixed type: size = %d, signed = %s", size, sign ? "true" : "false");
 
-    LOG_DEBUG("Simple fixed type: size = %d, signed = %s, alias = %s", size, sign ? "true" : "false", alias ? alias : "none");
-
-    if (!alias) {
-        switch (s_size) {
-            case 1:
-                *output_ffi_type = &ffi_type_sint8;
-                return 'B';
-            case 2:
-                *output_ffi_type = &ffi_type_sint16;
-                return 'S';
-            case 4:
-                *output_ffi_type = &ffi_type_sint32;
-                return 'I';
-            case 8:
-                *output_ffi_type = &ffi_type_sint64;
-                return 'J';
-            case -1:
-                *output_ffi_type = &ffi_type_uint8;
-                return 'b';
-            case -2:
-                *output_ffi_type = &ffi_type_uint16;
-                return 's';
-            case -4:
-                *output_ffi_type = &ffi_type_uint32;
-                return 'i';
-            case -8:
-                *output_ffi_type = &ffi_type_uint64;
-                return 'j';
-            default:
-                LOG_ERROR("Unrecognized size = %d", size);
-                return '0';
-        }
-    
-    }
-    else {
-        if (strcmp(alias, "float") == 0) {
-            *output_ffi_type = &ffi_type_float;
-            return 'F';
-        }
-        else if (strcmp(alias, "double") == 0) {
-            *output_ffi_type = &ffi_type_double;
-            return 'D';
-        }
-        else if (strcmp(alias, "string") == 0) {
-            *output_ffi_type = &ffi_type_pointer;
-            return 't';
-        }
-        else if (strcmp(alias, "boolean") == 0) {
+    switch (s_size) {
+        case 1:
+            *output_ffi_type = &ffi_type_sint8;
+            return 'B';
+        case 2:
+            *output_ffi_type = &ffi_type_sint16;
+            return 'S';
+        case 4:
+            *output_ffi_type = &ffi_type_sint32;
+            return 'I';
+        case 8:
+            *output_ffi_type = &ffi_type_sint64;
+            return 'J';
+        case -1:
             *output_ffi_type = &ffi_type_uint8;
-            return 'Z';
-        }
-        else if (strcmp(alias, "void") == 0) {
-            *output_ffi_type = &ffi_type_void;
-            return 'V';
-        }
-        else if (strcmp(alias, "void_ptr") == 0) {
-            *output_ffi_type = &ffi_type_pointer;
-            return 'P';
-        }
-        else if (strcmp(alias, "native_int") == 0) {
-            *output_ffi_type = &ffi_type_sint;
-            return 'N';
-        }
-        else {
-            LOG_ERROR("Unrecognized alias = %s", alias);
+            return 'b';
+        case -2:
+            *output_ffi_type = &ffi_type_uint16;
+            return 's';
+        case -4:
+            *output_ffi_type = &ffi_type_uint32;
+            return 'i';
+        case -8:
+            *output_ffi_type = &ffi_type_uint64;
+            return 'j';
+        default:
+            LOG_ERROR("Unrecognized size = %d", size);
             return '0';
-        }
     }
+}
+
+static dyn_type * dynAvprType_createSimpleTypeFromName(dyn_type * parent, const char * type_name) {
+    dyn_type * type = NULL;
+
+    if (!type_name) {
+        LOG_DEBUG("Simple Type, did not pass a valid name, returning NULL");
+    }
+    else if (strcmp(type_name, "int") == 0) {
+        type = dynAvprType_createSimpleType(parent, 'I', "int");
+    }
+    else if (strcmp(type_name, "long") == 0) {
+        type = dynAvprType_createSimpleType(parent, 'J', "long");
+    }
+    else if (strcmp(type_name, "string") == 0) {
+        type = dynAvprType_createSimpleType(parent, 't', "string");
+    }
+    else if (strcmp(type_name, "boolean") == 0) {
+        type = dynAvprType_createSimpleType(parent, 'Z', "boolean");
+    }
+    else if (strcmp(type_name, "float") == 0) {
+        type = dynAvprType_createSimpleType(parent, 'F', "float");
+    }
+    else if (strcmp(type_name, "double") == 0) {
+        type = dynAvprType_createSimpleType(parent, 'D', "double");
+    }
+    else if (strcmp(type_name, "null") == 0) {
+        type = dynAvprType_createSimpleType(parent, 'V', "null");
+    }
+    else if (strcmp(type_name, "bytes") == 0) {
+        type = dynAvprType_createSimpleType(parent, 'P', "bytes");
+    }
+    else if (strcmp(type_name, "void_ptr") == 0) {
+        type = dynAvprType_createSimpleType(parent, 'P', "void_ptr");
+    }
+    else if (strcmp(type_name, "native_int") == 0) {
+        type = dynAvprType_createSimpleType(parent, 'N', "native_int");
+    }
+
+    return type;
+}
+
+static dyn_type * dynAvprType_createSimpleType(dyn_type * parent, char kind, const char * name) {
+    dyn_type * type = dynAvprType_initializeType(parent);
+    if (!type) {
+        return NULL;
+    }
+
+    ffi_type * ffiType = NULL;
+    switch (kind) {
+        case 'I':
+            ffiType = &ffi_type_sint32;
+            break;
+        case 'J':
+            ffiType = &ffi_type_sint64;
+            break;
+        case 't':
+            ffiType = &ffi_type_pointer;
+            break;
+        case 'Z':
+            ffiType = &ffi_type_uint8;
+            break;
+        case 'F':
+            ffiType = &ffi_type_float;
+            break;
+        case 'D':
+            ffiType = &ffi_type_double;
+            break;
+        case 'V':
+            ffiType = &ffi_type_void;
+            break;
+        case 'P':
+            ffiType = &ffi_type_pointer;
+            break;
+        case 'N':
+            ffiType = &ffi_type_sint;
+            break;
+        default:
+            LOG_ERROR("Unrecognized kind: '%c'.", kind);
+            free(type);
+            return NULL;
+    }
+
+    type->name = strndup(name, FQN_SIZE);
+    type->type = (kind == 't') ? DYN_TYPE_TEXT : DYN_TYPE_SIMPLE;
+    type->descriptor = kind;
+    type->ffiType = ffiType;
+    return type;
 }
 
 static char * dynAvprType_createFqnFromJson(json_t const * const jsonObject, const char * namespace) {
@@ -883,7 +970,7 @@ static char * dynAvprType_createFqnFromJson(json_t const * const jsonObject, con
     }
 
     // Create fqn
-    const int length = strlen(ns) + strlen(name) + 2;
+    const size_t length = strlen(ns) + strlen(name) + 2;
     char * fqn = calloc(length, sizeof(char));
 
     snprintf(fqn, length, "%s.%s", ns, name);
@@ -892,13 +979,13 @@ static char * dynAvprType_createFqnFromJson(json_t const * const jsonObject, con
 
 static inline enum JsonTypeType dynAvprType_getType(json_t const * const json_type) {
     if (json_is_string(json_type)) {
-        return SIMPLE;
+        return SIMPLE; // Create type based on size (Could also be an internal type!)
     }
     else if (json_is_object(json_type) && json_is_string(json_object_get(json_type, "type")) && 0 == strcmp("array", json_string_value(json_object_get(json_type, "type")))) {
         return ARRAY;
     }
     else {
-        return INVALID;
+        return INVALID; // Not a legal type declaration
     }
 }
 
