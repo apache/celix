@@ -31,7 +31,7 @@
 #include "celixbool.h"
 #include "driver_loader.h"
 #include "device.h"
-#include "constants.h"
+#include "celix_constants.h"
 
 struct driver_attributes {
 	bundle_pt bundle;

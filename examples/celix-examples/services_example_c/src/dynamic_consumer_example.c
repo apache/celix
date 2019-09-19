@@ -21,7 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <constants.h>
+#include "celix_constants.h"
 
 #include "example_calc.h"
 #include <celix_api.h>

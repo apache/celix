@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 
-#include <constants.h>
+#include "celix_constants.h"
 #include <bundle_context.h>
 #include <service_tracker.h>
 

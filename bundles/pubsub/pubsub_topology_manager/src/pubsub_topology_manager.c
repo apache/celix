@@ -30,7 +30,7 @@
 #include "hash_map.h"
 #include "celix_array_list.h"
 #include "celix_bundle_context.h"
-#include "constants.h"
+#include "celix_constants.h"
 #include "utils.h"
 #include "log_service.h"
 #include "log_helper.h"

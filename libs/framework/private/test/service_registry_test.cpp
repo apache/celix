@@ -34,7 +34,7 @@
 #include "CppUTestExt/MockSupport_c.h"
 
 extern "C" {
-#include "constants.h"
+#include "celix_constants.h"
 #include "listener_hook_service.h"
 #include "service_registry.h"
 #include "service_registry_private.h"

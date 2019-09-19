@@ -30,7 +30,7 @@
 #include "bundle_activator.h"
 #include "std_commands.h"
 #include "service_tracker.h"
-#include "constants.h"
+#include "celix_constants.h"
 
 #define NUMBER_OF_COMMANDS 11
 

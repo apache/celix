@@ -28,7 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "constants.h"
+#include "celix_constants.h"
 #include "filter.h"
 #include "dm_component_impl.h"
 

@@ -26,7 +26,7 @@
 #include <stdlib.h>
 
 #include "hash_map.h"
-#include "constants.h"
+#include "celix_constants.h"
 
 #include "driver_matcher.h"
 #include "log_helper.h"

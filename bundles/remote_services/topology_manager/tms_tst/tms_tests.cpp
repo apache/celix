@@ -42,7 +42,7 @@ extern "C" {
 #include <jansson.h>
 
 #include "celix_launcher.h"
-#include "constants.h"
+#include "celix_constants.h"
 #include "endpoint_description.h"
 #include "framework.h"
 #include "topology_manager.h"

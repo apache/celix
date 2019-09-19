@@ -27,7 +27,7 @@
 
 #include <CppUTest/TestHarness.h>
 #include <CppUTestExt/MockSupport.h>
-#include <constants.h>
+#include "celix_constants.h"
 
 extern celix_framework_t *fw;
 

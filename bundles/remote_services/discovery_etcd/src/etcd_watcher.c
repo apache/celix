@@ -31,7 +31,7 @@
 
 #include "log_helper.h"
 #include "log_service.h"
-#include "constants.h"
+#include "celix_constants.h"
 #include "utils.h"
 #include "discovery.h"
 #include "discovery_impl.h"

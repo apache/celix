@@ -20,7 +20,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "constants.h"
+#include "celix_constants.h"
 #include "celix_filter.h"
 #include "filter.h"
 

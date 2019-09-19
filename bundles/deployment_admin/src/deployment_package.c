@@ -29,7 +29,7 @@
 #include "celix_errno.h"
 
 #include "deployment_package.h"
-#include "constants.h"
+#include "celix_constants.h"
 #include "utils.h"
 #include "bundle_context.h"
 #include "module.h"

@@ -27,7 +27,7 @@
 #include <string.h>
 
 #include "utils.h"
-#include "constants.h"
+#include "celix_constants.h"
 #include "manifest_parser.h"
 #include "capability.h"
 #include "requirement.h"

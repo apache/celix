@@ -23,7 +23,7 @@
 #include <string.h>
 #include <utils.h>
 
-#include "constants.h"
+#include "celix_constants.h"
 #include "bundle_context_private.h"
 #include "framework_private.h"
 #include "bundle.h"

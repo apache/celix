@@ -26,7 +26,7 @@
 
 #include "service_tracker_private.h"
 #include "bundle_context.h"
-#include "constants.h"
+#include "celix_constants.h"
 #include "service_reference.h"
 #include "celix_log.h"
 #include "bundle_context_private.h"

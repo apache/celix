@@ -28,7 +28,7 @@
 
 #include "bundle_cache_private.h"
 #include "bundle_archive.h"
-#include "constants.h"
+#include "celix_constants.h"
 #include "celix_log.h"
 #include "celix_properties.h"
 #include "celix_utils_api.h"

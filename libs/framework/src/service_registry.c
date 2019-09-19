@@ -25,7 +25,7 @@
 #include "service_registry_private.h"
 #include "service_registration_private.h"
 #include "listener_hook_service.h"
-#include "constants.h"
+#include "celix_constants.h"
 #include "service_reference_private.h"
 #include "framework_private.h"
 

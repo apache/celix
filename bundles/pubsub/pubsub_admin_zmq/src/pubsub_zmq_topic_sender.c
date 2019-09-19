@@ -31,7 +31,7 @@
 #include "pubsub_psa_zmq_constants.h"
 #include "pubsub_zmq_common.h"
 #include <uuid/uuid.h>
-#include <constants.h>
+#include "celix_constants.h"
 
 #define FIRST_SEND_DELAY_IN_SECONDS             2
 #define ZMQ_BIND_MAX_RETRY                      10

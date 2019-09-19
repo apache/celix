@@ -35,7 +35,7 @@
 extern "C" {
 #include "capability_private.h"
 #include "requirement_private.h"
-#include "constants.h"
+#include "celix_constants.h"
 #include "manifest_parser.h"
 #include "attribute.h"
 #include "celix_log.h"

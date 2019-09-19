@@ -28,7 +28,7 @@
 #include <string.h>
 #include <libxml/xmlwriter.h>
 
-#include "constants.h"
+#include "celix_constants.h"
 #include "remote_constants.h"
 
 #include "endpoint_description.h"

@@ -29,7 +29,7 @@
 #include "pubsub_psa_websocket_constants.h"
 #include "pubsub_websocket_common.h"
 #include <uuid/uuid.h>
-#include <constants.h>
+#include "celix_constants.h"
 #include "http_admin/api.h"
 #include "civetweb.h"
 

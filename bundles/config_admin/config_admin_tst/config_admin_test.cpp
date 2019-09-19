@@ -37,7 +37,7 @@ extern "C" {
 #include "array_list.h"
 
 #include "celix_launcher.h"
-#include "constants.h"
+#include "celix_constants.h"
 #include "framework.h"
 #include "configuration_admin.h"
 #include "example_managed_service_impl.h"

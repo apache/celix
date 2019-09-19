@@ -32,7 +32,7 @@
 #include "pubsub_tcp_common.h"
 #include "pubsub_endpoint.h"
 #include <uuid/uuid.h>
-#include <constants.h>
+#include "celix_constants.h"
 #include <signal.h>
 
 #define FIRST_SEND_DELAY_IN_SECONDS             2

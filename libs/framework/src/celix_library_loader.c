@@ -17,7 +17,7 @@
  *under the License.
  */
 
-#include "constants.h"
+#include "celix_constants.h"
 #include "celix_library_loader.h"
 #include <dlfcn.h>
 

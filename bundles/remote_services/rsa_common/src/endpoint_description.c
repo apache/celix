@@ -31,7 +31,7 @@
 
 #include "endpoint_description.h"
 #include "remote_constants.h"
-#include "constants.h"
+#include "celix_constants.h"
 
 static celix_status_t endpointDescription_verifyLongProperty(celix_properties_t *properties, char *propertyName, unsigned long *longProperty);
 
