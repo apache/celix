@@ -49,7 +49,7 @@ ffi_type * dynType_ffiType(dyn_type *type);
 dyn_type * dynAvprType_parseFromJson(json_t * const root, const char * fqn);
 dyn_function_type * dynAvprFunction_parseFromJson(json_t * const root, const char * fqn);
 int dynInterface_checkInterface(dyn_interface_type *intf);
-void dynAvprType_constructFqn(char * destination, int size, const char * possibleFqn, const char * ns);
+void dynAvprType_constructFqn(char *destination, size_t size, const char *possibleFqn, const char *ns);
 
 // Function definitions
 dyn_interface_type * dynInterface_parseAvprWithStr(const char * avpr) {
