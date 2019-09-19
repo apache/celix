@@ -17,15 +17,15 @@
  *under the License.
  */
 /*
- * constants.h
+ * celix_constants.h
  *
  *  \date       Apr 29, 2010
  *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
 
-#ifndef CONSTANTS_H_
-#define CONSTANTS_H_
+#ifndef CELIX_CONSTANTS_H_
+#define CELIX_CONSTANTS_H_
 
 #include <stdbool.h>
 
@@ -91,4 +91,4 @@ static const char *const CELIX_LOAD_BUNDLES_WITH_NODELETE = "CELIX_LOAD_BUNDLES_
 }
 #endif
 
-#endif /* CONSTANTS_H_ */
+#endif /* CELIX_CONSTANTS_H_ */
