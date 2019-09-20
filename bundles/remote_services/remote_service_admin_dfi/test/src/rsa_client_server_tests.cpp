@@ -19,7 +19,7 @@
 
 #include <CppUTest/TestHarness.h>
 #include <remote_constants.h>
-#include <constants.h>
+#include "celix_constants.h"
 #include <tst_service.h>
 #include "CppUTest/CommandLineTestRunner.h"
 #include "calculator_service.h"
