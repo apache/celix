@@ -15,7 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 
-
 LOGHELPER_ENABLE_STDOUT_FALLBACK=true
 org.osgi.framework.storage.clean=onFirstInit
 org.osgi.framework.storage=.cacheFramework2

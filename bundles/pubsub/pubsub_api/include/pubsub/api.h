@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -17,9 +17,9 @@
  * under the License.
  */
 
-
 #ifndef __PUBSUB_API_H_
 #define __PUBSUB_API_H_
+
 
 #include "pubsub/publisher.h"
 #include "pubsub/subscriber.h"
