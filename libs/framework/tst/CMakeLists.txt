@@ -15,7 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 
-
 add_celix_bundle(simple_test_bundle1 NO_ACTIVATOR VERSION 1.0.0)
 add_celix_bundle(simple_test_bundle2 NO_ACTIVATOR VERSION 1.0.0)
 add_celix_bundle(simple_test_bundle3 NO_ACTIVATOR VERSION 1.0.0)

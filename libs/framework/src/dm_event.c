@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- * 
- *   http://www.apache.org/licenses/LICENSE-2.0 
- * 
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -16,8 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
-/*
+/**
  * dm_event.c
  *
  *  \date       18 Dec 2014
@@ -26,7 +25,7 @@
  */
 
 #include <stdlib.h>
-#include <constants.h>
+#include "celix_constants.h"
 #include <utils.h>
 
 #include "dm_event.h"
@@ -43,7 +42,6 @@ celix_status_t event_create(dm_event_type_e event_type, bundle_pt bundle, bundle
 	serviceReference_getProperty(reference, OSGI_FRAMEWORK_SERVICE_ID, &serviceIdStr);
 	unsigned long servId = strtoul(serviceIdStr,NULL,10);
 
-	//FIXME service ranking can dynamically change, but service reference can be removed at any time.
 	const char* rankingStr = NULL;
 	serviceReference_getProperty(reference, OSGI_FRAMEWORK_SERVICE_RANKING, &rankingStr);
 	long ranking = rankingStr == NULL ? 0 : atol(rankingStr);

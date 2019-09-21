@@ -1,21 +1,22 @@
-/**
- *Licensed to the Apache Software Foundation (ASF) under one
- *or more contributor license agreements.  See the NOTICE file
- *distributed with this work for additional information
- *regarding copyright ownership.  The ASF licenses this file
- *to you under the Apache License, Version 2.0 (the
- *"License"); you may not use this file except in compliance
- *with the License.  You may obtain a copy of the License at
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- *Unless required by applicable law or agreed to in writing,
- *software distributed under the License is distributed on an
- *"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- *specific language governing permissions and limitations
- *under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
+
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"                                                                                                                                                                        
 
@@ -76,17 +77,18 @@ const char* theTestCase = "{ \
                     { \
                         \"name\" : \"aa\", \
                         \"type\" : \"uint\" \
-                    },\
-                    { \
+                    }, { \
                         \"name\" : \"bb\", \
                         \"type\" : \"uint\" \
-                    }\
-                    ,\
-                    { \
+                    }, { \
                         \"name\" : \"cc\", \
                         \"type\" : \"double\" \
-                    }\
-                    ] \
+                    }] \
+                  }, { \
+                    \"type\" : \"fixed\", \
+                    \"name\" : \"Alias\", \
+                    \"alias\" : \"other.dt.long\", \
+                    \"size\" : 7 \
                   }, { \
                     \"type\" : \"fixed\", \
                     \"name\" : \"long\", \
@@ -129,7 +131,14 @@ const char* theTestCase = "{ \
                     \"type\" : \"enum\", \
                     \"name\" : \"EnumWithoutValue\", \
                     \"symbols\" : [\"A\", \"B\"]\
-		  }, { \
+                  }, { \
+                    \"type\" : \"record\", \
+                    \"name\" : \"RecordWithSimpleTypes\", \
+                    \"fields\" : [ {\
+                        \"name\" : \"data\", \
+                        \"type\" :\"int\" \
+                    } ]\
+                  }, { \
                     \"type\" : \"record\", \
                     \"name\" : \"Anne\", \
                     \"alias\" : \"CoolType\", \
@@ -226,6 +235,52 @@ const char* referenceTestCase = "{\
                 \"messages\" : {} \
            }";
 
+const char* aliasTestCase = "{\
+                \"protocol\" : \"types\", \
+                \"namespace\" : \"common.dt\", \
+                \"version\" : \"1.0.0\", \
+                \"types\" : [ { \
+                    \"type\" : \"fixed\", \
+                    \"name\" : \"Rad\", \
+                    \"size\" : 4, \
+                    \"alias\" : \"common.dt.Float\" \
+                  }, { \
+                    \"type\" : \"fixed\", \
+                    \"name\" : \"Float\", \
+                    \"size\" : 4, \
+                    \"alias\" : \"float\" \
+                  }, { \
+                    \"type\" : \"record\", \
+                    \"name\" : \"Polar_2d\", \
+                    \"fields\" : [ { \
+                        \"name\" : \"range\", \
+                        \"type\" : \"Float\" \
+                    }, { \
+                        \"name\" : \"azimuth\", \
+                        \"type\" : \"Rad\" \
+                    } ] \
+                  } ] , \
+                \"messages\" : {} \
+           }";
+
+const char* arrayIntTestCase = "{\
+                \"protocol\" : \"types\", \
+                \"namespace\" : \"common.dt\", \
+                \"version\" : \"1.0.0\", \
+                \"types\" : [ { \
+                    \"type\" : \"record\", \
+                    \"name\" : \"SimpleArray\", \
+                    \"fields\" : [ { \
+                        \"name\" : \"array\", \
+                        \"type\" : {\
+                            \"type\" : \"array\",\
+                            \"items\" : \"int\" \
+                        } \
+                    } ] \
+                  } ] , \
+                \"messages\" : {} \
+           }";
+
 
 /*********************************************************************************
  * Type building tests
@@ -233,12 +288,16 @@ const char* referenceTestCase = "{\
 
 TEST_GROUP(DynAvprTypeTests) {
 	void setup() override {
-	    dynAvprType_logSetup(stdLogA, nullptr, 3);
+	    dynAvprType_logSetup(stdLogA, nullptr, 1);
 	}
 };
 
 TEST(DynAvprTypeTests, SimpleTest) {
     runTestA(theTestCase, "test.dt.uint", DYN_TYPE_SIMPLE);
+}
+
+TEST(DynAvprTypeTests, SimpleSimpleTest) {
+    runTestA(theTestCase, "test.dt.RecordWithSimpleTypes", DYN_TYPE_COMPLEX);
 }
 
 TEST(DynAvprTypeTests, ComplexTest) {
@@ -267,6 +326,18 @@ TEST(DynAvprTypeTests, ComplexComplexTest) {
 
 TEST(DynAvprTypeTests, ReferenceTest) {
     runTestA(referenceTestCase, "test.dt.R", DYN_TYPE_COMPLEX);
+}
+
+TEST(DynAvprTypeTests, AliasTest) {
+    runTestA(theTestCase, "test.dt.Alias", DYN_TYPE_SIMPLE);
+}
+
+TEST(DynAvprTypeTests, ComplexAliasTest) {
+    runTestA(aliasTestCase, "common.dt.Polar_2d", DYN_TYPE_COMPLEX);
+}
+
+TEST(DynAvprTypeTests, ArrayWithSimpleTest) { //TODO: fix this testcase
+    runTestA(arrayIntTestCase, "common.dt.SimpleArray", DYN_TYPE_COMPLEX);
 }
 
 /*********************************************************************************
@@ -354,6 +425,27 @@ TEST(DynAvprAssignTests, AssignComplexTest) {
     test_version(type, "1.1.9");
     dynType_destroy(type);
 }
+
+TEST(DynAvprAssignTests, AssignComplexSimpleTest) {
+    // Build type
+    struct exB {
+        int32_t b;
+    };
+
+    dyn_type *type = dynType_parseAvprWithStr(theTestCase, "test.dt.RecordWithSimpleTypes");
+    CHECK(type != nullptr);
+
+    // set example values
+    int32_t b_b = 5301;
+
+    exB inst {0};
+    dynType_complex_setValueAt(type, 0, &inst, &b_b);
+    CHECK_EQUAL(5301, inst.b);
+
+    test_version(type, "1.1.9");
+    dynType_destroy(type);
+}
+
 
 TEST(DynAvprAssignTests, AssignPtrTest) {
     // Build type

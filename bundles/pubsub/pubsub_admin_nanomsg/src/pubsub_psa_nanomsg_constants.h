@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -17,11 +17,8 @@
  * under the License.
  */
 
-
-
 #ifndef PUBSUB_PSA_NANOMSG_CONSTANTS_H_
 #define PUBSUB_PSA_NANOMSG_CONSTANTS_H_
-
 
 
 #define PSA_NANOMSG_BASE_PORT                       "PSA_NANOMSG_BASE_PORT"

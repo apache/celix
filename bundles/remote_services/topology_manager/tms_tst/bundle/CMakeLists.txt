@@ -15,7 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 
-
 include_directories(
         ${CPPUTEST_INCLUDE_DIR}
         ${PROJECT_SOURCE_DIR}/framework/public/include

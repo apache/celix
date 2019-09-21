@@ -1,22 +1,22 @@
-/**
- *Licensed to the Apache Software Foundation (ASF) under one
- *or more contributor license agreements.  See the NOTICE file
- *distributed with this work for additional information
- *regarding copyright ownership.  The ASF licenses this file
- *to you under the Apache License, Version 2.0 (the
- *"License"); you may not use this file except in compliance
- *with the License.  You may obtain a copy of the License at
- *
- *  http://www.apache.org/licenses/LICENSE-2.0
- *
- *Unless required by applicable law or agreed to in writing,
- *software distributed under the License is distributed on an
- *"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- *specific language governing permissions and limitations
- *under the License.
- */
 /*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+/**
  * bundle_revision.c
  *
  *  \date       Apr 12, 2011
@@ -42,7 +42,6 @@ celix_status_t bundleRevision_create(const char *root, const char *location, lon
     if (!revision) {
     	status = CELIX_ENOMEM;
     } else {
-    	// TODO: This overwrites an existing revision, is this supposed to happen?
         int state = mkdir(root, S_IRWXU);
         if ((state != 0) && (errno != EEXIST)) {
             free(revision);
@@ -51,7 +50,6 @@ celix_status_t bundleRevision_create(const char *root, const char *location, lon
             if (inputFile != NULL) {
                 status = extractBundle(inputFile, root);
             } else if (strcmp(location, "inputstream:") != 0) {
-            	// TODO how to handle this correctly?
             	// If location != inputstream, extract it, else ignore it and assume this is a cache entry.
                 status = extractBundle(location, root);
             }

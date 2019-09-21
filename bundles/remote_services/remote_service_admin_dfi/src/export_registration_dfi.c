@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -25,7 +25,7 @@
 #include <service_tracker_customizer.h>
 #include <service_tracker.h>
 #include <json_rpc.h>
-#include "constants.h"
+#include "celix_constants.h"
 #include "export_registration_dfi.h"
 #include "dfi_utils.h"
 

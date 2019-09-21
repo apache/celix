@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -30,7 +30,7 @@
 
 #include "celix_bundle_context.h"
 #include "celix_properties.h"
-#include "constants.h"
+#include "celix_constants.h"
 #include "celix_threads.h"
 #include "array_list.h"
 #include "utils.h"

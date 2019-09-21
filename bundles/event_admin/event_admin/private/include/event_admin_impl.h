@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/*
+/**
  * event_admin_impl.h
  *
  *  \date       Jul 16, 2013
@@ -30,7 +30,7 @@
 #include <string.h>
 #include "celix_errno.h"
 #include "bundle_context.h"
-#include "constants.h"
+#include "celix_constants.h"
 #include "event_constants.h"
 #include "event_admin.h"
 #include "event_handler.h"

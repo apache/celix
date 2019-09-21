@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -20,7 +20,7 @@
 #include <vector>
 #include <iostream>
 #include <cstring>
-#include "constants.h"
+#include "celix_constants.h"
 #include "celix_properties.h"
 
 using namespace celix::dm;

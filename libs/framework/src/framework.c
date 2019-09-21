@@ -1,22 +1,21 @@
-/**
- *Licensed to the Apache Software Foundation (ASF) under one
- *or more contributor license agreements.  See the NOTICE file
- *distributed with this work for additional information
- *regarding copyright ownership.  The ASF licenses this file
- *to you under the Apache License, Version 2.0 (the
- *"License"); you may not use this file except in compliance
- *with the License.  You may obtain a copy of the License at
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- *Unless required by applicable law or agreed to in writing,
- *software distributed under the License is distributed on an
- *"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- *specific language governing permissions and limitations
- *under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
-
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -28,7 +27,7 @@
 
 #include "celix_dependency_manager.h"
 #include "framework_private.h"
-#include "constants.h"
+#include "celix_constants.h"
 #include "resolver.h"
 #include "utils.h"
 #include "linked_list_iterator.h"
@@ -231,7 +230,6 @@ struct request {
 
 typedef struct request *request_pt;
 
-//TODO move to service registry
 typedef struct celix_fw_service_listener_entry {
     //only set during creating
     celix_bundle_t *bundle;
@@ -301,7 +299,6 @@ static inline void listener_waitAndDestroy(celix_framework_t *framework, celix_f
 
 framework_logger_pt logger;
 
-//TODO introduce a counter + mutex to control the freeing of the logger when mutiple threads are running a framework.
 static celix_thread_once_t loggerInit = CELIX_THREAD_ONCE_INIT;
 static void framework_loggerInit(void) {
     logger = malloc(sizeof(*logger));
@@ -324,11 +321,11 @@ celix_status_t framework_create(framework_pt *framework, properties_pt config) {
 
         status = CELIX_DO_IF(status, celixThreadCondition_init(&(*framework)->shutdown.cond, NULL));
         status = CELIX_DO_IF(status, celixThreadMutex_create(&(*framework)->shutdown.mutex, NULL));
-        status = CELIX_DO_IF(status, celixThreadMutex_create(&(*framework)->dispatcher.mutex, NULL));  //TODO refactor to use use count with condition (see serviceListeners)
+        status = CELIX_DO_IF(status, celixThreadMutex_create(&(*framework)->dispatcher.mutex, NULL));
         status = CELIX_DO_IF(status, celixThreadMutex_create(&(*framework)->serviceListenersLock, &attr));
-        status = CELIX_DO_IF(status, celixThreadMutex_create(&(*framework)->frameworkListenersLock, &attr));  //TODO refactor to use use count with condition (see serviceListeners)
-        status = CELIX_DO_IF(status, celixThreadMutex_create(&(*framework)->bundleListenerLock, NULL));  //TODO refactor to use use count with condition (see serviceListeners)
-        status = CELIX_DO_IF(status, celixThreadMutex_create(&(*framework)->installedBundles.mutex, NULL));  //TODO refactor to use use count with condition (see serviceListeners)
+        status = CELIX_DO_IF(status, celixThreadMutex_create(&(*framework)->frameworkListenersLock, &attr));
+        status = CELIX_DO_IF(status, celixThreadMutex_create(&(*framework)->bundleListenerLock, NULL));
+        status = CELIX_DO_IF(status, celixThreadMutex_create(&(*framework)->installedBundles.mutex, NULL));
         status = CELIX_DO_IF(status, celixThreadCondition_init(&(*framework)->dispatcher.cond, NULL));
         if (status == CELIX_SUCCESS) {
             (*framework)->bundle = NULL;
@@ -352,8 +349,7 @@ celix_status_t framework_create(framework_pt *framework, properties_pt config) {
             status = CELIX_DO_IF(status, bundle_getBundleId((*framework)->bundle, &(*framework)->bundleId));
             status = CELIX_DO_IF(status, bundle_setFramework((*framework)->bundle, (*framework)));
             if (status == CELIX_SUCCESS) {
-                //
-                //TODO set group (*framework)->bundle
+                //nop
             } else {
                 status = CELIX_FRAMEWORK_EXCEPTION;
                 fw_logCode((*framework)->logger, OSGI_FRAMEWORK_LOG_ERROR, status, "Could not create framework");
@@ -656,7 +652,6 @@ static void framework_autoStartConfiguredBundles(bundle_context_t *fwCtx) {
     for (int i = 0; i < len; ++i) {
         bundleContext_getProperty(fwCtx, celixKeys[i], &autoStart);
         if (autoStart == NULL) {
-            //trying cosgi.auto.start.<level> variants. TODO make this prop deprecated -> warning
             bundleContext_getProperty(fwCtx, cosgiKeys[i], &autoStart);
         }
         if (autoStart != NULL) {
@@ -780,7 +775,7 @@ celix_status_t fw_installBundle2(framework_pt framework, bundle_pt * bundle, lon
         return CELIX_FILE_IO_EXCEPTION;
     }
 
-    //increase use count of framework bundle to prevent a stop. TODO is concurrent installing of bundles supported? -> else need another lock
+    //increase use count of framework bundle to prevent a stop.
     fw_bundleEntry_increaseUseCount(framework, framework->bundleId);
 
   	status = CELIX_DO_IF(status, bundle_getState(framework->bundle, &state));
@@ -1158,7 +1153,6 @@ celix_status_t fw_stopBundle(framework_pt framework, bundle_pt bundle, bool reco
 
                     serviceRegistry_clearReferencesFor(framework->registry, bundle);
                 }
-                // #TODO remove listeners for bundle
 
                 if (context != NULL) {
                     status = CELIX_DO_IF(status, bundleContext_destroy(context));
@@ -1230,7 +1224,6 @@ celix_status_t fw_uninstallBundle(framework_pt framework, bundle_pt bundle) {
 
     status = CELIX_DO_IF(status, fw_stopBundle(framework, bundle, true));
 
-    // TODO Unload all libraries for transition to unresolved
     bundle_archive_t *archive = NULL;
     bundle_revision_t *revision = NULL;
 	array_list_pt handles = NULL;
@@ -1623,50 +1616,13 @@ celix_status_t framework_ungetService(framework_pt framework, bundle_pt bundle, 
 }
 
 void fw_addServiceListener(framework_pt framework, bundle_pt bundle, celix_service_listener_t *listener, const char* sfilter) {
-	array_list_pt listenerHooks = NULL;
-	unsigned int i;
-
     celix_fw_service_listener_entry_t *fwListener = listener_create(bundle, sfilter, listener);
-
-	bundle_context_t *context = NULL;
 
     celixThreadMutex_lock(&framework->serviceListenersLock);
 	arrayList_add(framework->serviceListeners, fwListener);
     celixThreadMutex_unlock(&framework->serviceListenersLock);
 
-    //TODO lock listeners hooks?
-	celix_status_t  status = serviceRegistry_getListenerHooks(framework->registry, framework->bundle, &listenerHooks);
-
-	if (status == CELIX_SUCCESS) {
-        struct listener_hook_info info;
-
-        bundle_getContext(bundle, &context);
-        info.context = context;
-        info.removed = false;
-        info.filter = sfilter;
-
-        for (i = 0; i < arrayList_size(listenerHooks); i++) {
-            service_reference_pt ref = (service_reference_pt) arrayList_get(listenerHooks, i);
-            listener_hook_service_pt hook = NULL;
-            array_list_pt infos = NULL;
-            bool ungetResult = false;
-
-            status = fw_getService(framework, framework->bundle, ref, (const void **) &hook);
-
-            if (status == CELIX_SUCCESS && hook != NULL) {
-                arrayList_create(&infos);
-                arrayList_add(infos, &info);
-                hook->added(hook->handle, infos);
-                serviceRegistry_ungetService(framework->registry, framework->bundle, ref, &ungetResult);
-                serviceRegistry_ungetServiceReference(framework->registry, framework->bundle, ref);
-                arrayList_destroy(infos);
-            } else {
-                fw_logCode(framework->logger, OSGI_FRAMEWORK_LOG_ERROR, status, "Could not retrieve hook service.");
-            }
-        }
-
-        arrayList_destroy(listenerHooks);
-    }
+    serviceRegistry_callHooksForListenerFilter(framework->registry, bundle, sfilter, false);
 }
 
 void fw_removeServiceListener(framework_pt framework, bundle_pt bundle, celix_service_listener_t *listener) {
@@ -1690,35 +1646,9 @@ void fw_removeServiceListener(framework_pt framework, bundle_pt bundle, celix_se
 
     if (match != NULL) {
         //invoke listener hooks
-
-        bundle_context_pt lContext = NULL;
-
-        struct listener_hook_info info;
-        bundle_getContext(match->bundle, &lContext);
-        info.context = lContext;
-        filter_getString(match->filter, &info.filter);
-        info.removed = true;
-
-        array_list_pt listenerHooks = NULL;
-        serviceRegistry_getListenerHooks(framework->registry, framework->bundle, &listenerHooks);
-        for (i = 0; i < arrayList_size(listenerHooks); i++) {
-            service_reference_pt ref = (service_reference_pt) arrayList_get(listenerHooks, i);
-            listener_hook_service_pt hook = NULL;
-            array_list_pt infos = NULL;
-            bool ungetResult;
-
-            fw_getService(framework, framework->bundle, ref, (const void **) &hook);
-
-            if (hook != NULL) {
-                arrayList_create(&infos);
-                arrayList_add(infos, &info);
-                hook->removed(hook->handle, infos);
-                serviceRegistry_ungetService(framework->registry, framework->bundle, ref, &ungetResult);
-                serviceRegistry_ungetServiceReference(framework->registry, framework->bundle, ref);
-                arrayList_destroy(infos);
-            }
-        }
-        arrayList_destroy(listenerHooks);
+        const char *filter;
+        filter_getString(match->filter, &filter);
+        serviceRegistry_callHooksForListenerFilter(framework->registry, bundle, filter, true);
     }
 
     if (match != NULL) {

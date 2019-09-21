@@ -1,22 +1,22 @@
-/**
- *Licensed to the Apache Software Foundation (ASF) under one
- *or more contributor license agreements.  See the NOTICE file
- *distributed with this work for additional information
- *regarding copyright ownership.  The ASF licenses this file
- *to you under the Apache License, Version 2.0 (the
- *"License"); you may not use this file except in compliance
- *with the License.  You may obtain a copy of the License at
- *
- *  http://www.apache.org/licenses/LICENSE-2.0
- *
- *Unless required by applicable law or agreed to in writing,
- *software distributed under the License is distributed on an
- *"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- *specific language governing permissions and limitations
- *under the License.
- */
 /*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+/**
  * service_registry_private.h
  *
  *  \date       Feb 7, 2013
@@ -24,12 +24,13 @@
  *  \copyright  Apache License, Version 2.0
  */
 
-
 #ifndef SERVICE_REGISTRY_PRIVATE_H_
 #define SERVICE_REGISTRY_PRIVATE_H_
 
 #include "registry_callback_private.h"
 #include "service_registry.h"
+#include "listener_hook_service.h"
+#include "service_reference.h"
 
 struct celix_serviceRegistry {
 	framework_pt framework;
@@ -44,10 +45,18 @@ struct celix_serviceRegistry {
 	serviceChanged_function_pt serviceChanged;
 	unsigned long currentServiceId;
 
-	array_list_pt listenerHooks;
+	array_list_pt listenerHooks; //celix_service_registry_listener_hook_entry_t*
 
 	celix_thread_rwlock_t lock;
 };
+
+typedef struct celix_service_registry_listener_hook_entry {
+    long svcId;
+    celix_listener_hook_service_t *hook;
+    celix_thread_mutex_t mutex; //protects below
+    celix_thread_cond_t cond;
+    unsigned int count;
+} celix_service_registry_listener_hook_entry_t;
 
 typedef enum reference_status_enum {
 	REF_ACTIVE,

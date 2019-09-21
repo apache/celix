@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -26,41 +26,45 @@
 #include "pubsub/api.h"
 
 #include "msg.h"
-
-#include <CppUTest/TestHarness.h>
-#include <CppUTestExt/MockSupport.h>
-#include <constants.h>
-
-extern "C" {
+#include "receive_count_service.h"
 
 static int tst_receive(void *handle, const char *msgType, unsigned int msgTypeId, void *msg, bool *release);
+static size_t tst_count(void *handle);
 
 struct activator {
     pubsub_subscriber_t subSvc;
     long subSvcId;
 
-    pthread_mutex_t mutex;
-    unsigned int count = 0;
-};
+    celix_receive_count_service_t countSvc;
+    long countSvcId;
 
-static struct activator *g_act = NULL; //global
+    pthread_mutex_t mutex;
+    unsigned int count;
+};
 
 celix_status_t bnd_start(struct activator *act, celix_bundle_context_t *ctx) {
     pthread_mutex_init(&act->mutex, NULL);
 
-    celix_properties_t *props = celix_properties_create();
-    celix_properties_set(props, PUBSUB_SUBSCRIBER_TOPIC, "ping");
-    act->subSvc.handle = act;
-    act->subSvc.receive = tst_receive;
-    act->subSvcId = celix_bundleContext_registerService(ctx, &act->subSvc, PUBSUB_SUBSCRIBER_SERVICE_NAME, props);
+    {
+        celix_properties_t *props = celix_properties_create();
+        celix_properties_set(props, PUBSUB_SUBSCRIBER_TOPIC, "ping");
+        act->subSvc.handle = act;
+        act->subSvc.receive = tst_receive;
+        act->subSvcId = celix_bundleContext_registerService(ctx, &act->subSvc, PUBSUB_SUBSCRIBER_SERVICE_NAME, props);
+    }
 
-    g_act = act;
+    {
+        act->countSvc.handle = act;
+        act->countSvc.receiveCount = tst_count;
+        act->countSvcId = celix_bundleContext_registerService(ctx, &act->countSvc, CELIX_RECEIVE_COUNT_SERVICE_NAME, NULL);
+    }
 
     return CELIX_SUCCESS;
 }
 
 celix_status_t bnd_stop(struct activator *act, celix_bundle_context_t *ctx) {
     celix_bundleContext_unregisterService(ctx, act->subSvcId);
+    celix_bundleContext_unregisterService(ctx, act->countSvcId);
     pthread_mutex_destroy(&act->mutex);
     return CELIX_SUCCESS;
 }
@@ -68,10 +72,10 @@ celix_status_t bnd_stop(struct activator *act, celix_bundle_context_t *ctx) {
 CELIX_GEN_BUNDLE_ACTIVATOR(struct activator, bnd_start, bnd_stop) ;
 
 
-static int tst_receive(void *handle, const char * /*msgType*/, unsigned int /*msgTypeId*/, void * voidMsg, bool */*release*/) {
-    struct activator *act = static_cast<struct activator *>(handle);
+static int tst_receive(void *handle, const char * msgType __attribute__((unused)), unsigned int msgTypeId  __attribute__((unused)), void * voidMsg, bool *release  __attribute__((unused))) {
+    struct activator *act = handle;
 
-    msg_t *msg = static_cast<msg_t*>(voidMsg);
+    msg_t *msg = voidMsg;
     static int prevSeqNr = 0;
     int delta = msg->seqNr - prevSeqNr;
     if (delta != 1) {
@@ -85,36 +89,11 @@ static int tst_receive(void *handle, const char * /*msgType*/, unsigned int /*ms
     return CELIX_SUCCESS;
 }
 
-} //end extern C
-
-TEST_GROUP(PUBSUB_INT_GROUP)
-{
-    void setup() {
-        //nop
-    }
-
-    void teardown() {
-        //nop
-    }
-};
-
-TEST(PUBSUB_INT_GROUP, recvTest) {
-    constexpr int TRIES = 25;
-    constexpr int TIMEOUT = 250000;
-    constexpr int MSG_COUNT = 100;
-
-    int count = 0;
-
-    for (int i = 0; i < TRIES; ++i) {
-        pthread_mutex_lock(&g_act->mutex);
-        count = g_act->count;
-        pthread_mutex_unlock(&g_act->mutex);
-        printf("Current msg count is %i, waiting for at least %i\n", count, MSG_COUNT);
-        if (count >= MSG_COUNT) {
-            break;
-        }
-        usleep(TIMEOUT);
-    }
-    CHECK(count >= MSG_COUNT);
-
+static size_t tst_count(void *handle) {
+    struct activator *act = handle;
+    size_t count;
+    pthread_mutex_lock(&act->mutex);
+    count = act->count;
+    pthread_mutex_unlock(&act->mutex);
+    return count;
 }

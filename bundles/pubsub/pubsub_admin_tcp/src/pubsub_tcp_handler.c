@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -47,7 +47,8 @@
 #define TCP_HEADER_SIZE 20
 #define MAX_EPOLL_EVENTS   64
 #define MAX_MSG_VECTOR_LEN 64
-#define MAX_DEFAULT_BUFFER_SIZE 4
+#define MAX_DEFAULT_BUFFER_SIZE 4u
+
 
 #define READ_STATE_INIT   0u
 #define READ_STATE_HEADER 1u

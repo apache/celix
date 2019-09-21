@@ -1,29 +1,28 @@
-/**
- *Licensed to the Apache Software Foundation (ASF) under one
- *or more contributor license agreements.  See the NOTICE file
- *distributed with this work for additional information
- *regarding copyright ownership.  The ASF licenses this file
- *to you under the Apache License, Version 2.0 (the
- *"License"); you may not use this file except in compliance
- *with the License.  You may obtain a copy of the License at
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- *Unless required by applicable law or agreed to in writing,
- *software distributed under the License is distributed on an
- *"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- *specific language governing permissions and limitations
- *under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
-
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <utils.h>
 
-#include "constants.h"
+#include "celix_constants.h"
 #include "bundle_context_private.h"
 #include "framework_private.h"
 #include "bundle.h"
@@ -83,8 +82,6 @@ celix_status_t bundleContext_destroy(bundle_context_pt context) {
 	    bundleContext_cleanupBundleTrackers(context);
 	    bundleContext_cleanupServiceTrackers(context);
         bundleContext_cleanupServiceTrackerTrackers(context);
-
-        //TODO cleanup service registrations
 
 	    //NOTE still present service registrations will be cleared during bundle stop in the
 	    //service registry (serviceRegistry_clearServiceRegistrations).
@@ -572,8 +569,6 @@ long celix_bundleContext_trackBundlesWithOptions(
         trackerId = entry->trackerId;
 
         //loop through all already installed bundles.
-        // FIXME there is a race condition between installing the listener and looping through the started bundles.
-        // NOTE move this to the framework, so that the framework can ensure locking to ensure not bundles is missed.
         if (entry->opts.onStarted != NULL) {
             celix_framework_useBundles(ctx->framework, entry->opts.includeFrameworkBundle, entry->opts.callbackHandle, entry->opts.onStarted);
         }
@@ -758,7 +753,7 @@ bool celix_bundleContext_stopBundle(celix_bundle_context_t *ctx, long bundleId) 
 
 static void bundleContext_uninstallBundleCallback(void *handle, const bundle_t *c_bnd) {
     bool *uninstalled = handle;
-    bundle_t *bnd = (bundle_t*)c_bnd; //TODO use mute-able variant ??
+    bundle_t *bnd = (bundle_t*)c_bnd;
     if (celix_bundle_getState(bnd) == OSGI_FRAMEWORK_BUNDLE_ACTIVE) {
         bundle_stop(bnd);
     }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/*
+/**
  * discovery_shmWatcher.c
  *
  * \date       16 Sep 2014
@@ -32,7 +32,7 @@
 
 
 #include "celix_log.h"
-#include "constants.h"
+#include "celix_constants.h"
 #include "discovery_impl.h"
 
 #include "discovery_shm.h"
