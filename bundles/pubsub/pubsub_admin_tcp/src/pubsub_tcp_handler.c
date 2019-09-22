@@ -49,6 +49,7 @@
 #define MAX_MSG_VECTOR_LEN 64
 #define MAX_DEFAULT_BUFFER_SIZE 4u
 
+
 #define READ_STATE_INIT   0u
 #define READ_STATE_HEADER 1u
 #define READ_STATE_DATA   2u
@@ -85,7 +86,8 @@ struct pubsub_tcpHandler {
   unsigned int msgIdOffset;
   unsigned int msgIdSize;
   bool bypassHeader;
-  bool useBlocking;
+  bool useBlockingWrite;
+  bool useBlockingRead;
   celix_thread_rwlock_t dbLock;
   unsigned int timeout;
   hash_map_t *url_map;
@@ -107,7 +109,6 @@ static inline int pubsub_tcpHandler_setInAddr(pubsub_tcpHandler_t *handle, const
 static inline int pubsub_tcpHandler_closeConnectionEntry(pubsub_tcpHandler_t *handle, psa_tcp_connection_entry_t *entry, bool lock);
 static inline int pubsub_tcpHandler_closeConnection(pubsub_tcpHandler_t *handle, int fd);
 static inline int pubsub_tcpHandler_makeNonBlocking(pubsub_tcpHandler_t *handle, int fd);
-//static inline int pubsub_tcpHandler_makeBlocking(pubsub_tcpHandler_t *handle, int fd);
 static inline void pubsub_tcpHandler_setupEntry(psa_tcp_connection_entry_t* entry, int fd, char *url, unsigned int bufferSize);
 static inline void pubsub_tcpHandler_freeEntry(psa_tcp_connection_entry_t* entry);
 
@@ -128,6 +129,7 @@ pubsub_tcpHandler_t *pubsub_tcpHandler_create(log_helper_t *logHelper) {
         handle->bypassHeader = false;
         handle->bufferSize = MAX_DEFAULT_BUFFER_SIZE;
         handle->maxNofBuffer = 1; // Reserved for future Use;
+        handle->useBlockingWrite = true;
         pubsub_tcpHandler_setupEntry(&handle->own, -1, NULL, MAX_DEFAULT_BUFFER_SIZE);
         celixThreadRwlock_create(&handle->dbLock, 0);
         //signal(SIGPIPE, SIG_IGN);
@@ -271,7 +273,7 @@ int pubsub_tcpHandler_connect(pubsub_tcpHandler_t *handle, char *url) {
             }
         }
         // Make file descriptor NonBlocking
-        if ((!handle->useBlocking) && (rc >= 0)) {
+        if ((!handle->useBlockingRead) && (rc >= 0)) {
             rc = pubsub_tcpHandler_makeNonBlocking(handle, fd);
             if (rc < 0) close(fd);
         }
@@ -408,23 +410,6 @@ int pubsub_tcpHandler_makeNonBlocking(pubsub_tcpHandler_t *handle, int fd) {
   return rc;
 }
 
-#ifdef USE_BLOCKING
-static inline
-int pubsub_tcpHandler_makeBlocking(pubsub_tcpHandler_t *handle, int fd) {
-    int rc = 0;
-    int flags = fcntl(fd, F_GETFL, 0);
-    if (flags == -1) rc = flags;
-    else {
-        rc = fcntl(fd, F_SETFL, flags & (~O_NONBLOCK));
-        if (rc < 0) {
-            L_ERROR("[TCP Socket] Cannot set to BLOCKING epoll: %s\n", strerror(errno));
-            errno = 0;
-        }
-    }
-    return rc;
-}
-#endif
-
 int pubsub_tcpHandler_listen(pubsub_tcpHandler_t *handle, char *url) {
     int fd = pubsub_tcpHandler_open(handle, url);
     // Make handler fd entry
@@ -507,7 +492,7 @@ void pubsub_tcpHandler_setUrlInfo(char *url, pubsub_tcpHandler_url_t *url_info) 
             url_info->hostname = strtok(strdup(hostname), ":");
             if (port) {
                 port += 1;
-                unsigned int portDigits = (unsigned) atoi(port);
+                unsigned int portDigits = (unsigned int) atoi(port);
                 if (portDigits != 0) url_info->portnr = portDigits;
             }
             free(hostname);
@@ -537,6 +522,7 @@ int pubsub_tcpHandler_createReceiveBufferStore(pubsub_tcpHandler_t *handle,
     return 0;
 }
 
+
 void pubsub_tcpHandler_setTimeout(pubsub_tcpHandler_t *handle, unsigned int timeout) {
     if (handle != NULL) {
         celixThreadRwlock_writeLock(&handle->dbLock);
@@ -555,12 +541,30 @@ void pubsub_tcpHandler_setBypassHeader(pubsub_tcpHandler_t *handle, bool bypassH
     }
 }
 
+void pubsub_tcpHandler_setBlockingWrite(pubsub_tcpHandler_t *handle, bool blocking) {
+    if (handle != NULL) {
+        celixThreadRwlock_writeLock(&handle->dbLock);
+        handle->useBlockingWrite = blocking;
+        celixThreadRwlock_unlock(&handle->dbLock);
+    }
+}
+
+void pubsub_tcpHandler_setBlockingRead(pubsub_tcpHandler_t *handle, bool blocking) {
+    if (handle != NULL) {
+        celixThreadRwlock_writeLock(&handle->dbLock);
+        handle->useBlockingRead = blocking;
+        celixThreadRwlock_unlock(&handle->dbLock);
+    }
+}
+
 //
 // Reads data from the filedescriptor which has date (determined by epoll()) and stores it in the internal structure
 // If the message is completely reassembled true is returned and the index and size have valid values
 //
 int pubsub_tcpHandler_dataAvailable(pubsub_tcpHandler_t *handle, int fd, unsigned int *index, unsigned int *size) {
     celixThreadRwlock_writeLock(&handle->dbLock);
+    *index = 0;
+    *size = 0;
     psa_tcp_connection_entry_t *entry = NULL;
     if (fd == handle->own.fd) entry = &handle->own;
     else entry = hashMap_get(handle->fd_map, (void *) (intptr_t) fd);
@@ -582,6 +586,15 @@ int pubsub_tcpHandler_dataAvailable(pubsub_tcpHandler_t *handle, int fd, unsigne
             // First start looking for header
             entry->readState = READ_STATE_HEADER;
             entry->expectedReadSize = sizeof(pubsub_tcp_msg_header_t);
+            if (entry->expectedReadSize > entry->bufferSize) {
+                char* buffer = realloc(entry->buffer, (size_t )entry->expectedReadSize);
+                if (buffer) {
+                    entry->buffer = buffer;
+                    entry->bufferSize = entry->expectedReadSize;
+                    L_WARN("[TCP Socket: %d, url: %s,  realloc read buffer: (%d, %d) \n", entry->fd, entry->url,
+                           entry->bufferSize, entry->expectedReadSize);
+                }
+            }
         } else {
             // When no header use Max buffer size
             entry->readState = READ_STATE_READY;
@@ -592,16 +605,15 @@ int pubsub_tcpHandler_dataAvailable(pubsub_tcpHandler_t *handle, int fd, unsigne
     int nbytes = recv(fd, &entry->buffer[entry->bufferReadSize], entry->expectedReadSize, 0);
     if (nbytes < 0) {
         // Handle Socket error, when nbytes == 0 => Connection is lost
-        if (nbytes < 0) {
-            L_ERROR("[TCP Socket] read error %s\n", strerror(errno));
-            errno = 0;
-        }
+        if ((errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)) {}
+        else L_ERROR("[TCP Socket] read error %s\n", strerror(errno));
+        errno = 0;
     }
-    if ((!handle->bypassHeader)&&(nbytes>0)) {
+    if ((!handle->bypassHeader) && (nbytes > 0)) {
         // Update buffer administration
         entry->bufferReadSize += nbytes;
         entry->expectedReadSize -= nbytes;
-        // When expected data is read then update state
+        // When expected data is read then update states
         if (entry->expectedReadSize <= 0) {
             pubsub_tcp_msg_header_t *pHeader = (pubsub_tcp_msg_header_t *) entry->buffer;
             if (entry->readState == READ_STATE_FIND_HEADER) {
@@ -629,10 +641,14 @@ int pubsub_tcpHandler_dataAvailable(pubsub_tcpHandler_t *handle, int fd, unsigne
                 // Header is found, read the data from the socket, update state to READ_STATE_DATA
                 int buffer_size = pHeader->bufferSize + entry->bufferReadSize;
                 // When buffer is not big enough, reallocate buffer
-                if (buffer_size > entry->bufferSize) {
-                    entry->buffer = realloc(entry->buffer, buffer_size);
-                    entry->bufferSize = buffer_size;
-                    //L_WARN("[TCP Socket: %d, url: %s,  realloc read buffer: (%d, %d) \n", entry->fd, entry->url, entry->bufferSize, buffer_size);
+                if ((buffer_size > entry->bufferSize) && (buffer_size)) {
+                    char* buffer = realloc(entry->buffer, (size_t )buffer_size);
+                    if (buffer) {
+                        entry->buffer = buffer;
+                        entry->bufferSize = buffer_size;
+                        L_WARN("[TCP Socket: %d, url: %s,  realloc read buffer: (%d, %d) \n", entry->fd, entry->url,
+                               entry->bufferSize, buffer_size);
+                    }
                 }
                 // Set data read size
                 entry->expectedReadSize = pHeader->bufferSize;
@@ -641,7 +657,7 @@ int pubsub_tcpHandler_dataAvailable(pubsub_tcpHandler_t *handle, int fd, unsigne
             } else if (entry->readState == READ_STATE_DATA) {
                 handle->readSeqNr = pHeader->seqNr;
                 //fprintf(stdout, "ReadSeqNr: Count: %d\n", handle->readSeqNr);
-                nbytes -= sizeof(pubsub_tcp_msg_header_t);
+                nbytes = entry->bufferReadSize - sizeof(pubsub_tcp_msg_header_t);
                 if (nbytes == 0) {
                     errno = 0;
                 }
@@ -655,9 +671,18 @@ int pubsub_tcpHandler_dataAvailable(pubsub_tcpHandler_t *handle, int fd, unsigne
             }
         }
     }
-    *index = 0;
-    // if read state is not ready, don't process buffer
-    *size = nbytes;
+    if (nbytes > 0 && entry->readState == READ_STATE_READY) {
+        // if read state is not ready, don't process buffer
+        // Check if buffer size is correct
+        pubsub_tcp_msg_header_t *pHeader = (pubsub_tcp_msg_header_t *) entry->buffer;
+        if (nbytes != pHeader->bufferSize) {
+            L_ERROR( "[TCP Socket] Buffer size is not correct %d: %d!=%d  errno: %s",
+                handle->readSeqNr, nbytes, pHeader->bufferSize, strerror(errno));
+            entry->readState = READ_STATE_INIT;
+        } else {
+            *size = nbytes;
+        }
+    }
     celixThreadRwlock_unlock(&handle->dbLock);
     return nbytes;
 }
@@ -730,6 +755,7 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_tcp_msg_header_t
     header->marker_end   = MARKER_END_PATTERN;
     header->bufferSize   = size;
     hash_map_iterator_t iter = hashMapIterator_construct(handle->fd_map);
+
     while (hashMapIterator_hasNext(&iter)) {
         psa_tcp_connection_entry_t *entry = hashMapIterator_nextValue(&iter);
 
@@ -763,19 +789,17 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_tcp_msg_header_t
         //  Btw, also, SIGSTOP issued by a debugging tool can result in EINTR error.
         if (nbytes == -1) {
             result = ((errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)) ? 0 : -1;
-            L_ERROR("[TCP Socket] Cannot send msg %s\n", strerror(errno));
+            L_ERROR("[TCP Socket] Seq_Id: %d Cannot send msg %s\n", header->seqNr, strerror(errno));
             errno = 0;
-            continue;
         }
         int msgSize = 0;
         for (int i = 0; i < msg.msg_iovlen; i++) {
             msgSize+=msg.msg_iov[i].iov_len;
         }
         if (nbytes != msgSize) {
-            L_ERROR("[TCP Socket] MsgSize not correct: %d != nBytess\n", msgSize, nbytes);
-            continue;
+            L_ERROR("[TCP Socket] Seq; %d, MsgSize not correct: %d != %d (BufferSize: %d \n", header->seqNr, msgSize, nbytes, header->bufferSize);
         }
-        written += nbytes;
+        written = (result == 0) ? written + nbytes : written;
     }
     celixThreadRwlock_unlock(&handle->dbLock);
     return (result == 0 ? written : result);
@@ -792,8 +816,9 @@ int pubsub_tcpHandler_handler(pubsub_tcpHandler_t *handle) {
         int nof_events = 0;
         nof_events = epoll_wait(handle->efd, events, MAX_EPOLL_EVENTS, handle->timeout);
         if (nof_events < 0) {
-          L_ERROR("[TCP Socket] Cannot create epoll wait (%d) %s\n", nof_events, strerror(errno));
-          errno = 0;
+            if ((errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)) {}
+            else L_ERROR("[TCP Socket] Cannot create epoll wait (%d) %s\n", nof_events, strerror(errno));
+            errno = 0;
         }
         for (int i = 0; i < nof_events; i++) {
             if ((handle->own.fd >= 0) && (events[i].data.fd == handle->own.fd)) {
@@ -808,7 +833,7 @@ int pubsub_tcpHandler_handler(pubsub_tcpHandler_t *handle) {
                   errno = 0;
                 }
                 // Make file descriptor NonBlocking
-                if ((!handle->useBlocking) && (rc >= 0)) {
+                if ((!handle->useBlockingWrite) && (rc >= 0)) {
                     rc = pubsub_tcpHandler_makeNonBlocking(handle, fd);
                     if (rc < 0) pubsub_tcpHandler_freeEntry(&handle->own);
                 }
@@ -846,35 +871,38 @@ int pubsub_tcpHandler_handler(pubsub_tcpHandler_t *handle) {
                 int count = 0;
                 bool isReading = true;
                 while(isReading) {
-                  unsigned int index = 0;
-                  unsigned int size = 0;
-                  isReading = (handle->useBlocking) ? false : isReading;
-                  count++;
-                  rc = pubsub_tcpHandler_dataAvailable(handle, events[i].data.fd, &index, &size);
-                  if (rc <= 0) {
+                    unsigned int index = 0;
+                    unsigned int size = 0;
+                    isReading = (handle->useBlockingRead) ? false : isReading;
+                    count++;
+                    rc = pubsub_tcpHandler_dataAvailable(handle, events[i].data.fd, &index, &size);
+                    if (rc <= 0) {
                         // close connection.
                         if (rc == 0) {
                             pubsub_tcpHandler_closeConnection(handle, events[i].data.fd);
                         }
                         isReading = false;
-                        break;
-                  }
-                  // Handle data
-                  void *buffer = NULL;
-                  pubsub_tcp_msg_header_t *msgHeader = NULL;
-                  rc = pubsub_tcpHandler_read(handle, events[i].data.fd, index, &msgHeader, &buffer, size);
-                    if (rc != 0) {
-                        isReading = false;
-                        break;
-                  }
-                  celixThreadRwlock_readLock(&handle->dbLock);
-                  if ((handle->processMessageCallback)&&(buffer)) {
-                    struct timespec receiveTime;
-                    clock_gettime(CLOCK_REALTIME, &receiveTime);
-                    handle->processMessageCallback(handle->processMessagePayload, msgHeader, buffer, size, &receiveTime);
-                    isReading = false;
-                  }
-                  celixThreadRwlock_unlock(&handle->dbLock);
+                        continue;
+                    }
+                    if (size) {
+                        // Handle data
+                        void *buffer = NULL;
+                        pubsub_tcp_msg_header_t *msgHeader = NULL;
+                        rc = pubsub_tcpHandler_read(handle, events[i].data.fd, index, &msgHeader, &buffer, size);
+                        if (rc < 0) {
+                            isReading = false;
+                            continue;
+                        }
+                        celixThreadRwlock_readLock(&handle->dbLock);
+                        if (handle->processMessageCallback) {
+                            struct timespec receiveTime;
+                            clock_gettime(CLOCK_REALTIME, &receiveTime);
+                            handle->processMessageCallback(handle->processMessagePayload, msgHeader, buffer, size,
+                                                           &receiveTime);
+                            isReading = false;
+                        }
+                        celixThreadRwlock_unlock(&handle->dbLock);
+                    }
                 }
             } else if (events[i].events & EPOLLOUT) {
                 int err = 0;
@@ -898,7 +926,6 @@ int pubsub_tcpHandler_handler(pubsub_tcpHandler_t *handle) {
                       event.data.fd = events[i].data.fd;
                       // Register Modify epoll
                       rc = epoll_ctl(handle->efd, EPOLL_CTL_MOD, events[i].data.fd, &event);
-                      //pubsub_tcpHandler_makeBlocking(handle, events[i].data.fd);
                       if (rc < 0) {
                           L_ERROR("[TCP Socket] Cannot create epoll\n");
                       }

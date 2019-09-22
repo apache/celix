@@ -140,10 +140,12 @@ pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
     }
     sender->metricsEnabled   = celix_bundleContext_getPropertyAsBool(ctx, PSA_TCP_METRICS_ENABLED, PSA_TCP_DEFAULT_METRICS_ENABLED);
     if (topicProperties != NULL) {
+        bool blocking     = celix_properties_getAsBool((celix_properties_t *) topicProperties, PUBSUB_TCP_PUBLISHER_BLOCKING_KEY, PUBSUB_TCP_PUBLISHER_BLOCKING_DEFAULT);
         bool bypassHeader = celix_properties_getAsBool((celix_properties_t *) topicProperties, PUBSUB_TCP_BYPASS_HEADER, PUBSUB_TCP_DEFAULT_BYPASS_HEADER);
         long msgIdOffset  = celix_properties_getAsLong(topicProperties, PUBSUB_TCP_MESSAGE_ID_OFFSET, PUBSUB_TCP_DEFAULT_MESSAGE_ID_OFFSET);
         long msgIdSize    = celix_properties_getAsLong(topicProperties, PUBSUB_TCP_MESSAGE_ID_SIZE,   PUBSUB_TCP_DEFAULT_MESSAGE_ID_SIZE);
         pubsub_tcpHandler_setBypassHeader(sender->socketHandler, bypassHeader, (unsigned int)msgIdOffset, (unsigned int)msgIdSize);
+        pubsub_tcpHandler_setBlockingWrite(sender->socketHandler, blocking);
     }
     /* Check if it's a static endpoint */
     bool isEndPointTypeClient = false;
