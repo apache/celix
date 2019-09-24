@@ -15,10 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_subdirectory(device_access)
-add_subdirectory(deployment_admin)
-add_subdirectory(remote_services)
-add_subdirectory(http_admin)
-add_subdirectory(shell)
-add_subdirectory(logging)
-add_subdirectory(pubsub)
+add_subdirectory(config_admin)
+add_subdirectory(event_admin)
+add_subdirectory(pubsub_admin_nanomsg)
