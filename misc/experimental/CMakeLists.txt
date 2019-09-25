@@ -15,10 +15,9 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_subdirectory(device_access)
-add_subdirectory(deployment_admin)
-add_subdirectory(remote_services)
-add_subdirectory(http_admin)
-add_subdirectory(shell)
-add_subdirectory(logging)
-add_subdirectory(pubsub)
+celix_subproject(EXPERIMENTAL "Options to enable building the experimental - non stable - bundles/libraries. " OFF DEPS FRAMEWORK)
+if (EXPERIMENTAL)
+
+    add_subdirectory(bundles)
+
+endif ()

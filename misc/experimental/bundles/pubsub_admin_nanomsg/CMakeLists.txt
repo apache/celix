@@ -42,7 +42,6 @@ if (BUILD_PUBSUB_PSA_NANOMSG)
         ${NANOMSG_INCLUDE_DIR}
         ${JANSSON_INCLUDE_DIR}
         src
-        ../pubsub_topology_manager/src
     )
 
     install_celix_bundle(celix_pubsub_admin_nanomsg EXPORT celix COMPONENT pubsub)
