@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -30,7 +30,7 @@
 #include "hash_map.h"
 #include "celix_array_list.h"
 #include "celix_bundle_context.h"
-#include "constants.h"
+#include "celix_constants.h"
 #include "utils.h"
 #include "log_service.h"
 #include "log_helper.h"

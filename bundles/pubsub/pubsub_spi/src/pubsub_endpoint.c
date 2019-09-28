@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/*
+/**
  * endpoint_description.c
  *
  *  \date       25 Jul 2014
@@ -34,7 +34,7 @@
 #include "celix_log.h"
 
 #include "pubsub_endpoint.h"
-#include "constants.h"
+#include "celix_constants.h"
 
 #include "pubsub_utils.h"
 

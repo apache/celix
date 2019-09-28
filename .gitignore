@@ -15,15 +15,18 @@
 # specific language governing permissions and limitations
 # under the License.
 
+*~
+*.swp
+
 /.project
 .DS_Store
 .idea
-build
-cmake-build*
-*~
-*.swp
-.idea
-nbproject
+*.iml
 *.pyc
 *.enc
 *.pub
+
+build
+cmake-build*
+nbproject
+target

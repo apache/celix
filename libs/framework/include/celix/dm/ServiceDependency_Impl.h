@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -20,7 +20,7 @@
 #include <vector>
 #include <iostream>
 #include <cstring>
-#include "constants.h"
+#include "celix_constants.h"
 #include "celix_properties.h"
 
 using namespace celix::dm;
@@ -201,7 +201,7 @@ int CServiceDependency<T,I>::invokeCallback(std::function<void(const I*, Propert
         hash_map_iterator_t iter = hashMapIterator_construct((hash_map_pt)props);
         while(hashMapIterator_hasNext(&iter)) {
             key = (const char*) hashMapIterator_nextKey(&iter);
-            value = celix_properties_get(props, key, NULL);
+            value = celix_properties_get(props, key, ""); //note. C++ does not allow nullptr entries for std::string
             //std::cout << "got property " << key << "=" << value << "\n";
             properties[key] = value;
         }
@@ -400,7 +400,7 @@ int ServiceDependency<T,I>::invokeCallback(std::function<void(I*, Properties&&)>
             hash_map_iterator_t iter = hashMapIterator_construct((hash_map_pt)props);
             while(hashMapIterator_hasNext(&iter)) {
                 key = (const char*) hashMapIterator_nextKey(&iter);
-                value = celix_properties_get(props, key, NULL);
+                value = celix_properties_get(props, key, "");
                 //std::cout << "got property " << key << "=" << value << "\n";
                 properties[key] = value;
             }

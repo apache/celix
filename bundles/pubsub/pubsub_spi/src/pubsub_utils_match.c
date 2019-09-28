@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -17,7 +17,6 @@
  * under the License.
  */
 
-
 #include <string.h>
 #include <limits.h>
 #include <pubsub_endpoint.h>
@@ -28,7 +27,7 @@
 #include "pubsub_admin.h"
 
 #include "pubsub_utils.h"
-#include "constants.h"
+#include "celix_constants.h"
 
 static double getPSAScore(const char *requested_admin, const char *request_qos, const char *adminType, double sampleScore, double controlScore, double defaultScore) {
     double score;

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/*
+/**
  * http_admin.c
  *
  *  \date       May 24, 2019
@@ -173,7 +173,7 @@ void http_admin_removeHttpService(void *handle, void *svc __attribute__((unused)
         node = findServiceNodeInTree(&admin->http_svc_tree, uri);
 
         if(node != NULL){
-            destroyServiceNode(node, &admin->http_svc_tree.tree_node_count, &admin->http_svc_tree.tree_svc_count);
+            destroyServiceNode(&admin->http_svc_tree, node, &admin->http_svc_tree.tree_node_count, &admin->http_svc_tree.tree_svc_count);
         } else {
             printf("Couldn't remove HTTP service with URI: %s, it doesn't exist\n", uri);
         }

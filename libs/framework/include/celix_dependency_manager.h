@@ -1,20 +1,20 @@
-/**
- *Licensed to the Apache Software Foundation (ASF) under one
- *or more contributor license agreements.  See the NOTICE file
- *distributed with this work for additional information
- *regarding copyright ownership.  The ASF licenses this file
- *to you under the Apache License, Version 2.0 (the
- *"License"); you may not use this file except in compliance
- *with the License.  You may obtain a copy of the License at
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- *Unless required by applicable law or agreed to in writing,
- *software distributed under the License is distributed on an
- *"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- *specific language governing permissions and limitations
- *under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 
 #ifndef CELIX_DEPENDENCY_MANAGER_H_
@@ -70,11 +70,6 @@ celix_dependency_manager_info_t* celix_dependencyManager_createInfo(celix_depend
 celix_array_list_t * /*celix_dependency_manager_info_t entries*/ celix_dependencyManager_createInfos(celix_dependency_manager_t *manager);
 
 /**
- * Check if all components - for all bundles - are active (all required dependencies resolved).
- */
-bool celix_dependencyManager_allComponentsActive(celix_dependency_manager_t *manager);
-
-/**
  * Destroys a DM info struct.
  */
 void celix_dependencyManager_destroyInfo(celix_dependency_manager_t *manager, celix_dependency_manager_info_t *info);
@@ -83,6 +78,22 @@ void celix_dependencyManager_destroyInfo(celix_dependency_manager_t *manager, ce
  * Destroys a celix array list of  DM info structs.
  */
 void celix_dependencyManager_destroyInfos(celix_dependency_manager_t *manager, celix_array_list_t * infos /*entries celix_dependency_manager_info_t*/);
+
+
+/**
+ * Check if all components for the bundle of the dependency manager are active (all required dependencies resolved).
+ */
+bool celix_dependencyManager_areComponentsActive(celix_dependency_manager_t *manager);
+
+/**
+ * Check if all components - for all bundles - are active (all required dependencies resolved).
+ */
+bool celix_dependencyManager_allComponentsActive(celix_dependency_manager_t *manager);
+
+/**
+ * Return the nr of components for this dependency manager
+ */
+size_t celix_dependencyManager_nrOfComponents(celix_dependency_manager_t *manager);
 
 #ifdef __cplusplus
 }

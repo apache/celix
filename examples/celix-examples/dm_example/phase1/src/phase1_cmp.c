@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,13 +16,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/*
- * publisher.c
+/**
+ * phase1_cmp.c
  *
  *  \date       Oct 29, 2015
  *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright  Apache License, Version 2.0
  */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>

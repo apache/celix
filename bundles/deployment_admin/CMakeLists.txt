@@ -19,6 +19,7 @@ celix_subproject(DEPLOYMENT_ADMIN "Option to enable building the Deployment Admi
 if (DEPLOYMENT_ADMIN)
 	
     find_package(CURL REQUIRED)
+    find_package(OpenSSL REQUIRED)
     find_package(UUID REQUIRED)
     find_package(ZLIB REQUIRED)
 
@@ -50,7 +51,7 @@ if (DEPLOYMENT_ADMIN)
     )
 
     target_compile_definitions(deployment_admin PRIVATE -DUSE_FILE32API)
-    target_link_libraries(deployment_admin PRIVATE ${CURL_LIBRARY} ${UUID_LIBRARY} ${ZLIB_LIBRARIES} deployment_admin_api)
+    target_link_libraries(deployment_admin PRIVATE ${CURL_LIBRARY} ${UUID_LIBRARY} ${ZLIB_LIBRARIES} ${OPENSLL_LIBRARY} deployment_admin_api)
     target_include_directories(deployment_admin PRIVATE ${CURL_INCLUDE_DIRS})
 
     install(TARGETS deployment_admin_api EXPORT celix COMPONENT deployment_admin)

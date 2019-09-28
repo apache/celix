@@ -32,13 +32,16 @@ find_path(OPENSSL_INCLUDE_DIR ssl.h crypto.h
 find_library(OPENSSL_LIBRARY NAMES ssl
              PATHS /usr/lib /usr/local/lib  /usr/local/opt/openssl/lib ${OPENSSL_DIR}/lib)
 
-set(OPENSSL_LIBRARIES ${OPENSSL_LIBRARY} )
-set(OPENSSL_INCLUDE_DIRS ${OPENSSL_INCLUDE_DIR} )
+find_library(CRYPTO_LIBRARY NAMES crypto
+             PATHS /usr/lib /usr/local/lib  /usr/local/opt/openssl/lib ${OPENSSL_DIR}/lib)
+
+set(OPENSSL_LIBRARIES ${OPENSSL_LIBRARY} ${CRYPTO_LIBRARY})
+set(OPENSSL_INCLUDE_DIRS ${OPENSSL_INCLUDE_DIR})
 
 include(FindPackageHandleStandardArgs)
 # handle the QUIETLY and REQUIRED arguments and set OPENSSL_FOUND to TRUE
 # if all listed variables are TRUE
 find_package_handle_standard_args(OpenSSL  DEFAULT_MSG
-                                  OPENSSL_LIBRARY OPENSSL_INCLUDE_DIR)
+             OPENSSL_LIBRARY CRYPTO_LIBRARY OPENSSL_INCLUDE_DIR)
 
-mark_as_advanced(OPENSSL_INCLUDE_DIR OPENSSL_LIBRARY)
+mark_as_advanced(OPENSSL_INCLUDE_DIR OPENSSL_LIBRARY CRYPTO_LIBRARY)

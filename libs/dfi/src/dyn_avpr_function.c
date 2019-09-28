@@ -1,20 +1,20 @@
-/**
- *Licensed to the Apache Software Foundation (ASF) under one
- *or more contributor license agreements.  See the NOTICE file
- *distributed with this work for additional information
- *regarding copyright ownership.  The ASF licenses this file
- *to you under the Apache License, Version 2.0 (the
- *"License"); you may not use this file except in compliance
- *with the License.  You may obtain a copy of the License at
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- *Unless required by applicable law or agreed to in writing,
- *software distributed under the License is distributed on an
- *"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- *specific language governing permissions and limitations
- *under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 
 #include "dyn_function.h"
@@ -47,10 +47,9 @@ inline static bool dynAvprFunction_initCif(dyn_function_type * func, size_t nofA
 
 // Section: extern function definitions
 ffi_type * dynType_ffiType(dyn_type *type);
-dyn_type * dynAvprType_parseFromJson(json_t * const root, const char * fqn);
 dyn_type * dynAvprType_createNestedForFunction(dyn_type * store_type, const char* fqn);
 dyn_type * dynAvprType_parseFromTypedJson(json_t * const root, json_t const * const type_entry, const char * namespace);
-void dynAvprType_constructFqn(char* destination, int size, const char * possibleFqn, const char * ns);
+void dynAvprType_constructFqn(char *destination, size_t size, const char *possibleFqn, const char *ns);
 
 // Section: function definitions
 dyn_function_type * dynFunction_parseAvpr(FILE * avprStream, const char * fqn) {
@@ -227,7 +226,7 @@ inline static bool dynAvprFunction_parseArgument(dyn_function_type * func, size_
         return false;
     }
 
-    arg->index = index;
+    arg->index = (int) index;
     arg->type = entry_dyn_type;
     arg->argumentMeta = DYN_FUNCTION_ARGUMENT_META__STD;
 
@@ -256,7 +255,7 @@ inline static bool dynAvprFunction_parseReturn(dyn_function_type * func, size_t 
         return false;
     }
 
-    arg->index = index;
+    arg->index = (int) index;
 
     // Check descriptor type, if it is a struct ({), sequence ([) or a string (t) an extra level of indirection is needed
     int descriptor = dynType_descriptorType(return_dyn_type);
@@ -345,7 +344,7 @@ inline static bool dynAvprFunction_initCif(dyn_function_type * func, size_t nofA
     }
 
     ffi_type *returnType = dynType_ffiType(func->funcReturn);
-    int ffi_result = ffi_prep_cif(&func->cif, FFI_DEFAULT_ABI, nofArguments, returnType, func->ffiArguments);
+    int ffi_result = ffi_prep_cif(&func->cif, FFI_DEFAULT_ABI, (int) nofArguments, returnType, func->ffiArguments);
 
     return ffi_result == FFI_OK;
 }

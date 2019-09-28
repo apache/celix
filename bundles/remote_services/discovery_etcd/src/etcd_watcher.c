@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/*
+/**
  * etcd_watcher.c
  *
  * \date       16 Sep 2014
@@ -31,7 +31,7 @@
 
 #include "log_helper.h"
 #include "log_service.h"
-#include "constants.h"
+#include "celix_constants.h"
 #include "utils.h"
 #include "discovery.h"
 #include "discovery_impl.h"

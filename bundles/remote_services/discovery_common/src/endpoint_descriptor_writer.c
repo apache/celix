@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/*
+/**
  * endpoint_descriptor_writer.c
  *
  *  \date       26 Jul 2014
@@ -28,7 +28,7 @@
 #include <string.h>
 #include <libxml/xmlwriter.h>
 
-#include "constants.h"
+#include "celix_constants.h"
 #include "remote_constants.h"
 
 #include "endpoint_description.h"

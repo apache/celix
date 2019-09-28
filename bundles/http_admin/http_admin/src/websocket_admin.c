@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/*
+/**
  * websocket_admin.c
  *
  *  \date       May 24, 2019
@@ -112,7 +112,7 @@ void websocket_admin_removeWebsocketService(void *handle, void *svc __attribute_
         node = findServiceNodeInTree(&admin->sock_svc_tree, uri);
 
         if(node != NULL){
-            destroyServiceNode(node, &admin->sock_svc_tree.tree_node_count, &admin->sock_svc_tree.tree_svc_count);
+            destroyServiceNode(&admin->sock_svc_tree, node, &admin->sock_svc_tree.tree_node_count, &admin->sock_svc_tree.tree_svc_count);
         } else {
             printf("Couldn't remove websocket service with URI: %s, it doesn't exist\n", uri);
         }

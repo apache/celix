@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(PUBSUB "Option to build the pubsub bundles" OFF DEPS UTILS)
+celix_subproject(PUBSUB "Option to build the pubsub bundles" OFF DEPS FRAMEWORK)
 if (PUBSUB)
 
     option(BUILD_PUBSUB_PSA_ZMQ "Build ZeroMQ PubSub Admin (LGPL License)" OFF)
@@ -24,7 +24,6 @@ if (PUBSUB)
         option(BUILD_ZMQ_SECURITY "Build with security for ZeroMQ." OFF)
     endif (BUILD_PUBSUB_PSA_ZMQ)
 
-    option(BUILD_PUBSUB_PSA_NANOMSG "Build NanoMsg PubSub Admin - Experimental" OFF)
     add_subdirectory(pubsub_api)
     add_subdirectory(pubsub_spi)
     add_subdirectory(pubsub_topology_manager)
@@ -32,7 +31,6 @@ if (PUBSUB)
     add_subdirectory(pubsub_serializer_json)
     add_subdirectory(pubsub_admin_zmq)
     add_subdirectory(pubsub_admin_tcp)
-    add_subdirectory(pubsub_admin_nanomsg)
     add_subdirectory(pubsub_admin_udp_mc)
     add_subdirectory(pubsub_admin_websocket)
     add_subdirectory(keygen)
