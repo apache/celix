@@ -716,8 +716,9 @@ long celix_bundleContext_trackBundlesWithOptions(
  * @param callbackHandle    The data pointer, which will be used in the callbacks
  * @param use               The callback which will be called for the currently started bundles.
  *                          The bundle pointers are only guaranteed to be valid during the callback.
+ * @return                  Returns true if the bundle is found and the callback is called.
  */
-void celix_bundleContext_useBundle(
+bool celix_bundleContext_useBundle(
         celix_bundle_context_t *ctx,
         long bundleId,
         void *callbackHandle,
@@ -726,7 +727,7 @@ void celix_bundleContext_useBundle(
 
 /**
  * Use the currently active (started) bundles.
- * The provided callback will be called for all the currently started bundles.
+ * The provided callback will be called for all the currently started bundles (excluding the framework bundle).
  *
  * @param ctx               The bundle context.
  * @param callbackHandle    The data pointer, which will be used in the callbacks

@@ -602,12 +602,12 @@ void celix_bundleContext_useBundles(
     celix_framework_useBundles(ctx->framework, false, callbackHandle, use);
 }
 
-void celix_bundleContext_useBundle(
+bool celix_bundleContext_useBundle(
         bundle_context_t *ctx,
         long bundleId,
         void *callbackHandle,
         void (*use)(void *handle, const bundle_t *bundle)) {
-    celix_framework_useBundle(ctx->framework, true, bundleId, callbackHandle, use);
+    return celix_framework_useBundle(ctx->framework, true, bundleId, callbackHandle, use);
 }
 
 static void bundleContext_cleanupBundleTrackers(bundle_context_t *ctx) {
@@ -690,10 +690,6 @@ long celix_bundleContext_installBundle(bundle_context_t *ctx, const char *bundle
         status = bundle_getBundleId(bnd, &bundleId);
         if (status == CELIX_SUCCESS && autoStart) {
             status = bundle_start(bnd);
-            if (status != CELIX_SUCCESS) {
-                bundleId = -1;
-                bundle_uninstall(bnd);
-            }
         }
     }
 
