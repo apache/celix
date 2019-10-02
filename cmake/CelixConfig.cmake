@@ -28,34 +28,6 @@ get_filename_component(REL_INSTALL_DIR "${REL_INSTALL_DIR}" PATH)
 get_filename_component(REL_INSTALL_DIR "${REL_INSTALL_DIR}" PATH)
 get_filename_component(REL_INSTALL_DIR "${REL_INSTALL_DIR}" PATH)
 
-set(CMAKE_PREFIX_PATH "${${REL_INSTALL_DIR}/share/celix/cmake/Modules}:${CMAKE_PREFIX_PATH}")
-
-#find required packages
-find_package(CURL REQUIRED) #framework, etcdlib
-find_package(ZLIB REQUIRED) #framework
-find_package(UUID REQUIRED) #framework
-find_package(JANSSON REQUIRED) #etcdlib, dfi
-find_package(FFI REQUIRED) #dfi
-
-if (NOT TARGET ZLIB::ZLIB)
-  message("Note ZLIB::ZLIB target not created by find_package(ZLIB). Creating one")
-  add_library(ZLIB::ZLIB SHARED IMPORTED)
-  set_target_properties(ZLIB::ZLIB PROPERTIES
-        IMPORTED_LOCATION "${ZLIB_LIBRARIES}"
-        INTERFACE_INCLUDE_DIRECTORIES "${ZLIB_INCLUDE_DIRS}"
-  )
-endif ()
-
-if (NOT TARGET CURL::libcurl)
-  message("Note CURL::libcurl target not created by find_package(CURL). Creating one")
-  add_library(CURL::libcurl SHARED IMPORTED)
-  set_target_properties(CURL::libcurl PROPERTIES
-          IMPORTED_LOCATION "${CURL_LIBRARIES}"
-          INTERFACE_INCLUDE_DIRECTORIES "${CURL_INCLUDE_DIRS}"
-  )
-endif ()
-
-
 include("${REL_INSTALL_DIR}/share/celix/cmake/cmake_celix/UseCelix.cmake") #adds celix commands (e.g. add_celix_bundle)
 include("${REL_INSTALL_DIR}/share/celix/cmake/Targets.cmake") #imports lib and exe targets (e.g. Celix::framework)
 include("${REL_INSTALL_DIR}/share/celix/cmake/CelixTargets.cmake") #imports bundle targets (e.g. Celix::shell)

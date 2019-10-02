@@ -20,8 +20,36 @@ include(CMakeParseArguments)
 
 set(CELIX_CMAKE_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CELIX_CMAKE_DIRECTORY}/../Modules)
+
+
+#Celix CMake function
 include(${CELIX_CMAKE_DIRECTORY}/BundlePackaging.cmake)
 include(${CELIX_CMAKE_DIRECTORY}/ContainerPackaging.cmake)
 include(${CELIX_CMAKE_DIRECTORY}/DockerPackaging.cmake)
 include(${CELIX_CMAKE_DIRECTORY}/Runtimes.cmake)
 include(${CELIX_CMAKE_DIRECTORY}/Generic.cmake)
+
+#find required packages
+find_package(CURL REQUIRED) #framework, etcdlib
+find_package(ZLIB REQUIRED) #framework
+find_package(UUID REQUIRED) #framework
+find_package(JANSSON REQUIRED) #etcdlib, dfi
+find_package(FFI REQUIRED) #dfi
+
+if (NOT TARGET ZLIB::ZLIB)
+    message("Note ZLIB::ZLIB target not created by find_package(ZLIB). Creating one")
+    add_library(ZLIB::ZLIB SHARED IMPORTED)
+    set_target_properties(ZLIB::ZLIB PROPERTIES
+            IMPORTED_LOCATION "${ZLIB_LIBRARIES}"
+            INTERFACE_INCLUDE_DIRECTORIES "${ZLIB_INCLUDE_DIRS}"
+            )
+endif ()
+
+if (NOT TARGET CURL::libcurl)
+    message("Note CURL::libcurl target not created by find_package(CURL). Creating one")
+    add_library(CURL::libcurl SHARED IMPORTED)
+    set_target_properties(CURL::libcurl PROPERTIES
+            IMPORTED_LOCATION "${CURL_LIBRARIES}"
+            INTERFACE_INCLUDE_DIRECTORIES "${CURL_INCLUDE_DIRS}"
+            )
+endif ()
