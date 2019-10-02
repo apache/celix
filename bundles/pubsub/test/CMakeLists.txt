@@ -120,7 +120,7 @@ add_celix_container(pubsub_udpmc_tests
             pubsub_sut
             pubsub_tst
 )
-target_link_libraries(pubsub_udpmc_tests PRIVATE Celix::pubsub_api ${CPPUTEST_LIBRARIES} ${JANSSON_LIBRARIES} Celix::dfi)
+target_link_libraries(pubsub_udpmc_tests PRIVATE Celix::pubsub_api ${CPPUTEST_LIBRARIES} JANSSON::lib Celix::dfi)
 target_include_directories(pubsub_udpmc_tests PRIVATE ${CPPUTEST_INCLUDE_DIR} test)
 message(WARNING "TODO fix issues with UDPMC and reanble test again")
 #add_test(NAME pubsub_udpmc_tests COMMAND pubsub_udpmc_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_udpmc_tests,CONTAINER_LOC>)
@@ -141,7 +141,7 @@ add_celix_container(pubsub_tcp_tests
         pubsub_sut
         pubsub_tst
         )
-target_link_libraries(pubsub_tcp_tests PRIVATE Celix::pubsub_api ${CPPUTEST_LIBRARIES} ${JANSSON_LIBRARIES} Celix::dfi)
+target_link_libraries(pubsub_tcp_tests PRIVATE Celix::pubsub_api ${CPPUTEST_LIBRARIES} JANSSON::lib Celix::dfi)
 target_include_directories(pubsub_tcp_tests PRIVATE ${CPPUTEST_INCLUDE_DIR} test)
 add_test(NAME pubsub_tcp_tests COMMAND pubsub_tcp_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_tcp_tests,CONTAINER_LOC>)
 SETUP_TARGET_FOR_COVERAGE(pubsub_tcp_tests_cov pubsub_tcp_tests ${CMAKE_BINARY_DIR}/coverage/pubsub_tcp_tests/pubsub_tcp_tests ..)
@@ -163,7 +163,7 @@ add_celix_container(pubsub_tcp_endpoint_tests
         pubsub_endpoint_sut
         pubsub_endpoint_tst
         )
-target_link_libraries(pubsub_tcp_endpoint_tests PRIVATE Celix::pubsub_api ${CPPUTEST_LIBRARIES} ${JANSSON_LIBRARIES} Celix::dfi)
+target_link_libraries(pubsub_tcp_endpoint_tests PRIVATE Celix::pubsub_api ${CPPUTEST_LIBRARIES} JANSSON::lib Celix::dfi)
 target_include_directories(pubsub_tcp_endpoint_tests PRIVATE ${CPPUTEST_INCLUDE_DIR} test)
 
 #TCP Endpoint test is disabled because the test is not stable when running on Travis
@@ -188,7 +188,7 @@ add_celix_container(pubsub_websocket_tests
             pubsub_sut
             pubsub_tst
 )
-target_link_libraries(pubsub_websocket_tests PRIVATE Celix::pubsub_api ${CPPUTEST_LIBRARIES} ${JANSSON_LIBRARIES} Celix::dfi)
+target_link_libraries(pubsub_websocket_tests PRIVATE Celix::pubsub_api ${CPPUTEST_LIBRARIES} JANSSON::lib Celix::dfi)
 target_include_directories(pubsub_websocket_tests PRIVATE ${CPPUTEST_INCLUDE_DIR} test)
 add_test(NAME pubsub_websocket_tests COMMAND pubsub_websocket_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_websocket_tests,CONTAINER_LOC>)
 SETUP_TARGET_FOR_COVERAGE(pubsub_websocket_tests_cov pubsub_websocket_tests ${CMAKE_BINARY_DIR}/coverage/pubsub_websocket_tests/pubsub_websocket_tests ..)
@@ -208,7 +208,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
                 pubsub_tst
     )
 
-    target_link_libraries(pubsub_zmq_tests PRIVATE Celix::pubsub_api ${CPPUTEST_LIBRARIES} ${JANSSON_LIBRARIES} Celix::dfi)
+    target_link_libraries(pubsub_zmq_tests PRIVATE Celix::pubsub_api ${CPPUTEST_LIBRARIES} JANSSON::lib Celix::dfi)
     target_include_directories(pubsub_zmq_tests PRIVATE ${CPPUTEST_INCLUDE_DIR} test)
     add_test(NAME pubsub_zmq_tests COMMAND pubsub_zmq_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_zmq_tests,CONTAINER_LOC>)
     SETUP_TARGET_FOR_COVERAGE(pubsub_zmq_tests_cov pubsub_zmq_tests ${CMAKE_BINARY_DIR}/coverage/pubsub_zmq_tests/pubsub_zmq_tests ..)
@@ -228,7 +228,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
                 pubsub_sut
                 pubsub_tst
     )
-    target_link_libraries(pubsub_zmq_zerocopy_tests PRIVATE Celix::pubsub_api ${CPPUTEST_LIBRARIES} ${JANSSON_LIBRARIES} Celix::dfi)
+    target_link_libraries(pubsub_zmq_zerocopy_tests PRIVATE Celix::pubsub_api ${CPPUTEST_LIBRARIES} JANSSON::lib Celix::dfi)
     target_include_directories(pubsub_zmq_zerocopy_tests PRIVATE ${CPPUTEST_INCLUDE_DIR} test)
     add_test(NAME pubsub_zmq_zerocopy_tests COMMAND pubsub_zmq_zerocopy_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_zmq_zerocopy_tests,CONTAINER_LOC>)
     SETUP_TARGET_FOR_COVERAGE(pubsub_zmq_zerocopy_tests_cov pubsub_zmq_zerocopy_tests ${CMAKE_BINARY_DIR}/coverage/pubsub_zmq_tests/pubsub_zmq_zerocopy_tests ..)

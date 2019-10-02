@@ -22,12 +22,6 @@ if (BUILD_PUBSUB_PSA_ZMQ)
     find_package(Jansson REQUIRED)
     find_package(UUID REQUIRED)
 
-    if(NOT UUID_LIBRARY)
-        #i.e. not found for OSX
-        set(UUID_LIBRARY "")
-        set(UUID_INCLUDE_DIRS "")
-    endif()
-
     if (BUILD_ZMQ_SECURITY)
         add_definitions(-DBUILD_WITH_ZMQ_SECURITY=1)
 
@@ -54,13 +48,9 @@ if (BUILD_PUBSUB_PSA_ZMQ)
     target_link_libraries(celix_pubsub_admin_zmq PRIVATE
             Celix::pubsub_spi
             Celix::framework Celix::dfi Celix::log_helper Celix::utils
-            ${ZMQ_LIBRARIES} ${CZMQ_LIBRARIES} ${OPENSSL_CRYPTO_LIBRARY}
+            ZMQ::lib CZMQ::lib OPENSSL::lib
     )
     target_include_directories(celix_pubsub_admin_zmq PRIVATE
-        ${ZMQ_INCLUDE_DIR}
-        ${CZMQ_INCLUDE_DIR}
-        ${JANSSON_INCLUDE_DIR}
-        ${UUID_INCLUDE_DIRS}
         src
     )
 

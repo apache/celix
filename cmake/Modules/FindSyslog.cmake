@@ -15,6 +15,11 @@
 # specific language governing permissions and limitations
 # under the License.
 
+# - Try to find Syslog
+# Once done this will define
+#  SYSLOG_FOUND - System has Syslog
+#  JANSSON_INCLUDE_DIRS - The Syslog include directories
+#  SYSLOG::lib - Imported target for Syslog
 
 find_path(SYSLOG_INCLUDE_DIR syslog.h /usr/include)
 
@@ -23,4 +28,12 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(Syslog DEFAULT_MSG
                                   SYSLOG_INCLUDE_DIR)
 
+set(SYSLOG_INCLUDE_DIRS ${SYSLOG_INCLUDE_DIR})
 mark_as_advanced(SYSLOG_INCLUDE_DIR)
+
+if (SYSLOG_FOUND AND NOT TARGET SYSLOG::lib)
+    add_library(SYSLOG::lib SHARED IMPORTED)
+    set_target_properties(SYSLOG::lib PROPERTIES
+            INTERFACE_INCLUDE_DIRECTORIES "${SYSLOG_INCLUDE_DIR}"
+    )
+endif ()

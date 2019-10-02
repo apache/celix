@@ -22,6 +22,7 @@
 #  OPENSSL_INCLUDE_DIRS - The OpenSSL include directories
 #  OPENSSL_LIBRARIES - The libraries needed to use OpenSSL
 #  OPENSSL_DEFINITIONS - Compiler switches required for using OpenSSL
+#  OPENSSL::lib - Imported target for OpenSSL
 
 find_path(OPENSSL_INCLUDE_DIR ssl.h crypto.h
           /usr/include/openssl
@@ -45,3 +46,11 @@ find_package_handle_standard_args(OpenSSL  DEFAULT_MSG
              OPENSSL_LIBRARY CRYPTO_LIBRARY OPENSSL_INCLUDE_DIR)
 
 mark_as_advanced(OPENSSL_INCLUDE_DIR OPENSSL_LIBRARY CRYPTO_LIBRARY)
+
+if (OPENSSL_FOUND AND NOT TARGET OPENSSL::lib)
+    add_library(OPENSSL::lib SHARED IMPORTED)
+    set_target_properties(OPENSSL::lib PROPERTIES
+            IMPORTED_LOCATION "${OPENSSL_LIBRARY};${CRYPTO_LIBRARY}"
+            INTERFACE_INCLUDE_DIRECTORIES "${OPENSSL_INCLUDE_DIR}"
+    )
+endif ()

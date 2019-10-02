@@ -20,12 +20,6 @@ find_package(UUID REQUIRED)
 find_package(CURL REQUIRED)
 find_package(OpenSSL REQUIRED)
 
-if(NOT UUID_LIBRARY)
-    #i.e. not found for OSX
-    set(UUID_LIBRARY "")
-    set(UUID_INCLUDE_DIRS "")
-endif()
-
 set(SOURCES
         src/attribute.c src/bundle.c src/bundle_archive.c src/bundle_cache.c
         src/bundle_context.c src/bundle_revision.c src/capability.c src/celix_errorcodes.c
@@ -41,15 +35,14 @@ set(SOURCES
 )
 add_library(framework SHARED ${SOURCES})
 set_target_properties(framework PROPERTIES OUTPUT_NAME "celix_framework")
-target_include_directories(framework PUBLIC 
+target_include_directories(framework PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
         $<INSTALL_INTERFACE:include/celix>
 )
 target_compile_options(framework PRIVATE -DUSE_FILE32API)
 set_target_properties(framework PROPERTIES "SOVERSION" 2)
 target_link_libraries(framework PUBLIC Celix::utils)
-target_link_libraries(framework PRIVATE ${UUID_LIBRARY} ${ZLIB_LIBRARY} ${CURL_LIBRARY} ${OPENSSL_LIBRARIES})
-target_include_directories(framework PRIVATE ${CURL_INCLUDE_DIR} ${UUID_INCLUDE_DIRS})
+target_link_libraries(framework PUBLIC UUID::lib CURL::libcurl ZLIB::ZLIB)
 
 install(TARGETS framework EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework)
 install(DIRECTORY include/ DESTINATION include/celix COMPONENT framework)
@@ -128,7 +121,7 @@ if (ENABLE_TESTING AND FRAMEWORK_TESTS)
         src/bundle_revision.c
         src/celix_errorcodes.c
         private/mock/celix_log_mock.c)
-    target_link_libraries(bundle_revision_test ${ZLIB_LIBRARY} ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} Celix::utils pthread)
+    target_link_libraries(bundle_revision_test ZLIB::ZLIB ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} Celix::utils pthread)
 
     add_executable(bundle_test
         private/test/bundle_test.cpp
@@ -178,7 +171,7 @@ if (ENABLE_TESTING AND FRAMEWORK_TESTS)
         private/mock/celix_log_mock.c
         src/framework.c
         src/celix_library_loader.c)
-    target_link_libraries(framework_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} ${UUID_LIBRARY} Celix::utils pthread dl)
+    target_link_libraries(framework_test PRIVATE ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} UUID::lib Celix::utils pthread dl)
 
     add_executable(manifest_parser_test
         private/test/manifest_parser_test.cpp

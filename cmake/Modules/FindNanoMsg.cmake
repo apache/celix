@@ -18,10 +18,10 @@
 
 # - Try to find ZMQ
 # 	Once done this will define
-#  ZMQ_FOUND - System has Zmq
-#  ZMQ_INCLUDE_DIRS - The Zmq include directories
-#  ZMQ_LIBRARIES - The libraries needed to use Zmq
-#  ZMQ_DEFINITIONS - Compiler switches required for using Zmq
+#  NANOMSG_FOUND - System has Nanomsg
+#  NANOMSG_INCLUDE_DIRS - The Nanomsg include directories
+#  NANOMSG_LIBRARIES - The libraries needed to use Nanomsg
+#  NANOMSG::lib - Imported target for Nanomsg
 
 find_path(NANOMSG_INCLUDE_DIR nanomsg/nn.h
           /usr/include
@@ -40,3 +40,11 @@ find_package_handle_standard_args(NanoMsg  DEFAULT_MSG
                                   NANOMSG_LIBRARY NANOMSG_INCLUDE_DIR)
 
 mark_as_advanced(NANOMSG_INCLUDE_DIR NANOMSG_LIBRARY )
+
+if (NANOMSG_FOUND AND NOT TARGET NANOMSG::lib)
+    add_library(NANOMSG::lib SHARED IMPORTED)
+    set_target_properties(NANOMSG::lib PROPERTIES
+            IMPORTED_LOCATION "${NANOMSG_LIBRARY}"
+            INTERFACE_INCLUDE_DIRECTORIES "${NANOMSG_INCLUDE_DIR}"
+    )
+endif ()

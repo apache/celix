@@ -22,6 +22,7 @@
 #  CZMQ_INCLUDE_DIRS - The Zmq include directories
 #  CZMQ_LIBRARIES - The libraries needed to use Zmq
 #  CZMQ_DEFINITIONS - Compiler switches required for using Zmq
+#  CZMQ::lib - Imported CMake target for the library (include path + library)
 
 find_path(CZMQ_INCLUDE_DIR czmq.h
           /usr/include
@@ -39,4 +40,12 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(Czmq  DEFAULT_MSG
                                   CZMQ_LIBRARY CZMQ_INCLUDE_DIR)
 
-mark_as_advanced(CZMQ_INCLUDE_DIR CZMQ_LIBRARY )
+mark_as_advanced(CZMQ_INCLUDE_DIR CZMQ_LIBRARY)
+
+if (CZMQ_FOUND AND NOT TARGET CZMQ::lib)
+    add_library(CZMQ::lib SHARED IMPORTED)
+    set_target_properties(CZMQ::lib PROPERTIES
+            IMPORTED_LOCATION "${CZMQ_LIBRARY}"
+            INTERFACE_INCLUDE_DIRECTORIES "${CZMQ_INCLUDE_DIR}"
+    )
+endif ()

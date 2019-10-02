@@ -39,7 +39,7 @@ if (RSA_DISCOVERY_SHM)
 			$<TARGET_PROPERTY:Celix::rsa_discovery_common,INCLUDE_DIRECTORIES>
 			$<TARGET_PROPERTY:Celix::civetweb,INCLUDE_DIRECTORIES>
 	)
-	target_link_libraries(rsa_discovery_shm PRIVATE Celix::framework ${CURL_LIBRARY} ${LIBXML2_LIBRARIES})
+	target_link_libraries(rsa_discovery_shm PRIVATE Celix::framework CURL::libcurl ${LIBXML2_LIBRARIES})
 
 	install_celix_bundle(rsa_discovery_shm EXPORT celix COMPONENT rsa)
 

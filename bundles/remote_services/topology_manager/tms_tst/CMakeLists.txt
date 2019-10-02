@@ -41,7 +41,7 @@ target_include_directories(test_tm_scoped PRIVATE ../src ../include)
 target_link_libraries(test_tm_scoped PRIVATE
         Celix::framework
         ${CPPUTEST_LIBRARY}
-        ${JANSSON_LIBRARY}
+        JANSSON::lib
         calculator_api
         Celix::rsa_common
 )
