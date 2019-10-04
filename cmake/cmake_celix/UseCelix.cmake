@@ -19,7 +19,7 @@ include(GNUInstallDirs)
 include(CMakeParseArguments)
 
 set(CELIX_CMAKE_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CELIX_CMAKE_DIRECTORY}/../Modules)
+set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CELIX_CMAKE_DIRECTORY}/../Modules")
 
 
 #Celix CMake function
@@ -33,7 +33,7 @@ include(${CELIX_CMAKE_DIRECTORY}/Generic.cmake)
 find_package(CURL REQUIRED) #framework, etcdlib
 find_package(ZLIB REQUIRED) #framework
 find_package(UUID REQUIRED) #framework
-find_package(JANSSON REQUIRED) #etcdlib, dfi
+find_package(Jansson REQUIRED) #etcdlib, dfi
 find_package(FFI REQUIRED) #dfi
 
 if (NOT TARGET ZLIB::ZLIB)

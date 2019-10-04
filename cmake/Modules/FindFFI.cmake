@@ -24,11 +24,10 @@
 # try using pkg-config if available
 find_package(PkgConfig QUIET)
 
-if (PkgConfig_FOUND)
-    if (APPLE)
-        #set brew location for pkg-config
-        set(ENV{PKG_CONFIG_PATH} "/usr/local/opt/libffi/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}")
-    endif ()
+if (APPLE AND PkgConfig_FOUND)
+    #set brew location for pkg-config
+    set(ENV{PKG_CONFIG_PATH} "/usr/local/opt/libffi/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}")
+
     pkg_check_modules(PC_LIBFFI QUIET libffi>=3.2.1)
 
     #use found LIBFFI pkg config info to search for the abs path fo the libffi lib.

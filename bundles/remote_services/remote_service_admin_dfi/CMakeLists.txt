@@ -45,7 +45,7 @@ if (RSA_REMOTE_SERVICE_ADMIN_DFI)
             Celix::log_helper
             Celix::rsa_common
             CURL::libcurl
-            JANSSON::lib
+            Jansson::lib
     )
 
     if (ENABLE_TESTING)
