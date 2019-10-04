@@ -170,7 +170,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
     find_package(ZMQ REQUIRED)
     find_package(CZMQ REQUIRED)
 
-    set(PUBSUB_CONTAINER_LIBS ${PUBSUB_CONTAINER_LIBS} ZMQ::lib CZMQ::lib OPENSSL::lib)
+    set(PUBSUB_CONTAINER_LIBS ${PUBSUB_CONTAINER_LIBS} ZMQ::lib CZMQ::lib ${OPTIONAL_OPENSSL_LIB})
 
     # Dynamic ZMQ / UDP / TCP admin
     add_celix_container(pubsub_publisher

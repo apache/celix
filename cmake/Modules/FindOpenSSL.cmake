@@ -18,39 +18,38 @@
 
 # - Try to find OpenSSL
 # Once done this will define
-#  OPENSSL_FOUND - System has OpenSSL
-#  OPENSSL_INCLUDE_DIRS - The OpenSSL include directories
-#  OPENSSL_LIBRARIES - The libraries needed to use OpenSSL
-#  OPENSSL_DEFINITIONS - Compiler switches required for using OpenSSL
-#  OPENSSL::lib - Imported target for OpenSSL
+#  OpenSSL_FOUND - System has OpenSSL
+#  OpenSSL_INCLUDE_DIRS - The OpenSSL include directories
+#  OpenSSL_LIBRARIES - The libraries needed to use OpenSSL
+#  OpenSSL::lib - Imported target for OpenSSL
 
-find_path(OPENSSL_INCLUDE_DIR ssl.h crypto.h
+find_path(OpenSSL_INCLUDE_DIR ssl.h crypto.h
           /usr/include/openssl
           /usr/local/include/openssl 
           /usr/local/opt/openssl/include/openssl
-          ${OPENSSL_DIR}/include/openssl)
+          ${OpenSSL_DIR}/include/openssl)
 
-find_library(OPENSSL_LIBRARY NAMES ssl
-             PATHS /usr/lib /usr/local/lib  /usr/local/opt/openssl/lib ${OPENSSL_DIR}/lib)
+find_library(OpenSSL_LIBRARY NAMES ssl
+             PATHS /usr/lib /usr/local/lib  /usr/local/opt/openssl/lib ${OpenSSL_DIR}/lib)
 
-find_library(CRYPTO_LIBRARY NAMES crypto
-             PATHS /usr/lib /usr/local/lib  /usr/local/opt/openssl/lib ${OPENSSL_DIR}/lib)
+find_library(Crypto_LIBRARY NAMES crypto
+             PATHS /usr/lib /usr/local/lib  /usr/local/opt/openssl/lib ${OpenSSL_DIR}/lib)
 
-set(OPENSSL_LIBRARIES ${OPENSSL_LIBRARY} ${CRYPTO_LIBRARY})
-set(OPENSSL_INCLUDE_DIRS ${OPENSSL_INCLUDE_DIR})
+set(OPENSSL_LIBRARIES ${OpenSSL_LIBRARY} ${CRYPTO_LIBRARY})
+set(OPENSSL_INCLUDE_DIRS ${OpenSSL_INCLUDE_DIR})
 
 include(FindPackageHandleStandardArgs)
 # handle the QUIETLY and REQUIRED arguments and set OPENSSL_FOUND to TRUE
 # if all listed variables are TRUE
 find_package_handle_standard_args(OpenSSL  DEFAULT_MSG
-             OPENSSL_LIBRARY CRYPTO_LIBRARY OPENSSL_INCLUDE_DIR)
+              OpenSSL_LIBRARY Crypto_LIBRARY OpenSSL_INCLUDE_DIR)
 
-mark_as_advanced(OPENSSL_INCLUDE_DIR OPENSSL_LIBRARY CRYPTO_LIBRARY)
+mark_as_advanced(OpenSSL_INCLUDE_DIR OpenSSL_LIBRARY Crypto_LIBRARY)
 
-if (OPENSSL_FOUND AND NOT TARGET OPENSSL::lib)
-    add_library(OPENSSL::lib SHARED IMPORTED)
-    set_target_properties(OPENSSL::lib PROPERTIES
-            IMPORTED_LOCATION "${OPENSSL_LIBRARY};${CRYPTO_LIBRARY}"
-            INTERFACE_INCLUDE_DIRECTORIES "${OPENSSL_INCLUDE_DIR}"
+if (OpenSSL_FOUND AND NOT TARGET OpenSSL::lib)
+    add_library(OpenSSL::lib SHARED IMPORTED)
+    set_target_properties(OpenSSL::lib PROPERTIES
+            IMPORTED_LOCATION "${OpenSSL_LIBRARY};${Crypto_LIBRARY}"
+            INTERFACE_INCLUDE_DIRECTORIES "${OpenSSL_INCLUDE_DIR}"
     )
 endif ()
