@@ -113,6 +113,14 @@ TEST(CelixBundleContextBundlesTests, startUnresolveableBundle) {
         CHECK_EQUAL(state, OSGI_FRAMEWORK_BUNDLE_INSTALLED);
     });
     CHECK_TRUE(called);
+
+    celix_bundleContext_startBundle(ctx, bndId);
+
+    celix_framework_useBundle(fw, false, bndId, nullptr, [](void */*handle*/, const celix_bundle_t *bnd) {
+        auto state = celix_bundle_getState(bnd);
+        CHECK_EQUAL(state, OSGI_FRAMEWORK_BUNDLE_INSTALLED);
+    });
+    CHECK_TRUE(called);
 }
 
 TEST(CelixBundleContextBundlesTests, useBundleTest) {

@@ -1928,11 +1928,13 @@ celix_status_t framework_markResolvedModules(framework_pt framework, linked_list
 
             if (status == CELIX_SUCCESS) {
                 module_setWires(module, wires);
-                module_setResolved(module);
                 resolver_moduleResolved(module);
                 const char *mname = NULL;
                 module_getSymbolicName(module, &mname);
                 status = framework_markBundleResolved(framework, module);
+                if (status == CELIX_SUCCESS) {
+                    module_setResolved(module);
+                }
             }
             linkedListIterator_remove(iterator);
             free(iw);

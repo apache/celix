@@ -22,8 +22,7 @@ add_celix_bundle(bundle_with_exception SOURCES nop_activator.c VERSION 1.0.0)
 add_subdirectory(subdir) #simple_test_bundle4, simple_test_bundle5 and sublib
 
 add_celix_bundle(unresolveable_bundle SOURCES nop_activator.c VERSION 1.0.0)
-target_link_directories(unresolveable_bundle PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/subdir)
-target_link_libraries(unresolveable_bundle PRIVATE "-lsublib")
+target_link_libraries(unresolveable_bundle PRIVATE "-L${CMAKE_CURRENT_BINARY_DIR}/subdir -lsublib")
 add_dependencies(unresolveable_bundle sublib)
 
 add_executable(test_framework
