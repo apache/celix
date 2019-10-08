@@ -18,41 +18,40 @@
 
 # - Try to find Jansson
 # Once done this will define
-#  Jansson - System has Jansson
-#  Jansson_INCLUDE_DIRS - The Jansson include directories
-#  Jansson_LIBRARIES - The libraries needed to use Jansson
-#  Jansson_DEFINITIONS - Compiler switches required for using Jansson
-#  Jansson::lib - Imported target for Jansson
+#  JANSSON_FOUND - System has Jansson
+#  JANSSON_INCLUDE_DIRS - The Jansson include directories
+#  JANSSON_LIBRARIES - The libraries needed to use Jansson
+#  Jansson - Imported target for Jansson
 
-find_path(Jansson_INCLUDE_DIR jansson.h
+find_path(JANSSON_INCLUDE_DIR jansson.h
           /usr/include
           /usr/local/include )
 
-find_library(Jansson_LIBRARY NAMES jansson
+find_library(JANSSON_LIBRARY NAMES jansson
              PATHS /usr/lib /usr/local/lib )
 
-set(Jansson_LIBRARIES ${Jansson_LIBRARY} )
-set(Jansson_INCLUDE_DIRS ${Jansson_INCLUDE_DIR} )
+set(JANSSON_LIBRARIES ${JANSSON_LIBRARY} )
+set(JANSSON_INCLUDE_DIRS ${JANSSON_INCLUDE_DIR} )
 
 include(FindPackageHandleStandardArgs)
 # handle the QUIETLY and REQUIRED arguments and set JANSSON_FOUND to TRUE
 # if all listed variables are TRUE
 find_package_handle_standard_args(Jansson  DEFAULT_MSG
-                                  Jansson_LIBRARY Jansson_INCLUDE_DIR)
+                                  JANSSON_LIBRARY JANSSON_INCLUDE_DIR)
 
-mark_as_advanced(Jansson_INCLUDE_DIR Jansson_LIBRARY)
+mark_as_advanced(JANSSON_INCLUDE_DIR JANSSON_LIBRARY)
 
-if (Jansson_FOUND AND NOT TARGET Jansson::lib)
-    add_library(Jansson::lib SHARED IMPORTED)
-    set_target_properties(Jansson::lib PROPERTIES
-            IMPORTED_LOCATION "${Jansson_LIBRARY}"
-            INTERFACE_INCLUDE_DIRECTORIES "${Jansson_INCLUDE_DIR}"
+if (JANSSON_FOUND AND NOT TARGET Jansson)
+    add_library(Jansson SHARED IMPORTED)
+    set_target_properties(Jansson PROPERTIES
+            IMPORTED_LOCATION "${JANSSON_LIBRARY}"
+            INTERFACE_INCLUDE_DIRECTORIES "${JANSSON_INCLUDE_DIR}"
     )
 
 endif ()
 
 #For backward compatability
-set(JANSSON_LIBRARY ${Jansson_LIBRARY})
-set(JANSSON_LIBRARIES ${Jansson_LIBRARY})
-set(JANSSON_INCLUDE_DIR ${Jansson_INCLUDE_DIR})
-set(JANSSON_INCLUDE_DIRS ${Jansson_INCLUDE_DIR})
+set(JANSSON_LIBRARY ${JANSSON_LIBRARY})
+set(JANSSON_LIBRARIES ${JANSSON_LIBRARY})
+set(JANSSON_INCLUDE_DIR ${JANSSON_INCLUDE_DIR})
+set(JANSSON_INCLUDE_DIRS ${JANSSON_INCLUDE_DIR})

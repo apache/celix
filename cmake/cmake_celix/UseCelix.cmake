@@ -37,19 +37,31 @@ find_package(Jansson REQUIRED) #etcdlib, dfi
 find_package(FFI REQUIRED) #dfi
 
 if (NOT TARGET ZLIB::ZLIB)
-    message("Note ZLIB::ZLIB target not created by find_package(ZLIB). Creating one")
+    #Note more recent zlib will create ZLIB::ZLIB target
+    message("Note ZLIB::ZLIB target not created by find_package(ZLIB). Creating ZLIB::ZLIB Target.")
     add_library(ZLIB::ZLIB SHARED IMPORTED)
     set_target_properties(ZLIB::ZLIB PROPERTIES
             IMPORTED_LOCATION "${ZLIB_LIBRARIES}"
             INTERFACE_INCLUDE_DIRECTORIES "${ZLIB_INCLUDE_DIRS}"
-            )
+    )
 endif ()
 
 if (NOT TARGET CURL::libcurl)
-    message("Note CURL::libcurl target not created by find_package(CURL). Creating one")
+    #Note more recent curl will create CURL::libcurl target
+    message("Note CURL::libcurl target not created by find_package(CURL). Creating CURL::libcurl Target.")
     add_library(CURL::libcurl SHARED IMPORTED)
     set_target_properties(CURL::libcurl PROPERTIES
             IMPORTED_LOCATION "${CURL_LIBRARIES}"
             INTERFACE_INCLUDE_DIRECTORIES "${CURL_INCLUDE_DIRS}"
-            )
+    )
+endif ()
+
+if (NOT TARGET Jansson)
+    #Note if JanssonConfig is present on system this is not needed
+    message("Note Jansson target not created by find_package(Jansson). Creating Jansson Target.")
+    add_library(Jansson SHARED IMPORTED)
+    set_target_properties(Jansson PROPERTIES
+            IMPORTED_LOCATION "${JANSSON_LIBRARY}"
+            INTERFACE_INCLUDE_DIRECTORIES "${JANSSON_INCLUDE_DIR}"
+    )
 endif ()

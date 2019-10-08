@@ -16,35 +16,35 @@
 # under the License.
 
 
-# - Try to find ZMQ
+# - Try to find NanoMsg
 # 	Once done this will define
-#  NanoMsg_FOUND - System has Nanomsg
-#  NanoMsg_INCLUDE_DIRS - The Nanomsg include directories
-#  NanoMsg_LIBRARIES - The libraries needed to use Nanomsg
+#  NANOMSG_FOUND - System has Nanomsg
+#  NANOMSG_INCLUDE_DIRS - The Nanomsg include directories
+#  NANOMSG_LIBRARIES - The libraries needed to use Nanomsg
 #  NanoMsg::lib - Imported target for Nanomsg
 
-find_path(NanoMsg_INCLUDE_DIR nanomsg/nn.h
+find_path(NANOMSG_INCLUDE_DIR nanomsg/nn.h
           /usr/include
           /usr/local/include )
 
-find_library(NanoMsg_LIBRARY NAMES nanomsg
+find_library(NANOMSG_LIBRARY NAMES nanomsg
              PATHS /usr/lib /usr/local/lib /usr/lib64 /usr/local/lib64 )
 
-set(NanoMsg_LIBRARIES ${NanoMsg_LIBRARY} )
-set(NanoMsg_INCLUDE_DIRS ${NanoMsg_INCLUDE_DIR} )
+set(NANOMSG_LIBRARIES ${NANOMSG_LIBRARY} )
+set(NANOMSG_INCLUDE_DIRS ${NANOMSG_INCLUDE_DIR} )
 
 include(FindPackageHandleStandardArgs)
 # handle the QUIETLY and REQUIRED arguments and set ZMQ_FOUND to TRUE
 # if all listed variables are TRUE
 find_package_handle_standard_args(NanoMsg  DEFAULT_MSG
-        NanoMsg_LIBRARY NanoMsg_INCLUDE_DIR)
+        NANOMSG_LIBRARY NANOMSG_INCLUDE_DIR)
 
-mark_as_advanced(NanoMsg_INCLUDE_DIR NanoMsg_LIBRARY )
+mark_as_advanced(NANOMSG_INCLUDE_DIR NANOMSG_LIBRARY )
 
-if (NanoMsg_FOUND AND NOT TARGET NanoMsg::lib)
+if (NANOMSG_FOUND AND NOT TARGET NanoMsg::lib)
     add_library(NanoMsg::lib SHARED IMPORTED)
     set_target_properties(NanoMsg::lib PROPERTIES
-            IMPORTED_LOCATION "${NanoMsg_LIBRARY}"
-            INTERFACE_INCLUDE_DIRECTORIES "${NanoMsg_INCLUDE_DIR}"
+            IMPORTED_LOCATION "${NANOMSG_LIBRARY}"
+            INTERFACE_INCLUDE_DIRECTORIES "${NANOMSG_INCLUDE_DIR}"
     )
 endif ()

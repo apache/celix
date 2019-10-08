@@ -43,7 +43,7 @@ if (RSA_DISCOVERY_ETCD)
 			${CURL_INCLUDE_DIR}
 			${LIBXML2_INCLUDE_DIR}
 	)
-	target_link_libraries(rsa_discovery_etcd PRIVATE CURL::libcurl ${LIBXML2_LIBRARIES} Jansson::lib)
+	target_link_libraries(rsa_discovery_etcd PRIVATE CURL::libcurl ${LIBXML2_LIBRARIES} Jansson)
 
 	install_celix_bundle(rsa_discovery_etcd EXPORT celix COMPONENT rsa)
 	#Setup target aliases to match external usage

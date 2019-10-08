@@ -22,7 +22,7 @@ find_program(XTERM_CMD NAMES xterm)
 
 find_package(Jansson REQUIRED)
 
-set(PUBSUB_CONTAINER_LIBS Jansson::lib Celix::dfi)
+set(PUBSUB_CONTAINER_LIBS Jansson Celix::dfi)
 
 # UDP Multicast
 add_celix_container(pubsub_publisher_udp_mc
