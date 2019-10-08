@@ -42,6 +42,7 @@ TEST_GROUP(CelixBundleContextBundlesTests) {
     const char * const TEST_BND4_LOC = "simple_test_bundle4.zip";
     const char * const TEST_BND5_LOC = "simple_test_bundle5.zip";
     const char * const TEST_BND_WITH_EXCEPTION_LOC = "bundle_with_exception.zip";
+    const char * const TEST_BND_UNRESOLVEABLE_LOC = "unresolveable_bundle.zip";
 
     void setup() {
         properties = properties_create();
@@ -98,6 +99,18 @@ TEST(CelixBundleContextBundlesTests, startBundleWithException) {
     bool called = celix_framework_useBundle(fw, false, bndId, nullptr, [](void */*handle*/, const celix_bundle_t *bnd) {
         auto state = celix_bundle_getState(bnd);
         CHECK_EQUAL(state, OSGI_FRAMEWORK_BUNDLE_RESOLVED);
+    });
+    CHECK_TRUE(called);
+}
+
+
+TEST(CelixBundleContextBundlesTests, startUnresolveableBundle) {
+    long bndId = celix_bundleContext_installBundle(ctx, TEST_BND_UNRESOLVEABLE_LOC, true);
+    CHECK(bndId > 0); //bundle is installed, but not resolved
+
+    bool called = celix_framework_useBundle(fw, false, bndId, nullptr, [](void */*handle*/, const celix_bundle_t *bnd) {
+        auto state = celix_bundle_getState(bnd);
+        CHECK_EQUAL(state, OSGI_FRAMEWORK_BUNDLE_INSTALLED);
     });
     CHECK_TRUE(called);
 }

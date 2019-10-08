@@ -19,7 +19,12 @@ add_celix_bundle(simple_test_bundle1 NO_ACTIVATOR VERSION 1.0.0)
 add_celix_bundle(simple_test_bundle2 NO_ACTIVATOR VERSION 1.0.0)
 add_celix_bundle(simple_test_bundle3 NO_ACTIVATOR VERSION 1.0.0)
 add_celix_bundle(bundle_with_exception SOURCES nop_activator.c VERSION 1.0.0)
-add_subdirectory(subdir) #simple_test_bundle4 and simeple_test_bundle5
+add_subdirectory(subdir) #simple_test_bundle4, simple_test_bundle5 and sublib
+
+add_celix_bundle(unresolveable_bundle SOURCES nop_activator.c VERSION 1.0.0)
+target_link_directories(unresolveable_bundle PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/subdir)
+target_link_libraries(unresolveable_bundle PRIVATE "-lsublib")
+add_dependencies(unresolveable_bundle sublib)
 
 add_executable(test_framework
     run_tests.cpp
@@ -31,7 +36,7 @@ add_executable(test_framework
 )
 
 target_link_libraries(test_framework Celix::framework CURL::libcurl ${CPPUTEST_LIBRARY})
-add_dependencies(test_framework simple_test_bundle1_bundle simple_test_bundle2_bundle simple_test_bundle3_bundle simple_test_bundle4_bundle simple_test_bundle5_bundle bundle_with_exception)
+add_dependencies(test_framework simple_test_bundle1_bundle simple_test_bundle2_bundle simple_test_bundle3_bundle simple_test_bundle4_bundle simple_test_bundle5_bundle bundle_with_exception_bundle unresolveable_bundle_bundle)
 target_include_directories(test_framework PRIVATE ../src)
 
 configure_file(config.properties.in config.properties @ONLY)

@@ -912,8 +912,10 @@ celix_status_t fw_startBundle(framework_pt framework, bundle_pt bundle, int opti
                     if (wires == NULL) {
                         return CELIX_BUNDLE_EXCEPTION;
                     }
-                    framework_markResolvedModules(framework, wires);
-
+                    status = framework_markResolvedModules(framework, wires);
+                    if (status != CELIX_SUCCESS) {
+                        break;
+                    }
                 }
                 /* no break */
             case OSGI_FRAMEWORK_BUNDLE_RESOLVED:
@@ -1867,6 +1869,7 @@ long framework_getNextBundleId(framework_pt framework) {
 }
 
 celix_status_t framework_markResolvedModules(framework_pt framework, linked_list_pt resolvedModuleWireMap) {
+    celix_status_t status = CELIX_SUCCESS;
     if (resolvedModuleWireMap != NULL) {
         // hash_map_iterator_pt iterator = hashMapIterator_create(resolvedModuleWireMap);
         linked_list_iterator_pt iterator = linkedListIterator_create(resolvedModuleWireMap, linkedList_size(resolvedModuleWireMap));
@@ -1923,21 +1926,21 @@ celix_status_t framework_markResolvedModules(framework_pt framework, linked_list
 //                printf("Module %s imports library %s:%s from %s\n", importerName, name, versionString, exporterName);
 //			}
 
-            module_setWires(module, wires);
-
-            module_setResolved(module);
-            resolver_moduleResolved(module);
-
-            const char *mname = NULL;
-            module_getSymbolicName(module, &mname);
-            framework_markBundleResolved(framework, module);
+            if (status == CELIX_SUCCESS) {
+                module_setWires(module, wires);
+                module_setResolved(module);
+                resolver_moduleResolved(module);
+                const char *mname = NULL;
+                module_getSymbolicName(module, &mname);
+                status = framework_markBundleResolved(framework, module);
+            }
             linkedListIterator_remove(iterator);
             free(iw);
         }
         linkedListIterator_destroy(iterator);
         linkedList_destroy(resolvedModuleWireMap);
     }
-    return CELIX_SUCCESS;
+    return status;
 }
 
 celix_status_t framework_markBundleResolved(framework_pt framework, module_pt module) {
@@ -1984,7 +1987,7 @@ celix_status_t framework_markBundleResolved(framework_pt framework, module_pt mo
         fw_bundleEntry_decreaseUseCount(framework, bndId);
     }
 
-    return CELIX_SUCCESS;
+    return status;
 }
 
 array_list_pt framework_getBundles(framework_pt framework) {
@@ -2425,8 +2428,7 @@ static celix_status_t framework_loadBundleLibraries(framework_pt framework, bund
 
         if (status == CELIX_SUCCESS) {
             bundle_setHandle(bundle, handle);
-        }
-        else if(handle != NULL){
+        } else if (handle != NULL) {
             celix_libloader_close(handle);
         }
     }
@@ -2479,8 +2481,6 @@ static celix_status_t framework_loadLibraries(framework_pt framework, const char
 
         token = strtok_r(NULL, ",", &last);
     }
-
-    framework_logIfError(framework->logger, status, NULL, "Could not load all libraries");
 
     free(libraries);
     return status;
