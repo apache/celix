@@ -15,25 +15,43 @@
 # specific language governing permissions and limitations
 # under the License.
 
+# - Try to find UUID
+# Once done this will define
+#  UUID_FOUND - System has UUID
+#  UUID_INCLUDE_DIRS - The UUID include directories
+#  UUID_LIBRARIES - The libraries needed to use UUID
+#  UUID::lib - Imported target for UUID
 
-find_path(UUID_INCLUDE_DIR uuid/uuid.h
-          /usr/include
-          /usr/local/include )
-
-find_library(UUID_LIBRARY NAMES uuid
-             PATHS /usr/lib /usr/local/lib /usr/lib64 /usr/local/lib64 /lib/i386-linux-gnu /lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu)
-
-include(FindPackageHandleStandardArgs)
 if (APPLE)
-find_package_handle_standard_args(UUID  DEFAULT_MSG
-                                  UUID_INCLUDE_DIR)
+    set(UUID_INCLUDE_DIRS )
+    set(UUID_LIBRARIES )
+
+    find_package_handle_standard_args(UUID DEFAULT_MSG)
+
+    if (NOT TARGET UUID::lib)
+        add_library(UUID::lib INTERFACE IMPORTED)
+    endif ()
 else ()
-find_package_handle_standard_args(UUID  DEFAULT_MSG
-                                  UUID_LIBRARY UUID_INCLUDE_DIR)
+
+    find_path(UUID_INCLUDE_DIR uuid/uuid.h
+              /usr/include
+              /usr/local/include )
+
+    find_library(UUID_LIBRARY NAMES uuid
+                 PATHS /usr/lib /usr/local/lib /usr/lib64 /usr/local/lib64 /lib/i386-linux-gnu /lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu)
+
+    include(FindPackageHandleStandardArgs)
+    find_package_handle_standard_args(UUID DEFAULT_MSG
+                                      UUID_LIBRARY UUID_INCLUDE_DIR)
+
+    mark_as_advanced(UUID_INCLUDE_DIR UUID_LIBRARY)
+    set(UUID_INCLUDE_DIRS ${UUID_INCLUDE_DIR})
+    set(UUID_LIBRARIES ${UUID_LIBRARY})
+    if (UUID_FOUND AND NOT TARGET UUID::lib)
+        add_library(UUID::lib SHARED IMPORTED)
+        set_target_properties(UUID::lib PROPERTIES
+                IMPORTED_LOCATION "${UUID_LIBRARY}"
+                INTERFACE_INCLUDE_DIRECTORIES "${UUID_INCLUDE_DIR}"
+        )
+    endif ()
 endif ()
-
-
-mark_as_advanced(UUID_INCLUDE_DIR UUID_LIBRARY)
-set(UUID_INCLUDE_DIRS ${UUID_INCLUDE_DIR})
-set(UUID_LIBRARIES ${UUID_LIBRARY})
-

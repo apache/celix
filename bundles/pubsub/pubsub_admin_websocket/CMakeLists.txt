@@ -18,12 +18,6 @@
 find_package(Jansson REQUIRED)
 find_package(UUID REQUIRED)
 
-if(NOT UUID_LIBRARY)
-    #i.e. not found for OSX
-    set(UUID_LIBRARY "")
-    set(UUID_INCLUDE_DIRS "")
-endif()
-
 add_celix_bundle(celix_pubsub_admin_websocket
     BUNDLE_SYMBOLICNAME "apache_celix_pubsub_admin_websocket"
     VERSION "1.0.0"
@@ -43,8 +37,6 @@ target_link_libraries(celix_pubsub_admin_websocket PRIVATE
         Celix::http_admin_api
 )
 target_include_directories(celix_pubsub_admin_websocket PRIVATE
-    ${JANSSON_INCLUDE_DIR}
-    ${UUID_INCLUDE_DIRS}
     src
 )
 

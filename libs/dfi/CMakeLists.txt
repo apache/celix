@@ -39,12 +39,8 @@ target_include_directories(dfi PUBLIC
 	$<INSTALL_INTERFACE:include/celix/dfi>
 )
 
-target_include_directories(dfi SYSTEM PRIVATE
-		${JANSSON_INCLUDE_DIRS}
-)
-target_link_libraries(dfi PRIVATE ffi::lib)
-target_include_directories(dfi SYSTEM PRIVATE)
-target_link_libraries(dfi PRIVATE ${JANSSON_LIBRARY})
+target_link_libraries(dfi PRIVATE FFI::lib)
+target_link_libraries(dfi PUBLIC Jansson)
 target_link_libraries(dfi PRIVATE Celix::utils)
 set_target_properties(dfi PROPERTIES "SOVERSION" 1)
 
@@ -72,8 +68,7 @@ if (ENABLE_TESTING)
 		test/run_tests.cpp
 	)
 
-    target_link_libraries(test_dfi PRIVATE Celix::dfi Celix::utils ffi::lib ${JANSSON_LIBRARY} ${CPPUTEST_LIBRARIES})
-    target_include_directories(test_dfi PRIVATE ${JANSSON_INCLUDE_DIRS})
+    target_link_libraries(test_dfi PRIVATE Celix::dfi Celix::utils FFI::lib Jansson ${CPPUTEST_LIBRARIES})
 
     file(COPY ${CMAKE_CURRENT_LIST_DIR}/test/schemas DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
     file(COPY ${CMAKE_CURRENT_LIST_DIR}/test/descriptors DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

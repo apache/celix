@@ -20,28 +20,30 @@ Apache Celix aims to be support a broad range of UNIX platforms.
  
 Currently the [continuous integration build server](https://travis-ci.org/apache/celix) builds and tests Apache Celix for:
 
-*   Ubuntu Trusty Tahr (14.04)
+* Ubuntu Trusty Tahr (14.04)
     * GCC 
     * CLang 
-*   OSX
+* OSX
     * GCC 
     * CLang 
-*   Android (cross-compiled on Ubuntu Trusty Tahr) 
+* Android (cross-compiled on Ubuntu Trusty Tahr) 
     * GCC 
 
 # Preparing
 The following packages (libraries + headers) should be installed on your system:
 
-*	Development Environment
-	*	build-essentials (gcc/g++ or clang/clang++) 
-	* 	git
-    *   java (for packaging bundles)
-	*	cmake (3.2 or higher)
-* 	Apache Celix Dependencies
-	*	curl
-	*	jansson
-	*   libffi
-	*   libxml2 (for remote services and bonjour shell)
+* Development Environment
+    * build-essentials (gcc/g++ or clang/clang++) 
+	* git
+    * java (for packaging bundles)
+	* make (3.2 or higher)
+* Apache Celix Dependencies
+    * zlib
+    * uuid
+	* curl (only initialized in the Celix framework)
+	* jansson (for serialization in libdfi)
+	* libffi (for libdfi)
+	* libxml2 (for remote services and bonjour shell)
 	
 
 For debian based systems (apt), the following command should work:
