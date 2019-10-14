@@ -29,12 +29,6 @@ add_celix_bundle(celix_pubsub_topology_manager
 target_link_libraries(celix_pubsub_topology_manager PRIVATE Celix::framework Celix::log_helper Celix::pubsub_spi Celix::shell_api)
 target_link_libraries(celix_pubsub_topology_manager PRIVATE UUID::lib)
 
-get_target_property(DESC Celix::pubsub_spi TOPIC_INFO_DESCRIPTOR)
-celix_bundle_files(celix_pubsub_topology_manager
-    ${DESC}
-    DESTINATION "META-INF/descriptors/services"
-)
-
 install_celix_bundle(celix_pubsub_topology_manager EXPORT celix COMPONENT pubsub)
 
 add_library(Celix::pubsub_topology_manager ALIAS celix_pubsub_topology_manager)

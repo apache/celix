@@ -31,9 +31,6 @@ target_include_directories(pubsub_spi PUBLIC
 )
 target_link_libraries(pubsub_spi PUBLIC Celix::framework Celix::pubsub_api)
 
-set_target_properties(pubsub_spi PROPERTIES TOPIC_INFO_DESCRIPTOR ${CMAKE_CURRENT_LIST_DIR}/include/pubsub_topic_info.descriptor)
-#TODO how to make this descriptor available for imported targets? $<INSTALL_INTERFACE:include/celix/pubsub_spi/pubsub_topic_info.descriptor>
-
 add_library(Celix::pubsub_spi ALIAS pubsub_spi)
 
 install(TARGETS pubsub_spi EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT pubsub)
