@@ -423,7 +423,7 @@ celix_status_t pubsub_websocketAdmin_teardownTopicReceiver(void *handle, const c
         free(receiverKey);
         pubsub_websocketTopicReceiver_destroy(receiver);
     }
-    celixThreadMutex_lock(&psa->topicReceivers.mutex);
+    celixThreadMutex_unlock(&psa->topicReceivers.mutex);
 
     celix_status_t  status = CELIX_SUCCESS;
     return status;
