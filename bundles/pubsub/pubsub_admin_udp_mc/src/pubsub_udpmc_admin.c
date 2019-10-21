@@ -440,7 +440,7 @@ celix_status_t pubsub_udpmcAdmin_teardownTopicReceiver(void *handle, const char 
         free(receiverKey);
         pubsub_udpmcTopicReceiver_destroy(receiver);
     }
-    celixThreadMutex_lock(&psa->topicReceivers.mutex);
+    celixThreadMutex_unlock(&psa->topicReceivers.mutex);
 
     celix_status_t  status = CELIX_SUCCESS;
     return status;

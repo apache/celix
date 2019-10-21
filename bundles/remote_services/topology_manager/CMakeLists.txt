@@ -36,7 +36,6 @@ if (RSA_TOPOLOGY_MANAGER)
         find_package(CppUTest REQUIRED)
 	    find_package(Jansson REQUIRED)
 
-        include_directories("${JANSSON_INCLUDE_DIR}")
         include_directories("${CPPUTEST_INCLUDE_DIR}")
         include_directories("${CPPUTEST_EXT_INCLUDE_DIR}")
         add_subdirectory(tms_tst)

@@ -329,13 +329,14 @@ void celix_framework_useBundles(framework_t *fw, bool includeFrameworkBundle, vo
 			->withPointerParameters("use", use);
 }
 
-void celix_framework_useBundle(framework_t *fw, bool onlyActive, long bundleId, void *callbackHandle, void(*use)(void *handle, const bundle_t *bnd)) {
+bool celix_framework_useBundle(framework_t *fw, bool onlyActive, long bundleId, void *callbackHandle, void(*use)(void *handle, const bundle_t *bnd)) {
 	mock_c()->actualCall("celix_framework_useBundle")
 			->withPointerParameters("fw", fw)
 			->withBoolParameters("onlyActive", onlyActive)
 			->withLongIntParameters("bundleId", bundleId)
 			->withPointerParameters("callbackHandle", callbackHandle)
 			->withPointerParameters("use", use);
+	return mock_c()->returnValue().value.boolValue;
 }
 
 service_registration_t* celix_framework_registerServiceFactory(framework_t *fw , const celix_bundle_t *bnd, const char* serviceName, celix_service_factory_t *factory, celix_properties_t *properties) {

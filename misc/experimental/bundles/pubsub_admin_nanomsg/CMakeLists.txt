@@ -36,11 +36,9 @@ if (BUILD_PUBSUB_PSA_NANOMSG)
     target_link_libraries(celix_pubsub_admin_nanomsg PRIVATE
             Celix::pubsub_spi
             Celix::framework Celix::dfi Celix::log_helper
-            ${NANOMSG_LIBRARIES}
+            NANOMSG::lib
     )
     target_include_directories(celix_pubsub_admin_nanomsg PRIVATE
-        ${NANOMSG_INCLUDE_DIR}
-        ${JANSSON_INCLUDE_DIR}
         src
     )
 

@@ -22,6 +22,7 @@
 #  ZMQ_INCLUDE_DIRS - The Zmq include directories
 #  ZMQ_LIBRARIES - The libraries needed to use Zmq
 #  ZMQ_DEFINITIONS - Compiler switches required for using Zmq
+#  ZMQ::lib - Imported target for UUID
 
 find_path(ZMQ_INCLUDE_DIR zmq.h zmq_utils.h
           /usr/include
@@ -40,3 +41,11 @@ find_package_handle_standard_args(Zmq  DEFAULT_MSG
                                   ZMQ_LIBRARY ZMQ_INCLUDE_DIR)
 
 mark_as_advanced(ZMQ_INCLUDE_DIR ZMQ_LIBRARY )
+
+if (ZMQ_FOUND AND NOT TARGET ZMQ::lib)
+    add_library(ZMQ::lib SHARED IMPORTED)
+    set_target_properties(ZMQ::lib PROPERTIES
+            IMPORTED_LOCATION "${ZMQ_LIBRARY}"
+            INTERFACE_INCLUDE_DIRECTORIES "${ZMQ_INCLUDE_DIR}"
+    )
+endif ()
