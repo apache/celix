@@ -27,24 +27,13 @@
 
 
 struct pubsub_websocket_msg_header {
-    uint32_t type; //msg type id (hash of fqn)
+    const char *id; //FQN
     uint8_t major;
     uint8_t minor;
     uint32_t seqNr;
-    unsigned char originUUID[16];
-    uint64_t sendtimeSeconds; //seconds since epoch
-    uint64_t sendTimeNanoseconds; //ns since epoch
 };
 
 typedef struct pubsub_websocket_msg_header pubsub_websocket_msg_header_t;
-
-struct pubsub_websocket_msg {
-    pubsub_websocket_msg_header_t header;
-    unsigned int payloadSize;
-    char payload[];
-};
-
-typedef struct pubsub_websocket_msg pubsub_websocket_msg_t;
 
 void psa_websocket_setScopeAndTopicFilter(const char* scope, const char *topic, char *filter);
 char *psa_websocket_createURI(const char *scope, const char *topic);
