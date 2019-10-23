@@ -501,7 +501,7 @@ static inline void processMsg(pubsub_websocket_topic_receiver_t *receiver, const
                    json_integer_value(jsSeqNr), (jsData ? "TRUE" : "FALSE"));
         }
     } else {
-        L_WARN("[PSA_WEBSOCKET_TR] Failed to load websocket JSON message, error: %s", error.line, error.text);
+        L_WARN("[PSA_WEBSOCKET_TR] Failed to load websocket JSON message, error line: %d, error message: %s", error.line, error.text);
         return;
     }
 

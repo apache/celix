@@ -331,7 +331,7 @@ static int psa_websocket_topicPublicationSend(void* handle, unsigned int msgType
                 free((void *) msg);
                 json_decref(jsData); //Decrease ref count means freeing the object
                 if (bytes_written != (int) bytes_to_write) {
-                    L_WARN("[PSA_WEBSOCKET_TS] Error sending websocket, written %lu of total %lu bytes", bytes_written, bytes_to_write);
+                    L_WARN("[PSA_WEBSOCKET_TS] Error sending websocket, written %d of total %lu bytes", bytes_written, bytes_to_write);
                 }
             } else {
                 L_WARN("[PSA_WEBSOCKET_TS] Error sending websocket, serialized data corrupt. Error(%d;%d;%d): %s", jsError.column, jsError.line, jsError.position, jsError.text);
