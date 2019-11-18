@@ -30,6 +30,7 @@ set(SOURCES
 	src/dyn_message.c
 	src/json_serializer.c
 	src/json_rpc.c
+	src/avrobin_serializer.c
 )
 
 add_library(dfi SHARED ${SOURCES})
@@ -65,6 +66,7 @@ if (ENABLE_TESTING)
         test/json_serializer_tests.cpp
         test/json_rpc_tests.cpp
         test/json_rpc_avpr_tests.cpp
+        test/avrobin_serialization_tests.cpp
 		test/run_tests.cpp
 	)
 
