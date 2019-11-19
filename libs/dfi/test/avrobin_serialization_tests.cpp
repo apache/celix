@@ -148,8 +148,7 @@ static void generalTests() {
                 rc = avrobinSerializer_generateSchema(type, &schema);
                 CHECK_EQUAL(0, rc);
                 if (rc == 0) {
-                    printf(schema);
-                    printf("\n");
+                    printf("%s\n", schema);
                     rc = avrobinSerializer_saveFile("test1.avro", schema, serdata, serdatalen);
                     CHECK_EQUAL(0, rc);
                     free(schema);
@@ -188,8 +187,7 @@ static void generalTests() {
                 rc = avrobinSerializer_generateSchema(type, &schema);
                 CHECK_EQUAL(0, rc);
                 if (rc == 0) {
-                    printf(schema);
-                    printf("\n");
+                    printf("%s\n", schema);
                     rc = avrobinSerializer_saveFile("test2.avro", schema, serdata, serdatalen);
                     CHECK_EQUAL(0, rc);
                     free(schema);
@@ -224,8 +222,7 @@ static void generalTests() {
                 rc = avrobinSerializer_generateSchema(type, &schema);
                 CHECK_EQUAL(0, rc);
                 if (rc == 0) {
-                    printf(schema);
-                    printf("\n");
+                    printf("%s\n", schema);
                     rc = avrobinSerializer_saveFile("test3.avro", schema, serdata, serdatalen);
                     CHECK_EQUAL(0, rc);
                     free(schema);
@@ -257,8 +254,7 @@ static void generalTests() {
                 rc = avrobinSerializer_generateSchema(type, &schema);
                 CHECK_EQUAL(0, rc);
                 if (rc == 0) {
-                    printf(schema);
-                    printf("\n");
+                    printf("%s\n", schema);
                     rc = avrobinSerializer_saveFile("test4.avro", schema, serdata, serdatalen);
                     CHECK_EQUAL(0, rc);
                     free(schema);
@@ -290,8 +286,7 @@ static void generalTests() {
                 rc = avrobinSerializer_generateSchema(type, &schema);
                 CHECK_EQUAL(0, rc);
                 if (rc == 0) {
-                    printf(schema);
-                    printf("\n");
+                    printf("%s\n", schema);
                     rc = avrobinSerializer_saveFile("test5.avro", schema, serdata, serdatalen);
                     CHECK_EQUAL(0, rc);
                     free(schema);
@@ -323,8 +318,7 @@ static void generalTests() {
                 rc = avrobinSerializer_generateSchema(type, &schema);
                 CHECK_EQUAL(0, rc);
                 if (rc == 0) {
-                    printf(schema);
-                    printf("\n");
+                    printf("%s\n", schema);
                     rc = avrobinSerializer_saveFile("test6.avro", schema, serdata, serdatalen);
                     CHECK_EQUAL(0, rc);
                     free(schema);
@@ -340,7 +334,7 @@ static void generalTests() {
     test7_val.cap = 8;
     test7_val.len = 8;
     test7_val.buf = (int32_t*)malloc(sizeof(int32_t) * test7_val.cap);
-    for (int i=0; i<test7_val.len; i++) {
+    for (unsigned int i=0; i<test7_val.len; i++) {
         test7_val.buf[i] = i;
     }
 
@@ -368,8 +362,7 @@ static void generalTests() {
                 rc = avrobinSerializer_generateSchema(type, &schema);
                 CHECK_EQUAL(0, rc);
                 if (rc == 0) {
-                    printf(schema);
-                    printf("\n");
+                    printf("%s\n", schema);
                     rc = avrobinSerializer_saveFile("test7.avro", schema, serdata, serdatalen);
                     CHECK_EQUAL(0, rc);
                     free(schema);
@@ -417,8 +410,7 @@ static void generalTests() {
                 rc = avrobinSerializer_generateSchema(type, &schema);
                 CHECK_EQUAL(0, rc);
                 if (rc == 0) {
-                    printf(schema);
-                    printf("\n");
+                    printf("%s\n", schema);
                     rc = avrobinSerializer_saveFile("test8.avro", schema, serdata, serdatalen);
                     CHECK_EQUAL(0, rc);
                     free(schema);
@@ -475,8 +467,7 @@ static void generalTests() {
                 rc = avrobinSerializer_generateSchema(type, &schema);
                 CHECK_EQUAL(0, rc);
                 if (rc == 0) {
-                    printf(schema);
-                    printf("\n");
+                    printf("%s\n", schema);
                     rc = avrobinSerializer_saveFile("test9.avro", schema, serdata, serdatalen);
                     CHECK_EQUAL(0, rc);
                     free(schema);
@@ -514,8 +505,7 @@ static void generalTests() {
                 rc = avrobinSerializer_generateSchema(type, &schema);
                 CHECK_EQUAL(0, rc);
                 if (rc == 0) {
-                    printf(schema);
-                    printf("\n");
+                    printf("%s\n", schema);
                     rc = avrobinSerializer_saveFile("test10.avro", schema, serdata, serdatalen);
                     CHECK_EQUAL(0, rc);
                     free(schema);
@@ -553,8 +543,7 @@ static void generalTests() {
                 rc = avrobinSerializer_generateSchema(type, &schema);
                 CHECK_EQUAL(0, rc);
                 if (rc == 0) {
-                    printf(schema);
-                    printf("\n");
+                    printf("%s\n", schema);
                     rc = avrobinSerializer_saveFile("test11.avro", schema, serdata, serdatalen);
                     CHECK_EQUAL(0, rc);
                     free(schema);
@@ -588,8 +577,7 @@ static void generalTests() {
                 rc = avrobinSerializer_generateSchema(type, &schema);
                 CHECK_EQUAL(0, rc);
                 if (rc == 0) {
-                    printf(schema);
-                    printf("\n");
+                    printf("%s\n", schema);
                     rc = avrobinSerializer_saveFile("test12.avro", schema, serdata, serdatalen);
                     CHECK_EQUAL(0, rc);
                     free(schema);
