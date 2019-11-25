@@ -446,8 +446,8 @@ static int avrobinSerializer_parseSequence(dyn_type *type, void *loc, FILE *stre
         return ERROR;
     }
 
-    fpos64_t streamPos;
-    if (fgetpos64(stream, &streamPos) != 0) {
+    fpos_t streamPos;
+    if (fgetpos(stream, &streamPos) != 0) {
         LOG_ERROR("Failed to get position of stream.");
         return ERROR;
     }
@@ -486,7 +486,7 @@ static int avrobinSerializer_parseSequence(dyn_type *type, void *loc, FILE *stre
 
     dynType_free(itemType, itemLoc);
 
-    if (fsetpos64(stream, &streamPos) != 0) {
+    if (fsetpos(stream, &streamPos) != 0) {
         LOG_ERROR("Failed to set position of stream.");
         return ERROR;
     }
