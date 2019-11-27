@@ -85,6 +85,33 @@ static celix_status_t dfi_findFileForBundle(celix_bundle_t *bundle, const char *
     return status;
 }
 
+static celix_status_t dfi_findAvprFileForBundle(celix_bundle_t *bundle, const char* fileName, FILE **out) {
+    celix_status_t status;
+    char *path = NULL;
+    status = bundle_getEntry(bundle, fileName, &path);
+
+    char metaInfFileName[512];
+
+    if (status != CELIX_SUCCESS || path == NULL) {
+        free(path);
+        snprintf(metaInfFileName, sizeof(metaInfFileName), "META-INF/avpr/%s", fileName);
+        status = bundle_getEntry(bundle, metaInfFileName, &path);
+    }
+
+    if (status == CELIX_SUCCESS && path != NULL) {
+        FILE *df = fopen(path, "r");
+        if (df == NULL)  {
+            status = CELIX_FILE_IO_EXCEPTION;
+        }
+        else {
+            *out = df;
+        }
+    }
+
+    free(path);
+    return status;
+}
+
 celix_status_t dfi_findDescriptor(celix_bundle_context_t *context, celix_bundle_t *bundle, const char *name, FILE **out) {
     celix_status_t  status;
     char fileName[128];
@@ -122,7 +149,7 @@ celix_status_t dfi_findAvprDescriptor(celix_bundle_context_t *context, celix_bun
             status = dfi_findFileForFramework(context, fileName, out);
         } else {
             //normal bundle
-            status = dfi_findFileForBundle(bundle, fileName, out);
+            status = dfi_findAvprFileForBundle(bundle, fileName, out);
         }
     }
 
