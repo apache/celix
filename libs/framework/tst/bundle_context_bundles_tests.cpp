@@ -1,21 +1,22 @@
-/**
- *Licensed to the Apache Software Foundation (ASF) under one
- *or more contributor license agreements.  See the NOTICE file
- *distributed with this work for additional information
- *regarding copyright ownership.  The ASF licenses this file
- *to you under the Apache License, Version 2.0 (the
- *"License"); you may not use this file except in compliance
- *with the License.  You may obtain a copy of the License at
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
- *Unless required by applicable law or agreed to in writing,
- *software distributed under the License is distributed on an
- *"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- *specific language governing permissions and limitations
- *under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
+
 #include <thread>
 #include <chrono>
 #include <iostream>
@@ -40,6 +41,8 @@ TEST_GROUP(CelixBundleContextBundlesTests) {
     const char * const TEST_BND3_LOC = "simple_test_bundle3.zip";
     const char * const TEST_BND4_LOC = "simple_test_bundle4.zip";
     const char * const TEST_BND5_LOC = "simple_test_bundle5.zip";
+    const char * const TEST_BND_WITH_EXCEPTION_LOC = "bundle_with_exception.zip";
+    const char * const TEST_BND_UNRESOLVEABLE_LOC = "unresolveable_bundle.zip";
 
     void setup() {
         properties = properties_create();
@@ -88,6 +91,39 @@ TEST(CelixBundleContextBundlesTests, useBundlesTest) {
     celix_bundleContext_useBundles(ctx, &count, use);
     CHECK_EQUAL(1, count);
 };
+
+TEST(CelixBundleContextBundlesTests, startBundleWithException) {
+    long bndId = celix_bundleContext_installBundle(ctx, TEST_BND_WITH_EXCEPTION_LOC, true);
+    CHECK(bndId > 0); //bundle is installed, but not started
+
+    bool called = celix_framework_useBundle(fw, false, bndId, nullptr, [](void */*handle*/, const celix_bundle_t *bnd) {
+        auto state = celix_bundle_getState(bnd);
+        CHECK_EQUAL(state, OSGI_FRAMEWORK_BUNDLE_RESOLVED);
+    });
+    CHECK_TRUE(called);
+}
+
+/* TODO enable again with newer Ubuntu. For now cannot reproduce this.
+ * Should be fixed with #121
+TEST(CelixBundleContextBundlesTests, startUnresolveableBundle) {
+    long bndId = celix_bundleContext_installBundle(ctx, TEST_BND_UNRESOLVEABLE_LOC, true);
+    CHECK(bndId > 0); //bundle is installed, but not resolved
+
+    bool called = celix_framework_useBundle(fw, false, bndId, nullptr, [](void *, const celix_bundle_t *bnd) {
+        auto state = celix_bundle_getState(bnd);
+        CHECK_EQUAL(state, OSGI_FRAMEWORK_BUNDLE_INSTALLED);
+    });
+    CHECK_TRUE(called);
+
+    celix_bundleContext_startBundle(ctx, bndId);
+
+   called = celix_framework_useBundle(fw, false, bndId, nullptr, [](void *, const celix_bundle_t *bnd) {
+        auto state = celix_bundle_getState(bnd);
+        CHECK_EQUAL(state, OSGI_FRAMEWORK_BUNDLE_INSTALLED);
+    });
+    CHECK_TRUE(called);
+}
+*/
 
 TEST(CelixBundleContextBundlesTests, useBundleTest) {
     int count = 0;

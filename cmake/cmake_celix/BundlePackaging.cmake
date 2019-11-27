@@ -15,12 +15,12 @@
 # specific language governing permissions and limitations
 # under the License.
 
-find_program(JAR_COMMAND jar)
+find_program(JAR_COMMAND jar NO_CMAKE_FIND_ROOT_PATH)
 
 if(JAR_COMMAND)
     message(STATUS "Using jar to create bundles")
 else()
-    find_program(ZIP_COMMAND zip)
+    find_program(ZIP_COMMAND zip NO_CMAKE_FIND_ROOT_PATH)
     if(ZIP_COMMAND)
         message(STATUS "Using zip to create bundles")
     else()

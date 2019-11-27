@@ -39,7 +39,7 @@ IF (ANDROID)
     set(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -Wall ${CMAKE_C_FLAGS}")
 ELSE ()
     set(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -fPIC ${CMAKE_C_FLAGS}")
-    set(CMAKE_CXX_FLAGS "-std=c++11 -fno-rtti -fno-exceptions ${CMAKE_CXX_FLAGS}")
+    set(CMAKE_CXX_FLAGS "-std=c++11 -fno-rtti ${CMAKE_CXX_FLAGS}")
     set(CMAKE_C_FLAGS "-Wall -Werror ${CMAKE_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "-Wall -Wextra -Weffc++ ${CMAKE_CXX_FLAGS}")
     set(CMAKE_C_FLAGS_DEBUG "-g -DDEBUG ${CMAKE_C_FLAGS}")
@@ -104,6 +104,9 @@ add_subdirectory(libs)
 
 #Bundles
 add_subdirectory(bundles)
+
+#Experimental Bundles/Libraries
+add_subdirectory(misc/experimental)
 
 #Example as last, because some example will check if underlining options are enabled
 add_subdirectory(examples/celix-examples examples)

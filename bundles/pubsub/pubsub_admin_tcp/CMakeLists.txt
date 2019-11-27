@@ -36,10 +36,10 @@ target_link_libraries(celix_pubsub_admin_tcp PRIVATE
         Celix::pubsub_spi
         Celix::framework Celix::dfi Celix::log_helper
 )
-target_include_directories(celix_pubsub_admin_tcp PRIVATE ${JANSSON_INCLUDE_DIR} src)
+target_include_directories(celix_pubsub_admin_tcp PRIVATE src)
 # cmake find package UUID set the wrong include dir for OSX
 if (NOT APPLE)
-    target_include_directories(celix_pubsub_admin_tcp SYSTEM PRIVATE ${UUID_INCLUDE_DIRS})
+    target_link_libraries(celix_pubsub_admin_tcp PRIVATE UUID::lib)
 endif()
 
 install_celix_bundle(celix_pubsub_admin_tcp EXPORT celix COMPONENT pubsub)

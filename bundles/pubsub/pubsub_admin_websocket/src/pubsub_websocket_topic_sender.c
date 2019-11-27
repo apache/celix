@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -29,6 +29,7 @@
 #include "pubsub_psa_websocket_constants.h"
 #include "pubsub_websocket_common.h"
 #include <uuid/uuid.h>
+#include <jansson.h>
 #include "celix_constants.h"
 #include "http_admin/api.h"
 #include "civetweb.h"
@@ -49,8 +50,6 @@ struct pubsub_websocket_topic_sender {
     log_helper_t *logHelper;
     long serializerSvcId;
     pubsub_serializer_service_t *serializer;
-    uuid_t fwUUID;
-    bool metricsEnabled;
 
     char *scope;
     char *topic;
@@ -75,17 +74,7 @@ struct pubsub_websocket_topic_sender {
 typedef struct psa_websocket_send_msg_entry {
     pubsub_websocket_msg_header_t header; //partially filled header (only seqnr and time needs to be updated per send)
     pubsub_msg_serializer_t *msgSer;
-    celix_thread_mutex_t sendLock; //protects send & Seqnr
-    unsigned int seqNr;
-    struct {
-        celix_thread_mutex_t mutex; //protects entries in struct
-        unsigned long nrOfMessagesSend;
-        unsigned long nrOfMessagesSendFailed;
-        unsigned long nrOfSerializationErrors;
-        struct timespec lastMessageSend;
-        double averageTimeBetweenMessagesInSeconds;
-        double averageSerializationTimeInSeconds;
-    } metrics;
+    celix_thread_mutex_t sendLock; //protects send & header(.seqNr)
 } psa_websocket_send_msg_entry_t;
 
 typedef struct psa_websocket_bounded_service_entry {
@@ -121,12 +110,6 @@ pubsub_websocket_topic_sender_t* pubsub_websocketTopicSender_create(
     sender->serializerSvcId = serializerSvcId;
     sender->serializer = ser;
     psa_websocket_setScopeAndTopicFilter(scope, topic, sender->scopeAndTopicFilter);
-    const char* uuid = celix_bundleContext_getProperty(ctx, OSGI_FRAMEWORK_FRAMEWORK_UUID, NULL);
-    if (uuid != NULL) {
-        uuid_parse(uuid, sender->fwUUID);
-    }
-    sender->metricsEnabled = celix_bundleContext_getPropertyAsBool(ctx, PSA_WEBSOCKET_METRICS_ENABLED, PSA_WEBSOCKET_DEFAULT_METRICS_ENABLED);
-
     sender->uri = psa_websocket_createURI(scope, topic);
 
     if (sender->uri != NULL) {
@@ -191,7 +174,6 @@ void pubsub_websocketTopicSender_destroy(pubsub_websocket_topic_sender_t *sender
                 hash_map_iterator_t iter2 = hashMapIterator_construct(entry->msgEntries);
                 while (hashMapIterator_hasNext(&iter2)) {
                     psa_websocket_send_msg_entry_t *msgEntry = hashMapIterator_nextValue(&iter2);
-                    celixThreadMutex_destroy(&msgEntry->metrics.mutex);
                     free(msgEntry);
 
                 }
@@ -260,15 +242,13 @@ static void* psa_websocket_getPublisherService(void *handle, const celix_bundle_
                 void *key = hashMapEntry_getKey(hashMapEntry);
                 psa_websocket_send_msg_entry_t *sendEntry = calloc(1, sizeof(*sendEntry));
                 sendEntry->msgSer = hashMapEntry_getValue(hashMapEntry);
-                sendEntry->header.type = (int32_t)sendEntry->msgSer->msgId;
+                sendEntry->header.id = sendEntry->msgSer->msgName;
                 int major;
                 int minor;
                 version_getMajor(sendEntry->msgSer->msgVersion, &major);
                 version_getMinor(sendEntry->msgSer->msgVersion, &minor);
                 sendEntry->header.major = (uint8_t)major;
                 sendEntry->header.minor = (uint8_t)minor;
-                uuid_copy(sendEntry->header.originUUID, sender->fwUUID);
-                celixThreadMutex_create(&sendEntry->metrics.mutex, NULL);
                 hashMap_put(entry->msgEntries, key, sendEntry);
                 hashMap_put(entry->msgTypeIds, strndup(sendEntry->msgSer->msgName, 1024), (void *)(uintptr_t) sendEntry->msgSer->msgId);
             }
@@ -305,7 +285,6 @@ static void psa_websocket_ungetPublisherService(void *handle, const celix_bundle
         hash_map_iterator_t iter = hashMapIterator_construct(entry->msgEntries);
         while (hashMapIterator_hasNext(&iter)) {
             psa_websocket_send_msg_entry_t *msgEntry = hashMapIterator_nextValue(&iter);
-            celixThreadMutex_destroy(&msgEntry->metrics.mutex);
             free(msgEntry);
         }
         hashMap_destroy(entry->msgEntries, false, false);
@@ -316,147 +295,58 @@ static void psa_websocket_ungetPublisherService(void *handle, const celix_bundle
     celixThreadMutex_unlock(&sender->boundedServices.mutex);
 }
 
-pubsub_admin_sender_metrics_t* pubsub_websocketTopicSender_metrics(pubsub_websocket_topic_sender_t *sender) {
-    pubsub_admin_sender_metrics_t *result = calloc(1, sizeof(*result));
-    snprintf(result->scope, PUBSUB_AMDIN_METRICS_NAME_MAX, "%s", sender->scope);
-    snprintf(result->topic, PUBSUB_AMDIN_METRICS_NAME_MAX, "%s", sender->topic);
-    celixThreadMutex_lock(&sender->boundedServices.mutex);
-    size_t count = 0;
-    hash_map_iterator_t iter = hashMapIterator_construct(sender->boundedServices.map);
-    while (hashMapIterator_hasNext(&iter)) {
-        psa_websocket_bounded_service_entry_t *entry = hashMapIterator_nextValue(&iter);
-        hash_map_iterator_t iter2 = hashMapIterator_construct(entry->msgEntries);
-        while (hashMapIterator_hasNext(&iter2)) {
-            hashMapIterator_nextValue(&iter2);
-            count += 1;
-        }
-    }
-
-    result->msgMetrics = calloc(count, sizeof(*result));
-
-    iter = hashMapIterator_construct(sender->boundedServices.map);
-    int i = 0;
-    while (hashMapIterator_hasNext(&iter)) {
-        psa_websocket_bounded_service_entry_t *entry = hashMapIterator_nextValue(&iter);
-        hash_map_iterator_t iter2 = hashMapIterator_construct(entry->msgEntries);
-        while (hashMapIterator_hasNext(&iter2)) {
-            psa_websocket_send_msg_entry_t *mEntry = hashMapIterator_nextValue(&iter2);
-            celixThreadMutex_lock(&mEntry->metrics.mutex);
-            result->msgMetrics[i].nrOfMessagesSend = mEntry->metrics.nrOfMessagesSend;
-            result->msgMetrics[i].nrOfMessagesSendFailed = mEntry->metrics.nrOfMessagesSendFailed;
-            result->msgMetrics[i].nrOfSerializationErrors = mEntry->metrics.nrOfSerializationErrors;
-            result->msgMetrics[i].averageSerializationTimeInSeconds = mEntry->metrics.averageSerializationTimeInSeconds;
-            result->msgMetrics[i].averageTimeBetweenMessagesInSeconds = mEntry->metrics.averageTimeBetweenMessagesInSeconds;
-            result->msgMetrics[i].lastMessageSend = mEntry->metrics.lastMessageSend;
-            result->msgMetrics[i].bndId = entry->bndId;
-            result->msgMetrics[i].typeId = mEntry->header.type;
-            snprintf(result->msgMetrics[i].typeFqn, PUBSUB_AMDIN_METRICS_NAME_MAX, "%s", mEntry->msgSer->msgName);
-            i += 1;
-            celixThreadMutex_unlock(&mEntry->metrics.mutex);
-        }
-    }
-
-    celixThreadMutex_unlock(&sender->boundedServices.mutex);
-    result->nrOfmsgMetrics = (int)count;
-    return result;
-}
-
 static int psa_websocket_topicPublicationSend(void* handle, unsigned int msgTypeId, const void *inMsg) {
     int status = CELIX_SERVICE_EXCEPTION;
     psa_websocket_bounded_service_entry_t *bound = handle;
     pubsub_websocket_topic_sender_t *sender = bound->parent;
-    bool monitor = sender->metricsEnabled;
     psa_websocket_send_msg_entry_t *entry = hashMap_get(bound->msgEntries, (void *) (uintptr_t) (msgTypeId));
-
-    //metrics updates
-    struct timespec sendTime;
-    struct timespec serializationStart;
-    struct timespec serializationEnd;
-    //int unknownMessageCountUpdate = 0;
-    int sendErrorUpdate = 0;
-    int serializationErrorUpdate = 0;
-    int sendCountUpdate = 0;
 
     if (sender->sockConnection != NULL && entry != NULL) {
         delay_first_send_for_late_joiners(sender);
-
-        if (monitor) {
-            clock_gettime(CLOCK_REALTIME, &serializationStart);
-        }
 
         void *serializedOutput = NULL;
         size_t serializedOutputLen = 0;
         status = entry->msgSer->serialize(entry->msgSer->handle, inMsg, &serializedOutput, &serializedOutputLen);
 
-        if (monitor) {
-            clock_gettime(CLOCK_REALTIME, &serializationEnd);
-        }
-
         if (status == CELIX_SUCCESS /*ser ok*/) {
+            json_error_t jsError;
             unsigned char *hdrEncoded = calloc(sizeof(pubsub_websocket_msg_header_t), sizeof(unsigned char));
 
             celixThreadMutex_lock(&entry->sendLock);
 
-            pubsub_websocket_msg_t *msg = malloc(sizeof(*msg) + sizeof(char[serializedOutputLen]));
-            pubsub_websocket_msg_header_t *msgHdr = &entry->header;
-            if (monitor) {
-                clock_gettime(CLOCK_REALTIME, &sendTime);
-                msgHdr->sendtimeSeconds = (uint64_t) sendTime.tv_sec;
-                msgHdr->sendTimeNanoseconds = (uint64_t) sendTime.tv_nsec;
-                msgHdr->seqNr++;
-            }
-            memcpy(&msg->header, msgHdr, sizeof(pubsub_websocket_msg_header_t));
+            json_t *jsMsg = json_object();
+            json_object_set_new(jsMsg, "id", json_string(entry->header.id));
+            json_object_set_new(jsMsg, "major", json_integer(entry->header.major));
+            json_object_set_new(jsMsg, "minor", json_integer(entry->header.minor));
+            json_object_set_new(jsMsg, "seqNr", json_integer(entry->header.seqNr++));
 
-            msg->payloadSize = (unsigned int) serializedOutputLen;
-            size_t hdr_size = sizeof(msg->header);
-            size_t ps_size = sizeof(msg->payloadSize);
-            size_t bytes_to_write = hdr_size + ps_size + serializedOutputLen;//sizeof(*msg);
-            memcpy(msg->payload, serializedOutput, serializedOutputLen);
-            int bytes_written = mg_websocket_client_write(sender->sockConnection, MG_WEBSOCKET_OPCODE_TEXT, (char *) msg, bytes_to_write);
-
-            celixThreadMutex_unlock(&entry->sendLock);
-            if (bytes_written == (int) bytes_to_write) {
-                sendCountUpdate = 1;
+            json_t *jsData;
+            jsData = json_loadb((const char *)serializedOutput, serializedOutputLen - 1, 0, &jsError);
+            if(jsData != NULL) {
+                json_object_set_new(jsMsg, "data", jsData);
+                const char *msg = json_dumps(jsMsg, 0);
+                size_t bytes_to_write = strlen(msg);
+                int bytes_written = mg_websocket_client_write(sender->sockConnection, MG_WEBSOCKET_OPCODE_TEXT, msg,
+                                                              bytes_to_write);
+                free((void *) msg);
+                json_decref(jsData); //Decrease ref count means freeing the object
+                if (bytes_written != (int) bytes_to_write) {
+                    L_WARN("[PSA_WEBSOCKET_TS] Error sending websocket, written %d of total %lu bytes", bytes_written, bytes_to_write);
+                }
             } else {
-                sendErrorUpdate = 1;
-                L_WARN("[PSA_WEBSOCKET_TS] Error sending websocket.");
+                L_WARN("[PSA_WEBSOCKET_TS] Error sending websocket, serialized data corrupt. Error(%d;%d;%d): %s", jsError.column, jsError.line, jsError.position, jsError.text);
             }
+            celixThreadMutex_unlock(&entry->sendLock);
 
-            free(msg);
+            json_decref(jsMsg); //Decrease ref count means freeing the object
             free(hdrEncoded);
             free(serializedOutput);
         } else {
-            serializationErrorUpdate = 1;
             L_WARN("[PSA_WEBSOCKET_TS] Error serialize message of type %s for scope/topic %s/%s",
                    entry->msgSer->msgName, sender->scope, sender->topic);
         }
     } else if (entry == NULL){
-        //unknownMessageCountUpdate = 1;
         L_WARN("[PSA_WEBSOCKET_TS] Error sending message with msg type id %i for scope/topic %s/%s", msgTypeId, sender->scope, sender->topic);
-    }
-
-
-    if (monitor && status == CELIX_SUCCESS) {
-        celixThreadMutex_lock(&entry->metrics.mutex);
-
-        long n = entry->metrics.nrOfMessagesSend + entry->metrics.nrOfMessagesSendFailed;
-        double diff = celix_difftime(&serializationStart, &serializationEnd);
-        double average = (entry->metrics.averageSerializationTimeInSeconds * n + diff) / (n+1);
-        entry->metrics.averageSerializationTimeInSeconds = average;
-
-        if (entry->metrics.nrOfMessagesSend > 2) {
-            diff = celix_difftime(&entry->metrics.lastMessageSend, &sendTime);
-            n = entry->metrics.nrOfMessagesSend;
-            average = (entry->metrics.averageTimeBetweenMessagesInSeconds * n + diff) / (n+1);
-            entry->metrics.averageTimeBetweenMessagesInSeconds = average;
-        }
-
-        entry->metrics.lastMessageSend = sendTime;
-        entry->metrics.nrOfMessagesSend += sendCountUpdate;
-        entry->metrics.nrOfMessagesSendFailed += sendErrorUpdate;
-        entry->metrics.nrOfSerializationErrors += serializationErrorUpdate;
-
-        celixThreadMutex_unlock(&entry->metrics.mutex);
     }
 
     return status;

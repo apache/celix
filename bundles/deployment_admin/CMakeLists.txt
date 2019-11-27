@@ -23,10 +23,6 @@ if (DEPLOYMENT_ADMIN)
     find_package(UUID REQUIRED)
     find_package(ZLIB REQUIRED)
 
-    if (NOT UUID_LIBRARY)
-        set(UUID_LIBRARY "")
-    endif ()
-
     add_library(deployment_admin_api INTERFACE)
     target_include_directories(deployment_admin_api INTERFACE 
 	    $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/api>
@@ -51,8 +47,7 @@ if (DEPLOYMENT_ADMIN)
     )
 
     target_compile_definitions(deployment_admin PRIVATE -DUSE_FILE32API)
-    target_link_libraries(deployment_admin PRIVATE ${CURL_LIBRARY} ${UUID_LIBRARY} ${ZLIB_LIBRARIES} ${OPENSLL_LIBRARY} deployment_admin_api)
-    target_include_directories(deployment_admin PRIVATE ${CURL_INCLUDE_DIRS})
+    target_link_libraries(deployment_admin PRIVATE CURL::libcurl UUID::lib ZLIB::ZLIB deployment_admin_api)
 
     install(TARGETS deployment_admin_api EXPORT celix COMPONENT deployment_admin)
     install(DIRECTORY api/ DESTINATION include/celix/deployment_admin COMPONENT deployment_admin)

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,14 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/*
+/**
  * version_range_private.h
  *
  *  \date       Dec 18, 2012
  *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright  Apache License, Version 2.0
  */
-
 
 #ifndef VERSION_RANGE_PRIVATE_H_
 #define VERSION_RANGE_PRIVATE_H_

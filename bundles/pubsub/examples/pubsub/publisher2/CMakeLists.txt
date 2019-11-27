@@ -48,4 +48,3 @@ celix_bundle_files(celix_pubsub_poi_publisher2
     DESTINATION "META-INF/keys/subscriber"
 )
 
-target_link_libraries(celix_pubsub_poi_publisher2 PRIVATE Celix::framework)

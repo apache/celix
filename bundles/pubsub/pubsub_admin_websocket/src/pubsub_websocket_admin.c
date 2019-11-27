@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -423,7 +423,7 @@ celix_status_t pubsub_websocketAdmin_teardownTopicReceiver(void *handle, const c
         free(receiverKey);
         pubsub_websocketTopicReceiver_destroy(receiver);
     }
-    celixThreadMutex_lock(&psa->topicReceivers.mutex);
+    celixThreadMutex_unlock(&psa->topicReceivers.mutex);
 
     celix_status_t  status = CELIX_SUCCESS;
     return status;

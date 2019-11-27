@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,17 +16,18 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/*
+/**
  * celix_errno.h
  *
  *  \date       Feb 15, 2011
  *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright  Apache License, Version 2.0
  */
+
 /*!
-  \file
-  \brief Error codes
-  \defgroup framework Celix Framework
+ * \file
+ * \brief Error codes
+ * \defgroup framework Celix Framework
  */
 #ifndef CELIX_ERRNO_H_
 #define CELIX_ERRNO_H_

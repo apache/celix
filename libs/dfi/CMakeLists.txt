@@ -30,6 +30,7 @@ set(SOURCES
 	src/dyn_message.c
 	src/json_serializer.c
 	src/json_rpc.c
+	src/avrobin_serializer.c
 )
 
 add_library(dfi SHARED ${SOURCES})
@@ -39,12 +40,8 @@ target_include_directories(dfi PUBLIC
 	$<INSTALL_INTERFACE:include/celix/dfi>
 )
 
-target_include_directories(dfi SYSTEM PRIVATE
-		${JANSSON_INCLUDE_DIRS}
-)
-target_link_libraries(dfi PRIVATE ffi::lib)
-target_include_directories(dfi SYSTEM PRIVATE)
-target_link_libraries(dfi PRIVATE ${JANSSON_LIBRARY})
+target_link_libraries(dfi PRIVATE FFI::lib)
+target_link_libraries(dfi PUBLIC Jansson)
 target_link_libraries(dfi PRIVATE Celix::utils)
 set_target_properties(dfi PROPERTIES "SOVERSION" 1)
 
@@ -69,11 +66,11 @@ if (ENABLE_TESTING)
         test/json_serializer_tests.cpp
         test/json_rpc_tests.cpp
         test/json_rpc_avpr_tests.cpp
+        test/avrobin_serialization_tests.cpp
 		test/run_tests.cpp
 	)
 
-    target_link_libraries(test_dfi PRIVATE Celix::dfi Celix::utils ffi::lib ${JANSSON_LIBRARY} ${CPPUTEST_LIBRARIES})
-    target_include_directories(test_dfi PRIVATE ${JANSSON_INCLUDE_DIRS})
+    target_link_libraries(test_dfi PRIVATE Celix::dfi Celix::utils FFI::lib Jansson ${CPPUTEST_LIBRARIES})
 
     file(COPY ${CMAKE_CURRENT_LIST_DIR}/test/schemas DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
     file(COPY ${CMAKE_CURRENT_LIST_DIR}/test/descriptors DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

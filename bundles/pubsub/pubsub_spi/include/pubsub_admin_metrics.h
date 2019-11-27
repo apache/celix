@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -24,7 +24,7 @@
 #include <sys/time.h>
 #include "celix_array_list.h"
 
-#define PUBSUB_ADMIN_METRICS_SERVICE_NAME   "pubsub_admin_metrics [version 1.0]"
+#define PUBSUB_ADMIN_METRICS_SERVICE_NAME   "pubsub_admin_metrics"
 
 #define PUBSUB_AMDIN_METRICS_NAME_MAX       1024
 

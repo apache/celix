@@ -15,7 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_subdirectory(config_admin)
 add_subdirectory(device_access)
 add_subdirectory(deployment_admin)
 add_subdirectory(remote_services)

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,7 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 
 #include "celix/dm/types.h"
 #include "celix/dm/Component.h"
@@ -53,7 +52,16 @@ namespace celix { namespace dm {
                 this->cDepMan = nullptr;
                 this->context = nullptr;
         }
-        DependencyManager& operator=(DependencyManager&&) = default;
+        DependencyManager& operator=(DependencyManager&& rhs) {
+            std::lock_guard<std::recursive_mutex> lock(rhs.componentsMutex);
+            context = rhs.context;
+            queuedComponents = std::move(rhs.queuedComponents);
+            startedComponents = std::move(rhs.startedComponents);
+            cDepMan = rhs.cDepMan;
+            rhs.cDepMan = nullptr;
+            rhs.context = nullptr;
+            return *this;
+        };
 
         DependencyManager(const DependencyManager&) = delete;
         DependencyManager& operator=(const DependencyManager&) = delete;

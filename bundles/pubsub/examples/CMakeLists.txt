@@ -22,7 +22,7 @@ find_program(XTERM_CMD NAMES xterm)
 
 find_package(Jansson REQUIRED)
 
-set(PUBSUB_CONTAINER_LIBS ${JANSSON_LIBRARY} Celix::dfi)
+set(PUBSUB_CONTAINER_LIBS Jansson Celix::dfi)
 
 # UDP Multicast
 add_celix_container(pubsub_publisher_udp_mc
@@ -170,7 +170,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
     find_package(ZMQ REQUIRED)
     find_package(CZMQ REQUIRED)
 
-    set(PUBSUB_CONTAINER_LIBS ${PUBSUB_CONTAINER_LIBS} ${ZMQ_LIBRARIES} ${CZMQ_LIBRARIES} ${OPENSSL_CRYPTO_LIBRARY})
+    set(PUBSUB_CONTAINER_LIBS ${PUBSUB_CONTAINER_LIBS} ZMQ::lib CZMQ::lib ${OPTIONAL_OPENSSL_LIB})
 
     # Dynamic ZMQ / UDP / TCP admin
     add_celix_container(pubsub_publisher
@@ -304,7 +304,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 endif()
 
 if (BUILD_PUBSUB_PSA_NANOMSG)
-    set(PUBSUB_CONTAINER_LIBS ${NANOMSG_LIBRARIES} ${PUBSUB_CONTAINER_LIBS})
+    set(PUBSUB_CONTAINER_LIBS NANOMSG::lib ${PUBSUB_CONTAINER_LIBS})
 
     add_celix_container(pubsub_publisher1_nanomsg
         GROUP "pubsub"
@@ -391,3 +391,23 @@ if (BUILD_PUBSUB_PSA_NANOMSG)
     endif ()
 
 endif()
+
+add_celix_container(pubsub_publisher_websocket
+    GROUP pubsub
+    BUNDLES
+        Celix::log_service
+        Celix::shell
+        Celix::shell_tui
+        Celix::http_admin
+        Celix::pubsub_serializer_json
+        Celix::pubsub_topology_manager
+        Celix::pubsub_admin_websocket
+        celix_pubsub_websocket_publisher
+    PROPERTIES
+        PSA_TCP_VERBOSE=true
+        PUBSUB_ETCD_DISCOVERY_VERBOSE=true
+        PUBSUB_TOPOLOGY_MANAGER_VERBOSE=true
+        CELIX_HTTP_ADMIN_LISTENING_PORTS=7660
+        CELIX_HTTP_ADMIN_NUM_THREADS=5
+)
+target_link_libraries(pubsub_publisher_websocket PRIVATE ${PUBSUB_CONTAINER_LIBS})
