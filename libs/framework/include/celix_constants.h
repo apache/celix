@@ -92,3 +92,5 @@ static const char *const CELIX_LOAD_BUNDLES_WITH_NODELETE = "CELIX_LOAD_BUNDLES_
 #endif
 
 #endif /* CELIX_CONSTANTS_H_ */
+
+
