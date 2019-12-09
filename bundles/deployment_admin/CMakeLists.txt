@@ -19,7 +19,6 @@ celix_subproject(DEPLOYMENT_ADMIN "Option to enable building the Deployment Admi
 if (DEPLOYMENT_ADMIN)
 	
     find_package(CURL REQUIRED)
-    find_package(OpenSSL REQUIRED)
     find_package(UUID REQUIRED)
     find_package(ZLIB REQUIRED)
 

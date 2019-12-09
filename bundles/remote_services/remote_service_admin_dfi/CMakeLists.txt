@@ -21,7 +21,6 @@ celix_subproject(RSA_REMOTE_SERVICE_ADMIN_DFI "Option to enable building the Rem
 if (RSA_REMOTE_SERVICE_ADMIN_DFI)
 
     find_package(CURL REQUIRED)
-    find_package(OpenSSL REQUIRED)
     find_package(Jansson REQUIRED)
     find_package(UUID REQUIRED)
 

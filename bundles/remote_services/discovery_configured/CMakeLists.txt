@@ -17,7 +17,6 @@
 celix_subproject(RSA_DISCOVERY_CONFIGURED "Option to enable building the Discovery (Configured) bundle" ON)
 if (RSA_DISCOVERY_CONFIGURED)
     find_package(CURL REQUIRED)
-    find_package(OpenSSL REQUIRED)
     find_package(LibXml2 REQUIRED)
 
     add_celix_bundle(rsa_discovery_configured

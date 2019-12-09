@@ -17,7 +17,6 @@
 
 
 find_package(CURL REQUIRED)
-find_package(OpenSSL REQUIRED)
 
 
 add_celix_bundle(celix_pubsub_websocket_publisher
@@ -27,7 +26,7 @@ add_celix_bundle(celix_pubsub_websocket_publisher
         ../publisher/private/src/ps_pub_activator.c
         ../publisher/private/src/pubsub_publisher.c
 )
-target_link_libraries(celix_pubsub_websocket_publisher PRIVATE Celix::framework Celix::pubsub_api ${CURL_LIBRARIES} ${OPENSSL_LIBRARIES})
+target_link_libraries(celix_pubsub_websocket_publisher PRIVATE Celix::framework Celix::pubsub_api ${CURL_LIBRARIES})
 target_include_directories(celix_pubsub_websocket_publisher PRIVATE ../publisher/private/include)
 
 
