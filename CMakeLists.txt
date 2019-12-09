@@ -99,6 +99,13 @@ endif()
 # Default bundle version
 set(DEFAULT_VERSION 1.0.0)
 
+option(CELIX_ADD_OPENSSL_DEP "Enabled building Celix framework & etcdlib with OpenSSL library dependency. This can help in some libcurl resolving issues" OFF)
+set(CELIX_OPTIONAL_EXTRA_LIBS "")
+if (CELIX_ADD_OPENSSL_DEP)
+    find_package(OpenSSL REQUIRED)
+    set(CELIX_OPTIONAL_EXTRA_LIBS "OpenSSL::lib")
+endif ()
+
 #Libraries and Launcher
 add_subdirectory(libs)
 
