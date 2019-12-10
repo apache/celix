@@ -32,8 +32,8 @@
 #define OSGI_SHELL_COMMAND_SEPARATOR " "
 
 celix_status_t lbCommand_execute(void *_ptr, char *command_line_str, FILE *out_ptr, FILE *err_ptr);
-celix_status_t startCommand_execute(void *_ptr, char *command_line_str, FILE *out_ptr, FILE *err_ptr);
-celix_status_t stopCommand_execute(void *handle, char * commandline, FILE *outStream, FILE *errStream);
+celix_status_t startCommand_execute(void *_ptr, char* command_line_str, FILE *out_ptr, FILE *err_ptr);
+celix_status_t stopCommand_execute(void *handle, char* commandline, FILE *outStream, FILE *errStream);
 celix_status_t installCommand_execute(void *handle, char * commandline, FILE *outStream, FILE *errStream);
 celix_status_t uninstallCommand_execute(void *handle, char * commandline, FILE *outStream, FILE *errStream);
 celix_status_t updateCommand_execute(void *handle, char * commandline, FILE *outStream, FILE *errStream);

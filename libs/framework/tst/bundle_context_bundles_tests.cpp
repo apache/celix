@@ -139,9 +139,14 @@ TEST(CelixBundleContextBundlesTests, useBundleTest) {
 };
 
 TEST(CelixBundleContextBundlesTests, StopStartTest) {
-    celix_bundleContext_installBundle(ctx, TEST_BND1_LOC, true);
-    celix_bundleContext_installBundle(ctx, TEST_BND2_LOC, true);
-    celix_bundleContext_installBundle(ctx, TEST_BND3_LOC, true);
+    long bndId1 = celix_bundleContext_installBundle(ctx, TEST_BND1_LOC, true);
+    long bndId2 = celix_bundleContext_installBundle(ctx, TEST_BND2_LOC, true);
+    long bndId3 = celix_bundleContext_installBundle(ctx, TEST_BND3_LOC, true);
+    CHECK_TRUE(celix_bundleContext_isBundleInstalled(ctx, bndId1));
+    CHECK_TRUE(celix_bundleContext_isBundleInstalled(ctx, bndId2));
+    CHECK_TRUE(celix_bundleContext_isBundleInstalled(ctx, bndId3));
+    CHECK_FALSE(celix_bundleContext_isBundleInstalled(ctx, 600 /*non existing*/));
+
 
 
     celix_array_list_t *ids = celix_bundleContext_listBundles(ctx);
@@ -182,6 +187,50 @@ TEST(CelixBundleContextBundlesTests, StopStartTest) {
     CHECK_EQUAL(3, count);
 
     celix_arrayList_destroy(ids);
+}
+
+TEST(CelixBundleContextBundlesTests, DoubleStopTest) {
+    long bndId = celix_bundleContext_installBundle(ctx, TEST_BND1_LOC, true);
+    CHECK_TRUE(bndId > 0);
+    CHECK_TRUE(celix_bundleContext_isBundleInstalled(ctx, bndId));
+
+    //TODO rewrite using celix_bundleContext_useBundlesWithOptions ....
+    bool called = celix_framework_useBundle(fw, false, bndId, nullptr, [](void *, const celix_bundle_t *bnd) {
+        CHECK_EQUAL(OSGI_FRAMEWORK_BUNDLE_ACTIVE, celix_bundle_getState(bnd));
+    });
+    CHECK_TRUE(called);
+
+    //first
+    celix_bundleContext_stopBundle(ctx, bndId);
+
+    called = celix_framework_useBundle(fw, false, bndId, nullptr, [](void *, const celix_bundle_t *bnd) {
+        CHECK_EQUAL(OSGI_FRAMEWORK_BUNDLE_RESOLVED, celix_bundle_getState(bnd));
+    });
+    CHECK_TRUE(called);
+
+    //second
+    celix_bundleContext_stopBundle(ctx, bndId);
+
+    called = celix_framework_useBundle(fw, false, bndId, nullptr, [](void *, const celix_bundle_t *bnd) {
+        CHECK_EQUAL(OSGI_FRAMEWORK_BUNDLE_RESOLVED, celix_bundle_getState(bnd));
+    });
+    CHECK_TRUE(called);
+
+    //first
+    celix_bundleContext_startBundle(ctx, bndId);
+
+    called = celix_framework_useBundle(fw, false, bndId, nullptr, [](void *, const celix_bundle_t *bnd) {
+        CHECK_EQUAL(OSGI_FRAMEWORK_BUNDLE_ACTIVE, celix_bundle_getState(bnd));
+    });
+    CHECK_TRUE(called);
+
+    //second
+    celix_bundleContext_startBundle(ctx, bndId);
+
+    called = celix_framework_useBundle(fw, false, bndId, nullptr, [](void *, const celix_bundle_t *bnd) {
+        CHECK_EQUAL(OSGI_FRAMEWORK_BUNDLE_ACTIVE, celix_bundle_getState(bnd));
+    });
+    CHECK_TRUE(called);
 }
 
 TEST(CelixBundleContextBundlesTests, trackBundlesTest) {

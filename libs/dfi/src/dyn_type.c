@@ -24,6 +24,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <ffi.h>
+#include <dyn_type_common.h>
 
 #include "dyn_type_common.h"
 #include "dyn_common.h"
@@ -636,6 +637,15 @@ int dynType_complex_valLocAt(dyn_type *type, int index, void *inst, void **resul
     void *loc = (void *)(l + dynType_getOffset(type, index));
     *result = loc;
     return OK;
+}
+
+size_t dynType_complex_nrOfEntries(dyn_type *type) {
+    size_t count = 0;
+    struct complex_type_entry *entry = NULL;
+    TAILQ_FOREACH(entry, &type->complex.entriesHead, entries) {
+        ++count;
+    }
+    return count;
 }
 
 int dynType_complex_entries(dyn_type *type, struct complex_type_entries_head **entries) {
