@@ -279,13 +279,20 @@ int etcdlib_get_directory(const etcdlib_t *etcdlib, const char* directory, etcdl
 			fprintf(stderr, "[ETCDLIB] Error: %s in js_root not found", ETCD_JSON_NODE);
 		}
 		if (js_rootnode != NULL) {
-			*modifiedIndex = 0;
-			retVal = etcd_get_recursive_values(js_rootnode, callback, arg, (json_int_t*)modifiedIndex);
-            long long indexFromHeader = etcd_get_current_index(reply.header);
-            if (indexFromHeader > *modifiedIndex) {
-              *modifiedIndex = indexFromHeader;
+            long long modIndex = 0;
+            long long *ptrModIndex = NULL;
+            if(modifiedIndex != NULL) {
+                *modifiedIndex = 0;
+                ptrModIndex = modifiedIndex;
+            } else {
+                ptrModIndex = &modIndex;
             }
-		} else {
+            retVal = etcd_get_recursive_values(js_rootnode, callback, arg, (json_int_t*)ptrModIndex);
+            long long indexFromHeader = etcd_get_current_index(reply.header);
+            if (indexFromHeader > *ptrModIndex) {
+              *ptrModIndex = indexFromHeader;
+            }
+		} else if (modifiedIndex != NULL) {
 			// Error occurred, retrieve the index of ETCD from the error code
 			js_rootnode = json_object_get(js_root, ETCD_JSON_INDEX);
 			if(js_rootnode) {
@@ -294,7 +301,6 @@ int etcdlib_get_directory(const etcdlib_t *etcdlib, const char* directory, etcdl
 
 			} else {
 				fprintf(stderr, "[ETCDLIB] Error: index not found in error %s\n", reply.memory);
-
 			}
 
 		}
