@@ -4208,7 +4208,7 @@ void mg_send_file(struct mg_connection *conn, const char *path)
 static void parse_http_headers(char **buf, struct mg_request_info *ri)
 {
     int i;
-
+    ri->num_headers = 0;
     for (i = 0; i < (int) ARRAY_SIZE(ri->http_headers); i++) {
         ri->http_headers[i].name = skip_quoted(buf, ":", " ", 0);
         ri->http_headers[i].value = skip(buf, "\r\n");
