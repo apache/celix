@@ -23,7 +23,7 @@
 #include "celix_errno.h"
 #include "celixbool.h"
 
-#include "log_writer.h"
+#include "celix_log_writer.h"
 #include "log_listener.h"
 
 #include "module.h"

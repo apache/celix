@@ -33,8 +33,8 @@
 #include "pubsub_websocket_common.h"
 
 #include <uuid/uuid.h>
-#include <pubsub_admin_metrics.h>
 #include <http_admin/api.h>
+#include <jansson.h>
 
 #ifndef UUID_STR_LEN
 #define UUID_STR_LEN 37
@@ -52,9 +52,13 @@
 
 typedef struct pubsub_websocket_rcv_buffer {
     celix_thread_mutex_t mutex;
-    celix_array_list_t *list;     //List of received websocket messages (type: pubsub_websocket_msg_t *)
-    celix_array_list_t *rcvTimes; //Corresponding receive times of the received websocket messages (rcvTimes[i] -> list[i])
+    celix_array_list_t *list;     //List of received websocket messages (type: pubsub_websocket_msg_entry_t *)
 } pubsub_websocket_rcv_buffer_t;
+
+typedef struct pubsub_websocket_msg_entry {
+    size_t msgSize;
+    const char *msgData;
+} pubsub_websocket_msg_entry_t;
 
 struct pubsub_websocket_topic_receiver {
     celix_bundle_context_t *ctx;
@@ -65,7 +69,6 @@ struct pubsub_websocket_topic_receiver {
     char *topic;
     char scopeAndTopicFilter[5];
     char *uri;
-    bool metricsEnabled;
 
     pubsub_websocket_rcv_buffer_t recvBuffer;
 
@@ -101,26 +104,9 @@ typedef struct psa_websocket_requested_connection_entry {
     bool statically; //true if the connection is statically configured through the topic properties.
 } psa_websocket_requested_connection_entry_t;
 
-typedef struct psa_websocket_subscriber_metrics_entry_t {
-    unsigned int msgTypeId;
-    uuid_t origin;
-
-    unsigned long nrOfMessagesReceived;
-    unsigned long nrOfSerializationErrors;
-    struct timespec lastMessageReceived;
-    double averageTimeBetweenMessagesInSeconds;
-    double averageSerializationTimeInSeconds;
-    double averageDelayInSeconds;
-    double maxDelayInSeconds;
-    double minDelayInSeconds;
-    unsigned int lastSeqNr;
-    unsigned long nrOfMissingSeqNumbers;
-} psa_websocket_subscriber_metrics_entry_t;
-
 typedef struct psa_websocket_subscriber_entry {
     int usageCount;
-    hash_map_t *msgTypes; //map from serializer svc
-    hash_map_t *metrics; //key = msg type id, value = hash_map (key = origin uuid, value = psa_websocket_subscriber_metrics_entry_t*
+    hash_map_t *msgTypes; //key = msg type id, value = pubsub_msg_serializer_t
     pubsub_subscriber_t *svc;
     bool initialized; //true if the init function is called through the receive thread
 } psa_websocket_subscriber_entry_t;
@@ -131,6 +117,7 @@ static void pubsub_websocketTopicReceiver_removeSubscriber(void *handle, void *s
 static void* psa_websocket_recvThread(void * data);
 static void psa_websocket_connectToAllRequestedConnections(pubsub_websocket_topic_receiver_t *receiver);
 static void psa_websocket_initializeAllSubscribers(pubsub_websocket_topic_receiver_t *receiver);
+static void *psa_websocket_getMsgTypeIdFromFqn(const char *fqn, hash_map_t *msg_type_id_map);
 
 static int psa_websocketTopicReceiver_data(struct mg_connection *connection, int op_code, char *data, size_t length, void *handle);
 static void psa_websocketTopicReceiver_close(const struct mg_connection *connection, void *handle);
@@ -151,7 +138,6 @@ pubsub_websocket_topic_receiver_t* pubsub_websocketTopicReceiver_create(celix_bu
     receiver->scope = strndup(scope, 1024 * 1024);
     receiver->topic = strndup(topic, 1024 * 1024);
     psa_websocket_setScopeAndTopicFilter(scope, topic, receiver->scopeAndTopicFilter);
-    receiver->metricsEnabled = celix_bundleContext_getPropertyAsBool(ctx, PSA_WEBSOCKET_METRICS_ENABLED, PSA_WEBSOCKET_DEFAULT_METRICS_ENABLED);
 
     receiver->uri = psa_websocket_createURI(scope, topic);
 
@@ -164,7 +150,6 @@ pubsub_websocket_topic_receiver_t* pubsub_websocketTopicReceiver_create(celix_bu
         receiver->subscribers.map = hashMap_create(NULL, NULL, NULL, NULL);
         receiver->requestedConnections.map = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
         arrayList_create(&receiver->recvBuffer.list);
-        arrayList_create(&receiver->recvBuffer.rcvTimes);
     }
 
     //track subscribers
@@ -259,13 +244,6 @@ void pubsub_websocketTopicReceiver_destroy(pubsub_websocket_topic_receiver_t *re
         while (hashMapIterator_hasNext(&iter)) {
             psa_websocket_subscriber_entry_t *entry = hashMapIterator_nextValue(&iter);
             if (entry != NULL)  {
-                hash_map_iterator_t iter2 = hashMapIterator_construct(entry->metrics);
-                while (hashMapIterator_hasNext(&iter2)) {
-                    hash_map_t *origins = hashMapIterator_nextValue(&iter2);
-                    hashMap_destroy(origins, true, true);
-                }
-                hashMap_destroy(entry->metrics, false, false);
-
                 receiver->serializer->destroySerializerMap(receiver->serializer->handle, entry->msgTypes);
                 free(entry);
             }
@@ -300,19 +278,12 @@ void pubsub_websocketTopicReceiver_destroy(pubsub_websocket_topic_receiver_t *re
         celixThreadMutex_destroy(&receiver->recvBuffer.mutex);
         int msgBufSize = celix_arrayList_size(receiver->recvBuffer.list);
         while(msgBufSize > 0) {
-            pubsub_websocket_msg_t *msg = celix_arrayList_get(receiver->recvBuffer.list, msgBufSize - 1);
+            pubsub_websocket_msg_entry_t *msg = celix_arrayList_get(receiver->recvBuffer.list, msgBufSize - 1);
+            free((void *) msg->msgData);
             free(msg);
             msgBufSize--;
         }
         celix_arrayList_destroy(receiver->recvBuffer.list);
-
-        int rcvTimesSize = celix_arrayList_size(receiver->recvBuffer.rcvTimes);
-        while(rcvTimesSize > 0) {
-            struct timespec *time = celix_arrayList_get(receiver->recvBuffer.rcvTimes, rcvTimesSize - 1);
-            free(time);
-            rcvTimesSize--;
-        }
-        celix_arrayList_destroy(receiver->recvBuffer.rcvTimes);
 
         free(receiver->uri);
         free(receiver->scope);
@@ -416,16 +387,6 @@ static void pubsub_websocketTopicReceiver_addSubscriber(void *handle, void *svc,
         int rc = receiver->serializer->createSerializerMap(receiver->serializer->handle, (celix_bundle_t*)bnd, &entry->msgTypes);
 
         if (rc == 0) {
-            entry->metrics = hashMap_create(NULL, NULL, NULL, NULL);
-            hash_map_iterator_t iter = hashMapIterator_construct(entry->msgTypes);
-            while (hashMapIterator_hasNext(&iter)) {
-                pubsub_msg_serializer_t *msgSer = hashMapIterator_nextValue(&iter);
-                hash_map_t *origins = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
-                hashMap_put(entry->metrics, (void*)(uintptr_t)msgSer->msgId, origins);
-            }
-        }
-
-        if (rc == 0) {
             hashMap_put(receiver->subscribers.map, (void*)bndId, entry);
         } else {
             L_ERROR("[PSA_WEBSOCKET] Cannot create msg serializer map for TopicReceiver %s/%s", receiver->scope, receiver->topic);
@@ -452,118 +413,98 @@ static void pubsub_websocketTopicReceiver_removeSubscriber(void *handle, void *s
         if (rc != 0) {
             L_ERROR("[PSA_WEBSOCKET] Cannot destroy msg serializers map for TopicReceiver %s/%s", receiver->scope, receiver->topic);
         }
-        hash_map_iterator_t iter = hashMapIterator_construct(entry->metrics);
-        while (hashMapIterator_hasNext(&iter)) {
-            hash_map_t *origins = hashMapIterator_nextValue(&iter);
-            hashMap_destroy(origins, true, true);
-        }
-        hashMap_destroy(entry->metrics, false, false);
         free(entry);
     }
     celixThreadMutex_unlock(&receiver->subscribers.mutex);
 }
 
-static inline void processMsgForSubscriberEntry(pubsub_websocket_topic_receiver_t *receiver, psa_websocket_subscriber_entry_t* entry, const pubsub_websocket_msg_header_t *hdr, const void* payload, size_t payloadSize, struct timespec *receiveTime) {
+static void * psa_websocket_getMsgTypeIdFromFqn(const char *fqn, hash_map_t *msg_type_id_map) {
+    void *msgTypeId = NULL;
+    if(fqn != NULL && msg_type_id_map != NULL) {
+        hash_map_iterator_t iter = hashMapIterator_construct(msg_type_id_map);
+        while (hashMapIterator_hasNext(&iter)) {
+            hash_map_entry_t *entry = hashMapIterator_nextEntry(&iter);
+            pubsub_msg_serializer_t *serializer = hashMapEntry_getValue(entry);
+            if(strcmp(serializer->msgName, fqn) == 0) {
+                msgTypeId =  hashMapEntry_getKey(entry);
+                return msgTypeId;
+            }
+        }
+    }
+
+    return msgTypeId;
+}
+
+static inline void processMsgForSubscriberEntry(pubsub_websocket_topic_receiver_t *receiver, psa_websocket_subscriber_entry_t* entry, pubsub_websocket_msg_header_t *hdr, const char* payload, size_t payloadSize) {
     //NOTE receiver->subscribers.mutex locked
-    pubsub_msg_serializer_t* msgSer = hashMap_get(entry->msgTypes, (void*)(uintptr_t)(hdr->type));
+    void *msgTypeId = psa_websocket_getMsgTypeIdFromFqn(hdr->id, entry->msgTypes);
+    pubsub_msg_serializer_t* msgSer = hashMap_get(entry->msgTypes, msgTypeId);
     pubsub_subscriber_t *svc = entry->svc;
-    bool monitor = receiver->metricsEnabled;
 
-    //monitoring
-    struct timespec beginSer;
-    struct timespec endSer;
-    int updateReceiveCount = 0;
-    int updateSerError = 0;
-
-    if (msgSer!= NULL) {
+    if (msgSer!= NULL && msgTypeId != 0) {
         void *deserializedMsg = NULL;
         bool validVersion = psa_websocket_checkVersion(msgSer->msgVersion, hdr);
         if (validVersion) {
-            if (monitor) {
-                clock_gettime(CLOCK_REALTIME, &beginSer);
-            }
             celix_status_t status = msgSer->deserialize(msgSer->handle, payload, payloadSize, &deserializedMsg);
-            if (monitor) {
-                clock_gettime(CLOCK_REALTIME, &endSer);
-            }
+
             if (status == CELIX_SUCCESS) {
                 bool release = true;
                 svc->receive(svc->handle, msgSer->msgName, msgSer->msgId, deserializedMsg, &release);
                 if (release) {
                     msgSer->freeMsg(msgSer->handle, deserializedMsg);
                 }
-                updateReceiveCount += 1;
             } else {
-                updateSerError += 1;
                 L_WARN("[PSA_WEBSOCKET_TR] Cannot deserialize msg type %s for scope/topic %s/%s", msgSer->msgName, receiver->scope, receiver->topic);
             }
         }
     } else {
-        L_WARN("[PSA_WEBSOCKET_TR] Cannot find serializer for type id 0x%X", hdr->type);
-    }
-
-    if (msgSer != NULL && monitor) {
-        hash_map_t *origins = hashMap_get(entry->metrics, (void*)(uintptr_t )hdr->type);
-        char uuidStr[UUID_STR_LEN+1];
-        uuid_unparse(hdr->originUUID, uuidStr);
-        psa_websocket_subscriber_metrics_entry_t *metrics = hashMap_get(origins, uuidStr);
-
-        if (metrics == NULL) {
-            metrics = calloc(1, sizeof(*metrics));
-            hashMap_put(origins, strndup(uuidStr, UUID_STR_LEN+1), metrics);
-            uuid_copy(metrics->origin, hdr->originUUID);
-            metrics->msgTypeId = hdr->type;
-            metrics->maxDelayInSeconds = -INFINITY;
-            metrics->minDelayInSeconds = INFINITY;
-            metrics->lastSeqNr = 0;
-        }
-
-        double diff = celix_difftime(&beginSer, &endSer);
-        long n = metrics->nrOfMessagesReceived;
-        metrics->averageSerializationTimeInSeconds = (metrics->averageSerializationTimeInSeconds * n + diff) / (n+1);
-
-        diff = celix_difftime(&metrics->lastMessageReceived, receiveTime);
-        n = metrics->nrOfMessagesReceived;
-        if (metrics->nrOfMessagesReceived >= 1) {
-            metrics->averageTimeBetweenMessagesInSeconds = (metrics->averageTimeBetweenMessagesInSeconds * n + diff) / (n + 1);
-        }
-        metrics->lastMessageReceived = *receiveTime;
-
-
-        int incr = hdr->seqNr - metrics->lastSeqNr;
-        if (metrics->lastSeqNr >0 && incr > 1) {
-            metrics->nrOfMissingSeqNumbers += (incr - 1);
-            L_WARN("Missing message seq nr went from %i to %i", metrics->lastSeqNr, hdr->seqNr);
-        }
-        metrics->lastSeqNr = hdr->seqNr;
-
-        struct timespec sendTime;
-        sendTime.tv_sec = (time_t)hdr->sendtimeSeconds;
-        sendTime.tv_nsec = (long)hdr->sendTimeNanoseconds; //TODO FIXME the tv_nsec is not correct
-        diff = celix_difftime(&sendTime, receiveTime);
-        metrics->averageDelayInSeconds = (metrics->averageDelayInSeconds * n + diff) / (n+1);
-        if (diff < metrics->minDelayInSeconds) {
-            metrics->minDelayInSeconds = diff;
-        }
-        if (diff > metrics->maxDelayInSeconds) {
-            metrics->maxDelayInSeconds = diff;
-        }
-
-        metrics->nrOfMessagesReceived += updateReceiveCount;
-        metrics->nrOfSerializationErrors += updateSerError;
+        L_WARN("[PSA_WEBSOCKET_TR] Cannot find serializer for type id 0x%X, fqn %s", msgTypeId, hdr->id);
     }
 }
 
-static inline void processMsg(pubsub_websocket_topic_receiver_t *receiver, const pubsub_websocket_msg_header_t *hdr, const char *payload, size_t payloadSize, struct timespec *receiveTime) {
-    celixThreadMutex_lock(&receiver->subscribers.mutex);
-    hash_map_iterator_t iter = hashMapIterator_construct(receiver->subscribers.map);
-    while (hashMapIterator_hasNext(&iter)) {
-        psa_websocket_subscriber_entry_t *entry = hashMapIterator_nextValue(&iter);
-        if (entry != NULL) {
-            processMsgForSubscriberEntry(receiver, entry, hdr, payload, payloadSize, receiveTime);
+static inline void processMsg(pubsub_websocket_topic_receiver_t *receiver, const char *msg, size_t msgSize) {
+    json_error_t error;
+    json_t *jsMsg = json_loadb(msg, msgSize, 0, &error);
+    if(jsMsg != NULL) {
+        json_t *jsId = json_object_get(jsMsg, "id");
+        json_t *jsMajor = json_object_get(jsMsg, "major");
+        json_t *jsMinor = json_object_get(jsMsg, "minor");
+        json_t *jsSeqNr = json_object_get(jsMsg, "seqNr");
+        json_t *jsData = json_object_get(jsMsg, "data");
+
+        if (jsId && jsMajor && jsMinor && jsSeqNr && jsData) {
+            pubsub_websocket_msg_header_t hdr;
+            hdr.id = json_string_value(jsId);
+            hdr.major = (uint8_t) json_integer_value(jsMajor);
+            hdr.minor = (uint8_t) json_integer_value(jsMinor);
+            hdr.seqNr = (uint32_t) json_integer_value(jsSeqNr);
+            const char *payload = json_dumps(jsData, 0);
+            size_t payloadSize = strlen(payload);
+            printf("Received msg: id %s\tmajor %u\tminor %u\tseqNr %u\tdata %s\n", hdr.id, hdr.major, hdr.minor, hdr.seqNr, payload);
+
+            celixThreadMutex_lock(&receiver->subscribers.mutex);
+            hash_map_iterator_t iter = hashMapIterator_construct(receiver->subscribers.map);
+            while (hashMapIterator_hasNext(&iter)) {
+                psa_websocket_subscriber_entry_t *entry = hashMapIterator_nextValue(&iter);
+                if (entry != NULL) {
+                    processMsgForSubscriberEntry(receiver, entry, &hdr, payload, payloadSize);
+                }
+            }
+            celixThreadMutex_unlock(&receiver->subscribers.mutex);
+            free((void *) hdr.id);
+            free((void *) payload);
+        } else {
+            L_WARN("[PSA_WEBSOCKET_TR] Received unsupported message: "
+                   "ID = %s, major = %d, minor = %d, seqNr = %d, data valid? %s",
+                   (jsId ? json_string_value(jsId) : "ERROR"),
+                   json_integer_value(jsMajor), json_integer_value(jsMinor),
+                   json_integer_value(jsSeqNr), (jsData ? "TRUE" : "FALSE"));
         }
+    } else {
+        L_WARN("[PSA_WEBSOCKET_TR] Failed to load websocket JSON message, error line: %d, error message: %s", error.line, error.text);
+        return;
     }
-    celixThreadMutex_unlock(&receiver->subscribers.mutex);
+
 }
 
 static void* psa_websocket_recvThread(void * data) {
@@ -592,18 +533,13 @@ static void* psa_websocket_recvThread(void * data) {
 
         while(celix_arrayList_size(receiver->recvBuffer.list) > 0) {
             celixThreadMutex_lock(&receiver->recvBuffer.mutex);
-            pubsub_websocket_msg_t *msg = (pubsub_websocket_msg_t *) celix_arrayList_get(receiver->recvBuffer.list, 0);
-            struct timespec *rcvTime = (struct timespec *) celix_arrayList_get(receiver->recvBuffer.rcvTimes, 0);
-            celixThreadMutex_unlock(&receiver->recvBuffer.mutex);
-
-            processMsg(receiver, &msg->header, msg->payload, msg->payloadSize, rcvTime);
-            free(msg);
-            free(rcvTime);
-
-            celixThreadMutex_lock(&receiver->recvBuffer.mutex);
+            pubsub_websocket_msg_entry_t *msg = (pubsub_websocket_msg_entry_t *) celix_arrayList_get(receiver->recvBuffer.list, 0);
             celix_arrayList_removeAt(receiver->recvBuffer.list, 0);
-            celix_arrayList_removeAt(receiver->recvBuffer.rcvTimes, 0);
             celixThreadMutex_unlock(&receiver->recvBuffer.mutex);
+
+            processMsg(receiver, msg->msgData, msg->msgSize);
+            free((void *)msg->msgData);
+            free(msg);
         }
 
         celixThreadMutex_lock(&receiver->recvThread.mutex);
@@ -631,21 +567,14 @@ static int psa_websocketTopicReceiver_data(struct mg_connection *connection __at
     if (handle != NULL) {
         psa_websocket_requested_connection_entry_t *entry = (psa_websocket_requested_connection_entry_t *) handle;
 
-        pubsub_websocket_msg_t *rcvdMsg = malloc(length);
-        memcpy(rcvdMsg, data, length);
-
-        //Check if payload is completely received
-        unsigned long rcvdPayloadSize = length - sizeof(rcvdMsg->header) - sizeof(rcvdMsg->payloadSize);
-        if(rcvdMsg->payloadSize == rcvdPayloadSize) {
-            celixThreadMutex_lock(&entry->recvBuffer->mutex);
-            celix_arrayList_add(entry->recvBuffer->list, rcvdMsg);
-            struct timespec *receiveTime = malloc(sizeof(*receiveTime));
-            clock_gettime(CLOCK_REALTIME, receiveTime);
-            celix_arrayList_add(entry->recvBuffer->rcvTimes, receiveTime);
-            celixThreadMutex_unlock(&entry->recvBuffer->mutex);
-        } else {
-            free(rcvdMsg);
-        }
+        celixThreadMutex_lock(&entry->recvBuffer->mutex);
+        pubsub_websocket_msg_entry_t *msg = malloc(sizeof(*msg));
+        const char *rcvdMsgData = malloc(length);
+        memcpy((void *) rcvdMsgData, data, length);
+        msg->msgData = rcvdMsgData;
+        msg->msgSize = length;
+        celix_arrayList_add(entry->recvBuffer->list, msg);
+        celixThreadMutex_unlock(&entry->recvBuffer->mutex);
     }
 
     return 1; //keep open (non-zero), 0 to close the socket
@@ -658,67 +587,6 @@ static void psa_websocketTopicReceiver_close(const struct mg_connection *connect
         entry->connected = false;
         entry->sockConnection = NULL;
     }
-}
-
-pubsub_admin_receiver_metrics_t* pubsub_websocketTopicReceiver_metrics(pubsub_websocket_topic_receiver_t *receiver) {
-    pubsub_admin_receiver_metrics_t *result = calloc(1, sizeof(*result));
-    snprintf(result->scope, PUBSUB_AMDIN_METRICS_NAME_MAX, "%s", receiver->scope);
-    snprintf(result->topic, PUBSUB_AMDIN_METRICS_NAME_MAX, "%s", receiver->topic);
-
-    size_t msgTypesCount = 0;
-    celixThreadMutex_lock(&receiver->subscribers.mutex);
-    hash_map_iterator_t iter = hashMapIterator_construct(receiver->subscribers.map);
-    while (hashMapIterator_hasNext(&iter)) {
-        psa_websocket_subscriber_entry_t *entry = hashMapIterator_nextValue(&iter);
-        hash_map_iterator_t iter2 = hashMapIterator_construct(entry->metrics);
-        while (hashMapIterator_hasNext(&iter2)) {
-            hashMapIterator_nextValue(&iter2);
-            msgTypesCount += 1;
-        }
-    }
-
-    result->nrOfMsgTypes = (unsigned long)msgTypesCount;
-    result->msgTypes = calloc(msgTypesCount, sizeof(*result->msgTypes));
-    int i = 0;
-    iter = hashMapIterator_construct(receiver->subscribers.map);
-    while (hashMapIterator_hasNext(&iter)) {
-        psa_websocket_subscriber_entry_t *entry = hashMapIterator_nextValue(&iter);
-        hash_map_iterator_t iter2 = hashMapIterator_construct(entry->metrics);
-        while (hashMapIterator_hasNext(&iter2)) {
-            hash_map_t *origins = hashMapIterator_nextValue(&iter2);
-            result->msgTypes[i].origins = calloc((size_t)hashMap_size(origins), sizeof(*(result->msgTypes[i].origins)));
-            result->msgTypes[i].nrOfOrigins = hashMap_size(origins);
-            int k = 0;
-            hash_map_iterator_t iter3 = hashMapIterator_construct(origins);
-            while (hashMapIterator_hasNext(&iter3)) {
-                psa_websocket_subscriber_metrics_entry_t *metrics = hashMapIterator_nextValue(&iter3);
-                result->msgTypes[i].typeId = metrics->msgTypeId;
-                pubsub_msg_serializer_t *msgSer = hashMap_get(entry->msgTypes, (void*)(uintptr_t)metrics->msgTypeId);
-                if (msgSer) {
-                    snprintf(result->msgTypes[i].typeFqn, PUBSUB_AMDIN_METRICS_NAME_MAX, "%s", msgSer->msgName);
-                    uuid_copy(result->msgTypes[i].origins[k].originUUID, metrics->origin);
-                    result->msgTypes[i].origins[k].nrOfMessagesReceived = metrics->nrOfMessagesReceived;
-                    result->msgTypes[i].origins[k].nrOfSerializationErrors = metrics->nrOfSerializationErrors;
-                    result->msgTypes[i].origins[k].averageDelayInSeconds = metrics->averageDelayInSeconds;
-                    result->msgTypes[i].origins[k].maxDelayInSeconds = metrics->maxDelayInSeconds;
-                    result->msgTypes[i].origins[k].minDelayInSeconds = metrics->minDelayInSeconds;
-                    result->msgTypes[i].origins[k].averageTimeBetweenMessagesInSeconds = metrics->averageTimeBetweenMessagesInSeconds;
-                    result->msgTypes[i].origins[k].averageSerializationTimeInSeconds = metrics->averageSerializationTimeInSeconds;
-                    result->msgTypes[i].origins[k].lastMessageReceived = metrics->lastMessageReceived;
-                    result->msgTypes[i].origins[k].nrOfMissingSeqNumbers = metrics->nrOfMissingSeqNumbers;
-
-                    k += 1;
-                } else {
-                    L_WARN("[PSA_WEBSOCKET]: Error cannot find key 0x%X in msg map during metrics collection!\n", metrics->msgTypeId);
-                }
-            }
-            i +=1 ;
-        }
-    }
-
-    celixThreadMutex_unlock(&receiver->subscribers.mutex);
-
-    return result;
 }
 
 

@@ -116,6 +116,14 @@ void etcdlib_destroy(etcdlib_t *etcdlib) {
     free(etcdlib);
 }
 
+const char* etcdlib_host(etcdlib_t *etcdlib) {
+    return etcdlib->host;
+}
+
+int etcdlib_port(etcdlib_t *etcdlib) {
+    return etcdlib->port;
+}
+
 int etcd_get(const char* key, char** value, int* modifiedIndex) {
 	return etcdlib_get(&g_etcdlib, key, value, modifiedIndex);
 }
@@ -660,7 +668,13 @@ static int performRequest(char* url, request_t request, void* reqData, void* rep
 	}
 
 	res = curl_easy_perform(curl);
-	curl_easy_cleanup(curl);
 
-	return res;
+
+	if (res != CURLE_OK && res != CURLE_OPERATION_TIMEDOUT) {
+	    const char* m = request == GET ? "GET" : request == PUT ? "PUT" : request == DELETE ? "DELETE" : "?";
+	    fprintf(stderr, "[etclib] Curl error for %s @ %s: %s\n", url, m, curl_easy_strerror(res));
+	}
+
+    curl_easy_cleanup(curl);
+    return res;
 }

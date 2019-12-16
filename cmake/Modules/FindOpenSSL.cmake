@@ -47,9 +47,16 @@ find_package_handle_standard_args(OpenSSL  DEFAULT_MSG
 mark_as_advanced(OPENSSL_INCLUDE_DIR OPENSSL_LIBRARY CRYPTO_LIBRARY)
 
 if (OPENSSL_FOUND AND NOT TARGET OpenSSL::lib)
+    add_library(OpenSSL::crypto SHARED IMPORTED)
+    set_target_properties(OpenSSL::crypto PROPERTIES
+            IMPORTED_LOCATION "${CRYPTO_LIBRARY}"
+            INTERFACE_INCLUDE_DIRECTORIES "${OPENSSL_INCLUDE_DIR}"
+    )
+
     add_library(OpenSSL::lib SHARED IMPORTED)
     set_target_properties(OpenSSL::lib PROPERTIES
-            IMPORTED_LOCATION "${OPENSSL_LIBRARY};${CRYPTO_LIBRARY}"
+            IMPORTED_LOCATION "${OPENSSL_LIBRARY}"
             INTERFACE_INCLUDE_DIRECTORIES "${OPENSSL_INCLUDE_DIR}"
+            INTERFACE_LINK_LIBRARIES OpenSSL::crypto
     )
 endif ()

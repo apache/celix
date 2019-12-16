@@ -757,6 +757,36 @@ static void check_example9_3(void *data) {
     STRCMP_EQUAL("your_name", ex->name);
     CHECK_EQUAL(RE_OK, ex->result);
 }
+/*********** example A ************************/
+const char *exampleA_descriptor = "TPoint={DD x y};{lPoint;lPoint;t point_a point_b name}";
+
+const char *exampleA_input =
+		R"({
+"point_a" : { "x" : 1.0, "y" : 2.0 },
+"point_b" : { "x" : 3.0, "y" : 4.0 },
+"name" : "this_is_my_name"
+})";
+
+struct exA_point {
+	double x;
+	double y;
+};
+
+struct exA_struct {
+	exA_point point_a;
+	exA_point point_b;
+	char* name;
+};
+
+static void check_exampleA(void *data) {
+	auto inp = static_cast<exA_struct*>(data);
+	CHECK_EQUAL(1.0, inp->point_a.x);
+	CHECK_EQUAL(2.0, inp->point_a.y);
+	CHECK_EQUAL(3.0, inp->point_b.x);
+	CHECK_EQUAL(4.0, inp->point_b.y);
+	STRCMP_EQUAL("this_is_my_name", inp->name)
+}
+
 
 static void parseAvprTests() {
 	dyn_type *type;
@@ -952,6 +982,16 @@ static void parseTests() {
 	check_example9_2(inst);
 	dynType_free(type, inst);
 	dynType_destroy(type);
+
+    type = nullptr;
+    inst = nullptr;
+    rc = dynType_parseWithStr(exampleA_descriptor, nullptr, nullptr, &type);
+    CHECK_EQUAL(0, rc);
+    rc = jsonSerializer_deserialize(type, exampleA_input, &inst);
+    CHECK_EQUAL(0, rc);
+    check_exampleA(inst);
+    dynType_free(type, inst);
+    dynType_destroy(type);
 }
 
 /*********** write example 1 ************************/

@@ -307,3 +307,17 @@ TEST(DynTypeTests, EnumTest) {
     dynType_print(type, stdout);
     dynType_destroy(type);
 }
+
+TEST(DynTypeTests, NrOfEntriesTest) {
+    dyn_type *type = NULL;
+    int rc = dynType_parseWithStr("{DD}", NULL, NULL, &type);
+    CHECK_EQUAL(0, rc);
+    CHECK_EQUAL(2, dynType_complex_nrOfEntries(type));
+    dynType_destroy(type);
+
+    type = NULL;
+    rc = dynType_parseWithStr("{DDJJ}", NULL, NULL, &type);
+    CHECK_EQUAL(0, rc);
+    CHECK_EQUAL(4, dynType_complex_nrOfEntries(type));
+    dynType_destroy(type);
+}

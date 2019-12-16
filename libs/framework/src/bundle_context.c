@@ -712,6 +712,11 @@ celix_array_list_t* celix_bundleContext_listBundles(celix_bundle_context_t *ctx)
     return result;
 }
 
+bool celix_bundleContext_isBundleInstalled(celix_bundle_context_t *ctx, long bndId) {
+    celix_bundle_t *bnd = framework_getBundleById(ctx->framework, bndId);
+    return bnd != NULL;
+}
+
 static void bundleContext_startBundleCallback(void *handle, const bundle_t *c_bnd) {
     bool *started = handle;
     *started = false;

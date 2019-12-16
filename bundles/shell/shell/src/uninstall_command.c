@@ -27,31 +27,30 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "array_list.h"
-#include "bundle_context.h"
+#include "celix_api.h"
 
-celix_status_t uninstallCommand_execute(void *handle, char * line, FILE *outStream, FILE *errStream) {
-	bundle_context_pt context = handle;
+
+celix_status_t uninstallCommand_execute(void *handle, char* command, FILE *outStream, FILE *errStream) {
+	celix_bundle_context_t *ctx = handle;
 	char delims[] = " ";
 	char * sub = NULL;
 	char *save_ptr = NULL;
 	celix_status_t status = CELIX_SUCCESS;
 
-	sub = strtok_r(line, delims, &save_ptr);
+	sub = strtok_r(command, delims, &save_ptr);
 	sub = strtok_r(NULL, delims, &save_ptr);
 
 	if (sub == NULL) {
 		fprintf(errStream, "Incorrect number of arguments.\n");
 	} else {
 		while (sub != NULL) {
-			long id = atol(sub);
-			bundle_pt bundle = NULL;
-			status = bundleContext_getBundleById(context, id, &bundle);
-			if (status==CELIX_SUCCESS && bundle!=NULL) {
-				bundle_uninstall(bundle);
+			long bndId = atol(sub);
+			bool exists = celix_bundleContext_isBundleInstalled(ctx, bndId);
+			if (exists) {
+			    celix_bundleContext_uninstallBundle(ctx, bndId);
 			} else {
-				fprintf(errStream, "Bundle id is invalid.");
-			}
+                fprintf(outStream, "No bundle with id %li.\n", bndId);
+            }
 			sub = strtok_r(NULL, delims, &save_ptr);
 		}
 	}

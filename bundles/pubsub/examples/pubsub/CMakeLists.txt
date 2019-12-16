@@ -19,6 +19,7 @@ include_directories("common/include")
 
 add_subdirectory(publisher)
 add_subdirectory(publisher2)
+add_subdirectory(publisher_websocket)
 add_subdirectory(subscriber)
 
 
