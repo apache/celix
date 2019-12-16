@@ -19,7 +19,7 @@ find_package(Jansson REQUIRED)
 
 add_celix_bundle(celix_pubsub_serializer_avrobin
         BUNDLE_SYMBOLICNAME "apache_celix_pubsub_serializer_avrobin"
-        VERSION "1.0.0"
+        VERSION "1.1.0"
         GROUP "Celix/PubSub"
         SOURCES
         src/ps_avrobin_serializer_activator.c

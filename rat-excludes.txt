@@ -35,7 +35,11 @@ Doxyfile.in
  Workaround to exclude .in files.
 (.*).in
 
+ Avpr files cannot have comments and as result no license info
+(.*).avpr
+
 build/*
+cmake-build-debug/*
 
 .project
    
@@ -73,9 +77,12 @@ open_memstream.h
 scope.*\.json
 
 
- MIT - C Thread Pool
+#MIT - C Thread Pool
 thpool.c
 thpool.h
 Design.md
 FAQ.md
 README.md
+
+#ansi_up.js : javascript lib to handle ansi colors
+ansi_up.js

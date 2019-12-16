@@ -17,7 +17,7 @@
 
 add_celix_bundle(log_writer_stdout
 	SYMBOLIC_NAME "apache_celix_log_writer"
-	VERSION "1.1.0"
+	VERSION "1.2.0"
 	NAME "Apache Celix Log Writer"
 	GROUP "Celix/Logging"
 	SOURCES
