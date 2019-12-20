@@ -92,7 +92,7 @@ celix_status_t bundle_setActivator(bundle_pt bundle, celix_bundle_activator_t *a
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t bundle_getContext(bundle_pt bundle, bundle_context_pt *context) {
+celix_status_t bundle_getContext(const_bundle_pt bundle, bundle_context_pt *context) {
 	mock_c()->actualCall("bundle_getContext")
 			->withPointerParameters("bundle", bundle)
 			->withOutputParameter("context", context);

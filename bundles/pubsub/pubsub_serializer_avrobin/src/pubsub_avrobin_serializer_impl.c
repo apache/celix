@@ -64,9 +64,9 @@ typedef struct pubsub_avrobin_msg_serializer_impl {
     version_pt msgVersion;
 } pubsub_avrobin_msg_serializer_impl_t;
 
-static char *pubsubAvrobinSerializer_getMsgDescriptionDir(celix_bundle_t *bundle);
-static void pubsubAvrobinSerializer_addMsgSerializerFromBundle(const char *root, celix_bundle_t *bundle, hash_map_pt msgTypesMap);
-static void pubsubAvrobinSerializer_fillMsgSerializerMap(hash_map_pt msgTypesMap, celix_bundle_t *bundle);
+static char *pubsubAvrobinSerializer_getMsgDescriptionDir(const celix_bundle_t *bundle);
+static void pubsubAvrobinSerializer_addMsgSerializerFromBundle(const char *root, const celix_bundle_t *bundle, hash_map_pt msgTypesMap);
+static void pubsubAvrobinSerializer_fillMsgSerializerMap(hash_map_pt msgTypesMap, const celix_bundle_t *bundle);
 
 static int pubsubMsgAvrobinSerializer_convertDescriptor(FILE* file_ptr, pubsub_msg_serializer_t* serializer);
 static int pubsubMsgAvrobinSerializer_convertAvpr(FILE* file_ptr, pubsub_msg_serializer_t* serializer, const char* fqn);
@@ -116,7 +116,7 @@ celix_status_t pubsubAvrobinSerializer_destroy(pubsub_avrobin_serializer_t *seri
     return status;
 }
 
-celix_status_t pubsubAvrobinSerializer_createSerializerMap(void *handle, celix_bundle_t *bundle, hash_map_pt *serializerMap) {
+celix_status_t pubsubAvrobinSerializer_createSerializerMap(void *handle, const celix_bundle_t *bundle, hash_map_pt *serializerMap) {
     celix_status_t status = CELIX_SUCCESS;
     pubsub_avrobin_serializer_t *serializer = handle;
 
@@ -214,7 +214,7 @@ static void pubsubMsgAvrobinSerializer_freeMsg(void *handle, void *msg) {
     }
 }
 
-static char *pubsubAvrobinSerializer_getMsgDescriptionDir(celix_bundle_t *bundle) {
+static char *pubsubAvrobinSerializer_getMsgDescriptionDir(const celix_bundle_t *bundle) {
     char *root = NULL;
 
     bool isSystemBundle = false;
@@ -240,7 +240,7 @@ static char *pubsubAvrobinSerializer_getMsgDescriptionDir(celix_bundle_t *bundle
     return root;
 }
 
-static void pubsubAvrobinSerializer_addMsgSerializerFromBundle(const char *root, celix_bundle_t *bundle, hash_map_pt msgTypesMap) {
+static void pubsubAvrobinSerializer_addMsgSerializerFromBundle(const char *root, const celix_bundle_t *bundle, hash_map_pt msgTypesMap) {
     char fqn[MAX_PATH_LEN];
     char path[MAX_PATH_LEN];
     const char* entry_name = NULL;
@@ -305,7 +305,7 @@ static void pubsubAvrobinSerializer_addMsgSerializerFromBundle(const char *root,
     }
 }
 
-static void pubsubAvrobinSerializer_fillMsgSerializerMap(hash_map_pt msgTypesMap, celix_bundle_t *bundle) {
+static void pubsubAvrobinSerializer_fillMsgSerializerMap(hash_map_pt msgTypesMap, const celix_bundle_t *bundle) {
     char *root = NULL;
     char *metaInfPath = NULL;
 

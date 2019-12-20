@@ -26,7 +26,7 @@
 #include "utils.h"
 
 celix_status_t bundle_createModule(bundle_pt bundle, module_pt *module);
-celix_status_t bundle_closeRevisions(bundle_pt bundle);
+celix_status_t bundle_closeRevisions(const_bundle_pt bundle);
 
 celix_status_t bundle_create(bundle_pt * bundle) {
     celix_status_t status;
@@ -105,7 +105,7 @@ celix_status_t bundle_destroy(bundle_pt bundle) {
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundle_getArchive(bundle_pt bundle, bundle_archive_pt *archive) {
+celix_status_t bundle_getArchive(const_bundle_pt bundle, bundle_archive_pt *archive) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (bundle != NULL && *archive == NULL) {
@@ -119,7 +119,7 @@ celix_status_t bundle_getArchive(bundle_pt bundle, bundle_archive_pt *archive) {
 	return status;
 }
 
-celix_status_t bundle_getCurrentModule(bundle_pt bundle, module_pt *module) {
+celix_status_t bundle_getCurrentModule(const_bundle_pt bundle, module_pt *module) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (bundle == NULL || arrayList_size(bundle->modules)==0 ) {
@@ -131,7 +131,7 @@ celix_status_t bundle_getCurrentModule(bundle_pt bundle, module_pt *module) {
 	return status;
 }
 
-array_list_pt bundle_getModules(bundle_pt bundle) {
+array_list_pt bundle_getModules(const_bundle_pt bundle) {
     return bundle->modules;
 }
 
@@ -143,7 +143,7 @@ void bundle_setHandle(bundle_pt bundle, void * handle) {
 	bundle->handle = handle;
 }
 
-celix_bundle_activator_t* bundle_getActivator(bundle_pt bundle) {
+celix_bundle_activator_t* bundle_getActivator(const_bundle_pt bundle) {
 	return bundle->activator;
 }
 
@@ -152,7 +152,7 @@ celix_status_t bundle_setActivator(bundle_pt bundle, celix_bundle_activator_t *a
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundle_getContext(bundle_pt bundle, bundle_context_pt *context) {
+celix_status_t bundle_getContext(const_bundle_pt bundle, bundle_context_pt *context) {
 	*context = bundle->context;
 	return CELIX_SUCCESS;
 }
@@ -162,11 +162,11 @@ celix_status_t bundle_setContext(bundle_pt bundle, bundle_context_pt context) {
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundle_getEntry(bundle_pt bundle, const char* name, char** entry) {
+celix_status_t bundle_getEntry(const_bundle_pt bundle, const char* name, char** entry) {
 	return framework_getBundleEntry(bundle->framework, bundle, name, entry);
 }
 
-celix_status_t bundle_getState(bundle_pt bundle, bundle_state_e *state) {
+celix_status_t bundle_getState(const_bundle_pt bundle, bundle_state_e *state) {
 	if(bundle==NULL){
 		*state = OSGI_FRAMEWORK_BUNDLE_UNKNOWN;
 		return CELIX_BUNDLE_EXCEPTION;
@@ -193,10 +193,10 @@ celix_status_t bundle_createModule(bundle_pt bundle, module_pt *module) {
 		long bundleId = 0;
         status = bundleArchive_getId(bundle->archive, &bundleId);
         if (status == CELIX_SUCCESS) {
-			int revision = 0;
+			int revision_no = 0;
 			char moduleId[512];
 
-			snprintf(moduleId, sizeof(moduleId), "%ld.%d", bundleId, revision);
+			snprintf(moduleId, sizeof(moduleId), "%ld.%d", bundleId, revision_no);
 			*module = module_create(headerMap, moduleId, bundle);
 
 			if (*module != NULL) {
@@ -406,7 +406,7 @@ celix_status_t bundle_addModule(bundle_pt bundle, module_pt module) {
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundle_isSystemBundle(bundle_pt bundle, bool *systemBundle) {
+celix_status_t bundle_isSystemBundle(const_bundle_pt bundle, bool *systemBundle) {
 	celix_status_t status;
 	long bundleId;
 	bundle_archive_pt archive = NULL;
@@ -424,7 +424,7 @@ celix_status_t bundle_isSystemBundle(bundle_pt bundle, bool *systemBundle) {
 	return status;
 }
 
-celix_status_t bundle_close(bundle_pt bundle) {
+celix_status_t bundle_close(const_bundle_pt bundle) {
 	bundle_archive_pt archive = NULL;
 	
 	celix_status_t status;
@@ -441,7 +441,7 @@ celix_status_t bundle_close(bundle_pt bundle) {
     return status;
 }
 
-celix_status_t bundle_closeAndDelete(bundle_pt bundle) {
+celix_status_t bundle_closeAndDelete(const_bundle_pt bundle) {
 	celix_status_t status;
 
 	bundle_archive_pt archive = NULL;
@@ -458,12 +458,12 @@ celix_status_t bundle_closeAndDelete(bundle_pt bundle) {
     return status;
 }
 
-celix_status_t bundle_closeRevisions(bundle_pt bundle) {
+celix_status_t bundle_closeRevisions(const_bundle_pt bundle) {
     celix_status_t status = CELIX_SUCCESS;
     return status;
 }
 
-celix_status_t bundle_closeModules(bundle_pt bundle) {
+celix_status_t bundle_closeModules(const_bundle_pt bundle) {
     celix_status_t status = CELIX_SUCCESS;
 
     unsigned int i = 0;
@@ -497,7 +497,7 @@ celix_status_t bundle_refresh(bundle_pt bundle) {
     return status;
 }
 
-celix_status_t bundle_getBundleId(bundle_t *bundle, long *bndId) {
+celix_status_t bundle_getBundleId(const bundle_t *bundle, long *bndId) {
 	celix_status_t status = CELIX_SUCCESS;
 	long id = celix_bundle_getId(bundle);
 	if (id >= 0) {
@@ -543,7 +543,7 @@ celix_status_t bundle_setFramework(bundle_pt bundle, framework_pt framework) {
 	return status;
 }
 
-celix_status_t bundle_getFramework(bundle_pt bundle, framework_pt *framework) {
+celix_status_t bundle_getFramework(const_bundle_pt bundle, framework_pt *framework) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (bundle != NULL && *framework == NULL) {
@@ -557,7 +557,7 @@ celix_status_t bundle_getFramework(bundle_pt bundle, framework_pt *framework) {
 	return status;
 }
 
-celix_status_t bundle_getBundleLocation(bundle_pt bundle, const char **location){
+celix_status_t bundle_getBundleLocation(const_bundle_pt bundle, const char **location){
 
 	celix_status_t status;
 
