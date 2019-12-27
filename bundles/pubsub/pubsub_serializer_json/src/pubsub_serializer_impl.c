@@ -77,9 +77,9 @@ typedef struct pubsub_json_msg_serializer_impl {
     version_pt msgVersion;
 } pubsub_json_msg_serializer_impl_t;
 
-static char* pubsubSerializer_getMsgDescriptionDir(celix_bundle_t *bundle);
-static void pubsubSerializer_addMsgSerializerFromBundle(pubsub_json_serializer_t* serializer, const char *root, celix_bundle_t *bundle, hash_map_pt msgSerializers);
-static void pubsubSerializer_fillMsgSerializerMap(pubsub_json_serializer_t* serializer, hash_map_pt msgSerializers,celix_bundle_t *bundle);
+static char* pubsubSerializer_getMsgDescriptionDir(const celix_bundle_t *bundle);
+static void pubsubSerializer_addMsgSerializerFromBundle(pubsub_json_serializer_t* serializer, const char *root, const celix_bundle_t *bundle, hash_map_pt msgSerializers);
+static void pubsubSerializer_fillMsgSerializerMap(pubsub_json_serializer_t* serializer, hash_map_pt msgSerializers, const celix_bundle_t *bundle);
 
 static int pubsubMsgSerializer_convertDescriptor(pubsub_json_serializer_t* serializer, FILE* file_ptr, pubsub_msg_serializer_t* msgSerializer);
 static int pubsubMsgSerializer_convertAvpr(pubsub_json_serializer_t *serializer, FILE* file_ptr, pubsub_msg_serializer_t* msgSerializer, const char* fqn);
@@ -131,7 +131,7 @@ celix_status_t pubsubSerializer_destroy(pubsub_json_serializer_t* serializer) {
     return status;
 }
 
-celix_status_t pubsubSerializer_createSerializerMap(void *handle, celix_bundle_t *bundle, hash_map_pt* serializerMap) {
+celix_status_t pubsubSerializer_createSerializerMap(void *handle, const celix_bundle_t *bundle, hash_map_pt* serializerMap) {
     pubsub_json_serializer_t *serializer = handle;
 
     hash_map_pt map = hashMap_create(NULL, NULL, NULL, NULL);
@@ -210,7 +210,7 @@ void pubsubMsgSerializer_freeMsg(void* handle, void *msg) {
 }
 
 
-static void pubsubSerializer_fillMsgSerializerMap(pubsub_json_serializer_t* serializer, hash_map_pt msgSerializers, celix_bundle_t *bundle) {
+static void pubsubSerializer_fillMsgSerializerMap(pubsub_json_serializer_t* serializer, hash_map_pt msgSerializers, const celix_bundle_t *bundle) {
     char* root = NULL;
     char* metaInfPath = NULL;
 
@@ -227,7 +227,7 @@ static void pubsubSerializer_fillMsgSerializerMap(pubsub_json_serializer_t* seri
     }
 }
 
-static char* pubsubSerializer_getMsgDescriptionDir(celix_bundle_t *bundle) {
+static char* pubsubSerializer_getMsgDescriptionDir(const celix_bundle_t *bundle) {
     char *root = NULL;
 
     bool isSystemBundle = false;
@@ -253,7 +253,7 @@ static char* pubsubSerializer_getMsgDescriptionDir(celix_bundle_t *bundle) {
     return root;
 }
 
-static void pubsubSerializer_addMsgSerializerFromBundle(pubsub_json_serializer_t* serializer, const char *root, celix_bundle_t *bundle, hash_map_pt msgSerializers) {
+static void pubsubSerializer_addMsgSerializerFromBundle(pubsub_json_serializer_t* serializer, const char *root, const celix_bundle_t *bundle, hash_map_pt msgSerializers) {
     char fqn[MAX_PATH_LEN];
     char pathOrError[MAX_PATH_LEN];
     const char* entry_name = NULL;

@@ -73,7 +73,7 @@ linked_list_pt resolver_resolve(module_pt root) {
     candidatesMap = hashMap_create(NULL, NULL, NULL, NULL);
 
     if (resolver_populateCandidatesMap(candidatesMap, root) != 0) {
-        hash_map_iterator_pt iter = hashMapIterator_create(candidatesMap);
+        iter = hashMapIterator_create(candidatesMap);
         while (hashMapIterator_hasNext(iter)) {
             hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
             linked_list_pt value = hashMapEntry_getValue(entry);
