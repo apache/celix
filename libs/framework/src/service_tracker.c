@@ -32,6 +32,8 @@
 #include "celix_log.h"
 #include "bundle_context_private.h"
 #include "celix_array_list.h"
+#include "../../utils/src/version_range_private.h"
+#include "../../utils/src/version_private.h"
 
 static celix_status_t serviceTracker_track(celix_service_tracker_instance_t *tracker, service_reference_pt reference, celix_service_event_t *event);
 static celix_status_t serviceTracker_untrack(celix_service_tracker_instance_t *tracker, service_reference_pt reference, celix_service_event_t *event);
@@ -714,6 +716,16 @@ celix_service_tracker_t* celix_serviceTracker_create(
     return celix_serviceTracker_createWithOptions(ctx, &opts);
 }
 
+#define PARSE_VERSION \
+version_range_pt range; \
+celix_status_t status = versionRange_parse(opts->filter.versionRange, &range); \
+if(status != CELIX_SUCCESS) { \
+    framework_log(logger, OSGI_FRAMEWORK_LOG_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__, \
+    "Error incorrect version range."); \
+    celixThreadRwlock_destroy(&tracker->instanceLock); \
+    free(tracker);\
+}
+
 celix_service_tracker_t* celix_serviceTracker_createWithOptions(
         bundle_context_t *ctx,
         const celix_service_tracking_options_t *opts
@@ -747,11 +759,17 @@ celix_service_tracker_t* celix_serviceTracker_createWithOptions(
             //setting filter
             if (opts->filter.ignoreServiceLanguage) {
                 if (opts->filter.filter != NULL && opts->filter.versionRange != NULL) {
-                    //TODO version range
-                    asprintf(&tracker->filter, "&((%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, opts->filter.filter);
+                    PARSE_VERSION
+                    asprintf(&tracker->filter, "(&(%s=%s)(%s%s%i.%i.%i)(%s%s%i.%i.%i)%s)",
+                             OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName,
+                             CELIX_FRAMEWORK_SERVICE_VERSION, range->isLowInclusive ? ">=" : ">", range->low->major, range->low->minor, range->low->micro,
+                             CELIX_FRAMEWORK_SERVICE_VERSION, range->isHighInclusive ? ">=" : ">", range->high->major, range->high->minor, range->high->micro,
+                             opts->filter.filter);
                 } else if (opts->filter.versionRange != NULL) {
-                    //TODO version range
-                    asprintf(&tracker->filter, "&((%s=%s))", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName);
+                    PARSE_VERSION
+                    asprintf(&tracker->filter, "(&(%s=%s)(%s%s%i.%i.%i)(%s%s%i.%i.%i))", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName,
+                             CELIX_FRAMEWORK_SERVICE_VERSION, range->isLowInclusive ? ">=" : ">", range->low->major, range->low->minor, range->low->micro,
+                             CELIX_FRAMEWORK_SERVICE_VERSION, range->isHighInclusive ? ">=" : ">", range->high->major, range->high->minor, range->high->micro);
                 } else if (opts->filter.filter != NULL) {
                     asprintf(&tracker->filter, "(&(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, opts->filter.filter);
                 } else {
@@ -759,11 +777,16 @@ celix_service_tracker_t* celix_serviceTracker_createWithOptions(
                 }
             } else {
                 if (opts->filter.filter != NULL && opts->filter.versionRange != NULL) {
-                    //TODO version range
-                    asprintf(&tracker->filter, "&((%s=%s)(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang, opts->filter.filter);
+                    PARSE_VERSION
+                    asprintf(&tracker->filter, "(&(%s=%s)(%s=%s)(%s%s%i.%i.%i)(%s%s%i.%i.%i)%s)", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang,
+                             CELIX_FRAMEWORK_SERVICE_VERSION, range->isLowInclusive ? ">=" : ">", range->low->major, range->low->minor, range->low->micro,
+                             CELIX_FRAMEWORK_SERVICE_VERSION, range->isHighInclusive ? ">=" : ">", range->high->major, range->high->minor, range->high->micro,
+                             opts->filter.filter);
                 } else if (opts->filter.versionRange != NULL) {
-                    //TODO version range
-                    asprintf(&tracker->filter, "&((%s=%s)(%s=%s))", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang);
+                    PARSE_VERSION
+                    asprintf(&tracker->filter, "(&(%s=%s)(%s=%s)(%s%s%i.%i.%i)(%s%s%i.%i.%i))", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang,
+                             CELIX_FRAMEWORK_SERVICE_VERSION, range->isLowInclusive ? ">=" : ">", range->low->major, range->low->minor, range->low->micro,
+                             CELIX_FRAMEWORK_SERVICE_VERSION, range->isHighInclusive ? ">=" : ">", range->high->major, range->high->minor, range->high->micro);
                 } else if (opts->filter.filter != NULL) {
                     asprintf(&tracker->filter, "(&(%s=%s)(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang, opts->filter.filter);
                 } else {
