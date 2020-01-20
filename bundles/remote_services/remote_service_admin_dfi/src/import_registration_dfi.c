@@ -209,7 +209,7 @@ static celix_status_t importRegistration_findAndParseInterfaceDescriptor(celix_b
     celix_status_t status = CELIX_SUCCESS;
     FILE* descriptor = NULL;
     status = dfi_findDescriptor(context, bundle, name, &descriptor);
-    if (status == CELIX_SUCCESS) {
+    if (status == CELIX_SUCCESS && descriptor != NULL) {
         int rc = dynInterface_parse(descriptor, out);
         fclose(descriptor);
         if (rc != 0) {
@@ -220,7 +220,7 @@ static celix_status_t importRegistration_findAndParseInterfaceDescriptor(celix_b
     }
 
     status = dfi_findAvprDescriptor(context, bundle, name, &descriptor);
-    if (status == CELIX_SUCCESS) {
+    if (status == CELIX_SUCCESS && descriptor != NULL) {
         *out = dynInterface_parseAvpr(descriptor);
         fclose(descriptor);
         if (*out == NULL) {
