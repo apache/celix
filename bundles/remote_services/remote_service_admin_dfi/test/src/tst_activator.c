@@ -24,16 +24,19 @@
 
 #include "tst_service.h"
 #include "calculator_service.h"
+#include "remote_example.h"
 #include <unistd.h>
 
 struct activator {
     long svcId;
     struct tst_service testSvc;
 
-    long trackerId;
+    long trackerId1;
+    long trackerId2;
 
     pthread_mutex_t mutex; //protects below
     calculator_service_t *calc;
+    remote_example_t *remoteExample;
 };
 
 static void bndSetCalc(void* handle, void* svc) {
@@ -43,11 +46,15 @@ static void bndSetCalc(void* handle, void* svc) {
     pthread_mutex_unlock(&act->mutex);
 }
 
-static int bndTest(void *handle) {
-    int status = 0;
-    struct activator *act = handle;
+static void bndSetRemoteExample(void* handle, void* svc) {
+    struct activator * act = handle;
+    pthread_mutex_lock(&act->mutex);
+    act->remoteExample = svc;
+    pthread_mutex_unlock(&act->mutex);
+}
 
-    double result = -1.0;
+static bool bndIsCalculatorDiscovered(void *handle) {
+    struct activator *act = handle;
 
     int retries = 40;
 
@@ -64,11 +71,42 @@ static int bndTest(void *handle) {
         pthread_mutex_unlock(&act->mutex);
     }
 
+    bool discovered = local != NULL;
+    return discovered;
+}
+
+static bool bndIsRemoteExampleDiscovered(void *handle) {
+    struct activator *act = handle;
+
+    int retries = 40;
+
+    pthread_mutex_lock(&act->mutex);
+    remote_example_t *local = act->remoteExample;
+    pthread_mutex_unlock(&act->mutex);
+
+    while (local == NULL && retries > 0) {
+        printf("Waiting for remote example service .. %d\n", retries);
+        usleep(100000);
+        --retries;
+        pthread_mutex_lock(&act->mutex);
+        local = act->remoteExample;
+        pthread_mutex_unlock(&act->mutex);
+    }
+
+    bool discovered = local != NULL;
+    return discovered;
+}
+
+static int bndTestCalculator(void *handle) {
+    int status = 0;
+    struct activator *act = handle;
+
+    double result = -1.0;
 
     pthread_mutex_lock(&act->mutex);
     int rc = 1;
     if (act->calc != NULL) {
-        rc = act->calc->sqrt(act->calc->calculator, 4, &result);
+        rc = act->calc->sqrt(act->calc->handle, 4, &result);
         printf("calc result is %f\n", result);
     } else {
         printf("calc not ready\n");
@@ -82,10 +120,20 @@ static int bndTest(void *handle) {
     return status;
 }
 
+static int bndTestRemoteExample(void *handle) {
+    return 1;//TODO
+//    int status = 0;
+//    struct activator *act = handle;
+//    return status;
+}
+
 static celix_status_t bndStart(struct activator *act, celix_bundle_context_t* ctx) {
     //initialize service struct
     act->testSvc.handle = act;
-    act->testSvc.test = bndTest;
+    act->testSvc.isCalcDiscovered = bndIsCalculatorDiscovered;
+    act->testSvc.isRemoteExampleDiscovered = bndIsRemoteExampleDiscovered;
+    act->testSvc.testCalculator = bndTestCalculator;
+    act->testSvc.testRemoteExample = bndTestRemoteExample;
 
     //create mutex
     pthread_mutex_init(&act->mutex, NULL);
@@ -97,7 +145,15 @@ static celix_status_t bndStart(struct activator *act, celix_bundle_context_t* ct
         opts.callbackHandle = act;
         opts.filter.serviceName = CALCULATOR_SERVICE;
         opts.filter.ignoreServiceLanguage = true;
-        act->trackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
+        act->trackerId1 = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
+    }
+    {
+        celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
+        opts.set = bndSetRemoteExample;
+        opts.callbackHandle = act;
+        opts.filter.serviceName = REMOTE_EXAMPLE_NAME;
+        opts.filter.ignoreServiceLanguage = true;
+        act->trackerId2 = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
     }
 
     //register test service
@@ -107,7 +163,8 @@ static celix_status_t bndStart(struct activator *act, celix_bundle_context_t* ct
 
 static celix_status_t bndStop(struct activator *act, celix_bundle_context_t* ctx) {
     celix_bundleContext_unregisterService(ctx, act->svcId);
-    celix_bundleContext_stopTracker(ctx, act->trackerId);
+    celix_bundleContext_stopTracker(ctx, act->trackerId1);
+    celix_bundleContext_stopTracker(ctx, act->trackerId2);
     pthread_mutex_destroy(&act->mutex);
     return CELIX_SUCCESS;
 }

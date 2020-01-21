@@ -117,7 +117,7 @@ extern "C" {
         CHECK_EQUAL(0, arrayList_size(imported));
 
         double result = 0;
-        rc = calc->add(calc->calculator, 2.0, 5.0, &result);
+        rc = calc->add(calc->handle, 2.0, 5.0, &result);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
         CHECK_EQUAL(7.0, result);
 

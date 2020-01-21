@@ -59,7 +59,7 @@ void subCommand_execute(celix_bundle_context_t *context, char *line, FILE *out, 
                     double a = atof(aStr);
                     double b = atof(bStr);
                     double result = 0;
-                    status = calculator->sub(calculator->calculator, a, b, &result);
+                    status = calculator->sub(calculator->handle, a, b, &result);
                     if (status == CELIX_SUCCESS) {
                         fprintf(out, "CALCULATOR_SHELL: Sub: %f - %f = %f\n", a, b, result);
                     } else {

@@ -16,13 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * calculator_impl.c
- *
- *  \date       Oct 5, 2011
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
+
 
 #include <math.h>
 
@@ -31,24 +25,17 @@
 
 #include "calculator_impl.h"
 
-celix_status_t calculator_create(calculator_t **calculator) {
-    celix_status_t status = CELIX_SUCCESS;
-
-    *calculator = calloc(1, sizeof(**calculator));
-    if (!*calculator) {
-        status = CELIX_ENOMEM;
-    }
-
-    return status;
+calculator_t* calculator_create(void) {
+    struct calculator *calc = calloc(1, sizeof(*calc));
+    return calc;
 }
 
-celix_status_t calculator_destroy(calculator_t **calculator) {
-    free(*calculator);
-    return CELIX_SUCCESS;
+void calculator_destroy(calculator_t *calculator) {
+    free(calculator);
 }
 
-celix_status_t calculator_add(calculator_t *calculator, double a, double b, double *result) {
-    celix_status_t status = CELIX_SUCCESS;
+int calculator_add(calculator_t *calculator __attribute__((unused)), double a, double b, double *result) {
+    int status = CELIX_SUCCESS;
 
     *result = a + b;
     printf("CALCULATOR: Add: %f + %f = %f\n", a, b, *result);
@@ -56,8 +43,8 @@ celix_status_t calculator_add(calculator_t *calculator, double a, double b, doub
     return status;
 }
 
-celix_status_t calculator_sub(calculator_t *calculator, double a, double b, double *result) {
-    celix_status_t status = CELIX_SUCCESS;
+int calculator_sub(calculator_t *calculator __attribute__((unused)), double a, double b, double *result) {
+    int status = CELIX_SUCCESS;
 
     *result = a - b;
     printf("CALCULATOR: Sub: %f + %f = %f\n", a, b, *result);
@@ -65,8 +52,8 @@ celix_status_t calculator_sub(calculator_t *calculator, double a, double b, doub
     return status;
 }
 
-celix_status_t calculator_sqrt(calculator_t *calculator, double a, double *result) {
-    celix_status_t status = CELIX_SUCCESS;
+int calculator_sqrt(calculator_t *calculator __attribute__((unused)), double a, double *result) {
+    int status = CELIX_SUCCESS;
 
     if (a > 0) {
         *result = sqrt(a);

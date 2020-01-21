@@ -24,7 +24,10 @@
 
 struct tst_service {
     void *handle;
-    int (*test)(void *handle);
+    bool (*isCalcDiscovered)(void *handle);
+    bool (*isRemoteExampleDiscovered)(void *handle);
+    int (*testCalculator)(void *handle);
+    int (*testRemoteExample)(void *handle);
 };
 
 typedef struct tst_service tst_service_t;

@@ -22,7 +22,6 @@
 #include "celix_constants.h"
 #include <tst_service.h>
 #include "CppUTest/CommandLineTestRunner.h"
-#include "calculator_service.h"
 
 extern "C" {
 
@@ -36,7 +35,6 @@ extern "C" {
 #include "celix_launcher.h"
 #include "framework.h"
 #include "remote_service_admin.h"
-#include "calculator_service.h"
 
     static celix_framework_t *serverFramework = NULL;
     static celix_bundle_context_t *serverContext = NULL;
@@ -87,7 +85,9 @@ extern "C" {
         clientFramework = NULL;
     }
 
-    static void test1(void) {
+    static void test(void) {
+        //TODO refactor to use celix_bundleContext_useService calls
+
         celix_status_t rc;
         service_reference_pt ref = NULL;
         tst_service_t *tst = NULL;
@@ -107,8 +107,17 @@ extern "C" {
         CHECK_EQUAL(CELIX_SUCCESS, rc);
         CHECK(tst != NULL);
 
-        rc = tst->test(tst->handle);
+        rc = tst->isCalcDiscovered(tst->handle);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
+
+        rc = tst->testCalculator(tst->handle);
+        CHECK_EQUAL(CELIX_SUCCESS, rc);
+
+//        rc = tst->isRemoteExampleDiscovered(tst->handle);
+//        CHECK_EQUAL(CELIX_SUCCESS, rc);
+//
+//        rc = tst->testRemoteExample(tst->handle);
+//        CHECK_EQUAL(CELIX_SUCCESS, rc);
 
         bool result;
         bundleContext_ungetService(clientContext, ref, &result);
@@ -129,5 +138,5 @@ TEST_GROUP(RsaDfiClientServerTests) {
 };
 
 TEST(RsaDfiClientServerTests, Test1) {
-    test1();
+    test();
 }

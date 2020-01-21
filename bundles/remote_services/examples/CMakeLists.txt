@@ -21,6 +21,9 @@ if (RSA_EXAMPLES)
     add_subdirectory(calculator_service)
     add_subdirectory(calculator_shell)
 
+    add_subdirectory(remote_example_api)
+    add_subdirectory(remote_example_service)
+
 
 #    TODO refactor shm remote service admin to use dfi
 #    if (BUILD_RSA_REMOTE_SERVICE_ADMIN_SHM AND BUILD_RSA_DISCOVERY_SHM)

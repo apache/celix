@@ -56,7 +56,7 @@ void sqrtCommand_execute(celix_bundle_context_t *context, char *line, FILE *out,
                 if (status == CELIX_SUCCESS && calculator != NULL) {
                     double a = atof(aStr);
                     double result = 0;
-                    status = calculator->sqrt(calculator->calculator, a, &result);
+                    status = calculator->sqrt(calculator->handle, a, &result);
                     if (status == CELIX_SUCCESS) {
                         fprintf(out, "CALCULATOR_SHELL: Sqrt: %f = %f\n", a, result);
                     } else {
