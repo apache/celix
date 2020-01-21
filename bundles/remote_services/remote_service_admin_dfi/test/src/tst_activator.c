@@ -141,25 +141,24 @@ static int bndTestRemoteExample(void *handle) {
             ok = (f == 3);
         }
 
-        //TODO enable and fix segfault
-//        if (ok) {
-//            //test string call with taking ownership
-//            char *tmp = strndup("test1", 1024);
-//            char *result = NULL;
-//            act->remoteExample->setName1(act->remoteExample->handle, tmp, &result);
-//            free(tmp);
-//            ok = strncmp(tmp, result, 1024) == 0;
-//            free(result);
-//        }
-//
-//        if (ok) {
-//            //test string call with keeping ownership
-//            const char *tmp = "test2";
-//            char *result = NULL;
-//            act->remoteExample->setName2(act->remoteExample->handle, tmp, &result);
-//            ok = strncmp(tmp, result, 1024) == 0;
-//            free(result);
-//        }
+        if (ok) {
+            //test string call with taking ownership
+            char *tmp = strndup("test1", 1024);
+            char *result = NULL;
+            act->remoteExample->setName1(act->remoteExample->handle, tmp, &result);
+            //note setName1 should take ownership of tmp, so no free(tmp) needed.
+            ok = strncmp("test1", result, 1024) == 0;
+            free(result);
+        }
+
+        if (ok) {
+            //test string call with keeping ownership
+            const char *tmp = "test2";
+            char *result = NULL;
+            act->remoteExample->setName2(act->remoteExample->handle, tmp, &result);
+            ok = strncmp("test2", result, 1024) == 0;
+            free(result); //TODO should fail on double free.
+        }
 
     } else {
         fprintf(stderr, "remote example service not available");

@@ -321,9 +321,13 @@ int jsonRpc_handleReply(dyn_function_type *func, const char *reply, void *args[]
 				dynType_typedPointer_getTypedType(argType, &subType);
 
 				if (dynType_descriptorType(subType) == 't') {
-					void ***out = (void ***) args[i];
-					status = jsonSerializer_deserializeJson(subType, result, *out);
-				} else {
+				    char ***out = (char ***) args[i];
+                    char **ptrToString = NULL;
+                    status = jsonSerializer_deserializeJson(subType, result, (void**)&ptrToString);
+                    char *s __attribute__((unused)) = *ptrToString; //note for debug
+                    free(ptrToString);
+                    **out = (void*)s;
+                } else {
 					dyn_type *subSubType = NULL;
 					dynType_typedPointer_getTypedType(subType, &subSubType);
 					void ***out = (void ***) args[i];

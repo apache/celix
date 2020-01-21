@@ -77,8 +77,11 @@ static int jsonSerializer_createType(dyn_type *type, json_t *val, void **result)
 
     if (dynType_descriptorType(type) == 't') {
         if (json_typeof(val) == JSON_STRING) {
+            //note a deserialized C string is a sequence of memory for the actual string and a
+            //pointer to that sequence. That pointer also needs to reside in the memory (heap).
             const char *s = json_string_value(val);
-            inst = strdup(s);
+            inst = calloc(1, sizeof(char*));
+            *((char**)inst) = strdup(s);
         } else {
             status = ERROR;
             LOG_ERROR("Expected json_string type got %i\n", json_typeof(val));
