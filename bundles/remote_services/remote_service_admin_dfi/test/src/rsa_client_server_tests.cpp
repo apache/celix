@@ -107,17 +107,17 @@ extern "C" {
         CHECK_EQUAL(CELIX_SUCCESS, rc);
         CHECK(tst != NULL);
 
-        rc = tst->isCalcDiscovered(tst->handle);
-        CHECK_EQUAL(CELIX_SUCCESS, rc);
+        bool discovered = tst->isCalcDiscovered(tst->handle);
+        CHECK_TRUE(discovered);
 
         rc = tst->testCalculator(tst->handle);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
 
-//        rc = tst->isRemoteExampleDiscovered(tst->handle);
-//        CHECK_EQUAL(CELIX_SUCCESS, rc);
-//
-//        rc = tst->testRemoteExample(tst->handle);
-//        CHECK_EQUAL(CELIX_SUCCESS, rc);
+        discovered = tst->isRemoteExampleDiscovered(tst->handle);
+        CHECK_TRUE(discovered);
+
+        rc = tst->testRemoteExample(tst->handle);
+        CHECK_EQUAL(CELIX_SUCCESS, rc);
 
         bool result;
         bundleContext_ungetService(clientContext, ref, &result);

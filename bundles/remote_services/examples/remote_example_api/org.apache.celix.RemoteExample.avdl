@@ -1,13 +1,14 @@
 @namespace("org.apache.celix")
+@version("1.0.0")
 protocol RemoteExample {
 
   //simple input
-  double pow(double a, double b);
-  int fib(int n);
+  @index(0) double pow(double a, double b);
+  @index(1) int fib(int n);
 
   //string input
-  string setName1(string n); //callee takes ownership of string n
-  string setName2(string @const(true) n); //caller keeps ownership of string n
+  @index(2) string setName1(string n); //callee takes ownership of string n
+  @index(3) string setName2(string @const(true) n); //caller keeps ownership of string n
 
   record Complex {
       double a;
@@ -15,5 +16,5 @@ protocol RemoteExample {
       array<string> names;
   }
 
-  //Complex updateComplex(Complex c);
+  //@index(4) Complex updateComplex(Complex c);
 }

@@ -748,7 +748,7 @@ static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, remoteServiceAdmin_write);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&get);
         curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, (curl_off_t)post.size);
-        logHelper_log(rsa->loghelper, OSGI_LOGSERVICE_DEBUG, "RSA: Performing curl post\n");
+        //logHelper_log(rsa->loghelper, OSGI_LOGSERVICE_DEBUG, "RSA: Performing curl post\n");
         res = curl_easy_perform(curl);
 
         *reply = get.writeptr;

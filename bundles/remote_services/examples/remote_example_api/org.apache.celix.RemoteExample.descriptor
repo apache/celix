@@ -1,0 +1,12 @@
+:header
+type=interface
+name=org.apache.celix.RemoteExample
+version=1.3.0
+:annotations
+classname=org.apache.celix.RemoteExample
+:types
+:methods
+pow(DD)D=pow(#am=handle;PDD#am=pre;*D)N
+fib(I)I=fib(#am=handle;PI#am=pre;*I)N
+setName1=setName1(#am=handle;Pt#am=out;*t)N
+setName2=setName2(#am=handle;Pt#am=out;*t)N

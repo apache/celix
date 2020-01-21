@@ -207,9 +207,16 @@ const char* theAvprFile = "{ \
                     \"structStringOutFunc\" : {\
                         \"request\" : [ ],\
                         \"response\" : \"StructString\" \
-                    } \
+                    }, \
+                    \"stringInFunc\" : {\
+                        \"request\" : [{\
+                            \"name\" : \"arg1\",\
+                            \"type\" : \"string\" \
+                        } ],\
+                        \"response\" : \"Void\"\
+                    }\
                 }\
-                }";
+            }";
 
 TEST_GROUP(DynAvprFunctionTests) {
     void setup() override {
@@ -616,5 +623,37 @@ TEST(DynAvprFunctionTests, Example10) {
     STRCMP_EQUAL("my_new_char", out.name);
 
     free(out.name);
+    dynFunction_destroy(dynFunc);
+}
+
+
+static int avpr_example11(void *handle __attribute__((unused)), char *arg1) {
+    STRCMP_EQUAL("input string test", arg1);
+    return 0;
+}
+
+TEST(DynAvprFunctionTests, Example11) {
+    auto fp = (void(*)()) avpr_example11;
+    dyn_function_type * dynFunc = dynFunction_parseAvprWithStr(theAvprFile, "test.dt.stringInFunc");
+    CHECK(dynFunc != nullptr);
+
+    int handle = 0;
+    int* handle_ptr = &handle;
+
+    const char *input = "input string test";
+
+    void *args[2];
+    args[0] = &handle_ptr;
+    args[1]= &input;
+    int rVal = 1;
+
+    int rc = dynFunction_call(dynFunc, fp, &rVal, args);
+    CHECK_EQUAL(0, rc);
+    CHECK_EQUAL(0, rVal);
+
+    //NOTE removing this will lead to segfault!!!. Why optimization with pointers to different segment?
+    char *input2 = strdup(input);
+    free(input2);
+
     dynFunction_destroy(dynFunc);
 }

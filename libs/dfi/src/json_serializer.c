@@ -77,7 +77,8 @@ static int jsonSerializer_createType(dyn_type *type, json_t *val, void **result)
 
     if (dynType_descriptorType(type) == 't') {
         if (json_typeof(val) == JSON_STRING) {
-            inst = strdup(json_string_value(val));
+            const char *s = json_string_value(val);
+            inst = strdup(s);
         } else {
             status = ERROR;
             LOG_ERROR("Expected json_string type got %i\n", json_typeof(val));
@@ -93,8 +94,7 @@ static int jsonSerializer_createType(dyn_type *type, json_t *val, void **result)
 
     if (status == OK) {
         *result = inst;
-    }
-    else{
+    } else {
     	dynType_free(type, inst);
     }
 

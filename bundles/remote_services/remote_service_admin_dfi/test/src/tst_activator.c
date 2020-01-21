@@ -121,10 +121,53 @@ static int bndTestCalculator(void *handle) {
 }
 
 static int bndTestRemoteExample(void *handle) {
-    return 1;//TODO
-//    int status = 0;
-//    struct activator *act = handle;
-//    return status;
+    bool ok = true;
+    struct activator *act = handle;
+
+    pthread_mutex_lock(&act->mutex);
+    if (act->remoteExample != NULL) {
+
+        if (ok) {
+            //test pow
+            double p;
+            act->remoteExample->pow(act->remoteExample->handle, 2, 2, &p);
+            ok = (p == 4.0);
+        }
+
+        if (ok) {
+            //test fib
+            int32_t f;
+            act->remoteExample->fib(act->remoteExample->handle, 4, &f);
+            ok = (f == 3);
+        }
+
+        //TODO enable and fix segfault
+//        if (ok) {
+//            //test string call with taking ownership
+//            char *tmp = strndup("test1", 1024);
+//            char *result = NULL;
+//            act->remoteExample->setName1(act->remoteExample->handle, tmp, &result);
+//            free(tmp);
+//            ok = strncmp(tmp, result, 1024) == 0;
+//            free(result);
+//        }
+//
+//        if (ok) {
+//            //test string call with keeping ownership
+//            const char *tmp = "test2";
+//            char *result = NULL;
+//            act->remoteExample->setName2(act->remoteExample->handle, tmp, &result);
+//            ok = strncmp(tmp, result, 1024) == 0;
+//            free(result);
+//        }
+
+    } else {
+        fprintf(stderr, "remote example service not available");
+        ok  = false;
+    }
+    pthread_mutex_unlock(&act->mutex);
+
+    return ok ? 0 : 1;
 }
 
 static celix_status_t bndStart(struct activator *act, celix_bundle_context_t* ctx) {

@@ -1,6 +1,7 @@
 {
   "protocol" : "RemoteExample",
   "namespace" : "org.apache.celix",
+  "version" : "1.0.0",
   "types" : [ {
     "type" : "record",
     "name" : "Complex",
@@ -20,6 +21,7 @@
   } ],
   "messages" : {
     "pow" : {
+      "index" : 0,
       "request" : [ {
         "name" : "a",
         "type" : "double"
@@ -30,6 +32,7 @@
       "response" : "double"
     },
     "fib" : {
+      "index" : 1,
       "request" : [ {
         "name" : "n",
         "type" : "int"
@@ -37,6 +40,7 @@
       "response" : "int"
     },
     "setName1" : {
+      "index" : 2,
       "request" : [ {
         "name" : "n",
         "type" : "string"
@@ -44,6 +48,7 @@
       "response" : "string"
     },
     "setName2" : {
+      "index" : 3,
       "request" : [ {
         "name" : "n",
         "type" : "string",

@@ -43,15 +43,18 @@ int remoteExample_pow(remote_example_impl_t* impl, double a, double b, double *o
 
 static int fib_int(int n)
 {
-    if (n <= 1) {
-        return n;
+    if (n <= 0) {
+        return 0;
+    } else if (n <= 2) {
+        return 1;
     } else {
         return fib_int(n-1) + fib_int(n-2);
     }
 }
 
 int remoteExample_fib(remote_example_impl_t* impl, int32_t a, int32_t *out) {
-    *out = fib_int(a);
+    int r = fib_int(a);
+    *out = r;
     return 0;
 }
 

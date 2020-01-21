@@ -36,10 +36,10 @@ celix_status_t remoteExampleBndStart(struct activator *act, celix_bundle_context
     act->impl = remoteExample_create();
     if (act->impl != NULL) {
         act->service.handle = act->impl;
-        act->service.pow = (void*)remoteExample_fib;
+        act->service.pow = (void*)remoteExample_pow;
         act->service.fib = (void*)remoteExample_fib;
-        act->service.setName1 = (void*)remoteExample_fib;
-        act->service.setName2 = (void*)remoteExample_fib;
+        act->service.setName1 = (void*)remoteExample_setName1;
+        act->service.setName2 = (void*)remoteExample_setName2;
         //TODO update complex
 
         celix_properties_t *properties = celix_properties_create();
