@@ -1,0 +1,19 @@
+@namespace("org.apache.celix")
+protocol RemoteExample {
+
+  //simple input
+  double pow(double a, double b);
+  int fib(int n);
+
+  //string input
+  string setName1(string n); //callee takes ownership of string n
+  string setName2(string @const(true) n); //caller keeps ownership of string n
+
+  record Complex {
+      double a;
+      double b;
+      array<string> names;
+  }
+
+  //Complex updateComplex(Complex c);
+}
