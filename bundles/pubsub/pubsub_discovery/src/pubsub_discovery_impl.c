@@ -83,7 +83,7 @@ pubsub_discovery_t* pubsub_discovery_create(celix_bundle_context_t *context, log
     long etcdPort = celix_bundleContext_getPropertyAsLong(context, PUBSUB_DISCOVERY_SERVER_PORT_KEY, PUBSUB_DISCOVERY_SERVER_PORT_DEFAULT);
     long ttl = celix_bundleContext_getPropertyAsLong(context, PUBSUB_DISCOVERY_ETCD_TTL_KEY, PUBSUB_DISCOVERY_ETCD_TTL_DEFAULT);
 
-    etcd_init(etcdIp, (int)etcdPort, ETCDLIB_NO_CURL_INITIALIZATION);
+    disc->etcdlib = etcdlib_create(etcdIp, etcdPort, ETCDLIB_NO_CURL_INITIALIZATION);
     disc->ttlForEntries = (int)ttl;
     disc->sleepInsecBetweenTTLRefresh = (int)(((float)ttl)/2.0);
     disc->pubsubPath = celix_bundleContext_getProperty(context, PUBSUB_DISCOVERY_SERVER_PATH_KEY, PUBSUB_DISCOVERY_SERVER_PATH_DEFAULT);
@@ -122,6 +122,11 @@ celix_status_t pubsub_discovery_destroy(pubsub_discovery_t *ps_discovery) {
 
     celixThreadMutex_destroy(&ps_discovery->runningMutex);
 
+    if (ps_discovery->etcdlib != NULL) {
+        etcdlib_destroy(ps_discovery->etcdlib);
+        ps_discovery->etcdlib = NULL;
+    }
+
     free(ps_discovery);
 
     return status;
@@ -142,7 +147,7 @@ static void psd_watchSetupConnection(pubsub_discovery_t *disc, bool *connectedPt
         if (disc->verbose) {
             printf("[PSD] Reading etcd directory at %s\n", disc->pubsubPath);
         }
-        int rc = etcd_get_directory(disc->pubsubPath, psd_etcdReadCallback, disc, mIndex);
+        int rc = etcdlib_get_directory(disc->etcdlib, disc->pubsubPath, psd_etcdReadCallback, disc, mIndex);
         if (rc == ETCDLIB_RC_OK) {
             *connectedPtr = true;
         } else {
@@ -159,8 +164,8 @@ static void psd_watchForChange(pubsub_discovery_t *disc, bool *connectedPtr, lon
         char *action = NULL;
         char *value = NULL;
         char *readKey = NULL;
-        //TODO add interruptable etcd_wait -> which returns a handle to interrupt and a can be used for a wait call
-        int rc = etcd_watch(disc->pubsubPath, watchIndex, &action, NULL, &value, &readKey, mIndex);
+        //TODO add interruptable etcdlib_wait -> which returns a handle to interrupt and a can be used for a wait call
+        int rc = etcdlib_watch(disc->etcdlib, disc->pubsubPath, watchIndex, &action, NULL, &value, &readKey, mIndex);
         if (rc == ETCDLIB_RC_ERROR) {
             L_ERROR("[PSD] Communicating with etcd. rc is %i, action value is %s\n", rc, action);
             *connectedPtr = false;
@@ -269,7 +274,7 @@ void* psd_refresh(void *data) {
             pubsub_announce_entry_t *entry = hashMapIterator_nextValue(&iter);
             if (entry->isSet) {
                 //only refresh ttl -> no index update -> no watch trigger
-                int rc = etcd_refresh(entry->key, disc->ttlForEntries);
+                int rc = etcdlib_refresh(disc->etcdlib, entry->key, disc->ttlForEntries);
                 if (rc != ETCDLIB_RC_OK) {
                     L_WARN("[PSD] Warning: Cannot refresh etcd key %s\n", entry->key);
                     entry->isSet = false;
@@ -279,7 +284,7 @@ void* psd_refresh(void *data) {
                 }
             } else {
                 char *str = pubsub_discovery_createJsonEndpoint(entry->properties);
-                int rc = etcd_set(entry->key, str, disc->ttlForEntries, false);
+                int rc = etcdlib_set(disc->etcdlib, entry->key, str, disc->ttlForEntries, false);
                 if (rc == ETCDLIB_RC_OK) {
                     entry->isSet = true;
                     entry->setCount += 1;
@@ -353,7 +358,7 @@ celix_status_t pubsub_discovery_stop(pubsub_discovery_t *disc) {
     while (hashMapIterator_hasNext(&iter)) {
         pubsub_announce_entry_t *entry = hashMapIterator_nextValue(&iter);
         if (entry->isSet) {
-            etcd_del(entry->key);
+            etcdlib_del(disc->etcdlib, entry->key);
         }
         free(entry->key);
         celix_properties_destroy(entry->properties);
@@ -446,7 +451,7 @@ celix_status_t pubsub_discovery_revokeEndpoint(void *handle, const celix_propert
 
     if (entry != NULL) {
         if (entry->isSet) {
-            etcd_del(entry->key);
+            etcdlib_del(disc->etcdlib, entry->key);
         }
         free(entry->key);
         celix_properties_destroy(entry->properties);
@@ -582,6 +587,14 @@ celix_status_t pubsub_discovery_executeCommand(void *handle, char * commandLine 
     struct timespec now;
     clock_gettime(CLOCK_MONOTONIC, &now);
     //TODO add support for query (scope / topic)
+
+    fprintf(os, "\n");
+    fprintf(os, "Discovery configuration:\n");
+    fprintf(os, "   |- etcd host                = %s\n", etcdlib_host(disc->etcdlib));
+    fprintf(os, "   |- etcd port                = %i\n", etcdlib_port(disc->etcdlib));
+    fprintf(os, "   |- entries ttl              = %i seconds\n", disc->ttlForEntries);
+    fprintf(os, "   |- entries refresh time     = %i seconds\n", disc->sleepInsecBetweenTTLRefresh);
+    fprintf(os, "   |- pubsub discovery path    = %s\n", disc->pubsubPath);
 
     fprintf(os, "\n");
     fprintf(os, "Discovered Endpoints:\n");

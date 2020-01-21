@@ -53,7 +53,7 @@ typedef struct pubsub_msg_serializer {
 typedef struct pubsub_serializer_service {
     void* handle;
 
-    celix_status_t (*createSerializerMap)(void* handle, celix_bundle_t *bundle, hash_map_pt* serializerMap);
+    celix_status_t (*createSerializerMap)(void* handle, const celix_bundle_t *bundle, hash_map_pt* serializerMap);
     celix_status_t (*destroySerializerMap)(void* handle, hash_map_pt serializerMap);
 
 } pubsub_serializer_service_t;

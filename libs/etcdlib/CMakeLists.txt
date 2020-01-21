@@ -23,7 +23,7 @@ if (NOT COMMAND celix_subproject)
 
     cmake_minimum_required (VERSION 3.2)
     project(ETCDLIB 
-        VERSION 1.0.0
+        VERSION 1.1.0
         LANGUAGES C CXX
     )
 
@@ -40,7 +40,6 @@ endif ()
 
 find_package(CURL REQUIRED)
 find_package(Jansson REQUIRED)
-find_package(OpenSSL REQUIRED)
 
 add_library(etcdlib SHARED
     src/etcd.c
@@ -53,7 +52,7 @@ target_include_directories(etcdlib PRIVATE src)
 
 set_target_properties(etcdlib PROPERTIES SOVERSION 1)
 set_target_properties(etcdlib PROPERTIES VERSION 1.0.0)
-target_link_libraries(etcdlib PUBLIC CURL::libcurl Jansson)
+target_link_libraries(etcdlib PUBLIC CURL::libcurl Jansson ${CELIX_OPTIONAL_EXTRA_LIBS})
 
 add_library(etcdlib_static STATIC
     src/etcd.c
@@ -64,7 +63,7 @@ target_include_directories(etcdlib_static PUBLIC
 )
 target_include_directories(etcdlib_static PRIVATE src)
 set_target_properties(etcdlib_static PROPERTIES "SOVERSION" 1)
-target_link_libraries(etcdlib_static PUBLIC CURL::libcurl Jansson)
+target_link_libraries(etcdlib_static PUBLIC CURL::libcurl Jansson ${CELIX_OPTIONAL_EXTRA_LIBS})
 
 add_executable(etcdlib_test ${CMAKE_CURRENT_SOURCE_DIR}/test/etcdlib_test.c)
 target_link_libraries(etcdlib_test PRIVATE etcdlib_static CURL::libcurl Jansson)

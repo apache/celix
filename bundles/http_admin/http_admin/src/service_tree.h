@@ -51,7 +51,6 @@ typedef struct service_tree {
 } service_tree_t;
 
 //Global function prototypes
-service_tree_node_t *createServiceNode(service_tree_node_t *parent, service_tree_node_t *children, service_tree_node_t *next, service_tree_node_t *prev, const char *uri, void *svc);
 bool addServiceNode(service_tree_t *svc_tree, const char *uri, void *svc);
 void destroyChildrenFromServiceNode(service_tree_node_t *parent, int *tree_item_count, int *tree_svc_count);
 void destroyServiceNode(service_tree_t *svc_tree, service_tree_node_t *node, int *tree_item_count, int *tree_svc_count);

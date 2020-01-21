@@ -49,26 +49,26 @@ celix_status_t bundle_destroy(bundle_pt bundle) {
 }
 
 
-celix_status_t bundle_isSystemBundle(bundle_pt bundle, bool *systemBundle) {
+celix_status_t bundle_isSystemBundle(const_bundle_pt bundle, bool *systemBundle) {
 	mock_c()->actualCall("bundle_isSystembundle")
-			->withPointerParameters("bundle", bundle)
+			->withPointerParameters("bundle", (bundle_pt)bundle)
 			->withOutputParameter("systemBundle", systemBundle);
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t bundle_getArchive(bundle_pt bundle, bundle_archive_pt *archive) {
+celix_status_t bundle_getArchive(const_bundle_pt bundle, bundle_archive_pt *archive) {
 	mock_c()->actualCall("bundle_getArchive");
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t bundle_getCurrentModule(bundle_pt bundle, module_pt *module) {
+celix_status_t bundle_getCurrentModule(const_bundle_pt bundle, module_pt *module) {
 	mock_c()->actualCall("bundle_getCurrentModule")
-		->withPointerParameters("bundle", bundle)
+		->withPointerParameters("bundle", (bundle_pt)bundle)
 		->withOutputParameter("module", (void **) module);
 	return mock_c()->returnValue().value.intValue;
 }
 
-array_list_pt bundle_getModules(bundle_pt bundle) {
+array_list_pt bundle_getModules(const_bundle_pt bundle) {
 	mock_c()->actualCall("bundle_getModules");
 	return mock_c()->returnValue().value.pointerValue;
 }
@@ -82,7 +82,7 @@ void bundle_setHandle(bundle_pt bundle, void * handle) {
 	mock_c()->actualCall("bundle_setHandle");
 }
 
-celix_bundle_activator_t *bundle_getActivator(bundle_pt bundle) {
+celix_bundle_activator_t *bundle_getActivator(const_bundle_pt bundle) {
 	mock_c()->actualCall("bundle_getActivator");
 	return mock_c()->returnValue().value.pointerValue;
 }
@@ -92,9 +92,9 @@ celix_status_t bundle_setActivator(bundle_pt bundle, celix_bundle_activator_t *a
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t bundle_getContext(bundle_pt bundle, bundle_context_pt *context) {
+celix_status_t bundle_getContext(const_bundle_pt bundle, bundle_context_pt *context) {
 	mock_c()->actualCall("bundle_getContext")
-			->withPointerParameters("bundle", bundle)
+			->withPointerParameters("bundle", (bundle_pt)bundle)
 			->withOutputParameter("context", context);
 	return mock_c()->returnValue().value.intValue;
 }
@@ -104,9 +104,9 @@ celix_status_t bundle_setContext(bundle_pt bundle, bundle_context_pt context) {
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t bundle_getEntry(bundle_pt bundle, const char * name, char **entry) {
+celix_status_t bundle_getEntry(const_bundle_pt bundle, const char * name, char **entry) {
 	mock_c()->actualCall("bundle_getEntry")
-			->withPointerParameters("bundle", bundle)
+			->withPointerParameters("bundle", (bundle_pt)bundle)
 			->withStringParameters("name", name)
 			->withOutputParameter("entry", entry);
 	return mock_c()->returnValue().value.intValue;
@@ -158,9 +158,9 @@ celix_status_t bundle_setPersistentStateUninstalled(bundle_pt bundle) {
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t bundle_getBundleLocation(bundle_pt bundle, const char **location) {
+celix_status_t bundle_getBundleLocation(const_bundle_pt bundle, const char **location) {
 	mock_c()->actualCall("bundle_getBundleLocation")
-	    ->withPointerParameters("bundle", bundle)
+	    ->withPointerParameters("bundle", (bundle_pt)bundle)
 	    ->withOutputParameter("location", location);
 	return mock_c()->returnValue().value.intValue;
 }
@@ -180,7 +180,7 @@ celix_status_t bundle_addModule(bundle_pt bundle, module_pt module) {
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t bundle_closeModules(bundle_pt bundle) {
+celix_status_t bundle_closeModules(const_bundle_pt bundle) {
 	mock_c()->actualCall("bundle_closeModules");
 	return mock_c()->returnValue().value.intValue;
 }
@@ -199,9 +199,9 @@ int compareTo(service_reference_pt a, service_reference_pt b) {
 }
 
 
-celix_status_t bundle_getState(bundle_pt bundle, bundle_state_e *state) {
+celix_status_t bundle_getState(const_bundle_pt bundle, bundle_state_e *state) {
 	mock_c()->actualCall("bundle_getState")
-			->withPointerParameters("bundle", bundle)
+			->withPointerParameters("bundle", (bundle_pt)bundle)
 			->withOutputParameter("state", state);
 	return mock_c()->returnValue().value.intValue;
 }
@@ -235,12 +235,12 @@ celix_status_t bundle_unlock(bundle_pt bundle, bool *unlocked) {
 }
 
 
-celix_status_t bundle_closeAndDelete(bundle_pt bundle) {
+celix_status_t bundle_closeAndDelete(const_bundle_pt bundle) {
 	mock_c()->actualCall("bundle_closeAndDelete");
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t bundle_close(bundle_pt bundle) {
+celix_status_t bundle_close(const_bundle_pt bundle) {
 	mock_c()->actualCall("bundle_close");
 	return mock_c()->returnValue().value.intValue;
 }
@@ -251,9 +251,9 @@ celix_status_t bundle_refresh(bundle_pt bundle) {
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t bundle_getBundleId(bundle_pt bundle, long *id) {
+celix_status_t bundle_getBundleId(const_bundle_pt bundle, long *id) {
 	mock_c()->actualCall("bundle_getBundleId")
-			->withPointerParameters("bundle", bundle)
+			->withPointerParameters("bundle", (bundle_pt)bundle)
 			->withOutputParameter("id", id);
 	return mock_c()->returnValue().value.intValue;
 }
@@ -278,9 +278,9 @@ celix_status_t bundle_setFramework(bundle_pt bundle, framework_pt framework) {
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t bundle_getFramework(bundle_pt bundle, framework_pt *framework) {
+celix_status_t bundle_getFramework(const_bundle_pt bundle, framework_pt *framework) {
 	mock_c()->actualCall("bundle_getFramework")
-			->withPointerParameters("bundle", bundle)
+			->withPointerParameters("bundle", (bundle_pt)bundle)
 			->withOutputParameter("framework", framework);
 	return mock_c()->returnValue().value.intValue;
 }

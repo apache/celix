@@ -70,6 +70,7 @@ typedef struct pubsub_discovery {
     //configurable by config/env.
     const char *pubsubPath;
     bool verbose;
+    etcdlib_t *etcdlib;
     int ttlForEntries;
     int sleepInsecBetweenTTLRefresh;
     const char *fwUUID;

@@ -17,7 +17,6 @@
 celix_subproject(SHELL "Option to enable building the Shell bundles" ON DEPS LAUNCHER LOG_SERVICE)
 if (SHELL)
 	find_package(CURL REQUIRED)
-	find_package(OpenSSL REQUIRED)
 
 	add_library(shell_api INTERFACE)
 	target_include_directories(shell_api INTERFACE

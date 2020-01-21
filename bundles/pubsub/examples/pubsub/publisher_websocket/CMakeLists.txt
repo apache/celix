@@ -15,36 +15,45 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_celix_bundle(celix_pubsub_poi_publisher2
-    SYMBOLIC_NAME "apache_celix_pubsub_poi_publisher2"
+
+find_package(CURL REQUIRED)
+
+
+add_celix_bundle(celix_pubsub_websocket_publisher
+    SYMBOLIC_NAME "apache_celix_pubsub_websocket_publisher"
     VERSION "1.0.0"
     SOURCES 
         ../publisher/private/src/ps_pub_activator.c
         ../publisher/private/src/pubsub_publisher.c
 )
-target_link_libraries(celix_pubsub_poi_publisher2 PRIVATE Celix::framework Celix::pubsub_api)
-target_include_directories(celix_pubsub_poi_publisher2 PRIVATE ../publisher/private/include)
+target_link_libraries(celix_pubsub_websocket_publisher PRIVATE Celix::framework Celix::pubsub_api ${CURL_LIBRARIES})
+target_include_directories(celix_pubsub_websocket_publisher PRIVATE ../publisher/private/include)
 
 
-celix_bundle_files(celix_pubsub_poi_publisher2
+celix_bundle_files(celix_pubsub_websocket_publisher
     ${PROJECT_SOURCE_DIR}/bundles/pubsub/examples/pubsub/msg_descriptors/msg_poi1.descriptor
     ${PROJECT_SOURCE_DIR}/bundles/pubsub/examples/pubsub/msg_descriptors/msg_poi2.descriptor
     DESTINATION "META-INF/descriptors"
 )
 
-celix_bundle_files(celix_pubsub_poi_publisher2
+celix_bundle_files(celix_pubsub_websocket_publisher
         ${PROJECT_SOURCE_DIR}/bundles/pubsub/examples/pubsub/msg_descriptors/poi1.properties
         ${PROJECT_SOURCE_DIR}/bundles/pubsub/examples/pubsub/msg_descriptors/poi2.properties
     DESTINATION "META-INF/topics/pub"
 )
 
-celix_bundle_files(celix_pubsub_poi_publisher2
+celix_bundle_files(celix_pubsub_websocket_publisher
         ${PROJECT_SOURCE_DIR}/bundles/pubsub/examples/keys/publisher
     DESTINATION "META-INF/keys"
 )
 
-celix_bundle_files(celix_pubsub_poi_publisher2
+celix_bundle_files(celix_pubsub_websocket_publisher
     ${PROJECT_SOURCE_DIR}/bundles/pubsub/examples/keys/subscriber/public
     DESTINATION "META-INF/keys/subscriber"
 )
 
+celix_bundle_add_dir(celix_pubsub_websocket_publisher resources DESTINATION ".")
+
+celix_bundle_headers(celix_pubsub_websocket_publisher
+    "X-Web-Resource: /example$<SEMICOLON>/resources"
+)

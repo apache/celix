@@ -31,8 +31,13 @@
 
 #include "service_tree.h"
 
+//Local function prototypes
+static service_tree_node_t *createServiceNode(service_tree_node_t *parent, service_tree_node_t *children, service_tree_node_t *next, service_tree_node_t *prev, const char *uri, void *svc);
+static size_t getUriTokenCount(const char *uri, const char *separator);
 
-service_tree_node_t *createServiceNode(service_tree_node_t *parent, service_tree_node_t *children, service_tree_node_t *next, service_tree_node_t *prev, const char *uri, void *svc) {
+
+
+static service_tree_node_t *createServiceNode(service_tree_node_t *parent, service_tree_node_t *children, service_tree_node_t *next, service_tree_node_t *prev, const char *uri, void *svc) {
     service_tree_node_t *node = calloc(1, sizeof(service_tree_node_t));
     node->parent = parent;
     node->children = children;
@@ -44,11 +49,28 @@ service_tree_node_t *createServiceNode(service_tree_node_t *parent, service_tree
     return node;
 }
 
+static size_t getUriTokenCount(const char *uri, const char *separator) {
+    char *saveptr, *token;
+    char *uri_cpy = strdup(uri);
+    size_t tokenCount = 0;
+
+    token = strtok_r(uri_cpy, separator, &saveptr);
+    while(token != NULL) {
+        tokenCount++;
+        token = strtok_r(NULL, separator, &saveptr);
+    }
+
+    free(uri_cpy);
+    return tokenCount;
+}
+
 bool addServiceNode(service_tree_t *svc_tree, const char *uri, void *svc) {
-    char *save_ptr = NULL; //Used internally by strtok_r to point to the next token (NULL if no token left)
+    char *save_ptr = NULL; //Used internally by strtok_r
     char *uri_cpy = NULL;
     char *req_uri = NULL;
     bool uri_exists = true;
+    size_t tokenCount = getUriTokenCount(uri, "/");
+    size_t subNodeCount = 1;
 
     if(svc_tree == NULL || uri == NULL){
         return false;
@@ -77,7 +99,7 @@ bool addServiceNode(service_tree_t *svc_tree, const char *uri, void *svc) {
     } else if(svc_tree->root_node == NULL) { //No service yet added
         uri_cpy = strdup(uri);
         req_uri = strtok_r(uri_cpy, "/", &save_ptr);
-        svc_tree->root_node = createServiceNode(NULL, NULL, NULL, NULL, req_uri, (strcmp(req_uri, "") == 0 ? svc : NULL));
+        svc_tree->root_node = createServiceNode(NULL, NULL, NULL, NULL, req_uri, (tokenCount == 1 ? svc : NULL));
         svc_tree->tree_node_count = 1;
         uri_exists = false;
     } else if(strcmp(svc_tree->root_node->svc_data->sub_uri, "root") == 0){
@@ -90,10 +112,8 @@ bool addServiceNode(service_tree_t *svc_tree, const char *uri, void *svc) {
 
     service_tree_node_t *current = svc_tree->root_node;
     service_node_data_t *current_data = current->svc_data;
-    while (req_uri != NULL) {
-        char *tmp_save_ptr = save_ptr;
-        char *next_token = strtok_r(NULL, "/", &tmp_save_ptr);
-        bool is_last_entry = next_token == NULL;
+    while (req_uri != NULL && subNodeCount <= tokenCount) {
+        bool is_last_entry = (tokenCount == subNodeCount);
         if (strcmp(current_data->sub_uri, req_uri) == 0) {
             if (is_last_entry) {
                 //Entry already exists/added in tree
@@ -112,11 +132,8 @@ bool addServiceNode(service_tree_t *svc_tree, const char *uri, void *svc) {
             } else {
                 //Parent has no sub URIs registered yet
                 req_uri = strtok_r(NULL, "/", &save_ptr);
-                tmp_save_ptr = save_ptr;
-                next_token = strtok_r(NULL, "/", &tmp_save_ptr);
-                is_last_entry = next_token == NULL;
-                service_tree_node_t *node = createServiceNode(current, NULL, NULL, NULL,
-                                                              req_uri, (is_last_entry ? svc : NULL));
+                //Create svc node without svc pointer, this will be added later if needed.
+                service_tree_node_t *node = createServiceNode(current, NULL, NULL, NULL, req_uri, NULL);
                 current->children = node;
                 current = node;
                 current_data = node->svc_data;
@@ -136,6 +153,7 @@ bool addServiceNode(service_tree_t *svc_tree, const char *uri, void *svc) {
             svc_tree->tree_node_count++;
             uri_exists = false;
         }
+        subNodeCount++;
     }
 
     //Increment tree service count if URI exists (only one service can be added at once)

@@ -16,27 +16,22 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * install_command.c
- *
- *  \date       Apr 4, 2011
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
 
 #include <stdlib.h>
 #include <string.h>
+#include "celix_api.h"
 
-#include "array_list.h"
-#include "bundle_context.h"
+static void printInstalledBundle(void *handle, const celix_bundle_t *bnd) {
+    FILE *outStream = handle;
+    fprintf(outStream, "Bundle '%s' installed with bundle id %li\n", celix_bundle_getSymbolicName(bnd), celix_bundle_getId(bnd));
+}
 
 void installCommand_execute(void *handle, char * line, FILE *outStream, FILE *errStream) {
-	bundle_context_pt context = handle;
+	celix_bundle_context_t *ctx = handle;
 
 	char delims[] = " ";
 	char * sub = NULL;
 	char *save_ptr = NULL;
-	char info[256];
 
 	// ignore the command
 	sub = strtok_r(line, delims, &save_ptr);
@@ -45,33 +40,12 @@ void installCommand_execute(void *handle, char * line, FILE *outStream, FILE *er
 	if (sub == NULL) {
 		fprintf(errStream, "Incorrect number of arguments.\n");
 	} else {
-		info[0] = '\0';
 		while (sub != NULL) {
-			bundle_pt bundle = NULL;
-			bundleContext_installBundle(context, sub, &bundle);
-			if (bundle != NULL) {
-				long id;
-				bundle_archive_pt archive = NULL;
-				char bundleId[sizeof(id) + 1];
-
-				if (strlen(info) > 0) {
-					strcat(info, ", ");
-				}
-				bundle_getArchive(bundle, &archive);
-				bundleArchive_getId(archive, &id);
-				sprintf(bundleId, "%ld", id);
-				strcat(info, bundleId);
+		    long bndId = celix_bundleContext_installBundle(ctx, sub, true);
+			if (bndId >= 0) {
+			    celix_bundleContext_useBundle(ctx, bndId, outStream, printInstalledBundle);
 			}
 			sub = strtok_r(NULL, delims, &save_ptr);
-		}
-		if (strchr(info, ',') != NULL) {
-			fprintf(outStream, "Bundle IDs: ");
-			fprintf(outStream, "%s", info);
-			fprintf(outStream, "\n");
-		} else if (strlen(info) > 0) {
-			fprintf(outStream, "Bundle ID: ");
-			fprintf(outStream, "%s", info);
-			fprintf(outStream, "\n");
 		}
 	}
 }

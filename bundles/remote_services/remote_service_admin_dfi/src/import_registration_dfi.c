@@ -54,6 +54,8 @@ struct service_proxy {
     size_t count;
 };
 
+static celix_status_t importRegistration_findAndParseInterfaceDescriptor(celix_bundle_context_t * const context, celix_bundle_t * const bundle, char const * const name, dyn_interface_type **out);
+
 static celix_status_t importRegistration_createProxy(import_registration_t *import, celix_bundle_t *bundle,
                                               struct service_proxy **proxy);
 static void importRegistration_proxyFunc(void *userData, void *args[], void *returnVal);
@@ -203,26 +205,41 @@ celix_status_t importRegistration_getService(import_registration_t *import, celi
     return status;
 }
 
-static celix_status_t importRegistration_createProxy(import_registration_t *import, celix_bundle_t *bundle, struct service_proxy **out) {
-    celix_status_t  status;
-    dyn_interface_type* intf = NULL;
-    FILE *descriptor = NULL;
-
-    status = dfi_findAvprDescriptor(import->context, bundle, import->classObject, &descriptor);
-
-    if (status != CELIX_SUCCESS || descriptor == NULL) {
-        //TODO use log helper logHelper_log(helper, OSGI_LOGSERVICE_ERROR, "Cannot find/open descriptor for '%s'", import->classObject);
-        fprintf(stdout, "RSA_DFI: Cannot find/open descriptor for '%s'", import->classObject);
-        return CELIX_BUNDLE_EXCEPTION;
+static celix_status_t importRegistration_findAndParseInterfaceDescriptor(celix_bundle_context_t * const context, celix_bundle_t * const bundle, char const * const name, dyn_interface_type **out) {
+    celix_status_t status = CELIX_SUCCESS;
+    FILE* descriptor = NULL;
+    status = dfi_findDescriptor(context, bundle, name, &descriptor);
+    if (status == CELIX_SUCCESS && descriptor != NULL) {
+        int rc = dynInterface_parse(descriptor, out);
+        fclose(descriptor);
+        if (rc != 0) {
+            fprintf(stderr, "RSA_DFI: Cannot parse dfi descriptor for '%s'", name);
+            status = CELIX_BUNDLE_EXCEPTION;
+        }
+        return status;
     }
 
-    if (status == CELIX_SUCCESS) {
-        intf = dynInterface_parseAvpr(descriptor);
+    status = dfi_findAvprDescriptor(context, bundle, name, &descriptor);
+    if (status == CELIX_SUCCESS && descriptor != NULL) {
+        *out = dynInterface_parseAvpr(descriptor);
         fclose(descriptor);
-        if (!intf) {
-            fprintf(stderr, "RSA_DFI: Cannot parse descriptor for '%s'", import->classObject);
-            return CELIX_BUNDLE_EXCEPTION;
+        if (*out == NULL) {
+            fprintf(stderr, "RSA_AVPR: Cannot parse avpr descriptor for '%s'", name);
+            status = CELIX_BUNDLE_EXCEPTION;
         }
+        return status;
+    }
+
+    fprintf(stdout, "RSA: Cannot find/open any valid (avpr) descriptor files for '%s'", name);
+    return CELIX_BUNDLE_EXCEPTION;
+}
+
+static celix_status_t importRegistration_createProxy(import_registration_t *import, celix_bundle_t *bundle, struct service_proxy **out) {
+    dyn_interface_type* intf = NULL;
+    celix_status_t  status = importRegistration_findAndParseInterfaceDescriptor(import->context, bundle, import->classObject, &intf);
+
+    if (status != CELIX_SUCCESS) {
+        return status;
     }
 
     /* Check if the imported service version is compatible with the one in the consumer descriptor */

@@ -404,8 +404,8 @@ celix_status_t framework_destroy(framework_pt framework) {
                 status = CELIX_DO_IF(status, bundleArchive_getCurrentRevision(archive, &revision));
                 status = CELIX_DO_IF(status, bundleRevision_getHandles(revision, &handles));
                 if (handles != NULL) {
-                    for (int i = arrayList_size(handles) - 1; i >= 0; i--) {
-                        celix_library_handle_t *handle = arrayList_get(handles, i);
+                    for (int h = arrayList_size(handles) - 1; h >= 0; h--) {
+                        celix_library_handle_t *handle = arrayList_get(handles, h);
                         celix_libloader_close(handle);
                     }
                 }
@@ -474,7 +474,7 @@ celix_status_t framework_destroy(framework_pt framework) {
 }
 
 celix_status_t fw_init(framework_pt framework) {
-	bundle_state_e state;
+	bundle_state_e state = OSGI_FRAMEWORK_BUNDLE_UNKNOWN;
 	const char *location = NULL;
 	module_pt module = NULL;
 	linked_list_pt wires = NULL;
@@ -499,7 +499,6 @@ celix_status_t fw_init(framework_pt framework) {
 	status = CELIX_DO_IF(status, bundle_getState(framework->bundle, &state));
 	if (status == CELIX_SUCCESS) {
 	    if ((state == OSGI_FRAMEWORK_BUNDLE_INSTALLED) || (state == OSGI_FRAMEWORK_BUNDLE_RESOLVED)) {
-	        bundle_state_e state;
 	        status = CELIX_DO_IF(status, bundleCache_create(uuid, framework->configurationMap,&framework->cache));
 	        status = CELIX_DO_IF(status, bundle_getState(framework->bundle, &state));
 	        if (status == CELIX_SUCCESS) {
@@ -567,7 +566,7 @@ celix_status_t fw_init(framework_pt framework) {
     if (status == CELIX_SUCCESS) {
         celix_bundle_activator_t *activator = calloc(1,(sizeof(*activator)));
         if (activator != NULL) {
-            bundle_context_t *context = NULL;
+            bundle_context_t *validateContext = NULL;
             void * userData = NULL;
 
 			//create_function_pt create = NULL;
@@ -579,7 +578,7 @@ celix_status_t fw_init(framework_pt framework) {
             activator->stop = stop;
             activator->destroy = destroy;
             status = CELIX_DO_IF(status, bundle_setActivator(framework->bundle, activator));
-            status = CELIX_DO_IF(status, bundle_getContext(framework->bundle, &context));
+            status = CELIX_DO_IF(status, bundle_getContext(framework->bundle, &validateContext));
 
             if (status == CELIX_SUCCESS) {
                 /* This code part is in principle dead, but in future it may do something.
@@ -591,7 +590,7 @@ celix_status_t fw_init(framework_pt framework) {
                 activator->userData = userData;
 
                 if (start != NULL) {
-                    start(userData, context);
+                    start(userData, validateContext);
                 }
             }
             else{
@@ -838,7 +837,7 @@ celix_status_t fw_installBundle2(framework_pt framework, bundle_pt * bundle, lon
   	return status;
 }
 
-celix_status_t framework_getBundleEntry(framework_pt framework, bundle_pt bundle, const char* name, char** entry) {
+celix_status_t framework_getBundleEntry(framework_pt framework, const_bundle_pt bundle, const char* name, char** entry) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	bundle_revision_pt revision;
@@ -1515,9 +1514,8 @@ celix_status_t fw_registerService(framework_pt framework, service_registration_p
                 status = CELIX_DO_IF(status, serviceRegistry_ungetService(framework->registry, framework->bundle, ref, NULL));
                 status = CELIX_DO_IF(status, serviceRegistry_ungetServiceReference(framework->registry, framework->bundle, ref));
 
-                int i = 0;
-                for (i = 0; i < arrayList_size(infos); i++) {
-                    listener_hook_info_pt info = arrayList_get(infos, i);
+                for (int j = 0; j < arrayList_size(infos); j++) {
+                    listener_hook_info_pt info = arrayList_get(infos, j);
                     free(info);
                 }
                 arrayList_destroy(infos);
@@ -1576,13 +1574,13 @@ celix_status_t fw_getServiceReferences(framework_pt framework, array_list_pt *re
         for (refIdx = 0; (*references != NULL) && refIdx < arrayList_size(*references); refIdx++) {
             service_reference_pt ref = (service_reference_pt) arrayList_get(*references, refIdx);
             service_registration_pt reg = NULL;
-            const char* serviceName;
+            const char* serviceNameObjectClass;
             properties_pt props = NULL;
             status = CELIX_DO_IF(status, serviceReference_getServiceRegistration(ref, &reg));
             status = CELIX_DO_IF(status, serviceRegistration_getProperties(reg, &props));
             if (status == CELIX_SUCCESS) {
-                serviceName = properties_get(props, OSGI_FRAMEWORK_OBJECTCLASS);
-                if (!serviceReference_isAssignableTo(ref, bundle, serviceName)) {
+                serviceNameObjectClass = properties_get(props, OSGI_FRAMEWORK_OBJECTCLASS);
+                if (!serviceReference_isAssignableTo(ref, bundle, serviceNameObjectClass)) {
                     arrayList_remove(*references, refIdx);
                     refIdx--;
                 }
@@ -1973,7 +1971,6 @@ celix_status_t framework_markBundleResolved(framework_pt framework, module_pt mo
         }
 
         if (status != CELIX_SUCCESS) {
-            module_pt module = NULL;
             const char *symbolicName = NULL;
             long id = 0;
             module_getSymbolicName(module, &symbolicName);
@@ -2127,7 +2124,7 @@ static void* framework_shutdown(void *framework) {
     return NULL;
 }
 
-celix_status_t framework_getFrameworkBundle(framework_pt framework, bundle_pt *bundle) {
+celix_status_t framework_getFrameworkBundle(const_framework_pt framework, bundle_pt *bundle) {
     celix_status_t status = CELIX_SUCCESS;
 
     if (framework != NULL && *bundle == NULL) {
@@ -2139,7 +2136,7 @@ celix_status_t framework_getFrameworkBundle(framework_pt framework, bundle_pt *b
     return status;
 }
 
-bundle_context_t* framework_getContext(framework_t *framework) {
+bundle_context_t* framework_getContext(const_framework_pt framework) {
     bundle_context_t *result = NULL;
     if (framework != NULL && framework->bundle != NULL) {
         result = framework->bundle->context;

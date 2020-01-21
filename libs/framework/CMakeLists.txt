@@ -18,7 +18,6 @@
 find_package(ZLIB REQUIRED)
 find_package(UUID REQUIRED)
 find_package(CURL REQUIRED)
-find_package(OpenSSL REQUIRED)
 
 set(SOURCES
         src/attribute.c src/bundle.c src/bundle_archive.c src/bundle_cache.c
@@ -41,7 +40,8 @@ target_include_directories(framework PUBLIC
 )
 target_compile_options(framework PRIVATE -DUSE_FILE32API)
 set_target_properties(framework PROPERTIES "SOVERSION" 2)
-target_link_libraries(framework PUBLIC Celix::utils)
+
+target_link_libraries(framework PUBLIC Celix::utils ${CELIX_OPTIONAL_EXTRA_LIBS})
 target_link_libraries(framework PUBLIC UUID::lib CURL::libcurl ZLIB::ZLIB)
 
 install(TARGETS framework EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework)

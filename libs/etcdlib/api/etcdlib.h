@@ -66,6 +66,16 @@ etcdlib_t* etcdlib_create(const char* server, int port, int flags);
 void etcdlib_destroy(etcdlib_t *etcdlib);
 
 /**
+ * Returns the configured etcd host for etcdlib.
+ */
+const char* etcdlib_host(etcdlib_t *etcdlib);
+
+/**
+ * Returns the configured etcd port for etcdlib.
+ */
+int etcdlib_port(etcdlib_t *etcdlib);
+
+/**
  * @desc Retrieve a single value from Etcd.
  * @param const etcdlib_t* etcdlib. The ETCD-LIB instance (contains hostname and port info).
  * @param const char* key. The Etcd-key (Note: a leading '/' should be avoided).
