@@ -154,7 +154,7 @@ static celix_status_t exportRegistration_findAndParseInterfaceDescriptor(log_hel
     FILE* descriptor = NULL;
 
     celix_status_t status = dfi_findDescriptor(context, bundle, name, &descriptor);
-    if (status == CELIX_SUCCESS) {
+    if (status == CELIX_SUCCESS && descriptor != NULL) {
         int rc = dynInterface_parse(descriptor, out);
         fclose(descriptor);
         if (rc != 0) {
@@ -165,7 +165,7 @@ static celix_status_t exportRegistration_findAndParseInterfaceDescriptor(log_hel
     }
 
     status = dfi_findAvprDescriptor(context, bundle, name, &descriptor);
-    if (status == CELIX_SUCCESS) {
+    if (status == CELIX_SUCCESS && descriptor != NULL) {
         *out = dynInterface_parseAvpr(descriptor);
         if (*out == NULL) {
             logHelper_log(helper, OSGI_LOGSERVICE_WARNING, "RSA_AVPR: Error parsing avpr service descriptor for '%s'", name);

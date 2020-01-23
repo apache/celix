@@ -19,144 +19,97 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
-#include <service_tracker_customizer.h>
-#include <service_tracker.h>
 
-#include "bundle_activator.h"
-#include "bundle_context.h"
-#include "service_registration.h"
-#include "service_reference.h"
-#include "celix_errno.h"
+#include <celix_api.h>
 
 #include "tst_service.h"
 #include "calculator_service.h"
 #include <unistd.h>
 
-
 struct activator {
-	celix_bundle_context_t *context;
-	struct tst_service serv;
-	service_registration_t * reg;
+    long svcId;
+    struct tst_service testSvc;
 
-	service_tracker_customizer_t *cust;
-	service_tracker_t *tracker;
-	calculator_service_t *calc;
+    long trackerId;
+
+    pthread_mutex_t mutex; //protects below
+    calculator_service_t *calc;
 };
 
-static celix_status_t addCalc(void * handle, service_reference_pt reference, void * service);
-static celix_status_t removeCalc(void * handle, service_reference_pt reference, void * service);
-static int test(void *handle);
-
-celix_status_t bundleActivator_create(celix_bundle_context_t *context, void **out) {
-	celix_status_t status = CELIX_SUCCESS;
-	struct activator *act = calloc(1, sizeof(*act));
-	if (act != NULL) {
-		act->context = context;
-		act->serv.handle = act;
-		act->serv.test = test;
-
-		status = serviceTrackerCustomizer_create(act, NULL, addCalc, NULL, removeCalc, &act->cust);
-		status = CELIX_DO_IF(status, serviceTracker_create(context, CALCULATOR_SERVICE, act->cust, &act->tracker));
-
-	} else {
-		status = CELIX_ENOMEM;
-	}
-
-	if (status == CELIX_SUCCESS) {
-		*out = act;
-	} else if (act != NULL) {
-		if (act->cust != NULL) {
-			free(act->cust);
-			act->cust = NULL;
-		}
-		if (act->tracker != NULL) {
-			serviceTracker_destroy(act->tracker);
-			act->tracker = NULL;
-		}
-		free(act);
-	}
-
-	return CELIX_SUCCESS;
+static void bndSetCalc(void* handle, void* svc) {
+    struct activator * act = handle;
+    pthread_mutex_lock(&act->mutex);
+    act->calc = svc;
+    pthread_mutex_unlock(&act->mutex);
 }
 
-static celix_status_t addCalc(void * handle, service_reference_pt reference, void * service) {
-	celix_status_t status = CELIX_SUCCESS;
-	struct activator * act = handle;
-	act->calc = service;
-	return status;
-}
+static int bndTest(void *handle) {
+    int status = 0;
+    struct activator *act = handle;
 
-static celix_status_t removeCalc(void * handle, service_reference_pt reference, void * service) {
-	celix_status_t status = CELIX_SUCCESS;
-	struct activator * act = handle;
-	if (act->calc == service) {
-		act->calc = NULL;
-	}
-	return status;
-
-}
-
-celix_status_t bundleActivator_start(void * userData, celix_bundle_context_t *context) {
-    celix_status_t status = CELIX_SUCCESS;
-	struct activator * act = userData;
-
-	act->reg = NULL;
-	status = bundleContext_registerService(context, (char *)TST_SERVICE_NAME, &act->serv, NULL, &act->reg);
-
-	status = CELIX_DO_IF(status, serviceTracker_open(act->tracker));
-
-
-	return status;
-}
-
-
-celix_status_t bundleActivator_stop(void * userData, celix_bundle_context_t *context) {
-    celix_status_t status = CELIX_SUCCESS;
-	struct activator * act = userData;
-
-	status = serviceRegistration_unregister(act->reg);
-	status = CELIX_DO_IF(status, serviceTracker_close(act->tracker));
-
-	return status;
-}
-
-celix_status_t bundleActivator_destroy(void * userData, celix_bundle_context_t *context) {
-	struct activator *act = userData;
-	if (act != NULL) {
-		if (act->tracker != NULL) {
-			serviceTracker_destroy(act->tracker);
-			act->tracker = NULL;
-		}
-		free(act);
-	}
-	return CELIX_SUCCESS;
-}
-
-static int test(void *handle) {
-	int status = 0;
-	struct activator *act = handle;
-
-	double result = -1.0;
+    double result = -1.0;
 
     int retries = 40;
 
-    while (act->calc == NULL) {
+    pthread_mutex_lock(&act->mutex);
+    calculator_service_t *local = act->calc;
+    pthread_mutex_unlock(&act->mutex);
+
+    while (local == NULL && retries > 0) {
         printf("Waiting for calc service .. %d\n", retries);
         usleep(100000);
         --retries;
+        pthread_mutex_lock(&act->mutex);
+        local = act->calc;
+        pthread_mutex_unlock(&act->mutex);
     }
 
+
+    pthread_mutex_lock(&act->mutex);
     int rc = 1;
     if (act->calc != NULL) {
-		rc = act->calc->sqrt(act->calc->calculator, 4, &result);
+        rc = act->calc->sqrt(act->calc->calculator, 4, &result);
         printf("calc result is %f\n", result);
     } else {
         printf("calc not ready\n");
     }
+    pthread_mutex_unlock(&act->mutex);
 
-	if (rc != 0 || result != 2.0) {
-		status = 1;
-	}
-	return status;
+
+    if (rc != 0 || result != 2.0) {
+        status = 1;
+    }
+    return status;
 }
+
+static celix_status_t bndStart(struct activator *act, celix_bundle_context_t* ctx) {
+    //initialize service struct
+    act->testSvc.handle = act;
+    act->testSvc.test = bndTest;
+
+    //create mutex
+    pthread_mutex_init(&act->mutex, NULL);
+
+    //track (remote) service
+    {
+        celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
+        opts.set = bndSetCalc;
+        opts.callbackHandle = act;
+        opts.filter.serviceName = CALCULATOR_SERVICE;
+        opts.filter.ignoreServiceLanguage = true;
+        act->trackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
+    }
+
+    //register test service
+    act->svcId = celix_bundleContext_registerService(ctx, &act->testSvc, TST_SERVICE_NAME, NULL);
+    return CELIX_SUCCESS;
+}
+
+static celix_status_t bndStop(struct activator *act, celix_bundle_context_t* ctx) {
+    celix_bundleContext_unregisterService(ctx, act->svcId);
+    celix_bundleContext_stopTracker(ctx, act->trackerId);
+    pthread_mutex_destroy(&act->mutex);
+    return CELIX_SUCCESS;
+}
+
+CELIX_GEN_BUNDLE_ACTIVATOR(struct activator, bndStart, bndStop);
