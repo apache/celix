@@ -263,7 +263,7 @@ function(add_celix_bundle)
             COMMAND ${ZIP_COMMAND} -rq ${BUNDLE_FILE} *
             COMMENT "Packaging ${BUNDLE_TARGET_NAME}"
             DEPENDS  ${BUNDLE_TARGET_NAME} "$<TARGET_PROPERTY:${BUNDLE_TARGET_NAME},BUNDLE_DEPEND_TARGETS>" ${BUNDLE_GEN_DIR}/MANIFEST.MF
-            WORKING_DIRECTORY ${BUNDLE_CONTENT_DIR}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         )
     else()
         message(FATAL_ERROR "A jar or zip command is needed to jar/zip bundles")
