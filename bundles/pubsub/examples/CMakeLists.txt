@@ -392,7 +392,7 @@ if (BUILD_PUBSUB_PSA_NANOMSG)
 
 endif()
 
-add_celix_container(pubsub_publisher_websocket
+add_celix_container(pubsub_websocket_example
     GROUP pubsub
     BUNDLES
         Celix::log_service
@@ -402,7 +402,7 @@ add_celix_container(pubsub_publisher_websocket
         Celix::pubsub_serializer_json
         Celix::pubsub_topology_manager
         Celix::pubsub_admin_websocket
-        celix_pubsub_websocket_publisher
+        celix_pubsub_websocket_example
     PROPERTIES
         PSA_TCP_VERBOSE=true
         PUBSUB_ETCD_DISCOVERY_VERBOSE=true
@@ -410,4 +410,4 @@ add_celix_container(pubsub_publisher_websocket
         CELIX_HTTP_ADMIN_LISTENING_PORTS=7660
         CELIX_HTTP_ADMIN_NUM_THREADS=5
 )
-target_link_libraries(pubsub_publisher_websocket PRIVATE ${PUBSUB_CONTAINER_LIBS})
+target_link_libraries(pubsub_websocket_example PRIVATE ${PUBSUB_CONTAINER_LIBS})
