@@ -716,16 +716,6 @@ celix_service_tracker_t* celix_serviceTracker_create(
     return celix_serviceTracker_createWithOptions(ctx, &opts);
 }
 
-#define PARSE_VERSION \
-version_range_pt range; \
-celix_status_t status = versionRange_parse(opts->filter.versionRange, &range); \
-if(status != CELIX_SUCCESS) { \
-    framework_log(logger, OSGI_FRAMEWORK_LOG_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__, \
-    "Error incorrect version range."); \
-    celixThreadRwlock_destroy(&tracker->instanceLock); \
-    free(tracker);\
-}
-
 celix_service_tracker_t* celix_serviceTracker_createWithOptions(
         bundle_context_t *ctx,
         const celix_service_tracking_options_t *opts
@@ -756,37 +746,43 @@ celix_service_tracker_t* celix_serviceTracker_createWithOptions(
                 lang = CELIX_FRAMEWORK_SERVICE_C_LANGUAGE;
             }
 
+            char* versionRange = NULL;
+            if(opts->filter.versionRange != NULL) {
+                version_range_pt range;
+                celix_status_t status = versionRange_parse(opts->filter.versionRange, &range);
+                if(status != CELIX_SUCCESS) {
+                    framework_log(logger, OSGI_FRAMEWORK_LOG_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__,
+                    "Error incorrect version range.");
+                    celixThreadRwlock_destroy(&tracker->instanceLock);
+                    free(tracker);
+                    return NULL;
+                }
+                versionRange = versionRange_createLDAPFilter(range);
+                if(versionRange == NULL) {
+                    framework_log(logger, OSGI_FRAMEWORK_LOG_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__,
+                                  "Error creating LDAP filter.");
+                    celixThreadRwlock_destroy(&tracker->instanceLock);
+                    free(tracker);
+                    return NULL;
+                }
+            }
+
             //setting filter
             if (opts->filter.ignoreServiceLanguage) {
-                if (opts->filter.filter != NULL && opts->filter.versionRange != NULL) {
-                    PARSE_VERSION
-                    asprintf(&tracker->filter, "(&(%s=%s)(%s%s%i.%i.%i)(%s%s%i.%i.%i)%s)",
-                             OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName,
-                             CELIX_FRAMEWORK_SERVICE_VERSION, range->isLowInclusive ? ">=" : ">", range->low->major, range->low->minor, range->low->micro,
-                             CELIX_FRAMEWORK_SERVICE_VERSION, range->isHighInclusive ? ">=" : ">", range->high->major, range->high->minor, range->high->micro,
-                             opts->filter.filter);
-                } else if (opts->filter.versionRange != NULL) {
-                    PARSE_VERSION
-                    asprintf(&tracker->filter, "(&(%s=%s)(%s%s%i.%i.%i)(%s%s%i.%i.%i))", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName,
-                             CELIX_FRAMEWORK_SERVICE_VERSION, range->isLowInclusive ? ">=" : ">", range->low->major, range->low->minor, range->low->micro,
-                             CELIX_FRAMEWORK_SERVICE_VERSION, range->isHighInclusive ? ">=" : ">", range->high->major, range->high->minor, range->high->micro);
+                if (opts->filter.filter != NULL && versionRange != NULL) {
+                    asprintf(&tracker->filter, "(&(%s=%s)%s%s)", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, versionRange, opts->filter.filter);
+                } else if (versionRange != NULL) {
+                    asprintf(&tracker->filter, "(&(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, versionRange);
                 } else if (opts->filter.filter != NULL) {
                     asprintf(&tracker->filter, "(&(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, opts->filter.filter);
                 } else {
                     asprintf(&tracker->filter, "(&(%s=%s))", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName);
                 }
             } else {
-                if (opts->filter.filter != NULL && opts->filter.versionRange != NULL) {
-                    PARSE_VERSION
-                    asprintf(&tracker->filter, "(&(%s=%s)(%s=%s)(%s%s%i.%i.%i)(%s%s%i.%i.%i)%s)", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang,
-                             CELIX_FRAMEWORK_SERVICE_VERSION, range->isLowInclusive ? ">=" : ">", range->low->major, range->low->minor, range->low->micro,
-                             CELIX_FRAMEWORK_SERVICE_VERSION, range->isHighInclusive ? ">=" : ">", range->high->major, range->high->minor, range->high->micro,
-                             opts->filter.filter);
-                } else if (opts->filter.versionRange != NULL) {
-                    PARSE_VERSION
-                    asprintf(&tracker->filter, "(&(%s=%s)(%s=%s)(%s%s%i.%i.%i)(%s%s%i.%i.%i))", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang,
-                             CELIX_FRAMEWORK_SERVICE_VERSION, range->isLowInclusive ? ">=" : ">", range->low->major, range->low->minor, range->low->micro,
-                             CELIX_FRAMEWORK_SERVICE_VERSION, range->isHighInclusive ? ">=" : ">", range->high->major, range->high->minor, range->high->micro);
+                if (opts->filter.filter != NULL && versionRange != NULL) {
+                    asprintf(&tracker->filter, "(&(%s=%s)(%s=%s)%s%s)", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang, versionRange, opts->filter.filter);
+                } else if (versionRange != NULL) {
+                    asprintf(&tracker->filter, "(&(%s=%s)(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang, versionRange);
                 } else if (opts->filter.filter != NULL) {
                     asprintf(&tracker->filter, "(&(%s=%s)(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang, opts->filter.filter);
                 } else {
@@ -794,6 +790,9 @@ celix_service_tracker_t* celix_serviceTracker_createWithOptions(
                 }
             }
 
+            if(versionRange != NULL){
+                free(versionRange);
+            }
 
             serviceTracker_open(tracker);
         }

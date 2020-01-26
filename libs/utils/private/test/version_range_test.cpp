@@ -243,6 +243,229 @@ TEST(version_range, parse) {
     free(low);
 }
 
+TEST(version_range, createLdapFilterInclusiveBoth) {
+    version_pt low = (version_pt) malloc(sizeof(*low));
+    low->major = 1;
+    low->minor = 2;
+    low->micro = 3;
+    low->qualifier = NULL;
+
+    version_pt high = (version_pt) malloc(sizeof(*high));
+    high->major = 1;
+    high->minor = 2;
+    high->micro = 3;
+    high->qualifier = NULL;
+
+    version_range_pt range = NULL;
+    LONGS_EQUAL(CELIX_SUCCESS, versionRange_createVersionRange(low, true, high, true, &range));
+
+    auto filter = versionRange_createLDAPFilter(range);
+    STRCMP_EQUAL(filter, "(&(service.version>=1.2.3)(service.version<=1.2.3))");
+
+    versionRange_destroy(range);
+}
+
+TEST(version_range, createLdapFilterInclusiveLow) {
+    version_pt low = (version_pt) malloc(sizeof(*low));
+    low->major = 1;
+    low->minor = 2;
+    low->micro = 3;
+    low->qualifier = NULL;
+
+    version_pt high = (version_pt) malloc(sizeof(*high));
+    high->major = 1;
+    high->minor = 2;
+    high->micro = 3;
+    high->qualifier = NULL;
+
+    version_range_pt range = NULL;
+    LONGS_EQUAL(CELIX_SUCCESS, versionRange_createVersionRange(low, false, high, true, &range));
+
+    auto filter = versionRange_createLDAPFilter(range);
+    STRCMP_EQUAL(filter, "(&(service.version>1.2.3)(service.version<=1.2.3))");
+
+    versionRange_destroy(range);
+}
+
+TEST(version_range, createLdapFilterInclusiveHigh) {
+    version_pt low = (version_pt) malloc(sizeof(*low));
+    low->major = 1;
+    low->minor = 2;
+    low->micro = 3;
+    low->qualifier = NULL;
+
+    version_pt high = (version_pt) malloc(sizeof(*high));
+    high->major = 1;
+    high->minor = 2;
+    high->micro = 3;
+    high->qualifier = NULL;
+
+    version_range_pt range = NULL;
+    LONGS_EQUAL(CELIX_SUCCESS, versionRange_createVersionRange(low, true, high, false, &range));
+
+    auto filter = versionRange_createLDAPFilter(range);
+    STRCMP_EQUAL(filter, "(&(service.version>=1.2.3)(service.version<1.2.3))");
+
+    versionRange_destroy(range);
+}
+
+TEST(version_range, createLdapFilterExclusiveBoth) {
+    version_pt low = (version_pt) malloc(sizeof(*low));
+    low->major = 1;
+    low->minor = 2;
+    low->micro = 3;
+    low->qualifier = NULL;
+
+    version_pt high = (version_pt) malloc(sizeof(*high));
+    high->major = 1;
+    high->minor = 2;
+    high->micro = 3;
+    high->qualifier = NULL;
+
+    version_range_pt range = NULL;
+    LONGS_EQUAL(CELIX_SUCCESS, versionRange_createVersionRange(low, false, high, false, &range));
+
+    auto filter = versionRange_createLDAPFilter(range);
+    STRCMP_EQUAL(filter, "(&(service.version>1.2.3)(service.version<1.2.3))");
+
+    versionRange_destroy(range);
+}
+
+TEST(version_range, createLdapFilterInfinite) {
+    version_pt low = (version_pt) malloc(sizeof(*low));
+    low->major = 1;
+    low->minor = 2;
+    low->micro = 3;
+    low->qualifier = NULL;
+
+    version_range_pt range = NULL;
+    LONGS_EQUAL(CELIX_SUCCESS, versionRange_createVersionRange(low, true, NULL, true, &range));
+
+    auto filter = versionRange_createLDAPFilter(range);
+    STRCMP_EQUAL(filter, "(&(service.version>=1.2.3))");
+
+    versionRange_destroy(range);
+}
+
+TEST(version_range, createLdapFilterInPlaceInclusiveBoth) {
+    version_pt low = (version_pt) malloc(sizeof(*low));
+    low->major = 1;
+    low->minor = 2;
+    low->micro = 3;
+    low->qualifier = NULL;
+
+    version_pt high = (version_pt) malloc(sizeof(*high));
+    high->major = 1;
+    high->minor = 2;
+    high->micro = 3;
+    high->qualifier = NULL;
+
+    version_range_pt range = NULL;
+    LONGS_EQUAL(CELIX_SUCCESS, versionRange_createVersionRange(low, true, high, true, &range));
+    char buffer[100];
+    int bufferLen = sizeof(buffer) / sizeof(buffer[0]);
+
+    LONGS_EQUAL(1, versionRange_createLDAPFilterInPlace(range, buffer, bufferLen));
+
+    STRCMP_EQUAL(buffer, "(&(service.version>=1.2.3)(service.version<=1.2.3))");
+
+    versionRange_destroy(range);
+}
+
+TEST(version_range, createLdapFilterInPlaceInclusiveLow) {
+    version_pt low = (version_pt) malloc(sizeof(*low));
+    low->major = 1;
+    low->minor = 2;
+    low->micro = 3;
+    low->qualifier = NULL;
+
+    version_pt high = (version_pt) malloc(sizeof(*high));
+    high->major = 1;
+    high->minor = 2;
+    high->micro = 3;
+    high->qualifier = NULL;
+
+    version_range_pt range = NULL;
+    LONGS_EQUAL(CELIX_SUCCESS, versionRange_createVersionRange(low, true, high, false, &range));
+    char buffer[100];
+    int bufferLen = sizeof(buffer) / sizeof(buffer[0]);
+
+    LONGS_EQUAL(1, versionRange_createLDAPFilterInPlace(range, buffer, bufferLen));
+
+    STRCMP_EQUAL(buffer, "(&(service.version>=1.2.3)(service.version<1.2.3))");
+
+    versionRange_destroy(range);
+}
+
+TEST(version_range, createLdapFilterInPlaceInclusiveHigh) {
+    version_pt low = (version_pt) malloc(sizeof(*low));
+    low->major = 1;
+    low->minor = 2;
+    low->micro = 3;
+    low->qualifier = NULL;
+
+    version_pt high = (version_pt) malloc(sizeof(*high));
+    high->major = 1;
+    high->minor = 2;
+    high->micro = 3;
+    high->qualifier = NULL;
+
+    version_range_pt range = NULL;
+    LONGS_EQUAL(CELIX_SUCCESS, versionRange_createVersionRange(low, false, high, true, &range));
+    char buffer[100];
+    int bufferLen = sizeof(buffer) / sizeof(buffer[0]);
+
+    LONGS_EQUAL(1, versionRange_createLDAPFilterInPlace(range, buffer, bufferLen));
+
+    STRCMP_EQUAL(buffer, "(&(service.version>1.2.3)(service.version<=1.2.3))");
+
+    versionRange_destroy(range);
+}
+
+TEST(version_range, createLdapFilterInPlaceExclusiveBoth) {
+    version_pt low = (version_pt) malloc(sizeof(*low));
+    low->major = 1;
+    low->minor = 2;
+    low->micro = 3;
+    low->qualifier = NULL;
+
+    version_pt high = (version_pt) malloc(sizeof(*high));
+    high->major = 1;
+    high->minor = 2;
+    high->micro = 3;
+    high->qualifier = NULL;
+
+    version_range_pt range = NULL;
+    LONGS_EQUAL(CELIX_SUCCESS, versionRange_createVersionRange(low, false, high, false, &range));
+    char buffer[100];
+    int bufferLen = sizeof(buffer) / sizeof(buffer[0]);
+
+    LONGS_EQUAL(1, versionRange_createLDAPFilterInPlace(range, buffer, bufferLen));
+
+    STRCMP_EQUAL(buffer, "(&(service.version>1.2.3)(service.version<1.2.3))");
+
+    versionRange_destroy(range);
+}
+
+TEST(version_range, createLdapFilterInPlaceInfiniteHigh) {
+    version_pt low = (version_pt) malloc(sizeof(*low));
+    low->major = 1;
+    low->minor = 2;
+    low->micro = 3;
+    low->qualifier = NULL;
+
+    version_range_pt range = NULL;
+    LONGS_EQUAL(CELIX_SUCCESS, versionRange_createVersionRange(low, false, NULL, false, &range));
+    char buffer[100];
+    int bufferLen = sizeof(buffer) / sizeof(buffer[0]);
+
+    LONGS_EQUAL(1, versionRange_createLDAPFilterInPlace(range, buffer, bufferLen));
+
+    STRCMP_EQUAL(buffer, "(&(service.version>1.2.3))");
+
+    versionRange_destroy(range);
+}
+
 
 
 

@@ -87,7 +87,7 @@ TEST(CelixBundleContextServicesTests, registerMultipleAndUseServices) {
     };
 
     const char *calcName = "calc";
-    struct calc svc{};
+    struct calc svc;
     svc.calc = [](int n) -> int {
         return n * 42;
     };
@@ -134,7 +134,7 @@ TEST(CelixBundleContextServicesTests, registerAndUseService) {
     };
 
     const char *calcName = "calc";
-    struct calc svc{};
+    struct calc svc;
     svc.calc = [](int n) -> int {
         return n * 42;
     };
@@ -173,7 +173,7 @@ TEST(CelixBundleContextServicesTests, registerAndUseServiceWithTimeout) {
     };
 
     const char *calcName = "calc";
-    struct calc svc{};
+    struct calc svc;
     svc.calc = [](int n) -> int {
         return n * 42;
     };
@@ -210,6 +210,8 @@ TEST(CelixBundleContextServicesTests, registerAndUseServiceWithTimeout) {
         return calledAsync;
     })};
     CHECK(!result2.get());
+
+    celix_bundleContext_unregisterService(ctx, svcId);
 }
 
 TEST(CelixBundleContextServicesTests, registerAndUseServiceWithCorrectVersion) {
@@ -218,29 +220,36 @@ TEST(CelixBundleContextServicesTests, registerAndUseServiceWithCorrectVersion) {
     };
 
     const char *calcName = "calc";
-    struct calc svc{};
+    struct calc svc;
     svc.calc = [](int n) -> int {
         return n * 42;
     };
 
-    celix_service_use_options_t opts{};
-    opts.filter.serviceName = "calc";
-    opts.filter.versionRange = "[1,2)";
+    celix_service_use_options_t use_opts{};
+    use_opts.filter.serviceName = "calc";
+    use_opts.filter.versionRange = "[1,2)";
 
-    bool called = celix_bundleContext_useServiceWithOptions(ctx, &opts);
+    celix_service_registration_options_t reg_opts{};
+    reg_opts.serviceName = calcName;
+    reg_opts.serviceVersion = "1.5";
+    reg_opts.svc = &svc;
+
+    bool called = celix_bundleContext_useServiceWithOptions(ctx, &use_opts);
     CHECK(!called); //service not avail.
 
     std::future<bool> result{std::async([&]{
-        opts.waitTimeoutInSeconds = 5.0;
-        printf("Trying to call calc with timeout of %f\n", opts.waitTimeoutInSeconds);
-        bool calledAsync = celix_bundleContext_useServiceWithOptions(ctx, &opts);
+        use_opts.waitTimeoutInSeconds = 5.0;
+        printf("Trying to call calc with timeout of %f\n", use_opts.waitTimeoutInSeconds);
+        bool calledAsync = celix_bundleContext_useServiceWithOptions(ctx, &use_opts);
         printf("returned from use service with timeout. calc called %s.\n", calledAsync ? "true" : "false");
         return calledAsync;
     })};
-    long svcId = celix_bundleContext_registerService(ctx, &svc, calcName, nullptr);
+    long svcId = celix_bundleContext_registerServiceWithOptions(ctx, &reg_opts);
     CHECK(svcId >= 0);
 
     CHECK(result.get()); //should return true after waiting for the registered service.
+
+    celix_bundleContext_unregisterService(ctx, svcId);
 }
 
 TEST(CelixBundleContextServicesTests, registerAndUseServiceWithIncorrectVersion) {
@@ -249,28 +258,35 @@ TEST(CelixBundleContextServicesTests, registerAndUseServiceWithIncorrectVersion)
     };
 
     const char *calcName = "calc";
-    struct calc svc{};
+    struct calc svc;
     svc.calc = [](int n) -> int {
         return n * 42;
     };
 
-    celix_service_use_options_t opts{};
-    opts.filter.serviceName = "calc";
-    opts.filter.versionRange = "[2,3)";
+    celix_service_use_options_t use_opts{};
+    use_opts.filter.serviceName = "calc";
+    use_opts.filter.versionRange = "[2,3)";
 
-    bool called = celix_bundleContext_useServiceWithOptions(ctx, &opts);
+    celix_service_registration_options_t reg_opts{};
+    reg_opts.serviceName = calcName;
+    reg_opts.serviceVersion = "1.5";
+    reg_opts.svc = &svc;
+
+    bool called = celix_bundleContext_useServiceWithOptions(ctx, &use_opts);
     CHECK(!called); //service not avail.
 
     std::future<bool> result{std::async([&]{
-        opts.waitTimeoutInSeconds = 1.0;
-        printf("Trying to call calc with timeout of %f\n", opts.waitTimeoutInSeconds);
-        bool calledAsync = celix_bundleContext_useServiceWithOptions(ctx, &opts);
+        use_opts.waitTimeoutInSeconds = 1.0;
+        printf("Trying to call calc with timeout of %f\n", use_opts.waitTimeoutInSeconds);
+        bool calledAsync = celix_bundleContext_useServiceWithOptions(ctx, &use_opts);
         printf("returned from use service with timeout. calc called %s.\n", calledAsync ? "true" : "false");
         return calledAsync;
     })};
-    long svcId = celix_bundleContext_registerService(ctx, &svc, calcName, nullptr);
+    long svcId = celix_bundleContext_registerServiceWithOptions(ctx, &reg_opts);
     CHECK(svcId >= 0);
     CHECK(!result.get());
+
+    celix_bundleContext_unregisterService(ctx, svcId);
 }
 
 TEST(CelixBundleContextServicesTests, registerAndUseWithForcedRaceCondition) {
@@ -279,7 +295,7 @@ TEST(CelixBundleContextServicesTests, registerAndUseWithForcedRaceCondition) {
     };
 
     const char *calcName = "calc";
-    struct calc svc{};
+    struct calc svc;
     svc.calc = [](int n) -> int {
         return n * 42;
     };
@@ -530,7 +546,7 @@ TEST(CelixBundleContextServicesTests, serviceTrackerWithRaceConditionTest) {
     };
 
     const char *calcName = "calc";
-    struct calc svc{};
+    struct calc svc;
     svc.calc = [](int n) -> int {
         return n * 42;
     };
@@ -702,7 +718,7 @@ TEST(CelixBundleContextServicesTests, serviceFactoryTest) {
     fac.getService = [](void *handle, const celix_bundle_t *, const celix_properties_t *) -> void* {
         auto *c = (int *)handle;
         *c += 1;
-        static struct calc svc{}; //normally a service per bundle
+        static struct calc svc; //normally a service per bundle
         svc.calc = [](int arg) { return arg * 42; };
         return &svc;
     };
