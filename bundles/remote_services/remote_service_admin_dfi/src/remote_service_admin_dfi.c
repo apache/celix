@@ -60,7 +60,7 @@ struct remote_service_admin {
     celix_bundle_context_t *context;
     log_helper_t *loghelper;
 
-    celix_thread_mutex_t exportedServicesLock;
+    celix_thread_rwlock_t exportedServicesLock;
     hash_map_pt exportedServices;
 
     celix_thread_mutex_t importedServicesLock;
@@ -118,8 +118,8 @@ celix_status_t remoteServiceAdmin_create(celix_bundle_context_t *context, remote
         (*admin)->exportedServices = hashMap_create(NULL, NULL, NULL, NULL);
          arrayList_create(&(*admin)->importedServices);
 
-        celixThreadMutex_create(&(*admin)->exportedServicesLock, NULL);
-        celixThreadMutex_create(&(*admin)->importedServicesLock, NULL);
+         celixThreadRwlock_create(&(*admin)->exportedServicesLock, NULL);
+         celixThreadMutex_create(&(*admin)->importedServicesLock, NULL);
 
         if (logHelper_create(context, &(*admin)->loghelper) == CELIX_SUCCESS) {
             logHelper_start((*admin)->loghelper);
@@ -217,7 +217,7 @@ celix_status_t remoteServiceAdmin_destroy(remote_service_admin_t **admin)
 celix_status_t remoteServiceAdmin_stop(remote_service_admin_t *admin) {
     celix_status_t status = CELIX_SUCCESS;
 
-    celixThreadMutex_lock(&admin->exportedServicesLock);
+    celixThreadRwlock_writeLock(&admin->exportedServicesLock);
 
     hash_map_iterator_pt iter = hashMapIterator_create(admin->exportedServices);
     while (hashMapIterator_hasNext(iter)) {
@@ -233,7 +233,7 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_t *admin) {
         arrayList_destroy(exports);
     }
     hashMapIterator_destroy(iter);
-    celixThreadMutex_unlock(&admin->exportedServicesLock);
+    celixThreadRwlock_unlock(&admin->exportedServicesLock);
 
     celixThreadMutex_lock(&admin->importedServicesLock);
     int i;
@@ -291,7 +291,7 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
             service[pos] = '\0';
             unsigned long serviceId = strtoul(service,NULL,10);
 
-            celixThreadMutex_lock(&rsa->exportedServicesLock);
+            celixThreadRwlock_readLock(&rsa->exportedServicesLock);
 
             //find endpoint
             export_registration_t *export = NULL;
@@ -345,7 +345,7 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
                 RSA_LOG_WARNING(rsa, "No export registration found for service id %lu", serviceId);
             }
 
-            celixThreadMutex_unlock(&rsa->exportedServicesLock);
+            celixThreadRwlock_unlock(&rsa->exportedServicesLock);
 
         }
     }
@@ -442,9 +442,9 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *admin, c
 
 
         if (status == CELIX_SUCCESS) {
-            celixThreadMutex_lock(&admin->exportedServicesLock);
+            celixThreadRwlock_writeLock(&admin->exportedServicesLock);
             hashMap_put(admin->exportedServices, reference, *registrations);
-            celixThreadMutex_unlock(&admin->exportedServicesLock);
+            celixThreadRwlock_unlock(&admin->exportedServicesLock);
         } else {
             arrayList_destroy(*registrations);
             *registrations = NULL;
@@ -464,7 +464,7 @@ celix_status_t remoteServiceAdmin_removeExportedService(remote_service_admin_t *
 
     if (status == CELIX_SUCCESS && ref != NULL) {
         service_reference_pt servRef;
-        celixThreadMutex_lock(&admin->exportedServicesLock);
+        celixThreadRwlock_writeLock(&admin->exportedServicesLock);
         exportReference_getExportedService(ref, &servRef);
 
         array_list_pt exports = (array_list_pt)hashMap_remove(admin->exportedServices, servRef);
@@ -475,7 +475,7 @@ celix_status_t remoteServiceAdmin_removeExportedService(remote_service_admin_t *
         exportRegistration_close(registration);
         exportRegistration_destroy(registration);
 
-        celixThreadMutex_unlock(&admin->exportedServicesLock);
+        celixThreadRwlock_unlock(&admin->exportedServicesLock);
 
         free(ref);
 

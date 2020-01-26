@@ -31,6 +31,11 @@
  * am=handle #void pointer for the handle
  * am=pre #output pointer with memory pre-allocated
  * am=out #output pointer
+ *
+ * text argument (t) can also be annotated to be considered const string.
+ * Normally a text argument will be handled as char*, meaning that the callee is expected to take of ownership.
+ * If a const=true annotation is used the text argument will be handled as a const char*, meaning that the caller
+ * keeps ownership of the string.
  */
 
 typedef struct _dyn_function_type dyn_function_type;
