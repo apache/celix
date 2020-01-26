@@ -23,6 +23,7 @@
 #include <strings.h>
 #include <stdlib.h>
 #include <ffi.h>
+#include <dyn_type_common.h>
 
 static const int OK = 0;
 static const int MEM_ERROR = 1;
@@ -305,3 +306,7 @@ dyn_type * dynFunction_returnType(dyn_function_type *dynFunction) {
     return dynFunction->funcReturn;
 }
 
+bool dynFunction_hasReturn(dyn_function_type *dynFunction) {
+    dyn_type *t = dynFunction_returnType(dynFunction);
+    return t->descriptor != 'V';
+}

@@ -22,14 +22,26 @@
 
 #include <stdint.h>
 
-struct complex {
+enum enum_example {
+    ENUM_EXAMPLE_VAL1 = 2,
+    ENUM_EXAMPLE_VAL2 = 4,
+    ENUM_EXAMPLE_VAL3 = 8
+};
+
+
+struct complex_input_example {
     double a;
     double b;
-    struct {
-        int32_t len;
-        int32_t cap;
-        char** buf;
-    };
+    int32_t n;
+    char *name;
+    enum enum_example e;
+};
+
+struct complex_output_example {
+    double pow;
+    int32_t fib;
+    char *name;
+    enum enum_example e;
 };
 
 #define REMOTE_EXAMPLE_NAME "org.apache.celix.RemoteExample"
@@ -43,7 +55,11 @@ typedef struct remote_example {
     int (*setName1)(void *handle, char *n, char **out);
     int (*setName2)(void *handle, const char *n, char **out);
 
-    //TODO int (*updateComplex)(void *handle, struct complex *c, struct complex **out);
+    int (*setEnum)(void *handle, enum enum_example e, enum enum_example *out);
+
+    int (*action)(void *handle);
+
+    int (*setComplex)(void *handle, struct complex_input_example *exmpl, struct complex_output_example **out);
 
 } remote_example_t;
 

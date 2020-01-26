@@ -97,8 +97,7 @@ static bool bndIsRemoteExampleDiscovered(void *handle) {
     return discovered;
 }
 
-static int bndTestCalculator(void *handle) {
-    int status = 0;
+static bool bndTestCalculator(void *handle) {
     struct activator *act = handle;
 
     double result = -1.0;
@@ -113,14 +112,53 @@ static int bndTestCalculator(void *handle) {
     }
     pthread_mutex_unlock(&act->mutex);
 
-
-    if (rc != 0 || result != 2.0) {
-        status = 1;
-    }
-    return status;
+    return rc == 0 && result == 2.0;
 }
 
-static int bndTestRemoteExample(void *handle) {
+static bool bndTestRemoteString(void *handle) {
+    bool ok;
+    struct activator *act = handle;
+
+    pthread_mutex_lock(&act->mutex);
+    if (act->remoteExample != NULL) {
+        //test string call with taking ownership
+        char *tmp = strndup("test1", 1024);
+        char *result = NULL;
+        act->remoteExample->setName1(act->remoteExample->handle, tmp, &result);
+        //note setName1 should take ownership of tmp, so no free(tmp) needed.
+        ok = strncmp("test1", result, 1024) == 0;
+        free(result);
+    } else {
+        fprintf(stderr, "remote example service not available");
+        ok = false;
+    }
+    pthread_mutex_unlock(&act->mutex);
+
+    return ok;
+}
+
+static bool bndTestRemoteConstString(void *handle) {
+    bool ok;
+    struct activator *act = handle;
+
+    pthread_mutex_lock(&act->mutex);
+    if (act->remoteExample != NULL) {
+        //test pow
+        const char *name = "name2";
+        char *result = NULL;
+        act->remoteExample->setName2(act->remoteExample->handle, name, &result);
+        ok = strncmp(result, "name2", 1024) == 0;
+        free(result);
+    } else {
+        fprintf(stderr, "remote example service not available");
+        ok = false;
+    }
+    pthread_mutex_unlock(&act->mutex);
+
+    return ok;
+}
+
+static bool bndTestRemoteNumbers(void *handle) {
     bool ok = true;
     struct activator *act = handle;
 
@@ -140,33 +178,77 @@ static int bndTestRemoteExample(void *handle) {
             act->remoteExample->fib(act->remoteExample->handle, 4, &f);
             ok = (f == 3);
         }
-
-        if (ok) {
-            //test string call with taking ownership
-            char *tmp = strndup("test1", 1024);
-            char *result = NULL;
-            act->remoteExample->setName1(act->remoteExample->handle, tmp, &result);
-            //note setName1 should take ownership of tmp, so no free(tmp) needed.
-            ok = strncmp("test1", result, 1024) == 0;
-            free(result);
-        }
-
-        if (ok) {
-            //test string call with keeping ownership
-            const char *tmp = "test2";
-            char *result = NULL;
-            act->remoteExample->setName2(act->remoteExample->handle, tmp, &result);
-            ok = strncmp("test2", result, 1024) == 0;
-            free(result); //TODO should fail on double free.
-        }
-
     } else {
         fprintf(stderr, "remote example service not available");
         ok  = false;
     }
     pthread_mutex_unlock(&act->mutex);
 
-    return ok ? 0 : 1;
+    return ok;
+}
+
+static bool bndTestRemoteEnum(void *handle) {
+    bool ok;
+    struct activator *act = handle;
+
+    pthread_mutex_lock(&act->mutex);
+    if (act->remoteExample != NULL) {
+        enum enum_example e = ENUM_EXAMPLE_VAL2;
+        enum enum_example result = ENUM_EXAMPLE_VAL3;
+        int rc = act->remoteExample->setEnum(act->remoteExample->handle, e, &result);
+        ok = rc == 0 && result == ENUM_EXAMPLE_VAL2;
+    } else {
+        fprintf(stderr, "remote example service not available");
+        ok = false;
+    }
+    pthread_mutex_unlock(&act->mutex);
+
+    return ok;
+}
+
+static bool bndTestRemoteAction(void *handle) {
+    bool ok;
+    struct activator *act = handle;
+
+    pthread_mutex_lock(&act->mutex);
+    if (act->remoteExample != NULL) {
+        int rc = act->remoteExample->action(act->remoteExample->handle);
+        ok = rc == 0;
+    } else {
+        fprintf(stderr, "remote example service not available");
+        ok = false;
+    }
+    pthread_mutex_unlock(&act->mutex);
+
+    return ok;
+}
+
+static bool bndTestRemoteComplex(void *handle) {
+    bool ok;
+    struct activator *act = handle;
+
+    pthread_mutex_lock(&act->mutex);
+    if (act->remoteExample != NULL) {
+       struct complex_input_example exmpl;
+       exmpl.a = 2;
+       exmpl.b = 3;
+       exmpl.n = 5;
+       exmpl.name = "name";
+       exmpl.e = ENUM_EXAMPLE_VAL3;
+       struct complex_output_example* result = NULL;
+       int rc = act->remoteExample->setComplex(act->remoteExample->handle, &exmpl, &result);
+       ok = rc == 0 && result->pow == 8 && result->fib == 5 && strncmp("name", result->name, 64) == 0;
+       if (rc == 0) {
+           free(result->name);
+           free(result);
+       }
+    } else {
+        fprintf(stderr, "remote example service not available");
+        ok = false;
+    }
+    pthread_mutex_unlock(&act->mutex);
+
+    return ok;
 }
 
 static celix_status_t bndStart(struct activator *act, celix_bundle_context_t* ctx) {
@@ -175,7 +257,13 @@ static celix_status_t bndStart(struct activator *act, celix_bundle_context_t* ct
     act->testSvc.isCalcDiscovered = bndIsCalculatorDiscovered;
     act->testSvc.isRemoteExampleDiscovered = bndIsRemoteExampleDiscovered;
     act->testSvc.testCalculator = bndTestCalculator;
-    act->testSvc.testRemoteExample = bndTestRemoteExample;
+    act->testSvc.testRemoteString = bndTestRemoteString;
+    act->testSvc.testRemoteConstString = bndTestRemoteConstString;
+    act->testSvc.testRemoteNumbers = bndTestRemoteNumbers;
+    act->testSvc.testRemoteEnum = bndTestRemoteEnum;
+    act->testSvc.testRemoteAction = bndTestRemoteAction;
+    act->testSvc.testRemoteComplex = bndTestRemoteComplex;
+
 
     //create mutex
     pthread_mutex_init(&act->mutex, NULL);

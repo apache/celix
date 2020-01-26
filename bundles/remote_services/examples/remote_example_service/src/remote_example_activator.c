@@ -40,7 +40,9 @@ celix_status_t remoteExampleBndStart(struct activator *act, celix_bundle_context
         act->service.fib = (void*)remoteExample_fib;
         act->service.setName1 = (void*)remoteExample_setName1;
         act->service.setName2 = (void*)remoteExample_setName2;
-        //TODO update complex
+        act->service.setEnum = (void*)remoteExample_setEnum;
+        act->service.action = (void*)remoteExample_action;
+        act->service.setComplex = (void*)remoteExample_setComplex;
 
         celix_properties_t *properties = celix_properties_create();
         celix_properties_set(properties, OSGI_RSA_SERVICE_EXPORTED_INTERFACES, REMOTE_EXAMPLE_NAME);

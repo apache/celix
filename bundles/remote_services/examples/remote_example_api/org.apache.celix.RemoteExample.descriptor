@@ -5,8 +5,14 @@ version=1.3.0
 :annotations
 classname=org.apache.celix.RemoteExample
 :types
+enum_example=#ENUM_EXAMPLE_VAL1=2;#ENUM_EXAMPLE_VAL2=4;#ENUM_EXAMPLE_VAL3=8;E
+complex_input={DDItlenum_example; a b n name e}
+complex_output={DItlenum_example; pow fib name e}
 :methods
 pow(DD)D=pow(#am=handle;PDD#am=pre;*D)N
 fib(I)I=fib(#am=handle;PI#am=pre;*I)N
 setName1=setName1(#am=handle;Pt#am=out;*t)N
-setName2=setName2(#am=handle;Pt#am=out;*t)N
+setName2=setName2(#am=handle;P#const=true;t#am=out;*t)N
+setEnum=setEnum(#am=handle;Plenum_example;#am=pre;Lenum_example;)N
+action=action(#am=handle;P)N
+setComplex=setComplex(#am=handle;PLcomplex_input;#am=out;*Lcomplex_output;)N

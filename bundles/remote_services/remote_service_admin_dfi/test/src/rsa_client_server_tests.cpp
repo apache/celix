@@ -88,7 +88,7 @@ extern "C" {
     static void test(void) {
         //TODO refactor to use celix_bundleContext_useService calls
 
-        celix_status_t rc;
+        celix_status_t rc = 0;
         service_reference_pt ref = NULL;
         tst_service_t *tst = NULL;
         int retries = 4;
@@ -110,14 +110,29 @@ extern "C" {
         bool discovered = tst->isCalcDiscovered(tst->handle);
         CHECK_TRUE(discovered);
 
-        rc = tst->testCalculator(tst->handle);
-        CHECK_EQUAL(CELIX_SUCCESS, rc);
+        bool ok = tst->testCalculator(tst->handle);
+        CHECK_TRUE(ok);
 
         discovered = tst->isRemoteExampleDiscovered(tst->handle);
         CHECK_TRUE(discovered);
 
-        rc = tst->testRemoteExample(tst->handle);
-        CHECK_EQUAL(CELIX_SUCCESS, rc);
+        ok = tst->testRemoteString(tst->handle);
+        CHECK_TRUE(ok);
+
+        ok = tst->testRemoteConstString(tst->handle);
+        CHECK_TRUE(ok);
+
+        ok = tst->testRemoteNumbers(tst->handle);
+        CHECK_TRUE(ok);
+
+        ok = tst->testRemoteEnum(tst->handle);
+        CHECK_TRUE(ok);
+
+        ok = tst->testRemoteAction(tst->handle);
+        CHECK_TRUE(ok);
+
+        ok = tst->testRemoteComplex(tst->handle);
+        CHECK_TRUE(ok);
 
         bool result;
         bundleContext_ungetService(clientContext, ref, &result);

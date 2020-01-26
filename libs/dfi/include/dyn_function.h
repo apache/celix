@@ -59,8 +59,16 @@ int dynFunction_call(dyn_function_type *dynFunc, void(*fn)(void), void *returnVa
 int dynFunction_createClosure(dyn_function_type *func, void (*bind)(void *, void **, void*), void *userData, void(**fn)(void));
 int dynFunction_getFnPointer(dyn_function_type *func, void (**fn)(void));
 
+/**
+ * Returns whether the function has a return type.
+ * Will return false if return is void.
+ */
+bool dynFunction_hasReturn(dyn_function_type *dynFunction);
+
 // Avpr parsing
 dyn_function_type * dynFunction_parseAvprWithStr(const char * avpr, const char * fqn);
 dyn_function_type * dynFunction_parseAvpr(FILE * avprStream, const char * fqn);
+
+
 
 #endif

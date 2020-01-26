@@ -571,27 +571,29 @@ static void dynType_clearTypedPointer(dyn_type *type) {
 }
 
 int dynType_alloc(dyn_type *type, void **bufLoc) {
-    assert(type->type != DYN_TYPE_REF);
-    assert(type->ffiType->size != 0);
     int status = OK;
 
-    void *inst = calloc(1, type->ffiType->size);
-    if (inst != NULL) {
-        if (type->type == DYN_TYPE_TYPED_POINTER) {
-            void *ptr = NULL;
-            dyn_type *sub = NULL;
-            status = dynType_typedPointer_getTypedType(type, &sub);
-            if (status == OK) {
-                status = dynType_alloc(sub, &ptr);
+    if (dynType_descriptorType(type) == 'l' /*reference*/) {
+        status = dynType_alloc(type->ref.ref, bufLoc);
+    } else {
+        void *inst = calloc(1, type->ffiType->size);
+        if (inst != NULL) {
+            if (type->type == DYN_TYPE_TYPED_POINTER) {
+                void *ptr = NULL;
+                dyn_type *sub = NULL;
+                status = dynType_typedPointer_getTypedType(type, &sub);
                 if (status == OK) {
-                    *(void **)inst = ptr;
+                    status = dynType_alloc(sub, &ptr);
+                    if (status == OK) {
+                        *(void **) inst = ptr;
+                    }
                 }
             }
+            *bufLoc = inst;
+        } else {
+            status = MEM_ERROR;
+            LOG_ERROR("Error allocating memory for type '%c'", type->descriptor);
         }
-        *bufLoc = inst;
-    } else {
-        status = MEM_ERROR;
-        LOG_ERROR("Error allocating memory for type '%c'", type->descriptor);
     }
 
     return status;

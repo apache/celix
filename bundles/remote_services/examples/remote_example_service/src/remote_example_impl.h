@@ -24,13 +24,17 @@
 
 typedef struct remote_example_impl remote_example_impl_t;
 
+
 remote_example_impl_t* remoteExample_create(void);
 void remoteExample_destroy(remote_example_impl_t* impl);
 
 int remoteExample_pow(remote_example_impl_t* impl, double a, double b, double *out);
 int remoteExample_fib(remote_example_impl_t* impl, int32_t a, int32_t *out);
+int remoteExample_setEnum(remote_example_impl_t* impl, enum enum_example e, enum enum_example *out);
 int remoteExample_setName1(remote_example_impl_t* impl, char *n, char **out);
 int remoteExample_setName2(remote_example_impl_t* impl, const char *n, char **out);
+int remoteExample_action(remote_example_impl_t* impl);
+int remoteExample_setComplex(remote_example_impl_t *impl, struct complex_input_example *exmpl, struct complex_output_example **out);
 
 //TODO complex
 #endif //CELIX_REMOTE_EXAMPLE_IMPL_H

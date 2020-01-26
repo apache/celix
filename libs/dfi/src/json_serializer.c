@@ -98,6 +98,7 @@ static int jsonSerializer_createType(dyn_type *type, json_t *val, void **result)
     if (status == OK) {
         *result = inst;
     } else {
+        *result = NULL;
     	dynType_free(type, inst);
     }
 
@@ -265,6 +266,9 @@ static int jsonSerializer_parseAny(dyn_type *type, void *loc, json_t *val) {
             status = ERROR;
             LOG_WARNING("Untyped pointer are not supported for serialization");
             break;
+        case 'l':
+            status = jsonSerializer_parseAny(type->ref.ref, loc, val);
+            break;
         default :
             status = ERROR;
             LOG_ERROR("Error provided type '%c' not supported for JSON\n", dynType_descriptorType(type));
@@ -426,6 +430,9 @@ static int jsonSerializer_writeAny(dyn_type *type, void* input, json_t **out) {
             break;
         case 'P' :
             LOG_WARNING("Untyped pointer not supported for serialization. ignoring");
+            break;
+        case 'l':
+            status = jsonSerializer_writeAny(type->ref.ref, input, out);
             break;
         default :
             LOG_ERROR("Unsupported descriptor '%c'", descriptor);
