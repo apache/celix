@@ -54,7 +54,6 @@ static void* send_thread(void* arg) {
     memset(fwUUID, 0, 9);
     memcpy(fwUUID, publisher->ident, 8);
 
-    //poi_t point = calloc(1,sizeof(*point));
     location_t place = calloc(1, sizeof(*place));
 
     char *desc = calloc(64, sizeof(char));
@@ -106,7 +105,6 @@ static void* send_thread(void* arg) {
     free(place->name);
     free(place);
 
-//    free(st_struct->pubsub);
     free(st_struct);
 
     return NULL;
