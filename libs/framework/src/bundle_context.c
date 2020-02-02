@@ -59,7 +59,7 @@ celix_status_t bundleContext_create(framework_pt framework, framework_logger_pt 
             arrayList_create(&context->svcRegistrations);
             context->bundleTrackers = hashMap_create(NULL,NULL,NULL,NULL);
             context->serviceTrackers = hashMap_create(NULL,NULL,NULL,NULL);
-            context->serviceTrackerTrackers =  hashMap_create(NULL,NULL,NULL,NULL);
+            context->metaTrackers =  hashMap_create(NULL,NULL,NULL,NULL);
             context->nextTrackerId = 1L;
 
             *bundle_context = context;
@@ -632,13 +632,13 @@ static void bundleContext_cleanupServiceTrackers(bundle_context_t *ctx) {
 }
 
 static void bundleContext_cleanupServiceTrackerTrackers(bundle_context_t *ctx) {
-    hash_map_iterator_t iter = hashMapIterator_construct(ctx->serviceTrackerTrackers);
+    hash_map_iterator_t iter = hashMapIterator_construct(ctx->metaTrackers);
     while (hashMapIterator_hasNext(&iter)) {
         celix_bundle_context_service_tracker_tracker_entry_t *entry = hashMapIterator_nextValue(&iter);
         serviceRegistration_unregister(entry->hookReg);
         free(entry);
     }
-    hashMap_destroy(ctx->serviceTrackerTrackers, false, false);
+    hashMap_destroy(ctx->metaTrackers, false, false);
 }
 
 
@@ -656,9 +656,9 @@ void celix_bundleContext_stopTracker(bundle_context_t *ctx, long trackerId) {
         } else if (hashMap_containsKey(ctx->serviceTrackers, (void*)trackerId)) {
             found = true;
             serviceTracker = hashMap_remove(ctx->serviceTrackers, (void*)trackerId);
-        } else if (hashMap_containsKey(ctx->serviceTrackerTrackers, (void*)trackerId)) {
+        } else if (hashMap_containsKey(ctx->metaTrackers, (void*)trackerId)) {
             found = true;
-            svcTrackerTracker = hashMap_remove(ctx->serviceTrackerTrackers, (void*)trackerId);
+            svcTrackerTracker = hashMap_remove(ctx->metaTrackers, (void*)trackerId);
         }
         celixThreadMutex_unlock(&ctx->mutex);
 
@@ -1016,7 +1016,7 @@ long celix_bundleContext_trackServiceTrackers(
     if (entry->hookReg != NULL) {
         celixThreadMutex_lock(&ctx->mutex);
         entry->trackerId = ctx->nextTrackerId++;
-        hashMap_put(ctx->serviceTrackerTrackers, (void*)entry->trackerId, entry);
+        hashMap_put(ctx->metaTrackers, (void*)entry->trackerId, entry);
         trackerId = entry->trackerId;
         celixThreadMutex_unlock(&ctx->mutex);
     } else {

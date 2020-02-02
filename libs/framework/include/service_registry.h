@@ -16,13 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * service_registry.h
- *
- *  \date       Aug 6, 2010
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
+
 
 #ifndef SERVICE_REGISTRY_H_
 #define SERVICE_REGISTRY_H_
@@ -109,6 +103,29 @@ celix_serviceRegistry_registerServiceFactory(
         celix_service_factory_t *factory,
         celix_properties_t* props,
         service_registration_t **registration);
+
+/**
+ * List the registered service for the provided bundle.
+ * @return A list of service ids. Caller is owner of the array list.
+ */
+celix_array_list_t* celix_serviceRegistry_listServiceIdsForOwner(celix_service_registry_t* registry, long bndId);
+
+/**
+ * Get service information for the provided svc id and bnd id.
+ *
+ * If the output pointers for serviceName and/or serviceProperties are provided these will get a copy of the registry
+ * value. The caller is owner of the serviceName/serviceProperties.
+ *
+ * Returns true if the bundle is found.
+ */
+bool celix_serviceRegistry_getServiceInfo(
+        celix_service_registry_t* registry,
+        long svcId,
+        long bndId,
+        char **serviceName,
+        celix_properties_t **serviceProperties,
+        bool *factory);
+
 
 #ifdef __cplusplus
 }

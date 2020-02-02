@@ -917,3 +917,58 @@ static void celix_decreaseCountHook(celix_service_registry_listener_hook_entry_t
         celixThreadMutex_unlock(&entry->mutex);
     }
 }
+
+celix_array_list_t* celix_serviceRegistry_listServiceIdsForOwner(celix_service_registry_t* registry, long bndId) {
+    celix_array_list_t *result = celix_arrayList_create();
+    celixThreadRwlock_readLock(&registry->lock);
+    celix_bundle_t *bundle = framework_getBundleById(registry->framework, bndId);
+    celix_array_list_t *registrations = bundle != NULL ? hashMap_get(registry->serviceRegistrations, bundle) : NULL;
+    if (registrations != NULL) {
+        for (int i = 0; i < celix_arrayList_size(registrations); ++i) {
+            service_registration_t *reg = celix_arrayList_get(registrations, i);
+            long svcId = serviceRegistration_getServiceId(reg);
+            celix_arrayList_addLong(result, svcId);
+        }
+    }
+    celixThreadRwlock_unlock(&registry->lock);
+    return result;
+}
+
+bool celix_serviceRegistry_getServiceInfo(
+        celix_service_registry_t* registry,
+        long svcId,
+        long bndId,
+        char **outServiceName,
+        celix_properties_t **outServiceProperties,
+        bool *outIsFactory) {
+    bool found = false;
+
+    celixThreadRwlock_readLock(&registry->lock);
+    celix_bundle_t *bundle = framework_getBundleById(registry->framework, bndId);
+    celix_array_list_t *registrations = bundle != NULL ? hashMap_get(registry->serviceRegistrations, bundle) : NULL;
+    if (registrations != NULL) {
+        for (int i = 0; i < celix_arrayList_size(registrations); ++i) {
+            service_registration_t *reg = celix_arrayList_get(registrations, i);
+            if (svcId == serviceRegistration_getServiceId(reg)) {
+                found = true;
+                if (outServiceName != NULL) {
+                    const char *s = NULL;
+                    serviceRegistration_getServiceName(reg, &s);
+                    *outServiceName = strndup(s, 1024 * 1024 * 10);
+                }
+                if (outServiceProperties != NULL) {
+                    celix_properties_t *p = NULL;
+                    serviceRegistration_getProperties(reg, &p);
+                    *outServiceProperties = celix_properties_copy(p);
+                }
+                if (outIsFactory != NULL) {
+                    *outIsFactory = serviceRegistration_isFactoryService(reg);
+                }
+                break;
+            }
+        }
+    }
+    celixThreadRwlock_unlock(&registry->lock);
+
+    return found;
+}

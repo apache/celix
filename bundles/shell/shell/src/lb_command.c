@@ -264,8 +264,7 @@ celix_status_t lbCommand_execute(void *_ptr, char *command_line_str, FILE *out_p
     lb_options_t opts;
     memset(&opts, 0, sizeof(opts));
 
-    const char* config = NULL;
-    bundleContext_getPropertyWithDefault(ctx, SHELL_USE_ANSI_COLORS, SHELL_USE_ANSI_COLORS_DEFAULT_VALUE, &config);
+    const char* config = celix_bundleContext_getProperty(ctx, SHELL_USE_ANSI_COLORS, SHELL_USE_ANSI_COLORS_DEFAULT_VALUE);
     opts.useColors = config != NULL && strncmp("true", config, 5) == 0;
 
 

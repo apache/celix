@@ -110,7 +110,7 @@ celix_status_t shellMediator_executeCommand(shell_mediator_pt instance, char *co
 
 
 	if (instance->shellService != NULL) {
-		instance->shellService->executeCommand(instance->shellService->shell, command, out, err);
+		instance->shellService->executeCommand(instance->shellService->handle, command, out, err);
 	}
 
 	celixThreadMutex_unlock(&instance->mutex);

@@ -31,7 +31,9 @@
 
 #define OSGI_SHELL_COMMAND_SEPARATOR " "
 
+//TODO update all char *command_line_str to const char *command_line_str
 celix_status_t lbCommand_execute(void *_ptr, char *command_line_str, FILE *out_ptr, FILE *err_ptr);
+celix_status_t queryCommand_execute(void *_ptr, char *command_line_str, FILE *out_ptr, FILE *err_ptr);
 celix_status_t startCommand_execute(void *_ptr, char* command_line_str, FILE *out_ptr, FILE *err_ptr);
 celix_status_t stopCommand_execute(void *handle, char* commandline, FILE *outStream, FILE *errStream);
 celix_status_t installCommand_execute(void *handle, char * commandline, FILE *outStream, FILE *errStream);
@@ -41,6 +43,7 @@ celix_status_t logCommand_execute(void *handle, char * commandline, FILE *outStr
 celix_status_t inspectCommand_execute(void *handle, char * commandline, FILE *outStream, FILE *errStream);
 celix_status_t helpCommand_execute(void *handle, char * commandline, FILE *outStream, FILE *errStream);
 celix_status_t dmListCommand_execute(void* handle, char * line, FILE *out, FILE *err);
+celix_status_t qCommand_execute(void *_ptr, char *command_line_str, FILE *sout, FILE *serr);
 
 
 #endif

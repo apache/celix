@@ -44,6 +44,8 @@ if (SHELL)
           src/inspect_command
           src/help_command
 		  src/dm_shell_list_command
+		  src/query_command.c
+		  src/q_command.c
 	)
 	target_include_directories(shell PRIVATE src)
 	target_link_libraries(shell PRIVATE Celix::shell_api CURL::libcurl Celix::log_service_api Celix::log_helper)

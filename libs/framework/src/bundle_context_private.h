@@ -49,13 +49,13 @@ struct celix_bundle_context {
 	celix_framework_t *framework;
 	celix_bundle_t *bundle;
 
-	celix_thread_mutex_t mutex; //protects fields below
+	celix_thread_mutex_t mutex; //protects fields below (NOTE/FIXME also used by bundle.c for listing service tracker usage)
 	array_list_t *svcRegistrations;
 	celix_dependency_manager_t *mng;
 	long nextTrackerId;
 	hash_map_t *bundleTrackers; //key = trackerId, value = celix_bundle_context_bundle_tracker_entry_t*
 	hash_map_t *serviceTrackers; //key = trackerId, value = celix_service_tracker_t*
-	hash_map_t *serviceTrackerTrackers; //key = trackerId, value = celix_bundle_context_service_tracker_tracker_entry_t*
+	hash_map_t *metaTrackers; //key = trackerId, value = celix_bundle_context_service_tracker_tracker_entry_t*
 };
 
 

@@ -31,18 +31,31 @@
 #include "service_reference.h"
 
 static const char * const OSGI_SHELL_SERVICE_NAME = "shellService";
-
-typedef struct shell shell_t;
-typedef shell_t* shell_pt;
+static const char * const OSGI_SHELL_SERVICE_VERSION = "2.0.0";
 
 struct shellService {
-	shell_pt shell;
+	void *handle;
 
-	celix_status_t (*getCommands)(shell_pt shell_ptr, celix_array_list_t **commands_ptr);
-	celix_status_t (*getCommandUsage)(shell_pt shell_ptr, char *command_name_str, char **usage_str);
-	celix_status_t (*getCommandDescription)(shell_pt shell_ptr, char *command_name_str, char **command_description_str);
-	celix_status_t (*getCommandReference)(shell_pt shell_ptr, char *command_name_str, service_reference_pt *command_reference_ptr);
-	celix_status_t (*executeCommand)(shell_pt shell_ptr, char * command_line_str, FILE *out, FILE *err);
+	/**
+	 * List the registered command names. Caller is owner of the commands.
+	 * @return A celix array list with char*.
+	 */
+	celix_status_t (*getCommands)(void *handle, celix_array_list_t **commands);
+
+	/**
+	 * Gets the usage info for the provided command str. Caller is owner.
+	 */
+	celix_status_t (*getCommandUsage)(void *handle, const char *commandName, char **UsageStr);
+
+    /**
+     * Gets the usage info for the provided command str. Caller is owner.
+     */
+	celix_status_t (*getCommandDescription)(void *handle, const char *commandName, char **commandDescription);
+
+	/**
+	 * Try to execute a commmand using the provided command line.
+	 */
+	celix_status_t (*executeCommand)(void *handle, const char *commandLine, FILE *out, FILE *err);
 };
 
 typedef struct shellService shell_service_t;

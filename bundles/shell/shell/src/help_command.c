@@ -52,7 +52,7 @@ static void printHelp(void *handle, void *svc) {
         unsigned int i;
         array_list_pt commands = NULL;
 
-        shell->getCommands(shell->shell, &commands);
+        shell->getCommands(shell->handle, &commands);
         for (i = 0; i < arrayList_size(commands); i++) {
             char *name = arrayList_get(commands, i);
             fprintf(out, "%s\n", name);
@@ -64,15 +64,15 @@ static void printHelp(void *handle, void *svc) {
         celix_status_t sub_status_usage;
         int i;
         celix_array_list_t *commands = NULL;
-        shell->getCommands(shell->shell, &commands);
+        shell->getCommands(shell->handle, &commands);
         for (i = 0; i < arrayList_size(commands); i++) {
             char *name = arrayList_get(commands, i);
             if (strcmp(sub, name) == 0) {
                 char *usage_str = NULL;
                 char *desc_str = NULL;
 
-                sub_status_desc = shell->getCommandDescription(shell->shell, name, &desc_str);
-                sub_status_usage = shell->getCommandUsage(shell->shell, name, &usage_str);
+                sub_status_desc = shell->getCommandDescription(shell->handle, name, &desc_str);
+                sub_status_usage = shell->getCommandUsage(shell->handle, name, &usage_str);
 
                 if (sub_status_usage == CELIX_SUCCESS && sub_status_desc == CELIX_SUCCESS) {
                     fprintf(out, "Command     : %s\n", name);
@@ -81,7 +81,11 @@ static void printHelp(void *handle, void *svc) {
                 } else {
                     fprintf(err, "Error retrieving help info for command '%s'\n", sub);
                 }
+
+                free(usage_str);
+                free(desc_str);
             }
+            free(name);
         }
         celix_arrayList_destroy(commands);
     }

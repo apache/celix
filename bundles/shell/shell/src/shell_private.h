@@ -33,19 +33,29 @@
 #include "command.h"
 #include "log_helper.h"
 
+typedef struct celix_shell_command_entry {
+    long svcId;
+    command_service_t *svc;
+    const celix_properties_t *props;
+} celix_shell_command_entry_t;
+
 struct shell {
-	bundle_context_pt bundle_context_ptr;
-	hash_map_pt command_reference_map_ptr;
-	hash_map_pt command_name_map_ptr;
-	log_helper_t *logHelper;
+	celix_bundle_context_t *ctx;
+    log_helper_t *logHelper;
+    celix_thread_mutex_t mutex; //protects below
+    hash_map_t *commandServices; //key = char* (command name), value = celix_shell_command_entry_t*
 };
+typedef struct shell shell_t;
 
-celix_status_t shell_create(bundle_context_pt context_ptr, shell_service_pt *shell_service_ptr);
-celix_status_t shell_destroy(shell_service_pt *shell_service_ptr);
-celix_status_t shell_addCommand(shell_pt shell_ptr, service_reference_pt reference_ptr, void *svc);
-celix_status_t shell_removeCommand(shell_pt shell_ptr, service_reference_pt reference_ptr, void *svc);
+shell_t* shell_create(celix_bundle_context_t *ctx);
+void shell_destroy(shell_t *shell);
+celix_status_t shell_addCommand(shell_t *shell, command_service_t *svc, const celix_properties_t *props);
+celix_status_t shell_removeCommand(shell_t *shell, command_service_t *svc, const celix_properties_t *props);
 
-celix_status_t shell_getCommandReference(shell_pt shell_ptr, char *command_name_str, service_reference_pt *command_reference_ptr);
-celix_status_t shell_executeCommand(shell_pt shell_ptr, char *command_line_str, FILE *out, FILE *err);
+celix_status_t shell_executeCommand(shell_t *shell, const char *commandLine, FILE *out, FILE *err);
+
+celix_status_t shell_getCommands(shell_t *shell, celix_array_list_t **commands);
+celix_status_t shell_getCommandUsage(shell_t *shell, const char *commandName, char **outUsage);
+celix_status_t shell_getCommandDescription(shell_t *shell, const char *commandName, char **outDescription);
 
 #endif /* SHELL_PRIVATE_H_ */

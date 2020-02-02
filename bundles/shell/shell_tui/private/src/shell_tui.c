@@ -256,7 +256,7 @@ static void shellTui_parseInput(shell_tui_t* shellTui, shell_context_t* ctx) {
             celixThreadMutex_lock(&shellTui->mutex);
             if (shellTui->shell != NULL) {
                 printf("Providing command '%s' from in '%s'\n", line, in);
-                shellTui->shell->executeCommand(shellTui->shell->shell, line, stdout, stderr);
+                shellTui->shell->executeCommand(shellTui->shell->handle, line, stdout, stderr);
             } else {
                 fprintf(stderr, "Shell service not available\n");
             }
@@ -379,7 +379,7 @@ static void shellTui_parseInputForControl(shell_tui_t* shellTui, shell_context_t
         historyLineReset(hist);
         celixThreadMutex_lock(&shellTui->mutex);
         if (shellTui->shell != NULL) {
-            shellTui->shell->executeCommand(shellTui->shell->shell, line, stdout, stderr);
+            shellTui->shell->executeCommand(shellTui->shell->handle, line, stdout, stderr);
             pos = 0;
             nr_chars = 0;
         } else {
@@ -426,7 +426,7 @@ static void writeLine(const char* line, int pos) {
 static int autoComplete(shell_service_t* shellSvc, char *in, int cursorPos, size_t maxLen) {
 	array_list_pt commandList = NULL;
 	array_list_pt possibleCmdList = NULL;
-	shellSvc->getCommands(shellSvc->shell, &commandList);
+	shellSvc->getCommands(shellSvc->handle, &commandList);
 	int nrCmds = arrayList_size(commandList);
 	arrayList_create(&possibleCmdList);
 
@@ -446,7 +446,7 @@ static int autoComplete(shell_service_t* shellSvc, char *in, int cursorPos, size
 				if (strncmp(in, cmd, strlen(cmd)) == 0) {
 					clearLine();
 					char* usage = NULL;
-					shellSvc->getCommandUsage(shellSvc->shell, cmd, &usage);
+					shellSvc->getCommandUsage(shellSvc->handle, cmd, &usage);
 					printf("Usage:\n %s\n", usage);
 				}
 			}

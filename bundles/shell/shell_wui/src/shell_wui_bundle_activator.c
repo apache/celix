@@ -44,7 +44,7 @@ static void useShell(void *handle, void *svc) {
     char *buf = NULL;
     size_t size;
     FILE *out = open_memstream(&buf, &size);
-    shell->executeCommand(shell->shell, arg->command, out, out);
+    shell->executeCommand(shell->handle, arg->command, out, out);
     fclose(out);
     mg_websocket_write(arg->conn, MG_WEBSOCKET_OPCODE_TEXT, buf, size);
 };

@@ -131,6 +131,7 @@ if (ENABLE_TESTING AND FRAMEWORK_TESTS)
         private/mock/bundle_revision_mock.c
         private/mock/resolver_mock.c
         private/mock/version_mock.c
+        private/mock/service_registry_mock.c
         src/bundle.c
         src/celix_errorcodes.c
         private/mock/celix_log_mock.c)

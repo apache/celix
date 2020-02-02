@@ -49,7 +49,7 @@ typedef command_service_t * command_service_pt;
  */
 struct commandService {
     void *handle;
-    celix_status_t (*executeCommand)(void *handle, char * commandLine, FILE *outStream, FILE *errorStream);
+    celix_status_t (*executeCommand)(void *handle, char* commandLine, FILE *outStream, FILE *errorStream);
 };
 
 

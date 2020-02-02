@@ -16,13 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * service_registration.c
- *
- *  \date       Aug 6, 2010
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -312,4 +305,14 @@ service_registration_t* celix_serviceRegistration_createServiceFactory(
     service_registration_pt registration = NULL;
     serviceRegistration_createInternal(callback, (celix_bundle_t*)bnd, serviceName, svcId, factory, props, CELIX_FACTORY_SERVICE, &registration);
     return registration;
+}
+
+bool serviceRegistration_isFactoryService(service_registration_t *registration) {
+    bool isFactory = false;
+    if (registration != NULL) {
+        celixThreadRwlock_readLock(&registration->lock);
+        isFactory = registration->svcType = CELIX_FACTORY_SERVICE || registration->svcType == CELIX_DEPRECATED_FACTORY_SERVICE;
+        celixThreadRwlock_unlock(&registration->lock);
+    }
+    return isFactory;
 }
