@@ -94,7 +94,8 @@ void celix_bundle_destroyRegisteredServicesList(celix_array_list_t* list);
  * Service Tracker Info provided to the service tracker tracker callbacks.
  */
 typedef struct celix_bundle_service_tracker_list_entry {
-    char* filter;;
+    char *filter;
+    char *serviceName;
     long bundleOwner;
 } celix_bundle_service_tracker_list_entry_t;
 

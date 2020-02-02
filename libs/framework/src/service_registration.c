@@ -311,7 +311,7 @@ bool serviceRegistration_isFactoryService(service_registration_t *registration) 
     bool isFactory = false;
     if (registration != NULL) {
         celixThreadRwlock_readLock(&registration->lock);
-        isFactory = registration->svcType = CELIX_FACTORY_SERVICE || registration->svcType == CELIX_DEPRECATED_FACTORY_SERVICE;
+        isFactory = registration->svcType == CELIX_FACTORY_SERVICE || registration->svcType == CELIX_DEPRECATED_FACTORY_SERVICE;
         celixThreadRwlock_unlock(&registration->lock);
     }
     return isFactory;

@@ -17,24 +17,23 @@
  * under the License.
  */
 
-#ifndef CELIX_CELIX_UTILS_API_H_
-#define CELIX_CELIX_UTILS_API_H_
+#ifndef CELIX_UTILS_H_
+#define CELIX_UTILS_H_
 
-#include "celix_errno.h"
-#include "celixbool.h"
-#include "celix_threads.h"
-#include "array_list.h"
-#include "hash_map.h"
-#include "properties.h"
-#include "utils.h"
-#include "celix_utils.h"
-#include "version.h"
-#include "version_range.h"
-#include "thpool.h"
-
-#if defined(BSD) || defined(__APPLE__) || defined(__ANDROID__)
-#include "memstream/open_memstream.h"
-#include "memstream/fmemopen.h"
+#ifdef __cplusplus
+extern "C" {
 #endif
 
-#endif //CELIX_CELIX_UTILS_API_H_
+#define CELIX_UTILS_MAX_STRLEN      1024*1024*10
+
+/**
+ * Creates a copy of a provided string.
+ * The strdup is limited to the CELIX_UTILS_MAX_STRLEN and uses strndup to achieve this.
+ * @return a copy of the string (including null terminator).
+ */
+char* celix_utils_strdup(const char *str);
+
+#ifdef __cplusplus
+}
+#endif
+#endif /* CELIX_UTILS_H_ */

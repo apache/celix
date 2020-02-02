@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include <celix_api.h>
 
 #include "service_registry_private.h"
 #include "service_registration_private.h"
@@ -954,7 +955,7 @@ bool celix_serviceRegistry_getServiceInfo(
                 if (outServiceName != NULL) {
                     const char *s = NULL;
                     serviceRegistration_getServiceName(reg, &s);
-                    *outServiceName = strndup(s, 1024 * 1024 * 10);
+                    *outServiceName = celix_utils_strdup(s);
                 }
                 if (outServiceProperties != NULL) {
                     celix_properties_t *p = NULL;

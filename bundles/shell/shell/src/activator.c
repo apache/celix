@@ -154,12 +154,13 @@ celix_status_t bundleActivator_create(celix_bundle_context_t* ctx, void **_pptr)
                     .exec = queryCommand_execute,
                     .name = "query",
                     .description = "Query services. Query for registered and requested services" \
-                    "\nIf a query is provided, only service with a service name containing the query will be displayed." \
-                    "\nOr if the query is a filter. the filter will be used. If a filter is used, the optional bundle id will be ignored."
+                    "\nIf a query is provided (or multiple), only service with a service name matching the query will be displayed." \
+                    "\nIf a query is a (LDAP) filter, filter matching will be used."
+                    "\nIf no query is provided all provided and requested services will be listed."
                     "\n\tIf the -v option is provided, also list the service properties." \
                     "\n\tIf the -r option is provided, only query for requested services." \
                     "\n\tIf the -p option is provided, only query for provided services.",
-                    .usage = "ls [bundleId] [-v] [-p] [-r] [query_name ...]"
+                    .usage = "query [bundleId ...] [-v] [-p] [-r] [query ...]"
                 };
         activator->std_commands[11] =
                 (struct command) {

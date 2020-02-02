@@ -16,18 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * utils.c
- *
- *  \date       Jul 27, 2010
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
+
 
 #include <stdlib.h>
 #include <string.h>
 
 #include "utils.h"
+#include "celix_utils.h"
 
 unsigned int utils_stringHash(const void* strPtr) {
     const char* string = strPtr;
@@ -145,4 +140,8 @@ double celix_difftime(const struct timespec *tBegin, const struct timespec *tEnd
     float diff_s = tEnd->tv_sec - tBegin->tv_sec;
     float diff_ns = tEnd->tv_nsec - tBegin->tv_nsec;
     return diff_s + (diff_ns / 1000000000.0);
+}
+
+char* celix_utils_strdup(const char *str) {
+    return strndup(str, CELIX_UTILS_MAX_STRLEN);
 }

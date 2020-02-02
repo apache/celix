@@ -20,6 +20,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <service_tracker.h>
+#include <celix_constants.h>
+#include <celix_api.h>
 
 #include "framework_private.h"
 #include "bundle_private.h"
@@ -403,7 +405,7 @@ celix_status_t bundle_addModule(bundle_pt bundle, module_pt module) {
 		const char *sn = NULL;
 		module_getSymbolicName(module, &sn);
 		if (sn != NULL) {
-            bundle->symbolicName = strndup(sn, 1024 * 1024);
+            bundle->symbolicName = celix_utils_strdup(sn);
         }
 	}
 
@@ -678,9 +680,23 @@ celix_array_list_t* celix_bundle_listServiceTrackers(const celix_bundle_t *bnd) 
     while (hashMapIterator_hasNext(&iter)) {
         celix_service_tracker_t *tracker = hashMapIterator_nextValue(&iter);
         celix_bundle_service_tracker_list_entry_t *entry = calloc(1, sizeof(*entry));
-        entry->filter = strndup(tracker->filter, 1024*1024*10);
+        entry->filter = celix_utils_strdup(tracker->filter);
+        celix_filter_t *f = celix_filter_create(entry->filter);
+        if (f != NULL) {
+            const char *sn = celix_filter_findAttribute(f, OSGI_FRAMEWORK_OBJECTCLASS);
+            if (sn != NULL) {
+                entry->serviceName = celix_utils_strdup(sn);
+            }
+        }
         entry->bundleOwner = celix_bundle_getId(bnd);
-        celix_arrayList_add(result, entry);
+
+        if (entry->serviceName != NULL) {
+            celix_arrayList_add(result, entry);
+        } else {
+            framework_logIfError(logger, CELIX_BUNDLE_EXCEPTION, NULL, "Failed to get service name from tracker. filter is %s", entry->filter);
+            free(entry->filter);
+            free(entry);
+        }
     }
     celixThreadMutex_unlock(&bnd->context->mutex);
     return result;
@@ -692,6 +708,7 @@ void celix_bundle_destroyServiceTrackerList(celix_array_list_t* list) {
         for (int i = 0; i < celix_arrayList_size(list); ++i) {
             celix_bundle_service_tracker_list_entry_t *entry = celix_arrayList_get(list, i);
             free(entry->filter);
+            free(entry->serviceName);
             free(entry);
         }
     }
