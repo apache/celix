@@ -19,8 +19,6 @@
 #ifndef SHELL_H_
 #define SHELL_H_
 
-__attribute__((deprecated))
-
 #include "celix_shell.h"
 
 #define OSGI_SHELL_SERVICE_NAME     CELIX_SHELL_SERVICE_NAME
