@@ -16,24 +16,22 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * shell.h
- *
- *  \date       Aug 12, 2010
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
 
-#ifndef SHELL_H_
-#define SHELL_H_
 
-#include "array_list.h"
-#include "service_reference.h"
+#ifndef CELIX_SHELL_H_
+#define CELIX_SHELL_H_
 
-static const char * const OSGI_SHELL_SERVICE_NAME = "shellService";
-static const char * const OSGI_SHELL_SERVICE_VERSION = "2.0.0";
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-struct shellService {
+#include <stdio.h>
+#include "celix_array_list.h"
+
+#define CELIX_SHELL_SERVICE_NAME        "celix_shell"
+#define CELIX_SHELL_SERVICE_VERSION     "2.0.0"
+
+struct celix_shell {
 	void *handle;
 
 	/**
@@ -58,7 +56,10 @@ struct shellService {
 	celix_status_t (*executeCommand)(void *handle, const char *commandLine, FILE *out, FILE *err);
 };
 
-typedef struct shellService shell_service_t;
-typedef shell_service_t* shell_service_pt;
+typedef struct celix_shell celix_shell_t;
 
-#endif /* SHELL_H_ */
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* CELIX_SHELL_H_ */
