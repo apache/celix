@@ -283,6 +283,7 @@ TEST(CelixBundleContextBundlesTests, trackBundlesTest) {
     CHECK_EQUAL(2, data.count);
 
     /* TODO does not work -> stopping bundle event is never forward to the bundle listener ?? very old bug?
+     * See gh-145
     celix_bundleContext_uninstallBundle(ctx, bundleId2);
     {
         std::unique_lock<std::mutex> lock{data.mutex};
@@ -379,3 +380,38 @@ TEST(CelixBundleContextBundlesTests, useBundlesConcurrentTest) {
     uninstallThread.join();
     std::cout << "uninstall thread joined" << std::endl;
 };*/
+
+TEST(CelixBundleContextBundlesTests, bundleInfoTests) {
+    struct data {
+        int provideCount{0};
+        int requestedCount{0};
+    };
+    struct data data;
+
+    void (*updateCountFp)(void *, const celix_bundle_t*) = [](void *handle, const celix_bundle_t *bnd) {
+        auto *data = static_cast<struct data*>(handle);
+        auto *trackers = celix_bundle_listServiceTrackers(bnd);
+        auto *services = celix_bundle_listRegisteredServices(bnd);
+        data->requestedCount = celix_arrayList_size(trackers);
+        data->provideCount = celix_arrayList_size(services);
+        celix_bundle_destroyServiceTrackerList(trackers);
+        celix_bundle_destroyRegisteredServicesList(services);
+    };
+
+    bool called = celix_bundleContext_useBundle(ctx, 0, &data, updateCountFp);
+    CHECK_TRUE(called);
+    CHECK_EQUAL(0, data.provideCount);
+    CHECK_EQUAL(0, data.requestedCount);
+
+
+    long svcId = celix_bundleContext_registerService(ctx, (void*)0x42, "NopService", NULL);
+    long trackerId = celix_bundleContext_trackServices(ctx, "AService", NULL, NULL, NULL);
+
+    called = celix_bundleContext_useBundle(ctx, 0, &data, updateCountFp);
+    CHECK_TRUE(called);
+    CHECK_EQUAL(1, data.provideCount);
+    CHECK_EQUAL(1, data.requestedCount);
+
+    celix_bundleContext_unregisterService(ctx, svcId);
+    celix_bundleContext_stopTracker(ctx, trackerId);
+}

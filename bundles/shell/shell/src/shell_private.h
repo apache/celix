@@ -28,14 +28,14 @@
 #define SHELL_PRIVATE_H_
 
 #include "bundle_context.h"
-#include "shell.h"
+#include "celix_shell.h"
 #include "hash_map.h"
-#include "command.h"
+#include "celix_shell_command.h"
 #include "log_helper.h"
 
 typedef struct celix_shell_command_entry {
     long svcId;
-    command_service_t *svc;
+    celix_shell_command_t *svc;
     const celix_properties_t *props;
 } celix_shell_command_entry_t;
 
@@ -49,8 +49,8 @@ typedef struct shell shell_t;
 
 shell_t* shell_create(celix_bundle_context_t *ctx);
 void shell_destroy(shell_t *shell);
-celix_status_t shell_addCommand(shell_t *shell, command_service_t *svc, const celix_properties_t *props);
-celix_status_t shell_removeCommand(shell_t *shell, command_service_t *svc, const celix_properties_t *props);
+celix_status_t shell_addCommand(shell_t *shell, celix_shell_command_t *svc, const celix_properties_t *props);
+celix_status_t shell_removeCommand(shell_t *shell, celix_shell_command_t *svc, const celix_properties_t *props);
 
 celix_status_t shell_executeCommand(shell_t *shell, const char *commandLine, FILE *out, FILE *err);
 

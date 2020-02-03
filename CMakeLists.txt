@@ -106,6 +106,8 @@ if (CELIX_ADD_OPENSSL_DEP)
     set(CELIX_OPTIONAL_EXTRA_LIBS "OpenSSL::lib")
 endif ()
 
+set(CELIX_USE_DEPRECATED_API true CACHE BOOL "whether to use and install deprecated apis (i.e. header with a celix_ prefix.")
+
 #Libraries and Launcher
 add_subdirectory(libs)
 

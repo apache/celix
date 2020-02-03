@@ -668,6 +668,7 @@ void celix_bundle_destroyRegisteredServicesList(celix_array_list_t* list) {
             celix_properties_destroy(entry->serviceProperties);
             free(entry);
         }
+        celix_arrayList_destroy(list);
     }
 }
 
@@ -675,19 +676,13 @@ celix_array_list_t* celix_bundle_listServiceTrackers(const celix_bundle_t *bnd) 
     celix_array_list_t* result = celix_arrayList_create();
     //FIXME: should not fall back to bundle context, but for now that is were the trackers are stored.
     celixThreadMutex_lock(&bnd->context->mutex);
-    //hash_map_t *serviceTrackers; //key = trackerId, value = celix_service_tracker_t*
     hash_map_iterator_t iter = hashMapIterator_construct(bnd->context->serviceTrackers);
     while (hashMapIterator_hasNext(&iter)) {
         celix_service_tracker_t *tracker = hashMapIterator_nextValue(&iter);
         celix_bundle_service_tracker_list_entry_t *entry = calloc(1, sizeof(*entry));
         entry->filter = celix_utils_strdup(tracker->filter);
-        celix_filter_t *f = celix_filter_create(entry->filter);
-        if (f != NULL) {
-            const char *sn = celix_filter_findAttribute(f, OSGI_FRAMEWORK_OBJECTCLASS);
-            if (sn != NULL) {
-                entry->serviceName = celix_utils_strdup(sn);
-            }
-        }
+        entry->nrOfTrackedServices = serviceTracker_nrOfTrackedServices(tracker);
+        entry->serviceName = celix_utils_strdup(tracker->serviceName);
         entry->bundleOwner = celix_bundle_getId(bnd);
 
         if (entry->serviceName != NULL) {
@@ -711,5 +706,6 @@ void celix_bundle_destroyServiceTrackerList(celix_array_list_t* list) {
             free(entry->serviceName);
             free(entry);
         }
+        celix_arrayList_destroy(list);
     }
 }

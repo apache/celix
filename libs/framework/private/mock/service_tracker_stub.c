@@ -21,3 +21,4 @@
 
 void celix_serviceTracker_syncForContext(void *_ignore){}
 void celix_serviceTracker_syncForFramework(void *_ignore){}
+size_t serviceTracker_nrOfTrackedServices(service_tracker_t *tracker) { return 0; }

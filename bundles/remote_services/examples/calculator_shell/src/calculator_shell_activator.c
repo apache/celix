@@ -16,13 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * calculator_shell_activator.c
- *
- *  \date       Oct 13, 2011
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
 
 #include <stdlib.h>
 #include <string.h>
@@ -38,16 +31,16 @@
 
 struct activator {
     service_registration_t *addCommand;
-    command_service_t *addCmd;
-    command_service_t *addCmdSrv;
+    celix_shell_command_t *addCmd;
+    celix_shell_command_t *addCmdSrv;
 
     service_registration_t *subCommand;
-    command_service_t *subCmd;
-    command_service_t *subCmdSrv;
+    celix_shell_command_t *subCmd;
+    celix_shell_command_t *subCmdSrv;
 
     service_registration_t *sqrtCommand;
-    command_service_t *sqrtCmd;
-    command_service_t *sqrtCmdSrv;
+    celix_shell_command_t *sqrtCmd;
+    celix_shell_command_t *sqrtCmdSrv;
 };
 
 celix_status_t bundleActivator_create(celix_bundle_context_t *context, void **userData) {

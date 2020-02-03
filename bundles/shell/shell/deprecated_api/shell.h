@@ -16,29 +16,17 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * shell_tui.h
- *
- *  \date       Jan 16, 2016
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
+#ifndef SHELL_H_
+#define SHELL_H_
 
-#ifndef SHELL_TUI_H_
-#define SHELL_TUI_H_
+__attribute__((deprecated))
 
-#include <stdlib.h>
-
-#include "celix_threads.h"
 #include "celix_shell.h"
 
-typedef struct shell_tui shell_tui_t ;
+#define OSGI_SHELL_SERVICE_NAME     CELIX_SHELL_SERVICE_NAME
+#define OSGI_SHELL_SERVICE_VERSION  CELIX_SHELL_SERVICE_VERSION
 
-shell_tui_t* shellTui_create(bool useAnsiControlSequences);
-celix_status_t shellTui_start(shell_tui_t* shellTui);
-celix_status_t shellTui_stop(shell_tui_t* shellTui);
-void shellTui_destroy(shell_tui_t* shellTui);
+typedef celix_shell_t shell_service_t; //use celix_shell.h instead
+typedef celix_shell_t* shell_service_pt; //use celix_shell.h instead
 
-celix_status_t shellTui_setShell(shell_tui_t* shellTui, celix_shell_t* svc);
-
-#endif /* SHELL_TUI_H_ */
+#endif /* SHELL_H_ */

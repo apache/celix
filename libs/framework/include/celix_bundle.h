@@ -19,6 +19,8 @@
 
 #include "celix_types.h"
 #include "bundle_state.h"
+#include "celix_properties.h"
+#include "celix_array_list.h"
 
 #ifndef CELIX_BUNDLE_H_
 #define CELIX_BUNDLE_H_
@@ -97,6 +99,7 @@ typedef struct celix_bundle_service_tracker_list_entry {
     char *filter;
     char *serviceName;
     long bundleOwner;
+    size_t nrOfTrackedServices;
 } celix_bundle_service_tracker_list_entry_t;
 
 

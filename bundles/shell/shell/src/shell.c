@@ -55,7 +55,7 @@ void shell_destroy(shell_t *shell) {
     }
 }
 
-celix_status_t shell_addCommand(shell_t *shell, command_service_t *svc, const celix_properties_t *props) {
+celix_status_t shell_addCommand(shell_t *shell, celix_shell_command_t *svc, const celix_properties_t *props) {
     celix_status_t status = CELIX_SUCCESS;
     const char *name = celix_properties_get(props, "command.name", NULL);
 
@@ -80,7 +80,7 @@ celix_status_t shell_addCommand(shell_t *shell, command_service_t *svc, const ce
     return status;
 }
 
-celix_status_t shell_removeCommand(shell_t *shell, command_service_t *svc, const celix_properties_t *props) {
+celix_status_t shell_removeCommand(shell_t *shell, celix_shell_command_t *svc, const celix_properties_t *props) {
     celix_status_t status = CELIX_SUCCESS;
     const char *name = celix_properties_get(props, "command.name", NULL);
 
@@ -131,7 +131,7 @@ celix_status_t shell_getCommandUsage(shell_t *shell, const char *commandName, ch
     celixThreadMutex_lock(&shell->mutex);
     celix_shell_command_entry_t *entry = hashMap_get(shell->commandServices, commandName);
     if (entry != NULL) {
-        const char *usage = celix_properties_get(entry->props, OSGI_SHELL_COMMAND_USAGE, "N/A");
+        const char *usage = celix_properties_get(entry->props, CELIX_SHELL_COMMAND_USAGE, "N/A");
         *outUsage = strndup(usage, 1024*1024*10);
     } else {
         *outUsage = NULL;
@@ -148,7 +148,7 @@ celix_status_t shell_getCommandDescription(shell_t *shell, const char *commandNa
     celixThreadMutex_lock(&shell->mutex);
     celix_shell_command_entry_t *entry = hashMap_get(shell->commandServices, commandName);
     if (entry != NULL) {
-        const char *desc = celix_properties_get(entry->props, OSGI_SHELL_COMMAND_DESCRIPTION, "N/A");
+        const char *desc = celix_properties_get(entry->props, CELIX_SHELL_COMMAND_DESCRIPTION, "N/A");
         *outDescription = strndup(desc, 1024*1024*10);
     } else {
         *outDescription = NULL;

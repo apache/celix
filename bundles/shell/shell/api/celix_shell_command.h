@@ -16,29 +16,25 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * command.h
- *
- *  \date       Aug 13, 2010
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
 
-#ifndef COMMAND_H_
-#define COMMAND_H_
+#ifndef CELIX_SHELL_COMMAND_H_
+#define CELIX_SHELL_COMMAND_H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include "celix_errno.h"
 #include <stdio.h>
 
-#define OSGI_SHELL_COMMAND_NAME "command.name"
-#define OSGI_SHELL_COMMAND_USAGE "command.usage"
-#define OSGI_SHELL_COMMAND_DESCRIPTION "command.description"
+#define CELIX_SHELL_COMMAND_NAME                "command.name"
+#define CELIX_SHELL_COMMAND_USAGE               "command.usage"
+#define CELIX_SHELL_COMMAND_DESCRIPTION         "command.description"
 
-static const char * const OSGI_SHELL_COMMAND_SERVICE_NAME = "commandService";
-static const char * const OSGI_SHELL_COMMAND_SERVICE_VERSION = "1.0.0";
+#define  CELIX_SHELL_COMMAND_SERVICE_NAME       "celix_shell_command"
+#define  CELIX_SHELL_COMMAND_SERVICE_VERSION    "1.0.0"
 
-typedef struct commandService command_service_t;
-typedef command_service_t * command_service_pt;
+typedef struct celix_shell_command celix_shell_command_t;
 
 /**
  * The command service can be used to register additional shell commands.
@@ -47,10 +43,17 @@ typedef command_service_t * command_service_pt;
  *  - command.usage: optional, string describing how tu use the command e.g. 'lb [-l | -s | -u]'
  *  - command.description: optional, string describing the command e.g. 'list bundles.'
  */
-struct commandService {
+struct celix_shell_command {
     void *handle;
-    celix_status_t (*executeCommand)(void *handle, char* commandLine, FILE *outStream, FILE *errorStream);
+
+    //TODO fix commandLine arg, needs to be const char* (increase version to 2.0.0)
+    celix_status_t (*executeCommand)(void *handle, char *commandLine, FILE *outStream, FILE *errorStream);
 };
 
 
-#endif /* COMMAND_H_ */
+#ifdef __cplusplus
+}
+#endif
+
+
+#endif /* CELIX_SHELL_COMMAND_H_ */

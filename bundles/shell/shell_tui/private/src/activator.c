@@ -28,6 +28,7 @@
 
 
 #include "shell_tui.h"
+#include "celix_shell.h"
 #include "service_tracker.h"
 
 #define SHELL_USE_ANSI_CONTROL_SEQUENCES "SHELL_USE_ANSI_CONTROL_SEQUENCES"
@@ -35,7 +36,7 @@
 typedef struct shell_tui_activator {
     shell_tui_t* shellTui;
     long trackerId;
-    shell_service_t* currentSvc;
+    celix_shell_t* currentSvc;
     bool useAnsiControlSequences;
 } shell_tui_activator_t;
 
@@ -67,7 +68,7 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 
         {
             celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
-            opts.filter.serviceName = OSGI_SHELL_SERVICE_NAME;
+            opts.filter.serviceName = CELIX_SHELL_SERVICE_NAME;
             opts.callbackHandle = activator->shellTui;
             opts.set = (void*)shellTui_setShell;
 

@@ -40,10 +40,9 @@ celix_status_t installCommand_execute(void *handle, char * commandline, FILE *ou
 celix_status_t uninstallCommand_execute(void *handle, char * commandline, FILE *outStream, FILE *errStream);
 celix_status_t updateCommand_execute(void *handle, char * commandline, FILE *outStream, FILE *errStream);
 celix_status_t logCommand_execute(void *handle, char * commandline, FILE *outStream, FILE *errStream);
-celix_status_t inspectCommand_execute(void *handle, char * commandline, FILE *outStream, FILE *errStream);
 celix_status_t helpCommand_execute(void *handle, char * commandline, FILE *outStream, FILE *errStream);
 celix_status_t dmListCommand_execute(void* handle, char * line, FILE *out, FILE *err);
-celix_status_t qCommand_execute(void *_ptr, char *command_line_str, FILE *sout, FILE *serr);
+celix_status_t quitCommand_execute(void *_ptr, char *command_line_str, FILE *sout, FILE *serr);
 
 
 #endif

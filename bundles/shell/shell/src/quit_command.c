@@ -19,7 +19,7 @@
 
 #include "celix_bundle_context.h"
 
-celix_status_t qCommand_execute(void *_ptr, char *command_line_str __attribute__((unused)), FILE *sout, FILE *serr __attribute__((unused))) {
+celix_status_t quitCommand_execute(void *_ptr, char *command_line_str __attribute__((unused)), FILE *sout, FILE *serr __attribute__((unused))) {
     bundle_context_t* ctx = _ptr;
     fprintf(sout, "Quitting framework\n");
     celix_bundleContext_stopBundle(ctx, 0L);

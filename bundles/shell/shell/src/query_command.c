@@ -41,6 +41,8 @@ struct query_options {
 struct bundle_callback_data {
     const struct query_options *opts;
     FILE *sout;
+    size_t nrOfProvidedServicesFound;
+    size_t nrOfRequestedServicesFound;
 };
 
 static bool queryCommand_printProvidedService(const struct query_options *opts, celix_bundle_service_list_entry_t *entry) {
@@ -89,9 +91,16 @@ static void queryCommand_callback(void *handle, const celix_bundle_t *bnd) {
         for (int i = 0; i < celix_arrayList_size(services); ++i) {
             celix_bundle_service_list_entry_t *entry = celix_arrayList_get(services, i);
             if (queryCommand_printProvidedService(data->opts, entry)) {
+                data->nrOfProvidedServicesFound += 1;
                 queryCommand_printBundleHeader(data->sout, bnd, &printBundleCalled);
-                fprintf(data->sout, "|- Provided service '%s' [id = %li]\n", entry->serviceName, entry->serviceId); //TODO underline if color enabled
+                fprintf(data->sout, "|- Provided service '%s' [id = %li]\n", entry->serviceName, entry->serviceId);
                 if (data->opts->verbose) {
+                    const char *cmpUUID = celix_properties_get(entry->serviceProperties, "component.uuid", NULL);
+                    if (cmpUUID != NULL) {
+                        //TODO add context to opts
+                        //TODO add celix_dependencyManager_createInfoForUUID()                    }
+                        //TODO print component name
+                    }
                     fprintf(data->sout, "   |- Is factory: %s\n", entry->factory ? "true" : "false");
                     fprintf(data->sout, "   |- Properties:\n");
                     const char *key;
@@ -109,8 +118,12 @@ static void queryCommand_callback(void *handle, const celix_bundle_t *bnd) {
         for (int i = 0; i < celix_arrayList_size(trackers); ++i) {
             celix_bundle_service_tracker_list_entry_t *entry = celix_arrayList_get(trackers, i);
             if (queryCommand_printRequestedService(data->opts, entry)) {
+                data->nrOfRequestedServicesFound += 1;
                 queryCommand_printBundleHeader(data->sout, bnd, &printBundleCalled);
                 fprintf(data->sout, "|- Service tracker '%s'\n", entry->filter);
+                if (data->opts->verbose) {
+                    fprintf(data->sout,"   |- nr of tracked services %lu\n", entry->nrOfTrackedServices);
+                }
             }
         }
         celix_bundle_destroyServiceTrackerList(trackers);
@@ -122,26 +135,38 @@ static void queryCommand_callback(void *handle, const celix_bundle_t *bnd) {
 }
 
 
-static void queryCommand_listServicesForBundle(celix_bundle_context_t *ctx, long bndId, const struct query_options *opts, FILE *sout, FILE *serr) {
-    struct bundle_callback_data data;
-    data.opts = opts;
-    data.sout = sout;
-    bool called = celix_bundleContext_useBundle(ctx, bndId, &data, queryCommand_callback);
+static void queryCommand_listServicesForBundle(celix_bundle_context_t *ctx, long bndId, struct bundle_callback_data *data, const struct query_options *opts, FILE *sout, FILE *serr) {
+    bool called = celix_bundleContext_useBundle(ctx, bndId, data, queryCommand_callback);
     if (!called) {
         fprintf(serr, "Bundle %li not installed!", bndId);
     }
 }
 
 static void queryCommand_listServices(celix_bundle_context_t *ctx, const struct query_options *opts, FILE *sout, FILE *serr) {
+    struct bundle_callback_data data;
+    data.opts = opts;
+    data.sout = sout;
+    data.nrOfProvidedServicesFound = 0;
+    data.nrOfRequestedServicesFound = 0;
+
     if (opts->bndId >= 0L) {
-        queryCommand_listServicesForBundle(ctx, opts->bndId, opts, sout, serr);
+        queryCommand_listServicesForBundle(ctx, opts->bndId, &data, opts, sout, serr);
     } else {
         celix_array_list_t *bundleIds = celix_bundleContext_listBundles(ctx);
         for (int i = 0; i < celix_arrayList_size(bundleIds); ++i) {
             long bndId = celix_arrayList_getLong(bundleIds, i);
-            queryCommand_listServicesForBundle(ctx, bndId, opts, sout, serr);
+            queryCommand_listServicesForBundle(ctx, bndId, &data, opts, sout, serr);
         }
         celix_arrayList_destroy(bundleIds);
+    }
+
+    if (data.nrOfRequestedServicesFound == 0 && data.nrOfProvidedServicesFound == 0) {
+        fprintf(sout, "No results\n");
+    } else {
+        fprintf(sout, "Query result:\n");
+        fprintf(sout, "|- Provided services found %lu\n", data.nrOfProvidedServicesFound);
+        fprintf(sout, "|- Requested services found %lu\n", data.nrOfRequestedServicesFound);
+        fprintf(sout, "\n");
     }
 }
 
@@ -149,6 +174,8 @@ static void queryCommand_listServices(celix_bundle_context_t *ctx, const struct 
 celix_status_t queryCommand_execute(void *_ptr, char *command_line_str, FILE *sout, FILE *serr __attribute__((unused))) {
     celix_status_t status = CELIX_SUCCESS;
     bundle_context_t* ctx = _ptr;
+
+    char *commandLine = celix_utils_strdup(command_line_str); //note command_line_str should be treated as const.
 
     struct query_options opts;
     memset(&opts, 0, sizeof(opts));
@@ -171,7 +198,7 @@ celix_status_t queryCommand_execute(void *_ptr, char *command_line_str, FILE *so
         char *sub_str = NULL;
         char *save_ptr = NULL;
 
-        strtok_r(command_line_str, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
+        strtok_r(commandLine, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
         sub_str = strtok_r(NULL, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
         while (sub_str != NULL) {
             if (strcmp(sub_str, "-v") == 0) {
@@ -209,6 +236,8 @@ celix_status_t queryCommand_execute(void *_ptr, char *command_line_str, FILE *so
             sub_str = strtok_r(NULL, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
         }
     }
+
+    free(commandLine);
 
     if (validCommand) {
         queryCommand_listServices(ctx, &opts, sout, serr);

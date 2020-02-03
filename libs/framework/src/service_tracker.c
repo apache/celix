@@ -24,6 +24,7 @@
 #include "framework_private.h"
 #include <assert.h>
 #include <unistd.h>
+#include <celix_api.h>
 
 #include "service_tracker_private.h"
 #include "bundle_context.h"
@@ -147,6 +148,7 @@ celix_status_t serviceTracker_destroy(service_tracker_pt tracker) {
 	    serviceTrackerCustomizer_destroy(tracker->customizer);
 	}
 
+    free(tracker->serviceName);
 	free(tracker->filter);
 	free(tracker);
 
@@ -449,6 +451,16 @@ void serviceTracker_serviceChanged(celix_service_listener_t *listener, celix_ser
     }
 }
 
+size_t serviceTracker_nrOfTrackedServices(service_tracker_t *tracker) {
+    size_t result = 0;
+    celixThreadRwlock_readLock(&tracker->instanceLock);
+    celixThreadRwlock_readLock(&tracker->instance->lock);
+    result = (size_t) arrayList_size(tracker->instance->trackedServices);
+    celixThreadRwlock_unlock(&tracker->instance->lock);
+    celixThreadRwlock_unlock(&tracker->instanceLock);
+    return result;
+}
+
 static celix_status_t serviceTracker_track(celix_service_tracker_instance_t *instance, service_reference_pt reference, celix_service_event_t *event) {
 	celix_status_t status = CELIX_SUCCESS;
 
@@ -726,6 +738,7 @@ celix_service_tracker_t* celix_serviceTracker_createWithOptions(
         tracker = calloc(1, sizeof(*tracker));
         if (tracker != NULL) {
             tracker->context = ctx;
+            tracker->serviceName = celix_utils_strdup(opts->filter.serviceName);
 
             //setting callbacks
             tracker->callbackHandle = opts->callbackHandle;
