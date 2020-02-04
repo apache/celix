@@ -89,10 +89,10 @@ celix_status_t framework_getBundleEntry(framework_pt framework, const_bundle_pt 
 }
 
 
-celix_status_t fw_startBundle(framework_pt framework, bundle_pt bundle, int options) {
+celix_status_t fw_startBundle(framework_pt framework, long bundle, int options) {
 	mock_c()->actualCall("fw_startBundle")
 		->withPointerParameters("framework", framework)
-		->withPointerParameters("bundle", bundle)
+		->withLongIntParameters("bundle", bundle)
 		->withIntParameters("options", options);
 	return mock_c()->returnValue().value.intValue;
 }
@@ -105,19 +105,19 @@ celix_status_t framework_updateBundle(framework_pt framework, bundle_pt bundle, 
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t fw_stopBundle(framework_pt framework, bundle_pt bundle, bool record) {
+celix_status_t fw_stopBundle(framework_pt framework, long bundle, bool record) {
 	mock_c()->actualCall("fw_stopBundle")
 		->withPointerParameters("framework", framework)
-		->withPointerParameters("bundle", bundle)
+		->withLongIntParameters("bundle", bundle)
 		->withIntParameters("record", record);
 	return mock_c()->returnValue().value.intValue;
 }
 
 
-celix_status_t fw_registerService(framework_pt framework, service_registration_pt * registration, bundle_pt bundle, const char* serviceName, const void* svcObj, properties_pt properties) {
+celix_status_t fw_registerService(framework_pt framework, service_registration_pt * registration, long bundle, const char* serviceName, const void* svcObj, properties_pt properties) {
 	mock_c()->actualCall("fw_registerService")
 		->withPointerParameters("framework", framework)
-		->withPointerParameters("bundle", bundle)
+		->withLongIntParameters("bundle", bundle)
 		->withStringParameters("serviceName", serviceName)
 		->withPointerParameters("service", (void*) svcObj)
 		->withPointerParameters("properties", properties)
@@ -125,10 +125,10 @@ celix_status_t fw_registerService(framework_pt framework, service_registration_p
 		return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t fw_registerServiceFactory(framework_pt framework, service_registration_pt * registration, bundle_pt bundle, const char* serviceName, service_factory_pt factory, properties_pt properties) {
+celix_status_t fw_registerServiceFactory(framework_pt framework, service_registration_pt * registration, long bundle, const char* serviceName, service_factory_pt factory, properties_pt properties) {
 	mock_c()->actualCall("fw_registerServiceFactory")
 		->withPointerParameters("framework", framework)
-		->withPointerParameters("bundle", bundle)
+		->withLongIntParameters("bundle", bundle)
 		->withStringParameters("serviceName", serviceName)
 		->withPointerParameters("serviceFactory", factory)
 		->withPointerParameters("properties", properties)

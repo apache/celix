@@ -92,6 +92,50 @@ TEST(CelixBundleContextBundlesTests, useBundlesTest) {
     CHECK_EQUAL(1, count);
 };
 
+TEST(CelixBundleContextBundlesTests, installAndUninstallBundlesTest) {
+    //install bundles
+    long bndId1 = celix_bundleContext_installBundle(ctx, TEST_BND1_LOC, true);
+    long bndId2 = celix_bundleContext_installBundle(ctx, TEST_BND2_LOC, false);
+    long bndId3 = celix_bundleContext_installBundle(ctx, TEST_BND3_LOC, true);
+
+    CHECK_TRUE(bndId1 >= 0L);
+    CHECK_TRUE(bndId2 >= 0L);
+    CHECK_TRUE(bndId3 >= 0L);
+
+    CHECK_TRUE(celix_bundleContext_isBundleInstalled(ctx, bndId1));
+    CHECK_TRUE(celix_bundleContext_isBundleInstalled(ctx, bndId2));
+    CHECK_TRUE(celix_bundleContext_isBundleInstalled(ctx, bndId3));
+
+    CHECK_TRUE(celix_bundleContext_isBundleActive(ctx, bndId1));
+    CHECK_FALSE(celix_bundleContext_isBundleActive(ctx, bndId2)); //not auto started
+    CHECK_TRUE(celix_bundleContext_isBundleActive(ctx, bndId3));
+
+    //uninstall bundles
+    CHECK_TRUE(celix_bundleContext_uninstallBundle(ctx, bndId1));
+    CHECK_TRUE(celix_bundleContext_uninstallBundle(ctx, bndId2));
+    CHECK_TRUE(celix_bundleContext_uninstallBundle(ctx, bndId3));
+
+    CHECK_FALSE(celix_bundleContext_isBundleInstalled(ctx, bndId1));
+    CHECK_FALSE(celix_bundleContext_isBundleInstalled(ctx, bndId2));
+    CHECK_FALSE(celix_bundleContext_isBundleInstalled(ctx, bndId3));
+
+    CHECK_FALSE(celix_bundleContext_isBundleActive(ctx, bndId1)); //not uninstall -> not active
+    CHECK_FALSE(celix_bundleContext_isBundleActive(ctx, bndId2));
+    CHECK_FALSE(celix_bundleContext_isBundleActive(ctx, bndId3));
+
+    //reinstall bundles
+    long bndId4 = celix_bundleContext_installBundle(ctx, TEST_BND1_LOC, true);
+    long bndId5 = celix_bundleContext_installBundle(ctx, TEST_BND2_LOC, false);
+    long bndId6 = celix_bundleContext_installBundle(ctx, TEST_BND3_LOC, true);
+
+    CHECK_TRUE(bndId4 >= 0L);
+    CHECK_FALSE(bndId1 == bndId4); //not new id
+    CHECK_TRUE(bndId5 >= 0L);
+    CHECK_FALSE(bndId2 == bndId5); //not new id
+    CHECK_TRUE(bndId6 >= 0L);
+    CHECK_FALSE(bndId5 == bndId6); //not new id
+}
+
 TEST(CelixBundleContextBundlesTests, startBundleWithException) {
     long bndId = celix_bundleContext_installBundle(ctx, TEST_BND_WITH_EXCEPTION_LOC, true);
     CHECK(bndId > 0); //bundle is installed, but not started
@@ -103,8 +147,6 @@ TEST(CelixBundleContextBundlesTests, startBundleWithException) {
     CHECK_TRUE(called);
 }
 
-/* TODO enable again with newer Ubuntu. For now cannot reproduce this.
- * Should be fixed with #121
 TEST(CelixBundleContextBundlesTests, startUnresolveableBundle) {
     long bndId = celix_bundleContext_installBundle(ctx, TEST_BND_UNRESOLVEABLE_LOC, true);
     CHECK(bndId > 0); //bundle is installed, but not resolved
@@ -123,18 +165,19 @@ TEST(CelixBundleContextBundlesTests, startUnresolveableBundle) {
     });
     CHECK_TRUE(called);
 }
-*/
+
 
 TEST(CelixBundleContextBundlesTests, useBundleTest) {
     int count = 0;
 
-    celix_bundleContext_useBundle(ctx, 0, &count, [](void *handle, const bundle_t *bnd) {
+    bool called = celix_bundleContext_useBundle(ctx, 0, &count, [](void *handle, const bundle_t *bnd) {
         int *c = (int*)handle;
         *c += 1;
         long id = celix_bundle_getId(bnd);
         CHECK_EQUAL(0, id);
     });
 
+    CHECK_TRUE(called);
     CHECK_EQUAL(1, count);
 };
 
@@ -194,7 +237,6 @@ TEST(CelixBundleContextBundlesTests, DoubleStopTest) {
     CHECK_TRUE(bndId > 0);
     CHECK_TRUE(celix_bundleContext_isBundleInstalled(ctx, bndId));
 
-    //TODO rewrite using celix_bundleContext_useBundlesWithOptions ....
     bool called = celix_framework_useBundle(fw, false, bndId, nullptr, [](void *, const celix_bundle_t *bnd) {
         CHECK_EQUAL(OSGI_FRAMEWORK_BUNDLE_ACTIVE, celix_bundle_getState(bnd));
     });
@@ -282,7 +324,6 @@ TEST(CelixBundleContextBundlesTests, trackBundlesTest) {
     }
     CHECK_EQUAL(2, data.count);
 
-    /* TODO does not work -> stopping bundle event is never forward to the bundle listener ?? very old bug?
     celix_bundleContext_uninstallBundle(ctx, bundleId2);
     {
         std::unique_lock<std::mutex> lock{data.mutex};
@@ -308,13 +349,11 @@ TEST(CelixBundleContextBundlesTests, trackBundlesTest) {
 
     }
     CHECK_EQUAL(4, data.count);
-     */
 
 
     celix_bundleContext_stopTracker(ctx, trackerId);
 };
 
-/* IGNORE TODO need to add locks
 TEST(CelixBundleContextBundlesTests, useBundlesConcurrentTest) {
 
     struct data {
@@ -322,7 +361,6 @@ TEST(CelixBundleContextBundlesTests, useBundlesConcurrentTest) {
         std::condition_variable cond{};
         bool inUse{false};
         bool readyToExit{false};
-        bool called{false};
     };
     struct data data{};
 
@@ -336,18 +374,13 @@ TEST(CelixBundleContextBundlesTests, useBundlesConcurrentTest) {
         d->cond.notify_all();
         d->cond.wait(lock, [d]{return d->readyToExit;});
         lock.unlock();
-
-        auto state = celix_bundle_getState(bnd);
-        CHECK_EQUAL(OSGI_FRAMEWORK_BUNDLE_ACTIVE, state);
-
-        d->called = true;
     };
 
     long bndId = celix_bundleContext_installBundle(ctx, TEST_BND1_LOC, true);
 
     auto call = [&] {
-        celix_bundleContext_useBundle(ctx, bndId, &data, use);
-        CHECK(data.called);
+        bool called = celix_bundleContext_useBundle(ctx, bndId, &data, use);
+        CHECK(called);
     };
     std::thread useThread{call};
 
@@ -378,4 +411,4 @@ TEST(CelixBundleContextBundlesTests, useBundlesConcurrentTest) {
     std::cout << "use thread joined" << std::endl;
     uninstallThread.join();
     std::cout << "uninstall thread joined" << std::endl;
-};*/
+};

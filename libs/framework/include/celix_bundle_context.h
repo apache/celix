@@ -586,12 +586,20 @@ void celix_bundleContext_useServicesWithOptions(
 celix_array_list_t* celix_bundleContext_listBundles(celix_bundle_context_t *ctx);
 
 /**
- * Check if whether a bundle is installed.
+ * Check whether a bundle is installed.
  * @param ctx       The bundle context.
  * @param bndId     The bundle id to check
  * @return          true if the bundle is installed.
  */
 bool celix_bundleContext_isBundleInstalled(celix_bundle_context_t *ctx, long bndId);
+
+/**
+ * Check whether the bundle is active.
+ * @param ctx       The bundle context.
+ * @param bndId     The bundle id to check
+ * @return          true if the bundle is installed and active.
+ */
+bool celix_bundleContext_isBundleActive(celix_bundle_context_t *ctx, long bndId);
 
 
 /**
