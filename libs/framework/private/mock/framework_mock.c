@@ -348,3 +348,46 @@ service_registration_t* celix_framework_registerServiceFactory(framework_t *fw ,
 			->withPointerParameters("properties", properties);
 	return mock_c()->returnValue().value.pointerValue;
 }
+
+bool celix_framework_isBundleInstalled(celix_framework_t *fw, long bndId) {
+    mock_c()->actualCall("celix_framework_isBundleInstalled")
+            ->withPointerParameters("fw", fw)
+            ->withLongIntParameters("bndId", bndId);
+    return mock_c()->returnValue().value.boolValue;
+}
+
+bool celix_framework_isBundleActive(celix_framework_t *fw, long bndId) {
+    mock_c()->actualCall("celix_framework_isBundleActive")
+            ->withPointerParameters("fw", fw)
+            ->withLongIntParameters("bndId", bndId);
+    return mock_c()->returnValue().value.boolValue;
+}
+
+long celix_framework_installBundle(celix_framework_t *fw, const char *bundleLoc, bool autoStart) {
+    mock_c()->actualCall("celix_framework_installBundle")
+            ->withPointerParameters("fw", fw)
+            ->withStringParameters("bundleLoc", bundleLoc)
+            ->withBoolParameters("autoStart", autoStart);
+    return mock_c()->returnValue().value.longIntValue;
+}
+
+bool celix_framework_uninstallBundle(celix_framework_t *fw, long bndId) {
+    mock_c()->actualCall("celix_framework_uninstallBundle")
+            ->withPointerParameters("fw", fw)
+            ->withLongIntParameters("bndId", bndId);
+    return mock_c()->returnValue().value.boolValue;
+}
+
+bool celix_framework_stopBundle(celix_framework_t *fw, long bndId) {
+    mock_c()->actualCall("celix_framework_stopBundle")
+            ->withPointerParameters("fw", fw)
+            ->withLongIntParameters("bndId", bndId);
+    return mock_c()->returnValue().value.boolValue;
+}
+
+bool celix_framework_startBundle(celix_framework_t *fw, long bndId) {
+    mock_c()->actualCall("celix_framework_startBundle")
+            ->withPointerParameters("fw", fw)
+            ->withLongIntParameters("bndId", bndId);
+    return mock_c()->returnValue().value.boolValue;
+}

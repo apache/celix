@@ -684,20 +684,7 @@ void celix_bundleContext_stopTracker(bundle_context_t *ctx, long trackerId) {
 }
 
 long celix_bundleContext_installBundle(bundle_context_t *ctx, const char *bundleLoc, bool autoStart) {
-    long bundleId = -1;
-    bundle_t *bnd = NULL;
-    celix_status_t status = CELIX_SUCCESS;
-
-    if (ctx != NULL && fw_installBundle(ctx->framework, &bnd, bundleLoc, NULL) == CELIX_SUCCESS) {
-        status = bundle_getBundleId(bnd, &bundleId);
-        if (status == CELIX_SUCCESS && autoStart) {
-            status = bundle_start(bnd);
-        }
-    }
-
-    framework_logIfError(logger, status, NULL, "Failed to install bundle");
-
-    return bundleId;
+    return celix_framework_installBundle(ctx->framework, bundleLoc, autoStart);
 }
 
 static void bundleContext_listBundlesCallback(void *handle, const bundle_t *c_bnd) {
@@ -715,117 +702,24 @@ celix_array_list_t* celix_bundleContext_listBundles(celix_bundle_context_t *ctx)
 }
 
 bool celix_bundleContext_isBundleInstalled(celix_bundle_context_t *ctx, long bndId) {
-    celix_bundle_t *bnd = framework_getBundleById(ctx->framework, bndId);
-    return bnd != NULL;
-}
-
-static void celix_bundleContext_isBundleActiveCallback(void *handle, const celix_bundle_t *bnd) {
-    bool *active = handle;
-    *active = celix_bundle_getState(bnd) == OSGI_FRAMEWORK_BUNDLE_ACTIVE;
+    return celix_framework_isBundleInstalled(ctx->framework, bndId);
 }
 
 bool celix_bundleContext_isBundleActive(celix_bundle_context_t *ctx, long bndId) {
-    bool active = false;
-    celix_bundleContext_useBundle(ctx, bndId, &active, celix_bundleContext_isBundleActiveCallback);
-    return active;
-}
-
-static void bundleContext_startBundleCallback(void *handle, const bundle_t *c_bnd) {
-    bool *started = handle;
-    *started = false;
-    bundle_t *bnd = (bundle_t*)c_bnd;
-    celix_bundle_state_e state = celix_bundle_getState(bnd);
-    if (state == OSGI_FRAMEWORK_BUNDLE_INSTALLED || state == OSGI_FRAMEWORK_BUNDLE_RESOLVED) {
-        celix_status_t rc = bundle_start(bnd);
-        *started = rc == CELIX_SUCCESS;
-    }
+    return celix_framework_isBundleActive(ctx->framework, bndId);
 }
 
 bool celix_bundleContext_startBundle(celix_bundle_context_t *ctx, long bundleId) {
-    bool started = false;
-
-    celix_framework_useBundle(ctx->framework, false, bundleId, &started, bundleContext_startBundleCallback);
-    return started;
+    return celix_framework_startBundle(ctx->framework, bundleId);
 }
 
-
-static void bundleContext_stopBundleCallback(void *handle, const bundle_t *c_bnd) {
-    bool *stopped = handle;
-    *stopped = false;
-    bundle_t *bnd = (bundle_t*)c_bnd;
-    if (celix_bundle_getState(bnd) == OSGI_FRAMEWORK_BUNDLE_ACTIVE) {
-        celix_status_t rc = bundle_stop(bnd);
-        *stopped = rc == CELIX_SUCCESS;
-    }
-}
 
 bool celix_bundleContext_stopBundle(celix_bundle_context_t *ctx, long bundleId) {
-    bool stopped = false;
-    celix_framework_useBundle(ctx->framework, true, bundleId, &stopped, bundleContext_stopBundleCallback);
-    return stopped;
-}
-
-struct celix_bundleContext_uninstallBundleCalllback_data {
-    bool threadCreated;
-    const celix_bundle_t *bnd;
-    celix_thread_t uninstallthread; //thread for uninstall
-    celix_thread_mutex_t  mutex; //protects below
-    celix_thread_cond_t cond;
-    bool uninstallCalled;
-    bool uninstalled;
-
-};
-
-static void* celix_bundleContext_uninstallBundleUninstallThread(void *handle) {
-    struct celix_bundleContext_uninstallBundleCalllback_data *data = handle;
-    celix_status_t status = bundle_uninstall((celix_bundle_t*)data->bnd);
-    celixThreadMutex_lock(&data->mutex);
-    data->uninstallCalled = true;
-    data->uninstalled = status == CELIX_SUCCESS;
-    celixThreadCondition_broadcast(&data->cond);
-    celixThreadMutex_unlock(&data->mutex);
-    return NULL;
-}
-
-static void celix_bundleContext_uninstallBundleCallback(void *handle, const celix_bundle_t *bnd) {
-    struct celix_bundleContext_uninstallBundleCalllback_data *data = handle;
-    celix_bundle_state_e bndState = celix_bundle_getState(bnd);
-    if (bndState == OSGI_FRAMEWORK_BUNDLE_ACTIVE) {
-        bundle_stop((celix_bundle_t*)bnd);
-    }
-    bndState = celix_bundle_getState(bnd);
-    if (bndState == OSGI_FRAMEWORK_BUNDLE_RESOLVED || bndState == OSGI_FRAMEWORK_BUNDLE_INSTALLED) {
-        data->bnd = bnd;
-        data->threadCreated = true;
-        celixThread_create(&data->uninstallthread, NULL, celix_bundleContext_uninstallBundleUninstallThread, data);
-    }
+    return celix_framework_stopBundle(ctx->framework, bundleId);
 }
 
 bool celix_bundleContext_uninstallBundle(bundle_context_t *ctx, long bundleId) {
-    bool result = false;
-    struct celix_bundleContext_uninstallBundleCalllback_data data;
-    data.threadCreated = false;
-    data.uninstalled = false;
-    data.uninstallCalled = false;
-    celixThreadMutex_create(&data.mutex, NULL);
-    celixThreadCondition_init(&data.cond, NULL);
-
-    bool called = celix_framework_useBundle(ctx->framework, false, bundleId, &data, celix_bundleContext_uninstallBundleCallback);
-    if (called && data.threadCreated) {
-        celixThreadMutex_lock(&data.mutex);
-        while (!data.uninstallCalled) {
-            celixThreadCondition_wait(&data.cond, &data.mutex);
-        }
-        celixThreadMutex_unlock(&data.mutex);
-        celixThread_join(data.uninstallthread, NULL);
-        celixThreadMutex_lock(&data.mutex);
-        result = data.uninstalled;
-        celixThreadMutex_unlock(&data.mutex);
-    }
-
-    celixThreadMutex_destroy(&data.mutex);
-    celixThreadCondition_destroy(&data.cond);
-    return result;
+    return celix_framework_uninstallBundle(ctx->framework, bundleId);
 }
 
 bool celix_bundleContext_useServiceWithId(
