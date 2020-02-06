@@ -257,12 +257,15 @@ function(add_celix_bundle)
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         )
     elseif(ZIP_COMMAND)
-        add_custom_command(OUTPUT ${BUNDLE_FILE}
+        add_custom_command(OUTPUT ${BUNDLE_CONTENT_DIR}
             COMMAND ${CMAKE_COMMAND} -E make_directory ${BUNDLE_CONTENT_DIR}
+        )
+
+        add_custom_command(OUTPUT ${BUNDLE_FILE}
             COMMAND ${CMAKE_COMMAND} -E copy_if_different ${BUNDLE_GEN_DIR}/MANIFEST.MF META-INF/MANIFEST.MF
             COMMAND ${ZIP_COMMAND} -rq ${BUNDLE_FILE} *
             COMMENT "Packaging ${BUNDLE_TARGET_NAME}"
-            DEPENDS  ${BUNDLE_TARGET_NAME} "$<TARGET_PROPERTY:${BUNDLE_TARGET_NAME},BUNDLE_DEPEND_TARGETS>" ${BUNDLE_GEN_DIR}/MANIFEST.MF
+            DEPENDS ${BUNDLE_CONTENT_DIR} ${BUNDLE_TARGET_NAME} "$<TARGET_PROPERTY:${BUNDLE_TARGET_NAME},BUNDLE_DEPEND_TARGETS>" ${BUNDLE_GEN_DIR}/MANIFEST.MF
             WORKING_DIRECTORY ${BUNDLE_CONTENT_DIR}
         )
     else()
