@@ -181,9 +181,11 @@ TEST(bundle_context, registerService) {
 	properties_pt properties = (properties_pt) 0x50;
 	service_registration_pt registration = (service_registration_pt) 0x60;
 
-	mock().expectOneCall("fw_registerService")
+    mock().expectOneCall("celix_bundle_getId").withConstPointerParameter("bnd", bundle);
+
+    mock().expectOneCall("fw_registerService")
 		.withParameter("framework", framework)
-		.withParameter("bundle", bundle)
+		.withParameter("bundle", 0)
 		.withParameter("serviceName", serviceName)
 		.withParameter("service", service)
 		.withParameter("properties", properties)
@@ -216,9 +218,11 @@ TEST(bundle_context, registerServiceFactory) {
 	properties_pt properties = (properties_pt) 0x50;
 	service_registration_pt registration = (service_registration_pt) 0x60;
 
+	mock().expectOneCall("celix_bundle_getId").withConstPointerParameter("bnd", bundle);
+
 	mock().expectOneCall("fw_registerServiceFactory")
 		.withParameter("framework", framework)
-		.withParameter("bundle", bundle)
+		.withParameter("bundle", 0)
 		.withParameter("serviceName", serviceName)
 		.withParameter("serviceFactory", serviceFactory)
 		.withParameter("properties", properties)

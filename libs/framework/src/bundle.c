@@ -263,7 +263,8 @@ celix_status_t bundle_startWithOptions(bundle_pt bundle, int options) {
     		if (systemBundle) {
     			framework_start(bundle->framework);
     		} else {
-    			status = fw_startBundle(bundle->framework, bundle, options);
+    		    long bndId = celix_bundle_getId(bundle);
+    			status = fw_startBundle(bundle->framework, bndId, options);
     		}
     	}
     }
@@ -305,7 +306,8 @@ celix_status_t bundle_stopWithOptions(bundle_pt bundle, int options) {
 			if (systemBundle) {
 				framework_stop(bundle->framework);
 			} else {
-				status = fw_stopBundle(bundle->framework, bundle, options);
+                long bndId = celix_bundle_getId(bundle);
+				status = fw_stopBundle(bundle->framework, bndId, options);
 			}
 		}
 	}
