@@ -974,11 +974,11 @@ celix_status_t fw_startBundle(framework_pt framework, long bndId, int options __
                             if (createCalled) {
                                 destroy(activator->userData, context);
                             }
-                            bundle_setContext(bundle, NULL);
-                            bundle_setActivator(bundle, NULL);
+                            bundle_setContext(entry->bnd, NULL);
+                            bundle_setActivator(entry->bnd, NULL);
                             bundleContext_destroy(context);
                             free(activator);
-                            framework_setBundleStateAndNotify(framework, bundle, OSGI_FRAMEWORK_BUNDLE_RESOLVED);
+                            framework_setBundleStateAndNotify(framework, entry->bnd, OSGI_FRAMEWORK_BUNDLE_RESOLVED);
                         }
                     }
                 }
