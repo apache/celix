@@ -24,6 +24,7 @@
 #define OSGI_SHELL_SERVICE_NAME     CELIX_SHELL_SERVICE_NAME
 #define OSGI_SHELL_SERVICE_VERSION  CELIX_SHELL_SERVICE_VERSION
 
+//NOTE celix_shell_t is a backwards compatible service for - the deprecated - shell_service_t.
 typedef celix_shell_t shell_service_t; //use celix_shell.h instead
 typedef celix_shell_t* shell_service_pt; //use celix_shell.h instead
 

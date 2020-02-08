@@ -32,7 +32,7 @@
 #include <service_tracker.h>
 #include <celix_errno.h>
 
-#include <shell.h>
+#include <celix_shell.h>
 
 struct shell_mediator {
 	log_helper_t *loghelper;

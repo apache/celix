@@ -19,7 +19,8 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <shell_constants.h>
+
+#include "celix_shell_constants.h"
 #include "celix_bundle_context.h"
 #include "celix_dependency_manager.h"
 
@@ -131,7 +132,7 @@ celix_status_t dmListCommand_execute(void* handle, char * line, FILE *out, FILE 
     celix_dependency_manager_t *mng = celix_bundleContext_getDependencyManager(ctx);
 
     const char *config = NULL;
-    bundleContext_getPropertyWithDefault(ctx, SHELL_USE_ANSI_COLORS, SHELL_USE_ANSI_COLORS_DEFAULT_VALUE, &config);
+    bundleContext_getPropertyWithDefault(ctx, CELIX_SHELL_USE_ANSI_COLORS, CELIX_SHELL_USE_ANSI_COLORS_DEFAULT_VALUE, &config);
     bool useColors = config != NULL && strncmp("true", config, 5) == 0;
 
     celix_array_list_t *bundleIds = NULL;

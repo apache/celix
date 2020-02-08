@@ -19,7 +19,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <command.h>
+#include <celix_shell_command.h>
 
 #include "bundle_activator.h"
 #include "bundle_context.h"
@@ -76,23 +76,23 @@ celix_status_t bundleActivator_start(void * userData, celix_bundle_context_t *co
     activator->addCmdSrv->handle = context;
     activator->addCmdSrv->executeCommand = (void *)addCommand_execute;
     celix_properties_t *props = celix_properties_create();
-    celix_properties_set(props, OSGI_SHELL_COMMAND_NAME, "add");
-    bundleContext_registerService(context, (char *)OSGI_SHELL_COMMAND_SERVICE_NAME, activator->addCmdSrv, props, &activator->addCommand);
+    celix_properties_set(props, CELIX_SHELL_COMMAND_NAME, "add");
+    bundleContext_registerService(context, (char *)CELIX_SHELL_COMMAND_SERVICE_NAME, activator->addCmdSrv, props, &activator->addCommand);
 
 
     activator->sqrtCmdSrv = calloc(1, sizeof(*activator->sqrtCmdSrv));
     activator->sqrtCmdSrv->handle = context;
     activator->sqrtCmdSrv->executeCommand = (void *)sqrtCommand_execute;
     props = celix_properties_create();
-    celix_properties_set(props, OSGI_SHELL_COMMAND_NAME, "sqrt");
-    bundleContext_registerService(context, (char *)OSGI_SHELL_COMMAND_SERVICE_NAME, activator->sqrtCmdSrv, props, &activator->sqrtCommand);
+    celix_properties_set(props, CELIX_SHELL_COMMAND_NAME, "sqrt");
+    bundleContext_registerService(context, (char *)CELIX_SHELL_COMMAND_SERVICE_NAME, activator->sqrtCmdSrv, props, &activator->sqrtCommand);
 
     activator->subCmdSrv = calloc(1, sizeof(*activator->subCmdSrv));
     activator->subCmdSrv->handle = context;
     activator->subCmdSrv->executeCommand = (void *)subCommand_execute;
     props = celix_properties_create();
-    celix_properties_set(props, OSGI_SHELL_COMMAND_NAME, "sub");
-    bundleContext_registerService(context, (char *)OSGI_SHELL_COMMAND_SERVICE_NAME, activator->subCmdSrv, props, &activator->subCommand);
+    celix_properties_set(props, CELIX_SHELL_COMMAND_NAME, "sub");
+    bundleContext_registerService(context, (char *)CELIX_SHELL_COMMAND_SERVICE_NAME, activator->subCmdSrv, props, &activator->subCommand);
 
     return status;
 }

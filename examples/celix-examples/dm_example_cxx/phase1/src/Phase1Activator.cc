@@ -41,43 +41,43 @@ Phase1Activator::Phase1Activator(std::shared_ptr<celix::dm::DependencyManager> m
     auto cmp = std::shared_ptr<Phase1Cmp>(new Phase1Cmp());
 
     Properties cmdProps;
-    cmdProps[OSGI_SHELL_COMMAND_NAME] = "phase1_info";
-    cmdProps[OSGI_SHELL_COMMAND_USAGE] = "phase1_info";
-    cmdProps[OSGI_SHELL_COMMAND_DESCRIPTION] = "Print information about the Phase1Cmp";
+    cmdProps[CELIX_SHELL_COMMAND_NAME] = "phase1_info";
+    cmdProps[CELIX_SHELL_COMMAND_USAGE] = "phase1_info";
+    cmdProps[CELIX_SHELL_COMMAND_DESCRIPTION] = "Print information about the Phase1Cmp";
 
 
     cmd.handle = cmp.get();
-    cmd.executeCommand = [](void *handle, char* line, FILE* out, FILE *err) {
+    cmd.executeCommand = [](void *handle, const char* line, FILE* out, FILE *err) -> bool {
         Phase1Cmp* cmp = (Phase1Cmp*)handle;
-        return cmp->infoCmd(line, out, err);
+        return cmp->infoCmd(line, out, err) == 0;
     };
 
     Properties addProps;
-    addProps[OSGI_SHELL_COMMAND_NAME] = "add";
-    addProps[OSGI_SHELL_COMMAND_USAGE] = "add";
-    addProps[OSGI_SHELL_COMMAND_DESCRIPTION] = "add dummy service";
+    addProps[CELIX_SHELL_COMMAND_NAME] = "add";
+    addProps[CELIX_SHELL_COMMAND_USAGE] = "add";
+    addProps[CELIX_SHELL_COMMAND_DESCRIPTION] = "add dummy service";
 
 
     addCmd.handle = this;
-    addCmd.executeCommand = [](void *handle, char* /*line*/, FILE* out, FILE */*err*/) {
+    addCmd.executeCommand = [](void *handle, const char* /*line*/, FILE* out, FILE */*err*/) -> bool  {
         Phase1Activator* act = (Phase1Activator*)handle;
         fprintf(out, "Adding dummy interface");
         act->phase1cmp->addCInterface(act->dummySvc, "DUMMY_SERVICE");
-        return 0;
+        return true;
     };
 
     Properties removeProps;
-    removeProps[OSGI_SHELL_COMMAND_NAME] = "remove";
-    removeProps[OSGI_SHELL_COMMAND_USAGE] = "remove";
-    removeProps[OSGI_SHELL_COMMAND_DESCRIPTION] = "remove dummy service";
+    removeProps[CELIX_SHELL_COMMAND_NAME] = "remove";
+    removeProps[CELIX_SHELL_COMMAND_USAGE] = "remove";
+    removeProps[CELIX_SHELL_COMMAND_DESCRIPTION] = "remove dummy service";
 
 
     removeCmd.handle = this;
-    removeCmd.executeCommand = [](void *handle, char* /*line*/, FILE* out, FILE */*err*/) {
+    removeCmd.executeCommand = [](void *handle, const char* /*line*/, FILE* out, FILE */*err*/) -> bool {
         Phase1Activator* act = (Phase1Activator*)handle;
         fprintf(out, "Removing dummy interface");
         act->phase1cmp->removeCInterface(act->dummySvc);
-        return 0;
+        return true;
     };
 
     auto tst = std::unique_ptr<InvalidCServ>(new InvalidCServ{});
@@ -87,9 +87,9 @@ Phase1Activator::Phase1Activator(std::shared_ptr<celix::dm::DependencyManager> m
 
     phase1cmp->addInterface<IPhase1>(IPHASE1_VERSION)
                     //.addInterface<IPhase2>() -> Compile error (static assert), because Phase1Cmp does not implement IPhase2
-            .addCInterface(&cmd, OSGI_SHELL_COMMAND_SERVICE_NAME, "", cmdProps)
-            .addCInterface(&addCmd, OSGI_SHELL_COMMAND_SERVICE_NAME, "", addProps)
-            .addCInterface(&removeCmd, OSGI_SHELL_COMMAND_SERVICE_NAME, "", removeProps)
+            .addCInterface(&cmd, CELIX_SHELL_COMMAND_SERVICE_NAME, "", cmdProps)
+            .addCInterface(&addCmd, CELIX_SHELL_COMMAND_SERVICE_NAME, "", addProps)
+            .addCInterface(&removeCmd, CELIX_SHELL_COMMAND_SERVICE_NAME, "", removeProps)
                     //.addCInterface(tst.get(), "TEST_SRV") -> Compile error (static assert), because InvalidCServ is not a pod
             .addInterface<srv::info::IName>(INAME_VERSION)
             .setCallbacks(&Phase1Cmp::init, &Phase1Cmp::start, &Phase1Cmp::stop, &Phase1Cmp::deinit);

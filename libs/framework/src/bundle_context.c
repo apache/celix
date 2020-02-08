@@ -22,6 +22,7 @@
 #include <string.h>
 #include <utils.h>
 
+#include "celix_utils.h"
 #include "celix_constants.h"
 #include "bundle_context_private.h"
 #include "framework_private.h"
@@ -1040,4 +1041,15 @@ bool celix_bundleContext_getPropertyAsBool(celix_bundle_context_t *ctx, const ch
         }
     }
     return result;
+}
+
+static void celix_bundleContext_getBundleSymbolicNameCallback(void *data, const celix_bundle_t *bnd) {
+    char **out = data;
+    *out = celix_utils_strdup(celix_bundle_getSymbolicName(bnd));
+}
+
+char* celix_bundleContext_getBundleSymbolicName(celix_bundle_context_t *ctx, long bndId) {
+    char *name = NULL;
+    celix_framework_useBundle(ctx->framework, false, bndId, &name, celix_bundleContext_getBundleSymbolicNameCallback);
+    return name;
 }

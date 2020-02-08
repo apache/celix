@@ -143,5 +143,9 @@ double celix_difftime(const struct timespec *tBegin, const struct timespec *tEnd
 }
 
 char* celix_utils_strdup(const char *str) {
-    return strndup(str, CELIX_UTILS_MAX_STRLEN);
+    if (str != NULL) {
+        return strndup(str, CELIX_UTILS_MAX_STRLEN);
+    } else {
+        return NULL;
+    }
 }

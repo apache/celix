@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <celix_api.h>
 
-#include "shell_constants.h"
+#include "celix_shell_constants.h"
 #include "celix_bundle_context.h"
 #include "std_commands.h"
 #include "celix_bundle.h"
@@ -171,8 +171,7 @@ static void queryCommand_listServices(celix_bundle_context_t *ctx, const struct 
 }
 
 
-celix_status_t queryCommand_execute(void *_ptr, char *command_line_str, FILE *sout, FILE *serr __attribute__((unused))) {
-    celix_status_t status = CELIX_SUCCESS;
+bool queryCommand_execute(void *_ptr, const char *command_line_str, FILE *sout, FILE *serr __attribute__((unused))) {
     bundle_context_t* ctx = _ptr;
 
     char *commandLine = celix_utils_strdup(command_line_str); //note command_line_str should be treated as const.
@@ -186,55 +185,50 @@ celix_status_t queryCommand_execute(void *_ptr, char *command_line_str, FILE *so
     opts.nameQueries = celix_arrayList_create();
     opts.filterQueries = celix_arrayList_create();
 
-    const char* config = celix_bundleContext_getProperty(ctx, SHELL_USE_ANSI_COLORS, SHELL_USE_ANSI_COLORS_DEFAULT_VALUE);
+    const char* config = celix_bundleContext_getProperty(ctx, CELIX_SHELL_USE_ANSI_COLORS, CELIX_SHELL_USE_ANSI_COLORS_DEFAULT_VALUE);
     opts.useColors = config != NULL && strncmp("true", config, 5) == 0;
 
-    if (!ctx || !command_line_str || !sout || !serr) {
-        status = CELIX_ILLEGAL_ARGUMENT;
-    }
 
     bool validCommand = true;
-    if (status == CELIX_SUCCESS) {
-        char *sub_str = NULL;
-        char *save_ptr = NULL;
+    char *sub_str = NULL;
+    char *save_ptr = NULL;
 
-        strtok_r(commandLine, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
-        sub_str = strtok_r(NULL, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
-        while (sub_str != NULL) {
-            if (strcmp(sub_str, "-v") == 0) {
-                opts.verbose = true;
-            } else if (strcmp(sub_str, "-p") == 0) {
-                opts.queryProvided = true;
-                opts.queryRequested = false;
-            } else if (strcmp(sub_str, "-r") == 0) {
-                opts.queryProvided = false;
-                opts.queryRequested = true;
+    strtok_r(commandLine, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
+    sub_str = strtok_r(NULL, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
+    while (sub_str != NULL) {
+        if (strcmp(sub_str, "-v") == 0) {
+            opts.verbose = true;
+        } else if (strcmp(sub_str, "-p") == 0) {
+            opts.queryProvided = true;
+            opts.queryRequested = false;
+        } else if (strcmp(sub_str, "-r") == 0) {
+            opts.queryProvided = false;
+            opts.queryRequested = true;
+        } else {
+            //check if its a number (bundle id)
+            errno = 0;
+            long bndId = strtol(sub_str, NULL, 10);
+            if (bndId > 0 && errno == 0 /*not EINVAL*/) {
+                opts.bndId = bndId;
             } else {
-                //check if its a number (bundle id)
-                errno = 0;
-                long bndId = strtol(sub_str, NULL, 10);
-                if (bndId > 0 && errno == 0 /*not EINVAL*/) {
-                    opts.bndId = bndId;
-                } else {
-                    //not option and not a bundle id -> query
-                    if (strnlen(sub_str, 16) > 1 && sub_str[0] == '(') {
-                        //assume this is a filter.
-                        celix_filter_t *filter = celix_filter_create(sub_str);
-                        if (filter != NULL) {
-                            celix_arrayList_add(opts.filterQueries, filter);
-                        } else {
-                            validCommand = false;
-                            fprintf(serr, "Cannot parse provided filter '%s'!\n", sub_str);
-                            break;
-                        }
+                //not option and not a bundle id -> query
+                if (strnlen(sub_str, 16) > 1 && sub_str[0] == '(') {
+                    //assume this is a filter.
+                    celix_filter_t *filter = celix_filter_create(sub_str);
+                    if (filter != NULL) {
+                        celix_arrayList_add(opts.filterQueries, filter);
                     } else {
-                        celix_arrayList_add(opts.nameQueries, celix_utils_strdup(sub_str));
+                        validCommand = false;
+                        fprintf(serr, "Cannot parse provided filter '%s'!\n", sub_str);
+                        break;
                     }
-
+                } else {
+                    celix_arrayList_add(opts.nameQueries, celix_utils_strdup(sub_str));
                 }
+
             }
-            sub_str = strtok_r(NULL, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
         }
+        sub_str = strtok_r(NULL, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
     }
 
     free(commandLine);
@@ -255,5 +249,5 @@ celix_status_t queryCommand_execute(void *_ptr, char *command_line_str, FILE *so
     }
     celix_arrayList_destroy(opts.filterQueries);
 
-    return status;
+    return validCommand;
 }

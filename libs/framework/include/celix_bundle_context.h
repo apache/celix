@@ -644,6 +644,16 @@ bool celix_bundleContext_stopBundle(celix_bundle_context_t *ctx, long bndId);
 bool celix_bundleContext_startBundle(celix_bundle_context_t *ctx, long bndId);
 
 /**
+ * Returns the bundle symbolic name for the provided bundle id.
+ * The caller is owner of the return string.
+ *
+ * @param ctx The bundle context
+ * @param bndId The bundle id to retrieve the symbolic name for.
+ * @return The bundle symbolic name or NULL if the bundle for the provided bundle id does not exist.
+ */
+char* celix_bundleContext_getBundleSymbolicName(celix_bundle_context_t *ctx, long bndId);
+
+/**
  * track bundles
  * The add bundle callback will also be called for already installed bundles.
  *

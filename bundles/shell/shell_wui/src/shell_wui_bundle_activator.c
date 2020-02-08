@@ -21,7 +21,7 @@
 #include <stdio.h>
 
 #include <celix_api.h>
-#include <shell.h>
+#include <celix_shell.h>
 #include <civetweb.h>
 
 #include "http_admin/api.h"
@@ -39,7 +39,7 @@ struct use_shell_arg {
 };
 
 static void useShell(void *handle, void *svc) {
-    shell_service_t *shell = svc;
+    celix_shell_t *shell = svc;
     struct use_shell_arg *arg = handle;
     char *buf = NULL;
     size_t size;
@@ -60,7 +60,7 @@ static int websocket_data_handler(struct mg_connection *conn, int bits, char *da
     arg.command[data_len] = '\0';
 
 
-    bool called = celix_bundleContext_useService(act->ctx, OSGI_SHELL_SERVICE_NAME, &arg, useShell);
+    bool called = celix_bundleContext_useService(act->ctx, CELIX_SHELL_SERVICE_NAME, &arg, useShell);
     if (!called) {
         const char *msg = "No shell available!";
         mg_websocket_write(conn, MG_WEBSOCKET_OPCODE_TEXT, msg , strlen(msg));

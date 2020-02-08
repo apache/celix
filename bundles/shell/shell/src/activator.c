@@ -16,13 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * activator.c
- *
- *  \date       Aug 13, 2010
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
+
 
 #include <stdlib.h>
 #include <string.h>
@@ -32,11 +26,12 @@
 #include "std_commands.h"
 #include "service_tracker.h"
 #include "celix_constants.h"
+#include "celix_shell_command.h"
 
 #define NUMBER_OF_COMMANDS 13
 
-struct command {
-    celix_status_t (*exec)(void *handle, char *commandLine, FILE *out, FILE *err);
+struct celix_shell_command_register_entry {
+    bool (*exec)(void *handle, const char *commandLine, FILE *out, FILE *err);
     char *name;
     char *description;
     char *usage;
@@ -50,8 +45,9 @@ struct shell_bundle_activator {
     celix_shell_t shellService;
 	long shellSvcId;
 	long trackerId;
+	long legacyTrackerId;
 
-    struct command std_commands[NUMBER_OF_COMMANDS];
+    struct celix_shell_command_register_entry std_commands[NUMBER_OF_COMMANDS];
 };
 
 typedef struct shell_bundle_activator shell_bundle_activator_t;
@@ -78,7 +74,7 @@ celix_status_t bundleActivator_create(celix_bundle_context_t* ctx, void **_pptr)
 
     if (status == CELIX_SUCCESS) {
         activator->std_commands[0] =
-                (struct command) {
+                (struct celix_shell_command_register_entry) {
                         .exec = lbCommand_execute,
                         .name = "lb",
                         .description = "list bundles. Default only the groupless bundles are listed. Use -a to list all bundles." \
@@ -87,63 +83,63 @@ celix_status_t bundleActivator_create(celix_bundle_context_t* ctx, void **_pptr)
                         .usage = "lb [-l | -s | -u | -a] [group]"
                 };
         activator->std_commands[1] =
-                (struct command) {
+                (struct celix_shell_command_register_entry) {
                         .exec = startCommand_execute,
                         .name = "start",
                         .description = "start bundle(s).",
                         .usage = "start <id> [<id> ...]"
                 };
         activator->std_commands[2] =
-                (struct command) {
+                (struct celix_shell_command_register_entry) {
                         .exec = stopCommand_execute,
                         .name = "stop",
                         .description = "stop bundle(s).",
                         .usage = "stop <id> [<id> ...]"
                 };
         activator->std_commands[3] =
-                (struct command) {
+                (struct celix_shell_command_register_entry) {
                         .exec = installCommand_execute,
                         .name = "install",
                         .description = "install bundle(s).",
                         .usage = "install <file> [<file> ...]"
                 };
         activator->std_commands[4] =
-                (struct command) {
+                (struct celix_shell_command_register_entry) {
                         .exec = uninstallCommand_execute,
                         .name = "uninstall",
                         .description = "uninstall bundle(s).",
                         .usage = "uninstall <file> [<file> ...]"
                 };
         activator->std_commands[5] =
-                (struct command) {
+                (struct celix_shell_command_register_entry) {
                         .exec = updateCommand_execute,
                         .name = "update",
                         .description = "update bundle(s).",
                         .usage = "update <id> [<URL>]"
                 };
         activator->std_commands[6] =
-                (struct command) {
+                (struct celix_shell_command_register_entry) {
                         .exec = helpCommand_execute,
                         .name = "help",
                         .description = "display available commands and description.",
                         .usage = "help <command>]"
                 };
         activator->std_commands[7] =
-                (struct command) {
+                (struct celix_shell_command_register_entry) {
                         .exec = logCommand_execute,
                         .name = "log",
                         .description = "print log.",
                         .usage = "log"
                 };
         activator->std_commands[8] =
-                (struct command) {
+                (struct celix_shell_command_register_entry) {
                         .exec = dmListCommand_execute,
                         .name = "dm",
                         .description = "Gives an overview of the component managed by a dependency manager.",
                         .usage = "dm [wtf] [f|full] [<Bundle ID> [<Bundle ID> [...]]]"
                 };
         activator->std_commands[9] =
-                (struct command) {
+                (struct celix_shell_command_register_entry) {
                     .exec = queryCommand_execute,
                     .name = "query",
                     .description = "Query services. Query for registered and requested services" \
@@ -156,24 +152,25 @@ celix_status_t bundleActivator_create(celix_bundle_context_t* ctx, void **_pptr)
                     .usage = "query [bundleId ...] [-v] [-p] [-r] [query ...]"
                 };
         activator->std_commands[10] =
-                (struct command) {
+                (struct celix_shell_command_register_entry) {
                         .exec = queryCommand_execute,
                         .name = "q",
                         .description = "Proxy for query command (see 'help query')",
                         .usage = "q [bundleId ...] [-v] [-p] [-r] [query ...]"
                 };
         activator->std_commands[11] =
-                (struct command) {
-                        .exec = quitCommand_execute,
-                        .name = "quit",
-                        .description = "Quit (exit) framework.",
-                        .usage = "quit"
-                };
+              (struct celix_shell_command_register_entry) {
+                      .exec = quitCommand_execute,
+                      .name = "quit",
+                      .description = "Quit (exit) framework.",
+                      .usage = "quit"
+              };
         activator->std_commands[12] =
-                (struct command) { NULL, NULL, NULL, NULL, {NULL,NULL}, NULL, -1L }; /*marker for last element*/
+                (struct celix_shell_command_register_entry) {
+                        .exec = NULL
+                };
 
-        unsigned int i = 0;
-        while (activator->std_commands[i].exec != NULL) {
+        for (unsigned int i = 0; activator->std_commands[i].exec != NULL; ++i) {
             activator->std_commands[i].props = properties_create();
             if (!activator->std_commands[i].props) {
                 status = CELIX_BUNDLE_EXCEPTION;
@@ -187,8 +184,6 @@ celix_status_t bundleActivator_create(celix_bundle_context_t* ctx, void **_pptr)
 
             activator->std_commands[i].service.handle = ctx;
             activator->std_commands[i].service.executeCommand = activator->std_commands[i].exec;
-
-            i += 1;
         }
     }
 
@@ -238,9 +233,22 @@ celix_status_t bundleActivator_start(void *activatorData, celix_bundle_context_t
 	    activator->trackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
     }
 
+    activator->legacyTrackerId = -1L;
+#ifdef CELIX_ADD_DEPRECATED_API
+    if (status == CELIX_SUCCESS) {
+        celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
+        opts.callbackHandle = activator->shell;
+        opts.addWithProperties = (void*) shell_addLegacyCommand;
+        opts.removeWithProperties = (void*) shell_removeLegacyCommand;
+        opts.filter.ignoreServiceLanguage = true;
+        opts.filter.serviceName = OSGI_SHELL_COMMAND_SERVICE_NAME;
+        activator->legacyTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
+    }
+#endif
+
 
     if (status == CELIX_SUCCESS) {
-        for (unsigned int i = 0; activator->std_commands[i].exec != NULL; i++) {
+        for (unsigned int i = 0; activator->std_commands[i].exec != NULL; ++i) {
             celix_service_registration_options_t opts = CELIX_EMPTY_SERVICE_REGISTRATION_OPTIONS;
             opts.svc = &activator->std_commands[i].service;
             opts.serviceName = CELIX_SHELL_COMMAND_SERVICE_NAME;
@@ -266,13 +274,10 @@ celix_status_t bundleActivator_stop(void *activatorData, celix_bundle_context_t*
             }
         }
 
-        if (activator->shellSvcId >= 0L) {
-            celix_bundleContext_unregisterService(ctx, activator->shellSvcId);
-        }
+        celix_bundleContext_unregisterService(ctx, activator->shellSvcId);
+        celix_bundleContext_stopTracker(ctx, activator->trackerId);
+        celix_bundleContext_stopTracker(ctx, activator->legacyTrackerId);
 
-        if (activator->trackerId >= 0L) {
-            celix_bundleContext_stopTracker(ctx, activator->trackerId);
-        }
     } else {
         status = CELIX_ILLEGAL_ARGUMENT;
     }

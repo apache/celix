@@ -37,7 +37,7 @@ public:
     void deinit();
 
     int getData() override; //implements IPhase1
-    int infoCmd(char* line, FILE *out, FILE* err);  //implements cmd service
+    int infoCmd(const char* line, FILE *out, FILE* err);  //implements cmd service
     std::string getName() override;
 };
 

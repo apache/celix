@@ -16,35 +16,32 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * update_command.c
- *
- *  \date       Aug 20, 2010
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
+
 
 #include <stdlib.h>
 #include <string.h>
 #include <curl/curl.h>
 #include <sys/stat.h>
 
-#include "array_list.h"
-#include "bundle_context.h"
+#include "celix_utils.h"
+#include "celix_array_list.h"
+#include "celix_bundle_context.h"
 
 celix_status_t updateCommand_download(bundle_context_pt context, char * url, char **inputFile);
 size_t updateCommand_writeData(void *ptr, size_t size, size_t nmemb, FILE *stream);
 
-void updateCommand_execute(void *handle, char * line, FILE *outStream, FILE *errStream) {
+bool updateCommand_execute(void *handle, const char *const_line, FILE *outStream, FILE *errStream) {
 	bundle_context_pt context = handle;
     bundle_pt bundle = NULL;
 	char delims[] = " ";
 	char * sub = NULL;
 	char *save_ptr = NULL;
+	char *line = celix_utils_strdup(const_line);
 
 	sub = strtok_r(line, delims, &save_ptr);
 	sub = strtok_r(NULL, delims, &save_ptr);
 
+	bool updateSucceeded = false;
 	if (sub == NULL) {
 		fprintf(errStream, "Incorrect number of arguments.\n");
 	} else {
@@ -60,7 +57,8 @@ void updateCommand_execute(void *handle, char * line, FILE *outStream, FILE *err
 
 				if (updateCommand_download(context, sub, &test) == CELIX_SUCCESS) {
 					printf("Update bundle with stream\n");
-					bundle_update(bundle, inputFile);
+					celix_status_t status = bundle_update(bundle, inputFile);
+                    updateSucceeded = status == CELIX_SUCCESS;
 				} else {
 					fprintf(errStream, "Unable to download from %s\n", sub);
 				}
@@ -71,6 +69,8 @@ void updateCommand_execute(void *handle, char * line, FILE *outStream, FILE *err
 			fprintf(errStream, "Bundle id is invalid.\n");
 		}
 	}
+	free(line);
+	return updateSucceeded;
 }
 
 celix_status_t updateCommand_download(bundle_context_pt context, char * url, char **inputFile) {

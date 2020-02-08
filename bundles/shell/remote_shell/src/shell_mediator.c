@@ -27,9 +27,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <utils.h>
-#include <shell.h>
+#include <celix_shell.h>
 #include <service_tracker.h>
-#include <command.h>
 #include <sys/socket.h>
 
 #include "log_helper.h"
@@ -56,7 +55,7 @@ celix_status_t shellMediator_create(bundle_context_pt context, shell_mediator_pt
 
 		status = CELIX_DO_IF(status, serviceTrackerCustomizer_create((*instance), NULL, shellMediator_addedService,
 				NULL, shellMediator_removedService, &customizer));
-		status = CELIX_DO_IF(status, serviceTracker_create(context, (char * )OSGI_SHELL_SERVICE_NAME, customizer, &(*instance)->tracker));
+		status = CELIX_DO_IF(status, serviceTracker_create(context, (char * )CELIX_SHELL_SERVICE_NAME, customizer, &(*instance)->tracker));
 
 		if (status == CELIX_SUCCESS) {
 			logHelper_start((*instance)->loghelper);
@@ -122,7 +121,7 @@ static celix_status_t shellMediator_addedService(void *handler, service_referenc
 	celix_status_t status = CELIX_SUCCESS;
 	shell_mediator_pt instance = (shell_mediator_pt) handler;
 	celixThreadMutex_lock(&instance->mutex);
-	instance->shellService = (shell_service_pt) service;
+	instance->shellService = (celix_shell_t*) service;
 	celixThreadMutex_unlock(&instance->mutex);
 	return status;
 }

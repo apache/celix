@@ -24,15 +24,17 @@
 #include "celix_api.h"
 #include "std_commands.h"
 
-celix_status_t startCommand_execute(void *handle, char *command, FILE *outStream, FILE *errStream) {
+bool startCommand_execute(void *handle, const char *const_command, FILE *outStream, FILE *errStream) {
     celix_bundle_context_t *ctx = handle;
 
     char *sub_str = NULL;
     char *save_ptr = NULL;
+    char *command = celix_utils_strdup(const_command);
 
     strtok_r(command, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
     sub_str = strtok_r(NULL, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
 
+    bool startSucceeded = false;
     if (sub_str == NULL) {
         fprintf(outStream, "Incorrect number of arguments.\n");
     } else {
@@ -44,7 +46,7 @@ celix_status_t startCommand_execute(void *handle, char *command, FILE *outStream
             } else {
                 bool exists = celix_bundleContext_isBundleInstalled(ctx, bndId);
                 if (exists) {
-                    celix_bundleContext_startBundle(ctx, bndId);
+                    startSucceeded = celix_bundleContext_startBundle(ctx, bndId);
                 } else {
                     fprintf(outStream, "No bundle with id %li.\n", bndId);
                 }
@@ -54,5 +56,7 @@ celix_status_t startCommand_execute(void *handle, char *command, FILE *outStream
         }
     }
 
-    return CELIX_SUCCESS;
+    free(command);
+
+    return startSucceeded;
 }

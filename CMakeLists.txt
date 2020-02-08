@@ -90,14 +90,16 @@ set(CELIX_MAJOR "2")
 set(CELIX_MINOR "2")
 set(CELIX_MICRO "0")
 
-option(ENABLE_TESTING "Enables unit/bundle testing" FALSE)
+# Default bundle version
+set(DEFAULT_VERSION 1.0.0)
 
+# Options
+option(ENABLE_TESTING "Enables unit/bundle testing" FALSE)
 if (ENABLE_TESTING)
     enable_testing()
 endif()
 
-# Default bundle version
-set(DEFAULT_VERSION 1.0.0)
+option(CELIX_ADD_DEPRECATED_API "whether to use and install deprecated apis (i.e. header without a celix_ prefix." ON)
 
 option(CELIX_ADD_OPENSSL_DEP "Enabled building Celix framework & etcdlib with OpenSSL library dependency. This can help in some libcurl resolving issues" OFF)
 set(CELIX_OPTIONAL_EXTRA_LIBS "")
@@ -105,8 +107,6 @@ if (CELIX_ADD_OPENSSL_DEP)
     find_package(OpenSSL REQUIRED)
     set(CELIX_OPTIONAL_EXTRA_LIBS "OpenSSL::lib")
 endif ()
-
-set(CELIX_USE_DEPRECATED_API true CACHE BOOL "whether to use and install deprecated apis (i.e. header with a celix_ prefix.")
 
 #Libraries and Launcher
 add_subdirectory(libs)

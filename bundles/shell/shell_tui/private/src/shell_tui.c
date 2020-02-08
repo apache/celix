@@ -33,7 +33,7 @@
 #include <unistd.h>
 
 #include "bundle_context.h"
-#include "shell.h"
+#include "celix_shell.h"
 #include "shell_tui.h"
 #include "utils.h"
 #include <signal.h>
@@ -57,7 +57,7 @@
 
 struct shell_tui {
     celix_thread_mutex_t mutex; //protects shell
-    shell_service_t* shell;
+    celix_shell_t* shell;
     celix_thread_t thread;
 
     int readPipeFd;
@@ -88,7 +88,7 @@ static void remove_newlines(char* line);
 static void clearLine();
 static void cursorLeft(int n);
 static void writeLine(const char*line, int pos);
-static int autoComplete(shell_service_pt shellSvc, char *in, int cursorPos, size_t maxLen);
+static int autoComplete(celix_shell_t* shellSvc, char *in, int cursorPos, size_t maxLen);
 static void shellSigHandler(int sig, siginfo_t *info, void* ptr);
 static void* shellTui_runnable(void *data);
 static void shellTui_parseInputForControl(shell_tui_t* shellTui, shell_context_t* ctx);
@@ -146,7 +146,7 @@ void shellTui_destroy(shell_tui_t* shellTui) {
     free(shellTui);
 }
 
-celix_status_t shellTui_setShell(shell_tui_t* shellTui, shell_service_t* svc) {
+celix_status_t shellTui_setShell(shell_tui_t* shellTui, celix_shell_t* svc) {
     celixThreadMutex_lock(&shellTui->mutex);
     shellTui->shell = svc;
     celixThreadMutex_unlock(&shellTui->mutex);
@@ -423,7 +423,7 @@ static void writeLine(const char* line, int pos) {
 	cursorLeft(strlen(line)-pos);
 }
 
-static int autoComplete(shell_service_t* shellSvc, char *in, int cursorPos, size_t maxLen) {
+static int autoComplete(celix_shell_t* shellSvc, char *in, int cursorPos, size_t maxLen) {
 	array_list_pt commandList = NULL;
 	array_list_pt possibleCmdList = NULL;
 	shellSvc->getCommands(shellSvc->handle, &commandList);

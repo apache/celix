@@ -24,8 +24,10 @@
 extern "C" {
 #endif
 
-#include "celix_errno.h"
+#include <stdbool.h>
 #include <stdio.h>
+
+#include "celix_errno.h"
 
 #define CELIX_SHELL_COMMAND_NAME                "command.name"
 #define CELIX_SHELL_COMMAND_USAGE               "command.usage"
@@ -37,8 +39,8 @@ extern "C" {
 typedef struct celix_shell_command celix_shell_command_t;
 
 /**
- * The command service can be used to register additional shell commands.
- * The service should be register with the following properties:
+ * The shell command can be used to register additional shell commands.
+ * This service should be register with the following properties:
  *  - command.name: mandatory, name of the command e.g. 'lb'
  *  - command.usage: optional, string describing how tu use the command e.g. 'lb [-l | -s | -u]'
  *  - command.description: optional, string describing the command e.g. 'list bundles.'
@@ -46,10 +48,16 @@ typedef struct celix_shell_command celix_shell_command_t;
 struct celix_shell_command {
     void *handle;
 
-    //TODO fix commandLine arg, needs to be const char* (increase version to 2.0.0)
-    celix_status_t (*executeCommand)(void *handle, char *commandLine, FILE *outStream, FILE *errorStream);
+    /**
+     * Calls the shell command.
+     * @param handle        The shell command handle.
+     * @param commandLine   The complete provided cmd line (e.g. for a 'stop' command -> 'stop 42')
+     * @param outStream     The output stream, to use for printing normal flow info.
+     * @param errorStream   The error stream, to use for printing error flow info.
+     * @return              Whether a command is successfully executed.
+     */
+    bool (*executeCommand)(void *handle, const char *commandLine, FILE *outStream, FILE *errorStream);
 };
-
 
 #ifdef __cplusplus
 }

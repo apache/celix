@@ -20,17 +20,32 @@
 #ifndef COMMAND_H_
 #define COMMAND_H_
 
-#include "celix_shell_command.h"
+#include "celix_errno.h"
+#include <stdio.h>
 
-#define OSGI_SHELL_COMMAND_NAME             CELIX_SHELL_COMMAND_NAME
-#define OSGI_SHELL_COMMAND_USAGE            CELIX_SHELL_COMMAND_USAGE
-#define OSGI_SHELL_COMMAND_DESCRIPTION      CELIX_SHELL_COMMAND_DESCRIPTION
+#define OSGI_SHELL_COMMAND_NAME "command.name"
+#define OSGI_SHELL_COMMAND_USAGE "command.usage"
+#define OSGI_SHELL_COMMAND_DESCRIPTION "command.description"
 
-#define OSGI_SHELL_COMMAND_SERVICE_NAME     CELIX_SHELL_COMMAND_SERVICE_NAME
-#define OSGI_SHELL_COMMAND_SERVICE_VERSION  CELIX_SHELL_COMMAND_SERVICE_VERSION
+#define OSGI_SHELL_COMMAND_SERVICE_NAME "commandService"
+#define OSGI_SHELL_COMMAND_SERVICE_VERSION "1.0.0"
 
-typedef celix_shell_command_t command_service_t; //use celix_command.h instead
-typedef celix_shell_command_t* command_service_pt; //use celix_command.h instead
+typedef struct commandService command_service_t;
+typedef command_service_t * command_service_pt;
+
+/**
+ * The command service can be used to register additional shell commands.
+ * The service should be register with the following properties:
+ *  - command.name: mandatory, name of the command e.g. 'lb'
+ *  - command.usage: optional, string describing how tu use the command e.g. 'lb [-l | -s | -u]'
+ *  - command.description: optional, string describing the command e.g. 'list bundles.'
+ *
+ *  \deprecated Replaced by celix_shell_command_t
+ */
+struct commandService {
+    void *handle;
+    celix_status_t (*executeCommand)(void *handle, char * commandLine, FILE *outStream, FILE *errorStream);
+};
 
 
 #endif /* COMMAND_H_ */

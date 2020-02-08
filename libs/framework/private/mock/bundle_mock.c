@@ -319,3 +319,9 @@ void celix_bundle_destroyServiceTrackerList(celix_array_list_t* list) {
             ->withPointerParameters("list", list);
 }
 
+const char* celix_bundle_getSymbolicName(const celix_bundle_t *bnd) {
+    mock_c()->actualCall("celix_bundle_getSymbolicName")
+            ->withConstPointerParameters("bnd", bnd);
+    return mock_c()->returnValue().value.pointerValue;
+}
+

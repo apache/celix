@@ -22,17 +22,18 @@
 #include <stdint.h>
 
 #include "celix_api.h"
-#include "shell.h"
+#include "celix_shell.h"
 #include "std_commands.h"
 
 struct print_handle {
     char *cmdLine;
     FILE *out;
     FILE *err;
+    bool callSucceeded;
 };
 
 static void printHelp(void *handle, void *svc) {
-    shell_service_t *shell = svc;
+    celix_shell_t *shell = svc;
     struct print_handle *p = handle;
     char *cmdLine = p->cmdLine;
     FILE *out = p->out;
@@ -50,7 +51,7 @@ static void printHelp(void *handle, void *svc) {
 
     if (sub == NULL) {
         unsigned int i;
-        array_list_pt commands = NULL;
+        celix_array_list_t *commands = NULL;
 
         shell->getCommands(shell->handle, &commands);
         for (i = 0; i < arrayList_size(commands); i++) {
@@ -58,16 +59,19 @@ static void printHelp(void *handle, void *svc) {
             fprintf(out, "%s\n", name);
         }
         fprintf(out, "\nUse 'help <command-name>' for more information.\n");
-        arrayList_destroy(commands);
+        celix_arrayList_destroy(commands);
+        p->callSucceeded = true; //main help is used
     } else {
         celix_status_t sub_status_desc;
         celix_status_t sub_status_usage;
         int i;
         celix_array_list_t *commands = NULL;
         shell->getCommands(shell->handle, &commands);
-        for (i = 0; i < arrayList_size(commands); i++) {
-            char *name = arrayList_get(commands, i);
+        bool cmdFound = false;
+        for (i = 0; i < celix_arrayList_size(commands); i++) {
+            char *name = celix_arrayList_get(commands, i);
             if (strcmp(sub, name) == 0) {
+                cmdFound = true;
                 char *usage_str = NULL;
                 char *desc_str = NULL;
 
@@ -88,16 +92,20 @@ static void printHelp(void *handle, void *svc) {
             free(name);
         }
         celix_arrayList_destroy(commands);
+        p->callSucceeded = cmdFound;
     }
 }
 
-celix_status_t helpCommand_execute(void *handle, char *cmdLine, FILE *out, FILE *err) {
-	celix_status_t status = CELIX_SUCCESS;
+bool helpCommand_execute(void *handle, const char *const_cmdLine, FILE *out, FILE *err) {
 	celix_bundle_context_t *ctx = handle;
 	struct print_handle printHandle;
+	char *cmdLine = celix_utils_strdup(const_cmdLine);
+
     printHandle.cmdLine = cmdLine;
     printHandle.out = out;
     printHandle.err = err;
-	celix_bundleContext_useService(ctx, OSGI_SHELL_SERVICE_NAME, &printHandle, printHelp);
-    return status;
+	bool called = celix_bundleContext_useService(ctx, CELIX_SHELL_SERVICE_NAME, &printHandle, printHelp);
+
+	free(cmdLine);
+    return called & printHandle.callSucceeded;
 }
