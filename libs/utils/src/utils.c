@@ -20,6 +20,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include "utils.h"
 #include "celix_utils.h"
