@@ -147,7 +147,6 @@ TEST(CelixBundleContextBundlesTests, startBundleWithException) {
     CHECK_TRUE(called);
 }
 
-/* TODO research why this lead to resolved instead of installed bundle for Ubuntu 18
 TEST(CelixBundleContextBundlesTests, startUnresolveableBundle) {
     long bndId = celix_bundleContext_installBundle(ctx, TEST_BND_UNRESOLVEABLE_LOC, true);
     CHECK(bndId > 0); //bundle is installed, but not resolved
@@ -166,7 +165,6 @@ TEST(CelixBundleContextBundlesTests, startUnresolveableBundle) {
     });
     CHECK_TRUE(called);
 }
- */
 
 
 TEST(CelixBundleContextBundlesTests, useBundleTest) {
