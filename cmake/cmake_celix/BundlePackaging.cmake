@@ -17,7 +17,7 @@
 
 find_program(JAR_COMMAND jar NO_CMAKE_FIND_ROOT_PATH)
 
-if(JAR_COMMAND)
+if(JAR_COMMAND AND NOT CELIX_USE_ZIP_INSTEAD_OF_JAR)
     message(STATUS "Using jar to create bundles")
 else()
     find_program(ZIP_COMMAND zip NO_CMAKE_FIND_ROOT_PATH)
@@ -257,15 +257,13 @@ function(add_celix_bundle)
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         )
     elseif(ZIP_COMMAND)
-        add_custom_command(OUTPUT ${BUNDLE_CONTENT_DIR}
-            COMMAND ${CMAKE_COMMAND} -E make_directory ${BUNDLE_CONTENT_DIR}
-        )
+        file(MAKE_DIRECTORY ${BUNDLE_CONTENT_DIR})
 
         add_custom_command(OUTPUT ${BUNDLE_FILE}
             COMMAND ${CMAKE_COMMAND} -E copy_if_different ${BUNDLE_GEN_DIR}/MANIFEST.MF META-INF/MANIFEST.MF
             COMMAND ${ZIP_COMMAND} -rq ${BUNDLE_FILE} *
             COMMENT "Packaging ${BUNDLE_TARGET_NAME}"
-            DEPENDS ${BUNDLE_CONTENT_DIR} ${BUNDLE_TARGET_NAME} "$<TARGET_PROPERTY:${BUNDLE_TARGET_NAME},BUNDLE_DEPEND_TARGETS>" ${BUNDLE_GEN_DIR}/MANIFEST.MF
+            DEPENDS ${BUNDLE_TARGET_NAME} "$<TARGET_PROPERTY:${BUNDLE_TARGET_NAME},BUNDLE_DEPEND_TARGETS>" ${BUNDLE_GEN_DIR}/MANIFEST.MF
             WORKING_DIRECTORY ${BUNDLE_CONTENT_DIR}
         )
     else()
