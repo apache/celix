@@ -54,7 +54,7 @@ add_library(Celix::framework ALIAS framework)
 if (ENABLE_TESTING)
     find_package(CppUTest REQUIRED)
     include_directories(${CPPUTEST_INCLUDE_DIR})
-    add_subdirectory(tst)
+    add_subdirectory(test)
 endif()
 
 

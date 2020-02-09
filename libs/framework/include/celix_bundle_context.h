@@ -586,12 +586,20 @@ void celix_bundleContext_useServicesWithOptions(
 celix_array_list_t* celix_bundleContext_listBundles(celix_bundle_context_t *ctx);
 
 /**
- * Check if whether a bundle is installed.
+ * Check whether a bundle is installed.
  * @param ctx       The bundle context.
  * @param bndId     The bundle id to check
  * @return          true if the bundle is installed.
  */
 bool celix_bundleContext_isBundleInstalled(celix_bundle_context_t *ctx, long bndId);
+
+/**
+ * Check whether the bundle is active.
+ * @param ctx       The bundle context.
+ * @param bndId     The bundle id to check
+ * @return          true if the bundle is installed and active.
+ */
+bool celix_bundleContext_isBundleActive(celix_bundle_context_t *ctx, long bndId);
 
 
 /**
@@ -610,30 +618,30 @@ long celix_bundleContext_installBundle(celix_bundle_context_t *ctx, const char *
  * Will silently ignore bundle ids < 0.
  *
  * @param ctx The bundle context
- * @param bundleId The bundle id to uninstall.
+ * @param bndId The bundle id to uninstall.
  * @return true if the bundle is correctly uninstalled. False if not.
  */
-bool celix_bundleContext_uninstallBundle(celix_bundle_context_t *ctx, long bundleId);
+bool celix_bundleContext_uninstallBundle(celix_bundle_context_t *ctx, long bndId);
 
 /**
  * Stop the bundle with the provided bundle id.
  * Will silently ignore bundle ids < 0.
  *
  * @param ctx The bundle context
- * @param bundleId The bundle id to stop.
+ * @param bndId The bundle id to stop.
  * @return true if the bundle is found & correctly stop. False if not.
  */
-bool celix_bundleContext_stopBundle(celix_bundle_context_t *ctx, long bundleId);
+bool celix_bundleContext_stopBundle(celix_bundle_context_t *ctx, long bndId);
 
 /**
  * Start the bundle with the provided bundle id.
  * Will silently ignore bundle ids < 0.
  *
  * @param ctx The bundle context
- * @param bundleId The bundle id to start.
+ * @param bndId The bundle id to start.
  * @return true if the bundle is found & correctly started. False if not.
  */
-bool celix_bundleContext_startBundle(celix_bundle_context_t *ctx, long bundleId);
+bool celix_bundleContext_startBundle(celix_bundle_context_t *ctx, long bndId);
 
 /**
  * track bundles

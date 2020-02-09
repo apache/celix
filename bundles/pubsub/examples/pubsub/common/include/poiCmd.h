@@ -16,10 +16,24 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+/**
+ * poiCmd.h
+ *
+ *  \date       Jan 16, 2020
+ *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
+ *  \copyright  Apache License, Version 2.0
+ */
 
-#include <CppUTest/TestHarness.h>
-#include "CppUTest/CommandLineTestRunner.h"
+#ifndef POICMD_H_
+#define POICMD_H_
 
-int main(int argc, char** argv) {
-    return RUN_ALL_TESTS(argc, argv);
-}
+#define MSG_POI_CMD_NAME "poiCmd" //Has to match the message name in the msg descriptor!
+
+struct poi_cmd{
+    char* command;
+};
+
+typedef struct poi_cmd poi_cmd_t;
+
+
+#endif /* POICMD_H_ */
