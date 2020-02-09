@@ -34,6 +34,8 @@ typedef struct celix_shell_command_entry {
     long svcId;
     celix_shell_command_t *svc;
     const celix_properties_t *props;
+    char *localName;
+    char *namespace;
 } celix_shell_command_entry_t;
 
 
@@ -49,7 +51,7 @@ typedef struct celix_legacy_command_entry {
 #define OSGI_SHELL_COMMAND_DESCRIPTION "command.description"
 struct celix_dummy_shell {
     void *handle;
-    void (*executeCommand)(void *, char*, FILE*, FILE*);
+    celix_status_t (*executeCommand)(void *, char*, FILE*, FILE*);
 };
 typedef struct celix_legacy_command_entry {
     long svcId;
@@ -62,7 +64,7 @@ struct shell {
 	celix_bundle_context_t *ctx;
     log_helper_t *logHelper;
     celix_thread_mutex_t mutex; //protects below
-    hash_map_t *commandServices; //key = char* (command name), value = celix_shell_command_entry_t*
+    hash_map_t *commandServices; //key = char* (fully qualified command name), value = celix_shell_command_entry_t*
     hash_map_t *legacyCommandServices; //key = char* (command name), value = celix_legacy_command_entry_t*
 };
 typedef struct shell shell_t;

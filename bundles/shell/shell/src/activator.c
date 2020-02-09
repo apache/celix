@@ -76,7 +76,7 @@ celix_status_t bundleActivator_create(celix_bundle_context_t* ctx, void **_pptr)
         activator->std_commands[0] =
                 (struct celix_shell_command_register_entry) {
                         .exec = lbCommand_execute,
-                        .name = "lb",
+                        .name = "celix::lb",
                         .description = "list bundles. Default only the groupless bundles are listed. Use -a to list all bundles." \
                             "\nIf a group string is provided only bundles matching the group string will be listed." \
                             "\nUse -l to print the bundle locations.\nUse -s to print the bundle symbolic names\nUse -u to print the bundle update location.",
@@ -85,63 +85,63 @@ celix_status_t bundleActivator_create(celix_bundle_context_t* ctx, void **_pptr)
         activator->std_commands[1] =
                 (struct celix_shell_command_register_entry) {
                         .exec = startCommand_execute,
-                        .name = "start",
+                        .name = "celix::start",
                         .description = "start bundle(s).",
                         .usage = "start <id> [<id> ...]"
                 };
         activator->std_commands[2] =
                 (struct celix_shell_command_register_entry) {
                         .exec = stopCommand_execute,
-                        .name = "stop",
+                        .name = "celix::stop",
                         .description = "stop bundle(s).",
                         .usage = "stop <id> [<id> ...]"
                 };
         activator->std_commands[3] =
                 (struct celix_shell_command_register_entry) {
                         .exec = installCommand_execute,
-                        .name = "install",
+                        .name = "celix::install",
                         .description = "install bundle(s).",
                         .usage = "install <file> [<file> ...]"
                 };
         activator->std_commands[4] =
                 (struct celix_shell_command_register_entry) {
                         .exec = uninstallCommand_execute,
-                        .name = "uninstall",
+                        .name = "celix::uninstall",
                         .description = "uninstall bundle(s).",
                         .usage = "uninstall <file> [<file> ...]"
                 };
         activator->std_commands[5] =
                 (struct celix_shell_command_register_entry) {
                         .exec = updateCommand_execute,
-                        .name = "update",
+                        .name = "celix::update",
                         .description = "update bundle(s).",
                         .usage = "update <id> [<URL>]"
                 };
         activator->std_commands[6] =
                 (struct celix_shell_command_register_entry) {
                         .exec = helpCommand_execute,
-                        .name = "help",
+                        .name = "celix::help",
                         .description = "display available commands and description.",
                         .usage = "help <command>]"
                 };
         activator->std_commands[7] =
                 (struct celix_shell_command_register_entry) {
                         .exec = logCommand_execute,
-                        .name = "log",
+                        .name = "celix::log",
                         .description = "print log.",
                         .usage = "log"
                 };
         activator->std_commands[8] =
                 (struct celix_shell_command_register_entry) {
                         .exec = dmListCommand_execute,
-                        .name = "dm",
+                        .name = "celix::dm",
                         .description = "Gives an overview of the component managed by a dependency manager.",
                         .usage = "dm [wtf] [f|full] [<Bundle ID> [<Bundle ID> [...]]]"
                 };
         activator->std_commands[9] =
                 (struct celix_shell_command_register_entry) {
                     .exec = queryCommand_execute,
-                    .name = "query",
+                    .name = "celix::query",
                     .description = "Query services. Query for registered and requested services" \
                     "\nIf a query is provided (or multiple), only service with a service name matching the query will be displayed." \
                     "\nIf a query is a (LDAP) filter, filter matching will be used."
@@ -154,14 +154,14 @@ celix_status_t bundleActivator_create(celix_bundle_context_t* ctx, void **_pptr)
         activator->std_commands[10] =
                 (struct celix_shell_command_register_entry) {
                         .exec = queryCommand_execute,
-                        .name = "q",
+                        .name = "celix::q",
                         .description = "Proxy for query command (see 'help query')",
                         .usage = "q [bundleId ...] [-v] [-p] [-r] [query ...]"
                 };
         activator->std_commands[11] =
               (struct celix_shell_command_register_entry) {
                       .exec = quitCommand_execute,
-                      .name = "quit",
+                      .name = "celix::quit",
                       .description = "Quit (exit) framework.",
                       .usage = "quit"
               };

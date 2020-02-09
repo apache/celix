@@ -28,7 +28,6 @@
 #include "shell_private.h"
 #include "utils.h"
 
-
 shell_t* shell_create(celix_bundle_context_t *ctx) {
     shell_t *shell = calloc(1, sizeof(*shell));
 
@@ -55,6 +54,7 @@ void shell_destroy(shell_t *shell) {
     }
 }
 
+
 celix_status_t shell_addCommand(shell_t *shell, celix_shell_command_t *svc, const celix_properties_t *props) {
     celix_status_t status = CELIX_SUCCESS;
     const char *name = celix_properties_get(props, CELIX_SHELL_COMMAND_NAME, NULL);
@@ -69,9 +69,14 @@ celix_status_t shell_addCommand(shell_t *shell, celix_shell_command_t *svc, cons
             logHelper_log(shell->logHelper, OSGI_LOGSERVICE_WARNING, "Command with name %s already registered!", name);
         } else {
             celix_shell_command_entry_t *entry = calloc(1, sizeof(*entry));
+            char *localName = NULL;
+            char *ns = NULL;
+            celix_utils_extractLocalNameAndNamespaceFromFullyQualifiedName(name, "::", &localName, &ns);
             entry->svcId = svcId;
             entry->svc = svc;
             entry->props = props;
+            entry->namespace = ns;
+            entry->localName = localName;
             hashMap_put(shell->commandServices, (void*)name, entry);
         }
         celixThreadMutex_unlock(&shell->mutex);
@@ -94,6 +99,8 @@ celix_status_t shell_removeCommand(shell_t *shell, celix_shell_command_t *svc, c
             celix_shell_command_entry_t *entry = hashMap_get(shell->commandServices, name);
             if (entry->svcId == svcId) {
                 hashMap_remove(shell->commandServices, name);
+                free(entry->localName);
+                free(entry->namespace);
                 free(entry);
             } else {
                 logHelper_log(shell->logHelper, OSGI_LOGSERVICE_WARNING, "svc id for command with name %s does not match (%li == %li)!", name, svcId, entry->svcId);
@@ -227,6 +234,34 @@ celix_status_t shell_getCommandDescription(shell_t *shell, const char *commandNa
     return status;
 }
 
+static celix_shell_command_entry_t * shell_findEntry(shell_t *shell, const char *cmdName, FILE *err) {
+    //NOTE precondition shell->mutex locked
+    celix_shell_command_entry_t *result = NULL;
+    int entriesFound = 0;
+    const char *substr = strstr(cmdName, "::");
+    if (substr == NULL) {
+        //only local name given, need to search
+        hash_map_iterator_t iter = hashMapIterator_construct(shell->commandServices);
+        while (hashMapIterator_hasNext(&iter)) {
+            celix_shell_command_entry_t *visit = hashMapIterator_nextValue(&iter);
+            if (strncmp(visit->localName, cmdName, 1024) == 0) {
+                entriesFound ++;
+                result = visit;
+            }
+        }
+    } else {
+        //:: present, assuming fully qualified name given, can just lookup
+        result = hashMap_get(shell->commandServices, cmdName);
+    }
+
+    if (entriesFound > 1 ) {
+        fprintf(err, "Got more than 1 command with the name '%s', found %i. Please use the fully qualified name for the requested command.\n", cmdName, entriesFound);
+        result = NULL;
+    }
+
+    return result;
+}
+
 celix_status_t shell_executeCommand(shell_t *shell, const char *commandLine, FILE *out, FILE *err) {
 	celix_status_t status = CELIX_SUCCESS;
 
@@ -234,14 +269,16 @@ celix_status_t shell_executeCommand(shell_t *shell, const char *commandLine, FIL
 
     char *commandName = (pos != strlen(commandLine)) ? strndup(commandLine, pos) : strdup(commandLine);
 
+
     celixThreadMutex_lock(&shell->mutex);
-    celix_shell_command_entry_t *entry = hashMap_get(shell->commandServices, commandName);
+    celix_shell_command_entry_t *entry = shell_findEntry(shell, commandName, err);
     celix_legacy_command_entry_t *legacyEntry = hashMap_get(shell->legacyCommandServices, commandName);
     if (entry != NULL) {
-        entry->svc->executeCommand(entry->svc->handle, commandLine, out, err);
+        bool succeeded = entry->svc->executeCommand(entry->svc->handle, commandLine, out, err);
+        status = succeeded ? CELIX_SUCCESS : CELIX_BUNDLE_EXCEPTION;
     } else if (legacyEntry != NULL) {
         char *cl = (void*)commandLine; //NOTE this is needed for the legacy command services (also the reason why it is legacy/deprecated)
-        legacyEntry->svc->executeCommand(legacyEntry->svc->handle, cl, out, err);
+        status = legacyEntry->svc->executeCommand(legacyEntry->svc->handle, cl, out, err);
     } else {
         fprintf(err, "No command '%s'. Provided command line: %s\n", commandName, commandLine);
         status = CELIX_BUNDLE_EXCEPTION;

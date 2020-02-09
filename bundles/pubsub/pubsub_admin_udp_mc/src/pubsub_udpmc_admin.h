@@ -45,7 +45,7 @@ void pubsub_udpmcAdmin_removeSerializerSvc(void *handle, void *svc, const celix_
 celix_status_t pubsub_udpmcAdmin_addEndpoint(void *handle, const celix_properties_t *endpoint);
 celix_status_t pubsub_udpmcAdmin_removeEndpoint(void *handle, const celix_properties_t *endpoint);
 
-celix_status_t pubsub_udpmcAdmin_executeCommand(void *handle, char *commandLine, FILE *outStream, FILE *errStream);
+bool pubsub_udpmcAdmin_executeCommand(void *handle, const char *commandLine, FILE *outStream, FILE *errStream);
 
 #endif //CELIX_PUBSUB_UDPMC_ADMIN_H
 

@@ -44,7 +44,7 @@ typedef struct pstm_activator {
     pubsub_discovered_endpoint_listener_t discListenerSvc;
     long discListenerSvcId;
 
-    command_service_t shellCmdSvc;
+    celix_shell_command_t shellCmdSvc;
     long shellCmdSvcId;
 
     log_helper_t *loghelper;
@@ -131,10 +131,10 @@ static int pstm_start(pstm_activator_t *act, celix_bundle_context_t *ctx) {
         act->shellCmdSvc.handle = act->manager;
         act->shellCmdSvc.executeCommand = pubsub_topologyManager_shellCommand;
         celix_properties_t *props = celix_properties_create();
-        celix_properties_set(props, OSGI_SHELL_COMMAND_NAME, "pstm");
-        celix_properties_set(props, OSGI_SHELL_COMMAND_USAGE, "pstm [topology|metrics]"); //TODO add search topic/scope option
-        celix_properties_set(props, OSGI_SHELL_COMMAND_DESCRIPTION, "pubsub_topology_info: Overview of Topology information for PubSub");
-        act->shellCmdSvcId = celix_bundleContext_registerService(ctx, &act->shellCmdSvc, OSGI_SHELL_COMMAND_SERVICE_NAME, props);
+        celix_properties_set(props, CELIX_SHELL_COMMAND_NAME, "celix::pstm");
+        celix_properties_set(props, CELIX_SHELL_COMMAND_USAGE, "pstm [topology|metrics]"); //TODO add search topic/scope option
+        celix_properties_set(props, CELIX_SHELL_COMMAND_DESCRIPTION, "pubsub_topology_info: Overview of Topology information for PubSub");
+        act->shellCmdSvcId = celix_bundleContext_registerService(ctx, &act->shellCmdSvc, CELIX_SHELL_COMMAND_SERVICE_NAME, props);
     }
 
     //TODO add tracker for pubsub_serializer and

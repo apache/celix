@@ -40,6 +40,7 @@ framework_logger_pt logger = (framework_logger_pt) 0x666;
 }
 
 int main(int argc, char** argv) {
+    MemoryLeakWarningPlugin::turnOffNewDeleteOverloads();
     return RUN_ALL_TESTS(argc, argv);
 }
 

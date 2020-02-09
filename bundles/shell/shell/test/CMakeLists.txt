@@ -26,6 +26,10 @@ target_link_libraries(test_shell PRIVATE Celix::framework CURL::libcurl ${CPPUTE
 target_include_directories(test_shell PRIVATE ${CPPUTEST_INCLUDE_DIRS})
 add_dependencies(test_shell shell_bundle)
 target_compile_definitions(test_shell PRIVATE -DSHELL_BUNDLE_LOCATION=\"$<TARGET_PROPERTY:shell,BUNDLE_FILE>\")
+target_compile_options(test_shell PRIVATE -Wno-deprecated-declarations)
+if (CELIX_ADD_DEPRECATED_API)
+    target_compile_definitions(test_shell PRIVATE CELIX_ADD_DEPRECATED_API)
+endif ()
 
 add_test(NAME test_shell COMMAND test_shell)
 SETUP_TARGET_FOR_COVERAGE(test_shell_cov test_shell ${CMAKE_BINARY_DIR}/coverage/test_shell/test_shell ..)

@@ -619,7 +619,7 @@ celix_status_t pubsub_tcpAdmin_removeDiscoveredEndpoint(void *handle, const celi
     return status;
 }
 
-celix_status_t pubsub_tcpAdmin_executeCommand(void *handle, char *commandLine __attribute__((unused)), FILE *out, FILE *errStream __attribute__((unused))) {
+bool pubsub_tcpAdmin_executeCommand(void *handle, const char *commandLine __attribute__((unused)), FILE *out, FILE *errStream __attribute__((unused))) {
     pubsub_tcp_admin_t *psa = handle;
     celix_status_t  status = CELIX_SUCCESS;
 

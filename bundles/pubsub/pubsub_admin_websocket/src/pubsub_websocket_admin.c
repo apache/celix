@@ -547,9 +547,8 @@ celix_status_t pubsub_websocketAdmin_removeDiscoveredEndpoint(void *handle, cons
     return status;
 }
 
-celix_status_t pubsub_websocketAdmin_executeCommand(void *handle, char *commandLine __attribute__((unused)), FILE *out, FILE *errStream __attribute__((unused))) {
+bool pubsub_websocketAdmin_executeCommand(void *handle, const char *commandLine __attribute__((unused)), FILE *out, FILE *errStream __attribute__((unused))) {
     pubsub_websocket_admin_t *psa = handle;
-    celix_status_t  status = CELIX_SUCCESS;
 
     fprintf(out, "\n");
     fprintf(out, "Topic Senders:\n");
@@ -609,7 +608,7 @@ celix_status_t pubsub_websocketAdmin_executeCommand(void *handle, char *commandL
     celixThreadMutex_unlock(&psa->serializers.mutex);
     fprintf(out, "\n");
 
-    return status;
+    return true;
 }
 
 pubsub_admin_metrics_t* pubsub_websocketAdmin_metrics(void *handle) {

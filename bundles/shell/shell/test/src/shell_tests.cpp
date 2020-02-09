@@ -17,12 +17,13 @@
  * under the License.
  */
 
-#include <CppUTest/TestHarness.h>
-#include <CppUTest/CommandLineTestRunner.h>
 
 #include "celix_shell_command.h"
 #include "celix_api.h"
 #include "celix_shell.h"
+
+#include <CppUTest/TestHarness.h>
+#include <CppUTest/CommandLineTestRunner.h>
 
 #ifdef SHELL_BUNDLE_LOCATION
 const char * const SHELL_BUNDLE = SHELL_BUNDLE_LOCATION;
@@ -64,10 +65,8 @@ TEST(CelixShellTests, shellBundleInstalledTest) {
     celix_arrayList_destroy(bndIds);
 }
 
-static bool callCommand(celix_bundle_context_t *ctx, const char *cmdName, const char *cmdLine, bool cmdShouldSucceed) {
+static void callCommand(celix_bundle_context_t *ctx, const char *cmdLine, bool cmdShouldSucceed) {
     celix_service_use_options_t opts{};
-    char filter[512];
-    snprintf(filter, 512, "(command.name=%s)", cmdName);
 
     struct callback_data {
         const char *cmdLine{};
@@ -77,83 +76,52 @@ static bool callCommand(celix_bundle_context_t *ctx, const char *cmdName, const 
     data.cmdLine = cmdLine;
     data.cmdShouldSucceed = cmdShouldSucceed;
 
-    opts.filter.serviceName = CELIX_SHELL_COMMAND_SERVICE_NAME;
-    opts.filter.filter = filter;
+    opts.filter.serviceName = CELIX_SHELL_SERVICE_NAME;
     opts.callbackHandle = static_cast<void*>(&data);
     opts.waitTimeoutInSeconds = 1.0;
     opts.use = [](void *handle, void *svc) {
-        auto *cmd = static_cast<celix_shell_command_t*>(svc);
+        auto *shell = static_cast<celix_shell_t *>(svc);
         auto *d = static_cast<struct callback_data*>(handle);
-        CHECK_TRUE(cmd != nullptr);
-        bool succeeded = cmd->executeCommand(cmd->handle, d->cmdLine, stdout, stderr);
+        CHECK_TRUE(shell != nullptr);
+        celix_status_t status = shell->executeCommand(shell->handle, d->cmdLine, stdout, stderr);
         if (d->cmdShouldSucceed) {
-            CHECK_TRUE_TEXT(succeeded, d->cmdLine);
+            CHECK_EQUAL_TEXT(CELIX_SUCCESS, status, d->cmdLine);
         } else {
-            CHECK_FALSE_TEXT(succeeded, d->cmdLine);
+            CHECK_TRUE_TEXT(status != CELIX_SUCCESS, d->cmdLine);
         }
     };
     bool called = celix_bundleContext_useServiceWithOptions(ctx, &opts);
-    return called;
+    CHECK_TRUE(called);
 }
 
 TEST(CelixShellTests, testAllCommandsAreCallable) {
-    bool called = callCommand(ctx, "non-existing", "non-existing", false);
-    CHECK_FALSE(called);
-
-    called = callCommand(ctx, "install", "install a-bundle-loc.zip", false);
-    CHECK_TRUE(called);
-
-    called = callCommand(ctx, "help", "help", true);
-    CHECK_TRUE(called);
-
-    called = callCommand(ctx, "help", "help lb", true);
-    CHECK_TRUE(called);
-
-    called = callCommand(ctx, "help", "help non-existing-command", false);
-    CHECK_TRUE(called);
-
-    called = callCommand(ctx, "lb", "lb -a", true);
-    CHECK_TRUE(called);
-
-    called = callCommand(ctx, "lb", "lb -a", true);
-    CHECK_TRUE(called);
-
-    called = callCommand(ctx, "lb", "lb", true);
-    CHECK_TRUE(called);
-
-    called = callCommand(ctx, "query", "query", true);
-    CHECK_TRUE(called);
-
-    called = callCommand(ctx, "q", "q -v", true);
-    CHECK_TRUE(called);
-
-    called = callCommand(ctx, "stop", "stop 15", false);
-    CHECK_TRUE(called);
-
-    called = callCommand(ctx, "start", "start 15", false);
-    CHECK_TRUE(called);
-
-    called = callCommand(ctx, "uninstall", "uninstall 15", false);
-    CHECK_TRUE(called);
-
-    called = callCommand(ctx, "update", "update 15", false);
-    CHECK_TRUE(called);
+    callCommand(ctx, "non-existing", false);
+    callCommand(ctx, "install a-bundle-loc.zip", false);
+    callCommand(ctx, "help lb", false); //note need namespace
+    callCommand(ctx, "help celix::lb", true);
+    callCommand(ctx, "help non-existing-command", false);
+    callCommand(ctx, "lb -a", true);
+    callCommand(ctx, "lb", true);
+    callCommand(ctx, "query", true);
+    callCommand(ctx, "q -v", true);
+    callCommand(ctx, "stop 15", false);
+    callCommand(ctx, "start 15", false);
+    callCommand(ctx, "uninstall 15", false);
+    callCommand(ctx, "update 15", false);
 }
 
 TEST(CelixShellTests, quitTest) {
-    bool called = callCommand(ctx, "quit", "quit", true);
-    CHECK_TRUE(called);
+    callCommand(ctx, "quit", true);
 }
 
 TEST(CelixShellTests, stopFrameworkTest) {
-    bool called = callCommand(ctx, "stop", "stop 0", true);
-    CHECK_TRUE(called);
+    callCommand(ctx, "stop 0", true);
 }
 
 TEST(CelixShellTests, queryTest) {
     celix_service_use_options_t opts{};
     opts.filter.serviceName = CELIX_SHELL_COMMAND_SERVICE_NAME;
-    opts.filter.filter = "(command.name=query)";
+    opts.filter.filter = "(command.name=celix::query)";
     opts.waitTimeoutInSeconds = 1.0;
     opts.use = [](void */*handle*/, void *svc) {
         auto *command = static_cast<celix_shell_command_t*>(svc);
@@ -183,8 +151,31 @@ TEST(CelixShellTests, queryTest) {
     CHECK_TRUE(called);
 }
 
+TEST(CelixShellTests, localNameClashTest) {
+    callCommand(ctx, "lb", true);
+
+    celix_shell_command_t cmdService;
+    cmdService.handle = nullptr;
+    cmdService.executeCommand = [](void *, const char* cmdLine, FILE *, FILE *) -> bool {
+        CHECK_TRUE(cmdLine != NULL);
+        return true;
+    };
+
+    celix_properties_t *props = celix_properties_create();
+    celix_properties_set(props, CELIX_SHELL_COMMAND_NAME, "3rdparty::lb");
+    long svcId = celix_bundleContext_registerService(ctx, &cmdService, CELIX_SHELL_COMMAND_SERVICE_NAME, props);
+
+    //two lb commands, need namespace
+    callCommand(ctx, "lb", false);
+    callCommand(ctx, "celix::lb", true);
+    callCommand(ctx, "3rdparty::lb", true);
+
+    celix_bundleContext_unregisterService(ctx, svcId);
+
+}
+
 #ifdef CELIX_ADD_DEPRECATED_API
-#include "command.H"
+#include "command.h"
 TEST(CelixShellTests, legacyCommandTest) {
     command_service_t cmdService;
     cmdService.handle = nullptr;
@@ -197,28 +188,7 @@ TEST(CelixShellTests, legacyCommandTest) {
     celix_properties_set(props, OSGI_SHELL_COMMAND_NAME, "testCommand");
     long svcId = celix_bundleContext_registerService(ctx, &cmdService, OSGI_SHELL_COMMAND_SERVICE_NAME, props);
 
-    celix_service_use_options_t opts{};
-    opts.filter.serviceName = CELIX_SHELL_SERVICE_NAME;
-    opts.waitTimeoutInSeconds = 1.0;
-    opts.use = [](void */*handle*/, void *svc) {
-        auto *shell = static_cast<celix_shell_t*>(svc);
-        celix_array_list_t *commands = nullptr;
-        shell->getCommands(shell->handle, &commands);
-        bool commandFound = false;
-        for (int i = 0; i < celix_arrayList_size(commands); ++i) {
-            auto* name = static_cast<char*>(celix_arrayList_get(commands, i));
-            if (strncmp(name, "testCommand", 64) == 0) {
-                commandFound = true;
-            }
-            free(name);
-        }
-        celix_arrayList_destroy(commands);
-        CHECK_TRUE(commandFound);
-
-        shell->executeCommand(shell->handle, "testCommand withArg", stdout, stderr);
-    };
-    bool called = celix_bundleContext_useServiceWithOptions(ctx, &opts);
-    CHECK_TRUE(called);
+    callCommand(ctx, "testCommand", true);
 
     celix_bundleContext_unregisterService(ctx, svcId);
 }

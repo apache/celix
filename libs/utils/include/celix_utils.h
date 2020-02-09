@@ -33,6 +33,20 @@ extern "C" {
  */
 char* celix_utils_strdup(const char *str);
 
+
+/**
+ * Extract a local name and namespace from a fully qualified name using the provided namespace separator.
+ * so fully qualified name = celix::extra::lb, namespace separator = "::" -> local name = lb, namespace = celix::extra
+ *
+ * Note that if no namespace is present the output for namespace will be NULL.
+ *
+ * @param fullyQualifiedName    The fully qualified name to split
+ * @param namespaceSeparator    The namespace separator
+ * @param outLocalName          A output argument for the local name part. Caller is owner of the data.
+ * @param outNamespace          A output argument for the (optional) namespace part. Caller is owner of the data.
+ */
+void celix_utils_extractLocalNameAndNamespaceFromFullyQualifiedName(const char *fullyQualifiedName, const char *namespaceSeparator, char **outLocalName, char **outNamespace);
+
 #ifdef __cplusplus
 }
 #endif
