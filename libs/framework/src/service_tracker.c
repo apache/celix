@@ -32,8 +32,6 @@
 #include "celix_log.h"
 #include "bundle_context_private.h"
 #include "celix_array_list.h"
-#include "../../utils/src/version_range_private.h"
-#include "../../utils/src/version_private.h"
 
 static celix_status_t serviceTracker_track(celix_service_tracker_instance_t *tracker, service_reference_pt reference, celix_service_event_t *event);
 static celix_status_t serviceTracker_untrack(celix_service_tracker_instance_t *tracker, service_reference_pt reference, celix_service_event_t *event);
