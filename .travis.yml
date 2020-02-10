@@ -19,19 +19,31 @@ env:
 matrix:
     include:
        - os: linux
-         dist: trusty
+         dist: bionic
          compiler: gcc
+         name: "Ubuntu Bionic (18) gcc"
        - os: linux
-         dist: trusty
+         dist: bionic
          compiler: clang
+         name: "Ubuntu Bionic (18) clang"
        - os: osx
          osx_image: xcode10.2
          compiler: clang
          env: MACOSX_DEPLOYMENT_TARGET=10.14
+         name: "OSX (10.14) clang"
        - os: linux
-         dist: trusty
+         dist: bionic
          compiler: gcc
          env: SANITIZE=1
+         name: "Ubuntu Bionic (18) gcc; address sanitizer"
+       - os: linux
+         dist: bionic
+         compiler: gcc
+         env:
+           - USE_ZIP_INSTEAD_OF_JAR=1
+           - ONLY_V3_API=1
+         name: "Ubuntu Bionic (18) gcc; only v3 api"
+
 
 #DISABLED ANDROID BUILD
 #       - os: linux
@@ -41,27 +53,10 @@ matrix:
 #services: docker
 
 before_install:
-  - if [ "$TRAVIS_OS_NAME" = "linux" ] &&  [ -z "$ANDROID" ]; then sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y && sudo apt-get -qq update && sudo apt-get install -y uuid-dev libxml2-dev lcov libffi-dev gcc-4.8 g++-4.8; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew update && brew install lcov libffi zeromq czmq openssl && brew link --force libffi; fi
+  - if [ "$TRAVIS_OS_NAME" = "linux" ] &&  [ -z "$ANDROID" ]; then sudo apt-get -qq update && sudo apt-get install -y build-essential cmake libcurl4-openssl-dev uuid-dev libxml2-dev lcov libffi-dev libczmq-dev libcpputest-dev libjansson-dev; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew update && brew install lcov libffi zeromq czmq openssl jansson cpputest && brew link --force libffi; fi
 
 before_script:
-    - wget https://github.com/cpputest/cpputest/releases/download/v3.8/cpputest-3.8.tar.gz -O /tmp/cpputest.tar.gz
-    - tar -xzvf /tmp/cpputest.tar.gz -C /tmp
-    - if [ "$CC" = "clang" ]; then export CXX="clang++"; fi && cd /tmp/cpputest-* && ./configure --prefix=/usr/local && make && sudo make install && cd -
-    - cd /tmp/cpputest-* && ./configure --prefix=/usr/local && make && sudo make install && cd -
-    - wget https://github.com/zeromq/libzmq/releases/download/v4.3.1/zeromq-4.3.1.tar.gz -O /tmp/zeromq.tar.gz
-    - tar -xzvf /tmp/zeromq.tar.gz -C /tmp && cd /tmp/zeromq-* && mkdir build && cd build
-    - if [ "$TRAVIS_OS_NAME" = "linux" ] &&  [ -z "$ANDROID" ]; then cmake -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_CURVE=ON .. && make && sudo make install; fi 
-    - cd $TRAVIS_BUILD_DIR
-    - wget https://github.com/zeromq/czmq/releases/download/v4.2.0/czmq-4.2.0.tar.gz -O /tmp/czmq.tar.gz
-    - tar -xzvf /tmp/czmq.tar.gz -C /tmp && cd /tmp/czmq-* && mkdir build && cd build
-    - if [ "$TRAVIS_OS_NAME" = "linux" ] &&  [ -z "$ANDROID" ]; then cmake -DCMAKE_INSTALL_PREFIX=/usr/local .. && make && sudo make install; fi
-    - cd $TRAVIS_BUILD_DIR
-    - git clone https://github.com/akheron/jansson.git jansson-build
-    - cd jansson-build && git checkout 2.7
-    - cmake -DJANSSON_BUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=/usr/local . && make
-    - sudo make install
-    - cd -
     - mkdir build install
     - export BUILD_OPTIONS=" \
         -DBUILD_REMOTE_SERVICE_ADMIN=ON \
@@ -89,20 +84,17 @@ before_script:
         -DBUILD_PUBSUB=OFF \
         -DBUILD_PUBSUB_PSA_ZMQ=OFF \
         -DBUILD_RSA_DISCOVERY_SHM=OFF "
-    - export BUILD_OPTIONS_SANITIZE=" -DENABLE_ADDRESS_SANITIZER=ON"
 
 script:
-    #- if [ "$SANITIZE" == 1 ]; then export CC=/usr/bin/gcc-4.8 CXX=/usr/bin/g++-4.8 CFLAGS="-lasan -fsanitize=address"  CXXFLAGS="-lasan -fsanitize=address" ASAN_OPTIONS="symbolize=1" ASAN_SYMBOLIZER_PATH="/usr/local/clang-3.4/bin/llvm-symbolizer"; fi
-    - if [ "$SANITIZE" == 1 ]; then export BUILD_OPTIONS="${BUILD_OPTIONS} ${BUILD_OPTIONS_SANITIZE}"; fi
-     # the following setup is broken:
-     # RSA_DISCOVERY_SHM is only working on linux, but both compilers (see CELIX-277)
-     # RSA_SHM is only working on linux, but both compilers (see CELIX-277)
-    - cd build
-    - if [ "$CC" = "gcc" ] && [ "$TRAVIS_OS_NAME" = "linux" ]; then export BUILD_OPTS="${BUILD_OPTS} -DENABLE_CODE_COVERAGE=ON"; fi
-    - if [ "$TRAVIS_OS_NAME" = "linux" ] && [ -z "$ANDROID" ]; then cmake -DCMAKE_BUILD_TYPE=Debug ${BUILD_OPTIONS} ${BUILD_OPTIONS_LINUX} -DBUILD_FRAMEWORK_TESTS=ON -DBUILD_UTILS-TESTS=ON -DENABLE_TESTING=ON ${BUILD_OPTS} -DCMAKE_INSTALL_PREFIX=../install ..; fi
-    - if [ "$TRAVIS_OS_NAME" = "osx" ]; then cmake -DCMAKE_BUILD_TYPE=Debug ${BUILD_OPTIONS} ${BUILD_OPTIONS_OSX} -DBUILD_FRAMEWORK_TESTS=ON -DBUILD_UTILS-TESTS=ON -DENABLE_TESTING=ON -DFFI_LIBRARY=/usr/local/opt/libffi/lib/libffi.dylib ${BUILD_OPTS} -DCMAKE_INSTALL_PREFIX=../install ..; fi
-    - if [ -z "$ANDROID" ]; then make all && make deploy && sudo make install; else cd .. && docker build -t celixandroid - < misc/Dockerfile.Android ; fi
-    - if [ -z "$ANDROID" ]; then export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH:`pwd`/utils:`pwd`/framework:`pwd`/dfi && make test ARGS="-V"; else docker run celixandroid; fi 
+  - if [ "$SANITIZE" == 1 ]; then export BUILD_OPTIONS="${BUILD_OPTIONS} DENABLE_ADDRESS_SANITIZER=ON"; fi
+  - if [ "$USE_ZIP_INSTEAD_OF_JAR" == 1 ]; then export BUILD_OPTIONS="${BUILD_OPTIONS} -DDCELIX_USE_ZIP_INSTEAD_OF_JAR=ON"; fi
+  - if [ "$ONLY_V3_API" == 1 ]; then export BUILD_OPTIONS="${BUILD_OPTIONS} -DCELIX_ADD_DEPRECATED_API=OFF"; fi
+  - cd build
+  - if [ "$CC" = "gcc" ] && [ "$TRAVIS_OS_NAME" = "linux" ]; then export BUILD_OPTS="${BUILD_OPTS} -DENABLE_CODE_COVERAGE=ON"; fi
+  - if [ "$TRAVIS_OS_NAME" = "linux" ] && [ -z "$ANDROID" ]; then cmake -DCMAKE_BUILD_TYPE=Debug ${BUILD_OPTIONS} ${BUILD_OPTIONS_LINUX} -DBUILD_FRAMEWORK_TESTS=ON -DBUILD_UTILS-TESTS=ON -DENABLE_TESTING=ON ${BUILD_OPTS} -DCMAKE_INSTALL_PREFIX=../install ..; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then cmake -DCMAKE_BUILD_TYPE=Debug ${BUILD_OPTIONS} ${BUILD_OPTIONS_OSX} -DBUILD_FRAMEWORK_TESTS=ON -DBUILD_UTILS-TESTS=ON -DENABLE_TESTING=ON -DFFI_LIBRARY=/usr/local/opt/libffi/lib/libffi.dylib ${BUILD_OPTS} -DCMAKE_INSTALL_PREFIX=../install ..; fi
+  - if [ -z "$ANDROID" ]; then make all && make deploy && sudo make install; else cd .. && docker build -t celixandroid - < misc/Dockerfile.Android ; fi
+  - if [ -z "$ANDROID" ]; then export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH:`pwd`/utils:`pwd`/framework:`pwd`/dfi && make test ARGS="-V"; else docker run celixandroid; fi
 
 after_success:
     - if [ "$CC" = "gcc" ] && [ "$TRAVIS_OS_NAME" = "linux" ]; then 
