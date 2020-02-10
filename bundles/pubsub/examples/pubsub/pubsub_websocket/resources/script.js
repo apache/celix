@@ -17,22 +17,38 @@
  * under the License.
  */
 
+var seqnr = 0;
+var sendSocketP1;
+
 function docReady() {
     var host = window.location.host;
-    var shellSocketP1 = new WebSocket("ws://" + host + "/pubsub/default/poi1");
-    var shellSocketP2 = new WebSocket("ws://" + host + "/pubsub/default/poi2");
+    var rcvSocketP1 = new WebSocket("ws://" + host + "/pubsub/default/poi1");
+    var rcvSocketP2 = new WebSocket("ws://" + host + "/pubsub/default/poi2");
+    sendSocketP1 = new WebSocket("ws://" + host + "/pubsub/default/poiCmd");
 
-    shellSocketP1.onmessage = function (event) {
+    rcvSocketP1.onmessage = function (event) {
         console.log(event);
         var obj = JSON.parse(event.data);
         document.getElementById("receivePoi1").innerHTML = "Received " + obj.id + " message with sequence nr: "
             + obj.seqNr + "<br/>latitude = " + JSON.stringify(obj.data.location.lat) + "<br/>longitude = " + JSON.stringify(obj.data.location.lon);
     };
 
-    shellSocketP2.onmessage = function (event) {
+    rcvSocketP2.onmessage = function (event) {
         console.log(event);
         var obj = JSON.parse(event.data);
         document.getElementById("receivePoi2").innerHTML = "Received " + obj.id + " message with sequence nr: "
             + obj.seqNr + "<br/>latitude = " + JSON.stringify(obj.data.location.lat) + "<br/>longitude = " + JSON.stringify(obj.data.location.lon);
     };
+}
+
+function submitForm() {
+    var element = document.getElementById("command");
+    var value = element.options[element.selectedIndex].value;
+    let msg = "{\"id\":\"poiCmd\", \"major\": 1, \"minor\": 0, \"seqNr\": " + seqnr++ + ", \"data\": {" +
+        "\"command\": \"" + value + "\" }}";
+
+    console.log("Sending message: " + msg);
+    sendSocketP1.send(msg);
+    alert("sending message: " + msg);
+    return false;
 }

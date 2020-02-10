@@ -35,6 +35,26 @@
         <br/>
         <p id="receivePoi2"></p>
     </div>
+    <div>
+        <h1>Send start/stop message:</h1>
+        <br/>
+        <form onsubmit="return submitForm()">
+            <table>
+                <tr>
+                    <td>
+                        <p>Choose command: </p>
+                    </td>
+                    <td>
+                        <select name="command" id="command">
+                            <option value="start" selected="selected">Start</option>
+                            <option value="stop">Stop</option>
+                        </select>
+                    </td>
+                </tr>
+            </table>
+            <input type="submit" name="submit" class="button" id="button" value="Send!">
+        </form>
+    </div>
     <script>docReady();</script>
 </body>
 </html>

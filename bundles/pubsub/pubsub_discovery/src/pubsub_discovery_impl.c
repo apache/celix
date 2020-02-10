@@ -581,7 +581,7 @@ static char* pubsub_discovery_createJsonEndpoint(const celix_properties_t *props
     return str;
 }
 
-celix_status_t pubsub_discovery_executeCommand(void *handle, char * commandLine __attribute__((unused)), FILE *os, FILE *errorStream __attribute__((unused))) {
+bool pubsub_discovery_executeCommand(void *handle, const char * commandLine __attribute__((unused)), FILE *os, FILE *errorStream __attribute__((unused))) {
     pubsub_discovery_t *disc = handle;
 
     struct timespec now;
@@ -646,5 +646,5 @@ celix_status_t pubsub_discovery_executeCommand(void *handle, char * commandLine 
     }
     celixThreadMutex_unlock(&disc->announcedEndpointsMutex);
 
-    return CELIX_SUCCESS;
+    return true;
 }

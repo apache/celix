@@ -22,7 +22,7 @@
 #include <string.h>
 
 #include "log_helper.h"
-#include "command.h"
+#include "celix_shell_command.h"
 
 #include "celix_bundle_context.h"
 #include "celix_bundle_activator.h"
@@ -41,7 +41,7 @@ typedef struct psd_activator {
     pubsub_announce_endpoint_listener_t listenerSvc;
     long listenerSvcId;
 
-    command_service_t cmdSvc;
+    celix_shell_command_t cmdSvc;
     long cmdSvcId;
 
     log_helper_t *loghelper;
@@ -74,10 +74,10 @@ static celix_status_t psd_start(psd_activator_t *act, celix_bundle_context_t *ct
         act->cmdSvc.handle = act->pubsub_discovery;
         act->cmdSvc.executeCommand = pubsub_discovery_executeCommand;
         celix_properties_t *props = celix_properties_create();
-        celix_properties_set(props, OSGI_SHELL_COMMAND_NAME, "psd_etcd");
-        celix_properties_set(props, OSGI_SHELL_COMMAND_USAGE, "psd_etcd"); //TODO add search topic/scope option
-        celix_properties_set(props, OSGI_SHELL_COMMAND_DESCRIPTION, "Overview of discovered/announced endpoints from/to ETCD");
-        act->cmdSvcId = celix_bundleContext_registerService(ctx, &act->cmdSvc, OSGI_SHELL_COMMAND_SERVICE_NAME, props);
+        celix_properties_set(props, CELIX_SHELL_COMMAND_NAME, "celix::psd_etcd");
+        celix_properties_set(props, CELIX_SHELL_COMMAND_USAGE, "psd_etcd");
+        celix_properties_set(props, CELIX_SHELL_COMMAND_DESCRIPTION, "Overview of discovered/announced endpoints from/to ETCD");
+        act->cmdSvcId = celix_bundleContext_registerService(ctx, &act->cmdSvc, CELIX_SHELL_COMMAND_SERVICE_NAME, props);
     }
 
     if (status == CELIX_SUCCESS) {

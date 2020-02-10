@@ -23,7 +23,7 @@
 #include "service_reference.h"
 #include "bundle_context.h"
 #include "log_helper.h"
-#include "command.h"
+#include "celix_shell_command.h"
 #include "celix_bundle_context.h"
 
 #include "pubsub_endpoint.h"
@@ -124,7 +124,7 @@ void pubsub_topologyManager_publisherTrackerRemoved(void *handle, const celix_se
 celix_status_t pubsub_topologyManager_addDiscoveredEndpoint(void *handle, const celix_properties_t *properties);
 celix_status_t pubsub_topologyManager_removeDiscoveredEndpoint(void *handle, const celix_properties_t *properties);
 
-celix_status_t pubsub_topologyManager_shellCommand(void *handle, char * commandLine, FILE *outStream, FILE *errorStream);
+bool pubsub_topologyManager_shellCommand(void *handle, const char * commandLine, FILE *outStream, FILE *errorStream);
 
 void pubsub_topologyManager_addMetricsService(void * handle, void *svc, const celix_properties_t *props);
 void pubsub_topologyManager_removeMetricsService(void * handle, void *svc, const celix_properties_t *props);

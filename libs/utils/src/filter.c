@@ -59,7 +59,7 @@ static celix_filter_t * filter_parseFilter(char * filterString, int * pos) {
     celix_filter_t * filter;
     filter_skipWhiteSpace(filterString, pos);
     if (filterString[*pos] != '(') {
-        fprintf(stderr, "Filter Error: Missing '(' in filter string '%s'.", filterString);
+        fprintf(stderr, "Filter Error: Missing '(' in filter string '%s'.\n", filterString);
         return NULL;
     }
     (*pos)++;
@@ -69,7 +69,7 @@ static celix_filter_t * filter_parseFilter(char * filterString, int * pos) {
     filter_skipWhiteSpace(filterString, pos);
 
     if (filterString[*pos] != ')') {
-        fprintf(stderr, "Filter Error: Missing ')' in filter string '%s'.", filterString);
+        fprintf(stderr, "Filter Error: Missing ')' in filter string '%s'.\n", filterString);
         if(filter!=NULL){
             filter_destroy(filter);
         }
@@ -110,7 +110,7 @@ static celix_filter_t * filter_parseAndOrOr(char * filterString, celix_filter_op
     bool failure = false;
 
     if (filterString[*pos] != '(') {
-        fprintf(stderr, "Filter Error: Missing '('.");
+        fprintf(stderr, "Filter Error: Missing '('.\n");
         return NULL;
     }
 
@@ -146,7 +146,7 @@ static celix_filter_t * filter_parseNot(char * filterString, int * pos) {
     filter_skipWhiteSpace(filterString, pos);
 
     if (filterString[*pos] != '(') {
-        fprintf(stderr, "Filter Error: Missing '('.");
+        fprintf(stderr, "Filter Error: Missing '('.\n");
         return NULL;
     }
 
@@ -259,7 +259,7 @@ static celix_filter_t * filter_parseItem(char * filterString, int * pos) {
             return filter;
         }
     }
-    fprintf(stderr, "Filter Error: Invalid operator.");
+    fprintf(stderr, "Filter Error: Invalid operator.\n");
     free(attr);
     return NULL;
 }
@@ -286,7 +286,7 @@ static char * filter_parseAttr(char * filterString, int * pos) {
     length = end - begin;
 
     if (length == 0) {
-        fprintf(stderr, "Filter Error: Missing attr.");
+        fprintf(stderr, "Filter Error: Missing attr.\n");
         return NULL;
     } else {
         char * attr = (char *) calloc(1, length+1);
@@ -309,12 +309,12 @@ static char * filter_parseValue(char * filterString, int * pos) {
                 break;
             }
             case '(': {
-                fprintf(stderr, "Filter Error: Invalid value.");
+                fprintf(stderr, "Filter Error: Invalid value.\n");
                 free(value);
                 return NULL;
             }
             case '\0':{
-                fprintf(stderr, "Filter Error: Unclosed bracket.");
+                fprintf(stderr, "Filter Error: Unclosed bracket.\n");
                 free(value);
                 return NULL;
             }
@@ -335,7 +335,7 @@ static char * filter_parseValue(char * filterString, int * pos) {
     }
 
     if (strlen(value) == 0) {
-        fprintf(stderr, "Filter Error: Missing value.");
+        fprintf(stderr, "Filter Error: Missing value.\n");
         free(value);
         return NULL;
     }
@@ -360,12 +360,12 @@ static celix_array_list_t* filter_parseSubstring(char * filterString, int * pos)
                 break;
             }
             case '\0':{
-                fprintf(stderr, "Filter Error: Unclosed bracket.");
+                fprintf(stderr, "Filter Error: Unclosed bracket.\n");
                 keepRunning = false;
                 break;
             }
             case '(': {
-                fprintf(stderr, "Filter Error: Invalid value.");
+                fprintf(stderr, "Filter Error: Invalid value.\n");
                 keepRunning = false;
                 break;
             }
@@ -396,7 +396,7 @@ static celix_array_list_t* filter_parseSubstring(char * filterString, int * pos)
     free(sub);
 
     if (celix_arrayList_size(operands) == 0) {
-        fprintf(stderr, "Filter Error: Missing value.");
+        fprintf(stderr, "Filter Error: Missing value.\n");
         celix_arrayList_destroy(operands);
         return NULL;
     }
@@ -534,7 +534,7 @@ celix_filter_t* celix_filter_create(const char *filterString) {
     int pos = 0;
     filter = filter_parseFilter(filterStr, &pos);
     if (filter != NULL && pos != strlen(filterStr)) {
-        fprintf(stderr, "Filter Error: Extraneous trailing characters.");
+        fprintf(stderr, "Filter Error: Extraneous trailing characters.\n");
         filter_destroy(filter);
         filter = NULL;
     } else if (filter != NULL) {
@@ -579,7 +579,7 @@ void celix_filter_destroy(celix_filter_t *filter) {
                 celix_arrayList_destroy(filter->children);
                 filter->children = NULL;
             } else {
-                fprintf(stderr, "Filter Error: Corrupt filter. children has a value, but not an expected operand");
+                fprintf(stderr, "Filter Error: Corrupt filter. children has a value, but not an expected operand\n");
             }
         }
         free((char*)filter->value);

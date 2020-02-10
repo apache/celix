@@ -32,7 +32,7 @@
 #include <service_tracker.h>
 #include <celix_errno.h>
 
-#include <shell.h>
+#include <celix_shell.h>
 
 struct shell_mediator {
 	log_helper_t *loghelper;
@@ -41,7 +41,7 @@ struct shell_mediator {
 	celix_thread_mutex_t mutex;
 
 	//protected by mutex
-	shell_service_pt shellService;
+	celix_shell_t *shellService;
 };
 typedef struct shell_mediator *shell_mediator_pt;
 

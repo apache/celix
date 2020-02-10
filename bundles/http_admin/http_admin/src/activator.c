@@ -54,7 +54,6 @@ static int http_admin_start(http_admin_activator_t *act, celix_bundle_context_t 
     celix_bundle_t *bundle = celix_bundleContext_getBundle(ctx);
     char* root = celix_bundle_getEntry(bundle, "root");
 
-
     bool prop_use_websockets = celix_bundleContext_getPropertyAsBool(ctx, HTTP_ADMIN_USE_WEBSOCKETS_KEY, HTTP_ADMIN_USE_WEBSOCKETS_DFT);
     long listPort = celix_bundleContext_getPropertyAsLong(ctx,    HTTP_ADMIN_LISTENING_PORTS_KEY, HTTP_ADMIN_LISTENING_PORTS_DFT);
     long websocketTimeoutMs = celix_bundleContext_getPropertyAsLong(ctx, HTTP_ADMIN_WEBSOCKET_TIMEOUT_MS_KEY, HTTP_ADMIN_WEBSOCKET_TIMEOUT_MS_DFT);

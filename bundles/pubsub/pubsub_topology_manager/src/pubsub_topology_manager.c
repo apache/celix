@@ -972,7 +972,7 @@ void pubsub_topologyManager_removeMetricsService(void * handle, void *svc, const
 }
 
 
-static celix_status_t pubsub_topologyManager_topology(pubsub_topology_manager_t *manager, char *commandLine __attribute__((unused)), FILE *os, FILE *errorStream __attribute__((unused))) {
+static celix_status_t pubsub_topologyManager_topology(pubsub_topology_manager_t *manager, const char *commandLine __attribute__((unused)), FILE *os, FILE *errorStream __attribute__((unused))) {
     fprintf(os, "\n");
 
     fprintf(os, "Discovered Endpoints: \n");
@@ -1113,7 +1113,7 @@ static void fetchBundleName(void *handle, const bundle_t *bundle) {
     *out = celix_bundle_getSymbolicName(bundle);
 }
 
-static celix_status_t pubsub_topologyManager_metrics(pubsub_topology_manager_t *manager, char *commandLine __attribute__((unused)), FILE *os, FILE *errorStream __attribute__((unused))) {
+static celix_status_t pubsub_topologyManager_metrics(pubsub_topology_manager_t *manager, const char *commandLine __attribute__((unused)), FILE *os, FILE *errorStream __attribute__((unused))) {
     celix_array_list_t *psaMetrics = celix_arrayList_create();
     celixThreadMutex_lock(&manager->psaMetrics.mutex);
     hash_map_iterator_t iter = hashMapIterator_construct(manager->psaMetrics.map);
@@ -1177,17 +1177,21 @@ static celix_status_t pubsub_topologyManager_metrics(pubsub_topology_manager_t *
     return CELIX_SUCCESS;
 }
 
-celix_status_t pubsub_topologyManager_shellCommand(void *handle, char *commandLine, FILE *os, FILE *errorStream) {
+bool pubsub_topologyManager_shellCommand(void *handle, const char *commandLine, FILE *os, FILE *errorStream) {
     pubsub_topology_manager_t *manager = handle;
 
     static const char * topCmd = "pstm t"; //"topology";
     static const char * metricsCmd = "pstm m"; //"metrics"
 
+    celix_status_t status;
+
     if (strncmp(commandLine, topCmd, strlen(topCmd)) == 0) {
-        return pubsub_topologyManager_topology(manager, commandLine, os, errorStream);
+        status = pubsub_topologyManager_topology(manager, commandLine, os, errorStream);
     } else if (strncmp(commandLine, metricsCmd, strlen(metricsCmd)) == 0) {
-        return pubsub_topologyManager_metrics(manager, commandLine, os, errorStream);
+        status = pubsub_topologyManager_metrics(manager, commandLine, os, errorStream);
     } else { //default
-        return pubsub_topologyManager_topology(manager, commandLine, os, errorStream);
+        status = pubsub_topologyManager_topology(manager, commandLine, os, errorStream);
     }
+
+    return status == CELIX_SUCCESS;
 }

@@ -297,5 +297,31 @@ celix_bundle_state_e celix_bundle_getState(const bundle_t *bnd) {
 	return (celix_bundle_state_e)mock_c()->returnValue().value.intValue;
 }
 
+celix_array_list_t* celix_bundle_listRegisteredServices(const celix_bundle_t *bnd) {
+    mock_c()->actualCall("celix_bundle_listRegisteredServices")
+            ->withConstPointerParameters("bnd", bnd);
+    return mock_c()->returnValue().value.pointerValue;
+}
 
+void celix_bundle_destroyRegisteredServicesList(celix_array_list_t* list) {
+    mock_c()->actualCall("celix_bundle_destroyRegisteredServicesList")
+            ->withPointerParameters("list)", list);
+}
+
+celix_array_list_t* celix_bundle_listServiceTrackers(const celix_bundle_t *bnd) {
+    mock_c()->actualCall("celix_bundle_listServiceTrackers")
+            ->withConstPointerParameters("bnd", bnd);
+    return mock_c()->returnValue().value.pointerValue;
+}
+
+void celix_bundle_destroyServiceTrackerList(celix_array_list_t* list) {
+    mock_c()->actualCall("celix_bundle_destroyServiceTrackerList")
+            ->withPointerParameters("list", list);
+}
+
+const char* celix_bundle_getSymbolicName(const celix_bundle_t *bnd) {
+    mock_c()->actualCall("celix_bundle_getSymbolicName")
+            ->withConstPointerParameters("bnd", bnd);
+    return mock_c()->returnValue().value.pointerValue;
+}
 

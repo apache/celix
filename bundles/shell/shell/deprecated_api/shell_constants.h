@@ -17,9 +17,12 @@
  * under the License.
  */
 
-#include <CppUTest/TestHarness.h>
-#include "CppUTest/CommandLineTestRunner.h"
+#ifndef SHELL_CONSTANTS_H_
+#define SHELL_CONSTANTS_H_
 
-int main(int argc, char** argv) {
-    return RUN_ALL_TESTS(argc, argv);
-}
+#include "celix_shell_constants.h"
+
+#define SHELL_USE_ANSI_COLORS                   CELIX_SHELL_USE_ANSI_COLORS
+#define SHELL_USE_ANSI_COLORS_DEFAULT_VALUE     CELIX_SHELL_USE_ANSI_COLORS_DEFAULT_VALUE
+
+#endif /* SHELL_CONSTANTS_H_ */

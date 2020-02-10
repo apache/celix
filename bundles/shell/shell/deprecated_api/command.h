@@ -16,13 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * command.h
- *
- *  \date       Aug 13, 2010
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
 
 #ifndef COMMAND_H_
 #define COMMAND_H_
@@ -34,8 +27,8 @@
 #define OSGI_SHELL_COMMAND_USAGE "command.usage"
 #define OSGI_SHELL_COMMAND_DESCRIPTION "command.description"
 
-static const char * const OSGI_SHELL_COMMAND_SERVICE_NAME = "commandService";
-static const char * const OSGI_SHELL_COMMAND_SERVICE_VERSION = "1.0.0";
+#define OSGI_SHELL_COMMAND_SERVICE_NAME "commandService"
+#define OSGI_SHELL_COMMAND_SERVICE_VERSION "1.0.0"
 
 typedef struct commandService command_service_t;
 typedef command_service_t * command_service_pt;
@@ -46,10 +39,14 @@ typedef command_service_t * command_service_pt;
  *  - command.name: mandatory, name of the command e.g. 'lb'
  *  - command.usage: optional, string describing how tu use the command e.g. 'lb [-l | -s | -u]'
  *  - command.description: optional, string describing the command e.g. 'list bundles.'
+ *
+ *  \deprecated Replaced by celix_shell_command_t
  */
 struct commandService {
     void *handle;
-    celix_status_t (*executeCommand)(void *handle, char * commandLine, FILE *outStream, FILE *errorStream);
+
+    celix_status_t (*executeCommand)(void *handle, char * commandLine, FILE *outStream, FILE *errorStream)
+        __attribute__((deprecated("command_service_t is replaced by celix_shell_command_t in celix_shell_command.h")));
 };
 
 

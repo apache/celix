@@ -46,7 +46,7 @@ celix_status_t pubsub_tcpAdmin_removeDiscoveredEndpoint(void *handle, const celi
 void pubsub_tcpAdmin_addSerializerSvc(void *handle, void *svc, const celix_properties_t *props);
 void pubsub_tcpAdmin_removeSerializerSvc(void *handle, void *svc, const celix_properties_t *props);
 
-celix_status_t pubsub_tcpAdmin_executeCommand(void *handle, char *commandLine, FILE *outStream, FILE *errStream);
+bool pubsub_tcpAdmin_executeCommand(void *handle, const char *commandLine, FILE *outStream, FILE *errStream);
 
 pubsub_admin_metrics_t* pubsub_tcpAdmin_metrics(void *handle);
 

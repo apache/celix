@@ -21,21 +21,20 @@
 #include <string.h>
 #include "celix_api.h"
 
-static void printInstalledBundle(void *handle, const celix_bundle_t *bnd) {
-    FILE *outStream = handle;
-    fprintf(outStream, "Bundle '%s' installed with bundle id %li\n", celix_bundle_getSymbolicName(bnd), celix_bundle_getId(bnd));
-}
-
-void installCommand_execute(void *handle, char * line, FILE *outStream, FILE *errStream) {
+bool installCommand_execute(void *handle, const char *const_line, FILE *outStream, FILE *errStream) {
 	celix_bundle_context_t *ctx = handle;
 
 	char delims[] = " ";
 	char * sub = NULL;
 	char *save_ptr = NULL;
 
+	char *line = celix_utils_strdup(const_line);
+
 	// ignore the command
 	sub = strtok_r(line, delims, &save_ptr);
 	sub = strtok_r(NULL, delims, &save_ptr);
+
+	bool installSucceeded = false;
 	
 	if (sub == NULL) {
 		fprintf(errStream, "Incorrect number of arguments.\n");
@@ -43,9 +42,16 @@ void installCommand_execute(void *handle, char * line, FILE *outStream, FILE *er
 		while (sub != NULL) {
 		    long bndId = celix_bundleContext_installBundle(ctx, sub, true);
 			if (bndId >= 0) {
-			    celix_bundleContext_useBundle(ctx, bndId, outStream, printInstalledBundle);
+			    char *name = celix_bundleContext_getBundleSymbolicName(ctx, bndId);
+                fprintf(outStream, "Bundle '%s' installed with bundle id %li\n", name, bndId);
+                free(name);
+                installSucceeded = true;
 			}
 			sub = strtok_r(NULL, delims, &save_ptr);
 		}
 	}
+
+	free(line);
+
+	return installSucceeded;
 }

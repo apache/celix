@@ -27,6 +27,7 @@
 #include "hash_map.h"
 #include "properties.h"
 #include "utils.h"
+#include "celix_utils.h"
 #include "version.h"
 #include "version_range.h"
 #include "thpool.h"

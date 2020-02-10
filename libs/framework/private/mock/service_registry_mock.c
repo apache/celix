@@ -24,6 +24,7 @@
  *  \copyright  Apache License, Version 2.0
  */
 
+#include <CppUTestExt/MockSupport_c.h>
 #include "CppUTestExt/MockSupport_c.h"
 
 #include "service_registry.h"
@@ -194,4 +195,28 @@ void serviceRegistry_callHooksForListenerFilter(
             ->withPointerParameters("owner", owner)
             ->withStringParameters("filter", filter)
             ->withBoolParameters("removed", removed);
+}
+
+bool celix_serviceRegistry_getServiceInfo(
+        celix_service_registry_t* registry,
+        long svcId,
+        long bndId,
+        char **outServiceName,
+        celix_properties_t **outServiceProperties,
+        bool *outIsFactory) {
+    mock_c()->actualCall("celix_serviceRegistry_getServiceInfo")
+        ->withPointerParameters("registry", registry)
+        ->withLongIntParameters("svcId", svcId)
+        ->withLongIntParameters("bndId", bndId)
+        ->withOutputParameter("outServiceName", outServiceName)
+        ->withOutputParameter("outServiceProperties", outServiceProperties)
+        ->withOutputParameter("outIsFactory", outIsFactory);
+    return mock_c()->returnValue().value.boolValue;
+}
+
+celix_array_list_t* celix_serviceRegistry_listServiceIdsForOwner(celix_service_registry_t* registry, long bndId) {
+    mock_c()->actualCall("celix_serviceRegistry_listServiceIdsForOwner")
+        ->withPointerParameters("registry", registry)
+        ->withLongIntParameters("bndId", bndId);
+    return mock_c()->returnValue().value.pointerValue;
 }

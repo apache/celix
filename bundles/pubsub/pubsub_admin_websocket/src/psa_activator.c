@@ -26,7 +26,7 @@
 #include "pubsub_admin.h"
 #include "pubsub_admin_metrics.h"
 #include "pubsub_websocket_admin.h"
-#include "command.h"
+#include "celix_shell_command.h"
 
 typedef struct psa_websocket_activator {
     log_helper_t *logHelper;
@@ -41,7 +41,7 @@ typedef struct psa_websocket_activator {
     pubsub_admin_metrics_service_t adminMetricsService;
     long adminMetricsSvcId;
 
-    command_service_t cmdSvc;
+    celix_shell_command_t cmdSvc;
     long cmdSvcId;
 } psa_websocket_activator_t;
 
@@ -103,10 +103,10 @@ int psa_websocket_start(psa_websocket_activator_t *act, celix_bundle_context_t *
         act->cmdSvc.handle = act->admin;
         act->cmdSvc.executeCommand = pubsub_websocketAdmin_executeCommand;
         celix_properties_t *props = celix_properties_create();
-        celix_properties_set(props, OSGI_SHELL_COMMAND_NAME, "psa_websocket");
-        celix_properties_set(props, OSGI_SHELL_COMMAND_USAGE, "psa_websocket");
-        celix_properties_set(props, OSGI_SHELL_COMMAND_DESCRIPTION, "Print the information about the TopicSender and TopicReceivers for the websocket PSA");
-        act->cmdSvcId = celix_bundleContext_registerService(ctx, &act->cmdSvc, OSGI_SHELL_COMMAND_SERVICE_NAME, props);
+        celix_properties_set(props, CELIX_SHELL_COMMAND_NAME, "celix::psa_websocket");
+        celix_properties_set(props, CELIX_SHELL_COMMAND_USAGE, "psa_websocket");
+        celix_properties_set(props, CELIX_SHELL_COMMAND_DESCRIPTION, "Print the information about the TopicSender and TopicReceivers for the websocket PSA");
+        act->cmdSvcId = celix_bundleContext_registerService(ctx, &act->cmdSvc, CELIX_SHELL_COMMAND_SERVICE_NAME, props);
     }
 
     return status;

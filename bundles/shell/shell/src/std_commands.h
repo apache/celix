@@ -31,16 +31,17 @@
 
 #define OSGI_SHELL_COMMAND_SEPARATOR " "
 
-celix_status_t lbCommand_execute(void *_ptr, char *command_line_str, FILE *out_ptr, FILE *err_ptr);
-celix_status_t startCommand_execute(void *_ptr, char* command_line_str, FILE *out_ptr, FILE *err_ptr);
-celix_status_t stopCommand_execute(void *handle, char* commandline, FILE *outStream, FILE *errStream);
-celix_status_t installCommand_execute(void *handle, char * commandline, FILE *outStream, FILE *errStream);
-celix_status_t uninstallCommand_execute(void *handle, char * commandline, FILE *outStream, FILE *errStream);
-celix_status_t updateCommand_execute(void *handle, char * commandline, FILE *outStream, FILE *errStream);
-celix_status_t logCommand_execute(void *handle, char * commandline, FILE *outStream, FILE *errStream);
-celix_status_t inspectCommand_execute(void *handle, char * commandline, FILE *outStream, FILE *errStream);
-celix_status_t helpCommand_execute(void *handle, char * commandline, FILE *outStream, FILE *errStream);
-celix_status_t dmListCommand_execute(void* handle, char * line, FILE *out, FILE *err);
+bool lbCommand_execute(void *handle, const char* commandLine, FILE *outhandle, FILE *errhandle);
+bool queryCommand_execute(void *handle, const char* commandLine, FILE *outhandle, FILE *errhandle);
+bool startCommand_execute(void *handle, const char* commandLine, FILE *outhandle, FILE *errhandle);
+bool stopCommand_execute(void *handle, const char* commandLine, FILE *outStream, FILE *errStream);
+bool installCommand_execute(void *handle, const char* commandLine, FILE *outStream, FILE *errStream);
+bool uninstallCommand_execute(void *handle, const char* commandLine, FILE *outStream, FILE *errStream);
+bool updateCommand_execute(void *handle, const char* commandLine, FILE *outStream, FILE *errStream);
+bool logCommand_execute(void *handle, const char* commandLine, FILE *outStream, FILE *errStream);
+bool helpCommand_execute(void *handle, const char* commandLine, FILE *outStream, FILE *errStream);
+bool dmListCommand_execute(void* handle, const char* commandLine, FILE *out, FILE *err);
+bool quitCommand_execute(void *handle, const char* commandLine, FILE *sout, FILE *serr);
 
 
 #endif

@@ -210,6 +210,83 @@ TEST(CelixBundleContextServicesTests, registerAndUseServiceWithTimeout) {
         return calledAsync;
     })};
     CHECK(!result2.get());
+
+    celix_bundleContext_unregisterService(ctx, svcId);
+}
+
+TEST(CelixBundleContextServicesTests, registerAndUseServiceWithCorrectVersion) {
+    struct calc {
+        int (*calc)(int);
+    };
+
+    const char *calcName = "calc";
+    struct calc svc;
+    svc.calc = [](int n) -> int {
+        return n * 42;
+    };
+
+    celix_service_use_options_t use_opts{};
+    use_opts.filter.serviceName = "calc";
+    use_opts.filter.versionRange = "[1,2)";
+
+    celix_service_registration_options_t reg_opts{};
+    reg_opts.serviceName = calcName;
+    reg_opts.serviceVersion = "1.5";
+    reg_opts.svc = &svc;
+
+    bool called = celix_bundleContext_useServiceWithOptions(ctx, &use_opts);
+    CHECK(!called); //service not avail.
+
+    std::future<bool> result{std::async([&]{
+        use_opts.waitTimeoutInSeconds = 5.0;
+        printf("Trying to call calc with timeout of %f\n", use_opts.waitTimeoutInSeconds);
+        bool calledAsync = celix_bundleContext_useServiceWithOptions(ctx, &use_opts);
+        printf("returned from use service with timeout. calc called %s.\n", calledAsync ? "true" : "false");
+        return calledAsync;
+    })};
+    long svcId = celix_bundleContext_registerServiceWithOptions(ctx, &reg_opts);
+    CHECK(svcId >= 0);
+
+    CHECK(result.get()); //should return true after waiting for the registered service.
+
+    celix_bundleContext_unregisterService(ctx, svcId);
+}
+
+TEST(CelixBundleContextServicesTests, registerAndUseServiceWithIncorrectVersion) {
+    struct calc {
+        int (*calc)(int);
+    };
+
+    const char *calcName = "calc";
+    struct calc svc;
+    svc.calc = [](int n) -> int {
+        return n * 42;
+    };
+
+    celix_service_use_options_t use_opts{};
+    use_opts.filter.serviceName = "calc";
+    use_opts.filter.versionRange = "[2,3)";
+
+    celix_service_registration_options_t reg_opts{};
+    reg_opts.serviceName = calcName;
+    reg_opts.serviceVersion = "1.5";
+    reg_opts.svc = &svc;
+
+    bool called = celix_bundleContext_useServiceWithOptions(ctx, &use_opts);
+    CHECK(!called); //service not avail.
+
+    std::future<bool> result{std::async([&]{
+        use_opts.waitTimeoutInSeconds = 1.0;
+        printf("Trying to call calc with timeout of %f\n", use_opts.waitTimeoutInSeconds);
+        bool calledAsync = celix_bundleContext_useServiceWithOptions(ctx, &use_opts);
+        printf("returned from use service with timeout. calc called %s.\n", calledAsync ? "true" : "false");
+        return calledAsync;
+    })};
+    long svcId = celix_bundleContext_registerServiceWithOptions(ctx, &reg_opts);
+    CHECK(svcId >= 0);
+    CHECK(!result.get());
+
+    celix_bundleContext_unregisterService(ctx, svcId);
 }
 
 TEST(CelixBundleContextServicesTests, registerAndUseWithForcedRaceCondition) {

@@ -98,7 +98,7 @@ void pubsub_discovery_discoveredEndpointsListenerRemoved(void *handle, void *svc
 celix_status_t pubsub_discovery_announceEndpoint(void *handle, const celix_properties_t *endpoint);
 celix_status_t pubsub_discovery_revokeEndpoint(void *handle, const celix_properties_t *endpoint);
 
-celix_status_t pubsub_discovery_executeCommand(void *handle, char * commandLine, FILE *os, FILE *errorStream);
+bool pubsub_discovery_executeCommand(void *handle, const char * commandLine, FILE *os, FILE *errorStream);
 
 
 #endif /* PUBSUB_DISCOVERY_IMPL_H_ */

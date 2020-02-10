@@ -140,6 +140,7 @@ bool addServiceNode(service_tree_t *svc_tree, const char *uri, void *svc) {
                 svc_tree->tree_node_count++;
                 uri_exists = false;
             }
+            subNodeCount++;
         } else if (current->next != NULL) {
             current = current->next;
             current_data = current->svc_data;
@@ -152,8 +153,8 @@ bool addServiceNode(service_tree_t *svc_tree, const char *uri, void *svc) {
             current_data = node->svc_data;
             svc_tree->tree_node_count++;
             uri_exists = false;
+            subNodeCount++;
         }
-        subNodeCount++;
     }
 
     //Increment tree service count if URI exists (only one service can be added at once)
