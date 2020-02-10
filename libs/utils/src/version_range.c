@@ -31,7 +31,6 @@
 
 #include "version_private.h"
 #include "version_range_private.h"
-#include "../../framework/include/celix_constants.h"
 
 celix_status_t versionRange_createVersionRange(version_pt low, bool isLowInclusive,
             version_pt high, bool isHighInclusive, version_range_pt *range) {
@@ -236,19 +235,19 @@ celix_status_t versionRange_parse(const char * rangeStr, version_range_pt *range
     return status;
 }
 
-char* versionRange_createLDAPFilter(version_range_pt range) {
+char* versionRange_createLDAPFilter(version_range_pt range, const char *serviceVersionAttributeName) {
     char *output;
 
     int ret = -1;
     if(range->high == NULL) {
         ret = asprintf(&output, "(&(%s%s%i.%i.%i))",
-                       CELIX_FRAMEWORK_SERVICE_VERSION, range->isLowInclusive ? ">=" : ">", range->low->major,
+                       serviceVersionAttributeName, range->isLowInclusive ? ">=" : ">", range->low->major,
                        range->low->minor, range->low->micro);
     } else {
         ret = asprintf(&output, "(&(%s%s%i.%i.%i)(%s%s%i.%i.%i))",
-                       CELIX_FRAMEWORK_SERVICE_VERSION, range->isLowInclusive ? ">=" : ">", range->low->major,
+                       serviceVersionAttributeName, range->isLowInclusive ? ">=" : ">", range->low->major,
                        range->low->minor, range->low->micro,
-                       CELIX_FRAMEWORK_SERVICE_VERSION, range->isHighInclusive ? "<=" : "<", range->high->major,
+                       serviceVersionAttributeName, range->isHighInclusive ? "<=" : "<", range->high->major,
                        range->high->minor, range->high->micro);
     }
 
@@ -261,7 +260,7 @@ char* versionRange_createLDAPFilter(version_range_pt range) {
 
 
 
-bool versionRange_createLDAPFilterInPlace(version_range_pt range, char* buffer, size_t bufferLength) {
+bool versionRange_createLDAPFilterInPlace(version_range_pt range, const char *serviceVersionAttributeName, char* buffer, size_t bufferLength) {
     if(buffer == NULL || bufferLength == 0) {
         return false;
     }
@@ -275,13 +274,13 @@ bool versionRange_createLDAPFilterInPlace(version_range_pt range, char* buffer, 
     int size = 0;
     if(range->high == NULL) {
         size = snprintf(NULL, 0, format,
-                        CELIX_FRAMEWORK_SERVICE_VERSION, range->isLowInclusive ? ">=" : ">", range->low->major,
+                        serviceVersionAttributeName, range->isLowInclusive ? ">=" : ">", range->low->major,
                         range->low->minor, range->low->micro);
     } else {
         size = snprintf(NULL, 0, format,
-                        CELIX_FRAMEWORK_SERVICE_VERSION, range->isLowInclusive ? ">=" : ">", range->low->major,
+                        serviceVersionAttributeName, range->isLowInclusive ? ">=" : ">", range->low->major,
                         range->low->minor, range->low->micro,
-                        CELIX_FRAMEWORK_SERVICE_VERSION, range->isHighInclusive ? "<=" : "<", range->high->major,
+                        serviceVersionAttributeName, range->isHighInclusive ? "<=" : "<", range->high->major,
                         range->high->minor, range->high->micro);
     }
 
@@ -292,13 +291,13 @@ bool versionRange_createLDAPFilterInPlace(version_range_pt range, char* buffer, 
     // write contents into buffer
     if(range->high == NULL) {
         size = snprintf(buffer, bufferLength, format,
-                        CELIX_FRAMEWORK_SERVICE_VERSION, range->isLowInclusive ? ">=" : ">", range->low->major,
+                        serviceVersionAttributeName, range->isLowInclusive ? ">=" : ">", range->low->major,
                         range->low->minor, range->low->micro);
     } else {
         size = snprintf(buffer, bufferLength, format,
-                        CELIX_FRAMEWORK_SERVICE_VERSION, range->isLowInclusive ? ">=" : ">", range->low->major,
+                        serviceVersionAttributeName, range->isLowInclusive ? ">=" : ">", range->low->major,
                         range->low->minor, range->low->micro,
-                        CELIX_FRAMEWORK_SERVICE_VERSION, range->isHighInclusive ? "<=" : "<", range->high->major,
+                        serviceVersionAttributeName, range->isHighInclusive ? "<=" : "<", range->high->major,
                         range->high->minor, range->high->micro);
     }
 

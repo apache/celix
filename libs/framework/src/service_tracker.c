@@ -771,7 +771,7 @@ celix_service_tracker_t* celix_serviceTracker_createWithOptions(
                     free(tracker);
                     return NULL;
                 }
-                versionRange = versionRange_createLDAPFilter(range);
+                versionRange = versionRange_createLDAPFilter(range, CELIX_FRAMEWORK_SERVICE_VERSION);
                 if(versionRange == NULL) {
                     framework_log(logger, OSGI_FRAMEWORK_LOG_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__,
                                   "Error creating LDAP filter.");

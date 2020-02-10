@@ -260,7 +260,7 @@ TEST(version_range, createLdapFilterInclusiveBoth) {
     version_range_pt range = NULL;
     LONGS_EQUAL(CELIX_SUCCESS, versionRange_createVersionRange(low, true, high, true, &range));
 
-    auto filter = versionRange_createLDAPFilter(range);
+    auto filter = versionRange_createLDAPFilter(range, "service.version");
     STRCMP_EQUAL(filter, "(&(service.version>=1.2.3)(service.version<=1.2.3))");
 
     versionRange_destroy(range);
@@ -282,7 +282,7 @@ TEST(version_range, createLdapFilterInclusiveLow) {
     version_range_pt range = NULL;
     LONGS_EQUAL(CELIX_SUCCESS, versionRange_createVersionRange(low, false, high, true, &range));
 
-    auto filter = versionRange_createLDAPFilter(range);
+    auto filter = versionRange_createLDAPFilter(range, "service.version");
     STRCMP_EQUAL(filter, "(&(service.version>1.2.3)(service.version<=1.2.3))");
 
     versionRange_destroy(range);
@@ -304,7 +304,7 @@ TEST(version_range, createLdapFilterInclusiveHigh) {
     version_range_pt range = NULL;
     LONGS_EQUAL(CELIX_SUCCESS, versionRange_createVersionRange(low, true, high, false, &range));
 
-    auto filter = versionRange_createLDAPFilter(range);
+    auto filter = versionRange_createLDAPFilter(range, "service.version");
     STRCMP_EQUAL(filter, "(&(service.version>=1.2.3)(service.version<1.2.3))");
 
     versionRange_destroy(range);
@@ -326,7 +326,7 @@ TEST(version_range, createLdapFilterExclusiveBoth) {
     version_range_pt range = NULL;
     LONGS_EQUAL(CELIX_SUCCESS, versionRange_createVersionRange(low, false, high, false, &range));
 
-    auto filter = versionRange_createLDAPFilter(range);
+    auto filter = versionRange_createLDAPFilter(range, "service.version");
     STRCMP_EQUAL(filter, "(&(service.version>1.2.3)(service.version<1.2.3))");
 
     versionRange_destroy(range);
@@ -342,7 +342,7 @@ TEST(version_range, createLdapFilterInfinite) {
     version_range_pt range = NULL;
     LONGS_EQUAL(CELIX_SUCCESS, versionRange_createVersionRange(low, true, NULL, true, &range));
 
-    auto filter = versionRange_createLDAPFilter(range);
+    auto filter = versionRange_createLDAPFilter(range, "service.version");
     STRCMP_EQUAL(filter, "(&(service.version>=1.2.3))");
 
     versionRange_destroy(range);
@@ -366,7 +366,7 @@ TEST(version_range, createLdapFilterInPlaceInclusiveBoth) {
     char buffer[100];
     int bufferLen = sizeof(buffer) / sizeof(buffer[0]);
 
-    LONGS_EQUAL(1, versionRange_createLDAPFilterInPlace(range, buffer, bufferLen));
+    LONGS_EQUAL(1, versionRange_createLDAPFilterInPlace(range, "service.version", buffer, bufferLen));
 
     STRCMP_EQUAL(buffer, "(&(service.version>=1.2.3)(service.version<=1.2.3))");
 
@@ -391,7 +391,7 @@ TEST(version_range, createLdapFilterInPlaceInclusiveLow) {
     char buffer[100];
     int bufferLen = sizeof(buffer) / sizeof(buffer[0]);
 
-    LONGS_EQUAL(1, versionRange_createLDAPFilterInPlace(range, buffer, bufferLen));
+    LONGS_EQUAL(1, versionRange_createLDAPFilterInPlace(range, "service.version", buffer, bufferLen));
 
     STRCMP_EQUAL(buffer, "(&(service.version>=1.2.3)(service.version<1.2.3))");
 
@@ -416,7 +416,7 @@ TEST(version_range, createLdapFilterInPlaceInclusiveHigh) {
     char buffer[100];
     int bufferLen = sizeof(buffer) / sizeof(buffer[0]);
 
-    LONGS_EQUAL(1, versionRange_createLDAPFilterInPlace(range, buffer, bufferLen));
+    LONGS_EQUAL(1, versionRange_createLDAPFilterInPlace(range, "service.version", buffer, bufferLen));
 
     STRCMP_EQUAL(buffer, "(&(service.version>1.2.3)(service.version<=1.2.3))");
 
@@ -441,7 +441,7 @@ TEST(version_range, createLdapFilterInPlaceExclusiveBoth) {
     char buffer[100];
     int bufferLen = sizeof(buffer) / sizeof(buffer[0]);
 
-    LONGS_EQUAL(1, versionRange_createLDAPFilterInPlace(range, buffer, bufferLen));
+    LONGS_EQUAL(1, versionRange_createLDAPFilterInPlace(range, "service.version", buffer, bufferLen));
 
     STRCMP_EQUAL(buffer, "(&(service.version>1.2.3)(service.version<1.2.3))");
 
@@ -460,7 +460,7 @@ TEST(version_range, createLdapFilterInPlaceInfiniteHigh) {
     char buffer[100];
     int bufferLen = sizeof(buffer) / sizeof(buffer[0]);
 
-    LONGS_EQUAL(1, versionRange_createLDAPFilterInPlace(range, buffer, bufferLen));
+    LONGS_EQUAL(1, versionRange_createLDAPFilterInPlace(range, "service.version", buffer, bufferLen));
 
     STRCMP_EQUAL(buffer, "(&(service.version>1.2.3))");
 
