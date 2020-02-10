@@ -107,14 +107,23 @@ int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, c
 	void *ptr = NULL;
 	void *ptrToPtr = &ptr;
 
-	for (i = 0; i < nrOfArgs; i += 1) {
+	//setup and deserialize input
+	for (i = 0; i < nrOfArgs; ++i) {
 		dyn_type *argType = dynFunction_argumentTypeForIndex(func, i);
 		enum dyn_function_argument_meta  meta = dynFunction_argumentMetaForIndex(func, i);
 		if (meta == DYN_FUNCTION_ARGUMENT_META__STD) {
 			value = json_array_get(arguments, index++);
-			status = jsonSerializer_deserializeJson(argType, value, &(args[i]));
+			void *outPtr = NULL;
+            status = jsonSerializer_deserializeJson(argType, value, &outPtr);
+            args[i] = outPtr;
 		} else if (meta == DYN_FUNCTION_ARGUMENT_META__PRE_ALLOCATED_OUTPUT) {
-			dynType_alloc(argType, &args[i]);
+		    void **instPtr = calloc(1, sizeof(void*));
+		    void *inst = NULL;
+		    dyn_type *subType = NULL;
+		    dynType_typedPointer_getTypedType(argType, &subType);
+            dynType_alloc(subType, &inst);
+            *instPtr = inst;
+            args[i] = instPtr;
 		} else if (meta == DYN_FUNCTION_ARGUMENT_META__OUTPUT) {
 			args[i] = &ptrToPtr;
 		} else if (meta == DYN_FUNCTION_ARGUMENT_META__HANDLE) {
@@ -146,10 +155,11 @@ int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, c
 		LOG_WARNING("Error calling remote endpoint function, got error code %i", funcCallStatus);
 	}
 
+    //free input args
 	json_t *jsonResult = NULL;
-	for(i = 0; i < nrOfArgs; i += 1) {
+	for(i = 0; i < nrOfArgs; ++i) {
 		dyn_type *argType = dynFunction_argumentTypeForIndex(func, i);
-		enum dyn_function_argument_meta  meta = dynFunction_argumentMetaForIndex(func, i);
+		enum dyn_function_argument_meta meta = dynFunction_argumentMetaForIndex(func, i);
 		if (meta == DYN_FUNCTION_ARGUMENT_META__STD) {
 		    if (dynType_descriptorType(argType) == 't') {
 		        const char* isConst = dynType_getMetaInfo(argType, "const");
@@ -166,6 +176,7 @@ int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, c
 		}
 	}
 
+	//serialize and free output
 	if (funcCallStatus == 0 && status == OK) {
 		for (i = 0; i < nrOfArgs; i += 1) {
 			dyn_type *argType = dynFunction_argumentTypeForIndex(func, i);
@@ -174,7 +185,11 @@ int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, c
 				if (status == OK) {
 					status = jsonSerializer_serializeJson(argType, args[i], &jsonResult);
 				}
-				dynType_free(argType, args[i]);
+				dyn_type *subType = NULL;
+				dynType_typedPointer_getTypedType(argType, &subType);
+				void **ptrToInst = (void**)args[i];
+				dynType_free(subType, *ptrToInst);
+				free(ptrToInst);
 			} else if (meta == DYN_FUNCTION_ARGUMENT_META__OUTPUT) {
 				if (ptr != NULL) {
 					dyn_type *typedType = NULL;
@@ -195,7 +210,7 @@ int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, c
 						}
 
 						if (status == OK) {
-							dynType_free(typedTypedType, ptr);
+                            dynType_free(typedTypedType, ptr);
 						}
 					}
 

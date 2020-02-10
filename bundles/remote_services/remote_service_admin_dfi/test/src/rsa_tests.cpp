@@ -17,133 +17,100 @@
  * under the License.
  */
 
-#include <CppUTest/TestHarness.h>
 #include <remote_constants.h>
-#include "celix_constants.h"
-#include "CppUTest/CommandLineTestRunner.h"
+#include "celix_api.h"
 #include "calculator_service.h"
+
+
+#include <CppUTest/TestHarness.h>
+#include <CppUTest/CommandLineTestRunner.h>
 
 extern "C" {
 
-#include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
-
-#include "celix_launcher.h"
-#include "framework.h"
 #include "remote_service_admin.h"
 #include "calculator_service.h"
 
 #define TST_CONFIGURATION_TYPE "org.amdatu.remote.admin.http"
 
-    static framework_pt framework = NULL;
+    static celix_framework_t *framework = NULL;
     static celix_bundle_context_t *context = NULL;
 
-    static service_reference_pt rsaRef = NULL;
-    static remote_service_admin_service_t *rsa = NULL;
-
-    static service_reference_pt calcRef = NULL;
-    static calculator_service_t *calc = NULL;
+    long calcSvcId = -1L;
 
     static void setupFm(void) {
-        int rc = 0;
+        celix_properties_t *fwProperties = celix_properties_load("config.properties");
+        CHECK_TRUE(fwProperties != NULL);
+        framework = celix_frameworkFactory_createFramework(fwProperties);
+        CHECK_TRUE(framework != NULL);
+        context = celix_framework_getFrameworkContext(framework);
+        CHECK_TRUE(context != NULL);
 
-        rc = celixLauncher_launch("config.properties", &framework);
-        CHECK_EQUAL(CELIX_SUCCESS, rc);
 
-        celix_bundle_t *bundle = NULL;
-        rc = framework_getFrameworkBundle(framework, &bundle);
-        CHECK_EQUAL(CELIX_SUCCESS, rc);
-
-        rc = bundle_getContext(bundle, &context);
-        CHECK_EQUAL(CELIX_SUCCESS, rc);
-
-        rc = bundleContext_getServiceReference(context, (char *)OSGI_RSA_REMOTE_SERVICE_ADMIN, &rsaRef);
-        CHECK_EQUAL(CELIX_SUCCESS, rc);
-        CHECK(rsaRef != NULL);
-
-        rc = bundleContext_getService(context, rsaRef, (void **)&rsa);
-        CHECK_EQUAL(CELIX_SUCCESS, rc);
-
-        rc = bundleContext_getServiceReference(context, (char *)CALCULATOR_SERVICE, &calcRef);
-        CHECK_EQUAL(CELIX_SUCCESS, rc);
-        CHECK(calcRef != NULL);
-
-        rc = bundleContext_getService(context, calcRef, (void **)&calc);
-        CHECK_EQUAL(CELIX_SUCCESS, rc);
+        calcSvcId = celix_bundleContext_findService(context, CALCULATOR_SERVICE);
+        CHECK_TRUE(calcSvcId >= 0L);
     }
 
     static void teardownFm(void) {
-        int rc = 0;
-        rc = bundleContext_ungetService(context, rsaRef, NULL);
-        CHECK_EQUAL(CELIX_SUCCESS, rc);
-
-        rc = bundleContext_ungetServiceReference(context, rsaRef);
-        CHECK_EQUAL(CELIX_SUCCESS, rc);
-
-        rc = bundleContext_ungetService(context, calcRef, NULL);
-        CHECK_EQUAL(CELIX_SUCCESS, rc);
-
-        rc = bundleContext_ungetServiceReference(context, calcRef);
-        CHECK_EQUAL(CELIX_SUCCESS, rc);
-
-        celixLauncher_stop(framework);
-        celixLauncher_waitForShutdown(framework);
-        celixLauncher_destroy(framework);
-
-        rsaRef = NULL;
-        rsa = NULL;
-        calcRef = NULL;
-        calc = NULL;
-        context = NULL;
-        framework = NULL;
+        celix_frameworkFactory_destroyFramework(framework);
     }
 
-    static void testServices(void) {
-        int rc = 0;
-        array_list_pt exported = NULL;
-        array_list_pt imported = NULL;
-        arrayList_create(&exported);
-        arrayList_create(&imported);
+    static void testServicesCallback(void *handle __attribute__((unused)), void *svc) {
+        auto* rsa = static_cast<remote_service_admin_service_t*>(svc);
+        celix_array_list_t *exported = celix_arrayList_create();
+        celix_array_list_t *imported = celix_arrayList_create();
 
-        rc = rsa->getExportedServices(rsa->admin, &exported);
+        int rc = rsa->getExportedServices(rsa->admin, &exported);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
-        CHECK_EQUAL(0, arrayList_size(exported));
+        CHECK_EQUAL(0, celix_arrayList_size(exported));
 
         rc = rsa->getImportedEndpoints(rsa->admin, &imported);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
-        CHECK_EQUAL(0, arrayList_size(imported));
+        CHECK_EQUAL(0, celix_arrayList_size(imported));
 
-        double result = 0;
-        rc = calc->add(calc->handle, 2.0, 5.0, &result);
-        CHECK_EQUAL(CELIX_SUCCESS, rc);
-        CHECK_EQUAL(7.0, result);
-
-        arrayList_destroy(imported);
-        arrayList_destroy(exported);
+        celix_arrayList_destroy(imported);
+        celix_arrayList_destroy(exported);
     }
+
+    static void testServices(void) {
+        celix_service_use_options_t opts{};
+        opts.filter.serviceName = OSGI_RSA_REMOTE_SERVICE_ADMIN;
+        opts.use = testServicesCallback;
+        opts.filter.ignoreServiceLanguage = true;
+        opts.waitTimeoutInSeconds = 0.25;
+        bool called = celix_bundleContext_useServiceWithOptions(context, &opts);
+        CHECK_TRUE(called);
+    }
+
+    static void testExportServiceCallback(void *handle __attribute__((unused)), void *svc) {
+        auto* rsa = static_cast<remote_service_admin_service_t*>(svc);
+
+        char strSvcId[64];
+        snprintf(strSvcId, 64, "%li", calcSvcId);
+
+        celix_array_list_t *svcRegistration = NULL;
+        int rc = rsa->exportService(rsa->admin, strSvcId, NULL, &svcRegistration);
+        CHECK_EQUAL(CELIX_SUCCESS, rc);
+
+        CHECK_EQUAL(1, celix_arrayList_size(svcRegistration));
+
+        rc = rsa->exportRegistration_close(rsa->admin,(export_registration_t *)(arrayList_get(svcRegistration,0)));
+        CHECK_EQUAL(CELIX_SUCCESS, rc);
+    }
+
 
     static void testExportService(void) {
-        int rc = 0;
-        const char *calcId = NULL;
-        array_list_pt regs = NULL;
-
-        rc = serviceReference_getProperty(calcRef, (char *)"service.id", &calcId);
-        CHECK_EQUAL(CELIX_SUCCESS, rc);
-
-        rc = rsa->exportService(rsa->admin, (char*)calcId, NULL, &regs);
-        CHECK_EQUAL(CELIX_SUCCESS, rc);
-
-        CHECK_EQUAL(1, arrayList_size(regs));
-
-        rc = rsa->exportRegistration_close(rsa->admin,(export_registration_t *)(arrayList_get(regs,0)));
-        CHECK_EQUAL(CELIX_SUCCESS, rc);
-
+        celix_service_use_options_t opts{};
+        opts.filter.serviceName = OSGI_RSA_REMOTE_SERVICE_ADMIN;
+        opts.use = testExportServiceCallback;
+        opts.filter.ignoreServiceLanguage = true;
+        opts.waitTimeoutInSeconds = 0.25;
+        bool called = celix_bundleContext_useServiceWithOptions(context, &opts);
+        CHECK_TRUE(called);
     }
 
-    static void testImportService(void) {
+    static void testImportServiceCallback(void *handle __attribute__((unused)), void *svc) {
+        auto *rsa = static_cast<remote_service_admin_service_t *>(svc);
+
         int rc = 0;
         import_registration_t *reg = NULL;
         endpoint_description_t *endpoint = NULL;
@@ -179,6 +146,16 @@ extern "C" {
         CHECK_EQUAL(CELIX_SUCCESS, rc);
         CHECK(service != NULL);
          */
+    }
+
+    static void testImportService(void) {
+        celix_service_use_options_t opts{};
+        opts.filter.serviceName = OSGI_RSA_REMOTE_SERVICE_ADMIN;
+        opts.use = testImportServiceCallback;
+        opts.filter.ignoreServiceLanguage = true;
+        opts.waitTimeoutInSeconds = 0.25;
+        bool called = celix_bundleContext_useServiceWithOptions(context, &opts);
+        CHECK_TRUE(called);
     }
 
     static void testBundles(void) {
