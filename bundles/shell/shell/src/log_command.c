@@ -33,11 +33,10 @@
 
 celix_status_t logCommand_levelAsString(celix_bundle_context_t *context, log_level_t level, char **string);
 
-void logCommand_execute(celix_bundle_context_t *context, char *line, FILE *outStream, FILE *errStream) {
-    celix_status_t status;
+bool logCommand_execute(celix_bundle_context_t *context, const char *line, FILE *outStream, FILE *errStream) {
     service_reference_pt readerService = NULL;
 
-    status = bundleContext_getServiceReference(context, (char *) OSGI_LOGSERVICE_READER_SERVICE_NAME, &readerService);
+    celix_status_t status = bundleContext_getServiceReference(context, (char *) OSGI_LOGSERVICE_READER_SERVICE_NAME, &readerService);
     if (status != CELIX_SUCCESS || readerService != NULL) {
         linked_list_pt list = NULL;
         linked_list_iterator_pt iter = NULL;
@@ -70,6 +69,8 @@ void logCommand_execute(celix_bundle_context_t *context, char *line, FILE *outSt
     } else {
 		fprintf(outStream, "No log reader available\n");
     }
+
+    return status == CELIX_SUCCESS;
 }
 
 celix_status_t logCommand_levelAsString(celix_bundle_context_t *context, log_level_t level, char **string) {

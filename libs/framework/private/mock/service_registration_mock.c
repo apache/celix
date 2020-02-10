@@ -157,3 +157,8 @@ service_registration_t* celix_serviceRegistration_createServiceFactory(
 	return mock_c()->returnValue().value.pointerValue;
 }
 
+bool serviceRegistration_isFactoryService(service_registration_t *registration) {
+    mock_c()->actualCall("serviceRegistration_isFactoryService")
+            ->withPointerParameters("registration", registration);
+    return mock_c()->returnValue().value.boolValue;
+}

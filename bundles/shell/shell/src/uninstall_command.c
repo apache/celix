@@ -30,15 +30,17 @@
 #include "celix_api.h"
 
 
-celix_status_t uninstallCommand_execute(void *handle, char* command, FILE *outStream, FILE *errStream) {
+bool uninstallCommand_execute(void *handle, const char* const_command, FILE *outStream, FILE *errStream) {
 	celix_bundle_context_t *ctx = handle;
 	char delims[] = " ";
 	char * sub = NULL;
 	char *save_ptr = NULL;
-	celix_status_t status = CELIX_SUCCESS;
+	char *command = celix_utils_strdup(const_command);
 
 	sub = strtok_r(command, delims, &save_ptr);
 	sub = strtok_r(NULL, delims, &save_ptr);
+
+	bool uninstallSucceeded = false;
 
 	if (sub == NULL) {
 		fprintf(errStream, "Incorrect number of arguments.\n");
@@ -47,12 +49,13 @@ celix_status_t uninstallCommand_execute(void *handle, char* command, FILE *outSt
 			long bndId = atol(sub);
 			bool exists = celix_bundleContext_isBundleInstalled(ctx, bndId);
 			if (exists) {
-			    celix_bundleContext_uninstallBundle(ctx, bndId);
+                uninstallSucceeded = celix_bundleContext_uninstallBundle(ctx, bndId);
 			} else {
                 fprintf(outStream, "No bundle with id %li.\n", bndId);
             }
 			sub = strtok_r(NULL, delims, &save_ptr);
 		}
 	}
-	return status;
+	free(command);
+	return uninstallSucceeded;
 }

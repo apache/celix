@@ -554,9 +554,8 @@ celix_status_t pubsub_udpmcAdmin_removeEndpoint(void *handle, const celix_proper
     return status;
 }
 
-celix_status_t pubsub_udpmcAdmin_executeCommand(void *handle, char *commandLine __attribute__((unused)), FILE *out, FILE *errStream __attribute__((unused))) {
+bool pubsub_udpmcAdmin_executeCommand(void *handle, const char *commandLine __attribute__((unused)), FILE *out, FILE *errStream __attribute__((unused))) {
     pubsub_udpmc_admin_t *psa = handle;
-    celix_status_t  status = CELIX_SUCCESS;
 
     fprintf(out, "\n");
     fprintf(out, "Topic Senders:\n");
@@ -610,7 +609,7 @@ celix_status_t pubsub_udpmcAdmin_executeCommand(void *handle, char *commandLine 
     fprintf(out, "\n");
 
 
-    return status;
+    return true;
 }
 
 void pubsub_udpmcAdmin_addSerializerSvc(void *handle, void *svc, const celix_properties_t *props) {

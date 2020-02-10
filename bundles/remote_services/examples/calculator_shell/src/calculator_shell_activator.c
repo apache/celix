@@ -16,17 +16,10 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * calculator_shell_activator.c
- *
- *  \date       Oct 13, 2011
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
 
 #include <stdlib.h>
 #include <string.h>
-#include <command.h>
+#include <celix_shell_command.h>
 
 #include "bundle_activator.h"
 #include "bundle_context.h"
@@ -38,16 +31,16 @@
 
 struct activator {
     service_registration_t *addCommand;
-    command_service_t *addCmd;
-    command_service_t *addCmdSrv;
+    celix_shell_command_t *addCmd;
+    celix_shell_command_t *addCmdSrv;
 
     service_registration_t *subCommand;
-    command_service_t *subCmd;
-    command_service_t *subCmdSrv;
+    celix_shell_command_t *subCmd;
+    celix_shell_command_t *subCmdSrv;
 
     service_registration_t *sqrtCommand;
-    command_service_t *sqrtCmd;
-    command_service_t *sqrtCmdSrv;
+    celix_shell_command_t *sqrtCmd;
+    celix_shell_command_t *sqrtCmdSrv;
 };
 
 celix_status_t bundleActivator_create(celix_bundle_context_t *context, void **userData) {
@@ -83,23 +76,23 @@ celix_status_t bundleActivator_start(void * userData, celix_bundle_context_t *co
     activator->addCmdSrv->handle = context;
     activator->addCmdSrv->executeCommand = (void *)addCommand_execute;
     celix_properties_t *props = celix_properties_create();
-    celix_properties_set(props, OSGI_SHELL_COMMAND_NAME, "add");
-    bundleContext_registerService(context, (char *)OSGI_SHELL_COMMAND_SERVICE_NAME, activator->addCmdSrv, props, &activator->addCommand);
+    celix_properties_set(props, CELIX_SHELL_COMMAND_NAME, "add");
+    bundleContext_registerService(context, (char *)CELIX_SHELL_COMMAND_SERVICE_NAME, activator->addCmdSrv, props, &activator->addCommand);
 
 
     activator->sqrtCmdSrv = calloc(1, sizeof(*activator->sqrtCmdSrv));
     activator->sqrtCmdSrv->handle = context;
     activator->sqrtCmdSrv->executeCommand = (void *)sqrtCommand_execute;
     props = celix_properties_create();
-    celix_properties_set(props, OSGI_SHELL_COMMAND_NAME, "sqrt");
-    bundleContext_registerService(context, (char *)OSGI_SHELL_COMMAND_SERVICE_NAME, activator->sqrtCmdSrv, props, &activator->sqrtCommand);
+    celix_properties_set(props, CELIX_SHELL_COMMAND_NAME, "sqrt");
+    bundleContext_registerService(context, (char *)CELIX_SHELL_COMMAND_SERVICE_NAME, activator->sqrtCmdSrv, props, &activator->sqrtCommand);
 
     activator->subCmdSrv = calloc(1, sizeof(*activator->subCmdSrv));
     activator->subCmdSrv->handle = context;
     activator->subCmdSrv->executeCommand = (void *)subCommand_execute;
     props = celix_properties_create();
-    celix_properties_set(props, OSGI_SHELL_COMMAND_NAME, "sub");
-    bundleContext_registerService(context, (char *)OSGI_SHELL_COMMAND_SERVICE_NAME, activator->subCmdSrv, props, &activator->subCommand);
+    celix_properties_set(props, CELIX_SHELL_COMMAND_NAME, "sub");
+    bundleContext_registerService(context, (char *)CELIX_SHELL_COMMAND_SERVICE_NAME, activator->subCmdSrv, props, &activator->subCommand);
 
     return status;
 }

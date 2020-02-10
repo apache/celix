@@ -32,6 +32,8 @@
 extern "C" {
 #endif
 
+#define CELIX_DM_COMPONENT_UUID     "component.uuid"
+
 typedef enum celix_dm_component_state_enum {
     DM_CMP_STATE_INACTIVE = 1,
     DM_CMP_STATE_WAITING_FOR_REQUIRED = 2,

@@ -970,6 +970,14 @@ celix_status_t fw_startBundle(framework_pt framework, long bndId, int options __
 
                         if (status != CELIX_SUCCESS) {
                             //state is still STARTING, back to resolved
+                            bool createCalled = activator != NULL && activator->userData != NULL;
+                            if (createCalled) {
+                                destroy(activator->userData, context);
+                            }
+                            bundle_setContext(entry->bnd, NULL);
+                            bundle_setActivator(entry->bnd, NULL);
+                            bundleContext_destroy(context);
+                            free(activator);
                             framework_setBundleStateAndNotify(framework, entry->bnd, OSGI_FRAMEWORK_BUNDLE_RESOLVED);
                         }
                     }

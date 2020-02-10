@@ -30,7 +30,7 @@
 #include <stdlib.h>
 
 #include "celix_threads.h"
-#include "shell.h"
+#include "celix_shell.h"
 
 typedef struct shell_tui shell_tui_t ;
 
@@ -39,6 +39,6 @@ celix_status_t shellTui_start(shell_tui_t* shellTui);
 celix_status_t shellTui_stop(shell_tui_t* shellTui);
 void shellTui_destroy(shell_tui_t* shellTui);
 
-celix_status_t shellTui_setShell(shell_tui_t* shellTui, shell_service_t* svc);
+celix_status_t shellTui_setShell(shell_tui_t* shellTui, celix_shell_t* svc);
 
 #endif /* SHELL_TUI_H_ */
