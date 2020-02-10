@@ -153,6 +153,22 @@ celix_status_t versionRange_getHighVersion(version_range_pt versionRange, versio
  */
 celix_status_t versionRange_parse(const char *rangeStr, version_range_pt *range);
 
+/**
+ * Returns the LDAP filter for a version range. Caller is owner of the returned string.
+ *
+ * @return LDAP filter string if valid, NULL otherwise
+ */
+char* versionRange_createLDAPFilter(version_range_pt range);
+
+/**
+ * construct a LDAP filter for the provided version range.
+ * The string will be created in the provided buffer, if the buffer is big enough.
+ *
+ * @return True if parse successful, False otherwise.
+ */
+bool versionRange_createLDAPFilterInPlace(version_range_pt range, char* buffer, size_t bufferLength);
+
+
 #ifdef __cplusplus
 }
 #endif

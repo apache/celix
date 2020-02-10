@@ -223,7 +223,13 @@ celix_status_t version_compareTo(version_pt version, version_pt compare, int *re
                 if (res != 0) {
                     *result = res;
                 } else {
-                    *result = strcmp(version->qualifier, compare->qualifier);
+                    if(version->qualifier == NULL && compare->qualifier == NULL) {
+                        *result = 0;
+                    } else if (version->qualifier == NULL || compare->qualifier == NULL) {
+                        *result = -1;
+                    } else {
+                        *result = strcmp(version->qualifier, compare->qualifier);
+                    }
                 }
             }
         }

@@ -29,14 +29,10 @@
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/TestHarness_c.h"
 #include "CppUTest/CommandLineTestRunner.h"
-#include "CppUTestExt/MockSupport.h"
 
 extern "C"
 {
 #include "version_private.h"
-#include "celix_log.h"
-
-framework_logger_pt logger = (framework_logger_pt) 0x666;
 }
 
 int main(int argc, char** argv) {
@@ -67,8 +63,6 @@ TEST_GROUP(version) {
     }
 
     void teardown() {
-        mock().checkExpectations();
-        mock().clear();
     }
 
 };
@@ -246,7 +240,7 @@ TEST(version, getters) {
     celix_status_t status = CELIX_SUCCESS;
     char * str;
     int major, minor, micro;
-    char *qualifier;
+    const char *qualifier;
 
     str = my_strdup("abc");
     status = version_createVersion(1, 2, 3, str, &version);
@@ -363,7 +357,7 @@ TEST(version,semanticCompatibility) {
     bool isCompatible = false;
 
     status = version_isCompatible(compatible_user, provider, &isCompatible);
-    LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
+    LONGS_EQUAL(CELIX_SUCCESS, status);
 
     version_createVersion(2, 3, 5, NULL, &provider);
     version_createVersion(2, 1, 9, NULL, &compatible_user);
