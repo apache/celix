@@ -71,8 +71,8 @@ TEST_GROUP(version_range) {
 TEST(version_range, create) {
     celix_status_t status = CELIX_SUCCESS;
     version_range_pt range = NULL;
-    version_pt low = (version_pt) malloc(sizeof(*low));
-    version_pt high = (version_pt) malloc(sizeof(*high));
+    version_pt low = (version_pt) calloc(1, sizeof(*low));
+    version_pt high = (version_pt) calloc(1, sizeof(*high));
 
     status = versionRange_createVersionRange(low, false, high, true, &range);
     LONGS_EQUAL(CELIX_SUCCESS, status);
@@ -88,7 +88,7 @@ TEST(version_range, create) {
 TEST(version_range, createInfinite) {
     celix_status_t status = CELIX_SUCCESS;
     version_range_pt range = NULL;
-    version_pt version = (version_pt) malloc(sizeof(*version));
+    version_pt version = (version_pt) calloc(1, sizeof(*version));
     version->major = 1;
     version->minor = 2;
     version->micro = 3;
@@ -110,7 +110,7 @@ TEST(version_range, createInfinite) {
 
 TEST(version_range, isInRange) {
     bool result;
-    version_pt version = (version_pt) malloc(sizeof(*version));
+    version_pt version = (version_pt) calloc(1, sizeof(*version));
     version->major = 1;
     version->minor = 2;
     version->micro = 3;
@@ -118,15 +118,17 @@ TEST(version_range, isInRange) {
     {
         version_range_pt range = NULL;
 
-        version_pt low = (version_pt) malloc(sizeof(*low));
+        version_pt low = (version_pt) calloc(1, sizeof(*low));
         low->major = 1;
         low->minor = 2;
         low->micro = 3;
+        low->qualifier = NULL;
 
-        version_pt high = (version_pt) malloc(sizeof(*high));
+        version_pt high = (version_pt) calloc(1, sizeof(*high));
         high->major = 1;
         high->minor = 2;
         high->micro = 3;
+        high->qualifier = NULL;
 
         LONGS_EQUAL(CELIX_SUCCESS, versionRange_createVersionRange(low, true, high, true, &range));
         LONGS_EQUAL(CELIX_SUCCESS, versionRange_isInRange(range, version, &result));
@@ -138,12 +140,12 @@ TEST(version_range, isInRange) {
     {
         version_range_pt range = NULL;
 
-        version_pt low = (version_pt) malloc(sizeof(*low));
+        version_pt low = (version_pt) calloc(1, sizeof(*low));
         low->major = 1;
         low->minor = 2;
         low->micro = 3;
 
-        version_pt high = (version_pt) malloc(sizeof(*high));
+        version_pt high = (version_pt) calloc(1, sizeof(*high));
         high->major = 1;
         high->minor = 2;
         high->micro = 3;
@@ -158,12 +160,12 @@ TEST(version_range, isInRange) {
     {
         version_range_pt range = NULL;
 
-        version_pt low = (version_pt) malloc(sizeof(*low));
+        version_pt low = (version_pt) calloc(1, sizeof(*low));
         low->major = 1;
         low->minor = 2;
         low->micro = 3;
 
-        version_pt high = (version_pt) malloc(sizeof(*high));
+        version_pt high = (version_pt) calloc(1, sizeof(*high));
         high->major = 1;
         high->minor = 2;
         high->micro = 3;
@@ -178,12 +180,12 @@ TEST(version_range, isInRange) {
     {
         version_range_pt range = NULL;
 
-        version_pt low = (version_pt) malloc(sizeof(*low));
+        version_pt low = (version_pt) calloc(1, sizeof(*low));
         low->major = 1;
         low->minor = 2;
         low->micro = 3;
 
-        version_pt high = (version_pt) malloc(sizeof(*high));
+        version_pt high = (version_pt) calloc(1, sizeof(*high));
         high->major = 1;
         high->minor = 2;
         high->micro = 3;
@@ -198,12 +200,12 @@ TEST(version_range, isInRange) {
     {
         version_range_pt range = NULL;
 
-        version_pt low = (version_pt) malloc(sizeof(*low));
+        version_pt low = (version_pt) calloc(1, sizeof(*low));
         low->major = 1;
         low->minor = 2;
         low->micro = 3;
 
-        version_pt high = (version_pt) malloc(sizeof(*high));
+        version_pt high = (version_pt) calloc(1, sizeof(*high));
         high->major = 1;
         high->minor = 2;
         high->micro = 3;
@@ -220,8 +222,8 @@ TEST(version_range, isInRange) {
 
 TEST(version_range, parse) {
     version_range_pt range = NULL;
-    version_pt low = (version_pt) malloc(sizeof(*low));
-    version_pt high = (version_pt) malloc(sizeof(*high));
+    version_pt low = (version_pt) calloc(1, sizeof(*low));
+    version_pt high = (version_pt) calloc(1, sizeof(*high));
     char * version = my_strdup("[1.2.3,7.8.9]");
     low->major = 1;
     low->minor = 2;
@@ -245,13 +247,13 @@ TEST(version_range, parse) {
 }
 
 TEST(version_range, createLdapFilterInclusiveBoth) {
-    version_pt low = (version_pt) malloc(sizeof(*low));
+    version_pt low = (version_pt) calloc(1, sizeof(*low));
     low->major = 1;
     low->minor = 2;
     low->micro = 3;
     low->qualifier = NULL;
 
-    version_pt high = (version_pt) malloc(sizeof(*high));
+    version_pt high = (version_pt) calloc(1, sizeof(*high));
     high->major = 1;
     high->minor = 2;
     high->micro = 3;
@@ -267,13 +269,13 @@ TEST(version_range, createLdapFilterInclusiveBoth) {
 }
 
 TEST(version_range, createLdapFilterInclusiveLow) {
-    version_pt low = (version_pt) malloc(sizeof(*low));
+    version_pt low = (version_pt) calloc(1, sizeof(*low));
     low->major = 1;
     low->minor = 2;
     low->micro = 3;
     low->qualifier = NULL;
 
-    version_pt high = (version_pt) malloc(sizeof(*high));
+    version_pt high = (version_pt) calloc(1, sizeof(*high));
     high->major = 1;
     high->minor = 2;
     high->micro = 3;
@@ -289,13 +291,13 @@ TEST(version_range, createLdapFilterInclusiveLow) {
 }
 
 TEST(version_range, createLdapFilterInclusiveHigh) {
-    version_pt low = (version_pt) malloc(sizeof(*low));
+    version_pt low = (version_pt) calloc(1, sizeof(*low));
     low->major = 1;
     low->minor = 2;
     low->micro = 3;
     low->qualifier = NULL;
 
-    version_pt high = (version_pt) malloc(sizeof(*high));
+    version_pt high = (version_pt) calloc(1, sizeof(*high));
     high->major = 1;
     high->minor = 2;
     high->micro = 3;
@@ -311,13 +313,13 @@ TEST(version_range, createLdapFilterInclusiveHigh) {
 }
 
 TEST(version_range, createLdapFilterExclusiveBoth) {
-    version_pt low = (version_pt) malloc(sizeof(*low));
+    version_pt low = (version_pt) calloc(1, sizeof(*low));
     low->major = 1;
     low->minor = 2;
     low->micro = 3;
     low->qualifier = NULL;
 
-    version_pt high = (version_pt) malloc(sizeof(*high));
+    version_pt high = (version_pt) calloc(1, sizeof(*high));
     high->major = 1;
     high->minor = 2;
     high->micro = 3;
@@ -333,7 +335,7 @@ TEST(version_range, createLdapFilterExclusiveBoth) {
 }
 
 TEST(version_range, createLdapFilterInfinite) {
-    version_pt low = (version_pt) malloc(sizeof(*low));
+    version_pt low = (version_pt) calloc(1, sizeof(*low));
     low->major = 1;
     low->minor = 2;
     low->micro = 3;
@@ -349,13 +351,13 @@ TEST(version_range, createLdapFilterInfinite) {
 }
 
 TEST(version_range, createLdapFilterInPlaceInclusiveBoth) {
-    version_pt low = (version_pt) malloc(sizeof(*low));
+    version_pt low = (version_pt) calloc(1, sizeof(*low));
     low->major = 1;
     low->minor = 2;
     low->micro = 3;
     low->qualifier = NULL;
 
-    version_pt high = (version_pt) malloc(sizeof(*high));
+    version_pt high = (version_pt) calloc(1, sizeof(*high));
     high->major = 1;
     high->minor = 2;
     high->micro = 3;
@@ -374,13 +376,13 @@ TEST(version_range, createLdapFilterInPlaceInclusiveBoth) {
 }
 
 TEST(version_range, createLdapFilterInPlaceInclusiveLow) {
-    version_pt low = (version_pt) malloc(sizeof(*low));
+    version_pt low = (version_pt) calloc(1, sizeof(*low));
     low->major = 1;
     low->minor = 2;
     low->micro = 3;
     low->qualifier = NULL;
 
-    version_pt high = (version_pt) malloc(sizeof(*high));
+    version_pt high = (version_pt) calloc(1, sizeof(*high));
     high->major = 1;
     high->minor = 2;
     high->micro = 3;
@@ -399,13 +401,13 @@ TEST(version_range, createLdapFilterInPlaceInclusiveLow) {
 }
 
 TEST(version_range, createLdapFilterInPlaceInclusiveHigh) {
-    version_pt low = (version_pt) malloc(sizeof(*low));
+    version_pt low = (version_pt) calloc(1, sizeof(*low));
     low->major = 1;
     low->minor = 2;
     low->micro = 3;
     low->qualifier = NULL;
 
-    version_pt high = (version_pt) malloc(sizeof(*high));
+    version_pt high = (version_pt) calloc(1, sizeof(*high));
     high->major = 1;
     high->minor = 2;
     high->micro = 3;
@@ -424,13 +426,13 @@ TEST(version_range, createLdapFilterInPlaceInclusiveHigh) {
 }
 
 TEST(version_range, createLdapFilterInPlaceExclusiveBoth) {
-    version_pt low = (version_pt) malloc(sizeof(*low));
+    version_pt low = (version_pt) calloc(1, sizeof(*low));
     low->major = 1;
     low->minor = 2;
     low->micro = 3;
     low->qualifier = NULL;
 
-    version_pt high = (version_pt) malloc(sizeof(*high));
+    version_pt high = (version_pt) calloc(1, sizeof(*high));
     high->major = 1;
     high->minor = 2;
     high->micro = 3;
@@ -449,7 +451,7 @@ TEST(version_range, createLdapFilterInPlaceExclusiveBoth) {
 }
 
 TEST(version_range, createLdapFilterInPlaceInfiniteHigh) {
-    version_pt low = (version_pt) malloc(sizeof(*low));
+    version_pt low = (version_pt) calloc(1, sizeof(*low));
     low->major = 1;
     low->minor = 2;
     low->micro = 3;
