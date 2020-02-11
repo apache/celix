@@ -174,7 +174,7 @@ TEST(CelixShellTests, localNameClashTest) {
 
 }
 
-#ifdef CELIX_ADD_DEPRECATED_API
+#ifdef CELIX_INSTALL_DEPRECATED_API
 #include "command.h"
 TEST(CelixShellTests, legacyCommandTest) {
     command_service_t cmdService;

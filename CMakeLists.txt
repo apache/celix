@@ -99,7 +99,13 @@ if (ENABLE_TESTING)
     enable_testing()
 endif()
 
-option(CELIX_ADD_DEPRECATED_API "whether to use and install deprecated apis (i.e. header without a celix_ prefix." ON)
+option(CELIX_INSTALL_DEPRECATED_API "whether to install (and use) deprecated apis (i.e. header without a celix_ prefix." ON)
+
+option(CELIX_ADD_DEPRECATED_ATTRIBUTES "If enabled add deprecated attributes to deprecated services/functions." ON)
+if (CELIX_ADD_DEPRECATED_ATTRIBUTES)
+    set(CMAKE_C_FLAGS "-DCELIX_ADD_DEPRECATED_ATTRIBUTES ${CMAKE_C_FLAGS}")
+    set(CMAKE_CXX_FLAGS "-DCELIX_ADD_DEPRECATED_ATTRIBUTES ${CMAKE_CXX_FLAGS}")
+endif ()
 
 option(CELIX_ADD_OPENSSL_DEP "Enabled building Celix framework & etcdlib with OpenSSL library dependency. This can help in some libcurl resolving issues" OFF)
 set(CELIX_OPTIONAL_EXTRA_LIBS "")

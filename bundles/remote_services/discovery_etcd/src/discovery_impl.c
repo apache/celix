@@ -16,13 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * discovery_impl.c
- *
- * \date        Aug 8, 2014
- * \author      <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- * \copyright   Apache License, Version 2.0
- */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,16 +24,13 @@
 #include <netdb.h>
 #include <netinet/in.h>
 
-#include "celix_constants.h"
+
 #include "celix_threads.h"
 #include "bundle_context.h"
-#include "array_list.h"
 #include "utils.h"
 #include "celix_errno.h"
 #include "filter.h"
 #include "service_reference.h"
-#include "service_registration.h"
-#include "remote_constants.h"
 
 
 #include "discovery.h"
