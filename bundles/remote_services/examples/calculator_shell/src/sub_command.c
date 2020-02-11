@@ -16,69 +16,73 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * sub_command.c
- *
- *  \date       Oct 13, 2011
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
 
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
 
-#include "array_list.h"
-#include "bundle_context.h"
+#include "celix_utils.h"
+#include "celix_api.h"
 #include "sub_command.h"
 #include "calculator_service.h"
 
 static celix_status_t subCommand_isNumeric(char *number, bool *ret);
 
-void subCommand_execute(celix_bundle_context_t *context, char *line, FILE *out, FILE *err) {
-    celix_status_t status = CELIX_SUCCESS;
-    service_reference_pt calculatorService = NULL;
+struct calc_callback_data {
+    double a;
+    double b;
+    double result;
+    int rc;
+};
 
-    status = bundleContext_getServiceReference(context, (char *) CALCULATOR_SERVICE, &calculatorService);
-    if (calculatorService == NULL) {
-        fprintf(err, "SUB: Cannot get reference for %s\n", CALCULATOR_SERVICE);
-    }
-    if (status == CELIX_SUCCESS) {
-        char *token = line;
-        strtok_r(line, " ", &token);
-        char *aStr = strtok_r(NULL, " ", &token);
-        char *bStr = strtok_r(NULL, " ", &token);
-        if(aStr != NULL && bStr != NULL ){
-            bool aNumeric, bNumeric;
-            subCommand_isNumeric(aStr, &aNumeric);
-            subCommand_isNumeric(bStr, &bNumeric);
-            if (aNumeric && bNumeric) {
-                calculator_service_t *calculator = NULL;
-                status = bundleContext_getService(context, calculatorService, (void *) &calculator);
-                if (status == CELIX_SUCCESS && calculator != NULL) {
-                    double a = atof(aStr);
-                    double b = atof(bStr);
-                    double result = 0;
-                    status = calculator->sub(calculator->handle, a, b, &result);
-                    if (status == CELIX_SUCCESS) {
-                        fprintf(out, "CALCULATOR_SHELL: Sub: %f - %f = %f\n", a, b, result);
-                    } else {
-                        fprintf(err, "SUB: Unexpected exception in Calc service\n");
-                    }
-                } else {
-                    fprintf(err, "No calc service available\n");
-                }
+static void calcCallback(void *handle, void *svc) {
+    struct calc_callback_data *data = handle;
+    calculator_service_t *calc = svc;
+    data->rc = calc->sub(calc->handle, data->a, data->b, &data->result);
+}
+
+bool subCommand_execute(void *handle, const char *const_line, FILE *out, FILE *err) {
+    bool ok = true;
+    celix_bundle_context_t *context = handle;
+
+    char *line = celix_utils_strdup(const_line);
+
+    char *token = line;
+    strtok_r(line, " ", &token);
+    char *aStr = strtok_r(NULL, " ", &token);
+    char *bStr = strtok_r(NULL, " ", &token);
+    bool aNumeric, bNumeric;
+    if (aStr != NULL && bStr != NULL) {
+        subCommand_isNumeric(aStr, &aNumeric);
+        subCommand_isNumeric(bStr, &bNumeric);
+        if (aNumeric && bNumeric) {
+            struct calc_callback_data data;
+
+            data.a = atof(aStr);
+            data.b = atof(bStr);
+            data.result = 0;
+            data.rc = 0;
+            bool called = celix_bundleContext_useService(context, CALCULATOR_SERVICE, &data, calcCallback);
+            if (called && data.rc == 0) {
+                fprintf(out, "CALCULATOR_SHELL: Add: %f + %f = %f\n", data.a, data.b, data.result);
+            } else if (!called) {
+                fprintf(err, "Sub: calculator service not available\n");
+                ok = false;
             } else {
-                fprintf(err, "SUB: Requires 2 numerical parameter\n");
+                fprintf(err, "Sub: Unexpected exception in Calc service\n");
+                ok = false;
             }
         } else {
-            fprintf(err, "SUB: Requires 2 numerical parameter\n");
+            fprintf(err, "Sub: Requires 2 numerical parameter\n");
+            ok = false;
         }
     } else {
-        fprintf(err, "No calc service available\n");
+        fprintf(err, "Sub: Requires 2 numerical parameter\n");
+        ok = false;
     }
 
-    //return status;
+    free(line);
+    return ok;
 }
 
 static celix_status_t subCommand_isNumeric(char *number, bool *ret) {

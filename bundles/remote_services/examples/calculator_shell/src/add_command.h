@@ -16,17 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * add_command.h
- *
- *  \date       Oct 13, 2011
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
+
 
 #ifndef ADD_COMMAND_H_
 #define ADD_COMMAND_H_
 
-void addCommand_execute(celix_bundle_context_t *context, char *line, FILE *out, FILE *err);
+bool addCommand_execute(void *handle, const char *line, FILE *out, FILE *err);
 
 #endif /* ADD_COMMAND_H_ */
