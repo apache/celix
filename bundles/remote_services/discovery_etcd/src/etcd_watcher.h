@@ -16,13 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * etcd_watcher.h
- *
- * \date       17 Sep 2014
- * \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- * \copyright  Apache License, Version 2.0
- */
 
 #ifndef ETCD_WATCHER_H_
 #define ETCD_WATCHER_H_

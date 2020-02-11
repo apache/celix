@@ -19,7 +19,7 @@
 
 #include "celix_framework_factory.h"
 
-framework_t* celix_frameworkFactory_createFramework(properties_t *config) {
+framework_t* celix_frameworkFactory_createFramework(celix_properties_t *config) {
     framework_t* fw = NULL;
 
     if (config == NULL) {

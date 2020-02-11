@@ -15,20 +15,14 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_celix_bundle(calculator_shell
-    SOURCES
-        src/add_command
-        src/sub_command
-        src/sqrt_command
-        src/calculator_shell_activator
-    VERSION 0.0.1
-    SYMBOLIC_NAME "apache_celix_remoting_calculator_shell"
-)
-target_include_directories(calculator_shell PRIVATE src)
-target_link_libraries(calculator_shell PRIVATE Celix::shell_api calculator_api)
+#[[
+Note use avro-tools.jar (idl command) to generate avpr from avdl
+#]]
 
-celix_bundle_files(calculator_shell
-    ../calculator_api/org.apache.celix.calc.api.Calculator.avpr
-    #src/org.apache.celix.calc.api.Calculator2.descriptor ##Use this descriptor in case you want to try out versioning!
-    DESTINATION .
-)
+add_library(remote_example_api INTERFACE)
+target_include_directories(remote_example_api INTERFACE include)
+set_target_properties(remote_example_api PROPERTIES
+    "INTERFACE_DESCRIPTOR"
+    "${CMAKE_CURRENT_LIST_DIR}/org.apache.celix.RemoteExample.descriptor")
+
+#TODO use avpr instead of descriptor

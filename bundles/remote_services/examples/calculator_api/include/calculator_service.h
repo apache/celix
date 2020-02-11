@@ -16,21 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * calculator_service.h
- *
- *  \date       Oct 5, 2011
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
 
 #ifndef CALCULATOR_SERVICE_H_
 #define CALCULATOR_SERVICE_H_
 
 #define CALCULATOR_SERVICE              "org.apache.celix.calc.api.Calculator"
 #define CALCULATOR_CONFIGURATION_TYPE   "org.amdatu.remote.admin.http"
-
-typedef struct calculator calculator_t;
 
 typedef struct calculator_service calculator_service_t;
 
@@ -44,10 +35,10 @@ typedef struct calculator_service calculator_service_t;
  * }
  */
 struct calculator_service {
-    calculator_t *calculator;
-    int (*add)(calculator_t *calculator, double a, double b, double *result);
-    int (*sub)(calculator_t *calculator, double a, double b, double *result);
-    int (*sqrt)(calculator_t *calculator, double a, double *result);
+    void *handle;
+    int (*add)(void *handle, double a, double b, double *result);
+    int (*sub)(void *handle, double a, double b, double *result);
+    int (*sqrt)(void *handle, double a, double *result);
 };
 
 

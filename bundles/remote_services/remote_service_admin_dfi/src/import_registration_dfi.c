@@ -340,7 +340,7 @@ static void importRegistration_proxyFunc(void *userData, void *args[], void *ret
         celixThreadMutex_unlock(&import->mutex);
         //printf("request sended. got reply '%s' with status %i\n", reply, rc);
 
-        if (rc == 0) {
+        if (rc == 0 && dynFunction_hasReturn(entry->dynFunc)) {
             //fjprintf("Handling reply '%s'\n", reply);
             status = jsonRpc_handleReply(entry->dynFunc, reply, args);
         }

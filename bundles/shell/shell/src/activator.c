@@ -234,7 +234,7 @@ celix_status_t bundleActivator_start(void *activatorData, celix_bundle_context_t
     }
 
     activator->legacyTrackerId = -1L;
-#ifdef CELIX_ADD_DEPRECATED_API
+#ifdef CELIX_INSTALL_DEPRECATED_API
     if (status == CELIX_SUCCESS) {
         celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
         opts.callbackHandle = activator->shell;

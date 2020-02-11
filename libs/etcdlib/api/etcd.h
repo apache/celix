@@ -27,6 +27,12 @@ extern "C"
 
 #include "etcdlib.h"
 
+#ifdef CELIX_ADD_DEPRECATED_ATTRIBUTES
+#define DEP_ATTRIBUTE __attribute__((deprecated("etcd_ call are placed by etcdlib_ calls, use etcdlib.h instead of etcd.h")))
+#else
+#define DEP_ATTRIBUTE
+#endif
+
 /**
  * @desc Initialize the ETCD-LIB  with the server/port where Etcd can be reached.
  * @param const char* server. String containing the IP-number of the server.
@@ -34,8 +40,7 @@ extern "C"
  * @param int flags. bitwise flags to control etcdlib initialization. 
  * @return 0 on success, non zero otherwise.
  */
-//__attribute__((deprecated("use etcdlib_create instead")))
-int etcd_init(const char* server, int port, int flags);
+int etcd_init(const char* server, int port, int flags) DEP_ATTRIBUTE;
 
 /**
  * @desc Retrieve a single value from Etcd.
@@ -44,8 +49,7 @@ int etcd_init(const char* server, int port, int flags);
  * @param int* modifiedIndex. If not NULL the Etcd-index of the last modified value.
  * @return 0 on success, non zero otherwise
  */
-//__attribute__((deprecated("use etcdlib_get instead")))
-int etcd_get(const char* key, char** value, int* modifiedIndex);
+int etcd_get(const char* key, char** value, int* modifiedIndex) DEP_ATTRIBUTE;
 
 /**
  * @desc Retrieve the contents of a directory. For every found key/value pair the given callback function is called.
@@ -55,8 +59,7 @@ int etcd_get(const char* key, char** value, int* modifiedIndex);
  * @param int* modifiedIndex. If not NULL the Etcd-index of the last modified value.
  * @return 0 on success, non zero otherwise
  */
-//__attribute__((deprecated("use etcdlib_get_directory instead")))
-int etcd_get_directory(const char* directory, etcdlib_key_value_callback callback, void *arg, long long* modifiedIndex);
+int etcd_get_directory(const char* directory, etcdlib_key_value_callback callback, void *arg, long long* modifiedIndex) DEP_ATTRIBUTE;
 
 /**
  * @desc Setting an Etcd-key/value
@@ -66,8 +69,7 @@ int etcd_get_directory(const char* directory, etcdlib_key_value_callback callbac
  * @param bool prevExist. If true the value is only set when the key already exists, if false it is always set
  * @return 0 on success, non zero otherwise
  */
-//__attribute__((deprecated("use etcdlib_set instead")))
-int etcd_set(const char* key, const char* value, int ttl, bool prevExist);
+int etcd_set(const char* key, const char* value, int ttl, bool prevExist) DEP_ATTRIBUTE;
 
 /**
  * @desc Refresh the ttl of an existing key.
@@ -75,8 +77,7 @@ int etcd_set(const char* key, const char* value, int ttl, bool prevExist);
  * @param ttl the ttl value to use.
  * @return 0 on success, non zero otherwise.
  */
-//__attribute__((deprecated("use etcdlib_refesh instead")))
-int etcd_refresh(const char *key, int ttl);
+int etcd_refresh(const char *key, int ttl) DEP_ATTRIBUTE;
 
 /**
  * @desc Setting an Etcd-key/value and checks if there is a different previous value
@@ -86,16 +87,14 @@ int etcd_refresh(const char *key, int ttl);
  * @param bool always_write. If true the value is written, if false only when the given value is equal to the value in etcd.
  * @return 0 on success, non zero otherwise
  */
-//__attribute__((deprecated("use etcdlib_set_with_check instead")))
-int etcd_set_with_check(const char* key, const char* value, int ttl, bool always_write);
+int etcd_set_with_check(const char* key, const char* value, int ttl, bool always_write) DEP_ATTRIBUTE;
 
 /**
  * @desc Deleting an Etcd-key
  * @param const char* key. The Etcd-key (Note: a leading '/' should be avoided)
  * @return 0 on success, non zero otherwise
  */
-//__attribute__((deprecated("use etcdlib_del instead")))
-int etcd_del(const char* key);
+int etcd_del(const char* key) DEP_ATTRIBUTE;
 
 /**
  * @desc Watching an etcd directory for changes
@@ -108,8 +107,7 @@ int etcd_del(const char* key);
  * @param long long* modifiedIndex. If not NULL, the index of the modification is written.
  * @return ETCDLIB_RC_OK (0) on success, non zero otherwise. Note that a timeout is signified by a ETCDLIB_RC_TIMEOUT return code.
  */
-//__attribute__((deprecated("use etcdlib_watch instead")))
-int etcd_watch(const char* key, long long index, char** action, char** prevValue, char** value, char** rkey, long long* modifiedIndex);
+int etcd_watch(const char* key, long long index, char** action, char** prevValue, char** value, char** rkey, long long* modifiedIndex) DEP_ATTRIBUTE;
 
 #ifdef __cplusplus
 }

@@ -26,7 +26,7 @@
 #include "celix_shell_command.h"
 #include "log_helper.h"
 
-#ifdef CELIX_ADD_DEPRECATED_API
+#ifdef CELIX_INSTALL_DEPRECATED_API
 #include "command.h"
 #endif
 
@@ -39,7 +39,7 @@ typedef struct celix_shell_command_entry {
 } celix_shell_command_entry_t;
 
 
-#ifdef CELIX_ADD_DEPRECATED_API
+#ifdef CELIX_INSTALL_DEPRECATED_API
 typedef struct celix_legacy_command_entry {
     long svcId;
     command_service_t *svc;
@@ -80,7 +80,7 @@ celix_status_t shell_getCommands(shell_t *shell, celix_array_list_t **commands);
 celix_status_t shell_getCommandUsage(shell_t *shell, const char *commandName, char **outUsage);
 celix_status_t shell_getCommandDescription(shell_t *shell, const char *commandName, char **outDescription);
 
-#ifdef CELIX_ADD_DEPRECATED_API
+#ifdef CELIX_INSTALL_DEPRECATED_API
 celix_status_t shell_addLegacyCommand(shell_t *shell, command_service_t *svc, const celix_properties_t *props);
 celix_status_t shell_removeLegacyCommand(shell_t *shell, command_service_t *svc, const celix_properties_t *props);
 #endif

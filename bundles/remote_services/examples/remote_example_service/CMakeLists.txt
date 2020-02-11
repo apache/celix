@@ -15,20 +15,15 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_celix_bundle(calculator_shell
+add_celix_bundle(remote_example_service
     SOURCES
-        src/add_command
-        src/sub_command
-        src/sqrt_command
-        src/calculator_shell_activator
+        src/remote_example_activator.c
+        src/remote_example_impl.c
+    SYMBOLIC_NAME "apache_celix_remote_example_service"
     VERSION 0.0.1
-    SYMBOLIC_NAME "apache_celix_remoting_calculator_shell"
 )
-target_include_directories(calculator_shell PRIVATE src)
-target_link_libraries(calculator_shell PRIVATE Celix::shell_api calculator_api)
+target_include_directories(remote_example_service PRIVATE src)
+target_link_libraries(remote_example_service PRIVATE Celix::rsa_spi remote_example_api)
 
-celix_bundle_files(calculator_shell
-    ../calculator_api/org.apache.celix.calc.api.Calculator.avpr
-    #src/org.apache.celix.calc.api.Calculator2.descriptor ##Use this descriptor in case you want to try out versioning!
-    DESTINATION .
-)
+get_target_property(DESCR remote_example_api INTERFACE_DESCRIPTOR)
+celix_bundle_files(remote_example_service ${DESCR} DESTINATION .)

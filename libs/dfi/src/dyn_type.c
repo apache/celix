@@ -571,27 +571,18 @@ static void dynType_clearTypedPointer(dyn_type *type) {
 }
 
 int dynType_alloc(dyn_type *type, void **bufLoc) {
-    assert(type->type != DYN_TYPE_REF);
-    assert(type->ffiType->size != 0);
     int status = OK;
 
-    void *inst = calloc(1, type->ffiType->size);
-    if (inst != NULL) {
-        if (type->type == DYN_TYPE_TYPED_POINTER) {
-            void *ptr = NULL;
-            dyn_type *sub = NULL;
-            status = dynType_typedPointer_getTypedType(type, &sub);
-            if (status == OK) {
-                status = dynType_alloc(sub, &ptr);
-                if (status == OK) {
-                    *(void **)inst = ptr;
-                }
-            }
-        }
-        *bufLoc = inst;
+    if (type->type == DYN_TYPE_REF) {
+        status = dynType_alloc(type->ref.ref, bufLoc);
     } else {
-        status = MEM_ERROR;
-        LOG_ERROR("Error allocating memory for type '%c'", type->descriptor);
+        void *inst = calloc(1, type->ffiType->size);
+        if (inst != NULL) {
+            *bufLoc = inst;
+        } else {
+            status = MEM_ERROR;
+            LOG_ERROR("Error allocating memory for type '%c'", type->descriptor);
+        }
     }
 
     return status;
@@ -687,6 +678,9 @@ void dynType_deepFree(dyn_type *type, void *loc, bool alsoDeleteSelf) {
         dyn_type *subType = NULL;
         char *text = NULL;
         switch (type->type) {
+            case DYN_TYPE_REF:
+                dynType_deepFree(type->ref.ref, loc, alsoDeleteSelf);
+                break;
             case DYN_TYPE_COMPLEX :
                 dynType_freeComplexType(type, loc);
                 break;
@@ -695,11 +689,18 @@ void dynType_deepFree(dyn_type *type, void *loc, bool alsoDeleteSelf) {
                 break;
             case DYN_TYPE_TYPED_POINTER:
                 dynType_typedPointer_getTypedType(type, &subType);
-                dynType_deepFree(subType, *(void **)loc, true);
+                void *ptrToType = *(void**)loc;
+                dynType_deepFree(subType, ptrToType, true);
                 break;
             case DYN_TYPE_TEXT :
                 text = *(char **)loc;
                 free(text);
+                break;
+            case DYN_TYPE_SIMPLE:
+                //nop
+                break;
+            default:
+                LOG_ERROR("Unexpected switch case. cannot free dyn type %c\n", type->descriptor);
                 break;
         }
 

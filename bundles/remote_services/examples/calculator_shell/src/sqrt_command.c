@@ -16,66 +16,71 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * sqrt_command.c
- *
- *  \date       Oct 13, 2011
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
+
 
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
 
-#include "array_list.h"
-#include "bundle_context.h"
+#include "celix_api.h"
+#include "celix_utils.h"
 #include "sqrt_command.h"
 #include "calculator_service.h"
 
 static celix_status_t sqrtCommand_isNumeric(char *number, bool *ret);
 
-void sqrtCommand_execute(celix_bundle_context_t *context, char *line, FILE *out, FILE *err) {
-    celix_status_t status = CELIX_SUCCESS;
-    service_reference_pt calculatorService = NULL;
+struct calc_callback_data {
+    double a;
+    double result;
+    int rc;
+};
 
-    status = bundleContext_getServiceReference(context, (char *) CALCULATOR_SERVICE, &calculatorService);
-    if (calculatorService == NULL) {
-        fprintf(err, "SQRT: Cannot get reference for %s.\n", CALCULATOR_SERVICE);
-    }
-    if (status == CELIX_SUCCESS) {
-        char *token = line;
-        strtok_r(line, " ", &token);
-        char *aStr = strtok_r(NULL, " ", &token);
-        if(aStr != NULL){
-            bool numeric;
-            sqrtCommand_isNumeric(aStr, &numeric);
-            if (numeric) {
-                calculator_service_t *calculator = NULL;
-                status = bundleContext_getService(context, calculatorService, (void *) &calculator);
-                if (status == CELIX_SUCCESS && calculator != NULL) {
-                    double a = atof(aStr);
-                    double result = 0;
-                    status = calculator->sqrt(calculator->calculator, a, &result);
-                    if (status == CELIX_SUCCESS) {
-                        fprintf(out, "CALCULATOR_SHELL: Sqrt: %f = %f\n", a, result);
-                    } else {
-                        fprintf(err, "SQRT: Unexpected exception in Calc service\n");
-                    }
-                } else {
-                    fprintf(err, "No calc service available\n");
-                }
+static void calcCallback(void *handle, void *svc) {
+    struct calc_callback_data *data = handle;
+    calculator_service_t *calc = svc;
+    data->rc = calc->sqrt(calc->handle, data->a, &data->result);
+}
+
+bool sqrtCommand_execute(void *handle, const char *const_line, FILE *out, FILE *err) {
+    celix_bundle_context_t *context = handle;
+    bool ok = true;
+    char *line = celix_utils_strdup(const_line);
+
+
+    char *token = line;
+    strtok_r(line, " ", &token);
+    char *aStr = strtok_r(NULL, " ", &token);
+    if(aStr != NULL) {
+        bool numeric;
+        sqrtCommand_isNumeric(aStr, &numeric);
+        if (numeric) {
+            struct calc_callback_data data;
+
+            data.a = atof(aStr);
+            data.result = 0;
+            data.rc = 0;
+            bool called = celix_bundleContext_useService(context, CALCULATOR_SERVICE, &data, calcCallback);
+            if (called && data.rc == 0) {
+                fprintf(out, "CALCULATOR_SHELL: Sqrt: %f = %f\n", data.a, data.result);
+            } else if (!called) {
+                fprintf(err, "ADD: calculator service not available\n");
+                ok = false;
             } else {
-                fprintf(err, "SQRT: Requires 1 numerical parameter\n");
+                fprintf(err, "ADD: Unexpected exception in Calc service\n");
+                ok = false;
             }
         } else {
             fprintf(err, "SQRT: Requires 1 numerical parameter\n");
+            ok = false;
         }
     } else {
-        fprintf(err, "No calc service available\n");
+        fprintf(err, "SQRT: Requires 1 numerical parameter\n");
+        ok = false;
     }
 
-    //return status;
+    free(line);
+
+    return ok;
 }
 
 static celix_status_t sqrtCommand_isNumeric(char *number, bool *ret) {

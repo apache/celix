@@ -380,6 +380,9 @@ static int avrobinSerializer_parseAny(dyn_type *type, void *loc, FILE *stream) {
                 status = avrobinSerializer_parseEnum(type, loc, stream);
             }
             break;
+        case 'l':
+            status = avrobinSerializer_parseAny(type->ref.ref, loc, stream);
+            break;
         case 'P' :
             status = ERROR;
             LOG_WARNING("Untyped pointers are not supported for serialization.");
@@ -636,6 +639,9 @@ static int avrobinSerializer_writeAny(dyn_type *type, void *loc, FILE *stream) {
             break;
         case 'E' :
             status = avrobinSerializer_writeEnum(type, loc, stream);
+            break;
+        case 'l':
+            status = avrobinSerializer_writeAny(type->ref.ref, loc, stream);
             break;
         case 'P' :
             status = ERROR;

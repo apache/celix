@@ -89,7 +89,7 @@
  * TypedPointer
  * *(Type)
  *
- * MetaInfo TODO
+ * MetaInfo
  * #Name=Value;
  *
  *

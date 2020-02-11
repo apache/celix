@@ -223,6 +223,34 @@ extern "C" {
         dynFunction_destroy(dynFunc);
     }
 
+    #define EXAMPLE5_DESCRIPTOR "example(#const=true;tt)V"
+
+    static void example5Func(const char *s1, char *s2) {
+        STRCMP_EQUAL("s1", s1);
+        STRCMP_EQUAL("s2", s2);
+    }
+
+    static void test_example5(void) {
+        dyn_function_type *dynFunc = NULL;
+        void (*fp)(void) = (void(*)(void)) example5Func;
+        int rc;
+
+        rc = dynFunction_parseWithStr(EXAMPLE5_DESCRIPTOR, NULL, &dynFunc);
+        CHECK_EQUAL(0, rc);
+
+        const char *a1 = "s1";
+        char *a2 = strdup("s2");
+        void *args[2];
+        args[0] = &a1;
+        args[1] = &a2;
+
+        rc = dynFunction_call(dynFunc, fp, NULL, args);
+        CHECK_EQUAL(0, rc);
+
+        dynFunction_destroy(dynFunc);
+    }
+
+
     #define INVALID_FUNC_DESCRIPTOR "example$[D)V"//$ is an invalid symbol, missing (
 
     static void test_invalidDynFunc(void) {
@@ -267,6 +295,10 @@ TEST(DynFunctionTests, DynFuncTest3) {
 
 TEST(DynFunctionTests, DynFuncTest4) {
     test_example4();
+}
+
+TEST(DynFunctionTests, DynFuncTest5) {
+    test_example5();
 }
 
 TEST(DynFunctionTests, InvalidDynFuncTest) {

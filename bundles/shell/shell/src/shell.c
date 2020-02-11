@@ -114,7 +114,7 @@ celix_status_t shell_removeCommand(shell_t *shell, celix_shell_command_t *svc, c
     return status;
 }
 
-#ifdef CELIX_ADD_DEPRECATED_API
+#ifdef CELIX_INSTALL_DEPRECATED_API
 celix_status_t shell_addLegacyCommand(shell_t *shell, command_service_t *svc, const celix_properties_t *props) {
     celix_status_t status = CELIX_SUCCESS;
     const char *name = celix_properties_get(props, OSGI_SHELL_COMMAND_NAME, NULL);
@@ -141,7 +141,7 @@ celix_status_t shell_addLegacyCommand(shell_t *shell, command_service_t *svc, co
 }
 #endif
 
-#ifdef CELIX_ADD_DEPRECATED_API
+#ifdef CELIX_INSTALL_DEPRECATED_API
 celix_status_t shell_removeLegacyCommand(shell_t *shell, command_service_t *svc, const celix_properties_t *props) {
     celix_status_t status = CELIX_SUCCESS;
     const char *name = celix_properties_get(props, OSGI_SHELL_COMMAND_NAME, NULL);

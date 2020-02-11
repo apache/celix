@@ -92,6 +92,11 @@ static void printHelp(void *handle, void *svc) {
             free(name);
         }
         celix_arrayList_destroy(commands);
+
+        if (!cmdFound) {
+            fprintf(out, "Command '%s' not found. Type 'help' to get an overview of the available commands\n", sub);
+        }
+
         p->callSucceeded = cmdFound;
     }
 }

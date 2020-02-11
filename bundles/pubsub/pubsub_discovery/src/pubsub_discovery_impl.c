@@ -164,7 +164,7 @@ static void psd_watchForChange(pubsub_discovery_t *disc, bool *connectedPtr, lon
         char *action = NULL;
         char *value = NULL;
         char *readKey = NULL;
-        //TODO add interruptable etcdlib_wait -> which returns a handle to interrupt and a can be used for a wait call
+        //TODO add interruptable etcdlib_watch -> which returns a handle to interrupt and a can be used for a wait call
         int rc = etcdlib_watch(disc->etcdlib, disc->pubsubPath, watchIndex, &action, NULL, &value, &readKey, mIndex);
         if (rc == ETCDLIB_RC_ERROR) {
             L_ERROR("[PSD] Communicating with etcd. rc is %i, action value is %s\n", rc, action);

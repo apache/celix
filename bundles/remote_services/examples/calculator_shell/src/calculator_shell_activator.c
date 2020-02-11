@@ -19,101 +19,51 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <celix_shell_command.h>
 
-#include "bundle_activator.h"
-#include "bundle_context.h"
-#include "service_registration.h"
+
+#include "celix_shell_command.h"
+#include "celix_api.h"
 
 #include "add_command.h"
 #include "sub_command.h"
 #include "sqrt_command.h"
 
-struct activator {
-    service_registration_t *addCommand;
-    celix_shell_command_t *addCmd;
-    celix_shell_command_t *addCmdSrv;
+typedef struct calc_shell_activator {
+    long addCmdSvcId;
+    celix_shell_command_t addCmd;
+    long subCmdSvcId;
+    celix_shell_command_t subCmd;
+    long sqrtCmdSvcId;
+    celix_shell_command_t sqrtCmd;
+} calc_shell_activator_t;
 
-    service_registration_t *subCommand;
-    celix_shell_command_t *subCmd;
-    celix_shell_command_t *subCmdSrv;
-
-    service_registration_t *sqrtCommand;
-    celix_shell_command_t *sqrtCmd;
-    celix_shell_command_t *sqrtCmdSrv;
-};
-
-celix_status_t bundleActivator_create(celix_bundle_context_t *context, void **userData) {
-    celix_status_t status = CELIX_SUCCESS;
-    if (status == CELIX_SUCCESS) {
-        *userData = calloc(1, sizeof(struct activator));
-        if (!*userData) {
-            status = CELIX_ENOMEM;
-        } else {
-            ((struct activator *) (*userData))->addCommand = NULL;
-            ((struct activator *) (*userData))->subCommand = NULL;
-            ((struct activator *) (*userData))->sqrtCommand = NULL;
-
-            ((struct activator *) (*userData))->addCmd = NULL;
-            ((struct activator *) (*userData))->subCmd = NULL;
-            ((struct activator *) (*userData))->sqrtCmd = NULL;
-
-            ((struct activator *) (*userData))->addCmdSrv = NULL;
-            ((struct activator *) (*userData))->subCmdSrv = NULL;
-            ((struct activator *) (*userData))->sqrtCmdSrv = NULL;
-        }
-    }
-
-    return status;
-}
-
-celix_status_t bundleActivator_start(void * userData, celix_bundle_context_t *context) {
-    celix_status_t status = CELIX_SUCCESS;
-
-    struct activator * activator = (struct activator *) userData;
-
-    activator->addCmdSrv = calloc(1, sizeof(*activator->addCmdSrv));
-    activator->addCmdSrv->handle = context;
-    activator->addCmdSrv->executeCommand = (void *)addCommand_execute;
+static celix_status_t calcShell_start(calc_shell_activator_t *activator, celix_bundle_context_t *ctx) {
+    activator->addCmd.handle = ctx;
+    activator->addCmd.executeCommand = addCommand_execute;
     celix_properties_t *props = celix_properties_create();
     celix_properties_set(props, CELIX_SHELL_COMMAND_NAME, "add");
-    bundleContext_registerService(context, (char *)CELIX_SHELL_COMMAND_SERVICE_NAME, activator->addCmdSrv, props, &activator->addCommand);
+    activator->addCmdSvcId = celix_bundleContext_registerService(ctx, &activator->addCmd, CELIX_SHELL_COMMAND_SERVICE_NAME, props);
 
-
-    activator->sqrtCmdSrv = calloc(1, sizeof(*activator->sqrtCmdSrv));
-    activator->sqrtCmdSrv->handle = context;
-    activator->sqrtCmdSrv->executeCommand = (void *)sqrtCommand_execute;
-    props = celix_properties_create();
-    celix_properties_set(props, CELIX_SHELL_COMMAND_NAME, "sqrt");
-    bundleContext_registerService(context, (char *)CELIX_SHELL_COMMAND_SERVICE_NAME, activator->sqrtCmdSrv, props, &activator->sqrtCommand);
-
-    activator->subCmdSrv = calloc(1, sizeof(*activator->subCmdSrv));
-    activator->subCmdSrv->handle = context;
-    activator->subCmdSrv->executeCommand = (void *)subCommand_execute;
+    activator->subCmd.handle = ctx;
+    activator->subCmd.executeCommand = subCommand_execute;
     props = celix_properties_create();
     celix_properties_set(props, CELIX_SHELL_COMMAND_NAME, "sub");
-    bundleContext_registerService(context, (char *)CELIX_SHELL_COMMAND_SERVICE_NAME, activator->subCmdSrv, props, &activator->subCommand);
+    activator->subCmdSvcId = celix_bundleContext_registerService(ctx, &activator->subCmd, CELIX_SHELL_COMMAND_SERVICE_NAME, props);
 
-    return status;
-}
+    activator->sqrtCmd.handle = ctx;
+    activator->sqrtCmd.executeCommand = sqrtCommand_execute;
+    props = celix_properties_create();
+    celix_properties_set(props, CELIX_SHELL_COMMAND_NAME, "sqrt");
+    activator->sqrtCmdSvcId = celix_bundleContext_registerService(ctx, &activator->sqrtCmd, CELIX_SHELL_COMMAND_SERVICE_NAME, props);
 
-
-celix_status_t bundleActivator_stop(void * userData, celix_bundle_context_t *context) {
-    celix_status_t status = CELIX_SUCCESS;
-    struct activator * activator = (struct activator *) userData;
-    serviceRegistration_unregister(activator->addCommand);
-    serviceRegistration_unregister(activator->subCommand);
-    serviceRegistration_unregister(activator->sqrtCommand);
-
-    free(activator->addCmdSrv);
-    free(activator->subCmdSrv);
-    free(activator->sqrtCmdSrv);
-
-    return status;
-}
-
-celix_status_t bundleActivator_destroy(void * userData, celix_bundle_context_t *context) {
-    free(userData);
     return CELIX_SUCCESS;
 }
 
+static celix_status_t calcShell_stop(calc_shell_activator_t *activator, celix_bundle_context_t *ctx) {
+    celix_bundleContext_unregisterService(ctx, activator->addCmdSvcId);
+    celix_bundleContext_unregisterService(ctx, activator->subCmdSvcId);
+    celix_bundleContext_unregisterService(ctx, activator->sqrtCmdSvcId);
+    return CELIX_SUCCESS;
+}
+
+CELIX_GEN_BUNDLE_ACTIVATOR(calc_shell_activator_t, calcShell_start, calcShell_stop);

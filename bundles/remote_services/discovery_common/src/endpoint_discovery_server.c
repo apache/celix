@@ -40,7 +40,7 @@
 
 // defines how often the webserver is restarted (with an increased port number)
 #define MAX_NUMBER_OF_RESTARTS     15
-#define DEFAULT_SERVER_THREADS "1"
+#define DEFAULT_SERVER_THREADS     "5"
 
 #define CIVETWEB_REQUEST_NOT_HANDLED 0
 #define CIVETWEB_REQUEST_HANDLED 1
