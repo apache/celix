@@ -15,10 +15,22 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(EXPERIMENTAL "Options to enable building the experimental - non stable - bundles/libraries. " OFF DEPS FRAMEWORK)
-if (EXPERIMENTAL)
+find_package(UUID REQUIRED)
+find_package(LIBZIP REQUIRED)
 
-    add_subdirectory(bundles)
-    add_subdirectory(cxx)
+add_library(celix_cxx_Framework SHARED
+        src/Framework.cc
+        src/BundleContext.cc
+        src/Bundle.cc
+)
+target_include_directories(celix_cxx_Framework PRIVATE src)
+target_include_directories(celix_cxx_Framework PUBLIC include)
+target_link_libraries(celix_cxx_Framework PRIVATE glog::glog libzip::libzip)
+#NOTE because of libzil libbz2 and libz is also needed. maybe more to other form of resources (i.e. tar)
+target_link_libraries(celix_cxx_Framework PUBLIC celix::Registry bz2 z UUID::lib)
 
+add_library(celix::cxx_Framework ALIAS celix_cxx_Framework)
+
+if (ENABLE_TESTING)
+    add_subdirectory(gtest)
 endif ()

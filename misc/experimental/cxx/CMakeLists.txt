@@ -15,10 +15,18 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(EXPERIMENTAL "Options to enable building the experimental - non stable - bundles/libraries. " OFF DEPS FRAMEWORK)
-if (EXPERIMENTAL)
+set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules")
 
-    add_subdirectory(bundles)
-    add_subdirectory(cxx)
-
+if (ENABLE_TESTING)
+    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/AddGTest.cmake)
 endif ()
+
+find_package(glog REQUIRED)
+
+add_subdirectory(libs/Registry)
+add_subdirectory(libs/Framework)
+
+add_subdirectory(bundles/Shell)
+add_subdirectory(bundles/ShellTui)
+
+add_subdirectory(examples/ShellExample)

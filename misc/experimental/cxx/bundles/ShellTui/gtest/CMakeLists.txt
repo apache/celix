@@ -5,9 +5,9 @@
 # to you under the Apache License, Version 2.0 (the
 # "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
-#
+# 
 #   http://www.apache.org/licenses/LICENSE-2.0
-#
+# 
 # Unless required by applicable law or agreed to in writing,
 # software distributed under the License is distributed on an
 # "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -15,10 +15,12 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(EXPERIMENTAL "Options to enable building the experimental - non stable - bundles/libraries. " OFF DEPS FRAMEWORK)
-if (EXPERIMENTAL)
+set(SOURCES
+        src/main.cc
+        src/ShellTui_tests.cc
+)
+add_executable(celix_cxx_shell_tui_tests ${SOURCES})
+target_link_libraries(celix_cxx_shell_tui_tests PRIVATE gtest celix_framework_cxx shell_tui_static celix_cxx_shell_api glog::glog)
 
-    add_subdirectory(bundles)
-    add_subdirectory(cxx)
-
-endif ()
+add_test(NAME celix_cxx_shell_tui_tests COMMAND celix_cxx_shell_tui_tests)
+SETUP_TARGET_FOR_COVERAGE(celix_cxx_shell_tui_tests_cov celix_cxx_shell_tui_tests ${CMAKE_BINARY_DIR}/coverage/celix_cxx_shell_tui_tests/celix_cxx_shell_tui_tests ..)

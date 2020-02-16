@@ -15,10 +15,23 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(EXPERIMENTAL "Options to enable building the experimental - non stable - bundles/libraries. " OFF DEPS FRAMEWORK)
-if (EXPERIMENTAL)
+add_library(celix_cxx_Registry STATIC
+        src/EmptyResourceBundle.cc
+        src/Utils.cc
+        src/Filter.cc
+        src/FilterBuilder.cc
+        src/Properties.cc
+        src/ServiceRegistry.cc
+        src/ComponentManager.cc
+)
 
-    add_subdirectory(bundles)
-    add_subdirectory(cxx)
+target_include_directories(celix_cxx_Registry PRIVATE src)
+target_include_directories(celix_cxx_Registry PUBLIC include)
+target_link_libraries(celix_cxx_Registry PRIVATE glog::glog)
+target_compile_options(celix_cxx_Registry PRIVATE -fPIC)
 
+add_library(celix::Registry ALIAS celix_cxx_Registry)
+
+if (ENABLE_TESTING)
+    add_subdirectory(gtest)
 endif ()

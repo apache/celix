@@ -15,10 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(EXPERIMENTAL "Options to enable building the experimental - non stable - bundles/libraries. " OFF DEPS FRAMEWORK)
-if (EXPERIMENTAL)
 
-    add_subdirectory(bundles)
-    add_subdirectory(cxx)
-
-endif ()
+add_executable(cxx_shell_example
+        src/main.cc
+)
+target_link_libraries(cxx_shell_example PRIVATE celix::Shell celix::ShellTui glog::glog)
