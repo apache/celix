@@ -19,7 +19,7 @@
 
 #include <glog/logging.h>
 
-#include "celix/api.h"
+#include "celix/Api.h"
 #include "celix/IShellCommand.h"
 #include "celix/IShell.h"
 
@@ -100,13 +100,13 @@ namespace {
     public:
         ShellBundleActivator(std::shared_ptr<celix::BundleContext> ctx) {
             //TODO ensure fixed framework thread that call ctor/dtor bundle activators
-            registrations.push_back(impl::registerLb(ctx));
-            registrations.push_back(impl::registerHelp(ctx));
-            registrations.push_back(impl::registerStop(ctx));
-            registrations.push_back(impl::registerStart(ctx));
-            registrations.push_back(impl::registerInspect(ctx));
-            registrations.push_back(impl::registerQuery(ctx));
-            registrations.push_back(impl::registerVersion(ctx));
+            registrations.push_back(celix::impl::registerLb(ctx));
+            registrations.push_back(celix::impl::registerHelp(ctx));
+            registrations.push_back(celix::impl::registerStop(ctx));
+            registrations.push_back(celix::impl::registerStart(ctx));
+            registrations.push_back(celix::impl::registerInspect(ctx));
+            registrations.push_back(celix::impl::registerQuery(ctx));
+            registrations.push_back(celix::impl::registerVersion(ctx));
 
             registrations.push_back(ctx->registerService(std::shared_ptr<celix::IShell>{new Shell{ctx}}));
         }

@@ -27,9 +27,9 @@ target_include_directories(celix_cxx_Framework PRIVATE src)
 target_include_directories(celix_cxx_Framework PUBLIC include)
 target_link_libraries(celix_cxx_Framework PRIVATE glog::glog libzip::libzip)
 #NOTE because of libzil libbz2 and libz is also needed. maybe more to other form of resources (i.e. tar)
-target_link_libraries(celix_cxx_Framework PUBLIC celix::Registry bz2 z UUID::lib)
+target_link_libraries(celix_cxx_Framework PUBLIC celix::cxx::Registry bz2 z UUID::lib)
 
-add_library(celix::cxx_Framework ALIAS celix_cxx_Framework)
+add_library(celix::cxx::Framework ALIAS celix_cxx_Framework)
 
 if (ENABLE_TESTING)
     add_subdirectory(gtest)

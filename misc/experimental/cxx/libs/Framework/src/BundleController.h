@@ -37,7 +37,7 @@ namespace celix {
     class BundleController {
     public:
         BundleController(
-                std::function<celix::IBundleActivator*(std::shared_ptr<celix::BundleContext>)> _actFactory,
+                std::function<celix::IBundleActivator*(const std::shared_ptr<celix::BundleContext>&)> _actFactory,
                 std::shared_ptr<celix::Bundle> _bnd,
                 std::shared_ptr<celix::BundleContext> _ctx,
                 const uint8_t *rZip,

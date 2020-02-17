@@ -37,15 +37,17 @@ static std::string filter_parseAttr(const char *filterString, int *pos);
 static std::string filter_parseValue(const char *filterString, int *pos);
 static std::string stringFromCriteria(const celix::FilterCriteria& criteria);
 
+celix::Filter::Filter() : empty{true}, criteria{} {}
+
 celix::Filter::Filter(const char *filter) {
     parseFilter(std::string{filter});
 }
 
 celix::Filter::Filter(const std::string &filter) {
-    parseFilter(filter);
+    parseFilter(std::string{filter});
 }
 
-celix::Filter::Filter(bool _empty, bool _valid, celix::FilterCriteria _criteria) : empty{_empty}, valid{_valid}, criteria{std::move(_criteria)} {}
+celix::Filter::Filter(bool _empty, celix::FilterCriteria _criteria) : empty{_empty}, criteria{std::move(_criteria)} {}
 
 static void filter_skipWhiteSpace(const char *filterString, int *pos) {
     size_t length;
@@ -457,17 +459,14 @@ static bool match_criteria(const celix::Properties &props, const celix::FilterCr
 }
 
 bool celix::Filter::match(const celix::Properties &props) const {
-    if (!isValid()) {
-        return false;
-    } else if (isEmpty()) {
+    if (isEmpty()) {
         return true;
     }
-
     return match_criteria(props, criteria);
 }
 
 std::string celix::Filter::toString() const {
-    if (isValid() && !isEmpty()) {
+    if (!isEmpty()) {
         return stringFromCriteria(criteria);
     } else {
         return "";
@@ -475,27 +474,30 @@ std::string celix::Filter::toString() const {
 }
 
 const celix::FilterCriteria& celix::Filter::getCriteria() const {
-    const static celix::FilterCriteria emptyCriteria{};
-    return valid ? criteria : emptyCriteria;
+    return criteria;
 }
 
 void celix::Filter::parseFilter(const std::string &filter) {
+    bool valid;
     if (!filter.empty()) {
+        empty = false;
         int pos = 0;
         auto result = filter_parseFilter(filter.c_str(), &pos);
         if (result.valid && pos != (int) filter.size()) {
             LOG(ERROR) << "Filter Error: Missing '(' in filter string '" << filter << "'.'n";
-            result.valid = false;
+            valid = false;
+        } else {
+            valid = result.valid;
         }
-        empty = false;
-        valid = result.valid;
         criteria = std::move(result.criteria);
     } else {
         empty = true;
         valid = true;
     }
+    if (!valid) {
+        throw new std::invalid_argument{"invalid filter: " + filter};
+    }
 }
-
 
 static std::string stringFromCriteria(const celix::FilterCriteria& criteria) {
     std::stringstream ss{};

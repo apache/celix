@@ -19,7 +19,7 @@
 
 #include <iostream>
 
-#include "celix/api.h"
+#include "celix/Api.h"
 #include "celix/IShellCommand.h"
 #include "celix/IShell.h"
 

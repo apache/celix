@@ -27,9 +27,9 @@ set(SOURCES
         src/FilterBuilder_tests.cc
 
 )
-add_executable(celix_registry_tests ${SOURCES})
-target_link_libraries(celix_registry_tests PRIVATE gtest glog::glog celix::cxx::registry)
+add_executable(celix_cxx_registry_tests ${SOURCES})
+target_link_libraries(celix_cxx_registry_tests PRIVATE gtest glog::glog celix::cxx::Registry)
 
 #NOTE last .. argument for the setup coverage is the scan dir (i.e. not gtest dir, but a dir higher)
-add_test(NAME celix_registry_tests COMMAND celix_registry_tests)
-SETUP_TARGET_FOR_COVERAGE(celix_registry_tests_cov celix_registry_tests ${CMAKE_BINARY_DIR}/coverage/celix_registry_tests/celix_registry_tests ..)
+add_test(NAME celix_cxx_registry_tests COMMAND celix_cxx_registry_tests)
+SETUP_TARGET_FOR_COVERAGE(celix_cxx_registry_tests_cov celix_cxx_registry_tests ${CMAKE_BINARY_DIR}/coverage/celix/cxx/Registry ..)

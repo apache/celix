@@ -21,7 +21,7 @@
 
 #include <functional>
 
-#include "celix/api.h"
+#include "celix/Api.h"
 #include "celix/IShellCommand.h"
 
 namespace {
@@ -41,7 +41,7 @@ namespace {
             if (what == nullptr || *what == "provided") {
                 out << "Provided Services: \n";
                 for (auto &svcName : servicesNames) {
-                    std::string filter = std::string{"("} + celix::SERVICE_BUNDLE + "=" + bndId + ")";
+                    std::string filter = std::string{"("} + celix::SERVICE_BUNDLE_ID + "=" + bndId + ")";
                     ctx->registry().useAnyServices(svcName, [&out](std::shared_ptr<void>, const celix::Properties &props, const celix::IResourceBundle &) {
                         out << "|- Service " << celix::getProperty(props, celix::SERVICE_ID, "!Error") << ":\n";
                         for (auto &pair : props) {
@@ -58,7 +58,7 @@ namespace {
 }
 
 
-celix::ServiceRegistration impl::registerInspect(std::shared_ptr<celix::BundleContext> ctx) {
+celix::ServiceRegistration celix::impl::registerInspect(std::shared_ptr<celix::BundleContext> ctx) {
     using namespace std::placeholders;
     celix::ShellCommandFunction cmd = std::bind(&inspect, ctx, _1, _2, _3, _4);
 

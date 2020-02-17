@@ -45,10 +45,10 @@ namespace celix {
         bool isCacheEntryFile(const std::string &) const noexcept override;
         std::string absPathForCacheEntry(const std::string &) const noexcept override;
         std::vector <std::string> readCacheDir(const std::string &) const noexcept override;
-        const std::string &cacheRoot() const noexcept override;
+        std::string cacheRoot() const noexcept override;
 
         //bundle part
-        bool isFrameworkBundle() const noexcept override { return bndId == 1 /*note 1 is the framework bundle id*/; }
+        bool isFrameworkBundle() const noexcept override { return bndId == celix::FRAMEWORK_BUNDLE_ID; }
 
         void *handle() const noexcept override { return nullptr; } //TODO
 

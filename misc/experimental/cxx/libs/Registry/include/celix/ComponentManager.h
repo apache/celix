@@ -578,7 +578,7 @@ celix::ProvidedService<T,I>::ProvidedService(
         std::function<std::shared_ptr<T>()> _getCmpInstanceCallback,
         std::function<void()> updateServiceRegistrationsCallback,
         bool valid) :
-    GenericProvidedService{reg, celix::serviceName<I>(), updateServiceRegistrationsCallback, valid}, getcmpInstanceCallback{_getCmpInstanceCallback} {}
+    GenericProvidedService{std::move(reg), celix::serviceName<I>(), std::move(updateServiceRegistrationsCallback), valid}, getcmpInstanceCallback{_getCmpInstanceCallback} {}
 
 template<typename T, typename I>
 void celix::ProvidedService<T, I>::registerService() {
@@ -587,7 +587,7 @@ void celix::ProvidedService<T, I>::registerService() {
     }
     auto inst = getcmpInstanceCallback();
 
-    //TODO try to improve compile error whent this happens
+    //TODO try to improve compile error when this happens
     std::shared_ptr<I> svcPtr = inst; //NOTE T should implement (inherit) I
 
     std::vector<ServiceRegistration> newReg{};

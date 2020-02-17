@@ -21,13 +21,13 @@
 
 #include "gtest/gtest.h"
 
-#include "celix/api.h"
+#include "celix/Api.h"
 #include "celix/ShellTui.h"
 
 class ShellTuiTest : public ::testing::Test {
 public:
-    ShellTuiTest() {}
-    ~ShellTuiTest(){}
+    ShellTuiTest() = default;
+    ~ShellTuiTest() override = default;
 
     celix::Framework& framework() { return fw; }
 private:

@@ -19,7 +19,7 @@
 
 #include <glog/logging.h>
 
-#include "celix/api.h"
+#include "celix/Api.h"
 
 
 int main(int /*argc*/, char **argv) {

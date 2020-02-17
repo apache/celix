@@ -20,7 +20,7 @@ set(SOURCES
         src/Shell_tests.cc
 )
 add_executable(celix_cxx_shell_tests ${SOURCES})
-target_link_libraries(celix_cxx_shell_tests PRIVATE gtest celix_framework_cxx celix_cxx_shell celix_cxx_shell_api glog::glog)
+target_link_libraries(celix_cxx_shell_tests PRIVATE gtest celix::cxx::Framework celix::Shell celix::ShellApi glog::glog)
 
 add_test(NAME celix_cxx_shell_tests COMMAND celix_cxx_shell_tests)
-SETUP_TARGET_FOR_COVERAGE(celix_cxx_shell_tests_cov celix_cxx_shell_tests ${CMAKE_BINARY_DIR}/coverage/celix_cxx_shell_tests/celix_cxx_shell_tests ..)
+SETUP_TARGET_FOR_COVERAGE(celix_cxx_shell_tests_cov celix_cxx_shell_tests ${CMAKE_BINARY_DIR}/coverage/celix/cxx/Shell ..)

@@ -54,12 +54,12 @@ namespace celix {
 
     class Filter {
     public:
+        explicit Filter();
         Filter(const char* filter);
         Filter(const std::string& filter);
-        Filter(bool empty, bool valid, celix::FilterCriteria criteria);
+        Filter(bool empty, celix::FilterCriteria criteria);
 
         bool isEmpty() const { return empty; }
-        bool isValid() const { return valid; }
         std::string toString() const;
         const celix::FilterCriteria& getCriteria() const;
 
@@ -69,7 +69,6 @@ namespace celix {
         void parseFilter(const std::string& filter);
 
         bool empty{false};
-        bool valid{true};
         celix::FilterCriteria criteria{};
     };
 }

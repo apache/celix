@@ -45,12 +45,13 @@ TEST_F(RegistryConcurrencyTest, ServiceRegistrationTest) {
         int (*calc)(int);
     };
 
-    calc svc{};
-    svc.calc = [](int a) {
+    auto svc = std::make_shared<calc>();
+    svc->calc = [](int a) {
         return a * 42;
     };
 
-    auto svcReg = registry().registerService<calc>(svc);
+
+    auto svcReg = registry().registerService(svc);
     EXPECT_GE(svcReg.serviceId(), 0);
 
     struct sync {
@@ -63,7 +64,7 @@ TEST_F(RegistryConcurrencyTest, ServiceRegistrationTest) {
     };
     struct sync callInfo{};
 
-    auto use = [&callInfo](calc &svc) {
+    auto use = [&callInfo](const std::shared_ptr<calc>& svc) {
         std::cout << "setting isUseCall to true and syncing on readyToExitUseCall" << std::endl;
         std::unique_lock<std::mutex> lock(callInfo.mutex);
         callInfo.inUseCall = true;
@@ -72,12 +73,15 @@ TEST_F(RegistryConcurrencyTest, ServiceRegistrationTest) {
         lock.unlock();
 
         std::cout << "Calling calc " << std::endl;
-        int tmp = svc.calc(2);
+        int tmp = svc->calc(2);
         callInfo.result = tmp;
     };
 
     auto call = [&] {
-        bool called = registry().useServiceWithId<calc>(svcReg.serviceId(), use);
+        celix::UseServiceOptions<calc> opts{};
+        opts.targetServiceId = svcReg.serviceId();
+        opts.use = use;
+        bool called = registry().useService(opts);
         EXPECT_TRUE(called);
         EXPECT_EQ(84, callInfo.result);
     };

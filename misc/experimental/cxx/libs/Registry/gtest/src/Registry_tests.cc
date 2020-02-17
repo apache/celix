@@ -53,9 +53,10 @@ TEST_F(RegistryTest, ServiceRegistrationTest) {
     EXPECT_EQ(0, registry().nrOfRegisteredServices());
 
     {
-        celix::Properties props{};
-        props["TEST"] = "VAL";
-        celix::ServiceRegistration reg = registry().registerService(std::make_shared<MarkerInterface1>(), props);
+        auto svc = std::make_shared<MarkerInterface1>();
+        celix::Properties properties{};
+        properties["TEST"] = "VAL";
+        celix::ServiceRegistration reg = registry().registerService(svc, properties);
         //no copy possible celix::ServiceRegistration copy = reg;
 
         long svcId = reg.serviceId();
@@ -81,15 +82,16 @@ TEST_F(RegistryTest, ServiceRegistrationTest) {
     EXPECT_EQ(0, registry().nrOfRegisteredServices());
     EXPECT_EQ(0, registry().findServices<MarkerInterface1>().size());
 
-    MarkerInterface1 intf1{};
-    MarkerInterface1 intf2{};
-    MarkerInterface2 intf3{};
+    auto svc1 = std::make_shared<MarkerInterface1>();
+    auto svc2 = std::make_shared<MarkerInterface2>();
+    auto svc3 = std::make_shared<MarkerInterface3>();
+
     {
-        celix::ServiceRegistration reg1 = registry().registerService(intf1);
+        celix::ServiceRegistration reg1 = registry().registerService(svc1);
         EXPECT_EQ(1, registry().nrOfRegisteredServices());
-        celix::ServiceRegistration reg2 = registry().registerService(intf2);
+        celix::ServiceRegistration reg2 = registry().registerService(svc2);
         EXPECT_EQ(2, registry().nrOfRegisteredServices());
-        celix::ServiceRegistration reg3 = registry().registerService(intf3);
+        celix::ServiceRegistration reg3 = registry().registerService(svc3);
         EXPECT_EQ(3, registry().nrOfRegisteredServices());
 
         EXPECT_GT(reg1.serviceId(), 0);
@@ -113,19 +115,20 @@ TEST_F(RegistryTest, ServiceRegistrationTest) {
 }
 
 TEST_F(RegistryTest, SimpleFindServicesTest) {
-    MarkerInterface1 intf1{};
-    MarkerInterface2 intf2{};
+    auto svc1 = std::make_shared<MarkerInterface1>();
+    auto svc2 = std::make_shared<MarkerInterface2>();
 
-    auto reg1 = registry().registerService(intf1);
-    auto reg2 = registry().registerService(intf2);
+
+    auto reg1 = registry().registerService(svc1);
+    auto reg2 = registry().registerService(svc2);
 
     long firstSvc = registry().findService<MarkerInterface1>();
     EXPECT_GT(firstSvc, 0);
     std::vector<long> services = registry().findServices<MarkerInterface1>();
     EXPECT_EQ(1, services.size());
 
-    auto reg3 = registry().registerService(intf1);
-    auto reg4 = registry().registerService(intf2);
+    auto reg3 = registry().registerService(svc1);
+    auto reg4 = registry().registerService(svc2);
 
     long foundSvc = registry().findService<MarkerInterface1>(); //should find the first services
     EXPECT_GT(foundSvc, 0);
@@ -135,18 +138,18 @@ TEST_F(RegistryTest, SimpleFindServicesTest) {
 }
 
 TEST_F(RegistryTest, FindServicesTest) {
-    MarkerInterface1 intf1{};
+    auto svc1 = std::make_shared<MarkerInterface1>();
 
-    celix::Properties props1{};
-    props1["loc"] = "front";
-    props1["answer"] = "42";
+    auto reg1 = registry().registerService(svc1); //note no properties
 
-    celix::Properties props2{};
-    props2["loc"] = "back";
+    celix::Properties properties{};
+    properties["loc"] = "front";
+    properties["answer"] = "42";
+    auto reg2 = registry().registerService(svc1, properties);
 
-    auto reg1 = registry().registerService(intf1, props1);
-    auto reg2 = registry().registerService(intf1, std::move(props2));
-    auto reg3 = registry().registerService(intf1);
+    properties.clear();
+    properties["loc"] = "back";
+    auto reg3 = registry().registerService(svc1, properties);
 
     auto find1 = registry().findServices<MarkerInterface1>("(loc=*)"); // expecting 2
     auto find2 = registry().findServices<MarkerInterface1>("(answer=42)"); // expecting 1
@@ -158,54 +161,60 @@ TEST_F(RegistryTest, FindServicesTest) {
 }
 
 TEST_F(RegistryTest, UseServices) {
-    MarkerInterface1 intf1{};
-    auto reg1 = registry().registerService(intf1);
-    auto reg2 = registry().registerService(intf1);
-    auto reg3 = registry().registerService(intf1);
+    auto svc1 = std::make_shared<MarkerInterface1>();
+
+    auto reg1 = registry().registerService(svc1);
+    auto reg2 = registry().registerService(svc1);
+    auto reg3 = registry().registerService(svc1);
 
     long svcId1 = reg1.serviceId();
 
-    bool called = registry().useService<MarkerInterface1>([&](MarkerInterface1& /*svc*/) -> void {
+    celix::UseServiceOptions<MarkerInterface1> useOpts{};
+    useOpts.use = [&](const std::shared_ptr<MarkerInterface1>& svc) -> void {
+        EXPECT_EQ(svc1.get(), svc.get());
         //nop
-    });
-    EXPECT_TRUE(called);
-
-    called = registry().useService<MarkerInterface1>([&](MarkerInterface1& /*svc*/, const celix::Properties &props) -> void {
+    };
+    useOpts.useWithProperties = [&](const std::shared_ptr<MarkerInterface1>& svc, const celix::Properties &props) -> void {
+        EXPECT_EQ(svc1.get(), svc.get());
         long id = celix::getPropertyAsLong(props, celix::SERVICE_ID, 0);
         EXPECT_EQ(svcId1, id);
-    });
-    EXPECT_TRUE(called);
-
-    called = registry().useService<MarkerInterface1>([&](MarkerInterface1& /*svc*/, const celix::Properties &props, const celix::IResourceBundle &bnd) -> void {
+    };
+    useOpts.useWithOwner = [&](const std::shared_ptr<MarkerInterface1>& svc, const celix::Properties &props, const celix::IResourceBundle &bnd) -> void {
+        EXPECT_EQ(svc1.get(), svc.get());
         long id = celix::getPropertyAsLong(props, celix::SERVICE_ID, 0L);
         EXPECT_EQ(svcId1, id);
         EXPECT_EQ(LONG_MAX, bnd.id()); //not nullptr -> use empty bundle (bndId 0)
-    });
+    };
+
+    bool called = registry().useService(useOpts);
     EXPECT_TRUE(called);
 }
 
 TEST_F(RegistryTest, RankingTest) {
-    MarkerInterface1 intf1{};
-    auto reg1 = registry().registerService(intf1); //no props -> ranking 0
-    auto reg2 = registry().registerService(intf1); //no props -> ranking 0
+    auto svc1 = std::make_shared<MarkerInterface1>();
+
+
+    auto reg1 = registry().registerService(svc1); //no props -> ranking 0
+    auto reg2 = registry().registerService(svc1); //no props -> ranking 0
 
     {
-        auto reg3 = registry().registerService(intf1); //no props -> ranking 0
+        auto reg3 = registry().registerService(svc1); //no props -> ranking 0
         auto find = registry().findServices<MarkerInterface1>(); // expecting 3
         EXPECT_EQ(3, find.size());
         EXPECT_EQ(reg1.serviceId(), find[0]); //first registered service should be found first
-        EXPECT_EQ(reg2.serviceId(), find[1]); //first registered service should be found first
-        EXPECT_EQ(reg3.serviceId(), find[2]); //first registered service should be found first
+        EXPECT_EQ(reg2.serviceId(), find[1]); //second registered service should be found second
+        EXPECT_EQ(reg3.serviceId(), find[2]); //third registered service should be found third
 
         //note reg 3 out of scope
     }
 
-    celix::Properties props{};
-    props[celix::SERVICE_RANKING] = "100";
-    auto reg4 = registry().registerService(intf1, props); // ranking 100 -> before services with ranking 0
+
+    celix::Properties properties{};
+    properties[celix::SERVICE_RANKING] = "100";
+    auto reg4 = registry().registerService(svc1, properties); // ranking 100 -> before services with ranking 0
 
     {
-        auto reg5 = registry().registerService(intf1, props); // ranking 100 -> before services with ranking 0
+        auto reg5 = registry().registerService(svc1, properties); // ranking 100 -> before services with ranking 0
         auto find = registry().findServices<MarkerInterface1>();
         EXPECT_EQ(4, find.size());
         EXPECT_EQ(reg4.serviceId(), find[0]); //ranking 100, oldest (i.e. highest ranking with lowest svcId)
@@ -216,13 +225,13 @@ TEST_F(RegistryTest, RankingTest) {
         //note reg 5 out of scope
     }
 
-    props[celix::SERVICE_RANKING] = "-100";
-    auto reg6 = registry().registerService(intf1, props); // ranking -100 -> after the rest
-    auto reg7 = registry().registerService(intf1, props); // ranking -100 -> after the rest
-    props[celix::SERVICE_RANKING] = "110";
-    auto reg8 = registry().registerService(intf1, props); // ranking 110 -> before the rest
-    props[celix::SERVICE_RANKING] = "80";
-    auto reg9 = registry().registerService(intf1, props); // ranking 80 -> between ranking 0 adn 100
+    properties[celix::SERVICE_RANKING] = "-100";
+    auto reg6 = registry().registerService(svc1, properties); // ranking -100 -> after the rest
+    auto reg7 = registry().registerService(svc1, properties); // ranking -100 -> after the rest
+    properties[celix::SERVICE_RANKING] = "110";
+    auto reg8 = registry().registerService(svc1, properties); // ranking 110 -> before the rest
+    properties[celix::SERVICE_RANKING] = "80";
+    auto reg9 = registry().registerService(svc1, properties); // ranking 80 -> between ranking 0 adn 100
     {
         auto find = registry().findServices<MarkerInterface1>();
         EXPECT_EQ(7, find.size());
@@ -247,23 +256,23 @@ TEST_F(RegistryTest, StdFunctionTest) {
     EXPECT_TRUE(reg1.valid());
     EXPECT_EQ(1, registry().nrOfRegisteredServices());
 
-    std::function<int(long,double,const std::string&)> funcWithReturnAndArgs = [](long a, double b, const std::string &ref) -> int {
+    std::function<int(long a, double b, const std::string &ref)> funcWithReturnAndArgs = [](long a, double b, const std::string &ref) -> int {
         return (int)(a/b) + (int)ref.size();
     };
-    auto reg2 = registry().registerFunctionService("yet another function", std::move(funcWithReturnAndArgs));
+    auto reg2 = registry().registerFunctionService("yet another function", funcWithReturnAndArgs);
     EXPECT_TRUE(reg2.valid());
     EXPECT_EQ(2, registry().nrOfRegisteredServices());
     LOG(INFO) << reg2.serviceName() << std::endl;
 
-    std::function<void(std::function<void()>&)> use = [](std::function<void()> &count) {
+    auto use = [](const std::function<void()> &count) {
         count();
     };
     EXPECT_EQ(0, count);
-    registry().useFunctionService("count", use);
+    celix::UseFunctionServiceOptions<void()> useOpts{"count"};
+    useOpts.use = use;
+    bool called = registry().useFunctionService(useOpts);
+    EXPECT_TRUE(called);
     EXPECT_EQ(1, count);
-    registry().useFunctionService<std::function<void()>>("count", [](std::function<void()> &count) {
-        count();
-    });
 }
 
 TEST_F(RegistryTest, ListServicesTest) {
@@ -272,14 +281,14 @@ TEST_F(RegistryTest, ListServicesTest) {
 
     std::function<void()> nop = []{/*nop*/};
     class MarkerInterface1 {};
-    MarkerInterface1 intf1;
 
     {
         auto reg1 = registry().registerFunctionService("nop", nop);
         serviceNames = registry().listAllRegisteredServiceNames();
         EXPECT_EQ(1, serviceNames.size());
 
-        auto reg2 = registry().registerService(intf1);
+        auto svc2 = std::make_shared<MarkerInterface1>();
+        auto reg2 = registry().registerService(svc2);
         serviceNames = registry().listAllRegisteredServiceNames();
         EXPECT_EQ(2, serviceNames.size());
     }

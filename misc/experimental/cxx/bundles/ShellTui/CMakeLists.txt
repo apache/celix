@@ -19,7 +19,7 @@ add_library(celix_ShellTui_static STATIC
         src/ShellTui.cc
 )
 target_include_directories(celix_ShellTui_static PUBLIC include)
-target_link_libraries(celix_ShellTui_static PRIVATE celix::cxx_Framework glog::glog celix::ShellApi)
+target_link_libraries(celix_ShellTui_static PRIVATE celix::cxx::Framework glog::glog celix::ShellApi)
 target_compile_options(celix_ShellTui_static PRIVATE -fPIC)
 
 
@@ -29,11 +29,11 @@ add_library(celix_ShellTui SHARED
 )
 target_include_directories(celix_ShellTui PRIVATE src)
 target_link_libraries(celix_ShellTui PRIVATE celix_ShellTui_static celix::ShellApi glog::glog)
-target_link_libraries(celix_ShellTui PUBLIC celix::cxx_Framework)
+target_link_libraries(celix_ShellTui PUBLIC celix::cxx::Framework)
+
+add_library(celix::ShellTui_static ALIAS celix_ShellTui_static)
+add_library(celix::ShellTui ALIAS celix_ShellTui)
 
 if (ENABLE_TESTING)
     add_subdirectory(gtest)
 endif ()
-
-add_library(celix::ShellTui_statid ALIAS celix_ShellTui_static)
-add_library(celix::ShellTui ALIAS celix_ShellTui)

@@ -23,6 +23,7 @@
 #include <cstring>
 #include <string>
 #include <iostream>
+#include <functional>
 
 namespace celix {
 namespace impl {
@@ -99,7 +100,8 @@ namespace celix {
     template<typename F>
     //NOTE C++17 typename std::enable_if<std::is_callable<I>::value, std::string>::type
     std::string functionServiceName(const std::string &fName) {
-        std::string func = functionName<decltype(&F::operator())>();
+        using FunctionType = std::function<F>;
+        std::string func = functionName<decltype(&FunctionType::operator())>();
         return fName + " [" + func + "]";
     }
 }

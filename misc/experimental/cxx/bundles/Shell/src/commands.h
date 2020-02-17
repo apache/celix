@@ -20,17 +20,24 @@
 #ifndef CELIX_COMMANDS_H
 #define CELIX_COMMANDS_H
 
-#include "celix/api.h"
+#include "celix/Api.h"
 
+namespace celix {
 namespace impl {
     celix::ServiceRegistration registerLb(std::shared_ptr<celix::BundleContext> ctx);
+
     celix::ServiceRegistration registerHelp(std::shared_ptr<celix::BundleContext> ctx);
+
     celix::ServiceRegistration registerStop(std::shared_ptr<celix::BundleContext> ctx);
+
     celix::ServiceRegistration registerStart(std::shared_ptr<celix::BundleContext> ctx);
+
     celix::ServiceRegistration registerInspect(std::shared_ptr<celix::BundleContext> ctx);
+
     celix::ServiceRegistration registerQuery(std::shared_ptr<celix::BundleContext> ctx);
+
     celix::ServiceRegistration registerVersion(std::shared_ptr<celix::BundleContext> ctx);
-}
+}}
 
 
 #endif //CELIX_COMMANDS_H

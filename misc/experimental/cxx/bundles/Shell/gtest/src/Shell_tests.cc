@@ -21,7 +21,7 @@
 
 #include "gtest/gtest.h"
 
-#include "celix/api.h"
+#include "celix/Api.h"
 #include "celix/IShellCommand.h"
 #include "celix/IShell.h"
 
@@ -41,34 +41,34 @@ private:
 TEST_F(ShellTest, AreCommandsAndShellRegistered) {
 
     std::string filter = std::string{"("} + celix::IShellCommand::COMMAND_NAME + "=lb)";
-    long svcId = framework().context().findService<celix::IShellCommand>(filter);
+    long svcId = framework().context()->findService<celix::IShellCommand>(filter);
     EXPECT_TRUE(svcId > 0);
 
     filter = std::string{"("} + celix::SHELL_COMMAND_FUNCTION_COMMAND_NAME + "=help)";
-    svcId = framework().context().findFunctionService<celix::ShellCommandFunction>(celix::SHELL_COMMAND_FUNCTION_SERVICE_FQN, filter);
+    svcId = framework().context()->findFunctionService<celix::ShellCommandFunction>(celix::SHELL_COMMAND_FUNCTION_SERVICE_FQN, filter);
     EXPECT_TRUE(svcId > 0);
 
     filter = std::string{"("} + celix::SHELL_COMMAND_FUNCTION_COMMAND_NAME + "=inspect)";
-    svcId = framework().context().findFunctionService<celix::ShellCommandFunction>(celix::SHELL_COMMAND_FUNCTION_SERVICE_FQN, filter);
+    svcId = framework().context()->findFunctionService<celix::ShellCommandFunction>(celix::SHELL_COMMAND_FUNCTION_SERVICE_FQN, filter);
     EXPECT_TRUE(svcId > 0);
 
     filter = std::string{"("} + celix::SHELL_COMMAND_FUNCTION_COMMAND_NAME + "=query)";
-    svcId = framework().context().findFunctionService<celix::ShellCommandFunction>(celix::SHELL_COMMAND_FUNCTION_SERVICE_FQN, filter);
+    svcId = framework().context()->findFunctionService<celix::ShellCommandFunction>(celix::SHELL_COMMAND_FUNCTION_SERVICE_FQN, filter);
     EXPECT_TRUE(svcId > 0);
 
     filter = std::string{"("} + celix::SHELL_COMMAND_FUNCTION_COMMAND_NAME + "=stop)";
-    svcId = framework().context().findFunctionService<celix::ShellCommandFunction>(celix::SHELL_COMMAND_FUNCTION_SERVICE_FQN, filter);
+    svcId = framework().context()->findFunctionService<celix::ShellCommandFunction>(celix::SHELL_COMMAND_FUNCTION_SERVICE_FQN, filter);
     EXPECT_TRUE(svcId > 0);
 
     filter = std::string{"("} + celix::SHELL_COMMAND_FUNCTION_COMMAND_NAME + "=start)";
-    svcId = framework().context().findFunctionService<celix::ShellCommandFunction>(celix::SHELL_COMMAND_FUNCTION_SERVICE_FQN, filter);
+    svcId = framework().context()->findFunctionService<celix::ShellCommandFunction>(celix::SHELL_COMMAND_FUNCTION_SERVICE_FQN, filter);
     EXPECT_TRUE(svcId > 0);
 
     filter = std::string{"("} + celix::SHELL_COMMAND_FUNCTION_COMMAND_NAME + "=version)";
-    svcId = framework().context().findFunctionService<celix::ShellCommandFunction>(celix::SHELL_COMMAND_FUNCTION_SERVICE_FQN, filter);
+    svcId = framework().context()->findFunctionService<celix::ShellCommandFunction>(celix::SHELL_COMMAND_FUNCTION_SERVICE_FQN, filter);
     EXPECT_TRUE(svcId > 0);
 
-    svcId = framework().context().findService<celix::IShell>();
+    svcId = framework().context()->findService<celix::IShell>();
     EXPECT_TRUE(svcId > 0);
 };
 
@@ -78,15 +78,15 @@ TEST_F(ShellTest, LbCommandTest) {
         cmd.executeCommand("lb", {}, ss, ss);
     };
     std::string filter = std::string{"("} + celix::SHELL_COMMAND_FUNCTION_COMMAND_NAME + "=lb)";
-    bool called = framework().context().useService(useLb, filter);
+    bool called = framework().context()->useService(useLb, filter);
     EXPECT_TRUE(called);
 
     ss.flush();
     std::string output = ss.str();
 
-    size_t pos = output.find("1: Framework");
+    size_t pos = output.find("0: Framework");
     EXPECT_LE(pos, output.size());
-    pos = output.find("2: Shell");
+    pos = output.find("1: Shell");
     EXPECT_LE(pos, output.size());
 
 }
@@ -99,7 +99,7 @@ TEST_F(ShellTest, HelpCommandTest) {
         std::function<void(celix::ShellCommandFunction&)> useHelp = [&ss](celix::ShellCommandFunction& cmd){
             cmd("help", {}, ss, ss);
         };
-        bool called = framework().context().useFunctionService(celix::SHELL_COMMAND_FUNCTION_SERVICE_FQN, useHelp, filter);
+        bool called = framework().context()->useFunctionService(celix::SHELL_COMMAND_FUNCTION_SERVICE_FQN, useHelp, filter);
         EXPECT_TRUE(called);
 
         ss.flush();
@@ -121,7 +121,7 @@ TEST_F(ShellTest, HelpCommandTest) {
         };
 
         args.emplace_back("lb");
-        bool called = framework().context().useFunctionService(celix::SHELL_COMMAND_FUNCTION_SERVICE_FQN, useHelp, filter);
+        bool called = framework().context()->useFunctionService(celix::SHELL_COMMAND_FUNCTION_SERVICE_FQN, useHelp, filter);
         EXPECT_TRUE(called);
         ss.flush();
         std::string output = ss.str();
@@ -131,7 +131,7 @@ TEST_F(ShellTest, HelpCommandTest) {
         args.clear();
         args.emplace_back("unknown");
         ss.clear();
-        called = framework().context().useFunctionService(celix::SHELL_COMMAND_FUNCTION_SERVICE_FQN, useHelp, filter);
+        called = framework().context()->useFunctionService(celix::SHELL_COMMAND_FUNCTION_SERVICE_FQN, useHelp, filter);
         EXPECT_TRUE(called);
         ss.flush();
         output = ss.str();
@@ -150,7 +150,7 @@ TEST_F(ShellTest, VersionCommandTest) {
     std::function<void(celix::ShellCommandFunction &)> useHelp = [&ss](celix::ShellCommandFunction &cmd) {
         cmd("version", {}, ss, ss);
     };
-    bool called = framework().context().useFunctionService(celix::SHELL_COMMAND_FUNCTION_SERVICE_FQN, useHelp, filter);
+    bool called = framework().context()->useFunctionService(celix::SHELL_COMMAND_FUNCTION_SERVICE_FQN, useHelp, filter);
     EXPECT_TRUE(called);
 
     ss.flush();

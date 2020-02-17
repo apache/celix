@@ -25,7 +25,7 @@
 
 bool celix::Bundle::hasCacheEntry(const std::string &path) const noexcept {
     auto abs = absPathForCacheEntry(path);
-    struct stat st;
+    struct stat st{};
     bool exists = stat(abs.c_str(), &st) == 0;
     return exists;
 }
@@ -38,7 +38,7 @@ std::vector <std::string> celix::Bundle::readCacheDir(const std::string &) const
     return std::vector < std::string > {};
 }
 
-const std::string& celix::Bundle::cacheRoot() const noexcept {
+std::string celix::Bundle::cacheRoot() const noexcept {
     return bundleCache;
 }
 

@@ -50,8 +50,10 @@ celix::FilterCriteriaBuilder celix::FilterContainerBuilder::andd(const std::stri
 
 celix::FilterContainerBuilder::FilterContainerBuilder(celix::FilterCriteria parent) : filterCriteria{std::move(parent)} {}
 
-celix::FilterContainerBuilder::operator celix::Filter() {
-    return celix::Filter{false, true, std::move(filterCriteria)};
+celix::Filter celix::FilterContainerBuilder::build() {
+    FilterCriteria criteria{};
+    std::swap(filterCriteria, criteria);
+    return celix::Filter{false, std::move(criteria)};
 }
 
 celix::FilterCriteriaBuilder celix::FilterBuilder::where(const std::string& attribute) {

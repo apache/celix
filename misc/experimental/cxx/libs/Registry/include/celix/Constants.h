@@ -27,7 +27,7 @@ namespace celix {
     static constexpr const char *const SERVICE_NAME = "service_name";
     static constexpr const char *const SERVICE_ID = "service_id";
     static constexpr const char *const SERVICE_RANKING = "service_ranking";
-    static constexpr const char *const SERVICE_BUNDLE = "service_bundle";
+    static constexpr const char *const SERVICE_BUNDLE_ID = "service_bundle_id";
     static constexpr const char *const FRAMEWORK_UUID = "framework_uuid";
 
     static constexpr const char *const MANIFEST_BUNDLE_SYMBOLIC_NAME = "Bundle-SymbolicName";
@@ -35,7 +35,7 @@ namespace celix {
     static constexpr const char *const MANIFEST_BUNDLE_VERSION = "Bundle-Version";
     static constexpr const char *const MANIFEST_BUNDLE_GROUP = "Bundle-Group";
 
-    static constexpr long FRAMEWORK_BUNDLE_ID = 1L;
+    static constexpr long FRAMEWORK_BUNDLE_ID = 0L;
 }
 
 #endif //CXX_CELIX_CONSTANTS_H

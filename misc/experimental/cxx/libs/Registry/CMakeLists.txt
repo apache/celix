@@ -23,14 +23,16 @@ add_library(celix_cxx_Registry STATIC
         src/Properties.cc
         src/ServiceRegistry.cc
         src/ComponentManager.cc
-)
+        src/ServiceTrackerImpl.cc
+        src/ServiceRegistationImpl.cc
+        )
 
 target_include_directories(celix_cxx_Registry PRIVATE src)
 target_include_directories(celix_cxx_Registry PUBLIC include)
 target_link_libraries(celix_cxx_Registry PRIVATE glog::glog)
 target_compile_options(celix_cxx_Registry PRIVATE -fPIC)
 
-add_library(celix::Registry ALIAS celix_cxx_Registry)
+add_library(celix::cxx::Registry ALIAS celix_cxx_Registry)
 
 if (ENABLE_TESTING)
     add_subdirectory(gtest)

@@ -49,10 +49,10 @@ TEST_F(UtilsTest, svcName) {
     name = celix::serviceName<SvcWithFqn>();
     //TODO EXPECT_EQ("SvcWithFqn[Version 1]", name);
 
-    name = celix::functionServiceName<std::function<void()>>("do");
+    name = celix::functionServiceName<void()>("do");
     EXPECT_EQ("do [std::function<void()>]", name);
 
 
-    name = celix::functionServiceName<std::function<std::vector<std::vector<long>>(long, int, std::vector<double>)>>("collect");
+    name = celix::functionServiceName<std::vector<std::vector<long>>(long, int, std::vector<double>)>("collect");
     //TODO EXPECT_EQ("collect[std::function<std::vector<std::vector<long>>(long, int, std::vector<double>)>]", name);
 }

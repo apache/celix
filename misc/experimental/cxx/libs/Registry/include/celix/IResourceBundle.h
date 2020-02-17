@@ -31,7 +31,7 @@ namespace celix {
 
         virtual long id() const = 0;
 
-        virtual const std::string& cacheRoot() const = 0;
+        virtual std::string cacheRoot() const = 0;
 
         virtual bool hasCacheEntry(const std::string &entryPath) const = 0;
         virtual bool isCacheEntryDir(const std::string &path) const = 0;
@@ -48,10 +48,11 @@ namespace celix {
     class EmptyResourceBundle : public IResourceBundle {
     public:
         EmptyResourceBundle();
+        ~EmptyResourceBundle() override;
 
         long id() const override;
 
-        const std::string &cacheRoot() const override;
+        std::string cacheRoot() const override;
 
         bool hasCacheEntry(const std::string &entryPath) const override;
 
@@ -62,8 +63,6 @@ namespace celix {
         std::string absPathForCacheEntry(const std::string &entry) const override;
 
         std::vector<std::string> readCacheDir(const std::string &path) const override;
-
-        ~EmptyResourceBundle() override;
     };
 }
 

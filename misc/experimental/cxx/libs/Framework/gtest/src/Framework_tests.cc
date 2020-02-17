@@ -25,8 +25,8 @@
 
 class FrameworkTest : public ::testing::Test {
 public:
-    FrameworkTest() {}
-    ~FrameworkTest(){}
+    FrameworkTest() = default;
+    ~FrameworkTest() override = default;
 
     celix::Framework& framework() { return fw; }
 private:
@@ -48,11 +48,11 @@ TEST_F(FrameworkTest, CreateDestroy) {
 
 class EmbeddedActivator : public celix::IBundleActivator {
 public:
-    explicit EmbeddedActivator(std::shared_ptr<celix::BundleContext>) {
+    explicit EmbeddedActivator(const std::shared_ptr<celix::BundleContext>&) {
         startCount.fetch_add(1);
     }
 
-    virtual ~EmbeddedActivator() {
+    ~EmbeddedActivator() override {
         stopCount.fetch_add(1);
     }
 
@@ -67,8 +67,8 @@ TEST_F(FrameworkTest, InstallBundle) {
     EmbeddedActivator::startCount = 0;
     EmbeddedActivator::stopCount = 0;
 
-    auto actFactory = [](std::shared_ptr<celix::BundleContext> ctx) -> celix::IBundleActivator* {
-        return new EmbeddedActivator{std::move(ctx)};
+    auto actFactory = [](const std::shared_ptr<celix::BundleContext>& ctx) -> celix::IBundleActivator* {
+        return new EmbeddedActivator{ctx};
     };
     long bndId1 = framework().installBundle("embedded", actFactory);
     EXPECT_GE(bndId1, 0);
@@ -99,12 +99,12 @@ TEST_F(FrameworkTest, InstallBundle) {
 TEST_F(FrameworkTest, StaticBundleTest) {
     class EmbeddedActivator : public celix::IBundleActivator {
     public:
-        EmbeddedActivator() {}
-        virtual ~EmbeddedActivator() = default;
+        EmbeddedActivator() = default;
+        ~EmbeddedActivator() override = default;
     };
 
     int count = 0;
-    auto factory = [&](std::shared_ptr<celix::BundleContext>) -> celix::IBundleActivator * {
+    auto factory = [&](const std::shared_ptr<celix::BundleContext>&) -> celix::IBundleActivator * {
         count++;
         return new EmbeddedActivator{};
     };

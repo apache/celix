@@ -33,7 +33,7 @@ namespace celix {
 
     void registerStaticBundle(
             std::string symbolicName,
-            std::function<celix::IBundleActivator*(std::shared_ptr<celix::BundleContext>)> bundleActivatorFactory = {},
+            std::function<celix::IBundleActivator*(const std::shared_ptr<celix::BundleContext>&)> bundleActivatorFactory = {},
             celix::Properties manifest = {},
             const uint8_t *resourcesZip = nullptr,
             size_t resourcesZipLen = 0);
@@ -44,8 +44,8 @@ namespace celix {
             celix::Properties manifest = {},
             const uint8_t *resourcesZip = nullptr,
             size_t resourcesZipLen = 0) {
-        auto actFactory = [](std::shared_ptr<celix::BundleContext> ctx) {
-            return new T{std::move(ctx)};
+        auto actFactory = [](const std::shared_ptr<celix::BundleContext> &ctx) {
+            return new T{ctx};
         };
         celix::registerStaticBundle(std::move(symbolicName), std::move(actFactory), std::move(manifest), resourcesZip, resourcesZipLen);
     }

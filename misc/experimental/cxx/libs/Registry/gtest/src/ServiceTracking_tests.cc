@@ -45,7 +45,8 @@ class MarkerInterface3 {
 TEST_F(ServiceTrackingTest, CreateTrackersTest) {
     EXPECT_EQ(0, registry().nrOfServiceTrackers());
     {
-        celix::ServiceTracker trk1 = registry().trackServices<MarkerInterface1>();
+        celix::ServiceTrackerOptions<MarkerInterface1> opts{};
+        celix::ServiceTracker trk1 = registry().trackServices(opts);
         EXPECT_EQ(1, registry().nrOfServiceTrackers());
 
         celix::ServiceTracker moved = std::move(trk1);
@@ -54,38 +55,41 @@ TEST_F(ServiceTrackingTest, CreateTrackersTest) {
         celix::ServiceTracker moved2 = celix::ServiceTracker{std::move(moved)};
         EXPECT_EQ(1, registry().nrOfServiceTrackers());
 
-        auto trk2 = registry().trackServices<MarkerInterface1>();
-        auto trk3 = registry().trackServices<MarkerInterface2>();
+        auto trk2 = registry().trackServices(opts);
+        auto trk3 = registry().trackServices(opts);
         EXPECT_EQ(3, registry().nrOfServiceTrackers());
     }
     EXPECT_EQ(0, registry().nrOfServiceTrackers());
 }
 
 TEST_F(ServiceTrackingTest, ServicesCountTrackersTest) {
-    MarkerInterface1 intf1{};
-    MarkerInterface2 intf2{};
-    MarkerInterface3 intf3{};
+    celix::ServiceTrackerOptions<MarkerInterface1> trkOpts1{};
+    celix::ServiceTrackerOptions<MarkerInterface2> trkOpts2{};
 
-    auto trk1 = registry().trackServices<MarkerInterface1>();
+    auto trk1 = registry().trackServices(trkOpts1);
     ASSERT_EQ(0, trk1.trackCount());
 
-    auto reg1 = registry().registerService(intf1);
-    auto reg2 = registry().registerService(intf2);
+    auto svc1 = std::make_shared<MarkerInterface1>();
+    auto svc2 = std::make_shared<MarkerInterface2>();
+    auto svc3 = std::make_shared<MarkerInterface3>();
 
-    auto trk2 = registry().trackServices<MarkerInterface2>();
+    auto reg1 = registry().registerService(svc1);
+    auto reg2 = registry().registerService(svc2);
+
+    auto trk2 = registry().trackServices(trkOpts2);
     ASSERT_EQ(1, trk1.trackCount());
     ASSERT_EQ(1, trk2.trackCount());
 
     {
 
-        auto reg3 = registry().registerService(intf1);
+        auto reg3 = registry().registerService(svc1);
         ASSERT_EQ(2, trk1.trackCount());
         ASSERT_EQ(1, trk2.trackCount());
 
         {
-            auto reg4 = registry().registerService(intf1);
-            auto reg5 = registry().registerService(intf2);
-            auto reg6 = registry().registerService(intf3);
+            auto reg4 = registry().registerService(svc1);
+            auto reg5 = registry().registerService(svc2);
+            auto reg6 = registry().registerService(svc3);
 
             ASSERT_EQ(3, trk1.trackCount());
             ASSERT_EQ(2, trk2.trackCount());
@@ -103,9 +107,9 @@ TEST_F(ServiceTrackingTest, ServicesCountTrackersTest) {
 }
 
 TEST_F(ServiceTrackingTest, SetServiceTest) {
-    auto intf1 = std::make_shared<MarkerInterface1>();
-    auto intf2 = std::make_shared<MarkerInterface2>();
-    auto intf3 = std::make_shared<MarkerInterface3>();
+    auto svc1 = std::make_shared<MarkerInterface1>();
+    auto svc2 = std::make_shared<MarkerInterface2>();
+    auto svc3 = std::make_shared<MarkerInterface3>();
 
     MarkerInterface1 *ptrToSvc = nullptr;
     //const celix::Properties *ptrToProps = nullptr;
@@ -116,33 +120,33 @@ TEST_F(ServiceTrackingTest, SetServiceTest) {
         ptrToSvc = svc.get();
     };
 
-    auto reg1 = registry().registerService(intf1);
-    auto reg2 = registry().registerService(intf2);
-    auto reg3 = registry().registerService(intf3);
+    auto reg1 = registry().registerService(svc1);
+    auto reg2 = registry().registerService(svc2);
+    auto reg3 = registry().registerService(svc3);
 
     auto trk1 = registry().trackServices(opts);
-    EXPECT_EQ(intf1.get(), ptrToSvc); //should be intf1
+    EXPECT_EQ(svc1.get(), ptrToSvc); //should be intf1
 
     reg1.unregister();
     EXPECT_EQ(nullptr, ptrToSvc); //unregistered -> nullptr
 
 
-    reg1 = registry().registerService(intf1);
-    EXPECT_EQ(intf1.get(), ptrToSvc); //set to intf1 again
+    reg1 = registry().registerService(svc1);
+    EXPECT_EQ(svc1.get(), ptrToSvc); //set to intf1 again
 
-    auto intf4 = std::make_shared<MarkerInterface1>();
-    auto reg4 = registry().registerService(intf4);
-    EXPECT_EQ(intf1.get(), ptrToSvc); //no change -> intf1 is older
+    auto svc4 = std::make_shared<MarkerInterface1>();
+    auto reg4 = registry().registerService(svc4);
+    EXPECT_EQ(svc1.get(), ptrToSvc); //no change -> intf1 is older
 
     reg1.unregister();
-    EXPECT_EQ(intf4.get(), ptrToSvc); //intf1 is gone, intf4 should be set
+    EXPECT_EQ(svc4.get(), ptrToSvc); //intf1 is gone, intf4 should be set
 
     trk1.stop();
     EXPECT_EQ(nullptr, ptrToSvc); //stop tracking nullptr svc is set
 
     {
         auto trk2 = registry().trackServices(opts);
-        EXPECT_EQ(intf4.get(), ptrToSvc); //intf1 is gone, intf4 should be set
+        EXPECT_EQ(svc4.get(), ptrToSvc); //intf1 is gone, intf4 should be set
         //out of scope -> tracker stopped
     }
     EXPECT_EQ(nullptr, ptrToSvc); //stop tracking nullptr svc is set
@@ -162,9 +166,9 @@ TEST_F(ServiceTrackingTest, SetServiceWithPropsAndOwnderTest) {
 }
 
 TEST_F(ServiceTrackingTest, AddRemoveTest) {
-    auto intf1 = std::make_shared<MarkerInterface1>();
-    auto intf2 = std::make_shared<MarkerInterface2>();
-    auto intf3 = std::make_shared<MarkerInterface3>();
+    auto svc1 = std::make_shared<MarkerInterface1>();
+    auto svc2 = std::make_shared<MarkerInterface2>();
+    auto svc3 = std::make_shared<MarkerInterface3>();
 
     std::vector<std::shared_ptr<MarkerInterface1>> services{};
 
@@ -176,30 +180,30 @@ TEST_F(ServiceTrackingTest, AddRemoveTest) {
         services.erase(std::remove(services.begin(), services.end(), svc), services.end());
     };
 
-    auto reg1 = registry().registerService(intf1);
-    auto reg2 = registry().registerService(intf2);
-    auto reg3 = registry().registerService(intf3);
+    auto reg1 = registry().registerService(svc1);
+    auto reg2 = registry().registerService(svc2);
+    auto reg3 = registry().registerService(svc3);
 
     auto trk1 = registry().trackServices(opts);
     ASSERT_EQ(1, services.size());
-    EXPECT_EQ(intf1.get(), services[0].get()); //should be intf1
+    EXPECT_EQ(svc1.get(), services[0].get()); //should be intf1
 
     reg1.unregister();
     EXPECT_EQ(0, services.size());
 
-    reg1 = registry().registerService(intf1);
+    reg1 = registry().registerService(svc1);
     ASSERT_EQ(1, services.size());
-    EXPECT_EQ(intf1.get(), services[0].get()); //should be intf1 again
+    EXPECT_EQ(svc1.get(), services[0].get()); //should be intf1 again
 
-    auto intf4 = std::make_shared<MarkerInterface1>();
-    auto reg4 = registry().registerService(intf4);
+    auto svc4 = std::make_shared<MarkerInterface1>();
+    auto reg4 = registry().registerService(svc4);
     ASSERT_EQ(2, services.size());
-    EXPECT_EQ(intf1.get(), services[0].get());
-    EXPECT_EQ(intf4.get(), services[1].get());
+    EXPECT_EQ(svc4.get(), services[0].get());
+    EXPECT_EQ(svc4.get(), services[1].get());
 
     reg1.unregister();
     ASSERT_EQ(1, services.size());
-    EXPECT_EQ(intf4.get(), services[0].get()); //intf1 gone -> index 0: intf4
+    EXPECT_EQ(svc4.get(), services[0].get()); //intf1 gone -> index 0: intf4
 
     trk1.stop();
     EXPECT_EQ(0, services.size());
@@ -207,7 +211,7 @@ TEST_F(ServiceTrackingTest, AddRemoveTest) {
     {
         auto trk2 = registry().trackServices(opts);
         ASSERT_EQ(1, services.size());
-        EXPECT_EQ(intf4.get(), services[0].get());
+        EXPECT_EQ(svc4.get(), services[0].get());
         //out of scope -> tracker stopped
     }
     EXPECT_EQ(0, services.size()); //stop tracking -> services removed
@@ -218,9 +222,10 @@ TEST_F(ServiceTrackingTest, AddRemoveServicesWithPropsAndOwnderTest) {
 }
 
 TEST_F(ServiceTrackingTest, UpdateTest) {
-    auto intf1 = std::make_shared<MarkerInterface1>();
-    auto intf2 = std::make_shared<MarkerInterface2>();
-    auto intf3 = std::make_shared<MarkerInterface3>();
+    auto svc1 = std::make_shared<MarkerInterface1>();
+    auto svc2 = std::make_shared<MarkerInterface2>();
+    auto svc3 = std::make_shared<MarkerInterface3>();
+
 
     std::vector<std::shared_ptr<MarkerInterface1>> services{};
 
@@ -229,32 +234,33 @@ TEST_F(ServiceTrackingTest, UpdateTest) {
         services = rankedServices;
     };
 
-    auto reg1 = registry().registerService(intf1);
-    auto reg2 = registry().registerService(intf2);
-    auto reg3 = registry().registerService(intf3);
+    auto reg1 = registry().registerService(svc1);
+    auto reg2 = registry().registerService(svc2);
+    auto reg3 = registry().registerService(svc3);
 
     auto trk1 = registry().trackServices(opts);
     EXPECT_EQ(1, trk1.trackCount());
     ASSERT_EQ(1, services.size());
-    EXPECT_EQ(intf1.get(), services[0].get()); //should be intf1
+    EXPECT_EQ(svc1.get(), services[0].get()); //should be intf1
 
     reg1.unregister();
     EXPECT_EQ(0, services.size());
 
-    reg1 = registry().registerService(intf1);
+    reg1 = registry().registerService(svc1);
     ASSERT_EQ(1, services.size());
-    EXPECT_EQ(intf1.get(), services[0].get()); //should be intf1 again
+    EXPECT_EQ(svc1.get(), services[0].get()); //should be intf1 again
 
-    auto intf4 = std::make_shared<MarkerInterface1>();
-    celix::Properties props{std::make_pair(celix::SERVICE_RANKING, "100")};
-    auto reg4 = registry().registerService(intf4, std::move(props));
+    auto svc4 = std::make_shared<MarkerInterface1>();
+    celix::Properties properties{};
+    properties[celix::SERVICE_RANKING] = "100";
+    auto reg4 = registry().registerService(svc4, properties);
     ASSERT_EQ(2, services.size());
-    EXPECT_EQ(intf4.get(), services[0].get()); //note 4 higher ranking
-    EXPECT_EQ(intf1.get(), services[1].get());
+    EXPECT_EQ(svc4.get(), services[0].get()); //note 4 higher ranking
+    EXPECT_EQ(svc4.get(), services[1].get());
 
     reg1.unregister();
     ASSERT_EQ(1, services.size());
-    EXPECT_EQ(intf4.get(), services[0].get()); //intf1 gone -> index 0: intf4
+    EXPECT_EQ(svc4.get(), services[0].get()); //intf1 gone -> index 0: intf4
 
     trk1.stop();
     EXPECT_EQ(0, services.size());
@@ -262,7 +268,7 @@ TEST_F(ServiceTrackingTest, UpdateTest) {
     {
         auto trk2 = registry().trackServices(opts);
         ASSERT_EQ(1, services.size());
-        EXPECT_EQ(intf4.get(), services[0].get());
+        EXPECT_EQ(svc4.get(), services[0].get());
         //out of scope -> tracker stopped
     }
     EXPECT_EQ(0, services.size()); //stop tracking -> services removed

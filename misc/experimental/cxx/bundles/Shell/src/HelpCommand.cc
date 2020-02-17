@@ -19,7 +19,7 @@
 
 #include "commands.h"
 
-#include "celix/api.h"
+#include "celix/Api.h"
 #include "celix/IShellCommand.h"
 
 
@@ -79,7 +79,7 @@ namespace {
     }
 }
 
-celix::ServiceRegistration impl::registerHelp(std::shared_ptr<celix::BundleContext> ctx) {
+celix::ServiceRegistration celix::impl::registerHelp(std::shared_ptr<celix::BundleContext> ctx) {
     using namespace std::placeholders;
     celix::ShellCommandFunction cmd = std::bind(&help, ctx, _1, _2, _3, _4);
 

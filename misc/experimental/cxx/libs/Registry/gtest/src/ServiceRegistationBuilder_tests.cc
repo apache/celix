@@ -78,12 +78,16 @@ TEST_F(ServiceRegistrationBuilderTest, ServiceRegistrationBuilderTest) {
                 .build();
         services = registry()->findServices<Interface1>("(name1=value1)");
         EXPECT_EQ(services.size(), 1);
-        auto called = registry()->useService<Interface1>([](Interface1& /*svc*/, const celix::Properties &props) {
+
+        celix::UseServiceOptions<Interface1> useOpts{};
+        useOpts.useWithProperties = [](const std::shared_ptr<Interface1>& /*svc*/, const celix::Properties &props) {
             EXPECT_EQ(props.find("name0"), props.end());
             EXPECT_EQ(props.at("name1"), "value1");
             EXPECT_EQ(props.at("name2"), "value2");
             EXPECT_EQ(props.at("name3"), "value3");
-        });
+        };
+
+        auto called = registry()->useService(useOpts);
         EXPECT_TRUE(called);
     }
 }
@@ -92,17 +96,17 @@ TEST_F(ServiceRegistrationBuilderTest, ServiceRegistrationBuilderTest) {
 TEST_F(ServiceRegistrationBuilderTest, FunctionServiceRegistrationBuilderTest) {
 
     auto fn = std::string{"test function"};
-    auto builder = celix::FunctionServiceRegistrationBuilder<std::function<void()>>{bundle(), registry(), fn};
+    celix::FunctionServiceRegistrationBuilder<void()> builder{bundle(), registry(), fn};
     //NOTE by design not possible, to prevent wrong use:
     // auto copy = build;
     const auto templ = builder.copy(); //this is possible
 
     {
         auto reg = builder.setFunctionService([]{/*nop*/}).build();
-        auto functions = registry()->findFunctionServices<std::function<void()>>(fn);
+        auto functions = registry()->findFunctionServices<void()>(fn);
         EXPECT_EQ(functions.size(), 1);
     } //RAII -> deregister service
-    auto services = registry()->findFunctionServices<std::function<void()>>(fn);
+    auto services = registry()->findFunctionServices<void()>(fn);
     EXPECT_EQ(services.size(), 0);
 
     services = registry()->findServices<Interface1>("(name=val)");
@@ -121,14 +125,18 @@ TEST_F(ServiceRegistrationBuilderTest, FunctionServiceRegistrationBuilderTest) {
                 .addProperty("name1", "value1")
                 .addProperties(props2)
                 .build();
-        services = registry()->findFunctionServices<std::function<void()>>(fn, "(name1=value1)");
+        services = registry()->findFunctionServices<void()>(fn, "(name1=value1)");
         EXPECT_EQ(services.size(), 1);
-        auto called = registry()->useFunctionService<std::function<void()>>(fn, [](std::function<void()>& /*f*/, const celix::Properties &props) {
+
+        celix::UseFunctionServiceOptions<void()> useOpts{fn};
+        useOpts.useWithProperties = [](const std::function<void()>& /*f*/, const celix::Properties &props) {
             EXPECT_EQ(props.find("name0"), props.end());
             EXPECT_EQ(props.at("name1"), "value1");
             EXPECT_EQ(props.at("name2"), "value2");
             EXPECT_EQ(props.at("name3"), "value3");
-        });
+        };
+
+        auto called = registry()->useFunctionService<void()>(useOpts);
         EXPECT_TRUE(called);
     }
 }

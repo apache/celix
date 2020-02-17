@@ -28,9 +28,8 @@ public:
 };
 
 TEST_F(FilterBuilderTest, BuildEqualFilter) {
-    celix::Filter filter = celix::FilterBuilder::where("key").is("value");
+    celix::Filter filter = celix::FilterBuilder::where("key").is("value").build();
     EXPECT_FALSE(filter.isEmpty());
-    EXPECT_TRUE(filter.isValid());
     EXPECT_EQ(std::string{"(key=value)"}, filter.toString());
 }
 
@@ -42,9 +41,8 @@ TEST_F(FilterBuilderTest, BuildEqualFilter) {
 //}
 
 TEST_F(FilterBuilderTest, BuildAndFilter) {
-    celix::Filter filter = celix::FilterBuilder::where("key1").is("value1").andd("key2").is("value2");
+    celix::Filter filter = celix::FilterBuilder::where("key1").is("value1").andd("key2").is("value2").build();
     EXPECT_FALSE(filter.isEmpty());
-    EXPECT_TRUE(filter.isValid());
     EXPECT_EQ(std::string{"(&(key1=value1)(key2=value2))"}, filter.toString());
 }
 

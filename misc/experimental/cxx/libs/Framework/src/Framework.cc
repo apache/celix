@@ -84,7 +84,7 @@ namespace {
 
     std::string createCwdString() {
         char workdir[PATH_MAX];
-        if (getcwd(workdir, sizeof(workdir)) != NULL) {
+        if (getcwd(workdir, sizeof(workdir)) != nullptr) {
             return std::string{workdir};
         } else {
             return std::string{};
@@ -129,7 +129,7 @@ public:
     }
 
     long installBundle(
-            std::string symbolicName,
+            const std::string& symbolicName,
             std::function<celix::IBundleActivator*(std::shared_ptr<celix::BundleContext>)> actFactory,
             celix::Properties manifest,
             bool autoStart,
@@ -309,7 +309,7 @@ public:
             bnd->setState(BundleState::ACTIVE);
             auto ctx = std::shared_ptr<celix::BundleContext>{new celix::BundleContext{bnd}};
             class EmptyActivator : public IBundleActivator {};
-            std::function<celix::IBundleActivator*(std::shared_ptr<celix::BundleContext>)> fac = [](std::shared_ptr<celix::BundleContext>) {
+            std::function<celix::IBundleActivator*(std::shared_ptr<celix::BundleContext>)> fac = [](const std::shared_ptr<celix::BundleContext>&) {
                 return new EmptyActivator{};
             };
             auto ctr = std::shared_ptr<celix::BundleController>{new celix::BundleController{std::move(fac), std::move(bnd), std::move(ctx), nullptr, 0}};
@@ -327,13 +327,13 @@ public:
         std::lock_guard<std::mutex> lck{shutdown.mutex};
         if (!shutdown.shutdownStarted) {
             shutdown.future = std::async(std::launch::async, [this]{
-                std::vector<long> bundles = listBundles(false);
-                while (!bundles.empty()) {
-                    for (auto it = bundles.rbegin(); it != bundles.rend(); ++it) {
+                std::vector<long> fwBundles = listBundles(false);
+                while (!fwBundles.empty()) {
+                    for (auto it = fwBundles.rbegin(); it != fwBundles.rend(); ++it) {
                         stopBundle(*it);
                         uninstallBundle(*it);
                     }
-                    bundles = listBundles(false);
+                    fwBundles = listBundles(false);
                 }
             });
             shutdown.shutdownStarted = true;
@@ -417,11 +417,11 @@ long celix::Framework::installBundle(
 std::vector<long> celix::Framework::listBundles(bool includeFrameworkBundle) const { return pimpl->listBundles(includeFrameworkBundle); }
 
 bool celix::Framework::useBundle(long bndId, std::function<void(const celix::IBundle &bnd)> use) const {
-    return pimpl->useBundle(bndId, use);
+    return pimpl->useBundle(bndId, std::move(use));
 }
 
 int celix::Framework::useBundles(std::function<void(const celix::IBundle &bnd)> use, bool includeFrameworkBundle) const {
-    return pimpl->useBundles(use, includeFrameworkBundle);
+    return pimpl->useBundles(std::move(use), includeFrameworkBundle);
 }
 
 bool celix::Framework::startBundle(long bndId) { return pimpl->stopBundle(bndId); }
@@ -448,7 +448,7 @@ std::shared_ptr<celix::BundleContext> celix::Framework::context() const {
 
 void celix::registerStaticBundle(
         std::string symbolicName,
-        std::function<celix::IBundleActivator*(std::shared_ptr<celix::BundleContext>)> bundleActivatorFactory,
+        std::function<celix::IBundleActivator*(const std::shared_ptr<celix::BundleContext>&)> bundleActivatorFactory,
         celix::Properties manifest,
         const uint8_t *resourcesZip,
         size_t resourcesZipLen) {

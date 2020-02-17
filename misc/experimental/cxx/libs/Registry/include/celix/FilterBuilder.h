@@ -28,8 +28,8 @@ namespace celix {
 
     class FilterCriteriaBuilder {
     public:
-        FilterCriteriaBuilder(celix::FilterCriteria parent, std::string attribute);
         explicit FilterCriteriaBuilder(std::string attribute);
+        FilterCriteriaBuilder(celix::FilterCriteria parent, std::string attribute);
 
 //        FilterContainerBuilder gte(const std::string& value);
 //        FilterContainerBuilder gt(const std::string& value);
@@ -43,21 +43,24 @@ namespace celix {
         bool useContainer;
         celix::FilterCriteria container{};
         std::string attribute;
+
+        //TODO make copy ctor/assign private
     };
 
     class FilterContainerBuilder {
     public:
         explicit FilterContainerBuilder(celix::FilterCriteria parent);
 
-        //TODO rename andd, and is not possible (keyword)
+        //TODO rename andd, note and is not possible (keyword)
         FilterCriteriaBuilder andd(const std::string& attribute);
 //        FilterCriteriaBuilder orr(const std::string& attribute);
-//        FilterCriteriaBuilder andd(FilterContainerBuilder nested);
 //        FilterCriteriaBuilder orr(FilterContainerBuilder nested);
 
-        operator celix::Filter();
+        celix::Filter build();
     protected:
         celix::FilterCriteria filterCriteria{};
+    private:
+        //TODO make copy ctor/assign private
     };
 
     class FilterBuilder {

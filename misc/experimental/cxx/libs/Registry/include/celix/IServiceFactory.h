@@ -28,12 +28,18 @@ namespace celix {
     template<typename I>
     class IServiceFactory {
     public:
-        using type = I;
-
+        using ServiceType = I;
         virtual ~IServiceFactory() = default;
 
-        virtual I* getService(const celix::IResourceBundle &requestingBundle, const celix::Properties &properties) noexcept = 0;
-        virtual void ungetService(const celix::IResourceBundle &requestingBundle, const celix::Properties &properties) noexcept = 0;
+        /**
+         * Called when a bundle specific bundle needs to be created.
+         */
+        virtual std::shared_ptr<I> createBundleSpecificService(const celix::IResourceBundle &requestingBundle, const celix::Properties &properties) = 0;
+
+        /**
+         * Called when a bundle specific service is removed (i.e. no longer needed)
+         */
+        virtual void bundleSpecificServiceRemoved(const celix::IResourceBundle &requestingBundle, const celix::Properties &properties) = 0;
     };
 
 }

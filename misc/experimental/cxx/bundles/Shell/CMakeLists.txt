@@ -45,7 +45,7 @@ add_library(celix_Shell SHARED
 )
 target_include_directories(celix_Shell PRIVATE src)
 target_link_libraries(celix_Shell PRIVATE celix_ShellApi glog::glog)
-target_link_libraries(celix_Shell PUBLIC celix::cxx_Framework)
+target_link_libraries(celix_Shell PUBLIC celix::cxx::Framework)
 add_dependencies(celix_Shell create_resources)
 
 #TODO should eventually be done by a CMake command (i.e. the add_celix_bundle)
@@ -55,10 +55,9 @@ else ()
     target_link_libraries(celix_Shell PRIVATE -Wl,-sectcreate -Wl,resources -Wl,celix_cxx_shell -Wl,celix_cxx_shell_resources.zip)
 endif ()
 
+add_library(celix::ShellApi ALIAS celix_ShellApi)
+add_library(celix::Shell ALIAS celix_Shell)
 
 if (ENABLE_TESTING)
     add_subdirectory(gtest)
 endif ()
-
-add_library(celix::ShellApi ALIAS celix_ShellApi)
-add_library(celix::Shell ALIAS celix_Shell)
