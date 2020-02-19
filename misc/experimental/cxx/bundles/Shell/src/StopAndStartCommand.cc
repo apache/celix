@@ -52,7 +52,7 @@ namespace {
 }
 
 
-celix::ServiceRegistration celix::impl::registerStop(std::shared_ptr<celix::BundleContext> ctx) {
+celix::ServiceRegistration celix::impl::registerStop(const std::shared_ptr<celix::BundleContext>& ctx) {
     using namespace std::placeholders;
     celix::ShellCommandFunction stop = std::bind(&stopOrStart, ctx, _1, _2, _3, _4);
 
@@ -63,7 +63,7 @@ celix::ServiceRegistration celix::impl::registerStop(std::shared_ptr<celix::Bund
     return ctx->registerFunctionService(celix::SHELL_COMMAND_FUNCTION_SERVICE_FQN, std::move(stop), std::move(props));
 }
 
-celix::ServiceRegistration celix::impl::registerStart(std::shared_ptr<celix::BundleContext> ctx) {
+celix::ServiceRegistration celix::impl::registerStart(const std::shared_ptr<celix::BundleContext>& ctx) {
     using namespace std::placeholders;
     celix::ShellCommandFunction stop = std::bind(&stopOrStart, ctx, _1, _2, _3, _4);
 

@@ -24,19 +24,19 @@
 
 namespace celix {
 namespace impl {
-    celix::ServiceRegistration registerLb(std::shared_ptr<celix::BundleContext> ctx);
+    celix::ServiceRegistration registerLb(const std::shared_ptr<celix::BundleContext>& ctx);
 
-    celix::ServiceRegistration registerHelp(std::shared_ptr<celix::BundleContext> ctx);
+    celix::ServiceRegistration registerHelp(const std::shared_ptr<celix::BundleContext>& ctx);
 
-    celix::ServiceRegistration registerStop(std::shared_ptr<celix::BundleContext> ctx);
+    celix::ServiceRegistration registerStop(const std::shared_ptr<celix::BundleContext>& ctx);
 
-    celix::ServiceRegistration registerStart(std::shared_ptr<celix::BundleContext> ctx);
+    celix::ServiceRegistration registerStart(const std::shared_ptr<celix::BundleContext>& ctx);
 
-    celix::ServiceRegistration registerInspect(std::shared_ptr<celix::BundleContext> ctx);
+    celix::ServiceRegistration registerInspect(const std::shared_ptr<celix::BundleContext>& ctx);
 
-    celix::ServiceRegistration registerQuery(std::shared_ptr<celix::BundleContext> ctx);
+    celix::ServiceRegistration registerQuery(const std::shared_ptr<celix::BundleContext>& ctx);
 
-    celix::ServiceRegistration registerVersion(std::shared_ptr<celix::BundleContext> ctx);
+    celix::ServiceRegistration registerVersion(const std::shared_ptr<celix::BundleContext>& ctx);
 }}
 
 

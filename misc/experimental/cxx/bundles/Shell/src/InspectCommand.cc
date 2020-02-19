@@ -58,7 +58,7 @@ namespace {
 }
 
 
-celix::ServiceRegistration celix::impl::registerInspect(std::shared_ptr<celix::BundleContext> ctx) {
+celix::ServiceRegistration celix::impl::registerInspect(const std::shared_ptr<celix::BundleContext>& ctx) {
     using namespace std::placeholders;
     celix::ShellCommandFunction cmd = std::bind(&inspect, ctx, _1, _2, _3, _4);
 

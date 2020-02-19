@@ -43,7 +43,7 @@ namespace {
     };
 }
 
-celix::ServiceRegistration celix::impl::registerLb(std::shared_ptr<celix::BundleContext> ctx) {
+celix::ServiceRegistration celix::impl::registerLb(const std::shared_ptr<celix::BundleContext>& ctx) {
     celix::Properties props{};
     props[celix::IShellCommand::COMMAND_NAME] = "lb";
     props[celix::IShellCommand::COMMAND_USAGE] = "list bundles. Default only the groupless bundles are listed. Use -a to list all bundles." \

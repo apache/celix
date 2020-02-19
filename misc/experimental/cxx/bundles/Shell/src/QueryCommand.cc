@@ -89,7 +89,7 @@ namespace {
 }
 
 
-celix::ServiceRegistration celix::impl::registerQuery(std::shared_ptr<celix::BundleContext> ctx) {
+celix::ServiceRegistration celix::impl::registerQuery(const std::shared_ptr<celix::BundleContext>& ctx) {
     using namespace std::placeholders;
     celix::ShellCommandFunction cmd = std::bind(&query, ctx, _1, _2, _3, _4);
 

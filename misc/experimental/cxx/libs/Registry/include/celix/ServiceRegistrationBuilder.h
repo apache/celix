@@ -85,9 +85,6 @@ namespace celix {
         std::function<F> function{};
         celix::Properties properties{};
     };
-
-    //TODO (Function)ServiceTrackerBuilder
-    //TODO (Function)UseServices
 }
 
 

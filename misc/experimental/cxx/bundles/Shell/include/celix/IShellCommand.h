@@ -43,8 +43,8 @@ namespace celix {
     static constexpr const char * const SHELL_COMMAND_FUNCTION_COMMAND_NAME = "COMMAND_NAME";
     static constexpr const char * const SHELL_COMMAND_FUNCTION_COMMAND_USAGE = "COMMAND_USAGE";
     static constexpr const char * const SHELL_COMMAND_FUNCTION_COMMAND_DESCRIPTION = "COMMAND_DESCRIPTION";
-    using ShellCommandFunction = std::function<void(const std::string &cmdName, const std::vector<std::string> &cmdArgs, std::ostream &out, std::ostream &err)>;
-
+    using ShellCommandFunctionSignature = void(const std::string &cmdName, const std::vector<std::string> &cmdArgs, std::ostream &out, std::ostream &err);
+    using ShellCommandFunction = std::function<ShellCommandFunctionSignature>;
 }
 
 #endif //CXX_CELIX_ISHELLCOMMAND_H

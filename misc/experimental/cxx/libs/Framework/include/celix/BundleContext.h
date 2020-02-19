@@ -65,6 +65,11 @@ namespace celix {
         template<typename F>
         celix::UseFunctionServiceBuilder<F> buildUseFunctionService(std::string functionName);
 
+        template< typename I>
+        long findService(const celix::Filter& filter = celix::Filter{});
+
+        template<typename F>
+        long findFunctionService(const std::string &functionName, const celix::Filter& filter = celix::Filter{});
         //TODO reg svc factories
 
         bool useBundle(long bndId, std::function<void(const celix::IBundle &bnd)> use) const;
@@ -149,4 +154,14 @@ inline celix::UseServiceBuilder<I> celix::BundleContext::buildUseService() {
 template<typename F>
 inline celix::UseFunctionServiceBuilder<F> celix::BundleContext::buildUseFunctionService(std::string functionName) {
     return celix::UseFunctionServiceBuilder<F>{bundle(), registry(), std::move(functionName)};
+}
+
+template<typename I>
+inline long celix::BundleContext::findService(const celix::Filter &filter) {
+    return registry()->findService<I>(filter);
+}
+
+template<typename F>
+inline long celix::BundleContext::findFunctionService(const std::string &functionName, const celix::Filter &filter) {
+    return registry()->findFunctionService<F>(functionName, filter);
 }

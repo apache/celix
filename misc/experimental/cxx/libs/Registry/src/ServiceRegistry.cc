@@ -311,14 +311,14 @@ public:
 
     std::vector<long> findAnyServices(const std::string &svcName, const celix::Filter& filter) const {
         //TODO order by rank
-        std::vector<long> result{};
+        std::set<std::shared_ptr<const celix::impl::SvcEntry>> entries{};
 
         std::lock_guard<std::mutex> lock{services.mutex};
         if (svcName.empty()) {
             //LOG(DEBUG) << "finding ALL services";
             for (const auto &pair : services.cache) {
                 if (filter.isEmpty() || filter.match(pair.second->props)) {
-                    result.push_back(pair.first);
+                    entries.insert(pair.second);
                 }
             }
         } else {
@@ -327,10 +327,16 @@ public:
                 const auto &namedServices = it->second;
                 for (const auto &visit : namedServices) {
                     if (filter.isEmpty() || filter.match(visit->props)) {
-                        result.push_back(visit->svcId);
+                        entries.insert(visit);
                     }
                 }
             }
+        }
+
+        std::vector<long> result{};
+        result.reserve(entries.size());
+        for (const auto &entry: entries) {
+            result.push_back(entry->svcId);
         }
         return result;
     }

@@ -30,9 +30,11 @@ namespace {
     class ShellTuiBundleActivator : public celix::IBundleActivator {
     public:
         ShellTuiBundleActivator(std::shared_ptr<celix::BundleContext> ctx) {
-            celix::ServiceTrackerOptions<celix::IShell> opts{};
-            opts.set = std::bind(&celix::ShellTui::setShell, &tui, std::placeholders::_1);
-            trk = ctx->trackServices(opts);
+            trk = ctx->buildServiceTracker<celix::IShell>()
+                    .setCallback([this](const std::shared_ptr<celix::IShell> &shell) {
+                        tui.setShell(shell);
+                    })
+                    .build();
         }
     private:
         celix::ShellTui tui{&std::cout, &std::cerr};

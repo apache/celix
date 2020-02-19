@@ -39,7 +39,7 @@ namespace {
 }
 
 
-celix::ServiceRegistration celix::impl::registerVersion(std::shared_ptr<celix::BundleContext> ctx) {
+celix::ServiceRegistration celix::impl::registerVersion(const std::shared_ptr<celix::BundleContext>& ctx) {
     using namespace std::placeholders;
     celix::ShellCommandFunction cmd = std::bind(&version, ctx, _1, _2, _3, _4);
 

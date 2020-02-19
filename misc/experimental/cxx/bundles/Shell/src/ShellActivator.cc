@@ -72,7 +72,7 @@ namespace {
             //first try to call IShellCommand services.
             std::string filter = std::string{"("} + celix::IShellCommand::COMMAND_NAME + "=" + cmdName + ")";
             commandCalled = ctx->buildUseService<celix::IShellCommand>()
-                    .setUse([&](celix::IShellCommand &cmd) {
+                    .setCallback([&](celix::IShellCommand &cmd) {
                         cmd.executeCommand(cmdName, cmdArgs, out, err);
                     })
                     .setFilter(filter)
@@ -86,7 +86,7 @@ namespace {
                 };
                 commandCalled = ctx->buildUseFunctionService<void(const std::string &cmdName, const std::vector<std::string> &cmdArgs, std::ostream &out, std::ostream &err)>(celix::SHELL_COMMAND_FUNCTION_SERVICE_FQN)
                         .setFilter(f)
-                        .setUse(use)
+                        .setCallback(use)
                         .use();
             }
 
