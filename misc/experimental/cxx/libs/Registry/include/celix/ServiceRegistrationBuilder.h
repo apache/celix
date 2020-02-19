@@ -17,8 +17,9 @@
  *under the License.
  */
 
-#ifndef CELIX_SERVICEREGISTRATIONBUILDERS_H
-#define CELIX_SERVICEREGISTRATIONBUILDERS_H
+#pragma once
+
+#include <glog/logging.h>
 
 #include "celix/ServiceRegistry.h"
 
@@ -42,7 +43,7 @@ namespace celix {
 
         ServiceRegistration build();
         ServiceRegistrationBuilder<I> copy() const;
-        bool isValid() const;
+        bool valid() const;
     private:
         ServiceRegistrationBuilder(const ServiceRegistrationBuilder<I>&);
         ServiceRegistrationBuilder<I>& operator=(const ServiceRegistrationBuilder<I>&);
@@ -58,7 +59,7 @@ namespace celix {
     template<typename F>
     class FunctionServiceRegistrationBuilder {
     public:
-        FunctionServiceRegistrationBuilder(std::shared_ptr<celix::IResourceBundle> owner, std::shared_ptr<celix::ServiceRegistry> registry, const std::string &functionName);
+        FunctionServiceRegistrationBuilder(std::shared_ptr<celix::IResourceBundle> owner, std::shared_ptr<celix::ServiceRegistry> registry, std::string functionName);
         FunctionServiceRegistrationBuilder(FunctionServiceRegistrationBuilder<F> &&); /*todo make noexcept without default in header ...*/
         FunctionServiceRegistrationBuilder<F>& operator=(FunctionServiceRegistrationBuilder<F>&&);
 
@@ -70,9 +71,9 @@ namespace celix {
         FunctionServiceRegistrationBuilder<F>& addProperty(const std::string &name, const std::string &value);
         FunctionServiceRegistrationBuilder<F>& addProperties(celix::Properties);
 
-        ServiceRegistration build();
+        ServiceRegistration build() const;
         FunctionServiceRegistrationBuilder<F> copy() const;
-        bool isValid() const;
+        bool valid() const;
     private:
         FunctionServiceRegistrationBuilder(const FunctionServiceRegistrationBuilder<F>&);
         FunctionServiceRegistrationBuilder<F>& operator=(const FunctionServiceRegistrationBuilder<F>&);
@@ -97,35 +98,30 @@ namespace celix {
 
 
 
-
-
-
-
-
 /**********************************************************************************************************************
   ServiceRegistrationBuilder Implementation
  **********************************************************************************************************************/
 
 
 template<typename I>
-celix::ServiceRegistrationBuilder<I>::ServiceRegistrationBuilder(
+inline celix::ServiceRegistrationBuilder<I>::ServiceRegistrationBuilder(
         std::shared_ptr<celix::IResourceBundle> _owner,
         std::shared_ptr<ServiceRegistry> _registry) : owner{std::move(_owner)}, registry{std::move(_registry)} {}
 
 
 template<typename I>
-bool celix::ServiceRegistrationBuilder<I>::isValid() const {
+inline bool celix::ServiceRegistrationBuilder<I>::valid() const {
     return (service || serviceFactory) && ! (service  && serviceFactory); //only one is set.
 }
 
 template<typename I>
-celix::ServiceRegistrationBuilder<I>& celix::ServiceRegistrationBuilder<I>::setProperties(celix::Properties props) {
+inline celix::ServiceRegistrationBuilder<I>& celix::ServiceRegistrationBuilder<I>::setProperties(celix::Properties props) {
     properties = std::move(props);
     return *this;
 }
 
 template<typename I>
-celix::ServiceRegistrationBuilder<I> &celix::ServiceRegistrationBuilder<I>::addProperties(celix::Properties props) {
+inline celix::ServiceRegistrationBuilder<I> &celix::ServiceRegistrationBuilder<I>::addProperties(celix::Properties props) {
     //TODO insert with move
     properties.insert(props.begin(), props.end());
     return *this;
@@ -133,25 +129,32 @@ celix::ServiceRegistrationBuilder<I> &celix::ServiceRegistrationBuilder<I>::addP
 
 
 template<typename I>
-celix::ServiceRegistrationBuilder<I>&
+inline celix::ServiceRegistrationBuilder<I>&
 celix::ServiceRegistrationBuilder<I>::addProperty(const std::string &name, const std::string &value) {
     properties[name] = value;
     return *this;
 }
 
 template<typename I>
-celix::ServiceRegistration celix::ServiceRegistrationBuilder<I>::build() {
-    if (isValid()) {
-        celix::Properties nProps{};
-        std::shared_ptr<I> nSvc{};
-        std::shared_ptr<celix::IServiceFactory<I>> nFac{};
-        std::swap(properties, nProps);
-        std::swap(service, nSvc);
-        std::swap(serviceFactory, nFac);
-        if (nSvc) {
-            return registry->registerService<I>(std::move(nSvc), std::move(nProps), owner);
+inline celix::ServiceRegistration celix::ServiceRegistrationBuilder<I>::build() {
+    if (valid()) {
+//        celix::Properties nProps{};
+//        std::shared_ptr<I> nSvc{};
+//        std::shared_ptr<celix::IServiceFactory<I>> nFac{};
+//        std::swap(properties, nProps);
+//        std::swap(service, nSvc);
+//        std::swap(serviceFactory, nFac);
+//        if (nSvc) {
+//            return registry->registerService<I>(std::move(nSvc), std::move(nProps), owner);
+//        } else {
+//            return registry->registerServiceFactory<I>(std::move(nFac), std::move(nProps), owner);
+//        }
+
+        //TODO note using copy, make also make a buildAndClear? or make build() also clear and add a buildAndKeep()?
+        if (service) {
+            return registry->registerService<I>(service, properties, owner);
         } else {
-            return registry->registerServiceFactory<I>(std::move(nFac), std::move(nProps), owner);
+            return registry->registerServiceFactory<I>(serviceFactory, properties, owner);
         }
     } else {
         LOG(ERROR) << "Invalid builder. Builder should have a service, function service or factory service instance";
@@ -161,26 +164,26 @@ celix::ServiceRegistration celix::ServiceRegistrationBuilder<I>::build() {
 }
 
 template<typename I>
-celix::ServiceRegistrationBuilder<I> celix::ServiceRegistrationBuilder<I>::copy() const {
+inline celix::ServiceRegistrationBuilder<I> celix::ServiceRegistrationBuilder<I>::copy() const {
     return *this;
 }
 
 template<typename I>
-celix::ServiceRegistrationBuilder<I> &celix::ServiceRegistrationBuilder<I>::setService(std::shared_ptr<I> svc) {
+inline celix::ServiceRegistrationBuilder<I> &celix::ServiceRegistrationBuilder<I>::setService(std::shared_ptr<I> svc) {
     service = std::move(svc);
     serviceFactory = {};
     return *this;
 }
 
 template<typename I>
-celix::ServiceRegistrationBuilder<I> &celix::ServiceRegistrationBuilder<I>::setService(I *svc) {
+inline celix::ServiceRegistrationBuilder<I> &celix::ServiceRegistrationBuilder<I>::setService(I *svc) {
     service = std::shared_ptr<I>{svc, [](I*){/*nop*/}};
     serviceFactory = {};
     return *this;
 }
 
 template<typename I>
-celix::ServiceRegistrationBuilder<I> &
+inline celix::ServiceRegistrationBuilder<I> &
 celix::ServiceRegistrationBuilder<I>::setServiceFactory(std::shared_ptr<celix::IServiceFactory<I>> factory) {
     serviceFactory = std::move(factory);
     service = {};
@@ -188,25 +191,25 @@ celix::ServiceRegistrationBuilder<I>::setServiceFactory(std::shared_ptr<celix::I
 }
 
 template<typename I>
-celix::ServiceRegistrationBuilder<I> &celix::ServiceRegistrationBuilder<I>::setServiceFactory(celix::IServiceFactory<I> *factory) {
+inline celix::ServiceRegistrationBuilder<I> &celix::ServiceRegistrationBuilder<I>::setServiceFactory(celix::IServiceFactory<I> *factory) {
     serviceFactory = std::shared_ptr<celix::IServiceFactory<I>>{factory, [](celix::IServiceFactory<I>*){/*nop*/}};
     service = {};
     return *this;
 }
 
 template<typename I>
-celix::ServiceRegistrationBuilder<I> &
+inline celix::ServiceRegistrationBuilder<I> &
 celix::ServiceRegistrationBuilder<I>::operator=(celix::ServiceRegistrationBuilder<I> &&) = default;
 
 template<typename I>
-celix::ServiceRegistrationBuilder<I>::ServiceRegistrationBuilder(const celix::ServiceRegistrationBuilder<I> &) = default;
+inline celix::ServiceRegistrationBuilder<I>::ServiceRegistrationBuilder(const celix::ServiceRegistrationBuilder<I> &) = default;
 
 template<typename I>
-celix::ServiceRegistrationBuilder<I> &
+inline celix::ServiceRegistrationBuilder<I> &
 celix::ServiceRegistrationBuilder<I>::operator=(const celix::ServiceRegistrationBuilder<I> &) = default;
 
 template<typename I>
-celix::ServiceRegistrationBuilder<I>::ServiceRegistrationBuilder(celix::ServiceRegistrationBuilder<I> &&) = default;
+inline celix::ServiceRegistrationBuilder<I>::ServiceRegistrationBuilder(celix::ServiceRegistrationBuilder<I> &&) = default;
 
 
 /**********************************************************************************************************************
@@ -214,29 +217,29 @@ celix::ServiceRegistrationBuilder<I>::ServiceRegistrationBuilder(celix::ServiceR
  **********************************************************************************************************************/
 
 template<typename F>
-celix::FunctionServiceRegistrationBuilder<F>::FunctionServiceRegistrationBuilder(
+inline celix::FunctionServiceRegistrationBuilder<F>::FunctionServiceRegistrationBuilder(
         std::shared_ptr<celix::IResourceBundle> _owner,
         std::shared_ptr<celix::ServiceRegistry> _registry,
-        const std::string &_functionName) : owner{std::move(_owner)}, registry{std::move(_registry)}, functionName{_functionName} {
+        std::string _functionName) : owner{std::move(_owner)}, registry{std::move(_registry)}, functionName{std::move(_functionName)} {
     //TODO static assert is function / callable}
 }
 
 template<typename F>
-celix::FunctionServiceRegistrationBuilder<F>::FunctionServiceRegistrationBuilder(celix::FunctionServiceRegistrationBuilder<F> &&) = default;
+inline celix::FunctionServiceRegistrationBuilder<F>::FunctionServiceRegistrationBuilder(celix::FunctionServiceRegistrationBuilder<F> &&) = default;
 
 template<typename F>
-celix::FunctionServiceRegistrationBuilder<F> &
+inline celix::FunctionServiceRegistrationBuilder<F> &
 celix::FunctionServiceRegistrationBuilder<F>::operator=(celix::FunctionServiceRegistrationBuilder<F> &&) = default;
 
 template<typename F>
-celix::FunctionServiceRegistrationBuilder<F> &
+inline celix::FunctionServiceRegistrationBuilder<F> &
 celix::FunctionServiceRegistrationBuilder<F>::setFunctionService(F&& func) {
     function = std::forward<F>(func);
     return *this;
 }
 
 template<typename F>
-celix::FunctionServiceRegistrationBuilder<F>& celix::FunctionServiceRegistrationBuilder<F>::setFunctionService(F func) {
+inline celix::FunctionServiceRegistrationBuilder<F>& celix::FunctionServiceRegistrationBuilder<F>::setFunctionService(F func) {
    function = func;
    return *this;
 }
@@ -250,21 +253,21 @@ celix::FunctionServiceRegistrationBuilder<F>& celix::FunctionServiceRegistration
 //}
 
 template<typename F>
-celix::FunctionServiceRegistrationBuilder<F> &
+inline celix::FunctionServiceRegistrationBuilder<F> &
 celix::FunctionServiceRegistrationBuilder<F>::setProperties(celix::Properties props) {
     properties = props;
     return *this;
 }
 
 template<typename F>
-celix::FunctionServiceRegistrationBuilder<F> &
+inline celix::FunctionServiceRegistrationBuilder<F> &
 celix::FunctionServiceRegistrationBuilder<F>::addProperty(const std::string &name, const std::string &value) {
     properties[name] = value;
     return *this;
 }
 
 template<typename F>
-celix::FunctionServiceRegistrationBuilder<F> &
+inline celix::FunctionServiceRegistrationBuilder<F> &
 celix::FunctionServiceRegistrationBuilder<F>::addProperties(celix::Properties props) {
     //TODO insert with move
     properties.insert(props.begin(), props.end());
@@ -272,13 +275,15 @@ celix::FunctionServiceRegistrationBuilder<F>::addProperties(celix::Properties pr
 }
 
 template<typename F>
-celix::ServiceRegistration celix::FunctionServiceRegistrationBuilder<F>::build() {
-    if (isValid()) {
-        std::function<F> nFun{};
-        celix::Properties nProps{};
-        std::swap(function, nFun);
-        std::swap(nProps, properties);
-        return registry->registerFunctionService(functionName, std::move(nFun), std::move(nProps), owner);
+inline celix::ServiceRegistration celix::FunctionServiceRegistrationBuilder<F>::build() const {
+    if (valid()) {
+        //TODO note using copy, make also make a buildAndClear? or make build() also clear and add a buildAndKeep()?
+//        std::function<F> nFunc{};
+//        celix::Properties nProps{};
+//        std::swap(function, nFunc);
+//        std::swap(properties, nProps);
+//        return registry->registerFunctionService(functionName, std::move(nFunc), std::move(nProps), owner);
+        return registry->registerFunctionService(functionName, function, properties, owner);
     } else {
         LOG(ERROR) << "Invalid builder. Builder should have a service, function service or factory service instance";
         abort();
@@ -287,22 +292,18 @@ celix::ServiceRegistration celix::FunctionServiceRegistrationBuilder<F>::build()
 }
 
 template<typename F>
-celix::FunctionServiceRegistrationBuilder<F> celix::FunctionServiceRegistrationBuilder<F>::copy() const {
+inline celix::FunctionServiceRegistrationBuilder<F> celix::FunctionServiceRegistrationBuilder<F>::copy() const {
     return *this;
 }
 
 template<typename F>
-bool celix::FunctionServiceRegistrationBuilder<F>::isValid() const {
+inline bool celix::FunctionServiceRegistrationBuilder<F>::valid() const {
     return (!functionName.empty() && function);
 }
 
 template<typename F>
-celix::FunctionServiceRegistrationBuilder<F>::FunctionServiceRegistrationBuilder(const celix::FunctionServiceRegistrationBuilder<F> &) = default;
+inline celix::FunctionServiceRegistrationBuilder<F>::FunctionServiceRegistrationBuilder(const celix::FunctionServiceRegistrationBuilder<F> &) = default;
 
 template<typename F>
-celix::FunctionServiceRegistrationBuilder<F> &
+inline celix::FunctionServiceRegistrationBuilder<F> &
 celix::FunctionServiceRegistrationBuilder<F>::operator=(const celix::FunctionServiceRegistrationBuilder<F> &) = default;
-
-
-
-#endif //CELIX_SERVICEREGISTRATIONBUILDERS_H

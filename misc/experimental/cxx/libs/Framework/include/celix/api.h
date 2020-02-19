@@ -28,5 +28,9 @@
 #include "celix/Framework.h"
 #include "celix/BundleContext.h"
 
+//Builders
+#include "celix/ServiceTrackerBuilder.h"
+#include "celix/ServiceRegistrationBuilder.h"
+
 
 #endif //CXX_CELIX_API_H

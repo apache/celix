@@ -17,8 +17,7 @@
  *under the License.
  */
 
-#ifndef CXX_CELIX_UTILS_H
-#define CXX_CELIX_UTILS_H
+#pragma once
 
 #include <cstring>
 #include <string>
@@ -35,29 +34,29 @@ namespace impl {
 namespace {
 
     template<typename INTERFACE_TYPENAME>
-    std::string typeNameInternal() {
+    inline std::string typeNameInternal() {
         static const std::string templateStr = "INTERFACE_TYPENAME = ";
         std::string pretty = __PRETTY_FUNCTION__;
         return celix::impl::typeNameFromPrettyFunction(templateStr, __PRETTY_FUNCTION__);
     }
 
     template<typename Arg>
-    std::string argName() {
+    inline std::string argName() {
         return typeNameInternal<Arg>(); //terminal;
     }
 
     template<typename Arg1, typename Arg2, typename... Args>
-    std::string argName() {
+    inline std::string argName() {
         return typeNameInternal<Arg1>() + ", " + argName<Arg2, Args...>();
     }
 
     template<typename R>
-    std::string functionName() {
+    inline std::string functionName() {
         return "std::function<" + typeNameInternal<R>() + "()>";
     }
 
     template<typename R, typename Arg1, typename... Args>
-    std::string functionName() {
+    inline std::string functionName() {
         return "std::function<" + typeNameInternal<R>() + "("  + argName<Arg1, Args...>() + ")>";
     }
 };
@@ -68,7 +67,7 @@ namespace celix {
      * Returns the type name of the provided template T
      */
     template<typename T>
-    std::string typeName() {
+    inline std::string typeName() {
         return typeNameInternal<T>();
     }
 
@@ -84,7 +83,7 @@ namespace celix {
     */
     template<typename I>
     //NOTE C++17 typename std::enable_if<!std::is_callable<I>::value, std::string>::type
-    std::string serviceName() {
+    inline std::string serviceName() {
         std::string svcName = typeName<I>();
         celix::impl::assertIsNotFunctionService(svcName);
         return svcName;
@@ -99,11 +98,10 @@ namespace celix {
     */
     template<typename F>
     //NOTE C++17 typename std::enable_if<std::is_callable<I>::value, std::string>::type
-    std::string functionServiceName(const std::string &fName) {
+    inline std::string functionServiceName(const std::string &fName) {
         using FunctionType = std::function<F>;
         std::string func = functionName<decltype(&FunctionType::operator())>();
         return fName + " [" + func + "]";
     }
 }
 
-#endif //CXX_CELIX_UTILS_H

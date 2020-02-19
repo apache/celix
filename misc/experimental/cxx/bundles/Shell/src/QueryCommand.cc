@@ -71,15 +71,15 @@ namespace {
 
         for (const auto &svcName : svcNames) {
             out << "Result '" << svcName << "':" << std::endl;
-            reg->useAnyServices(svcName, fun, nullptr, ctx->bundle());
+            reg->useAnyServices(svcName, celix::Filter{}, fun, ctx->bundle());
         }
         for (const auto &filter: filters) {
             out << "Result '" << filter.toString() << "':" << std::endl;
-            reg->useAnyServices({}, fun, filter.toString(), ctx->bundle());
+            reg->useAnyServices({}, filter, fun, ctx->bundle());
         }
         if (svcNames.empty() && filters.empty()) {
             //TODO handle verbose options
-            auto names = ctx->registry().listAllRegisteredServiceNames();
+            auto names = ctx->registry()->listAllRegisteredServiceNames();
             out << "Available Service Names:" << std::endl;
             for (auto &name : names) {
                 out << "|- " << name << std::endl;

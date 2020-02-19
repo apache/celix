@@ -498,10 +498,12 @@ bool celix::GenericProvidedService::isValid() const {
 }
 
 celix::GenericProvidedService::GenericProvidedService(
+        std::string _cmpUUID,
         std::shared_ptr<celix::ServiceRegistry> _reg,
         std::string _svcName,
         std::function<void()> _updateServiceRegistrationsCallback,
         bool _valid) :
+    cmpUUID{std::move(_cmpUUID)},
     reg{std::move(_reg)},
     uuid{genUUID()},
     svcName{std::move(_svcName)},

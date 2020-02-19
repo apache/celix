@@ -17,8 +17,7 @@
  *under the License.
  */
 
-#ifndef CXX_CELIX_ISERVICEFACTORY_H
-#define CXX_CELIX_ISERVICEFACTORY_H
+#pragma once
 
 #include "celix/Properties.h"
 #include "celix/IResourceBundle.h"
@@ -43,5 +42,3 @@ namespace celix {
     };
 
 }
-
-#endif //CXX_CELIX_ISERVICEFACTORY_H

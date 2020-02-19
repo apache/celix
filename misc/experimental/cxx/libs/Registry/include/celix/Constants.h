@@ -18,17 +18,17 @@
  */
 
 
-#ifndef CXX_CELIX_CONSTANTS_H
-#define CXX_CELIX_CONSTANTS_H
+#pragma once
 
 namespace celix {
 
     //NOTE manually aligned with celix_constants.h
-    static constexpr const char *const SERVICE_NAME = "service_name";
-    static constexpr const char *const SERVICE_ID = "service_id";
-    static constexpr const char *const SERVICE_RANKING = "service_ranking";
-    static constexpr const char *const SERVICE_BUNDLE_ID = "service_bundle_id";
-    static constexpr const char *const FRAMEWORK_UUID = "framework_uuid";
+    static constexpr const char *const SERVICE_NAME = "service.name";
+    static constexpr const char *const SERVICE_ID = "service.id";
+    static constexpr const char *const SERVICE_RANKING = "service.ranking";
+    static constexpr const char *const SERVICE_BUNDLE_ID = "service.bundle.id";
+    static constexpr const char *const SERVICE_COMPONENT_ID = "service.component.id";
+    static constexpr const char *const FRAMEWORK_UUID = "framework.uuid";
 
     static constexpr const char *const MANIFEST_BUNDLE_SYMBOLIC_NAME = "Bundle-SymbolicName";
     static constexpr const char *const MANIFEST_BUNDLE_NAME = "Bundle-Name";
@@ -37,5 +37,3 @@ namespace celix {
 
     static constexpr long FRAMEWORK_BUNDLE_ID = 0L;
 }
-
-#endif //CXX_CELIX_CONSTANTS_H

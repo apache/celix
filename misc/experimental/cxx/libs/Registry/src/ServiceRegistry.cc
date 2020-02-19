@@ -267,96 +267,46 @@ public:
         }
     }
 
-    int useAnyServices(const std::string& svcName, celix::UseServiceOptions<void> opts, const std::shared_ptr<celix::IResourceBundle>& requester) const {
-        std::vector<std::shared_ptr<const celix::impl::SvcEntry>> matches{};
+    int useAnyServices(const std::string& svcOrFunctionName, celix::Filter filter, std::function<void(const std::shared_ptr<void> &svc, const celix::Properties&, const celix::IResourceBundle&)> callback, const std::shared_ptr<celix::IResourceBundle>& requester, int maxUse) const {
+        //Collection all matching services in a set; this means that services are always called on service ranking order
+        std::set<std::shared_ptr<const celix::impl::SvcEntry>> matches{};
         {
             std::lock_guard<std::mutex> lock{services.mutex};
-            if (svcName.empty()) {
+            if (svcOrFunctionName.empty()) {
                 //LOG(DEBUG) << "finding ALL services";
                 for (const auto& pair : services.cache) {
-                    if (opts.filter.isEmpty() || opts.filter.match(pair.second->props)) {
+                    if (filter.isEmpty() || filter.match(pair.second->props)) {
                         pair.second->incrUsage();
-                        matches.push_back(pair.second);
+                        matches.insert(pair.second);
                     }
                 }
             } else {
-                const auto it = services.registry.find(svcName);
+                const auto it = services.registry.find(svcOrFunctionName);
                 if (it != services.registry.end()) {
                     const auto &matchingServices = it->second;
                     for (const std::shared_ptr<const celix::impl::SvcEntry> &entry : matchingServices) {
-                        if (opts.filter.isEmpty() || opts.filter.match(entry->props)) {
+                        if (filter.isEmpty() || filter.match(entry->props)) {
                             entry->incrUsage();
-                            matches.push_back(entry);
+                            matches.insert(entry);
                         }
                     }
                 }
             }
         }
 
+        int count = 0;
         for (const std::shared_ptr<const celix::impl::SvcEntry> &entry : matches) {
             std::shared_ptr<void> rawSvc = entry->service(*requester);
             std::shared_ptr<void> svc{rawSvc.get(), [entry](void *) {
                 entry->decrUsage();
             }};
-            if (opts.use) {
-                opts.use(svc);
-            }
-            if (opts.useWithProperties) {
-                opts.useWithProperties(svc, entry->props);
-            }
-            if (opts.useWithOwner) {
-                opts.useWithOwner(svc, entry->props, *entry->owner);
+            if (maxUse == 0 || count < maxUse) {
+                callback(svc, entry->props, *entry->owner);
+                ++count;
             }
         }
 
-        return (int)matches.size();
-    }
-
-    bool useAnyService(const std::string &svcName, celix::UseServiceOptions<void> opts, const std::shared_ptr<celix::IResourceBundle>& requester) const {
-        std::shared_ptr<const celix::impl::SvcEntry> match = nullptr;
-        {
-            std::lock_guard<std::mutex> lock{services.mutex};
-            if (svcName.empty()) {
-                //LOG(DEBUG) << "finding ALL services";
-                for (const auto& pair : services.cache) {
-                    if (opts.filter.isEmpty() || opts.filter.match(pair.second->props)) {
-                        pair.second->incrUsage();
-                        match = pair.second;
-                        break;
-                    }
-                }
-            } else {
-                const auto it = services.registry.find(svcName);
-                if (it != services.registry.end()) {
-                    const auto &namedServices = it->second;
-                    for (const std::shared_ptr<const celix::impl::SvcEntry> &visit : namedServices) {
-                        if (opts.filter.isEmpty() || opts.filter.match(visit->props)) {
-                            visit->incrUsage();
-                            match = visit;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
-        if (match != nullptr) {
-            std::shared_ptr<void> rawSvc = match->service(*requester);
-            std::shared_ptr<void> svc{rawSvc.get(), [match](void *) {
-                match->decrUsage();
-            }};
-            if (opts.use) {
-                opts.use(svc);
-            }
-            if (opts.useWithProperties) {
-                opts.useWithProperties(svc, match->props);
-            }
-            if (opts.useWithOwner) {
-                opts.useWithOwner(svc, match->props, *match->owner);
-            }
-        }
-
-        return match != nullptr;
+        return count;
     }
 
     std::vector<long> findAnyServices(const std::string &svcName, const celix::Filter& filter) const {
@@ -416,25 +366,18 @@ celix::ServiceRegistry::~ServiceRegistry() {
     }
 }
 
-int celix::ServiceRegistry::useAnyServices(const std::string& svcName, celix::UseServiceOptions<void> opts, const std::shared_ptr<celix::IResourceBundle>& requester) const {
-    return pimpl->useAnyServices(svcName, std::move(opts), requester);
+int celix::ServiceRegistry::useAnyServices(const std::string& svcOrFunctionName, celix::Filter filter, std::function<void(const std::shared_ptr<void> &svc, const celix::Properties&, const celix::IResourceBundle&)> callback, const std::shared_ptr<celix::IResourceBundle>& requester) const {
+    return pimpl->useAnyServices(svcOrFunctionName, filter, std::move(callback), requester, 0);
 }
 
-//int celix::ServiceRegistry::useAnyFunctionServices(celix::UseFunctionServiceOptions<std::function<void()>> /*opts*/, const std::shared_ptr<celix::IResourceBundle>& /*requester*/) const {
-//    //TODO
-//    LOG(ERROR) << "TODO IMPL";
-//    return 0;
-//}
-
-bool celix::ServiceRegistry::useAnyService(const std::string &svcName, celix::UseServiceOptions<void> opts, const std::shared_ptr<celix::IResourceBundle>& requester) const {
-    return pimpl->useAnyService(svcName, std::move(opts), requester);
+bool celix::ServiceRegistry::useAnyService(const std::string &svcOrFunctionName, celix::Filter filter, std::function<void(const std::shared_ptr<void> &svc, const celix::Properties&, const celix::IResourceBundle&)> callback, const std::shared_ptr<celix::IResourceBundle>& requester) const {
+    return pimpl->useAnyServices(svcOrFunctionName, filter, std::move(callback), requester, 1) == 1;
 }
 
-//bool celix::ServiceRegistry::useAnyFunctionService(celix::UseFunctionServiceOptions<std::function<void()>> /*opts*/, const std::shared_ptr<celix::IResourceBundle>& /*requester*/) const {
-//    //TODO
-//    LOG(ERROR) << "TODO IMPL";
-//    return false;
-//}
+bool celix::ServiceRegistry::useAnyServiceWithId(const std::string &svcOrFunctionName, long svcId, std::function<void(const std::shared_ptr<void> &svc, const celix::Properties&, const celix::IResourceBundle&)> callback, const std::shared_ptr<celix::IResourceBundle>& requester) const {
+    celix::Filter f{std::string{"("} + celix::SERVICE_ID + "=" + std::to_string(svcId) + ")"};
+    return pimpl->useAnyServices(svcOrFunctionName, std::move(f), std::move(callback), requester, 1) == 1;
+}
 
 std::vector<long> celix::ServiceRegistry::findAnyServices(const std::string &svcName, const celix::Filter& filter) const {
     return pimpl->findAnyServices(svcName, filter);
@@ -444,12 +387,6 @@ std::vector<long> celix::ServiceRegistry::findAnyServices(const std::string &svc
 celix::ServiceTracker celix::ServiceRegistry::trackAnyServices(const std::string &svcName, celix::ServiceTrackerOptions<void> opts, const std::shared_ptr<celix::IResourceBundle>& requester) {
     return pimpl->trackAnyServices(svcName, std::move(opts), requester);
 }
-
-//celix::ServiceTracker celix::ServiceRegistry::trackAnyFunctionService(celix::FunctionServiceTrackerOptions<void()> /*opts*/, const std::shared_ptr<celix::IResourceBundle>& /*requester*/) {
-//    //TODO return pimpl->trackAnyFunctionService(std::move(opts));
-//    LOG(ERROR) << "TODO IMPL";
-//    return celix::ServiceTracker{nullptr};
-//}
 
 celix::ServiceRegistration celix::ServiceRegistry::registerAnyService(
         const std::string &svcName,

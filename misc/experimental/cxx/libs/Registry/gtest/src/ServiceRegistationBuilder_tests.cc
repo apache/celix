@@ -80,7 +80,7 @@ TEST_F(ServiceRegistrationBuilderTest, ServiceRegistrationBuilderTest) {
         EXPECT_EQ(services.size(), 1);
 
         celix::UseServiceOptions<Interface1> useOpts{};
-        useOpts.useWithProperties = [](const std::shared_ptr<Interface1>& /*svc*/, const celix::Properties &props) {
+        useOpts.useWithProperties = [](Interface1& /*svc*/, const celix::Properties &props) {
             EXPECT_EQ(props.find("name0"), props.end());
             EXPECT_EQ(props.at("name1"), "value1");
             EXPECT_EQ(props.at("name2"), "value2");

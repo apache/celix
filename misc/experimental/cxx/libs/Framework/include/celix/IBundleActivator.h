@@ -17,8 +17,7 @@
  *under the License.
  */
 
-#ifndef CXX_CELIX_IBUNDLEACTIVATOR_H
-#define CXX_CELIX_IBUNDLEACTIVATOR_H
+#pragma once
 
 namespace celix {
     /**
@@ -32,5 +31,3 @@ namespace celix {
         virtual ~IBundleActivator() = default;
     };
 }
-
-#endif //CXX_CELIX_IBUNDLEACTIVATOR_H

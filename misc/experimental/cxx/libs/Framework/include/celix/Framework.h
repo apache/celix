@@ -17,8 +17,7 @@
  *under the License.
  */
 
-#ifndef CXX_CELIX_FRAMEWORK_H
-#define CXX_CELIX_FRAMEWORK_H
+#pragma once
 
 #include <memory>
 
@@ -103,6 +102,4 @@ namespace celix {
         std::unique_ptr<Impl> pimpl;
     };
 
-};
-
-#endif //CXX_CELIX_FRAMEWORK_H
+}

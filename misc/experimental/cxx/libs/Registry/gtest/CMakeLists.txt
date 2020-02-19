@@ -25,6 +25,8 @@ set(SOURCES
         src/ServiceRegistationBuilder_tests.cc
         src/ComponentManager_tests.cc
         src/FilterBuilder_tests.cc
+        src/ServiceTrackerBuilder_tests.cc
+        src/UseServiceBuilder_tests.cc
 
 )
 add_executable(celix_cxx_registry_tests ${SOURCES})

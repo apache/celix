@@ -42,12 +42,12 @@ celix::BundleContext::BundleContext(std::shared_ptr<celix::IBundle> bnd) :
 
 celix::BundleContext::~BundleContext() = default;
 
-std::shared_ptr<celix::IBundle> celix::BundleContext::bundle() const {
+const std::shared_ptr<celix::IBundle>& celix::BundleContext::bundle() const {
     return pimpl->bnd;
 }
 
-celix::ServiceRegistry& celix::BundleContext::registry() const {
-    return *pimpl->reg;
+const std::shared_ptr<celix::ServiceRegistry>& celix::BundleContext::registry() const {
+    return pimpl->reg;
 }
 
 

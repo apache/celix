@@ -17,8 +17,7 @@
  *under the License.
  */
 
-#ifndef CELIX_FILTERBUILDER_H
-#define CELIX_FILTERBUILDER_H
+#pragma once
 
 #include "celix/Filter.h"
 
@@ -68,5 +67,3 @@ namespace celix {
         static FilterCriteriaBuilder where(const std::string &attribute);
     };
 }
-
-#endif //CELIX_FILTERBUILDER_H

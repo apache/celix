@@ -84,14 +84,14 @@ TEST_F(RegistryTest, ServiceRegistrationTest) {
 
     auto svc1 = std::make_shared<MarkerInterface1>();
     auto svc2 = std::make_shared<MarkerInterface2>();
-    auto svc3 = std::make_shared<MarkerInterface3>();
+    //auto svc3 = std::make_shared<MarkerInterface3>();
 
     {
         celix::ServiceRegistration reg1 = registry().registerService(svc1);
         EXPECT_EQ(1, registry().nrOfRegisteredServices());
-        celix::ServiceRegistration reg2 = registry().registerService(svc2);
+        celix::ServiceRegistration reg2 = registry().registerService(svc1);
         EXPECT_EQ(2, registry().nrOfRegisteredServices());
-        celix::ServiceRegistration reg3 = registry().registerService(svc3);
+        celix::ServiceRegistration reg3 = registry().registerService(svc2);
         EXPECT_EQ(3, registry().nrOfRegisteredServices());
 
         EXPECT_GT(reg1.serviceId(), 0);
@@ -170,17 +170,17 @@ TEST_F(RegistryTest, UseServices) {
     long svcId1 = reg1.serviceId();
 
     celix::UseServiceOptions<MarkerInterface1> useOpts{};
-    useOpts.use = [&](const std::shared_ptr<MarkerInterface1>& svc) -> void {
-        EXPECT_EQ(svc1.get(), svc.get());
+    useOpts.use = [&](MarkerInterface1& svc) -> void {
+        EXPECT_EQ(svc1.get(), &svc);
         //nop
     };
-    useOpts.useWithProperties = [&](const std::shared_ptr<MarkerInterface1>& svc, const celix::Properties &props) -> void {
-        EXPECT_EQ(svc1.get(), svc.get());
+    useOpts.useWithProperties = [&](MarkerInterface1& svc, const celix::Properties &props) -> void {
+        EXPECT_EQ(svc1.get(), &svc);
         long id = celix::getPropertyAsLong(props, celix::SERVICE_ID, 0);
         EXPECT_EQ(svcId1, id);
     };
-    useOpts.useWithOwner = [&](const std::shared_ptr<MarkerInterface1>& svc, const celix::Properties &props, const celix::IResourceBundle &bnd) -> void {
-        EXPECT_EQ(svc1.get(), svc.get());
+    useOpts.useWithOwner = [&](MarkerInterface1& svc, const celix::Properties &props, const celix::IResourceBundle &bnd) -> void {
+        EXPECT_EQ(svc1.get(), &svc);
         long id = celix::getPropertyAsLong(props, celix::SERVICE_ID, 0L);
         EXPECT_EQ(svcId1, id);
         EXPECT_EQ(LONG_MAX, bnd.id()); //not nullptr -> use empty bundle (bndId 0)

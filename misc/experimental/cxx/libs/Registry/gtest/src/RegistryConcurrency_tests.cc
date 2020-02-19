@@ -21,6 +21,7 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
+#include <random>
 
 #include "gtest/gtest.h"
 
@@ -64,7 +65,7 @@ TEST_F(RegistryConcurrencyTest, ServiceRegistrationTest) {
     };
     struct sync callInfo{};
 
-    auto use = [&callInfo](const std::shared_ptr<calc>& svc) {
+    auto use = [&callInfo](calc& svc) {
         std::cout << "setting isUseCall to true and syncing on readyToExitUseCall" << std::endl;
         std::unique_lock<std::mutex> lock(callInfo.mutex);
         callInfo.inUseCall = true;
@@ -73,7 +74,7 @@ TEST_F(RegistryConcurrencyTest, ServiceRegistrationTest) {
         lock.unlock();
 
         std::cout << "Calling calc " << std::endl;
-        int tmp = svc->calc(2);
+        int tmp = svc.calc(2);
         callInfo.result = tmp;
     };
 
@@ -121,12 +122,12 @@ TEST_F(RegistryConcurrencyTest, ServiceRegistrationTest) {
 class ICalc {
 public:
     virtual ~ICalc() = default;
-    virtual double calc();
+    virtual double calc() = 0;
 };
 
 class NodeCalc : public ICalc {
 public:
-    virtual ~NodeCalc() = default;
+    ~NodeCalc() override = default;
 
     double calc() override {
         double val = 1.0;
@@ -144,13 +145,18 @@ private:
 class LeafCalc : public ICalc {
 
 public:
-    virtual ~LeafCalc() = default;
+    LeafCalc() {
+        std::default_random_engine generator;
+        std::uniform_int_distribution<double> distribution(1,100);
+        rand = distribution(generator);
+    }
+    ~LeafCalc() override = default;
 
     double calc() override {
-        return seed;
+        return rand;
     }
 private:
-    double const seed = std::rand() / 100.0;
+    double rand;
 };
 
 TEST_F(RegistryConcurrencyTest, ManyThreadsTest) {

@@ -17,8 +17,7 @@
  *under the License.
  */
 
-#ifndef CXX_CELIX_IRESOURCEBUNDLE_H
-#define CXX_CELIX_IRESOURCEBUNDLE_H
+#pragma once
 
 #include <string>
 #include <vector>
@@ -65,5 +64,3 @@ namespace celix {
         std::vector<std::string> readCacheDir(const std::string &path) const override;
     };
 }
-
-#endif //CXX_CELIX_IRESOURCEBUNDLE_H

@@ -17,8 +17,7 @@
  *under the License.
  */
 
-#ifndef CXX_CELIX_PROPERTIES_H
-#define CXX_CELIX_PROPERTIES_H
+#pragma once
 
 #include <string>
 #include <map>
@@ -82,5 +81,3 @@ namespace celix {
     //bool storeProperties(const celix::Properties &props, const std::string &path); TODO
     //bool storeProperties(const celix::Properties &props, std::ofstream &stream); TODO
 }
-
-#endif //CXX_CELIX_PROPERTIES_H

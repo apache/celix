@@ -22,7 +22,6 @@
 #include "celix/Filter.h"
 
 namespace celix {
-    class ServiceRegistry;
 
     //RAII service tracker: out of scope -> stop tracker
     // NOTE access not thread safe -> TODO make thread save?

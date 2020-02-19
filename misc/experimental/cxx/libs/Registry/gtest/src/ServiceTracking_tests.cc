@@ -198,7 +198,7 @@ TEST_F(ServiceTrackingTest, AddRemoveTest) {
     auto svc4 = std::make_shared<MarkerInterface1>();
     auto reg4 = registry().registerService(svc4);
     ASSERT_EQ(2, services.size());
-    EXPECT_EQ(svc4.get(), services[0].get());
+    EXPECT_EQ(svc1.get(), services[0].get());
     EXPECT_EQ(svc4.get(), services[1].get());
 
     reg1.unregister();
@@ -256,7 +256,7 @@ TEST_F(ServiceTrackingTest, UpdateTest) {
     auto reg4 = registry().registerService(svc4, properties);
     ASSERT_EQ(2, services.size());
     EXPECT_EQ(svc4.get(), services[0].get()); //note 4 higher ranking
-    EXPECT_EQ(svc4.get(), services[1].get());
+    EXPECT_EQ(svc1.get(), services[1].get());
 
     reg1.unregister();
     ASSERT_EQ(1, services.size());

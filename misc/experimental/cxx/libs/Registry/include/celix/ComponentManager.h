@@ -17,8 +17,7 @@
  *under the License.
  */
 
-#ifndef CXX_CELIX_COMPONENT_MANAGER_H
-#define CXX_CELIX_COMPONENT_MANAGER_H
+#pragma once
 
 #include <memory>
 #include <unordered_map>
@@ -256,8 +255,9 @@ namespace celix {
         bool isServiceRegistered();
         virtual void registerService() = 0;
     protected:
-        GenericProvidedService(std::shared_ptr<celix::ServiceRegistry> reg, std::string svcName, std::function<void()> updateServiceRegistrationsCallback, bool valid);
+        GenericProvidedService(std::string cmpUUID, std::shared_ptr<celix::ServiceRegistry> reg, std::string svcName, std::function<void()> updateServiceRegistrationsCallback, bool valid);
 
+        const std::string cmpUUID;
         const std::shared_ptr<celix::ServiceRegistry> reg;
         const std::string uuid;
         const std::string svcName;
@@ -274,11 +274,12 @@ namespace celix {
     class ProvidedService : public GenericProvidedService {
     public:
         ProvidedService(
+                std::string cmpUUID,
                 std::shared_ptr<celix::ServiceRegistry> reg,
                 std::function<std::shared_ptr<T>()> getCmpInstanceCallback,
                 std::function<void()> updateServiceRegistrationsCallback,
                 bool valid = true);
-        virtual ~ProvidedService() = default;
+        ~ProvidedService() override = default;
 
         ProvidedService& extractUUID(std::string& out);
         ProvidedService& enable();
@@ -303,7 +304,7 @@ std::ostream& operator<< (std::ostream& out, const celix::GenericComponentManage
  **********************************************************************************************************************/
 
 template<typename T>
-celix::ComponentManager<T>::ComponentManager(
+inline celix::ComponentManager<T>::ComponentManager(
         std::shared_ptr<celix::IResourceBundle> owner,
         std::shared_ptr<celix::ServiceRegistry> reg,
         std::shared_ptr<T> cmpInstance,
@@ -311,19 +312,19 @@ celix::ComponentManager<T>::ComponentManager(
 }
 
 template<typename T>
-celix::ComponentManager<T>& celix::ComponentManager<T>::enable() {
+inline celix::ComponentManager<T>& celix::ComponentManager<T>::enable() {
     setEnabled(true);
     return *this;
 }
 
 template<typename T>
-celix::ComponentManager<T>& celix::ComponentManager<T>::disable() {
+inline celix::ComponentManager<T>& celix::ComponentManager<T>::disable() {
     setEnabled(false);
     return *this;
 }
 
 template<typename T>
-celix::ComponentManager<T>& celix::ComponentManager<T>::setCallbacks(
+inline celix::ComponentManager<T>& celix::ComponentManager<T>::setCallbacks(
         void (T::*memberInit)(),
         void (T::*memberStart)(),
         void (T::*memberStop)(),
@@ -357,14 +358,14 @@ celix::ComponentManager<T>& celix::ComponentManager<T>::setCallbacks(
 }
 
 template<typename T>
-celix::ComponentManager<T>& celix::ComponentManager<T>::extractUUID(std::string &out) {
+inline celix::ComponentManager<T>& celix::ComponentManager<T>::extractUUID(std::string &out) {
     out = uuid;
     return *this;
 }
 
 template<typename T>
 template<typename I>
-celix::ServiceDependency<T,I>& celix::ComponentManager<T>::addServiceDependency() {
+inline celix::ServiceDependency<T,I>& celix::ComponentManager<T>::addServiceDependency() {
     auto *dep = new celix::ServiceDependency<T,I>{reg, [this]{updateState();}, [this]{return getCmpInstance();}, [this]{suspense();}, [this]{resume();}};
     std::lock_guard<std::mutex> lck{serviceDependenciesMutex};
     serviceDependencies[dep->getUUD()] = std::unique_ptr<GenericServiceDependency>{dep};
@@ -373,7 +374,7 @@ celix::ServiceDependency<T,I>& celix::ComponentManager<T>::addServiceDependency(
 
 template<typename T>
 template<typename I>
-celix::ServiceDependency<T,I>& celix::ComponentManager<T>::findServiceDependency(const std::string& serviceDependencyUUID) {
+inline celix::ServiceDependency<T,I>& celix::ComponentManager<T>::findServiceDependency(const std::string& serviceDependencyUUID) {
     static celix::ServiceDependency<T,I> invalid{reg, []{}, []{return nullptr;}, []{} , []{}, false};
     auto svcName = celix::typeName<I>();
     auto found = findGenericServiceDependency(svcName, serviceDependencyUUID);
@@ -387,14 +388,14 @@ celix::ServiceDependency<T,I>& celix::ComponentManager<T>::findServiceDependency
 }
 
 template<typename T>
-std::shared_ptr<T> celix::ComponentManager<T>::getCmpInstance() const {
+inline std::shared_ptr<T> celix::ComponentManager<T>::getCmpInstance() const {
     return inst;
 }
 
 template<typename T>
 template<typename I>
-celix::ProvidedService<T, I> &celix::ComponentManager<T>::addProvidedService() {
-    auto *provided = new celix::ProvidedService<T,I>{reg, [this]{return getCmpInstance();}, [this]{updateServiceRegistrations();}};
+inline celix::ProvidedService<T, I> &celix::ComponentManager<T>::addProvidedService() {
+    auto *provided = new celix::ProvidedService<T,I>{getUUD(), reg, [this]{return getCmpInstance();}, [this]{updateServiceRegistrations();}};
     std::lock_guard<std::mutex> lck{providedServicesMutex};
     providedServices[provided->getUUID()] = std::shared_ptr<GenericProvidedService>{provided};
     return *provided;
@@ -402,8 +403,8 @@ celix::ProvidedService<T, I> &celix::ComponentManager<T>::addProvidedService() {
 
 template<typename T>
 template<typename I>
-celix::ProvidedService<T, I> &celix::ComponentManager<T>::findProvidedService(const std::string &providedServiceUUID) {
-    static celix::ProvidedService<T,I> invalid{reg, []{return nullptr;}, []{}, false};
+inline celix::ProvidedService<T, I> &celix::ComponentManager<T>::findProvidedService(const std::string &providedServiceUUID) {
+    static celix::ProvidedService<T,I> invalid{uuid, reg, []{return nullptr;}, []{}, false};
     auto svcName = celix::typeName<I>();
     auto found = findGenericProvidedService(svcName, providedServiceUUID);
     if (found) {
@@ -421,7 +422,7 @@ celix::ProvidedService<T, I> &celix::ComponentManager<T>::findProvidedService(co
  **********************************************************************************************************************/
 
 template<typename T, typename I>
-celix::ServiceDependency<T,I>::ServiceDependency(
+inline celix::ServiceDependency<T,I>::ServiceDependency(
         std::shared_ptr<celix::ServiceRegistry> _reg,
         std::function<void()> _stateChangedCallback,
         std::function<std::shared_ptr<T>()> _getCmpInstance,
@@ -437,7 +438,7 @@ celix::ServiceDependency<T,I>::ServiceDependency(
              getCmpInstance{std::move(_getCmpInstance)} {};
 
 template<typename T, typename I>
-void celix::ServiceDependency<T,I>::setEnabled(bool enable) {
+inline void celix::ServiceDependency<T,I>::setEnabled(bool enable) {
     bool currentlyEnabled = isEnabled();
     {
         std::vector<ServiceTracker> newTracker{};
@@ -467,20 +468,20 @@ void celix::ServiceDependency<T,I>::setEnabled(bool enable) {
 }
 
 template<typename T, typename I>
-celix::ServiceDependency<T,I>& celix::ServiceDependency<T,I>::enable() {
+inline celix::ServiceDependency<T,I>& celix::ServiceDependency<T,I>::enable() {
     setEnabled(true);
     return *this;
 }
 
 template<typename T, typename I>
-celix::ServiceDependency<T,I>& celix::ServiceDependency<T,I>::disable() {
+inline celix::ServiceDependency<T,I>& celix::ServiceDependency<T,I>::disable() {
     setEnabled(false);
     return *this;
 }
 
 
 template<typename T, typename I>
-celix::ServiceDependency<T,I>& celix::ServiceDependency<T,I>::setCallbacks(void (T::*setfp)(std::shared_ptr<I>)) {
+inline celix::ServiceDependency<T,I>& celix::ServiceDependency<T,I>::setCallbacks(void (T::*setfp)(std::shared_ptr<I>)) {
     auto setFunc = [this, setfp](std::shared_ptr<I> svc, const celix::Properties &, const celix::IResourceBundle &) {
         (getCmpInstance()->instance->*setfp)(svc);
     };
@@ -490,7 +491,7 @@ celix::ServiceDependency<T,I>& celix::ServiceDependency<T,I>::setCallbacks(void 
 
 
 template<typename T, typename I>
-celix::ServiceDependency<T,I>& celix::ServiceDependency<T,I>::setCallbacks(void (T::*addfp)(std::shared_ptr<I>), void (T::*remfp)(std::shared_ptr<I>)) {
+inline celix::ServiceDependency<T,I>& celix::ServiceDependency<T,I>::setCallbacks(void (T::*addfp)(std::shared_ptr<I>), void (T::*remfp)(std::shared_ptr<I>)) {
     auto addFunc = [this, addfp](std::shared_ptr<I> svc, const celix::Properties &, const celix::IResourceBundle &) {
         (getCmpInstance()->instance->*addfp)(svc);
     };
@@ -503,41 +504,41 @@ celix::ServiceDependency<T,I>& celix::ServiceDependency<T,I>::setCallbacks(void 
 }
 
 template<typename T, typename I>
-celix::ServiceDependency<T,I>& celix::ServiceDependency<T,I>::setFilter(const std::string &f) {
+inline celix::ServiceDependency<T,I>& celix::ServiceDependency<T,I>::setFilter(const std::string &f) {
     std::lock_guard<std::mutex> lck{mutex};
     filter = f;
     return *this;
 }
 
 template<typename T, typename I>
-celix::ServiceDependency<T,I>& celix::ServiceDependency<T,I>::setStrategy(UpdateServiceStrategy s) {
+inline celix::ServiceDependency<T,I>& celix::ServiceDependency<T,I>::setStrategy(UpdateServiceStrategy s) {
     std::lock_guard<std::mutex> lck{mutex};
     strategy = s;
     return *this;
 }
 
 template<typename T, typename I>
-celix::ServiceDependency<T,I>& celix::ServiceDependency<T,I>::setRequired(bool r) {
+inline celix::ServiceDependency<T,I>& celix::ServiceDependency<T,I>::setRequired(bool r) {
     std::lock_guard<std::mutex> lck{mutex};
     required = r;
     return *this;
 }
 
 template<typename T, typename I>
-celix::ServiceDependency<T,I>& celix::ServiceDependency<T,I>::setCardinality(celix::Cardinality c) {
+inline celix::ServiceDependency<T,I>& celix::ServiceDependency<T,I>::setCardinality(celix::Cardinality c) {
     std::lock_guard<std::mutex> lck{mutex};
     cardinality = c;
     return *this;
 }
 
 template<typename T, typename I>
-celix::ServiceDependency<T,I>& celix::ServiceDependency<T,I>::extractUUID(std::string& out) {
+inline celix::ServiceDependency<T,I>& celix::ServiceDependency<T,I>::extractUUID(std::string& out) {
     out = uuid;
     return *this;
 }
 
 template<typename T, typename I>
-void celix::ServiceDependency<T,I>::setService(std::shared_ptr<I> svc, const celix::Properties &props, const celix::IResourceBundle &owner) {
+inline void celix::ServiceDependency<T,I>::setService(std::shared_ptr<I> svc, const celix::Properties &props, const celix::IResourceBundle &owner) {
     std::lock_guard<std::mutex> lck{callbacksMutex};
     if (set) {
         set(std::move(svc), props, owner);
@@ -545,7 +546,7 @@ void celix::ServiceDependency<T,I>::setService(std::shared_ptr<I> svc, const cel
 }
 
 template<typename T, typename I>
-void celix::ServiceDependency<T,I>::addService(std::shared_ptr<I> svc, const celix::Properties &props, const celix::IResourceBundle &owner) {
+inline void celix::ServiceDependency<T,I>::addService(std::shared_ptr<I> svc, const celix::Properties &props, const celix::IResourceBundle &owner) {
     std::lock_guard<std::mutex> lck{callbacksMutex};
     if (add) {
         add(std::move(svc), props, owner);
@@ -553,7 +554,7 @@ void celix::ServiceDependency<T,I>::addService(std::shared_ptr<I> svc, const cel
 }
 
 template<typename T, typename I>
-void celix::ServiceDependency<T,I>::remService(std::shared_ptr<I> svc, const celix::Properties &props, const celix::IResourceBundle &owner) {
+inline void celix::ServiceDependency<T,I>::remService(std::shared_ptr<I> svc, const celix::Properties &props, const celix::IResourceBundle &owner) {
     std::lock_guard<std::mutex> lck{callbacksMutex};
     if (rem) {
         rem(std::move(svc), props, owner);
@@ -561,7 +562,7 @@ void celix::ServiceDependency<T,I>::remService(std::shared_ptr<I> svc, const cel
 }
 
 template<typename T, typename I>
-void celix::ServiceDependency<T,I>::updateServices(std::vector<std::tuple<std::shared_ptr<I>, const celix::Properties*, const celix::IResourceBundle *>> rankedServices) {
+inline void celix::ServiceDependency<T,I>::updateServices(std::vector<std::tuple<std::shared_ptr<I>, const celix::Properties*, const celix::IResourceBundle *>> rankedServices) {
     std::lock_guard<std::mutex> lck{callbacksMutex};
     if (update) {
         update(std::move(rankedServices));
@@ -573,19 +574,21 @@ void celix::ServiceDependency<T,I>::updateServices(std::vector<std::tuple<std::s
  **********************************************************************************************************************/
 
 template<typename T, typename I>
-celix::ProvidedService<T,I>::ProvidedService(
+inline celix::ProvidedService<T,I>::ProvidedService(
+        std::string cmpUUID,
         std::shared_ptr<celix::ServiceRegistry> reg,
         std::function<std::shared_ptr<T>()> _getCmpInstanceCallback,
         std::function<void()> updateServiceRegistrationsCallback,
         bool valid) :
-    GenericProvidedService{std::move(reg), celix::serviceName<I>(), std::move(updateServiceRegistrationsCallback), valid}, getcmpInstanceCallback{_getCmpInstanceCallback} {}
+    GenericProvidedService{std::move(cmpUUID), std::move(reg), celix::serviceName<I>(), std::move(updateServiceRegistrationsCallback), valid}, getcmpInstanceCallback{_getCmpInstanceCallback} {}
 
 template<typename T, typename I>
-void celix::ProvidedService<T, I>::registerService() {
+inline void celix::ProvidedService<T, I>::registerService() {
     if (isServiceRegistered()) {
         return; //already registered. note that also means a disable -> enable is needed to update a provided service
     }
     auto inst = getcmpInstanceCallback();
+    properties[celix::SERVICE_COMPONENT_ID] = cmpUUID; //always set cmp uuid
 
     //TODO try to improve compile error when this happens
     std::shared_ptr<I> svcPtr = inst; //NOTE T should implement (inherit) I
@@ -597,40 +600,37 @@ void celix::ProvidedService<T, I>::registerService() {
 }
 
 template<typename T, typename I>
-celix::ProvidedService<T,I>& celix::ProvidedService<T, I>::extractUUID(std::string &out) {
+inline celix::ProvidedService<T,I>& celix::ProvidedService<T, I>::extractUUID(std::string &out) {
     out = uuid;
     return *this;
 }
 
 template<typename T, typename I>
-celix::ProvidedService<T,I>& celix::ProvidedService<T, I>::enable() {
+inline celix::ProvidedService<T,I>& celix::ProvidedService<T, I>::enable() {
     setEnabled(true);
     return *this;
 }
 
 template<typename T, typename I>
-celix::ProvidedService<T,I>& celix::ProvidedService<T, I>::disable() {
+inline celix::ProvidedService<T,I>& celix::ProvidedService<T, I>::disable() {
     setEnabled(false);
     return *this;
 }
 
 template<typename T, typename I>
-celix::ProvidedService<T,I>& celix::ProvidedService<T, I>::setProperties(const celix::Properties& p) {
+inline celix::ProvidedService<T,I>& celix::ProvidedService<T, I>::setProperties(const celix::Properties& p) {
     properties = p;
     return *this;
 }
 
 template<typename T, typename I>
-celix::ProvidedService<T,I>& celix::ProvidedService<T, I>::setProperties(celix::Properties p) {
+inline celix::ProvidedService<T,I>& celix::ProvidedService<T, I>::setProperties(celix::Properties p) {
     properties = std::move(p);
     return *this;
 }
 
 template<typename T, typename I>
-celix::ProvidedService<T,I>& celix::ProvidedService<T, I>::addProperty(const std::string &name, const std::string &val) {
+inline celix::ProvidedService<T,I>& celix::ProvidedService<T, I>::addProperty(const std::string &name, const std::string &val) {
     properties[name] = val;
     return *this;
 }
-
-
-#endif //CXX_CELIX_COMPONENT_MANAGER_H

@@ -17,8 +17,7 @@
  *under the License.
  */
 
-#ifndef CXX_CELIX_IBUNDLE_H
-#define CXX_CELIX_IBUNDLE_H
+#pragma once
 
 #include "celix/IResourceBundle.h"
 #include "celix/Properties.h"
@@ -58,5 +57,3 @@ namespace celix {
     };
 
 }
-
-#endif //CXX_CELIX_IBUNDLE_H

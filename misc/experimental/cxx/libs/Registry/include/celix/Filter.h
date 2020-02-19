@@ -17,8 +17,7 @@
  *under the License.
  */
 
-#ifndef CXX_CELIX_FILTER_H
-#define CXX_CELIX_FILTER_H
+#pragma once
 
 #include <memory>
 #include <string>
@@ -74,5 +73,3 @@ namespace celix {
 }
 
 std::ostream& operator<<(std::ostream& stream, const celix::Filter& criteria);
-
-#endif //CXX_CELIX_FILTER_H

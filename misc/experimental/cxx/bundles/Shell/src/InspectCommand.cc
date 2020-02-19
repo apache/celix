@@ -31,7 +31,7 @@ namespace {
             out << "Provide a bundle id" << std::endl;
         } else {
             auto &bndId = cmdArgs[0];
-            auto servicesNames = ctx->registry().listAllRegisteredServiceNames();
+            auto servicesNames = ctx->registry()->listAllRegisteredServiceNames();
 
             const std::string *what{nullptr};
             if (cmdArgs.size() >= 2) {
@@ -42,12 +42,12 @@ namespace {
                 out << "Provided Services: \n";
                 for (auto &svcName : servicesNames) {
                     std::string filter = std::string{"("} + celix::SERVICE_BUNDLE_ID + "=" + bndId + ")";
-                    ctx->registry().useAnyServices(svcName, [&out](std::shared_ptr<void>, const celix::Properties &props, const celix::IResourceBundle &) {
+                    ctx->registry()->useAnyServices(svcName, celix::Filter{}, [&out](const std::shared_ptr<void>, const celix::Properties &props, const celix::IResourceBundle &) {
                         out << "|- Service " << celix::getProperty(props, celix::SERVICE_ID, "!Error") << ":\n";
                         for (auto &pair : props) {
                             out << "   |- " << pair.first << " = " << pair.second << std::endl;
                         }
-                    }, filter, ctx->bundle());
+                    }, ctx->bundle());
                 }
             }
             if (what == nullptr || *what == "tracked") {

@@ -23,8 +23,6 @@
 
 namespace celix {
 
-    class ServiceRegistry;
-
     // RAII service registration: out of scope -> deregister service
     // NOTE access not thread safe -> TODO make thread save?
     class ServiceRegistration {
