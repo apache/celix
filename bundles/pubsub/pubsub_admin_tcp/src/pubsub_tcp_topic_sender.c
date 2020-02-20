@@ -144,8 +144,12 @@ pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
         bool bypassHeader = celix_properties_getAsBool((celix_properties_t *) topicProperties, PUBSUB_TCP_BYPASS_HEADER, PUBSUB_TCP_DEFAULT_BYPASS_HEADER);
         long msgIdOffset  = celix_properties_getAsLong(topicProperties, PUBSUB_TCP_MESSAGE_ID_OFFSET, PUBSUB_TCP_DEFAULT_MESSAGE_ID_OFFSET);
         long msgIdSize    = celix_properties_getAsLong(topicProperties, PUBSUB_TCP_MESSAGE_ID_SIZE,   PUBSUB_TCP_DEFAULT_MESSAGE_ID_SIZE);
+        long retryCnt     = celix_properties_getAsLong(topicProperties, PUBSUB_TCP_PUBLISHER_RETRY_CNT_KEY, PUBSUB_TCP_PUBLISHER_RETRY_CNT_DEFAULT);
+        double timeout    = celix_properties_getAsDouble(topicProperties, PUBSUB_TCP_PUBLISHER_SNDTIMEO_KEY, PUBSUB_TCP_PUBLISHER_SNDTIMEO_DEFAULT);
         pubsub_tcpHandler_setBypassHeader(sender->socketHandler, bypassHeader, (unsigned int)msgIdOffset, (unsigned int)msgIdSize);
         pubsub_tcpHandler_setBlockingWrite(sender->socketHandler, blocking);
+        pubsub_tcpHandler_setSendRetryCnt(sender->socketHandler, (unsigned int) retryCnt);
+        pubsub_tcpHandler_setSendTimeOut(sender->socketHandler, timeout);
     }
     /* Check if it's a static endpoint */
     bool isEndPointTypeClient = false;
@@ -537,7 +541,7 @@ static int psa_tcp_topicPublicationSend(void *handle, unsigned int msgTypeId, co
                 sendCountUpdate = 1;
             } else {
                 sendErrorUpdate = 1;
-                L_WARN("[PSA_TCP_TS] Error sending tcp. %s", strerror(errno));
+                L_WARN("[PSA_TCP_TS] Error sending tcp.");
             }
         } else {
             serializationErrorUpdate = 1;
