@@ -1,6 +1,8 @@
 #ifndef OPEN_MEMSTREAM_H_
 #define OPEN_MEMSTREAM_H_
 
+#include <stdio.h>
+
 #ifdef __cplusplus
 extern "C"
 {

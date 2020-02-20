@@ -46,7 +46,7 @@ celix_status_t pubsub_websocketAdmin_removeDiscoveredEndpoint(void *handle, cons
 void pubsub_websocketAdmin_addSerializerSvc(void *handle, void *svc, const celix_properties_t *props);
 void pubsub_websocketAdmin_removeSerializerSvc(void *handle, void *svc, const celix_properties_t *props);
 
-celix_status_t pubsub_websocketAdmin_executeCommand(void *handle, char *commandLine, FILE *outStream, FILE *errStream);
+bool pubsub_websocketAdmin_executeCommand(void *handle, const char *commandLine, FILE *outStream, FILE *errStream);
 
 pubsub_admin_metrics_t* pubsub_websocketAdmin_metrics(void *handle);
 

@@ -207,6 +207,11 @@ $<JOIN:$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_EMBEDDED_PROPERTIES>,\\n\\
 
     add_executable(${DOCKER_TARGET} EXCLUDE_FROM_ALL ${LAUNCHER_SRC})
     target_link_libraries(${DOCKER_TARGET} PRIVATE Celix::framework)
+    if(NOT APPLE)
+      #Add --no-as-needed options, to ensure that libraries are always linked.
+      #This is needed because most libraries are not used by the executable, but by the bundle libraries instead.
+      set_target_properties(${DOCKER_TARGET} PROPERTIES LINK_FLAGS -Wl,--no-as-needed)
+    endif()
     set(LAUNCHER "$<TARGET_FILE:${DOCKER_TARGET}>")
     set(DOCKER_ENTRYPOINT "ENTRYPOINT [\"/bin/$<TARGET_FILE_NAME:${DOCKER_TARGET}>\"]")
   endif ()

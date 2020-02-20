@@ -19,6 +19,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <celix_api.h>
 
 #include "utils.h"
 #include "celix_bundle_context.h"
@@ -26,7 +27,7 @@
 #include "array_list.h"
 #include "bundle_context.h"
 #include "std_commands.h"
-#include "shell_constants.h"
+#include "celix_shell_constants.h"
 
 static const char * const HEAD_COLOR = "\033[4m"; //underline
 static const char * const EVEN_COLOR = "\033[1m"; //bold
@@ -257,15 +258,15 @@ static void lbCommand_listBundles(celix_bundle_context_t *ctx, const lb_options_
     arrayList_destroy(bundles_ptr);
 }
 
-celix_status_t lbCommand_execute(void *_ptr, char *command_line_str, FILE *out_ptr, FILE *err_ptr) {
-    celix_status_t status = CELIX_SUCCESS;
-    bundle_context_t* ctx = _ptr;
+bool lbCommand_execute(void *handle, const char *const_command_line_str, FILE *out_ptr, FILE *err_ptr) {
+    bundle_context_t* ctx = handle;
+
+    char *command_line_str = celix_utils_strdup(const_command_line_str);
 
     lb_options_t opts;
     memset(&opts, 0, sizeof(opts));
 
-    const char* config = NULL;
-    bundleContext_getPropertyWithDefault(ctx, SHELL_USE_ANSI_COLORS, SHELL_USE_ANSI_COLORS_DEFAULT_VALUE, &config);
+    const char* config = celix_bundleContext_getProperty(ctx, CELIX_SHELL_USE_ANSI_COLORS, CELIX_SHELL_USE_ANSI_COLORS_DEFAULT_VALUE);
     opts.useColors = config != NULL && strncmp("true", config, 5) == 0;
 
 
@@ -273,38 +274,33 @@ celix_status_t lbCommand_execute(void *_ptr, char *command_line_str, FILE *out_p
     opts.show_symbolic_name   = false;
     opts.show_update_location = false;
 
-    if (!ctx || !command_line_str || !out_ptr || !err_ptr) {
-        status = CELIX_ILLEGAL_ARGUMENT;
-    }
+    char *sub_str = NULL;
+    char *save_ptr = NULL;
 
-    if (status == CELIX_SUCCESS) {
-        char *sub_str = NULL;
-        char *save_ptr = NULL;
-
-        strtok_r(command_line_str, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
-        sub_str = strtok_r(NULL, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
-        while (sub_str != NULL) {
-            if (strcmp(sub_str, "-l") == 0) {
-                opts.show_location = true;
-            } else if (strcmp(sub_str, "-s") == 0) {
-                opts.show_symbolic_name = true;
-            } else if (strcmp(sub_str, "-u") == 0) {
-                opts.show_update_location = true;
-            } else if (strcmp(sub_str, "-a") == 0) {
-                opts.listAllGroups = true;
-            } else {
-                opts.listGroup = strdup(sub_str);
-            }
-            sub_str = strtok_r(NULL, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
+    strtok_r(command_line_str, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
+    sub_str = strtok_r(NULL, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
+    while (sub_str != NULL) {
+        if (strcmp(sub_str, "-l") == 0) {
+            opts.show_location = true;
+        } else if (strcmp(sub_str, "-s") == 0) {
+            opts.show_symbolic_name = true;
+        } else if (strcmp(sub_str, "-u") == 0) {
+            opts.show_update_location = true;
+        } else if (strcmp(sub_str, "-a") == 0) {
+            opts.listAllGroups = true;
+        } else {
+            opts.listGroup = strdup(sub_str);
         }
+        sub_str = strtok_r(NULL, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
     }
 
     lbCommand_showGroups(ctx, &opts, out_ptr);
     lbCommand_listBundles(ctx, &opts, out_ptr);
 
     free(opts.listGroup);
+    free(command_line_str);
 
-    return status;
+    return true;
 }
 
 static char * psCommand_stateString(bundle_state_e state) {

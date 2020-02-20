@@ -31,13 +31,13 @@
 
 #include "calculator_service.h"
 
-struct calculator {
-};
+typedef struct calculator {
+} calculator_t;
 
-celix_status_t calculator_create(calculator_t **calculator);
-celix_status_t calculator_destroy(calculator_t **calculator);
-celix_status_t calculator_add(calculator_t *calculator, double a, double b, double *result);
-celix_status_t calculator_sub(calculator_t *calculator, double a, double b, double *result);
-celix_status_t calculator_sqrt(calculator_t *calculator, double a, double *result);
+calculator_t* calculator_create(void);
+void calculator_destroy(calculator_t *calculator);
+int calculator_add(calculator_t *calculator, double a, double b, double *result);
+int calculator_sub(calculator_t *calculator, double a, double b, double *result);
+int calculator_sqrt(calculator_t *calculator, double a, double *result);
 
 #endif /* CALCULATOR_IMPL_H_ */

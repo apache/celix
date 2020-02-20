@@ -16,13 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * version_range.h
- *
- *  \date       Jul 12, 2010
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
+
 
 #ifndef VERSION_RANGE_H_
 #define VERSION_RANGE_H_
@@ -152,6 +146,24 @@ celix_status_t versionRange_getHighVersion(version_range_pt versionRange, versio
  *               the qualifier string is invalid or <code>versionStr</code> is impropertly formatted.
  */
 celix_status_t versionRange_parse(const char *rangeStr, version_range_pt *range);
+
+/**
+ * Returns the LDAP filter for a version range. Caller is owner of the returned string.
+ *
+ * @param range                         The version range used as input for the LDAP filer
+ * @param serviceVersionPropertyName    The service version name to be used in the filter (i.e. service.version)
+ * @return LDAP filter string if valid, NULL otherwise
+ */
+char* versionRange_createLDAPFilter(version_range_pt range, const char *serviceVersionAttributeName);
+
+/**
+ * construct a LDAP filter for the provided version range.
+ * The string will be created in the provided buffer, if the buffer is big enough.
+ *
+ * @return True if parse successful, False otherwise.
+ */
+bool versionRange_createLDAPFilterInPlace(version_range_pt range, const char *serviceVersionAttributeName, char* buffer, size_t bufferLength);
+
 
 #ifdef __cplusplus
 }

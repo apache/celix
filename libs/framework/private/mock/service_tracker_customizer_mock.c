@@ -82,6 +82,3 @@ celix_status_t serviceTrackerCustomizer_getRemovedFunction(service_tracker_custo
 			->withOutputParameter("function", (void **) function);
 	return mock_c()->returnValue().value.intValue;
 }
-
-
-

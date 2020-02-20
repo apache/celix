@@ -90,14 +90,22 @@ set(CELIX_MAJOR "2")
 set(CELIX_MINOR "2")
 set(CELIX_MICRO "0")
 
-option(ENABLE_TESTING "Enables unit/bundle testing" FALSE)
+# Default bundle version
+set(DEFAULT_VERSION 1.0.0)
 
+# Options
+option(ENABLE_TESTING "Enables unit/bundle testing" FALSE)
 if (ENABLE_TESTING)
     enable_testing()
 endif()
 
-# Default bundle version
-set(DEFAULT_VERSION 1.0.0)
+option(CELIX_INSTALL_DEPRECATED_API "whether to install (and use) deprecated apis (i.e. header without a celix_ prefix." ON)
+
+option(CELIX_ADD_DEPRECATED_ATTRIBUTES "If enabled add deprecated attributes to deprecated services/functions." ON)
+if (CELIX_ADD_DEPRECATED_ATTRIBUTES)
+    set(CMAKE_C_FLAGS "-DCELIX_ADD_DEPRECATED_ATTRIBUTES ${CMAKE_C_FLAGS}")
+    set(CMAKE_CXX_FLAGS "-DCELIX_ADD_DEPRECATED_ATTRIBUTES ${CMAKE_CXX_FLAGS}")
+endif ()
 
 option(CELIX_ADD_OPENSSL_DEP "Enabled building Celix framework & etcdlib with OpenSSL library dependency. This can help in some libcurl resolving issues" OFF)
 set(CELIX_OPTIONAL_EXTRA_LIBS "")
@@ -105,6 +113,8 @@ if (CELIX_ADD_OPENSSL_DEP)
     find_package(OpenSSL REQUIRED)
     set(CELIX_OPTIONAL_EXTRA_LIBS "OpenSSL::lib")
 endif ()
+
+option(CELIX_USE_ZIP_INSTEAD_OF_JAR "Default Celix cmake command will use jar to package bundle (if found). This option enforces Celix to use zip instead." OFF)
 
 #Libraries and Launcher
 add_subdirectory(libs)

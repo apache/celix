@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include <celix_api.h>
 
 #include "service_registry_private.h"
 #include "service_registration_private.h"
@@ -96,7 +97,7 @@ celix_status_t serviceRegistry_destroy(service_registry_pt registry) {
     //destroy service registration map
     int size = hashMap_size(registry->serviceRegistrations);
     if (size > 0) {
-        fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "%i bundles with dangling service registration\n");
+        fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "%i bundles with dangling service registration\n", size);
         hash_map_iterator_t iter = hashMapIterator_construct(registry->serviceRegistrations);
         while (hashMapIterator_hasNext(&iter)) {
             hash_map_entry_t *entry = hashMapIterator_nextEntry(&iter);
@@ -916,4 +917,59 @@ static void celix_decreaseCountHook(celix_service_registry_listener_hook_entry_t
         celixThreadCondition_broadcast(&entry->cond);
         celixThreadMutex_unlock(&entry->mutex);
     }
+}
+
+celix_array_list_t* celix_serviceRegistry_listServiceIdsForOwner(celix_service_registry_t* registry, long bndId) {
+    celix_array_list_t *result = celix_arrayList_create();
+    celixThreadRwlock_readLock(&registry->lock);
+    celix_bundle_t *bundle = framework_getBundleById(registry->framework, bndId);
+    celix_array_list_t *registrations = bundle != NULL ? hashMap_get(registry->serviceRegistrations, bundle) : NULL;
+    if (registrations != NULL) {
+        for (int i = 0; i < celix_arrayList_size(registrations); ++i) {
+            service_registration_t *reg = celix_arrayList_get(registrations, i);
+            long svcId = serviceRegistration_getServiceId(reg);
+            celix_arrayList_addLong(result, svcId);
+        }
+    }
+    celixThreadRwlock_unlock(&registry->lock);
+    return result;
+}
+
+bool celix_serviceRegistry_getServiceInfo(
+        celix_service_registry_t* registry,
+        long svcId,
+        long bndId,
+        char **outServiceName,
+        celix_properties_t **outServiceProperties,
+        bool *outIsFactory) {
+    bool found = false;
+
+    celixThreadRwlock_readLock(&registry->lock);
+    celix_bundle_t *bundle = framework_getBundleById(registry->framework, bndId);
+    celix_array_list_t *registrations = bundle != NULL ? hashMap_get(registry->serviceRegistrations, bundle) : NULL;
+    if (registrations != NULL) {
+        for (int i = 0; i < celix_arrayList_size(registrations); ++i) {
+            service_registration_t *reg = celix_arrayList_get(registrations, i);
+            if (svcId == serviceRegistration_getServiceId(reg)) {
+                found = true;
+                if (outServiceName != NULL) {
+                    const char *s = NULL;
+                    serviceRegistration_getServiceName(reg, &s);
+                    *outServiceName = celix_utils_strdup(s);
+                }
+                if (outServiceProperties != NULL) {
+                    celix_properties_t *p = NULL;
+                    serviceRegistration_getProperties(reg, &p);
+                    *outServiceProperties = celix_properties_copy(p);
+                }
+                if (outIsFactory != NULL) {
+                    *outIsFactory = serviceRegistration_isFactoryService(reg);
+                }
+                break;
+            }
+        }
+    }
+    celixThreadRwlock_unlock(&registry->lock);
+
+    return found;
 }

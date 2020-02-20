@@ -16,13 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * utils_test.cpp
- *
- *  \date       Feb 6, 2013
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
+
 
 #include "string.h"
 #include <stdlib.h>
@@ -31,6 +25,7 @@
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/TestHarness_c.h"
 #include "CppUTest/CommandLineTestRunner.h"
+#include "celix_utils.h"
 
 extern "C"
 {
@@ -38,6 +33,7 @@ extern "C"
 }
 
 int main(int argc, char** argv) {
+    MemoryLeakWarningPlugin::turnOffNewDeleteOverloads();
     return RUN_ALL_TESTS(argc, argv);
 }
 
@@ -298,4 +294,71 @@ TEST(utils, compareServiceIdsAndRanking){
 
 }
 
+TEST(utils, extractLocalNameAndNamespaceTest) {
+    const char *input = "lb";
+    char* name = NULL;
+    char *ns = NULL;
+    celix_utils_extractLocalNameAndNamespaceFromFullyQualifiedName(input, "::", &name, &ns);
+    CHECK_EQUAL_C_STRING("lb", name);
+    CHECK_TRUE(ns == NULL);
+    free(name);
+    free(ns);
 
+    input = "celix::lb";
+    name = NULL;
+    ns = NULL;
+    celix_utils_extractLocalNameAndNamespaceFromFullyQualifiedName(input, "::", &name, &ns);
+    CHECK_EQUAL_C_STRING("lb", name);
+    CHECK_EQUAL_C_STRING("celix", ns);
+    free(name);
+    free(ns);
+
+    input = "celix::extra::namespace::entries::lb";
+    name = NULL;
+    ns = NULL;
+    celix_utils_extractLocalNameAndNamespaceFromFullyQualifiedName(input, "::", &name, &ns);
+    CHECK_EQUAL_C_STRING("lb", name);
+    CHECK_EQUAL_C_STRING("celix::extra::namespace::entries", ns);
+    free(name);
+    free(ns);
+
+    input = "celix.extra.namespace.entries.lb";
+    name = NULL;
+    ns = NULL;
+    celix_utils_extractLocalNameAndNamespaceFromFullyQualifiedName(input, ".", &name, &ns);
+    CHECK_EQUAL_C_STRING("lb", name);
+    CHECK_EQUAL_C_STRING("celix.extra.namespace.entries", ns);
+    free(name);
+    free(ns);
+
+    //testing with non existing namespace
+    input = "celix.extra.namespace.entries.lb";
+    name = NULL;
+    ns = NULL;
+    celix_utils_extractLocalNameAndNamespaceFromFullyQualifiedName(input, "??", &name, &ns);
+    CHECK_EQUAL_C_STRING("celix.extra.namespace.entries.lb", name);
+    CHECK_TRUE(ns == NULL);
+    free(name);
+    free(ns);
+
+    //wrong input check
+    input = NULL;
+    name = NULL;
+    ns = NULL;
+    celix_utils_extractLocalNameAndNamespaceFromFullyQualifiedName(input, "??", &name, &ns);
+    CHECK_TRUE(name == NULL);
+    CHECK_TRUE(ns == NULL);
+    free(name);
+    free(ns);
+
+
+    //empty namespace check
+    input = "celix.extra.namespace.entries.lb";
+    name = NULL;
+    ns = NULL;
+    celix_utils_extractLocalNameAndNamespaceFromFullyQualifiedName(input, "", &name, &ns);
+    CHECK_EQUAL_C_STRING("celix.extra.namespace.entries.lb", name);
+    CHECK_TRUE(ns == NULL);
+    free(name);
+    free(ns);
+}

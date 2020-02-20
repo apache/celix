@@ -113,6 +113,12 @@ if (ENABLE_TESTING AND UTILS-TESTS)
     add_executable(filter_test private/test/filter_test.cpp)
     target_link_libraries(filter_test ${CPPUTEST_LIBRARY}  Celix::utils pthread)
 
+    add_executable(version_range_test private/test/version_range_test.cpp)
+    target_link_libraries(version_range_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY}  Celix::utils pthread)
+
+    add_executable(version_test private/test/version_test.cpp)
+    target_link_libraries(version_test ${CPPUTEST_LIBRARY}  Celix::utils pthread)
+
     configure_file(private/resources-test/properties.txt ${CMAKE_CURRENT_BINARY_DIR}/resources-test/properties.txt COPYONLY)
 
     add_test(NAME run_array_list_test COMMAND array_list_test)
@@ -124,6 +130,8 @@ if (ENABLE_TESTING AND UTILS-TESTS)
     add_test(NAME run_utils_test COMMAND utils_test)
     add_test(NAME run_ip_utils_test COMMAND ip_utils_test)
     add_test(NAME filter_test COMMAND filter_test)
+    add_test(NAME version_range_test COMMAND version_range_test)
+    add_test(NAME version_test COMMAND version_test)
 
     SETUP_TARGET_FOR_COVERAGE(array_list_test array_list_test ${CMAKE_BINARY_DIR}/coverage/array_list_test/array_list_test)
     SETUP_TARGET_FOR_COVERAGE(hash_map hash_map_test ${CMAKE_BINARY_DIR}/coverage/hash_map_test/hash_map_test)
@@ -133,5 +141,7 @@ if (ENABLE_TESTING AND UTILS-TESTS)
     SETUP_TARGET_FOR_COVERAGE(properties_test properties_test ${CMAKE_BINARY_DIR}/coverage/properties_test/properties_test)
     SETUP_TARGET_FOR_COVERAGE(utils_test utils_test ${CMAKE_BINARY_DIR}/coverage/utils_test/utils_test)
     SETUP_TARGET_FOR_COVERAGE(ip_utils_test ip_utils_test ${CMAKE_BINARY_DIR}/coverage/ip_utils_test/ip_utils_test)
+    SETUP_TARGET_FOR_COVERAGE(version_range_test version_range_test ${CMAKE_BINARY_DIR}/coverage/version_range_test/version_range_test)
+    SETUP_TARGET_FOR_COVERAGE(version_test version_test ${CMAKE_BINARY_DIR}/coverage/version_test/version_test)
 
 endif(ENABLE_TESTING AND UTILS-TESTS)

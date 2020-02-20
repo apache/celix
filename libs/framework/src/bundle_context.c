@@ -22,6 +22,7 @@
 #include <string.h>
 #include <utils.h>
 
+#include "celix_utils.h"
 #include "celix_constants.h"
 #include "bundle_context_private.h"
 #include "framework_private.h"
@@ -59,7 +60,7 @@ celix_status_t bundleContext_create(framework_pt framework, framework_logger_pt 
             arrayList_create(&context->svcRegistrations);
             context->bundleTrackers = hashMap_create(NULL,NULL,NULL,NULL);
             context->serviceTrackers = hashMap_create(NULL,NULL,NULL,NULL);
-            context->serviceTrackerTrackers =  hashMap_create(NULL,NULL,NULL,NULL);
+            context->metaTrackers =  hashMap_create(NULL,NULL,NULL,NULL);
             context->nextTrackerId = 1L;
 
             *bundle_context = context;
@@ -163,7 +164,8 @@ celix_status_t bundleContext_registerService(bundle_context_pt context, const ch
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (context != NULL) {
-	    fw_registerService(context->framework, &registration, context->bundle, serviceName, svcObj, properties);
+	    long bndId = celix_bundle_getId(context->bundle);
+	    fw_registerService(context->framework, &registration, bndId, serviceName, svcObj, properties);
 	    *service_registration = registration;
 	} else {
 	    status = CELIX_ILLEGAL_ARGUMENT;
@@ -180,7 +182,8 @@ celix_status_t bundleContext_registerServiceFactory(bundle_context_pt context, c
     celix_status_t status = CELIX_SUCCESS;
 
     if (context != NULL && *service_registration == NULL) {
-        fw_registerServiceFactory(context->framework, &registration, context->bundle, serviceName, factory, properties);
+        long bndId = celix_bundle_getId(context->bundle);
+        fw_registerServiceFactory(context->framework, &registration, bndId, serviceName, factory, properties);
         *service_registration = registration;
     } else {
         status = CELIX_ILLEGAL_ARGUMENT;
@@ -632,13 +635,13 @@ static void bundleContext_cleanupServiceTrackers(bundle_context_t *ctx) {
 }
 
 static void bundleContext_cleanupServiceTrackerTrackers(bundle_context_t *ctx) {
-    hash_map_iterator_t iter = hashMapIterator_construct(ctx->serviceTrackerTrackers);
+    hash_map_iterator_t iter = hashMapIterator_construct(ctx->metaTrackers);
     while (hashMapIterator_hasNext(&iter)) {
         celix_bundle_context_service_tracker_tracker_entry_t *entry = hashMapIterator_nextValue(&iter);
         serviceRegistration_unregister(entry->hookReg);
         free(entry);
     }
-    hashMap_destroy(ctx->serviceTrackerTrackers, false, false);
+    hashMap_destroy(ctx->metaTrackers, false, false);
 }
 
 
@@ -656,9 +659,9 @@ void celix_bundleContext_stopTracker(bundle_context_t *ctx, long trackerId) {
         } else if (hashMap_containsKey(ctx->serviceTrackers, (void*)trackerId)) {
             found = true;
             serviceTracker = hashMap_remove(ctx->serviceTrackers, (void*)trackerId);
-        } else if (hashMap_containsKey(ctx->serviceTrackerTrackers, (void*)trackerId)) {
+        } else if (hashMap_containsKey(ctx->metaTrackers, (void*)trackerId)) {
             found = true;
-            svcTrackerTracker = hashMap_remove(ctx->serviceTrackerTrackers, (void*)trackerId);
+            svcTrackerTracker = hashMap_remove(ctx->metaTrackers, (void*)trackerId);
         }
         celixThreadMutex_unlock(&ctx->mutex);
 
@@ -682,20 +685,7 @@ void celix_bundleContext_stopTracker(bundle_context_t *ctx, long trackerId) {
 }
 
 long celix_bundleContext_installBundle(bundle_context_t *ctx, const char *bundleLoc, bool autoStart) {
-    long bundleId = -1;
-    bundle_t *bnd = NULL;
-    celix_status_t status = CELIX_SUCCESS;
-
-    if (ctx != NULL && fw_installBundle(ctx->framework, &bnd, bundleLoc, NULL) == CELIX_SUCCESS) {
-        status = bundle_getBundleId(bnd, &bundleId);
-        if (status == CELIX_SUCCESS && autoStart) {
-            status = bundle_start(bnd);
-        }
-    }
-
-    framework_logIfError(logger, status, NULL, "Failed to install bundle");
-
-    return bundleId;
+    return celix_framework_installBundle(ctx->framework, bundleLoc, autoStart);
 }
 
 static void bundleContext_listBundlesCallback(void *handle, const bundle_t *c_bnd) {
@@ -713,59 +703,24 @@ celix_array_list_t* celix_bundleContext_listBundles(celix_bundle_context_t *ctx)
 }
 
 bool celix_bundleContext_isBundleInstalled(celix_bundle_context_t *ctx, long bndId) {
-    celix_bundle_t *bnd = framework_getBundleById(ctx->framework, bndId);
-    return bnd != NULL;
+    return celix_framework_isBundleInstalled(ctx->framework, bndId);
 }
 
-static void bundleContext_startBundleCallback(void *handle, const bundle_t *c_bnd) {
-    bool *started = handle;
-    *started = false;
-    bundle_t *bnd = (bundle_t*)c_bnd;
-    celix_bundle_state_e state = celix_bundle_getState(bnd);
-    if (state == OSGI_FRAMEWORK_BUNDLE_INSTALLED || state == OSGI_FRAMEWORK_BUNDLE_RESOLVED) {
-        celix_status_t rc = bundle_start(bnd);
-        *started = rc == CELIX_SUCCESS;
-    }
+bool celix_bundleContext_isBundleActive(celix_bundle_context_t *ctx, long bndId) {
+    return celix_framework_isBundleActive(ctx->framework, bndId);
 }
 
 bool celix_bundleContext_startBundle(celix_bundle_context_t *ctx, long bundleId) {
-    bool started = false;
-
-    celix_framework_useBundle(ctx->framework, false, bundleId, &started, bundleContext_startBundleCallback);
-    return started;
+    return celix_framework_startBundle(ctx->framework, bundleId);
 }
 
-
-static void bundleContext_stopBundleCallback(void *handle, const bundle_t *c_bnd) {
-    bool *stopped = handle;
-    *stopped = false;
-    bundle_t *bnd = (bundle_t*)c_bnd;
-    if (celix_bundle_getState(bnd) == OSGI_FRAMEWORK_BUNDLE_ACTIVE) {
-        celix_status_t rc = bundle_stop(bnd);
-        *stopped = rc == CELIX_SUCCESS;
-    }
-}
 
 bool celix_bundleContext_stopBundle(celix_bundle_context_t *ctx, long bundleId) {
-    bool stopped = false;
-    celix_framework_useBundle(ctx->framework, true, bundleId, &stopped, bundleContext_stopBundleCallback);
-    return stopped;
-}
-
-static void bundleContext_uninstallBundleCallback(void *handle, const bundle_t *c_bnd) {
-    bool *uninstalled = handle;
-    bundle_t *bnd = (bundle_t*)c_bnd;
-    if (celix_bundle_getState(bnd) == OSGI_FRAMEWORK_BUNDLE_ACTIVE) {
-        bundle_stop(bnd);
-    }
-    bundle_uninstall(bnd);
-    *uninstalled = true;
+    return celix_framework_stopBundle(ctx->framework, bundleId);
 }
 
 bool celix_bundleContext_uninstallBundle(bundle_context_t *ctx, long bundleId) {
-    bool uninstalled = false;
-    celix_framework_useBundle(ctx->framework, true, bundleId, &uninstalled, bundleContext_uninstallBundleCallback);
-    return uninstalled;
+    return celix_framework_uninstallBundle(ctx->framework, bundleId);
 }
 
 bool celix_bundleContext_useServiceWithId(
@@ -1016,7 +971,7 @@ long celix_bundleContext_trackServiceTrackers(
     if (entry->hookReg != NULL) {
         celixThreadMutex_lock(&ctx->mutex);
         entry->trackerId = ctx->nextTrackerId++;
-        hashMap_put(ctx->serviceTrackerTrackers, (void*)entry->trackerId, entry);
+        hashMap_put(ctx->metaTrackers, (void*)entry->trackerId, entry);
         trackerId = entry->trackerId;
         celixThreadMutex_unlock(&ctx->mutex);
     } else {
@@ -1086,4 +1041,15 @@ bool celix_bundleContext_getPropertyAsBool(celix_bundle_context_t *ctx, const ch
         }
     }
     return result;
+}
+
+static void celix_bundleContext_getBundleSymbolicNameCallback(void *data, const celix_bundle_t *bnd) {
+    char **out = data;
+    *out = celix_utils_strdup(celix_bundle_getSymbolicName(bnd));
+}
+
+char* celix_bundleContext_getBundleSymbolicName(celix_bundle_context_t *ctx, long bndId) {
+    char *name = NULL;
+    celix_framework_useBundle(ctx->framework, false, bndId, &name, celix_bundleContext_getBundleSymbolicNameCallback);
+    return name;
 }

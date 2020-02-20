@@ -16,18 +16,23 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * utils.c
- *
- *  \date       Jul 27, 2010
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
+
 
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include "utils.h"
+#include "celix_utils.h"
+
+
+#ifdef __APPLE__
+#include "memstream/open_memstream.h"
+#else
+#include <stdio.h>
+#include <assert.h>
+
+#endif
 
 unsigned int utils_stringHash(const void* strPtr) {
     const char* string = strPtr;
@@ -145,4 +150,60 @@ double celix_difftime(const struct timespec *tBegin, const struct timespec *tEnd
     float diff_s = tEnd->tv_sec - tBegin->tv_sec;
     float diff_ns = tEnd->tv_nsec - tBegin->tv_nsec;
     return diff_s + (diff_ns / 1000000000.0);
+}
+
+char* celix_utils_strdup(const char *str) {
+    if (str != NULL) {
+        return strndup(str, CELIX_UTILS_MAX_STRLEN);
+    } else {
+        return NULL;
+    }
+}
+
+
+void celix_utils_extractLocalNameAndNamespaceFromFullyQualifiedName(const char *fullyQualifiedName, const char *namespaceSeparator, char **outLocalName, char **outNamespace) {
+    assert(namespaceSeparator != NULL);
+    if (fullyQualifiedName == NULL) {
+        *outLocalName = NULL;
+        *outNamespace = NULL;
+        return;
+    }
+
+    char *cpy = celix_utils_strdup(fullyQualifiedName);
+
+    char *local = NULL;
+    char *namespace = NULL;
+    size_t namespaceLen;
+    FILE *namespaceStream = open_memstream(&namespace, &namespaceLen);
+
+    char *savePtr = NULL;
+    char *nextSubStr = NULL;
+    char *currentSubStr = strtok_r(cpy, namespaceSeparator, &savePtr);
+    bool firstNamespaceEntry = true;
+    while (currentSubStr != NULL) {
+        nextSubStr = strtok_r(NULL, namespaceSeparator, &savePtr);
+        if (nextSubStr != NULL) {
+            //still more, so last is part of the namespace
+            if (firstNamespaceEntry) {
+                firstNamespaceEntry = false;
+            } else {
+                fprintf(namespaceStream, "%s", namespaceSeparator);
+            }
+            fprintf(namespaceStream, "%s", currentSubStr);
+        } else {
+            //end reached current is local name
+            local = celix_utils_strdup(currentSubStr);
+        }
+        currentSubStr = nextSubStr;
+    }
+    fclose(namespaceStream);
+    free(cpy);
+    *outLocalName = local;
+    if (strncmp("", namespace, 1) == 0)  {
+        //empty string -> set to NULL
+        *outNamespace = NULL;
+        free(namespace);
+    } else {
+        *outNamespace = namespace;
+    }
 }

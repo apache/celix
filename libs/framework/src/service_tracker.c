@@ -24,6 +24,7 @@
 #include "framework_private.h"
 #include <assert.h>
 #include <unistd.h>
+#include <celix_api.h>
 
 #include "service_tracker_private.h"
 #include "bundle_context.h"
@@ -52,14 +53,17 @@ static bool serviceTracker_useHighestRankingServiceInternal(celix_service_tracke
 static void serviceTracker_addInstanceFromShutdownList(celix_service_tracker_instance_t *instance);
 static void serviceTracker_remInstanceFromShutdownList(celix_service_tracker_instance_t *instance);
 
-static celix_thread_once_t g_once = CELIX_THREAD_ONCE_INIT;
-static celix_thread_mutex_t g_mutex;
-static celix_thread_cond_t g_cond;
+static celix_thread_once_t g_once = CELIX_THREAD_ONCE_INIT; //once for g_shutdownMutex, g_shutdownCond
+
+
+static celix_thread_mutex_t g_shutdownMutex;
+static celix_thread_cond_t g_shutdownCond;
 static celix_array_list_t *g_shutdownInstances = NULL; //value = celix_service_tracker_instance -> used for syncing with shutdown threads
 
+
 static void serviceTracker_once(void) {
-    celixThreadMutex_create(&g_mutex, NULL);
-    celixThreadCondition_init(&g_cond, NULL);
+    celixThreadMutex_create(&g_shutdownMutex, NULL);
+    celixThreadCondition_init(&g_shutdownCond, NULL);
 }
 
 static inline celix_tracked_entry_t* tracked_create(service_reference_pt ref, void *svc, celix_properties_t *props, celix_bundle_t *bnd) {
@@ -144,6 +148,7 @@ celix_status_t serviceTracker_destroy(service_tracker_pt tracker) {
 	    serviceTrackerCustomizer_destroy(tracker->customizer);
 	}
 
+    free(tracker->serviceName);
 	free(tracker->filter);
 	free(tracker);
 
@@ -446,6 +451,16 @@ void serviceTracker_serviceChanged(celix_service_listener_t *listener, celix_ser
     }
 }
 
+size_t serviceTracker_nrOfTrackedServices(service_tracker_t *tracker) {
+    size_t result = 0;
+    celixThreadRwlock_readLock(&tracker->instanceLock);
+    celixThreadRwlock_readLock(&tracker->instance->lock);
+    result = (size_t) arrayList_size(tracker->instance->trackedServices);
+    celixThreadRwlock_unlock(&tracker->instance->lock);
+    celixThreadRwlock_unlock(&tracker->instanceLock);
+    return result;
+}
+
 static celix_status_t serviceTracker_track(celix_service_tracker_instance_t *instance, service_reference_pt reference, celix_service_event_t *event) {
 	celix_status_t status = CELIX_SUCCESS;
 
@@ -723,6 +738,7 @@ celix_service_tracker_t* celix_serviceTracker_createWithOptions(
         tracker = calloc(1, sizeof(*tracker));
         if (tracker != NULL) {
             tracker->context = ctx;
+            tracker->serviceName = celix_utils_strdup(opts->filter.serviceName);
 
             //setting callbacks
             tracker->callbackHandle = opts->callbackHandle;
@@ -744,26 +760,43 @@ celix_service_tracker_t* celix_serviceTracker_createWithOptions(
                 lang = CELIX_FRAMEWORK_SERVICE_C_LANGUAGE;
             }
 
+            char* versionRange = NULL;
+            if(opts->filter.versionRange != NULL) {
+                version_range_pt range;
+                celix_status_t status = versionRange_parse(opts->filter.versionRange, &range);
+                if(status != CELIX_SUCCESS) {
+                    framework_log(logger, OSGI_FRAMEWORK_LOG_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__,
+                    "Error incorrect version range.");
+                    celixThreadRwlock_destroy(&tracker->instanceLock);
+                    free(tracker);
+                    return NULL;
+                }
+                versionRange = versionRange_createLDAPFilter(range, CELIX_FRAMEWORK_SERVICE_VERSION);
+                if(versionRange == NULL) {
+                    framework_log(logger, OSGI_FRAMEWORK_LOG_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__,
+                                  "Error creating LDAP filter.");
+                    celixThreadRwlock_destroy(&tracker->instanceLock);
+                    free(tracker);
+                    return NULL;
+                }
+            }
+
             //setting filter
             if (opts->filter.ignoreServiceLanguage) {
-                if (opts->filter.filter != NULL && opts->filter.versionRange != NULL) {
-                    //TODO version range
-                    asprintf(&tracker->filter, "&((%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, opts->filter.filter);
-                } else if (opts->filter.versionRange != NULL) {
-                    //TODO version range
-                    asprintf(&tracker->filter, "&((%s=%s))", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName);
+                if (opts->filter.filter != NULL && versionRange != NULL) {
+                    asprintf(&tracker->filter, "(&(%s=%s)%s%s)", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, versionRange, opts->filter.filter);
+                } else if (versionRange != NULL) {
+                    asprintf(&tracker->filter, "(&(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, versionRange);
                 } else if (opts->filter.filter != NULL) {
                     asprintf(&tracker->filter, "(&(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, opts->filter.filter);
                 } else {
                     asprintf(&tracker->filter, "(&(%s=%s))", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName);
                 }
             } else {
-                if (opts->filter.filter != NULL && opts->filter.versionRange != NULL) {
-                    //TODO version range
-                    asprintf(&tracker->filter, "&((%s=%s)(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang, opts->filter.filter);
-                } else if (opts->filter.versionRange != NULL) {
-                    //TODO version range
-                    asprintf(&tracker->filter, "&((%s=%s)(%s=%s))", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang);
+                if (opts->filter.filter != NULL && versionRange != NULL) {
+                    asprintf(&tracker->filter, "(&(%s=%s)(%s=%s)%s%s)", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang, versionRange, opts->filter.filter);
+                } else if (versionRange != NULL) {
+                    asprintf(&tracker->filter, "(&(%s=%s)(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang, versionRange);
                 } else if (opts->filter.filter != NULL) {
                     asprintf(&tracker->filter, "(&(%s=%s)(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang, opts->filter.filter);
                 } else {
@@ -771,6 +804,9 @@ celix_service_tracker_t* celix_serviceTracker_createWithOptions(
                 }
             }
 
+            if(versionRange != NULL){
+                free(versionRange);
+            }
 
             serviceTracker_open(tracker);
         }
@@ -933,7 +969,7 @@ void celix_serviceTracker_useServices(
 
 void celix_serviceTracker_syncForFramework(void *fw) {
     celixThread_once(&g_once, serviceTracker_once);
-    celixThreadMutex_lock(&g_mutex);
+    celixThreadMutex_lock(&g_shutdownMutex);
     size_t count = 0;
     do {
         count = 0;
@@ -946,7 +982,7 @@ void celix_serviceTracker_syncForFramework(void *fw) {
             }
         }
         if (count > 0) {
-            pthread_cond_wait(&g_cond, &g_mutex);
+            pthread_cond_wait(&g_shutdownCond, &g_shutdownMutex);
         }
     } while (count > 0);
 
@@ -954,12 +990,12 @@ void celix_serviceTracker_syncForFramework(void *fw) {
         celix_arrayList_destroy(g_shutdownInstances);
         g_shutdownInstances = NULL;
     }
-    celixThreadMutex_unlock(&g_mutex);
+    celixThreadMutex_unlock(&g_shutdownMutex);
 }
 
 void celix_serviceTracker_syncForContext(void *ctx) {
     celixThread_once(&g_once, serviceTracker_once);
-    celixThreadMutex_lock(&g_mutex);
+    celixThreadMutex_lock(&g_shutdownMutex);
     size_t count;
     do {
         count = 0;
@@ -972,7 +1008,7 @@ void celix_serviceTracker_syncForContext(void *ctx) {
             }
         }
         if (count > 0) {
-            pthread_cond_wait(&g_cond, &g_mutex);
+            pthread_cond_wait(&g_shutdownCond, &g_shutdownMutex);
         }
     } while (count > 0);
 
@@ -980,22 +1016,22 @@ void celix_serviceTracker_syncForContext(void *ctx) {
         celix_arrayList_destroy(g_shutdownInstances);
         g_shutdownInstances = NULL;
     }
-    celixThreadMutex_unlock(&g_mutex);
+    celixThreadMutex_unlock(&g_shutdownMutex);
 }
 
 static void serviceTracker_addInstanceFromShutdownList(celix_service_tracker_instance_t *instance) {
     celixThread_once(&g_once, serviceTracker_once);
-    celixThreadMutex_lock(&g_mutex);
+    celixThreadMutex_lock(&g_shutdownMutex);
     if (g_shutdownInstances == NULL) {
         g_shutdownInstances = celix_arrayList_create();
     }
     celix_arrayList_add(g_shutdownInstances, instance);
-    celixThreadMutex_unlock(&g_mutex);
+    celixThreadMutex_unlock(&g_shutdownMutex);
 }
 
 static void serviceTracker_remInstanceFromShutdownList(celix_service_tracker_instance_t *instance) {
     celixThread_once(&g_once, serviceTracker_once);
-    celixThreadMutex_lock(&g_mutex);
+    celixThreadMutex_lock(&g_shutdownMutex);
     if (g_shutdownInstances != NULL) {
         size_t size = celix_arrayList_size(g_shutdownInstances);
         for (size_t i = 0; i < size; ++i) {
@@ -1008,7 +1044,7 @@ static void serviceTracker_remInstanceFromShutdownList(celix_service_tracker_ins
             celix_arrayList_destroy(g_shutdownInstances);
             g_shutdownInstances = NULL;
         }
-        celixThreadCondition_broadcast(&g_cond);
+        celixThreadCondition_broadcast(&g_shutdownCond);
     }
-    celixThreadMutex_unlock(&g_mutex);
+    celixThreadMutex_unlock(&g_shutdownMutex);
 }

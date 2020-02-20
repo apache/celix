@@ -199,6 +199,11 @@ $<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_EMBEDDED_PROPERTIES>,\\n\
         set_target_properties(${CONTAINER_TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CONTAINER_LOC})
         set_target_properties(${CONTAINER_TARGET} PROPERTIES OUTPUT_NAME ${CONTAINER_NAME})
         target_link_libraries(${CONTAINER_TARGET} PRIVATE Celix::framework)
+        if(NOT APPLE)
+            #Add --no-as-needed options, to ensure that libraries are always linked.
+            #This is needed because most libraries are not used by the executable, but by the bundle libraries instead.
+            set_target_properties(${CONTAINER_TARGET} PROPERTIES LINK_FLAGS -Wl,--no-as-needed)
+        endif()
         set(LAUNCHER "$<TARGET_FILE:${CONTAINER_TARGET}>")
     else ()
         #LAUNCHER already set

@@ -26,7 +26,7 @@
 #include "pubsub_admin.h"
 #include "pubsub_admin_metrics.h"
 #include "pubsub_tcp_admin.h"
-#include "command.h"
+#include "celix_shell_command.h"
 
 typedef struct psa_tcp_activator {
     log_helper_t *logHelper;
@@ -41,7 +41,7 @@ typedef struct psa_tcp_activator {
     pubsub_admin_metrics_service_t adminMetricsService;
     long adminMetricsSvcId;
 
-    command_service_t cmdSvc;
+    celix_shell_command_t cmdSvc;
     long cmdSvcId;
 } psa_tcp_activator_t;
 
@@ -102,10 +102,10 @@ int psa_tcp_start(psa_tcp_activator_t *act, celix_bundle_context_t *ctx) {
         act->cmdSvc.handle = act->admin;
         act->cmdSvc.executeCommand = pubsub_tcpAdmin_executeCommand;
         celix_properties_t *props = celix_properties_create();
-        celix_properties_set(props, OSGI_SHELL_COMMAND_NAME, "psa_tcp");
-        celix_properties_set(props, OSGI_SHELL_COMMAND_USAGE, "psa_tcp");
-        celix_properties_set(props, OSGI_SHELL_COMMAND_DESCRIPTION, "Print the information about the TopicSender and TopicReceivers for the TCP PSA");
-        act->cmdSvcId = celix_bundleContext_registerService(ctx, &act->cmdSvc, OSGI_SHELL_COMMAND_SERVICE_NAME, props);
+        celix_properties_set(props, CELIX_SHELL_COMMAND_NAME, "celix::psa_tcp");
+        celix_properties_set(props, CELIX_SHELL_COMMAND_USAGE, "psa_tcp");
+        celix_properties_set(props, CELIX_SHELL_COMMAND_DESCRIPTION, "Print the information about the TopicSender and TopicReceivers for the TCP PSA");
+        act->cmdSvcId = celix_bundleContext_registerService(ctx, &act->cmdSvc, CELIX_SHELL_COMMAND_SERVICE_NAME, props);
     }
 
     return status;

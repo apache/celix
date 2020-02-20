@@ -16,17 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * sqrt_command.h
- *
- *  \date       Oct 13, 2011
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
+
 
 #ifndef SQRT_COMMAND_H_
 #define SQRT_COMMAND_H_
 
-void sqrtCommand_execute(celix_bundle_context_t *context, char *line, FILE *out, FILE *err);
+bool sqrtCommand_execute(void *handle, const char *line, FILE *out, FILE *err);
 
 #endif /* SQRT_COMMAND_H_ */

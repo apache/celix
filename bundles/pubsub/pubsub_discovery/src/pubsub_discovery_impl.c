@@ -164,7 +164,7 @@ static void psd_watchForChange(pubsub_discovery_t *disc, bool *connectedPtr, lon
         char *action = NULL;
         char *value = NULL;
         char *readKey = NULL;
-        //TODO add interruptable etcdlib_wait -> which returns a handle to interrupt and a can be used for a wait call
+        //TODO add interruptable etcdlib_watch -> which returns a handle to interrupt and a can be used for a wait call
         int rc = etcdlib_watch(disc->etcdlib, disc->pubsubPath, watchIndex, &action, NULL, &value, &readKey, mIndex);
         if (rc == ETCDLIB_RC_ERROR) {
             L_ERROR("[PSD] Communicating with etcd. rc is %i, action value is %s\n", rc, action);
@@ -581,7 +581,7 @@ static char* pubsub_discovery_createJsonEndpoint(const celix_properties_t *props
     return str;
 }
 
-celix_status_t pubsub_discovery_executeCommand(void *handle, char * commandLine __attribute__((unused)), FILE *os, FILE *errorStream __attribute__((unused))) {
+bool pubsub_discovery_executeCommand(void *handle, const char * commandLine __attribute__((unused)), FILE *os, FILE *errorStream __attribute__((unused))) {
     pubsub_discovery_t *disc = handle;
 
     struct timespec now;
@@ -646,5 +646,5 @@ celix_status_t pubsub_discovery_executeCommand(void *handle, char * commandLine 
     }
     celixThreadMutex_unlock(&disc->announcedEndpointsMutex);
 
-    return CELIX_SUCCESS;
+    return true;
 }

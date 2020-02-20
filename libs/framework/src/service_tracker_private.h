@@ -16,13 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * service_tracker_private.h
- *
- *  \date       Feb 6, 2013
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
 
 #ifndef SERVICE_TRACKER_PRIVATE_H_
 #define SERVICE_TRACKER_PRIVATE_H_
@@ -72,7 +65,8 @@ typedef struct celix_service_tracker_instance {
 struct celix_serviceTracker {
 	bundle_context_t *context;
 
-	char * filter;
+	char* serviceName;
+	char* filter;
 	service_tracker_customizer_t *customizer;
 
 	void *callbackHandle;

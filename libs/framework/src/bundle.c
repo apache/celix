@@ -19,11 +19,17 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <service_tracker.h>
+#include <celix_constants.h>
+#include <celix_api.h>
 
 #include "framework_private.h"
 #include "bundle_private.h"
 #include "resolver.h"
 #include "utils.h"
+
+#include "bundle_context_private.h"
+#include "service_tracker_private.h"
 
 celix_status_t bundle_createModule(bundle_pt bundle, module_pt *module);
 celix_status_t bundle_closeRevisions(const_bundle_pt bundle);
@@ -257,7 +263,8 @@ celix_status_t bundle_startWithOptions(bundle_pt bundle, int options) {
     		if (systemBundle) {
     			framework_start(bundle->framework);
     		} else {
-    			status = fw_startBundle(bundle->framework, bundle, options);
+    		    long bndId = celix_bundle_getId(bundle);
+    			status = fw_startBundle(bundle->framework, bndId, options);
     		}
     	}
     }
@@ -299,7 +306,8 @@ celix_status_t bundle_stopWithOptions(bundle_pt bundle, int options) {
 			if (systemBundle) {
 				framework_stop(bundle->framework);
 			} else {
-				status = fw_stopBundle(bundle->framework, bundle, options);
+                long bndId = celix_bundle_getId(bundle);
+				status = fw_stopBundle(bundle->framework, bndId, options);
 			}
 		}
 	}
@@ -399,7 +407,7 @@ celix_status_t bundle_addModule(bundle_pt bundle, module_pt module) {
 		const char *sn = NULL;
 		module_getSymbolicName(module, &sn);
 		if (sn != NULL) {
-            bundle->symbolicName = strndup(sn, 1024 * 1024);
+            bundle->symbolicName = celix_utils_strdup(sn);
         }
 	}
 
@@ -636,4 +644,70 @@ const char* celix_bundle_getSymbolicName(const celix_bundle_t *bnd) {
 		module_getSymbolicName(mod, &result);
 	}
 	return result;
+}
+
+celix_array_list_t* celix_bundle_listRegisteredServices(const celix_bundle_t *bnd) {
+    long bndId = celix_bundle_getId(bnd);
+    celix_array_list_t* result = celix_arrayList_create();
+    celix_array_list_t *svcIds = celix_serviceRegistry_listServiceIdsForOwner(bnd->framework->registry, bndId);
+    for (int i = 0; i < celix_arrayList_size(svcIds); ++i) {
+        long svcId = celix_arrayList_getLong(svcIds, i);
+        celix_bundle_service_list_entry_t* entry = calloc(1, sizeof(*entry));
+        entry->serviceId = svcId;
+        entry->bundleOwner = bndId;
+        celix_serviceRegistry_getServiceInfo(bnd->framework->registry, svcId, bndId, &entry->serviceName, &entry->serviceProperties, &entry->factory);
+        celix_arrayList_add(result, entry);
+    }
+    celix_arrayList_destroy(svcIds);
+    return result;
+}
+
+void celix_bundle_destroyRegisteredServicesList(celix_array_list_t* list) {
+    if (list != NULL) {
+        for (int i = 0; i < celix_arrayList_size(list); ++i) {
+            celix_bundle_service_list_entry_t *entry = celix_arrayList_get(list, i);
+            free(entry->serviceName);
+            celix_properties_destroy(entry->serviceProperties);
+            free(entry);
+        }
+        celix_arrayList_destroy(list);
+    }
+}
+
+celix_array_list_t* celix_bundle_listServiceTrackers(const celix_bundle_t *bnd) {
+    celix_array_list_t* result = celix_arrayList_create();
+    //FIXME: should not fall back to bundle context, but for now that is were the trackers are stored.
+    celixThreadMutex_lock(&bnd->context->mutex);
+    hash_map_iterator_t iter = hashMapIterator_construct(bnd->context->serviceTrackers);
+    while (hashMapIterator_hasNext(&iter)) {
+        celix_service_tracker_t *tracker = hashMapIterator_nextValue(&iter);
+        celix_bundle_service_tracker_list_entry_t *entry = calloc(1, sizeof(*entry));
+        entry->filter = celix_utils_strdup(tracker->filter);
+        entry->nrOfTrackedServices = serviceTracker_nrOfTrackedServices(tracker);
+        entry->serviceName = celix_utils_strdup(tracker->serviceName);
+        entry->bundleOwner = celix_bundle_getId(bnd);
+
+        if (entry->serviceName != NULL) {
+            celix_arrayList_add(result, entry);
+        } else {
+            framework_logIfError(logger, CELIX_BUNDLE_EXCEPTION, NULL, "Failed to get service name from tracker. filter is %s", entry->filter);
+            free(entry->filter);
+            free(entry);
+        }
+    }
+    celixThreadMutex_unlock(&bnd->context->mutex);
+    return result;
+}
+
+
+void celix_bundle_destroyServiceTrackerList(celix_array_list_t* list) {
+    if (list != NULL) {
+        for (int i = 0; i < celix_arrayList_size(list); ++i) {
+            celix_bundle_service_tracker_list_entry_t *entry = celix_arrayList_get(list, i);
+            free(entry->filter);
+            free(entry->serviceName);
+            free(entry);
+        }
+        celix_arrayList_destroy(list);
+    }
 }

@@ -16,27 +16,24 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+/**
+ * poiCmd.h
+ *
+ *  \date       Jan 16, 2020
+ *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
+ *  \copyright  Apache License, Version 2.0
+ */
 
-#ifndef DM_SHELL_LIST_COMMAND_H_
-#define DM_SHELL_LIST_COMMAND_H_
+#ifndef POICMD_H_
+#define POICMD_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#define MSG_POI_CMD_NAME "poiCmd" //Has to match the message name in the msg descriptor!
 
-#include <stdlib.h>
-#include <string.h>
-#include "command.h"
+struct poi_cmd{
+    char* command;
+};
 
-typedef struct dm_command_handle {
-    bundle_context_pt context;
-    bool useColors;
-} dm_command_handle_t;
+typedef struct poi_cmd poi_cmd_t;
 
-void dmListCommand_execute(dm_command_handle_t* handle, char * line, FILE *out, FILE *err);
 
-#ifdef __cplusplus
-}
-#endif
-
-#endif //DM_SHELL_LSIT_COMMAND_H_
+#endif /* POICMD_H_ */

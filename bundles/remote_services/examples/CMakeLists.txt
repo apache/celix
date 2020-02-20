@@ -21,6 +21,9 @@ if (RSA_EXAMPLES)
     add_subdirectory(calculator_service)
     add_subdirectory(calculator_shell)
 
+    add_subdirectory(remote_example_api)
+    add_subdirectory(remote_example_service)
+
 
 #    TODO refactor shm remote service admin to use dfi
 #    if (BUILD_RSA_REMOTE_SERVICE_ADMIN_SHM AND BUILD_RSA_DISCOVERY_SHM)
@@ -51,11 +54,12 @@ if (RSA_EXAMPLES)
             BUNDLES
                 Celix::rsa_discovery_etcd
                 Celix::rsa_topology_manager
-                Celix::rsa_dfi calculator
+                Celix::rsa_dfi
                 Celix::shell
                 Celix::shell_tui
                 Celix::log_service
                 Celix::log_writer_stdout
+                calculator
             PROPERTIES
                 RSA_PORT=18888
         )
@@ -69,8 +73,8 @@ if (RSA_EXAMPLES)
                 Celix::shell_tui
                 Celix::log_service
                 Celix::log_writer_stdout
-                calculator_shell
                 Celix::rsa_discovery_etcd
+                calculator_shell
             PROPERTIES
                 RSA_PORT=28888
         )

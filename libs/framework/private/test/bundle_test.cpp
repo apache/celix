@@ -465,14 +465,14 @@ TEST(bundle, start) {
 	int options = 42;
 
 	long id = 1;
-	mock().expectNCalls(2, "bundleArchive_getId")
+	mock().expectNCalls(4, "bundleArchive_getId")
         				.withParameter("archive", archive)
         				.withOutputParameterReturning("id", &id, sizeof(id))
         				.andReturnValue(CELIX_SUCCESS);
 
 	mock().expectOneCall("fw_startBundle")
 						.withParameter("framework", framework)
-						.withParameter("bundle", bundle)
+						.withParameter("bundle", 1)
 						.withParameter("options", options)
 						.andReturnValue(CELIX_SUCCESS);
 
@@ -481,7 +481,7 @@ TEST(bundle, start) {
 
 	mock().expectOneCall("fw_startBundle")
 						.withParameter("framework", framework)
-						.withParameter("bundle", bundle)
+						.withParameter("bundle", 1)
 						.withParameter("options", 0)
 						.andReturnValue(CELIX_SUCCESS);
 
@@ -525,7 +525,7 @@ TEST(bundle, stop) {
 	bundle->archive = archive;
 
 	long id = 1;
-	mock().expectNCalls(2, "bundleArchive_getId")
+	mock().expectNCalls(4, "bundleArchive_getId")
 	        				.withParameter("archive", archive)
 	        				.withOutputParameterReturning("id", &id, sizeof(id))
 	        				.andReturnValue(CELIX_SUCCESS);
@@ -533,7 +533,7 @@ TEST(bundle, stop) {
 	int options = 1;
 	mock().expectOneCall("fw_stopBundle")
 						.withParameter("framework", framework)
-						.withParameter("bundle", bundle)
+						.withParameter("bundle", id)
 						.withParameter("record", 1)
 						.andReturnValue(CELIX_SUCCESS);
 
@@ -542,7 +542,7 @@ TEST(bundle, stop) {
 
 	mock().expectOneCall("fw_stopBundle")
 						.withParameter("framework", framework)
-						.withParameter("bundle", bundle)
+						.withParameter("bundle", id)
 						.withParameter("record", 0)
 						.andReturnValue(CELIX_SUCCESS);
 
