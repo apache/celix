@@ -660,7 +660,6 @@ int pubsub_tcpHandler_dataAvailable(pubsub_tcpHandler_t *handle, int fd, unsigne
     int nbytes = recv(fd, &entry->buffer[entry->bufferReadSize], entry->expectedReadSize, 0);
     // Handle Socket error, when nbytes == 0 => Connection is lost
     if (nbytes < 0) {
-        L_ERROR("[TCP Socket] read error %s\n", strerror(errno));
         if(entry->retryCount < handle->maxRcvRetryCount) {
             entry->retryCount++;
             L_WARN("[TCP Socket] Failed to receive message (fd: %d), error: %s. Retry count %u of %u,",
