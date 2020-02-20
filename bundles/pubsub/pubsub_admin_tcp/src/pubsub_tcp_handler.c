@@ -669,6 +669,8 @@ int pubsub_tcpHandler_dataAvailable(pubsub_tcpHandler_t *handle, int fd, unsigne
                     entry->fd, handle->maxRcvRetryCount, strerror(errno));
             nbytes = 0; //Return 0 as indicator to close the connection
         }
+    } else {
+        entry->retryCount = 0;
     }
     if ((!handle->bypassHeader) && (nbytes > 0)) {
         // Update buffer administration
