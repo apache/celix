@@ -17,8 +17,7 @@
  *under the License.
  */
 
-#ifndef CXX_CELIX_API_H
-#define CXX_CELIX_API_H
+#pragma once
 
 #include "celix/Constants.h"
 #include "celix/Filter.h"
@@ -31,6 +30,5 @@
 //Builders
 #include "celix/ServiceTrackerBuilder.h"
 #include "celix/ServiceRegistrationBuilder.h"
+#include "celix/UseServiceBuilder.h"
 
-
-#endif //CXX_CELIX_API_H

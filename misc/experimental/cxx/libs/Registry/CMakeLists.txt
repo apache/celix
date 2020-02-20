@@ -15,6 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 
+find_package(UUID REQUIRED)
+
 add_library(celix_cxx_Registry STATIC
         src/EmptyResourceBundle.cc
         src/Utils.cc
@@ -29,7 +31,7 @@ add_library(celix_cxx_Registry STATIC
 
 target_include_directories(celix_cxx_Registry PRIVATE src)
 target_include_directories(celix_cxx_Registry PUBLIC include)
-target_link_libraries(celix_cxx_Registry PRIVATE glog::glog)
+target_link_libraries(celix_cxx_Registry PRIVATE spdlog::spdlog UUID::lib)
 target_compile_options(celix_cxx_Registry PRIVATE -fPIC)
 
 add_library(celix::cxx::Registry ALIAS celix_cxx_Registry)

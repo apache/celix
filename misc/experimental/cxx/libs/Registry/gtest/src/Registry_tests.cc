@@ -23,7 +23,6 @@
 #include <climits>
 
 #include <gtest/gtest.h>
-#include <glog/logging.h>
 
 #include "celix/ServiceRegistry.h"
 
@@ -252,7 +251,6 @@ TEST_F(RegistryTest, StdFunctionTest) {
     };
 
     auto reg1 = registry().registerFunctionService("count", func1);
-    LOG(INFO) << reg1.serviceName() << std::endl;
     EXPECT_TRUE(reg1.valid());
     EXPECT_EQ(1, registry().nrOfRegisteredServices());
 
@@ -262,7 +260,6 @@ TEST_F(RegistryTest, StdFunctionTest) {
     auto reg2 = registry().registerFunctionService("yet another function", funcWithReturnAndArgs);
     EXPECT_TRUE(reg2.valid());
     EXPECT_EQ(2, registry().nrOfRegisteredServices());
-    LOG(INFO) << reg2.serviceName() << std::endl;
 
     auto use = [](const std::function<void()> &count) {
         count();

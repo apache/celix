@@ -19,7 +19,12 @@
 
 #include "celix/Filter.h"
 
-#include <glog/logging.h>
+#include <sstream>
+#include <spdlog/spdlog.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+
+static auto logger = spdlog::stdout_color_mt("celix::Filter");
+
 
 namespace {
     struct ParseResult {
@@ -62,7 +67,7 @@ static ParseResult filter_parseAndOrOr(const char *filterString, celix::FilterOp
     bool failure = false;
 
     if (filterString[*pos] != '(') {
-        LOG(ERROR) << "Filter Error: Missing '('.\n";
+        logger->error("Filter Error: Missing '('");
         result.valid = false;
         return result;
     }
@@ -94,7 +99,7 @@ static ParseResult filter_parseNot(const char * filterString, int * pos) {
 
     filter_skipWhiteSpace(filterString, pos);
     if (filterString[*pos] != '(') {
-        LOG(ERROR) << "Filter Error: Missing '('.\n";
+        logger->warn("Filter Error: Missing '('.");
         result.valid = false;
         return result;
     }
@@ -134,7 +139,7 @@ static std::string filter_parseAttr(const char *filterString, int *pos) {
     length = end - begin;
 
     if (length == 0) {
-        LOG(ERROR) << "Filter Error: Missing attr.\n";
+        logger->error("Filter Error: Missing attr.");
     } else {
         attr.assign(filterString+begin, (size_t)length);
     }
@@ -155,13 +160,13 @@ static std::string filter_parseValue(const char *filterString, int *pos) {
                 break;
             }
             case '(': {
-                LOG(ERROR) << "Filter Error: Invalid value.\n";
+                logger->error("Filter Error: Invalid value.");
                 val = "";
                 keepRunning = 0;
                 break;
             }
             case '\0':{
-                LOG(ERROR) << "Filter Error: Unclosed bracket.\n";
+                logger->error("Filter Error: Unclosed bracket.\n");
                 val = "";
                 keepRunning = 0;
                 break;
@@ -188,7 +193,7 @@ static std::string filter_parseValue(const char *filterString, int *pos) {
     }
 
     if (val.empty()) {
-        LOG(ERROR) << "Filter Error: Missing value.\n";
+        logger->error("Filter Error: Missing value.");
     }
     return val;
 }
@@ -210,7 +215,7 @@ static ParseResult filter_parseItem(const char * filterString, int * pos) {
                 *pos += 2; //skip ~=
                 std::string val = filter_parseValue(filterString, pos);
                 if (val.empty()) {
-                    LOG(ERROR) << "Unexpected emtpy value after ~= operator in filter '" << filterString << "'\n";
+                    logger->info("Unexpected emtpy value after ~= operator in filter '{}'.", filterString);
                 } else {
                     result.criteria = celix::FilterCriteria{
                             std::move(attr),
@@ -219,7 +224,7 @@ static ParseResult filter_parseItem(const char * filterString, int * pos) {
                     result.valid = true;
                 }
             } else {
-                LOG(ERROR) << "Unexpected ~ char without the expected = in filter '" << filterString << "'\n";
+                logger->error("Unexpected ~ char without the expected = in filter '{}'.", filterString);
             }
             break;
         }
@@ -233,7 +238,7 @@ static ParseResult filter_parseItem(const char * filterString, int * pos) {
             }
             std::string val = filter_parseValue(filterString, pos);
             if (val.empty()) {
-                LOG(ERROR) << "Unexpected empty value in > or >= operator for filter '" << filterString << "'\n";
+                logger->error("Unexpected empty value in > or >= operator for filter '{}'", filterString);
             } else {
                 result.criteria = celix::FilterCriteria{
                         std::move(attr),
@@ -254,7 +259,7 @@ static ParseResult filter_parseItem(const char * filterString, int * pos) {
             }
             std::string val = filter_parseValue(filterString, pos);
             if (val.empty()) {
-                LOG(ERROR) << "Unexpected emtpy value after < or <= operator in filter '" << filterString <<"'\n";
+                logger->info("Unexpected emtpy value after < or <= operator in filter '{}'.", filterString);
             } else {
                 result.criteria = celix::FilterCriteria {
                         std::move(attr),
@@ -290,7 +295,7 @@ static ParseResult filter_parseItem(const char * filterString, int * pos) {
                 std::string val = filter_parseValue(filterString, pos);
                 bool substring = val.size() > 2 && (val.front() == '*' || val.back() == '*');
                 if (val.empty()) {
-                    LOG(ERROR) << "Unexpected emtpy value after = operator in filter '" << filterString << "'\n";
+                    logger->error("Unexpected emtpy value after = operator in filter '{}'.", filterString);
                 } else {
                     result.criteria = celix::FilterCriteria{
                             std::move(attr),
@@ -303,13 +308,13 @@ static ParseResult filter_parseItem(const char * filterString, int * pos) {
             break;
         }
         default: {
-            LOG(ERROR) << "Unexpected operator " << *pos << std::endl;
+            logger->error("Unexpected operator {}", *pos);
             break;
         }
     }
 
     if (!result.valid) {
-        LOG(ERROR) << "Filter Error: Invalid operator.\n";
+        logger->error("Filter Error: Invalid operator.");
     }
 
     return result;
@@ -351,7 +356,7 @@ static ParseResult filter_parseFilter(const char *filterString, int *pos) {
     ParseResult result{};
     filter_skipWhiteSpace(filterString, pos);
     if (filterString[*pos] != '(') {
-        LOG(ERROR) << "Filter Error: Missing '(' in filter string '" << filterString << "'.\n";
+        logger->error("Filter Error: Missing '(' in filter string '{}'.", filterString);
         result.valid = false;
         return result;
     }
@@ -362,7 +367,7 @@ static ParseResult filter_parseFilter(const char *filterString, int *pos) {
     filter_skipWhiteSpace(filterString, pos);
 
     if (filterString[*pos] != ')') {
-        LOG(ERROR) << "Filter Error: Missing ')' in filter string '" << filterString << "'.\n";
+        logger->error("Filter Error: Missing ')' in filter string '{}'.", filterString);
         result.valid = false;
         return result;
     }
@@ -484,7 +489,7 @@ void celix::Filter::parseFilter(const std::string &filter) {
         int pos = 0;
         auto result = filter_parseFilter(filter.c_str(), &pos);
         if (result.valid && pos != (int) filter.size()) {
-            LOG(ERROR) << "Filter Error: Missing '(' in filter string '" << filter << "'.'n";
+            logger->error("Filter Error: Missing '(' in filter string '{}'.", filter);
             valid = false;
         } else {
             valid = result.valid;
@@ -500,7 +505,7 @@ void celix::Filter::parseFilter(const std::string &filter) {
 }
 
 static std::string stringFromCriteria(const celix::FilterCriteria& criteria) {
-    std::stringstream ss{};
+    std::stringstream ss;
     ss << "(";
     switch (criteria.op) {
         case celix::FilterOperator::AND:

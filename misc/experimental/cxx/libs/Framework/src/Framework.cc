@@ -1,7 +1,3 @@
-#include <utility>
-
-#include <utility>
-
 /**
  *Licensed to the Apache Software Foundation (ASF) under one
  *or more contributor license agreements.  See the NOTICE file
@@ -23,6 +19,7 @@
 
 #include "celix/Framework.h"
 
+#include <utility>
 #include <unordered_map>
 #include <mutex>
 #include <iostream>
@@ -30,12 +27,8 @@
 #include <vector>
 #include <future>
 #include <algorithm>
+#include <climits>
 
-#ifndef __APPLE__
-#include <linux/limits.h>
-#endif
-
-#include <glog/logging.h>
 #include <uuid/uuid.h>
 
 #include "BundleController.h"
@@ -138,7 +131,8 @@ public:
         //TODO on separate thread ?? specific bundle resolve thread ??
         long bndId = -1L;
         if (symbolicName.empty()) {
-            LOG(WARNING) << "Cannot install bundle with a empty symbolic name" << std::endl;
+            //TODO move to cc file and add logger
+            //LOG(WARNING) << "Cannot install bundle with a empty symbolic name" << std::endl;
             return bndId;
         }
 
@@ -171,7 +165,8 @@ public:
             if (autoStart) {
                 bool successful = bndController->transitionTo(BundleState::ACTIVE);
                 if (!successful) {
-                    LOG(WARNING) << "Cannot start bundle " << bndController->bundle()->symbolicName() << std::endl;
+                    //TODO move to cc file and add logger
+                    //LOG(WARNING) << "Cannot start bundle " << bndController->bundle()->symbolicName() << std::endl;
                 }
             }
         }

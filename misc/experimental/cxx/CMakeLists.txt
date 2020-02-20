@@ -21,7 +21,7 @@ if (ENABLE_TESTING)
     include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/AddGTest.cmake)
 endif ()
 
-find_package(glog REQUIRED)
+find_package(spdlog REQUIRED)
 
 add_subdirectory(libs/Registry)
 add_subdirectory(libs/Framework)

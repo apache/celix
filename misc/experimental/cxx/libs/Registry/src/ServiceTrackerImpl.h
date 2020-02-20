@@ -20,6 +20,7 @@
 #pragma once
 
 #include <memory>
+#include <cassert>
 
 #include "celix/IResourceBundle.h"
 #include "celix/ServiceRegistry.h"
@@ -223,7 +224,8 @@ namespace celix {
             void decrUsage() const {
                 std::lock_guard<std::mutex> lck{mutex};
                 if (usage == 0) {
-                    LOG(ERROR) << "Usage count decrease below 0!" << std::endl;
+                    //TODO move to cc
+                    //logger->error("Usage count decrease below 0!");
                 } else {
                     usage -= 1;
                 }

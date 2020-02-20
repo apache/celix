@@ -19,8 +19,6 @@
 
 #pragma once
 
-#include <glog/logging.h>
-
 #include "celix/ServiceRegistry.h"
 
 namespace celix {
@@ -154,7 +152,7 @@ inline celix::ServiceRegistration celix::ServiceRegistrationBuilder<I>::build() 
             return registry->registerServiceFactory<I>(serviceFactory, properties, owner);
         }
     } else {
-        LOG(ERROR) << "Invalid builder. Builder should have a service, function service or factory service instance";
+        //LOG(ERROR) << "Invalid builder. Builder should have a service, function service or factory service instance";
         abort();
         //TODO create and throw exception
     }
@@ -282,7 +280,7 @@ inline celix::ServiceRegistration celix::FunctionServiceRegistrationBuilder<F>::
 //        return registry->registerFunctionService(functionName, std::move(nFunc), std::move(nProps), owner);
         return registry->registerFunctionService(functionName, function, properties, owner);
     } else {
-        LOG(ERROR) << "Invalid builder. Builder should have a service, function service or factory service instance";
+        //LOG(ERROR) << "Invalid builder. Builder should have a service, function service or factory service instance";
         abort();
         //TODO return invalid svc reg
     }

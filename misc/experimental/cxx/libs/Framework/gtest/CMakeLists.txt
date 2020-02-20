@@ -20,7 +20,7 @@ set(SOURCES
         src/Framework_tests.cc
 )
 add_executable(celix_cxx_framework_tests ${SOURCES})
-target_link_libraries(celix_cxx_framework_tests PRIVATE gtest celix::cxx::Framework glog::glog)
+target_link_libraries(celix_cxx_framework_tests PRIVATE gtest celix::cxx::Framework spdlog::spdlog)
 
 #NOTE last .. argument for the setup coverage is the scan dir (i.e. not gtest dir, but a dir higher)
 add_test(NAME celix_cxx_framework_tests COMMAND celix_cxx_framework_tests)

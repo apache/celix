@@ -18,22 +18,27 @@
  */
 
 
+//#include <fmt/ostream.h>
+#include <spdlog/spdlog.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+
 #include <iostream>
 #include <uuid/uuid.h>
-#include <celix/ComponentManager.h>
-#include <glog/logging.h>
-
 
 #include "celix/ComponentManager.h"
 
+
+static auto logger = spdlog::stdout_color_mt("celix::ComponentManager");
+
+
 static std::string genUUID() {
     uuid_t tmpUUID;
-    uuid_string_t str;
+    char uuidStr[UUID_STR_LEN+1];
 
     uuid_generate(tmpUUID);
-    uuid_unparse(tmpUUID, str);
+    uuid_unparse(tmpUUID, uuidStr);
 
-    return std::string{str};
+    return std::string{uuidStr};
 }
 
 celix::GenericServiceDependency::GenericServiceDependency(
@@ -171,10 +176,10 @@ void celix::GenericComponentManager::updateState() {
     {
         std::lock_guard<std::mutex> lck{serviceDependenciesMutex};
         for (auto &pair : serviceDependencies) {
-            auto enabled = pair.second->isEnabled();
+            auto depEnabled = pair.second->isEnabled();
             auto required = pair.second->isRequired();
             auto resolved = pair.second->isResolved();
-            if (enabled && required && !resolved) {
+            if (depEnabled && required && !resolved) {
                 allRequiredDependenciesResolved = false;
                 break;
             }
@@ -214,7 +219,8 @@ void celix::GenericComponentManager::transition() {
         targetState = pair.second;
     }
 
-    DLOG(INFO) << "Transition " << *this << " from " << currentState << " to " << targetState;
+//    logger->info("Transition {} ({})from {} to {}", name, uuid, currentState, targetState);
+    logger->info("Transition {} ({}) TODO", name, uuid);
 
     if (currentState == ComponentManagerState::Disabled) {
         switch (targetState) {
@@ -301,8 +307,7 @@ void celix::GenericComponentManager::removeServiceDependency(const std::string& 
             removed = it->second;
             serviceDependencies.erase(it);
         } else {
-            LOG(WARNING) << "Cannot find service dependency with uuid " << serviceDependencyUUID
-                         << " in component manager " << name << " with uuid " << uuid << ".";
+            logger->info("Cannot find service dependency with uuid {} in component manager {} with uuid {}", serviceDependencyUUID, name, uuid);
         }
     }
     if (removed) {
@@ -320,8 +325,7 @@ void celix::GenericComponentManager::removeProvideService(const std::string& pro
             removed = it->second;
             providedServices.erase(it);
         } else {
-            LOG(WARNING) << "Cannot find provided service with uuid " << provideServiceUUID
-                         << " in component manager " << name << " with uuid " << uuid << ".";
+            logger->info("Cannot find provided service with uuid {} in component manager {} with uuid {}", provideServiceUUID, name, uuid);
         }
     }
     if (removed) {
@@ -348,11 +352,11 @@ celix::GenericComponentManager::findGenericServiceDependency(const std::string &
         if (it->second->getSvcName() == svcName) {
             return it->second;
         } else {
-            LOG(WARNING) << "Requested svc name has svc name " << it->second->getSvcName() <<  " instead of the requested " << svcName;
+            logger->warn("Requested svc name has svc name {} instead of the requested {}", it->second->getSvcName(), svcName);
             return nullptr;
         }
     } else {
-        LOG(WARNING) << "Cmp Manager (" << uuid << ") does not have a service dependency with uuid " << svcDepUUID << "; returning an invalid GenericServiceDependency";
+        logger->warn("Cmp Manager ({}) does not have a service dependency with uuid {}; returning an invalid GenericServiceDependency", uuid, svcDepUUID);
         return nullptr;
     }
 }
@@ -375,7 +379,7 @@ void celix::GenericComponentManager::suspense() {
         transition();
         std::lock_guard<std::mutex> lck{stateMutex};
         suspendedCount += 1;
-        DLOG(INFO) << "Suspended " << *this;
+        logger->info("Suspended {} ({})", name, uuid);
     }
 }
 
@@ -390,7 +394,7 @@ void celix::GenericComponentManager::resume() {
     }
     if (changedSuspended) {
         transition();
-        DLOG(INFO) << "Resumed " << *this;
+        logger->info("Resumed {} ({})", name, uuid);
     }
 }
 
@@ -400,11 +404,11 @@ void celix::GenericComponentManager::updateServiceRegistrations() {
     if (getState() == ComponentManagerState::ComponentStarted) {
         std::lock_guard<std::mutex> lck{providedServicesMutex};
         for (auto &pair : providedServices) {
-            auto enabled = pair.second->isEnabled();
+            auto provideEnabled = pair.second->isEnabled();
             auto registered = pair.second->isServiceRegistered();
             if (enabled && !registered) {
                 toRegisterServices.push_back(pair.second);
-            } else if (registered && !enabled) {
+            } else if (registered && !provideEnabled) {
                 toUnregisterServices.push_back(pair.second);
             }
         }
@@ -436,11 +440,11 @@ celix::GenericComponentManager::findGenericProvidedService(const std::string &sv
         if (it->second->getServiceName() == svcName) {
             return it->second;
         } else {
-            LOG(WARNING) << "Requested svc name has svc name " << it->second->getServiceName() <<  " instead of the requested " << svcName;
+            logger->warn("Requested svc name has svc name {} instead of the requested {}", it->second->getServiceName(), svcName);
             return nullptr;
         }
     } else {
-        LOG(WARNING) << "Cmp Manager (" << uuid << ") does not have a provided service with uuid " << providedServiceUUID << "; returning an invalid GenericProvidedService";
+        logger->warn("Cmp Manager ({}) does not have a provided service with uuid {}; returning an invalid GenericProvidedService", uuid, providedServiceUUID);
         return nullptr;
     }
 }
@@ -531,5 +535,5 @@ void celix::GenericProvidedService::unregisterService() {
 
 bool celix::GenericProvidedService::isServiceRegistered() {
     std::lock_guard<std::mutex> lck{mutex};
-    return registration.size() > 0;
+    return !registration.empty();
 }

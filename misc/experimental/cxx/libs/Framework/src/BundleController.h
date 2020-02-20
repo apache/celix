@@ -25,7 +25,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include <glog/logging.h>
+
 #include <zip.h>
 #include <dirent.h>
 
@@ -66,8 +66,9 @@ namespace celix {
                 success = deleteBundleCache();
                 bnd->setState(BundleState::INSTALLED); //note still going to installed
             } else {
+                //TODO log to cc file and add logger
                 //LOG(ERROR) << "Unexpected desired state " << desired << " from state " << bndState << std::endl;
-                LOG(ERROR) << "Unexpected desired/form state combination " << std::endl;
+                //LOG(ERROR) << "Unexpected desired/form state combination " << std::endl;
             }
             return success;
         }
@@ -97,7 +98,8 @@ namespace celix {
             DIR *dir;
             dir = opendir(path.c_str());
             if (dir == NULL) {
-                LOG(WARNING) << "Cannot delete dir " << path << ". " << strerror(errno) << std::endl;
+                //TODO move to cc file and add logger
+                //LOG(WARNING) << "Cannot delete dir " << path << ". " << strerror(errno) << std::endl;
             } else {
                 struct dirent* dent = NULL;
                 errno = 0;
@@ -114,7 +116,8 @@ namespace celix {
                                 success = deleteDir(sd);
                             } else {
                                 if (remove(subdir) != 0) {
-                                    LOG(WARNING) << "Cannot delete dir " << path << ". " << strerror(errno) << std::endl;
+                                    //TODO move to cc file and add logger
+                                    //LOG(WARNING) << "Cannot delete dir " << path << ". " << strerror(errno) << std::endl;
                                 }
                             }
                         }
@@ -124,12 +127,15 @@ namespace celix {
                 }
 
                 if (errno != 0) {
-                    LOG(WARNING) << "Cannot delete dir " << path << ". " << strerror(errno) << std::endl;
+                    //TODO move to cc file and add logger
+                    //LOG(WARNING) << "Cannot delete dir " << path << ". " << strerror(errno) << std::endl;
                 } else if (closedir(dir) != 0) {
-                    LOG(WARNING) << "Cannot close dir " << path << ". " << strerror(errno) << std::endl;
+                    //TODO move to cc file and add logger
+                    //LOG(WARNING) << "Cannot close dir " << path << ". " << strerror(errno) << std::endl;
                 } else {
                     if (rmdir(path.c_str()) != 0) {
-                        LOG(WARNING) << "Cannot delete dir " << path << ". " << strerror(errno) << std::endl;
+                        //TODO move to cc file and add logger
+                        //LOG(WARNING) << "Cannot delete dir " << path << ". " << strerror(errno) << std::endl;
                     } else {
                         success = true;
                     }
@@ -152,7 +158,8 @@ namespace celix {
                     if (mkdir(path.c_str(), S_IRWXU) == 0) {
                         success = true;
                     } else {
-                        LOG(WARNING) << "Cannot create dir " << path << ". " << strerror(errno) << std::endl;
+                        //TODO move to cc file and add logger
+                        //LOG(WARNING) << "Cannot create dir " << path << ". " << strerror(errno) << std::endl;
                     }
                 } else {
                     std::string subdir = path.substr(0, slashAt - path.c_str());
@@ -161,7 +168,8 @@ namespace celix {
                         if (mkdir(path.c_str(), S_IRWXU) == 0) {
                             success = true;
                         } else {
-                            LOG(WARNING) << "Cannot create dir " << path << ". " << strerror(errno) << std::endl;
+                            //TODO move to cc file and add logger
+                            //LOG(WARNING) << "Cannot create dir " << path << ". " << strerror(errno) << std::endl;
                         }
                     } else {
                         //nop, error should be reported in the recursion
@@ -189,10 +197,12 @@ namespace celix {
                         zip_source_close(source);
                         success = true;
                     } else {
-                        LOG(WARNING) << "Cannot create zip from source: " << zip_error_strerror(&error) << std::endl;
+                        //TODO move to cc file and add logger
+                        //LOG(WARNING) << "Cannot create zip from source: " << zip_error_strerror(&error) << std::endl;
                     }
                 } else {
-                    LOG(WARNING) << "Cannot create zip source: " << zip_error_strerror(&error) << std::endl;
+                    //TODO move to cc file and add logger
+                    //LOG(WARNING) << "Cannot create zip source: " << zip_error_strerror(&error) << std::endl;
                 }
             } else {
                 //no resources
@@ -210,8 +220,8 @@ namespace celix {
                 zip_stat_index(zip, i, 0, &st);
                 if (st.name[strlen(st.name) - 1] == '/') {
                     //dir
-                    //TODO
-                    LOG(ERROR) << "TODO extract dirs" << std::endl;
+                    //TODO move to cc file and add logger
+                    //LOG(ERROR) << "TODO extract dirs" << std::endl;
                     succes = false;
                 } else {
                     //file
@@ -228,11 +238,13 @@ namespace celix {
                             }
                             outf.close();
                         } else {
-                            LOG(WARNING) << "Cannot open file '" << p << "': " << std::endl;
+                            //TODO move to cc file and add logger
+                            //LOG(WARNING) << "Cannot open file '" << p << "': " << std::endl;
                         }
                         zip_fclose(f);
                     } else {
-                        LOG(WARNING) << "Cannot read file from zip: " << zip_strerror(zip) << std::endl;
+                        //TODO move to cc file and add logger
+                        //LOG(WARNING) << "Cannot read file from zip: " << zip_strerror(zip) << std::endl;
                         succes = false;
                         break;
                     }

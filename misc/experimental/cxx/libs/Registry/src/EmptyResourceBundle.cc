@@ -19,6 +19,7 @@
 
 
 #include "celix/IResourceBundle.h"
+#include <climits>
 
 celix::EmptyResourceBundle::EmptyResourceBundle() = default;
 celix::EmptyResourceBundle::~EmptyResourceBundle() = default;

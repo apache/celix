@@ -28,8 +28,10 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <mutex>
+#include <cerrno>
 
-#include <glog/logging.h>
+#include <spdlog/spdlog.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
 
 #include "celix/Api.h"
 #include "celix/IShellCommand.h"
@@ -38,19 +40,23 @@
 static constexpr const char * const PROMPT = "-> ";
 static constexpr int KEY_ENTER = '\n';
 
+static auto logger = spdlog::stdout_color_mt("celix::ShellTui");
+
+
+
 celix::ShellTui::ShellTui(std::ostream *_outStream, std::ostream *_errStream) : outStream{_outStream}, errStream{_errStream} {
     int fds[2];
     int rc  = pipe(fds);
     if (rc == 0) {
         readPipeFd = fds[0];
         writePipeFd = fds[1];
-    if(fcntl(writePipeFd, F_SETFL, O_NONBLOCK) == 0) {
-        readThread = std::thread{&ShellTui::runnable, this};
+        if(fcntl(writePipeFd, F_SETFL, O_NONBLOCK) == 0) {
+            readThread = std::thread{&ShellTui::runnable, this};
+        } else {
+            logger->error("fcntl on pipe failed. {}", strerror(errno));
+        }
     } else {
-        LOG(ERROR) << "fcntl on pipe failed" << std::endl;
-    }
-    } else {
-        LOG(ERROR) << "fcntl on pipe failed" << std::endl;
+        logger->error("create pipe failed. {}", strerror(errno));
     }
 }
 
@@ -88,7 +94,7 @@ void celix::ShellTui::writePrompt() {
 }
 
 void celix::ShellTui::parseInput() {
-    char* line = NULL;
+    char* line = nullptr;
     int nr_chars = (int)read(STDIN_FILENO, buffer, SHELL_TUI_LINE_SIZE-pos-1);
     for (int bufpos = 0; bufpos < nr_chars; bufpos++) {
         if (buffer[bufpos] == KEY_ENTER) { //end of line -> forward command

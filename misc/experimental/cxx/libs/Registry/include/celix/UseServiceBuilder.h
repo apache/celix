@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include <glog/logging.h>
+
 
 #include "celix/ServiceRegistry.h"
 

@@ -26,7 +26,7 @@
 #include <future>
 #include <climits>
 
-#include <glog/logging.h>
+#include <spdlog/spdlog.h>
 #include <cassert>
 #include <celix/ServiceRegistry.h>
 
@@ -37,6 +37,9 @@
 
 #include "ServiceTrackerImpl.h"
 
+#include <spdlog/sinks/stdout_color_sinks.h>
+
+static auto logger = spdlog::stdout_color_mt("celix::ServiceRegistry");
 
 /**********************************************************************************************************************
   Impl classes
@@ -101,10 +104,10 @@ public:
         assert(! (factoryService && service)); //cannot register both factory and 'normal' service
 
         if (factoryService) {
-            DLOG(INFO) << "Registering service factory '" << svcName << "' from bundle id " << bnd->id() << std::endl;
+            logger->debug("Registering service factory '{}' from bundle id {}.", svcName, bnd->id());
         } else {
             //note service can be nullptr. TODO is this allowed?
-            DLOG(INFO) << "Registering service '" << svcName << "' from bundle id " << bnd->id() << std::endl;
+            logger->debug("Registering service '{}' form bundle id {}", svcName, bnd->id());
         }
 
         const auto it = services.registry[svcName].emplace(new celix::impl::SvcEntry{std::move(bnd), svcId, svcName, std::move(service), std::move(factoryService), std::move(props)});
@@ -156,7 +159,7 @@ public:
             future.wait();
             match->waitTillUnused();
         } else {
-            LOG(WARNING) << "Cannot unregister service. Unknown service id: " << svcId << "." << std::endl;
+            logger->warn("Cannot unregister service. Unknown service id {}.", svcId);
         }
     }
 
@@ -181,7 +184,7 @@ public:
             auto future = std::async([&]{match->clear();}); //ensure that all service are removed using the callbacks
             future.wait();
         } else {
-            LOG(WARNING) << "Cannot remove tracker. Unknown tracker id: " << trkId << "." << std::endl;
+            logger->warn("Cannot remove tracker. Unknown tracker id {}.", trkId);
         }
     }
 
@@ -262,7 +265,7 @@ public:
             return celix::ServiceTracker{impl};
         } else {
             trkEntry->decrUsage(); //note usage is 1 at creation
-            LOG(ERROR) << "Cannot create tracker. Invalid filter?" << std::endl;
+            logger->error("Cannot create tracker. Invalid filter?");
             return celix::ServiceTracker{nullptr};
         }
     }
@@ -310,7 +313,6 @@ public:
     }
 
     std::vector<long> findAnyServices(const std::string &svcName, const celix::Filter& filter) const {
-        //TODO order by rank
         std::set<std::shared_ptr<const celix::impl::SvcEntry>> entries{};
 
         std::lock_guard<std::mutex> lock{services.mutex};

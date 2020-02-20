@@ -19,8 +19,6 @@
 
 #pragma once
 
-#include <glog/logging.h>
-
 #include "celix/ServiceRegistry.h"
 
 namespace celix {
@@ -104,7 +102,7 @@ inline celix::ServiceTracker celix::ServiceTrackerBuilder<I>::build() const {
         //TODO note using copy, make also make a buildAndClear? or make build() also clear and add a buildAndKeep()?
         return registry->trackServices(options, requester);
     } else {
-        LOG(ERROR) << "Invalid builder. Builder should have a service, function service or factory service instance";
+        //LOG(ERROR) << "Invalid builder. Builder should have a service, function service or factory service instance";
         abort();
         //TODO return invalid svc reg
     }

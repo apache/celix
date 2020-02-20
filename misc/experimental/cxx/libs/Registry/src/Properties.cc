@@ -21,11 +21,14 @@
 #include <string>
 #include <cstring>
 
-#include <glog/logging.h>
+#include <spdlog/spdlog.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
 
 #include "celix/Properties.h"
 
 #define MALLOC_BLOCK_SIZE		5
+
+static auto logger = spdlog::stdout_color_mt("celix::Properties");
 
 
 static char * utils_stringTrim(char * string) {
@@ -178,7 +181,7 @@ celix::Properties celix::loadProperties(const std::string &path) {
     std::ifstream file;
     file.open(path);
     if (file.fail()) {
-        LOG(WARNING) << "Cannot open file " << path << ". " << file.failbit << std::endl;
+        logger->warn("Cannot open file {}. {}", path, file.failbit);
         return celix::Properties{};
     } else {
         return celix::loadProperties(file);

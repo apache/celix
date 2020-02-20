@@ -17,16 +17,10 @@
  *under the License.
  */
 
-#include <glog/logging.h>
-
 #include "celix/Api.h"
 
 
-int main(int /*argc*/, char **argv) {
-    //TODO move glog init to framework (a pthread_once?), so that glog::glog dep can be removed from executables.
-    google::InitGoogleLogging(argv[0]);
-    google::LogToStderr();
-
+int main(int /*argc*/, char **/*argv*/) {
     //TODO create launcher, which handles config.properties and command args
     auto fw = celix::Framework{};
     fw.waitForShutdown();

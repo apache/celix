@@ -145,12 +145,14 @@ private:
 class LeafCalc : public ICalc {
 
 public:
-    LeafCalc() {
-        std::default_random_engine generator;
-        std::uniform_int_distribution<double> distribution(1,100);
-        rand = distribution(generator);
-    }
+    LeafCalc() : rand{random()} {}
     ~LeafCalc() override = default;
+
+    static double random() {
+        std::default_random_engine generator;
+        std::uniform_int_distribution<int> distribution(1,100);
+        return (double)distribution(generator);
+    }
 
     double calc() override {
         return rand;

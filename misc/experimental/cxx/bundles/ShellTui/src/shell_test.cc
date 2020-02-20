@@ -17,7 +17,7 @@
  *under the License.
  */
 
-#include <glog/logging.h>
+#include <spdlog/spdlog.h>
 
 #include "celix/api.h"
 

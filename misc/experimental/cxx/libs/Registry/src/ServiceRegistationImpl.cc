@@ -20,10 +20,14 @@
 
 #include "ServiceRegistationImpl.h"
 
-#include <glog/logging.h>
+#include <spdlog/spdlog.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+
 
 #include "ServiceRegistationImpl.h"
 #include "celix/Constants.h"
+
+static auto logger = spdlog::stdout_color_mt("celix::ServiceRegistration");
 
 
 class celix::ServiceRegistration::Impl {
@@ -48,9 +52,9 @@ bool celix::ServiceRegistration::registered() const {return pimpl && pimpl->regi
 
 void celix::ServiceRegistration::unregister() {
     if (pimpl && pimpl->registered) {
+        logger->debug("Unregistering service {} with id {}", pimpl->entry->svcName, pimpl->entry->svcId);
         pimpl->registered = false; //TODO make thread safe
         pimpl->unregisterCallback();
-        DLOG(INFO) << "Unregister " << *this;
     }
 }
 

@@ -17,7 +17,7 @@
  *under the License.
  */
 
-#include <glog/logging.h>
+
 
 #include "celix/Api.h"
 #include "celix/IShellCommand.h"

@@ -44,7 +44,7 @@ add_library(celix_Shell SHARED
         src/VersionCommand.cc
 )
 target_include_directories(celix_Shell PRIVATE src)
-target_link_libraries(celix_Shell PRIVATE celix_ShellApi glog::glog)
+target_link_libraries(celix_Shell PRIVATE celix_ShellApi)
 target_link_libraries(celix_Shell PUBLIC celix::cxx::Framework)
 add_dependencies(celix_Shell create_resources)
 

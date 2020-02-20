@@ -21,14 +21,16 @@
 
 #include <memory>
 #include <mutex>
+#include <condition_variable>
 
-#include <glog/logging.h>
+#include <spdlog/spdlog.h>
 
 #include "celix/Constants.h"
 #include "celix/IServiceFactory.h"
 #include "celix/IResourceBundle.h"
 #include "celix/Properties.h"
 #include "celix/ServiceRegistration.h"
+
 
 namespace celix {
     namespace impl {
@@ -72,7 +74,8 @@ namespace celix {
             void decrUsage() const {
                 std::lock_guard<std::mutex> lck{mutex};
                 if (usage == 0) {
-                    LOG(ERROR) << "Usage count decrease below 0!" << std::endl;
+                    //TODO more to cc file
+                    //logger->error("Usage count decrease below 0!");
                 } else {
                     usage -= 1;
                 }

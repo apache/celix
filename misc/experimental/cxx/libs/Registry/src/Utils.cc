@@ -22,13 +22,16 @@
 #include <string>
 #include <cassert>
 
-#include <glog/logging.h>
+#include <spdlog/spdlog.h>
+
+static auto logger = spdlog::get("celix::Utils");
+
 
 void celix::impl::assertIsNotFunctionService(const std::string &svcName) {
     size_t pos = svcName.find("::function"); //note could be std::fuction or st::__1::function, etc?
     if (pos <= svcName.size()) {
         //match
-        LOG(WARNING) << "Unexpected std::function as template argument. For function use the find/use/trackFunctionService instead of find/use/trackService!" << std::endl;
+        logger->warn("Unexpected std::function as template argument. For function use the find/use/trackFunctionService instead of find/use/trackService!");
         assert(false);
     }
 }
@@ -44,7 +47,7 @@ std::string celix::impl::typeNameFromPrettyFunction(const std::string &templateN
     result = result.substr(bpos, len);
 
     if (result.empty()) {
-        LOG(WARNING) << "Cannot infer type name in function call '" << prettyFunction << "'\n'";
+        logger->warn("Cannot infer type name in function call '{}'", prettyFunction);
     }
 
     return result;
