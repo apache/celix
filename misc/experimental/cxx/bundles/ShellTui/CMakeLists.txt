@@ -31,8 +31,8 @@ target_include_directories(celix_ShellTui PRIVATE src)
 target_link_libraries(celix_ShellTui PRIVATE celix_ShellTui_static celix::ShellApi )
 target_link_libraries(celix_ShellTui PUBLIC celix::cxx::Framework)
 
-add_library(celix::ShellTui_static ALIAS celix_ShellTui_static)
-add_library(celix::ShellTui ALIAS celix_ShellTui)
+add_library(celix::bundle::ShellTui_static ALIAS celix_ShellTui_static)
+add_library(celix::bundle::ShellTui ALIAS celix_ShellTui)
 
 if (ENABLE_TESTING)
     add_subdirectory(gtest)

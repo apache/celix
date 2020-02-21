@@ -33,7 +33,7 @@ static auto logger = spdlog::stdout_color_mt("celix::ComponentManager");
 
 static std::string genUUID() {
     uuid_t tmpUUID;
-    char uuidStr[UUID_STR_LEN+1];
+    char uuidStr[37];
 
     uuid_generate(tmpUUID);
     uuid_unparse(tmpUUID, uuidStr);

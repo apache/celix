@@ -31,8 +31,12 @@
 
 #include <uuid/uuid.h>
 
+#include <spdlog/spdLog.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+
 #include "BundleController.h"
 
+static auto logger = spdlog::stdout_color_mt("celix::Framework");
 
 extern bool extractBundle(const char *bundleZip, const char *targetPath); //FROM miniunz.c
 
@@ -85,7 +89,7 @@ namespace {
     }
 
     std::string genFwCacheDir(const celix::Properties &/*fwConfig*/) {
-        //TODO make configeruable
+        //TODO make configure-able
         return createCwdString() + "/.cache";
     }
 }
@@ -98,7 +102,9 @@ public:
             bndManifest{createFwManifest()},
             cwd{createCwdString()},
             fwUUID{genUUIDString()},
-            fwCacheDir{genFwCacheDir(config)} {}
+            fwCacheDir{genFwCacheDir(config)} {
+        logger->debug("Framework {} created", fwUUID);
+    }
 
     Impl(const Impl&) = delete;
     Impl& operator=(const Impl&) = delete;

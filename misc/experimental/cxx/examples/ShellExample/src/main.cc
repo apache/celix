@@ -19,7 +19,6 @@
 
 #include "celix/Api.h"
 
-
 int main(int /*argc*/, char **/*argv*/) {
     //TODO create launcher, which handles config.properties and command args
     auto fw = celix::Framework{};

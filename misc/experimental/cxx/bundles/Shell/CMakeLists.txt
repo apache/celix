@@ -15,19 +15,20 @@
 # specific language governing permissions and limitations
 # under the License.
 
-#TODO rename to celix::shell && celix::shell_api
-
 add_library(celix_ShellApi INTERFACE)
 target_include_directories(celix_ShellApi INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
     $<INSTALL_INTERFACE:include/celix/shell>
 )
 
+execute_process(COMMAND git rev-parse HEAD OUTPUT_VARIABLE GIT_HASH)
+configure_file(resources/version.properties.in resources/version.properties @ONLY)
+
 #TODO should eventually be done by a CMake command (i.e. celix_bundle_add_resources)
 add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/celix_cxx_shell_resources.zip
         COMMAND zip -rq ${CMAKE_CURRENT_BINARY_DIR}/celix_cxx_shell_resources.zip *
         COMMENT "Packaging Resources"
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/resources
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/resources
 )
 
 add_custom_target(create_resources ALL
@@ -42,6 +43,7 @@ add_library(celix_Shell SHARED
         src/InspectCommand.cc
         src/QueryCommand.cc
         src/VersionCommand.cc
+        src/LoggingCommand.cc
 )
 target_include_directories(celix_Shell PRIVATE src)
 target_link_libraries(celix_Shell PRIVATE celix_ShellApi)
@@ -56,7 +58,7 @@ else ()
 endif ()
 
 add_library(celix::ShellApi ALIAS celix_ShellApi)
-add_library(celix::Shell ALIAS celix_Shell)
+add_library(celix::bundle::Shell ALIAS celix_Shell)
 
 if (ENABLE_TESTING)
     add_subdirectory(gtest)

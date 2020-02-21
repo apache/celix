@@ -1,0 +1,2 @@
+celix.version=@CELIX_MAJOR@.@CELIX_MINOR@.@CELIX_MICRO@
+commmit=@GIT_HASH@

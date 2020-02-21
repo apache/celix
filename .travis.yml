@@ -53,8 +53,8 @@ matrix:
 #services: docker
 
 before_install:
-  - if [ "$TRAVIS_OS_NAME" = "linux" ] &&  [ -z "$ANDROID" ]; then sudo apt-get -qq update && sudo apt-get install -y build-essential cmake libcurl4-openssl-dev uuid-dev libxml2-dev lcov libffi-dev libczmq-dev libcpputest-dev libjansson-dev libzip-dev libgoogle-glog-dev; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew update && brew install lcov libffi zeromq czmq openssl jansson cpputest glog libzip && brew link --force libffi; fi
+  - if [ "$TRAVIS_OS_NAME" = "linux" ] &&  [ -z "$ANDROID" ]; then sudo apt-get -qq update && sudo apt-get install -y build-essential cmake libcurl4-openssl-dev uuid-dev libxml2-dev lcov libffi-dev libczmq-dev libcpputest-dev libjansson-dev libzip-dev libspdlog-dev libfmt-dev; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew update && brew install lcov libffi zeromq czmq openssl jansson cpputest libzip spdlog fmt && brew link --force libffi; fi
 
 before_script:
     - mkdir build install

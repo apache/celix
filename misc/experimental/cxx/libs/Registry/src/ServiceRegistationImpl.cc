@@ -18,8 +18,7 @@
  */
 
 
-#include "ServiceRegistationImpl.h"
-
+#include <ostream>
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 

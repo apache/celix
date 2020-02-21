@@ -19,4 +19,4 @@
 add_executable(cxx_shell_example
         src/main.cc
 )
-target_link_libraries(cxx_shell_example PRIVATE celix::Shell celix::ShellTui)
+target_link_libraries(cxx_shell_example PRIVATE celix::bundle::Shell celix::bundle::ShellTui)

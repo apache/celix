@@ -37,6 +37,8 @@ namespace impl {
     celix::ServiceRegistration registerQuery(const std::shared_ptr<celix::BundleContext>& ctx);
 
     celix::ServiceRegistration registerVersion(const std::shared_ptr<celix::BundleContext>& ctx);
+
+    celix::ServiceRegistration registerLogging(const std::shared_ptr<celix::BundleContext>& ctx);
 }}
 
 
