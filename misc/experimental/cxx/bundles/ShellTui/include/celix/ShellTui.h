@@ -42,7 +42,7 @@ namespace celix {
         ShellTui(const ShellTui&) = delete;
         ShellTui& operator=(const ShellTui&) = delete;
 
-        void setShell(std::shared_ptr<celix::IShell> _shell);
+        void setShell(const std::shared_ptr<celix::IShell>& _shell);
     private:
         void runnable();
         void writePrompt();

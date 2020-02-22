@@ -54,6 +54,26 @@ TEST_F(ComponentManagerTest, CreateDestroy) {
     EXPECT_EQ(cmpMng.getState(), celix::ComponentManagerState::Disabled);
 }
 
+//TODO maybe make special static component manager ....
+//TEST_F(ComponentManagerTest, CreateLazy) {
+//    celix::ComponentManager<Cmp> cmpMng{bundle(), registry()};
+//    EXPECT_FALSE(cmpMng.isEnabled());
+//    EXPECT_FALSE(cmpMng.isResolved()); //disabled -> not resolved
+//    EXPECT_EQ(cmpMng.getState(), celix::ComponentManagerState::Disabled);
+//    EXPECT_EQ(cmpMng.getCmpInstance().get(), nullptr);
+//
+//    cmpMng.enable();
+//    EXPECT_TRUE(cmpMng.isEnabled());
+//    EXPECT_TRUE(cmpMng.isResolved()); //no deps -> resolved
+//    EXPECT_EQ(cmpMng.getState(), celix::ComponentManagerState::ComponentStarted);
+//    EXPECT_NE(cmpMng.getCmpInstance().get(), nullptr); //resolved -> got an instance
+//
+//    cmpMng.disable();
+//    EXPECT_FALSE(cmpMng.isEnabled());
+//    EXPECT_EQ(cmpMng.getState(), celix::ComponentManagerState::Disabled);
+//    EXPECT_NE(cmpMng.getCmpInstance().get(), nullptr); //disabled-> got no instance
+//}
+
 TEST_F(ComponentManagerTest, AddSvcDep) {
     celix::ComponentManager<Cmp> cmpMng{bundle(), registry(), std::make_shared<Cmp>()};
     cmpMng.addServiceDependency<ISvc>()

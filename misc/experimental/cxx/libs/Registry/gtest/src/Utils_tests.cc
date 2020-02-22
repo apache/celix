@@ -46,20 +46,20 @@ class SvcWithSpecializedName {
 
 namespace celix {
     template<>
-    constexpr inline const char* customServiceNameFor<SvcWithSpecializedName>() { return "SPECIALIZED"; }
+    constexpr inline const char* customTypeNameFor<SvcWithSpecializedName>() { return "SPECIALIZED"; }
 }
 
 TEST_F(UtilsTest, svcName) {
-    std::string name = celix::serviceName<MarkerInterface>();
+    std::string name = celix::typeName<MarkerInterface>();
     EXPECT_EQ("MarkerInterface", name);
 
-    name = celix::serviceName<example::MarkerInterface>();
+    name = celix::typeName<example::MarkerInterface>();
     EXPECT_EQ("example::MarkerInterface", name);
 
-    name = celix::serviceName<SvcWithFqn>();
+    name = celix::typeName<SvcWithFqn>();
     EXPECT_EQ("[SvcWithFqn] [version 1]", name);
 
-    name = celix::serviceName<SvcWithSpecializedName>();
+    name = celix::typeName<SvcWithSpecializedName>();
     EXPECT_EQ("SPECIALIZED", name);
 
     name = celix::functionServiceName<std::function<void()>>("do");

@@ -84,28 +84,20 @@ namespace {
 namespace celix {
 
     /**
-     * Returns the type name of the provided template T
-     */
-    template<typename T>
-    inline std::string typeName() {
-        return typeNameInternal<T>();
-    }
-
-    /**
-     * the celix::serviceNameFor<I>() can be specialized to provide a customized service name for a type, without changes the class (i.e. adding a NAME member).
+     * the celix::customTypeNameFor<I>() can be specialized to provide a customized type name for a type, without changes the class (i.e. adding a NAME member).
      * @return This instance will return an empty string, indicating that there is no specialized function for serviceNameFor.
      */
     template<typename I>
-    const char* customServiceNameFor() { return ""; }
+    constexpr inline const char* customTypeNameFor() { return ""; }
 
     //OR ??
 //    /**
-//     * the celix::customServiceNameFor(I*) can be specialized to provide a customized service name for a type, without changes the class (i.e. adding a NAME member).
+//     * the celix::customTypeNameFor(I*) can be specialized to provide a customized service name for a type, without changes the class (i.e. adding a NAME member).
 //     * Note that the pointer argument is not used
 //     * @return This instance will return an empty string, indicating that there is no specialized function for serviceNameFor.
 //     */
 //    template<typename I>
-//    inline std::string customServiceNameFor(I */*ignored*/) { return std::string{}; }
+//    inline std::string customTypeNameFor(I */*ignored*/) { return std::string{}; }
 
     /**
     * Returns the service name for a type I, based on the member I::NAME
@@ -113,22 +105,22 @@ namespace celix {
     template<typename I>
     constexpr inline
     typename std::enable_if<has_NAME<I>::value, std::string>::type
-    serviceName() {
+    typeName() {
         return I::NAME;
     }
 
     /**
-    * Returns the service name for a type I
+    * Returns the type name for a type I
     */
     template<typename I>
     inline
     typename std::enable_if<!has_NAME<I>::value, std::string>::type
-    serviceName() {
+    typeName() {
         using namespace celix;
         //I* ptr = nullptr;
         //auto svcName = serviceNameFor(ptr); //note for C++14 this can be constexpr
-        auto svcName = customServiceNameFor<I>(); //note for C++14 this can be constexpr
-        return strnlen(svcName, 1) == 0 ? celix::typeName<I>() : std::string{svcName};
+        auto svcName = customTypeNameFor<I>(); //note for C++14 this can be constexpr
+        return strnlen(svcName, 1) == 0 ? typeNameInternal<I>() : std::string{svcName};
     }
 
     /**
@@ -148,6 +140,6 @@ namespace celix {
     template<typename F>
     //NOTE C++17 typename std::enable_if<std::is_callable<I>::value, std::string>::type
     inline std::string functionServiceName(const std::string &fName) {
-        return std::string{"["} + fName + "] [" + functionSignature<F>() + "]";
+        return fName + " [" + functionSignature<F>() + "]";
     }
 }

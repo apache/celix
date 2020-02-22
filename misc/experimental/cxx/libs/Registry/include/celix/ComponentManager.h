@@ -77,7 +77,7 @@ namespace celix {
         const std::string name;
         const std::string uuid;
 
-        std::mutex callbacksMutex{}; //protects below std::functions
+        mutable std::mutex callbacksMutex{}; //protects below std::functions
         std::function<void()> initCmp{[]{/*nop*/}};
         std::function<void()> startCmp{[]{/*nop*/}};
         std::function<void()> stopCmp{[]{/*nop*/}};
@@ -107,7 +107,7 @@ namespace celix {
     public:
         using ComponentType = T;
 
-        ComponentManager(std::shared_ptr<celix::IResourceBundle> owner, std::shared_ptr<celix::ServiceRegistry> reg, std::shared_ptr<T> cmpInstance, const std::string &name = celix::typeName<T>());
+        ComponentManager(std::shared_ptr<celix::IResourceBundle> owner, std::shared_ptr<celix::ServiceRegistry> reg, std::shared_ptr<T> cmpInstance);
         ~ComponentManager() override = default;
 
         ComponentManager<T>& enable();
@@ -138,8 +138,7 @@ namespace celix {
 
         std::shared_ptr<T> getCmpInstance() const;
     private:
-        const std::shared_ptr<T> inst;
-
+        const std::shared_ptr<T> cmpInstance;
     };
 
     enum class Cardinality {
@@ -215,8 +214,8 @@ namespace celix {
         ServiceDependency<T,I>& setStrategy(UpdateServiceStrategy strategy);
         ServiceDependency<T,I>& setRequired(bool required);
         ServiceDependency<T,I>& setCardinality(celix::Cardinality cardinality);
-        ServiceDependency<T,I>& setCallbacks(void (T::*set)(std::shared_ptr<I>));
-        ServiceDependency<T,I>& setCallbacks(void (T::*add)(std::shared_ptr<I>), void (T::*remove)(std::shared_ptr<I>));
+        ServiceDependency<T,I>& setCallbacks(void (T::*set)(const std::shared_ptr<I>&));
+        ServiceDependency<T,I>& setCallbacks(void (T::*add)(const std::shared_ptr<I>&), void (T::*remove)(const std::shared_ptr<I>&));
         //TODO update callback
         //TODO callbacks with properties and owner
 
@@ -235,9 +234,9 @@ namespace celix {
         const std::function<std::shared_ptr<T>()> getCmpInstance;
 
         std::mutex callbacksMutex{}; //protects below
-        std::function<void(std::shared_ptr<I> svc, const celix::Properties &props, const celix::IResourceBundle &owner)> set{};
-        std::function<void(std::shared_ptr<I> svc, const celix::Properties &props, const celix::IResourceBundle &owner)> add{};
-        std::function<void(std::shared_ptr<I> svc, const celix::Properties &props, const celix::IResourceBundle &owner)> rem{};
+        std::function<void(const std::shared_ptr<I>& svc, const celix::Properties &props, const celix::IResourceBundle &owner)> set{};
+        std::function<void(const std::shared_ptr<I>& svc, const celix::Properties &props, const celix::IResourceBundle &owner)> add{};
+        std::function<void(const std::shared_ptr<I>& svc, const celix::Properties &props, const celix::IResourceBundle &owner)> rem{};
         std::function<void(std::vector<std::tuple<std::shared_ptr<I>, const celix::Properties*, const celix::IResourceBundle *>> rankedServices)> update{};
     };
 
@@ -308,8 +307,7 @@ template<typename T>
 inline celix::ComponentManager<T>::ComponentManager(
         std::shared_ptr<celix::IResourceBundle> owner,
         std::shared_ptr<celix::ServiceRegistry> reg,
-        std::shared_ptr<T> cmpInstance,
-        const std::string &name) : GenericComponentManager{owner, reg, name}, inst{std::move(cmpInstance)} {
+        std::shared_ptr<T> cmpInstance) : GenericComponentManager{owner, reg, celix::typeName<T>()}, cmpInstance{std::move(cmpInstance)} {
 }
 
 template<typename T>
@@ -390,7 +388,7 @@ inline celix::ServiceDependency<T,I>& celix::ComponentManager<T>::findServiceDep
 
 template<typename T>
 inline std::shared_ptr<T> celix::ComponentManager<T>::getCmpInstance() const {
-    return inst;
+    return cmpInstance;
 }
 
 template<typename T>
@@ -431,7 +429,7 @@ inline celix::ServiceDependency<T,I>::ServiceDependency(
         std::function<void()> _resumeCallback,
         bool isValid) :
             GenericServiceDependency{std::move(_reg),
-             celix::typeName<I>(),
+                                     celix::typeName<I>(),
              std::move(_stateChangedCallback),
              std::move(_suspenseCallback),
              std::move(_resumeCallback),
@@ -482,26 +480,28 @@ inline celix::ServiceDependency<T,I>& celix::ServiceDependency<T,I>::disable() {
 
 
 template<typename T, typename I>
-inline celix::ServiceDependency<T,I>& celix::ServiceDependency<T,I>::setCallbacks(void (T::*setfp)(std::shared_ptr<I>)) {
-    auto setFunc = [this, setfp](std::shared_ptr<I> svc, const celix::Properties &, const celix::IResourceBundle &) {
-        (getCmpInstance()->instance->*setfp)(svc);
+inline celix::ServiceDependency<T,I>& celix::ServiceDependency<T,I>::setCallbacks(void (T::*setfp)(const std::shared_ptr<I>&)) {
+    auto setFunc = [this, setfp](const std::shared_ptr<I>& svc, const celix::Properties &, const celix::IResourceBundle &) {
+        (getCmpInstance().get()->*setfp)(svc);
     };
     std::lock_guard<std::mutex> lck{callbacksMutex};
     set = std::move(setFunc);
+    return *this;
 }
 
 
 template<typename T, typename I>
-inline celix::ServiceDependency<T,I>& celix::ServiceDependency<T,I>::setCallbacks(void (T::*addfp)(std::shared_ptr<I>), void (T::*remfp)(std::shared_ptr<I>)) {
-    auto addFunc = [this, addfp](std::shared_ptr<I> svc, const celix::Properties &, const celix::IResourceBundle &) {
-        (getCmpInstance()->instance->*addfp)(svc);
+inline celix::ServiceDependency<T,I>& celix::ServiceDependency<T,I>::setCallbacks(void (T::*addfp)(const std::shared_ptr<I>&), void (T::*remfp)(const std::shared_ptr<I>&)) {
+    auto addFunc = [this, addfp](const std::shared_ptr<I>& svc, const celix::Properties &, const celix::IResourceBundle &) {
+        (getCmpInstance().get()->*addfp)(svc);
     };
-    auto remFunc = [this, remfp](std::shared_ptr<I> svc, const celix::Properties &, const celix::IResourceBundle &) {
-        (getCmpInstance()->instance->*remfp)(svc);
+    auto remFunc = [this, remfp](const std::shared_ptr<I>& svc, const celix::Properties &, const celix::IResourceBundle &) {
+        (getCmpInstance().get()->*remfp)(svc);
     };
     std::lock_guard<std::mutex> lck{callbacksMutex};
     add = std::move(addFunc);
     rem = std::move(remFunc);
+    return *this;
 }
 
 template<typename T, typename I>
@@ -581,7 +581,7 @@ inline celix::ProvidedService<T,I>::ProvidedService(
         std::function<std::shared_ptr<T>()> _getCmpInstanceCallback,
         std::function<void()> updateServiceRegistrationsCallback,
         bool valid) :
-    GenericProvidedService{std::move(cmpUUID), std::move(reg), celix::serviceName<I>(), std::move(updateServiceRegistrationsCallback), valid}, getcmpInstanceCallback{_getCmpInstanceCallback} {}
+    GenericProvidedService{std::move(cmpUUID), std::move(reg), celix::typeName<I>(), std::move(updateServiceRegistrationsCallback), valid}, getcmpInstanceCallback{_getCmpInstanceCallback} {}
 
 template<typename T, typename I>
 inline void celix::ProvidedService<T, I>::registerService() {

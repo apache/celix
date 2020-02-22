@@ -116,7 +116,7 @@ void celix::ShellTui::parseInput() {
     } //for
 }
 
-void celix::ShellTui::setShell(std::shared_ptr<celix::IShell> _shell) {
+void celix::ShellTui::setShell(const std::shared_ptr<celix::IShell>& _shell) {
     std::lock_guard<std::mutex> lck{mutex};
     shell = std::move(_shell);
 }

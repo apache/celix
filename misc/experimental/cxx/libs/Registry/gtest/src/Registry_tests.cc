@@ -61,7 +61,7 @@ TEST_F(RegistryTest, ServiceRegistrationTest) {
         long svcId = reg.serviceId();
         EXPECT_GE(svcId, -1L);
         EXPECT_TRUE(reg.valid());
-        EXPECT_EQ(reg.properties().at(celix::SERVICE_NAME), celix::serviceName<MarkerInterface1>());
+        EXPECT_EQ(reg.properties().at(celix::SERVICE_NAME), celix::typeName<MarkerInterface1>());
         EXPECT_EQ("VAL", celix::getProperty(reg.properties(), "TEST", ""));
 
         EXPECT_EQ(1, registry().nrOfRegisteredServices());

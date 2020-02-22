@@ -172,7 +172,7 @@ namespace celix {
         template<typename I>
         //NOTE C++17 typename std::enable_if<!std::is_callable<I>::value, std::vector<long>>::type
         std::vector<long> findServices(const celix::Filter& filter = celix::Filter{}) const {
-            auto svcName = celix::serviceName<I>();
+            auto svcName = celix::typeName<I>();
             return findAnyServices(svcName, filter);
         }
 
@@ -239,7 +239,7 @@ std::ostream& operator<<(std::ostream &out, celix::ServiceRegistration& serviceR
 
 template<typename I>
 inline celix::ServiceRegistration celix::ServiceRegistry::registerService(std::shared_ptr<I> svc, celix::Properties props, const std::shared_ptr<celix::IResourceBundle>& owner) {
-    auto svcName = celix::serviceName<I>();
+    auto svcName = celix::typeName<I>();
     std::shared_ptr<void> anySvc = std::static_pointer_cast<void>(svc);
     return registerAnyService(std::move(svcName), std::move(anySvc), std::move(props), owner);
 }
@@ -262,7 +262,7 @@ inline celix::ServiceRegistration celix::ServiceRegistry::registerServiceFactory
         std::shared_ptr<celix::IServiceFactory<I>> factory;
     };
     auto anyFactory = std::make_shared<VoidServiceFactory>(outerFactory);
-    auto svcName = celix::serviceName<I>();
+    auto svcName = celix::typeName<I>();
     return registerAnyService(std::move(svcName), std::move(anyFactory), std::move(props), owner);
 }
 
@@ -289,7 +289,7 @@ inline int celix::ServiceRegistry::useServices(celix::UseServiceOptions<I> opts,
             opts.useWithOwner(*typedSvc, props, bnd);
         }
     };
-    auto svcName = celix::serviceName<I>();
+    auto svcName = celix::typeName<I>();
     return useAnyServices(std::move(svcName), std::move(opts.filter), std::move(voidUse), requester);
 }
 
@@ -307,7 +307,7 @@ inline bool celix::ServiceRegistry::useService(celix::UseServiceOptions<I> opts,
             opts.useWithOwner(*typedSvc, props, bnd);
         }
     };
-    auto svcName = celix::serviceName<I>();
+    auto svcName = celix::typeName<I>();
     return useAnyService(std::move(svcName), std::move(opts.filter), std::move(voidUse), requester);
 }
 
@@ -463,7 +463,7 @@ inline celix::ServiceTracker celix::ServiceRegistry::trackServices(celix::Servic
         anyOpts.postServiceUpdateHook = std::move(opts.postServiceUpdateHook);
     }
 
-    auto svcName = celix::serviceName<I>();
+    auto svcName = celix::typeName<I>();
 
     return trackAnyServices(svcName, std::move(anyOpts), requester);
 }
