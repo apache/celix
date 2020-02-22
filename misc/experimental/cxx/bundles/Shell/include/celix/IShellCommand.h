@@ -28,23 +28,22 @@ namespace celix {
 
     class IShellCommand {
     public:
-        static constexpr const char * const SERVICE_FQN = "celix::IShellCommand [Version 1]";
+        static constexpr const char * const NAME = "[celix::IShellCommand] [version 1]";
 
-        static constexpr const char * const COMMAND_NAME = "COMMAND_NAME";
-        static constexpr const char * const COMMAND_USAGE = "COMMAND_USAGE";
-        static constexpr const char * const COMMAND_DESCRIPTION = "COMMAND_DESCRIPTION";
+        static constexpr const char * const COMMAND_NAME = "command.name";
+        static constexpr const char * const COMMAND_USAGE = "command.usage";
+        static constexpr const char * const COMMAND_DESCRIPTION = "command.description";
 
         virtual ~IShellCommand() = default;
 
         virtual void executeCommand(const std::string &cmdName, const std::vector<std::string> &cmdArgs, std::ostream &out, std::ostream &err) noexcept = 0;
     };
 
-    static constexpr const char * const SHELL_COMMAND_FUNCTION_SERVICE_FQN = "celix::ShellCommandFunction [Version 1]";
-    static constexpr const char * const SHELL_COMMAND_FUNCTION_COMMAND_NAME = "COMMAND_NAME";
-    static constexpr const char * const SHELL_COMMAND_FUNCTION_COMMAND_USAGE = "COMMAND_USAGE";
-    static constexpr const char * const SHELL_COMMAND_FUNCTION_COMMAND_DESCRIPTION = "COMMAND_DESCRIPTION";
-    using ShellCommandFunctionSignature = void(const std::string &cmdName, const std::vector<std::string> &cmdArgs, std::ostream &out, std::ostream &err);
-    using ShellCommandFunction = std::function<ShellCommandFunctionSignature>;
+    static constexpr const char * const SHELL_COMMAND_FUNCTION_SERVICE_NAME = "[celix::ShellCommandFunction] [Version 1]";
+    static constexpr const char * const SHELL_COMMAND_FUNCTION_COMMAND_NAME = IShellCommand::COMMAND_NAME;
+    static constexpr const char * const SHELL_COMMAND_FUNCTION_COMMAND_USAGE = IShellCommand::COMMAND_USAGE;
+    static constexpr const char * const SHELL_COMMAND_FUNCTION_COMMAND_DESCRIPTION = IShellCommand::COMMAND_DESCRIPTION;
+    using ShellCommandFunction = std::function<void(const std::string &cmdName, const std::vector<std::string> &cmdArgs, std::ostream &out, std::ostream &err)>;
 }
 
 #endif //CXX_CELIX_ISHELLCOMMAND_H

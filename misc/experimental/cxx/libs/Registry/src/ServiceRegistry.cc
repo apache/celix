@@ -19,25 +19,23 @@
  *under the License.
  */
 
+#include "celix/ServiceRegistry.h"
+
+
 #include <unordered_map>
 #include <mutex>
 #include <set>
-#include <utility>
 #include <future>
-#include <climits>
+#include <cassert>
 
 #include <spdlog/spdlog.h>
-#include <cassert>
-#include <celix/ServiceRegistry.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
 
 
 #include "celix/Constants.h"
-#include "celix/ServiceRegistry.h"
 #include "celix/Filter.h"
 
 #include "ServiceTrackerImpl.h"
-
-#include <spdlog/sinks/stdout_color_sinks.h>
 
 static auto logger = spdlog::stdout_color_mt("celix::ServiceRegistry");
 
@@ -270,35 +268,43 @@ public:
         }
     }
 
-    int useAnyServices(const std::string& svcOrFunctionName, celix::Filter filter, std::function<void(const std::shared_ptr<void> &svc, const celix::Properties&, const celix::IResourceBundle&)> callback, const std::shared_ptr<celix::IResourceBundle>& requester, int maxUse) const {
+    std::set<std::shared_ptr<const celix::impl::SvcEntry>, celix::impl::SvcEntryLess> collectSvcEntries(const std::string& svcName, const celix::Filter& filter) const {
         //Collection all matching services in a set; this means that services are always called on service ranking order
-        std::set<std::shared_ptr<const celix::impl::SvcEntry>> matches{};
-        {
-            std::lock_guard<std::mutex> lock{services.mutex};
-            if (svcOrFunctionName.empty()) {
-                //LOG(DEBUG) << "finding ALL services";
-                for (const auto& pair : services.cache) {
-                    if (filter.isEmpty() || filter.match(pair.second->props)) {
-                        pair.second->incrUsage();
-                        matches.insert(pair.second);
-                    }
+        std::set<std::shared_ptr<const celix::impl::SvcEntry>, celix::impl::SvcEntryLess> entries{};
+        std::lock_guard<std::mutex> lock{services.mutex};
+        if (svcName.empty()) {
+            for (const auto& pair : services.cache) {
+                if (filter.isEmpty() || filter.match(pair.second->props)) {
+                    pair.second->incrUsage();
+                    entries.insert(pair.second);
                 }
-            } else {
-                const auto it = services.registry.find(svcOrFunctionName);
-                if (it != services.registry.end()) {
-                    const auto &matchingServices = it->second;
-                    for (const std::shared_ptr<const celix::impl::SvcEntry> &entry : matchingServices) {
-                        if (filter.isEmpty() || filter.match(entry->props)) {
-                            entry->incrUsage();
-                            matches.insert(entry);
-                        }
+            }
+        } else {
+            const auto it = services.registry.find(svcName);
+            if (it != services.registry.end()) {
+                const auto &matchingServices = it->second;
+                for (const std::shared_ptr<const celix::impl::SvcEntry> &entry : matchingServices) {
+                    if (filter.isEmpty() || filter.match(entry->props)) {
+                        entry->incrUsage();
+                        entries.insert(entry);
                     }
                 }
             }
         }
+        return entries;
+    }
+
+    int useAnyServices(const std::string& svcName, celix::Filter filter, std::function<void(const std::shared_ptr<void> &svc, const celix::Properties&, const celix::IResourceBundle&)> callback, const std::shared_ptr<celix::IResourceBundle>& requester, int maxUse) const {
+        auto entries = collectSvcEntries(svcName, filter);
+
+        if (svcName.empty()) {
+            logger->trace("Using ALL services with filter '{}'. Nr found {}.", filter.toString(), entries.size());
+        } else {
+            logger->trace("Using services '{}' with filter '{}'. Nr found {}.", svcName, filter.toString(), entries.size());
+        }
 
         int count = 0;
-        for (const std::shared_ptr<const celix::impl::SvcEntry> &entry : matches) {
+        for (const std::shared_ptr<const celix::impl::SvcEntry> &entry : entries) {
             std::shared_ptr<void> rawSvc = entry->service(*requester);
             std::shared_ptr<void> svc{rawSvc.get(), [entry](void *) {
                 entry->decrUsage();
@@ -313,32 +319,19 @@ public:
     }
 
     std::vector<long> findAnyServices(const std::string &svcName, const celix::Filter& filter) const {
-        std::set<std::shared_ptr<const celix::impl::SvcEntry>> entries{};
+        auto entries = collectSvcEntries(svcName, filter);
 
-        std::lock_guard<std::mutex> lock{services.mutex};
         if (svcName.empty()) {
-            //LOG(DEBUG) << "finding ALL services";
-            for (const auto &pair : services.cache) {
-                if (filter.isEmpty() || filter.match(pair.second->props)) {
-                    entries.insert(pair.second);
-                }
-            }
+            logger->trace("Finding ALL services with filter '{}'. Nr found {}.", filter.toString(), entries.size());
         } else {
-            const auto it = services.registry.find(svcName);
-            if (it != services.registry.end()) {
-                const auto &namedServices = it->second;
-                for (const auto &visit : namedServices) {
-                    if (filter.isEmpty() || filter.match(visit->props)) {
-                        entries.insert(visit);
-                    }
-                }
-            }
+            logger->trace("Finding services '{}' with filter '{}'. Nr found {}.", svcName, filter.toString(), entries.size());
         }
 
         std::vector<long> result{};
         result.reserve(entries.size());
         for (const auto &entry: entries) {
             result.push_back(entry->svcId);
+            entry->decrUsage();
         }
         return result;
     }

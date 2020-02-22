@@ -50,9 +50,9 @@ namespace celix {
         const std::string functionName;
         celix::Filter filter{};
         long targetServiceId{-1L}; //note -1 means not targeting a specific service id.
-        std::function<void(const std::function<F>& func)> use{};
-        std::function<void(const std::function<F>& func, const celix::Properties &props)> useWithProperties{};
-        std::function<void(const std::function<F>& func, const celix::Properties &props, const celix::IResourceBundle &bundle)> useWithOwner{};
+        std::function<void(const F& func)> use{};
+        std::function<void(const F& func, const celix::Properties &props)> useWithProperties{};
+        std::function<void(const F& func, const celix::Properties &props, const celix::IResourceBundle &bundle)> useWithOwner{};
     };
 
     template<typename I>
@@ -91,21 +91,21 @@ namespace celix {
 
         celix::Filter filter{};
 
-        std::function<void(std::function<F> &func)> set{};
-        std::function<void(std::function<F> &func, const celix::Properties &props)> setWithProperties{};
-        std::function<void(std::function<F> &func, const celix::Properties &props, const celix::IResourceBundle &owner)> setWithOwner{};
+        std::function<void(F &func)> set{};
+        std::function<void(F &func, const celix::Properties &props)> setWithProperties{};
+        std::function<void(F &func, const celix::Properties &props, const celix::IResourceBundle &owner)> setWithOwner{};
 
-        std::function<void(std::function<F> &func)> add{};
-        std::function<void(std::function<F> &func, const celix::Properties &props)> addWithProperties{};
-        std::function<void(std::function<F> &func, const celix::Properties &props, const celix::IResourceBundle &owner)> addWithOwner{};
+        std::function<void(F &func)> add{};
+        std::function<void(F &func, const celix::Properties &props)> addWithProperties{};
+        std::function<void(F &func, const celix::Properties &props, const celix::IResourceBundle &owner)> addWithOwner{};
 
-        std::function<void(std::function<F> &func)> remove{};
-        std::function<void(std::function<F> &func, const celix::Properties &props)> removeWithProperties{};
-        std::function<void(std::function<F> &func, const celix::Properties &props, const celix::IResourceBundle &owner)> removeWithOwner{};
+        std::function<void(F &func)> remove{};
+        std::function<void(F &func, const celix::Properties &props)> removeWithProperties{};
+        std::function<void(F &func, const celix::Properties &props, const celix::IResourceBundle &owner)> removeWithOwner{};
 
-        std::function<void(std::vector<std::function<F>> rankedServices)> update{};
-        std::function<void(std::vector<std::tuple<std::function<F>, const celix::Properties*>> rankedServices)> updateWithProperties{};
-        std::function<void(std::vector<std::tuple<std::function<F>, const celix::Properties*, const celix::IResourceBundle*>> rankedServices)> updateWithOwner{};
+        std::function<void(std::vector<F> rankedServices)> update{};
+        std::function<void(std::vector<std::tuple<F, const celix::Properties*>> rankedServices)> updateWithProperties{};
+        std::function<void(std::vector<std::tuple<F, const celix::Properties*, const celix::IResourceBundle*>> rankedServices)> updateWithOwner{};
 
         std::function<void()> preServiceUpdateHook{};
         std::function<void()> postServiceUpdateHook{};
@@ -135,7 +135,7 @@ namespace celix {
         celix::ServiceRegistration registerServiceFactory(std::shared_ptr<celix::IServiceFactory<I>> factory, celix::Properties props = {}, const std::shared_ptr<celix::IResourceBundle>& owner = {});
 
         template<typename F>
-        celix::ServiceRegistration registerFunctionService(const std::string &functionName, std::function<F> function, celix::Properties props = {}, const std::shared_ptr<celix::IResourceBundle>& owner = {});
+        celix::ServiceRegistration registerFunctionService(const std::string &functionName, F function, celix::Properties props = {}, const std::shared_ptr<celix::IResourceBundle>& owner = {});
 
         template<typename I>
         celix::ServiceTracker trackServices(celix::ServiceTrackerOptions<I> opts, const std::shared_ptr<celix::IResourceBundle>& requester = {});
@@ -267,8 +267,8 @@ inline celix::ServiceRegistration celix::ServiceRegistry::registerServiceFactory
 }
 
 template<typename F>
-inline celix::ServiceRegistration celix::ServiceRegistry::registerFunctionService(const std::string& functionName, std::function<F> outerFunction, celix::Properties props, const std::shared_ptr<celix::IResourceBundle>& owner) {
-    auto functionPtr = std::shared_ptr<std::function<F>>{new std::function<F>{std::move(outerFunction)}, [](std::function<F>*){/*nop*/}};
+inline celix::ServiceRegistration celix::ServiceRegistry::registerFunctionService(const std::string& functionName, F outerFunction, celix::Properties props, const std::shared_ptr<celix::IResourceBundle>& owner) {
+    auto functionPtr = std::shared_ptr<F>{new F{std::move(outerFunction)}, [](F*){/*nop*/}};
     auto voidPtr = std::static_pointer_cast<void>(functionPtr);
     auto svcName = celix::functionServiceName<F>(functionName);
     return registerAnyService(svcName, std::move(voidPtr), std::move(props), owner);
@@ -314,7 +314,7 @@ inline bool celix::ServiceRegistry::useService(celix::UseServiceOptions<I> opts,
 template<typename F>
 int celix::ServiceRegistry::useFunctionServices(celix::UseFunctionServiceOptions<F> opts, const std::shared_ptr<celix::IResourceBundle>& requester) const {
     auto voidUse = [opts](const std::shared_ptr<void>& rawFunction, const celix::Properties &props, const celix::IResourceBundle &bnd) -> void {
-        std::shared_ptr<std::function<F>> function = std::static_pointer_cast<std::function<F>>(rawFunction);
+        std::shared_ptr<F> function = std::static_pointer_cast<F>(rawFunction);
         if (opts.use) {
             opts.use(*function);
         }
@@ -332,7 +332,7 @@ int celix::ServiceRegistry::useFunctionServices(celix::UseFunctionServiceOptions
 template<typename F>
 bool celix::ServiceRegistry::useFunctionService(celix::UseFunctionServiceOptions<F> opts, const std::shared_ptr<celix::IResourceBundle>& requester) const {
     auto voidUse = [opts](const std::shared_ptr<void>& rawFunction, const celix::Properties &props, const celix::IResourceBundle &bnd) -> void {
-        std::shared_ptr<std::function<F>> function = std::static_pointer_cast<std::function<F>>(rawFunction);
+        std::shared_ptr<F> function = std::static_pointer_cast<F>(rawFunction);
         if (opts.use) {
             opts.use(*function);
         }
@@ -477,21 +477,21 @@ inline celix::ServiceTracker celix::ServiceRegistry::trackFunctionServices(celix
     if (opts.setWithOwner != nullptr) {
         auto set = std::move(opts.setWithOwner);
         anyOpts.setWithOwner = [set](std::shared_ptr<void> svc, celix::Properties &props, celix::IResourceBundle &owner){
-            auto typedSvc = std::static_pointer_cast<std::function<F>>(svc);
+            auto typedSvc = std::static_pointer_cast<F>(svc);
             set(typedSvc, props, owner);
         };
     }
     if (opts.setWithProperties != nullptr) {
         auto set = std::move(opts.setWithProperties);
         anyOpts.setWithProperties = [set](std::shared_ptr<void> svc, celix::Properties &props){
-            auto typedSvc = std::static_pointer_cast<std::function<F>>(svc);
+            auto typedSvc = std::static_pointer_cast<F>(svc);
             set(*typedSvc, props);
         };
     }
     if (opts.set != nullptr) {
         auto set = std::move(opts.set);
         anyOpts.set = [set](std::shared_ptr<void> svc){
-            auto typedSvc = std::static_pointer_cast<std::function<F>>(svc);
+            auto typedSvc = std::static_pointer_cast<F>(svc);
             set(*typedSvc);
         };
     }
@@ -499,21 +499,21 @@ inline celix::ServiceTracker celix::ServiceRegistry::trackFunctionServices(celix
     if (opts.addWithOwner != nullptr) {
         auto add = std::move(opts.addWithOwner);
         anyOpts.addWithOwner = [add](std::shared_ptr<void> svc, celix::Properties &props, celix::IResourceBundle &bnd) {
-            auto typedSvc = std::static_pointer_cast<std::function<F>>(svc);
+            auto typedSvc = std::static_pointer_cast<F>(svc);
             add(*typedSvc, props, bnd);
         };
     }
     if (opts.addWithProperties != nullptr) {
         auto add = std::move(opts.addWithProperties);
         anyOpts.addWithProperties = [add](std::shared_ptr<void> svc, celix::Properties &props) {
-            auto typedSvc = std::static_pointer_cast<std::function<F>>(svc);
+            auto typedSvc = std::static_pointer_cast<F>(svc);
             add(*typedSvc, props);
         };
     }
     if (opts.add != nullptr) {
         auto add = std::move(opts.add);
         anyOpts.add = [add](std::shared_ptr<void> svc) {
-            auto typedSvc = std::static_pointer_cast<std::function<F>>(svc);
+            auto typedSvc = std::static_pointer_cast<F>(svc);
             add(*typedSvc);
         };
     }
@@ -521,21 +521,21 @@ inline celix::ServiceTracker celix::ServiceRegistry::trackFunctionServices(celix
     if (opts.removeWithOwner != nullptr) {
         auto rem = std::move(opts.removeWithOwner);
         anyOpts.removeWithOwner = [rem](std::shared_ptr<void> svc, celix::Properties &props, celix::IResourceBundle &bnd) {
-            auto typedSvc = std::static_pointer_cast<std::function<F>>(svc);
+            auto typedSvc = std::static_pointer_cast<F>(svc);
             rem(*typedSvc, props, bnd);
         };
     }
     if (opts.removeWithProperties != nullptr) {
         auto rem = std::move(opts.removeWithProperties);
         anyOpts.removeWithProperties = [rem](std::shared_ptr<void> svc, celix::Properties &props) {
-            auto typedSvc = std::static_pointer_cast<std::function<F>>(svc);
+            auto typedSvc = std::static_pointer_cast<F>(svc);
             rem(*typedSvc, props);
         };
     }
     if (opts.remove != nullptr) {
         auto rem = std::move(opts.remove);
         anyOpts.remove = [rem](std::shared_ptr<void> svc) {
-            auto typedSvc = std::static_pointer_cast<std::function<F>>(svc);
+            auto typedSvc = std::static_pointer_cast<F>(svc);
             rem(*typedSvc);
         };
     }
@@ -546,7 +546,7 @@ inline celix::ServiceTracker celix::ServiceRegistry::trackFunctionServices(celix
             std::vector<std::tuple<std::shared_ptr<F>, celix::Properties*, celix::IResourceBundle*>> typedServices{};
             typedServices.reserve(rankedServices.size());
             for (auto &tuple : rankedServices) {
-                auto typedSvc = std::static_pointer_cast<std::function<F>>(std::get<0>(tuple));
+                auto typedSvc = std::static_pointer_cast<F>(std::get<0>(tuple));
                 typedServices.push_back(std::make_tuple(*typedSvc, std::get<1>(tuple), std::get<2>(tuple)));
             }
             update(std::move(typedServices));
@@ -558,7 +558,7 @@ inline celix::ServiceTracker celix::ServiceRegistry::trackFunctionServices(celix
             std::vector<std::tuple<std::shared_ptr<F>, celix::Properties*>> typedServices{};
             typedServices.reserve(rankedServices.size());
             for (auto &tuple : rankedServices) {
-                auto typedSvc = std::static_pointer_cast<std::function<F>>(std::get<0>(tuple));
+                auto typedSvc = std::static_pointer_cast<F>(std::get<0>(tuple));
                 typedServices.push_back(std::make_tuple(*typedSvc, std::get<1>(tuple)));
             }
             update(std::move(typedServices));
@@ -570,7 +570,7 @@ inline celix::ServiceTracker celix::ServiceRegistry::trackFunctionServices(celix
             std::vector<std::shared_ptr<F>> typedServices{};
             typedServices.reserve(rankedServices.size());
             for (auto &svc : rankedServices) {
-                auto typedSvc = std::static_pointer_cast<std::function<F>>(svc);
+                auto typedSvc = std::static_pointer_cast<F>(svc);
                 typedServices.push_back(*typedSvc);
             }
             update(std::move(typedServices));

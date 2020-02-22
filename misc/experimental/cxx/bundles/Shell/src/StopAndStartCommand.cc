@@ -60,7 +60,7 @@ celix::ServiceRegistration celix::impl::registerStop(const std::shared_ptr<celix
     props[celix::SHELL_COMMAND_FUNCTION_COMMAND_NAME] = "stop";
     props[celix::SHELL_COMMAND_FUNCTION_COMMAND_USAGE] = "stop (bndId)+";
     props[celix::SHELL_COMMAND_FUNCTION_COMMAND_DESCRIPTION] = "Stops the provided bundles, identified by the bundle ids";
-    return ctx->registerFunctionService(celix::SHELL_COMMAND_FUNCTION_SERVICE_FQN, std::move(stop), std::move(props));
+    return ctx->registerFunctionService(celix::SHELL_COMMAND_FUNCTION_SERVICE_NAME, std::move(stop), std::move(props));
 }
 
 celix::ServiceRegistration celix::impl::registerStart(const std::shared_ptr<celix::BundleContext>& ctx) {
@@ -71,5 +71,5 @@ celix::ServiceRegistration celix::impl::registerStart(const std::shared_ptr<celi
     props[celix::SHELL_COMMAND_FUNCTION_COMMAND_NAME] = "start";
     props[celix::SHELL_COMMAND_FUNCTION_COMMAND_USAGE] = "start (bndId)+";
     props[celix::SHELL_COMMAND_FUNCTION_COMMAND_DESCRIPTION] = "Starts the provided bundles, identified by the bundle ids";
-    return ctx->registerFunctionService(celix::SHELL_COMMAND_FUNCTION_SERVICE_FQN, std::move(stop), std::move(props));
+    return ctx->registerFunctionService(celix::SHELL_COMMAND_FUNCTION_SERVICE_NAME, std::move(stop), std::move(props));
 }

@@ -29,15 +29,25 @@ public:
     ~UtilsTest(){}
 };
 
-class MarkerInterface;
+class MarkerInterface{};
 
 namespace example {
-    class MarkerInterface;
+    class MarkerInterface{};
 }
 
 class SvcWithFqn {
-    static constexpr const char * const FQN = "SvcWithFqn[Version 1]";
+public:
+    static constexpr const char * const NAME = "[SvcWithFqn] [version 1]";
 };
+
+class SvcWithSpecializedName {
+    //note no NAME
+};
+
+namespace celix {
+    template<>
+    constexpr inline const char* customServiceNameFor<SvcWithSpecializedName>() { return "SPECIALIZED"; }
+}
 
 TEST_F(UtilsTest, svcName) {
     std::string name = celix::serviceName<MarkerInterface>();
@@ -47,12 +57,22 @@ TEST_F(UtilsTest, svcName) {
     EXPECT_EQ("example::MarkerInterface", name);
 
     name = celix::serviceName<SvcWithFqn>();
-    //TODO EXPECT_EQ("SvcWithFqn[Version 1]", name);
+    EXPECT_EQ("[SvcWithFqn] [version 1]", name);
 
-    name = celix::functionServiceName<void()>("do");
-    EXPECT_EQ("do [std::function<void()>]", name);
+    name = celix::serviceName<SvcWithSpecializedName>();
+    EXPECT_EQ("SPECIALIZED", name);
 
+    name = celix::functionServiceName<std::function<void()>>("do");
+    EXPECT_EQ("[do] [std::function<void()>]", name);
 
-    name = celix::functionServiceName<std::vector<std::vector<long>>(long, int, std::vector<double>)>("collect");
-    //TODO EXPECT_EQ("collect[std::function<std::vector<std::vector<long>>(long, int, std::vector<double>)>]", name);
+    name = celix::functionServiceName<std::function<double()>>("do");
+    EXPECT_EQ("[do] [std::function<double()>]", name);
+
+    //TODO FIXME
+//    name = celix::functionServiceName<void(double)>("do");
+//    EXPECT_EQ("do [std::function<void(double)>]", name);
+
+    //TODO FIXME
+//    name = celix::functionServiceName<std::vector<std::vector<long>>(long, int, std::vector<double>)>("collect");
+//    EXPECT_EQ("collect [std::function<std::vector<std::vector<long>>(long, int, std::vector<double>)>]", name);
 }

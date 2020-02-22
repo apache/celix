@@ -26,10 +26,8 @@
 
 namespace celix {
 namespace impl {
-    void assertIsNotFunctionService(const std::string &svcName);
     std::string typeNameFromPrettyFunction(const std::string &templateName, const std::string &pretty);
-}
-}
+}}
 
 namespace {
 
@@ -57,9 +55,31 @@ namespace {
 
     template<typename R, typename Arg1, typename... Args>
     inline std::string functionName() {
-        return "std::function<" + typeNameInternal<R>() + "("  + argName<Arg1, Args...>() + ")>";
+        return "std::function<" + typeNameInternal<R>() + "(" + argName<Arg1, Args...>() + ")>";
     }
-};
+
+    template<typename T>
+    class has_NAME {
+        struct Fallback {
+            struct NAME {};
+        };
+        struct Derived : T, Fallback {
+
+        };
+
+        using True = float;
+        using False = double;
+
+        //note this works because Fallback::NAME* is a valid type (a pointer to a struct), but T::NAME* (assuming T::NAME is a field member) not.
+        template<typename U>
+        static False test(typename U::NAME*) { return 0.0; };
+
+        template<typename U>
+        static True test(U*) { return 0.0; };
+    public:
+        static constexpr bool value = sizeof(test<Derived>(nullptr)) == sizeof(True);
+    };
+}
 
 namespace celix {
 
@@ -71,37 +91,63 @@ namespace celix {
         return typeNameInternal<T>();
     }
 
-    /* TODO
+    /**
+     * the celix::serviceNameFor<I>() can be specialized to provide a customized service name for a type, without changes the class (i.e. adding a NAME member).
+     * @return This instance will return an empty string, indicating that there is no specialized function for serviceNameFor.
+     */
     template<typename I>
-    typename std::enable_if<I::FQN, std::string>::type
+    const char* customServiceNameFor() { return ""; }
+
+    //OR ??
+//    /**
+//     * the celix::customServiceNameFor(I*) can be specialized to provide a customized service name for a type, without changes the class (i.e. adding a NAME member).
+//     * Note that the pointer argument is not used
+//     * @return This instance will return an empty string, indicating that there is no specialized function for serviceNameFor.
+//     */
+//    template<typename I>
+//    inline std::string customServiceNameFor(I */*ignored*/) { return std::string{}; }
+
+    /**
+    * Returns the service name for a type I, based on the member I::NAME
+    */
+    template<typename I>
+    constexpr inline
+    typename std::enable_if<has_NAME<I>::value, std::string>::type
     serviceName() {
-        return I::FQN;
-    }*/
+        return I::NAME;
+    }
 
     /**
     * Returns the service name for a type I
     */
     template<typename I>
-    //NOTE C++17 typename std::enable_if<!std::is_callable<I>::value, std::string>::type
-    inline std::string serviceName() {
-        std::string svcName = typeName<I>();
-        celix::impl::assertIsNotFunctionService(svcName);
-        return svcName;
+    inline
+    typename std::enable_if<!has_NAME<I>::value, std::string>::type
+    serviceName() {
+        using namespace celix;
+        //I* ptr = nullptr;
+        //auto svcName = serviceNameFor(ptr); //note for C++14 this can be constexpr
+        auto svcName = customServiceNameFor<I>(); //note for C++14 this can be constexpr
+        return strnlen(svcName, 1) == 0 ? celix::typeName<I>() : std::string{svcName};
     }
 
-
-    //TODO resolve FQN for Function Service.
+    /**
+    * Returns the function signature for a std::function F.
+    */
+    template<typename F>
+    //NOTE C++17 typename std::enable_if<std::is_callable<I>::value, std::string>::type
+    inline std::string functionSignature() {
+        using FunctionType = F;
+        return functionName<decltype(&FunctionType::operator())>();
+    }
 
     /**
-    * Returns the service name for a std::function I.
-    * Note that for a std::function the additional function name is needed to get a fully qualified service name;
+    * Returns the service name for a function name.
+    * Combining the function name and function signature
     */
     template<typename F>
     //NOTE C++17 typename std::enable_if<std::is_callable<I>::value, std::string>::type
     inline std::string functionServiceName(const std::string &fName) {
-        using FunctionType = std::function<F>;
-        std::string func = functionName<decltype(&FunctionType::operator())>();
-        return fName + " [" + func + "]";
+        return std::string{"["} + fName + "] [" + functionSignature<F>() + "]";
     }
 }
-

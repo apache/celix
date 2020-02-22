@@ -87,7 +87,7 @@ namespace {
                 auto use = [&](const celix::ShellCommandFunction &cmd) -> void {
                     cmd(cmdName, cmdArgs, out, err);
                 };
-                commandCalled = ctx->buildUseFunctionService<void(const std::string &cmdName, const std::vector<std::string> &cmdArgs, std::ostream &out, std::ostream &err)>(celix::SHELL_COMMAND_FUNCTION_SERVICE_FQN)
+                commandCalled = ctx->buildUseFunctionService<celix::ShellCommandFunction>(celix::SHELL_COMMAND_FUNCTION_SERVICE_NAME)
                         .setFilter(f)
                         .setCallback(use)
                         .use();

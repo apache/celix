@@ -69,5 +69,5 @@ celix::ServiceRegistration celix::impl::registerLogging(const std::shared_ptr<ce
     props[celix::SHELL_COMMAND_FUNCTION_COMMAND_NAME] = "logging";
     props[celix::SHELL_COMMAND_FUNCTION_COMMAND_USAGE] = usage;
     props[celix::SHELL_COMMAND_FUNCTION_COMMAND_DESCRIPTION] = "logging command can be used to list all loggers and to configure the log level of the loggers";
-    return ctx->registerFunctionService(celix::SHELL_COMMAND_FUNCTION_SERVICE_FQN, std::move(cmd), std::move(props));
+    return ctx->registerFunctionService(celix::SHELL_COMMAND_FUNCTION_SERVICE_NAME, std::move(cmd), std::move(props));
 }

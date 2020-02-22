@@ -96,17 +96,17 @@ TEST_F(ServiceRegistrationBuilderTest, ServiceRegistrationBuilderTest) {
 TEST_F(ServiceRegistrationBuilderTest, FunctionServiceRegistrationBuilderTest) {
 
     auto fn = std::string{"test function"};
-    celix::FunctionServiceRegistrationBuilder<void()> builder{bundle(), registry(), fn};
+    celix::FunctionServiceRegistrationBuilder<std::function<void()>> builder{bundle(), registry(), fn};
     //NOTE by design not possible, to prevent wrong use:
     // auto copy = build;
     const auto templ = builder.copy(); //this is possible
 
     {
         auto reg = builder.setFunctionService([]{/*nop*/}).build();
-        auto functions = registry()->findFunctionServices<void()>(fn);
+        auto functions = registry()->findFunctionServices<std::function<void()>>(fn);
         EXPECT_EQ(functions.size(), 1);
     } //RAII -> deregister service
-    auto services = registry()->findFunctionServices<void()>(fn);
+    auto services = registry()->findFunctionServices<std::function<void()>>(fn);
     EXPECT_EQ(services.size(), 0);
 
     services = registry()->findServices<Interface1>("(name=val)");
@@ -125,10 +125,10 @@ TEST_F(ServiceRegistrationBuilderTest, FunctionServiceRegistrationBuilderTest) {
                 .addProperty("name1", "value1")
                 .addProperties(props2)
                 .build();
-        services = registry()->findFunctionServices<void()>(fn, "(name1=value1)");
+        services = registry()->findFunctionServices<std::function<void()>>(fn, "(name1=value1)");
         EXPECT_EQ(services.size(), 1);
 
-        celix::UseFunctionServiceOptions<void()> useOpts{fn};
+        celix::UseFunctionServiceOptions<std::function<void()>> useOpts{fn};
         useOpts.useWithProperties = [](const std::function<void()>& /*f*/, const celix::Properties &props) {
             EXPECT_EQ(props.find("name0"), props.end());
             EXPECT_EQ(props.at("name1"), "value1");
@@ -136,7 +136,7 @@ TEST_F(ServiceRegistrationBuilderTest, FunctionServiceRegistrationBuilderTest) {
             EXPECT_EQ(props.at("name3"), "value3");
         };
 
-        auto called = registry()->useFunctionService<void()>(useOpts);
+        auto called = registry()->useFunctionService<std::function<void()>>(useOpts);
         EXPECT_TRUE(called);
     }
 }

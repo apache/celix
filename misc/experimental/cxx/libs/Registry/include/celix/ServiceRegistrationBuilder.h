@@ -62,7 +62,6 @@ namespace celix {
         FunctionServiceRegistrationBuilder<F>& operator=(FunctionServiceRegistrationBuilder<F>&&);
 
         FunctionServiceRegistrationBuilder<F>& setFunctionService(F&& function);
-        FunctionServiceRegistrationBuilder<F>& setFunctionService(F function);
         //FunctionServiceRegistrationBuilder<F>& setFunctionServiceFactory(std::shared_ptr<celix::IServiceFactory<F>> factory);
 
         FunctionServiceRegistrationBuilder<F>& setProperties(celix::Properties);
@@ -80,7 +79,7 @@ namespace celix {
         const std::shared_ptr<celix::IResourceBundle> owner;
         const std::shared_ptr<celix::ServiceRegistry> registry;
         const std::string functionName;
-        std::function<F> function{};
+        F function{};
         celix::Properties properties{};
     };
 }
@@ -233,12 +232,6 @@ celix::FunctionServiceRegistrationBuilder<F>::setFunctionService(F&& func) {
     return *this;
 }
 
-template<typename F>
-inline celix::FunctionServiceRegistrationBuilder<F>& celix::FunctionServiceRegistrationBuilder<F>::setFunctionService(F func) {
-   function = func;
-   return *this;
-}
-
 //template<typename F>
 //celix::FunctionServiceRegistrationBuilder<F> &
 //celix::FunctionServiceRegistrationBuilder<F>::setFunctionServiceFactory(std::shared_ptr<celix::IServiceFactory<F>> factory) {
@@ -273,7 +266,7 @@ template<typename F>
 inline celix::ServiceRegistration celix::FunctionServiceRegistrationBuilder<F>::build() const {
     if (valid()) {
         //TODO note using copy, make also make a buildAndClear? or make build() also clear and add a buildAndKeep()?
-//        std::function<F> nFunc{};
+//        F nFunc{};
 //        celix::Properties nProps{};
 //        std::swap(function, nFunc);
 //        std::swap(properties, nProps);

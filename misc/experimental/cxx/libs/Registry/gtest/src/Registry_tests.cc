@@ -265,7 +265,7 @@ TEST_F(RegistryTest, StdFunctionTest) {
         count();
     };
     EXPECT_EQ(0, count);
-    celix::UseFunctionServiceOptions<void()> useOpts{"count"};
+    celix::UseFunctionServiceOptions<std::function<void()>> useOpts{"count"};
     useOpts.use = use;
     bool called = registry().useFunctionService(useOpts);
     EXPECT_TRUE(called);

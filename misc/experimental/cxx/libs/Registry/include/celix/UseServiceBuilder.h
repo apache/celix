@@ -62,9 +62,9 @@ namespace celix {
 
         UseFunctionServiceBuilder& setFilter(celix::Filter f);
 
-        UseFunctionServiceBuilder& setCallback(std::function<void(const std::function<F>& func)> f);
-        UseFunctionServiceBuilder& setCallback(std::function<void(const std::function<F>& func, const celix::Properties &props)> f);
-        UseFunctionServiceBuilder& setCallback(std::function<void(const std::function<F>& func, const celix::Properties &props, const celix::IResourceBundle &bnd)> f);
+        UseFunctionServiceBuilder& setCallback(std::function<void(const F& func)> f);
+        UseFunctionServiceBuilder& setCallback(std::function<void(const F& func, const celix::Properties &props)> f);
+        UseFunctionServiceBuilder& setCallback(std::function<void(const F& func, const celix::Properties &props, const celix::IResourceBundle &bnd)> f);
 
         UseFunctionServiceBuilder& setServiceId(long svcId);
 
@@ -175,21 +175,21 @@ inline celix::UseFunctionServiceBuilder<F> &celix::UseFunctionServiceBuilder<F>:
 
 template<typename F>
 inline celix::UseFunctionServiceBuilder<F> &
-celix::UseFunctionServiceBuilder<F>::setCallback(std::function<void(const std::function<F>& func)> f) {
+celix::UseFunctionServiceBuilder<F>::setCallback(std::function<void(const F& func)> f) {
     options.use = std::move(f);
     return *this;
 }
 
 template<typename F>
 inline celix::UseFunctionServiceBuilder<F> &celix::UseFunctionServiceBuilder<F>::setCallback(
-        std::function<void(const std::function<F>& func, const celix::Properties &)> f) {
+        std::function<void(const F& func, const celix::Properties &)> f) {
     options.useWithProperties = std::move(f);
     return *this;
 }
 
 template<typename F>
 inline celix::UseFunctionServiceBuilder<F> &celix::UseFunctionServiceBuilder<F>::setCallback(
-        std::function<void(const std::function<F>& func, const celix::Properties &, const celix::IResourceBundle &)> f) {
+        std::function<void(const F& func, const celix::Properties &, const celix::IResourceBundle &)> f) {
     options.useWithOwner = std::move(f);
     return *this;
 }

@@ -77,7 +77,7 @@ TEST_F(UseServiceBuilderTest, UseServiceBuilderTest) {
 }
 
 TEST_F(UseServiceBuilderTest, UseFunctionServiceBuilderTest) {
-    auto builder = celix::UseFunctionServiceBuilder<void()>{bundle(), registry(), "test"};
+    auto builder = celix::UseFunctionServiceBuilder<std::function<void()>>{bundle(), registry(), "test"};
     //NOTE by design not possible, to prevent wrong use:
     // auto copy = build;
     auto templ = builder.copy(); //this is possible
@@ -87,7 +87,7 @@ TEST_F(UseServiceBuilderTest, UseFunctionServiceBuilderTest) {
         EXPECT_FALSE(called);
 
         size_t count = 0;
-        auto reg = registry()->registerFunctionService<void()>("test", [&count]{++count;});
+        auto reg = registry()->registerFunctionService<std::function<void()>>("test", [&count]{++count;});
 
         called = builder.use();
         EXPECT_TRUE(called);

@@ -43,7 +43,7 @@ namespace {
             auto use = [&](const celix::ShellCommandFunction&, const celix::Properties &props) {
                 commands.push_back(celix::getProperty(props, celix::SHELL_COMMAND_FUNCTION_COMMAND_NAME, "!Error!"));
             };
-            ctx->buildUseFunctionService<celix::ShellCommandFunctionSignature>(celix::SHELL_COMMAND_FUNCTION_SERVICE_FQN)
+            ctx->buildUseFunctionService<celix::ShellCommandFunction>(celix::SHELL_COMMAND_FUNCTION_SERVICE_NAME)
                     .setFilter(hasCommandNameFilter)
                     .setCallback(use)
                 .useAll();
@@ -73,7 +73,7 @@ namespace {
                         out << "Command Usage      : " << celix::getProperty(props, celix::SHELL_COMMAND_FUNCTION_COMMAND_USAGE, "!Error!") << std::endl;
                         out << "Command Description: " << celix::getProperty(props, celix::SHELL_COMMAND_FUNCTION_COMMAND_DESCRIPTION, "!Error!") << std::endl;
                     };
-                    ctx->buildUseFunctionService<void(const std::string &cmdName, const std::vector<std::string> &cmdArgs, std::ostream &out, std::ostream &err)>(celix::SHELL_COMMAND_FUNCTION_SERVICE_FQN)
+                    ctx->buildUseFunctionService<celix::ShellCommandFunction>(celix::SHELL_COMMAND_FUNCTION_SERVICE_NAME)
                             .setFilter(commandNameFilter)
                             .setCallback(use)
                             .use();
@@ -98,5 +98,5 @@ celix::ServiceRegistration celix::impl::registerHelp(const std::shared_ptr<celix
     props[celix::SHELL_COMMAND_FUNCTION_COMMAND_NAME] = "help";
     props[celix::SHELL_COMMAND_FUNCTION_COMMAND_USAGE] = "help [command name]";
     props[celix::SHELL_COMMAND_FUNCTION_COMMAND_DESCRIPTION] = "display available commands and description.";
-    return ctx->registerFunctionService(celix::SHELL_COMMAND_FUNCTION_SERVICE_FQN, std::move(cmd), std::move(props));
+    return ctx->registerFunctionService(celix::SHELL_COMMAND_FUNCTION_SERVICE_NAME, std::move(cmd), std::move(props));
 }

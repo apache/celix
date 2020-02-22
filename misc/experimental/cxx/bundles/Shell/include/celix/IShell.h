@@ -25,7 +25,7 @@
 namespace celix {
     class IShell {
     public:
-        static constexpr const char * const SERVICE_FQN = "celix::IShell [Version 1]";
+        static constexpr const char * const NAME = "[celix::IShell] [version 1]";
 
         virtual ~IShell() = default;
 

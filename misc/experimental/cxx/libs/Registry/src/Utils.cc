@@ -17,24 +17,14 @@
  *under the License.
  */
 
-#include "celix/Utils.h"
-
 #include <string>
 #include <cassert>
 
 #include <spdlog/spdlog.h>
 
+#include "celix/Utils.h"
+
 static auto logger = spdlog::get("celix::Utils");
-
-
-void celix::impl::assertIsNotFunctionService(const std::string &svcName) {
-    size_t pos = svcName.find("::function"); //note could be std::fuction or st::__1::function, etc?
-    if (pos <= svcName.size()) {
-        //match
-        logger->warn("Unexpected std::function as template argument. For function use the find/use/trackFunctionService instead of find/use/trackService!");
-        assert(false);
-    }
-}
 
 std::string celix::impl::typeNameFromPrettyFunction(const std::string &templateName, const std::string &prettyFunction) {
     std::string result = prettyFunction; //USING pretty function to retrieve the filled in template argument without using typeid()

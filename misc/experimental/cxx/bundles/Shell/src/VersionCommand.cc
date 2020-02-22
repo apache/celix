@@ -49,5 +49,5 @@ celix::ServiceRegistration celix::impl::registerVersion(const std::shared_ptr<ce
     props[celix::SHELL_COMMAND_FUNCTION_COMMAND_NAME] = "version";
     props[celix::SHELL_COMMAND_FUNCTION_COMMAND_USAGE] = "version";
     props[celix::SHELL_COMMAND_FUNCTION_COMMAND_DESCRIPTION] = "Show version information about the framework (TODO and installed bundles)";
-    return ctx->registerFunctionService(celix::SHELL_COMMAND_FUNCTION_SERVICE_FQN, std::move(cmd), std::move(props));
+    return ctx->registerFunctionService(celix::SHELL_COMMAND_FUNCTION_SERVICE_NAME, std::move(cmd), std::move(props));
 }
