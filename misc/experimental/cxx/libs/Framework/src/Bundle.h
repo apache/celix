@@ -40,39 +40,35 @@ namespace celix {
         Bundle& operator=(const Bundle&) = delete;
 
         //resource part
-        bool hasCacheEntry(const std::string &) const noexcept override;
-        bool isCacheEntryDir(const std::string &) const noexcept override;
-        bool isCacheEntryFile(const std::string &) const noexcept override;
-        std::string absPathForCacheEntry(const std::string &) const noexcept override;
-        std::vector <std::string> readCacheDir(const std::string &) const noexcept override;
-        std::string cacheRoot() const noexcept override;
+        bool hasCacheEntry(const std::string &) const override;
+        bool isCacheEntryDir(const std::string &) const override;
+        bool isCacheEntryFile(const std::string &) const override;
+        std::string absPathForCacheEntry(const std::string &) const override;
+        std::vector <std::string> readCacheDir(const std::string &) const override;
+        const std::string& cacheRoot() const override;
 
         //bundle part
-        bool isFrameworkBundle() const noexcept override { return bndId == celix::FRAMEWORK_BUNDLE_ID; }
+        bool isFrameworkBundle() const override { return bndId == celix::FRAMEWORK_BUNDLE_ID; }
 
-        void *handle() const noexcept override { return nullptr; } //TODO
+        void *handle() const override { return nullptr; } //TODO
 
-        long id() const noexcept override { return bndId; }
+        long id() const override { return bndId; }
 
-        const std::string &name() const noexcept override { return bndManifest.at(celix::MANIFEST_BUNDLE_NAME); }
+        const std::string &name() const override { return bndManifest.at(celix::MANIFEST_BUNDLE_NAME); }
 
-        const std::string &symbolicName() const noexcept override {
-            return bndManifest.at(celix::MANIFEST_BUNDLE_SYMBOLIC_NAME);
-        }
-
-        const std::string &group() const noexcept override {
+        const std::string &group() const override {
             return bndManifest.at(celix::MANIFEST_BUNDLE_GROUP);
         }
 
-        const std::string &version() const noexcept override { return bndManifest.at(celix::MANIFEST_BUNDLE_VERSION); }
+        const std::string &version() const override { return bndManifest.at(celix::MANIFEST_BUNDLE_VERSION); }
 
-        const celix::Properties &manifest() const noexcept override { return bndManifest; }
+        const celix::Properties &manifest() const override { return bndManifest; }
 
-        bool isValid() const noexcept override { return bndId >= 0; }
+        bool isValid() const override { return bndId >= 0; }
 
-        celix::Framework &framework() const noexcept override { return *fw; }
+        celix::Framework &framework() const override { return *fw; }
 
-        celix::BundleState state() const noexcept override {
+        celix::BundleState state() const override {
             return bndState.load(std::memory_order_acquire);
         }
 

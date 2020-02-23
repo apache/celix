@@ -49,6 +49,7 @@ namespace celix {
         celix::registerStaticBundle(std::move(symbolicName), std::move(actFactory), std::move(manifest), resourcesZip, resourcesZipLen);
     }
 
+    //TODO create IFramework and move impl to private/cc
     class Framework {
     public:
         Framework(celix::Properties config = {});
@@ -86,6 +87,7 @@ namespace celix {
 
         std::string cacheDir() const;
         std::string uuid() const;
+        std::string shortUUID() const; //only the first 4 char of the framework uuid
 
         std::shared_ptr<celix::BundleContext> context() const;
 

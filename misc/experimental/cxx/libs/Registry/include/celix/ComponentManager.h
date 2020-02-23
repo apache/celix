@@ -294,8 +294,8 @@ namespace celix {
     };
 }
 
-std::ostream& operator<< (std::ostream& out, celix::ComponentManagerState state);
-std::ostream& operator<< (std::ostream& out, const celix::GenericComponentManager& mng);
+std::ostream& operator<<(std::ostream& out, celix::ComponentManagerState state);
+std::ostream& operator<<(std::ostream& out, const celix::GenericComponentManager& mng);
 
 
 

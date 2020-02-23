@@ -28,7 +28,12 @@ long celix::EmptyResourceBundle::id() const {
     return LONG_MAX;
 }
 
-std::string celix::EmptyResourceBundle::cacheRoot() const {
+const std::string& celix::EmptyResourceBundle::name() const {
+    static std::string bndName{"EmptyBundle"};
+    return bndName;
+}
+
+const std::string& celix::EmptyResourceBundle::cacheRoot() const {
     static std::string empty{};
     return empty;
 }

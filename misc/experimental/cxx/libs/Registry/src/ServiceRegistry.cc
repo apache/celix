@@ -37,7 +37,7 @@
 
 #include "ServiceTrackerImpl.h"
 
-static auto logger = spdlog::stdout_color_mt("celix::ServiceRegistry");
+static auto logger = celix::getLogger("celix::ServiceRegistry");
 
 /**********************************************************************************************************************
   Impl classes
@@ -102,10 +102,10 @@ public:
         assert(! (factoryService && service)); //cannot register both factory and 'normal' service
 
         if (factoryService) {
-            logger->debug("Registering service factory '{}' from bundle id {}.", svcName, bnd->id());
+            logger->debug("Registering service factory '{}' for bundle {} (id={}).", svcName, bnd->name(), bnd->id());
         } else {
             //note service can be nullptr. TODO is this allowed?
-            logger->debug("Registering service '{}' form bundle id {}", svcName, bnd->id());
+            logger->debug("Registering service '{}' for bundle {} (id={}).", svcName, bnd->name(), bnd->id());
         }
 
         const auto it = services.registry[svcName].emplace(new celix::impl::SvcEntry{std::move(bnd), svcId, svcName, std::move(service), std::move(factoryService), std::move(props)});

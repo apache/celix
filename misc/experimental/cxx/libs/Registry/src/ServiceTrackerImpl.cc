@@ -22,7 +22,7 @@
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 
-//static auto logger = spdlog::stdout_color_mt("celix::ServiceTracker");
+//static auto logger = celix::getLogger("celix::ServiceTracker");
 
 static celix::Filter emptyFilter{};
 static std::string emptyString{};

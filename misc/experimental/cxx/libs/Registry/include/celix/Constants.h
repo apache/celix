@@ -30,7 +30,6 @@ namespace celix {
     static constexpr const char *const SERVICE_COMPONENT_ID = "service.component.id";
     static constexpr const char *const FRAMEWORK_UUID = "framework.uuid";
 
-    static constexpr const char *const MANIFEST_BUNDLE_SYMBOLIC_NAME = "Bundle-SymbolicName";
     static constexpr const char *const MANIFEST_BUNDLE_NAME = "Bundle-Name";
     static constexpr const char *const MANIFEST_BUNDLE_VERSION = "Bundle-Version";
     static constexpr const char *const MANIFEST_BUNDLE_GROUP = "Bundle-Group";

@@ -23,25 +23,25 @@
 
 #include "Bundle.h"
 
-bool celix::Bundle::hasCacheEntry(const std::string &path) const noexcept {
+bool celix::Bundle::hasCacheEntry(const std::string &path) const {
     auto abs = absPathForCacheEntry(path);
     struct stat st{};
     bool exists = stat(abs.c_str(), &st) == 0;
     return exists;
 }
 
-bool celix::Bundle::isCacheEntryDir(const std::string &) const noexcept { return false; } //TODO
+bool celix::Bundle::isCacheEntryDir(const std::string &) const { return false; } //TODO
 
-bool celix::Bundle::isCacheEntryFile(const std::string &) const noexcept { return false; } //TODO
+bool celix::Bundle::isCacheEntryFile(const std::string &) const { return false; } //TODO
 
-std::vector <std::string> celix::Bundle::readCacheDir(const std::string &) const noexcept { //TODO
+std::vector <std::string> celix::Bundle::readCacheDir(const std::string &) const { //TODO
     return std::vector < std::string > {};
 }
 
-std::string celix::Bundle::cacheRoot() const noexcept {
+const std::string& celix::Bundle::cacheRoot() const {
     return bundleCache;
 }
 
-std::string celix::Bundle::absPathForCacheEntry(const std::string &entryPath) const noexcept {
+std::string celix::Bundle::absPathForCacheEntry(const std::string &entryPath) const {
     return bundleCache + "/" + entryPath;
 }

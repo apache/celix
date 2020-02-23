@@ -23,7 +23,9 @@
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 
-static auto logger = spdlog::stdout_color_mt("celix::Filter");
+#include "celix/Utils.h"
+
+static auto logger = celix::getLogger("celix::Filter");
 
 
 namespace {

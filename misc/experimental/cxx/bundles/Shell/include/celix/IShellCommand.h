@@ -39,7 +39,7 @@ namespace celix {
         virtual void executeCommand(const std::string &cmdName, const std::vector<std::string> &cmdArgs, std::ostream &out, std::ostream &err) noexcept = 0;
     };
 
-    static constexpr const char * const SHELL_COMMAND_FUNCTION_SERVICE_NAME = "[celix::ShellCommandFunction] [Version 1]";
+    static constexpr const char * const SHELL_COMMAND_FUNCTION_SERVICE_NAME = "[celix::ShellCommandFunction] [version 1]";
     static constexpr const char * const SHELL_COMMAND_FUNCTION_COMMAND_NAME = IShellCommand::COMMAND_NAME;
     static constexpr const char * const SHELL_COMMAND_FUNCTION_COMMAND_USAGE = IShellCommand::COMMAND_USAGE;
     static constexpr const char * const SHELL_COMMAND_FUNCTION_COMMAND_DESCRIPTION = IShellCommand::COMMAND_DESCRIPTION;

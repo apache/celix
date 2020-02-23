@@ -20,15 +20,17 @@
 #include <fstream>
 #include <string>
 #include <cstring>
+#include <memory>
 
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 
 #include "celix/Properties.h"
+#include "celix/Utils.h"
 
 #define MALLOC_BLOCK_SIZE		5
 
-static auto logger = spdlog::stdout_color_mt("celix::Properties");
+static auto logger = celix::getLogger("celix::Properties");
 
 
 static char * utils_stringTrim(char * string) {

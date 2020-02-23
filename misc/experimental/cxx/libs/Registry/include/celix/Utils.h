@@ -23,6 +23,8 @@
 #include <string>
 #include <iostream>
 #include <functional>
+#include <spdlog/spdlog.h>
+
 
 namespace celix {
 namespace impl {
@@ -142,4 +144,10 @@ namespace celix {
     inline std::string functionServiceName(const std::string &fName) {
         return fName + " [" + functionSignature<F>() + "]";
     }
+
+    //TODO can this really be noexcept?
+    //TODO move to celix/Logging.h and move Utils.h and Logging.h to Utils static lib
+    std::shared_ptr<spdlog::logger> getLogger(const std::string& name);
 }
+
+

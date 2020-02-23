@@ -17,16 +17,51 @@
  *under the License.
  */
 
+#include <mutex>
 #include <string>
 #include <cassert>
+#include <unordered_map>
 
 #include <spdlog/spdlog.h>
+#ifdef __APPLE__
+#include <spdlog/sinks/stdout_color_sinks.h>
+#else
+#include <spdlog/sinks/stdout_sinks.h>
+#endif
 
 #include "celix/Utils.h"
 
-static auto logger = spdlog::get("celix::Utils");
+namespace {
+    std::mutex loggersMutex{};
+    std::unordered_map<std::string, std::shared_ptr<spdlog::logger>> loggers{};
+}
+
+std::shared_ptr<spdlog::logger> celix::getLogger(const std::string& name) {
+    std::lock_guard<std::mutex> lck{loggersMutex};
+    auto it = loggers.find(name);
+    if (it == loggers.end()) {
+        try {
+            //new
+#ifdef __APPLE__
+            loggers[name] = spdlog::stdout_color_mt(name);
+#else
+            //NOTE use color does not work on ubuntu 18
+            loggers[name] = spdlog::stdout_logger_mt(name);
+#endif
+            loggers[name]->set_level(spdlog::level::trace); //TODO make configureable
+        } catch (...) {
+            spdlog::default_logger()->critical("Got exception when creating spdlog logger");
+            abort();
+        }
+    }
+    return loggers[name];
+}
+
+//FIXME throws exception, maybe to early?
+//auto static logger = celix::getLogger("celix::Utils");
 
 std::string celix::impl::typeNameFromPrettyFunction(const std::string &templateName, const std::string &prettyFunction) {
+    static auto logger = celix::getLogger("celix::Utils");
     std::string result = prettyFunction; //USING pretty function to retrieve the filled in template argument without using typeid()
     size_t bpos = result.find(templateName) + templateName.size(); //find begin pos after INTERFACE_TYPENAME = entry
     size_t epos = bpos;

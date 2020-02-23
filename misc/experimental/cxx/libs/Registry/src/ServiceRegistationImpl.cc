@@ -25,8 +25,9 @@
 
 #include "ServiceRegistationImpl.h"
 #include "celix/Constants.h"
+#include "celix/Utils.h"
 
-static auto logger = spdlog::stdout_color_mt("celix::ServiceRegistration");
+static auto logger = celix::getLogger("celix::ServiceRegistration");
 
 
 class celix::ServiceRegistration::Impl {

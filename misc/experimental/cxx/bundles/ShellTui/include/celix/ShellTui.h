@@ -17,8 +17,7 @@
  *under the License.
  */
 
-#ifndef CELIX_SHELLTUI_H
-#define CELIX_SHELLTUI_H
+#pragma once
 
 #include <sstream>
 #include <mutex>
@@ -32,6 +31,7 @@
 
 
 namespace celix {
+namespace bundle {
     static constexpr int SHELL_TUI_LINE_SIZE = 256;
 
     class ShellTui {
@@ -64,6 +64,5 @@ namespace celix {
         char buffer[SHELL_TUI_LINE_SIZE+1]{};
         int pos{};
     };
-}
+}}
 
-#endif //CELIX_SHELLTUI_H

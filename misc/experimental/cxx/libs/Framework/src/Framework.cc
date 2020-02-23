@@ -36,7 +36,7 @@
 
 #include "BundleController.h"
 
-static auto logger = spdlog::stdout_color_mt("celix::Framework");
+static auto logger = celix::getLogger("celix::Framework");
 
 extern bool extractBundle(const char *bundleZip, const char *targetPath); //FROM miniunz.c
 
@@ -64,9 +64,8 @@ namespace {
 
     celix::Properties createFwManifest() {
         celix::Properties m{};
-        m[celix::MANIFEST_BUNDLE_SYMBOLIC_NAME] = "framework";
-        m[celix::MANIFEST_BUNDLE_NAME] = "Framework";
-        m[celix::MANIFEST_BUNDLE_GROUP] = "Celix";
+        m[celix::MANIFEST_BUNDLE_NAME] = "celix::Framework";
+        m[celix::MANIFEST_BUNDLE_GROUP] = "celix";
         m[celix::MANIFEST_BUNDLE_VERSION] = "3.0.0";
         return m;
     }
@@ -103,13 +102,15 @@ public:
             cwd{createCwdString()},
             fwUUID{genUUIDString()},
             fwCacheDir{genFwCacheDir(config)} {
-        logger->debug("Framework {} created", fwUUID);
+        logger->trace("Celix Framework {} created", shortUUID());
     }
 
     Impl(const Impl&) = delete;
     Impl& operator=(const Impl&) = delete;
 
-    ~Impl() {}
+    ~Impl() {
+        logger->trace("Celix Framework {} destroyed", shortUUID());
+    }
 
     std::vector<long> listBundles(bool includeFrameworkBundle) const {
         std::vector<long> result{};
@@ -128,7 +129,7 @@ public:
     }
 
     long installBundle(
-            const std::string& symbolicName,
+            const std::string& name,
             std::function<celix::IBundleActivator*(std::shared_ptr<celix::BundleContext>)> actFactory,
             celix::Properties manifest,
             bool autoStart,
@@ -136,7 +137,7 @@ public:
             size_t resourcesZipLen) {
         //TODO on separate thread ?? specific bundle resolve thread ??
         long bndId = -1L;
-        if (symbolicName.empty()) {
+        if (name.empty()) {
             //TODO move to cc file and add logger
             //LOG(WARNING) << "Cannot install bundle with a empty symbolic name" << std::endl;
             return bndId;
@@ -144,10 +145,7 @@ public:
 
         std::shared_ptr<celix::BundleController> bndController{nullptr};
         {
-            manifest[celix::MANIFEST_BUNDLE_SYMBOLIC_NAME] = symbolicName;
-            if (manifest.find(celix::MANIFEST_BUNDLE_NAME) == manifest.end()) {
-                manifest[celix::MANIFEST_BUNDLE_NAME] = symbolicName;
-            }
+            manifest[celix::MANIFEST_BUNDLE_NAME] = name;
             if (manifest.find(celix::MANIFEST_BUNDLE_VERSION) == manifest.end()) {
                 manifest[celix::MANIFEST_BUNDLE_NAME] = "0.0.0";
             }
@@ -295,6 +293,10 @@ public:
         return fwUUID;
     }
 
+    std::string shortUUID() const {
+        return fwUUID.substr(0, 4);
+    }
+
     std::shared_ptr<celix::BundleContext> frameworkContext() const {
         std::lock_guard<std::mutex> lck(bundles.mutex);
         return bundles.entries.at(celix::FRAMEWORK_BUNDLE_ID)->context();
@@ -320,7 +322,7 @@ public:
 
         //TODO update state
 
-        std::cout << "Celix Framework Started\n";
+        logger->info("Celix Framework {} Started.", shortUUID());
         return true;
     }
 
@@ -345,7 +347,7 @@ public:
 
         //TODO clean cache dir
 
-        std::cout << "Celix Framework Stopped\n";
+        logger->info("Celix Framework {} Stopped.", shortUUID());
         return true;
     }
 
@@ -437,6 +439,10 @@ std::string celix::Framework::cacheDir() const {
 
 std::string celix::Framework::uuid() const {
     return pimpl->uuid();
+}
+
+std::string celix::Framework::shortUUID() const {
+    return pimpl->shortUUID();
 }
 
 std::shared_ptr<celix::BundleContext> celix::Framework::context() const {

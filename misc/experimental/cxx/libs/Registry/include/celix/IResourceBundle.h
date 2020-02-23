@@ -30,7 +30,9 @@ namespace celix {
 
         virtual long id() const = 0;
 
-        virtual std::string cacheRoot() const = 0;
+        virtual const std::string& name() const = 0;
+
+        virtual const std::string& cacheRoot() const = 0;
 
         virtual bool hasCacheEntry(const std::string &entryPath) const = 0;
         virtual bool isCacheEntryDir(const std::string &path) const = 0;
@@ -51,7 +53,9 @@ namespace celix {
 
         long id() const override;
 
-        std::string cacheRoot() const override;
+        const std::string& name() const override;
+
+        const std::string& cacheRoot() const override;
 
         bool hasCacheEntry(const std::string &entryPath) const override;
 

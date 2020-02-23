@@ -62,10 +62,10 @@ TEST_F(UtilsTest, svcName) {
     name = celix::typeName<SvcWithSpecializedName>();
     EXPECT_EQ("SPECIALIZED", name);
 
-    name = celix::functionServiceName<std::function<void()>>("do");
+    name = celix::functionServiceName<std::function<void()>>("[do]");
     EXPECT_EQ("[do] [std::function<void()>]", name);
 
-    name = celix::functionServiceName<std::function<double()>>("do");
+    name = celix::functionServiceName<std::function<double()>>("[do]");
     EXPECT_EQ("[do] [std::function<double()>]", name);
 
     //TODO FIXME

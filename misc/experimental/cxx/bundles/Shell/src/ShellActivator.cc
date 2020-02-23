@@ -36,7 +36,7 @@ extern const uint8_t resources[]       asm("_binary_celix_cxx_shell_resources_zi
 extern const uint8_t resources_end[]   asm("_binary_celix_cxx_shell_resources_zip_end");
 #endif
 
-static auto logger = spdlog::stdout_color_mt("celix::ShellTuiActivator");
+static auto logger = celix::getLogger("celix::bundle::ShellActivator");
 
 namespace {
 

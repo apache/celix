@@ -40,7 +40,7 @@ private:
 TEST_F(ShellTuiTest, AcceptCommand) {
     {
         std::stringstream stream{};
-        celix::ShellTui tui{&stream, &stream};
+        celix::bundle::ShellTui tui{&stream, &stream};
         usleep(100000);//IMPROVE, for now wait till stdin reading thread is started
 
         stream.flush();

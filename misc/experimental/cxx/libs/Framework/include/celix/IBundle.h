@@ -35,25 +35,21 @@ namespace celix {
     public:
         virtual ~IBundle() = default;
 
-        virtual const std::string& name() const noexcept = 0;
+        virtual const std::string& group() const = 0;
 
-        virtual const std::string& symbolicName() const noexcept = 0;
+        virtual bool isFrameworkBundle() const  = 0;
 
-        virtual const std::string& group() const noexcept = 0;
+        virtual void* handle() const = 0;
 
-        virtual bool isFrameworkBundle() const noexcept  = 0;
+        virtual celix::BundleState state() const  = 0;
 
-        virtual void* handle() const noexcept = 0;
+        virtual const std::string& version() const = 0;
 
-        virtual celix::BundleState state() const noexcept  = 0;
+        virtual const celix::Properties& manifest() const  = 0;
 
-        virtual const std::string& version() const noexcept = 0;
+        virtual bool isValid() const = 0;
 
-        virtual const celix::Properties& manifest() const noexcept  = 0;
-
-        virtual bool isValid() const noexcept = 0;
-
-        virtual celix::Framework& framework() const noexcept = 0;
+        virtual celix::Framework& framework() const = 0;
     };
 
 }

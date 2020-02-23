@@ -28,7 +28,7 @@
 #include "celix/ComponentManager.h"
 
 
-static auto logger = spdlog::stdout_color_mt("celix::ComponentManager");
+static auto logger = celix::getLogger("celix::ComponentManager");
 
 
 static std::string genUUID() {
@@ -219,8 +219,8 @@ void celix::GenericComponentManager::transition() {
         targetState = pair.second;
     }
 
-//    logger->info("Transition {} ({})from {} to {}", name, uuid, currentState, targetState);
-    logger->info("Transition {} ({}) TODO", name, uuid);
+    logger->info("Transition {}({}) from {} to {}", name, uuid, currentState, targetState);
+    //logger->info("Transition {} from {} to {}", *this, currentState, targetState);
 
     if (currentState == ComponentManagerState::Disabled) {
         switch (targetState) {

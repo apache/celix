@@ -40,11 +40,11 @@
 static constexpr const char * const PROMPT = "-> ";
 static constexpr int KEY_ENTER = '\n';
 
-static auto logger = spdlog::stdout_color_mt("celix::ShellTui");
+static auto logger = celix::getLogger("celix::bundle::ShellTui");
 
 
 
-celix::ShellTui::ShellTui(std::ostream *_outStream, std::ostream *_errStream) : outStream{_outStream}, errStream{_errStream} {
+celix::bundle::ShellTui::ShellTui(std::ostream *_outStream, std::ostream *_errStream) : outStream{_outStream}, errStream{_errStream} {
     int fds[2];
     int rc  = pipe(fds);
     if (rc == 0) {
@@ -61,12 +61,12 @@ celix::ShellTui::ShellTui(std::ostream *_outStream, std::ostream *_errStream) : 
 }
 
 
-celix::ShellTui::~ShellTui() {
+celix::bundle::ShellTui::~ShellTui() {
     write(writePipeFd, "\0", 1); //trigger select to stop
     readThread.join();
 }
 
-void celix::ShellTui::runnable() {
+void celix::bundle::ShellTui::runnable() {
     //setup file descriptors
     fd_set rfds;
     int nfds = writePipeFd > STDIN_FILENO ? (writePipeFd +1) : (STDIN_FILENO + 1);
@@ -87,13 +87,13 @@ void celix::ShellTui::runnable() {
     }
 }
 
-void celix::ShellTui::writePrompt() {
+void celix::bundle::ShellTui::writePrompt() {
     *outStream << PROMPT;
     std::flush(*outStream);
     outStream->flush();
 }
 
-void celix::ShellTui::parseInput() {
+void celix::bundle::ShellTui::parseInput() {
     char* line = nullptr;
     int nr_chars = (int)read(STDIN_FILENO, buffer, SHELL_TUI_LINE_SIZE-pos-1);
     for (int bufpos = 0; bufpos < nr_chars; bufpos++) {
@@ -116,7 +116,7 @@ void celix::ShellTui::parseInput() {
     } //for
 }
 
-void celix::ShellTui::setShell(const std::shared_ptr<celix::IShell>& _shell) {
+void celix::bundle::ShellTui::setShell(const std::shared_ptr<celix::IShell>& _shell) {
     std::lock_guard<std::mutex> lck{mutex};
     shell = std::move(_shell);
 }
