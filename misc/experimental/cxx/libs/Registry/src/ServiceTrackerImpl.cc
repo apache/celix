@@ -22,7 +22,7 @@
 
 
 
-//static auto logger = celix::getLogger("celix::ServiceTracker");
+//#define LOGGER celix::getLogger("celix::ServiceTracker");
 
 static celix::Filter emptyFilter{};
 static std::string emptyString{};

@@ -22,7 +22,6 @@
 #include <utility>
 #include <unordered_map>
 #include <mutex>
-#include <iostream>
 #include <set>
 #include <vector>
 #include <future>
@@ -31,12 +30,10 @@
 
 #include <uuid/uuid.h>
 
-#include <spdlog/spdLog.h>
-
 
 #include "BundleController.h"
 
-static auto logger = celix::getLogger("celix::Framework");
+#define LOGGER celix::getLogger("celix::Framework")
 
 extern bool extractBundle(const char *bundleZip, const char *targetPath); //FROM miniunz.c
 
@@ -102,14 +99,14 @@ public:
             cwd{createCwdString()},
             fwUUID{genUUIDString()},
             fwCacheDir{genFwCacheDir(config)} {
-        logger->trace("Celix Framework {} created", shortUUID());
+        LOGGER->trace("Celix Framework {} created", shortUUID());
     }
 
     Impl(const Impl&) = delete;
     Impl& operator=(const Impl&) = delete;
 
     ~Impl() {
-        logger->trace("Celix Framework {} destroyed", shortUUID());
+        LOGGER->trace("Celix Framework {} destroyed", shortUUID());
     }
 
     std::vector<long> listBundles(bool includeFrameworkBundle) const {
@@ -138,7 +135,7 @@ public:
         //TODO on separate thread ?? specific bundle resolve thread ??
         long bndId = -1L;
         if (name.empty()) {
-            //TODO move to cc file and add logger
+            //TODO move to cc file and add LOGGER
             //LOG(WARNING) << "Cannot install bundle with a empty symbolic name" << std::endl;
             return bndId;
         }
@@ -169,7 +166,7 @@ public:
             if (autoStart) {
                 bool successful = bndController->transitionTo(BundleState::ACTIVE);
                 if (!successful) {
-                    //TODO move to cc file and add logger
+                    //TODO move to cc file and add LOGGER
                     //LOG(WARNING) << "Cannot start bundle " << bndController->bundle()->symbolicName() << std::endl;
                 }
             }
@@ -322,7 +319,7 @@ public:
 
         //TODO update state
 
-        logger->info("Celix Framework {} Started.", shortUUID());
+        LOGGER->info("Celix Framework {} Started.", shortUUID());
         return true;
     }
 
@@ -347,7 +344,7 @@ public:
 
         //TODO clean cache dir
 
-        logger->info("Celix Framework {} Stopped.", shortUUID());
+        LOGGER->info("Celix Framework {} Stopped.", shortUUID());
         return true;
     }
 

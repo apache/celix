@@ -36,7 +36,7 @@ extern const uint8_t resources[]       asm("_binary_celix_cxx_shell_resources_zi
 extern const uint8_t resources_end[]   asm("_binary_celix_cxx_shell_resources_zip_end");
 #endif
 
-static auto logger = celix::getLogger("celix::bundle::ShellActivator");
+#define LOGGER celix::getLogger("celix::bundle::ShellActivator")
 
 namespace {
 
@@ -156,7 +156,7 @@ namespace {
             read = fread(resources, 1, sect->size, dylib);
         }
         if (dylib == nullptr || read != sect->size) {
-            logger->warn("Error reading resources from dylib {}: {}", info.dli_fname, strerror(errno));
+            LOGGER->warn("Error reading resources from dylib {}: {}", info.dli_fname, strerror(errno));
             free(resources);
             resources = nullptr;
             resourcesLen = 0;

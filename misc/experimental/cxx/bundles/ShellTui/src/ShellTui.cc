@@ -40,7 +40,7 @@
 static constexpr const char * const PROMPT = "-> ";
 static constexpr int KEY_ENTER = '\n';
 
-static auto logger = celix::getLogger("celix::bundle::ShellTui");
+#define LOGGER celix::getLogger("celix::bundle::ShellTui")
 
 
 
@@ -53,10 +53,10 @@ celix::bundle::ShellTui::ShellTui(std::ostream *_outStream, std::ostream *_errSt
         if(fcntl(writePipeFd, F_SETFL, O_NONBLOCK) == 0) {
             readThread = std::thread{&ShellTui::runnable, this};
         } else {
-            logger->error("fcntl on pipe failed. {}", strerror(errno));
+            LOGGER->error("fcntl on pipe failed. {}", strerror(errno));
         }
     } else {
-        logger->error("create pipe failed. {}", strerror(errno));
+        LOGGER->error("create pipe failed. {}", strerror(errno));
     }
 }
 

@@ -28,7 +28,7 @@
 #include "celix/ComponentManager.h"
 
 
-static auto logger = celix::getLogger("celix::ComponentManager");
+#define LOGGER celix::getLogger("celix::ComponentManager")
 
 
 static std::string genUUID() {
@@ -219,9 +219,9 @@ void celix::GenericComponentManager::transition() {
         targetState = pair.second;
     }
 
-    logger->info("Transition {}({}) from {} to {}", name, uuid, celix::toString(currentState), celix::toString(targetState));
-    //logger->info("Transition {}({}) from {} to {}", name, uuid, currentState, targetState);
-    //logger->info("Transition {} from {} to {}", *this, currentState, targetState);
+    LOGGER->info("Transition {}({}) from {} to {}", name, uuid, celix::toString(currentState), celix::toString(targetState));
+    //LOGGER->info("Transition {}({}) from {} to {}", name, uuid, currentState, targetState);
+    //LOGGER->info("Transition {} from {} to {}", *this, currentState, targetState);
 
     if (currentState == ComponentManagerState::Disabled) {
         switch (targetState) {
@@ -308,7 +308,7 @@ void celix::GenericComponentManager::removeServiceDependency(const std::string& 
             removed = it->second;
             serviceDependencies.erase(it);
         } else {
-            logger->info("Cannot find service dependency with uuid {} in component manager {} with uuid {}", serviceDependencyUUID, name, uuid);
+            LOGGER->info("Cannot find service dependency with uuid {} in component manager {} with uuid {}", serviceDependencyUUID, name, uuid);
         }
     }
     if (removed) {
@@ -326,7 +326,7 @@ void celix::GenericComponentManager::removeProvideService(const std::string& pro
             removed = it->second;
             providedServices.erase(it);
         } else {
-            logger->info("Cannot find provided service with uuid {} in component manager {} with uuid {}", provideServiceUUID, name, uuid);
+            LOGGER->info("Cannot find provided service with uuid {} in component manager {} with uuid {}", provideServiceUUID, name, uuid);
         }
     }
     if (removed) {
@@ -353,11 +353,11 @@ celix::GenericComponentManager::findGenericServiceDependency(const std::string &
         if (it->second->getSvcName() == svcName) {
             return it->second;
         } else {
-            logger->warn("Requested svc name has svc name {} instead of the requested {}", it->second->getSvcName(), svcName);
+            LOGGER->warn("Requested svc name has svc name {} instead of the requested {}", it->second->getSvcName(), svcName);
             return nullptr;
         }
     } else {
-        logger->warn("Cmp Manager ({}) does not have a service dependency with uuid {}; returning an invalid GenericServiceDependency", uuid, svcDepUUID);
+        LOGGER->warn("Cmp Manager ({}) does not have a service dependency with uuid {}; returning an invalid GenericServiceDependency", uuid, svcDepUUID);
         return nullptr;
     }
 }
@@ -380,7 +380,7 @@ void celix::GenericComponentManager::suspense() {
         transition();
         std::lock_guard<std::mutex> lck{stateMutex};
         suspendedCount += 1;
-        logger->info("Suspended {} ({})", name, uuid);
+        LOGGER->info("Suspended {} ({})", name, uuid);
     }
 }
 
@@ -395,7 +395,7 @@ void celix::GenericComponentManager::resume() {
     }
     if (changedSuspended) {
         transition();
-        logger->info("Resumed {} ({})", name, uuid);
+        LOGGER->info("Resumed {} ({})", name, uuid);
     }
 }
 
@@ -441,11 +441,11 @@ celix::GenericComponentManager::findGenericProvidedService(const std::string &sv
         if (it->second->getServiceName() == svcName) {
             return it->second;
         } else {
-            logger->warn("Requested svc name has svc name {} instead of the requested {}", it->second->getServiceName(), svcName);
+            LOGGER->warn("Requested svc name has svc name {} instead of the requested {}", it->second->getServiceName(), svcName);
             return nullptr;
         }
     } else {
-        logger->warn("Cmp Manager ({}) does not have a provided service with uuid {}; returning an invalid GenericProvidedService", uuid, providedServiceUUID);
+        LOGGER->warn("Cmp Manager ({}) does not have a provided service with uuid {}; returning an invalid GenericProvidedService", uuid, providedServiceUUID);
         return nullptr;
     }
 }

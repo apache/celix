@@ -30,7 +30,7 @@
 
 #define MALLOC_BLOCK_SIZE		5
 
-static auto logger = celix::getLogger("celix::Properties");
+#define LOGGER celix::getLogger("celix::Properties")
 
 
 static char * utils_stringTrim(char * string) {
@@ -183,7 +183,7 @@ celix::Properties celix::loadProperties(const std::string &path) {
     std::ifstream file;
     file.open(path);
     if (file.fail()) {
-        logger->warn("Cannot open file {}. {}", path, file.failbit);
+        LOGGER->warn("Cannot open file {}. {}", path, file.failbit);
         return celix::Properties{};
     } else {
         return celix::loadProperties(file);
