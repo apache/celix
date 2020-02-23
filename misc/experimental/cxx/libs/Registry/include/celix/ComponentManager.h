@@ -292,6 +292,8 @@ namespace celix {
     private:
         const std::function<std::shared_ptr<T>()> getcmpInstanceCallback;
     };
+
+    std::string toString(celix::ComponentManagerState state);
 }
 
 std::ostream& operator<<(std::ostream& out, celix::ComponentManagerState state);

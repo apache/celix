@@ -219,7 +219,8 @@ void celix::GenericComponentManager::transition() {
         targetState = pair.second;
     }
 
-    logger->info("Transition {}({}) from {} to {}", name, uuid, currentState, targetState);
+    logger->info("Transition {}({}) from {} to {}", name, uuid, celix::toString(currentState), celix::toString(targetState));
+    //logger->info("Transition {}({}) from {} to {}", name, uuid, currentState, targetState);
     //logger->info("Transition {} from {} to {}", *this, currentState, targetState);
 
     if (currentState == ComponentManagerState::Disabled) {
@@ -467,21 +468,27 @@ std::ostream& operator<< (std::ostream& out, const celix::GenericComponentManage
 
 std::ostream& operator<< (std::ostream& out, celix::ComponentManagerState state)
 {
+    out << celix::toString(state);
+    return out;
+}
+
+std::string celix::toString(celix::ComponentManagerState state) {
+    std::string result{};
     switch (state) {
         case celix::ComponentManagerState::Disabled:
-            out << "Disabled";
+            result = "Disabled";
             break;
         case celix::ComponentManagerState::ComponentUninitialized:
-            out << "ComponentUninitialized";
+            result = "ComponentUninitialized";
             break;
         case celix::ComponentManagerState::ComponentInitialized:
-            out << "ComponentInitialized";
+            result = "ComponentInitialized";
             break;
         case celix::ComponentManagerState::ComponentStarted:
-            out << "ComponentStarted";
+            result = "ComponentStarted";
             break;
     }
-    return out;
+    return result;
 }
 
 bool celix::GenericProvidedService::isEnabled() const {
