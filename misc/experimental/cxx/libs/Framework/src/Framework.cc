@@ -32,7 +32,7 @@
 #include <uuid/uuid.h>
 
 #include <spdlog/spdLog.h>
-#include <spdlog/sinks/stdout_color_sinks.h>
+
 
 #include "BundleController.h"
 

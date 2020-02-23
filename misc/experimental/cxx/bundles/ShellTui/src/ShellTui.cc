@@ -30,8 +30,8 @@
 #include <mutex>
 #include <cerrno>
 
-#include <spdlog/spdlog.h>
-#include <spdlog/sinks/stdout_color_sinks.h>
+
+
 
 #include "celix/Api.h"
 #include "celix/IShellCommand.h"

@@ -19,8 +19,8 @@
 
 #include "ServiceTrackerImpl.h"
 
-#include <spdlog/spdlog.h>
-#include <spdlog/sinks/stdout_color_sinks.h>
+
+
 
 //static auto logger = celix::getLogger("celix::ServiceTracker");
 

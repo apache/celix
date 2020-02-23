@@ -22,8 +22,8 @@
 #include <cstring>
 #include <memory>
 
-#include <spdlog/spdlog.h>
-#include <spdlog/sinks/stdout_color_sinks.h>
+
+
 
 #include "celix/Properties.h"
 #include "celix/Utils.h"
