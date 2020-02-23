@@ -148,6 +148,7 @@ namespace celix {
     //TODO can this really be noexcept?
     //TODO move to celix/Logging.h and move Utils.h and Logging.h to Utils static lib
     std::shared_ptr<spdlog::logger> getLogger(const std::string& name);
+
 }
 
 

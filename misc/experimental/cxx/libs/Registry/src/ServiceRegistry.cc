@@ -28,10 +28,6 @@
 #include <future>
 #include <cassert>
 
-#include <spdlog/spdlog.h>
-#include <spdlog/sinks/stdout_color_sinks.h>
-
-
 #include "celix/Constants.h"
 #include "celix/Filter.h"
 

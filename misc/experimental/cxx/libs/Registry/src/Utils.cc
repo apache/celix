@@ -50,7 +50,7 @@ std::shared_ptr<spdlog::logger> celix::getLogger(const std::string& name) {
 #endif
             loggers[name]->set_level(spdlog::level::trace); //TODO make configureable
         } catch (...) {
-            spdlog::default_logger()->critical("Got exception when creating spdlog logger");
+            std::cerr << "Got exception when creating spdlog logger" << std::endl;
             abort();
         }
     }
