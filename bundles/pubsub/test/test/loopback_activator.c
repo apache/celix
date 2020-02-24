@@ -26,7 +26,7 @@
 #include "pubsub/api.h"
 #include "msg.h"
 
-static int tst_receive(void *handle, const char *msgType, unsigned int msgTypeId, void *msg, celix_properties_t *metadata, bool *release);
+static int tst_receive(void *handle, const char *msgType, unsigned int msgTypeId, void *msg, const celix_properties_t *metadata, bool *release);
 static void sut_pubSet(void *handle, void *service);
 
 struct activator {
