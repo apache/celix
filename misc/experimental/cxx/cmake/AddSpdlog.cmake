@@ -29,7 +29,7 @@ ExternalProject_Get_Property(spdlog_project source_dir binary_dir)
 
 file(MAKE_DIRECTORY ${source_dir}/spdlog/include)
 add_library(spdlog::spdlog IMPORTED STATIC GLOBAL)
-add_dependencies(pdlog::spdlog spdlog_project)
+add_dependencies(spdlog::spdlog spdlog_project)
 set_target_properties(spdlog::spdlog PROPERTIES
         IMPORTED_LOCATION "${binary_dir}/libspdlog.a"
         INTERFACE_INCLUDE_DIRECTORIES "${source_dir}/include"
