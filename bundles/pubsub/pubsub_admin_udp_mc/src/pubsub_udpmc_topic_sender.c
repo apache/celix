@@ -81,7 +81,7 @@ typedef struct pubsub_msg {
 static int psa_udpmc_localMsgTypeIdForMsgType(void* handle, const char* msgType, unsigned int* msgTypeId);
 static void* psa_udpmc_getPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties);
 static void psa_udpmc_ungetPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties);
-static int psa_udpmc_topicPublicationSend(void* handle, unsigned int msgTypeId, const void *inMsg);
+static int psa_udpmc_topicPublicationSend(void* handle, unsigned int msgTypeId, const void *inMsg, celix_properties_t *metadata);
 static bool psa_udpmc_sendMsg(psa_udpmc_bounded_service_entry_t *entry, pubsub_udp_msg_t* msg);
 static unsigned int rand_range(unsigned int min, unsigned int max);
 
@@ -267,7 +267,7 @@ static void psa_udpmc_ungetPublisherService(void *handle, const celix_bundle_t *
     celixThreadMutex_unlock(&sender->boundedServices.mutex);
 }
 
-static int psa_udpmc_topicPublicationSend(void* handle, unsigned int msgTypeId, const void *inMsg) {
+static int psa_udpmc_topicPublicationSend(void* handle, unsigned int msgTypeId, const void *inMsg, celix_properties_t *metadata) {
     psa_udpmc_bounded_service_entry_t *entry = handle;
     int status = 0;
 

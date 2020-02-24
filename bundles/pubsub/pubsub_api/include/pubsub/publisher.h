@@ -29,6 +29,8 @@
 
 #include <stdlib.h>
 
+#include "hash_map.h"
+
 #define PUBSUB_PUBLISHER_SERVICE_NAME           "pubsub.publisher"
 #define PUBSUB_PUBLISHER_SERVICE_VERSION        "3.0.0"
  
@@ -59,7 +61,7 @@ struct pubsub_publisher {
      * send is a async function, but the msg can be safely deleted after send returns.
      * Returns 0 on success.
      */
-    int (*send)(void *handle, unsigned int msgTypeId, const void *msg);
+    int (*send)(void *handle, unsigned int msgTypeId, const void *msg, celix_properties_t *metadata);
  
 };
 typedef struct pubsub_publisher pubsub_publisher_t;

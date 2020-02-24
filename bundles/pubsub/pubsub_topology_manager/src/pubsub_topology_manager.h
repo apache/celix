@@ -96,6 +96,7 @@ typedef struct pstm_topic_receiver_or_sender_entry {
     int usageCount; //nr of subscriber service for the topic receiver (matching scope & topic)
     long selectedPsaSvcId;
     long selectedSerializerSvcId;
+    long selectedProtocolSvcId;
     long bndId;
     celix_properties_t *topicProperties; //found in META-INF/(pub|sub)/(topic).properties
 

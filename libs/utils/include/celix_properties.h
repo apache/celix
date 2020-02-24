@@ -56,6 +56,8 @@ const char* celix_properties_get(const celix_properties_t *properties, const cha
 
 void celix_properties_set(celix_properties_t *properties, const char *key, const char *value);
 
+void celix_properties_setWithoutCopy(celix_properties_t *properties, char *key, char *value);
+
 void celix_properties_unset(celix_properties_t *properties, const char *key);
 
 celix_properties_t* celix_properties_copy(const celix_properties_t *properties);

@@ -41,6 +41,7 @@ extern "C" {
 #define PUBSUB_ENDPOINT_VISIBILITY      "pubsub.endpoint.visibility" //local, host or system. e.g. for IPC host
 #define PUBSUB_ENDPOINT_ADMIN_TYPE       PUBSUB_ADMIN_TYPE_KEY
 #define PUBSUB_ENDPOINT_SERIALIZER       PUBSUB_SERIALIZER_TYPE_KEY
+#define PUBSUB_ENDPOINT_PROTOCOL         PUBSUB_PROTOCOL_TYPE_KEY
 
 
 #define PUBSUB_PUBLISHER_ENDPOINT_TYPE      "publisher"
@@ -50,7 +51,7 @@ extern "C" {
 
 celix_properties_t *
 pubsubEndpoint_create(const char *fwUUID, const char *scope, const char *topic, const char *pubsubType,
-                      const char *adminType, const char *serType, celix_properties_t *topic_props);
+                      const char *adminType, const char *serType, const char *protType, celix_properties_t *topic_props);
 
 celix_properties_t *
 pubsubEndpoint_createFromSubscriberSvc(bundle_context_t *ctx, long svcBndId, const celix_properties_t *svcProps);

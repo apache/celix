@@ -17,26 +17,20 @@
  * under the License.
  */
 
-#ifndef PUBSUB_CONSTANTS_H_
-#define PUBSUB_CONSTANTS_H_
+#include <stdint.h>
 
-#define PUBSUB_ADMIN_TYPE_KEY       "pubsub.config"
-#define PUBSUB_SERIALIZER_TYPE_KEY  "pubsub.serializer"
-#define PUBSUB_PROTOCOL_TYPE_KEY    "pubsub.protocol"
+#ifndef CELIX_PUBSUB_WIRE_PROTOCOL_COMMON_H
+#define CELIX_PUBSUB_WIRE_PROTOCOL_COMMON_H
 
-/**
- * Endpoints with the system visibility should be discoverable through the complete system
- */
-#define PUBSUB_ENDPOINT_SYSTEM_VISIBILITY    "system"
+static const unsigned int PROTOCOL_WIRE_SYNC = 0xABBABAAB;
+static const unsigned int PROTOCOL_WIRE_ENVELOPE_VERSION = 1;
 
-/**
- * Endpoints with the system visibility are discoverable for a single host (i.e. IPC)
- */
-#define PUBSUB_ENDPOINT_HOST_VISIBILITY      "host"
+int readShort(const unsigned char *data, int offset, uint16_t *val);
+int readInt(const unsigned char *data, int offset, uint32_t *val);
+int readLong(const unsigned char *data, int offset, uint64_t *val);
 
-/**
- * Endpoints which are only visible within a single process
- */
-#define PUBSUB_ENDPOINT_LOCAL_VISIBILITY     "local"
+int writeShort(unsigned char *data, int offset, uint16_t val);
+int writeInt(unsigned char *data, int offset, uint32_t val);
+int writeLong(unsigned char *data, int offset, uint64_t val);
 
-#endif /* PUBSUB_CONSTANTS_H_ */
+#endif //CELIX_PUBSUB_WIRE_PROTOCOL_COMMON_H
