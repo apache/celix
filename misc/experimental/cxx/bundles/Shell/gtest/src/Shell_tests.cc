@@ -42,34 +42,34 @@ TEST_F(ShellTest, AreCommandsAndShellRegistered) {
 
     std::string filter = std::string{"("} + celix::IShellCommand::COMMAND_NAME + "=lb)";
     long svcId = framework().context()->findService<celix::IShellCommand>(filter);
-    EXPECT_TRUE(svcId > 0);
+    EXPECT_TRUE(svcId >= 0);
 
     filter = std::string{"("} + celix::SHELL_COMMAND_FUNCTION_COMMAND_NAME + "=help)";
     svcId = framework().context()->findFunctionService<celix::ShellCommandFunction>(celix::SHELL_COMMAND_FUNCTION_SERVICE_NAME, filter);
-    EXPECT_TRUE(svcId > 0);
+    EXPECT_TRUE(svcId >= 0);
 
     filter = std::string{"("} + celix::SHELL_COMMAND_FUNCTION_COMMAND_NAME + "=inspect)";
     svcId = framework().context()->findFunctionService<celix::ShellCommandFunction>(celix::SHELL_COMMAND_FUNCTION_SERVICE_NAME, filter);
-    EXPECT_TRUE(svcId > 0);
+    EXPECT_TRUE(svcId >= 0);
 
     filter = std::string{"("} + celix::SHELL_COMMAND_FUNCTION_COMMAND_NAME + "=query)";
     svcId = framework().context()->findFunctionService<celix::ShellCommandFunction>(celix::SHELL_COMMAND_FUNCTION_SERVICE_NAME, filter);
-    EXPECT_TRUE(svcId > 0);
+    EXPECT_TRUE(svcId >= 0);
 
     filter = std::string{"("} + celix::SHELL_COMMAND_FUNCTION_COMMAND_NAME + "=stop)";
     svcId = framework().context()->findFunctionService<celix::ShellCommandFunction>(celix::SHELL_COMMAND_FUNCTION_SERVICE_NAME, filter);
-    EXPECT_TRUE(svcId > 0);
+    EXPECT_TRUE(svcId >= 0);
 
     filter = std::string{"("} + celix::SHELL_COMMAND_FUNCTION_COMMAND_NAME + "=start)";
     svcId = framework().context()->findFunctionService<celix::ShellCommandFunction>(celix::SHELL_COMMAND_FUNCTION_SERVICE_NAME, filter);
-    EXPECT_TRUE(svcId > 0);
+    EXPECT_TRUE(svcId >= 0);
 
     filter = std::string{"("} + celix::SHELL_COMMAND_FUNCTION_COMMAND_NAME + "=version)";
     svcId = framework().context()->findFunctionService<celix::ShellCommandFunction>(celix::SHELL_COMMAND_FUNCTION_SERVICE_NAME, filter);
-    EXPECT_TRUE(svcId > 0);
+    EXPECT_TRUE(svcId >= 0);
 
     svcId = framework().context()->findService<celix::IShell>();
-    EXPECT_TRUE(svcId > 0);
+    EXPECT_TRUE(svcId >= 0);
 };
 
 TEST_F(ShellTest, LbCommandTest) {
