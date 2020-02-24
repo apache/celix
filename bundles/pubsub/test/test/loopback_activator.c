@@ -81,7 +81,7 @@ static void sut_pubSet(void *handle, void *service) {
 }
 
 
-static int tst_receive(void *handle, const char *msgType, unsigned int msgTypeId, void * voidMsg, celix_properties_t *metadata, bool *release) {
+static int tst_receive(void *handle, const char *msgType, unsigned int msgTypeId, void * voidMsg, const celix_properties_t *metadata, bool *release) {
   struct activator *act =handle;
   msg_t *msg = voidMsg;
   msg_t send_msg = *msg;
