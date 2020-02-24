@@ -37,13 +37,12 @@ private:
 };
 
 class MarkerInterface1 {
-  //nop
 };
+
 class MarkerInterface2 {
-    //nop
 };
+
 class MarkerInterface3 {
-    //nop
 };
 
 

@@ -36,13 +36,12 @@ private:
 
 
 class Interface1 {
-  //nop
 };
+
 class Interface2 {
-    //nop
 };
+
 class Interface3 {
-    //nop
 };
 
 

@@ -60,26 +60,45 @@ namespace {
         return "std::function<" + typeNameInternal<R>() + "(" + argName<Arg1, Args...>() + ")>";
     }
 
+//    template<typename T>
+//    class has_NAME {
+//        struct Fallback {
+//            struct NAME {};
+//            virtual ~Fallback() = default;
+//        };
+//        struct Derived : T, Fallback {
+//            ~Derived() final = default;
+//        };
+//
+//        using True = float;
+//        using False = double;
+//
+//        //note this works because Fallback::NAME* is a valid type (a pointer to a struct), but T::NAME* (assuming T::NAME is a field member) not.
+//        template<typename U>
+//        static False test(typename U::NAME*) { return 0.0; };
+//
+//        template<typename U>
+//        static True test(U*) { return 0.0; };
+//    public:
+//        static constexpr bool value = sizeof(test<Derived>(nullptr)) == sizeof(True);
+//    };
+
     template<typename T>
-    class has_NAME {
-        struct Fallback {
-            struct NAME {};
-        };
-        struct Derived : T, Fallback {
-
-        };
-
-        using True = float;
-        using False = double;
-
-        //note this works because Fallback::NAME* is a valid type (a pointer to a struct), but T::NAME* (assuming T::NAME is a field member) not.
-        template<typename U>
-        static False test(typename U::NAME*) { return 0.0; };
+    struct has_NAME
+    {
+        template<typename U, const char * PTR>
+        struct SFINAE {};
 
         template<typename U>
-        static True test(U*) { return 0.0; };
-    public:
-        static constexpr bool value = sizeof(test<Derived>(nullptr)) == sizeof(True);
+        static float test(SFINAE<U, U::NAME>*) { return 0; };
+
+        template<typename U>
+        static double test(...) { return 0; };
+
+//        template<typename U>
+//        static int32_t test(...) { return 0; };
+
+        static constexpr bool value = sizeof(test<T>(nullptr)) == sizeof(float);
     };
 }
 

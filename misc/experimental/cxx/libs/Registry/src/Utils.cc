@@ -23,11 +23,7 @@
 #include <unordered_map>
 
 #include <spdlog/spdlog.h>
-#ifdef __APPLE__
 #include <spdlog/sinks/stdout_color_sinks.h>
-#else
-#include <spdlog/sinks/stdout_sinks.h>
-#endif
 
 #include "celix/Utils.h"
 
@@ -42,12 +38,7 @@ std::shared_ptr<spdlog::logger> celix::getLogger(const std::string& name) {
     if (it == loggers.end()) {
         try {
             //new
-#ifdef __APPLE__
             loggers[name] = spdlog::stdout_color_mt(name);
-#else
-            //NOTE use color does not work on ubuntu 18
-            loggers[name] = spdlog::stdout_logger_mt(name);
-#endif
             loggers[name]->set_level(spdlog::level::trace); //TODO make configureable
         } catch (...) {
             std::cerr << "Got exception when creating spdlog logger" << std::endl;

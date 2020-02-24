@@ -15,22 +15,23 @@
 # specific language governing permissions and limitations
 # under the License.
 
+include(ExternalProject)
+ExternalProject_Add(
+        spdlog_project
+        GIT_REPOSITORY https://github.com/gabime/spdlog.git
+        GIT_TAG v1.5.0
+        UPDATE_DISCONNECTED TRUE
+        PREFIX ${CMAKE_BINARY_DIR}/spdlog
+        INSTALL_COMMAND ""
+)
 
-set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules")
+ExternalProject_Get_Property(spdlog_project source_dir binary_dir)
 
-if (ENABLE_TESTING)
-    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/AddGTest.cmake)
-endif ()
+file(MAKE_DIRECTORY ${source_dir}/spdlog/include)
+add_library(spdlog::spdlog IMPORTED STATIC GLOBAL)
+#add_dependencies(gtest googletest_project)
+set_target_properties(spdlog::spdlog PROPERTIES
+        IMPORTED_LOCATION "${binary_dir}/libspdlog.a"
+        INTERFACE_INCLUDE_DIRECTORIES "${source_dir}/include"
+)
 
-find_package(spdlog QUIET)
-if (NOT spdlog_FOUND)
-    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/AddSpdlog.cmake)
-endif()
-
-add_subdirectory(libs/Registry)
-add_subdirectory(libs/Framework)
-
-add_subdirectory(bundles/Shell)
-add_subdirectory(bundles/ShellTui)
-
-add_subdirectory(examples/ShellExample)
