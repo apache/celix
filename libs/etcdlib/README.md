@@ -19,6 +19,7 @@ limitations under the License.
 etcd is a distributed, consistent key-value store for shared configuration and service discovery, part of the CoreOS project.
 
 This repository provides a library for etcd for C applications.
+It uses the v2 (REST) api of etcd.
 
 Etcdlib can be used as part of Celix but is also usable stand-alone.
 
