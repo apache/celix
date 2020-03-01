@@ -39,9 +39,9 @@
 #include "pubsub_utils.h"
 
 
-static void pubsubEndpoint_setFields(celix_properties_t *psEp, const char* fwUUID, const char* scope, const char* topic, const char *pubsubType, const char *adminType, const char *serType, const celix_properties_t *topic_props);
+static void pubsubEndpoint_setFields(celix_properties_t *psEp, const char* fwUUID, const char* scope, const char* topic, const char *pubsubType, const char *adminType, const char *serType, const char *protType, const celix_properties_t *topic_props);
 
-static void pubsubEndpoint_setFields(celix_properties_t *ep, const char* fwUUID, const char* scope, const char* topic, const char *pubsubType, const char *adminType, const char *serType, const celix_properties_t *topic_props) {
+static void pubsubEndpoint_setFields(celix_properties_t *ep, const char* fwUUID, const char* scope, const char* topic, const char *pubsubType, const char *adminType, const char *serType, const char *protType, const celix_properties_t *topic_props) {
     assert(ep != NULL);
 
     //copy topic properties
@@ -82,6 +82,10 @@ static void pubsubEndpoint_setFields(celix_properties_t *ep, const char* fwUUID,
     if (serType != NULL) {
         celix_properties_set(ep, PUBSUB_ENDPOINT_SERIALIZER, serType);
     }
+
+    if (protType != NULL) {
+        celix_properties_set(ep, PUBSUB_ENDPOINT_PROTOCOL, protType);
+    }
 }
 
 celix_properties_t* pubsubEndpoint_create(
@@ -91,9 +95,10 @@ celix_properties_t* pubsubEndpoint_create(
         const char* pubsubType,
         const char* adminType,
         const char *serType,
+        const char *protType,
         celix_properties_t *topic_props) {
     celix_properties_t *ep = celix_properties_create();
-    pubsubEndpoint_setFields(ep, fwUUID, scope, topic, pubsubType, adminType, serType, topic_props);
+    pubsubEndpoint_setFields(ep, fwUUID, scope, topic, pubsubType, adminType, serType, protType, topic_props);
     if (!pubsubEndpoint_isValid(ep, true, true)) {
         celix_properties_destroy(ep);
         ep = NULL;
@@ -128,7 +133,7 @@ celix_properties_t* pubsubEndpoint_createFromSubscriberSvc(bundle_context_t* ctx
 
     const char *pubsubType = PUBSUB_SUBSCRIBER_ENDPOINT_TYPE;
 
-    pubsubEndpoint_setFields(ep, fwUUID, scope, topic, pubsubType, NULL, NULL, data.props);
+    pubsubEndpoint_setFields(ep, fwUUID, scope, topic, pubsubType, NULL, NULL, NULL, data.props);
 
     if (data.props != NULL) {
         celix_properties_destroy(data.props); //Can be deleted since setFields invokes properties_copy
@@ -161,7 +166,7 @@ celix_properties_t* pubsubEndpoint_createFromPublisherTrackerInfo(bundle_context
     celix_bundleContext_useBundle(ctx, bundleId, &data, retrieveTopicProperties);
 
     if (data.props != NULL) {
-        pubsubEndpoint_setFields(ep, fwUUID, scope, topic, PUBSUB_PUBLISHER_ENDPOINT_TYPE, NULL, NULL, data.props);
+        pubsubEndpoint_setFields(ep, fwUUID, scope, topic, PUBSUB_PUBLISHER_ENDPOINT_TYPE, NULL, NULL, NULL, data.props);
         celix_properties_destroy(data.props); //safe to delete, properties are copied in pubsubEndpoint_setFields
     }
 

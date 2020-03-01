@@ -227,6 +227,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             Celix::shell
             Celix::shell_tui
             Celix::pubsub_serializer_json
+            Celix::pubsub_protocol_wire_v1
             Celix::pubsub_discovery_etcd
             Celix::pubsub_topology_manager
             Celix::pubsub_admin_zmq
@@ -246,6 +247,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             Celix::shell
             Celix::shell_tui
             Celix::pubsub_serializer_json
+            Celix::pubsub_protocol_wire_v1
             Celix::pubsub_discovery_etcd
             Celix::pubsub_topology_manager
             Celix::pubsub_admin_zmq

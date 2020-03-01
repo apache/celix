@@ -91,7 +91,7 @@ void subscriber_start(pubsub_receiver_t* client);
 void subscriber_stop(pubsub_receiver_t* client);
 void subscriber_destroy(pubsub_receiver_t* client);
 
-int pubsub_subscriber_recv(void* handle, const char* msgType, unsigned int msgTypeId, void* msg, bool* release);
+int pubsub_subscriber_recv(void* handle, const char* msgType, unsigned int msgTypeId, void* msg, const celix_properties_t *metadata, bool* release);
 
 
 #endif /* PUBSUB_WEBSOCKET_PRIVATE_H_ */

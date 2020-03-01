@@ -87,7 +87,7 @@ static void* send_thread(void* arg) {
                 }
                 place->data[nr_char - 1] = '\0';
                 if (publish_svc->send) {
-                    if (publish_svc->send(publish_svc->handle, msgId, place) == 0) {
+                    if (publish_svc->send(publish_svc->handle, msgId, place, NULL) == 0) {
                         printf("Sent %s [%f, %f] (%s, %s) data len = %d\n", st_struct->topic,
                                place->position.lat, place->position.lon, place->name, place->description, nr_char);
                     }
@@ -193,7 +193,7 @@ void subscriber_destroy(pubsub_receiver_t *subscriber) {
     free(subscriber);
 }
 
-int pubsub_subscriber_recv(void* handle, const char* msgType, unsigned int msgTypeId, void* msg, bool* release) {
+int pubsub_subscriber_recv(void* handle, const char* msgType, unsigned int msgTypeId, void* msg, const celix_properties_t *metadata, bool* release) {
     poi_cmd_t *cmd = (poi_cmd_t *) msg;
     pubsub_info_t *pubsub = (pubsub_info_t *) handle;
     printf("Received command %s\n", cmd->command);

@@ -481,8 +481,9 @@ static void pubsub_discovery_addDiscoveredEndpoint(pubsub_discovery_t *disc, cel
             const char *type = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TYPE, "!Error!");
             const char *admin = celix_properties_get(endpoint, PUBSUB_ENDPOINT_ADMIN_TYPE, "!Error!");
             const char *ser = celix_properties_get(endpoint, PUBSUB_SERIALIZER_TYPE_KEY, "!Error!");
-            L_INFO("[PSD] Adding discovered endpoint %s. type is %s, admin is %s, serializer is %s.\n",
-                   uuid, type, admin, ser);
+            const char *prot = celix_properties_get(endpoint, PUBSUB_PROTOCOL_TYPE_KEY, "!Error!");
+            L_INFO("[PSD] Adding discovered endpoint %s. type is %s, admin is %s, serializer is %s, protocol is %s.\n",
+                   uuid, type, admin, ser, prot);
         }
 
         celixThreadMutex_lock(&disc->discoveredEndpointsListenersMutex);
@@ -511,8 +512,9 @@ static void pubsub_discovery_removeDiscoveredEndpoint(pubsub_discovery_t *disc, 
         const char *type = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TYPE, "!Error!");
         const char *admin = celix_properties_get(endpoint, PUBSUB_ENDPOINT_ADMIN_TYPE, "!Error!");
         const char *ser = celix_properties_get(endpoint, PUBSUB_SERIALIZER_TYPE_KEY, "!Error!");
-        L_INFO("[PSD] Removing discovered endpoint %s. type is %s, admin is %s, serializer is %s.\n",
-               uuid, type, admin, ser);
+        const char *prot = celix_properties_get(endpoint, PUBSUB_PROTOCOL_TYPE_KEY, "!Error!");
+        L_INFO("[PSD] Removing discovered endpoint %s. type is %s, admin is %s, serializer is %s, protocol = %s.\n",
+               uuid, type, admin, ser, prot);
     }
 
     if (endpoint != NULL) {
@@ -607,6 +609,7 @@ bool pubsub_discovery_executeCommand(void *handle, const char * commandLine __at
         const char *topic = celix_properties_get(ep, PUBSUB_ENDPOINT_TOPIC_NAME, "!Error!");
         const char *adminType = celix_properties_get(ep, PUBSUB_ENDPOINT_ADMIN_TYPE, "!Error!");
         const char *serType = celix_properties_get(ep, PUBSUB_ENDPOINT_SERIALIZER, "!Error!");
+        const char *protType = celix_properties_get(ep, PUBSUB_ENDPOINT_PROTOCOL, "!Error!");
         const char *type = celix_properties_get(ep, PUBSUB_ENDPOINT_TYPE, "!Error!");
         fprintf(os, "Endpoint %s:\n", uuid);
         fprintf(os, "   |- type          = %s\n", type);
@@ -614,6 +617,7 @@ bool pubsub_discovery_executeCommand(void *handle, const char * commandLine __at
         fprintf(os, "   |- topic         = %s\n", topic);
         fprintf(os, "   |- admin type    = %s\n", adminType);
         fprintf(os, "   |- serializer    = %s\n", serType);
+        fprintf(os, "   |- protocol      = %s\n", protType);
     }
     celixThreadMutex_unlock(&disc->discoveredEndpointsMutex);
 
@@ -628,6 +632,7 @@ bool pubsub_discovery_executeCommand(void *handle, const char * commandLine __at
         const char *topic = celix_properties_get(entry->properties, PUBSUB_ENDPOINT_TOPIC_NAME, "!Error!");
         const char *adminType = celix_properties_get(entry->properties, PUBSUB_ENDPOINT_ADMIN_TYPE, "!Error!");
         const char *serType = celix_properties_get(entry->properties, PUBSUB_ENDPOINT_SERIALIZER, "!Error!");
+        const char *protType = celix_properties_get(entry->properties, PUBSUB_ENDPOINT_PROTOCOL, "!Error!");
         const char *type = celix_properties_get(entry->properties, PUBSUB_ENDPOINT_TYPE, "!Error!");
         int age = (int)(now.tv_sec - entry->createTime.tv_sec);
         fprintf(os, "Endpoint %s:\n", uuid);
@@ -636,6 +641,7 @@ bool pubsub_discovery_executeCommand(void *handle, const char * commandLine __at
         fprintf(os, "   |- topic         = %s\n", topic);
         fprintf(os, "   |- admin type    = %s\n", adminType);
         fprintf(os, "   |- serializer    = %s\n", serType);
+        fprintf(os, "   |- protocol      = %s\n", protType);
         fprintf(os, "   |- age           = %ds\n", age);
         fprintf(os, "   |- is set        = %s\n", entry->isSet ? "true" : "false");
         if (disc->verbose) {

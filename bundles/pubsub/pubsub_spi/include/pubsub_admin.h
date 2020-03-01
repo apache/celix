@@ -44,16 +44,16 @@
 struct pubsub_admin_service {
     void *handle;
 
-    celix_status_t (*matchPublisher)(void *handle, long svcRequesterBndId, const celix_filter_t *svcFilter, celix_properties_t **outTopicProperties, double *outScore, long *outSerializerSvcId);
-    celix_status_t (*matchSubscriber)(void *handle, long svcProviderBndId, const celix_properties_t *svcProperties, celix_properties_t **outTopicProperties, double *outScore, long *outSerializerSvcId);
+    celix_status_t (*matchPublisher)(void *handle, long svcRequesterBndId, const celix_filter_t *svcFilter, celix_properties_t **outTopicProperties, double *outScore, long *outSerializerSvcId, long *outProtocolSvcId);
+    celix_status_t (*matchSubscriber)(void *handle, long svcProviderBndId, const celix_properties_t *svcProperties, celix_properties_t **outTopicProperties, double *outScore, long *outSerializerSvcId, long *outProtocolSvcId);
     celix_status_t (*matchDiscoveredEndpoint)(void *handle, const celix_properties_t *endpoint, bool *match);
 
     //note endpoint is owned by caller
-    celix_status_t (*setupTopicSender)(void *handle, const char *scope, const char *topic, const celix_properties_t *topicProperties, long serializerSvcId, celix_properties_t **publisherEndpoint);
+    celix_status_t (*setupTopicSender)(void *handle, const char *scope, const char *topic, const celix_properties_t *topicProperties, long serializerSvcId, long protocolSvcId, celix_properties_t **publisherEndpoint);
     celix_status_t (*teardownTopicSender)(void *handle, const char *scope, const char *topic);
 
     //note endpoint is owned by caller
-    celix_status_t (*setupTopicReceiver)(void *handle, const char *scope, const char *topic, const celix_properties_t *topicProperties, long serializerSvcId, celix_properties_t **subscriberEndpoint);
+    celix_status_t (*setupTopicReceiver)(void *handle, const char *scope, const char *topic, const celix_properties_t *topicProperties, long serializerSvcId, long protocolSvcId, celix_properties_t **subscriberEndpoint);
     celix_status_t (*teardownTopicReceiver)(void *handle, const char *scope, const char *topic);
 
     celix_status_t (*addDiscoveredEndpoint)(void *handle, const celix_properties_t *endpoint);

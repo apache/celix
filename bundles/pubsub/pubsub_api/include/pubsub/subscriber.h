@@ -29,6 +29,8 @@
 
 #include <stdbool.h>
 
+#include "celix_properties.h"
+
 #define PUBSUB_SUBSCRIBER_SERVICE_NAME          "pubsub.subscriber"
 #define PUBSUB_SUBSCRIBER_SERVICE_VERSION       "3.0.0"
  
@@ -62,7 +64,7 @@ struct pubsub_subscriber_struct {
      *
      * this method can be  NULL.
      */
-    int (*receive)(void *handle, const char *msgType, unsigned int msgTypeId, void *msg, bool *release);
+    int (*receive)(void *handle, const char *msgType, unsigned int msgTypeId, void *msg, const celix_properties_t *metadata, bool *release);
 
 };
 typedef struct pubsub_subscriber_struct pubsub_subscriber_t;

@@ -21,6 +21,7 @@
 #include <limits.h>
 #include <pubsub_endpoint.h>
 #include <pubsub_serializer.h>
+#include <pubsub_protocol.h>
 
 #include "service_reference.h"
 
@@ -98,6 +99,50 @@ static long getPSASerializer(celix_bundle_context_t *ctx, const char *requested_
     return svcId;
 }
 
+struct psa_protocol_selection_data {
+    const char *requested_protocol;
+    long matchingSvcId;
+};
+
+void psa_protocol_selection_callback(void *handle, void *svc __attribute__((unused)), const celix_properties_t *props) {
+    struct psa_protocol_selection_data *data = handle;
+    const char *serType = celix_properties_get(props, PUBSUB_PROTOCOL_TYPE_KEY, NULL);
+    if (serType == NULL) {
+        fprintf(stderr, "Warning found protocol without mandatory protocol type key (%s)\n", PUBSUB_PROTOCOL_TYPE_KEY);
+    } else {
+        if (strncmp(data->requested_protocol, serType, 1024 * 1024) == 0) {
+            data->matchingSvcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
+        }
+    }
+}
+
+static long getPSAProtocol(celix_bundle_context_t *ctx, const char *requested_protocol) {
+    long svcId;
+
+    if (requested_protocol != NULL) {
+        struct psa_protocol_selection_data data;
+        data.requested_protocol = requested_protocol;
+        data.matchingSvcId = -1L;
+
+        celix_service_use_options_t opts = CELIX_EMPTY_SERVICE_USE_OPTIONS;
+        opts.filter.serviceName = PUBSUB_PROTOCOL_SERVICE_NAME;
+        opts.filter.ignoreServiceLanguage = true;
+        opts.callbackHandle = &data;
+        opts.useWithProperties = psa_protocol_selection_callback;
+        celix_bundleContext_useServicesWithOptions(ctx, &opts);
+        svcId = data.matchingSvcId;
+    } else {
+        celix_service_filter_options_t opts = CELIX_EMPTY_SERVICE_FILTER_OPTIONS;
+        opts.serviceName = PUBSUB_PROTOCOL_SERVICE_NAME;
+        opts.ignoreServiceLanguage = true;
+
+        //note findService will automatically return the highest ranking service id
+        svcId = celix_bundleContext_findServiceWithOptions(ctx, &opts);
+    }
+
+    return svcId;
+}
+
 double pubsub_utils_matchPublisher(
         celix_bundle_context_t *ctx,
         long bundleId,
@@ -106,8 +151,10 @@ double pubsub_utils_matchPublisher(
         double sampleScore,
         double controlScore,
         double defaultScore,
+        bool matchProtocol,
         celix_properties_t **outTopicProperties,
-        long *outSerializerSvcId) {
+        long *outSerializerSvcId,
+        long *outProtocolSvcId) {
 
     celix_properties_t *ep = pubsubEndpoint_createFromPublisherTrackerInfo(ctx, bundleId, filter);
     const char *requested_admin         = NULL;
@@ -126,10 +173,21 @@ double pubsub_utils_matchPublisher(
         score = PUBSUB_ADMIN_NO_MATCH_SCORE; //no serializer, no match
     }
 
-//    printf("Score publisher service for psa type %s is %f\n", adminType, score);
-
     if (outSerializerSvcId != NULL) {
         *outSerializerSvcId = serializerSvcId;
+    }
+
+    if (matchProtocol) {
+        const char *requested_protocol = celix_properties_get(ep, PUBSUB_ENDPOINT_PROTOCOL, NULL);
+        long protocolSvcId = getPSAProtocol(ctx, requested_protocol);
+
+        if (protocolSvcId < 0) {
+            score = PUBSUB_ADMIN_NO_MATCH_SCORE;
+        }
+
+        if (outProtocolSvcId != NULL) {
+            *outProtocolSvcId = protocolSvcId;
+        }
     }
 
     if (outTopicProperties != NULL) {
@@ -161,8 +219,10 @@ double pubsub_utils_matchSubscriber(
         double sampleScore,
         double controlScore,
         double defaultScore,
+        bool matchProtocol,
         celix_properties_t **outTopicProperties,
-        long *outSerializerSvcId) {
+        long *outSerializerSvcId,
+        long *outProtocolSvcId) {
 
     pubsub_get_topic_properties_data_t data;
     data.isPublisher = false;
@@ -174,10 +234,14 @@ double pubsub_utils_matchSubscriber(
     const char *requested_admin         = NULL;
     const char *requested_qos            = NULL;
     const char *requested_serializer     = NULL;
+    const char *requested_protocol = NULL;
     if (ep != NULL) {
         requested_admin = celix_properties_get(ep, PUBSUB_ENDPOINT_ADMIN_TYPE, NULL);
         requested_qos = celix_properties_get(ep, PUBSUB_UTILS_QOS_ATTRIBUTE_KEY, NULL);
         requested_serializer = celix_properties_get(ep, PUBSUB_ENDPOINT_SERIALIZER, NULL);
+        if (matchProtocol) {
+            requested_protocol = celix_properties_get(ep, PUBSUB_ENDPOINT_PROTOCOL, NULL);
+        }
     }
 
     double score = getPSAScore(requested_admin, requested_qos, adminType, sampleScore, controlScore, defaultScore);
@@ -189,6 +253,17 @@ double pubsub_utils_matchSubscriber(
 
     if (outSerializerSvcId != NULL) {
         *outSerializerSvcId = serializerSvcId;
+    }
+
+    if (matchProtocol) {
+        long protocolSvcId = getPSAProtocol(ctx, requested_protocol);
+        if (protocolSvcId < 0) {
+            score = PUBSUB_ADMIN_NO_MATCH_SCORE; //no protocol, no match
+        }
+
+        if (outProtocolSvcId != NULL) {
+            *outProtocolSvcId = protocolSvcId;
+        }
     }
 
     if (outTopicProperties != NULL) {
@@ -204,7 +279,9 @@ bool pubsub_utils_matchEndpoint(
         celix_bundle_context_t *ctx,
         const celix_properties_t *ep,
         const char *adminType,
-        long *outSerializerSvcId) {
+        bool matchProtocol,
+        long *outSerializerSvcId,
+        long *outProtocolSvcId) {
 
     bool psaMatch = false;
     const char *configured_admin = celix_properties_get(ep, PUBSUB_ENDPOINT_ADMIN_TYPE, NULL);
@@ -221,7 +298,21 @@ bool pubsub_utils_matchEndpoint(
     }
 
     bool match = psaMatch && serMatch;
-//    printf("Match for endpoint for psa type %s is %s\n", adminType, match ? "true" : "false");
+
+    if (matchProtocol) {
+        bool protMatch = false;
+        long protocolSvcId = -1L;
+        if (psaMatch) {
+            const char *configured_protocol = celix_properties_get(ep, PUBSUB_ENDPOINT_PROTOCOL, NULL);
+            protocolSvcId = getPSAProtocol(ctx, configured_protocol);
+            protMatch = protocolSvcId >= 0;
+        }
+        match = match && protMatch;
+
+        if (outProtocolSvcId != NULL) {
+            *outProtocolSvcId = protocolSvcId;
+        }
+    }
 
     if (outSerializerSvcId != NULL) {
         *outSerializerSvcId = serializerSvcId;

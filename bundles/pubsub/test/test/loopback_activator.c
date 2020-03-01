@@ -26,7 +26,7 @@
 #include "pubsub/api.h"
 #include "msg.h"
 
-static int tst_receive(void *handle, const char *msgType, unsigned int msgTypeId, void *msg, bool *release);
+static int tst_receive(void *handle, const char *msgType, unsigned int msgTypeId, void *msg, celix_properties_t *metadata, bool *release);
 static void sut_pubSet(void *handle, void *service);
 
 struct activator {
@@ -81,7 +81,7 @@ static void sut_pubSet(void *handle, void *service) {
 }
 
 
-static int tst_receive(void *handle, const char *msgType, unsigned int msgTypeId, void * voidMsg, bool *release) {
+static int tst_receive(void *handle, const char *msgType, unsigned int msgTypeId, void * voidMsg, const celix_properties_t *metadata, bool *release) {
   struct activator *act =handle;
   msg_t *msg = voidMsg;
   msg_t send_msg = *msg;
@@ -90,7 +90,7 @@ static int tst_receive(void *handle, const char *msgType, unsigned int msgTypeId
     if (act->count == 0) {
       act->pubSvc->localMsgTypeIdForMsgType(act->pubSvc->handle, MSG_NAME, &act->msgId);
     }
-    act->pubSvc->send(act->pubSvc->handle, act->msgId, &send_msg);
+    act->pubSvc->send(act->pubSvc->handle, act->msgId, &send_msg, metadata);
     act->count += 1;
   }
   pthread_mutex_unlock(&act->mutex);

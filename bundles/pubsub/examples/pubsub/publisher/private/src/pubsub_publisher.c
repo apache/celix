@@ -33,6 +33,7 @@
 #include "celix_threads.h"
 
 #include "poi.h"
+#include "hash_map.h"
 
 #include "pubsub_publisher_private.h"
 
@@ -84,7 +85,9 @@ static void* send_thread(void* arg) {
             }
             place->data[nr_char - 1] = '\0';
             if (publish_svc->send) {
-                if (publish_svc->send(publish_svc->handle, msgId, place) == 0) {
+                celix_properties_t *metadata = celix_properties_create();
+                celix_properties_set(metadata, "Key", "Value");
+                if (publish_svc->send(publish_svc->handle, msgId, place, metadata) == 0) {
                     printf("Sent %s [%f, %f] (%s, %s) data len = %d\n", st_struct->topic,
                            place->position.lat, place->position.lon, place->name, place->description, nr_char);
                 }

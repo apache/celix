@@ -42,7 +42,6 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             src/pubsub_zmq_admin.c
             src/pubsub_zmq_topic_sender.c
             src/pubsub_zmq_topic_receiver.c
-            src/pubsub_zmq_common.c
             ${ZMQ_CRYPTO_C}
     )
 

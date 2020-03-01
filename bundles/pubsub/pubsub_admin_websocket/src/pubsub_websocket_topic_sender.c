@@ -92,7 +92,7 @@ static void* psa_websocket_getPublisherService(void *handle, const celix_bundle_
 static void psa_websocket_ungetPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties);
 static void delay_first_send_for_late_joiners(pubsub_websocket_topic_sender_t *sender);
 
-static int psa_websocket_topicPublicationSend(void* handle, unsigned int msgTypeId, const void *msg);
+static int psa_websocket_topicPublicationSend(void* handle, unsigned int msgTypeId, const void *msg, celix_properties_t *metadata);
 
 static void psa_websocketTopicSender_ready(struct mg_connection *connection, void *handle);
 static void psa_websocketTopicSender_close(const struct mg_connection *connection, void *handle);
@@ -295,7 +295,7 @@ static void psa_websocket_ungetPublisherService(void *handle, const celix_bundle
     celixThreadMutex_unlock(&sender->boundedServices.mutex);
 }
 
-static int psa_websocket_topicPublicationSend(void* handle, unsigned int msgTypeId, const void *inMsg) {
+static int psa_websocket_topicPublicationSend(void* handle, unsigned int msgTypeId, const void *inMsg, celix_properties_t *metadata) {
     int status = CELIX_SERVICE_EXCEPTION;
     psa_websocket_bounded_service_entry_t *bound = handle;
     pubsub_websocket_topic_sender_t *sender = bound->parent;
