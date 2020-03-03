@@ -17,8 +17,7 @@
  *under the License.
  */
 
-#ifndef CXX_CELIX_ISHELL_H
-#define CXX_CELIX_ISHELL_H
+#pragma once
 
 #include <iostream>
 
@@ -32,5 +31,3 @@ namespace celix {
         virtual bool executeCommandLine(const std::string &commandLine, std::ostream &out, std::ostream &err) noexcept = 0;
     };
 }
-
-#endif //CXX_CELIX_ISHELL_H

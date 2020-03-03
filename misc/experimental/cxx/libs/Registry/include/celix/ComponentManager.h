@@ -26,81 +26,15 @@
 
 #include "celix/Utils.h"
 #include "celix/ServiceRegistry.h"
+#include "celix/GenericComponentManager.h"
 
 namespace celix {
 
-    enum class ComponentManagerState {
-        Disabled,
-        ComponentUninitialized,
-        ComponentInitialized,
-        ComponentStarted
-    };
-
     template<typename T, typename I>
     class ServiceDependency; //forward declaration
-    class GenericServiceDependency; //forward declaration
 
     template<typename T, typename I>
     class ProvidedService; //forward declaration
-    class GenericProvidedService; //forward declaration
-
-    class GenericComponentManager {
-    public:
-        virtual ~GenericComponentManager() = default;
-
-        ComponentManagerState getState() const;
-        bool isEnabled() const;
-        bool isResolved() const;
-        std::string getName() const;
-        std::string getUUD() const;
-        std::size_t getSuspendedCount() const;
-
-
-        void removeServiceDependency(const std::string& serviceDependencyUUID);
-        void removeProvideService(const std::string& provideServiceUUID);
-        std::size_t nrOfServiceDependencies();
-        std::size_t nrOfProvidedServices();
-    protected:
-        GenericComponentManager(std::shared_ptr<celix::IResourceBundle> owner, std::shared_ptr<celix::ServiceRegistry> reg, const std::string &name);
-
-        void setEnabled(bool enable);
-        std::shared_ptr<GenericServiceDependency> findGenericServiceDependency(const std::string& svcName, const std::string& svcDepUUID);
-        std::shared_ptr<GenericProvidedService> findGenericProvidedService(const std::string& svcName, const std::string& providedServiceUUID);
-        void updateState();
-        void updateServiceRegistrations();
-        void suspense();
-        void resume();
-
-        /**** Fields ****/
-        const std::shared_ptr<celix::IResourceBundle> owner;
-        const std::shared_ptr<celix::ServiceRegistry> reg;
-        const std::string name;
-        const std::string uuid;
-
-        mutable std::mutex callbacksMutex{}; //protects below std::functions
-        std::function<void()> initCmp{[]{/*nop*/}};
-        std::function<void()> startCmp{[]{/*nop*/}};
-        std::function<void()> stopCmp{[]{/*nop*/}};
-        std::function<void()> deinitCmp{[]{/*nop*/}};
-
-        std::mutex serviceDependenciesMutex{};
-        std::unordered_map<std::string,std::shared_ptr<GenericServiceDependency>> serviceDependencies{}; //key = dep uuid
-
-        std::mutex providedServicesMutex{};
-        std::unordered_map<std::string,std::shared_ptr<GenericProvidedService>> providedServices{}; //key = provide uuid
-    private:
-        void setState(ComponentManagerState state);
-        void setInitialized(bool initialized);
-        void transition();
-
-        mutable std::mutex stateMutex{}; //protects below
-        ComponentManagerState state = ComponentManagerState::Disabled;
-        bool enabled = false;
-        bool initialized = false;
-        bool suspended = false;
-        std::size_t suspendedCount = 0;
-        std::queue<std::pair<ComponentManagerState,ComponentManagerState>> transitionQueue{};
-    };
 
     template<typename T>
     class ComponentManager : public GenericComponentManager {
@@ -139,60 +73,6 @@ namespace celix {
         std::shared_ptr<T> getCmpInstance() const;
     private:
         const std::shared_ptr<T> cmpInstance;
-    };
-
-    enum class Cardinality {
-        One,
-        Many
-    };
-
-    enum class UpdateServiceStrategy {
-        Suspense,
-        Locking
-    };
-
-    class GenericServiceDependency {
-    public:
-        virtual ~GenericServiceDependency() = default;
-
-        bool isResolved() const;
-        Cardinality getCardinality() const;
-        bool isRequired() const;
-        const std::string& getFilter() const;
-        const std::string& getUUD() const;
-        const std::string& getSvcName() const;
-        bool isValid() const;
-        UpdateServiceStrategy getStrategy() const;
-
-        bool isEnabled() const;
-        virtual void setEnabled(bool e) = 0;
-    protected:
-        GenericServiceDependency(
-                std::shared_ptr<celix::ServiceRegistry> reg,
-                std::string svcName,
-                std::function<void()> stateChangedCallback,
-                std::function<void()> suspenseCallback,
-                std::function<void()> resumeCallback,
-                bool isValid);
-
-        void preServiceUpdate();
-        void postServiceUpdate();
-
-        //Fields
-        const std::shared_ptr<celix::ServiceRegistry> reg;
-        const std::string svcName;
-        const std::function<void()> stateChangedCallback;
-        const std::function<void()> suspenseCallback;
-        const std::function<void()> resumeCallback;
-        const std::string uuid;
-        const bool valid;
-
-        mutable std::mutex mutex{}; //protects below
-        UpdateServiceStrategy strategy = UpdateServiceStrategy::Suspense;
-        bool required = true;
-        std::string filter{};
-        Cardinality cardinality = Cardinality::One;
-        std::vector<ServiceTracker> tracker{}; //max 1 (1 == enabled / 0 = disabled
     };
 
     template<typename T, typename I>
@@ -240,36 +120,6 @@ namespace celix {
         std::function<void(std::vector<std::tuple<std::shared_ptr<I>, const celix::Properties*, const celix::IResourceBundle *>> rankedServices)> update{};
     };
 
-
-    class GenericProvidedService {
-    public:
-        virtual ~GenericProvidedService() = default;
-
-        bool isEnabled() const;
-        const std::string& getUUID() const;
-        const std::string& getServiceName() const;
-        bool isValid() const;
-
-        void setEnabled(bool enabled);
-        void unregisterService();
-        bool isServiceRegistered();
-        virtual void registerService() = 0;
-    protected:
-        GenericProvidedService(std::string cmpUUID, std::shared_ptr<celix::ServiceRegistry> reg, std::string svcName, std::function<void()> updateServiceRegistrationsCallback, bool valid);
-
-        const std::string cmpUUID;
-        const std::shared_ptr<celix::ServiceRegistry> reg;
-        const std::string uuid;
-        const std::string svcName;
-        const std::function<void()> updateServiceRegistrationsCallback;
-        const bool valid;
-
-        mutable std::mutex mutex{}; //protects below
-        bool enabled = false;
-        std::vector<celix::ServiceRegistration> registration{}; //max size 1 (optional). 0 == disabled, 1 == enabled
-        celix::Properties properties{};
-    };
-
     template<typename T, typename I>
     class ProvidedService : public GenericProvidedService {
     public:
@@ -292,12 +142,7 @@ namespace celix {
     private:
         const std::function<std::shared_ptr<T>()> getcmpInstanceCallback;
     };
-
-    std::string toString(celix::ComponentManagerState state);
 }
-
-std::ostream& operator<<(std::ostream& out, celix::ComponentManagerState state);
-std::ostream& operator<<(std::ostream& out, const celix::GenericComponentManager& mng);
 
 
 

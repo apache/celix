@@ -24,14 +24,12 @@
 #include <iostream>
 #include <functional>
 #include <spdlog/spdlog.h>
+#include <string_view>
 
 
 namespace celix {
 namespace impl {
     std::string typeNameFromPrettyFunction(const std::string &templateName, const std::string &pretty);
-}}
-
-namespace {
 
     template<typename INTERFACE_TYPENAME>
     inline std::string typeNameInternal() {
@@ -84,23 +82,29 @@ namespace {
 //    };
 
     template<typename T>
-    struct has_NAME
-    {
-        template<typename U, const char * PTR>
-        struct SFINAE {};
+    struct has_NAME {
+        template<typename U>
+        struct SFINAE {
+            using NAME_TYPE = decltype(U::NAME);
+        };
 
         template<typename U>
-        static float test(SFINAE<U, U::NAME>*) { return 0; };
+        struct FALLBACK {
+            using NAME_TYPE = uint8_t;
+        };
+
+        using True = float;
+        using False = double;
 
         template<typename U>
-        static double test(...) { return 0; };
+        static True test(SFINAE<U> *) { return 0.0; }
 
-//        template<typename U>
-//        static int32_t test(...) { return 0; };
+        template<typename U>
+        static False test(FALLBACK<U> *) { return 0.0; }
 
-        static constexpr bool value = sizeof(test<T>(nullptr)) == sizeof(float);
+        static constexpr bool value = sizeof(test<T>(nullptr)) == sizeof(True);
     };
-}
+}}
 
 namespace celix {
 
@@ -125,7 +129,7 @@ namespace celix {
     */
     template<typename I>
     constexpr inline
-    typename std::enable_if<has_NAME<I>::value, std::string>::type
+    typename std::enable_if<::celix::impl::has_NAME<I>::value, std::string>::type
     typeName() {
         return I::NAME;
     }
@@ -135,13 +139,13 @@ namespace celix {
     */
     template<typename I>
     inline
-    typename std::enable_if<!has_NAME<I>::value, std::string>::type
+    typename std::enable_if<!::celix::impl::has_NAME<I>::value, std::string>::type
     typeName() {
         using namespace celix;
         //I* ptr = nullptr;
         //auto svcName = serviceNameFor(ptr); //note for C++14 this can be constexpr
         auto svcName = customTypeNameFor<I>(); //note for C++14 this can be constexpr
-        return strnlen(svcName, 1) == 0 ? typeNameInternal<I>() : std::string{svcName};
+        return strnlen(svcName, 1) == 0 ? ::celix::impl::typeNameInternal<I>() : std::string{svcName};
     }
 
     /**
@@ -151,7 +155,7 @@ namespace celix {
     //NOTE C++17 typename std::enable_if<std::is_callable<I>::value, std::string>::type
     inline std::string functionSignature() {
         using FunctionType = F;
-        return functionName<decltype(&FunctionType::operator())>();
+        return ::celix::impl::functionName<decltype(&FunctionType::operator())>();
     }
 
     /**
@@ -161,7 +165,7 @@ namespace celix {
     template<typename F>
     //NOTE C++17 typename std::enable_if<std::is_callable<I>::value, std::string>::type
     inline std::string functionServiceName(const std::string &fName) {
-        return fName + " [" + functionSignature<F>() + "]";
+        return fName + " [" + ::celix::functionSignature<F>() + "]";
     }
 
     //TODO can this really be noexcept?

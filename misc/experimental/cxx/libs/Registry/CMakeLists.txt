@@ -24,7 +24,7 @@ add_library(celix_cxx_Registry STATIC
         src/FilterBuilder.cc
         src/Properties.cc
         src/ServiceRegistry.cc
-        src/ComponentManager.cc
+        src/GenericComponentManager.cc
         src/ServiceTrackerImpl.cc
         src/ServiceRegistationImpl.cc
         )

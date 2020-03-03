@@ -17,18 +17,14 @@
  *under the License.
  */
 
-
-//#include <fmt/ostream.h>
-
-
-
 #include <iostream>
 #include <uuid/uuid.h>
 
-#include "celix/ComponentManager.h"
+#include "celix/ServiceRegistry.h"
+#include "celix/GenericComponentManager.h"
 
 
-#define LOGGER celix::getLogger("celix::ComponentManager")
+#define LOGGER celix::getLogger("celix::GenericComponentManager")
 
 
 static std::string genUUID() {
@@ -458,6 +454,16 @@ std::size_t celix::GenericComponentManager::nrOfServiceDependencies() {
 std::size_t celix::GenericComponentManager::nrOfProvidedServices() {
     std::lock_guard<std::mutex> lck{providedServicesMutex};
     return providedServices.size();
+}
+
+celix::GenericComponentManager &celix::GenericComponentManager::enable() {
+    setEnabled(true);
+    return *this;
+}
+
+celix::GenericComponentManager &celix::GenericComponentManager::disable() {
+    setEnabled(false);
+    return *this;
 }
 
 std::ostream& operator<< (std::ostream& out, const celix::GenericComponentManager& mng) {

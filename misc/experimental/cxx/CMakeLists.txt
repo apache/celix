@@ -18,11 +18,15 @@
 
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules")
 
+#TODO improve flag handling, for now this is used to keep the top level cmakelists untouched.
+set(PREV_FLAGS "${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "-std=c++17 ${CMAKE_CXX_FLAGS}")
+
 if (ENABLE_TESTING)
     include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/AddGTest.cmake)
 endif ()
 
-find_package(spdlog QUIET)
+#find_package(spdlog QUIET)
 if (NOT spdlog_FOUND)
     include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/AddSpdlog.cmake)
 endif()
@@ -34,3 +38,6 @@ add_subdirectory(bundles/Shell)
 add_subdirectory(bundles/ShellTui)
 
 add_subdirectory(examples/ShellExample)
+
+
+set(CMAKE_CXX_FLAGS "${PREV_FLAGS}")

@@ -68,8 +68,8 @@ TEST_F(UtilsTest, svcName) {
     name = celix::typeName<example::MarkerInterface>();
     EXPECT_EQ("example::MarkerInterface", name);
 
-    //name = celix::typeName<SvcWithFqn>();
-    //EXPECT_EQ("[SvcWithFqn] [version 1]", name);
+    name = celix::typeName<SvcWithFqn>();
+    EXPECT_EQ("[SvcWithFqn] [version 1]", name);
     LOGGER->warn("TODO fix typeName function for class with a static NAME member (Member detection idiom)");
 
     name = celix::typeName<SvcWithSpecializedName>();

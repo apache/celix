@@ -38,13 +38,43 @@ class Cmp {};
 class ISvc {};
 
 
-TEST_F(ComponentManagerTest, CreateDestroy) {
-    celix::ComponentManager<Cmp> cmpMng{bundle(), registry(), std::make_shared<Cmp>()};
+TEST_F(ComponentManagerTest, CreateDestroyGeneric) {
+    celix::GenericComponentManager cmpMng{bundle(), registry(), "TestComponent"};
     EXPECT_FALSE(cmpMng.isEnabled());
     EXPECT_FALSE(cmpMng.isResolved()); //disabled -> not resolved
     EXPECT_EQ(cmpMng.getState(), celix::ComponentManagerState::Disabled);
 
     cmpMng.enable();
+    EXPECT_TRUE(cmpMng.isEnabled());
+    EXPECT_TRUE(cmpMng.isResolved()); //no deps -> resolved
+    EXPECT_EQ(cmpMng.getState(), celix::ComponentManagerState::ComponentStarted);
+
+    cmpMng.disable().disable().enable();
+    EXPECT_FALSE(cmpMng.isEnabled());
+    EXPECT_EQ(cmpMng.getState(), celix::ComponentManagerState::Disabled);
+}
+
+
+//TEST_F(ComponentManagerTest, GenericCmpFactory) {
+//    //TODO test using create destroy factory for generic component
+//    class TestComponent{};
+//    celix::GenericComponentManager cmpMng{bundle(), registry(), "TestComponent"};
+//    cmpMng.setCreateCallbacks([]() { return std::make_shared<TestComponent>(); }, {});
+//    cmpMng.enable();
+//
+//    EXPECT_TRUE(cmpMng.getInstance().get() != nullptr);
+//    cmpMng.disable();
+//    EXPECT_TRUE(cmpMng.getInstance().get() == nullptr);
+//}
+
+
+TEST_F(ComponentManagerTest, CreateDestroyTyped) {
+    celix::ComponentManager<Cmp> cmpMng{bundle(), registry(), std::make_shared<Cmp>()};
+    EXPECT_FALSE(cmpMng.isEnabled());
+    EXPECT_FALSE(cmpMng.isResolved()); //disabled -> not resolved
+    EXPECT_EQ(cmpMng.getState(), celix::ComponentManagerState::Disabled);
+
+    cmpMng.enable().disable().enable();
     EXPECT_TRUE(cmpMng.isEnabled());
     EXPECT_TRUE(cmpMng.isResolved()); //no deps -> resolved
     EXPECT_EQ(cmpMng.getState(), celix::ComponentManagerState::ComponentStarted);

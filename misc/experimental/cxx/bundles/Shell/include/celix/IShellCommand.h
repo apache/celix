@@ -21,8 +21,7 @@
 #include <vector>
 #include <iostream>
 
-#ifndef CXX_CELIX_ISHELLCOMMAND_H
-#define CXX_CELIX_ISHELLCOMMAND_H
+#pragma once
 
 namespace celix {
 
@@ -45,5 +44,3 @@ namespace celix {
     static constexpr const char * const SHELL_COMMAND_FUNCTION_COMMAND_DESCRIPTION = IShellCommand::COMMAND_DESCRIPTION;
     using ShellCommandFunction = std::function<void(const std::string &cmdName, const std::vector<std::string> &cmdArgs, std::ostream &out, std::ostream &err)>;
 }
-
-#endif //CXX_CELIX_ISHELLCOMMAND_H

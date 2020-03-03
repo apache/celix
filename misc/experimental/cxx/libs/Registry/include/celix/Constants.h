@@ -23,16 +23,16 @@
 namespace celix {
 
     //NOTE manually aligned with celix_constants.h
-    static constexpr const char *const SERVICE_NAME = "service.name";
-    static constexpr const char *const SERVICE_ID = "service.id";
-    static constexpr const char *const SERVICE_RANKING = "service.ranking";
-    static constexpr const char *const SERVICE_BUNDLE_ID = "service.bundle.id";
-    static constexpr const char *const SERVICE_COMPONENT_ID = "service.component.id";
-    static constexpr const char *const FRAMEWORK_UUID = "framework.uuid";
+    static constexpr const char * const SERVICE_NAME = "service.name";
+    static constexpr const char * const SERVICE_ID = "service.id";
+    static constexpr const char * const SERVICE_RANKING = "service.ranking";
+    static constexpr const char * const SERVICE_BUNDLE_ID = "service.bundle.id";
+    static constexpr const char * const SERVICE_COMPONENT_ID = "service.component.id";
+    static constexpr const char * const FRAMEWORK_UUID = "framework.uuid";
 
-    static constexpr const char *const MANIFEST_BUNDLE_NAME = "Bundle-Name";
-    static constexpr const char *const MANIFEST_BUNDLE_VERSION = "Bundle-Version";
-    static constexpr const char *const MANIFEST_BUNDLE_GROUP = "Bundle-Group";
+    static constexpr const char * const MANIFEST_BUNDLE_NAME = "Bundle-Name";
+    static constexpr const char * const MANIFEST_BUNDLE_VERSION = "Bundle-Version";
+    static constexpr const char * const MANIFEST_BUNDLE_GROUP = "Bundle-Group";
 
     static constexpr long FRAMEWORK_BUNDLE_ID = 0L;
 }
