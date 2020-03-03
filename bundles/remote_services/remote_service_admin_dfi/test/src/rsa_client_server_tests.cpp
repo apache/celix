@@ -75,29 +75,31 @@ extern "C" {
         bool discovered = tst->isCalcDiscovered(tst->handle);
         CHECK_TRUE(discovered);
 
-//        ok = tst->testCalculator(tst->handle);
-//        CHECK_TRUE(ok);
+        ok = tst->testCalculator(tst->handle);
+        CHECK_TRUE(ok);
 
         discovered = tst->isRemoteExampleDiscovered(tst->handle);
         CHECK_TRUE(discovered);
 
-//        ok = tst->testRemoteString(tst->handle);
-//        CHECK_TRUE(ok);
-//
-//        ok = tst->testRemoteConstString(tst->handle);
-//        CHECK_TRUE(ok);
+        ok = tst->testRemoteComplex(tst->handle);
+        CHECK_TRUE(ok);
+
+        ok = tst->testRemoteAction(tst->handle);
+        CHECK_TRUE(ok);
 
         ok = tst->testRemoteNumbers(tst->handle);
         CHECK_TRUE(ok);
 
-//        ok = tst->testRemoteEnum(tst->handle);
-//        CHECK_TRUE(ok);
-//
-//        ok = tst->testRemoteAction(tst->handle);
-//        CHECK_TRUE(ok);
-//
-//        ok = tst->testRemoteComplex(tst->handle);
-//        CHECK_TRUE(ok);
+        ok = tst->testRemoteString(tst->handle);
+        CHECK_TRUE(ok);
+
+        ok = tst->testRemoteConstString(tst->handle);
+        CHECK_TRUE(ok);
+
+#ifndef __APPLE__ //TODO fix for apple dfi handling, see issue #91
+        ok = tst->testRemoteEnum(tst->handle);
+        CHECK_TRUE(ok);
+#endif
     };
 
     static void test(void) {
