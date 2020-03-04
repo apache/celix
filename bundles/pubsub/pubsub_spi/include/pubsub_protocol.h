@@ -21,8 +21,6 @@
 #define PUBSUB_PROTOCOL_SERVICE_H_
 
 #include "celix_properties.h"
-#include "version.h"
-#include "celix_bundle.h"
 
 #define PUBSUB_PROTOCOL_SERVICE_NAME      "pubsub_protocol"
 #define PUBSUB_PROTOCOL_SERVICE_VERSION   "1.0.0"

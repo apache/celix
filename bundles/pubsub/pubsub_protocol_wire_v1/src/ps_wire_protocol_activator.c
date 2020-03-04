@@ -33,7 +33,7 @@ typedef struct ps_wp_activator {
 static int ps_wp_start(ps_wp_activator_t *act, celix_bundle_context_t *ctx) {
     act->wireProtocolSvcId = -1L;
 
-    celix_status_t status = pubsubProtocol_create(ctx, &(act->wireprotocol));
+    celix_status_t status = pubsubProtocol_create(&(act->wireprotocol));
     if (status == CELIX_SUCCESS) {
         /* Set serializertype */
         celix_properties_t *props = celix_properties_create();

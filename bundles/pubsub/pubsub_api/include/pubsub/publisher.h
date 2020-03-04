@@ -29,7 +29,7 @@
 
 #include <stdlib.h>
 
-#include "hash_map.h"
+#include "celix_properties.h"
 
 #define PUBSUB_PUBLISHER_SERVICE_NAME           "pubsub.publisher"
 #define PUBSUB_PUBLISHER_SERVICE_VERSION        "3.0.0"
@@ -41,8 +41,7 @@
  
 #define PUBSUB_PUBLISHER_SCOPE_DEFAULT          "default"
 
- 
- 
+
 struct pubsub_publisher {
     void *handle;
 

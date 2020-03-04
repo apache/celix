@@ -22,11 +22,15 @@
 
 #include "pubsub_protocol.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define PUBSUB_WIRE_PROTOCOL_TYPE "wire"
 
 typedef struct pubsub_protocol_wire_v1 pubsub_protocol_wire_v1_t;
 
-celix_status_t pubsubProtocol_create(celix_bundle_context_t *context, pubsub_protocol_wire_v1_t **protocol);
+celix_status_t pubsubProtocol_create(pubsub_protocol_wire_v1_t **protocol);
 celix_status_t pubsubProtocol_destroy(pubsub_protocol_wire_v1_t* protocol);
 
 celix_status_t pubsubProtocol_getSyncHeader(void* handle, void *syncHeader);
@@ -39,5 +43,8 @@ celix_status_t pubsubProtocol_decodeHeader(void* handle, void *data, size_t leng
 celix_status_t pubsubProtocol_decodePayload(void* handle, void *data, size_t length, pubsub_protocol_message_t *message);
 celix_status_t pubsubProtocol_decodeMetadata(void* handle, void *data, size_t length, pubsub_protocol_message_t *message);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* PUBSUB_PROTOCOL_WIRE_H_ */

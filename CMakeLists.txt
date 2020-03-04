@@ -116,6 +116,13 @@ endif ()
 
 option(CELIX_USE_ZIP_INSTEAD_OF_JAR "Default Celix cmake command will use jar to package bundle (if found). This option enforces Celix to use zip instead." OFF)
 
+if (ENABLE_TESTING)
+    find_package(GTest QUIET)
+    if (NOT GTest_FOUND)
+        include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/AddGTest.cmake)
+    endif()
+endif ()
+
 #Libraries and Launcher
 add_subdirectory(libs)
 

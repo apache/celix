@@ -90,7 +90,7 @@ static int tst_receive(void *handle, const char *msgType, unsigned int msgTypeId
     if (act->count == 0) {
       act->pubSvc->localMsgTypeIdForMsgType(act->pubSvc->handle, MSG_NAME, &act->msgId);
     }
-    act->pubSvc->send(act->pubSvc->handle, act->msgId, &send_msg, metadata);
+    act->pubSvc->send(act->pubSvc->handle, act->msgId, &send_msg, (celix_properties_t *) metadata);
     act->count += 1;
   }
   pthread_mutex_unlock(&act->mutex);

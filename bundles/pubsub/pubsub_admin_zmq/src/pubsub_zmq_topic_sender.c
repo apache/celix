@@ -502,7 +502,7 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
     psa_zmq_send_msg_entry_t *entry = hashMap_get(bound->msgEntries, (void*)(uintptr_t)(msgTypeId));
 
     //metrics updates
-    struct timespec sendTime;
+    struct timespec sendTime = { 0, 0 };
     struct timespec serializationStart;
     struct timespec serializationEnd;
     //int unknownMessageCountUpdate = 0;

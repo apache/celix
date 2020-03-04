@@ -23,7 +23,9 @@
 #include <pubsub/subscriber.h>
 #include <memory.h>
 #include <pubsub_constants.h>
-#include <sys/epoll.h>
+#if !defined(__APPLE__)
+    #include <sys/epoll.h>
+#endif
 #include <assert.h>
 #include <pubsub_endpoint.h>
 #include <arpa/inet.h>
@@ -781,10 +783,12 @@ static void psa_zmq_setupZmqContext(pubsub_zmq_topic_receiver_t *receiver, const
         int policy = ZMQ_THREAD_SCHED_POLICY_DFLT;
         if (strncmp("SCHED_OTHER", sched, 16) == 0) {
             policy = SCHED_OTHER;
+#if !defined(__APPLE__)
         } else if (strncmp("SCHED_BATCH", sched, 16) == 0) {
             policy = SCHED_BATCH;
         } else if (strncmp("SCHED_IDLE", sched, 16) == 0) {
             policy = SCHED_IDLE;
+#endif
         } else if (strncmp("SCHED_FIFO", sched, 16) == 0) {
             policy = SCHED_FIFO;
         } else if (strncmp("SCHED_RR", sched, 16) == 0) {

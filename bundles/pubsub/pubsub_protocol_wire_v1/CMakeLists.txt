@@ -34,3 +34,6 @@ install_celix_bundle(celix_pubsub_protocol_wire_v1 EXPORT celix COMPONENT pubsub
 
 add_library(Celix::pubsub_protocol_wire_v1 ALIAS celix_pubsub_protocol_wire_v1)
 
+if (ENABLE_TESTING)
+    add_subdirectory(gtest)
+endif()

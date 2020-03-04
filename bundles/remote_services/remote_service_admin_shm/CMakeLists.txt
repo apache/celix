@@ -51,11 +51,11 @@ if (RSA_REMOTE_SERVICE_ADMIN_SHM)
        install_celix_bundle(remote_service_admin_shm EXPORT celix COMPONENT rsa)
        add_library(Celix::remote_service_admin_shm ALIAS remote_service_admin_shm)
 
-	if (ENABLE_TESTING)
-             find_package(CppUTest REQUIRED)
-	     include_directories(${CPPUTEST_INCLUDE_DIR})
-	     add_subdirectory(private/test)
-         endif()
+		if (ENABLE_TESTING)
+			find_package(CppUTest REQUIRED)
+			include_directories(SYSTEM PRIVATE ${CPPUTEST_INCLUDE_DIR})
+			add_subdirectory(private/test)
+		endif()
 
 endif (RSA_REMOTE_SERVICE_ADMIN_SHM)
 

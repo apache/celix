@@ -23,7 +23,7 @@ add_executable(test_shell
 )
 
 target_link_libraries(test_shell PRIVATE Celix::framework CURL::libcurl ${CPPUTEST_LIBRARY} Celix::shell_api)
-target_include_directories(test_shell PRIVATE ${CPPUTEST_INCLUDE_DIRS})
+target_include_directories(test_shell SYSTEM PRIVATE ${CPPUTEST_INCLUDE_DIRS})
 add_dependencies(test_shell shell_bundle)
 target_compile_definitions(test_shell PRIVATE -DSHELL_BUNDLE_LOCATION=\"$<TARGET_PROPERTY:shell,BUNDLE_FILE>\")
 target_compile_options(test_shell PRIVATE -Wno-deprecated-declarations)

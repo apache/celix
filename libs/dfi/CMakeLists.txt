@@ -70,7 +70,8 @@ if (ENABLE_TESTING)
 		test/run_tests.cpp
 	)
 
-    target_link_libraries(test_dfi PRIVATE Celix::dfi Celix::utils FFI::lib Jansson ${CPPUTEST_LIBRARIES})
+	target_include_directories(test_dfi SYSTEM PRIVATE ${CPPUTEST_INCLUDE_DIR})
+	target_link_libraries(test_dfi PRIVATE Celix::dfi Celix::utils FFI::lib Jansson ${CPPUTEST_LIBRARIES})
 
     file(COPY ${CMAKE_CURRENT_LIST_DIR}/test/schemas DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
     file(COPY ${CMAKE_CURRENT_LIST_DIR}/test/descriptors DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

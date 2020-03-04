@@ -37,7 +37,7 @@ add_executable(test_tm_scoped
     run_tests.cpp
     tms_tests.cpp
 )
-target_include_directories(test_tm_scoped PRIVATE ../src ../include)
+target_include_directories(test_tm_scoped SYSTEM PRIVATE ${CPPUTEST_INCLUDE_DIR} PRIVATE ../src ../include)
 target_link_libraries(test_tm_scoped PRIVATE
         Celix::framework
         ${CPPUTEST_LIBRARY}

@@ -53,7 +53,7 @@ add_library(Celix::framework ALIAS framework)
 
 if (ENABLE_TESTING)
     find_package(CppUTest REQUIRED)
-    include_directories(${CPPUTEST_INCLUDE_DIR})
+    include_directories(SYSTEM PRIVATE ${CPPUTEST_INCLUDE_DIR})
     add_subdirectory(test)
 endif()
 
@@ -62,8 +62,8 @@ celix_subproject(FRAMEWORK_TESTS "Option to build the framework tests" "OFF" DEP
 if (ENABLE_TESTING AND FRAMEWORK_TESTS)
     find_package(CppUTest REQUIRED)
 
-    include_directories(${CPPUTEST_INCLUDE_DIR})
-    include_directories(${CPPUTEST_EXT_INCLUDE_DIR})
+    include_directories(SYSTEM PRIVATE ${CPPUTEST_INCLUDE_DIR})
+    include_directories(SYSTEM PRIVATE ${CPPUTEST_EXT_INCLUDE_DIR})
     include_directories(include src)
 
 
