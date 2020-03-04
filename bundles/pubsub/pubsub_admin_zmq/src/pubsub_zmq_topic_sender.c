@@ -610,12 +610,13 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
                 if (!sendOk) {
                     zmsg_destroy(&msg); //if send was not ok, no owner change -> destroy msg
                 }
+
+                free(headerData);
+                free(payloadData);
+                free(metadataData);
             }
 
             celix_properties_destroy(message.metadata.metadata);
-            free(headerData);
-            free(payloadData);
-            free(metadataData);
 
             celixThreadMutex_unlock(&entry->sendLock);
             if (sendOk) {
