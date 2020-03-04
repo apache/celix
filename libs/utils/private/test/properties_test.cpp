@@ -33,7 +33,7 @@
 #include "CppUTestExt/MockSupport.h"
 
 extern "C" {
-#include <string>
+#include <string.h>
 
 #include "properties.h"
 #include "celix_properties.h"
