@@ -22,7 +22,7 @@
 #include <string.h>
 #if defined(__APPLE__)
     #include <machine/endian.h>
-#elif
+#else
     #include <endian.h>
 #endif
 
@@ -42,7 +42,7 @@ int readLong(const unsigned char *data, int offset, uint64_t *val) {
     memcpy(val, data + offset, sizeof(uint64_t));
 #if defined(__APPLE__)
     *val = ntohll(*val);
-#elif
+#else
     *val = be64toh(*val);
 #endif
     return offset + sizeof(uint64_t);
@@ -63,7 +63,7 @@ int writeInt(unsigned char *data, int offset, uint32_t val) {
 int writeLong(unsigned char *data, int offset, uint64_t val) {
 #if defined(__APPLE__)
     uint64_t nVal = htonll(val);
-#elif
+#else
     uint64_t nVal = htobe64(val);
 #endif
     memcpy(data + offset, &nVal, sizeof(uint64_t));
