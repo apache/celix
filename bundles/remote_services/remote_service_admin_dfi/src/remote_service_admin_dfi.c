@@ -761,20 +761,42 @@ static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description
     return status;
 }
 
+#define READCALLBACK_WRITE_TO_BUFF(buff, post, loops) \
+
+
 static size_t remoteServiceAdmin_readCallback(void *voidBuffer, size_t size, size_t nmemb, void *userp) {
     struct post *post = userp;
     char *buffer = voidBuffer;
+    size_t buffSize = size * nmemb;
+    size_t readSize = post->size > buffSize ? buffSize : post->size;
+    size_t startRead = post->read;
 
-    if (post->read == post->size) {
-        return 0;
-    } else {
-        size_t buffSize = size * nmemb;
-        size_t startRead = post->read;
-        for (size_t i = 0; i < buffSize && post->size != post->read; ++i) {
-            buffer[i] = post->readptr[post->read++];
-        }
-        return post->read - startRead;
+    //TODO discuss the manual unrolling delivers slower results on OSX (10.15)
+//    size_t manualStepSize = 16;
+//    size_t steps = readSize / manualStepSize;
+//    for (size_t i = 0; i < steps; ++i) { //NOTE manual loop unrolling optimization
+//        buffer[(i*manualStepSize) + 0] = post->readptr[post->read + 0];
+//        buffer[(i*manualStepSize) + 1] = post->readptr[post->read + 1];
+//        buffer[(i*manualStepSize) + 2] = post->readptr[post->read + 2];
+//        buffer[(i*manualStepSize) + 3] = post->readptr[post->read + 3];
+//        buffer[(i*manualStepSize) + 4] = post->readptr[post->read + 4];
+//        buffer[(i*manualStepSize) + 5] = post->readptr[post->read + 5];
+//        buffer[(i*manualStepSize) + 6] = post->readptr[post->read + 6];
+//        buffer[(i*manualStepSize) + 7] = post->readptr[post->read + 7];
+//        buffer[(i*manualStepSize) + 8] = post->readptr[post->read + 8];
+//        buffer[(i*manualStepSize) + 9] = post->readptr[post->read + 9];
+//        buffer[(i*manualStepSize) + 10] = post->readptr[post->read + 10];
+//        buffer[(i*manualStepSize) + 11] = post->readptr[post->read + 11];
+//        buffer[(i*manualStepSize) + 12] = post->readptr[post->read + 12];
+//        buffer[(i*manualStepSize) + 13] = post->readptr[post->read + 13];
+//        buffer[(i*manualStepSize) + 14] = post->readptr[post->read + 14];
+//        buffer[(i*manualStepSize) + 15] = post->readptr[post->read + 15];
+//        post->read += manualStepSize;
+//    }
+    for (size_t i = post->read; i < readSize; ++i) {
+        buffer[i] = post->readptr[post->read++];
     }
+    return post->read - startRead;
 }
 
 static size_t remoteServiceAdmin_write(void *contents, size_t size, size_t nmemb, void *userp) {
