@@ -24,6 +24,7 @@
     #include <machine/endian.h>
 #else
     #include <endian.h>
+    #include <arpa/inet.h>
 #endif
 
 int readShort(const unsigned char *data, int offset, uint16_t *val) {
