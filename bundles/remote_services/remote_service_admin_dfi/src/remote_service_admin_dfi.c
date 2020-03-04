@@ -72,6 +72,10 @@ struct remote_service_admin {
     struct mg_context *ctx;
 
     FILE *logFile;
+    void *curlShare;
+    pthread_mutex_t curlMutexConnect;
+    pthread_mutex_t curlMutexCookie;
+    pthread_mutex_t curlMutexDns;
 };
 
 struct post {
@@ -106,6 +110,47 @@ static celix_status_t remoteServiceAdmin_getIpAddress(char* interface, char** ip
 static size_t remoteServiceAdmin_readCallback(void *ptr, size_t size, size_t nmemb, void *userp);
 static size_t remoteServiceAdmin_write(void *contents, size_t size, size_t nmemb, void *userp);
 static void remoteServiceAdmin_log(remote_service_admin_t *admin, int level, const char *file, int line, const char *msg, ...);
+
+static void remoteServiceAdmin_curlshare_lock(CURL *handle, curl_lock_data data, curl_lock_access laccess, void *userptr)
+{
+    (void)handle;
+    (void)data;
+    (void)laccess;
+    remote_service_admin_t *rsa = userptr;
+    switch(data) {
+        case CURL_LOCK_DATA_CONNECT:
+            pthread_mutex_lock(&rsa->curlMutexConnect);
+            break;
+        case CURL_LOCK_DATA_COOKIE:
+            pthread_mutex_lock(&rsa->curlMutexCookie);
+            break;
+        case CURL_LOCK_DATA_DNS:
+            pthread_mutex_lock(&rsa->curlMutexDns);
+            break;
+        default:
+            break;
+    }
+}
+
+static void remoteServiceAdmin_curlshare_unlock(CURL *handle, curl_lock_data data, void *userptr)
+{
+    (void)handle;
+    (void)data;
+    remote_service_admin_t *rsa = userptr;
+    switch(data) {
+        case CURL_LOCK_DATA_CONNECT:
+            pthread_mutex_unlock(&rsa->curlMutexConnect);
+            break;
+        case CURL_LOCK_DATA_COOKIE:
+            pthread_mutex_unlock(&rsa->curlMutexCookie);
+            break;
+        case CURL_LOCK_DATA_DNS:
+            pthread_mutex_unlock(&rsa->curlMutexDns);
+            break;
+        default:
+            break;
+    }
+}
 
 celix_status_t remoteServiceAdmin_create(celix_bundle_context_t *context, remote_service_admin_t **admin) {
     celix_status_t status = CELIX_SUCCESS;
@@ -151,6 +196,30 @@ celix_status_t remoteServiceAdmin_create(celix_bundle_context_t *context, remote
 
         if (detectedIp != NULL) {
             free(detectedIp);
+        }
+
+        (*admin)->curlShare = curl_share_init();
+        curl_share_setopt((*admin)->curlShare, CURLSHOPT_SHARE, CURL_LOCK_DATA_CONNECT);
+        curl_share_setopt((*admin)->curlShare, CURLSHOPT_SHARE, CURL_LOCK_DATA_COOKIE);
+        curl_share_setopt((*admin)->curlShare, CURLSHOPT_SHARE, CURL_LOCK_DATA_DNS);
+        curl_share_setopt((*admin)->curlShare, CURLSHOPT_USERDATA, *admin);
+
+        curl_share_setopt((*admin)->curlShare, CURLSHOPT_LOCKFUNC, remoteServiceAdmin_curlshare_lock);
+        curl_share_setopt((*admin)->curlShare, CURLSHOPT_UNLOCKFUNC, remoteServiceAdmin_curlshare_unlock);
+
+        if(status == CELIX_SUCCESS && pthread_mutex_init(&(*admin)->curlMutexConnect, NULL) != 0) {
+            fprintf(stderr, "Could not initialize mutex connect\n");
+            status = EPERM;
+        }
+
+        if(status == CELIX_SUCCESS && pthread_mutex_init(&(*admin)->curlMutexCookie, NULL) != 0) {
+            fprintf(stderr, "Could not initialize mutex cookie\n");
+            status = EPERM;
+        }
+
+        if(status == CELIX_SUCCESS && pthread_mutex_init(&(*admin)->curlMutexDns, NULL) != 0) {
+            fprintf(stderr, "Could not initialize mutex dns\n");
+            status = EPERM;
         }
 
         // Prepare callbacks structure. We have only one callback, the rest are NULL.
@@ -208,6 +277,10 @@ celix_status_t remoteServiceAdmin_destroy(remote_service_admin_t **admin)
     free((*admin)->ip);
     free((*admin)->port);
     free(*admin);
+    curl_share_cleanup((*admin)->curlShare);
+    pthread_mutex_destroy(&(*admin)->curlMutexConnect);
+    pthread_mutex_destroy(&(*admin)->curlMutexCookie);
+    pthread_mutex_destroy(&(*admin)->curlMutexDns);
 
     *admin = NULL;
 
@@ -749,6 +822,7 @@ static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, remoteServiceAdmin_write);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&get);
         curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, (curl_off_t)post.size);
+        curl_easy_setopt(curl, CURLOPT_SHARE, rsa->curlShare);
         //logHelper_log(rsa->loghelper, OSGI_LOGSERVICE_DEBUG, "RSA: Performing curl post\n");
         res = curl_easy_perform(curl);
 
