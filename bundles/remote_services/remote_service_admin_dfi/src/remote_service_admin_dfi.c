@@ -835,9 +835,6 @@ static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description
     return status;
 }
 
-#define READCALLBACK_WRITE_TO_BUFF(buff, post, loops) \
-
-
 static size_t remoteServiceAdmin_readCallback(void *voidBuffer, size_t size, size_t nmemb, void *userp) {
     struct post *post = userp;
     size_t buffSize = size * nmemb;
