@@ -21,7 +21,6 @@
 #include "celix_api.h"
 #include "calculator_service.h"
 
-
 #include <CppUTest/TestHarness.h>
 #include <CppUTest/CommandLineTestRunner.h>
 

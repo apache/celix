@@ -28,7 +28,6 @@
 #include <curl/curl.h>
 
 #include <jansson.h>
-#include <assert.h>
 #include "json_serializer.h"
 #include "utils.h"
 

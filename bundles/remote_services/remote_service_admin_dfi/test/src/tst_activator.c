@@ -28,20 +28,6 @@
 #include "remote_example.h"
 #include <unistd.h>
 
-static double diffBetweenTimeSpecs(struct timespec *b, struct timespec *e)
-{
-    struct timespec diff;
-    if ((e->tv_nsec - b->tv_nsec) < 0) {
-        diff.tv_sec = e->tv_sec - b->tv_sec - 1;
-        diff.tv_nsec = e->tv_nsec - b->tv_nsec + 1000000000;
-    } else {
-        diff.tv_sec = e->tv_sec - b->tv_sec;
-        diff.tv_nsec = e->tv_nsec - b->tv_nsec;
-    }
-
-    return ((double)diff.tv_sec) + diff.tv_nsec /  1000000000.0;
-}
-
 //note exports double diff variable (time in ms)
 #define TIMED_EXPR(expr) \
     double diff; \
@@ -50,7 +36,7 @@ static double diffBetweenTimeSpecs(struct timespec *b, struct timespec *e)
         clock_gettime(CLOCK_MONOTONIC, &_begin); \
         expr; \
         clock_gettime(CLOCK_MONOTONIC, &_end); \
-        diff = diffBetweenTimeSpecs(&_begin, &_end) * 1000.0; \
+        diff = celix_difftime(&_begin, &_end) * 1000.0; \
     } while(0)
 
 struct activator {
