@@ -19,6 +19,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include <celix_api.h>
 
@@ -26,6 +27,17 @@
 #include "calculator_service.h"
 #include "remote_example.h"
 #include <unistd.h>
+
+//note exports double diff variable (time in ms)
+#define TIMED_EXPR(expr) \
+    double diff; \
+    do { \
+        struct timespec _begin, _end; \
+        clock_gettime(CLOCK_MONOTONIC, &_begin); \
+        expr; \
+        clock_gettime(CLOCK_MONOTONIC, &_end); \
+        diff = celix_difftime(&_begin, &_end) * 1000.0; \
+    } while(0)
 
 struct activator {
     long svcId;
@@ -105,8 +117,8 @@ static bool bndTestCalculator(void *handle) {
     pthread_mutex_lock(&act->mutex);
     int rc = 1;
     if (act->calc != NULL) {
-        rc = act->calc->sqrt(act->calc->handle, 4, &result);
-        printf("calc result is %f\n", result);
+        TIMED_EXPR(rc = act->calc->sqrt(act->calc->handle, 4, &result));
+        printf("calc result is %f. Call took %f ms\n", result, diff);
     } else {
         printf("calc not ready\n");
     }
@@ -121,10 +133,11 @@ static bool bndTestRemoteString(void *handle) {
 
     pthread_mutex_lock(&act->mutex);
     if (act->remoteExample != NULL) {
-        //test string call with taking ownership
+        //test string Call with taking ownership
         char *tmp = strndup("test1", 1024);
         char *result = NULL;
-        act->remoteExample->setName1(act->remoteExample->handle, tmp, &result);
+        TIMED_EXPR(act->remoteExample->setName1(act->remoteExample->handle, tmp, &result));
+        printf("Call setName1 took %f ms\n", diff);
         //note setName1 should take ownership of tmp, so no free(tmp) needed.
         ok = strncmp("test1", result, 1024) == 0;
         free(result);
@@ -146,7 +159,8 @@ static bool bndTestRemoteConstString(void *handle) {
         //test pow
         const char *name = "name2";
         char *result = NULL;
-        act->remoteExample->setName2(act->remoteExample->handle, name, &result);
+        TIMED_EXPR(act->remoteExample->setName2(act->remoteExample->handle, name, &result));
+        printf("Call setName2 took %f ms\n", diff);
         ok = strncmp(result, "name2", 1024) == 0;
         free(result);
     } else {
@@ -168,14 +182,16 @@ static bool bndTestRemoteNumbers(void *handle) {
         if (ok) {
             //test pow
             double p;
-            act->remoteExample->pow(act->remoteExample->handle, 2, 2, &p);
+            TIMED_EXPR(act->remoteExample->pow(act->remoteExample->handle, 2, 2, &p));
+            printf("Call pow took %f ms\n", diff);
             ok = (p == 4.0);
         }
 
         if (ok) {
             //test fib
             int32_t f;
-            act->remoteExample->fib(act->remoteExample->handle, 4, &f);
+            TIMED_EXPR(act->remoteExample->fib(act->remoteExample->handle, 4, &f));
+            printf("Call fib took %f ms\n", diff);
             ok = (f == 3);
         }
     } else {
@@ -236,7 +252,9 @@ static bool bndTestRemoteComplex(void *handle) {
        exmpl.name = "name";
        exmpl.e = ENUM_EXAMPLE_VAL3;
        struct complex_output_example* result = NULL;
-       int rc = act->remoteExample->setComplex(act->remoteExample->handle, &exmpl, &result);
+       int rc;
+       TIMED_EXPR(rc = act->remoteExample->setComplex(act->remoteExample->handle, &exmpl, &result));
+       printf("Call setComplex took %f ms\n", diff);
        ok = rc == 0 && result->pow == 8 && result->fib == 5 && strncmp("name", result->name, 64) == 0;
        if (rc == 0) {
            free(result->name);

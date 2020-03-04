@@ -76,12 +76,13 @@ struct remote_service_admin {
 
 struct post {
     const char *readptr;
-    int size;
+    size_t size;
+    size_t read;
 };
 
 struct get {
     char *writeptr;
-    int size;
+    size_t size;
 };
 
 #define OSGI_RSA_REMOTE_PROXY_FACTORY   "remote_proxy_factory"
@@ -700,16 +701,16 @@ celix_status_t remoteServiceAdmin_removeImportedService(remote_service_admin_t *
     return status;
 }
 
-
 static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description_t *endpointDescription, char *request, char **reply, int* replyStatus) {
     remote_service_admin_t * rsa = handle;
     struct post post;
     post.readptr = request;
     post.size = strlen(request);
+    post.read = 0;
 
     struct get get;
     get.size = 0;
-    get.writeptr = malloc(1);
+    get.writeptr = NULL;
 
     const char *serviceUrl = celix_properties_get(endpointDescription->properties, (char*) RSA_DFI_ENDPOINT_URL, NULL);
     char url[256];
@@ -760,35 +761,37 @@ static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description
     return status;
 }
 
-static size_t remoteServiceAdmin_readCallback(void *ptr, size_t size, size_t nmemb, void *userp) {
+static size_t remoteServiceAdmin_readCallback(void *voidBuffer, size_t size, size_t nmemb, void *userp) {
     struct post *post = userp;
+    char *buffer = voidBuffer;
 
-    if (post->size) {
-        *(char *) ptr = post->readptr[0];
-        post->readptr++;
-        post->size--;
-        return 1;
+    if (post->read == post->size) {
+        return 0;
+    } else {
+        size_t buffSize = size * nmemb;
+        size_t startRead = post->read;
+        for (size_t i = 0; i < buffSize && post->size != post->read; ++i) {
+            buffer[i] = post->readptr[post->read++];
+        }
+        return post->read - startRead;
     }
-
-    return 0;
 }
 
 static size_t remoteServiceAdmin_write(void *contents, size_t size, size_t nmemb, void *userp) {
     size_t realsize = size * nmemb;
     struct get *mem = (struct get *)userp;
 
-    mem->writeptr = realloc(mem->writeptr, mem->size + realsize + 1);
+    mem->writeptr =malloc(realsize + 1);
     if (mem->writeptr == NULL) {
         /* out of memory! */
-        printf("not enough memory (realloc returned NULL)");
-        exit(EXIT_FAILURE);
+        fprintf(stderr, "not enough memory (malloc returned NULL)");
+        return 0;
+    } else {
+        memcpy(&(mem->writeptr[mem->size]), contents, realsize);
+        mem->size += realsize;
+        mem->writeptr[mem->size] = 0;
+        return realsize;
     }
-
-    memcpy(&(mem->writeptr[mem->size]), contents, realsize);
-    mem->size += realsize;
-    mem->writeptr[mem->size] = 0;
-
-    return realsize;
 }
 
 
