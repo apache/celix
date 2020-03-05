@@ -112,7 +112,7 @@ static void psa_tcp_ungetPublisherService(void *handle, const celix_bundle_t *re
 static unsigned int rand_range(unsigned int min, unsigned int max);
 static void delay_first_send_for_late_joiners(pubsub_tcp_topic_sender_t *sender);
 static void *psa_tcp_sendThread(void *data);
-static int psa_tcp_topicPublicationSend(void *handle, unsigned int msgTypeId, const void *msg);
+static int psa_tcp_topicPublicationSend(void *handle, unsigned int msgTypeId, const void *msg, celix_properties_t *metadata);
 
 pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
         celix_bundle_context_t *ctx,
@@ -481,7 +481,7 @@ pubsub_admin_sender_metrics_t *pubsub_tcpTopicSender_metrics(pubsub_tcp_topic_se
     return result;
 }
 
-static int psa_tcp_topicPublicationSend(void *handle, unsigned int msgTypeId, const void *inMsg) {
+static int psa_tcp_topicPublicationSend(void *handle, unsigned int msgTypeId, const void *inMsg, celix_properties_t *metadata) {
     int status = CELIX_SUCCESS;
     psa_tcp_bounded_service_entry_t *bound = handle;
     pubsub_tcp_topic_sender_t *sender = bound->parent;

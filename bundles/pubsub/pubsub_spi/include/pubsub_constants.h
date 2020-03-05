@@ -20,8 +20,9 @@
 #ifndef PUBSUB_CONSTANTS_H_
 #define PUBSUB_CONSTANTS_H_
 
-#define PUBSUB_ADMIN_TYPE_KEY      "pubsub.config"
-#define PUBSUB_SERIALIZER_TYPE_KEY "pubsub.serializer"
+#define PUBSUB_ADMIN_TYPE_KEY       "pubsub.config"
+#define PUBSUB_SERIALIZER_TYPE_KEY  "pubsub.serializer"
+#define PUBSUB_PROTOCOL_TYPE_KEY    "pubsub.protocol"
 
 /**
  * Endpoints with the system visibility should be discoverable through the complete system

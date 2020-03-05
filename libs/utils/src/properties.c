@@ -382,6 +382,21 @@ void celix_properties_set(celix_properties_t *properties, const char *key, const
     }
 }
 
+void celix_properties_setWithoutCopy(celix_properties_t *properties, char *key, char *value) {
+    if (properties != NULL) {
+        hash_map_entry_pt entry = hashMap_getEntry(properties, key);
+        char *oldVal = NULL;
+        if (entry != NULL) {
+            char *oldKey = hashMapEntry_getKey(entry);
+            oldVal = hashMapEntry_getValue(entry);
+            hashMap_put(properties, oldKey, value);
+        } else {
+            hashMap_put(properties, key, value);
+        }
+        free(oldVal);
+    }
+}
+
 void celix_properties_unset(celix_properties_t *properties, const char *key) {
     char* oldValue = hashMap_remove(properties, key);
     free(oldValue);

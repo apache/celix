@@ -29,6 +29,8 @@
 
 #include <stdlib.h>
 
+#include "celix_properties.h"
+
 #define PUBSUB_PUBLISHER_SERVICE_NAME           "pubsub.publisher"
 #define PUBSUB_PUBLISHER_SERVICE_VERSION        "3.0.0"
  
@@ -39,8 +41,7 @@
  
 #define PUBSUB_PUBLISHER_SCOPE_DEFAULT          "default"
 
- 
- 
+
 struct pubsub_publisher {
     void *handle;
 
@@ -51,15 +52,28 @@ struct pubsub_publisher {
      * this is called the local message type id. This local message type id can be requested with the localMsgIdForMsgType method.
      * When return is successful the msgTypeId is always greater than 0. (Note this can be used to specify/detect uninitialized msg type ids in the consumer code).
      *
-     * Returns 0 on success.
+     * @param handle        The publisher handle.
+     * @param msgType       The fully qualified type name.
+     * @param msgTypeId     Output argument for the local type id, how this is calculated/created is up to the pubsub admin.
+     * @return              Returns 0 on success.
      */
     int (*localMsgTypeIdForMsgType)(void *handle, const char *msgType, unsigned int *msgTypeId);
 
     /**
-     * send is a async function, but the msg can be safely deleted after send returns.
-     * Returns 0 on success.
+     * send block untill the message is either copied or serialized.
+     * Whether the message is already provided to the network layer or whether send through the network is up to the pubsubadmins.
+     * If and how meta data is handled can be different between pubsubadmins.
+     *
+     * Caller keeps ownership of the provided msg and can safely free the msg when the send function returns.
+     * Callee will take ownership of the metadata.
+     *
+     * @param handle        The publisher handle.
+     * @param msgTypeId     The local type id. Is used to find the correct message serializer and to identify the message on the wire.
+     * @param msg           The message to send.
+     * @param metadata      The meta data to send along with this message. Can be NULL.
+     * @return              Returns 0 on success.
      */
-    int (*send)(void *handle, unsigned int msgTypeId, const void *msg);
+    int (*send)(void *handle, unsigned int msgTypeId, const void *msg, celix_properties_t *metadata);
  
 };
 typedef struct pubsub_publisher pubsub_publisher_t;

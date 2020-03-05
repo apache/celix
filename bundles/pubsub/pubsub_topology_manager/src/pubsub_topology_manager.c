@@ -263,6 +263,7 @@ void pubsub_topologyManager_psaRemoved(void *handle, void *svc __attribute__((un
 
             entry->needsMatch = true;
             entry->selectedSerializerSvcId = -1L;
+            entry->selectedProtocolSvcId = -1L;
             entry->selectedPsaSvcId = -1L;
             if (entry->endpoint != NULL) {
                 celix_properties_destroy(entry->endpoint);
@@ -290,6 +291,7 @@ void pubsub_topologyManager_psaRemoved(void *handle, void *svc __attribute__((un
 
             entry->needsMatch = true;
             entry->selectedSerializerSvcId = -1L;
+            entry->selectedProtocolSvcId = -1L;
             entry->selectedPsaSvcId = -1L;
             if (entry->endpoint != NULL) {
                 celix_properties_destroy(entry->endpoint);
@@ -458,6 +460,7 @@ void pubsub_topologyManager_publisherTrackerAdded(void *handle, const celix_serv
         entry = calloc(1, sizeof(*entry));
         entry->usageCount = 1;
         entry->selectedSerializerSvcId = -1L;
+        entry->selectedProtocolSvcId = -1L;
         entry->selectedPsaSvcId = -1L;
         entry->scope = scope; //taking ownership
         entry->topic = topic; //taking ownership
@@ -673,6 +676,7 @@ static void pstm_teardownTopicSenders(pubsub_topology_manager_t *manager) {
                 entry->endpoint = NULL;
                 entry->selectedPsaSvcId = -1L;
                 entry->selectedSerializerSvcId = -1L;
+                entry->selectedProtocolSvcId = -1L;
             }
         }
     }
@@ -737,6 +741,7 @@ static void pstm_teardownTopicReceivers(pubsub_topology_manager_t *manager) {
                 entry->endpoint = NULL;
                 entry->selectedPsaSvcId = -1L;
                 entry->selectedSerializerSvcId = -1L;
+                entry->selectedProtocolSvcId = -1L;
             }
         }
     }
@@ -789,7 +794,7 @@ static void pstm_findPsaForEndpoints(pubsub_topology_manager_t *manager) {
 static void pstm_setupTopicSenderCallback(void *handle, void *svc) {
     pstm_topic_receiver_or_sender_entry_t *entry = handle;
     pubsub_admin_service_t *psa = svc;
-    psa->setupTopicSender(psa->handle, entry->scope, entry->topic, entry->topicProperties, entry->selectedSerializerSvcId, &entry->endpoint);
+    psa->setupTopicSender(psa->handle, entry->scope, entry->topic, entry->topicProperties, entry->selectedSerializerSvcId, entry->selectedProtocolSvcId, &entry->endpoint);
 }
 
 static void pstm_setupTopicSenders(pubsub_topology_manager_t *manager) {
@@ -801,6 +806,7 @@ static void pstm_setupTopicSenders(pubsub_topology_manager_t *manager) {
             //new topic sender needed, requesting match with current psa
             double highestScore = PUBSUB_ADMIN_NO_MATCH_SCORE;
             long serializerSvcId = -1L;
+            long protocolSvcId = -1L;
             long selectedPsaSvcId = -1L;
             celix_properties_t *topicPropertiesForHighestMatch = NULL;
 
@@ -812,14 +818,16 @@ static void pstm_setupTopicSenders(pubsub_topology_manager_t *manager) {
                 pubsub_admin_service_t *psa = hashMapEntry_getValue(mapEntry);
                 double score = PUBSUB_ADMIN_NO_MATCH_SCORE;
                 long serSvcId = -1L;
+                long protSvcId = -1L;
                 celix_properties_t *topicProps = NULL;
-                psa->matchPublisher(psa->handle, entry->bndId, entry->publisherFilter, &topicProps, &score, &serSvcId);
+                psa->matchPublisher(psa->handle, entry->bndId, entry->publisherFilter, &topicProps, &score, &serSvcId, &protSvcId);
                 if (score > highestScore) {
                     if (topicPropertiesForHighestMatch != NULL) {
                         celix_properties_destroy(topicPropertiesForHighestMatch);
                     }
                     highestScore = score;
                     serializerSvcId = serSvcId;
+                    protocolSvcId = protSvcId;
                     selectedPsaSvcId = svcId;
                     topicPropertiesForHighestMatch = topicProps;
                 } else if (topicProps != NULL) {
@@ -831,6 +839,7 @@ static void pstm_setupTopicSenders(pubsub_topology_manager_t *manager) {
             if (highestScore > PUBSUB_ADMIN_NO_MATCH_SCORE) {
                 entry->selectedPsaSvcId = selectedPsaSvcId;
                 entry->selectedSerializerSvcId = serializerSvcId;
+                entry->selectedProtocolSvcId = protocolSvcId;
                 entry->topicProperties = topicPropertiesForHighestMatch;
                 bool called = celix_bundleContext_useServiceWithId(manager->context, selectedPsaSvcId, PUBSUB_ADMIN_SERVICE_NAME, entry, pstm_setupTopicSenderCallback);
 
@@ -858,7 +867,7 @@ static void pstm_setupTopicSenders(pubsub_topology_manager_t *manager) {
 static void pstm_setupTopicReceiverCallback(void *handle, void *svc) {
     pstm_topic_receiver_or_sender_entry_t *entry = handle;
     pubsub_admin_service_t *psa = svc;
-    psa->setupTopicReceiver(psa->handle, entry->scope, entry->topic, entry->topicProperties, entry->selectedSerializerSvcId, &entry->endpoint);
+    psa->setupTopicReceiver(psa->handle, entry->scope, entry->topic, entry->topicProperties, entry->selectedSerializerSvcId, entry->selectedProtocolSvcId, &entry->endpoint);
 }
 
 static void pstm_setupTopicReceivers(pubsub_topology_manager_t *manager) {
@@ -870,6 +879,7 @@ static void pstm_setupTopicReceivers(pubsub_topology_manager_t *manager) {
 
             double highestScore = PUBSUB_ADMIN_NO_MATCH_SCORE;
             long serializerSvcId = -1L;
+            long protocolSvcId = -1L;
             long selectedPsaSvcId = -1L;
             celix_properties_t *highestMatchTopicProperties = NULL;
 
@@ -881,15 +891,17 @@ static void pstm_setupTopicReceivers(pubsub_topology_manager_t *manager) {
                 pubsub_admin_service_t *psa = hashMapEntry_getValue(mapEntry);
                 double score = PUBSUB_ADMIN_NO_MATCH_SCORE;
                 long serSvcId = -1L;
+                long protSvcId = -1L;
                 celix_properties_t *topicProps = NULL;
 
-                psa->matchSubscriber(psa->handle, entry->bndId, entry->subscriberProperties, &topicProps, &score, &serSvcId);
+                psa->matchSubscriber(psa->handle, entry->bndId, entry->subscriberProperties, &topicProps, &score, &serSvcId, &protSvcId);
                 if (score > highestScore) {
                     if (highestMatchTopicProperties != NULL) {
                         celix_properties_destroy(highestMatchTopicProperties);
                     }
                     highestScore = score;
                     serializerSvcId = serSvcId;
+                    protocolSvcId = protSvcId;
                     selectedPsaSvcId = svcId;
                     highestMatchTopicProperties = topicProps;
                 } else if (topicProps != NULL) {
@@ -901,6 +913,7 @@ static void pstm_setupTopicReceivers(pubsub_topology_manager_t *manager) {
             if (highestScore > PUBSUB_ADMIN_NO_MATCH_SCORE) {
                 entry->selectedPsaSvcId = selectedPsaSvcId;
                 entry->selectedSerializerSvcId = serializerSvcId;
+                entry->selectedProtocolSvcId = protocolSvcId;
                 entry->topicProperties = highestMatchTopicProperties;
 
                 bool called = celix_bundleContext_useServiceWithId(manager->context, selectedPsaSvcId, PUBSUB_ADMIN_SERVICE_NAME,
@@ -987,6 +1000,7 @@ static celix_status_t pubsub_topologyManager_topology(pubsub_topology_manager_t 
         const char *topic = celix_properties_get(discovered->endpoint, PUBSUB_ENDPOINT_TOPIC_NAME, "!Error!");
         const char *adminType = celix_properties_get(discovered->endpoint, PUBSUB_ENDPOINT_ADMIN_TYPE, "!Error!");
         const char *serType = celix_properties_get(discovered->endpoint, PUBSUB_ENDPOINT_SERIALIZER, "!Error!");
+        const char *protType = celix_properties_get(discovered->endpoint, PUBSUB_ENDPOINT_PROTOCOL, "!Error!");
         fprintf(os, "|- Discovered Endpoint %s:\n", discovered->uuid);
         fprintf(os, "   |- container name = %s\n", cn);
         fprintf(os, "   |- fw uuid        = %s\n", fwuuid);
@@ -995,6 +1009,7 @@ static celix_status_t pubsub_topologyManager_topology(pubsub_topology_manager_t 
         fprintf(os, "   |- topic          = %s\n", topic);
         fprintf(os, "   |- admin type     = %s\n", adminType);
         fprintf(os, "   |- serializer     = %s\n", serType);
+        fprintf(os, "   |- protocol       = %s\n", protType);
         if (manager->verbose) {
             fprintf(os, "   |- psa svc id     = %li\n", discovered->selectedPsaSvcId);
             fprintf(os, "   |- usage count    = %i\n", discovered->usageCount);
@@ -1017,14 +1032,17 @@ static celix_status_t pubsub_topologyManager_topology(pubsub_topology_manager_t 
         const char *uuid = celix_properties_get(entry->endpoint, PUBSUB_ENDPOINT_UUID, "!Error!");
         const char *adminType = celix_properties_get(entry->endpoint, PUBSUB_ENDPOINT_ADMIN_TYPE, "!Error!");
         const char *serType = celix_properties_get(entry->endpoint, PUBSUB_ENDPOINT_SERIALIZER, "!Error!");
+        const char *protType = celix_properties_get(entry->endpoint, PUBSUB_ENDPOINT_PROTOCOL, "!Error!");
         fprintf(os, "|- Topic Sender for endpoint %s:\n", uuid);
         fprintf(os, "   |- scope       = %s\n", entry->scope);
         fprintf(os, "   |- topic       = %s\n", entry->topic);
         fprintf(os, "   |- admin type  = %s\n", adminType);
         fprintf(os, "   |- serializer  = %s\n", serType);
+        fprintf(os, "   |- protocol    = %s\n", protType);
         if (manager->verbose) {
             fprintf(os, "   |- psa svc id  = %li\n", entry->selectedPsaSvcId);
             fprintf(os, "   |- ser svc id  = %li\n", entry->selectedSerializerSvcId);
+            fprintf(os, "   |- prot svc id = %li\n", entry->selectedProtocolSvcId);
             fprintf(os, "   |- usage count = %i\n", entry->usageCount);
         }
     }
@@ -1044,14 +1062,17 @@ static celix_status_t pubsub_topologyManager_topology(pubsub_topology_manager_t 
         const char *uuid = celix_properties_get(entry->endpoint, PUBSUB_ENDPOINT_UUID, "!Error!");
         const char *adminType = celix_properties_get(entry->endpoint, PUBSUB_ENDPOINT_ADMIN_TYPE, "!Error!");
         const char *serType = celix_properties_get(entry->endpoint, PUBSUB_ENDPOINT_SERIALIZER, "!Error!");
+        const char *protType = celix_properties_get(entry->endpoint, PUBSUB_ENDPOINT_PROTOCOL, "!Error!");
         fprintf(os, "|- Topic Receiver for endpoint %s:\n", uuid);
         fprintf(os, "   |- scope       = %s\n", entry->scope);
         fprintf(os, "   |- topic       = %s\n", entry->topic);
         fprintf(os, "   |- admin type  = %s\n", adminType);
         fprintf(os, "   |- serializer  = %s\n", serType);
+        fprintf(os, "   |- protocol    = %s\n", protType);
         if (manager->verbose) {
             fprintf(os, "    |- psa svc id  = %li\n", entry->selectedPsaSvcId);
             fprintf(os, "    |- ser svc id  = %li\n", entry->selectedSerializerSvcId);
+            fprintf(os, "    |- prot svc id = %li\n", entry->selectedProtocolSvcId);
             fprintf(os, "    |- usage count = %i\n", entry->usageCount);
         }
     }
@@ -1069,9 +1090,11 @@ static celix_status_t pubsub_topologyManager_topology(pubsub_topology_manager_t 
                 const char *requestedQos = celix_properties_get(entry->topicProperties, PUBSUB_UTILS_QOS_ATTRIBUTE_KEY, "(None)");
                 const char *requestedConfig = celix_properties_get(entry->topicProperties, PUBSUB_ADMIN_TYPE_KEY, "(None)");
                 const char *requestedSer = celix_properties_get(entry->topicProperties, PUBSUB_SERIALIZER_TYPE_KEY, "(None)");
+                const char *requestedProt = celix_properties_get(entry->topicProperties, PUBSUB_PROTOCOL_TYPE_KEY, "(None)");
                 fprintf(os, "    |- requested qos        = %s\n", requestedQos);
                 fprintf(os, "    |- requested config     = %s\n", requestedConfig);
                 fprintf(os, "    |- requested serializer = %s\n", requestedSer);
+                fprintf(os, "    |- requested protocol   = %s\n", requestedProt);
                 if (manager->verbose) {
                     fprintf(os, "    |- usage count          = %i\n", entry->usageCount);
                 }
@@ -1092,9 +1115,11 @@ static celix_status_t pubsub_topologyManager_topology(pubsub_topology_manager_t 
                 const char *requestedQos = celix_properties_get(entry->topicProperties, PUBSUB_UTILS_QOS_ATTRIBUTE_KEY, "(None)");
                 const char *requestedConfig = celix_properties_get(entry->topicProperties, PUBSUB_ADMIN_TYPE_KEY, "(None)");
                 const char *requestedSer = celix_properties_get(entry->topicProperties, PUBSUB_SERIALIZER_TYPE_KEY, "(None)");
+                const char *requestedProt = celix_properties_get(entry->topicProperties, PUBSUB_PROTOCOL_TYPE_KEY, "(None)");
                 fprintf(os, "    |- requested qos        = %s\n", requestedQos);
                 fprintf(os, "    |- requested config     = %s\n", requestedConfig);
                 fprintf(os, "    |- requested serializer = %s\n", requestedSer);
+                fprintf(os, "    |- requested protocol   = %s\n", requestedProt);
                 if (manager->verbose) {
                     fprintf(os, "    |- usage count          = %i\n", entry->usageCount);
                 }

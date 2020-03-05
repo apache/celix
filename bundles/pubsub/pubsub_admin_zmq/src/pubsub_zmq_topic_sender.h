@@ -32,6 +32,8 @@ pubsub_zmq_topic_sender_t* pubsub_zmqTopicSender_create(
         const char *topic,
         long serializerSvcId,
         pubsub_serializer_service_t *ser,
+        long protocolSvcId,
+        pubsub_protocol_service_t *prot,
         const char *bindIP,
         const char *staticBindUrl,
         unsigned int basePort,
@@ -44,6 +46,7 @@ const char* pubsub_zmqTopicSender_url(pubsub_zmq_topic_sender_t *sender);
 bool pubsub_zmqTopicSender_isStatic(pubsub_zmq_topic_sender_t *sender);
 
 long pubsub_zmqTopicSender_serializerSvcId(pubsub_zmq_topic_sender_t *sender);
+long pubsub_zmqTopicSender_protocolSvcId(pubsub_zmq_topic_sender_t *sender);
 
 void pubsub_zmqTopicSender_connectTo(pubsub_zmq_topic_sender_t *sender, const celix_properties_t *endpoint);
 void pubsub_zmqTopicSender_disconnectFrom(pubsub_zmq_topic_sender_t *sender, const celix_properties_t *endpoint);

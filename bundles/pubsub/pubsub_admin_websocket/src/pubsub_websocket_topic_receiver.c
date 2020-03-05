@@ -22,7 +22,6 @@
 #include <pubsub/subscriber.h>
 #include <memory.h>
 #include <pubsub_constants.h>
-#include <sys/epoll.h>
 #include <assert.h>
 #include <pubsub_endpoint.h>
 #include <arpa/inet.h>
@@ -477,7 +476,7 @@ static inline void processMsgForSubscriberEntry(pubsub_websocket_topic_receiver_
 
             if (status == CELIX_SUCCESS) {
                 bool release = true;
-                svc->receive(svc->handle, msgSer->msgName, msgSer->msgId, deserializedMsg, &release);
+                svc->receive(svc->handle, msgSer->msgName, msgSer->msgId, deserializedMsg, NULL, &release);
                 if (release) {
                     msgSer->freeMsg(msgSer->handle, deserializedMsg);
                 }

@@ -453,7 +453,10 @@ static int pubsubMsgSerializer_convertDescriptor(pubsub_json_serializer_t* seria
 
 static int pubsubMsgSerializer_convertAvpr(pubsub_json_serializer_t *serializer, FILE* file_ptr, pubsub_msg_serializer_t* msgSerializer, const char* fqn) {
     if (!file_ptr || !fqn || !serializer) return -2;
-    dyn_message_type* msgType = dynMessage_parseAvpr(file_ptr, fqn);
+
+    //TODO FIXME, see #158
+    //dyn_message_type* msgType = dynMessage_parseAvpr(file_ptr, fqn);
+    dyn_message_type* msgType = NULL;
 
     if (!msgType) {
         L_WARN("[json serializer] Cannot parse avpr file '%s'\n", fqn);

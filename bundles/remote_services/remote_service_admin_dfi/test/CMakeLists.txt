@@ -16,7 +16,7 @@
 # under the License.
 
 find_package(CppUTest REQUIRED)
-include_directories(${CPPUTEST_INCLUDE_DIR})
+include_directories(SYSTEM PRIVATE ${CPPUTEST_INCLUDE_DIR})
 
 add_celix_bundle(rsa_dfi_tst_bundle
     VERSION 0.0.1

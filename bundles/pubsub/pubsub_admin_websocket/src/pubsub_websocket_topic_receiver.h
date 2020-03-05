@@ -44,8 +44,4 @@ void pubsub_websocketTopicReceiver_listConnections(pubsub_websocket_topic_receiv
 void pubsub_websocketTopicReceiver_connectTo(pubsub_websocket_topic_receiver_t *receiver, const char *socketAddress, long socketPort);
 void pubsub_websocketTopicReceiver_disconnectFrom(pubsub_websocket_topic_receiver_t *receiver, const char *socketAddress, long socketPort);
 
-
-pubsub_admin_receiver_metrics_t* pubsub_websocketTopicReceiver_metrics(pubsub_websocket_topic_receiver_t *receiver);
-
-
 #endif //CELIX_PUBSUB_WEBSOCKET_TOPIC_RECEIVER_H

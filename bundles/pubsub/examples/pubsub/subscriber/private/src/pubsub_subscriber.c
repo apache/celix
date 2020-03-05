@@ -26,6 +26,8 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <hash_map.h>
+#include <celix_properties.h>
 
 #include "poi.h"
 #include "pubsub_subscriber_private.h"
@@ -53,9 +55,19 @@ void subscriber_destroy(pubsub_receiver_t *subscriber) {
     free(subscriber);
 }
 
-int pubsub_subscriber_recv(void* handle, const char* msgType, unsigned int msgTypeId, void* msg, bool* release) {
+int pubsub_subscriber_recv(void* handle, const char* msgType, unsigned int msgTypeId, void* msg, const celix_properties_t *metadata, bool* release) {
     location_t place = (location_t)msg;
     printf("Recv (%s): [%f, %f] (%s, %s, %s, len data %li)\n", msgType, place->position.lat, place->position.lon, place->name, place->description, place->extra, (long)(strlen(place->data) + 1));
+
+    if (metadata == NULL || celix_properties_size(metadata) == 0) {
+        printf("No metadata\n");
+    } else {
+        const char *key;
+        CELIX_PROPERTIES_FOR_EACH(metadata, key) {
+            const char *val = celix_properties_get(metadata, key, "!Error!");
+            printf("%s=%s\n", key, val);
+        }
+    }
 
     return 0;
 }

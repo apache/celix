@@ -81,7 +81,7 @@ celix_subproject(UTILS-TESTS "Option to build the utilities library tests" "OFF"
 if (ENABLE_TESTING AND UTILS-TESTS)
     find_package(CppUTest REQUIRED)
 
-    include_directories(SYSTEM ${CPPUTEST_INCLUDE_DIR})
+    include_directories(SYSTEM PRIVATE ${CPPUTEST_INCLUDE_DIR})
     include_directories(include)
     include_directories(src)
 

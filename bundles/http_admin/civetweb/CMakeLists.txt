@@ -24,6 +24,7 @@ target_include_directories(civetweb_shared PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
         $<INSTALL_INTERFACE:include/celix/http_admin>
         )
+target_link_libraries(civetweb_shared PUBLIC CURL::libcurl)
 
 
 #Create static library
@@ -35,6 +36,7 @@ target_include_directories(civetweb_static PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
         $<INSTALL_INTERFACE:include/celix/http_admin>
 )
+target_link_libraries(civetweb_static PUBLIC CURL::libcurl)
 
 target_compile_options(civetweb_shared PRIVATE -w -DUSE_WEBSOCKET)
 target_compile_options(civetweb_static PRIVATE -w -DUSE_WEBSOCKET)

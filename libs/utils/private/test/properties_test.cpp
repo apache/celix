@@ -33,6 +33,8 @@
 #include "CppUTestExt/MockSupport.h"
 
 extern "C" {
+#include <string.h>
+
 #include "properties.h"
 #include "celix_properties.h"
 }
@@ -146,15 +148,19 @@ TEST(properties, getSet) {
     char keyA[] = "x";
     char keyB[] = "y";
     char keyC[] = "z";
+    char *keyD = strndup("a", 1);
     char valueA[] = "1";
     char valueB[] = "2";
     char valueC[] = "3";
+    char *valueD = strndup("4", 1);
     celix_properties_set(properties, keyA, valueA);
     celix_properties_set(properties, keyB, valueB);
+    celix_properties_setWithoutCopy(properties, keyD, valueD);
 
     STRCMP_EQUAL(valueA, celix_properties_get(properties, keyA, NULL));
     STRCMP_EQUAL(valueB, celix_properties_get(properties, keyB, NULL));
     STRCMP_EQUAL(valueC, celix_properties_get(properties, keyC, valueC));
+    STRCMP_EQUAL(valueD, celix_properties_get(properties, keyD, NULL));
 
     celix_properties_destroy(properties);
 }

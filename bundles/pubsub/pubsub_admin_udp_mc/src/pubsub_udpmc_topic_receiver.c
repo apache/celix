@@ -447,7 +447,7 @@ static void psa_udpmc_processMsg(pubsub_udpmc_topic_receiver_t *receiver, pubsub
                 if (status == CELIX_SUCCESS) {
                     bool release = true;
                     pubsub_subscriber_t *svc = entry->svc;
-                    svc->receive(svc->handle, msgSer->msgName, msg->header.type, msgInst, &release);
+                    svc->receive(svc->handle, msgSer->msgName, msg->header.type, msgInst, NULL, &release);
 
                     if (release) {
                         msgSer->freeMsg(msgSer->handle, msgInst);

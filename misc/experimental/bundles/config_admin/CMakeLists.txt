@@ -27,7 +27,7 @@ if (CONFIG_ADMIN)
 	if (ENABLE_TESTING)
 		find_package(CppUTest REQUIRED)
 
-	    include_directories(${CPPUTEST_INCLUDE_DIR})
+	    include_directories(SYSTEM PRIVATE ${CPPUTEST_INCLUDE_DIR})
 	    add_subdirectory(config_admin_tst)
 #		find_package(CppUTest REQUIRED)
 #

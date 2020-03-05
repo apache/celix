@@ -19,7 +19,9 @@ include_directories("common/include")
 
 add_subdirectory(publisher)
 add_subdirectory(publisher2)
-add_subdirectory(pubsub_websocket)
+if (BUILD_PUBSUB_PSA_WS)
+    add_subdirectory(pubsub_websocket)
+endif()
 add_subdirectory(subscriber)
 
 

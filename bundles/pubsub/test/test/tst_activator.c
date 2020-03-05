@@ -28,7 +28,7 @@
 #include "msg.h"
 #include "receive_count_service.h"
 
-static int tst_receive(void *handle, const char *msgType, unsigned int msgTypeId, void *msg, bool *release);
+static int tst_receive(void *handle, const char *msgType, unsigned int msgTypeId, void *msg, const celix_properties_t *metadata, bool *release);
 static size_t tst_count(void *handle);
 
 struct activator {
@@ -72,7 +72,7 @@ celix_status_t bnd_stop(struct activator *act, celix_bundle_context_t *ctx) {
 CELIX_GEN_BUNDLE_ACTIVATOR(struct activator, bnd_start, bnd_stop) ;
 
 
-static int tst_receive(void *handle, const char * msgType __attribute__((unused)), unsigned int msgTypeId  __attribute__((unused)), void * voidMsg, bool *release  __attribute__((unused))) {
+static int tst_receive(void *handle, const char * msgType __attribute__((unused)), unsigned int msgTypeId  __attribute__((unused)), void * voidMsg, const celix_properties_t *metadata  __attribute__((unused)), bool *release  __attribute__((unused))) {
     struct activator *act = handle;
 
     msg_t *msg = voidMsg;

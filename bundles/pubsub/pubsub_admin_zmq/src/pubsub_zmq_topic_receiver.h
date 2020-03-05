@@ -27,17 +27,20 @@ typedef struct pubsub_zmq_topic_receiver pubsub_zmq_topic_receiver_t;
 
 pubsub_zmq_topic_receiver_t* pubsub_zmqTopicReceiver_create(celix_bundle_context_t *ctx,
         log_helper_t *logHelper,
-        const char *scope, 
+        const char *scope,
         const char *topic,
         const celix_properties_t *topicProperties,
         long serializerSvcId,
-        pubsub_serializer_service_t *serializer);
+        pubsub_serializer_service_t *serializer,
+        long protocolSvcId,
+        pubsub_protocol_service_t *protocol);
 void pubsub_zmqTopicReceiver_destroy(pubsub_zmq_topic_receiver_t *receiver);
 
 const char* pubsub_zmqTopicReceiver_scope(pubsub_zmq_topic_receiver_t *receiver);
 const char* pubsub_zmqTopicReceiver_topic(pubsub_zmq_topic_receiver_t *receiver);
 
 long pubsub_zmqTopicReceiver_serializerSvcId(pubsub_zmq_topic_receiver_t *receiver);
+long pubsub_zmqTopicReceiver_protocolSvcId(pubsub_zmq_topic_receiver_t *receiver);
 void pubsub_zmqTopicReceiver_listConnections(pubsub_zmq_topic_receiver_t *receiver, celix_array_list_t *connectedUrls, celix_array_list_t *unconnectedUrls);
 
 void pubsub_zmqTopicReceiver_connectTo(pubsub_zmq_topic_receiver_t *receiver, const char *url);

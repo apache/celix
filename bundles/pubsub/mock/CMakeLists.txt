@@ -18,7 +18,7 @@
 #only install if CppuTest is available
 find_package(CppUTest QUIET)
 if (CPPUTEST_FOUND)
-    include_directories(SYSTEM ${CPPUTEST_INCLUDE_DIR})
+    include_directories(SYSTEM PRIVATE ${CPPUTEST_INCLUDE_DIR})
 
     add_library(pubsub_mock STATIC
             src/publisher_mock.cc

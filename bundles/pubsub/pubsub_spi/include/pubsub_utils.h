@@ -86,8 +86,10 @@ double pubsub_utils_matchPublisher(
         double sampleScore,
         double controlScore,
         double defaultScore,
+        bool matchProtocol,
         celix_properties_t **outTopicProperties,
-        long *outSerializerSvcId);
+        long *outSerializerSvcId,
+        long *outProtocolSvcId);
 
 /**
  * Match a subscriber for a provided bnd (using the bundleId) and provided service properties.
@@ -127,8 +129,10 @@ double pubsub_utils_matchSubscriber(
         double sampleScore,
         double controlScore,
         double defaultScore,
+        bool matchProtocol,
         celix_properties_t **outTopicProperties,
-        long *outSerializerSvcId);
+        long *outSerializerSvcId,
+        long *outProtocolSvcId);
 
 /**
  * Match an endpoint (subscriber or publisher endpoint) for the provided admin type.
@@ -146,7 +150,9 @@ bool pubsub_utils_matchEndpoint(
         celix_bundle_context_t *ctx,
         const celix_properties_t *endpoint,
         const char *adminType,
-        long *outSerializerSvcId);
+        bool matchProtocol,
+        long *outSerializerSvcId,
+        long *outProtocolSvcId);
 
 
 /**

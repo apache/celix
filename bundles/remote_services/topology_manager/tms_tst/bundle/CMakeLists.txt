@@ -16,7 +16,7 @@
 # under the License.
 
 include_directories(
-        ${CPPUTEST_INCLUDE_DIR}
+        SYSTEM PRIVATE ${CPPUTEST_INCLUDE_DIR}
         ${PROJECT_SOURCE_DIR}/framework/public/include
         ${PROJECT_SOURCE_DIR}/utils/public/include
 )
