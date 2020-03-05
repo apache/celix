@@ -15,20 +15,24 @@
 # specific language governing permissions and limitations
 # under the License.
 
+add_library(celix_wire_protocol_v1_impl STATIC
+    src/pubsub_wire_protocol_impl.c
+    src/pubsub_wire_protocol_common.c
+)
+target_include_directories(celix_wire_protocol_v1_impl PRIVATE src)
+target_link_libraries(celix_wire_protocol_v1_impl PRIVATE Celix::pubsub_spi )
+
+
 add_celix_bundle(celix_pubsub_protocol_wire_v1
     BUNDLE_SYMBOLICNAME "apache_celix_pubsub_protocol_wire_v1"
     VERSION "1.0.0"
     GROUP "Celix/PubSub"
     SOURCES
         src/ps_wire_protocol_activator.c
-        src/pubsub_wire_protocol_impl.c
-        src/pubsub_wire_protocol_common.c
 )
-target_include_directories(celix_pubsub_protocol_wire_v1 PRIVATE
-    src
-)
-set_target_properties(celix_pubsub_protocol_wire_v1 PROPERTIES INSTALL_RPATH "$ORIGIN")
-target_link_libraries(celix_pubsub_protocol_wire_v1 PRIVATE Celix::pubsub_spi Celix::framework)
+target_include_directories(celix_pubsub_protocol_wire_v1 PRIVATE src)
+target_link_libraries(celix_pubsub_protocol_wire_v1 PRIVATE Celix::pubsub_spi )
+target_link_libraries(celix_pubsub_protocol_wire_v1 PRIVATE celix_wire_protocol_v1_impl)
 
 install_celix_bundle(celix_pubsub_protocol_wire_v1 EXPORT celix COMPONENT pubsub)
 
