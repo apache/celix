@@ -22,23 +22,31 @@ if (PUBSUB)
     if (BUILD_PUBSUB_PSA_ZMQ)
         message(WARNING "Celix will now contain a dependency with a LGPL License (ZeroMQ). For more information about this, consult the pubsub/README.md file.")
         option(BUILD_ZMQ_SECURITY "Build with security for ZeroMQ." OFF)
-
         add_subdirectory(pubsub_admin_zmq)
     endif (BUILD_PUBSUB_PSA_ZMQ)
 
     option(BUILD_PUBSUB_PSA_TCP "Build TCP PubSub Admin" OFF)
     if (BUILD_PUBSUB_PSA_TCP)
         add_subdirectory(pubsub_admin_tcp)
+        if (APPLE)
+            message(WARNING "TCP PubSub Admin not supported on OSX, expect compiler errors due to epoll!")
+        endif ()
     endif (BUILD_PUBSUB_PSA_TCP)
 
     option(BUILD_PUBSUB_PSA_UDP_MC "Build UDP MC PubSub Admin" OFF)
     if (BUILD_PUBSUB_PSA_UDP_MC)
         add_subdirectory(pubsub_admin_udp_mc)
+        if (APPLE)
+            message(WARNING "UDP MC PubSub Admin not supported on OSX, expect compiler errors due to epoll!")
+        endif ()
     endif (BUILD_PUBSUB_PSA_UDP_MC)
 
-    option(BUILD_PUBSUB_PSA_WS "Build WebSocket PubSub Admin" OFF)
+    option(BUILD_PUBSUB_PSA_WS "Build WebSocket PubSub Admin" ON)
     if (BUILD_PUBSUB_PSA_WS)
         add_subdirectory(pubsub_admin_websocket)
+        if (APPLE)
+            message(WARNING "WebSocket PubSub Admin not supported on OSX, the tests are failing! See issue #161")
+        endif ()
     endif (BUILD_PUBSUB_PSA_WS)
 
 

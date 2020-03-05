@@ -22,7 +22,6 @@
 #include <pubsub/subscriber.h>
 #include <memory.h>
 #include <pubsub_constants.h>
-#include <sys/epoll.h>
 #include <assert.h>
 #include <pubsub_endpoint.h>
 #include <arpa/inet.h>

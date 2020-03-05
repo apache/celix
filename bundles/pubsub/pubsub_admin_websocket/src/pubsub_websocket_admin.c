@@ -610,31 +610,3 @@ bool pubsub_websocketAdmin_executeCommand(void *handle, const char *commandLine 
 
     return true;
 }
-
-pubsub_admin_metrics_t* pubsub_websocketAdmin_metrics(void *handle) {
-    pubsub_websocket_admin_t *psa = handle;
-    pubsub_admin_metrics_t *result = calloc(1, sizeof(*result));
-    snprintf(result->psaType, PUBSUB_AMDIN_METRICS_NAME_MAX, "%s", PUBSUB_WEBSOCKET_ADMIN_TYPE);
-    result->senders = celix_arrayList_create();
-    result->receivers = celix_arrayList_create();
-
-    celixThreadMutex_lock(&psa->topicSenders.mutex);
-    hash_map_iterator_t iter = hashMapIterator_construct(psa->topicSenders.map);
-    while (hashMapIterator_hasNext(&iter)) {
-        pubsub_websocket_topic_sender_t *sender = hashMapIterator_nextValue(&iter);
-        pubsub_admin_sender_metrics_t *metrics = pubsub_websocketTopicSender_metrics(sender);
-        celix_arrayList_add(result->senders, metrics);
-    }
-    celixThreadMutex_unlock(&psa->topicSenders.mutex);
-
-    celixThreadMutex_lock(&psa->topicReceivers.mutex);
-    iter = hashMapIterator_construct(psa->topicReceivers.map);
-    while (hashMapIterator_hasNext(&iter)) {
-        pubsub_websocket_topic_receiver_t *receiver = hashMapIterator_nextValue(&iter);
-        pubsub_admin_receiver_metrics_t *metrics = pubsub_websocketTopicReceiver_metrics(receiver);
-        celix_arrayList_add(result->receivers, metrics);
-    }
-    celixThreadMutex_unlock(&psa->topicReceivers.mutex);
-
-    return result;
-}

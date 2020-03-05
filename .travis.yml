@@ -84,8 +84,8 @@ before_script:
         -DBUILD_RSA_DISCOVERY_SHM=ON "
     - export BUILD_OPTIONS_OSX=" \
         -DBUILD_RSA_REMOTE_SERVICE_ADMIN_SHM=OFF \
-        -DBUILD_PUBSUB=OFF \
-        -DBUILD_PUBSUB_PSA_ZMQ=OFF \
+        -DBUILD_PUBSUB=ON \
+        -DBUILD_PUBSUB_PSA_ZMQ=ON \
         -DBUILD_RSA_DISCOVERY_SHM=OFF "
 
 script:

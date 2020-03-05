@@ -455,7 +455,10 @@ static int pubsubMsgAvrobinSerializer_convertDescriptor(FILE* file_ptr, pubsub_m
 
 static int pubsubMsgAvrobinSerializer_convertAvpr(FILE* file_ptr, pubsub_msg_serializer_t* serializer, const char* fqn) {
     if (!file_ptr || !fqn || !serializer) return -2;
-    dyn_message_type* msgType = dynMessage_parseAvpr(file_ptr, fqn);
+
+    //TODO FIXME, see #158
+    //dyn_message_type* msgType = dynMessage_parseAvpr(file_ptr, fqn);
+    dyn_message_type* msgType = NULL;
 
     if (!msgType) {
         printf("DMU: cannot parse avpr file for '%s'\n", fqn);
