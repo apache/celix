@@ -32,7 +32,7 @@
 #include "version_range.h"
 #include "thpool.h"
 
-#if defined(BSD) || defined(__APPLE__) || defined(__ANDROID__)
+#if defined(NO_MEMSTREAM_AVAILABLE)
 #include "memstream/open_memstream.h"
 #include "memstream/fmemopen.h"
 #endif
