@@ -110,9 +110,9 @@ static celix_status_t refiningDriver_stopDevice(refining_driver_device_pt device
 }
 
 
-static celix_status_t refiningDriver_serviceChanged(celix_service_listener_t *listener, celix_service_event_t *event) {
+static celix_status_t refiningDriver_serviceChanged(void *handle, celix_service_event_t *event) {
 	celix_status_t status =  CELIX_SUCCESS;
-	refining_driver_device_pt device = listener->handle;
+	refining_driver_device_pt device = handle;
 	if (event->type == OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING) {
 		bool equal = false;
 		status = serviceReference_equals(device->baseServiceReference, event->reference, &equal);

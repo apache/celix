@@ -49,13 +49,23 @@ static celix_status_t serviceRegistry_setReferenceStatus(service_registry_pt reg
                                                   bool deleted);
 static celix_status_t serviceRegistry_getUsingBundles(service_registry_pt registry, service_registration_pt reg, array_list_pt *bundles);
 static celix_status_t serviceRegistry_getServiceReference_internal(service_registry_pt registry, bundle_pt owner, service_registration_pt registration, service_reference_pt *out);
+static void celix_serviceRegistry_serviceChanged(celix_service_registry_t *registry, celix_service_event_type_t eventType, service_registration_pt registration);
+static void serviceRegistry_callHooksForListenerFilter(service_registry_pt registry, celix_bundle_t *owner, const celix_filter_t *filter, bool removed);
 
-static celix_service_registry_listener_hook_entry_t* celix_createHookEntry(long svcId, celix_listener_hook_service_t*);
+    static celix_service_registry_listener_hook_entry_t* celix_createHookEntry(long svcId, celix_listener_hook_service_t*);
 static void celix_waitAndDestroyHookEntry(celix_service_registry_listener_hook_entry_t *entry);
 static void celix_increaseCountHook(celix_service_registry_listener_hook_entry_t *entry);
 static void celix_decreaseCountHook(celix_service_registry_listener_hook_entry_t *entry);
 
-celix_status_t serviceRegistry_create(framework_pt framework, serviceChanged_function_pt serviceChanged, service_registry_pt *out) {
+static void celix_increaseCountServiceListener(celix_service_registry_service_listener_entry_t *entry);
+static void celix_decreaseCountServiceListener(celix_service_registry_service_listener_entry_t *entry);
+static void celix_waitAndDestroyServiceListener(celix_service_registry_service_listener_entry_t *entry);
+
+static void celix_increasePendingRegisteredEvent(celix_service_registry_t *registry, long svcId);
+static void celix_decreasePendingRegisteredEvent(celix_service_registry_t *registry, long svcId);
+static void celix_waitForPendingRegisteredEvents(celix_service_registry_t *registry, long svcId);
+
+celix_status_t serviceRegistry_create(framework_pt framework, service_registry_pt *out) {
 	celix_status_t status;
 
 	service_registry_pt reg = calloc(1, sizeof(*reg));
@@ -66,9 +76,7 @@ celix_status_t serviceRegistry_create(framework_pt framework, serviceChanged_fun
         reg->callback.handle = reg;
         reg->callback.getUsingBundles = (void *)serviceRegistry_getUsingBundles;
         reg->callback.unregister = (void *) serviceRegistry_unregisterService;
-        reg->callback.modified = (void *) serviceRegistry_servicePropertiesModified;
 
-        reg->serviceChanged = serviceChanged;
 		reg->serviceRegistrations = hashMap_create(NULL, NULL, NULL, NULL);
 		reg->framework = framework;
 		reg->currentServiceId = 1UL;
@@ -77,7 +85,12 @@ celix_status_t serviceRegistry_create(framework_pt framework, serviceChanged_fun
         reg->checkDeletedReferences = CHECK_DELETED_REFERENCES;
         reg->deletedServiceReferences = hashMap_create(NULL, NULL, NULL, NULL);
 
-		arrayList_create(&reg->listenerHooks);
+		reg->listenerHooks = celix_arrayList_create();
+		reg->serviceListeners = celix_arrayList_create();
+
+		celixThreadMutex_create(&reg->pendingRegisterEvents.mutex, NULL);
+		celixThreadCondition_init(&reg->pendingRegisterEvents.cond, NULL);
+		reg->pendingRegisterEvents.map = hashMap_create(NULL, NULL, NULL, NULL);
 
 		status = celixThreadRwlock_create(&reg->lock, NULL);
 	}
@@ -94,36 +107,44 @@ celix_status_t serviceRegistry_create(framework_pt framework, serviceChanged_fun
 celix_status_t serviceRegistry_destroy(service_registry_pt registry) {
     celixThreadRwlock_writeLock(&registry->lock);
 
+    //remove service listeners
+    int size = celix_arrayList_size(registry->serviceListeners);
+    if (size > 0) {
+        fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "%i dangling service listeners\n", size);
+    }
+    for (int i = 0; i < size; ++i) {
+        celix_service_registry_service_listener_entry_t *entry = celix_arrayList_get(registry->serviceListeners, i);
+        celix_decreaseCountServiceListener(entry);
+        celix_waitAndDestroyServiceListener(entry);
+    }
+    arrayList_destroy(registry->serviceListeners);
+
     //destroy service registration map
-    int size = hashMap_size(registry->serviceRegistrations);
+    size = hashMap_size(registry->serviceRegistrations);
     if (size > 0) {
         fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "%i bundles with dangling service registration\n", size);
-        hash_map_iterator_t iter = hashMapIterator_construct(registry->serviceRegistrations);
-        while (hashMapIterator_hasNext(&iter)) {
-            hash_map_entry_t *entry = hashMapIterator_nextEntry(&iter);
-            bundle_t *bnd = hashMapEntry_getKey(entry);
-            celix_array_list_t *registrations = hashMapEntry_getValue(entry);
-            module_pt mod = NULL;
-            const char *name = NULL;
-            bundle_getCurrentModule(bnd, &mod);
-            if (mod != NULL) {
-                module_getSymbolicName(mod, &name);
-            }
-            for (int i = 0; i < celix_arrayList_size(registrations); ++i) {
-                service_registration_pt reg = celix_arrayList_get(registrations, i);
-                const char *svcName = NULL;
-                serviceRegistration_getServiceName(reg, &svcName);
-                fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Bundle %s still has a %s service registered\n", name, svcName);
-            }
+    }
+    hash_map_iterator_t iter = hashMapIterator_construct(registry->serviceRegistrations);
+    while (hashMapIterator_hasNext(&iter)) {
+        hash_map_entry_t *entry = hashMapIterator_nextEntry(&iter);
+        celix_bundle_t *bnd = hashMapEntry_getKey(entry);
+        celix_array_list_t *registrations = hashMapEntry_getValue(entry);
+        for (int i = 0; i < celix_arrayList_size(registrations); ++i) {
+            service_registration_pt reg = celix_arrayList_get(registrations, i);
+            const char *svcName = NULL;
+            serviceRegistration_getServiceName(reg, &svcName);
+            fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Bundle %s (bundle id: %li) still has a %s service registered\n", celix_bundle_getSymbolicName(bnd), celix_bundle_getId(bnd), svcName);
         }
     }
+
     assert(size == 0);
     hashMap_destroy(registry->serviceRegistrations, false, false);
 
     //destroy service references (double) map);
-    //FIXME. The framework bundle does not (yet) call clearReferences, as result the size could be > 0 for test code.
-    //size = hashMap_size(registry->serviceReferences);
-    //assert(size == 0);
+    size = hashMap_size(registry->serviceReferences);
+    if (size > 0) {
+        fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Unexpected service references left in the service registry! Nr of references: %i", size);
+    }
     hashMap_destroy(registry->serviceReferences, false, false);
 
     //destroy listener hooks
@@ -135,6 +156,12 @@ celix_status_t serviceRegistry_destroy(service_registry_pt registry) {
     celix_arrayList_destroy(registry->listenerHooks);
 
     hashMap_destroy(registry->deletedServiceReferences, false, false);
+
+    size = hashMap_size(registry->pendingRegisterEvents.map);
+    assert(size == 0);
+    celixThreadMutex_destroy(&registry->pendingRegisterEvents.mutex);
+    celixThreadCondition_destroy(&registry->pendingRegisterEvents.cond);
+    hashMap_destroy(registry->pendingRegisterEvents.map, false, false);
 
     free(registry);
 
@@ -190,11 +217,8 @@ static celix_status_t serviceRegistry_registerServiceInternal(service_registry_p
 	} else { //plain
 	    *registration = serviceRegistration_create(registry->callback, bundle, serviceName, ++registry->currentServiceId, serviceObject, dictionary);
 	}
-
-    //long id;
-    //bundle_getBundleId(bundle, &id);
-    //fprintf(stderr, "REG: Registering service '%s' for bundle id %li with reg pointer %p\n", serviceName, id, *registration);
-
+    long svcId = serviceRegistration_getServiceId(*registration);
+	//printf("Registering service %li with name %s\n", svcId, serviceName);
 
     serviceRegistry_addHooks(registry, serviceName, serviceObject, *registration);
 
@@ -206,41 +230,56 @@ static celix_status_t serviceRegistry_registerServiceInternal(service_registry_p
         hashMap_put(registry->serviceRegistrations, bundle, regs);
     }
 	arrayList_add(regs, *registration);
-	celixThreadRwlock_unlock(&registry->lock);
 
-	if (registry->serviceChanged != NULL) {
-		registry->serviceChanged(registry->framework, OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED, *registration, NULL);
-	}
+    //update pending register event
+    celix_increasePendingRegisteredEvent(registry, svcId);
+    celixThreadRwlock_unlock(&registry->lock);
+
+
+    //NOTE there is a race condition with celix_serviceRegistry_addServiceListener, as result
+    //a REGISTERED event can be triggered twice instead of once. The service tracker can deal with this.
+    //The handling of pending registered events is to ensure that the UNREGISTERING event is always
+    //after the 1 or 2 REGISTERED events.
+
+	celix_serviceRegistry_serviceChanged(registry, OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED, *registration);
+    //update pending register event count
+    celix_decreasePendingRegisteredEvent(registry, svcId);
 
 	return CELIX_SUCCESS;
 }
 
 celix_status_t serviceRegistry_unregisterService(service_registry_pt registry, bundle_pt bundle, service_registration_pt registration) {
 	// array_list_t clients;
-	array_list_pt regs;
+	celix_array_list_t *regs;
 
     //fprintf(stderr, "REG: Unregistering service registration with pointer %p\n", registration);
+
+    long svcId = serviceRegistration_getServiceId(registration);
+    const char *svcName = NULL;
+    serviceRegistration_getServiceName(registration, &svcName);
+    //printf("Unregistering service %li with name %s\n", svcId, svcName);
 
 	serviceRegistry_removeHook(registry, registration);
 
 	celixThreadRwlock_writeLock(&registry->lock);
-	regs = (array_list_pt) hashMap_get(registry->serviceRegistrations, bundle);
+	regs = (celix_array_list_t*) hashMap_get(registry->serviceRegistrations, bundle);
 	if (regs != NULL) {
 		arrayList_removeElement(regs, registration);
         int size = arrayList_size(regs);
         if (size == 0) {
-            arrayList_destroy(regs);
+            celix_arrayList_destroy(regs);
             hashMap_remove(registry->serviceRegistrations, bundle);
         }
 	}
 	celixThreadRwlock_unlock(&registry->lock);
 
-	if (registry->serviceChanged != NULL) {
-		registry->serviceChanged(registry->framework, OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING, registration, NULL);
-	}
 
+    //check and wait for pending register events
+    celix_waitForPendingRegisteredEvents(registry, svcId);
 
-	celixThreadRwlock_readLock(&registry->lock);
+    celix_serviceRegistry_serviceChanged(registry, OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING, registration);
+
+    celixThreadRwlock_readLock(&registry->lock);
     //invalidate service references
     hash_map_iterator_pt iter = hashMapIterator_create(registry->serviceReferences);
     while (hashMapIterator_hasNext(iter)) {
@@ -308,7 +347,7 @@ celix_status_t serviceRegistry_getServiceReference(service_registry_pt registry,
                                                    service_registration_pt registration, service_reference_pt *out) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	if(celixThreadRwlock_writeLock(&registry->lock) == CELIX_SUCCESS) {
+	if (celixThreadRwlock_writeLock(&registry->lock) == CELIX_SUCCESS) {
 	    status = serviceRegistry_getServiceReference_internal(registry, owner, registration, out);
 	    celixThreadRwlock_unlock(&registry->lock);
 	}
@@ -566,22 +605,16 @@ static void serviceRegistry_logWarningServiceReferenceUsageCount(service_registr
     }
 
     if(usageCount > 0 || refCount > 0) {
-        module_pt module_ptr = NULL;
-        bundle_getCurrentModule(bundle, &module_ptr);
-        const char* bundle_name = NULL;
-        module_getSymbolicName(module_ptr, &bundle_name);
-
+        const char* bundle_name = celix_bundle_getSymbolicName(bundle);
         const char* service_name = "unknown";
         const char* bundle_provider_name = "unknown";
         if (refCount > 0 && ref != NULL) {
             serviceReference_getProperty(ref, OSGI_FRAMEWORK_OBJECTCLASS, &service_name);
             service_registration_pt reg = NULL;
-            bundle_pt bundle = NULL;
-            module_pt mod = NULL;
+            bundle_pt providedBnd = NULL;
             serviceReference_getServiceRegistration(ref, &reg);
-            serviceRegistration_getBundle(reg, &bundle);
-            bundle_getCurrentModule(bundle, &mod);
-            module_getSymbolicName(mod, &bundle_provider_name);
+            serviceRegistration_getBundle(reg, &providedBnd);
+            bundle_provider_name = celix_bundle_getSymbolicName(providedBnd);
         }
 
         fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "Previous Dangling service reference warnings caused by bundle '%s', for service '%s', provided by bundle '%s'", bundle_name, service_name, bundle_provider_name);
@@ -779,14 +812,14 @@ static celix_status_t serviceRegistry_removeHook(service_registry_pt registry, s
 	return status;
 }
 
-void serviceRegistry_callHooksForListenerFilter(service_registry_pt registry, celix_bundle_t *owner, const char *filter, bool removed) {
+static void serviceRegistry_callHooksForListenerFilter(service_registry_pt registry, celix_bundle_t *owner, const celix_filter_t *filter, bool removed) {
     celix_bundle_context_t *ctx;
     bundle_getContext(owner, &ctx);
 
     struct listener_hook_info info;
     info.context = ctx;
     info.removed = removed;
-    info.filter = filter;
+    info.filter = celix_filter_getFilterString(filter);
     celix_array_list_t *infos = celix_arrayList_create();
     celix_arrayList_add(infos, &info);
 
@@ -821,13 +854,6 @@ size_t serviceRegistry_nrOfHooks(service_registry_pt registry) {
     unsigned size = arrayList_size(registry->listenerHooks);
     celixThreadRwlock_unlock(&registry->lock);
     return (size_t) size;
-}
-
-celix_status_t serviceRegistry_servicePropertiesModified(service_registry_pt registry, service_registration_pt registration, properties_pt oldprops) {
-	if (registry->serviceChanged != NULL) {
-		registry->serviceChanged(registry->framework, OSGI_FRAMEWORK_SERVICE_EVENT_MODIFIED, registration, oldprops);
-	}
-	return CELIX_SUCCESS;
 }
 
 static celix_status_t serviceRegistry_getUsingBundles(service_registry_pt registry, service_registration_pt registration, array_list_pt *out) {
@@ -886,12 +912,12 @@ static void celix_waitAndDestroyHookEntry(celix_service_registry_listener_hook_e
     if (entry != NULL) {
         celixThreadMutex_lock(&entry->mutex);
         int waitCount = 0;
-        while (entry->count > 0) {
+        while (entry->useCount > 0) {
             celixThreadCondition_timedwaitRelative(&entry->cond, &entry->mutex, 1, 0); //wait for 1 second
             waitCount += 1;
             if (waitCount >= 5) {
                 fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING,
-                        "Still waiting for service listener hook use count to become zero. Waiting for %i seconds. Use Count is %i, svc id is %li", waitCount, (int)entry->count, entry->svcId);
+                        "Still waiting for service listener hook use count to become zero. Waiting for %i seconds. Use Count is %i, svc id is %li", waitCount, (int)entry->useCount, entry->svcId);
             }
         }
         celixThreadMutex_unlock(&entry->mutex);
@@ -905,7 +931,7 @@ static void celix_waitAndDestroyHookEntry(celix_service_registry_listener_hook_e
 static void celix_increaseCountHook(celix_service_registry_listener_hook_entry_t *entry) {
     if (entry != NULL) {
         celixThreadMutex_lock(&entry->mutex);
-        entry->count += 1;
+        entry->useCount += 1;
         celixThreadCondition_broadcast(&entry->cond);
         celixThreadMutex_unlock(&entry->mutex);
     }
@@ -913,11 +939,45 @@ static void celix_increaseCountHook(celix_service_registry_listener_hook_entry_t
 static void celix_decreaseCountHook(celix_service_registry_listener_hook_entry_t *entry) {
     if (entry != NULL) {
         celixThreadMutex_lock(&entry->mutex);
-        entry->count -= 1;
+        entry->useCount -= 1;
         celixThreadCondition_broadcast(&entry->cond);
         celixThreadMutex_unlock(&entry->mutex);
     }
 }
+
+static void celix_increaseCountServiceListener(celix_service_registry_service_listener_entry_t *entry) {
+    if (entry != NULL) {
+        celixThreadMutex_lock(&entry->mutex);
+        entry->useCount += 1;
+        celixThreadCondition_broadcast(&entry->cond);
+        celixThreadMutex_unlock(&entry->mutex);
+    }
+}
+
+static void celix_decreaseCountServiceListener(celix_service_registry_service_listener_entry_t *entry) {
+    if (entry != NULL) {
+        celixThreadMutex_lock(&entry->mutex);
+        entry->useCount -= 1;
+        celixThreadCondition_broadcast(&entry->cond);
+        celixThreadMutex_unlock(&entry->mutex);
+    }
+}
+
+static inline void celix_waitAndDestroyServiceListener(celix_service_registry_service_listener_entry_t *entry) {
+    celixThreadMutex_lock(&entry->mutex);
+    while (entry->useCount != 0) {
+        celixThreadCondition_wait(&entry->cond, &entry->mutex);
+    }
+    celixThreadMutex_unlock(&entry->mutex);
+
+    //use count == 0 -> safe to destroy.
+    //destroy
+    celixThreadMutex_destroy(&entry->mutex);
+    celixThreadCondition_destroy(&entry->cond);
+    celix_filter_destroy(entry->filter);
+    free(entry);
+}
+
 
 celix_array_list_t* celix_serviceRegistry_listServiceIdsForOwner(celix_service_registry_t* registry, long bndId) {
     celix_array_list_t *result = celix_arrayList_create();
@@ -973,3 +1033,248 @@ bool celix_serviceRegistry_getServiceInfo(
 
     return found;
 }
+
+celix_status_t celix_serviceRegistry_addServiceListener(celix_service_registry_t *registry, celix_bundle_t *bundle, const char *stringFilter, celix_service_listener_t *listener) {
+
+    celix_filter_t *filter = NULL;
+    if (stringFilter != NULL) {
+        filter = celix_filter_create(stringFilter);
+        if (filter == NULL) {
+            fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Cannot add service listener filter '%s' is invalid", stringFilter);
+            return CELIX_ILLEGAL_ARGUMENT;
+        }
+    }
+
+    celix_service_registry_service_listener_entry_t *entry = calloc(1, sizeof(*entry));
+    entry->bundle = bundle;
+    entry->filter = filter;
+    entry->listener = listener;
+    entry->useCount = 1; //new entry -> count on 1
+    celixThreadMutex_create(&entry->mutex, NULL);
+    celixThreadCondition_init(&entry->cond, NULL);
+
+    celix_array_list_t *registrations =  celix_arrayList_create();
+
+    celixThreadRwlock_writeLock(&registry->lock);
+    celix_arrayList_add(registry->serviceListeners, entry); //use count 1
+
+    //find already registered services
+    hash_map_iterator_t iter = hashMapIterator_construct(registry->serviceRegistrations);
+    while (hashMapIterator_hasNext(&iter)) {
+        celix_array_list_t *regs = (array_list_pt) hashMapIterator_nextValue(&iter);
+        for (int regIdx = 0; (regs != NULL) && regIdx < celix_arrayList_size(regs); ++regIdx) {
+            service_registration_pt registration = celix_arrayList_get(regs, regIdx);
+            properties_pt props = NULL;
+            serviceRegistration_getProperties(registration, &props);
+            if (celix_filter_match(filter, props)) {
+                serviceRegistration_retain(registration);
+                long svcId = serviceRegistration_getServiceId(registration);
+                celix_arrayList_add(registrations, registration);
+                //update pending register event count
+                celix_increasePendingRegisteredEvent(registry, svcId);
+            }
+        }
+    }
+    celixThreadRwlock_unlock(&registry->lock);
+
+    //NOTE there is a race condition with serviceRegistry_registerServiceInternal, as result
+    //a REGISTERED event can be triggered twice instead of once. The service tracker can deal with this.
+    //The handling of pending registered events is to ensure that the UNREGISTERING event is always
+    //after the 1 or 2 REGISTERED events.
+
+    for (int i = 0; i < celix_arrayList_size(registrations); ++i) {
+        service_registration_pt reg = celix_arrayList_get(registrations, i);
+        long svcId = serviceRegistration_getServiceId(reg);
+        service_reference_pt ref = NULL;
+        serviceRegistry_getServiceReference_internal(registry, bundle, reg, &ref);
+        celix_service_event_t event;
+        event.reference = ref;
+        event.type = OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED;
+        listener->serviceChanged(listener->handle, &event);
+        serviceReference_release(ref, NULL);
+        serviceRegistration_release(reg);
+
+        //update pending register event count
+        celix_decreasePendingRegisteredEvent(registry, svcId);
+    }
+    celix_arrayList_destroy(registrations);
+
+    serviceRegistry_callHooksForListenerFilter(registry, bundle, entry->filter, false);
+
+    celix_decreaseCountServiceListener(entry); //use count decreased, can be 0
+    return CELIX_SUCCESS;
+}
+
+celix_status_t celix_serviceRegistry_removeServiceListener(celix_service_registry_t *registry, celix_service_listener_t *listener) {
+    celix_service_registry_service_listener_entry_t *entry = NULL;
+
+    celixThreadRwlock_writeLock(&registry->lock);
+    for (int i = 0; i < celix_arrayList_size(registry->serviceListeners); ++i) {
+        celix_service_registry_service_listener_entry_t *visit = celix_arrayList_get(registry->serviceListeners, i);
+        if (visit->listener == listener) {
+            entry = visit;
+            celix_arrayList_removeAt(registry->serviceListeners, i);
+            break;
+        }
+    }
+    celixThreadRwlock_unlock(&registry->lock);
+
+    if (entry != NULL) {
+        serviceRegistry_callHooksForListenerFilter(registry, entry->bundle, entry->filter, true);
+        celix_waitAndDestroyServiceListener(entry);
+    } else {
+        fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Cannot remove service listener, listener not found");
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
+    return CELIX_SUCCESS;
+}
+
+static void celix_serviceRegistry_serviceChanged(celix_service_registry_t *registry, celix_service_event_type_t eventType, service_registration_pt registration) {
+    celix_service_registry_service_listener_entry_t *entry;
+
+    celix_array_list_t* retainedEntries = celix_arrayList_create();
+    celix_array_list_t* matchedEntries = celix_arrayList_create();
+
+    celixThreadRwlock_readLock(&registry->lock);
+    for (int i = 0; i < celix_arrayList_size(registry->serviceListeners); ++i) {
+        entry = celix_arrayList_get(registry->serviceListeners, i);
+        celix_arrayList_add(retainedEntries, entry);
+        celix_increaseCountServiceListener(entry); //ensure that use count > 0, so that the listener cannot be destroyed until all pending event are handled.
+    }
+    celixThreadRwlock_unlock(&registry->lock);
+
+    for (int i = 0; i < celix_arrayList_size(retainedEntries); ++i) {
+        entry = celix_arrayList_get(retainedEntries, i);
+        int matched = 0;
+        celix_properties_t *props = NULL;
+        bool matchResult = false;
+        serviceRegistration_getProperties(registration, &props);
+        if (entry->filter != NULL) {
+            filter_match(entry->filter, props, &matchResult);
+        }
+        matched = (entry->filter == NULL) || matchResult;
+        if (matched) {
+            celix_arrayList_add(matchedEntries, entry);
+        } else {
+            celix_decreaseCountServiceListener(entry); //Not a match -> release entry
+        }
+    }
+    celix_arrayList_destroy(retainedEntries);
+
+    /*
+     * TODO FIXME, A deadlock can happen when (e.g.) a service is deregistered, triggering this fw_serviceChanged and
+     * one of the matching service listener callbacks tries to remove an other matched service listener.
+     * The remove service listener will call the listener_waitForDestroy and the fw_serviceChanged part keeps the
+     * usageCount on > 0.
+     *
+     * Not sure how to prevent/handle this.
+     */
+
+    for (int i = 0; i < celix_arrayList_size(matchedEntries); ++i) {
+        entry = celix_arrayList_get(matchedEntries, i);
+        service_reference_pt reference = NULL;
+        celix_service_event_t event;
+        serviceRegistry_getServiceReference(registry, entry->bundle, registration, &reference);
+        event.type = eventType;
+        event.reference = reference;
+        entry->listener->serviceChanged(entry->listener->handle, &event);
+        serviceRegistry_ungetServiceReference(registry, entry->bundle, reference);
+        celix_decreaseCountServiceListener(entry); //decrease usage, so that the listener can be destroyed (if use count is now 0)
+    }
+    celix_arrayList_destroy(matchedEntries);
+}
+
+
+static void celix_increasePendingRegisteredEvent(celix_service_registry_t *registry, long svcId) {
+    celixThreadMutex_lock(&registry->pendingRegisterEvents.mutex);
+    long count = (long)hashMap_get(registry->pendingRegisterEvents.map, (void*)svcId);
+    count += 1;
+    hashMap_put(registry->pendingRegisterEvents.map, (void*)svcId, (void*)count);
+    celixThreadMutex_unlock(&registry->pendingRegisterEvents.mutex);
+}
+
+static void celix_decreasePendingRegisteredEvent(celix_service_registry_t *registry, long svcId) {
+    celixThreadMutex_lock(&registry->pendingRegisterEvents.mutex);
+    long count = (long)hashMap_get(registry->pendingRegisterEvents.map, (void*)svcId);
+    assert(count >= 1);
+    count -= 1;
+    if (count > 0) {
+        hashMap_put(registry->pendingRegisterEvents.map, (void *)svcId, (void *)count);
+    } else {
+        hashMap_remove(registry->pendingRegisterEvents.map, (void*)svcId);
+    }
+    celixThreadCondition_signal(&registry->pendingRegisterEvents.cond);
+    celixThreadMutex_unlock(&registry->pendingRegisterEvents.mutex);
+}
+
+static void celix_waitForPendingRegisteredEvents(celix_service_registry_t *registry, long svcId) {
+    celixThreadMutex_lock(&registry->pendingRegisterEvents.mutex);
+    long count = (long)hashMap_get(registry->pendingRegisterEvents.map, (void*)svcId);
+    while (count > 0) {
+        celixThreadCondition_wait(&registry->pendingRegisterEvents.cond, &registry->pendingRegisterEvents.mutex);
+        count = (long)hashMap_get(registry->pendingRegisterEvents.map, (void*)svcId);
+    }
+    celixThreadMutex_unlock(&registry->pendingRegisterEvents.mutex);
+}
+
+//static void celix_serviceRegistry_triggerListenerHooks(celix_service_registry_t *registry, const char* serviceName, const celix_properties_t *properties) {
+//     //If this is a listener hook, invoke the callback with all current listeners
+//    if (strcmp(serviceName, OSGI_FRAMEWORK_LISTENER_HOOK_SERVICE_NAME) == 0) {
+//        celix_array_list_t *infos = NULL;
+//        service_reference_pt ref = NULL;
+//        listener_hook_service_pt hook = NULL;
+//
+//        status = CELIX_DO_IF(status, arrayList_create(&infos));
+//
+//        if (status == CELIX_SUCCESS) {
+//            celix_status_t subs = CELIX_SUCCESS;
+//
+//            celixThreadMutex_lock(&framework->serviceListenersLock);
+//            for (i = 0; i < arrayList_size(framework->serviceListeners); i++) {
+//                celix_fw_service_listener_entry_t *listener = arrayList_get(framework->serviceListeners, i);
+//                bundle_context_t *context = NULL;
+//                listener_hook_info_pt info = NULL;
+//                bundle_context_pt lContext = NULL;
+//
+//                subs = CELIX_DO_IF(subs, bundle_getContext(entry->bnd, &context));
+//                if (subs == CELIX_SUCCESS) {
+//                    info = (listener_hook_info_pt) malloc(sizeof(*info));
+//                    if (info == NULL) {
+//                        subs = CELIX_ENOMEM;
+//                    }
+//                }
+//
+//                subs = CELIX_DO_IF(subs, bundle_getContext(listener->bundle, &lContext));
+//                if (subs == CELIX_SUCCESS) {
+//                    info->context = lContext;
+//                    info->removed = false;
+//                }
+//                subs = CELIX_DO_IF(subs, filter_getString(listener->filter, &info->filter));
+//
+//                if (subs == CELIX_SUCCESS) {
+//                    arrayList_add(infos, info);
+//                }
+//                else{
+//                    fw_logCode(framework->logger, OSGI_FRAMEWORK_LOG_ERROR, status, "Could not pass all listeners to the hook: %s", serviceName);
+//                    free(info);
+//                }
+//            }
+//            celixThreadMutex_unlock(&framework->serviceListenersLock);
+//
+//            status = CELIX_DO_IF(status, serviceRegistry_getServiceReference(framework->registry, framework->bundle,
+//                                                                             *registration, &ref));
+//            status = CELIX_DO_IF(status, fw_getService(framework,framework->bundle, ref, (const void **) &hook));
+//            if (status == CELIX_SUCCESS) {
+//                hook->added(hook->handle, infos);
+//            }
+//            status = CELIX_DO_IF(status, serviceRegistry_ungetService(framework->registry, framework->bundle, ref, NULL));
+//            status = CELIX_DO_IF(status, serviceRegistry_ungetServiceReference(framework->registry, framework->bundle, ref));
+//
+//            for (int j = 0; j < arrayList_size(infos); j++) {
+//                listener_hook_info_pt info = arrayList_get(infos, j);
+//                free(info);
+//            }
+//            arrayList_destroy(infos);
+//        }
+//    }
+//}

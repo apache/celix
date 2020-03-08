@@ -39,6 +39,7 @@ target_include_directories(framework PUBLIC
         $<INSTALL_INTERFACE:include/celix>
 )
 target_compile_options(framework PRIVATE -DUSE_FILE32API)
+target_compile_options(framework PRIVATE -Wno-deprecated-declarations) #note part of the api is deprecated, ignore this warning on own api
 set_target_properties(framework PROPERTIES "SOVERSION" 2)
 
 target_link_libraries(framework PUBLIC Celix::utils Celix::dfi ${CELIX_OPTIONAL_EXTRA_LIBS})
@@ -112,6 +113,7 @@ if (ENABLE_TESTING AND FRAMEWORK_TESTS)
         private/mock/bundle_mock.c
         private/mock/celix_log_mock.c)
     target_link_libraries(bundle_context_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} Celix::utils pthread)
+    target_compile_options(bundle_context_test PRIVATE -Wno-deprecated-declarations)
 
     add_executable(bundle_revision_test
         private/test/bundle_revision_test.cpp

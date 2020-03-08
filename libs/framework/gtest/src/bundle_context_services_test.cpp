@@ -111,13 +111,15 @@ TEST_F(CelixBundleContextServicesTests, registerMultipleAndUseServices) {
     };
 
     int total = 0;
-    celix_bundleContext_useServices(ctx, "calc", &total, use);
+    auto count = celix_bundleContext_useServices(ctx, "calc", &total, use);
+    ASSERT_EQ(3, count);
     ASSERT_EQ(42 * 3, total);
 
 
     celix_bundleContext_unregisterService(ctx, svcId3);
     total = 0;
-    celix_bundleContext_useServices(ctx, "calc", &total, use);
+    count = celix_bundleContext_useServices(ctx, "calc", &total, use);
+    ASSERT_EQ(2, count);
     ASSERT_EQ(42 * 2, total);
 
     total = 0;
@@ -125,6 +127,10 @@ TEST_F(CelixBundleContextServicesTests, registerMultipleAndUseServices) {
     ASSERT_TRUE(called);
     ASSERT_EQ(42, total);
 
+    celix_bundleContext_unregisterService(ctx, svcId1);
+    celix_bundleContext_unregisterService(ctx, svcId2);
+
+    //NOTE superfluous (note prints errors)
     celix_bundleContext_unregisterService(ctx, svcId1);
     celix_bundleContext_unregisterService(ctx, svcId2);
 };
@@ -169,50 +175,52 @@ TEST_F(CelixBundleContextServicesTests, registerAndUseService) {
 };
 
 TEST_F(CelixBundleContextServicesTests, registerAndUseServiceWithTimeout) {
-    struct calc {
-        int (*calc)(int);
-    };
+    const int NR_ITERATIONS = 5; //NOTE this test is sensitive for triggering race condition in the celix framework, therefore is used a few times.
+    for (int i = 0; i < NR_ITERATIONS; ++i) {
+        printf("Iter %i\n", i);
+        struct calc {
+            int (*calc)(int);
+        };
 
-    const char *calcName = "calc";
-    struct calc svc;
-    svc.calc = [](int n) -> int {
-        return n * 42;
-    };
+        const char *calcName = "calc";
+        struct calc svc;
+        svc.calc = [](int n) -> int {
+            return n * 42;
+        };
 
-    celix_service_use_options_t opts{};
-    opts.filter.serviceName = "calc";
+        celix_service_use_options_t opts{};
+        opts.filter.serviceName = "calc";
 
-    bool called = celix_bundleContext_useServiceWithOptions(ctx, &opts);
-    ASSERT_TRUE(!called); //service not avail.
+        bool called = celix_bundleContext_useServiceWithOptions(ctx, &opts);
+        EXPECT_FALSE(called); //service not avail.
 
-    std::future<bool> result{std::async([&]{
-        opts.waitTimeoutInSeconds = 5.0;
-        printf("Trying to call calc with timeout of %f\n", opts.waitTimeoutInSeconds);
-        bool calledAsync = celix_bundleContext_useServiceWithOptions(ctx, &opts);
-        printf("returned from use service with timeout. calc called %s.\n", calledAsync ? "true" : "false");
-        return calledAsync;
-    })};
-    long svcId = celix_bundleContext_registerService(ctx, &svc, calcName, nullptr);
-    ASSERT_TRUE(svcId >= 0);
-
-
-    ASSERT_TRUE(result.get()); //should return true after waiting for the registered service.
-
-
-    celix_bundleContext_unregisterService(ctx, svcId);
+        std::future<bool> result{std::async([&] {
+            opts.waitTimeoutInSeconds = 2.0;
+            //printf("Trying to call calc with timeout of %f\n", opts.waitTimeoutInSeconds);
+            bool calledAsync = celix_bundleContext_useServiceWithOptions(ctx, &opts);
+            //printf("returned from use service with timeout. calc called %s.\n", calledAsync ? "true" : "false");
+            return calledAsync;
+        })};
+        long svcId = celix_bundleContext_registerService(ctx, &svc, calcName, nullptr);
+        EXPECT_TRUE(svcId >= 0);
 
 
-    //check if timeout is triggered
-    std::future<bool> result2{std::async([&]{
-        opts.waitTimeoutInSeconds = 0.5;
-        printf("Trying to call calc with timeout of %f\n", opts.waitTimeoutInSeconds);
-        bool calledAsync = celix_bundleContext_useServiceWithOptions(ctx, &opts);
-        printf("returned from use service with timeout. calc called %s.\n", calledAsync ? "true" : "false");
-        return calledAsync;
-    })};
-    ASSERT_TRUE(!result2.get());
+        EXPECT_TRUE(result.get()); //should return true after waiting for the registered service.
 
-    celix_bundleContext_unregisterService(ctx, svcId);
+
+        celix_bundleContext_unregisterService(ctx, svcId);
+
+
+        //check if timeout is triggered
+        std::future<bool> result2{std::async([&] {
+            opts.waitTimeoutInSeconds = 0.1;
+            //printf("Trying to call calc with timeout of %f\n", opts.waitTimeoutInSeconds);
+            bool calledAsync = celix_bundleContext_useServiceWithOptions(ctx, &opts);
+            //printf("returned from use service with timeout. calc called %s.\n", calledAsync ? "true" : "false");
+            return calledAsync;
+        })};
+        EXPECT_FALSE(result2.get()); //note service is away, so even with a wait the service is not found.
+    }
 }
 
 TEST_F(CelixBundleContextServicesTests, registerAndUseServiceWithCorrectVersion) {

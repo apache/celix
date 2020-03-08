@@ -317,12 +317,13 @@ bool celix_bundleContext_useServiceWithOptions(
 }
 
 
-void celix_bundleContext_useServicesWithOptions(
+size_t celix_bundleContext_useServicesWithOptions(
 		celix_bundle_context_t *ctx,
 		const celix_service_use_options_t *opts) {
 	mock_c()->actualCall("celix_bundleContext_useServicesWithOptions")
 			->withPointerParameters("ctx", ctx)
 			->withConstPointerParameters("opts", opts);
+	return mock_c()->returnValue().value.unsignedLongIntValue;
 }
 
 long celix_bundleContext_registerServiceFactory(celix_bundle_context_t *ctx, celix_service_factory_t *factory, const char *serviceName, celix_properties_t *props) {
