@@ -17,8 +17,7 @@
  * under the License.
  */
 
-#include <CppUTest/TestHarness.h>
-#include "CppUTest/CommandLineTestRunner.h"
+#include "gtest/gtest.h"
 
 extern "C" {
 #include <stdio.h>
@@ -120,11 +119,11 @@ struct example1 {
 
 static void check_example1(void *data) {
 	auto ex = static_cast<example1*>(data);
-	CHECK_EQUAL(1.0, ex->a);
-	LONGS_EQUAL(22, ex->b);
-	LONGS_EQUAL(32, ex->c);
-	LONGS_EQUAL(42, ex->d);
-	CHECK_EQUAL(4.4f, ex->e);
+	ASSERT_EQ(1.0, ex->a);
+	ASSERT_EQ(22, ex->b);
+	ASSERT_EQ(32, ex->c);
+	ASSERT_EQ(42, ex->d);
+	ASSERT_EQ(4.4f, ex->e);
 }
 
 /*********** example 2 ************************/
@@ -202,12 +201,12 @@ struct example2 {
 
 static void check_example2(void *data) {
     auto ex = static_cast<example2*>(data);
-	CHECK_EQUAL(42, ex->byte);
-	LONGS_EQUAL(232, ex->long1);
-	LONGS_EQUAL(242, ex->long2);
-	CHECK_EQUAL(4.2, ex->double1);
-	CHECK_EQUAL(3.2f, ex->float1);
-	CHECK_EQUAL(4.4, ex->double2);
+	ASSERT_EQ(42, ex->byte);
+	ASSERT_EQ(232, ex->long1);
+	ASSERT_EQ(242, ex->long2);
+	ASSERT_EQ(4.2, ex->double1);
+	ASSERT_EQ(3.2f, ex->float1);
+	ASSERT_EQ(4.4, ex->double2);
 }
 
 
@@ -255,10 +254,10 @@ struct example3 {
 
 static void check_example3(void *data) {
     auto ex = static_cast<example3*>(data);
-	CHECK_EQUAL(3, ex->numbers.len);
-	CHECK_EQUAL(22, ex->numbers.buf[0]);
-	CHECK_EQUAL(32, ex->numbers.buf[1]);
-	CHECK_EQUAL(42, ex->numbers.buf[2]);
+	ASSERT_EQ(3, ex->numbers.len);
+	ASSERT_EQ(22, ex->numbers.buf[0]);
+	ASSERT_EQ(32, ex->numbers.buf[1]);
+	ASSERT_EQ(42, ex->numbers.buf[2]);
 }
 
 /*********** example 4 ************************/
@@ -327,12 +326,12 @@ struct example4 {
 
 static void check_example4(void *data) {
     auto ex = static_cast<example4*>(data);
-	CHECK_EQUAL(1, ex->left.index);
-	CHECK_EQUAL(1.0, ex->left.val1);
-	CHECK_EQUAL(2.0, ex->left.val2);
-	CHECK_EQUAL(2, ex->right.index);
-	CHECK_EQUAL(5.0, ex->right.val1);
-	CHECK_EQUAL(4.0, ex->right.val2);
+	ASSERT_EQ(1, ex->left.index);
+	ASSERT_EQ(1.0, ex->left.val1);
+	ASSERT_EQ(2.0, ex->left.val2);
+	ASSERT_EQ(2, ex->right.index);
+	ASSERT_EQ(5.0, ex->right.val1);
+	ASSERT_EQ(4.0, ex->right.val2);
 }
 
 
@@ -434,24 +433,24 @@ struct example5 {
 
 static void check_example5(void *data) {
     auto ex = static_cast<example5*>(data);
-	CHECK_TRUE(ex->head != nullptr);
+	ASSERT_TRUE(ex->head != nullptr);
 
-	CHECK(ex->head->left != nullptr);
-	CHECK(ex->head->left->value != nullptr);
-	STRCMP_EQUAL("John", ex->head->left->value->name);
-	CHECK_EQUAL(44, ex->head->left->value->age);
-	CHECK(ex->head->left->right == nullptr);
-	CHECK(ex->head->left->left != nullptr);
-	CHECK(ex->head->left->left->value != nullptr);
-	STRCMP_EQUAL("Victor", ex->head->left->left->value->name);
-	CHECK_EQUAL(400, ex->head->left->left->value->age);
+	ASSERT_TRUE(ex->head->left != nullptr);
+	ASSERT_TRUE(ex->head->left->value != nullptr);
+	ASSERT_STREQ("John", ex->head->left->value->name);
+	ASSERT_EQ(44, ex->head->left->value->age);
+	ASSERT_TRUE(ex->head->left->right == nullptr);
+	ASSERT_TRUE(ex->head->left->left != nullptr);
+	ASSERT_TRUE(ex->head->left->left->value != nullptr);
+	ASSERT_STREQ("Victor", ex->head->left->left->value->name);
+	ASSERT_EQ(400, ex->head->left->left->value->age);
 
-	CHECK(ex->head->right != nullptr);
-	CHECK(ex->head->right->value != nullptr);
-	STRCMP_EQUAL("Peter", ex->head->right->value->name);
-	CHECK_EQUAL(55, ex->head->right->value->age);
-	CHECK(ex->head->right->left == nullptr);
-	CHECK(ex->head->right->right == nullptr);
+	ASSERT_TRUE(ex->head->right != nullptr);
+	ASSERT_TRUE(ex->head->right->value != nullptr);
+	ASSERT_STREQ("Peter", ex->head->right->value->name);
+	ASSERT_EQ(55, ex->head->right->value->age);
+	ASSERT_TRUE(ex->head->right->left == nullptr);
+	ASSERT_TRUE(ex->head->right->right == nullptr);
 }
 
 /*********** example 6 ************************/
@@ -512,26 +511,26 @@ struct ex6_avpr_struct {
 };
 
 static void check_example6(struct ex6_sequence seq) {
-	CHECK_EQUAL(3, seq.cap);
-	CHECK_EQUAL(3, seq.len);
-	CHECK_EQUAL(0.1, seq.buf[0].v1);
-	CHECK_EQUAL(0.2, seq.buf[0].v2);
-	CHECK_EQUAL(1.1, seq.buf[1].v1);
-	CHECK_EQUAL(1.2, seq.buf[1].v2);
-	CHECK_EQUAL(2.1, seq.buf[2].v1);
-	CHECK_EQUAL(2.2, seq.buf[2].v2);
+	ASSERT_EQ(3, seq.cap);
+	ASSERT_EQ(3, seq.len);
+	ASSERT_EQ(0.1, seq.buf[0].v1);
+	ASSERT_EQ(0.2, seq.buf[0].v2);
+	ASSERT_EQ(1.1, seq.buf[1].v1);
+	ASSERT_EQ(1.2, seq.buf[1].v2);
+	ASSERT_EQ(2.1, seq.buf[2].v1);
+	ASSERT_EQ(2.2, seq.buf[2].v2);
 }
 
 static void check_example6_avpr(void *data) {
     auto ex = static_cast<ex6_avpr_struct*>(data);
-	CHECK_EQUAL(3, ex->samples.cap);
-	CHECK_EQUAL(3, ex->samples.len);
-	CHECK_EQUAL(0.1, ex->samples.buf[0].v1);
-	CHECK_EQUAL(0.2, ex->samples.buf[0].v2);
-	CHECK_EQUAL(1.1, ex->samples.buf[1].v1);
-	CHECK_EQUAL(1.2, ex->samples.buf[1].v2);
-	CHECK_EQUAL(2.1, ex->samples.buf[2].v1);
-	CHECK_EQUAL(2.2, ex->samples.buf[2].v2);
+	ASSERT_EQ(3, ex->samples.cap);
+	ASSERT_EQ(3, ex->samples.len);
+	ASSERT_EQ(0.1, ex->samples.buf[0].v1);
+	ASSERT_EQ(0.2, ex->samples.buf[0].v2);
+	ASSERT_EQ(1.1, ex->samples.buf[1].v1);
+	ASSERT_EQ(1.2, ex->samples.buf[1].v2);
+	ASSERT_EQ(2.1, ex->samples.buf[2].v1);
+	ASSERT_EQ(2.2, ex->samples.buf[2].v2);
 }
 
 /*********** example 7 ************************/
@@ -570,7 +569,7 @@ struct example7 {
 
 static void check_example7(void *data) {
     auto ex = static_cast<example7*>(data);
-	STRCMP_EQUAL("apache celix", ex->a);
+	ASSERT_STREQ("apache celix", ex->a);
 }
 
 
@@ -657,12 +656,12 @@ struct example8 {
 
 static void check_example8(void *data) {
     auto ex = static_cast<example8*>(data);
-	CHECK_EQUAL(true,ex->a);
-	CHECK_EQUAL(4,ex->b);
-	CHECK_EQUAL(8,ex->c);
-	//error on mac CHECK_EQUAL(16,ex->d);
-    CHECK(16 == ex->d);
-	CHECK_EQUAL(32,ex->e);
+	ASSERT_EQ(true,ex->a);
+	ASSERT_EQ(4,ex->b);
+	ASSERT_EQ(8,ex->c);
+	//error on mac ASSERT_EQ(16,ex->d);
+    ASSERT_TRUE(16 == ex->d);
+	ASSERT_EQ(32,ex->e);
 }
 
 /*********** example 9 ************************/
@@ -739,23 +738,23 @@ struct example9 {
 
 static void check_example9_1(void *data) {
     auto ex = static_cast<example9*>(data);
-    CHECK_EQUAL(1000, ex->id);
-    STRCMP_EQUAL("my_name", ex->name);
-    CHECK_EQUAL(RE_NOK, ex->result);
+    ASSERT_EQ(1000, ex->id);
+    ASSERT_STREQ("my_name", ex->name);
+    ASSERT_EQ(RE_NOK, ex->result);
 }
 
 static void check_example9_2(void *data) {
     auto ex = static_cast<example9*>(data);
-    CHECK_EQUAL(1001, ex->id);
-    STRCMP_EQUAL("your_name", ex->name);
-    CHECK_EQUAL(RE_MAYBE, ex->result);
+    ASSERT_EQ(1001, ex->id);
+    ASSERT_STREQ("your_name", ex->name);
+    ASSERT_EQ(RE_MAYBE, ex->result);
 }
 
 static void check_example9_3(void *data) {
     auto ex = static_cast<example9*>(data);
-    CHECK_EQUAL(1001, ex->id);
-    STRCMP_EQUAL("your_name", ex->name);
-    CHECK_EQUAL(RE_OK, ex->result);
+    ASSERT_EQ(1001, ex->id);
+    ASSERT_STREQ("your_name", ex->name);
+    ASSERT_EQ(RE_OK, ex->result);
 }
 /*********** example A ************************/
 const char *exampleA_descriptor = "TPoint={DD x y};{lPoint;lPoint;t point_a point_b name}";
@@ -780,11 +779,11 @@ struct exA_struct {
 
 static void check_exampleA(void *data) {
 	auto inp = static_cast<exA_struct*>(data);
-	CHECK_EQUAL(1.0, inp->point_a.x);
-	CHECK_EQUAL(2.0, inp->point_a.y);
-	CHECK_EQUAL(3.0, inp->point_b.x);
-	CHECK_EQUAL(4.0, inp->point_b.y);
-	STRCMP_EQUAL("this_is_my_name", inp->name)
+	ASSERT_EQ(1.0, inp->point_a.x);
+	ASSERT_EQ(2.0, inp->point_a.y);
+	ASSERT_EQ(3.0, inp->point_b.x);
+	ASSERT_EQ(4.0, inp->point_b.y);
+	ASSERT_STREQ("this_is_my_name", inp->name);
 }
 
 
@@ -795,45 +794,45 @@ static void parseAvprTests() {
 
     inst = nullptr;
     type = dynType_parseAvprWithStr(avpr_example1_descriptor, avpr_example1_fqn);
-    CHECK(type != nullptr);
+    ASSERT_TRUE(type != nullptr);
 	rc = jsonSerializer_deserialize(type, example1_input, &inst);
-	CHECK_EQUAL(0, rc);
+	ASSERT_EQ(0, rc);
 	check_example1(inst);
 	dynType_free(type, inst);
 	dynType_destroy(type);
 
     inst = nullptr;
     type = dynType_parseAvprWithStr(avpr_example2_descriptor, avpr_example2_fqn);
-    CHECK(type != nullptr);
+    ASSERT_TRUE(type != nullptr);
 	rc = jsonSerializer_deserialize(type, example2_input, &inst);
-	CHECK_EQUAL(0, rc);
+	ASSERT_EQ(0, rc);
 	check_example2(inst);
 	dynType_free(type, inst);
 	dynType_destroy(type);
 
     inst = nullptr;
     type = dynType_parseAvprWithStr(avpr_example3_descriptor, avpr_example3_fqn);
-    CHECK(type != nullptr);
+    ASSERT_TRUE(type != nullptr);
 	rc = jsonSerializer_deserialize(type, example3_input, &inst);
-	CHECK_EQUAL(0, rc);
+	ASSERT_EQ(0, rc);
 	check_example3(inst);
 	dynType_free(type, inst);
 	dynType_destroy(type);
 
     inst = nullptr;
     type = dynType_parseAvprWithStr(avpr_example4_descriptor, avpr_example4_fqn);
-    CHECK(type != nullptr);
+    ASSERT_TRUE(type != nullptr);
 	rc = jsonSerializer_deserialize(type, example4_input, &inst);
-	CHECK_EQUAL(0, rc);
+	ASSERT_EQ(0, rc);
 	check_example4(inst);
 	dynType_free(type, inst);
 	dynType_destroy(type);
 
     inst = nullptr;
     type = dynType_parseAvprWithStr(avpr_example5_descriptor, avpr_example5_fqn);
-    CHECK(type != nullptr);
+    ASSERT_TRUE(type != nullptr);
 	rc = jsonSerializer_deserialize(type, example5_input, &inst);
-	CHECK_EQUAL(0, rc);
+	ASSERT_EQ(0, rc);
 	check_example5(inst);
 	dynType_free(type, inst);
 	dynType_destroy(type);
@@ -841,44 +840,44 @@ static void parseAvprTests() {
     // Test 6 has custom checker because avdl does not allow an array to be a type on its own
     inst = nullptr;
     type = dynType_parseAvprWithStr(avpr_example6_descriptor, avpr_example6_fqn);
-    CHECK(type != nullptr);
+    ASSERT_TRUE(type != nullptr);
 	rc = jsonSerializer_deserialize(type, avpr_example6_input, &inst);
-	CHECK_EQUAL(0, rc);
+	ASSERT_EQ(0, rc);
 	check_example6_avpr(inst);
 	dynType_free(type, inst);
 	dynType_destroy(type);
 
     inst = nullptr;
     type = dynType_parseAvprWithStr(avpr_example7_descriptor, avpr_example7_fqn);
-    CHECK(type != nullptr);
+    ASSERT_TRUE(type != nullptr);
 	rc = jsonSerializer_deserialize(type, example7_input, &inst);
-	CHECK_EQUAL(0, rc);
+	ASSERT_EQ(0, rc);
 	check_example7(inst);
 	dynType_free(type, inst);
 	dynType_destroy(type);
 
     inst = nullptr;
     type = dynType_parseAvprWithStr(avpr_example8_descriptor, avpr_example8_fqn);
-    CHECK(type != nullptr);
+    ASSERT_TRUE(type != nullptr);
 	rc = jsonSerializer_deserialize(type, example8_input, &inst);
-	CHECK_EQUAL(0, rc);
+	ASSERT_EQ(0, rc);
 	check_example8(inst);
 	dynType_free(type, inst);
 	dynType_destroy(type);
 
     inst = nullptr;
     type = dynType_parseAvprWithStr(avpr_example9_descriptor, avpr_example9_fqn);
-    CHECK(type != nullptr);
+    ASSERT_TRUE(type != nullptr);
 	rc = jsonSerializer_deserialize(type, example9_input_1, &inst);
-	CHECK_EQUAL(0, rc);
+	ASSERT_EQ(0, rc);
 	check_example9_1(inst);
 	dynType_free(type, inst);
 	rc = jsonSerializer_deserialize(type, example9_input_2, &inst);
-	CHECK_EQUAL(0, rc);
+	ASSERT_EQ(0, rc);
 	check_example9_2(inst);
 	dynType_free(type, inst);
     rc = jsonSerializer_deserialize(type, example9_input_3, &inst);
-    CHECK_EQUAL(0, rc);
+    ASSERT_EQ(0, rc);
     check_example9_3(inst);
     dynType_free(type, inst);
 	dynType_destroy(type);
@@ -892,9 +891,9 @@ static void parseTests() {
 	type = nullptr;
 	inst = nullptr;
 	rc = dynType_parseWithStr(example1_descriptor, nullptr, nullptr, &type);
-	CHECK_EQUAL(0, rc);
+	ASSERT_EQ(0, rc);
 	rc = jsonSerializer_deserialize(type, example1_input, &inst);
-	CHECK_EQUAL(0, rc);
+	ASSERT_EQ(0, rc);
 	check_example1(inst);
 	dynType_free(type, inst);
 	dynType_destroy(type);
@@ -902,9 +901,9 @@ static void parseTests() {
 	type = nullptr;
 	inst = nullptr;
 	rc = dynType_parseWithStr(example2_descriptor, nullptr, nullptr, &type);
-	CHECK_EQUAL(0, rc);
+	ASSERT_EQ(0, rc);
 	rc = jsonSerializer_deserialize(type, example2_input, &inst);
-	CHECK_EQUAL(0, rc);
+	ASSERT_EQ(0, rc);
 	check_example2(inst);
 	dynType_free(type, inst);
 	dynType_destroy(type);
@@ -912,9 +911,9 @@ static void parseTests() {
 	type = nullptr;
 	inst = nullptr;
 	rc = dynType_parseWithStr(example3_descriptor, nullptr, nullptr, &type);
-	CHECK_EQUAL(0, rc);
+	ASSERT_EQ(0, rc);
 	rc = jsonSerializer_deserialize(type, example3_input, &inst);
-	CHECK_EQUAL(0, rc);
+	ASSERT_EQ(0, rc);
 	check_example3(inst);
 	dynType_free(type, inst);
 	dynType_destroy(type);
@@ -922,9 +921,9 @@ static void parseTests() {
 	type = nullptr;
 	inst = nullptr;
 	rc = dynType_parseWithStr(example4_descriptor, nullptr, nullptr, &type);
-	CHECK_EQUAL(0, rc);
+	ASSERT_EQ(0, rc);
 	rc = jsonSerializer_deserialize(type, example4_input, &inst);
-	CHECK_EQUAL(0, rc);
+	ASSERT_EQ(0, rc);
 	check_example4(inst);
 	dynType_free(type, inst);
 	dynType_destroy(type);
@@ -932,9 +931,9 @@ static void parseTests() {
 	type = nullptr;
 	inst = nullptr;
 	rc = dynType_parseWithStr(example5_descriptor, nullptr, nullptr, &type);
-	CHECK_EQUAL(0, rc);
+	ASSERT_EQ(0, rc);
 	rc = jsonSerializer_deserialize(type, example5_input, &inst);
-	CHECK_EQUAL(0, rc);
+	ASSERT_EQ(0, rc);
 	check_example5(inst);
 	dynType_free(type, inst);
 	dynType_destroy(type);
@@ -942,9 +941,9 @@ static void parseTests() {
 	type = nullptr;
 	struct ex6_sequence *seq;
 	rc = dynType_parseWithStr(example6_descriptor, nullptr, nullptr, &type);
-	CHECK_EQUAL(0, rc);
+	ASSERT_EQ(0, rc);
 	rc = jsonSerializer_deserialize(type, example6_input, (void **)&seq);
-	CHECK_EQUAL(0, rc);
+	ASSERT_EQ(0, rc);
 	check_example6((*seq));
 	dynType_free(type, seq);
 	dynType_destroy(type);
@@ -952,9 +951,9 @@ static void parseTests() {
 	type = nullptr;
 	inst = nullptr;
 	rc = dynType_parseWithStr(example7_descriptor, nullptr, nullptr, &type);
-	CHECK_EQUAL(0, rc);
+	ASSERT_EQ(0, rc);
 	rc = jsonSerializer_deserialize(type, example7_input, &inst);
-	CHECK_EQUAL(0, rc);
+	ASSERT_EQ(0, rc);
 	check_example7(inst);
 	dynType_free(type, inst);
 	dynType_destroy(type);
@@ -962,9 +961,9 @@ static void parseTests() {
 	type = nullptr;
 	inst = nullptr;
 	rc = dynType_parseWithStr(example8_descriptor, nullptr, nullptr, &type);
-	CHECK_EQUAL(0, rc);
+	ASSERT_EQ(0, rc);
 	rc = jsonSerializer_deserialize(type, example8_input, &inst);
-	CHECK_EQUAL(0, rc);
+	ASSERT_EQ(0, rc);
 	check_example8(inst);
 	dynType_free(type, inst);
 	dynType_destroy(type);
@@ -972,13 +971,13 @@ static void parseTests() {
 	type = nullptr;
 	inst = nullptr;
 	rc = dynType_parseWithStr(example9_descriptor, nullptr, nullptr, &type);
-	CHECK_EQUAL(0, rc);
+	ASSERT_EQ(0, rc);
 	rc = jsonSerializer_deserialize(type, example9_input_1, &inst);
-	CHECK_EQUAL(0, rc);
+	ASSERT_EQ(0, rc);
 	check_example9_1(inst);
 	dynType_free(type, inst);
 	rc = jsonSerializer_deserialize(type, example9_input_2, &inst);
-	CHECK_EQUAL(0, rc);
+	ASSERT_EQ(0, rc);
 	check_example9_2(inst);
 	dynType_free(type, inst);
 	dynType_destroy(type);
@@ -986,9 +985,9 @@ static void parseTests() {
     type = nullptr;
     inst = nullptr;
     rc = dynType_parseWithStr(exampleA_descriptor, nullptr, nullptr, &type);
-    CHECK_EQUAL(0, rc);
+    ASSERT_EQ(0, rc);
     rc = jsonSerializer_deserialize(type, exampleA_input, &inst);
-    CHECK_EQUAL(0, rc);
+    ASSERT_EQ(0, rc);
     check_exampleA(inst);
     dynType_free(type, inst);
     dynType_destroy(type);
@@ -1125,21 +1124,20 @@ void writeTest1(void) {
 	dyn_type *type = nullptr;
 	char *result = nullptr;
 	int rc = dynType_parseWithStr(write_example1_descriptor, "ex1", nullptr, &type);
-	CHECK_EQUAL(0, rc);
+	ASSERT_EQ(0, rc);
 	rc = jsonSerializer_serialize(type, &ex1, &result);
-	CHECK_EQUAL(0, rc);
-	STRCMP_CONTAINS(R"("a":65)", result);
-	STRCMP_CONTAINS(R"("b":2)", result);
-	STRCMP_CONTAINS(R"("c":3)", result);
-	STRCMP_CONTAINS(R"("d":4)", result);
-	STRCMP_CONTAINS(R"("e":5)", result);
-	STRCMP_CONTAINS(R"("f":6)", result);
-	STRCMP_CONTAINS(R"("g":7)", result);
-	STRCMP_CONTAINS(R"("h":8.8)", result);
-	STRCMP_CONTAINS(R"("i":9.9)", result);
-	STRCMP_CONTAINS(R"("j":10)", result);
-	STRCMP_CONTAINS(R"("k":false)", result);
-	STRCMP_CONTAINS(R"("l":12)", result);
+	ASSERT_EQ(0, rc);
+	ASSERT_TRUE(strstr(result, R"("b":2)") != nullptr);
+    ASSERT_TRUE(strstr(result, R"("c":3)") != nullptr);
+    ASSERT_TRUE(strstr(result, R"("d":4)") != nullptr);
+    ASSERT_TRUE(strstr(result, R"("e":5)") != nullptr);
+    ASSERT_TRUE(strstr(result, R"("f":6)") != nullptr);
+    ASSERT_TRUE(strstr(result, R"("g":7)") != nullptr);
+    ASSERT_TRUE(strstr(result, R"("h":8.8)") != nullptr);
+    ASSERT_TRUE(strstr(result, R"("i":9.9)") != nullptr);
+    ASSERT_TRUE(strstr(result, R"("j":10)") != nullptr);
+    ASSERT_TRUE(strstr(result, R"("k":false)") != nullptr);
+    ASSERT_TRUE(strstr(result, R"("l":12)") != nullptr);
 	//printf("example 1 result: '%s'\n", result);
 	dynType_destroy(type);
 	free(result);
@@ -1150,23 +1148,23 @@ void writeAvprTest1(void) {
 
 	char *result = nullptr;
 	dyn_type *type = dynType_parseAvprWithStr(avpr_write_example1_descriptor, avpr_write_example1_fqn);
-	CHECK(type != nullptr);
+	ASSERT_TRUE(type != nullptr);
 
 	int rc = jsonSerializer_serialize(type, &ex1, &result);
-	CHECK_EQUAL(0, rc);
+	ASSERT_EQ(0, rc);
 
-	STRCMP_CONTAINS(R"("a":1)", result);
-	STRCMP_CONTAINS(R"("b":2)", result);
-	STRCMP_CONTAINS(R"("c":3)", result);
-	STRCMP_CONTAINS(R"("d":4)", result);
-	STRCMP_CONTAINS(R"("e":5)", result);
-	STRCMP_CONTAINS(R"("f":6)", result);
-	STRCMP_CONTAINS(R"("g":7)", result);
-	STRCMP_CONTAINS(R"("h":8.8)", result);
-	STRCMP_CONTAINS(R"("i":9.9)", result);
-	STRCMP_CONTAINS(R"("j":10)", result);
-	STRCMP_CONTAINS(R"("k":true)", result);
-	STRCMP_CONTAINS(R"("l":12)", result);
+	ASSERT_TRUE(strstr(result, R"("a":1)") != nullptr);
+    ASSERT_TRUE(strstr(result, R"("b":2)") != nullptr);
+    ASSERT_TRUE(strstr(result, R"("c":3)") != nullptr);
+    ASSERT_TRUE(strstr(result, R"("d":4)") != nullptr);
+    ASSERT_TRUE(strstr(result, R"("e":5)") != nullptr);
+    ASSERT_TRUE(strstr(result, R"("f":6)") != nullptr);
+    ASSERT_TRUE(strstr(result, R"("g":7)") != nullptr);
+    ASSERT_TRUE(strstr(result, R"("h":8.8)") != nullptr);
+    ASSERT_TRUE(strstr(result, R"("i":9.9)") != nullptr);
+    ASSERT_TRUE(strstr(result, R"("j":10)") != nullptr);
+    ASSERT_TRUE(strstr(result, R"("k":true)") != nullptr);
+    ASSERT_TRUE(strstr(result, R"("l":12)") != nullptr);
 
 	dynType_destroy(type);
 	free(result);
@@ -1246,13 +1244,13 @@ void writeTest2(void) {
 	dyn_type *type = nullptr;
 	char *result = nullptr;
 	int rc = dynType_parseWithStr(write_example2_descriptor, "ex2", nullptr, &type);
-	CHECK_EQUAL(0, rc);
+	ASSERT_EQ(0, rc);
 	rc = jsonSerializer_serialize(type, &ex, &result);
-	CHECK_EQUAL(0, rc);
-	STRCMP_CONTAINS("\"a\":1", result);
-	STRCMP_CONTAINS("\"b\":2", result);
-	STRCMP_CONTAINS("\"c\":3", result);
-	STRCMP_CONTAINS("\"d\":4", result);
+	ASSERT_EQ(0, rc);
+	ASSERT_TRUE(strstr(result, "\"a\":1") != nullptr);
+    ASSERT_TRUE(strstr(result, "\"b\":2") != nullptr);
+    ASSERT_TRUE(strstr(result, "\"c\":3") != nullptr);
+    ASSERT_TRUE(strstr(result, "\"d\":4") != nullptr);
 	//printf("example 2 result: '%s'\n", result);
 	dynType_destroy(type);
 	free(result);
@@ -1266,15 +1264,15 @@ void writeAvprTest2(void) {
 
 	char *result = nullptr;
 	dyn_type *type = dynType_parseAvprWithStr(avpr_write_example2_descriptor, avpr_write_example2_fqn);
-	CHECK(type != nullptr);
+	ASSERT_TRUE(type != nullptr);
 
 	int rc = jsonSerializer_serialize(type, &ex, &result);
-	CHECK_EQUAL(0, rc);
+	ASSERT_EQ(0, rc);
 
-	STRCMP_CONTAINS("\"a\":1", result);
-	STRCMP_CONTAINS("\"b\":2", result);
-	STRCMP_CONTAINS("\"c\":3", result);
-	STRCMP_CONTAINS("\"d\":4", result);
+	ASSERT_TRUE(strstr(result, "\"a\":1") != nullptr);
+    ASSERT_TRUE(strstr(result, "\"b\":2") != nullptr);
+    ASSERT_TRUE(strstr(result, "\"c\":3") != nullptr);
+    ASSERT_TRUE(strstr(result, "\"d\":4") != nullptr);
 
 	dynType_destroy(type);
 	free(result);
@@ -1356,13 +1354,13 @@ void writeTest3(void) {
 	dyn_type *type = nullptr;
 	char *result = nullptr;
 	int rc = dynType_parseWithStr(write_example3_descriptor, "ex3", nullptr, &type);
-	CHECK_EQUAL(0, rc);
+	ASSERT_EQ(0, rc);
 	rc = jsonSerializer_serialize(type, &seq, &result);
-	CHECK_EQUAL(0, rc);
-	STRCMP_CONTAINS("\"age\":33", result);
-	STRCMP_CONTAINS("\"age\":44", result);
-	STRCMP_CONTAINS("\"age\":55", result);
-	STRCMP_CONTAINS("\"age\":66", result);
+	ASSERT_EQ(0, rc);
+	ASSERT_TRUE(strstr(result, "\"age\":33") != nullptr);
+    ASSERT_TRUE(strstr(result, "\"age\":44") != nullptr);
+    ASSERT_TRUE(strstr(result, "\"age\":55") != nullptr);
+    ASSERT_TRUE(strstr(result, "\"age\":66") != nullptr);
 	//printf("example 3 result: '%s'\n", result);
 	free(seq.buf);
 	dynType_destroy(type);
@@ -1383,15 +1381,15 @@ void writeAvprTest3(void) {
 
 	char *result = nullptr;
 	dyn_type *type = dynType_parseAvprWithStr(avpr_write_example3_descriptor, avpr_write_example3_fqn);
-    CHECK(type != nullptr);
+    ASSERT_TRUE(type != nullptr);
 
 	int rc = jsonSerializer_serialize(type, &seq, &result);
-	CHECK_EQUAL(0, rc);
+	ASSERT_EQ(0, rc);
 
-	STRCMP_CONTAINS("\"age\":33", result);
-	STRCMP_CONTAINS("\"age\":44", result);
-	STRCMP_CONTAINS("\"age\":55", result);
-	STRCMP_CONTAINS("\"age\":66", result);
+    ASSERT_TRUE(strstr(result, "\"age\":33") != nullptr);
+    ASSERT_TRUE(strstr(result, "\"age\":44") != nullptr);
+    ASSERT_TRUE(strstr(result, "\"age\":55") != nullptr);
+    ASSERT_TRUE(strstr(result, "\"age\":66") != nullptr);
 
 	free(seq.buf);
 	dynType_destroy(type);
@@ -1400,36 +1398,41 @@ void writeAvprTest3(void) {
 
 } // extern "C"
 
-TEST_GROUP(JsonSerializerTests) {
-	void setup() override {
-		int lvl = 1;
-		dynCommon_logSetup(stdLog, nullptr, lvl);
-		dynType_logSetup(stdLog, nullptr,lvl);
-		dynAvprType_logSetup(stdLog, nullptr,lvl);
-		dynTypeCommon_logSetup(stdLog, nullptr,lvl);
-		jsonSerializer_logSetup(stdLog, nullptr, lvl);
-	}
+
+class JsonSerializerTests : public ::testing::Test {
+public:
+    JsonSerializerTests() {
+        int lvl = 1;
+        dynCommon_logSetup(stdLog, nullptr, lvl);
+        dynType_logSetup(stdLog, nullptr,lvl);
+        dynAvprType_logSetup(stdLog, nullptr,lvl);
+        dynTypeCommon_logSetup(stdLog, nullptr,lvl);
+        jsonSerializer_logSetup(stdLog, nullptr, lvl);
+    }
+    ~JsonSerializerTests() override {
+    }
+
 };
 
-TEST(JsonSerializerTests, ParseTests) {
+TEST_F(JsonSerializerTests, ParseTests) {
 	parseTests();
 }
 
-TEST(JsonSerializerTests, ParseAvprTests) {
+TEST_F(JsonSerializerTests, ParseAvprTests) {
     parseAvprTests();
 }
 
-TEST(JsonSerializerTests, WriteTest1) {
+TEST_F(JsonSerializerTests, WriteTest1) {
 	writeTest1();
     writeAvprTest1();
 }
 
-TEST(JsonSerializerTests, WriteTest2) {
+TEST_F(JsonSerializerTests, WriteTest2) {
 	writeTest2();
     writeAvprTest2();
 }
 
-TEST(JsonSerializerTests, WriteTest3) {
+TEST_F(JsonSerializerTests, WriteTest3) {
 	writeTest3();
     writeAvprTest3();
 }

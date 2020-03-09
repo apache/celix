@@ -17,8 +17,8 @@
  * under the License.
  */
 
-#include <CppUTest/TestHarness.h>
-#include "CppUTest/CommandLineTestRunner.h"                                                                                                                                                                        
+#include "gtest/gtest.h"
+
 
 extern "C" {
     
@@ -99,12 +99,12 @@ static void tests() {
     {
         int32_t (*func)(int32_t a, int32_t b, int32_t c) = NULL;
         rc = dynFunction_parseWithStr(EXAMPLE1_DESCRIPTOR, NULL, &dynFunction);
-        CHECK_EQUAL(0, rc);
+        ASSERT_EQ(0, rc);
         rc = dynFunction_createClosure(dynFunction, example1_binding, NULL, (void(**)(void))&func);
-        CHECK_EQUAL(0, rc);
+        ASSERT_EQ(0, rc);
         int32_t ret = func(2,3,4);
-        CHECK_EQUAL(1, g_count);
-        CHECK_EQUAL(9, ret);
+        ASSERT_EQ(1, g_count);
+        ASSERT_EQ(9, ret);
         dynFunction_destroy(dynFunction);
     }
 
@@ -113,19 +113,19 @@ static void tests() {
         double (*func2)(int32_t a, struct example2_arg2 b, int32_t c) = NULL;
         dynFunction = NULL;
         rc = dynFunction_parseWithStr(EXAMPLE2_DESCRIPTOR, NULL, &dynFunction);
-        CHECK_EQUAL(0, rc);
+        ASSERT_EQ(0, rc);
         rc = dynFunction_createClosure(dynFunction, example2_binding, NULL, (void(**)(void))&func);
-        CHECK_EQUAL(0, rc);
+        ASSERT_EQ(0, rc);
         rc = dynFunction_getFnPointer(dynFunction, (void(**)(void))&func2);
-        CHECK_EQUAL(0, rc);
-        CHECK(func == func2);
+        ASSERT_EQ(0, rc);
+        ASSERT_TRUE(func == func2);
         struct example2_arg2 b;
         b.val1 = 1.0;
         b.val2 = 1.5;
         b.val3 = 2.0;
         double ret = func(2,b,4);
-        CHECK_EQUAL(2, g_count);
-        CHECK_EQUAL(10.5, ret);
+        ASSERT_EQ(2, g_count);
+        ASSERT_EQ(10.5, ret);
         dynFunction_destroy(dynFunction);
     }
 
@@ -133,12 +133,12 @@ static void tests() {
         struct example3_ret * (*func)(int32_t a, int32_t b, int32_t c) = NULL;
         dynFunction = NULL;
         rc = dynFunction_parseWithStr(EXAMPLE3_DESCRIPTOR, NULL, &dynFunction);
-        CHECK_EQUAL(0, rc);
+        ASSERT_EQ(0, rc);
         rc = dynFunction_createClosure(dynFunction, example3_binding, NULL, (void(**)(void))&func);
-        CHECK_EQUAL(0, rc);
+        ASSERT_EQ(0, rc);
         struct example3_ret *ret = func(2,8,4);
-        CHECK_EQUAL(3, g_count);
-        CHECK_EQUAL(14, ret->sum);
+        ASSERT_EQ(3, g_count);
+        ASSERT_EQ(14, ret->sum);
         dynFunction_destroy(dynFunction);
         free(ret);
     }
@@ -146,18 +146,21 @@ static void tests() {
 
 }
 
-
-TEST_GROUP(DynClosureTests) {
-    void setup() {
+class DynClosureTests : public ::testing::Test {
+public:
+    DynClosureTests() {
         int lvl = 1;
         dynFunction_logSetup(stdLog, NULL, lvl);
         dynType_logSetup(stdLog, NULL, lvl);
         dynCommon_logSetup(stdLog, NULL, lvl);
         g_count = 0;
     }
+    ~DynClosureTests() override {
+    }
+
 };
 
-TEST(DynClosureTests, DynClosureTest1) {
+TEST_F(DynClosureTests, DynClosureTest1) {
     //TODO split up
     tests();
 }

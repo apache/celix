@@ -17,8 +17,7 @@
  * under the License.
  */
 
-#include <CppUTest/TestHarness.h>
-#include "CppUTest/CommandLineTestRunner.h"                                                                                                                                                                        
+#include "gtest/gtest.h"
 
 extern "C" {
     #include <stdio.h>
@@ -43,9 +42,9 @@ extern "C" {
 
     #define EXAMPLE1_DESCRIPTOR "example(III)I"
     int32_t example1(int32_t a, int32_t b, int32_t c) {
-        CHECK_EQUAL(2, a);
-        CHECK_EQUAL(4, b);
-        CHECK_EQUAL(8, c);
+        EXPECT_EQ(2, a);
+        EXPECT_EQ(4, b);
+        EXPECT_EQ(8, c);
         return 1;
     }
 
@@ -55,7 +54,7 @@ extern "C" {
         void (*fp)(void) = (void (*)(void)) example1;
 
         rc = dynFunction_parseWithStr(EXAMPLE1_DESCRIPTOR, NULL, &dynFunc);
-        CHECK_EQUAL(0, rc);
+        ASSERT_EQ(0, rc);
 
         int32_t a = 2;
         int32_t b = 4;
@@ -67,8 +66,8 @@ extern "C" {
         values[2] = &c;
 
         rc = dynFunction_call(dynFunc, fp, &rVal, values);
-        CHECK_EQUAL(0, rc);
-        CHECK_EQUAL(1, rVal);
+        ASSERT_EQ(0, rc);
+        ASSERT_EQ(1, rVal);
         dynFunction_destroy(dynFunc);
     }
 
@@ -80,11 +79,11 @@ extern "C" {
     };
 
     double example2(int32_t arg1, struct example2_arg arg2, double arg3) {
-        CHECK_EQUAL(2, arg1);
-        CHECK_EQUAL(2, arg2.val1);
-        CHECK_EQUAL(3, arg2.val2);
-        CHECK_EQUAL(4.1, arg2.val3);
-        CHECK_EQUAL(8.1, arg3);
+        EXPECT_EQ(2, arg1);
+        EXPECT_EQ(2, arg2.val1);
+        EXPECT_EQ(3, arg2.val2);
+        EXPECT_EQ(4.1, arg2.val3);
+        EXPECT_EQ(8.1, arg3);
         return 2.2;
     }
 
@@ -94,7 +93,7 @@ extern "C" {
         void (*fp)(void) = (void (*)(void)) example2;
 
         rc = dynFunction_parseWithStr(EXAMPLE2_DESCRIPTOR, NULL, &dynFunc);
-        CHECK_EQUAL(0, rc);
+        ASSERT_EQ(0, rc);
 
         int32_t arg1 = 2;
         struct example2_arg arg2;
@@ -109,8 +108,8 @@ extern "C" {
         values[2] = &arg3;
 
         rc = dynFunction_call(dynFunc, fp, &returnVal, values);
-        CHECK_EQUAL(0, rc);
-        CHECK_EQUAL(2.2, returnVal);
+        ASSERT_EQ(0, rc);
+        ASSERT_EQ(2.2, returnVal);
         dynFunction_destroy(dynFunc);
     }
 
@@ -119,20 +118,20 @@ extern "C" {
         int rc;
         rc = dynFunction_parseWithStr("add(D{DD a b}*D)V", NULL, &dynFunc);
 
-        CHECK_EQUAL(0, rc);
+        ASSERT_EQ(0, rc);
 
         int nrOfArgs = dynFunction_nrOfArguments(dynFunc);
-        CHECK_EQUAL(3, nrOfArgs);
+        ASSERT_EQ(3, nrOfArgs);
 
         dyn_type *arg1 = dynFunction_argumentTypeForIndex(dynFunc, 1);
-        CHECK(arg1 != NULL);
-        CHECK_EQUAL('{', (char) dynType_descriptorType(arg1));
+        ASSERT_TRUE(arg1 != NULL);
+        ASSERT_EQ('{', (char) dynType_descriptorType(arg1));
 
         dyn_type *nonExist = dynFunction_argumentTypeForIndex(dynFunc, 10);
-        CHECK(nonExist == NULL);
+        ASSERT_TRUE(nonExist == NULL);
 
         dyn_type *returnType = dynFunction_returnType(dynFunc);
-        CHECK_EQUAL('V', (char) dynType_descriptorType(returnType));
+        ASSERT_EQ('V', (char) dynType_descriptorType(returnType));
 
         dynFunction_destroy(dynFunc);
     }
@@ -142,8 +141,8 @@ extern "C" {
 
     static int testExample3(void *ptr, double a, double *out) {
         double *b = (double *)ptr;
-        CHECK_EQUAL(2.0, *b);
-        CHECK_EQUAL(a, 2.0);
+        EXPECT_EQ(2.0, *b);
+        EXPECT_EQ(a, 2.0);
         *out = *b * a;
         return 0;
     }
@@ -154,7 +153,7 @@ extern "C" {
         int rc;
 
         rc = dynFunction_parseWithStr(EXAMPLE3_DESCRIPTOR, NULL, &dynFunc);
-        CHECK_EQUAL(0, rc);
+        ASSERT_EQ(0, rc);
         double result = -1.0;
         double *input = &result;
         double a = 2.0;
@@ -165,8 +164,8 @@ extern "C" {
         args[2] = &input;
         int rVal = 0;
         rc = dynFunction_call(dynFunc, fp, &rVal, args);
-        CHECK_EQUAL(0, rc);
-        CHECK_EQUAL(4.0, result);
+        ASSERT_EQ(0, rc);
+        ASSERT_EQ(4.0, result);
 
 
         double *inMemResult = (double *)calloc(1, sizeof(double));
@@ -177,8 +176,8 @@ extern "C" {
         args[2] = &inMemResult;
         rVal = 0;
         rc = dynFunction_call(dynFunc, fp, &rVal, args);
-        CHECK_EQUAL(0, rc);
-        CHECK_EQUAL(4.0, result);
+        ASSERT_EQ(0, rc);
+        ASSERT_EQ(4.0, result);
         free(inMemResult);
 
         dynFunction_destroy(dynFunc);
@@ -193,10 +192,10 @@ extern "C" {
     #define EXAMPLE4_DESCRIPTOR "example([D)V"
 
     static void example4Func(struct tst_seq seq) {
-        CHECK_EQUAL(4, seq.cap);
-        CHECK_EQUAL(2, seq.len);
-        CHECK_EQUAL(1.1, seq.buf[0]);
-        CHECK_EQUAL(2.2, seq.buf[1]);
+        ASSERT_EQ(4, seq.cap);
+        ASSERT_EQ(2, seq.len);
+        ASSERT_EQ(1.1, seq.buf[0]);
+        ASSERT_EQ(2.2, seq.buf[1]);
     }
 
     static void test_example4(void) {
@@ -205,7 +204,7 @@ extern "C" {
         int rc;
 
         rc = dynFunction_parseWithStr(EXAMPLE4_DESCRIPTOR, NULL, &dynFunc);
-        CHECK_EQUAL(0, rc);
+        ASSERT_EQ(0, rc);
 
         double buf[4];
         buf[0] = 1.1;
@@ -218,7 +217,7 @@ extern "C" {
         void *args[1];
         args[0] = &seq;
         rc = dynFunction_call(dynFunc, fp, NULL, args);
-        CHECK_EQUAL(0, rc);
+        ASSERT_EQ(0, rc);
 
         dynFunction_destroy(dynFunc);
     }
@@ -226,8 +225,8 @@ extern "C" {
     #define EXAMPLE5_DESCRIPTOR "example(#const=true;tt)V"
 
     static void example5Func(const char *s1, char *s2) {
-        STRCMP_EQUAL("s1", s1);
-        STRCMP_EQUAL("s2", s2);
+        ASSERT_STREQ("s1", s1);
+        ASSERT_STREQ("s2", s2);
     }
 
     static void test_example5(void) {
@@ -236,7 +235,7 @@ extern "C" {
         int rc;
 
         rc = dynFunction_parseWithStr(EXAMPLE5_DESCRIPTOR, NULL, &dynFunc);
-        CHECK_EQUAL(0, rc);
+        ASSERT_EQ(0, rc);
 
         const char *a1 = "s1";
         char *a2 = strdup("s2");
@@ -245,7 +244,7 @@ extern "C" {
         args[1] = &a2;
 
         rc = dynFunction_call(dynFunc, fp, NULL, args);
-        CHECK_EQUAL(0, rc);
+        ASSERT_EQ(0, rc);
 
         dynFunction_destroy(dynFunc);
     }
@@ -256,7 +255,7 @@ extern "C" {
     static void test_invalidDynFunc(void) {
         dyn_function_type *dynFunc = NULL;
         int rc = dynFunction_parseWithStr(INVALID_FUNC_DESCRIPTOR, NULL, &dynFunc);
-        CHECK_EQUAL(2, rc); //Mem error
+        ASSERT_EQ(2, rc); //Mem error
     }
 
     #define INVALID_FUNC_TYPE_DESCRIPTOR "example(H)A"//H and A are invalid types
@@ -264,44 +263,48 @@ extern "C" {
     static void test_invalidDynFuncType(void) {
         dyn_function_type *dynFunc = NULL;
         int rc = dynFunction_parseWithStr(INVALID_FUNC_TYPE_DESCRIPTOR, NULL, &dynFunc);
-        CHECK_EQUAL(3, rc); //Parse Error
+        ASSERT_EQ(3, rc); //Parse Error
     }
 }
 
-TEST_GROUP(DynFunctionTests) {
-    void setup() {
+class DynFunctionTests : public ::testing::Test {
+public:
+    DynFunctionTests() {
         int lvl = 1;
         dynFunction_logSetup(stdLog, NULL, lvl);
         dynType_logSetup(stdLog, NULL, lvl);
         dynCommon_logSetup(stdLog, NULL, lvl);
     }
+    ~DynFunctionTests() override {
+    }
+
 };
 
-TEST(DynFunctionTests, DynFuncTest1) {
+TEST_F(DynFunctionTests, DynFuncTest1) {
     test_example1();
 }
 
-TEST(DynFunctionTests, DynFuncTest2) {
+TEST_F(DynFunctionTests, DynFuncTest2) {
     test_example2();
 }
 
-TEST(DynFunctionTests, DynFuncAccTest) {
+TEST_F(DynFunctionTests, DynFuncAccTest) {
     test_access_functions();
 }
 
-TEST(DynFunctionTests, DynFuncTest3) {
+TEST_F(DynFunctionTests, DynFuncTest3) {
     test_example3();
 }
 
-TEST(DynFunctionTests, DynFuncTest4) {
+TEST_F(DynFunctionTests, DynFuncTest4) {
     test_example4();
 }
 
-TEST(DynFunctionTests, DynFuncTest5) {
+TEST_F(DynFunctionTests, DynFuncTest5) {
     test_example5();
 }
 
-TEST(DynFunctionTests, InvalidDynFuncTest) {
+TEST_F(DynFunctionTests, InvalidDynFuncTest) {
     test_invalidDynFunc();
     test_invalidDynFuncType();
 }

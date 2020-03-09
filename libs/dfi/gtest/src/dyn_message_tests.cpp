@@ -17,8 +17,7 @@
  * under the License.
  */
 
-#include <CppUTest/TestHarness.h>
-#include "CppUTest/CommandLineTestRunner.h"
+#include "gtest/gtest.h"
 
 extern "C" {
 
@@ -52,15 +51,15 @@ static void checkMessageVersion(dyn_message_type* dynMsg, const char* v){
 
 	char *version = NULL;
 	status = dynMessage_getVersionString(dynMsg, &version);
-	CHECK_EQUAL(0, status);
-	STRCMP_EQUAL(v, version);
+	ASSERT_EQ(0, status);
+	ASSERT_STREQ(v, version);
 	version_pt msgVersion = NULL, localMsgVersion = NULL;
 	int cmpVersion = -1;
 	version_createVersionFromString(version,&localMsgVersion);
 	status = dynMessage_getVersion(dynMsg,&msgVersion);
-	CHECK_EQUAL(0, status);
+	ASSERT_EQ(0, status);
 	version_compareTo(msgVersion,localMsgVersion,&cmpVersion);
-	CHECK_EQUAL(cmpVersion,0);
+	ASSERT_EQ(cmpVersion,0);
 	version_destroy(localMsgVersion);
 
 }
@@ -72,30 +71,30 @@ static void msg_test1(void) {
 	FILE *desc = fopen("descriptors/msg_example1.descriptor", "r");
 	assert(desc != NULL);
 	status = dynMessage_parse(desc, &dynMsg);
-	CHECK_EQUAL(0, status);
+	ASSERT_EQ(0, status);
 	fclose(desc);
 
 	char *name = NULL;
 	status = dynMessage_getName(dynMsg, &name);
-	CHECK_EQUAL(0, status);
-	STRCMP_EQUAL("poi", name);
+	ASSERT_EQ(0, status);
+	ASSERT_STREQ("poi", name);
 
 	checkMessageVersion(dynMsg,"1.0.0");
 
 	char *annVal = NULL;
 	status = dynMessage_getAnnotationEntry(dynMsg, "classname", &annVal);
-	CHECK_EQUAL(0, status);
-	STRCMP_EQUAL("org.example.PointOfInterest", annVal);
+	ASSERT_EQ(0, status);
+	ASSERT_STREQ("org.example.PointOfInterest", annVal);
 
 	char *nonExist = NULL;
 	status = dynMessage_getHeaderEntry(dynMsg, "nonExisting", &nonExist);
-	CHECK(status != 0);
-	CHECK(nonExist == NULL);
+	ASSERT_TRUE(status != 0);
+	ASSERT_TRUE(nonExist == NULL);
 
 	dyn_type *msgType = NULL;
 	status = dynMessage_getMessageType(dynMsg, &msgType);
-	CHECK_EQUAL(0, status);
-	CHECK(msgType != NULL);
+	ASSERT_EQ(0, status);
+	ASSERT_TRUE(msgType != NULL);
 
 	dynMessage_destroy(dynMsg);
 }
@@ -107,30 +106,30 @@ static void msg_test2(void) {
 	FILE *desc = fopen("descriptors/msg_example2.descriptor", "r");
 	assert(desc != NULL);
 	status = dynMessage_parse(desc, &dynMsg);
-	CHECK_EQUAL(0, status);
+	ASSERT_EQ(0, status);
 	fclose(desc);
 
 	char *name = NULL;
 	status = dynMessage_getName(dynMsg, &name);
-	CHECK_EQUAL(0, status);
-	STRCMP_EQUAL("track", name);
+	ASSERT_EQ(0, status);
+	ASSERT_STREQ("track", name);
 
 	checkMessageVersion(dynMsg,"0.0.1");
 
 	char *annVal = NULL;
 	status = dynMessage_getAnnotationEntry(dynMsg, "classname", &annVal);
-	CHECK_EQUAL(0, status);
-	STRCMP_EQUAL("org.example.Track", annVal);
+	ASSERT_EQ(0, status);
+	ASSERT_STREQ("org.example.Track", annVal);
 
 	char *nonExist = NULL;
 	status = dynMessage_getHeaderEntry(dynMsg, "nonExisting", &nonExist);
-	CHECK(status != 0);
-	CHECK(nonExist == NULL);
+	ASSERT_TRUE(status != 0);
+	ASSERT_TRUE(nonExist == NULL);
 
 	dyn_type *msgType = NULL;
 	status = dynMessage_getMessageType(dynMsg, &msgType);
-	CHECK_EQUAL(0, status);
-	CHECK(msgType != NULL);
+	ASSERT_EQ(0, status);
+	ASSERT_TRUE(msgType != NULL);
 
 	dynMessage_destroy(dynMsg);
 }
@@ -141,30 +140,30 @@ static void msg_test3(void) {
 	FILE *desc = fopen("descriptors/msg_example3.descriptor", "r");
 	assert(desc != NULL);
 	status = dynMessage_parse(desc, &dynMsg);
-	CHECK_EQUAL(0, status);
+	ASSERT_EQ(0, status);
 	fclose(desc);
 
 	char *name = NULL;
 	status = dynMessage_getName(dynMsg, &name);
-	CHECK_EQUAL(0, status);
-	STRCMP_EQUAL("logEntry", name);
+	ASSERT_EQ(0, status);
+	ASSERT_STREQ("logEntry", name);
 
 	checkMessageVersion(dynMsg,"1.0.0");
 
 	char *annVal = NULL;
 	status = dynMessage_getAnnotationEntry(dynMsg, "classname", &annVal);
-	CHECK_EQUAL(0, status);
-	STRCMP_EQUAL("org.example.LogEntry", annVal);
+	ASSERT_EQ(0, status);
+	ASSERT_STREQ("org.example.LogEntry", annVal);
 
 	char *nonExist = NULL;
 	status = dynMessage_getHeaderEntry(dynMsg, "nonExisting", &nonExist);
-	CHECK(status != 0);
-	CHECK(nonExist == NULL);
+	ASSERT_TRUE(status != 0);
+	ASSERT_TRUE(nonExist == NULL);
 
 	dyn_type *msgType = NULL;
 	status = dynMessage_getMessageType(dynMsg, &msgType);
-	CHECK_EQUAL(0, status);
-	CHECK(msgType != NULL);
+	ASSERT_EQ(0, status);
+	ASSERT_TRUE(msgType != NULL);
 
 	dynMessage_destroy(dynMsg);
 }
@@ -175,7 +174,7 @@ static void msg_test4(void) {
 	FILE *desc = fopen("descriptors/msg_example4.descriptor", "r");
 	assert(desc != NULL);
 	status = dynMessage_parse(desc, &dynMsg);
-	CHECK(status != 0);
+	ASSERT_TRUE(status != 0);
 	fclose(desc);
 }
 
@@ -185,37 +184,37 @@ static void msg_invalid(void) {
 	FILE *desc = fopen("descriptors/invalids/invalidMsgHdr.descriptor", "r");
 	assert(desc != NULL);
 	status = dynMessage_parse(desc, &dynMsg);
-	CHECK_EQUAL(1, status);
+	ASSERT_EQ(1, status);
 	fclose(desc);
 
 	desc = fopen("descriptors/invalids/invalidMsgMissingVersion.descriptor", "r");
 	assert(desc != NULL);
 	status = dynMessage_parse(desc, &dynMsg);
-	CHECK_EQUAL(1, status);
+	ASSERT_EQ(1, status);
 	fclose(desc);
 
 	desc = fopen("descriptors/invalids/invalidMsgInvalidSection.descriptor", "r");
 	assert(desc != NULL);
 	status = dynMessage_parse(desc, &dynMsg);
-	CHECK_EQUAL(1, status);
+	ASSERT_EQ(1, status);
 	fclose(desc);
 
 	desc = fopen("descriptors/invalids/invalidMsgInvalidName.descriptor", "r");
 	assert(desc != NULL);
 	status = dynMessage_parse(desc, &dynMsg);
-	CHECK_EQUAL(1, status);
+	ASSERT_EQ(1, status);
 	fclose(desc);
 
 	desc = fopen("descriptors/invalids/invalidMsgInvalidType.descriptor", "r");
 	assert(desc != NULL);
 	status = dynMessage_parse(desc, &dynMsg);
-	CHECK_EQUAL(1, status);
+	ASSERT_EQ(1, status);
 	fclose(desc);
 
 	desc = fopen("descriptors/invalids/invalidMsgInvalidVersion.descriptor", "r");
 	assert(desc != NULL);
 	status = dynMessage_parse(desc, &dynMsg);
-	CHECK_EQUAL(1, status);
+	ASSERT_EQ(1, status);
 	fclose(desc);
 
 }
@@ -223,33 +222,36 @@ static void msg_invalid(void) {
 }
 
 
-TEST_GROUP(DynMessageTests) {
-	void setup() {
-		int level = 1;
-		dynCommon_logSetup(stdLog, NULL, level);
-		dynType_logSetup(stdLog, NULL, level);
-		dynMessage_logSetup(stdLog, NULL, level);
-	}
+class DynMessageTests : public ::testing::Test {
+public:
+    DynMessageTests() {
+        int level = 1;
+        dynCommon_logSetup(stdLog, NULL, level);
+        dynType_logSetup(stdLog, NULL, level);
+        dynMessage_logSetup(stdLog, NULL, level);
+    }
+    ~DynMessageTests() override {
+    }
+
 };
 
-
-TEST(DynMessageTests, msg_test1) {
+TEST_F(DynMessageTests, msg_test1) {
 	msg_test1();
 }
 
-TEST(DynMessageTests, msg_test2) {
+TEST_F(DynMessageTests, msg_test2) {
 	msg_test2();
 }
 
-TEST(DynMessageTests, msg_test3) {
+TEST_F(DynMessageTests, msg_test3) {
 	msg_test3();
 }
 
-TEST(DynMessageTests, msg_test4) {
+TEST_F(DynMessageTests, msg_test4) {
 	msg_test4();
 }
 
-TEST(DynMessageTests, msg_invalid) {
+TEST_F(DynMessageTests, msg_invalid) {
 	msg_invalid();
 }
 
