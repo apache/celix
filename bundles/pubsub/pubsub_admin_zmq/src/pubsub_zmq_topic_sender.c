@@ -502,7 +502,7 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
     psa_zmq_send_msg_entry_t *entry = hashMap_get(bound->msgEntries, (void*)(uintptr_t)(msgTypeId));
 
     //metrics updates
-    struct timespec sendTime;
+    struct timespec sendTime = { 0, 0 };
     struct timespec serializationStart;
     struct timespec serializationEnd;
     //int unknownMessageCountUpdate = 0;
@@ -576,9 +576,9 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
                 //send header
                 if (rc > 0) {
                     zmq_msg_init_data(&msg2, payloadData, payloadLength, psa_zmq_freeMsg, bound);
-                    int flags = ZMQ_SNDMORE;
+                    int flags = 0;
                     if (metadataLength > 0) {
-                        flags = 0;
+                        flags = ZMQ_SNDMORE;
                     }
                     rc = zmq_msg_send(&msg2, socket, flags);
                     if (rc == -1) {
@@ -610,12 +610,13 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
                 if (!sendOk) {
                     zmsg_destroy(&msg); //if send was not ok, no owner change -> destroy msg
                 }
+
+                free(headerData);
+                free(payloadData);
+                free(metadataData);
             }
 
             celix_properties_destroy(message.metadata.metadata);
-            free(headerData);
-            free(payloadData);
-            free(metadataData);
 
             celixThreadMutex_unlock(&entry->sendLock);
             if (sendOk) {

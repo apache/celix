@@ -48,7 +48,5 @@ void pubsub_websocketAdmin_removeSerializerSvc(void *handle, void *svc, const ce
 
 bool pubsub_websocketAdmin_executeCommand(void *handle, const char *commandLine, FILE *outStream, FILE *errStream);
 
-pubsub_admin_metrics_t* pubsub_websocketAdmin_metrics(void *handle);
-
 #endif //CELIX_PUBSUB_WEBSOCKET_ADMIN_H
 

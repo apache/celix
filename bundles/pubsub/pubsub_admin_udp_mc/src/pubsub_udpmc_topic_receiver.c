@@ -32,8 +32,6 @@
 #include "large_udp.h"
 #include "pubsub_udpmc_common.h"
 
-#include "hash_map.h"
-
 #define MAX_EPOLL_EVENTS        10
 #define RECV_THREAD_TIMEOUT     5
 #define UDP_BUFFER_SIZE         65535

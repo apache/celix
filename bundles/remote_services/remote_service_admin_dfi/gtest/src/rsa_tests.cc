@@ -17,13 +17,11 @@
  * under the License.
  */
 
+#include "gtest/gtest.h"
+
 #include <remote_constants.h>
 #include "celix_api.h"
 #include "calculator_service.h"
-
-
-#include <CppUTest/TestHarness.h>
-#include <CppUTest/CommandLineTestRunner.h>
 
 extern "C" {
 
@@ -39,15 +37,15 @@ extern "C" {
 
     static void setupFm(void) {
         celix_properties_t *fwProperties = celix_properties_load("config.properties");
-        CHECK_TRUE(fwProperties != NULL);
+        ASSERT_TRUE(fwProperties != NULL);
         framework = celix_frameworkFactory_createFramework(fwProperties);
-        CHECK_TRUE(framework != NULL);
+        ASSERT_TRUE(framework != NULL);
         context = celix_framework_getFrameworkContext(framework);
-        CHECK_TRUE(context != NULL);
+        ASSERT_TRUE(context != NULL);
 
 
         calcSvcId = celix_bundleContext_findService(context, CALCULATOR_SERVICE);
-        CHECK_TRUE(calcSvcId >= 0L);
+        ASSERT_TRUE(calcSvcId >= 0L);
     }
 
     static void teardownFm(void) {
@@ -60,12 +58,12 @@ extern "C" {
         celix_array_list_t *imported = celix_arrayList_create();
 
         int rc = rsa->getExportedServices(rsa->admin, &exported);
-        CHECK_EQUAL(CELIX_SUCCESS, rc);
-        CHECK_EQUAL(0, celix_arrayList_size(exported));
+        ASSERT_EQ(CELIX_SUCCESS, rc);
+        ASSERT_EQ(0, celix_arrayList_size(exported));
 
         rc = rsa->getImportedEndpoints(rsa->admin, &imported);
-        CHECK_EQUAL(CELIX_SUCCESS, rc);
-        CHECK_EQUAL(0, celix_arrayList_size(imported));
+        ASSERT_EQ(CELIX_SUCCESS, rc);
+        ASSERT_EQ(0, celix_arrayList_size(imported));
 
         celix_arrayList_destroy(imported);
         celix_arrayList_destroy(exported);
@@ -78,7 +76,7 @@ extern "C" {
         opts.filter.ignoreServiceLanguage = true;
         opts.waitTimeoutInSeconds = 0.25;
         bool called = celix_bundleContext_useServiceWithOptions(context, &opts);
-        CHECK_TRUE(called);
+        ASSERT_TRUE(called);
     }
 
     static void testExportServiceCallback(void *handle __attribute__((unused)), void *svc) {
@@ -89,12 +87,12 @@ extern "C" {
 
         celix_array_list_t *svcRegistration = NULL;
         int rc = rsa->exportService(rsa->admin, strSvcId, NULL, &svcRegistration);
-        CHECK_EQUAL(CELIX_SUCCESS, rc);
+        ASSERT_EQ(CELIX_SUCCESS, rc);
 
-        CHECK_EQUAL(1, celix_arrayList_size(svcRegistration));
+        ASSERT_EQ(1, celix_arrayList_size(svcRegistration));
 
         rc = rsa->exportRegistration_close(rsa->admin,(export_registration_t *)(arrayList_get(svcRegistration,0)));
-        CHECK_EQUAL(CELIX_SUCCESS, rc);
+        ASSERT_EQ(CELIX_SUCCESS, rc);
     }
 
 
@@ -105,7 +103,7 @@ extern "C" {
         opts.filter.ignoreServiceLanguage = true;
         opts.waitTimeoutInSeconds = 0.25;
         bool called = celix_bundleContext_useServiceWithOptions(context, &opts);
-        CHECK_TRUE(called);
+        ASSERT_TRUE(called);
     }
 
     static void testImportServiceCallback(void *handle __attribute__((unused)), void *svc) {
@@ -123,28 +121,28 @@ extern "C" {
         celix_properties_set(props, OSGI_FRAMEWORK_OBJECTCLASS, "org.apache.celix.Example");
 
         rc = endpointDescription_create(props, &endpoint);
-        CHECK_EQUAL(CELIX_SUCCESS, rc);
+        ASSERT_EQ(CELIX_SUCCESS, rc);
 
         rc = rsa->importService(rsa->admin, endpoint, &reg);
-        CHECK_EQUAL(CELIX_SUCCESS, rc);
-        CHECK(reg != NULL);
+        ASSERT_EQ(CELIX_SUCCESS, rc);
+        ASSERT_TRUE(reg != NULL);
 
         service_reference_pt ref = NULL;
         rc = bundleContext_getServiceReference(context, (char *)"org.apache.celix.Example", &ref);
-        CHECK_EQUAL(CELIX_SUCCESS, rc);
-        CHECK(ref != NULL);
+        ASSERT_EQ(CELIX_SUCCESS, rc);
+        ASSERT_TRUE(ref != NULL);
 
         rc = bundleContext_ungetServiceReference(context, ref);
-        CHECK_EQUAL(CELIX_SUCCESS, rc);
+        ASSERT_EQ(CELIX_SUCCESS, rc);
 
         rc = endpointDescription_destroy(endpoint);
-        CHECK_EQUAL(CELIX_SUCCESS, rc);
+        ASSERT_EQ(CELIX_SUCCESS, rc);
 
         /* Cannot test. uses requesting bundles descriptor
         void *service = NULL;
         rc = bundleContext_getService(context, ref, &service);
-        CHECK_EQUAL(CELIX_SUCCESS, rc);
-        CHECK(service != NULL);
+        ASSERT_EQ(CELIX_SUCCESS, rc);
+        ASSERT_TRUE(service != NULL);
          */
     }
 
@@ -155,15 +153,15 @@ extern "C" {
         opts.filter.ignoreServiceLanguage = true;
         opts.waitTimeoutInSeconds = 0.25;
         bool called = celix_bundleContext_useServiceWithOptions(context, &opts);
-        CHECK_TRUE(called);
+        ASSERT_TRUE(called);
     }
 
     static void testBundles(void) {
         array_list_pt bundles = NULL;
 
         int rc = bundleContext_getBundles(context, &bundles);
-        CHECK_EQUAL(0, rc);
-        CHECK_EQUAL(3, arrayList_size(bundles)); //framework, rsa_dfi & calc
+        ASSERT_EQ(0, rc);
+        ASSERT_EQ(3, arrayList_size(bundles)); //framework, rsa_dfi & calc
 
         /*
         int size = arrayList_size(bundles);
@@ -184,29 +182,30 @@ extern "C" {
 
 }
 
-
-TEST_GROUP(RsaDfiTests) {
-    void setup() {
+class RsaDfiTests : public ::testing::Test {
+public:
+    RsaDfiTests() {
         setupFm();
     }
-
-    void teardown() {
+    ~RsaDfiTests() override {
         teardownFm();
     }
+
 };
 
-TEST(RsaDfiTests, InfoTest) {
+
+TEST_F(RsaDfiTests, InfoTest) {
     testServices();
 }
 
-TEST(RsaDfiTests, ExportService) {
+TEST_F(RsaDfiTests, ExportService) {
     testExportService();
 }
 
-TEST(RsaDfiTests, ImportService) {
+TEST_F(RsaDfiTests, ImportService) {
     testImportService();
 }
 
-TEST(RsaDfiTests, TestBundles) {
+TEST_F(RsaDfiTests, TestBundles) {
     testBundles();
 }

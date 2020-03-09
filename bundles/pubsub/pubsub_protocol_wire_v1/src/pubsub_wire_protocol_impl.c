@@ -36,14 +36,13 @@
 #define NETSTRING_ERROR_NO_LENGTH    -6
 
 struct pubsub_protocol_wire_v1 {
-    celix_bundle_context_t *bundle_context;
 };
 
 static celix_status_t pubsubProtocol_createNetstring(const char* string, char** netstringOut);
 static int pubsubProtocol_parseNetstring(char *buffer, size_t buffer_length,
                                   char **netstring_start, size_t *netstring_length);
 
-celix_status_t pubsubProtocol_create(celix_bundle_context_t *context, pubsub_protocol_wire_v1_t **protocol) {
+celix_status_t pubsubProtocol_create(pubsub_protocol_wire_v1_t **protocol) {
     celix_status_t status = CELIX_SUCCESS;
 
     *protocol = calloc(1, sizeof(**protocol));
@@ -52,7 +51,7 @@ celix_status_t pubsubProtocol_create(celix_bundle_context_t *context, pubsub_pro
         status = CELIX_ENOMEM;
     }
     else {
-        (*protocol)->bundle_context = context;
+        //
     }
 
     return status;
@@ -107,38 +106,50 @@ celix_status_t pubsubProtocol_encodePayload(void *handle, pubsub_protocol_messag
 celix_status_t pubsubProtocol_encodeMetadata(void *handle, pubsub_protocol_message_t *message, void **outBuffer, size_t *outLength) {
     celix_status_t status = CELIX_SUCCESS;
 
-    char *line = calloc(1, 1);
+    char *line = calloc(1, 4);
+    size_t idx = 4;
     size_t len = 0;
 
     const char *key;
-    if (message->metadata.metadata != NULL || celix_properties_size(message->metadata.metadata) > 0) {
+    if (message->metadata.metadata != NULL && celix_properties_size(message->metadata.metadata) > 0) {
         CELIX_PROPERTIES_FOR_EACH(message->metadata.metadata, key) {
             const char *val = celix_properties_get(message->metadata.metadata, key, "!Error!");
             char *keyNetString = NULL;
             char *valueNetString = NULL;
 
-            pubsubProtocol_createNetstring(key, &keyNetString);
-            pubsubProtocol_createNetstring(val, &valueNetString);
+            status = pubsubProtocol_createNetstring(key, &keyNetString);
+            if (status != CELIX_SUCCESS) {
+                break;
+            }
+            status = pubsubProtocol_createNetstring(val, &valueNetString);
+            if (status != CELIX_SUCCESS) {
+                break;
+            }
 
             len += strlen(keyNetString);
             len += strlen(valueNetString);
-            char *tmp = realloc(line, len + 1);
+            char *tmp = realloc(line, len + sizeof(uint32_t));
             if (!tmp) {
                 free(line);
                 status = CELIX_ENOMEM;
+                return status;
             }
             line = tmp;
 
-            strncat(line, keyNetString, strlen(keyNetString));
-            strncat(line, valueNetString, strlen(valueNetString));
+            memcpy(line + idx, keyNetString, strlen(keyNetString));
+            idx += strlen(keyNetString);
+            memcpy(line + idx, valueNetString, strlen(keyNetString));
+            idx += strlen(valueNetString);
 
             free(keyNetString);
             free(valueNetString);
         }
     }
+    int size = celix_properties_size(message->metadata.metadata);
+    memcpy(line, &size, sizeof(int32_t));
 
     *outBuffer = line;
-    *outLength = len;
+    *outLength = idx;
 
     return status;
 }
@@ -178,18 +189,29 @@ celix_status_t pubsubProtocol_decodePayload(void* handle, void *data, size_t len
 celix_status_t pubsubProtocol_decodeMetadata(void* handle, void *data, size_t length, pubsub_protocol_message_t *message) {
     celix_status_t status = CELIX_SUCCESS;
 
-    char *netstring = data;
+    uint32_t nOfElements;
+    size_t idx = readInt(data, 0, &nOfElements);
+    char *netstring = data + idx;
+    int netstringLen = length - idx;
 
     message->metadata.metadata = celix_properties_create();
-    while (strlen(netstring) > 0) {
+    while (idx < length) {
         size_t outlen;
-        pubsubProtocol_parseNetstring(netstring, length, &netstring, &outlen);
+        status = pubsubProtocol_parseNetstring(netstring, netstringLen, &netstring, &outlen);
+        if (status != CELIX_SUCCESS) {
+            break;
+        }
         char *key = strndup(netstring, outlen);
         netstring += outlen + 1;
+        idx += outlen + 3;
 
-        pubsubProtocol_parseNetstring(netstring, length, &netstring, &outlen);
+        status = pubsubProtocol_parseNetstring(netstring, netstringLen, &netstring, &outlen);
+        if (status != CELIX_SUCCESS) {
+            break;
+        }
         char *value = strndup(netstring, outlen);
         netstring += outlen + 1;
+        idx += outlen + 3;
 
         celix_properties_setWithoutCopy(message->metadata.metadata, key, value);
     }

@@ -5,9 +5,9 @@
 # to you under the Apache License, Version 2.0 (the
 # "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
-# 
+#
 #   http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing,
 # software distributed under the License is distributed on an
 # "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -15,13 +15,14 @@
 # specific language governing permissions and limitations
 # under the License.
 
-include_directories("common/include")
+set(SOURCES
+        src/main.cc
+        src/PS_WP_tests.cc
+    )
+add_executable(celix_pswp_tests ${SOURCES})
+#target_include_directories(celix_cxx_pswp_tests SYSTEM PRIVATE gtest)
+target_include_directories(celix_pswp_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src)
+target_link_libraries(celix_pswp_tests PRIVATE celix_wire_protocol_v1_impl GTest::GTest Celix::pubsub_spi)
 
-add_subdirectory(publisher)
-add_subdirectory(publisher2)
-if (BUILD_PUBSUB_PSA_WS)
-    add_subdirectory(pubsub_websocket)
-endif()
-add_subdirectory(subscriber)
-
-
+add_test(NAME celix_pswp_tests COMMAND celix_pswp_tests)
+SETUP_TARGET_FOR_COVERAGE(celix_pswp_tests_cov celix_cxx_pswp_tests ${CMAKE_BINARY_DIR}/coverage/bundles/pubsub/protocol_wire_v1 ..)

@@ -28,8 +28,6 @@
 
 #include "pubsub/publisher_mock.h"
 
-#include "celix_utils_api.h"
-
 static pubsub_publisher_t mockSrv;
 static void* mockHandle = (void*)0x42;
 

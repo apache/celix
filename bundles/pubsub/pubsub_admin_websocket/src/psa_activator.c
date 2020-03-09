@@ -38,9 +38,6 @@ typedef struct psa_websocket_activator {
     pubsub_admin_service_t adminService;
     long adminSvcId;
 
-    pubsub_admin_metrics_service_t adminMetricsService;
-    long adminMetricsSvcId;
-
     celix_shell_command_t cmdSvc;
     long cmdSvcId;
 } psa_websocket_activator_t;
@@ -88,16 +85,6 @@ int psa_websocket_start(psa_websocket_activator_t *act, celix_bundle_context_t *
         act->adminSvcId = celix_bundleContext_registerService(ctx, psaSvc, PUBSUB_ADMIN_SERVICE_NAME, props);
     }
 
-    if (status == CELIX_SUCCESS) {
-        act->adminMetricsService.handle = act->admin;
-        act->adminMetricsService.metrics = pubsub_websocketAdmin_metrics;
-
-        celix_properties_t *props = celix_properties_create();
-        celix_properties_set(props, PUBSUB_ADMIN_SERVICE_TYPE, PUBSUB_WEBSOCKET_ADMIN_TYPE);
-
-        act->adminMetricsSvcId = celix_bundleContext_registerService(ctx, &act->adminMetricsService, PUBSUB_ADMIN_METRICS_SERVICE_NAME, props);
-    }
-
     //register shell command service
     {
         act->cmdSvc.handle = act->admin;
@@ -115,7 +102,6 @@ int psa_websocket_start(psa_websocket_activator_t *act, celix_bundle_context_t *
 int psa_websocket_stop(psa_websocket_activator_t *act, celix_bundle_context_t *ctx) {
     celix_bundleContext_unregisterService(ctx, act->adminSvcId);
     celix_bundleContext_unregisterService(ctx, act->cmdSvcId);
-    celix_bundleContext_unregisterService(ctx, act->adminMetricsSvcId);
     celix_bundleContext_stopTracker(ctx, act->serializersTrackerId);
     pubsub_websocketAdmin_destroy(act->admin);
 

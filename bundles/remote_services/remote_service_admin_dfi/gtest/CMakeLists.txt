@@ -16,7 +16,7 @@
 # under the License.
 
 find_package(CppUTest REQUIRED)
-include_directories(${CPPUTEST_INCLUDE_DIR})
+include_directories(SYSTEM PRIVATE ${CPPUTEST_INCLUDE_DIR})
 
 add_celix_bundle(rsa_dfi_tst_bundle
     VERSION 0.0.1
@@ -36,15 +36,17 @@ target_link_libraries(rsa_dfi_tst_bundle PRIVATE ${CPPUTEST_LIBRARY} calculator_
 target_include_directories(rsa_dfi_tst_bundle PRIVATE src)
 
 add_executable(test_rsa_dfi
-    src/run_tests.cpp
-    src/rsa_tests.cpp
-    src/rsa_client_server_tests.cpp
+    src/main.cc
+    src/rsa_tests.cc
+    src/rsa_client_server_tests.cc
 )
 target_include_directories(test_rsa_dfi PRIVATE src)
-target_link_libraries(test_rsa_dfi PRIVATE CURL::libcurl ${CPPUTEST_LIBRARY}
+target_link_libraries(test_rsa_dfi PRIVATE
+        CURL::libcurl
         Celix::framework
         Celix::rsa_common
         calculator_api
+        GTest::GTest
 )
 
 get_property(rsa_bundle_file TARGET rsa_dfi PROPERTY BUNDLE_FILE)

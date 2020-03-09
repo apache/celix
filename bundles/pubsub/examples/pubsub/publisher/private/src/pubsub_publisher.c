@@ -33,7 +33,6 @@
 #include "celix_threads.h"
 
 #include "poi.h"
-#include "hash_map.h"
 
 #include "pubsub_publisher_private.h"
 

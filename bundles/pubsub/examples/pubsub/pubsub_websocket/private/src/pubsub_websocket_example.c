@@ -161,7 +161,7 @@ void publisher_publishSvcRemoved(void * handle, void *svc, const celix_propertie
 #if defined(__APPLE__) && defined(__MACH__)
     uint64_t threadid;
     pthread_threadid_np(tid->thread, &threadid);
-    printf("PUBLISHER: publish service unexporting (%s) %llu!\n",manager->ident, threadid);
+    printf("PUBLISHER: publish service unexporting (%s) %llu!\n",manager->sender->ident, threadid);
 #else
     printf("PUBLISHER: publish service unexporting (%s) %li!\n", manager->sender->ident, tid->thread);
 #endif

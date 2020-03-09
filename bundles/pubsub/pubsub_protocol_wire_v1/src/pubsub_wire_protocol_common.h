@@ -17,10 +17,14 @@
  * under the License.
  */
 
-#include <stdint.h>
-
 #ifndef CELIX_PUBSUB_WIRE_PROTOCOL_COMMON_H
 #define CELIX_PUBSUB_WIRE_PROTOCOL_COMMON_H
+
+#include <stdint.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 static const unsigned int PROTOCOL_WIRE_SYNC = 0xABBABAAB;
 static const unsigned int PROTOCOL_WIRE_ENVELOPE_VERSION = 1;
@@ -32,5 +36,9 @@ int readLong(const unsigned char *data, int offset, uint64_t *val);
 int writeShort(unsigned char *data, int offset, uint16_t val);
 int writeInt(unsigned char *data, int offset, uint32_t val);
 int writeLong(unsigned char *data, int offset, uint64_t val);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //CELIX_PUBSUB_WIRE_PROTOCOL_COMMON_H

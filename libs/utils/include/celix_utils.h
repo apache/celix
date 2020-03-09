@@ -24,6 +24,8 @@
 extern "C" {
 #endif
 
+#include <time.h>
+
 #define CELIX_UTILS_MAX_STRLEN      1024*1024*10
 
 /**
@@ -46,6 +48,14 @@ char* celix_utils_strdup(const char *str);
  * @param outNamespace          A output argument for the (optional) namespace part. Caller is owner of the data.
  */
 void celix_utils_extractLocalNameAndNamespaceFromFullyQualifiedName(const char *fullyQualifiedName, const char *namespaceSeparator, char **outLocalName, char **outNamespace);
+
+/**
+ * Returns the diff in seconds between tBegin and tEnd.
+ * @param tBegin The begin time.
+ * @param tEnd   The end time.
+ * @return       Diff in seconds.
+ */
+double celix_difftime(const struct timespec *tBegin, const struct timespec *tEnd);
 
 #ifdef __cplusplus
 }
