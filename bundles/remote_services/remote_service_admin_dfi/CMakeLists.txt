@@ -48,7 +48,7 @@ if (RSA_REMOTE_SERVICE_ADMIN_DFI)
     )
 
     if (ENABLE_TESTING)
-        add_subdirectory(test)
+        add_subdirectory(gtest)
     endif()
 
 
