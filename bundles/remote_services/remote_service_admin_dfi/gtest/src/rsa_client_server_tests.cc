@@ -64,7 +64,67 @@ extern "C" {
         celix_frameworkFactory_destroyFramework(clientFramework);
     }
 
-    static void testCallback(void *handle __attribute__((unused)), void *svc) {
+    static void testComplex(void *handle __attribute__((unused)), void *svc) {
+        auto *tst = static_cast<tst_service_t *>(svc);
+
+        bool discovered = tst->isRemoteExampleDiscovered(tst->handle);
+        ASSERT_TRUE(discovered);
+
+        bool ok = tst->testRemoteComplex(tst->handle);
+        ASSERT_TRUE(ok);
+    };
+
+    static void testAction(void *handle __attribute__((unused)), void *svc) {
+        auto *tst = static_cast<tst_service_t *>(svc);
+
+        bool discovered = tst->isRemoteExampleDiscovered(tst->handle);
+        ASSERT_TRUE(discovered);
+
+        bool ok = tst->testRemoteAction(tst->handle);
+        ASSERT_TRUE(ok);
+    };
+
+    static void testNumbers(void *handle __attribute__((unused)), void *svc) {
+        auto *tst = static_cast<tst_service_t *>(svc);
+
+        bool discovered = tst->isRemoteExampleDiscovered(tst->handle);
+        ASSERT_TRUE(discovered);
+
+        bool ok = tst->testRemoteNumbers(tst->handle);
+        ASSERT_TRUE(ok);
+    };
+
+    static void testString(void *handle __attribute__((unused)), void *svc) {
+        auto *tst = static_cast<tst_service_t *>(svc);
+
+        bool discovered = tst->isRemoteExampleDiscovered(tst->handle);
+        ASSERT_TRUE(discovered);
+
+        bool ok = tst->testRemoteString(tst->handle);
+        ASSERT_TRUE(ok);
+    };
+
+    static void testEnum(void *handle __attribute__((unused)), void *svc) {
+        auto *tst = static_cast<tst_service_t *>(svc);
+
+        bool discovered = tst->isRemoteExampleDiscovered(tst->handle);
+        ASSERT_TRUE(discovered);
+
+        bool ok = tst->testRemoteEnum(tst->handle);
+        ASSERT_TRUE(ok);
+    };
+
+    static void testConstString(void *handle __attribute__((unused)), void *svc) {
+        auto *tst = static_cast<tst_service_t *>(svc);
+
+        bool discovered = tst->isRemoteExampleDiscovered(tst->handle);
+        ASSERT_TRUE(discovered);
+
+        bool ok = tst->testRemoteConstString(tst->handle);
+        ASSERT_TRUE(ok);
+    };
+
+    static void testCalculator(void *handle __attribute__((unused)), void *svc) {
         auto *tst = static_cast<tst_service_t *>(svc);
 
         bool ok;
@@ -74,40 +134,19 @@ extern "C" {
 
         ok = tst->testCalculator(tst->handle);
         ASSERT_TRUE(ok);
-
-        discovered = tst->isRemoteExampleDiscovered(tst->handle);
-        ASSERT_TRUE(discovered);
-
-        ok = tst->testRemoteComplex(tst->handle);
-        ASSERT_TRUE(ok);
-
-        ok = tst->testRemoteAction(tst->handle);
-        ASSERT_TRUE(ok);
-
-        ok = tst->testRemoteNumbers(tst->handle);
-        ASSERT_TRUE(ok);
-
-        ok = tst->testRemoteString(tst->handle);
-        ASSERT_TRUE(ok);
-
-        ok = tst->testRemoteConstString(tst->handle);
-        ASSERT_TRUE(ok);
-
-        //TODO fix for apple dfi handling, see issue #91
-//        ok = tst->testRemoteEnum(tst->handle);
-//        ASSERT_TRUE(ok);
     };
 
-    static void test(void) {
-        celix_service_use_options_t opts{};
-        opts.filter.serviceName = TST_SERVICE_NAME;
-        opts.use = testCallback;
-        opts.filter.ignoreServiceLanguage = true;
-        opts.waitTimeoutInSeconds = 2;
-        bool called = celix_bundleContext_useServiceWithOptions(clientContext, &opts);
-        ASSERT_TRUE(called);
-    }
+}
 
+template<typename F>
+static void test(F&& f) {
+    celix_service_use_options_t opts{};
+    opts.filter.serviceName = TST_SERVICE_NAME;
+    opts.use = f;
+    opts.filter.ignoreServiceLanguage = true;
+    opts.waitTimeoutInSeconds = 2;
+    bool called = celix_bundleContext_useServiceWithOptions(clientContext, &opts);
+    ASSERT_TRUE(called);
 }
 
 class RsaDfiClientServerTests : public ::testing::Test {
@@ -122,6 +161,30 @@ public:
 };
 
 
-TEST_F(RsaDfiClientServerTests, Test1) {
-    test();
+TEST_F(RsaDfiClientServerTests, TestRemoteCalculator) {
+    test(testCalculator);
+}
+
+TEST_F(RsaDfiClientServerTests, TestRemoteComplex) {
+    test(testComplex);
+}
+
+TEST_F(RsaDfiClientServerTests, TestRemoteNumbers) {
+    test(testNumbers);
+}
+
+TEST_F(RsaDfiClientServerTests, TestRemoteString) {
+    test(testString);
+}
+
+TEST_F(RsaDfiClientServerTests, TestRemoteConstString) {
+    test(testConstString);
+}
+
+TEST_F(RsaDfiClientServerTests, TestRemoteEnum) {
+    test(testEnum);
+}
+
+TEST_F(RsaDfiClientServerTests, TestRemoteAction) {
+    test(testAction);
 }
