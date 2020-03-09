@@ -17,13 +17,10 @@
  * under the License.
  */
 
-
+#include "gtest/gtest.h"
 #include <remote_constants.h>
 #include <tst_service.h>
 #include "celix_api.h"
-
-#include <CppUTest/CommandLineTestRunner.h>
-#include <CppUTest/TestHarness.h>
 
 extern "C" {
 
@@ -47,19 +44,19 @@ extern "C" {
     static void setupFm(void) {
         //server
         celix_properties_t *serverProps = celix_properties_load("server.properties");
-        CHECK_TRUE(serverProps != NULL);
+        ASSERT_TRUE(serverProps != NULL);
         serverFramework = celix_frameworkFactory_createFramework(serverProps);
-        CHECK_TRUE(serverFramework != NULL);
+        ASSERT_TRUE(serverFramework != NULL);
         serverContext = celix_framework_getFrameworkContext(serverFramework);
-        CHECK_TRUE(serverContext != NULL);
+        ASSERT_TRUE(serverContext != NULL);
 
         //client
         celix_properties_t *clientProperties = celix_properties_load("client.properties");
-        CHECK_TRUE(clientProperties != NULL);
+        ASSERT_TRUE(clientProperties != NULL);
         clientFramework = celix_frameworkFactory_createFramework(clientProperties);
-        CHECK_TRUE(clientFramework != NULL);
+        ASSERT_TRUE(clientFramework != NULL);
         clientContext = celix_framework_getFrameworkContext(clientFramework);
-        CHECK_TRUE(clientContext != NULL);
+        ASSERT_TRUE(clientContext != NULL);
     }
 
     static void teardownFm(void) {
@@ -73,32 +70,32 @@ extern "C" {
         bool ok;
 
         bool discovered = tst->isCalcDiscovered(tst->handle);
-        CHECK_TRUE(discovered);
+        ASSERT_TRUE(discovered);
 
         ok = tst->testCalculator(tst->handle);
-        CHECK_TRUE(ok);
+        ASSERT_TRUE(ok);
 
         discovered = tst->isRemoteExampleDiscovered(tst->handle);
-        CHECK_TRUE(discovered);
+        ASSERT_TRUE(discovered);
 
         ok = tst->testRemoteComplex(tst->handle);
-        CHECK_TRUE(ok);
+        ASSERT_TRUE(ok);
 
         ok = tst->testRemoteAction(tst->handle);
-        CHECK_TRUE(ok);
+        ASSERT_TRUE(ok);
 
         ok = tst->testRemoteNumbers(tst->handle);
-        CHECK_TRUE(ok);
+        ASSERT_TRUE(ok);
 
         ok = tst->testRemoteString(tst->handle);
-        CHECK_TRUE(ok);
+        ASSERT_TRUE(ok);
 
         ok = tst->testRemoteConstString(tst->handle);
-        CHECK_TRUE(ok);
+        ASSERT_TRUE(ok);
 
         //TODO fix for apple dfi handling, see issue #91
-        //ok = tst->testRemoteEnum(tst->handle);
-        //CHECK_TRUE(ok);
+//        ok = tst->testRemoteEnum(tst->handle);
+//        ASSERT_TRUE(ok);
     };
 
     static void test(void) {
@@ -108,22 +105,23 @@ extern "C" {
         opts.filter.ignoreServiceLanguage = true;
         opts.waitTimeoutInSeconds = 2;
         bool called = celix_bundleContext_useServiceWithOptions(clientContext, &opts);
-        CHECK_TRUE(called);
+        ASSERT_TRUE(called);
     }
 
 }
 
-
-TEST_GROUP(RsaDfiClientServerTests) {
-    void setup() {
+class RsaDfiClientServerTests : public ::testing::Test {
+public:
+    RsaDfiClientServerTests() {
         setupFm();
     }
-
-    void teardown() {
+    ~RsaDfiClientServerTests() override {
         teardownFm();
     }
+
 };
 
-TEST(RsaDfiClientServerTests, Test1) {
+
+TEST_F(RsaDfiClientServerTests, Test1) {
     test();
 }

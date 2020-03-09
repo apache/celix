@@ -175,7 +175,7 @@ TEST_F(CelixBundleContextServicesTests, registerAndUseService) {
 };
 
 TEST_F(CelixBundleContextServicesTests, registerAndUseServiceWithTimeout) {
-    const int NR_ITERATIONS = 5; //NOTE this test is sensitive for triggering race condition in the celix framework, therefore is used a few times.
+    const int NR_ITERATIONS = 1000; //NOTE this test is sensitive for triggering race condition in the celix framework, therefore is used a few times.
     for (int i = 0; i < NR_ITERATIONS; ++i) {
         printf("Iter %i\n", i);
         struct calc {
