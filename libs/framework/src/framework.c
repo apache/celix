@@ -173,7 +173,8 @@ static celix_status_t frameworkActivator_stop(void * userData, bundle_context_t 
 static celix_status_t frameworkActivator_destroy(void * userData, bundle_context_t *context);
 
 static void framework_autoStartConfiguredBundles(bundle_context_t *fwCtx);
-static void framework_autoStartConfiguredBundlesForList(bundle_context_t *fwCtx, const char *autoStart);
+static void framework_autoInstallConfiguredBundlesForList(bundle_context_t *fwCtx, const char *autoStart, celix_array_list_t *installedBundles);
+static void framework_autoStartConfiguredBundlesForList(bundle_context_t *fwCtx, const celix_array_list_t *installedBundles);
 
 struct fw_refreshHelper {
     framework_pt framework;
@@ -634,27 +635,30 @@ celix_status_t framework_start(framework_pt framework) {
 }
 
 static void framework_autoStartConfiguredBundles(bundle_context_t *fwCtx) {
-    const char* autoStart = NULL;
-    const char* cosgiKeys[] = {"cosgi.auto.start.0","cosgi.auto.start.1","cosgi.auto.start.2","cosgi.auto.start.3","cosgi.auto.start.4","cosgi.auto.start.5"};
-    const char* celixKeys[] = {CELIX_AUTO_START_0, CELIX_AUTO_START_1, CELIX_AUTO_START_2, CELIX_AUTO_START_3, CELIX_AUTO_START_4, CELIX_AUTO_START_5};
-    size_t len = 6;
+    const char* cosgiKeys[] = {"cosgi.auto.start.0","cosgi.auto.start.1","cosgi.auto.start.2","cosgi.auto.start.3","cosgi.auto.start.4","cosgi.auto.start.5","cosgi.auto.start.6"};
+    const char* celixKeys[] = {CELIX_AUTO_START_0, CELIX_AUTO_START_1, CELIX_AUTO_START_2, CELIX_AUTO_START_3, CELIX_AUTO_START_4, CELIX_AUTO_START_5, CELIX_AUTO_START_6};
+    celix_array_list_t *installedBundles = celix_arrayList_create();
+    size_t len = 7;
     for (int i = 0; i < len; ++i) {
-        bundleContext_getProperty(fwCtx, celixKeys[i], &autoStart);
+        const char *autoStart = celix_bundleContext_getProperty(fwCtx, celixKeys[i], NULL);
         if (autoStart == NULL) {
-            bundleContext_getProperty(fwCtx, cosgiKeys[i], &autoStart);
+            autoStart = celix_bundleContext_getProperty(fwCtx, cosgiKeys[i], NULL);
         }
         if (autoStart != NULL) {
-            framework_autoStartConfiguredBundlesForList(fwCtx, autoStart);
+            framework_autoInstallConfiguredBundlesForList(fwCtx, autoStart, installedBundles);
         }
     }
+    for (int i = 0; i < len; ++i) {
+        framework_autoStartConfiguredBundlesForList(fwCtx, installedBundles);
+    }
+    celix_arrayList_destroy(installedBundles);
 }
 
-static void framework_autoStartConfiguredBundlesForList(bundle_context_t *fwCtx, const char *autoStartIn)  {
+
+static void framework_autoInstallConfiguredBundlesForList(bundle_context_t *fwCtx, const char *autoStartIn, celix_array_list_t *installedBundles) {
     char delims[] = " ";
     char *save_ptr = NULL;
-    array_list_pt installed = NULL;
-    char *autoStart = strndup(autoStartIn, 1024*1024*10);
-    arrayList_create(&installed);
+    char *autoStart = celix_utils_strdup(autoStartIn);
 
     if (autoStart != NULL) {
         char *location = strtok_r(autoStart, delims, &save_ptr);
@@ -663,29 +667,27 @@ static void framework_autoStartConfiguredBundlesForList(bundle_context_t *fwCtx,
             bundle_t *bnd = NULL;
             celix_status_t  rc = bundleContext_installBundle(fwCtx, location, &bnd);
             if (rc == CELIX_SUCCESS) {
-                arrayList_add(installed, bnd);
+                celix_arrayList_add(installedBundles, bnd);
             } else {
                 printf("Could not install bundle '%s'\n", location);
             }
             location = strtok_r(NULL, delims, &save_ptr);
         }
     }
+    free(autoStart);
+}
 
-    unsigned int i;
-    for (i = 0; i < arrayList_size(installed); ++i) {
+static void framework_autoStartConfiguredBundlesForList(bundle_context_t *fwCtx, const celix_array_list_t *installedBundles) {
+    for (int i = 0; i < celix_arrayList_size(installedBundles); ++i) {
         long bndId = -1;
-        bundle_t *bnd = arrayList_get(installed, i);
+        bundle_t *bnd = celix_arrayList_get(installedBundles, i);
         bundle_getBundleId(bnd, &bndId);
         celix_status_t rc = bundle_startWithOptions(bnd, 0);
         if (rc != CELIX_SUCCESS) {
             printf("Could not start bundle %li\n", bndId);
         }
     }
-
-    free(autoStart);
-    arrayList_destroy(installed);
 }
-
 
 celix_status_t framework_stop(framework_pt framework) {
 	return fw_stopBundle(framework, framework->bundleId, true);
