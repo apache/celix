@@ -634,7 +634,7 @@ TEST_F(DynAvprFunctionTests, Example10) {
 
 #ifndef __APPLE__
 static int avpr_example11(void *handle __attribute__((unused)), char *arg1) {
-    STRCMP_EQUAL("input string test", arg1);
+    EXPECT_STREQ("input string test", arg1);
     return 0;
 }
 

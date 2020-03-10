@@ -18,7 +18,10 @@
  */
 
 #include "gtest/gtest.h"
-                                                                                                                                                                    
+
+#include <stdarg.h>
+
+
 extern "C" {
     
 #include <stdio.h>
