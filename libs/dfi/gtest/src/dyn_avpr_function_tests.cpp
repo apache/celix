@@ -639,7 +639,7 @@ static int avpr_example11(void *handle __attribute__((unused)), char *arg1) {
 }
 
 //FIXME does not work in OSX. Also has issues in linux if input is not dynamically allocated.
-TEST(DynAvprFunctionTests, Example11) {
+TEST_F(DynAvprFunctionTests, Example11) {
     auto fp = (void(*)()) avpr_example11;
     dyn_function_type * dynFunc = dynFunction_parseAvprWithStr(theAvprFile, "test.dt.stringInFunc");
     ASSERT_TRUE(dynFunc != nullptr);
