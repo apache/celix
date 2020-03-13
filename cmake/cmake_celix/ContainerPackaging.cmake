@@ -408,7 +408,7 @@ endfunction()
 Add the selected bundles to the Celix container. These bundles are (if configured) copied to the container build dir and
 are added to the configuration properties so that they are installed and started when the Celix container executed.
 
-The Celix framework support 7 (0 - 6) run levels. Run levels can be used to control the start and stop order of bundles.
+The Celix framework supports 7 (0 - 6) run levels. Run levels can be used to control the start and stop order of bundles.
 Bundles in run level 0 are started first and bundles in run level 6 are started last.
 When stopping bundles in run level 6 are stopped first and bundles in run level 0 are stopped last.
 Within a run level the order of configured decides the start order; bundles added earlier are started first.
@@ -419,7 +419,7 @@ Optional Arguments:
 
 ```CMake
 celix_container_bundles(<celix_container_target_name>
-    [LEVEL (0..5)]
+    [LEVEL (0..6)]
     bundle1
     bundle2
     ...

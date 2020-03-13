@@ -371,3 +371,11 @@ bool celix_bundleContext_getPropertyAsBool(celix_bundle_context_t *ctx, const ch
 			->withBoolParameters("defaultValue", defaultValue);
 	return mock_c()->returnValue().value.boolValue;
 }
+
+const char* celix_bundleContext_getProperty(celix_bundle_context_t *ctx, const char *key, const char* defaultValue) {
+    mock_c()->actualCall("celix_bundleContext_getProperty")
+            ->withPointerParameters("ctx", ctx)
+            ->withStringParameters("key", key)
+            ->withStringParameters("defaultValue", defaultValue);
+    return mock_c()->returnValue().value.stringValue;
+}
