@@ -16,31 +16,43 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-#ifndef __AVROBIN_SERIALIZER_H_
-#define __AVROBIN_SERIALIZER_H_
 
-#include "dfi_log_util.h"
-#include "dyn_type.h"
-#include "dyn_function.h"
-#include "dyn_interface.h"
+#pragma once
+
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-//logging
-DFI_SETUP_LOG_HEADER(avrobinSerializer);
+#define EXAMPLE1_DESCRIPTOR "example(III)I"
+int32_t example1(int32_t a, int32_t b, int32_t c);
 
-int avrobinSerializer_deserialize(dyn_type *type, const uint8_t *input, size_t inlen, void **result);
+#define EXAMPLE2_DESCRIPTOR "example(I{IID val1 val2 val3}D)D"
+struct example2_arg {
+    int32_t val1;
+    int32_t val2;
+    double val3;
+};
+double example2(int32_t arg1, struct example2_arg arg2, double arg3);
 
-int avrobinSerializer_serialize(dyn_type *type, const void *input, uint8_t **output, size_t *outlen);
+#define EXAMPLE3_DESCRIPTOR "example(PD*D)N"
+int testExample3(void *ptr, double a, double *out);
 
-int avrobinSerializer_generateSchema(dyn_type *type, char **output);
+#define EXAMPLE4_DESCRIPTOR "example([D)V"
+struct tst_seq {
+    uint32_t cap;
+    uint32_t len;
+    double *buf;
+};
+void example4Func(struct tst_seq seq);
 
-int avrobinSerializer_saveFile(const char *filename, const char *schema, const uint8_t *serdata, size_t serdatalen);
+#define EXAMPLE5_DESCRIPTOR "example(#const=true;tt)V"
+void example5Func(const char *s1, char *s2);
+
+
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif

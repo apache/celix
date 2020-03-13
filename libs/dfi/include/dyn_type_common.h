@@ -27,6 +27,10 @@
 
 #include "dfi_log_util.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 DFI_SETUP_LOG_HEADER(dynTypeCommon);
 
 struct _dyn_type {
@@ -60,5 +64,9 @@ struct _dyn_type {
 dyn_type * dynType_findType(dyn_type *type, char *name);
 ffi_type * dynType_ffiType(dyn_type * type);
 void dynType_prepCif(ffi_type *type);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

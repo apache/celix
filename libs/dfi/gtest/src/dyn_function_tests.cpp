@@ -20,294 +20,198 @@
 #include "gtest/gtest.h"
 
 #include <stdarg.h>
+#include "dyn_example_functions.h"
 
-extern "C" {
-    #include <stdio.h>
-    #include <stdint.h>
-    #include <stdlib.h>
-    #include <string.h>
-    #include <ctype.h>
+#include "dyn_common.h"
+#include "dyn_function.h"
 
 
-    #include "dyn_common.h"
-    #include "dyn_function.h"
-
-    static void stdLog(void*, int level, const char *file, int line, const char *msg, ...) {
-        va_list ap;
-        const char *levels[5] = {"NIL", "ERROR", "WARNING", "INFO", "DEBUG"};
-        fprintf(stderr, "%s: FILE:%s, LINE:%i, MSG:",levels[level], file, line);
-        va_start(ap, msg);
-        vfprintf(stderr, msg, ap);
-        fprintf(stderr, "\n");
-        va_end(ap);
-    }
-
-    #define EXAMPLE1_DESCRIPTOR "example(III)I"
-    int32_t example1(int32_t a, int32_t b, int32_t c) {
-        EXPECT_EQ(2, a);
-        EXPECT_EQ(4, b);
-        EXPECT_EQ(8, c);
-        return 1;
-    }
-
-    void test_example1(void) {
-        dyn_function_type *dynFunc = NULL;
-        int rc;
-        void (*fp)(void) = (void (*)(void)) example1;
-
-        rc = dynFunction_parseWithStr(EXAMPLE1_DESCRIPTOR, NULL, &dynFunc);
-        ASSERT_EQ(0, rc);
-
-        int32_t a = 2;
-        int32_t b = 4;
-        int32_t c = 8;
-        void *values[3];
-        int32_t rVal = 0;
-        values[0] = &a;
-        values[1] = &b;
-        values[2] = &c;
-
-        rc = dynFunction_call(dynFunc, fp, &rVal, values);
-        ASSERT_EQ(0, rc);
-        ASSERT_EQ(1, rVal);
-        dynFunction_destroy(dynFunc);
-    }
-
-    #define EXAMPLE2_DESCRIPTOR "example(I{IID val1 val2 val3}D)D"
-    struct example2_arg {
-        int32_t val1;
-        int32_t val2;
-        double val3;
-    };
-
-    double example2(int32_t arg1, struct example2_arg arg2, double arg3) {
-        EXPECT_EQ(2, arg1);
-        EXPECT_EQ(2, arg2.val1);
-        EXPECT_EQ(3, arg2.val2);
-        EXPECT_EQ(4.1, arg2.val3);
-        EXPECT_EQ(8.1, arg3);
-        return 2.2;
-    }
-
-    void test_example2(void) {
-        dyn_function_type *dynFunc = NULL;
-        int rc;
-        void (*fp)(void) = (void (*)(void)) example2;
-
-        rc = dynFunction_parseWithStr(EXAMPLE2_DESCRIPTOR, NULL, &dynFunc);
-        ASSERT_EQ(0, rc);
-
-        int32_t arg1 = 2;
-        struct example2_arg arg2;
-        arg2.val1 = 2;
-        arg2.val2 = 3;
-        arg2.val3 = 4.1;
-        double arg3 = 8.1;
-        double returnVal = 0;
-        void *values[3];
-        values[0] = &arg1;
-        values[1] = &arg2;
-        values[2] = &arg3;
-
-        rc = dynFunction_call(dynFunc, fp, &returnVal, values);
-        ASSERT_EQ(0, rc);
-        ASSERT_EQ(2.2, returnVal);
-        dynFunction_destroy(dynFunc);
-    }
-
-    static void test_access_functions(void) {
-        dyn_function_type *dynFunc = NULL;
-        int rc;
-        rc = dynFunction_parseWithStr("add(D{DD a b}*D)V", NULL, &dynFunc);
-
-        ASSERT_EQ(0, rc);
-
-        int nrOfArgs = dynFunction_nrOfArguments(dynFunc);
-        ASSERT_EQ(3, nrOfArgs);
-
-        dyn_type *arg1 = dynFunction_argumentTypeForIndex(dynFunc, 1);
-        ASSERT_TRUE(arg1 != NULL);
-        ASSERT_EQ('{', (char) dynType_descriptorType(arg1));
-
-        dyn_type *nonExist = dynFunction_argumentTypeForIndex(dynFunc, 10);
-        ASSERT_TRUE(nonExist == NULL);
-
-        dyn_type *returnType = dynFunction_returnType(dynFunc);
-        ASSERT_EQ('V', (char) dynType_descriptorType(returnType));
-
-        dynFunction_destroy(dynFunc);
-    }
-
-    //example with gen pointer and output
-    #define EXAMPLE3_DESCRIPTOR "example(PD*D)N"
-
-    static int testExample3(void *ptr, double a, double *out) {
-        double *b = (double *)ptr;
-        EXPECT_EQ(2.0, *b);
-        EXPECT_EQ(a, 2.0);
-        *out = *b * a;
-        return 0;
-    }
-
-    static void test_example3(void) {
-        dyn_function_type *dynFunc = NULL;
-        void (*fp)(void) = (void(*)(void)) testExample3;
-        int rc;
-
-        rc = dynFunction_parseWithStr(EXAMPLE3_DESCRIPTOR, NULL, &dynFunc);
-        ASSERT_EQ(0, rc);
-        double result = -1.0;
-        double *input = &result;
-        double a = 2.0;
-        void *ptr = &a;
-        void *args[3];
-        args[0] = &ptr;
-        args[1] = &a;
-        args[2] = &input;
-        int rVal = 0;
-        rc = dynFunction_call(dynFunc, fp, &rVal, args);
-        ASSERT_EQ(0, rc);
-        ASSERT_EQ(4.0, result);
-
-
-        double *inMemResult = (double *)calloc(1, sizeof(double));
-        a = 2.0;
-        ptr = &a;
-        args[0] = &ptr;
-        args[1] = &a;
-        args[2] = &inMemResult;
-        rVal = 0;
-        rc = dynFunction_call(dynFunc, fp, &rVal, args);
-        ASSERT_EQ(0, rc);
-        ASSERT_EQ(4.0, result);
-        free(inMemResult);
-
-        dynFunction_destroy(dynFunc);
-    }
-
-    struct tst_seq {
-        uint32_t cap;
-        uint32_t len;
-        double *buf;
-    };
-
-    #define EXAMPLE4_DESCRIPTOR "example([D)V"
-
-    static void example4Func(struct tst_seq seq) {
-        ASSERT_EQ(4, seq.cap);
-        ASSERT_EQ(2, seq.len);
-        ASSERT_EQ(1.1, seq.buf[0]);
-        ASSERT_EQ(2.2, seq.buf[1]);
-    }
-
-    static void test_example4(void) {
-        dyn_function_type *dynFunc = NULL;
-        void (*fp)(void) = (void(*)(void)) example4Func;
-        int rc;
-
-        rc = dynFunction_parseWithStr(EXAMPLE4_DESCRIPTOR, NULL, &dynFunc);
-        ASSERT_EQ(0, rc);
-
-        double buf[4];
-        buf[0] = 1.1;
-        buf[1] = 2.2;
-        struct tst_seq seq;
-        seq.cap = 4;
-        seq.len = 2;
-        seq.buf = buf;
-
-        void *args[1];
-        args[0] = &seq;
-        rc = dynFunction_call(dynFunc, fp, NULL, args);
-        ASSERT_EQ(0, rc);
-
-        dynFunction_destroy(dynFunc);
-    }
-
-    #define EXAMPLE5_DESCRIPTOR "example(#const=true;tt)V"
-
-    static void example5Func(const char *s1, char *s2) {
-        ASSERT_STREQ("s1", s1);
-        ASSERT_STREQ("s2", s2);
-    }
-
-    static void test_example5(void) {
-        dyn_function_type *dynFunc = NULL;
-        void (*fp)(void) = (void(*)(void)) example5Func;
-        int rc;
-
-        rc = dynFunction_parseWithStr(EXAMPLE5_DESCRIPTOR, NULL, &dynFunc);
-        ASSERT_EQ(0, rc);
-
-        const char *a1 = "s1";
-        char *a2 = strdup("s2");
-        void *args[2];
-        args[0] = &a1;
-        args[1] = &a2;
-
-        rc = dynFunction_call(dynFunc, fp, NULL, args);
-        ASSERT_EQ(0, rc);
-
-        dynFunction_destroy(dynFunc);
-    }
-
-
-    #define INVALID_FUNC_DESCRIPTOR "example$[D)V"//$ is an invalid symbol, missing (
-
-    static void test_invalidDynFunc(void) {
-        dyn_function_type *dynFunc = NULL;
-        int rc = dynFunction_parseWithStr(INVALID_FUNC_DESCRIPTOR, NULL, &dynFunc);
-        ASSERT_EQ(2, rc); //Mem error
-    }
-
-    #define INVALID_FUNC_TYPE_DESCRIPTOR "example(H)A"//H and A are invalid types
-
-    static void test_invalidDynFuncType(void) {
-        dyn_function_type *dynFunc = NULL;
-        int rc = dynFunction_parseWithStr(INVALID_FUNC_TYPE_DESCRIPTOR, NULL, &dynFunc);
-        ASSERT_EQ(3, rc); //Parse Error
-    }
+static void stdLog(void*, int level, const char *file, int line, const char *msg, ...) {
+    va_list ap;
+    const char *levels[5] = {"NIL", "ERROR", "WARNING", "INFO", "DEBUG"};
+    fprintf(stderr, "%s: FILE:%s, LINE:%i, MSG:",levels[level], file, line);
+    va_start(ap, msg);
+    vfprintf(stderr, msg, ap);
+    fprintf(stderr, "\n");
+    va_end(ap);
 }
+
+
+#define INVALID_FUNC_DESCRIPTOR "example$[D)V"//$ is an invalid symbol, missing (
+#define INVALID_FUNC_TYPE_DESCRIPTOR "example(H)A"//H and A are invalid types
+
 
 class DynFunctionTests : public ::testing::Test {
 public:
     DynFunctionTests() {
         int lvl = 1;
-        dynFunction_logSetup(stdLog, NULL, lvl);
-        dynType_logSetup(stdLog, NULL, lvl);
-        dynCommon_logSetup(stdLog, NULL, lvl);
+        dynFunction_logSetup(stdLog, nullptr, lvl);
+        dynType_logSetup(stdLog, nullptr, lvl);
+        dynCommon_logSetup(stdLog, nullptr, lvl);
     }
-    ~DynFunctionTests() override {
-    }
+    ~DynFunctionTests() override = default;
 
 };
 
 TEST_F(DynFunctionTests, DynFuncTest1) {
-    test_example1();
+    dyn_function_type *dynFunc = nullptr;
+    int rc;
+    void (*fp)(void) = (void (*)(void)) example1;
+
+    rc = dynFunction_parseWithStr(EXAMPLE1_DESCRIPTOR, nullptr, &dynFunc);
+    ASSERT_EQ(0, rc);
+
+    int32_t a = 2;
+    int32_t b = 4;
+    int32_t c = 8;
+    void *values[3];
+    int32_t rVal = 0;
+    values[0] = &a;
+    values[1] = &b;
+    values[2] = &c;
+
+    rc = dynFunction_call(dynFunc, fp, &rVal, values);
+    ASSERT_EQ(0, rc);
+    ASSERT_EQ(14, rVal);
+    dynFunction_destroy(dynFunc);
 }
 
 TEST_F(DynFunctionTests, DynFuncTest2) {
-    test_example2();
+    dyn_function_type *dynFunc = nullptr;
+    int rc;
+    void (*fp)(void) = (void (*)(void)) example2;
+
+    rc = dynFunction_parseWithStr(EXAMPLE2_DESCRIPTOR, nullptr, &dynFunc);
+    ASSERT_EQ(0, rc);
+
+    int32_t arg1 = 2;
+    struct example2_arg arg2;
+    arg2.val1 = 2;
+    arg2.val2 = 3;
+    arg2.val3 = 4.1;
+    double arg3 = 8.1;
+    double returnVal = 0;
+    void *values[3];
+    values[0] = &arg1;
+    values[1] = &arg2;
+    values[2] = &arg3;
+
+    rc = dynFunction_call(dynFunc, fp, &returnVal, values);
+    ASSERT_EQ(0, rc);
+    ASSERT_EQ(19.2, returnVal);
+    dynFunction_destroy(dynFunc);
 }
 
 TEST_F(DynFunctionTests, DynFuncAccTest) {
-    test_access_functions();
+    dyn_function_type *dynFunc = nullptr;
+    int rc;
+    rc = dynFunction_parseWithStr("add(D{DD a b}*D)V", nullptr, &dynFunc);
+
+    ASSERT_EQ(0, rc);
+
+    int nrOfArgs = dynFunction_nrOfArguments(dynFunc);
+    ASSERT_EQ(3, nrOfArgs);
+
+    dyn_type *arg1 = dynFunction_argumentTypeForIndex(dynFunc, 1);
+    ASSERT_TRUE(arg1 != nullptr);
+    ASSERT_EQ('{', (char) dynType_descriptorType(arg1));
+
+    dyn_type *nonExist = dynFunction_argumentTypeForIndex(dynFunc, 10);
+    ASSERT_TRUE(nonExist == nullptr);
+
+    dyn_type *returnType = dynFunction_returnType(dynFunc);
+    ASSERT_EQ('V', (char) dynType_descriptorType(returnType));
+
+    dynFunction_destroy(dynFunc);
 }
 
 TEST_F(DynFunctionTests, DynFuncTest3) {
-    test_example3();
+    dyn_function_type *dynFunc = nullptr;
+    void (*fp)(void) = (void(*)(void)) testExample3;
+    int rc;
+
+    rc = dynFunction_parseWithStr(EXAMPLE3_DESCRIPTOR, nullptr, &dynFunc);
+    ASSERT_EQ(0, rc);
+    double result = -1.0;
+    double *input = &result;
+    double a = 2.0;
+    void *ptr = &a;
+    void *args[3];
+    args[0] = &ptr;
+    args[1] = &a;
+    args[2] = &input;
+    int rVal = 0;
+    rc = dynFunction_call(dynFunc, fp, &rVal, args);
+    ASSERT_EQ(0, rc);
+    ASSERT_EQ(4.0, result);
+
+
+    double *inMemResult = (double *)calloc(1, sizeof(double));
+    a = 2.0;
+    ptr = &a;
+    args[0] = &ptr;
+    args[1] = &a;
+    args[2] = &inMemResult;
+    rVal = 0;
+    rc = dynFunction_call(dynFunc, fp, &rVal, args);
+    ASSERT_EQ(0, rc);
+    ASSERT_EQ(4.0, result);
+    free(inMemResult);
+
+    dynFunction_destroy(dynFunc);
 }
 
 TEST_F(DynFunctionTests, DynFuncTest4) {
-    test_example4();
+    dyn_function_type *dynFunc = nullptr;
+    void (*fp)(void) = (void(*)(void)) example4Func;
+    int rc;
+
+    rc = dynFunction_parseWithStr(EXAMPLE4_DESCRIPTOR, nullptr, &dynFunc);
+    ASSERT_EQ(0, rc);
+
+    double buf[4];
+    buf[0] = 1.1;
+    buf[1] = 2.2;
+    struct tst_seq seq;
+    seq.cap = 4;
+    seq.len = 2;
+    seq.buf = buf;
+
+    void *args[1];
+    args[0] = &seq;
+    rc = dynFunction_call(dynFunc, fp, nullptr, args);
+    ASSERT_EQ(0, rc);
+
+    dynFunction_destroy(dynFunc);
 }
 
 TEST_F(DynFunctionTests, DynFuncTest5) {
-    test_example5();
+    dyn_function_type *dynFunc = nullptr;
+    void (*fp)(void) = (void(*)(void)) example5Func;
+    int rc;
+
+    rc = dynFunction_parseWithStr(EXAMPLE5_DESCRIPTOR, nullptr, &dynFunc);
+    ASSERT_EQ(0, rc);
+
+    const char *a1 = "s1";
+    char *a2 = strdup("s2");
+    void *args[2];
+    args[0] = &a1;
+    args[1] = &a2;
+
+    rc = dynFunction_call(dynFunc, fp, nullptr, args);
+    ASSERT_EQ(0, rc);
+
+    dynFunction_destroy(dynFunc);
 }
 
 TEST_F(DynFunctionTests, InvalidDynFuncTest) {
-    test_invalidDynFunc();
-    test_invalidDynFuncType();
+    dyn_function_type *dynFunc = nullptr;
+    int rc = dynFunction_parseWithStr(INVALID_FUNC_DESCRIPTOR, nullptr, &dynFunc);
+    ASSERT_EQ(2, rc); //Mem error
+
+    dynFunc = nullptr;
+    rc = dynFunction_parseWithStr(INVALID_FUNC_TYPE_DESCRIPTOR, nullptr, &dynFunc);
+    ASSERT_EQ(3, rc); //Parse Error
 }
 

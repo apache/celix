@@ -23,6 +23,10 @@
 #include "dyn_type.h"
 #include "dfi_log_util.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Uses the following schema
  * (Name)([Type]*)Type
@@ -74,6 +78,8 @@ bool dynFunction_hasReturn(dyn_function_type *dynFunction);
 dyn_function_type * dynFunction_parseAvprWithStr(const char * avpr, const char * fqn);
 dyn_function_type * dynFunction_parseAvpr(FILE * avprStream, const char * fqn);
 
-
+#ifdef __cplusplus
+}
+#endif
 
 #endif

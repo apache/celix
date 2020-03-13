@@ -17,34 +17,32 @@
  * under the License.
  */
 
-#include "gtest/gtest.h" 
+#include "gtest/gtest.h"
 
-extern "C" {
-    #include <stdarg.h>
-    
-    #include "dyn_common.h"
-    #include "dyn_type.h"
+#include <stdarg.h>
 
-	static void stdLogA(void*, int level, const char *file, int line, const char *msg, ...) {
-	    va_list ap;
-	    const char *levels[5] = {"NIL", "ERROR", "WARNING", "INFO", "DEBUG"};
-	    fprintf(stderr, "%s: FILE:%s, LINE:%i, MSG:",levels[level], file, line);
-	    va_start(ap, msg);
-	    vfprintf(stderr, msg, ap);
-	    fprintf(stderr, "\n");
-	    va_end(ap);
-	}
+#include "dyn_common.h"
+#include "dyn_type.h"
 
-    static void runTestA(const char *descriptorStr, const char *exName, int expectedType) {
-        dyn_type *type;
-        type = dynType_parseAvprWithStr(descriptorStr, exName);
+static void stdLogA(void*, int level, const char *file, int line, const char *msg, ...) {
+    va_list ap;
+    const char *levels[5] = {"NIL", "ERROR", "WARNING", "INFO", "DEBUG"};
+    fprintf(stderr, "%s: FILE:%s, LINE:%i, MSG:",levels[level], file, line);
+    va_start(ap, msg);
+    vfprintf(stderr, msg, ap);
+    fprintf(stderr, "\n");
+    va_end(ap);
+}
 
-        if (type != nullptr) {
-            ASSERT_EQ(expectedType, dynType_type(type));
-            dynType_destroy(type);
-        } else {
-            ASSERT_EQ(1, 0);
-        }
+static void runTestA(const char *descriptorStr, const char *exName, int expectedType) {
+    dyn_type *type;
+    type = dynType_parseAvprWithStr(descriptorStr, exName);
+
+    if (type != nullptr) {
+        ASSERT_EQ(expectedType, dynType_type(type));
+        dynType_destroy(type);
+    } else {
+        ASSERT_EQ(1, 0);
     }
 }
 
@@ -615,4 +613,3 @@ TEST_F(DynAvprInvalidTests, InvalidJsonObject) {
     ASSERT_TRUE(type == nullptr);
     // None of the above testcases should crash the parser
 }
-

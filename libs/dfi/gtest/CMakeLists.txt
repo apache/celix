@@ -17,6 +17,7 @@
 
 
 add_executable(test_dfi
+		src/dyn_example_functions.c
 		src/dyn_avpr_tests.cpp
 		src/dyn_type_tests.cpp
 		src/dyn_function_tests.cpp

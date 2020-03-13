@@ -28,6 +28,10 @@
 
 #include "dfi_log_util.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #if defined(NO_MEMSTREAM_AVAILABLE)
 #include "memstream/open_memstream.h"
 #include "memstream/fmemopen.h"
@@ -285,5 +289,10 @@ void dynType_simple_setValue(dyn_type *type, void *inst, void *in);
 // avpr parsing
 dyn_type * dynType_parseAvpr(FILE *avprStream, const char *fqn);
 dyn_type * dynType_parseAvprWithStr(const char *avpr, const char *fqn);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //_DYN_TYPE_H_

@@ -16,31 +16,33 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-#ifndef __AVROBIN_SERIALIZER_H_
-#define __AVROBIN_SERIALIZER_H_
 
-#include "dfi_log_util.h"
-#include "dyn_type.h"
-#include "dyn_function.h"
-#include "dyn_interface.h"
+#include <assert.h>
+#include <string.h>
+#include "dyn_example_functions.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-//logging
-DFI_SETUP_LOG_HEADER(avrobinSerializer);
-
-int avrobinSerializer_deserialize(dyn_type *type, const uint8_t *input, size_t inlen, void **result);
-
-int avrobinSerializer_serialize(dyn_type *type, const void *input, uint8_t **output, size_t *outlen);
-
-int avrobinSerializer_generateSchema(dyn_type *type, char **output);
-
-int avrobinSerializer_saveFile(const char *filename, const char *schema, const uint8_t *serdata, size_t serdatalen);
-
-#ifdef __cplusplus
+int32_t example1(int32_t a, int32_t b, int32_t c) {
+    return a + b + c;
 }
-#endif
 
-#endif
+double example2(int32_t arg1, struct example2_arg arg2, double arg3) {
+    return 0.0 + arg1 + arg2.val1 + arg2.val2 + arg2.val3 + arg3;
+}
+
+void example4Func(struct tst_seq seq) {
+    assert(4 == seq.cap);
+    assert(2 == seq.len);
+    assert(1.1 == seq.buf[0]);
+    assert(2.2 == seq.buf[1]);
+}
+
+int testExample3(void *ptr, double a, double *out) {
+    double *b = (double *)ptr;
+    *out = *b * a;
+    return 0;
+}
+
+void example5Func(const char *s1, char *s2) {
+    assert(strncmp("s1", s1, 5) == 0);
+    assert(strncmp("s2", s2, 5) == 0);
+}
