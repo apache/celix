@@ -17,8 +17,7 @@
  * under the License.
  */
 
-#include <CppUTest/TestHarness.h>
-#include <CppUTest/CommandLineTestRunner.h>
+#include <gtest/gtest.h>
 
 extern "C" {
 
@@ -44,26 +43,26 @@ extern "C" {
 
         //server
         rc = celixLauncher_launch("framework1.properties", &serverFramework);
-        CHECK_EQUAL(CELIX_SUCCESS, rc);
+        ASSERT_EQ(CELIX_SUCCESS, rc);
 
         bundle = nullptr;
         rc = framework_getFrameworkBundle(serverFramework, &bundle);
-        CHECK_EQUAL(CELIX_SUCCESS, rc);
+        ASSERT_EQ(CELIX_SUCCESS, rc);
 
         rc = bundle_getContext(bundle, &serverContext);
-        CHECK_EQUAL(CELIX_SUCCESS, rc);
+        ASSERT_EQ(CELIX_SUCCESS, rc);
 
 
         //client
         rc = celixLauncher_launch("framework2.properties", &clientFramework);
-        CHECK_EQUAL(CELIX_SUCCESS, rc);
+        ASSERT_EQ(CELIX_SUCCESS, rc);
 
         bundle = nullptr;
         rc = framework_getFrameworkBundle(clientFramework, &bundle);
-        CHECK_EQUAL(CELIX_SUCCESS, rc);
+        ASSERT_EQ(CELIX_SUCCESS, rc);
 
         rc = bundle_getContext(bundle, &clientContext);
-        CHECK_EQUAL(CELIX_SUCCESS, rc);
+        ASSERT_EQ(CELIX_SUCCESS, rc);
     }
 
     static void teardownFm(void) {
@@ -88,17 +87,17 @@ extern "C" {
 
 }
 
-
-TEST_GROUP(CelixMultipleFrameworks) {
-    void setup() {
+class CelixMultipleFrameworks : public ::testing::Test {
+public:
+    CelixMultipleFrameworks() {
         setupFm();
     }
 
-    void teardown() {
+    ~CelixMultipleFrameworks() override {
         teardownFm();
     }
 };
 
-TEST(CelixMultipleFrameworks, testFrameworks) {
+TEST_F(CelixMultipleFrameworks, testFrameworks) {
     testFrameworks();
 }

@@ -184,3 +184,9 @@ unsigned int serviceReference_hashCode(const void *referenceP) {
 	mock_c()->actualCall("serviceReference_hashCode");
 	return mock_c()->returnValue().value.intValue;
 }
+
+long serviceReference_getServiceId(service_reference_pt reference) {
+    mock_c()->actualCall("serviceReference_getServiceId")
+            ->withPointerParameters("reference", reference);
+    return mock_c()->returnValue().value.longIntValue;
+}

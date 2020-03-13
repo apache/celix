@@ -36,18 +36,33 @@ struct celix_serviceRegistry {
 	framework_pt framework;
 	registry_callback_t callback;
 
-	hash_map_pt serviceRegistrations; //key = bundle (reg owner), value = list ( registration )
-	hash_map_pt serviceReferences; //key = bundle, value = map (key = serviceId, value = reference)
+    celix_thread_rwlock_t lock; //protect below
+
+	hash_map_t *serviceRegistrations; //key = bundle (reg owner), value = list ( registration )
+	hash_map_t *serviceReferences; //key = bundle, value = map (key = serviceId, value = reference)
 
 	bool checkDeletedReferences; //If enabled. check if provided service references are still valid
-	hash_map_pt deletedServiceReferences; //key = ref pointer, value = bool
+	hash_map_t *deletedServiceReferences; //key = ref pointer, value = bool
 
-	serviceChanged_function_pt serviceChanged;
 	unsigned long currentServiceId;
 
-	array_list_pt listenerHooks; //celix_service_registry_listener_hook_entry_t*
+	celix_array_list_t *listenerHooks; //celix_service_registry_listener_hook_entry_t*
+	celix_array_list_t *serviceListeners; //celix_service_registry_service_listener_entry_t*
 
-	celix_thread_rwlock_t lock;
+	/**
+	 * The pending register events are introduced to ensure UNREGISTERING events are always
+	 * after REGISTERED events in service listeners.
+	 * When a listener is registered and it retroactively triggers registered events, it will also
+	 * increase the pending registered events for the matching services.
+	 * Also when a new service is registered all matching services listeners are called.
+	 * This is used to ensuring unregistering events can only be triggered after all registered
+	 * events - for a given service - are triggered.
+	 */
+	struct {
+	    celix_thread_mutex_t mutex;
+	    celix_thread_cond_t cond;
+	    hash_map_t *map; //key = svc id, value = long (nr of pending register events)
+	} pendingRegisterEvents;
 };
 
 typedef struct celix_service_registry_listener_hook_entry {
@@ -55,8 +70,17 @@ typedef struct celix_service_registry_listener_hook_entry {
     celix_listener_hook_service_t *hook;
     celix_thread_mutex_t mutex; //protects below
     celix_thread_cond_t cond;
-    unsigned int count;
+    unsigned int useCount;
 } celix_service_registry_listener_hook_entry_t;
+
+typedef struct celix_service_registry_service_listener_entry {
+    celix_bundle_t *bundle;
+    celix_filter_t *filter;
+    celix_service_listener_t *listener;
+    celix_thread_mutex_t mutex; //protects below
+    celix_thread_cond_t cond;
+    unsigned int useCount;
+} celix_service_registry_service_listener_entry_t;
 
 typedef enum reference_status_enum {
 	REF_ACTIVE,

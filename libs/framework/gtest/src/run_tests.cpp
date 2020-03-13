@@ -17,10 +17,10 @@
  * under the License.
  */
 
-#include <CppUTest/TestHarness.h>
-#include "CppUTest/CommandLineTestRunner.h"
+#include <gtest/gtest.h>
 
-int main(int argc, char** argv) {
-    MemoryLeakWarningPlugin::turnOffNewDeleteOverloads();
-    return RUN_ALL_TESTS(argc, argv);
+int main(int argc, char **argv) {
+    ::testing::InitGoogleTest(&argc, argv);
+    int rc = RUN_ALL_TESTS();
+    return rc;
 }

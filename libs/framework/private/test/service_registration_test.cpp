@@ -344,30 +344,6 @@ TEST(service_registration, getProperties) {
 	free(name);
 }
 
-TEST(service_registration, setProperties){
-	registry_callback_t callback;
-	callback.modified = (callback_modified_signature) serviceRegistry_servicePropertiesModified;
-	service_registry_pt registry = (service_registry_pt) 0x10;
-	callback.handle = registry;
-	char * name = my_strdup("service_name");
-	service_registration_pt registration = serviceRegistration_create(callback, NULL, name, 0, NULL, NULL);
-
-	properties_pt properties = properties_create();
-	properties_pt old_properties = registration->properties;
-
-	mock().expectOneCall("serviceRegistry_servicePropertiesModified")
-			.withParameter("registry", registry)
-			.withParameter("registration", registration)
-			.withParameter("oldprops", old_properties);
-
-	serviceRegistration_setProperties(registration, properties);
-
-	POINTERS_EQUAL(properties, registration->properties);
-
-	properties_destroy(old_properties);
-	serviceRegistration_release(registration);
-	free(name);
-}
 
 TEST(service_registration, getServiceName) {
 	registry_callback_t callback;

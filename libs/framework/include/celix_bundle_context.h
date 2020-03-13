@@ -471,8 +471,9 @@ bool celix_bundleContext_useService(
  * @param   serviceName the required service name.
  * @param   callbackHandle The data pointer, which will be used in the callbacks
  * @param   use The callback, which will be called for every service found.
+ * @return  The number of services found and called
  */
-void celix_bundleContext_useServices(
+size_t celix_bundleContext_useServices(
         celix_bundle_context_t *ctx,
         const char* serviceName,
         void *callbackHandle,
@@ -568,8 +569,9 @@ bool celix_bundleContext_useServiceWithOptions(
  *
  * @param   ctx The bundle context.
  * @param   opts The required options. Note that the serviceName is required.
+ * @return  The number of services found and called
  */
-void celix_bundleContext_useServicesWithOptions(
+size_t celix_bundleContext_useServicesWithOptions(
         celix_bundle_context_t *ctx,
         const celix_service_use_options_t *opts);
 

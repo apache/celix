@@ -17,8 +17,7 @@
  * under the License.
  */
 
-#include <CppUTest/TestHarness.h>
-#include <CppUTest/CommandLineTestRunner.h>
+#include <gtest/gtest.h>
 
 extern "C" {
 
@@ -32,21 +31,21 @@ extern "C" {
 #include "celix_framework_factory.h"
 
 
-    static framework_pt framework = nullptr;
-    static bundle_context_pt context = nullptr;
+    static celix_framework_t *framework = nullptr;
+    static celix_bundle_context_t *context = nullptr;
 
     static void setupFm(void) {
         int rc = 0;
 
         rc = celixLauncher_launch("config.properties", &framework);
-        CHECK_EQUAL(CELIX_SUCCESS, rc);
+        ASSERT_EQ(CELIX_SUCCESS, rc);
 
         bundle_pt bundle = nullptr;
         rc = framework_getFrameworkBundle(framework, &bundle);
-        CHECK_EQUAL(CELIX_SUCCESS, rc);
+        ASSERT_EQ(CELIX_SUCCESS, rc);
 
         rc = bundle_getContext(bundle, &context);
-        CHECK_EQUAL(CELIX_SUCCESS, rc);
+        ASSERT_EQ(CELIX_SUCCESS, rc);
     }
 
     static void teardownFm(void) {
@@ -64,38 +63,40 @@ extern "C" {
         printf("testing startup/shutdown single framework\n");
     }
 
-    //TODO test register / use service
-
 }
 
 
-TEST_GROUP(CelixFramework) {
-    void setup() {
+class CelixFramework : public ::testing::Test {
+public:
+    CelixFramework() {
         setupFm();
     }
 
-    void teardown() {
+    ~CelixFramework() override {
         teardownFm();
     }
 };
 
-TEST(CelixFramework, testFramework) {
+TEST_F(CelixFramework, testFramework) {
     testFramework();
 }
 
-TEST_GROUP(FrameworkFactory) {
+class FrameworkFactory : public ::testing::Test {
+public:
+    FrameworkFactory() = default;
+    ~FrameworkFactory() override = default;
 };
 
 
-TEST(FrameworkFactory, testFactoryCreate) {
+TEST_F(FrameworkFactory, testFactoryCreate) {
     framework_t* fw = celix_frameworkFactory_createFramework(nullptr);
-    CHECK(fw != nullptr);
+    ASSERT_TRUE(fw != nullptr);
     celix_frameworkFactory_destroyFramework(fw);
 }
 
-TEST(FrameworkFactory, testFactoryCreateAndToManyStartAndStops) {
+TEST_F(FrameworkFactory, testFactoryCreateAndToManyStartAndStops) {
     framework_t* fw = celix_frameworkFactory_createFramework(nullptr);
-    CHECK(fw != nullptr);
+    ASSERT_TRUE(fw != nullptr);
 
     framework_start(fw); //should already be done by frameworkFactory_newFramework();
     framework_start(fw);
@@ -112,9 +113,9 @@ TEST(FrameworkFactory, testFactoryCreateAndToManyStartAndStops) {
     framework_destroy(fw); //note stop, wait and then destroy is needed .. combine ?
 }
 
-TEST(FrameworkFactory, restartFramework) {
+TEST_F(FrameworkFactory, restartFramework) {
     framework_t* fw = celix_frameworkFactory_createFramework(nullptr);
-    CHECK(fw != nullptr);
+    ASSERT_TRUE(fw != nullptr);
 
 
     /* TODO fix mem leak in restarting framework
