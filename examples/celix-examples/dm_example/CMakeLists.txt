@@ -77,4 +77,4 @@ add_celix_docker(dm_exmpl2
 set(CELIX_BUILD_DOCKER_USE_DOCKER_DIR_TAR ON)
 set(CELIX_BUILD_DOCKER_TAR_LOCATION ${CMAKE_BINARY_DIR}/export)
 
-install_celix_docker_targz(dm_exmpl)
+install_celix_docker(dm_exmpl)

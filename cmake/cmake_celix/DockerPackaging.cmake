@@ -538,12 +538,12 @@ Optional arguments:
 - PROJECT_NAME: The project name for installing. Default is the cmake project name.
 - IMAGE_NAME: Configure the image name. Default is NAME.
 
-install_celix_docker_targz(<docker_target_name>
+install_celix_docker(<docker_target_name>
     [PROJECT_NAME] project_name
     [IMAGE_NAME docker_image_name]
 )
 ]]
-function(install_celix_docker_targz)
+function(install_celix_docker)
   list(GET ARGN 0 DOCKER_TARGET)
   list(REMOVE_AT ARGN 0)
 
@@ -562,7 +562,7 @@ function(install_celix_docker_targz)
     set(DOCKER_IMAGE_NAME "${DOCKER_NAME}")
   endif ()
 
-  if(CELIX_BUILD_DOCKER_USE_DOCKER_DIR_TAR)
+  if(CELIX_BUILD_DOCKER_USE_DOCKER_DIR_TAR OR CELIX_BUILD_DOCKER_USE_DOCKER_DIR_TAR)
     add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/${DOCKER_PROJECT_NAME}/${DOCKER_IMAGE_NAME}.tar.gz
             COMMAND tar czf ${CMAKE_BINARY_DIR}/${DOCKER_PROJECT_NAME}/${DOCKER_IMAGE_NAME}.tar.gz --directory=$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_LOC> .
             DEPENDS ${DOCKERFILE} ${DOCKER_TARGET}
