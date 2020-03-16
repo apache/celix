@@ -1,4 +1,3 @@
-
 sudo: required
 group: deprecated-2017Q2
 
@@ -81,12 +80,14 @@ before_script:
         -DBUILD_PUBSUB_PSA_WS=ON \
         -DBUILD_PUBSUB_PSA_ZMQ=ON \
         -DBUILD_PUBSUB_TESTS=ON \
-        -DBUILD_RSA_DISCOVERY_SHM=ON "
+        -DBUILD_RSA_DISCOVERY_SHM=ON \
+        -DBUILD_EXPERIMENTAL=ON"
     - export BUILD_OPTIONS_OSX=" \
         -DBUILD_RSA_REMOTE_SERVICE_ADMIN_SHM=OFF \
         -DBUILD_PUBSUB=ON \
         -DBUILD_PUBSUB_PSA_ZMQ=ON \
-        -DBUILD_RSA_DISCOVERY_SHM=OFF "
+        -DBUILD_RSA_DISCOVERY_SHM=OFF \
+        -DBUILD_EXPERIMENTAL=ON"
 
 script:
   - if [ "$SANITIZE" == 1 ]; then export BUILD_OPTIONS="${BUILD_OPTIONS} DENABLE_ADDRESS_SANITIZER=ON"; fi
