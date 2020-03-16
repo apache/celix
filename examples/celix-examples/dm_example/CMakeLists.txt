@@ -74,3 +74,7 @@ add_celix_docker(dm_exmpl2
         LOGHELPER_ENABLE_STDOUT_FALLBACK=true
 )
 
+set(CELIX_BUILD_DOCKER_USE_DOCKER_DIR_TAR ON)
+set(CELIX_BUILD_DOCKER_TAR_LOCATION ${CMAKE_BINARY_DIR}/export)
+
+install_celix_docker(dm_exmpl)
