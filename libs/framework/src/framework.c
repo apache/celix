@@ -2160,7 +2160,7 @@ static celix_status_t framework_loadLibraries(framework_pt framework, const char
         char lib[128];
         lib[127] = '\0';
 
-        char *path;
+        char *path = NULL;
         char *pathToken = strtok_r(token, ";", &path);
         strncpy(lib, pathToken, 127);
         pathToken = strtok_r(NULL, ";", &path);
