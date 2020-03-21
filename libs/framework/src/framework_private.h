@@ -49,9 +49,6 @@ struct celix_framework {
     long bundleId; //the bundle id of the framework (normally 0)
     hash_map_pt installRequestMap;
 
-    celix_thread_mutex_t serviceListenersLock;
-    array_list_pt serviceListeners;
-
     array_list_pt frameworkListeners;
     celix_thread_mutex_t frameworkListenersLock;
 

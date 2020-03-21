@@ -16,13 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * service_registration_private.h
- *
- *  \date       Feb 11, 2013
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
+
 
 #ifndef SERVICE_REGISTRATION_PRIVATE_H_
 #define SERVICE_REGISTRATION_PRIVATE_H_

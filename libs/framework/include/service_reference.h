@@ -48,6 +48,9 @@ serviceReference_getPropertyKeys(service_reference_pt reference, char **keys[], 
 FRAMEWORK_EXPORT celix_status_t
 serviceReference_getServiceRegistration(service_reference_pt reference, service_registration_pt *registration);
 
+FRAMEWORK_EXPORT
+long serviceReference_getServiceId(service_reference_pt reference);
+
 FRAMEWORK_EXPORT celix_status_t
 serviceReference_equals(service_reference_pt reference, service_reference_pt compareTo, bool *equal);
 

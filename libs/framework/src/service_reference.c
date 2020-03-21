@@ -204,6 +204,18 @@ celix_status_t serviceReference_getServiceRegistration(service_reference_pt ref,
     }
 }
 
+long serviceReference_getServiceId(service_reference_pt ref) {
+    long svcId = -1L;
+    if (ref != NULL) {
+        celixThreadRwlock_readLock(&ref->lock);
+        svcId = ref->registration->serviceId;
+        celixThreadRwlock_unlock(&ref->lock);
+    }
+    return svcId;
+}
+
+
+
 FRAMEWORK_EXPORT celix_status_t
 serviceReference_getPropertyWithDefault(service_reference_pt ref, const char *key, const char* def, const char **value) {
     celix_status_t status = CELIX_SUCCESS;

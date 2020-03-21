@@ -29,10 +29,9 @@
 
 #include "service_registry.h"
 
-celix_status_t serviceRegistry_create(framework_pt framework, serviceChanged_function_pt serviceChanged, service_registry_pt *registry) {
+celix_status_t serviceRegistry_create(framework_pt framework, service_registry_pt *registry) {
 	mock_c()->actualCall("serviceRegistry_create")
 			->withPointerParameters("framework", framework)
-			->withPointerParameters("serviceChanged", serviceChanged)
 			->withOutputParameter("registry", registry);
 	return mock_c()->returnValue().value.intValue;
 }
@@ -220,3 +219,20 @@ celix_array_list_t* celix_serviceRegistry_listServiceIdsForOwner(celix_service_r
         ->withLongIntParameters("bndId", bndId);
     return mock_c()->returnValue().value.pointerValue;
 }
+
+celix_status_t celix_serviceRegistry_addServiceListener(celix_service_registry_t *registry, celix_bundle_t *bundle, const char *stringFilter, celix_service_listener_t *listener) {
+    mock_c()->actualCall("celix_serviceRegistry_addServiceListener")
+            ->withPointerParameters("registry", registry)
+            ->withPointerParameters("bundle", bundle)
+            ->withConstPointerParameters("stringFilter", stringFilter)
+            ->withPointerParameters("listener", listener);
+    return mock_c()->returnValue().value.intValue;
+}
+
+celix_status_t celix_serviceRegistry_removeServiceListener(celix_service_registry_t *registry, celix_service_listener_t *listener) {
+    mock_c()->actualCall("celix_serviceRegistry_removeServiceListener")
+            ->withPointerParameters("registry", registry)
+            ->withPointerParameters("listener", listener);
+    return mock_c()->returnValue().value.intValue;
+}
+
