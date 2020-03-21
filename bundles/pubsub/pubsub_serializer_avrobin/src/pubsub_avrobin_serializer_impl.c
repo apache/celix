@@ -49,10 +49,10 @@ struct pubsub_avrobin_serializer {
     log_helper_t *loghelper;
 };
 
-static celix_status_t pubsubMsgAvrobinSerializer_serialize(void *handle, const void *msg, void **out, size_t *outLen);
-static celix_status_t pubsubMsgAvrobinSerializer_deserialize(void *handle, const void *input, size_t inputLen, void **out);
-static void pubsubMsgAvrobinSerializer_freeMsg(void *handle, void *msg);
-
+static celix_status_t pubsubMsgAvrobinSerializer_serialize(void *handle, const void *msg, struct iovec** output, size_t* outputIovLen);
+static celix_status_t pubsubMsgAvrobinSerializer_deserialize(void *handle, const struct iovec *input, size_t inputIovLen, void **out);
+static void pubsubMsgAvrobinSerializer_freeDeserializeMsg(void *handle, void *msg);
+static void pubsubMsgAvrobinSerializer_freeSerializeMsg(void* handle, struct iovec* input, size_t inputIovLen);
 static FILE* openFileStream(FILE_INPUT_TYPE file_input_type, const char* filename, const char* root, /*output*/ char* avpr_fqn, /*output*/ char* path);
 static FILE_INPUT_TYPE getFileInputType(const char* filename);
 static bool readPropertiesFile(const char* properties_file_name, const char* root, /*output*/ char* avpr_fqn, /*output*/ char* path);
@@ -157,7 +157,7 @@ celix_status_t pubsubAvrobinSerializer_destroySerializerMap(void *handle, hash_m
     return status;
 }
 
-static celix_status_t pubsubMsgAvrobinSerializer_serialize(void *handle, const void *msg, void **out, size_t *outLen) {
+static celix_status_t pubsubMsgAvrobinSerializer_serialize(void *handle, const void *msg, struct iovec** output, size_t* outputIovLen) {
     celix_status_t status = CELIX_SUCCESS;
 
     pubsub_avrobin_msg_serializer_impl_t *impl = handle;
@@ -167,6 +167,11 @@ static celix_status_t pubsubMsgAvrobinSerializer_serialize(void *handle, const v
     dyn_type *dynType = NULL;
     dynMessage_getMessageType(impl->msgType, &dynType);
 
+    if (*output == NULL) {
+        *output = calloc(1, sizeof(struct iovec));
+        if (outputIovLen) *outputIovLen = 1;
+        if (output == NULL) status = CELIX_BUNDLE_EXCEPTION;
+    }
     if (avrobinSerializer_serialize(dynType, msg, &avroData, &avroLen) != 0) {
         status = CELIX_BUNDLE_EXCEPTION;
     }
@@ -180,23 +185,37 @@ static celix_status_t pubsubMsgAvrobinSerializer_serialize(void *handle, const v
     }*/
 
     if (status == CELIX_SUCCESS) {
-        *out = (void*)avroData;
-        *outLen = avroLen;
+        (**output).iov_base = (void*)avroData;
+        (**output).iov_len  = avroLen;
+        if (outputIovLen) *outputIovLen = 1;
     }
 
     return status;
 }
 
-static celix_status_t pubsubMsgAvrobinSerializer_deserialize(void *handle, const void *input, size_t inputLen, void **out) {
-    celix_status_t status = CELIX_SUCCESS;
+void pubsubMsgAvrobinSerializer_freeSerializeMsg(void* handle, struct iovec* input, size_t inputIovLen) {
+  pubsub_avrobin_msg_serializer_impl_t *impl = handle;
+  if (input == NULL) return;
+  if (impl->msgType != NULL) {
+    for (int i = 0; i < inputIovLen; i++) {
+      if (input[i].iov_base) free(input[i].iov_base);
+      input[i].iov_base = NULL;
+      input[i].iov_len  = 0;
+    }
+  }
+}
 
+
+static celix_status_t pubsubMsgAvrobinSerializer_deserialize(void *handle, const struct iovec* input, size_t inputIovLen __attribute__((unused)), void **out) {
+    celix_status_t status = CELIX_SUCCESS;
+    if (input == NULL) return CELIX_BUNDLE_EXCEPTION;
     pubsub_avrobin_msg_serializer_impl_t *impl = handle;
 
     void *msg = NULL;
     dyn_type *dynType = NULL;
     dynMessage_getMessageType(impl->msgType, &dynType);
 
-    if (avrobinSerializer_deserialize(dynType, (const uint8_t*)input, inputLen, &msg) != 0) {
+    if (avrobinSerializer_deserialize(dynType, (const uint8_t*)input->iov_base, input->iov_len, &msg) != 0) {
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
         *out = msg;
@@ -205,7 +224,7 @@ static celix_status_t pubsubMsgAvrobinSerializer_deserialize(void *handle, const
     return status;
 }
 
-static void pubsubMsgAvrobinSerializer_freeMsg(void *handle, void *msg) {
+static void pubsubMsgAvrobinSerializer_freeDeserializeMsg(void *handle, void *msg) {
     pubsub_avrobin_msg_serializer_impl_t *impl = handle;
     if (impl->msgType != NULL) {
         dyn_type *dynType = NULL;
@@ -448,8 +467,8 @@ static int pubsubMsgAvrobinSerializer_convertDescriptor(FILE* file_ptr, pubsub_m
 
     serializer->serialize = (void*) pubsubMsgAvrobinSerializer_serialize;
     serializer->deserialize = (void*) pubsubMsgAvrobinSerializer_deserialize;
-    serializer->freeMsg = (void*) pubsubMsgAvrobinSerializer_freeMsg;
-
+    serializer->freeSerializeMsg = (void*) pubsubMsgAvrobinSerializer_freeSerializeMsg;
+    serializer->freeDeserializeMsg = (void*) pubsubMsgAvrobinSerializer_freeDeserializeMsg;
     return 0;
 }
 
@@ -507,7 +526,8 @@ static int pubsubMsgAvrobinSerializer_convertAvpr(FILE* file_ptr, pubsub_msg_ser
 
     serializer->serialize = (void*) pubsubMsgAvrobinSerializer_serialize;
     serializer->deserialize = (void*) pubsubMsgAvrobinSerializer_deserialize;
-    serializer->freeMsg = (void*) pubsubMsgAvrobinSerializer_freeMsg;
+    serializer->freeSerializeMsg = (void*) pubsubMsgAvrobinSerializer_freeSerializeMsg;
+    serializer->freeDeserializeMsg = (void*) pubsubMsgAvrobinSerializer_freeDeserializeMsg;
 
     return 0;
 }

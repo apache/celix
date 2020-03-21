@@ -22,6 +22,7 @@
 
 #include <pubsub_admin_metrics.h>
 #include "celix_bundle_context.h"
+#include <pubsub_protocol.h>
 #include "pubsub_tcp_common.h"
 
 typedef struct pubsub_tcp_topic_receiver pubsub_tcp_topic_receiver_t;
@@ -33,13 +34,16 @@ pubsub_tcp_topic_receiver_t* pubsub_tcpTopicReceiver_create(celix_bundle_context
                                                             const celix_properties_t *topicProperties,
                                                             pubsub_tcp_endPointStore_t* endPointStore,
                                                             long serializerSvcId,
-                                                            pubsub_serializer_service_t *serializer);
+                                                            pubsub_serializer_service_t *serializer,
+                                                            long protocolSvcId,
+                                                            pubsub_protocol_service_t *protocol);
 void pubsub_tcpTopicReceiver_destroy(pubsub_tcp_topic_receiver_t *receiver);
 
 const char* pubsub_tcpTopicReceiver_scope(pubsub_tcp_topic_receiver_t *receiver);
 const char* pubsub_tcpTopicReceiver_topic(pubsub_tcp_topic_receiver_t *receiver);
 
 long pubsub_tcpTopicReceiver_serializerSvcId(pubsub_tcp_topic_receiver_t *receiver);
+long pubsub_tcpTopicReceiver_protocolSvcId(pubsub_tcp_topic_receiver_t *receiver);
 void pubsub_tcpTopicReceiver_listConnections(pubsub_tcp_topic_receiver_t *receiver, celix_array_list_t *connectedUrls, celix_array_list_t *unconnectedUrls);
 
 void pubsub_tcpTopicReceiver_connectTo(pubsub_tcp_topic_receiver_t *receiver, const char *url);

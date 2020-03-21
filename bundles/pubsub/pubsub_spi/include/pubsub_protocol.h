@@ -28,39 +28,77 @@
 
 typedef struct pubsub_protocol_header pubsub_protocol_header_t;
 
+/**
+ * The protocol header structure, contains the information about the message payload and metadata
+ */
 struct pubsub_protocol_header {
-    unsigned int msgId;
-    unsigned short msgMajorVersion;
-    unsigned short msgMinorVersion;
+  /** message payload identification attributes */
+    unsigned int msgId; /*!< Message id of the payload */
+    unsigned short msgMajorVersion; /*!< Message Major version of the payload */
+    unsigned short msgMinorVersion; /*!< Message Minor version of the payload */
 
-    unsigned int payloadSize;
-    unsigned int metadataSize;
+    /** Payload and metadata sizes attributes */
+    unsigned int payloadSize; /*!< Size of the payload (Can be used for payload buffer allocation by the receiver) */
+    unsigned int metadataSize; /*!< Size of the metadata (Can be used for metadata buffer allocation by the receiver) */
+
+    /** message segmentation attributes */
+    unsigned int seqNr; /*!< seqNr for message segmentation, multiple segmentation messages with same seqNr belong to each other */
+    unsigned int payloadPartSize; /*!< payloadPartSize contains size of payload part that is send by a single segmentation message */
+    unsigned int payloadOffset; /*!< payloadOffset contains offset of payload part in the total message payload */
 };
 
 typedef struct pubsub_protocol_payload pubsub_protocol_payload_t;
 
 struct pubsub_protocol_payload {
-    void *payload;
-    size_t length;
+    void *payload; /*!< The payload that is send by the wire protocol */
+    size_t length; /*!< The length/size of the payload. */
 };
 
 typedef struct pubsub_protocol_metadata pubsub_protocol_metadata_t;
 
 struct pubsub_protocol_metadata {
-    celix_properties_t *metadata;
+    celix_properties_t *metadata; /*!< The metadata that is send by the wire protocol */
 };
 
 typedef struct pubsub_protocol_message pubsub_protocol_message_t;
 
 struct pubsub_protocol_message {
-    pubsub_protocol_header_t header;
-    pubsub_protocol_payload_t payload;
-    pubsub_protocol_metadata_t metadata;
+    pubsub_protocol_header_t header; /*!< protocol header */
+    pubsub_protocol_payload_t payload; /*!< payload header */
+    pubsub_protocol_metadata_t metadata; /*!< metadata header */
 };
 
 typedef struct pubsub_protocol_service {
     void* handle;
-
+  /**
+    * Returns the size of the header.
+    * Is used by the receiver to configure the receive size of the header
+    *
+    * @param handle handle for service
+    * @param length output param for header size
+    * @return status code indicating failure or success
+    */
+    celix_status_t (*getHeaderSize)(void *handle, size_t *length);
+  /**
+    * Returns the size of the header buffer.
+    * Is used by the receiver to configure the receive buffer size of the header
+    * Note for header-less protocol (re-use header of the payload) the size is zero.
+    *
+    * @param handle handle for service
+    * @param length output param for header buffer size
+    * @return status code indicating failure or success
+    */
+    celix_status_t (*getHeaderBufferSize)(void *handle, size_t *length);
+  /**
+    * Returns the size of the sync word
+    * Is used by the receiver to skip the sync in the header buffer,
+    * to get in sync with data reception.
+    *
+    * @param handle handle for service
+    * @param length output param for sync size
+    * @return status code indicating failure or success
+    */
+    celix_status_t (*getSyncHeaderSize)(void *handle, size_t *length);
     /**
      * Returns the header (as byte array) that should be used by the underlying protocol as sync between messages.
      *
@@ -69,6 +107,14 @@ typedef struct pubsub_protocol_service {
      * @return status code indicating failure or success
      */
     celix_status_t (*getSyncHeader)(void *handle, void *sync);
+  /**
+    * Returns the is the protocol service supports the message segmentation attributes that is used by the underlying protocol.
+    *
+    * @param handle handle for service
+    * @param isSupported indicates that message segmentation is supported or not.
+    * @return status code indicating failure or success
+    */
+    celix_status_t (*isMessageSegmentationSupported)(void *handle, bool *isSupported);
 
     /**
      * Encodes the header using the supplied message.header.

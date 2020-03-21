@@ -19,6 +19,7 @@
 
 #include <pubsub_serializer.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <pubsub/subscriber.h>
 #include <memory.h>
 #include <pubsub_constants.h>
@@ -33,6 +34,7 @@
 #include "pubsub_psa_tcp_constants.h"
 #include "pubsub_tcp_common.h"
 
+#include "celix_utils_api.h"
 #include <uuid/uuid.h>
 #include <pubsub_admin_metrics.h>
 
@@ -56,9 +58,11 @@ struct pubsub_tcp_topic_receiver {
     log_helper_t *logHelper;
     long serializerSvcId;
     pubsub_serializer_service_t *serializer;
+    long protocolSvcId;
+    pubsub_protocol_service_t *protocol;
     char *scope;
     char *topic;
-    char scopeAndTopicFilter[5];
+    size_t timeout;
     bool metricsEnabled;
     pubsub_tcpHandler_t *socketHandler;
     pubsub_tcpHandler_t *sharedSocketHandler;
@@ -85,9 +89,7 @@ struct pubsub_tcp_topic_receiver {
 
 typedef struct psa_tcp_requested_connection_entry {
     pubsub_tcp_topic_receiver_t *parent;
-    char *key;
     char *url;
-    int fd;
     bool connected;
     bool statically; //true if the connection is statically configured through the topic properties.
 } psa_tcp_requested_connection_entry_t;
@@ -117,11 +119,8 @@ typedef struct psa_tcp_subscriber_entry {
 } psa_tcp_subscriber_entry_t;
 
 
-static void pubsub_tcpTopicReceiver_addSubscriber(void *handle, void *svc, const celix_properties_t *props,
-                                                  const celix_bundle_t *owner);
-
-static void pubsub_tcpTopicReceiver_removeSubscriber(void *handle, void *svc, const celix_properties_t *props,
-                                                     const celix_bundle_t *owner);
+static void pubsub_tcpTopicReceiver_addSubscriber(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner);
+static void pubsub_tcpTopicReceiver_removeSubscriber(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner);
 
 static void *psa_tcp_recvThread(void *data);
 
@@ -129,10 +128,11 @@ static void psa_tcp_connectToAllRequestedConnections(pubsub_tcp_topic_receiver_t
 
 static void psa_tcp_initializeAllSubscribers(pubsub_tcp_topic_receiver_t *receiver);
 
-static void processMsg(void *handle, const pubsub_tcp_msg_header_t *hdr, const unsigned char *payload, size_t payloadSize, struct timespec *receiveTime);
+static void processMsg(void *handle, const pubsub_protocol_message_t *hdr, bool* release, struct timespec *receiveTime);
 static void psa_tcp_connectHandler(void *handle, const char *url, bool lock);
 static void psa_tcp_disConnectHandler(void *handle, const char *url, bool lock);
 
+static bool psa_tcp_checkVersion(version_pt msgVersion, uint16_t major, uint16_t minor);
 
 pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context_t *ctx,
                                                             log_helper_t *logHelper,
@@ -141,12 +141,16 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
                                                             const celix_properties_t *topicProperties,
                                                             pubsub_tcp_endPointStore_t *endPointStore,
                                                             long serializerSvcId,
-                                                            pubsub_serializer_service_t *serializer) {
+                                                            pubsub_serializer_service_t *serializer,
+                                                            long protocolSvcId,
+                                                            pubsub_protocol_service_t *protocol) {
     pubsub_tcp_topic_receiver_t *receiver = calloc(1, sizeof(*receiver));
     receiver->ctx = ctx;
     receiver->logHelper = logHelper;
     receiver->serializerSvcId = serializerSvcId;
     receiver->serializer = serializer;
+    receiver->protocolSvcId = protocolSvcId;
+    receiver->protocol = protocol;
     receiver->scope = strndup(scope, 1024 * 1024);
     receiver->topic = strndup(topic, 1024 * 1024);
 
@@ -167,11 +171,14 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
             isEndPointTypeServer = true;
         }
     }
+    // Set receiver connection thread timeout.
+    // property is in ms, timeout value in us. (convert ms to us).
+    receiver->timeout =  celix_bundleContext_getPropertyAsLong(ctx, PSA_TCP_SUBSCRIBER_CONNECTION_TIMEOUT, PSA_TCP_SUBSCRIBER_CONNECTION_DEFAULT_TIMEOUT) * 1000;
     // When endpoint is server, use the bind url as a key.
     const char *staticBindUrl = ((topicProperties != NULL) && isEndPointTypeServer) ? celix_properties_get(topicProperties, PUBSUB_TCP_STATIC_BIND_URL, NULL) : NULL;
     /* When it's an endpoint share the socket with the receiver */
     if (staticBindUrl != NULL || (isEndPointTypeClient && staticConnectUrls != NULL)) {
-        celixThreadMutex_lock(&receiver->thread.mutex);
+        celixThreadMutex_lock(&endPointStore->mutex);
         pubsub_tcpHandler_t *entry = hashMap_get(endPointStore->map, (isEndPointTypeServer) ? staticBindUrl : staticConnectUrls);
         if (entry != NULL) {
             receiver->socketHandler = entry;
@@ -179,34 +186,29 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
         } else {
             L_ERROR("[PSA_TCP] Cannot find static Endpoint URL for %s/%s", scope, topic);
         }
-        celixThreadMutex_unlock(&receiver->thread.mutex);
+        celixThreadMutex_unlock(&endPointStore->mutex);
     }
 
     if (receiver->socketHandler == NULL) {
-        receiver->socketHandler = pubsub_tcpHandler_create(receiver->logHelper);
+        receiver->socketHandler = pubsub_tcpHandler_create(receiver->protocol,receiver->logHelper);
     }
 
     if (receiver->socketHandler != NULL) {
         pubsub_tcpHandler_createReceiveBufferStore(receiver->socketHandler, (unsigned int) sessions, (unsigned int) buffer_size);
         pubsub_tcpHandler_setTimeout(receiver->socketHandler, (unsigned int) timeout);
         pubsub_tcpHandler_addMessageHandler(receiver->socketHandler, receiver, processMsg);
-        pubsub_tcpHandler_addConnectionCallback(receiver->socketHandler, receiver, psa_tcp_connectHandler, psa_tcp_disConnectHandler);
+        pubsub_tcpHandler_addReceiverConnectionCallback(receiver->socketHandler, receiver, psa_tcp_connectHandler, psa_tcp_disConnectHandler);
     }
 
     if (topicProperties != NULL) {
-        bool blocking     = celix_properties_getAsBool((celix_properties_t *) topicProperties, PUBSUB_TCP_SUBSCRIBER_BLOCKING_KEY, PUBSUB_TCP_SUBSCRIBER_BLOCKING_DEFAULT);
-        bool bypassHeader = celix_properties_getAsBool((celix_properties_t *) topicProperties, PUBSUB_TCP_BYPASS_HEADER, PUBSUB_TCP_DEFAULT_BYPASS_HEADER);
-        long msgIdOffset  = celix_properties_getAsLong(topicProperties, PUBSUB_TCP_MESSAGE_ID_OFFSET, PUBSUB_TCP_DEFAULT_MESSAGE_ID_OFFSET);
-        long msgIdSize    = celix_properties_getAsLong(topicProperties, PUBSUB_TCP_MESSAGE_ID_SIZE,   PUBSUB_TCP_DEFAULT_MESSAGE_ID_SIZE);
+        long prio         = celix_properties_getAsLong(topicProperties, PUBSUB_TCP_THREAD_REALTIME_PRIO, -1L);
+        const char *sched = celix_properties_get(topicProperties, PUBSUB_TCP_THREAD_REALTIME_SCHED, NULL);
         long retryCnt     = celix_properties_getAsLong(topicProperties, PUBSUB_TCP_SUBSCRIBER_RETRY_CNT_KEY, PUBSUB_TCP_SUBSCRIBER_RETRY_CNT_DEFAULT);
         double rcvTimeout = celix_properties_getAsDouble(topicProperties, PUBSUB_TCP_SUBSCRIBER_RCVTIMEO_KEY, PUBSUB_TCP_SUBSCRIBER_RCVTIMEO_DEFAULT);
-        pubsub_tcpHandler_setBypassHeader(receiver->socketHandler, bypassHeader, (unsigned int)msgIdOffset, (unsigned int)msgIdSize);
-        pubsub_tcpHandler_setBlockingRead(receiver->socketHandler, blocking);
+        pubsub_tcpHandler_setThreadPriority(receiver->socketHandler, prio, sched);
         pubsub_tcpHandler_setReceiveRetryCnt(receiver->socketHandler, (unsigned int) retryCnt);
         pubsub_tcpHandler_setReceiveTimeOut(receiver->socketHandler, rcvTimeout);
     }
-
-    psa_tcp_setScopeAndTopicFilter(scope, topic, receiver->scopeAndTopicFilter);
     receiver->metricsEnabled = celix_bundleContext_getPropertyAsBool(ctx, PSA_TCP_METRICS_ENABLED,
                                                                      PSA_TCP_DEFAULT_METRICS_ENABLED);
 
@@ -233,14 +235,13 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
       free(urlsCopy);
     }
 
-    if ((receiver->socketHandler != NULL) && (staticBindUrl == NULL)) {
+    if (receiver->socketHandler != NULL) {
         // Configure Receiver thread
         receiver->thread.running = true;
         celixThread_create(&receiver->thread.thread, NULL, psa_tcp_recvThread, receiver);
         char name[64];
-        snprintf(name, 64, "TCP TR %s/%s", scope, topic);
+        snprintf(name, 64, "TCP CH %s/%s", scope, topic);
         celixThread_setName(&receiver->thread.thread, name);
-        psa_tcp_setupTcpContext(receiver->logHelper, &receiver->thread.thread, topicProperties);
     }
 
     //track subscribers
@@ -319,7 +320,7 @@ void pubsub_tcpTopicReceiver_destroy(pubsub_tcp_topic_receiver_t *receiver) {
         celixThreadMutex_destroy(&receiver->thread.mutex);
 
         pubsub_tcpHandler_addMessageHandler(receiver->socketHandler, NULL, NULL);
-        pubsub_tcpHandler_addConnectionCallback(receiver->socketHandler, NULL, NULL, NULL);
+        pubsub_tcpHandler_addReceiverConnectionCallback(receiver->socketHandler, NULL, NULL, NULL);
         if ((receiver->socketHandler) && (receiver->sharedSocketHandler == NULL)) {
             pubsub_tcpHandler_destroy(receiver->socketHandler);
             receiver->socketHandler = NULL;
@@ -341,6 +342,10 @@ const char *pubsub_tcpTopicReceiver_topic(pubsub_tcp_topic_receiver_t *receiver)
 
 long pubsub_tcpTopicReceiver_serializerSvcId(pubsub_tcp_topic_receiver_t *receiver) {
     return receiver->serializerSvcId;
+}
+
+long pubsub_tcpTopicReceiver_protocolSvcId(pubsub_tcp_topic_receiver_t *receiver) {
+    return receiver->protocolSvcId;
 }
 
 void pubsub_tcpTopicReceiver_listConnections(pubsub_tcp_topic_receiver_t *receiver, celix_array_list_t *connectedUrls,
@@ -422,8 +427,7 @@ static void pubsub_tcpTopicReceiver_addSubscriber(void *handle, void *svc, const
         entry->initialized = false;
         receiver->subscribers.allInitialized = false;
 
-        int rc = receiver->serializer->createSerializerMap(receiver->serializer->handle, (celix_bundle_t *) bnd,
-                                                           &entry->msgTypes);
+        int rc = receiver->serializer->createSerializerMap(receiver->serializer->handle, (celix_bundle_t *) bnd, &entry->msgTypes);
 
         if (rc == 0) {
             entry->metrics = hashMap_create(NULL, NULL, NULL, NULL);
@@ -445,8 +449,7 @@ static void pubsub_tcpTopicReceiver_addSubscriber(void *handle, void *svc, const
     celixThreadMutex_unlock(&receiver->subscribers.mutex);
 }
 
-static void pubsub_tcpTopicReceiver_removeSubscriber(void *handle, void *svc, const celix_properties_t *props,
-                                                     const celix_bundle_t *bnd) {
+static void pubsub_tcpTopicReceiver_removeSubscriber(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *bnd) {
     pubsub_tcp_topic_receiver_t *receiver = handle;
 
     long bndId = celix_bundle_getId(bnd);
@@ -474,12 +477,9 @@ static void pubsub_tcpTopicReceiver_removeSubscriber(void *handle, void *svc, co
     celixThreadMutex_unlock(&receiver->subscribers.mutex);
 }
 
-static inline void
-processMsgForSubscriberEntry(pubsub_tcp_topic_receiver_t *receiver, psa_tcp_subscriber_entry_t *entry,
-                             const pubsub_tcp_msg_header_t *hdr, const unsigned char *payload, size_t payloadSize,
-                             struct timespec *receiveTime) {
+static inline void processMsgForSubscriberEntry(pubsub_tcp_topic_receiver_t *receiver, psa_tcp_subscriber_entry_t *entry, const pubsub_protocol_message_t *message,  bool* releaseMsg, struct timespec *receiveTime) {
     //NOTE receiver->subscribers.mutex locked
-    pubsub_msg_serializer_t *msgSer = hashMap_get(entry->msgTypes, (void *) (uintptr_t)(hdr->type));
+    pubsub_msg_serializer_t* msgSer = hashMap_get(entry->msgTypes, (void*)(uintptr_t)(message->header.msgId));
     pubsub_subscriber_t *svc = entry->svc;
     bool monitor = receiver->metricsEnabled;
 
@@ -490,94 +490,49 @@ processMsgForSubscriberEntry(pubsub_tcp_topic_receiver_t *receiver, psa_tcp_subs
     int updateSerError = 0;
 
     if (msgSer != NULL) {
-        void *deserializedMsg = NULL;
-        bool validVersion = psa_tcp_checkVersion(msgSer->msgVersion, hdr);
+        void *deSerializedMsg = NULL;
+        bool validVersion = psa_tcp_checkVersion(msgSer->msgVersion, message->header.msgMajorVersion, message->header.msgMinorVersion);
         if (validVersion) {
             if (monitor) {
                 clock_gettime(CLOCK_REALTIME, &beginSer);
             }
-            celix_status_t status = msgSer->deserialize(msgSer->handle, payload, payloadSize, &deserializedMsg);
+            struct iovec deSerializeBuffer;
+            deSerializeBuffer.iov_base = message->payload.payload;
+            deSerializeBuffer.iov_len  = message->payload.length;
+            celix_status_t status = msgSer->deserialize(msgSer->handle, &deSerializeBuffer, 0, &deSerializedMsg);
             if (monitor) {
                 clock_gettime(CLOCK_REALTIME, &endSer);
             }
+            // When received payload pointer is the same as deserializedMsg, set ownership of pointer to topic receiver
+            if (message->payload.payload == deSerializedMsg) {
+                *releaseMsg = true;
+            }
+
             if (status == CELIX_SUCCESS) {
                 bool release = true;
-                svc->receive(svc->handle, msgSer->msgName, msgSer->msgId, deserializedMsg, NULL, &release);
+                svc->receive(svc->handle, msgSer->msgName, msgSer->msgId, deSerializedMsg, message->metadata.metadata, &release);
                 if (release) {
-                    msgSer->freeMsg(msgSer->handle, deserializedMsg);
+                    msgSer->freeDeserializeMsg(msgSer->handle, deSerializedMsg);
                 }
                 updateReceiveCount += 1;
             } else {
                 updateSerError += 1;
-                L_WARN("[PSA_TCP_TR] Cannot deserialize msg type %s for scope/topic %s/%s", msgSer->msgName, receiver->scope,
-                       receiver->topic);
+                L_WARN("[PSA_TCP_TR] Cannot deserialize msg type %s for scope/topic %s/%s", msgSer->msgName, receiver->scope, receiver->topic);
             }
         }
     } else {
-        L_WARN("[PSA_TCP_TR] Cannot find serializer for type id 0x%X", hdr->type);
-    }
-
-    if (msgSer != NULL && monitor) {
-        hash_map_t *origins = hashMap_get(entry->metrics, (void *) (uintptr_t) hdr->type);
-        char uuidStr[UUID_STR_LEN + 1];
-        uuid_unparse(hdr->originUUID, uuidStr);
-        psa_tcp_subscriber_metrics_entry_t *metrics = hashMap_get(origins, uuidStr);
-
-        if (metrics == NULL) {
-            metrics = calloc(1, sizeof(*metrics));
-            hashMap_put(origins, strndup(uuidStr, UUID_STR_LEN + 1), metrics);
-            uuid_copy(metrics->origin, hdr->originUUID);
-            metrics->msgTypeId = hdr->type;
-            metrics->maxDelayInSeconds = -INFINITY;
-            metrics->minDelayInSeconds = INFINITY;
-            metrics->lastSeqNr = 0;
-        }
-
-        double diff = celix_difftime(&beginSer, &endSer);
-        long n = metrics->nrOfMessagesReceived;
-        metrics->averageSerializationTimeInSeconds = (metrics->averageSerializationTimeInSeconds * n + diff) / (n + 1);
-
-        diff = celix_difftime(&metrics->lastMessageReceived, receiveTime);
-        n = metrics->nrOfMessagesReceived;
-        if (metrics->nrOfMessagesReceived >= 1) {
-            metrics->averageTimeBetweenMessagesInSeconds =
-                    (metrics->averageTimeBetweenMessagesInSeconds * n + diff) / (n + 1);
-        }
-        metrics->lastMessageReceived = *receiveTime;
-
-
-        int incr = hdr->seqNr - metrics->lastSeqNr;
-        if (metrics->lastSeqNr > 0 && incr > 1) {
-            metrics->nrOfMissingSeqNumbers += (incr - 1);
-            L_WARN("Missing message seq nr went from %i to %i", metrics->lastSeqNr, hdr->seqNr);
-        }
-        metrics->lastSeqNr = hdr->seqNr;
-
-        struct timespec sendTime;
-        sendTime.tv_sec = (time_t) hdr->sendtimeSeconds;
-        sendTime.tv_nsec = (long) hdr->sendTimeNanoseconds; //TODO FIXME the tv_nsec is not correct
-        diff = celix_difftime(&sendTime, receiveTime);
-        metrics->averageDelayInSeconds = (metrics->averageDelayInSeconds * n + diff) / (n + 1);
-        if (diff < metrics->minDelayInSeconds) {
-            metrics->minDelayInSeconds = diff;
-        }
-        if (diff > metrics->maxDelayInSeconds) {
-            metrics->maxDelayInSeconds = diff;
-        }
-
-        metrics->nrOfMessagesReceived += updateReceiveCount;
-        metrics->nrOfSerializationErrors += updateSerError;
+        L_WARN("[PSA_ZMQ_TR] Cannot find serializer for type id 0x%X", message->header.msgId);
     }
 }
 
-static void processMsg(void *handle, const pubsub_tcp_msg_header_t *hdr, const unsigned char *payload, size_t payloadSize, struct timespec *receiveTime) {
+static void processMsg(void *handle, const pubsub_protocol_message_t *message, bool* release, struct timespec *receiveTime) {
     pubsub_tcp_topic_receiver_t *receiver = handle;
     celixThreadMutex_lock(&receiver->subscribers.mutex);
     hash_map_iterator_t iter = hashMapIterator_construct(receiver->subscribers.map);
     while (hashMapIterator_hasNext(&iter)) {
         psa_tcp_subscriber_entry_t *entry = hashMapIterator_nextValue(&iter);
         if (entry != NULL) {
-            processMsgForSubscriberEntry(receiver, entry, hdr, payload, payloadSize, receiveTime);
+            processMsgForSubscriberEntry(receiver, entry, message, release, receiveTime);
         }
     }
     celixThreadMutex_unlock(&receiver->subscribers.mutex);
@@ -605,7 +560,7 @@ static void *psa_tcp_recvThread(void *data) {
         if (!allInitialized) {
             psa_tcp_initializeAllSubscribers(receiver);
         }
-        pubsub_tcpHandler_handler(receiver->socketHandler);
+        usleep(receiver->timeout);
 
         celixThreadMutex_lock(&receiver->thread.mutex);
         running = receiver->thread.running;
@@ -690,8 +645,8 @@ static void psa_tcp_connectToAllRequestedConnections(pubsub_tcp_topic_receiver_t
         while (hashMapIterator_hasNext(&iter)) {
             psa_tcp_requested_connection_entry_t *entry = hashMapIterator_nextValue(&iter);
             if (!entry->connected) {
-                entry->fd = pubsub_tcpHandler_connect(entry->parent->socketHandler, entry->url);
-                if (entry->fd < 0) {
+                int rc =  pubsub_tcpHandler_connect(entry->parent->socketHandler, entry->url);
+                if (rc < 0) {
                     //L_WARN("[PSA_TCP] Error connecting to tcp url %s\n", entry->url);
                     allConnected = false;
                 }
@@ -755,4 +710,25 @@ static void psa_tcp_initializeAllSubscribers(pubsub_tcp_topic_receiver_t *receiv
         receiver->subscribers.allInitialized = allInitialized;
     }
     celixThreadMutex_unlock(&receiver->subscribers.mutex);
+}
+
+static bool psa_tcp_checkVersion(version_pt msgVersion, uint16_t major, uint16_t minor) {
+    bool check=false;
+
+    if (major == 0 && minor == 0) {
+        //no check
+        return true;
+    }
+
+    int versionMajor;
+    int versionMinor;
+    if (msgVersion!=NULL) {
+        version_getMajor(msgVersion, &versionMajor);
+        version_getMinor(msgVersion, &versionMinor);
+        if (major==((unsigned char)versionMajor)) { /* Different major means incompatible */
+            check = (minor>=((unsigned char)versionMinor)); /* Compatible only if the provider has a minor equals or greater (means compatible update) */
+        }
+    }
+
+    return check;
 }

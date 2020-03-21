@@ -201,6 +201,7 @@ double pubsub_utils_matchPublisher(
 
 typedef struct pubsub_match_retrieve_topic_properties_data {
     const char *topic;
+    const char *scope;
     bool isPublisher;
 
     celix_properties_t *outEndpoint;
@@ -208,7 +209,7 @@ typedef struct pubsub_match_retrieve_topic_properties_data {
 
 static void getTopicPropertiesCallback(void *handle, const celix_bundle_t *bnd) {
     pubsub_get_topic_properties_data_t *data = handle;
-    data->outEndpoint = pubsub_utils_getTopicProperties(bnd, data->topic, data->isPublisher);
+    data->outEndpoint = pubsub_utils_getTopicProperties(bnd, data->topic, data->scope, data->isPublisher);
 }
 
 double pubsub_utils_matchSubscriber(
@@ -227,6 +228,7 @@ double pubsub_utils_matchSubscriber(
     pubsub_get_topic_properties_data_t data;
     data.isPublisher = false;
     data.topic = celix_properties_get(svcProperties, PUBSUB_SUBSCRIBER_TOPIC, NULL);
+    data.scope = celix_properties_get(svcProperties, PUBSUB_SUBSCRIBER_SCOPE, PUBSUB_SUBSCRIBER_SCOPE_DEFAULT);
     data.outEndpoint = NULL;
     celix_bundleContext_useBundle(ctx, svcProviderBundleId, &data, getTopicPropertiesCallback);
 

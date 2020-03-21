@@ -301,7 +301,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             NAME zmq
             GROUP pubsub
             CONTAINERS
-                pubsub_publisher
+                pubsub_publisher_zmq
                 pubsub_subscriber_zmq
                 pubsub_subscriber2_zmq
             COMMANDS

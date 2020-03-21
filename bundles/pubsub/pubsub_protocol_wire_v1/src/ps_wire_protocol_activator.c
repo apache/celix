@@ -39,7 +39,11 @@ static int ps_wp_start(ps_wp_activator_t *act, celix_bundle_context_t *ctx) {
         celix_properties_t *props = celix_properties_create();
         celix_properties_set(props, PUBSUB_PROTOCOL_TYPE_KEY, PUBSUB_WIRE_PROTOCOL_TYPE);
 
+        act->protocolSvc.getHeaderSize = pubsubProtocol_getHeaderSize;
+        act->protocolSvc.getHeaderBufferSize = pubsubProtocol_getHeaderBufferSize;
+        act->protocolSvc.getSyncHeaderSize = pubsubProtocol_getSyncHeaderSize;
         act->protocolSvc.getSyncHeader = pubsubProtocol_getSyncHeader;
+        act->protocolSvc.isMessageSegmentationSupported = pubsubProtocol_isMessageSegmentationSupported;
         
         act->protocolSvc.encodeHeader = pubsubProtocol_encodeHeader;
         act->protocolSvc.encodePayload = pubsubProtocol_encodePayload;

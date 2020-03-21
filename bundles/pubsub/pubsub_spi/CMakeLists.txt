@@ -19,6 +19,7 @@ find_package(UUID REQUIRED)
 
 add_library(pubsub_spi STATIC
         src/pubsub_utils_match.c
+        src/pubsub_utils_url.c
         src/pubsub_endpoint.c
         src/pubsub_utils.c
         src/pubsub_admin_metrics.c

@@ -277,9 +277,8 @@ static int psa_udpmc_topicPublicationSend(void* handle, unsigned int msgTypeId, 
     }
 
     if (msgSer != NULL) {
-        void* serializedOutput = NULL;
         size_t serializedOutputLen = 0;
-
+        struct iovec* serializedOutput = NULL;
         if (msgSer->serialize(msgSer->handle, inMsg, &serializedOutput, &serializedOutputLen) == CELIX_SUCCESS) {
             pubsub_udp_msg_header_t *msg_hdr = calloc(1, sizeof(*msg_hdr));
             msg_hdr->type = msgTypeId;
@@ -294,14 +293,15 @@ static int psa_udpmc_topicPublicationSend(void* handle, unsigned int msgTypeId, 
 
             pubsub_udp_msg_t *msg = calloc(1, sizeof(*msg));
             msg->header = msg_hdr;
-            msg->payload = (char *) serializedOutput;
-            msg->payloadSize = (unsigned int) serializedOutputLen;
+            msg->payload = (char *) serializedOutput->iov_base;
+            msg->payloadSize = (unsigned int)  serializedOutput->iov_len;
 
             if (psa_udpmc_sendMsg(entry, msg) == false) {
                 status = -1;
             }
             free(msg);
             free(msg_hdr);
+            msgSer->freeSerializeMsg(msgSer->handle, serializedOutput, serializedOutputLen);
             free(serializedOutput);
         } else {
             printf("[PSA_UDPMC/TopicSender] Serialization of msg type id %d failed\n", msgTypeId);

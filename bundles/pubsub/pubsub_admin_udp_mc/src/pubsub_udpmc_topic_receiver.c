@@ -442,7 +442,10 @@ static void psa_udpmc_processMsg(pubsub_udpmc_topic_receiver_t *receiver, pubsub
             bool validVersion = psa_udpmc_checkVersion(msgSer->msgVersion, &msg->header);
 
             if (validVersion) {
-                celix_status_t status = msgSer->deserialize(msgSer->handle, (const void *)msg->payload, 0, &msgInst);
+                struct iovec deSerializeBuffer;
+                deSerializeBuffer.iov_base = msg->payload;
+                deSerializeBuffer.iov_len  = 0;
+                celix_status_t status = msgSer->deserialize(msgSer->handle, &deSerializeBuffer, 0, &msgInst);
 
                 if (status == CELIX_SUCCESS) {
                     bool release = true;
@@ -450,7 +453,7 @@ static void psa_udpmc_processMsg(pubsub_udpmc_topic_receiver_t *receiver, pubsub
                     svc->receive(svc->handle, msgSer->msgName, msg->header.type, msgInst, NULL, &release);
 
                     if (release) {
-                        msgSer->freeMsg(msgSer->handle, msgInst);
+                        msgSer->freeDeserializeMsg(msgSer->handle, msgInst);
                     }
                 } else {
                     printf("[PSA_UDPMC] Cannot deserialize msgType %s.\n",msgSer->msgName);
