@@ -298,6 +298,7 @@ celix_status_t framework_destroy(framework_pt framework) {
     //has not been joined yet.
     celixThread_join(framework->shutdown.thread, NULL);
 
+    serviceRegistry_destroy(framework->registry);
 
     celixThreadMutex_lock(&framework->installedBundles.mutex);
     for (int i = 0; i < celix_arrayList_size(framework->installedBundles.entries); ++i) {
@@ -342,11 +343,7 @@ celix_status_t framework_destroy(framework_pt framework) {
     celix_arrayList_destroy(framework->installedBundles.entries);
     celixThreadMutex_destroy(&framework->installedBundles.mutex);
 
-
-
 	hashMap_destroy(framework->installRequestMap, false, false);
-
-	serviceRegistry_destroy(framework->registry);
 
     if (framework->bundleListeners) {
         arrayList_destroy(framework->bundleListeners);
