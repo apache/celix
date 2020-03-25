@@ -18,6 +18,8 @@
  */
 #include "first_interceptor_private.h"
 
+#include <inttypes.h>
+
 celix_status_t firstInterceptor_create(first_interceptor_t **interceptor) {
     celix_status_t status = CELIX_SUCCESS;
 
@@ -54,18 +56,18 @@ bool firstInterceptor_preSend(void *handle, pubsub_interceptor_properties_t prop
 
 void firstInterceptor_postSend(void *handle, pubsub_interceptor_properties_t properties, const char *messageType, const uint32_t msgTypeId, const void *message, celix_properties_t *metadata) {
     uint64_t sequence = celix_properties_getAsLong(metadata, SEQUENCE_NUMBER, 0);
-    printf("Invoked postSend on first interceptor, for message with sequenceNumber [%llu]\n", sequence);
+    printf("Invoked postSend on first interceptor, for message with sequenceNumber [%"PRIu64"]\n", sequence);
 }
 
 bool firstInterceptor_preReceive(void *handle, pubsub_interceptor_properties_t properties, const char *messageType, const uint32_t msgTypeId, const void *message, celix_properties_t *metadata) {
     uint64_t sequence = celix_properties_getAsLong(metadata, SEQUENCE_NUMBER, 0);
-    printf("Invoked preReceive on first interceptor, for message with sequenceNumber [%llu]\n", sequence);
+    printf("Invoked preReceive on first interceptor, for message with sequenceNumber [%"PRIu64"]\n", sequence);
 
     return true;
 }
 
 void firstInterceptor_postReceive(void *handle, pubsub_interceptor_properties_t properties, const char *messageType, const uint32_t msgTypeId, const void *message, celix_properties_t *metadata) {
     uint64_t sequence = celix_properties_getAsLong(metadata, SEQUENCE_NUMBER, 0);
-    printf("Invoked postReceive on first interceptor, for message with sequenceNumber [%llu]\n", sequence);
+    printf("Invoked postReceive on first interceptor, for message with sequenceNumber [%"PRIu64"]\n", sequence);
 }
 

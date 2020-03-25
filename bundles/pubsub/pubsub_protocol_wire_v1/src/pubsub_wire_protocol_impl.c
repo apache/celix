@@ -138,7 +138,7 @@ celix_status_t pubsubProtocol_encodeMetadata(void *handle, pubsub_protocol_messa
 
             memcpy(line + idx, keyNetString, strlen(keyNetString));
             idx += strlen(keyNetString);
-            memcpy(line + idx, valueNetString, strlen(keyNetString));
+            memcpy(line + idx, valueNetString, strlen(valueNetString));
             idx += strlen(valueNetString);
 
             free(keyNetString);
