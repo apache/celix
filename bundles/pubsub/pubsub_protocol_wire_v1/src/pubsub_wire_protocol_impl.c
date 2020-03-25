@@ -106,7 +106,7 @@ celix_status_t pubsubProtocol_encodePayload(void *handle, pubsub_protocol_messag
 celix_status_t pubsubProtocol_encodeMetadata(void *handle, pubsub_protocol_message_t *message, void **outBuffer, size_t *outLength) {
     celix_status_t status = CELIX_SUCCESS;
 
-    char *line = calloc(1, 4);
+    unsigned char *line = calloc(1, 4);
     size_t idx = 4;
     size_t len = 0;
 
@@ -128,7 +128,7 @@ celix_status_t pubsubProtocol_encodeMetadata(void *handle, pubsub_protocol_messa
 
             len += strlen(keyNetString);
             len += strlen(valueNetString);
-            char *tmp = realloc(line, len + sizeof(uint32_t));
+            unsigned char *tmp = realloc(line, len + sizeof(uint32_t));
             if (!tmp) {
                 free(line);
                 status = CELIX_ENOMEM;
@@ -146,7 +146,7 @@ celix_status_t pubsubProtocol_encodeMetadata(void *handle, pubsub_protocol_messa
         }
     }
     int size = celix_properties_size(message->metadata.metadata);
-    memcpy(line, &size, sizeof(int32_t));
+    writeInt(line, 0, size);
 
     *outBuffer = line;
     *outLength = idx;
