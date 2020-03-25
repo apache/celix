@@ -21,6 +21,7 @@
 #define __PUBSUB_INTERCEPTOR_H
 
 #include <stdlib.h>
+#include <stdint.h>
 
 #include "celix_properties.h"
 

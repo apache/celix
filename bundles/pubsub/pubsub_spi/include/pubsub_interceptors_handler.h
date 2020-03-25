@@ -19,6 +19,8 @@
 #ifndef PUBSUB_INTERCEPTORS_HANDLER_H
 #define PUBSUB_INTERCEPTORS_HANDLER_H
 
+#include <stdint.h>
+
 #include "celix_errno.h"
 #include "celix_array_list.h"
 #include "pubsub_interceptor.h"
