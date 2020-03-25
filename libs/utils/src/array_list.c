@@ -567,7 +567,7 @@ void celix_arrayList_clear(celix_array_list_t *list) {
 
 #if defined(__APPLE__)
 static int celix_arrayList_compare(void *arg, const void * a, const void *b) {
-#elif
+#else
 static int celix_arrayList_compare(const void * a, const void *b, void *arg) {
 #endif
     const celix_array_list_entry_t *aEntry = a;
@@ -581,7 +581,7 @@ static int celix_arrayList_compare(const void * a, const void *b, void *arg) {
 void celix_arrayList_sort(celix_array_list_t *list, celix_arrayList_sort_fp sortFp) {
 #if defined(__APPLE__)
     qsort_r(list->elementData, list->size, sizeof(celix_array_list_entry_t), sortFp, celix_arrayList_compare);
-#elif
+#else
     qsort_r(list->elementData, list->size, sizeof(celix_array_list_entry_t), celix_arrayList_compare, sortFp);
 #endif
 }
