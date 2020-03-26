@@ -186,7 +186,7 @@ TEST_F(WireProtocolV1Test, WireProtocolV1Test_EncodeMetadata_Test) { // NOLINT(c
 
     celix_properties_destroy(message.metadata.metadata);
     free(data);
-    pubsubProtocol_destroy(wireprotocol)
+    pubsubProtocol_destroy(wireprotocol);
 }
 
 TEST_F(WireProtocolV1Test, WireProtocolV1Test_DecodeMetadata_Test) { // NOLINT(cert-err58-cpp)
