@@ -69,6 +69,9 @@ TEST_F(WireProtocolV1Test, WireProtocolV1Test_EncodeHeader_Test) { // NOLINT(cer
     for (int i = 0; i < 24; i++) {
         ASSERT_EQ(((unsigned char*) headerData)[i], exp[i]);
     }
+
+    pubsubProtocol_destroy(wireprotocol);
+    free(headerData);
 }
 
 TEST_F(WireProtocolV1Test, WireProtocolV1Test_DecodeHeader_Test) { // NOLINT(cert-err58-cpp)
@@ -99,6 +102,8 @@ TEST_F(WireProtocolV1Test, WireProtocolV1Test_DecodeHeader_Test) { // NOLINT(cer
     ASSERT_EQ(0, message.header.msgMinorVersion);
     ASSERT_EQ(2, message.header.payloadSize);
     ASSERT_EQ(3, message.header.metadataSize);
+
+    pubsubProtocol_destroy(wireprotocol);
 }
 
 TEST_F(WireProtocolV1Test, WireProtocolV1Test_WireProtocolV1Test_DecodeHeader_IncorrectSync_Test) { // NOLINT(cert-err58-cpp)
@@ -124,6 +129,8 @@ TEST_F(WireProtocolV1Test, WireProtocolV1Test_WireProtocolV1Test_DecodeHeader_In
     celix_status_t status = pubsubProtocol_decodeHeader(nullptr, exp, 24, &message);
 
     ASSERT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
+
+    pubsubProtocol_destroy(wireprotocol);
 }
 
 TEST_F(WireProtocolV1Test, WireProtocolV1Test_WireProtocolV1Test_DecodeHeader_IncorrectVersion_Test) { // NOLINT(cert-err58-cpp)
@@ -149,6 +156,8 @@ TEST_F(WireProtocolV1Test, WireProtocolV1Test_WireProtocolV1Test_DecodeHeader_In
     celix_status_t status = pubsubProtocol_decodeHeader(nullptr, exp, 24, &message);
 
     ASSERT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
+
+    pubsubProtocol_destroy(wireprotocol);
 }
 
 TEST_F(WireProtocolV1Test, WireProtocolV1Test_EncodeMetadata_Test) { // NOLINT(cert-err58-cpp)
@@ -174,6 +183,10 @@ TEST_F(WireProtocolV1Test, WireProtocolV1Test_EncodeMetadata_Test) { // NOLINT(c
     for (int i = 0; i < 12; i++) {
         ASSERT_EQ(((unsigned char*) data)[i], exp[i]);
     }
+
+    celix_properties_destroy(message.metadata.metadata);
+    free(data);
+    pubsubProtocol_destroy(wireprotocol)
 }
 
 TEST_F(WireProtocolV1Test, WireProtocolV1Test_DecodeMetadata_Test) { // NOLINT(cert-err58-cpp)
@@ -192,6 +205,10 @@ TEST_F(WireProtocolV1Test, WireProtocolV1Test_DecodeMetadata_Test) { // NOLINT(c
     ASSERT_EQ(1, celix_properties_size(message.metadata.metadata));
     const char * value = celix_properties_get(message.metadata.metadata, "a", nullptr);
     ASSERT_STREQ("b", value);
+
+    celix_properties_destroy(message.metadata.metadata);
+
+    pubsubProtocol_destroy(wireprotocol);
 }
 
 TEST_F(WireProtocolV1Test, WireProtocolV1Test_DecodeMetadata_EmptyKey_Test) { // NOLINT(cert-err58-cpp)
@@ -210,6 +227,9 @@ TEST_F(WireProtocolV1Test, WireProtocolV1Test_DecodeMetadata_EmptyKey_Test) { //
     ASSERT_EQ(1, celix_properties_size(message.metadata.metadata));
     const char * value = celix_properties_get(message.metadata.metadata, "", nullptr);
     ASSERT_STREQ("b", value);
+
+    celix_properties_destroy(message.metadata.metadata);
+    pubsubProtocol_destroy(wireprotocol);
 }
 
 TEST_F(WireProtocolV1Test, WireProtocolV1Test_DecodeMetadata_SpecialChars_Test) { // NOLINT(cert-err58-cpp)
@@ -228,5 +248,8 @@ TEST_F(WireProtocolV1Test, WireProtocolV1Test_DecodeMetadata_SpecialChars_Test) 
     ASSERT_EQ(1, celix_properties_size(message.metadata.metadata));
     const char * value = celix_properties_get(message.metadata.metadata, "a,:l", nullptr);
     ASSERT_STREQ("b", value);
+
+    celix_properties_destroy(message.metadata.metadata);
+    pubsubProtocol_destroy(wireprotocol);
 }
 
