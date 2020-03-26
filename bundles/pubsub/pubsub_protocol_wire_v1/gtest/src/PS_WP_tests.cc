@@ -163,7 +163,7 @@ TEST_F(WireProtocolV1Test, WireProtocolV1Test_EncodeMetadata_Test) { // NOLINT(c
     celix_status_t status = pubsubProtocol_encodeMetadata(nullptr, &message, &data, &length);
 
     unsigned char exp[12];
-    uint32_t s = 1;
+    uint32_t s = htonl(1);
     memcpy(exp, &s, sizeof(uint32_t));
     memcpy(exp + 4, "1:a,1:b,", 8);
 
@@ -179,7 +179,7 @@ TEST_F(WireProtocolV1Test, WireProtocolV1Test_DecodeMetadata_Test) { // NOLINT(c
     pubsubProtocol_create(&wireprotocol);
 
     unsigned char exp[12];
-    uint32_t s = 1;
+    uint32_t s = htonl(1);
     memcpy(exp, &s, sizeof(uint32_t));
     memcpy(exp + 4, "1:a,1:b,", 8);
 
@@ -197,7 +197,7 @@ TEST_F(WireProtocolV1Test, WireProtocolV1Test_DecodeMetadata_EmptyKey_Test) { //
     pubsubProtocol_create(&wireprotocol);
 
     unsigned char exp[11];
-    uint32_t s = 1;
+    uint32_t s = htonl(1);
     memcpy(exp, &s, sizeof(uint32_t));
     memcpy(exp + 4, "0:,1:b,", 7);
 
@@ -215,7 +215,7 @@ TEST_F(WireProtocolV1Test, WireProtocolV1Test_DecodeMetadata_SpecialChars_Test) 
     pubsubProtocol_create(&wireprotocol);
 
     unsigned char exp[15];
-    uint32_t s = 1;
+    uint32_t s = htonl(1);
     memcpy(exp, &s, sizeof(uint32_t));
     memcpy(exp + 4, "4:a,:l,1:b,", 11);
 
