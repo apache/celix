@@ -18,6 +18,8 @@
  */
 
 #include <sstream>
+#include <arpa/inet.h>
+
 #include <pubsub_wire_protocol_common.h>
 
 #include "gtest/gtest.h"
