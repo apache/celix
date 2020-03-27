@@ -282,7 +282,6 @@ TEST(service_registry, registerServiceListenerHook) {
 	//cleanup
 	array_list_pt destroy_this = (array_list_pt) hashMap_remove(registry->serviceRegistrations, bundle);
 	arrayList_destroy(destroy_this);
-	arrayList_remove(registry->listenerHooks, 0);
 	serviceRegistry_destroy(registry);
 	free(serviceName);
 }
