@@ -633,14 +633,11 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
               entry->msgSer->freeSerializeMsg(entry->msgSer->handle, serializedOutput, serializedOutputLen);
               free(serializedOutput);
             }
-<<<<<<< HEAD
-=======
 
             if (message.metadata.metadata != NULL) {
                 celix_properties_destroy(message.metadata.metadata);
             }
 
->>>>>>> develop
             celixThreadMutex_unlock(&entry->sendLock);
             if (sendOk) {
                 sendCountUpdate = 1;
