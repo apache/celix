@@ -154,57 +154,57 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
     receiver->scope = strndup(scope, 1024 * 1024);
     receiver->topic = strndup(topic, 1024 * 1024);
 
-    long sessions = celix_bundleContext_getPropertyAsLong(ctx, PSA_TCP_MAX_RECV_SESSIONS, PSA_TCP_DEFAULT_MAX_RECV_SESSIONS);
-    long buffer_size = celix_bundleContext_getPropertyAsLong(ctx, PSA_TCP_RECV_BUFFER_SIZE, PSA_TCP_DEFAULT_RECV_BUFFER_SIZE);
-    long timeout = celix_bundleContext_getPropertyAsLong(ctx, PSA_TCP_TIMEOUT, PSA_TCP_DEFAULT_TIMEOUT);
-    const char *staticConnectUrls = celix_properties_get(topicProperties, PUBSUB_TCP_STATIC_CONNECT_URLS, NULL);
-
     /* Check if it's a static endpoint */
-    bool isEndPointTypeClient = false;
-    bool isEndPointTypeServer = false;
-    const char *endPointType = celix_properties_get(topicProperties, PUBSUB_TCP_STATIC_ENDPOINT_TYPE, NULL);
-    if (endPointType != NULL) {
-        if (strncmp(PUBSUB_TCP_STATIC_ENDPOINT_TYPE_CLIENT, endPointType, strlen(PUBSUB_TCP_STATIC_ENDPOINT_TYPE_CLIENT)) == 0) {
-            isEndPointTypeClient = true;
-        }
-        if (strncmp(PUBSUB_TCP_STATIC_ENDPOINT_TYPE_SERVER, endPointType, strlen(PUBSUB_TCP_STATIC_ENDPOINT_TYPE_SERVER)) == 0) {
-            isEndPointTypeServer = true;
+    const char *staticClientEndPointUrls = NULL;
+    const char *staticServerEndPointUrls = NULL;
+    const char *staticConnectUrls = NULL;
+    if (topicProperties != NULL) {
+        staticConnectUrls = celix_properties_get(topicProperties, PUBSUB_TCP_STATIC_CONNECT_URLS, NULL);
+        const char *endPointType = celix_properties_get(topicProperties, PUBSUB_TCP_STATIC_ENDPOINT_TYPE, NULL);
+        if (endPointType != NULL) {
+            if (strncmp(PUBSUB_TCP_STATIC_ENDPOINT_TYPE_CLIENT, endPointType, strlen(PUBSUB_TCP_STATIC_ENDPOINT_TYPE_CLIENT)) == 0) {
+                staticClientEndPointUrls = staticConnectUrls;
+            }
+            if (strncmp(PUBSUB_TCP_STATIC_ENDPOINT_TYPE_SERVER, endPointType, strlen(PUBSUB_TCP_STATIC_ENDPOINT_TYPE_SERVER)) == 0) {
+                staticServerEndPointUrls = celix_properties_get(topicProperties, PUBSUB_TCP_STATIC_BIND_URL, NULL);
+            }
         }
     }
     // Set receiver connection thread timeout.
     // property is in ms, timeout value in us. (convert ms to us).
     receiver->timeout =  celix_bundleContext_getPropertyAsLong(ctx, PSA_TCP_SUBSCRIBER_CONNECTION_TIMEOUT, PSA_TCP_SUBSCRIBER_CONNECTION_DEFAULT_TIMEOUT) * 1000;
-    // When endpoint is server, use the bind url as a key.
-    const char *staticBindUrl = ((topicProperties != NULL) && isEndPointTypeServer) ? celix_properties_get(topicProperties, PUBSUB_TCP_STATIC_BIND_URL, NULL) : NULL;
-    /* When it's an endpoint share the socket with the receiver */
-    if (staticBindUrl != NULL || (isEndPointTypeClient && staticConnectUrls != NULL)) {
+    /* When it's an endpoint share the socket with the sender */
+    if ((staticClientEndPointUrls != NULL) || (staticServerEndPointUrls)) {
         celixThreadMutex_lock(&endPointStore->mutex);
-        pubsub_tcpHandler_t *entry = hashMap_get(endPointStore->map, (isEndPointTypeServer) ? staticBindUrl : staticConnectUrls);
-        if (entry != NULL) {
+        const char* endPointUrl = (staticServerEndPointUrls) ? staticServerEndPointUrls : staticClientEndPointUrls;
+        pubsub_tcpHandler_t *entry = hashMap_get(endPointStore->map, endPointUrl);
+        if (entry == NULL) {
+            if (receiver->socketHandler == NULL)  receiver->socketHandler = pubsub_tcpHandler_create(receiver->protocol, receiver->logHelper);
+            entry = receiver->socketHandler;
+            receiver->sharedSocketHandler = receiver->socketHandler;
+            hashMap_put(endPointStore->map, (void *) endPointUrl, entry);
+        } else {
             receiver->socketHandler = entry;
             receiver->sharedSocketHandler = entry;
-        } else {
-            L_ERROR("[PSA_TCP] Cannot find static Endpoint URL for %s/%s", scope, topic);
         }
         celixThreadMutex_unlock(&endPointStore->mutex);
-    }
-
-    if (receiver->socketHandler == NULL) {
-        receiver->socketHandler = pubsub_tcpHandler_create(receiver->protocol,receiver->logHelper);
+    } else {
+        receiver->socketHandler = pubsub_tcpHandler_create(receiver->protocol, receiver->logHelper);
     }
 
     if (receiver->socketHandler != NULL) {
-        pubsub_tcpHandler_createReceiveBufferStore(receiver->socketHandler, (unsigned int) sessions, (unsigned int) buffer_size);
-        pubsub_tcpHandler_setTimeout(receiver->socketHandler, (unsigned int) timeout);
-        pubsub_tcpHandler_addMessageHandler(receiver->socketHandler, receiver, processMsg);
-        pubsub_tcpHandler_addReceiverConnectionCallback(receiver->socketHandler, receiver, psa_tcp_connectHandler, psa_tcp_disConnectHandler);
-    }
-
-    if (topicProperties != NULL) {
         long prio         = celix_properties_getAsLong(topicProperties, PUBSUB_TCP_THREAD_REALTIME_PRIO, -1L);
         const char *sched = celix_properties_get(topicProperties, PUBSUB_TCP_THREAD_REALTIME_SCHED, NULL);
         long retryCnt     = celix_properties_getAsLong(topicProperties, PUBSUB_TCP_SUBSCRIBER_RETRY_CNT_KEY, PUBSUB_TCP_SUBSCRIBER_RETRY_CNT_DEFAULT);
         double rcvTimeout = celix_properties_getAsDouble(topicProperties, PUBSUB_TCP_SUBSCRIBER_RCVTIMEO_KEY, PUBSUB_TCP_SUBSCRIBER_RCVTIMEO_DEFAULT);
+        long sessions = celix_bundleContext_getPropertyAsLong(ctx, PSA_TCP_MAX_RECV_SESSIONS, PSA_TCP_DEFAULT_MAX_RECV_SESSIONS);
+        long buffer_size = celix_bundleContext_getPropertyAsLong(ctx, PSA_TCP_RECV_BUFFER_SIZE, PSA_TCP_DEFAULT_RECV_BUFFER_SIZE);
+        long timeout = celix_bundleContext_getPropertyAsLong(ctx, PSA_TCP_TIMEOUT, PSA_TCP_DEFAULT_TIMEOUT);
+        pubsub_tcpHandler_setThreadName(receiver->socketHandler, topic, scope);
+        pubsub_tcpHandler_createReceiveBufferStore(receiver->socketHandler, (unsigned int) sessions, (unsigned int) buffer_size);
+        pubsub_tcpHandler_setTimeout(receiver->socketHandler, (unsigned int) timeout);
+        pubsub_tcpHandler_addMessageHandler(receiver->socketHandler, receiver, processMsg);
+        pubsub_tcpHandler_addReceiverConnectionCallback(receiver->socketHandler, receiver, psa_tcp_connectHandler, psa_tcp_disConnectHandler);
         pubsub_tcpHandler_setThreadPriority(receiver->socketHandler, prio, sched);
         pubsub_tcpHandler_setReceiveRetryCnt(receiver->socketHandler, (unsigned int) retryCnt);
         pubsub_tcpHandler_setReceiveTimeOut(receiver->socketHandler, rcvTimeout);
@@ -220,7 +220,7 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
     receiver->requestedConnections.map = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
     receiver->requestedConnections.allConnected = false;
 
-    if ((staticConnectUrls != NULL) && (receiver->socketHandler != NULL) && (staticBindUrl == NULL)) {
+    if ((staticConnectUrls != NULL) && (receiver->socketHandler != NULL) && (staticServerEndPointUrls == NULL)) {
       char *urlsCopy = strndup(staticConnectUrls, 1024 * 1024);
       char *url;
       char *save = urlsCopy;

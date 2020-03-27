@@ -32,6 +32,8 @@ typedef struct pubsub_utils_url {
   unsigned int portnr;
   char *uri;
   char *interface;
+  unsigned int interface_portnr;
+  char *interface_url;
 } pubsub_utils_url_t;
 
 

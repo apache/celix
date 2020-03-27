@@ -60,6 +60,7 @@
 // Entry administration
 //
 typedef struct psa_tcp_connection_entry {
+    char *interface_url;
     char *url;
     int fd;
     struct sockaddr_in addr;
@@ -115,7 +116,7 @@ struct pubsub_tcpHandler {
 static inline int pubsub_tcpHandler_closeConnectionEntry(pubsub_tcpHandler_t *handle, psa_tcp_connection_entry_t *entry, bool lock);
 static inline int pubsub_tcpHandler_closeInterfaceEntry(pubsub_tcpHandler_t *handle, psa_tcp_connection_entry_t *entry);
 static inline int pubsub_tcpHandler_makeNonBlocking(pubsub_tcpHandler_t *handle, int fd);
-static inline psa_tcp_connection_entry_t *pubsub_tcpHandler_createEntry(pubsub_tcpHandler_t *handle, int fd, char *url, struct sockaddr_in* addr);
+static inline psa_tcp_connection_entry_t *pubsub_tcpHandler_createEntry(pubsub_tcpHandler_t *handle, int fd, char *url, char *external_url, struct sockaddr_in* addr);
 static inline void pubsub_tcpHandler_freeEntry(psa_tcp_connection_entry_t *entry);
 static inline void pubsub_tcpHandler_releaseEntryBuffer(pubsub_tcpHandler_t *handle, int fd, unsigned int index);
 static inline void pubsub_tcpHandler_readHandler( pubsub_tcpHandler_t *handle, int fd);
@@ -274,12 +275,17 @@ int pubsub_tcpHandler_close(pubsub_tcpHandler_t *handle, int fd) {
 // Create connection/interface entry
 //
 static inline psa_tcp_connection_entry_t *
-pubsub_tcpHandler_createEntry(pubsub_tcpHandler_t *handle, int fd, char *url, struct sockaddr_in* addr) {
+pubsub_tcpHandler_createEntry(pubsub_tcpHandler_t *handle, int fd, char *url, char *interface_url, struct sockaddr_in* addr) {
   psa_tcp_connection_entry_t *entry = NULL;
   if (fd >= 0) {
     entry = calloc(sizeof(psa_tcp_connection_entry_t), 1);
     entry->fd = fd;
     if (url) entry->url = strndup(url, 1024 * 1024);
+    if (interface_url) {
+        entry->interface_url = strndup(interface_url, 1024 * 1024);
+    } else {
+        if (url) entry->interface_url = strndup(url, 1024 * 1024);
+    }
     if (addr) entry->addr = *addr;
     entry->len = sizeof(struct sockaddr_in);
     size_t size = 0;
@@ -322,6 +328,10 @@ pubsub_tcpHandler_freeEntry(psa_tcp_connection_entry_t *entry) {
       free(entry->url);
       entry->url = NULL;
     }
+      if (entry->interface_url) {
+          free(entry->interface_url);
+          entry->interface_url = NULL;
+      }
     if (entry->fd >= 0) {
       close(entry->fd);
       entry->fd = -1;
@@ -360,7 +370,7 @@ int pubsub_tcpHandler_connect(pubsub_tcpHandler_t *handle, char *url) {
       hashMap_get(handle->connection_url_map, (void *)(intptr_t)url);
   if (entry == NULL) {
     pubsub_utils_url_t *url_info = pubsub_utils_url_parse(url);
-    int fd = pubsub_tcpHandler_open(handle, NULL);
+    int fd = pubsub_tcpHandler_open(handle,  url_info->interface_url);
     rc = fd;
     // Connect to sender
     struct sockaddr_in *addr = pubsub_utils_url_getInAddr(url_info->hostname, url_info->portnr);
@@ -373,7 +383,9 @@ int pubsub_tcpHandler_connect(pubsub_tcpHandler_t *handle, char *url) {
         struct sockaddr_in sin;
         socklen_t len = sizeof(sin);
         rc = getsockname(fd, (struct sockaddr *)&sin, &len);
-        entry = pubsub_tcpHandler_createEntry(handle, fd, url, &sin);
+        char* interface_url = pubsub_utils_url_get_url(&sin, NULL);
+        entry = pubsub_tcpHandler_createEntry(handle, fd, url, interface_url, &sin);
+        free(interface_url);
       }
     }
     // Subscribe File Descriptor to epoll
@@ -500,7 +512,7 @@ int pubsub_tcpHandler_listen(pubsub_tcpHandler_t *handle, char *url) {
     struct sockaddr_in *sin = pubsub_utils_url_from_fd(fd);
     // Make handler fd entry
     char* pUrl = pubsub_utils_url_get_url(sin, protocol);
-    entry = pubsub_tcpHandler_createEntry(handle, fd, pUrl, sin);
+    entry = pubsub_tcpHandler_createEntry(handle, fd, pUrl, NULL, sin);
     entry->connected = true;
     free(pUrl);
     celixThreadRwlock_writeLock(&handle->dbLock);
@@ -1006,8 +1018,11 @@ void pubsub_tcpHandler_acceptHandler( pubsub_tcpHandler_t *handle, psa_tcp_conne
         // handle new connection:
         struct epoll_event event;
         bzero(&event, sizeof(event)); // zero the struct
+        struct sockaddr_in sin;
+        getsockname(pendingConnectionEntry->fd, (struct sockaddr *)&sin, &len);
+        char* interface_url = pubsub_utils_url_get_url(&sin, NULL);
         char *url = pubsub_utils_url_get_url(&their_addr, NULL);
-        psa_tcp_connection_entry_t *entry = pubsub_tcpHandler_createEntry(handle, fd, url, &their_addr);
+        psa_tcp_connection_entry_t *entry = pubsub_tcpHandler_createEntry(handle, fd, url, interface_url, &their_addr);
         event.events = EPOLLIN | EPOLLRDHUP | EPOLLERR | EPOLLOUT;
         event.data.fd = entry->fd;
         // Register Read to epoll
@@ -1024,6 +1039,7 @@ void pubsub_tcpHandler_acceptHandler( pubsub_tcpHandler_t *handle, psa_tcp_conne
             L_INFO("[TCP Socket] New connection to url: %s: \n", url);
         }
         free(url);
+        free(interface_url);
     }
     celixThreadRwlock_unlock(&handle->dbLock);
 }

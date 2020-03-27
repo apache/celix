@@ -137,53 +137,60 @@ pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
     if (uuid != NULL) {
         uuid_parse(uuid, sender->fwUUID);
     }
-    bool isEndPointTypeClient = false;
-    bool isEndPointTypeServer = false;
-    pubsub_tcpHandler_setThreadName(sender->socketHandler, topic, scope);
     sender->metricsEnabled   = celix_bundleContext_getPropertyAsBool(ctx, PSA_TCP_METRICS_ENABLED, PSA_TCP_DEFAULT_METRICS_ENABLED);
-    sender->socketHandler = pubsub_tcpHandler_create(sender->protocol, sender->logHelper);
     char* urls = NULL;
     const char *ip = celix_bundleContext_getProperty(ctx, PUBSUB_TCP_PSA_IP_KEY , NULL);
-    const char* discUrl = (topicProperties != NULL) ? celix_properties_get(topicProperties, PUBSUB_TCP_STATIC_DISCOVER_URL, NULL) : NULL;
+    const char* discUrl = NULL;
+    const char *staticClientEndPointUrls = NULL;
+    const char *staticServerEndPointUrls = NULL;
     if (topicProperties != NULL) {
+        discUrl = celix_properties_get(topicProperties, PUBSUB_TCP_STATIC_DISCOVER_URL, NULL);
+        /* Check if it's a static endpoint */
+        const char *endPointType = celix_properties_get(topicProperties, PUBSUB_TCP_STATIC_ENDPOINT_TYPE, NULL);
+        if (endPointType != NULL) {
+            if (strncmp(PUBSUB_TCP_STATIC_ENDPOINT_TYPE_CLIENT, endPointType, strlen(PUBSUB_TCP_STATIC_ENDPOINT_TYPE_CLIENT)) == 0) {
+                staticClientEndPointUrls = celix_properties_get(topicProperties, PUBSUB_TCP_STATIC_CONNECT_URLS, NULL);
+            }
+            if (strncmp(PUBSUB_TCP_STATIC_ENDPOINT_TYPE_SERVER, endPointType, strlen(PUBSUB_TCP_STATIC_ENDPOINT_TYPE_SERVER)) == 0) {
+                staticServerEndPointUrls = discUrl;
+            }
+        }
+    }
+
+    /* When it's an endpoint share the socket with the receiver */
+    if ((staticClientEndPointUrls != NULL) || (staticServerEndPointUrls)) {
+        celixThreadMutex_lock(&endPointStore->mutex);
+        const char* endPointUrl = (staticClientEndPointUrls) ? staticClientEndPointUrls : staticServerEndPointUrls;
+        pubsub_tcpHandler_t *entry = hashMap_get(endPointStore->map, endPointUrl);
+        if (entry == NULL) {
+            if (sender->socketHandler == NULL)  sender->socketHandler = pubsub_tcpHandler_create(sender->protocol, sender->logHelper);
+            entry = sender->socketHandler;
+            sender->sharedSocketHandler = sender->socketHandler;
+            hashMap_put(endPointStore->map, (void *) endPointUrl, entry);
+        } else {
+            sender->socketHandler = entry;
+            sender->sharedSocketHandler = entry;
+        }
+        celixThreadMutex_unlock(&endPointStore->mutex);
+    } else {
+        sender->socketHandler = pubsub_tcpHandler_create(sender->protocol, sender->logHelper);
+    }
+
+    if ((sender->socketHandler != NULL) && (topicProperties != NULL)) {
         long prio         = celix_properties_getAsLong(topicProperties, PUBSUB_TCP_THREAD_REALTIME_PRIO, -1L);
         const char *sched = celix_properties_get(topicProperties, PUBSUB_TCP_THREAD_REALTIME_SCHED, NULL);
         long retryCnt     = celix_properties_getAsLong(topicProperties, PUBSUB_TCP_PUBLISHER_RETRY_CNT_KEY, PUBSUB_TCP_PUBLISHER_RETRY_CNT_DEFAULT);
         double timeout    = celix_properties_getAsDouble(topicProperties, PUBSUB_TCP_PUBLISHER_SNDTIMEO_KEY, PUBSUB_TCP_PUBLISHER_SNDTIMEO_DEFAULT);
+        pubsub_tcpHandler_setThreadName(sender->socketHandler, topic, scope);
         pubsub_tcpHandler_setThreadPriority(sender->socketHandler, prio, sched);
         pubsub_tcpHandler_setSendRetryCnt(sender->socketHandler, (unsigned int) retryCnt);
         pubsub_tcpHandler_setSendTimeOut(sender->socketHandler, timeout);
-        /* Check if it's a static endpoint */
-    const char *endPointType = celix_properties_get(topicProperties, PUBSUB_TCP_STATIC_ENDPOINT_TYPE, NULL);
-    if (endPointType != NULL) {
-        if (strncmp(PUBSUB_TCP_STATIC_ENDPOINT_TYPE_CLIENT, endPointType, strlen(PUBSUB_TCP_STATIC_ENDPOINT_TYPE_CLIENT)) == 0) {
-            isEndPointTypeClient = true;
-        }
-        if (strncmp(PUBSUB_TCP_STATIC_ENDPOINT_TYPE_SERVER, endPointType, strlen(PUBSUB_TCP_STATIC_ENDPOINT_TYPE_SERVER)) == 0) {
-            isEndPointTypeServer = true;
-        }
-    }
-    }
-
-    // When endpoint is client, use the connection urls as a key.
-    const char *staticConnectUrls = ((topicProperties != NULL) && isEndPointTypeClient) ? celix_properties_get(topicProperties, PUBSUB_TCP_STATIC_CONNECT_URLS, NULL) : NULL;
-
-    /* When it's an endpoint share the socket with the receiver */
-    if (staticConnectUrls != NULL || (isEndPointTypeServer && discUrl != NULL)) {
-        celixThreadMutex_lock(&endPointStore->mutex);
-        sender->sharedSocketHandler = sender->socketHandler;
-        pubsub_tcpHandler_t *entry = hashMap_get(endPointStore->map, staticConnectUrls);
-        if (entry == NULL) {
-            entry = sender->socketHandler;
-            hashMap_put(endPointStore->map, (void *) (isEndPointTypeClient ? staticConnectUrls : discUrl), entry);
-        }
-        celixThreadMutex_unlock(&endPointStore->mutex);
     }
 
     //setting up tcp socket for TCP TopicSender
-    if (staticConnectUrls != NULL) {
+    if (staticClientEndPointUrls != NULL) {
       // Store url for client static endpoint
-      sender->url = strndup(staticConnectUrls, 1024 * 1024);
+      sender->url = strndup(staticClientEndPointUrls, 1024 * 1024);
       sender->isStatic = true;
     } else if (discUrl != NULL) {
       urls = strndup(discUrl, 1024 * 1024);
