@@ -248,6 +248,7 @@ extern "C" {
         CHECK_EQUAL(0, rc);
 
         dynFunction_destroy(dynFunc);
+        free(a2);
     }
 
 

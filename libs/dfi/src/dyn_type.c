@@ -806,7 +806,7 @@ void dynType_simple_setValue(dyn_type *type, void *inst, void *in) {
     memcpy(inst, in, size);
 }
 
-int dynType_descriptorType(dyn_type *type) {
+char dynType_descriptorType(dyn_type *type) {
     return type->descriptor;
 }
 

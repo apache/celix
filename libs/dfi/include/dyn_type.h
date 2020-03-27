@@ -215,7 +215,7 @@ int dynType_type(dyn_type *type);
  * @param type  The dyn type
  * @return      The descriptor of the dyn type.
  */
-int dynType_descriptorType(dyn_type *type);
+char dynType_descriptorType(dyn_type *type);
 
 /**
  * Get the dyn type meta information for the provided name.
