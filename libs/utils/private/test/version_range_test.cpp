@@ -145,11 +145,6 @@ TEST(version_range, isInRange) {
         low->minor = 2;
         low->micro = 3;
 
-        version_pt high = (version_pt) calloc(1, sizeof(*high));
-        high->major = 1;
-        high->minor = 2;
-        high->micro = 3;
-
         LONGS_EQUAL(CELIX_SUCCESS, versionRange_createVersionRange(low, true, NULL, true, &range));
         LONGS_EQUAL(CELIX_SUCCESS, versionRange_isInRange(range, version, &result));
         LONGS_EQUAL(true, result);
@@ -242,6 +237,7 @@ TEST(version_range, parse) {
     LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, versionRange_parse(version, &range));
 
     free(version);
+
     free(high);
     free(low);
 }
@@ -266,6 +262,7 @@ TEST(version_range, createLdapFilterInclusiveBoth) {
     STRCMP_EQUAL(filter, "(&(service.version>=1.2.3)(service.version<=1.2.3))");
 
     versionRange_destroy(range);
+    free(filter);
 }
 
 TEST(version_range, createLdapFilterInclusiveLow) {
@@ -288,6 +285,7 @@ TEST(version_range, createLdapFilterInclusiveLow) {
     STRCMP_EQUAL(filter, "(&(service.version>1.2.3)(service.version<=1.2.3))");
 
     versionRange_destroy(range);
+    free(filter);
 }
 
 TEST(version_range, createLdapFilterInclusiveHigh) {
@@ -310,6 +308,7 @@ TEST(version_range, createLdapFilterInclusiveHigh) {
     STRCMP_EQUAL(filter, "(&(service.version>=1.2.3)(service.version<1.2.3))");
 
     versionRange_destroy(range);
+    free(filter);
 }
 
 TEST(version_range, createLdapFilterExclusiveBoth) {
@@ -332,6 +331,7 @@ TEST(version_range, createLdapFilterExclusiveBoth) {
     STRCMP_EQUAL(filter, "(&(service.version>1.2.3)(service.version<1.2.3))");
 
     versionRange_destroy(range);
+    free(filter);
 }
 
 TEST(version_range, createLdapFilterInfinite) {
@@ -348,6 +348,7 @@ TEST(version_range, createLdapFilterInfinite) {
     STRCMP_EQUAL(filter, "(&(service.version>=1.2.3))");
 
     versionRange_destroy(range);
+    free(filter);
 }
 
 TEST(version_range, createLdapFilterInPlaceInclusiveBoth) {

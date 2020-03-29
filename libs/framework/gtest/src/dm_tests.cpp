@@ -17,18 +17,17 @@
  * under the License.
  */
 
+#include <gtest/gtest.h>
+
 #include "celix_api.h"
 
-#include <CppUTest/TestHarness.h>
-#include <CppUTest/CommandLineTestRunner.h>
+class DepenencyManagerTests : public ::testing::Test {
+public:
+    celix_framework_t* fw = nullptr;
+    celix_bundle_context_t *ctx = nullptr;
+    celix_properties_t *properties = nullptr;
 
-
-TEST_GROUP(DepenencyManagerTests) {
-    framework_t* fw = nullptr;
-    bundle_context_t *ctx = nullptr;
-    properties_t *properties = nullptr;
-
-    void setup() {
+    DepenencyManagerTests() {
         properties = properties_create();
         properties_set(properties, "LOGHELPER_ENABLE_STDOUT_FALLBACK", "true");
         properties_set(properties, "org.osgi.framework.storage.clean", "onFirstInit");
@@ -38,27 +37,32 @@ TEST_GROUP(DepenencyManagerTests) {
         ctx = framework_getContext(fw);
     }
 
-    void teardown() {
+    ~DepenencyManagerTests() override {
         celix_frameworkFactory_destroyFramework(fw);
     }
+
+    DepenencyManagerTests(DepenencyManagerTests&&) = delete;
+    DepenencyManagerTests(const DepenencyManagerTests&) = delete;
+    DepenencyManagerTests& operator=(DepenencyManagerTests&&) = delete;
+    DepenencyManagerTests& operator=(const DepenencyManagerTests&) = delete;
 };
 
-TEST(DepenencyManagerTests, DmCreateComponent) {
+TEST_F(DepenencyManagerTests, DmCreateComponent) {
     auto *mng = celix_bundleContext_getDependencyManager(ctx);
     auto *cmp = celix_dmComponent_create(ctx, "test1");
     celix_dependencyManager_add(mng, cmp);
 
-    CHECK_EQUAL(1, celix_dependencyManager_nrOfComponents(mng));
-    CHECK_TRUE(celix_dependencyManager_allComponentsActive(mng));
+    ASSERT_EQ(1, celix_dependencyManager_nrOfComponents(mng));
+    ASSERT_TRUE(celix_dependencyManager_allComponentsActive(mng));
 
     cmp = celix_dmComponent_create(ctx, "test2");
     celix_dependencyManager_add(mng, cmp);
 
-    CHECK_EQUAL(2, celix_dependencyManager_nrOfComponents(mng));
-    CHECK_TRUE(celix_dependencyManager_allComponentsActive(mng));
+    ASSERT_EQ(2, celix_dependencyManager_nrOfComponents(mng));
+    ASSERT_TRUE(celix_dependencyManager_allComponentsActive(mng));
 }
 
-TEST(DepenencyManagerTests, TestCheckActive) {
+TEST_F(DepenencyManagerTests, TestCheckActive) {
     auto *mng = celix_bundleContext_getDependencyManager(ctx);
     auto *cmp = celix_dmComponent_create(ctx, "test1");
 
@@ -69,5 +73,5 @@ TEST(DepenencyManagerTests, TestCheckActive) {
 
 
     celix_dependencyManager_add(mng, cmp);
-    CHECK_FALSE(celix_dependencyManager_areComponentsActive(mng));
+    ASSERT_FALSE(celix_dependencyManager_areComponentsActive(mng));
 }

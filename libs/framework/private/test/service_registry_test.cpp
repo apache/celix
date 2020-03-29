@@ -44,14 +44,6 @@ extern "C" {
 
 framework_logger_pt logger = (framework_logger_pt) 0x42;
 
-void serviceRegistryTest_serviceChanged(framework_pt framework, celix_service_event_type_t eventType, service_registration_pt registration, properties_pt oldprops) {
-	mock_c()->actualCall("serviceRegistryTest_serviceChanged")
-			->withPointerParameters("framework", framework)
-			->withIntParameters("eventType", eventType)
-			->withPointerParameters("registration", registration)
-			->withPointerParameters("oldprops", oldprops);
-}
-
 static char* my_strdup(const char* s) {
 	if (s == NULL) {
 		return NULL;
@@ -75,7 +67,6 @@ static int registry_callback_t_isEqual(const void* object1, const void* object2)
 	registry_callback_t callback2 = *(registry_callback_t*) object2;
 	return 	callback1.getUsingBundles == callback2.getUsingBundles &&
        		callback1.handle == callback2.handle &&
-       		callback1.modified == callback2.modified &&
        		callback1.unregister == callback2.unregister;
 }
 
@@ -83,7 +74,7 @@ static const char * registry_callback_t_toString(const void* object)
 {
 	char buff[512];
 	registry_callback_t callback = *(registry_callback_t*) object;
-	snprintf(buff, 512, "getUsingBundles: %p, handle: %p, modified: %p, unregister: %p", callback.getUsingBundles, callback.handle, callback.modified, callback.unregister);
+	snprintf(buff, 512, "getUsingBundles: %p, handle: %p, unregister: %p", callback.getUsingBundles, callback.handle, callback.unregister);
 
 	return my_strdup(buff);
 }
@@ -110,10 +101,9 @@ TEST(service_registry, create) {
 	framework_pt framework = (framework_pt) 0x10;
 	service_registry_pt registry = NULL;
 
-	serviceRegistry_create(framework, serviceRegistryTest_serviceChanged, &registry);
+	serviceRegistry_create(framework, &registry);
 
 	POINTERS_EQUAL(framework, registry->framework);
-	POINTERS_EQUAL(serviceRegistryTest_serviceChanged, registry->serviceChanged);
 	UNSIGNED_LONGS_EQUAL(1UL, registry->currentServiceId);
 	CHECK(registry->listenerHooks != NULL);
 	CHECK(registry->serviceReferences != NULL);
@@ -125,7 +115,7 @@ TEST(service_registry, create) {
 TEST(service_registry, getRegisteredServices) {
 	service_registry_pt registry = NULL;
 	framework_pt framework = (framework_pt) 0x01;
-	serviceRegistry_create(framework,serviceRegistryTest_serviceChanged, &registry);
+	serviceRegistry_create(framework, &registry);
 	array_list_pt registrations = NULL;
 	arrayList_create(&registrations);
 	service_registration_pt reg = (service_registration_pt) calloc(1,sizeof(struct serviceRegistration));
@@ -138,6 +128,8 @@ TEST(service_registry, getRegisteredServices) {
 	service_reference_pt ref = (service_reference_pt) 0x30;
 	hashMap_put(usages, (void*)reg->serviceId, ref);
 	hashMap_put(registry->serviceReferences, bundle, usages);
+
+    mock().expectNCalls(1,"framework_log");
 
 	mock()
 		.expectOneCall("serviceRegistration_isValid")
@@ -163,7 +155,7 @@ TEST(service_registry, getRegisteredServices) {
 TEST(service_registry, getServicesInUse) {
 	service_registry_pt registry = NULL;
 	framework_pt framework = (framework_pt) 0x01;
-	serviceRegistry_create(framework,serviceRegistryTest_serviceChanged, &registry);
+	serviceRegistry_create(framework, &registry);
 
 	hash_map_pt usages = hashMap_create(NULL, NULL, NULL, NULL);
 	bundle_pt bundle = (bundle_pt) 0x10;
@@ -171,6 +163,8 @@ TEST(service_registry, getServicesInUse) {
 	service_registration_pt reg = (service_registration_pt) 0x30;
 	hashMap_put(usages, reg, ref);
 	hashMap_put(registry->serviceReferences, bundle, usages);
+
+    mock().expectNCalls(1,"framework_log");
 
 	array_list_pt inUse = NULL;
 	serviceRegistry_getServicesInUse(registry, bundle, &inUse);
@@ -185,7 +179,7 @@ TEST(service_registry, getServicesInUse) {
 TEST(service_registry, registerServiceNoProps) {
 	service_registry_pt registry = NULL;
 	framework_pt framework = (framework_pt) 0x01;
-	serviceRegistry_create(framework,serviceRegistryTest_serviceChanged, &registry);
+	serviceRegistry_create(framework, &registry);
 
 	bundle_pt bundle = (bundle_pt) 0x10;
 	char * serviceName = my_strdup("service");
@@ -202,11 +196,9 @@ TEST(service_registry, registerServiceNoProps) {
 		.withParameter("dictionary", (void *) NULL)
 		.andReturnValue(reg);
 
-	mock().expectOneCall("serviceRegistryTest_serviceChanged")
-			.withParameter("framework", framework)
-			.withParameter("eventType", OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED)
-			.withParameter("registration", reg)
-			.withParameter("oldprops", (void*)NULL);
+    mock().expectNCalls(1,"serviceRegistration_getServiceId")
+            .withParameter("registration", reg)
+            .andReturnValue(42);
 
 	service_registration_pt registration = NULL;
 	serviceRegistry_registerService(registry, bundle, serviceName, service, NULL, &registration);
@@ -221,7 +213,7 @@ TEST(service_registry, registerServiceNoProps) {
 TEST(service_registry, registerServiceFactoryNoProps) {
 	service_registry_pt registry = NULL;
 	framework_pt framework = (framework_pt) 0x01;
-	serviceRegistry_create(framework,serviceRegistryTest_serviceChanged, &registry);
+	serviceRegistry_create(framework, &registry);
 
 	bundle_pt bundle = (bundle_pt) 0x10;
 	char * serviceName = my_strdup("service");
@@ -239,11 +231,9 @@ TEST(service_registry, registerServiceFactoryNoProps) {
 		.withParameter("dictionary", (void *) NULL)
 		.andReturnValue(reg);
 
-	mock().expectOneCall("serviceRegistryTest_serviceChanged")
-		.withParameter("framework", framework)
-		.withParameter("eventType", OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED)
-		.withParameter("registration", reg)
-		.withParameter("oldprops", (void*)NULL);
+    mock().expectNCalls(1,"serviceRegistration_getServiceId")
+            .withParameter("registration", reg)
+            .andReturnValue(42);
 
 	service_registration_pt registration = NULL;
 	serviceRegistry_registerServiceFactory(registry, bundle, serviceName, factory, NULL, &registration);
@@ -259,7 +249,7 @@ TEST(service_registry, registerServiceFactoryNoProps) {
 TEST(service_registry, registerServiceListenerHook) {
 	service_registry_pt registry = NULL;
 	framework_pt framework = (framework_pt) 0x01;
-	serviceRegistry_create(framework,serviceRegistryTest_serviceChanged, &registry);
+	serviceRegistry_create(framework, &registry);
 
 	bundle_pt bundle = (bundle_pt) 0x10;
 	char * serviceName = my_strdup(OSGI_FRAMEWORK_LISTENER_HOOK_SERVICE_NAME);
@@ -277,13 +267,7 @@ TEST(service_registry, registerServiceListenerHook) {
 		.withParameter("dictionary", (void *) NULL)
 		.andReturnValue(reg);
 
-	mock().expectOneCall("serviceRegistryTest_serviceChanged")
-			.withParameter("framework", framework)
-			.withParameter("eventType", OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED)
-			.withParameter("registration", reg)
-			.withParameter("oldprops", (void*)NULL);
-
-    mock().expectOneCall("serviceRegistration_getServiceId")
+    mock().expectNCalls(2,"serviceRegistration_getServiceId")
             .withParameter("registration", reg)
             .andReturnValue(svcId);
 
@@ -298,7 +282,6 @@ TEST(service_registry, registerServiceListenerHook) {
 	//cleanup
 	array_list_pt destroy_this = (array_list_pt) hashMap_remove(registry->serviceRegistrations, bundle);
 	arrayList_destroy(destroy_this);
-	arrayList_remove(registry->listenerHooks, 0);
 	serviceRegistry_destroy(registry);
 	free(serviceName);
 }
@@ -306,7 +289,7 @@ TEST(service_registry, registerServiceListenerHook) {
 TEST(service_registry, unregisterService) {
 	service_registry_pt registry = NULL;
 	framework_pt framework = (framework_pt) 0x01;
-	serviceRegistry_create(framework,serviceRegistryTest_serviceChanged, &registry);
+	serviceRegistry_create(framework, &registry);
 	bundle_pt bundle = (bundle_pt) 0x10;
 	service_registration_pt registration = (service_registration_pt) calloc(1,sizeof(struct serviceRegistration));
 	registration->serviceId = 20UL;
@@ -323,6 +306,17 @@ TEST(service_registry, unregisterService) {
 	properties_pt properties = (properties_pt) 0x40;
 	long svcId = 12;
 
+    mock().expectNCalls(1,"framework_log");
+
+    char *serviceName = (char *) OSGI_FRAMEWORK_LISTENER_HOOK_SERVICE_NAME;
+
+
+    mock()
+        .expectOneCall("serviceRegistration_getServiceName")
+        .withParameter("registration", registration)
+            .withOutputParameterReturning("serviceName", &serviceName, sizeof(serviceName))
+        .andReturnValue(CELIX_SUCCESS);
+
 	mock()
 		.expectOneCall("serviceRegistration_getProperties")
 		.withParameter("registration", registration)
@@ -334,16 +328,9 @@ TEST(service_registry, unregisterService) {
 		.withParameter("key", (char *)OSGI_FRAMEWORK_OBJECTCLASS)
 		.andReturnValue((char*)OSGI_FRAMEWORK_LISTENER_HOOK_SERVICE_NAME);
 
-    mock().expectOneCall("serviceRegistration_getServiceId")
+    mock().expectNCalls(2,"serviceRegistration_getServiceId")
             .withParameter("registration", registration)
             .andReturnValue(svcId);
-
-	mock()
-		.expectOneCall("serviceRegistryTest_serviceChanged")
-		.withParameter("framework", framework)
-		.withParameter("eventType", OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING)
-		.withParameter("registration", registration)
-		.withParameter("oldprops", (void*) NULL);
 
 	mock()
 		.expectOneCall("serviceReference_invalidate")
@@ -368,7 +355,7 @@ TEST(service_registry, unregisterService) {
 TEST(service_registry, clearServiceRegistrations){
 	service_registry_pt registry = NULL;
 	framework_pt framework = (framework_pt) 0x01;
-	serviceRegistry_create(framework,serviceRegistryTest_serviceChanged, &registry);
+	serviceRegistry_create(framework, &registry);
 	array_list_pt registrations = NULL;
 	arrayList_create(&registrations);
 	service_registration_pt reg = (service_registration_pt) 0x10;
@@ -424,7 +411,7 @@ TEST(service_registry, clearServiceRegistrations){
 TEST(service_registry, getServiceReference){
 	service_registry_pt registry = NULL;
 	framework_pt framework = (framework_pt) 0x01;
-	serviceRegistry_create(framework,serviceRegistryTest_serviceChanged, &registry);
+	serviceRegistry_create(framework, &registry);
 
 	bundle_pt bundle = (bundle_pt) 0x10;
 	service_registration_pt registration = (service_registration_pt) calloc(1,sizeof(struct serviceRegistration));
@@ -434,6 +421,8 @@ TEST(service_registry, getServiceReference){
 	hash_map_pt references = hashMap_create(NULL, NULL, NULL, NULL);
 	hashMap_put(references, (void*)registration->serviceId, reference);
 	hashMap_put(registry->serviceReferences, bundle, references);
+
+    mock().expectNCalls(1,"framework_log");
 
 	mock().expectOneCall("serviceReference_retain")
 			.withParameter("ref", reference);
@@ -451,7 +440,7 @@ TEST(service_registry, getServiceReference){
 TEST(service_registry, getServiceReference_unknownRef){
 	service_registry_pt registry = NULL;
 	framework_pt framework = (framework_pt) 0x01;
-	serviceRegistry_create(framework,serviceRegistryTest_serviceChanged, &registry);
+	serviceRegistry_create(framework, &registry);
 
 	bundle_pt bundle = (bundle_pt) 0x10;
 	service_registration_pt registration = (service_registration_pt) calloc(1,sizeof(struct serviceRegistration));
@@ -485,7 +474,7 @@ TEST(service_registry, getServiceReference_unknownRef){
 TEST(service_registry, getServiceReferences) {
 	service_registry_pt registry = NULL;
 	framework_pt framework = (framework_pt) 0x01;
-	serviceRegistry_create(framework,serviceRegistryTest_serviceChanged, &registry);
+	serviceRegistry_create(framework, &registry);
 
 	bundle_pt bundle = (bundle_pt) 0x10;
 	service_registration_pt registration = (service_registration_pt) calloc(1,sizeof(struct serviceRegistration));
@@ -503,6 +492,8 @@ TEST(service_registry, getServiceReferences) {
 	service_reference_pt reference = (service_reference_pt) 0x50;
 	hashMap_put(references, (void*)registration->serviceId, reference);
 	hashMap_put(registry->serviceReferences, bundle, references);
+
+    mock().expectNCalls(1,"framework_log");
 
 	mock()
 		.expectOneCall("serviceRegistration_retain")
@@ -554,7 +545,7 @@ TEST(service_registry, getServiceReferences) {
 TEST(service_registry, getServiceReferences_noFilterOrName) {
 	service_registry_pt registry = NULL;
 	framework_pt framework = (framework_pt) 0x01;
-	serviceRegistry_create(framework,serviceRegistryTest_serviceChanged, &registry);
+	serviceRegistry_create(framework, &registry);
 
 	bundle_pt bundle = (bundle_pt) 0x10;
 	service_registration_pt registration = (service_registration_pt) calloc(1,sizeof(struct serviceRegistration));
@@ -572,7 +563,9 @@ TEST(service_registry, getServiceReferences_noFilterOrName) {
 	hashMap_put(references, (void*)registration->serviceId, reference);
 	hashMap_put(registry->serviceReferences, bundle, references);
 
-	mock()
+    mock().expectNCalls(1,"framework_log");
+
+    mock()
 		.expectOneCall("serviceRegistration_retain")
 		.withParameter("registration", registration);
 
@@ -611,7 +604,7 @@ TEST(service_registry, getServiceReferences_noFilterOrName) {
 TEST(service_registry, retainServiceReference){
 	service_registry_pt registry = NULL;
 	framework_pt framework = (framework_pt) 0x01;
-	serviceRegistry_create(framework,serviceRegistryTest_serviceChanged, &registry);
+	serviceRegistry_create(framework, &registry);
 
 	service_reference_pt reference = (service_reference_pt) 0x10;
 	bundle_pt bundle = (bundle_pt) 0x20;
@@ -651,7 +644,7 @@ TEST(service_registry, retainServiceReference){
 TEST(service_registry, ungetServiceReference){
 	service_registry_pt registry = NULL;
 	framework_pt framework = (framework_pt) 0x01;
-	serviceRegistry_create(framework,serviceRegistryTest_serviceChanged, &registry);
+	serviceRegistry_create(framework, &registry);
 
 	service_registration_pt registration = (service_registration_pt) 0x10;
 	service_registration_pt registration2 = (service_registration_pt) 0x20;
@@ -661,7 +654,6 @@ TEST(service_registry, ungetServiceReference){
 	service_reference_pt reference3 = (service_reference_pt) 0x60;
 	bundle_pt bundle = (bundle_pt) 0x70;
 	bundle_pt bundle2 = (bundle_pt) 0x80;
-    module_pt module = (module_pt) 0x90;
 
 	hash_map_pt references = hashMap_create(NULL, NULL, NULL, NULL);
 	hashMap_put(references, registration, reference);
@@ -671,9 +663,9 @@ TEST(service_registry, ungetServiceReference){
 	hashMap_put(references2, registration3, reference3);
 	hashMap_put(registry->serviceReferences, bundle2, references2);
 
-	//test unknown reference (reference not present in registry->deletedServiceReferences)
-	mock().expectOneCall("framework_log");
+    mock().expectNCalls(5,"framework_log");
 
+    //test unknown reference (reference not present in registry->deletedServiceReferences)
 	serviceRegistry_ungetServiceReference(registry, bundle, reference);
 
 	//test known reference, but destroyed == false
@@ -699,7 +691,6 @@ TEST(service_registry, ungetServiceReference){
 	mock().expectOneCall("serviceReference_release")
 			.withParameter("ref", reference)
 			.withOutputParameterReturning("destroyed", &destroyed, sizeof(destroyed));
-	mock().expectOneCall("framework_log");
 
 	serviceRegistry_ungetServiceReference(registry, bundle2, reference);
 
@@ -707,7 +698,6 @@ TEST(service_registry, ungetServiceReference){
 	destroyed = true;
 	count = 5;
 
-    const char* mod_name = "mod name";
     //const char* srv_name = "srv name";
 	mock().expectOneCall("serviceReference_getUsageCount")
 			.withParameter("reference", reference)
@@ -715,13 +705,9 @@ TEST(service_registry, ungetServiceReference){
 	mock().expectOneCall("serviceReference_release")
 			.withParameter("ref", reference)
 			.withOutputParameterReturning("destroyed", &destroyed, sizeof(destroyed));
-    mock().expectNCalls(1, "bundle_getCurrentModule")
-            .withParameter("bundle", bundle)
-			.withOutputParameterReturning("module", &module, sizeof(module));
-    mock().expectNCalls(1, "module_getSymbolicName")
-            .withParameter("module", module)
-			.withOutputParameterReturning("symbolicName", &mod_name, sizeof(mod_name));
-	mock().expectNCalls(2, "framework_log");
+    mock().expectNCalls(1, "celix_bundle_getSymbolicName")
+            .withConstPointerParameter("bnd", bundle)
+            .andReturnValue("mod name");
 
 	serviceRegistry_ungetServiceReference(registry, bundle, reference);
 
@@ -758,7 +744,7 @@ TEST(service_registry, ungetServiceReference){
 TEST(service_registry, clearReferencesFor_1){
 	service_registry_pt registry = NULL;
 	framework_pt framework = (framework_pt) 0x01;
-	serviceRegistry_create(framework,serviceRegistryTest_serviceChanged, &registry);
+	serviceRegistry_create(framework, &registry);
 
 	service_registration_pt registration = (service_registration_pt) 0x10;
 	service_reference_pt reference = (service_reference_pt) 0x40;
@@ -794,13 +780,11 @@ TEST(service_registry, clearReferencesFor_1){
 TEST(service_registry, clearReferencesFor_2){
 	service_registry_pt registry = NULL;
 	framework_pt framework = (framework_pt) 0x01;
-	serviceRegistry_create(framework,serviceRegistryTest_serviceChanged, &registry);
+	serviceRegistry_create(framework, &registry);
 
 	service_registration_pt registration = (service_registration_pt) 0x10;
 	service_reference_pt reference = (service_reference_pt) 0x40;
 	bundle_pt bundle = (bundle_pt) 0x70;
-	module_pt module = (module_pt) 0x80;
-	const char* modName = "mod name";
     const char* srvName = "srv name";
 
 	hash_map_pt references = hashMap_create(NULL, NULL, NULL, NULL);
@@ -825,12 +809,9 @@ TEST(service_registry, clearReferencesFor_2){
 	mock().expectNCalls(1, "serviceReference_release")
 			.withParameter("ref", reference)
 			.withOutputParameterReturning("destroyed", &destroyed, sizeof(destroyed));
-	mock().expectNCalls(2, "bundle_getCurrentModule")
-			.withParameter("bundle", bundle)
-			.withOutputParameterReturning("module", &module, sizeof(module));
-	mock().expectNCalls(2, "module_getSymbolicName")
-			.withParameter("module", module)
-			.withOutputParameterReturning("symbolicName", &modName, sizeof(modName));
+	mock().expectNCalls(2, "celix_bundle_getSymbolicName")
+			.withConstPointerParameter("bnd", bundle)
+			.andReturnValue("mod name");
     mock().expectOneCall("serviceReference_getProperty")
             .withParameter("reference", reference)
             .withParameter("key", OSGI_FRAMEWORK_OBJECTCLASS)
@@ -852,7 +833,7 @@ TEST(service_registry, clearReferencesFor_2){
 TEST(service_registry, getService) {
 	service_registry_pt registry = NULL;
 	framework_pt framework = (framework_pt) 0x01;
-	serviceRegistry_create(framework,serviceRegistryTest_serviceChanged, &registry);
+	serviceRegistry_create(framework, &registry);
 
 	bundle_pt bundle = (bundle_pt) 0x10;
 	service_registration_pt registration = (service_registration_pt) 0x20;
@@ -941,7 +922,7 @@ TEST(service_registry, getService) {
 TEST(service_registry, ungetService) {
 	service_registry_pt registry = NULL;
 	framework_pt framework = (framework_pt) 0x01;
-	serviceRegistry_create(framework,serviceRegistryTest_serviceChanged, &registry);
+	serviceRegistry_create(framework, &registry);
 
 	bundle_pt bundle = (bundle_pt) 0x10;
 	service_registration_pt registration = (service_registration_pt) 0x20;
@@ -990,8 +971,7 @@ TEST(service_registry, ungetService) {
 	hashMap_remove(registry->deletedServiceReferences, reference);
 	hashMap_put(registry->deletedServiceReferences, reference, (void*) true);
 
-	mock()
-		.expectOneCall("framework_log");
+	mock().expectNCalls(2,"framework_log");
 
 	status = serviceRegistry_ungetService(registry, bundle, reference, &result);
 	LONGS_EQUAL(CELIX_BUNDLE_EXCEPTION, status);
@@ -1006,7 +986,7 @@ TEST(service_registry, ungetService) {
 TEST(service_registry, getListenerHooks) {
 	service_registry_pt registry = NULL;
 	framework_pt framework = (framework_pt) 0x01;
-	serviceRegistry_create(framework,serviceRegistryTest_serviceChanged, &registry);
+	serviceRegistry_create(framework, &registry);
 	bundle_pt bundle = (bundle_pt) 0x10;
 	service_registration_pt registration = (service_registration_pt) calloc(1,sizeof(struct serviceRegistration));
 	registration->serviceId = 20UL;
@@ -1017,6 +997,8 @@ TEST(service_registry, getListenerHooks) {
 	hashMap_put(usages, (void*)registration->serviceId, reference);
 	hashMap_put(registry->serviceReferences, bundle, usages);
 
+    mock().ignoreOtherCalls();
+
     size_t nrOfHooks = serviceRegistry_nrOfHooks(registry);
 	LONGS_EQUAL(1, nrOfHooks);
 
@@ -1026,28 +1008,10 @@ TEST(service_registry, getListenerHooks) {
 	serviceRegistry_destroy(registry);
 }
 
-TEST(service_registry, servicePropertiesModified) {
-	service_registry_pt registry = NULL;
-	framework_pt framework = (framework_pt) 0x01;
-	serviceRegistry_create(framework,serviceRegistryTest_serviceChanged, &registry);
-	service_registration_pt registration = (service_registration_pt) 0x02;
-	properties_pt properties = (properties_pt) 0x03;
-
-	mock().expectOneCall("serviceRegistryTest_serviceChanged")
-		.withParameter("framework", registry->framework)
-		.withParameter("eventType", OSGI_FRAMEWORK_SERVICE_EVENT_MODIFIED)
-		.withParameter("registration", registration)
-		.withParameter("oldprops", properties);
-
-	serviceRegistry_servicePropertiesModified(registry, registration, properties);
-
-	serviceRegistry_destroy(registry);
-}
-
 TEST(service_registry, getUsingBundles) {
 	service_registry_pt registry = NULL;
 	framework_pt framework = (framework_pt) 0x01;
-	serviceRegistry_create(framework,serviceRegistryTest_serviceChanged, &registry);
+	serviceRegistry_create(framework, &registry);
 
 	service_registration_pt registration  = (service_registration_pt) calloc(1,sizeof(struct serviceRegistration));
 	service_registration_pt registration2 = (service_registration_pt) calloc(1,sizeof(struct serviceRegistration));
@@ -1085,6 +1049,8 @@ TEST(service_registry, getUsingBundles) {
 	hashMap_put(references3, (void*)registration3->serviceId, reference4);
 	hashMap_put(references3, (void*)registration4->serviceId, reference5);
 	hashMap_put(registry->serviceReferences, bundle3, references3);
+
+    mock().ignoreOtherCalls();
 
 	//call to getUsingBundles
 	array_list_pt get_bundles_list = NULL;

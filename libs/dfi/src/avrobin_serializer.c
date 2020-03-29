@@ -837,7 +837,7 @@ static int avrobinSerializer_generateComplex(dyn_type *type, json_t **output) {
         return ERROR;
     }
 
-    json_t *record_string = json_string("record");
+    json_t *record_string = json_string_nocheck("record");
     if (record_string == NULL) {
         json_decref(record_object);
         return ERROR;
@@ -904,7 +904,7 @@ static int avrobinSerializer_generateComplex(dyn_type *type, json_t **output) {
             }
 
             if (status == OK) {
-                if (json_object_set_new(field_object, "name", field_name) == 0) {
+                if (json_object_set_new_nocheck(field_object, "name", field_name) == 0) {
                     field_name = NULL;
                 } else {
                     status = ERROR;
@@ -912,7 +912,7 @@ static int avrobinSerializer_generateComplex(dyn_type *type, json_t **output) {
             }
 
             if (status == OK) {
-                if (json_object_set_new(field_object, "type", field_schema) == 0) {
+                if (json_object_set_new_nocheck(field_object, "type", field_schema) == 0) {
                     field_schema = NULL;
                 } else {
                     status = ERROR;
@@ -949,7 +949,7 @@ static int avrobinSerializer_generateComplex(dyn_type *type, json_t **output) {
     }
 
     if (status == OK) {
-        if (json_object_set_new(record_object, "type", record_string) == 0) {
+        if (json_object_set_new_nocheck(record_object, "type", record_string) == 0) {
             record_string = NULL;
         } else {
             status = ERROR;
@@ -957,7 +957,7 @@ static int avrobinSerializer_generateComplex(dyn_type *type, json_t **output) {
     }
 
     if (status == OK) {
-        if (json_object_set_new(record_object, "name", name_string) == 0) {
+        if (json_object_set_new_nocheck(record_object, "name", name_string) == 0) {
             name_string = NULL;
         } else {
             status = ERROR;
@@ -965,7 +965,7 @@ static int avrobinSerializer_generateComplex(dyn_type *type, json_t **output) {
     }
 
     if (status == OK) {
-        if (json_object_set_new(record_object, "fields", record_fields) == 0) {
+        if (json_object_set_new_nocheck(record_object, "fields", record_fields) == 0) {
             record_fields = NULL;
         } else {
             status = ERROR;
@@ -1005,7 +1005,7 @@ static int avrobinSerializer_generateSequence(dyn_type *type, json_t **output) {
         return ERROR;
     }
 
-    json_t *array_string = json_string("array");
+    json_t *array_string = json_string_nocheck("array");
     if (array_string == NULL) {
         json_decref(array_object);
         return ERROR;
@@ -1018,7 +1018,7 @@ static int avrobinSerializer_generateSequence(dyn_type *type, json_t **output) {
         return ERROR;
     }
 
-    if (json_object_set_new(array_object, "type", array_string) == 0) {
+    if (json_object_set_new_nocheck(array_object, "type", array_string) == 0) {
         array_string = NULL;
     } else {
         json_decref(array_object);
@@ -1027,7 +1027,7 @@ static int avrobinSerializer_generateSequence(dyn_type *type, json_t **output) {
         return ERROR;
     }
 
-    if (json_object_set_new(array_object, "items", item_schema) == 0) {
+    if (json_object_set_new_nocheck(array_object, "items", item_schema) == 0) {
         item_schema = NULL;
     } else {
         json_decref(array_object);
@@ -1046,7 +1046,7 @@ static int avrobinSerializer_generateEnum(dyn_type *type, json_t **output) {
         return ERROR;
     }
 
-    json_t *enum_string = json_string("enum");
+    json_t *enum_string = json_string_nocheck("enum");
     if (enum_string == NULL) {
         json_decref(enum_object);
         return ERROR;
@@ -1097,7 +1097,7 @@ static int avrobinSerializer_generateEnum(dyn_type *type, json_t **output) {
         }
     }
 
-    if (json_object_set_new(enum_object, "type", enum_string) != 0) {
+    if (json_object_set_new_nocheck(enum_object, "type", enum_string) != 0) {
         json_decref(enum_object);
         json_decref(enum_string);
         json_decref(name_string);
@@ -1105,14 +1105,14 @@ static int avrobinSerializer_generateEnum(dyn_type *type, json_t **output) {
         return ERROR;
     }
 
-    if  (json_object_set_new(enum_object, "name", name_string) != 0) {
+    if  (json_object_set_new_nocheck(enum_object, "name", name_string) != 0) {
         json_decref(enum_object);
         json_decref(name_string);
         json_decref(symbols_array);
         return ERROR;
     }
 
-    if (json_object_set_new(enum_object, "symbols", symbols_array) != 0) {
+    if (json_object_set_new_nocheck(enum_object, "symbols", symbols_array) != 0) {
         json_decref(enum_object);
         json_decref(symbols_array);
         return ERROR;
@@ -1390,7 +1390,7 @@ static int avrobin_schema_primitive(const char *tname, json_t **output) {
         json_decref(jo);
         return ERROR;
     }
-    if (json_object_set_new(jo, "type", js) != 0) {
+    if (json_object_set_new_nocheck(jo, "type", js) != 0) {
         json_decref(jo);
         json_decref(js);
         return ERROR;

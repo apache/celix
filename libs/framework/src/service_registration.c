@@ -231,18 +231,9 @@ celix_status_t serviceRegistration_getProperties(service_registration_pt registr
 celix_status_t serviceRegistration_setProperties(service_registration_pt registration, properties_pt properties) {
     celix_status_t status;
 
-    properties_pt oldProperties = NULL;
-    registry_callback_t callback;
-
     celixThreadRwlock_writeLock(&registration->lock);
-    oldProperties = registration->properties;
     status = serviceRegistration_initializeProperties(registration, properties);
-    callback = registration->callback;
     celixThreadRwlock_unlock(&registration->lock);
-
-    if (status == CELIX_SUCCESS && callback.modified != NULL) {
-        callback.modified(callback.handle, registration, oldProperties);
-    }
 
 	return status;
 }
