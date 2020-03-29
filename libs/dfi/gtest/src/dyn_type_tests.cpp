@@ -17,8 +17,7 @@
  * under the License.
  */
 
-#include <CppUTest/TestHarness.h>
-#include "CppUTest/CommandLineTestRunner.h"                                                                                                                                                                        
+#include "gtest/gtest.h"
 
 extern "C" {
     #include <stdarg.h>
@@ -41,7 +40,7 @@ extern "C" {
         type = NULL;
         //printf("\n-- example %s with descriptor string '%s' --\n", exName, descriptorStr);
         int status = dynType_parseWithStr(descriptorStr, exName, NULL, &type);
-        CHECK_EQUAL(0, status);
+        ASSERT_EQ(0, status);
 
         //MEM check, to try to ensure no mem leaks/corruptions occur.
         int i;
@@ -67,10 +66,14 @@ extern "C" {
     }
 }
 
-TEST_GROUP(DynTypeTests) {
-	void setup() {
-	    dynType_logSetup(stdLog, NULL, 1);
-	}
+class DynTypeTests : public ::testing::Test {
+public:
+    DynTypeTests() {
+        dynType_logSetup(stdLog, NULL, 1);
+    }
+    ~DynTypeTests() override {
+    }
+
 };
 
 #define EX1 "{BbJjIiSsDFNN arg1 arg2 arg3 arg4 arg5 arg6 arg7 arg8 arg9 arg10 arg11 arg12}"
@@ -92,7 +95,7 @@ TEST_GROUP(DynTypeTests) {
 #define EX17 "{#v1=0;#v2=1;E#v1=9;#v2=10;E enum1 enum2}"
 
 #define CREATE_EXAMPLES_TEST(DESC) \
-    TEST(DynTypeTests, ParseTestExample ## DESC) { \
+    TEST_F(DynTypeTests, ParseTestExample ## DESC) { \
         runTest(DESC, #DESC); \
     }    
 
@@ -114,10 +117,10 @@ CREATE_EXAMPLES_TEST(EX15)
 CREATE_EXAMPLES_TEST(EX16)
 CREATE_EXAMPLES_TEST(EX17)
 
-TEST(DynTypeTests, ParseRandomGarbageTest) {
+TEST_F(DynTypeTests, ParseRandomGarbageTest) {
     /*
     unsigned int seed = 4148;
-    char *testRandom = getenv("DYN_TYPE_TEST_RANDOM");
+    char *testRandom = getenv("DYN_TYPE_TEST_F_RANDOM");
     if (testRandom != NULL && strcmp("true", testRandom) == 0) {
         seed = (unsigned int) time(NULL);
     } 
@@ -153,7 +156,7 @@ TEST(DynTypeTests, ParseRandomGarbageTest) {
      */
 }
 
-TEST(DynTypeTests, AssignTest1) {
+TEST_F(DynTypeTests, AssignTest1) {
     struct ex1 {
         int32_t a;
         int32_t b;
@@ -163,21 +166,21 @@ TEST(DynTypeTests, AssignTest1) {
     const char *desc = "{III a b c}";
     dyn_type *type = NULL;
     int status = dynType_parseWithStr(desc, NULL, NULL, &type);
-    CHECK_EQUAL(0, status);
+    ASSERT_EQ(0, status);
     int32_t val1 = 2;
     int32_t val2 = 4;
     int32_t val3 = 8;
     dynType_complex_setValueAt(type, 0,  &inst, &val1);
-    CHECK_EQUAL(2, inst.a);
+    ASSERT_EQ(2, inst.a);
     dynType_complex_setValueAt(type, 1,  &inst, &val2);
-    CHECK_EQUAL(4, inst.b);
+    ASSERT_EQ(4, inst.b);
     dynType_complex_setValueAt(type, 2,  &inst, &val3);
-    CHECK_EQUAL(8, inst.c);
+    ASSERT_EQ(8, inst.c);
 
     dynType_destroy(type);
 }
 
-TEST(DynTypeTests, AssignTest2) {
+TEST_F(DynTypeTests, AssignTest2) {
     struct ex {
         int32_t a;
         struct {
@@ -189,13 +192,13 @@ TEST(DynTypeTests, AssignTest2) {
     const char *desc = "{I{DD a b} a b}";
     dyn_type *type = NULL;
     int status = dynType_parseWithStr(desc, NULL, NULL,  &type);
-    CHECK_EQUAL(0, status);
+    ASSERT_EQ(0, status);
     int32_t a = 2;
     double b_a = 1.1;
     double b_b = 1.2;
 
     dynType_complex_setValueAt(type, 0,  &inst, &a);
-    CHECK_EQUAL(2, inst.a);
+    ASSERT_EQ(2, inst.a);
 
     void *loc = NULL;
     dyn_type *subType = NULL;
@@ -203,51 +206,51 @@ TEST(DynTypeTests, AssignTest2) {
     dynType_complex_dynTypeAt(type, 1, &subType);
 
     dynType_complex_setValueAt(subType, 0, &inst.b, &b_a);
-    CHECK_EQUAL(1.1, inst.b.a);
+    ASSERT_EQ(1.1, inst.b.a);
 
     dynType_complex_setValueAt(subType, 1, &inst.b, &b_b);
-    CHECK_EQUAL(1.2, inst.b.b);
+    ASSERT_EQ(1.2, inst.b.b);
 
     dynType_destroy(type);
 }
 
-TEST(DynTypeTests, AssignTest3) {
+TEST_F(DynTypeTests, AssignTest3) {
     int simple = 1;
     dyn_type *type = NULL;
     int rc = dynType_parseWithStr("N", NULL, NULL, &type);
-    CHECK_EQUAL(0, rc);
+    ASSERT_EQ(0, rc);
 
     int newValue = 42;
     void *loc = &simple;
     void *input = &newValue;
     dynType_simple_setValue(type, loc, input);
-    CHECK_EQUAL(42, simple);
+    ASSERT_EQ(42, simple);
     dynType_destroy(type);
 }
 
-TEST(DynTypeTests, MetaInfoTest) {
+TEST_F(DynTypeTests, MetaInfoTest) {
     dyn_type *type = NULL;
     int rc = 0;
     rc = dynType_parseWithStr("#a=t;{DD#longname=longvalue;D a b c}", NULL, NULL, &type);
     //rc = dynType_parseWithStr("{DDD a b c}", NULL, NULL, &type);
 
-    CHECK_EQUAL(0, rc);
+    ASSERT_EQ(0, rc);
 
     const char *val = NULL;
     val = dynType_getMetaInfo(type, "a");
-    CHECK(val != NULL);
-    CHECK(strcmp("t", val) == 0);
+    ASSERT_TRUE(val != NULL);
+    ASSERT_TRUE(strcmp("t", val) == 0);
 
     val = dynType_getMetaInfo(type, "longname");
-    CHECK(val == NULL);
+    ASSERT_TRUE(val == NULL);
 
     val = dynType_getMetaInfo(type, "nonexisting");
-    CHECK(val == NULL);
+    ASSERT_TRUE(val == NULL);
 
     dynType_destroy(type);
 }
 
-TEST(DynTypeTests, SequenceWithPointerTest) {
+TEST_F(DynTypeTests, SequenceWithPointerTest) {
     struct val {
         double a;
         double b;
@@ -271,12 +274,12 @@ TEST(DynTypeTests, SequenceWithPointerTest) {
     dyn_type *type = NULL;
     int rc = 0;
     rc = dynType_parseWithStr("Tval={DD a b};Titem={Jtlval;DDJ a text val c d e};**[Litem;", NULL, NULL, &type);
-    CHECK_EQUAL(0, rc);
+    ASSERT_EQ(0, rc);
 
     struct item_sequence *seq = NULL;
     rc = dynType_alloc(type, (void **)&seq);
-    CHECK_EQUAL(0, rc);
-    CHECK(seq != NULL);
+    ASSERT_EQ(0, rc);
+    ASSERT_TRUE(seq != NULL);
 
     dynType_free(type, seq);
 
@@ -298,26 +301,26 @@ TEST(DynTypeTests, SequenceWithPointerTest) {
     dynType_destroy(type);
 }
 
-TEST(DynTypeTests, EnumTest) {
+TEST_F(DynTypeTests, EnumTest) {
     dyn_type *type = NULL;
     int rc = 0;
     rc = dynType_parseWithStr("{#v1=0;#v2=1;E#v1=9;#v2=10;E enum1 enum2}", NULL, NULL, &type);
-    CHECK_EQUAL(0, rc);
+    ASSERT_EQ(0, rc);
 
     dynType_print(type, stdout);
     dynType_destroy(type);
 }
 
-TEST(DynTypeTests, NrOfEntriesTest) {
+TEST_F(DynTypeTests, NrOfEntriesTest) {
     dyn_type *type = NULL;
     int rc = dynType_parseWithStr("{DD}", NULL, NULL, &type);
-    CHECK_EQUAL(0, rc);
-    CHECK_EQUAL(2, dynType_complex_nrOfEntries(type));
+    ASSERT_EQ(0, rc);
+    ASSERT_EQ(2, dynType_complex_nrOfEntries(type));
     dynType_destroy(type);
 
     type = NULL;
     rc = dynType_parseWithStr("{DDJJ}", NULL, NULL, &type);
-    CHECK_EQUAL(0, rc);
-    CHECK_EQUAL(4, dynType_complex_nrOfEntries(type));
+    ASSERT_EQ(0, rc);
+    ASSERT_EQ(4, dynType_complex_nrOfEntries(type));
     dynType_destroy(type);
 }

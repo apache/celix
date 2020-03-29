@@ -26,6 +26,10 @@
 #include "dyn_function.h"
 #include "dyn_interface.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //logging
 DFI_SETUP_LOG_HEADER(jsonSerializer);
 
@@ -34,5 +38,9 @@ int jsonSerializer_deserializeJson(dyn_type *type, json_t *input, void **result)
 
 int jsonSerializer_serialize(dyn_type *type, const void* input, char **output);
 int jsonSerializer_serializeJson(dyn_type *type, const void* input, json_t **out);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -27,8 +27,12 @@
 
 #include "dfi_log_util.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //logging
-DFI_SETUP_LOG_HEADER(dynCommon);
+DFI_SETUP_LOG_HEADER(dynCommon) ;
 
 TAILQ_HEAD(namvals_head, namval_entry);
 
@@ -44,5 +48,9 @@ int dynCommon_parseNameValue(FILE *stream, char **name, char **value);
 int dynCommon_eatChar(FILE *stream, int c);
 
 void dynCommon_clearNamValHead(struct namvals_head *head);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif 

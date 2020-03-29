@@ -28,6 +28,10 @@
 
 #include "dyn_common.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct _dyn_interface_type {
     struct namvals_head header;
     struct namvals_head annotations;
@@ -35,5 +39,9 @@ struct _dyn_interface_type {
     struct methods_head methods;
     version_pt version;
 };
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

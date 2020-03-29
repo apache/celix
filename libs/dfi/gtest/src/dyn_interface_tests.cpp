@@ -17,8 +17,11 @@
  * under the License.
  */
 
-#include <CppUTest/TestHarness.h>
-#include "CppUTest/CommandLineTestRunner.h"                                                                                                                                                                        
+#include "gtest/gtest.h"
+
+#include <stdarg.h>
+
+
 extern "C" {
     
 #include <stdio.h>
@@ -51,15 +54,15 @@ extern "C" {
 
         char *version = NULL;
         status = dynInterface_getVersionString(dynIntf, &version);
-        CHECK_EQUAL(0, status);
-        STRCMP_EQUAL(v, version);
+        ASSERT_EQ(0, status);
+        ASSERT_STREQ(v, version);
         version_pt msgVersion = NULL, localMsgVersion = NULL;
         int cmpVersion = -1;
         version_createVersionFromString(version, &localMsgVersion);
         status = dynInterface_getVersion(dynIntf, &msgVersion);
-        CHECK_EQUAL(0, status);
+        ASSERT_EQ(0, status);
         version_compareTo(msgVersion, localMsgVersion, &cmpVersion);
-        CHECK_EQUAL(cmpVersion, 0);
+        ASSERT_EQ(cmpVersion, 0);
         version_destroy(localMsgVersion);
     }
 
@@ -69,33 +72,33 @@ extern "C" {
         FILE *desc = fopen("descriptors/example1.descriptor", "r");
         assert(desc != NULL);
         status = dynInterface_parse(desc, &dynIntf);
-        CHECK_EQUAL(0, status);
+        ASSERT_EQ(0, status);
         fclose(desc);
 
         char *name = NULL;
         status = dynInterface_getName(dynIntf, &name);
-        CHECK_EQUAL(0, status);
-        STRCMP_EQUAL("calculator", name);
+        ASSERT_EQ(0, status);
+        ASSERT_STREQ("calculator", name);
 
 	checkInterfaceVersion(dynIntf,"1.0.0");
 
         char *annVal = NULL;
         status = dynInterface_getAnnotationEntry(dynIntf, "classname", &annVal);
-        CHECK_EQUAL(0, status);
-        STRCMP_EQUAL("org.example.Calculator", annVal);
+        ASSERT_EQ(0, status);
+        ASSERT_STREQ("org.example.Calculator", annVal);
 
         char *nonExist = NULL;
         status = dynInterface_getHeaderEntry(dynIntf, "nonExisting", &nonExist);
-        CHECK(status != 0);
-        CHECK(nonExist == NULL);
+        ASSERT_TRUE(status != 0);
+        ASSERT_TRUE(nonExist == NULL);
 
         struct methods_head *list = NULL;
         status = dynInterface_methods(dynIntf, &list);
-        CHECK(status == 0);
-        CHECK(list != NULL);
+        ASSERT_TRUE(status == 0);
+        ASSERT_TRUE(list != NULL);
 
         int count = dynInterface_nrOfMethods(dynIntf);
-        CHECK_EQUAL(4, count);
+        ASSERT_EQ(4, count);
 
         dynInterface_destroy(dynIntf);
     }
@@ -106,7 +109,7 @@ extern "C" {
         FILE *desc = fopen("descriptors/example3.descriptor", "r");
         assert(desc != NULL);
         status = dynInterface_parse(desc, &dynIntf);
-        CHECK_EQUAL(0, status);
+        ASSERT_EQ(0, status);
         fclose(desc);
 
         dynInterface_destroy(dynIntf);
@@ -121,7 +124,7 @@ extern "C" {
         assert(desc != NULL);
         status = dynInterface_parse(desc, &dynIntf);
         //dynInterface_destroy(dynIntf);
-        CHECK_EQUAL(1, status); //Test fails because of a space at the end of the name
+        ASSERT_EQ(1, status); //Test fails because of a space at the end of the name
         fclose(desc); desc=NULL;
 
 
@@ -130,7 +133,7 @@ extern "C" {
         assert(desc != NULL);
         status = dynInterface_parse(desc, &dynIntf);
         //dynInterface_destroy(dynIntf);
-        CHECK_EQUAL(1, status); //Test fails because of missing version field in header section
+        ASSERT_EQ(1, status); //Test fails because of missing version field in header section
         fclose(desc); desc=NULL;
 
         /* Invalid section */
@@ -138,7 +141,7 @@ extern "C" {
         assert(desc != NULL);
         status = dynInterface_parse(desc, &dynIntf);
         //dynInterface_destroy(dynIntf);
-        CHECK_EQUAL(1, status); //Test fails because of unknown section type
+        ASSERT_EQ(1, status); //Test fails because of unknown section type
         fclose(desc); desc=NULL;
 
         /* Invalid return type */
@@ -146,7 +149,7 @@ extern "C" {
         assert(desc != NULL);
         status = dynInterface_parse(desc, &dynIntf);
         //dynInterface_destroy(dynIntf);
-        CHECK_EQUAL(1, status); //Test fails because of invalid return type (D instead of N)
+        ASSERT_EQ(1, status); //Test fails because of invalid return type (D instead of N)
         fclose(desc); desc=NULL;
 
         /* Invalid  method section */
@@ -154,7 +157,7 @@ extern "C" {
         assert(desc != NULL);
         status = dynInterface_parse(desc, &dynIntf);
         //dynInterface_destroy(dynIntf);
-        CHECK_EQUAL(1, status); //Test fails because of space at the end of the method
+        ASSERT_EQ(1, status); //Test fails because of space at the end of the method
         fclose(desc); desc=NULL;
 
         /* Invalid type */
@@ -162,7 +165,7 @@ extern "C" {
         assert(desc != NULL);
         status = dynInterface_parse(desc, &dynIntf);
         //dynInterface_destroy(dynIntf);
-        CHECK_EQUAL(1, status); //Test fails because of space at the end of the type
+        ASSERT_EQ(1, status); //Test fails because of space at the end of the type
         fclose(desc); desc=NULL;
 
         /* Invalid metatype in method description */
@@ -170,7 +173,7 @@ extern "C" {
         assert(desc != NULL);
         status = dynInterface_parse(desc, &dynIntf);
         dynInterface_destroy(dynIntf);
-        CHECK_EQUAL(0, status); //Invalid meta type doesn't generate errors, just warnings
+        ASSERT_EQ(0, status); //Invalid meta type doesn't generate errors, just warnings
         fclose(desc); desc=NULL; dynIntf=NULL;
 
         /* Invalid version section */
@@ -178,32 +181,35 @@ extern "C" {
         assert(desc != NULL);
         status = dynInterface_parse(desc, &dynIntf);
         //dynInterface_destroy(dynIntf);
-        CHECK_EQUAL(1, status); //Invalid meta type doesn't generate errors, just warnings
+        ASSERT_EQ(1, status); //Invalid meta type doesn't generate errors, just warnings
         fclose(desc); desc=NULL;
 
     }
 }
 
-
-TEST_GROUP(DynInterfaceTests) {
-    void setup() {
+class DynInterfaceTests : public ::testing::Test {
+public:
+    DynInterfaceTests() {
         int level = 1;
         dynCommon_logSetup(stdLog, NULL, level);
         dynType_logSetup(stdLog, NULL, level);
         dynFunction_logSetup(stdLog, NULL, level);
         dynInterface_logSetup(stdLog, NULL, level);
     }
+    ~DynInterfaceTests() override {
+    }
+
 };
 
-TEST(DynInterfaceTests, test1) {
+TEST_F(DynInterfaceTests, test1) {
     test1();
 }
 
-TEST(DynInterfaceTests, test2) {
+TEST_F(DynInterfaceTests, test2) {
     test2();
 }
 
-TEST(DynInterfaceTests, testInvalid) {
+TEST_F(DynInterfaceTests, testInvalid) {
     testInvalid();
 }
 

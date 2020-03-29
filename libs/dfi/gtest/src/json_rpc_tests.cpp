@@ -17,10 +17,10 @@
  * under the License.
  */
 
-#include <CppUTest/TestHarness.h>
+#include "gtest/gtest.h"
+
 #include <float.h>
-#include <assert.h>
-#include "CppUTest/CommandLineTestRunner.h"                                                                                                                                                                        
+#include <assert.h> 
 
 extern "C" {
 #include <stdio.h>
@@ -50,7 +50,7 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
     void prepareTest(void) {
         dyn_function_type *dynFunc = nullptr;
         int rc = dynFunction_parseWithStr("add(#am=handle;PDD#am=pre;*D)N", nullptr, &dynFunc);
-        CHECK_EQUAL(0, rc);
+        ASSERT_EQ(0, rc);
 
         char *result = nullptr;
 
@@ -64,13 +64,13 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
         args[2] = &arg2;
 
         rc = jsonRpc_prepareInvokeRequest(dynFunc, "add", args, &result);
-        CHECK_EQUAL(0, rc);
+        ASSERT_EQ(0, rc);
 
         //printf("result is %s\n", result);
 
-        STRCMP_CONTAINS("\"add\"", result);
-        STRCMP_CONTAINS("1.0", result);
-        STRCMP_CONTAINS("2.0", result);
+        ASSERT_TRUE(strstr(result, "\"add\"") != nullptr);
+        ASSERT_TRUE(strstr(result, "1.0") != nullptr);
+        ASSERT_TRUE(strstr(result, "2.0") != nullptr);
 
         free(result);
         dynFunction_destroy(dynFunc);
@@ -79,7 +79,7 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
     void handleTestPre(void) {
         dyn_function_type *dynFunc = nullptr;
         int rc = dynFunction_parseWithStr("add(#am=handle;PDD#am=pre;*D)N", nullptr, &dynFunc);
-        CHECK_EQUAL(0, rc);
+        ASSERT_EQ(0, rc);
 
         const char *reply = "{\"r\":2.2}";
         double result = -1.0;
@@ -87,8 +87,8 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
         void *args[4];
         args[3] = &out;
         rc = jsonRpc_handleReply(dynFunc, reply, args);
-        CHECK_EQUAL(0, rc);
-        //CHECK_EQUAL(2.2, result);
+        ASSERT_EQ(0, rc);
+        //ASSERT_EQ(2.2, result);
 
         dynFunction_destroy(dynFunc);
     }
@@ -182,17 +182,17 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
     void callTestPreAllocated(void) {
         dyn_interface_type *intf = nullptr;
         FILE *desc = fopen("descriptors/example1.descriptor", "r");
-        CHECK(desc != nullptr);
+        ASSERT_TRUE(desc != nullptr);
         int rc = dynInterface_parse(desc, &intf);
-        CHECK_EQUAL(0, rc);
+        ASSERT_EQ(0, rc);
         fclose(desc);
 
         char *result = nullptr;
         tst_serv serv {nullptr, add, nullptr, nullptr, nullptr};
 
         rc = jsonRpc_call(intf, &serv, R"({"m":"add(DD)D", "a": [1.0,2.0]})", &result);
-        CHECK_EQUAL(0, rc);
-        STRCMP_CONTAINS("3.0", result);
+        ASSERT_EQ(0, rc);
+        ASSERT_TRUE(strstr(result, "3.0") != nullptr);
 
         free(result);
         dynInterface_destroy(intf);
@@ -201,17 +201,17 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
     void callTestOutput(void) {
         dyn_interface_type *intf = nullptr;
         FILE *desc = fopen("descriptors/example1.descriptor", "r");
-        CHECK(desc != nullptr);
+        ASSERT_TRUE(desc != nullptr);
         int rc = dynInterface_parse(desc, &intf);
-        CHECK_EQUAL(0, rc);
+        ASSERT_EQ(0, rc);
         fclose(desc);
 
         char *result = nullptr;
         tst_serv serv {nullptr, nullptr, nullptr, nullptr, stats};
 
         rc = jsonRpc_call(intf, &serv, R"({"m":"stats([D)LStatsResult;", "a": [[1.0,2.0]]})", &result);
-        CHECK_EQUAL(0, rc);
-        STRCMP_CONTAINS("1.5", result); //avg
+        ASSERT_EQ(0, rc);
+        ASSERT_TRUE(strstr(result, "1.5") != nullptr);
 
         free(result);
         dynInterface_destroy(intf);
@@ -220,9 +220,9 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
     void handleTestOut(void) {
         dyn_interface_type *intf = nullptr;
         FILE *desc = fopen("descriptors/example1.descriptor", "r");
-        CHECK(desc != nullptr);
+        ASSERT_TRUE(desc != nullptr);
         int rc = dynInterface_parse(desc, &intf);
-        CHECK_EQUAL(0, rc);
+        ASSERT_EQ(0, rc);
         fclose(desc);
 
         struct methods_head *head;
@@ -235,7 +235,7 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
                 break;
             }
         }
-        CHECK(func != nullptr);
+        ASSERT_TRUE(func != nullptr);
 
         const char *reply = R"({"r":{"input":[1.0,2.0],"max":2.0,"average":1.5,"min":1.0}})";
 
@@ -249,8 +249,8 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
         args[2] = &out;
 
         rc = jsonRpc_handleReply(func, reply, args);
-        CHECK_EQUAL(0, rc);
-        CHECK_EQUAL(1.5, result->average);
+        ASSERT_EQ(0, rc);
+        ASSERT_EQ(1.5, result->average);
 
         free(result->input.buf);
         free(result);
@@ -260,9 +260,9 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
     static void handleTestOutputSequence() {
         dyn_interface_type *intf = nullptr;
         FILE *desc = fopen("descriptors/example2.descriptor", "r");
-        CHECK(desc != nullptr);
+        ASSERT_TRUE(desc != nullptr);
         int rc = dynInterface_parse(desc, &intf);
-        CHECK_EQUAL(0, rc);
+        ASSERT_EQ(0, rc);
         fclose(desc);
 
         struct methods_head *head;
@@ -275,7 +275,7 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
                 break;
             }
         }
-        CHECK(func != nullptr);
+        ASSERT_TRUE(func != nullptr);
 
         //dyn_type *arg = dynFunction_argumentTypeForIndex(func, 1);
         //dynType_print(arg, stdout);
@@ -291,12 +291,12 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
         args[1] = &out;
 
         rc = jsonRpc_handleReply(func, reply, args);
-        CHECK_EQUAL(0, rc);
-        CHECK_EQUAL(2, result->len);
-        CHECK_EQUAL(1.0, result->buf[0]->a);
-        CHECK_EQUAL(1.5, result->buf[0]->b);
-        CHECK_EQUAL(2.0, result->buf[1]->a);
-        CHECK_EQUAL(2.5, result->buf[1]->b);
+        ASSERT_EQ(0, rc);
+        ASSERT_EQ(2, result->len);
+        ASSERT_EQ(1.0, result->buf[0]->a);
+        ASSERT_EQ(1.5, result->buf[0]->b);
+        ASSERT_EQ(2.0, result->buf[1]->a);
+        ASSERT_EQ(2.5, result->buf[1]->b);
 
 
         unsigned int i;
@@ -314,18 +314,18 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
     void callTestOutChar(void) {
         dyn_interface_type *intf = nullptr;
         FILE *desc = fopen("descriptors/example4.descriptor", "r");
-        CHECK(desc != nullptr);
+        ASSERT_TRUE(desc != nullptr);
         int rc = dynInterface_parse(desc, &intf);
-        CHECK_EQUAL(0, rc);
+        ASSERT_EQ(0, rc);
         fclose(desc);
 
         char *result = nullptr;
         tst_serv_example4 serv {nullptr, getName_example4};
 
         rc = jsonRpc_call(intf, &serv, R"({"m": "getName(V)t", "a": []})", &result);
-        CHECK_EQUAL(0, rc);
+        ASSERT_EQ(0, rc);
 
-        STRCMP_CONTAINS("allocatedInFunction", result);
+        ASSERT_TRUE(strstr(result, "allocatedInFunction") != nullptr);
 
         free(result);
         dynInterface_destroy(intf);
@@ -335,9 +335,9 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
     void handleTestOutChar(void) {
         dyn_interface_type *intf = nullptr;
         FILE *desc = fopen("descriptors/example4.descriptor", "r");
-        CHECK(desc != nullptr);
+        ASSERT_TRUE(desc != nullptr);
         int rc = dynInterface_parse(desc, &intf);
-        CHECK_EQUAL(0, rc);
+        ASSERT_EQ(0, rc);
         fclose(desc);
 
         struct methods_head *head;
@@ -351,7 +351,7 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
             }
         }
 
-        CHECK(func != nullptr);
+        ASSERT_TRUE(func != nullptr);
 
         const char *reply = R"({"r": "this is a test string"})";
         char *result = nullptr;
@@ -365,15 +365,16 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
 		     jsonRpc_handleReply(func, reply, args);
         }
 
-        STRCMP_EQUAL("this is a test string", result);
+        ASSERT_STREQ("this is a test string", result);
 
         free(result);
         dynInterface_destroy(intf);
     }
 }
 
-TEST_GROUP(JsonRpcTests) {
-    void setup() override {
+class JsonRpcTests : public ::testing::Test {
+public:
+    JsonRpcTests() {
         int lvl = 1;
         dynCommon_logSetup(stdLog, nullptr, lvl);
         dynType_logSetup(stdLog, nullptr,lvl);
@@ -382,38 +383,40 @@ TEST_GROUP(JsonRpcTests) {
         jsonSerializer_logSetup(stdLog, nullptr, lvl);
         jsonRpc_logSetup(stdLog, nullptr, lvl);
     }
+    ~JsonRpcTests() override {
+    }
+
 };
 
-
-TEST(JsonRpcTests, prepareTest) {
+TEST_F(JsonRpcTests, prepareTest) {
     prepareTest();
 }
 
-TEST(JsonRpcTests, handleTestPre) {
+TEST_F(JsonRpcTests, handleTestPre) {
     handleTestPre();
 }
 
-TEST(JsonRpcTests, handleTestOut) {
+TEST_F(JsonRpcTests, handleTestOut) {
     handleTestOut();
 }
 
-TEST(JsonRpcTests, callPre) {
+TEST_F(JsonRpcTests, callPre) {
     callTestPreAllocated();
 }
 
-TEST(JsonRpcTests, callOut) {
+TEST_F(JsonRpcTests, callOut) {
     callTestOutput();
 }
 
-TEST(JsonRpcTests, handleOutSeq) {
+TEST_F(JsonRpcTests, handleOutSeq) {
     handleTestOutputSequence();
 }
 
-TEST(JsonRpcTests, callTestOutChar) {
+TEST_F(JsonRpcTests, callTestOutChar) {
     callTestOutChar();
 }
 
-TEST(JsonRpcTests, handleOutChar) {
+TEST_F(JsonRpcTests, handleOutChar) {
     handleTestOutChar();
 }
 

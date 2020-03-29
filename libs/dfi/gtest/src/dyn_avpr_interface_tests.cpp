@@ -17,8 +17,7 @@
  * under the License.
  */
 
-#include <CppUTest/TestHarness.h>
-#include "CppUTest/CommandLineTestRunner.h"                                                                                                                                                                        
+#include "gtest/gtest.h" 
 
 extern "C" {
     #include <stdio.h>
@@ -103,13 +102,18 @@ const char* theBigAvprFile = "{ \
                 } \
             }";
 
-TEST_GROUP(DynAvprInterfaceTests) {
-    void setup() override {
+
+class DynAvprInterfaceTests : public ::testing::Test {
+public:
+    DynAvprInterfaceTests() {
         int lvl = 1;
         dynAvprInterface_logSetup(stdLog, nullptr, lvl);
         dynAvprFunction_logSetup(stdLog, nullptr, lvl);
         dynAvprType_logSetup(stdLog, nullptr, lvl);
     }
+    ~DynAvprInterfaceTests() override {
+    }
+
 };
 
 static void checkInterfaceVersion(dyn_interface_type* dynIntf, const char* v) {
@@ -117,22 +121,22 @@ static void checkInterfaceVersion(dyn_interface_type* dynIntf, const char* v) {
 
     char *version = nullptr;
     status = dynInterface_getVersionString(dynIntf, &version);
-    CHECK_EQUAL(0, status);
-    STRCMP_EQUAL(v, version);
+    ASSERT_EQ(0, status);
+    ASSERT_STREQ(v, version);
     version_pt msgVersion = nullptr, localMsgVersion = nullptr;
     int cmpVersion = -1;
     version_createVersionFromString(version, &localMsgVersion);
     status = dynInterface_getVersion(dynIntf, &msgVersion);
-    CHECK_EQUAL(0, status);
+    ASSERT_EQ(0, status);
     version_compareTo(msgVersion, localMsgVersion, &cmpVersion);
-    CHECK_EQUAL(cmpVersion, 0);
+    ASSERT_EQ(cmpVersion, 0);
     version_destroy(localMsgVersion);
 }
 
 // Test 1, simply see if parsing works and if parsed correctly
-TEST(DynAvprInterfaceTests, Example1) {
+TEST_F(DynAvprInterfaceTests, Example1) {
     dyn_interface_type *dynIntf = dynInterface_parseAvprWithStr(theBigAvprFile);
-    CHECK(dynIntf != nullptr);
+    ASSERT_TRUE(dynIntf != nullptr);
 
     // Check version
     checkInterfaceVersion(dynIntf, "1.1.0");
@@ -140,35 +144,35 @@ TEST(DynAvprInterfaceTests, Example1) {
     // Check name
     char *name = nullptr;
     dynInterface_getName(dynIntf, &name);
-    CHECK(name != nullptr);
-    STRCMP_EQUAL("the_interface", name);
+    ASSERT_TRUE(name != nullptr);
+    ASSERT_STREQ("the_interface", name);
 
     // Check annotation (namespace)
     char *annVal = nullptr;
     dynInterface_getAnnotationEntry(dynIntf, "namespace", &annVal);
-    CHECK(annVal != nullptr);
-    STRCMP_EQUAL("test.dt", annVal);
+    ASSERT_TRUE(annVal != nullptr);
+    ASSERT_STREQ("test.dt", annVal);
 
     // Check nonexisting
     char *nonExist = nullptr;
     dynInterface_getHeaderEntry(dynIntf, "nonExisting", &nonExist);
-    CHECK(nonExist == nullptr);
+    ASSERT_TRUE(nonExist == nullptr);
 
     // Get lists of methods
     struct methods_head *list = nullptr;
     int status = dynInterface_methods(dynIntf, &list);
-    CHECK(status == 0);
-    CHECK(list != nullptr);
+    ASSERT_TRUE(status == 0);
+    ASSERT_TRUE(list != nullptr);
 
     int count = dynInterface_nrOfMethods(dynIntf);
-    CHECK_EQUAL(2, count);
+    ASSERT_EQ(2, count);
 
     dynInterface_destroy(dynIntf);
 }
 
 // Invalid tests 
-TEST(DynAvprInterfaceTests, InvalidExample) {
+TEST_F(DynAvprInterfaceTests, InvalidExample) {
     dyn_interface_type *dynIntf = dynInterface_parseAvprWithStr(theInvalidAvprFile);
-    CHECK(dynIntf == nullptr);
+    ASSERT_TRUE(dynIntf == nullptr);
 }
 

@@ -28,6 +28,10 @@
 
 #include "dyn_common.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct _dyn_function_type {
     char *name;
     struct types_head *refTypes; //NOTE not owned
@@ -51,5 +55,9 @@ struct _dyn_function_argument_type {
     dyn_type *type;
     TAILQ_ENTRY(_dyn_function_argument_type) entries;
 };
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

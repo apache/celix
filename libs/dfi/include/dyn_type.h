@@ -28,6 +28,10 @@
 
 #include "dfi_log_util.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #if defined(NO_MEMSTREAM_AVAILABLE)
 #include "memstream/open_memstream.h"
 #include "memstream/fmemopen.h"
@@ -267,7 +271,27 @@ int dynType_complex_entries(dyn_type *type, struct complex_type_entries_head **e
 size_t dynType_complex_nrOfEntries(dyn_type *type);
 
 //sequence
+
+/**
+ * Initialize a sequence struct with a cap & len of 0 and the buf to NULL.
+ */
+void dynType_sequence_init(dyn_type *type, void *inst);
+
+/**
+ * Allocates memory for a sequence with capacity cap.
+ * Will not free if the existing buf.
+ * Sets len to 0
+ */
 int dynType_sequence_alloc(dyn_type *type, void *inst, uint32_t cap);
+
+/**
+ * Reserve a sequence capacity of cap
+ * Using realloc of the requested capicity is not enough.
+ * Keeps the len value.
+ * Note will not decrease the allocated memory
+ */
+int dynType_sequence_reserve(dyn_type *type, void *inst, uint32_t cap);
+
 int dynType_sequence_locForIndex(dyn_type *type, void *seqLoc, int index, void **valLoc);
 int dynType_sequence_increaseLengthAndReturnLastLoc(dyn_type *type, void *seqLoc, void **valLoc);
 dyn_type * dynType_sequence_itemType(dyn_type *type);
@@ -285,5 +309,10 @@ void dynType_simple_setValue(dyn_type *type, void *inst, void *in);
 // avpr parsing
 dyn_type * dynType_parseAvpr(FILE *avprStream, const char *fqn);
 dyn_type * dynType_parseAvprWithStr(const char *avpr, const char *fqn);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //_DYN_TYPE_H_
