@@ -256,6 +256,8 @@ static bool func_test5() {
         dynFunction_destroy(dynFunc);
     }
 
+    free(a2);
+
     return rc == 0;
 }
 }
