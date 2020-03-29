@@ -22,30 +22,25 @@ jobs:
     - name: Install dependencies
       run: |
         if [[ "${{ matrix.os }}" == "ubuntu"* ]]; then
-          sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
-          sudo apt-get -qq update
-          sudo apt-get install -y uuid-dev libxml2-dev lcov libffi-dev libcurl4-openssl-dev gcc-4.8 g++-4.8
+          sudo apt-get install -yq --no-install-recommends \
+            build-essential \
+            curl \
+            uuid-dev \
+            libjansson-dev \
+            libcurl4-openssl-dev \
+            default-jdk \
+            cmake \
+            libffi-dev \
+            libxml2-dev \
+            libczmq-dev \
+            libcpputest-dev
         fi
         if [[ "${{ matrix.os }}" == "macOS"* ]]; then
           brew update
-          brew install lcov libffi zeromq czmq openssl
+          brew install lcov libffi zeromq czmq openssl cpputest
           brew link --force libffi
           brew unlink openssl && brew link openssl --force
         fi
-        wget https://github.com/cpputest/cpputest/releases/download/v3.8/cpputest-3.8.tar.gz -O /tmp/cpputest.tar.gz
-        tar -xzvf /tmp/cpputest.tar.gz -C /tmp
-        cd /tmp/cpputest-* && ./configure --prefix=/usr/local && make && sudo make install && cd -
-        if [[ "${{ matrix.os }}" == "ubuntu"* ]]; then
-          wget https://github.com/zeromq/libzmq/releases/download/v4.3.1/zeromq-4.3.1.tar.gz -O /tmp/zeromq.tar.gz
-          tar -xzvf /tmp/zeromq.tar.gz -C /tmp && cd /tmp/zeromq-* && mkdir build && cd build
-          cmake -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_CURVE=ON .. && make && sudo make install
-          wget https://github.com/zeromq/czmq/releases/download/v4.2.0/czmq-4.2.0.tar.gz -O /tmp/czmq.tar.gz
-          tar -xzvf /tmp/czmq.tar.gz -C /tmp && cd /tmp/czmq-* && mkdir build && cd build
-          cmake -DCMAKE_INSTALL_PREFIX=/usr/local .. && make && sudo make install
-        fi
-        cd /tmp && git clone https://github.com/akheron/jansson.git jansson-build
-        cd jansson-build && git checkout 2.7
-        cmake -DJANSSON_BUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=/usr/local . && make && sudo make install
         cd $GITHUB_WORKSPACE
     - name: Build
       env:
