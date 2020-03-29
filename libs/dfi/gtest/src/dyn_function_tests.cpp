@@ -53,36 +53,46 @@ public:
 
 };
 
-TEST_F(DynFunctionTests, DynFuncTest1) {
-    dyn_function_type *dynFunc = nullptr;
-    int rc;
-    void (*fp)(void) = (void (*)(void)) example1;
 
-    rc = dynFunction_parseWithStr(EXAMPLE1_DESCRIPTOR, nullptr, &dynFunc);
-    ASSERT_EQ(0, rc);
+extern "C" {
+    static bool func_test1() {
+        dyn_function_type *dynFunc = nullptr;
+        int rc;
+        void (*fp)(void) = (void (*)(void)) example1;
 
-    int32_t a = 2;
-    int32_t b = 4;
-    int32_t c = 8;
-    void *values[3];
-    int32_t rVal = 0;
-    values[0] = &a;
-    values[1] = &b;
-    values[2] = &c;
+        rc = dynFunction_parseWithStr(EXAMPLE1_DESCRIPTOR, nullptr, &dynFunc);
 
-    rc = dynFunction_call(dynFunc, fp, &rVal, values);
-    ASSERT_EQ(0, rc);
-    ASSERT_EQ(14, rVal);
-    dynFunction_destroy(dynFunc);
+        int32_t rVal = 0;
+        int32_t a = 2;
+        int32_t b = 4;
+        int32_t c = 8;
+        void *values[3];
+        values[0] = &a;
+        values[1] = &b;
+        values[2] = &c;
+
+        if (rc == 0) {
+            rc = dynFunction_call(dynFunc, fp, &rVal, values);
+            dynFunction_destroy(dynFunc);
+        }
+
+        return rc == 0 && rVal == 14;
+    }
 }
 
-TEST_F(DynFunctionTests, DynFuncTest2) {
+TEST_F(DynFunctionTests, DynFuncTest1) {
+    //NOTE only using libffi with extern C, because combining libffi with EXPECT_*/ASSERT_* call leads to
+    //corrupted memory. Note that libffi is a function for interfacing with C not C++
+    EXPECT_TRUE(func_test1());
+}
+
+extern "C" {
+static bool func_test2() {
     dyn_function_type *dynFunc = nullptr;
     int rc;
     void (*fp)(void) = (void (*)(void)) example2;
 
     rc = dynFunction_parseWithStr(EXAMPLE2_DESCRIPTOR, nullptr, &dynFunc);
-    ASSERT_EQ(0, rc);
 
     int32_t arg1 = 2;
     struct example2_arg arg2;
@@ -96,78 +106,111 @@ TEST_F(DynFunctionTests, DynFuncTest2) {
     values[1] = &arg2;
     values[2] = &arg3;
 
-    rc = dynFunction_call(dynFunc, fp, &returnVal, values);
-    ASSERT_EQ(0, rc);
-    ASSERT_EQ(19.2, returnVal);
-    dynFunction_destroy(dynFunc);
+    if (rc == 0) {
+        rc = dynFunction_call(dynFunc, fp, &returnVal, values);
+        dynFunction_destroy(dynFunc);
+    }
+
+    return rc == 0 && returnVal == 19.2;
+}
 }
 
-TEST_F(DynFunctionTests, DynFuncAccTest) {
+TEST_F(DynFunctionTests, DynFuncTest2) {
+    //NOTE only using libffi with extern C, because combining libffi with EXPECT_*/ASSERT_* call leads to
+    //corrupted memory. Note that libffi is a function for interfacing with C not C++
+    EXPECT_TRUE(func_test2());
+}
+
+extern "C" {
+static bool func_acc() {
     dyn_function_type *dynFunc = nullptr;
     int rc;
     rc = dynFunction_parseWithStr("add(D{DD a b}*D)V", nullptr, &dynFunc);
 
-    ASSERT_EQ(0, rc);
+    int nrOfArgs = 0;
+    bool isStruct = false;
+    bool isVoid = false;
+    dyn_type *nonExist = nullptr;
+    if (rc == 0) {
+         nrOfArgs = dynFunction_nrOfArguments(dynFunc);
+        dyn_type *arg1 = dynFunction_argumentTypeForIndex(dynFunc, 1);
+        if (arg1 != nullptr) {
+            isStruct = '{' == dynType_descriptorType(arg1);
+        }
+        nonExist = dynFunction_argumentTypeForIndex(dynFunc, 10);
+        dyn_type *returnType = dynFunction_returnType(dynFunc);
+        if (returnType != nullptr) {
+            isVoid = 'V' == dynType_descriptorType(returnType);
+        }
+        dynFunction_destroy(dynFunc);
+    }
 
-    int nrOfArgs = dynFunction_nrOfArguments(dynFunc);
-    ASSERT_EQ(3, nrOfArgs);
-
-    dyn_type *arg1 = dynFunction_argumentTypeForIndex(dynFunc, 1);
-    ASSERT_TRUE(arg1 != nullptr);
-    ASSERT_EQ('{', (char) dynType_descriptorType(arg1));
-
-    dyn_type *nonExist = dynFunction_argumentTypeForIndex(dynFunc, 10);
-    ASSERT_TRUE(nonExist == nullptr);
-
-    dyn_type *returnType = dynFunction_returnType(dynFunc);
-    ASSERT_EQ('V', (char) dynType_descriptorType(returnType));
-
-    dynFunction_destroy(dynFunc);
+    return rc == 0 && nrOfArgs == 3 && isStruct && isVoid && nonExist == nullptr;
+}
 }
 
-TEST_F(DynFunctionTests, DynFuncTest3) {
+TEST_F(DynFunctionTests, DynFuncAccTest) {
+    //NOTE only using libffi with extern C, because combining libffi with EXPECT_*/ASSERT_* call leads to
+    //corrupted memory. Note that libffi is a function for interfacing with C not C++
+    EXPECT_TRUE(func_acc());
+}
+
+extern "C" {
+static bool func_test3() {
     dyn_function_type *dynFunc = nullptr;
     void (*fp)(void) = (void(*)(void)) testExample3;
     int rc;
 
     rc = dynFunction_parseWithStr(EXAMPLE3_DESCRIPTOR, nullptr, &dynFunc);
-    ASSERT_EQ(0, rc);
-    double result = -1.0;
-    double *input = &result;
-    double a = 2.0;
-    void *ptr = &a;
-    void *args[3];
-    args[0] = &ptr;
-    args[1] = &a;
-    args[2] = &input;
-    int rVal = 0;
-    rc = dynFunction_call(dynFunc, fp, &rVal, args);
-    ASSERT_EQ(0, rc);
-    ASSERT_EQ(4.0, result);
+    double result1 = -1.0;
+    double result2 = -1.0;
 
+    if (rc == 0) {
+        double *input = &result1;
+        double a = 2.0;
+        void *ptr = &a;
+        void *args[3];
+        args[0] = &ptr;
+        args[1] = &a;
+        args[2] = &input;
+        int rVal = 0;
 
-    double *inMemResult = (double *)calloc(1, sizeof(double));
-    a = 2.0;
-    ptr = &a;
-    args[0] = &ptr;
-    args[1] = &a;
-    args[2] = &inMemResult;
-    rVal = 0;
-    rc = dynFunction_call(dynFunc, fp, &rVal, args);
-    ASSERT_EQ(0, rc);
-    ASSERT_EQ(4.0, result);
-    free(inMemResult);
+        rc = dynFunction_call(dynFunc, fp, &rVal, args);
 
-    dynFunction_destroy(dynFunc);
+        double *inMemResult = (double *)calloc(1, sizeof(double));
+        a = 2.0;
+        ptr = &a;
+        args[0] = &ptr;
+        args[1] = &a;
+        args[2] = &inMemResult;
+        rVal = 0;
+        if (rc == 0) {
+            rc = dynFunction_call(dynFunc, fp, &rVal, args);
+        }
+        result2 = *inMemResult;
+        free(inMemResult);
+
+        dynFunction_destroy(dynFunc);
+    }
+
+    return rc == 0 && result1 == 4.0 && result2 == 4.0;
+}
 }
 
-TEST_F(DynFunctionTests, DynFuncTest4) {
+
+TEST_F(DynFunctionTests, DynFuncTest3) {
+    //NOTE only using libffi with extern C, because combining libffi with EXPECT_*/ASSERT_* call leads to
+    //corrupted memory. Note that libffi is a function for interfacing with C not C++
+    EXPECT_TRUE(func_test3());
+}
+
+extern "C" {
+static bool func_test4() {
     dyn_function_type *dynFunc = nullptr;
     void (*fp)(void) = (void(*)(void)) example4Func;
     int rc;
 
     rc = dynFunction_parseWithStr(EXAMPLE4_DESCRIPTOR, nullptr, &dynFunc);
-    ASSERT_EQ(0, rc);
 
     double buf[4];
     buf[0] = 1.1;
@@ -179,19 +222,28 @@ TEST_F(DynFunctionTests, DynFuncTest4) {
 
     void *args[1];
     args[0] = &seq;
-    rc = dynFunction_call(dynFunc, fp, nullptr, args);
-    ASSERT_EQ(0, rc);
+    if (rc == 0) {
+        rc = dynFunction_call(dynFunc, fp, nullptr, args);
+        dynFunction_destroy(dynFunc);
+    }
 
-    dynFunction_destroy(dynFunc);
+    return rc == 0;
+}
 }
 
-TEST_F(DynFunctionTests, DynFuncTest5) {
+TEST_F(DynFunctionTests, DynFuncTest4) {
+    //NOTE only using libffi with extern C, because combining libffi with EXPECT_*/ASSERT_* call leads to
+    //corrupted memory. Note that libffi is a function for interfacing with C not C++
+    EXPECT_TRUE(func_test4());
+}
+
+extern "C" {
+static bool func_test5() {
     dyn_function_type *dynFunc = nullptr;
     void (*fp)(void) = (void(*)(void)) example5Func;
     int rc;
 
     rc = dynFunction_parseWithStr(EXAMPLE5_DESCRIPTOR, nullptr, &dynFunc);
-    ASSERT_EQ(0, rc);
 
     const char *a1 = "s1";
     char *a2 = strdup("s2");
@@ -199,19 +251,35 @@ TEST_F(DynFunctionTests, DynFuncTest5) {
     args[0] = &a1;
     args[1] = &a2;
 
-    rc = dynFunction_call(dynFunc, fp, nullptr, args);
-    ASSERT_EQ(0, rc);
+    if (rc == 0) {
+        rc = dynFunction_call(dynFunc, fp, nullptr, args);
+        dynFunction_destroy(dynFunc);
+    }
 
-    dynFunction_destroy(dynFunc);
+    return rc == 0;
+}
+}
+
+TEST_F(DynFunctionTests, DynFuncTest5) {
+    //NOTE only using libffi with extern C, because combining libffi with EXPECT_*/ASSERT_* call leads to
+    //corrupted memory. Note that libffi is a function for interfacing with C not C++
+    EXPECT_TRUE(func_test5());
+}
+
+extern "C" {
+static bool func_invalid() {
+    dyn_function_type *dynFunc = nullptr;
+    int rc1 = dynFunction_parseWithStr(INVALID_FUNC_DESCRIPTOR, nullptr, &dynFunc);
+
+    dynFunc = nullptr;
+    int rc2 = dynFunction_parseWithStr(INVALID_FUNC_TYPE_DESCRIPTOR, nullptr, &dynFunc);
+    return rc1 != 0 && rc2 != 0;
+}
 }
 
 TEST_F(DynFunctionTests, InvalidDynFuncTest) {
-    dyn_function_type *dynFunc = nullptr;
-    int rc = dynFunction_parseWithStr(INVALID_FUNC_DESCRIPTOR, nullptr, &dynFunc);
-    ASSERT_EQ(2, rc); //Mem error
-
-    dynFunc = nullptr;
-    rc = dynFunction_parseWithStr(INVALID_FUNC_TYPE_DESCRIPTOR, nullptr, &dynFunc);
-    ASSERT_EQ(3, rc); //Parse Error
+    //NOTE only using libffi with extern C, because combining libffi with EXPECT_*/ASSERT_* call leads to
+    //corrupted memory. Note that libffi is a function for interfacing with C not C++
+    EXPECT_TRUE(func_invalid());
 }
 

@@ -271,7 +271,27 @@ int dynType_complex_entries(dyn_type *type, struct complex_type_entries_head **e
 size_t dynType_complex_nrOfEntries(dyn_type *type);
 
 //sequence
+
+/**
+ * Initialize a sequence struct with a cap & len of 0 and the buf to NULL.
+ */
+void dynType_sequence_init(dyn_type *type, void *inst);
+
+/**
+ * Allocates memory for a sequence with capacity cap.
+ * Will not free if the existing buf.
+ * Sets len to 0
+ */
 int dynType_sequence_alloc(dyn_type *type, void *inst, uint32_t cap);
+
+/**
+ * Reserve a sequence capacity of cap
+ * Using realloc of the requested capicity is not enough.
+ * Keeps the len value.
+ * Note will not decrease the allocated memory
+ */
+int dynType_sequence_reserve(dyn_type *type, void *inst, uint32_t cap);
+
 int dynType_sequence_locForIndex(dyn_type *type, void *seqLoc, int index, void **valLoc);
 int dynType_sequence_increaseLengthAndReturnLastLoc(dyn_type *type, void *seqLoc, void **valLoc);
 dyn_type * dynType_sequence_itemType(dyn_type *type);

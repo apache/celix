@@ -647,16 +647,25 @@ int dynType_complex_entries(dyn_type *type, struct complex_type_entries_head **e
 }
 
 //sequence
+
+void dynType_sequence_init(dyn_type *type, void *inst) {
+    assert(type->type == DYN_TYPE_SEQUENCE);
+    struct generic_sequence *seq = inst;
+    seq->buf = NULL;
+    seq->cap = 0;
+    seq->len = 0;
+}
+
 int dynType_sequence_alloc(dyn_type *type, void *inst, uint32_t cap) {
     assert(type->type == DYN_TYPE_SEQUENCE);
     int status = OK;
     struct generic_sequence *seq = inst;
     if (seq != NULL) {
         size_t size = dynType_size(type->sequence.itemType);
-        seq->buf = calloc(cap, size);
+        seq->buf = malloc(cap * size);
         if (seq->buf != NULL) {
             seq->cap = cap;
-            seq->len = 0;;
+            seq->len = 0;
         } else {
             seq->cap = 0;
             status = MEM_ERROR;
@@ -665,6 +674,27 @@ int dynType_sequence_alloc(dyn_type *type, void *inst, uint32_t cap) {
     } else {
             status = MEM_ERROR;
             LOG_ERROR("Error allocating memory for seq")
+    }
+    return status;
+}
+
+int dynType_sequence_reserve(dyn_type *type, void *inst, uint32_t cap) {
+    assert(type->type == DYN_TYPE_SEQUENCE);
+    int status = OK;
+    struct generic_sequence *seq = inst;
+    if (seq != NULL && seq->cap < cap) {
+        size_t size = dynType_size(type->sequence.itemType);
+        seq->buf = reallocarray(seq->buf, cap, size);
+        if (seq->buf != NULL) {
+            seq->cap = cap;
+        } else {
+            seq->cap = 0;
+            status = MEM_ERROR;
+            LOG_ERROR("Error allocating memory for buf")
+        }
+    } else {
+        status = MEM_ERROR;
+        LOG_ERROR("Error allocating memory for seq")
     }
     return status;
 }
@@ -716,7 +746,7 @@ void dynType_freeSequenceType(dyn_type *type, void *seqLoc) {
     dyn_type *itemType = dynType_sequence_itemType(type);
     void *itemLoc = NULL;
     int i;
-    for (i = 0; i < seq->len; i += 1) {
+    for (i = 0; i < seq->len; ++i) {
         dynType_sequence_locForIndex(type, seqLoc, i, &itemLoc);
         dynType_deepFree(itemType, itemLoc, false);
     }
@@ -744,7 +774,6 @@ int dynType_sequence_locForIndex(dyn_type *type, void *seqLoc, int index, void *
     int status = OK;
 
     struct generic_sequence *seq = seqLoc;
-    char *valLoc = seq->buf;
 
     size_t itemSize = dynType_size(type->sequence.itemType);
 
@@ -757,17 +786,10 @@ int dynType_sequence_locForIndex(dyn_type *type, void *seqLoc, int index, void *
         LOG_WARNING("Requesting index (%i) outsize defined length (%u) but within capacity", index, seq->len);
     }
 
-    if (status == OK) { }
-    int i;
-    for (i = 0; i < seq->cap; i += 1) {
-        if (index == i) {
-            break;
-        } else {
-            valLoc += itemSize;
-        }
+    if (status == OK) {
+        char *valLoc = seq->buf + (index * itemSize);
+        (*out) = valLoc;
     }
-
-    (*out) = valLoc;
 
     return status;
 }
