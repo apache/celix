@@ -20,7 +20,7 @@ Apache Celix aims to be support a broad range of UNIX platforms.
  
 Currently the [continuous integration build server](https://travis-ci.org/apache/celix) builds and tests Apache Celix for:
 
-* Ubuntu Trusty Tahr (18.04)
+* Ubuntu Bionic Beaver (18.04)
     * GCC 
     * CLang 
 * OSX
