@@ -684,7 +684,7 @@ int dynType_sequence_reserve(dyn_type *type, void *inst, uint32_t cap) {
     struct generic_sequence *seq = inst;
     if (seq != NULL && seq->cap < cap) {
         size_t size = dynType_size(type->sequence.itemType);
-        seq->buf = reallocarray(seq->buf, cap, size);
+        seq->buf = realloc(seq->buf, (size_t)(cap * size));
         if (seq->buf != NULL) {
             seq->cap = cap;
         } else {
