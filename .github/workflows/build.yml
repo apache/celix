@@ -8,19 +8,18 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macOS-10.14]
+        os: [macOS-latest]
         #os: [ubuntu-18.04, ubuntu-16.04, macOS-10.14]
         compiler: [clang]
         include:
           - os: ubuntu-18.04
-            name: Ubuntu Bionic (18) clang
             compiler: clang
           - os: ubuntu-18.04
-            name: Ubuntu Bionic (18) gcc (sanitizer)
+            name: sanitizer
             compiler: gcc
             sanitize: true
           - os: ubuntu-18.04
-            name: Ubuntu Bionic (18) gcc (only v3 api)
+            name: only v3 api
             compiler: gcc
             v3_api: true
     timeout-minutes: 120
