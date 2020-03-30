@@ -20,14 +20,12 @@ Apache Celix aims to be support a broad range of UNIX platforms.
  
 Currently the [continuous integration build server](https://travis-ci.org/apache/celix) builds and tests Apache Celix for:
 
-* Ubuntu Trusty Tahr (14.04)
+* Ubuntu Bionic Beaver (18.04)
     * GCC 
     * CLang 
 * OSX
     * GCC 
     * CLang 
-* Android (cross-compiled on Ubuntu Trusty Tahr) 
-    * GCC 
 
 # Preparing
 The following packages (libraries + headers) should be installed on your system:
@@ -48,16 +46,26 @@ The following packages (libraries + headers) should be installed on your system:
 
 For debian based systems (apt), the following command should work:
 ```bash
+#required for celix framework and default bundles
 sudo apt-get install -yq --no-install-recommends \
-	build-essential \
-  	curl \
-  	git \
-  	libjansson-dev \
-  	libcurl4-openssl-dev \
-    java \
-  	cmake \
-  	libffi-dev \
-  	libxml2-dev
+    build-essential \
+    curl \
+    uuid-dev \
+    git \
+    libjansson-dev \
+    libcurl4-openssl-dev \
+    default-jdk \
+    cmake \
+    libffi-dev \
+    libxml2-dev
+
+#required if the ZMQ PubSubAdmin option (BUILD_PUBSUB_PSA_ZMQ) is enabled
+sudo apt-get install -yq --no-install-recommends \
+    libczmq-dev 
+     
+#required if the ENABLE_TESTING option is enabled
+sudo apt-get install -yq --no-install-recommends \
+    libcpputest-dev
 ```
 
 For Fedora based systems (dnf), the following command should work:
