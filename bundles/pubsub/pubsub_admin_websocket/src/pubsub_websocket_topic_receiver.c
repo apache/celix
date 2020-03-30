@@ -469,16 +469,19 @@ static inline void processMsgForSubscriberEntry(pubsub_websocket_topic_receiver_
     pubsub_subscriber_t *svc = entry->svc;
 
     if (msgSer!= NULL && msgTypeId != 0) {
-        void *deserializedMsg = NULL;
+        void *deSerializedMsg = NULL;
         bool validVersion = psa_websocket_checkVersion(msgSer->msgVersion, hdr);
         if (validVersion) {
-            celix_status_t status = msgSer->deserialize(msgSer->handle, payload, payloadSize, &deserializedMsg);
+            struct iovec deSerializeBuffer;
+            deSerializeBuffer.iov_base = (void *)payload;
+            deSerializeBuffer.iov_len  = payloadSize;
+            celix_status_t status = msgSer->deserialize(msgSer->handle, &deSerializeBuffer, 0, &deSerializedMsg);
 
             if (status == CELIX_SUCCESS) {
                 bool release = true;
-                svc->receive(svc->handle, msgSer->msgName, msgSer->msgId, deserializedMsg, NULL, &release);
+                svc->receive(svc->handle, msgSer->msgName, msgSer->msgId, deSerializedMsg, NULL, &release);
                 if (release) {
-                    msgSer->freeMsg(msgSer->handle, deserializedMsg);
+                    msgSer->freeDeserializeMsg(msgSer->handle, deSerializedMsg);
                 }
             } else {
                 L_WARN("[PSA_WEBSOCKET_TR] Cannot deserialize msg type %s for scope/topic %s/%s", msgSer->msgName, receiver->scope, receiver->topic);

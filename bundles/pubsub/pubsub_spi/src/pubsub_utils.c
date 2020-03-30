@@ -128,7 +128,7 @@ char* pubsub_getKeysBundleDir(celix_bundle_context_t *ctx) {
     return result;
 }
 
-celix_properties_t *pubsub_utils_getTopicProperties(const celix_bundle_t *bundle, const char *topic, bool isPublisher) {
+celix_properties_t *pubsub_utils_getTopicProperties(const celix_bundle_t *bundle, const char *topic, const char *scope, bool isPublisher) {
     celix_properties_t *topic_props = NULL;
 
     bool isSystemBundle = false;
@@ -143,12 +143,17 @@ celix_properties_t *pubsub_utils_getTopicProperties(const celix_bundle_t *bundle
         bundle_getEntry((celix_bundle_t *)bundle, ".", &bundleRoot);
 
         if (bundleRoot != NULL) {
-            asprintf(&topicPropertiesPath, "%s/META-INF/topics/%s/%s.properties", bundleRoot, isPublisher? "pub":"sub", topic);
+            asprintf(&topicPropertiesPath, "%s/META-INF/topics/%s/%s.%s,properties", bundleRoot, isPublisher? "pub":"sub", topic, scope);
             topic_props = celix_properties_load(topicPropertiesPath);
-            if (topic_props == NULL) {
-                printf("PubSub: Could not load properties for %s on topic %s. Searched location %s, bundleId=%ld\n", isPublisher? "publication":"subscription", topic, topicPropertiesPath, bundleId);
-            }
 
+            if (topic_props == NULL) {
+              free(topicPropertiesPath);
+              asprintf(&topicPropertiesPath, "%s/META-INF/topics/%s/%s.properties", bundleRoot, isPublisher ? "pub" : "sub", topic);
+              topic_props = celix_properties_load(topicPropertiesPath);
+              if (topic_props == NULL) {
+                printf("PubSub: Could not load properties for %s on topic %s. Searched location %s, bundleId=%ld\n", isPublisher ? "publication" : "subscription", topic, topicPropertiesPath, bundleId);
+              }
+            }
             free(topicPropertiesPath);
             free(bundleRoot);
         }

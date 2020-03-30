@@ -41,7 +41,7 @@
 unsigned int ipUtils_ipToUnsignedInt(char *ip) {
     unsigned int ipAsUint = 0;
 
-    char *partOfIp, *savePtr;
+    char *partOfIp = NULL, *savePtr = NULL;
     char *input = strdup(ip); // Make a copy because otherwise strtok_r manipulates the input string
     partOfIp = strtok_r(input, ".\0", &savePtr); ipAsUint += strtoul(partOfIp, NULL, 10) * (unsigned int) pow(256, 3);
     partOfIp = strtok_r(NULL, ".\0", &savePtr);  ipAsUint += strtoul(partOfIp, NULL, 10) * (unsigned int) pow(256, 2);

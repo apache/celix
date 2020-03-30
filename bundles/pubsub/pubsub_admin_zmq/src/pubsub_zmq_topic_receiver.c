@@ -481,21 +481,24 @@ static inline void processMsgForSubscriberEntry(pubsub_zmq_topic_receiver_t *rec
     int updateSerError = 0;
 
     if (msgSer!= NULL) {
-        void *deserializedMsg = NULL;
+        void *deSerializedMsg = NULL;
         bool validVersion = psa_zmq_checkVersion(msgSer->msgVersion, message->header.msgMajorVersion, message->header.msgMinorVersion);
         if (validVersion) {
             if (monitor) {
                 clock_gettime(CLOCK_REALTIME, &beginSer);
             }
-            celix_status_t status = msgSer->deserialize(msgSer->handle, message->payload.payload, message->payload.length, &deserializedMsg);
+            struct iovec deSerializeBuffer;
+            deSerializeBuffer.iov_base = message->payload.payload;
+            deSerializeBuffer.iov_len  = message->payload.length;
+            celix_status_t status = msgSer->deserialize(msgSer->handle, &deSerializeBuffer, 0, &deSerializedMsg);
             if (monitor) {
                 clock_gettime(CLOCK_REALTIME, &endSer);
             }
             if (status == CELIX_SUCCESS) {
                 bool release = true;
-                svc->receive(svc->handle, msgSer->msgName, msgSer->msgId, deserializedMsg, message->metadata.metadata, &release);
+                svc->receive(svc->handle, msgSer->msgName, msgSer->msgId, deSerializedMsg, message->metadata.metadata, &release);
                 if (release) {
-                    msgSer->freeMsg(msgSer->handle, deserializedMsg);
+                    msgSer->freeDeserializeMsg(msgSer->handle, deSerializedMsg);
                 }
                 updateReceiveCount += 1;
             } else {

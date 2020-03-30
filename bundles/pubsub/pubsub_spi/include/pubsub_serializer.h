@@ -23,6 +23,7 @@
 #include "hash_map.h"
 #include "version.h"
 #include "celix_bundle.h"
+#include "sys/uio.h"
 
 /**
  * There should be a pubsub_serializer_t
@@ -44,9 +45,10 @@ typedef struct pubsub_msg_serializer {
     const char* msgName;
     version_pt msgVersion;
 
-    celix_status_t (*serialize)(void* handle, const void* input, void** out, size_t* outLen);
-    celix_status_t (*deserialize)(void* handle, const void* input, size_t inputLen, void** out); //note inputLen can be 0 if predefined size is not needed
-    void (*freeMsg)(void* handle, void* msg);
+    celix_status_t (*serialize)(void* handle, const void* input, struct iovec** output, size_t* outputIovLen);
+    void (*freeSerializeMsg)(void* handle, const struct iovec* input, size_t inputIovLen);
+    celix_status_t (*deserialize)(void* handle, const struct iovec* input, size_t inputIovLen, void** out); //note inputLen can be 0 if predefined size is not needed
+    void (*freeDeserializeMsg)(void* handle, void* msg);
 
 } pubsub_msg_serializer_t;
 

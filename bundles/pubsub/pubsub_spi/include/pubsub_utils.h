@@ -165,10 +165,11 @@ bool pubsub_utils_matchEndpoint(
  *
  * @param bundle         The bundle where the properties reside.
  * @param topic          The topic name.
+ * @param scope          The scope name.
  * @param isPublisher    true if the topic properties for a publisher should be found.
  * @return               The topic properties if found or NULL.
  */
-celix_properties_t* pubsub_utils_getTopicProperties(const celix_bundle_t *bundle, const char *topic, bool isPublisher);
+celix_properties_t* pubsub_utils_getTopicProperties(const celix_bundle_t *bundle, const char *topic, const char *scope, bool isPublisher);
 
 #ifdef __cplusplus
 }
