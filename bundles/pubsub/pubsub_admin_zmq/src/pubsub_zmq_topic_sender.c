@@ -535,12 +535,9 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
         }
 
         if (status == CELIX_SUCCESS /*ser ok*/) {
-            if (metadata == NULL) {
-                metadata = celix_properties_create();
-            }
             celixThreadMutex_lock(&entry->sendLock);
 
-            bool cont = pubsubInterceptorHandler_invokePreSend(sender->interceptorsHandler, entry->msgSer->msgName, msgTypeId, inMsg, metadata);
+            bool cont = pubsubInterceptorHandler_invokePreSend(sender->interceptorsHandler, entry->msgSer->msgName, msgTypeId, inMsg, &metadata);
             if (cont) {
                 pubsub_protocol_message_t message;
                 message.payload.payload = serializedOutput;
@@ -555,6 +552,8 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
                 if (metadata != NULL) {
                     message.metadata.metadata = metadata;
                     entry->protSer->encodeMetadata(entry->protSer->handle, &message, &metadataData, &metadataLength);
+                } else {
+                    message.metadata.metadata = NULL;
                 }
 
                 message.header.msgId = msgTypeId;

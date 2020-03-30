@@ -503,7 +503,7 @@ static inline void processMsgForSubscriberEntry(pubsub_zmq_topic_receiver_t *rec
                 const char *msgType = msgSer->msgName;
                 uint32_t msgId = message->header.msgId;
                 celix_properties_t *metadata = message->metadata.metadata;
-                bool cont = pubsubInterceptorHandler_invokePreReceive(receiver->interceptorsHandler, msgType, msgId, deserializedMsg, metadata);
+                bool cont = pubsubInterceptorHandler_invokePreReceive(receiver->interceptorsHandler, msgType, msgId, deserializedMsg, &metadata);
                 if (cont) {
                     bool release = true;
                     svc->receive(svc->handle, msgSer->msgName, msgSer->msgId, deserializedMsg,
@@ -627,10 +627,15 @@ static void* psa_zmq_recvThread(void * data) {
                 if (message.header.payloadSize > 0) {
                     payload = zmsg_pop(zmsg);
                     receiver->protocol->decodePayload(receiver->protocol->handle, zframe_data(payload), zframe_size(payload), &message);
+                } else {
+                    message.payload.payload = NULL;
+                    message.payload.length = 0;
                 }
                 if (message.header.metadataSize > 0) {
                     metadata = zmsg_pop(zmsg);
                     receiver->protocol->decodeMetadata(receiver->protocol->handle, zframe_data(metadata), zframe_size(metadata), &message);
+                } else {
+                    message.metadata.metadata = NULL;
                 }
                 if (header != NULL && payload != NULL) {
                     struct timespec receiveTime;
