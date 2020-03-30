@@ -8,13 +8,24 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macOS-10.14]
+        os: []
         #os: [ubuntu-18.04, ubuntu-16.04, macOS-10.14]
-        compiler: [gcc, clang]
+        compiler: []
         include:
+          - os: macOS-10.14
+            name: OSX (10.14) clang
+            compiler: clang
           - os: ubuntu-18.04
+            name: Ubuntu Bionic (18) clang
+            compiler: clang
+          - os: ubuntu-18.04
+            name: Ubuntu Bionic (18) gcc (sanitizer)
             compiler: gcc
             sanitize: true
+          - os: ubuntu-18.04
+            name: Ubuntu Bionic (18) gcc (only v3 api)
+            compiler: gcc
+            v3_api: true
     timeout-minutes: 120
     steps:
     - name: Checkout source code
@@ -22,6 +33,7 @@ jobs:
     - name: Install dependencies
       run: |
         if [[ "${{ matrix.os }}" == "ubuntu"* ]]; then
+          sudo apt-get update
           sudo apt-get install -yq --no-install-recommends \
             build-essential \
             curl \
@@ -72,11 +84,17 @@ jobs:
           -DBUILD_RSA_DISCOVERY_SHM=OFF
         BUILD_OPTIONS_SANITIZE: |
           -DENABLE_ADDRESS_SANITIZER=ON
+        BUILD_OPTIONS_V3_API: |
+          -DCELIX_USE_ZIP_INSTEAD_OF_JAR=ON
+          -DCELIX_INSTALL_DEPRECATED_API=OFF
       run: |
         mkdir build install
         cd build
         if [[ "${{ matrix.sanitize }}" == "true" ]]; then
           export BUILD_OPTIONS="${BUILD_OPTIONS} ${BUILD_OPTIONS_SANITIZE}"
+        fi
+        if [[ "${{ matrix.v3_api }}" == "true" ]]; then
+          export BUILD_OPTIONS="${BUILD_OPTIONS} ${BUILD_OPTIONS_V3_API}"
         fi
         if [[ "${{ matrix.os }}" == "ubuntu"* ]]; then
           cmake -DCMAKE_BUILD_TYPE=Debug ${BUILD_OPTIONS} ${BUILD_OPTIONS_LINUX} \
