@@ -17,8 +17,7 @@
  * under the License.
  */
 
-#include <CppUTest/TestHarness.h>
-#include "CppUTest/CommandLineTestRunner.h"                                                                                                                                                                        
+#include "gtest/gtest.h"
 
 extern "C" {
 
@@ -155,28 +154,33 @@ extern "C" {
     }
 }
 
-TEST_GROUP(AvroDescTranslatorTest) {
-    void setup() {
+class AvroDescTranslatorTest : public ::testing::Test {
+public:
+    AvroDescTranslatorTest() {
         descriptorTranslator_logSetup(stdLog, NULL, 3);
         dynInterface_logSetup(stdLog, NULL, 3);
         dynType_logSetup(stdLog, NULL, 3);
         dynCommon_logSetup(stdLog, NULL, 3);
     }
+    ~AvroDescTranslatorTest() override {
+    }
+
 };
 
-TEST(AvroDescTranslatorTest, simple) {
+
+TEST_F(AvroDescTranslatorTest, simple) {
     simple();
 }
 
-TEST(AvroDescTranslatorTest, complex) {
+TEST_F(AvroDescTranslatorTest, complex) {
     complex();
 }
 
-TEST(AvroDescTranslatorTest, invalid1) {
+TEST_F(AvroDescTranslatorTest, invalid1) {
     invalid("schemas/invalid1.avpr");
 }
 
-TEST(AvroDescTranslatorTest, invalid2) {
+TEST_F(AvroDescTranslatorTest, invalid2) {
     invalid("schemas/invalid2.avpr");
 }
 

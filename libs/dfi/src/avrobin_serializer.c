@@ -438,97 +438,62 @@ static int avrobinSerializer_parseComplex(dyn_type *type, void *loc, FILE *strea
 }
 
 static int avrobinSerializer_parseSequence(dyn_type *type, void *loc, FILE *stream) {
-    int64_t blockCount;
-    int64_t blockSize;
-    int64_t totalCount = 0;
+    /* Avro 1.8.1 Specification
+     * Arrays
+     * Arrays are encoded as a series of blocks. Each block consists of a long count value, followed by that many array items. A block with count zero indicates the end of the array. Each item is encoded per the array's item schema.
+     * If a block's count is negative, its absolute value is used, and the count is followed immediately by a long block size indicating the number of bytes in the block. This block size permits fast skipping through data, e.g., when projecting a record to a subset of its fields.
+     * For example, the array schema
+     * {"type": "array", "items": "long"}
+     * an array containing the items 3 and 27 could be encoded as the long value 2 (encoded as hex 04) followed by long values 3 and 27 (encoded as hex 06 36) terminated by zero:
+     * 04 06 36 00
+     * The blocked representation permits one to read and write arrays larger than can be buffered in memory, since one can start writing items without knowing the full length of the array.
+     */
 
+    dynType_sequence_init(type, loc);
+    int status = 0;
     dyn_type *itemType = dynType_sequence_itemType(type);
+    size_t itemSize = (int64_t)dynType_size(itemType);
+    uint32_t cap = 0;
 
-    void *itemLoc = NULL;
-    if (dynType_alloc(itemType, &itemLoc) != OK) {
-        return ERROR;
-    }
+    int64_t blockCount = 0;
+    int64_t blockSize = 0;
 
-    fpos_t streamPos;
-    if (fgetpos(stream, &streamPos) != 0) {
-        LOG_ERROR("Failed to get position of stream.");
-        return ERROR;
-    }
-
-    if (avrobin_read_long(stream, &blockCount) != OK) {
-        LOG_ERROR("Failed to read array block count.");
-        dynType_free(itemType, itemLoc);
-        return ERROR;
-    }
-
-    while (blockCount != 0) {
-        if (blockCount < 0) {
-            if (avrobin_read_long(stream, &blockSize) != OK) {
-                LOG_ERROR("Failed to read array block size.");
-                dynType_free(itemType, itemLoc);
-                return ERROR;
-            }
-            blockCount *= -1;
-        }
-
-        totalCount += blockCount;
-
-        for (int64_t i=0; i<blockCount; i++) {
-            if (avrobinSerializer_parseAny(itemType, itemLoc, stream) != OK) {
-                dynType_free(itemType, itemLoc);
-                return ERROR;
+    do {
+        status = avrobin_read_long(stream, &blockCount);
+        if (status != OK) {
+            break;
+        } else if (blockCount < 0) {
+            blockSize = blockCount * -1; //found a block of blockSize bytes
+            blockCount = blockSize / itemSize;
+            int64_t rest = blockSize % itemSize;
+            if (rest != 0) {
+                LOG_ERROR("Found block size (%li) is not a multitude of the item size (%li)", blockSize, itemSize);
+                status = ERROR;
+                break;
             }
         }
-
-        if (avrobin_read_long(stream, &blockCount) != OK) {
-            LOG_ERROR("Failed to read array block count.");
-            dynType_free(itemType, itemLoc);
-            return ERROR;
-        }
-    }
-
-    dynType_free(itemType, itemLoc);
-
-    if (fsetpos(stream, &streamPos) != 0) {
-        LOG_ERROR("Failed to set position of stream.");
-        return ERROR;
-    }
-
-    if (dynType_sequence_alloc(type, loc, (uint32_t)totalCount) != OK) {
-        LOG_ERROR("Failed to allocate memory for array.");
-        return ERROR;
-    }
-
-    if (avrobin_read_long(stream, &blockCount) != OK) {
-        LOG_ERROR("Failed to read array block count.");
-        return ERROR;
-    }
-
-    while (blockCount != 0) {
-        if (blockCount < 0) {
-            if (avrobin_read_long(stream, &blockSize) != OK) {
-                LOG_ERROR("Failed to read array block size.");
-                return ERROR;
+        if (blockCount > 0) {
+            LOG_DEBUG("Parsing block count of %li", blockCount);
+            cap += blockCount;
+            dynType_sequence_reserve(type, loc, cap);
+            for (int64_t i = 0; i < blockCount; ++i) {
+                void* itemLoc = NULL;
+                status = dynType_sequence_increaseLengthAndReturnLastLoc(type, loc, &itemLoc);
+                if (status != OK) {
+                    break;
+                }
+                avrobinSerializer_parseAny(itemType, itemLoc, stream);
             }
-            blockCount *= -1;
-        }
-
-        for (int64_t i=0; i<blockCount; i++) {
-            if (dynType_sequence_increaseLengthAndReturnLastLoc(type, loc, &itemLoc) != OK) {
-                return ERROR;
-            }
-            if (avrobinSerializer_parseAny(itemType, itemLoc, stream) != OK) {
-                return ERROR;
+            if (status != OK) {
+                break;
             }
         }
+    } while (blockCount != 0);
 
-        if (avrobin_read_long(stream, &blockCount) != OK) {
-            LOG_ERROR("Failed to read array block count.");
-            return ERROR;
-        }
+    if (status != OK) {
+        dynType_free(type, loc);
     }
-
-    return OK;
+    return status;
 }
 
 static int avrobinSerializer_parseEnum(dyn_type *type, void *loc, FILE *stream) {

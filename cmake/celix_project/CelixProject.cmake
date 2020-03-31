@@ -15,7 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 
-option(ENABLE_ADDRESS_SANITIZER "Enabled building with address sanitizer. Note for gcc libasan must be installed" OFF)
+option(ENABLE_ADDRESS_SANITIZER "Enabled building with address sanitizer. Note for gcc libasan must be installed," OFF)
+option(ENABLE_UNDEFINED_SANITIZER "Enabled building with undefined behavior sanitizer." OFF)
 
 if (ENABLE_ADDRESS_SANITIZER)
     if (APPLE)
@@ -27,6 +28,10 @@ if (ENABLE_ADDRESS_SANITIZER)
     endif ()
 endif()
 
+if (ENABLE_UNDEFINED_SANITIZER)
+    set(CMAKE_C_FLAGS "-fsanitize=undefined ${CMAKE_C_FLAGS}")
+    set(CMAKE_CXX_FLAGS "-fsanitize=undefined ${CMAKE_CXX_FLAGS}")
+endif()
 
 MACRO(celix_subproject)
     set(ARGS "${ARGN}")

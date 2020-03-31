@@ -17,8 +17,7 @@
  * under the License.
  */
 
-#include <CppUTest/TestHarness.h>
-#include "CppUTest/CommandLineTestRunner.h"                                                                                                                                                                        
+#include "gtest/gtest.h"
 
 extern "C" {
     #include <stdio.h>
@@ -154,8 +153,9 @@ extern "C" {
             }";
 }
 
-TEST_GROUP(JsonAvprRpcTests) {
-    void setup() override {
+class JsonAvprRpcTests : public ::testing::Test {
+public:
+    JsonAvprRpcTests() {
         int lvl = 1;
         dynCommon_logSetup(stdLog, nullptr, lvl);
         dynType_logSetup(stdLog, nullptr,lvl);
@@ -164,13 +164,16 @@ TEST_GROUP(JsonAvprRpcTests) {
         jsonSerializer_logSetup(stdLog, nullptr, lvl);
         jsonRpc_logSetup(stdLog, nullptr, lvl);
     }
+    ~JsonAvprRpcTests() override {
+    }
+
 };
 
-TEST(JsonAvprRpcTests, prep) {
+TEST_F(JsonAvprRpcTests, prep) {
     dyn_function_type * func = dynFunction_parseAvprWithStr(sourceAvprFile, "test.rpc.add");
-    CHECK(func != nullptr);
+    ASSERT_TRUE(func != nullptr);
     int nof_args = dynFunction_nrOfArguments(func);
-    CHECK_EQUAL(4, nof_args);
+    ASSERT_EQ(4, nof_args);
 
     // Msg
     char *result = nullptr;
@@ -185,11 +188,11 @@ TEST(JsonAvprRpcTests, prep) {
     args[2] = &arg2;
 
     int rc = jsonRpc_prepareInvokeRequest(func, "add", args, &result);
-    CHECK_EQUAL(0, rc);
+    ASSERT_EQ(0, rc);
 
-    STRCMP_CONTAINS("\"add\"", result);
-    STRCMP_CONTAINS("1.0", result);
-    STRCMP_CONTAINS("2.0", result);
+    ASSERT_TRUE(strstr(result, "\"add\"") != nullptr);
+    ASSERT_TRUE(strstr(result, "1.0") != nullptr);
+    ASSERT_TRUE(strstr(result, "2.0") != nullptr);
 
     // Reply
     const char *reply = "{\"r\": 2.2}";
@@ -199,8 +202,8 @@ TEST(JsonAvprRpcTests, prep) {
     args[3] = &out;
 
     rc = jsonRpc_handleReply(func, reply, args);
-    CHECK_EQUAL(0, rc);
-    DOUBLES_EQUAL(2.2, calc_result, 0.001);
+    ASSERT_EQ(0, rc);
+    ASSERT_NEAR(2.2, calc_result, 0.001);
 
     free(result);
     dynFunction_destroy(func);
@@ -222,9 +225,9 @@ extern "C" {
     };
 }
 
-TEST(JsonAvprRpcTests, handle_out) {
+TEST_F(JsonAvprRpcTests, handle_out) {
     dyn_interface_type * intf = dynInterface_parseAvprWithStr(sourceAvprFile);
-    CHECK(intf != nullptr);
+    ASSERT_TRUE(intf != nullptr);
 
     methods_head *head;
     dynInterface_methods(intf, &head);
@@ -237,9 +240,9 @@ TEST(JsonAvprRpcTests, handle_out) {
             break;
         }
     }
-    CHECK(func != nullptr);
+    ASSERT_TRUE(func != nullptr);
     int nof_args = dynFunction_nrOfArguments(func);
-    CHECK_EQUAL(3, nof_args);
+    ASSERT_EQ(3, nof_args);
 
     const char *reply = R"({"r":{"input":[1.0,2.0],"max":2.0,"average":1.5,"min":1.0}})";
 
@@ -253,9 +256,9 @@ TEST(JsonAvprRpcTests, handle_out) {
     args[2] = &out;
 
     int rc = jsonRpc_handleReply(func, reply, args);
-    CHECK_EQUAL(0, rc);
-    CHECK(result != nullptr);
-    CHECK_EQUAL(1.5, result->average);
+    ASSERT_EQ(0, rc);
+    ASSERT_TRUE(result != nullptr);
+    ASSERT_EQ(1.5, result->average);
 
     free(result->input.buf);
     free(result);
@@ -280,17 +283,17 @@ extern "C" {
     }
 }
 
-TEST(JsonAvprRpcTests, preallocated) {
+TEST_F(JsonAvprRpcTests, preallocated) {
     dyn_interface_type * intf = dynInterface_parseAvprWithStr(sourceAvprFile);
-    CHECK(intf != nullptr);
+    ASSERT_TRUE(intf != nullptr);
 
     char *result = nullptr;
     tst_serv serv {nullptr, xadd, nullptr, nullptr, nullptr};
 
     int rc = jsonRpc_call(intf, &serv, R"({"m": "add", "a": [1.0,2.0]})", &result);
-    CHECK_EQUAL(0, rc);
-    CHECK(result != nullptr);
-    STRCMP_CONTAINS("3.0", result);
+    ASSERT_EQ(0, rc);
+    ASSERT_TRUE(result != nullptr);
+    ASSERT_TRUE(strstr(result, "3.0") != nullptr);
 
     free(result);
     dynInterface_destroy(intf);
@@ -320,14 +323,14 @@ extern "C" {
         }
 
         auto result = static_cast<tst_StatsResult *>(calloc(1, sizeof(tst_StatsResult)));
-        CHECK(result != nullptr);
+        EXPECT_TRUE(result != nullptr);
         if (count>0) {
             result->average = total / count;
         }
         result->min = min;
         result->max = max;
         auto buf = static_cast<double *>(calloc(input.len, sizeof(double)));
-        CHECK(buf != nullptr);
+        EXPECT_TRUE(buf != nullptr);
         memcpy(buf, input.buf, input.len * sizeof(double));
         result->input.len = input.len;
         result->input.cap = input.len;
@@ -338,16 +341,16 @@ extern "C" {
     }
 }
 
-TEST(JsonAvprRpcTests, output) {
+TEST_F(JsonAvprRpcTests, output) {
     dyn_interface_type * intf = dynInterface_parseAvprWithStr(sourceAvprFile);
-    CHECK(intf != nullptr);
+    ASSERT_TRUE(intf != nullptr);
 
     char *result = nullptr;
     tst_serv serv {nullptr, nullptr, nullptr, nullptr, xstats};
 
     int rc = jsonRpc_call(intf, &serv, R"({"m":"stats", "a": [[1.0, 2.0]]})", &result);
-    CHECK_EQUAL(0, rc);
-    STRCMP_CONTAINS("1.5", result); //avg
+    ASSERT_EQ(0, rc);
+    ASSERT_TRUE(strstr(result, "1.5") != nullptr);
 
     free(result);
     dynInterface_destroy(intf);
@@ -366,17 +369,17 @@ extern "C" {
     }
 }
 
-TEST(JsonAvprRpcTests, output_char) {
+TEST_F(JsonAvprRpcTests, output_char) {
     dyn_interface_type * intf = dynInterface_parseAvprWithStr(sourceAvprFile);
-    CHECK(intf != nullptr);
+    ASSERT_TRUE(intf != nullptr);
 
     char *result = nullptr;
     tst_service_ex_output_char serv {nullptr, getName_ex};
 
     int rc = jsonRpc_call(intf, &serv, R"({"m" : "getName", "a": []})", &result);
-    CHECK_EQUAL(0, rc);
+    ASSERT_EQ(0, rc);
 
-    STRCMP_CONTAINS("allocatedInFunction", result);
+    ASSERT_TRUE(strstr(result, "allocatedInFunction") != nullptr);
 
     free(result);
     dynInterface_destroy(intf);

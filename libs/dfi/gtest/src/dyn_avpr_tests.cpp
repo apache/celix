@@ -17,35 +17,32 @@
  * under the License.
  */
 
-#include "CppUTest/TestHarness.h"
-#include "CppUTest/CommandLineTestRunner.h"                                                                                                                                                                        
+#include "gtest/gtest.h"
 
-extern "C" {
-    #include <stdarg.h>
-    
-    #include "dyn_common.h"
-    #include "dyn_type.h"
+#include <stdarg.h>
 
-	static void stdLogA(void*, int level, const char *file, int line, const char *msg, ...) {
-	    va_list ap;
-	    const char *levels[5] = {"NIL", "ERROR", "WARNING", "INFO", "DEBUG"};
-	    fprintf(stderr, "%s: FILE:%s, LINE:%i, MSG:",levels[level], file, line);
-	    va_start(ap, msg);
-	    vfprintf(stderr, msg, ap);
-	    fprintf(stderr, "\n");
-	    va_end(ap);
-	}
+#include "dyn_common.h"
+#include "dyn_type.h"
 
-    static void runTestA(const char *descriptorStr, const char *exName, int expectedType) {
-        dyn_type *type;
-        type = dynType_parseAvprWithStr(descriptorStr, exName);
+static void stdLogA(void*, int level, const char *file, int line, const char *msg, ...) {
+    va_list ap;
+    const char *levels[5] = {"NIL", "ERROR", "WARNING", "INFO", "DEBUG"};
+    fprintf(stderr, "%s: FILE:%s, LINE:%i, MSG:",levels[level], file, line);
+    va_start(ap, msg);
+    vfprintf(stderr, msg, ap);
+    fprintf(stderr, "\n");
+    va_end(ap);
+}
 
-        if (type != nullptr) {
-            CHECK_EQUAL(expectedType, dynType_type(type));
-            dynType_destroy(type);
-        } else {
-            CHECK_EQUAL(1, 0);
-        }
+static void runTestA(const char *descriptorStr, const char *exName, int expectedType) {
+    dyn_type *type;
+    type = dynType_parseAvprWithStr(descriptorStr, exName);
+
+    if (type != nullptr) {
+        ASSERT_EQ(expectedType, dynType_type(type));
+        dynType_destroy(type);
+    } else {
+        ASSERT_EQ(1, 0);
     }
 }
 
@@ -286,57 +283,61 @@ const char* arrayIntTestCase = "{\
  * Type building tests
  */
 
-TEST_GROUP(DynAvprTypeTests) {
-	void setup() override {
-	    dynAvprType_logSetup(stdLogA, nullptr, 1);
-	}
+class DynAvprTypeTests : public ::testing::Test {
+public:
+    DynAvprTypeTests() {
+        dynAvprType_logSetup(stdLogA, nullptr, 1);
+    }
+    ~DynAvprTypeTests() override {
+    }
+
 };
 
-TEST(DynAvprTypeTests, SimpleTest) {
+TEST_F(DynAvprTypeTests, SimpleTest) {
     runTestA(theTestCase, "test.dt.uint", DYN_TYPE_SIMPLE);
 }
 
-TEST(DynAvprTypeTests, SimpleSimpleTest) {
+TEST_F(DynAvprTypeTests, SimpleSimpleTest) {
     runTestA(theTestCase, "test.dt.RecordWithSimpleTypes", DYN_TYPE_COMPLEX);
 }
 
-TEST(DynAvprTypeTests, ComplexTest) {
+TEST_F(DynAvprTypeTests, ComplexTest) {
     runTestA(theTestCase, "blah.test.dt.A", DYN_TYPE_COMPLEX);
 }
 
-TEST(DynAvprTypeTests, EnumTest2) {
+TEST_F(DynAvprTypeTests, EnumTest2) {
     runTestA(theTestCase, "test.dt.EnumWithValue", DYN_TYPE_SIMPLE);
 }
 
-TEST(DynAvprTypeTests, EnumTest) {
+TEST_F(DynAvprTypeTests, EnumTest) {
     runTestA(theTestCase, "test.dt.EnumWithoutValue", DYN_TYPE_SIMPLE);
 }
 
-TEST(DynAvprTypeTests, ArrayTest) {
+TEST_F(DynAvprTypeTests, ArrayTest) {
     runTestA(theTestCase, "test.dt.V", DYN_TYPE_COMPLEX);
 }
 
-TEST(DynAvprTypeTests, NestedArrayTest) {
+TEST_F(DynAvprTypeTests, NestedArrayTest) {
     runTestA(nestedArray, "test.dt.NA", DYN_TYPE_COMPLEX);
 }
 
-TEST(DynAvprTypeTests, ComplexComplexTest) {
+TEST_F(DynAvprTypeTests, ComplexComplexTest) {
     runTestA(theTestCase, "test.dt.B", DYN_TYPE_COMPLEX);
 }
 
-TEST(DynAvprTypeTests, ReferenceTest) {
+TEST_F(DynAvprTypeTests, ReferenceTest) {
     runTestA(referenceTestCase, "test.dt.R", DYN_TYPE_COMPLEX);
 }
 
-TEST(DynAvprTypeTests, AliasTest) {
+TEST_F(DynAvprTypeTests, AliasTest) {
     runTestA(theTestCase, "test.dt.Alias", DYN_TYPE_SIMPLE);
 }
 
-TEST(DynAvprTypeTests, ComplexAliasTest) {
+TEST_F(DynAvprTypeTests, ComplexAliasTest) {
     runTestA(aliasTestCase, "common.dt.Polar_2d", DYN_TYPE_COMPLEX);
 }
 
-TEST(DynAvprTypeTests, ArrayWithSimpleTest) { //TODO: fix this testcase
+TEST_F(DynAvprTypeTests, ArrayWithSimpleTest) { //TODO: fix this testcase
     runTestA(arrayIntTestCase, "common.dt.SimpleArray", DYN_TYPE_COMPLEX);
 }
 
@@ -347,42 +348,46 @@ TEST(DynAvprTypeTests, ArrayWithSimpleTest) { //TODO: fix this testcase
 void test_version(dyn_type* type, const std::string& version_string) {
     struct meta_entry *entry = nullptr;
     struct meta_properties_head *entries = nullptr;
-    CHECK_EQUAL(0, dynType_metaEntries(type, &entries));
-    CHECK_FALSE(TAILQ_EMPTY(entries));
+    ASSERT_EQ(0, dynType_metaEntries(type, &entries));
+    ASSERT_FALSE(TAILQ_EMPTY(entries));
 
     const std::string entry_value {"version"};
     bool compared = false;
     TAILQ_FOREACH(entry, entries, entries) {
         if (entry_value == entry->name) {
-            STRCMP_EQUAL(version_string.c_str(), entry->value);
+            ASSERT_STREQ(version_string.c_str(), entry->value);
             compared = true;
         }
     }
-    CHECK_TRUE_TEXT(compared, "Expect a comparison, otherwise no version meta info is available");
+    ASSERT_TRUE(compared); //"Expect a comparison, otherwise no version meta info is available");
 }
 
-TEST_GROUP(DynAvprAssignTests) {
-	void setup() override {
-	    dynAvprType_logSetup(stdLogA, nullptr, 1);
-	}
+class DynAvprAssignTests : public ::testing::Test {
+public:
+    DynAvprAssignTests() {
+        dynAvprType_logSetup(stdLogA, nullptr, 1);
+    }
+    ~DynAvprAssignTests() override {
+    }
+
 };
 
-TEST(DynAvprAssignTests, AssignSimpleTest) {
+TEST_F(DynAvprAssignTests, AssignSimpleTest) {
     // Build type
     dyn_type* type = dynType_parseAvprWithStr(theTestCase, "test.dt.uint");
-    CHECK(type != nullptr);
+    ASSERT_TRUE(type != nullptr);
 
     // set value
     uint32_t simple = 0;
     uint32_t nv = 42;
     dynType_simple_setValue(type, &simple, &nv);
 
-    CHECK_EQUAL(42, simple);
+    ASSERT_EQ(42, simple);
     test_version(type, "2.1.9");
     dynType_destroy(type);
 }
 
-TEST(DynAvprAssignTests, AssignComplexTest) {
+TEST_F(DynAvprAssignTests, AssignComplexTest) {
     // Build type
     struct exA {
         struct {
@@ -395,7 +400,7 @@ TEST(DynAvprAssignTests, AssignComplexTest) {
 
 
     dyn_type *type = dynType_parseAvprWithStr(theTestCase, "blah.test.dt.A");
-    CHECK(type != nullptr);
+    ASSERT_TRUE(type != nullptr);
 
     // set example values
     uint32_t a_x_aa = 52;
@@ -406,7 +411,7 @@ TEST(DynAvprAssignTests, AssignComplexTest) {
     // Simple element in complex
     exA inst {{0, 0, 0.0}, 0};
     dynType_complex_setValueAt(type, 1, &inst, &a_y);
-    CHECK_EQUAL(1001001, inst.y);
+    ASSERT_EQ(1001001, inst.y);
 
     // Complex element in complex type, first acquire subtype, then check similar to simple type
     void *loc = nullptr;
@@ -415,39 +420,39 @@ TEST(DynAvprAssignTests, AssignComplexTest) {
     dynType_complex_dynTypeAt(type, 0, &subType);
 
     dynType_complex_setValueAt(subType, 0, &inst.x, &a_x_aa);
-    CHECK_EQUAL(52, inst.x.aa);
+    ASSERT_EQ(52, inst.x.aa);
 
     dynType_complex_setValueAt(subType, 1, &inst.x, &a_x_bb);
-    CHECK_EQUAL(42, inst.x.bb);
+    ASSERT_EQ(42, inst.x.bb);
     dynType_complex_setValueAt(subType, 2, &inst.x, &a_x_cc);
-    CHECK_EQUAL(31.13, inst.x.cc);
+    ASSERT_EQ(31.13, inst.x.cc);
 
     test_version(type, "1.1.9");
     dynType_destroy(type);
 }
 
-TEST(DynAvprAssignTests, AssignComplexSimpleTest) {
+TEST_F(DynAvprAssignTests, AssignComplexSimpleTest) {
     // Build type
     struct exB {
         int32_t b;
     };
 
     dyn_type *type = dynType_parseAvprWithStr(theTestCase, "test.dt.RecordWithSimpleTypes");
-    CHECK(type != nullptr);
+    ASSERT_TRUE(type != nullptr);
 
     // set example values
     int32_t b_b = 5301;
 
     exB inst {0};
     dynType_complex_setValueAt(type, 0, &inst, &b_b);
-    CHECK_EQUAL(5301, inst.b);
+    ASSERT_EQ(5301, inst.b);
 
     test_version(type, "1.1.9");
     dynType_destroy(type);
 }
 
 
-TEST(DynAvprAssignTests, AssignPtrTest) {
+TEST_F(DynAvprAssignTests, AssignPtrTest) {
     // Build type
 
     struct exNode {
@@ -457,7 +462,7 @@ TEST(DynAvprAssignTests, AssignPtrTest) {
     };
 
     dyn_type* type = dynType_parseAvprWithStr(theTestCase, "N.Node");
-    CHECK(type != nullptr);
+    ASSERT_TRUE(type != nullptr);
 
     // right tree
     exNode rightrightright {2.0, nullptr, nullptr};
@@ -475,18 +480,18 @@ TEST(DynAvprAssignTests, AssignPtrTest) {
 
     double nv = 101.101;
     dynType_complex_setValueAt(type, 0, &base, &nv);
-    CHECK_EQUAL(101.101, base.data);
+    ASSERT_EQ(101.101, base.data);
 
     test_version(type, "1.1.9");
     dynType_destroy(type);
 }
 
-TEST(DynAvprAssignTests, AssignEnumTest) {
+TEST_F(DynAvprAssignTests, AssignEnumTest) {
     // Build type
     dyn_type* type = dynType_parseAvprWithStr(theTestCase, "test.dt.EnumWithValue");
     dyn_type* type_2 = dynType_parseAvprWithStr(theTestCase, "test.dt.EnumWithoutValue");
-    CHECK(type != nullptr);
-    CHECK(type_2 != nullptr);
+    ASSERT_TRUE(type != nullptr);
+    ASSERT_TRUE(type_2 != nullptr);
 
     // Print type
     dynType_print(type, stdout);
@@ -499,13 +504,13 @@ TEST(DynAvprAssignTests, AssignEnumTest) {
 
     dynType_simple_setValue(type, &mEnum, &nv);
 
-    CHECK_EQUAL(A, mEnum);
+    ASSERT_EQ(A, mEnum);
     test_version(type, "1.1.9");
     dynType_destroy(type);
     dynType_destroy(type_2);
 }
 
-TEST(DynAvprAssignTests, AssignArrayTest) {
+TEST_F(DynAvprAssignTests, AssignArrayTest) {
     // Build type
     struct exV_sequence {
         uint32_t cap;
@@ -521,7 +526,7 @@ TEST(DynAvprAssignTests, AssignArrayTest) {
     exV_sequence *s = &inst.elem;
 
     dyn_type* type = dynType_parseAvprWithStr(theTestCase, "test.dt.V");
-    CHECK(type != nullptr);
+    ASSERT_TRUE(type != nullptr);
 
     // set value
     void *loc = nullptr;
@@ -529,23 +534,23 @@ TEST(DynAvprAssignTests, AssignArrayTest) {
     dynType_complex_valLocAt(type, 0, static_cast<void*>(&inst), &loc);
     dynType_complex_dynTypeAt(type, 0, &subType);
     int res = dynType_alloc(subType, reinterpret_cast<void**>(&s));
-    CHECK_EQUAL(0, res);
-    CHECK(s != nullptr);
+    ASSERT_EQ(0, res);
+    ASSERT_TRUE(s != nullptr);
 
     dynType_free(type, s);
     test_version(type, "1.1.9");
     dynType_destroy(type);
 }
 
-TEST(DynAvprAssignTests, AnnotationTest) {
+TEST_F(DynAvprAssignTests, AnnotationTest) {
     dyn_type* type = dynType_parseAvprWithStr(theTestCase, "test.dt.Anne");
-    CHECK(type != nullptr);
+    ASSERT_TRUE(type != nullptr);
 
     // get value for meta entry
     struct meta_entry *entry = nullptr;
     struct meta_properties_head *entries = nullptr;
-    CHECK_EQUAL(0, dynType_metaEntries(type, &entries));
-    CHECK_FALSE(TAILQ_EMPTY(entries));
+    ASSERT_EQ(0, dynType_metaEntries(type, &entries));
+    ASSERT_FALSE(TAILQ_EMPTY(entries));
 
     const std::string msg_id_entry {"MsgId"};
     bool compared = false;
@@ -553,11 +558,11 @@ TEST(DynAvprAssignTests, AnnotationTest) {
     TAILQ_FOREACH(entry, entries, entries) {
         printf("Got an entry: %s\n", entry->name);
         if (msg_id_entry == entry->name) {
-            STRCMP_EQUAL("1000", entry->value);
+            ASSERT_STREQ("1000", entry->value);
             compared = true;
         }
     }
-    CHECK_TRUE_TEXT(compared, "Expect a comparison, otherwise no msg id entry available");
+    ASSERT_TRUE(compared); //"Expect a comparison, otherwise no msg id entry available");
 
     dynType_destroy(type);
 }
@@ -565,42 +570,46 @@ TEST(DynAvprAssignTests, AnnotationTest) {
 /*********************************************************************************
  * Invalid tests
  */
-TEST_GROUP(DynAvprInvalidTests) {
-	void setup() override {
-	    dynAvprType_logSetup(stdLogA, nullptr, 1);
-	}
+
+class DynAvprInvalidTests : public ::testing::Test {
+public:
+    DynAvprInvalidTests() {
+        dynAvprType_logSetup(stdLogA, nullptr, 1);
+    }
+    ~DynAvprInvalidTests() override {
+    }
+
 };
 
-TEST(DynAvprInvalidTests, InvalidJson) {
+TEST_F(DynAvprInvalidTests, InvalidJson) {
     dyn_type* type = dynType_parseAvprWithStr("{", "test.invalid.type"); // Json error
-    CHECK(type == nullptr);
+    ASSERT_TRUE(type == nullptr);
 }
 
-TEST(DynAvprInvalidTests, InvalidJsonObject) {
+TEST_F(DynAvprInvalidTests, InvalidJsonObject) {
     dyn_type* type = dynType_parseAvprWithStr("[]", "test.invalid.type"); // Root should be object not list
-    CHECK(type == nullptr);
+    ASSERT_TRUE(type == nullptr);
     type = dynType_parseAvprWithStr("{}", "test.invalid.type"); // Root should have a namespace
-    CHECK(type == nullptr);
+    ASSERT_TRUE(type == nullptr);
     type = dynType_parseAvprWithStr(R"({"namespace":"nested"})", "test.invalid.type"); // Root should have types array
-    CHECK(type == nullptr);
+    ASSERT_TRUE(type == nullptr);
     type = dynType_parseAvprWithStr(
             R"({"namespace":"nested", "types" : [] })"
             , "test.invalid.type"); // types is empty, so not found
-    CHECK(type == nullptr);
+    ASSERT_TRUE(type == nullptr);
     type = dynType_parseAvprWithStr(
             "{\"namespace\":\"nested\", \"types\" : [\
             { \"type\" : \"record\", \"name\" : \"IncompleteStruct\", \"fields\" : [\
             { \"name\" : \"Field1\", \"type\" : \"NonExisting\" } ] } \
             ] }"
             , "nested.IncompleteStruct"); // struct misses definition
-    CHECK(type == nullptr);
+    ASSERT_TRUE(type == nullptr);
     type = dynType_parseAvprWithStr(
             "{\"namespace\":\"nested\", \"types\" : [\
             { \"type\" : \"record\", \"name\" : \"IncompleteStruct\", \"fields\" : [\
             { \"name\" : \"Field1\" } ] } \
             ] }"
             , "nested.IncompleteStruct"); // struct entry misses type
-    CHECK(type == nullptr);
+    ASSERT_TRUE(type == nullptr);
     // None of the above testcases should crash the parser
 }
-

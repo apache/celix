@@ -521,7 +521,6 @@ static inline void processMsg(pubsub_websocket_topic_receiver_t *receiver, const
                 }
             }
             celixThreadMutex_unlock(&receiver->subscribers.mutex);
-            free((void *) hdr.id);
             free((void *) payload);
         } else {
             L_WARN("[PSA_WEBSOCKET_TR] Received unsupported message: "
@@ -530,6 +529,7 @@ static inline void processMsg(pubsub_websocket_topic_receiver_t *receiver, const
                    json_integer_value(jsMajor), json_integer_value(jsMinor),
                    json_integer_value(jsSeqNr), (jsData ? "TRUE" : "FALSE"));
         }
+        json_decref(jsMsg);
     } else {
         L_WARN("[PSA_WEBSOCKET_TR] Failed to load websocket JSON message, error line: %d, error message: %s", error.line, error.text);
         return;

@@ -16,8 +16,11 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-#include <CppUTest/TestHarness.h>
-#include "CppUTest/CommandLineTestRunner.h"
+
+#include "gtest/gtest.h"
+
+#include <stdarg.h>
+
 
 extern "C" {
 #include "avrobin_serializer.h"
@@ -136,21 +139,21 @@ static void generalTests() {
     serdatalen = 0;
     schema = NULL;
     rc = dynType_parseWithStr(test1_descriptor, "test1", NULL, &type);
-    CHECK_EQUAL(0, rc);
+    ASSERT_EQ(0, rc);
     if (rc == 0) {
         rc = avrobinSerializer_serialize(type, &test1_val, &serdata, &serdatalen);
-        CHECK_EQUAL(0, rc);
+        ASSERT_EQ(0, rc);
         if (rc == 0) {
             rc = avrobinSerializer_deserialize(type, serdata, serdatalen, &inst);
-            CHECK_EQUAL(0, rc);
+            ASSERT_EQ(0, rc);
             if (rc == 0) {
-                CHECK_EQUAL(-444,*(int32_t*)inst);
+                ASSERT_EQ(-444,*(int32_t*)inst);
                 rc = avrobinSerializer_generateSchema(type, &schema);
-                CHECK_EQUAL(0, rc);
+                ASSERT_EQ(0, rc);
                 if (rc == 0) {
                     printf("%s\n", schema);
                     rc = avrobinSerializer_saveFile("test1.avro", schema, serdata, serdatalen);
-                    CHECK_EQUAL(0, rc);
+                    ASSERT_EQ(0, rc);
                     free(schema);
                 }
                 dynType_free(type, inst);
@@ -172,24 +175,24 @@ static void generalTests() {
     serdatalen = 0;
     schema = NULL;
     rc = dynType_parseWithStr(test2_descriptor, "test2", NULL, &type);
-    CHECK_EQUAL(0, rc);
+    ASSERT_EQ(0, rc);
     if (rc == 0) {
         rc = avrobinSerializer_serialize(type, &test2_val, &serdata, &serdatalen);
-        CHECK_EQUAL(0, rc);
+        ASSERT_EQ(0, rc);
         if (rc == 0) {
             rc = avrobinSerializer_deserialize(type, serdata, serdatalen, &inst);
-            CHECK_EQUAL(0, rc);
+            ASSERT_EQ(0, rc);
             if (rc == 0) {
-                CHECK_EQUAL(10000,(*(struct test2_type*)inst).a);
-                CHECK_EQUAL(20000,(*(struct test2_type*)inst).b);
-                CHECK_EQUAL(-30000,(*(struct test2_type*)inst).c);
-                CHECK_EQUAL(-40000,(*(struct test2_type*)inst).d);
+                ASSERT_EQ(10000,(*(struct test2_type*)inst).a);
+                ASSERT_EQ(20000,(*(struct test2_type*)inst).b);
+                ASSERT_EQ(-30000,(*(struct test2_type*)inst).c);
+                ASSERT_EQ(-40000,(*(struct test2_type*)inst).d);
                 rc = avrobinSerializer_generateSchema(type, &schema);
-                CHECK_EQUAL(0, rc);
+                ASSERT_EQ(0, rc);
                 if (rc == 0) {
                     printf("%s\n", schema);
                     rc = avrobinSerializer_saveFile("test2.avro", schema, serdata, serdatalen);
-                    CHECK_EQUAL(0, rc);
+                    ASSERT_EQ(0, rc);
                     free(schema);
                 }
                 dynType_free(type, inst);
@@ -209,22 +212,22 @@ static void generalTests() {
     serdatalen = 0;
     schema = NULL;
     rc = dynType_parseWithStr(test3_descriptor, "test3", NULL, &type);
-    CHECK_EQUAL(0, rc);
+    ASSERT_EQ(0, rc);
     if (rc == 0) {
         rc = avrobinSerializer_serialize(type, &test3_val, &serdata, &serdatalen);
-        CHECK_EQUAL(0, rc);
+        ASSERT_EQ(0, rc);
         if (rc == 0) {
             rc = avrobinSerializer_deserialize(type, serdata, serdatalen, &inst);
-            CHECK_EQUAL(0, rc);
+            ASSERT_EQ(0, rc);
             if (rc == 0) {
-                CHECK_EQUAL(101,(*(struct test3_type*)inst).c.a);
-                CHECK_EQUAL(99,(*(struct test3_type*)inst).d.b);
+                ASSERT_EQ(101,(*(struct test3_type*)inst).c.a);
+                ASSERT_EQ(99,(*(struct test3_type*)inst).d.b);
                 rc = avrobinSerializer_generateSchema(type, &schema);
-                CHECK_EQUAL(0, rc);
+                ASSERT_EQ(0, rc);
                 if (rc == 0) {
                     printf("%s\n", schema);
                     rc = avrobinSerializer_saveFile("test3.avro", schema, serdata, serdatalen);
-                    CHECK_EQUAL(0, rc);
+                    ASSERT_EQ(0, rc);
                     free(schema);
                 }
                 dynType_free(type, inst);
@@ -242,21 +245,21 @@ static void generalTests() {
     serdatalen = 0;
     schema = NULL;
     rc = dynType_parseWithStr(test4_descriptor, "test4", NULL, &type);
-    CHECK_EQUAL(0, rc);
+    ASSERT_EQ(0, rc);
     if (rc == 0) {
         rc = avrobinSerializer_serialize(type, &test4_val, &serdata, &serdatalen);
-        CHECK_EQUAL(0, rc);
+        ASSERT_EQ(0, rc);
         if (rc == 0) {
             rc = avrobinSerializer_deserialize(type, serdata, serdatalen, &inst);
-            CHECK_EQUAL(0, rc);
+            ASSERT_EQ(0, rc);
             if (rc == 0) {
-                CHECK_EQUAL(1.234f,*(float*)inst);
+                ASSERT_EQ(1.234f,*(float*)inst);
                 rc = avrobinSerializer_generateSchema(type, &schema);
-                CHECK_EQUAL(0, rc);
+                ASSERT_EQ(0, rc);
                 if (rc == 0) {
                     printf("%s\n", schema);
                     rc = avrobinSerializer_saveFile("test4.avro", schema, serdata, serdatalen);
-                    CHECK_EQUAL(0, rc);
+                    ASSERT_EQ(0, rc);
                     free(schema);
                 }
                 dynType_free(type, inst);
@@ -274,21 +277,21 @@ static void generalTests() {
     serdatalen = 0;
     schema = NULL;
     rc = dynType_parseWithStr(test5_descriptor, "test5", NULL, &type);
-    CHECK_EQUAL(0, rc);
+    ASSERT_EQ(0, rc);
     if (rc == 0) {
         rc = avrobinSerializer_serialize(type, &test5_val, &serdata, &serdatalen);
-        CHECK_EQUAL(0, rc);
+        ASSERT_EQ(0, rc);
         if (rc == 0) {
             rc = avrobinSerializer_deserialize(type, serdata, serdatalen, &inst);
-            CHECK_EQUAL(0, rc);
+            ASSERT_EQ(0, rc);
             if (rc == 0) {
-                CHECK_EQUAL(2.345678,*(double*)inst);
+                ASSERT_EQ(2.345678,*(double*)inst);
                 rc = avrobinSerializer_generateSchema(type, &schema);
-                CHECK_EQUAL(0, rc);
+                ASSERT_EQ(0, rc);
                 if (rc == 0) {
                     printf("%s\n", schema);
                     rc = avrobinSerializer_saveFile("test5.avro", schema, serdata, serdatalen);
-                    CHECK_EQUAL(0, rc);
+                    ASSERT_EQ(0, rc);
                     free(schema);
                 }
                 dynType_free(type, inst);
@@ -306,21 +309,21 @@ static void generalTests() {
     serdatalen = 0;
     schema = NULL;
     rc = dynType_parseWithStr(test6_descriptor, "test6", NULL, &type);
-    CHECK_EQUAL(0, rc);
+    ASSERT_EQ(0, rc);
     if (rc == 0) {
         rc = avrobinSerializer_serialize(type, &test6_val, &serdata, &serdatalen);
-        CHECK_EQUAL(0, rc);
+        ASSERT_EQ(0, rc);
         if (rc == 0) {
             rc = avrobinSerializer_deserialize(type, serdata, serdatalen, &inst);
-            CHECK_EQUAL(0, rc);
+            ASSERT_EQ(0, rc);
             if (rc == 0) {
-                STRCMP_EQUAL("This is a string.",*(const char**)inst);
+                ASSERT_STREQ("This is a string.",*(const char**)inst);
                 rc = avrobinSerializer_generateSchema(type, &schema);
-                CHECK_EQUAL(0, rc);
+                ASSERT_EQ(0, rc);
                 if (rc == 0) {
                     printf("%s\n", schema);
                     rc = avrobinSerializer_saveFile("test6.avro", schema, serdata, serdatalen);
-                    CHECK_EQUAL(0, rc);
+                    ASSERT_EQ(0, rc);
                     free(schema);
                 }
                 dynType_free(type, inst);
@@ -344,27 +347,27 @@ static void generalTests() {
     serdatalen = 0;
     schema = NULL;
     rc = dynType_parseWithStr(test7_descriptor, "test7", NULL, &type);
-    CHECK_EQUAL(0, rc);
+    ASSERT_EQ(0, rc);
     if (rc == 0) {
         rc = avrobinSerializer_serialize(type, &test7_val, &serdata, &serdatalen);
-        CHECK_EQUAL(0, rc);
+        ASSERT_EQ(0, rc);
         if (rc == 0) {
             rc = avrobinSerializer_deserialize(type, serdata, serdatalen, &inst);
-            CHECK_EQUAL(0, rc);
+            ASSERT_EQ(0, rc);
             if (rc == 0) {
-                CHECK_EQUAL(8, (*(struct test7_type*)inst).cap);
-                CHECK_EQUAL(8, (*(struct test7_type*)inst).len);
+                ASSERT_EQ(8, (*(struct test7_type*)inst).cap);
+                ASSERT_EQ(8, (*(struct test7_type*)inst).len);
                 if ((*(struct test7_type*)inst).cap == 8 && (*(struct test7_type*)inst).len == 8) {
                     for (int i=0; i<8; i++) {
-                        CHECK_EQUAL(i, (*(struct test7_type*)inst).buf[i]);
+                        ASSERT_EQ(i, (*(struct test7_type*)inst).buf[i]);
                     }
                 }
                 rc = avrobinSerializer_generateSchema(type, &schema);
-                CHECK_EQUAL(0, rc);
+                ASSERT_EQ(0, rc);
                 if (rc == 0) {
                     printf("%s\n", schema);
                     rc = avrobinSerializer_saveFile("test7.avro", schema, serdata, serdatalen);
-                    CHECK_EQUAL(0, rc);
+                    ASSERT_EQ(0, rc);
                     free(schema);
                 }
                 dynType_free(type, inst);
@@ -391,28 +394,28 @@ static void generalTests() {
     serdatalen = 0;
     schema = NULL;
     rc = dynType_parseWithStr(test8_descriptor, "test8", NULL, &type);
-    CHECK_EQUAL(0, rc);
+    ASSERT_EQ(0, rc);
     if (rc == 0) {
         rc = avrobinSerializer_serialize(type, &test8_val, &serdata, &serdatalen);
-        CHECK_EQUAL(0, rc);
+        ASSERT_EQ(0, rc);
         if (rc == 0) {
             rc = avrobinSerializer_deserialize(type, serdata, serdatalen, &inst);
-            CHECK_EQUAL(0, rc);
+            ASSERT_EQ(0, rc);
             if (rc == 0) {
-                CHECK_EQUAL(64, (*(struct test8_type*)inst).cap);
-                CHECK_EQUAL(64, (*(struct test8_type*)inst).len);
+                ASSERT_EQ(64, (*(struct test8_type*)inst).cap);
+                ASSERT_EQ(64, (*(struct test8_type*)inst).len);
                 if ((*(struct test8_type*)inst).cap == 64 && (*(struct test8_type*)inst).len == 64) {
                     for (int i=0; i<64; i++) {
-                        CHECK_EQUAL( i * 3.333 , ((*(struct test8_type*)inst).buf[i]).one );
-                        CHECK_EQUAL( i * 4.444 , ((*(struct test8_type*)inst).buf[i]).two );
+                        ASSERT_EQ( i * 3.333 , ((*(struct test8_type*)inst).buf[i]).one );
+                        ASSERT_EQ( i * 4.444 , ((*(struct test8_type*)inst).buf[i]).two );
                     }
                 }
                 rc = avrobinSerializer_generateSchema(type, &schema);
-                CHECK_EQUAL(0, rc);
+                ASSERT_EQ(0, rc);
                 if (rc == 0) {
                     printf("%s\n", schema);
                     rc = avrobinSerializer_saveFile("test8.avro", schema, serdata, serdatalen);
-                    CHECK_EQUAL(0, rc);
+                    ASSERT_EQ(0, rc);
                     free(schema);
                 }
                 dynType_free(type, inst);
@@ -443,33 +446,33 @@ static void generalTests() {
     serdatalen = 0;
     schema = NULL;
     rc = dynType_parseWithStr(test9_descriptor, "test9", NULL, &type);
-    CHECK_EQUAL(0, rc);
+    ASSERT_EQ(0, rc);
     if (rc == 0) {
         rc = avrobinSerializer_serialize(type, &test9_val, &serdata, &serdatalen);
-        CHECK_EQUAL(0, rc);
+        ASSERT_EQ(0, rc);
         if (rc == 0) {
             rc = avrobinSerializer_deserialize(type, serdata, serdatalen, &inst);
-            CHECK_EQUAL(0, rc);
+            ASSERT_EQ(0, rc);
             if (rc == 0) {
-                CHECK_EQUAL(64, (*(struct test9_type*)inst).cap);
-                CHECK_EQUAL(64, (*(struct test9_type*)inst).len);
+                ASSERT_EQ(64, (*(struct test9_type*)inst).cap);
+                ASSERT_EQ(64, (*(struct test9_type*)inst).len);
                 if ((*(struct test9_type*)inst).cap == 64 && (*(struct test9_type*)inst).len == 64) {
                     for (int i=0; i<64; i++) {
-                        CHECK_EQUAL(8, ((*(struct test9_type*)inst).buf[i]).cap);
-                        CHECK_EQUAL(8, ((*(struct test9_type*)inst).buf[i]).len);
+                        ASSERT_EQ(8, ((*(struct test9_type*)inst).buf[i]).cap);
+                        ASSERT_EQ(8, ((*(struct test9_type*)inst).buf[i]).len);
                         if ( ((*(struct test9_type*)inst).buf[i]).cap == 8 && ((*(struct test9_type*)inst).buf[i]).len == 8 ) {
                             for (int j=0; j<8; j++) {
-                                CHECK_EQUAL(j*1.234f, ((*(struct test9_type*)inst).buf[i]).buf[j]);
+                                ASSERT_EQ(j*1.234f, ((*(struct test9_type*)inst).buf[i]).buf[j]);
                             }
                         }
                     }
                 }
                 rc = avrobinSerializer_generateSchema(type, &schema);
-                CHECK_EQUAL(0, rc);
+                ASSERT_EQ(0, rc);
                 if (rc == 0) {
                     printf("%s\n", schema);
                     rc = avrobinSerializer_saveFile("test9.avro", schema, serdata, serdatalen);
-                    CHECK_EQUAL(0, rc);
+                    ASSERT_EQ(0, rc);
                     free(schema);
                 }
                 dynType_free(type, inst);
@@ -493,21 +496,21 @@ static void generalTests() {
     serdatalen = 0;
     schema = NULL;
     rc = dynType_parseWithStr(test10_descriptor, "test10", NULL, &type);
-    CHECK_EQUAL(0, rc);
+    ASSERT_EQ(0, rc);
     if (rc == 0) {
         rc = avrobinSerializer_serialize(type, &test10_val, &serdata, &serdatalen);
-        CHECK_EQUAL(0, rc);
+        ASSERT_EQ(0, rc);
         if (rc == 0) {
             rc = avrobinSerializer_deserialize(type, serdata, serdatalen, &inst);
-            CHECK_EQUAL(0, rc);
+            ASSERT_EQ(0, rc);
             if (rc == 0) {
-                CHECK_EQUAL(8765,*(*(int32_t**)inst));
+                ASSERT_EQ(8765,*(*(int32_t**)inst));
                 rc = avrobinSerializer_generateSchema(type, &schema);
-                CHECK_EQUAL(0, rc);
+                ASSERT_EQ(0, rc);
                 if (rc == 0) {
                     printf("%s\n", schema);
                     rc = avrobinSerializer_saveFile("test10.avro", schema, serdata, serdatalen);
-                    CHECK_EQUAL(0, rc);
+                    ASSERT_EQ(0, rc);
                     free(schema);
                 }
                 dynType_free(type, inst);
@@ -530,22 +533,22 @@ static void generalTests() {
     serdatalen = 0;
     schema = NULL;
     rc = dynType_parseWithStr(test11_descriptor, "test11", NULL, &type);
-    CHECK_EQUAL(0, rc);
+    ASSERT_EQ(0, rc);
     if (rc == 0) {
         rc = avrobinSerializer_serialize(type, &test11_val, &serdata, &serdatalen);
-        CHECK_EQUAL(0, rc);
+        ASSERT_EQ(0, rc);
         if (rc == 0) {
             rc = avrobinSerializer_deserialize(type, serdata, serdatalen, &inst);
-            CHECK_EQUAL(0, rc);
+            ASSERT_EQ(0, rc);
             if (rc == 0) {
-                CHECK_EQUAL(1.234,(*(struct test11_type *)inst).c->a);
-                CHECK_EQUAL(2.345,(*(struct test11_type *)inst).c->b);
+                ASSERT_EQ(1.234,(*(struct test11_type *)inst).c->a);
+                ASSERT_EQ(2.345,(*(struct test11_type *)inst).c->b);
                 rc = avrobinSerializer_generateSchema(type, &schema);
-                CHECK_EQUAL(0, rc);
+                ASSERT_EQ(0, rc);
                 if (rc == 0) {
                     printf("%s\n", schema);
                     rc = avrobinSerializer_saveFile("test11.avro", schema, serdata, serdatalen);
-                    CHECK_EQUAL(0, rc);
+                    ASSERT_EQ(0, rc);
                     free(schema);
                 }
                 dynType_free(type, inst);
@@ -565,21 +568,21 @@ static void generalTests() {
     serdatalen = 0;
     schema = NULL;
     rc = dynType_parseWithStr(test12_descriptor, "test12", NULL, &type);
-    CHECK_EQUAL(0, rc);
+    ASSERT_EQ(0, rc);
     if (rc == 0) {
         rc = avrobinSerializer_serialize(type, &test12_val, &serdata, &serdatalen);
-        CHECK_EQUAL(0, rc);
+        ASSERT_EQ(0, rc);
         if (rc == 0) {
             rc = avrobinSerializer_deserialize(type, serdata, serdatalen, &inst);
-            CHECK_EQUAL(0, rc);
+            ASSERT_EQ(0, rc);
             if (rc == 0) {
-                CHECK_EQUAL(TEST12_ENUM_NOK,*(enum test12_enum*)inst);
+                ASSERT_EQ(TEST12_ENUM_NOK,*(enum test12_enum*)inst);
                 rc = avrobinSerializer_generateSchema(type, &schema);
-                CHECK_EQUAL(0, rc);
+                ASSERT_EQ(0, rc);
                 if (rc == 0) {
                     printf("%s\n", schema);
                     rc = avrobinSerializer_saveFile("test12.avro", schema, serdata, serdatalen);
-                    CHECK_EQUAL(0, rc);
+                    ASSERT_EQ(0, rc);
                     free(schema);
                 }
                 dynType_free(type, inst);
@@ -592,13 +595,18 @@ static void generalTests() {
 
 }
 
-TEST_GROUP(AvrobinSerializerTests) {
-    void setup() {
+
+class AvrobinSerializerTests : public ::testing::Test {
+public:
+    AvrobinSerializerTests() {
         int lvl = 1;
         avrobinSerializer_logSetup(stdLog, NULL, lvl);
     }
+    ~AvrobinSerializerTests() override {
+    }
+
 };
 
-TEST(AvrobinSerializerTests, GeneralTests) {
+TEST_F(AvrobinSerializerTests, GeneralTests) {
     generalTests();
 }
