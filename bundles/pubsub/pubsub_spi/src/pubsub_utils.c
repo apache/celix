@@ -34,6 +34,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include <stdint.h>
+
 #define MAX_KEYBUNDLE_LENGTH 256
 
 
