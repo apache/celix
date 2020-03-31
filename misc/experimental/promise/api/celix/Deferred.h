@@ -24,27 +24,31 @@
 #include "celix/PromiseSharedState.h"
 #include "celix/Promise.h"
 
+#include <tbb/task.h>
+#include <tbb/task_group.h>
+#include <tbb/task_scheduler_init.h>
+#include <tbb/task_scheduler_observer.h>
+
 namespace celix {
     template<typename T>
     class Deferred {
     public:
         using type = T;
-//        Deferred();
-//        ~Deferred() = default;
-//        Deferred(Deferred&&) = default;
-//        Deferred(const Deferred&) = delete;
-//        Deferred& operator=(Deferred&&) = default;
-//        Deferred& operator=(const Deferred&) = delete;
 
         void fail(std::exception_ptr p);
 
         Promise<T> getPromise();
 
-//        void resolve(T value);
+//        void z(T value);
         void resolve(T&& value);
 
-//        template<typename U>
-//        Promise<void> resolveWith(Promise<U> with)
+        template<typename U>
+        void resolveWith(Promise<U> with);
+
+        //Note this is the OSGI spec api
+        //TODO why return a Promise<void> in a Deferred<T> with a Promise<U> ???
+        //template<typename U>
+        //Promise<void> resolveWith(Promise<U> with);
 
     private:
         std::shared_ptr<celix::PromiseSharedState<T>> state{new celix::PromiseSharedState<T>{}};
@@ -70,6 +74,19 @@ inline celix::Promise<T> celix::Deferred<T>::getPromise() {
 template<typename T>
 inline void celix::Deferred<T>::resolve(T&& value) {
     state->resolve(std::forward<T>(value));
+}
+
+template<typename T>
+template<typename U>
+inline void celix::Deferred<T>::resolveWith(celix::Promise<U> with) {
+    auto& s = state;
+    with.onSuccess([s](U v) {
+        s->resolve(std::move(v));
+    });
+    with.onFailure([s](const std::exception& e) {
+        auto p = std::make_exception_ptr(e);
+        s->fail(p);
+    });
 }
 
 //template<typename T>

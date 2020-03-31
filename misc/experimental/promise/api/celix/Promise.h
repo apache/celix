@@ -37,9 +37,19 @@ namespace celix {
 
         bool isDone() const;
 
-        Promise<T>& onSuccess(std::function<void(const T&)> success);
+        Promise<T>& onSuccess(std::function<void(T)> success);
+
+        //TODO decide, if you do this and move the value out of the shared state, you
+        // a) can only have one move based callback and
+        // b) if any callbacks success callbacks are registered after the onSuccessMove this will fail ->
+        //    celix::PromiseInvocationException or not called
+        //TODO make a MoveablePromise ??
+        //Promise<T>& onSuccessMove(std::function<void(T) success);
 
         Promise<T>& onFailure(std::function<void(const std::exception&)> failure);
+
+//        template<typename U>
+//        celix::Promise<U>& then(std::function<celix::Promise<U>(celix::Promise<T>)> success, std::function<celix::Promise<U>(celix::Promise<T>)> failure = nullptr);
 
 
 //        template<typename U, typename F>
@@ -64,9 +74,11 @@ namespace celix {
 //
 //        //TODO thenAccept
 //
-//        Promise<T>& timeout(long milliseconds); //TODO use chrono
-//
-//        Promise<T>& delay(long milliseconds); //TODO use chrono
+        template<typename Rep, typename Period>
+        Promise<T> timeout(std::chrono::duration<Rep, Period> duration);
+
+        template<typename Rep, typename Period>
+        Promise<T> delay(std::chrono::duration<Rep, Period> duration);
 //
 //        template<typename U>
 //        Promise<T>& fallbackTo(Promise<U>&& fallback);
@@ -86,7 +98,6 @@ namespace celix {
 
 template<typename T>
 inline celix::Promise<T>::Promise(std::shared_ptr<celix::PromiseSharedState<T>> s) : state{std::move(s)} {
-
 }
 
 template<typename T>
@@ -110,13 +121,54 @@ inline std::exception_ptr celix::Promise<T>::getFailure() const {
 }
 
 template<typename T>
-inline celix::Promise<T>& celix::Promise<T>::onSuccess(std::function<void(const T&)> success) {
-    state->addOnSuccessCallback(std::move(success));
+inline celix::Promise<T>& celix::Promise<T>::onSuccess(std::function<void(T)> success) {
+    state->addOnSuccessConsumeCallback(std::move(success));
     return *this;
 }
 
 template<typename T>
 inline celix::Promise<T>& celix::Promise<T>::onFailure(std::function<void(const std::exception&)> failure) {
-    state->addOnSuccessCallback(std::move(failure));
+    state->addOnFailureConsumeCallback(std::move(failure));
     return *this;
 }
+
+template<typename T>
+template<typename Rep, typename Period>
+inline celix::Promise<T> celix::Promise<T>::timeout(std::chrono::duration<Rep, Period> duration) {
+    return celix::Promise<T>{PromiseSharedState<T>::timeout(state, duration)};
+}
+
+template<typename T>
+template<typename Rep, typename Period>
+inline celix::Promise<T> celix::Promise<T>::delay(std::chrono::duration<Rep, Period> duration) {
+    return celix::Promise<T>{state->delay(duration)};
+}
+
+//template<typename T>
+//template<typename U>
+//inline celix::Promise<U>& celix::Promise<T>::then(std::function<celix::Promise<U>(celix::Promise<T>)> success, std::function<celix::Promise<U>(celix::Promise<T>)> failure) {
+//    //Assert R assignable fom T (so T super of R)?? not sure
+//    auto uState = std::make_shared<celix::PromiseSharedState<U>>();
+//    auto tState = state;
+//    tState->addOnSuccessConsumeCallback([tState, uState, success] {
+//        celix::Promise<U> uPromise = success(celix::Promise<T>{tState});
+//        uPromise.onSuccess([uState](U& v) {
+//            uState->resolve(v);
+//        });
+//        uPromise.onFailure([uState](const std::exception& e) {
+//            uState->fail(e);
+//        });
+//    });
+//    if (failure) {
+//        tState->onFailure([tState, uState, failure] {
+//            celix::Promise<U> uPromise = failure(celix::Promise<T>{tState});
+//            uPromise.onSuccess([uState](U &v) {
+//                uState->resolve(v);
+//            });
+//            uPromise.onFailure([uState](const std::exception &e) {
+//                uState->fail(e);
+//            });
+//        });
+//    }
+//    return celix::Promise<U>{std::move(uState)};
+//}

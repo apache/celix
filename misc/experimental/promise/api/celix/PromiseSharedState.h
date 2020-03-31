@@ -19,23 +19,19 @@
 
 #pragma once
 
+#include <tbb/task_arena.h>
+
 #include "celix/PromiseInvocationException.h"
+#include "celix/PromiseTimeoutException.h"
 
 namespace celix { //TODO move to impl namespace?
-
 
     template<typename T>
     class PromiseSharedState {
     public:
         typedef typename std::aligned_storage<sizeof(T), std::alignment_of<T>::value>::type DataType;
 
-
-        enum class PromiseCallbackBehaviour {
-            DEFERRED,
-            ON_RESOLVE
-        };
-
-        explicit PromiseSharedState(PromiseCallbackBehaviour b = PromiseCallbackBehaviour::ON_RESOLVE);
+        explicit PromiseSharedState(const tbb::task_arena& executor = {});
         ~PromiseSharedState();
 
         void resolve(T&& value);
@@ -45,34 +41,47 @@ namespace celix { //TODO move to impl namespace?
         T move(); //move
         std::exception_ptr failure() const;
         bool isDone() const;
+        bool isResolved() const;
 
-        void addOnSuccessCallback(std::function<void(const T&)> consumer);
+        void addOnSuccessConsumeCallback(std::function<void(T)> success);
+        void addOnFailureConsumeCallback(std::function<void(const std::exception&)> failure);
+        void addOnResolve(std::function<void(bool succeeded, T* val, std::exception_ptr exp)> resolve);
+
+        template<typename Rep, typename Period>
+        std::shared_ptr<PromiseSharedState<T>> delay(std::chrono::duration<Rep, Period> duration);
+
+        static void resolveWith(std::shared_ptr<PromiseSharedState> state, std::shared_ptr<PromiseSharedState> with);
+
+        template<typename Rep, typename Period>
+        static std::shared_ptr<PromiseSharedState> timeout(std::shared_ptr<PromiseSharedState> state, std::chrono::duration<Rep, Period> duration);
     private:
+        /**
+         * Complete the resolving and call the registered tasks
+         * A reference to the possible locked unique_lock.
+         */
+        void complete(std::unique_lock<std::mutex>& lck);
+
+        /**
+         * run the promise chain for this resolved promise.
+         * A reference to the possible locked unique_lock.
+         */
+        void runChain(std::unique_lock<std::mutex>& lck);
+
         /**
          * Wait for data and check if it resolved as expected (expects mutex locked)
          */
         void waitForAndCheckData(std::unique_lock<std::mutex>& lck, bool expectValid) const;
 
-        /**
-         *
-         */
-        void invokeCallbacks() const;
+        tbb::task_arena executor;
 
-        const PromiseCallbackBehaviour behaviour;
-
-        mutable std::mutex mutex{};
+        mutable std::mutex mutex{}; //protects below
         mutable std::condition_variable cond{};
-
-        bool resolved = false;
-        bool valid = false;
+        bool done = false;
         bool dataMoved = false;
-
-        std::vector<std::function<void(const T&)>> onSuccesCallbacks{};
-        std::vector<std::function<void(const std::exception&)>> onFailureCallbacks{};
-        //std::thread callbackThread{this, &celix::PromiseSharedState<T>::invokeCallbacks};
-
+        std::vector<std::function<void()>> tasks{};
+        std::vector<std::shared_ptr<PromiseSharedState<void*>>> chain{};
         std::exception_ptr exp{nullptr};
-        DataType data;
+        DataType data{};
     };
 }
 
@@ -82,75 +91,61 @@ namespace celix { //TODO move to impl namespace?
 *********************************************************************************/
 
 template<typename T>
-inline celix::PromiseSharedState<T>::PromiseSharedState(PromiseCallbackBehaviour b) : behaviour{b} {
-    if (b == PromiseCallbackBehaviour::DEFERRED) {
-        //TODO only in this case start the callbackThread
-    }
-}
-
+inline celix::PromiseSharedState<T>::PromiseSharedState(const tbb::task_arena& _executor) : executor{_executor} {}
 
 template<typename T>
 inline celix::PromiseSharedState<T>::~PromiseSharedState() {
     //waiting until promise is met, this should be improved (i.e. waiting on a detached thread)
     std::unique_lock<std::mutex> lck{mutex};
-    cond.wait(lck, [this]{return resolved;});
+    cond.wait(lck, [this]{return done;}); //TODO need to wait or destruct unresolved promise??
 
-    //TODO if thread -> join or detach
-
-    if (valid && !dataMoved) {
+    if (done && !exp && !dataMoved) {
         static_cast<T*>(static_cast<void*>(&data))->~T();
     }
 }
 
 template<typename T>
 inline void celix::PromiseSharedState<T>::resolve(T&& value) {
-    {
-        std::lock_guard<std::mutex> lck{mutex};
-        if (resolved) {
-            //TODO throw
-        }
-        new(&data) T(std::forward<T>(value));
-        resolved = true;
-        valid = true;
-        cond.notify_all();
+    std::unique_lock<std::mutex> lck{mutex};
+    if (done) {
+        throw celix::PromiseInvocationException("Cannot resolve Promise. Promise is already done");
     }
-    if (behaviour == PromiseCallbackBehaviour::ON_RESOLVE) {
-        invokeCallbacks();
-    } else {
-        //nop, already notified
-    }
+    new(&data) T(std::forward<T>(value));
+    exp = nullptr;
+    complete(lck);
 }
 
 template<typename T>
-inline void celix::PromiseSharedState<T>::fail(std::exception_ptr p) {
-    {
-        std::lock_guard<std::mutex> lck{mutex};
-        exp = p;
-        resolved = true;
-        valid = false;
-        cond.notify_all();
+inline void celix::PromiseSharedState<T>::fail(std::exception_ptr e) {
+    std::unique_lock<std::mutex> lck{mutex};
+    if (done) {
+        throw celix::PromiseInvocationException("Cannot fail Promise. Promise is already done");
     }
-    if (behaviour == PromiseCallbackBehaviour::ON_RESOLVE) {
-        invokeCallbacks();
-    } else {
-        //nop, already notified
-    }
+    exp = e;
+    complete(lck);
 }
 
 template<typename T>
 inline bool celix::PromiseSharedState<T>::isDone() const {
     std::lock_guard<std::mutex> lck{mutex};
-    return resolved;
+    return done;
 }
+
+template<typename T>
+inline bool celix::PromiseSharedState<T>::isResolved() const {
+    std::lock_guard<std::mutex> lck{mutex};
+    return done && !exp;
+}
+
 
 template<typename T>
 inline void celix::PromiseSharedState<T>::waitForAndCheckData(std::unique_lock<std::mutex>& lck, bool expectValid) const {
     assert(lck.owns_lock());
-    cond.wait(lck, [this]{return resolved;});
-    if (expectValid && !valid) {
-        throw celix::PromiseInvocationException{"Expected a succeeded promise, but no value is available!"};
-    } else if(!expectValid && valid) {
-        throw celix::PromiseInvocationException{"Expected a failed promise, but no exception is available!"};
+    cond.wait(lck, [this]{return done;});
+    if (expectValid && exp) {
+        throw celix::PromiseInvocationException{"Expected a succeeded promise, but promise failed"};
+    } else if(!expectValid && !exp && !dataMoved) {
+        throw celix::PromiseInvocationException{"Expected a failed promise, but promise succeeded"};
     } else if (dataMoved) {
         throw celix::PromiseInvocationException{"Invalid use of promise, data is moved and not available anymore!"};
     }
@@ -160,7 +155,6 @@ template<typename T>
 inline const T& celix::PromiseSharedState<T>::get() const {
     std::unique_lock<std::mutex> lck{mutex};
     waitForAndCheckData(lck, true);
-    //const T* ptr = static_cast<const T*>(static_cast<const void*>(&data));
     const T* ptr = reinterpret_cast<const T*>(&data);
     return *ptr;
 }
@@ -182,43 +176,199 @@ inline std::exception_ptr celix::PromiseSharedState<T>::failure() const {
 }
 
 template<typename T>
-inline void celix::PromiseSharedState<T>::addOnSuccessCallback(std::function<void(const T&)> consumer) {
-    bool alreadyResolved = false;
+inline void celix::PromiseSharedState<T>::resolveWith(std::shared_ptr<PromiseSharedState<T>> state, std::shared_ptr<PromiseSharedState<T>> with) {
+    with->addOnResolve([state](bool succeeded, T* v, std::exception_ptr e) {
+       if (succeeded) {
+           state->resolve(std::forward<T>(*v));
+       } else {
+           state->fail(e);
+       }
+    });
+}
+
+template<typename T>
+template<typename Rep, typename Period>
+inline std::shared_ptr<celix::PromiseSharedState<T>> celix::PromiseSharedState<T>::timeout(std::shared_ptr<PromiseSharedState<T>> state, std::chrono::duration<Rep, Period> duration) {
+    auto p = std::make_shared<celix::PromiseSharedState<T>>();
+    resolveWith(p, state);
+    state->executor.execute([duration, p]{
+        std::this_thread::sleep_for(duration); //TODO use scheduler instead of sleep on thread (using unnecessary resources)
+        if (!p->isDone()) {
+            try {
+                p->fail(std::make_exception_ptr(celix::PromiseTimeoutException{}));
+            } catch(celix::PromiseInvocationException&) {
+                //already resolved. TODO improve this race condition (i.e. failIfNotDone)
+            }
+        }
+    });
+    return p;
+}
+
+template<typename T>
+template<typename Rep, typename Period>
+inline std::shared_ptr<celix::PromiseSharedState<T>> celix::PromiseSharedState<T>::delay(std::chrono::duration<Rep, Period> duration) {
+    auto p = std::make_shared<celix::PromiseSharedState<T>>();
+
+    addOnResolve([p, duration](bool succeeded, T* v, std::exception_ptr e) {
+        std::this_thread::sleep_for(duration); //TODO use scheduler instead of sleep on thread (using unnecessary resources)
+        try {
+            if (succeeded) {
+                p->resolve(std::forward<T>(*v));
+            } else {
+                p->fail(e);
+            }
+        } catch (celix::PromiseInvocationException&) {
+            //somebody already resolved p?
+        } catch (...) {
+            p->fail(std::current_exception());
+        }
+    });
+
+    return p;
+}
+
+template<typename T>
+inline void celix::PromiseSharedState<T>::addOnResolve(std::function<void(bool succeeded, T* val, std::exception_ptr exp)> callback) {
+    std::function<void()> task = [this, callback] {
+        std::exception_ptr e = nullptr;
+        T* val = nullptr;
+        {
+            std::lock_guard<std::mutex> lck{mutex};
+            e = exp;
+            val = e ? nullptr : reinterpret_cast<T*>(&data);
+        }
+        callback(!e, val, e);
+    };
+
+    bool alreadyDone;
     {
-        std::unique_lock<std::mutex> lck{mutex};
-        if (resolved) {
-            alreadyResolved = true;
-        } else {
-            onSuccesCallbacks.push_back(std::move(consumer));
+        std::lock_guard<std::mutex> lck{mutex};
+        alreadyDone = done;
+        if (!done) {
+            tasks.push_back(std::move(task));
         }
     }
-    if (alreadyResolved /*note consumer not moved*/) {
-        consumer(get());
+    if (alreadyDone) {
+        executor.execute(task);
     }
 }
 
 template<typename T>
-inline void celix::PromiseSharedState<T>::invokeCallbacks() const {
-    std::unique_lock<std::mutex> lck{mutex};
-    cond.wait(lck, [this]{return resolved;});
-
-    if (valid) {
-        for (auto& cb : onSuccesCallbacks) {
-            const T* ptr = static_cast<const T*>(static_cast<const void*>(&data));
-            cb(*ptr);
+inline void celix::PromiseSharedState<T>::addOnSuccessConsumeCallback(std::function<void(T)> callback) {
+    std::function<void()> task = [this, callback] {
+        if (isResolved()) {
+            callback(get());
         }
-    } else {
-        try {
-            std::rethrow_exception(exp);
-        } catch(const std::exception& e) {
-            for (auto& cb : onFailureCallbacks) {
-                cb(e);
+    };
+
+    bool alreadyDone;
+    {
+        std::lock_guard<std::mutex> lck{mutex};
+        alreadyDone = done;
+        if (!done) {
+            tasks.push_back(std::move(task));
+        }
+    }
+    if (alreadyDone) {
+        executor.execute(task);
+    }
+}
+
+template<typename T>
+inline void celix::PromiseSharedState<T>::addOnFailureConsumeCallback(std::function<void(const std::exception&)> callback) {
+    std::function<void()> task = [this, callback] {
+        if (!isResolved()) {
+            try {
+                std::rethrow_exception(failure());
+            } catch (const std::exception &e) {
+                callback(e);
+            } catch (...) {
+                //NOTE not a exception based on std::exception, "repacking" it to logical error
+                std::logic_error logicError{"Unknown exception throw for the failure of A celix::Promise"};
+                callback(logicError);
             }
-        } catch(...) {
-            //NOTE not a exception based on std::exception, "repacking" it to logical error
-            std::logic_error e{"Unknown exception throw for the failure of A celix::Promise"};
-            for (auto& cb : onFailureCallbacks) {
-                cb(e);
+        }
+    };
+
+    bool alreadyDone;
+    {
+        std::lock_guard<std::mutex> lck{mutex};
+        alreadyDone = done;
+        if (!done) {
+            tasks.push_back(std::move(task));
+        }
+    }
+    if (alreadyDone) {
+        executor.execute(task);
+    }
+}
+
+template<typename T>
+inline void celix::PromiseSharedState<T>::complete(std::unique_lock<std::mutex>& lck) {
+    if (!lck.owns_lock()) {
+        lck.lock();
+    }
+    std::vector<std::function<void()>> localTasks{};
+    std::vector<std::shared_ptr<PromiseSharedState<void*>>> localChain{};
+
+    if (done) {
+        throw celix::PromiseInvocationException("Promise is already resolved");
+    }
+
+    localTasks.swap(tasks);
+    localChain.swap(chain);
+
+    done = true;
+    cond.notify_all();
+    lck.unlock();
+
+    for (auto& task : localTasks) {
+        executor.execute(task);
+    }
+
+    runChain(lck);
+}
+
+template<typename T>
+inline void celix::PromiseSharedState<T>::runChain(std::unique_lock<std::mutex>& lck) {
+    if (!lck.owns_lock()) {
+        lck.lock();
+    }
+
+    while (!chain.empty()) {
+        auto next = chain.back();
+        chain.pop_back();
+
+        if (exp) {
+            try {
+//                if (next.onFailure != null) {
+//                    // "This method is called if the Promise with which it is registered resolves with a failure."
+//                    next.onFailure.fail(this);
+//                }
+//                // "If this method completes normally, the chained Promise will be failed
+//                // with the same exception which failed the resolved Promise."
+
+                next->fail(exp);
+            } catch(...) {
+                next->fail(std::current_exception());
+            }
+        } else {
+            // "This method is called if the Promise with which it is registered resolves successfully."
+//            Promise<T> p = null;
+//            if (next.onSuccess != null) {
+//                p = next.onSuccess.call(this);
+//            }
+
+            std::shared_ptr<PromiseSharedState<void*>> p = nullptr;
+
+            try {
+                if (!p) {
+                    next->resolve(nullptr);
+                } else {
+                    //TODO PromiseSharedState<T>::resolveWith(next, p);
+                }
+            } catch(...) {
+                next->fail(std::current_exception());
             }
         }
     }

@@ -15,7 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 
-
 add_executable(test_promise
     src/promise_tests.cc
 )

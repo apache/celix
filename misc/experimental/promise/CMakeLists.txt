@@ -15,9 +15,12 @@
 # specific language governing permissions and limitations
 # under the License.
 
+find_package(TBB REQUIRED)
 
 add_library(celix_Promise INTERFACE)
 target_include_directories(celix_Promise INTERFACE api)
+target_link_libraries(celix_Promise INTERFACE TBB::tbb)
+target_compile_options(celix_Promise INTERFACE -frtti) #Note needed for TBB
 add_library(Celix::Promise ALIAS celix_Promise)
 
 if (ENABLE_TESTING)
