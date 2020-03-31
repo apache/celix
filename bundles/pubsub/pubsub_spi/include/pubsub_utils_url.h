@@ -18,7 +18,7 @@
  */
 
 #ifndef PUBSUB_UTILS_URL_H_
-#define PUBSUB_UTILS_URI_H_
+#define PUBSUB_UTILS_URL_H_
 
 #ifdef __cplusplus
 extern "C" {

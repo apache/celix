@@ -98,15 +98,6 @@ celix_status_t pubsubProtocol_encodeHeader(void *handle, pubsub_protocol_message
     if (*outBuffer == NULL) {
         *outBuffer = calloc(1, headerSize);
         *outLength = headerSize;
-    } else if (*outLength < headerSize) {
-        void *tmp = realloc(*outBuffer, headerSize);
-        if (!tmp) {
-            free(*outBuffer);
-            *outBuffer = NULL;
-            status = CELIX_ENOMEM;
-        } else {
-           *outBuffer = tmp;
-        }
     }
     if (*outBuffer == NULL) {
         status = CELIX_ENOMEM;
