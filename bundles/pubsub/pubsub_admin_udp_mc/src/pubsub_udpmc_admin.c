@@ -328,7 +328,7 @@ celix_status_t pubsub_udpmcAdmin_setupTopicSender(void *handle, const char *scop
         }
     } else {
         free(key);
-        L_ERROR("[PSA_UDPMC] Cannot setup already existing TopicSender for scope/topic %s/%s!", scope, topic);
+        L_ERROR("[PSA_UDPMC] Cannot setup already existing TopicSender for scope/topic %s/%s!", scope == NULL ? "(null)" : scope, topic);
     }
     celixThreadMutex_unlock(&psa->topicSenders.mutex);
     celixThreadMutex_unlock(&psa->serializers.mutex);
@@ -361,7 +361,7 @@ celix_status_t pubsub_udpmcAdmin_teardownTopicSender(void *handle, const char *s
         //TODO disconnect endpoints to sender. note is this needed for a udpmc topic sender?
         pubsub_udpmcTopicSender_destroy(sender);
     } else {
-        L_ERROR("[PSA UDPMC] Cannot teardown TopicSender with scope/topic %s/%s. Does not exists", scope, topic);
+        L_ERROR("[PSA UDPMC] Cannot teardown TopicSender with scope/topic %s/%s. Does not exists", scope == NULL ? "(null)" : scope, topic);
     }
     celixThreadMutex_unlock(&psa->topicSenders.mutex);
     free(key);
@@ -400,7 +400,7 @@ celix_status_t pubsub_udpmcAdmin_setupTopicReceiver(void *handle, const char *sc
         }
     } else {
         free(key);
-        L_ERROR("[PSA_UDPMC] Cannot setup already existing TopicReceiver for scope/topic %s/%s!", scope, topic);
+        L_ERROR("[PSA_UDPMC] Cannot setup already existing TopicReceiver for scope/topic %s/%s!", scope == NULL ? "(null)" : scope, topic);
     }
     celixThreadMutex_unlock(&psa->topicReceivers.mutex);
     celixThreadMutex_unlock(&psa->serializers.mutex);
@@ -474,12 +474,16 @@ static celix_status_t pubsub_udpmcAdmin_connectEndpointToReceiver(pubsub_udpmc_a
         const char *eTopic = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_NAME, NULL);
         const char *eSerializer = celix_properties_get(endpoint, PUBSUB_ENDPOINT_SERIALIZER, NULL);
 
-        if (scope != NULL && topic != NULL && serializer != NULL
-                        && eScope != NULL && eTopic != NULL && eSerializer != NULL
-                        && strncmp(eScope, scope, 1024*1024) == 0
+        if (topic != NULL && serializer != NULL
+                        && eTopic != NULL && eSerializer != NULL
                         && strncmp(eTopic, topic, 1024*1024) == 0
                         && strncmp(eSerializer, serializer, 1024*1024) == 0) {
-            pubsub_udpmcTopicReceiver_connectTo(receiver, sockAddress, sockPort);
+            if (scope == NULL && eScope == NULL) {
+                pubsub_udpmcTopicReceiver_connectTo(receiver, sockAddress, sockPort);
+            } else if (scope != NULL && eScope != NULL && strncmp(eScope, scope, 1024*1024) == 0) {
+                pubsub_udpmcTopicReceiver_connectTo(receiver, sockAddress, sockPort);
+            }
+
         }
     }
 
@@ -572,7 +576,7 @@ bool pubsub_udpmcAdmin_executeCommand(void *handle, const char *commandLine __at
         const char *sockAddr = pubsub_udpmcTopicSender_socketAddress(sender);
         long sockPort = pubsub_udpmcTopicSender_socketPort(sender);
         const char *postAddr = pubsub_udpmcTopicSender_isStatic(sender) ? " (static port)" : "";
-        fprintf(out, "|- Topic Sender %s/%s\n", scope, topic);
+        fprintf(out, "|- Topic Sender %s/%s\n", scope == NULL ? "(null)" : scope, topic);
         fprintf(out, "   |- serializer type = %s\n", serType);
         fprintf(out, "   |- socket address  = %s:%li%s\n", sockAddr, sockPort, postAddr);
     }
@@ -594,7 +598,7 @@ bool pubsub_udpmcAdmin_executeCommand(void *handle, const char *commandLine __at
         celix_array_list_t *connections = celix_arrayList_create();
         pubsub_udpmcTopicReceiver_listConnections(receiver, connections);
 
-        fprintf(out, "|- Topic Receiver %s/%s\n", scope, topic);
+        fprintf(out, "|- Topic Receiver %s/%s\n", scope == NULL ? "(null)" : scope, topic);
         fprintf(out, "   |- serializer type = %s\n", serType);
         fprintf(out, "   |- connections (%i):\n", celix_arrayList_size(connections));
         for (int i = 0 ; i < celix_arrayList_size(connections); ++i) {

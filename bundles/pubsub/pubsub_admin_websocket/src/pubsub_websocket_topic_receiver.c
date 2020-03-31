@@ -138,7 +138,7 @@ pubsub_websocket_topic_receiver_t* pubsub_websocketTopicReceiver_create(celix_bu
     receiver->logHelper = logHelper;
     receiver->serializerSvcId = serializerSvcId;
     receiver->serializer = serializer;
-    receiver->scope = strndup(scope, 1024 * 1024);
+    receiver->scope = scope == NULL ? NULL : strndup(scope, 1024 * 1024);
     receiver->topic = strndup(topic, 1024 * 1024);
     psa_websocket_setScopeAndTopicFilter(scope, topic, receiver->scopeAndTopicFilter);
 
@@ -230,7 +230,7 @@ pubsub_websocket_topic_receiver_t* pubsub_websocketTopicReceiver_create(celix_bu
         receiver->recvThread.running = true;
         celixThread_create(&receiver->recvThread.thread, NULL, psa_websocket_recvThread, receiver);
         char name[64];
-        snprintf(name, 64, "WEBSOCKET TR %s/%s", scope, topic);
+        snprintf(name, 64, "WEBSOCKET TR %s/%s", scope == NULL ? "(null)" : scope, topic);
         celixThread_setName(&receiver->recvThread.thread, name);
     }
 
@@ -239,7 +239,7 @@ pubsub_websocket_topic_receiver_t* pubsub_websocketTopicReceiver_create(celix_bu
         free(receiver->topic);
         free(receiver);
         receiver = NULL;
-        L_ERROR("[PSA_WEBSOCKET] Cannot create TopicReceiver for %s/%s", scope, topic);
+        L_ERROR("[PSA_WEBSOCKET] Cannot create TopicReceiver for %s/%s", scope == NULL ? "(null)" : scope, topic);
     }
 
     return receiver;
@@ -342,7 +342,7 @@ void pubsub_websocketTopicReceiver_listConnections(pubsub_websocket_topic_receiv
 
 
 void pubsub_websocketTopicReceiver_connectTo(pubsub_websocket_topic_receiver_t *receiver, const char *socketAddress, long socketPort) {
-    L_DEBUG("[PSA_WEBSOCKET] TopicReceiver %s/%s ('%s') connecting to websocket address %s:li", receiver->scope, receiver->topic, receiver->uri, socketAddress, socketPort);
+    L_DEBUG("[PSA_WEBSOCKET] TopicReceiver %s/%s ('%s') connecting to websocket address %s:li", receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic, receiver->uri, socketAddress, socketPort);
 
     char *key = NULL;
     asprintf(&key, "%s:%li", socketAddress, socketPort);
@@ -369,7 +369,7 @@ void pubsub_websocketTopicReceiver_connectTo(pubsub_websocket_topic_receiver_t *
 }
 
 void pubsub_websocketTopicReceiver_disconnectFrom(pubsub_websocket_topic_receiver_t *receiver, const char *socketAddress, long socketPort) {
-    L_DEBUG("[PSA_WEBSOCKET] TopicReceiver %s/%s ('%s') disconnect from websocket address %s:%li", receiver->scope, receiver->topic, receiver->uri, socketAddress, socketPort);
+    L_DEBUG("[PSA_WEBSOCKET] TopicReceiver %s/%s ('%s') disconnect from websocket address %s:%li", receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic, receiver->uri, socketAddress, socketPort);
 
     char *key = NULL;
     asprintf(&key, "%s:%li", socketAddress, socketPort);
@@ -394,10 +394,16 @@ static void pubsub_websocketTopicReceiver_addSubscriber(void *handle, void *svc,
     pubsub_websocket_topic_receiver_t *receiver = handle;
 
     long bndId = celix_bundle_getId(bnd);
-    const char *subScope = celix_properties_get(props, PUBSUB_SUBSCRIBER_SCOPE, "default");
-    if (strncmp(subScope, receiver->scope, strlen(receiver->scope)) != 0) {
-        //not the same scope. ignore
-        return;
+    const char *subScope = celix_properties_get(props, PUBSUB_SUBSCRIBER_SCOPE, NULL);
+    if (receiver->scope == NULL){
+        if (subScope != NULL){
+            return;
+        }
+    } else {
+        if (strncmp(subScope, receiver->scope, strlen(receiver->scope)) != 0) {
+            //not the same scope. ignore
+            return;
+        }
     }
 
     celixThreadMutex_lock(&receiver->subscribers.mutex);
@@ -416,7 +422,7 @@ static void pubsub_websocketTopicReceiver_addSubscriber(void *handle, void *svc,
         if (rc == 0) {
             hashMap_put(receiver->subscribers.map, (void*)bndId, entry);
         } else {
-            L_ERROR("[PSA_WEBSOCKET] Cannot create msg serializer map for TopicReceiver %s/%s", receiver->scope, receiver->topic);
+            L_ERROR("[PSA_WEBSOCKET] Cannot create msg serializer map for TopicReceiver %s/%s", receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic);
             free(entry);
         }
     }
@@ -438,7 +444,7 @@ static void pubsub_websocketTopicReceiver_removeSubscriber(void *handle, void *s
         hashMap_remove(receiver->subscribers.map, (void*)bndId);
         int rc = receiver->serializer->destroySerializerMap(receiver->serializer->handle, entry->msgTypes);
         if (rc != 0) {
-            L_ERROR("[PSA_WEBSOCKET] Cannot destroy msg serializers map for TopicReceiver %s/%s", receiver->scope, receiver->topic);
+            L_ERROR("[PSA_WEBSOCKET] Cannot destroy msg serializers map for TopicReceiver %s/%s", receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic);
         }
         free(entry);
     }
@@ -481,7 +487,7 @@ static inline void processMsgForSubscriberEntry(pubsub_websocket_topic_receiver_
                     msgSer->freeMsg(msgSer->handle, deserializedMsg);
                 }
             } else {
-                L_WARN("[PSA_WEBSOCKET_TR] Cannot deserialize msg type %s for scope/topic %s/%s", msgSer->msgName, receiver->scope, receiver->topic);
+                L_WARN("[PSA_WEBSOCKET_TR] Cannot deserialize msg type %s for scope/topic %s/%s", msgSer->msgName, receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic);
             }
         }
     } else {

@@ -126,7 +126,7 @@ pubsub_websocket_topic_sender_t* pubsub_websocketTopicSender_create(
     }
 
     if (sender->websockSvcId > 0) {
-        sender->scope = strndup(scope, 1024 * 1024);
+        sender->scope = scope == NULL ? NULL : strndup(scope, 1024 * 1024);
         sender->topic = strndup(topic, 1024 * 1024);
 
         celixThreadMutex_create(&sender->boundedServices.mutex, NULL);
@@ -141,7 +141,9 @@ pubsub_websocket_topic_sender_t* pubsub_websocketTopicSender_create(
 
         celix_properties_t *props = celix_properties_create();
         celix_properties_set(props, PUBSUB_PUBLISHER_TOPIC, sender->topic);
-        celix_properties_set(props, PUBSUB_PUBLISHER_SCOPE, sender->scope);
+        if (sender->scope != NULL) {
+            celix_properties_set(props, PUBSUB_PUBLISHER_SCOPE, sender->scope);
+        }
 
         celix_service_registration_options_t opts = CELIX_EMPTY_SERVICE_REGISTRATION_OPTIONS;
         opts.factory = &sender->publisher.factory;
@@ -189,7 +191,9 @@ void pubsub_websocketTopicSender_destroy(pubsub_websocket_topic_sender_t *sender
 
         celix_bundleContext_unregisterService(sender->ctx, sender->websockSvcId);
 
-        free(sender->scope);
+        if (sender->scope != NULL) {
+            free(sender->scope);
+        }
         free(sender->topic);
         free(sender->uri);
         free(sender);
@@ -257,7 +261,7 @@ static void* psa_websocket_getPublisherService(void *handle, const celix_bundle_
             entry->service.send = psa_websocket_topicPublicationSend;
             hashMap_put(sender->boundedServices.map, (void*)bndId, entry);
         } else {
-            L_ERROR("Error creating serializer map for websocket TopicSender %s/%s", sender->scope, sender->topic);
+            L_ERROR("Error creating serializer map for websocket TopicSender %s/%s", sender->scope == NULL ? "(null)" : sender->scope, sender->topic);
         }
     }
     celixThreadMutex_unlock(&sender->boundedServices.mutex);
@@ -343,10 +347,10 @@ static int psa_websocket_topicPublicationSend(void* handle, unsigned int msgType
             free(serializedOutput);
         } else {
             L_WARN("[PSA_WEBSOCKET_TS] Error serialize message of type %s for scope/topic %s/%s",
-                   entry->msgSer->msgName, sender->scope, sender->topic);
+                   entry->msgSer->msgName, sender->scope == NULL ? "(null)" : sender->scope, sender->topic);
         }
     } else if (entry == NULL){
-        L_WARN("[PSA_WEBSOCKET_TS] Error sending message with msg type id %i for scope/topic %s/%s", msgTypeId, sender->scope, sender->topic);
+        L_WARN("[PSA_WEBSOCKET_TS] Error sending message with msg type id %i for scope/topic %s/%s", msgTypeId, sender->scope == NULL ? "(null)" : sender->scope, sender->topic);
     }
 
     return status;

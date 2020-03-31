@@ -425,7 +425,7 @@ celix_status_t pubsub_discovery_announceEndpoint(void *handle, const celix_prope
         celixThreadCondition_broadcast(&disc->waitCond);
         celixThreadMutex_unlock(&disc->waitMutex);
     } else if (valid) {
-        L_DEBUG("[PSD] Ignoring endpoint %s/%s because the visibility is not %s. Configured visibility is %s\n", scope, topic, PUBSUB_ENDPOINT_SYSTEM_VISIBILITY, visibility);
+        L_DEBUG("[PSD] Ignoring endpoint %s/%s because the visibility is not %s. Configured visibility is %s\n", scope == NULL ? "(null)" : scope, topic, PUBSUB_ENDPOINT_SYSTEM_VISIBILITY, visibility);
     }
 
     if (!valid) {

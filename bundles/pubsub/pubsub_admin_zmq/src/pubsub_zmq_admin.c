@@ -510,7 +510,7 @@ celix_status_t pubsub_zmqAdmin_setupTopicSender(void *handle, const char *scope,
         }
     } else {
         free(key);
-        L_ERROR("[PSA_ZMQ] Cannot setup already existing TopicSender for scope/topic %s/%s!", scope, topic);
+        L_ERROR("[PSA_ZMQ] Cannot setup already existing TopicSender for scope/topic %s/%s!", scope == NULL ? "(null)" : scope, topic);
     }
     celixThreadMutex_unlock(&psa->topicSenders.mutex);
     celixThreadMutex_unlock(&psa->protocols.mutex);
@@ -544,7 +544,7 @@ celix_status_t pubsub_zmqAdmin_teardownTopicSender(void *handle, const char *sco
         //TODO disconnect endpoints to sender. note is this needed for a zmq topic sender?
         pubsub_zmqTopicSender_destroy(sender);
     } else {
-        L_ERROR("[PSA ZMQ] Cannot teardown TopicSender with scope/topic %s/%s. Does not exists", scope, topic);
+        L_ERROR("[PSA ZMQ] Cannot teardown TopicSender with scope/topic %s/%s. Does not exists", scope == NULL ? "(null)" : scope, topic);
     }
     celixThreadMutex_unlock(&psa->topicSenders.mutex);
     free(key);
@@ -568,7 +568,7 @@ celix_status_t pubsub_zmqAdmin_setupTopicReceiver(void *handle, const char *scop
         if (serEntry != NULL && protEntry != NULL) {
             receiver = pubsub_zmqTopicReceiver_create(psa->ctx, psa->log, scope, topic, topicProperties, serializerSvcId, serEntry->svc, protocolSvcId, protEntry->svc);
         } else {
-            L_ERROR("[PSA_ZMQ] Cannot find serializer or protocol for TopicSender %s/%s", scope, topic);
+            L_ERROR("[PSA_ZMQ] Cannot find serializer or protocol for TopicSender %s/%s", scope == NULL ? "(null)" : scope, topic);
         }
         if (receiver != NULL) {
             const char *psaType = PUBSUB_ZMQ_ADMIN_TYPE;
@@ -588,7 +588,7 @@ celix_status_t pubsub_zmqAdmin_setupTopicReceiver(void *handle, const char *scop
         }
     } else {
         free(key);
-        L_ERROR("[PSA_ZMQ] Cannot setup already existing TopicReceiver for scope/topic %s/%s!", scope, topic);
+        L_ERROR("[PSA_ZMQ] Cannot setup already existing TopicReceiver for scope/topic %s/%s!", scope == NULL ? "(null)" : scope, topic);
     }
     celixThreadMutex_unlock(&psa->topicReceivers.mutex);
     celixThreadMutex_unlock(&psa->protocols.mutex);
@@ -775,7 +775,7 @@ bool pubsub_zmqAdmin_executeCommand(void *handle, const char *commandLine __attr
         const char *topic = pubsub_zmqTopicSender_topic(sender);
         const char *url = pubsub_zmqTopicSender_url(sender);
         const char *postUrl = pubsub_zmqTopicSender_isStatic(sender) ? " (static)" : "";
-        fprintf(out, "|- Topic Sender %s/%s\n", scope, topic);
+        fprintf(out, "|- Topic Sender %s/%s\n", scope == NULL ? "(null)" : scope, topic);
         fprintf(out, "   |- serializer type = %s\n", serType);
         fprintf(out, "   |- protocol type = %s\n", protType);
         fprintf(out, "   |- url            = %s%s\n", url, postUrl);
@@ -808,7 +808,7 @@ bool pubsub_zmqAdmin_executeCommand(void *handle, const char *commandLine __attr
         celix_array_list_t *unconnected = celix_arrayList_create();
         pubsub_zmqTopicReceiver_listConnections(receiver, connected, unconnected);
 
-        fprintf(out, "|- Topic Receiver %s/%s\n", scope, topic);
+        fprintf(out, "|- Topic Receiver %s/%s\n", scope == NULL ? "(null)" : scope, topic);
         fprintf(out, "   |- serializer type = %s\n", serType);
         fprintf(out, "   |- protocol type = %s\n", protType);
         for (int i = 0; i < celix_arrayList_size(connected); ++i) {
