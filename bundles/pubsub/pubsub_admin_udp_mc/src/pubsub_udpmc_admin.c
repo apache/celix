@@ -477,7 +477,7 @@ celix_status_t pubsub_udpmcAdmin_addEndpoint(void *handle, const celix_propertie
         char *key = pubsubEndpoint_createScopeTopicKey(scope, topic);
 
         pubsub_udpmc_topic_receiver_t *receiver = hashMap_get(psa->topicReceivers.map, key);
-        if (receiver != null) {
+        if (receiver != NULL) {
             pubsub_udpmcAdmin_connectEndpointToReceiver(psa, receiver, endpoint);
         }
         celixThreadMutex_unlock(&psa->topicReceivers.mutex);

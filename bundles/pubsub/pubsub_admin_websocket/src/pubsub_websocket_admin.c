@@ -465,7 +465,7 @@ celix_status_t pubsub_websocketAdmin_addDiscoveredEndpoint(void *handle, const c
         char *key = pubsubEndpoint_createScopeTopicKey(scope, topic);
 
         pubsub_websocket_topic_receiver_t *receiver = hashMap_get(psa->topicReceivers.map, key);
-        if (receiver != null) {
+        if (receiver != NULL) {
             pubsub_websocketAdmin_connectEndpointToReceiver(psa, receiver, endpoint);
         }
         celixThreadMutex_unlock(&psa->topicReceivers.mutex);

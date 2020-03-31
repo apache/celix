@@ -543,7 +543,7 @@ celix_status_t pubsub_tcpAdmin_addDiscoveredEndpoint(void *handle, const celix_p
         char *key = pubsubEndpoint_createScopeTopicKey(scope, topic);
 
         pubsub_tcp_topic_receiver_t *receiver = hashMap_get(psa->topicReceivers.map, key);
-        if (receiver != null) {
+        if (receiver != NULL) {
             pubsub_tcpAdmin_connectEndpointToReceiver(psa, receiver, endpoint);
         }
         celixThreadMutex_unlock(&psa->topicReceivers.mutex);
