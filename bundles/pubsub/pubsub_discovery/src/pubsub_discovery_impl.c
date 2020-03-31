@@ -414,7 +414,7 @@ celix_status_t pubsub_discovery_announceEndpoint(void *handle, const celix_prope
         clock_gettime(CLOCK_MONOTONIC, &entry->createTime);
         entry->isSet = false;
         entry->properties = celix_properties_copy(endpoint);
-        asprintf(&entry->key, "/pubsub/%s/%s/%s/%s", config, scope == NULL ? "default" : scope, topic, uuid);
+        asprintf(&entry->key, "/pubsub/%s/%s/%s/%s", config, scope == NULL ? PUBSUB_DEFAULT_ENDPOINT_SCOPE : scope, topic, uuid);
 
         const char *hashKey = celix_properties_get(entry->properties, PUBSUB_ENDPOINT_UUID, NULL);
         celixThreadMutex_lock(&disc->announcedEndpointsMutex);
