@@ -65,6 +65,8 @@ static void pubsubEndpoint_setFields(celix_properties_t *ep, const char* fwUUID,
 
     if (scope != NULL) {
         celix_properties_set(ep, PUBSUB_ENDPOINT_TOPIC_SCOPE, scope);
+    } else {
+        celix_properties_set(ep, PUBSUB_ENDPOINT_TOPIC_SCOPE, "default");
     }
 
     if (topic != NULL) {

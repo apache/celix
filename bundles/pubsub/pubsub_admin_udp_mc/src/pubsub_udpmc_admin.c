@@ -461,30 +461,7 @@ static celix_status_t pubsub_udpmcAdmin_connectEndpointToReceiver(pubsub_udpmc_a
         }
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
-        const char *scope = pubsub_udpmcTopicReceiver_scope(receiver);
-        const char *topic = pubsub_udpmcTopicReceiver_topic(receiver);
-        const char *serializer = NULL;
-        long serializerSvcId = pubsub_udpmcTopicReceiver_serializerSvcId(receiver);
-        psa_udpmc_serializer_entry_t *serializerEntry = hashMap_get(psa->serializers.map, (void*)serializerSvcId);
-        if (serializerEntry != NULL) {
-            serializer = serializerEntry->serType;
-        }
-
-        const char *eScope = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_SCOPE, NULL);
-        const char *eTopic = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_NAME, NULL);
-        const char *eSerializer = celix_properties_get(endpoint, PUBSUB_ENDPOINT_SERIALIZER, NULL);
-
-        if (topic != NULL && serializer != NULL
-                        && eTopic != NULL && eSerializer != NULL
-                        && strncmp(eTopic, topic, 1024*1024) == 0
-                        && strncmp(eSerializer, serializer, 1024*1024) == 0) {
-            if (scope == NULL && eScope == NULL) {
-                pubsub_udpmcTopicReceiver_connectTo(receiver, sockAddress, sockPort);
-            } else if (scope != NULL && eScope != NULL && strncmp(eScope, scope, 1024*1024) == 0) {
-                pubsub_udpmcTopicReceiver_connectTo(receiver, sockAddress, sockPort);
-            }
-
-        }
+        pubsub_udpmcTopicReceiver_connectTo(receiver, sockAddress, sockPort);
     }
 
     return status;
@@ -495,9 +472,12 @@ celix_status_t pubsub_udpmcAdmin_addEndpoint(void *handle, const celix_propertie
 
     if (pubsub_udpmcAdmin_endpointIsPublisher(endpoint)) {
         celixThreadMutex_lock(&psa->topicReceivers.mutex);
-        hash_map_iterator_t iter = hashMapIterator_construct(psa->topicReceivers.map);
-        while (hashMapIterator_hasNext(&iter)) {
-            pubsub_udpmc_topic_receiver_t *receiver = hashMapIterator_nextValue(&iter);
+        const char *scope = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_SCOPE, NULL);
+        const char *topic = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_NAME, NULL);
+        char *key = pubsubEndpoint_createScopeTopicKey(scope, topic);
+
+        pubsub_udpmc_topic_receiver_t *receiver = hashMap_get(psa->topicReceivers.map, key);
+        if (receiver != null) {
             pubsub_udpmcAdmin_connectEndpointToReceiver(psa, receiver, endpoint);
         }
         celixThreadMutex_unlock(&psa->topicReceivers.mutex);
