@@ -146,7 +146,7 @@ pubsub_zmq_topic_receiver_t* pubsub_zmqTopicReceiver_create(celix_bundle_context
     receiver->serializer = serializer;
     receiver->protocolSvcId = protocolSvcId;
     receiver->protocol = protocol;
-    receiver->scope = strndup(scope, 1024 * 1024);
+    receiver->scope = scope == NULL ? NULL : strndup(scope, 1024 * 1024);
     receiver->topic = strndup(topic, 1024 * 1024);
     receiver->metricsEnabled = celix_bundleContext_getPropertyAsBool(ctx, PSA_ZMQ_METRICS_ENABLED, PSA_ZMQ_DEFAULT_METRICS_ENABLED);
 
@@ -260,7 +260,9 @@ pubsub_zmq_topic_receiver_t* pubsub_zmqTopicReceiver_create(celix_bundle_context
     }
 
     if (receiver->zmqSock == NULL) {
-        free(receiver->scope);
+        if (receiver->scope != NULL) {
+            free(receiver->scope);
+        }
         free(receiver->topic);
         free(receiver);
         receiver = NULL;
@@ -401,10 +403,16 @@ static void pubsub_zmqTopicReceiver_addSubscriber(void *handle, void *svc, const
     pubsub_zmq_topic_receiver_t *receiver = handle;
 
     long bndId = celix_bundle_getId(bnd);
-    const char *subScope = celix_properties_get(props, PUBSUB_SUBSCRIBER_SCOPE, "default");
-    if (strncmp(subScope, receiver->scope, strlen(receiver->scope)) != 0) {
-        //not the same scope. ignore
-        return;
+    const char *subScope = celix_properties_get(props, PUBSUB_SUBSCRIBER_SCOPE, NULL);
+    if (receiver->scope == NULL){
+        if (subScope != NULL){
+            return;
+        }
+    } else {
+        if (strncmp(subScope, receiver->scope, strlen(receiver->scope)) != 0) {
+            //not the same scope. ignore
+            return;
+        }
     }
 
     celixThreadMutex_lock(&receiver->subscribers.mutex);

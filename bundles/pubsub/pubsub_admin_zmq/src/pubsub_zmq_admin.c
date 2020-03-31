@@ -667,13 +667,17 @@ static celix_status_t pubsub_zmqAdmin_connectEndpointToReceiver(pubsub_zmq_admin
         const char *eSerializer = celix_properties_get(endpoint, PUBSUB_ENDPOINT_SERIALIZER, NULL);
         const char *eProtocol = celix_properties_get(endpoint, PUBSUB_ENDPOINT_PROTOCOL, NULL);
 
-        if (scope != NULL && topic != NULL && serializer != NULL && protocol != NULL
-                        && eScope != NULL && eTopic != NULL && eSerializer != NULL && eProtocol != NULL
-                        && strncmp(eScope, scope, 1024*1024) == 0
+        if (topic != NULL && serializer != NULL && protocol != NULL
+                        && eTopic != NULL && eSerializer != NULL && eProtocol != NULL
                         && strncmp(eTopic, topic, 1024*1024) == 0
                         && strncmp(eSerializer, serializer, 1024*1024) == 0
                         && strncmp(eProtocol, protocol, 1024*1024) == 0) {
-            pubsub_zmqTopicReceiver_connectTo(receiver, url);
+            // Scope is not required
+            if (scope == NULL && eScope == NULL) {
+                pubsub_zmqTopicReceiver_connectTo(receiver, url);
+            } else if (scope != NULL && eScope != NULL && strncmp(scope, eScope, 1024*1024) == 0) {
+                pubsub_zmqTopicReceiver_connectTo(receiver, url);
+            }
         }
     }
 

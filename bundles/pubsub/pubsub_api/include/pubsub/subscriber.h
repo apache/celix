@@ -39,7 +39,7 @@
 #define PUBSUB_SUBSCRIBER_SCOPE                "scope"
 #define PUBSUB_SUBSCRIBER_CONFIG               "pubsub.config"
 
-#define PUBSUB_SUBSCRIBER_SCOPE_DEFAULT        "default"
+//#define PUBSUB_SUBSCRIBER_SCOPE_DEFAULT        "default"
 
 struct pubsub_subscriber_struct {
     void *handle;

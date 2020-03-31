@@ -126,7 +126,9 @@ celix_status_t pubsub_topologyManager_destroy(pubsub_topology_manager_t *manager
         pstm_topic_receiver_or_sender_entry_t *entry = hashMapIterator_nextValue(&iter);
         if (entry != NULL) {
             free(entry->scopeAndTopicKey);
-            free(entry->scope);
+            if (entry->scope != NULL) {
+                free(entry->scope);
+            }
             free(entry->topic);
             if (entry->topicProperties != NULL) {
                 celix_properties_destroy(entry->topicProperties);
@@ -148,7 +150,9 @@ celix_status_t pubsub_topologyManager_destroy(pubsub_topology_manager_t *manager
         pstm_topic_receiver_or_sender_entry_t *entry = hashMapIterator_nextValue(&iter);
         if (entry != NULL) {
             free(entry->scopeAndTopicKey);
-            free(entry->scope);
+            if (entry->scope != NULL) {
+                free(entry->scope);
+            }
             free(entry->topic);
             if (entry->topicProperties != NULL) {
                 celix_properties_destroy(entry->topicProperties);
@@ -314,7 +318,7 @@ void pubsub_topologyManager_subscriberAdded(void *handle, void *svc __attribute_
     //3) signal psaHandling thread to setup topic receiver
 
     const char *topic = celix_properties_get(props, PUBSUB_SUBSCRIBER_TOPIC, NULL);
-    const char *scope = celix_properties_get(props, PUBSUB_SUBSCRIBER_SCOPE, "default");
+    const char *scope = celix_properties_get(props, PUBSUB_SUBSCRIBER_SCOPE, NULL);
     if (topic == NULL) {
         logHelper_log(manager->loghelper, OSGI_LOGSERVICE_WARNING,
                       "[PSTM] Warning found subscriber service without mandatory '%s' property.",
@@ -334,7 +338,7 @@ void pubsub_topologyManager_subscriberAdded(void *handle, void *svc __attribute_
     } else {
         entry = calloc(1, sizeof(*entry));
         entry->scopeAndTopicKey = scopeAndTopicKey; //note taking owner ship
-        entry->scope = strndup(scope, 1024 * 1024);
+        entry->scope = scope == NULL ? NULL : strndup(scope, 1024 * 1024);
         entry->topic = strndup(topic, 1024 * 1024);
         entry->usageCount = 1;
         entry->selectedPsaSvcId = -1L;
@@ -362,7 +366,7 @@ void pubsub_topologyManager_subscriberRemoved(void *handle, void *svc __attribut
     //1) Find topic receiver and decrease count
 
     const char *topic = celix_properties_get(props, PUBSUB_SUBSCRIBER_TOPIC, NULL);
-    const char *scope = celix_properties_get(props, PUBSUB_SUBSCRIBER_SCOPE, "default");
+    const char *scope = celix_properties_get(props, PUBSUB_SUBSCRIBER_SCOPE, NULL);
 
     if (topic == NULL) {
         return;
@@ -437,7 +441,7 @@ void pubsub_topologyManager_publisherTrackerAdded(void *handle, const celix_serv
     char *topicFromFilter = NULL;
     char *scopeFromFilter = NULL;
     pubsub_getPubSubInfoFromFilter(info->filter->filterStr, &topicFromFilter, &scopeFromFilter);
-    char *scope = scopeFromFilter == NULL ? strndup("default", 32) : scopeFromFilter;
+    char *scope = scopeFromFilter;
     char *topic = topicFromFilter;
 
     char *scopeAndTopicKey = NULL;
@@ -453,7 +457,9 @@ void pubsub_topologyManager_publisherTrackerAdded(void *handle, const celix_serv
     pstm_topic_receiver_or_sender_entry_t *entry = hashMap_get(manager->topicSenders.map, scopeAndTopicKey);
     if (entry != NULL) {
         entry->usageCount += 1;
-        free(scope);
+        if (scope != NULL) {
+            free(scope);
+        }
         free(topic);
         free(scopeAndTopicKey);
     } else {
@@ -491,10 +497,12 @@ void pubsub_topologyManager_publisherTrackerRemoved(void *handle, const celix_se
     char *topic = NULL;
     char *scopeFromFilter = NULL;
     pubsub_getPubSubInfoFromFilter(info->filter->filterStr, &topic, &scopeFromFilter);
-    const char *scope = scopeFromFilter == NULL ? "default" : scopeFromFilter;
+    const char *scope = scopeFromFilter;
 
     if (topic == NULL) {
-        free(scopeFromFilter);
+        if (scopeFromFilter != NULL) {
+            free(scopeFromFilter);
+        }
         return;
     }
 
@@ -509,7 +517,9 @@ void pubsub_topologyManager_publisherTrackerRemoved(void *handle, const celix_se
 
     free(scopeAndTopicKey);
     free(topic);
-    free(scopeFromFilter);
+    if (scopeFromFilter != NULL) {
+        free(scopeFromFilter);
+    }
 }
 
 celix_status_t pubsub_topologyManager_addDiscoveredEndpoint(void *handle, const celix_properties_t *endpoint) {
@@ -656,7 +666,9 @@ static void pstm_teardownTopicSenders(pubsub_topology_manager_t *manager) {
                 //no usage -> remove
                 hashMapIterator_remove(&iter);
                 free(entry->scopeAndTopicKey);
-                free(entry->scope);
+                if (entry->scope != NULL) {
+                    free(entry->scope);
+                }
                 free(entry->topic);
                 if (entry->topicProperties != NULL) {
                     celix_properties_destroy(entry->topicProperties);
@@ -721,7 +733,9 @@ static void pstm_teardownTopicReceivers(pubsub_topology_manager_t *manager) {
                 hashMapIterator_remove(&iter);
                 //cleanup entry
                 free(entry->scopeAndTopicKey);
-                free(entry->scope);
+                if (entry->scope != NULL) {
+                    free(entry->scope);
+                }
                 free(entry->topic);
                 if (entry->topicProperties != NULL) {
                     celix_properties_destroy(entry->topicProperties);
