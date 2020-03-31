@@ -198,9 +198,14 @@ celix_status_t pubsubProtocol_decodeHeader(void* handle, void *data, size_t leng
                 idx = readInt(data, idx, &message->header.payloadSize);
                 readInt(data, idx, &message->header.metadataSize);
                 // Set message segmentation parameters to defaults
-                message->header.seqNr           = 0;
                 message->header.payloadPartSize = message->header.payloadSize;
-                message->header.payloadOffset   = 0;
+                message->header.payloadOffset    = 0;
+                message->header.isLastSegment    = 1;
+#if __BYTE_ORDER__ && (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
+                message->header.convertEndianess = 1;
+#else
+                message->header.convertEndianess = 0;
+#endif
             }
         }
     } else {

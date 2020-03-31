@@ -15,12 +15,12 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(celix_wire_protocol_v1_impl STATIC
+add_library(celix_wire_v1_protocol_impl STATIC
     src/pubsub_wire_protocol_impl.c
     src/pubsub_wire_protocol_common.c
 )
-target_include_directories(celix_wire_protocol_v1_impl PRIVATE src)
-target_link_libraries(celix_wire_protocol_v1_impl PRIVATE Celix::pubsub_spi )
+target_include_directories(celix_wire_v1_protocol_impl PRIVATE src)
+target_link_libraries(celix_wire_v1_protocol_impl PRIVATE Celix::pubsub_spi )
 
 
 add_celix_bundle(celix_pubsub_protocol_wire_v1
@@ -32,7 +32,7 @@ add_celix_bundle(celix_pubsub_protocol_wire_v1
 )
 target_include_directories(celix_pubsub_protocol_wire_v1 PRIVATE src)
 target_link_libraries(celix_pubsub_protocol_wire_v1 PRIVATE Celix::pubsub_spi )
-target_link_libraries(celix_pubsub_protocol_wire_v1 PRIVATE celix_wire_protocol_v1_impl)
+target_link_libraries(celix_pubsub_protocol_wire_v1 PRIVATE celix_wire_v1_protocol_impl)
 
 install_celix_bundle(celix_pubsub_protocol_wire_v1 EXPORT celix COMPONENT pubsub)
 

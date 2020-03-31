@@ -64,7 +64,6 @@ struct pubsub_tcp_topic_sender {
     char *topic;
     char *url;
     bool isStatic;
-
     bool verbose;
 
     struct {
@@ -85,9 +84,7 @@ typedef struct psa_tcp_send_msg_entry {
     unsigned char originUUID[16];
     pubsub_msg_serializer_t *msgSer;
     pubsub_protocol_service_t *protSer;
-    struct iovec *serializedIoVecOutput;
     size_t serializedIoVecOutputLen;
-    unsigned int seqNr;
     struct {
         celix_thread_mutex_t mutex; //protects entries in struct
         unsigned long nrOfMessagesSend;
@@ -274,8 +271,6 @@ void pubsub_tcpTopicSender_destroy(pubsub_tcp_topic_sender_t *sender) {
                 hash_map_iterator_t iter2 = hashMapIterator_construct(entry->msgEntries);
                 while (hashMapIterator_hasNext(&iter2)) {
                     psa_tcp_send_msg_entry_t *msgEntry = hashMapIterator_nextValue(&iter2);
-                    if (msgEntry->serializedIoVecOutput) free(msgEntry->serializedIoVecOutput);
-                    msgEntry->serializedIoVecOutput = NULL;
                     celixThreadMutex_destroy(&msgEntry->metrics.mutex);
                     free(msgEntry);
                 }
@@ -408,8 +403,6 @@ static void psa_tcp_ungetPublisherService(void *handle, const celix_bundle_t *re
         hash_map_iterator_t iter = hashMapIterator_construct(entry->msgEntries);
         while (hashMapIterator_hasNext(&iter)) {
             psa_tcp_send_msg_entry_t *msgEntry = hashMapIterator_nextValue(&iter);
-            if (msgEntry->serializedIoVecOutput) free(msgEntry->serializedIoVecOutput);
-            msgEntry->serializedIoVecOutput = NULL;
             celixThreadMutex_destroy(&msgEntry->metrics.mutex);
             free(msgEntry);
         }
@@ -490,7 +483,7 @@ static int psa_tcp_topicPublicationSend(void *handle, unsigned int msgTypeId, co
             clock_gettime(CLOCK_REALTIME, &serializationStart);
         }
 
-        size_t serializedIoVecOutputLen = 0; //entry->serializedIoVecOutputLen;
+        size_t serializedIoVecOutputLen = 0;
         struct iovec* serializedIoVecOutput = NULL;
         status = entry->msgSer->serialize(entry->msgSer->handle, inMsg, &serializedIoVecOutput, &serializedIoVecOutputLen);
         entry->serializedIoVecOutputLen = MAX(serializedIoVecOutputLen, entry->serializedIoVecOutputLen);
@@ -509,7 +502,6 @@ static int psa_tcp_topicPublicationSend(void *handle, unsigned int msgTypeId, co
                 message.payload.length  = serializedIoVecOutput->iov_len;
             }
             message.header.msgId = msgTypeId;
-            message.header.seqNr = entry->seqNr;
             message.header.msgMajorVersion = entry->major;
             message.header.msgMinorVersion = entry->minor;
             message.header.payloadSize = 0;
@@ -517,7 +509,6 @@ static int psa_tcp_topicPublicationSend(void *handle, unsigned int msgTypeId, co
             message.header.payloadOffset = 0;
             message.header.metadataSize  = 0;
             if (metadata != NULL) message.metadata.metadata = metadata;
-            entry->seqNr++;
             bool sendOk = true;
             {
                 int rc = pubsub_tcpHandler_write(sender->socketHandler, &message, serializedIoVecOutput, serializedIoVecOutputLen, 0);

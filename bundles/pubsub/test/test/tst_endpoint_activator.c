@@ -61,7 +61,6 @@ celix_status_t bnd_start(struct activator *act, celix_bundle_context_t *ctx) {
         act->countSvcId = celix_bundleContext_registerService(ctx, &act->countSvc, CELIX_RECEIVE_COUNT_SERVICE_NAME, NULL);
     }
 
-
     return CELIX_SUCCESS;
 }
 

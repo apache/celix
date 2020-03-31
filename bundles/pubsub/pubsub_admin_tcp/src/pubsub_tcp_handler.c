@@ -67,6 +67,7 @@ typedef struct psa_tcp_connection_entry {
     socklen_t len;
     bool connected;
     pubsub_protocol_message_t header;
+    unsigned int maxMsgSize;
     unsigned int syncSize;
     unsigned int headerSize;
     unsigned int headerBufferSize; // Size of headerBuffer, size = 0, no headerBuffer -> included in payload
@@ -85,7 +86,6 @@ typedef struct psa_tcp_connection_entry {
 // Handle administration
 //
 struct pubsub_tcpHandler {
-    unsigned int readSeqNr;
     celix_thread_rwlock_t dbLock;
     unsigned int timeout;
     hash_map_t *connection_url_map;
@@ -323,6 +323,7 @@ pubsub_tcpHandler_createEntry(pubsub_tcpHandler_t *handle, int fd, char *url, ch
             entry->msg_iovlen++;
         }
         entry->buffer = calloc(sizeof(char), entry->bufferSize);
+        entry->maxMsgSize = (!handle->maxMsgSize) ? SIZE_MAX - entry->headerSize : handle->maxMsgSize;
         entry->msg.msg_iov[entry->msg.msg_iovlen].iov_base = entry->buffer;
         entry->msg.msg_iov[entry->msg.msg_iovlen].iov_len = entry->bufferSize;
         entry->msg_iovlen++;
@@ -779,9 +780,10 @@ int pubsub_tcpHandler_dataAvailable(pubsub_tcpHandler_t *handle, int fd, unsigne
         }
 
         if (entry->headerBufferSize) entry->msg.msg_iovlen++;
-        if (entry->header.header.payloadSize) {
-            entry->msg.msg_iov[entry->msg.msg_iovlen].iov_base = entry->buffer;
-            entry->msg.msg_iov[entry->msg.msg_iovlen].iov_len = entry->header.header.payloadSize;
+        if (entry->header.header.payloadPartSize) {
+            char *buffer = entry->buffer;
+            entry->msg.msg_iov[entry->msg.msg_iovlen].iov_base = &buffer[entry->header.header.payloadOffset];
+            entry->msg.msg_iov[entry->msg.msg_iovlen].iov_len = entry->header.header.payloadPartSize;
             entry->msg.msg_iovlen++;
         }
         if (entry->header.header.metadataSize) {
@@ -796,7 +798,8 @@ int pubsub_tcpHandler_dataAvailable(pubsub_tcpHandler_t *handle, int fd, unsigne
             L_WARN("[TCP Socket] Failed to receive message header (fd: %d), error: %s. Retry count %u of %u,",
                    entry->fd, strerror(errno), entry->retryCount, handle->maxRcvRetryCount);
         } else {
-            L_ERROR("[TCP Socket] Failed to receive message header (fd: %d) after %u retries! Closing connection... Error: %s",
+            L_ERROR(
+                    "[TCP Socket] Failed to receive message header (fd: %d) after %u retries! Closing connection... Error: %s",
                     entry->fd, handle->maxRcvRetryCount, strerror(errno));
             nbytes = 0; //Return 0 as indicator to close the connection
         }
@@ -807,9 +810,9 @@ int pubsub_tcpHandler_dataAvailable(pubsub_tcpHandler_t *handle, int fd, unsigne
         for (int i = 0; i < entry->msg.msg_iovlen; i++) {
             msgSize += entry->msg.msg_iov[i].iov_len;
         }
-        if (nbytes == msgSize) {
+        if ((nbytes == msgSize) && (entry->header.header.isLastSegment)) {
             *readMsg = true;
-        } else {
+        } else if (nbytes != msgSize) {
             L_ERROR("[TCP Socket] Failed to receive complete message (fd: %d) nbytes : %d = msgSize %d", entry->fd,
                     nbytes, msgSize);
         }
@@ -899,6 +902,7 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
     int nofConnToClose = 0;
     if (handle) {
         hash_map_iterator_t iter = hashMapIterator_construct(handle->connection_fd_map);
+        size_t max_msg_iov_len = IOV_MAX - 2;
         while (hashMapIterator_hasNext(&iter)) {
             psa_tcp_connection_entry_t *entry = hashMapIterator_nextValue(&iter);
             void *payloadData = NULL;
@@ -923,86 +927,120 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
                                                  &metadataSize);
             }
             message->header.metadataSize = metadataSize;
+            size_t totalMessageSize = payloadSize + metadataSize;
+
+            bool isMessageSegmentationSupported = false;
+            handle->protocol->isMessageSegmentationSupported(handle->protocol->handle, &isMessageSegmentationSupported);
+            if (((!isMessageSegmentationSupported) && (msg_iov_len > max_msg_iov_len)) ||
+                ((!isMessageSegmentationSupported) && (totalMessageSize > entry->maxMsgSize))) {
+                L_WARN("[TCP Socket] Failed to send message (fd: %d), Message segmentation is not supported\n",
+                       entry->fd);
+                continue;
+            }
 
             size_t msgSize = 0;
-            long int nbytes = 0;
-            struct msghdr msg;
-            struct iovec msg_iov[IOV_MAX];
-            msg.msg_name = &entry->addr;
-            msg.msg_namelen = entry->len;
-            msg.msg_flags = flags;
-            msg.msg_control = NULL;
-            msg.msg_controllen = 0;
-            msg.msg_iovlen = 0;
-            msg.msg_iov = msg_iov;
+            size_t msgIovLen = 0;
+            long int nbytes = UINT32_MAX;
+            while (msgSize < totalMessageSize && nbytes > 0) {
+                struct msghdr msg;
+                struct iovec msg_iov[IOV_MAX];
+                msg.msg_name = &entry->addr;
+                msg.msg_namelen = entry->len;
+                msg.msg_flags = flags;
+                msg.msg_control = NULL;
+                msg.msg_controllen = 0;
+                msg.msg_iovlen = 0;
+                msg.msg_iov = msg_iov;
+                size_t msgPartSize = 0;
+                message->header.payloadPartSize = 0;
+                message->header.payloadOffset = 0;
+                message->header.metadataSize = 0;
+                message->header.isLastSegment = 0;
 
-            // Write generic seralized payload in vector buffer
-            if (payloadSize && payloadData) {
-                msg.msg_iovlen++;
-                msg.msg_iov[msg.msg_iovlen].iov_base = payloadData;
-                msg.msg_iov[msg.msg_iovlen].iov_len = payloadSize;
-                msgSize += msg.msg_iov[msg.msg_iovlen].iov_len;
-            } else {
-                // copy serialized vector into vector buffer
-                for (size_t i = 0; i < MIN(msg_iov_len, IOV_MAX - 2); i++) {
+                // Write generic seralized payload in vector buffer
+                if (payloadSize && payloadData) {
+                    char *payloadDataBuffer = payloadData;
                     msg.msg_iovlen++;
-                    msg.msg_iov[msg.msg_iovlen].iov_base = msgIoVec[i].iov_base;
-                    msg.msg_iov[msg.msg_iovlen].iov_len = msgIoVec[i].iov_len;
+                    msg.msg_iov[msg.msg_iovlen].iov_base = &payloadDataBuffer[msgSize];
+                    msg.msg_iov[msg.msg_iovlen].iov_len = MIN((payloadSize - msgSize), entry->maxMsgSize);
+                    msgPartSize += msg.msg_iov[msg.msg_iovlen].iov_len;
+                    message->header.payloadPartSize = msgPartSize;
+                    message->header.payloadOffset = msgSize;
                     msgSize += msg.msg_iov[msg.msg_iovlen].iov_len;
-                }
-            }
-
-            // Write optional metadata in vector buffer
-            if (metadataSize && metadataData) {
-                msg.msg_iovlen++;
-                msg.msg_iov[msg.msg_iovlen].iov_base = metadataData;
-                msg.msg_iov[msg.msg_iovlen].iov_len = metadataSize;
-                msgSize += msg.msg_iov[msg.msg_iovlen].iov_len;
-            }
-
-            void *headerData = NULL;
-            size_t headerSize = 0;
-            // Encode the header, with payload size and metadata size
-            handle->protocol->encodeHeader(handle->protocol->handle, message,
-                                           &headerData,
-                                           &headerSize);
-            // Write header in 1st vector buffer item
-            if (headerSize && headerData) {
-                msg.msg_iov[0].iov_base = headerData;
-                msg.msg_iov[0].iov_len = headerSize;
-                msgSize += msg.msg_iov[0].iov_len;
-                msg.msg_iovlen++;
-            }
-            nbytes = 0;
-            if (entry->fd >= 0 && msgSize && headerData) nbytes = sendmsg(entry->fd, &msg, MSG_NOSIGNAL | flags);
-            //  When a specific socket keeps reporting errors can indicate a subscriber
-            //  which is not active anymore, the connection will remain until the retry
-            //  counter exceeds the maximum retry count.
-            //  Btw, also, SIGSTOP issued by a debugging tool can result in EINTR error.
-            if (nbytes == -1) {
-                if (entry->retryCount < handle->maxSendRetryCount) {
-                    entry->retryCount++;
-                    L_ERROR("[TCP Socket] Failed to send message (fd: %d), error: %s. try again. Retry count %u of %u, ",
-                            entry->fd, strerror(errno), entry->retryCount, handle->maxSendRetryCount);
                 } else {
-                    L_ERROR("[TCP Socket] Failed to send message (fd: %d) after %u retries! Closing connection... Error: %s",
-                            entry->fd, handle->maxSendRetryCount, strerror(errno));
-                    connFdCloseQueue[nofConnToClose++] = entry->fd;
+                    // copy serialized vector into vector buffer
+                    for (size_t i = 0; i < MIN(msg_iov_len, max_msg_iov_len); i++) {
+                        msg.msg_iovlen++;
+                        msg.msg_iov[msg.msg_iovlen].iov_base = msgIoVec[msgIovLen + i].iov_base;
+                        msg.msg_iov[msg.msg_iovlen].iov_len = msgIoVec[msgIovLen + i].iov_len;
+                        if ((msgPartSize + msg.msg_iov[msg.msg_iovlen].iov_len) > entry->maxMsgSize) break;
+                        msgSize += msg.msg_iov[msg.msg_iovlen].iov_len;
+                    }
+                    message->header.payloadPartSize = msgPartSize;
+                    message->header.payloadOffset = msgSize;
+                    msgSize += msgPartSize;
+                    msgIovLen += (msg.msg_iovlen - 1);
                 }
-                result = -1; //At least one connection failed sending
-            } else if (msgSize) {
-                entry->retryCount = 0;
-                if (nbytes != msgSize) {
-                    L_ERROR("[TCP Socket]  MsgSize not correct: %d != %d\n", msgSize, nbytes);
+
+                // Write optional metadata in vector buffer
+                if ((msgSize < (payloadSize + metadataSize)) &&
+                    (msgPartSize < entry->maxMsgSize) &&
+                    (metadataSize && metadataData)) {
+                    msg.msg_iovlen++;
+                    msg.msg_iov[msg.msg_iovlen].iov_base = metadataData;
+                    msg.msg_iov[msg.msg_iovlen].iov_len = metadataSize;
+                    msgPartSize += msg.msg_iov[msg.msg_iovlen].iov_len;
+                    message->header.metadataSize = metadataSize;
+                    msgSize += metadataSize;
                 }
+                if (msgSize >= totalMessageSize) {
+                    message->header.isLastSegment = 0x1;
+                }
+
+                void *headerData = NULL;
+                size_t headerSize = 0;
+                // Encode the header, with payload size and metadata size
+                handle->protocol->encodeHeader(handle->protocol->handle, message,
+                                               &headerData,
+                                               &headerSize);
+                // Write header in 1st vector buffer item
+                if (headerSize && headerData) {
+                    msg.msg_iov[0].iov_base = headerData;
+                    msg.msg_iov[0].iov_len = headerSize;
+                    msgPartSize += msg.msg_iov[0].iov_len;
+                    msg.msg_iovlen++;
+                }
+                nbytes = 0;
+                if (entry->fd >= 0 && msgSize && headerData) nbytes = sendmsg(entry->fd, &msg, MSG_NOSIGNAL | flags);
+                //  When a specific socket keeps reporting errors can indicate a subscriber
+                //  which is not active anymore, the connection will remain until the retry
+                //  counter exceeds the maximum retry count.
+                //  Btw, also, SIGSTOP issued by a debugging tool can result in EINTR error.
+                if (nbytes == -1) {
+                    if (entry->retryCount < handle->maxSendRetryCount) {
+                        entry->retryCount++;
+                        L_ERROR("[TCP Socket] Failed to send message (fd: %d), error: %s. try again. Retry count %u of %u, ",
+                                entry->fd, strerror(errno), entry->retryCount, handle->maxSendRetryCount);
+                    } else {
+                        L_ERROR("[TCP Socket] Failed to send message (fd: %d) after %u retries! Closing connection... Error: %s",
+                                entry->fd, handle->maxSendRetryCount, strerror(errno));
+                        connFdCloseQueue[nofConnToClose++] = entry->fd;
+                    }
+                    result = -1; //At least one connection failed sending
+                } else if (msgPartSize) {
+                    entry->retryCount = 0;
+                    if (nbytes != msgPartSize) {
+                        L_ERROR("[TCP Socket]  MsgSize not correct: %d != %d\n", msgPartSize, nbytes);
+                    }
+                }
+                // Release data
+                if (headerData) free(headerData);
+                // Note: serialized Payload is deleted by serializer
+                if (payloadData && (payloadData != message->payload.payload)) {
+                    free(payloadData);
+                }
+                if (metadataData) free(metadataData);
             }
-            // Release data
-            if (headerData) free(headerData);
-            // Note: serialized Payload is deleted by serializer
-            if (payloadData && (payloadData != message->payload.payload)) {
-                free(payloadData);
-            }
-            if (metadataData) free(metadataData);
         }
     }
     celixThreadRwlock_unlock(&handle->dbLock);
@@ -1041,7 +1079,8 @@ char *pubsub_tcpHandler_get_interface_url(pubsub_tcpHandler_t *handle) {
 // Handle non-blocking accept (sender)
 //
 static inline
-void pubsub_tcpHandler_acceptHandler(pubsub_tcpHandler_t *handle, psa_tcp_connection_entry_t *pendingConnectionEntry) {
+void
+pubsub_tcpHandler_acceptHandler(pubsub_tcpHandler_t *handle, psa_tcp_connection_entry_t *pendingConnectionEntry) {
     celixThreadRwlock_writeLock(&handle->dbLock);
     // new connection available
     struct sockaddr_in their_addr;
@@ -1059,7 +1098,8 @@ void pubsub_tcpHandler_acceptHandler(pubsub_tcpHandler_t *handle, psa_tcp_connec
         getsockname(pendingConnectionEntry->fd, (struct sockaddr *) &sin, &len);
         char *interface_url = pubsub_utils_url_get_url(&sin, NULL);
         char *url = pubsub_utils_url_get_url(&their_addr, NULL);
-        psa_tcp_connection_entry_t *entry = pubsub_tcpHandler_createEntry(handle, fd, url, interface_url, &their_addr);
+        psa_tcp_connection_entry_t *entry = pubsub_tcpHandler_createEntry(handle, fd, url, interface_url,
+                                                                          &their_addr);
         event.events = EPOLLIN | EPOLLRDHUP | EPOLLERR | EPOLLOUT;
         event.data.fd = entry->fd;
         // Register Read to epoll
@@ -1106,7 +1146,8 @@ void pubsub_tcpHandler_readHandler(pubsub_tcpHandler_t *handle, int fd) {
             struct timespec receiveTime;
             clock_gettime(CLOCK_REALTIME, &receiveTime);
             bool releaseEntryBuffer = false;
-            handle->processMessageCallback(handle->processMessagePayload, header, &releaseEntryBuffer, &receiveTime);
+            handle->processMessageCallback(handle->processMessagePayload, header, &releaseEntryBuffer,
+                                           &receiveTime);
             if (releaseEntryBuffer) pubsub_tcpHandler_releaseEntryBuffer(handle, fd, index);
         }
         celixThreadRwlock_unlock(&handle->dbLock);

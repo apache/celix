@@ -49,7 +49,6 @@ if (PUBSUB)
         endif ()
     endif (BUILD_PUBSUB_PSA_WS)
 
-
     add_subdirectory(pubsub_api)
     add_subdirectory(pubsub_spi)
     add_subdirectory(pubsub_topology_manager)
@@ -57,6 +56,7 @@ if (PUBSUB)
     add_subdirectory(pubsub_serializer_json)
     add_subdirectory(pubsub_serializer_avrobin)
     add_subdirectory(pubsub_protocol_wire_v1)
+    add_subdirectory(pubsub_protocol_wire_v2)
     add_subdirectory(keygen)
     add_subdirectory(mock)
 
