@@ -276,11 +276,11 @@ celix_status_t remoteServiceAdmin_destroy(remote_service_admin_t **admin)
 
     free((*admin)->ip);
     free((*admin)->port);
-    free(*admin);
     curl_share_cleanup((*admin)->curlShare);
     pthread_mutex_destroy(&(*admin)->curlMutexConnect);
     pthread_mutex_destroy(&(*admin)->curlMutexCookie);
     pthread_mutex_destroy(&(*admin)->curlMutexDns);
+    free(*admin);
 
     *admin = NULL;
 
