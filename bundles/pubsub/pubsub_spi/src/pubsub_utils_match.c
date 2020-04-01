@@ -228,7 +228,7 @@ double pubsub_utils_matchSubscriber(
     pubsub_get_topic_properties_data_t data;
     data.isPublisher = false;
     data.topic = celix_properties_get(svcProperties, PUBSUB_SUBSCRIBER_TOPIC, NULL);
-    data.scope = celix_properties_get(svcProperties, PUBSUB_SUBSCRIBER_SCOPE, PUBSUB_SUBSCRIBER_SCOPE_DEFAULT);
+    data.scope = celix_properties_get(svcProperties, PUBSUB_SUBSCRIBER_SCOPE, NULL);
     data.outEndpoint = NULL;
     celix_bundleContext_useBundle(ctx, svcProviderBundleId, &data, getTopicPropertiesCallback);
 
