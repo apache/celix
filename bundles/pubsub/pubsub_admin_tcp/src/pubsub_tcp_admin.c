@@ -578,7 +578,7 @@ static celix_status_t pubsub_tcpAdmin_disconnectEndpointFromReceiver(pubsub_tcp_
         if (eTopic != NULL && topic != NULL && strncmp(eTopic, topic, 1024 * 1024) == 0) {
             if (scope == NULL && eScope == NULL) {
                 pubsub_tcpTopicReceiver_disconnectFrom(receiver, url);
-            } else if (scope != NULL && eScope != NULL && strncmp(eScope, scope, 1024 * 1024) == 0 &&) {
+            } else if (scope != NULL && eScope != NULL && strncmp(eScope, scope, 1024 * 1024) == 0) {
                 pubsub_tcpTopicReceiver_disconnectFrom(receiver, url);
             }
         }

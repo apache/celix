@@ -666,6 +666,7 @@ celix_status_t pubsub_zmqAdmin_addDiscoveredEndpoint(void *handle, const celix_p
         if (receiver != NULL) {
             pubsub_zmqAdmin_connectEndpointToReceiver(psa, receiver, endpoint);
         }
+        free(key);
         celixThreadMutex_unlock(&psa->topicReceivers.mutex);
     }
 
