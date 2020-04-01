@@ -552,8 +552,8 @@ psa_zmq_topicPublicationSend(void *handle, unsigned int msgTypeId, const void *i
                                                                msgTypeId, inMsg, &metadata);
             if (cont) {
                 pubsub_protocol_message_t message;
-                message.payload.payload = serializedOutput;
-                message.payload.length = serializedOutputLen;
+                message.payload.payload = serializedOutput->iov_base;
+                message.payload.length = serializedOutput->iov_len;
 
                 void *payloadData = NULL;
                 size_t payloadLength = 0;
