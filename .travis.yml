@@ -22,28 +22,6 @@ matrix:
          dist: bionic
          compiler: gcc
          name: "Ubuntu Bionic (18) gcc"
-       - os: linux
-         dist: bionic
-         compiler: clang
-         name: "Ubuntu Bionic (18) clang"
-       - os: osx
-         osx_image: xcode10.2
-         compiler: clang
-         env: MACOSX_DEPLOYMENT_TARGET=10.14
-         name: "OSX (10.14) clang"
-       - os: linux
-         dist: bionic
-         compiler: gcc
-         env: SANITIZE=1
-         name: "Ubuntu Bionic (18) gcc; address sanitizer"
-       - os: linux
-         dist: bionic
-         compiler: gcc
-         env:
-           - USE_ZIP_INSTEAD_OF_JAR=1
-           - ONLY_V3_API=1
-         name: "Ubuntu Bionic (18) gcc; only v3 api"
-
 
 #DISABLED ANDROID BUILD
 #       - os: linux
