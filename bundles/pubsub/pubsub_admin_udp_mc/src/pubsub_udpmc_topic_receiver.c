@@ -121,7 +121,7 @@ pubsub_udpmc_topic_receiver_t* pubsub_udpmcTopicReceiver_create(celix_bundle_con
     receiver->logHelper = logHelper;
     receiver->serializerSvcId = serializerSvcId;
     receiver->serializer = serializer;
-    receiver->scope = strndup(scope, 1024 * 1024);
+    receiver->scope = scope == NULL ? NULL : strndup(scope, 1024 * 1024);
     receiver->topic = strndup(topic, 1024 * 1024);
     receiver->ifIpAddress = strndup(ifIP, 1024 * 1024);
     receiver->recvThread.running = true;
@@ -260,7 +260,7 @@ long pubsub_udpmcTopicReceiver_serializerSvcId(pubsub_udpmc_topic_receiver_t *re
 }
 
 void pubsub_udpmcTopicReceiver_connectTo(pubsub_udpmc_topic_receiver_t *receiver, const char *socketAddress, long socketPort) {
-    printf("[PSA UDPMC] TopicReceiver %s/%s connect to socket address = %s:%li\n", receiver->scope, receiver->topic, socketAddress, socketPort);
+    printf("[PSA UDPMC] TopicReceiver %s/%s connect to socket address = %s:%li\n", receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic, socketAddress, socketPort);
 
     char *key = NULL;
     asprintf(&key, "%s:%li", socketAddress, socketPort);
@@ -285,7 +285,7 @@ void pubsub_udpmcTopicReceiver_connectTo(pubsub_udpmc_topic_receiver_t *receiver
 }
 
 void pubsub_udpmcTopicReceiver_disconnectFrom(pubsub_udpmc_topic_receiver_t *receiver, const char *socketAddress, long socketPort) {
-    printf("[PSA UDPMC] TopicReceiver %s/%s disconnect from socket address = %s:%li\n", receiver->scope, receiver->topic, socketAddress, socketPort);
+    printf("[PSA UDPMC] TopicReceiver %s/%s disconnect from socket address = %s:%li\n", receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic, socketAddress, socketPort);
 
     int len = snprintf(NULL, 0, "%s:%li", socketAddress, socketPort);
     char *key = calloc((size_t)len+1, sizeof(char));
@@ -299,7 +299,7 @@ void pubsub_udpmcTopicReceiver_disconnectFrom(pubsub_udpmc_topic_receiver_t *rec
         memset(&ev, 0, sizeof(ev));
         int rc = epoll_ctl(receiver->topicEpollFd, EPOLL_CTL_DEL, entry->recvSocket, &ev);
         if (rc < 0) {
-            fprintf(stderr, "[PSA UDPMC] Error disconnecting TopicReceiver %s/%s to %s:%li.\n%s", receiver->scope, receiver->topic, socketAddress, socketPort, strerror(errno));
+            fprintf(stderr, "[PSA UDPMC] Error disconnecting TopicReceiver %s/%s to %s:%li.\n%s", receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic, socketAddress, socketPort, strerror(errno));
         }
     }
     if (entry != NULL) {
@@ -314,10 +314,16 @@ static void pubsub_udpmcTopicReceiver_addSubscriber(void *handle, void *svc, con
     pubsub_udpmc_topic_receiver_t *receiver = handle;
 
     long bndId = celix_bundle_getId(bnd);
-    const char *subScope = celix_properties_get(props, PUBSUB_SUBSCRIBER_SCOPE, "default");
-    if (strncmp(subScope, receiver->scope, strlen(receiver->scope)) != 0) {
-        //not the same scope. ignore
-        return;
+    const char *subScope = celix_properties_get(props, PUBSUB_SUBSCRIBER_SCOPE, NULL);
+    if (receiver->scope == NULL) {
+        if (subScope != NULL) {
+            return;
+        }
+    } else {
+        if (strncmp(subScope, receiver->scope, strlen(receiver->scope)) != 0) {
+            //not the same scope. ignore
+            return;
+        }
     }
 
     celixThreadMutex_lock(&receiver->subscribers.mutex);
@@ -337,7 +343,7 @@ static void pubsub_udpmcTopicReceiver_addSubscriber(void *handle, void *svc, con
             hashMap_put(receiver->subscribers.map, (void*)bndId, entry);
         } else {
             free(entry);
-            fprintf(stderr, "Cannot find serializer for TopicReceiver %s/%s", receiver->scope, receiver->topic);
+            fprintf(stderr, "Cannot find serializer for TopicReceiver %s/%s", receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic);
         }
     }
     celixThreadMutex_unlock(&receiver->subscribers.mutex);
@@ -358,7 +364,7 @@ static void pubsub_udpmcTopicReceiver_removeSubscriber(void *handle, void *svc, 
         hashMap_remove(receiver->subscribers.map, (void*)bndId);
         int rc =  receiver->serializer->destroySerializerMap(receiver->serializer->handle, entry->msgTypes);
         if (rc != 0) {
-            fprintf(stderr, "Cannot find serializer for TopicReceiver %s/%s", receiver->scope, receiver->topic);
+            fprintf(stderr, "Cannot find serializer for TopicReceiver %s/%s", receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic);
         }
         free(entry);
     }
@@ -513,7 +519,7 @@ static bool psa_udpmc_connectToEntry(pubsub_udpmc_topic_receiver_t *receiver, ps
     }
 
     if (entry->recvSocket < 0 || rc < 0) {
-        L_WARN("[PSA UDPMC] Error connecting TopicReceiver %s/%s to %s:%li. (%s)\n", receiver->scope, receiver->topic, entry->socketAddress, entry->socketPort, strerror(errno));
+        L_WARN("[PSA UDPMC] Error connecting TopicReceiver %s/%s to %s:%li. (%s)\n", receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic, entry->socketAddress, entry->socketPort, strerror(errno));
         connected = false;
     }
     return connected;
