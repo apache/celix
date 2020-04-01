@@ -198,8 +198,12 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
         bool bypassHeader = celix_properties_getAsBool((celix_properties_t *) topicProperties, PUBSUB_TCP_BYPASS_HEADER, PUBSUB_TCP_DEFAULT_BYPASS_HEADER);
         long msgIdOffset  = celix_properties_getAsLong(topicProperties, PUBSUB_TCP_MESSAGE_ID_OFFSET, PUBSUB_TCP_DEFAULT_MESSAGE_ID_OFFSET);
         long msgIdSize    = celix_properties_getAsLong(topicProperties, PUBSUB_TCP_MESSAGE_ID_SIZE,   PUBSUB_TCP_DEFAULT_MESSAGE_ID_SIZE);
+        long retryCnt     = celix_properties_getAsLong(topicProperties, PUBSUB_TCP_SUBSCRIBER_RETRY_CNT_KEY, PUBSUB_TCP_SUBSCRIBER_RETRY_CNT_DEFAULT);
+        double rcvTimeout = celix_properties_getAsDouble(topicProperties, PUBSUB_TCP_SUBSCRIBER_RCVTIMEO_KEY, PUBSUB_TCP_SUBSCRIBER_RCVTIMEO_DEFAULT);
         pubsub_tcpHandler_setBypassHeader(receiver->socketHandler, bypassHeader, (unsigned int)msgIdOffset, (unsigned int)msgIdSize);
         pubsub_tcpHandler_setBlockingRead(receiver->socketHandler, blocking);
+        pubsub_tcpHandler_setReceiveRetryCnt(receiver->socketHandler, (unsigned int) retryCnt);
+        pubsub_tcpHandler_setReceiveTimeOut(receiver->socketHandler, rcvTimeout);
     }
 
     psa_tcp_setScopeAndTopicFilter(scope, topic, receiver->scopeAndTopicFilter);

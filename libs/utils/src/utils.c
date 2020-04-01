@@ -147,9 +147,16 @@ int utils_compareServiceIdsAndRanking(unsigned long servId, long servRank, unsig
 }
 
 double celix_difftime(const struct timespec *tBegin, const struct timespec *tEnd) {
-    float diff_s = tEnd->tv_sec - tBegin->tv_sec;
-    float diff_ns = tEnd->tv_nsec - tBegin->tv_nsec;
-    return diff_s + (diff_ns / 1000000000.0);
+    struct timespec diff;
+    if ((tEnd->tv_nsec - tBegin->tv_nsec) < 0) {
+        diff.tv_sec = tEnd->tv_sec - tBegin->tv_sec - 1;
+        diff.tv_nsec = tEnd->tv_nsec - tBegin->tv_nsec + 1000000000;
+    } else {
+        diff.tv_sec = tEnd->tv_sec - tBegin->tv_sec;
+        diff.tv_nsec = tEnd->tv_nsec - tBegin->tv_nsec;
+    }
+
+    return ((double)diff.tv_sec) + diff.tv_nsec /  1000000000.0;
 }
 
 char* celix_utils_strdup(const char *str) {

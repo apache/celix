@@ -502,7 +502,7 @@ void celix_bundleContext_unregisterService(bundle_context_t *ctx, long serviceId
         if (found != NULL) {
             serviceRegistration_unregister(found);
         } else {
-            framework_logIfError(logger, CELIX_ILLEGAL_ARGUMENT, NULL, "Provided service id (%li) is not used to registered using celix_bundleContext_registerCService/celix_registerServiceForLang". serviceId);
+            framework_logIfError(logger, CELIX_ILLEGAL_ARGUMENT, NULL, "No service registered with svc id %li for bundle %s (bundle id: %li)!", serviceId, celix_bundle_getSymbolicName(ctx->bundle), celix_bundle_getId(ctx->bundle));
         }
     }
 }
@@ -754,7 +754,7 @@ bool celix_bundleContext_useService(
 }
 
 
-void celix_bundleContext_useServices(
+size_t celix_bundleContext_useServices(
         bundle_context_t *ctx,
         const char* serviceName,
         void *callbackHandle,
@@ -763,7 +763,7 @@ void celix_bundleContext_useServices(
     opts.filter.serviceName = serviceName;
     opts.callbackHandle = callbackHandle;
     opts.use = use;
-    celix_bundleContext_useServicesWithOptions(ctx, &opts);
+    return celix_bundleContext_useServicesWithOptions(ctx, &opts);
 }
 
 
@@ -800,11 +800,11 @@ bool celix_bundleContext_useServiceWithOptions(
 
 
 
-void celix_bundleContext_useServicesWithOptions(
+size_t celix_bundleContext_useServicesWithOptions(
         celix_bundle_context_t *ctx,
         const celix_service_use_options_t *opts) {
+    size_t count = 0;
     celix_service_tracking_options_t trkOpts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
-
     if (opts != NULL) {
         trkOpts.filter.serviceName = opts->filter.serviceName;
         trkOpts.filter.filter = opts->filter.filter;
@@ -813,10 +813,11 @@ void celix_bundleContext_useServicesWithOptions(
 
         service_tracker_t *trk = celix_serviceTracker_createWithOptions(ctx, &trkOpts);
         if (trk != NULL) {
-            celix_serviceTracker_useServices(trk, opts->filter.serviceName, opts->callbackHandle, opts->use, opts->useWithProperties, opts->useWithOwner);
+            count = celix_serviceTracker_useServices(trk, opts->filter.serviceName, opts->callbackHandle, opts->use, opts->useWithProperties, opts->useWithOwner);
             celix_serviceTracker_destroy(trk);
         }
     }
+    return count;
 }
 
 

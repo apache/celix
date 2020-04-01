@@ -181,13 +181,13 @@ enum dyn_function_argument_meta dynFunction_argumentMetaForIndex(dyn_function_ty
 static int dynFunction_initCif(dyn_function_type *dynFunc) {
     int status = 0;
 
-    int count = 0;
+    unsigned int nargs = 0;
     dyn_function_argument_type *entry = NULL;
     TAILQ_FOREACH(entry, &dynFunc->arguments, entries) {
-        count +=1;
+        nargs +=1;
     }
 
-    dynFunc->ffiArguments = calloc(count, sizeof(ffi_type*));
+    dynFunc->ffiArguments = calloc(nargs, sizeof(ffi_type*));
 
     TAILQ_FOREACH(entry, &dynFunc->arguments, entries) {
         dynFunc->ffiArguments[entry->index] = dynType_ffiType(entry->type);
@@ -196,7 +196,7 @@ static int dynFunction_initCif(dyn_function_type *dynFunc) {
     ffi_type **args = dynFunc->ffiArguments;
     ffi_type *returnType = dynType_ffiType(dynFunc->funcReturn);
 
-    int ffiResult = ffi_prep_cif(&dynFunc->cif, FFI_DEFAULT_ABI, count, returnType, args);
+    int ffiResult = ffi_prep_cif(&dynFunc->cif, FFI_DEFAULT_ABI, nargs, returnType, args);
     if (ffiResult != FFI_OK) {
         status = 1;
     }

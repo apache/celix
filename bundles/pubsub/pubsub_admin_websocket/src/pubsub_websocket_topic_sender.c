@@ -315,15 +315,15 @@ static int psa_websocket_topicPublicationSend(void* handle, unsigned int msgType
             celixThreadMutex_lock(&entry->sendLock);
 
             json_t *jsMsg = json_object();
-            json_object_set_new(jsMsg, "id", json_string(entry->header.id));
-            json_object_set_new(jsMsg, "major", json_integer(entry->header.major));
-            json_object_set_new(jsMsg, "minor", json_integer(entry->header.minor));
-            json_object_set_new(jsMsg, "seqNr", json_integer(entry->header.seqNr++));
+            json_object_set_new_nocheck(jsMsg, "id", json_string(entry->header.id));
+            json_object_set_new_nocheck(jsMsg, "major", json_integer(entry->header.major));
+            json_object_set_new_nocheck(jsMsg, "minor", json_integer(entry->header.minor));
+            json_object_set_new_nocheck(jsMsg, "seqNr", json_integer(entry->header.seqNr++));
 
             json_t *jsData;
             jsData = json_loadb((const char *)serializedOutput, serializedOutputLen - 1, 0, &jsError);
             if(jsData != NULL) {
-                json_object_set_new(jsMsg, "data", jsData);
+                json_object_set_new_nocheck(jsMsg, "data", jsData);
                 const char *msg = json_dumps(jsMsg, 0);
                 size_t bytes_to_write = strlen(msg);
                 int bytes_written = mg_websocket_client_write(sender->sockConnection, MG_WEBSOCKET_OPCODE_TEXT, msg,

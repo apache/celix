@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include "celixbool.h"
 #include "topology_manager.h"
@@ -201,91 +202,75 @@ celix_status_t topologyManager_rsaAdding(void * handle, service_reference_pt ref
 	return status;
 }
 
-celix_status_t topologyManager_rsaAdded(void * handle, service_reference_pt reference, void * service) {
-	celix_status_t status;
+celix_status_t topologyManager_rsaAdded(void * handle, service_reference_pt unusedRef __attribute__((unused)), void * service) {
 	topology_manager_pt manager = (topology_manager_pt) handle;
 	celix_properties_t *serviceProperties = NULL;
 	remote_service_admin_service_t *rsa = (remote_service_admin_service_t *) service;
 	logHelper_log(manager->loghelper, OSGI_LOGSERVICE_INFO, "TOPOLOGY_MANAGER: Added RSA");
 
-	status = celixThreadMutex_lock(&manager->rsaListLock);
-
-	if (status == CELIX_SUCCESS) {
-		arrayList_add(manager->rsaList, rsa);
-		status = celixThreadMutex_unlock(&manager->rsaListLock);
-	}
+	celixThreadMutex_lock(&manager->rsaListLock);
+	arrayList_add(manager->rsaList, rsa);
+    celixThreadMutex_unlock(&manager->rsaListLock);
 
 	// add already imported services to new rsa
-	if (status == CELIX_SUCCESS) {
-		status = celixThreadMutex_lock(&manager->importedServicesLock);
+    celixThreadMutex_lock(&manager->importedServicesLock);
+    hash_map_iterator_pt importedServicesIterator = hashMapIterator_create(manager->importedServices);
 
-		if (status == CELIX_SUCCESS) {
-			hash_map_iterator_pt importedServicesIterator = hashMapIterator_create(manager->importedServices);
+    while (hashMapIterator_hasNext(importedServicesIterator)) {
+        hash_map_entry_pt entry = hashMapIterator_nextEntry(importedServicesIterator);
+        endpoint_description_t *endpoint = hashMapEntry_getKey(entry);
+        if (scope_allowImport(manager->scope, endpoint)) {
+            import_registration_t *import = NULL;
+            celix_status_t status = rsa->importService(rsa->admin, endpoint, &import);
 
-			while (hashMapIterator_hasNext(importedServicesIterator)) {
-				hash_map_entry_pt entry = hashMapIterator_nextEntry(importedServicesIterator);
-				endpoint_description_t *endpoint = hashMapEntry_getKey(entry);
-				if (scope_allowImport(manager->scope, endpoint)) {
-					import_registration_t *import = NULL;
-					status = rsa->importService(rsa->admin, endpoint, &import);
+            if (status == CELIX_SUCCESS) {
+                hash_map_pt imports = hashMapEntry_getValue(entry);
 
-					if (status == CELIX_SUCCESS) {
-						hash_map_pt imports = hashMapEntry_getValue(entry);
+                if (imports == NULL) {
+                    imports = hashMap_create(NULL, NULL, NULL, NULL);
+                    hashMap_put(manager->importedServices, endpoint, imports);
+                }
 
-						if (imports == NULL) {
-							imports = hashMap_create(NULL, NULL, NULL, NULL);
-							hashMap_put(manager->importedServices,endpoint,imports);
-						}
+                hashMap_put(imports, service, import);
+            }
+        }
+    }
 
-						hashMap_put(imports, service, import);
-					}
-				}
-			}
-
-			hashMapIterator_destroy(importedServicesIterator);
-
-			celixThreadMutex_unlock(&manager->importedServicesLock);
-		}
-	}
+    hashMapIterator_destroy(importedServicesIterator);
+    celixThreadMutex_unlock(&manager->importedServicesLock);
 
 	// add already exported services to new rsa
-	if (status == CELIX_SUCCESS) {
-		status = celixThreadMutex_lock(&manager->exportedServicesLock);
+    celixThreadMutex_lock(&manager->exportedServicesLock);
+    hash_map_iterator_pt exportedServicesIterator = hashMapIterator_create(manager->exportedServices);
 
-		if (status == CELIX_SUCCESS) {
-			hash_map_iterator_pt exportedServicesIterator = hashMapIterator_create(manager->exportedServices);
+    while (hashMapIterator_hasNext(exportedServicesIterator)) {
+        hash_map_entry_pt entry = hashMapIterator_nextEntry(exportedServicesIterator);
+        service_reference_pt reference = hashMapEntry_getKey(entry);
+        const char* serviceId = NULL;
 
-			while (hashMapIterator_hasNext(exportedServicesIterator)) {
-				hash_map_entry_pt entry = hashMapIterator_nextEntry(exportedServicesIterator);
-				service_reference_pt reference = hashMapEntry_getKey(entry);
-				const char* serviceId = NULL;
+        serviceReference_getProperty(reference, OSGI_FRAMEWORK_SERVICE_ID, &serviceId);
 
-				serviceReference_getProperty(reference, OSGI_FRAMEWORK_SERVICE_ID, &serviceId);
+        scope_getExportProperties(manager->scope, reference, &serviceProperties);
 
-				scope_getExportProperties(manager->scope, reference, &serviceProperties);
+        array_list_pt endpoints = NULL;
+        celix_status_t status = rsa->exportService(rsa->admin, (char*)serviceId, serviceProperties, &endpoints);
 
-				array_list_pt endpoints = NULL;
-				status = rsa->exportService(rsa->admin, (char*)serviceId, serviceProperties, &endpoints);
+        if (status == CELIX_SUCCESS) {
+            hash_map_pt exports = hashMapEntry_getValue(entry);
 
-				if (status == CELIX_SUCCESS) {
-					hash_map_pt exports = hashMapEntry_getValue(entry);
+            if (exports == NULL) {
+                exports = hashMap_create(NULL, NULL, NULL, NULL);
+                hashMap_put(manager->exportedServices,reference,exports);
+            }
 
-					if (exports == NULL) {
-						exports = hashMap_create(NULL, NULL, NULL, NULL);
-						hashMap_put(manager->exportedServices,reference,exports);
-					}
+            hashMap_put(exports, rsa, endpoints);
+            topologyManager_notifyListenersEndpointAdded(manager, rsa, endpoints);
+        }
+    }
 
-					hashMap_put(exports, rsa, endpoints);
-					status = topologyManager_notifyListenersEndpointAdded(manager, rsa, endpoints);
-				}
-			}
-
-			hashMapIterator_destroy(exportedServicesIterator);
-
-			celixThreadMutex_unlock(&manager->exportedServicesLock);
-		}
-	}
-	return status;
+    hashMapIterator_destroy(exportedServicesIterator);
+    celixThreadMutex_unlock(&manager->exportedServicesLock);
+	return CELIX_SUCCESS;
 }
 
 celix_status_t topologyManager_rsaModified(void * handle, service_reference_pt reference, void * service) {
@@ -372,43 +357,6 @@ celix_status_t topologyManager_rsaRemoved(void * handle, service_reference_pt re
 	}
 
 	logHelper_log(manager->loghelper, OSGI_LOGSERVICE_INFO, "TOPOLOGY_MANAGER: Removed RSA");
-
-	return status;
-}
-
-
-celix_status_t topologyManager_serviceChanged(void *listener, celix_service_event_t *event) {
-	celix_status_t status = CELIX_SUCCESS;
-	celix_service_listener_t *listen = listener;
-	topology_manager_pt manager = listen->handle;
-
-	const char* export = NULL;
-	const char* serviceId = NULL;
-	serviceReference_getProperty(event->reference, OSGI_RSA_SERVICE_EXPORTED_INTERFACES, &export);
-	serviceReference_getProperty(event->reference, OSGI_FRAMEWORK_SERVICE_ID, &serviceId);
-
-	if (!export) {
-		// Nothing needs to be done: we're not interested...
-		return status;
-	}
-
-	switch (event->type) {
-	case OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED:
-		status = topologyManager_addExportedService(manager, event->reference, (char*)serviceId);
-		break;
-	case OSGI_FRAMEWORK_SERVICE_EVENT_MODIFIED:
-		status = topologyManager_removeExportedService(manager, event->reference, (char*)serviceId);
-
-		if (status == CELIX_SUCCESS) {
-			status = topologyManager_addExportedService(manager, event->reference, (char*)serviceId);
-		}
-		break;
-	case OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING:
-		status = topologyManager_removeExportedService(manager, event->reference, (char*)serviceId);
-		break;
-	case OSGI_FRAMEWORK_SERVICE_EVENT_MODIFIED_ENDMATCH:
-		break;
-	}
 
 	return status;
 }
@@ -602,11 +550,19 @@ celix_status_t topologyManager_removeImportedService(void *handle, endpoint_desc
 	return status;
 }
 
-celix_status_t topologyManager_addExportedService(topology_manager_pt manager, service_reference_pt reference, char *serviceId) {
+celix_status_t topologyManager_addExportedService(void * handle, service_reference_pt reference, void * service __attribute__((unused))) {
+    topology_manager_pt manager = handle;
 	celix_status_t status = CELIX_SUCCESS;
+    long serviceId = serviceReference_getServiceId(reference);
+    char serviceIdStr[64];
+    snprintf(serviceIdStr, 64, "%li", serviceId);
 	celix_properties_t *serviceProperties = NULL;
 
-	logHelper_log(manager->loghelper, OSGI_LOGSERVICE_INFO, "TOPOLOGY_MANAGER: Add exported service (%s).", serviceId);
+	const char *export = NULL;
+    serviceReference_getProperty(reference, OSGI_RSA_SERVICE_EXPORTED_INTERFACES, &export);
+    assert(export != NULL);
+
+	logHelper_log(manager->loghelper, OSGI_LOGSERVICE_INFO, "TOPOLOGY_MANAGER: Add exported service (%li).", serviceId);
 
 	if (celixThreadMutex_lock(&manager->exportedServicesLock) == CELIX_SUCCESS) {
 		scope_getExportProperties(manager->scope, reference, &serviceProperties);
@@ -624,7 +580,7 @@ celix_status_t topologyManager_addExportedService(topology_manager_pt manager, s
 				remote_service_admin_service_t *rsa = arrayList_get(manager->rsaList, iter);
 
 				array_list_pt endpoints = NULL;
-				celix_status_t substatus = rsa->exportService(rsa->admin, serviceId, serviceProperties, &endpoints);
+				celix_status_t substatus = rsa->exportService(rsa->admin, serviceIdStr, serviceProperties, &endpoints);
 
 				if (substatus == CELIX_SUCCESS) {
 					hashMap_put(exports, rsa, endpoints);
@@ -641,10 +597,12 @@ celix_status_t topologyManager_addExportedService(topology_manager_pt manager, s
 	return status;
 }
 
-celix_status_t topologyManager_removeExportedService(topology_manager_pt manager, service_reference_pt reference, char *serviceId) {
+celix_status_t topologyManager_removeExportedService(void * handle, service_reference_pt reference, void * service  __attribute__((unused))) {
+    topology_manager_pt manager = handle;
 	celix_status_t status = CELIX_SUCCESS;
+	long serviceId = serviceReference_getServiceId(reference);
 
-	logHelper_log(manager->loghelper, OSGI_LOGSERVICE_INFO, "TOPOLOGY_MANAGER: Remove exported service (%s).", serviceId);
+	logHelper_log(manager->loghelper, OSGI_LOGSERVICE_INFO, "TOPOLOGY_MANAGER: Remove exported service (%li).", serviceId);
 
 	if (celixThreadMutex_lock(&manager->exportedServicesLock) == CELIX_SUCCESS) {
 		hash_map_pt exports = hashMap_get(manager->exportedServices, reference);
