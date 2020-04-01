@@ -57,8 +57,7 @@ if (ENABLE_TESTING)
 endif()
 
 
-celix_subproject(FRAMEWORK_TESTS "Option to build the framework tests" "OFF" DEPS)
-if (ENABLE_TESTING AND FRAMEWORK_TESTS)
+if (ENABLE_TESTING)
     find_package(CppUTest REQUIRED)
 
     include_directories(SYSTEM PRIVATE ${CPPUTEST_INCLUDE_DIR})
@@ -342,4 +341,4 @@ if (ENABLE_TESTING AND FRAMEWORK_TESTS)
 #    SETUP_TARGET_FOR_COVERAGE(service_tracker_test service_tracker_test ${CMAKE_BINARY_DIR}/coverage/service_tracker_test/service_tracker_test)
     SETUP_TARGET_FOR_COVERAGE(wire_test wire_test ${CMAKE_BINARY_DIR}/coverage/wire_test/wire_test)
 
-endif (ENABLE_TESTING AND FRAMEWORK_TESTS)
+endif ()
