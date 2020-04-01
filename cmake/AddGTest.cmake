@@ -34,9 +34,9 @@ set_target_properties(GTest::GTest PROPERTIES
         IMPORTED_LOCATION "${binary_dir}/googlemock/gtest/libgtest.a"
         INTERFACE_INCLUDE_DIRECTORIES "${source_dir}/googletest/include"
         )
-add_library(GTest::GMain IMPORTED STATIC GLOBAL)
-add_dependencies(GTest::GMain googletest_project)
-set_target_properties(GTest::GMain PROPERTIES
+add_library(GTest::Main IMPORTED STATIC GLOBAL)
+add_dependencies(GTest::Main googletest_project)
+set_target_properties(GTest::Main PROPERTIES
         IMPORTED_LOCATION "${binary_dir}/googlemock/gtest/libgtest_main.a"
         INTERFACE_INCLUDE_DIRECTORIES "${source_dir}/googletest/include"
         )
