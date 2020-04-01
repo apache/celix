@@ -17,6 +17,7 @@
 
 include_directories("common/include")
 
+add_subdirectory(interceptors)
 add_subdirectory(publisher)
 add_subdirectory(publisher2)
 if (BUILD_PUBSUB_PSA_WS)

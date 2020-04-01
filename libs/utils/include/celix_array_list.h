@@ -45,6 +45,8 @@ typedef struct celix_array_list celix_array_list_t;
 
 typedef bool (*celix_arrayList_equals_fp)(celix_array_list_entry_t, celix_array_list_entry_t);
 
+typedef int (*celix_arrayList_sort_fp)(const void *, const void *);
+
 
 celix_array_list_t* celix_arrayList_create();
 
@@ -98,6 +100,8 @@ void celix_arrayList_removeFloat(celix_array_list_t *list, float val);
 void celix_arrayList_removeDouble(celix_array_list_t *list, double val);
 void celix_arrayList_removeBool(celix_array_list_t *list, bool val);
 void celix_arrayList_removeSize(celix_array_list_t *list, size_t val);
+
+void celix_arrayList_sort(celix_array_list_t *list, celix_arrayList_sort_fp sortFp);
 
 #ifdef __cplusplus
 }
