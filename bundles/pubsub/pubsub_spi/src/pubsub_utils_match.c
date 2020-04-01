@@ -209,7 +209,7 @@ typedef struct pubsub_match_retrieve_topic_properties_data {
 
 static void getTopicPropertiesCallback(void *handle, const celix_bundle_t *bnd) {
     pubsub_get_topic_properties_data_t *data = handle;
-    data->outEndpoint = pubsub_utils_getTopicProperties(bnd, data->topic, data->scope, data->isPublisher);
+    data->outEndpoint = pubsub_utils_getTopicProperties(bnd, data->scope, data->topic, data->isPublisher);
 }
 
 double pubsub_utils_matchSubscriber(

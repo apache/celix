@@ -384,7 +384,7 @@ pubsub_tcpHandler_releaseEntryBuffer(pubsub_tcpHandler_t *handle, int fd, unsign
 int pubsub_tcpHandler_connect(pubsub_tcpHandler_t *handle, char *url) {
     int rc = 0;
     psa_tcp_connection_entry_t *entry =
-            hashMap_get(handle->connection_url_map, (void *) (intptr_t) url);
+        hashMap_get(handle->connection_url_map, (void *) (intptr_t) url);
     if (entry == NULL) {
         pubsub_utils_url_t *url_info = pubsub_utils_url_parse(url);
         int fd = pubsub_tcpHandler_open(handle, url_info->interface_url);
@@ -450,7 +450,7 @@ int pubsub_tcpHandler_disconnect(pubsub_tcpHandler_t *handle, char *url) {
 // loses the connection entry (of receiver)
 //
 static inline int pubsub_tcpHandler_closeConnectionEntry(
-        pubsub_tcpHandler_t *handle, psa_tcp_connection_entry_t *entry, bool lock) {
+    pubsub_tcpHandler_t *handle, psa_tcp_connection_entry_t *entry, bool lock) {
     int rc = 0;
     if (handle != NULL && entry != NULL) {
         fprintf(stdout, "[TCP Socket] Close connection to url: %s: \n", entry->url);
@@ -525,7 +525,7 @@ static inline int pubsub_tcpHandler_makeNonBlocking(pubsub_tcpHandler_t *handle,
 int pubsub_tcpHandler_listen(pubsub_tcpHandler_t *handle, char *url) {
     int rc = 0;
     psa_tcp_connection_entry_t *entry =
-            hashMap_get(handle->connection_url_map, (void *) (intptr_t) url);
+        hashMap_get(handle->connection_url_map, (void *) (intptr_t) url);
     if (entry == NULL) {
         char protocol[] = "tcp";
         int fd = pubsub_tcpHandler_open(handle, url);
@@ -796,8 +796,9 @@ int pubsub_tcpHandler_dataAvailable(pubsub_tcpHandler_t *handle, int fd, unsigne
             L_WARN("[TCP Socket] Failed to receive message header (fd: %d), error: %s. Retry count %u of %u,",
                    entry->fd, strerror(errno), entry->retryCount, handle->maxRcvRetryCount);
         } else {
-            L_ERROR("[TCP Socket] Failed to receive message header (fd: %d) after %u retries! Closing connection... Error: %s",
-                    entry->fd, handle->maxRcvRetryCount, strerror(errno));
+            L_ERROR(
+                "[TCP Socket] Failed to receive message header (fd: %d) after %u retries! Closing connection... Error: %s",
+                entry->fd, handle->maxRcvRetryCount, strerror(errno));
             nbytes = 0; //Return 0 as indicator to close the connection
         }
     }
@@ -982,11 +983,13 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
             if (nbytes == -1) {
                 if (entry->retryCount < handle->maxSendRetryCount) {
                     entry->retryCount++;
-                    L_ERROR("[TCP Socket] Failed to send message (fd: %d), error: %s. try again. Retry count %u of %u, ",
-                            entry->fd, strerror(errno), entry->retryCount, handle->maxSendRetryCount);
+                    L_ERROR(
+                        "[TCP Socket] Failed to send message (fd: %d), error: %s. try again. Retry count %u of %u, ",
+                        entry->fd, strerror(errno), entry->retryCount, handle->maxSendRetryCount);
                 } else {
-                    L_ERROR("[TCP Socket] Failed to send message (fd: %d) after %u retries! Closing connection... Error: %s",
-                            entry->fd, handle->maxSendRetryCount, strerror(errno));
+                    L_ERROR(
+                        "[TCP Socket] Failed to send message (fd: %d) after %u retries! Closing connection... Error: %s",
+                        entry->fd, handle->maxSendRetryCount, strerror(errno));
                     connFdCloseQueue[nofConnToClose++] = entry->fd;
                 }
                 result = -1; //At least one connection failed sending
@@ -1018,11 +1021,11 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
 //
 char *pubsub_tcpHandler_get_interface_url(pubsub_tcpHandler_t *handle) {
     hash_map_iterator_t interface_iter =
-            hashMapIterator_construct(handle->interface_url_map);
+        hashMapIterator_construct(handle->interface_url_map);
     char *url = NULL;
     while (hashMapIterator_hasNext(&interface_iter)) {
         psa_tcp_connection_entry_t *entry =
-                hashMapIterator_nextValue(&interface_iter);
+            hashMapIterator_nextValue(&interface_iter);
         if (entry && entry->url) {
             if (!url) {
                 url = strdup(entry->url);

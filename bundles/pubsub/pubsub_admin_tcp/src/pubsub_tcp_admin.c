@@ -48,7 +48,7 @@ struct pubsub_tcp_admin {
     log_helper_t *log;
     const char *fwUUID;
 
-    char* ipAddress;
+    char *ipAddress;
 
     unsigned int basePort;
     unsigned int maxPort;
@@ -84,7 +84,7 @@ struct pubsub_tcp_admin {
         hash_map_t *map; //key = endpoint uuid, value = celix_properties_t* (endpoint)
     } discoveredEndpoints;
 
-  pubsub_tcp_endPointStore_t endpointStore;
+    pubsub_tcp_endPointStore_t endpointStore;
 };
 
 typedef struct psa_tcp_serializer_entry {
@@ -98,15 +98,21 @@ typedef struct psa_tcp_protocol_entry {
     long svcId;
     pubsub_protocol_service_t *svc;
 } psa_tcp_protocol_entry_t;
-static celix_status_t pubsub_tcpAdmin_connectEndpointToReceiver(pubsub_tcp_admin_t* psa, pubsub_tcp_topic_receiver_t *receiver, const celix_properties_t *endpoint);
-static celix_status_t pubsub_tcpAdmin_disconnectEndpointFromReceiver(pubsub_tcp_admin_t* psa, pubsub_tcp_topic_receiver_t *receiver, const celix_properties_t *endpoint);
+
+static celix_status_t
+pubsub_tcpAdmin_connectEndpointToReceiver(pubsub_tcp_admin_t *psa, pubsub_tcp_topic_receiver_t *receiver,
+                                          const celix_properties_t *endpoint);
+
+static celix_status_t
+pubsub_tcpAdmin_disconnectEndpointFromReceiver(pubsub_tcp_admin_t *psa, pubsub_tcp_topic_receiver_t *receiver,
+                                               const celix_properties_t *endpoint);
 
 static bool pubsub_tcpAdmin_endpointIsPublisher(const celix_properties_t *endpoint) {
     const char *type = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TYPE, NULL);
     return type != NULL && strncmp(PUBSUB_PUBLISHER_ENDPOINT_TYPE, type, strlen(PUBSUB_PUBLISHER_ENDPOINT_TYPE)) == 0;
 }
 
-pubsub_tcp_admin_t* pubsub_tcpAdmin_create(celix_bundle_context_t *ctx, log_helper_t *logHelper) {
+pubsub_tcp_admin_t *pubsub_tcpAdmin_create(celix_bundle_context_t *ctx, log_helper_t *logHelper) {
     pubsub_tcp_admin_t *psa = calloc(1, sizeof(*psa));
     psa->ctx = ctx;
     psa->log = logHelper;
@@ -114,11 +120,13 @@ pubsub_tcp_admin_t* pubsub_tcpAdmin_create(celix_bundle_context_t *ctx, log_help
     psa->fwUUID = celix_bundleContext_getProperty(ctx, OSGI_FRAMEWORK_FRAMEWORK_UUID, NULL);
     long basePort = celix_bundleContext_getPropertyAsLong(ctx, PSA_TCP_BASE_PORT, PSA_TCP_DEFAULT_BASE_PORT);
     long maxPort = celix_bundleContext_getPropertyAsLong(ctx, PSA_TCP_MAX_PORT, PSA_TCP_DEFAULT_MAX_PORT);
-    psa->basePort = (unsigned int)basePort;
-    psa->maxPort = (unsigned int)maxPort;
+    psa->basePort = (unsigned int) basePort;
+    psa->maxPort = (unsigned int) maxPort;
     psa->defaultScore = celix_bundleContext_getPropertyAsDouble(ctx, PSA_TCP_DEFAULT_SCORE_KEY, PSA_TCP_DEFAULT_SCORE);
-    psa->qosSampleScore = celix_bundleContext_getPropertyAsDouble(ctx, PSA_TCP_QOS_SAMPLE_SCORE_KEY, PSA_TCP_DEFAULT_QOS_SAMPLE_SCORE);
-    psa->qosControlScore = celix_bundleContext_getPropertyAsDouble(ctx, PSA_TCP_QOS_CONTROL_SCORE_KEY, PSA_TCP_DEFAULT_QOS_CONTROL_SCORE);
+    psa->qosSampleScore = celix_bundleContext_getPropertyAsDouble(ctx, PSA_TCP_QOS_SAMPLE_SCORE_KEY,
+                                                                  PSA_TCP_DEFAULT_QOS_SAMPLE_SCORE);
+    psa->qosControlScore = celix_bundleContext_getPropertyAsDouble(ctx, PSA_TCP_QOS_CONTROL_SCORE_KEY,
+                                                                   PSA_TCP_DEFAULT_QOS_CONTROL_SCORE);
 
     celixThreadMutex_create(&psa->serializers.mutex, NULL);
     psa->serializers.map = hashMap_create(NULL, NULL, NULL, NULL);
@@ -148,7 +156,7 @@ void pubsub_tcpAdmin_destroy(pubsub_tcp_admin_t *psa) {
     celixThreadMutex_lock(&psa->endpointStore.mutex);
     hash_map_iterator_t iter = hashMapIterator_construct(psa->endpointStore.map);
     while (hashMapIterator_hasNext(&iter)) {
-        pubsub_tcpHandler_t* tcpHandler = hashMapIterator_nextValue(&iter);
+        pubsub_tcpHandler_t *tcpHandler = hashMapIterator_nextValue(&iter);
         pubsub_tcpHandler_destroy(tcpHandler);
     }
     celixThreadMutex_unlock(&psa->endpointStore.mutex);
@@ -227,13 +235,13 @@ void pubsub_tcpAdmin_addSerializerSvc(void *handle, void *svc, const celix_prope
     }
 
     celixThreadMutex_lock(&psa->serializers.mutex);
-    psa_tcp_serializer_entry_t *entry = hashMap_get(psa->serializers.map, (void*)svcId);
+    psa_tcp_serializer_entry_t *entry = hashMap_get(psa->serializers.map, (void *) svcId);
     if (entry == NULL) {
         entry = calloc(1, sizeof(*entry));
         entry->serType = serType;
         entry->svcId = svcId;
         entry->svc = svc;
-        hashMap_put(psa->serializers.map, (void*)svcId, entry);
+        hashMap_put(psa->serializers.map, (void *) svcId, entry);
     }
     celixThreadMutex_unlock(&psa->serializers.mutex);
 }
@@ -249,7 +257,7 @@ void pubsub_tcpAdmin_removeSerializerSvc(void *handle, void *svc, const celix_pr
     // Note that it is the responsibility of the topology manager to create new topic senders/receivers
 
     celixThreadMutex_lock(&psa->serializers.mutex);
-    psa_tcp_serializer_entry_t *entry = hashMap_remove(psa->serializers.map, (void*)svcId);
+    psa_tcp_serializer_entry_t *entry = hashMap_remove(psa->serializers.map, (void *) svcId);
     celixThreadMutex_unlock(&psa->serializers.mutex);
 
     if (entry != NULL) {
@@ -297,13 +305,13 @@ void pubsub_tcpAdmin_addProtocolSvc(void *handle, void *svc, const celix_propert
     }
 
     celixThreadMutex_lock(&psa->protocols.mutex);
-    psa_tcp_protocol_entry_t *entry = hashMap_get(psa->protocols.map, (void*)svcId);
+    psa_tcp_protocol_entry_t *entry = hashMap_get(psa->protocols.map, (void *) svcId);
     if (entry == NULL) {
         entry = calloc(1, sizeof(*entry));
         entry->protType = protType;
         entry->svcId = svcId;
         entry->svc = svc;
-        hashMap_put(psa->protocols.map, (void*)svcId, entry);
+        hashMap_put(psa->protocols.map, (void *) svcId, entry);
     }
     celixThreadMutex_unlock(&psa->protocols.mutex);
 }
@@ -319,7 +327,7 @@ void pubsub_tcpAdmin_removeProtocolSvc(void *handle, void *svc, const celix_prop
     // Note that it is the responsibility of the topology manager to create new topic senders/receivers
 
     celixThreadMutex_lock(&psa->protocols.mutex);
-    psa_tcp_protocol_entry_t *entry = hashMap_remove(psa->protocols.map, (void*)svcId);
+    psa_tcp_protocol_entry_t *entry = hashMap_remove(psa->protocols.map, (void *) svcId);
     celixThreadMutex_unlock(&psa->protocols.mutex);
 
     if (entry != NULL) {
@@ -354,33 +362,42 @@ void pubsub_tcpAdmin_removeProtocolSvc(void *handle, void *svc, const celix_prop
         free(entry);
     }
 }
-celix_status_t pubsub_tcpAdmin_matchPublisher(void *handle, long svcRequesterBndId, const celix_filter_t *svcFilter, celix_properties_t **topicProperties, double *outScore, long *outSerializerSvcId, long *outProtocolSvcId) {
+
+celix_status_t pubsub_tcpAdmin_matchPublisher(void *handle, long svcRequesterBndId, const celix_filter_t *svcFilter,
+                                              celix_properties_t **topicProperties, double *outScore,
+                                              long *outSerializerSvcId, long *outProtocolSvcId) {
     pubsub_tcp_admin_t *psa = handle;
     L_DEBUG("[PSA_TCP] pubsub_tcpAdmin_matchPublisher");
-    celix_status_t  status = CELIX_SUCCESS;
+    celix_status_t status = CELIX_SUCCESS;
     double score = pubsub_utils_matchPublisher(psa->ctx, svcRequesterBndId, svcFilter->filterStr, PUBSUB_TCP_ADMIN_TYPE,
-                                                psa->qosSampleScore, psa->qosControlScore, psa->defaultScore, true, topicProperties, outSerializerSvcId, outProtocolSvcId);
+                                               psa->qosSampleScore, psa->qosControlScore, psa->defaultScore, true,
+                                               topicProperties, outSerializerSvcId, outProtocolSvcId);
     *outScore = score;
 
     return status;
 }
 
-celix_status_t pubsub_tcpAdmin_matchSubscriber(void *handle, long svcProviderBndId, const celix_properties_t *svcProperties, celix_properties_t **topicProperties, double *outScore, long *outSerializerSvcId, long *outProtocolSvcId) {
+celix_status_t
+pubsub_tcpAdmin_matchSubscriber(void *handle, long svcProviderBndId, const celix_properties_t *svcProperties,
+                                celix_properties_t **topicProperties, double *outScore, long *outSerializerSvcId,
+                                long *outProtocolSvcId) {
     pubsub_tcp_admin_t *psa = handle;
     L_DEBUG("[PSA_TCP] pubsub_tcpAdmin_matchSubscriber");
-    celix_status_t  status = CELIX_SUCCESS;
+    celix_status_t status = CELIX_SUCCESS;
     double score = pubsub_utils_matchSubscriber(psa->ctx, svcProviderBndId, svcProperties, PUBSUB_TCP_ADMIN_TYPE,
-            psa->qosSampleScore, psa->qosControlScore, psa->defaultScore, true, topicProperties, outSerializerSvcId, outProtocolSvcId);
+                                                psa->qosSampleScore, psa->qosControlScore, psa->defaultScore, true,
+                                                topicProperties, outSerializerSvcId, outProtocolSvcId);
     if (outScore != NULL) {
         *outScore = score;
     }
     return status;
 }
 
-celix_status_t pubsub_tcpAdmin_matchDiscoveredEndpoint(void *handle, const celix_properties_t *endpoint, bool *outMatch) {
+celix_status_t
+pubsub_tcpAdmin_matchDiscoveredEndpoint(void *handle, const celix_properties_t *endpoint, bool *outMatch) {
     pubsub_tcp_admin_t *psa = handle;
     L_DEBUG("[PSA_TCP] pubsub_tcpAdmin_matchEndpoint");
-    celix_status_t  status = CELIX_SUCCESS;
+    celix_status_t status = CELIX_SUCCESS;
     bool match = pubsub_utils_matchEndpoint(psa->ctx, endpoint, PUBSUB_TCP_ADMIN_TYPE, true, NULL, NULL);
     if (outMatch != NULL) {
         *outMatch = match;
@@ -388,9 +405,11 @@ celix_status_t pubsub_tcpAdmin_matchDiscoveredEndpoint(void *handle, const celix
     return status;
 }
 
-celix_status_t pubsub_tcpAdmin_setupTopicSender(void *handle, const char *scope, const char *topic, const celix_properties_t *topicProperties, long serializerSvcId, long protocolSvcId, celix_properties_t **outPublisherEndpoint) {
+celix_status_t pubsub_tcpAdmin_setupTopicSender(void *handle, const char *scope, const char *topic,
+                                                const celix_properties_t *topicProperties, long serializerSvcId,
+                                                long protocolSvcId, celix_properties_t **outPublisherEndpoint) {
     pubsub_tcp_admin_t *psa = handle;
-    celix_status_t  status = CELIX_SUCCESS;
+    celix_status_t status = CELIX_SUCCESS;
 
     //1) Create TopicSender
     //2) Store TopicSender
@@ -404,16 +423,19 @@ celix_status_t pubsub_tcpAdmin_setupTopicSender(void *handle, const char *scope,
     celixThreadMutex_lock(&psa->topicSenders.mutex);
     pubsub_tcp_topic_sender_t *sender = hashMap_get(psa->topicSenders.map, key);
     if (sender == NULL) {
-        psa_tcp_serializer_entry_t *serEntry = hashMap_get(psa->serializers.map, (void*)serializerSvcId);
-        psa_tcp_protocol_entry_t *protEntry = hashMap_get(psa->protocols.map, (void*)protocolSvcId);
+        psa_tcp_serializer_entry_t *serEntry = hashMap_get(psa->serializers.map, (void *) serializerSvcId);
+        psa_tcp_protocol_entry_t *protEntry = hashMap_get(psa->protocols.map, (void *) protocolSvcId);
         if (serEntry != NULL && protEntry != NULL) {
-            sender = pubsub_tcpTopicSender_create(psa->ctx, psa->log, scope, topic, topicProperties, &psa->endpointStore, serializerSvcId, serEntry->svc, protocolSvcId, protEntry->svc);
+            sender = pubsub_tcpTopicSender_create(psa->ctx, psa->log, scope, topic, topicProperties,
+                                                  &psa->endpointStore, serializerSvcId, serEntry->svc, protocolSvcId,
+                                                  protEntry->svc);
         }
         if (sender != NULL) {
             const char *psaType = PUBSUB_TCP_ADMIN_TYPE;
             const char *serType = serEntry->serType;
             const char *protType = protEntry->protType;
-            newEndpoint = pubsubEndpoint_create(psa->fwUUID, scope, topic, PUBSUB_PUBLISHER_ENDPOINT_TYPE, psaType, serType, protType, NULL);
+            newEndpoint = pubsubEndpoint_create(psa->fwUUID, scope, topic, PUBSUB_PUBLISHER_ENDPOINT_TYPE, psaType,
+                                                serType, protType, NULL);
             celix_properties_set(newEndpoint, PUBSUB_TCP_URL_KEY, pubsub_tcpTopicSender_url(sender));
 
             celix_properties_setBool(newEndpoint, PUBSUB_TCP_STATIC_CONFIGURED, pubsub_tcpTopicSender_isStatic(sender));
@@ -448,7 +470,7 @@ celix_status_t pubsub_tcpAdmin_setupTopicSender(void *handle, const char *scope,
 
 celix_status_t pubsub_tcpAdmin_teardownTopicSender(void *handle, const char *scope, const char *topic) {
     pubsub_tcp_admin_t *psa = handle;
-    celix_status_t  status = CELIX_SUCCESS;
+    celix_status_t status = CELIX_SUCCESS;
 
     //1) Find and remove TopicSender from map
     //2) destroy topic sender
@@ -471,7 +493,9 @@ celix_status_t pubsub_tcpAdmin_teardownTopicSender(void *handle, const char *sco
     return status;
 }
 
-celix_status_t pubsub_tcpAdmin_setupTopicReceiver(void *handle, const char *scope, const char *topic, const celix_properties_t *topicProperties, long serializerSvcId, long protocolSvcId, celix_properties_t **outSubscriberEndpoint) {
+celix_status_t pubsub_tcpAdmin_setupTopicReceiver(void *handle, const char *scope, const char *topic,
+                                                  const celix_properties_t *topicProperties, long serializerSvcId,
+                                                  long protocolSvcId, celix_properties_t **outSubscriberEndpoint) {
     pubsub_tcp_admin_t *psa = handle;
 
     celix_properties_t *newEndpoint = NULL;
@@ -482,10 +506,12 @@ celix_status_t pubsub_tcpAdmin_setupTopicReceiver(void *handle, const char *scop
     celixThreadMutex_lock(&psa->topicReceivers.mutex);
     pubsub_tcp_topic_receiver_t *receiver = hashMap_get(psa->topicReceivers.map, key);
     if (receiver == NULL) {
-        psa_tcp_serializer_entry_t *serEntry = hashMap_get(psa->serializers.map, (void*)serializerSvcId);
-        psa_tcp_protocol_entry_t *protEntry = hashMap_get(psa->protocols.map, (void*)protocolSvcId);
+        psa_tcp_serializer_entry_t *serEntry = hashMap_get(psa->serializers.map, (void *) serializerSvcId);
+        psa_tcp_protocol_entry_t *protEntry = hashMap_get(psa->protocols.map, (void *) protocolSvcId);
         if (serEntry != NULL && protEntry != NULL) {
-            receiver = pubsub_tcpTopicReceiver_create(psa->ctx, psa->log, scope, topic, topicProperties, &psa->endpointStore, serializerSvcId, serEntry->svc, protocolSvcId, protEntry->svc);
+            receiver = pubsub_tcpTopicReceiver_create(psa->ctx, psa->log, scope, topic, topicProperties,
+                                                      &psa->endpointStore, serializerSvcId, serEntry->svc,
+                                                      protocolSvcId, protEntry->svc);
         } else {
             L_ERROR("[PSA_TCP] Cannot find serializer for TopicSender %s/%s", scope, topic);
         }
@@ -519,7 +545,8 @@ celix_status_t pubsub_tcpAdmin_setupTopicReceiver(void *handle, const char *scop
         while (hashMapIterator_hasNext(&iter)) {
             celix_properties_t *endpoint = hashMapIterator_nextValue(&iter);
             const char *type = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TYPE, NULL);
-            if (type != NULL && strncmp(PUBSUB_PUBLISHER_ENDPOINT_TYPE, type, strlen(PUBSUB_PUBLISHER_ENDPOINT_TYPE)) == 0) {
+            if (type != NULL &&
+                strncmp(PUBSUB_PUBLISHER_ENDPOINT_TYPE, type, strlen(PUBSUB_PUBLISHER_ENDPOINT_TYPE)) == 0) {
                 pubsub_tcpAdmin_connectEndpointToReceiver(psa, receiver, endpoint);
             }
         }
@@ -530,7 +557,7 @@ celix_status_t pubsub_tcpAdmin_setupTopicReceiver(void *handle, const char *scop
         *outSubscriberEndpoint = newEndpoint;
     }
 
-    celix_status_t  status = CELIX_SUCCESS;
+    celix_status_t status = CELIX_SUCCESS;
     return status;
 }
 
@@ -551,11 +578,13 @@ celix_status_t pubsub_tcpAdmin_teardownTopicReceiver(void *handle, const char *s
     }
     celixThreadMutex_unlock(&psa->topicReceivers.mutex);
 
-    celix_status_t  status = CELIX_SUCCESS;
+    celix_status_t status = CELIX_SUCCESS;
     return status;
 }
 
-static celix_status_t pubsub_tcpAdmin_connectEndpointToReceiver(pubsub_tcp_admin_t* psa, pubsub_tcp_topic_receiver_t *receiver, const celix_properties_t *endpoint) {
+static celix_status_t
+pubsub_tcpAdmin_connectEndpointToReceiver(pubsub_tcp_admin_t *psa, pubsub_tcp_topic_receiver_t *receiver,
+                                          const celix_properties_t *endpoint) {
     //note can be called with discoveredEndpoint.mutex lock
     celix_status_t status = CELIX_SUCCESS;
 
@@ -564,20 +593,20 @@ static celix_status_t pubsub_tcpAdmin_connectEndpointToReceiver(pubsub_tcp_admin
     if (url == NULL) {
         const char *admin = celix_properties_get(endpoint, PUBSUB_ENDPOINT_ADMIN_TYPE, NULL);
         const char *type = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TYPE, NULL);
-        L_WARN("[PSA TCP] Error got endpoint without a tcp url (admin: %s, type: %s)", admin , type);
+        L_WARN("[PSA TCP] Error got endpoint without a tcp url (admin: %s, type: %s)", admin, type);
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
         const char *scope = pubsub_tcpTopicReceiver_scope(receiver);
         const char *topic = pubsub_tcpTopicReceiver_topic(receiver);
         const char *serializer = NULL;
         long serializerSvcId = pubsub_tcpTopicReceiver_serializerSvcId(receiver);
-        psa_tcp_serializer_entry_t *serializerEntry = hashMap_get(psa->serializers.map, (void*)serializerSvcId);
+        psa_tcp_serializer_entry_t *serializerEntry = hashMap_get(psa->serializers.map, (void *) serializerSvcId);
         if (serializerEntry != NULL) {
             serializer = serializerEntry->serType;
         }
         const char *protocol = NULL;
         long protocolSvcId = pubsub_tcpTopicReceiver_protocolSvcId(receiver);
-        psa_tcp_protocol_entry_t *protocolEntry = hashMap_get(psa->protocols.map, (void*)protocolSvcId);
+        psa_tcp_protocol_entry_t *protocolEntry = hashMap_get(psa->protocols.map, (void *) protocolSvcId);
         if (protocolEntry != NULL) {
             protocol = protocolEntry->protType;
         }
@@ -588,11 +617,11 @@ static celix_status_t pubsub_tcpAdmin_connectEndpointToReceiver(pubsub_tcp_admin
         const char *eProtocol = celix_properties_get(endpoint, PUBSUB_ENDPOINT_PROTOCOL, NULL);
 
         if (scope != NULL && topic != NULL && serializer != NULL && protocol != NULL
-                        && eScope != NULL && eTopic != NULL && eSerializer != NULL && eProtocol != NULL
-                        && strncmp(eScope, scope, 1024*1024) == 0
-                        && strncmp(eTopic, topic, 1024*1024) == 0
-                        && strncmp(eSerializer, serializer, 1024*1024) == 0
-                        && strncmp(eProtocol, protocol, 1024*1024) == 0) {
+            && eScope != NULL && eTopic != NULL && eSerializer != NULL && eProtocol != NULL
+            && strncmp(eScope, scope, 1024 * 1024) == 0
+            && strncmp(eTopic, topic, 1024 * 1024) == 0
+            && strncmp(eSerializer, serializer, 1024 * 1024) == 0
+            && strncmp(eProtocol, protocol, 1024 * 1024) == 0) {
             pubsub_tcpTopicReceiver_connectTo(receiver, url);
         }
     }
@@ -616,15 +645,17 @@ celix_status_t pubsub_tcpAdmin_addDiscoveredEndpoint(void *handle, const celix_p
     celixThreadMutex_lock(&psa->discoveredEndpoints.mutex);
     celix_properties_t *cpy = celix_properties_copy(endpoint);
     const char *uuid = celix_properties_get(cpy, PUBSUB_ENDPOINT_UUID, NULL);
-    hashMap_put(psa->discoveredEndpoints.map, (void*)uuid, cpy);
+    hashMap_put(psa->discoveredEndpoints.map, (void *) uuid, cpy);
     celixThreadMutex_unlock(&psa->discoveredEndpoints.mutex);
 
-    celix_status_t  status = CELIX_SUCCESS;
+    celix_status_t status = CELIX_SUCCESS;
     return status;
 }
 
 
-static celix_status_t pubsub_tcpAdmin_disconnectEndpointFromReceiver(pubsub_tcp_admin_t* psa, pubsub_tcp_topic_receiver_t *receiver, const celix_properties_t *endpoint) {
+static celix_status_t
+pubsub_tcpAdmin_disconnectEndpointFromReceiver(pubsub_tcp_admin_t *psa, pubsub_tcp_topic_receiver_t *receiver,
+                                               const celix_properties_t *endpoint) {
     //note can be called with discoveredEndpoint.mutex lock
     celix_status_t status = CELIX_SUCCESS;
 
@@ -655,20 +686,21 @@ celix_status_t pubsub_tcpAdmin_removeDiscoveredEndpoint(void *handle, const celi
 
     celixThreadMutex_lock(&psa->discoveredEndpoints.mutex);
     const char *uuid = celix_properties_get(endpoint, PUBSUB_ENDPOINT_UUID, NULL);
-    celix_properties_t *found = hashMap_remove(psa->discoveredEndpoints.map, (void*)uuid);
+    celix_properties_t *found = hashMap_remove(psa->discoveredEndpoints.map, (void *) uuid);
     celixThreadMutex_unlock(&psa->discoveredEndpoints.mutex);
 
     if (found != NULL) {
         celix_properties_destroy(found);
     }
 
-    celix_status_t  status = CELIX_SUCCESS;
+    celix_status_t status = CELIX_SUCCESS;
     return status;
 }
 
-bool pubsub_tcpAdmin_executeCommand(void *handle, const char *commandLine __attribute__((unused)), FILE *out, FILE *errStream __attribute__((unused))) {
+bool pubsub_tcpAdmin_executeCommand(void *handle, const char *commandLine __attribute__((unused)), FILE *out,
+                                    FILE *errStream __attribute__((unused))) {
     pubsub_tcp_admin_t *psa = handle;
-    celix_status_t  status = CELIX_SUCCESS;
+    celix_status_t status = CELIX_SUCCESS;
 
     fprintf(out, "\n");
     fprintf(out, "Topic Senders:\n");
@@ -679,9 +711,9 @@ bool pubsub_tcpAdmin_executeCommand(void *handle, const char *commandLine __attr
     while (hashMapIterator_hasNext(&iter)) {
         pubsub_tcp_topic_sender_t *sender = hashMapIterator_nextValue(&iter);
         long serSvcId = pubsub_tcpTopicSender_serializerSvcId(sender);
-        psa_tcp_serializer_entry_t *serEntry = hashMap_get(psa->serializers.map, (void*)serSvcId);
+        psa_tcp_serializer_entry_t *serEntry = hashMap_get(psa->serializers.map, (void *) serSvcId);
         long protSvcId = pubsub_tcpTopicSender_protocolSvcId(sender);
-        psa_tcp_protocol_entry_t *protEntry = hashMap_get(psa->protocols.map, (void*)protSvcId);
+        psa_tcp_protocol_entry_t *protEntry = hashMap_get(psa->protocols.map, (void *) protSvcId);
         const char *serType = serEntry == NULL ? "!Error!" : serEntry->serType;
         const char *protType = protEntry == NULL ? "!Error!" : protEntry->protType;
         const char *scope = pubsub_tcpTopicSender_scope(sender);
@@ -706,9 +738,9 @@ bool pubsub_tcpAdmin_executeCommand(void *handle, const char *commandLine __attr
     while (hashMapIterator_hasNext(&iter)) {
         pubsub_tcp_topic_receiver_t *receiver = hashMapIterator_nextValue(&iter);
         long serSvcId = pubsub_tcpTopicReceiver_serializerSvcId(receiver);
-        psa_tcp_serializer_entry_t *serEntry = hashMap_get(psa->serializers.map, (void*)serSvcId);
+        psa_tcp_serializer_entry_t *serEntry = hashMap_get(psa->serializers.map, (void *) serSvcId);
         long protSvcId = pubsub_tcpTopicReceiver_protocolSvcId(receiver);
-        psa_tcp_protocol_entry_t *protEntry = hashMap_get(psa->protocols.map, (void*)protSvcId);
+        psa_tcp_protocol_entry_t *protEntry = hashMap_get(psa->protocols.map, (void *) protSvcId);
         const char *serType = serEntry == NULL ? "!Error!" : serEntry->serType;
         const char *protType = protEntry == NULL ? "!Error!" : protEntry->protType;
         const char *scope = pubsub_tcpTopicReceiver_scope(receiver);
@@ -742,7 +774,7 @@ bool pubsub_tcpAdmin_executeCommand(void *handle, const char *commandLine __attr
     return status;
 }
 
-pubsub_admin_metrics_t* pubsub_tcpAdmin_metrics(void *handle) {
+pubsub_admin_metrics_t *pubsub_tcpAdmin_metrics(void *handle) {
     pubsub_tcp_admin_t *psa = handle;
     pubsub_admin_metrics_t *result = calloc(1, sizeof(*result));
     snprintf(result->psaType, PUBSUB_AMDIN_METRICS_NAME_MAX, "%s", PUBSUB_TCP_ADMIN_TYPE);

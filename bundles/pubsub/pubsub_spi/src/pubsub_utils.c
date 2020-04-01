@@ -37,10 +37,10 @@
 #define MAX_KEYBUNDLE_LENGTH 256
 
 
-celix_status_t pubsub_getPubSubInfoFromFilter(const char* filterstr, char **topicOut, char **scopeOut) {
+celix_status_t pubsub_getPubSubInfoFromFilter(const char* filterstr, char **scopeOut, char **topicOut) {
     celix_status_t status = CELIX_SUCCESS;
-    const char *topic = NULL;
     const char *scope = NULL;
+    const char *topic = NULL;
     const char *objectClass = NULL;
     celix_filter_t *filter = celix_filter_create(filterstr);
     if (filter != NULL) {
@@ -66,7 +66,7 @@ celix_status_t pubsub_getPubSubInfoFromFilter(const char* filterstr, char **topi
     if (topic != NULL && objectClass != NULL && strncmp(objectClass, PUBSUB_PUBLISHER_SERVICE_NAME, 128) == 0) {
         //NOTE topic must be present, scope can be present in the filter.
         *topicOut = strdup(topic);
-                if (scope != NULL) {
+        if (scope != NULL) {
             *scopeOut = strdup(scope);
         } else {
             *scopeOut = NULL;
@@ -128,7 +128,7 @@ char* pubsub_getKeysBundleDir(celix_bundle_context_t *ctx) {
     return result;
 }
 
-celix_properties_t *pubsub_utils_getTopicProperties(const celix_bundle_t *bundle, const char *topic, const char *scope, bool isPublisher) {
+celix_properties_t *pubsub_utils_getTopicProperties(const celix_bundle_t *bundle, const char *scope, const char *topic, bool isPublisher) {
     celix_properties_t *topic_props = NULL;
 
     bool isSystemBundle = false;
@@ -143,7 +143,7 @@ celix_properties_t *pubsub_utils_getTopicProperties(const celix_bundle_t *bundle
         bundle_getEntry((celix_bundle_t *)bundle, ".", &bundleRoot);
 
         if (bundleRoot != NULL) {
-            asprintf(&topicPropertiesPath, "%s/META-INF/topics/%s/%s.%s,properties", bundleRoot, isPublisher? "pub":"sub", topic, scope);
+            asprintf(&topicPropertiesPath, "%s/META-INF/topics/%s/%s.%s.properties", bundleRoot, isPublisher? "pub":"sub", scope, topic);
             topic_props = celix_properties_load(topicPropertiesPath);
 
             if (topic_props == NULL) {
