@@ -14,7 +14,11 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-celix_subproject(LOG_WRITER_SYSLOG "Option to enable building the Syslog Writer" OFF DEPS FRAMEWORK LOG_SERVICE)
+set(LOG_WRITER_SYSLOG_DEFAULT ON)
+if (APPLE)
+    set(LOG_WRITER_SYSLOG_DEFAULT OFF)
+endif ()
+celix_subproject(LOG_WRITER_SYSLOG "Option to enable building the Syslog Writer" ${LOG_WRITER_SYSLOG_DEFAULT} DEPS FRAMEWORK LOG_SERVICE)
 if (LOG_WRITER_SYSLOG)
     find_package(Syslog REQUIRED)
 
