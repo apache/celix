@@ -15,23 +15,14 @@
 # specific language governing permissions and limitations
 # under the License.
 
-find_package(UUID REQUIRED)
-
-add_library(pubsub_spi STATIC
-        src/pubsub_utils_match.c
-        src/pubsub_endpoint.c
-        src/pubsub_utils.c
-        src/pubsub_admin_metrics.c
-        src/pubsub_interceptors_handler.c)
-
-set_target_properties(pubsub_spi PROPERTIES OUTPUT_NAME "celix_pubsub_spi")
-target_include_directories(pubsub_spi PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
-        $<INSTALL_INTERFACE:include/celix/pubsub_spi>
+add_celix_bundle(celix_pubsub_interceptors_example
+    SYMBOLIC_NAME "celix_pubsub_interceptors_example"
+    VERSION "1.0.0"
+    SOURCES 
+        src/ps_interceptor_activator.c
+        src/first_interceptor.c
+        src/second_interceptor.c
 )
-target_link_libraries(pubsub_spi PUBLIC Celix::framework Celix::pubsub_api)
 
-add_library(Celix::pubsub_spi ALIAS pubsub_spi)
-
-install(TARGETS pubsub_spi EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT pubsub)
-install(DIRECTORY include/ DESTINATION include/celix/pubsub_spi COMPONENT pubsub)
+target_link_libraries(celix_pubsub_interceptors_example PRIVATE Celix::framework Celix::pubsub_spi)
+target_include_directories(celix_pubsub_interceptors_example PRIVATE include)
