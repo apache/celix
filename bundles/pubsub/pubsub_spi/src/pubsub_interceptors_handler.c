@@ -76,7 +76,7 @@ celix_status_t pubsubInterceptorsHandler_create(celix_bundle_context_t *ctx, con
 celix_status_t pubsubInterceptorsHandler_destroy(pubsub_interceptors_handler_t *handler) {
     celix_bundleContext_stopTracker(handler->ctx, handler->interceptorsTrackerId);
 
-    free(handler->interceptors);
+    celix_arrayList_destroy(handler->interceptors);
     free(handler);
 
     return CELIX_SUCCESS;
