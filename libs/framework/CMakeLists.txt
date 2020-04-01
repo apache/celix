@@ -137,7 +137,7 @@ if (ENABLE_TESTING AND FRAMEWORK_TESTS)
         src/bundle.c
         src/celix_errorcodes.c
         private/mock/celix_log_mock.c)
-    target_link_libraries(bundle_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} Celix::utils pthread)
+    target_link_libraries(bundle_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} Celix::utils pthread -ldl)
 
     add_executable(capability_test
         private/test/capability_test.cpp

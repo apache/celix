@@ -20,9 +20,13 @@ add_celix_bundle(hello_world_cxx
     SOURCES src/BundleActivator.cc
 )
 
+set_target_properties(hello_world_cxx PROPERTIES LINK_FLAGS -Wl,--no-as-needed)
+target_link_libraries(hello_world_cxx PRIVATE -ldl)
+
 add_celix_container(hello_world_cxx_container
     BUNDLES
         Celix::shell
         Celix::shell_tui
         hello_world_cxx
+        Jansson
 )

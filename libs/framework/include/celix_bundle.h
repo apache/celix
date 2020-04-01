@@ -117,6 +117,8 @@ celix_array_list_t* celix_bundle_listServiceTrackers(const celix_bundle_t *bnd);
  */
 void celix_bundle_destroyServiceTrackerList(celix_array_list_t* list);
 
+void* celix_bundle_dlsym(const celix_bundle_t *bnd, const char * symbol);
+
 
 #ifdef __cplusplus
 }

@@ -22,6 +22,7 @@
 #include <service_tracker.h>
 #include <celix_constants.h>
 #include <celix_api.h>
+#include <dlfcn.h>
 
 #include "framework_private.h"
 #include "bundle_private.h"
@@ -704,4 +705,8 @@ void celix_bundle_destroyServiceTrackerList(celix_array_list_t* list) {
         }
         celix_arrayList_destroy(list);
     }
+}
+
+void* celix_bundle_dlsym(const celix_bundle_t *bnd, const char * symbol) {
+	return dlsym(bnd->handle, symbol);
 }

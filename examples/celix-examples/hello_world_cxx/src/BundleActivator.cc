@@ -26,8 +26,12 @@ namespace /*anon*/ {
 
     class BundleActivator {
     public:
-        BundleActivator(std::shared_ptr<celix::dm::DependencyManager> _mng) : mng{_mng} {
+        explicit BundleActivator(std::shared_ptr<celix::dm::DependencyManager> _mng) : mng{std::move(_mng)} {
             std::cout << "Hello world from C++ bundle with id " << bndId() << std::endl;
+            auto bnd = celix_bundleContext_getBundle(mng->bundleContext());
+            auto dlsym = celix_bundle_dlsym(bnd, "json_true");
+            std::cout << "dlsym: " << (dlsym == nullptr ? "nullptr" : "found") << "\n";
+
         }
         ~BundleActivator() {
             std::cout << "Goodbye world from C++ bundle with id " << bndId() << std::endl;
