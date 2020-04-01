@@ -15,14 +15,14 @@
 # specific language governing permissions and limitations
 # under the License.
 
-include_directories("common/include")
+add_celix_bundle(celix_pubsub_interceptors_example
+    SYMBOLIC_NAME "celix_pubsub_interceptors_example"
+    VERSION "1.0.0"
+    SOURCES 
+        src/ps_interceptor_activator.c
+        src/first_interceptor.c
+        src/second_interceptor.c
+)
 
-add_subdirectory(interceptors)
-add_subdirectory(publisher)
-add_subdirectory(publisher2)
-if (BUILD_PUBSUB_PSA_WS)
-    add_subdirectory(pubsub_websocket)
-endif()
-add_subdirectory(subscriber)
-
-
+target_link_libraries(celix_pubsub_interceptors_example PRIVATE Celix::framework Celix::pubsub_spi)
+target_include_directories(celix_pubsub_interceptors_example PRIVATE include)

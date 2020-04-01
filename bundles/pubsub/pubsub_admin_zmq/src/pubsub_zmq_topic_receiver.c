@@ -37,6 +37,8 @@
 #include <uuid/uuid.h>
 #include <pubsub_admin_metrics.h>
 
+#include "pubsub_interceptors_handler.h"
+
 #include "celix_utils_api.h"
 
 #define PSA_ZMQ_RECV_TIMEOUT 1000
@@ -65,6 +67,8 @@ struct pubsub_zmq_topic_receiver {
     char *scope;
     char *topic;
     bool metricsEnabled;
+
+    pubsub_interceptors_handler_t *interceptorsHandler;
 
     void *zmqCtx;
     void *zmqSock;
@@ -150,6 +154,7 @@ pubsub_zmq_topic_receiver_t* pubsub_zmqTopicReceiver_create(celix_bundle_context
     receiver->topic = strndup(topic, 1024 * 1024);
     receiver->metricsEnabled = celix_bundleContext_getPropertyAsBool(ctx, PSA_ZMQ_METRICS_ENABLED, PSA_ZMQ_DEFAULT_METRICS_ENABLED);
 
+    pubsubInterceptorsHandler_create(ctx, scope, topic, &receiver->interceptorsHandler);
 
 #ifdef BUILD_WITH_ZMQ_SECURITY
     char* keys_bundle_dir = pubsub_getKeysBundleDir(bundle_context);
@@ -320,6 +325,8 @@ void pubsub_zmqTopicReceiver_destroy(pubsub_zmq_topic_receiver_t *receiver) {
         zmq_close(receiver->zmqSock);
         zmq_ctx_term(receiver->zmqCtx);
 
+        pubsubInterceptorsHandler_destroy(receiver->interceptorsHandler);
+
         free(receiver->scope);
         free(receiver->topic);
     }
@@ -481,26 +488,34 @@ static inline void processMsgForSubscriberEntry(pubsub_zmq_topic_receiver_t *rec
     int updateSerError = 0;
 
     if (msgSer!= NULL) {
-        void *deSerializedMsg = NULL;
+        void *deserializedMsg = NULL;
         bool validVersion = psa_zmq_checkVersion(msgSer->msgVersion, message->header.msgMajorVersion, message->header.msgMinorVersion);
         if (validVersion) {
             if (monitor) {
                 clock_gettime(CLOCK_REALTIME, &beginSer);
             }
-            struct iovec deSerializeBuffer;
-            deSerializeBuffer.iov_base = message->payload.payload;
-            deSerializeBuffer.iov_len  = message->payload.length;
-            celix_status_t status = msgSer->deserialize(msgSer->handle, &deSerializeBuffer, 0, &deSerializedMsg);
+            celix_status_t status = msgSer->deserialize(msgSer->handle, message->payload.payload, message->payload.length, &deserializedMsg);
             if (monitor) {
                 clock_gettime(CLOCK_REALTIME, &endSer);
             }
             if (status == CELIX_SUCCESS) {
-                bool release = true;
-                svc->receive(svc->handle, msgSer->msgName, msgSer->msgId, deSerializedMsg, message->metadata.metadata, &release);
-                if (release) {
-                    msgSer->freeDeserializeMsg(msgSer->handle, deSerializedMsg);
+
+                const char *msgType = msgSer->msgName;
+                uint32_t msgId = message->header.msgId;
+                celix_properties_t *metadata = message->metadata.metadata;
+                bool cont = pubsubInterceptorHandler_invokePreReceive(receiver->interceptorsHandler, msgType, msgId, deserializedMsg, &metadata);
+                if (cont) {
+                    bool release = true;
+                    svc->receive(svc->handle, msgSer->msgName, msgSer->msgId, deserializedMsg,
+                                 metadata, &release);
+                    if (release) {
+                        msgSer->freeDeserializeMsg(msgSer->handle, deserializedMsg);
+                    }
+
+                    pubsubInterceptorHandler_invokePostReceive(receiver->interceptorsHandler, msgType, msgId, deserializedMsg, metadata);
+
+                    updateReceiveCount += 1;
                 }
-                updateReceiveCount += 1;
             } else {
                 updateSerError += 1;
                 L_WARN("[PSA_ZMQ_TR] Cannot deserialize msg type %s for scope/topic %s/%s", msgSer->msgName, receiver->scope, receiver->topic);
@@ -612,10 +627,15 @@ static void* psa_zmq_recvThread(void * data) {
                 if (message.header.payloadSize > 0) {
                     payload = zmsg_pop(zmsg);
                     receiver->protocol->decodePayload(receiver->protocol->handle, zframe_data(payload), zframe_size(payload), &message);
+                } else {
+                    message.payload.payload = NULL;
+                    message.payload.length = 0;
                 }
                 if (message.header.metadataSize > 0) {
                     metadata = zmsg_pop(zmsg);
                     receiver->protocol->decodeMetadata(receiver->protocol->handle, zframe_data(metadata), zframe_size(metadata), &message);
+                } else {
+                    message.metadata.metadata = NULL;
                 }
                 if (header != NULL && payload != NULL) {
                     struct timespec receiveTime;
