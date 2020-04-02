@@ -43,7 +43,6 @@
 #define UUID_STR_LEN  37
 #endif
 
-
 #define L_DEBUG(...) \
     logHelper_log(receiver->logHelper, OSGI_LOGSERVICE_DEBUG, __VA_ARGS__)
 #define L_INFO(...) \
@@ -113,14 +112,17 @@ typedef struct psa_tcp_subscriber_metrics_entry_t {
 typedef struct psa_tcp_subscriber_entry {
     int usageCount;
     hash_map_t *msgTypes; //map from serializer svc
-    hash_map_t *metrics; //key = msg type id, value = hash_map (key = origin uuid, value = psa_tcp_subscriber_metrics_entry_t*
+    hash_map_t
+        *metrics; //key = msg type id, value = hash_map (key = origin uuid, value = psa_tcp_subscriber_metrics_entry_t*
     pubsub_subscriber_t *svc;
     bool initialized; //true if the init function is called through the receive thread
 } psa_tcp_subscriber_entry_t;
 
+static void pubsub_tcpTopicReceiver_addSubscriber(void *handle, void *svc, const celix_properties_t *props,
+                                                  const celix_bundle_t *owner);
 
-static void pubsub_tcpTopicReceiver_addSubscriber(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner);
-static void pubsub_tcpTopicReceiver_removeSubscriber(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner);
+static void pubsub_tcpTopicReceiver_removeSubscriber(void *handle, void *svc, const celix_properties_t *props,
+                                                     const celix_bundle_t *owner);
 
 static void *psa_tcp_recvThread(void *data);
 
@@ -128,8 +130,10 @@ static void psa_tcp_connectToAllRequestedConnections(pubsub_tcp_topic_receiver_t
 
 static void psa_tcp_initializeAllSubscribers(pubsub_tcp_topic_receiver_t *receiver);
 
-static void processMsg(void *handle, const pubsub_protocol_message_t *hdr, bool* release, struct timespec *receiveTime);
+static void processMsg(void *handle, const pubsub_protocol_message_t *hdr, bool *release, struct timespec *receiveTime);
+
 static void psa_tcp_connectHandler(void *handle, const char *url, bool lock);
+
 static void psa_tcp_disConnectHandler(void *handle, const char *url, bool lock);
 
 static bool psa_tcp_checkVersion(version_pt msgVersion, uint16_t major, uint16_t minor);
@@ -151,7 +155,7 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
     receiver->serializer = serializer;
     receiver->protocolSvcId = protocolSvcId;
     receiver->protocol = protocol;
-    receiver->scope = strndup(scope, 1024 * 1024);
+    receiver->scope = scope == NULL ? NULL : strndup(scope, 1024 * 1024);
     receiver->topic = strndup(topic, 1024 * 1024);
 
     /* Check if it's a static endpoint */
@@ -162,24 +166,28 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
         staticConnectUrls = celix_properties_get(topicProperties, PUBSUB_TCP_STATIC_CONNECT_URLS, NULL);
         const char *endPointType = celix_properties_get(topicProperties, PUBSUB_TCP_STATIC_ENDPOINT_TYPE, NULL);
         if (endPointType != NULL) {
-            if (strncmp(PUBSUB_TCP_STATIC_ENDPOINT_TYPE_CLIENT, endPointType, strlen(PUBSUB_TCP_STATIC_ENDPOINT_TYPE_CLIENT)) == 0) {
+            if (strncmp(PUBSUB_TCP_STATIC_ENDPOINT_TYPE_CLIENT, endPointType,
+                        strlen(PUBSUB_TCP_STATIC_ENDPOINT_TYPE_CLIENT)) == 0) {
                 staticClientEndPointUrls = staticConnectUrls;
             }
-            if (strncmp(PUBSUB_TCP_STATIC_ENDPOINT_TYPE_SERVER, endPointType, strlen(PUBSUB_TCP_STATIC_ENDPOINT_TYPE_SERVER)) == 0) {
+            if (strncmp(PUBSUB_TCP_STATIC_ENDPOINT_TYPE_SERVER, endPointType,
+                        strlen(PUBSUB_TCP_STATIC_ENDPOINT_TYPE_SERVER)) == 0) {
                 staticServerEndPointUrls = celix_properties_get(topicProperties, PUBSUB_TCP_STATIC_BIND_URL, NULL);
             }
         }
     }
     // Set receiver connection thread timeout.
     // property is in ms, timeout value in us. (convert ms to us).
-    receiver->timeout =  celix_bundleContext_getPropertyAsLong(ctx, PSA_TCP_SUBSCRIBER_CONNECTION_TIMEOUT, PSA_TCP_SUBSCRIBER_CONNECTION_DEFAULT_TIMEOUT) * 1000;
+    receiver->timeout = celix_bundleContext_getPropertyAsLong(ctx, PSA_TCP_SUBSCRIBER_CONNECTION_TIMEOUT,
+                                                              PSA_TCP_SUBSCRIBER_CONNECTION_DEFAULT_TIMEOUT) * 1000;
     /* When it's an endpoint share the socket with the sender */
     if ((staticClientEndPointUrls != NULL) || (staticServerEndPointUrls)) {
         celixThreadMutex_lock(&endPointStore->mutex);
-        const char* endPointUrl = (staticServerEndPointUrls) ? staticServerEndPointUrls : staticClientEndPointUrls;
+        const char *endPointUrl = (staticServerEndPointUrls) ? staticServerEndPointUrls : staticClientEndPointUrls;
         pubsub_tcpHandler_t *entry = hashMap_get(endPointStore->map, endPointUrl);
         if (entry == NULL) {
-            if (receiver->socketHandler == NULL)  receiver->socketHandler = pubsub_tcpHandler_create(receiver->protocol, receiver->logHelper);
+            if (receiver->socketHandler == NULL)
+                receiver->socketHandler = pubsub_tcpHandler_create(receiver->protocol, receiver->logHelper);
             entry = receiver->socketHandler;
             receiver->sharedSocketHandler = receiver->socketHandler;
             hashMap_put(endPointStore->map, (void *) endPointUrl, entry);
@@ -193,18 +201,24 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
     }
 
     if (receiver->socketHandler != NULL) {
-        long prio         = celix_properties_getAsLong(topicProperties, PUBSUB_TCP_THREAD_REALTIME_PRIO, -1L);
+        long prio = celix_properties_getAsLong(topicProperties, PUBSUB_TCP_THREAD_REALTIME_PRIO, -1L);
         const char *sched = celix_properties_get(topicProperties, PUBSUB_TCP_THREAD_REALTIME_SCHED, NULL);
-        long retryCnt     = celix_properties_getAsLong(topicProperties, PUBSUB_TCP_SUBSCRIBER_RETRY_CNT_KEY, PUBSUB_TCP_SUBSCRIBER_RETRY_CNT_DEFAULT);
-        double rcvTimeout = celix_properties_getAsDouble(topicProperties, PUBSUB_TCP_SUBSCRIBER_RCVTIMEO_KEY, PUBSUB_TCP_SUBSCRIBER_RCVTIMEO_DEFAULT);
-        long sessions = celix_bundleContext_getPropertyAsLong(ctx, PSA_TCP_MAX_RECV_SESSIONS, PSA_TCP_DEFAULT_MAX_RECV_SESSIONS);
-        long buffer_size = celix_bundleContext_getPropertyAsLong(ctx, PSA_TCP_RECV_BUFFER_SIZE, PSA_TCP_DEFAULT_RECV_BUFFER_SIZE);
+        long retryCnt = celix_properties_getAsLong(topicProperties, PUBSUB_TCP_SUBSCRIBER_RETRY_CNT_KEY,
+                                                   PUBSUB_TCP_SUBSCRIBER_RETRY_CNT_DEFAULT);
+        double rcvTimeout = celix_properties_getAsDouble(topicProperties, PUBSUB_TCP_SUBSCRIBER_RCVTIMEO_KEY,
+                                                         PUBSUB_TCP_SUBSCRIBER_RCVTIMEO_DEFAULT);
+        long sessions = celix_bundleContext_getPropertyAsLong(ctx, PSA_TCP_MAX_RECV_SESSIONS,
+                                                              PSA_TCP_DEFAULT_MAX_RECV_SESSIONS);
+        long buffer_size = celix_bundleContext_getPropertyAsLong(ctx, PSA_TCP_RECV_BUFFER_SIZE,
+                                                                 PSA_TCP_DEFAULT_RECV_BUFFER_SIZE);
         long timeout = celix_bundleContext_getPropertyAsLong(ctx, PSA_TCP_TIMEOUT, PSA_TCP_DEFAULT_TIMEOUT);
         pubsub_tcpHandler_setThreadName(receiver->socketHandler, topic, scope);
-        pubsub_tcpHandler_createReceiveBufferStore(receiver->socketHandler, (unsigned int) sessions, (unsigned int) buffer_size);
+        pubsub_tcpHandler_createReceiveBufferStore(receiver->socketHandler, (unsigned int) sessions,
+                                                   (unsigned int) buffer_size);
         pubsub_tcpHandler_setTimeout(receiver->socketHandler, (unsigned int) timeout);
         pubsub_tcpHandler_addMessageHandler(receiver->socketHandler, receiver, processMsg);
-        pubsub_tcpHandler_addReceiverConnectionCallback(receiver->socketHandler, receiver, psa_tcp_connectHandler, psa_tcp_disConnectHandler);
+        pubsub_tcpHandler_addReceiverConnectionCallback(receiver->socketHandler, receiver, psa_tcp_connectHandler,
+                                                        psa_tcp_disConnectHandler);
         pubsub_tcpHandler_setThreadPriority(receiver->socketHandler, prio, sched);
         pubsub_tcpHandler_setReceiveRetryCnt(receiver->socketHandler, (unsigned int) retryCnt);
         pubsub_tcpHandler_setReceiveTimeOut(receiver->socketHandler, rcvTimeout);
@@ -221,18 +235,18 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
     receiver->requestedConnections.allConnected = false;
 
     if ((staticConnectUrls != NULL) && (receiver->socketHandler != NULL) && (staticServerEndPointUrls == NULL)) {
-      char *urlsCopy = strndup(staticConnectUrls, 1024 * 1024);
-      char *url;
-      char *save = urlsCopy;
-      while ((url = strtok_r(save, " ", &save))) {
-        psa_tcp_requested_connection_entry_t *entry = calloc(1, sizeof(*entry));
-        entry->statically = true;
-        entry->connected = false;
-        entry->url = strndup(url, 1024 * 1024);
-        entry->parent = receiver;
-        hashMap_put(receiver->requestedConnections.map, entry->url, entry);
-      }
-      free(urlsCopy);
+        char *urlsCopy = strndup(staticConnectUrls, 1024 * 1024);
+        char *url;
+        char *save = urlsCopy;
+        while ((url = strtok_r(save, " ", &save))) {
+            psa_tcp_requested_connection_entry_t *entry = calloc(1, sizeof(*entry));
+            entry->statically = true;
+            entry->connected = false;
+            entry->url = strndup(url, 1024 * 1024);
+            entry->parent = receiver;
+            hashMap_put(receiver->requestedConnections.map, entry->url, entry);
+        }
+        free(urlsCopy);
     }
 
     if (receiver->socketHandler != NULL) {
@@ -240,7 +254,7 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
         receiver->thread.running = true;
         celixThread_create(&receiver->thread.thread, NULL, psa_tcp_recvThread, receiver);
         char name[64];
-        snprintf(name, 64, "TCP CH %s/%s", scope, topic);
+        snprintf(name, 64, "TCP TR %s/%s", scope == NULL ? "(null)" : scope, topic);
         celixThread_setName(&receiver->thread.thread, name);
     }
 
@@ -260,18 +274,19 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
     }
 
     if (receiver->socketHandler == NULL) {
-        free(receiver->scope);
+        if (receiver->scope != NULL) {
+            free(receiver->scope);
+        }
         free(receiver->topic);
         free(receiver);
         receiver = NULL;
-        L_ERROR("[PSA_TCP] Cannot create TopicReceiver for %s/%s", scope, topic);
+        L_ERROR("[PSA_TCP] Cannot create TopicReceiver for %s/%s", scope == NULL ? "(null)" : scope, topic);
     }
     return receiver;
 }
 
 void pubsub_tcpTopicReceiver_destroy(pubsub_tcp_topic_receiver_t *receiver) {
     if (receiver != NULL) {
-
 
         celixThreadMutex_lock(&receiver->thread.mutex);
         if (receiver->thread.running) {
@@ -300,7 +315,6 @@ void pubsub_tcpTopicReceiver_destroy(pubsub_tcp_topic_receiver_t *receiver) {
         }
         hashMap_destroy(receiver->subscribers.map, false, false);
 
-
         celixThreadMutex_unlock(&receiver->subscribers.mutex);
 
         celixThreadMutex_lock(&receiver->requestedConnections.mutex);
@@ -326,7 +340,9 @@ void pubsub_tcpTopicReceiver_destroy(pubsub_tcp_topic_receiver_t *receiver) {
             receiver->socketHandler = NULL;
         }
 
-        free(receiver->scope);
+        if (receiver->scope != NULL) {
+            free(receiver->scope);
+        }
         free(receiver->topic);
     }
     free(receiver);
@@ -365,11 +381,13 @@ void pubsub_tcpTopicReceiver_listConnections(pubsub_tcp_topic_receiver_t *receiv
     celixThreadMutex_unlock(&receiver->requestedConnections.mutex);
 }
 
-
 void pubsub_tcpTopicReceiver_connectTo(
-        pubsub_tcp_topic_receiver_t *receiver,
-        const char *url) {
-    L_DEBUG("[PSA_TCP] TopicReceiver %s/%s connecting to tcp url %s", receiver->scope, receiver->topic, url);
+    pubsub_tcp_topic_receiver_t *receiver,
+    const char *url) {
+    L_DEBUG("[PSA_TCP] TopicReceiver %s/%s connecting to tcp url %s",
+            receiver->scope == NULL ? "(null)" : receiver->scope,
+            receiver->topic,
+            url);
 
     celixThreadMutex_lock(&receiver->requestedConnections.mutex);
     psa_tcp_requested_connection_entry_t *entry = hashMap_get(receiver->requestedConnections.map, url);
@@ -388,13 +406,17 @@ void pubsub_tcpTopicReceiver_connectTo(
 }
 
 void pubsub_tcpTopicReceiver_disconnectFrom(pubsub_tcp_topic_receiver_t *receiver, const char *url) {
-    L_DEBUG("[PSA TCP] TopicReceiver %s/%s disconnect from tcp url %s", receiver->scope, receiver->topic, url);
+    L_DEBUG("[PSA TCP] TopicReceiver %s/%s disconnect from tcp url %s",
+            receiver->scope == NULL ? "(null)" : receiver->scope,
+            receiver->topic,
+            url);
 
     celixThreadMutex_lock(&receiver->requestedConnections.mutex);
     psa_tcp_requested_connection_entry_t *entry = hashMap_remove(receiver->requestedConnections.map, url);
     if (entry != NULL) {
         int rc = pubsub_tcpHandler_disconnect(receiver->socketHandler, entry->url);
-        if (rc < 0) L_WARN("[PSA_TCP] Error disconnecting from tcp url %s. (%s)", url, strerror(errno));
+        if (rc < 0)
+            L_WARN("[PSA_TCP] Error disconnecting from tcp url %s. (%s)", url, strerror(errno));
     }
     if (entry != NULL) {
         free(entry->url);
@@ -403,16 +425,21 @@ void pubsub_tcpTopicReceiver_disconnectFrom(pubsub_tcp_topic_receiver_t *receive
     celixThreadMutex_unlock(&receiver->requestedConnections.mutex);
 }
 
-
 static void pubsub_tcpTopicReceiver_addSubscriber(void *handle, void *svc, const celix_properties_t *props,
                                                   const celix_bundle_t *bnd) {
     pubsub_tcp_topic_receiver_t *receiver = handle;
 
     long bndId = celix_bundle_getId(bnd);
-    const char *subScope = celix_properties_get(props, PUBSUB_SUBSCRIBER_SCOPE, "default");
-    if (strncmp(subScope, receiver->scope, strlen(receiver->scope)) != 0) {
-        //not the same scope. ignore
-        return;
+    const char *subScope = celix_properties_get(props, PUBSUB_SUBSCRIBER_SCOPE, NULL);
+    if (receiver->scope == NULL) {
+        if (subScope != NULL) {
+            return;
+        }
+    } else if (subScope != NULL) {
+        if (strncmp(subScope, receiver->scope, strlen(receiver->scope)) != 0) {
+            //not the same scope. ignore
+            return;
+        }
     }
 
     celixThreadMutex_lock(&receiver->subscribers.mutex);
@@ -427,7 +454,8 @@ static void pubsub_tcpTopicReceiver_addSubscriber(void *handle, void *svc, const
         entry->initialized = false;
         receiver->subscribers.allInitialized = false;
 
-        int rc = receiver->serializer->createSerializerMap(receiver->serializer->handle, (celix_bundle_t *) bnd, &entry->msgTypes);
+        int rc = receiver->serializer->createSerializerMap(receiver->serializer->handle, (celix_bundle_t *) bnd,
+                                                           &entry->msgTypes);
 
         if (rc == 0) {
             entry->metrics = hashMap_create(NULL, NULL, NULL, NULL);
@@ -442,14 +470,17 @@ static void pubsub_tcpTopicReceiver_addSubscriber(void *handle, void *svc, const
         if (rc == 0) {
             hashMap_put(receiver->subscribers.map, (void *) bndId, entry);
         } else {
-            L_ERROR("[PSA_TCP] Cannot create msg serializer map for TopicReceiver %s/%s", receiver->scope, receiver->topic);
+            L_ERROR("[PSA_TCP] Cannot create msg serializer map for TopicReceiver %s/%s",
+                    receiver->scope == NULL ? "(null)" : receiver->scope,
+                    receiver->topic);
             free(entry);
         }
     }
     celixThreadMutex_unlock(&receiver->subscribers.mutex);
 }
 
-static void pubsub_tcpTopicReceiver_removeSubscriber(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *bnd) {
+static void pubsub_tcpTopicReceiver_removeSubscriber(void *handle, void *svc, const celix_properties_t *props,
+                                                     const celix_bundle_t *bnd) {
     pubsub_tcp_topic_receiver_t *receiver = handle;
 
     long bndId = celix_bundle_getId(bnd);
@@ -464,7 +495,9 @@ static void pubsub_tcpTopicReceiver_removeSubscriber(void *handle, void *svc, co
         hashMap_remove(receiver->subscribers.map, (void *) bndId);
         int rc = receiver->serializer->destroySerializerMap(receiver->serializer->handle, entry->msgTypes);
         if (rc != 0) {
-            L_ERROR("[PSA_TCP] Cannot destroy msg serializers map for TopicReceiver %s/%s", receiver->scope, receiver->topic);
+            L_ERROR("[PSA_TCP] Cannot destroy msg serializers map for TopicReceiver %s/%s",
+                    receiver->scope == NULL ? "(null)" : receiver->scope,
+                    receiver->topic);
         }
         hash_map_iterator_t iter = hashMapIterator_construct(entry->metrics);
         while (hashMapIterator_hasNext(&iter)) {
@@ -477,9 +510,11 @@ static void pubsub_tcpTopicReceiver_removeSubscriber(void *handle, void *svc, co
     celixThreadMutex_unlock(&receiver->subscribers.mutex);
 }
 
-static inline void processMsgForSubscriberEntry(pubsub_tcp_topic_receiver_t *receiver, psa_tcp_subscriber_entry_t *entry, const pubsub_protocol_message_t *message,  bool* releaseMsg, struct timespec *receiveTime) {
+static inline void
+processMsgForSubscriberEntry(pubsub_tcp_topic_receiver_t *receiver, psa_tcp_subscriber_entry_t *entry,
+                             const pubsub_protocol_message_t *message, bool *releaseMsg, struct timespec *receiveTime) {
     //NOTE receiver->subscribers.mutex locked
-    pubsub_msg_serializer_t* msgSer = hashMap_get(entry->msgTypes, (void*)(uintptr_t)(message->header.msgId));
+    pubsub_msg_serializer_t *msgSer = hashMap_get(entry->msgTypes, (void *) (uintptr_t) (message->header.msgId));
     pubsub_subscriber_t *svc = entry->svc;
     bool monitor = receiver->metricsEnabled;
 
@@ -491,14 +526,15 @@ static inline void processMsgForSubscriberEntry(pubsub_tcp_topic_receiver_t *rec
 
     if (msgSer != NULL) {
         void *deSerializedMsg = NULL;
-        bool validVersion = psa_tcp_checkVersion(msgSer->msgVersion, message->header.msgMajorVersion, message->header.msgMinorVersion);
+        bool validVersion = psa_tcp_checkVersion(msgSer->msgVersion, message->header.msgMajorVersion,
+                                                 message->header.msgMinorVersion);
         if (validVersion) {
             if (monitor) {
                 clock_gettime(CLOCK_REALTIME, &beginSer);
             }
             struct iovec deSerializeBuffer;
             deSerializeBuffer.iov_base = message->payload.payload;
-            deSerializeBuffer.iov_len  = message->payload.length;
+            deSerializeBuffer.iov_len = message->payload.length;
             celix_status_t status = msgSer->deserialize(msgSer->handle, &deSerializeBuffer, 0, &deSerializedMsg);
             if (monitor) {
                 clock_gettime(CLOCK_REALTIME, &endSer);
@@ -510,14 +546,18 @@ static inline void processMsgForSubscriberEntry(pubsub_tcp_topic_receiver_t *rec
 
             if (status == CELIX_SUCCESS) {
                 bool release = true;
-                svc->receive(svc->handle, msgSer->msgName, msgSer->msgId, deSerializedMsg, message->metadata.metadata, &release);
+                svc->receive(svc->handle, msgSer->msgName, msgSer->msgId, deSerializedMsg, message->metadata.metadata,
+                             &release);
                 if (release) {
                     msgSer->freeDeserializeMsg(msgSer->handle, deSerializedMsg);
                 }
+                if (message->metadata.metadata)
+                    celix_properties_destroy(message->metadata.metadata);
                 updateReceiveCount += 1;
             } else {
                 updateSerError += 1;
-                L_WARN("[PSA_TCP_TR] Cannot deserialize msg type %s for scope/topic %s/%s", msgSer->msgName, receiver->scope, receiver->topic);
+                L_WARN("[PSA_TCP_TR] Cannot deserialize msg type %s for scope/topic %s/%s", msgSer->msgName,
+                       receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic);
             }
         }
     } else {
@@ -525,7 +565,8 @@ static inline void processMsgForSubscriberEntry(pubsub_tcp_topic_receiver_t *rec
     }
 }
 
-static void processMsg(void *handle, const pubsub_protocol_message_t *message, bool* release, struct timespec *receiveTime) {
+static void
+processMsg(void *handle, const pubsub_protocol_message_t *message, bool *release, struct timespec *receiveTime) {
     pubsub_tcp_topic_receiver_t *receiver = handle;
     celixThreadMutex_lock(&receiver->subscribers.mutex);
     hash_map_iterator_t iter = hashMapIterator_construct(receiver->subscribers.map);
@@ -579,7 +620,10 @@ static void *psa_tcp_recvThread(void *data) {
 
 pubsub_admin_receiver_metrics_t *pubsub_tcpTopicReceiver_metrics(pubsub_tcp_topic_receiver_t *receiver) {
     pubsub_admin_receiver_metrics_t *result = calloc(1, sizeof(*result));
-    snprintf(result->scope, PUBSUB_AMDIN_METRICS_NAME_MAX, "%s", receiver->scope);
+    snprintf(result->scope,
+             PUBSUB_AMDIN_METRICS_NAME_MAX,
+             "%s",
+             receiver->scope == NULL ? PUBSUB_DEFAULT_ENDPOINT_SCOPE : receiver->scope);
     snprintf(result->topic, PUBSUB_AMDIN_METRICS_NAME_MAX, "%s", receiver->topic);
 
     int msgTypesCount = 0;
@@ -603,7 +647,8 @@ pubsub_admin_receiver_metrics_t *pubsub_tcpTopicReceiver_metrics(pubsub_tcp_topi
         hash_map_iterator_t iter2 = hashMapIterator_construct(entry->metrics);
         while (hashMapIterator_hasNext(&iter2)) {
             hash_map_t *origins = hashMapIterator_nextValue(&iter2);
-            result->msgTypes[i].origins = calloc((size_t) hashMap_size(origins), sizeof(*(result->msgTypes[i].origins)));
+            result->msgTypes[i].origins = calloc((size_t) hashMap_size(origins),
+                                                 sizeof(*(result->msgTypes[i].origins)));
             result->msgTypes[i].nrOfOrigins = hashMap_size(origins);
             int k = 0;
             hash_map_iterator_t iter3 = hashMapIterator_construct(origins);
@@ -619,14 +664,17 @@ pubsub_admin_receiver_metrics_t *pubsub_tcpTopicReceiver_metrics(pubsub_tcp_topi
                     result->msgTypes[i].origins[k].averageDelayInSeconds = metrics->averageDelayInSeconds;
                     result->msgTypes[i].origins[k].maxDelayInSeconds = metrics->maxDelayInSeconds;
                     result->msgTypes[i].origins[k].minDelayInSeconds = metrics->minDelayInSeconds;
-                    result->msgTypes[i].origins[k].averageTimeBetweenMessagesInSeconds = metrics->averageTimeBetweenMessagesInSeconds;
-                    result->msgTypes[i].origins[k].averageSerializationTimeInSeconds = metrics->averageSerializationTimeInSeconds;
+                    result->msgTypes[i].origins[k].averageTimeBetweenMessagesInSeconds =
+                        metrics->averageTimeBetweenMessagesInSeconds;
+                    result->msgTypes[i].origins[k].averageSerializationTimeInSeconds =
+                        metrics->averageSerializationTimeInSeconds;
                     result->msgTypes[i].origins[k].lastMessageReceived = metrics->lastMessageReceived;
                     result->msgTypes[i].origins[k].nrOfMissingSeqNumbers = metrics->nrOfMissingSeqNumbers;
 
                     k += 1;
                 } else {
-                    L_WARN("[PSA_TCP]: Error cannot find key 0x%X in msg map during metrics collection!\n", metrics->msgTypeId);
+                    L_WARN("[PSA_TCP]: Error cannot find key 0x%X in msg map during metrics collection!\n",
+                           metrics->msgTypeId);
                 }
             }
             i += 1;
@@ -636,7 +684,6 @@ pubsub_admin_receiver_metrics_t *pubsub_tcpTopicReceiver_metrics(pubsub_tcp_topi
     return result;
 }
 
-
 static void psa_tcp_connectToAllRequestedConnections(pubsub_tcp_topic_receiver_t *receiver) {
     celixThreadMutex_lock(&receiver->requestedConnections.mutex);
     if (!receiver->requestedConnections.allConnected) {
@@ -645,7 +692,7 @@ static void psa_tcp_connectToAllRequestedConnections(pubsub_tcp_topic_receiver_t
         while (hashMapIterator_hasNext(&iter)) {
             psa_tcp_requested_connection_entry_t *entry = hashMapIterator_nextValue(&iter);
             if (!entry->connected) {
-                int rc =  pubsub_tcpHandler_connect(entry->parent->socketHandler, entry->url);
+                int rc = pubsub_tcpHandler_connect(entry->parent->socketHandler, entry->url);
                 if (rc < 0) {
                     //L_WARN("[PSA_TCP] Error connecting to tcp url %s\n", entry->url);
                     allConnected = false;
@@ -659,8 +706,12 @@ static void psa_tcp_connectToAllRequestedConnections(pubsub_tcp_topic_receiver_t
 
 static void psa_tcp_connectHandler(void *handle, const char *url, bool lock) {
     pubsub_tcp_topic_receiver_t *receiver = handle;
-    L_DEBUG("[PSA_TCP] TopicReceiver %s/%s connecting to tcp url %s", receiver->scope, receiver->topic, url);
-    if (lock) celixThreadMutex_lock(&receiver->requestedConnections.mutex);
+    L_DEBUG("[PSA_TCP] TopicReceiver %s/%s connecting to tcp url %s",
+            receiver->scope == NULL ? "(null)" : receiver->scope,
+            receiver->topic,
+            url);
+    if (lock)
+        celixThreadMutex_lock(&receiver->requestedConnections.mutex);
     psa_tcp_requested_connection_entry_t *entry = hashMap_get(receiver->requestedConnections.map, url);
     if (entry == NULL) {
         entry = calloc(1, sizeof(*entry));
@@ -671,21 +722,26 @@ static void psa_tcp_connectHandler(void *handle, const char *url, bool lock) {
         receiver->requestedConnections.allConnected = false;
     }
     entry->connected = true;
-    if (lock) celixThreadMutex_unlock(&receiver->requestedConnections.mutex);
+    if (lock)
+        celixThreadMutex_unlock(&receiver->requestedConnections.mutex);
 }
 
 static void psa_tcp_disConnectHandler(void *handle, const char *url, bool lock) {
     pubsub_tcp_topic_receiver_t *receiver = handle;
-    L_DEBUG("[PSA TCP] TopicReceiver %s/%s disconnect from tcp url %s", receiver->scope, receiver->topic, url);
-    if (lock) celixThreadMutex_lock(&receiver->requestedConnections.mutex);
+    L_DEBUG("[PSA TCP] TopicReceiver %s/%s disconnect from tcp url %s",
+            receiver->scope == NULL ? "(null)" : receiver->scope,
+            receiver->topic,
+            url);
+    if (lock)
+        celixThreadMutex_lock(&receiver->requestedConnections.mutex);
     psa_tcp_requested_connection_entry_t *entry = hashMap_get(receiver->requestedConnections.map, url);
     if (entry != NULL) {
-      entry->connected = false;
-      receiver->requestedConnections.allConnected = false;
+        entry->connected = false;
+        receiver->requestedConnections.allConnected = false;
     }
-    if (lock) celixThreadMutex_unlock(&receiver->requestedConnections.mutex);
+    if (lock)
+        celixThreadMutex_unlock(&receiver->requestedConnections.mutex);
 }
-
 
 static void psa_tcp_initializeAllSubscribers(pubsub_tcp_topic_receiver_t *receiver) {
     celixThreadMutex_lock(&receiver->subscribers.mutex);
@@ -713,7 +769,7 @@ static void psa_tcp_initializeAllSubscribers(pubsub_tcp_topic_receiver_t *receiv
 }
 
 static bool psa_tcp_checkVersion(version_pt msgVersion, uint16_t major, uint16_t minor) {
-    bool check=false;
+    bool check = false;
 
     if (major == 0 && minor == 0) {
         //no check
@@ -722,11 +778,12 @@ static bool psa_tcp_checkVersion(version_pt msgVersion, uint16_t major, uint16_t
 
     int versionMajor;
     int versionMinor;
-    if (msgVersion!=NULL) {
+    if (msgVersion != NULL) {
         version_getMajor(msgVersion, &versionMajor);
         version_getMinor(msgVersion, &versionMinor);
-        if (major==((unsigned char)versionMajor)) { /* Different major means incompatible */
-            check = (minor>=((unsigned char)versionMinor)); /* Compatible only if the provider has a minor equals or greater (means compatible update) */
+        if (major == ((unsigned char) versionMajor)) { /* Different major means incompatible */
+            check = (minor >=
+                ((unsigned char) versionMinor)); /* Compatible only if the provider has a minor equals or greater (means compatible update) */
         }
     }
 

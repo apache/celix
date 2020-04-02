@@ -192,6 +192,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
                 Celix::pubsub_admin_zmq
                 Celix::pubsub_admin_udp_multicast
                 Celix::pubsub_admin_tcp
+                Celix::pubsub_protocol_wire_v1
                 celix_pubsub_poi_publisher
                 celix_pubsub_poi_publisher2
         )
@@ -208,6 +209,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
                 Celix::pubsub_admin_zmq
                 Celix::pubsub_admin_udp_multicast
                 Celix::pubsub_admin_tcp
+                Celix::pubsub_protocol_wire_v1
                 celix_pubsub_poi_subscriber
         )
         target_link_libraries(pubsub_subscriber PRIVATE ${PUBSUB_CONTAINER_LIBS})
@@ -242,6 +244,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             Celix::pubsub_admin_zmq
             celix_pubsub_poi_publisher
             celix_pubsub_poi_publisher2
+            celix_pubsub_interceptors_example
         PROPERTIES
             PSA_ZMQ_VERBOSE=true
             PUBSUB_ETCD_DISCOVERY_VERBOSE=true
@@ -261,6 +264,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             Celix::pubsub_topology_manager
             Celix::pubsub_admin_zmq
             celix_pubsub_poi_subscriber
+            celix_pubsub_interceptors_example
         PROPERTIES
             PSA_ZMQ_VERBOSE=true
             PUBSUB_ETCD_DISCOVERY_VERBOSE=true

@@ -98,7 +98,7 @@ pubsub_udpmc_topic_sender_t* pubsub_udpmcTopicSender_create(
     sender->ctx = ctx;
     sender->serializerSvcId = serializerSvcId;
     sender->serializer = serializer;
-    sender->scope = strndup(scope, 1024 * 1024);
+    sender->scope = scope == NULL ? NULL : strndup(scope, 1024 * 1024);
     sender->topic = strndup(topic, 1024 * 1024);
 
     celixThreadMutex_create(&sender->boundedServices.mutex, NULL);
@@ -135,7 +135,9 @@ pubsub_udpmc_topic_sender_t* pubsub_udpmcTopicSender_create(
         {
             celix_properties_t *props = celix_properties_create();
             celix_properties_set(props, PUBSUB_PUBLISHER_TOPIC, sender->topic);
-            celix_properties_set(props, PUBSUB_PUBLISHER_SCOPE, sender->scope);
+            if (sender->scope != NULL) {
+                celix_properties_set(props, PUBSUB_PUBLISHER_SCOPE, sender->scope);
+            }
 
             celix_service_registration_options_t opts = CELIX_EMPTY_SERVICE_REGISTRATION_OPTIONS;
             opts.factory = &sender->publisher.factory;
@@ -159,7 +161,9 @@ void pubsub_udpmcTopicSender_destroy(pubsub_udpmc_topic_sender_t *sender) {
         //TODO loop and cleanup?
         hashMap_destroy(sender->boundedServices.map, false, true);
 
-        free(sender->scope);
+        if (sender->scope != NULL) {
+            free(sender->scope);
+        }
         free(sender->topic);
         free(sender->socketAddress);
         free(sender);

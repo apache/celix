@@ -247,16 +247,16 @@ celix_status_t serviceTracker_close(service_tracker_pt tracker) {
 
     if (instance != NULL) {
         celixThreadRwlock_writeLock(&instance->lock);
-        int size = celix_arrayList_size(instance->trackedServices);
+        unsigned int size = celix_arrayList_size(instance->trackedServices);
         celix_tracked_entry_t *trackedEntries[size];
-        for (int i = 0; i < arrayList_size(instance->trackedServices); i++) {
+        for (unsigned int i = 0u; i < arrayList_size(instance->trackedServices); i++) {
             trackedEntries[i] = (celix_tracked_entry_t *) arrayList_get(instance->trackedServices, i);
         }
         arrayList_clear(instance->trackedServices);
         celixThreadRwlock_unlock(&instance->lock);
 
         //loop trough tracked entries an untrack
-        for (int i = 0; i < size; i++) {
+        for (unsigned int i = 0u; i < size; i++) {
             serviceTracker_untrackTracked(instance, trackedEntries[i]);
         }
 

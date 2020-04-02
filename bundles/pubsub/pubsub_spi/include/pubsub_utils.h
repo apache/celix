@@ -38,7 +38,7 @@ extern "C" {
  * present an allocated scope string.
  * The caller is owner of the topic and scope output string.
  */
-celix_status_t pubsub_getPubSubInfoFromFilter(const char* filterstr, char **topic, char **scope);
+celix_status_t pubsub_getPubSubInfoFromFilter(const char* filterstr, char **scope, char **topic);
 
 /**
  * Loop through all bundles and look for the bundle with the keys inside.
@@ -164,12 +164,12 @@ bool pubsub_utils_matchEndpoint(
  * The caller is owner of the returned topic properties.
  *
  * @param bundle         The bundle where the properties reside.
- * @param topic          The topic name.
  * @param scope          The scope name.
+ * @param topic          The topic name.
  * @param isPublisher    true if the topic properties for a publisher should be found.
  * @return               The topic properties if found or NULL.
  */
-celix_properties_t* pubsub_utils_getTopicProperties(const celix_bundle_t *bundle, const char *topic, const char *scope, bool isPublisher);
+celix_properties_t* pubsub_utils_getTopicProperties(const celix_bundle_t *bundle, const char *scope, const char *topic, bool isPublisher);
 
 #ifdef __cplusplus
 }

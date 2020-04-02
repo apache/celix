@@ -436,7 +436,7 @@ void pubsub_topologyManager_publisherTrackerAdded(void *handle, const celix_serv
 
     char *topicFromFilter = NULL;
     char *scopeFromFilter = NULL;
-    pubsub_getPubSubInfoFromFilter(info->filter->filterStr, &topicFromFilter, &scopeFromFilter);
+    pubsub_getPubSubInfoFromFilter(info->filter->filterStr, &scopeFromFilter, &topicFromFilter);
     char *scope = scopeFromFilter == NULL ? strndup("default", 32) : scopeFromFilter;
     char *topic = topicFromFilter;
 
@@ -490,7 +490,7 @@ void pubsub_topologyManager_publisherTrackerRemoved(void *handle, const celix_se
 
     char *topic = NULL;
     char *scopeFromFilter = NULL;
-    pubsub_getPubSubInfoFromFilter(info->filter->filterStr, &topic, &scopeFromFilter);
+    pubsub_getPubSubInfoFromFilter(info->filter->filterStr, &scopeFromFilter, &topic);
     const char *scope = scopeFromFilter == NULL ? "default" : scopeFromFilter;
 
     if (topic == NULL) {

@@ -15,11 +15,14 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(DEVICE_ACCESS "Option to enable building the Device Access Service bundles" ON DEPS LAUNCHER LOG_SERVICE SHELL shell_tui)
-if(DEVICE_ACCESS)
+add_celix_bundle(celix_pubsub_interceptors_example
+    SYMBOLIC_NAME "celix_pubsub_interceptors_example"
+    VERSION "1.0.0"
+    SOURCES 
+        src/ps_interceptor_activator.c
+        src/first_interceptor.c
+        src/second_interceptor.c
+)
 
-    add_subdirectory(device_access)
-    add_subdirectory(driver_locator)   
-    add_subdirectory(example)
-
-endif(DEVICE_ACCESS)
+target_link_libraries(celix_pubsub_interceptors_example PRIVATE Celix::framework Celix::pubsub_spi)
+target_include_directories(celix_pubsub_interceptors_example PRIVATE include)

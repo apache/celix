@@ -24,7 +24,6 @@
 extern "C" {
 #endif
 
-
 typedef struct pubsub_utils_url {
   char *url;
   char *protocol;
@@ -36,16 +35,15 @@ typedef struct pubsub_utils_url {
   char *interface_url;
 } pubsub_utils_url_t;
 
-
-struct sockaddr_in* pubsub_utils_url_from_fd(int fd);
-struct sockaddr_in* pubsub_utils_url_getInAddr(const char *hostname, int port);
-char* pubsub_utils_url_generate_url(char* hostname, unsigned int portnr, char* protocol);
-char* pubsub_utils_url_get_url(struct sockaddr_in *inp, char* protocol);
-bool pubsub_utils_url_is_multicast(char* hostname);
-char* pubsub_utils_url_get_multicast_ip(char* hostname);
-char* pubsub_utils_url_get_ip(char* hostname);
-void pubsub_utils_url_parse_url(char *_url, pubsub_utils_url_t* url_info);
-pubsub_utils_url_t* pubsub_utils_url_parse(char *url);
+struct sockaddr_in *pubsub_utils_url_from_fd(int fd);
+struct sockaddr_in *pubsub_utils_url_getInAddr(const char *hostname, int port);
+char *pubsub_utils_url_generate_url(char *hostname, unsigned int portnr, char *protocol);
+char *pubsub_utils_url_get_url(struct sockaddr_in *inp, char *protocol);
+bool pubsub_utils_url_is_multicast(char *hostname);
+char *pubsub_utils_url_get_multicast_ip(char *hostname);
+char *pubsub_utils_url_get_ip(char *hostname);
+void pubsub_utils_url_parse_url(char *_url, pubsub_utils_url_t *url_info);
+pubsub_utils_url_t *pubsub_utils_url_parse(char *url);
 void pubsub_utils_url_free(pubsub_utils_url_t *url_info);
 
 #ifdef __cplusplus

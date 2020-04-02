@@ -510,7 +510,7 @@ celix_status_t pubsub_zmqAdmin_setupTopicSender(void *handle, const char *scope,
         }
     } else {
         free(key);
-        L_ERROR("[PSA_ZMQ] Cannot setup already existing TopicSender for scope/topic %s/%s!", scope, topic);
+        L_ERROR("[PSA_ZMQ] Cannot setup already existing TopicSender for scope/topic %s/%s!", scope == NULL ? "(null)" : scope, topic);
     }
     celixThreadMutex_unlock(&psa->topicSenders.mutex);
     celixThreadMutex_unlock(&psa->protocols.mutex);
@@ -544,7 +544,7 @@ celix_status_t pubsub_zmqAdmin_teardownTopicSender(void *handle, const char *sco
         //TODO disconnect endpoints to sender. note is this needed for a zmq topic sender?
         pubsub_zmqTopicSender_destroy(sender);
     } else {
-        L_ERROR("[PSA ZMQ] Cannot teardown TopicSender with scope/topic %s/%s. Does not exists", scope, topic);
+        L_ERROR("[PSA ZMQ] Cannot teardown TopicSender with scope/topic %s/%s. Does not exists", scope == NULL ? "(null)" : scope, topic);
     }
     celixThreadMutex_unlock(&psa->topicSenders.mutex);
     free(key);
@@ -568,7 +568,7 @@ celix_status_t pubsub_zmqAdmin_setupTopicReceiver(void *handle, const char *scop
         if (serEntry != NULL && protEntry != NULL) {
             receiver = pubsub_zmqTopicReceiver_create(psa->ctx, psa->log, scope, topic, topicProperties, serializerSvcId, serEntry->svc, protocolSvcId, protEntry->svc);
         } else {
-            L_ERROR("[PSA_ZMQ] Cannot find serializer or protocol for TopicSender %s/%s", scope, topic);
+            L_ERROR("[PSA_ZMQ] Cannot find serializer or protocol for TopicSender %s/%s", scope == NULL ? "(null)" : scope, topic);
         }
         if (receiver != NULL) {
             const char *psaType = PUBSUB_ZMQ_ADMIN_TYPE;
@@ -588,7 +588,7 @@ celix_status_t pubsub_zmqAdmin_setupTopicReceiver(void *handle, const char *scop
         }
     } else {
         free(key);
-        L_ERROR("[PSA_ZMQ] Cannot setup already existing TopicReceiver for scope/topic %s/%s!", scope, topic);
+        L_ERROR("[PSA_ZMQ] Cannot setup already existing TopicReceiver for scope/topic %s/%s!", scope == NULL ? "(null)" : scope, topic);
     }
     celixThreadMutex_unlock(&psa->topicReceivers.mutex);
     celixThreadMutex_unlock(&psa->protocols.mutex);
@@ -647,34 +647,7 @@ static celix_status_t pubsub_zmqAdmin_connectEndpointToReceiver(pubsub_zmq_admin
         L_WARN("[PSA ZMQ] Error got endpoint without a zmq url (admin: %s, type: %s)", admin , type);
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
-        const char *scope = pubsub_zmqTopicReceiver_scope(receiver);
-        const char *topic = pubsub_zmqTopicReceiver_topic(receiver);
-        const char *serializer = NULL;
-        long serializerSvcId = pubsub_zmqTopicReceiver_serializerSvcId(receiver);
-        psa_zmq_serializer_entry_t *serializerEntry = hashMap_get(psa->serializers.map, (void*)serializerSvcId);
-        if (serializerEntry != NULL) {
-            serializer = serializerEntry->serType;
-        }
-        const char *protocol = NULL;
-        long protocolSvcId = pubsub_zmqTopicReceiver_protocolSvcId(receiver);
-        psa_zmq_protocol_entry_t *protocolEntry = hashMap_get(psa->protocols.map, (void*)protocolSvcId);
-        if (protocolEntry != NULL) {
-            protocol = protocolEntry->protType;
-        }
-
-        const char *eScope = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_SCOPE, NULL);
-        const char *eTopic = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_NAME, NULL);
-        const char *eSerializer = celix_properties_get(endpoint, PUBSUB_ENDPOINT_SERIALIZER, NULL);
-        const char *eProtocol = celix_properties_get(endpoint, PUBSUB_ENDPOINT_PROTOCOL, NULL);
-
-        if (scope != NULL && topic != NULL && serializer != NULL && protocol != NULL
-                        && eScope != NULL && eTopic != NULL && eSerializer != NULL && eProtocol != NULL
-                        && strncmp(eScope, scope, 1024*1024) == 0
-                        && strncmp(eTopic, topic, 1024*1024) == 0
-                        && strncmp(eSerializer, serializer, 1024*1024) == 0
-                        && strncmp(eProtocol, protocol, 1024*1024) == 0) {
-            pubsub_zmqTopicReceiver_connectTo(receiver, url);
-        }
+        pubsub_zmqTopicReceiver_connectTo(receiver, url);
     }
 
     return status;
@@ -685,11 +658,15 @@ celix_status_t pubsub_zmqAdmin_addDiscoveredEndpoint(void *handle, const celix_p
 
     if (pubsub_zmqAdmin_endpointIsPublisher(endpoint)) {
         celixThreadMutex_lock(&psa->topicReceivers.mutex);
-        hash_map_iterator_t iter = hashMapIterator_construct(psa->topicReceivers.map);
-        while (hashMapIterator_hasNext(&iter)) {
-            pubsub_zmq_topic_receiver_t *receiver = hashMapIterator_nextValue(&iter);
+        const char *scope = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_SCOPE, NULL);
+        const char *topic = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_NAME, NULL);
+        char *key = pubsubEndpoint_createScopeTopicKey(scope, topic);
+
+        pubsub_zmq_topic_receiver_t *receiver = hashMap_get(psa->topicReceivers.map, key);
+        if (receiver != NULL) {
             pubsub_zmqAdmin_connectEndpointToReceiver(psa, receiver, endpoint);
         }
+        free(key);
         celixThreadMutex_unlock(&psa->topicReceivers.mutex);
     }
 
@@ -771,7 +748,7 @@ bool pubsub_zmqAdmin_executeCommand(void *handle, const char *commandLine __attr
         const char *topic = pubsub_zmqTopicSender_topic(sender);
         const char *url = pubsub_zmqTopicSender_url(sender);
         const char *postUrl = pubsub_zmqTopicSender_isStatic(sender) ? " (static)" : "";
-        fprintf(out, "|- Topic Sender %s/%s\n", scope, topic);
+        fprintf(out, "|- Topic Sender %s/%s\n", scope == NULL ? "(null)" : scope, topic);
         fprintf(out, "   |- serializer type = %s\n", serType);
         fprintf(out, "   |- protocol type = %s\n", protType);
         fprintf(out, "   |- url            = %s%s\n", url, postUrl);
@@ -804,7 +781,7 @@ bool pubsub_zmqAdmin_executeCommand(void *handle, const char *commandLine __attr
         celix_array_list_t *unconnected = celix_arrayList_create();
         pubsub_zmqTopicReceiver_listConnections(receiver, connected, unconnected);
 
-        fprintf(out, "|- Topic Receiver %s/%s\n", scope, topic);
+        fprintf(out, "|- Topic Receiver %s/%s\n", scope == NULL ? "(null)" : scope, topic);
         fprintf(out, "   |- serializer type = %s\n", serType);
         fprintf(out, "   |- protocol type = %s\n", protType);
         for (int i = 0; i < celix_arrayList_size(connected); ++i) {

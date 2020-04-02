@@ -38,9 +38,6 @@
 #define PUBSUB_PUBLISHER_TOPIC                  "topic"
 #define PUBSUB_PUBLISHER_SCOPE                  "scope"
 #define PUBSUB_PUBLISHER_CONFIG                 "pubsub.config"
- 
-#define PUBSUB_PUBLISHER_SCOPE_DEFAULT          "default"
-
 
 struct pubsub_publisher {
     void *handle;
