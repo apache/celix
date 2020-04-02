@@ -35,9 +35,11 @@
 #include <netdb.h>
 #include <stdbool.h>
 #include "pubsub_utils_url.h"
+#include <utils.h>
 
 unsigned int pubsub_utils_url_rand_range(unsigned int min, unsigned int max) {
-    if (!min || !max) return 0;
+    if (!min || !max)
+        return 0;
     double scaled = ((double) random()) / ((double) RAND_MAX);
     return (unsigned int) ((max - min + 1) * scaled + min);
 }
@@ -97,7 +99,8 @@ char *pubsub_utils_url_generate_url(char *hostname, unsigned int portnr, char *p
 
 char *pubsub_utils_url_get_url(struct sockaddr_in *inp, char *protocol) {
     char *url = NULL;
-    if (inp == NULL) return url;
+    if (inp == NULL)
+        return url;
     char host[NI_MAXHOST];
     char service[NI_MAXSERV];
     if ((getnameinfo((struct sockaddr *) inp, sizeof(struct sockaddr_in), host, NI_MAXHOST, service, NI_MAXSERV,
@@ -125,7 +128,8 @@ char *pubsub_utils_url_get_multicast_ip(char *hostname) {
         char *subNet = strchr(hostname, '/');
         if (subNet != NULL) {
             unsigned int length = strlen(subNet);
-            if ((length <= 1) || isalpha(subNet[1])) return ip;
+            if ((length <= 1) || isalpha(subNet[1]))
+                return ip;
             char *input = strndup(hostname, 19); // Make a copy as otherwise strtok_r manipulates the input string
             char *savePtr;
             char *inputIp = strtok_r(input, "/", &savePtr);
@@ -135,7 +139,8 @@ char *pubsub_utils_url_get_multicast_ip(char *hostname) {
             struct sockaddr_in address;
             address.sin_family = AF_INET;
             address.sin_port = 0;
-            if (!inet_aton(inputIp, &address.sin_addr)) return NULL;
+            if (!inet_aton(inputIp, &address.sin_addr))
+                return NULL;
             unsigned int ipAsUint = ntohl(address.sin_addr.s_addr);
             unsigned int bitmask = ipUtils_prefixToBitmask(inputPrefix);
             unsigned int ipRangeStart = ipAsUint & bitmask;
@@ -152,14 +157,17 @@ char *pubsub_utils_url_get_ip(char *_hostname) {
     char *ip = NULL;
     if (_hostname) {
         char *subNet = strstr(_hostname, "/");
-        char *hostname = strtok(strdup(_hostname), "/");
+        char *hostname = strtok(celix_utils_strdup(_hostname), "/");
         if (subNet != NULL) {
             unsigned int length = strlen(subNet);
             if ((length > 1) && isdigit(subNet[1])) {
                 bool is_multicast = pubsub_utils_url_is_multicast(_hostname);
-                if (is_multicast) ip = pubsub_utils_url_get_multicast_ip(_hostname);
-                else ip = ipUtils_findIpBySubnet(_hostname);
-                if (ip == NULL) fprintf(stderr, "Could not find interface for requested subnet %s\n", _hostname);
+                if (is_multicast)
+                    ip = pubsub_utils_url_get_multicast_ip(_hostname);
+                else
+                    ip = ipUtils_findIpBySubnet(_hostname);
+                if (ip == NULL)
+                    fprintf(stderr, "Could not find interface for requested subnet %s\n", _hostname);
             }
         }
         free(hostname);
@@ -168,11 +176,14 @@ char *pubsub_utils_url_get_ip(char *_hostname) {
 }
 
 void pubsub_utils_url_parse_url(char *_url, pubsub_utils_url_t *url_info) {
-    if (!_url || !url_info) return;
-    char *url_copy = strdup(_url);
+    if (!_url || !url_info)
+        return;
+    char *url_copy = celix_utils_strdup(_url);
     char *url = strstr(url_copy, "://");
     if (url) {
-        url_info->protocol = strtok(strdup(url_copy), "://");
+        char* protocol = celix_utils_strdup(url_copy);
+        url_info->protocol = celix_utils_strdup(strtok(protocol, "://"));
+        if (protocol) free(protocol);
         url += 3;
     } else {
         url = url_copy;
@@ -182,26 +193,27 @@ void pubsub_utils_url_parse_url(char *_url, pubsub_utils_url_t *url_info) {
     unsigned int length = strlen(url);
     if (url[0] == ';') {
         *url++ = '\0';
-        hostname = strdup(url);
+        hostname = celix_utils_strdup(url);
     } else if ((url[0] == '/') && ((length > 1) && (isalpha(url[1])))) {
-        url_info->uri = strdup(url);
+        url_info->uri = celix_utils_strdup(url);
     } else {
         interface = strstr(url, ";");
         if (!interface) {
             interface = strstr(url, "@");
-            hostname = strtok(strdup(url), "@");
+            hostname = strtok(celix_utils_strdup(url), "@");
         }
-        if (!hostname) hostname = strtok(strdup(url), ";");
+        if (!hostname)
+            hostname = strtok(celix_utils_strdup(url), ";");
     }
 
     if (hostname) {
         // Get port number
         char *port = strstr(hostname, ":");
-        url_info->hostname = strtok(strdup(hostname), ":");
+        url_info->hostname = strtok(celix_utils_strdup(hostname), ":");
         char *uri = strstr(url_info->hostname, "/");
         if (port) {
             port += 1;
-            char *portnr = strtok(strdup(port), "-");
+            char *portnr = strtok(celix_utils_strdup(port), "-");
             char *maxPortnr = strstr(port, "-");
             if (maxPortnr) {
                 maxPortnr += 1;
@@ -210,15 +222,18 @@ void pubsub_utils_url_parse_url(char *_url, pubsub_utils_url_t *url_info) {
                 url_info->portnr = pubsub_utils_url_rand_range(minDigits, maxDigits);
             } else {
                 unsigned int portDigits = (unsigned int) atoi(portnr);
-                if (portDigits != 0) url_info->portnr = portDigits;
+                if (portDigits != 0)
+                    url_info->portnr = portDigits;
                 uri = strstr(port, "/");
-                if (uri) url_info->uri = strdup(uri);
+                if (uri)
+                    url_info->uri = celix_utils_strdup(uri);
             }
-            if (portnr) free(portnr);
+            if (portnr)
+                free(portnr);
         } else if (uri) {
             length = strlen(uri);
             if ((length > 1) && isalpha(uri[1])) {
-                url_info->uri = strdup(uri);
+                url_info->uri = celix_utils_strdup(uri);
                 *uri = '\0';
             }
         }
@@ -229,11 +244,11 @@ void pubsub_utils_url_parse_url(char *_url, pubsub_utils_url_t *url_info) {
         *interface++ = '0';
         // Get port number
         char *port = strstr(interface, ":");
-        url_info->interface = strtok(strdup(interface), ":");
+        url_info->interface = strtok(celix_utils_strdup(interface), ":");
         char *uri = strstr(url_info->interface, "/");
         if (port) {
             port += 1;
-            char *portnr = strtok(strdup(port), "-");
+            char *portnr = strtok(celix_utils_strdup(port), "-");
             char *maxPortnr = strstr(port, "-");
             if (maxPortnr) {
                 maxPortnr += 1;
@@ -242,22 +257,24 @@ void pubsub_utils_url_parse_url(char *_url, pubsub_utils_url_t *url_info) {
                 url_info->interface_portnr = pubsub_utils_url_rand_range(minDigits, maxDigits);
             } else {
                 unsigned int portDigits = (unsigned int) atoi(portnr);
-                if (portDigits != 0) url_info->interface_portnr = portDigits;
+                if (portDigits != 0)
+                    url_info->interface_portnr = portDigits;
                 uri = strstr(port, "/");
-                if (uri) url_info->uri = strdup(uri);
+                if (uri)
+                    url_info->uri = celix_utils_strdup(uri);
             }
-            if (portnr) free(portnr);
+            if (portnr)
+                free(portnr);
         } else if (uri) {
             length = strlen(uri);
             if ((length > 1) && isalpha(uri[1])) {
-                url_info->uri = strdup(uri);
+                url_info->uri = celix_utils_strdup(uri);
                 *uri = '\0';
             }
         }
     }
     free(url_copy);
 }
-
 
 pubsub_utils_url_t *pubsub_utils_url_parse(char *url) {
     pubsub_utils_url_t *url_info = calloc(1, sizeof(pubsub_utils_url_t));
@@ -279,7 +296,8 @@ pubsub_utils_url_t *pubsub_utils_url_parse(char *url) {
     }
 
     if (url_info->hostname) {
-        if (url_info->url) free(url_info->url);
+        if (url_info->url)
+            free(url_info->url);
         char *ip = pubsub_utils_url_get_ip(url_info->hostname);
         if (ip != NULL) {
             free(url_info->hostname);
@@ -297,12 +315,20 @@ pubsub_utils_url_t *pubsub_utils_url_parse(char *url) {
 }
 
 void pubsub_utils_url_free(pubsub_utils_url_t *url_info) {
-    if (url_info->hostname) free(url_info->hostname);
-    if (url_info->protocol) free(url_info->protocol);
-    if (url_info->interface) free(url_info->interface);
-    if (url_info->url) free(url_info->url);
-    if (url_info->interface_url) free(url_info->interface_url);
-    if (url_info->uri) free(url_info->uri);
+    if (!url_info)
+        return;
+    if (url_info->hostname)
+        free(url_info->hostname);
+    if (url_info->protocol)
+        free(url_info->protocol);
+    if (url_info->interface)
+        free(url_info->interface);
+    if (url_info->url)
+        free(url_info->url);
+    if (url_info->interface_url)
+        free(url_info->interface_url);
+    if (url_info->uri)
+        free(url_info->uri);
     url_info->url = NULL;
     url_info->interface_url = NULL;
     url_info->uri = NULL;
@@ -311,4 +337,5 @@ void pubsub_utils_url_free(pubsub_utils_url_t *url_info) {
     url_info->interface = NULL;
     url_info->portnr = 0;
     url_info->interface_portnr = 0;
+    free(url_info);
 }

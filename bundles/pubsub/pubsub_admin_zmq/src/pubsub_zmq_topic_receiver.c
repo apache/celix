@@ -77,6 +77,8 @@ struct pubsub_zmq_topic_receiver {
     void *zmqCtx;
     void *zmqSock;
 
+    char sync[8];
+
     struct {
         celix_thread_t thread;
         celix_thread_mutex_t mutex;
@@ -883,9 +885,8 @@ static void psa_zmq_setupZmqSocket(pubsub_zmq_topic_receiver_t *receiver, const 
     zcert_apply (sub_cert, zmq_s);
     zsock_set_curve_serverkey (zmq_s, pub_key); //apply key of publisher to socket of subscriber
 #endif
-    char sync[5];
-    receiver->protocol->getSyncHeader(receiver->protocol->handle, sync);
-    zsock_set_subscribe(receiver->zmqSock, sync);
+    receiver->protocol->getSyncHeader(receiver->protocol->handle, receiver->sync);
+    zsock_set_subscribe(receiver->zmqSock, receiver->sync);
 
 #ifdef BUILD_WITH_ZMQ_SECURITY
     ts->zmq_cert = sub_cert;

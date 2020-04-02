@@ -44,59 +44,59 @@
     logHelper_log(psa->log, OSGI_LOGSERVICE_ERROR, __VA_ARGS__)
 
 struct pubsub_tcp_admin {
-    celix_bundle_context_t *ctx;
-    log_helper_t *log;
-    const char *fwUUID;
+  celix_bundle_context_t *ctx;
+  log_helper_t *log;
+  const char *fwUUID;
 
-    char *ipAddress;
+  char *ipAddress;
 
-    unsigned int basePort;
-    unsigned int maxPort;
+  unsigned int basePort;
+  unsigned int maxPort;
 
-    double qosSampleScore;
-    double qosControlScore;
-    double defaultScore;
+  double qosSampleScore;
+  double qosControlScore;
+  double defaultScore;
 
-    bool verbose;
+  bool verbose;
 
-    struct {
-        celix_thread_mutex_t mutex;
-        hash_map_t *map; //key = svcId, value = psa_tcp_serializer_entry_t*
-    } serializers;
+  struct {
+    celix_thread_mutex_t mutex;
+    hash_map_t *map; //key = svcId, value = psa_tcp_serializer_entry_t*
+  } serializers;
 
-    struct {
-        celix_thread_mutex_t mutex;
-        hash_map_t *map; //key = svcId, value = psa_tcp_protocol_entry_t*
-    } protocols;
+  struct {
+    celix_thread_mutex_t mutex;
+    hash_map_t *map; //key = svcId, value = psa_tcp_protocol_entry_t*
+  } protocols;
 
-    struct {
-        celix_thread_mutex_t mutex;
-        hash_map_t *map; //key = scope:topic key, value = pubsub_tcp_topic_sender_t*
-    } topicSenders;
+  struct {
+    celix_thread_mutex_t mutex;
+    hash_map_t *map; //key = scope:topic key, value = pubsub_tcp_topic_sender_t*
+  } topicSenders;
 
-    struct {
-        celix_thread_mutex_t mutex;
-        hash_map_t *map; //key = scope:topic key, value = pubsub_tcp_topic_sender_t*
-    } topicReceivers;
+  struct {
+    celix_thread_mutex_t mutex;
+    hash_map_t *map; //key = scope:topic key, value = pubsub_tcp_topic_sender_t*
+  } topicReceivers;
 
-    struct {
-        celix_thread_mutex_t mutex;
-        hash_map_t *map; //key = endpoint uuid, value = celix_properties_t* (endpoint)
-    } discoveredEndpoints;
+  struct {
+    celix_thread_mutex_t mutex;
+    hash_map_t *map; //key = endpoint uuid, value = celix_properties_t* (endpoint)
+  } discoveredEndpoints;
 
-    pubsub_tcp_endPointStore_t endpointStore;
+  pubsub_tcp_endPointStore_t endpointStore;
 };
 
 typedef struct psa_tcp_serializer_entry {
-    const char *serType;
-    long svcId;
-    pubsub_serializer_service_t *svc;
+  const char *serType;
+  long svcId;
+  pubsub_serializer_service_t *svc;
 } psa_tcp_serializer_entry_t;
 
 typedef struct psa_tcp_protocol_entry {
-    const char *protType;
-    long svcId;
-    pubsub_protocol_service_t *svc;
+  const char *protType;
+  long svcId;
+  pubsub_protocol_service_t *svc;
 } psa_tcp_protocol_entry_t;
 
 static celix_status_t
@@ -443,7 +443,8 @@ celix_status_t pubsub_tcpAdmin_setupTopicSender(void *handle, const char *scope,
 
             //if available also set container name
             const char *cn = celix_bundleContext_getProperty(psa->ctx, "CELIX_CONTAINER_NAME", NULL);
-            if (cn != NULL) celix_properties_set(newEndpoint, "container_name", cn);
+            if (cn != NULL)
+                celix_properties_set(newEndpoint, "container_name", cn);
             hashMap_put(psa->topicSenders.map, key, sender);
         } else {
             L_ERROR("[PSA TCP] Error creating a TopicSender");
@@ -651,7 +652,6 @@ celix_status_t pubsub_tcpAdmin_addDiscoveredEndpoint(void *handle, const celix_p
     celix_status_t status = CELIX_SUCCESS;
     return status;
 }
-
 
 static celix_status_t
 pubsub_tcpAdmin_disconnectEndpointFromReceiver(pubsub_tcp_admin_t *psa, pubsub_tcp_topic_receiver_t *receiver,

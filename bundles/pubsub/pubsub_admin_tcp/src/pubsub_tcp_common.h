@@ -23,9 +23,9 @@
 #include <utils.h>
 #include <hash_map.h>
 
-typedef struct pubsub_tcp_endPointStore{
-    celix_thread_mutex_t mutex;
-    hash_map_t *map;
+typedef struct pubsub_tcp_endPointStore {
+  celix_thread_mutex_t mutex;
+  hash_map_t *map;
 } pubsub_tcp_endPointStore_t;
 
 #endif //CELIX_PUBSUB_TCP_COMMON_H

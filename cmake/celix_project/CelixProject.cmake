@@ -15,8 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 
-option(ENABLE_ADDRESS_SANITIZER "Enabled building with address sanitizer. Note for gcc libasan must be installed," OFF)
-option(ENABLE_UNDEFINED_SANITIZER "Enabled building with undefined behavior sanitizer." OFF)
+option(ENABLE_ADDRESS_SANITIZER "Enabled building with address sanitizer. Note for gcc libasan must be installed," ON)
+option(ENABLE_UNDEFINED_SANITIZER "Enabled building with undefined behavior sanitizer." ON)
 
 if (ENABLE_ADDRESS_SANITIZER)
     if (APPLE)
