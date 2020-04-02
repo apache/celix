@@ -60,56 +60,56 @@
 // Entry administration
 //
 typedef struct psa_tcp_connection_entry {
-  char *interface_url;
-  char *url;
-  int fd;
-  struct sockaddr_in addr;
-  socklen_t len;
-  bool connected;
-  pubsub_protocol_message_t header;
-  unsigned int syncSize;
-  unsigned int headerSize;
-  unsigned int headerBufferSize; // Size of headerBuffer, size = 0, no headerBuffer -> included in payload
-  void *headerBuffer;
-  unsigned int bufferSize;
-  void *buffer;
-  unsigned int metaBufferSize;
-  void *metaBuffer;
-  struct msghdr msg;
-  size_t msg_iovlen;        /* Number of elements in the vector.  */
-  unsigned int retryCount;
+    char *interface_url;
+    char *url;
+    int fd;
+    struct sockaddr_in addr;
+    socklen_t len;
+    bool connected;
+    pubsub_protocol_message_t header;
+    unsigned int syncSize;
+    unsigned int headerSize;
+    unsigned int headerBufferSize; // Size of headerBuffer, size = 0, no headerBuffer -> included in payload
+    void *headerBuffer;
+    unsigned int bufferSize;
+    void *buffer;
+    unsigned int metaBufferSize;
+    void *metaBuffer;
+    struct msghdr msg;
+    size_t msg_iovlen;        /* Number of elements in the vector.  */
+    unsigned int retryCount;
 } psa_tcp_connection_entry_t;
 
 //
 // Handle administration
 //
 struct pubsub_tcpHandler {
-  unsigned int readSeqNr;
-  celix_thread_rwlock_t dbLock;
-  unsigned int timeout;
-  hash_map_t *connection_url_map;
-  hash_map_t *connection_fd_map;
-  hash_map_t *interface_url_map;
-  hash_map_t *interface_fd_map;
-  int efd;
-  pubsub_tcpHandler_receiverConnectMessage_callback_t receiverConnectMessageCallback;
-  pubsub_tcpHandler_receiverConnectMessage_callback_t receiverDisconnectMessageCallback;
-  void *receiverConnectPayload;
-  pubsub_tcpHandler_acceptConnectMessage_callback_t acceptConnectMessageCallback;
-  pubsub_tcpHandler_acceptConnectMessage_callback_t acceptDisconnectMessageCallback;
-  void *acceptConnectPayload;
-  pubsub_tcpHandler_processMessage_callback_t processMessageCallback;
-  void *processMessagePayload;
-  log_helper_t *logHelper;
-  pubsub_protocol_service_t *protocol;
-  unsigned int bufferSize;
-  unsigned int maxNofBuffer;
-  unsigned int maxSendRetryCount;
-  unsigned int maxRcvRetryCount;
-  double sendTimeout;
-  double rcvTimeout;
-  celix_thread_t thread;
-  bool running;
+    unsigned int readSeqNr;
+    celix_thread_rwlock_t dbLock;
+    unsigned int timeout;
+    hash_map_t *connection_url_map;
+    hash_map_t *connection_fd_map;
+    hash_map_t *interface_url_map;
+    hash_map_t *interface_fd_map;
+    int efd;
+    pubsub_tcpHandler_receiverConnectMessage_callback_t receiverConnectMessageCallback;
+    pubsub_tcpHandler_receiverConnectMessage_callback_t receiverDisconnectMessageCallback;
+    void *receiverConnectPayload;
+    pubsub_tcpHandler_acceptConnectMessage_callback_t acceptConnectMessageCallback;
+    pubsub_tcpHandler_acceptConnectMessage_callback_t acceptDisconnectMessageCallback;
+    void *acceptConnectPayload;
+    pubsub_tcpHandler_processMessage_callback_t processMessageCallback;
+    void *processMessagePayload;
+    log_helper_t *logHelper;
+    pubsub_protocol_service_t *protocol;
+    unsigned int bufferSize;
+    unsigned int maxNofBuffer;
+    unsigned int maxSendRetryCount;
+    unsigned int maxRcvRetryCount;
+    double sendTimeout;
+    double rcvTimeout;
+    celix_thread_t thread;
+    bool running;
 };
 
 static inline int

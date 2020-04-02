@@ -73,6 +73,8 @@ struct pubsub_zmq_topic_receiver {
     void *zmqCtx;
     void *zmqSock;
 
+    char sync[8];
+
     struct {
         celix_thread_t thread;
         celix_thread_mutex_t mutex;
@@ -415,7 +417,7 @@ static void pubsub_zmqTopicReceiver_addSubscriber(void *handle, void *svc, const
         if (subScope != NULL){
             return;
         }
-    } else {
+    } else if (subScope != NULL) {
         if (strncmp(subScope, receiver->scope, strlen(receiver->scope)) != 0) {
             //not the same scope. ignore
             return;
@@ -502,7 +504,10 @@ static inline void processMsgForSubscriberEntry(pubsub_zmq_topic_receiver_t *rec
             if (monitor) {
                 clock_gettime(CLOCK_REALTIME, &beginSer);
             }
-            celix_status_t status = msgSer->deserialize(msgSer->handle, message->payload.payload, message->payload.length, &deserializedMsg);
+            struct iovec deSerializeBuffer;
+            deSerializeBuffer.iov_base = message->payload.payload;
+            deSerializeBuffer.iov_len  = message->payload.length;
+            celix_status_t status = msgSer->deserialize(msgSer->handle, &deSerializeBuffer, 0, &deserializedMsg);
             if (monitor) {
                 clock_gettime(CLOCK_REALTIME, &endSer);
             }
@@ -517,7 +522,7 @@ static inline void processMsgForSubscriberEntry(pubsub_zmq_topic_receiver_t *rec
                     svc->receive(svc->handle, msgSer->msgName, msgSer->msgId, deserializedMsg,
                                  metadata, &release);
                     if (release) {
-                        msgSer->freeMsg(msgSer->handle, deserializedMsg);
+                        msgSer->freeDeserializeMsg(msgSer->handle, deserializedMsg);
                     }
 
                     pubsubInterceptorHandler_invokePostReceive(receiver->interceptorsHandler, msgType, msgId, deserializedMsg, metadata);
@@ -853,9 +858,8 @@ static void psa_zmq_setupZmqSocket(pubsub_zmq_topic_receiver_t *receiver, const 
     zcert_apply (sub_cert, zmq_s);
     zsock_set_curve_serverkey (zmq_s, pub_key); //apply key of publisher to socket of subscriber
 #endif
-    char sync[5];
-    receiver->protocol->getSyncHeader(receiver->protocol->handle, sync);
-    zsock_set_subscribe(receiver->zmqSock, sync);
+    receiver->protocol->getSyncHeader(receiver->protocol->handle, receiver->sync);
+    zsock_set_subscribe(receiver->zmqSock, receiver->sync);
 
 #ifdef BUILD_WITH_ZMQ_SECURITY
     ts->zmq_cert = sub_cert;

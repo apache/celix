@@ -399,7 +399,7 @@ static void pubsub_websocketTopicReceiver_addSubscriber(void *handle, void *svc,
         if (subScope != NULL){
             return;
         }
-    } else {
+    } else if (subScope != NULL) {
         if (strncmp(subScope, receiver->scope, strlen(receiver->scope)) != 0) {
             //not the same scope. ignore
             return;
