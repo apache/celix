@@ -365,6 +365,11 @@ pubsub_tcpHandler_freeEntry(psa_tcp_connection_entry_t *entry) {
             entry->headerBuffer = NULL;
             entry->headerBufferSize = 0;
         }
+        if (entry->metaBuffer) {
+            free(entry->metaBuffer);
+            entry->metaBuffer = NULL;
+            entry->metaBufferSize = 0;
+        }
         entry->connected = false;
         free(entry);
     }

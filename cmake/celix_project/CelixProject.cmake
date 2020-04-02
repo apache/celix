@@ -15,16 +15,16 @@
 # specific language governing permissions and limitations
 # under the License.
 
-option(ENABLE_ADDRESS_SANITIZER "Enabled building with address sanitizer. Note for gcc libasan must be installed," ON)
-option(ENABLE_UNDEFINED_SANITIZER "Enabled building with undefined behavior sanitizer." ON)
+option(ENABLE_ADDRESS_SANITIZER "Enabled building with address sanitizer. Note for gcc libasan must be installed," OFF)
+option(ENABLE_UNDEFINED_SANITIZER "Enabled building with undefined behavior sanitizer." OFF)
 
 if (ENABLE_ADDRESS_SANITIZER)
-    if (APPLE)
+    if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         set(CMAKE_C_FLAGS "-fsanitize=address ${CMAKE_C_FLAGS}")
         set(CMAKE_CXX_FLAGS "-fsanitize=address ${CMAKE_CXX_FLAGS}")
     else ()
-        set(CMAKE_C_FLAGS "-lasan -fsanitize=address ${CMAKE_C_FLAGS}")
-        set(CMAKE_CXX_FLAGS "-lasan -fsanitize=address ${CMAKE_CXX_FLAGS}")
+        set(CMAKE_C_FLAGS "-lasan -fsanitize=leak ${CMAKE_C_FLAGS}")
+        set(CMAKE_CXX_FLAGS "-lasan -fsanitize=leak ${CMAKE_CXX_FLAGS}")
     endif ()
 endif()
 

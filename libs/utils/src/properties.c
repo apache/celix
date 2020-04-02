@@ -32,6 +32,7 @@
 #include "properties.h"
 #include "celix_properties.h"
 #include "utils.h"
+#include "hash_map_private.h"
 #include <errno.h>
 
 
@@ -225,8 +226,7 @@ void celix_properties_destroy(celix_properties_t *properties) {
         hash_map_iterator_pt iter = hashMapIterator_create(properties);
         while (hashMapIterator_hasNext(iter)) {
             hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
-            free(hashMapEntry_getKey(entry));
-            free(hashMapEntry_getValue(entry));
+            hashMapEntry_clear(entry, true, true);
         }
         hashMapIterator_destroy(iter);
         hashMap_destroy(properties, false, false);

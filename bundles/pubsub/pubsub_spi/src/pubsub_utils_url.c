@@ -181,9 +181,8 @@ void pubsub_utils_url_parse_url(char *_url, pubsub_utils_url_t *url_info) {
     char *url_copy = celix_utils_strdup(_url);
     char *url = strstr(url_copy, "://");
     if (url) {
-        char* protocol = celix_utils_strdup(url_copy);
-        url_info->protocol = celix_utils_strdup(strtok(protocol, "://"));
-        if (protocol) free(protocol);
+        if (!url_info->protocol)
+            url_info->protocol = strtok(strdup(url_copy), "://");
         url += 3;
     } else {
         url = url_copy;
@@ -195,7 +194,8 @@ void pubsub_utils_url_parse_url(char *_url, pubsub_utils_url_t *url_info) {
         *url++ = '\0';
         hostname = celix_utils_strdup(url);
     } else if ((url[0] == '/') && ((length > 1) && (isalpha(url[1])))) {
-        url_info->uri = celix_utils_strdup(url);
+        if (!url_info->uri)
+            url_info->uri = celix_utils_strdup(url);
     } else {
         interface = strstr(url, ";");
         if (!interface) {
@@ -209,7 +209,8 @@ void pubsub_utils_url_parse_url(char *_url, pubsub_utils_url_t *url_info) {
     if (hostname) {
         // Get port number
         char *port = strstr(hostname, ":");
-        url_info->hostname = strtok(celix_utils_strdup(hostname), ":");
+        if (!url_info->hostname)
+            url_info->hostname = strtok(celix_utils_strdup(hostname), ":");
         char *uri = strstr(url_info->hostname, "/");
         if (port) {
             port += 1;
@@ -225,14 +226,14 @@ void pubsub_utils_url_parse_url(char *_url, pubsub_utils_url_t *url_info) {
                 if (portDigits != 0)
                     url_info->portnr = portDigits;
                 uri = strstr(port, "/");
-                if (uri)
+                if ((uri) && (!url_info->uri))
                     url_info->uri = celix_utils_strdup(uri);
             }
             if (portnr)
                 free(portnr);
         } else if (uri) {
             length = strlen(uri);
-            if ((length > 1) && isalpha(uri[1])) {
+            if ((length > 1) && isalpha(uri[1]) && (!url_info->uri)) {
                 url_info->uri = celix_utils_strdup(uri);
                 *uri = '\0';
             }
@@ -244,7 +245,8 @@ void pubsub_utils_url_parse_url(char *_url, pubsub_utils_url_t *url_info) {
         *interface++ = '0';
         // Get port number
         char *port = strstr(interface, ":");
-        url_info->interface = strtok(celix_utils_strdup(interface), ":");
+        if (!url_info->interface)
+            url_info->interface = strtok(celix_utils_strdup(interface), ":");
         char *uri = strstr(url_info->interface, "/");
         if (port) {
             port += 1;
@@ -260,14 +262,14 @@ void pubsub_utils_url_parse_url(char *_url, pubsub_utils_url_t *url_info) {
                 if (portDigits != 0)
                     url_info->interface_portnr = portDigits;
                 uri = strstr(port, "/");
-                if (uri)
+                if ((uri) && (!url_info->uri))
                     url_info->uri = celix_utils_strdup(uri);
             }
             if (portnr)
                 free(portnr);
         } else if (uri) {
             length = strlen(uri);
-            if ((length > 1) && isalpha(uri[1])) {
+            if ((length > 1) && isalpha(uri[1]) && (!url_info->uri)) {
                 url_info->uri = celix_utils_strdup(uri);
                 *uri = '\0';
             }
@@ -291,6 +293,7 @@ pubsub_utils_url_t *pubsub_utils_url_parse(char *url) {
         url_info->interface_url = pubsub_utils_url_get_url(m_sin, NULL);
         free(m_sin);
         pubsub_utils_url_parse_url(url_info->interface_url, &interface_url_info);
+        free(url_info->interface);
         url_info->interface = interface_url_info.hostname;
         url_info->interface_portnr = interface_url_info.portnr;
     }

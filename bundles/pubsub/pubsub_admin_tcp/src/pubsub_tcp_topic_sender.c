@@ -49,64 +49,64 @@
     logHelper_log(sender->logHelper, OSGI_LOGSERVICE_ERROR, __VA_ARGS__)
 
 struct pubsub_tcp_topic_sender {
-  celix_bundle_context_t *ctx;
-  log_helper_t *logHelper;
-  long serializerSvcId;
-  pubsub_serializer_service_t *serializer;
-  long protocolSvcId;
-  pubsub_protocol_service_t *protocol;
-  uuid_t fwUUID;
-  bool metricsEnabled;
-  pubsub_tcpHandler_t *socketHandler;
-  pubsub_tcpHandler_t *sharedSocketHandler;
+    celix_bundle_context_t *ctx;
+    log_helper_t *logHelper;
+    long serializerSvcId;
+    pubsub_serializer_service_t *serializer;
+    long protocolSvcId;
+    pubsub_protocol_service_t *protocol;
+    uuid_t fwUUID;
+    bool metricsEnabled;
+    pubsub_tcpHandler_t *socketHandler;
+    pubsub_tcpHandler_t *sharedSocketHandler;
 
-  char *scope;
-  char *topic;
-  char *url;
-  bool isStatic;
+    char *scope;
+    char *topic;
+    char *url;
+    bool isStatic;
 
-  bool verbose;
+    bool verbose;
 
-  struct {
-    long svcId;
-    celix_service_factory_t factory;
-  } publisher;
+    struct {
+        long svcId;
+        celix_service_factory_t factory;
+    } publisher;
 
-  struct {
-    celix_thread_mutex_t mutex;
-    hash_map_t *map;  //key = bndId, value = psa_tcp_bounded_service_entry_t
-  } boundedServices;
+    struct {
+        celix_thread_mutex_t mutex;
+        hash_map_t *map;  //key = bndId, value = psa_tcp_bounded_service_entry_t
+    } boundedServices;
 };
 
 typedef struct psa_tcp_send_msg_entry {
-  uint32_t type; //msg type id (hash of fqn)
-  uint8_t major;
-  uint8_t minor;
-  unsigned char originUUID[16];
-  pubsub_msg_serializer_t *msgSer;
-  pubsub_protocol_service_t *protSer;
-  struct iovec *serializedIoVecOutput;
-  size_t serializedIoVecOutputLen;
-  unsigned int seqNr;
-  struct {
-    celix_thread_mutex_t mutex; //protects entries in struct
-    unsigned long nrOfMessagesSend;
-    unsigned long nrOfMessagesSendFailed;
-    unsigned long nrOfSerializationErrors;
-    struct timespec lastMessageSend;
-    double averageTimeBetweenMessagesInSeconds;
-    double averageSerializationTimeInSeconds;
-  } metrics;
+    uint32_t type; //msg type id (hash of fqn)
+    uint8_t major;
+    uint8_t minor;
+    unsigned char originUUID[16];
+    pubsub_msg_serializer_t *msgSer;
+    pubsub_protocol_service_t *protSer;
+    struct iovec *serializedIoVecOutput;
+    size_t serializedIoVecOutputLen;
+    unsigned int seqNr;
+    struct {
+        celix_thread_mutex_t mutex; //protects entries in struct
+        unsigned long nrOfMessagesSend;
+        unsigned long nrOfMessagesSendFailed;
+        unsigned long nrOfSerializationErrors;
+        struct timespec lastMessageSend;
+        double averageTimeBetweenMessagesInSeconds;
+        double averageSerializationTimeInSeconds;
+    } metrics;
 } psa_tcp_send_msg_entry_t;
 
 typedef struct psa_tcp_bounded_service_entry {
-  pubsub_tcp_topic_sender_t *parent;
-  pubsub_publisher_t service;
-  long bndId;
-  hash_map_t *msgTypes; //key = msg type id, value = pubsub_msg_serializer_t
-  hash_map_t *msgTypeIds; // key = msg name, value = msg type id
-  hash_map_t *msgEntries; //key = msg type id, value = psa_tcp_send_msg_entry_t
-  int getCount;
+    pubsub_tcp_topic_sender_t *parent;
+    pubsub_publisher_t service;
+    long bndId;
+    hash_map_t *msgTypes; //key = msg type id, value = pubsub_msg_serializer_t
+    hash_map_t *msgTypeIds; // key = msg name, value = msg type id
+    hash_map_t *msgEntries; //key = msg type id, value = psa_tcp_send_msg_entry_t
+    int getCount;
 } psa_tcp_bounded_service_entry_t;
 
 static int psa_tcp_localMsgTypeIdForMsgType(void *handle, const char *msgType, unsigned int *msgTypeId);
@@ -236,6 +236,8 @@ pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
         free(urlsCopy);
         sender->url = pubsub_tcpHandler_get_interface_url(sender->socketHandler);
     }
+    if (urls)
+        free(urls);
 
     if (sender->url != NULL) {
         sender->scope = strndup(scope, 1024 * 1024);
