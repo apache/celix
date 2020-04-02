@@ -45,13 +45,11 @@
 #define PSA_TCP_QOS_CONTROL_SCORE_KEY           "PSA_TCP_QOS_CONTROL_SCORE"
 #define PSA_TCP_DEFAULT_SCORE_KEY               "PSA_TCP_DEFAULT_SCORE"
 
-
 #define PSA_TCP_METRICS_ENABLED                 "PSA_TCP_METRICS_ENABLED"
 #define PSA_TCP_DEFAULT_METRICS_ENABLED         false
 
 #define PUBSUB_TCP_VERBOSE_KEY                  "PSA_TCP_VERBOSE"
 #define PUBSUB_TCP_VERBOSE_DEFAULT              false
-
 
 #define PUBSUB_TCP_PUBLISHER_RETRY_CNT_KEY      "PUBSUB_TCP_PUBLISHER_RETRY_COUNT"
 #define PUBSUB_TCP_PUBLISHER_RETRY_CNT_DEFAULT  5
@@ -103,7 +101,6 @@
  */
 #define PUBSUB_TCP_STATIC_ENDPOINT_TYPE         "tcp.static.endpoint.type"
 
-
 #define PUBSUB_TCP_STATIC_ENDPOINT_TYPE_SERVER  "server"
 #define PUBSUB_TCP_STATIC_ENDPOINT_TYPE_CLIENT  "client"
 
@@ -115,6 +112,5 @@
  */
 #define PUBSUB_TCP_THREAD_REALTIME_PRIO         "thread.realtime.prio"
 #define PUBSUB_TCP_THREAD_REALTIME_SCHED        "thread.realtime.sched"
-
 
 #endif /* PUBSUB_PSA_TCP_CONSTANTS_H_ */
