@@ -21,7 +21,7 @@
 
 #include <exception>
 
-#include "celix/PromiseSharedState.h"
+#include "celix/SharedPromiseState.h"
 #include "celix/Promise.h"
 
 #include <tbb/task.h>
@@ -51,7 +51,7 @@ namespace celix {
         //Promise<void> resolveWith(Promise<U> with);
 
     private:
-        std::shared_ptr<celix::PromiseSharedState<T>> state{new celix::PromiseSharedState<T>{}};
+        std::shared_ptr<celix::SharedPromiseState<T>> state{new celix::SharedPromiseState<T>{}};
     };
 }
 
@@ -80,6 +80,7 @@ template<typename T>
 template<typename U>
 inline void celix::Deferred<T>::resolveWith(celix::Promise<U> with) {
     auto& s = state;
+    //TODO use with.onResolve()
     with.onSuccess([s](U v) {
         s->resolve(std::move(v));
     });
