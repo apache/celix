@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <celix_bundle_activator.h>
 #include "celix_constants.h"
 #include "bundle_activator.h"
 #include "service_tracker.h"
@@ -46,98 +47,42 @@
 struct activator {
 	celix_bundle_context_t *context;
 
-	topology_manager_pt manager;
+	topology_manager_t *manager;
 
-	service_tracker_t *endpointListenerTracker;
-	service_tracker_t *remoteServiceAdminTracker;
-	service_tracker_t *exportedServicesTracker;
+    celix_service_tracker_t *endpointListenerTracker;
+    celix_service_tracker_t *remoteServiceAdminTracker;
+    celix_service_tracker_t *exportedServicesTracker;
 
 	endpoint_listener_t *endpointListener;
-	service_registration_t *endpointListenerService;
+    long endpointServiceId;
 
-	listener_hook_service_pt hookService;
-	service_registration_t *hook;
+    celix_listener_hook_service_t *hookService;
+    long hookServiceId;
 
-	tm_scope_service_pt	scopeService;
-	service_registration_t *scopeReg;
+	tm_scope_service_t *scopeService;
+    long scopeServiceId;
 
 	log_helper_t *loghelper;
 };
 
 
-static celix_status_t bundleActivator_createEPLTracker(struct activator *activator, service_tracker_t **tracker);
-static celix_status_t bundleActivator_createRSATracker(struct activator *activator, service_tracker_t **tracker);
-static celix_status_t bundleActivator_createExportedServicesTracker(struct activator *activator, service_tracker_t **tracker);
+static celix_status_t bundleActivator_createEPLTracker(struct activator *activator, celix_service_tracker_t **tracker);
+static celix_status_t bundleActivator_createRSATracker(struct activator *activator, celix_service_tracker_t **tracker);
+static celix_status_t bundleActivator_createExportedServicesTracker(struct activator *activator, celix_service_tracker_t **tracker);
 
-celix_status_t bundleActivator_create(celix_bundle_context_t *context, void **userData) {
-	celix_status_t status = CELIX_SUCCESS;
-	struct activator *activator = NULL;
-	void *scope;
-
-	activator = calloc(1, sizeof(struct activator));
-
-	if (!activator) {
-		return CELIX_ENOMEM;
-	}
-
-	activator->context = context;
-	activator->endpointListenerService = NULL;
-	activator->endpointListenerTracker = NULL;
-	activator->hook = NULL;
-	activator->manager = NULL;
-	activator->remoteServiceAdminTracker = NULL;
-	activator->exportedServicesTracker = NULL;
-	activator->scopeService = calloc(1, sizeof(*(activator->scopeService)));
-	if (activator->scopeService == NULL)
-	{
-		free(activator);
-		return CELIX_ENOMEM;
-	}
-
-	activator->scopeService->addExportScope = tm_addExportScope;
-	activator->scopeService->removeExportScope = tm_removeExportScope;
-	activator->scopeService->addImportScope = tm_addImportScope;
-	activator->scopeService->removeImportScope = tm_removeImportScope;
-	activator->scopeReg = NULL; // explicitly needed, otherwise exception
-
-	logHelper_create(context, &activator->loghelper);
-	logHelper_start(activator->loghelper);
-
-	status = topologyManager_create(context, activator->loghelper, &activator->manager, &scope);
-	activator->scopeService->handle = scope;
-
-	if (status == CELIX_SUCCESS) {
-		status = bundleActivator_createEPLTracker(activator, &activator->endpointListenerTracker);
-		if (status == CELIX_SUCCESS) {
-			status = bundleActivator_createRSATracker(activator, &activator->remoteServiceAdminTracker);
-			if (status == CELIX_SUCCESS) {
-				status = bundleActivator_createExportedServicesTracker(activator, &activator->exportedServicesTracker);
-				if (status == CELIX_SUCCESS) {
-					*userData = activator;
-				}
-			}
-		}
-	}
-
-	if(status != CELIX_SUCCESS){
-		bundleActivator_destroy(activator,context);
-	}
-
-	return status;
-}
-
-static celix_status_t bundleActivator_createEPLTracker(struct activator *activator, service_tracker_t **tracker) {
+static celix_status_t bundleActivator_createEPLTracker(struct activator *activator, celix_service_tracker_t **tracker) {
 	celix_status_t status;
+
 	service_tracker_customizer_t *customizer = NULL;
 	status = serviceTrackerCustomizer_create(activator->manager, topologyManager_endpointListenerAdding, topologyManager_endpointListenerAdded, topologyManager_endpointListenerModified,
 			topologyManager_endpointListenerRemoved, &customizer);
 	if (status == CELIX_SUCCESS) {
-		status = serviceTracker_create(activator->context, (char *) OSGI_ENDPOINT_LISTENER_SERVICE, customizer, tracker);
+		status = serviceTracker_create(activator->context, OSGI_ENDPOINT_LISTENER_SERVICE, customizer, tracker);
 	}
 	return status;
 }
 
-static celix_status_t bundleActivator_createRSATracker(struct activator *activator, service_tracker_t **tracker) {
+static celix_status_t bundleActivator_createRSATracker(struct activator *activator, celix_service_tracker_t **tracker) {
 	celix_status_t status;
 	service_tracker_customizer_t *customizer = NULL;
 	status = serviceTrackerCustomizer_create(activator->manager, topologyManager_rsaAdding, topologyManager_rsaAdded, topologyManager_rsaModified, topologyManager_rsaRemoved, &customizer);
@@ -147,7 +92,7 @@ static celix_status_t bundleActivator_createRSATracker(struct activator *activat
 	return status;
 }
 
-static celix_status_t bundleActivator_createExportedServicesTracker(struct activator *activator, service_tracker_t **tracker) {
+static celix_status_t bundleActivator_createExportedServicesTracker(struct activator *activator, celix_service_tracker_t **tracker) {
     celix_status_t status;
     service_tracker_customizer_t *customizer = NULL;
     status = serviceTrackerCustomizer_create(activator->manager, NULL, topologyManager_addExportedService, NULL, topologyManager_removeExportedService, &customizer);
@@ -157,113 +102,169 @@ static celix_status_t bundleActivator_createExportedServicesTracker(struct activ
     return status;
 }
 
-celix_status_t bundleActivator_start(void * userData, celix_bundle_context_t *context) {
-	celix_status_t status;
-	struct activator *activator = userData;
 
-	endpoint_listener_t *endpointListener = malloc(sizeof(*endpointListener));
-	endpointListener->handle = activator->manager;
-	endpointListener->endpointAdded = topologyManager_addImportedService;
-	endpointListener->endpointRemoved = topologyManager_removeImportedService;
-	activator->endpointListener = endpointListener;
+static int rsa_start(struct activator *act, celix_bundle_context_t *ctx) {
+    celix_status_t status = CELIX_SUCCESS;
+    void *topology_scope;
 
-	const char *uuid = NULL;
-	status = bundleContext_getProperty(activator->context, OSGI_FRAMEWORK_FRAMEWORK_UUID, &uuid);
-	if (!uuid) {
-		logHelper_log(activator->loghelper, OSGI_LOGSERVICE_ERROR, "TOPOLOGY_MANAGER: no framework UUID defined?!");
-		return CELIX_ILLEGAL_STATE;
-	}
+    act->context = ctx;
+    act->manager = NULL;
+    act->endpointListener = NULL;
+    act->endpointServiceId = -1;
+    act->hookServiceId = -1;
+    act->hookService = NULL;
+    act->scopeService = calloc(1, sizeof(tm_scope_service_t));
+    act->scopeServiceId = -1;
+    act->endpointListenerTracker = NULL;
+    act->remoteServiceAdminTracker = NULL;
+    act->exportedServicesTracker = NULL;
+    if (act->scopeService == NULL) {
+        return CELIX_ENOMEM;
+    }
 
-	size_t len = 14 + strlen(OSGI_FRAMEWORK_OBJECTCLASS) + strlen(OSGI_RSA_ENDPOINT_FRAMEWORK_UUID) + strlen(uuid);
-	char *scope = malloc(len);
-	if (!scope) {
-		return CELIX_ENOMEM;
-	}
+    act->scopeService->addExportScope = tm_addExportScope;
+    act->scopeService->removeExportScope = tm_removeExportScope;
+    act->scopeService->addImportScope = tm_addImportScope;
+    act->scopeService->removeImportScope = tm_removeImportScope;
 
-	snprintf(scope, len, "(&(%s=*)(!(%s=%s)))", OSGI_FRAMEWORK_OBJECTCLASS, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
+    logHelper_create(ctx, &act->loghelper);
+    logHelper_start(act->loghelper);
 
-	logHelper_log(activator->loghelper, OSGI_LOGSERVICE_INFO, "TOPOLOGY_MANAGER: endpoint listener scope is %s", scope);
-
-	celix_properties_t *props = celix_properties_create();
-	celix_properties_set(props, (char *) OSGI_ENDPOINT_LISTENER_SCOPE, scope);
-
-	// We can release the scope, as celix_properties_set makes a copy of the key & value...
-	free(scope);
-
-	bundleContext_registerService(context, (char *) OSGI_ENDPOINT_LISTENER_SERVICE, endpointListener, props, &activator->endpointListenerService);
-
-	listener_hook_service_pt hookService = malloc(sizeof(*hookService));
-	hookService->handle = activator->manager;
-	hookService->added = topologyManager_listenerAdded;
-	hookService->removed = topologyManager_listenerRemoved;
-	activator->hookService = hookService;
-
-	bundleContext_registerService(context, (char *) TOPOLOGYMANAGER_SCOPE_SERVICE, activator->scopeService, NULL, &activator->scopeReg);
-
-    bundleContext_registerService(context, (char *) OSGI_FRAMEWORK_LISTENER_HOOK_SERVICE_NAME, hookService, NULL, &activator->hook);
+    status = topologyManager_create(ctx, act->loghelper, &act->manager, &topology_scope);
+    act->scopeService->handle = topology_scope;
 
     if (status == CELIX_SUCCESS) {
-        status = serviceTracker_open(activator->exportedServicesTracker);
+        status = bundleActivator_createEPLTracker(act, &act->endpointListenerTracker);
+        if (status == CELIX_SUCCESS) {
+            status = bundleActivator_createRSATracker(act, &act->remoteServiceAdminTracker);
+            if (status == CELIX_SUCCESS) {
+                status = bundleActivator_createExportedServicesTracker(act, &act->exportedServicesTracker);
+            }
+        }
+    }
+
+    const char *uuid = NULL;
+    if(status == CELIX_SUCCESS) {
+        status = bundleContext_getProperty(act->context, OSGI_FRAMEWORK_FRAMEWORK_UUID, &uuid);
+    }
+
+    if(status == CELIX_SUCCESS) {
+        if (!uuid) {
+            logHelper_log(act->loghelper, OSGI_LOGSERVICE_ERROR, "TOPOLOGY_MANAGER: no framework UUID defined?!");
+            return CELIX_ILLEGAL_STATE;
+        }
+
+        size_t len = 14 + strlen(OSGI_FRAMEWORK_OBJECTCLASS) + strlen(OSGI_RSA_ENDPOINT_FRAMEWORK_UUID) + strlen(uuid);
+        char *scope = malloc(len);
+        if (!scope) {
+            return CELIX_ENOMEM;
+        }
+
+        snprintf(scope, len, "(&(%s=*)(!(%s=%s)))", OSGI_FRAMEWORK_OBJECTCLASS, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
+
+        logHelper_log(act->loghelper, OSGI_LOGSERVICE_INFO, "TOPOLOGY_MANAGER: endpoint listener scope is %s", scope);
+
+        celix_properties_t *props = celix_properties_create();
+        celix_properties_set(props, OSGI_ENDPOINT_LISTENER_SCOPE, scope);
+
+        // We can release the scope, as celix_properties_set makes a copy of the key & value...
+        free(scope);
+
+        endpoint_listener_t *endpointListener = malloc(sizeof(*endpointListener));
+        endpointListener->handle = act->manager;
+        endpointListener->endpointAdded = topologyManager_addImportedService;
+        endpointListener->endpointRemoved = topologyManager_removeImportedService;
+        act->endpointListener = endpointListener;
+
+        act->endpointServiceId = celix_bundleContext_registerService(ctx, act->endpointListener, OSGI_ENDPOINT_LISTENER_SERVICE, props);
+        if(act->endpointServiceId < 0) {
+            status = CELIX_BUNDLE_EXCEPTION;
+        }
+    }
+
+    if(status == CELIX_SUCCESS) {
+        act->scopeServiceId = celix_bundleContext_registerService(ctx, act->scopeService, TOPOLOGYMANAGER_SCOPE_SERVICE, NULL);
+        if(act->scopeServiceId < 0) {
+            status = CELIX_BUNDLE_EXCEPTION;
+        }
+    }
+
+    if(status == CELIX_SUCCESS) {
+        listener_hook_service_pt hookService = malloc(sizeof(*hookService));
+        hookService->handle = act->manager;
+        hookService->added = topologyManager_listenerAdded;
+        hookService->removed = topologyManager_listenerRemoved;
+        act->hookService = hookService;
+
+        act->hookServiceId = celix_bundleContext_registerService(ctx, act->hookService, OSGI_FRAMEWORK_LISTENER_HOOK_SERVICE_NAME, NULL);
+        if(act->hookServiceId < 0) {
+            status = CELIX_BUNDLE_EXCEPTION;
+        }
     }
 
     if (status == CELIX_SUCCESS) {
-        serviceTracker_open(activator->remoteServiceAdminTracker);
+        status = serviceTracker_open(act->exportedServicesTracker);
     }
 
     if (status == CELIX_SUCCESS) {
-        status = serviceTracker_open(activator->endpointListenerTracker);
+        status = serviceTracker_open(act->remoteServiceAdminTracker);
     }
 
-	return status;
-}
-
-celix_status_t bundleActivator_stop(void * userData, celix_bundle_context_t *context) {
-	celix_status_t status = CELIX_SUCCESS;
-	struct activator *activator = userData;
-
-	if (serviceTracker_close(activator->remoteServiceAdminTracker) == CELIX_SUCCESS) {
-		serviceTracker_destroy(activator->remoteServiceAdminTracker);
-	}
-
-	if (serviceTracker_close(activator->endpointListenerTracker) == CELIX_SUCCESS) {
-		serviceTracker_destroy(activator->endpointListenerTracker);
-	}
-
-    if (serviceTracker_close(activator->exportedServicesTracker) == CELIX_SUCCESS) {
-        serviceTracker_destroy(activator->exportedServicesTracker);
+    if (status == CELIX_SUCCESS) {
+        status = serviceTracker_open(act->endpointListenerTracker);
     }
 
-	serviceRegistration_unregister(activator->hook);
-	free(activator->hookService);
+    if(status != CELIX_SUCCESS) {
+        celix_bundleContext_unregisterService(ctx, act->endpointServiceId);
+        celix_bundleContext_unregisterService(ctx, act->scopeServiceId);
+        celix_bundleContext_unregisterService(ctx, act->hookServiceId);
+        free(act->scopeService);
+        free(act->hookService);
+        free(act->endpointListener);
+        topologyManager_closeImports(act->manager);
+        topologyManager_destroy(act->manager);
+        logHelper_destroy(&act->loghelper);
+    }
 
-	serviceRegistration_unregister(activator->endpointListenerService);
-	free(activator->endpointListener);
-
-	serviceRegistration_unregister(activator->scopeReg);
-
-	topologyManager_closeImports(activator->manager);
-
-	return status;
+    return status;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, celix_bundle_context_t *context) {
-	celix_status_t status = CELIX_SUCCESS;
 
-	struct activator *activator = userData;
-	if (!activator || !activator->manager) {
-		status = CELIX_BUNDLE_EXCEPTION;
-	} else {
-		logHelper_stop(activator->loghelper);
-		logHelper_destroy(&activator->loghelper);
+static int rsa_stop(struct activator *act, celix_bundle_context_t *ctx) {
+    celix_status_t status = CELIX_SUCCESS;
 
-		status = topologyManager_destroy(activator->manager);
+    if (!act || !act->manager) {
+        return CELIX_BUNDLE_EXCEPTION;
+    }
 
-		if (activator->scopeService) {
-			free(activator->scopeService);
-		}
+    if (serviceTracker_close(act->remoteServiceAdminTracker) == CELIX_SUCCESS) {
+        status |= serviceTracker_destroy(act->remoteServiceAdminTracker);
+    }
 
-		free(activator);
-	}
+    if (serviceTracker_close(act->endpointListenerTracker) == CELIX_SUCCESS) {
+        status |= serviceTracker_destroy(act->endpointListenerTracker);
+    }
 
-	return status;
+    if (serviceTracker_close(act->exportedServicesTracker) == CELIX_SUCCESS) {
+        status |= serviceTracker_destroy(act->exportedServicesTracker);
+    }
+
+    celix_bundleContext_unregisterService(ctx, act->endpointServiceId);
+    celix_bundleContext_unregisterService(ctx, act->scopeServiceId);
+    celix_bundleContext_unregisterService(ctx, act->hookServiceId);
+
+    free(act->scopeService);
+    free(act->hookService);
+    free(act->endpointListener);
+
+    status |= topologyManager_closeImports(act->manager);
+
+    status |= logHelper_stop(act->loghelper);
+    status |= logHelper_destroy(&act->loghelper);
+
+    status |= topologyManager_destroy(act->manager);
+
+    return status;
 }
+
+CELIX_GEN_BUNDLE_ACTIVATOR(struct activator, rsa_start, rsa_stop);

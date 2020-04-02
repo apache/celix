@@ -486,8 +486,8 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *admin, c
         const char *exports = NULL;
         const char *provided = NULL;
         if (status == CELIX_SUCCESS) {
-            serviceReference_getProperty(reference, (char *) OSGI_RSA_SERVICE_EXPORTED_INTERFACES, &exports);
-            serviceReference_getProperty(reference, (char *) OSGI_FRAMEWORK_OBJECTCLASS, &provided);
+            serviceReference_getProperty(reference, OSGI_RSA_SERVICE_EXPORTED_INTERFACES, &exports);
+            serviceReference_getProperty(reference, OSGI_FRAMEWORK_OBJECTCLASS, &provided);
 
             if (exports == NULL || provided == NULL || strcmp(exports, provided) != 0) {
                 logHelper_log(admin->loghelper, OSGI_LOGSERVICE_WARNING, "RSA: No Services to export.");

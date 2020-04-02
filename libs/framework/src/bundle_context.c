@@ -467,7 +467,7 @@ long celix_bundleContext_registerServiceWithOptions(bundle_context_t *ctx, const
         } else {
             bundleContext_registerService(ctx, opts->serviceName, opts->svc, props, &reg);
         }
-        svcId = serviceRegistration_getServiceId(reg); //save to call with NULL
+        svcId = serviceRegistration_getServiceId(reg); //safe to call with NULL
     } else {
         framework_logIfError(logger, CELIX_ILLEGAL_ARGUMENT, NULL, "Required serviceName argument is NULL");
     }

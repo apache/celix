@@ -34,11 +34,11 @@ namespace celix { namespace dm {
         celix_bundle_context_t *context {nullptr};
         celix_dm_component_t *cCmp {nullptr};
     public:
-        BaseComponent(celix_bundle_context_t *con, std::string name) : context{con}, cCmp{nullptr} {
+        BaseComponent(celix_bundle_context_t *con, const std::string &name) : context{con}, cCmp{nullptr} {
             this->cCmp = celix_dmComponent_create(this->context, name.c_str());
             celix_dmComponent_setImplementation(this->cCmp, this);
         }
-        virtual ~BaseComponent() {}
+        virtual ~BaseComponent() = default;
 
         BaseComponent(const BaseComponent&) = delete;
         BaseComponent& operator=(const BaseComponent&) = delete;
@@ -74,8 +74,8 @@ namespace celix { namespace dm {
         int (T::*stopFpNoExc)() = {};
         int (T::*deinitFpNoExc)() = {};
     public:
-        Component(celix_bundle_context_t *context, std::string name);
-        virtual ~Component();
+        Component(celix_bundle_context_t *context, const std::string &name);
+        ~Component() override;
 
         /**
          * Creates a Component using the provided bundle context
@@ -83,7 +83,7 @@ namespace celix { namespace dm {
          * Will use new(nothrow) if exceptions are disabled.
          * @return newly created DM Component or nullptr
          */
-        static Component<T>* create(celix_bundle_context_t*, std::string name);
+        static Component<T>* create(celix_bundle_context_t*, const std::string &name);
 
         /**
          * Creates a Component using the provided bundle context.
@@ -137,7 +137,7 @@ namespace celix { namespace dm {
          * @param properties To (meta) properties to provide with the service
          * @return the DM Component reference for chaining (fluent API)
          */
-        template<class I> Component<T>& addInterfaceWithName(const std::string serviceName, const std::string version = std::string{}, const Properties properties = Properties{});
+        template<class I> Component<T>& addInterfaceWithName(const std::string &serviceName, const std::string &version = std::string{}, const Properties &properties = Properties{});
 
         /**
          * Adds a C++ interface to provide as service to the Celix framework.
@@ -147,7 +147,7 @@ namespace celix { namespace dm {
          * @param properties To (meta) properties to provide with the service
          * @return the DM Component reference for chaining (fluent API)
          */
-        template<class I> Component<T>& addInterface(const std::string version = std::string{}, const Properties properties = Properties{});
+        template<class I> Component<T>& addInterface(const std::string &version = std::string{}, const Properties &properties = Properties{});
 
         /**
          * Adds a C interface to provide as service to the Celix framework.
@@ -157,7 +157,7 @@ namespace celix { namespace dm {
          * @param version The version of the interface (e.g. "1.0.0"), can be an empty string
          * @param properties To (meta) properties to provide with the service
          */
-        template<class I> Component<T>& addCInterface(const I* svc, const std::string serviceName, const std::string version = std::string{}, const Properties properties = Properties{});
+        template<class I> Component<T>& addCInterface(const I* svc, const std::string &serviceName, const std::string &version = std::string{}, const Properties &properties = Properties{});
 
 
         /**
@@ -177,7 +177,7 @@ namespace celix { namespace dm {
          * @return the Service Dependency reference for chaining (fluent API)
          */
         template<class I>
-        ServiceDependency<T,I>& createServiceDependency(const std::string name = std::string{});
+        ServiceDependency<T,I>& createServiceDependency(const std::string &name = std::string{});
 
         /**
          Removes a C++ service dependency from the component
@@ -193,7 +193,7 @@ namespace celix { namespace dm {
          * @return the DM Component reference for chaining (fluent API)
          */
         template<typename I>
-        CServiceDependency<T,I>& createCServiceDependency(const std::string name);
+        CServiceDependency<T,I>& createCServiceDependency(const std::string &name);
 
         /**
          * Removes a C service dependency to the component
@@ -243,6 +243,18 @@ namespace celix { namespace dm {
          * @return the DM Component reference for chaining (fluent API)
          */
         Component<T>& removeCallbacks();
+
+        /**
+         * Safely copies a std::string into a char* buffer
+         * @param input string to copy
+         * @param dst buffer to allocate into, owner is responsible for freeing memory
+         */
+        void copyString(const std::string& input, char **dst)
+        {
+            *dst = (char*)malloc(input.length() + 1);
+            strncpy(*dst, input.c_str(), input.length());
+            *dst[input.length()] = '\0';
+        }
     };
 }}
 

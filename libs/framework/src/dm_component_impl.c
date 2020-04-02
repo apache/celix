@@ -378,8 +378,9 @@ celix_status_t celix_dmComponent_addInterface(celix_dm_component_t *component, c
         properties = celix_properties_create();
     }
 
-    if ((properties_get(properties, CELIX_FRAMEWORK_SERVICE_VERSION) == NULL) && (serviceVersion != NULL)) {
-        celix_properties_set(properties, CELIX_FRAMEWORK_SERVICE_VERSION, serviceVersion);
+    if ((properties_get(properties, CELIX_FRAMEWORK_SERVICE_VERSION) == NULL) && serviceVersion != NULL) {
+        char *version = strdup(serviceVersion);
+        celix_properties_set(properties, CELIX_FRAMEWORK_SERVICE_VERSION, version);
     }
 
     if (component->setCLanguageProperty && properties_get(properties, CELIX_FRAMEWORK_SERVICE_LANGUAGE) == NULL) { //always set default lang to C

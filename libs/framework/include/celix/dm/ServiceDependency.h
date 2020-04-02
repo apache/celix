@@ -93,8 +93,8 @@ namespace celix { namespace dm {
 
         TypedServiceDependency(const TypedServiceDependency&) = delete;
         TypedServiceDependency& operator=(const TypedServiceDependency&) = delete;
-        TypedServiceDependency(TypedServiceDependency&&) = default;
-        TypedServiceDependency& operator=(TypedServiceDependency&&) = default;
+        TypedServiceDependency(TypedServiceDependency&&) noexcept = default;
+        TypedServiceDependency& operator=(TypedServiceDependency&&) noexcept = default;
 
         /**
          * Set the component instance with a pointer
@@ -106,7 +106,7 @@ namespace celix { namespace dm {
     class CServiceDependency : public TypedServiceDependency<T> {
         using type = I;
     public:
-        CServiceDependency(const std::string name, bool valid = true);
+        CServiceDependency(const std::string &name, bool valid = true);
         virtual ~CServiceDependency() = default;
 
         /**
@@ -115,7 +115,7 @@ namespace celix { namespace dm {
          * @param serviceVersionRange The service version range, can be an empty string
          * @return the C service dependency reference for chaining (fluent API)
          */
-        CServiceDependency<T,I>& setVersionRange(const std::string serviceVersionRange);
+        CServiceDependency<T,I>& setVersionRange(const std::string &serviceVersionRange);
 
         /**
          * Sets the service filter for the C service dependency.
@@ -123,7 +123,7 @@ namespace celix { namespace dm {
          * @param filter The (additional) filter to use (e.g. "(location=front)")
          * @return the C service dependency reference for chaining (fluent API)
          */
-        CServiceDependency<T,I>& setFilter(const std::string filter);
+        CServiceDependency<T,I>& setFilter(const std::string &filter);
 
         /**
          * Specify if the service dependency is required. Default is false
@@ -211,7 +211,7 @@ namespace celix { namespace dm {
     class ServiceDependency : public TypedServiceDependency<T> {
         using type = I;
     public:
-        ServiceDependency(const std::string name = std::string{}, bool valid = true);
+        ServiceDependency(const std::string &name = std::string{}, bool valid = true);
         virtual ~ServiceDependency() = default;
 
         /**
@@ -219,21 +219,21 @@ namespace celix { namespace dm {
          *
          * @return the C++ service dependency reference for chaining (fluent API)
          */
-        ServiceDependency<T,I>& setName(const std::string name);
+        ServiceDependency<T,I>& setName(const std::string &_name);
 
         /**
          * Set the service filter of the service dependency.
          *
          * @return the C++ service dependency reference for chaining (fluent API)
          */
-        ServiceDependency<T,I>& setFilter(const std::string filter);
+        ServiceDependency<T,I>& setFilter(const std::string &filter);
 
         /**
          * Set the service version range of the service dependency.
          *
          * @return the C++ service dependency reference for chaining (fluent API)
          */
-        ServiceDependency<T,I>& setVersionRange(const std::string versionRange);
+        ServiceDependency<T,I>& setVersionRange(const std::string &versionRange);
 
         /**
          * Set the set callback for when the service dependency becomes available
