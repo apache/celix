@@ -77,8 +77,7 @@ install(DIRECTORY include/ DESTINATION include/celix COMPONENT framework
 add_library(Celix::utils ALIAS utils)
 
 
-celix_subproject(UTILS-TESTS "Option to build the utilities library tests" "OFF")
-if (ENABLE_TESTING AND UTILS-TESTS)
+if (ENABLE_TESTING)
     find_package(CppUTest REQUIRED)
 
     include_directories(SYSTEM PRIVATE ${CPPUTEST_INCLUDE_DIR})
@@ -144,4 +143,4 @@ if (ENABLE_TESTING AND UTILS-TESTS)
     SETUP_TARGET_FOR_COVERAGE(version_range_test version_range_test ${CMAKE_BINARY_DIR}/coverage/version_range_test/version_range_test)
     SETUP_TARGET_FOR_COVERAGE(version_test version_test ${CMAKE_BINARY_DIR}/coverage/version_test/version_test)
 
-endif(ENABLE_TESTING AND UTILS-TESTS)
+endif ()

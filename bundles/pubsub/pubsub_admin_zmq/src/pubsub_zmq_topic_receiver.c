@@ -23,13 +23,9 @@
 #include <pubsub/subscriber.h>
 #include <memory.h>
 #include <pubsub_constants.h>
-
 #if !defined(__APPLE__)
-
-#include <sys/epoll.h>
-
+    #include <sys/epoll.h>
 #endif
-
 #include <assert.h>
 #include <pubsub_endpoint.h>
 #include <arpa/inet.h>
@@ -76,8 +72,6 @@ struct pubsub_zmq_topic_receiver {
 
     void *zmqCtx;
     void *zmqSock;
-
-    char sync[8];
 
     struct {
         celix_thread_t thread;
@@ -130,34 +124,25 @@ typedef struct psa_zmq_subscriber_entry {
 } psa_zmq_subscriber_entry_t;
 
 
-static void pubsub_zmqTopicReceiver_addSubscriber(void *handle, void *svc, const celix_properties_t *props,
-                                                  const celix_bundle_t *owner);
-
-static void pubsub_zmqTopicReceiver_removeSubscriber(void *handle, void *svc, const celix_properties_t *props,
-                                                     const celix_bundle_t *owner);
-
-static void *psa_zmq_recvThread(void *data);
-
+static void pubsub_zmqTopicReceiver_addSubscriber(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner);
+static void pubsub_zmqTopicReceiver_removeSubscriber(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner);
+static void* psa_zmq_recvThread(void * data);
 static void psa_zmq_connectToAllRequestedConnections(pubsub_zmq_topic_receiver_t *receiver);
-
 static void psa_zmq_initializeAllSubscribers(pubsub_zmq_topic_receiver_t *receiver);
-
 static void psa_zmq_setupZmqContext(pubsub_zmq_topic_receiver_t *receiver, const celix_properties_t *topicProperties);
-
 static void psa_zmq_setupZmqSocket(pubsub_zmq_topic_receiver_t *receiver, const celix_properties_t *topicProperties);
-
 static bool psa_zmq_checkVersion(version_pt msgVersion, uint16_t major, uint16_t minor);
 
 
-pubsub_zmq_topic_receiver_t *pubsub_zmqTopicReceiver_create(celix_bundle_context_t *ctx,
-                                                            log_helper_t *logHelper,
-                                                            const char *scope,
-                                                            const char *topic,
-                                                            const celix_properties_t *topicProperties,
-                                                            long serializerSvcId,
-                                                            pubsub_serializer_service_t *serializer,
-                                                            long protocolSvcId,
-                                                            pubsub_protocol_service_t *protocol) {
+pubsub_zmq_topic_receiver_t* pubsub_zmqTopicReceiver_create(celix_bundle_context_t *ctx,
+                                                              log_helper_t *logHelper,
+                                                              const char *scope,
+                                                              const char *topic,
+                                                              const celix_properties_t *topicProperties,
+                                                              long serializerSvcId,
+                                                              pubsub_serializer_service_t *serializer,
+                                                              long protocolSvcId,
+                                                              pubsub_protocol_service_t *protocol) {
     pubsub_zmq_topic_receiver_t *receiver = calloc(1, sizeof(*receiver));
     receiver->ctx = ctx;
     receiver->logHelper = logHelper;
@@ -165,10 +150,9 @@ pubsub_zmq_topic_receiver_t *pubsub_zmqTopicReceiver_create(celix_bundle_context
     receiver->serializer = serializer;
     receiver->protocolSvcId = protocolSvcId;
     receiver->protocol = protocol;
-    receiver->scope = strndup(scope, 1024 * 1024);
+    receiver->scope = scope == NULL ? NULL : strndup(scope, 1024 * 1024);
     receiver->topic = strndup(topic, 1024 * 1024);
-    receiver->metricsEnabled = celix_bundleContext_getPropertyAsBool(ctx, PSA_ZMQ_METRICS_ENABLED,
-                                                                     PSA_ZMQ_DEFAULT_METRICS_ENABLED);
+    receiver->metricsEnabled = celix_bundleContext_getPropertyAsBool(ctx, PSA_ZMQ_METRICS_ENABLED, PSA_ZMQ_DEFAULT_METRICS_ENABLED);
 
     pubsubInterceptorsHandler_create(ctx, scope, topic, &receiver->interceptorsHandler);
 
@@ -241,15 +225,15 @@ pubsub_zmq_topic_receiver_t *pubsub_zmqTopicReceiver_create(celix_bundle_context
 
     const char *staticConnectUrls = celix_properties_get(topicProperties, PUBSUB_ZMQ_STATIC_CONNECT_URLS, NULL);
     if (receiver->zmqSock != NULL && staticConnectUrls != NULL) {
-        char *urlsCopy = strndup(staticConnectUrls, 1024 * 1024);
-        char *url;
-        char *save = urlsCopy;
+        char *urlsCopy = strndup(staticConnectUrls, 1024*1024);
+        char* url;
+        char* save = urlsCopy;
 
         while ((url = strtok_r(save, " ", &save))) {
             psa_zmq_requested_connection_entry_t *entry = calloc(1, sizeof(*entry));
             entry->statically = true;
             entry->connected = false;
-            entry->url = strndup(url, 1024 * 1024);
+            entry->url = strndup(url, 1024*1024);
             hashMap_put(receiver->requestedConnections.map, entry->url, entry);
             receiver->requestedConnections.allConnected = false;
         }
@@ -257,10 +241,10 @@ pubsub_zmq_topic_receiver_t *pubsub_zmqTopicReceiver_create(celix_bundle_context
     }
 
     //track subscribers
-    if (receiver->zmqSock != NULL) {
+    if (receiver->zmqSock != NULL ) {
         int size = snprintf(NULL, 0, "(%s=%s)", PUBSUB_SUBSCRIBER_TOPIC, topic);
-        char buf[size + 1];
-        snprintf(buf, (size_t) size + 1, "(%s=%s)", PUBSUB_SUBSCRIBER_TOPIC, topic);
+        char buf[size+1];
+        snprintf(buf, (size_t)size+1, "(%s=%s)", PUBSUB_SUBSCRIBER_TOPIC, topic);
         celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
         opts.filter.ignoreServiceLanguage = true;
         opts.filter.serviceName = PUBSUB_SUBSCRIBER_SERVICE_NAME;
@@ -272,20 +256,22 @@ pubsub_zmq_topic_receiver_t *pubsub_zmqTopicReceiver_create(celix_bundle_context
         receiver->subscriberTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
     }
 
-    if (receiver->zmqSock != NULL) {
+    if (receiver->zmqSock != NULL ) {
         receiver->recvThread.running = true;
         celixThread_create(&receiver->recvThread.thread, NULL, psa_zmq_recvThread, receiver);
         char name[64];
-        snprintf(name, 64, "ZMQ TR %s/%s", scope, topic);
+        snprintf(name, 64, "ZMQ TR %s/%s", scope == NULL ? "(null)" : scope, topic);
         celixThread_setName(&receiver->recvThread.thread, name);
     }
 
     if (receiver->zmqSock == NULL) {
-        free(receiver->scope);
+        if (receiver->scope != NULL) {
+            free(receiver->scope);
+        }
         free(receiver->topic);
         free(receiver);
         receiver = NULL;
-        L_ERROR("[PSA_ZMQ] Cannot create TopicReceiver for %s/%s", scope, topic);
+        L_ERROR("[PSA_ZMQ] Cannot create TopicReceiver for %s/%s", scope == NULL ? "(null)" : scope, topic);
     }
 
     return receiver;
@@ -305,7 +291,7 @@ void pubsub_zmqTopicReceiver_destroy(pubsub_zmq_topic_receiver_t *receiver) {
         hash_map_iterator_t iter = hashMapIterator_construct(receiver->subscribers.map);
         while (hashMapIterator_hasNext(&iter)) {
             psa_zmq_subscriber_entry_t *entry = hashMapIterator_nextValue(&iter);
-            if (entry != NULL) {
+            if (entry != NULL)  {
                 receiver->serializer->destroySerializerMap(receiver->serializer->handle, entry->msgTypes);
                 free(entry);
             }
@@ -349,11 +335,10 @@ void pubsub_zmqTopicReceiver_destroy(pubsub_zmq_topic_receiver_t *receiver) {
     free(receiver);
 }
 
-const char *pubsub_zmqTopicReceiver_scope(pubsub_zmq_topic_receiver_t *receiver) {
+const char* pubsub_zmqTopicReceiver_scope(pubsub_zmq_topic_receiver_t *receiver) {
     return receiver->scope;
 }
-
-const char *pubsub_zmqTopicReceiver_topic(pubsub_zmq_topic_receiver_t *receiver) {
+const char* pubsub_zmqTopicReceiver_topic(pubsub_zmq_topic_receiver_t *receiver) {
     return receiver->topic;
 }
 
@@ -365,8 +350,7 @@ long pubsub_zmqTopicReceiver_protocolSvcId(pubsub_zmq_topic_receiver_t *receiver
     return receiver->protocolSvcId;
 }
 
-void pubsub_zmqTopicReceiver_listConnections(pubsub_zmq_topic_receiver_t *receiver, celix_array_list_t *connectedUrls,
-                                             celix_array_list_t *unconnectedUrls) {
+void pubsub_zmqTopicReceiver_listConnections(pubsub_zmq_topic_receiver_t *receiver, celix_array_list_t *connectedUrls, celix_array_list_t *unconnectedUrls) {
     celixThreadMutex_lock(&receiver->requestedConnections.mutex);
     hash_map_iterator_t iter = hashMapIterator_construct(receiver->requestedConnections.map);
     while (hashMapIterator_hasNext(&iter)) {
@@ -384,18 +368,18 @@ void pubsub_zmqTopicReceiver_listConnections(pubsub_zmq_topic_receiver_t *receiv
 
 
 void pubsub_zmqTopicReceiver_connectTo(
-    pubsub_zmq_topic_receiver_t *receiver,
-    const char *url) {
-    L_DEBUG("[PSA_ZMQ] TopicReceiver %s/%s connecting to zmq url %s", receiver->scope, receiver->topic, url);
+        pubsub_zmq_topic_receiver_t *receiver,
+        const char *url) {
+    L_DEBUG("[PSA_ZMQ] TopicReceiver %s/%s connecting to zmq url %s", receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic, url);
 
     celixThreadMutex_lock(&receiver->requestedConnections.mutex);
     psa_zmq_requested_connection_entry_t *entry = hashMap_get(receiver->requestedConnections.map, url);
     if (entry == NULL) {
         entry = calloc(1, sizeof(*entry));
-        entry->url = strndup(url, 1024 * 1024);
+        entry->url = strndup(url, 1024*1024);
         entry->connected = false;
         entry->statically = false;
-        hashMap_put(receiver->requestedConnections.map, (void *) entry->url, entry);
+        hashMap_put(receiver->requestedConnections.map, (void*)entry->url, entry);
         receiver->requestedConnections.allConnected = false;
     }
     celixThreadMutex_unlock(&receiver->requestedConnections.mutex);
@@ -404,7 +388,7 @@ void pubsub_zmqTopicReceiver_connectTo(
 }
 
 void pubsub_zmqTopicReceiver_disconnectFrom(pubsub_zmq_topic_receiver_t *receiver, const char *url) {
-    L_DEBUG("[PSA ZMQ] TopicReceiver %s/%s disconnect from zmq url %s", receiver->scope, receiver->topic, url);
+    L_DEBUG("[PSA ZMQ] TopicReceiver %s/%s disconnect from zmq url %s", receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic, url);
 
     celixThreadMutex_lock(&receiver->requestedConnections.mutex);
     psa_zmq_requested_connection_entry_t *entry = hashMap_remove(receiver->requestedConnections.map, url);
@@ -422,19 +406,24 @@ void pubsub_zmqTopicReceiver_disconnectFrom(pubsub_zmq_topic_receiver_t *receive
     celixThreadMutex_unlock(&receiver->requestedConnections.mutex);
 }
 
-static void pubsub_zmqTopicReceiver_addSubscriber(void *handle, void *svc, const celix_properties_t *props,
-                                                  const celix_bundle_t *bnd) {
+static void pubsub_zmqTopicReceiver_addSubscriber(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *bnd) {
     pubsub_zmq_topic_receiver_t *receiver = handle;
 
     long bndId = celix_bundle_getId(bnd);
-    const char *subScope = celix_properties_get(props, PUBSUB_SUBSCRIBER_SCOPE, "default");
-    if (strncmp(subScope, receiver->scope, strlen(receiver->scope)) != 0) {
-        //not the same scope. ignore
-        return;
+    const char *subScope = celix_properties_get(props, PUBSUB_SUBSCRIBER_SCOPE, NULL);
+    if (receiver->scope == NULL){
+        if (subScope != NULL){
+            return;
+        }
+    } else {
+        if (strncmp(subScope, receiver->scope, strlen(receiver->scope)) != 0) {
+            //not the same scope. ignore
+            return;
+        }
     }
 
     celixThreadMutex_lock(&receiver->subscribers.mutex);
-    psa_zmq_subscriber_entry_t *entry = hashMap_get(receiver->subscribers.map, (void *) bndId);
+    psa_zmq_subscriber_entry_t *entry = hashMap_get(receiver->subscribers.map, (void*)bndId);
     if (entry != NULL) {
         entry->usageCount += 1;
     } else {
@@ -444,8 +433,7 @@ static void pubsub_zmqTopicReceiver_addSubscriber(void *handle, void *svc, const
         entry->svc = svc;
         entry->initialized = false;
 
-        int rc = receiver->serializer->createSerializerMap(receiver->serializer->handle, (celix_bundle_t *) bnd,
-                                                           &entry->msgTypes);
+        int rc = receiver->serializer->createSerializerMap(receiver->serializer->handle, (celix_bundle_t*)bnd, &entry->msgTypes);
 
         if (rc == 0) {
             entry->metrics = hashMap_create(NULL, NULL, NULL, NULL);
@@ -453,39 +441,36 @@ static void pubsub_zmqTopicReceiver_addSubscriber(void *handle, void *svc, const
             while (hashMapIterator_hasNext(&iter)) {
                 pubsub_msg_serializer_t *msgSer = hashMapIterator_nextValue(&iter);
                 hash_map_t *origins = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
-                hashMap_put(entry->metrics, (void *) (uintptr_t) msgSer->msgId, origins);
+                hashMap_put(entry->metrics, (void*)(uintptr_t)msgSer->msgId, origins);
             }
         }
 
         if (rc == 0) {
-            hashMap_put(receiver->subscribers.map, (void *) bndId, entry);
+            hashMap_put(receiver->subscribers.map, (void*)bndId, entry);
         } else {
-            L_ERROR("[PSA_ZMQ] Cannot create msg serializer map for TopicReceiver %s/%s", receiver->scope,
-                    receiver->topic);
+            L_ERROR("[PSA_ZMQ] Cannot create msg serializer map for TopicReceiver %s/%s", receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic);
             free(entry);
         }
     }
     celixThreadMutex_unlock(&receiver->subscribers.mutex);
 }
 
-static void pubsub_zmqTopicReceiver_removeSubscriber(void *handle, void *svc, const celix_properties_t *props,
-                                                     const celix_bundle_t *bnd) {
+static void pubsub_zmqTopicReceiver_removeSubscriber(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *bnd) {
     pubsub_zmq_topic_receiver_t *receiver = handle;
 
     long bndId = celix_bundle_getId(bnd);
 
     celixThreadMutex_lock(&receiver->subscribers.mutex);
-    psa_zmq_subscriber_entry_t *entry = hashMap_get(receiver->subscribers.map, (void *) bndId);
+    psa_zmq_subscriber_entry_t *entry = hashMap_get(receiver->subscribers.map, (void*)bndId);
     if (entry != NULL) {
         entry->usageCount -= 1;
     }
     if (entry != NULL && entry->usageCount <= 0) {
         //remove entry
-        hashMap_remove(receiver->subscribers.map, (void *) bndId);
+        hashMap_remove(receiver->subscribers.map, (void*)bndId);
         int rc = receiver->serializer->destroySerializerMap(receiver->serializer->handle, entry->msgTypes);
         if (rc != 0) {
-            L_ERROR("[PSA_ZMQ] Cannot destroy msg serializers map for TopicReceiver %s/%s", receiver->scope,
-                    receiver->topic);
+            L_ERROR("[PSA_ZMQ] Cannot destroy msg serializers map for TopicReceiver %s/%s", receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic);
         }
         hash_map_iterator_t iter = hashMapIterator_construct(entry->metrics);
         while (hashMapIterator_hasNext(&iter)) {
@@ -498,11 +483,9 @@ static void pubsub_zmqTopicReceiver_removeSubscriber(void *handle, void *svc, co
     celixThreadMutex_unlock(&receiver->subscribers.mutex);
 }
 
-static inline void
-processMsgForSubscriberEntry(pubsub_zmq_topic_receiver_t *receiver, psa_zmq_subscriber_entry_t *entry,
-                             pubsub_protocol_message_t *message, struct timespec *receiveTime) {
+static inline void processMsgForSubscriberEntry(pubsub_zmq_topic_receiver_t *receiver, psa_zmq_subscriber_entry_t* entry, pubsub_protocol_message_t *message, struct timespec *receiveTime) {
     //NOTE receiver->subscribers.mutex locked
-    pubsub_msg_serializer_t *msgSer = hashMap_get(entry->msgTypes, (void *) (uintptr_t) (message->header.msgId));
+    pubsub_msg_serializer_t* msgSer = hashMap_get(entry->msgTypes, (void*)(uintptr_t)(message->header.msgId));
     pubsub_subscriber_t *svc = entry->svc;
     bool monitor = receiver->metricsEnabled;
 
@@ -512,18 +495,14 @@ processMsgForSubscriberEntry(pubsub_zmq_topic_receiver_t *receiver, psa_zmq_subs
     int updateReceiveCount = 0;
     int updateSerError = 0;
 
-    if (msgSer != NULL) {
+    if (msgSer!= NULL) {
         void *deserializedMsg = NULL;
-        bool validVersion = psa_zmq_checkVersion(msgSer->msgVersion, message->header.msgMajorVersion,
-                                                 message->header.msgMinorVersion);
+        bool validVersion = psa_zmq_checkVersion(msgSer->msgVersion, message->header.msgMajorVersion, message->header.msgMinorVersion);
         if (validVersion) {
             if (monitor) {
                 clock_gettime(CLOCK_REALTIME, &beginSer);
             }
-            struct iovec deSerializeBuffer;
-            deSerializeBuffer.iov_base = message->payload.payload;
-            deSerializeBuffer.iov_len  = message->payload.length;
-            celix_status_t status = msgSer->deserialize(msgSer->handle, &deSerializeBuffer, 0, &deserializedMsg);
+            celix_status_t status = msgSer->deserialize(msgSer->handle, message->payload.payload, message->payload.length, &deserializedMsg);
             if (monitor) {
                 clock_gettime(CLOCK_REALTIME, &endSer);
             }
@@ -532,25 +511,22 @@ processMsgForSubscriberEntry(pubsub_zmq_topic_receiver_t *receiver, psa_zmq_subs
                 const char *msgType = msgSer->msgName;
                 uint32_t msgId = message->header.msgId;
                 celix_properties_t *metadata = message->metadata.metadata;
-                bool cont = pubsubInterceptorHandler_invokePreReceive(receiver->interceptorsHandler, msgType, msgId,
-                                                                      deserializedMsg, &metadata);
+                bool cont = pubsubInterceptorHandler_invokePreReceive(receiver->interceptorsHandler, msgType, msgId, deserializedMsg, &metadata);
                 if (cont) {
                     bool release = true;
                     svc->receive(svc->handle, msgSer->msgName, msgSer->msgId, deserializedMsg,
                                  metadata, &release);
                     if (release) {
-                        msgSer->freeDeserializeMsg(msgSer->handle, deserializedMsg);
+                        msgSer->freeMsg(msgSer->handle, deserializedMsg);
                     }
 
-                    pubsubInterceptorHandler_invokePostReceive(receiver->interceptorsHandler, msgType, msgId,
-                                                               deserializedMsg, metadata);
+                    pubsubInterceptorHandler_invokePostReceive(receiver->interceptorsHandler, msgType, msgId, deserializedMsg, metadata);
 
                     updateReceiveCount += 1;
                 }
             } else {
                 updateSerError += 1;
-                L_WARN("[PSA_ZMQ_TR] Cannot deserialize msg type %s for scope/topic %s/%s", msgSer->msgName,
-                       receiver->scope, receiver->topic);
+                L_WARN("[PSA_ZMQ_TR] Cannot deserialize msg type %s for scope/topic %s/%s", msgSer->msgName, receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic);
             }
         }
     } else {
@@ -610,8 +586,7 @@ processMsgForSubscriberEntry(pubsub_zmq_topic_receiver_t *receiver, psa_zmq_subs
     }
 }
 
-static inline void
-processMsg(pubsub_zmq_topic_receiver_t *receiver, pubsub_protocol_message_t *message, struct timespec *receiveTime) {
+static inline void processMsg(pubsub_zmq_topic_receiver_t *receiver, pubsub_protocol_message_t *message, struct timespec *receiveTime) {
     celixThreadMutex_lock(&receiver->subscribers.mutex);
     hash_map_iterator_t iter = hashMapIterator_construct(receiver->subscribers.map);
     while (hashMapIterator_hasNext(&iter)) {
@@ -623,7 +598,7 @@ processMsg(pubsub_zmq_topic_receiver_t *receiver, pubsub_protocol_message_t *mes
     celixThreadMutex_unlock(&receiver->subscribers.mutex);
 }
 
-static void *psa_zmq_recvThread(void *data) {
+static void* psa_zmq_recvThread(void * data) {
     pubsub_zmq_topic_receiver_t *receiver = data;
 
     celixThreadMutex_lock(&receiver->recvThread.mutex);
@@ -649,29 +624,24 @@ static void *psa_zmq_recvThread(void *data) {
         zmsg_t *zmsg = zmsg_recv(receiver->zmqSock);
         if (zmsg != NULL) {
             if (zmsg_size(zmsg) < 2) {
-                L_WARN(
-                    "[PSA_ZMQ_TR] Always expecting at least frames per zmsg (header + payload (+ metadata)), got %i frames",
-                    (int) zmsg_size(zmsg));
+                L_WARN("[PSA_ZMQ_TR] Always expecting at least frames per zmsg (header + payload (+ metadata)), got %i frames", (int)zmsg_size(zmsg));
             } else {
                 zframe_t *header = zmsg_pop(zmsg); // header
                 zframe_t *payload = NULL;
                 zframe_t *metadata = NULL;
 
                 pubsub_protocol_message_t message;
-                receiver->protocol->decodeHeader(receiver->protocol->handle, zframe_data(header), zframe_size(header),
-                                                 &message);
+                receiver->protocol->decodeHeader(receiver->protocol->handle, zframe_data(header), zframe_size(header), &message);
                 if (message.header.payloadSize > 0) {
                     payload = zmsg_pop(zmsg);
-                    receiver->protocol->decodePayload(receiver->protocol->handle, zframe_data(payload),
-                                                      zframe_size(payload), &message);
+                    receiver->protocol->decodePayload(receiver->protocol->handle, zframe_data(payload), zframe_size(payload), &message);
                 } else {
                     message.payload.payload = NULL;
                     message.payload.length = 0;
                 }
                 if (message.header.metadataSize > 0) {
                     metadata = zmsg_pop(zmsg);
-                    receiver->protocol->decodeMetadata(receiver->protocol->handle, zframe_data(metadata),
-                                                       zframe_size(metadata), &message);
+                    receiver->protocol->decodeMetadata(receiver->protocol->handle, zframe_data(metadata), zframe_size(metadata), &message);
                 } else {
                     message.metadata.metadata = NULL;
                 }
@@ -712,9 +682,9 @@ static void *psa_zmq_recvThread(void *data) {
     return NULL;
 }
 
-pubsub_admin_receiver_metrics_t *pubsub_zmqTopicReceiver_metrics(pubsub_zmq_topic_receiver_t *receiver) {
+pubsub_admin_receiver_metrics_t* pubsub_zmqTopicReceiver_metrics(pubsub_zmq_topic_receiver_t *receiver) {
     pubsub_admin_receiver_metrics_t *result = calloc(1, sizeof(*result));
-    snprintf(result->scope, PUBSUB_AMDIN_METRICS_NAME_MAX, "%s", receiver->scope);
+    snprintf(result->scope, PUBSUB_AMDIN_METRICS_NAME_MAX, "%s", receiver->scope == NULL ? PUBSUB_DEFAULT_ENDPOINT_SCOPE : receiver->scope);
     snprintf(result->topic, PUBSUB_AMDIN_METRICS_NAME_MAX, "%s", receiver->topic);
 
     int msgTypesCount = 0;
@@ -729,7 +699,7 @@ pubsub_admin_receiver_metrics_t *pubsub_zmqTopicReceiver_metrics(pubsub_zmq_topi
         }
     }
 
-    result->nrOfMsgTypes = (unsigned long) msgTypesCount;
+    result->nrOfMsgTypes = (unsigned long)msgTypesCount;
     result->msgTypes = calloc(msgTypesCount, sizeof(*result->msgTypes));
     int i = 0;
     iter = hashMapIterator_construct(receiver->subscribers.map);
@@ -738,15 +708,14 @@ pubsub_admin_receiver_metrics_t *pubsub_zmqTopicReceiver_metrics(pubsub_zmq_topi
         hash_map_iterator_t iter2 = hashMapIterator_construct(entry->metrics);
         while (hashMapIterator_hasNext(&iter2)) {
             hash_map_t *origins = hashMapIterator_nextValue(&iter2);
-            result->msgTypes[i].origins = calloc((size_t) hashMap_size(origins),
-                                                 sizeof(*(result->msgTypes[i].origins)));
+            result->msgTypes[i].origins = calloc((size_t)hashMap_size(origins), sizeof(*(result->msgTypes[i].origins)));
             result->msgTypes[i].nrOfOrigins = hashMap_size(origins);
             int k = 0;
             hash_map_iterator_t iter3 = hashMapIterator_construct(origins);
             while (hashMapIterator_hasNext(&iter3)) {
                 psa_zmq_subscriber_metrics_entry_t *metrics = hashMapIterator_nextValue(&iter3);
                 result->msgTypes[i].typeId = metrics->msgTypeId;
-                pubsub_msg_serializer_t *msgSer = hashMap_get(entry->msgTypes, (void *) (uintptr_t) metrics->msgTypeId);
+                pubsub_msg_serializer_t *msgSer = hashMap_get(entry->msgTypes, (void*)(uintptr_t)metrics->msgTypeId);
                 if (msgSer) {
                     snprintf(result->msgTypes[i].typeFqn, PUBSUB_AMDIN_METRICS_NAME_MAX, "%s", msgSer->msgName);
                     uuid_copy(result->msgTypes[i].origins[k].originUUID, metrics->origin);
@@ -762,11 +731,10 @@ pubsub_admin_receiver_metrics_t *pubsub_zmqTopicReceiver_metrics(pubsub_zmq_topi
 
                     k += 1;
                 } else {
-                    L_WARN("[PSA_ZMQ]: Error cannot find key 0x%X in msg map during metrics collection!\n",
-                           metrics->msgTypeId);
+                    L_WARN("[PSA_ZMQ]: Error cannot find key 0x%X in msg map during metrics collection!\n", metrics->msgTypeId);
                 }
             }
-            i += 1;
+            i +=1 ;
         }
     }
 
@@ -837,7 +805,7 @@ static void psa_zmq_setupZmqContext(pubsub_zmq_topic_receiver_t *receiver, const
         if (gotPermission) {
             zmq_ctx_set(receiver->zmqCtx, ZMQ_THREAD_PRIORITY, (int) prio);
         } else {
-            L_INFO("Skipping configuration of thread prio to %i. No permission\n", (int) prio);
+            L_INFO("Skipping configuration of thread prio to %i. No permission\n", (int)prio);
         }
     }
 
@@ -885,8 +853,9 @@ static void psa_zmq_setupZmqSocket(pubsub_zmq_topic_receiver_t *receiver, const 
     zcert_apply (sub_cert, zmq_s);
     zsock_set_curve_serverkey (zmq_s, pub_key); //apply key of publisher to socket of subscriber
 #endif
-    receiver->protocol->getSyncHeader(receiver->protocol->handle, receiver->sync);
-    zsock_set_subscribe(receiver->zmqSock, receiver->sync);
+    char sync[5];
+    receiver->protocol->getSyncHeader(receiver->protocol->handle, sync);
+    zsock_set_subscribe(receiver->zmqSock, sync);
 
 #ifdef BUILD_WITH_ZMQ_SECURITY
     ts->zmq_cert = sub_cert;
@@ -895,7 +864,7 @@ static void psa_zmq_setupZmqSocket(pubsub_zmq_topic_receiver_t *receiver, const 
 }
 
 static bool psa_zmq_checkVersion(version_pt msgVersion, uint16_t major, uint16_t minor) {
-    bool check = false;
+    bool check=false;
 
     if (major == 0 && minor == 0) {
         //no check
@@ -904,12 +873,11 @@ static bool psa_zmq_checkVersion(version_pt msgVersion, uint16_t major, uint16_t
 
     int versionMajor;
     int versionMinor;
-    if (msgVersion != NULL) {
+    if (msgVersion!=NULL) {
         version_getMajor(msgVersion, &versionMajor);
         version_getMinor(msgVersion, &versionMinor);
-        if (major == ((unsigned char) versionMajor)) { /* Different major means incompatible */
-            check = (minor >=
-                     ((unsigned char) versionMinor)); /* Compatible only if the provider has a minor equals or greater (means compatible update) */
+        if (major==((unsigned char)versionMajor)) { /* Different major means incompatible */
+            check = (minor>=((unsigned char)versionMinor)); /* Compatible only if the provider has a minor equals or greater (means compatible update) */
         }
     }
 

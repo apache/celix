@@ -109,14 +109,13 @@ celix_properties_t* pubsubEndpoint_create(
 
 struct retrieve_topic_properties_data {
     celix_properties_t *props;
-    const char *scope;
     const char *topic;
     bool isPublisher;
 };
 
 static void retrieveTopicProperties(void *handle, const celix_bundle_t *bnd) {
     struct retrieve_topic_properties_data *data = handle;
-    data->props = pubsub_utils_getTopicProperties(bnd, data->scope, data->topic, data->isPublisher);
+    data->props = pubsub_utils_getTopicProperties(bnd, data->topic, data->isPublisher);
 }
 
 celix_properties_t* pubsubEndpoint_createFromSubscriberSvc(bundle_context_t* ctx, long bundleId, const celix_properties_t *svcProps) {
@@ -129,7 +128,6 @@ celix_properties_t* pubsubEndpoint_createFromSubscriberSvc(bundle_context_t* ctx
     struct retrieve_topic_properties_data data;
     data.props = NULL;
     data.isPublisher = false;
-    data.scope = scope;
     data.topic = topic;
     celix_bundleContext_useBundle(ctx, bundleId, &data, retrieveTopicProperties);
 
@@ -158,13 +156,12 @@ celix_properties_t* pubsubEndpoint_createFromPublisherTrackerInfo(bundle_context
 
     char* topic = NULL;
     char* scopeFromFilter = NULL;
-    pubsub_getPubSubInfoFromFilter(filter, &scopeFromFilter, &topic);
+    pubsub_getPubSubInfoFromFilter(filter, &topic, &scopeFromFilter);
     const char *scope = scopeFromFilter == NULL ? "default" : scopeFromFilter;
 
     struct retrieve_topic_properties_data data;
     data.props = NULL;
     data.isPublisher = true;
-    data.scope = scope;
     data.topic = topic;
     celix_bundleContext_useBundle(ctx, bundleId, &data, retrieveTopicProperties);
 

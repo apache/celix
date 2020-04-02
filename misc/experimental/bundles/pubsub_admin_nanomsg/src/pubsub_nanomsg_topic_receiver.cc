@@ -204,7 +204,7 @@ void pubsub::nanomsg::topic_receiver::disconnectFrom(const char *url) {
 void pubsub::nanomsg::topic_receiver::addSubscriber(void *svc, const celix_properties_t *props,
                                                       const celix_bundle_t *bnd) {
     long bndId = celix_bundle_getId(bnd);
-    std::string subScope = celix_properties_get(props, PUBSUB_SUBSCRIBER_SCOPE, "default");
+    std::string subScope = celix_properties_get(props, PUBSUB_SUBSCRIBER_SCOPE, PUBSUB_DEFAULT_ENDPOINT_SCOPE);
     if (subScope != m_scope) {
         //not the same scope. ignore
         return;

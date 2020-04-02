@@ -62,7 +62,7 @@ static int pub_start(struct publisherActivator *act, celix_bundle_context_t *ctx
         snprintf(filter, 128, "(%s=%s)(%s=%s)", PUBSUB_PUBLISHER_TOPIC, topic, PUBSUB_PUBLISHER_SCOPE, scope);
         free(scope);
 #else
-        snprintf(filter, 128, "(%s=%s)", (char*) PUBSUB_PUBLISHER_TOPIC, topic);
+        snprintf(filter, 128, "(&(%s=%s)(!(%s=*)))", (char*) PUBSUB_PUBLISHER_TOPIC, topic, PUBSUB_PUBLISHER_SCOPE);
 #endif
         celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
         opts.callbackHandle = act->client;
