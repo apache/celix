@@ -129,12 +129,12 @@ celix_status_t exportRegistration_create(log_helper_t *helper, service_reference
     return status;
 }
 
-celix_status_t exportRegistration_call(export_registration_t *export, char *data, int datalength, char **responseOut, int *responseLength) {
+celix_status_t exportRegistration_call(export_registration_t *export, char *data, int datalength, deleteTypeFunc deleteType, char **responseOut, int *responseLength) {
     int status = CELIX_SUCCESS;
 
     *responseLength = -1;
     celixThreadMutex_lock(&export->mutex);
-    status = jsonRpc_call(export->intf, export->service, data, responseOut);
+    status = jsonRpc_call(export->intf, export->service, data, deleteType, responseOut);
     celixThreadMutex_unlock(&export->mutex);
 
     //printf("calling for '%s'\n");

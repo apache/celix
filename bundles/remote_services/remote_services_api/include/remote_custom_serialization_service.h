@@ -17,22 +17,20 @@
  * under the License.
  */
 
-#ifndef CELIX_EXPORT_REGISTRATION_DFI_H
-#define CELIX_EXPORT_REGISTRATION_DFI_H
+#ifndef CELIX_REMOTE_CUSTOM_SERIALIZATION_SERVICE_H
+#define CELIX_REMOTE_CUSTOM_SERIALIZATION_SERVICE_H
 
+#define RSA_CUSTOM_SERIALIZATION_SERVICE_NAME "rsa.custom.serialization"
+#define RSA_SERVICE_TARGETED_ID "targeted.service.id"
 
 #include <json_rpc.h>
-#include "export_registration.h"
-#include "log_helper.h"
-#include "endpoint_description.h"
 
-celix_status_t exportRegistration_create(log_helper_t *helper, service_reference_pt reference, endpoint_description_t *endpoint, celix_bundle_context_t *context, FILE *logFile, export_registration_t **registration);
-void exportRegistration_destroy(export_registration_t *registration);
+typedef struct rsa_custom_serialization_service {
+    void* handle;
 
-celix_status_t exportRegistration_start(export_registration_t *registration);
-celix_status_t exportRegistration_stop(export_registration_t *registration);
+    deleteTypeFunc deleteType;
+    // TODO add a serialize/deserialize function
 
-celix_status_t exportRegistration_call(export_registration_t *export, char *data, int datalength, deleteTypeFunc deleteType, char **response, int *responseLength);
+} rsa_custom_serialization_service;
 
-
-#endif //CELIX_EXPORT_REGISTRATION_DFI_H
+#endif //CELIX_REMOTE_CUSTOM_SERIALIZATION_SERVICE_H

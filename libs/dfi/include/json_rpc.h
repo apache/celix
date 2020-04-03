@@ -33,7 +33,9 @@ extern "C" {
 //logging
 DFI_SETUP_LOG_HEADER(jsonRpc);
 
-int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, char **out);
+typedef celix_status_t (*deleteTypeFunc)(const char *fqn, void* instance);
+
+int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, deleteTypeFunc deleteType, char **out);
 
 
 int jsonRpc_prepareInvokeRequest(dyn_function_type *func, const char *id, void *args[], char **out);

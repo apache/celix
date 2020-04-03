@@ -102,8 +102,9 @@ static celix_status_t bundleActivator_createExportedServicesTracker(struct activ
     return status;
 }
 
+static celix_status_t rsa_topology_stop(struct activator *act, celix_bundle_context_t *ctx);
 
-static int rsa_start(struct activator *act, celix_bundle_context_t *ctx) {
+static celix_status_t rsa_topology_start(struct activator *act, celix_bundle_context_t *ctx) {
     celix_status_t status = CELIX_SUCCESS;
     void *topology_scope;
 
@@ -215,22 +216,14 @@ static int rsa_start(struct activator *act, celix_bundle_context_t *ctx) {
     }
 
     if(status != CELIX_SUCCESS) {
-        celix_bundleContext_unregisterService(ctx, act->endpointServiceId);
-        celix_bundleContext_unregisterService(ctx, act->scopeServiceId);
-        celix_bundleContext_unregisterService(ctx, act->hookServiceId);
-        free(act->scopeService);
-        free(act->hookService);
-        free(act->endpointListener);
-        topologyManager_closeImports(act->manager);
-        topologyManager_destroy(act->manager);
-        logHelper_destroy(&act->loghelper);
+        rsa_topology_stop(act, ctx);
     }
 
     return status;
 }
 
 
-static int rsa_stop(struct activator *act, celix_bundle_context_t *ctx) {
+static celix_status_t rsa_topology_stop(struct activator *act, celix_bundle_context_t *ctx) {
     celix_status_t status = CELIX_SUCCESS;
 
     if (!act || !act->manager) {
@@ -267,4 +260,4 @@ static int rsa_stop(struct activator *act, celix_bundle_context_t *ctx) {
     return status;
 }
 
-CELIX_GEN_BUNDLE_ACTIVATOR(struct activator, rsa_start, rsa_stop);
+CELIX_GEN_BUNDLE_ACTIVATOR(struct activator, rsa_topology_start, rsa_topology_stop);

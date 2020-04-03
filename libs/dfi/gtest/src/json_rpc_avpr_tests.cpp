@@ -290,7 +290,7 @@ TEST_F(JsonAvprRpcTests, preallocated) {
     char *result = nullptr;
     tst_serv serv {nullptr, xadd, nullptr, nullptr, nullptr};
 
-    int rc = jsonRpc_call(intf, &serv, R"({"m": "add", "a": [1.0,2.0]})", &result);
+    int rc = jsonRpc_call(intf, &serv, R"({"m": "add", "a": [1.0,2.0]})", nullptr, &result);
     ASSERT_EQ(0, rc);
     ASSERT_TRUE(result != nullptr);
     ASSERT_TRUE(strstr(result, "3.0") != nullptr);
@@ -348,7 +348,7 @@ TEST_F(JsonAvprRpcTests, output) {
     char *result = nullptr;
     tst_serv serv {nullptr, nullptr, nullptr, nullptr, xstats};
 
-    int rc = jsonRpc_call(intf, &serv, R"({"m":"stats", "a": [[1.0, 2.0]]})", &result);
+    int rc = jsonRpc_call(intf, &serv, R"({"m":"stats", "a": [[1.0, 2.0]]})", nullptr, &result);
     ASSERT_EQ(0, rc);
     ASSERT_TRUE(strstr(result, "1.5") != nullptr);
 
@@ -376,7 +376,7 @@ TEST_F(JsonAvprRpcTests, output_char) {
     char *result = nullptr;
     tst_service_ex_output_char serv {nullptr, getName_ex};
 
-    int rc = jsonRpc_call(intf, &serv, R"({"m" : "getName", "a": []})", &result);
+    int rc = jsonRpc_call(intf, &serv, R"({"m" : "getName", "a": []})", nullptr, &result);
     ASSERT_EQ(0, rc);
 
     ASSERT_TRUE(strstr(result, "allocatedInFunction") != nullptr);

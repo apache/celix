@@ -79,6 +79,10 @@ celix_status_t discovery_create(celix_bundle_context_t *context, discovery_t** o
 celix_status_t discovery_destroy(discovery_t *discovery) {
     celix_status_t status = CELIX_SUCCESS;
 
+    if(discovery == NULL) {
+        return status;
+    }
+
     discovery->context = NULL;
     discovery->poller = NULL;
     discovery->server = NULL;

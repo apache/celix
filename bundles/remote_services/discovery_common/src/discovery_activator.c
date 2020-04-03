@@ -28,7 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-
+#include <celix_bundle_activator.h>
 #include "bundle_activator.h"
 #include "service_tracker.h"
 #include "celix_constants.h"
@@ -46,6 +46,7 @@ struct activator {
 	endpoint_listener_t *endpointListener;
 	service_registration_t *endpointListenerService;
 };
+static celix_status_t rsa_discovery_stop(struct activator *activator, celix_bundle_context_t *context);
 
 celix_status_t bundleActivator_createEPLTracker(struct activator *activator, service_tracker_t **tracker) {
 	celix_status_t status;
@@ -56,53 +57,33 @@ celix_status_t bundleActivator_createEPLTracker(struct activator *activator, ser
 			discovery_endpointListenerRemoved, &customizer);
 
 	if (status == CELIX_SUCCESS) {
-		status = serviceTracker_create(activator->context, (char *) OSGI_ENDPOINT_LISTENER_SERVICE, customizer, tracker);
+		status = serviceTracker_create(activator->context, OSGI_ENDPOINT_LISTENER_SERVICE, customizer, tracker);
 	}
 
 	return status;
 }
 
-celix_status_t bundleActivator_create(celix_bundle_context_t *context, void **userData) {
+static celix_status_t rsa_discovery_start(struct activator *activator, celix_bundle_context_t *context) {
 	celix_status_t status;
-
-	struct activator* activator = calloc(1,sizeof(struct activator));
-	if (!activator) {
-		return CELIX_ENOMEM;
-	}
-
-	status = discovery_create(context, &activator->discovery);
-	if (status == CELIX_SUCCESS) {
-		activator->context = context;
-
-		logHelper_create(context, &activator->loghelper);
-
-		status = bundleActivator_createEPLTracker(activator, &activator->endpointListenerTracker);
-		if(status==CELIX_SUCCESS){
-			*userData = activator;
-		}
-		else{
-			bundleActivator_destroy(activator,context);
-		}
-	}
-	else{
-		free(activator);
-	}
-
-	return status;
-}
-
-celix_status_t bundleActivator_start(void * userData, celix_bundle_context_t *context) {
-	celix_status_t status;
-	struct activator *activator = userData;
 	const char *uuid = NULL;
 
-	logHelper_start(activator->loghelper);
+    status = discovery_create(context, &activator->discovery);
+    if (status == CELIX_SUCCESS) {
+        activator->context = context;
 
-	status = bundleContext_getProperty(context, OSGI_FRAMEWORK_FRAMEWORK_UUID, &uuid);
-	if (!uuid) {
-		logHelper_log(activator->loghelper, OSGI_LOGSERVICE_DEBUG, "no framework UUID defined?!");
-		return CELIX_ILLEGAL_STATE;
-	}
+        status |= logHelper_create(context, &activator->loghelper);
+        status |= logHelper_start(activator->loghelper);
+
+        status |= bundleActivator_createEPLTracker(activator, &activator->endpointListenerTracker);
+    }
+
+    if(status == CELIX_SUCCESS) {
+        status = bundleContext_getProperty(context, OSGI_FRAMEWORK_FRAMEWORK_UUID, &uuid);
+        if (!uuid) {
+            logHelper_log(activator->loghelper, OSGI_LOGSERVICE_DEBUG, "no framework UUID defined?!");
+            return CELIX_ILLEGAL_STATE;
+        }
+    }
 
 	size_t len = 11 + strlen(OSGI_FRAMEWORK_OBJECTCLASS) + strlen(OSGI_RSA_ENDPOINT_FRAMEWORK_UUID) + strlen(uuid);
 	char *scope = malloc(len + 1);
@@ -113,11 +94,13 @@ celix_status_t bundleActivator_start(void * userData, celix_bundle_context_t *co
 	sprintf(scope, "(&(%s=*)(%s=%s))", OSGI_FRAMEWORK_OBJECTCLASS, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
 	scope[len] = 0;
 
-	logHelper_log(activator->loghelper, OSGI_LOGSERVICE_DEBUG, "using scope %s.", scope);
+	if(status == CELIX_SUCCESS) {
+        status |= logHelper_log(activator->loghelper, OSGI_LOGSERVICE_DEBUG, "using scope %s.", scope);
+    }
 
 	celix_properties_t *props = celix_properties_create();
 	celix_properties_set(props, "DISCOVERY", "true");
-	celix_properties_set(props, (char *) OSGI_ENDPOINT_LISTENER_SCOPE, scope);
+	celix_properties_set(props, OSGI_ENDPOINT_LISTENER_SCOPE, scope);
 
 	if (status == CELIX_SUCCESS) {
 		status = serviceTracker_open(activator->endpointListenerTracker);
@@ -135,7 +118,7 @@ celix_status_t bundleActivator_start(void * userData, celix_bundle_context_t *co
 			endpointListener->endpointAdded = discovery_endpointAdded;
 			endpointListener->endpointRemoved = discovery_endpointRemoved;
 
-			status = bundleContext_registerService(context, (char *) OSGI_ENDPOINT_LISTENER_SERVICE, endpointListener, props, &activator->endpointListenerService);
+			status = bundleContext_registerService(context, OSGI_ENDPOINT_LISTENER_SERVICE, endpointListener, props, &activator->endpointListenerService);
 
 			if (status == CELIX_SUCCESS) {
 				activator->endpointListener = endpointListener;
@@ -145,42 +128,38 @@ celix_status_t bundleActivator_start(void * userData, celix_bundle_context_t *co
 	// We can release the scope, as celix_properties_set makes a copy of the key & value...
 	free(scope);
 
+	if(status != CELIX_SUCCESS) {
+        rsa_discovery_stop(activator, context);
+	}
+
 	return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, celix_bundle_context_t *context) {
-	celix_status_t status;
-	struct activator *activator = userData;
+static celix_status_t rsa_discovery_stop(struct activator *activator, celix_bundle_context_t *context) {
+	celix_status_t status = CELIX_SUCCESS;
 
-	status = discovery_stop(activator->discovery);
+	status |= discovery_stop(activator->discovery);
 
-	status = serviceTracker_close(activator->endpointListenerTracker);
+	status |= serviceTracker_close(activator->endpointListenerTracker);
 
-	status = serviceRegistration_unregister(activator->endpointListenerService);
+	status |= serviceRegistration_unregister(activator->endpointListenerService);
 	free(activator->endpointListener);
 
-	logHelper_stop(activator->loghelper);
+	status |= logHelper_stop(activator->loghelper);
+
+    status |= serviceTracker_destroy(activator->endpointListenerTracker);
+
+    status |= discovery_destroy(activator->discovery);
+
+    logHelper_destroy(&activator->loghelper);
+
+    activator->loghelper = NULL;
+    activator->endpointListenerTracker = NULL;
+    activator->endpointListenerService = NULL;
+    activator->discovery = NULL;
+    activator->context = NULL;
 
 	return status;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, celix_bundle_context_t *context) {
-	celix_status_t status;
-	struct activator *activator = userData;
-
-	status = serviceTracker_destroy(activator->endpointListenerTracker);
-
-	status = discovery_destroy(activator->discovery);
-
-	logHelper_destroy(&activator->loghelper);
-
-	activator->loghelper = NULL;
-	activator->endpointListenerTracker = NULL;
-	activator->endpointListenerService = NULL;
-	activator->discovery = NULL;
-	activator->context = NULL;
-
-	free(activator);
-
-	return status;
-}
+CELIX_GEN_BUNDLE_ACTIVATOR(struct activator, rsa_discovery_start, rsa_discovery_stop);

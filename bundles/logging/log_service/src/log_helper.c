@@ -159,7 +159,11 @@ celix_status_t logHelper_logServiceRemoved(void *handle, service_reference_pt re
 
 
 celix_status_t logHelper_stop(log_helper_t *loghelper) {
-	celix_status_t status;
+	celix_status_t status = CELIX_SUCCESS;
+
+	if(loghelper == NULL) {
+	    return status;
+	}
 
     status = serviceTracker_close(loghelper->logServiceTracker);
 
@@ -168,6 +172,10 @@ celix_status_t logHelper_stop(log_helper_t *loghelper) {
 
 celix_status_t logHelper_destroy(log_helper_t **loghelper) {
         celix_status_t status = CELIX_SUCCESS;
+
+        if(loghelper == NULL) {
+            return status;
+        }
 
         if((*loghelper)->logServiceTracker){
       		serviceTracker_destroy((*loghelper)->logServiceTracker);

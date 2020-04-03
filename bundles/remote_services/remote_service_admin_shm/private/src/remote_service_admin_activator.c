@@ -39,26 +39,10 @@ struct activator {
 	service_registration_t *registration;
 };
 
-celix_status_t bundleActivator_create(celix_bundle_context_t *context, void **userData) {
-	celix_status_t status = CELIX_SUCCESS;
-	struct activator *activator;
+static celix_status_t rsa_shm_stop(struct activator *activator, celix_bundle_context_t *context);
 
-	activator = calloc(1, sizeof(*activator));
-	if (!activator) {
-		status = CELIX_ENOMEM;
-	} else {
-		activator->admin = NULL;
-		activator->registration = NULL;
-
-		*userData = activator;
-	}
-
-	return status;
-}
-
-celix_status_t bundleActivator_start(void * userData, celix_bundle_context_t *context) {
+static celix_status_t rsa_shm_start(struct activator *activator, celix_bundle_context_t *context) {
 	celix_status_t status;
-	struct activator *activator = userData;
 	remote_service_admin_service_t *remoteServiceAdmin = NULL;
 
 	status = remoteServiceAdmin_create(context, &activator->admin);
@@ -93,12 +77,15 @@ celix_status_t bundleActivator_start(void * userData, celix_bundle_context_t *co
 		}
 	}
 
+    if(status != CELIX_SUCCESS) {
+        rsa_shm_stop(activator, context);
+    }
+
 	return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, celix_bundle_context_t *context) {
+static celix_status_t rsa_shm_stop(struct activator *activator, celix_bundle_context_t *context) {
     celix_status_t status = CELIX_SUCCESS;
-    struct activator *activator = userData;
 
     serviceRegistration_unregister(activator->registration);
     activator->registration = NULL;
@@ -112,13 +99,4 @@ celix_status_t bundleActivator_stop(void * userData, celix_bundle_context_t *con
     return status;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, celix_bundle_context_t *context) {
-	celix_status_t status = CELIX_SUCCESS;
-	struct activator *activator = userData;
-
-	free(activator);
-
-	return status;
-}
-
-
+CELIX_GEN_BUNDLE_ACTIVATOR(struct activator, rsa_shm_start, rsa_shm_stop)

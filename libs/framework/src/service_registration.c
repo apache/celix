@@ -155,6 +155,10 @@ bool serviceRegistration_isValid(service_registration_pt registration) {
 celix_status_t serviceRegistration_unregister(service_registration_pt registration) {
 	celix_status_t status = CELIX_SUCCESS;
 
+	if(registration == NULL) {
+	    return status;
+	}
+
     bool notValidOrUnregistering;
     celixThreadRwlock_readLock(&registration->lock);
     notValidOrUnregistering = !serviceRegistration_isValid(registration) || registration->isUnregistering;

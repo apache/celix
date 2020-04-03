@@ -34,19 +34,12 @@ celix_status_t remoteServiceAdmin_destroy(remote_service_admin_t **admin);
 
 celix_status_t remoteServiceAdmin_stop(remote_service_admin_t *admin);
 
-celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *admin, char *serviceId, celix_properties_t *properties, array_list_pt *registrations);
+celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *admin, char *serviceId, celix_properties_t *properties, array_list_t **registrations);
 celix_status_t remoteServiceAdmin_removeExportedService(remote_service_admin_t *admin, export_registration_t *registration);
 celix_status_t remoteServiceAdmin_getExportedServices(remote_service_admin_t *admin, array_list_pt *services);
 celix_status_t remoteServiceAdmin_getImportedEndpoints(remote_service_admin_t *admin, array_list_pt *services);
 celix_status_t remoteServiceAdmin_importService(remote_service_admin_t *admin, endpoint_description_t *endpoint, import_registration_t **registration);
 celix_status_t remoteServiceAdmin_removeImportedService(remote_service_admin_t *admin, import_registration_t *registration);
-
-
-celix_status_t exportReference_getExportedEndpoint(export_reference_t *reference, endpoint_description_t **endpoint);
-celix_status_t exportReference_getExportedService(export_reference_t *reference, service_reference_pt *service);
-
-celix_status_t importReference_getImportedEndpoint(import_reference_t *reference);
-celix_status_t importReference_getImportedService(import_reference_t *reference);
 
 celix_status_t remoteServiceAdmin_destroyEndpointDescription(endpoint_description_t **description);
 

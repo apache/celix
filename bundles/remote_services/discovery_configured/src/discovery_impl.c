@@ -81,12 +81,15 @@ celix_status_t discovery_start(discovery_t *discovery) {
 }
 
 celix_status_t discovery_stop(discovery_t *discovery) {
-	celix_status_t status;
+	celix_status_t status = CELIX_SUCCESS;
 
-	status = endpointDiscoveryServer_destroy(discovery->server);
-	status = endpointDiscoveryPoller_destroy(discovery->poller);
 
-	logHelper_stop(discovery->loghelper);
+	if(discovery != NULL) {
+        status |= endpointDiscoveryServer_destroy(discovery->server);
+        status |= endpointDiscoveryPoller_destroy(discovery->poller);
+
+        status |= logHelper_stop(discovery->loghelper);
+    }
 
 	return status;
 }

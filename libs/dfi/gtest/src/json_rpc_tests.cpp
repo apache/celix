@@ -155,6 +155,42 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
         return 0;
     }
 
+    int statsCustomDelete(void*, struct tst_seq input, struct tst_StatsResult **out) {
+        assert(out != nullptr);
+        assert(*out == nullptr);
+        double total = 0.0;
+        unsigned int count = 0;
+        auto max = DBL_MIN;
+        auto min = DBL_MAX;
+
+        unsigned int i;
+        for (i = 0; i<input.len; i += 1) {
+            total += input.buf[i];
+            count += 1;
+            if (input.buf[i] > max) {
+                max = input.buf[i];
+            }
+            if (input.buf[i] < min) {
+                min = input.buf[i];
+            }
+        }
+
+        auto result = new tst_StatsResult;
+        if(count>0) {
+            result->average = total / count;
+        }
+        result->min = min;
+        result->max = max;
+        auto buf = new double[input.len];
+        memcpy(buf, input.buf, input.len * sizeof(double));
+        result->input.len = input.len;
+        result->input.cap = input.len;
+        result->input.buf = buf;
+
+        *out = result;
+        return 0;
+    }
+
     struct item {
         double a;
         double b;
@@ -190,9 +226,67 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
         char *result = nullptr;
         tst_serv serv {nullptr, add, nullptr, nullptr, nullptr};
 
-        rc = jsonRpc_call(intf, &serv, R"({"m":"add(DD)D", "a": [1.0,2.0]})", &result);
+        rc = jsonRpc_call(intf, &serv, R"({"m":"add(DD)D", "a": [1.0,2.0]})", nullptr, &result);
         ASSERT_EQ(0, rc);
         ASSERT_TRUE(strstr(result, "3.0") != nullptr);
+
+        free(result);
+        dynInterface_destroy(intf);
+    }
+
+    bool customDeleteCalled;
+    void callTestCustomDelete(void) {
+        dyn_interface_type *intf = nullptr;
+        FILE *desc = fopen("descriptors/example1.descriptor", "r");
+        ASSERT_TRUE(desc != nullptr);
+        int rc = dynInterface_parse(desc, &intf);
+        ASSERT_EQ(0, rc);
+        fclose(desc);
+
+        char *result = nullptr;
+        tst_serv serv {nullptr, nullptr, nullptr, nullptr, statsCustomDelete};
+        deleteTypeFunc deleteType = [](const char *fqn, void *ptr) -> celix_status_t {
+            if(strcmp(fqn, "StatsResult") != 0 ){
+                throw std::runtime_error("fqn incorrect");
+            }
+            auto *res = static_cast<tst_StatsResult*>(ptr);
+            delete[] res->input.buf;
+            delete res;
+            customDeleteCalled = true;
+            return CELIX_SUCCESS;
+        };
+
+        customDeleteCalled = false;
+        rc = jsonRpc_call(intf, &serv, R"({"m":"stats([D)LStatsResult;", "a": [[1.0,2.0]]})", deleteType, &result);
+        ASSERT_EQ(0, rc);
+        ASSERT_TRUE(strstr(result, "1.5") != nullptr);
+        ASSERT_TRUE(customDeleteCalled);
+
+        free(result);
+        dynInterface_destroy(intf);
+    }
+
+    // AddressSanitizer will check if memory is deleted when, f.e., fqn is not found.
+    void callTestCustomDeleteFailure(void) {
+        dyn_interface_type *intf = nullptr;
+        FILE *desc = fopen("descriptors/example1.descriptor", "r");
+        ASSERT_TRUE(desc != nullptr);
+        int rc = dynInterface_parse(desc, &intf);
+        ASSERT_EQ(0, rc);
+        fclose(desc);
+
+        char *result = nullptr;
+        tst_serv serv {nullptr, nullptr, nullptr, nullptr, stats};
+        deleteTypeFunc deleteType = [](const char *, void *) -> celix_status_t {
+            customDeleteCalled = true;
+            return CELIX_JSONRPC_EXCEPTION;
+        };
+
+        customDeleteCalled = false;
+        rc = jsonRpc_call(intf, &serv, R"({"m":"stats([D)LStatsResult;", "a": [[1.0,2.0]]})", deleteType, &result);
+        ASSERT_EQ(0, rc);
+        ASSERT_TRUE(strstr(result, "1.5") != nullptr);
+        ASSERT_TRUE(customDeleteCalled);
 
         free(result);
         dynInterface_destroy(intf);
@@ -209,7 +303,7 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
         char *result = nullptr;
         tst_serv serv {nullptr, nullptr, nullptr, nullptr, stats};
 
-        rc = jsonRpc_call(intf, &serv, R"({"m":"stats([D)LStatsResult;", "a": [[1.0,2.0]]})", &result);
+        rc = jsonRpc_call(intf, &serv, R"({"m":"stats([D)LStatsResult;", "a": [[1.0,2.0]]})", nullptr, &result);
         ASSERT_EQ(0, rc);
         ASSERT_TRUE(strstr(result, "1.5") != nullptr);
 
@@ -322,7 +416,7 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
         char *result = nullptr;
         tst_serv_example4 serv {nullptr, getName_example4};
 
-        rc = jsonRpc_call(intf, &serv, R"({"m": "getName(V)t", "a": []})", &result);
+        rc = jsonRpc_call(intf, &serv, R"({"m": "getName(V)t", "a": []})", nullptr, &result);
         ASSERT_EQ(0, rc);
 
         ASSERT_TRUE(strstr(result, "allocatedInFunction") != nullptr);
@@ -402,6 +496,14 @@ TEST_F(JsonRpcTests, handleTestOut) {
 
 TEST_F(JsonRpcTests, callPre) {
     callTestPreAllocated();
+}
+
+TEST_F(JsonRpcTests, callOutCustomDelete) {
+    callTestCustomDelete();
+}
+
+TEST_F(JsonRpcTests, callOutCustomDeleteFailure) {
+    callTestCustomDeleteFailure();
 }
 
 TEST_F(JsonRpcTests, callOut) {

@@ -142,6 +142,10 @@ celix_status_t serviceTracker_createWithFilter(bundle_context_pt context, const 
 }
 
 celix_status_t serviceTracker_destroy(service_tracker_pt tracker) {
+    if(tracker == NULL) {
+        return CELIX_SUCCESS;
+    }
+
     if (tracker->customizer != NULL) {
 	    serviceTrackerCustomizer_destroy(tracker->customizer);
 	}
@@ -234,6 +238,10 @@ celix_status_t serviceTracker_close(service_tracker_pt tracker) {
 	//put all tracked entries in tmp array list, so that the untrack (etc) calls are not blocked.
     //set state to close to prevent service listener events
 
+    if(tracker == NULL) {
+        return CELIX_SUCCESS;
+    }
+
     celixThreadRwlock_writeLock(&tracker->instanceLock);
     celix_service_tracker_instance_t *instance = tracker->instance;
     tracker->instance = NULL;
@@ -248,16 +256,18 @@ celix_status_t serviceTracker_close(service_tracker_pt tracker) {
     if (instance != NULL) {
         celixThreadRwlock_writeLock(&instance->lock);
         int size = celix_arrayList_size(instance->trackedServices);
-        celix_tracked_entry_t *trackedEntries[size];
-        for (int i = 0; i < arrayList_size(instance->trackedServices); i++) {
-            trackedEntries[i] = (celix_tracked_entry_t *) arrayList_get(instance->trackedServices, i);
-        }
-        arrayList_clear(instance->trackedServices);
-        celixThreadRwlock_unlock(&instance->lock);
+        if(size > 0) {
+            celix_tracked_entry_t *trackedEntries[size];
+            for (int i = 0; i < arrayList_size(instance->trackedServices); i++) {
+                trackedEntries[i] = (celix_tracked_entry_t *) arrayList_get(instance->trackedServices, i);
+            }
+            arrayList_clear(instance->trackedServices);
+            celixThreadRwlock_unlock(&instance->lock);
 
-        //loop trough tracked entries an untrack
-        for (int i = 0; i < size; i++) {
-            serviceTracker_untrackTracked(instance, trackedEntries[i]);
+            //loop trough tracked entries an untrack
+            for (int i = 0; i < size; i++) {
+                serviceTracker_untrackTracked(instance, trackedEntries[i]);
+            }
         }
 
         celixThreadMutex_lock(&instance->closingLock);

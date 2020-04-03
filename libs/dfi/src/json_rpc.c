@@ -40,7 +40,7 @@ struct generic_service_layout {
 	gen_func_type methods[];
 };
 
-int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, char **out) {
+int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, deleteTypeFunc deleteType, char **out) {
 	int status = OK;
 
 	dyn_type* returnType = NULL;
@@ -210,7 +210,14 @@ int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, c
 						}
 
 						if (status == OK) {
-                            dynType_free(typedTypedType, ptr);
+						    if(deleteType != NULL) {
+						        celix_status_t ret = deleteType(typedTypedType->name, ptr);
+						        if(ret == CELIX_JSONRPC_EXCEPTION) {
+									dynType_free(typedTypedType, ptr);
+						        }
+						    } else {
+                                dynType_free(typedTypedType, ptr);
+                            }
 						}
 					}
 

@@ -830,7 +830,7 @@ static void serviceRegistry_callHooksForListenerFilter(service_registry_pt regis
     for (int i = 0; i < size; ++i) {
         celix_service_registry_listener_hook_entry_t* entry = arrayList_get(registry->listenerHooks, i);
         if (entry != NULL) {
-            celix_increaseCountHook(entry); //increate use count to ensure the hook cannot be removed, untill used
+            celix_increaseCountHook(entry); //increase use count to ensure the hook cannot be removed, until used
             celix_arrayList_add(hookRegistrations, entry);
         }
     }

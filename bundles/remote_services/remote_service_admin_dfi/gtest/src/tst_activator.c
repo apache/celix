@@ -49,19 +49,33 @@ struct activator {
     pthread_mutex_t mutex; //protects below
     calculator_service_t *calc;
     remote_example_t *remoteExample;
+    long remoteExampleSvcId;
 };
 
-static void bndSetCalc(void* handle, void* svc) {
+static void bndSetCalc(void* handle, void* svc, const celix_properties_t *props) {
+    long svcId = -1;
     struct activator * act = handle;
+    if(props != NULL) {
+        svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1);
+        printf("bndSetCalc service id %li\n", svcId);
+    }
     pthread_mutex_lock(&act->mutex);
     act->calc = svc;
     pthread_mutex_unlock(&act->mutex);
 }
 
-static void bndSetRemoteExample(void* handle, void* svc) {
+static void bndSetRemoteExample(void* handle, void* svc, const celix_properties_t *props) {
     struct activator * act = handle;
+
+    long svcId = -1;
+    if(props != NULL) {
+        svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1);
+        printf("bndSetRemoteExample service id %li\n", svcId);
+    }
+
     pthread_mutex_lock(&act->mutex);
     act->remoteExample = svc;
+    act->remoteExampleSvcId = svcId;
     pthread_mutex_unlock(&act->mutex);
 }
 
@@ -289,7 +303,7 @@ static celix_status_t bndStart(struct activator *act, celix_bundle_context_t* ct
     //track (remote) service
     {
         celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
-        opts.set = bndSetCalc;
+        opts.setWithProperties = bndSetCalc;
         opts.callbackHandle = act;
         opts.filter.serviceName = CALCULATOR_SERVICE;
         opts.filter.ignoreServiceLanguage = true;
@@ -297,7 +311,7 @@ static celix_status_t bndStart(struct activator *act, celix_bundle_context_t* ct
     }
     {
         celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
-        opts.set = bndSetRemoteExample;
+        opts.setWithProperties = bndSetRemoteExample;
         opts.callbackHandle = act;
         opts.filter.serviceName = REMOTE_EXAMPLE_NAME;
         opts.filter.ignoreServiceLanguage = true;
