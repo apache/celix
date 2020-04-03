@@ -41,8 +41,9 @@ namespace celix { namespace dm {
     };
 
     class BaseServiceDependency {
+    private:
+        bool valid;
     protected:
-        const bool valid;
         celix_dm_service_dependency_t *cServiceDep {nullptr};
 
         void setDepStrategy(DependencyUpdateStrategy strategy) {
@@ -70,6 +71,8 @@ namespace celix { namespace dm {
 
         BaseServiceDependency(const BaseServiceDependency&) = delete;
         BaseServiceDependency& operator=(const BaseServiceDependency&) = delete;
+        BaseServiceDependency(BaseServiceDependency&&) noexcept = default;
+        BaseServiceDependency& operator=(BaseServiceDependency&&) noexcept = default;
 
         /**
          * Whether the service dependency is valid.
@@ -89,7 +92,7 @@ namespace celix { namespace dm {
         T* componentInstance {nullptr};
     public:
         TypedServiceDependency(bool valid) : BaseServiceDependency(valid) {}
-        virtual ~TypedServiceDependency() = default;
+        ~TypedServiceDependency() override = default;
 
         TypedServiceDependency(const TypedServiceDependency&) = delete;
         TypedServiceDependency& operator=(const TypedServiceDependency&) = delete;
@@ -107,7 +110,12 @@ namespace celix { namespace dm {
         using type = I;
     public:
         CServiceDependency(const std::string &name, bool valid = true);
-        virtual ~CServiceDependency() = default;
+        ~CServiceDependency() override = default;
+
+        CServiceDependency(const CServiceDependency&) = delete;
+        CServiceDependency& operator=(const CServiceDependency&) = delete;
+        CServiceDependency(CServiceDependency&&) noexcept = default;
+        CServiceDependency& operator=(CServiceDependency&&) noexcept = default;
 
         /**
          * Sets the service version range for the C service dependency.
@@ -212,7 +220,12 @@ namespace celix { namespace dm {
         using type = I;
     public:
         ServiceDependency(const std::string &name = std::string{}, bool valid = true);
-        virtual ~ServiceDependency() = default;
+        ~ServiceDependency() override = default;
+
+        ServiceDependency(const ServiceDependency&) = delete;
+        ServiceDependency& operator=(const ServiceDependency&) = delete;
+        ServiceDependency(ServiceDependency&&) noexcept = default;
+        ServiceDependency& operator=(ServiceDependency&&) noexcept = default;
 
         /**
          * Set the service name of the service dependency.

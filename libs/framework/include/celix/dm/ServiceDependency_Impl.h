@@ -47,7 +47,7 @@ CServiceDependency<T,I>& CServiceDependency<T,I>::setFilter(const std::string &_
 
 template<class T, typename I>
 void CServiceDependency<T,I>::setupService() {
-    if (!this->valid) {
+    if (!this->isValid()) {
         return;
     }
     const char* cversion = this->versionRange.empty() ? nullptr : versionRange.c_str();
@@ -57,7 +57,7 @@ void CServiceDependency<T,I>::setupService() {
 
 template<class T, typename I>
 CServiceDependency<T,I>& CServiceDependency<T,I>::setAddLanguageFilter(bool addLang) {
-//    if (!this->valid) {
+//    if (!this->isValid()) {
 //        *this;
 //    }
     celix_serviceDependency_setAddCLanguageFilter(this->cServiceDependency(), addLang);
@@ -67,7 +67,7 @@ CServiceDependency<T,I>& CServiceDependency<T,I>::setAddLanguageFilter(bool addL
 
 template<class T, typename I>
 CServiceDependency<T,I>& CServiceDependency<T,I>::setRequired(bool req) {
-    if (!this->valid) {
+    if (!this->isValid()) {
         return *this;
     }
     celix_dmServiceDependency_setRequired(this->cServiceDependency(), req);
@@ -76,7 +76,7 @@ CServiceDependency<T,I>& CServiceDependency<T,I>::setRequired(bool req) {
 
 template<class T, typename I>
 CServiceDependency<T,I>& CServiceDependency<T,I>::setStrategy(DependencyUpdateStrategy strategy) {
-    if (!this->valid) {
+    if (!this->isValid()) {
         return *this;
     }
     this->setDepStrategy(strategy);
@@ -156,7 +156,7 @@ CServiceDependency<T,I>& CServiceDependency<T,I>::setCallbacks(std::function<voi
 
 template<class T, typename I>
 void CServiceDependency<T,I>::setupCallbacks() {
-    if (!this->valid) {
+    if (!this->isValid()) {
         return;
     }
 
@@ -224,7 +224,7 @@ ServiceDependency<T,I>::ServiceDependency(const std::string &name, bool valid) :
 
 template<class T, class I>
 void ServiceDependency<T,I>::setupService() {
-    if (!this->valid) {
+    if (!this->isValid()) {
         return;
     }
 
@@ -412,7 +412,7 @@ int ServiceDependency<T,I>::invokeCallback(std::function<void(I*, Properties&&)>
 
 template<class T, class I>
 void ServiceDependency<T,I>::setupCallbacks() {
-    if (!this->valid) {
+    if (!this->isValid()) {
         return;
     }
 
