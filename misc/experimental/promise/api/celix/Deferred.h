@@ -36,6 +36,7 @@ namespace celix {
         using type = T;
 
         void fail(std::exception_ptr p);
+        void fail(const std::exception& e);
 
         Promise<T> getPromise();
 
@@ -64,6 +65,11 @@ namespace celix {
 template<typename T>
 inline void celix::Deferred<T>::fail(std::exception_ptr p) {
     state->fail(p);
+}
+
+template<typename T>
+inline void celix::Deferred<T>::fail(const std::exception& e) {
+    state->fail(e);
 }
 
 template<typename T>

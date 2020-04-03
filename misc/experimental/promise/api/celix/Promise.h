@@ -30,12 +30,19 @@ namespace celix {
 
         explicit Promise(std::shared_ptr<celix::SharedPromiseState<T>> s);
 
+//        ~Promise() {
+//            //TODO maybe make a special detach call to state if the count is 1
+//            //state->detachIfNeeded(state); //create a callback with ref to self if share_ptr count is 1
+//        }
+
         std::exception_ptr getFailure() const;
 
         const T& getValue() const;
         T moveValue();
 
         bool isDone() const;
+
+        void wait() const; //NOTE not part of the OSGI promise, wait till resolved (used in testing)
         
         Promise<T>& onSuccess(std::function<void(T)> success);
 
@@ -254,12 +261,12 @@ inline celix::Promise<T>::Promise(std::shared_ptr<celix::SharedPromiseState<T>> 
 
 template<typename T>
 inline const T& celix::Promise<T>::getValue() const {
-    return state->get();
+    return state->getValue();
 }
 
 template<typename T>
 inline T celix::Promise<T>::moveValue() {
-    return state->move();
+    return state->moveValue();
 }
 
 template<typename T>
@@ -269,7 +276,7 @@ inline bool celix::Promise<T>::isDone() const {
 
 template<typename T>
 inline std::exception_ptr celix::Promise<T>::getFailure() const {
-    return state->failure();
+    return state->getFailure();
 }
 
 template<typename T>
@@ -310,25 +317,28 @@ inline celix::Promise<T> celix::Promise<T>::recover(std::function<T()> recover) 
 template<typename T>
 template<typename R>
 inline celix::Promise<R> celix::Promise<T>::map(std::function<R(T)> mapper) {
-    return celix::Promise<R>{celix::SharedPromiseState<T>::map(state, std::move(mapper))};
+    return celix::Promise<R>{state->map(std::move(mapper))};
 }
 
 
 template<typename T>
 inline celix::Promise<T> celix::Promise<T>::thenAccept(std::function<void(T)> consumer) {
-    return celix::Promise<T>{celix::SharedPromiseState<T>::thenAccept(state, std::move(consumer))};
+    return celix::Promise<T>{state->thenAccept(std::move(consumer))};
 }
 
 template<typename T>
 inline celix::Promise<T> celix::Promise<T>::fallbackTo(celix::Promise<T> fallback) {
-    auto p = celix::SharedPromiseState<T>::fallbackTo(state, fallback.state);
-    return celix::Promise<T>{p};
+    return celix::Promise<T>{state->fallbackTo(fallback.state)};
 }
 
 template<typename T>
 inline celix::Promise<T> celix::Promise<T>::filter(std::function<bool(T)> predicate) {
-    auto p = celix::SharedPromiseState<T>::filter(state, std::move(predicate));
-    return celix::Promise<T>{p};
+    return celix::Promise<T>{state->filter(std::move(predicate))};
+}
+
+template<typename T>
+inline void celix::Promise<T>::wait() const {
+    state->wait();
 }
 
 //template<typename T>
