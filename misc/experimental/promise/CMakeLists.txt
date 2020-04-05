@@ -15,6 +15,10 @@
 # specific language governing permissions and limitations
 # under the License.
 
+#NOTE: TBB does not yet deliver a TBBConfig.cmake on Ubuntu 18, using a FindTBB.cmake file
+if (UNIX AND NOT APPLE)
+    set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+endif ()
 find_package(TBB REQUIRED)
 
 add_library(celix_Promise INTERFACE)

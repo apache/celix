@@ -18,7 +18,7 @@
 add_executable(test_promise
     src/promise_tests.cc
 )
-target_link_libraries(test_promise PRIVATE GTest::GTest GTest::GMain Celix::Promise) #TODO only GTest::GMain should be needed
+target_link_libraries(test_promise PRIVATE GTest::GTest GTest::Main Celix::Promise)
 
 add_test(NAME test_promise COMMAND test_promise)
 SETUP_TARGET_FOR_COVERAGE(test_promise_cov test_promise ${CMAKE_BINARY_DIR}/coverage/promise ..)

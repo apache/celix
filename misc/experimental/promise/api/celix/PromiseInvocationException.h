@@ -27,9 +27,9 @@ namespace celix {
     class PromiseInvocationException : public std::exception {
     public:
         explicit PromiseInvocationException(const char* what) : w{what} {}
-        const char* what() const noexcept override { return w; }
+        const char* what() const noexcept override { return w.c_str(); }
     private:
-        const char *w;
+        std::string w;
     };
 }
 
