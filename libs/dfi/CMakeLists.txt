@@ -52,31 +52,6 @@ install(DIRECTORY include/ DESTINATION include/celix/dfi COMPONENT dfi)
 add_library(Celix::dfi ALIAS dfi)
 
 if (ENABLE_TESTING)
-    find_package(CppUTest REQUIRED)
-
-	add_executable(test_dfi
-        test/dyn_avpr_tests.cpp
-        test/dyn_type_tests.cpp
-        test/dyn_function_tests.cpp
-        test/dyn_closure_tests.cpp
-        test/dyn_avpr_function_tests.cpp
-        test/dyn_interface_tests.cpp
-        test/dyn_avpr_interface_tests.cpp
-        test/dyn_message_tests.cpp
-        test/json_serializer_tests.cpp
-        test/json_rpc_tests.cpp
-        test/json_rpc_avpr_tests.cpp
-        test/avrobin_serialization_tests.cpp
-		test/run_tests.cpp
-	)
-
-	target_include_directories(test_dfi SYSTEM PRIVATE ${CPPUTEST_INCLUDE_DIR})
-	target_link_libraries(test_dfi PRIVATE Celix::dfi Celix::utils FFI::lib Jansson ${CPPUTEST_LIBRARIES})
-
-    file(COPY ${CMAKE_CURRENT_LIST_DIR}/test/schemas DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-    file(COPY ${CMAKE_CURRENT_LIST_DIR}/test/descriptors DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-
-	add_test(NAME run_test_dfi COMMAND test_dfi)
-	SETUP_TARGET_FOR_COVERAGE(test_dfi_cov test_dfi ${CMAKE_BINARY_DIR}/coverage/test_dfi/test_dfi)
+	add_subdirectory(gtest)
 endif(ENABLE_TESTING)
 

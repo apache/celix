@@ -18,6 +18,8 @@
  */
 
 #include <sstream>
+#include <arpa/inet.h>
+
 #include <pubsub_wire_protocol_common.h>
 
 #include "gtest/gtest.h"
@@ -67,6 +69,9 @@ TEST_F(WireProtocolV1Test, WireProtocolV1Test_EncodeHeader_Test) { // NOLINT(cer
     for (int i = 0; i < 24; i++) {
         ASSERT_EQ(((unsigned char*) headerData)[i], exp[i]);
     }
+
+    pubsubProtocol_destroy(wireprotocol);
+    free(headerData);
 }
 
 TEST_F(WireProtocolV1Test, WireProtocolV1Test_DecodeHeader_Test) { // NOLINT(cert-err58-cpp)
@@ -97,6 +102,8 @@ TEST_F(WireProtocolV1Test, WireProtocolV1Test_DecodeHeader_Test) { // NOLINT(cer
     ASSERT_EQ(0, message.header.msgMinorVersion);
     ASSERT_EQ(2, message.header.payloadSize);
     ASSERT_EQ(3, message.header.metadataSize);
+
+    pubsubProtocol_destroy(wireprotocol);
 }
 
 TEST_F(WireProtocolV1Test, WireProtocolV1Test_WireProtocolV1Test_DecodeHeader_IncorrectSync_Test) { // NOLINT(cert-err58-cpp)
@@ -122,6 +129,8 @@ TEST_F(WireProtocolV1Test, WireProtocolV1Test_WireProtocolV1Test_DecodeHeader_In
     celix_status_t status = pubsubProtocol_decodeHeader(nullptr, exp, 24, &message);
 
     ASSERT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
+
+    pubsubProtocol_destroy(wireprotocol);
 }
 
 TEST_F(WireProtocolV1Test, WireProtocolV1Test_WireProtocolV1Test_DecodeHeader_IncorrectVersion_Test) { // NOLINT(cert-err58-cpp)
@@ -147,6 +156,8 @@ TEST_F(WireProtocolV1Test, WireProtocolV1Test_WireProtocolV1Test_DecodeHeader_In
     celix_status_t status = pubsubProtocol_decodeHeader(nullptr, exp, 24, &message);
 
     ASSERT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
+
+    pubsubProtocol_destroy(wireprotocol);
 }
 
 TEST_F(WireProtocolV1Test, WireProtocolV1Test_EncodeMetadata_Test) { // NOLINT(cert-err58-cpp)
@@ -163,7 +174,7 @@ TEST_F(WireProtocolV1Test, WireProtocolV1Test_EncodeMetadata_Test) { // NOLINT(c
     celix_status_t status = pubsubProtocol_encodeMetadata(nullptr, &message, &data, &length);
 
     unsigned char exp[12];
-    uint32_t s = 1;
+    uint32_t s = htonl(1);
     memcpy(exp, &s, sizeof(uint32_t));
     memcpy(exp + 4, "1:a,1:b,", 8);
 
@@ -172,6 +183,10 @@ TEST_F(WireProtocolV1Test, WireProtocolV1Test_EncodeMetadata_Test) { // NOLINT(c
     for (int i = 0; i < 12; i++) {
         ASSERT_EQ(((unsigned char*) data)[i], exp[i]);
     }
+
+    celix_properties_destroy(message.metadata.metadata);
+    free(data);
+    pubsubProtocol_destroy(wireprotocol);
 }
 
 TEST_F(WireProtocolV1Test, WireProtocolV1Test_DecodeMetadata_Test) { // NOLINT(cert-err58-cpp)
@@ -179,7 +194,7 @@ TEST_F(WireProtocolV1Test, WireProtocolV1Test_DecodeMetadata_Test) { // NOLINT(c
     pubsubProtocol_create(&wireprotocol);
 
     unsigned char exp[12];
-    uint32_t s = 1;
+    uint32_t s = htonl(1);
     memcpy(exp, &s, sizeof(uint32_t));
     memcpy(exp + 4, "1:a,1:b,", 8);
 
@@ -190,6 +205,10 @@ TEST_F(WireProtocolV1Test, WireProtocolV1Test_DecodeMetadata_Test) { // NOLINT(c
     ASSERT_EQ(1, celix_properties_size(message.metadata.metadata));
     const char * value = celix_properties_get(message.metadata.metadata, "a", nullptr);
     ASSERT_STREQ("b", value);
+
+    celix_properties_destroy(message.metadata.metadata);
+
+    pubsubProtocol_destroy(wireprotocol);
 }
 
 TEST_F(WireProtocolV1Test, WireProtocolV1Test_DecodeMetadata_EmptyKey_Test) { // NOLINT(cert-err58-cpp)
@@ -197,7 +216,7 @@ TEST_F(WireProtocolV1Test, WireProtocolV1Test_DecodeMetadata_EmptyKey_Test) { //
     pubsubProtocol_create(&wireprotocol);
 
     unsigned char exp[11];
-    uint32_t s = 1;
+    uint32_t s = htonl(1);
     memcpy(exp, &s, sizeof(uint32_t));
     memcpy(exp + 4, "0:,1:b,", 7);
 
@@ -208,6 +227,9 @@ TEST_F(WireProtocolV1Test, WireProtocolV1Test_DecodeMetadata_EmptyKey_Test) { //
     ASSERT_EQ(1, celix_properties_size(message.metadata.metadata));
     const char * value = celix_properties_get(message.metadata.metadata, "", nullptr);
     ASSERT_STREQ("b", value);
+
+    celix_properties_destroy(message.metadata.metadata);
+    pubsubProtocol_destroy(wireprotocol);
 }
 
 TEST_F(WireProtocolV1Test, WireProtocolV1Test_DecodeMetadata_SpecialChars_Test) { // NOLINT(cert-err58-cpp)
@@ -215,7 +237,7 @@ TEST_F(WireProtocolV1Test, WireProtocolV1Test_DecodeMetadata_SpecialChars_Test) 
     pubsubProtocol_create(&wireprotocol);
 
     unsigned char exp[15];
-    uint32_t s = 1;
+    uint32_t s = htonl(1);
     memcpy(exp, &s, sizeof(uint32_t));
     memcpy(exp + 4, "4:a,:l,1:b,", 11);
 
@@ -226,5 +248,8 @@ TEST_F(WireProtocolV1Test, WireProtocolV1Test_DecodeMetadata_SpecialChars_Test) 
     ASSERT_EQ(1, celix_properties_size(message.metadata.metadata));
     const char * value = celix_properties_get(message.metadata.metadata, "a,:l", nullptr);
     ASSERT_STREQ("b", value);
+
+    celix_properties_destroy(message.metadata.metadata);
+    pubsubProtocol_destroy(wireprotocol);
 }
 

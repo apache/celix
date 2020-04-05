@@ -147,7 +147,7 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
     receiver->logHelper = logHelper;
     receiver->serializerSvcId = serializerSvcId;
     receiver->serializer = serializer;
-    receiver->scope = strndup(scope, 1024 * 1024);
+    receiver->scope = scope == NULL ? NULL : strndup(scope, 1024 * 1024);
     receiver->topic = strndup(topic, 1024 * 1024);
 
     long sessions = celix_bundleContext_getPropertyAsLong(ctx, PSA_TCP_MAX_RECV_SESSIONS, PSA_TCP_DEFAULT_MAX_RECV_SESSIONS);
@@ -177,7 +177,7 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
             receiver->socketHandler = entry;
             receiver->sharedSocketHandler = entry;
         } else {
-            L_ERROR("[PSA_TCP] Cannot find static Endpoint URL for %s/%s", scope, topic);
+            L_ERROR("[PSA_TCP] Cannot find static Endpoint URL for %s/%s", scope == NULL ? "(null)" : scope, topic);
         }
         celixThreadMutex_unlock(&receiver->thread.mutex);
     }
@@ -238,7 +238,7 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
         receiver->thread.running = true;
         celixThread_create(&receiver->thread.thread, NULL, psa_tcp_recvThread, receiver);
         char name[64];
-        snprintf(name, 64, "TCP TR %s/%s", scope, topic);
+        snprintf(name, 64, "TCP TR %s/%s", scope == NULL ? "(null)" : scope, topic);
         celixThread_setName(&receiver->thread.thread, name);
         psa_tcp_setupTcpContext(receiver->logHelper, &receiver->thread.thread, topicProperties);
     }
@@ -259,11 +259,13 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
     }
 
     if (receiver->socketHandler == NULL) {
-        free(receiver->scope);
+        if (receiver->scope != NULL) {
+            free(receiver->scope);
+        }
         free(receiver->topic);
         free(receiver);
         receiver = NULL;
-        L_ERROR("[PSA_TCP] Cannot create TopicReceiver for %s/%s", scope, topic);
+        L_ERROR("[PSA_TCP] Cannot create TopicReceiver for %s/%s", scope == NULL ? "(null)" : scope, topic);
     }
     return receiver;
 }
@@ -325,7 +327,9 @@ void pubsub_tcpTopicReceiver_destroy(pubsub_tcp_topic_receiver_t *receiver) {
             receiver->socketHandler = NULL;
         }
 
-        free(receiver->scope);
+        if (receiver->scope != NULL) {
+            free(receiver->scope);
+        }
         free(receiver->topic);
     }
     free(receiver);
@@ -364,7 +368,7 @@ void pubsub_tcpTopicReceiver_listConnections(pubsub_tcp_topic_receiver_t *receiv
 void pubsub_tcpTopicReceiver_connectTo(
         pubsub_tcp_topic_receiver_t *receiver,
         const char *url) {
-    L_DEBUG("[PSA_TCP] TopicReceiver %s/%s connecting to tcp url %s", receiver->scope, receiver->topic, url);
+    L_DEBUG("[PSA_TCP] TopicReceiver %s/%s connecting to tcp url %s", receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic, url);
 
     celixThreadMutex_lock(&receiver->requestedConnections.mutex);
     psa_tcp_requested_connection_entry_t *entry = hashMap_get(receiver->requestedConnections.map, url);
@@ -383,7 +387,7 @@ void pubsub_tcpTopicReceiver_connectTo(
 }
 
 void pubsub_tcpTopicReceiver_disconnectFrom(pubsub_tcp_topic_receiver_t *receiver, const char *url) {
-    L_DEBUG("[PSA TCP] TopicReceiver %s/%s disconnect from tcp url %s", receiver->scope, receiver->topic, url);
+    L_DEBUG("[PSA TCP] TopicReceiver %s/%s disconnect from tcp url %s", receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic, url);
 
     celixThreadMutex_lock(&receiver->requestedConnections.mutex);
     psa_tcp_requested_connection_entry_t *entry = hashMap_remove(receiver->requestedConnections.map, url);
@@ -404,10 +408,16 @@ static void pubsub_tcpTopicReceiver_addSubscriber(void *handle, void *svc, const
     pubsub_tcp_topic_receiver_t *receiver = handle;
 
     long bndId = celix_bundle_getId(bnd);
-    const char *subScope = celix_properties_get(props, PUBSUB_SUBSCRIBER_SCOPE, "default");
-    if (strncmp(subScope, receiver->scope, strlen(receiver->scope)) != 0) {
-        //not the same scope. ignore
-        return;
+    const char *subScope = celix_properties_get(props, PUBSUB_SUBSCRIBER_SCOPE, NULL);
+    if (receiver->scope == NULL){
+        if (subScope != NULL){
+            return;
+        }
+    } else {
+        if (strncmp(subScope, receiver->scope, strlen(receiver->scope)) != 0) {
+            //not the same scope. ignore
+            return;
+        }
     }
 
     celixThreadMutex_lock(&receiver->subscribers.mutex);
@@ -438,7 +448,7 @@ static void pubsub_tcpTopicReceiver_addSubscriber(void *handle, void *svc, const
         if (rc == 0) {
             hashMap_put(receiver->subscribers.map, (void *) bndId, entry);
         } else {
-            L_ERROR("[PSA_TCP] Cannot create msg serializer map for TopicReceiver %s/%s", receiver->scope, receiver->topic);
+            L_ERROR("[PSA_TCP] Cannot create msg serializer map for TopicReceiver %s/%s", receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic);
             free(entry);
         }
     }
@@ -461,7 +471,7 @@ static void pubsub_tcpTopicReceiver_removeSubscriber(void *handle, void *svc, co
         hashMap_remove(receiver->subscribers.map, (void *) bndId);
         int rc = receiver->serializer->destroySerializerMap(receiver->serializer->handle, entry->msgTypes);
         if (rc != 0) {
-            L_ERROR("[PSA_TCP] Cannot destroy msg serializers map for TopicReceiver %s/%s", receiver->scope, receiver->topic);
+            L_ERROR("[PSA_TCP] Cannot destroy msg serializers map for TopicReceiver %s/%s", receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic);
         }
         hash_map_iterator_t iter = hashMapIterator_construct(entry->metrics);
         while (hashMapIterator_hasNext(&iter)) {
@@ -509,7 +519,7 @@ processMsgForSubscriberEntry(pubsub_tcp_topic_receiver_t *receiver, psa_tcp_subs
                 updateReceiveCount += 1;
             } else {
                 updateSerError += 1;
-                L_WARN("[PSA_TCP_TR] Cannot deserialize msg type %s for scope/topic %s/%s", msgSer->msgName, receiver->scope,
+                L_WARN("[PSA_TCP_TR] Cannot deserialize msg type %s for scope/topic %s/%s", msgSer->msgName, receiver->scope == NULL ? "(null)" : receiver->scope,
                        receiver->topic);
             }
         }
@@ -624,7 +634,7 @@ static void *psa_tcp_recvThread(void *data) {
 
 pubsub_admin_receiver_metrics_t *pubsub_tcpTopicReceiver_metrics(pubsub_tcp_topic_receiver_t *receiver) {
     pubsub_admin_receiver_metrics_t *result = calloc(1, sizeof(*result));
-    snprintf(result->scope, PUBSUB_AMDIN_METRICS_NAME_MAX, "%s", receiver->scope);
+    snprintf(result->scope, PUBSUB_AMDIN_METRICS_NAME_MAX, "%s", receiver->scope == NULL ? PUBSUB_DEFAULT_ENDPOINT_SCOPE : receiver->scope);
     snprintf(result->topic, PUBSUB_AMDIN_METRICS_NAME_MAX, "%s", receiver->topic);
 
     int msgTypesCount = 0;
@@ -704,7 +714,7 @@ static void psa_tcp_connectToAllRequestedConnections(pubsub_tcp_topic_receiver_t
 
 static void psa_tcp_connectHandler(void *handle, const char *url, bool lock) {
     pubsub_tcp_topic_receiver_t *receiver = handle;
-    L_DEBUG("[PSA_TCP] TopicReceiver %s/%s connecting to tcp url %s", receiver->scope, receiver->topic, url);
+    L_DEBUG("[PSA_TCP] TopicReceiver %s/%s connecting to tcp url %s", receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic, url);
     if (lock) celixThreadMutex_lock(&receiver->requestedConnections.mutex);
     psa_tcp_requested_connection_entry_t *entry = hashMap_get(receiver->requestedConnections.map, url);
     if (entry == NULL) {
@@ -721,7 +731,7 @@ static void psa_tcp_connectHandler(void *handle, const char *url, bool lock) {
 
 static void psa_tcp_disConnectHandler(void *handle, const char *url, bool lock) {
     pubsub_tcp_topic_receiver_t *receiver = handle;
-    L_DEBUG("[PSA TCP] TopicReceiver %s/%s disconnect from tcp url %s", receiver->scope, receiver->topic, url);
+    L_DEBUG("[PSA TCP] TopicReceiver %s/%s disconnect from tcp url %s", receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic, url);
     if (lock) celixThreadMutex_lock(&receiver->requestedConnections.mutex);
     psa_tcp_requested_connection_entry_t *entry = hashMap_get(receiver->requestedConnections.map, url);
     if (entry != NULL) {

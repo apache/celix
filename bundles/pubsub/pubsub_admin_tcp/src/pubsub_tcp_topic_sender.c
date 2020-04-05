@@ -214,7 +214,7 @@ pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
     }
 
     if (sender->url != NULL) {
-        sender->scope = strndup(scope, 1024 * 1024);
+        sender->scope = scope == NULL ? NULL : strndup(scope, 1024 * 1024);
         sender->topic = strndup(topic, 1024 * 1024);
 
         celixThreadMutex_create(&sender->boundedServices.mutex, NULL);
@@ -226,7 +226,7 @@ pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
         sender->thread.running = true;
         celixThread_create(&sender->thread.thread, NULL, psa_tcp_sendThread, sender);
         char name[64];
-        snprintf(name, 64, "TCP TS %s/%s", scope, topic);
+        snprintf(name, 64, "TCP TS %s/%s", scope == NULL ? "(null)" : scope, topic);
         celixThread_setName(&sender->thread.thread, name);
         psa_tcp_setupTcpContext(sender->logHelper, &sender->thread.thread, topicProperties);
     }
@@ -240,7 +240,9 @@ pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
 
         celix_properties_t *props = celix_properties_create();
         celix_properties_set(props, PUBSUB_PUBLISHER_TOPIC, sender->topic);
-        celix_properties_set(props, PUBSUB_PUBLISHER_SCOPE, sender->scope);
+        if (sender->scope != NULL) {
+            celix_properties_set(props, PUBSUB_PUBLISHER_SCOPE, sender->scope);
+        }
 
         celix_service_registration_options_t opts = CELIX_EMPTY_SERVICE_REGISTRATION_OPTIONS;
         opts.factory = &sender->publisher.factory;
@@ -295,7 +297,9 @@ void pubsub_tcpTopicSender_destroy(pubsub_tcp_topic_sender_t *sender) {
             sender->socketHandler = NULL;
         }
 
-        free(sender->scope);
+        if (sender->scope != NULL) {
+            free(sender->scope);
+        }
         free(sender->topic);
         free(sender->url);
         free(sender);
@@ -378,7 +382,7 @@ static void *psa_tcp_getPublisherService(void *handle, const celix_bundle_t *req
             entry->service.send = psa_tcp_topicPublicationSend;
             hashMap_put(sender->boundedServices.map, (void *) bndId, entry);
         } else {
-            L_ERROR("Error creating serializer map for TCP TopicSender %s/%s", sender->scope, sender->topic);
+            L_ERROR("Error creating serializer map for TCP TopicSender %s/%s", sender->scope == NULL ? "(null)" : sender->scope, sender->topic);
         }
     }
     celixThreadMutex_unlock(&sender->boundedServices.mutex);
@@ -438,7 +442,7 @@ static void *psa_tcp_sendThread(void *data) {
 
 pubsub_admin_sender_metrics_t *pubsub_tcpTopicSender_metrics(pubsub_tcp_topic_sender_t *sender) {
     pubsub_admin_sender_metrics_t *result = calloc(1, sizeof(*result));
-    snprintf(result->scope, PUBSUB_AMDIN_METRICS_NAME_MAX, "%s", sender->scope);
+    snprintf(result->scope, PUBSUB_AMDIN_METRICS_NAME_MAX, "%s", sender->scope == NULL ? PUBSUB_DEFAULT_ENDPOINT_SCOPE : sender->scope);
     snprintf(result->topic, PUBSUB_AMDIN_METRICS_NAME_MAX, "%s", sender->topic);
     celixThreadMutex_lock(&sender->boundedServices.mutex);
     size_t count = 0;
@@ -546,13 +550,13 @@ static int psa_tcp_topicPublicationSend(void *handle, unsigned int msgTypeId, co
         } else {
             serializationErrorUpdate = 1;
             L_WARN("[PSA_TCP_TS] Error serialize message of type %s for scope/topic %s/%s", entry->msgSer->msgName,
-                   sender->scope, sender->topic);
+                   sender->scope == NULL ? "(null)" : sender->scope, sender->topic);
         }
     } else {
         //unknownMessageCountUpdate = 1;
         status = CELIX_SERVICE_EXCEPTION;
         L_WARN("[PSA_TCP_TS] Error cannot serialize message with msg type id %i for scope/topic %s/%s", msgTypeId,
-               sender->scope, sender->topic);
+               sender->scope == NULL ? "(null)" : sender->scope, sender->topic);
     }
 
 

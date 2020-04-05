@@ -391,7 +391,7 @@ celix_status_t pubsub_tcpAdmin_setupTopicSender(void *handle, const char *scope,
         }
     } else {
         free(key);
-        L_ERROR("[PSA_TCP] Cannot setup already existing TopicSender for scope/topic %s/%s!", scope, topic);
+        L_ERROR("[PSA_TCP] Cannot setup already existing TopicSender for scope/topic %s/%s!", scope == NULL ? "(null)" : scope, topic);
     }
     celixThreadMutex_unlock(&psa->topicSenders.mutex);
     celixThreadMutex_unlock(&psa->serializers.mutex);
@@ -424,7 +424,7 @@ celix_status_t pubsub_tcpAdmin_teardownTopicSender(void *handle, const char *sco
         //TODO disconnect endpoints to sender. note is this needed for a tcp topic sender?
         pubsub_tcpTopicSender_destroy(sender);
     } else {
-        L_ERROR("[PSA TCP] Cannot teardown TopicSender with scope/topic %s/%s. Does not exists", scope, topic);
+        L_ERROR("[PSA TCP] Cannot teardown TopicSender with scope/topic %s/%s. Does not exists", scope == NULL ? "(null)" : scope, topic);
     }
     celixThreadMutex_unlock(&psa->topicSenders.mutex);
     free(key);
@@ -447,7 +447,7 @@ celix_status_t pubsub_tcpAdmin_setupTopicReceiver(void *handle, const char *scop
             receiver = pubsub_tcpTopicReceiver_create(psa->ctx, psa->log, scope, topic, topicProperties, &psa->endpointStore,
                     serializerSvcId, serEntry->svc);
         } else {
-            L_ERROR("[PSA_TCP] Cannot find serializer for TopicSender %s/%s", scope, topic);
+            L_ERROR("[PSA_TCP] Cannot find serializer for TopicSender %s/%s", scope == NULL ? "(null)" : scope, topic);
         }
         if (receiver != NULL) {
             const char *psaType = PUBSUB_TCP_ADMIN_TYPE;
@@ -466,7 +466,7 @@ celix_status_t pubsub_tcpAdmin_setupTopicReceiver(void *handle, const char *scop
         }
     } else {
         free(key);
-        L_ERROR("[PSA_TCP] Cannot setup already existing TopicReceiver for scope/topic %s/%s!", scope, topic);
+        L_ERROR("[PSA_TCP] Cannot setup already existing TopicReceiver for scope/topic %s/%s!", scope == NULL ? "(null)" : scope, topic);
     }
     celixThreadMutex_unlock(&psa->topicReceivers.mutex);
     celixThreadMutex_unlock(&psa->serializers.mutex);
@@ -517,11 +517,6 @@ static celix_status_t pubsub_tcpAdmin_connectEndpointToReceiver(pubsub_tcp_admin
     //note can be called with discoveredEndpoint.mutex lock
     celix_status_t status = CELIX_SUCCESS;
 
-    const char *scope = pubsub_tcpTopicReceiver_scope(receiver);
-    const char *topic = pubsub_tcpTopicReceiver_topic(receiver);
-
-    const char *eScope = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_SCOPE, NULL);
-    const char *eTopic = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_NAME, NULL);
     const char *url = celix_properties_get(endpoint, PUBSUB_TCP_URL_KEY, NULL);
 
     if (url == NULL) {
@@ -530,11 +525,7 @@ static celix_status_t pubsub_tcpAdmin_connectEndpointToReceiver(pubsub_tcp_admin
         L_WARN("[PSA TCP] Error got endpoint without a tcp url (admin: %s, type: %s)", admin , type);
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
-        if (eScope != NULL && eTopic != NULL &&
-            strncmp(eScope, scope, 1024 * 1024) == 0 &&
-            strncmp(eTopic, topic, 1024 * 1024) == 0) {
-            pubsub_tcpTopicReceiver_connectTo(receiver, url);
-        }
+        pubsub_tcpTopicReceiver_connectTo(receiver, url);
     }
 
     return status;
@@ -547,9 +538,12 @@ celix_status_t pubsub_tcpAdmin_addDiscoveredEndpoint(void *handle, const celix_p
 
     if (type != NULL && strncmp(PUBSUB_PUBLISHER_ENDPOINT_TYPE, type, strlen(PUBSUB_PUBLISHER_ENDPOINT_TYPE)) == 0) {
         celixThreadMutex_lock(&psa->topicReceivers.mutex);
-        hash_map_iterator_t iter = hashMapIterator_construct(psa->topicReceivers.map);
-        while (hashMapIterator_hasNext(&iter)) {
-            pubsub_tcp_topic_receiver_t *receiver = hashMapIterator_nextValue(&iter);
+        const char *scope = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_SCOPE, NULL);
+        const char *topic = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_NAME, NULL);
+        char *key = pubsubEndpoint_createScopeTopicKey(scope, topic);
+
+        pubsub_tcp_topic_receiver_t *receiver = hashMap_get(psa->topicReceivers.map, key);
+        if (receiver != NULL) {
             pubsub_tcpAdmin_connectEndpointToReceiver(psa, receiver, endpoint);
         }
         celixThreadMutex_unlock(&psa->topicReceivers.mutex);
@@ -581,10 +575,12 @@ static celix_status_t pubsub_tcpAdmin_disconnectEndpointFromReceiver(pubsub_tcp_
         L_WARN("[PSA TCP] Error got endpoint without tcp url");
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
-        if (eScope != NULL && eTopic != NULL &&
-            strncmp(eScope, scope, 1024 * 1024) == 0 &&
-            strncmp(eTopic, topic, 1024 * 1024) == 0) {
-            pubsub_tcpTopicReceiver_disconnectFrom(receiver, url);
+        if (eTopic != NULL && topic != NULL && strncmp(eTopic, topic, 1024 * 1024) == 0) {
+            if (scope == NULL && eScope == NULL) {
+                pubsub_tcpTopicReceiver_disconnectFrom(receiver, url);
+            } else if (scope != NULL && eScope != NULL && strncmp(eScope, scope, 1024 * 1024) == 0) {
+                pubsub_tcpTopicReceiver_disconnectFrom(receiver, url);
+            }
         }
     }
 
@@ -637,7 +633,7 @@ bool pubsub_tcpAdmin_executeCommand(void *handle, const char *commandLine __attr
         const char *topic = pubsub_tcpTopicSender_topic(sender);
         const char *url = pubsub_tcpTopicSender_url(sender);
         const char *postUrl = pubsub_tcpTopicSender_isStatic(sender) ? " (static)" : "";
-        fprintf(out, "|- Topic Sender %s/%s\n", scope, topic);
+        fprintf(out, "|- Topic Sender %s/%s\n", scope == NULL ? "(null)" : scope, topic);
         fprintf(out, "   |- serializer type = %s\n", serType);
         fprintf(out, "   |- url            = %s%s\n", url, postUrl);
     }
@@ -661,7 +657,7 @@ bool pubsub_tcpAdmin_executeCommand(void *handle, const char *commandLine __attr
         celix_array_list_t *unconnected = celix_arrayList_create();
         pubsub_tcpTopicReceiver_listConnections(receiver, connected, unconnected);
 
-        fprintf(out, "|- Topic Receiver %s/%s\n", scope, topic);
+        fprintf(out, "|- Topic Receiver %s/%s\n", scope == NULL ? "(null)" : scope, topic);
         fprintf(out, "   |- serializer type = %s\n", serType);
         for (int i = 0; i < celix_arrayList_size(connected); ++i) {
             char *url = celix_arrayList_get(connected, i);

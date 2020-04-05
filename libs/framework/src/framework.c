@@ -298,6 +298,7 @@ celix_status_t framework_destroy(framework_pt framework) {
     //has not been joined yet.
     celixThread_join(framework->shutdown.thread, NULL);
 
+    serviceRegistry_destroy(framework->registry);
 
     celixThreadMutex_lock(&framework->installedBundles.mutex);
     for (int i = 0; i < celix_arrayList_size(framework->installedBundles.entries); ++i) {
@@ -342,11 +343,7 @@ celix_status_t framework_destroy(framework_pt framework) {
     celix_arrayList_destroy(framework->installedBundles.entries);
     celixThreadMutex_destroy(&framework->installedBundles.mutex);
 
-
-
 	hashMap_destroy(framework->installRequestMap, false, false);
-
-	serviceRegistry_destroy(framework->registry);
 
     if (framework->bundleListeners) {
         arrayList_destroy(framework->bundleListeners);
@@ -2160,7 +2157,7 @@ static celix_status_t framework_loadLibraries(framework_pt framework, const char
         char lib[128];
         lib[127] = '\0';
 
-        char *path;
+        char *path = NULL;
         char *pathToken = strtok_r(token, ";", &path);
         strncpy(lib, pathToken, 127);
         pathToken = strtok_r(NULL, ";", &path);

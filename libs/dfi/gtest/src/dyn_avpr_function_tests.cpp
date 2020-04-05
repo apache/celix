@@ -17,9 +17,9 @@
  * under the License.
  */
 
-#include <CppUTest/TestHarness.h>
+#include "gtest/gtest.h"
+
 #include <celix_utils.h>
-#include "CppUTest/CommandLineTestRunner.h"
 
 extern "C" {
     #include <stdio.h>
@@ -219,27 +219,32 @@ const char* theAvprFile = "{ \
                 }\
             }";
 
-TEST_GROUP(DynAvprFunctionTests) {
-    void setup() override {
+
+class DynAvprFunctionTests : public ::testing::Test {
+public:
+    DynAvprFunctionTests() {
         int lvl = 1;
         dynAvprFunction_logSetup(stdLog, nullptr, lvl);
         dynAvprType_logSetup(stdLog, nullptr, lvl);
     }
+    ~DynAvprFunctionTests() override {
+    }
+
 };
 
 // Test 1, simple function with three arguments and a return type
 static int avpr_example1(__attribute__((unused)) void* handle, int32_t a, int32_t b, int32_t c, int32_t * out) {
-    CHECK_EQUAL(2, a);
-    CHECK_EQUAL(4, b);
-    CHECK_EQUAL(8, c);
+    EXPECT_EQ(2, a);
+    EXPECT_EQ(4, b);
+    EXPECT_EQ(8, c);
     *out = 1;
     return 0;
 }
 
-TEST(DynAvprFunctionTests, Example1) {
+TEST_F(DynAvprFunctionTests, Example1) {
     auto fp = (void (*)()) avpr_example1;
     dyn_function_type * dynFunc = dynFunction_parseAvprWithStr(theAvprFile, "test.dt.simpleFunc");
-    CHECK(dynFunc != nullptr);
+    ASSERT_TRUE(dynFunc != nullptr);
 
     int handle = 0;
     int* handle_ptr = &handle;
@@ -257,9 +262,9 @@ TEST(DynAvprFunctionTests, Example1) {
     int rVal = 1;
 
     int rc = dynFunction_call(dynFunc, fp, &rVal, values);
-    CHECK_EQUAL(0, rc);
-    CHECK_EQUAL(1, out);
-    CHECK_EQUAL(0, rVal);
+    ASSERT_EQ(0, rc);
+    ASSERT_EQ(1, out);
+    ASSERT_EQ(0, rVal);
     dynFunction_destroy(dynFunc);
 }
 
@@ -272,19 +277,19 @@ struct avpr_example2_arg2 {
 };
 
 static int avpr_example2(__attribute__((unused)) void* handle, int32_t arg1, struct avpr_example2_arg2 arg2, double arg3, double* out) {
-    CHECK_EQUAL(2, arg1);
-    CHECK_EQUAL(2, arg2.val1);
-    CHECK_EQUAL(3, arg2.val2);
-    CHECK_EQUAL(4.1, arg2.val3);
-    CHECK_EQUAL(8.1, arg3);
+    EXPECT_EQ(2, arg1);
+    EXPECT_EQ(2, arg2.val1);
+    EXPECT_EQ(3, arg2.val2);
+    EXPECT_EQ(4.1, arg2.val3);
+    EXPECT_EQ(8.1, arg3);
     *out = 2.2;
     return 0;
 }
 
-TEST(DynAvprFunctionTests, Example2) {
+TEST_F(DynAvprFunctionTests, Example2) {
     auto fp = (void (*)()) avpr_example2;
     dyn_function_type * dynFunc = dynFunction_parseAvprWithStr(theAvprFile, "nested.test.dt.structFunc");
-    CHECK(dynFunc != nullptr);
+    ASSERT_TRUE(dynFunc != nullptr);
 
     int handle = 0;
     int* handle_ptr = &handle;
@@ -303,29 +308,29 @@ TEST(DynAvprFunctionTests, Example2) {
     int rVal = 1;
 
     int rc = dynFunction_call(dynFunc, fp, &rVal, values);
-    CHECK_EQUAL(0, rc);
-    CHECK_EQUAL(0, rVal);
-    CHECK_EQUAL(2.2, out);
+    ASSERT_EQ(0, rc);
+    ASSERT_EQ(0, rVal);
+    ASSERT_EQ(2.2, out);
     dynFunction_destroy(dynFunc);
 }
 
 // Test 3, Test access of functions, see if arguments and result type can be accessed
-TEST(DynAvprFunctionTests, Example3) {
+TEST_F(DynAvprFunctionTests, Example3) {
     dyn_function_type * dynFunc = dynFunction_parseAvprWithStr(theAvprFile, "test.dt.accessFunc");
-    CHECK(dynFunc != nullptr);
+    ASSERT_TRUE(dynFunc != nullptr);
 
     int nrOfArgs = dynFunction_nrOfArguments(dynFunc);
-    CHECK_EQUAL(3+1+1, nrOfArgs);
+    ASSERT_EQ(3+1+1, nrOfArgs);
 
     dyn_type *arg1 = dynFunction_argumentTypeForIndex(dynFunc, 2);
-    CHECK(arg1 != nullptr);
-    CHECK_EQUAL('{', (char) dynType_descriptorType(arg1));
+    ASSERT_TRUE(arg1 != nullptr);
+    ASSERT_EQ('{', (char) dynType_descriptorType(arg1));
 
     dyn_type *nonExist = dynFunction_argumentTypeForIndex(dynFunc, 10);
-    CHECK(nonExist == nullptr);
+    ASSERT_TRUE(nonExist == nullptr);
 
     dyn_type *returnType = dynFunction_returnType(dynFunc);
-    CHECK_EQUAL('N', (char) dynType_descriptorType(returnType));
+    ASSERT_EQ('N', (char) dynType_descriptorType(returnType));
 
     dynFunction_destroy(dynFunc);
 }
@@ -335,8 +340,8 @@ TEST(DynAvprFunctionTests, Example3) {
 /*
 static int avpr_example4(__attribute__((unused)) void *handle, void *ptr, double a, double *out, int *out_2) {
     auto b = (double *)ptr;
-    CHECK_EQUAL(2.0, *b);
-    CHECK_EQUAL(2.0, a);
+    ASSERT_EQ(2.0, *b);
+    ASSERT_EQ(2.0, a);
     *out = *b * a; // => out parameter
     *out_2 = 3;
     return 0;
@@ -345,7 +350,7 @@ static int avpr_example4(__attribute__((unused)) void *handle, void *ptr, double
 TEST(DynAvprFunctionTests, Example4) {
     auto fp = (void(*)()) avpr_example4;
     dyn_function_type * dynFunc = dynFunction_parseAvprWithStr(theAvprFile, "test.dt.outFunc");
-    CHECK(dynFunc != nullptr);
+    ASSERT_TRUE(dynFunc != nullptr);
 
     int handle = 0;
     int* handle_ptr = &handle;
@@ -364,9 +369,9 @@ TEST(DynAvprFunctionTests, Example4) {
     int rVal = 1;
     int rc = dynFunction_call(dynFunc, fp, &rVal, args);
 
-    CHECK_EQUAL(0, rc);
-    CHECK_EQUAL(4.0, result);
-    CHECK_EQUAL(3, out);
+    ASSERT_EQ(0, rc);
+    ASSERT_EQ(4.0, result);
+    ASSERT_EQ(3, out);
 
     auto inMemResult = (double *)calloc(1, sizeof(double));
     a = 2.0;
@@ -376,8 +381,8 @@ TEST(DynAvprFunctionTests, Example4) {
     args[3] = &inMemResult;
     rVal = 0;
     rc = dynFunction_call(dynFunc, fp, &rVal, args);
-    CHECK_EQUAL(0, rc);
-    CHECK_EQUAL(4.0, result);
+    ASSERT_EQ(0, rc);
+    ASSERT_EQ(4.0, result);
     free(inMemResult);
     dynFunction_destroy(dynFunc);
 }
@@ -391,18 +396,18 @@ struct tst_seq {
 };
 
 static int avpr_example5(__attribute__((unused)) void* handle, struct tst_seq seq, __attribute__((unused)) void* out)  {
-    CHECK_EQUAL(4, seq.cap);
-    CHECK_EQUAL(2, seq.len);
-    CHECK_EQUAL(1.1, seq.buf[0]);
-    CHECK_EQUAL(2.2, seq.buf[1]);
+    EXPECT_EQ(4, seq.cap);
+    EXPECT_EQ(2, seq.len);
+    EXPECT_EQ(1.1, seq.buf[0]);
+    EXPECT_EQ(2.2, seq.buf[1]);
     return 0;
 }
 
-TEST(DynAvprFunctionTests, Example5) {
+TEST_F(DynAvprFunctionTests, Example5) {
     auto fp = (void(*)()) avpr_example5;
     dyn_function_type * dynFunc = dynFunction_parseAvprWithStr(theAvprFile, "test.dt.seqFunc");
 
-    CHECK(dynFunc != nullptr);
+    ASSERT_TRUE(dynFunc != nullptr);
 
     int handle = 0;
     int* handle_ptr = &handle;
@@ -420,8 +425,8 @@ TEST(DynAvprFunctionTests, Example5) {
     int retArg = 1;
 
     int rc = dynFunction_call(dynFunc, fp, &retArg, args);
-    CHECK_EQUAL(0, rc);
-    CHECK_EQUAL(0, retArg);
+    ASSERT_EQ(0, rc);
+    ASSERT_EQ(0, retArg);
 
     dynFunction_destroy(dynFunc);
 }
@@ -434,21 +439,21 @@ struct info {
 
 static int avpr_example6(void *handle, int32_t id_modifier, double* out) {
     auto fake_this = (struct info *) handle;
-    CHECK(fake_this != nullptr);
-    CHECK(fake_this->name != nullptr);
-    CHECK_EQUAL(0, strcmp(fake_this->name, "test_name"));
-    CHECK_EQUAL(42, fake_this->id);
+    EXPECT_TRUE(fake_this != nullptr);
+    EXPECT_TRUE(fake_this->name != nullptr);
+    EXPECT_EQ(0, strcmp(fake_this->name, "test_name"));
+    EXPECT_EQ(42, fake_this->id);
     *out = (double)(fake_this->id + id_modifier);
     return 0;
 }
 
-TEST(DynAvprFunctionTests, Example6) {
+TEST_F(DynAvprFunctionTests, Example6) {
     auto fp = (void(*)()) avpr_example6;
     dyn_function_type * dynFunc = dynFunction_parseAvprWithStr(theAvprFile, "test.dt.infoFunc");
-    CHECK(dynFunc != nullptr);
+    ASSERT_TRUE(dynFunc != nullptr);
 
     info handle {strdup("test_name"), 42};
-    CHECK(handle.name != nullptr);
+    ASSERT_TRUE(handle.name != nullptr);
 
     struct info * handle_ptr = &handle;
     int32_t argument = 58;
@@ -462,9 +467,9 @@ TEST(DynAvprFunctionTests, Example6) {
     int rVal = 1;
 
     int rc = dynFunction_call(dynFunc, fp, &rVal, values);
-    CHECK_EQUAL(0, rc);
-    CHECK_EQUAL(100.0, out);
-    CHECK_EQUAL(0, rVal);
+    ASSERT_EQ(0, rc);
+    ASSERT_EQ(100.0, out);
+    ASSERT_EQ(0, rVal);
     dynFunction_destroy(dynFunc);
     free(handle.name);
 }
@@ -477,16 +482,16 @@ struct double_seq {
 };
 
 static int avpr_example7(__attribute__((unused)) void *handle, struct double_seq seq_in, double* out) {
-    CHECK_EQUAL(2, seq_in.cap);
-    CHECK_EQUAL(2, seq_in.len);
+    EXPECT_EQ(2, seq_in.cap);
+    EXPECT_EQ(2, seq_in.len);
     *out = seq_in.buf[0] + seq_in.buf[1];
     return 0;
 }
 
-TEST(DynAvprFunctionTests, Example7) {
+TEST_F(DynAvprFunctionTests, Example7) {
     auto fp = (void(*)()) avpr_example7;
     dyn_function_type * dynFunc = dynFunction_parseAvprWithStr(theAvprFile, "test.dt.arrayInFunc");
-    CHECK(dynFunc != nullptr);
+    ASSERT_TRUE(dynFunc != nullptr);
 
     int handle = 0;
     int* handle_ptr = &handle;
@@ -506,26 +511,26 @@ TEST(DynAvprFunctionTests, Example7) {
     int rVal = 0;
 
     int rc = dynFunction_call(dynFunc, fp, &rVal, args);
-    CHECK_EQUAL(0, rc);
-    DOUBLES_EQUAL(3.303, out, 0.00001);
+    ASSERT_EQ(0, rc);
+    ASSERT_NEAR(3.303, out, 0.001);
 
     dynFunction_destroy(dynFunc);
 }
 
 //Test 8, Test function with array as return value
 static int avpr_example8(__attribute__((unused))void *handle, double arg1, struct double_seq** out) {
-    DOUBLES_EQUAL(2.0, arg1, 0.0001);
-    CHECK_EQUAL(3, (*out)->cap);
+    EXPECT_NEAR(2.0, arg1, 0.001);
+    EXPECT_EQ(3, (*out)->cap);
     (*out)->buf[0] = 0.0;
     (*out)->buf[1] = 1.1;
     (*out)->buf[2] = 2.2;
     return 0;
 }
 
-TEST(DynAvprFunctionTests, Example8) {
+TEST_F(DynAvprFunctionTests, Example8) {
     auto fp = (void(*)()) avpr_example8;
     dyn_function_type * dynFunc = dynFunction_parseAvprWithStr(theAvprFile, "test.dt.arrayOutFunc");
-    CHECK(dynFunc != nullptr);
+    ASSERT_TRUE(dynFunc != nullptr);
 
     int handle = 0;
     int* handle_ptr = &handle;
@@ -547,10 +552,10 @@ TEST(DynAvprFunctionTests, Example8) {
     int rVal = 0;
 
     int rc = dynFunction_call(dynFunc, fp, &rVal, args);
-    CHECK_EQUAL(0, rc);
-    DOUBLES_EQUAL(0.0, buf[0], 0.0001);
-    DOUBLES_EQUAL(1.1, buf[1], 0.0001);
-    DOUBLES_EQUAL(2.2, buf[2], 0.0001);
+    ASSERT_EQ(0, rc);
+    ASSERT_NEAR(0.0, buf[0], 0.001);
+    ASSERT_NEAR(1.1, buf[1], 0.001);
+    ASSERT_NEAR(2.2, buf[2], 0.001);
 
     dynFunction_destroy(dynFunc);
 }
@@ -558,14 +563,14 @@ TEST(DynAvprFunctionTests, Example8) {
 // Test 9, Test function with string as return value
 static int avpr_example9(__attribute__((unused))void *handle, char** out) {
     *out = strdup("result_out");
-    CHECK(*out != nullptr);
+    EXPECT_TRUE(*out != nullptr);
     return 0;
 }
 
-TEST(DynAvprFunctionTests, Example9) {
+TEST_F(DynAvprFunctionTests, Example9) {
     auto fp = (void(*)()) avpr_example9;
     dyn_function_type * dynFunc = dynFunction_parseAvprWithStr(theAvprFile, "test.dt.stringOutFunc");
-    CHECK(dynFunc != nullptr);
+    ASSERT_TRUE(dynFunc != nullptr);
 
     int handle = 0;
     int* handle_ptr = &handle;
@@ -579,8 +584,8 @@ TEST(DynAvprFunctionTests, Example9) {
     int rVal = 1;
 
     int rc = dynFunction_call(dynFunc, fp, &rVal, args);
-    CHECK_EQUAL(0, rc);
-    STRCMP_EQUAL("result_out", out);
+    ASSERT_EQ(0, rc);
+    ASSERT_STREQ("result_out", out);
 
     free(out);
     dynFunction_destroy(dynFunc);
@@ -596,15 +601,15 @@ extern "C" {
 
 static int avpr_example10(__attribute__((unused))void *handle, struct tst_10 ** out) {
     (*out)->name = strdup("my_new_char");
-    CHECK((*out)->name != nullptr);
+    EXPECT_TRUE((*out)->name != nullptr);
     (*out)->id = 132;
     return 0;
 }
 
-TEST(DynAvprFunctionTests, Example10) {
+TEST_F(DynAvprFunctionTests, Example10) {
     auto fp = (void(*)()) avpr_example10;
     dyn_function_type * dynFunc = dynFunction_parseAvprWithStr(theAvprFile, "test.dt.structStringOutFunc");
-    CHECK(dynFunc != nullptr);
+    ASSERT_TRUE(dynFunc != nullptr);
 
     int handle = 0;
     int* handle_ptr = &handle;
@@ -619,42 +624,50 @@ TEST(DynAvprFunctionTests, Example10) {
     int rVal = 1;
 
     int rc = dynFunction_call(dynFunc, fp, &rVal, args);
-    CHECK_EQUAL(0, rc);
-    CHECK_EQUAL(132, out.id);
-    STRCMP_EQUAL("my_new_char", out.name);
+    ASSERT_EQ(0, rc);
+    ASSERT_EQ(132, out.id);
+    ASSERT_STREQ("my_new_char", out.name);
 
     free(out.name);
     dynFunction_destroy(dynFunc);
 }
 
-#ifndef __APPLE__
-static int avpr_example11(void *handle __attribute__((unused)), char *arg1) {
-    STRCMP_EQUAL("input string test", arg1);
-    return 0;
-}
-
-//FIXME does not work in OSX. Also has issues in linux if input is not dynamically allocated.
-TEST(DynAvprFunctionTests, Example11) {
-    auto fp = (void(*)()) avpr_example11;
-    dyn_function_type * dynFunc = dynFunction_parseAvprWithStr(theAvprFile, "test.dt.stringInFunc");
-    CHECK(dynFunc != nullptr);
-
-    int handle = 0;
-    int* handle_ptr = &handle;
-
-    char *input = celix_utils_strdup("input string test");
-
-    void *args[2];
-    args[0] = &handle_ptr;
-    args[1]= &input;
-    int rVal = 1;
-
-    int rc = dynFunction_call(dynFunc, fp, &rVal, args);
-    CHECK_EQUAL(0, rc);
-    CHECK_EQUAL(0, rVal);
-
-    free(input);
-
-    dynFunction_destroy(dynFunc);
-}
-#endif
+//FIXME issue #179
+//extern "C" {
+//static int avpr_example11(void *handle, char *arg1) {
+//    if (handle != nullptr && strncmp("input string test", arg1, 1024) == 0) {
+//        return 0;
+//    }
+//    return 1;
+//}
+//
+//static bool test_example11() {
+//    auto fp = (void(*)()) avpr_example11;
+//    dyn_function_type * dynFunc = dynFunction_parseAvprWithStr(theAvprFile, "test.dt.stringInFunc");
+//
+//    int handle = 0;
+//    void* handle_ptr = &handle;
+//
+//    char *input = celix_utils_strdup("input string test");
+//
+//    void *args[2];
+//    args[0] = &handle_ptr;
+//    args[1]= &input;
+//    int rVal = 1;
+//
+//    int rc = 0;
+//    if (dynFunc != nullptr) {
+//        rc = dynFunction_call(dynFunc, fp, &rVal, args);
+//        dynFunction_destroy(dynFunc);
+//    }
+//    free(input);
+//
+//    return dynFunc != nullptr && rc == 0 && rVal == 0;
+//}
+//}
+//
+//TEST_F(DynAvprFunctionTests, Example11) {
+//    //NOTE only using libffi with extern C, because combining libffi with EXPECT_*/ASSERT_* call leads to
+//    //corrupted memory. Note that libffi is a function for interfacing with C not C++
+//    EXPECT_TRUE(test_example11());
+//}

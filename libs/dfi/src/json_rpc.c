@@ -234,11 +234,11 @@ int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, c
 				//ignore -> no result
 			} else {
 				LOG_DEBUG("Setting result payload");
-				json_object_set_new(payload, "r", jsonResult);
+                json_object_set_new_nocheck(payload, "r", jsonResult);
 			}
 		} else {
 			LOG_DEBUG("Setting error payload");
-			json_object_set_new(payload, "e", json_integer(funcCallStatus));
+            json_object_set_new_nocheck(payload, "e", json_integer(funcCallStatus));
 		}
 		response = json_dumps(payload, JSON_DECODE_ANY);
 		json_decref(payload);
@@ -260,10 +260,10 @@ int jsonRpc_prepareInvokeRequest(dyn_function_type *func, const char *id, void *
 
 	LOG_DEBUG("Calling remote function '%s'\n", id);
 	json_t *invoke = json_object();
-	json_object_set_new(invoke, "m", json_string(id));
+    json_object_set_new_nocheck(invoke, "m", json_string(id));
 
 	json_t *arguments = json_array();
-	json_object_set_new(invoke, "a", arguments);
+    json_object_set_new_nocheck(invoke, "a", arguments);
 
 	int i;
 	int nrOfArgs = dynFunction_nrOfArguments(func);
