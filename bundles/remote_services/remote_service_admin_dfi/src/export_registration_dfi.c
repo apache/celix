@@ -166,6 +166,8 @@ celix_status_t exportRegistration_call(export_registration_t *export, char *data
         status = CELIX_ILLEGAL_ARGUMENT;
     }
 
+    json_decref(js_request);
+
     return status;
 }
 
