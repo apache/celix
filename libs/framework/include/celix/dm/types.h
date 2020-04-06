@@ -49,7 +49,7 @@ namespace celix { namespace dm {
      * Returns the deferred type name for the template I
      */
     template<typename INTERFACE_TYPENAME>
-    const std::string typeName() {
+    std::string typeName() {
         std::string result;
 
 #ifdef __GXX_RTTI
