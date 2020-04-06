@@ -49,7 +49,7 @@ Component<T>& Component<T>::addInterfaceWithName(const std::string &serviceName,
             char *value = nullptr;
             copyString(pair.first, &key);
             copyString(pair.second, &value);
-            properties_set(cProperties, key, value);
+            celix_properties_setWithoutCopy(cProperties, key, value);
         }
 
         T* cmpPtr = &this->getInstance();
@@ -89,7 +89,7 @@ Component<T>& Component<T>::addCInterface(const I* svc, const std::string &servi
         char *value = nullptr;
         copyString(pair.first, &key);
         copyString(pair.second, &value);
-        properties_set(cProperties, key, value);
+        celix_properties_setWithoutCopy(cProperties, key, value);
     }
 
     const char *cVersion = version.empty() ? nullptr : version.c_str();
