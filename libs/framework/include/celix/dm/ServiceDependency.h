@@ -41,9 +41,8 @@ namespace celix { namespace dm {
     };
 
     class BaseServiceDependency {
-    private:
-        bool valid;
     protected:
+        const bool valid;
         celix_dm_service_dependency_t *cServiceDep {nullptr};
 
         void setDepStrategy(DependencyUpdateStrategy strategy) {
@@ -71,8 +70,6 @@ namespace celix { namespace dm {
 
         BaseServiceDependency(const BaseServiceDependency&) = delete;
         BaseServiceDependency& operator=(const BaseServiceDependency&) = delete;
-        BaseServiceDependency(BaseServiceDependency&&) noexcept = default;
-        BaseServiceDependency& operator=(BaseServiceDependency&&) noexcept = default;
 
         /**
          * Whether the service dependency is valid.
@@ -92,12 +89,12 @@ namespace celix { namespace dm {
         T* componentInstance {nullptr};
     public:
         TypedServiceDependency(bool valid) : BaseServiceDependency(valid) {}
-        ~TypedServiceDependency() override = default;
+        virtual ~TypedServiceDependency() = default;
 
         TypedServiceDependency(const TypedServiceDependency&) = delete;
         TypedServiceDependency& operator=(const TypedServiceDependency&) = delete;
-        TypedServiceDependency(TypedServiceDependency&&) noexcept = default;
-        TypedServiceDependency& operator=(TypedServiceDependency&&) noexcept = default;
+        TypedServiceDependency(TypedServiceDependency&&) = default;
+        TypedServiceDependency& operator=(TypedServiceDependency&&) = default;
 
         /**
          * Set the component instance with a pointer
@@ -109,13 +106,8 @@ namespace celix { namespace dm {
     class CServiceDependency : public TypedServiceDependency<T> {
         using type = I;
     public:
-        CServiceDependency(const std::string &name, bool valid = true);
-        ~CServiceDependency() override = default;
-
-        CServiceDependency(const CServiceDependency&) = delete;
-        CServiceDependency& operator=(const CServiceDependency&) = delete;
-        CServiceDependency(CServiceDependency&&) noexcept = default;
-        CServiceDependency& operator=(CServiceDependency&&) noexcept = default;
+        CServiceDependency(const std::string name, bool valid = true);
+        virtual ~CServiceDependency() = default;
 
         /**
          * Sets the service version range for the C service dependency.
@@ -123,7 +115,7 @@ namespace celix { namespace dm {
          * @param serviceVersionRange The service version range, can be an empty string
          * @return the C service dependency reference for chaining (fluent API)
          */
-        CServiceDependency<T,I>& setVersionRange(const std::string &serviceVersionRange);
+        CServiceDependency<T,I>& setVersionRange(const std::string serviceVersionRange);
 
         /**
          * Sets the service filter for the C service dependency.
@@ -131,7 +123,7 @@ namespace celix { namespace dm {
          * @param filter The (additional) filter to use (e.g. "(location=front)")
          * @return the C service dependency reference for chaining (fluent API)
          */
-        CServiceDependency<T,I>& setFilter(const std::string &filter);
+        CServiceDependency<T,I>& setFilter(const std::string filter);
 
         /**
          * Specify if the service dependency is required. Default is false
@@ -191,8 +183,8 @@ namespace celix { namespace dm {
          * @return the C service dependency reference for chaining (fluent API)
          */
         CServiceDependency<T,I>& setCallbacks(
-		std::function<void(const I* service, Properties&& properties)> add,
-		std::function<void(const I* service, Properties&& properties)> remove
+                std::function<void(const I* service, Properties&& properties)> add,
+                std::function<void(const I* service, Properties&& properties)> remove
         );
 
         /**
@@ -219,34 +211,29 @@ namespace celix { namespace dm {
     class ServiceDependency : public TypedServiceDependency<T> {
         using type = I;
     public:
-        ServiceDependency(const std::string &name = std::string{}, bool valid = true);
-        ~ServiceDependency() override = default;
-
-        ServiceDependency(const ServiceDependency&) = delete;
-        ServiceDependency& operator=(const ServiceDependency&) = delete;
-        ServiceDependency(ServiceDependency&&) noexcept = default;
-        ServiceDependency& operator=(ServiceDependency&&) noexcept = default;
+        ServiceDependency(const std::string name = std::string{}, bool valid = true);
+        virtual ~ServiceDependency() = default;
 
         /**
          * Set the service name of the service dependency.
          *
          * @return the C++ service dependency reference for chaining (fluent API)
          */
-        ServiceDependency<T,I>& setName(const std::string &_name);
+        ServiceDependency<T,I>& setName(const std::string name);
 
         /**
          * Set the service filter of the service dependency.
          *
          * @return the C++ service dependency reference for chaining (fluent API)
          */
-        ServiceDependency<T,I>& setFilter(const std::string &filter);
+        ServiceDependency<T,I>& setFilter(const std::string filter);
 
         /**
          * Set the service version range of the service dependency.
          *
          * @return the C++ service dependency reference for chaining (fluent API)
          */
-        ServiceDependency<T,I>& setVersionRange(const std::string &versionRange);
+        ServiceDependency<T,I>& setVersionRange(const std::string versionRange);
 
         /**
          * Set the set callback for when the service dependency becomes available
@@ -292,8 +279,8 @@ namespace celix { namespace dm {
          * @return the C service dependency reference for chaining (fluent API)
          */
         ServiceDependency<T,I>& setCallbacks(
-		std::function<void(I* service, Properties&& properties)> add,
-		std::function<void(I* service, Properties&& properties)> remove
+                std::function<void(I* service, Properties&& properties)> add,
+                std::function<void(I* service, Properties&& properties)> remove
         );
 
         /**
