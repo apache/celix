@@ -15,12 +15,12 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(celix_wire_v1_protocol_impl STATIC
+add_library(celix_protocol_wire_v1_impl STATIC
     src/pubsub_wire_protocol_impl.c
     src/pubsub_wire_protocol_common.c
 )
-target_include_directories(celix_wire_v1_protocol_impl PRIVATE src)
-target_link_libraries(celix_wire_v1_protocol_impl PRIVATE Celix::pubsub_spi )
+target_include_directories(celix_protocol_wire_v1_impl PRIVATE src)
+target_link_libraries(celix_protocol_wire_v1_impl PRIVATE Celix::pubsub_spi Celix::pubsub_utils)
 
 
 add_celix_bundle(celix_pubsub_protocol_wire_v1
@@ -31,14 +31,8 @@ add_celix_bundle(celix_pubsub_protocol_wire_v1
         src/ps_wire_protocol_activator.c
 )
 target_include_directories(celix_pubsub_protocol_wire_v1 PRIVATE src)
-<<<<<<< HEAD
-target_link_libraries(celix_pubsub_protocol_wire_v1 PRIVATE Celix::pubsub_spi )
-target_link_libraries(celix_pubsub_protocol_wire_v1 PRIVATE celix_wire_v1_protocol_impl)
-=======
 target_link_libraries(celix_pubsub_protocol_wire_v1 PRIVATE Celix::pubsub_spi Celix::pubsub_utils)
-target_link_libraries(celix_pubsub_protocol_wire_v1 PRIVATE celix_wire_protocol_v1_impl)
->>>>>>> feature/Refactor_TcpAdmin_Add_Support_for_VectorIo_serialisation
-
+target_link_libraries(celix_pubsub_protocol_wire_v1 PRIVATE celix_protocol_wire_v1_impl)
 install_celix_bundle(celix_pubsub_protocol_wire_v1 EXPORT celix COMPONENT pubsub)
 
 add_library(Celix::pubsub_protocol_wire_v1 ALIAS celix_pubsub_protocol_wire_v1)

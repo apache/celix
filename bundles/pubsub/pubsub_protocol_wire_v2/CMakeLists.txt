@@ -15,12 +15,12 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(celix_wire_v2_protocol_impl STATIC
+add_library(celix_protocol_wire_v2_impl STATIC
         src/pubsub_wire_v2_protocol_impl.c
         src/pubsub_wire_v2_protocol_common.c)
-target_include_directories(celix_wire_v2_protocol_impl PRIVATE src)
-target_link_libraries(celix_wire_v2_protocol_impl PRIVATE Celix::pubsub_spi )
-target_include_directories(celix_wire_v2_protocol_impl PRIVATE src ${CMAKE_SOURCE_DIR}/bundles/pubsub/pubsub_protocol_wire_v1/src )
+target_include_directories(celix_protocol_wire_v2_impl PRIVATE src)
+target_link_libraries(celix_protocol_wire_v2_impl PRIVATE Celix::pubsub_spi Celix::pubsub_utils)
+target_include_directories(celix_protocol_wire_v2_impl PRIVATE src ${CMAKE_SOURCE_DIR}/bundles/pubsub/pubsub_protocol_wire_v1/src )
 
 add_celix_bundle(celix_pubsub_protocol_wire_v2
     BUNDLE_SYMBOLICNAME "apache_celix_pubsub_protocol_wire_v2"
@@ -31,9 +31,9 @@ add_celix_bundle(celix_pubsub_protocol_wire_v2
 )
 
 target_include_directories(celix_pubsub_protocol_wire_v2 PRIVATE src ${CMAKE_SOURCE_DIR}/bundles/pubsub/pubsub_protocol_wire_v1/src)
-target_link_libraries(celix_pubsub_protocol_wire_v2 PRIVATE Celix::pubsub_spi )
-target_link_libraries(celix_pubsub_protocol_wire_v2 PRIVATE celix_wire_v2_protocol_impl)
-target_link_libraries(celix_pubsub_protocol_wire_v2 PRIVATE celix_wire_v1_protocol_impl)
+target_link_libraries(celix_pubsub_protocol_wire_v2 PRIVATE Celix::pubsub_spi Celix::pubsub_utils)
+target_link_libraries(celix_pubsub_protocol_wire_v2 PRIVATE celix_protocol_wire_v2_impl)
+target_link_libraries(celix_pubsub_protocol_wire_v2 PRIVATE celix_protocol_wire_v1_impl)
 
 install_celix_bundle(celix_pubsub_protocol_wire_v2 EXPORT celix COMPONENT pubsub)
 
