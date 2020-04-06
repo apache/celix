@@ -45,10 +45,11 @@ add_celix_bundle(celix_pubsub_admin_zmq
 
 set_target_properties(celix_pubsub_admin_zmq PROPERTIES INSTALL_RPATH "$ORIGIN")
 target_link_libraries(celix_pubsub_admin_zmq PRIVATE
-        Celix::pubsub_spi
+
         Celix::framework Celix::dfi Celix::log_helper Celix::utils
         ZMQ::lib CZMQ::lib ${OPTIONAL_OPENSSL_LIB}
 )
+target_link_libraries(celix_pubsub_admin_zmq PRIVATE Celix::pubsub_spi Celix::pubsub_utils )
 target_include_directories(celix_pubsub_admin_zmq PRIVATE
     src
 )

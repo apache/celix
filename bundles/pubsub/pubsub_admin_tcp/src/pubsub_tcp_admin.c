@@ -369,7 +369,7 @@ celix_status_t pubsub_tcpAdmin_matchPublisher(void *handle, long svcRequesterBnd
     pubsub_tcp_admin_t *psa = handle;
     L_DEBUG("[PSA_TCP] pubsub_tcpAdmin_matchPublisher");
     celix_status_t status = CELIX_SUCCESS;
-    double score = pubsub_utils_matchPublisher(psa->ctx, svcRequesterBndId, svcFilter->filterStr, PUBSUB_TCP_ADMIN_TYPE,
+    double score = pubsubEndpoint_matchPublisher(psa->ctx, svcRequesterBndId, svcFilter->filterStr, PUBSUB_TCP_ADMIN_TYPE,
                                                psa->qosSampleScore, psa->qosControlScore, psa->defaultScore, true,
                                                topicProperties, outSerializerSvcId, outProtocolSvcId);
     *outScore = score;
@@ -384,7 +384,7 @@ pubsub_tcpAdmin_matchSubscriber(void *handle, long svcProviderBndId, const celix
     pubsub_tcp_admin_t *psa = handle;
     L_DEBUG("[PSA_TCP] pubsub_tcpAdmin_matchSubscriber");
     celix_status_t status = CELIX_SUCCESS;
-    double score = pubsub_utils_matchSubscriber(psa->ctx, svcProviderBndId, svcProperties, PUBSUB_TCP_ADMIN_TYPE,
+    double score = pubsubEndpoint_matchSubscriber(psa->ctx, svcProviderBndId, svcProperties, PUBSUB_TCP_ADMIN_TYPE,
                                                 psa->qosSampleScore, psa->qosControlScore, psa->defaultScore, true,
                                                 topicProperties, outSerializerSvcId, outProtocolSvcId);
     if (outScore != NULL) {
@@ -398,7 +398,7 @@ pubsub_tcpAdmin_matchDiscoveredEndpoint(void *handle, const celix_properties_t *
     pubsub_tcp_admin_t *psa = handle;
     L_DEBUG("[PSA_TCP] pubsub_tcpAdmin_matchEndpoint");
     celix_status_t status = CELIX_SUCCESS;
-    bool match = pubsub_utils_matchEndpoint(psa->ctx, endpoint, PUBSUB_TCP_ADMIN_TYPE, true, NULL, NULL);
+    bool match = pubsubEndpoint_match(psa->ctx, endpoint, PUBSUB_TCP_ADMIN_TYPE, true, NULL, NULL);
     if (outMatch != NULL) {
         *outMatch = match;
     }
