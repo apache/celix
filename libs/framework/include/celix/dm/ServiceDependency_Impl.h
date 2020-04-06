@@ -26,48 +26,48 @@
 using namespace celix::dm;
 
 template<class T, typename I>
-CServiceDependency<T,I>::CServiceDependency(const std::string name, bool valid) : TypedServiceDependency<T>(valid) {
+CServiceDependency<T,I>::CServiceDependency(const std::string &name, bool valid) : TypedServiceDependency<T>(valid) {
     this->name = name;
     this->setupService();
 }
 
 template<class T, typename I>
-CServiceDependency<T,I>& CServiceDependency<T,I>::setVersionRange(const std::string serviceVersionRange) {
+CServiceDependency<T,I>& CServiceDependency<T,I>::setVersionRange(const std::string &serviceVersionRange) {
     this->versionRange = serviceVersionRange;
     this->setupService();
     return *this;
 }
 
 template<class T, typename I>
-CServiceDependency<T,I>& CServiceDependency<T,I>::setFilter(const std::string filter) {
-    this->filter = filter;
+CServiceDependency<T,I>& CServiceDependency<T,I>::setFilter(const std::string &_filter) {
+    filter = _filter;
     this->setupService();
     return *this;
 }
 
 template<class T, typename I>
 void CServiceDependency<T,I>::setupService() {
-    if (!this->valid) {
+    if (!this->isValid()) {
         return;
     }
     const char* cversion = this->versionRange.empty() ? nullptr : versionRange.c_str();
     const char* cfilter = filter.empty() ? nullptr : filter.c_str();
     celix_dmServiceDependency_setService(this->cServiceDependency(), this->name.c_str(), cversion, cfilter);
-};
+}
 
 template<class T, typename I>
 CServiceDependency<T,I>& CServiceDependency<T,I>::setAddLanguageFilter(bool addLang) {
-//    if (!this->valid) {
+//    if (!this->isValid()) {
 //        *this;
 //    }
     celix_serviceDependency_setAddCLanguageFilter(this->cServiceDependency(), addLang);
     this->setupService();
     return *this;
-};
+}
 
 template<class T, typename I>
 CServiceDependency<T,I>& CServiceDependency<T,I>::setRequired(bool req) {
-    if (!this->valid) {
+    if (!this->isValid()) {
         return *this;
     }
     celix_dmServiceDependency_setRequired(this->cServiceDependency(), req);
@@ -76,7 +76,7 @@ CServiceDependency<T,I>& CServiceDependency<T,I>::setRequired(bool req) {
 
 template<class T, typename I>
 CServiceDependency<T,I>& CServiceDependency<T,I>::setStrategy(DependencyUpdateStrategy strategy) {
-    if (!this->valid) {
+    if (!this->isValid()) {
         return *this;
     }
     this->setDepStrategy(strategy);
@@ -115,14 +115,14 @@ CServiceDependency<T,I>& CServiceDependency<T,I>::setCallbacks(
         void (T::*add)(const I* service),
         void (T::*remove)(const I* service)) {
     this->setCallbacks(
-		    [this, add](const I* service, [[gnu::unused]] Properties&& properties) {
-			    T *cmp = this->componentInstance;
-			    (cmp->*add)(service);
-		    },
-		    [this, remove](const I* service, [[gnu::unused]] Properties&& properties) {
-			    T *cmp = this->componentInstance;
-			    (cmp->*remove)(service);
-		    }
+            [this, add](const I* service, [[gnu::unused]] Properties&& properties) {
+                T *cmp = this->componentInstance;
+                (cmp->*add)(service);
+            },
+            [this, remove](const I* service, [[gnu::unused]] Properties&& properties) {
+                T *cmp = this->componentInstance;
+                (cmp->*remove)(service);
+            }
     );
     return *this;
 }
@@ -133,21 +133,21 @@ CServiceDependency<T,I>& CServiceDependency<T,I>::setCallbacks(
         void (T::*remove)(const I* service, Properties&& properties)
 ) {
     this->setCallbacks(
-		    [this, add](const I* service, Properties&& properties) {
-			    T *cmp = this->componentInstance;
-			    (cmp->*add)(service, std::move(properties));
-		    },
-		    [this, remove](const I* service, Properties&& properties) {
-			    T *cmp = this->componentInstance;
-			    (cmp->*remove)(service, std::move(properties));
-		    }
+            [this, add](const I* service, Properties&& properties) {
+                T *cmp = this->componentInstance;
+                (cmp->*add)(service, std::move(properties));
+            },
+            [this, remove](const I* service, Properties&& properties) {
+                T *cmp = this->componentInstance;
+                (cmp->*remove)(service, std::move(properties));
+            }
     );
     return *this;
 }
 
 template<class T, typename I>
 CServiceDependency<T,I>& CServiceDependency<T,I>::setCallbacks(std::function<void(const I* service, Properties&& properties)> add, std::function<void(const I* service, Properties&& properties)> remove) {
-    this->addFp = add;;
+    this->addFp = add;
     this->removeFp = remove;
     this->setupCallbacks();
     return *this;
@@ -156,7 +156,7 @@ CServiceDependency<T,I>& CServiceDependency<T,I>::setCallbacks(std::function<voi
 
 template<class T, typename I>
 void CServiceDependency<T,I>::setupCallbacks() {
-    if (!this->valid) {
+    if (!this->isValid()) {
         return;
     }
 
@@ -214,17 +214,17 @@ int CServiceDependency<T,I>::invokeCallback(std::function<void(const I*, Propert
 }
 
 template<class T, class I>
-ServiceDependency<T,I>::ServiceDependency(std::string name, bool valid) : TypedServiceDependency<T>(valid) {
+ServiceDependency<T,I>::ServiceDependency(const std::string &name, bool valid) : TypedServiceDependency<T>(valid) {
     if (!name.empty()) {
         this->setName(name);
     } else {
         this->setupService();
     }
-};
+}
 
 template<class T, class I>
 void ServiceDependency<T,I>::setupService() {
-    if (!this->valid) {
+    if (!this->isValid()) {
         return;
     }
 
@@ -276,25 +276,25 @@ void ServiceDependency<T,I>::setupService() {
 }
 
 template<class T, class I>
-ServiceDependency<T,I>& ServiceDependency<T,I>::setName(std::string name) {
-    this->name = name;
+ServiceDependency<T,I>& ServiceDependency<T,I>::setName(const std::string &_name) {
+    name = _name;
     setupService();
     return *this;
-};
+}
 
 template<class T, class I>
-ServiceDependency<T,I>& ServiceDependency<T,I>::setFilter(std::string filter) {
-    this->filter = filter;
+ServiceDependency<T,I>& ServiceDependency<T,I>::setFilter(const std::string &_filter) {
+    filter = _filter;
     setupService();
     return *this;
-};
+}
 
 template<class T, class I>
-ServiceDependency<T,I>& ServiceDependency<T,I>::setVersionRange(std::string versionRange) {
-    this->versionRange = versionRange;
+ServiceDependency<T,I>& ServiceDependency<T,I>::setVersionRange(const std::string &_versionRange) {
+    versionRange = _versionRange;
     setupService();
     return *this;
-};
+}
 
 
 template<class T, class I>
@@ -302,7 +302,7 @@ ServiceDependency<T,I>& ServiceDependency<T,I>::setAddLanguageFilter(bool addLan
     this->addCxxLanguageFilter = addLang;
     setupService();
     return *this;
-};
+}
 
 //set callbacks
 template<class T, class I>
@@ -336,14 +336,14 @@ ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(
         void (T::*add)(I* service),
         void (T::*remove)(I* service)) {
     this->setCallbacks(
-	    [this, add](I* srv, [[gnu::unused]] Properties&& props) {
-        	T *cmp = this->componentInstance;
-        	(cmp->*add)(srv);
-    	    },
-	    [this, remove](I* srv, [[gnu::unused]] Properties&& props) {
-        	T *cmp = this->componentInstance;
-        	(cmp->*remove)(srv);
-    	    }
+            [this, add](I* srv, [[gnu::unused]] Properties&& props) {
+                T *cmp = this->componentInstance;
+                (cmp->*add)(srv);
+            },
+            [this, remove](I* srv, [[gnu::unused]] Properties&& props) {
+                T *cmp = this->componentInstance;
+                (cmp->*remove)(srv);
+            }
     );
     return *this;
 }
@@ -352,24 +352,24 @@ template<class T, class I>
 ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(
         void (T::*add)(I* service, Properties&& properties),
         void (T::*remove)(I* service, Properties&& properties)
-        ) {
+) {
     this->setCallbacks(
-	    [this, add](I* srv, Properties&& props) {
-        	T *cmp = this->componentInstance;
-        	(cmp->*add)(srv, std::move(props));
-    	    },
-	    [this, remove](I* srv, Properties&& props) {
-        	T *cmp = this->componentInstance;
-        	(cmp->*remove)(srv, std::move(props));
-    	    }
+            [this, add](I* srv, Properties&& props) {
+                T *cmp = this->componentInstance;
+                (cmp->*add)(srv, std::move(props));
+            },
+            [this, remove](I* srv, Properties&& props) {
+                T *cmp = this->componentInstance;
+                (cmp->*remove)(srv, std::move(props));
+            }
     );
     return *this;
 }
 
 template<class T, class I>
 ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(
-		std::function<void(I* service, Properties&& properties)> add,
-		std::function<void(I* service, Properties&& properties)> remove) {
+        std::function<void(I* service, Properties&& properties)> add,
+        std::function<void(I* service, Properties&& properties)> remove) {
     this->addFp = add;
     this->removeFp = remove;
     this->setupCallbacks();
@@ -386,7 +386,7 @@ template<class T, class I>
 ServiceDependency<T,I>& ServiceDependency<T,I>::setStrategy(DependencyUpdateStrategy strategy) {
     this->setDepStrategy(strategy);
     return *this;
-};
+}
 
 template<class T, class I>
 int ServiceDependency<T,I>::invokeCallback(std::function<void(I*, Properties&&)> fp, const celix_properties_t *props, const void* service) {
@@ -396,15 +396,15 @@ int ServiceDependency<T,I>::invokeCallback(std::function<void(I*, Properties&&)>
     const char* key {nullptr};
     const char* value {nullptr};
 
-	if (props != nullptr) {
-            hash_map_iterator_t iter = hashMapIterator_construct((hash_map_pt)props);
-            while(hashMapIterator_hasNext(&iter)) {
-                key = (const char*) hashMapIterator_nextKey(&iter);
-                value = celix_properties_get(props, key, "");
-                //std::cout << "got property " << key << "=" << value << "\n";
-                properties[key] = value;
-            }
-	}
+    if (props != nullptr) {
+        hash_map_iterator_t iter = hashMapIterator_construct((hash_map_pt)props);
+        while(hashMapIterator_hasNext(&iter)) {
+            key = (const char*) hashMapIterator_nextKey(&iter);
+            value = celix_properties_get(props, key, "");
+            //std::cout << "got property " << key << "=" << value << "\n";
+            properties[key] = value;
+        }
+    }
 
     fp(svc, std::move(properties)); //explicit move of lvalue properties.
     return 0;
@@ -412,7 +412,7 @@ int ServiceDependency<T,I>::invokeCallback(std::function<void(I*, Properties&&)>
 
 template<class T, class I>
 void ServiceDependency<T,I>::setupCallbacks() {
-    if (!this->valid) {
+    if (!this->isValid()) {
         return;
     }
 
@@ -446,4 +446,4 @@ void ServiceDependency<T,I>::setupCallbacks() {
     opts.addWithProps = cadd;
     opts.removeWithProps = crem;
     celix_dmServiceDependency_setCallbacksWithOptions(this->cServiceDependency(), &opts);
-};
+}

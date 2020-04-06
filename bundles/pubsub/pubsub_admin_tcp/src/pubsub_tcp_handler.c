@@ -141,7 +141,7 @@ static void *pubsub_tcpHandler_thread(void *data);
 //
 // Create a handle
 //
-pubsub_tcpHandler_t *pubsub_tcpHandler_create(pubsub_protocol_service_t *protocol, log_helper_t *logHelper) {
+pubsub_tcpHandler_t *pubsub_tcpHandler_create(log_helper_t *logHelper) {
     pubsub_tcpHandler_t *handle = calloc(sizeof(*handle), 1);
     if (handle != NULL) {
         handle->efd = epoll_create1(0);
@@ -811,9 +811,8 @@ int pubsub_tcpHandler_dataAvailable(pubsub_tcpHandler_t *handle, int fd, unsigne
             L_WARN("[TCP Socket] Failed to receive message header (fd: %d), error: %s. Retry count %u of %u,",
                    entry->fd, strerror(errno), entry->retryCount, handle->maxRcvRetryCount);
         } else {
-            L_ERROR(
-                "[TCP Socket] Failed to receive message header (fd: %d) after %u retries! Closing connection... Error: %s",
-                entry->fd, handle->maxRcvRetryCount, strerror(errno));
+            L_ERROR("[TCP Socket] Failed to receive message (fd: %d) after %u retries! Closing connection... Error: %s",
+                    entry->fd, handle->maxRcvRetryCount, strerror(errno));
             nbytes = 0; //Return 0 as indicator to close the connection
         }
     }
