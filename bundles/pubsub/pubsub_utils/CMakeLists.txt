@@ -15,22 +15,18 @@
 # specific language governing permissions and limitations
 # under the License.
 
-find_package(UUID REQUIRED)
+add_library(pubsub_utils STATIC
+        src/pubsub_utils.c
+        src/pubsub_utils_url.c)
 
-add_library(pubsub_spi STATIC
-        src/pubsub_endpoint.c
-        src/pubsub_endpoint_match.c
-        src/pubsub_admin_metrics.c
-        src/pubsub_interceptors_handler.c)
-
-set_target_properties(pubsub_spi PROPERTIES OUTPUT_NAME "celix_pubsub_spi")
-target_include_directories(pubsub_spi PUBLIC
+set_target_properties(pubsub_utils PROPERTIES OUTPUT_NAME "celix_pubsub_utils")
+target_include_directories(pubsub_utils PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
-        $<INSTALL_INTERFACE:include/celix/pubsub_spi>)
+        $<INSTALL_INTERFACE:include/celix/pubsub_utils>
+)
+target_link_libraries(pubsub_utils PUBLIC Celix::framework Celix::pubsub_api)
 
-target_link_libraries(pubsub_spi PUBLIC Celix::framework Celix::pubsub_api)
-target_link_libraries(pubsub_spi PUBLIC Celix::pubsub_utils )
-add_library(Celix::pubsub_spi ALIAS pubsub_spi)
+add_library(Celix::pubsub_utils ALIAS pubsub_utils)
 
-install(TARGETS pubsub_spi EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT pubsub)
-install(DIRECTORY include/ DESTINATION include/celix/pubsub_spi COMPONENT pubsub)
+install(TARGETS pubsub_utils EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT pubsub)
+install(DIRECTORY include/ DESTINATION include/celix/pubsub_utils COMPONENT pubsub)

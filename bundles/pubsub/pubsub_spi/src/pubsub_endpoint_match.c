@@ -143,7 +143,7 @@ static long getPSAProtocol(celix_bundle_context_t *ctx, const char *requested_pr
     return svcId;
 }
 
-double pubsub_utils_matchPublisher(
+double pubsubEndpoint_matchPublisher(
         celix_bundle_context_t *ctx,
         long bundleId,
         const char *filter,
@@ -212,7 +212,7 @@ static void getTopicPropertiesCallback(void *handle, const celix_bundle_t *bnd) 
     data->outEndpoint = pubsub_utils_getTopicProperties(bnd, data->scope, data->topic, data->isPublisher);
 }
 
-double pubsub_utils_matchSubscriber(
+double pubsubEndpoint_matchSubscriber(
         celix_bundle_context_t *ctx,
         const long svcProviderBundleId,
         const celix_properties_t *svcProperties,
@@ -277,7 +277,7 @@ double pubsub_utils_matchSubscriber(
     return score;
 }
 
-bool pubsub_utils_matchEndpoint(
+bool pubsubEndpoint_match(
         celix_bundle_context_t *ctx,
         const celix_properties_t *ep,
         const char *adminType,

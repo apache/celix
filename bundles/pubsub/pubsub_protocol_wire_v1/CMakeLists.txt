@@ -31,8 +31,13 @@ add_celix_bundle(celix_pubsub_protocol_wire_v1
         src/ps_wire_protocol_activator.c
 )
 target_include_directories(celix_pubsub_protocol_wire_v1 PRIVATE src)
+<<<<<<< HEAD
 target_link_libraries(celix_pubsub_protocol_wire_v1 PRIVATE Celix::pubsub_spi )
 target_link_libraries(celix_pubsub_protocol_wire_v1 PRIVATE celix_wire_v1_protocol_impl)
+=======
+target_link_libraries(celix_pubsub_protocol_wire_v1 PRIVATE Celix::pubsub_spi Celix::pubsub_utils)
+target_link_libraries(celix_pubsub_protocol_wire_v1 PRIVATE celix_wire_protocol_v1_impl)
+>>>>>>> feature/Refactor_TcpAdmin_Add_Support_for_VectorIo_serialisation
 
 install_celix_bundle(celix_pubsub_protocol_wire_v1 EXPORT celix COMPONENT pubsub)
 

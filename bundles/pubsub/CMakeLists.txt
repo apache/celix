@@ -61,6 +61,7 @@ if (PUBSUB)
     endif (BUILD_PUBSUB_PSA_WS)
 
     add_subdirectory(pubsub_api)
+    add_subdirectory(pubsub_utils)
     add_subdirectory(pubsub_spi)
     add_subdirectory(pubsub_topology_manager)
     add_subdirectory(pubsub_discovery)
