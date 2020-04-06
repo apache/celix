@@ -105,7 +105,7 @@ static const unsigned int DEFAULT_TIMEOUT = 0;
 
 static int remoteServiceAdmin_callback(struct mg_connection *conn);
 static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin_t *admin, service_reference_pt reference, celix_properties_t *props, char *interface, endpoint_description_t **description);
-static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description_t *endpointDescription, char *request, char **reply, int* replyStatus);
+static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description_t *endpointDescription, char *request, celix_properties_t *metadata, char **reply, int* replyStatus);
 static celix_status_t remoteServiceAdmin_getIpAddress(char* interface, char** ip);
 static size_t remoteServiceAdmin_readCallback(void *ptr, size_t size, size_t nmemb, void *userp);
 static size_t remoteServiceAdmin_write(void *contents, size_t size, size_t nmemb, void *userp);
@@ -365,6 +365,18 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
             service[pos] = '\0';
             unsigned long serviceId = strtoul(service,NULL,10);
 
+            celix_properties_t *metadata = NULL;
+
+            for (int i = 0; i < request_info->num_headers; i++) {
+                struct mg_header header = request_info->http_headers[i];
+                if (strncmp(header.name, "X-RSA-Metadata-", 15) == 0) {
+                    if (metadata == NULL) {
+                        metadata = celix_properties_create();
+                    }
+                    celix_properties_set(metadata, header.name + 15, header.value);
+                }
+            }
+
             celixThreadRwlock_readLock(&rsa->exportedServicesLock);
 
             //find endpoint
@@ -399,7 +411,7 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
 
                 char *response = NULL;
                 int responceLength = 0;
-                int rc = exportRegistration_call(export, data, -1, &response, &responceLength);
+                int rc = exportRegistration_call(export, data, -1, metadata, &response, &responceLength);
                 if (rc != CELIX_SUCCESS) {
                     RSA_LOG_ERROR(rsa, "Error trying to invoke remove service, got error %i\n", rc);
                 }
@@ -774,7 +786,7 @@ celix_status_t remoteServiceAdmin_removeImportedService(remote_service_admin_t *
     return status;
 }
 
-static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description_t *endpointDescription, char *request, char **reply, int* replyStatus) {
+static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description_t *endpointDescription, char *request, celix_properties_t *metadata, char **reply, int* replyStatus) {
     remote_service_admin_t * rsa = handle;
     struct post post;
     post.readptr = request;
@@ -813,6 +825,22 @@ static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description
     if(!curl) {
         status = CELIX_ILLEGAL_STATE;
     } else {
+        struct curl_slist *metadataHeader = NULL;
+        if (metadata != NULL && celix_properties_size(metadata) > 0) {
+            const char *key = NULL;
+            CELIX_PROPERTIES_FOR_EACH(metadata, key) {
+                const char *val = celix_properties_get(metadata, key, "");
+                size_t length = strlen(key) + strlen(val) + 18; // "X-RSA-Metadata-key: val\0"
+
+                char header[length];
+
+                snprintf(header, length, "X-RSA-Metadata-%s: %s", key, val);
+                metadataHeader = curl_slist_append(metadataHeader, header);
+            }
+
+            curl_easy_setopt(curl, CURLOPT_HTTPHEADER, metadataHeader);
+        }
+
         curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
         curl_easy_setopt(curl, CURLOPT_TIMEOUT, timeout);
         curl_easy_setopt(curl, CURLOPT_URL, url);
@@ -830,6 +858,7 @@ static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description
         *replyStatus = res;
 
         curl_easy_cleanup(curl);
+        curl_slist_free_all(metadataHeader);
     }
 
     return status;

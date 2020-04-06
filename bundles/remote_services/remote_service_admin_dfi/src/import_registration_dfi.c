@@ -27,6 +27,7 @@
 #include "import_registration.h"
 #include "import_registration_dfi.h"
 #include "remote_service_admin_dfi.h"
+#include "remote_interceptors_handler.h"
 #include "remote_service_admin_dfi_constants.h"
 
 struct import_registration {
@@ -44,6 +45,8 @@ struct import_registration {
 
     hash_map_pt proxies; //key -> bundle, value -> service_proxy
     celix_thread_mutex_t proxiesMutex; //protects proxies
+
+    remote_interceptors_handler_t *interceptorsHandler;
 
     FILE *logFile;
 };
@@ -77,6 +80,8 @@ celix_status_t importRegistration_create(celix_bundle_context_t *context, endpoi
         reg->endpoint = endpoint;
         reg->classObject = classObject;
         reg->proxies = hashMap_create(NULL, NULL, NULL, NULL);
+
+        remoteInterceptorsHandler_create(context, &reg->interceptorsHandler);
 
         celixThreadMutex_create(&reg->mutex, NULL);
         celixThreadMutex_create(&reg->proxiesMutex, NULL);
@@ -135,6 +140,8 @@ void importRegistration_destroy(import_registration_t *import) {
             hashMap_destroy(import->proxies, false, false);
             import->proxies = NULL;
         }
+
+        remoteInterceptorsHandler_destroy(import->interceptorsHandler);
 
         pthread_mutex_destroy(&import->mutex);
         pthread_mutex_destroy(&import->proxiesMutex);
@@ -333,19 +340,25 @@ static void importRegistration_proxyFunc(void *userData, void *args[], void *ret
         char *reply = NULL;
         int rc = 0;
         //printf("sending request\n");
-        celixThreadMutex_lock(&import->mutex);
-        if (import->send != NULL) {
-            import->send(import->sendHandle, import->endpoint, invokeRequest, &reply, &rc);
-        }
-        celixThreadMutex_unlock(&import->mutex);
-        //printf("request sended. got reply '%s' with status %i\n", reply, rc);
+        celix_properties_t *metadata = NULL;
+        bool cont = remoteInterceptorHandler_invokePreProxyCall(import->interceptorsHandler, "TODO", import->endpoint->properties, entry->name, &metadata);
+        if (cont) {
+            celixThreadMutex_lock(&import->mutex);
+            if (import->send != NULL) {
+                import->send(import->sendHandle, import->endpoint, invokeRequest, metadata, &reply, &rc);
+            }
+            celixThreadMutex_unlock(&import->mutex);
+            //printf("request sended. got reply '%s' with status %i\n", reply, rc);
 
-        if (rc == 0 && dynFunction_hasReturn(entry->dynFunc)) {
-            //fjprintf("Handling reply '%s'\n", reply);
-            status = jsonRpc_handleReply(entry->dynFunc, reply, args);
-        }
+            if (rc == 0 && dynFunction_hasReturn(entry->dynFunc)) {
+                //fjprintf("Handling reply '%s'\n", reply);
+                status = jsonRpc_handleReply(entry->dynFunc, reply, args);
+            }
 
-        *(int *) returnVal = rc;
+            *(int *) returnVal = rc;
+
+            remoteInterceptorHandler_invokePostProxyCall(import->interceptorsHandler, "TODO", import->endpoint->properties, entry->name, metadata);
+        }
 
         if (import->logFile != NULL) {
             static int callCount = 0;
@@ -440,3 +453,4 @@ static const char* importRegistration_getUrl(import_registration_t *reg) {
 static const char* importRegistration_getServiceName(import_registration_t *reg) {
     return reg->endpoint->service;
 }
+
