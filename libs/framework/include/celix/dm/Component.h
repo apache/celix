@@ -243,18 +243,6 @@ namespace celix { namespace dm {
          * @return the DM Component reference for chaining (fluent API)
          */
         Component<T>& removeCallbacks();
-
-        /**
-         * Safely copies a std::string into a char* buffer
-         * @param input string to copy
-         * @param dst buffer to allocate into, owner is responsible for freeing memory
-         */
-        void copyString(const std::string& input, char **dst)
-        {
-            *dst = (char*)malloc(input.length() + 1);
-            strncpy(*dst, input.c_str(), input.length());
-            *dst[input.length()] = '\0';
-        }
     };
 }}
 

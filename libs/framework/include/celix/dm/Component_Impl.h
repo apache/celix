@@ -45,11 +45,7 @@ Component<T>& Component<T>::addInterfaceWithName(const std::string &serviceName,
         celix_properties_t *cProperties = properties_create();
         properties_set(cProperties, CELIX_FRAMEWORK_SERVICE_LANGUAGE, CELIX_FRAMEWORK_SERVICE_CXX_LANGUAGE);
         for (const auto& pair : properties) {
-            char *key = nullptr;
-            char *value = nullptr;
-            copyString(pair.first, &key);
-            copyString(pair.second, &value);
-            celix_properties_setWithoutCopy(cProperties, key, value);
+            properties_set(cProperties, pair.first.c_str(), pair.second.c_str());
         }
 
         T* cmpPtr = &this->getInstance();
@@ -85,11 +81,7 @@ Component<T>& Component<T>::addCInterface(const I* svc, const std::string &servi
     celix_properties_t *cProperties = properties_create();
     properties_set(cProperties, CELIX_FRAMEWORK_SERVICE_LANGUAGE, CELIX_FRAMEWORK_SERVICE_C_LANGUAGE);
     for (const auto& pair : properties) {
-        char *key = nullptr;
-        char *value = nullptr;
-        copyString(pair.first, &key);
-        copyString(pair.second, &value);
-        celix_properties_setWithoutCopy(cProperties, key, value);
+        properties_set(cProperties, pair.first.c_str(), pair.second.c_str());
     }
 
     const char *cVersion = version.empty() ? nullptr : version.c_str();
