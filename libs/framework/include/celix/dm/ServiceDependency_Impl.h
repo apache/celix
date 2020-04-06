@@ -115,14 +115,14 @@ CServiceDependency<T,I>& CServiceDependency<T,I>::setCallbacks(
         void (T::*add)(const I* service),
         void (T::*remove)(const I* service)) {
     this->setCallbacks(
-            [this, add](const I* service, [[gnu::unused]] Properties&& properties) {
-                T *cmp = this->componentInstance;
-                (cmp->*add)(service);
-            },
-            [this, remove](const I* service, [[gnu::unused]] Properties&& properties) {
-                T *cmp = this->componentInstance;
-                (cmp->*remove)(service);
-            }
+		    [this, add](const I* service, [[gnu::unused]] Properties&& properties) {
+			    T *cmp = this->componentInstance;
+			    (cmp->*add)(service);
+		    },
+		    [this, remove](const I* service, [[gnu::unused]] Properties&& properties) {
+			    T *cmp = this->componentInstance;
+			    (cmp->*remove)(service);
+		    }
     );
     return *this;
 }
@@ -133,14 +133,14 @@ CServiceDependency<T,I>& CServiceDependency<T,I>::setCallbacks(
         void (T::*remove)(const I* service, Properties&& properties)
 ) {
     this->setCallbacks(
-            [this, add](const I* service, Properties&& properties) {
-                T *cmp = this->componentInstance;
-                (cmp->*add)(service, std::move(properties));
-            },
-            [this, remove](const I* service, Properties&& properties) {
-                T *cmp = this->componentInstance;
-                (cmp->*remove)(service, std::move(properties));
-            }
+		    [this, add](const I* service, Properties&& properties) {
+			    T *cmp = this->componentInstance;
+			    (cmp->*add)(service, std::move(properties));
+		    },
+		    [this, remove](const I* service, Properties&& properties) {
+			    T *cmp = this->componentInstance;
+			    (cmp->*remove)(service, std::move(properties));
+		    }
     );
     return *this;
 }
@@ -336,14 +336,14 @@ ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(
         void (T::*add)(I* service),
         void (T::*remove)(I* service)) {
     this->setCallbacks(
-            [this, add](I* srv, [[gnu::unused]] Properties&& props) {
-                T *cmp = this->componentInstance;
-                (cmp->*add)(srv);
-            },
-            [this, remove](I* srv, [[gnu::unused]] Properties&& props) {
-                T *cmp = this->componentInstance;
-                (cmp->*remove)(srv);
-            }
+	    [this, add](I* srv, [[gnu::unused]] Properties&& props) {
+        	T *cmp = this->componentInstance;
+        	(cmp->*add)(srv);
+    	    },
+	    [this, remove](I* srv, [[gnu::unused]] Properties&& props) {
+        	T *cmp = this->componentInstance;
+        	(cmp->*remove)(srv);
+    	    }
     );
     return *this;
 }
@@ -352,24 +352,24 @@ template<class T, class I>
 ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(
         void (T::*add)(I* service, Properties&& properties),
         void (T::*remove)(I* service, Properties&& properties)
-) {
+        ) {
     this->setCallbacks(
-            [this, add](I* srv, Properties&& props) {
-                T *cmp = this->componentInstance;
-                (cmp->*add)(srv, std::move(props));
-            },
-            [this, remove](I* srv, Properties&& props) {
-                T *cmp = this->componentInstance;
-                (cmp->*remove)(srv, std::move(props));
-            }
+	    [this, add](I* srv, Properties&& props) {
+        	T *cmp = this->componentInstance;
+        	(cmp->*add)(srv, std::move(props));
+    	    },
+	    [this, remove](I* srv, Properties&& props) {
+        	T *cmp = this->componentInstance;
+        	(cmp->*remove)(srv, std::move(props));
+    	    }
     );
     return *this;
 }
 
 template<class T, class I>
 ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(
-        std::function<void(I* service, Properties&& properties)> add,
-        std::function<void(I* service, Properties&& properties)> remove) {
+		std::function<void(I* service, Properties&& properties)> add,
+		std::function<void(I* service, Properties&& properties)> remove) {
     this->addFp = add;
     this->removeFp = remove;
     this->setupCallbacks();
@@ -396,15 +396,15 @@ int ServiceDependency<T,I>::invokeCallback(std::function<void(I*, Properties&&)>
     const char* key {nullptr};
     const char* value {nullptr};
 
-    if (props != nullptr) {
-        hash_map_iterator_t iter = hashMapIterator_construct((hash_map_pt)props);
-        while(hashMapIterator_hasNext(&iter)) {
-            key = (const char*) hashMapIterator_nextKey(&iter);
-            value = celix_properties_get(props, key, "");
-            //std::cout << "got property " << key << "=" << value << "\n";
-            properties[key] = value;
-        }
-    }
+	if (props != nullptr) {
+            hash_map_iterator_t iter = hashMapIterator_construct((hash_map_pt)props);
+            while(hashMapIterator_hasNext(&iter)) {
+                key = (const char*) hashMapIterator_nextKey(&iter);
+                value = celix_properties_get(props, key, "");
+                //std::cout << "got property " << key << "=" << value << "\n";
+                properties[key] = value;
+            }
+	}
 
     fp(svc, std::move(properties)); //explicit move of lvalue properties.
     return 0;

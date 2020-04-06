@@ -214,10 +214,10 @@ namespace celix { namespace dm {
          * @return the DM Component reference for chaining (fluent API)
          */
         Component<T>& setCallbacks(
-                void (T::*init)(),
-                void (T::*start)(),
-                void (T::*stop)(),
-                void (T::*deinit)()
+            void (T::*init)(),
+            void (T::*start)(),
+            void (T::*stop)(),
+            void (T::*deinit)()
         );
 
         /**
@@ -232,10 +232,10 @@ namespace celix { namespace dm {
          * @return the DM Component reference for chaining (fluent API)
          */
         Component<T>& setCallbacks(
-                int (T::*init)(),
-                int (T::*start)(),
-                int (T::*stop)(),
-                int (T::*deinit)()
+            int (T::*init)(),
+            int (T::*start)(),
+            int (T::*stop)(),
+            int (T::*deinit)()
         );
         /**
          * Remove the previously registered callbacks for the component life cycle control

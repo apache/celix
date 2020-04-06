@@ -183,8 +183,8 @@ namespace celix { namespace dm {
          * @return the C service dependency reference for chaining (fluent API)
          */
         CServiceDependency<T,I>& setCallbacks(
-                std::function<void(const I* service, Properties&& properties)> add,
-                std::function<void(const I* service, Properties&& properties)> remove
+		std::function<void(const I* service, Properties&& properties)> add,
+		std::function<void(const I* service, Properties&& properties)> remove
         );
 
         /**
@@ -279,8 +279,8 @@ namespace celix { namespace dm {
          * @return the C service dependency reference for chaining (fluent API)
          */
         ServiceDependency<T,I>& setCallbacks(
-                std::function<void(I* service, Properties&& properties)> add,
-                std::function<void(I* service, Properties&& properties)> remove
+		std::function<void(I* service, Properties&& properties)> add,
+		std::function<void(I* service, Properties&& properties)> remove
         );
 
         /**

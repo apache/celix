@@ -53,7 +53,7 @@ Component<T>& Component<T>::addInterfaceWithName(const std::string serviceName, 
 
         const char *cVersion = version.empty() ? nullptr : version.c_str();
         celix_dmComponent_addInterface(this->cComponent(), (char *) serviceName.c_str(), (char *) cVersion,
-                                       intfPtr, cProperties);
+                               intfPtr, cProperties);
     } else {
         std::cerr << "Cannot add interface with a empty name\n";
     }
@@ -138,7 +138,7 @@ template<class T>
 template<typename I>
 Component<T>& Component<T>::remove(CServiceDependency<T,I>& dep) {
     celix_component_removeServiceDependency(cComponent(), dep.cServiceDependency());
-    this->dependencies.erase(std::remove(this->dependencies.begin(), this->dependencies.end(), dep));
+     this->dependencies.erase(std::remove(this->dependencies.begin(), this->dependencies.end(), dep));
     return *this;
 }
 
@@ -204,10 +204,10 @@ Component<T>& Component<T>::setInstance(T&& inst) {
 
 template<class T>
 Component<T>& Component<T>::setCallbacks(
-        void (T::*init)(),
-        void (T::*start)(),
-        void (T::*stop)(),
-        void (T::*deinit)() ) {
+            void (T::*init)(),
+            void (T::*start)(),
+            void (T::*stop)(),
+            void (T::*deinit)() ) {
 
     this->initFp = init;
     this->startFp = start;
@@ -258,10 +258,10 @@ Component<T>& Component<T>::setCallbacks(
 
 template<class T>
 Component<T>& Component<T>::setCallbacks(
-        int (T::*init)(),
-        int (T::*start)(),
-        int (T::*stop)(),
-        int (T::*deinit)() ) {
+            int (T::*init)(),
+            int (T::*start)(),
+            int (T::*stop)(),
+            int (T::*deinit)() ) {
 
     this->initFpNoExc = init;
     this->startFpNoExc = start;
