@@ -15,18 +15,28 @@
 # specific language governing permissions and limitations
 # under the License.
 
-#NOTE: TBB does not yet deliver a TBBConfig.cmake on Ubuntu 18, using a FindTBB.cmake file
-if (UNIX AND NOT APPLE)
-    set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
+celix_subproject(PROMISE "Option to build the Promise library" ON)
+if (PROMISE)
+
+    find_package(TBB QUIET)
+    if (NOT TBB_FOUND)
+        #NOTE: TBB does not yet deliver a TBBConfig.cmake on Ubuntu 18, using a FindTBB.cmake file
+        set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+    endif ()
+    find_package(TBB REQUIRED)
+
+    add_library(celix_Promise INTERFACE)
+    target_include_directories(celix_Promise INTERFACE api)
+    target_link_libraries(celix_Promise INTERFACE TBB::tbb)
+    target_compile_options(celix_Promise INTERFACE -frtti) #Note needed for TBB
+    add_library(Celix::Promise ALIAS celix_Promise)
+
+    add_executable(PromiseExamples src/PromiseExamples.cc)
+    target_link_libraries(PromiseExamples PRIVATE Celix::Promise)
+
+    if (ENABLE_TESTING)
+        add_subdirectory(gtest)
+    endif()
+
 endif ()
-find_package(TBB REQUIRED)
-
-add_library(celix_Promise INTERFACE)
-target_include_directories(celix_Promise INTERFACE api)
-target_link_libraries(celix_Promise INTERFACE TBB::tbb)
-target_compile_options(celix_Promise INTERFACE -frtti) #Note needed for TBB
-add_library(Celix::Promise ALIAS celix_Promise)
-
-if (ENABLE_TESTING)
-    add_subdirectory(gtest)
-endif()

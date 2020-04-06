@@ -19,33 +19,171 @@
 
 #pragma once
 
-#include "celix/SharedPromiseState.h"
+#include "celix/impl/SharedPromiseState.h"
 
 namespace celix {
 
+    /**
+     * A Promise of a value.
+     * <p>
+     * A Promise represents a future value. It handles the interactions for
+     * asynchronous processing. A {@link Deferred} object can be used to create a
+     * Promise and later resolve the Promise. A Promise is used by the caller of an
+     * asynchronous function to get the result or handle the error. The caller can
+     * either get a callback when the Promise is resolved with a value or an error,
+     * or the Promise can be used in chaining. In chaining, callbacks are provided
+     * that receive the resolved Promise, and a new Promise is generated that
+     * resolves based upon the result of a callback.
+     * <p>
+     * Both {@link #onResolve(Runnable) callbacks} and
+     * {@link #then(Success, Failure) chaining} can be repeated any number of times,
+     * even after the Promise has been resolved.
+     * <p>
+     * Example callback usage:
+     *
+     * <pre>
+     * celix::Promise&lt;std::string&gt; foo{};
+     * foo.onResolve([]{ std::cout << "resolved" << std::endl; });
+     * </pre>
+     *
+     *
+     * @tparam <T> The value type associated with this Promise.
+     * @ThreadSafe
+     */
     template<typename T>
     class Promise {
     public:
         using type = T;
 
-        explicit Promise(std::shared_ptr<celix::SharedPromiseState<T>> s);
+        explicit Promise(std::shared_ptr<celix::impl::SharedPromiseState<T>> s);
 
 //        ~Promise() {
 //            //TODO maybe make a special detach call to state if the count is 1
 //            //state->detachIfNeeded(state); //create a callback with ref to self if share_ptr count is 1
 //        }
 
-        std::exception_ptr getFailure() const;
-
-        const T& getValue() const;
-        T moveValue();
-
+        /**
+         * Returns whether this Promise has been resolved.
+         *
+         * <p>
+         * This Promise may be successfully resolved or resolved with a failure.
+         *
+         * @return {@code true} if this Promise was resolved either successfully or
+         *         with a failure; {@code false} if this Promise is unresolved.
+         */
         bool isDone() const;
 
+        //
+        /**
+         * Returns whether this Promise has been resolved and whether it resolved successfully.
+         * NOTE although not part of the OSGi spec, IMO this is clearer than (isDone() && !getFailure())
+         *
+         *
+         * @return {@code true} if this Promise was resolved successfully.
+         *         {@code false} if this Promise is unresolved or resolved with a failure.
+         */
+        bool isSuccessfullyResolved() const;
+
+        /**
+         * Returns the failure of this Promise.
+         *
+         * <p>
+         * If this Promise is not {@link #isDone() resolved}, this method must block
+         * and wait for this Promise to be resolved before completing.
+         *
+         * <p>
+         * If this Promise was resolved with a failure, this method returns with the
+         * failure of this Promise. If this Promise was successfully resolved, this
+         * method must return {@code null}.
+         *
+         * @return The failure of this resolved Promise or {@code null} if this
+         *         Promise was successfully resolved.
+         * @throws InterruptedException If the current thread was interrupted while
+         *         waiting.
+         */
+        std::exception_ptr getFailure() const;
+
+        /**
+         * Returns the value of this Promise.
+         *
+         * <p>
+         * If this Promise is not {@link #isDone() resolved}, this method must block
+         * and wait for this Promise to be resolved before completing.
+         *
+         * <p>
+         * If this Promise was successfully resolved, this method returns with the
+         * value of this Promise. If this Promise was resolved with a failure, this
+         * method must throw an {@code InvocationTargetException} with the
+         * {@link #getFailure() failure exception} as the cause.
+         *
+         * @return The value of this resolved Promise.
+         * @throws InvocationTargetException If this Promise was resolved with a
+         *         failure. The cause of the {@code InvocationTargetException} is
+         *         the failure exception.
+         * @throws InterruptedException If the current thread was interrupted while
+         *         waiting.
+         */
+        const T& getValue() const;
+
+        //TODO is a move value needed? Howto handle this with resolve callbacks
+        T moveValue();
+
+        /**
+         * Wait till the promise is resolved.
+         *
+         * <p>
+         * If this Promise is not {@link #isDone() resolved}, this method must block
+         * and wait for this Promise to be resolved before completing.
+         *
+         */
         void wait() const; //NOTE not part of the OSGI promise, wait till resolved (used in testing)
-        
+
+        /**
+         * Register a callback to be called with the result of this Promise when
+         * this Promise is resolved successfully. The callback will not be called if
+         * this Promise is resolved with a failure.
+         * <p>
+         * This method may be called at any time including before and after this
+         * Promise has been resolved.
+         * <p>
+         * Resolving this Promise <i>happens-before</i> any registered callback is
+         * called. That is, in a registered callback, {@link #isDone()} must return
+         * {@code true} and {@link #getValue()} and {@link #getFailure()} must not
+         * block.
+         * <p>
+         * A callback may be called on a different thread than the thread which
+         * registered the callback. So the callback must be thread safe but can rely
+         * upon that the registration of the callback <i>happens-before</i> the
+         * registered callback is called.
+         *
+         * @param success The Consumer callback that receives the value of this
+         *            Promise. Must be valid.
+         * @return This Promise.
+         */
         Promise<T>& onSuccess(std::function<void(T)> success);
 
+        /**
+         * Register a callback to be called with the failure for this Promise when
+         * this Promise is resolved with a failure. The callback will not be called
+         * if this Promise is resolved successfully.
+         * <p>
+         * This method may be called at any time including before and after this
+         * Promise has been resolved.
+         * <p>
+         * Resolving this Promise <i>happens-before</i> any registered callback is
+         * called. That is, in a registered callback, {@link #isDone()} must return
+         * {@code true} and {@link #getValue()} and {@link #getFailure()} must not
+         * block.
+         * <p>
+         * A callback may be called on a different thread than the thread which
+         * registered the callback. So the callback must be thread safe but can rely
+         * upon that the registration of the callback <i>happens-before</i> the
+         * registered callback is called.
+         *
+         * @param failure The Consumer callback that receives the failure of this
+         *            Promise. Must be valid.
+         * @return This Promise.
+         */
         Promise<T>& onFailure(std::function<void(const std::exception&)> failure);
 
         /**
@@ -221,7 +359,7 @@ namespace celix {
          * callback must be used to resolve the returned Promise. Multiple calls to this method can be used to create a
          * chain of promises which are resolved in sequence.
          * <p/>
-         * If this Promise is successfully resolved, the duccess callback is executed and the result Promise, if any, or
+         * If this Promise is successfully resolved, the success callback is executed and the result Promise, if any, or
          * thrown exception is used to resolve the returned Promise from this method. If this Promise is resolved with a
          * failure, the failure callback is executed and the returned Promise from this method is failed.
          * <p/>
@@ -234,6 +372,7 @@ namespace celix {
          * must be thread safe but can rely upon that the registration of the callback happens-before the registered
          * callback is called.
          *
+         * @tparam U      The returned Promise type parameter.
          * @param success A Success callback to be called when this Promise is successfully resolved. May be null if no
          *                Success callback is required. In thi
          * @param failure A Failure callback to be called when this Promise is resolved with a failure. May be null if no
@@ -241,11 +380,10 @@ namespace celix {
          * @return A new Promise which is chained to this Promise. The returned Promise must be resolved when this Promise
          * is resolved after the specified Success or Failure callback, if any, is executed
          */
-        //        TODO
-        //        template<typename R>
-        //        celix::Promise<R> then(std::function<void()> success, std::function<void()> failure = {});
+        template<typename U>
+        celix::Promise<U> then(std::function<celix::Promise<U>(celix::Promise<T>)> success, std::function<void(celix::Promise<T>)> failure = {});
     private:
-        const std::shared_ptr<celix::SharedPromiseState<T>> state;
+        const std::shared_ptr<celix::impl::SharedPromiseState<T>> state;
     };
 }
 
@@ -256,7 +394,7 @@ namespace celix {
 *********************************************************************************/
 
 template<typename T>
-inline celix::Promise<T>::Promise(std::shared_ptr<celix::SharedPromiseState<T>> s) : state{std::move(s)} {
+inline celix::Promise<T>::Promise(std::shared_ptr<celix::impl::SharedPromiseState<T>> s) : state{std::move(s)} {
 }
 
 template<typename T>
@@ -272,6 +410,11 @@ inline T celix::Promise<T>::moveValue() {
 template<typename T>
 inline bool celix::Promise<T>::isDone() const {
     return state->isDone();
+}
+
+template<typename T>
+inline bool celix::Promise<T>::isSuccessfullyResolved() const  {
+    return state->isSuccessfullyResolved();
 }
 
 template<typename T>
@@ -293,14 +436,14 @@ inline celix::Promise<T>& celix::Promise<T>::onFailure(std::function<void(const 
 
 template<typename T>
 inline celix::Promise<T>& celix::Promise<T>::onResolve(std::function<void()> callback) {
-    state->addOnResolve(std::move(callback));
+    state->addChain(std::move(callback));
     return *this;
 }
 
 template<typename T>
 template<typename Rep, typename Period>
 inline celix::Promise<T> celix::Promise<T>::timeout(std::chrono::duration<Rep, Period> duration) {
-    return celix::Promise<T>{SharedPromiseState<T>::timeout(state, duration)};
+    return celix::Promise<T>{celix::impl::SharedPromiseState<T>::timeout(state, duration)};
 }
 
 template<typename T>
@@ -341,21 +484,29 @@ inline void celix::Promise<T>::wait() const {
     state->wait();
 }
 
-//template<typename T>
-//template<typename R>
-//celix::Promise<R> celix::Promise<T>::flatMap(std::function<celix::Promise<R>(T)> mapper) {
-//
-//}
+template<typename T>
+template<typename U>
+inline celix::Promise<U> celix::Promise<T>::then(std::function<celix::Promise<U>(celix::Promise<T>)> success, std::function<void(celix::Promise<T>)> failure) {
+    auto s = state;
+    auto p = std::make_shared<celix::impl::SharedPromiseState<U>>(state->getExecutor());
 
-//template<typename T>
-//template<typename R>
-//inline celix::Promise<R> celix::Promise<T>::then(std::function<celix::Promise<R>(celix::Promise<T>)> success, std::function<void(celix::Promise<T>)> failure) {
-//    auto stateSuccess = [success](std::shared_ptr<celix::SharedPromiseState<T>> s) -> celix::Promise<R> {
-//        auto p = success(celix::Promise<T>{std::move(s)});
-//        p->resolveWith()
-//    };
-//    auto stateFailure = [failure](std::shared_ptr<celix::SharedPromiseState<T>> s) {
-//        return failure(celix::Promise<T>{std::move(s)});
-//    };
-//    return celix::Promise<R>{state->then(std::move(stateSuccess), std::move(stateFailure))};
-//}
+    auto chain = [s, p, success, failure]() {
+        //chain is called when s is resolved
+        if (s->isSuccessfullyResolved()) {
+            try {
+                auto tmpPromise = success(celix::Promise<T>{s});
+                p->resolveWith(tmpPromise.state);
+            } catch (...) {
+                //failure(); TODO not sure if this needs to be called
+                p->fail(std::current_exception());
+            }
+        } else {
+            if (failure) {
+                failure(celix::Promise<T>{s});
+            }
+            p->fail(s->getFailure());
+        }
+    };
+    state->addChain(std::move(chain));
+    return celix::Promise<U>{p};
+}
