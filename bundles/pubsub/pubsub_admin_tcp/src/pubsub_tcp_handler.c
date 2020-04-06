@@ -141,7 +141,7 @@ static void *pubsub_tcpHandler_thread(void *data);
 //
 // Create a handle
 //
-pubsub_tcpHandler_t *pubsub_tcpHandler_create(log_helper_t *logHelper) {
+pubsub_tcpHandler_t *pubsub_tcpHandler_create(pubsub_protocol_service_t *protocol, log_helper_t *logHelper) {
     pubsub_tcpHandler_t *handle = calloc(sizeof(*handle), 1);
     if (handle != NULL) {
         handle->efd = epoll_create1(0);
