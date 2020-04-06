@@ -529,9 +529,8 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
         if (monitor) {
             clock_gettime(CLOCK_REALTIME, &serializationStart);
         }
-
-        void *serializedOutput = NULL;
         size_t serializedOutputLen = 0;
+        struct iovec *serializedOutput = NULL;
         status = entry->msgSer->serialize(entry->msgSer->handle, inMsg, &serializedOutput, &serializedOutputLen);
 
         if (monitor) {
@@ -544,8 +543,8 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
             bool cont = pubsubInterceptorHandler_invokePreSend(sender->interceptorsHandler, entry->msgSer->msgName, msgTypeId, inMsg, &metadata);
             if (cont) {
                 pubsub_protocol_message_t message;
-                message.payload.payload = serializedOutput;
-                message.payload.length = serializedOutputLen;
+                message.payload.payload = serializedOutput->iov_base;
+                message.payload.length = serializedOutput->iov_len;
 
                 void *payloadData = NULL;
                 size_t payloadLength = 0;
@@ -565,6 +564,8 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
                 message.header.msgMinorVersion = 0;
                 message.header.payloadSize = payloadLength;
                 message.header.metadataSize = metadataLength;
+                message.header.payloadPartSize = payloadLength;
+                message.header.payloadOffset = 0;
 
                 void *headerData = NULL;
                 size_t headerLength = 0;
@@ -589,7 +590,7 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
                         zmq_msg_close(&msg1);
                     }
 
-                    //send header
+                    //send Payload
                     if (rc > 0) {
                         zmq_msg_init_data(&msg2, payloadData, payloadLength, psa_zmq_freeMsg, bound);
                         int flags = 0;
@@ -603,6 +604,7 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
                         }
                     }
 
+                    //send MetaData
                     if (rc > 0 && metadataLength > 0) {
                         zmq_msg_init_data(&msg3, metadataData, metadataLength, psa_zmq_freeMsg, bound);
                         rc = zmq_msg_send(&msg3, socket, 0);
@@ -627,14 +629,19 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
                         zmsg_destroy(&msg); //if send was not ok, no owner change -> destroy msg
                     }
 
-                    free(headerData);
-                    free(payloadData);
-                    free(metadataData);
+                    if (headerData) free(headerData);
+                    // Note: serialized Payload is deleted by serializer
+                    if (payloadData && (payloadData != message.payload.payload)) free(payloadData);
+                    if (metadataData) free(metadataData);
                 }
 
                 pubsubInterceptorHandler_invokePostSend(sender->interceptorsHandler, entry->msgSer->msgName, msgTypeId, inMsg, metadata);
 
-                celix_properties_destroy(metadata);
+                if (message.metadata.metadata) celix_properties_destroy(message.metadata.metadata);
+                if (serializedOutput) {
+                    entry->msgSer->freeSerializeMsg(entry->msgSer->handle, serializedOutput, serializedOutputLen);
+                    free(serializedOutput);
+                }
 
                 celixThreadMutex_unlock(&entry->sendLock);
                 if (sendOk) {

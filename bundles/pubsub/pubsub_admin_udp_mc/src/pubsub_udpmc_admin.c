@@ -258,7 +258,7 @@ celix_status_t pubsub_udpmcAdmin_matchPublisher(void *handle, long svcRequesterB
     pubsub_udpmc_admin_t *psa = handle;
     L_DEBUG("[PSA_UDPMC] pubsub_udpmcAdmin_matchPublisher");
     celix_status_t  status = CELIX_SUCCESS;
-    double score = pubsub_utils_matchPublisher(psa->ctx, svcRequesterBndId, svcFilter->filterStr, PUBSUB_UDPMC_ADMIN_TYPE,
+    double score = pubsubEndpoint_matchPublisher(psa->ctx, svcRequesterBndId, svcFilter->filterStr, PUBSUB_UDPMC_ADMIN_TYPE,
                                                 psa->qosSampleScore, psa->qosControlScore, psa->defaultScore, false, topicProperties, outSerializerSvcId, outProtocolSvcId);
     *outScore = score;
 
@@ -269,7 +269,7 @@ celix_status_t pubsub_udpmcAdmin_matchSubscriber(void *handle, long svcProviderB
     pubsub_udpmc_admin_t *psa = handle;
     L_DEBUG("[PSA_UDPMC] pubsub_udpmcAdmin_matchSubscriber");
     celix_status_t  status = CELIX_SUCCESS;
-    double score = pubsub_utils_matchSubscriber(psa->ctx, svcProviderBndId, svcProperties, PUBSUB_UDPMC_ADMIN_TYPE,
+    double score = pubsubEndpoint_matchSubscriber(psa->ctx, svcProviderBndId, svcProperties, PUBSUB_UDPMC_ADMIN_TYPE,
             psa->qosSampleScore, psa->qosControlScore, psa->defaultScore, false, topicProperties, outSerializerSvcId, outProtocolSvcId);
     if (outScore != NULL) {
         *outScore = score;
@@ -281,7 +281,7 @@ celix_status_t pubsub_udpmcAdmin_matchEndpoint(void *handle, const celix_propert
     pubsub_udpmc_admin_t *psa = handle;
     L_DEBUG("[PSA_UDPMC] pubsub_udpmcAdmin_matchEndpoint");
     celix_status_t  status = CELIX_SUCCESS;
-    bool match = pubsub_utils_matchEndpoint(psa->ctx, endpoint, PUBSUB_UDPMC_ADMIN_TYPE, false, NULL, NULL);
+    bool match = pubsubEndpoint_match(psa->ctx, endpoint, PUBSUB_UDPMC_ADMIN_TYPE, false, NULL, NULL);
     if (outMatch != NULL) {
         *outMatch = match;
     }

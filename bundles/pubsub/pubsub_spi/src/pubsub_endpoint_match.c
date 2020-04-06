@@ -143,7 +143,7 @@ static long getPSAProtocol(celix_bundle_context_t *ctx, const char *requested_pr
     return svcId;
 }
 
-double pubsub_utils_matchPublisher(
+double pubsubEndpoint_matchPublisher(
         celix_bundle_context_t *ctx,
         long bundleId,
         const char *filter,
@@ -201,6 +201,7 @@ double pubsub_utils_matchPublisher(
 
 typedef struct pubsub_match_retrieve_topic_properties_data {
     const char *topic;
+    const char *scope;
     bool isPublisher;
 
     celix_properties_t *outEndpoint;
@@ -208,10 +209,10 @@ typedef struct pubsub_match_retrieve_topic_properties_data {
 
 static void getTopicPropertiesCallback(void *handle, const celix_bundle_t *bnd) {
     pubsub_get_topic_properties_data_t *data = handle;
-    data->outEndpoint = pubsub_utils_getTopicProperties(bnd, data->topic, data->isPublisher);
+    data->outEndpoint = pubsub_utils_getTopicProperties(bnd, data->scope, data->topic, data->isPublisher);
 }
 
-double pubsub_utils_matchSubscriber(
+double pubsubEndpoint_matchSubscriber(
         celix_bundle_context_t *ctx,
         const long svcProviderBundleId,
         const celix_properties_t *svcProperties,
@@ -226,6 +227,7 @@ double pubsub_utils_matchSubscriber(
 
     pubsub_get_topic_properties_data_t data;
     data.isPublisher = false;
+    data.scope = celix_properties_get(svcProperties, PUBSUB_SUBSCRIBER_SCOPE, NULL);
     data.topic = celix_properties_get(svcProperties, PUBSUB_SUBSCRIBER_TOPIC, NULL);
     data.outEndpoint = NULL;
     celix_bundleContext_useBundle(ctx, svcProviderBundleId, &data, getTopicPropertiesCallback);
@@ -275,7 +277,7 @@ double pubsub_utils_matchSubscriber(
     return score;
 }
 
-bool pubsub_utils_matchEndpoint(
+bool pubsubEndpoint_match(
         celix_bundle_context_t *ctx,
         const celix_properties_t *ep,
         const char *adminType,

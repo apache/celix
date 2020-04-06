@@ -152,6 +152,8 @@ UTILS_EXPORT void *hashMapEntry_getKey(hash_map_entry_pt entry);
 
 UTILS_EXPORT void *hashMapEntry_getValue(hash_map_entry_pt entry);
 
+UTILS_EXPORT void  hashMapEntry_clear(hash_map_entry_pt entry, bool freeKey, bool freeValue);
+
 #ifdef __cplusplus
 }
 #endif

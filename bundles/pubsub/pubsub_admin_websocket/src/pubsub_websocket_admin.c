@@ -235,7 +235,7 @@ celix_status_t pubsub_websocketAdmin_matchPublisher(void *handle, long svcReques
     pubsub_websocket_admin_t *psa = handle;
     L_DEBUG("[PSA_WEBSOCKET] pubsub_websocketAdmin_matchPublisher");
     celix_status_t  status = CELIX_SUCCESS;
-    double score = pubsub_utils_matchPublisher(psa->ctx, svcRequesterBndId, svcFilter->filterStr, PUBSUB_WEBSOCKET_ADMIN_TYPE,
+    double score = pubsubEndpoint_matchPublisher(psa->ctx, svcRequesterBndId, svcFilter->filterStr, PUBSUB_WEBSOCKET_ADMIN_TYPE,
                                                psa->qosSampleScore, psa->qosControlScore, psa->defaultScore,
                                                false, topicProperties, outSerializerSvcId, outProtocolSvcId);
     *outScore = score;
@@ -247,7 +247,7 @@ celix_status_t pubsub_websocketAdmin_matchSubscriber(void *handle, long svcProvi
     pubsub_websocket_admin_t *psa = handle;
     L_DEBUG("[PSA_WEBSOCKET] pubsub_websocketAdmin_matchSubscriber");
     celix_status_t  status = CELIX_SUCCESS;
-    double score = pubsub_utils_matchSubscriber(psa->ctx, svcProviderBndId, svcProperties, PUBSUB_WEBSOCKET_ADMIN_TYPE,
+    double score = pubsubEndpoint_matchSubscriber(psa->ctx, svcProviderBndId, svcProperties, PUBSUB_WEBSOCKET_ADMIN_TYPE,
                                                 psa->qosSampleScore, psa->qosControlScore, psa->defaultScore,
                                                 false, topicProperties, outSerializerSvcId, outProtocolSvcId);
     if (outScore != NULL) {
@@ -260,7 +260,7 @@ celix_status_t pubsub_websocketAdmin_matchDiscoveredEndpoint(void *handle, const
     pubsub_websocket_admin_t *psa = handle;
     L_DEBUG("[PSA_WEBSOCKET] pubsub_websocketAdmin_matchEndpoint");
     celix_status_t  status = CELIX_SUCCESS;
-    bool match = pubsub_utils_matchEndpoint(psa->ctx, endpoint, PUBSUB_WEBSOCKET_ADMIN_TYPE, false, NULL, NULL);
+    bool match = pubsubEndpoint_match(psa->ctx, endpoint, PUBSUB_WEBSOCKET_ADMIN_TYPE, false, NULL, NULL);
     if (outMatch != NULL) {
         *outMatch = match;
     }

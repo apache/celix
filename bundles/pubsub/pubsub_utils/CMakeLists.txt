@@ -5,19 +5,28 @@
 # to you under the Apache License, Version 2.0 (the
 # "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
-#
+# 
 #   http://www.apache.org/licenses/LICENSE-2.0
-#
+# 
 # Unless required by applicable law or agreed to in writing,
 # software distributed under the License is distributed on an
 # "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-tcp.static.connect.urls=tcp://localhost:9500;localhost:9501
-tcp.static.endpoint.type=client
 
-#note only effective if run as root
-thread.realtime.shed=SCHED_FIFO
-thread.realtime.prio=50
+add_library(pubsub_utils STATIC
+        src/pubsub_utils.c
+        src/pubsub_utils_url.c)
 
+set_target_properties(pubsub_utils PROPERTIES OUTPUT_NAME "celix_pubsub_utils")
+target_include_directories(pubsub_utils PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
+        $<INSTALL_INTERFACE:include/celix/pubsub_utils>
+)
+target_link_libraries(pubsub_utils PUBLIC Celix::framework Celix::pubsub_api)
+
+add_library(Celix::pubsub_utils ALIAS pubsub_utils)
+
+install(TARGETS pubsub_utils EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT pubsub)
+install(DIRECTORY include/ DESTINATION include/celix/pubsub_utils COMPONENT pubsub)
