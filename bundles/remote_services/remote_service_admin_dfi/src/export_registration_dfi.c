@@ -143,13 +143,13 @@ celix_status_t exportRegistration_call(export_registration_t *export, char *data
     const char *sig;
     if (js_request) {
         if (json_unpack(js_request, "{s:s}", "m", &sig) == 0) {
-            bool cont = remoteInterceptorHandler_invokePreExportCall(export->interceptorsHandler, "TODO", export->exportReference.endpoint->properties, sig, &metadata);
+            bool cont = remoteInterceptorHandler_invokePreExportCall(export->interceptorsHandler, export->exportReference.endpoint->properties, sig, &metadata);
             if (cont) {
                 celixThreadMutex_lock(&export->mutex);
                 status = jsonRpc_call(export->intf, export->service, data, responseOut);
                 celixThreadMutex_unlock(&export->mutex);
 
-                remoteInterceptorHandler_invokePostExportCall(export->interceptorsHandler, "TODO", export->exportReference.endpoint->properties, sig, metadata);
+                remoteInterceptorHandler_invokePostExportCall(export->interceptorsHandler, export->exportReference.endpoint->properties, sig, metadata);
             }
 
             //printf("calling for '%s'\n");

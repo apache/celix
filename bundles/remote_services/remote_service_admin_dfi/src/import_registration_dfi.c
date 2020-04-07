@@ -341,7 +341,7 @@ static void importRegistration_proxyFunc(void *userData, void *args[], void *ret
         int rc = 0;
         //printf("sending request\n");
         celix_properties_t *metadata = NULL;
-        bool cont = remoteInterceptorHandler_invokePreProxyCall(import->interceptorsHandler, "TODO", import->endpoint->properties, entry->name, &metadata);
+        bool cont = remoteInterceptorHandler_invokePreProxyCall(import->interceptorsHandler, import->endpoint->properties, entry->name, &metadata);
         if (cont) {
             celixThreadMutex_lock(&import->mutex);
             if (import->send != NULL) {
@@ -357,7 +357,7 @@ static void importRegistration_proxyFunc(void *userData, void *args[], void *ret
 
             *(int *) returnVal = rc;
 
-            remoteInterceptorHandler_invokePostProxyCall(import->interceptorsHandler, "TODO", import->endpoint->properties, entry->name, metadata);
+            remoteInterceptorHandler_invokePostProxyCall(import->interceptorsHandler, import->endpoint->properties, entry->name, metadata);
         }
 
         if (import->logFile != NULL) {

@@ -40,19 +40,19 @@ celix_status_t firstInterceptor_destroy(first_interceptor_t *interceptor) {
 }
 
 
-bool firstInterceptor_preExportCall(void *handle, const char *rsaType, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t *metadata) {
+bool firstInterceptor_preExportCall(void *handle, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t *metadata) {
     uint64_t sequence = celix_properties_getAsLong(metadata, SEQUENCE_NUMBER, 0);
     printf("Invoked preExportCall on first interceptor, for message with sequenceNumber [%"PRIu64"]\n", sequence);
 
     return true;
 }
 
-void firstInterceptor_postExportCall(void *handle, const char *rsaType, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t *metadata) {
+void firstInterceptor_postExportCall(void *handle, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t *metadata) {
     uint64_t sequence = celix_properties_getAsLong(metadata, SEQUENCE_NUMBER, 0);
     printf("Invoked postExportCall on first interceptor, for message with sequenceNumber [%"PRIu64"]\n", sequence);
 }
 
-bool firstInterceptor_preProxyCall(void *handle, const char *rsaType, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t *metadata) {
+bool firstInterceptor_preProxyCall(void *handle, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t *metadata) {
     first_interceptor_t *interceptor = handle;
     celix_properties_setLong((celix_properties_t *) metadata, SEQUENCE_NUMBER, interceptor->sequenceNumber++);
 
@@ -62,7 +62,7 @@ bool firstInterceptor_preProxyCall(void *handle, const char *rsaType, const celi
     return true;
 }
 
-void firstInterceptor_postProxyCall(void *handle, const char *rsaType, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t *metadata) {
+void firstInterceptor_postProxyCall(void *handle, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t *metadata) {
     uint64_t sequence = celix_properties_getAsLong(metadata, SEQUENCE_NUMBER, 0);
     printf("Invoked postProxyCall on first interceptor, for message with sequenceNumber [%"PRIu64"]\n", sequence);
 }

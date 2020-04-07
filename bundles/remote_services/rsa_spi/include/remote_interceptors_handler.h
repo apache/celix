@@ -32,9 +32,9 @@ typedef struct remote_interceptors_handler remote_interceptors_handler_t;
 celix_status_t remoteInterceptorsHandler_create(celix_bundle_context_t *ctx, remote_interceptors_handler_t **handler);
 celix_status_t remoteInterceptorsHandler_destroy(remote_interceptors_handler_t *handler);
 
-bool remoteInterceptorHandler_invokePreExportCall(remote_interceptors_handler_t *handler, const char *rsaType, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t **metadata);
-void remoteInterceptorHandler_invokePostExportCall(remote_interceptors_handler_t *handler, const char *rsaType, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t *metadata);
-bool remoteInterceptorHandler_invokePreProxyCall(remote_interceptors_handler_t *handler, const char *rsaType, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t **metadata);
-void remoteInterceptorHandler_invokePostProxyCall(remote_interceptors_handler_t *handler, const char *rsaType, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t *metadata);
+bool remoteInterceptorHandler_invokePreExportCall(remote_interceptors_handler_t *handler, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t **metadata);
+void remoteInterceptorHandler_invokePostExportCall(remote_interceptors_handler_t *handler, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t *metadata);
+bool remoteInterceptorHandler_invokePreProxyCall(remote_interceptors_handler_t *handler, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t **metadata);
+void remoteInterceptorHandler_invokePostProxyCall(remote_interceptors_handler_t *handler, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t *metadata);
 
 #endif //CELIX_REMOTE_INTERCEPTORS_HANDLER_H

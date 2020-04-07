@@ -29,9 +29,9 @@ typedef struct second_interceptor {
 celix_status_t secondInterceptor_create(second_interceptor_t **interceptor);
 celix_status_t secondInterceptor_destroy(second_interceptor_t *interceptor);
 
-bool secondInterceptor_preExportCall(void *handle, const char *rsaType, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t *metadata);
-void secondInterceptor_postExportCall(void *handle, const char *rsaType, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t *metadata);
-bool secondInterceptor_preProxyCall(void *handle, const char *rsaType, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t *metadata);
-void secondInterceptor_postProxyCall(void *handle, const char *rsaType, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t *metadata);
+bool secondInterceptor_preExportCall(void *handle, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t *metadata);
+void secondInterceptor_postExportCall(void *handle, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t *metadata);
+bool secondInterceptor_preProxyCall(void *handle, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t *metadata);
+void secondInterceptor_postProxyCall(void *handle, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t *metadata);
 
 #endif //CELIX_SECOND_INTERCEPTOR_PRIVATE_H

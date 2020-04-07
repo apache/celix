@@ -33,9 +33,9 @@ static const char *const SEQUENCE_NUMBER = "sequence.number";
 celix_status_t firstInterceptor_create(first_interceptor_t **interceptor);
 celix_status_t firstInterceptor_destroy(first_interceptor_t *interceptor);
 
-bool firstInterceptor_preExportCall(void *handle, const char *rsaType, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t *metadata);
-void firstInterceptor_postExportCall(void *handle, const char *rsaType, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t *metadata);
-bool firstInterceptor_preProxyCall(void *handle, const char *rsaType, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t *metadata);
-void firstInterceptor_postProxyCall(void *handle, const char *rsaType, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t *metadata);
+bool firstInterceptor_preExportCall(void *handle, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t *metadata);
+void firstInterceptor_postExportCall(void *handle, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t *metadata);
+bool firstInterceptor_preProxyCall(void *handle, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t *metadata);
+void firstInterceptor_postProxyCall(void *handle, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t *metadata);
 
 #endif //CELIX_FIRST_INTERCEPTOR_PRIVATE_H

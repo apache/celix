@@ -28,10 +28,10 @@
 typedef struct remote_interceptor {
     void *handle;
 
-    bool (*preExportCall)(void *handle, const char *rsaType, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t *metadata);
-    void (*postExportCall)(void *handle, const char *rsaType, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t *metadata);
-    bool (*preProxyCall)(void *handle, const char *rsaType, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t *metadata);
-    void (*postProxyCall)(void *handle, const char *rsaType, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t *metadata);
+    bool (*preExportCall)(void *handle, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t *metadata);
+    void (*postExportCall)(void *handle, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t *metadata);
+    bool (*preProxyCall)(void *handle, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t *metadata);
+    void (*postProxyCall)(void *handle, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t *metadata);
 } remote_interceptor_t;
 
 #endif //CELIX_REMOTE_INTERCEPTOR_H

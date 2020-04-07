@@ -106,7 +106,7 @@ void remoteInterceptorsHandler_removeInterceptor(void *handle, void *svc, __attr
     }
 }
 
-bool remoteInterceptorHandler_invokePreExportCall(remote_interceptors_handler_t *handler, const char *rsaType, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t **metadata) {
+bool remoteInterceptorHandler_invokePreExportCall(remote_interceptors_handler_t *handler, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t **metadata) {
     bool cont = true;
 
     if (*metadata == NULL && arrayList_size(handler->interceptors) > 0) {
@@ -116,7 +116,7 @@ bool remoteInterceptorHandler_invokePreExportCall(remote_interceptors_handler_t 
     for (uint32_t i = arrayList_size(handler->interceptors); i > 0; i--) {
         entry_t *entry = arrayList_get(handler->interceptors, i - 1);
 
-        cont = entry->interceptor->preExportCall(entry->interceptor->handle, rsaType, svcProperties, functionName, *metadata);
+        cont = entry->interceptor->preExportCall(entry->interceptor->handle, svcProperties, functionName, *metadata);
         if (!cont) {
             break;
         }
@@ -125,15 +125,15 @@ bool remoteInterceptorHandler_invokePreExportCall(remote_interceptors_handler_t 
     return cont;
 }
 
-void remoteInterceptorHandler_invokePostExportCall(remote_interceptors_handler_t *handler, const char *rsaType, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t *metadata) {
+void remoteInterceptorHandler_invokePostExportCall(remote_interceptors_handler_t *handler, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t *metadata) {
     for (uint32_t i = arrayList_size(handler->interceptors); i > 0; i--) {
         entry_t *entry = arrayList_get(handler->interceptors, i - 1);
 
-        entry->interceptor->postExportCall(entry->interceptor->handle, rsaType, svcProperties, functionName, metadata);
+        entry->interceptor->postExportCall(entry->interceptor->handle, svcProperties, functionName, metadata);
     }
 }
 
-bool remoteInterceptorHandler_invokePreProxyCall(remote_interceptors_handler_t *handler, const char *rsaType, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t **metadata) {
+bool remoteInterceptorHandler_invokePreProxyCall(remote_interceptors_handler_t *handler, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t **metadata) {
     bool cont = true;
 
     if (*metadata == NULL && arrayList_size(handler->interceptors) > 0) {
@@ -143,7 +143,7 @@ bool remoteInterceptorHandler_invokePreProxyCall(remote_interceptors_handler_t *
     for (uint32_t i = 0; i < arrayList_size(handler->interceptors); i++) {
         entry_t *entry = arrayList_get(handler->interceptors, i);
 
-        cont = entry->interceptor->preProxyCall(entry->interceptor->handle, rsaType, svcProperties, functionName, *metadata);
+        cont = entry->interceptor->preProxyCall(entry->interceptor->handle, svcProperties, functionName, *metadata);
         if (!cont) {
             break;
         }
@@ -152,11 +152,11 @@ bool remoteInterceptorHandler_invokePreProxyCall(remote_interceptors_handler_t *
     return cont;
 }
 
-void remoteInterceptorHandler_invokePostProxyCall(remote_interceptors_handler_t *handler, const char *rsaType, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t *metadata) {
+void remoteInterceptorHandler_invokePostProxyCall(remote_interceptors_handler_t *handler, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t *metadata) {
     for (uint32_t i = 0; i < arrayList_size(handler->interceptors); i++) {
         entry_t *entry = arrayList_get(handler->interceptors, i);
 
-        entry->interceptor->postProxyCall(entry->interceptor->handle, rsaType, svcProperties, functionName, metadata);
+        entry->interceptor->postProxyCall(entry->interceptor->handle, svcProperties, functionName, metadata);
     }
 }
 
