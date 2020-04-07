@@ -258,7 +258,7 @@ celix_status_t serviceTracker_close(service_tracker_pt tracker) {
         int size = celix_arrayList_size(instance->trackedServices);
         if(size > 0) {
             celix_tracked_entry_t *trackedEntries[size];
-            for (int i = 0; i < arrayList_size(instance->trackedServices); i++) {
+            for (int i = 0; i < size; i++) {
                 trackedEntries[i] = (celix_tracked_entry_t *) arrayList_get(instance->trackedServices, i);
             }
             arrayList_clear(instance->trackedServices);

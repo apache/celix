@@ -28,13 +28,24 @@
 
 typedef struct pubsub_protocol_header pubsub_protocol_header_t;
 
+/**
+ * The protocol header structure, contains the information about the message payload and metadata
+ */
 struct pubsub_protocol_header {
+  /** message payload identification attributes */
     unsigned int msgId;
     unsigned short msgMajorVersion;
     unsigned short msgMinorVersion;
 
+    /** Payload and metadata sizes attributes */
     unsigned int payloadSize;
     unsigned int metadataSize;
+
+    /** Optional message segmentation attributes, these attributes are only used/written by the protocol admin.
+     *  When message segmentation is supported by the protocol admin */
+    unsigned int seqNr;
+    unsigned int payloadPartSize;
+    unsigned int payloadOffset;
 };
 
 typedef struct pubsub_protocol_payload pubsub_protocol_payload_t;
@@ -60,7 +71,39 @@ struct pubsub_protocol_message {
 
 typedef struct pubsub_protocol_service {
     void* handle;
-
+  /**
+    * Returns the size of the header.
+    * Is used by the receiver to configure the expected size of the header.
+    * The receiver first reads the header to know if the receive is big enough
+    * to contain the complete payload.
+    *
+    * @param handle handle for service
+    * @param length output param for header size
+    * @return status code indicating failure or success
+    */
+    celix_status_t (*getHeaderSize)(void *handle, size_t *length);
+  /**
+    * Returns the size of the header buffer for the receiver.
+    * Is used by the receiver to configure the buffer size of the header.
+    * Note for a protocol with a header the headerBufferSize >= headerSize.
+    * Note for header-less protocol the headerBufferSize is zero
+    * because the header is part of the payload.
+    *
+    * @param handle handle for service
+    * @param length output param for header buffer size
+    * @return status code indicating failure or success
+    */
+    celix_status_t (*getHeaderBufferSize)(void *handle, size_t *length);
+  /**
+    * Returns the size of the sync word
+    * Is used by the receiver to skip the sync in the header buffer,
+    * to get in sync with data reception.
+    *
+    * @param handle handle for service
+    * @param length output param for sync size
+    * @return status code indicating failure or success
+    */
+    celix_status_t (*getSyncHeaderSize)(void *handle, size_t *length);
     /**
      * Returns the header (as byte array) that should be used by the underlying protocol as sync between messages.
      *
@@ -69,6 +112,14 @@ typedef struct pubsub_protocol_service {
      * @return status code indicating failure or success
      */
     celix_status_t (*getSyncHeader)(void *handle, void *sync);
+  /**
+    * Returns the if the protocol service supports the message segmentation attributes that is used by the underlying protocol.
+    *
+    * @param handle handle for service
+    * @param isSupported indicates that message segmentation is supported or not.
+    * @return status code indicating failure or success
+    */
+    celix_status_t (*isMessageSegmentationSupported)(void *handle, bool *isSupported);
 
     /**
      * Encodes the header using the supplied message.header.

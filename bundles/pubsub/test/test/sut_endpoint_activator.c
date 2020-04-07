@@ -93,9 +93,7 @@ static void* sut_sendThread(void *data) {
 		    if (msgId == 0) {
 		        act->pubSvc->localMsgTypeIdForMsgType(act->pubSvc->handle, MSG_NAME, &msgId);
 		    }
-
-            celix_properties_t *metadata = hashMap_create(utils_stringHash, utils_stringHash, utils_stringEquals, utils_stringEquals);
-            act->pubSvc->send(act->pubSvc->handle, msgId, &msg, metadata);
+            act->pubSvc->send(act->pubSvc->handle, msgId, &msg, NULL);
             if (msg.seqNr % 1000 == 0) {
                 printf("Send %i messages\n", msg.seqNr);
             }

@@ -33,7 +33,11 @@ typedef struct pubsub_protocol_wire_v1 pubsub_protocol_wire_v1_t;
 celix_status_t pubsubProtocol_create(pubsub_protocol_wire_v1_t **protocol);
 celix_status_t pubsubProtocol_destroy(pubsub_protocol_wire_v1_t* protocol);
 
+celix_status_t pubsubProtocol_getHeaderSize(void *handle, size_t *length);
+celix_status_t pubsubProtocol_getHeaderBufferSize(void *handle, size_t *length);
+celix_status_t pubsubProtocol_getSyncHeaderSize(void *handle, size_t *length);
 celix_status_t pubsubProtocol_getSyncHeader(void* handle, void *syncHeader);
+celix_status_t pubsubProtocol_isMessageSegmentationSupported(void* handle, bool *isSupported);
 
 celix_status_t pubsubProtocol_encodeHeader(void *handle, pubsub_protocol_message_t *message, void **outBuffer, size_t *outLength);
 celix_status_t pubsubProtocol_encodePayload(void *handle, pubsub_protocol_message_t *message, void **outBuffer, size_t *outLength);

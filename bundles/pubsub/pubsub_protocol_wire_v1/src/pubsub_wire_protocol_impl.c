@@ -65,19 +65,40 @@ celix_status_t pubsubProtocol_destroy(pubsub_protocol_wire_v1_t* protocol) {
     return status;
 }
 
-celix_status_t pubsubProtocol_getSyncHeader(void* handle, void *syncHeader) {
-    for (int i = 0; i < 5; ++i) {
-        ((char *) syncHeader)[i] = '\0';
-    }
-    writeInt(syncHeader, 0, PROTOCOL_WIRE_SYNC);
+celix_status_t pubsubProtocol_getHeaderSize(void* handle, size_t *length) {
+    *length = sizeof(int) * 5 + sizeof(short) * 2; // header + sync + version = 24
 
     return CELIX_SUCCESS;
 }
 
+celix_status_t pubsubProtocol_getHeaderBufferSize(void* handle, size_t *length) {
+    return pubsubProtocol_getHeaderSize(handle, length);
+}
+
+celix_status_t pubsubProtocol_getSyncHeaderSize(void* handle,  size_t *length) {
+    *length = sizeof(int);
+    return CELIX_SUCCESS;
+}
+
+celix_status_t pubsubProtocol_getSyncHeader(void* handle, void *syncHeader) {
+    writeInt(syncHeader, 0, PROTOCOL_WIRE_SYNC);
+    return CELIX_SUCCESS;
+}
+
+celix_status_t pubsubProtocol_isMessageSegmentationSupported(void* handle, bool *isSupported) {
+    *isSupported = false;
+    return CELIX_SUCCESS;
+}
 celix_status_t pubsubProtocol_encodeHeader(void *handle, pubsub_protocol_message_t *message, void **outBuffer, size_t *outLength) {
     celix_status_t status = CELIX_SUCCESS;
+    // Get HeaderSize
+    size_t headerSize = 0;
+    pubsubProtocol_getHeaderSize(handle, &headerSize);
 
-    *outBuffer = calloc(1, 24);
+    if (*outBuffer == NULL) {
+        *outBuffer = calloc(1, headerSize);
+        *outLength = headerSize;
+    }
     if (*outBuffer == NULL) {
         status = CELIX_ENOMEM;
     } else {
@@ -158,24 +179,33 @@ celix_status_t pubsubProtocol_decodeHeader(void* handle, void *data, size_t leng
     celix_status_t status = CELIX_SUCCESS;
 
     int idx = 0;
-    unsigned int sync;
-    idx = readInt(data, idx, &sync);
-    if (sync != PROTOCOL_WIRE_SYNC) {
-        status = CELIX_ILLEGAL_ARGUMENT;
-    } else {
-        unsigned int envelopeVersion;
-        idx = readInt(data, idx, &envelopeVersion);
-        if (envelopeVersion != PROTOCOL_WIRE_ENVELOPE_VERSION) {
+    size_t headerSize = 0;
+    pubsubProtocol_getHeaderSize(handle, &headerSize);
+    if (length == headerSize) {
+        unsigned int sync;
+        idx = readInt(data, idx, &sync);
+        if (sync != PROTOCOL_WIRE_SYNC) {
             status = CELIX_ILLEGAL_ARGUMENT;
         } else {
-            idx = readInt(data, idx, &message->header.msgId);
-            idx = readShort(data, idx, &message->header.msgMajorVersion);
-            idx = readShort(data, idx, &message->header.msgMinorVersion);
-            idx = readInt(data, idx, &message->header.payloadSize);
-            readInt(data, idx, &message->header.metadataSize);
+            unsigned int envelopeVersion;
+            idx = readInt(data, idx, &envelopeVersion);
+            if (envelopeVersion != PROTOCOL_WIRE_ENVELOPE_VERSION) {
+                status = CELIX_ILLEGAL_ARGUMENT;
+            } else {
+                idx = readInt(data, idx, &message->header.msgId);
+                idx = readShort(data, idx, &message->header.msgMajorVersion);
+                idx = readShort(data, idx, &message->header.msgMinorVersion);
+                idx = readInt(data, idx, &message->header.payloadSize);
+                readInt(data, idx, &message->header.metadataSize);
+                // Set message segmentation parameters to defaults
+                message->header.seqNr           = 0;
+                message->header.payloadPartSize = message->header.payloadSize;
+                message->header.payloadOffset   = 0;
+            }
         }
+    } else {
+        status = CELIX_ILLEGAL_ARGUMENT;
     }
-
     return status;
 }
 

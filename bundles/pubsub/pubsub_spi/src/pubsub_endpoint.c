@@ -65,8 +65,6 @@ static void pubsubEndpoint_setFields(celix_properties_t *ep, const char* fwUUID,
 
     if (scope != NULL) {
         celix_properties_set(ep, PUBSUB_ENDPOINT_TOPIC_SCOPE, scope);
-    } else {
-        celix_properties_set(ep, PUBSUB_ENDPOINT_TOPIC_SCOPE, PUBSUB_DEFAULT_ENDPOINT_SCOPE);
     }
 
     if (topic != NULL) {
@@ -111,13 +109,14 @@ celix_properties_t* pubsubEndpoint_create(
 
 struct retrieve_topic_properties_data {
     celix_properties_t *props;
+    const char *scope;
     const char *topic;
     bool isPublisher;
 };
 
 static void retrieveTopicProperties(void *handle, const celix_bundle_t *bnd) {
     struct retrieve_topic_properties_data *data = handle;
-    data->props = pubsub_utils_getTopicProperties(bnd, data->topic, data->isPublisher);
+    data->props = pubsub_utils_getTopicProperties(bnd, data->scope, data->topic, data->isPublisher);
 }
 
 celix_properties_t* pubsubEndpoint_createFromSubscriberSvc(bundle_context_t* ctx, long bundleId, const celix_properties_t *svcProps) {
@@ -130,6 +129,7 @@ celix_properties_t* pubsubEndpoint_createFromSubscriberSvc(bundle_context_t* ctx
     struct retrieve_topic_properties_data data;
     data.props = NULL;
     data.isPublisher = false;
+    data.scope = scope;
     data.topic = topic;
     celix_bundleContext_useBundle(ctx, bundleId, &data, retrieveTopicProperties);
 
@@ -158,12 +158,13 @@ celix_properties_t* pubsubEndpoint_createFromPublisherTrackerInfo(bundle_context
 
     char* topic = NULL;
     char* scopeFromFilter = NULL;
-    pubsub_getPubSubInfoFromFilter(filter, &topic, &scopeFromFilter);
-    const char *scope = scopeFromFilter;
+    pubsub_getPubSubInfoFromFilter(filter, &scopeFromFilter, &topic);
+    const char *scope = scopeFromFilter == NULL ? "default" : scopeFromFilter;
 
     struct retrieve_topic_properties_data data;
     data.props = NULL;
     data.isPublisher = true;
+    data.scope = scope;
     data.topic = topic;
     celix_bundleContext_useBundle(ctx, bundleId, &data, retrieveTopicProperties);
 
@@ -178,9 +179,7 @@ celix_properties_t* pubsubEndpoint_createFromPublisherTrackerInfo(bundle_context
     }
 
     free(topic);
-    if (scope != NULL) {
-        free(scopeFromFilter);
-    }
+    free(scopeFromFilter);
 
     return ep;
 }
@@ -198,11 +197,7 @@ bool pubsubEndpoint_equals(const celix_properties_t *psEp1, const celix_properti
 
 char* pubsubEndpoint_createScopeTopicKey(const char* scope, const char* topic) {
     char *result = NULL;
-    if (scope != NULL) {
-        asprintf(&result, "%s:%s", scope, topic);
-    } else {
-        asprintf(&result, "default:%s", topic);
-    }
+    asprintf(&result, "%s:%s", scope, topic);
     return result;
 }
 
@@ -228,6 +223,7 @@ bool pubsubEndpoint_isValid(const celix_properties_t *props, bool requireAdminTy
         checkProp(props, PUBSUB_ENDPOINT_SERIALIZER);
     }
     bool p6 = checkProp(props, PUBSUB_ENDPOINT_TOPIC_NAME);
+    bool p7 = checkProp(props, PUBSUB_ENDPOINT_TOPIC_SCOPE);
 
-    return p1 && p2 && p3 && p4 && p5 && p6;
+    return p1 && p2 && p3 && p4 && p5 && p6 && p7;
 }
