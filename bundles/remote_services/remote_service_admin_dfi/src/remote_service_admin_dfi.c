@@ -272,7 +272,7 @@ celix_status_t remoteServiceAdmin_create(celix_bundle_context_t *context, remote
         }
     }
 
-    celix_service_tracking_options_t opts = {0};
+    celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
     opts.filter.serviceName = RSA_CUSTOM_SERIALIZATION_SERVICE_NAME;
     opts.filter.ignoreServiceLanguage = true;
     opts.callbackHandle = *admin;
