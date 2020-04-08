@@ -64,7 +64,7 @@ SET(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG")
 #Part 3. Setup Celix cmake files, include paths, libraries and library paths
 #Note. If celix is not installed in /usr/local dir, change the location accordingly.
 set(CMAKE_MODULE_PATH  ${CMAKE_MODULE_PATH} "/usr/local/share/celix/cmake/modules")
-find_package(CELIX REQUIRED)
+find_package(Celix REQUIRED)
 
 #Part 4. Choose C, C++ or both
 add_subdirectory(bundles/HelloWorld_c) #C
@@ -131,7 +131,7 @@ to generate the bundle activator functions (and as result the symbols needed for
 
 The C Bundle Activator:
 ```C
-//${WS}/myproject/bundles/hello_world/src/HelloWorld_activator.c
+//${WS}/myproject/bundles/HelloWorld_c/src/HelloWorld_activator.c
 #include <stdio.h>
 #include <celix_api.h>
 
@@ -157,7 +157,7 @@ CELIX_GEN_BUNDLE_ACTIVATOR(activator_data_t, activator_start, activator_stop)
 The C++ Bundle Activator:
 
 ```C++
-//${WS}/myproject/bundles/HelloWorld/private/src/HelloWorldActivator.cc
+//${WS}/myproject/bundles/HelloWorld_cxx/src/HelloWorldActivator.cc
 #include <memory>
 #include <iostream>
 
