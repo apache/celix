@@ -64,6 +64,24 @@ char* pubsub_getKeysBundleDir(celix_bundle_context_t *ctx);
  */
 celix_properties_t* pubsub_utils_getTopicProperties(const celix_bundle_t *bundle, const char *scope, const char *topic, bool isPublisher);
 
+/**
+ * Returns a msg id from the provided fully qualified name.
+ *
+ *
+ * @param fqn fully qualified name
+ * @return    msg id
+ */
+unsigned int pubsub_msgIdHashFromFqn(const char* fqn);
+
+/**
+ * Returns the directory where the descriptor for messages can be found.
+ *
+ * @param ctx The bundle context.
+ * @param bnd The bundle to get descriptor root dir from.
+ * @return NULL if the directory does not exists. Caller is owner of the data.
+ */
+char* pubsub_getMessageDescriptorsDir(celix_bundle_context_t*ctx, const celix_bundle_t *bnd);
+
 #ifdef __cplusplus
 }
 #endif

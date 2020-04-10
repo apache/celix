@@ -13,7 +13,7 @@
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  *  KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
+ * specific language governing permissions and limitationss
  * under the License.
  */
 
@@ -28,15 +28,22 @@
 #include "pubsub_utils.h"
 
 #include "array_list.h"
-#include "bundle.h"
+#include "celix_bundle.h"
 
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
 #include <stdint.h>
+#include "celix_utils.h"
 
 #define MAX_KEYBUNDLE_LENGTH 256
+
+/**
+ * The config/env options to set the extender path which is used to find
+ * descriptors if the requesting bundle is the framework bundle.
+ */
+#define SYSTEM_BUNDLE_ARCHIVE_PATH  "CELIX_FRAMEWORK_EXTENDER_PATH"
 
 
 celix_status_t pubsub_getPubSubInfoFromFilter(const char* filterstr, char **scopeOut, char **topicOut) {
@@ -148,4 +155,29 @@ celix_properties_t *pubsub_utils_getTopicProperties(const celix_bundle_t *bundle
     }
 
     return topic_props;
+}
+
+unsigned int pubsub_msgIdHashFromFqn(const char* fqn) {
+    return celix_utils_stringHash(fqn);
+}
+
+char* pubsub_getMessageDescriptorsDir(celix_bundle_context_t* ctx, const celix_bundle_t *bnd) {
+    char *root = NULL;
+
+    bool isSystemBundle = celix_bundle_isSystemBundle(bnd);
+    bundle_isSystemBundle(bnd, &isSystemBundle);
+
+    if (isSystemBundle == true) {
+
+        const char *dir = celix_bundleContext_getProperty(ctx, SYSTEM_BUNDLE_ARCHIVE_PATH, NULL);
+        //asprintf(&root, "%s/META-INF/descriptors", dir);
+        struct stat s;
+        if (stat(dir, &s) == 0) {
+            //file does exist
+            root = celix_utils_strdup(dir);
+        }
+    } else {
+        root = celix_bundle_getEntry(bnd, "META-INF/descriptors");
+    }
+    return root;
 }

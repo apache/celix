@@ -640,6 +640,10 @@ const char* celix_bundle_getSymbolicName(const celix_bundle_t *bnd) {
 	return bnd->symbolicName;
 }
 
+bool celix_bundle_isSystemBundle(const celix_bundle_t *bnd) {
+    return bnd != NULL && celix_bundle_getId(bnd) == 0;
+}
+
 celix_array_list_t* celix_bundle_listRegisteredServices(const celix_bundle_t *bnd) {
     long bndId = celix_bundle_getId(bnd);
     celix_array_list_t* result = celix_arrayList_create();

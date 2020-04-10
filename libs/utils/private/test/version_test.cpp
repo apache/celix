@@ -16,19 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * version_test.cpp
- *
- *  \date       Dec 18, 2012
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
 
 #include <string.h>
 
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/TestHarness_c.h"
 #include "CppUTest/CommandLineTestRunner.h"
+
+#include "celix_version.h"
+#include "version.h"
 
 extern "C"
 {

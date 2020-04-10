@@ -16,94 +16,142 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * version.c
- *
- *  \date       Jul 12, 2010
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <celix_utils.h>
 
+#include "celix_version.h"
+#include "version.h"
 #include "celix_errno.h"
 #include "version_private.h"
 
-celix_status_t version_createVersion(int major, int minor, int micro, char * qualifier, version_pt *version) {
-    celix_status_t status = CELIX_SUCCESS;
-
-    if (*version != NULL) {
-        status = CELIX_ILLEGAL_ARGUMENT;
-    } else {
-        *version = (version_pt) malloc(sizeof(**version));
-        if (!*version) {
-            status = CELIX_ENOMEM;
-        } else {
-            unsigned int i;
-
-            (*version)->major = major;
-            (*version)->minor = minor;
-            (*version)->micro = micro;
-            if (qualifier == NULL) {
-                qualifier = "";
-            }
-            (*version)->qualifier = strdup(qualifier);
-
-            if (major < 0) {
-                status = CELIX_ILLEGAL_ARGUMENT;
-            }
-            if (minor < 0) {
-                status = CELIX_ILLEGAL_ARGUMENT;
-            }
-            if (micro < 0) {
-                status = CELIX_ILLEGAL_ARGUMENT;
-            }
-
-            for (i = 0; i < strlen(qualifier); i++) {
-                char ch = qualifier[i];
-                if (('A' <= ch) && (ch <= 'Z')) {
-                    continue;
-                }
-                if (('a' <= ch) && (ch <= 'z')) {
-                    continue;
-                }
-                if (('0' <= ch) && (ch <= '9')) {
-                    continue;
-                }
-                if ((ch == '_') || (ch == '-')) {
-                    continue;
-                }
-                status = CELIX_ILLEGAL_ARGUMENT;
-                break;
-            }
-        }
-    }
-
-    return status;
+celix_status_t version_createVersion(int major, int minor, int micro, const char * qualifier, version_pt *version) {
+    *version = celix_version_createVersion(major, minor, micro, qualifier);
+    return *version == NULL ? CELIX_ILLEGAL_ARGUMENT : CELIX_SUCCESS;
 }
 
 celix_status_t version_clone(version_pt version, version_pt *clone) {
-    return version_createVersion(version->major, version->minor, version->micro, version->qualifier, clone);
-}
-
-celix_status_t version_destroy(version_pt version) {
-    version->major = 0;
-    version->minor = 0;
-    version->micro = 0;
-    free(version->qualifier);
-    version->qualifier = NULL;
-    free(version);
+    *clone = celix_version_copy(version);
     return CELIX_SUCCESS;
 }
 
-celix_status_t version_createVersionFromString(const char * versionStr, version_pt *version) {
-    celix_status_t status = CELIX_SUCCESS;
+celix_status_t version_destroy(version_pt version) {
+   celix_version_destroy(version);
+   return CELIX_SUCCESS;
+}
 
+celix_status_t version_createVersionFromString(const char * versionStr, version_pt *version) {
     if (versionStr == NULL) {
         *version = NULL;
-        return status;
+        return CELIX_SUCCESS;
+    }
+    *version = celix_version_createVersionFromString(versionStr);
+    return *version == NULL ? CELIX_ILLEGAL_ARGUMENT : CELIX_SUCCESS;
+}
+
+celix_status_t version_createEmptyVersion(version_pt *version) {
+    *version = celix_version_createEmptyVersion();
+    return *version == NULL ? CELIX_ILLEGAL_ARGUMENT : CELIX_SUCCESS;
+}
+
+celix_status_t version_getMajor(version_pt version, int *major) {
+    celix_status_t status = CELIX_SUCCESS;
+    *major = version->major;
+    return status;
+}
+
+celix_status_t version_getMinor(version_pt version, int *minor) {
+    celix_status_t status = CELIX_SUCCESS;
+    *minor = version->minor;
+    return status;
+}
+
+celix_status_t version_getMicro(version_pt version, int *micro) {
+    celix_status_t status = CELIX_SUCCESS;
+    *micro = version->micro;
+    return status;
+}
+
+celix_status_t version_getQualifier(version_pt version, const char **qualifier) {
+    celix_status_t status = CELIX_SUCCESS;
+    *qualifier = version->qualifier;
+    return status;
+}
+
+celix_status_t version_compareTo(version_pt version, version_pt compare, int *result) {
+    *result = celix_version_compareTo(version, compare);
+    return CELIX_SUCCESS;
+}
+
+celix_status_t version_toString(version_pt version, char **string) {
+    *string = celix_version_toString(version);
+    return CELIX_SUCCESS;
+}
+
+celix_status_t version_isCompatible(version_pt user, version_pt provider, bool* isCompatible) {
+    *isCompatible = celix_version_isCompatible(user, provider);
+    return CELIX_SUCCESS;
+}
+
+celix_version_t* celix_version_createVersion(int major, int minor, int micro, const char* qualifier) {
+    if (major < 0 || minor < 0 || micro < 0) {
+        return NULL;
+    }
+
+    if (qualifier == NULL) {
+        qualifier = "";
+    }
+    for (int i = 0; i < strlen(qualifier); i++) {
+        char ch = qualifier[i];
+        if (('A' <= ch) && (ch <= 'Z')) {
+            continue;
+        }
+        if (('a' <= ch) && (ch <= 'z')) {
+            continue;
+        }
+        if (('0' <= ch) && (ch <= '9')) {
+            continue;
+        }
+        if ((ch == '_') || (ch == '-')) {
+            continue;
+        }
+        //invalid
+        return NULL;
+    }
+
+    celix_version_t* version = calloc(1, sizeof(*version));
+
+    version->major = major;
+    version->minor = minor;
+    version->micro = micro;
+    version->qualifier = celix_utils_strdup(qualifier);
+
+
+    return version;
+}
+
+void celix_version_destroy(celix_version_t* version) {
+    if (version != NULL) {
+        version->major = 0;
+        version->minor = 0;
+        version->micro = 0;
+        free(version->qualifier);
+        version->qualifier = NULL;
+        free(version);
+    }
+}
+
+
+celix_version_t* celix_version_copy(const celix_version_t* version) {
+    return celix_version_createVersion(version->major, version->minor, version->micro, version->qualifier);
+}
+
+
+celix_version_t* celix_version_createVersionFromString(const char *versionStr) {
+    if (versionStr == NULL) {
+        return NULL;
     }
 
     int major = 0;
@@ -119,6 +167,7 @@ celix_status_t version_createVersionFromString(const char * versionStr, version_
 
     char* versionWrkStr = strdup(versionStr);
 
+    celix_status_t status = CELIX_SUCCESS;
     token = strtok_r(versionWrkStr, delims, &last);
     if (token != NULL) {
         for (i = 0; i < strlen(token); i++) {
@@ -157,7 +206,6 @@ celix_status_t version_createVersionFromString(const char * versionStr, version_
                     qualifier = strdup(token);
                     token = strtok_r(NULL, delims, &last);
                     if (token != NULL) {
-                        *version = NULL;
                         status = CELIX_ILLEGAL_ARGUMENT;
                     }
                 }
@@ -167,108 +215,98 @@ celix_status_t version_createVersionFromString(const char * versionStr, version_
 
     free(versionWrkStr);
 
+    celix_version_t* version = NULL;
     if (status == CELIX_SUCCESS) {
-        status = version_createVersion(major, minor, micro, qualifier, version);
+        version = celix_version_createVersion(major, minor, micro, qualifier);
     }
 
     if (qualifier != NULL) {
         free(qualifier);
     }
 
-    return status;
+    return version;
 }
 
-celix_status_t version_createEmptyVersion(version_pt *version) {
-    return version_createVersion(0, 0, 0, "", version);
+
+celix_version_t* celix_version_createEmptyVersion() {
+    return celix_version_createVersion(0, 0, 0, NULL);
 }
 
-celix_status_t version_getMajor(version_pt version, int *major) {
-    celix_status_t status = CELIX_SUCCESS;
-    *major = version->major;
-    return status;
+int celix_version_getMajor(const celix_version_t* version) {
+    return version->major;
 }
 
-celix_status_t version_getMinor(version_pt version, int *minor) {
-    celix_status_t status = CELIX_SUCCESS;
-    *minor = version->minor;
-    return status;
+int celix_version_getMinor(const celix_version_t* version) {
+    return version->minor;
 }
 
-celix_status_t version_getMicro(version_pt version, int *micro) {
-    celix_status_t status = CELIX_SUCCESS;
-    *micro = version->micro;
-    return status;
+int celix_version_getMicro(const celix_version_t* version) {
+    return version->micro;
 }
 
-celix_status_t version_getQualifier(version_pt version, const char **qualifier) {
-    celix_status_t status = CELIX_SUCCESS;
-    *qualifier = version->qualifier;
-    return status;
+const char* celix_version_getQualifier(const celix_version_t* version) {
+    return version->qualifier;
 }
 
-celix_status_t version_compareTo(version_pt version, version_pt compare, int *result) {
-    celix_status_t status = CELIX_SUCCESS;
+int celix_version_compareTo(const celix_version_t* version, const celix_version_t* compare) {
+    int result;
     if (compare == version) {
-        *result = 0;
+        result = 0;
     } else {
         int res = version->major - compare->major;
         if (res != 0) {
-            *result = res;
+            result = res;
         } else {
             res = version->minor - compare->minor;
             if (res != 0) {
-                *result = res;
+                result = res;
             } else {
                 res = version->micro - compare->micro;
                 if (res != 0) {
-                    *result = res;
+                    result = res;
                 } else {
                     if(version->qualifier == NULL && compare->qualifier == NULL) {
-                        *result = 0;
+                        result = 0;
                     } else if (version->qualifier == NULL || compare->qualifier == NULL) {
-                        *result = -1;
+                        result = -1;
                     } else {
-                        *result = strcmp(version->qualifier, compare->qualifier);
+                        result = strcmp(version->qualifier, compare->qualifier);
                     }
                 }
             }
         }
     }
-
-    return status;
+    return result;
 }
 
-celix_status_t version_toString(version_pt version, char **string) {
-    celix_status_t status = CELIX_SUCCESS;
+
+char* celix_version_toString(const celix_version_t* version) {
+    char* string = NULL;
     if (strlen(version->qualifier) > 0) {
-        char str[512];
-        int written = snprintf(str, 512, "%d.%d.%d.%s", version->major, version->minor, version->micro, version->qualifier);
-        if (written >= 512 || written < 0) {
-            status = CELIX_BUNDLE_EXCEPTION;
-        }
-        *string = strdup(str);
+        asprintf(&string,"%d.%d.%d.%s", version->major, version->minor, version->micro, version->qualifier);
     } else {
-        char str[512];
-        int written = snprintf(str, 512, "%d.%d.%d", version->major, version->minor, version->micro);
-        if (written >= 512 || written < 0) {
-            status = CELIX_BUNDLE_EXCEPTION;
-        }
-        *string = strdup(str);
+        asprintf(&string, "%d.%d.%d", version->major, version->minor, version->micro);
     }
-    return status;
+    return string;
 }
 
-celix_status_t version_isCompatible(version_pt user, version_pt provider, bool* isCompatible) {
-    celix_status_t status = CELIX_SUCCESS;
-    bool result = false;
 
-    if (user == NULL || provider == NULL) {
-        result = true; // When no version defined, always respond as compatible
-    } else if (user->major == provider->major) {
-        result = (provider->minor >= user->minor);
+bool celix_version_isCompatible(const celix_version_t* user, const celix_version_t* provider) {
+    if (user == NULL && provider == NULL) {
+        return true;
+    } else {
+        return celix_version_isUserCompatible(user, provider->major, provider->minor);
     }
+}
 
-    *isCompatible = result;
+bool celix_version_isUserCompatible(const celix_version_t* user, int providerMajorVersionPart, int provideMinorVersionPart) {
+    bool isCompatible = false;
+    if (providerMajorVersionPart == user->major) {
+        isCompatible = (provideMinorVersionPart >= user->minor);
+    }
+    return isCompatible;
+}
 
-    return status;
+unsigned int celix_version_hash(const celix_version_t* version) {
+    return (unsigned int)(version->major | version->minor | version->micro | celix_utils_stringHash(version->qualifier));
 }

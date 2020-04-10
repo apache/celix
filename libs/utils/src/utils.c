@@ -34,8 +34,7 @@
 
 #endif
 
-unsigned int utils_stringHash(const void* strPtr) {
-    const char* string = strPtr;
+unsigned int celix_utils_stringHash(const char* string) {
     unsigned int hc = 5381;
     char ch;
     while((ch = *string++) != '\0'){
@@ -43,6 +42,10 @@ unsigned int utils_stringHash(const void* strPtr) {
     }
 
     return hc;
+}
+
+unsigned int utils_stringHash(const void* strPtr) {
+    return celix_utils_stringHash(strPtr);
 }
 
 int utils_stringEquals(const void* string, const void* toCompare) {

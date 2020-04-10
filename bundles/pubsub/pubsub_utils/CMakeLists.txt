@@ -17,16 +17,22 @@
 
 add_library(pubsub_utils STATIC
         src/pubsub_utils.c
-        src/pubsub_utils_url.c)
+        src/pubsub_utils_url.c
+        src/pubsub_serializer_handler.c
+)
 
 set_target_properties(pubsub_utils PROPERTIES OUTPUT_NAME "celix_pubsub_utils")
 target_include_directories(pubsub_utils PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
         $<INSTALL_INTERFACE:include/celix/pubsub_utils>
 )
-target_link_libraries(pubsub_utils PUBLIC Celix::framework Celix::pubsub_api)
+target_link_libraries(pubsub_utils PUBLIC Celix::framework Celix::pubsub_api Celix::pubsub_spi Celix::log_helper)
 
 add_library(Celix::pubsub_utils ALIAS pubsub_utils)
 
 install(TARGETS pubsub_utils EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT pubsub)
 install(DIRECTORY include/ DESTINATION include/celix/pubsub_utils COMPONENT pubsub)
+
+if (ENABLE_TESTING)
+    add_subdirectory(gtest)
+endif(ENABLE_TESTING)

@@ -539,7 +539,10 @@ static celix_status_t bundleContext_bundleChanged(void *listenerSvc, bundle_even
     if (tracker != NULL && handleEvent) {
         void *callbackHandle = tracker->opts.callbackHandle;
 
-        if (event->type == OSGI_FRAMEWORK_BUNDLE_EVENT_STARTED && tracker->opts.onStarted != NULL) {
+        if (event->type == OSGI_FRAMEWORK_BUNDLE_EVENT_INSTALLED && tracker->opts.onInstalled != NULL) {
+            bundle_t *bnd = framework_getBundleById(tracker->ctx->framework, event->bundleId);
+            tracker->opts.onInstalled(callbackHandle, bnd);
+        } else if (event->type == OSGI_FRAMEWORK_BUNDLE_EVENT_STARTED && tracker->opts.onStarted != NULL) {
             bundle_t *bnd = framework_getBundleById(tracker->ctx->framework, event->bundleId);
             tracker->opts.onStarted(callbackHandle, bnd);
         } else if (event->type == OSGI_FRAMEWORK_BUNDLE_EVENT_STOPPING && tracker->opts.onStopped != NULL) {
@@ -568,18 +571,9 @@ long celix_bundleContext_trackBundlesWithOptions(
 
         celixThreadMutex_lock(&ctx->mutex);
         entry->trackerId = ctx->nextTrackerId++;
-        celixThreadMutex_unlock(&ctx->mutex);
-        trackerId = entry->trackerId;
-
-        //loop through all already installed bundles.
-        if (entry->opts.onStarted != NULL) {
-            celix_framework_useBundles(ctx->framework, entry->opts.includeFrameworkBundle, entry->opts.callbackHandle, entry->opts.onStarted);
-        }
-
-        celixThreadMutex_lock(&ctx->mutex);
         hashMap_put(ctx->bundleTrackers, (void*)entry->trackerId, entry);
         celixThreadMutex_unlock(&ctx->mutex);
-
+        trackerId = entry->trackerId;
     }
     return trackerId;
 }
@@ -810,6 +804,7 @@ size_t celix_bundleContext_useServicesWithOptions(
         trkOpts.filter.filter = opts->filter.filter;
         trkOpts.filter.versionRange = opts->filter.versionRange;
         trkOpts.filter.serviceLanguage = opts->filter.serviceLanguage;
+        trkOpts.filter.ignoreServiceLanguage = opts->filter.ignoreServiceLanguage;
 
         service_tracker_t *trk = celix_serviceTracker_createWithOptions(ctx, &trkOpts);
         if (trk != NULL) {

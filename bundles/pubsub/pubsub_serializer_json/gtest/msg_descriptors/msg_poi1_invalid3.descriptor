@@ -1,0 +1,12 @@
+:header
+type=message
+name=poi2
+version=1.0.0
+:annotations
+classname=org.example.PointOfInterest
+msgId=42
+invalid_reason=same msg id, different msg fqn
+:types
+location={DD lat lon}
+:message
+{llocation;t location name}

@@ -188,9 +188,43 @@ celix_status_t fw_refreshHelper_stop(struct fw_refreshHelper * refreshHelper);
 struct fw_bundleListener {
 	bundle_pt bundle;
 	bundle_listener_pt listener;
+
+    celix_thread_mutex_t useMutex; //protects useCount
+    celix_thread_cond_t useCond;
+    size_t useCount;
 };
 
 typedef struct fw_bundleListener * fw_bundle_listener_pt;
+
+static inline void fw_bundleListener_destroy(fw_bundle_listener_pt listener, bool wait) {
+    celixThreadMutex_lock(&listener->useMutex);
+    while (wait && listener->useCount != 0) {
+        celixThreadCondition_wait(&listener->useCond, &listener->useMutex);
+    }
+    celixThreadMutex_unlock(&listener->useMutex);
+
+    //destroy
+    celixThreadMutex_destroy(&listener->useMutex);
+    celixThreadCondition_destroy(&listener->useCond);
+    free(listener);
+}
+
+static inline void fw_bundleListener_increaseUseCount(fw_bundle_listener_pt listener) {
+    //pre condition mutex is taken on  fw->installedBundles.mutex
+    assert(listener != NULL);
+    celixThreadMutex_lock(&listener->useMutex);
+    ++listener->useCount;
+    celixThreadMutex_unlock(&listener->useMutex);
+}
+
+static inline void fw_bundleListener_decreaseUseCount(fw_bundle_listener_pt listener) {
+    //pre condition mutex is taken on  fw->installedBundles.mutex
+    celixThreadMutex_lock(&listener->useMutex);
+    assert(listener->useCount > 0);
+    --listener->useCount;
+    celixThreadCondition_broadcast(&listener->useCond);
+    celixThreadMutex_unlock(&listener->useMutex);
+}
 
 struct fw_frameworkListener {
 	bundle_pt bundle;
@@ -209,7 +243,6 @@ typedef enum event_type event_type_e;
 
 struct request {
 	event_type_e type;
-	array_list_pt listeners;
 
 	int eventType;
 	long bundleId;
@@ -1470,27 +1503,50 @@ void fw_removeServiceListener(framework_pt framework, bundle_pt bundle __attribu
 
 celix_status_t fw_addBundleListener(framework_pt framework, bundle_pt bundle, bundle_listener_pt listener) {
     celix_status_t status = CELIX_SUCCESS;
-    fw_bundle_listener_pt bundleListener = NULL;
+    fw_bundle_listener_pt bundleListener = calloc(1, sizeof(*bundleListener));
+    bundleListener->listener = listener;
+    bundleListener->bundle = bundle;
+    celixThreadMutex_create(&bundleListener->useMutex, NULL);
+    celixThreadCondition_init(&bundleListener->useCond, NULL);
+    bundleListener->useCount = 1;
+    celix_array_list_t* installedBundles = celix_arrayList_create();
 
-    bundleListener = (fw_bundle_listener_pt) malloc(sizeof(*bundleListener));
-    if (!bundleListener) {
-        status = CELIX_ENOMEM;
-    } else {
-        bundleListener->listener = listener;
-        bundleListener->bundle = bundle;
-
-        if (celixThreadMutex_lock(&framework->bundleListenerLock) != CELIX_SUCCESS) {
-            status = CELIX_FRAMEWORK_EXCEPTION;
-        } else {
-            arrayList_add(framework->bundleListeners, bundleListener);
-
-            if (celixThreadMutex_unlock(&framework->bundleListenerLock)) {
-                status = CELIX_FRAMEWORK_EXCEPTION;
-            }
-        }
+    celixThreadMutex_lock(&framework->installedBundles.mutex);
+    int size = celix_arrayList_size(framework->installedBundles.entries);
+    for (int i = 0; i < size; ++i) {
+        celix_framework_bundle_entry_t *entry = celix_arrayList_get(framework->installedBundles.entries, i);
+        fw_bundleEntry_increaseUseCount(entry);
+        celix_arrayList_add(installedBundles, entry);
     }
+    celixThreadMutex_lock(&framework->bundleListenerLock);
+    celix_arrayList_add(framework->bundleListeners, bundleListener);
+    celixThreadMutex_unlock(&framework->bundleListenerLock);
+    celixThreadMutex_unlock(&framework->installedBundles.mutex);
 
-    framework_logIfError(framework->logger, status, NULL, "Failed to add bundle listener");
+    //Calling bundle events for already installed bundles.
+    for (int i =0 ; i < celix_arrayList_size(installedBundles); ++i) {
+        celix_framework_bundle_entry_t *entry = celix_arrayList_get(installedBundles, i);
+        celix_bundle_state_e state = celix_bundle_getState(entry->bnd);
+        celix_bundle_event_t event;
+        event.bundleId = entry->bndId;
+        event.bundleSymbolicName = (char*)celix_bundle_getSymbolicName(entry->bnd);
+
+        //note assuming bundle state values are increasing!
+        if (state >= OSGI_FRAMEWORK_BUNDLE_INSTALLED) {
+            event.type = OSGI_FRAMEWORK_BUNDLE_EVENT_INSTALLED;
+            listener->bundleChanged(listener, &event);
+        }
+        if (state >= OSGI_FRAMEWORK_BUNDLE_RESOLVED) {
+            event.type = OSGI_FRAMEWORK_BUNDLE_EVENT_RESOLVED;
+            listener->bundleChanged(listener, &event);
+        }
+        if (state >= OSGI_FRAMEWORK_BUNDLE_ACTIVE) {
+            event.type = OSGI_FRAMEWORK_BUNDLE_EVENT_STARTED;
+            listener->bundleChanged(listener, &event);
+        }
+        fw_bundleEntry_decreaseUseCount(entry);
+    }
+    fw_bundleListener_decreaseUseCount(bundleListener);
 
     return status;
 }
@@ -1498,29 +1554,24 @@ celix_status_t fw_addBundleListener(framework_pt framework, bundle_pt bundle, bu
 celix_status_t fw_removeBundleListener(framework_pt framework, bundle_pt bundle, bundle_listener_pt listener) {
     celix_status_t status = CELIX_SUCCESS;
 
-    unsigned int i;
     fw_bundle_listener_pt bundleListener;
 
-    if (celixThreadMutex_lock(&framework->bundleListenerLock) != CELIX_SUCCESS) {
-        status = CELIX_FRAMEWORK_EXCEPTION;
-    }
-    else {
-        for (i = 0; i < arrayList_size(framework->bundleListeners); i++) {
-            bundleListener = (fw_bundle_listener_pt) arrayList_get(framework->bundleListeners, i);
-            if (bundleListener->listener == listener && bundleListener->bundle == bundle) {
-                arrayList_remove(framework->bundleListeners, i);
-
-                bundleListener->bundle = NULL;
-                bundleListener->listener = NULL;
-                free(bundleListener);
-            }
-        }
-        if (celixThreadMutex_unlock(&framework->bundleListenerLock)) {
-            status = CELIX_FRAMEWORK_EXCEPTION;
+    celixThreadMutex_lock(&framework->bundleListenerLock);
+    for (int i = 0; i < arrayList_size(framework->bundleListeners); i++) {
+        bundleListener = celix_arrayList_get(framework->bundleListeners, i);
+        if (bundleListener->listener == listener && bundleListener->bundle == bundle) {
+            celix_arrayList_removeAt(framework->bundleListeners, i);
+            break;
         }
     }
+    celixThreadMutex_unlock(&framework->bundleListenerLock);
 
-    framework_logIfError(framework->logger, status, NULL, "Failed to remove bundle listener");
+    if (bundleListener != NULL) {
+        fw_bundleListener_destroy(bundleListener, true);
+    } else {
+        framework_logIfError(framework->logger, status, NULL, "Failed to remove bundle listener");
+    }
+
 
     return status;
 }
@@ -1856,53 +1907,48 @@ bundle_context_t* framework_getContext(const_framework_pt framework) {
 celix_status_t fw_fireBundleEvent(framework_pt framework, bundle_event_type_e eventType, bundle_pt bundle) {
     celix_status_t status = CELIX_SUCCESS;
 
-    if ((eventType != OSGI_FRAMEWORK_BUNDLE_EVENT_STARTING)
-        && (eventType != OSGI_FRAMEWORK_BUNDLE_EVENT_STOPPING)
-        && (eventType != OSGI_FRAMEWORK_BUNDLE_EVENT_LAZY_ACTIVATION)) {
-        request_pt request = (request_pt) calloc(1, sizeof(*request));
-        if (!request) {
-            status = CELIX_ENOMEM;
-        } else {
-            bundle_archive_pt archive = NULL;
-            module_pt module = NULL;
+    request_pt request = (request_pt) calloc(1, sizeof(*request));
+    if (!request) {
+        status = CELIX_ENOMEM;
+    } else {
+        bundle_archive_pt archive = NULL;
+        module_pt module = NULL;
 
-            request->eventType = eventType;
-            request->filter = NULL;
-            request->listeners = framework->bundleListeners;
-            request->type = BUNDLE_EVENT_TYPE;
-            request->error = NULL;
-            request->bundleId = -1;
+        request->eventType = eventType;
+        request->filter = NULL;
+        request->type = BUNDLE_EVENT_TYPE;
+        request->error = NULL;
+        request->bundleId = -1;
 
-            status = bundle_getArchive(bundle, &archive);
+        status = bundle_getArchive(bundle, &archive);
 
-            if (status == CELIX_SUCCESS) {
-                long bundleId;
+        if (status == CELIX_SUCCESS) {
+            long bundleId;
 
-                status = bundleArchive_getId(archive, &bundleId);
-
-                if (status == CELIX_SUCCESS) {
-                    request->bundleId = bundleId;
-                }
-            }
+            status = bundleArchive_getId(archive, &bundleId);
 
             if (status == CELIX_SUCCESS) {
-                status = bundle_getCurrentModule(bundle, &module);
-
-                if (status == CELIX_SUCCESS) {
-                    const char *symbolicName = NULL;
-                    status = module_getSymbolicName(module, &symbolicName);
-                    if (status == CELIX_SUCCESS) {
-                        request->bundleSymbolicName = strdup(symbolicName);
-                    }
-                }
+                request->bundleId = bundleId;
             }
-
-            celixThreadMutex_lock(&framework->dispatcher.mutex);
-            arrayList_add(framework->dispatcher.requests, request);
-            celixThreadCondition_broadcast(&framework->dispatcher.cond);
-            celixThreadMutex_unlock(&framework->dispatcher.mutex);
-
         }
+
+        if (status == CELIX_SUCCESS) {
+            status = bundle_getCurrentModule(bundle, &module);
+
+            if (status == CELIX_SUCCESS) {
+                const char *symbolicName = NULL;
+                status = module_getSymbolicName(module, &symbolicName);
+                if (status == CELIX_SUCCESS) {
+                    request->bundleSymbolicName = strdup(symbolicName);
+                }
+            }
+        }
+
+        celixThreadMutex_lock(&framework->dispatcher.mutex);
+        arrayList_add(framework->dispatcher.requests, request);
+        celixThreadCondition_broadcast(&framework->dispatcher.cond);
+        celixThreadMutex_unlock(&framework->dispatcher.mutex);
+
     }
 
     framework_logIfError(framework->logger, status, NULL, "Failed to fire bundle event");
@@ -1922,7 +1968,6 @@ celix_status_t fw_fireFrameworkEvent(framework_pt framework, framework_event_typ
 
         request->eventType = eventType;
         request->filter = NULL;
-        request->listeners = framework->frameworkListeners;
         request->type = FRAMEWORK_EVENT_TYPE;
         request->errorCode = errorCode;
         request->error = "";
@@ -1969,6 +2014,49 @@ celix_status_t fw_fireFrameworkEvent(framework_pt framework, framework_event_typ
     return status;
 }
 
+
+static void fw_handleEventRequest(celix_framework_t *framework, request_pt request) {
+    if (request->type == BUNDLE_EVENT_TYPE) {
+        celix_array_list_t *localListeners = celix_arrayList_create();
+        celixThreadMutex_lock(&framework->bundleListenerLock);
+        for (int i = 0; i < celix_arrayList_size(framework->bundleListeners); ++i) {
+            fw_bundle_listener_pt listener = arrayList_get(framework->bundleListeners, i);
+            fw_bundleListener_increaseUseCount(listener);
+            celix_arrayList_add(localListeners, listener);
+        }
+        celixThreadMutex_unlock(&framework->bundleListenerLock);
+        for (int i = 0; i < celix_arrayList_size(localListeners); ++i) {
+            fw_bundle_listener_pt listener = arrayList_get(localListeners, i);
+
+            bundle_event_t event;
+            memset(&event, 0, sizeof(event));
+            event.bundleId = request->bundleId;
+            event.bundleSymbolicName = request->bundleSymbolicName;
+            event.type = request->eventType;
+            fw_invokeBundleListener(framework, listener->listener, &event, listener->bundle);
+
+            fw_bundleListener_decreaseUseCount(listener);
+        }
+        celix_arrayList_destroy(localListeners);
+    } else  if (request->type == FRAMEWORK_EVENT_TYPE) {
+        celixThreadMutex_lock(&framework->frameworkListenersLock);
+        //TODO refactor use of framework listeners to use a useCount + conditition.
+        for (int i = 0; i < celix_arrayList_size(framework->frameworkListeners); ++i) {
+            fw_framework_listener_pt listener = celix_arrayList_get(framework->frameworkListeners, i);
+            framework_event_t event;
+            memset(&event, 0, sizeof(event));
+            event.bundleId = request->bundleId;
+            event.bundleSymbolicName = request->bundleSymbolicName;
+            event.type = request->eventType;
+            event.error = request->error;
+            event.errorCode = request->errorCode;
+
+            fw_invokeFrameworkListener(framework, listener->listener, &event, listener->bundle);
+        }
+        celixThreadMutex_unlock(&framework->frameworkListenersLock);
+    }
+}
+
 static void *fw_eventDispatcher(void *fw) {
     framework_pt framework = (framework_pt) fw;
 
@@ -1990,43 +2078,10 @@ static void *fw_eventDispatcher(void *fw) {
         celix_arrayList_clear(framework->dispatcher.requests);
         celixThreadMutex_unlock(&framework->dispatcher.mutex);
 
-        //FIXME strange locking  of bundleListenerLock and frameworkListenerLock inside a loop.
-        //Seems like a request depends on bundle listeners or framework listeners -> this should be protected with
-        //a use count!!
         for (int i = 0; i < celix_arrayList_size(localRequests); ++i) {
             request_pt request = celix_arrayList_get(localRequests, i);
-            int size = arrayList_size(request->listeners);
-            for (int k = 0; k < size; k++) {
-                if (request->type == BUNDLE_EVENT_TYPE) {
-                    celixThreadMutex_lock(&framework->bundleListenerLock);
-                    fw_bundle_listener_pt listener = (fw_bundle_listener_pt) arrayList_get(request->listeners, k);
-                    bundle_event_t event;
-                    memset(&event, 0, sizeof(event));
-                    event.bundleId = request->bundleId;
-                    event.bundleSymbolicName = request->bundleSymbolicName;
-                    event.type = request->eventType;
-
-                    fw_invokeBundleListener(framework, listener->listener, &event, listener->bundle);
-                    celixThreadMutex_unlock(&framework->bundleListenerLock);
-                } else if (request->type == FRAMEWORK_EVENT_TYPE) {
-                    celixThreadMutex_lock(&framework->frameworkListenersLock);
-                    fw_framework_listener_pt listener = (fw_framework_listener_pt) arrayList_get(request->listeners, k);
-                    framework_event_t event;
-                    memset(&event, 0, sizeof(event));
-                    event.bundleId = request->bundleId;
-                    event.bundleSymbolicName = request->bundleSymbolicName;
-                    event.type = request->eventType;
-                    event.error = request->error;
-                    event.errorCode = request->errorCode;
-
-                    fw_invokeFrameworkListener(framework, listener->listener, &event, listener->bundle);
-                    celixThreadMutex_unlock(&framework->frameworkListenersLock);
-                }
-            }
+            fw_handleEventRequest(framework, request);
             free(request->bundleSymbolicName);
-            //NOTE next 2 free calls not needed? why it is a char* not a const char*
-            //free(request->filter);
-            //free(request->error);
             free(request);
         }
         celix_arrayList_clear(localRequests);

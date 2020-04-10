@@ -16,13 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * celix_constants.h
- *
- *  \date       Apr 29, 2010
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
 
 #ifndef CELIX_CONSTANTS_H_
 #define CELIX_CONSTANTS_H_
@@ -78,6 +71,14 @@ static const char *const CELIX_BUNDLES_PATH_NAME = "CELIX_BUNDLES_PATH";
 static const char *const CELIX_BUNDLES_PATH_DEFAULT = "bundles";
 
 static const char *const CELIX_LOAD_BUNDLES_WITH_NODELETE = "CELIX_LOAD_BUNDLES_WITH_NODELETE";
+
+/**
+ * The path used getting entries from the framework bundle.
+ * Normal bundles have an archive directory.
+ * For the celix framework by default the working directory is used, with this configuration this can be changed.
+ */
+static const char *const CELIX_SYSTEM_BUNDLE_ARCHIVE_PATH = "CELIX_SYSTEM_BUNDLE_ARCHIVE_PATH";
+
 
 #define CELIX_AUTO_START_0 "CELIX_AUTO_START_0"
 #define CELIX_AUTO_START_1 "CELIX_AUTO_START_1"

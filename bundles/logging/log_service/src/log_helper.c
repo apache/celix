@@ -16,16 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * log_helper.c
- *
- *  \date       Nov 10, 2014
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
+
 
 #include <stdlib.h>
 #include <stdarg.h>
+#include <string.h>
+
+#include <celix_api.h>
 
 #include "bundle_context.h"
 #include "service_tracker.h"
@@ -77,6 +74,7 @@ static char* logHelper_backtrace(void) {
 
 struct log_helper {
 	celix_bundle_context_t *bundleContext;
+	char *name;
 	celix_service_tracker_t *logServiceTracker;
 	celix_thread_mutex_t logListLock;
 	array_list_pt logServices;
@@ -84,34 +82,29 @@ struct log_helper {
 	bool stdOutFallbackIncludeDebug;
 };
 
-celix_status_t logHelper_logServiceAdded(void *handle, service_reference_pt reference, void *service);
-celix_status_t logHelper_logServiceRemoved(void *handle, service_reference_pt reference, void *service);
+static celix_status_t logHelper_logServiceAdded(void *handle, service_reference_pt reference, void *service);
+static celix_status_t logHelper_logServiceRemoved(void *handle, service_reference_pt reference, void *service);
 
+log_helper_t* logHelper_createWithName(celix_bundle_context_t* context, const char *name) {
+	log_helper_t* logHelper = calloc(1, sizeof(*logHelper));
 
-celix_status_t logHelper_create(bundle_context_pt context, log_helper_t **loghelper)
-{
-	celix_status_t status = CELIX_SUCCESS;
+    logHelper->bundleContext = context;
+    logHelper->name = celix_utils_strdup(name);
+    logHelper->logServiceTracker = NULL;
+    logHelper->stdOutFallback = false;
 
-	(*loghelper) = calloc(1, sizeof(**loghelper));
+    logHelper->stdOutFallback = celix_bundleContext_getPropertyAsBool(context, LOGHELPER_ENABLE_STDOUT_FALLBACK_NAME, LOGHELPER_ENABLE_STDOUT_FALLBACK_DEFAULT);
+    logHelper->stdOutFallbackIncludeDebug = celix_bundleContext_getPropertyAsBool(context, LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG_NAME, LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG_DEFAULT);
 
-	if (!(*loghelper))
-	{
-		status = CELIX_ENOMEM;
-	}
-	else
-	{
-		(*loghelper)->bundleContext = context;
-		(*loghelper)->logServiceTracker = NULL;
-		(*loghelper)->stdOutFallback = false;
+    pthread_mutex_init(&logHelper->logListLock, NULL);
+    arrayList_create(&logHelper->logServices);
 
-		(*loghelper)->stdOutFallback = celix_bundleContext_getPropertyAsBool(context, LOGHELPER_ENABLE_STDOUT_FALLBACK_NAME, LOGHELPER_ENABLE_STDOUT_FALLBACK_DEFAULT);
-		(*loghelper)->stdOutFallbackIncludeDebug = celix_bundleContext_getPropertyAsBool(context, LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG_NAME, LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG_DEFAULT);
+	return logHelper;
+}
 
-		pthread_mutex_init(&(*loghelper)->logListLock, NULL);
-        arrayList_create(&(*loghelper)->logServices);
-	}
-
-	return status;
+celix_status_t logHelper_create(bundle_context_pt context, log_helper_t **loghelper) {
+	*loghelper = logHelper_createWithName(context, NULL);
+	return *loghelper == NULL ? CELIX_ILLEGAL_STATE : CELIX_SUCCESS;
 }
 
 celix_status_t logHelper_start(log_helper_t *loghelper)
@@ -135,7 +128,7 @@ celix_status_t logHelper_start(log_helper_t *loghelper)
 
 
 
-celix_status_t logHelper_logServiceAdded(void *handle, service_reference_pt reference, void *service)
+static celix_status_t logHelper_logServiceAdded(void *handle, service_reference_pt reference, void *service)
 {
 	log_helper_t *loghelper = handle;
 
@@ -146,7 +139,7 @@ celix_status_t logHelper_logServiceAdded(void *handle, service_reference_pt refe
 	return CELIX_SUCCESS;
 }
 
-celix_status_t logHelper_logServiceRemoved(void *handle, service_reference_pt reference, void *service)
+static celix_status_t logHelper_logServiceRemoved(void *handle, service_reference_pt reference, void *service)
 {
 	log_helper_t *loghelper = handle;
 
@@ -193,6 +186,10 @@ celix_status_t logHelper_log(log_helper_t *loghelper, log_level_t level, const c
 	va_list listPointer;
     char msg[1024];
     msg[0] = '\0';
+    size_t prefixLen = 0;
+    if (loghelper->name != NULL) {
+        prefixLen = strlen(loghelper->name) + 3; //3 for '[] '
+    }
     bool logged = false;
 
     if(loghelper == NULL){
@@ -200,7 +197,10 @@ celix_status_t logHelper_log(log_helper_t *loghelper, log_level_t level, const c
     }
 
 	va_start(listPointer, message);
-	vsnprintf(msg, 1024, message, listPointer);
+    if (loghelper->name != NULL) {
+        snprintf(msg, 1024, "[%s] ", loghelper->name);
+    }
+	vsnprintf(msg + prefixLen, 1024 - prefixLen, message, listPointer);
 
 	pthread_mutex_lock(&loghelper->logListLock);
 
@@ -244,10 +244,11 @@ celix_status_t logHelper_log(log_helper_t *loghelper, log_level_t level, const c
         if (print) {
 			if (level == OSGI_LOGSERVICE_ERROR) {
 				fprintf(stderr, "%s: %s\n", levelStr, msg);
-				if (level == OSGI_LOGSERVICE_ERROR) {
-					char *backtrace = logHelper_backtrace();
-					fprintf(stderr, "%s", backtrace);
-					free(backtrace);
+
+                char *backtrace = logHelper_backtrace();
+                if (backtrace != NULL) {
+                    fprintf(stderr, "%s", backtrace);
+                    free(backtrace);
 				}
 			} else {
 				printf("%s: %s\n", levelStr, msg);

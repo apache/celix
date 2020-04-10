@@ -57,15 +57,11 @@ typedef struct pubsub_discovery {
     celix_thread_mutex_t discoveredEndpointsListenersMutex;
     hash_map_pt discoveredEndpointsListeners; //key=svcId, value=pubsub_discovered_endpoint_listener_t
 
-    //NOTE using pthread instead of celix mutex/cond so that condwait with abs time using a MONOTONIC clock can be used
-    pthread_mutex_t waitMutex;
-    pthread_cond_t  waitCond;
-
     celix_thread_mutex_t runningMutex;
     bool running;
+    celix_thread_cond_t  waitCond;
     celix_thread_t watchThread;
     celix_thread_t refreshTTLThread;
-
 
     //configurable by config/env.
     const char *pubsubPath;

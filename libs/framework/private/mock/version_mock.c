@@ -16,19 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * version_mock.c
- *
- *  \date       Feb 11, 2013
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
+
 
 #include "CppUTestExt/MockSupport_c.h"
 
 #include "version.h"
 
-celix_status_t version_createVersion(int major, int minor, int micro, char * qualifier, version_pt *version) {
+celix_status_t version_createVersion(int major, int minor, int micro, const char * qualifier, version_pt *version) {
 	mock_c()->actualCall("version_createVersion")
 		->withIntParameters("major", major)
 		->withIntParameters("minor", minor)

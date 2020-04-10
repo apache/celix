@@ -29,6 +29,7 @@ extern "C" {
 
 typedef struct log_helper log_helper_t;
 
+log_helper_t*  logHelper_createWithName(celix_bundle_context_t* context, const char *name);
 celix_status_t logHelper_create(celix_bundle_context_t *context, log_helper_t **log_helper);
 celix_status_t logHelper_start(log_helper_t *loghelper);
 celix_status_t logHelper_stop(log_helper_t *loghelper);
