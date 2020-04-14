@@ -27,11 +27,10 @@
 #include <zconf.h>
 #include <arpa/inet.h>
 #include <log_helper.h>
+#include "pubsub_psa_tcp_constants.h"
 #include "pubsub_tcp_topic_sender.h"
 #include "pubsub_tcp_handler.h"
-#include "pubsub_psa_tcp_constants.h"
 #include "pubsub_tcp_common.h"
-#include "pubsub_endpoint.h"
 #include <uuid/uuid.h>
 #include "celix_constants.h"
 #include <signal.h>
@@ -555,16 +554,20 @@ psa_tcp_topicPublicationSend(void *handle, unsigned int msgTypeId, const void *i
                 }
                 if (message.metadata.metadata)
                     celix_properties_destroy(message.metadata.metadata);
-                entry->msgSer->freeSerializeMsg(entry->msgSer->handle, serializedIoVecOutput, serializedIoVecOutputLen);
-                free(serializedIoVecOutput);
-                serializedIoVecOutput = 0;
+                if (serializedIoVecOutput) {
+                    entry->msgSer->freeSerializeMsg(entry->msgSer->handle,
+                                                    serializedIoVecOutput,
+                                                    serializedIoVecOutputLen);
+                    free(serializedIoVecOutput);
+                    serializedIoVecOutput = NULL;
+                }
             }
 
             if (sendOk) {
                 sendCountUpdate = 1;
             } else {
                 sendErrorUpdate = 1;
-                L_WARN("[PSA_TCP_TS] Error sending tcp.");
+                L_WARN("[PSA_TCP_TS] Error sending msg. %s", strerror(errno));
             }
         } else {
             serializationErrorUpdate = 1;
