@@ -19,6 +19,7 @@
 
 #include <pubsub_serializer.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <unistd.h>
 #include <pubsub/subscriber.h>
 #include <memory.h>
