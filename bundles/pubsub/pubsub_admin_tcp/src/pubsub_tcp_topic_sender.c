@@ -27,11 +27,10 @@
 #include <zconf.h>
 #include <arpa/inet.h>
 #include <log_helper.h>
+#include "pubsub_psa_tcp_constants.h"
 #include "pubsub_tcp_topic_sender.h"
 #include "pubsub_tcp_handler.h"
-#include "pubsub_psa_tcp_constants.h"
 #include "pubsub_tcp_common.h"
-#include "pubsub_endpoint.h"
 #include <uuid/uuid.h>
 #include "celix_constants.h"
 #include <signal.h>
@@ -396,7 +395,7 @@ static void *psa_tcp_getPublisherService(void *handle, const celix_bundle_t *req
             entry->service.send = psa_tcp_topicPublicationSend;
             hashMap_put(sender->boundedServices.map, (void *) bndId, entry);
         } else {
-            L_ERROR("Error creating serializer map for TCP TopicSender %s/%s", sender->scope, sender->topic);
+            L_ERROR("Error creating serializer map for TCP TopicSender %s/%s", sender->scope == NULL ? "(null)" : sender->scope, sender->topic);
         }
     }
     celixThreadMutex_unlock(&sender->boundedServices.mutex);
@@ -439,7 +438,7 @@ static void psa_tcp_ungetPublisherService(void *handle, const celix_bundle_t *re
 
 pubsub_admin_sender_metrics_t *pubsub_tcpTopicSender_metrics(pubsub_tcp_topic_sender_t *sender) {
     pubsub_admin_sender_metrics_t *result = calloc(1, sizeof(*result));
-    snprintf(result->scope, PUBSUB_AMDIN_METRICS_NAME_MAX, "%s", sender->scope);
+    snprintf(result->scope, PUBSUB_AMDIN_METRICS_NAME_MAX, "%s", sender->scope == NULL ? PUBSUB_DEFAULT_ENDPOINT_SCOPE : sender->scope);
     snprintf(result->topic, PUBSUB_AMDIN_METRICS_NAME_MAX, "%s", sender->topic);
     celixThreadMutex_lock(&sender->boundedServices.mutex);
     size_t count = 0;
@@ -545,16 +544,20 @@ psa_tcp_topicPublicationSend(void *handle, unsigned int msgTypeId, const void *i
                 }
                 if (message.metadata.metadata)
                     celix_properties_destroy(message.metadata.metadata);
-                entry->msgSer->freeSerializeMsg(entry->msgSer->handle, serializedIoVecOutput, serializedIoVecOutputLen);
-                free(serializedIoVecOutput);
-                serializedIoVecOutput = 0;
+                if (serializedIoVecOutput) {
+                    entry->msgSer->freeSerializeMsg(entry->msgSer->handle,
+                                                    serializedIoVecOutput,
+                                                    serializedIoVecOutputLen);
+                    free(serializedIoVecOutput);
+                    serializedIoVecOutput = NULL;
+                }
             }
 
             if (sendOk) {
                 sendCountUpdate = 1;
             } else {
                 sendErrorUpdate = 1;
-                L_WARN("[PSA_TCP_TS] Error sending tcp.");
+                L_WARN("[PSA_TCP_TS] Error sending msg. %s", strerror(errno));
             }
         } else {
             serializationErrorUpdate = 1;
