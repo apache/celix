@@ -638,13 +638,24 @@ pubsub_tcpAdmin_disconnectEndpointFromReceiver(pubsub_tcp_admin_t *psa, pubsub_t
     //note can be called with discoveredEndpoint.mutex lock
     celix_status_t status = CELIX_SUCCESS;
 
+    const char *scope = pubsub_tcpTopicReceiver_scope(receiver);
+    const char *topic = pubsub_tcpTopicReceiver_topic(receiver);
+
+    const char *eScope = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_SCOPE, NULL);
+    const char *eTopic = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_NAME, NULL);
     const char *url = celix_properties_get(endpoint, PUBSUB_TCP_URL_KEY, NULL);
 
     if (url == NULL) {
         L_WARN("[PSA TCP] Error got endpoint without tcp url");
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
-        pubsub_tcpTopicReceiver_disconnectFrom(receiver, url);
+        if (eTopic != NULL && topic != NULL && strncmp(eTopic, topic, 1024 * 1024) == 0) {
+            if (scope == NULL && eScope == NULL) {
+                pubsub_tcpTopicReceiver_disconnectFrom(receiver, url);
+            } else if (scope != NULL && eScope != NULL && strncmp(eScope, scope, 1024 * 1024) == 0) {
+                pubsub_tcpTopicReceiver_disconnectFrom(receiver, url);
+            }
+        }
     }
 
     return status;

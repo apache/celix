@@ -231,6 +231,5 @@ bool pubsubEndpoint_isValid(const celix_properties_t *props, bool requireAdminTy
         checkProp(props, PUBSUB_ENDPOINT_SERIALIZER);
     }
     bool p6 = checkProp(props, PUBSUB_ENDPOINT_TOPIC_NAME);
-
     return p1 && p2 && p3 && p4 && p5 && p6;
 }
