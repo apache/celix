@@ -65,6 +65,8 @@ static void pubsubEndpoint_setFields(celix_properties_t *ep, const char* fwUUID,
 
     if (scope != NULL) {
         celix_properties_set(ep, PUBSUB_ENDPOINT_TOPIC_SCOPE, scope);
+    } else {
+        celix_properties_set(ep, PUBSUB_ENDPOINT_TOPIC_SCOPE, PUBSUB_DEFAULT_ENDPOINT_SCOPE);
     }
 
     if (topic != NULL) {
@@ -159,12 +161,11 @@ celix_properties_t* pubsubEndpoint_createFromPublisherTrackerInfo(bundle_context
     char* topic = NULL;
     char* scopeFromFilter = NULL;
     pubsub_getPubSubInfoFromFilter(filter, &scopeFromFilter, &topic);
-    const char *scope = scopeFromFilter == NULL ? "default" : scopeFromFilter;
+    const char *scope = scopeFromFilter;
 
     struct retrieve_topic_properties_data data;
     data.props = NULL;
     data.isPublisher = true;
-    data.scope = scope;
     data.topic = topic;
     celix_bundleContext_useBundle(ctx, bundleId, &data, retrieveTopicProperties);
 
@@ -197,7 +198,11 @@ bool pubsubEndpoint_equals(const celix_properties_t *psEp1, const celix_properti
 
 char* pubsubEndpoint_createScopeTopicKey(const char* scope, const char* topic) {
     char *result = NULL;
-    asprintf(&result, "%s:%s", scope, topic);
+    if (scope != NULL) {
+        asprintf(&result, "%s:%s", scope, topic);
+    } else {
+        asprintf(&result, "default:%s", topic);
+    }
     return result;
 }
 
@@ -223,7 +228,5 @@ bool pubsubEndpoint_isValid(const celix_properties_t *props, bool requireAdminTy
         checkProp(props, PUBSUB_ENDPOINT_SERIALIZER);
     }
     bool p6 = checkProp(props, PUBSUB_ENDPOINT_TOPIC_NAME);
-    bool p7 = checkProp(props, PUBSUB_ENDPOINT_TOPIC_SCOPE);
-
-    return p1 && p2 && p3 && p4 && p5 && p6 && p7;
+    return p1 && p2 && p3 && p4 && p5 && p6;
 }
