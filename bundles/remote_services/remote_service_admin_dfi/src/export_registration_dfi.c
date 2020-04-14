@@ -28,6 +28,7 @@
 #include "celix_constants.h"
 #include "export_registration_dfi.h"
 #include "dfi_utils.h"
+#include "remote_interceptors_handler.h"
 
 struct export_reference {
     endpoint_description_t *endpoint; //owner
@@ -46,6 +47,8 @@ struct export_registration {
 
     //TODO add tracker and lock
     bool closed;
+
+    remote_interceptors_handler_t *interceptorsHandler;
 
     FILE *logFile;
 };
@@ -79,6 +82,8 @@ celix_status_t exportRegistration_create(log_helper_t *helper, service_reference
         reg->closed = false;
         reg->logFile = logFile;
         reg->servId = strndup(servId, 1024);
+
+        remoteInterceptorsHandler_create(context, &reg->interceptorsHandler);
 
         celixThreadMutex_create(&reg->mutex, NULL);
     }
@@ -129,23 +134,39 @@ celix_status_t exportRegistration_create(log_helper_t *helper, service_reference
     return status;
 }
 
-celix_status_t exportRegistration_call(export_registration_t *export, char *data, int datalength, char **responseOut, int *responseLength) {
+celix_status_t exportRegistration_call(export_registration_t *export, char *data, int datalength, celix_properties_t *metadata, char **responseOut, int *responseLength) {
     int status = CELIX_SUCCESS;
 
     *responseLength = -1;
-    celixThreadMutex_lock(&export->mutex);
-    status = jsonRpc_call(export->intf, export->service, data, responseOut);
-    celixThreadMutex_unlock(&export->mutex);
+    json_error_t error;
+    json_t *js_request = json_loads(data, 0, &error);
+    const char *sig;
+    if (js_request) {
+        if (json_unpack(js_request, "{s:s}", "m", &sig) == 0) {
+            bool cont = remoteInterceptorHandler_invokePreExportCall(export->interceptorsHandler, export->exportReference.endpoint->properties, sig, &metadata);
+            if (cont) {
+                celixThreadMutex_lock(&export->mutex);
+                status = jsonRpc_call(export->intf, export->service, data, responseOut);
+                celixThreadMutex_unlock(&export->mutex);
 
-    //printf("calling for '%s'\n");
-    if (export->logFile != NULL) {
-        static int callCount = 0;
-        char *name = NULL;
-        dynInterface_getName(export->intf, &name);
-        fprintf(export->logFile, "REMOTE CALL %i\n\tservice=%s\n\tservice_id=%s\n\trequest_payload=%s\n\tstatus=%i\n", callCount, name, export->servId, data, status);
-        fflush(export->logFile);
-        callCount += 1;
+                remoteInterceptorHandler_invokePostExportCall(export->interceptorsHandler, export->exportReference.endpoint->properties, sig, metadata);
+            }
+
+            //printf("calling for '%s'\n");
+            if (export->logFile != NULL) {
+                static int callCount = 0;
+                char *name = NULL;
+                dynInterface_getName(export->intf, &name);
+                fprintf(export->logFile, "REMOTE CALL %i\n\tservice=%s\n\tservice_id=%s\n\trequest_payload=%s\n\tstatus=%i\n", callCount, name, export->servId, data, status);
+                fflush(export->logFile);
+                callCount += 1;
+            }
+        }
+    } else {
+        status = CELIX_ILLEGAL_ARGUMENT;
     }
+
+    json_decref(js_request);
 
     return status;
 }
@@ -197,6 +218,9 @@ void exportRegistration_destroy(export_registration_t *reg) {
         if (reg->servId != NULL) {
             free(reg->servId);
         }
+
+        remoteInterceptorsHandler_destroy(reg->interceptorsHandler);
+
         celixThreadMutex_destroy(&reg->mutex);
 
         free(reg);

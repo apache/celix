@@ -32,7 +32,7 @@ void exportRegistration_destroy(export_registration_t *registration);
 celix_status_t exportRegistration_start(export_registration_t *registration);
 celix_status_t exportRegistration_stop(export_registration_t *registration);
 
-celix_status_t exportRegistration_call(export_registration_t *export, char *data, int datalength, char **response, int *responseLength);
+celix_status_t exportRegistration_call(export_registration_t *export, char *data, int datalength, celix_properties_t *metadata, char **response, int *responseLength);
 
 
 #endif //CELIX_EXPORT_REGISTRATION_DFI_H

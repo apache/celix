@@ -25,7 +25,7 @@
 
 #include <celix_errno.h>
 
-typedef void (*send_func_type)(void *handle, endpoint_description_t *endpointDescription, char *request, char **reply, int* replyStatus);
+typedef void (*send_func_type)(void *handle, endpoint_description_t *endpointDescription, char *request, celix_properties_t *metadata, char **reply, int* replyStatus);
 
 celix_status_t importRegistration_create(celix_bundle_context_t *context, endpoint_description_t *description, const char *classObject, const char* serviceVersion, FILE *logFile,
                                          import_registration_t **import);
