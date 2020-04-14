@@ -166,6 +166,7 @@ celix_properties_t* pubsubEndpoint_createFromPublisherTrackerInfo(bundle_context
     struct retrieve_topic_properties_data data;
     data.props = NULL;
     data.isPublisher = true;
+    data.scope = scope;
     data.topic = topic;
     celix_bundleContext_useBundle(ctx, bundleId, &data, retrieveTopicProperties);
 
