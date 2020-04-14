@@ -111,6 +111,13 @@ typedef struct psa_zmq_bounded_service_entry {
     int getCount;
 } psa_zmq_bounded_service_entry_t;
 
+typedef struct psa_zmq_zerocopy_free_entry {
+    pubsub_msg_serializer_t *msgSer;
+    struct iovec *serializedOutput;
+    size_t serializedOutputLen;
+} psa_zmq_zerocopy_free_entry;
+
+
 static void* psa_zmq_getPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties);
 static void psa_zmq_ungetPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties);
 static unsigned int rand_range(unsigned int min, unsigned int max);
@@ -500,8 +507,15 @@ pubsub_admin_sender_metrics_t* pubsub_zmqTopicSender_metrics(pubsub_zmq_topic_se
     return result;
 }
 
-static void psa_zmq_freeMsg(void *msg, void *hint __attribute__((unused))) {
-    free(msg);
+static void psa_zmq_freeMsg(void *msg, void *hint) {
+    if(hint) {
+        psa_zmq_zerocopy_free_entry *entry = hint;
+        entry->msgSer->freeSerializeMsg(entry->msgSer->handle, entry->serializedOutput, entry->serializedOutputLen);
+        free(entry->serializedOutput);
+        free(entry);
+    } else {
+        free(msg);
+    }
 }
 
 static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, const void *inMsg, celix_properties_t *metadata) {
@@ -549,6 +563,9 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
                 void *payloadData = NULL;
                 size_t payloadLength = 0;
                 entry->protSer->encodePayload(entry->protSer->handle, &message, &payloadData, &payloadLength);
+                if(payloadLength > 1000000) {
+                    printf("ERR LARGE PAYLOAD DETECTED\n");
+                }
 
                 void *metadataData = NULL;
                 size_t metadataLength = 0;
@@ -557,6 +574,10 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
                     entry->protSer->encodeMetadata(entry->protSer->handle, &message, &metadataData, &metadataLength);
                 } else {
                     message.metadata.metadata = NULL;
+                }
+
+                if(metadataLength > 1000000) {
+                    printf("ERR LARGE METADATA DETECTED\n");
                 }
 
                 message.header.msgId = msgTypeId;
@@ -581,8 +602,12 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
                     zmq_msg_t msg2; // Payload
                     zmq_msg_t msg3; // Metadata
                     void *socket = zsock_resolve(sender->zmq.socket);
+                    psa_zmq_zerocopy_free_entry *freeMsgEntry = malloc(sizeof(psa_zmq_zerocopy_free_entry));
+                    freeMsgEntry->msgSer = entry->msgSer;
+                    freeMsgEntry->serializedOutput = serializedOutput;
+                    freeMsgEntry->serializedOutputLen = serializedOutputLen;
 
-                    zmq_msg_init_data(&msg1, headerData, headerLength, psa_zmq_freeMsg, bound);
+                    zmq_msg_init_data(&msg1, headerData, headerLength, psa_zmq_freeMsg, NULL);
                     //send header
                     int rc = zmq_msg_send(&msg1, socket, ZMQ_SNDMORE);
                     if (rc == -1) {
@@ -592,7 +617,11 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
 
                     //send Payload
                     if (rc > 0) {
-                        zmq_msg_init_data(&msg2, payloadData, payloadLength, psa_zmq_freeMsg, bound);
+                        if(metadataLength > 0) {
+                            zmq_msg_init_data(&msg2, payloadData, payloadLength, psa_zmq_freeMsg, NULL);
+                        } else {
+                            zmq_msg_init_data(&msg2, payloadData, payloadLength, psa_zmq_freeMsg, freeMsgEntry);
+                        }
                         int flags = 0;
                         if (metadataLength > 0) {
                             flags = ZMQ_SNDMORE;
@@ -606,7 +635,7 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
 
                     //send MetaData
                     if (rc > 0 && metadataLength > 0) {
-                        zmq_msg_init_data(&msg3, metadataData, metadataLength, psa_zmq_freeMsg, bound);
+                        zmq_msg_init_data(&msg3, metadataData, metadataLength, psa_zmq_freeMsg, freeMsgEntry);
                         rc = zmq_msg_send(&msg3, socket, 0);
                         if (rc == -1) {
                             L_WARN("Error sending metadata msg. %s", strerror(errno));
@@ -629,16 +658,24 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
                         zmsg_destroy(&msg); //if send was not ok, no owner change -> destroy msg
                     }
 
-                    if (headerData) free(headerData);
+                    if (headerData) {
+                        free(headerData);
+                    }
                     // Note: serialized Payload is deleted by serializer
-                    if (payloadData && (payloadData != message.payload.payload)) free(payloadData);
-                    if (metadataData) free(metadataData);
+                    if (payloadData && (payloadData != message.payload.payload)) {
+                        free(payloadData);
+                    }
+                    if (metadataData) {
+                        free(metadataData);
+                    }
                 }
 
                 pubsubInterceptorHandler_invokePostSend(sender->interceptorsHandler, entry->msgSer->msgName, msgTypeId, inMsg, metadata);
 
-                if (message.metadata.metadata) celix_properties_destroy(message.metadata.metadata);
-                if (serializedOutput) {
+                if (message.metadata.metadata) {
+                    celix_properties_destroy(message.metadata.metadata);
+                }
+                if (!bound->parent->zeroCopyEnabled && serializedOutput) {
                     entry->msgSer->freeSerializeMsg(entry->msgSer->handle, serializedOutput, serializedOutputLen);
                     free(serializedOutput);
                 }
