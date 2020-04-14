@@ -24,6 +24,8 @@ if (RSA_EXAMPLES)
     add_subdirectory(remote_example_api)
     add_subdirectory(remote_example_service)
 
+    add_subdirectory(interceptors)
+
 
 #    TODO refactor shm remote service admin to use dfi
 #    if (BUILD_RSA_REMOTE_SERVICE_ADMIN_SHM AND BUILD_RSA_DISCOVERY_SHM)
@@ -59,6 +61,7 @@ if (RSA_EXAMPLES)
                 Celix::shell_tui
                 Celix::log_service
                 Celix::log_writer_stdout
+                celix_remote_interceptors_example
                 calculator
             PROPERTIES
                 RSA_PORT=18888
@@ -74,6 +77,7 @@ if (RSA_EXAMPLES)
                 Celix::log_service
                 Celix::log_writer_stdout
                 Celix::rsa_discovery_etcd
+                celix_remote_interceptors_example
                 calculator_shell
             PROPERTIES
                 RSA_PORT=28888
