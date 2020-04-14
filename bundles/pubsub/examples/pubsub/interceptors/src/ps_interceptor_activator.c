@@ -55,6 +55,8 @@ static int interceptor_start(struct interceptorActivator *act, celix_bundle_cont
 
     act->interceptorSvcId = celix_bundleContext_registerServiceWithOptions(ctx, &opts);
 
+    free(interceptorSvc);
+
     pubsub_interceptor_t *secondInterceptorSvc = calloc(1, sizeof(*secondInterceptorSvc));
     second_interceptor_t *secondInterceptor = NULL;
     secondInterceptor_create(&secondInterceptor);
@@ -77,6 +79,8 @@ static int interceptor_start(struct interceptorActivator *act, celix_bundle_cont
     secondOpts.properties = secondProps;
 
     act->secondInterceptorSvcId = celix_bundleContext_registerServiceWithOptions(ctx, &secondOpts);
+
+    free(secondInterceptorSvc);
 
     return 0;
 }
