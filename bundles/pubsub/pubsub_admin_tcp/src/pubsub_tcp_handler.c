@@ -433,7 +433,7 @@ int pubsub_tcpHandler_connect(pubsub_tcpHandler_t *handle, char *url) {
         if ((rc >= 0) && (entry)) {
 #if defined(__APPLE__)
             struct kevent ev;
-            EV_SET (&ev, entry->fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, 0);
+            EV_SET (&ev, entry->fd, EVFILT_READ | EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, 0);
             rc = kevent (handle->efd, &ev, 1, NULL, 0, NULL);
 #else
             struct epoll_event event;
@@ -453,6 +453,7 @@ int pubsub_tcpHandler_connect(pubsub_tcpHandler_t *handle, char *url) {
             hashMap_put(handle->connection_url_map, entry->url, entry);
             hashMap_put(handle->connection_fd_map, (void *) (intptr_t) entry->fd, entry);
             celixThreadRwlock_unlock(&handle->dbLock);
+            pubsub_tcpHandler_connectionHandler(handle, fd);
         }
         pubsub_utils_url_free(url_info);
     }
@@ -1202,18 +1203,6 @@ void pubsub_tcpHandler_connectionHandler(pubsub_tcpHandler_t *handle, int fd) {
             if (handle->receiverConnectMessageCallback)
                 handle->receiverConnectMessageCallback(handle->receiverConnectPayload, entry->url, false);
             entry->connected = true;
-#if defined(__APPLE__)
-            rc = 0;
-#else
-            struct epoll_event event;
-            bzero(&event, sizeof(event)); // zero the struct
-            event.events = EPOLLIN | EPOLLRDHUP | EPOLLERR;
-            event.data.fd = fd;
-            // Register Modify epoll
-            rc = epoll_ctl(handle->efd, EPOLL_CTL_MOD, fd, &event);
-#endif
-            if (rc < 0)
-                L_ERROR("[TCP Socket] Cannot create poll\n");
         }
     celixThreadRwlock_unlock(&handle->dbLock);
 }
@@ -1294,11 +1283,10 @@ void pubsub_tcpHandler_handler(pubsub_tcpHandler_t *handle) {
                     pendingConnectionEntry = entry;
             }
             if (pendingConnectionEntry) {
-                pubsub_tcpHandler_acceptHandler(handle, pendingConnectionEntry);
+               int fd = pubsub_tcpHandler_acceptHandler(handle, pendingConnectionEntry);
+               pubsub_tcpHandler_connectionHandler(handle, fd);
             } else if (events[i].events & EPOLLIN) {
                 pubsub_tcpHandler_readHandler(handle, events[i].data.fd);
-            } else if (events[i].events & EPOLLOUT) {
-                pubsub_tcpHandler_connectionHandler(handle, events[i].data.fd);
             } else if (events[i].events & EPOLLRDHUP) {
                 int err = 0;
                 socklen_t len = sizeof(int);
