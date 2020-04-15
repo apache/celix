@@ -181,7 +181,9 @@ celix_properties_t* pubsubEndpoint_createFromPublisherTrackerInfo(bundle_context
     }
 
     free(topic);
-    free(scopeFromFilter);
+    if (scope != NULL) {
+        free(scopeFromFilter);
+    }
 
     return ep;
 }

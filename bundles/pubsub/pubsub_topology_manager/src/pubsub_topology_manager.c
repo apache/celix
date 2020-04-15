@@ -126,7 +126,9 @@ celix_status_t pubsub_topologyManager_destroy(pubsub_topology_manager_t *manager
         pstm_topic_receiver_or_sender_entry_t *entry = hashMapIterator_nextValue(&iter);
         if (entry != NULL) {
             free(entry->scopeAndTopicKey);
-            free(entry->scope);
+            if (entry->scope != NULL) {
+                free(entry->scope);
+            }
             free(entry->topic);
             if (entry->topicProperties != NULL) {
                 celix_properties_destroy(entry->topicProperties);
@@ -148,7 +150,9 @@ celix_status_t pubsub_topologyManager_destroy(pubsub_topology_manager_t *manager
         pstm_topic_receiver_or_sender_entry_t *entry = hashMapIterator_nextValue(&iter);
         if (entry != NULL) {
             free(entry->scopeAndTopicKey);
-            free(entry->scope);
+            if (entry->scope != NULL) {
+                free(entry->scope);
+            }
             free(entry->topic);
             if (entry->topicProperties != NULL) {
                 celix_properties_destroy(entry->topicProperties);
@@ -453,7 +457,9 @@ void pubsub_topologyManager_publisherTrackerAdded(void *handle, const celix_serv
     pstm_topic_receiver_or_sender_entry_t *entry = hashMap_get(manager->topicSenders.map, scopeAndTopicKey);
     if (entry != NULL) {
         entry->usageCount += 1;
-        free(scope);
+        if (scope != NULL) {
+            free(scope);
+        }
         free(topic);
         free(scopeAndTopicKey);
     } else {
@@ -494,7 +500,9 @@ void pubsub_topologyManager_publisherTrackerRemoved(void *handle, const celix_se
     const char *scope = scopeFromFilter;
 
     if (topic == NULL) {
-        free(scopeFromFilter);
+        if (scopeFromFilter != NULL) {
+            free(scopeFromFilter);
+        }
         return;
     }
 
@@ -509,7 +517,9 @@ void pubsub_topologyManager_publisherTrackerRemoved(void *handle, const celix_se
 
     free(scopeAndTopicKey);
     free(topic);
-    free(scopeFromFilter);
+    if (scopeFromFilter != NULL) {
+        free(scopeFromFilter);
+    }
 }
 
 celix_status_t pubsub_topologyManager_addDiscoveredEndpoint(void *handle, const celix_properties_t *endpoint) {
@@ -656,7 +666,9 @@ static void pstm_teardownTopicSenders(pubsub_topology_manager_t *manager) {
                 //no usage -> remove
                 hashMapIterator_remove(&iter);
                 free(entry->scopeAndTopicKey);
-                free(entry->scope);
+                if (entry->scope != NULL) {
+                    free(entry->scope);
+                }
                 free(entry->topic);
                 if (entry->topicProperties != NULL) {
                     celix_properties_destroy(entry->topicProperties);
@@ -721,7 +733,9 @@ static void pstm_teardownTopicReceivers(pubsub_topology_manager_t *manager) {
                 hashMapIterator_remove(&iter);
                 //cleanup entry
                 free(entry->scopeAndTopicKey);
-                free(entry->scope);
+                if (entry->scope != NULL) {
+                    free(entry->scope);
+                }
                 free(entry->topic);
                 if (entry->topicProperties != NULL) {
                     celix_properties_destroy(entry->topicProperties);

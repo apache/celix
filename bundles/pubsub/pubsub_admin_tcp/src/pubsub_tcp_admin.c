@@ -516,7 +516,7 @@ celix_status_t pubsub_tcpAdmin_setupTopicReceiver(void *handle, const char *scop
                                                       &psa->endpointStore, serializerSvcId, serEntry->svc,
                                                       protocolSvcId, protEntry->svc);
         } else {
-            L_ERROR("[PSA_TCP] Cannot find serializer for TopicSender %s/%s", scope == NULL ? "(null)" : scope, topic);
+            L_ERROR("[PSA_TCP] Cannot find serializer or protocol for TopicSender %s/%s", scope == NULL ? "(null)" : scope, topic);
         }
         if (receiver != NULL) {
             const char *psaType = PUBSUB_TCP_ADMIN_TYPE;
@@ -549,9 +549,7 @@ celix_status_t pubsub_tcpAdmin_setupTopicReceiver(void *handle, const char *scop
         hash_map_iterator_t iter = hashMapIterator_construct(psa->discoveredEndpoints.map);
         while (hashMapIterator_hasNext(&iter)) {
             celix_properties_t *endpoint = hashMapIterator_nextValue(&iter);
-            const char *type = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TYPE, NULL);
-            if (type != NULL &&
-                strncmp(PUBSUB_PUBLISHER_ENDPOINT_TYPE, type, strlen(PUBSUB_PUBLISHER_ENDPOINT_TYPE)) == 0) {
+            if (pubsub_tcpAdmin_endpointIsPublisher(endpoint)) {
                 pubsub_tcpAdmin_connectEndpointToReceiver(psa, receiver, endpoint);
             }
         }
@@ -620,6 +618,7 @@ celix_status_t pubsub_tcpAdmin_addDiscoveredEndpoint(void *handle, const celix_p
         if (receiver != NULL) {
             pubsub_tcpAdmin_connectEndpointToReceiver(psa, receiver, endpoint);
         }
+        free(key);
         celixThreadMutex_unlock(&psa->topicReceivers.mutex);
     }
 

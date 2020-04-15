@@ -232,7 +232,6 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
 
     receiver->subscribers.map = hashMap_create(NULL, NULL, NULL, NULL);
     receiver->requestedConnections.map = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
-    receiver->requestedConnections.allConnected = false;
 
     if ((staticConnectUrls != NULL) && (receiver->socketHandler != NULL) && (staticServerEndPointUrls == NULL)) {
         char *urlsCopy = strndup(staticConnectUrls, 1024 * 1024);
@@ -245,6 +244,7 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
             entry->url = strndup(url, 1024 * 1024);
             entry->parent = receiver;
             hashMap_put(receiver->requestedConnections.map, entry->url, entry);
+            receiver->requestedConnections.allConnected = false;
         }
         free(urlsCopy);
     }
@@ -694,7 +694,7 @@ static void psa_tcp_connectToAllRequestedConnections(pubsub_tcp_topic_receiver_t
             if (!entry->connected) {
                 int rc = pubsub_tcpHandler_connect(entry->parent->socketHandler, entry->url);
                 if (rc < 0) {
-                    //L_WARN("[PSA_TCP] Error connecting to tcp url %s\n", entry->url);
+                    //L_WARN("[PSA_TCP] Error connecting to tcp url %s. (%s)", entry->url, strerror(errno));
                     allConnected = false;
                 }
             }
