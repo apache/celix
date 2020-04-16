@@ -31,19 +31,19 @@ int main(int argc, char **argv) {
 }
 
 TEST_GROUP(PUBSUB_INT_GROUP) {
-    celix_framework_t *fw = NULL;
-    celix_bundle_context_t *ctx = NULL;
-    void setup() {
+    celix_framework_t *fw = nullptr;
+    celix_bundle_context_t *ctx = nullptr;
+    void setup() override {
         celixLauncher_launch("config.properties", &fw);
         ctx = celix_framework_getFrameworkContext(fw);
     }
 
-    void teardown() {
+    void teardown() override {
         celixLauncher_stop(fw);
         celixLauncher_waitForShutdown(fw);
         celixLauncher_destroy(fw);
-        ctx = NULL;
-        fw = NULL;
+        ctx = nullptr;
+        fw = nullptr;
     }
 };
 
