@@ -18,24 +18,31 @@
  */
 
 
+#include <thread>
 #include <iostream>
 #include "celix/Deferred.h"
+
+static long calc_fib(long n) {
+    long m = 1;
+    long k = 0;
+    for (long i = 0; i <= n; ++i) {
+        int tmp = m + k;
+        m = k;
+        k = tmp;
+    }
+    return m;
+}
 
 celix::Promise<long> fib(long n) {
     auto deferred = celix::Deferred<long>{};
 
     if (n <= 0) {
-        deferred.fail(std::logic_error{"Requires more than 2"});
+        deferred.fail(std::logic_error{"argument must be positive"});
+    } else if (n < 10 ) {
+        deferred.resolve(calc_fib(n));
     } else {
         std::thread t{[deferred, n] () mutable {
-            long m = 1;
-            long k = 0;
-            for (long i = 1; i <= n; ++i) {
-                int tmp = m + k;
-                m = k;
-                k = tmp;
-            }
-            deferred.resolve(m);
+            deferred.resolve(calc_fib(n));
         }};
         t.detach();
     }
@@ -44,13 +51,20 @@ celix::Promise<long> fib(long n) {
 }
 
 int main() {
-    auto p1 = fib(100);
-    p1.timeout(std::chrono::seconds{5}).onSuccess([](long val) {
-        std::cout << "Found result p1 " << val << std::endl;
+    auto p1 = fib(39);
+    p1.timeout(std::chrono::milliseconds{100})
+    .onSuccess([](long val) {
+        std::cout << "Success p1 : " << val << std::endl;
+    })
+    .onFailure([](const std::exception& e) {
+        std::cerr << "Failure p1 : " << e.what() << std::endl;
     });
-    auto p2 = fib(1000);
-    p2.timeout(std::chrono::seconds{5}).onSuccess([](long val) {
-        std::cout << "Found result p2 " << val << std::endl;
+    auto p2 = fib(1000000000);
+    p2.timeout(std::chrono::milliseconds {100}).onSuccess([](long val) {
+        std::cout << "Success p2 : " << std::to_string(val) << std::endl;
+    })
+    .onFailure([](const std::exception& e) {
+        std::cerr << "Failure p2 : " << e.what() << std::endl;
     });
     p1.wait();
     p2.wait();

@@ -283,6 +283,7 @@ inline std::shared_ptr<celix::impl::SharedPromiseState<T>> celix::impl::SharedPr
     state->executor.execute([duration, p]{
         std::this_thread::sleep_for(duration); //TODO use scheduler instead of sleep on thread (using unnecessary resources)
         p->tryFail(std::make_exception_ptr(celix::PromiseTimeoutException{}));
+        //TODO is a callback to deferred needed to abort ?
     });
     return p;
 }
