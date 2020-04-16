@@ -564,7 +564,7 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
                 size_t payloadLength = 0;
                 entry->protSer->encodePayload(entry->protSer->handle, &message, &payloadData, &payloadLength);
                 if(payloadLength > 1000000) {
-                    printf("ERR LARGE PAYLOAD DETECTED\n");
+                    L_WARN("ERR LARGE PAYLOAD DETECTED\n");
                 }
 
                 void *metadataData = NULL;
@@ -577,7 +577,7 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
                 }
 
                 if(metadataLength > 1000000) {
-                    printf("ERR LARGE METADATA DETECTED\n");
+                    L_WARN("ERR LARGE METADATA DETECTED\n");
                 }
 
                 message.header.msgId = msgTypeId;

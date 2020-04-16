@@ -26,23 +26,22 @@
 struct interceptorActivator {
     first_interceptor_t *interceptor;
     uint64_t interceptorSvcId;
-    pubsub_interceptor_t *interceptorSvc;
+    pubsub_interceptor_t interceptorSvc;
 
     second_interceptor_t *secondInterceptor;
     uint64_t secondInterceptorSvcId;
-    pubsub_interceptor_t *secondInterceptorSvc;
+    pubsub_interceptor_t secondInterceptorSvc;
 };
 
 static int interceptor_start(struct interceptorActivator *act, celix_bundle_context_t *ctx) {
-    act->interceptorSvc = calloc(1,sizeof(pubsub_interceptor_t));
     first_interceptor_t *interceptor = NULL;
     firstInterceptor_create(&interceptor);
 
-    act->interceptorSvc->handle = interceptor;
-    act->interceptorSvc->preSend = firstInterceptor_preSend;
-    act->interceptorSvc->postSend = firstInterceptor_postSend;
-    act->interceptorSvc->preReceive = firstInterceptor_preReceive;
-    act->interceptorSvc->postReceive = firstInterceptor_postReceive;
+    act->interceptorSvc.handle = interceptor;
+    act->interceptorSvc.preSend = firstInterceptor_preSend;
+    act->interceptorSvc.postSend = firstInterceptor_postSend;
+    act->interceptorSvc.preReceive = firstInterceptor_preReceive;
+    act->interceptorSvc.postReceive = firstInterceptor_postReceive;
 
     act->interceptor = interceptor;
 
@@ -50,22 +49,21 @@ static int interceptor_start(struct interceptorActivator *act, celix_bundle_cont
     celix_properties_setLong(props, OSGI_FRAMEWORK_SERVICE_RANKING, 10);
 
     celix_service_registration_options_t opts = CELIX_EMPTY_SERVICE_REGISTRATION_OPTIONS;
-    opts.svc = act->interceptorSvc;
+    opts.svc = &act->interceptorSvc;
     opts.serviceName = PUBSUB_INTERCEPTOR_SERVICE_NAME;
     opts.serviceVersion = PUBSUB_INTERCEPTOR_SERVICE_VERSION;
     opts.properties = props;
 
     act->interceptorSvcId = celix_bundleContext_registerServiceWithOptions(ctx, &opts);
 
-    act->secondInterceptorSvc = calloc(1, sizeof(pubsub_interceptor_t));
     second_interceptor_t *secondInterceptor = NULL;
     secondInterceptor_create(&secondInterceptor);
 
-    act->secondInterceptorSvc->handle = secondInterceptor;
-    act->secondInterceptorSvc->preSend = secondInterceptor_preSend;
-    act->secondInterceptorSvc->postSend = secondInterceptor_postSend;
-    act->secondInterceptorSvc->preReceive = secondInterceptor_preReceive;
-    act->secondInterceptorSvc->postReceive = secondInterceptor_postReceive;
+    act->secondInterceptorSvc.handle = secondInterceptor;
+    act->secondInterceptorSvc.preSend = secondInterceptor_preSend;
+    act->secondInterceptorSvc.postSend = secondInterceptor_postSend;
+    act->secondInterceptorSvc.preReceive = secondInterceptor_preReceive;
+    act->secondInterceptorSvc.postReceive = secondInterceptor_postReceive;
 
     act->secondInterceptor = secondInterceptor;
 
@@ -73,7 +71,7 @@ static int interceptor_start(struct interceptorActivator *act, celix_bundle_cont
     celix_properties_setLong(secondProps, OSGI_FRAMEWORK_SERVICE_RANKING, 20);
 
     celix_service_registration_options_t secondOpts = CELIX_EMPTY_SERVICE_REGISTRATION_OPTIONS;
-    secondOpts.svc = act->secondInterceptorSvc;
+    secondOpts.svc = &act->secondInterceptorSvc;
     secondOpts.serviceName = PUBSUB_INTERCEPTOR_SERVICE_NAME;
     secondOpts.serviceVersion = PUBSUB_INTERCEPTOR_SERVICE_VERSION;
     secondOpts.properties = secondProps;
@@ -89,9 +87,6 @@ static int interceptor_stop(struct interceptorActivator *act, celix_bundle_conte
 
     celix_bundleContext_unregisterService(ctx, act->secondInterceptorSvcId);
     secondInterceptor_destroy(act->secondInterceptor);
-
-    free(act->interceptorSvc);
-    free(act->secondInterceptorSvc);
 
     return 0;
 }
