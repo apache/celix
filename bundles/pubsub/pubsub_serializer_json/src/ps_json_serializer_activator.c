@@ -26,7 +26,7 @@
 
 typedef struct psjs_activator {
     pubsub_json_serializer_t* serializer;
-    pubsub_json_serialization_provider_t *provider;
+    pubsub_serialization_provider_t *provider;
 
     pubsub_serializer_service_t serializerSvc;
     long serializerSvcId;

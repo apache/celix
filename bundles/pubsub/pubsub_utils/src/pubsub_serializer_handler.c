@@ -156,6 +156,7 @@ void pubsub_serializerHandler_destroy(pubsub_serializer_handler_t* handler) {
             celix_arrayList_destroy(entries);
         }
         hashMap_destroy(handler->serializationServices, false, false);
+        logHelper_destroy(&handler->logHelper);
         free(handler);
     }
 }

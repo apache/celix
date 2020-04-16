@@ -20,12 +20,15 @@
 #ifndef CELIX_PUBSUB_SERIALIZER_HANDLER_H
 #define CELIX_PUBSUB_SERIALIZER_HANDLER_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <stdint.h>
 
 #include "celix_api.h"
 #include "pubsub_message_serialization_service.h"
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct pubsub_serializer_handler pubsub_serializer_handler_t; //opaque type
 

@@ -17,8 +17,8 @@
  *under the License.
  */
 
-#ifndef CELIX_PUBSUB_JSON_SERIALIZATION_PROVIDER_H
-#define CELIX_PUBSUB_JSON_SERIALIZATION_PROVIDER_H
+#ifndef CELIX_PUBSUB_AVROBIN_SERIALIZATION_PROVIDER_H
+#define CELIX_PUBSUB_AVROBIN_SERIALIZATION_PROVIDER_H
 
 #include "pubsub_serialization_provider.h"
 
@@ -26,15 +26,15 @@
 extern "C" {
 #endif
 
-pubsub_serialization_provider_t* pubsub_jsonSerializationProvider_create(celix_bundle_context_t *ctx);
+pubsub_serialization_provider_t* pubsub_avrobinSerializationProvider_create(celix_bundle_context_t *ctx);
 
 /**
- * Destroys the provided JSON Serialization Provider.
+ * Destroys the provided AVRO-bin Serialization Provider.
  */
-void pubsub_jsonSerializationProvider_destroy(pubsub_serialization_provider_t *provider);
+void pubsub_avrobinSerializationProvider_destroy(pubsub_serialization_provider_t *provider);
 
 #ifdef __cplusplus
 };
 #endif
 
-#endif //CELIX_PUBSUB_JSON_SERIALIZATION_PROVIDER_H
+#endif //CELIX_PUBSUB_AVROBIN_SERIALIZATION_PROVIDER_H

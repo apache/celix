@@ -24,9 +24,9 @@
 #include <celix_api.h>
 #include "pubsub_serializer_handler.h"
 
-class PubSubMsgSerializationTestSuite : public ::testing::Test {
+class PubSubSerializationHandlerTestSuite : public ::testing::Test {
 public:
-    PubSubMsgSerializationTestSuite() {
+    PubSubSerializationHandlerTestSuite() {
         auto* props = celix_properties_create();
         celix_properties_set(props, OSGI_FRAMEWORK_FRAMEWORK_STORAGE, ".pubsub_utils_cache");
         auto* fwPtr = celix_frameworkFactory_createFramework(props);
@@ -36,21 +36,21 @@ public:
 
         msgSerSvc.handle = this;
         msgSerSvc.serialize = [](void* handle, const void*, struct iovec**, size_t*) -> celix_status_t {
-            auto* suite = static_cast<PubSubMsgSerializationTestSuite*>(handle);
+            auto* suite = static_cast<PubSubSerializationHandlerTestSuite*>(handle);
             suite->serializeCallCount += 1;
             return CELIX_SUCCESS;
         };
         msgSerSvc.freeSerializedMsg = [](void* handle, struct iovec* , size_t) {
-            auto* suite = static_cast<PubSubMsgSerializationTestSuite*>(handle);
+            auto* suite = static_cast<PubSubSerializationHandlerTestSuite*>(handle);
             suite->freeSerializedMsgCallCount += 1;
         };
         msgSerSvc.deserialize = [](void* handle, const struct iovec*, size_t, void**) -> celix_status_t {
-            auto* suite = static_cast<PubSubMsgSerializationTestSuite*>(handle);
+            auto* suite = static_cast<PubSubSerializationHandlerTestSuite*>(handle);
             suite->deserializeCallCount += 1;
             return CELIX_SUCCESS;
         };
         msgSerSvc.freeDeserializedMsg = [](void* handle, void*) {
-            auto* suite = static_cast<PubSubMsgSerializationTestSuite*>(handle);
+            auto* suite = static_cast<PubSubSerializationHandlerTestSuite*>(handle);
             suite->freeDeserializedMsgCallCount += 1;
         };
     }
@@ -69,8 +69,8 @@ public:
         return celix_bundleContext_registerServiceWithOptions(ctx.get(), &opts);
     }
 
-    std::shared_ptr<celix_framework_t> fw;
-    std::shared_ptr<celix_bundle_context_t> ctx;
+    std::shared_ptr<celix_framework_t> fw{};
+    std::shared_ptr<celix_bundle_context_t> ctx{};
     pubsub_message_serialization_service_t  msgSerSvc{};
 
     size_t serializeCallCount = 0;
@@ -80,19 +80,21 @@ public:
 };
 
 
-TEST_F(PubSubMsgSerializationTestSuite, CreateDestroy) {
+TEST_F(PubSubSerializationHandlerTestSuite, CreateDestroy) {
     auto *handler = pubsub_serializerHandler_create(ctx.get(), "json", true);
     ASSERT_TRUE(handler != nullptr);
     pubsub_serializerHandler_destroy(handler);
 }
 
-TEST_F(PubSubMsgSerializationTestSuite, SerializationServiceFound) {
+TEST_F(PubSubSerializationHandlerTestSuite, SerializationServiceFound) {
     auto *handler = pubsub_serializerHandler_create(ctx.get(), "json", true);
     long svcId = registerSerSvc("json", 42, "example::Msg", "1.0.0");
 
     EXPECT_EQ(1, pubsub_serializerHandler_messageSerializationServiceCount(handler));
     EXPECT_EQ(42, pubsub_serializerHandler_getMsgId(handler, "example::Msg"));
-    EXPECT_STREQ("example::Msg", pubsub_serializerHandler_getMsgFqn(handler, 42));
+    auto *fqn = pubsub_serializerHandler_getMsgFqn(handler, 42);
+    EXPECT_STREQ("example::Msg",  fqn);
+    free(fqn);
     EXPECT_TRUE(pubsub_serializerHandler_supportMsg(handler, 42, 1, 0));
     EXPECT_FALSE(pubsub_serializerHandler_supportMsg(handler, 42, 2, 0));
 
@@ -102,7 +104,7 @@ TEST_F(PubSubMsgSerializationTestSuite, SerializationServiceFound) {
     pubsub_serializerHandler_destroy(handler);
 }
 
-TEST_F(PubSubMsgSerializationTestSuite, DifferentTypeOfSerializationService) {
+TEST_F(PubSubSerializationHandlerTestSuite, DifferentTypeOfSerializationService) {
     auto *handler = pubsub_serializerHandler_create(ctx.get(), "json", true);
     long svcId = registerSerSvc("avrobin", 42, "example::Msg", "1.0.0");
     EXPECT_EQ(0, pubsub_serializerHandler_messageSerializationServiceCount(handler));
@@ -110,7 +112,7 @@ TEST_F(PubSubMsgSerializationTestSuite, DifferentTypeOfSerializationService) {
     pubsub_serializerHandler_destroy(handler);
 }
 
-TEST_F(PubSubMsgSerializationTestSuite, MutipleSerializationServices) {
+TEST_F(PubSubSerializationHandlerTestSuite, MutipleSerializationServices) {
     auto *handler = pubsub_serializerHandler_create(ctx.get(), "json", true);
     long svcId1 = registerSerSvc("json", 43, "example::Msg1", "1.0.0");
     long svcId2 = registerSerSvc("json", 44, "example::Msg2", "1.0.0");
@@ -128,7 +130,7 @@ TEST_F(PubSubMsgSerializationTestSuite, MutipleSerializationServices) {
     pubsub_serializerHandler_destroy(handler);
 }
 
-TEST_F(PubSubMsgSerializationTestSuite, ClashingId) {
+TEST_F(PubSubSerializationHandlerTestSuite, ClashingId) {
     auto *handler = pubsub_serializerHandler_create(ctx.get(), "json", true);
 
     testing::internal::CaptureStderr();
@@ -143,7 +145,7 @@ TEST_F(PubSubMsgSerializationTestSuite, ClashingId) {
     pubsub_serializerHandler_destroy(handler);
 }
 
-TEST_F(PubSubMsgSerializationTestSuite, MultipleVersions) {
+TEST_F(PubSubSerializationHandlerTestSuite, MultipleVersions) {
     auto *handler = pubsub_serializerHandler_create(ctx.get(), "json", true);
 
     testing::internal::CaptureStderr();
@@ -166,7 +168,7 @@ TEST_F(PubSubMsgSerializationTestSuite, MultipleVersions) {
     pubsub_serializerHandler_destroy(handler);
 }
 
-TEST_F(PubSubMsgSerializationTestSuite, NoBackwardsCompatbile) {
+TEST_F(PubSubSerializationHandlerTestSuite, NoBackwardsCompatbile) {
     auto *handler = pubsub_serializerHandler_create(ctx.get(), "json", false);
 
     long svcId1 = registerSerSvc("json", 42, "example::Msg1", "1.0.0");
@@ -182,7 +184,7 @@ TEST_F(PubSubMsgSerializationTestSuite, NoBackwardsCompatbile) {
     pubsub_serializerHandler_destroy(handler);
 }
 
-TEST_F(PubSubMsgSerializationTestSuite, CallServiceMethods) {
+TEST_F(PubSubSerializationHandlerTestSuite, CallServiceMethods) {
     auto *handler = pubsub_serializerHandler_create(ctx.get(), "json", false);
 
     long svcId1 = registerSerSvc("json", 42, "example::Msg1", "1.0.0");
@@ -205,7 +207,7 @@ TEST_F(PubSubMsgSerializationTestSuite, CallServiceMethods) {
     pubsub_serializerHandler_destroy(handler);
 }
 
-TEST_F(PubSubMsgSerializationTestSuite, MismatchedCallServiceMethods) {
+TEST_F(PubSubSerializationHandlerTestSuite, MismatchedCallServiceMethods) {
     auto *handler = pubsub_serializerHandler_create(ctx.get(), "json", false);
 
     long svcId1 = registerSerSvc("json", 42, "example::Msg1", "1.0.0");
@@ -229,7 +231,7 @@ TEST_F(PubSubMsgSerializationTestSuite, MismatchedCallServiceMethods) {
     pubsub_serializerHandler_destroy(handler);
 }
 
-TEST_F(PubSubMsgSerializationTestSuite, BackwardsCompatibleCall) {
+TEST_F(PubSubSerializationHandlerTestSuite, BackwardsCompatibleCall) {
     auto *handler = pubsub_serializerHandler_create(ctx.get(), "json", true);
 
     long svcId1 = registerSerSvc("json", 42, "example::Msg1", "1.0.0");

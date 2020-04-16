@@ -24,9 +24,9 @@
 #include <celix_api.h>
 #include "pubsub_message_serialization_service.h"
 
-class PubSubJsonSerializationProviderTestSuite : public ::testing::Test {
+class PubSubAvrobinSerializationProviderTestSuite : public ::testing::Test {
 public:
-    PubSubJsonSerializationProviderTestSuite() {
+    PubSubAvrobinSerializationProviderTestSuite() {
         auto* props = celix_properties_create();
         celix_properties_set(props, OSGI_FRAMEWORK_FRAMEWORK_STORAGE, ".pubsub_json_serializer_cache");
         auto* fwPtr = celix_frameworkFactory_createFramework(props);
@@ -50,70 +50,64 @@ public:
 };
 
 
-TEST_F(PubSubJsonSerializationProviderTestSuite, CreateDestroy) {
+TEST_F(PubSubAvrobinSerializationProviderTestSuite, CreateDestroy) {
     //checks if the bundles are started and stopped correctly (no mem leaks).
 }
 
-TEST_F(PubSubJsonSerializationProviderTestSuite, FindSerializationMarkerSvc) {
+TEST_F(PubSubAvrobinSerializationProviderTestSuite, FindSerializationMarkerSvc) {
     auto* services = celix_bundleContext_findServices(ctx.get(), PUBSUB_MESSAGE_SERIALIZATION_MARKER_NAME);
     EXPECT_EQ(1, celix_arrayList_size(services));
     celix_arrayList_destroy(services);
 }
 
-TEST_F(PubSubJsonSerializationProviderTestSuite, FindSerializationServices) {
+TEST_F(PubSubAvrobinSerializationProviderTestSuite, FindSerializationServices) {
     auto* services = celix_bundleContext_findServices(ctx.get(), PUBSUB_MESSAGE_SERIALIZATION_SERVICE_NAME);
     EXPECT_EQ(3, celix_arrayList_size(services)); //3 valid, 5 invalid
     celix_arrayList_destroy(services);
 }
 
-struct poi1 {
-    struct {
-        double lat;
-        double lon;
-    } location;
-    const char *name;
-};
-
-TEST_F(PubSubJsonSerializationProviderTestSuite, SerializeTest) {
-    poi1 p;
-    p.location.lat = 42;
-    p.location.lon = 43;
-    p.name = "test";
-
-    celix_service_use_options_t opts{};
-    opts.filter.serviceName = PUBSUB_MESSAGE_SERIALIZATION_SERVICE_NAME;
-    opts.filter.filter = "(msg.fqn=poi1)";
-    opts.callbackHandle = static_cast<void*>(&p);
-    opts.use = [](void *handle, void *svc) {
-        //auto *poi = static_cast<poi1*>(handle);
-        auto* ser = static_cast<pubsub_message_serialization_service_t*>(svc);
-        struct iovec* outVec;
-        size_t outSize;
-        ser->serialize(ser->handle, handle, &outVec, &outSize);
-        EXPECT_TRUE(strstr(static_cast<char*>(outVec->iov_base), "\"lat\":42") != NULL);
-        ser->freeSerializedMsg(ser->handle, outVec, outSize);
+TEST_F(PubSubAvrobinSerializationProviderTestSuite, SerializeAndDeserializeTest) {
+    struct poi1 {
+        struct {
+            double lat;
+            double lon;
+        } location;
+        const char *name;
     };
-    bool called = celix_bundleContext_useServiceWithOptions(ctx.get(), &opts);
-    EXPECT_TRUE(called);
-}
 
-TEST_F(PubSubJsonSerializationProviderTestSuite, DeserializeTest) {
+    struct data {
+        poi1* input;
+        poi1* output;
+    };
+
+    poi1 input;
+    input.location.lat = 42;
+    input.location.lon = 43;
+    input.name = "test";
+
+    poi1 output;
+    memset(&output, 0, sizeof(output));
+
+    data dataHandle;
+    dataHandle.input = &input;
+    dataHandle.output = &output;
+
     celix_service_use_options_t opts{};
     opts.filter.serviceName = PUBSUB_MESSAGE_SERIALIZATION_SERVICE_NAME;
     opts.filter.filter = "(msg.fqn=poi1)";
-    opts.callbackHandle = nullptr;
-    opts.use = [](void *, void *svc) {
+    opts.callbackHandle = static_cast<void*>(&dataHandle);
+    opts.use = [](void *handle, void *svc) {
+        auto *dh = static_cast<data*>(handle);
         auto* ser = static_cast<pubsub_message_serialization_service_t*>(svc);
-        const char* data = R"({"location":{"lat":42.0,"lon":43.0},"name":"test"})";
-        poi1 *p = nullptr;
-        iovec inVec;
-        inVec.iov_base = static_cast<void*>(const_cast<char*>(data));
-        inVec.iov_len = strlen(data) + 1;
-        ser->deserialize(ser->handle, &inVec, 1, (void**)(&p));
-        EXPECT_EQ(42,p->location.lat);
-        EXPECT_EQ(43,p->location.lon);
-        EXPECT_STREQ("test", p->name);
-        ser->freeDeserializedMsg(ser->handle, p);
+        struct iovec* serVec;
+        size_t serSize;
+        ser->serialize(ser->handle, dh->input, &serVec, &serSize);
+        ser->deserialize(ser->handle, serVec, serSize, (void**)(&dh->output));
+
+        EXPECT_EQ(42, dh->output->location.lat);
+
+        ser->freeSerializedMsg(ser->handle, serVec, serSize);
+        ser->freeDeserializedMsg(ser->handle, dh->output);
     };
     bool called = celix_bundleContext_useServiceWithOptions(ctx.get(), &opts);
     EXPECT_TRUE(called);

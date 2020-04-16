@@ -75,22 +75,35 @@ static char* logHelper_backtrace(void) {
 struct log_helper {
 	celix_bundle_context_t *bundleContext;
 	char *name;
-	celix_service_tracker_t *logServiceTracker;
-	celix_thread_mutex_t logListLock;
+	long logServiceTrackerId;
+
+    celix_thread_mutex_t logListLock;
 	array_list_pt logServices;
 	bool stdOutFallback;
 	bool stdOutFallbackIncludeDebug;
 };
 
-static celix_status_t logHelper_logServiceAdded(void *handle, service_reference_pt reference, void *service);
-static celix_status_t logHelper_logServiceRemoved(void *handle, service_reference_pt reference, void *service);
+static void logHelper_logServiceAdded(void *handle, void *service);
+static void logHelper_logServiceRemoved(void *handle, void *service);
+
+celix_status_t logHelper_start(log_helper_t *loghelper  __attribute__((unused)))
+{
+    //NOP, done in create
+    return CELIX_SUCCESS;
+}
+
+celix_status_t logHelper_stop(log_helper_t *loghelper __attribute__((unused)))
+{
+    //NOP, done in stop
+    return CELIX_SUCCESS;
+}
 
 log_helper_t* logHelper_createWithName(celix_bundle_context_t* context, const char *name) {
 	log_helper_t* logHelper = calloc(1, sizeof(*logHelper));
 
     logHelper->bundleContext = context;
     logHelper->name = celix_utils_strdup(name);
-    logHelper->logServiceTracker = NULL;
+    logHelper->logServiceTrackerId = -1L;
     logHelper->stdOutFallback = false;
 
     logHelper->stdOutFallback = celix_bundleContext_getPropertyAsBool(context, LOGHELPER_ENABLE_STDOUT_FALLBACK_NAME, LOGHELPER_ENABLE_STDOUT_FALLBACK_DEFAULT);
@@ -98,6 +111,13 @@ log_helper_t* logHelper_createWithName(celix_bundle_context_t* context, const ch
 
     pthread_mutex_init(&logHelper->logListLock, NULL);
     arrayList_create(&logHelper->logServices);
+
+    celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
+    opts.filter.serviceName = OSGI_LOGSERVICE_NAME;
+    opts.callbackHandle = logHelper;
+    opts.add = logHelper_logServiceAdded;
+    opts.remove = logHelper_logServiceRemoved;
+    logHelper->logServiceTrackerId = celix_bundleContext_trackServicesWithOptions(logHelper->bundleContext, &opts);
 
 	return logHelper;
 }
@@ -107,64 +127,28 @@ celix_status_t logHelper_create(bundle_context_pt context, log_helper_t **loghel
 	return *loghelper == NULL ? CELIX_ILLEGAL_STATE : CELIX_SUCCESS;
 }
 
-celix_status_t logHelper_start(log_helper_t *loghelper)
-{
-	celix_status_t status;
-	service_tracker_customizer_pt logTrackerCustomizer = NULL;
-
-	status = serviceTrackerCustomizer_create(loghelper, NULL, logHelper_logServiceAdded, NULL, logHelper_logServiceRemoved, &logTrackerCustomizer);
-
-	if (status == CELIX_SUCCESS) {
-        loghelper->logServiceTracker = NULL;
-		status = serviceTracker_create(loghelper->bundleContext, (char*) OSGI_LOGSERVICE_NAME, logTrackerCustomizer, &loghelper->logServiceTracker);
-	}
-
-	if (status == CELIX_SUCCESS) {
-		status = serviceTracker_open(loghelper->logServiceTracker);
-	}
-
-	return status;
-}
-
-
-
-static celix_status_t logHelper_logServiceAdded(void *handle, service_reference_pt reference, void *service)
+static void logHelper_logServiceAdded(void *handle, void *service)
 {
 	log_helper_t *loghelper = handle;
 
 	pthread_mutex_lock(&loghelper->logListLock);
 	arrayList_add(loghelper->logServices, service);
 	pthread_mutex_unlock(&loghelper->logListLock);
-
-	return CELIX_SUCCESS;
 }
 
-static celix_status_t logHelper_logServiceRemoved(void *handle, service_reference_pt reference, void *service)
+static void logHelper_logServiceRemoved(void *handle, void *service)
 {
 	log_helper_t *loghelper = handle;
 
 	pthread_mutex_lock(&loghelper->logListLock);
 	arrayList_removeElement(loghelper->logServices, service);
 	pthread_mutex_unlock(&loghelper->logListLock);
-
-	return CELIX_SUCCESS;
-}
-
-
-celix_status_t logHelper_stop(log_helper_t *loghelper) {
-	celix_status_t status;
-
-    status = serviceTracker_close(loghelper->logServiceTracker);
-
-    return status;
 }
 
 celix_status_t logHelper_destroy(log_helper_t **loghelper) {
         celix_status_t status = CELIX_SUCCESS;
 
-        if((*loghelper)->logServiceTracker){
-      		serviceTracker_destroy((*loghelper)->logServiceTracker);
-        }
+        celix_bundleContext_stopTracker((*loghelper)->bundleContext, (*loghelper)->logServiceTrackerId);
 
         pthread_mutex_lock(&(*loghelper)->logListLock);
         arrayList_destroy((*loghelper)->logServices);
@@ -172,13 +156,12 @@ celix_status_t logHelper_destroy(log_helper_t **loghelper) {
 
         pthread_mutex_destroy(&(*loghelper)->logListLock);
 
+        free((*loghelper)->name);
+
         free(*loghelper);
         *loghelper = NULL;
         return status;
 }
-
-
-
 
 celix_status_t logHelper_log(log_helper_t *loghelper, log_level_t level, const char* message, ... )
 {

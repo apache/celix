@@ -1547,6 +1547,7 @@ celix_status_t fw_addBundleListener(framework_pt framework, bundle_pt bundle, bu
         fw_bundleEntry_decreaseUseCount(entry);
     }
     fw_bundleListener_decreaseUseCount(bundleListener);
+    celix_arrayList_destroy(installedBundles);
 
     return status;
 }
