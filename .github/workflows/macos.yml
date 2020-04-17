@@ -1,4 +1,4 @@
-name: Celix
+name: Celix MacOS
 
 on: [push, pull_request]
 
