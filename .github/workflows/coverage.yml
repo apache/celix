@@ -22,7 +22,8 @@ jobs:
             libffi-dev \
             libxml2-dev \
             libczmq-dev \
-            libcpputest-dev
+            libcpputest-dev \
+            lcov
           cd $GITHUB_WORKSPACE
       - name: Build
         env:
@@ -34,11 +35,6 @@ jobs:
           cd build
           cmake -DCMAKE_BUILD_TYPE=Debug ${BUILD_OPTIONS} ..
           make -j
-      - name: Test
-        run: |
-          cd $GITHUB_WORKSPACE/build
-          export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH:$(pwd)/utils:$(pwd)/framework:$(pwd)/dfi
-          make test ARGS="-V"
       - name: Coverage
         run: |
           cd $GITHUB_WORKSPACE/build

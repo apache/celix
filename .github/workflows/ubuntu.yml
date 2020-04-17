@@ -12,14 +12,18 @@ jobs:
         #compiler: [gcc, clang]
         include:
           - os: ubuntu-18.04
+            name: clang
+            sanitizer: false #note sanitizer on clang with cpputest does not work
             compiler: clang
             cxx_compiler: clang++
           - os: ubuntu-18.04
-            name: sanitizer
+            name: gcc
+            sanitizer: true
             compiler: gcc
             cxx_compiler: g++
           - os: ubuntu-18.04
             name: only v3 api
+            sanitizer: true
             compiler: gcc
             cxx_compiler: g++
             v3_api: true
@@ -49,6 +53,7 @@ jobs:
         CXX: ${{ matrix.cxx_compiler }}
         BUILD_OPTIONS: |
           -DENABLE_TESTING=ON
+        BUILD_OPTIONS_SANITIZER: |
           -DENABLE_ADDRESS_SANITIZER=ON
         BUILD_OPTIONS_V3_API: |
           -DCELIX_USE_ZIP_INSTEAD_OF_JAR=ON
@@ -58,6 +63,9 @@ jobs:
         cd build
         if [[ "${{ matrix.v3_api }}" == "true" ]]; then
           export BUILD_OPTIONS="${BUILD_OPTIONS} ${BUILD_OPTIONS_V3_API}"
+        fi
+        if [[ "${{ matrix.sanitizer }}" == "true" ]]; then
+          export BUILD_OPTIONS="${BUILD_OPTIONS} ${BUILD_OPTIONS_SANITIZER}"
         fi
         cmake -DCMAKE_BUILD_TYPE=Debug ${BUILD_OPTIONS} -DCMAKE_INSTALL_PREFIX=../install ..
         make -j && make install
