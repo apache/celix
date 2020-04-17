@@ -268,17 +268,17 @@ static bool pubsub_serializationProvider_isUniqueAndCheckValid(pubsub_serializat
             unique = false; //already have a descriptor with the same id or fqn. check if valid
             visit->nrOfTimesRead += 1;
             if (visit->msgId == entry->msgId && strncmp(visit->msgFqn, entry->msgFqn, 1024*1024) != 0) {
-                L_ERROR("Error descriptor adding %s. Found msg types with same msg id, but different msg fqn. Msg id is %d, but found fully qualified names are '%s' and '%s'",
+                L_ERROR("Error adding descriptor %s. Found msg types with same msg id, but different msg fqn. Msg id is %d, but found fully qualified names are '%s' and '%s'",
                         entry->readFromEntryPath, entry->msgId, entry->msgFqn, visit->msgFqn);
                 entry->invalidReason = "msg id clash";
                 entry->valid = false;
             } else if (strncmp(visit->msgFqn, entry->msgFqn, 1024*1024) == 0 && entry->msgId != visit->msgId) {
-                L_ERROR("Error descriptor adding %s. Found msg types with same fqn, but different msg ids. Msg fqn is %d, but found msg ids are '%d' and '%d'",
+                L_ERROR("Error adding descriptor %s. Found msg types with same fqn, but different msg ids. Msg fqn is %d, but found msg ids are '%d' and '%d'",
                         entry->readFromEntryPath, entry->msgFqn, entry->msgId, visit->msgId);
                 entry->invalidReason = "msg fqn clash";
                 entry->valid = false;
             } else if (celix_version_compareTo(visit->msgVersion, entry->msgVersion) != 0) {
-                L_ERROR("Error descriptor adding %s. Found two different version for msg %s. This is not supported, please align used versions between bundles!. Versions found %s and %s",
+                L_ERROR("Error adding descriptor %s. Found two different version for msg %s. This is not supported, please align used versions between bundles!. Versions found %s and %s",
                         entry->readFromEntryPath, entry->msgFqn, entry->msgVersionStr, visit->msgVersionStr);
                 entry->invalidReason = "different versions for the same msg type";
                 entry->valid = false;

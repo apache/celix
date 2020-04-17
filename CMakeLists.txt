@@ -44,10 +44,6 @@ ELSE ()
     set(CMAKE_CXX_FLAGS "-Wall -Wextra -Weffc++ ${CMAKE_CXX_FLAGS}")
     set(CMAKE_C_FLAGS_DEBUG "-g -DDEBUG ${CMAKE_C_FLAGS}")
     set(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG ${CMAKE_CXX_FLAGS}")
-
-    #prevent the linker from optimizing out linked libraries. libraries linked against executable are maybe not used
-    #by the executable, but could be used by the (dynamically) loaded libraries.
-    set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -Wl,--no-as-needed")
 ENDIF()
 
 IF(APPLE)
@@ -56,6 +52,10 @@ ELSE ()
     set(CMAKE_C_FLAGS "-pthread ${CMAKE_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "-pthread ${CMAKE_CXX_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "-pthread ${CMAKE_EXE_LINKER_FLAGS}")
+
+    #prevent the linker from optimizing out linked libraries. libraries linked against executable are maybe not used
+    #by the executable, but could be used by the (dynamically) loaded libraries.
+    set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -Wl,--no-as-needed")
 ENDIF()
 
 if (ENABLE_MORE_WARNINGS)

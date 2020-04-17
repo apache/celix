@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
+#include <assert.h>
 
 #include "avrobin_serializer.h"
 #include "dyn_message.h"
@@ -88,6 +89,8 @@ celix_status_t pubsub_avrobinSerializationProvider_deserialize(pubsub_serializat
     void *msg = NULL;
     dyn_type* dynType;
     dynMessage_getMessageType(entry->msgType, &dynType);
+
+    assert(inputIovLen == 1);
 
     if (avrobinSerializer_deserialize(dynType, (uint8_t *)input->iov_base, input->iov_len, &msg) != 0) {
         status = CELIX_BUNDLE_EXCEPTION;
