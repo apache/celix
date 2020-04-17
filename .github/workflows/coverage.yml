@@ -3,7 +3,7 @@ name: Celix Coverage
 on: [push, pull_request]
 
 jobs:
-  build:
+  coverage:
     runs-on: ubuntu-18.04
     steps:
       - name: Checkout source code
@@ -32,7 +32,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake -DCMAKE_BUILD_TYPE=Debug ${BUILD_OPTIONS}
+          cmake -DCMAKE_BUILD_TYPE=Debug ${BUILD_OPTIONS} ..
           make -j
       - name: Test
         run: |
@@ -41,6 +41,8 @@ jobs:
           make test ARGS="-V"
       - name: Coverage
         run: |
+          cd $GITHUB_WORKSPACE/build
+          export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH:$(pwd)/utils:$(pwd)/framework:$(pwd)/dfi
           make coverage
       - name: Coveralls
         uses: coverallsapp/github-action@master
