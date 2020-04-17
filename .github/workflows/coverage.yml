@@ -27,8 +27,8 @@ jobs:
     - name: Build
       env:
         BUILD_OPTIONS: |
-        -DENABLE_TESTING=ON
-        -DENABLE_CODE_COVERAGE=ON
+          -DENABLE_TESTING=ON
+          -DENABLE_CODE_COVERAGE=ON
       run: |
         mkdir build
         cd build
