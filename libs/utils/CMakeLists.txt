@@ -34,7 +34,6 @@ add_library(utils SHARED
     src/celix_threads.c
     src/version.c
     src/version_range.c
-    src/thpool.c
     src/properties.c
     src/utils.c
     src/ip_utils.c
@@ -96,10 +95,6 @@ if (ENABLE_TESTING)
     add_executable(linked_list_test private/test/linked_list_test.cpp)
     target_link_libraries(linked_list_test  Celix::utils ${CPPUTEST_LIBRARY} pthread)
 
-    #TODO disabled for now, seems to create a deadlock on host..
-    #add_executable(thread_pool_test private/test/thread_pool_test.cpp)
-    #target_link_libraries(thread_pool_test  Celix::utils ${CPPUTEST_LIBRARY} pthread)
-
     add_executable(properties_test private/test/properties_test.cpp)
     target_link_libraries(properties_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY}  Celix::utils pthread)
 
@@ -123,7 +118,6 @@ if (ENABLE_TESTING)
     add_test(NAME run_array_list_test COMMAND array_list_test)
     add_test(NAME run_hash_map_test COMMAND hash_map_test)
     add_test(NAME run_celix_threads_test COMMAND celix_threads_test)
-    #add_test(NAME run_thread_pool_test COMMAND thread_pool_test)
     add_test(NAME run_linked_list_test COMMAND linked_list_test)
     add_test(NAME run_properties_test COMMAND properties_test)
     add_test(NAME run_utils_test COMMAND utils_test)
@@ -135,11 +129,11 @@ if (ENABLE_TESTING)
     setup_target_for_coverage(array_list_test)
     setup_target_for_coverage(hash_map_test)
     setup_target_for_coverage(celix_threads_test)
-    #setup_target_for_coverage(thread_pool_test)
     setup_target_for_coverage(linked_list_test)
     setup_target_for_coverage(properties_test)
     setup_target_for_coverage(utils_test)
     setup_target_for_coverage(ip_utils_test)
+    setup_target_for_coverage(filter_test)
     setup_target_for_coverage(version_range_test)
     setup_target_for_coverage(version_test)
 
