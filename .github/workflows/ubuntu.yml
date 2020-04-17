@@ -46,7 +46,6 @@ jobs:
           libxml2-dev \
           libczmq-dev \
           libcpputest-dev
-        cd $GITHUB_WORKSPACE
     - name: Build
       env:
         CC: ${{ matrix.compiler }}

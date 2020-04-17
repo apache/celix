@@ -24,7 +24,6 @@ jobs:
             libczmq-dev \
             libcpputest-dev \
             lcov
-          cd $GITHUB_WORKSPACE
       - name: Build
         env:
           BUILD_OPTIONS: |
@@ -44,3 +43,4 @@ jobs:
         uses: coverallsapp/github-action@master
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: build/coverage/*.info
