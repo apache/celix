@@ -78,11 +78,7 @@ script:
   - if [ -z "$ANDROID" ]; then export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH:`pwd`/utils:`pwd`/framework:`pwd`/dfi && make test ARGS="-V"; else docker run celixandroid; fi
 
 after_success:
-    - if [ "$CC" = "gcc" ] && [ "$TRAVIS_OS_NAME" = "linux" ]; then 
-        cd ${TRAVIS_BUILD_DIR}/build;
-        gem install coveralls-lcov &&
-        make coverage &&
-        lcx="lcov --output-file=coverage.info " && for i in `find . -name "*.info.cleaned"`; do lcx+=" --add-tracefile=$i"; done && $lcx && coveralls-lcov --repo-token=9dpeTAjiGoQU5hgXFe0ezk65iu40oc3WY coverage.info;
+    - if [ "$CC" = "gcc" ] && [ "$TRAVIS_OS_NAME" = "linux" ]; then
         if [ $(( $TRAVIS_BUILD_NUMBER  % 5 )) -eq 0 -o ${COVERITY_SCAN_ALWAYS_ON} = "y" ]; then make clean & eval "$COVERITY_SCAN_BUILD"; fi
       fi;
 

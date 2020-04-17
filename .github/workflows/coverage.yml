@@ -1,0 +1,48 @@
+name: Celix Coverage
+
+on: [push, pull_request]
+
+jobs:
+  build:
+  runs-on: ubuntu-18.04
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@master
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -yq --no-install-recommends \
+            build-essential \
+            curl \
+            uuid-dev \
+            libjansson-dev \
+            libcurl4-openssl-dev \
+            default-jdk \
+            cmake \
+            libffi-dev \
+            libxml2-dev \
+            libczmq-dev \
+            libcpputest-dev
+          cd $GITHUB_WORKSPACE
+      - name: Build
+        env:
+          BUILD_OPTIONS: |
+          -DENABLE_TESTING=ON
+          -DENABLE_CODE_COVERAGE=ON
+        run: |
+          mkdir build
+          cd build
+          cmake -DCMAKE_BUILD_TYPE=Debug ${BUILD_OPTIONS}
+          make -j
+      - name: Test
+        run: |
+          cd $GITHUB_WORKSPACE/build
+          export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH:$(pwd)/utils:$(pwd)/framework:$(pwd)/dfi
+          make test ARGS="-V"
+      - name: Coverage
+        run: |
+          make coverage
+      - name: Coveralls
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
