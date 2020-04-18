@@ -415,7 +415,7 @@ static void* psa_udpmc_recvThread(void * data) {
         int nfds = kevent (receiver->topicEpollFd, NULL, 0, &events[0], MAX_EVENTS, timeout ? &ts : NULL);
 #else
         struct epoll_event events[MAX_EVENTS];
-        int nfds = epoll_wait(receiver->topicEpollFd, events, MAX_EVENTS, RECV_THREAD_TIMEOUT * 1000);
+        int nfds = epoll_wait(receiver->topicEpollFd, events, MAX_EVENTS, timeout);
 #endif
         int i;
         for (i = 0; i < nfds; i++ ) {
