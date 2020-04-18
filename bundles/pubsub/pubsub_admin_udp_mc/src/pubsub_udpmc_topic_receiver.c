@@ -132,7 +132,6 @@ pubsub_udpmc_topic_receiver_t* pubsub_udpmcTopicReceiver_create(celix_bundle_con
     receiver->ifIpAddress = strndup(ifIP, 1024 * 1024);
     receiver->recvThread.running = true;
     receiver->largeUdpHandle = largeUdp_create(MAX_UDP_SESSIONS);
-    receiver->topicEpollFd = epoll_create1(0);
 #if defined(__APPLE__)
     receiver->topicEpollFd = kqueue();
 #else
@@ -307,7 +306,7 @@ void pubsub_udpmcTopicReceiver_disconnectFrom(pubsub_udpmc_topic_receiver_t *rec
 #if defined(__APPLE__)
         struct kevent ev;
         EV_SET (&ev, entry->recvSocket, EVFILT_READ, EV_DELETE, 0, 0, 0);
-        rc = kevent (receiver->topicEpollFd, &ev, 1, NULL, 0, NULL);
+        int rc = kevent (receiver->topicEpollFd, &ev, 1, NULL, 0, NULL);
 #else
         struct epoll_event ev;
         memset(&ev, 0, sizeof(ev));
@@ -422,7 +421,12 @@ static void* psa_udpmc_recvThread(void * data) {
         for (i = 0; i < nfds; i++ ) {
             unsigned int index;
             unsigned int size;
-            if (largeUdp_dataAvailable(receiver->largeUdpHandle, events[i].data.fd, &index, &size) == true) {
+#if defined(__APPLE__)
+            int fd = events[i].ident;
+#else
+            int fd = events[i].data.fd;
+#endif
+            if (largeUdp_dataAvailable(receiver->largeUdpHandle, fd, &index, &size) == true) {
                 // Handle data
                 pubsub_udp_msg_t *udpMsg = NULL;
                 if (largeUdp_read(receiver->largeUdpHandle, index, (void**) &udpMsg, size) != 0) {
