@@ -83,6 +83,7 @@ struct celix_framework {
         celix_thread_mutex_t mutex; //protect active and requests
         bool active;
         celix_array_list_t *requests;
+        size_t nrOfLocalRequest;
     } dispatcher;
 
     framework_logger_pt logger;

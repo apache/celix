@@ -296,41 +296,29 @@ TEST_F(CelixBundleContextBundlesTests, DoubleStopTest) {
 }
 
 TEST_F(CelixBundleContextBundlesTests, trackBundlesTest) {
-    const std::chrono::seconds waitTime{3};
-
     struct data {
-        int installedCount{0};
-        int startedCount{0};
-        int stoppedCount{0};
-        std::mutex mutex{};
-        std:: condition_variable cond{};
+        std::atomic<int> installedCount{0};
+        std::atomic<int> startedCount{0};
+        std::atomic<int> stoppedCount{0};
     };
     struct data data;
 
     auto installed = [](void *handle, const bundle_t *bnd) {
         auto *d = static_cast<struct data*>(handle);
         ASSERT_TRUE(bnd != nullptr);
-        d->mutex.lock();
-        d->installedCount += 1;
-        d->cond.notify_all();
-        d->mutex.unlock();
+        d->installedCount.fetch_add(1);
     };
 
     auto started = [](void *handle, const bundle_t *bnd) {
         auto *d = static_cast<struct data*>(handle);
         ASSERT_TRUE(bnd != nullptr);
-        d->mutex.lock();
-        d->startedCount += 1;
-        d->cond.notify_all();
-        d->mutex.unlock();
+        d->startedCount.fetch_add(1);
     };
+
     auto stopped = [](void *handle, const bundle_t *bnd) {
         auto *d = static_cast<struct data*>(handle);
         ASSERT_TRUE(bnd != nullptr);
-        d->mutex.lock();
-        d->stoppedCount += 1;
-        d->cond.notify_all();
-        d->mutex.unlock();
+        d->stoppedCount.fetch_add(1);
     };
 
     celix_bundle_tracking_options_t opts{};
@@ -339,74 +327,47 @@ TEST_F(CelixBundleContextBundlesTests, trackBundlesTest) {
     opts.onStarted = started;
     opts.onStopped = stopped;
 
-    long trackerId = celix_bundleContext_trackBundlesWithOptions(ctx, &opts);
-    ASSERT_EQ(0, data.startedCount); //note default framework bundle is not tracked
-
-
     long bundleId1 = celix_bundleContext_installBundle(ctx, TEST_BND1_LOC, true);
     ASSERT_TRUE(bundleId1 >= 0);
 
-    {
-        std::unique_lock<std::mutex> lock{data.mutex};
-        data.cond.wait_for(lock, waitTime, [&]{return data.startedCount == 1;});
+    /*
+     * NOTE for bundles already installed (TEST_BND1) the callbacks are called on the
+     * thread of celix_bundleContext_trackBundlesWithOptions.
+     * For Bundles installed after the celix_bundleContext_trackBundlesWithOptions function
+     * the called are called on the Celix framework event queue thread.
+     */
+    long trackerId = celix_bundleContext_trackBundlesWithOptions(ctx, &opts);
+    ASSERT_EQ(1, data.installedCount.load());
+    ASSERT_EQ(1, data.startedCount.load());
+    ASSERT_EQ(0, data.stoppedCount.load());
 
-    }
-    {
-        std::lock_guard<std::mutex> lock{data.mutex};
-        ASSERT_EQ(1, data.startedCount);
-        ASSERT_EQ(1, data.installedCount);
-    }
 
     long bundleId2 = celix_bundleContext_installBundle(ctx, TEST_BND2_LOC, true);
+    celix_framework_waitForEmptyEventQueue(fw);
     ASSERT_TRUE(bundleId2 >= 0);
-    {
-        std::unique_lock<std::mutex> lock{data.mutex};
-        data.cond.wait_for(lock, waitTime, [&]{return data.startedCount == 2;});
-
-    }
-    {
-        std::lock_guard<std::mutex> lock{data.mutex};
-        ASSERT_EQ(2, data.startedCount);
-        ASSERT_EQ(2, data.installedCount);
-    }
+    ASSERT_EQ(2, data.installedCount.load());
+    ASSERT_EQ(2, data.startedCount.load());
+    ASSERT_EQ(0, data.stoppedCount.load());
 
     celix_bundleContext_uninstallBundle(ctx, bundleId2);
-    {
-        std::unique_lock<std::mutex> lock{data.mutex};
-        data.cond.wait_for(lock, waitTime, [&]{return data.stoppedCount == 1;});
-
-    }
-    {
-        std::lock_guard<std::mutex> lock{data.mutex};
-        ASSERT_EQ(1, data.stoppedCount);
-        ASSERT_EQ(2, data.installedCount);
-    }
+    celix_framework_waitForEmptyEventQueue(fw);
+    ASSERT_EQ(2, data.installedCount.load());
+    ASSERT_EQ(2, data.startedCount.load());
+    ASSERT_EQ(1, data.stoppedCount.load());
 
     long bundleId3 = celix_bundleContext_installBundle(ctx, TEST_BND3_LOC, true);
     ASSERT_TRUE(bundleId3 >= 0);
-    {
-        std::unique_lock<std::mutex> lock{data.mutex};
-        data.cond.wait_for(lock, waitTime, [&]{return data.startedCount == 3;});
-
-    }
-    {
-        std::lock_guard<std::mutex> lock{data.mutex};
-        ASSERT_EQ(3, data.startedCount);
-        ASSERT_EQ(3, data.installedCount);
-    }
+    celix_framework_waitForEmptyEventQueue(fw);
+    ASSERT_EQ(3, data.installedCount.load());
+    ASSERT_EQ(3, data.startedCount.load());
+    ASSERT_EQ(1, data.stoppedCount.load());
 
     bundleId2 = celix_bundleContext_installBundle(ctx, TEST_BND2_LOC, true);
+    celix_framework_waitForEmptyEventQueue(fw);
     ASSERT_TRUE(bundleId2 >= 0);
-    {
-        std::unique_lock<std::mutex> lock{data.mutex};
-        data.cond.wait_for(lock, waitTime, [&]{return data.startedCount == 4;});
-
-    }
-    {
-        std::lock_guard<std::mutex> lock{data.mutex};
-        ASSERT_EQ(4, data.startedCount);
-        ASSERT_EQ(4, data.installedCount);
-    }
+    ASSERT_EQ(4, data.installedCount.load());
+    ASSERT_EQ(4, data.startedCount.load());
+    ASSERT_EQ(1, data.stoppedCount.load());
 
     celix_bundleContext_stopTracker(ctx, trackerId);
 };

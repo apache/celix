@@ -134,6 +134,16 @@ bool celix_framework_stopBundle(celix_framework_t *fw, long bndId);
  */
 bool celix_framework_startBundle(celix_framework_t *fw, long bndId);
 
+/**
+ * Wait till the framework event queue is empty.
+ *
+ * The Celix framework has an event queue which (among others) handles bundle events.
+ * This function can be used to ensure that all queue event are handled, mainly useful
+ * for testing.
+ *
+ * @param fw The Celix Framework
+ */
+void celix_framework_waitForEmptyEventQueue(celix_framework_t *fw);
 
 
 #ifdef __cplusplus

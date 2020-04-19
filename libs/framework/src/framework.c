@@ -297,6 +297,7 @@ celix_status_t framework_create(framework_pt *framework, properties_pt config) {
             (*framework)->bundleListeners = NULL;
             (*framework)->frameworkListeners = NULL;
             (*framework)->dispatcher.requests = NULL;
+            (*framework)->dispatcher.nrOfLocalRequest = 0;
             (*framework)->configurationMap = config;
             (*framework)->logger = logger;
 
@@ -1946,7 +1947,7 @@ celix_status_t fw_fireBundleEvent(framework_pt framework, bundle_event_type_e ev
         }
 
         celixThreadMutex_lock(&framework->dispatcher.mutex);
-        arrayList_add(framework->dispatcher.requests, request);
+        celix_arrayList_add(framework->dispatcher.requests, request);
         celixThreadCondition_broadcast(&framework->dispatcher.cond);
         celixThreadMutex_unlock(&framework->dispatcher.mutex);
 
@@ -2005,7 +2006,7 @@ celix_status_t fw_fireFrameworkEvent(framework_pt framework, framework_event_typ
         }
 
         celixThreadMutex_lock(&framework->dispatcher.mutex);
-        arrayList_add(framework->dispatcher.requests, request);
+        celix_arrayList_add(framework->dispatcher.requests, request);
         celixThreadCondition_broadcast(&framework->dispatcher.cond);
         celixThreadMutex_unlock(&framework->dispatcher.mutex);
     }
@@ -2077,6 +2078,7 @@ static void *fw_eventDispatcher(void *fw) {
             celix_arrayList_add(localRequests, r);
         }
         celix_arrayList_clear(framework->dispatcher.requests);
+        framework->dispatcher.nrOfLocalRequest = celix_arrayList_size(localRequests);
         celixThreadMutex_unlock(&framework->dispatcher.mutex);
 
         for (int i = 0; i < celix_arrayList_size(localRequests); ++i) {
@@ -2088,6 +2090,8 @@ static void *fw_eventDispatcher(void *fw) {
         celix_arrayList_clear(localRequests);
 
         celixThreadMutex_lock(&framework->dispatcher.mutex);
+        framework->dispatcher.nrOfLocalRequest = 0;
+        celixThreadCondition_broadcast(&framework->dispatcher.cond); //trigger threads waiting for an empty event queue (after local events are handled)
         active = framework->dispatcher.active;
         celixThreadMutex_unlock(&framework->dispatcher.mutex);
     }
@@ -2513,4 +2517,12 @@ bool celix_framework_startBundle(celix_framework_t *fw, long bndId) {
         fw_bundleEntry_decreaseUseCount(entry);
     }
     return started;
+}
+
+void celix_framework_waitForEmptyEventQueue(celix_framework_t *fw) {
+    celixThreadMutex_lock(&fw->dispatcher.mutex);
+    while ((celix_arrayList_size(fw->dispatcher.requests) + fw->dispatcher.nrOfLocalRequest) != 0) {
+        celixThreadCondition_wait(&fw->dispatcher.cond, &fw->dispatcher.mutex);
+    }
+    celixThreadMutex_unlock(&fw->dispatcher.mutex);
 }
