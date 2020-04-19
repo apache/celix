@@ -54,7 +54,7 @@ jobs:
     - name: Build
       env:
         CC: ${{ matrix.compiler }}
-        CXX: ${{ matric.cxx_compiler }}
+        CXX: ${{ matrix.cxx_compiler }}
         BUILD_OPTIONS: |
           -DENABLE_TESTING=ON
           -DENABLE_ADDRESS_SANITIZER=ON
