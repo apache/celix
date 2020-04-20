@@ -329,6 +329,7 @@ TEST_F(CelixBundleContextBundlesTests, trackBundlesTest) {
 
     long bundleId1 = celix_bundleContext_installBundle(ctx, TEST_BND1_LOC, true);
     ASSERT_TRUE(bundleId1 >= 0);
+    celix_framework_waitForEmptyEventQueue(fw);
 
     /*
      * NOTE for bundles already installed (TEST_BND1) the callbacks are called on the

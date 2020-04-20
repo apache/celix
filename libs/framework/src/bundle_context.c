@@ -562,19 +562,17 @@ long celix_bundleContext_trackBundlesWithOptions(
         const celix_bundle_tracking_options_t *opts) {
     long trackerId = -1;
     celix_bundle_context_bundle_tracker_entry_t *entry = calloc(1, sizeof(*entry));
-    if (entry != NULL) {
-        memcpy(&entry->opts, opts, sizeof(*opts));
-        entry->ctx = ctx;
-        entry->listener.handle = entry;
-        entry->listener.bundleChanged = bundleContext_bundleChanged;
-        fw_addBundleListener(ctx->framework, ctx->bundle, &entry->listener);
+    memcpy(&entry->opts, opts, sizeof(*opts));
+    entry->ctx = ctx;
+    entry->listener.handle = entry;
+    entry->listener.bundleChanged = bundleContext_bundleChanged;
+    fw_addBundleListener(ctx->framework, ctx->bundle, &entry->listener);
 
-        celixThreadMutex_lock(&ctx->mutex);
-        entry->trackerId = ctx->nextTrackerId++;
-        hashMap_put(ctx->bundleTrackers, (void*)entry->trackerId, entry);
-        celixThreadMutex_unlock(&ctx->mutex);
-        trackerId = entry->trackerId;
-    }
+    celixThreadMutex_lock(&ctx->mutex);
+    entry->trackerId = ctx->nextTrackerId++;
+    hashMap_put(ctx->bundleTrackers, (void*)entry->trackerId, entry);
+    celixThreadMutex_unlock(&ctx->mutex);
+    trackerId = entry->trackerId;
     return trackerId;
 }
 
