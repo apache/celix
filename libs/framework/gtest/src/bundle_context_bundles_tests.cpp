@@ -24,8 +24,7 @@
 #include <iostream>
 #include <mutex>
 #include <condition_variable>
-
-#include <zconf.h>
+#include <atomic>
 
 #include "celix_api.h"
 
