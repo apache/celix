@@ -18,9 +18,9 @@
 cmake_minimum_required (VERSION 3.2)
 cmake_policy(SET CMP0012 NEW)
 cmake_policy(SET CMP0042 NEW)
-#if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.9.0")
-#   cmake_policy(SET CMP0068 NEW)
-#endif()
+if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.9.0")
+   cmake_policy(SET CMP0068 NEW)
+endif()
 
 project (Celix C CXX)
 
@@ -117,7 +117,7 @@ endif ()
 option(CELIX_USE_ZIP_INSTEAD_OF_JAR "Default Celix cmake command will use jar to package bundle (if found). This option enforces Celix to use zip instead." OFF)
 
 if (ENABLE_TESTING)
-    find_package(GTest QUIET)
+    find_package(GTest CONFIG QUIET)
     if (NOT GTest_FOUND)
         include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/AddGTest.cmake)
     endif()
