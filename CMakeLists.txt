@@ -40,7 +40,8 @@ IF (ANDROID)
 ELSE ()
     set(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -fPIC ${CMAKE_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "-std=c++11 -fno-rtti ${CMAKE_CXX_FLAGS}")
-    set(CMAKE_C_FLAGS "-Wall -Werror ${CMAKE_C_FLAGS}")
+    set(CMAKE_C_FLAGS "-Wall -Werror -Wno-nullability-completeness -Wno-expansion-to-defined ${CMAKE_C_FLAGS}")
+#    set(CMAKE_C_FLAGS "-Wall -Werror ${CMAKE_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "-Wall -Wextra -Weffc++ ${CMAKE_CXX_FLAGS}")
     set(CMAKE_C_FLAGS_DEBUG "-g -DDEBUG ${CMAKE_C_FLAGS}")
     set(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG ${CMAKE_CXX_FLAGS}")
@@ -93,6 +94,8 @@ set(CELIX_MICRO "0")
 # Default bundle version
 set(DEFAULT_VERSION 1.0.0)
 
+set(CMAKE_DEBUG_POSTFIX "d")
+
 # Options
 option(ENABLE_TESTING "Enables unit/bundle testing" FALSE)
 if (ENABLE_TESTING)
@@ -137,7 +140,7 @@ add_subdirectory(examples/celix-examples examples)
 
 #export targets
 install(EXPORT celix NAMESPACE Celix:: DESTINATION share/celix/cmake FILE Targets.cmake COMPONENT cmake)
-install_celix_targets(celix NAMESPACE Celix:: DESTINATION share/celix/cmake FILE CelixTargets.cmake COMPONENT cmake)
+install_celix_targets(celix NAMESPACE Celix:: DESTINATION share/celix/cmake FILE CelixTargets COMPONENT cmake)
 
 #install celix cmake modules
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/ DESTINATION share/celix/cmake/Modules)

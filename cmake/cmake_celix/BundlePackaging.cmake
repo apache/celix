@@ -189,7 +189,10 @@ function(add_celix_bundle)
     if (NOT DEFINED BUNDLE_SYMBOLIC_NAME)
         set(BUNDLE_SYMBOLIC_NAME ${BUNDLE_TARGET_NAME})
     endif ()
-    if (NOT DEFINED BUNDLE_FILENAME)
+
+    if (NOT DEFINED BUNDLE_FILENAME AND NOT CMAKE_BUILD_TYPE STREQUAL "Release")
+        set(BUNDLE_FILENAME ${BUNDLE_TARGET_NAME}-${CMAKE_BUILD_TYPE}.zip)
+    elseif(NOT DEFINED BUNDLE_FILENAME)
         set(BUNDLE_FILENAME ${BUNDLE_TARGET_NAME}.zip)
     endif ()
 
@@ -762,7 +765,7 @@ function(install_celix_bundle)
     if (INSTALL_EXPORT)
         get_target_property(CURRENT_EXPORT_BUNDLES celix-bundles EXPORT_${INSTALL_EXPORT}_BUNDLES)
 
-	if (NOT CURRENT_EXPORT_BUNDLES)
+    	if (NOT CURRENT_EXPORT_BUNDLES)
             set(CURRENT_EXPORT_BUNDLES ${BUNDLE})
         else ()
             list(APPEND CURRENT_EXPORT_BUNDLES ${BUNDLE})
@@ -791,7 +794,7 @@ install using the provided <export_name>. These imported CMake targets can be us
 bundles.
 
 Optional Arguments:
-- FILE: The Celix Targets cmake filename to used. Default is <export_name>BundleTargets.cmake
+- FILE: The Celix Targets cmake filename to used, without the cmake extension. Default is <export_name>BundleTargets
 - PROJECT_NAME: The project name to used for the share location. Default is the cmake project name.
 - DESTINATION: The (relative) location to install the Celix Targets cmake file to. Default is share/<PROJECT_NAME>/cmake.
 
@@ -803,7 +806,7 @@ install_celix_targets(<export_name>
 )
 
 Example:
-install_celix_targets(celix NAMESPACE Celix:: DESTINATION share/celix/cmake FILE CelixTargets.cmake)
+install_celix_targets(celix NAMESPACE Celix:: DESTINATION share/celix/cmake FILE CelixTargets)
 ]]
 
 function(install_celix_bundle_targets)
@@ -825,10 +828,14 @@ function(install_celix_bundle_targets)
         message(FATAL_ERROR "Please provide a namespace used for the generated cmake targets.")
     endif ()
 
-
     if (NOT DEFINED EXPORT_FILE)
-        set(EXPORT_FILE ${EXPORT_NAME}BundleTargets.cmake)
+        set(EXPORT_FILE ${EXPORT_NAME}BundleTargets)
     endif ()
+
+#    if (NOT CMAKE_BUILD_TYPE STREQUAL "Release")
+        set(EXPORT_FILE ${EXPORT_FILE}-${CMAKE_BUILD_TYPE})
+#    endif ()
+
     if (NOT DEFINED EXPORT_PROJECT_NAME)
         string(TOLOWER ${PROJECT_NAME} EXPORT_PROJECT_NAME)
     endif()
@@ -875,8 +882,8 @@ endif ()
     file(GENERATE OUTPUT "${CONF_FILE}" INPUT "${CONF_IN_FILE}")
 
     if (EXPORT_COMPONENT)
-        install(FILES "${CONF_FILE}" DESTINATION ${EXPORT_DESTINATION} RENAME ${EXPORT_FILE} COMPONENT ${EXPORT_COMPONENT})
+        install(FILES "${CONF_FILE}" DESTINATION ${EXPORT_DESTINATION} RENAME ${EXPORT_FILE}.cmake COMPONENT ${EXPORT_COMPONENT})
     else ()
-        install(FILES "${CONF_FILE}" DESTINATION ${EXPORT_DESTINATION} RENAME ${EXPORT_FILE})
+        install(FILES "${CONF_FILE}" DESTINATION ${EXPORT_DESTINATION} RENAME ${EXPORT_FILE}.cmake)
     endif ()
 endfunction()

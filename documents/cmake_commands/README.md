@@ -189,7 +189,7 @@ install using the provided <export_name>. These imported CMake targets can be us
 bundles. 
 
 Optional Arguments:
-- FILE: The Celix Targets cmake filename to used. Default is <export_name>BundleTargets.cmake
+- FILE: The Celix Targets cmake filename to used, without the cmake extension. Default is <export_name>BundleTargets.
 - PROJECT_NAME: The project name to used for the share location. Default is the cmake project name.
 - DESTINATION: The (relative) location to install the Celix Targets cmake file to. Default is share/<PROJECT_NAME>/cmake.
 
@@ -204,7 +204,7 @@ install_celix_targets(<export_name>
 
 Example:
 ```CMake
-install_celix_targets(celix NAMESPACE Celix:: DESTINATION share/celix/cmake FILE CelixTargets.cmake)
+install_celix_targets(celix NAMESPACE Celix:: DESTINATION share/celix/cmake FILE CelixTargets)
 ```
 
 
