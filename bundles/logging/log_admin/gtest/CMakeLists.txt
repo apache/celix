@@ -16,16 +16,15 @@
 # under the License.
 
 
-add_subdirectory(log_service_api)
+add_executable(test_log_admin
+        src/LogAdminTestSuite.cc
+)
+target_link_libraries(test_log_admin PRIVATE Celix::log_service_api Celix::shell_api GTest::GTest GTest::Main)
 
-#Version 2 API (deprecated)
-if (CELIX_INSTALL_DEPRECATED_API)
-    add_subdirectory(log_helper_v2)
-    add_subdirectory(log_service_v2)
-endif ()
+add_dependencies(test_log_admin log_admin_bundle)
+target_compile_definitions(test_log_admin PRIVATE -DLOG_ADMIN_BUNDLE=\"$<TARGET_PROPERTY:log_admin,BUNDLE_FILE>\")
 
-#Version 3 API
-add_subdirectory(log_utils)
-add_subdirectory(log_admin)
-add_subdirectory(log_writers)
+
+add_test(NAME test_log_admin COMMAND test_log_admin)
+setup_target_for_coverage(test_log_admin SCAN_DIR ..)
 

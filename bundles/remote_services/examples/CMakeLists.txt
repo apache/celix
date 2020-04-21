@@ -74,8 +74,7 @@ if (RSA_EXAMPLES)
                 Celix::rsa_topology_manager
                 Celix::rsa_dfi Celix::shell
                 Celix::shell_tui
-                Celix::log_service
-                Celix::log_writer_stdout
+                Celix::log_admin
                 Celix::rsa_discovery_etcd
                 celix_remote_interceptors_example
                 calculator_shell

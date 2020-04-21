@@ -35,18 +35,30 @@
 #endif
 
 unsigned int utils_stringHash(const void* strPtr) {
-    const char* string = strPtr;
+    return celix_utils_stringHash((const char*)strPtr);
+}
+
+int utils_stringEquals(const void* string, const void* toCompare) {
+    return celix_utils_stringEquals((const char*)string, (const char*)toCompare);
+}
+
+unsigned int celix_utils_stringHash(const char* string) {
     unsigned int hc = 5381;
     char ch;
     while((ch = *string++) != '\0'){
         hc = (hc << 5) + hc + ch;
     }
-
     return hc;
 }
 
-int utils_stringEquals(const void* string, const void* toCompare) {
-    return strcmp((const char*)string, (const char*)toCompare) == 0;
+bool celix_utils_stringEquals(const char* a, const char* b) {
+    if (a == NULL && b == NULL) {
+        return true;
+    } else if (a == NULL || b == NULL) {
+        return false;
+    } else {
+        return strncmp(a, b, 1024*124*10) == 0;
+    }
 }
 
 char * string_ndup(const char *s, size_t n) {

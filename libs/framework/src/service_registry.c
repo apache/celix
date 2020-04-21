@@ -787,10 +787,7 @@ static celix_status_t serviceRegistry_removeHook(service_registry_pt registry, s
 	const char* serviceName = NULL;
 
 	celix_service_registry_listener_hook_entry_t *removedEntry = NULL;
-
-	properties_pt props = NULL;
-	serviceRegistration_getProperties(registration, &props);
-	serviceName = properties_get(props, (char *) OSGI_FRAMEWORK_OBJECTCLASS);
+	serviceRegistration_getServiceName(registration, &serviceName);
 	long svcId = serviceRegistration_getServiceId(registration);
 	if (strcmp(OSGI_FRAMEWORK_LISTENER_HOOK_SERVICE_NAME, serviceName) == 0) {
         celixThreadRwlock_writeLock(&registry->lock);

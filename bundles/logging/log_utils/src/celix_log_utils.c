@@ -1,0 +1,141 @@
+/**
+ *Licensed to the Apache Software Foundation (ASF) under one
+ *or more contributor license agreements.  See the NOTICE file
+ *distributed with this work for additional information
+ *regarding copyright ownership.  The ASF licenses this file
+ *to you under the Apache License, Version 2.0 (the
+ *"License"); you may not use this file except in compliance
+ *with the License.  You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *Unless required by applicable law or agreed to in writing,
+ *software distributed under the License is distributed on an
+ *"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ *specific language governing permissions and limitations
+ *under the License.
+ */
+
+#include "celix_log_utils.h"
+
+#include <stdarg.h>
+#include <execinfo.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <time.h>
+#include <string.h>
+
+static const char * const CELIX_STRING_VALUE_DISABLED  = "disabled";
+static const char * const CELIX_STRING_VALUE_FATAL     = "fatal";
+static const char * const CELIX_STRING_VALUE_ERROR     = "error";
+static const char * const CELIX_STRING_VALUE_WARNING   = "warning";
+static const char * const CELIX_STRING_VALUE_INFO      = "info";
+static const char * const CELIX_STRING_VALUE_DEBUG     = "debug";
+static const char * const CELIX_STRING_VALUE_TRACE     = "trace";
+static const char * const CELIX_STRING_VALUE_UNKNOWN   = "unknown";
+
+const char* celix_logUtils_logLevelToString(celix_log_level_e level) {
+    switch(level) {
+        case CELIX_LOG_LEVEL_DISABLED:
+            return CELIX_STRING_VALUE_DISABLED;
+        case CELIX_LOG_LEVEL_FATAL:
+            return CELIX_STRING_VALUE_FATAL;
+        case CELIX_LOG_LEVEL_ERROR:
+            return CELIX_STRING_VALUE_ERROR;
+        case CELIX_LOG_LEVEL_WARNING:
+            return CELIX_STRING_VALUE_WARNING;
+        case CELIX_LOG_LEVEL_INFO:
+            return CELIX_STRING_VALUE_INFO;
+        case CELIX_LOG_LEVEL_DEBUG:
+            return CELIX_STRING_VALUE_DEBUG;
+        case CELIX_LOG_LEVEL_TRACE:
+            return CELIX_STRING_VALUE_TRACE;
+        default:
+            return CELIX_STRING_VALUE_UNKNOWN;
+    }
+}
+
+celix_log_level_e celix_logUtils_logLevelFromString(const char *str, celix_log_level_e fallbackLogLevel) {
+    celix_log_level_e level = fallbackLogLevel;
+    if (str != NULL) {
+        if (strncmp(CELIX_STRING_VALUE_DISABLED, str, strlen(CELIX_STRING_VALUE_DISABLED)) == 0) {
+            level = CELIX_LOG_LEVEL_DISABLED;
+        } else if (strncmp(CELIX_STRING_VALUE_FATAL, str, strlen(CELIX_STRING_VALUE_FATAL)) == 0) {
+            level = CELIX_LOG_LEVEL_FATAL;
+        } else if (strncmp(CELIX_STRING_VALUE_ERROR, str, strlen(CELIX_STRING_VALUE_ERROR)) == 0) {
+            level = CELIX_LOG_LEVEL_ERROR;
+        } else if (strncmp(CELIX_STRING_VALUE_WARNING, str, strlen(CELIX_STRING_VALUE_WARNING)) == 0) {
+            level = CELIX_LOG_LEVEL_WARNING;
+        } else if (strncmp(CELIX_STRING_VALUE_INFO, str, strlen(CELIX_STRING_VALUE_INFO)) == 0) {
+            level = CELIX_LOG_LEVEL_INFO;
+        } else if (strncmp(CELIX_STRING_VALUE_DEBUG, str, strlen(CELIX_STRING_VALUE_DEBUG)) == 0) {
+            level = CELIX_LOG_LEVEL_DEBUG;
+        } else if (strncmp(CELIX_STRING_VALUE_TRACE, str, strlen(CELIX_STRING_VALUE_TRACE)) == 0) {
+            level = CELIX_LOG_LEVEL_TRACE;
+        } else if (strncmp(CELIX_STRING_VALUE_UNKNOWN, str, strlen(CELIX_STRING_VALUE_UNKNOWN)) == 0) {
+            level = CELIX_LOG_LEVEL_UNKNOWN;
+        } else {
+            celix_logUtils_logToStdout("logUtils", CELIX_LOG_LEVEL_ERROR, "Cannot match log level str '%s' to an existing log level. Falling back to log level %s", str, celix_logUtils_logLevelToString(fallbackLogLevel));
+        }
+    } else {
+        celix_logUtils_logToStdout("logUtils", CELIX_LOG_LEVEL_ERROR, "Cannot match NULL log level str to an existing log level. Falling back to log level %s",  celix_logUtils_logLevelToString(fallbackLogLevel));
+    }
+    return level;
+}
+
+static inline void celix_logUtils_inlinePrintBacktrace(FILE *stream) {
+    void *bbuf[64];
+    int nrOfTraces = backtrace(bbuf, 64);
+    char **lines = backtrace_symbols(bbuf, nrOfTraces);
+    for (int i = 0; i < nrOfTraces; ++i) {
+        char *line = lines[i];
+        fprintf(stream, "%s\n", line);
+    }
+    free(lines);
+    fflush(stream);
+}
+
+void celix_logUtils_printBacktrace(FILE* stream) {
+    celix_logUtils_inlinePrintBacktrace(stream);
+}
+
+void celix_logUtils_logToStdout(const char *logServiceName, celix_log_level_e level, const char *format, ...) {
+    va_list args;
+    va_start(args, format);
+    celix_logUtils_vLogToStdout(logServiceName, level, format, args);
+    va_end(args);
+}
+
+void celix_logUtils_vLogToStdout(const char *logServiceName, celix_log_level_e level, const char *format, va_list formatArgs) {
+    if (level == CELIX_LOG_LEVEL_UNKNOWN) {
+        fprintf(stderr, "Unexpected log level %s", CELIX_STRING_VALUE_UNKNOWN);
+        celix_logUtils_inlinePrintBacktrace(stderr);
+        return;
+    }
+
+    //get printable time
+    time_t t = time(NULL);
+    struct tm local;
+    localtime_r(&t, &local);
+
+    FILE *out = stdout;
+    if (level == CELIX_LOG_LEVEL_WARNING || level == CELIX_LOG_LEVEL_ERROR || level == CELIX_LOG_LEVEL_FATAL) {
+        out = stderr;
+    }
+
+    //TODO protect multiple fprint calls, so that there is not interference
+    fprintf(out, "[%i-%02i-%02iT%02i:%02i:%02i] ", local.tm_year + 1900, local.tm_mon+1, local.tm_mday, local.tm_hour, local.tm_min, local.tm_sec);
+    fprintf(out, "[%s] [%s] ", celix_logUtils_logLevelToString(level), logServiceName);
+
+    vfprintf(out, format, formatArgs);
+
+    fprintf(out, "\n");
+    fflush(out);
+
+    if (level == CELIX_LOG_LEVEL_ERROR) {
+        fprintf(out, "Backtrace:\n");
+        fflush(out);
+        celix_logUtils_inlinePrintBacktrace(out);
+    }
+}
