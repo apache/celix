@@ -41,6 +41,7 @@ jobs:
           make coverage
           lcx="lcov --output-file=coverage.info " && for i in `find . -name "*.info.cleaned"`; do lcx+=" --add-tracefile=$i"; done && $lcx
 #      NOTE For now disabled, need to be able to configure coveralls thresholds
+#      See https://github.com/lemurheavy/coveralls-public/issues/1431
 #      - name: Coveralls
 #        uses: coverallsapp/github-action@master
 #        with:
