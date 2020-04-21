@@ -16,16 +16,16 @@
 # under the License.
 
 
-add_subdirectory(log_service_api)
+add_executable(test_syslog_writer
+        src/SyslogWriterTestSuite.cc
+)
+target_link_libraries(test_syslog_writer PRIVATE Celix::log_utils GTest::GTest GTest::Main)
 
-#Version 2 API (deprecated)
-if (CELIX_INSTALL_DEPRECATED_API)
-    add_subdirectory(log_helper_v2)
-    add_subdirectory(log_service_v2)
-endif ()
+add_dependencies(test_syslog_writer log_admin_bundle syslog_writer_bundle)
+target_compile_definitions(test_syslog_writer PRIVATE -DLOG_ADMIN_BUNDLE=\"$<TARGET_PROPERTY:log_admin,BUNDLE_FILE>\")
+target_compile_definitions(test_syslog_writer PRIVATE -DSYSLOG_WRITER_BUNDLE=\"$<TARGET_PROPERTY:syslog_writer,BUNDLE_FILE>\")
 
-#Version 3 API
-add_subdirectory(log_utils)
-add_subdirectory(log_admin)
-add_subdirectory(log_writers)
+
+add_test(NAME test_syslog_writer COMMAND test_syslog_writer)
+setup_target_for_coverage(test_syslog_writer SCAN_DIR ..)
 

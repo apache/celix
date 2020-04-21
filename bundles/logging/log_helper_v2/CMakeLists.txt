@@ -5,9 +5,9 @@
 # to you under the Apache License, Version 2.0 (the
 # "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
-#
+# 
 #   http://www.apache.org/licenses/LICENSE-2.0
-#
+# 
 # Unless required by applicable law or agreed to in writing,
 # software distributed under the License is distributed on an
 # "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -15,17 +15,14 @@
 # specific language governing permissions and limitations
 # under the License.
 
+add_library(log_helper STATIC src/log_helper.c)
+set_target_properties(log_helper PROPERTIES OUTPUT_NAME "celix_log_helper")
+target_include_directories(log_helper PUBLIC
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
+		$<INSTALL_INTERFACE:include/celix/log_helper>
+)
+target_link_libraries(log_helper PUBLIC Celix::framework Celix::log_service_api)
+install(TARGETS log_helper EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT logging)
+install(DIRECTORY loghelper_include/ DESTINATION include/celix/log_helper COMPONENT logging)
 
-add_subdirectory(log_service_api)
-
-#Version 2 API (deprecated)
-if (CELIX_INSTALL_DEPRECATED_API)
-    add_subdirectory(log_helper_v2)
-    add_subdirectory(log_service_v2)
-endif ()
-
-#Version 3 API
-add_subdirectory(log_utils)
-add_subdirectory(log_admin)
-add_subdirectory(log_writers)
-
+add_library(Celix::log_helper ALIAS log_helper)

@@ -5,9 +5,9 @@
 # to you under the Apache License, Version 2.0 (the
 # "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
-#
+# 
 #   http://www.apache.org/licenses/LICENSE-2.0
-#
+# 
 # Unless required by applicable law or agreed to in writing,
 # software distributed under the License is distributed on an
 # "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -16,16 +16,21 @@
 # under the License.
 
 
-add_subdirectory(log_service_api)
+add_library(log_utils STATIC
+		src/celix_log_utils.c
+		src/celix_log_helper.c
+)
+set_target_properties(log_utils PROPERTIES OUTPUT_NAME "celix_log_utils")
+target_include_directories(log_utils PUBLIC
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
+		$<INSTALL_INTERFACE:include/celix/log_utils>
+)
+target_link_libraries(log_utils PUBLIC Celix::utils Celix::log_service_api)
+install(TARGETS log_utils EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT logging)
+install(DIRECTORY include/ DESTINATION include/celix/log_utils COMPONENT logging)
 
-#Version 2 API (deprecated)
-if (CELIX_INSTALL_DEPRECATED_API)
-    add_subdirectory(log_helper_v2)
-    add_subdirectory(log_service_v2)
-endif ()
+add_library(Celix::log_utils ALIAS log_utils)
 
-#Version 3 API
-add_subdirectory(log_utils)
-add_subdirectory(log_admin)
-add_subdirectory(log_writers)
-
+if (ENABLE_TESTING)
+	add_subdirectory(gtest)
+endif()

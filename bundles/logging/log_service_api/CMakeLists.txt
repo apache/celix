@@ -5,9 +5,9 @@
 # to you under the Apache License, Version 2.0 (the
 # "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
-#
+# 
 #   http://www.apache.org/licenses/LICENSE-2.0
-#
+# 
 # Unless required by applicable law or agreed to in writing,
 # software distributed under the License is distributed on an
 # "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -15,17 +15,22 @@
 # specific language governing permissions and limitations
 # under the License.
 
+add_library(log_service_api INTERFACE)
+target_include_directories(log_service_api INTERFACE
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
+	$<INSTALL_INTERFACE:include/celix/log_service>
+)
+target_link_libraries(log_service_api INTERFACE Celix::utils Celix::framework)
 
-add_subdirectory(log_service_api)
-
-#Version 2 API (deprecated)
 if (CELIX_INSTALL_DEPRECATED_API)
-    add_subdirectory(log_helper_v2)
-    add_subdirectory(log_service_v2)
+	target_include_directories(log_service_api INTERFACE
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include_v2>
+		$<INSTALL_INTERFACE:include/celix/log_service>
+	)
+	install(DIRECTORY v2_api/ DESTINATION include/celix/log_service)
 endif ()
 
-#Version 3 API
-add_subdirectory(log_utils)
-add_subdirectory(log_admin)
-add_subdirectory(log_writers)
+install(TARGETS log_service_api EXPORT celix)
+install(DIRECTORY api/ DESTINATION include/celix/log_service)
 
+add_library(Celix::log_service_api ALIAS log_service_api)

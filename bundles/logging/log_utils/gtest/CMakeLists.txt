@@ -16,16 +16,13 @@
 # under the License.
 
 
-add_subdirectory(log_service_api)
+add_executable(test_log_utils
+        src/LogUtilsTestSuite.cc
+        src/LogHelperTestSuite.cc
+)
 
-#Version 2 API (deprecated)
-if (CELIX_INSTALL_DEPRECATED_API)
-    add_subdirectory(log_helper_v2)
-    add_subdirectory(log_service_v2)
-endif ()
+target_link_libraries(test_log_utils PRIVATE Celix::log_utils GTest::GTest GTest::Main)
 
-#Version 3 API
-add_subdirectory(log_utils)
-add_subdirectory(log_admin)
-add_subdirectory(log_writers)
+add_test(NAME test_log_utils COMMAND test_log_utils)
+setup_target_for_coverage(test_log_utils)
 
