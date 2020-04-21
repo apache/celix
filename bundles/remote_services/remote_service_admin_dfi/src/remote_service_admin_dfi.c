@@ -28,7 +28,6 @@
 #include <curl/curl.h>
 
 #include <jansson.h>
-#include <remote_custom_serialization_service.h>
 #include "json_serializer.h"
 #include "utils.h"
 
@@ -62,14 +61,10 @@ struct remote_service_admin {
     log_helper_t *loghelper;
 
     celix_thread_rwlock_t exportedServicesLock;
-    hash_map_t *exportedServices;
+    hash_map_pt exportedServices;
 
     celix_thread_mutex_t importedServicesLock;
-    array_list_t *importedServices;
-
-    celix_thread_mutex_t customSerializationLock;
-    hash_map_t *customSerializationServices;
-    long customSerializationTrackerId;
+    array_list_pt importedServices;
 
     char *port;
     char *ip;
@@ -109,12 +104,10 @@ static const char *no_content_response_headers =
 static const unsigned int DEFAULT_TIMEOUT = 0;
 
 static int remoteServiceAdmin_callback(struct mg_connection *conn);
-static void remoteServiceAdmin_customSerializationServiceAdded(void* handle, void* svc, const celix_properties_t *props);
-static void remoteServiceAdmin_customSerializationServiceRemoved(void* handle, void* svc, const celix_properties_t *props);
-static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin_t *admin, service_reference_pt reference, celix_properties_t *props, char *interface, endpoint_description_t **endpoint);
-static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description_t *endpointDescription, char *request, char **reply, int* replyStatus);
+static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin_t *admin, service_reference_pt reference, celix_properties_t *props, char *interface, endpoint_description_t **description);
+static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description_t *endpointDescription, char *request, celix_properties_t *metadata, char **reply, int* replyStatus);
 static celix_status_t remoteServiceAdmin_getIpAddress(char* interface, char** ip);
-static size_t remoteServiceAdmin_readCallback(void *voidBuffer, size_t size, size_t nmemb, void *userp);
+static size_t remoteServiceAdmin_readCallback(void *ptr, size_t size, size_t nmemb, void *userp);
 static size_t remoteServiceAdmin_write(void *contents, size_t size, size_t nmemb, void *userp);
 static void remoteServiceAdmin_log(remote_service_admin_t *admin, int level, const char *file, int line, const char *msg, ...);
 
@@ -162,7 +155,6 @@ static void remoteServiceAdmin_curlshare_unlock(CURL *handle, curl_lock_data dat
 celix_status_t remoteServiceAdmin_create(celix_bundle_context_t *context, remote_service_admin_t **admin) {
     celix_status_t status = CELIX_SUCCESS;
 
-
     *admin = calloc(1, sizeof(**admin));
 
     if (!*admin) {
@@ -170,12 +162,10 @@ celix_status_t remoteServiceAdmin_create(celix_bundle_context_t *context, remote
     } else {
         (*admin)->context = context;
         (*admin)->exportedServices = hashMap_create(NULL, NULL, NULL, NULL);
-        (*admin)->customSerializationServices = hashMap_create(NULL, NULL, NULL, NULL);
-        (*admin)->importedServices = celix_arrayList_create();
+         arrayList_create(&(*admin)->importedServices);
 
          celixThreadRwlock_create(&(*admin)->exportedServicesLock, NULL);
          celixThreadMutex_create(&(*admin)->importedServicesLock, NULL);
-         celixThreadMutex_create(&(*admin)->customSerializationLock, NULL);
 
         if (logHelper_create(context, &(*admin)->loghelper) == CELIX_SUCCESS) {
             logHelper_start((*admin)->loghelper);
@@ -272,24 +262,13 @@ celix_status_t remoteServiceAdmin_create(celix_bundle_context_t *context, remote
         }
     }
 
-    celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
-    opts.filter.serviceName = RSA_CUSTOM_SERIALIZATION_SERVICE_NAME;
-    opts.filter.ignoreServiceLanguage = true;
-    opts.callbackHandle = *admin;
-    opts.addWithProperties = remoteServiceAdmin_customSerializationServiceAdded;
-    opts.removeWithProperties = remoteServiceAdmin_customSerializationServiceRemoved;
-    (*admin)->customSerializationTrackerId = celix_bundleContext_trackServicesWithOptions(context, &opts);
-
     return status;
 }
 
 
-celix_status_t remoteServiceAdmin_destroy(remote_service_admin_t **admin) {
+celix_status_t remoteServiceAdmin_destroy(remote_service_admin_t **admin)
+{
     celix_status_t status = CELIX_SUCCESS;
-
-    if(admin == NULL) {
-        return status;
-    }
 
     if ( (*admin)->logFile != NULL && (*admin)->logFile != stdout) {
         fclose((*admin)->logFile);
@@ -301,13 +280,6 @@ celix_status_t remoteServiceAdmin_destroy(remote_service_admin_t **admin) {
     pthread_mutex_destroy(&(*admin)->curlMutexConnect);
     pthread_mutex_destroy(&(*admin)->curlMutexCookie);
     pthread_mutex_destroy(&(*admin)->curlMutexDns);
-    celixThreadRwlock_destroy(&(*admin)->exportedServicesLock);
-    pthread_mutex_destroy(&(*admin)->importedServicesLock);
-    pthread_mutex_destroy(&(*admin)->customSerializationLock);
-    hashMap_destroy((*admin)->exportedServices, false, false);
-    hashMap_destroy((*admin)->customSerializationServices, false, false);
-    celix_arrayList_destroy((*admin)->importedServices);
-    logHelper_destroy(&(*admin)->loghelper);
     free(*admin);
 
     *admin = NULL;
@@ -318,47 +290,36 @@ celix_status_t remoteServiceAdmin_destroy(remote_service_admin_t **admin) {
 
 celix_status_t remoteServiceAdmin_stop(remote_service_admin_t *admin) {
     celix_status_t status = CELIX_SUCCESS;
-    int size;
-    hash_map_iterator_pt iter;
-
-    if (admin == NULL) {
-        return status;
-    }
 
     celixThreadRwlock_writeLock(&admin->exportedServicesLock);
 
-    iter = hashMapIterator_create(admin->exportedServices);
+    hash_map_iterator_pt iter = hashMapIterator_create(admin->exportedServices);
     while (hashMapIterator_hasNext(iter)) {
         array_list_pt exports = hashMapIterator_nextValue(iter);
-        size = celix_arrayList_size(exports);
-        for (int i = 0; i < size; i++) {
-            export_registration_t *export = celix_arrayList_get(exports, i);
+        int i;
+        for (i = 0; i < arrayList_size(exports); i++) {
+            export_registration_t *export = arrayList_get(exports, i);
             if (export != NULL) {
                 exportRegistration_stop(export);
                 exportRegistration_destroy(export);
             }
         }
-        celix_arrayList_destroy(exports);
+        arrayList_destroy(exports);
     }
     hashMapIterator_destroy(iter);
-    hashMap_clear(admin->exportedServices, false, false);
     celixThreadRwlock_unlock(&admin->exportedServicesLock);
 
     celixThreadMutex_lock(&admin->importedServicesLock);
-    size = celix_arrayList_size(admin->importedServices);
-    for (int i = 0; i < size ; i += 1) {
-        import_registration_t *import = celix_arrayList_get(admin->importedServices, i);
+    int i;
+    int size = arrayList_size(admin->importedServices);
+    for (i = 0; i < size ; i += 1) {
+        import_registration_t *import = arrayList_get(admin->importedServices, i);
         if (import != NULL) {
             importRegistration_stop(import);
             importRegistration_destroy(import);
         }
     }
-    celix_arrayList_clear(admin->importedServices);
     celixThreadMutex_unlock(&admin->importedServicesLock);
-
-    celixThreadMutex_lock(&admin->customSerializationLock);
-    hashMap_clear(admin->customSerializationServices, false, false);
-    celixThreadMutex_unlock(&admin->customSerializationLock);
 
     if (admin->ctx != NULL) {
         logHelper_log(admin->loghelper, OSGI_LOGSERVICE_INFO, "RSA: Stopping webserver...");
@@ -366,9 +327,11 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_t *admin) {
         admin->ctx = NULL;
     }
 
-    celix_bundleContext_stopTracker(admin->context, admin->customSerializationTrackerId);
+    hashMap_destroy(admin->exportedServices, false, false);
+    arrayList_destroy(admin->importedServices);
 
     logHelper_stop(admin->loghelper);
+    logHelper_destroy(&admin->loghelper);
 
     return status;
 }
@@ -402,6 +365,18 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
             service[pos] = '\0';
             unsigned long serviceId = strtoul(service,NULL,10);
 
+            celix_properties_t *metadata = NULL;
+
+            for (int i = 0; i < request_info->num_headers; i++) {
+                struct mg_header header = request_info->http_headers[i];
+                if (strncmp(header.name, "X-RSA-Metadata-", 15) == 0) {
+                    if (metadata == NULL) {
+                        metadata = celix_properties_create();
+                    }
+                    celix_properties_set(metadata, header.name + 15, header.value);
+                }
+            }
+
             celixThreadRwlock_readLock(&rsa->exportedServicesLock);
 
             //find endpoint
@@ -410,9 +385,9 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
             while (hashMapIterator_hasNext(iter)) {
                 hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
                 array_list_pt exports = hashMapEntry_getValue(entry);
-                int size = celix_arrayList_size(exports);
-                for (int expIt = 0; expIt < size; expIt++) {
-                    export_registration_t *check = celix_arrayList_get(exports, expIt);
+                int expIt = 0;
+                for (expIt = 0; expIt < arrayList_size(exports); expIt++) {
+                    export_registration_t *check = arrayList_get(exports, expIt);
                     export_reference_t * ref = NULL;
                     exportRegistration_getExportReference(check, &ref);
                     endpoint_description_t * checkEndpoint = NULL;
@@ -429,24 +404,17 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
 
             if (export != NULL) {
 
-                celixThreadMutex_lock(&rsa->customSerializationLock);
-                rsa_custom_serialization_service *customSerializationService = hashMap_get(rsa->customSerializationServices, (void*)(uintptr_t)serviceId);
-
-                logHelper_log(rsa->loghelper, OSGI_LOGSERVICE_DEBUG, "RSA: remoteServiceAdmin_callback service id %li is NULL? %s", serviceId, customSerializationService == NULL ? "yes" : "no");
-
                 uint64_t datalength = request_info->content_length;
                 char* data = malloc(datalength + 1);
                 mg_read(conn, data, datalength);
                 data[datalength] = '\0';
 
                 char *response = NULL;
-                deleteTypeFunc deleteType = customSerializationService != NULL ? customSerializationService->deleteType : NULL;
-                int responseLength = 0;
-                int rc = exportRegistration_call(export, data, -1, deleteType, &response, &responseLength);
+                int responceLength = 0;
+                int rc = exportRegistration_call(export, data, -1, metadata, &response, &responceLength);
                 if (rc != CELIX_SUCCESS) {
                     RSA_LOG_ERROR(rsa, "Error trying to invoke remove service, got error %i\n", rc);
                 }
-                celixThreadMutex_unlock(&rsa->customSerializationLock);
 
                 if (rc == CELIX_SUCCESS && response != NULL) {
                     mg_write(conn, data_response_headers, strlen(data_response_headers));
@@ -456,6 +424,7 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
                     mg_write(conn, no_content_response_headers, strlen(no_content_response_headers));
                 }
                 result = 1;
+
                 free(data);
             } else {
                 result = 0;
@@ -470,39 +439,7 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
     return result;
 }
 
-static void remoteServiceAdmin_customSerializationServiceAdded(void* handle, void* svc, const celix_properties_t *props) {
-    remote_service_admin_t *admin = (remote_service_admin_t*)handle;
-
-    long svcId = celix_properties_getAsLong(props, RSA_SERVICE_TARGETED_ID, -1L);
-    if(svcId == -1) {
-        logHelper_log(admin->loghelper, OSGI_LOGSERVICE_WARNING, "RSA: remoteServiceAdmin_customSerializationServiceAdded without targeted service id");
-        return;
-    }
-
-    logHelper_log(admin->loghelper, OSGI_LOGSERVICE_INFO, "RSA: remoteServiceAdmin_customSerializationServiceAdded targeted service id %li", svcId);
-
-    celixThreadMutex_lock(&admin->customSerializationLock);
-    hashMap_put(admin->customSerializationServices, (void*)(uintptr_t)svcId, svc);
-    celixThreadMutex_unlock(&admin->customSerializationLock);
-}
-
-static void remoteServiceAdmin_customSerializationServiceRemoved(void* handle, void* svc, const celix_properties_t *props) {
-    remote_service_admin_t *admin = (remote_service_admin_t*)handle;
-
-    long svcId = celix_properties_getAsLong(props, RSA_SERVICE_TARGETED_ID, -1L);
-    if(svcId == -1) {
-        logHelper_log(admin->loghelper, OSGI_LOGSERVICE_WARNING, "RSA: remoteServiceAdmin_customSerializationServiceRemoved without targeted service id");
-        return;
-    }
-
-    logHelper_log(admin->loghelper, OSGI_LOGSERVICE_INFO, "RSA: remoteServiceAdmin_customSerializationServiceRemoved targeted service id %li", svcId);
-
-    celixThreadMutex_lock(&admin->customSerializationLock);
-    hashMap_remove(admin->customSerializationServices, (void*)(uintptr_t)svcId);
-    celixThreadMutex_unlock(&admin->customSerializationLock);
-}
-
-celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *admin, char *serviceId, celix_properties_t *properties, array_list_t **registrations) {
+celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *admin, char *serviceId, celix_properties_t *properties, array_list_pt *registrations) {
     celix_status_t status = CELIX_SUCCESS;
 
     bool export = false;
@@ -530,26 +467,27 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *admin, c
     }
 
     if (export) {
-        *registrations = celix_arrayList_create();
+        arrayList_create(registrations);
         array_list_pt references = NULL;
         service_reference_pt reference = NULL;
         char filter[256];
 
-        snprintf(filter, 256, "(%s=%s)", OSGI_FRAMEWORK_SERVICE_ID, serviceId);
+        snprintf(filter, 256, "(%s=%s)", (char *) OSGI_FRAMEWORK_SERVICE_ID, serviceId);
 
         status = bundleContext_getServiceReferences(admin->context, NULL, filter, &references);
 
         logHelper_log(admin->loghelper, OSGI_LOGSERVICE_DEBUG, "RSA: exportService called for serviceId %s", serviceId);
 
-        int size = celix_arrayList_size(references);
-        for (int i = 0; i < size; i += 1) {
+        int i;
+        int size = arrayList_size(references);
+        for (i = 0; i < size; i += 1) {
             if (i == 0) {
-                reference = celix_arrayList_get(references, i);
+                reference = arrayList_get(references, i);
             } else {
-                bundleContext_ungetServiceReference(admin->context, celix_arrayList_get(references, i));
+                bundleContext_ungetServiceReference(admin->context, arrayList_get(references, i));
             }
         }
-        celix_arrayList_destroy(references);
+        arrayList_destroy(references);
 
         if (reference == NULL) {
             logHelper_log(admin->loghelper, OSGI_LOGSERVICE_ERROR, "ERROR: expected a reference for service id %s.",
@@ -560,8 +498,8 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *admin, c
         const char *exports = NULL;
         const char *provided = NULL;
         if (status == CELIX_SUCCESS) {
-            serviceReference_getProperty(reference, OSGI_RSA_SERVICE_EXPORTED_INTERFACES, &exports);
-            serviceReference_getProperty(reference, OSGI_FRAMEWORK_OBJECTCLASS, &provided);
+            serviceReference_getProperty(reference, (char *) OSGI_RSA_SERVICE_EXPORTED_INTERFACES, &exports);
+            serviceReference_getProperty(reference, (char *) OSGI_FRAMEWORK_OBJECTCLASS, &provided);
 
             if (exports == NULL || provided == NULL || strcmp(exports, provided) != 0) {
                 logHelper_log(admin->loghelper, OSGI_LOGSERVICE_WARNING, "RSA: No Services to export.");
@@ -583,7 +521,7 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *admin, c
             if (status == CELIX_SUCCESS) {
                 status = exportRegistration_start(registration);
                 if (status == CELIX_SUCCESS) {
-                    celix_arrayList_add(*registrations, registration);
+                    arrayList_add(*registrations, registration);
                 }
             }
         }
@@ -594,7 +532,7 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *admin, c
             hashMap_put(admin->exportedServices, reference, *registrations);
             celixThreadRwlock_unlock(&admin->exportedServicesLock);
         } else {
-            celix_arrayList_destroy(*registrations);
+            arrayList_destroy(*registrations);
             *registrations = NULL;
         }
     }
@@ -617,7 +555,7 @@ celix_status_t remoteServiceAdmin_removeExportedService(remote_service_admin_t *
 
         array_list_pt exports = (array_list_pt)hashMap_remove(admin->exportedServices, servRef);
         if(exports!=NULL){
-            celix_arrayList_destroy(exports);
+            arrayList_destroy(exports);
         }
 
         exportRegistration_close(registration);
@@ -648,9 +586,9 @@ static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_servic
         const char *value = NULL;
 
         if (serviceReference_getProperty(reference, key, &value) == CELIX_SUCCESS
-            && strcmp(key, OSGI_RSA_SERVICE_EXPORTED_INTERFACES) != 0
-            && strcmp(key, OSGI_RSA_SERVICE_EXPORTED_CONFIGS) != 0
-            && strcmp(key, OSGI_FRAMEWORK_OBJECTCLASS) != 0) {
+            && strcmp(key, (char*) OSGI_RSA_SERVICE_EXPORTED_INTERFACES) != 0
+            && strcmp(key, (char*) OSGI_RSA_SERVICE_EXPORTED_CONFIGS) != 0
+            && strcmp(key, (char*) OSGI_FRAMEWORK_OBJECTCLASS) != 0) {
             celix_properties_set(endpointProperties, key, value);
         }
     }
@@ -678,7 +616,7 @@ static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_servic
     celix_properties_set(endpointProperties, OSGI_RSA_ENDPOINT_SERVICE_ID, serviceId);
     celix_properties_set(endpointProperties, OSGI_RSA_ENDPOINT_ID, endpoint_uuid);
     celix_properties_set(endpointProperties, OSGI_RSA_SERVICE_IMPORTED, "true");
-    celix_properties_set(endpointProperties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, RSA_DFI_CONFIGURATION_TYPE);
+    celix_properties_set(endpointProperties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, (char*) RSA_DFI_CONFIGURATION_TYPE);
     celix_properties_set(endpointProperties, RSA_DFI_ENDPOINT_URL, url);
 
     if (props != NULL) {
@@ -694,11 +632,11 @@ static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_servic
     if (!*endpoint) {
         status = CELIX_ENOMEM;
     } else {
-        (*endpoint)->id = (char*) celix_properties_get(endpointProperties, OSGI_RSA_ENDPOINT_ID, NULL);
+        (*endpoint)->id = (char*) celix_properties_get(endpointProperties, (char*) OSGI_RSA_ENDPOINT_ID, NULL);
         const char *serviceId = NULL;
-        serviceReference_getProperty(reference, OSGI_FRAMEWORK_SERVICE_ID, &serviceId);
+        serviceReference_getProperty(reference, (char*) OSGI_FRAMEWORK_SERVICE_ID, &serviceId);
         (*endpoint)->serviceId = strtoull(serviceId, NULL, 0);
-        (*endpoint)->frameworkUUID = (char*) celix_properties_get(endpointProperties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, NULL);
+        (*endpoint)->frameworkUUID = (char*) celix_properties_get(endpointProperties, (char*) OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, NULL);
         (*endpoint)->service = strndup(interface, 1024*10);
         (*endpoint)->properties = endpointProperties;
     }
@@ -814,7 +752,7 @@ celix_status_t remoteServiceAdmin_importService(remote_service_admin_t *admin, e
         }
 
         celixThreadMutex_lock(&admin->importedServicesLock);
-        celix_arrayList_add(admin->importedServices, import);
+        arrayList_add(admin->importedServices, import);
         celixThreadMutex_unlock(&admin->importedServicesLock);
 
         if (status == CELIX_SUCCESS) {
@@ -831,14 +769,15 @@ celix_status_t remoteServiceAdmin_removeImportedService(remote_service_admin_t *
     logHelper_log(admin->loghelper, OSGI_LOGSERVICE_INFO, "RSA_DFI: Removing imported service");
 
     celixThreadMutex_lock(&admin->importedServicesLock);
-    int size = celix_arrayList_size(admin->importedServices);
+    int i;
+    int size = arrayList_size(admin->importedServices);
     import_registration_t * current  = NULL;
-    for (int i = 0; i < size; i += 1) {
-        current = celix_arrayList_get(admin->importedServices, i);
+    for (i = 0; i < size; i += 1) {
+        current = arrayList_get(admin->importedServices, i);
         if (current == registration) {
+            arrayList_remove(admin->importedServices, i);
             importRegistration_close(current);
             importRegistration_destroy(current);
-            celix_arrayList_removeAt(admin->importedServices, i);
             break;
         }
     }
@@ -847,7 +786,7 @@ celix_status_t remoteServiceAdmin_removeImportedService(remote_service_admin_t *
     return status;
 }
 
-static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description_t *endpointDescription, char *request, char **reply, int* replyStatus) {
+static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description_t *endpointDescription, char *request, celix_properties_t *metadata, char **reply, int* replyStatus) {
     remote_service_admin_t * rsa = handle;
     struct post post;
     post.readptr = request;
@@ -886,6 +825,22 @@ static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description
     if(!curl) {
         status = CELIX_ILLEGAL_STATE;
     } else {
+        struct curl_slist *metadataHeader = NULL;
+        if (metadata != NULL && celix_properties_size(metadata) > 0) {
+            const char *key = NULL;
+            CELIX_PROPERTIES_FOR_EACH(metadata, key) {
+                const char *val = celix_properties_get(metadata, key, "");
+                size_t length = strlen(key) + strlen(val) + 18; // "X-RSA-Metadata-key: val\0"
+
+                char header[length];
+
+                snprintf(header, length, "X-RSA-Metadata-%s: %s", key, val);
+                metadataHeader = curl_slist_append(metadataHeader, header);
+            }
+
+            curl_easy_setopt(curl, CURLOPT_HTTPHEADER, metadataHeader);
+        }
+
         curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
         curl_easy_setopt(curl, CURLOPT_TIMEOUT, timeout);
         curl_easy_setopt(curl, CURLOPT_URL, url);
@@ -903,6 +858,7 @@ static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description
         *replyStatus = res;
 
         curl_easy_cleanup(curl);
+        curl_slist_free_all(metadataHeader);
     }
 
     return status;
