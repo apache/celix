@@ -511,7 +511,6 @@ static void psa_zmq_freeMsg(void *msg, void *hint) {
     if(hint) {
         psa_zmq_zerocopy_free_entry *entry = hint;
         entry->msgSer->freeSerializeMsg(entry->msgSer->handle, entry->serializedOutput, entry->serializedOutputLen);
-        free(entry->serializedOutput);
         free(entry);
     } else {
         free(msg);
@@ -677,7 +676,6 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
                 }
                 if (!bound->parent->zeroCopyEnabled && serializedOutput) {
                     entry->msgSer->freeSerializeMsg(entry->msgSer->handle, serializedOutput, serializedOutputLen);
-                    free(serializedOutput);
                 }
 
                 celixThreadMutex_unlock(&entry->sendLock);

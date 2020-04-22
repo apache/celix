@@ -558,7 +558,6 @@ psa_tcp_topicPublicationSend(void *handle, unsigned int msgTypeId, const void *i
                     entry->msgSer->freeSerializeMsg(entry->msgSer->handle,
                                                     serializedIoVecOutput,
                                                     serializedIoVecOutputLen);
-                    free(serializedIoVecOutput);
                     serializedIoVecOutput = NULL;
                 }
             }
