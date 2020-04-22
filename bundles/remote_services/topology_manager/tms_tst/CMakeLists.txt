@@ -71,5 +71,5 @@ configure_file("scope4.json" "scope4.json")
 
 
 add_test(NAME run_test_tm_scoped COMMAND test_tm_scoped)
-SETUP_TARGET_FOR_COVERAGE(test_tm_scoped_cov test_tm_scoped ${CMAKE_BINARY_DIR}/coverage/test_tm_scoped/test_tm_scoped)
+setup_target_for_coverage(test_tm_scoped SCAN_DIR ..)
 

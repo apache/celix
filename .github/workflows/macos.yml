@@ -1,0 +1,41 @@
+name: Celix MacOS
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macOS-latest]
+        compiler: [clang]
+    timeout-minutes: 120
+    steps:
+    - name: Checkout source code
+      uses: actions/checkout@master
+    - name: Install dependencies
+      run: |
+        brew update
+        brew install lcov libffi zeromq czmq openssl cpputest
+        brew link --force libffi
+        brew unlink openssl && brew link openssl --force
+    - name: Build
+      env:
+        CC: ${{ matrix.compiler }}
+        BUILD_OPTIONS: |
+          -DENABLE_TESTING=ON
+          -DENABLE_ADDRESS_SANITIZER=ON
+          -DFFI_INCLUDE_DIR=/usr/local/opt/libffi/lib/libffi-3.2.1/include
+          -DFFI_LIBRARY=/usr/local/opt/libffi/lib/libffi.dylib
+      run: |
+        mkdir build install
+        cd build
+        cmake -DCMAKE_BUILD_TYPE=Debug ${BUILD_OPTIONS} -DCMAKE_INSTALL_PREFIX=../install ..
+        make -j && make install
+    - name: Test
+      run: |
+        cd $GITHUB_WORKSPACE/build
+        export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH:$(pwd)/utils:$(pwd)/framework:$(pwd)/dfi
+        make test ARGS="-V"
+
