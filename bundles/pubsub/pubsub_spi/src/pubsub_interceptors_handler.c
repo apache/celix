@@ -117,7 +117,8 @@ void pubsubInterceptorsHandler_removeInterceptor(void *handle, void *svc, __attr
     for (uint32_t i = 0; i < arrayList_size(handler->interceptors); i++) {
         entry_t *entry = arrayList_get(handler->interceptors, i);
         if (entry->interceptor == svc) {
-            arrayList_remove(handler->interceptors, i);
+            void *old = arrayList_remove(handler->interceptors, i);
+            free(old);
             break;
         }
     }
