@@ -39,5 +39,5 @@ target_compile_definitions(test_pubsub_serializer_json PRIVATE -DSER_BUNDLE=\"$<
 target_compile_definitions(test_pubsub_serializer_json PRIVATE -DDESCRIPTOR_BUNDLE=\"$<TARGET_PROPERTY:pubsub_json_serialization_descriptor,BUNDLE_FILE>\")
 
 add_test(NAME test_pubsub_serializer_json COMMAND test_pubsub_serializer_json)
-SETUP_TARGET_FOR_COVERAGE(test_pubsub_serializer_json_cov test_pubsub_serializer_json ${CMAKE_BINARY_DIR}/coverage/pubsub/pubsub_serializer_json ..)
+setup_target_for_coverage(test_pubsub_serializer_json SCAN_DIR ..)
 

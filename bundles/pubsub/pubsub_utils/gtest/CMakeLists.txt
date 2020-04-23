@@ -35,7 +35,7 @@ add_executable(test_pubsub_utils
 target_link_libraries(test_pubsub_utils PRIVATE Celix::framework Celix::pubsub_utils GTest::GTest GTest::Main)
 target_compile_options(test_pubsub_utils PRIVATE -std=c++14) #Note test code is allowed to be C++14
 add_test(NAME test_pubsub_utils COMMAND test_pubsub_utils)
-SETUP_TARGET_FOR_COVERAGE(test_pubsub_utils_cov test_pubsub_utils ${CMAKE_BINARY_DIR}/coverage/pubsub/pubsub_utils ..)
+setup_target_for_coverage(test_pubsub_utils SCAN_DIR ..)
 
 add_dependencies(test_pubsub_utils pubsub_serialization_provider_descriptors_bundle)
 target_compile_definitions(test_pubsub_utils PRIVATE -DDESCRIPTOR_BUNDLE=\"$<TARGET_PROPERTY:pubsub_serialization_provider_descriptors,BUNDLE_FILE>\")

@@ -39,5 +39,5 @@ target_compile_definitions(test_pubsub_serializer_avrobin PRIVATE -DSER_BUNDLE=\
 target_compile_definitions(test_pubsub_serializer_avrobin PRIVATE -DDESCRIPTOR_BUNDLE=\"$<TARGET_PROPERTY:pubsub_avrobin_serialization_descriptor,BUNDLE_FILE>\")
 
 add_test(NAME test_pubsub_serializer_avrobin COMMAND test_pubsub_serializer_avrobin)
-SETUP_TARGET_FOR_COVERAGE(test_pubsub_serializer_avrobin_cov test_pubsub_serializer_avrobin ${CMAKE_BINARY_DIR}/coverage/pubsub/pubsub_serializer_avrobin ..)
+setup_target_for_coverage(test_pubsub_serializer_avrobin SCAN_DIR ..)
 
