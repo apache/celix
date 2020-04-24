@@ -344,7 +344,6 @@ static int psa_websocket_topicPublicationSend(void* handle, unsigned int msgType
             json_decref(jsMsg); //Decrease ref count means freeing the object
             free(hdrEncoded);
             entry->msgSer->freeSerializeMsg(entry->msgSer->handle, serializedOutput, serializedOutputLen);
-            free(serializedOutput);
         } else {
             L_WARN("[PSA_WEBSOCKET_TS] Error serialize message of type %s for scope/topic %s/%s",
                    entry->msgSer->msgName, sender->scope == NULL ? "(null)" : sender->scope, sender->topic);

@@ -210,13 +210,16 @@ celix_status_t pubsubMsgSerializer_deserialize(void* handle, const struct iovec*
 
 void pubsubMsgSerializer_freeSerializeMsg(void* handle, struct iovec* input, size_t inputIovLen) {
     pubsub_json_msg_serializer_impl_t *impl = handle;
-    if (input == NULL) return;
+    if (input == NULL) {
+        return;
+    }
     if (impl->msgType != NULL) {
         for (int i = 0; i < inputIovLen; i++) {
             if (input[i].iov_base) free(input[i].iov_base);
             input[i].iov_base = NULL;
             input[i].iov_len  = 0;
         }
+        free(input);
     }
 }
 

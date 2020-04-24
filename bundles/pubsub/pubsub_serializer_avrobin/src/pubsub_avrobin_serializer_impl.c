@@ -195,13 +195,16 @@ static celix_status_t pubsubMsgAvrobinSerializer_serialize(void *handle, const v
 
 void pubsubMsgAvrobinSerializer_freeSerializeMsg(void* handle, struct iovec* input, size_t inputIovLen) {
   pubsub_avrobin_msg_serializer_impl_t *impl = handle;
-  if (input == NULL) return;
+  if (input == NULL) {
+      return;
+  }
   if (impl->msgType != NULL) {
     for (int i = 0; i < inputIovLen; i++) {
       if (input[i].iov_base) free(input[i].iov_base);
       input[i].iov_base = NULL;
       input[i].iov_len  = 0;
     }
+    free(input);
   }
 }
 
