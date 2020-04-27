@@ -25,14 +25,13 @@ extern "C" {
 #endif
 
 typedef enum celix_log_level {
-    CELIX_LOG_LEVEL_UNKNOWN =   0,
-    CELIX_LOG_LEVEL_TRACE =     1,
-    CELIX_LOG_LEVEL_DEBUG =     2,
-    CELIX_LOG_LEVEL_INFO =      3,
-    CELIX_LOG_LEVEL_WARNING =   4,
-    CELIX_LOG_LEVEL_ERROR =     5,
-    CELIX_LOG_LEVEL_FATAL =     6,
-    CELIX_LOG_LEVEL_DISABLED =  7
+    CELIX_LOG_LEVEL_TRACE =     0,
+    CELIX_LOG_LEVEL_DEBUG =     1,
+    CELIX_LOG_LEVEL_INFO =      2,
+    CELIX_LOG_LEVEL_WARNING =   3,
+    CELIX_LOG_LEVEL_ERROR =     4,
+    CELIX_LOG_LEVEL_FATAL =     5,
+    CELIX_LOG_LEVEL_DISABLED =  6
 } celix_log_level_e;
 
 #ifdef __cplusplus

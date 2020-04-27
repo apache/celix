@@ -25,6 +25,7 @@
 
 #include <celix_constants.h>
 #include <celix_log_control.h>
+#include <assert.h>
 
 #include "celix_log_service.h"
 #include "celix_log_sink.h"
@@ -68,6 +69,7 @@ typedef struct celix_log_service_entry {
 
 typedef struct celix_log_sink_entry {
     celix_log_sink_t *sink;
+    long svcId;
     char* name;
 
     //mutable and protected by admin->lock
@@ -77,13 +79,13 @@ typedef struct celix_log_sink_entry {
 static void celix_logAdmin_vlog(void *handle, celix_log_level_e level, const char *format, va_list formatArgs) {
     celix_log_service_entry_t* entry = handle;
 
-    if (level == CELIX_LOG_LEVEL_DISABLED || level == CELIX_LOG_LEVEL_UNKNOWN) {
+    if (level == CELIX_LOG_LEVEL_DISABLED) {
         //silently ignore
         return;
     }
 
     celixThreadRwlock_readLock(&entry->admin->lock);
-    if (entry->activeLogLevel != CELIX_LOG_LEVEL_UNKNOWN && level >= entry->activeLogLevel) {
+    if (level >= entry->activeLogLevel) {
         int nrOfLogWriters = hashMap_size(entry->admin->sinks);
         hash_map_iterator_t iter = hashMapIterator_construct(entry->admin->sinks);
         while (hashMapIterator_hasNext(&iter)) {
@@ -227,10 +229,10 @@ static void celix_logAdmin_addSink(void *handle, void *svc, const celix_properti
     celix_log_admin_t* admin = handle;
     celix_log_sink_t* sink = svc;
 
+    long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
     const char* sinkName = celix_properties_get(props, CELIX_LOG_SINK_PROPERTY_NAME, NULL);
     char nameBuf[16];
     if (sinkName == NULL) {
-        long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
         snprintf(nameBuf, 16, "LogSink-%li", svcId);
         sinkName = nameBuf;
     }
@@ -240,8 +242,9 @@ static void celix_logAdmin_addSink(void *handle, void *svc, const celix_properti
     if (found == NULL) {
         celix_log_sink_entry_t *entry = calloc(1, sizeof(*entry));
         entry->name = celix_utils_strdup(sinkName);
-        entry->sink = sink;
+        entry->svcId = svcId;
         entry->enabled = admin->sinksDefaultEnabled;
+        entry->sink = sink;
         hashMap_put(admin->sinks, entry->name, entry);
     }
     celixThreadRwlock_unlock(&admin->lock);
@@ -253,22 +256,28 @@ static void celix_logAdmin_addSink(void *handle, void *svc, const celix_properti
 
 static void celix_logAdmin_remSink(void *handle, void *svc __attribute__((unused)), const celix_properties_t* props) {
     celix_log_admin_t* admin = handle;
+    long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
     const char* sinkName = celix_properties_get(props, CELIX_LOG_SINK_PROPERTY_NAME, NULL);
     char nameBuf[16];
     if (sinkName == NULL) {
-        long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
         snprintf(nameBuf, 16, "LogSink-%li", svcId);
         sinkName = nameBuf;
     }
 
     celixThreadRwlock_writeLock(&admin->lock);
-    celix_log_sink_entry_t* entry = hashMap_remove(admin->sinks, sinkName);
+    celix_log_sink_entry_t* entry = hashMap_get(admin->sinks, sinkName);
+    if (entry->svcId != svcId) {
+        //no match (note there can be invalid log sinks with the same name, but different svc ids.
+        entry = NULL;
+    }
+    if (entry != NULL) {
+        hashMap_remove(admin->sinks, sinkName);
+    }
     celixThreadRwlock_unlock(&admin->lock);
+
     if (entry != NULL) {
         free(entry->name);
         free(entry);
-    } else {
-        celix_logUtils_logToStdout(CELIX_LOG_ADMIN_DEFAULT_LOG_NAME, CELIX_LOG_LEVEL_ERROR, "Cannot find log sink with name '%s'", sinkName);
     }
 }
 
@@ -410,12 +419,13 @@ static bool celix_logAdmin_sinkInfo(void *handle, const char* sinkName, bool* ou
 }
 
 static void celix_logAdmin_setLogLevelCmd(celix_log_admin_t* admin, const char* select, const char* level, FILE* outStream, FILE* errorStream) {
-    celix_log_level_e logLevel = celix_logUtils_logLevelFromString(level, CELIX_LOG_LEVEL_UNKNOWN);
-    if (logLevel == CELIX_LOG_LEVEL_UNKNOWN) {
-        fprintf(outStream, "Cannot convert '%s' to a valid celix log level.\n", level);
-    } else {
+    bool converted;
+    celix_log_level_e logLevel = celix_logUtils_logLevelFromStringWithCheck(level, CELIX_LOG_LEVEL_TRACE, &converted);
+    if (converted) {
         size_t count = celix_logAdmin_setActiveLogLevels(admin, select, logLevel);
         fprintf(outStream, "Updated %lu log services to log level %s\n", count, celix_logUtils_logLevelToString(logLevel));
+    } else {
+        fprintf(outStream, "Cannot convert '%s' to a valid celix log level.\n", level);
     }
 }
 
@@ -500,10 +510,10 @@ static bool celix_logAdmin_executeCommand(void *handle, const char *commandLine,
         } else if (strncmp("sink", token, 64) == 0) {
             const char* arg1 = strtok_r(NULL, " ", &savePtr);
             const char* arg2 = strtok_r(NULL, " ", &savePtr);
-            if (arg1 != NULL) {
-                celix_logAdmin_setSinkEnabledCmd(admin, NULL, arg1, outStream, errorStream);
-            } else if(arg2 != NULL) {
+            if (arg1 != NULL && arg2 != NULL) {
                 celix_logAdmin_setSinkEnabledCmd(admin, arg1, arg2, outStream, errorStream);
+            } else if (arg1 != NULL) {
+                celix_logAdmin_setSinkEnabledCmd(admin, NULL, arg1, outStream, errorStream);
             } else {
                 fprintf(errorStream, "Invalid arguments. For log command expected 1 or 2 args. (<true|false> or <log_service_selection> <true|false>");
             }
@@ -600,12 +610,7 @@ void celix_logAdmin_destroy(celix_log_admin_t *admin) {
         }
         hashMap_destroy(admin->loggers, false, false);
 
-        iter = hashMapIterator_construct(admin->sinks);
-        while (hashMapIterator_hasNext(&iter)) {
-            celix_log_sink_entry_t* entry = hashMapIterator_nextValue(&iter);
-            free(entry->name);
-            free(entry);
-        }
+        assert(hashMap_size(admin->sinks) == 0); //note should all be removed as result of stopping the svc tracker.
         hashMap_destroy(admin->sinks, false, false);
 
         celixThreadRwlock_destroy(&admin->lock);

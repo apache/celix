@@ -60,7 +60,7 @@ typedef struct celix_log_service {
 
     /**
      * Log using a va_list argument.
-     * Silently ignores log levels CELIX_LOG_LEVEL_UNKNOWN and CELIX_LOG_LEVEL_DISABLED.
+     * Silently ignores log level CELIX_LOG_LEVEL_DISABLED.
      */
     void (*vlog)(void *handle, celix_log_level_e level, const char *format, va_list formatArgs);
 } celix_log_service_t;

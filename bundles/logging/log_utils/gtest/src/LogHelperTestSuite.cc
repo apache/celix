@@ -18,6 +18,7 @@
  */
 
 #include <gtest/gtest.h>
+#include <atomic>
 
 #include "celix_log_service.h"
 #include "celix_log_constants.h"
@@ -63,7 +64,7 @@ TEST_F(LogHelperTestSuite, LogToLogSvc) {
     auto *helper = celix_logHelper_create(ctx.get(), "test::Log");
     EXPECT_EQ(0, celix_logHelper_logCount(helper));
 
-    std::atomic<size_t> logCount;
+    std::atomic<size_t> logCount{0};
     celix_log_service_t logSvc;
     logSvc.handle = (void*)&logCount;
     logSvc.vlog = [](void *handle, celix_log_level_e, const char *format, va_list formatArgs) {
@@ -90,6 +91,7 @@ TEST_F(LogHelperTestSuite, LogToLogSvc) {
     celix_logHelper_warning(helper, "testing %i", 3);
     celix_logHelper_error(helper, "testing %i", 4);
     celix_logHelper_fatal(helper, "testing %i", 5);
+    celix_logHelper_vlog(helper, CELIX_LOG_LEVEL_DISABLED, "test", nullptr);
     EXPECT_EQ(5, celix_logHelper_logCount(helper));
     EXPECT_EQ(5, logCount.load());
 
