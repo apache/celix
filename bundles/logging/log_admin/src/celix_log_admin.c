@@ -610,7 +610,15 @@ void celix_logAdmin_destroy(celix_log_admin_t *admin) {
         }
         hashMap_destroy(admin->loggers, false, false);
 
-        assert(hashMap_size(admin->sinks) == 0); //note should all be removed as result of stopping the svc tracker.
+
+        // TODO add assert if stopTracker can wait till tracker thread is stopped.
+        // assert(hashMap_size(admin->sinks) == 0); //note should all be removed as result of stopping the svc tracker.
+        iter = hashMapIterator_construct(admin->sinks);
+        while (hashMapIterator_hasNext(&iter)) {
+            celix_log_sink_entry_t* entry = hashMapIterator_nextValue(&iter);
+            free(entry->name);
+            free(entry);
+        }
         hashMap_destroy(admin->sinks, false, false);
 
         celixThreadRwlock_destroy(&admin->lock);
