@@ -48,8 +48,11 @@ static bool serviceTracker_useHighestRankingServiceInternal(celix_service_tracke
                                                             void (*useWithProperties)(void *handle, void *svc, const celix_properties_t *props),
                                                             void (*useWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner));
 
+#ifdef CELIX_SERVICE_TRACKER_USE_SHUTDOWN_THREAD
 static void serviceTracker_addInstanceFromShutdownList(celix_service_tracker_instance_t *instance);
 static void serviceTracker_remInstanceFromShutdownList(celix_service_tracker_instance_t *instance);
+static void* shutdownServiceTrackerInstanceHandler(void *data);
+#endif
 
 static void serviceTracker_serviceChanged(void *handle, celix_service_event_t *event);
 
@@ -212,24 +215,6 @@ celix_status_t serviceTracker_open(service_tracker_pt tracker) {
 	return CELIX_SUCCESS;
 }
 
-static void* shutdownServiceTrackerInstanceHandler(void *data) {
-    celix_service_tracker_instance_t *instance = data;
-
-    fw_removeServiceListener(instance->context->framework, instance->context->bundle, &instance->listener);
-
-    celixThreadMutex_destroy(&instance->closingLock);
-    celixThreadCondition_destroy(&instance->activeServiceChangeCallsCond);
-    celixThreadMutex_destroy(&instance->mutex);
-    celixThreadRwlock_destroy(&instance->lock);
-    celix_arrayList_destroy(instance->trackedServices);
-    free(instance->filter);
-
-    serviceTracker_remInstanceFromShutdownList(instance);
-    free(instance);
-
-    return NULL;
-}
-
 celix_status_t serviceTracker_close(service_tracker_pt tracker) {
 	//put all tracked entries in tmp array list, so that the untrack (etc) calls are not blocked.
     //set state to close to prevent service listener events
@@ -271,7 +256,7 @@ celix_status_t serviceTracker_close(service_tracker_pt tracker) {
         celixThreadMutex_unlock(&instance->closingLock);
 
 
-
+#ifdef CELIX_SERVICE_TRACKER_USE_SHUTDOWN_THREAD
         //NOTE Separate thread is needed to prevent deadlock where closing is triggered from a serviceChange event and the
         // untrack -> removeServiceListener will try to remove a service listener which is being invoked and is the
         // actual thread calling the removeServiceListener.
@@ -282,6 +267,17 @@ celix_status_t serviceTracker_close(service_tracker_pt tracker) {
         celix_thread_t localThread;
         celixThread_create(&localThread, NULL, shutdownServiceTrackerInstanceHandler, instance);
         celixThread_detach(localThread);
+#else
+        fw_removeServiceListener(instance->context->framework, instance->context->bundle, &instance->listener);
+
+        celixThreadMutex_destroy(&instance->closingLock);
+        celixThreadCondition_destroy(&instance->activeServiceChangeCallsCond);
+        celixThreadMutex_destroy(&instance->mutex);
+        celixThreadRwlock_destroy(&instance->lock);
+        celix_arrayList_destroy(instance->trackedServices);
+        free(instance->filter);
+        free(instance);
+#endif
     }
 
 	return CELIX_SUCCESS;
@@ -968,6 +964,7 @@ void celix_serviceTracker_syncForContext(void *ctx) {
     celixThreadMutex_unlock(&g_shutdownMutex);
 }
 
+#ifdef CELIX_SERVICE_TRACKER_USE_SHUTDOWN_THREAD
 static void serviceTracker_addInstanceFromShutdownList(celix_service_tracker_instance_t *instance) {
     celixThread_once(&g_once, serviceTracker_once);
     celixThreadMutex_lock(&g_shutdownMutex);
@@ -997,3 +994,22 @@ static void serviceTracker_remInstanceFromShutdownList(celix_service_tracker_ins
     }
     celixThreadMutex_unlock(&g_shutdownMutex);
 }
+
+static void* shutdownServiceTrackerInstanceHandler(void *data) {
+    celix_service_tracker_instance_t *instance = data;
+
+    fw_removeServiceListener(instance->context->framework, instance->context->bundle, &instance->listener);
+
+    celixThreadMutex_destroy(&instance->closingLock);
+    celixThreadCondition_destroy(&instance->activeServiceChangeCallsCond);
+    celixThreadMutex_destroy(&instance->mutex);
+    celixThreadRwlock_destroy(&instance->lock);
+    celix_arrayList_destroy(instance->trackedServices);
+    free(instance->filter);
+
+    serviceTracker_remInstanceFromShutdownList(instance);
+    free(instance);
+
+    return NULL;
+}
+#endif

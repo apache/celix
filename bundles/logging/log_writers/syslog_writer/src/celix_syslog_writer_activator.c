@@ -46,10 +46,7 @@ static void celix_syslogWriter_sinkLog(void *handle __attribute__((unused)), cel
         case CELIX_LOG_LEVEL_DEBUG:
             sysLogLvl = LOG_MAKEPRI(LOG_FAC(LOG_USER), LOG_DEBUG);
             break;
-        case CELIX_LOG_LEVEL_TRACE:
-            sysLogLvl = LOG_MAKEPRI(LOG_FAC(LOG_USER), LOG_DEBUG);
-            break;
-        default:
+        default: //only TRACE left
             sysLogLvl = LOG_MAKEPRI(LOG_FAC(LOG_USER), LOG_INFO);
             break;
     }

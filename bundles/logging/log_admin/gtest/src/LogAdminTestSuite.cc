@@ -107,9 +107,6 @@ TEST_F(LogBundleTestSuite, NrOfLogServices) {
     //removing another trackers. Should effect log service instances
     celix_bundleContext_stopTracker(ctx.get(), trkId2);
 
-    //wait a while for the service tracker to close, which is done on a separate thread.
-    //TODO improve this
-    std::this_thread::sleep_for(std::chrono::milliseconds{50});
     EXPECT_EQ(1, control->nrOfLogServices(control->handle, nullptr));
 
     //NOTE stopping bundle before all trackers are gone -> should be fine
@@ -419,8 +416,8 @@ TEST_F(LogBundleTestSuite, LogAdminCmd) {
         cmd->executeCommand(cmd->handle, "celix::log_admin sink true", ss, ss); //all
         cmd->executeCommand(cmd->handle, "celix::log_admin sink celix false", ss, ss); //with selection
         cmd->executeCommand(cmd->handle, "celix::log_admin sink", ss, ss); //missing args
-        cmd->executeCommand(cmd->handle, "celix::log_admin log not_a_bool", ss, ss); //invalid arg
-        cmd->executeCommand(cmd->handle, "celix::log_admin not_a_command", ss, ss); //invalid arg
+        cmd->executeCommand(cmd->handle, "celix::log_admin sink celix not_a_bool", ss, ss); //invalid bool arg
+        cmd->executeCommand(cmd->handle, "celix::log_admin not_a_command", ss, ss); //invalid cmd arg
         fclose(ss);
         EXPECT_TRUE(strstr(cmdResult, "log sinks to ") != nullptr);
         EXPECT_TRUE(strstr(cmdResult, "Cannot convert") != nullptr);
