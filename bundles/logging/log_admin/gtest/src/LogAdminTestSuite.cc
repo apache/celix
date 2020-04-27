@@ -18,7 +18,9 @@
  */
 
 #include <gtest/gtest.h>
+
 #include <thread>
+#include <atomic>
 
 #include "celix_log_sink.h"
 #include "celix_log_control.h"
@@ -133,6 +135,8 @@ TEST_F(LogBundleTestSuite, NrOfLogSinks) {
 
     long svcId3 = celix_bundleContext_registerServiceWithOptions(ctx.get(), &opts);
     EXPECT_EQ(3, control->nrOfSinks(control->handle, nullptr));
+    EXPECT_EQ(0, control->nrOfSinks(control->handle, "NonExisting"));
+    EXPECT_EQ(3, control->nrOfSinks(control->handle, "LogSink-"));
 
     celix_bundleContext_unregisterService(ctx.get(), svcId1);
     celix_bundleContext_unregisterService(ctx.get(), svcId2);
@@ -164,6 +168,12 @@ TEST_F(LogBundleTestSuite, SinkLogControl) {
     celix_properties_set(props, CELIX_LOG_SINK_PROPERTY_NAME, "test::group::Sink2");
     opts.properties = props;
     long svcId3 = celix_bundleContext_registerServiceWithOptions(ctx.get(), &opts);
+    EXPECT_EQ(3, control->nrOfSinks(control->handle, nullptr));
+
+    props = celix_properties_create();
+    celix_properties_set(props, CELIX_LOG_SINK_PROPERTY_NAME, "test::group::Sink2");
+    opts.properties = props;
+    long svcId4 = celix_bundleContext_registerServiceWithOptions(ctx.get(), &opts); //Log Sink with same name -> not added to log admin
     EXPECT_EQ(3, control->nrOfSinks(control->handle, nullptr));
 
     EXPECT_FALSE(control->sinkInfo(control->handle, "NonExisting", nullptr));
@@ -198,6 +208,9 @@ TEST_F(LogBundleTestSuite, SinkLogControl) {
 
     celix_bundleContext_unregisterService(ctx.get(), svcId1);
     celix_bundleContext_unregisterService(ctx.get(), svcId2);
+    celix_bundleContext_unregisterService(ctx.get(), svcId4);
+    //note log sink with svcId3 should still exists
+    EXPECT_EQ(1, control->nrOfSinks(control->handle, nullptr));
     celix_bundleContext_unregisterService(ctx.get(), svcId3);
 }
 
@@ -216,6 +229,7 @@ TEST_F(LogBundleTestSuite, LogServiceControl) {
     opts.filter.filter = "(name=test::group::Log2)";
     long trkId3 = celix_bundleContext_trackServicesWithOptions(ctx.get(), &opts);
     EXPECT_EQ(3, control->nrOfLogServices(control->handle, nullptr));
+    EXPECT_EQ(2, control->nrOfLogServices(control->handle, "test::group"));
 
     EXPECT_FALSE(control->logServiceInfo(control->handle, "NonExisting", nullptr));
 
@@ -230,6 +244,7 @@ TEST_F(LogBundleTestSuite, LogServiceControl) {
 
 
     EXPECT_EQ(2, control->setActiveLogLevels(control->handle, "test::group", CELIX_LOG_LEVEL_DEBUG));
+    EXPECT_EQ(3, control->setActiveLogLevels(control->handle, nullptr, CELIX_LOG_LEVEL_DEBUG));
     EXPECT_TRUE(control->logServiceInfo(control->handle, "test::group::Log1", &activeLogLevel));
     EXPECT_EQ(CELIX_LOG_LEVEL_DEBUG, activeLogLevel);
     EXPECT_TRUE(control->logServiceInfo(control->handle, "test::group::Log2", &activeLogLevel));
@@ -253,7 +268,7 @@ static void logSinkFunction(void *handle, celix_log_level_e level, long logServi
     auto *count = static_cast<std::atomic<size_t>*>(handle);
     count->fetch_add(1);
 
-    EXPECT_NE(CELIX_LOG_LEVEL_UNKNOWN, level);
+    EXPECT_GE(level, CELIX_LOG_LEVEL_TRACE);
     EXPECT_GE(logServiceId, 0);
     EXPECT_STREQ("test::Log1", logServiceName);
 
@@ -264,7 +279,7 @@ static void logSinkFunction(void *handle, celix_log_level_e level, long logServi
 
 TEST_F(LogBundleTestSuite, LogServiceAndSink) {
     celix_log_sink_t logSink;
-    std::atomic<size_t> count;
+    std::atomic<size_t> count{0};
     logSink.handle = (void*)&count;
     logSink.sinkLog = logSinkFunction;
     long svcId;
@@ -327,9 +342,14 @@ TEST_F(LogBundleTestSuite, LogServiceAndSink) {
     ls->warning(ls->handle, "test %i %i %i", 1, 2, 3); //+1
     ls->error(ls->handle, "test %i %i %i", 1, 2, 3); //+1
     ls->fatal(ls->handle, "test %i %i %i", 1, 2, 3); //+1
+    ls->vlog(ls->handle, CELIX_LOG_LEVEL_DISABLED, "ignored", NULL); //+0
     EXPECT_EQ(9, count.load());
 
-    celix_bundleContext_unregisterService(ctx.get(), svcId);
+    celix_bundleContext_unregisterService(ctx.get(), svcId); //no log sink anymore
+
+    ls->fatal(ls->handle, "test %i %i %i", 1, 2, 3); //+0 (no log to sink, fallback to stdout)
+    EXPECT_EQ(9, count.load());
+
     celix_bundleContext_stopTracker(ctx.get(), trkId);
 }
 
@@ -395,10 +415,12 @@ TEST_F(LogBundleTestSuite, LogAdminCmd) {
         char *cmdResult = NULL;
         size_t cmdResultLen;
         FILE *ss = open_memstream(&cmdResult, &cmdResultLen);
+        cmd->executeCommand(cmd->handle, "celix::log_admin sink false", ss, ss); //all
         cmd->executeCommand(cmd->handle, "celix::log_admin sink true", ss, ss); //all
         cmd->executeCommand(cmd->handle, "celix::log_admin sink celix false", ss, ss); //with selection
         cmd->executeCommand(cmd->handle, "celix::log_admin sink", ss, ss); //missing args
         cmd->executeCommand(cmd->handle, "celix::log_admin log not_a_bool", ss, ss); //invalid arg
+        cmd->executeCommand(cmd->handle, "celix::log_admin not_a_command", ss, ss); //invalid arg
         fclose(ss);
         EXPECT_TRUE(strstr(cmdResult, "log sinks to ") != nullptr);
         EXPECT_TRUE(strstr(cmdResult, "Cannot convert") != nullptr);
@@ -409,4 +431,18 @@ TEST_F(LogBundleTestSuite, LogAdminCmd) {
 
     celix_bundleContext_unregisterService(ctx.get(), svcId);
     celix_bundleContext_stopTracker(ctx.get(), trkId);
+
+    opts.use = [](void*, void *svc) {
+        auto* cmd = static_cast<celix_shell_command_t*>(svc);
+        char *cmdResult = NULL;
+        size_t cmdResultLen;
+        FILE *ss = open_memstream(&cmdResult, &cmdResultLen);
+        cmd->executeCommand(cmd->handle, "celix::log_admin", ss, ss);
+        fclose(ss);
+        EXPECT_TRUE(strstr(cmdResult, "Log Admin has provided 0 log services") != nullptr);
+        EXPECT_TRUE(strstr(cmdResult, "Log Admin has found 0 log sinks") != nullptr);
+        free(cmdResult);
+    };
+    called = celix_bundleContext_useServiceWithOptions(ctx.get(), &opts);
+    EXPECT_TRUE(called);
 }

@@ -31,7 +31,7 @@ public:
     SyslogWriterTestSuite() {
         auto* properties = celix_properties_create();
         celix_properties_set(properties, "org.osgi.framework.storage", ".cacheSyslogWriterTestSuite");
-        celix_properties_set(properties, CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL_CONFIG_NAME, "debug");
+        celix_properties_set(properties, CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL_CONFIG_NAME, "trace");
 
 
         auto* fwPtr = celix_frameworkFactory_createFramework(properties);

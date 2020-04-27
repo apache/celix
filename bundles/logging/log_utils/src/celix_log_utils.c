@@ -19,6 +19,7 @@
 
 #include "celix_log_utils.h"
 
+#include <stdbool.h>
 #include <stdarg.h>
 #include <execinfo.h>
 #include <stdlib.h>
@@ -33,7 +34,6 @@ static const char * const CELIX_STRING_VALUE_WARNING   = "warning";
 static const char * const CELIX_STRING_VALUE_INFO      = "info";
 static const char * const CELIX_STRING_VALUE_DEBUG     = "debug";
 static const char * const CELIX_STRING_VALUE_TRACE     = "trace";
-static const char * const CELIX_STRING_VALUE_UNKNOWN   = "unknown";
 
 const char* celix_logUtils_logLevelToString(celix_log_level_e level) {
     switch(level) {
@@ -52,34 +52,45 @@ const char* celix_logUtils_logLevelToString(celix_log_level_e level) {
         case CELIX_LOG_LEVEL_TRACE:
             return CELIX_STRING_VALUE_TRACE;
         default:
-            return CELIX_STRING_VALUE_UNKNOWN;
+            return CELIX_STRING_VALUE_TRACE;
     }
 }
 
 celix_log_level_e celix_logUtils_logLevelFromString(const char *str, celix_log_level_e fallbackLogLevel) {
+    return celix_logUtils_logLevelFromStringWithCheck(str, fallbackLogLevel, NULL);
+}
+
+celix_log_level_e celix_logUtils_logLevelFromStringWithCheck(const char *str, celix_log_level_e fallbackLogLevel, bool *convertedSuccessfully) {
     celix_log_level_e level = fallbackLogLevel;
+    if (convertedSuccessfully != NULL) {
+        *convertedSuccessfully = true;
+    }
     if (str != NULL) {
-        if (strncmp(CELIX_STRING_VALUE_DISABLED, str, strlen(CELIX_STRING_VALUE_DISABLED)) == 0) {
+        if (strncasecmp(CELIX_STRING_VALUE_DISABLED, str, strlen(CELIX_STRING_VALUE_DISABLED)) == 0) {
             level = CELIX_LOG_LEVEL_DISABLED;
-        } else if (strncmp(CELIX_STRING_VALUE_FATAL, str, strlen(CELIX_STRING_VALUE_FATAL)) == 0) {
+        } else if (strncasecmp(CELIX_STRING_VALUE_FATAL, str, strlen(CELIX_STRING_VALUE_FATAL)) == 0) {
             level = CELIX_LOG_LEVEL_FATAL;
-        } else if (strncmp(CELIX_STRING_VALUE_ERROR, str, strlen(CELIX_STRING_VALUE_ERROR)) == 0) {
+        } else if (strncasecmp(CELIX_STRING_VALUE_ERROR, str, strlen(CELIX_STRING_VALUE_ERROR)) == 0) {
             level = CELIX_LOG_LEVEL_ERROR;
-        } else if (strncmp(CELIX_STRING_VALUE_WARNING, str, strlen(CELIX_STRING_VALUE_WARNING)) == 0) {
+        } else if (strncasecmp(CELIX_STRING_VALUE_WARNING, str, strlen(CELIX_STRING_VALUE_WARNING)) == 0) {
             level = CELIX_LOG_LEVEL_WARNING;
-        } else if (strncmp(CELIX_STRING_VALUE_INFO, str, strlen(CELIX_STRING_VALUE_INFO)) == 0) {
+        } else if (strncasecmp(CELIX_STRING_VALUE_INFO, str, strlen(CELIX_STRING_VALUE_INFO)) == 0) {
             level = CELIX_LOG_LEVEL_INFO;
-        } else if (strncmp(CELIX_STRING_VALUE_DEBUG, str, strlen(CELIX_STRING_VALUE_DEBUG)) == 0) {
+        } else if (strncasecmp(CELIX_STRING_VALUE_DEBUG, str, strlen(CELIX_STRING_VALUE_DEBUG)) == 0) {
             level = CELIX_LOG_LEVEL_DEBUG;
-        } else if (strncmp(CELIX_STRING_VALUE_TRACE, str, strlen(CELIX_STRING_VALUE_TRACE)) == 0) {
+        } else if (strncasecmp(CELIX_STRING_VALUE_TRACE, str, strlen(CELIX_STRING_VALUE_TRACE)) == 0) {
             level = CELIX_LOG_LEVEL_TRACE;
-        } else if (strncmp(CELIX_STRING_VALUE_UNKNOWN, str, strlen(CELIX_STRING_VALUE_UNKNOWN)) == 0) {
-            level = CELIX_LOG_LEVEL_UNKNOWN;
         } else {
             celix_logUtils_logToStdout("logUtils", CELIX_LOG_LEVEL_ERROR, "Cannot match log level str '%s' to an existing log level. Falling back to log level %s", str, celix_logUtils_logLevelToString(fallbackLogLevel));
+            if (convertedSuccessfully != NULL) {
+                *convertedSuccessfully = false;
+            }
         }
     } else {
         celix_logUtils_logToStdout("logUtils", CELIX_LOG_LEVEL_ERROR, "Cannot match NULL log level str to an existing log level. Falling back to log level %s",  celix_logUtils_logLevelToString(fallbackLogLevel));
+        if (convertedSuccessfully != NULL) {
+            *convertedSuccessfully = false;
+        }
     }
     return level;
 }
@@ -108,9 +119,8 @@ void celix_logUtils_logToStdout(const char *logServiceName, celix_log_level_e le
 }
 
 void celix_logUtils_vLogToStdout(const char *logServiceName, celix_log_level_e level, const char *format, va_list formatArgs) {
-    if (level == CELIX_LOG_LEVEL_UNKNOWN) {
-        fprintf(stderr, "Unexpected log level %s", CELIX_STRING_VALUE_UNKNOWN);
-        celix_logUtils_inlinePrintBacktrace(stderr);
+    if (level == CELIX_LOG_LEVEL_DISABLED) {
+        //silently ignore
         return;
     }
 

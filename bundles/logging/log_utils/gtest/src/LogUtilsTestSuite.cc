@@ -33,22 +33,28 @@ TEST_F(LogUtilsTestSuite, LogLevelToString) {
     EXPECT_STREQ("error", celix_logUtils_logLevelToString(CELIX_LOG_LEVEL_ERROR));
     EXPECT_STREQ("fatal", celix_logUtils_logLevelToString(CELIX_LOG_LEVEL_FATAL));
     EXPECT_STREQ("disabled", celix_logUtils_logLevelToString(CELIX_LOG_LEVEL_DISABLED));
-    EXPECT_STREQ("unknown", celix_logUtils_logLevelToString(CELIX_LOG_LEVEL_UNKNOWN));
 }
 
 TEST_F(LogUtilsTestSuite, LogLevelFromString) {
-    EXPECT_EQ(CELIX_LOG_LEVEL_TRACE, celix_logUtils_logLevelFromString("trace", CELIX_LOG_LEVEL_UNKNOWN));
-    EXPECT_EQ(CELIX_LOG_LEVEL_DEBUG, celix_logUtils_logLevelFromString("debug", CELIX_LOG_LEVEL_UNKNOWN));
-    EXPECT_EQ(CELIX_LOG_LEVEL_INFO, celix_logUtils_logLevelFromString("info", CELIX_LOG_LEVEL_UNKNOWN));
-    EXPECT_EQ(CELIX_LOG_LEVEL_WARNING, celix_logUtils_logLevelFromString("warning", CELIX_LOG_LEVEL_UNKNOWN));
-    EXPECT_EQ(CELIX_LOG_LEVEL_ERROR, celix_logUtils_logLevelFromString("error", CELIX_LOG_LEVEL_UNKNOWN));
-    EXPECT_EQ(CELIX_LOG_LEVEL_FATAL, celix_logUtils_logLevelFromString("fatal", CELIX_LOG_LEVEL_UNKNOWN));
-    EXPECT_EQ(CELIX_LOG_LEVEL_DISABLED, celix_logUtils_logLevelFromString("disabled", CELIX_LOG_LEVEL_UNKNOWN));
-    EXPECT_EQ(CELIX_LOG_LEVEL_UNKNOWN, celix_logUtils_logLevelFromString("unknown", CELIX_LOG_LEVEL_UNKNOWN));
+    EXPECT_EQ(CELIX_LOG_LEVEL_TRACE, celix_logUtils_logLevelFromString("trace", CELIX_LOG_LEVEL_DISABLED));
+    EXPECT_EQ(CELIX_LOG_LEVEL_DEBUG, celix_logUtils_logLevelFromString("debug", CELIX_LOG_LEVEL_DISABLED));
+    EXPECT_EQ(CELIX_LOG_LEVEL_INFO, celix_logUtils_logLevelFromString("info", CELIX_LOG_LEVEL_DISABLED));
+    EXPECT_EQ(CELIX_LOG_LEVEL_WARNING, celix_logUtils_logLevelFromString("warning", CELIX_LOG_LEVEL_DISABLED));
+    EXPECT_EQ(CELIX_LOG_LEVEL_ERROR, celix_logUtils_logLevelFromString("error", CELIX_LOG_LEVEL_DISABLED));
+    EXPECT_EQ(CELIX_LOG_LEVEL_FATAL, celix_logUtils_logLevelFromString("fatal", CELIX_LOG_LEVEL_DISABLED));
+    EXPECT_EQ(CELIX_LOG_LEVEL_DISABLED, celix_logUtils_logLevelFromString("disabled", CELIX_LOG_LEVEL_DISABLED));
 
 
-    EXPECT_EQ(CELIX_LOG_LEVEL_UNKNOWN, celix_logUtils_logLevelFromString(nullptr, CELIX_LOG_LEVEL_UNKNOWN));
-    EXPECT_EQ(CELIX_LOG_LEVEL_UNKNOWN, celix_logUtils_logLevelFromString("garbage", CELIX_LOG_LEVEL_UNKNOWN));
+    EXPECT_EQ(CELIX_LOG_LEVEL_DISABLED, celix_logUtils_logLevelFromString(nullptr, CELIX_LOG_LEVEL_DISABLED));
+    EXPECT_EQ(CELIX_LOG_LEVEL_DISABLED, celix_logUtils_logLevelFromString("garbage", CELIX_LOG_LEVEL_DISABLED));
+
+    bool converted;
+    EXPECT_EQ(CELIX_LOG_LEVEL_FATAL, celix_logUtils_logLevelFromStringWithCheck("fatal", CELIX_LOG_LEVEL_DISABLED, &converted));
+    EXPECT_TRUE(converted);
+    EXPECT_EQ(CELIX_LOG_LEVEL_DISABLED, celix_logUtils_logLevelFromStringWithCheck(nullptr, CELIX_LOG_LEVEL_DISABLED, &converted));
+    EXPECT_FALSE(converted);
+    EXPECT_EQ(CELIX_LOG_LEVEL_DISABLED, celix_logUtils_logLevelFromStringWithCheck("garbage", CELIX_LOG_LEVEL_DISABLED, &converted));
+    EXPECT_FALSE(converted);
 }
 
 TEST_F(LogUtilsTestSuite, LogToStdout) {
@@ -57,14 +63,12 @@ TEST_F(LogUtilsTestSuite, LogToStdout) {
 
     celix_logUtils_logToStdout("TestLogger", CELIX_LOG_LEVEL_INFO, "testing_stdout %i %i %i", 1, 2, 3);
     celix_logUtils_logToStdout("TestLogger", CELIX_LOG_LEVEL_ERROR, "testing_stderr %i %i %i", 1, 2, 3);
-    celix_logUtils_logToStdout("TestLogger", CELIX_LOG_LEVEL_UNKNOWN, "testing_stderr %i %i %i", 1, 2, 3);
 
     std::string stdOutput = testing::internal::GetCapturedStdout();
     std::string errOutput = testing::internal::GetCapturedStderr();
 
     EXPECT_TRUE(strstr(stdOutput.c_str(), "testing_stdout 1 2 3") != NULL);
     EXPECT_TRUE(strstr(errOutput.c_str(), "testing_stderr 1 2 3") != NULL);
-    EXPECT_TRUE(strstr(errOutput.c_str(), "Unexpected log level") != NULL);
 }
 
 TEST_F(LogUtilsTestSuite, PrintBacktrace) {

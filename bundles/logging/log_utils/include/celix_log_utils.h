@@ -22,6 +22,7 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <stdbool.h>
 
 #include "celix_log_level.h"
 
@@ -39,6 +40,14 @@ const char* celix_logUtils_logLevelToString(celix_log_level_e level);
  * If the provided log level cannot be parsed or is NULL, the fallbackLogLevel is returned.
  */
 celix_log_level_e celix_logUtils_logLevelFromString(const char *level, celix_log_level_e fallbackLogLevel);
+
+/**
+ * Converts a const char* value to a celix log level
+ * If the provided log level cannot be parsed or is NULL, the fallbackLogLevel is returned and
+ * if a convertedSuccessfully pointer is provided this will be set to false.
+ * If converted succcessfully and the convertedSuccessfully pointer is provided. This will be set to true.
+ */
+celix_log_level_e celix_logUtils_logLevelFromStringWithCheck(const char *level, celix_log_level_e fallbackLogLevel, bool *convertedSuccessfully);
 
 /**
  * Logs to stdout/stderr using the provided logServiceName and log level.

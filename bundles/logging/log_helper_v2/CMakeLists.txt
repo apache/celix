@@ -23,6 +23,6 @@ target_include_directories(log_helper PUBLIC
 )
 target_link_libraries(log_helper PUBLIC Celix::framework Celix::log_service_api)
 install(TARGETS log_helper EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT logging)
-install(DIRECTORY loghelper_include/ DESTINATION include/celix/log_helper COMPONENT logging)
+install(DIRECTORY include/ DESTINATION include/celix/log_helper COMPONENT logging)
 
 add_library(Celix::log_helper ALIAS log_helper)
