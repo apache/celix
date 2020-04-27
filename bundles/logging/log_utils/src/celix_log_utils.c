@@ -49,9 +49,7 @@ const char* celix_logUtils_logLevelToString(celix_log_level_e level) {
             return CELIX_STRING_VALUE_INFO;
         case CELIX_LOG_LEVEL_DEBUG:
             return CELIX_STRING_VALUE_DEBUG;
-        case CELIX_LOG_LEVEL_TRACE:
-            return CELIX_STRING_VALUE_TRACE;
-        default:
+        default: //only trace left
             return CELIX_STRING_VALUE_TRACE;
     }
 }

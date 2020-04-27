@@ -63,12 +63,15 @@ TEST_F(LogUtilsTestSuite, LogToStdout) {
 
     celix_logUtils_logToStdout("TestLogger", CELIX_LOG_LEVEL_INFO, "testing_stdout %i %i %i", 1, 2, 3);
     celix_logUtils_logToStdout("TestLogger", CELIX_LOG_LEVEL_ERROR, "testing_stderr %i %i %i", 1, 2, 3);
+    celix_logUtils_logToStdout("TestLogger", CELIX_LOG_LEVEL_DISABLED, "ignore"); //will be ignored
 
     std::string stdOutput = testing::internal::GetCapturedStdout();
     std::string errOutput = testing::internal::GetCapturedStderr();
 
-    EXPECT_TRUE(strstr(stdOutput.c_str(), "testing_stdout 1 2 3") != NULL);
-    EXPECT_TRUE(strstr(errOutput.c_str(), "testing_stderr 1 2 3") != NULL);
+    EXPECT_TRUE(strstr(stdOutput.c_str(), "testing_stdout 1 2 3") != nullptr);
+    EXPECT_TRUE(strstr(stdOutput.c_str(), "ignore") == nullptr);
+    EXPECT_TRUE(strstr(errOutput.c_str(), "testing_stderr 1 2 3") != nullptr);
+    EXPECT_TRUE(strstr(stdOutput.c_str(), "ignore") == nullptr);
 }
 
 TEST_F(LogUtilsTestSuite, PrintBacktrace) {
