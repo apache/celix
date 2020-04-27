@@ -28,18 +28,18 @@ Phase2Cmp::Phase2Cmp(Phase2Cmp&& other) noexcept : phase1(other.phase1), logSrv{
     other.logSrv = nullptr;
 }
 
-void Phase2Cmp::setPhase1(IPhase1* phase1) {
+void Phase2Cmp::setPhase1(IPhase1* p1) {
     std::cout << "setting phase1 for phase2\n";
-    this->phase1 = phase1;
+    this->phase1 = p1;
 }
 
-void Phase2Cmp::setLogService(const log_service_t* logSrv) {
-    this->logSrv = logSrv;
+void Phase2Cmp::setLogService(const celix_log_service_t* ls) {
+    this->logSrv = ls;
 }
 
 double Phase2Cmp::getData() {
-    if (this->logSrv != NULL) {
-        this->logSrv->log(this->logSrv->logger, OSGI_LOGSERVICE_DEBUG, (char *) "getting data from phase2cmp A\n");
+    if (this->logSrv != nullptr) {
+        this->logSrv->info(this->logSrv->handle, (char *) "getting data from phase2cmp A\n");
     }
     return phase1->getData() * 42.0;
 };

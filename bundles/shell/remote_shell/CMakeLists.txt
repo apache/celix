@@ -30,7 +30,7 @@ if (REMOTE_SHELL)
 	)
 
 	target_include_directories(remote_shell PRIVATE src)
-	target_link_libraries(remote_shell PRIVATE log_helper)
+	target_link_libraries(remote_shell PRIVATE Celix::log_utils)
 
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
     include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
@@ -41,5 +41,5 @@ if (REMOTE_SHELL)
 	#Alias setup to match external usage
 	add_library(Celix::remote_shell ALIAS remote_shell)
 
-    add_celix_container("remote_shell_deploy" NAME "remote_shell"  BUNDLES Celix::shell Celix::remote_shell Celix::shell_tui log_service)
+    add_celix_container("remote_shell_deploy" NAME "remote_shell"  BUNDLES Celix::shell Celix::remote_shell Celix::shell_tui Celix::log_admin)
 endif (REMOTE_SHELL)

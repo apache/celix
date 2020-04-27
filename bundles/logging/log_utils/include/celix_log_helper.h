@@ -66,6 +66,11 @@ void celix_logHelper_error(celix_log_helper_t* logHelper, const char *format, ..
 void celix_logHelper_fatal(celix_log_helper_t* logHelper, const char *format, ...);
 
 /**
+ * Logs to using the provided celix log level
+ */
+void celix_logHelper_log(celix_log_helper_t* logHelper, celix_log_level_e level, const char *format, ...);
+
+/**
  * Logs to logHelper using a va_list argument.
  * Silently ignores log level CELIX_LOG_LEVEL_DISABLED.
  */

@@ -26,7 +26,7 @@
 #include <utils.h>
 #include <zconf.h>
 #include <arpa/inet.h>
-#include <log_helper.h>
+#include <celix_log_helper.h>
 #include "pubsub_psa_tcp_constants.h"
 #include "pubsub_tcp_topic_sender.h"
 #include "pubsub_tcp_handler.h"
@@ -39,17 +39,17 @@
 #define TCP_BIND_MAX_RETRY                      10
 
 #define L_DEBUG(...) \
-    logHelper_log(sender->logHelper, OSGI_LOGSERVICE_DEBUG, __VA_ARGS__)
+    celix_logHelper_log(sender->logHelper, CELIX_LOG_LEVEL_DEBUG, __VA_ARGS__)
 #define L_INFO(...) \
-    logHelper_log(sender->logHelper, OSGI_LOGSERVICE_INFO, __VA_ARGS__)
+    celix_logHelper_log(sender->logHelper, CELIX_LOG_LEVEL_INFO, __VA_ARGS__)
 #define L_WARN(...) \
-    logHelper_log(sender->logHelper, OSGI_LOGSERVICE_WARNING, __VA_ARGS__)
+    celix_logHelper_log(sender->logHelper, CELIX_LOG_LEVEL_WARNING, __VA_ARGS__)
 #define L_ERROR(...) \
-    logHelper_log(sender->logHelper, OSGI_LOGSERVICE_ERROR, __VA_ARGS__)
+    celix_logHelper_log(sender->logHelper, CELIX_LOG_LEVEL_ERROR, __VA_ARGS__)
 
 struct pubsub_tcp_topic_sender {
     celix_bundle_context_t *ctx;
-    log_helper_t *logHelper;
+    celix_log_helper_t *logHelper;
     long serializerSvcId;
     pubsub_serializer_service_t *serializer;
     long protocolSvcId;
@@ -123,7 +123,7 @@ psa_tcp_topicPublicationSend(void *handle, unsigned int msgTypeId, const void *m
 
 pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
     celix_bundle_context_t *ctx,
-    log_helper_t *logHelper,
+    celix_log_helper_t *logHelper,
     const char *scope,
     const char *topic,
     const celix_properties_t *topicProperties,

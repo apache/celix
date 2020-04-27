@@ -59,8 +59,8 @@ if (RSA_EXAMPLES)
                 Celix::rsa_dfi
                 Celix::shell
                 Celix::shell_tui
-                Celix::log_service
-                Celix::log_writer_stdout
+                Celix::log_admin
+
                 celix_remote_interceptors_example
                 calculator
             PROPERTIES

@@ -57,7 +57,7 @@ celix_status_t eventHandlerHandleEvent(event_handler_pt *event_handler, event_pt
 	if (event != NULL) {
         const char *topic = event->topic;
         //status = (*event_handler)->event_admin_service->getTopic(&event, &topic);
-		logHelper_log((*event_handler)->loghelper, OSGI_LOGSERVICE_INFO, "[SUB] topic of event: %s.", topic);
+		logHelper_log((*event_handler)->loghelper, CELIX_LOG_LEVEL_INFO, "[SUB] topic of event: %s.", topic);
 
 		array_list_pt propertyNames;
 		arrayList_create(&propertyNames);
@@ -77,7 +77,7 @@ celix_status_t eventHandlerHandleEvent(event_handler_pt *event_handler, event_pt
             value = properties_get((*event).properties, key);
 
 
-			logHelper_log((*event_handler)->loghelper, OSGI_LOGSERVICE_INFO, "[SUB] Key: %s value: %s.", key, value);
+			logHelper_log((*event_handler)->loghelper, CELIX_LOG_LEVEL_INFO, "[SUB] Key: %s value: %s.", key, value);
 		}
 	}
 	return status;

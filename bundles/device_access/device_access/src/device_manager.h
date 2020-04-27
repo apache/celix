@@ -27,13 +27,13 @@
 #ifndef DEVICE_MANAGER_H_
 #define DEVICE_MANAGER_H_
 
-#include "log_helper.h"
+#include "celix_log_helper.h"
 
 #include "driver_loader.h"
 
 typedef struct device_manager *device_manager_pt;
 
-celix_status_t deviceManager_create(bundle_context_pt context, log_helper_t *logHelper, device_manager_pt *manager);
+celix_status_t deviceManager_create(bundle_context_pt context, celix_log_helper_t *logHelper, device_manager_pt *manager);
 celix_status_t deviceManager_destroy(device_manager_pt manager);
 
 celix_status_t deviceManager_matchAttachDriver(device_manager_pt manager, driver_loader_pt loader,

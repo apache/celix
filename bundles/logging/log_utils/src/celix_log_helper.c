@@ -123,6 +123,13 @@ void celix_logHelper_fatal(celix_log_helper_t* logHelper, const char *format, ..
     va_end(args);
 }
 
+void celix_logHelper_log(celix_log_helper_t* logHelper, celix_log_level_e level, const char *format, ...) {
+    va_list args;
+    va_start(args, format);
+    celix_logHelper_vlog(logHelper, level, format, args);
+    va_end(args);
+}
+
 void celix_logHelper_vlog(celix_log_helper_t* logHelper, celix_log_level_e level, const char *format, va_list formatArgs) {
     if (level == CELIX_LOG_LEVEL_DISABLED) {
         //silently ignore

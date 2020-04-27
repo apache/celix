@@ -45,14 +45,13 @@ if (SHELL)
           src/install_command
           src/update_command
           src/uninstall_command
-          src/log_command
           src/help_command
 		  src/dm_shell_list_command
 		  src/query_command.c
 		  src/quit_command.c
 	)
 	target_include_directories(shell PRIVATE src)
-	target_link_libraries(shell PRIVATE Celix::shell_api CURL::libcurl Celix::log_service_api Celix::log_helper)
+	target_link_libraries(shell PRIVATE Celix::shell_api CURL::libcurl Celix::log_service_api Celix::log_utils)
 	target_compile_options(shell PRIVATE -Wno-deprecated-declarations)
 	if (CELIX_INSTALL_DEPRECATED_API)
 		target_compile_definitions(shell PRIVATE CELIX_INSTALL_DEPRECATED_API)

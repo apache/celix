@@ -35,17 +35,17 @@
 #include "pubsub_tcp_topic_receiver.h"
 
 #define L_DEBUG(...) \
-    logHelper_log(psa->log, OSGI_LOGSERVICE_DEBUG, __VA_ARGS__)
+    celix_logHelper_log(psa->log, CELIX_LOG_LEVEL_DEBUG, __VA_ARGS__)
 #define L_INFO(...) \
-    logHelper_log(psa->log, OSGI_LOGSERVICE_INFO, __VA_ARGS__)
+    celix_logHelper_log(psa->log, CELIX_LOG_LEVEL_INFO, __VA_ARGS__)
 #define L_WARN(...) \
-    logHelper_log(psa->log, OSGI_LOGSERVICE_WARNING, __VA_ARGS__)
+    celix_logHelper_log(psa->log, CELIX_LOG_LEVEL_WARNING, __VA_ARGS__)
 #define L_ERROR(...) \
-    logHelper_log(psa->log, OSGI_LOGSERVICE_ERROR, __VA_ARGS__)
+    celix_logHelper_log(psa->log, CELIX_LOG_LEVEL_ERROR, __VA_ARGS__)
 
 struct pubsub_tcp_admin {
     celix_bundle_context_t *ctx;
-    log_helper_t *log;
+    celix_log_helper_t *log;
     const char *fwUUID;
 
     char *ipAddress;
@@ -112,7 +112,7 @@ static bool pubsub_tcpAdmin_endpointIsPublisher(const celix_properties_t *endpoi
     return type != NULL && strncmp(PUBSUB_PUBLISHER_ENDPOINT_TYPE, type, strlen(PUBSUB_PUBLISHER_ENDPOINT_TYPE)) == 0;
 }
 
-pubsub_tcp_admin_t *pubsub_tcpAdmin_create(celix_bundle_context_t *ctx, log_helper_t *logHelper) {
+pubsub_tcp_admin_t *pubsub_tcpAdmin_create(celix_bundle_context_t *ctx, celix_log_helper_t *logHelper) {
     pubsub_tcp_admin_t *psa = calloc(1, sizeof(*psa));
     psa->ctx = ctx;
     psa->log = logHelper;

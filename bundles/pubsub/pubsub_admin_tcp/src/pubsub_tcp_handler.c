@@ -58,13 +58,13 @@
 #endif
 
 #define L_DEBUG(...) \
-    logHelper_log(handle->logHelper, OSGI_LOGSERVICE_DEBUG, __VA_ARGS__)
+    celix_logHelper_log(handle->logHelper, CELIX_LOG_LEVEL_DEBUG, __VA_ARGS__)
 #define L_INFO(...) \
-    logHelper_log(handle->logHelper, OSGI_LOGSERVICE_INFO, __VA_ARGS__)
+    celix_logHelper_log(handle->logHelper, CELIX_LOG_LEVEL_INFO, __VA_ARGS__)
 #define L_WARN(...) \
-    logHelper_log(handle->logHelper, OSGI_LOGSERVICE_WARNING, __VA_ARGS__)
+    celix_logHelper_log(handle->logHelper, CELIX_LOG_LEVEL_WARNING, __VA_ARGS__)
 #define L_ERROR(...) \
-    logHelper_log(handle->logHelper, OSGI_LOGSERVICE_ERROR, __VA_ARGS__)
+    celix_logHelper_log(handle->logHelper, CELIX_LOG_LEVEL_ERROR, __VA_ARGS__)
 
 //
 // Entry administration
@@ -110,7 +110,7 @@ struct pubsub_tcpHandler {
     void *acceptConnectPayload;
     pubsub_tcpHandler_processMessage_callback_t processMessageCallback;
     void *processMessagePayload;
-    log_helper_t *logHelper;
+    celix_log_helper_t *logHelper;
     pubsub_protocol_service_t *protocol;
     unsigned int bufferSize;
     unsigned int maxNofBuffer;
@@ -150,7 +150,7 @@ static void *pubsub_tcpHandler_thread(void *data);
 //
 // Create a handle
 //
-pubsub_tcpHandler_t *pubsub_tcpHandler_create(pubsub_protocol_service_t *protocol, log_helper_t *logHelper) {
+pubsub_tcpHandler_t *pubsub_tcpHandler_create(pubsub_protocol_service_t *protocol, celix_log_helper_t *logHelper) {
     pubsub_tcpHandler_t *handle = calloc(sizeof(*handle), 1);
     if (handle != NULL) {
 #if defined(__APPLE__)
@@ -712,7 +712,7 @@ void pubsub_tcpHandler_setThreadPriority(pubsub_tcpHandler_t *handle, long prio,
                 printf("Skipping configuration of thread prio to %i and thread "
                        "scheduling to %s. No permission\n",
                        (int) prio, sched);
-                logHelper_log(handle->logHelper, OSGI_LOGSERVICE_INFO,
+                celix_logHelper_log(handle->logHelper, CELIX_LOG_LEVEL_INFO,
                               "Skipping configuration of thread prio to %i and thread "
                               "scheduling to %s. No permission\n",
                               (int) prio, sched);

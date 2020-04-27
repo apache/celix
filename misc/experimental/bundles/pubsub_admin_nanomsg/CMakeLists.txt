@@ -35,7 +35,7 @@ if (BUILD_PUBSUB_PSA_NANOMSG)
     set_target_properties(celix_pubsub_admin_nanomsg PROPERTIES INSTALL_RPATH "$ORIGIN")
     target_link_libraries(celix_pubsub_admin_nanomsg PRIVATE
             Celix::pubsub_spi
-            Celix::framework Celix::dfi Celix::log_helper
+            Celix::framework Celix::dfi Celix::log_utils
             NANOMSG::lib
     )
     target_include_directories(celix_pubsub_admin_nanomsg PRIVATE
