@@ -23,8 +23,7 @@
 #include <string.h>
 
 #include "celix_api.h"
-#include "log_helper.h"
-#include "log_service.h"
+#include "celix_log_helper.h"
 #include "utils.h"
 #include "discovery.h"
 #include "discovery_impl.h"
@@ -40,7 +39,7 @@ struct etcd_watcher {
     int ttl;
 
     discovery_t *discovery;
-    log_helper_t **loghelper;
+    celix_log_helper_t **loghelper;
     hash_map_pt entries;
 
     celix_thread_mutex_t watcherLock;
@@ -160,7 +159,7 @@ static celix_status_t etcdWatcher_addOwnFramework(etcd_watcher_t *watcher)
 	if (etcdlib_get(watcher->etcdlib, localNodePath, &value, &modIndex) != ETCDLIB_RC_OK) {
 		etcdlib_set(watcher->etcdlib, localNodePath, endpoints, watcher->ttl, false);
 	} else if (etcdlib_set(watcher->etcdlib, localNodePath, endpoints, watcher->ttl , true) != ETCDLIB_RC_OK)  {
-		logHelper_log(*watcher->loghelper, OSGI_LOGSERVICE_WARNING, "Cannot register local discovery");
+		celix_logHelper_log(*watcher->loghelper, CELIX_LOG_LEVEL_WARNING, "Cannot register local discovery");
     }
 
 	FREE_MEM(value);
@@ -254,7 +253,7 @@ static void* etcdWatcher_run(void* data) {
 			} else if (strcmp(action, "update") == 0) {
 				etcdWatcher_addEntry(watcher, rkey, value);
 			} else {
-				logHelper_log(*watcher->loghelper, OSGI_LOGSERVICE_INFO, "Unexpected action: %s", action);
+				celix_logHelper_log(*watcher->loghelper, CELIX_LOG_LEVEL_INFO, "Unexpected action: %s", action);
 			}
 
 			highestModified = modIndex;
@@ -341,7 +340,7 @@ celix_status_t etcdWatcher_destroy(etcd_watcher_t *watcher) {
 
 	if (status != CELIX_SUCCESS || etcdlib_del(watcher->etcdlib, localNodePath) == false)
 	{
-		logHelper_log(*watcher->loghelper, OSGI_LOGSERVICE_WARNING, "Cannot remove local discovery registration.");
+		celix_logHelper_log(*watcher->loghelper, CELIX_LOG_LEVEL_WARNING, "Cannot remove local discovery registration.");
 	}
 
 	watcher->loghelper = NULL;

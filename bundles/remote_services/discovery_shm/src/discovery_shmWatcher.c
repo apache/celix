@@ -161,7 +161,7 @@ static void* discoveryShmWatcher_run(void* data) {
     char url[MAX_LOCALNODE_LENGTH];
 
     if (discoveryShmWatcher_getLocalNodePath(discovery->context, &localNodePath[0]) != CELIX_SUCCESS) {
-        logHelper_log(discovery->loghelper, OSGI_LOGSERVICE_WARNING, "Cannot retrieve local discovery path.");
+        logHelper_log(discovery->loghelper, CELIX_LOG_LEVEL_WARNING, "Cannot retrieve local discovery path.");
     }
 
     if (endpointDiscoveryServer_getUrl(discovery->server, &url[0]) != CELIX_SUCCESS) {
@@ -171,7 +171,7 @@ static void* discoveryShmWatcher_run(void* data) {
     while (watcher->running) {
         // register own framework
         if (discoveryShm_set(watcher->shmData, localNodePath, url) != CELIX_SUCCESS) {
-            logHelper_log(discovery->loghelper, OSGI_LOGSERVICE_WARNING, "Cannot set local discovery registration.");
+            logHelper_log(discovery->loghelper, CELIX_LOG_LEVEL_WARNING, "Cannot set local discovery registration.");
         }
 
         discoveryShmWatcher_syncEndpoints(discovery);
@@ -193,12 +193,12 @@ celix_status_t discoveryShmWatcher_create(discovery_t *discovery) {
         status = discoveryShm_attach(&(watcher->shmData));
 
         if (status != CELIX_SUCCESS) {
-            logHelper_log(discovery->loghelper, OSGI_LOGSERVICE_DEBUG, "Attaching to Shared Memory Failed. Trying to create.");
+            logHelper_log(discovery->loghelper, CELIX_LOG_LEVEL_DEBUG, "Attaching to Shared Memory Failed. Trying to create.");
 
             status = discoveryShm_create(&(watcher->shmData));
 
             if (status != CELIX_SUCCESS) {
-                logHelper_log(discovery->loghelper, OSGI_LOGSERVICE_ERROR, "Failed to create Shared Memory Segment.");
+                logHelper_log(discovery->loghelper, CELIX_LOG_LEVEL_ERROR, "Failed to create Shared Memory Segment.");
             }
         }
 
@@ -246,7 +246,7 @@ celix_status_t discoveryShmWatcher_destroy(discovery_t *discovery) {
         free(watcher);
     }
     else {
-        logHelper_log(discovery->loghelper, OSGI_LOGSERVICE_WARNING, "Cannot remove local discovery registration.");
+        logHelper_log(discovery->loghelper, CELIX_LOG_LEVEL_WARNING, "Cannot remove local discovery registration.");
     }
 
 

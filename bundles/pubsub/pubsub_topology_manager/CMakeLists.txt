@@ -26,7 +26,7 @@ add_celix_bundle(celix_pubsub_topology_manager
         src/pubsub_topology_manager.c
         src/pubsub_topology_manager.h
 )
-target_link_libraries(celix_pubsub_topology_manager PRIVATE Celix::framework Celix::log_helper Celix::shell_api)
+target_link_libraries(celix_pubsub_topology_manager PRIVATE Celix::framework Celix::log_utils Celix::shell_api)
 target_link_libraries(celix_pubsub_topology_manager PRIVATE Celix::pubsub_spi Celix::pubsub_utils )
 target_link_libraries(celix_pubsub_topology_manager PRIVATE UUID::lib)
 

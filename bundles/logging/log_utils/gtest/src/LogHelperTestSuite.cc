@@ -91,6 +91,7 @@ TEST_F(LogHelperTestSuite, LogToLogSvc) {
     celix_logHelper_warning(helper, "testing %i", 3);
     celix_logHelper_error(helper, "testing %i", 4);
     celix_logHelper_fatal(helper, "testing %i", 5);
+    celix_logHelper_log(helper, CELIX_LOG_LEVEL_DISABLED, "testing %i", 0);
     celix_logHelper_vlog(helper, CELIX_LOG_LEVEL_DISABLED, "test", nullptr);
     EXPECT_EQ(5, celix_logHelper_logCount(helper));
     EXPECT_EQ(5, logCount.load());

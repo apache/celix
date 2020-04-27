@@ -22,7 +22,7 @@ if(DEVICE_ACCESS_EXAMPLE)
 	add_subdirectory(refining_driver)
 
     add_celix_container(device_access_example
-        BUNDLES Celix::device_manager Celix::driver_locator Celix::shell Celix::shell_tui log_service base_driver
+        BUNDLES Celix::device_manager Celix::driver_locator Celix::shell Celix::shell_tui base_driver
     )
 
     celix_container_bundles_dir(device_access_example

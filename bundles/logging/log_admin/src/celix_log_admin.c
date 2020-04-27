@@ -490,24 +490,24 @@ static bool celix_logAdmin_executeCommand(void *handle, const char *commandLine,
     celix_log_admin_t* admin = handle;
 
     char *cmd = celix_utils_strdup(commandLine); //note command_line_str should be treated as const.
-    const char *token = NULL;
+    const char *subCmd = NULL;
     char *savePtr = NULL;
 
     strtok_r(cmd, " ", &savePtr);
-    token = strtok_r(NULL, " ", &savePtr);
-    if (token != NULL) {
-        if (strncmp("log", token, 64) == 0) {
+    subCmd = strtok_r(NULL, " ", &savePtr);
+    if (subCmd != NULL) {
+        if (strncmp("log", subCmd, 64) == 0) {
             //expect 1 or 2 tokens
             const char* arg1 = strtok_r(NULL, " ", &savePtr);
             const char* arg2 = strtok_r(NULL, " ", &savePtr);
             if (arg1 != NULL && arg2 != NULL) {
                 celix_logAdmin_setLogLevelCmd(admin, arg1, arg2, outStream, errorStream);
             } else if (arg1 != NULL) {
-                celix_logAdmin_setLogLevelCmd(admin, NULL, arg2, outStream, errorStream);
+                celix_logAdmin_setLogLevelCmd(admin, NULL, arg1, outStream, errorStream);
             } else {
                 fprintf(errorStream, "Invalid arguments. For log command expected 1 or 2 args. (<log_level> or <log_service_selection> <log_level>");
             }
-        } else if (strncmp("sink", token, 64) == 0) {
+        } else if (strncmp("sink", subCmd, 64) == 0) {
             const char* arg1 = strtok_r(NULL, " ", &savePtr);
             const char* arg2 = strtok_r(NULL, " ", &savePtr);
             if (arg1 != NULL && arg2 != NULL) {
@@ -518,7 +518,7 @@ static bool celix_logAdmin_executeCommand(void *handle, const char *commandLine,
                 fprintf(errorStream, "Invalid arguments. For log command expected 1 or 2 args. (<true|false> or <log_service_selection> <true|false>");
             }
         } else {
-            fprintf(errorStream, "Unexpected command '%s'. Expected empty, log or sink command.'n", token);
+            fprintf(errorStream, "Unexpected sub command '%s'. Expected empty, log or sink command.'n", subCmd);
         }
     } else {
         celix_logAdmin_InfoCmd(admin, outStream, errorStream);
@@ -601,22 +601,10 @@ void celix_logAdmin_destroy(celix_log_admin_t *admin) {
         celix_bundleContext_stopTracker(admin->ctx, admin->logServiceMetaTrackerId);
         celix_bundleContext_stopTracker(admin->ctx, admin->logWriterTrackerId);
 
-        hash_map_iterator_t iter = hashMapIterator_construct(admin->loggers);
-        while (hashMapIterator_hasNext(&iter)) {
-            celix_log_service_entry_t* entry = hashMapIterator_nextValue(&iter);
-            celix_bundleContext_unregisterService(admin->ctx, entry->logSvcId);
-            free(entry->name);
-            free(entry);
-        }
+        assert(hashMap_size(admin->loggers) == 0); //note stopping service tracker tracker should triggered all needed remove events
         hashMap_destroy(admin->loggers, false, false);
 
-         assert(hashMap_size(admin->sinks) == 0); //note should all be removed as result of stopping the svc tracker.
-//        iter = hashMapIterator_construct(admin->sinks);
-//        while (hashMapIterator_hasNext(&iter)) {
-//            celix_log_sink_entry_t* entry = hashMapIterator_nextValue(&iter);
-//            free(entry->name);
-//            free(entry);
-//        }
+        assert(hashMap_size(admin->sinks) == 0); //note stopping service tracker should triggered all needed remove events
         hashMap_destroy(admin->sinks, false, false);
 
         celixThreadRwlock_destroy(&admin->lock);

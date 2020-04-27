@@ -32,7 +32,7 @@
 #include <assert.h>
 #include <pubsub_endpoint.h>
 #include <arpa/inet.h>
-#include <log_helper.h>
+#include <celix_log_helper.h>
 #include "pubsub_udpmc_topic_receiver.h"
 #include "pubsub_psa_udpmc_constants.h"
 #include "large_udp.h"
@@ -44,17 +44,17 @@
 #define MAX_UDP_SESSIONS        16
 
 #define L_DEBUG(...) \
-    logHelper_log(receiver->logHelper, OSGI_LOGSERVICE_DEBUG, __VA_ARGS__)
+    celix_logHelper_log(receiver->logHelper, CELIX_LOG_LEVEL_DEBUG, __VA_ARGS__)
 #define L_INFO(...) \
-    logHelper_log(receiver->logHelper, OSGI_LOGSERVICE_INFO, __VA_ARGS__)
+    celix_logHelper_log(receiver->logHelper, CELIX_LOG_LEVEL_INFO, __VA_ARGS__)
 #define L_WARN(...) \
-    logHelper_log(receiver->logHelper, OSGI_LOGSERVICE_WARNING, __VA_ARGS__)
+    celix_logHelper_log(receiver->logHelper, CELIX_LOG_LEVEL_WARNING, __VA_ARGS__)
 #define L_ERROR(...) \
-    logHelper_log(receiver->logHelper, OSGI_LOGSERVICE_ERROR, __VA_ARGS__)
+    celix_logHelper_log(receiver->logHelper, CELIX_LOG_LEVEL_ERROR, __VA_ARGS__)
 
 struct pubsub_udpmc_topic_receiver {
     celix_bundle_context_t *ctx;
-    log_helper_t *logHelper;
+    celix_log_helper_t *logHelper;
     long serializerSvcId;
     pubsub_serializer_service_t *serializer;
     char *scope;
@@ -115,7 +115,7 @@ static void psa_udpmc_connectToAllRequestedConnections(pubsub_udpmc_topic_receiv
 static void psa_udpmc_initializeAllSubscribers(pubsub_udpmc_topic_receiver_t *receiver);
 
 pubsub_udpmc_topic_receiver_t* pubsub_udpmcTopicReceiver_create(celix_bundle_context_t *ctx,
-                                                                log_helper_t *logHelper,
+                                                                celix_log_helper_t *logHelper,
                                                                 const char *scope,
                                                                 const char *topic,
                                                                 const char *ifIP,

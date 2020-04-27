@@ -60,7 +60,7 @@ celix_status_t discovery_create(celix_bundle_context_t *context, discovery_t** o
         status = celixThreadMutex_create(&discovery->listenerReferencesMutex, NULL);
         status = celixThreadMutex_create(&discovery->discoveredServicesMutex, NULL);
 
-        logHelper_create(context, &discovery->loghelper);
+        discovery->loghelper = celix_logHelper_create(context, "celix_rsa_discovery");
     } else {
         status = CELIX_ENOMEM;
         free(discovery);
@@ -101,7 +101,7 @@ celix_status_t discovery_destroy(discovery_t *discovery) {
 
     celixThreadMutex_destroy(&discovery->listenerReferencesMutex);
 
-    logHelper_destroy(&discovery->loghelper);
+    celix_logHelper_destroy(discovery->loghelper);
 
     free(discovery);
 
@@ -112,8 +112,6 @@ celix_status_t discovery_start(discovery_t *discovery) {
     celix_status_t status = CELIX_SUCCESS;
     const char *port = NULL;
     const char *path = NULL;
-
-    logHelper_start(discovery->loghelper);
 
     bundleContext_getProperty(discovery->context, DISCOVERY_SERVER_PORT, &port);
     if (port == NULL) {
@@ -173,9 +171,6 @@ celix_status_t discovery_stop(discovery_t *discovery) {
     hashMapIterator_destroy(iter);
 
     celixThreadMutex_unlock(&discovery->discoveredServicesMutex);
-
-
-    logHelper_stop(discovery->loghelper);
 
     return status;
 }

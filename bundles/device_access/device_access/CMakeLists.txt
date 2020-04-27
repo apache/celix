@@ -34,12 +34,10 @@ add_celix_bundle(device_manager
 		src/driver_loader
 		src/driver_matcher
 )
-target_link_libraries(device_manager PRIVATE Celix::log_helper)
+target_link_libraries(device_manager PRIVATE Celix::log_utils)
 
 target_include_directories(device_manager PRIVATE src)
 target_link_libraries(device_manager PRIVATE device_access_api)
-
-include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
 
 install(TARGETS device_access_api EXPORT celix COMPONENT device_access)
 install(DIRECTORY include/ DESTINATION include/celix/device_access COMPONENT device_access)

@@ -48,17 +48,17 @@
 
 
 #define RSA_LOG_ERROR(admin, msg, ...) \
-    logHelper_log((admin)->loghelper, OSGI_LOGSERVICE_ERROR, (msg),  ##__VA_ARGS__)
+    celix_logHelper_log((admin)->loghelper, CELIX_LOG_LEVEL_ERROR, (msg),  ##__VA_ARGS__)
 
 #define RSA_LOG_WARNING(admin, msg, ...) \
-    logHelper_log((admin)->loghelper, OSGI_LOGSERVICE_ERROR, (msg),  ##__VA_ARGS__)
+    celix_logHelper_log((admin)->loghelper, CELIX_LOG_LEVEL_ERROR, (msg),  ##__VA_ARGS__)
 
 #define RSA_LOG_DEBUG(admin, msg, ...) \
-    logHelper_log((admin)->loghelper, OSGI_LOGSERVICE_ERROR, (msg),  ##__VA_ARGS__)
+    celix_logHelper_log((admin)->loghelper, CELIX_LOG_LEVEL_ERROR, (msg),  ##__VA_ARGS__)
 
 struct remote_service_admin {
     celix_bundle_context_t *context;
-    log_helper_t *loghelper;
+    celix_log_helper_t *loghelper;
 
     celix_thread_rwlock_t exportedServicesLock;
     hash_map_pt exportedServices;
@@ -167,15 +167,13 @@ celix_status_t remoteServiceAdmin_create(celix_bundle_context_t *context, remote
          celixThreadRwlock_create(&(*admin)->exportedServicesLock, NULL);
          celixThreadMutex_create(&(*admin)->importedServicesLock, NULL);
 
-        if (logHelper_create(context, &(*admin)->loghelper) == CELIX_SUCCESS) {
-            logHelper_start((*admin)->loghelper);
-            dynCommon_logSetup((void *)remoteServiceAdmin_log, *admin, 1);
-            dynType_logSetup((void *)remoteServiceAdmin_log, *admin, 1);
-            dynFunction_logSetup((void *)remoteServiceAdmin_log, *admin, 1);
-            dynInterface_logSetup((void *)remoteServiceAdmin_log, *admin, 1);
-            jsonSerializer_logSetup((void *)remoteServiceAdmin_log, *admin, 1);
-            jsonRpc_logSetup((void *)remoteServiceAdmin_log, *admin, 1);
-        }
+        (*admin)->loghelper = celix_logHelper_create(context, "celix_rsa_admin");
+        dynCommon_logSetup((void *)remoteServiceAdmin_log, *admin, 1);
+        dynType_logSetup((void *)remoteServiceAdmin_log, *admin, 1);
+        dynFunction_logSetup((void *)remoteServiceAdmin_log, *admin, 1);
+        dynInterface_logSetup((void *)remoteServiceAdmin_log, *admin, 1);
+        jsonSerializer_logSetup((void *)remoteServiceAdmin_log, *admin, 1);
+        jsonRpc_logSetup((void *)remoteServiceAdmin_log, *admin, 1);
 
         long port = celix_bundleContext_getPropertyAsLong(context, RSA_PORT_KEY, RSA_PORT_DEFAULT);
         const char *ip = celix_bundleContext_getProperty(context, RSA_IP_KEY, RSA_IP_DEFAULT);
@@ -183,14 +181,14 @@ celix_status_t remoteServiceAdmin_create(celix_bundle_context_t *context, remote
 
         char *detectedIp = NULL;
         if ((interface != NULL) && (remoteServiceAdmin_getIpAddress((char*)interface, &detectedIp) != CELIX_SUCCESS)) {
-            logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_WARNING, "RSA: Could not retrieve IP address for interface %s", interface);
+            celix_logHelper_log((*admin)->loghelper, CELIX_LOG_LEVEL_WARNING, "RSA: Could not retrieve IP address for interface %s", interface);
         }
         if (detectedIp != NULL) {
             ip = detectedIp;
         }
 
         if (ip != NULL) {
-            logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_DEBUG, "RSA: Using %s for service annunciation", ip);
+            celix_logHelper_log((*admin)->loghelper, CELIX_LOG_LEVEL_DEBUG, "RSA: Using %s for service annunciation", ip);
             (*admin)->ip = strdup(ip);
         }
 
@@ -238,11 +236,11 @@ celix_status_t remoteServiceAdmin_create(celix_bundle_context_t *context, remote
             (*admin)->ctx = mg_start(&callbacks, (*admin), options);
 
             if ((*admin)->ctx != NULL) {
-                logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_INFO, "RSA: Start webserver: %s", newPort);
+                celix_logHelper_log((*admin)->loghelper, CELIX_LOG_LEVEL_INFO, "RSA: Start webserver: %s", newPort);
                 (*admin)->port = strdup(newPort);
 
             } else {
-                logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_ERROR, "Error while starting rsa server on port %s - retrying on port %li...", newPort, port + port_counter);
+                celix_logHelper_log((*admin)->loghelper, CELIX_LOG_LEVEL_ERROR, "Error while starting rsa server on port %s - retrying on port %li...", newPort, port + port_counter);
                 snprintf(newPort, 10,  "%li", port + port_counter++);
             }
         } while (((*admin)->ctx == NULL) && (port_counter < MAX_NUMBER_OF_RESTARTS));
@@ -257,7 +255,7 @@ celix_status_t remoteServiceAdmin_create(celix_bundle_context_t *context, remote
         } else {
             (*admin)->logFile = fopen(f, "w");
             if ( (*admin)->logFile == NULL) {
-                logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_WARNING, "Error opening file '%s' for logging calls. %s", f, strerror(errno));
+                celix_logHelper_log((*admin)->loghelper, CELIX_LOG_LEVEL_WARNING, "Error opening file '%s' for logging calls. %s", f, strerror(errno));
             }
         }
     }
@@ -322,7 +320,7 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_t *admin) {
     celixThreadMutex_unlock(&admin->importedServicesLock);
 
     if (admin->ctx != NULL) {
-        logHelper_log(admin->loghelper, OSGI_LOGSERVICE_INFO, "RSA: Stopping webserver...");
+        celix_logHelper_log(admin->loghelper, CELIX_LOG_LEVEL_INFO, "RSA: Stopping webserver...");
         mg_stop(admin->ctx);
         admin->ctx = NULL;
     }
@@ -330,8 +328,7 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_t *admin) {
     hashMap_destroy(admin->exportedServices, false, false);
     arrayList_destroy(admin->importedServices);
 
-    logHelper_stop(admin->loghelper);
-    logHelper_destroy(&admin->loghelper);
+    celix_logHelper_destroy(admin->loghelper);
 
     return status;
 }
@@ -476,7 +473,7 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *admin, c
 
         status = bundleContext_getServiceReferences(admin->context, NULL, filter, &references);
 
-        logHelper_log(admin->loghelper, OSGI_LOGSERVICE_DEBUG, "RSA: exportService called for serviceId %s", serviceId);
+        celix_logHelper_log(admin->loghelper, CELIX_LOG_LEVEL_DEBUG, "RSA: exportService called for serviceId %s", serviceId);
 
         int i;
         int size = arrayList_size(references);
@@ -490,7 +487,7 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *admin, c
         arrayList_destroy(references);
 
         if (reference == NULL) {
-            logHelper_log(admin->loghelper, OSGI_LOGSERVICE_ERROR, "ERROR: expected a reference for service id %s.",
+            celix_logHelper_log(admin->loghelper, CELIX_LOG_LEVEL_ERROR, "ERROR: expected a reference for service id %s.",
                           serviceId);
             status = CELIX_ILLEGAL_STATE;
         }
@@ -502,10 +499,10 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *admin, c
             serviceReference_getProperty(reference, (char *) OSGI_FRAMEWORK_OBJECTCLASS, &provided);
 
             if (exports == NULL || provided == NULL || strcmp(exports, provided) != 0) {
-                logHelper_log(admin->loghelper, OSGI_LOGSERVICE_WARNING, "RSA: No Services to export.");
+                celix_logHelper_log(admin->loghelper, CELIX_LOG_LEVEL_WARNING, "RSA: No Services to export.");
                 status = CELIX_ILLEGAL_STATE;
             } else {
-                logHelper_log(admin->loghelper, OSGI_LOGSERVICE_INFO, "RSA: Export service (%s)", provided);
+                celix_logHelper_log(admin->loghelper, CELIX_LOG_LEVEL_INFO, "RSA: Export service (%s)", provided);
             }
         }
 
@@ -543,7 +540,7 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *admin, c
 celix_status_t remoteServiceAdmin_removeExportedService(remote_service_admin_t *admin, export_registration_t *registration) {
     celix_status_t status;
 
-    logHelper_log(admin->loghelper, OSGI_LOGSERVICE_INFO, "RSA_DFI: Removing exported service");
+    celix_logHelper_log(admin->loghelper, CELIX_LOG_LEVEL_INFO, "RSA_DFI: Removing exported service");
 
     export_reference_t * ref = NULL;
     status = exportRegistration_getExportReference(registration, &ref);
@@ -566,7 +563,7 @@ celix_status_t remoteServiceAdmin_removeExportedService(remote_service_admin_t *
         free(ref);
 
     } else {
-        logHelper_log(admin->loghelper, OSGI_LOGSERVICE_ERROR, "Cannot find reference for registration");
+        celix_logHelper_log(admin->loghelper, CELIX_LOG_LEVEL_ERROR, "Cannot find reference for registration");
     }
 
     return status;
@@ -725,7 +722,7 @@ celix_status_t remoteServiceAdmin_importService(remote_service_admin_t *admin, e
 
         free(ecCopy);
     } else {
-        logHelper_log(admin->loghelper, OSGI_LOGSERVICE_WARNING, "Mandatory %s element missing from endpoint description",
+        celix_logHelper_log(admin->loghelper, CELIX_LOG_LEVEL_WARNING, "Mandatory %s element missing from endpoint description",
                 OSGI_RSA_SERVICE_IMPORTED_CONFIGS);
     }
 
@@ -735,8 +732,8 @@ celix_status_t remoteServiceAdmin_importService(remote_service_admin_t *admin, e
         const char *objectClass = celix_properties_get(endpointDescription->properties, "objectClass", NULL);
         const char *serviceVersion = celix_properties_get(endpointDescription->properties, CELIX_FRAMEWORK_SERVICE_VERSION, NULL);
 
-        logHelper_log(admin->loghelper, OSGI_LOGSERVICE_INFO, "RSA: Import service %s", endpointDescription->service);
-        logHelper_log(admin->loghelper, OSGI_LOGSERVICE_INFO, "Registering service factory (proxy) for service '%s'\n",
+        celix_logHelper_log(admin->loghelper, CELIX_LOG_LEVEL_INFO, "RSA: Import service %s", endpointDescription->service);
+        celix_logHelper_log(admin->loghelper, CELIX_LOG_LEVEL_INFO, "Registering service factory (proxy) for service '%s'\n",
                       objectClass);
 
         if (objectClass != NULL) {
@@ -766,7 +763,7 @@ celix_status_t remoteServiceAdmin_importService(remote_service_admin_t *admin, e
 
 celix_status_t remoteServiceAdmin_removeImportedService(remote_service_admin_t *admin, import_registration_t *registration) {
     celix_status_t status = CELIX_SUCCESS;
-    logHelper_log(admin->loghelper, OSGI_LOGSERVICE_INFO, "RSA_DFI: Removing imported service");
+    celix_logHelper_log(admin->loghelper, CELIX_LOG_LEVEL_INFO, "RSA_DFI: Removing imported service");
 
     celixThreadMutex_lock(&admin->importedServicesLock);
     int i;
@@ -851,7 +848,7 @@ static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&get);
         curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, (curl_off_t)post.size);
         curl_easy_setopt(curl, CURLOPT_SHARE, rsa->curlShare);
-        //logHelper_log(rsa->loghelper, OSGI_LOGSERVICE_DEBUG, "RSA: Performing curl post\n");
+        //celix_logHelper_log(rsa->loghelper, CELIX_LOG_LEVEL_DEBUG, "RSA: Performing curl post\n");
         res = curl_easy_perform(curl);
 
         *reply = get.writeptr;
@@ -898,13 +895,13 @@ static size_t remoteServiceAdmin_write(void *contents, size_t size, size_t nmemb
 static void remoteServiceAdmin_log(remote_service_admin_t *admin, int level, const char *file, int line, const char *msg, ...) {
     va_list ap;
     va_start(ap, msg);
-    int levels[5] = {0, OSGI_LOGSERVICE_ERROR, OSGI_LOGSERVICE_WARNING, OSGI_LOGSERVICE_INFO, OSGI_LOGSERVICE_DEBUG};
+    int levels[5] = {0, CELIX_LOG_LEVEL_ERROR, CELIX_LOG_LEVEL_WARNING, CELIX_LOG_LEVEL_INFO, CELIX_LOG_LEVEL_DEBUG};
 
     char buf1[256];
     snprintf(buf1, 256, "FILE:%s, LINE:%i, MSG:", file, line);
 
     char buf2[256];
     vsnprintf(buf2, 256, msg, ap);
-    logHelper_log(admin->loghelper, levels[level], "%s%s", buf1, buf2);
+    celix_logHelper_log(admin->loghelper, levels[level], "%s%s", buf1, buf2);
     va_end(ap);
 }

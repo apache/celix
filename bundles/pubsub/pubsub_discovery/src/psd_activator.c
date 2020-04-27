@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "log_helper.h"
+#include "celix_log_helper.h"
 #include "celix_shell_command.h"
 
 #include "celix_bundle_context.h"
@@ -44,14 +44,13 @@ typedef struct psd_activator {
     celix_shell_command_t cmdSvc;
     long cmdSvcId;
 
-    log_helper_t *loghelper;
+    celix_log_helper_t *loghelper;
 } psd_activator_t;
 
 static celix_status_t psd_start(psd_activator_t *act, celix_bundle_context_t *ctx) {
     celix_status_t status;
 
-    logHelper_create(ctx, &act->loghelper);
-    logHelper_start(act->loghelper);
+    act->loghelper = celix_logHelper_create(ctx, "celix_psa_discovery_etcd");
 
     act->pubsub_discovery = pubsub_discovery_create(ctx, act->loghelper);
     // pubsub_discovery_start needs to be first to initialize
@@ -97,8 +96,7 @@ static celix_status_t psd_stop(psd_activator_t *act, celix_bundle_context_t *ctx
     celix_status_t status = pubsub_discovery_stop(act->pubsub_discovery);
     pubsub_discovery_destroy(act->pubsub_discovery);
 
-    logHelper_stop(act->loghelper);
-    logHelper_destroy(&act->loghelper);
+    celix_logHelper_destroy(act->loghelper);
 
     return status;
 }
