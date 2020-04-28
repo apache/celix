@@ -69,7 +69,7 @@ static celix_status_t celix_syslogWriterActivator_start(celix_syslog_writer_acti
 
     celix_service_registration_options_t opts = CELIX_EMPTY_SERVICE_REGISTRATION_OPTIONS;
     celix_properties_t* props = celix_properties_create();
-    celix_properties_set(props, CELIX_LOG_SINK_PROPERTY_NAME, "celix::SyslogSink");
+    celix_properties_set(props, CELIX_LOG_SINK_PROPERTY_NAME, "celix_syslog");
     opts.serviceName = CELIX_LOG_SINK_NAME;
     opts.serviceVersion = CELIX_LOG_SINK_VERSION;
     opts.properties = props;
