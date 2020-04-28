@@ -200,7 +200,7 @@ TEST_F(LogBundleTestSuite, SinkLogControl) {
         auto *item = celix_arrayList_get(list, i);
         free(item);
     }
-    free(list);
+    celix_arrayList_destroy(list);
 
 
     celix_bundleContext_unregisterService(ctx.get(), svcId1);
@@ -254,7 +254,7 @@ TEST_F(LogBundleTestSuite, LogServiceControl) {
         auto *item = celix_arrayList_get(list, i);
         free(item);
     }
-    free(list);
+    celix_arrayList_destroy(list);
 
     celix_bundleContext_stopTracker(ctx.get(), trkId1);
     celix_bundleContext_stopTracker(ctx.get(), trkId2);
