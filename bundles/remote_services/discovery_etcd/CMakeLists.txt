@@ -32,7 +32,7 @@ if (RSA_DISCOVERY_ETCD)
 			$<TARGET_OBJECTS:Celix::rsa_discovery_common>
 			$<TARGET_OBJECTS:Celix::civetweb>
 	)
-    target_link_libraries(rsa_discovery_etcd PRIVATE Celix::log_utils Celix::etcdlib_static Celix::rsa_common)
+    target_link_libraries(rsa_discovery_etcd PRIVATE Celix::log_helper Celix::etcdlib_static Celix::rsa_common)
 	target_include_directories(rsa_discovery_etcd PRIVATE src)
 	target_include_directories(rsa_discovery_etcd PRIVATE
 			$<TARGET_PROPERTY:Celix::rsa_discovery_common,INCLUDE_DIRECTORIES>

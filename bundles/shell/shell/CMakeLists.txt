@@ -51,7 +51,7 @@ if (SHELL)
 		  src/quit_command.c
 	)
 	target_include_directories(shell PRIVATE src)
-	target_link_libraries(shell PRIVATE Celix::shell_api CURL::libcurl Celix::log_service_api Celix::log_utils)
+	target_link_libraries(shell PRIVATE Celix::shell_api CURL::libcurl Celix::log_service_api Celix::log_helper)
 	target_compile_options(shell PRIVATE -Wno-deprecated-declarations)
 	if (CELIX_INSTALL_DEPRECATED_API)
 		target_compile_definitions(shell PRIVATE CELIX_INSTALL_DEPRECATED_API)

@@ -23,7 +23,7 @@ add_celix_bundle(log_service_example
         src/activator.c
 )
 target_include_directories(log_service_example PRIVATE src)
-target_link_libraries(log_service_example PRIVATE Celix::log_utils)
+target_link_libraries(log_service_example PRIVATE Celix::log_helper)
 
 add_celix_container(log_example
     GROUP log_service

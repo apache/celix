@@ -24,9 +24,9 @@ Properties specific for the Celix Log Admin (`Celix::log_admin` bundle)
 If the Celix Log Service is installed, 'find_package(Celix)' will set:
  - The `Celix::log_service_api` interface (i.e. header only) library target (v2 and v3 api)
  - The `Celix::log_admin` bundle target. The bundle contaiting th 
- - The `Celix::log_utils` static library target. Helper library with common logger functionality and helpers to setup logging
+ - The `Celix::log_helper` static library target. Helper library with common logger functionality and helpers to setup logging
  
 Also the following deprecated bundle will be set:
- - The `Celix::log_utils` static library target. Helper library to setup loggers. Deprecated, use Celix::log_utils instead.
+ - The `Celix::log_helper` static library target. Helper library to setup loggers. Deprecated, use Celix::log_helper instead.
  - The `Celix::log_service` bundle target. The log service bundle. Deprecated, use Celix::log_admin instead.
  - TODO deprecated log writers

@@ -123,7 +123,7 @@ celix_status_t serviceTracker_create(bundle_context_pt context, const char * ser
 		}
 	}
 
-	framework_logIfError(logger, status, NULL, "Cannot create service tracker");
+	framework_logIfError(context->framework->logger, status, NULL, "Cannot create service tracker");
 
 	return status;
 }
@@ -139,7 +139,7 @@ celix_status_t serviceTracker_createWithFilter(bundle_context_pt context, const 
         (*tracker)->customizer = customizer;
 	}
 
-	framework_logIfError(logger, status, NULL, "Cannot create service tracker [filter=%s]", filter);
+	framework_logIfError(celix_frameworkLogger_globalLogger(), status, NULL, "Cannot create service tracker [filter=%s]", filter);
 
 	return status;
 }
@@ -204,7 +204,7 @@ celix_status_t serviceTracker_open(service_tracker_pt tracker) {
         addListener = true;
     } else {
         //already open
-        framework_logIfError(logger, status, NULL, "Tracker already open");
+        framework_logIfError(tracker->context->framework->logger, status, NULL, "Tracker already open");
 
     }
     celixThreadRwlock_unlock(&tracker->instanceLock);
@@ -491,7 +491,7 @@ static celix_status_t serviceTracker_track(celix_service_tracker_instance_t *ins
         }
     }
 
-    framework_logIfError(logger, status, NULL, "Cannot track reference");
+    framework_logIfError(instance->context->framework->logger, status, NULL, "Cannot track reference");
 
     return status;
 }
@@ -572,7 +572,7 @@ static celix_status_t serviceTracker_invokeAddingService(celix_service_tracker_i
         status = bundleContext_getService(instance->context, ref, svcOut);
     }
 
-    framework_logIfError(logger, status, NULL, "Cannot handle addingService");
+    framework_logIfError(instance->context->framework->logger, status, NULL, "Cannot handle addingService");
 
     return status;
 }
@@ -609,7 +609,7 @@ static celix_status_t serviceTracker_untrack(celix_service_tracker_instance_t* i
 
     serviceTracker_untrackTracked(instance, remove);
 
-    framework_logIfError(logger, status, NULL, "Cannot untrack reference");
+    framework_logIfError(instance->context->framework->logger, status, NULL, "Cannot untrack reference");
 
     return status;
 }
@@ -655,7 +655,7 @@ static celix_status_t serviceTracker_invokeRemovingService(celix_service_tracker
     }
 
     if (!ungetSuccess) {
-        framework_log(logger, OSGI_FRAMEWORK_LOG_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__, "Error ungetting service");
+        framework_log(instance->context->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__, "Error ungetting service");
         status = CELIX_BUNDLE_EXCEPTION;
     }
 
@@ -718,7 +718,7 @@ celix_service_tracker_t* celix_serviceTracker_createWithOptions(
                 version_range_pt range;
                 celix_status_t status = versionRange_parse(opts->filter.versionRange, &range);
                 if(status != CELIX_SUCCESS) {
-                    framework_log(logger, OSGI_FRAMEWORK_LOG_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__,
+                    framework_log(tracker->context->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__,
                     "Error incorrect version range.");
                     celixThreadRwlock_destroy(&tracker->instanceLock);
                     free(tracker);
@@ -727,7 +727,7 @@ celix_service_tracker_t* celix_serviceTracker_createWithOptions(
                 versionRange = versionRange_createLDAPFilter(range, CELIX_FRAMEWORK_SERVICE_VERSION);
                 versionRange_destroy(range);
                 if(versionRange == NULL) {
-                    framework_log(logger, OSGI_FRAMEWORK_LOG_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__,
+                    framework_log(tracker->context->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__,
                                   "Error creating LDAP filter.");
                     celixThreadRwlock_destroy(&tracker->instanceLock);
                     free(tracker);
@@ -765,11 +765,11 @@ celix_service_tracker_t* celix_serviceTracker_createWithOptions(
             serviceTracker_open(tracker);
         }
     } else {
-        if (opts != NULL && opts->filter.serviceName == NULL) {
-            framework_log(logger, OSGI_FRAMEWORK_LOG_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__,
+        if (ctx != NULL && opts != NULL && opts->filter.serviceName == NULL) {
+            framework_log(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__,
                           "Error incorrect arguments. Missing service name.");
-        } else {
-            framework_log(logger, OSGI_FRAMEWORK_LOG_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__, "Error incorrect arguments. Required context (%p) or opts (%p) is NULL", ctx, opts);
+        } else if (ctx != NULL) {
+            framework_log(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__, "Error incorrect arguments. Required context (%p) or opts (%p) is NULL", ctx, opts);
         }
     }
     return tracker;

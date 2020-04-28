@@ -34,7 +34,7 @@ add_celix_bundle(device_manager
 		src/driver_loader
 		src/driver_matcher
 )
-target_link_libraries(device_manager PRIVATE Celix::log_utils)
+target_link_libraries(device_manager PRIVATE Celix::log_helper)
 
 target_include_directories(device_manager PRIVATE src)
 target_link_libraries(device_manager PRIVATE device_access_api)

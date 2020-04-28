@@ -18,82 +18,119 @@
  */
 
 #include <stdarg.h>
+#include <celix_log_utils.h>
+#include <assert.h>
+#include <stdlib.h>
 
 #include "celix_errno.h"
 #include "celix_log.h"
+#include "celix_threads.h"
+#include "celix_array_list.h"
 
-#ifdef __linux__
-//includes for the backtrace function
-#include <execinfo.h>
-#include <stdlib.h>
-#endif
+#define LOG_NAME        "celix_framework"
 
-#ifdef __linux__
-static void framework_logBacktrace(void) {
-    void *bbuf[64];
-    int nrOfTraces = backtrace(bbuf, 64);
-    char **lines = backtrace_symbols(bbuf, nrOfTraces);
-    for (int i = 0; i < nrOfTraces; ++i) {
-        char *line = lines[i];
-        fprintf(stderr, "%s\n", line);
+struct celix_framework_logger {
+    celix_thread_mutex_t mutex; //protect below
+    char *buf;
+    size_t bufSize;
+    FILE* stream;
+    void *logHandle;
+    void (*logFunction)(void* handle, celix_log_level_e level, const char *func, int line, const char *format, va_list formatArgs);
+};
+
+static pthread_mutex_t globalMutex = PTHREAD_MUTEX_INITIALIZER;
+celix_array_list_t* globalLoggers = NULL;
+
+celix_framework_logger_t* celix_frameworkLogger_globalLogger() {
+    celix_framework_logger_t* logger = NULL;
+    pthread_mutex_lock(&globalMutex);
+    if (globalLoggers != NULL) {
+        logger = celix_arrayList_get(globalLoggers, 0); //Not NULL, always 1 entry
     }
-    free(lines);
-}
-#else
-static void framework_logBacktrace(void) {}
-#endif
-
-void framework_log(framework_logger_pt logger, framework_log_level_t level, const char *func, const char *file, int line, const char *fmsg, ...) {
-    char msg[512];
-    va_list listPointer;
-    va_start(listPointer, fmsg);
-    vsprintf(msg, fmsg, listPointer);
-
-    //FIXME logger and/or logger->logFunction can be null. But this solution is not thread safe!
-    if (logger != NULL && logger->logFunction != NULL) {
-        logger->logFunction(level, func, file, line, msg);
-    }
-
-    va_end(listPointer);
+    pthread_mutex_unlock(&globalMutex);
+    return logger;
 }
 
-void framework_logCode(framework_logger_pt logger, framework_log_level_t level, const char *func, const char *file, int line, celix_status_t code, const char *fmsg, ...) {
-    char message[256];
-    celix_strerror(code, message, 256);
-    char msg[512];
-    va_list listPointer;
-    va_start(listPointer, fmsg);
-    vsprintf(msg, fmsg, listPointer);
+celix_framework_logger_t* celix_frameworkLogger_create() {
+    celix_framework_logger_t* logger = calloc(1, sizeof(*logger));
+    celixThreadMutex_create(&logger->mutex, NULL);
+    logger->stream = open_memstream(&logger->buf, &logger->bufSize);
 
-    framework_log(logger, level, func, file, line, "%s [%d]: %s", message, code, msg);
+    pthread_mutex_lock(&globalMutex);
+    if (globalLoggers == NULL) {
+        globalLoggers = celix_arrayList_create();
+    }
+    celix_arrayList_add(globalLoggers, logger);
+    pthread_mutex_unlock(&globalMutex);
 
-    va_end(listPointer);
+    return logger;
 }
 
-celix_status_t frameworkLogger_log(framework_log_level_t level, const char *func, const char *file, int line, const char *msg) {
-    char *levelStr = NULL;
-    switch (level) {
-        case OSGI_FRAMEWORK_LOG_ERROR:
-            levelStr = "ERROR";
-            break;
-        case OSGI_FRAMEWORK_LOG_WARNING:
-            levelStr = "WARNING";
-            break;
-        case OSGI_FRAMEWORK_LOG_INFO:
-            levelStr = "INFO";
-            break;
-        case OSGI_FRAMEWORK_LOG_DEBUG:
-        default:
-            levelStr = "DEBUG";
-            break;
-    }
+void celix_frameworkLogger_destroy(celix_framework_logger_t* logger) {
+    if (logger != NULL) {
+        pthread_mutex_lock(&globalMutex);
+        assert(globalLoggers != NULL);
+        for (int i = 0; i < celix_arrayList_size(globalLoggers); ++i) {
+            celix_framework_logger_t *visit = celix_arrayList_get(globalLoggers, i);
+            if (visit == logger) {
+                celix_arrayList_removeAt(globalLoggers, i);
+                break;
+            }
+        }
+        if (celix_arrayList_size(globalLoggers) == 0) {
+            celix_arrayList_destroy(globalLoggers);
+            globalLoggers = NULL;
+        }
+        pthread_mutex_unlock(&globalMutex);
 
-    if (level == OSGI_FRAMEWORK_LOG_ERROR) {
-        fprintf(stderr, "%s: %s\n\tat %s(%s:%d)\n", levelStr, msg, func, file, line);
-        framework_logBacktrace();
+        celixThreadMutex_destroy(&logger->mutex);
+        fclose(logger->stream);
+        free(logger->buf);
+        free(logger);
+    }
+}
+void celix_frameworkLogger_setLogCallback(celix_framework_logger_t* logger, void* logHandle, void (*logFunction)(void* handle, celix_log_level_e level, const char *func, int line, const char *format, va_list formatArgs)) {
+    celixThreadMutex_lock(&logger->mutex);
+    logger->logHandle = logHandle;
+    logger->logFunction = logFunction;
+    celixThreadMutex_unlock(&logger->mutex);
+}
+
+
+static void vlog(celix_framework_logger_t* logger, celix_log_level_e level, celix_status_t *optionalStatus, const char* func, int line, const char* format, va_list args) {
+    if (level == CELIX_LOG_LEVEL_DISABLED) {
+        return;
+    }
+    celixThreadMutex_lock(&logger->mutex);
+    if (logger->logFunction != NULL) {
+        logger->logFunction(logger->logHandle, level, func, line, format, args);
     } else {
-        printf("%s: %s\n", levelStr, msg);
+        fseek(logger->stream, 0L, SEEK_SET);
+        fprintf(logger->stream, "[%s:%i] ", func, line);
+        if (optionalStatus != NULL) {
+            fprintf(logger->stream, "%s: ", celix_strerror(*optionalStatus));
+        }
+        vfprintf(logger->stream, format, args);
+        fputc('\0', logger->stream); //note not sure if this is needed
+        fflush(logger->stream);
+        celix_logUtils_logToStdout(LOG_NAME, level, logger->buf);
     }
+    celixThreadMutex_unlock(&logger->mutex);
+}
 
-    return CELIX_SUCCESS;
+
+void framework_log(celix_framework_logger_t*  logger, celix_log_level_e level, const char *func, const char *file, int line, const char *format, ...) {
+    va_list args;
+    va_start(args, format);
+    (void)file; //TODO lose file arg
+    vlog(logger, level, NULL, func, line, format, args);
+    va_end(args);
+}
+
+void framework_logCode(celix_framework_logger_t*  logger, celix_log_level_e level, const char *func, const char *file, int line, celix_status_t code, const char *format, ...) {
+    va_list args;
+    va_start(args, format);
+    (void)file; //TODO lose file arg
+    vlog(logger, level, &code, func, line, format, args);
+    va_end(args);
 }

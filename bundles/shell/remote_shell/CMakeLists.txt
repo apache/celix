@@ -30,7 +30,7 @@ if (REMOTE_SHELL)
 	)
 
 	target_include_directories(remote_shell PRIVATE src)
-	target_link_libraries(remote_shell PRIVATE Celix::log_utils)
+	target_link_libraries(remote_shell PRIVATE Celix::log_helper)
 
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
     include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")

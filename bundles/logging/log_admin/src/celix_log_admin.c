@@ -26,6 +26,7 @@
 #include <celix_constants.h>
 #include <celix_log_control.h>
 #include <assert.h>
+#include <celix_api.h>
 
 #include "celix_log_service.h"
 #include "celix_log_sink.h"
@@ -35,6 +36,7 @@
 #include "celix_shell_command.h"
 
 #define CELIX_LOG_ADMIN_DEFAULT_LOG_NAME "default"
+#define CELIX_LOG_ADMIN_FRAMEWORK_LOG_NAME "celix_framework"
 
 struct celix_log_admin {
     celix_bundle_context_t* ctx;
@@ -145,13 +147,15 @@ static void celix_logAdmin_fatal(void *handle, const char *format, ...) {
     va_end(args);
 }
 
-static void celix_logAdmin_trackerAdd(void *handle, const celix_service_tracker_info_t *info) {
-    celix_log_admin_t* admin = handle;
-    const char* name = celix_filter_findAttribute(info->filter, CELIX_LOG_SERVICE_PROPERTY_NAME);
-    if (name == NULL) {
-        name = CELIX_LOG_ADMIN_DEFAULT_LOG_NAME;
-    }
+static void celix_logAdmin_frameworkLogFunction(void* handle, celix_log_level_e level, const char *func, int line, const char *format, va_list formatArgs) {
+    celix_log_service_entry_t* entry = handle;
+    //note for now igoring func & line
+    (void)func;
+    (void)line;
+    entry->logSvc.vlog(entry->logSvc.handle, level, format, formatArgs);
+}
 
+static void celix_logAdmin_addLogSvcForName(celix_log_admin_t* admin, const char* name) {
     celix_log_service_entry_t* newEntry = NULL;
 
     celixThreadRwlock_writeLock(&admin->lock);
@@ -172,6 +176,11 @@ static void celix_logAdmin_trackerAdd(void *handle, const celix_service_tracker_
         newEntry->logSvc.fatal = celix_logAdmin_fatal;
         newEntry->logSvc.vlog = celix_logAdmin_vlog;
         hashMap_put(admin->loggers, (void*)newEntry->name, newEntry);
+
+        if (celix_utils_stringEquals(newEntry->name, CELIX_LOG_ADMIN_FRAMEWORK_LOG_NAME)) {
+            celix_framework_t* fw = celix_bundleContext_getFramework(admin->ctx);
+            celix_framework_setLogCallback(fw, newEntry, celix_logAdmin_frameworkLogFunction);
+        }
     } else {
         found->count += 1;
     }
@@ -195,15 +204,17 @@ static void celix_logAdmin_trackerAdd(void *handle, const celix_service_tracker_
     }
 }
 
-static void celix_logAdmin_trackerRem(void *handle, const celix_service_tracker_info_t *info) {
+static void celix_logAdmin_trackerAdd(void *handle, const celix_service_tracker_info_t *info) {
     celix_log_admin_t* admin = handle;
     const char* name = celix_filter_findAttribute(info->filter, CELIX_LOG_SERVICE_PROPERTY_NAME);
     if (name == NULL) {
         name = CELIX_LOG_ADMIN_DEFAULT_LOG_NAME;
     }
+    celix_logAdmin_addLogSvcForName(admin, name);
+}
 
+static void celix_logAdmin_remLogSvcForName(celix_log_admin_t* admin, const char* name) {
     celix_log_service_entry_t* remEntry = NULL;
-
 
     celixThreadRwlock_writeLock(&admin->lock);
     celix_log_service_entry_t* found = hashMap_get(admin->loggers, name);
@@ -218,10 +229,25 @@ static void celix_logAdmin_trackerRem(void *handle, const celix_service_tracker_
     celixThreadRwlock_unlock(&admin->lock);
 
     if (remEntry != NULL) {
+        if (celix_utils_stringEquals(remEntry->name, CELIX_LOG_ADMIN_FRAMEWORK_LOG_NAME)) {
+            celix_framework_t* fw = celix_bundleContext_getFramework(admin->ctx);
+            celix_framework_setLogCallback(fw, NULL, NULL);
+        }
+
         celix_bundleContext_unregisterService(admin->ctx, remEntry->logSvcId);
         free(remEntry->name);
         free(remEntry);
     }
+}
+
+
+static void celix_logAdmin_trackerRem(void *handle, const celix_service_tracker_info_t *info) {
+    celix_log_admin_t* admin = handle;
+    const char* name = celix_filter_findAttribute(info->filter, CELIX_LOG_SERVICE_PROPERTY_NAME);
+    if (name == NULL) {
+        name = CELIX_LOG_ADMIN_DEFAULT_LOG_NAME;
+    }
+    celix_logAdmin_remLogSvcForName(admin, name);
 }
 
 
@@ -453,19 +479,15 @@ static void celix_logAdmin_InfoCmd(celix_log_admin_t* admin, FILE* outStream, FI
     celix_arrayList_sort(logServices, (void*)strcmp);
     celix_arrayList_sort(sinks, (void*)strcmp);
 
-    if (celix_arrayList_size(logServices) > 0) {
-        fprintf(outStream, "Log Admin provided log services:\n");
-        for (int i = 0 ; i < celix_arrayList_size(logServices); ++i) {
-            char *name = celix_arrayList_get(logServices, i);
-            celix_log_level_e level;
-            bool found = celix_logAdmin_logServiceInfo(admin, name, &level);
-            if (found) {
-                fprintf(outStream, " |- %i) Log Service %20s, active log level %s\n", i+1, name, celix_logUtils_logLevelToString(level));
-            }
-            free(name);
+    fprintf(outStream, "Log Admin provided log services:\n");
+    for (int i = 0 ; i < celix_arrayList_size(logServices); ++i) {
+        char *name = celix_arrayList_get(logServices, i);
+        celix_log_level_e level;
+        bool found = celix_logAdmin_logServiceInfo(admin, name, &level);
+        if (found) {
+            fprintf(outStream, " |- %i) Log Service %20s, active log level %s\n", i+1, name, celix_logUtils_logLevelToString(level));
         }
-    } else {
-        fprintf(outStream, "Log Admin has provided 0 log services\n");
+        free(name);
     }
     celix_arrayList_destroy(logServices);
 
@@ -591,11 +613,16 @@ celix_log_admin_t* celix_logAdmin_create(celix_bundle_context_t *ctx) {
         admin->cmdSvcId = celix_bundleContext_registerServiceWithOptions(ctx, &opts);
     }
 
+    //add log service for the framework
+    celix_logAdmin_addLogSvcForName(admin, CELIX_LOG_ADMIN_FRAMEWORK_LOG_NAME);
+
     return admin;
 }
 
 void celix_logAdmin_destroy(celix_log_admin_t *admin) {
     if (admin != NULL) {
+        celix_logAdmin_remLogSvcForName(admin, CELIX_LOG_ADMIN_FRAMEWORK_LOG_NAME);
+
         celix_bundleContext_unregisterService(admin->ctx, admin->cmdSvcId);
         celix_bundleContext_unregisterService(admin->ctx, admin->controlSvcId);
         celix_bundleContext_stopTracker(admin->ctx, admin->logServiceMetaTrackerId);

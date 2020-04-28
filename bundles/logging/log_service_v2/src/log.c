@@ -227,7 +227,7 @@ celix_status_t log_frameworkEvent(void *listener, framework_event_pt event) {
     log_t *logger = ((framework_listener_pt) listener)->handle;
     log_entry_t *entry = NULL;
 
-    status = logEntry_create(event->bundleId, event->bundleSymbolicName, NULL, (event->type == OSGI_FRAMEWORK_EVENT_ERROR) ? OSGI_LOGSERVICE_ERROR : OSGI_LOGSERVICE_INFO, event->error, event->errorCode, &entry);
+    status = logEntry_create(event->bundleId, event->bundleSymbolicName, NULL, (event->type == OSGI_FRAMEWORK_EVENT_ERROR) ? OSGI_LOGSERVICE_ERROR : OSGI_LOGSERVICE_INFO, (char*)event->error, event->errorCode, &entry);
     if (status == CELIX_SUCCESS) {
         status = log_addEntry(logger, entry);
     }
