@@ -50,20 +50,20 @@ celix_log_level_e celix_logUtils_logLevelFromString(const char *level, celix_log
 celix_log_level_e celix_logUtils_logLevelFromStringWithCheck(const char *level, celix_log_level_e fallbackLogLevel, bool *convertedSuccessfully);
 
 /**
- * Logs to stdout/stderr using the provided logServiceName and log level.
+ * Logs to stdout/stderr using the provided logName and log level.
  * If the provided log level is higher than info, stderr will be used.
  *
  * function is not thread safe (multiple printf's are used).
  */
-void celix_logUtils_logToStdout(const char *logServiceName, celix_log_level_e level, const char *format, ...);
+void celix_logUtils_logToStdout(const char *logName, celix_log_level_e level, const char *format, ...);
 
 /**
- * Logs to stdout/stderr using the provided logServiceName and log level.
+ * Logs to stdout/stderr using the provided logName and log level.
  * If the provided log level is higher than info, stderr will be used.
  *
  * function is not thread safe (multiple printf's are used).
  */
-void celix_logUtils_vLogToStdout(const char *logServiceName, celix_log_level_e level, const char *format, va_list formatArgs);
+void celix_logUtils_vLogToStdout(const char *logName, celix_log_level_e level, const char *format, va_list formatArgs);
 
 /**
  * Prints a backtrace to the provided output stream.

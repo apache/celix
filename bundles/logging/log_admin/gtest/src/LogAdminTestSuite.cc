@@ -78,36 +78,36 @@ TEST_F(LogBundleTestSuite, StartStop) {
 
 TEST_F(LogBundleTestSuite, NrOfLogServices) {
     ASSERT_TRUE(control);
-    EXPECT_EQ(0, control->nrOfLogServices(control->handle, nullptr));
+    EXPECT_EQ(1, control->nrOfLogServices(control->handle, nullptr)); //default the framework log services is available
 
     //request "default" log service
     long trkId1 = celix_bundleContext_trackService(ctx.get(), CELIX_LOG_SERVICE_NAME, NULL, NULL);
-    EXPECT_EQ(1, control->nrOfLogServices(control->handle, nullptr));
+    EXPECT_EQ(2, control->nrOfLogServices(control->handle, nullptr));
 
     //request "default" log service -> already created
     long trkId2 = celix_bundleContext_trackService(ctx.get(), CELIX_LOG_SERVICE_NAME, NULL, NULL);
-    EXPECT_EQ(1, control->nrOfLogServices(control->handle, nullptr));
+    EXPECT_EQ(2, control->nrOfLogServices(control->handle, nullptr));
 
     //request a 'logger1' log service
     celix_service_tracking_options_t opts{};
     opts.filter.serviceName = CELIX_LOG_SERVICE_NAME;
     opts.filter.filter = "(name=logger1)";
     long trkId3 = celix_bundleContext_trackServicesWithOptions(ctx.get(), &opts);
-    EXPECT_EQ(2, control->nrOfLogServices(control->handle, nullptr));
+    EXPECT_EQ(3, control->nrOfLogServices(control->handle, nullptr));
 
     //request a 'logger1' log service -> already created;
     long trkId4 = celix_bundleContext_trackServicesWithOptions(ctx.get(), &opts);
-    EXPECT_EQ(2, control->nrOfLogServices(control->handle, nullptr));
+    EXPECT_EQ(3, control->nrOfLogServices(control->handle, nullptr));
 
     //removing some trackers. Should not effect log service instances
     celix_bundleContext_stopTracker(ctx.get(), trkId1);
     celix_bundleContext_stopTracker(ctx.get(), trkId3);
-    EXPECT_EQ(2, control->nrOfLogServices(control->handle, nullptr));
+    EXPECT_EQ(3, control->nrOfLogServices(control->handle, nullptr));
 
     //removing another trackers. Should effect log service instances
     celix_bundleContext_stopTracker(ctx.get(), trkId2);
 
-    EXPECT_EQ(1, control->nrOfLogServices(control->handle, nullptr));
+    EXPECT_EQ(2, control->nrOfLogServices(control->handle, nullptr));
 
     //NOTE stopping bundle before all trackers are gone -> should be fine
     celix_bundleContext_stopBundle(ctx.get(), bndId);
@@ -214,18 +214,18 @@ TEST_F(LogBundleTestSuite, SinkLogControl) {
 TEST_F(LogBundleTestSuite, LogServiceControl) {
     //request "default" log service
     long trkId1 = celix_bundleContext_trackService(ctx.get(), CELIX_LOG_SERVICE_NAME, NULL, NULL);
-    EXPECT_EQ(1, control->nrOfLogServices(control->handle, nullptr));
+    EXPECT_EQ(2, control->nrOfLogServices(control->handle, nullptr));
 
     //request a 'logger1' log service
     celix_service_tracking_options_t opts{};
     opts.filter.serviceName = CELIX_LOG_SERVICE_NAME;
     opts.filter.filter = "(name=test::group::Log1)";
     long trkId2 = celix_bundleContext_trackServicesWithOptions(ctx.get(), &opts);
-    EXPECT_EQ(2, control->nrOfLogServices(control->handle, nullptr));
+    EXPECT_EQ(3, control->nrOfLogServices(control->handle, nullptr));
 
     opts.filter.filter = "(name=test::group::Log2)";
     long trkId3 = celix_bundleContext_trackServicesWithOptions(ctx.get(), &opts);
-    EXPECT_EQ(3, control->nrOfLogServices(control->handle, nullptr));
+    EXPECT_EQ(4, control->nrOfLogServices(control->handle, nullptr));
     EXPECT_EQ(2, control->nrOfLogServices(control->handle, "test::group"));
 
     EXPECT_FALSE(control->logServiceInfo(control->handle, "NonExisting", nullptr));
@@ -241,7 +241,7 @@ TEST_F(LogBundleTestSuite, LogServiceControl) {
 
 
     EXPECT_EQ(2, control->setActiveLogLevels(control->handle, "test::group", CELIX_LOG_LEVEL_DEBUG));
-    EXPECT_EQ(3, control->setActiveLogLevels(control->handle, nullptr, CELIX_LOG_LEVEL_DEBUG));
+    EXPECT_EQ(4, control->setActiveLogLevels(control->handle, nullptr, CELIX_LOG_LEVEL_DEBUG));
     EXPECT_TRUE(control->logServiceInfo(control->handle, "test::group::Log1", &activeLogLevel));
     EXPECT_EQ(CELIX_LOG_LEVEL_DEBUG, activeLogLevel);
     EXPECT_TRUE(control->logServiceInfo(control->handle, "test::group::Log2", &activeLogLevel));
@@ -249,7 +249,7 @@ TEST_F(LogBundleTestSuite, LogServiceControl) {
 
 
     auto *list = control->currentLogServices(control->handle);
-    EXPECT_EQ(3, celix_arrayList_size(list));
+    EXPECT_EQ(4, celix_arrayList_size(list));
     for (int i = 0; i < celix_arrayList_size(list); ++i) {
         auto *item = celix_arrayList_get(list, i);
         free(item);
@@ -436,7 +436,7 @@ TEST_F(LogBundleTestSuite, LogAdminCmd) {
         FILE *ss = open_memstream(&cmdResult, &cmdResultLen);
         cmd->executeCommand(cmd->handle, "celix::log_admin", ss, ss);
         fclose(ss);
-        EXPECT_TRUE(strstr(cmdResult, "Log Admin has provided 0 log services") != nullptr);
+        EXPECT_TRUE(strstr(cmdResult, "Log Admin provided log services:") != nullptr);
         EXPECT_TRUE(strstr(cmdResult, "Log Admin has found 0 log sinks") != nullptr);
         free(cmdResult);
     };

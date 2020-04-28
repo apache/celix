@@ -5,9 +5,9 @@
 # to you under the Apache License, Version 2.0 (the
 # "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
-# 
+#
 #   http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing,
 # software distributed under the License is distributed on an
 # "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -15,10 +15,13 @@
 # specific language governing permissions and limitations
 # under the License.
 
-All files in this directory are licensed to the Apache Software Foundation (as included above).
-Normally source/txt files should include this header but for Manifest files this is not possible.
-The following files do not include the header:
-* manifest_sections.txt
-* manifest.txt
 
-This note is added to explicitly mention that the same licensing applies to these files as to any other having the header.  
+add_executable(test_log_helper
+        src/LogHelperTestSuite.cc
+)
+
+target_link_libraries(test_log_helper PRIVATE Celix::log_helper GTest::GTest GTest::Main)
+
+add_test(NAME test_log_helper COMMAND test_log_helper)
+setup_target_for_coverage(test_log_helper SCAN_DIR ..)
+

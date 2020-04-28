@@ -215,28 +215,16 @@ struct request {
 	long bundleId;
 	char* bundleSymbolicName;
 	celix_status_t errorCode;
-	char *error;
+	const char *error;
 
 	char *filter;
 };
 
 typedef struct request *request_pt;
 
-framework_logger_pt logger;
-
-static celix_thread_once_t loggerInit = CELIX_THREAD_ONCE_INIT;
-static void framework_loggerInit(void) {
-    logger = malloc(sizeof(*logger));
-    logger->logFunction = frameworkLogger_log;
-}
 
 celix_status_t framework_create(framework_pt *framework, properties_pt config) {
     celix_status_t status = CELIX_SUCCESS;
-
-    logger = hashMap_get(config, "logger");
-    if (logger == NULL) {
-        celixThread_once(&loggerInit, framework_loggerInit);
-    }
 
     *framework = (framework_pt) malloc(sizeof(**framework));
     if (*framework != NULL) {
@@ -265,7 +253,7 @@ celix_status_t framework_create(framework_pt *framework, properties_pt config) {
             (*framework)->frameworkListeners = NULL;
             (*framework)->dispatcher.requests = NULL;
             (*framework)->configurationMap = config;
-            (*framework)->logger = logger;
+            (*framework)->logger = celix_frameworkLogger_create();
 
 
             status = CELIX_DO_IF(status, bundle_create(&(*framework)->bundle));
@@ -275,15 +263,15 @@ celix_status_t framework_create(framework_pt *framework, properties_pt config) {
                 //nop
             } else {
                 status = CELIX_FRAMEWORK_EXCEPTION;
-                fw_logCode((*framework)->logger, OSGI_FRAMEWORK_LOG_ERROR, status, "Could not create framework");
+                fw_logCode((*framework)->logger, CELIX_LOG_LEVEL_ERROR, status, "Could not create framework");
             }
         } else {
             status = CELIX_FRAMEWORK_EXCEPTION;
-            fw_logCode((*framework)->logger, OSGI_FRAMEWORK_LOG_ERROR, status, "Could not create framework");
+            fw_logCode((*framework)->logger, CELIX_LOG_LEVEL_ERROR, status, "Could not create framework");
         }
     } else {
         status = CELIX_FRAMEWORK_EXCEPTION;
-        fw_logCode(logger, OSGI_FRAMEWORK_LOG_ERROR, CELIX_ENOMEM, "Could not create framework");
+        fw_logCode((*framework)->logger, CELIX_LOG_LEVEL_ERROR, CELIX_ENOMEM, "Could not create framework");
     }
 
     return status;
@@ -308,7 +296,7 @@ celix_status_t framework_destroy(framework_pt framework) {
         celixThreadMutex_unlock(&entry->useMutex);
         bundle_t *bnd = entry->bnd;
         if (count > 0) {
-            fw_log(framework->logger, OSGI_FRAMEWORK_LOG_WARNING, "Cannot destroy framework (yet), a bundle use count is not 0 (%ui)", count);
+            fw_log(framework->logger, CELIX_LOG_LEVEL_WARNING, "Cannot destroy framework (yet), a bundle use count is not 0 (%ui)", count);
         }
         fw_bundleEntry_destroy(entry, true);
 
@@ -371,10 +359,7 @@ celix_status_t framework_destroy(framework_pt framework) {
 	celixThreadMutex_destroy(&framework->shutdown.mutex);
 	celixThreadCondition_destroy(&framework->shutdown.cond);
 
-    logger = hashMap_get(framework->configurationMap, "logger");
-    if (logger == NULL) {
-        free(framework->logger);
-    }
+    celix_frameworkLogger_destroy(framework->logger);
 
     properties_destroy(framework->configurationMap);
 
@@ -439,7 +424,7 @@ celix_status_t fw_init(framework_pt framework) {
             framework_markResolvedModules(framework, wires);
         } else {
             status = CELIX_BUNDLE_EXCEPTION;
-            fw_logCode(framework->logger, OSGI_FRAMEWORK_LOG_ERROR, status, "Unresolved constraints in System Bundle");
+            fw_logCode(framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Unresolved constraints in System Bundle");
         }
     }
 
@@ -511,7 +496,7 @@ celix_status_t fw_init(framework_pt framework) {
     }
 
     if (status != CELIX_SUCCESS) {
-       fw_logCode(framework->logger, OSGI_FRAMEWORK_LOG_ERROR, status, "Could not init framework");
+       fw_logCode(framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Could not init framework");
     }
 
 	return status;
@@ -540,7 +525,7 @@ celix_status_t framework_start(framework_pt framework) {
 
 	if (status != CELIX_SUCCESS) {
        status = CELIX_BUNDLE_EXCEPTION;
-       fw_logCode(framework->logger, OSGI_FRAMEWORK_LOG_ERROR, status, "Could not start framework");
+       fw_logCode(framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Could not start framework");
        fw_fireFrameworkEvent(framework, OSGI_FRAMEWORK_EVENT_ERROR, framework->bundle, status);
     }
 
@@ -548,6 +533,10 @@ celix_status_t framework_start(framework_pt framework) {
 	if (fwCtx != NULL) {
         framework_autoStartConfiguredBundles(fwCtx);
     }
+
+	if (status == CELIX_SUCCESS) {
+        fw_log(framework->logger, CELIX_LOG_LEVEL_INFO, "Celix framework started");
+	}
 
 	return status;
 }
@@ -608,7 +597,11 @@ static void framework_autoStartConfiguredBundlesForList(bundle_context_t *fwCtx,
 }
 
 celix_status_t framework_stop(framework_pt framework) {
-	return fw_stopBundle(framework, framework->bundleId, true);
+	celix_status_t status = fw_stopBundle(framework, framework->bundleId, true);
+	if (status == CELIX_SUCCESS) {
+	    fw_log(framework->logger, CELIX_LOG_LEVEL_INFO, "Celix framework stopped");
+	}
+	return status;
 }
 
 celix_status_t fw_getProperty(framework_pt framework, const char* name, const char* defaultValue, const char** out) {
@@ -679,7 +672,7 @@ celix_status_t fw_installBundle2(framework_pt framework, bundle_pt * bundle, lon
     fw_getProperty(framework, CELIX_BUNDLES_PATH_NAME, CELIX_BUNDLES_PATH_DEFAULT, &paths);
     char *location = resolveBundleLocation(framework, bndLoc, paths);
     if (location == NULL) {
-        fw_log(framework->logger, OSGI_FRAMEWORK_LOG_WARNING, "Cannot find bundle %s. Using %s=%s", bndLoc, CELIX_BUNDLES_PATH_NAME, paths);
+        fw_log(framework->logger, CELIX_LOG_LEVEL_WARNING, "Cannot find bundle %s. Using %s=%s", bndLoc, CELIX_BUNDLES_PATH_NAME, paths);
         free(location);
         return CELIX_FILE_IO_EXCEPTION;
     }
@@ -690,7 +683,7 @@ celix_status_t fw_installBundle2(framework_pt framework, bundle_pt * bundle, lon
   	status = CELIX_DO_IF(status, bundle_getState(framework->bundle, &state));
   	if (status == CELIX_SUCCESS) {
         if (state == OSGI_FRAMEWORK_BUNDLE_STOPPING || state == OSGI_FRAMEWORK_BUNDLE_UNINSTALLED) {
-            fw_log(framework->logger, OSGI_FRAMEWORK_LOG_INFO,  "The framework is being shutdown");
+            fw_log(framework->logger, CELIX_LOG_LEVEL_INFO,  "The framework is being shutdown");
             status = CELIX_FRAMEWORK_SHUTDOWN;
         }
   	}
@@ -737,7 +730,7 @@ celix_status_t fw_installBundle2(framework_pt framework, bundle_pt * bundle, lon
     fw_bundleEntry_decreaseUseCount(entry);
 
     if (status != CELIX_SUCCESS) {
-    	fw_logCode(framework->logger, OSGI_FRAMEWORK_LOG_ERROR, status, "Could not install bundle");
+    	fw_logCode(framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Could not install bundle");
     } else {
         status = CELIX_DO_IF(status, fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_INSTALLED, *bundle));
     }
@@ -914,9 +907,9 @@ celix_status_t fw_startBundle(framework_pt framework, long bndId, int options __
 	    module_getSymbolicName(module, &symbolicName);
 	    bundle_getBundleId(entry->bnd, &id);
 	    if (error != NULL) {
-	        fw_logCode(framework->logger, OSGI_FRAMEWORK_LOG_ERROR, status, "Could not start bundle: %s [%ld]; cause: %s", symbolicName, id, error);
+	        fw_logCode(framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Could not start bundle: %s [%ld]; cause: %s", symbolicName, id, error);
 	    } else {
-	        fw_logCode(framework->logger, OSGI_FRAMEWORK_LOG_ERROR, status, "Could not start bundle: %s [%ld]", symbolicName, id);
+	        fw_logCode(framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Could not start bundle: %s [%ld]", symbolicName, id);
 	    }
 	}
 
@@ -986,9 +979,9 @@ celix_status_t framework_updateBundle(framework_pt framework, bundle_pt bundle, 
         module_getSymbolicName(module, &symbolicName);
         bundle_getBundleId(bundle, &id);
         if (error != NULL) {
-            fw_logCode(framework->logger, OSGI_FRAMEWORK_LOG_ERROR, status, "Cannot update bundle: %s [%ld]; cause: %s", symbolicName, id, error);
+            fw_logCode(framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Cannot update bundle: %s [%ld]; cause: %s", symbolicName, id, error);
         } else {
-            fw_logCode(framework->logger, OSGI_FRAMEWORK_LOG_ERROR, status, "Cannot update bundle: %s [%ld]", symbolicName, id);
+            fw_logCode(framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Cannot update bundle: %s [%ld]", symbolicName, id);
         }
 	}
 
@@ -1100,9 +1093,9 @@ celix_status_t fw_stopBundle(framework_pt framework, long bndId, bool record) {
         module_getSymbolicName(module, &symbolicName);
         bundle_getBundleId(entry->bnd, &id);
         if (error != NULL) {
-            fw_logCode(framework->logger, OSGI_FRAMEWORK_LOG_ERROR, status, "Cannot stop bundle: %s [%ld]; cause: %s", symbolicName, id, error);
+            fw_logCode(framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Cannot stop bundle: %s [%ld]; cause: %s", symbolicName, id, error);
         } else {
-            fw_logCode(framework->logger, OSGI_FRAMEWORK_LOG_ERROR, status, "Cannot stop bundle: %s [%ld]", symbolicName, id);
+            fw_logCode(framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Cannot stop bundle: %s [%ld]", symbolicName, id);
         }
  	} else {
         fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_STOPPED, entry->bnd);
@@ -1702,9 +1695,9 @@ celix_status_t framework_markBundleResolved(framework_pt framework, module_pt mo
             module_getSymbolicName(module, &symbolicName);
             bundle_getBundleId(bundle, &id);
             if (error != NULL) {
-                fw_logCode(framework->logger, OSGI_FRAMEWORK_LOG_ERROR, status, "Could not start bundle: %s [%ld]; cause: %s", symbolicName, id, error);
+                fw_logCode(framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Could not start bundle: %s [%ld]; cause: %s", symbolicName, id, error);
             } else {
-                fw_logCode(framework->logger, OSGI_FRAMEWORK_LOG_ERROR, status, "Could not start bundle: %s [%ld]", symbolicName, id);
+                fw_logCode(framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Could not start bundle: %s [%ld]", symbolicName, id);
             }
         }
 
@@ -1767,14 +1760,13 @@ celix_status_t framework_waitForStop(framework_pt framework) {
     }
     celixThreadMutex_unlock(&framework->shutdown.mutex);
 
-    fw_log(framework->logger, OSGI_FRAMEWORK_LOG_INFO, "FRAMEWORK: Successful shutdown");
     return CELIX_SUCCESS;
 }
 
 static void* framework_shutdown(void *framework) {
     framework_pt fw = (framework_pt) framework;
 
-    fw_log(fw->logger, OSGI_FRAMEWORK_LOG_INFO, "FRAMEWORK: Shutdown");
+    fw_log(fw->logger, CELIX_LOG_LEVEL_TRACE, "Celix framework shutting down");
 
     //celix_framework_bundle_entry_t *fwEntry = NULL;
     celix_array_list_t *stopEntries = celix_arrayList_create();
@@ -1953,9 +1945,7 @@ celix_status_t fw_fireFrameworkEvent(framework_pt framework, framework_event_typ
         }
 
         if (errorCode != CELIX_SUCCESS) {
-            char message[256];
-            celix_strerror(errorCode, message, 256);
-            request->error = message;
+            request->error = celix_strerror(errorCode);
         }
 
         celixThreadMutex_lock(&framework->dispatcher.mutex);
@@ -2075,7 +2065,7 @@ static celix_status_t frameworkActivator_stop(void * userData, bundle_context_t 
 
     if (bundleContext_getFramework(context, &framework) == CELIX_SUCCESS) {
 
-        fw_log(framework->logger, OSGI_FRAMEWORK_LOG_DEBUG, "FRAMEWORK: Start shutdownthread");
+        fw_log(framework->logger, CELIX_LOG_LEVEL_TRACE, "Start shutdownthread");
 
         celixThreadMutex_lock(&framework->shutdown.mutex);
         bool alreadyInitialized = framework->shutdown.initialized;
@@ -2403,7 +2393,7 @@ long celix_framework_installBundle(celix_framework_t *fw, const char *bundleLoc,
         }
     }
 
-    framework_logIfError(logger, status, NULL, "Failed to install bundle '%s'", bundleLoc);
+    framework_logIfError(fw->logger, status, NULL, "Failed to install bundle '%s'", bundleLoc);
 
     return bundleId;
 }
@@ -2457,4 +2447,8 @@ bool celix_framework_startBundle(celix_framework_t *fw, long bndId) {
         fw_bundleEntry_decreaseUseCount(entry);
     }
     return started;
+}
+
+void celix_framework_setLogCallback(celix_framework_t* fw, void* logHandle, void (*logFunction)(void* handle, celix_log_level_e level, const char *func, int line, const char *format, va_list formatArgs)) {
+    celix_frameworkLogger_setLogCallback(fw->logger, logHandle, logFunction);
 }

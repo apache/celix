@@ -98,7 +98,7 @@ celix_status_t serviceRegistry_create(framework_pt framework, service_registry_p
 	if (status == CELIX_SUCCESS) {
 		*out = reg;
 	} else {
-		framework_logIfError(logger, status, NULL, "Cannot create service registry");
+		framework_logIfError(reg->framework->logger, status, NULL, "Cannot create service registry");
 	}
 
 	return status;
@@ -110,7 +110,7 @@ celix_status_t serviceRegistry_destroy(service_registry_pt registry) {
     //remove service listeners
     int size = celix_arrayList_size(registry->serviceListeners);
     if (size > 0) {
-        fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "%i dangling service listeners\n", size);
+        fw_log(registry->framework->logger, CELIX_LOG_LEVEL_ERROR, "%i dangling service listeners\n", size);
     }
     for (int i = 0; i < size; ++i) {
         celix_service_registry_service_listener_entry_t *entry = celix_arrayList_get(registry->serviceListeners, i);
@@ -122,7 +122,7 @@ celix_status_t serviceRegistry_destroy(service_registry_pt registry) {
     //destroy service registration map
     size = hashMap_size(registry->serviceRegistrations);
     if (size > 0) {
-        fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "%i bundles with dangling service registration\n", size);
+        fw_log(registry->framework->logger, CELIX_LOG_LEVEL_ERROR, "%i bundles with dangling service registration\n", size);
     }
     hash_map_iterator_t iter = hashMapIterator_construct(registry->serviceRegistrations);
     while (hashMapIterator_hasNext(&iter)) {
@@ -133,7 +133,7 @@ celix_status_t serviceRegistry_destroy(service_registry_pt registry) {
             service_registration_pt reg = celix_arrayList_get(registrations, i);
             const char *svcName = NULL;
             serviceRegistration_getServiceName(reg, &svcName);
-            fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Bundle %s (bundle id: %li) still has a %s service registered\n", celix_bundle_getSymbolicName(bnd), celix_bundle_getId(bnd), svcName);
+            fw_log(registry->framework->logger, CELIX_LOG_LEVEL_ERROR, "Bundle %s (bundle id: %li) still has a %s service registered\n", celix_bundle_getSymbolicName(bnd), celix_bundle_getId(bnd), svcName);
         }
     }
 
@@ -143,7 +143,7 @@ celix_status_t serviceRegistry_destroy(service_registry_pt registry) {
     //destroy service references (double) map);
     size = hashMap_size(registry->serviceReferences);
     if (size > 0) {
-        fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Unexpected service references left in the service registry! Nr of references: %i", size);
+        fw_log(registry->framework->logger, CELIX_LOG_LEVEL_ERROR, "Unexpected service references left in the service registry! Nr of references: %i", size);
     }
     hashMap_destroy(registry->serviceReferences, false, false);
 
@@ -192,7 +192,7 @@ celix_status_t serviceRegistry_getRegisteredServices(service_registry_pt registr
 
 	celixThreadRwlock_unlock(&registry->lock);
 
-	framework_logIfError(logger, status, NULL, "Cannot get registered services");
+	framework_logIfError(registry->framework->logger, status, NULL, "Cannot get registered services");
 
 	return status;
 }
@@ -340,7 +340,7 @@ celix_status_t serviceRegistry_clearServiceRegistrations(service_registry_pt reg
 static void serviceRegistry_logWarningServiceRegistration(service_registry_pt registry __attribute__((unused)), service_registration_pt reg) {
     const char *servName = NULL;
     serviceRegistration_getServiceName(reg, &servName);
-    fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "Dangling service registration for service %s. Look for missing bundleContext_unregisterService/serviceRegistration_unregister calls.", servName);
+    fw_log(registry->framework->logger, CELIX_LOG_LEVEL_WARNING, "Dangling service registration for service %s. Look for missing bundleContext_unregisterService/serviceRegistration_unregister calls.", servName);
 }
 
 celix_status_t serviceRegistry_getServiceReference(service_registry_pt registry, bundle_pt owner,
@@ -388,7 +388,7 @@ static celix_status_t serviceRegistry_getServiceReference_internal(service_regis
         *out = ref;
     }
 
-	framework_logIfError(logger, status, NULL, "Cannot create service reference");
+	framework_logIfError(registry->framework->logger, status, NULL, "Cannot create service reference");
 
 
 	return status;
@@ -471,7 +471,7 @@ celix_status_t serviceRegistry_getServiceReferences(service_registry_pt registry
     } else {
         //TODO ungetServiceRefs
         arrayList_destroy(references);
-        framework_logIfError(logger, status, NULL, "Cannot get service references");
+        framework_logIfError(registry->framework->logger, status, NULL, "Cannot get service references");
     }
 
 	return status;
@@ -490,7 +490,7 @@ celix_status_t serviceRegistry_retainServiceReference(service_registry_pt regist
             serviceReference_retain(reference);
         } else {
             status = CELIX_ILLEGAL_ARGUMENT;
-            fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "cannot retain a service reference from an other bundle (in ref %p) (provided %p).", refBundle, bundle);
+            fw_log(registry->framework->logger, CELIX_LOG_LEVEL_ERROR, "cannot retain a service reference from an other bundle (in ref %p) (provided %p).", refBundle, bundle);
         }
     } else {
         serviceRegistry_logIllegalReference(registry, reference, refStatus);
@@ -548,7 +548,7 @@ celix_status_t serviceRegistry_ungetServiceReference(service_registry_pt registr
                 }
                 serviceRegistry_setReferenceStatus(registry, reference, true);
             } else {
-                fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Cannot find reference %p in serviceReferences map",
+                fw_log(registry->framework->logger, CELIX_LOG_LEVEL_ERROR, "Cannot find reference %p in serviceReferences map",
                        reference);
             }
         }
@@ -571,7 +571,7 @@ static celix_status_t serviceRegistry_setReferenceStatus(service_registry_pt reg
 
 static void serviceRegistry_logIllegalReference(service_registry_pt registry __attribute__((unused)), service_reference_pt reference,
                                                    reference_status_t refStatus) {
-    fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR,
+    fw_log(registry->framework->logger, CELIX_LOG_LEVEL_ERROR,
            "Error handling service reference %p, status is %i",reference, refStatus);
 }
 
@@ -598,10 +598,10 @@ static celix_status_t serviceRegistry_checkReference(service_registry_pt registr
 
 static void serviceRegistry_logWarningServiceReferenceUsageCount(service_registry_pt registry __attribute__((unused)), bundle_pt bundle, service_reference_pt ref, size_t usageCount, size_t refCount) {
     if (usageCount > 0) {
-        fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "Service Reference destroyed with usage count is %zu, expected 0. Look for missing bundleContext_ungetService calls.", usageCount);
+        fw_log(registry->framework->logger, CELIX_LOG_LEVEL_WARNING, "Service Reference destroyed with usage count is %zu, expected 0. Look for missing bundleContext_ungetService calls.", usageCount);
     }
     if (refCount > 0) {
-        fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "Dangling service reference. Reference count is %zu, expected 1.  Look for missing bundleContext_ungetServiceReference calls.", refCount);
+        fw_log(registry->framework->logger, CELIX_LOG_LEVEL_WARNING, "Dangling service reference. Reference count is %zu, expected 1.  Look for missing bundleContext_ungetServiceReference calls.", refCount);
     }
 
     if(usageCount > 0 || refCount > 0) {
@@ -617,7 +617,7 @@ static void serviceRegistry_logWarningServiceReferenceUsageCount(service_registr
             bundle_provider_name = celix_bundle_getSymbolicName(providedBnd);
         }
 
-        fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "Previous Dangling service reference warnings caused by bundle '%s', for service '%s', provided by bundle '%s'", bundle_name, service_name, bundle_provider_name);
+        fw_log(registry->framework->logger, CELIX_LOG_LEVEL_WARNING, "Previous Dangling service reference warnings caused by bundle '%s', for service '%s', provided by bundle '%s'", bundle_name, service_name, bundle_provider_name);
     }
 }
 
@@ -980,7 +980,7 @@ static void celix_waitAndDestroyHookEntry(celix_service_registry_listener_hook_e
             celixThreadCondition_timedwaitRelative(&entry->cond, &entry->mutex, 1, 0); //wait for 1 second
             waitCount += 1;
             if (waitCount >= 5) {
-                fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING,
+                fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_WARNING,
                         "Still waiting for service listener hook use count to become zero. Waiting for %i seconds. Use Count is %i, svc id is %li", waitCount, (int)entry->useCount, entry->svcId);
             }
         }
@@ -1104,7 +1104,7 @@ celix_status_t celix_serviceRegistry_addServiceListener(celix_service_registry_t
     if (stringFilter != NULL) {
         filter = celix_filter_create(stringFilter);
         if (filter == NULL) {
-            fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Cannot add service listener filter '%s' is invalid", stringFilter);
+            fw_log(registry->framework->logger, CELIX_LOG_LEVEL_ERROR, "Cannot add service listener filter '%s' is invalid", stringFilter);
             return CELIX_ILLEGAL_ARGUMENT;
         }
     }
@@ -1187,7 +1187,7 @@ celix_status_t celix_serviceRegistry_removeServiceListener(celix_service_registr
         serviceRegistry_callHooksForListenerFilter(registry, entry->bundle, entry->filter, true);
         celix_waitAndDestroyServiceListener(entry);
     } else {
-        fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Cannot remove service listener, listener not found");
+        fw_log(registry->framework->logger, CELIX_LOG_LEVEL_ERROR, "Cannot remove service listener, listener not found");
         return CELIX_ILLEGAL_ARGUMENT;
     }
     return CELIX_SUCCESS;

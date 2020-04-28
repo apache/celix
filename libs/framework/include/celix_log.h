@@ -29,6 +29,7 @@
 
 #include <stdio.h>
 
+#include "celix_log_level.h"
 #include "celix_errno.h"
 #include "framework_exports.h"
 
@@ -36,25 +37,7 @@
 extern "C" {
 #endif
 
-enum framework_log_level {
-    OSGI_FRAMEWORK_LOG_ERROR = 0x00000001,
-    OSGI_FRAMEWORK_LOG_WARNING = 0x00000002,
-    OSGI_FRAMEWORK_LOG_INFO = 0x00000003,
-    OSGI_FRAMEWORK_LOG_DEBUG = 0x00000004,
-};
-
-typedef enum framework_log_level framework_log_level_t;
-
-typedef struct framework_logger *framework_logger_pt;
-
-extern framework_logger_pt logger;
-
-typedef celix_status_t (*framework_log_function_pt)(framework_log_level_t level, const char *func, const char *file,
-                                                    int line, const char *msg);
-
-struct framework_logger {
-    framework_log_function_pt logFunction;
-};
+typedef struct celix_framework_logger celix_framework_logger_t; //opaque
 
 #define fw_log(logger, level, fmsg, args...) framework_log(logger, level, __func__, __FILE__, __LINE__, fmsg, ## args)
 
@@ -63,22 +46,23 @@ struct framework_logger {
 #define framework_logIfError(logger, status, error, fmsg, args...) \
     if (status != CELIX_SUCCESS) { \
         if (error != NULL) { \
-            fw_logCode(logger, OSGI_FRAMEWORK_LOG_ERROR, status, #fmsg";\n Cause: %s", ## args, (char*) error); \
+            fw_logCode(logger, CELIX_LOG_LEVEL_ERROR, status, #fmsg";\n Cause: %s", ## args, (char*) error); \
         } else { \
-            fw_logCode(logger, OSGI_FRAMEWORK_LOG_ERROR, status, #fmsg, ## args); \
+            fw_logCode(logger, CELIX_LOG_LEVEL_ERROR, status, #fmsg, ## args); \
         } \
     }
 
-FRAMEWORK_EXPORT celix_status_t
-frameworkLogger_log(framework_log_level_t level, const char *func, const char *file, int line, const char *fmsg);
 
-FRAMEWORK_EXPORT void
-framework_log(framework_logger_pt logger, framework_log_level_t level, const char *func, const char *file, int line,
-              const char *fmsg, ...);
+celix_framework_logger_t* celix_frameworkLogger_create();
+void celix_frameworkLogger_destroy(celix_framework_logger_t* logger);
+void celix_frameworkLogger_setLogCallback(celix_framework_logger_t* logger, void* logHandle, void (*logFunction)(void* handle, celix_log_level_e level, const char *func, int line, const char *format, va_list formatArgs));
+celix_framework_logger_t* celix_frameworkLogger_globalLogger(); //TODO do not use global logger, make this deprecated __attribute__((deprecated));
 
-FRAMEWORK_EXPORT void
-framework_logCode(framework_logger_pt logger, framework_log_level_t level, const char *func, const char *file, int line,
-                  celix_status_t code, const char *fmsg, ...);
+void framework_log(celix_framework_logger_t* logger, celix_log_level_e level, const char *func, const char *file, int line,
+              const char *format, ...);
+
+void framework_logCode(celix_framework_logger_t* logger, celix_log_level_e level, const char *func, const char *file, int line,
+                  celix_status_t code, const char *format, ...);
 
 #ifdef __cplusplus
 }

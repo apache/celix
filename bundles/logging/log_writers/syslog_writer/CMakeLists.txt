@@ -23,7 +23,7 @@ add_celix_bundle(syslog_writer
 		SOURCES
 		src/celix_syslog_writer_activator.c
 )
-target_link_libraries(syslog_writer PRIVATE Celix::log_utils)
+target_link_libraries(syslog_writer PRIVATE Celix::log_helper)
 install_celix_bundle(syslog_writer EXPORT celix COMPONENT logging)
 
 #Setup target aliases to match external usage

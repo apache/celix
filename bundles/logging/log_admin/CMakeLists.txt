@@ -24,7 +24,7 @@ add_celix_bundle(log_admin
 		src/celix_log_admin.c
 		src/celix_log_admin_activator.c
 )
-target_link_libraries(log_admin PRIVATE Celix::log_utils Celix::shell_api)
+target_link_libraries(log_admin PRIVATE Celix::log_helper Celix::shell_api)
 target_include_directories(log_admin PRIVATE src)
 install_celix_bundle(log_admin EXPORT celix COMPONENT logging)
 

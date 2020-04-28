@@ -16,13 +16,12 @@
 # under the License.
 
 
-add_executable(test_log_utils
+add_executable(test_utils
         src/LogUtilsTestSuite.cc
-        src/LogHelperTestSuite.cc
 )
 
-target_link_libraries(test_log_utils PRIVATE Celix::log_utils GTest::GTest GTest::Main)
+target_link_libraries(test_utils PRIVATE Celix::utils GTest::GTest GTest::Main)
 
-add_test(NAME test_log_utils COMMAND test_log_utils)
-setup_target_for_coverage(test_log_utils SCAN_DIR ..)
+add_test(NAME test_utils COMMAND test_utils)
+setup_target_for_coverage(test_utils SCAN_DIR ..)
 

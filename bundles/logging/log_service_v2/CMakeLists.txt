@@ -47,4 +47,3 @@ install_celix_bundle(log_writer_stdout EXPORT celix COMPONENT logging)
 #Setup target aliases to match external usage
 add_library(Celix::log_service ALIAS log_service)
 add_library(Celix::log_writer_stdout ALIAS log_writer_stdout)
-add_library(Celix::log_helper ALIAS log_helper)

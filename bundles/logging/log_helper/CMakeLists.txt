@@ -15,14 +15,32 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(log_helper STATIC src/log_helper.c)
-set_target_properties(log_helper PROPERTIES OUTPUT_NAME "celix_log_helper")
+if (CELIX_INSTALL_DEPRECATED_API)
+	set(SOURCES src/celix_log_helper.c src/log_helper.c)
+else ()
+	set(SOURCES src/celix_log_helper.c)
+endif ()
+
+add_library(log_helper STATIC ${SOURCES})
+set_target_properties(log_helper PROPERTIES OUTPUT_NAME "celix_log_utils")
 target_include_directories(log_helper PUBLIC
-		$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
-		$<INSTALL_INTERFACE:include/celix/log_helper>
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
+	$<INSTALL_INTERFACE:include/celix/log_helper>
 )
-target_link_libraries(log_helper PUBLIC Celix::framework Celix::log_service_api)
+target_link_libraries(log_helper PUBLIC Celix::utils Celix::log_service_api)
 install(TARGETS log_helper EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT logging)
 install(DIRECTORY include/ DESTINATION include/celix/log_helper COMPONENT logging)
 
+if (CELIX_INSTALL_DEPRECATED_API)
+	target_include_directories(log_helper PUBLIC
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include_v2>
+		$<INSTALL_INTERFACE:include/celix/log_helper>
+	)
+	install(DIRECTORY include_v2/ DESTINATION include/celix/log_helper)
+endif ()
+
 add_library(Celix::log_helper ALIAS log_helper)
+
+if (ENABLE_TESTING)
+	add_subdirectory(gtest)
+endif()
