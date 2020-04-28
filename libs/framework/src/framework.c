@@ -24,6 +24,7 @@
 #include "celixbool.h"
 #include <uuid/uuid.h>
 #include <assert.h>
+#include <celix_log_utils.h>
 
 #include "celix_dependency_manager.h"
 #include "framework_private.h"
@@ -38,6 +39,7 @@
 #include "bundle_context_private.h"
 #include "service_tracker.h"
 #include "celix_library_loader.h"
+#include "celix_log_constants.h"
 
 typedef celix_status_t (*create_function_fp)(bundle_context_t *context, void **userData);
 typedef celix_status_t (*start_function_fp)(void *userData, bundle_context_t *context);
@@ -253,8 +255,12 @@ celix_status_t framework_create(framework_pt *framework, properties_pt config) {
             (*framework)->frameworkListeners = NULL;
             (*framework)->dispatcher.requests = NULL;
             (*framework)->configurationMap = config;
-            (*framework)->logger = celix_frameworkLogger_create();
 
+            const char* logStr = getenv(CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL_CONFIG_NAME);
+            if (logStr == NULL) {
+                logStr = celix_properties_get(config, CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL_CONFIG_NAME, CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL_DEFAULT_VALUE);
+            }
+            (*framework)->logger = celix_frameworkLogger_create(celix_logUtils_logLevelFromString(logStr, CELIX_LOG_LEVEL_INFO));
 
             status = CELIX_DO_IF(status, bundle_create(&(*framework)->bundle));
             status = CELIX_DO_IF(status, bundle_getBundleId((*framework)->bundle, &(*framework)->bundleId));

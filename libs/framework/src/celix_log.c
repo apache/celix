@@ -31,6 +31,7 @@
 
 struct celix_framework_logger {
     celix_thread_mutex_t mutex; //protect below
+    celix_log_level_e activeLogLevel;
     char *buf;
     size_t bufSize;
     FILE* stream;
@@ -51,9 +52,10 @@ celix_framework_logger_t* celix_frameworkLogger_globalLogger() {
     return logger;
 }
 
-celix_framework_logger_t* celix_frameworkLogger_create() {
+celix_framework_logger_t* celix_frameworkLogger_create(celix_log_level_e activeLogLevel) {
     celix_framework_logger_t* logger = calloc(1, sizeof(*logger));
     celixThreadMutex_create(&logger->mutex, NULL);
+    logger->activeLogLevel = activeLogLevel;
     logger->stream = open_memstream(&logger->buf, &logger->bufSize);
 
     pthread_mutex_lock(&globalMutex);
@@ -103,8 +105,9 @@ static void vlog(celix_framework_logger_t* logger, celix_log_level_e level, celi
     }
     celixThreadMutex_lock(&logger->mutex);
     if (logger->logFunction != NULL) {
+        //note let log function handle active log levels
         logger->logFunction(logger->logHandle, level, func, line, format, args);
-    } else {
+    } else if (level >= logger->activeLogLevel) {
         fseek(logger->stream, 0L, SEEK_SET);
         fprintf(logger->stream, "[%s:%i] ", func, line);
         if (optionalStatus != NULL) {
