@@ -36,7 +36,7 @@ struct celix_framework_logger {
     size_t bufSize;
     FILE* stream;
     void *logHandle;
-    void (*logFunction)(void* handle, celix_log_level_e level, const char *func, int line, const char *format, va_list formatArgs);
+    void (*logFunction)(void* handle, celix_log_level_e level, const char* file, const char *function, int line, const char *format, va_list formatArgs);
 };
 
 static pthread_mutex_t globalMutex = PTHREAD_MUTEX_INITIALIZER;
@@ -91,7 +91,7 @@ void celix_frameworkLogger_destroy(celix_framework_logger_t* logger) {
         free(logger);
     }
 }
-void celix_frameworkLogger_setLogCallback(celix_framework_logger_t* logger, void* logHandle, void (*logFunction)(void* handle, celix_log_level_e level, const char *func, int line, const char *format, va_list formatArgs)) {
+void celix_frameworkLogger_setLogCallback(celix_framework_logger_t* logger, void* logHandle, void (*logFunction)(void* handle, celix_log_level_e level, const char* file, const char *func, int line, const char *format, va_list formatArgs)) {
     celixThreadMutex_lock(&logger->mutex);
     logger->logHandle = logHandle;
     logger->logFunction = logFunction;
@@ -99,24 +99,25 @@ void celix_frameworkLogger_setLogCallback(celix_framework_logger_t* logger, void
 }
 
 
-static void vlog(celix_framework_logger_t* logger, celix_log_level_e level, celix_status_t *optionalStatus, const char* func, int line, const char* format, va_list args) {
+static void vlog(celix_framework_logger_t* logger, celix_log_level_e level, celix_status_t *optionalStatus, const char* file, const char* function, int line, const char* format, va_list args) {
     if (level == CELIX_LOG_LEVEL_DISABLED) {
         return;
     }
     celixThreadMutex_lock(&logger->mutex);
     if (logger->logFunction != NULL) {
         //note let log function handle active log levels
-        logger->logFunction(logger->logHandle, level, func, line, format, args);
+        logger->logFunction(logger->logHandle, level, file, function, line, format, args);
     } else if (level >= logger->activeLogLevel) {
-        fseek(logger->stream, 0L, SEEK_SET);
-        fprintf(logger->stream, "[%s:%i] ", func, line);
         if (optionalStatus != NULL) {
+            fseek(logger->stream, 0L, SEEK_SET);
             fprintf(logger->stream, "%s: ", celix_strerror(*optionalStatus));
+            vfprintf(logger->stream, format, args);
+            fputc('\0', logger->stream); //note not sure if this is needed
+            fflush(logger->stream);
+            celix_logUtils_logToStdoutDetails(LOG_NAME, level, file, function, line, logger->buf);
+        } else {
+            celix_logUtils_vLogToStdoutDetails(LOG_NAME, level, file, function, line, format, args);
         }
-        vfprintf(logger->stream, format, args);
-        fputc('\0', logger->stream); //note not sure if this is needed
-        fflush(logger->stream);
-        celix_logUtils_logToStdout(LOG_NAME, level, logger->buf);
     }
     celixThreadMutex_unlock(&logger->mutex);
 }
@@ -125,15 +126,13 @@ static void vlog(celix_framework_logger_t* logger, celix_log_level_e level, celi
 void framework_log(celix_framework_logger_t*  logger, celix_log_level_e level, const char *func, const char *file, int line, const char *format, ...) {
     va_list args;
     va_start(args, format);
-    (void)file; //TODO lose file arg
-    vlog(logger, level, NULL, func, line, format, args);
+    vlog(logger, level, NULL, file, func, line, format, args);
     va_end(args);
 }
 
 void framework_logCode(celix_framework_logger_t*  logger, celix_log_level_e level, const char *func, const char *file, int line, celix_status_t code, const char *format, ...) {
     va_list args;
     va_start(args, format);
-    (void)file; //TODO lose file arg
-    vlog(logger, level, &code, func, line, format, args);
+    vlog(logger, level, &code, file, func, line, format, args);
     va_end(args);
 }

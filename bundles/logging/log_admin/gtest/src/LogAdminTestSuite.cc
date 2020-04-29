@@ -261,7 +261,7 @@ TEST_F(LogBundleTestSuite, LogServiceControl) {
     celix_bundleContext_stopTracker(ctx.get(), trkId3);
 }
 
-static void logSinkFunction(void *handle, celix_log_level_e level, long logServiceId, const char* logServiceName, const char *format, va_list formatArgs) {
+static void logSinkFunction(void *handle, celix_log_level_e level, long logServiceId, const char* logServiceName, const char*, const char*, int, const char *format, va_list formatArgs) {
     auto *count = static_cast<std::atomic<size_t>*>(handle);
     count->fetch_add(1);
 
@@ -339,13 +339,14 @@ TEST_F(LogBundleTestSuite, LogServiceAndSink) {
     ls->warning(ls->handle, "test %i %i %i", 1, 2, 3); //+1
     ls->error(ls->handle, "test %i %i %i", 1, 2, 3); //+1
     ls->fatal(ls->handle, "test %i %i %i", 1, 2, 3); //+1
-    ls->vlog(ls->handle, CELIX_LOG_LEVEL_DISABLED, "ignored", NULL); //+0
-    EXPECT_EQ(9, count.load());
+    ls->log(ls->handle, CELIX_LOG_LEVEL_ERROR, "error"); //+1
+    ls->logDetails(ls->handle, CELIX_LOG_LEVEL_ERROR, __FILE__, __FUNCTION__, __LINE__, "error"); //+1
+    EXPECT_EQ(11, count.load());
 
     celix_bundleContext_unregisterService(ctx.get(), svcId); //no log sink anymore
 
     ls->fatal(ls->handle, "test %i %i %i", 1, 2, 3); //+0 (no log to sink, fallback to stdout)
-    EXPECT_EQ(9, count.load());
+    EXPECT_EQ(11, count.load());
 
     celix_bundleContext_stopTracker(ctx.get(), trkId);
 }

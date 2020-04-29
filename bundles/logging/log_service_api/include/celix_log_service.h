@@ -46,23 +46,69 @@ extern "C" {
 typedef struct celix_log_service {
     void *handle;
 
-    void (*trace)(void *handle, const char *format, ...);
-
-    void (*debug)(void *handle, const char *format, ...);
-
-    void (*info)(void *handle, const char *format, ...);
-
-    void (*warning)(void *handle, const char *format, ...);
-
-    void (*error)(void *handle, const char *format, ...);
-
-    void (*fatal)(void *handle, const char *format, ...);
+    /**
+     * Logs a trace message, printf style.
+     */
+    void (*trace)(void *handle, const char* format, ...);
 
     /**
-     * Log using a va_list argument.
+     * Logs a debug message, printf style.
+     */
+    void (*debug)(void *handle, const char* format, ...);
+
+    /**
+     * Logs a info message, printf style.
+     */
+    void (*info)(void *handle, const char* format, ...);
+
+    /**
+     * Logs a warning message, printf style.
+     */
+    void (*warning)(void *handle, const char* format, ...);
+
+    /**
+     * Logs a error message, printf style.
+     */
+    void (*error)(void *handle, const char* format, ...);
+
+    /**
+     * Logs a fatal message, printf style.
+     */
+    void (*fatal)(void *handle, const char* format, ...);
+
+    /**
+     * Logs a message using the provided log level, printf style
      * Silently ignores log level CELIX_LOG_LEVEL_DISABLED.
      */
-    void (*vlog)(void *handle, celix_log_level_e level, const char *format, va_list formatArgs);
+    void (*log)(void *handle, celix_log_level_e level, const char* format, ...);
+
+    /**
+     * Logs a message using the provided log level, printf style
+     * Silently ignores log level CELIX_LOG_LEVEL_DISABLED.
+     *
+     * The file, function and line arguments are expected to be called with the values:
+     * __FILE__, __FUNCTION__ and __LINE__.
+     *
+     * If the argument file or function is NULL, the arguments file, function and line are not used.
+     */
+    void (*logDetails)(void *handle, celix_log_level_e level, const char* file, const char* function, int line, const char* format, ...);
+
+    /**
+     * Log a message using a format string and va_list argument (vprintf style)
+     * Silently ignores log level CELIX_LOG_LEVEL_DISABLED.
+     */
+    void (*vlog)(void *handle, celix_log_level_e level, const char* format, va_list formatArgs);
+
+    /**
+     * Log a detailed message using a format string and va_list argument (vprintf style)
+     * Silently ignores log level CELIX_LOG_LEVEL_DISABLED.
+     *
+     * The file, function and line arguments are expected to be called with the values:
+     * __FILE__, __FUNCTION__ and __LINE__.
+     *
+     * If the argument file or function is NULL, the arguments file, function and line are not used.
+     */
+    void (*vlogDetails)(void *handle, celix_log_level_e level, const char* file, const char* function, int line, const char* format, va_list formatArgs);
 } celix_log_service_t;
 
 #ifdef __cplusplus
