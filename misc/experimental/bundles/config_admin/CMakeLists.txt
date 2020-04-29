@@ -42,7 +42,7 @@ if (CONFIG_ADMIN)
 #	    
 #	    
 #		add_test(NAME run_config_admin_test COMMAND config_admin_test)
-#      	SETUP_TARGET_FOR_COVERAGE(config_admin_test config_admin_test ${CMAKE_BINARY_DIR}/coverage/config_admin_test/config_admin_test)
+#      	setup_target_for_coverage(config_admin_test config_admin_test ${CMAKE_BINARY_DIR}/coverage/config_admin_test/config_admin_test)
 
    endif(ENABLE_TESTING)
 	

@@ -32,5 +32,5 @@ if (CELIX_INSTALL_DEPRECATED_API)
 endif ()
 
 add_test(NAME test_shell COMMAND test_shell)
-SETUP_TARGET_FOR_COVERAGE(test_shell_cov test_shell ${CMAKE_BINARY_DIR}/coverage/test_shell/test_shell ..)
+setup_target_for_coverage(test_shell SCAN_DIR ..)
 

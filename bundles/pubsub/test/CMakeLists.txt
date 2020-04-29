@@ -125,7 +125,7 @@ if (BUILD_PUBSUB_PSA_UDP_MC)
 
     #TODO fix issues with UDPMC and reanble test again
     #add_test(NAME pubsub_udpmc_tests COMMAND pubsub_udpmc_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_udpmc_tests,CONTAINER_LOC>)
-    #SETUP_TARGET_FOR_COVERAGE(pubsub_udpmc_tests_cov pubsub_udpmc_tests ${CMAKE_BINARY_DIR}/coverage/pubsub_udpmc_tests/pubsub_udpmc_tests ..)
+    #setup_target_for_coverage(pubsub_udpmc_tests_cov pubsub_udpmc_tests ${CMAKE_BINARY_DIR}/coverage/pubsub_udpmc_tests/pubsub_udpmc_tests ..)
 endif()
 
 if (BUILD_PUBSUB_PSA_TCP)
@@ -148,7 +148,7 @@ if (BUILD_PUBSUB_PSA_TCP)
     target_link_libraries(pubsub_tcp_tests PRIVATE Celix::pubsub_api ${CPPUTEST_LIBRARIES} Jansson Celix::dfi)
     target_include_directories(pubsub_tcp_tests SYSTEM PRIVATE ${CPPUTEST_INCLUDE_DIR} test)
     add_test(NAME pubsub_tcp_tests COMMAND pubsub_tcp_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_tcp_tests,CONTAINER_LOC>)
-    SETUP_TARGET_FOR_COVERAGE(pubsub_tcp_tests_cov pubsub_tcp_tests ${CMAKE_BINARY_DIR}/coverage/pubsub_tcp_tests/pubsub_tcp_tests ..)
+    setup_target_for_coverage(pubsub_tcp_tests SCAN_DIR ..)
 
 
     add_celix_container(pubsub_tcp_endpoint_tests
@@ -163,7 +163,7 @@ if (BUILD_PUBSUB_PSA_TCP)
             Celix::pubsub_serializer_json
             Celix::pubsub_topology_manager
             Celix::pubsub_admin_tcp
-            Celix::pubsub_protocol_wire_v2
+            Celix::pubsub_protocol_wire_v1
             pubsub_loopback
             pubsub_endpoint_sut
             pubsub_endpoint_tst
@@ -173,8 +173,8 @@ if (BUILD_PUBSUB_PSA_TCP)
 
     #TCP Endpoint test is disabled because the test is not stable when running on Travis
     if (ENABLE_PUBSUB_PSA_TCP_ENDPOINT_TEST)
-    add_test(NAME pubsub_tcp_endpoint_tests COMMAND pubsub_tcp_endpoint_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_tcp_endpoint_tests,CONTAINER_LOC>)
-    SETUP_TARGET_FOR_COVERAGE(pubsub_tcp_endpoint_tests_cov pubsub_tcp_endpoint_tests ${CMAKE_BINARY_DIR}/coverage/pubsub_tcp_endpoint_tests/pubsub_tcp_endpoint_tests ..)
+        add_test(NAME pubsub_tcp_endpoint_tests COMMAND pubsub_tcp_endpoint_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_tcp_endpoint_tests,CONTAINER_LOC>)
+        setup_target_for_coverage(pubsub_tcp_endpoint_tests SCAN_DIR ..)
     endif()
 endif()
 
@@ -198,7 +198,7 @@ if (BUILD_PUBSUB_PSA_WS)
     target_link_libraries(pubsub_websocket_tests PRIVATE Celix::pubsub_api ${CPPUTEST_LIBRARIES} Jansson Celix::dfi)
     target_include_directories(pubsub_websocket_tests SYSTEM PRIVATE ${CPPUTEST_INCLUDE_DIR} test)
     add_test(NAME pubsub_websocket_tests COMMAND pubsub_websocket_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_websocket_tests,CONTAINER_LOC>)
-    SETUP_TARGET_FOR_COVERAGE(pubsub_websocket_tests_cov pubsub_websocket_tests ${CMAKE_BINARY_DIR}/coverage/pubsub_websocket_tests/pubsub_websocket_tests ..)
+    setup_target_for_coverage(pubsub_websocket_tests SCAN_DIR ..)
     endif()
 
 if (BUILD_PUBSUB_PSA_ZMQ)
@@ -220,7 +220,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
     target_link_libraries(pubsub_zmq_tests PRIVATE Celix::pubsub_api ${CPPUTEST_LIBRARIES} Jansson Celix::dfi)
     target_include_directories(pubsub_zmq_tests SYSTEM PRIVATE ${CPPUTEST_INCLUDE_DIR} test)
     add_test(NAME pubsub_zmq_tests COMMAND pubsub_zmq_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_zmq_tests,CONTAINER_LOC>)
-    SETUP_TARGET_FOR_COVERAGE(pubsub_zmq_tests_cov pubsub_zmq_tests ${CMAKE_BINARY_DIR}/coverage/pubsub_zmq_tests/pubsub_zmq_tests ..)
+    setup_target_for_coverage(pubsub_zmq_tests SCAN_DIR ..)
 
 
     add_celix_container(pubsub_zmq_zerocopy_tests
@@ -244,6 +244,6 @@ if (BUILD_PUBSUB_PSA_ZMQ)
     target_include_directories(pubsub_zmq_zerocopy_tests SYSTEM PRIVATE ${CPPUTEST_INCLUDE_DIR} test)
 
     #TODO fix issues with ZeroCopy and reanble test again
-#    add_test(NAME pubsub_zmq_zerocopy_tests COMMAND pubsub_zmq_zerocopy_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_zmq_zerocopy_tests,CONTAINER_LOC>)
-#    SETUP_TARGET_FOR_COVERAGE(pubsub_zmq_zerocopy_tests_cov pubsub_zmq_zerocopy_tests ${CMAKE_BINARY_DIR}/coverage/pubsub_zmq_tests/pubsub_zmq_zerocopy_tests ..)
+    add_test(NAME pubsub_zmq_zerocopy_tests COMMAND pubsub_zmq_zerocopy_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_zmq_zerocopy_tests,CONTAINER_LOC>)
+    setup_target_for_coverage(pubsub_zmq_zerocopy_tests SCAN_DIR ..)
 endif ()

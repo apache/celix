@@ -19,12 +19,12 @@ option(ENABLE_ADDRESS_SANITIZER "Enabled building with address sanitizer. Note f
 option(ENABLE_UNDEFINED_SANITIZER "Enabled building with undefined behavior sanitizer." OFF)
 
 if (ENABLE_ADDRESS_SANITIZER)
-    if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-        set(CMAKE_C_FLAGS "-fsanitize=address ${CMAKE_C_FLAGS}")
-        set(CMAKE_CXX_FLAGS "-fsanitize=address ${CMAKE_CXX_FLAGS}")
+    if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
+        set(CMAKE_C_FLAGS "-fsanitize=address -fno-omit-frame-pointer ${CMAKE_C_FLAGS}")
+        set(CMAKE_CXX_FLAGS "-fsanitize=address -fno-omit-frame-pointer ${CMAKE_CXX_FLAGS}")
     else ()
-        set(CMAKE_C_FLAGS "-lasan -fsanitize=address ${CMAKE_C_FLAGS}")
-        set(CMAKE_CXX_FLAGS "-lasan -fsanitize=address ${CMAKE_CXX_FLAGS}")
+        set(CMAKE_C_FLAGS "-lasan -fsanitize=address -fno-omit-frame-pointer ${CMAKE_C_FLAGS}")
+        set(CMAKE_CXX_FLAGS "-lasan -fsanitize=address -fno-omit-frame-pointer ${CMAKE_CXX_FLAGS}")
     endif ()
 endif()
 

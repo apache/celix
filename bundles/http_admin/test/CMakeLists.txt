@@ -57,7 +57,7 @@ target_link_libraries(http_websocket_tests PRIVATE Celix::http_admin_api ${CPPUT
 target_include_directories(http_websocket_tests SYSTEM PRIVATE ${CPPUTEST_INCLUDE_DIR})
 
 add_test(NAME http_websocket_tests COMMAND http_websocket_tests WORKING_DIRECTORY $<TARGET_PROPERTY:http_websocket_tests,CONTAINER_LOC>)
-SETUP_TARGET_FOR_COVERAGE(http_websocket_tests http_websocket_tests ${CMAKE_BINARY_DIR}/coverage/http_websocket_tests/http_websocket_tests ..)
+setup_target_for_coverage(http_websocket_tests SCAN_DIR ${CMAKE_BINARY_DIR}/bundles/http_admin/http_admin)
 
 get_target_property(http_admin_service_cmp Celix::http_admin BUNDLE_FILE)
 get_target_property(http_admin_sut_cmp http_admin_sut BUNDLE_FILE)

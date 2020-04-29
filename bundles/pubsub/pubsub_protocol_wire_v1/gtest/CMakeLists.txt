@@ -19,10 +19,10 @@ set(SOURCES
         src/main.cc
         src/PS_WP_tests.cc
     )
-add_executable(celix_pswp_v1_tests ${SOURCES})
+add_executable(celix_pswp_tests ${SOURCES})
 #target_include_directories(celix_cxx_pswp_tests SYSTEM PRIVATE gtest)
-target_include_directories(celix_pswp_v1_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src)
-target_link_libraries(celix_pswp_v1_tests PRIVATE celix_protocol_wire_v1_impl GTest::GTest Celix::pubsub_spi)
+target_include_directories(celix_pswp_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src)
+target_link_libraries(celix_pswp_tests PRIVATE celix_wire_protocol_v1_impl GTest::GTest Celix::pubsub_spi)
 
-add_test(NAME celix_pswp_v1_tests COMMAND celix_pswp_v1_tests)
-SETUP_TARGET_FOR_COVERAGE(celix_pswp_v1_tests_cov celix_cxx_pswp_v1_tests ${CMAKE_BINARY_DIR}/coverage/bundles/pubsub/protocol_wire_v1 ..)
+add_test(NAME celix_pswp_tests COMMAND celix_pswp_tests)
+setup_target_for_coverage(celix_pswp_tests SCAN_DIR ..)
