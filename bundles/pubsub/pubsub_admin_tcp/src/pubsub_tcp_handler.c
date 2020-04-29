@@ -1040,8 +1040,9 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
               msg.msg_iovlen = 0;
             }
             nbytes = 0;
-            if (entry->fd >= 0 && msgSize && msg.msg_iovlen)
+            if (entry->fd >= 0 && msgSize && msg.msg_iovlen) {
                 nbytes = sendmsg(entry->fd, &msg, flags | MSG_NOSIGNAL);
+            }
             //  When a specific socket keeps reporting errors can indicate a subscriber
             //  which is not active anymore, the connection will remain until the retry
             //  counter exceeds the maximum retry count.
@@ -1066,14 +1067,16 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
                 }
             }
             // Release data
-            if (headerData)
+            if (headerData) {
                 free(headerData);
+            }
             // Note: serialized Payload is deleted by serializer
             if (payloadData && (payloadData != message->payload.payload)) {
                 free(payloadData);
             }
-            if (metadataData)
+            if (metadataData) {
                 free(metadataData);
+            }
         }
     }
     celixThreadRwlock_unlock(&handle->dbLock);

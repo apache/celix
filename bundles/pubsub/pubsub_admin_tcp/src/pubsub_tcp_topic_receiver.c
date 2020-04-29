@@ -693,12 +693,10 @@ static void psa_tcp_connectToAllRequestedConnections(pubsub_tcp_topic_receiver_t
         hash_map_iterator_t iter = hashMapIterator_construct(receiver->requestedConnections.map);
         while (hashMapIterator_hasNext(&iter)) {
             psa_tcp_requested_connection_entry_t *entry = hashMapIterator_nextValue(&iter);
-            if (entry) {
-                if (!entry->connected) {
-                  int rc = pubsub_tcpHandler_connect(entry->parent->socketHandler, entry->url);
-                  if (rc < 0) {
-                      allConnected = false;
-                  }
+            if ((entry) && (!entry->connected)) {
+                int rc = pubsub_tcpHandler_connect(entry->parent->socketHandler, entry->url);
+                if (rc < 0) {
+                    allConnected = false;
                 }
             }
         }
