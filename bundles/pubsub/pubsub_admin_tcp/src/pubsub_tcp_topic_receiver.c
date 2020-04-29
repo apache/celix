@@ -157,6 +157,7 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
     receiver->protocol = protocol;
     receiver->scope = scope == NULL ? NULL : strndup(scope, 1024 * 1024);
     receiver->topic = strndup(topic, 1024 * 1024);
+    bool isServerEndPoint = false;
 
     /* Check if it's a static endpoint */
     const char *staticClientEndPointUrls = NULL;
@@ -173,6 +174,7 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
             if (strncmp(PUBSUB_TCP_STATIC_ENDPOINT_TYPE_SERVER, endPointType,
                         strlen(PUBSUB_TCP_STATIC_ENDPOINT_TYPE_SERVER)) == 0) {
                 staticServerEndPointUrls = celix_properties_get(topicProperties, PUBSUB_TCP_STATIC_BIND_URL, NULL);
+                isServerEndPoint = true;
             }
         }
     }
@@ -249,7 +251,7 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
         free(urlsCopy);
     }
 
-    if (receiver->socketHandler != NULL) {
+    if (receiver->socketHandler != NULL && (!isServerEndPoint)) {
         // Configure Receiver thread
         receiver->thread.running = true;
         celixThread_create(&receiver->thread.thread, NULL, psa_tcp_recvThread, receiver);
@@ -691,11 +693,12 @@ static void psa_tcp_connectToAllRequestedConnections(pubsub_tcp_topic_receiver_t
         hash_map_iterator_t iter = hashMapIterator_construct(receiver->requestedConnections.map);
         while (hashMapIterator_hasNext(&iter)) {
             psa_tcp_requested_connection_entry_t *entry = hashMapIterator_nextValue(&iter);
-            if (!entry->connected) {
-                int rc = pubsub_tcpHandler_connect(entry->parent->socketHandler, entry->url);
-                if (rc < 0) {
-                    //L_WARN("[PSA_TCP] Error connecting to tcp url %s. (%s)", entry->url, strerror(errno));
-                    allConnected = false;
+            if (entry) {
+                if (!entry->connected) {
+                  int rc = pubsub_tcpHandler_connect(entry->parent->socketHandler, entry->url);
+                  if (rc < 0) {
+                      allConnected = false;
+                  }
                 }
             }
         }
