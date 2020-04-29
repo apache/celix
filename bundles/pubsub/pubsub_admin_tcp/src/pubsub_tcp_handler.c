@@ -454,7 +454,7 @@ int pubsub_tcpHandler_connect(pubsub_tcpHandler_t *handle, char *url) {
             hashMap_put(handle->connection_fd_map, (void *) (intptr_t) entry->fd, entry);
             celixThreadRwlock_unlock(&handle->dbLock);
             pubsub_tcpHandler_connectionHandler(handle, fd);
-            L_INFO("[TCP Socket] Connect to %s using; %s err: %s\n", entry->url, entry->interface_url);
+            L_INFO("[TCP Socket] Connect to %s using; %s\n", entry->url, entry->interface_url);
         }
         pubsub_utils_url_free(url_info);
     }
