@@ -206,7 +206,9 @@ void celix_utils_extractLocalNameAndNamespaceFromFullyQualifiedName(const char *
     fclose(namespaceStream);
     free(cpy);
     *outLocalName = local;
-    if (strncmp("", namespace, 1) == 0)  {
+    if (namespace == NULL) {
+      *outNamespace = NULL;
+    } else if (strncmp("", namespace, 1) == 0)  {
         //empty string -> set to NULL
         *outNamespace = NULL;
         free(namespace);

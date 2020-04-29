@@ -394,6 +394,7 @@ TEST(celix_thread_rwlock, create){
 TEST(celix_thread_rwlock, readLock){
     int status;
     celix_thread_rwlock_t lock;
+    memset(&lock, 0x00, sizeof(celix_thread_rwlock_t));
     //struct func_param * param = (struct func_param*) calloc(1,sizeof(struct func_param));
 
     celixThreadRwlock_create(&lock, NULL);
