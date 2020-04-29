@@ -161,7 +161,7 @@ static void* discoveryShmWatcher_run(void* data) {
     char url[MAX_LOCALNODE_LENGTH];
 
     if (discoveryShmWatcher_getLocalNodePath(discovery->context, &localNodePath[0]) != CELIX_SUCCESS) {
-        logHelper_log(discovery->loghelper, CELIX_LOG_LEVEL_WARNING, "Cannot retrieve local discovery path.");
+        celix_logHelper_log(discovery->loghelper, CELIX_LOG_LEVEL_WARNING, "Cannot retrieve local discovery path.");
     }
 
     if (endpointDiscoveryServer_getUrl(discovery->server, &url[0]) != CELIX_SUCCESS) {
@@ -171,7 +171,7 @@ static void* discoveryShmWatcher_run(void* data) {
     while (watcher->running) {
         // register own framework
         if (discoveryShm_set(watcher->shmData, localNodePath, url) != CELIX_SUCCESS) {
-            logHelper_log(discovery->loghelper, CELIX_LOG_LEVEL_WARNING, "Cannot set local discovery registration.");
+            celix_logHelper_log(discovery->loghelper, CELIX_LOG_LEVEL_WARNING, "Cannot set local discovery registration.");
         }
 
         discoveryShmWatcher_syncEndpoints(discovery);
