@@ -2460,6 +2460,6 @@ bool celix_framework_startBundle(celix_framework_t *fw, long bndId) {
     return started;
 }
 
-void celix_framework_setLogCallback(celix_framework_t* fw, void* logHandle, void (*logFunction)(void* handle, celix_log_level_e level, const char *func, int line, const char *format, va_list formatArgs)) {
+void celix_framework_setLogCallback(celix_framework_t* fw, void* logHandle, void (*logFunction)(void* handle, celix_log_level_e level, const char* file, const char *function, int line, const char *format, va_list formatArgs)) {
     celix_frameworkLogger_setLogCallback(fw->logger, logHandle, logFunction);
 }

@@ -142,7 +142,7 @@ bool celix_framework_startBundle(celix_framework_t *fw, long bndId);
  * A log function can be injected to change how the Celix framework logs.
  * Can be reset by setting the log function to NULL.
  */
-void celix_framework_setLogCallback(celix_framework_t* fw, void* logHandle, void (*logFunction)(void* handle, celix_log_level_e level, const char *func, int line, const char *format, va_list formatArgs));
+void celix_framework_setLogCallback(celix_framework_t* fw, void* logHandle, void (*logFunction)(void* handle, celix_log_level_e level, const char* file, const char *function, int line, const char *format, va_list formatArgs));
 
 
 #ifdef __cplusplus

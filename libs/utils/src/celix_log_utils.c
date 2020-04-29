@@ -109,14 +109,25 @@ void celix_logUtils_printBacktrace(FILE* stream) {
     celix_logUtils_inlinePrintBacktrace(stream);
 }
 
-void celix_logUtils_logToStdout(const char *logServiceName, celix_log_level_e level, const char *format, ...) {
+void celix_logUtils_logToStdout(const char *logName, celix_log_level_e level, const char *format, ...) {
     va_list args;
     va_start(args, format);
-    celix_logUtils_vLogToStdout(logServiceName, level, format, args);
+    celix_logUtils_vLogToStdout(logName, level, format, args);
     va_end(args);
 }
 
-void celix_logUtils_vLogToStdout(const char *logServiceName, celix_log_level_e level, const char *format, va_list formatArgs) {
+void celix_logUtils_logToStdoutDetails(const char *logName, celix_log_level_e level, const char* file, const char* function, int line, const char *format, ...) {
+    va_list args;
+    va_start(args, format);
+    celix_logUtils_vLogToStdoutDetails(logName, level, file, function, line, format, args);
+    va_end(args);
+}
+
+void celix_logUtils_vLogToStdout(const char *logName, celix_log_level_e level, const char *format, va_list formatArgs) {
+    celix_logUtils_vLogToStdoutDetails(logName, level, NULL, NULL, 0, format, formatArgs);
+}
+
+void celix_logUtils_vLogToStdoutDetails(const char *logName, celix_log_level_e level, const char* file, const char* function, int line, const char *format, va_list formatArgs) {
     if (level == CELIX_LOG_LEVEL_DISABLED) {
         //silently ignore
         return;
@@ -132,16 +143,20 @@ void celix_logUtils_vLogToStdout(const char *logServiceName, celix_log_level_e l
         out = stderr;
     }
 
-    //TODO protect multiple fprint calls, so that there is not interference
     fprintf(out, "[%i-%02i-%02iT%02i:%02i:%02i] ", local.tm_year + 1900, local.tm_mon+1, local.tm_mday, local.tm_hour, local.tm_min, local.tm_sec);
-    fprintf(out, "[%s] [%s] ", celix_logUtils_logLevelToString(level), logServiceName);
+    if (file != NULL && function != NULL) {
+        (void)file; //note not using file
+        fprintf(out, "[%s] [%s] [%s:%i] ", celix_logUtils_logLevelToString(level), logName, function, line);
+    } else {
+        fprintf(out, "[%s] [%s] ", celix_logUtils_logLevelToString(level), logName);
+    }
 
     vfprintf(out, format, formatArgs);
 
     fprintf(out, "\n");
     fflush(out);
 
-    if (level == CELIX_LOG_LEVEL_ERROR) {
+    if (level >= CELIX_LOG_LEVEL_ERROR) {
         fprintf(out, "Backtrace:\n");
         fflush(out);
         celix_logUtils_inlinePrintBacktrace(out);

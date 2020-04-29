@@ -78,7 +78,7 @@ typedef struct celix_log_sink_entry {
     bool enabled;
 } celix_log_sink_entry_t;
 
-static void celix_logAdmin_vlog(void *handle, celix_log_level_e level, const char *format, va_list formatArgs) {
+static void celix_logAdmin_vlogDetails(void *handle, celix_log_level_e level, const char* file, const char* function, int line, const char *format, va_list formatArgs) {
     celix_log_service_entry_t* entry = handle;
 
     if (level == CELIX_LOG_LEVEL_DISABLED) {
@@ -94,15 +94,33 @@ static void celix_logAdmin_vlog(void *handle, celix_log_level_e level, const cha
             celix_log_sink_entry_t *sinkEntry = hashMapIterator_nextValue(&iter);
             if (sinkEntry->enabled) {
                 celix_log_sink_t *sink = sinkEntry->sink;
-                sink->sinkLog(sink->handle, level, entry->logSvcId, entry->name, format, formatArgs);
+                sink->sinkLog(sink->handle, level, entry->logSvcId, entry->name, file, function, line, format, formatArgs);
             }
         }
 
         if (entry->admin->alwaysLogToStdOut || (nrOfLogWriters == 0 && entry->admin->fallbackToStdOut)) {
-            celix_logUtils_vLogToStdout(entry->name, level, format, formatArgs);
+            celix_logUtils_vLogToStdoutDetails(entry->name, level, file, function, line, format, formatArgs);
         }
     }
     celixThreadRwlock_unlock(&entry->admin->lock);
+}
+
+static void celix_logAdmin_vlog(void *handle, celix_log_level_e level, const char *format, va_list formatArgs) {
+    celix_logAdmin_vlogDetails(handle, level, NULL, NULL, 0, format, formatArgs);
+}
+
+static void celix_logAdmin_logDetails(void *handle, celix_log_level_e level, const char* file, const char* function, int line, const char *format, ...) {
+    va_list args;
+    va_start(args, format);
+    celix_logAdmin_vlogDetails(handle, level, file, function, 0, format, args);
+    va_end(args);
+}
+
+static void celix_logAdmin_log(void *handle, celix_log_level_e level, const char *format, ...) {
+    va_list args;
+    va_start(args, format);
+    celix_logAdmin_vlogDetails(handle, level, NULL, NULL, 0, format, args);
+    va_end(args);
 }
 
 static void celix_logAdmin_trace(void *handle, const char *format, ...) {
@@ -147,12 +165,10 @@ static void celix_logAdmin_fatal(void *handle, const char *format, ...) {
     va_end(args);
 }
 
-static void celix_logAdmin_frameworkLogFunction(void* handle, celix_log_level_e level, const char *func, int line, const char *format, va_list formatArgs) {
+static void celix_logAdmin_frameworkLogFunction(void* handle, celix_log_level_e level, const char* file, const char *function, int line, const char *format, va_list formatArgs) {
     celix_log_service_entry_t* entry = handle;
     //note for now igoring func & line
-    (void)func;
-    (void)line;
-    entry->logSvc.vlog(entry->logSvc.handle, level, format, formatArgs);
+    entry->logSvc.vlogDetails(entry->logSvc.handle, level, file, function, line, format, formatArgs);
 }
 
 static void celix_logAdmin_addLogSvcForName(celix_log_admin_t* admin, const char* name) {
@@ -174,7 +190,10 @@ static void celix_logAdmin_addLogSvcForName(celix_log_admin_t* admin, const char
         newEntry->logSvc.warning = celix_logAdmin_warning;
         newEntry->logSvc.error = celix_logAdmin_error;
         newEntry->logSvc.fatal = celix_logAdmin_fatal;
+        newEntry->logSvc.log = celix_logAdmin_log;
+        newEntry->logSvc.logDetails = celix_logAdmin_logDetails;
         newEntry->logSvc.vlog = celix_logAdmin_vlog;
+        newEntry->logSvc.vlogDetails = celix_logAdmin_vlogDetails;
         hashMap_put(admin->loggers, (void*)newEntry->name, newEntry);
 
         if (celix_utils_stringEquals(newEntry->name, CELIX_LOG_ADMIN_FRAMEWORK_LOG_NAME)) {

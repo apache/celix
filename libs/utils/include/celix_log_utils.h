@@ -50,7 +50,7 @@ celix_log_level_e celix_logUtils_logLevelFromString(const char *level, celix_log
 celix_log_level_e celix_logUtils_logLevelFromStringWithCheck(const char *level, celix_log_level_e fallbackLogLevel, bool *convertedSuccessfully);
 
 /**
- * Logs to stdout/stderr using the provided logName and log level.
+ * Logs a message to stdout/stderr using the provided logName and log level.
  * If the provided log level is higher than info, stderr will be used.
  *
  * function is not thread safe (multiple printf's are used).
@@ -58,12 +58,39 @@ celix_log_level_e celix_logUtils_logLevelFromStringWithCheck(const char *level, 
 void celix_logUtils_logToStdout(const char *logName, celix_log_level_e level, const char *format, ...);
 
 /**
- * Logs to stdout/stderr using the provided logName and log level.
+ * Logs a detailed message to stdout/stderr using the provided logName and log level.
+ * If the provided log level is higher than info, stderr will be used.
+ *
+ * The file, function and line arguments are expected to be called with the values:
+ * __FILE__, __FUNCTION__ and __LINE__.
+ *
+ * If the argument file or function is NULL, the arguments file, function and line are not used.
+ *
+ * function is not thread safe (multiple printf's are used).
+ */
+void celix_logUtils_logToStdoutDetails(const char *logName, celix_log_level_e level, const char* file, const char* function, int line, const char *format, ...);
+
+
+/**
+ * Logs a message to stdout/stderr using the provided logName and log level.
  * If the provided log level is higher than info, stderr will be used.
  *
  * function is not thread safe (multiple printf's are used).
  */
 void celix_logUtils_vLogToStdout(const char *logName, celix_log_level_e level, const char *format, va_list formatArgs);
+
+/**
+ * Logs - a detailed - messages to stdout/stderr using the provided logName and log level.
+ * If the provided log level is higher than info, stderr will be used.
+ *
+ * The file, function and line arguments are expected to be called with the values:
+ * __FILE__, __FUNCTION__ and __LINE__.
+ *
+ * If the argument file or function is NULL, the arguments file, function and line are not used.
+ *
+ * function is not thread safe (multiple printf's are used).
+ */
+void celix_logUtils_vLogToStdoutDetails(const char *logName, celix_log_level_e level, const char* file, const char* function, int line, const char *format, va_list formatArgs);
 
 /**
  * Prints a backtrace to the provided output stream.

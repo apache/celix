@@ -37,10 +37,20 @@ extern "C" {
 typedef struct celix_log_sink {
     void *handle;
 
-    void (*sinkLog)(void *handle, celix_log_level_e level, long logServiceId, const char* logServiceName, const char *format, va_list formatArgs);
-
-    //TODO TBD
-    //Add logServiceAdded/Removed methods so that sink are aware of the available log services?
+    /**
+     * Sink a log message, vprintf style.
+     *
+     * @param handle            The service handle.
+     * @param level             The log level.
+     * @param logServiceId      The service id of the log service used to log a message.
+     * @param logServiceName    The name of the log service used to log a message.
+     * @param file              An optional file line argument (only valid if function is also not NULL)
+     * @param function          An optional function line argument (only valid if file is also not NULL)
+     * @param line              An optional file line argument (only valid if file and function are not NULL)
+     * @param format            The log message in a format string (i.e. a printf format)
+     * @param formatArgs        va_list of the variable format arg
+     */
+    void (*sinkLog)(void *handle, celix_log_level_e level, long logServiceId, const char* logServiceName, const char* file, const char* function, int line, const char *format, va_list formatArgs);
 } celix_log_sink_t;
 
 #ifdef __cplusplus

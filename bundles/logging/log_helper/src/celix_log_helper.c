@@ -130,7 +130,18 @@ void celix_logHelper_log(celix_log_helper_t* logHelper, celix_log_level_e level,
     va_end(args);
 }
 
+void celix_logHelper_logDetails(celix_log_helper_t* logHelper, celix_log_level_e level, const char* file, const char* function, int line, const char *format, ...) {
+    va_list args;
+    va_start(args, format);
+    celix_logHelper_vlogDetails(logHelper, level, file, function, line, format, args);
+    va_end(args);
+}
+
 void celix_logHelper_vlog(celix_log_helper_t* logHelper, celix_log_level_e level, const char *format, va_list formatArgs) {
+    celix_logHelper_vlogDetails(logHelper, level, NULL, NULL, 0, format, formatArgs);
+}
+
+void celix_logHelper_vlogDetails(celix_log_helper_t* logHelper, celix_log_level_e level, const char* file, const char* function, int line, const char *format, va_list formatArgs) {
     if (level == CELIX_LOG_LEVEL_DISABLED) {
         //silently ignore
         return;

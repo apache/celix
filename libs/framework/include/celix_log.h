@@ -55,7 +55,7 @@ typedef struct celix_framework_logger celix_framework_logger_t; //opaque
 
 celix_framework_logger_t* celix_frameworkLogger_create(celix_log_level_e activeLogLevel);
 void celix_frameworkLogger_destroy(celix_framework_logger_t* logger);
-void celix_frameworkLogger_setLogCallback(celix_framework_logger_t* logger, void* logHandle, void (*logFunction)(void* handle, celix_log_level_e level, const char *func, int line, const char *format, va_list formatArgs));
+void celix_frameworkLogger_setLogCallback(celix_framework_logger_t* logger, void* logHandle, void (*logFunction)(void* handle, celix_log_level_e level, const char* file, const char *function, int line, const char *format, va_list formatArgs));
 celix_framework_logger_t* celix_frameworkLogger_globalLogger(); //TODO do not use global logger, make this deprecated __attribute__((deprecated));
 
 void framework_log(celix_framework_logger_t* logger, celix_log_level_e level, const char *func, const char *file, int line,
