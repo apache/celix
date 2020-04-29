@@ -193,12 +193,12 @@ celix_status_t discoveryShmWatcher_create(discovery_t *discovery) {
         status = discoveryShm_attach(&(watcher->shmData));
 
         if (status != CELIX_SUCCESS) {
-            logHelper_log(discovery->loghelper, CELIX_LOG_LEVEL_DEBUG, "Attaching to Shared Memory Failed. Trying to create.");
+            celix_logHelper_log(discovery->loghelper, CELIX_LOG_LEVEL_DEBUG, "Attaching to Shared Memory Failed. Trying to create.");
 
             status = discoveryShm_create(&(watcher->shmData));
 
             if (status != CELIX_SUCCESS) {
-                logHelper_log(discovery->loghelper, CELIX_LOG_LEVEL_ERROR, "Failed to create Shared Memory Segment.");
+                celix_logHelper_log(discovery->loghelper, CELIX_LOG_LEVEL_ERROR, "Failed to create Shared Memory Segment.");
             }
         }
 
@@ -246,7 +246,7 @@ celix_status_t discoveryShmWatcher_destroy(discovery_t *discovery) {
         free(watcher);
     }
     else {
-        logHelper_log(discovery->loghelper, CELIX_LOG_LEVEL_WARNING, "Cannot remove local discovery registration.");
+        celix_logHelper_log(discovery->loghelper, CELIX_LOG_LEVEL_WARNING, "Cannot remove local discovery registration.");
     }
 
 
