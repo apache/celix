@@ -66,8 +66,8 @@ celix_status_t discovery_create(celix_bundle_context_t *context, discovery_t** o
         celixThreadMutex_create(&discovery->listenerReferencesMutex, NULL);
         celixThreadMutex_create(&discovery->discoveredServicesMutex, NULL);
 
-        if (logHelper_create(context, &discovery->loghelper) == CELIX_SUCCESS) {
-            logHelper_start(discovery->loghelper);
+        if (celix_logHelper_create(context, &discovery->loghelper) == CELIX_SUCCESS) {
+
         }
     } else {
         status = CELIX_ENOMEM;
@@ -159,8 +159,7 @@ celix_status_t discovery_stop(discovery_t *discovery) {
 
         celixThreadMutex_unlock(&discovery->discoveredServicesMutex);
 
-        logHelper_stop(discovery->loghelper);
-        logHelper_destroy(&discovery->loghelper);
+        celix_logHelper_destroy(&discovery->loghelper);
 	}
 
 	return status;

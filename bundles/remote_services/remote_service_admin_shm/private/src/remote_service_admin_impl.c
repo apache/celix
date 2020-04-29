@@ -82,7 +82,6 @@ celix_status_t remoteServiceAdmin_create(celix_bundle_context_t *context, remote
 		(*admin)->pollThreadRunning = hashMap_create(NULL, NULL, NULL, NULL);
 
 		if (logHelper_create(context, &(*admin)->loghelper) == CELIX_SUCCESS) {
-			logHelper_start((*admin)->loghelper);
 		}
 	}
 
@@ -197,8 +196,7 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_t *admin) {
 
 	remoteServiceAdmin_removeSharedIdentityFiles(admin);
 
-	logHelper_stop(admin->loghelper);
-	logHelper_destroy(&admin->loghelper);
+	celix_logHelper_destroy(&admin->loghelper);
 	return status;
 }
 

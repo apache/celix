@@ -207,7 +207,7 @@ celix_status_t eventAdmin_modifiedService(void * handle, service_reference_pt re
 
 celix_status_t eventAdmin_removedService(void * handle, service_reference_pt ref, void * service) {
     event_admin_pt event_admin = (event_admin_pt) handle;
-    logHelper_log(*event_admin->loghelper, CELIX_LOG_LEVEL_ERROR, "Event admin Removed %p", service);
+    celix_logHelper_log(*event_admin->loghelper, CELIX_LOG_LEVEL_ERROR, "Event admin Removed %p", service);
     printf("Event admin Removed %p", service);
     return CELIX_SUCCESS;
 }
