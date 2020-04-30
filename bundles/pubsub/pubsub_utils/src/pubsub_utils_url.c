@@ -161,7 +161,7 @@ char *pubsub_utils_url_get_ip(char *_hostname) {
         if (subNet != NULL) {
             unsigned int length = strlen(subNet);
             if ((length > 1) && isdigit(subNet[1])) {
-                bool is_multicast = pubsub_utils_url_is_multicast(_hostname);
+                bool is_multicast = pubsub_utils_url_is_multicast(hostname);
                 if (is_multicast)
                     ip = pubsub_utils_url_get_multicast_ip(_hostname);
                 else
