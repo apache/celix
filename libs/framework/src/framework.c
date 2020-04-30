@@ -1005,7 +1005,7 @@ celix_status_t fw_stopBundle(framework_pt framework, long bndId, bool record) {
     celix_framework_bundle_entry_t *entry = fw_bundleEntry_getBundleEntryAndIncreaseUseCount(framework, bndId);
     if (entry == NULL) {
       status = CELIX_ILLEGAL_STATE;
-      fw_logCode(framework->logger, OSGI_FRAMEWORK_LOG_ERROR, status, "Cannot stop bundle [%ld]: cannot find bundle entry", bndId);
+      fw_logCode(framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Cannot stop bundle [%ld]: cannot find bundle entry", bndId);
       return status;
     }
 
