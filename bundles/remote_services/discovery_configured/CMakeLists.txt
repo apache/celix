@@ -14,28 +14,26 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-celix_subproject(RSA_DISCOVERY_CONFIGURED "Option to enable building the Discovery (Configured) bundle" ON)
-if (RSA_DISCOVERY_CONFIGURED)
-    find_package(CURL REQUIRED)
-    find_package(LibXml2 REQUIRED)
 
-    add_celix_bundle(rsa_discovery_configured
-        VERSION 0.9.0
-        SYMBOLIC_NAME "apache_celix_rsa_discovery_configured"
-        NAME "Apache Celix RSA Configured Discovery"
-        SOURCES
-	        src/discovery_impl.c
-            $<TARGET_OBJECTS:Celix::rsa_discovery_common>
-            $<TARGET_OBJECTS:Celix::civetweb>
-    )
-    target_include_directories(rsa_discovery_configured PRIVATE
-            src
-            $<TARGET_PROPERTY:Celix::rsa_discovery_common,INCLUDE_DIRECTORIES>
-            $<TARGET_PROPERTY:Celix::civetweb,INCLUDE_DIRECTORIES>
-    )
-    target_link_libraries(rsa_discovery_configured PRIVATE CURL::libcurl ${LIBXML2_LIBRARIES} Celix::log_helper Celix::rsa_common)
+find_package(CURL REQUIRED)
+find_package(LibXml2 REQUIRED)
 
-    install_celix_bundle(rsa_discovery_configured EXPORT celix COMPONENT rsa)
-    #Setup target aliases to match external usage
-    add_library(Celix::rsa_discovery_configured ALIAS rsa_discovery_configured)
-endif (RSA_DISCOVERY_CONFIGURED)
+add_celix_bundle(rsa_discovery_configured
+    VERSION 0.9.0
+    SYMBOLIC_NAME "apache_celix_rsa_discovery_configured"
+    NAME "Apache Celix RSA Configured Discovery"
+    SOURCES
+        src/discovery_impl.c
+        $<TARGET_OBJECTS:Celix::rsa_discovery_common>
+        $<TARGET_OBJECTS:Celix::civetweb>
+)
+target_include_directories(rsa_discovery_configured PRIVATE
+        src
+        $<TARGET_PROPERTY:Celix::rsa_discovery_common,INCLUDE_DIRECTORIES>
+        $<TARGET_PROPERTY:Celix::civetweb,INCLUDE_DIRECTORIES>
+)
+target_link_libraries(rsa_discovery_configured PRIVATE CURL::libcurl ${LIBXML2_LIBRARIES} Celix::log_helper Celix::rsa_common)
+
+install_celix_bundle(rsa_discovery_configured EXPORT celix COMPONENT rsa)
+#Setup target aliases to match external usage
+add_library(Celix::rsa_discovery_configured ALIAS rsa_discovery_configured)
