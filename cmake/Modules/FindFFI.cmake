@@ -22,14 +22,12 @@
 #  FFI::lib - Imported target for the libffi
 
 find_library(FFI_LIBRARY NAMES ffi libffi
-    NO_DEFAULT_PATH
     PATHS $ENV{FFI_DIR} ${FFI_DIR} /usr/local/opt/libffi /opt/local /usr /usr/local
     PATH_SUFFIXES lib lib64 x86_64-linux-gnu lib/x86_64-linux-gnu
     HINTS ${PC_LIBFFI_LIBDIR} ${PC_LIBFFI_LIBRARY_DIRS}
 )
 
 find_path(FFI_INCLUDE_DIR ffi.h
-     NO_DEFAULT_PATH
      PATHS $ENV{FFI_DIR} ${FFI_DIR} /usr/local/opt/libffi /opt/local /usr /usr/local
      PATH_SUFFIXES include include/ffi include/x86_64-linux-gnu x86_64-linux-gnu
      HINTS ${PC_LIBFFI_INCLUDEDIR} ${PC_LIBFFI_INCLUDE_DIRS}
