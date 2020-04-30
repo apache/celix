@@ -56,19 +56,24 @@ typedef struct {
  *
  * The provider monitors bundles and creates pubsub message serialization services for every unique descriptor found.
  *
- * Descriptors can be DFI descriptors or AVPR descriptors (FIXE #158).
+ * Descriptors can be DFI descriptors or AVPR descriptors (FIXME #158).
  *
  * The provider will look for descriptors in META-INF/descriptors directory of every installed bundle.
  * If a framework config CELIX_FRAMEWORK_EXTENDER_PATH is set, this path will also be used to search for descriptor files.
  *
- * For every unique and valid descriptor found a pubsub_message_serialization_service will be registered for the 'json' serialization type.
- * The provider will also register a single pubsub_serialization_marker service which 'marks' the existing of the a json serialization support.
+ * For every unique and valid descriptor found a pubsub_message_serialization_service will be registered for the serialization type (e.g. 'json')
+ * The provider will also register a single pubsub_serialization_marker service which 'marks' the existing of the a serialization type serialization support.
  *
  * Lastly a celix command shell will be register with the command name 'celix::<serialization_type>_message_serialization' which can be used to interactively
  * query the provided serialization services.
  *
- * @param ctx   The bundle context.
- * @return      A JSON Serialization Provider.
+ * @param ctx                   The bundle context
+ * @param serializationType     The serialization type (e.g. 'json')
+ * @param serialize             The serialize function to use
+ * @param freeSerializeMsg      The freeSerializeMsg function to use
+ * @param deserialize           The deserialize function to use
+ * @param freeDeserializeMsg    The freeDesrializeMsg function to use
+ * @return                      A pubsub serialization provided for the requested serialization type using the provided serialization functions.
  */
 pubsub_serialization_provider_t *pubsub_serializationProvider_create(
         celix_bundle_context_t *ctx,

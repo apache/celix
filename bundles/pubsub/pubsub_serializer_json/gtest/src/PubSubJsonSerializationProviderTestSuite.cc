@@ -87,9 +87,10 @@ TEST_F(PubSubJsonSerializationProviderTestSuite, SerializeTest) {
     opts.use = [](void *handle, void *svc) {
         //auto *poi = static_cast<poi1*>(handle);
         auto* ser = static_cast<pubsub_message_serialization_service_t*>(svc);
-        struct iovec* outVec;
-        size_t outSize;
-        ser->serialize(ser->handle, handle, &outVec, &outSize);
+        struct iovec* outVec = NULL;
+        size_t outSize = 0;
+        int rc = ser->serialize(ser->handle, handle, &outVec, &outSize);
+        EXPECT_EQ(0, rc);
         EXPECT_TRUE(strstr(static_cast<char*>(outVec->iov_base), "\"lat\":42") != NULL);
         ser->freeSerializedMsg(ser->handle, outVec, outSize);
     };
