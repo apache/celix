@@ -66,9 +66,7 @@ celix_status_t discovery_create(celix_bundle_context_t *context, discovery_t** o
         celixThreadMutex_create(&discovery->listenerReferencesMutex, NULL);
         celixThreadMutex_create(&discovery->discoveredServicesMutex, NULL);
 
-        if (celix_logHelper_create(context, &discovery->loghelper) == CELIX_SUCCESS) {
-
-        }
+        discovery->loghelper = celix_logHelper_create(context, "rsa_discovery");
     } else {
         status = CELIX_ENOMEM;
         free(discovery);
@@ -159,7 +157,7 @@ celix_status_t discovery_stop(discovery_t *discovery) {
 
         celixThreadMutex_unlock(&discovery->discoveredServicesMutex);
 
-        celix_logHelper_destroy(&discovery->loghelper);
+        celix_logHelper_destroy(discovery->loghelper);
 	}
 
 	return status;
