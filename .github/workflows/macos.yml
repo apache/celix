@@ -17,8 +17,7 @@ jobs:
     - name: Install dependencies
       run: |
         brew update
-        brew install lcov libffi zeromq czmq openssl cpputest
-        brew link --force libffi
+        brew install lcov zeromq czmq openssl cpputest
         brew unlink openssl && brew link openssl --force
     - name: Build
       env:
