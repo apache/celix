@@ -566,8 +566,10 @@ static inline int pubsub_tcpHandler_makeNonBlocking(pubsub_tcpHandler_t *handle,
 //
 int pubsub_tcpHandler_listen(pubsub_tcpHandler_t *handle, char *url) {
     int rc = 0;
+    celixThreadRwlock_readLock(&handle->dbLock);
     psa_tcp_connection_entry_t *entry =
         hashMap_get(handle->connection_url_map, (void *) (intptr_t) url);
+    celixThreadRwlock_unlock(&handle->dbLock);
     if (entry == NULL) {
         char protocol[] = "tcp";
         int fd = pubsub_tcpHandler_open(handle, url);
