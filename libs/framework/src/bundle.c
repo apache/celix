@@ -177,12 +177,12 @@ celix_status_t bundle_getState(const_bundle_pt bundle, bundle_state_e *state) {
 		*state = OSGI_FRAMEWORK_BUNDLE_UNKNOWN;
 		return CELIX_BUNDLE_EXCEPTION;
 	}
-	*state = bundle->state;
+    __atomic_load(&bundle->state, state, __ATOMIC_ACQUIRE);
 	return CELIX_SUCCESS;
 }
 
 celix_status_t bundle_setState(bundle_pt bundle, bundle_state_e state) {
-	bundle->state = state;
+    __atomic_store_n(&bundle->state, state, __ATOMIC_RELEASE);
 	return CELIX_SUCCESS;
 }
 
@@ -495,7 +495,7 @@ celix_status_t bundle_refresh(bundle_pt bundle) {
 		if (status == CELIX_SUCCESS) {
 			status = bundle_addModule(bundle, module);
 			if (status == CELIX_SUCCESS) {
-				bundle->state = OSGI_FRAMEWORK_BUNDLE_INSTALLED;
+                __atomic_store_n(&bundle->state, OSGI_FRAMEWORK_BUNDLE_INSTALLED, __ATOMIC_RELEASE);
 			}
 		}
 	}
@@ -612,7 +612,7 @@ long celix_bundle_getId(const bundle_t* bnd) {
 }
 
 celix_bundle_state_e celix_bundle_getState(const bundle_t *bnd) {
-	return bnd->state;
+    return __atomic_load_n(&bnd->state, __ATOMIC_ACQUIRE);
 }
 
 char* celix_bundle_getEntry(const bundle_t* bnd, const char *path) {
