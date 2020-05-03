@@ -183,7 +183,7 @@ celix_status_t bundle_getState(const_bundle_pt bundle, bundle_state_e *state) {
 }
 
 celix_status_t bundle_setState(bundle_pt bundle, bundle_state_e state) {
-    bundle->state = state;
+	bundle->state = state;
 	return CELIX_SUCCESS;
 }
 
@@ -496,7 +496,7 @@ celix_status_t bundle_refresh(bundle_pt bundle) {
 		if (status == CELIX_SUCCESS) {
 			status = bundle_addModule(bundle, module);
 			if (status == CELIX_SUCCESS) {
-			    bundle->state = OSGI_FRAMEWORK_BUNDLE_INSTALLED;
+				bundle->state = OSGI_FRAMEWORK_BUNDLE_INSTALLED;
 			}
 		}
 	}
@@ -613,7 +613,7 @@ long celix_bundle_getId(const bundle_t* bnd) {
 }
 
 celix_bundle_state_e celix_bundle_getState(const bundle_t *bnd) {
-    return bnd->state;
+	return bnd->state;
 }
 
 char* celix_bundle_getEntry(const bundle_t* bnd, const char *path) {
