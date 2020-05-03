@@ -30,7 +30,7 @@ if (NOT COMMAND celix_subproject)
     include(GNUInstallDirs)
 
     set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
-    set(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 ${CMAKE_C_FLAGS}")
+    set(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=c11 ${CMAKE_C_FLAGS}")
     set(CMAKE_C_FLAGS_DEBUG "-g -DDEBUG")
 
     set(ETCDLIB_CMP ${CMAKE_INSTALL_DEFAULT_COMPONENT_NAME})
