@@ -17,7 +17,6 @@
 
 option(ENABLE_ADDRESS_SANITIZER "Enabled building with address sanitizer. Note for gcc libasan must be installed," OFF)
 option(ENABLE_UNDEFINED_SANITIZER "Enabled building with undefined behavior sanitizer." OFF)
-option(ENABLE_THREAD_SANITIZER "Enabled building with thread sanitizer." OFF)
 
 if (ENABLE_ADDRESS_SANITIZER)
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
@@ -32,11 +31,6 @@ endif()
 if (ENABLE_UNDEFINED_SANITIZER)
     set(CMAKE_C_FLAGS "-fsanitize=undefined ${CMAKE_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "-fsanitize=undefined ${CMAKE_CXX_FLAGS}")
-endif()
-
-if (ENABLE_THREAD_SANITIZER)
-    set(CMAKE_C_FLAGS "-fsanitize=thread ${CMAKE_C_FLAGS}")
-    set(CMAKE_CXX_FLAGS "-fsanitize=thread ${CMAKE_CXX_FLAGS}")
 endif()
 
 MACRO(celix_subproject)
