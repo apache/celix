@@ -510,7 +510,7 @@ static void serviceTracker_checkAndInvokeSetService(void *handle, void *highestS
     } else {
         svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1);
     }
-    if (svcId > 0) {
+    if (svcId >= 0) {
         celixThreadMutex_lock(&instance->mutex);
         if (instance->currentHighestServiceId != svcId) {
             instance->currentHighestServiceId = svcId;
