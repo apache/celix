@@ -22,33 +22,39 @@
 #include <pubsub/subscriber.h>
 #include <memory.h>
 #include <pubsub_constants.h>
+#if defined(__APPLE__)
+#include <sys/types.h>
+#include <sys/event.h>
+#include <sys/time.h>
+#else
 #include <sys/epoll.h>
+#endif
 #include <assert.h>
 #include <pubsub_endpoint.h>
 #include <arpa/inet.h>
-#include <log_helper.h>
+#include <celix_log_helper.h>
 #include "pubsub_udpmc_topic_receiver.h"
 #include "pubsub_psa_udpmc_constants.h"
 #include "large_udp.h"
 #include "pubsub_udpmc_common.h"
 
-#define MAX_EPOLL_EVENTS        10
+#define MAX_EVENTS        10
 #define RECV_THREAD_TIMEOUT     5
 #define UDP_BUFFER_SIZE         65535
 #define MAX_UDP_SESSIONS        16
 
 #define L_DEBUG(...) \
-    logHelper_log(receiver->logHelper, OSGI_LOGSERVICE_DEBUG, __VA_ARGS__)
+    celix_logHelper_log(receiver->logHelper, CELIX_LOG_LEVEL_DEBUG, __VA_ARGS__)
 #define L_INFO(...) \
-    logHelper_log(receiver->logHelper, OSGI_LOGSERVICE_INFO, __VA_ARGS__)
+    celix_logHelper_log(receiver->logHelper, CELIX_LOG_LEVEL_INFO, __VA_ARGS__)
 #define L_WARN(...) \
-    logHelper_log(receiver->logHelper, OSGI_LOGSERVICE_WARNING, __VA_ARGS__)
+    celix_logHelper_log(receiver->logHelper, CELIX_LOG_LEVEL_WARNING, __VA_ARGS__)
 #define L_ERROR(...) \
-    logHelper_log(receiver->logHelper, OSGI_LOGSERVICE_ERROR, __VA_ARGS__)
+    celix_logHelper_log(receiver->logHelper, CELIX_LOG_LEVEL_ERROR, __VA_ARGS__)
 
 struct pubsub_udpmc_topic_receiver {
     celix_bundle_context_t *ctx;
-    log_helper_t *logHelper;
+    celix_log_helper_t *logHelper;
     long serializerSvcId;
     pubsub_serializer_service_t *serializer;
     char *scope;
@@ -109,7 +115,7 @@ static void psa_udpmc_connectToAllRequestedConnections(pubsub_udpmc_topic_receiv
 static void psa_udpmc_initializeAllSubscribers(pubsub_udpmc_topic_receiver_t *receiver);
 
 pubsub_udpmc_topic_receiver_t* pubsub_udpmcTopicReceiver_create(celix_bundle_context_t *ctx,
-                                                                log_helper_t *logHelper,
+                                                                celix_log_helper_t *logHelper,
                                                                 const char *scope,
                                                                 const char *topic,
                                                                 const char *ifIP,
@@ -126,9 +132,11 @@ pubsub_udpmc_topic_receiver_t* pubsub_udpmcTopicReceiver_create(celix_bundle_con
     receiver->ifIpAddress = strndup(ifIP, 1024 * 1024);
     receiver->recvThread.running = true;
     receiver->largeUdpHandle = largeUdp_create(MAX_UDP_SESSIONS);
+#if defined(__APPLE__)
+    receiver->topicEpollFd = kqueue();
+#else
     receiver->topicEpollFd = epoll_create1(0);
-
-
+#endif
     celixThreadMutex_create(&receiver->subscribers.mutex, NULL);
     celixThreadMutex_create(&receiver->requestedConnections.mutex, NULL);
     celixThreadMutex_create(&receiver->recvThread.mutex, NULL);
@@ -295,9 +303,15 @@ void pubsub_udpmcTopicReceiver_disconnectFrom(pubsub_udpmc_topic_receiver_t *rec
     psa_udpmc_requested_connection_entry_t *entry = hashMap_remove(receiver->requestedConnections.map, key);
     free(key);
     if (entry != NULL && entry->connected) {
+#if defined(__APPLE__)
+        struct kevent ev;
+        EV_SET (&ev, entry->recvSocket, EVFILT_READ, EV_DELETE, 0, 0, 0);
+        int rc = kevent (receiver->topicEpollFd, &ev, 1, NULL, 0, NULL);
+#else
         struct epoll_event ev;
         memset(&ev, 0, sizeof(ev));
         int rc = epoll_ctl(receiver->topicEpollFd, EPOLL_CTL_DEL, entry->recvSocket, &ev);
+#endif
         if (rc < 0) {
             fprintf(stderr, "[PSA UDPMC] Error disconnecting TopicReceiver %s/%s to %s:%li.\n%s", receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic, socketAddress, socketPort, strerror(errno));
         }
@@ -374,8 +388,6 @@ static void pubsub_udpmcTopicReceiver_removeSubscriber(void *handle, void *svc, 
 static void* psa_udpmc_recvThread(void * data) {
     pubsub_udpmc_topic_receiver_t *receiver = data;
 
-    struct epoll_event events[MAX_EPOLL_EVENTS];
-
     celixThreadMutex_lock(&receiver->recvThread.mutex);
     bool running = receiver->recvThread.running;
     celixThreadMutex_unlock(&receiver->recvThread.mutex);
@@ -396,12 +408,25 @@ static void* psa_udpmc_recvThread(void * data) {
             psa_udpmc_initializeAllSubscribers(receiver);
         }
 
-        int nfds = epoll_wait(receiver->topicEpollFd, events, MAX_EPOLL_EVENTS, RECV_THREAD_TIMEOUT * 1000);
+        unsigned int timeout = RECV_THREAD_TIMEOUT * 1000;
+#if defined(__APPLE__)
+        struct kevent events[MAX_EVENTS];
+        struct timespec ts = {timeout / 1000, (timeout  % 1000) * 1000000};
+        int nfds = kevent (receiver->topicEpollFd, NULL, 0, &events[0], MAX_EVENTS, timeout ? &ts : NULL);
+#else
+        struct epoll_event events[MAX_EVENTS];
+        int nfds = epoll_wait(receiver->topicEpollFd, events, MAX_EVENTS, timeout);
+#endif
         int i;
         for (i = 0; i < nfds; i++ ) {
             unsigned int index;
             unsigned int size;
-            if (largeUdp_dataAvailable(receiver->largeUdpHandle, events[i].data.fd, &index, &size) == true) {
+#if defined(__APPLE__)
+            int fd = events[i].ident;
+#else
+            int fd = events[i].data.fd;
+#endif
+            if (largeUdp_dataAvailable(receiver->largeUdpHandle, fd, &index, &size) == true) {
                 // Handle data
                 pubsub_udp_msg_t *udpMsg = NULL;
                 if (largeUdp_read(receiver->largeUdpHandle, index, (void**) &udpMsg, size) != 0) {
@@ -514,11 +539,17 @@ static bool psa_udpmc_connectToEntry(pubsub_udpmc_topic_receiver_t *receiver, ps
         rc = bind(entry->recvSocket, (struct sockaddr*)&mcListenAddr, sizeof(mcListenAddr));
     }
     if (entry->recvSocket >= 0 && rc >= 0) {
-        struct epoll_event ev;
-        memset(&ev, 0, sizeof(ev));
-        ev.events = EPOLLIN;
-        ev.data.fd = entry->recvSocket;
-        rc = epoll_ctl(receiver->topicEpollFd, EPOLL_CTL_ADD, entry->recvSocket, &ev);
+#if defined(__APPLE__)
+      struct kevent ev;
+      EV_SET (&ev, entry->recvSocket, EVFILT_READ, EV_ADD | EV_ENABLE , 0, 0, 0);
+      rc = kevent (receiver->topicEpollFd, &ev, 1, NULL, 0, NULL);
+#else
+      struct epoll_event ev;
+      memset(&ev, 0, sizeof(ev));
+      ev.events = EPOLLIN;
+      ev.data.fd = entry->recvSocket;
+      rc = epoll_ctl(receiver->topicEpollFd, EPOLL_CTL_ADD, entry->recvSocket, &ev);
+#endif
     }
 
     if (entry->recvSocket < 0 || rc < 0) {

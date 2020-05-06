@@ -31,7 +31,7 @@
 #include "bundle_activator.h"
 #include "bundle_context.h"
 
-#include "log_helper.h"
+#include "celix_log_helper.h"
 #include "connection_listener.h"
 #include "shell_mediator.h"
 #include "remote_shell.h"
@@ -43,7 +43,7 @@
 #define DEFAULT_REMOTE_SHELL_TELNET_MAXCONN 		2
 
 struct bundle_instance {
-	log_helper_t *loghelper;
+	celix_log_helper_t *loghelper;
 	shell_mediator_pt shellMediator;
 	remote_shell_pt remoteShell;
 	connection_listener_pt connectionListener;
@@ -69,7 +69,7 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 		bi->remoteShell = NULL;
 		bi->connectionListener = NULL;
 
-		status = logHelper_create(context, &bi->loghelper);
+        bi->loghelper = celix_logHelper_create(context, "celix_shell_remote");
 
 		(*userData) = bi;
 	} else {
@@ -86,8 +86,6 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 
 	int port = bundleActivator_getPort(bi, context);
 	int maxConn = bundleActivator_getMaximumConnections(bi, context);
-
-	status = logHelper_start(bi->loghelper);
 
 	status = CELIX_DO_IF(status, shellMediator_create(context, &bi->shellMediator));
 	status = CELIX_DO_IF(status, remoteShell_create(bi->shellMediator, maxConn, &bi->remoteShell));
@@ -107,8 +105,6 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 
 	remoteShell_stopConnections(bi->remoteShell);
 
-	status = logHelper_stop(bi->loghelper);
-
 	return status;
 }
 
@@ -117,7 +113,7 @@ celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt contex
 	bundle_instance_pt bi = (bundle_instance_pt) userData;
 
 	connectionListener_destroy(bi->connectionListener);
-	status = logHelper_destroy(&bi->loghelper);
+	celix_logHelper_destroy(bi->loghelper);
 
 	return status;
 }
@@ -141,7 +137,7 @@ static int bundleActivator_getProperty(bundle_instance_pt bi, bundle_context_pt 
 		errno = 0;
 		value = strtol(strValue, &endptr, 10);
 		if (*endptr || errno != 0) {
-			logHelper_log(bi->loghelper, OSGI_LOGSERVICE_WARNING, "incorrect format for %s", propertyName);
+			celix_logHelper_log(bi->loghelper, CELIX_LOG_LEVEL_WARNING, "incorrect format for %s", propertyName);
 			value = defaultValue;
 		}
 	}

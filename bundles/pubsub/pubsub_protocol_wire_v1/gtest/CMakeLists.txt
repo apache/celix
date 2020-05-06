@@ -25,4 +25,4 @@ target_include_directories(celix_pswp_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/
 target_link_libraries(celix_pswp_tests PRIVATE celix_wire_protocol_v1_impl GTest::gtest Celix::pubsub_spi)
 
 add_test(NAME celix_pswp_tests COMMAND celix_pswp_tests)
-SETUP_TARGET_FOR_COVERAGE(celix_pswp_tests_cov celix_cxx_pswp_tests ${CMAKE_BINARY_DIR}/coverage/bundles/pubsub/protocol_wire_v1 ..)
+setup_target_for_coverage(celix_pswp_tests SCAN_DIR ..)

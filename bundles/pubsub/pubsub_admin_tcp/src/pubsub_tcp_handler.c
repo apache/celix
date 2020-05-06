@@ -58,13 +58,13 @@
 #endif
 
 #define L_DEBUG(...) \
-    logHelper_log(handle->logHelper, OSGI_LOGSERVICE_DEBUG, __VA_ARGS__)
+    celix_logHelper_log(handle->logHelper, CELIX_LOG_LEVEL_DEBUG, __VA_ARGS__)
 #define L_INFO(...) \
-    logHelper_log(handle->logHelper, OSGI_LOGSERVICE_INFO, __VA_ARGS__)
+    celix_logHelper_log(handle->logHelper, CELIX_LOG_LEVEL_INFO, __VA_ARGS__)
 #define L_WARN(...) \
-    logHelper_log(handle->logHelper, OSGI_LOGSERVICE_WARNING, __VA_ARGS__)
+    celix_logHelper_log(handle->logHelper, CELIX_LOG_LEVEL_WARNING, __VA_ARGS__)
 #define L_ERROR(...) \
-    logHelper_log(handle->logHelper, OSGI_LOGSERVICE_ERROR, __VA_ARGS__)
+    celix_logHelper_log(handle->logHelper, CELIX_LOG_LEVEL_ERROR, __VA_ARGS__)
 
 //
 // Entry administration
@@ -110,7 +110,7 @@ struct pubsub_tcpHandler {
     void *acceptConnectPayload;
     pubsub_tcpHandler_processMessage_callback_t processMessageCallback;
     void *processMessagePayload;
-    log_helper_t *logHelper;
+    celix_log_helper_t *logHelper;
     pubsub_protocol_service_t *protocol;
     unsigned int bufferSize;
     unsigned int maxNofBuffer;
@@ -150,7 +150,7 @@ static void *pubsub_tcpHandler_thread(void *data);
 //
 // Create a handle
 //
-pubsub_tcpHandler_t *pubsub_tcpHandler_create(pubsub_protocol_service_t *protocol, log_helper_t *logHelper) {
+pubsub_tcpHandler_t *pubsub_tcpHandler_create(pubsub_protocol_service_t *protocol, celix_log_helper_t *logHelper) {
     pubsub_tcpHandler_t *handle = calloc(sizeof(*handle), 1);
     if (handle != NULL) {
 #if defined(__APPLE__)
@@ -412,23 +412,23 @@ int pubsub_tcpHandler_connect(pubsub_tcpHandler_t *handle, char *url) {
         int fd = pubsub_tcpHandler_open(handle, url_info->interface_url);
         rc = fd;
         // Connect to sender
+        struct sockaddr_in sin;
+        socklen_t len = sizeof(sin);
+        getsockname(fd, (struct sockaddr *) &sin, &len);
+        char *interface_url = pubsub_utils_url_get_url(&sin, NULL);
         struct sockaddr_in *addr = pubsub_utils_url_getInAddr(url_info->hostname, url_info->portnr);
         if ((rc >= 0) && addr) {
             rc = connect(fd, (struct sockaddr *) addr, sizeof(struct sockaddr));
             if (rc < 0 && errno != EINPROGRESS) {
-                L_ERROR("[TCP Socket] Cannot connect to %s:%d: err: %s\n", url_info->hostname, url_info->portnr,
+                L_ERROR("[TCP Socket] Cannot connect to %s:%d: using; %s err: %s\n", url_info->hostname, url_info->portnr, interface_url,
                         strerror(errno));
                 close(fd);
             } else {
-                struct sockaddr_in sin;
-                socklen_t len = sizeof(sin);
-                rc = getsockname(fd, (struct sockaddr *) &sin, &len);
-                char *interface_url = pubsub_utils_url_get_url(&sin, NULL);
                 entry = pubsub_tcpHandler_createEntry(handle, fd, url, interface_url, &sin);
-                free(interface_url);
             }
             free(addr);
         }
+        free(interface_url);
         // Subscribe File Descriptor to epoll
         if ((rc >= 0) && (entry)) {
 #if defined(__APPLE__)
@@ -454,6 +454,7 @@ int pubsub_tcpHandler_connect(pubsub_tcpHandler_t *handle, char *url) {
             hashMap_put(handle->connection_fd_map, (void *) (intptr_t) entry->fd, entry);
             celixThreadRwlock_unlock(&handle->dbLock);
             pubsub_tcpHandler_connectionHandler(handle, fd);
+            L_INFO("[TCP Socket] Connect to %s using; %s\n", entry->url, entry->interface_url);
         }
         pubsub_utils_url_free(url_info);
     }
@@ -565,8 +566,10 @@ static inline int pubsub_tcpHandler_makeNonBlocking(pubsub_tcpHandler_t *handle,
 //
 int pubsub_tcpHandler_listen(pubsub_tcpHandler_t *handle, char *url) {
     int rc = 0;
+    celixThreadRwlock_readLock(&handle->dbLock);
     psa_tcp_connection_entry_t *entry =
         hashMap_get(handle->connection_url_map, (void *) (intptr_t) url);
+    celixThreadRwlock_unlock(&handle->dbLock);
     if (entry == NULL) {
         char protocol[] = "tcp";
         int fd = pubsub_tcpHandler_open(handle, url);
@@ -574,52 +577,55 @@ int pubsub_tcpHandler_listen(pubsub_tcpHandler_t *handle, char *url) {
         // Make handler fd entry
         char *pUrl = pubsub_utils_url_get_url(sin, protocol);
         entry = pubsub_tcpHandler_createEntry(handle, fd, pUrl, NULL, sin);
-        entry->connected = true;
-        free(pUrl);
-        free(sin);
-        celixThreadRwlock_writeLock(&handle->dbLock);
-        rc = fd;
-        if (rc >= 0) {
-            rc = listen(fd, SOMAXCONN);
-            if (rc != 0) {
-                L_ERROR("[TCP Socket] Error listen: %s\n", strerror(errno));
-                pubsub_tcpHandler_freeEntry(entry);
-                entry = NULL;
+        if (entry != NULL) {
+            entry->connected = true;
+            free(pUrl);
+            free(sin);
+            celixThreadRwlock_writeLock(&handle->dbLock);
+            rc = fd;
+            if (rc >= 0) {
+                rc = listen(fd, SOMAXCONN);
+                if (rc != 0) {
+                    L_ERROR("[TCP Socket] Error listen: %s\n", strerror(errno));
+                    pubsub_tcpHandler_freeEntry(entry);
+                    entry = NULL;
+                }
             }
-        }
-        if (rc >= 0) {
-            rc = pubsub_tcpHandler_makeNonBlocking(handle, fd);
-            if (rc < 0) {
-                pubsub_tcpHandler_freeEntry(entry);
-                entry = NULL;
+            if (rc >= 0) {
+                rc = pubsub_tcpHandler_makeNonBlocking(handle, fd);
+                if (rc < 0) {
+                    pubsub_tcpHandler_freeEntry(entry);
+                    entry = NULL;
+                }
             }
-        }
-        if ((rc >= 0) && (handle->efd >= 0)) {
+            if ((rc >= 0) && (handle->efd >= 0)) {
 #if defined(__APPLE__)
-            struct kevent ev;
-            EV_SET (&ev, fd, EVFILT_READ, EV_ADD | EV_ENABLE , 0, 0, 0);
-            rc = kevent (handle->efd, &ev, 1, NULL, 0, NULL);
+                struct kevent ev;
+                EV_SET (&ev, fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, 0);
+                rc = kevent(handle->efd, &ev, 1, NULL, 0, NULL);
 #else
-            struct epoll_event event;
-            bzero(&event, sizeof(event)); // zero the struct
-            event.events = EPOLLIN | EPOLLRDHUP | EPOLLERR;
-            event.data.fd = fd;
-            rc = epoll_ctl(handle->efd, EPOLL_CTL_ADD, fd, &event);
+                struct epoll_event event;
+                bzero(&event, sizeof(event)); // zero the struct
+                event.events = EPOLLIN | EPOLLRDHUP | EPOLLERR;
+                event.data.fd = fd;
+                rc = epoll_ctl(handle->efd, EPOLL_CTL_ADD, fd, &event);
 #endif
-            if (rc < 0) {
-                L_ERROR("[TCP Socket] Cannot create poll: %s\n", strerror(errno));
-                errno = 0;
-                pubsub_tcpHandler_freeEntry(entry);
-                entry = NULL;
+                if (rc < 0) {
+                    L_ERROR("[TCP Socket] Cannot create poll: %s\n", strerror(errno));
+                    errno = 0;
+                    pubsub_tcpHandler_freeEntry(entry);
+                    entry = NULL;
+                }
+                if (entry) {
+                    L_INFO("[TCP Socket] Using %s for service annunciation", entry->url);
+                    hashMap_put(handle->interface_fd_map, (void *) (intptr_t) entry->fd, entry);
+                    hashMap_put(handle->interface_url_map, entry->url, entry);
+                }
             }
-            if (entry)
-                L_INFO("[TCP Socket] Using %s for service annunciation", entry->url);
-            if (entry)
-                hashMap_put(handle->interface_fd_map, (void *) (intptr_t) entry->fd, entry);
-            if (entry)
-                hashMap_put(handle->interface_url_map, entry->url, entry);
+            celixThreadRwlock_unlock(&handle->dbLock);
+        } else {
+            L_ERROR("[TCP Socket] Error listen socket cannot bind to %s: %s\n", url ? url : "", strerror(errno));
         }
-        celixThreadRwlock_unlock(&handle->dbLock);
     }
     return rc;
 }
@@ -711,7 +717,7 @@ void pubsub_tcpHandler_setThreadPriority(pubsub_tcpHandler_t *handle, long prio,
                 printf("Skipping configuration of thread prio to %i and thread "
                        "scheduling to %s. No permission\n",
                        (int) prio, sched);
-                logHelper_log(handle->logHelper, OSGI_LOGSERVICE_INFO,
+                celix_logHelper_log(handle->logHelper, CELIX_LOG_LEVEL_INFO,
                               "Skipping configuration of thread prio to %i and thread "
                               "scheduling to %s. No permission\n",
                               (int) prio, sched);
@@ -1018,20 +1024,30 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
 
             void *headerData = NULL;
             size_t headerSize = 0;
-            // Encode the header, with payload size and metadata size
-            handle->protocol->encodeHeader(handle->protocol->handle, message,
-                                           &headerData,
-                                           &headerSize);
-            // Write header in 1st vector buffer item
-            if (headerSize && headerData) {
+            // check if header is not part of the payload (=> headerBufferSize = 0)s
+            if (entry->headerBufferSize) {
+              // Encode the header, with payload size and metadata size
+              handle->protocol->encodeHeader(handle->protocol->handle, message,
+                                             &headerData,
+                                             &headerSize);
+            }
+            if (!entry->headerBufferSize) {
+              // Skip header buffer, when header is part of payload;
+              msg.msg_iov = &msg_iov[1];
+            } else if (headerSize && headerData) {
+              // Write header in 1st vector buffer item
                 msg.msg_iov[0].iov_base = headerData;
                 msg.msg_iov[0].iov_len = headerSize;
                 msgSize += msg.msg_iov[0].iov_len;
                 msg.msg_iovlen++;
+            } else {
+              L_ERROR("[TCP Socket] No header buffer is generated");
+              msg.msg_iovlen = 0;
             }
             nbytes = 0;
-            if (entry->fd >= 0 && msgSize && headerData)
+            if (entry->fd >= 0 && msgSize && msg.msg_iovlen) {
                 nbytes = sendmsg(entry->fd, &msg, flags | MSG_NOSIGNAL);
+            }
             //  When a specific socket keeps reporting errors can indicate a subscriber
             //  which is not active anymore, the connection will remain until the retry
             //  counter exceeds the maximum retry count.
@@ -1056,14 +1072,16 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
                 }
             }
             // Release data
-            if (headerData)
+            if (headerData) {
                 free(headerData);
+            }
             // Note: serialized Payload is deleted by serializer
             if (payloadData && (payloadData != message->payload.payload)) {
                 free(payloadData);
             }
-            if (metadataData)
+            if (metadataData) {
                 free(metadataData);
+            }
         }
     }
     celixThreadRwlock_unlock(&handle->dbLock);

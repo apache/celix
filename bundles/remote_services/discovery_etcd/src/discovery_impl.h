@@ -30,7 +30,7 @@
 #include "endpoint_discovery_server.h"
 #include "etcd_watcher.h"
 
-#include "log_helper.h"
+#include "celix_log_helper.h"
 
 #define DEFAULT_SERVER_IP 	"127.0.0.1"
 #define DEFAULT_SERVER_PORT "9999"

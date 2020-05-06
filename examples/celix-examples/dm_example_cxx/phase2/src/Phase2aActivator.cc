@@ -21,7 +21,7 @@
 #include <celix_api.h>
 #include "Phase2Cmp.h"
 #include "Phase2Activator.h"
-#include "log_service.h"
+#include "celix_log_service.h"
 
 using namespace celix::dm;
 
@@ -43,7 +43,7 @@ Phase2Activator::Phase2Activator(std::shared_ptr<celix::dm::DependencyManager> m
             .setVersionRange("[1.0.0,2)")
             .setCallbacks(&Phase2Cmp::setName);
 
-    cmp.createCServiceDependency<log_service_t>(OSGI_LOGSERVICE_NAME)
+    cmp.createCServiceDependency<celix_log_service_t>(CELIX_LOG_SERVICE_NAME)
             .setRequired(false)
             .setCallbacks(&Phase2Cmp::setLogService);
 }

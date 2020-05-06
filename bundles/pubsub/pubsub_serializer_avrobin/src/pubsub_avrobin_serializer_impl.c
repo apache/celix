@@ -29,7 +29,7 @@
 #include "hash_map.h"
 #include "bundle_context.h"
 
-#include "log_helper.h"
+#include "celix_log_helper.h"
 
 #include "avrobin_serializer.h"
 
@@ -46,7 +46,7 @@ typedef enum {
 
 struct pubsub_avrobin_serializer {
     celix_bundle_context_t *bundle_context;
-    log_helper_t *loghelper;
+    celix_log_helper_t *loghelper;
 };
 
 static celix_status_t pubsubMsgAvrobinSerializer_serialize(void *handle, const void *msg, struct iovec** output, size_t* outputIovLen);
@@ -78,7 +78,7 @@ static void dfi_log(void *handle, int level, const char *file, int line, const c
     va_start(ap, msg);
     vasprintf(&logStr, msg, ap);
     va_end(ap);
-    logHelper_log(serializer->loghelper, level, "FILE:%s, LINE:%i, MSG:%s", file, line, logStr);
+    celix_logHelper_log(serializer->loghelper, level, "FILE:%s, LINE:%i, MSG:%s", file, line, logStr);
     free(logStr);
 }
 
@@ -93,13 +93,12 @@ celix_status_t pubsubAvrobinSerializer_create(celix_bundle_context_t *context, p
 
         (*serializer)->bundle_context = context;
 
-        if (logHelper_create(context, &(*serializer)->loghelper) == CELIX_SUCCESS) {
-            logHelper_start((*serializer)->loghelper);
-            avrobinSerializer_logSetup(dfi_log, (*serializer), 1);
-            dynFunction_logSetup(dfi_log, (*serializer), 1);
-            dynType_logSetup(dfi_log, (*serializer), 1);
-            dynCommon_logSetup(dfi_log, (*serializer), 1);
-        }
+        (*serializer)->loghelper = celix_logHelper_create(context, "celix_psa_serializer_avrobin");
+
+        avrobinSerializer_logSetup(dfi_log, (*serializer), 1);
+        dynFunction_logSetup(dfi_log, (*serializer), 1);
+        dynType_logSetup(dfi_log, (*serializer), 1);
+        dynCommon_logSetup(dfi_log, (*serializer), 1);
     }
 
     return status;
@@ -108,8 +107,7 @@ celix_status_t pubsubAvrobinSerializer_create(celix_bundle_context_t *context, p
 celix_status_t pubsubAvrobinSerializer_destroy(pubsub_avrobin_serializer_t *serializer) {
     celix_status_t status = CELIX_SUCCESS;
 
-    logHelper_stop(serializer->loghelper);
-    logHelper_destroy(&serializer->loghelper);
+    celix_logHelper_destroy(serializer->loghelper);
 
     free(serializer);
 
@@ -125,7 +123,7 @@ celix_status_t pubsubAvrobinSerializer_createSerializerMap(void *handle, const c
     if (map != NULL) {
         pubsubAvrobinSerializer_fillMsgSerializerMap(map, bundle);
     } else {
-        logHelper_log(serializer->loghelper, OSGI_LOGSERVICE_ERROR, "Cannot allocate memory for msg map");
+        celix_logHelper_log(serializer->loghelper, CELIX_LOG_LEVEL_ERROR, "Cannot allocate memory for msg map");
         status = CELIX_ENOMEM;
     }
 
@@ -195,13 +193,16 @@ static celix_status_t pubsubMsgAvrobinSerializer_serialize(void *handle, const v
 
 void pubsubMsgAvrobinSerializer_freeSerializeMsg(void* handle, struct iovec* input, size_t inputIovLen) {
   pubsub_avrobin_msg_serializer_impl_t *impl = handle;
-  if (input == NULL) return;
+  if (input == NULL) {
+      return;
+  }
   if (impl->msgType != NULL) {
     for (int i = 0; i < inputIovLen; i++) {
       if (input[i].iov_base) free(input[i].iov_base);
       input[i].iov_base = NULL;
       input[i].iov_len  = 0;
     }
+    free(input);
   }
 }
 

@@ -30,14 +30,14 @@
 #include "remote_service_admin.h"
 #include "remote_endpoint.h"
 #include "service_tracker.h"
-#include "log_helper.h"
+#include "celix_log_helper.h"
 
 struct export_registration {
 	celix_bundle_context_t *context;
 	remote_service_admin_t *rsa;
 	endpoint_description_t *endpointDescription;
 	service_reference_pt reference;
-	log_helper_t *loghelper;
+    celix_log_helper_t *loghelper;
 
 	service_tracker_t *tracker;
 	service_tracker_t *endpointTracker;
@@ -50,7 +50,7 @@ struct export_registration {
 	bool closed;
 };
 
-celix_status_t exportRegistration_create(log_helper_t *helper, service_reference_pt reference, endpoint_description_t *endpoint, remote_service_admin_t *rsa, celix_bundle_context_t *context, export_registration_t **registration);
+celix_status_t exportRegistration_create(celix_log_helper_t *helper, service_reference_pt reference, endpoint_description_t *endpoint, remote_service_admin_t *rsa, celix_bundle_context_t *context, export_registration_t **registration);
 celix_status_t exportRegistration_destroy(export_registration_t **registration);
 celix_status_t exportRegistration_open(export_registration_t *registration);
 

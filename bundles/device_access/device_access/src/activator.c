@@ -33,11 +33,10 @@
 
 #include "driver_locator.h"
 #include "device_manager.h"
-#include "log_service.h"
-#include "log_helper.h"
+#include "celix_log_helper.h"
 
 struct device_manager_bundle_instance {
-	log_helper_t *loghelper;
+    celix_log_helper_t *loghelper;
 	bundle_context_pt context;
 	device_manager_pt deviceManager;
 	service_tracker_pt driverLocatorTracker;
@@ -71,8 +70,7 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 		(*userData) = bi;
 		bi->context = context;
 
-		logHelper_create(context, &bi->loghelper);
-		logHelper_start(bi->loghelper);
+        bi->loghelper = celix_logHelper_create(context, "celix_device_access");
 
 		status = deviceManager_create(context, bi->loghelper, &bi->deviceManager);
 	}
@@ -101,10 +99,10 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	}
 
 	if (status != CELIX_SUCCESS) {
-		logHelper_log(bundleData->loghelper, OSGI_LOGSERVICE_ERROR, "DEVICE_MANAGER: Error while starting bundle got error num %d", status);
+        celix_logHelper_log(bundleData->loghelper, CELIX_LOG_LEVEL_ERROR, "DEVICE_MANAGER: Error while starting bundle got error num %d", status);
 	}
 
-	logHelper_log(bundleData->loghelper, OSGI_LOGSERVICE_INFO, "DEVICE_MANAGER: Started");
+    celix_logHelper_log(bundleData->loghelper, CELIX_LOG_LEVEL_INFO, "DEVICE_MANAGER: Started");
 
 	return status;
 }
@@ -188,8 +186,7 @@ celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt contex
 	device_manager_bundle_instance_pt bundleData = userData;
 	status = deviceManager_destroy(bundleData->deviceManager);
 
-	logHelper_stop(bundleData->loghelper);
-	logHelper_destroy(&bundleData->loghelper);
+    celix_logHelper_destroy(bundleData->loghelper);
 
 	return status;
 }

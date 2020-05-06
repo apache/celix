@@ -53,7 +53,7 @@ celix_status_t wire_create(module_pt importer, requirement_pt requirement,
 		}
 	}
 
-	framework_logIfError(logger, status, NULL, "Cannot create wire");
+	framework_logIfError(celix_frameworkLogger_globalLogger(), status, NULL, "Cannot create wire");
 
 	return status;
 }

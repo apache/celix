@@ -15,34 +15,31 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(RSA_DISCOVERY_SHM "Option to enable building the Discovery (SHM) bundle" OFF)
-if (RSA_DISCOVERY_SHM)
-	find_package(CURL REQUIRED)
-	find_package(LibXml2 REQUIRED)
+find_package(CURL REQUIRED)
+find_package(LibXml2 REQUIRED)
 
-	add_celix_bundle(rsa_discovery_shm
-        VERSION 0.0.1
-        SYMBOLIC_NAME "apache_celix_rsa_discovery_shm"
-        NAME "Apache Celix RSA Discovery SHM"
-		GROUP "Celix/RSA"
-        SOURCES
-			src/discovery_shm.c
-			src/discovery_shmWatcher.c
-			src/discovery_impl.c
-			$<TARGET_OBJECTS:Celix::rsa_discovery_common>
-			$<TARGET_OBJECTS:Celix::civetweb>
-	)
-	target_include_directories(rsa_discovery_shm PRIVATE
-			src
-			${LIBXML2_INCLUDE_DIR}
-			${CURL_INCLUDE_DIR}
-			$<TARGET_PROPERTY:Celix::rsa_discovery_common,INCLUDE_DIRECTORIES>
-			$<TARGET_PROPERTY:Celix::civetweb,INCLUDE_DIRECTORIES>
-	)
-	target_link_libraries(rsa_discovery_shm PRIVATE Celix::framework CURL::libcurl ${LIBXML2_LIBRARIES})
+add_celix_bundle(rsa_discovery_shm
+	VERSION 0.0.1
+	SYMBOLIC_NAME "apache_celix_rsa_discovery_shm"
+	NAME "Apache Celix RSA Discovery SHM"
+	GROUP "Celix/RSA"
+	SOURCES
+		src/discovery_shm.c
+		src/discovery_shmWatcher.c
+		src/discovery_impl.c
+		$<TARGET_OBJECTS:Celix::rsa_discovery_common>
+		$<TARGET_OBJECTS:Celix::civetweb>
+)
+target_include_directories(rsa_discovery_shm PRIVATE
+		src
+		${LIBXML2_INCLUDE_DIR}
+		${CURL_INCLUDE_DIR}
+		$<TARGET_PROPERTY:Celix::rsa_discovery_common,INCLUDE_DIRECTORIES>
+		$<TARGET_PROPERTY:Celix::civetweb,INCLUDE_DIRECTORIES>
+)
+target_link_libraries(rsa_discovery_shm PRIVATE Celix::framework CURL::libcurl ${LIBXML2_LIBRARIES})
 
-	install_celix_bundle(rsa_discovery_shm EXPORT celix COMPONENT rsa)
+install_celix_bundle(rsa_discovery_shm EXPORT celix COMPONENT rsa)
 
-	#Setup target aliases to match external usage
-	add_library(Celix::rsa_discovery_shm ALIAS rsa_discovery_shm)
-endif (RSA_DISCOVERY_SHM)
+#Setup target aliases to match external usage
+add_library(Celix::rsa_discovery_shm ALIAS rsa_discovery_shm)
