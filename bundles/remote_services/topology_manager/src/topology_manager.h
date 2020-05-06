@@ -30,7 +30,7 @@
 #include "endpoint_listener.h"
 #include "service_reference.h"
 #include "bundle_context.h"
-#include "log_helper.h"
+#include "celix_log_helper.h"
 #include "scope.h"
 
 #define OSGI_RSA_REMOTE_SERVICE_ADMIN "remote_service_admin"
@@ -38,7 +38,7 @@
 typedef struct topology_manager topology_manager_t;
 typedef struct topology_manager *topology_manager_pt;
 
-celix_status_t topologyManager_create(celix_bundle_context_t *context, log_helper_t *logHelper, topology_manager_pt *manager, void **scope);
+celix_status_t topologyManager_create(celix_bundle_context_t *context, celix_log_helper_t *logHelper, topology_manager_pt *manager, void **scope);
 celix_status_t topologyManager_destroy(topology_manager_pt manager);
 celix_status_t topologyManager_closeImports(topology_manager_pt manager);
 

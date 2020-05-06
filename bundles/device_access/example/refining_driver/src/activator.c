@@ -75,8 +75,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	if (status == CELIX_SUCCESS) {
 		printf("REFINING_DRIVER: registered driver service.\n");
 	} else {
-		char error[256];
-		printf("REFINING_DRIVER: Could not register driver service. Get error %s\n", celix_strerror(status, error, 256));
+		printf("REFINING_DRIVER: Could not register driver service. Get error %s\n", celix_strerror(status));
 	}
 
 	return status;

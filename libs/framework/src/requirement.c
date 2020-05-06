@@ -59,7 +59,7 @@ celix_status_t requirement_create(hash_map_pt directives, hash_map_pt attributes
 		}
 	}
 
-	framework_logIfError(logger, status, NULL, "Cannot create requirement");
+	framework_logIfError(celix_frameworkLogger_globalLogger(), status, NULL, "Cannot create requirement");
 
 	return status;
 }
@@ -109,7 +109,7 @@ celix_status_t requirement_isSatisfied(requirement_pt requirement, capability_pt
 		}
 	}
 
-	framework_logIfError(logger, status, NULL, "Cannot check if requirement is satisfied");
+	framework_logIfError(celix_frameworkLogger_globalLogger(), status, NULL, "Cannot check if requirement is satisfied");
 
 	return status;
 }

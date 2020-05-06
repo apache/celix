@@ -36,15 +36,15 @@ celix_status_t eventAdmin_createEvent(event_admin_pt event_admin, const char *to
 									  event_pt *event) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	logHelper_log(*event_admin->loghelper, OSGI_LOGSERVICE_DEBUG, "create event event admin pointer: %p",event_admin);
+    celix_logHelper_log(*event_admin->loghelper, CELIX_LOG_LEVEL_DEBUG, "create event event admin pointer: %p",event_admin);
 
 
 	*event = calloc(1, sizeof(**event));
 	if(!*event){
 	       status = CELIX_ENOMEM;
-	       logHelper_log(*event_admin->loghelper, OSGI_LOGSERVICE_ERROR, "No MEM");
+            celix_logHelper_log(*event_admin->loghelper, CELIX_LOG_LEVEL_ERROR, "No MEM");
 	}else {
-		logHelper_log(*event_admin->loghelper, OSGI_LOGSERVICE_INFO, "Event created : %s", topic);
+        celix_logHelper_log(*event_admin->loghelper, CELIX_LOG_LEVEL_INFO, "Event created : %s", topic);
 		(*event)->topic = topic;
 		(*event)->properties = properties;
 		properties_set((*event)->properties, (char *)EVENT_TOPIC, topic);

@@ -91,8 +91,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
     struct activator *data = userData;
     serviceRegistration_unregister(data->registration);
     //serviceTracker_close(data->tracker);
-    //status = logHelper_stop(data->loghelper);
-    //logHelper_destroy(&data->loghelper);
+    //celix_logHelper_destroy(&data->loghelper);
     return status;
 }
 

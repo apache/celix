@@ -57,7 +57,7 @@ celix_status_t capability_create(module_pt module, hash_map_pt directives, hash_
 
 	}
 
-	framework_logIfError(logger, status, NULL, "Failed to create capability");
+	framework_logIfError(celix_frameworkLogger_globalLogger(), status, NULL, "Failed to create capability");
 
 	return status;
 }

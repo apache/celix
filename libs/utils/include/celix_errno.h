@@ -56,11 +56,10 @@ struct celix_status {
  */
 typedef int celix_status_t;
 
-/*!
- * Return a readable string for the given error code.
- *
+/**
+ * Return a readable string for the given status code.
  */
-UTILS_EXPORT char *celix_strerror(celix_status_t errorcode, char *buffer, size_t bufferSize);
+const char* celix_strerror(celix_status_t status);
 
 /*!
  * Error code indicating successful execution of the function.

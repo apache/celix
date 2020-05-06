@@ -32,7 +32,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <log_helper.h>
+#include <celix_log_helper.h>
 #include "celix_threads.h"
 #include "pubsub_utils_url.h"
 #include <pubsub_protocol.h>
@@ -51,7 +51,7 @@ typedef void(*pubsub_tcpHandler_processMessage_callback_t)
 typedef void (*pubsub_tcpHandler_receiverConnectMessage_callback_t)(void *payload, const char *url, bool lock);
 typedef void (*pubsub_tcpHandler_acceptConnectMessage_callback_t)(void *payload, const char *url);
 
-pubsub_tcpHandler_t *pubsub_tcpHandler_create(pubsub_protocol_service_t *protocol, log_helper_t *logHelper);
+pubsub_tcpHandler_t *pubsub_tcpHandler_create(pubsub_protocol_service_t *protocol, celix_log_helper_t *logHelper);
 void pubsub_tcpHandler_destroy(pubsub_tcpHandler_t *handle);
 int pubsub_tcpHandler_open(pubsub_tcpHandler_t *handle, char *url);
 int pubsub_tcpHandler_close(pubsub_tcpHandler_t *handle, int fd);
