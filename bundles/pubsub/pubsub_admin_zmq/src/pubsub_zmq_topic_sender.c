@@ -508,7 +508,7 @@ pubsub_admin_sender_metrics_t* pubsub_zmqTopicSender_metrics(pubsub_zmq_topic_se
 }
 
 static void psa_zmq_freeMsg(void *msg, void *hint) {
-    if(hint) {
+    if (hint) {
         psa_zmq_zerocopy_free_entry *entry = hint;
         entry->msgSer->freeSerializeMsg(entry->msgSer->handle, entry->serializedOutput, entry->serializedOutputLen);
         free(entry);
@@ -597,6 +597,7 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
                 bool sendOk;
 
                 if (bound->parent->zeroCopyEnabled) {
+                    celixThreadMutex_lock(&sender->zmq.mutex);
                     zmq_msg_t msg1; // Header
                     zmq_msg_t msg2; // Payload
                     zmq_msg_t msg3; // Metadata
@@ -641,16 +642,20 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
                             zmq_msg_close(&msg3);
                         }
                     }
+                    celixThreadMutex_unlock(&sender->zmq.mutex);
 
                     sendOk = rc > 0;
                 } else {
+                    //no zero copy
                     zmsg_t *msg = zmsg_new();
                     zmsg_addmem(msg, headerData, headerLength);
                     zmsg_addmem(msg, payloadData, payloadLength);
                     if (metadataLength > 0) {
                         zmsg_addmem(msg, metadataData, metadataLength);
                     }
+                    celixThreadMutex_lock(&sender->zmq.mutex);
                     int rc = zmsg_send(&msg, sender->zmq.socket);
+                    celixThreadMutex_unlock(&sender->zmq.mutex);
                     sendOk = rc == 0;
 
                     if (!sendOk) {
