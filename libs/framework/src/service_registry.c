@@ -79,7 +79,7 @@ celix_status_t serviceRegistry_create(framework_pt framework, service_registry_p
 
 		reg->serviceRegistrations = hashMap_create(NULL, NULL, NULL, NULL);
 		reg->framework = framework;
-		reg->currentServiceId = 1UL;
+		reg->nextServiceId = 1L;
 		reg->serviceReferences = hashMap_create(NULL, NULL, NULL, NULL);
 
         reg->checkDeletedReferences = CHECK_DELETED_REFERENCES;
@@ -207,17 +207,17 @@ celix_status_t serviceRegistry_registerServiceFactory(service_registry_pt regist
 
 static celix_status_t serviceRegistry_registerServiceInternal(service_registry_pt registry, bundle_pt bundle, const char* serviceName, const void * serviceObject, properties_pt dictionary, enum celix_service_type svcType, service_registration_pt *registration) {
 	array_list_pt regs;
+	long svcId = celix_serviceRegistry_nextSvcId(registry);
 
 	if (svcType == CELIX_DEPRECATED_FACTORY_SERVICE) {
         *registration = serviceRegistration_createServiceFactory(registry->callback, bundle, serviceName,
-                                                                 ++registry->currentServiceId, serviceObject,
+                                                                 svcId, serviceObject,
                                                                  dictionary);
     } else if (svcType == CELIX_FACTORY_SERVICE) {
-        *registration = celix_serviceRegistration_createServiceFactory(registry->callback, bundle, serviceName, ++registry->currentServiceId, (celix_service_factory_t*)serviceObject, dictionary);
+        *registration = celix_serviceRegistration_createServiceFactory(registry->callback, bundle, serviceName, svcId, (celix_service_factory_t*)serviceObject, dictionary);
 	} else { //plain
-	    *registration = serviceRegistration_create(registry->callback, bundle, serviceName, ++registry->currentServiceId, serviceObject, dictionary);
+	    *registration = serviceRegistration_create(registry->callback, bundle, serviceName, svcId, serviceObject, dictionary);
 	}
-    long svcId = serviceRegistration_getServiceId(*registration);
 	//printf("Registering service %li with name %s\n", svcId, serviceName);
 
     serviceRegistry_addHooks(registry, serviceName, serviceObject, *registration);
@@ -1279,4 +1279,9 @@ static void celix_waitForPendingRegisteredEvents(celix_service_registry_t *regis
         count = (long)hashMap_get(registry->pendingRegisterEvents.map, (void*)svcId);
     }
     celixThreadMutex_unlock(&registry->pendingRegisterEvents.mutex);
+}
+
+long celix_serviceRegistry_nextSvcId(celix_service_registry_t* registry) {
+    long scvId = __atomic_fetch_add(&registry->nextServiceId, 1, __ATOMIC_SEQ_CST);
+    return scvId;
 }
