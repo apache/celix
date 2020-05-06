@@ -38,7 +38,6 @@ bool stopCommand_execute(void *handle, const char* commandLine, FILE *outStream,
 bool installCommand_execute(void *handle, const char* commandLine, FILE *outStream, FILE *errStream);
 bool uninstallCommand_execute(void *handle, const char* commandLine, FILE *outStream, FILE *errStream);
 bool updateCommand_execute(void *handle, const char* commandLine, FILE *outStream, FILE *errStream);
-bool logCommand_execute(void *handle, const char* commandLine, FILE *outStream, FILE *errStream);
 bool helpCommand_execute(void *handle, const char* commandLine, FILE *outStream, FILE *errStream);
 bool dmListCommand_execute(void* handle, const char* commandLine, FILE *out, FILE *err);
 bool quitCommand_execute(void *handle, const char* commandLine, FILE *sout, FILE *serr);

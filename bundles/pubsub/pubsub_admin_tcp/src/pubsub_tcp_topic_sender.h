@@ -29,7 +29,7 @@ typedef struct pubsub_tcp_topic_sender pubsub_tcp_topic_sender_t;
 
 pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
     celix_bundle_context_t *ctx,
-    log_helper_t *logHelper,
+    celix_log_helper_t *logHelper,
     const char *scope,
     const char *topic,
     const celix_properties_t *topicProperties,

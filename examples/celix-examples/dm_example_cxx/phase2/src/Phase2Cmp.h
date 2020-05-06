@@ -29,7 +29,7 @@
 #include <iostream>
 
 extern "C" {
-#include "log_service.h"
+#include "celix_log_service.h"
 };
 
 class Phase2Cmp : public IPhase2 {
@@ -45,12 +45,12 @@ public:
 
     void setPhase1(IPhase1* phase); //injector used by dependency manager
     void setName(srv::info::IName* name) { std::cout << "Setting IName with name: " << (name != nullptr ? name->getName() : "null") << std::endl; }
-    void setLogService(const log_service_t* logSrv);
+    void setLogService(const celix_log_service_t* logSrv);
 
     double getData() override; //implements IPhase2
 private:
     IPhase1* phase1 {nullptr};
-    const log_service_t* logSrv {nullptr};
+    const celix_log_service_t* logSrv {nullptr};
 };
 
 #endif //CELIX_PHASE2CMP_H

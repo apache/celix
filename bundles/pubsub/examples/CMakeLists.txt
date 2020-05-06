@@ -29,7 +29,7 @@ if (BUILD_PUBSUB_PSA_UDP_MC)
     add_celix_container(pubsub_publisher_udp_mc
         GROUP pubsub
         BUNDLES
-            Celix::log_service
+            Celix::log_admin
             Celix::shell
             Celix::shell_tui
             Celix::pubsub_serializer_json
@@ -48,7 +48,7 @@ if (BUILD_PUBSUB_PSA_UDP_MC)
     add_celix_container(pubsub_subscriber_udp_mc
         GROUP pubsub
         BUNDLES
-            Celix::log_service
+            Celix::log_admin
             Celix::shell
             Celix::shell_tui
             Celix::pubsub_serializer_json
@@ -66,7 +66,7 @@ if (BUILD_PUBSUB_PSA_UDP_MC)
     add_celix_container(pubsub_subscriber2_udp_mc
         GROUP pubsub
         BUNDLES
-            Celix::log_service
+            Celix::log_admin
             Celix::shell
             Celix::shell_tui
             Celix::pubsub_serializer_json
@@ -102,7 +102,7 @@ if (BUILD_PUBSUB_PSA_TCP)
     add_celix_container(pubsub_publisher_tcp
             GROUP pubsub
             BUNDLES
-                Celix::log_service
+                Celix::log_admin
                 Celix::shell
                 Celix::shell_tui
                 Celix::pubsub_serializer_json
@@ -122,7 +122,7 @@ if (BUILD_PUBSUB_PSA_TCP)
     add_celix_container(pubsub_subscriber_tcp
             GROUP pubsub
             BUNDLES
-                Celix::log_service
+                Celix::log_admin
                 Celix::shell
                 Celix::shell_tui
                 Celix::pubsub_serializer_json
@@ -141,7 +141,7 @@ if (BUILD_PUBSUB_PSA_TCP)
     add_celix_container(pubsub_subscriber2_tcp
             GROUP pubsub
             BUNDLES
-                Celix::log_service
+                Celix::log_admin
                 Celix::shell
                 Celix::shell_tui
                 Celix::pubsub_serializer_json
@@ -411,7 +411,7 @@ if (BUILD_PUBSUB_PSA_WS)
     add_celix_container(pubsub_websocket_example
         GROUP pubsub
         BUNDLES
-            Celix::log_service
+            Celix::log_admin
             Celix::shell
             Celix::shell_tui
             Celix::http_admin

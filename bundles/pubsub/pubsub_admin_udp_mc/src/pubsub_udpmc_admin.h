@@ -21,12 +21,12 @@
 #define CELIX_PUBSUB_UDPMC_ADMIN_H
 
 #include "celix_api.h"
-#include "log_helper.h"
+#include "celix_log_helper.h"
 #include "pubsub_psa_udpmc_constants.h"
 
 typedef struct pubsub_udpmc_admin pubsub_udpmc_admin_t;
 
-pubsub_udpmc_admin_t* pubsub_udpmcAdmin_create(celix_bundle_context_t *ctx, log_helper_t *logHelper);
+pubsub_udpmc_admin_t* pubsub_udpmcAdmin_create(celix_bundle_context_t *ctx, celix_log_helper_t *logHelper);
 void pubsub_udpmcAdmin_destroy(pubsub_udpmc_admin_t *psa);
 
 celix_status_t pubsub_udpmcAdmin_matchPublisher(void *handle, long svcRequesterBndId, const celix_filter_t *svcFilter, celix_properties_t **topicProperties, double *score, long *serializerSvcId, long *protocolSvcId);

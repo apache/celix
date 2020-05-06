@@ -22,12 +22,12 @@
 
 #include <pubsub_admin_metrics.h>
 #include "celix_api.h"
-#include "log_helper.h"
+#include "celix_log_helper.h"
 #include "pubsub_psa_tcp_constants.h"
 
 typedef struct pubsub_tcp_admin pubsub_tcp_admin_t;
 
-pubsub_tcp_admin_t *pubsub_tcpAdmin_create(celix_bundle_context_t *ctx, log_helper_t *logHelper);
+pubsub_tcp_admin_t *pubsub_tcpAdmin_create(celix_bundle_context_t *ctx, celix_log_helper_t *logHelper);
 void pubsub_tcpAdmin_destroy(pubsub_tcp_admin_t *psa);
 
 celix_status_t pubsub_tcpAdmin_matchPublisher(void *handle,

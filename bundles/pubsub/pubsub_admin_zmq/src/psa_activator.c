@@ -22,7 +22,7 @@
 #include "celix_api.h"
 #include "pubsub_serializer.h"
 #include "pubsub_protocol.h"
-#include "log_helper.h"
+#include "celix_log_helper.h"
 
 #include "pubsub_admin.h"
 #include "pubsub_admin_metrics.h"
@@ -30,7 +30,7 @@
 #include "celix_shell_command.h"
 
 typedef struct psa_zmq_activator {
-    log_helper_t *logHelper;
+    celix_log_helper_t *logHelper;
 
     pubsub_zmq_admin_t *admin;
 
@@ -54,8 +54,7 @@ int psa_zmq_start(psa_zmq_activator_t *act, celix_bundle_context_t *ctx) {
     act->serializersTrackerId = -1L;
     act->protocolsTrackerId = -1L;
 
-    logHelper_create(ctx, &act->logHelper);
-    logHelper_start(act->logHelper);
+    act->logHelper = celix_logHelper_create(ctx, "celix_psa_discovery");
 
     act->admin = pubsub_zmqAdmin_create(ctx, act->logHelper);
     celix_status_t status = act->admin != NULL ? CELIX_SUCCESS : CELIX_BUNDLE_EXCEPTION;
@@ -134,8 +133,7 @@ int psa_zmq_stop(psa_zmq_activator_t *act, celix_bundle_context_t *ctx) {
     celix_bundleContext_stopTracker(ctx, act->protocolsTrackerId);
     pubsub_zmqAdmin_destroy(act->admin);
 
-    logHelper_stop(act->logHelper);
-    logHelper_destroy(&act->logHelper);
+    celix_logHelper_destroy(act->logHelper);
 
     return CELIX_SUCCESS;
 }

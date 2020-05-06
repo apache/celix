@@ -44,7 +44,7 @@ extern "C" {
 #endif
 
 celix_status_t
-bundleContext_create(celix_framework_t *framework, framework_logger_pt, celix_bundle_t *bundle, celix_bundle_context_t **bundle_context);
+bundleContext_create(celix_framework_t *framework, celix_framework_logger_t* logger, celix_bundle_t *bundle, celix_bundle_context_t **bundle_context);
 
 celix_status_t bundleContext_destroy(celix_bundle_context_t *context);
 

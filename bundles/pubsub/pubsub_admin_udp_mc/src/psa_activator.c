@@ -21,14 +21,14 @@
 
 #include "celix_api.h"
 #include "pubsub_serializer.h"
-#include "log_helper.h"
+#include "celix_log_helper.h"
 
 #include "pubsub_admin.h"
 #include "pubsub_udpmc_admin.h"
 #include "celix_shell_command.h"
 
 typedef struct psa_udpmc_activator {
-    log_helper_t *logHelper;
+    celix_log_helper_t *logHelper;
 
     pubsub_udpmc_admin_t *admin;
 
@@ -47,8 +47,7 @@ int psa_udpmc_start(psa_udpmc_activator_t *act, celix_bundle_context_t *ctx) {
     act->serializersTrackerId = -1L;
 
 
-    logHelper_create(ctx, &act->logHelper);
-    logHelper_start(act->logHelper);
+    act->logHelper = celix_logHelper_create(ctx, "celix_psa_admin_udpmc");
 
     act->admin = pubsub_udpmcAdmin_create(ctx, act->logHelper);
     celix_status_t status = act->admin != NULL ? CELIX_SUCCESS : CELIX_BUNDLE_EXCEPTION;
@@ -104,8 +103,7 @@ int psa_udpmc_stop(psa_udpmc_activator_t *act, celix_bundle_context_t *ctx) {
     celix_bundleContext_stopTracker(ctx, act->serializersTrackerId);
     pubsub_udpmcAdmin_destroy(act->admin);
 
-    logHelper_stop(act->logHelper);
-    logHelper_destroy(&act->logHelper);
+    celix_logHelper_destroy(act->logHelper);
 
     return CELIX_SUCCESS;
 }

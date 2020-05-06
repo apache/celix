@@ -38,6 +38,7 @@ add_library(utils SHARED
     src/utils.c
     src/ip_utils.c
     src/filter.c
+    src/celix_log_utils.c
     ${MEMSTREAM_SOURCES}
 )
 set_target_properties(utils PROPERTIES OUTPUT_NAME "celix_utils")
@@ -77,6 +78,8 @@ add_library(Celix::utils ALIAS utils)
 
 
 if (ENABLE_TESTING)
+    add_subdirectory(gtest)
+
     find_package(CppUTest REQUIRED)
 
     include_directories(SYSTEM PRIVATE ${CPPUTEST_INCLUDE_DIR})

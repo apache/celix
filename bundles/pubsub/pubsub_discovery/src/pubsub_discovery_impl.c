@@ -42,13 +42,13 @@
 #include "pubsub_discovery_impl.h"
 
 #define L_DEBUG(...) \
-    logHelper_log(disc->logHelper, OSGI_LOGSERVICE_DEBUG, __VA_ARGS__)
+    celix_logHelper_log(disc->logHelper, CELIX_LOG_LEVEL_DEBUG, __VA_ARGS__)
 #define L_INFO(...) \
-    logHelper_log(disc->logHelper, OSGI_LOGSERVICE_INFO, __VA_ARGS__)
+    celix_logHelper_log(disc->logHelper, CELIX_LOG_LEVEL_INFO, __VA_ARGS__)
 #define L_WARN(...) \
-    logHelper_log(disc->logHelper, OSGI_LOGSERVICE_WARNING, __VA_ARGS__)
+    celix_logHelper_log(disc->logHelper, CELIX_LOG_LEVEL_WARNING, __VA_ARGS__)
 #define L_ERROR(...) \
-    logHelper_log(disc->logHelper, OSGI_LOGSERVICE_ERROR, __VA_ARGS__)
+    celix_logHelper_log(disc->logHelper, CELIX_LOG_LEVEL_ERROR, __VA_ARGS__)
 
 static celix_properties_t* pubsub_discovery_parseEndpoint(pubsub_discovery_t *disc, const char *key, const char *value);
 static char* pubsub_discovery_createJsonEndpoint(const celix_properties_t *props);
@@ -56,7 +56,7 @@ static void pubsub_discovery_addDiscoveredEndpoint(pubsub_discovery_t *disc, cel
 static void pubsub_discovery_removeDiscoveredEndpoint(pubsub_discovery_t *disc, const char *uuid);
 
 /* Discovery activator functions */
-pubsub_discovery_t* pubsub_discovery_create(celix_bundle_context_t *context, log_helper_t *logHelper) {
+pubsub_discovery_t* pubsub_discovery_create(celix_bundle_context_t *context, celix_log_helper_t *logHelper) {
     pubsub_discovery_t *disc = calloc(1, sizeof(*disc));
     disc->logHelper = logHelper;
     disc->context = context;

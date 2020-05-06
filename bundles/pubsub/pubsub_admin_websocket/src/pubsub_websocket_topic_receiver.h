@@ -26,7 +26,7 @@
 typedef struct pubsub_websocket_topic_receiver pubsub_websocket_topic_receiver_t;
 
 pubsub_websocket_topic_receiver_t* pubsub_websocketTopicReceiver_create(celix_bundle_context_t *ctx,
-        log_helper_t *logHelper,
+        celix_log_helper_t *logHelper,
         const char *scope,
         const char *topic,
         const celix_properties_t *topicProperties,

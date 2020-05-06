@@ -30,7 +30,7 @@
 #include "remote_service_admin.h"
 #include "remote_proxy.h"
 #include "service_tracker.h"
-#include "log_helper.h"
+#include "celix_log_helper.h"
 
 struct import_registration {
 	celix_bundle_context_t *context;
@@ -49,7 +49,7 @@ struct import_registration {
 
 struct import_registration_factory {
 	char *serviceName;
-	log_helper_t *loghelper;
+    celix_log_helper_t *loghelper;
 	remote_proxy_factory_service_t *trackedFactory;
 	service_tracker_t *proxyFactoryTracker;
 	celix_bundle_context_t *context;
@@ -73,7 +73,7 @@ celix_status_t importRegistration_createProxyFactoryTracker(import_registration_
 celix_status_t importRegistrationFactory_destroy(import_registration_factory_t **registration_factory);
 //celix_status_t importRegistrationFactory_open(import_registration_factory_t *registration_factory);
 celix_status_t importRegistrationFactory_close(import_registration_factory_t *registration_factory);
-celix_status_t importRegistrationFactory_install(log_helper_t *helper, char* serviceName, celix_bundle_context_t *context, import_registration_factory_t **registration_factory);
+celix_status_t importRegistrationFactory_install(celix_log_helper_t *helper, char* serviceName, celix_bundle_context_t *context, import_registration_factory_t **registration_factory);
 
 
 

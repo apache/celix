@@ -32,7 +32,7 @@
 #include "celix_threads.h"
 #include "bundle_context.h"
 #include "utils.h"
-#include "log_helper.h"
+#include "celix_log_helper.h"
 
 #include "discovery.h"
 #include "discovery_impl.h"
@@ -56,7 +56,7 @@ celix_status_t discovery_create(celix_bundle_context_t *context, discovery_t **d
 		status = celixThreadMutex_create(&(*discovery)->listenerReferencesMutex, NULL);
 		status = celixThreadMutex_create(&(*discovery)->discoveredServicesMutex, NULL);
 
-		logHelper_create(context, &(*discovery)->loghelper);
+        (*discovery)->loghelper = celix_logHelper_create(context, "celix_rsa_discovery");
 	}
 
 	return status;
@@ -64,8 +64,6 @@ celix_status_t discovery_create(celix_bundle_context_t *context, discovery_t **d
 
 celix_status_t discovery_start(discovery_t *discovery) {
     celix_status_t status;
-
-	logHelper_start(discovery->loghelper);
 
     status = endpointDiscoveryPoller_create(discovery, discovery->context, DEFAULT_POLL_ENDPOINTS, &discovery->poller);
     if (status != CELIX_SUCCESS) {
@@ -85,8 +83,6 @@ celix_status_t discovery_stop(discovery_t *discovery) {
 
 	status = endpointDiscoveryServer_destroy(discovery->server);
 	status = endpointDiscoveryPoller_destroy(discovery->poller);
-
-	logHelper_stop(discovery->loghelper);
 
 	return status;
 }
@@ -116,7 +112,7 @@ celix_status_t discovery_destroy(discovery_t *discovery) {
 
 	celixThreadMutex_destroy(&discovery->listenerReferencesMutex);
 
-	logHelper_destroy(&discovery->loghelper);
+    celix_logHelper_destroy(discovery->loghelper);
 
 	free(discovery);
 

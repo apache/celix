@@ -30,17 +30,17 @@
 #include "pubsub_websocket_common.h"
 
 #define L_DEBUG(...) \
-    logHelper_log(psa->log, OSGI_LOGSERVICE_DEBUG, __VA_ARGS__)
+    celix_logHelper_log(psa->log, CELIX_LOG_LEVEL_DEBUG, __VA_ARGS__)
 #define L_INFO(...) \
-    logHelper_log(psa->log, OSGI_LOGSERVICE_INFO, __VA_ARGS__)
+    celix_logHelper_log(psa->log, CELIX_LOG_LEVEL_INFO, __VA_ARGS__)
 #define L_WARN(...) \
-    logHelper_log(psa->log, OSGI_LOGSERVICE_WARNING, __VA_ARGS__)
+    celix_logHelper_log(psa->log, CELIX_LOG_LEVEL_WARNING, __VA_ARGS__)
 #define L_ERROR(...) \
-    logHelper_log(psa->log, OSGI_LOGSERVICE_ERROR, __VA_ARGS__)
+    celix_logHelper_log(psa->log, CELIX_LOG_LEVEL_ERROR, __VA_ARGS__)
 
 struct pubsub_websocket_admin {
     celix_bundle_context_t *ctx;
-    log_helper_t *log;
+    celix_log_helper_t *log;
     const char *fwUUID;
 
     double qosSampleScore;
@@ -81,7 +81,7 @@ static celix_status_t pubsub_websocketAdmin_connectEndpointToReceiver(pubsub_web
 static celix_status_t pubsub_websocketAdmin_disconnectEndpointFromReceiver(pubsub_websocket_admin_t* psa, pubsub_websocket_topic_receiver_t *receiver, const celix_properties_t *endpoint);
 
 
-pubsub_websocket_admin_t* pubsub_websocketAdmin_create(celix_bundle_context_t *ctx, log_helper_t *logHelper) {
+pubsub_websocket_admin_t* pubsub_websocketAdmin_create(celix_bundle_context_t *ctx, celix_log_helper_t *logHelper) {
     pubsub_websocket_admin_t *psa = calloc(1, sizeof(*psa));
     psa->ctx = ctx;
     psa->log = logHelper;

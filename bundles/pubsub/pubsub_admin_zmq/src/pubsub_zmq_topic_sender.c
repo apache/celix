@@ -27,7 +27,7 @@
 #include <zconf.h>
 #include <arpa/inet.h>
 #include <czmq.h>
-#include <log_helper.h>
+#include <celix_log_helper.h>
 #include "pubsub_zmq_topic_sender.h"
 #include "pubsub_psa_zmq_constants.h"
 #include <uuid/uuid.h>
@@ -38,17 +38,17 @@
 #define ZMQ_BIND_MAX_RETRY                      10
 
 #define L_DEBUG(...) \
-    logHelper_log(sender->logHelper, OSGI_LOGSERVICE_DEBUG, __VA_ARGS__)
+    celix_logHelper_log(sender->logHelper, CELIX_LOG_LEVEL_DEBUG, __VA_ARGS__)
 #define L_INFO(...) \
-    logHelper_log(sender->logHelper, OSGI_LOGSERVICE_INFO, __VA_ARGS__)
+    celix_logHelper_log(sender->logHelper, CELIX_LOG_LEVEL_INFO, __VA_ARGS__)
 #define L_WARN(...) \
-    logHelper_log(sender->logHelper, OSGI_LOGSERVICE_WARNING, __VA_ARGS__)
+    celix_logHelper_log(sender->logHelper, CELIX_LOG_LEVEL_WARNING, __VA_ARGS__)
 #define L_ERROR(...) \
-    logHelper_log(sender->logHelper, OSGI_LOGSERVICE_ERROR, __VA_ARGS__)
+    celix_logHelper_log(sender->logHelper, CELIX_LOG_LEVEL_ERROR, __VA_ARGS__)
 
 struct pubsub_zmq_topic_sender {
     celix_bundle_context_t *ctx;
-    log_helper_t *logHelper;
+    celix_log_helper_t *logHelper;
     long serializerSvcId;
     pubsub_serializer_service_t *serializer;
     long protocolSvcId;
@@ -127,7 +127,7 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
 
 pubsub_zmq_topic_sender_t* pubsub_zmqTopicSender_create(
         celix_bundle_context_t *ctx,
-        log_helper_t *logHelper,
+        celix_log_helper_t *logHelper,
         const char *scope,
         const char *topic,
         long serializerSvcId,
@@ -508,7 +508,7 @@ pubsub_admin_sender_metrics_t* pubsub_zmqTopicSender_metrics(pubsub_zmq_topic_se
 }
 
 static void psa_zmq_freeMsg(void *msg, void *hint) {
-    if(hint) {
+    if (hint) {
         psa_zmq_zerocopy_free_entry *entry = hint;
         entry->msgSer->freeSerializeMsg(entry->msgSer->handle, entry->serializedOutput, entry->serializedOutputLen);
         free(entry);
@@ -597,6 +597,7 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
                 bool sendOk;
 
                 if (bound->parent->zeroCopyEnabled) {
+                    celixThreadMutex_lock(&sender->zmq.mutex);
                     zmq_msg_t msg1; // Header
                     zmq_msg_t msg2; // Payload
                     zmq_msg_t msg3; // Metadata
@@ -641,16 +642,20 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
                             zmq_msg_close(&msg3);
                         }
                     }
+                    celixThreadMutex_unlock(&sender->zmq.mutex);
 
                     sendOk = rc > 0;
                 } else {
+                    //no zero copy
                     zmsg_t *msg = zmsg_new();
                     zmsg_addmem(msg, headerData, headerLength);
                     zmsg_addmem(msg, payloadData, payloadLength);
                     if (metadataLength > 0) {
                         zmsg_addmem(msg, metadataData, metadataLength);
                     }
+                    celixThreadMutex_lock(&sender->zmq.mutex);
                     int rc = zmsg_send(&msg, sender->zmq.socket);
+                    celixThreadMutex_unlock(&sender->zmq.mutex);
                     sendOk = rc == 0;
 
                     if (!sendOk) {
