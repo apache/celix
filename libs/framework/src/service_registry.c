@@ -79,7 +79,7 @@ celix_status_t serviceRegistry_create(framework_pt framework, service_registry_p
 
 		reg->serviceRegistrations = hashMap_create(NULL, NULL, NULL, NULL);
 		reg->framework = framework;
-		reg->nextServiceId = 0L;
+		reg->nextServiceId = 1L;
 		reg->serviceReferences = hashMap_create(NULL, NULL, NULL, NULL);
 
         reg->checkDeletedReferences = CHECK_DELETED_REFERENCES;
