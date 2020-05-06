@@ -32,6 +32,13 @@ IF (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} EQUAL 3.3 AND ${CMAKE_GENERATO
     message( FATAL_ERROR "Building Celix using CMake 3.3 and makefiles is not supported due to a bug in the Makefile Generator (see Bug 15696). Please change the used CMake version - both, CMake 3.2 and CMake 3.4 are working fine. Or use a different generator (e.g. Ninja)." )
 ENDIF()
 
+if (ENABLE_TESTING)
+    find_package(GTest CONFIG QUIET)
+    if (NOT GTest_FOUND)
+        include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/AddGTest.cmake)
+    endif()
+endif ()
+
 set(ENABLE_W_ERROR ON)
 set(ENABLE_MORE_WARNINGS OFF)
 
@@ -41,7 +48,7 @@ ELSE ()
     set(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -fPIC ${CMAKE_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "-std=c++11 -fno-rtti ${CMAKE_CXX_FLAGS}")
     set(CMAKE_C_FLAGS "-Wall -Werror ${CMAKE_C_FLAGS}")
-    set(CMAKE_CXX_FLAGS "-Wall -Wextra ${CMAKE_CXX_FLAGS}")
+    set(CMAKE_CXX_FLAGS "-Wall -Wextra -Weffc++ ${CMAKE_CXX_FLAGS}")
     set(CMAKE_C_FLAGS_DEBUG "-g -DDEBUG ${CMAKE_C_FLAGS}")
     set(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG ${CMAKE_CXX_FLAGS}")
 ENDIF()
@@ -115,13 +122,6 @@ if (CELIX_ADD_OPENSSL_DEP)
 endif ()
 
 option(CELIX_USE_ZIP_INSTEAD_OF_JAR "Default Celix cmake command will use jar to package bundle (if found). This option enforces Celix to use zip instead." OFF)
-
-if (ENABLE_TESTING)
-    find_package(GTest CONFIG QUIET)
-    if (NOT GTest_FOUND)
-        include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/AddGTest.cmake)
-    endif()
-endif ()
 
 #Libraries and Launcher
 add_subdirectory(libs)
