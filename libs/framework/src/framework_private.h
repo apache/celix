@@ -86,7 +86,7 @@ struct celix_framework {
         size_t nrOfLocalRequest;
     } dispatcher;
 
-    framework_logger_pt logger;
+    celix_framework_logger_t* logger;
 };
 
 FRAMEWORK_EXPORT celix_status_t fw_getProperty(framework_pt framework, const char* name, const char* defaultValue, const char** value);

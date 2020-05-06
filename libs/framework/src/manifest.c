@@ -47,7 +47,7 @@ celix_status_t manifest_create(manifest_pt *manifest) {
 		(*manifest)->attributes = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
 	}
 
-	framework_logIfError(logger, status, NULL, "Cannot create manifest");
+	framework_logIfError(celix_frameworkLogger_globalLogger(), status, NULL, "Cannot create manifest");
 
 	return status;
 }
@@ -73,7 +73,7 @@ celix_status_t manifest_createFromFile(const char *filename, manifest_pt *manife
 		manifest_read(*manifest, filename);
 	}
 
-	framework_logIfError(logger, status, NULL, "Cannot create manifest from file");
+	framework_logIfError(celix_frameworkLogger_globalLogger(), status, NULL, "Cannot create manifest from file");
 
 	return status;
 }
@@ -112,7 +112,7 @@ celix_status_t manifest_read(manifest_pt manifest, const char *filename) {
 
 			if (lbuf[--len] != '\n') {
 				status = CELIX_FILE_IO_EXCEPTION;
-				framework_logIfError(logger, status, NULL, "Manifest '%s' line too long", filename);
+				framework_logIfError(celix_frameworkLogger_globalLogger(), status, NULL, "Manifest '%s' line too long", filename);
 				break;
 			}
 			if (len > 0 && lbuf[len - 1] == '\r') {
@@ -133,7 +133,7 @@ celix_status_t manifest_read(manifest_pt manifest, const char *filename) {
 					name[len - 6] = '\0';
 				} else {
 					status = CELIX_FILE_IO_EXCEPTION;
-					framework_logIfError(logger, status, NULL, "Manifest '%s' invalid format", filename);
+					framework_logIfError(celix_frameworkLogger_globalLogger(), status, NULL, "Manifest '%s' invalid format", filename);
 					break;
 				}
 
@@ -178,7 +178,7 @@ celix_status_t manifest_read(manifest_pt manifest, const char *filename) {
 		status = CELIX_FILE_IO_EXCEPTION;
 	}
 
-	framework_logIfError(logger, status, NULL, "Cannot read manifest");
+	framework_logIfError(celix_frameworkLogger_globalLogger(), status, NULL, "Cannot read manifest");
 
 	return status;
 }

@@ -32,8 +32,7 @@
 #include "celix_bundle_context.h"
 #include "celix_constants.h"
 #include "utils.h"
-#include "log_service.h"
-#include "log_helper.h"
+#include "celix_log_helper.h"
 
 #include "pubsub_listeners.h"
 #include "pubsub_topology_manager.h"
@@ -48,7 +47,7 @@
 
 static void *pstm_psaHandlingThread(void *data);
 
-celix_status_t pubsub_topologyManager_create(celix_bundle_context_t *context, log_helper_t *logHelper, pubsub_topology_manager_t **out) {
+celix_status_t pubsub_topologyManager_create(celix_bundle_context_t *context, celix_log_helper_t *logHelper, pubsub_topology_manager_t **out) {
     celix_status_t status = CELIX_SUCCESS;
 
     pubsub_topology_manager_t *manager = calloc(1, sizeof(*manager));
@@ -185,7 +184,7 @@ void pubsub_topologyManager_psaAdded(void *handle, void *svc, const celix_proper
 
 
     long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
-    logHelper_log(manager->loghelper, OSGI_LOGSERVICE_DEBUG, "PSTM: Added PSA");
+    celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_DEBUG, "PSTM: Added PSA");
 
     if (svcId >= 0) {
         celixThreadMutex_lock(&manager->pubsubadmins.mutex);
@@ -216,7 +215,7 @@ void pubsub_topologyManager_psaAdded(void *handle, void *svc, const celix_proper
     celixThreadMutex_unlock(&manager->topicReceivers.mutex);
 
     if (needsRematchCount > 0) {
-        logHelper_log(manager->loghelper, OSGI_LOGSERVICE_INFO,
+        celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_INFO,
                       "A PSA is added after at least one active publisher/provided. \
                 It is preferred that all PSA are started before publiser/subscriber are started!\n\
                 Current topic/sender count is %i", needsRematchCount);
@@ -306,7 +305,7 @@ void pubsub_topologyManager_psaRemoved(void *handle, void *svc __attribute__((un
     celixThreadMutex_unlock(&manager->topicReceivers.mutex);
 
 
-    logHelper_log(manager->loghelper, OSGI_LOGSERVICE_DEBUG, "PSTM: Removed PSA");
+    celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_DEBUG, "PSTM: Removed PSA");
 }
 
 void pubsub_topologyManager_subscriberAdded(void *handle, void *svc __attribute__((unused)), const celix_properties_t *props, const celix_bundle_t *bnd) {
@@ -320,7 +319,7 @@ void pubsub_topologyManager_subscriberAdded(void *handle, void *svc __attribute_
     const char *topic = celix_properties_get(props, PUBSUB_SUBSCRIBER_TOPIC, NULL);
     const char *scope = celix_properties_get(props, PUBSUB_SUBSCRIBER_SCOPE, NULL);
     if (topic == NULL) {
-        logHelper_log(manager->loghelper, OSGI_LOGSERVICE_WARNING,
+        celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_WARNING,
                       "[PSTM] Warning found subscriber service without mandatory '%s' property.",
                       PUBSUB_SUBSCRIBER_TOPIC);
         return;
@@ -446,7 +445,7 @@ void pubsub_topologyManager_publisherTrackerAdded(void *handle, const celix_serv
 
     char *scopeAndTopicKey = NULL;
     if (topic == NULL) {
-        logHelper_log(manager->loghelper, OSGI_LOGSERVICE_WARNING,
+        celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_WARNING,
                       "[PSTM] Warning found publisher service request without mandatory '%s' filter attribute.",
                       PUBSUB_SUBSCRIBER_TOPIC);
         return;
@@ -535,7 +534,7 @@ celix_status_t pubsub_topologyManager_addDiscoveredEndpoint(void *handle, const 
     bool triggerCondition = false;
 
     if (manager->verbose) {
-        logHelper_log(manager->loghelper, OSGI_LOGSERVICE_DEBUG,
+        celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_DEBUG,
                       "PSTM: Discovered endpoint added for topic %s with scope %s [fwUUID=%s, epUUID=%s]\n",
                       celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_NAME, NULL),
                       celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_SCOPE, "(null)"),
@@ -590,7 +589,7 @@ celix_status_t pubsub_topologyManager_removeDiscoveredEndpoint(void *handle, con
     assert(uuid != NULL); //discovery should check if endpoint is valid -> pubsubEndoint_isValid.
 
     if (manager->verbose) {
-        logHelper_log(manager->loghelper, OSGI_LOGSERVICE_DEBUG,
+        celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_DEBUG,
                       "PSTM: Discovered endpoint removed for topic %s with scope %s [fwUUID=%s, epUUID=%s]\n",
                       celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_NAME, "(null)"),
                       celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_SCOPE, "(null)"),
@@ -618,7 +617,7 @@ celix_status_t pubsub_topologyManager_removeDiscoveredEndpoint(void *handle, con
             celix_bundleContext_useServiceWithId(manager->context, entry->selectedPsaSvcId, PUBSUB_ADMIN_SERVICE_NAME,
                                                  (void *) endpoint, pstm_removeEndpointCallback);
         } else {
-            logHelper_log(manager->loghelper, OSGI_LOGSERVICE_DEBUG, "No selected psa for endpoint %s\n", entry->uuid);
+            celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_DEBUG, "No selected psa for endpoint %s\n", entry->uuid);
         }
         celix_properties_destroy(entry->endpoint);
         free(entry);
@@ -643,7 +642,7 @@ static void pstm_teardownTopicSenders(pubsub_topology_manager_t *manager) {
 
         if (entry != NULL && (entry->usageCount <= 0 || entry->needsMatch)) {
             if (manager->verbose && entry->endpoint != NULL) {
-                logHelper_log(manager->loghelper, OSGI_LOGSERVICE_DEBUG,
+                celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_DEBUG,
                               "[PSTM] Tearing down TopicSender for scope/topic %s/%s\n", entry->scope == NULL ? "(null)" : entry->scope, entry->topic);
             }
 
@@ -710,7 +709,7 @@ static void pstm_teardownTopicReceivers(pubsub_topology_manager_t *manager) {
             if (manager->verbose && entry->endpoint != NULL) {
                 const char *adminType = celix_properties_get(entry->endpoint, PUBSUB_ENDPOINT_ADMIN_TYPE, "!Error!");
                 const char *serType = celix_properties_get(entry->endpoint, PUBSUB_ENDPOINT_SERIALIZER, "!Error!");
-                logHelper_log(manager->loghelper, OSGI_LOGSERVICE_DEBUG,
+                celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_DEBUG,
                               "[PSTM] Tearing down TopicReceiver for scope/topic %s/%s with psa admin type %s and serializer %s\n",
                               entry->scope == NULL ? "(null)" : entry->scope, entry->topic, adminType, serType);
             }
@@ -795,7 +794,7 @@ static void pstm_findPsaForEndpoints(pubsub_topology_manager_t *manager) {
                 celix_bundleContext_useServiceWithId(manager->context, psaSvcId, PUBSUB_ADMIN_SERVICE_NAME,
                                                      (void *) entry->endpoint, pstm_addEndpointCallback);
             } else {
-                logHelper_log(manager->loghelper, OSGI_LOGSERVICE_DEBUG, "Cannot find psa for endpoint %s\n", entry->uuid);
+                celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_DEBUG, "Cannot find psa for endpoint %s\n", entry->uuid);
             }
 
             entry->selectedPsaSvcId = psaSvcId;
@@ -871,7 +870,7 @@ static void pstm_setupTopicSenders(pubsub_topology_manager_t *manager) {
             }
 
             if (entry->needsMatch) {
-                logHelper_log(manager->loghelper, OSGI_LOGSERVICE_WARNING, "Cannot setup TopicSender for %s/%s\n", entry->scope == NULL ? "(null)" : entry->scope, entry->topic);
+                celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_WARNING, "Cannot setup TopicSender for %s/%s\n", entry->scope == NULL ? "(null)" : entry->scope, entry->topic);
             }
         }
     }
@@ -949,7 +948,7 @@ static void pstm_setupTopicReceivers(pubsub_topology_manager_t *manager) {
 
 
             if (entry->needsMatch) {
-                logHelper_log(manager->loghelper, OSGI_LOGSERVICE_WARNING, "Cannot setup TopicReceiver for %s/%s\n", entry->scope == NULL ? "(null)" : entry->scope, entry->topic);
+                celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_WARNING, "Cannot setup TopicReceiver for %s/%s\n", entry->scope == NULL ? "(null)" : entry->scope, entry->topic);
             }
         }
     }

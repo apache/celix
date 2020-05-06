@@ -126,19 +126,12 @@ celix_status_t bundleActivator_create(celix_bundle_context_t* ctx, void **_pptr)
                 };
         activator->std_commands[7] =
                 (struct celix_shell_command_register_entry) {
-                        .exec = logCommand_execute,
-                        .name = "celix::log",
-                        .description = "print log.",
-                        .usage = "log"
-                };
-        activator->std_commands[8] =
-                (struct celix_shell_command_register_entry) {
                         .exec = dmListCommand_execute,
                         .name = "celix::dm",
                         .description = "Gives an overview of the component managed by a dependency manager.",
                         .usage = "dm [wtf] [f|full] [<Bundle ID> [<Bundle ID> [...]]]"
                 };
-        activator->std_commands[9] =
+        activator->std_commands[8] =
                 (struct celix_shell_command_register_entry) {
                     .exec = queryCommand_execute,
                     .name = "celix::query",
@@ -151,21 +144,21 @@ celix_status_t bundleActivator_create(celix_bundle_context_t* ctx, void **_pptr)
                     "\n\tIf the -p option is provided, only query for provided services.",
                     .usage = "query [bundleId ...] [-v] [-p] [-r] [query ...]"
                 };
-        activator->std_commands[10] =
+        activator->std_commands[9] =
                 (struct celix_shell_command_register_entry) {
                         .exec = queryCommand_execute,
                         .name = "celix::q",
                         .description = "Proxy for query command (see 'help query')",
                         .usage = "q [bundleId ...] [-v] [-p] [-r] [query ...]"
                 };
-        activator->std_commands[11] =
+        activator->std_commands[10] =
               (struct celix_shell_command_register_entry) {
                       .exec = quitCommand_execute,
                       .name = "celix::quit",
                       .description = "Quit (exit) framework.",
                       .usage = "quit"
               };
-        activator->std_commands[12] =
+        activator->std_commands[11] =
                 (struct celix_shell_command_register_entry) {
                         .exec = NULL
                 };

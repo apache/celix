@@ -46,7 +46,7 @@ celix_status_t exportRegistration_endpointRemoved(void * handle, service_referen
 
 celix_status_t exportRegistration_createEndpointTracker(export_registration_t *registration, service_tracker_t **tracker);
 
-celix_status_t exportRegistration_create(log_helper_t *helper, service_reference_pt reference, endpoint_description_t *endpoint, remote_service_admin_t *rsa, celix_bundle_context_t *context, export_registration_t **registration) {
+celix_status_t exportRegistration_create(celix_log_helper_t *helper, service_reference_pt reference, endpoint_description_t *endpoint, remote_service_admin_t *rsa, celix_bundle_context_t *context, export_registration_t **registration) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	*registration = calloc(1, sizeof(**registration));
@@ -97,7 +97,7 @@ celix_status_t exportRegistration_stopTracking(export_registration_t *registrati
 	if (registration->endpointTracker != NULL) {
 		status = serviceTracker_close(registration->endpointTracker);
 		if (status != CELIX_SUCCESS) {
-		    logHelper_log(registration->loghelper, OSGI_LOGSERVICE_ERROR, "EXPORT_REGISTRATION: Could not close endpoint tracker");
+            celix_logHelper_warning(registration->loghelper, "EXPORT_REGISTRATION: Could not close endpoint tracker");
 		}
 		else {
 			status = serviceTracker_destroy(registration->endpointTracker);
@@ -106,7 +106,7 @@ celix_status_t exportRegistration_stopTracking(export_registration_t *registrati
 	if (registration->tracker != NULL) {
 		status = serviceTracker_close(registration->tracker);
 		if (status != CELIX_SUCCESS) {
-			logHelper_log(registration->loghelper, OSGI_LOGSERVICE_ERROR, "EXPORT_REGISTRATION: Could not close service tracker");
+            celix_logHelper_warning(registration->loghelper, "EXPORT_REGISTRATION: Could not close service tracker");
 		}
 		else {
 			status = serviceTracker_destroy(registration->tracker);

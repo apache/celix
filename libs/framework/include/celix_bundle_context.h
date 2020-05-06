@@ -839,8 +839,9 @@ celix_dependency_manager_t* celix_bundleContext_getDependencyManager(celix_bundl
 /**
  * Returns the bundle for this bundle context.
  */
-celix_bundle_t* celix_bundleContext_getBundle(celix_bundle_context_t *ctx);
+celix_bundle_t* celix_bundleContext_getBundle(const celix_bundle_context_t *ctx);
 
+celix_framework_t* celix_bundleContext_getFramework(const celix_bundle_context_t* ctx);
 
 /**
  * Gets the config property - or environment variable if the config property does not exist - for the provided name.

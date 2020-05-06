@@ -37,8 +37,7 @@
 #include "endpoint_listener.h"
 #include "remote_constants.h"
 #include "listener_hook_service.h"
-#include "log_service.h"
-#include "log_helper.h"
+#include "celix_log_helper.h"
 #include "scope.h"
 #include "tm_scope.h"
 #include "topology_manager.h"
@@ -61,7 +60,7 @@ struct activator {
 	tm_scope_service_pt	scopeService;
 	service_registration_t *scopeReg;
 
-	log_helper_t *loghelper;
+    celix_log_helper_t *celix_logHelper;
 };
 
 
@@ -100,10 +99,9 @@ celix_status_t bundleActivator_create(celix_bundle_context_t *context, void **us
 	activator->scopeService->removeImportScope = tm_removeImportScope;
 	activator->scopeReg = NULL; // explicitly needed, otherwise exception
 
-	logHelper_create(context, &activator->loghelper);
-	logHelper_start(activator->loghelper);
+    activator->celix_logHelper = celix_logHelper_create(context, "celix_rsa_topology_manager");
 
-	status = topologyManager_create(context, activator->loghelper, &activator->manager, &scope);
+	status = topologyManager_create(context, activator->celix_logHelper, &activator->manager, &scope);
 	activator->scopeService->handle = scope;
 
 	if (status == CELIX_SUCCESS) {
@@ -170,7 +168,7 @@ celix_status_t bundleActivator_start(void * userData, celix_bundle_context_t *co
 	const char *uuid = NULL;
 	status = bundleContext_getProperty(activator->context, OSGI_FRAMEWORK_FRAMEWORK_UUID, &uuid);
 	if (!uuid) {
-		logHelper_log(activator->loghelper, OSGI_LOGSERVICE_ERROR, "TOPOLOGY_MANAGER: no framework UUID defined?!");
+		celix_logHelper_log(activator->celix_logHelper, CELIX_LOG_LEVEL_ERROR, "TOPOLOGY_MANAGER: no framework UUID defined?!");
 		return CELIX_ILLEGAL_STATE;
 	}
 
@@ -182,7 +180,7 @@ celix_status_t bundleActivator_start(void * userData, celix_bundle_context_t *co
 
 	snprintf(scope, len, "(&(%s=*)(!(%s=%s)))", OSGI_FRAMEWORK_OBJECTCLASS, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
 
-	logHelper_log(activator->loghelper, OSGI_LOGSERVICE_INFO, "TOPOLOGY_MANAGER: endpoint listener scope is %s", scope);
+	celix_logHelper_log(activator->celix_logHelper, CELIX_LOG_LEVEL_INFO, "TOPOLOGY_MANAGER: endpoint listener scope is %s", scope);
 
 	celix_properties_t *props = celix_properties_create();
 	celix_properties_set(props, (char *) OSGI_ENDPOINT_LISTENER_SCOPE, scope);
@@ -253,8 +251,7 @@ celix_status_t bundleActivator_destroy(void * userData, celix_bundle_context_t *
 	if (!activator || !activator->manager) {
 		status = CELIX_BUNDLE_EXCEPTION;
 	} else {
-		logHelper_stop(activator->loghelper);
-		logHelper_destroy(&activator->loghelper);
+		celix_logHelper_destroy(activator->celix_logHelper);
 
 		status = topologyManager_destroy(activator->manager);
 

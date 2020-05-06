@@ -25,6 +25,7 @@ extern "C" {
 #endif
 
 #include <time.h>
+#include <stdbool.h>
 
 #define CELIX_UTILS_MAX_STRLEN      1024*1024*10
 
@@ -34,6 +35,19 @@ extern "C" {
  * @return a copy of the string (including null terminator).
  */
 char* celix_utils_strdup(const char *str);
+
+/**
+ * Creates a hash from a string
+ * @param string
+ * @return hash
+ */
+unsigned int celix_utils_stringHash(const char* string);
+
+/**
+ * Compares two strings and returns true if the strings are equal.
+ */
+bool celix_utils_stringEquals(const char* a, const char* b);
+
 
 
 /**

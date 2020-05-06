@@ -29,14 +29,14 @@
 
 #include "celix_errno.h"
 #include "discovery_type.h"
-#include "log_helper.h"
+#include "celix_log_helper.h"
 
 typedef struct endpoint_discovery_poller endpoint_discovery_poller_t;
 
 struct endpoint_discovery_poller {
     discovery_t *discovery;
     hash_map_pt entries;
-    log_helper_t **loghelper;
+    celix_log_helper_t **loghelper;
 
     celix_thread_mutex_t pollerLock;
     celix_thread_t pollerThread;

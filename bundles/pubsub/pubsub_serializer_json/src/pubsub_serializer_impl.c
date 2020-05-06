@@ -28,7 +28,7 @@
 #include "hash_map.h"
 #include "bundle_context.h"
 
-#include "log_helper.h"
+#include "celix_log_helper.h"
 
 #include "json_serializer.h"
 
@@ -47,17 +47,17 @@ FILE_INPUT_TYPE;
 
 struct pubsub_json_serializer {
     celix_bundle_context_t *bundle_context;
-    log_helper_t *log;
+    celix_log_helper_t *log;
 };
 
 #define L_DEBUG(...) \
-    logHelper_log(serializer->log, OSGI_LOGSERVICE_DEBUG, __VA_ARGS__)
+    celix_logHelper_log(serializer->log, CELIX_LOG_LEVEL_DEBUG, __VA_ARGS__)
 #define L_INFO(...) \
-    logHelper_log(serializer->log, OSGI_LOGSERVICE_INFO, __VA_ARGS__)
+    celix_logHelper_log(serializer->log, CELIX_LOG_LEVEL_INFO, __VA_ARGS__)
 #define L_WARN(...) \
-    logHelper_log(serializer->log, OSGI_LOGSERVICE_WARNING, __VA_ARGS__)
+    celix_logHelper_log(serializer->log, CELIX_LOG_LEVEL_WARNING, __VA_ARGS__)
 #define L_ERROR(...) \
-    logHelper_log(serializer->log, OSGI_LOGSERVICE_ERROR, __VA_ARGS__)
+    celix_logHelper_log(serializer->log, CELIX_LOG_LEVEL_ERROR, __VA_ARGS__)
 
 
 
@@ -92,7 +92,7 @@ static void dfi_log(void *handle, int level, const char *file, int line, const c
     va_start(ap, msg);
     vasprintf(&logStr, msg, ap);
     va_end(ap);
-    logHelper_log(serializer->log, level, "FILE:%s, LINE:%i, MSG:%s", file, line, logStr);
+    celix_logHelper_log(serializer->log, level, "FILE:%s, LINE:%i, MSG:%s", file, line, logStr);
     free(logStr);
 }
 
@@ -103,18 +103,13 @@ celix_status_t pubsubSerializer_create(celix_bundle_context_t *context, pubsub_j
 
     if (!*serializer) {
         status = CELIX_ENOMEM;
-    }
-    else{
-
+    } else {
         (*serializer)->bundle_context= context;
-
-        if (logHelper_create(context, &(*serializer)->log) == CELIX_SUCCESS) {
-            logHelper_start((*serializer)->log);
-            jsonSerializer_logSetup(dfi_log, (*serializer), 1);
-            dynFunction_logSetup(dfi_log, (*serializer), 1);
-            dynType_logSetup(dfi_log, (*serializer), 1);
-            dynCommon_logSetup(dfi_log, (*serializer), 1);
-        }
+        (*serializer)->log = celix_logHelper_create(context, "celix_psa_serializer_json");
+        jsonSerializer_logSetup(dfi_log, (*serializer), 1);
+        dynFunction_logSetup(dfi_log, (*serializer), 1);
+        dynType_logSetup(dfi_log, (*serializer), 1);
+        dynCommon_logSetup(dfi_log, (*serializer), 1);
 
     }
 
@@ -124,8 +119,7 @@ celix_status_t pubsubSerializer_create(celix_bundle_context_t *context, pubsub_j
 celix_status_t pubsubSerializer_destroy(pubsub_json_serializer_t* serializer) {
     celix_status_t status = CELIX_SUCCESS;
 
-    logHelper_stop(serializer->log);
-    logHelper_destroy(&serializer->log);
+    celix_logHelper_destroy(serializer->log);
 
     free(serializer);
 
@@ -210,13 +204,16 @@ celix_status_t pubsubMsgSerializer_deserialize(void* handle, const struct iovec*
 
 void pubsubMsgSerializer_freeSerializeMsg(void* handle, struct iovec* input, size_t inputIovLen) {
     pubsub_json_msg_serializer_impl_t *impl = handle;
-    if (input == NULL) return;
+    if (input == NULL) {
+        return;
+    }
     if (impl->msgType != NULL) {
         for (int i = 0; i < inputIovLen; i++) {
             if (input[i].iov_base) free(input[i].iov_base);
             input[i].iov_base = NULL;
             input[i].iov_len  = 0;
         }
+        free(input);
     }
 }
 

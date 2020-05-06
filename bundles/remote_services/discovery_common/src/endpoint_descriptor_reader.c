@@ -28,7 +28,7 @@
 #include <string.h>
 #include <libxml/xmlreader.h>
 
-#include "log_helper.h"
+#include "celix_log_helper.h"
 #include "remote_constants.h"
 
 #include "endpoint_description.h"
@@ -37,7 +37,7 @@
 
 struct endpoint_descriptor_reader {
     xmlTextReaderPtr reader;
-    log_helper_t **loghelper;
+    celix_log_helper_t **loghelper;
 };
 
 static valueType valueTypeFromString(char *name);
@@ -212,7 +212,7 @@ celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader
                     }
                     else if (propertyValue != NULL) {
                         if (propertyType != VALUE_TYPE_STRING) {
-                            logHelper_log(*reader->loghelper, OSGI_LOGSERVICE_WARNING, "ENDPOINT_DESCRIPTOR_READER: Only string support for %s\n", propertyName);
+                            celix_logHelper_warning(*reader->loghelper, "ENDPOINT_DESCRIPTOR_READER: Only string support for %s\n", propertyName);
                         }
                         endpointDescriptorReader_addSingleValuedProperty(endpointProperties, propertyName, propertyValue);
 
