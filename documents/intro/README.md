@@ -89,7 +89,7 @@ Objects in Apache Celix can generally be created and destroyed using a create an
 For example:
 
 ```C
-celix_status_t bundleContext_create(framework_pt framework, framework_logger_pt, bundle_pt bundle, bundle_context_pt *bundle_context);
+celix_status_t bundleContext_create(framework_pt framework, celix_framework_logger_t* , bundle_pt bundle, bundle_context_pt *bundle_context);
 celix_status_t bundleContext_destroy(bundle_context_pt context);
 ```
 

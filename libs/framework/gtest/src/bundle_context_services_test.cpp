@@ -392,15 +392,15 @@ TEST_F(CelixBundleContextServicesTests, servicesTrackerTest) {
     };
 
     long trackerId = celix_bundleContext_trackServices(ctx, "calc", &count, add, remove);
-    ASSERT_TRUE(trackerId > 0);
+    ASSERT_TRUE(trackerId >= 0);
     ASSERT_EQ(0, count);
 
     long svcId1 = celix_bundleContext_registerService(ctx, (void*)0x100, "calc", nullptr);
-    ASSERT_TRUE(svcId1 > 0);
+    ASSERT_TRUE(svcId1 >= 0);
     ASSERT_EQ(1, count);
 
     long svcId2 = celix_bundleContext_registerService(ctx, (void*)0x200, "calc", nullptr);
-    ASSERT_TRUE(svcId2 > 0);
+    ASSERT_TRUE(svcId2 >= 0);
     ASSERT_EQ(2, count);
 
     celix_bundleContext_unregisterService(ctx, svcId1);
@@ -453,15 +453,15 @@ TEST_F(CelixBundleContextServicesTests, servicesTrackerTestWithAlreadyRegistered
 
 
     long trackerId = celix_bundleContext_trackServices(ctx, "calc", &count, add, remove);
-    ASSERT_TRUE(trackerId > 0);
+    ASSERT_TRUE(trackerId >= 0);
     ASSERT_EQ(2, count);
 
     long svcId3 = celix_bundleContext_registerService(ctx, (void*)0x100, "calc", nullptr);
-    ASSERT_TRUE(svcId1 > 0);
+    ASSERT_TRUE(svcId1 >= 0);
     ASSERT_EQ(3, count);
 
     long svcId4 = celix_bundleContext_registerService(ctx, (void*)0x200, "calc", nullptr);
-    ASSERT_TRUE(svcId2 > 0);
+    ASSERT_TRUE(svcId2 >= 0);
     ASSERT_EQ(4, count);
 
     celix_bundleContext_unregisterService(ctx, svcId1);
@@ -496,11 +496,11 @@ TEST_F(CelixBundleContextServicesTests, servicesTrackerTestWithProperties) {
     opts.addWithProperties = add;
     opts.removeWithProperties = remove;
     long trackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
-    ASSERT_TRUE(trackerId > 0);
+    ASSERT_TRUE(trackerId >= 0);
     ASSERT_EQ(1, count);
 
     long svcId2 = celix_bundleContext_registerService(ctx, (void*)0x200, "calc", nullptr);
-    ASSERT_TRUE(svcId1 > 0);
+    ASSERT_TRUE(svcId1 >= 0);
     ASSERT_EQ(2, count);
 
     celix_bundleContext_unregisterService(ctx, svcId1);
@@ -535,11 +535,11 @@ TEST_F(CelixBundleContextServicesTests, servicesTrackerTestWithOwner) {
     opts.addWithOwner = add;
     opts.removeWithOwner = remove;
     long trackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
-    ASSERT_TRUE(trackerId > 0);
+    ASSERT_TRUE(trackerId >= 0);
     ASSERT_EQ(1, count);
 
     long svcId2 = celix_bundleContext_registerService(ctx, (void*)0x200, "calc", nullptr);
-    ASSERT_TRUE(svcId1 > 0);
+    ASSERT_TRUE(svcId1 >= 0);
     ASSERT_EQ(2, count);
 
     celix_bundleContext_unregisterService(ctx, svcId1);
@@ -616,7 +616,7 @@ TEST_F(CelixBundleContextServicesTests, serviceTrackerWithRaceConditionTest) {
     std::thread unregisterThread{[&]{
         long id = -1;
         std::unique_lock<std::mutex> lock(data.mutex);
-        data.sync.wait(lock, [&]{return data.svcId > 0;});
+        data.sync.wait(lock, [&]{return data.svcId >= 0;});
         id = data.svcId;
         lock.unlock();
         std::cout << "trying to unregister ... with id " << id << std::endl;
@@ -688,7 +688,7 @@ TEST_F(CelixBundleContextServicesTests, servicesTrackerSetTest) {
     opts.filter.serviceName = "NA";
     opts.set = set;
     long trackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
-    ASSERT_TRUE(trackerId > 0);
+    ASSERT_TRUE(trackerId >= 0);
 
     //register svc3 should lead to second set call
     properties_t *props3 = celix_properties_create();

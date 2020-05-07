@@ -82,7 +82,7 @@ celix_status_t bundleCache_create(const char *fwUUID, celix_properties_t *config
 		status = CELIX_SUCCESS;
 	}
 
-	framework_logIfError(logger, status, NULL, "Failed to create bundle cache");
+	framework_logIfError(celix_frameworkLogger_globalLogger(), status, NULL, "Failed to create bundle cache");
 
 	return status;
 }
@@ -149,7 +149,7 @@ celix_status_t bundleCache_getArchives(bundle_cache_pt cache, array_list_pt *arc
 		}
 
 		if (errno != 0) {
-			fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error reading dir");
+			fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_ERROR, "Error reading dir");
 			status = CELIX_FILE_IO_EXCEPTION;
 		} else {
 			status = CELIX_SUCCESS;
@@ -173,7 +173,7 @@ celix_status_t bundleCache_getArchives(bundle_cache_pt cache, array_list_pt *arc
 		status = CELIX_FILE_IO_EXCEPTION;
 	}
 
-	framework_logIfError(logger, status, NULL, "Failed to get bundle archives");
+	framework_logIfError(celix_frameworkLogger_globalLogger(), status, NULL, "Failed to get bundle archives");
 	if (status != CELIX_SUCCESS) {
 		perror("\t");
 	}
@@ -190,7 +190,7 @@ celix_status_t bundleCache_createArchive(bundle_cache_pt cache, long id, const c
 		status = bundleArchive_create(archiveRoot, id, location, inputFile, bundle_archive);
 	}
 
-	framework_logIfError(logger, status, NULL, "Failed to create archive");
+	framework_logIfError(celix_frameworkLogger_globalLogger(), status, NULL, "Failed to create archive");
 
 	return status;
 }
@@ -243,7 +243,7 @@ static celix_status_t bundleCache_deleteTree(bundle_cache_pt cache, char * direc
     if (!root) {
         //note root dir can be non existing
         char *err = errno == 0 ? "" : strerror(errno);
-        framework_logIfError(logger, status, NULL, "Failed to delete tree at dir '%s'. %s", directory, err);
+        framework_logIfError(celix_frameworkLogger_globalLogger(), status, NULL, "Failed to delete tree at dir '%s'. %s", directory, err);
     }
 
 	return status;

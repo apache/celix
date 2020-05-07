@@ -45,7 +45,6 @@ if (SHELL)
           src/install_command
           src/update_command
           src/uninstall_command
-          src/log_command
           src/help_command
 		  src/dm_shell_list_command
 		  src/query_command.c

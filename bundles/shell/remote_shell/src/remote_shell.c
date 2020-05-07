@@ -31,9 +31,8 @@
 #include <array_list.h>
 #include <sys/socket.h>
 
-#include "log_helper.h"
+#include "celix_log_helper.h"
 
-#include "log_service.h"
 #include "remote_shell.h"
 
 #define COMMAND_BUFF_SIZE (256)
@@ -195,14 +194,14 @@ void *remoteShell_connection_run(void *data) {
 				}
 
 			} else {
-				logHelper_log(*connection->parent->loghelper, OSGI_LOGSERVICE_ERROR, "REMOTE_SHELL: Error while retrieving data");
+                celix_logHelper_log(*connection->parent->loghelper, CELIX_LOG_LEVEL_ERROR, "REMOTE_SHELL: Error while retrieving data");
 			}
 		}
 	}
 
 	remoteShell_connection_print(connection, RS_GOODBYE);
 
-	logHelper_log(*connection->parent->loghelper, OSGI_LOGSERVICE_INFO, "REMOTE_SHELL: Closing socket");
+    celix_logHelper_log(*connection->parent->loghelper, CELIX_LOG_LEVEL_INFO, "REMOTE_SHELL: Closing socket");
 	celixThreadMutex_lock(&connection->parent->mutex);
 	arrayList_removeElement(connection->parent->connections, connection);
 	celixThreadMutex_unlock(&connection->parent->mutex);

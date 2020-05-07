@@ -306,7 +306,6 @@ static int psa_udpmc_topicPublicationSend(void* handle, unsigned int msgTypeId, 
             free(msg);
             free(msg_hdr);
             msgSer->freeSerializeMsg(msgSer->handle, serializedOutput, serializedOutputLen);
-            free(serializedOutput);
         } else {
             printf("[PSA_UDPMC/TopicSender] Serialization of msg type id %d failed\n", msgTypeId);
             status = -1;

@@ -41,8 +41,7 @@
 #include "utils.h"
 #include "service_reference.h"
 #include "service_registration.h"
-#include "log_service.h"
-#include "log_helper.h"
+#include "celix_log_helper.h"
 #include "topology_manager.h"
 #include "scope.h"
 #include "hash_map.h"
@@ -66,7 +65,7 @@ struct topology_manager {
 
 	scope_pt scope;
 
-	log_helper_t *loghelper;
+	celix_log_helper_t *loghelper;
 };
 
 celix_status_t topologyManager_exportScopeChanged(void *handle, char *service_name);
@@ -74,7 +73,7 @@ celix_status_t topologyManager_importScopeChanged(void *handle, char *service_na
 celix_status_t topologyManager_notifyListenersEndpointAdded(topology_manager_pt manager, remote_service_admin_service_t *rsa, array_list_pt registrations);
 celix_status_t topologyManager_notifyListenersEndpointRemoved(topology_manager_pt manager, remote_service_admin_service_t *rsa, export_registration_t *export);
 
-celix_status_t topologyManager_create(celix_bundle_context_t *context, log_helper_t *logHelper, topology_manager_pt *manager, void **scope) {
+celix_status_t topologyManager_create(celix_bundle_context_t *context, celix_log_helper_t *logHelper, topology_manager_pt *manager, void **scope) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	*manager = calloc(1, sizeof(**manager));
@@ -165,7 +164,7 @@ celix_status_t topologyManager_closeImports(topology_manager_pt manager) {
 		hash_map_pt imports = hashMapEntry_getValue(entry);
 
 		if (imports != NULL) {
-			logHelper_log(manager->loghelper, OSGI_LOGSERVICE_INFO, "TOPOLOGY_MANAGER: Remove imported service (%s; %s).", ep->service, ep->id);
+			celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_INFO, "TOPOLOGY_MANAGER: Remove imported service (%s; %s).", ep->service, ep->id);
 			hash_map_iterator_pt importsIter = hashMapIterator_create(imports);
 
 			while (hashMapIterator_hasNext(importsIter)) {
@@ -206,7 +205,7 @@ celix_status_t topologyManager_rsaAdded(void * handle, service_reference_pt unus
 	topology_manager_pt manager = (topology_manager_pt) handle;
 	celix_properties_t *serviceProperties = NULL;
 	remote_service_admin_service_t *rsa = (remote_service_admin_service_t *) service;
-	logHelper_log(manager->loghelper, OSGI_LOGSERVICE_INFO, "TOPOLOGY_MANAGER: Added RSA");
+	celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_INFO, "TOPOLOGY_MANAGER: Added RSA");
 
 	celixThreadMutex_lock(&manager->rsaListLock);
 	arrayList_add(manager->rsaList, rsa);
@@ -356,7 +355,7 @@ celix_status_t topologyManager_rsaRemoved(void * handle, service_reference_pt re
 		celixThreadMutex_unlock(&manager->rsaListLock);
 	}
 
-	logHelper_log(manager->loghelper, OSGI_LOGSERVICE_INFO, "TOPOLOGY_MANAGER: Removed RSA");
+	celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_INFO, "TOPOLOGY_MANAGER: Removed RSA");
 
 	return status;
 }
@@ -415,7 +414,7 @@ celix_status_t topologyManager_exportScopeChanged(void *handle, char *filterStr)
 					celix_status_t substatus = topologyManager_removeExportedService(manager, srvRefs[i], srvIds[i]);
 
 					if (substatus != CELIX_SUCCESS) {
-						logHelper_log(manager->loghelper, OSGI_LOGSERVICE_ERROR, "TOPOLOGY_MANAGER: Removal of exported service (%s) failed.", srvIds[i]);
+						celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_ERROR, "TOPOLOGY_MANAGER: Removal of exported service (%s) failed.", srvIds[i]);
 					} else {
 						substatus = topologyManager_addExportedService(manager, srvRefs[i], srvIds[i]);
 					}
@@ -464,7 +463,7 @@ celix_status_t topologyManager_importScopeChanged(void *handle, char *service_na
 		status = topologyManager_removeImportedService(manager, endpoint, NULL);
 
 		if (status != CELIX_SUCCESS) {
-			logHelper_log(manager->loghelper, OSGI_LOGSERVICE_ERROR, "TOPOLOGY_MANAGER: Removal of imported service (%s; %s) failed.", endpoint->service, endpoint->id);
+			celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_ERROR, "TOPOLOGY_MANAGER: Removal of imported service (%s; %s) failed.", endpoint->service, endpoint->id);
 		} else {
 			status = topologyManager_addImportedService(manager, endpoint, NULL);
 		}
@@ -476,7 +475,7 @@ celix_status_t topologyManager_addImportedService(void *handle, endpoint_descrip
 	celix_status_t status = CELIX_SUCCESS;
 	topology_manager_pt manager = handle;
 
-	logHelper_log(manager->loghelper, OSGI_LOGSERVICE_INFO, "TOPOLOGY_MANAGER: Add imported service (%s; %s).", endpoint->service, endpoint->id);
+	celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_INFO, "TOPOLOGY_MANAGER: Add imported service (%s; %s).", endpoint->service, endpoint->id);
 
 	if (celixThreadMutex_lock(&manager->importedServicesLock) == CELIX_SUCCESS) {
 
@@ -513,7 +512,7 @@ celix_status_t topologyManager_removeImportedService(void *handle, endpoint_desc
 	celix_status_t status = CELIX_SUCCESS;
 	topology_manager_pt manager = handle;
 
-	logHelper_log(manager->loghelper, OSGI_LOGSERVICE_INFO, "TOPOLOGY_MANAGER: Remove imported service (%s; %s).", endpoint->service, endpoint->id);
+	celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_INFO, "TOPOLOGY_MANAGER: Remove imported service (%s; %s).", endpoint->service, endpoint->id);
 
 	if (celixThreadMutex_lock(&manager->importedServicesLock) == CELIX_SUCCESS) {
 
@@ -562,7 +561,7 @@ celix_status_t topologyManager_addExportedService(void * handle, service_referen
     serviceReference_getProperty(reference, OSGI_RSA_SERVICE_EXPORTED_INTERFACES, &export);
     assert(export != NULL);
 
-	logHelper_log(manager->loghelper, OSGI_LOGSERVICE_INFO, "TOPOLOGY_MANAGER: Add exported service (%li).", serviceId);
+	celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_INFO, "TOPOLOGY_MANAGER: Add exported service (%li).", serviceId);
 
 	if (celixThreadMutex_lock(&manager->exportedServicesLock) == CELIX_SUCCESS) {
 		scope_getExportProperties(manager->scope, reference, &serviceProperties);
@@ -573,7 +572,7 @@ celix_status_t topologyManager_addExportedService(void * handle, service_referen
 			int size = arrayList_size(manager->rsaList);
 
 			if (size == 0) {
-				logHelper_log(manager->loghelper, OSGI_LOGSERVICE_WARNING, "TOPOLOGY_MANAGER: No RSA available yet.");
+				celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_WARNING, "TOPOLOGY_MANAGER: No RSA available yet.");
 			}
 
 			for (int iter = 0; iter < size; iter++) {
@@ -602,7 +601,7 @@ celix_status_t topologyManager_removeExportedService(void * handle, service_refe
 	celix_status_t status = CELIX_SUCCESS;
 	long serviceId = serviceReference_getServiceId(reference);
 
-	logHelper_log(manager->loghelper, OSGI_LOGSERVICE_INFO, "TOPOLOGY_MANAGER: Remove exported service (%li).", serviceId);
+	celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_INFO, "TOPOLOGY_MANAGER: Remove exported service (%li).", serviceId);
 
 	if (celixThreadMutex_lock(&manager->exportedServicesLock) == CELIX_SUCCESS) {
 		hash_map_pt exports = hashMap_get(manager->exportedServices, reference);
@@ -670,7 +669,7 @@ celix_status_t topologyManager_endpointListenerAdded(void* handle, service_refer
 	topology_manager_pt manager = handle;
 	const char* scope = NULL;
 
-	logHelper_log(manager->loghelper, OSGI_LOGSERVICE_INFO, "TOPOLOGY_MANAGER: Added ENDPOINT_LISTENER");
+	celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_INFO, "TOPOLOGY_MANAGER: Added ENDPOINT_LISTENER");
 
 	if (celixThreadMutex_lock(&manager->listenerListLock) == CELIX_SUCCESS) {
 		hashMap_put(manager->listenerList, reference, NULL);
@@ -737,7 +736,7 @@ celix_status_t topologyManager_endpointListenerRemoved(void * handle, service_re
 	if (celixThreadMutex_lock(&manager->listenerListLock) == CELIX_SUCCESS) {
 
 		if (hashMap_remove(manager->listenerList, reference)) {
-			logHelper_log(manager->loghelper, OSGI_LOGSERVICE_INFO, "EndpointListener Removed");
+			celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_INFO, "EndpointListener Removed");
 		}
 
 		celixThreadMutex_unlock(&manager->listenerListLock);
@@ -833,7 +832,7 @@ static celix_status_t topologyManager_extendFilter(topology_manager_pt manager, 
 	status = bundleContext_getProperty(context, OSGI_FRAMEWORK_FRAMEWORK_UUID, &uuid);
 
 	if (!uuid) {
-		logHelper_log(manager->loghelper, OSGI_LOGSERVICE_ERROR, "TOPOLOGY_MANAGER: no framework UUID defined?!");
+		celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_ERROR, "TOPOLOGY_MANAGER: no framework UUID defined?!");
 		return CELIX_BUNDLE_EXCEPTION;
 	}
 
@@ -858,11 +857,11 @@ celix_status_t topologyManager_listenerAdded(void *handle, array_list_pt listene
 		bundleContext_getBundle(info->context, &bundle);
 		bundleContext_getBundle(manager->context, &self);
 		if (bundle == self) {
-			logHelper_log(manager->loghelper, OSGI_LOGSERVICE_DEBUG, "TOPOLOGY_MANAGER: Ignore myself.");
+			celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_DEBUG, "TOPOLOGY_MANAGER: Ignore myself.");
 			continue;
 		}
 
-		logHelper_log(manager->loghelper, OSGI_LOGSERVICE_INFO, "TOPOLOGY_MANAGER: listener with filter \"%s\" added", info->filter);
+		celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_INFO, "TOPOLOGY_MANAGER: listener with filter \"%s\" added", info->filter);
 
 		char *filter = NULL;
 		bool free_filter = true;
@@ -909,11 +908,11 @@ celix_status_t topologyManager_listenerRemoved(void *handle, array_list_pt liste
 		bundleContext_getBundle(info->context, &bundle);
 		bundleContext_getBundle(manager->context, &self);
 		if (bundle == self) {
-			logHelper_log(manager->loghelper, OSGI_LOGSERVICE_DEBUG, "TOPOLOGY_MANAGER: Ignore myself.");
+			celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_DEBUG, "TOPOLOGY_MANAGER: Ignore myself.");
 			continue;
 		}
 
-		logHelper_log(manager->loghelper, OSGI_LOGSERVICE_INFO, "TOPOLOGY_MANAGER: listener with filter \"%s\" removed.", info->filter);
+		celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_INFO, "TOPOLOGY_MANAGER: listener with filter \"%s\" removed.", info->filter);
 
 		char *filter = NULL;
 		topologyManager_extendFilter(manager, info->filter, &filter);

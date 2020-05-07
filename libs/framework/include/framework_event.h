@@ -63,7 +63,7 @@ struct framework_event {
 	char *bundleSymbolicName;
 	framework_event_type_e type;
 	celix_status_t errorCode;
-	char *error;
+	const char *error;
 };
 #ifdef __cplusplus
 }

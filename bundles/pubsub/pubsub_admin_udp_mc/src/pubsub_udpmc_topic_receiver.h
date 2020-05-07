@@ -22,12 +22,12 @@
 
 #include "celix_bundle_context.h"
 #include "pubsub_serializer.h"
-#include "log_helper.h"
+#include "celix_log_helper.h"
 
 typedef struct pubsub_udpmc_topic_receiver pubsub_udpmc_topic_receiver_t;
 
 pubsub_udpmc_topic_receiver_t* pubsub_udpmcTopicReceiver_create(celix_bundle_context_t *ctx,
-        log_helper_t *logHelper,
+        celix_log_helper_t *logHelper,
         const char *scope, 
         const char *topic, 
         const char *ifIP,

@@ -65,7 +65,7 @@ celix_properties_t* celix_properties_copy(const celix_properties_t *properties);
 long celix_properties_getAsLong(const celix_properties_t *props, const char *key, long defaultValue);
 void celix_properties_setLong(celix_properties_t *props, const char *key, long value);
 
-bool celix_properties_getAsBool(celix_properties_t *props, const char *key, bool defaultValue);
+bool celix_properties_getAsBool(const celix_properties_t *props, const char *key, bool defaultValue);
 void celix_properties_setBool(celix_properties_t *props, const char *key, bool val);
 
 

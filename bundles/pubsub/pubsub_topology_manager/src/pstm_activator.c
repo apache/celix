@@ -26,8 +26,7 @@
 
 #include "celix_api.h"
 
-#include "log_service.h"
-#include "log_helper.h"
+#include "celix_log_helper.h"
 
 #include "pubsub_topology_manager.h"
 #include "pubsub_listeners.h"
@@ -47,7 +46,7 @@ typedef struct pstm_activator {
     celix_shell_command_t shellCmdSvc;
     long shellCmdSvcId;
 
-    log_helper_t *loghelper;
+    celix_log_helper_t *loghelper;
 } pstm_activator_t;
 
 
@@ -62,8 +61,7 @@ static int pstm_start(pstm_activator_t *act, celix_bundle_context_t *ctx) {
     act->pubsubPSAMetricsTrackerId = -1L;
     act->shellCmdSvcId = -1L;
 
-    logHelper_create(ctx, &act->loghelper);
-    logHelper_start(act->loghelper);
+    act->loghelper = celix_logHelper_create(ctx, "celix_psa_topology_manager");
 
     status = pubsub_topologyManager_create(ctx, act->loghelper, &act->manager);
 
@@ -161,8 +159,7 @@ static int pstm_stop(pstm_activator_t *act, celix_bundle_context_t *ctx) {
 
     pubsub_topologyManager_destroy(act->manager);
 
-    logHelper_stop(act->loghelper);
-    logHelper_destroy(&act->loghelper);
+    celix_logHelper_destroy(act->loghelper);
 
     return 0;
 }

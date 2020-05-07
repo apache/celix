@@ -38,7 +38,7 @@ celix_status_t celixThread_create(celix_thread_t *new_thread, celix_thread_attr_
         status = CELIX_BUNDLE_EXCEPTION;
     }
     else {
-        (*new_thread).threadInitialized = true;
+        __atomic_store_n(&(*new_thread).threadInitialized, true, __ATOMIC_RELEASE);
     }
 
     return status;
@@ -94,7 +94,7 @@ int celixThread_equals(celix_thread_t thread1, celix_thread_t thread2) {
 }
 
 bool celixThread_initialized(celix_thread_t thread) {
-    return thread.threadInitialized;
+    return __atomic_load_n(&thread.threadInitialized, __ATOMIC_ACQUIRE);
 }
 
 
