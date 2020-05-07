@@ -20,11 +20,12 @@ celix_bundle_files(pubsub_serialization_provider_descriptors
 		${CMAKE_CURRENT_SOURCE_DIR}/msg_descriptors/garbage.descriptor
 		${CMAKE_CURRENT_SOURCE_DIR}/msg_descriptors/msg_poi1.descriptor
 		${CMAKE_CURRENT_SOURCE_DIR}/msg_descriptors/msg_poi1_invalid1.descriptor
-		${CMAKE_CURRENT_SOURCE_DIR}/msg_descriptors/msg_poi1_invalid2.descriptor
 		${CMAKE_CURRENT_SOURCE_DIR}/msg_descriptors/msg_poi1_invalid3.descriptor
-		${CMAKE_CURRENT_SOURCE_DIR}/msg_descriptors/msg_poi1_invalid4.descriptor
+		${CMAKE_CURRENT_SOURCE_DIR}/msg_descriptors/msg_poi2_invalid4.descriptor
 		${CMAKE_CURRENT_SOURCE_DIR}/msg_descriptors/msg_poi2.descriptor
 		${CMAKE_CURRENT_SOURCE_DIR}/msg_descriptors/msg_poiCmd.descriptor
+		${CMAKE_CURRENT_SOURCE_DIR}/msg_descriptors/msg_poi3.descriptor
+		${CMAKE_CURRENT_SOURCE_DIR}/msg_descriptors/msg_poi3_invalid2.descriptor
 		DESTINATION "META-INF/descriptors"
 )
 
@@ -32,7 +33,7 @@ add_executable(test_pubsub_utils
 		src/PubSubSerializationHandlerTestSuite.cc
 		src/PubSubSerializationProviderTestSuite.cc
 )
-target_link_libraries(test_pubsub_utils PRIVATE Celix::framework Celix::pubsub_utils GTest::GTest GTest::Main)
+target_link_libraries(test_pubsub_utils PRIVATE Celix::framework Celix::pubsub_utils GTest::gtest GTest::gtest_main)
 target_compile_options(test_pubsub_utils PRIVATE -std=c++14) #Note test code is allowed to be C++14
 add_test(NAME test_pubsub_utils COMMAND test_pubsub_utils)
 setup_target_for_coverage(test_pubsub_utils SCAN_DIR ..)

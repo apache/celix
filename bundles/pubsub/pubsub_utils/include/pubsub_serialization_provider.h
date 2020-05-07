@@ -20,7 +20,7 @@
 #ifndef CELIX_PUBSUB_SERIALIZATION_PROVIDER_H
 #define CELIX_PUBSUB_SERIALIZATION_PROVIDER_H
 
-#include "log_helper.h"
+#include "celix_log_helper.h"
 #include "celix_bundle_context.h"
 #include "pubsub_message_serialization_service.h"
 #include "dyn_message.h"
@@ -33,7 +33,7 @@ extern "C" {
 typedef struct pubsub_serialization_provider pubsub_serialization_provider_t; //opaque
 
 typedef struct {
-    log_helper_t *log;
+    celix_log_helper_t *log;
     long svcId;
     pubsub_message_serialization_service_t  svc;
     char* descriptorContent;
@@ -102,7 +102,7 @@ size_t pubsub_serializationProvider_nrOfInvalidEntries(pubsub_serialization_prov
 /**
  * Returns the log helper of the serialization provider.
  */
-log_helper_t* pubsub_serializationProvider_getLogHelper(pubsub_serialization_provider_t *provider);
+celix_log_helper_t* pubsub_serializationProvider_getLogHelper(pubsub_serialization_provider_t *provider);
 
 
 #ifdef __cplusplus

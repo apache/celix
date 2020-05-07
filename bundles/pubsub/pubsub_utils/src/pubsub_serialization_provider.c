@@ -29,7 +29,7 @@
 #include "celix_utils.h"
 #include "dyn_message.h"
 #include "pubsub_utils.h"
-#include "log_helper.h"
+#include "celix_log_helper.h"
 #include "pubsub_message_serialization_service.h"
 #include "celix_shell_command.h"
 
@@ -43,18 +43,18 @@ typedef enum
 } descriptor_type_e;
 
 #define L_DEBUG(...) \
-    logHelper_log(provider->log, OSGI_LOGSERVICE_DEBUG, __VA_ARGS__)
+    celix_logHelper_debug(provider->logHelper, __VA_ARGS__)
 #define L_INFO(...) \
-    logHelper_log(provider->log, OSGI_LOGSERVICE_INFO, __VA_ARGS__)
+    celix_logHelper_info(provider->logHelper, __VA_ARGS__)
 #define L_WARN(...) \
-    logHelper_log(provider->log, OSGI_LOGSERVICE_WARNING, __VA_ARGS__)
+    celix_logHelper_warning(provider->logHelper, __VA_ARGS__)
 #define L_ERROR(...) \
-    logHelper_log(provider->log, OSGI_LOGSERVICE_ERROR, __VA_ARGS__)
+    celix_logHelper_error(provider->logHelper, __VA_ARGS__)
 
 
 struct pubsub_serialization_provider {
     celix_bundle_context_t *ctx;
-    log_helper_t *log;
+    celix_log_helper_t *logHelper;
     char* serializationType;
 
     //serialization callbacks
@@ -77,13 +77,14 @@ struct pubsub_serialization_provider {
 };
 
 static void dfi_log(void *handle, int level, const char *file, int line, const char *msg, ...) {
+    (void)level;
     va_list ap;
     pubsub_serialization_provider_t *provider = handle;
     char *logStr = NULL;
     va_start(ap, msg);
     vasprintf(&logStr, msg, ap);
     va_end(ap);
-    logHelper_log(provider->log, level, "FILE:%s, LINE:%i, MSG:%s", file, line, logStr);
+    celix_logHelper_log(provider->logHelper, CELIX_LOG_LEVEL_WARNING, "FILE:%s, LINE:%i, MSG:%s", file, line, logStr);
     free(logStr);
 }
 
@@ -374,7 +375,7 @@ static void pubsub_serializationProvider_parseDescriptors(pubsub_serialization_p
         unsigned int msgId = pubsub_serializationProvider_getMsgId(provider, msgType);
 
         pubsub_serialization_entry_t* serEntry = calloc(1, sizeof(*serEntry));
-        serEntry->log = provider->log;
+        serEntry->log = provider->logHelper;
         serEntry->descriptorContent = membuf;
         serEntry->msgFqn = msgFqn;
         serEntry->msgVersion = msgVersion;
@@ -549,10 +550,8 @@ pubsub_serialization_provider_t *pubsub_serializationProvider_create(
 
 
     {
-        char *logName = NULL;
-        asprintf(&logName, "pubsub_serialization_provider(%s)", serializationType);
-        provider->log = logHelper_createWithName(ctx, logName);
-        free(logName);
+        provider->logHelper = celix_logHelper_create(ctx, "celix_pubsub_serialization_provider");
+
     }
 
     dynFunction_logSetup(dfi_log, provider, 1);
@@ -628,7 +627,7 @@ void pubsub_serializationProvider_destroy(pubsub_serialization_provider_t* provi
 
         celixThreadMutex_destroy(&provider->mutex);
 
-        logHelper_destroy(&provider->log);
+        celix_logHelper_destroy(provider->logHelper);
 
         free(provider->serializationType);
         free(provider);
@@ -661,6 +660,6 @@ size_t pubsub_serializationProvider_nrOfInvalidEntries(pubsub_serialization_prov
     return count;
 }
 
-log_helper_t* pubsub_serializationProvider_getLogHelper(pubsub_serialization_provider_t *provider) {
-    return provider->log;
+celix_log_helper_t* pubsub_serializationProvider_getLogHelper(pubsub_serialization_provider_t *provider) {
+    return provider->logHelper;
 }

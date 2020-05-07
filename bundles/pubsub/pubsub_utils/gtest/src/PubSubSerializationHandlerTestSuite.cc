@@ -138,7 +138,7 @@ TEST_F(PubSubSerializationHandlerTestSuite, ClashingId) {
     long svcId2 = registerSerSvc("json", 42, "example::Msg2", "1.0.0");
     std::string output = testing::internal::GetCapturedStderr();
 
-    EXPECT_TRUE(strstr(output.c_str(), "ERROR") != nullptr);
+    EXPECT_TRUE(strstr(output.c_str(), "error") != nullptr);
     EXPECT_EQ(1, pubsub_serializerHandler_messageSerializationServiceCount(handler));
     celix_bundleContext_unregisterService(ctx.get(), svcId1);
     celix_bundleContext_unregisterService(ctx.get(), svcId2);
@@ -155,7 +155,7 @@ TEST_F(PubSubSerializationHandlerTestSuite, MultipleVersions) {
     std::string output = testing::internal::GetCapturedStderr();
 
     EXPECT_EQ(1, pubsub_serializerHandler_messageSerializationServiceCount(handler));
-    EXPECT_TRUE(strstr(output.c_str(), "ERROR") != nullptr);
+    EXPECT_TRUE(strstr(output.c_str(), "error") != nullptr);
     EXPECT_TRUE(pubsub_serializerHandler_supportMsg(handler, 42, 1, 0));
     EXPECT_TRUE(pubsub_serializerHandler_supportMsg(handler, 42, 1, 1));
     EXPECT_TRUE(pubsub_serializerHandler_supportMsg(handler, 42, 1, 14));

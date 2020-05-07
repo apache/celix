@@ -24,16 +24,16 @@
 
 #include "celix_version.h"
 #include "pubsub_message_serialization_service.h"
-#include "log_helper.h"
+#include "celix_log_helper.h"
 
 #define L_DEBUG(...) \
-    logHelper_log(handler->logHelper, OSGI_LOGSERVICE_DEBUG, __VA_ARGS__)
+    celix_logHelper_debug(handler->logHelper, __VA_ARGS__)
 #define L_INFO(...) \
-    logHelper_log(handler->logHelper, OSGI_LOGSERVICE_INFO, __VA_ARGS__)
+    celix_logHelper_info(handler->logHelper, __VA_ARGS__)
 #define L_WARN(...) \
-    logHelper_log(handler->logHelper, OSGI_LOGSERVICE_WARNING, __VA_ARGS__)
+    celix_logHelper_warning(handler->logHelper, __VA_ARGS__)
 #define L_ERROR(...) \
-    logHelper_log(handler->logHelper, OSGI_LOGSERVICE_ERROR, __VA_ARGS__)
+    celix_logHelper_error(handler->logHelper, __VA_ARGS__)
 
 typedef struct pubsub_serialization_service_entry {
     long svcId;
@@ -48,7 +48,7 @@ struct pubsub_serializer_handler {
     celix_bundle_context_t* ctx;
     bool backwardCompatible;
     long serializationSvcTrackerId;
-    log_helper_t *logHelper;
+    celix_log_helper_t *logHelper;
 
     celix_thread_mutex_t mutex;
     hash_map_t *serializationServices; //key = msg id, value = sorted array list with pubsub_serialization_service_entry_t*
@@ -116,10 +116,7 @@ pubsub_serializer_handler_t* pubsub_serializerHandler_create(celix_bundle_contex
     handler->ctx = ctx;
     handler->backwardCompatible = backwardCompatible;
 
-    char *name;
-    asprintf(&name,  "PUBSUB_SERIALIZER_HANDLER(%s)", serializerType);
-    handler->logHelper = logHelper_createWithName(ctx, name);
-    free(name);
+    handler->logHelper = celix_logHelper_create(ctx, "celix_pubsub_serialization_handler");
 
     celixThreadMutex_create(&handler->mutex, NULL);
     handler->serializationServices = hashMap_create(NULL, NULL, NULL, NULL);
@@ -156,7 +153,7 @@ void pubsub_serializerHandler_destroy(pubsub_serializer_handler_t* handler) {
             celix_arrayList_destroy(entries);
         }
         hashMap_destroy(handler->serializationServices, false, false);
-        logHelper_destroy(&handler->logHelper);
+        celix_logHelper_destroy(handler->logHelper);
         free(handler);
     }
 }

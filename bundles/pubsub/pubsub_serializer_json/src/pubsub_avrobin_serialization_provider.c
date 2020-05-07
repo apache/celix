@@ -25,17 +25,17 @@
 
 #include "json_serializer.h"
 #include "dyn_message.h"
-#include "log_helper.h"
+#include "celix_log_helper.h"
 #include "pubsub_message_serialization_service.h"
 
 static void dfi_log(void *handle, int level, const char *file, int line, const char *msg, ...) {
     va_list ap;
-    log_helper_t *log = handle;
+    celix_log_helper_t *log = handle;
     char *logStr = NULL;
     va_start(ap, msg);
     vasprintf(&logStr, msg, ap);
     va_end(ap);
-    logHelper_log(log, level, "FILE:%s, LINE:%i, MSG:%s", file, line, logStr);
+    celix_logHelper_log(log, level, "FILE:%s, LINE:%i, MSG:%s", file, line, logStr);
     free(logStr);
 }
 
