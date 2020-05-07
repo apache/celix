@@ -68,8 +68,8 @@ sudo apt-get install -yq --no-install-recommends \
     libcpputest-dev
 
 #For testing gtest is also used. This is fetched using a cmake 3.11+ feature,
-# which is newer that intalled under Ubuntu 18. 
-#Use snap to install the latest cmake version
+#The isntalled cmake version for Ubuntu 18 is older than 3.11,
+#use snap to install the latest cmake version
 snap install --classic cmake
 ```
 
