@@ -25,7 +25,7 @@ add_celix_bundle(bundle_with_exception SOURCES src/nop_activator.c VERSION 1.0.0
 add_subdirectory(subdir) #simple_test_bundle4, simple_test_bundle5 and sublib
 
 add_celix_bundle(unresolveable_bundle SOURCES src/nop_activator.c VERSION 1.0.0)
-target_link_libraries(unresolveable_bundle PRIVATE "-L${CMAKE_CURRENT_BINARY_DIR}/subdir -lsublib")
+target_link_libraries(unresolveable_bundle PRIVATE sublib)
 if(NOT APPLE)
     set_target_properties(unresolveable_bundle PROPERTIES LINK_FLAGS -Wl,--no-as-needed)
 endif()
