@@ -37,7 +37,7 @@ add_executable(test_framework
     src/dm_tests.cpp
 )
 
-target_link_libraries(test_framework Celix::framework CURL::libcurl GTest::GTest)
+target_link_libraries(test_framework Celix::framework CURL::libcurl GTest::gtest)
 add_dependencies(test_framework simple_test_bundle1_bundle simple_test_bundle2_bundle simple_test_bundle3_bundle simple_test_bundle4_bundle simple_test_bundle5_bundle bundle_with_exception_bundle unresolveable_bundle_bundle)
 target_include_directories(test_framework PRIVATE ../src)
 

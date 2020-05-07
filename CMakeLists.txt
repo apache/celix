@@ -18,9 +18,9 @@
 cmake_minimum_required (VERSION 3.2)
 cmake_policy(SET CMP0012 NEW)
 cmake_policy(SET CMP0042 NEW)
-#if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.9.0")
-#   cmake_policy(SET CMP0068 NEW)
-#endif()
+if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.9.0")
+   cmake_policy(SET CMP0068 NEW)
+endif()
 
 project (Celix C CXX)
 
@@ -31,6 +31,13 @@ include(cmake/cmake_celix/UseCelix.cmake)
 IF (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} EQUAL 3.3 AND ${CMAKE_GENERATOR} STREQUAL "Unix Makefiles")
     message( FATAL_ERROR "Building Celix using CMake 3.3 and makefiles is not supported due to a bug in the Makefile Generator (see Bug 15696). Please change the used CMake version - both, CMake 3.2 and CMake 3.4 are working fine. Or use a different generator (e.g. Ninja)." )
 ENDIF()
+
+if (ENABLE_TESTING)
+    find_package(GTest CONFIG QUIET)
+    if (NOT GTest_FOUND)
+        include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/AddGTest.cmake)
+    endif()
+endif ()
 
 set(ENABLE_W_ERROR ON)
 set(ENABLE_MORE_WARNINGS OFF)
@@ -115,13 +122,6 @@ if (CELIX_ADD_OPENSSL_DEP)
 endif ()
 
 option(CELIX_USE_ZIP_INSTEAD_OF_JAR "Default Celix cmake command will use jar to package bundle (if found). This option enforces Celix to use zip instead." OFF)
-
-if (ENABLE_TESTING)
-    find_package(GTest QUIET)
-    if (NOT GTest_FOUND)
-        include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/AddGTest.cmake)
-    endif()
-endif ()
 
 #Libraries and Launcher
 add_subdirectory(libs)

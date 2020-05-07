@@ -46,7 +46,7 @@ target_link_libraries(test_rsa_dfi PRIVATE
         Celix::framework
         Celix::rsa_common
         calculator_api
-        GTest::GTest
+        GTest::gtest
 )
 
 get_property(rsa_bundle_file TARGET rsa_dfi PROPERTY BUNDLE_FILE)
