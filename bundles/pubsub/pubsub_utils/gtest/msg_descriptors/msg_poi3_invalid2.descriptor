@@ -1,6 +1,6 @@
 :header
 type=message
-name=poi1
+name=poi3
 version=1.1.0
 :annotations
 classname=org.example.PointOfInterest
