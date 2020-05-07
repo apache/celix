@@ -16,17 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * sub_command.h
- *
- *  \date       Oct 13, 2011
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
+
 
 #ifndef SUB_COMMAND_H_
 #define SUB_COMMAND_H_
 
-void subCommand_execute(celix_bundle_context_t *context, char *line, FILE *out, FILE *err);
+bool subCommand_execute(void *handle, const char *line, FILE *out, FILE *err);
 
 #endif /* SUB_COMMAND_H_ */

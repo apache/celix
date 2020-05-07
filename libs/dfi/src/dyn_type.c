@@ -571,27 +571,18 @@ static void dynType_clearTypedPointer(dyn_type *type) {
 }
 
 int dynType_alloc(dyn_type *type, void **bufLoc) {
-    assert(type->type != DYN_TYPE_REF);
-    assert(type->ffiType->size != 0);
     int status = OK;
 
-    void *inst = calloc(1, type->ffiType->size);
-    if (inst != NULL) {
-        if (type->type == DYN_TYPE_TYPED_POINTER) {
-            void *ptr = NULL;
-            dyn_type *sub = NULL;
-            status = dynType_typedPointer_getTypedType(type, &sub);
-            if (status == OK) {
-                status = dynType_alloc(sub, &ptr);
-                if (status == OK) {
-                    *(void **)inst = ptr;
-                }
-            }
-        }
-        *bufLoc = inst;
+    if (type->type == DYN_TYPE_REF) {
+        status = dynType_alloc(type->ref.ref, bufLoc);
     } else {
-        status = MEM_ERROR;
-        LOG_ERROR("Error allocating memory for type '%c'", type->descriptor);
+        void *inst = calloc(1, type->ffiType->size);
+        if (inst != NULL) {
+            *bufLoc = inst;
+        } else {
+            status = MEM_ERROR;
+            LOG_ERROR("Error allocating memory for type '%c'", type->descriptor);
+        }
     }
 
     return status;
@@ -656,16 +647,25 @@ int dynType_complex_entries(dyn_type *type, struct complex_type_entries_head **e
 }
 
 //sequence
+
+void dynType_sequence_init(dyn_type *type, void *inst) {
+    assert(type->type == DYN_TYPE_SEQUENCE);
+    struct generic_sequence *seq = inst;
+    seq->buf = NULL;
+    seq->cap = 0;
+    seq->len = 0;
+}
+
 int dynType_sequence_alloc(dyn_type *type, void *inst, uint32_t cap) {
     assert(type->type == DYN_TYPE_SEQUENCE);
     int status = OK;
     struct generic_sequence *seq = inst;
     if (seq != NULL) {
         size_t size = dynType_size(type->sequence.itemType);
-        seq->buf = calloc(cap, size);
+        seq->buf = malloc(cap * size);
         if (seq->buf != NULL) {
             seq->cap = cap;
-            seq->len = 0;;
+            seq->len = 0;
         } else {
             seq->cap = 0;
             status = MEM_ERROR;
@@ -674,6 +674,27 @@ int dynType_sequence_alloc(dyn_type *type, void *inst, uint32_t cap) {
     } else {
             status = MEM_ERROR;
             LOG_ERROR("Error allocating memory for seq")
+    }
+    return status;
+}
+
+int dynType_sequence_reserve(dyn_type *type, void *inst, uint32_t cap) {
+    assert(type->type == DYN_TYPE_SEQUENCE);
+    int status = OK;
+    struct generic_sequence *seq = inst;
+    if (seq != NULL && seq->cap < cap) {
+        size_t size = dynType_size(type->sequence.itemType);
+        seq->buf = realloc(seq->buf, (size_t)(cap * size));
+        if (seq->buf != NULL) {
+            seq->cap = cap;
+        } else {
+            seq->cap = 0;
+            status = MEM_ERROR;
+            LOG_ERROR("Error allocating memory for buf")
+        }
+    } else {
+        status = MEM_ERROR;
+        LOG_ERROR("Error allocating memory for seq")
     }
     return status;
 }
@@ -687,6 +708,10 @@ void dynType_deepFree(dyn_type *type, void *loc, bool alsoDeleteSelf) {
         dyn_type *subType = NULL;
         char *text = NULL;
         switch (type->type) {
+            case DYN_TYPE_REF:
+                //NOTE: do not recursively forward asloDeleteSelf, because this is already handled in this function)
+                dynType_deepFree(type->ref.ref, loc, false);
+                break;
             case DYN_TYPE_COMPLEX :
                 dynType_freeComplexType(type, loc);
                 break;
@@ -695,11 +720,18 @@ void dynType_deepFree(dyn_type *type, void *loc, bool alsoDeleteSelf) {
                 break;
             case DYN_TYPE_TYPED_POINTER:
                 dynType_typedPointer_getTypedType(type, &subType);
-                dynType_deepFree(subType, *(void **)loc, true);
+                void *ptrToType = *(void**)loc;
+                dynType_deepFree(subType, ptrToType, true);
                 break;
             case DYN_TYPE_TEXT :
                 text = *(char **)loc;
                 free(text);
+                break;
+            case DYN_TYPE_SIMPLE:
+                //nop
+                break;
+            default:
+                LOG_ERROR("Unexpected switch case. cannot free dyn type %c\n", type->descriptor);
                 break;
         }
 
@@ -714,7 +746,7 @@ void dynType_freeSequenceType(dyn_type *type, void *seqLoc) {
     dyn_type *itemType = dynType_sequence_itemType(type);
     void *itemLoc = NULL;
     int i;
-    for (i = 0; i < seq->len; i += 1) {
+    for (i = 0; i < seq->len; ++i) {
         dynType_sequence_locForIndex(type, seqLoc, i, &itemLoc);
         dynType_deepFree(itemType, itemLoc, false);
     }
@@ -742,7 +774,6 @@ int dynType_sequence_locForIndex(dyn_type *type, void *seqLoc, int index, void *
     int status = OK;
 
     struct generic_sequence *seq = seqLoc;
-    char *valLoc = seq->buf;
 
     size_t itemSize = dynType_size(type->sequence.itemType);
 
@@ -755,17 +786,10 @@ int dynType_sequence_locForIndex(dyn_type *type, void *seqLoc, int index, void *
         LOG_WARNING("Requesting index (%i) outsize defined length (%u) but within capacity", index, seq->len);
     }
 
-    if (status == OK) { }
-    int i;
-    for (i = 0; i < seq->cap; i += 1) {
-        if (index == i) {
-            break;
-        } else {
-            valLoc += itemSize;
-        }
+    if (status == OK) {
+        char *valLoc = seq->buf + (index * itemSize);
+        (*out) = valLoc;
     }
-
-    (*out) = valLoc;
 
     return status;
 }
@@ -804,7 +828,7 @@ void dynType_simple_setValue(dyn_type *type, void *inst, void *in) {
     memcpy(inst, in, size);
 }
 
-int dynType_descriptorType(dyn_type *type) {
+char dynType_descriptorType(dyn_type *type) {
     return type->descriptor;
 }
 

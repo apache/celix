@@ -15,5 +15,16 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_subdirectory(log_writer)
-add_subdirectory(log_service)
+
+add_subdirectory(log_service_api)
+
+#Version 2 API (deprecated)
+if (CELIX_INSTALL_DEPRECATED_API)
+    add_subdirectory(log_service_v2)
+endif ()
+
+#Version 3 API
+add_subdirectory(log_helper)
+add_subdirectory(log_admin)
+add_subdirectory(log_writers)
+

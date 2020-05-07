@@ -16,17 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * dm_component_impl.c
- *
- *  \date       9 Oct 2014
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
+
 
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
+#include <uuid/uuid.h>
 
 #include "celix_constants.h"
 #include "filter.h"
@@ -65,8 +60,8 @@ struct celix_dm_component_struct {
 typedef struct dm_interface_struct {
     char* serviceName;
     const void* service;
-    properties_pt properties;
-    service_registration_pt registration;
+    celix_properties_t *properties;
+    long svcId;
 } dm_interface_t;
 
 struct dm_executor_struct {
@@ -131,7 +126,13 @@ static celix_status_t component_resume(celix_dm_component_t *component, celix_dm
 
 celix_dm_component_t* celix_dmComponent_create(bundle_context_t *context, const char* name) {
     celix_dm_component_t *component = calloc(1, sizeof(*component));
-    snprintf(component->id, DM_COMPONENT_MAX_ID_LENGTH, "%p", component);
+
+    //gen uuid
+    uuid_t uid;
+    uuid_generate(uid);
+    uuid_unparse(uid, component->id);
+    //snprintf(component->id, DM_COMPONENT_MAX_ID_LENGTH, "%p", component);
+
     snprintf(component->name, DM_COMPONENT_MAX_NAME_LENGTH, "%s", name == NULL ? "n/a" : name);
 
     component->context = context;
@@ -374,22 +375,24 @@ celix_status_t celix_dmComponent_addInterface(celix_dm_component_t *component, c
     char *name = strdup(serviceName);
 
     if (properties == NULL) {
-        properties = properties_create();
+        properties = celix_properties_create();
     }
 
     if ((properties_get(properties, CELIX_FRAMEWORK_SERVICE_VERSION) == NULL) && (serviceVersion != NULL)) {
-        properties_set(properties, CELIX_FRAMEWORK_SERVICE_VERSION, serviceVersion);
+        celix_properties_set(properties, CELIX_FRAMEWORK_SERVICE_VERSION, serviceVersion);
     }
 
     if (component->setCLanguageProperty && properties_get(properties, CELIX_FRAMEWORK_SERVICE_LANGUAGE) == NULL) { //always set default lang to C
-        properties_set(properties, CELIX_FRAMEWORK_SERVICE_LANGUAGE, CELIX_FRAMEWORK_SERVICE_C_LANGUAGE);
+        celix_properties_set(properties, CELIX_FRAMEWORK_SERVICE_LANGUAGE, CELIX_FRAMEWORK_SERVICE_C_LANGUAGE);
     }
+
+    celix_properties_set(properties, CELIX_DM_COMPONENT_UUID, (char*)component->id);
 
     if (interface && name) {
         interface->serviceName = name;
         interface->service = service;
         interface->properties = properties;
-        interface->registration = NULL;
+        interface->svcId= -1L;
         celixThreadMutex_lock(&component->mutex);
         arrayList_add(component->dm_interfaces, interface);
         celixThreadMutex_unlock(&component->mutex);
@@ -1247,11 +1250,14 @@ static celix_status_t component_registerServices(celix_dm_component_t *component
         celixThreadMutex_lock(&component->mutex);
         for (i = 0; i < arrayList_size(component->dm_interfaces); i++) {
             dm_interface_t *interface = arrayList_get(component->dm_interfaces, i);
-            if (interface->registration == NULL) {
-                properties_pt regProps = NULL;
-                properties_copy(interface->properties, &regProps);
-                bundleContext_registerService(component->context, interface->serviceName, interface->service, regProps,
-                                              &interface->registration);
+            if (interface->svcId == -1L) {
+                celix_properties_t *regProps = celix_properties_copy(interface->properties);
+                celix_service_registration_options_t opts = CELIX_EMPTY_SERVICE_REGISTRATION_OPTIONS;
+                opts.properties = regProps;
+                opts.svc = (void*)interface->service;
+                opts.serviceName = interface->serviceName;
+                opts.serviceLanguage = celix_properties_get(regProps, CELIX_FRAMEWORK_SERVICE_LANGUAGE, NULL);
+                interface->svcId = celix_bundleContext_registerServiceWithOptions(component->context, &opts);
             }
         }
         celixThreadMutex_unlock(&component->mutex);
@@ -1263,16 +1269,22 @@ static celix_status_t component_registerServices(celix_dm_component_t *component
 static celix_status_t component_unregisterServices(celix_dm_component_t *component) {
     celix_status_t status = CELIX_SUCCESS;
 
-    unsigned int i;
+    celix_array_list_t *ids = celix_arrayList_create();
 
     celixThreadMutex_lock(&component->mutex);
-    for (i = 0; i < arrayList_size(component->dm_interfaces); i++) {
+    for (int i = 0; i < celix_arrayList_size(component->dm_interfaces); ++i) {
 	    dm_interface_t *interface = arrayList_get(component->dm_interfaces, i);
-
-	    serviceRegistration_unregister(interface->registration);
-	    interface->registration = NULL;
+	    celix_arrayList_addLong(ids, interface->svcId);
+	    interface->svcId = -1L;
     }
     celixThreadMutex_unlock(&component->mutex);
+
+    for (int i = 0; i < celix_arrayList_size(ids); ++i) {
+        long svcId = celix_arrayList_getLong(ids, i);
+        celix_bundleContext_unregisterService(component->context, svcId);
+    }
+
+    celix_arrayList_destroy(ids);
 
     return status;
 }

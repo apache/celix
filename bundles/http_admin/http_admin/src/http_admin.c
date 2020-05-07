@@ -102,6 +102,7 @@ http_admin_manager_t *httpAdmin_create(celix_bundle_context_t *context, char *ro
         }
         celixThreadMutex_destroy(&admin->admin_lock);
 
+        celix_arrayList_destroy(admin->aliasList);
         free(admin);
         admin = NULL;
     }
@@ -120,9 +121,9 @@ void httpAdmin_destroy(http_admin_manager_t *admin) {
     destroyServiceTree(&admin->http_svc_tree);
 
     //Destroy alias map by removing symbolic links first.
-    unsigned int size = arrayList_size(admin->aliasList);
+    unsigned int size = celix_arrayList_size(admin->aliasList);
     for (unsigned int i = (size - 1); i < size; i--) {
-        http_alias_t *alias = arrayList_get(admin->aliasList, i);
+        http_alias_t *alias = celix_arrayList_get(admin->aliasList, i);
 
         //Delete alias in cache directory
         if (remove(alias->alias_path) < 0)
@@ -133,7 +134,7 @@ void httpAdmin_destroy(http_admin_manager_t *admin) {
         free(alias);
         celix_arrayList_removeAt(admin->aliasList, i);
     }
-    arrayList_destroy(admin->aliasList);
+    celix_arrayList_destroy(admin->aliasList);
 
     celixThreadMutex_unlock(&(admin->admin_lock));
     celixThreadMutex_destroy(&(admin->admin_lock));
@@ -222,7 +223,8 @@ int http_request_handle(struct mg_connection *connection) {
 
                         if (ri->content_length > 0) {
                             int content_size = (ri->content_length > INT_MAX ? INT_MAX : (int) ri->content_length);
-                            rcv_buf = malloc((size_t) content_size);
+                            rcv_buf = malloc((size_t) content_size + 1);
+                            rcv_buf[content_size] = '\0';
                             bytes_read = mg_read(connection, rcv_buf, (size_t) content_size);
                         } else {
                             no_data = true;
@@ -250,7 +252,8 @@ int http_request_handle(struct mg_connection *connection) {
 
                         if (ri->content_length > 0) {
                             int content_size = (ri->content_length > INT_MAX ? INT_MAX : (int) ri->content_length);
-                            rcv_buf = malloc((size_t) content_size);
+                            rcv_buf = malloc((size_t) content_size + 1);
+                            rcv_buf[content_size] = '\0';
                             bytes_read = mg_read(connection, rcv_buf, (size_t) content_size);
                         } else {
                             no_data = true;
@@ -284,7 +287,8 @@ int http_request_handle(struct mg_connection *connection) {
 
                         if (ri->content_length > 0) {
                             int content_size = (ri->content_length > INT_MAX ? INT_MAX : (int) ri->content_length);
-                            rcv_buf = malloc((size_t) content_size);
+                            rcv_buf = malloc((size_t) content_size + 1);
+                            rcv_buf[content_size] = '\0';
                             bytes_read = mg_read(connection, rcv_buf, (size_t) content_size);
                         } else {
                             no_data = true;
@@ -317,7 +321,8 @@ int http_request_handle(struct mg_connection *connection) {
 
                         if (ri->content_length > 0) {
                             int content_size = (ri->content_length > INT_MAX ? INT_MAX : (int) ri->content_length);
-                            rcv_buf = malloc((size_t) content_size);
+                            rcv_buf = malloc((size_t) content_size + 1);
+                            rcv_buf[content_size] = '\0';
                             bytes_read = mg_read(connection, rcv_buf, (size_t) content_size);
                         } else {
                             no_data = true;

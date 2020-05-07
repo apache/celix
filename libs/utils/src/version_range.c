@@ -26,11 +26,15 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
+#include <assert.h>
 
+#include "version_private.h"
 #include "version_range_private.h"
 
 celix_status_t versionRange_createVersionRange(version_pt low, bool isLowInclusive,
             version_pt high, bool isHighInclusive, version_range_pt *range) {
+    assert(low != high);
     celix_status_t status = CELIX_SUCCESS;
     *range = (version_range_pt) malloc(sizeof(**range));
     if (!*range) {
@@ -231,3 +235,75 @@ celix_status_t versionRange_parse(const char * rangeStr, version_range_pt *range
     return status;
 }
 
+char* versionRange_createLDAPFilter(version_range_pt range, const char *serviceVersionAttributeName) {
+    char *output;
+
+    int ret = -1;
+    if(range->high == NULL) {
+        ret = asprintf(&output, "(&(%s%s%i.%i.%i))",
+                       serviceVersionAttributeName, range->isLowInclusive ? ">=" : ">", range->low->major,
+                       range->low->minor, range->low->micro);
+    } else {
+        ret = asprintf(&output, "(&(%s%s%i.%i.%i)(%s%s%i.%i.%i))",
+                       serviceVersionAttributeName, range->isLowInclusive ? ">=" : ">", range->low->major,
+                       range->low->minor, range->low->micro,
+                       serviceVersionAttributeName, range->isHighInclusive ? "<=" : "<", range->high->major,
+                       range->high->minor, range->high->micro);
+    }
+
+    if (ret < 0) {
+        return NULL;
+    }
+
+    return output;
+}
+
+
+
+bool versionRange_createLDAPFilterInPlace(version_range_pt range, const char *serviceVersionAttributeName, char* buffer, size_t bufferLength) {
+    if(buffer == NULL || bufferLength == 0) {
+        return false;
+    }
+
+    const char* format = "(&(%s%s%i.%i.%i)(%s%s%i.%i.%i))";
+    if(range->high == NULL) {
+        format = "(&(%s%s%i.%i.%i))";
+    }
+
+    // check if buffer is long enough
+    int size = 0;
+    if(range->high == NULL) {
+        size = snprintf(NULL, 0, format,
+                        serviceVersionAttributeName, range->isLowInclusive ? ">=" : ">", range->low->major,
+                        range->low->minor, range->low->micro);
+    } else {
+        size = snprintf(NULL, 0, format,
+                        serviceVersionAttributeName, range->isLowInclusive ? ">=" : ">", range->low->major,
+                        range->low->minor, range->low->micro,
+                        serviceVersionAttributeName, range->isHighInclusive ? "<=" : "<", range->high->major,
+                        range->high->minor, range->high->micro);
+    }
+
+    if(size >= bufferLength || size < 0) {
+        return false;
+    }
+
+    // write contents into buffer
+    if(range->high == NULL) {
+        size = snprintf(buffer, bufferLength, format,
+                        serviceVersionAttributeName, range->isLowInclusive ? ">=" : ">", range->low->major,
+                        range->low->minor, range->low->micro);
+    } else {
+        size = snprintf(buffer, bufferLength, format,
+                        serviceVersionAttributeName, range->isLowInclusive ? ">=" : ">", range->low->major,
+                        range->low->minor, range->low->micro,
+                        serviceVersionAttributeName, range->isHighInclusive ? "<=" : "<", range->high->major,
+                        range->high->minor, range->high->micro);
+    }
+
+    if(size >= bufferLength || size < 0) {
+        return false;
+    }
+
+    return true;
+}

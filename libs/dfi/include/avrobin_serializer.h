@@ -24,12 +24,23 @@
 #include "dyn_function.h"
 #include "dyn_interface.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //logging
 DFI_SETUP_LOG_HEADER(avrobinSerializer);
 
 int avrobinSerializer_deserialize(dyn_type *type, const uint8_t *input, size_t inlen, void **result);
+
 int avrobinSerializer_serialize(dyn_type *type, const void *input, uint8_t **output, size_t *outlen);
+
 int avrobinSerializer_generateSchema(dyn_type *type, char **output);
+
 int avrobinSerializer_saveFile(const char *filename, const char *schema, const uint8_t *serdata, size_t serdatalen);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

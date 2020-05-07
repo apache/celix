@@ -53,8 +53,10 @@ typedef struct celix_dm_service_dependency dm_service_dependency_t CELIX_DEPRECA
 typedef struct celix_bundle_context *bundle_context_pt CELIX_DEPRECATED_ATTR;
 typedef struct celix_bundle_context bundle_context_t CELIX_DEPRECATED_ATTR;
 typedef struct celix_framework *framework_pt CELIX_DEPRECATED_ATTR;
+typedef const struct celix_framework *const_framework_pt CELIX_DEPRECATED_ATTR;
 typedef struct celix_framework framework_t CELIX_DEPRECATED_ATTR;
 typedef struct celix_bundle * bundle_pt CELIX_DEPRECATED_ATTR;
+typedef const struct celix_bundle * const_bundle_pt CELIX_DEPRECATED_ATTR;
 typedef struct celix_bundle bundle_t CELIX_DEPRECATED_ATTR;
 
 // will be deprecated in the future

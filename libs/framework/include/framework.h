@@ -48,9 +48,9 @@ FRAMEWORK_EXPORT celix_status_t framework_destroy(celix_framework_t *framework);
 
 FRAMEWORK_EXPORT celix_status_t framework_waitForStop(celix_framework_t *framework);
 
-FRAMEWORK_EXPORT celix_status_t framework_getFrameworkBundle(celix_framework_t *framework, celix_bundle_t **bundle);
+FRAMEWORK_EXPORT celix_status_t framework_getFrameworkBundle(const celix_framework_t *framework, celix_bundle_t **bundle);
 
-celix_bundle_context_t* framework_getContext(celix_framework_t *framework);
+celix_bundle_context_t* framework_getContext(const celix_framework_t *framework);
 
 #ifdef __cplusplus
 }

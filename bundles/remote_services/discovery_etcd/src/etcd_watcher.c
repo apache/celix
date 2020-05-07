@@ -16,22 +16,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * etcd_watcher.c
- *
- * \date       16 Sep 2014
- * \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- * \copyright  Apache License, Version 2.0
- */
 
 #include <stdbool.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 
-#include "log_helper.h"
-#include "log_service.h"
-#include "celix_constants.h"
+#include "celix_api.h"
+#include "celix_log_helper.h"
 #include "utils.h"
 #include "discovery.h"
 #include "discovery_impl.h"
@@ -44,9 +36,10 @@
 
 struct etcd_watcher {
     etcdlib_t *etcdlib;
+    int ttl;
 
     discovery_t *discovery;
-    log_helper_t **loghelper;
+    celix_log_helper_t **loghelper;
     hash_map_pt entries;
 
     celix_thread_mutex_t watcherLock;
@@ -140,19 +133,17 @@ static celix_status_t etcdWatcher_addAlreadyExistingWatchpoints(etcd_watcher_t *
 
 static celix_status_t etcdWatcher_addOwnFramework(etcd_watcher_t *watcher)
 {
-    celix_status_t status = CELIX_BUNDLE_EXCEPTION;
     char localNodePath[MAX_LOCALNODE_LENGTH];
     char *value;
  	char url[MAX_VALUE_LENGTH];
     int modIndex;
     char* endpoints = NULL;
-    const char* ttlStr = NULL;
-    int ttl;
 
 	celix_bundle_context_t *context = watcher->discovery->context;
 	endpoint_discovery_server_t *server = watcher->discovery->server;
 
     // register own framework
+    celix_status_t status;
     if ((status = etcdWatcher_getLocalNodePath(context, localNodePath)) != CELIX_SUCCESS) {
         return status;
     }
@@ -163,32 +154,17 @@ static celix_status_t etcdWatcher_addOwnFramework(etcd_watcher_t *watcher)
 
 	endpoints = url;
 
-    if ((bundleContext_getProperty(context, CFG_ETCD_TTL, &ttlStr) != CELIX_SUCCESS) || !ttlStr) {
-        ttl = DEFAULT_ETCD_TTL;
-    }
-    else
-    {
-        char* endptr = (char *) ttlStr;
-        errno = 0;
-        ttl = strtol(ttlStr, &endptr, 10);
-        if (*endptr || errno != 0) {
-            ttl = DEFAULT_ETCD_TTL;
-        }
-    }
+	watcher->ttl = celix_bundleContext_getPropertyAsLong(context, CFG_ETCD_TTL, DEFAULT_ETCD_TTL);
 
 	if (etcdlib_get(watcher->etcdlib, localNodePath, &value, &modIndex) != ETCDLIB_RC_OK) {
-		etcdlib_set(watcher->etcdlib, localNodePath, endpoints, ttl, false);
-	}
-	else if (etcdlib_set(watcher->etcdlib, localNodePath, endpoints, ttl, true) != ETCDLIB_RC_OK)  {
-		logHelper_log(*watcher->loghelper, OSGI_LOGSERVICE_WARNING, "Cannot register local discovery");
-    }
-    else {
-        status = CELIX_SUCCESS;
+		etcdlib_set(watcher->etcdlib, localNodePath, endpoints, watcher->ttl, false);
+	} else if (etcdlib_set(watcher->etcdlib, localNodePath, endpoints, watcher->ttl , true) != ETCDLIB_RC_OK)  {
+		celix_logHelper_log(*watcher->loghelper, CELIX_LOG_LEVEL_WARNING, "Cannot register local discovery");
     }
 
 	FREE_MEM(value);
 
-    return status;
+    return CELIX_SUCCESS;
 }
 
 
@@ -277,12 +253,12 @@ static void* etcdWatcher_run(void* data) {
 			} else if (strcmp(action, "update") == 0) {
 				etcdWatcher_addEntry(watcher, rkey, value);
 			} else {
-				logHelper_log(*watcher->loghelper, OSGI_LOGSERVICE_INFO, "Unexpected action: %s", action);
+				celix_logHelper_log(*watcher->loghelper, CELIX_LOG_LEVEL_INFO, "Unexpected action: %s", action);
 			}
 
 			highestModified = modIndex;
-        } else if (time(NULL) - timeBeforeWatch <= (DEFAULT_ETCD_TTL / 4)) {
-			sleep(DEFAULT_ETCD_TTL / 4);
+        } else if (time(NULL) - timeBeforeWatch <= (watcher->ttl / 4)) {
+			sleep(watcher->ttl / 4);
         }
 
         FREE_MEM(action);
@@ -291,7 +267,7 @@ static void* etcdWatcher_run(void* data) {
         FREE_MEM(rkey);
 
 		// update own framework uuid
-		if (time(NULL) - timeBeforeWatch > (DEFAULT_ETCD_TTL / 4)) {
+		if (time(NULL) - timeBeforeWatch > (watcher->ttl / 4)) {
 			etcdWatcher_addOwnFramework(watcher);
 			timeBeforeWatch = time(NULL);
 		}
@@ -306,12 +282,6 @@ static void* etcdWatcher_run(void* data) {
  */
 celix_status_t etcdWatcher_create(discovery_t *discovery, celix_bundle_context_t *context, etcd_watcher_t **watcher)
 {
-	celix_status_t status = CELIX_SUCCESS;
-
-	const char* etcd_server = NULL;
-	const char* etcd_port_string = NULL;
-	int etcd_port = 0;
-
 	if (discovery == NULL) {
 		return CELIX_BUNDLE_EXCEPTION;
 	}
@@ -325,32 +295,17 @@ celix_status_t etcdWatcher_create(discovery_t *discovery, celix_bundle_context_t
 		(*watcher)->discovery = discovery;
 		(*watcher)->loghelper = &discovery->loghelper;
 		(*watcher)->entries = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
+        (*watcher)->ttl = DEFAULT_ETCD_TTL;
 	}
 
-	if ((bundleContext_getProperty(context, CFG_ETCD_SERVER_IP, &etcd_server) != CELIX_SUCCESS) || !etcd_server) {
-		etcd_server = DEFAULT_ETCD_SERVER_IP;
-	}
+	const char* etcd_server = celix_bundleContext_getProperty(context, CFG_ETCD_SERVER_IP, DEFAULT_ETCD_SERVER_IP);
+	long etcd_port = celix_bundleContext_getPropertyAsLong(context, CFG_ETCD_SERVER_PORT, DEFAULT_ETCD_SERVER_PORT);
 
-	if ((bundleContext_getProperty(context, CFG_ETCD_SERVER_PORT, &etcd_port_string) != CELIX_SUCCESS) || !etcd_port_string) {
-		etcd_port = DEFAULT_ETCD_SERVER_PORT;
-	}
-	else
-	{
-		char* endptr = (char*)etcd_port_string;
-		errno = 0;
-		etcd_port =  strtol(etcd_port_string, &endptr, 10);
-		if (*endptr || errno != 0) {
-			etcd_port = DEFAULT_ETCD_SERVER_PORT;
-		}
-	}
-
-	(*watcher)->etcdlib = etcdlib_create(etcd_server, etcd_port, CURL_GLOBAL_DEFAULT);
+	(*watcher)->etcdlib = etcdlib_create(etcd_server, (int)etcd_port, CURL_GLOBAL_DEFAULT);
+	celix_status_t status = CELIX_SUCCESS;
 	if ((*watcher)->etcdlib == NULL) {
 		status = CELIX_BUNDLE_EXCEPTION;
-	} else {
-		status = CELIX_SUCCESS;
 	}
-
     if (status == CELIX_SUCCESS) {
         etcdWatcher_addOwnFramework(*watcher);
         status = celixThreadMutex_create(&(*watcher)->watcherLock, NULL);
@@ -385,7 +340,7 @@ celix_status_t etcdWatcher_destroy(etcd_watcher_t *watcher) {
 
 	if (status != CELIX_SUCCESS || etcdlib_del(watcher->etcdlib, localNodePath) == false)
 	{
-		logHelper_log(*watcher->loghelper, OSGI_LOGSERVICE_WARNING, "Cannot remove local discovery registration.");
+		celix_logHelper_log(*watcher->loghelper, CELIX_LOG_LEVEL_WARNING, "Cannot remove local discovery registration.");
 	}
 
 	watcher->loghelper = NULL;

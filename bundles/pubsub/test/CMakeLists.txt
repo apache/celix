@@ -106,93 +106,100 @@ celix_bundle_files(pubsub_tst
     DESTINATION "META-INF/topics/sub"
 )
 
+if (BUILD_PUBSUB_PSA_UDP_MC)
+    add_celix_container(pubsub_udpmc_tests
+            USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
+            LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_runner.cc
+            DIR ${CMAKE_CURRENT_BINARY_DIR}
+            PROPERTIES
+                LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
+            BUNDLES
+                Celix::pubsub_serializer_json
+                Celix::pubsub_topology_manager
+                Celix::pubsub_admin_udp_multicast
+                pubsub_sut
+                pubsub_tst
+    )
+    target_link_libraries(pubsub_udpmc_tests PRIVATE Celix::pubsub_api ${CPPUTEST_LIBRARIES} Jansson Celix::dfi)
+    target_include_directories(pubsub_udpmc_tests SYSTEM PRIVATE ${CPPUTEST_INCLUDE_DIR} test)
 
-add_celix_container(pubsub_udpmc_tests
-        USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
-        LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_runner.cc
-        DIR ${CMAKE_CURRENT_BINARY_DIR}
-        PROPERTIES
-            LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
-        BUNDLES
-            Celix::pubsub_serializer_json
-            Celix::pubsub_topology_manager
-            Celix::pubsub_admin_udp_multicast
-            pubsub_sut
-            pubsub_tst
-)
-target_link_libraries(pubsub_udpmc_tests PRIVATE Celix::pubsub_api ${CPPUTEST_LIBRARIES} Jansson Celix::dfi)
-target_include_directories(pubsub_udpmc_tests PRIVATE ${CPPUTEST_INCLUDE_DIR} test)
-
-#TODO fix issues with UDPMC and reanble test again
-#add_test(NAME pubsub_udpmc_tests COMMAND pubsub_udpmc_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_udpmc_tests,CONTAINER_LOC>)
-#SETUP_TARGET_FOR_COVERAGE(pubsub_udpmc_tests_cov pubsub_udpmc_tests ${CMAKE_BINARY_DIR}/coverage/pubsub_udpmc_tests/pubsub_udpmc_tests ..)
-
-add_celix_container(pubsub_tcp_tests
-        USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
-        LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_runner.cc
-        DIR ${CMAKE_CURRENT_BINARY_DIR}
-        PROPERTIES
-        LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
-        BUNDLES
-        Celix::shell
-        Celix::shell_tui
-        Celix::pubsub_serializer_json
-        Celix::pubsub_topology_manager
-        Celix::pubsub_admin_tcp
-        pubsub_sut
-        pubsub_tst
-        )
-target_link_libraries(pubsub_tcp_tests PRIVATE Celix::pubsub_api ${CPPUTEST_LIBRARIES} Jansson Celix::dfi)
-target_include_directories(pubsub_tcp_tests PRIVATE ${CPPUTEST_INCLUDE_DIR} test)
-add_test(NAME pubsub_tcp_tests COMMAND pubsub_tcp_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_tcp_tests,CONTAINER_LOC>)
-SETUP_TARGET_FOR_COVERAGE(pubsub_tcp_tests_cov pubsub_tcp_tests ${CMAKE_BINARY_DIR}/coverage/pubsub_tcp_tests/pubsub_tcp_tests ..)
-
-
-add_celix_container(pubsub_tcp_endpoint_tests
-        USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
-        LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_endpoint_runner.cc
-        DIR ${CMAKE_CURRENT_BINARY_DIR}
-        PROPERTIES
-        LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
-        BUNDLES
-        Celix::shell
-        Celix::shell_tui
-        Celix::pubsub_serializer_json
-        Celix::pubsub_topology_manager
-        Celix::pubsub_admin_tcp
-        pubsub_loopback
-        pubsub_endpoint_sut
-        pubsub_endpoint_tst
-        )
-target_link_libraries(pubsub_tcp_endpoint_tests PRIVATE Celix::pubsub_api ${CPPUTEST_LIBRARIES} Jansson Celix::dfi)
-target_include_directories(pubsub_tcp_endpoint_tests PRIVATE ${CPPUTEST_INCLUDE_DIR} test)
-
-#TCP Endpoint test is disabled because the test is not stable when running on Travis
-if (ENABLE_PUBSUB_PSA_TCP_ENDPOINT_TEST)
-add_test(NAME pubsub_tcp_endpoint_tests COMMAND pubsub_tcp_endpoint_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_tcp_endpoint_tests,CONTAINER_LOC>)
-SETUP_TARGET_FOR_COVERAGE(pubsub_tcp_endpoint_tests_cov pubsub_tcp_endpoint_tests ${CMAKE_BINARY_DIR}/coverage/pubsub_tcp_endpoint_tests/pubsub_tcp_endpoint_tests ..)
+    #TODO fix issues with UDPMC and reanble test again
+    #add_test(NAME pubsub_udpmc_tests COMMAND pubsub_udpmc_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_udpmc_tests,CONTAINER_LOC>)
+    #setup_target_for_coverage(pubsub_udpmc_tests_cov pubsub_udpmc_tests ${CMAKE_BINARY_DIR}/coverage/pubsub_udpmc_tests/pubsub_udpmc_tests ..)
 endif()
 
-add_celix_container(pubsub_websocket_tests
-        USE_CONFIG
-        LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_runner.cc
-        DIR ${CMAKE_CURRENT_BINARY_DIR}
-        PROPERTIES
+if (BUILD_PUBSUB_PSA_TCP)
+    add_celix_container(pubsub_tcp_tests
+            USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
+            LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_runner.cc
+            DIR ${CMAKE_CURRENT_BINARY_DIR}
+            PROPERTIES
             LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
-            USE_WEBSOCKETS=true
-            LISTENING_PORTS=8080
-        BUNDLES
+            BUNDLES
+            Celix::shell
+            Celix::shell_tui
             Celix::pubsub_serializer_json
-            Celix::http_admin
             Celix::pubsub_topology_manager
-            Celix::pubsub_admin_websocket
+            Celix::pubsub_admin_tcp
+            Celix::pubsub_protocol_wire_v1
             pubsub_sut
             pubsub_tst
-)
-target_link_libraries(pubsub_websocket_tests PRIVATE Celix::pubsub_api ${CPPUTEST_LIBRARIES} Jansson Celix::dfi)
-target_include_directories(pubsub_websocket_tests PRIVATE ${CPPUTEST_INCLUDE_DIR} test)
-add_test(NAME pubsub_websocket_tests COMMAND pubsub_websocket_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_websocket_tests,CONTAINER_LOC>)
-SETUP_TARGET_FOR_COVERAGE(pubsub_websocket_tests_cov pubsub_websocket_tests ${CMAKE_BINARY_DIR}/coverage/pubsub_websocket_tests/pubsub_websocket_tests ..)
+            )
+    target_link_libraries(pubsub_tcp_tests PRIVATE Celix::pubsub_api ${CPPUTEST_LIBRARIES} Jansson Celix::dfi)
+    target_include_directories(pubsub_tcp_tests SYSTEM PRIVATE ${CPPUTEST_INCLUDE_DIR} test)
+    add_test(NAME pubsub_tcp_tests COMMAND pubsub_tcp_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_tcp_tests,CONTAINER_LOC>)
+    setup_target_for_coverage(pubsub_tcp_tests SCAN_DIR ..)
+
+
+    add_celix_container(pubsub_tcp_endpoint_tests
+            USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
+            LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_endpoint_runner.cc
+            DIR ${CMAKE_CURRENT_BINARY_DIR}
+            PROPERTIES
+            LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
+            BUNDLES
+            Celix::shell
+            Celix::shell_tui
+            Celix::pubsub_serializer_json
+            Celix::pubsub_topology_manager
+            Celix::pubsub_admin_tcp
+            Celix::pubsub_protocol_wire_v1
+            pubsub_loopback
+            pubsub_endpoint_sut
+            pubsub_endpoint_tst
+            )
+    target_link_libraries(pubsub_tcp_endpoint_tests PRIVATE Celix::pubsub_api ${CPPUTEST_LIBRARIES} Jansson Celix::dfi)
+    target_include_directories(pubsub_tcp_endpoint_tests SYSTEM PRIVATE ${CPPUTEST_INCLUDE_DIR} test)
+
+    #TCP Endpoint test is disabled because the test is not stable when running on Travis
+    if (ENABLE_PUBSUB_PSA_TCP_ENDPOINT_TEST)
+        add_test(NAME pubsub_tcp_endpoint_tests COMMAND pubsub_tcp_endpoint_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_tcp_endpoint_tests,CONTAINER_LOC>)
+        setup_target_for_coverage(pubsub_tcp_endpoint_tests SCAN_DIR ..)
+    endif()
+endif()
+
+if (BUILD_PUBSUB_PSA_WS)
+    add_celix_container(pubsub_websocket_tests
+            USE_CONFIG
+            LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_runner.cc
+            DIR ${CMAKE_CURRENT_BINARY_DIR}
+            PROPERTIES
+                LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
+                USE_WEBSOCKETS=true
+                LISTENING_PORTS=8080
+            BUNDLES
+                Celix::pubsub_serializer_json
+                Celix::http_admin
+                Celix::pubsub_topology_manager
+                Celix::pubsub_admin_websocket
+                pubsub_sut
+                pubsub_tst
+    )
+    target_link_libraries(pubsub_websocket_tests PRIVATE Celix::pubsub_api ${CPPUTEST_LIBRARIES} Jansson Celix::dfi)
+    target_include_directories(pubsub_websocket_tests SYSTEM PRIVATE ${CPPUTEST_INCLUDE_DIR} test)
+    add_test(NAME pubsub_websocket_tests COMMAND pubsub_websocket_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_websocket_tests,CONTAINER_LOC>)
+    setup_target_for_coverage(pubsub_websocket_tests SCAN_DIR ..)
+    endif()
 
 if (BUILD_PUBSUB_PSA_ZMQ)
     add_celix_container(pubsub_zmq_tests
@@ -205,14 +212,15 @@ if (BUILD_PUBSUB_PSA_ZMQ)
                 Celix::pubsub_serializer_json
                 Celix::pubsub_topology_manager
                 Celix::pubsub_admin_zmq
+                Celix::pubsub_protocol_wire_v1
                 pubsub_sut
                 pubsub_tst
     )
 
     target_link_libraries(pubsub_zmq_tests PRIVATE Celix::pubsub_api ${CPPUTEST_LIBRARIES} Jansson Celix::dfi)
-    target_include_directories(pubsub_zmq_tests PRIVATE ${CPPUTEST_INCLUDE_DIR} test)
+    target_include_directories(pubsub_zmq_tests SYSTEM PRIVATE ${CPPUTEST_INCLUDE_DIR} test)
     add_test(NAME pubsub_zmq_tests COMMAND pubsub_zmq_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_zmq_tests,CONTAINER_LOC>)
-    SETUP_TARGET_FOR_COVERAGE(pubsub_zmq_tests_cov pubsub_zmq_tests ${CMAKE_BINARY_DIR}/coverage/pubsub_zmq_tests/pubsub_zmq_tests ..)
+    setup_target_for_coverage(pubsub_zmq_tests SCAN_DIR ..)
 
 
     add_celix_container(pubsub_zmq_zerocopy_tests
@@ -226,11 +234,16 @@ if (BUILD_PUBSUB_PSA_ZMQ)
                 Celix::pubsub_serializer_json
                 Celix::pubsub_topology_manager
                 Celix::pubsub_admin_zmq
+                Celix::pubsub_protocol_wire_v1
+                Celix::shell
+                Celix::shell_tui
                 pubsub_sut
                 pubsub_tst
     )
     target_link_libraries(pubsub_zmq_zerocopy_tests PRIVATE Celix::pubsub_api ${CPPUTEST_LIBRARIES} Jansson Celix::dfi)
-    target_include_directories(pubsub_zmq_zerocopy_tests PRIVATE ${CPPUTEST_INCLUDE_DIR} test)
+    target_include_directories(pubsub_zmq_zerocopy_tests SYSTEM PRIVATE ${CPPUTEST_INCLUDE_DIR} test)
+
+    #TODO fix issues with ZeroCopy and reanble test again
     add_test(NAME pubsub_zmq_zerocopy_tests COMMAND pubsub_zmq_zerocopy_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_zmq_zerocopy_tests,CONTAINER_LOC>)
-    SETUP_TARGET_FOR_COVERAGE(pubsub_zmq_zerocopy_tests_cov pubsub_zmq_zerocopy_tests ${CMAKE_BINARY_DIR}/coverage/pubsub_zmq_tests/pubsub_zmq_zerocopy_tests ..)
+    setup_target_for_coverage(pubsub_zmq_zerocopy_tests SCAN_DIR ..)
 endif ()

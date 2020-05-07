@@ -33,7 +33,7 @@
 #include <curl/curl.h>
 
 #include "bundle_context.h"
-#include "log_helper.h"
+#include "celix_log_helper.h"
 #include "utils.h"
 
 #include "endpoint_descriptor_reader.h"
@@ -196,7 +196,7 @@ celix_status_t endpointDiscoveryPoller_addDiscoveryEndpoint(endpoint_discovery_p
 		status = arrayList_createWithEquals(endpointDiscoveryPoller_endpointDescriptionEquals, &endpoints);
 
 		if (status == CELIX_SUCCESS) {
-			logHelper_log(*poller->loghelper, OSGI_LOGSERVICE_DEBUG, "ENDPOINT_POLLER: add new discovery endpoint with url %s", url);
+            celix_logHelper_debug(*poller->loghelper, "ENDPOINT_POLLER: add new discovery endpoint with url %s", url);
 			hashMap_put(poller->entries, strdup(url), endpoints);
 			endpointDiscoveryPoller_poll(poller, url, endpoints);
 		}
@@ -219,11 +219,11 @@ celix_status_t endpointDiscoveryPoller_removeDiscoveryEndpoint(endpoint_discover
 		hash_map_entry_pt entry = hashMap_getEntry(poller->entries, url);
 
 		if (entry == NULL) {
-			logHelper_log(*poller->loghelper, OSGI_LOGSERVICE_DEBUG, "ENDPOINT_POLLER: There was no entry found belonging to url %s - maybe already removed?", url);
+            celix_logHelper_debug(*poller->loghelper, "ENDPOINT_POLLER: There was no entry found belonging to url %s - maybe already removed?", url);
 		} else {
 			char* origKey = hashMapEntry_getKey(entry);
 
-			logHelper_log(*poller->loghelper, OSGI_LOGSERVICE_DEBUG, "ENDPOINT_POLLER: remove discovery endpoint with url %s", url);
+            celix_logHelper_debug(*poller->loghelper, "ENDPOINT_POLLER: remove discovery endpoint with url %s", url);
 
 			array_list_pt entries = hashMap_remove(poller->entries, url);
 
@@ -299,7 +299,7 @@ static void *endpointDiscoveryPoller_performPeriodicPoll(void *data) {
 		celix_status_t status = celixThreadMutex_lock(&poller->pollerLock);
 
 		if (status != CELIX_SUCCESS) {
-			logHelper_log(*poller->loghelper, OSGI_LOGSERVICE_WARNING, "ENDPOINT_POLLER: failed to obtain lock; retrying...");
+            celix_logHelper_warning(*poller->loghelper, "ENDPOINT_POLLER: failed to obtain lock; retrying...");
 		} else {
 			hash_map_iterator_pt iterator = hashMapIterator_create(poller->entries);
 
@@ -317,7 +317,7 @@ static void *endpointDiscoveryPoller_performPeriodicPoll(void *data) {
 
 		status = celixThreadMutex_unlock(&poller->pollerLock);
 		if (status != CELIX_SUCCESS) {
-			logHelper_log(*poller->loghelper, OSGI_LOGSERVICE_WARNING, "ENDPOINT_POLLER: failed to release lock; retrying...");
+            celix_logHelper_warning(*poller->loghelper, "ENDPOINT_POLLER: failed to release lock; retrying...");
 		}
 	}
 
@@ -387,7 +387,7 @@ static celix_status_t endpointDiscoveryPoller_getEndpoints(endpoint_discovery_po
 			endpointDescriptorReader_destroy(reader);
 		}
 	} else {
-		logHelper_log(*poller->loghelper, OSGI_LOGSERVICE_WARNING, "ENDPOINT_POLLER: unable to read endpoints from %s, reason: %s", url, curl_easy_strerror(res));
+        celix_logHelper_warning(*poller->loghelper, "ENDPOINT_POLLER: unable to read endpoints from %s, reason: %s", url, curl_easy_strerror(res));
 	}
 
 	// clean up endpoints file

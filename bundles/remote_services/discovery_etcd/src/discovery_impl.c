@@ -16,13 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * discovery_impl.c
- *
- * \date        Aug 8, 2014
- * \author      <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- * \copyright   Apache License, Version 2.0
- */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,16 +24,13 @@
 #include <netdb.h>
 #include <netinet/in.h>
 
-#include "celix_constants.h"
+
 #include "celix_threads.h"
 #include "bundle_context.h"
-#include "array_list.h"
 #include "utils.h"
 #include "celix_errno.h"
 #include "filter.h"
 #include "service_reference.h"
-#include "service_registration.h"
-#include "remote_constants.h"
 
 
 #include "discovery.h"
@@ -70,7 +60,7 @@ celix_status_t discovery_create(celix_bundle_context_t *context, discovery_t** o
         status = celixThreadMutex_create(&discovery->listenerReferencesMutex, NULL);
         status = celixThreadMutex_create(&discovery->discoveredServicesMutex, NULL);
 
-        logHelper_create(context, &discovery->loghelper);
+        discovery->loghelper = celix_logHelper_create(context, "celix_rsa_discovery");
     } else {
         status = CELIX_ENOMEM;
         free(discovery);
@@ -111,7 +101,7 @@ celix_status_t discovery_destroy(discovery_t *discovery) {
 
     celixThreadMutex_destroy(&discovery->listenerReferencesMutex);
 
-    logHelper_destroy(&discovery->loghelper);
+    celix_logHelper_destroy(discovery->loghelper);
 
     free(discovery);
 
@@ -122,8 +112,6 @@ celix_status_t discovery_start(discovery_t *discovery) {
     celix_status_t status = CELIX_SUCCESS;
     const char *port = NULL;
     const char *path = NULL;
-
-    logHelper_start(discovery->loghelper);
 
     bundleContext_getProperty(discovery->context, DISCOVERY_SERVER_PORT, &port);
     if (port == NULL) {
@@ -183,9 +171,6 @@ celix_status_t discovery_stop(discovery_t *discovery) {
     hashMapIterator_destroy(iter);
 
     celixThreadMutex_unlock(&discovery->discoveredServicesMutex);
-
-
-    logHelper_stop(discovery->loghelper);
 
     return status;
 }

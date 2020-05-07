@@ -41,6 +41,7 @@ extern "C" {
 #define PUBSUB_ENDPOINT_VISIBILITY      "pubsub.endpoint.visibility" //local, host or system. e.g. for IPC host
 #define PUBSUB_ENDPOINT_ADMIN_TYPE       PUBSUB_ADMIN_TYPE_KEY
 #define PUBSUB_ENDPOINT_SERIALIZER       PUBSUB_SERIALIZER_TYPE_KEY
+#define PUBSUB_ENDPOINT_PROTOCOL         PUBSUB_PROTOCOL_TYPE_KEY
 
 
 #define PUBSUB_PUBLISHER_ENDPOINT_TYPE      "publisher"
@@ -50,7 +51,7 @@ extern "C" {
 
 celix_properties_t *
 pubsubEndpoint_create(const char *fwUUID, const char *scope, const char *topic, const char *pubsubType,
-                      const char *adminType, const char *serType, celix_properties_t *topic_props);
+                      const char *adminType, const char *serType, const char *protType, celix_properties_t *topic_props);
 
 celix_properties_t *
 pubsubEndpoint_createFromSubscriberSvc(bundle_context_t *ctx, long svcBndId, const celix_properties_t *svcProps);
@@ -66,6 +67,115 @@ pubsubEndpoint_isValid(const celix_properties_t *endpointProperties, bool requir
 
 
 char *pubsubEndpoint_createScopeTopicKey(const char *scope, const char *topic);
+
+/**
+ * Match a publisher for a provided bnd (using the bundleId) and service filter.
+ *
+ * The match function will try to find a topic properties for the requesting bundle (bundleId) using the topic
+ * from the filter at META-INF/topics/pub/<topic>.properties
+ *
+ * If the topic properties is configured for the provided adminType (i.e. pubsub.config=ZMQ) a full match will
+ * be returned. If no specific admin is configured in the topic properties the sampleScore will be returned if sample
+ * qos is configured (i.e. qos=sample), the controlScore will be returned if control qos is configured
+ * (i.e. qos=control) and otherwise the defaultScore will be returned.
+ *
+ * The match function will also search for a valid serializer. If a serializer is configured in the topic properties
+ * (i.e. pubsub.serializer=json) that specific serializer will be searched. If no serializer is configured the
+ * highest ranking serializer service will be returned. If no serializer can be found, the outSerializerSvcId will
+ * be -1.
+ *
+ * The function will also returned the found topic properties and the matching serialized.
+ * The caller is owner of the outTopicProperties.
+ *
+ * @param ctx                   The bundle context.
+ * @param bundleId              The requesting bundle id.
+ * @param filter                The filter of the publisher (i.e. "(&(topic=example)(scope=subsystem))")
+ * @param adminType             The admin type used for the match.
+ * @param sampleScore           The sample score used for the match.
+ * @param controlScore          The control score used for the match.
+ * @param defaultScore          The default score used for the match.
+ * @param outTopicProperties    Output pointer for the read topic properties. Return can be NULL.
+ * @param outSerializerSvcId    Output svc id for the matching serializer. If not found will be -1L.
+ * @return                      The matching score.
+ */
+double pubsubEndpoint_matchPublisher(
+        celix_bundle_context_t *ctx,
+        long bundleId,
+        const char *filter,
+        const char *adminType,
+        double sampleScore,
+        double controlScore,
+        double defaultScore,
+        bool matchProtocol,
+        celix_properties_t **outTopicProperties,
+        long *outSerializerSvcId,
+        long *outProtocolSvcId);
+
+/**
+ * Match a subscriber for a provided bnd (using the bundleId) and provided service properties.
+ *
+ * The match function will try to find a topic properties for the requesting bundle (bundleId) - using topic in the
+ * provided service properties - at META-INF/topics/sub/<topic>.properties
+ *
+ * If the topic properties is configured for the provided adminType (i.e. pubsub.config=ZMQ) a full match will
+ * be returned. If no specific admin is configured in the topic properties the sampleScore will be returned if sample
+ * qos is configured (i.e. qos=sample), the controlScore will be returned if control qos is configured
+ * (i.e. qos=control) and otherwise the defaultScore will be returned.
+ *
+ * The match function will also search for a valid serializer. If a serializer is configured in the topic properties
+ * (i.e. pubsub.serializer=json) that specific serializer will be searched. If no serializer is configured the
+ * highest ranking serializer service will be returned. If no serializer can be found, the outSerializerSvcId will
+ * be -1.
+ *
+ * The function will also returned the found topic properties and the matching serialized.
+ * The caller is owner of the outTopicProperties.
+ *
+ * @param ctx                   The bundle context.
+ * @param bundleId              The requesting bundle id.
+ * @param svcProperties         The service properties of the registered subscriber service.
+ * @param adminType             The admin type used for the match.
+ * @param sampleScore           The sample score used for the match.
+ * @param controlScore          The control score used for the match.
+ * @param defaultScore          The default score used for the match.
+ * @param outTopicProperties    Output pointer for the read topic properties. Return can be NULL.
+ * @param outSerializerSvcId    Output svc id for the matching serializer. If not found will be -1L.
+ * @return                      The matching score.
+ */
+double pubsubEndpoint_matchSubscriber(
+        celix_bundle_context_t *ctx,
+        long svcProviderBundleId,
+        const celix_properties_t *svcProperties,
+        const char *adminType,
+        double sampleScore,
+        double controlScore,
+        double defaultScore,
+        bool matchProtocol,
+        celix_properties_t **outTopicProperties,
+        long *outSerializerSvcId,
+        long *outProtocolSvcId);
+
+/**
+ * Match an endpoint (subscriber or publisher endpoint) for the provided admin type.
+ *
+ * Also tries to found the matching serializer configured in the endpoint.
+ *
+ * @param ctx                   The bundle context.
+ * @param endpoint              The endpoint to match.
+ * @param adminType             The admin type (i.e. UDPMC)
+ * @param outSerializerSvcId    The found serialized svc id based on the endpoint or -1 if no serializer is
+ *                              configured/found.
+ * @return                      true if there is a match.
+ */
+bool pubsubEndpoint_match(
+        celix_bundle_context_t *ctx,
+        const celix_properties_t *endpoint,
+        const char *adminType,
+        bool matchProtocol,
+        long *outSerializerSvcId,
+        long *outProtocolSvcId);
+
+
+
 
 #ifdef __cplusplus
 }

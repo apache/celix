@@ -16,13 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * attribute.c
- *
- *  \date       Jul 27, 2010
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -49,7 +42,7 @@ celix_status_t attribute_create(char * key, char * value, attribute_pt *attribut
 		}
 	}
 
-	framework_logIfError(logger, status, error, "Could not create attribute: [key=%s;value=%s]", key, value);
+	framework_logIfError(celix_frameworkLogger_globalLogger(), status, error, "Could not create attribute: [key=%s;value=%s]", key, value);
 
 	return status;
 }

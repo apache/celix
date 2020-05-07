@@ -16,13 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * celix_errno.h
- *
- *  \date       Feb 15, 2011
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
 
 /*!
  * \file
@@ -63,11 +56,10 @@ struct celix_status {
  */
 typedef int celix_status_t;
 
-/*!
- * Return a readable string for the given error code.
- *
+/**
+ * Return a readable string for the given status code.
  */
-UTILS_EXPORT char *celix_strerror(celix_status_t errorcode, char *buffer, size_t bufferSize);
+const char* celix_strerror(celix_status_t status);
 
 /*!
  * Error code indicating successful execution of the function.

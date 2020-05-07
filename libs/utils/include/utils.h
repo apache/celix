@@ -16,13 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * utils.h
- *
- *  \date       Jul 27, 2010
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
 
 #ifndef UTILS_H_
 #define UTILS_H_
@@ -33,6 +26,7 @@
 #include "celixbool.h"
 #include "exports.h"
 #include "celix_threads.h"
+#include "celix_utils.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -54,8 +48,6 @@ utils_compareServiceIdsAndRanking(unsigned long servId, long servRank, unsigned 
 UTILS_EXPORT celix_status_t thread_equalsSelf(celix_thread_t thread, bool *equals);
 
 UTILS_EXPORT celix_status_t utils_isNumeric(const char *number, bool *ret);
-
-UTILS_EXPORT double celix_difftime(const struct timespec *tBegin, const struct timespec *tEnd);
 
 #ifdef __cplusplus
 }

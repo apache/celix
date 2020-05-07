@@ -36,6 +36,12 @@ extern "C" {
 static const char *const OSGI_FRAMEWORK_OBJECTCLASS = "objectClass";
 static const char *const OSGI_FRAMEWORK_SERVICE_ID = "service.id";
 static const char *const OSGI_FRAMEWORK_SERVICE_PID = "service.pid";
+
+/**
+ * Service property (named "service.ranking") identifying a service's ranking number (of type long).
+ * The default ranking is 0. A service with a ranking of LONG_MAX is very likely to be returned as the default service, whereas a service with a ranking of LONG_MIN is very unlikely to be returned.
+ * If the supplied property value cannot converted to long, a ranking value of 0 is used.
+ */
 static const char *const OSGI_FRAMEWORK_SERVICE_RANKING = "service.ranking";
 
 static const char *const CELIX_FRAMEWORK_SERVICE_VERSION = "service.version";
@@ -85,6 +91,7 @@ static const char *const CELIX_LOAD_BUNDLES_WITH_NODELETE = "CELIX_LOAD_BUNDLES_
 #define CELIX_AUTO_START_3 "CELIX_AUTO_START_3"
 #define CELIX_AUTO_START_4 "CELIX_AUTO_START_4"
 #define CELIX_AUTO_START_5 "CELIX_AUTO_START_5"
+#define CELIX_AUTO_START_6 "CELIX_AUTO_START_6"
 
 
 #ifdef __cplusplus

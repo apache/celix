@@ -16,13 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * service_tracker.h
- *
- *  \date       Apr 20, 2010
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
 
 #ifndef SERVICE_TRACKER_H_
 #define SERVICE_TRACKER_H_
@@ -68,7 +61,8 @@ FRAMEWORK_EXPORT celix_array_list_t *serviceTracker_getServices(service_tracker_
 
 FRAMEWORK_EXPORT void *serviceTracker_getServiceByReference(service_tracker_t *tracker, service_reference_pt reference);
 
-FRAMEWORK_EXPORT void serviceTracker_serviceChanged(celix_service_listener_t *listener, celix_service_event_t *event);
+FRAMEWORK_EXPORT size_t serviceTracker_nrOfTrackedServices(service_tracker_t *tracker);
+
 
 
 
@@ -129,8 +123,9 @@ bool celix_serviceTracker_useHighestRankingService(
 
 /**
  * Calls the use callback for every services found by this tracker.
+ * Returns the number of called services
  */
-void celix_serviceTracker_useServices(
+size_t celix_serviceTracker_useServices(
         service_tracker_t *tracker,
         const char* serviceName /*sanity*/,
         void *callbackHandle,

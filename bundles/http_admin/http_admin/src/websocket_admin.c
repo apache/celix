@@ -92,7 +92,8 @@ void websocket_admin_addWebsocketService(void *handle, void *svc, const celix_pr
     if(uri != NULL) {
         celixThreadMutex_lock(&(admin->admin_lock));
         if(addServiceNode(&admin->sock_svc_tree, uri, websockSvc)) {
-            mg_set_websocket_handler(admin->mg_ctx, uri, websocket_connect_handler, websocket_ready_handler, websocket_data_handler, websocket_close_handler, admin);
+            mg_set_websocket_handler(admin->mg_ctx, uri, websocket_connect_handler, websocket_ready_handler,
+                                     websocket_data_handler, websocket_close_handler, admin);
         } else {
             printf("Websocket service with URI %s already exists!\n", uri);
         }

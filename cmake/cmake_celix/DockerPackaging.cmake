@@ -207,6 +207,11 @@ $<JOIN:$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_EMBEDDED_PROPERTIES>,\\n\\
 
     add_executable(${DOCKER_TARGET} EXCLUDE_FROM_ALL ${LAUNCHER_SRC})
     target_link_libraries(${DOCKER_TARGET} PRIVATE Celix::framework)
+    if(NOT APPLE)
+      #Add --no-as-needed options, to ensure that libraries are always linked.
+      #This is needed because most libraries are not used by the executable, but by the bundle libraries instead.
+      set_target_properties(${DOCKER_TARGET} PROPERTIES LINK_FLAGS -Wl,--no-as-needed)
+    endif()
     set(LAUNCHER "$<TARGET_FILE:${DOCKER_TARGET}>")
     set(DOCKER_ENTRYPOINT "ENTRYPOINT [\"/bin/$<TARGET_FILE_NAME:${DOCKER_TARGET}>\"]")
   endif ()
@@ -320,24 +325,6 @@ $<JOIN:$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_PROPERTIES>,
       COMMENT "Creating docker image for target '${DOCKER_TARGET}'" VERBATIM
       )
     add_dependencies(celix-build-docker-images celix-build-${DOCKER_TARGET}-docker-image)
-  endif()
-
-
-  if(CELIX_BUILD_DOCKER_USE_DOCKER_DIR_TAR)
-    add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/${DOCKER_IMAGE_NAME}.tar.gz
-      COMMAND tar czf ${CMAKE_BINARY_DIR}/${DOCKER_IMAGE_NAME}.tar.gz --directory=$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_LOC> .
-      DEPENDS ${DOCKERFILE} ${DOCKER_TARGET}
-      COMMENT "Generating '${DOCKER_IMAGE_NAME}.tar.gz'" VERBATIM
-      )
-    add_custom_target(${DOCKER_IMAGE_NAME}-dirs-tars ALL DEPENDS ${CMAKE_BINARY_DIR}/${DOCKER_IMAGE_NAME}.tar.gz)
-
-    if (CELIX_BUILD_DOCKER_TAR_LOCATION)
-      set(DOCKER_TAR_LOCATION ${CELIX_BUILD_DOCKER_TAR_LOCATION})
-    endif()
-    if (NOT DEFINED DOCKER_TAR_LOCATION)
-      set(DOCKER_TAR_LOCATION shared)
-    endif()
-    install(FILES ${CMAKE_BINARY_DIR}/${DOCKER_IMAGE_NAME}.tar.gz DESTINATION ${DOCKER_TAR_LOCATION}/containers)
   endif()
 endfunction()
 
@@ -538,4 +525,57 @@ function(cmake_docker_add_files)
       COMMENT "Copying file '${DOCKER_FILE}' to '${DOCKER_DIR_LOCATION}/${DOCKER_DESTINATION}'"
       )
   endforeach()
+endfunction()
+
+
+#[[
+Install docker container when 'make install' is executed and CELIX_BUILD_DOCKER_USE_DOCKER_DIR_TAR is defined.
+Docker containers are installed at `<install-prefix>/shared/<project_name>/containers`.
+
+CELIX_BUILD_DOCKER_TAR_LOCATION can be defined to override the default install-prefix.
+
+Optional arguments:
+- PROJECT_NAME: The project name for installing. Default is the cmake project name.
+- IMAGE_NAME: Configure the image name. Default is NAME.
+
+install_celix_docker(<docker_target_name>
+    [PROJECT_NAME] project_name
+    [IMAGE_NAME docker_image_name]
+)
+]]
+function(install_celix_docker)
+  list(GET ARGN 0 DOCKER_TARGET)
+  list(REMOVE_AT ARGN 0)
+
+  set(OPTIONS )
+  set(ONE_VAL_ARGS PROJECT_NAME)
+  set(MULTI_VAL_ARGS )
+  cmake_parse_arguments(DOCKER "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
+
+  if (NOT DEFINED DOCKER_PROJECT_NAME)
+    string(TOLOWER ${PROJECT_NAME} DOCKER_PROJECT_NAME)
+  endif()
+  if (NOT DEFINED DOCKER_NAME)
+    set(DOCKER_NAME "${DOCKER_TARGET}")
+  endif ()
+  if (NOT DEFINED DOCKER_IMAGE_NAME)
+    set(DOCKER_IMAGE_NAME "${DOCKER_NAME}")
+  endif ()
+
+  if(CELIX_BUILD_DOCKER_USE_DOCKER_DIR_TAR)
+    add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/${DOCKER_PROJECT_NAME}/${DOCKER_IMAGE_NAME}.tar.gz
+            COMMAND tar czf ${CMAKE_BINARY_DIR}/${DOCKER_PROJECT_NAME}/${DOCKER_IMAGE_NAME}.tar.gz --directory=$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_LOC> .
+            DEPENDS ${DOCKERFILE} ${DOCKER_TARGET}
+            COMMENT "Generating '${DOCKER_IMAGE_NAME}.tar.gz'" VERBATIM
+            )
+    add_custom_target(${DOCKER_IMAGE_NAME}-dirs-tars ALL DEPENDS ${CMAKE_BINARY_DIR}/${DOCKER_PROJECT_NAME}/${DOCKER_IMAGE_NAME}.tar.gz)
+
+    if (DEFINED CELIX_BUILD_DOCKER_TAR_LOCATION)
+      set(DOCKER_TAR_LOCATION ${CELIX_BUILD_DOCKER_TAR_LOCATION})
+    endif()
+    if (NOT DEFINED DOCKER_TAR_LOCATION)
+      set(DOCKER_TAR_LOCATION shared)
+    endif()
+    install(FILES ${CMAKE_BINARY_DIR}/${DOCKER_PROJECT_NAME}/${DOCKER_IMAGE_NAME}.tar.gz DESTINATION ${DOCKER_TAR_LOCATION}/${DOCKER_PROJECT_NAME}/containers)
+  endif()
 endfunction()

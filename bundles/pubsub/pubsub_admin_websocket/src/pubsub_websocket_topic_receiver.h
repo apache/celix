@@ -26,7 +26,7 @@
 typedef struct pubsub_websocket_topic_receiver pubsub_websocket_topic_receiver_t;
 
 pubsub_websocket_topic_receiver_t* pubsub_websocketTopicReceiver_create(celix_bundle_context_t *ctx,
-        log_helper_t *logHelper,
+        celix_log_helper_t *logHelper,
         const char *scope,
         const char *topic,
         const celix_properties_t *topicProperties,
@@ -36,15 +36,12 @@ void pubsub_websocketTopicReceiver_destroy(pubsub_websocket_topic_receiver_t *re
 
 const char* pubsub_websocketTopicReceiver_scope(pubsub_websocket_topic_receiver_t *receiver);
 const char* pubsub_websocketTopicReceiver_topic(pubsub_websocket_topic_receiver_t *receiver);
+const char* pubsub_websocketTopicReceiver_url(pubsub_websocket_topic_receiver_t *receiver);
 
 long pubsub_websocketTopicReceiver_serializerSvcId(pubsub_websocket_topic_receiver_t *receiver);
 void pubsub_websocketTopicReceiver_listConnections(pubsub_websocket_topic_receiver_t *receiver, celix_array_list_t *connectedUrls, celix_array_list_t *unconnectedUrls);
 
-void pubsub_websocketTopicReceiver_connectTo(pubsub_websocket_topic_receiver_t *receiver, const char *socketAddress, long socketPort, const char *uri);
-void pubsub_websocketTopicReceiver_disconnectFrom(pubsub_websocket_topic_receiver_t *receiver, const char *uri);
-
-
-pubsub_admin_receiver_metrics_t* pubsub_websocketTopicReceiver_metrics(pubsub_websocket_topic_receiver_t *receiver);
-
+void pubsub_websocketTopicReceiver_connectTo(pubsub_websocket_topic_receiver_t *receiver, const char *socketAddress, long socketPort);
+void pubsub_websocketTopicReceiver_disconnectFrom(pubsub_websocket_topic_receiver_t *receiver, const char *socketAddress, long socketPort);
 
 #endif //CELIX_PUBSUB_WEBSOCKET_TOPIC_RECEIVER_H

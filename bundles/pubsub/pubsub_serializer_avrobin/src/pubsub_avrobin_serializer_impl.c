@@ -29,7 +29,7 @@
 #include "hash_map.h"
 #include "bundle_context.h"
 
-#include "log_helper.h"
+#include "celix_log_helper.h"
 
 #include "avrobin_serializer.h"
 
@@ -46,13 +46,13 @@ typedef enum {
 
 struct pubsub_avrobin_serializer {
     celix_bundle_context_t *bundle_context;
-    log_helper_t *loghelper;
+    celix_log_helper_t *loghelper;
 };
 
-static celix_status_t pubsubMsgAvrobinSerializer_serialize(void *handle, const void *msg, void **out, size_t *outLen);
-static celix_status_t pubsubMsgAvrobinSerializer_deserialize(void *handle, const void *input, size_t inputLen, void **out);
-static void pubsubMsgAvrobinSerializer_freeMsg(void *handle, void *msg);
-
+static celix_status_t pubsubMsgAvrobinSerializer_serialize(void *handle, const void *msg, struct iovec** output, size_t* outputIovLen);
+static celix_status_t pubsubMsgAvrobinSerializer_deserialize(void *handle, const struct iovec *input, size_t inputIovLen, void **out);
+static void pubsubMsgAvrobinSerializer_freeDeserializeMsg(void *handle, void *msg);
+static void pubsubMsgAvrobinSerializer_freeSerializeMsg(void* handle, struct iovec* input, size_t inputIovLen);
 static FILE* openFileStream(FILE_INPUT_TYPE file_input_type, const char* filename, const char* root, /*output*/ char* avpr_fqn, /*output*/ char* path);
 static FILE_INPUT_TYPE getFileInputType(const char* filename);
 static bool readPropertiesFile(const char* properties_file_name, const char* root, /*output*/ char* avpr_fqn, /*output*/ char* path);
@@ -64,9 +64,9 @@ typedef struct pubsub_avrobin_msg_serializer_impl {
     version_pt msgVersion;
 } pubsub_avrobin_msg_serializer_impl_t;
 
-static char *pubsubAvrobinSerializer_getMsgDescriptionDir(celix_bundle_t *bundle);
-static void pubsubAvrobinSerializer_addMsgSerializerFromBundle(const char *root, celix_bundle_t *bundle, hash_map_pt msgTypesMap);
-static void pubsubAvrobinSerializer_fillMsgSerializerMap(hash_map_pt msgTypesMap, celix_bundle_t *bundle);
+static char *pubsubAvrobinSerializer_getMsgDescriptionDir(const celix_bundle_t *bundle);
+static void pubsubAvrobinSerializer_addMsgSerializerFromBundle(const char *root, const celix_bundle_t *bundle, hash_map_pt msgTypesMap);
+static void pubsubAvrobinSerializer_fillMsgSerializerMap(hash_map_pt msgTypesMap, const celix_bundle_t *bundle);
 
 static int pubsubMsgAvrobinSerializer_convertDescriptor(FILE* file_ptr, pubsub_msg_serializer_t* serializer);
 static int pubsubMsgAvrobinSerializer_convertAvpr(FILE* file_ptr, pubsub_msg_serializer_t* serializer, const char* fqn);
@@ -78,7 +78,7 @@ static void dfi_log(void *handle, int level, const char *file, int line, const c
     va_start(ap, msg);
     vasprintf(&logStr, msg, ap);
     va_end(ap);
-    logHelper_log(serializer->loghelper, level, "FILE:%s, LINE:%i, MSG:%s", file, line, logStr);
+    celix_logHelper_log(serializer->loghelper, level, "FILE:%s, LINE:%i, MSG:%s", file, line, logStr);
     free(logStr);
 }
 
@@ -93,13 +93,12 @@ celix_status_t pubsubAvrobinSerializer_create(celix_bundle_context_t *context, p
 
         (*serializer)->bundle_context = context;
 
-        if (logHelper_create(context, &(*serializer)->loghelper) == CELIX_SUCCESS) {
-            logHelper_start((*serializer)->loghelper);
-            avrobinSerializer_logSetup(dfi_log, (*serializer), 1);
-            dynFunction_logSetup(dfi_log, (*serializer), 1);
-            dynType_logSetup(dfi_log, (*serializer), 1);
-            dynCommon_logSetup(dfi_log, (*serializer), 1);
-        }
+        (*serializer)->loghelper = celix_logHelper_create(context, "celix_psa_serializer_avrobin");
+
+        avrobinSerializer_logSetup(dfi_log, (*serializer), 1);
+        dynFunction_logSetup(dfi_log, (*serializer), 1);
+        dynType_logSetup(dfi_log, (*serializer), 1);
+        dynCommon_logSetup(dfi_log, (*serializer), 1);
     }
 
     return status;
@@ -108,15 +107,14 @@ celix_status_t pubsubAvrobinSerializer_create(celix_bundle_context_t *context, p
 celix_status_t pubsubAvrobinSerializer_destroy(pubsub_avrobin_serializer_t *serializer) {
     celix_status_t status = CELIX_SUCCESS;
 
-    logHelper_stop(serializer->loghelper);
-    logHelper_destroy(&serializer->loghelper);
+    celix_logHelper_destroy(serializer->loghelper);
 
     free(serializer);
 
     return status;
 }
 
-celix_status_t pubsubAvrobinSerializer_createSerializerMap(void *handle, celix_bundle_t *bundle, hash_map_pt *serializerMap) {
+celix_status_t pubsubAvrobinSerializer_createSerializerMap(void *handle, const celix_bundle_t *bundle, hash_map_pt *serializerMap) {
     celix_status_t status = CELIX_SUCCESS;
     pubsub_avrobin_serializer_t *serializer = handle;
 
@@ -125,7 +123,7 @@ celix_status_t pubsubAvrobinSerializer_createSerializerMap(void *handle, celix_b
     if (map != NULL) {
         pubsubAvrobinSerializer_fillMsgSerializerMap(map, bundle);
     } else {
-        logHelper_log(serializer->loghelper, OSGI_LOGSERVICE_ERROR, "Cannot allocate memory for msg map");
+        celix_logHelper_log(serializer->loghelper, CELIX_LOG_LEVEL_ERROR, "Cannot allocate memory for msg map");
         status = CELIX_ENOMEM;
     }
 
@@ -157,7 +155,7 @@ celix_status_t pubsubAvrobinSerializer_destroySerializerMap(void *handle, hash_m
     return status;
 }
 
-static celix_status_t pubsubMsgAvrobinSerializer_serialize(void *handle, const void *msg, void **out, size_t *outLen) {
+static celix_status_t pubsubMsgAvrobinSerializer_serialize(void *handle, const void *msg, struct iovec** output, size_t* outputIovLen) {
     celix_status_t status = CELIX_SUCCESS;
 
     pubsub_avrobin_msg_serializer_impl_t *impl = handle;
@@ -167,6 +165,11 @@ static celix_status_t pubsubMsgAvrobinSerializer_serialize(void *handle, const v
     dyn_type *dynType = NULL;
     dynMessage_getMessageType(impl->msgType, &dynType);
 
+    if (*output == NULL) {
+        *output = calloc(1, sizeof(struct iovec));
+        if (outputIovLen) *outputIovLen = 1;
+        if (output == NULL) status = CELIX_BUNDLE_EXCEPTION;
+    }
     if (avrobinSerializer_serialize(dynType, msg, &avroData, &avroLen) != 0) {
         status = CELIX_BUNDLE_EXCEPTION;
     }
@@ -180,23 +183,40 @@ static celix_status_t pubsubMsgAvrobinSerializer_serialize(void *handle, const v
     }*/
 
     if (status == CELIX_SUCCESS) {
-        *out = (void*)avroData;
-        *outLen = avroLen;
+        (**output).iov_base = (void*)avroData;
+        (**output).iov_len  = avroLen;
+        if (outputIovLen) *outputIovLen = 1;
     }
 
     return status;
 }
 
-static celix_status_t pubsubMsgAvrobinSerializer_deserialize(void *handle, const void *input, size_t inputLen, void **out) {
-    celix_status_t status = CELIX_SUCCESS;
+void pubsubMsgAvrobinSerializer_freeSerializeMsg(void* handle, struct iovec* input, size_t inputIovLen) {
+  pubsub_avrobin_msg_serializer_impl_t *impl = handle;
+  if (input == NULL) {
+      return;
+  }
+  if (impl->msgType != NULL) {
+    for (int i = 0; i < inputIovLen; i++) {
+      if (input[i].iov_base) free(input[i].iov_base);
+      input[i].iov_base = NULL;
+      input[i].iov_len  = 0;
+    }
+    free(input);
+  }
+}
 
+
+static celix_status_t pubsubMsgAvrobinSerializer_deserialize(void *handle, const struct iovec* input, size_t inputIovLen __attribute__((unused)), void **out) {
+    celix_status_t status = CELIX_SUCCESS;
+    if (input == NULL) return CELIX_BUNDLE_EXCEPTION;
     pubsub_avrobin_msg_serializer_impl_t *impl = handle;
 
     void *msg = NULL;
     dyn_type *dynType = NULL;
     dynMessage_getMessageType(impl->msgType, &dynType);
 
-    if (avrobinSerializer_deserialize(dynType, (const uint8_t*)input, inputLen, &msg) != 0) {
+    if (avrobinSerializer_deserialize(dynType, (const uint8_t*)input->iov_base, input->iov_len, &msg) != 0) {
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
         *out = msg;
@@ -205,7 +225,7 @@ static celix_status_t pubsubMsgAvrobinSerializer_deserialize(void *handle, const
     return status;
 }
 
-static void pubsubMsgAvrobinSerializer_freeMsg(void *handle, void *msg) {
+static void pubsubMsgAvrobinSerializer_freeDeserializeMsg(void *handle, void *msg) {
     pubsub_avrobin_msg_serializer_impl_t *impl = handle;
     if (impl->msgType != NULL) {
         dyn_type *dynType = NULL;
@@ -214,7 +234,7 @@ static void pubsubMsgAvrobinSerializer_freeMsg(void *handle, void *msg) {
     }
 }
 
-static char *pubsubAvrobinSerializer_getMsgDescriptionDir(celix_bundle_t *bundle) {
+static char *pubsubAvrobinSerializer_getMsgDescriptionDir(const celix_bundle_t *bundle) {
     char *root = NULL;
 
     bool isSystemBundle = false;
@@ -240,7 +260,7 @@ static char *pubsubAvrobinSerializer_getMsgDescriptionDir(celix_bundle_t *bundle
     return root;
 }
 
-static void pubsubAvrobinSerializer_addMsgSerializerFromBundle(const char *root, celix_bundle_t *bundle, hash_map_pt msgTypesMap) {
+static void pubsubAvrobinSerializer_addMsgSerializerFromBundle(const char *root, const celix_bundle_t *bundle, hash_map_pt msgTypesMap) {
     char fqn[MAX_PATH_LEN];
     char path[MAX_PATH_LEN];
     const char* entry_name = NULL;
@@ -305,7 +325,7 @@ static void pubsubAvrobinSerializer_addMsgSerializerFromBundle(const char *root,
     }
 }
 
-static void pubsubAvrobinSerializer_fillMsgSerializerMap(hash_map_pt msgTypesMap, celix_bundle_t *bundle) {
+static void pubsubAvrobinSerializer_fillMsgSerializerMap(hash_map_pt msgTypesMap, const celix_bundle_t *bundle) {
     char *root = NULL;
     char *metaInfPath = NULL;
 
@@ -448,14 +468,17 @@ static int pubsubMsgAvrobinSerializer_convertDescriptor(FILE* file_ptr, pubsub_m
 
     serializer->serialize = (void*) pubsubMsgAvrobinSerializer_serialize;
     serializer->deserialize = (void*) pubsubMsgAvrobinSerializer_deserialize;
-    serializer->freeMsg = (void*) pubsubMsgAvrobinSerializer_freeMsg;
-
+    serializer->freeSerializeMsg = (void*) pubsubMsgAvrobinSerializer_freeSerializeMsg;
+    serializer->freeDeserializeMsg = (void*) pubsubMsgAvrobinSerializer_freeDeserializeMsg;
     return 0;
 }
 
 static int pubsubMsgAvrobinSerializer_convertAvpr(FILE* file_ptr, pubsub_msg_serializer_t* serializer, const char* fqn) {
     if (!file_ptr || !fqn || !serializer) return -2;
-    dyn_message_type* msgType = dynMessage_parseAvpr(file_ptr, fqn);
+
+    //TODO FIXME, see #158
+    //dyn_message_type* msgType = dynMessage_parseAvpr(file_ptr, fqn);
+    dyn_message_type* msgType = NULL;
 
     if (!msgType) {
         printf("DMU: cannot parse avpr file for '%s'\n", fqn);
@@ -504,7 +527,8 @@ static int pubsubMsgAvrobinSerializer_convertAvpr(FILE* file_ptr, pubsub_msg_ser
 
     serializer->serialize = (void*) pubsubMsgAvrobinSerializer_serialize;
     serializer->deserialize = (void*) pubsubMsgAvrobinSerializer_deserialize;
-    serializer->freeMsg = (void*) pubsubMsgAvrobinSerializer_freeMsg;
+    serializer->freeSerializeMsg = (void*) pubsubMsgAvrobinSerializer_freeSerializeMsg;
+    serializer->freeDeserializeMsg = (void*) pubsubMsgAvrobinSerializer_freeDeserializeMsg;
 
     return 0;
 }

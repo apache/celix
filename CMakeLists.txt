@@ -18,9 +18,9 @@
 cmake_minimum_required (VERSION 3.2)
 cmake_policy(SET CMP0012 NEW)
 cmake_policy(SET CMP0042 NEW)
-#if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.9.0")
-#   cmake_policy(SET CMP0068 NEW)
-#endif()
+if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.9.0")
+   cmake_policy(SET CMP0068 NEW)
+endif()
 
 project (Celix C CXX)
 
@@ -31,6 +31,13 @@ include(cmake/cmake_celix/UseCelix.cmake)
 IF (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} EQUAL 3.3 AND ${CMAKE_GENERATOR} STREQUAL "Unix Makefiles")
     message( FATAL_ERROR "Building Celix using CMake 3.3 and makefiles is not supported due to a bug in the Makefile Generator (see Bug 15696). Please change the used CMake version - both, CMake 3.2 and CMake 3.4 are working fine. Or use a different generator (e.g. Ninja)." )
 ENDIF()
+
+if (ENABLE_TESTING)
+    find_package(GTest CONFIG QUIET)
+    if (NOT GTest_FOUND)
+        include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/AddGTest.cmake)
+    endif()
+endif ()
 
 set(ENABLE_W_ERROR ON)
 set(ENABLE_MORE_WARNINGS OFF)
@@ -90,14 +97,22 @@ set(CELIX_MAJOR "2")
 set(CELIX_MINOR "2")
 set(CELIX_MICRO "0")
 
-option(ENABLE_TESTING "Enables unit/bundle testing" FALSE)
+# Default bundle version
+set(DEFAULT_VERSION 1.0.0)
 
+# Options
+option(ENABLE_TESTING "Enables unit/bundle testing" FALSE)
 if (ENABLE_TESTING)
     enable_testing()
 endif()
 
-# Default bundle version
-set(DEFAULT_VERSION 1.0.0)
+option(CELIX_INSTALL_DEPRECATED_API "whether to install (and use) deprecated apis (i.e. header without a celix_ prefix." ON)
+
+option(CELIX_ADD_DEPRECATED_ATTRIBUTES "If enabled add deprecated attributes to deprecated services/functions." ON)
+if (CELIX_ADD_DEPRECATED_ATTRIBUTES)
+    set(CMAKE_C_FLAGS "-DCELIX_ADD_DEPRECATED_ATTRIBUTES ${CMAKE_C_FLAGS}")
+    set(CMAKE_CXX_FLAGS "-DCELIX_ADD_DEPRECATED_ATTRIBUTES ${CMAKE_CXX_FLAGS}")
+endif ()
 
 option(CELIX_ADD_OPENSSL_DEP "Enabled building Celix framework & etcdlib with OpenSSL library dependency. This can help in some libcurl resolving issues" OFF)
 set(CELIX_OPTIONAL_EXTRA_LIBS "")
@@ -105,6 +120,8 @@ if (CELIX_ADD_OPENSSL_DEP)
     find_package(OpenSSL REQUIRED)
     set(CELIX_OPTIONAL_EXTRA_LIBS "OpenSSL::lib")
 endif ()
+
+option(CELIX_USE_ZIP_INSTEAD_OF_JAR "Default Celix cmake command will use jar to package bundle (if found). This option enforces Celix to use zip instead." OFF)
 
 #Libraries and Launcher
 add_subdirectory(libs)
@@ -123,8 +140,8 @@ install(EXPORT celix NAMESPACE Celix:: DESTINATION share/celix/cmake FILE Target
 install_celix_targets(celix NAMESPACE Celix:: DESTINATION share/celix/cmake FILE CelixTargets.cmake COMPONENT cmake)
 
 #install celix cmake modules
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/cmake/Modules/ DESTINATION share/celix/cmake/Modules)
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/cmake/cmake_celix/ DESTINATION share/celix/cmake/cmake_celix)
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/ DESTINATION share/celix/cmake/Modules)
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_celix/ DESTINATION share/celix/cmake/cmake_celix)
 
 #configure and install CelixConfig and CelixConfigVersion files
 configure_file(cmake/CelixConfigVersion.cmake.in

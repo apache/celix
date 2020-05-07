@@ -23,7 +23,7 @@
 #include "dyn_common.h"
 #include "dyn_type.h"
 #include "dyn_message.h"
-#include "log_helper.h"
+#include "celix_log_helper.h"
 
 #include "pubsub_serializer.h"
 
@@ -34,7 +34,7 @@ typedef struct pubsub_avrobin_serializer pubsub_avrobin_serializer_t;
 celix_status_t pubsubAvrobinSerializer_create(celix_bundle_context_t *context, pubsub_avrobin_serializer_t **serializer);
 celix_status_t pubsubAvrobinSerializer_destroy(pubsub_avrobin_serializer_t *serializer);
 
-celix_status_t pubsubAvrobinSerializer_createSerializerMap(void *handle, celix_bundle_t *bundle, hash_map_pt *serializerMap);
+celix_status_t pubsubAvrobinSerializer_createSerializerMap(void *handle, const celix_bundle_t *bundle, hash_map_pt *serializerMap);
 celix_status_t pubsubAvrobinSerializer_destroySerializerMap(void *handle, hash_map_pt serializerMap);
 
 #endif /* PUBSUB_SERIALIZER_AVROBIN_H_ */

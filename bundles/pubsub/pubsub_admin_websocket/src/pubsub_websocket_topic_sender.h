@@ -27,7 +27,7 @@ typedef struct pubsub_websocket_topic_sender pubsub_websocket_topic_sender_t;
 
 pubsub_websocket_topic_sender_t* pubsub_websocketTopicSender_create(
         celix_bundle_context_t *ctx,
-        log_helper_t *logHelper,
+        celix_log_helper_t *logHelper,
         const char *scope,
         const char *topic,
         long serializerSvcId,
@@ -39,10 +39,5 @@ const char* pubsub_websocketTopicSender_topic(pubsub_websocket_topic_sender_t *s
 const char* pubsub_websocketTopicSender_url(pubsub_websocket_topic_sender_t *sender);
 
 long pubsub_websocketTopicSender_serializerSvcId(pubsub_websocket_topic_sender_t *sender);
-
-/**
- * Returns a array of pubsub_admin_sender_msg_type_metrics_t entries for every msg_type/bundle send with the topic sender.
- */
-pubsub_admin_sender_metrics_t* pubsub_websocketTopicSender_metrics(pubsub_websocket_topic_sender_t *sender);
 
 #endif //CELIX_PUBSUB_WEBSOCKET_TOPIC_SENDER_H

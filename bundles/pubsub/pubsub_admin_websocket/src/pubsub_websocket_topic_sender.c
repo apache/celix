@@ -24,7 +24,7 @@
 #include <pubsub/publisher.h>
 #include <utils.h>
 #include <zconf.h>
-#include <log_helper.h>
+#include <celix_log_helper.h>
 #include "pubsub_websocket_topic_sender.h"
 #include "pubsub_psa_websocket_constants.h"
 #include "pubsub_websocket_common.h"
@@ -37,17 +37,17 @@
 #define FIRST_SEND_DELAY_IN_SECONDS             2
 
 #define L_DEBUG(...) \
-    logHelper_log(sender->logHelper, OSGI_LOGSERVICE_DEBUG, __VA_ARGS__)
+    celix_logHelper_log(sender->logHelper, CELIX_LOG_LEVEL_DEBUG, __VA_ARGS__)
 #define L_INFO(...) \
-    logHelper_log(sender->logHelper, OSGI_LOGSERVICE_INFO, __VA_ARGS__)
+    celix_logHelper_log(sender->logHelper, CELIX_LOG_LEVEL_INFO, __VA_ARGS__)
 #define L_WARN(...) \
-    logHelper_log(sender->logHelper, OSGI_LOGSERVICE_WARNING, __VA_ARGS__)
+    celix_logHelper_log(sender->logHelper, CELIX_LOG_LEVEL_WARNING, __VA_ARGS__)
 #define L_ERROR(...) \
-    logHelper_log(sender->logHelper, OSGI_LOGSERVICE_ERROR, __VA_ARGS__)
+    celix_logHelper_log(sender->logHelper, CELIX_LOG_LEVEL_ERROR, __VA_ARGS__)
 
 struct pubsub_websocket_topic_sender {
     celix_bundle_context_t *ctx;
-    log_helper_t *logHelper;
+    celix_log_helper_t *logHelper;
     long serializerSvcId;
     pubsub_serializer_service_t *serializer;
 
@@ -92,14 +92,14 @@ static void* psa_websocket_getPublisherService(void *handle, const celix_bundle_
 static void psa_websocket_ungetPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties);
 static void delay_first_send_for_late_joiners(pubsub_websocket_topic_sender_t *sender);
 
-static int psa_websocket_topicPublicationSend(void* handle, unsigned int msgTypeId, const void *msg);
+static int psa_websocket_topicPublicationSend(void* handle, unsigned int msgTypeId, const void *msg, celix_properties_t *metadata);
 
 static void psa_websocketTopicSender_ready(struct mg_connection *connection, void *handle);
 static void psa_websocketTopicSender_close(const struct mg_connection *connection, void *handle);
 
 pubsub_websocket_topic_sender_t* pubsub_websocketTopicSender_create(
         celix_bundle_context_t *ctx,
-        log_helper_t *logHelper,
+        celix_log_helper_t *logHelper,
         const char *scope,
         const char *topic,
         long serializerSvcId,
@@ -126,7 +126,7 @@ pubsub_websocket_topic_sender_t* pubsub_websocketTopicSender_create(
     }
 
     if (sender->websockSvcId > 0) {
-        sender->scope = strndup(scope, 1024 * 1024);
+        sender->scope = scope == NULL ? NULL : strndup(scope, 1024 * 1024);
         sender->topic = strndup(topic, 1024 * 1024);
 
         celixThreadMutex_create(&sender->boundedServices.mutex, NULL);
@@ -141,7 +141,9 @@ pubsub_websocket_topic_sender_t* pubsub_websocketTopicSender_create(
 
         celix_properties_t *props = celix_properties_create();
         celix_properties_set(props, PUBSUB_PUBLISHER_TOPIC, sender->topic);
-        celix_properties_set(props, PUBSUB_PUBLISHER_SCOPE, sender->scope);
+        if (sender->scope != NULL) {
+            celix_properties_set(props, PUBSUB_PUBLISHER_SCOPE, sender->scope);
+        }
 
         celix_service_registration_options_t opts = CELIX_EMPTY_SERVICE_REGISTRATION_OPTIONS;
         opts.factory = &sender->publisher.factory;
@@ -189,7 +191,9 @@ void pubsub_websocketTopicSender_destroy(pubsub_websocket_topic_sender_t *sender
 
         celix_bundleContext_unregisterService(sender->ctx, sender->websockSvcId);
 
-        free(sender->scope);
+        if (sender->scope != NULL) {
+            free(sender->scope);
+        }
         free(sender->topic);
         free(sender->uri);
         free(sender);
@@ -257,7 +261,7 @@ static void* psa_websocket_getPublisherService(void *handle, const celix_bundle_
             entry->service.send = psa_websocket_topicPublicationSend;
             hashMap_put(sender->boundedServices.map, (void*)bndId, entry);
         } else {
-            L_ERROR("Error creating serializer map for websocket TopicSender %s/%s", sender->scope, sender->topic);
+            L_ERROR("Error creating serializer map for websocket TopicSender %s/%s", sender->scope == NULL ? "(null)" : sender->scope, sender->topic);
         }
     }
     celixThreadMutex_unlock(&sender->boundedServices.mutex);
@@ -295,7 +299,7 @@ static void psa_websocket_ungetPublisherService(void *handle, const celix_bundle
     celixThreadMutex_unlock(&sender->boundedServices.mutex);
 }
 
-static int psa_websocket_topicPublicationSend(void* handle, unsigned int msgTypeId, const void *inMsg) {
+static int psa_websocket_topicPublicationSend(void* handle, unsigned int msgTypeId, const void *inMsg, celix_properties_t *metadata) {
     int status = CELIX_SERVICE_EXCEPTION;
     psa_websocket_bounded_service_entry_t *bound = handle;
     pubsub_websocket_topic_sender_t *sender = bound->parent;
@@ -303,9 +307,8 @@ static int psa_websocket_topicPublicationSend(void* handle, unsigned int msgType
 
     if (sender->sockConnection != NULL && entry != NULL) {
         delay_first_send_for_late_joiners(sender);
-
-        void *serializedOutput = NULL;
         size_t serializedOutputLen = 0;
+        struct iovec* serializedOutput = NULL;
         status = entry->msgSer->serialize(entry->msgSer->handle, inMsg, &serializedOutput, &serializedOutputLen);
 
         if (status == CELIX_SUCCESS /*ser ok*/) {
@@ -315,15 +318,15 @@ static int psa_websocket_topicPublicationSend(void* handle, unsigned int msgType
             celixThreadMutex_lock(&entry->sendLock);
 
             json_t *jsMsg = json_object();
-            json_object_set_new(jsMsg, "id", json_string(entry->header.id));
-            json_object_set_new(jsMsg, "major", json_integer(entry->header.major));
-            json_object_set_new(jsMsg, "minor", json_integer(entry->header.minor));
-            json_object_set_new(jsMsg, "seqNr", json_integer(entry->header.seqNr++));
+            json_object_set_new_nocheck(jsMsg, "id", json_string(entry->header.id));
+            json_object_set_new_nocheck(jsMsg, "major", json_integer(entry->header.major));
+            json_object_set_new_nocheck(jsMsg, "minor", json_integer(entry->header.minor));
+            json_object_set_new_nocheck(jsMsg, "seqNr", json_integer(entry->header.seqNr++));
 
             json_t *jsData;
-            jsData = json_loadb((const char *)serializedOutput, serializedOutputLen - 1, 0, &jsError);
+            jsData = json_loadb((const char *)serializedOutput->iov_base, serializedOutput->iov_len - 1, 0, &jsError);
             if(jsData != NULL) {
-                json_object_set_new(jsMsg, "data", jsData);
+                json_object_set_new_nocheck(jsMsg, "data", jsData);
                 const char *msg = json_dumps(jsMsg, 0);
                 size_t bytes_to_write = strlen(msg);
                 int bytes_written = mg_websocket_client_write(sender->sockConnection, MG_WEBSOCKET_OPCODE_TEXT, msg,
@@ -340,13 +343,13 @@ static int psa_websocket_topicPublicationSend(void* handle, unsigned int msgType
 
             json_decref(jsMsg); //Decrease ref count means freeing the object
             free(hdrEncoded);
-            free(serializedOutput);
+            entry->msgSer->freeSerializeMsg(entry->msgSer->handle, serializedOutput, serializedOutputLen);
         } else {
             L_WARN("[PSA_WEBSOCKET_TS] Error serialize message of type %s for scope/topic %s/%s",
-                   entry->msgSer->msgName, sender->scope, sender->topic);
+                   entry->msgSer->msgName, sender->scope == NULL ? "(null)" : sender->scope, sender->topic);
         }
     } else if (entry == NULL){
-        L_WARN("[PSA_WEBSOCKET_TS] Error sending message with msg type id %i for scope/topic %s/%s", msgTypeId, sender->scope, sender->topic);
+        L_WARN("[PSA_WEBSOCKET_TS] Error sending message with msg type id %i for scope/topic %s/%s", msgTypeId, sender->scope == NULL ? "(null)" : sender->scope, sender->topic);
     }
 
     return status;

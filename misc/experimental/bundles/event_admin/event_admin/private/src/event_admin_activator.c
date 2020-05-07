@@ -107,7 +107,6 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
         properties = properties_create();
         event_admin_service = activator->event_admin_service;
         bundleContext_registerService(context, (char *) EVENT_ADMIN_NAME, event_admin_service, properties, &activator->registration);
-        logHelper_start(activator->loghelper);
     }
     return status;
 }
@@ -117,7 +116,6 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
     struct activator * data =  userData;
     serviceRegistration_unregister(data->registration);
     serviceTracker_close(data->tracker);
-    status = logHelper_stop(data->loghelper);
     logHelper_destroy(&data->loghelper);
 
     return status;

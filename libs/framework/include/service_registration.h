@@ -48,6 +48,10 @@ serviceRegistration_getServiceName(service_registration_t *registration, const c
 FRAMEWORK_EXPORT long
 serviceRegistration_getServiceId(service_registration_t *registration);
 
+FRAMEWORK_EXPORT bool
+serviceRegistration_isFactoryService(service_registration_t *registration);
+
+
 #ifdef __cplusplus
 }
 #endif

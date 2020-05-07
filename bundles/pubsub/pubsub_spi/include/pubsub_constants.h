@@ -20,8 +20,9 @@
 #ifndef PUBSUB_CONSTANTS_H_
 #define PUBSUB_CONSTANTS_H_
 
-#define PUBSUB_ADMIN_TYPE_KEY      "pubsub.config"
-#define PUBSUB_SERIALIZER_TYPE_KEY "pubsub.serializer"
+#define PUBSUB_ADMIN_TYPE_KEY       "pubsub.config"
+#define PUBSUB_SERIALIZER_TYPE_KEY  "pubsub.serializer"
+#define PUBSUB_PROTOCOL_TYPE_KEY    "pubsub.protocol"
 
 /**
  * Endpoints with the system visibility should be discoverable through the complete system
@@ -37,5 +38,10 @@
  * Endpoints which are only visible within a single process
  */
 #define PUBSUB_ENDPOINT_LOCAL_VISIBILITY     "local"
+
+/**
+ * Default scope, if not scope is specified endpoints are published using this scope
+ */
+#define PUBSUB_DEFAULT_ENDPOINT_SCOPE        "default"
 
 #endif /* PUBSUB_CONSTANTS_H_ */

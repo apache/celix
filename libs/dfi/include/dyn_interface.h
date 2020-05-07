@@ -27,6 +27,10 @@
 
 #include "version.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 DFI_SETUP_LOG_HEADER(dynInterface);
 DFI_SETUP_LOG_HEADER(dynAvprInterface);
 
@@ -67,5 +71,9 @@ int dynInterface_nrOfMethods(dyn_interface_type *intf);
 // Avpr parsing
 dyn_interface_type * dynInterface_parseAvprWithStr(const char * avpr);
 dyn_interface_type * dynInterface_parseAvpr(FILE * avprStream);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

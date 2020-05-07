@@ -84,7 +84,7 @@ celix_status_t logSync_create(char *targetId, log_store_pt store, log_sync_pt *l
 celix_status_t logSync_parseLogDescriptor(log_sync_pt logSync, char *descriptorString, log_descriptor_pt *descriptor) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "Descriptor: %s", descriptorString);
+	fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_DEBUG, "Descriptor: %s", descriptorString);
 	char *last = NULL;
 	char *targetId = strtok_r(descriptorString, ",", &last);
 	char *logIdStr = strtok_r(NULL, ",", &last);
@@ -93,7 +93,7 @@ celix_status_t logSync_parseLogDescriptor(log_sync_pt logSync, char *descriptorS
 		logId = atol(logIdStr);
 	}
 	char *range = strtok_r(NULL, ",", &last);
-	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "Range: %s", range);
+	fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_DEBUG, "Range: %s", range);
 
 	long low = 0;
 	long high = 0;
@@ -181,7 +181,7 @@ celix_status_t logSync_queryLog(log_sync_pt logSync, char *targetId, long logId,
 		if (res != CURLE_OK) {
 			status = CELIX_BUNDLE_EXCEPTION;
 		}
-		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error: %d", res);
+		fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_ERROR, "Error: %d", res);
 		/* always cleanup */
 		curl_easy_cleanup(curl);
 
@@ -198,7 +198,7 @@ static size_t logSync_readQuery(void *contents, size_t size, size_t nmemb, void 
 	mem->memory = realloc(mem->memory, mem->size + realsize + 1);
 	if (mem->memory == NULL) {
 		/* out of memory! */
-		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "not enough memory (realloc returned NULL)");
+		fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_ERROR, "not enough memory (realloc returned NULL)");
 		exit(EXIT_FAILURE);
 	}
 

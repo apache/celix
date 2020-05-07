@@ -199,6 +199,11 @@ $<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_EMBEDDED_PROPERTIES>,\\n\
         set_target_properties(${CONTAINER_TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CONTAINER_LOC})
         set_target_properties(${CONTAINER_TARGET} PROPERTIES OUTPUT_NAME ${CONTAINER_NAME})
         target_link_libraries(${CONTAINER_TARGET} PRIVATE Celix::framework)
+        if(NOT APPLE)
+            #Add --no-as-needed options, to ensure that libraries are always linked.
+            #This is needed because most libraries are not used by the executable, but by the bundle libraries instead.
+            set_target_properties(${CONTAINER_TARGET} PROPERTIES LINK_FLAGS -Wl,--no-as-needed)
+        endif()
         set(LAUNCHER "$<TARGET_FILE:${CONTAINER_TARGET}>")
     else ()
         #LAUNCHER already set
@@ -403,7 +408,7 @@ endfunction()
 Add the selected bundles to the Celix container. These bundles are (if configured) copied to the container build dir and
 are added to the configuration properties so that they are installed and started when the Celix container executed.
 
-The Celix framework support 7 (0 - 6) run levels. Run levels can be used to control the start and stop order of bundles.
+The Celix framework supports 7 (0 - 6) run levels. Run levels can be used to control the start and stop order of bundles.
 Bundles in run level 0 are started first and bundles in run level 6 are started last.
 When stopping bundles in run level 6 are stopped first and bundles in run level 0 are stopped last.
 Within a run level the order of configured decides the start order; bundles added earlier are started first.
@@ -414,7 +419,7 @@ Optional Arguments:
 
 ```CMake
 celix_container_bundles(<celix_container_target_name>
-    [LEVEL (0..5)]
+    [LEVEL (0..6)]
     bundle1
     bundle2
     ...

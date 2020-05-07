@@ -73,7 +73,7 @@ linked_list_pt resolver_resolve(module_pt root) {
     candidatesMap = hashMap_create(NULL, NULL, NULL, NULL);
 
     if (resolver_populateCandidatesMap(candidatesMap, root) != 0) {
-        hash_map_iterator_pt iter = hashMapIterator_create(candidatesMap);
+        iter = hashMapIterator_create(candidatesMap);
         while (hashMapIterator_hasNext(iter)) {
             hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
             linked_list_pt value = hashMapEntry_getValue(entry);
@@ -183,7 +183,7 @@ int resolver_populateCandidatesMap(hash_map_pt candidatesMap, module_pt targetMo
                         module_getSymbolicName(targetModule, &name);
 
                         linkedList_destroy(invalid);
-                        fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "Unable to resolve: %s, %s\n", name, targetName);
+                        fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_INFO, "Unable to resolve: %s, %s\n", name, targetName);
                     }
                     linkedList_destroy(candidates);
                     linkedList_destroy(candSetList);
@@ -328,13 +328,13 @@ void resolver_removeModule(module_pt module) {
 
         if (!linkedList_isEmpty(m_unresolvedServices)) {
             // #TODO: Something is wrong, not all modules have been removed from the resolver
-            fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Unexpected entries in unresolved module list");
+            fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_ERROR, "Unexpected entries in unresolved module list");
         }
         linkedList_destroy(m_unresolvedServices);
         m_unresolvedServices = NULL;
         if (!linkedList_isEmpty(m_resolvedServices)) {
             // #TODO: Something is wrong, not all modules have been removed from the resolver
-            fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Unexpected entries in resolved module list");
+            fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_ERROR, "Unexpected entries in resolved module list");
         }
         linkedList_destroy(m_resolvedServices);
         m_resolvedServices = NULL;

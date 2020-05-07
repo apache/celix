@@ -17,6 +17,7 @@
  * under the License.
  */
 
+#include <celix_properties.h>
 #include "pubsub/publisher_mock.h"
 #include "CppUTest/TestHarness.h"
 #include "CppUTestExt/MockSupport.h"
@@ -36,12 +37,13 @@ static int pubsub__publisherMock_localMsgTypeIdForMsgType(void *handle, const ch
 /*============================================================================
   MOCK - mock function for pubsub_publisher->send
   ============================================================================*/
-static int pubsub__publisherMock_send(void *handle, unsigned int msgTypeId, const void *msg) {
+static int pubsub__publisherMock_send(void *handle, unsigned int msgTypeId, const void *msg, celix_properties_t *metadata) {
     return mock(PUBSUB_PUBLISHERMOCK_SCOPE)
         .actualCall(PUBSUB_PUBLISHERMOCK_SEND_METHOD)
         .withPointerParameter("handle", handle)
         .withParameter("msgTypeId", msgTypeId)
         .withPointerParameter("msg", (void*)msg)
+        .withPointerParameter("metadata", (void*)metadata)
         .returnIntValue();
 }
 

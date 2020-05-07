@@ -16,21 +16,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * celix_errorcodes.c
- *
- *  \date       Aug 30, 2011
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
 
 #include <stdio.h>
 #include <string.h>
 
 #include "celix_errno.h"
 
-static char* celix_error_string(celix_status_t statcode) {
-	switch (statcode) {
+const char* celix_strerror(celix_status_t status) {
+	switch (status) {
         case CELIX_BUNDLE_EXCEPTION:
             return "Bundle exception";
         case CELIX_INVALID_BUNDLE_CONTEXT:
@@ -52,14 +45,4 @@ static char* celix_error_string(celix_status_t statcode) {
         default:
             return "Unknown code";
 	}
-}
-
-char* celix_strerror(celix_status_t errorcode, char *buffer, size_t bufferSize) {
-    if (errorcode < CELIX_START_ERROR) {
-        return strerror(errorcode);
-    } else {
-    	char * str = celix_error_string(errorcode);
-    	strncpy(buffer, str, bufferSize);
-        return buffer;
-    }
 }

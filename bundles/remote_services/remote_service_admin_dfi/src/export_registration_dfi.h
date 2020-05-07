@@ -22,17 +22,17 @@
 
 
 #include "export_registration.h"
-#include "log_helper.h"
+#include "celix_log_helper.h"
 #include "endpoint_description.h"
 
-celix_status_t exportRegistration_create(log_helper_t *helper, service_reference_pt reference, endpoint_description_t *endpoint, celix_bundle_context_t *context, FILE *logFile, export_registration_t **registration);
+celix_status_t exportRegistration_create(celix_log_helper_t *helper, service_reference_pt reference, endpoint_description_t *endpoint, celix_bundle_context_t *context, FILE *logFile, export_registration_t **registration);
 celix_status_t exportRegistration_close(export_registration_t *registration);
 void exportRegistration_destroy(export_registration_t *registration);
 
 celix_status_t exportRegistration_start(export_registration_t *registration);
 celix_status_t exportRegistration_stop(export_registration_t *registration);
 
-celix_status_t exportRegistration_call(export_registration_t *export, char *data, int datalength, char **response, int *responseLength);
+celix_status_t exportRegistration_call(export_registration_t *export, char *data, int datalength, celix_properties_t *metadata, char **response, int *responseLength);
 
 
 #endif //CELIX_EXPORT_REGISTRATION_DFI_H

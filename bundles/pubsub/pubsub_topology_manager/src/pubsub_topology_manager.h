@@ -22,8 +22,8 @@
 
 #include "service_reference.h"
 #include "bundle_context.h"
-#include "log_helper.h"
-#include "command.h"
+#include "celix_log_helper.h"
+#include "celix_shell_command.h"
 #include "celix_bundle_context.h"
 
 #include "pubsub_endpoint.h"
@@ -74,7 +74,7 @@ typedef struct pubsub_topology_manager {
         bool running;
     } psaHandling;
 
-    log_helper_t *loghelper;
+    celix_log_helper_t *loghelper;
 
     bool verbose;
 } pubsub_topology_manager_t;
@@ -96,6 +96,7 @@ typedef struct pstm_topic_receiver_or_sender_entry {
     int usageCount; //nr of subscriber service for the topic receiver (matching scope & topic)
     long selectedPsaSvcId;
     long selectedSerializerSvcId;
+    long selectedProtocolSvcId;
     long bndId;
     celix_properties_t *topicProperties; //found in META-INF/(pub|sub)/(topic).properties
 
@@ -106,7 +107,7 @@ typedef struct pstm_topic_receiver_or_sender_entry {
     celix_properties_t *subscriberProperties;
 } pstm_topic_receiver_or_sender_entry_t;
 
-celix_status_t pubsub_topologyManager_create(celix_bundle_context_t *context, log_helper_t *logHelper, pubsub_topology_manager_t **manager);
+celix_status_t pubsub_topologyManager_create(celix_bundle_context_t *context, celix_log_helper_t *logHelper, pubsub_topology_manager_t **manager);
 celix_status_t pubsub_topologyManager_destroy(pubsub_topology_manager_t *manager);
 
 void pubsub_topologyManager_psaAdded(void *handle, void *svc, const celix_properties_t *props);
@@ -124,7 +125,7 @@ void pubsub_topologyManager_publisherTrackerRemoved(void *handle, const celix_se
 celix_status_t pubsub_topologyManager_addDiscoveredEndpoint(void *handle, const celix_properties_t *properties);
 celix_status_t pubsub_topologyManager_removeDiscoveredEndpoint(void *handle, const celix_properties_t *properties);
 
-celix_status_t pubsub_topologyManager_shellCommand(void *handle, char * commandLine, FILE *outStream, FILE *errorStream);
+bool pubsub_topologyManager_shellCommand(void *handle, const char * commandLine, FILE *outStream, FILE *errorStream);
 
 void pubsub_topologyManager_addMetricsService(void * handle, void *svc, const celix_properties_t *props);
 void pubsub_topologyManager_removeMetricsService(void * handle, void *svc, const celix_properties_t *props);

@@ -21,14 +21,14 @@
 
 #include "celix_api.h"
 #include "pubsub_serializer.h"
-#include "log_helper.h"
+#include "celix_log_helper.h"
 
 #include "pubsub_admin.h"
 #include "pubsub_udpmc_admin.h"
-#include "../../../shell/shell/include/command.h"
+#include "celix_shell_command.h"
 
 typedef struct psa_udpmc_activator {
-    log_helper_t *logHelper;
+    celix_log_helper_t *logHelper;
 
     pubsub_udpmc_admin_t *admin;
 
@@ -37,7 +37,7 @@ typedef struct psa_udpmc_activator {
     pubsub_admin_service_t adminService;
     long adminSvcId;
 
-    command_service_t cmdSvc;
+    celix_shell_command_t cmdSvc;
     long cmdSvcId;
 } psa_udpmc_activator_t;
 
@@ -47,8 +47,7 @@ int psa_udpmc_start(psa_udpmc_activator_t *act, celix_bundle_context_t *ctx) {
     act->serializersTrackerId = -1L;
 
 
-    logHelper_create(ctx, &act->logHelper);
-    logHelper_start(act->logHelper);
+    act->logHelper = celix_logHelper_create(ctx, "celix_psa_admin_udpmc");
 
     act->admin = pubsub_udpmcAdmin_create(ctx, act->logHelper);
     celix_status_t status = act->admin != NULL ? CELIX_SUCCESS : CELIX_BUNDLE_EXCEPTION;
@@ -89,10 +88,10 @@ int psa_udpmc_start(psa_udpmc_activator_t *act, celix_bundle_context_t *ctx) {
         act->cmdSvc.handle = act->admin;
         act->cmdSvc.executeCommand = pubsub_udpmcAdmin_executeCommand;
         celix_properties_t *props = celix_properties_create();
-        celix_properties_set(props, OSGI_SHELL_COMMAND_NAME, "psa_udpmc");
-        celix_properties_set(props, OSGI_SHELL_COMMAND_USAGE, "psa_udpmc");
-        celix_properties_set(props, OSGI_SHELL_COMMAND_DESCRIPTION, "Print the information about the TopicSender and TopicReceivers for the UDPMC PSA");
-        act->cmdSvcId = celix_bundleContext_registerService(ctx, &act->cmdSvc, OSGI_SHELL_COMMAND_SERVICE_NAME, props);
+        celix_properties_set(props, CELIX_SHELL_COMMAND_NAME, "celix::psa_udpmc");
+        celix_properties_set(props, CELIX_SHELL_COMMAND_USAGE, "psa_udpmc");
+        celix_properties_set(props, CELIX_SHELL_COMMAND_DESCRIPTION, "Print the information about the TopicSender and TopicReceivers for the UDPMC PSA");
+        act->cmdSvcId = celix_bundleContext_registerService(ctx, &act->cmdSvc, CELIX_SHELL_COMMAND_SERVICE_NAME, props);
     }
 
     return status;
@@ -104,8 +103,7 @@ int psa_udpmc_stop(psa_udpmc_activator_t *act, celix_bundle_context_t *ctx) {
     celix_bundleContext_stopTracker(ctx, act->serializersTrackerId);
     pubsub_udpmcAdmin_destroy(act->admin);
 
-    logHelper_stop(act->logHelper);
-    logHelper_destroy(&act->logHelper);
+    celix_logHelper_destroy(act->logHelper);
 
     return CELIX_SUCCESS;
 }

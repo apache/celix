@@ -15,34 +15,52 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(PUBSUB "Option to build the pubsub bundles" OFF DEPS FRAMEWORK)
+celix_subproject(PUBSUB "Option to build the pubsub bundles" ON DEPS FRAMEWORK)
 if (PUBSUB)
 
-    option(BUILD_PUBSUB_PSA_ZMQ "Build ZeroMQ PubSub Admin (LGPL License)" OFF)
+    option(BUILD_PUBSUB_PSA_ZMQ "Build ZeroMQ PubSub Admin (LGPL License)" ON)
     if (BUILD_PUBSUB_PSA_ZMQ)
-        message(WARNING "Celix will now contain a dependency with a LGPL License (ZeroMQ). For more information about this, consult the pubsub/README.md file.")
         option(BUILD_ZMQ_SECURITY "Build with security for ZeroMQ." OFF)
+        add_subdirectory(pubsub_admin_zmq)
     endif (BUILD_PUBSUB_PSA_ZMQ)
 
+    option(BUILD_PUBSUB_PSA_TCP "Build TCP PubSub Admin" ON)
+    if (BUILD_PUBSUB_PSA_TCP)
+        add_subdirectory(pubsub_admin_tcp)
+    endif (BUILD_PUBSUB_PSA_TCP)
+
+    option(BUILD_PUBSUB_PSA_UDP_MC "Build UDP MC PubSub Admin" ON)
+    if (BUILD_PUBSUB_PSA_UDP_MC)
+        add_subdirectory(pubsub_admin_udp_mc)
+    endif (BUILD_PUBSUB_PSA_UDP_MC)
+
+    set(BUILD_PUBSUB_PSA_WS_DEFAULT ON)
+    if (APPLE)
+        set(BUILD_PUBSUB_PSA_WS_DEFAULT OFF)
+    endif ()
+    option(BUILD_PUBSUB_PSA_WS "Build WebSocket PubSub Admin" ${BUILD_PUBSUB_PSA_WS_DEFAULT})
+    if (BUILD_PUBSUB_PSA_WS)
+        add_subdirectory(pubsub_admin_websocket)
+        if (APPLE)
+            message(WARNING "WebSocket PubSub Admin not supported on OSX, the tests are failing! See issue #161")
+        endif ()
+    endif (BUILD_PUBSUB_PSA_WS)
+
+
     add_subdirectory(pubsub_api)
+    add_subdirectory(pubsub_utils)
     add_subdirectory(pubsub_spi)
     add_subdirectory(pubsub_topology_manager)
     add_subdirectory(pubsub_discovery)
     add_subdirectory(pubsub_serializer_json)
     add_subdirectory(pubsub_serializer_avrobin)
-    add_subdirectory(pubsub_admin_zmq)
-    add_subdirectory(pubsub_admin_tcp)
-    add_subdirectory(pubsub_admin_udp_mc)
-    add_subdirectory(pubsub_admin_websocket)
+    add_subdirectory(pubsub_protocol_wire_v1)
     add_subdirectory(keygen)
     add_subdirectory(mock)
 
     add_subdirectory(examples)
 
     if (ENABLE_TESTING)
-        option(BUILD_PUBSUB_TESTS "Enable Tests for PUBSUB" OFF)
-    endif()
-    if (ENABLE_TESTING AND BUILD_PUBSUB_TESTS)
         add_subdirectory(test)
     endif()
 

@@ -21,8 +21,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "log_helper.h"
-#include "command.h"
+#include "celix_log_helper.h"
+#include "celix_shell_command.h"
 
 #include "celix_bundle_context.h"
 #include "celix_bundle_activator.h"
@@ -41,17 +41,16 @@ typedef struct psd_activator {
     pubsub_announce_endpoint_listener_t listenerSvc;
     long listenerSvcId;
 
-    command_service_t cmdSvc;
+    celix_shell_command_t cmdSvc;
     long cmdSvcId;
 
-    log_helper_t *loghelper;
+    celix_log_helper_t *loghelper;
 } psd_activator_t;
 
 static celix_status_t psd_start(psd_activator_t *act, celix_bundle_context_t *ctx) {
     celix_status_t status;
 
-    logHelper_create(ctx, &act->loghelper);
-    logHelper_start(act->loghelper);
+    act->loghelper = celix_logHelper_create(ctx, "celix_psa_discovery_etcd");
 
     act->pubsub_discovery = pubsub_discovery_create(ctx, act->loghelper);
     // pubsub_discovery_start needs to be first to initialize
@@ -74,10 +73,10 @@ static celix_status_t psd_start(psd_activator_t *act, celix_bundle_context_t *ct
         act->cmdSvc.handle = act->pubsub_discovery;
         act->cmdSvc.executeCommand = pubsub_discovery_executeCommand;
         celix_properties_t *props = celix_properties_create();
-        celix_properties_set(props, OSGI_SHELL_COMMAND_NAME, "psd_etcd");
-        celix_properties_set(props, OSGI_SHELL_COMMAND_USAGE, "psd_etcd"); //TODO add search topic/scope option
-        celix_properties_set(props, OSGI_SHELL_COMMAND_DESCRIPTION, "Overview of discovered/announced endpoints from/to ETCD");
-        act->cmdSvcId = celix_bundleContext_registerService(ctx, &act->cmdSvc, OSGI_SHELL_COMMAND_SERVICE_NAME, props);
+        celix_properties_set(props, CELIX_SHELL_COMMAND_NAME, "celix::psd_etcd");
+        celix_properties_set(props, CELIX_SHELL_COMMAND_USAGE, "psd_etcd");
+        celix_properties_set(props, CELIX_SHELL_COMMAND_DESCRIPTION, "Overview of discovered/announced endpoints from/to ETCD");
+        act->cmdSvcId = celix_bundleContext_registerService(ctx, &act->cmdSvc, CELIX_SHELL_COMMAND_SERVICE_NAME, props);
     }
 
     if (status == CELIX_SUCCESS) {
@@ -97,8 +96,7 @@ static celix_status_t psd_stop(psd_activator_t *act, celix_bundle_context_t *ctx
     celix_status_t status = pubsub_discovery_stop(act->pubsub_discovery);
     pubsub_discovery_destroy(act->pubsub_discovery);
 
-    logHelper_stop(act->loghelper);
-    logHelper_destroy(&act->loghelper);
+    celix_logHelper_destroy(act->loghelper);
 
     return status;
 }

@@ -44,7 +44,7 @@ extern "C" {
 #endif
 
 celix_status_t
-bundleContext_create(celix_framework_t *framework, framework_logger_pt, celix_bundle_t *bundle, celix_bundle_context_t **bundle_context);
+bundleContext_create(celix_framework_t *framework, celix_framework_logger_t* logger, celix_bundle_t *bundle, celix_bundle_context_t **bundle_context);
 
 celix_status_t bundleContext_destroy(celix_bundle_context_t *context);
 
@@ -125,7 +125,7 @@ FRAMEWORK_EXPORT celix_status_t bundleContext_getBundles(celix_bundle_context_t 
 FRAMEWORK_EXPORT celix_status_t bundleContext_getBundleById(celix_bundle_context_t *context, long id, celix_bundle_t **bundle);
 
 FRAMEWORK_EXPORT celix_status_t
-bundleContext_addServiceListener(celix_bundle_context_t *context, celix_service_listener_t *listener, const char *filter);
+bundleContext_addServiceListener(celix_bundle_context_t *context, celix_service_listener_t *listener, const char *filter) __attribute__((deprecated("using service listeners directly is deprecated, use a service tracker instead!")));
 
 FRAMEWORK_EXPORT celix_status_t
 bundleContext_removeServiceListener(celix_bundle_context_t *context, celix_service_listener_t *listener);

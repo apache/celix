@@ -28,7 +28,7 @@
 #include "hash_map.h"
 #include "bundle_context.h"
 
-#include "log_helper.h"
+#include "celix_log_helper.h"
 
 #include "json_serializer.h"
 
@@ -47,24 +47,25 @@ FILE_INPUT_TYPE;
 
 struct pubsub_json_serializer {
     celix_bundle_context_t *bundle_context;
-    log_helper_t *log;
+    celix_log_helper_t *log;
 };
 
 #define L_DEBUG(...) \
-    logHelper_log(serializer->log, OSGI_LOGSERVICE_DEBUG, __VA_ARGS__)
+    celix_logHelper_log(serializer->log, CELIX_LOG_LEVEL_DEBUG, __VA_ARGS__)
 #define L_INFO(...) \
-    logHelper_log(serializer->log, OSGI_LOGSERVICE_INFO, __VA_ARGS__)
+    celix_logHelper_log(serializer->log, CELIX_LOG_LEVEL_INFO, __VA_ARGS__)
 #define L_WARN(...) \
-    logHelper_log(serializer->log, OSGI_LOGSERVICE_WARNING, __VA_ARGS__)
+    celix_logHelper_log(serializer->log, CELIX_LOG_LEVEL_WARNING, __VA_ARGS__)
 #define L_ERROR(...) \
-    logHelper_log(serializer->log, OSGI_LOGSERVICE_ERROR, __VA_ARGS__)
+    celix_logHelper_log(serializer->log, CELIX_LOG_LEVEL_ERROR, __VA_ARGS__)
 
 
 
 /* Start of serializer specific functions */
-static celix_status_t pubsubMsgSerializer_serialize(void* handle, const void* msg, void** out, size_t *outLen);
-static celix_status_t pubsubMsgSerializer_deserialize(void* handle, const void* input, size_t inputLen, void **out);
-static void pubsubMsgSerializer_freeMsg(void* handle, void *msg);
+static celix_status_t pubsubMsgSerializer_serialize(void* handle, const void* msg,  struct iovec** output, size_t* outputIovLen);
+static celix_status_t pubsubMsgSerializer_deserialize(void* handle,const struct iovec* input, size_t inputIovLen, void **out);
+static void pubsubMsgSerializer_freeSerializeMsg(void* handle, struct iovec* input, size_t inputIovLen);
+static void pubsubMsgSerializer_freeDeserializeMsg(void* handle, void *msg);
 static FILE* openFileStream(pubsub_json_serializer_t* serializer, FILE_INPUT_TYPE file_input_type, const char* filename, const char* root, /*output*/ char* avpr_fqn, /*output*/ char* path);
 static FILE_INPUT_TYPE getFileInputType(const char* filename);
 static bool readPropertiesFile(pubsub_json_serializer_t* serializer, const char* properties_file_name, const char* root, /*output*/ char* avpr_fqn, /*output*/ char* path);
@@ -77,9 +78,9 @@ typedef struct pubsub_json_msg_serializer_impl {
     version_pt msgVersion;
 } pubsub_json_msg_serializer_impl_t;
 
-static char* pubsubSerializer_getMsgDescriptionDir(celix_bundle_t *bundle);
-static void pubsubSerializer_addMsgSerializerFromBundle(pubsub_json_serializer_t* serializer, const char *root, celix_bundle_t *bundle, hash_map_pt msgSerializers);
-static void pubsubSerializer_fillMsgSerializerMap(pubsub_json_serializer_t* serializer, hash_map_pt msgSerializers,celix_bundle_t *bundle);
+static char* pubsubSerializer_getMsgDescriptionDir(const celix_bundle_t *bundle);
+static void pubsubSerializer_addMsgSerializerFromBundle(pubsub_json_serializer_t* serializer, const char *root, const celix_bundle_t *bundle, hash_map_pt msgSerializers);
+static void pubsubSerializer_fillMsgSerializerMap(pubsub_json_serializer_t* serializer, hash_map_pt msgSerializers, const celix_bundle_t *bundle);
 
 static int pubsubMsgSerializer_convertDescriptor(pubsub_json_serializer_t* serializer, FILE* file_ptr, pubsub_msg_serializer_t* msgSerializer);
 static int pubsubMsgSerializer_convertAvpr(pubsub_json_serializer_t *serializer, FILE* file_ptr, pubsub_msg_serializer_t* msgSerializer, const char* fqn);
@@ -91,7 +92,7 @@ static void dfi_log(void *handle, int level, const char *file, int line, const c
     va_start(ap, msg);
     vasprintf(&logStr, msg, ap);
     va_end(ap);
-    logHelper_log(serializer->log, level, "FILE:%s, LINE:%i, MSG:%s", file, line, logStr);
+    celix_logHelper_log(serializer->log, level, "FILE:%s, LINE:%i, MSG:%s", file, line, logStr);
     free(logStr);
 }
 
@@ -102,18 +103,13 @@ celix_status_t pubsubSerializer_create(celix_bundle_context_t *context, pubsub_j
 
     if (!*serializer) {
         status = CELIX_ENOMEM;
-    }
-    else{
-
+    } else {
         (*serializer)->bundle_context= context;
-
-        if (logHelper_create(context, &(*serializer)->log) == CELIX_SUCCESS) {
-            logHelper_start((*serializer)->log);
-            jsonSerializer_logSetup(dfi_log, (*serializer), 1);
-            dynFunction_logSetup(dfi_log, (*serializer), 1);
-            dynType_logSetup(dfi_log, (*serializer), 1);
-            dynCommon_logSetup(dfi_log, (*serializer), 1);
-        }
+        (*serializer)->log = celix_logHelper_create(context, "celix_psa_serializer_json");
+        jsonSerializer_logSetup(dfi_log, (*serializer), 1);
+        dynFunction_logSetup(dfi_log, (*serializer), 1);
+        dynType_logSetup(dfi_log, (*serializer), 1);
+        dynCommon_logSetup(dfi_log, (*serializer), 1);
 
     }
 
@@ -123,15 +119,14 @@ celix_status_t pubsubSerializer_create(celix_bundle_context_t *context, pubsub_j
 celix_status_t pubsubSerializer_destroy(pubsub_json_serializer_t* serializer) {
     celix_status_t status = CELIX_SUCCESS;
 
-    logHelper_stop(serializer->log);
-    logHelper_destroy(&serializer->log);
+    celix_logHelper_destroy(serializer->log);
 
     free(serializer);
 
     return status;
 }
 
-celix_status_t pubsubSerializer_createSerializerMap(void *handle, celix_bundle_t *bundle, hash_map_pt* serializerMap) {
+celix_status_t pubsubSerializer_createSerializerMap(void *handle, const celix_bundle_t *bundle, hash_map_pt* serializerMap) {
     pubsub_json_serializer_t *serializer = handle;
 
     hash_map_pt map = hashMap_create(NULL, NULL, NULL, NULL);
@@ -162,10 +157,15 @@ celix_status_t pubsubSerializer_destroySerializerMap(void* handle __attribute__(
 }
 
 
-celix_status_t pubsubMsgSerializer_serialize(void *handle, const void* msg, void** out, size_t *outLen) {
+celix_status_t pubsubMsgSerializer_serialize(void *handle, const void* msg, struct iovec** output, size_t* outputIovLen) {
     celix_status_t status = CELIX_SUCCESS;
 
     pubsub_json_msg_serializer_impl_t *impl = handle;
+
+    if (*output == NULL) {
+        *output = calloc(1, sizeof(struct iovec));
+        if (output == NULL) status = CELIX_BUNDLE_EXCEPTION;
+    }
 
     char *jsonOutput = NULL;
     dyn_type* dynType;
@@ -176,21 +176,23 @@ celix_status_t pubsubMsgSerializer_serialize(void *handle, const void* msg, void
     }
 
     if (status == CELIX_SUCCESS) {
-        *out = jsonOutput;
-        *outLen = strlen(jsonOutput) + 1;
+        (**output).iov_base = (void*)jsonOutput;
+        (**output).iov_len  = strlen(jsonOutput) + 1;
+        if (outputIovLen) *outputIovLen = 1;
     }
 
     return status;
 }
 
-celix_status_t pubsubMsgSerializer_deserialize(void* handle, const void* input, size_t inputLen, void **out) {
+celix_status_t pubsubMsgSerializer_deserialize(void* handle, const struct iovec* input, size_t inputIovLen __attribute__((unused)), void **out) {
     celix_status_t status = CELIX_SUCCESS;
+    if (input == NULL) return CELIX_BUNDLE_EXCEPTION;
     pubsub_json_msg_serializer_impl_t *impl = handle;
     void *msg = NULL;
     dyn_type* dynType;
     dynMessage_getMessageType(impl->msgType, &dynType);
 
-    if (jsonSerializer_deserialize(dynType, (const char*)input, &msg) != 0) {
+    if (jsonSerializer_deserialize(dynType, (const char*)input->iov_base, &msg) != 0) {
         status = CELIX_BUNDLE_EXCEPTION;
     }
     else{
@@ -200,7 +202,23 @@ celix_status_t pubsubMsgSerializer_deserialize(void* handle, const void* input, 
     return status;
 }
 
-void pubsubMsgSerializer_freeMsg(void* handle, void *msg) {
+void pubsubMsgSerializer_freeSerializeMsg(void* handle, struct iovec* input, size_t inputIovLen) {
+    pubsub_json_msg_serializer_impl_t *impl = handle;
+    if (input == NULL) {
+        return;
+    }
+    if (impl->msgType != NULL) {
+        for (int i = 0; i < inputIovLen; i++) {
+            if (input[i].iov_base) free(input[i].iov_base);
+            input[i].iov_base = NULL;
+            input[i].iov_len  = 0;
+        }
+        free(input);
+    }
+}
+
+
+void pubsubMsgSerializer_freeDeserializeMsg(void* handle, void *msg) {
     pubsub_json_msg_serializer_impl_t *impl = handle;
     if (impl->msgType != NULL) {
         dyn_type* dynType;
@@ -210,7 +228,7 @@ void pubsubMsgSerializer_freeMsg(void* handle, void *msg) {
 }
 
 
-static void pubsubSerializer_fillMsgSerializerMap(pubsub_json_serializer_t* serializer, hash_map_pt msgSerializers, celix_bundle_t *bundle) {
+static void pubsubSerializer_fillMsgSerializerMap(pubsub_json_serializer_t* serializer, hash_map_pt msgSerializers, const celix_bundle_t *bundle) {
     char* root = NULL;
     char* metaInfPath = NULL;
 
@@ -227,7 +245,7 @@ static void pubsubSerializer_fillMsgSerializerMap(pubsub_json_serializer_t* seri
     }
 }
 
-static char* pubsubSerializer_getMsgDescriptionDir(celix_bundle_t *bundle) {
+static char* pubsubSerializer_getMsgDescriptionDir(const celix_bundle_t *bundle) {
     char *root = NULL;
 
     bool isSystemBundle = false;
@@ -253,7 +271,7 @@ static char* pubsubSerializer_getMsgDescriptionDir(celix_bundle_t *bundle) {
     return root;
 }
 
-static void pubsubSerializer_addMsgSerializerFromBundle(pubsub_json_serializer_t* serializer, const char *root, celix_bundle_t *bundle, hash_map_pt msgSerializers) {
+static void pubsubSerializer_addMsgSerializerFromBundle(pubsub_json_serializer_t* serializer, const char *root, const celix_bundle_t *bundle, hash_map_pt msgSerializers) {
     char fqn[MAX_PATH_LEN];
     char pathOrError[MAX_PATH_LEN];
     const char* entry_name = NULL;
@@ -446,14 +464,19 @@ static int pubsubMsgSerializer_convertDescriptor(pubsub_json_serializer_t* seria
 
     msgSerializer->serialize = (void*) pubsubMsgSerializer_serialize;
     msgSerializer->deserialize = (void*) pubsubMsgSerializer_deserialize;
-    msgSerializer->freeMsg = (void*) pubsubMsgSerializer_freeMsg;
+
+    msgSerializer->freeSerializeMsg = (void*) pubsubMsgSerializer_freeSerializeMsg;
+    msgSerializer->freeDeserializeMsg = (void*) pubsubMsgSerializer_freeDeserializeMsg;
 
     return 0;
 }
 
 static int pubsubMsgSerializer_convertAvpr(pubsub_json_serializer_t *serializer, FILE* file_ptr, pubsub_msg_serializer_t* msgSerializer, const char* fqn) {
     if (!file_ptr || !fqn || !serializer) return -2;
-    dyn_message_type* msgType = dynMessage_parseAvpr(file_ptr, fqn);
+
+    //TODO FIXME, see #158
+    //dyn_message_type* msgType = dynMessage_parseAvpr(file_ptr, fqn);
+    dyn_message_type* msgType = NULL;
 
     if (!msgType) {
         L_WARN("[json serializer] Cannot parse avpr file '%s'\n", fqn);
@@ -501,7 +524,8 @@ static int pubsubMsgSerializer_convertAvpr(pubsub_json_serializer_t *serializer,
 
     msgSerializer->serialize = (void*) pubsubMsgSerializer_serialize;
     msgSerializer->deserialize = (void*) pubsubMsgSerializer_deserialize;
-    msgSerializer->freeMsg = (void*) pubsubMsgSerializer_freeMsg;
+    msgSerializer->freeSerializeMsg = (void*) pubsubMsgSerializer_freeSerializeMsg;
+    msgSerializer->freeDeserializeMsg = (void*) pubsubMsgSerializer_freeDeserializeMsg;
 
     return 0;
 }

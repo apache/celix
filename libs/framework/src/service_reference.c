@@ -62,7 +62,7 @@ celix_status_t serviceReference_create(registry_callback_t callback, bundle_pt r
 		*out = ref;
 	}
 
-    framework_logIfError(logger, status, NULL, "Cannot create service reference");
+    framework_logIfError(celix_frameworkLogger_globalLogger(), status, NULL, "Cannot create service reference");
 
 	return status;
 }
@@ -97,7 +97,7 @@ celix_status_t serviceReference_release(service_reference_pt ref, bool *out) {
 }
 
 celix_status_t serviceReference_increaseUsage(service_reference_pt ref, size_t *out) {
-    //fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "Destroying service reference %p\n", ref);
+    //fw_log(logger, CELIX_LOG_LEVEL_DEBUG, "Destroying service reference %p\n", ref);
     size_t local = 0;
     celixThreadRwlock_writeLock(&ref->lock);
     ref->usageCount += 1;
@@ -129,7 +129,7 @@ celix_status_t serviceReference_decreaseUsage(service_reference_pt ref, size_t *
 }
 
 static void serviceReference_logWarningUsageCountBelowZero(service_reference_pt ref __attribute__((unused))) {
-    fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "Cannot decrease service usage count below 0\n");
+    fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_WARNING, "Cannot decrease service usage count below 0\n");
 }
 
 
@@ -203,6 +203,18 @@ celix_status_t serviceReference_getServiceRegistration(service_reference_pt ref,
         return CELIX_ILLEGAL_ARGUMENT;
     }
 }
+
+long serviceReference_getServiceId(service_reference_pt ref) {
+    long svcId = -1L;
+    if (ref != NULL) {
+        celixThreadRwlock_readLock(&ref->lock);
+        svcId = ref->registration->serviceId;
+        celixThreadRwlock_unlock(&ref->lock);
+    }
+    return svcId;
+}
+
+
 
 FRAMEWORK_EXPORT celix_status_t
 serviceReference_getPropertyWithDefault(service_reference_pt ref, const char *key, const char* def, const char **value) {
@@ -373,7 +385,7 @@ celix_status_t serviceReference_getUsingBundles(service_reference_pt ref, array_
         if (callback.getUsingBundles != NULL) {
             status = callback.getUsingBundles(callback.handle, reg, out);
         } else {
-            fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "getUsingBundles callback not set");
+            fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_ERROR, "getUsingBundles callback not set");
             status = CELIX_BUNDLE_EXCEPTION;
         }
         serviceRegistration_release(reg);
