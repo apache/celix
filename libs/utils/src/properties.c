@@ -450,7 +450,7 @@ void celix_properties_setDouble(celix_properties_t *props, const char *key, doub
     }
 }
 
-bool celix_properties_getAsBool(celix_properties_t *props, const char *key, bool defaultValue) {
+bool celix_properties_getAsBool(const celix_properties_t *props, const char *key, bool defaultValue) {
     bool result = defaultValue;
     const char *val = celix_properties_get(props, key, NULL);
     if (val != NULL) {

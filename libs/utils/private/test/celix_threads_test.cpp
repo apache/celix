@@ -61,8 +61,8 @@ static int celix_thread_t_equals(const void * object, const void * compareTo){
     celix_thread_t * thread1 = (celix_thread_t*) object;
     celix_thread_t * thread2 = (celix_thread_t*) compareTo;
 
-    return thread1->thread == thread2->thread &&
-            thread1->threadInitialized == thread2->threadInitialized;
+    return __atomic_load_n(&thread1->thread, __ATOMIC_ACQUIRE) == __atomic_load_n(&thread2->thread, __ATOMIC_ACQUIRE) &&
+            __atomic_load_n(&thread1->threadInitialized, __ATOMIC_ACQUIRE) == __atomic_load_n(&thread2->threadInitialized, __ATOMIC_ACQUIRE);
 }
 
 static const char * celix_thread_t_toString(const void * object){
@@ -79,7 +79,7 @@ static void * thread_test_func_exit(void *);
 static void * thread_test_func_detach(void *);
 static void * thread_test_func_self(void *);
 static void * thread_test_func_once(void*);
-static void thread_test_func_once_init(void);
+static void thread_test_func_once_init();
 static void * thread_test_func_lock(void *);
 static void * thread_test_func_cond_wait(void *);
 static void * thread_test_func_cond_broadcast(void *);
@@ -105,10 +105,10 @@ int main(int argc, char** argv) {
 TEST_GROUP(celix_thread) {
     celix_thread thread;
 
-    void setup(void) {
+    void setup() override {
     }
 
-    void teardown(void) {
+    void teardown() override {
     }
 };
 
@@ -116,7 +116,7 @@ TEST_GROUP(celix_thread_kill) {
     celix_thread thread;
     struct sigaction sigact, sigactold;
 
-    void setup(void) {
+    void setup() override {
         memset(&sigact, 0, sizeof(sigact));
         sigact.sa_handler = thread_test_func_kill_handler;
         sigaction(SIGUSR1, &sigact, &sigactold);
@@ -124,7 +124,7 @@ TEST_GROUP(celix_thread_kill) {
         mock_c()->installComparator("celix_thread_t", celix_thread_t_equals, celix_thread_t_toString);
     }
 
-    void teardown(void) {
+    void teardown() override {
         sigaction(SIGUSR1, &sigactold, &sigact);
 
         mock_c()->removeAllComparatorsAndCopiers();
@@ -135,10 +135,10 @@ TEST_GROUP(celix_thread_mutex) {
     celix_thread thread;
     celix_thread_mutex_t mu;
 
-    void setup(void) {
+    void setup() override {
     }
 
-    void teardown(void) {
+    void teardown() override {
     }
 };
 
@@ -147,20 +147,20 @@ TEST_GROUP(celix_thread_condition) {
     celix_thread_mutex_t mu;
     celix_thread_cond_t cond;
 
-    void setup(void) {
+    void setup() {
     }
 
-    void teardown(void) {
+    void teardown() {
     }
 };
 
 TEST_GROUP(celix_thread_rwlock) {
     celix_thread thread;
 
-    void setup(void) {
+    void setup() {
     }
 
-    void teardown(void) {
+    void teardown() {
     }
 };
 
@@ -397,6 +397,7 @@ TEST(celix_thread_rwlock, create){
 TEST(celix_thread_rwlock, readLock){
     int status;
     celix_thread_rwlock_t lock;
+    memset(&lock, 0x00, sizeof(celix_thread_rwlock_t));
     //struct func_param * param = (struct func_param*) calloc(1,sizeof(struct func_param));
 
     celixThreadRwlock_create(&lock, NULL);
@@ -466,7 +467,7 @@ static void * thread_test_func_once(void * arg) {
     return NULL;
 }
 
-static void thread_test_func_once_init(void) {
+static void thread_test_func_once_init() {
     mock_c()->actualCall("thread_test_func_once_init");
 }
 

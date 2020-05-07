@@ -17,8 +17,7 @@ jobs:
     - name: Install dependencies
       run: |
         brew update
-        brew install lcov libffi zeromq czmq openssl cpputest
-        brew link --force libffi
+        brew install lcov zeromq czmq openssl cpputest
         brew unlink openssl && brew link openssl --force
     - name: Build
       env:
@@ -26,8 +25,6 @@ jobs:
         BUILD_OPTIONS: |
           -DENABLE_TESTING=ON
           -DENABLE_ADDRESS_SANITIZER=ON
-          -DFFI_INCLUDE_DIR=/usr/local/opt/libffi/lib/libffi-3.2.1/include
-          -DFFI_LIBRARY=/usr/local/opt/libffi/lib/libffi.dylib
       run: |
         mkdir build install
         cd build

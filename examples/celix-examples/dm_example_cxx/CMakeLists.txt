@@ -52,8 +52,8 @@ add_celix_docker(dm_exmpl_cxx_docker
            Celix::shell
            Celix::shell_tui
            Celix::dm_shell
-           Celix::log_service
-           Celix::log_writer_stdout
+           Celix::log_admin
+
 
            dm_example_cxx_phase1
            dm_example_cxx_phase2a

@@ -128,6 +128,12 @@ bool celix_serviceRegistry_getServiceInfo(
         bool *factory);
 
 
+/**
+ * Returns the next svc id.
+ */
+long celix_serviceRegistry_nextSvcId(celix_service_registry_t* registry);
+
+
 #ifdef __cplusplus
 }
 #endif

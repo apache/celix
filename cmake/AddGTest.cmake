@@ -15,37 +15,16 @@
 # specific language governing permissions and limitations
 # under the License.
 
-include(ExternalProject)
-ExternalProject_Add(
-        googletest_project
+include(FetchContent)
+FetchContent_Declare(
+        googletest
         GIT_REPOSITORY https://github.com/google/googletest.git
-        GIT_TAG release-1.8.1
-        UPDATE_DISCONNECTED TRUE
-        PREFIX ${CMAKE_BINARY_DIR}/gtest
-        INSTALL_COMMAND ""
+        GIT_TAG        release-1.10.0
 )
+FetchContent_MakeAvailable(googletest)
 
-ExternalProject_Get_Property(googletest_project source_dir binary_dir)
+add_library(GTest::gtest ALIAS gtest)
+add_library(GTest::gtest_main ALIAS gtest_main)
 
-file(MAKE_DIRECTORY ${source_dir}/googletest/include)
-add_library(GTest::GTest IMPORTED STATIC GLOBAL)
-add_dependencies(GTest::GTest googletest_project)
-set_target_properties(GTest::GTest PROPERTIES
-        IMPORTED_LOCATION "${binary_dir}/googlemock/gtest/libgtest.a"
-        INTERFACE_INCLUDE_DIRECTORIES "${source_dir}/googletest/include"
-        )
-add_library(GTest::Main IMPORTED STATIC GLOBAL)
-add_dependencies(GTest::Main googletest_project)
-set_target_properties(GTest::Main PROPERTIES
-        IMPORTED_LOCATION "${binary_dir}/googlemock/gtest/libgtest_main.a"
-        INTERFACE_INCLUDE_DIRECTORIES "${source_dir}/googletest/include"
-        )
-
-
-file(MAKE_DIRECTORY ${source_dir}/googlemock/include)
-add_library(GTest::GMock IMPORTED STATIC GLOBAL)
-add_dependencies(GTest::GMock googletest_project)
-set_target_properties(GTest::GMock PROPERTIES
-        IMPORTED_LOCATION "${binary_dir}/googlemock/libgmock.a"
-        INTERFACE_INCLUDE_DIRECTORIES "${source_dir}/googlemock/include"
-        )
+add_library(GTest::gmock ALIAS gmock)
+add_library(GTest::gmock_main ALIAS gmock_main)

@@ -23,9 +23,9 @@ add_celix_bundle(log_service_example
         src/activator.c
 )
 target_include_directories(log_service_example PRIVATE src)
-target_link_libraries(log_service_example PRIVATE Celix::log_service_api Celix::log_helper)
+target_link_libraries(log_service_example PRIVATE Celix::log_helper)
 
 add_celix_container(log_example
     GROUP log_service
-    BUNDLES log_service_example Celix::log_service Celix::shell Celix::shell_tui Celix::log_writer_stdout
+    BUNDLES log_service_example Celix::log_admin Celix::shell Celix::shell_tui
 )
