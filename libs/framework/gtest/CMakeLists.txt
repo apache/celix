@@ -15,6 +15,9 @@
 # specific language governing permissions and limitations
 # under the License.
 
+# Set buildtype as define so that in the test code we can use the proper bundle names
+add_definitions ( -DBUILD_TYPE=\"${CMAKE_BUILD_TYPE}\" )
+
 add_celix_bundle(simple_test_bundle1 NO_ACTIVATOR VERSION 1.0.0)
 add_celix_bundle(simple_test_bundle2 NO_ACTIVATOR VERSION 1.0.0)
 add_celix_bundle(simple_test_bundle3 NO_ACTIVATOR VERSION 1.0.0)
