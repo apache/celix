@@ -106,6 +106,10 @@ celix_status_t celixThreadMutex_destroy(celix_thread_mutex_t *mutex) {
     return pthread_mutex_destroy(mutex);
 }
 
+celix_status_t celixThreadMutex_trylock(celix_thread_mutex_t *mutex) {
+    return pthread_mutex_trylock(mutex);
+}
+
 celix_status_t celixThreadMutex_lock(celix_thread_mutex_t *mutex) {
     return pthread_mutex_lock(mutex);
 }

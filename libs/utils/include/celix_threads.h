@@ -90,6 +90,7 @@ celix_status_t celixThreadMutex_create(celix_thread_mutex_t *mutex, celix_thread
 
 celix_status_t celixThreadMutex_destroy(celix_thread_mutex_t *mutex);
 
+celix_status_t celixThreadMutex_trylock(celix_thread_mutex_t *mutex);
 celix_status_t celixThreadMutex_lock(celix_thread_mutex_t *mutex);
 
 celix_status_t celixThreadMutex_unlock(celix_thread_mutex_t *mutex);

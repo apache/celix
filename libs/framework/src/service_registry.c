@@ -159,6 +159,8 @@ celix_status_t serviceRegistry_destroy(service_registry_pt registry) {
 
     size = hashMap_size(registry->pendingRegisterEvents.map);
     assert(size == 0);
+    celixThreadMutex_trylock(&registry->pendingRegisterEvents.mutex);
+    celixThreadMutex_unlock(&registry->pendingRegisterEvents.mutex);
     celixThreadMutex_destroy(&registry->pendingRegisterEvents.mutex);
     celixThreadCondition_destroy(&registry->pendingRegisterEvents.cond);
     hashMap_destroy(registry->pendingRegisterEvents.map, false, false);

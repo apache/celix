@@ -272,6 +272,8 @@ celix_status_t serviceTracker_close(service_tracker_pt tracker) {
 
         celixThreadMutex_destroy(&instance->closingLock);
         celixThreadCondition_destroy(&instance->activeServiceChangeCallsCond);
+        celixThreadMutex_trylock(&instance->mutex);
+        celixThreadMutex_unlock(&instance->mutex);
         celixThreadMutex_destroy(&instance->mutex);
         celixThreadRwlock_destroy(&instance->lock);
         celix_arrayList_destroy(instance->trackedServices);

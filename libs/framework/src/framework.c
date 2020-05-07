@@ -335,6 +335,8 @@ celix_status_t framework_destroy(framework_pt framework) {
 
     }
     celix_arrayList_destroy(framework->installedBundles.entries);
+    celixThreadMutex_trylock(&framework->installedBundles.mutex);
+    celixThreadMutex_unlock(&framework->installedBundles.mutex);
     celixThreadMutex_destroy(&framework->installedBundles.mutex);
 
 	hashMap_destroy(framework->installRequestMap, false, false);
@@ -359,9 +361,17 @@ celix_status_t framework_destroy(framework_pt framework) {
 	bundleCache_destroy(&framework->cache);
 
 	celixThreadCondition_destroy(&framework->dispatcher.cond);
+    celixThreadMutex_trylock(&framework->frameworkListenersLock);
+    celixThreadMutex_unlock(&framework->frameworkListenersLock);
     celixThreadMutex_destroy(&framework->frameworkListenersLock);
+    celixThreadMutex_trylock(&framework->bundleListenerLock);
+    celixThreadMutex_unlock(&framework->bundleListenerLock);
 	celixThreadMutex_destroy(&framework->bundleListenerLock);
+    celixThreadMutex_trylock(&framework->dispatcher.mutex);
+    celixThreadMutex_unlock(&framework->dispatcher.mutex);
 	celixThreadMutex_destroy(&framework->dispatcher.mutex);
+    celixThreadMutex_trylock(&framework->shutdown.mutex);
+    celixThreadMutex_unlock(&framework->shutdown.mutex);
 	celixThreadMutex_destroy(&framework->shutdown.mutex);
 	celixThreadCondition_destroy(&framework->shutdown.cond);
 
