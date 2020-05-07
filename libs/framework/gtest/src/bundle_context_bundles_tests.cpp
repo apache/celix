@@ -25,6 +25,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <atomic>
+#include <celix_log_utils.h>
 
 #include "celix_api.h"
 
@@ -63,6 +64,9 @@ public:
 };
 
 
+TEST_F(CelixBundleContextBundlesTests, StartStopTest) {
+    //nop
+}
 
 TEST_F(CelixBundleContextBundlesTests, installBundlesTest) {
     long bndId = celix_bundleContext_installBundle(ctx, "non-existing.zip", true);
@@ -77,8 +81,6 @@ TEST_F(CelixBundleContextBundlesTests, installBundlesTest) {
     setenv(CELIX_BUNDLES_PATH_NAME, "subdir", true);
     bndId = celix_bundleContext_installBundle(ctx, TEST_BND4_LOC, true); //subdir now part of CELIX_BUNDLES_PATH
     ASSERT_TRUE(bndId >= 0);
-
-
 }
 
 TEST_F(CelixBundleContextBundlesTests, TestIsSystemBundle) {
@@ -304,19 +306,22 @@ TEST_F(CelixBundleContextBundlesTests, trackBundlesTest) {
 
     auto installed = [](void *handle, const bundle_t *bnd) {
         auto *d = static_cast<struct data*>(handle);
-        ASSERT_TRUE(bnd != nullptr);
+        EXPECT_TRUE(bnd != nullptr);
         d->installedCount.fetch_add(1);
     };
 
     auto started = [](void *handle, const bundle_t *bnd) {
         auto *d = static_cast<struct data*>(handle);
-        ASSERT_TRUE(bnd != nullptr);
+        EXPECT_TRUE(bnd != nullptr);
         d->startedCount.fetch_add(1);
     };
 
     auto stopped = [](void *handle, const bundle_t *bnd) {
         auto *d = static_cast<struct data*>(handle);
-        ASSERT_TRUE(bnd != nullptr);
+        if (bnd == nullptr) {
+            celix_logUtils_logToStdout("test", CELIX_LOG_LEVEL_ERROR, "bnd should not be null");
+        }
+        EXPECT_TRUE(bnd != nullptr);
         d->stoppedCount.fetch_add(1);
     };
 
@@ -327,8 +332,8 @@ TEST_F(CelixBundleContextBundlesTests, trackBundlesTest) {
     opts.onStopped = stopped;
 
     long bundleId1 = celix_bundleContext_installBundle(ctx, TEST_BND1_LOC, true);
-    ASSERT_TRUE(bundleId1 >= 0);
     celix_framework_waitForEmptyEventQueue(fw);
+    EXPECT_TRUE(bundleId1 >= 0);
 
     /*
      * NOTE for bundles already installed (TEST_BND1) the callbacks are called on the
@@ -337,37 +342,37 @@ TEST_F(CelixBundleContextBundlesTests, trackBundlesTest) {
      * the called are called on the Celix framework event queue thread.
      */
     long trackerId = celix_bundleContext_trackBundlesWithOptions(ctx, &opts);
-    ASSERT_EQ(1, data.installedCount.load());
-    ASSERT_EQ(1, data.startedCount.load());
-    ASSERT_EQ(0, data.stoppedCount.load());
+    EXPECT_EQ(1, data.installedCount.load());
+    EXPECT_EQ(1, data.startedCount.load());
+    EXPECT_EQ(0, data.stoppedCount.load());
 
 
     long bundleId2 = celix_bundleContext_installBundle(ctx, TEST_BND2_LOC, true);
     celix_framework_waitForEmptyEventQueue(fw);
-    ASSERT_TRUE(bundleId2 >= 0);
-    ASSERT_EQ(2, data.installedCount.load());
-    ASSERT_EQ(2, data.startedCount.load());
-    ASSERT_EQ(0, data.stoppedCount.load());
+    EXPECT_TRUE(bundleId2 >= 0);
+    EXPECT_EQ(2, data.installedCount.load());
+    EXPECT_EQ(2, data.startedCount.load());
+    EXPECT_EQ(0, data.stoppedCount.load());
 
     celix_bundleContext_uninstallBundle(ctx, bundleId2);
     celix_framework_waitForEmptyEventQueue(fw);
-    ASSERT_EQ(2, data.installedCount.load());
-    ASSERT_EQ(2, data.startedCount.load());
-    ASSERT_EQ(1, data.stoppedCount.load());
+    EXPECT_EQ(2, data.installedCount.load());
+    EXPECT_EQ(2, data.startedCount.load());
+    EXPECT_EQ(1, data.stoppedCount.load());
 
     long bundleId3 = celix_bundleContext_installBundle(ctx, TEST_BND3_LOC, true);
-    ASSERT_TRUE(bundleId3 >= 0);
     celix_framework_waitForEmptyEventQueue(fw);
-    ASSERT_EQ(3, data.installedCount.load());
-    ASSERT_EQ(3, data.startedCount.load());
-    ASSERT_EQ(1, data.stoppedCount.load());
+    EXPECT_TRUE(bundleId3 >= 0);
+    EXPECT_EQ(3, data.installedCount.load());
+    EXPECT_EQ(3, data.startedCount.load());
+    EXPECT_EQ(1, data.stoppedCount.load());
 
     bundleId2 = celix_bundleContext_installBundle(ctx, TEST_BND2_LOC, true);
     celix_framework_waitForEmptyEventQueue(fw);
-    ASSERT_TRUE(bundleId2 >= 0);
-    ASSERT_EQ(4, data.installedCount.load());
-    ASSERT_EQ(4, data.startedCount.load());
-    ASSERT_EQ(1, data.stoppedCount.load());
+    EXPECT_TRUE(bundleId2 >= 0);
+    EXPECT_EQ(4, data.installedCount.load());
+    EXPECT_EQ(4, data.startedCount.load());
+    EXPECT_EQ(1, data.stoppedCount.load());
 
     celix_bundleContext_stopTracker(ctx, trackerId);
 };

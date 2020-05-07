@@ -532,7 +532,8 @@ static celix_status_t bundleContext_bundleChanged(void *listenerSvc, bundle_even
     }
 
     bool handleEvent = true;
-    if (event->bundleId == 0 /*framework bundle*/)  {
+    long bndId = celix_bundle_getId(event->bnd);
+    if (bndId == 0 /*framework bundle*/)  {
         handleEvent = tracker->opts.includeFrameworkBundle;
     }
 
@@ -540,14 +541,11 @@ static celix_status_t bundleContext_bundleChanged(void *listenerSvc, bundle_even
         void *callbackHandle = tracker->opts.callbackHandle;
 
         if (event->type == OSGI_FRAMEWORK_BUNDLE_EVENT_INSTALLED && tracker->opts.onInstalled != NULL) {
-            bundle_t *bnd = framework_getBundleById(tracker->ctx->framework, event->bundleId);
-            tracker->opts.onInstalled(callbackHandle, bnd);
+            tracker->opts.onInstalled(callbackHandle, event->bnd);
         } else if (event->type == OSGI_FRAMEWORK_BUNDLE_EVENT_STARTED && tracker->opts.onStarted != NULL) {
-            bundle_t *bnd = framework_getBundleById(tracker->ctx->framework, event->bundleId);
-            tracker->opts.onStarted(callbackHandle, bnd);
+            tracker->opts.onStarted(callbackHandle, event->bnd);
         } else if (event->type == OSGI_FRAMEWORK_BUNDLE_EVENT_STOPPING && tracker->opts.onStopped != NULL) {
-            bundle_t *bnd = framework_getBundleById(tracker->ctx->framework, event->bundleId);
-            tracker->opts.onStopped(callbackHandle, bnd);
+            tracker->opts.onStopped(callbackHandle, event->bnd);
         }
 
         if (tracker->opts.onBundleEvent != NULL) {

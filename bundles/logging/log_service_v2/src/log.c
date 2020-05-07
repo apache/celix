@@ -186,53 +186,17 @@ celix_status_t log_getEntries(log_t *log, linked_list_pt *list) {
 }
 
 celix_status_t log_bundleChanged(void *listener, celix_bundle_event_t *event) {
-    celix_status_t status = CELIX_SUCCESS;
-    log_t *logger = ((bundle_listener_t *) listener)->handle;
-    log_entry_t *entry = NULL;
-
-    int messagesLength = 10;
-    char *messages[] = {
-        "BUNDLE_EVENT_INSTALLED",
-        "BUNDLE_EVENT_STARTED",
-        "BUNDLE_EVENT_STOPPED",
-        "BUNDLE_EVENT_UPDATED",
-        "BUNDLE_EVENT_UNINSTALLED",
-        "BUNDLE_EVENT_RESOLVED",
-        "BUNDLE_EVENT_UNRESOLVED",
-        "BUNDLE_EVENT_STARTING",
-        "BUNDLE_EVENT_STOPPING",
-        "BUNDLE_EVENT_LAZY_ACTIVATION"
-    };
-
-    char *message = NULL;
-    int i = 0;
-    for (i = 0; i < messagesLength; i++) {
-        if (event->type >> i == 1) {
-            message = messages[i];
-        }
-    }
-
-    if (message != NULL) {
-        status = logEntry_create(event->bundleId, event->bundleSymbolicName, NULL, OSGI_LOGSERVICE_INFO, message, 0, &entry);
-        if (status == CELIX_SUCCESS) {
-            status = log_addEntry(logger, entry);
-        }
-    }
-
-    return status;
+    //deprecated nop
+    (void)listener;
+    (void)event;
+    return CELIX_SUCCESS;
 }
 
 celix_status_t log_frameworkEvent(void *listener, framework_event_pt event) {
-    celix_status_t status;
-    log_t *logger = ((framework_listener_pt) listener)->handle;
-    log_entry_t *entry = NULL;
-
-    status = logEntry_create(event->bundleId, event->bundleSymbolicName, NULL, (event->type == OSGI_FRAMEWORK_EVENT_ERROR) ? OSGI_LOGSERVICE_ERROR : OSGI_LOGSERVICE_INFO, (char*)event->error, event->errorCode, &entry);
-    if (status == CELIX_SUCCESS) {
-        status = log_addEntry(logger, entry);
-    }
-
-    return status;
+    //deprecated nop
+    (void)listener;
+    (void)event;
+    return CELIX_SUCCESS;
 }
 
 celix_status_t log_addLogListener(log_t *logger, log_listener_t *listener) {
