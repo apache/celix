@@ -1,4 +1,4 @@
-name: Celix MacOS
+name: Celix MacOS Nightly
 
 on:
   schedule:

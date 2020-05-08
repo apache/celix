@@ -1,4 +1,4 @@
-name: Celix Ubuntu
+name: Celix Ubuntu Nightly
 
 on:
   schedule:
