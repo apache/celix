@@ -29,20 +29,11 @@ extern "C" {
 
 typedef struct log_helper log_helper_t;
 
-log_helper_t*  logHelper_createWithName(celix_bundle_context_t* context, const char *name);
 celix_status_t logHelper_create(celix_bundle_context_t *context, log_helper_t **log_helper);
+celix_status_t logHelper_start(log_helper_t *loghelper);
+celix_status_t logHelper_stop(log_helper_t *loghelper);
 celix_status_t logHelper_destroy(log_helper_t **loghelper);
 celix_status_t logHelper_log(log_helper_t *loghelper, log_level_t level, const char* message, ... );
-
-/**
- * deprecated. log helper is already start in create
- */
-celix_status_t logHelper_start(log_helper_t *loghelper);
-
-/**
- * deprecated. log helper is already stopped in destroy
- */
-celix_status_t logHelper_stop(log_helper_t *loghelper);
 
 #ifdef __cplusplus
 }

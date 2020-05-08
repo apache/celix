@@ -82,39 +82,39 @@ if (ENABLE_TESTING)
 
     find_package(CppUTest REQUIRED)
 
-    include_directories(SYSTEM PRIVATE ${CPPUTEST_INCLUDE_DIR})
+    include_directories(SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR})
     include_directories(include)
     include_directories(src)
 
     add_executable(hash_map_test private/test/hash_map_test.cpp)
-    target_link_libraries(hash_map_test Celix::utils ${CPPUTEST_LIBRARY} pthread)
+    target_link_libraries(hash_map_test Celix::utils ${CppUTest_LIBRARY} pthread)
 
     add_executable(array_list_test private/test/array_list_test.cpp)
-    target_link_libraries(array_list_test  Celix::utils ${CPPUTEST_LIBRARY} pthread)
+    target_link_libraries(array_list_test  Celix::utils ${CppUTest_LIBRARY} pthread)
 
     add_executable(celix_threads_test private/test/celix_threads_test.cpp)
-    target_link_libraries(celix_threads_test Celix::utils ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} pthread)
+    target_link_libraries(celix_threads_test Celix::utils ${CppUTest_LIBRARY} ${CPPUTEST_EXT_LIBRARY} pthread)
 
     add_executable(linked_list_test private/test/linked_list_test.cpp)
-    target_link_libraries(linked_list_test  Celix::utils ${CPPUTEST_LIBRARY} pthread)
+    target_link_libraries(linked_list_test  Celix::utils ${CppUTest_LIBRARY} pthread)
 
     add_executable(properties_test private/test/properties_test.cpp)
-    target_link_libraries(properties_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY}  Celix::utils pthread)
+    target_link_libraries(properties_test ${CppUTest_LIBRARY} ${CPPUTEST_EXT_LIBRARY}  Celix::utils pthread)
 
     add_executable(utils_test private/test/utils_test.cpp)
-    target_link_libraries(utils_test ${CPPUTEST_LIBRARY}  Celix::utils pthread)
+    target_link_libraries(utils_test ${CppUTest_LIBRARY}  Celix::utils pthread)
 
     add_executable(ip_utils_test private/test/ip_utils_test.cpp)
-    target_link_libraries(ip_utils_test ${CPPUTEST_LIBRARY}  Celix::utils pthread)
+    target_link_libraries(ip_utils_test ${CppUTest_LIBRARY}  Celix::utils pthread)
 
     add_executable(filter_test private/test/filter_test.cpp)
-    target_link_libraries(filter_test ${CPPUTEST_LIBRARY}  Celix::utils pthread)
+    target_link_libraries(filter_test ${CppUTest_LIBRARY}  Celix::utils pthread)
 
     add_executable(version_range_test private/test/version_range_test.cpp)
-    target_link_libraries(version_range_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY}  Celix::utils pthread)
+    target_link_libraries(version_range_test ${CppUTest_LIBRARY} ${CPPUTEST_EXT_LIBRARY}  Celix::utils pthread)
 
     add_executable(version_test private/test/version_test.cpp)
-    target_link_libraries(version_test ${CPPUTEST_LIBRARY}  Celix::utils pthread)
+    target_link_libraries(version_test ${CppUTest_LIBRARY}  Celix::utils pthread)
 
     configure_file(private/resources-test/properties.txt ${CMAKE_CURRENT_BINARY_DIR}/resources-test/properties.txt COPYONLY)
 

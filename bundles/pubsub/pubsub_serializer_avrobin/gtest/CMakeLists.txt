@@ -17,15 +17,8 @@
 
 add_celix_bundle(pubsub_avrobin_serialization_descriptor NO_ACTIVATOR VERSION 1.0.0)
 celix_bundle_files(pubsub_avrobin_serialization_descriptor
-	${CMAKE_CURRENT_SOURCE_DIR}/msg_descriptors/garbage.descriptor
-	${CMAKE_CURRENT_SOURCE_DIR}/msg_descriptors/msg_poi1.descriptor
-	${CMAKE_CURRENT_SOURCE_DIR}/msg_descriptors/msg_poi1_invalid1.descriptor
-	${CMAKE_CURRENT_SOURCE_DIR}/msg_descriptors/msg_poi1_invalid2.descriptor
-	${CMAKE_CURRENT_SOURCE_DIR}/msg_descriptors/msg_poi1_invalid3.descriptor
-	${CMAKE_CURRENT_SOURCE_DIR}/msg_descriptors/msg_poi1_invalid4.descriptor
-	${CMAKE_CURRENT_SOURCE_DIR}/msg_descriptors/msg_poi2.descriptor
-	${CMAKE_CURRENT_SOURCE_DIR}/msg_descriptors/msg_poiCmd.descriptor
-	DESTINATION "META-INF/descriptors"
+		${CMAKE_CURRENT_SOURCE_DIR}/msg_descriptors/msg_poi1.descriptor
+		DESTINATION "META-INF/descriptors"
 )
 
 add_executable(test_pubsub_serializer_avrobin

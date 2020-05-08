@@ -33,7 +33,7 @@ if (ENABLE_TESTING)
     find_package(CppUTest REQUIRED)
     find_package(Jansson REQUIRED)
 
-    include_directories("SYSTEM PRIVATE ${CPPUTEST_INCLUDE_DIR}")
+    include_directories("SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR}")
     include_directories("SYSTEM PRIVATE ${CPPUTEST_EXT_INCLUDE_DIR}")
     add_subdirectory(tms_tst)
 endif (ENABLE_TESTING)

@@ -53,7 +53,7 @@ if (RSA_REMOTE_SERVICE_ADMIN_SHM)
 
 		if (ENABLE_TESTING)
 			find_package(CppUTest REQUIRED)
-			include_directories(SYSTEM PRIVATE ${CPPUTEST_INCLUDE_DIR})
+			include_directories(SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR})
 			add_subdirectory(private/test)
 		endif()
 
