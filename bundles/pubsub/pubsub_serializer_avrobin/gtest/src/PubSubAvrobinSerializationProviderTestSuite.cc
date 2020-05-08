@@ -62,7 +62,7 @@ TEST_F(PubSubAvrobinSerializationProviderTestSuite, FindSerializationMarkerSvc) 
 
 TEST_F(PubSubAvrobinSerializationProviderTestSuite, FindSerializationServices) {
     auto* services = celix_bundleContext_findServices(ctx.get(), PUBSUB_MESSAGE_SERIALIZATION_SERVICE_NAME);
-    EXPECT_EQ(4, celix_arrayList_size(services)); //3 valid, 5 invalid
+    EXPECT_EQ(1, celix_arrayList_size(services)); //3 valid, 5 invalid
     celix_arrayList_destroy(services);
 }
 
