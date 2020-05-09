@@ -93,13 +93,13 @@ if (ENABLE_TESTING)
     target_link_libraries(array_list_test  Celix::utils ${CppUTest_LIBRARY} pthread)
 
     add_executable(celix_threads_test private/test/celix_threads_test.cpp)
-    target_link_libraries(celix_threads_test Celix::utils ${CppUTest_LIBRARY} ${CPPUTEST_EXT_LIBRARY} pthread)
+    target_link_libraries(celix_threads_test Celix::utils ${CppUTest_LIBRARY} ${CppUTest_EXT_LIBRARIES} pthread)
 
     add_executable(linked_list_test private/test/linked_list_test.cpp)
     target_link_libraries(linked_list_test  Celix::utils ${CppUTest_LIBRARY} pthread)
 
     add_executable(properties_test private/test/properties_test.cpp)
-    target_link_libraries(properties_test ${CppUTest_LIBRARY} ${CPPUTEST_EXT_LIBRARY}  Celix::utils pthread)
+    target_link_libraries(properties_test ${CppUTest_LIBRARY} ${CppUTest_EXT_LIBRARIES}  Celix::utils pthread)
 
     add_executable(utils_test private/test/utils_test.cpp)
     target_link_libraries(utils_test ${CppUTest_LIBRARY}  Celix::utils pthread)
@@ -111,7 +111,7 @@ if (ENABLE_TESTING)
     target_link_libraries(filter_test ${CppUTest_LIBRARY}  Celix::utils pthread)
 
     add_executable(version_range_test private/test/version_range_test.cpp)
-    target_link_libraries(version_range_test ${CppUTest_LIBRARY} ${CPPUTEST_EXT_LIBRARY}  Celix::utils pthread)
+    target_link_libraries(version_range_test ${CppUTest_LIBRARY} ${CppUTest_EXT_LIBRARIES}  Celix::utils pthread)
 
     add_executable(version_test private/test/version_test.cpp)
     target_link_libraries(version_test ${CppUTest_LIBRARY}  Celix::utils pthread)
