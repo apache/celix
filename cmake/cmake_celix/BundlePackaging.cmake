@@ -16,6 +16,9 @@
 # specific language governing permissions and limitations
 # under the License.
 
+
+set(CELIX_NO_POSTFIX_BUILD_TYPE "RelWithDebInfo" CACHE STRING "The build type used for creating bundle without a build type postfix.")
+
 find_program(JAR_COMMAND jar NO_CMAKE_FIND_ROOT_PATH)
 
 if(JAR_COMMAND AND NOT CELIX_USE_ZIP_INSTEAD_OF_JAR)
@@ -195,7 +198,11 @@ function(add_celix_bundle)
         set(BUNDLE_FILENAME ${BUNDLE_TARGET_NAME})
     endif ()
 
-    set(BUNDLE_FILENAME ${BUNDLE_FILENAME}-${CMAKE_BUILD_TYPE}.zip)
+    if ("${CMAKE_BUILD_TYPE}" STREQUAL "${CELIX_NO_POSTFIX_BUILD_TYPE}")
+        set(BUNDLE_FILENAME ${BUNDLE_FILENAME}.zip)
+    else ()
+        set(BUNDLE_FILENAME ${BUNDLE_FILENAME}-${CMAKE_BUILD_TYPE}.zip)
+    endif ()
 
     set(BUNDLE_FILE "${CMAKE_CURRENT_BINARY_DIR}/${BUNDLE_FILENAME}")
     #set(BUNDLE_CONTENT_DIR "${CMAKE_CURRENT_BINARY_DIR}/${BUNDLE_TARGET_NAME}_content")

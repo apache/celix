@@ -44,6 +44,16 @@ target_link_libraries(test_framework Celix::framework CURL::libcurl GTest::gtest
 add_dependencies(test_framework simple_test_bundle1_bundle simple_test_bundle2_bundle simple_test_bundle3_bundle simple_test_bundle4_bundle simple_test_bundle5_bundle bundle_with_exception_bundle unresolveable_bundle_bundle)
 target_include_directories(test_framework PRIVATE ../src)
 
+target_compile_definitions(test_framework PRIVATE
+        -DSIMPLE_TEST_BUNDLE1_LOCATION="$<TARGET_PROPERTY:simple_test_bundle1,BUNDLE_FILE>"
+        -DSIMPLE_TEST_BUNDLE2_LOCATION="$<TARGET_PROPERTY:simple_test_bundle2,BUNDLE_FILE>"
+        -DSIMPLE_TEST_BUNDLE3_LOCATION="$<TARGET_PROPERTY:simple_test_bundle3,BUNDLE_FILE>"
+        -DSIMPLE_TEST_BUNDLE4_LOCATION="$<TARGET_PROPERTY:simple_test_bundle4,BUNDLE_FILENAME>"
+        -DSIMPLE_TEST_BUNDLE5_LOCATION="$<TARGET_PROPERTY:simple_test_bundle5,BUNDLE_FILENAME>"
+        -DTEST_BUNDLE_WITH_EXCEPTION_LOCATION="$<TARGET_PROPERTY:bundle_with_exception,BUNDLE_FILE>"
+        -DTEST_BUNDLE_UNRESOLVEABLE_LOCATION="$<TARGET_PROPERTY:unresolveable_bundle,BUNDLE_FILE>"
+)
+
 configure_file(config.properties.in config.properties @ONLY)
 configure_file(framework1.properties.in framework1.properties @ONLY)
 configure_file(framework2.properties.in framework2.properties @ONLY)

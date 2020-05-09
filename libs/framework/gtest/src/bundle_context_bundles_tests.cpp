@@ -35,13 +35,13 @@ public:
     celix_bundle_context_t *ctx = nullptr;
     celix_properties_t *properties = nullptr;
 
-    const char * const TEST_BND1_LOC = "simple_test_bundle1-" BUILD_TYPE ".zip";
-    const char * const TEST_BND2_LOC = "simple_test_bundle2-" BUILD_TYPE ".zip";
-    const char * const TEST_BND3_LOC = "simple_test_bundle3-" BUILD_TYPE ".zip";
-    const char * const TEST_BND4_LOC = "simple_test_bundle4-" BUILD_TYPE ".zip";
-    const char * const TEST_BND5_LOC = "simple_test_bundle5-" BUILD_TYPE ".zip";
-    const char * const TEST_BND_WITH_EXCEPTION_LOC = "bundle_with_exception-" BUILD_TYPE ".zip";
-    const char * const TEST_BND_UNRESOLVEABLE_LOC = "unresolveable_bundle-" BUILD_TYPE ".zip";
+    const char * const TEST_BND1_LOC = "" SIMPLE_TEST_BUNDLE1_LOCATION "";
+    const char * const TEST_BND2_LOC = "" SIMPLE_TEST_BUNDLE2_LOCATION "";
+    const char * const TEST_BND3_LOC = "" SIMPLE_TEST_BUNDLE3_LOCATION "";
+    const char * const TEST_BND4_LOC = "" SIMPLE_TEST_BUNDLE4_LOCATION "";
+    const char * const TEST_BND5_LOC = "" SIMPLE_TEST_BUNDLE5_LOCATION "";
+    const char * const TEST_BND_WITH_EXCEPTION_LOC = "" TEST_BUNDLE_WITH_EXCEPTION_LOCATION "";
+    const char * const TEST_BND_UNRESOLVEABLE_LOC = "" TEST_BUNDLE_UNRESOLVEABLE_LOCATION "";
 
     CelixBundleContextBundlesTests() {
         properties = properties_create();

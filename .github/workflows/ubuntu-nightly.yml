@@ -68,7 +68,7 @@ jobs:
         if [[ "${{ matrix.sanitizer }}" == "true" ]]; then
           export BUILD_OPTIONS="${BUILD_OPTIONS} ${BUILD_OPTIONS_SANITIZER}"
         fi
-        cmake -DCMAKE_BUILD_TYPE=Release ${BUILD_OPTIONS} -DCMAKE_INSTALL_PREFIX=../install ..
+        cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ${BUILD_OPTIONS} -DCMAKE_INSTALL_PREFIX=../install ..
         make -j && make install
     - name: Test
       run: |

@@ -30,7 +30,7 @@ jobs:
       run: |
         mkdir build install
         cd build
-        cmake -DCMAKE_BUILD_TYPE=Release ${BUILD_OPTIONS} -DCMAKE_INSTALL_PREFIX=../install ..
+        cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ${BUILD_OPTIONS} -DCMAKE_INSTALL_PREFIX=../install ..
         make -j && make install
     - name: Test
       run: |
