@@ -2047,7 +2047,9 @@ static void *fw_eventDispatcher(void *fw) {
     while (active || nrOfRequest > 0) {
         celixThreadMutex_lock(&framework->dispatcher.mutex);
         if (celix_arrayList_size(framework->dispatcher.requests) == 0) {
-            celixThreadCondition_wait(&framework->dispatcher.cond, &framework->dispatcher.mutex);
+            //TODO needs a timed wait, because this loop sometimes misses the active=false/broadcast.
+            //FIXME an go back to 'normal' cond wait.
+            celixThreadCondition_timedwaitRelative(&framework->dispatcher.cond, &framework->dispatcher.mutex, 1, 0);
         }
         for (int i = 0; i < celix_arrayList_size(framework->dispatcher.requests); ++i) {
             void *r = celix_arrayList_get(framework->dispatcher.requests, i);

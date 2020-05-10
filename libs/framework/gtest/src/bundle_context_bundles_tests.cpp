@@ -80,6 +80,7 @@ TEST_F(CelixBundleContextBundlesTests, installBundlesTest) {
 
     setenv(CELIX_BUNDLES_PATH_NAME, "subdir", true);
     bndId = celix_bundleContext_installBundle(ctx, TEST_BND4_LOC, true); //subdir now part of CELIX_BUNDLES_PATH
+    unsetenv("subdir");
     ASSERT_TRUE(bndId >= 0);
 }
 

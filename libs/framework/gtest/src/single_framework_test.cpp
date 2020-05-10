@@ -113,18 +113,61 @@ TEST_F(FrameworkFactory, testFactoryCreateAndToManyStartAndStops) {
     framework_destroy(fw); //note stop, wait and then destroy is needed .. combine ?
 }
 
+TEST_F(FrameworkFactory, recreateFramework) {
+    framework_t* fw = celix_frameworkFactory_createFramework(nullptr);
+    ASSERT_TRUE(fw != nullptr);
+    framework_stop(fw);
+    framework_waitForStop(fw);
+    framework_destroy(fw);
+
+    fw = celix_frameworkFactory_createFramework(nullptr);
+    ASSERT_TRUE(fw != nullptr);
+    framework_start(fw);
+    framework_stop(fw);
+    framework_waitForStop(fw);
+    framework_destroy(fw);
+
+    fw = celix_frameworkFactory_createFramework(nullptr);
+    ASSERT_TRUE(fw != nullptr);
+    framework_start(fw);
+    framework_stop(fw);
+    framework_waitForStop(fw);
+    framework_destroy(fw);
+
+    fw = celix_frameworkFactory_createFramework(nullptr);
+    ASSERT_TRUE(fw != nullptr);
+    framework_start(fw);
+    framework_stop(fw);
+    framework_waitForStop(fw);
+    framework_destroy(fw);
+
+    fw = celix_frameworkFactory_createFramework(nullptr);
+    ASSERT_TRUE(fw != nullptr);
+    framework_start(fw);
+    framework_stop(fw);
+    framework_waitForStop(fw);
+    framework_destroy(fw);
+}
+
 TEST_F(FrameworkFactory, restartFramework) {
     framework_t* fw = celix_frameworkFactory_createFramework(nullptr);
     ASSERT_TRUE(fw != nullptr);
-
-
-    /* TODO fix mem leak in restarting framework
     framework_stop(fw);
+    framework_waitForStop(fw);
+
     framework_start(fw);
     framework_stop(fw);
-    framework_start(fw);
-     */
+    framework_waitForStop(fw);
 
+    framework_start(fw);
+    framework_stop(fw);
+    framework_waitForStop(fw);
+
+    framework_start(fw);
+    framework_stop(fw);
+    framework_waitForStop(fw);
+
+    framework_start(fw);
     framework_stop(fw);
     framework_waitForStop(fw);
     framework_destroy(fw);
