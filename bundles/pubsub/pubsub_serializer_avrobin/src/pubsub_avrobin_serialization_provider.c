@@ -44,7 +44,7 @@ static void dfi_log(void *handle, int level, const char *file, int line, const c
 static celix_status_t pubsub_avrobinSerializationProvider_serialize(pubsub_serialization_entry_t* entry, const void* msg, struct iovec** output, size_t* outputIovLen) {
     celix_status_t status = CELIX_SUCCESS;
 
-    if (*output == NULL) {
+    if (output != NULL) {
         *output = calloc(1, sizeof(struct iovec));
         *outputIovLen = 1;
     } else {
