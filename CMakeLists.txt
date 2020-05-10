@@ -88,7 +88,7 @@ endif()
 # Set version for the framework package/release
 set(CELIX_MAJOR "2")
 set(CELIX_MINOR "2")
-set(CELIX_MICRO "0")
+set(CELIX_MICRO "1")
 
 option(ENABLE_TESTING "Enables unit/bundle testing" FALSE)
 
