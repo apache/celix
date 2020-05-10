@@ -83,7 +83,7 @@ void pubsub_avrobinSerializationProvider_freeSerializeMsg(pubsub_serialization_e
     }
 }
 
-celix_status_t pubsub_avrobinSerializationProvider_deserialize(pubsub_serialization_entry_t* entry, const struct iovec* input, size_t inputIovLen __attribute__((unused)), void **out) {
+celix_status_t pubsub_avrobinSerializationProvider_deserialize(pubsub_serialization_entry_t* entry, const struct iovec* input, size_t inputIovLen, void **out) {
     celix_status_t status = CELIX_SUCCESS;
     if (input == NULL) return CELIX_BUNDLE_EXCEPTION;
     void *msg = NULL;
