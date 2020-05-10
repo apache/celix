@@ -34,7 +34,7 @@ The following packages (libraries + headers) should be installed on your system:
     * build-essentials (gcc/g++ or clang/clang++) 
 	* git
     * java (for packaging bundles)
-	* make (3.2 or higher)
+	* make (3.14 or higher)
 * Apache Celix Dependencies
     * zlib
     * uuid
@@ -67,8 +67,7 @@ sudo apt-get install -yq --no-install-recommends \
 sudo apt-get install -yq --no-install-recommends \
     libcpputest-dev
 
-#For testing gtest is also used. This is fetched using a cmake 3.11+ feature,
-#The installed cmake version for Ubuntu 18 is older than 3.11,
+#The installed cmake version for Ubuntu 18 is older than 3.14,
 #use snap to install the latest cmake version
 snap install --classic cmake
 ```
