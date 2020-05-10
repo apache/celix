@@ -172,7 +172,7 @@ char* pubsub_getMessageDescriptorsDir(celix_bundle_context_t* ctx, const celix_b
         const char *dir = celix_bundleContext_getProperty(ctx, SYSTEM_BUNDLE_ARCHIVE_PATH, NULL);
         //asprintf(&root, "%s/META-INF/descriptors", dir);
         struct stat s;
-        if (stat(dir, &s) == 0) {
+        if (dir && stat(dir, &s) == 0) {
             //file does exist
             root = celix_utils_strdup(dir);
         }
