@@ -26,16 +26,24 @@ namespace celix {
 
     class PromiseFactory {
     public:
-        //TODO ctor with callbackExecutor
+        explicit PromiseFactory(const tbb::task_arena &executor = {});
         //TODO ctor with callbackExecutor and scheduledExecutor
-
-//        template<typename T>
-//        Promise<std::vector<T>> all(std::vector<Promise<T>> promises);
 
         template<typename T>
         celix::Deferred<T> deferred();
 
+        template<typename T>
+        celix::Promise<T> failed(const std::exception& e);
+
+        template<typename T>
+        celix::Promise<T> failed(std::exception_ptr ptr);
+
+        template<typename T>
+        celix::Promise<T> resolved(T&& value);
+
         //TODO rest
+    private:
+        tbb::task_arena executor; //TODO look into different thread pool libraries
     };
 
 }
@@ -44,7 +52,30 @@ namespace celix {
  Implementation
 *********************************************************************************/
 
+inline celix::PromiseFactory::PromiseFactory(const tbb::task_arena &_executor) : executor(_executor) {}
+
 template<typename T>
 inline celix::Deferred<T> celix::PromiseFactory::deferred() {
-    return celix::Deferred<T>{};
+    return celix::Deferred<T>{std::make_shared<celix::impl::SharedPromiseState<T>>(executor)};
+}
+
+template<typename T>
+inline celix::Promise<T> celix::PromiseFactory::failed(const std::exception &e) {
+    auto p = std::make_shared<celix::impl::SharedPromiseState<T>>(executor);
+    p->fail(e);
+    return celix::Promise<T>{p};
+}
+
+template<typename T>
+inline celix::Promise<T> celix::PromiseFactory::failed(std::exception_ptr ptr) {
+    auto p = std::make_shared<celix::impl::SharedPromiseState<T>>(executor);
+    p->fail(ptr);
+    return celix::Promise<T>{p};
+}
+
+template<typename T>
+inline celix::Promise<T> celix::PromiseFactory::resolved(T &&value) {
+    auto p = std::make_shared<celix::impl::SharedPromiseState<T>>(executor);
+    p->resolve(std::forward<T>(value));
+    return celix::Promise<T>{p};
 }

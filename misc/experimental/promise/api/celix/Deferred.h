@@ -53,6 +53,10 @@ namespace celix {
     public:
         using type = T;
 
+        Deferred();
+
+        explicit Deferred(std::shared_ptr<celix::impl::SharedPromiseState<T>> state);
+
         //TODO deferred ctor with factory
 
         /**
@@ -136,7 +140,7 @@ namespace celix {
         //Promise<void> resolveWith(Promise<T> with);
 
     private:
-        std::shared_ptr<celix::impl::SharedPromiseState<T>> state{new celix::impl::SharedPromiseState<T>{}};
+        std::shared_ptr<celix::impl::SharedPromiseState<T>> state;
     };
 }
 
@@ -145,6 +149,12 @@ namespace celix {
 /*********************************************************************************
  Implementation
 *********************************************************************************/
+
+template<typename T>
+inline celix::Deferred<T>::Deferred() : state{std::make_shared<celix::impl::SharedPromiseState<T>>()} {}
+
+template<typename T>
+inline celix::Deferred<T>::Deferred(std::shared_ptr<celix::impl::SharedPromiseState<T>> _state) : state{std::move(_state)} {}
 
 template<typename T>
 inline void celix::Deferred<T>::fail(std::exception_ptr p) {

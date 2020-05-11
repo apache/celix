@@ -90,8 +90,9 @@ void processPayload(celix::Promise<std::shared_ptr<RestApi::Payload>> promise) {
 }
 ```
 
-## Open Issues
+## Open Issues & TODOs
 
+- TODO: refactors use of std::function as function arguments to templates.
 - Currently the Promises implementation uses the Intel Threading Building Block (TBB) library (apache license 2.0) for its async communication.
 It is not yet clear whether the TBB library is the correct library to use and if the library is used correctly at all.
 - There is no solution chosen yet for scheduling task, like the ScheduledExecutorService used in Java. 

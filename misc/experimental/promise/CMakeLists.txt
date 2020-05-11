@@ -15,9 +15,28 @@
 # specific language governing permissions and limitations
 # under the License.
 
+if (NOT COMMAND celix_subproject)
+    #If COMMAND celix_subproject is not defined, this CMakeLists will
+    #act as a top level project. Making the Celix::Promise useable
+    #stand-alone
 
-celix_subproject(PROMISE "Option to build the Promise library" ON)
-if (PROMISE)
+    cmake_minimum_required (VERSION 3.11)
+    project(celix_Promise
+            VERSION 1.0.0
+            LANGUAGES CXX
+    )
+
+    include(GNUInstallDirs)
+
+    set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
+    set(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG ${CMAKE_CXX_FLAGS_DEBUG}")
+
+    set(PROMISE_STANDALONE ON)
+else ()
+    celix_subproject(PROMISE "Option to build the Promise library" ON)
+endif ()
+
+if (PROMISE OR PROMISE_STANDALONE)
 
     find_package(TBB QUIET)
     if (NOT TBB_FOUND)
@@ -25,18 +44,33 @@ if (PROMISE)
         set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_SOURCE_DIR}/cmake")
     endif ()
     find_package(TBB REQUIRED)
+    find_package(Threads)
 
-    add_library(celix_Promise INTERFACE)
-    target_include_directories(celix_Promise INTERFACE api)
-    target_link_libraries(celix_Promise INTERFACE TBB::tbb)
-    target_compile_options(celix_Promise INTERFACE -frtti) #Note needed for TBB
-    add_library(Celix::Promise ALIAS celix_Promise)
+    add_library(Promise INTERFACE)
+    target_include_directories(Promise INTERFACE
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/api>
+        $<INSTALL_INTERFACE:include/celix/promise>
+    )
+    target_link_libraries(Promise INTERFACE TBB::tbb Threads::Threads)
+    target_compile_options(Promise INTERFACE -frtti) #Note needed for TBB
+    add_library(Celix::Promise ALIAS Promise)
 
     add_executable(PromiseExamples src/PromiseExamples.cc)
     target_link_libraries(PromiseExamples PRIVATE Celix::Promise)
 
-    if (ENABLE_TESTING)
+    if (ENABLE_TESTING AND NOT PROMISE_STANDALONE)
         add_subdirectory(gtest)
     endif()
+
+    install(TARGETS Promise EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR})
+    install(DIRECTORY api/ DESTINATION include/celix/promise)
+
+    if (PROMISE_STANDALONE)
+        install(EXPORT celix NAMESPACE Celix:: DESTINATION share/CelixPromise/cmake FILE Targets.cmake COMPONENT cmake)
+        install(FILES
+                "cmake/CelixPromiseConfig.cmake"
+                "cmake/CelixPromiseConfigVersion.cmake"
+                DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/CelixPromise" COMPONENT cmake)
+    endif ()
 
 endif ()

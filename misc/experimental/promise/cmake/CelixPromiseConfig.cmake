@@ -15,11 +15,14 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_executable(test_promise
-        src/PromiseTestSuite.cc
-)
-target_link_libraries(test_promise PRIVATE GTest::gtest GTest::gtest_main Celix::Promise)
+# - Config file for the Apache Celix Promise library
+# It defines the following variables
+#  Celix::Promise CMake imported target
 
-add_test(NAME test_promise COMMAND test_promise)
-SETUP_TARGET_FOR_COVERAGE(test_promise_cov test_promise ${CMAKE_BINARY_DIR}/coverage/promise ..)
+# relative install dir from lib/CMake/CelixPromise.
+get_filename_component(REL_INSTALL_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+get_filename_component(REL_INSTALL_DIR "${REL_INSTALL_DIR}" PATH)
+get_filename_component(REL_INSTALL_DIR "${REL_INSTALL_DIR}" PATH)
+get_filename_component(REL_INSTALL_DIR "${REL_INSTALL_DIR}" PATH)
 
+include("${REL_INSTALL_DIR}/share/CelixPromise/cmake/Targets.cmake") #imports lib and exe targets (e.g. Celix::framework)

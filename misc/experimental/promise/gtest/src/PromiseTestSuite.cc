@@ -27,7 +27,7 @@ class PromiseTestSuite : public ::testing::Test {
 public:
     ~PromiseTestSuite() override = default;
 
-    celix::PromiseFactory factory{};
+    celix::PromiseFactory factory{ tbb::task_arena{5, 1} };
 };
 
 
@@ -184,36 +184,48 @@ TEST_F(PromiseTestSuite, resolveWithTimeout) {
         }
     }};
 
-    bool successCalled = false;
-    bool failedCalled = false;
+    bool firstSuccessCalled = false;
+    bool secondSuccessCalled = false;
+    bool secondFailedCalled = false;
     auto p = deferred1.getPromise()
-            .timeout(std::chrono::milliseconds{10})
-            .onSuccess([&successCalled](long value) {
+            .onSuccess([&firstSuccessCalled](long value) {
                 EXPECT_EQ(42, value);
-                successCalled = true;
+                firstSuccessCalled = true;
             })
-            .onFailure([&failedCalled](const std::exception&) {
-               failedCalled = true;
+            .timeout(std::chrono::milliseconds{10})
+            .onSuccess([&secondSuccessCalled](long value) {
+                EXPECT_EQ(42, value);
+                secondSuccessCalled = true;
+            })
+            .onFailure([&secondFailedCalled](const std::exception&) {
+                secondFailedCalled = true;
             });
     t.join();
     p.wait();
-    EXPECT_EQ(false, successCalled);
-    EXPECT_EQ(true, failedCalled);
+    EXPECT_EQ(true, firstSuccessCalled);
+    EXPECT_EQ(false, secondSuccessCalled);
+    EXPECT_EQ(true, secondFailedCalled);
 
-    successCalled = false;
-    failedCalled = false;
+    firstSuccessCalled = false;
+    secondSuccessCalled = false;
+    secondFailedCalled = false;
     auto p2 = deferred1.getPromise()
-            .timeout(std::chrono::milliseconds{50})
-            .onSuccess([&successCalled](long value) {
+            .onSuccess([&firstSuccessCalled](long value) {
                 EXPECT_EQ(42, value);
-                successCalled = true;
+                firstSuccessCalled = true;
             })
-            .onFailure([&failedCalled](const std::exception&) {
-                failedCalled = true;
+            .timeout(std::chrono::milliseconds{50})
+            .onSuccess([&secondSuccessCalled](long value) {
+                EXPECT_EQ(42, value);
+                secondSuccessCalled = true;
+            })
+            .onFailure([&secondFailedCalled](const std::exception&) {
+                secondFailedCalled = true;
             });
     p2.wait();
-    EXPECT_EQ(true, successCalled);
-    EXPECT_EQ(false, failedCalled);
+    EXPECT_EQ(true, firstSuccessCalled);
+    EXPECT_EQ(true, secondSuccessCalled);
+    EXPECT_EQ(false, secondFailedCalled);
 }
 
 TEST_F(PromiseTestSuite, resolveWithDelay) {
@@ -348,4 +360,15 @@ TEST_F(PromiseTestSuite, chainFailedPromises) {
     deferred.fail(std::logic_error{"fail"});
     deferred.getPromise().then<long>(success, failed).wait();
     EXPECT_TRUE(called);
+}
+
+TEST_F(PromiseTestSuite, failedResolvedWithPromiseFactory) {
+    auto factory = celix::PromiseFactory{};
+    auto p1 = factory.failed<long>(std::logic_error{"test"});
+    EXPECT_TRUE(p1.isDone());
+    EXPECT_NE(nullptr, p1.getFailure());
+
+    auto p2 = factory.resolved(42);
+    EXPECT_TRUE(p2.isDone());
+    EXPECT_EQ(42, p2.getValue());
 }
