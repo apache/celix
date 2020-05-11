@@ -1991,6 +1991,8 @@ celix_status_t fw_fireFrameworkEvent(framework_pt framework, framework_event_typ
             //fw_log(framework->logger, CELIX_LOG_LEVEL_TRACE, "Adding dispatcher framework event request for event type %i", eventType);
             celix_arrayList_add(framework->dispatcher.requests, request);
             celixThreadCondition_broadcast(&framework->dispatcher.cond);
+        } else {
+            free(request);
         }
         celixThreadMutex_unlock(&framework->dispatcher.mutex);
     }
