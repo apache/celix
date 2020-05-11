@@ -50,7 +50,7 @@ struct pubsub_serializer_handler {
     long serializationSvcTrackerId;
     celix_log_helper_t *logHelper;
 
-    celix_thread_mutex_t mutex;
+    celix_thread_rwlock_t lock;
     hash_map_t *serializationServices; //key = msg id, value = sorted array list with pubsub_serialization_service_entry_t*
 };
 
@@ -118,7 +118,7 @@ pubsub_serializer_handler_t* pubsub_serializerHandler_create(celix_bundle_contex
 
     handler->logHelper = celix_logHelper_create(ctx, "celix_pubsub_serialization_handler");
 
-    celixThreadMutex_create(&handler->mutex, NULL);
+    celixThreadRwlock_create(&handler->lock, NULL);
     handler->serializationServices = hashMap_create(NULL, NULL, NULL, NULL);
 
     char *filter = NULL;
@@ -140,7 +140,7 @@ pubsub_serializer_handler_t* pubsub_serializerHandler_create(celix_bundle_contex
 void pubsub_serializerHandler_destroy(pubsub_serializer_handler_t* handler) {
     if (handler != NULL) {
         celix_bundleContext_stopTracker(handler->ctx, handler->serializationSvcTrackerId);
-        celixThreadMutex_destroy(&handler->mutex);
+        celixThreadRwlock_destroy(&handler->lock);
         hash_map_iterator_t iter = hashMapIterator_construct(handler->serializationServices);
         while (hashMapIterator_hasNext(&iter)) {
             celix_array_list_t *entries = hashMapIterator_nextValue(&iter);
@@ -174,7 +174,7 @@ void pubsub_serializerHandler_addSerializationService(pubsub_serializer_handler_
         return;
     }
 
-    celixThreadMutex_lock(&handler->mutex);
+    celixThreadRwlock_writeLock(&handler->lock);
 
     pubsub_serialization_service_entry_t* existingEntry = findEntry(handler, msgId);
 
@@ -210,7 +210,7 @@ void pubsub_serializerHandler_addSerializationService(pubsub_serializer_handler_
     } else {
         celix_version_destroy(msgVersion);
     }
-    celixThreadMutex_unlock(&handler->mutex);
+    celixThreadRwlock_unlock(&handler->lock);
 }
 
 void pubsub_serializerHandler_removeSerializationService(pubsub_serializer_handler_t* handler, pubsub_message_serialization_service_t* svc, const celix_properties_t* svcProperties) {
@@ -221,7 +221,7 @@ void pubsub_serializerHandler_removeSerializationService(pubsub_serializer_handl
         msgId = celix_utils_stringHash(msgFqn);
     }
 
-    celixThreadMutex_lock(&handler->mutex);
+    celixThreadRwlock_writeLock(&handler->lock);
     celix_array_list_t* entries = hashMap_get(handler->serializationServices, (void*)(uintptr_t)msgId);
     if (entries != NULL) {
         pubsub_serialization_service_entry_t *found = NULL;
@@ -244,12 +244,12 @@ void pubsub_serializerHandler_removeSerializationService(pubsub_serializer_handl
             celix_arrayList_destroy(entries);
         }
     }
-    celixThreadMutex_unlock(&handler->mutex);
+    celixThreadRwlock_unlock(&handler->lock);
 }
 
 celix_status_t pubsub_serializerHandler_serialize(pubsub_serializer_handler_t* handler, uint32_t msgId, const void* input, struct iovec** output, size_t* outputIovLen) {
     celix_status_t status;
-    celixThreadMutex_lock(&handler->mutex);
+    celixThreadRwlock_readLock(&handler->lock);
     pubsub_serialization_service_entry_t* entry = findEntry(handler, msgId);
     if (entry != NULL) {
         status = entry->svc->serialize(entry->svc->handle, input, output, outputIovLen);
@@ -257,13 +257,13 @@ celix_status_t pubsub_serializerHandler_serialize(pubsub_serializer_handler_t* h
         status = CELIX_ILLEGAL_ARGUMENT;
         L_ERROR("Cannot find message serialization service for msg id %u.", msgId);
     }
-    celixThreadMutex_unlock(&handler->mutex);
+    celixThreadRwlock_unlock(&handler->lock);
     return status;
 }
 
 celix_status_t pubsub_serializerHandler_freeSerializedMsg(pubsub_serializer_handler_t* handler, uint32_t msgId, struct iovec* input, size_t inputIovLen) {
     celix_status_t status = CELIX_SUCCESS;
-    celixThreadMutex_lock(&handler->mutex);
+    celixThreadRwlock_readLock(&handler->lock);
     pubsub_serialization_service_entry_t* entry = findEntry(handler, msgId);
     if (entry != NULL) {
         entry->svc->freeSerializedMsg(entry->svc->handle, input, inputIovLen);
@@ -271,14 +271,14 @@ celix_status_t pubsub_serializerHandler_freeSerializedMsg(pubsub_serializer_hand
         status = CELIX_ILLEGAL_ARGUMENT;
         L_ERROR("Cannot find message serialization service for msg id %u.", msgId);
     }
-    celixThreadMutex_unlock(&handler->mutex);
+    celixThreadRwlock_unlock(&handler->lock);
     return status;
 
 }
 
 celix_status_t pubsub_serializerHandler_deserialize(pubsub_serializer_handler_t* handler, uint32_t msgId, int serializedMajorVersion, int serializedMinorVersion, const struct iovec* input, size_t inputIovLen, void** out) {
     celix_status_t status;
-    celixThreadMutex_lock(&handler->mutex);
+    celixThreadRwlock_readLock(&handler->lock);
     pubsub_serialization_service_entry_t* entry = findEntry(handler, msgId);
     bool compatible = false;
     if (entry != NULL) {
@@ -295,13 +295,13 @@ celix_status_t pubsub_serializerHandler_deserialize(pubsub_serializer_handler_t*
         status = CELIX_ILLEGAL_ARGUMENT;
         L_ERROR("Cannot find message serialization service for msg id %u.", msgId);
     }
-    celixThreadMutex_unlock(&handler->mutex);
+    celixThreadRwlock_unlock(&handler->lock);
     return status;
 }
 
 celix_status_t pubsub_serializerHandler_freeDeserializedMsg(pubsub_serializer_handler_t* handler, uint32_t msgId, void* msg) {
     celix_status_t status = CELIX_SUCCESS;
-    celixThreadMutex_lock(&handler->mutex);
+    celixThreadRwlock_readLock(&handler->lock);
     pubsub_serialization_service_entry_t* entry = findEntry(handler, msgId);
     if (entry != NULL) {
         entry->svc->freeDeserializedMsg(entry->svc->handle, msg);
@@ -309,32 +309,32 @@ celix_status_t pubsub_serializerHandler_freeDeserializedMsg(pubsub_serializer_ha
         status = CELIX_ILLEGAL_ARGUMENT;
         L_ERROR("Cannot find message serialization service for msg id %u.", msgId);
     }
-    celixThreadMutex_unlock(&handler->mutex);
+    celixThreadRwlock_unlock(&handler->lock);
     return status;
 }
 
 bool pubsub_serializerHandler_supportMsg(pubsub_serializer_handler_t* handler, uint32_t msgId, int serializedMajorVersion, int serializedMinorVersion) {
-    celixThreadMutex_lock(&handler->mutex);
+    celixThreadRwlock_readLock(&handler->lock);
     bool compatible = false;
     pubsub_serialization_service_entry_t* entry = findEntry(handler, msgId);
     if (entry != NULL) {
         compatible = isCompatible(handler, entry, serializedMajorVersion, serializedMinorVersion);
     }
-    celixThreadMutex_unlock(&handler->mutex);
+    celixThreadRwlock_unlock(&handler->lock);
     return compatible;
 }
 
 char* pubsub_serializerHandler_getMsgFqn(pubsub_serializer_handler_t* handler, uint32_t msgId) {
-    celixThreadMutex_lock(&handler->mutex);
+    celixThreadRwlock_readLock(&handler->lock);
     char *msgFqn = celix_utils_strdup(getMsgFqn(handler, msgId));
-    celixThreadMutex_unlock(&handler->mutex);
+    celixThreadRwlock_unlock(&handler->lock);
     return msgFqn;
 
 }
 
 uint32_t pubsub_serializerHandler_getMsgId(pubsub_serializer_handler_t* handler, const char* msgFqn) {
     uint32_t result = 0;
-    celixThreadMutex_lock(&handler->mutex);
+    celixThreadRwlock_readLock(&handler->lock);
     hash_map_iterator_t iter = hashMapIterator_construct(handler->serializationServices);
     while (hashMapIterator_hasNext(&iter) && result == 0) {
         celix_array_list_t *entries = hashMapIterator_nextValue(&iter);
@@ -343,18 +343,18 @@ uint32_t pubsub_serializerHandler_getMsgId(pubsub_serializer_handler_t* handler,
             result = entry->msgId;
         }
     }
-    celixThreadMutex_unlock(&handler->mutex);
+    celixThreadRwlock_unlock(&handler->lock);
     return result;
 }
 
 size_t pubsub_serializerHandler_messageSerializationServiceCount(pubsub_serializer_handler_t* handler) {
     size_t count = 0;
-    celixThreadMutex_lock(&handler->mutex);
+    celixThreadRwlock_readLock(&handler->lock);
     hash_map_iterator_t iter = hashMapIterator_construct(handler->serializationServices);
     while (hashMapIterator_hasNext(&iter)) {
         celix_array_list_t *entries = hashMapIterator_nextValue(&iter);
         count += celix_arrayList_size(entries);
     }
-    celixThreadMutex_unlock(&handler->mutex);
+    celixThreadRwlock_unlock(&handler->lock);
     return count;
 }

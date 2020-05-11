@@ -77,16 +77,16 @@ static inline celix_framework_bundle_entry_t* fw_bundleEntry_create(celix_bundle
 }
 
 
-//static inline void fw_bundleEntry_waitTillNotUsed(celix_framework_bundle_entry_t *entry) {
-//    celixThreadMutex_lock(&entry->useMutex);
-//    while (entry->useCount != 0) {
-//        celixThreadCondition_timedwaitRelative(&entry->useCond, &entry->useMutex, 5, 0);
-//        if (entry->useCount != 0) {
-//            fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_WARNING, "Bundle %s (%li) still in use. Use count is %u", celix_bundle_getSymbolicName(entry->bnd), entry->bndId, entry->useCount);
-//        }
-//    }
-//    celixThreadMutex_unlock(&entry->useMutex);
-//}
+static inline void fw_bundleEntry_waitTillUseCountIs(celix_framework_bundle_entry_t *entry, size_t desiredUseCount) {
+    celixThreadMutex_lock(&entry->useMutex);
+    while (entry->useCount != desiredUseCount) {
+        celixThreadCondition_timedwaitRelative(&entry->useCond, &entry->useMutex, 5, 0);
+        if (entry->useCount != desiredUseCount) {
+            fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_WARNING, "Bundle %s (%li) still in use. Use count is %u, desired is ", celix_bundle_getSymbolicName(entry->bnd), entry->bndId, entry->useCount, desiredUseCount);
+        }
+    }
+    celixThreadMutex_unlock(&entry->useMutex);
+}
 
 static inline void fw_bundleEntry_destroy(celix_framework_bundle_entry_t *entry, bool wait) {
     celixThreadMutex_lock(&entry->useMutex);
@@ -1865,8 +1865,8 @@ static void* framework_shutdown(void *framework) {
 
         bundle_t *bnd = entry->bnd;
 
-        //wait until entry use counts is 0
-        //fw_bundleEntry_waitTillNotUsed(entry);
+        //NOTE possible starvation.
+        fw_bundleEntry_waitTillUseCountIs(entry, 1);  //note this function has 1 use count.
 
         bundle_state_e state;
         bundle_getState(bnd, &state);
@@ -1882,8 +1882,7 @@ static void* framework_shutdown(void *framework) {
     // 'stop' framework bundle
     if (fwEntry != NULL) {
         bundle_t *bnd = fwEntry->bnd;
-        //celix_framework_waitForEmptyEventQueue(fw);
-        //fw_bundleEntry_waitTillNotUsed(fwEntry);
+        fw_bundleEntry_waitTillUseCountIs(fwEntry, 1); //note this function has 1 use count.
 
         bundle_state_e state;
         bundle_getState(bnd, &state);
