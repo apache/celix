@@ -32,48 +32,62 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <log_helper.h>
+#include <celix_log_helper.h>
 #include "celix_threads.h"
-#include "pubsub_tcp_msg_header.h"
+#include "pubsub_utils_url.h"
+#include <pubsub_protocol.h>
 
-typedef struct pubsub_tcpHandler_url {
-    char *url;
-    char *protocol;
-    char *hostname;
-    unsigned int portnr;
-} pubsub_tcpHandler_url_t;
+#ifndef MIN
+#define MIN(a, b) ((a<b) ? (a) : (b))
+#endif
+
+#ifndef MAX
+#define MAX(a, b) ((a>b) ? (a) : (b))
+#endif
 
 typedef struct pubsub_tcpHandler pubsub_tcpHandler_t;
-typedef void (*pubsub_tcpHandler_processMessage_callback_t)(void* payload, const pubsub_tcp_msg_header_t* header, const unsigned char * buffer, size_t size, struct timespec *receiveTime);
-typedef void (*pubsub_tcpHandler_connectMessage_callback_t)(void* payload, const char *url, bool lock);
+typedef void(*pubsub_tcpHandler_processMessage_callback_t)
+    (void *payload, const pubsub_protocol_message_t *header, bool *release, struct timespec *receiveTime);
+typedef void (*pubsub_tcpHandler_receiverConnectMessage_callback_t)(void *payload, const char *url, bool lock);
+typedef void (*pubsub_tcpHandler_acceptConnectMessage_callback_t)(void *payload, const char *url);
 
-pubsub_tcpHandler_t *pubsub_tcpHandler_create(log_helper_t *logHelper);
+pubsub_tcpHandler_t *pubsub_tcpHandler_create(pubsub_protocol_service_t *protocol, celix_log_helper_t *logHelper);
 void pubsub_tcpHandler_destroy(pubsub_tcpHandler_t *handle);
-int pubsub_tcpHandler_open(pubsub_tcpHandler_t *handle, char* url);
-int pubsub_tcpHandler_close(pubsub_tcpHandler_t *handle);
-int pubsub_tcpHandler_connect(pubsub_tcpHandler_t *handle, char* url);
-int pubsub_tcpHandler_disconnect(pubsub_tcpHandler_t *handle, char* url);
-int pubsub_tcpHandler_listen(pubsub_tcpHandler_t *handle, char* url);
+int pubsub_tcpHandler_open(pubsub_tcpHandler_t *handle, char *url);
+int pubsub_tcpHandler_close(pubsub_tcpHandler_t *handle, int fd);
+int pubsub_tcpHandler_connect(pubsub_tcpHandler_t *handle, char *url);
+int pubsub_tcpHandler_disconnect(pubsub_tcpHandler_t *handle, char *url);
+int pubsub_tcpHandler_listen(pubsub_tcpHandler_t *handle, char *url);
 
-int pubsub_tcpHandler_createReceiveBufferStore(pubsub_tcpHandler_t *handle, unsigned int maxNofBuffers, unsigned int bufferSize);
+int pubsub_tcpHandler_createReceiveBufferStore(pubsub_tcpHandler_t *handle,
+                                               unsigned int maxNofBuffers,
+                                               unsigned int bufferSize);
 void pubsub_tcpHandler_setTimeout(pubsub_tcpHandler_t *handle, unsigned int timeout);
-void pubsub_tcpHandler_setBypassHeader(pubsub_tcpHandler_t *handle, bool bypassHeader, unsigned int msgIdOffset, unsigned int msgIdSize);
-void pubsub_tcpHandler_setBlockingWrite(pubsub_tcpHandler_t *handle, bool blocking);
-void pubsub_tcpHandler_setBlockingRead(pubsub_tcpHandler_t *handle, bool blocking);
 void pubsub_tcpHandler_setSendRetryCnt(pubsub_tcpHandler_t *handle, unsigned int count);
 void pubsub_tcpHandler_setReceiveRetryCnt(pubsub_tcpHandler_t *handle, unsigned int count);
 void pubsub_tcpHandler_setSendTimeOut(pubsub_tcpHandler_t *handle, double timeout);
 void pubsub_tcpHandler_setReceiveTimeOut(pubsub_tcpHandler_t *handle, double timeout);
 
-int pubsub_tcpHandler_dataAvailable(pubsub_tcpHandler_t *handle, int fd, unsigned int *index, unsigned int *size);
-int pubsub_tcpHandler_read(pubsub_tcpHandler_t *handle, int fd, unsigned int index, pubsub_tcp_msg_header_t** header, void ** buffer, unsigned int size);
-int pubsub_tcpHandler_handler(pubsub_tcpHandler_t *handle);
-int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_tcp_msg_header_t* header, void* buffer, unsigned int size, int flags);
-int pubsub_tcpHandler_addMessageHandler(pubsub_tcpHandler_t *handle, void* payload, pubsub_tcpHandler_processMessage_callback_t processMessageCallback);
-int pubsub_tcpHandler_addConnectionCallback(pubsub_tcpHandler_t *handle, void* payload, pubsub_tcpHandler_connectMessage_callback_t connectMessageCallback, pubsub_tcpHandler_connectMessage_callback_t disconnectMessageCallback);
-
-const char* pubsub_tcpHandler_url(pubsub_tcpHandler_t *handle);
-void pubsub_tcpHandler_setUrlInfo(char *url, pubsub_tcpHandler_url_t *url_info);
-void pubsub_tcpHandler_free_setUrlInfo(pubsub_tcpHandler_url_t *url_info);
+int pubsub_tcpHandler_dataAvailable(pubsub_tcpHandler_t *handle, int fd, unsigned int *index, bool *readMsg);
+int pubsub_tcpHandler_read(pubsub_tcpHandler_t *handle, int fd, unsigned int index, pubsub_protocol_message_t **header);
+int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle,
+                            pubsub_protocol_message_t *message,
+                            struct iovec *msg_iovec,
+                            size_t msg_iov_len,
+                            int flags);
+int pubsub_tcpHandler_addMessageHandler(pubsub_tcpHandler_t *handle,
+                                        void *payload,
+                                        pubsub_tcpHandler_processMessage_callback_t processMessageCallback);
+int pubsub_tcpHandler_addReceiverConnectionCallback(pubsub_tcpHandler_t *handle,
+                                                    void *payload,
+                                                    pubsub_tcpHandler_receiverConnectMessage_callback_t connectMessageCallback,
+                                                    pubsub_tcpHandler_receiverConnectMessage_callback_t disconnectMessageCallback);
+int pubsub_tcpHandler_addAcceptConnectionCallback(pubsub_tcpHandler_t *handle,
+                                                  void *payload,
+                                                  pubsub_tcpHandler_acceptConnectMessage_callback_t connectMessageCallback,
+                                                  pubsub_tcpHandler_acceptConnectMessage_callback_t disconnectMessageCallback);
+char *pubsub_tcpHandler_get_interface_url(pubsub_tcpHandler_t *handle);
+void pubsub_tcpHandler_setThreadPriority(pubsub_tcpHandler_t *handle, long prio, const char *sched);
+void pubsub_tcpHandler_setThreadName(pubsub_tcpHandler_t *handle, const char *topic, const char *scope);
 
 #endif /* _PUBSUB_TCP_BUFFER_HANDLER_H_ */

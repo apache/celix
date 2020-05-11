@@ -32,10 +32,10 @@ add_celix_bundle(celix_pubsub_admin_websocket
 
 set_target_properties(celix_pubsub_admin_websocket PROPERTIES INSTALL_RPATH "$ORIGIN")
 target_link_libraries(celix_pubsub_admin_websocket PRIVATE
-        Celix::pubsub_spi
         Celix::framework Celix::dfi Celix::log_helper Celix::utils
         Celix::http_admin_api
 )
+target_link_libraries(celix_pubsub_admin_websocket PRIVATE Celix::pubsub_spi Celix::pubsub_utils )
 target_include_directories(celix_pubsub_admin_websocket PRIVATE
     src
 )

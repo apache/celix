@@ -23,7 +23,7 @@
 #include "dyn_common.h"
 #include "dyn_type.h"
 #include "dyn_message.h"
-#include "log_helper.h"
+#include "celix_log_helper.h"
 
 #include "pubsub_serializer.h"
 

@@ -36,7 +36,7 @@ struct pubsub_interceptors_handler {
 
     celix_bundle_context_t *ctx;
 
-    celix_thread_mutex_t mutex;
+    celix_thread_mutex_t lock;
 };
 
 static int referenceCompare(const void *a, const void *b);
@@ -58,16 +58,18 @@ celix_status_t pubsubInterceptorsHandler_create(celix_bundle_context_t *ctx, con
 
         (*handler)->interceptors = celix_arrayList_create();
 
-        celixThreadMutex_create(&(*handler)->mutex, NULL);
+        status = celixThreadMutex_create(&(*handler)->lock, NULL);
 
-        // Create service tracker here, and not in the activator
-        celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
-        opts.filter.serviceName = PUBSUB_INTERCEPTOR_SERVICE_NAME;
-        opts.filter.ignoreServiceLanguage = true;
-        opts.callbackHandle = *handler;
-        opts.addWithProperties = pubsubInterceptorsHandler_addInterceptor;
-        opts.removeWithProperties = pubsubInterceptorsHandler_removeInterceptor;
-        (*handler)->interceptorsTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
+        if (status == CELIX_SUCCESS) {
+            // Create service tracker here, and not in the activator
+            celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
+            opts.filter.serviceName = PUBSUB_INTERCEPTOR_SERVICE_NAME;
+            opts.filter.ignoreServiceLanguage = true;
+            opts.callbackHandle = *handler;
+            opts.addWithProperties = pubsubInterceptorsHandler_addInterceptor;
+            opts.removeWithProperties = pubsubInterceptorsHandler_removeInterceptor;
+            (*handler)->interceptorsTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
+        }
     }
 
     return status;
@@ -77,6 +79,7 @@ celix_status_t pubsubInterceptorsHandler_destroy(pubsub_interceptors_handler_t *
     celix_bundleContext_stopTracker(handler->ctx, handler->interceptorsTrackerId);
 
     celix_arrayList_destroy(handler->interceptors);
+    celixThreadMutex_destroy(&handler->lock);
     free(handler);
 
     return CELIX_SUCCESS;
@@ -84,7 +87,8 @@ celix_status_t pubsubInterceptorsHandler_destroy(pubsub_interceptors_handler_t *
 
 void pubsubInterceptorsHandler_addInterceptor(void *handle, void *svc, const celix_properties_t *props) {
     pubsub_interceptors_handler_t *handler = handle;
-    celixThreadMutex_lock(&handler->mutex);
+
+    celixThreadMutex_lock(&handler->lock);
 
     bool exists = false;
     for (uint32_t i = 0; i < arrayList_size(handler->interceptors); i++) {
@@ -102,22 +106,30 @@ void pubsubInterceptorsHandler_addInterceptor(void *handle, void *svc, const cel
         celix_arrayList_sort(handler->interceptors, referenceCompare);
     }
 
-    celixThreadMutex_unlock(&handler->mutex);
+    celixThreadMutex_unlock(&handler->lock);
 }
 
 void pubsubInterceptorsHandler_removeInterceptor(void *handle, void *svc, __attribute__((unused)) const celix_properties_t *props) {
     pubsub_interceptors_handler_t *handler = handle;
+
+    celixThreadMutex_lock(&handler->lock);
+
     for (uint32_t i = 0; i < arrayList_size(handler->interceptors); i++) {
         entry_t *entry = arrayList_get(handler->interceptors, i);
         if (entry->interceptor == svc) {
-            arrayList_remove(handler->interceptors, i);
+            void *old = arrayList_remove(handler->interceptors, i);
+            free(old);
             break;
         }
     }
+
+    celixThreadMutex_unlock(&handler->lock);
 }
 
 bool pubsubInterceptorHandler_invokePreSend(pubsub_interceptors_handler_t *handler, const char *messageType, const uint32_t messageId, const void *message, celix_properties_t **metadata) {
     bool cont = true;
+
+    celixThreadMutex_lock(&handler->lock);
 
     if (*metadata == NULL && arrayList_size(handler->interceptors) > 0) {
         *metadata = celix_properties_create();
@@ -132,19 +144,27 @@ bool pubsubInterceptorHandler_invokePreSend(pubsub_interceptors_handler_t *handl
         }
     }
 
+    celixThreadMutex_unlock(&handler->lock);
+
     return cont;
 }
 
 void pubsubInterceptorHandler_invokePostSend(pubsub_interceptors_handler_t *handler, const char *messageType, const uint32_t messageId, const void *message, celix_properties_t *metadata) {
+    celixThreadMutex_lock(&handler->lock);
+
     for (uint32_t i = arrayList_size(handler->interceptors); i > 0; i--) {
         entry_t *entry = arrayList_get(handler->interceptors, i - 1);
 
         entry->interceptor->postSend(entry->interceptor->handle, &handler->properties, messageType, messageId, message, metadata);
     }
+
+    celixThreadMutex_unlock(&handler->lock);
 }
 
 bool pubsubInterceptorHandler_invokePreReceive(pubsub_interceptors_handler_t *handler, const char *messageType, const uint32_t messageId, const void *message, celix_properties_t **metadata) {
     bool cont = true;
+
+    celixThreadMutex_lock(&handler->lock);
 
     if (*metadata == NULL && arrayList_size(handler->interceptors) > 0) {
         *metadata = celix_properties_create();
@@ -159,15 +179,21 @@ bool pubsubInterceptorHandler_invokePreReceive(pubsub_interceptors_handler_t *ha
         }
     }
 
+    celixThreadMutex_unlock(&handler->lock);
+
     return cont;
 }
 
 void pubsubInterceptorHandler_invokePostReceive(pubsub_interceptors_handler_t *handler, const char *messageType, const uint32_t messageId, const void *message, celix_properties_t *metadata) {
+    celixThreadMutex_lock(&handler->lock);
+
     for (uint32_t i = 0; i < arrayList_size(handler->interceptors); i++) {
         entry_t *entry = arrayList_get(handler->interceptors, i);
 
         entry->interceptor->postReceive(entry->interceptor->handle, &handler->properties, messageType, messageId, message, metadata);
     }
+
+    celixThreadMutex_unlock(&handler->lock);
 }
 
 int referenceCompare(const void *a, const void *b) {

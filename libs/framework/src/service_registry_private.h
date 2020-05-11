@@ -44,7 +44,7 @@ struct celix_serviceRegistry {
 	bool checkDeletedReferences; //If enabled. check if provided service references are still valid
 	hash_map_t *deletedServiceReferences; //key = ref pointer, value = bool
 
-	unsigned long currentServiceId;
+	long nextServiceId;
 
 	celix_array_list_t *listenerHooks; //celix_service_registry_listener_hook_entry_t*
 	celix_array_list_t *serviceListeners; //celix_service_registry_service_listener_entry_t*

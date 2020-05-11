@@ -21,33 +21,11 @@
 #define CELIX_PUBSUB_TCP_COMMON_H
 
 #include <utils.h>
-#include <stdint.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <log_helper.h>
-#include "version.h"
-#include "pubsub_tcp_msg_header.h"
+#include <hash_map.h>
 
-
-typedef struct pubsub_tcp_endPointStore{
+typedef struct pubsub_tcp_endPointStore {
     celix_thread_mutex_t mutex;
     hash_map_t *map;
 } pubsub_tcp_endPointStore_t;
-
-/*
- * NOTE tcp is used by first sending three frames:
- * 1) A subscription filter.
- * This is a 5 char string of the first two chars of scope and topic combined and terminated with a '\0'.
- *
- * 2) The pubsub_tcp_msg_header_t is send containing the type id and major/minor version
- *
- * 3) The actual payload
- */
-
-
-void psa_tcp_setScopeAndTopicFilter(const char* scope, const char *topic, char *filter);
-bool psa_tcp_checkVersion(version_pt msgVersion, const pubsub_tcp_msg_header_t *hdr);
-void psa_tcp_setupTcpContext(log_helper_t *logHelper, celix_thread_t *thread, const celix_properties_t *topicProperties);
 
 #endif //CELIX_PUBSUB_TCP_COMMON_H

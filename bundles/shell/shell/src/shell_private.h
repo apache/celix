@@ -24,7 +24,7 @@
 #include "celix_shell.h"
 #include "hash_map.h"
 #include "celix_shell_command.h"
-#include "log_helper.h"
+#include "celix_log_helper.h"
 
 #ifdef CELIX_INSTALL_DEPRECATED_API
 #include "command.h"
@@ -62,7 +62,7 @@ typedef struct celix_legacy_command_entry {
 
 struct shell {
 	celix_bundle_context_t *ctx;
-    log_helper_t *logHelper;
+    celix_log_helper_t *logHelper;
     celix_thread_mutex_t mutex; //protects below
     hash_map_t *commandServices; //key = char* (fully qualified command name), value = celix_shell_command_entry_t*
     hash_map_t *legacyCommandServices; //key = char* (command name), value = celix_legacy_command_entry_t*

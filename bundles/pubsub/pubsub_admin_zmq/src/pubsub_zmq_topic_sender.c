@@ -27,7 +27,7 @@
 #include <zconf.h>
 #include <arpa/inet.h>
 #include <czmq.h>
-#include <log_helper.h>
+#include <celix_log_helper.h>
 #include "pubsub_zmq_topic_sender.h"
 #include "pubsub_psa_zmq_constants.h"
 #include <uuid/uuid.h>
@@ -38,17 +38,17 @@
 #define ZMQ_BIND_MAX_RETRY                      10
 
 #define L_DEBUG(...) \
-    logHelper_log(sender->logHelper, OSGI_LOGSERVICE_DEBUG, __VA_ARGS__)
+    celix_logHelper_log(sender->logHelper, CELIX_LOG_LEVEL_DEBUG, __VA_ARGS__)
 #define L_INFO(...) \
-    logHelper_log(sender->logHelper, OSGI_LOGSERVICE_INFO, __VA_ARGS__)
+    celix_logHelper_log(sender->logHelper, CELIX_LOG_LEVEL_INFO, __VA_ARGS__)
 #define L_WARN(...) \
-    logHelper_log(sender->logHelper, OSGI_LOGSERVICE_WARNING, __VA_ARGS__)
+    celix_logHelper_log(sender->logHelper, CELIX_LOG_LEVEL_WARNING, __VA_ARGS__)
 #define L_ERROR(...) \
-    logHelper_log(sender->logHelper, OSGI_LOGSERVICE_ERROR, __VA_ARGS__)
+    celix_logHelper_log(sender->logHelper, CELIX_LOG_LEVEL_ERROR, __VA_ARGS__)
 
 struct pubsub_zmq_topic_sender {
     celix_bundle_context_t *ctx;
-    log_helper_t *logHelper;
+    celix_log_helper_t *logHelper;
     long serializerSvcId;
     pubsub_serializer_service_t *serializer;
     long protocolSvcId;
@@ -111,6 +111,13 @@ typedef struct psa_zmq_bounded_service_entry {
     int getCount;
 } psa_zmq_bounded_service_entry_t;
 
+typedef struct psa_zmq_zerocopy_free_entry {
+    pubsub_msg_serializer_t *msgSer;
+    struct iovec *serializedOutput;
+    size_t serializedOutputLen;
+} psa_zmq_zerocopy_free_entry;
+
+
 static void* psa_zmq_getPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties);
 static void psa_zmq_ungetPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties);
 static unsigned int rand_range(unsigned int min, unsigned int max);
@@ -120,7 +127,7 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
 
 pubsub_zmq_topic_sender_t* pubsub_zmqTopicSender_create(
         celix_bundle_context_t *ctx,
-        log_helper_t *logHelper,
+        celix_log_helper_t *logHelper,
         const char *scope,
         const char *topic,
         long serializerSvcId,
@@ -500,8 +507,14 @@ pubsub_admin_sender_metrics_t* pubsub_zmqTopicSender_metrics(pubsub_zmq_topic_se
     return result;
 }
 
-static void psa_zmq_freeMsg(void *msg, void *hint __attribute__((unused))) {
-    free(msg);
+static void psa_zmq_freeMsg(void *msg, void *hint) {
+    if (hint) {
+        psa_zmq_zerocopy_free_entry *entry = hint;
+        entry->msgSer->freeSerializeMsg(entry->msgSer->handle, entry->serializedOutput, entry->serializedOutputLen);
+        free(entry);
+    } else {
+        free(msg);
+    }
 }
 
 static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, const void *inMsg, celix_properties_t *metadata) {
@@ -529,9 +542,8 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
         if (monitor) {
             clock_gettime(CLOCK_REALTIME, &serializationStart);
         }
-
-        void *serializedOutput = NULL;
         size_t serializedOutputLen = 0;
+        struct iovec *serializedOutput = NULL;
         status = entry->msgSer->serialize(entry->msgSer->handle, inMsg, &serializedOutput, &serializedOutputLen);
 
         if (monitor) {
@@ -544,12 +556,15 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
             bool cont = pubsubInterceptorHandler_invokePreSend(sender->interceptorsHandler, entry->msgSer->msgName, msgTypeId, inMsg, &metadata);
             if (cont) {
                 pubsub_protocol_message_t message;
-                message.payload.payload = serializedOutput;
-                message.payload.length = serializedOutputLen;
+                message.payload.payload = serializedOutput->iov_base;
+                message.payload.length = serializedOutput->iov_len;
 
                 void *payloadData = NULL;
                 size_t payloadLength = 0;
                 entry->protSer->encodePayload(entry->protSer->handle, &message, &payloadData, &payloadLength);
+                if(payloadLength > 1000000) {
+                    L_WARN("ERR LARGE PAYLOAD DETECTED\n");
+                }
 
                 void *metadataData = NULL;
                 size_t metadataLength = 0;
@@ -560,11 +575,17 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
                     message.metadata.metadata = NULL;
                 }
 
+                if(metadataLength > 1000000) {
+                    L_WARN("ERR LARGE METADATA DETECTED\n");
+                }
+
                 message.header.msgId = msgTypeId;
                 message.header.msgMajorVersion = 0;
                 message.header.msgMinorVersion = 0;
                 message.header.payloadSize = payloadLength;
                 message.header.metadataSize = metadataLength;
+                message.header.payloadPartSize = payloadLength;
+                message.header.payloadOffset = 0;
 
                 void *headerData = NULL;
                 size_t headerLength = 0;
@@ -576,12 +597,17 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
                 bool sendOk;
 
                 if (bound->parent->zeroCopyEnabled) {
+                    celixThreadMutex_lock(&sender->zmq.mutex);
                     zmq_msg_t msg1; // Header
                     zmq_msg_t msg2; // Payload
                     zmq_msg_t msg3; // Metadata
                     void *socket = zsock_resolve(sender->zmq.socket);
+                    psa_zmq_zerocopy_free_entry *freeMsgEntry = malloc(sizeof(psa_zmq_zerocopy_free_entry));
+                    freeMsgEntry->msgSer = entry->msgSer;
+                    freeMsgEntry->serializedOutput = serializedOutput;
+                    freeMsgEntry->serializedOutputLen = serializedOutputLen;
 
-                    zmq_msg_init_data(&msg1, headerData, headerLength, psa_zmq_freeMsg, bound);
+                    zmq_msg_init_data(&msg1, headerData, headerLength, psa_zmq_freeMsg, NULL);
                     //send header
                     int rc = zmq_msg_send(&msg1, socket, ZMQ_SNDMORE);
                     if (rc == -1) {
@@ -589,9 +615,13 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
                         zmq_msg_close(&msg1);
                     }
 
-                    //send header
+                    //send Payload
                     if (rc > 0) {
-                        zmq_msg_init_data(&msg2, payloadData, payloadLength, psa_zmq_freeMsg, bound);
+                        if(metadataLength > 0) {
+                            zmq_msg_init_data(&msg2, payloadData, payloadLength, psa_zmq_freeMsg, NULL);
+                        } else {
+                            zmq_msg_init_data(&msg2, payloadData, payloadLength, psa_zmq_freeMsg, freeMsgEntry);
+                        }
                         int flags = 0;
                         if (metadataLength > 0) {
                             flags = ZMQ_SNDMORE;
@@ -603,38 +633,55 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
                         }
                     }
 
+                    //send MetaData
                     if (rc > 0 && metadataLength > 0) {
-                        zmq_msg_init_data(&msg3, metadataData, metadataLength, psa_zmq_freeMsg, bound);
+                        zmq_msg_init_data(&msg3, metadataData, metadataLength, psa_zmq_freeMsg, freeMsgEntry);
                         rc = zmq_msg_send(&msg3, socket, 0);
                         if (rc == -1) {
                             L_WARN("Error sending metadata msg. %s", strerror(errno));
                             zmq_msg_close(&msg3);
                         }
                     }
+                    celixThreadMutex_unlock(&sender->zmq.mutex);
 
                     sendOk = rc > 0;
                 } else {
+                    //no zero copy
                     zmsg_t *msg = zmsg_new();
                     zmsg_addmem(msg, headerData, headerLength);
                     zmsg_addmem(msg, payloadData, payloadLength);
                     if (metadataLength > 0) {
                         zmsg_addmem(msg, metadataData, metadataLength);
                     }
+                    celixThreadMutex_lock(&sender->zmq.mutex);
                     int rc = zmsg_send(&msg, sender->zmq.socket);
+                    celixThreadMutex_unlock(&sender->zmq.mutex);
                     sendOk = rc == 0;
 
                     if (!sendOk) {
                         zmsg_destroy(&msg); //if send was not ok, no owner change -> destroy msg
                     }
 
-                    free(headerData);
-                    free(payloadData);
-                    free(metadataData);
+                    if (headerData) {
+                        free(headerData);
+                    }
+                    // Note: serialized Payload is deleted by serializer
+                    if (payloadData && (payloadData != message.payload.payload)) {
+                        free(payloadData);
+                    }
+                    if (metadataData) {
+                        free(metadataData);
+                    }
                 }
 
                 pubsubInterceptorHandler_invokePostSend(sender->interceptorsHandler, entry->msgSer->msgName, msgTypeId, inMsg, metadata);
 
-                celix_properties_destroy(metadata);
+                if (message.metadata.metadata) {
+                    celix_properties_destroy(message.metadata.metadata);
+                }
+                if (!bound->parent->zeroCopyEnabled && serializedOutput) {
+                    entry->msgSer->freeSerializeMsg(entry->msgSer->handle, serializedOutput, serializedOutputLen);
+                }
 
                 celixThreadMutex_unlock(&entry->sendLock);
                 if (sendOk) {

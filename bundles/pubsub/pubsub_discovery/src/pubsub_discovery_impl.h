@@ -20,7 +20,7 @@
 #ifndef PUBSUB_DISCOVERY_IMPL_H_
 #define PUBSUB_DISCOVERY_IMPL_H_
 
-#include <log_helper.h>
+#include <celix_log_helper.h>
 #include "bundle_context.h"
 #include "service_reference.h"
 
@@ -46,7 +46,7 @@
 
 typedef struct pubsub_discovery {
     celix_bundle_context_t *context;
-    log_helper_t *logHelper;
+    celix_log_helper_t *logHelper;
 
     celix_thread_mutex_t discoveredEndpointsMutex; //when locked with EndpointsListenersMutex -> first lock this
     hash_map_pt discoveredEndpoints; //<key = uuid,celix_properties_t /*endpoint*/>>
@@ -87,7 +87,7 @@ typedef struct pubsub_announce_entry {
 } pubsub_announce_entry_t;
 
 
-pubsub_discovery_t* pubsub_discovery_create(celix_bundle_context_t *context, log_helper_t *logHelper);
+pubsub_discovery_t* pubsub_discovery_create(celix_bundle_context_t *context, celix_log_helper_t *logHelper);
 celix_status_t pubsub_discovery_destroy(pubsub_discovery_t *node_discovery);
 celix_status_t pubsub_discovery_start(pubsub_discovery_t *node_discovery);
 celix_status_t pubsub_discovery_stop(pubsub_discovery_t *node_discovery);

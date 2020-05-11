@@ -37,7 +37,7 @@
 #include "endpoint_discovery_server.h"
 #include "endpoint_discovery_poller.h"
 
-#include "log_helper.h"
+#include "celix_log_helper.h"
 
 #define DISCOVERY_SERVER_INTERFACE  "DISCOVERY_CFG_SERVER_INTERFACE"
 #define DISCOVERY_SERVER_IP         "DISCOVERY_CFG_SERVER_IP"
@@ -58,7 +58,7 @@ struct discovery {
     endpoint_discovery_poller_t *poller;
     endpoint_discovery_server_t *server;
 
-    log_helper_t *loghelper;
+    celix_log_helper_t *loghelper;
 
     discovery_impl_t *pImpl;
 };

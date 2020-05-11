@@ -29,7 +29,7 @@ if (BUILD_PUBSUB_PSA_UDP_MC)
     add_celix_container(pubsub_publisher_udp_mc
         GROUP pubsub
         BUNDLES
-            Celix::log_service
+            Celix::log_admin
             Celix::shell
             Celix::shell_tui
             Celix::pubsub_serializer_json
@@ -48,7 +48,7 @@ if (BUILD_PUBSUB_PSA_UDP_MC)
     add_celix_container(pubsub_subscriber_udp_mc
         GROUP pubsub
         BUNDLES
-            Celix::log_service
+            Celix::log_admin
             Celix::shell
             Celix::shell_tui
             Celix::pubsub_serializer_json
@@ -66,7 +66,7 @@ if (BUILD_PUBSUB_PSA_UDP_MC)
     add_celix_container(pubsub_subscriber2_udp_mc
         GROUP pubsub
         BUNDLES
-            Celix::log_service
+            Celix::log_admin
             Celix::shell
             Celix::shell_tui
             Celix::pubsub_serializer_json
@@ -102,13 +102,14 @@ if (BUILD_PUBSUB_PSA_TCP)
     add_celix_container(pubsub_publisher_tcp
             GROUP pubsub
             BUNDLES
-                Celix::log_service
+                Celix::log_admin
                 Celix::shell
                 Celix::shell_tui
                 Celix::pubsub_serializer_json
                 Celix::pubsub_discovery_etcd
                 Celix::pubsub_topology_manager
                 Celix::pubsub_admin_tcp
+                Celix::pubsub_protocol_wire_v1
                 celix_pubsub_poi_publisher
                 celix_pubsub_poi_publisher2
             PROPERTIES
@@ -121,13 +122,14 @@ if (BUILD_PUBSUB_PSA_TCP)
     add_celix_container(pubsub_subscriber_tcp
             GROUP pubsub
             BUNDLES
-                Celix::log_service
+                Celix::log_admin
                 Celix::shell
                 Celix::shell_tui
                 Celix::pubsub_serializer_json
                 Celix::pubsub_discovery_etcd
                 Celix::pubsub_topology_manager
                 Celix::pubsub_admin_tcp
+                Celix::pubsub_protocol_wire_v1
                 celix_pubsub_poi_subscriber
             PROPERTIES
                 PSA_TCP_VERBOSE=true
@@ -139,13 +141,14 @@ if (BUILD_PUBSUB_PSA_TCP)
     add_celix_container(pubsub_subscriber2_tcp
             GROUP pubsub
             BUNDLES
-                Celix::log_service
+                Celix::log_admin
                 Celix::shell
                 Celix::shell_tui
                 Celix::pubsub_serializer_json
                 Celix::pubsub_discovery_etcd
                 Celix::pubsub_topology_manager
                 Celix::pubsub_admin_tcp
+                Celix::pubsub_protocol_wire_v1
                 celix_pubsub_poi_subscriber
             PROPERTIES
                 PSA_TCP_VERBOSE=true
@@ -189,6 +192,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
                 Celix::pubsub_admin_zmq
                 Celix::pubsub_admin_udp_multicast
                 Celix::pubsub_admin_tcp
+                Celix::pubsub_protocol_wire_v1
                 celix_pubsub_poi_publisher
                 celix_pubsub_poi_publisher2
         )
@@ -205,6 +209,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
                 Celix::pubsub_admin_zmq
                 Celix::pubsub_admin_udp_multicast
                 Celix::pubsub_admin_tcp
+                Celix::pubsub_protocol_wire_v1
                 celix_pubsub_poi_subscriber
         )
         target_link_libraries(pubsub_subscriber PRIVATE ${PUBSUB_CONTAINER_LIBS})
@@ -303,7 +308,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             NAME zmq
             GROUP pubsub
             CONTAINERS
-                pubsub_publisher
+                pubsub_publisher_zmq
                 pubsub_subscriber_zmq
                 pubsub_subscriber2_zmq
             COMMANDS
@@ -406,7 +411,7 @@ if (BUILD_PUBSUB_PSA_WS)
     add_celix_container(pubsub_websocket_example
         GROUP pubsub
         BUNDLES
-            Celix::log_service
+            Celix::log_admin
             Celix::shell
             Celix::shell_tui
             Celix::http_admin

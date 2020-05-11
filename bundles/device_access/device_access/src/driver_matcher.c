@@ -30,14 +30,13 @@
 #include "celix_constants.h"
 
 #include "driver_matcher.h"
-#include "log_helper.h"
-#include "log_service.h"
+#include "celix_log_helper.h"
 
 
 struct driver_matcher {
 	hash_map_pt attributes;
 	array_list_pt matches;
-	log_helper_t *loghelper;
+    celix_log_helper_t *loghelper;
 
 	bundle_context_pt context;
 };
@@ -72,10 +71,7 @@ celix_status_t driverMatcher_create(bundle_context_pt context, driver_matcher_pt
 
 		arrayList_create(&(*matcher)->matches);
 
-		if(logHelper_create(context, &(*matcher)->loghelper) == CELIX_SUCCESS) {
-			logHelper_start((*matcher)->loghelper);
-		}
-
+        (*matcher)->loghelper = celix_logHelper_create(context, "celix_device_access");
 	}
 
 	return status;
@@ -105,8 +101,7 @@ celix_status_t driverMatcher_destroy(driver_matcher_pt *matcher) {
 		hashMapIterator_destroy(iter);
 		hashMap_destroy((*matcher)->attributes, false, false);
 
-		logHelper_stop((*matcher)->loghelper);
-		logHelper_destroy(&(*matcher)->loghelper);
+		celix_logHelper_destroy((*matcher)->loghelper);
 
 		free(*matcher);
 	}
@@ -223,7 +218,7 @@ celix_status_t driverMatcher_getBestMatchInternal(driver_matcher_pt matcher, mat
 					rank1Str = "0";
 					rank2Str = "0";
 
-					logHelper_log(matcher->loghelper, OSGI_LOGSERVICE_DEBUG, "DRIVER_MATCHER: Compare ranking");
+                    celix_logHelper_log(matcher->loghelper, CELIX_LOG_LEVEL_DEBUG, "DRIVER_MATCHER: Compare ranking");
 
 					serviceReference_getProperty(reference, OSGI_FRAMEWORK_SERVICE_RANKING, &rank1Str);
 					serviceReference_getProperty(reference, OSGI_FRAMEWORK_SERVICE_RANKING, &rank2Str);
@@ -243,7 +238,7 @@ celix_status_t driverMatcher_getBestMatchInternal(driver_matcher_pt matcher, mat
 						id1Str = NULL;
 						id2Str = NULL;
 
-						logHelper_log(matcher->loghelper, OSGI_LOGSERVICE_DEBUG, "DRIVER_MATCHER: Compare id's");
+                        celix_logHelper_log(matcher->loghelper, CELIX_LOG_LEVEL_DEBUG, "DRIVER_MATCHER: Compare id's");
 
 						serviceReference_getProperty(reference, OSGI_FRAMEWORK_SERVICE_ID, &id1Str);
 						serviceReference_getProperty(reference, OSGI_FRAMEWORK_SERVICE_ID, &id2Str);

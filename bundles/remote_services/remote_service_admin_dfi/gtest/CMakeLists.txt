@@ -46,7 +46,7 @@ target_link_libraries(test_rsa_dfi PRIVATE
         Celix::framework
         Celix::rsa_common
         calculator_api
-        GTest::GTest
+        GTest::gtest
 )
 
 get_property(rsa_bundle_file TARGET rsa_dfi PROPERTY BUNDLE_FILE)
@@ -68,5 +68,5 @@ add_dependencies(test_rsa_dfi
 )
 
 add_test(NAME run_test_rsa_dfi COMMAND test_rsa_dfi)
-SETUP_TARGET_FOR_COVERAGE(test_rsa_dfi_cov test_rsa_dfi ${CMAKE_BINARY_DIR}/coverage/test_rsa_dfi/test_rsa_dfi)
+setup_target_for_coverage(test_rsa_dfi SCAN_DIR ..)
 

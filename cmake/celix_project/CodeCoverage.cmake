@@ -75,11 +75,10 @@ IF(ENABLE_CODE_COVERAGE)
 
     IF(NOT TARGET coverage)
         add_custom_target(coverage
-    	    COMMAND ${CMAKE_COMMAND} -E make_directory coverage_results
-          COMMAND ${GENHTML_PATH} -o coverage_results coverage/*/*.info.cleaned
-
+            COMMAND ${CMAKE_COMMAND} -E make_directory coverage_results
+            COMMAND ${GENHTML_PATH} -o coverage_results coverage/*.info.cleaned
     	    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-          COMMENT "Generating report.\nOpen ./${_outputname}/index.html in your browser to view the coverage report."
+            COMMENT "Generating report.\nOpen index.html in your browser to view the coverage report."
         )
 
         SET_TARGET_PROPERTIES(coverage PROPERTIES COVERAGE_TARGET_ADDED "")
@@ -87,14 +86,30 @@ IF(ENABLE_CODE_COVERAGE)
 
 ENDIF(ENABLE_CODE_COVERAGE)
 
-# Param _targetname     The name of new the custom make target
-# Param _testrunner     The name of the target which runs the tests
-# Param _outputname     lcov output is generated as _outputname.info
-#                       HTML report is generated in _outputname/index.html
-# Optional fourth parameter is passed as arguments to _testrunner
-#   Pass them in list form, e.g.: "-j;2" for -j 2
-FUNCTION(SETUP_TARGET_FOR_COVERAGE _targetname _testrunner _outputname)
-    IF(ENABLE_CODE_COVERAGE)
+#[[
+Setup provided test target for coverage generation.
+the <test_target> should be a CMake target created with a add_test CMake command.
+
+setup_target_for_coverage(<test_target>
+    [c <dir>]
+    [ARGUMENTS arguments...]
+)
+
+
+Optional arguments are:
+- SCAN_DIR: The directory used to scan for source files. Default is .
+- ARGUMENTS: The arguments to pass to the test runnner
+]]
+function (setup_target_for_coverage)
+    if (ENABLE_CODE_COVERAGE)
+        list(GET ARGN 0 TEST_TARGET_NAME)
+        list(REMOVE_AT ARGN 0)
+
+        set(OPTIONS )
+        set(ONE_VAL_ARGS SCAN_DIR)
+        set(MULTI_VAL_ARGS ARGUMENTS)
+        cmake_parse_arguments(COVERAGE "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
+
     	IF(NOT LCOV_PATH)
     		MESSAGE(FATAL_ERROR "lcov not found! Aborting...")
     	ENDIF() # NOT LCOV_PATH
@@ -103,31 +118,31 @@ FUNCTION(SETUP_TARGET_FOR_COVERAGE _targetname _testrunner _outputname)
     		MESSAGE(FATAL_ERROR "genhtml not found! Aborting...")
     	ENDIF() # NOT GENHTML_PATH
 
-        set(SCAN_DIR ".")
-        if (NOT ARGV3)
-            set(SCAN_DIR ".")
-        else()
-            set(SCAN_DIR "${ARGV3}")
-        endif ()
+        if (NOT COVERAGE_SCAN_DIR)
+            set(COVERAGE_SCAN_DIR ".")
+        endif()
+
+        set(OUTPUT_FILE "${CMAKE_BINARY_DIR}/coverage/${TEST_TARGET_NAME}.info")
 
     	# Setup target
-      ADD_CUSTOM_TARGET(${_targetname}_coverage
+        add_custom_target(${TEST_TARGET_NAME}_coverage
 
     		# Cleanup lcov
-    		${LCOV_PATH} --directory . --zerocounters
+    		COMMAND ${LCOV_PATH} --directory . --zerocounters
 
-    		# Run tests
-    		COMMAND ${_testrunner} ${ARGV3}
+            COMMAND ${CMAKE_CTEST_COMMAND} -R ${TEST_TARGET_NAME}
 
     		# Capturing lcov counters and generating report
-    		COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/coverage
-    		COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/coverage/${_testrunner}
-    		COMMAND ${LCOV_PATH} --directory ${SCAN_DIR} --capture --output-file ${_outputname}.info
-    		COMMAND ${LCOV_PATH} --remove ${_outputname}.info '**/mock/*' '**/test/*' '**/gtest/*' '**/tst/*' '**/celix/gen/*' '**/googletest_project/*' '**/glog/*' '/usr/*' --output-file ${_outputname}.info.cleaned
+            COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/coverage
+    		COMMAND ${LCOV_PATH} --directory ${COVERAGE_SCAN_DIR} --capture --output-file ${OUTPUT_FILE}
+    		COMMAND ${LCOV_PATH} --remove ${OUTPUT_FILE} '**/mock/*' '**/test/*' '**/gtest/*' '**/tst/*' '**/celix/gen/*' '**/googletest_project/*' '**/glog/*' '/usr/*' --output-file ${OUTPUT_FILE}.cleaned
 
-    		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            #test dependencies, so that test is runned
+            DEPENDENCIES ${TEST_TARGET_NAME}
+
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     		COMMENT "Resetting code coverage counters to zero.\nProcessing code coverage counters and generating report."
     	)
-      ADD_DEPENDENCIES(coverage ${_targetname}_coverage)
-    ENDIF(ENABLE_CODE_COVERAGE)
-ENDFUNCTION() # SETUP_TARGET_FOR_COVERAGE
+        add_dependencies(coverage ${TEST_TARGET_NAME}_coverage)
+    endif ()
+endfunction ()

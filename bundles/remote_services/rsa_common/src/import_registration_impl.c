@@ -73,7 +73,7 @@ celix_status_t importRegistration_destroy(import_registration_t *registration)
 }
 
 
-celix_status_t importRegistrationFactory_create(log_helper_t *helper, char* serviceName, celix_bundle_context_t *context, import_registration_factory_t **registration_factory) {
+celix_status_t importRegistrationFactory_create(celix_log_helper_t *helper, char* serviceName, celix_bundle_context_t *context, import_registration_factory_t **registration_factory) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	*registration_factory = calloc(1, sizeof(**registration_factory));
@@ -131,11 +131,11 @@ celix_status_t importRegistrationFactory_open(import_registration_factory_t *reg
 	if (status == CELIX_SUCCESS) {
 		status = bundle_start(registration_factory->bundle);
 		if (status == CELIX_SUCCESS) {
-			logHelper_log(registration_factory->loghelper, OSGI_LOGSERVICE_INFO, "%s successfully started.", name);
+			celix_logHelper_log(registration_factory->loghelper, CELIX_LOG_LEVEL_INFO, "%s successfully started.", name);
 		}
 	}
 	else {
-		logHelper_log(registration_factory->loghelper, OSGI_LOGSERVICE_ERROR, "%s could not be installed.", name);
+		celix_logHelper_log(registration_factory->loghelper, CELIX_LOG_LEVEL_ERROR, "%s could not be installed.", name);
 	}
 
 	return status;
@@ -214,18 +214,18 @@ celix_status_t importRegistration_proxyFactoryRemoved(void * handle, service_ref
 
 
 
-celix_status_t importRegistrationFactory_install(log_helper_t *helper, char* serviceName, celix_bundle_context_t *context, import_registration_factory_t **registration_factory)
+celix_status_t importRegistrationFactory_install(celix_log_helper_t *helper, char* serviceName, celix_bundle_context_t *context, import_registration_factory_t **registration_factory)
 {
 	celix_status_t status;
 
 	if ( (status = importRegistrationFactory_create(helper, serviceName, context, registration_factory)) == CELIX_SUCCESS) {
 		// starting the proxy tracker first allows us to pick up already available proxy factories
 		importRegistration_createProxyFactoryTracker(*registration_factory, &((*registration_factory)->proxyFactoryTracker));
-		logHelper_log((*registration_factory)->loghelper, OSGI_LOGSERVICE_INFO, "remoteServiceAdmin_importService: new registration_factory added for %s at %p", serviceName, (*registration_factory)->proxyFactoryTracker);
+		celix_logHelper_log((*registration_factory)->loghelper, CELIX_LOG_LEVEL_INFO, "remoteServiceAdmin_importService: new registration_factory added for %s at %p", serviceName, (*registration_factory)->proxyFactoryTracker);
 
 		// check whether factory is available
 		if (((*registration_factory)->trackedFactory == NULL) && ((status = importRegistrationFactory_open(*registration_factory)) != CELIX_SUCCESS)) {
-			logHelper_log((*registration_factory)->loghelper, OSGI_LOGSERVICE_ERROR, "remoteServiceAdmin_importService: cannot open registration_factory for %s.", serviceName);
+			celix_logHelper_log((*registration_factory)->loghelper, CELIX_LOG_LEVEL_ERROR, "remoteServiceAdmin_importService: cannot open registration_factory for %s.", serviceName);
 
 			importRegistrationFactory_close(*registration_factory);
 			importRegistrationFactory_destroy(registration_factory);

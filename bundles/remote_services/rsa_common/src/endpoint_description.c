@@ -54,7 +54,7 @@ celix_status_t endpointDescription_create(celix_properties_t *properties, endpoi
     ep->serviceId = serviceId;
 
     if (!(ep->frameworkUUID) || !(ep->id) || !(ep->service) ) {
-    	fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "ENDPOINT_DESCRIPTION: incomplete description!.");
+    	fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_ERROR, "ENDPOINT_DESCRIPTION: incomplete description!.");
     	status = CELIX_BUNDLE_EXCEPTION;
     }
 
