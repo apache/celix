@@ -67,17 +67,24 @@ typedef struct {
  * Lastly a celix command shell will be register with the command name 'celix::<serialization_type>_message_serialization' which can be used to interactively
  * query the provided serialization services.
  *
- * @param ctx                   The bundle context
- * @param serializationType     The serialization type (e.g. 'json')
- * @param serialize             The serialize function to use
- * @param freeSerializeMsg      The freeSerializeMsg function to use
- * @param deserialize           The deserialize function to use
- * @param freeDeserializeMsg    The freeDesrializeMsg function to use
- * @return                      A pubsub serialization provided for the requested serialization type using the provided serialization functions.
+ * If no specific serialization is configured or builtin by the PubSubAdmin, serialization is chosen by the
+ * highest ranking serialization marker service.
+ *
+ *
+ * @param ctx                           The bundle context
+ * @param serializationType             The serialization type (e.g. 'json')
+ * @param serializationServiceRanking   The service raking used for the serialization marker service.
+ * @param serialize                     The serialize function to use
+ * @param freeSerializeMsg              The freeSerializeMsg function to use
+ * @param deserialize                   The deserialize function to use
+ * @param freeDeserializeMsg            The freeDesrializeMsg function to use
+ * @return                              A pubsub serialization provided for the requested serialization type using the
+ *                                      provided serialization functions.
  */
 pubsub_serialization_provider_t *pubsub_serializationProvider_create(
         celix_bundle_context_t *ctx,
         const char* serializationType,
+        long serializationServiceRanking,
         celix_status_t (*serialize)(pubsub_serialization_entry_t* entry, const void* msg, struct iovec** output, size_t* outputIovLen),
         void (*freeSerializeMsg)(pubsub_serialization_entry_t* entry, struct iovec* input, size_t inputIovLen),
         celix_status_t (*deserialize)(pubsub_serialization_entry_t* entry, const struct iovec* input, size_t inputIovLen __attribute__((unused)), void **out),

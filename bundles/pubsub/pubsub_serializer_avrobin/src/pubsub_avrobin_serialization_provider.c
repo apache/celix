@@ -110,7 +110,7 @@ void pubsub_avrobinSerializationProvider_freeDeserializeMsg(pubsub_serialization
 }
 
 pubsub_serialization_provider_t* pubsub_avrobinSerializationProvider_create(celix_bundle_context_t* ctx)  {
-    pubsub_serialization_provider_t* provider = pubsub_serializationProvider_create(ctx, "avrobin", pubsub_avrobinSerializationProvider_serialize, pubsub_avrobinSerializationProvider_freeSerializeMsg, pubsub_avrobinSerializationProvider_deserialize, pubsub_avrobinSerializationProvider_freeDeserializeMsg);
+    pubsub_serialization_provider_t* provider = pubsub_serializationProvider_create(ctx, "avrobin", 0, pubsub_avrobinSerializationProvider_serialize, pubsub_avrobinSerializationProvider_freeSerializeMsg, pubsub_avrobinSerializationProvider_deserialize, pubsub_avrobinSerializationProvider_freeDeserializeMsg);
     avrobinSerializer_logSetup(dfi_log, pubsub_serializationProvider_getLogHelper(provider), 1);;
     return provider;
 }

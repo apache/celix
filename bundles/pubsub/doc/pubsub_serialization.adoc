@@ -7,7 +7,7 @@ PubSub serialization is realized by providing a single marker serialization serv
 (`pubsub_message_serialization_service_t`), a message serialization service per msg type.
 
 Both the serialization marker service and message serialization services must provide a mandatory `serialization.type`.
-This is used to identify the serialization "type" they below to, for example "json" or "avrobin".
+This is used to identify the serialization "type" they belong to, for example "json" or "avrobin".
 
 The serialization services are used by the PubSub Admins to send (serialize) and receive (deserialize) messages.
 The PubSub Admins arrange the transport for the message the the serialization services the serializations.
@@ -30,7 +30,6 @@ pubsub_message_serialization_marker_t
  */
 typedef struct pubsub_message_serialization_marker {
     void *handle;
-    //TODO maybe a match function with qos as input?
 } pubsub_message_serialization_marker_t;
 ----
 
@@ -57,10 +56,83 @@ typedef struct pubsub_message_serialization_service {
 
     celix_status_t (*serialize)(void* handle, const void* input, struct iovec** output, size_t* outputIovLen);
     void (*freeSerializedMsg)(void* handle, struct iovec* input, size_t inputIovLen);
-    celix_status_t (*deserialize)(void* handle, const struct iovec* input, size_t inputIovLen, void** out); //note inputLen can be 0 if predefined size is not needed
+    celix_status_t (*deserialize)
+
+(void* handle, const struct iovec* input, size_t inputIovLen, void** out); //note inputLen can be 0 if predefined size is not needed
     void (*freeDeserializedMsg)(void* handle, void* msg);
 
 } pubsub_message_serialization_service_t;
+----
+
+== PubSub Serialization Matching
+
+TODO: Explain matching and usage service ranking on serialization marker service.
+
+
+=== Match Serializer for Subscriber
+[plantuml]
+----
+@startuml
+actor PubSubUser
+
+PubSubUser -> BundleContext: Register Subscriber Service
+BundleContext -> Framework: Register Subscriber Service
+Framework -> PubSubTopologyManager : Service Added (service tracker)
+PubSubTopologyManager --> Framework
+Framework --> BundleContext
+BundleContext --> PubSubUser
+
+== PubSubAdmin Setup ==
+
+loop psa handling thread
+PubSubTopologyManager -> PubSubTopologyManager: pstm_setupTopicReceivers
+activate PubSubTopologyManager
+PubSubTopologyManager ->  PubSubAdmin: matchSubscriber
+PubSubAdmin -> PubSubUtils: matchSerializer
+PubSubUtils --> PubSubAdmin
+PubSubAdmin --> PubSubTopologyManager
+PubSubTopologyManager -> PubSubAdmin: setupTopicReceiver
+PubSubAdmin -> PubSubAdmin: create topic receiver
+PubSubAdmin --> PubSubTopologyManager
+deactivate PubSubTopologyManager
+end
+
+@enduml
+----
+
+=== Match Serializer for Publisher
+[plantuml]
+----
+@startuml
+actor PubSubUser
+
+PubSubUser -> BundleContext: Request Publisher Service
+BundleContext -> Framework: Register Service Listener hook
+Framework -> PubSubTopologyManager : Listener Added
+PubSubTopologyManager --> Framework
+Framework --> BundleContext
+BundleContext --> PubSubUser
+
+== PubSubAdmin Setup ==
+
+loop psa handling thread
+PubSubTopologyManager -> PubSubTopologyManager: pstm_setupTopicSenders
+activate PubSubTopologyManager
+PubSubTopologyManager ->  PubSubAdmin: matchPublisher
+PubSubAdmin -> PubSubUtils: matchSerializer
+PubSubUtils --> PubSubAdmin
+PubSubAdmin --> PubSubTopologyManager
+PubSubTopologyManager -> PubSubAdmin: setupTopicSender
+PubSubAdmin -> PubSubAdmin: create topic sender
+PubSubAdmin -> BundleContext: Register Publisher Service
+BundleContext -> PubSubUser: Publisher Added
+PubSubUser --> BundleContext
+BundleContext --> PubSubAdmin
+PubSubAdmin --> PubSubTopologyManager
+deactivate PubSubTopologyManager
+end
+
+@enduml
 ----
 
 == PubSub Serialization Provider
@@ -75,52 +147,51 @@ The PubSub Serialization Provider is part of the `Celix::pubsub_utils` static li
 
 [ditaa]
 ----
-
-                 +----------------+
-                 | PubSub User    |
-                 | <bundle>       |                             +----------------+
-                 |                |           contains          |                |
-                 |                +---------------------------->+  +----------------+
-                 |                |                             |  |                |
-                 +-------^--------+                             |  | +-----------------+
-                         |                                      |  | | examples.Types  |
-                         |       +----------------------------->+  | | <descriptor>    |
-                 tracks  |       |             reads            +----+                 |
-                 bundles |       |                                 | |                 |
-                         |       |                                 +-+                 |
-                         |       |                                   |                 |
-                         |       |                                   |             {d} |
-                         |       |                                   +-----------------+
-                         |       |
-                         |       |
-                         |       |
-               +---------+-------+-+
-               |  JSON             |
-               |  Serialization    |                            +----------------+
-               |  Provider         +--------------------------->+                |
-               |  <bundle>         |         provides           |  +----------------+
-               |                   |                            |  |             |  |
-               |                   |                            |  | +-----------------+
-               |                   |                            |  | |                 |  Properties:
-               |                   |                            |  | |  PubSub         |  serialization.type=json
-               +--+--------------+-+                            +----+  Message        |  msg.fqn=examples.Type
-                  |              |                                 | |  Serialization  |  msg.version=...
-                  |              |                                 +-+  Service        |  msg.id=...
-                  |              |                                   |  <service>      |
-        specialize|              |                                   |                 |
-                  |              |                                   +-----------------+
-                  |              |
-                  |              |
-                  v              |                               +------------------+
-    +-------------------+        |                               |                  |  Properties:
-    |                   |        |                               | PubSub           |  serialization.type=json
-    |  PubSub           |        |                               | Message          |
-    |  Serialization    |        +------------------------------>+ Serialization    |
-    |  Provider         |                provides                | Marker           |
-    |  <library>        |                                        | <service>        |
-    |                   |                                        |                  |
-    |                   |                                        +------------------+
-    +-------------------+
+             +----------------+
+             | PubSub User    |
+             | (bundle)       |              +----------------+
+             |                |  contains    |                |
+             |                +------------->+  +-------------+--+
+             |                |              |  |                |
+             +-------^--------+              |  | +--------------+--+
+                     |                       |  | | examples.Types  |
+                     |       +-------------->+  | | (descriptor)    |
+             tracks  |       |    reads      +----+                 |
+             bundles |       |                  | |                 |
+                     |       |                  +-+                 |
+                     |       |                    |                 |
+                     |       |                    |             {d} |
+                     |       |                    +-----------------+
+                     |       |
+                     |       |
+                     |       |
+           +---------+-------+-+
+           |  JSON             |
+           |  Serialization    |             +----------------+
+           |  Provider         +------------>+                |
+           |  (bundle)         |  provides   |  +----------------+
+           |                   |             |  |             |  |
+           |                   |             |  | +-----------+--+--+
+           |                   |             |  | |                 |  Properties:
+           |                   |             |  | |  PubSub         |  serialization.type=json
+           +--+--------------+-+             +----+  Message        |  msg.fqn=examples.Type
+              |              |                  | |  Serialization  |  msg.version=...
+              |              |                  +-+  Service        |  msg.id=...
+              |              |                    |  (service)      |
+    specialize|              |                    |                 |
+              |              |                    +-----------------+
+              |              |
+              |              |
+              v              |               +------------------+
++-------------+-----+        |               |                  |  Properties:
+|                   |        |               | PubSub           |  serialization.type=json
+|  PubSub           |        |               | Message          |
+|  Serialization    |        +-------------->+ Serialization    |
+|  Provider         |           provides     | Marker           |
+|  (library)        |                        | (service)        |
+|                   |                        |                  |
+|                   |                        +------------------+
++-------------------+
 ----
 
 == PubSub Serialization Handler

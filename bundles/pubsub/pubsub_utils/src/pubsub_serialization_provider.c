@@ -24,6 +24,7 @@
 #include <dirent.h>
 #include <string.h>
 
+#include "celix_constants.h"
 #include "dyn_function.h"
 #include "celix_version.h"
 #include "celix_utils.h"
@@ -533,6 +534,7 @@ void pubsub_serializationProvider_onInstalledBundle(void *handle, const celix_bu
 pubsub_serialization_provider_t *pubsub_serializationProvider_create(
         celix_bundle_context_t *ctx,
         const char* serializationType,
+        long serializationServiceRanking,
         celix_status_t (*serialize)(pubsub_serialization_entry_t* entry, const void* msg, struct iovec** output, size_t* outputIovLen),
         void (*freeSerializeMsg)(pubsub_serialization_entry_t* entry, struct iovec* input, size_t inputIovLen),
         celix_status_t (*deserialize)(pubsub_serialization_entry_t* entry, const struct iovec* input, size_t inputIovLen __attribute__((unused)), void **out),
@@ -570,6 +572,7 @@ pubsub_serialization_provider_t *pubsub_serializationProvider_create(
         celix_properties_t* props = celix_properties_create();
         provider->markerSvc.handle = provider;
         celix_properties_set(props, PUBSUB_MESSAGE_SERIALIZATION_MARKER_SERIALIZATION_TYPE_PROPERTY, provider->serializationType);
+        celix_properties_setLong(props, OSGI_FRAMEWORK_SERVICE_RANKING, serializationServiceRanking);
         celix_service_registration_options_t opts = CELIX_EMPTY_SERVICE_REGISTRATION_OPTIONS;
         opts.svc = &provider->markerSvc;
         opts.serviceName = PUBSUB_MESSAGE_SERIALIZATION_MARKER_NAME;

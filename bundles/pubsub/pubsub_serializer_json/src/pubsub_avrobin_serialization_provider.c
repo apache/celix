@@ -106,7 +106,7 @@ void pubsub_jsonSerializationProvider_freeDeserializeMsg(pubsub_serialization_en
 }
 
 pubsub_serialization_provider_t* pubsub_jsonSerializationProvider_create(celix_bundle_context_t* ctx)  {
-    pubsub_serialization_provider_t* provider = pubsub_serializationProvider_create(ctx, "json", pubsub_jsonSerializationProvider_serialize, pubsub_jsonSerializationProvider_freeSerializeMsg, pubsub_jsonSerializationProvider_deserialize, pubsub_jsonSerializationProvider_freeDeserializeMsg);
+    pubsub_serialization_provider_t* provider = pubsub_serializationProvider_create(ctx, "json", 0, pubsub_jsonSerializationProvider_serialize, pubsub_jsonSerializationProvider_freeSerializeMsg, pubsub_jsonSerializationProvider_deserialize, pubsub_jsonSerializationProvider_freeDeserializeMsg);
     jsonSerializer_logSetup(dfi_log, pubsub_serializationProvider_getLogHelper(provider), 1);;
     return provider;
 }
