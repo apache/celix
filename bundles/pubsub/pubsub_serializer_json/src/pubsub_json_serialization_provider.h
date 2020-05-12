@@ -26,6 +26,9 @@
 extern "C" {
 #endif
 
+/**
+* Creates a JSON Serialization Provider.
+*/
 pubsub_serialization_provider_t* pubsub_jsonSerializationProvider_create(celix_bundle_context_t *ctx);
 
 /**

@@ -16,6 +16,8 @@ if this is not the case select the highest ranking available serialization marke
 The serialization services are used by the PubSub Admins to send (serialize) and receive (deserialize) messages.
 The PubSub Admins realizes the transport for messages and the serialization services serializes the serializations.
 
+Currently the Celix PubSub facilities delivers two serialiation types: "json" and "avrobin".
+<<PubSub Serialization Provider>> can be used to create additional serialization types.
 
 pubsub_message_serialization_marker_t
 [source,c]

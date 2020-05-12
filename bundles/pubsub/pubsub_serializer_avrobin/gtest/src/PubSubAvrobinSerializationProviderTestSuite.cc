@@ -28,7 +28,7 @@ class PubSubAvrobinSerializationProviderTestSuite : public ::testing::Test {
 public:
     PubSubAvrobinSerializationProviderTestSuite() {
         auto* props = celix_properties_create();
-        celix_properties_set(props, OSGI_FRAMEWORK_FRAMEWORK_STORAGE, ".pubsub_json_serializer_cache");
+        celix_properties_set(props, OSGI_FRAMEWORK_FRAMEWORK_STORAGE, ".pubsub_avrobin_serializer_cache");
         auto* fwPtr = celix_frameworkFactory_createFramework(props);
         auto* ctxPtr = celix_framework_getFrameworkContext(fwPtr);
         fw = std::shared_ptr<celix_framework_t>{fwPtr, [](auto* f) {celix_frameworkFactory_destroyFramework(f);}};

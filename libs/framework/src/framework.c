@@ -200,11 +200,13 @@ struct fw_bundleListener {
 typedef struct fw_bundleListener * fw_bundle_listener_pt;
 
 static inline void fw_bundleListener_destroy(fw_bundle_listener_pt listener, bool wait) {
-    celixThreadMutex_lock(&listener->useMutex);
-    while (wait && listener->useCount != 0) {
-        celixThreadCondition_wait(&listener->useCond, &listener->useMutex);
+    if (wait) {
+        celixThreadMutex_lock(&listener->useMutex);
+        while (listener->useCount != 0) {
+            celixThreadCondition_wait(&listener->useCond, &listener->useMutex);
+        }
+        celixThreadMutex_unlock(&listener->useMutex);
     }
-    celixThreadMutex_unlock(&listener->useMutex);
 
     //destroy
     celixThreadMutex_destroy(&listener->useMutex);
