@@ -15,9 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 
-# Set buildtype as define so that in the test code we can use the proper bundle names
-add_definitions ( -DBUILD_TYPE=\"${CMAKE_BUILD_TYPE}\" )
-
 add_celix_bundle(simple_test_bundle1 NO_ACTIVATOR VERSION 1.0.0)
 add_celix_bundle(simple_test_bundle2 NO_ACTIVATOR VERSION 1.0.0)
 add_celix_bundle(simple_test_bundle3 NO_ACTIVATOR VERSION 1.0.0)
@@ -25,7 +22,10 @@ add_celix_bundle(bundle_with_exception SOURCES src/nop_activator.c VERSION 1.0.0
 add_subdirectory(subdir) #simple_test_bundle4, simple_test_bundle5 and sublib
 
 add_celix_bundle(unresolveable_bundle SOURCES src/nop_activator.c VERSION 1.0.0)
-target_link_libraries(unresolveable_bundle PRIVATE sublib)
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(POSTFIX ${CMAKE_DEBUG_POSTFIX})
+endif()
+target_link_libraries(unresolveable_bundle PRIVATE "-L${CMAKE_CURRENT_BINARY_DIR}/subdir -lsublib${POSTFIX}")
 if(NOT APPLE)
     set_target_properties(unresolveable_bundle PROPERTIES LINK_FLAGS -Wl,--no-as-needed)
 endif()
