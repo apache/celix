@@ -1,3 +1,4 @@
+
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -14,6 +15,9 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+
+
+set(CELIX_NO_POSTFIX_BUILD_TYPE "RelWithDebInfo" CACHE STRING "The build type used for creating bundle without a build type postfix.")
 
 find_program(JAR_COMMAND jar NO_CMAKE_FIND_ROOT_PATH)
 
@@ -107,7 +111,7 @@ Optional arguments are:
 - GROUP: The group the bundle is part of. This will be used as Bundle-Group manifest entry. Default this is empty (no group).
 - VERSION: The bundle version. This will be used for the Bundle-Version manifest entry. In combination with SOURCES the version will also be used to set the activator library target property VERSION and SOVERSION.
   For SOVERSION only the major part is used. Expected scheme is "<major>.<minor>.<path>". Default version is "0.0.0"
-- FILENAME: The filename of the bundle file. Default is <bundle_target_name>.zip.
+- FILENAME: The filename of the bundle file, without extension. Default is <bundle_target_name>. Together with the BUILD_TYPE, this will result in a filename like "bundle_target_name_Debug.zip
 - PRIVATE_LIBRARIES: private libraries to be included in the bundle. Specified libraries are added to the "Private-Library" manifest statement and added in the root of the bundle. libraries can be cmake library targets or absolute paths to existing libraries.
 - HEADERS: Additional headers values that are appended to the bundle manifest.
 
@@ -189,8 +193,15 @@ function(add_celix_bundle)
     if (NOT DEFINED BUNDLE_SYMBOLIC_NAME)
         set(BUNDLE_SYMBOLIC_NAME ${BUNDLE_TARGET_NAME})
     endif ()
+
     if (NOT DEFINED BUNDLE_FILENAME)
-        set(BUNDLE_FILENAME ${BUNDLE_TARGET_NAME}.zip)
+        set(BUNDLE_FILENAME ${BUNDLE_TARGET_NAME})
+    endif ()
+
+    if ("${CMAKE_BUILD_TYPE}" STREQUAL "${CELIX_NO_POSTFIX_BUILD_TYPE}")
+        set(BUNDLE_FILENAME ${BUNDLE_FILENAME}.zip)
+    else ()
+        set(BUNDLE_FILENAME ${BUNDLE_FILENAME}-${CMAKE_BUILD_TYPE}.zip)
     endif ()
 
     set(BUNDLE_FILE "${CMAKE_CURRENT_BINARY_DIR}/${BUNDLE_FILENAME}")
@@ -762,7 +773,7 @@ function(install_celix_bundle)
     if (INSTALL_EXPORT)
         get_target_property(CURRENT_EXPORT_BUNDLES celix-bundles EXPORT_${INSTALL_EXPORT}_BUNDLES)
 
-	if (NOT CURRENT_EXPORT_BUNDLES)
+    	if (NOT CURRENT_EXPORT_BUNDLES)
             set(CURRENT_EXPORT_BUNDLES ${BUNDLE})
         else ()
             list(APPEND CURRENT_EXPORT_BUNDLES ${BUNDLE})
@@ -791,7 +802,7 @@ install using the provided <export_name>. These imported CMake targets can be us
 bundles.
 
 Optional Arguments:
-- FILE: The Celix Targets cmake filename to used. Default is <export_name>BundleTargets.cmake
+- FILE: The Celix Targets cmake filename to used, without the cmake extension. Default is <export_name>BundleTargets
 - PROJECT_NAME: The project name to used for the share location. Default is the cmake project name.
 - DESTINATION: The (relative) location to install the Celix Targets cmake file to. Default is share/<PROJECT_NAME>/cmake.
 
@@ -803,7 +814,7 @@ install_celix_targets(<export_name>
 )
 
 Example:
-install_celix_targets(celix NAMESPACE Celix:: DESTINATION share/celix/cmake FILE CelixTargets.cmake)
+install_celix_targets(celix NAMESPACE Celix:: DESTINATION share/celix/cmake FILE CelixTargets)
 ]]
 
 function(install_celix_bundle_targets)
@@ -825,10 +836,14 @@ function(install_celix_bundle_targets)
         message(FATAL_ERROR "Please provide a namespace used for the generated cmake targets.")
     endif ()
 
-
     if (NOT DEFINED EXPORT_FILE)
-        set(EXPORT_FILE ${EXPORT_NAME}BundleTargets.cmake)
+        set(EXPORT_FILE ${EXPORT_NAME}BundleTargets)
     endif ()
+
+#    if (NOT CMAKE_BUILD_TYPE STREQUAL "Release")
+        set(EXPORT_FILE ${EXPORT_FILE}-${CMAKE_BUILD_TYPE})
+#    endif ()
+
     if (NOT DEFINED EXPORT_PROJECT_NAME)
         string(TOLOWER ${PROJECT_NAME} EXPORT_PROJECT_NAME)
     endif()
@@ -875,8 +890,8 @@ endif ()
     file(GENERATE OUTPUT "${CONF_FILE}" INPUT "${CONF_IN_FILE}")
 
     if (EXPORT_COMPONENT)
-        install(FILES "${CONF_FILE}" DESTINATION ${EXPORT_DESTINATION} RENAME ${EXPORT_FILE} COMPONENT ${EXPORT_COMPONENT})
+        install(FILES "${CONF_FILE}" DESTINATION ${EXPORT_DESTINATION} RENAME ${EXPORT_FILE}.cmake COMPONENT ${EXPORT_COMPONENT})
     else ()
-        install(FILES "${CONF_FILE}" DESTINATION ${EXPORT_DESTINATION} RENAME ${EXPORT_FILE})
+        install(FILES "${CONF_FILE}" DESTINATION ${EXPORT_DESTINATION} RENAME ${EXPORT_FILE}.cmake)
     endif ()
 endfunction()
