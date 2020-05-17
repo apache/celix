@@ -21,5 +21,5 @@ add_executable(test_promise
 target_link_libraries(test_promise PRIVATE GTest::gtest GTest::gtest_main Celix::Promise)
 
 add_test(NAME test_promise COMMAND test_promise)
-SETUP_TARGET_FOR_COVERAGE(test_promise_cov test_promise ${CMAKE_BINARY_DIR}/coverage/promise ..)
+setup_target_for_coverage(test_promise SCAN_DIR ..)
 
