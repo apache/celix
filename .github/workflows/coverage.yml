@@ -43,7 +43,7 @@ jobs:
       - name: Codecov
         uses: codecov/codecov-action@v1
         with:
-          file: ./coverage.info
+          file: build/coverage.info
           name: codecov-celix
 
 #      NOTE For now disabled, need to be able to configure coveralls thresholds
