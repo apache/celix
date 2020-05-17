@@ -30,8 +30,9 @@ if (NOT COMMAND celix_subproject)
     include(GNUInstallDirs)
 
     set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
-    set(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 ${CMAKE_C_FLAGS}")
+    set(CMAKE_C_FLAGS "-pthread -D_GNU_SOURCE -std=gnu99 ${CMAKE_C_FLAGS}")
     set(CMAKE_C_FLAGS_DEBUG "-g -DDEBUG")
+    set(CMAKE_EXE_LINKER_FLAGS "-pthread ${CMAKE_EXE_LINKER_FLAGS}")
 
     set(ETCDLIB_CMP ${CMAKE_INSTALL_DEFAULT_COMPONENT_NAME})
 else()
@@ -40,6 +41,26 @@ endif ()
 
 find_package(CURL REQUIRED)
 find_package(Jansson REQUIRED)
+
+if (NOT TARGET CURL::libcurl)
+    #Note more recent curl will create CURL::libcurl target
+    message("Note CURL::libcurl target not created by find_package(CURL). Creating CURL::libcurl Target.")
+    add_library(CURL::libcurl SHARED IMPORTED)
+    set_target_properties(CURL::libcurl PROPERTIES
+            IMPORTED_LOCATION "${CURL_LIBRARIES}"
+            INTERFACE_INCLUDE_DIRECTORIES "${CURL_INCLUDE_DIRS}"
+    )
+endif ()
+
+if (NOT TARGET Jansson)
+    #Note if JanssonConfig is present on system this is not needed
+    message("Note Jansson target not created by find_package(Jansson). Creating Jansson Target.")
+    add_library(Jansson SHARED IMPORTED)
+    set_target_properties(Jansson PROPERTIES
+            IMPORTED_LOCATION "${JANSSON_LIBRARY}"
+            INTERFACE_INCLUDE_DIRECTORIES "${JANSSON_INCLUDE_DIR}"
+    )
+endif ()
 
 add_library(etcdlib SHARED
     src/etcd.c

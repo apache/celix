@@ -113,7 +113,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O0 -DNDEBUG ${CMAKE_CXX_FLAGS}")
 # Set version for the framework package/release
 set(CELIX_MAJOR "2")
 set(CELIX_MINOR "2")
-set(CELIX_MICRO "0")
+set(CELIX_MICRO "1")
 
 # Default bundle version
 set(DEFAULT_VERSION 1.0.0)
