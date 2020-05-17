@@ -63,12 +63,12 @@ TEST_F(PubSubSerializationProviderTestSuite, FindSerializationServices) {
     auto* provider = pubsub_serializationProvider_create(ctx.get(), "test", 0, nullptr, nullptr, nullptr, nullptr);
 
     size_t nrEntries = pubsub_serializationProvider_nrOfEntries(provider);
-    EXPECT_EQ(4, nrEntries);
+    EXPECT_EQ(5, nrEntries);
     size_t nrOfInvalidEntries = pubsub_serializationProvider_nrOfInvalidEntries(provider);
-    EXPECT_EQ(4, nrOfInvalidEntries); //note 4 invalid, because garbage.descriptor is never added (cannot extract msgFqn)
+    EXPECT_EQ(3, nrOfInvalidEntries); //note 4 invalid, because garbage.descriptor is never added (cannot extract msgFqn)
 
     auto* services = celix_bundleContext_findServices(ctx.get(), PUBSUB_MESSAGE_SERIALIZATION_SERVICE_NAME);
-    EXPECT_EQ(4, celix_arrayList_size(services)); //3 valid, 5 invalid
+    EXPECT_EQ(5, celix_arrayList_size(services)); //3 valid, 5 invalid
     celix_arrayList_destroy(services);
 
     pubsub_serializationProvider_destroy(provider);

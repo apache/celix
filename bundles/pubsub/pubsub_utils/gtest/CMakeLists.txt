@@ -19,13 +19,13 @@ add_celix_bundle(pubsub_serialization_provider_descriptors NO_ACTIVATOR VERSION 
 celix_bundle_files(pubsub_serialization_provider_descriptors
 		${CMAKE_CURRENT_SOURCE_DIR}/msg_descriptors/garbage.descriptor
 		${CMAKE_CURRENT_SOURCE_DIR}/msg_descriptors/msg_poi1.descriptor
-		${CMAKE_CURRENT_SOURCE_DIR}/msg_descriptors/msg_poi1_invalid1.descriptor
-		${CMAKE_CURRENT_SOURCE_DIR}/msg_descriptors/msg_poi1_invalid3.descriptor
-		${CMAKE_CURRENT_SOURCE_DIR}/msg_descriptors/msg_poi2_invalid4.descriptor
-		${CMAKE_CURRENT_SOURCE_DIR}/msg_descriptors/msg_poi2.descriptor
 		${CMAKE_CURRENT_SOURCE_DIR}/msg_descriptors/msg_poiCmd.descriptor
-		${CMAKE_CURRENT_SOURCE_DIR}/msg_descriptors/msg_poi3.descriptor
-		${CMAKE_CURRENT_SOURCE_DIR}/msg_descriptors/msg_poi3_invalid2.descriptor
+		${CMAKE_CURRENT_SOURCE_DIR}/msg_descriptors/msg_poi2_variant1.descriptor
+		${CMAKE_CURRENT_SOURCE_DIR}/msg_descriptors/msg_poi2_variant2.descriptor
+		${CMAKE_CURRENT_SOURCE_DIR}/msg_descriptors/msg_poi3_variant1.descriptor
+		${CMAKE_CURRENT_SOURCE_DIR}/msg_descriptors/msg_poi3_variant2.descriptor
+		${CMAKE_CURRENT_SOURCE_DIR}/msg_descriptors/msg_poi4_variant1.descriptor
+		${CMAKE_CURRENT_SOURCE_DIR}/msg_descriptors/msg_poi4_variant2.descriptor
 		DESTINATION "META-INF/descriptors"
 )
 
