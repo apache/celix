@@ -1,6 +1,8 @@
-name: Celix Ubuntu
+name: Celix Ubuntu Nightly
 
-on: [push, pull_request]
+on:
+  schedule:
+    - cron:  '0 0 * * *'
 
 jobs:
   build:
@@ -45,15 +47,13 @@ jobs:
           libffi-dev \
           libxml2-dev \
           libczmq-dev \
-          libcpputest-dev \
-          libtbb-dev
+          libcpputest-dev
     - name: Build
       env:
         CC: ${{ matrix.compiler }}
         CXX: ${{ matrix.cxx_compiler }}
         BUILD_OPTIONS: |
           -DENABLE_TESTING=ON
-          -DBUILD_EXPERIMENTAL=ON
         BUILD_OPTIONS_SANITIZER: |
           -DENABLE_ADDRESS_SANITIZER=ON
         BUILD_OPTIONS_V3_API: |
@@ -68,7 +68,7 @@ jobs:
         if [[ "${{ matrix.sanitizer }}" == "true" ]]; then
           export BUILD_OPTIONS="${BUILD_OPTIONS} ${BUILD_OPTIONS_SANITIZER}"
         fi
-        cmake -DCMAKE_BUILD_TYPE=Debug ${BUILD_OPTIONS} -DCMAKE_INSTALL_PREFIX=../install ..
+        cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ${BUILD_OPTIONS} -DCMAKE_INSTALL_PREFIX=../install ..
         make -j && make install
     - name: Test
       run: |

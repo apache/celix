@@ -15,6 +15,9 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_subdirectory(config_admin)
-add_subdirectory(event_admin)
-add_subdirectory(pubsub_admin_nanomsg)
+if (NOT APPLE)
+    #Note note sure if these bundles build on OSX
+    add_subdirectory(config_admin)
+    add_subdirectory(event_admin)
+    add_subdirectory(pubsub_admin_nanomsg)
+endif ()

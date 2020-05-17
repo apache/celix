@@ -15,10 +15,14 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(EXPERIMENTAL "Options to enable building the experimental - non stable - bundles/libraries. " OFF DEPS FRAMEWORK)
-if (EXPERIMENTAL)
+# - Config file for the Apache Celix Promise library
+# It defines the following variables
+#  Celix::Promise CMake imported target
 
-    add_subdirectory(bundles)
-    add_subdirectory(promise)
+# relative install dir from lib/CMake/CelixPromise.
+get_filename_component(REL_INSTALL_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+get_filename_component(REL_INSTALL_DIR "${REL_INSTALL_DIR}" PATH)
+get_filename_component(REL_INSTALL_DIR "${REL_INSTALL_DIR}" PATH)
+get_filename_component(REL_INSTALL_DIR "${REL_INSTALL_DIR}" PATH)
 
-endif ()
+include("${REL_INSTALL_DIR}/share/CelixPromise/cmake/Targets.cmake") #imports lib and exe targets (e.g. Celix::framework)

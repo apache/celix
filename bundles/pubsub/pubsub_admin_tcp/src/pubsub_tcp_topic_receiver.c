@@ -537,7 +537,7 @@ processMsgForSubscriberEntry(pubsub_tcp_topic_receiver_t *receiver, psa_tcp_subs
             struct iovec deSerializeBuffer;
             deSerializeBuffer.iov_base = message->payload.payload;
             deSerializeBuffer.iov_len = message->payload.length;
-            celix_status_t status = msgSer->deserialize(msgSer->handle, &deSerializeBuffer, 0, &deSerializedMsg);
+            celix_status_t status = msgSer->deserialize(msgSer->handle, &deSerializeBuffer, 1, &deSerializedMsg);
             if (monitor) {
                 clock_gettime(CLOCK_REALTIME, &endSer);
             }

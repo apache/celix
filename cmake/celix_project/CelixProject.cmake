@@ -19,6 +19,11 @@ option(ENABLE_ADDRESS_SANITIZER "Enabled building with address sanitizer. Note f
 option(ENABLE_UNDEFINED_SANITIZER "Enabled building with undefined behavior sanitizer." OFF)
 option(ENABLE_THREAD_SANITIZER "Enabled building with thread sanitizer." OFF)
 
+# Clear "Advanced" flag for sanitizer options
+mark_as_advanced(CLEAR ENABLE_ADDRESS_SANITIZER)
+mark_as_advanced(CLEAR ENABLE_UNDEFINED_SANITIZER)
+mark_as_advanced(CLEAR ENABLE_THREAD_SANITIZER)
+
 if (ENABLE_ADDRESS_SANITIZER)
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
         set(CMAKE_C_FLAGS "-fsanitize=address -fno-omit-frame-pointer ${CMAKE_C_FLAGS}")

@@ -25,13 +25,13 @@ Etcdlib can be used as part of Celix but is also usable stand-alone.
 ## Preparing
 The following packages (libraries + headers) should be installed on your system:
 
-*	Development Environment
-	*	build-essentials (gcc/g++ or clang/clang++)
-	*	cmake (3.2 or higher)
+* Development Environment
+  * build-essentials (gcc/g++ or clang/clang++)
+  * cmake (3.2 or higher)
 
-* 	Etcdlib Dependencies
-	*	curl
-	*	jansson
+* Etcdlib Dependencies
+  * curl
+  * jansson
 
 ## Download the Apache Celix sources
 To get started you first have to download the Apache Celix sources. This can be done by cloning the Apache Celix git repository:
@@ -43,7 +43,7 @@ export WS=${HOME}/workspace
 cd ${WS}
 
 # clone the repro
-git clone --single-branch --branch develop https://github.com/apache/celix.git
+git clone --single-branch --branch master https://github.com/apache/celix.git
 ```
 
 ## Building

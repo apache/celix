@@ -15,7 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-# Apache Celix [![Build Status](https://travis-ci.org/apache/celix.svg?branch=develop)](https://travis-ci.org/apache/celix) [![Coverage Status](https://coveralls.io/repos/apache/celix/badge.svg?branch=develop&service=github)](https://coveralls.io/github/apache/celix?branch=develop) [![Coverity Scan Build Status](https://scan.coverity.com/projects/6685/badge.svg)](https://scan.coverity.com/projects/6685)
+# Apache Celix [![Build Status](https://travis-ci.org/apache/celix.svg?branch=master)](https://travis-ci.org/apache/celix) [![Coverage Status](https://coveralls.io/repos/apache/celix/badge.svg?branch=master&service=github)](https://coveralls.io/github/apache/celix?branch=master) [![Coverity Scan Build Status](https://scan.coverity.com/projects/6685/badge.svg)](https://scan.coverity.com/projects/6685)
 Apache Celix is an implementation of the OSGi specification adapted to C and C++ (C++11). It is a framework to develop (dynamic) modular software applications using component and/or service-oriented programming.
 
 ## Building

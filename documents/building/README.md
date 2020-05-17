@@ -34,7 +34,7 @@ The following packages (libraries + headers) should be installed on your system:
     * build-essentials (gcc/g++ or clang/clang++) 
 	* git
     * java (for packaging bundles)
-	* make (3.2 or higher)
+	* make (3.14 or higher)
 * Apache Celix Dependencies
     * zlib
     * uuid
@@ -66,6 +66,10 @@ sudo apt-get install -yq --no-install-recommends \
 #required if the ENABLE_TESTING option is enabled
 sudo apt-get install -yq --no-install-recommends \
     libcpputest-dev
+
+#The installed cmake version for Ubuntu 18 is older than 3.14,
+#use snap to install the latest cmake version
+snap install --classic cmake
 ```
 
 For Fedora based systems (dnf), the following command should work:
