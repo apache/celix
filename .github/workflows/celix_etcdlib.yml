@@ -1,4 +1,4 @@
-name: Standalone Celix Promise Weekly
+name: Standalone Celix etcdlib Weekly
 
 on:
   schedule:
@@ -22,7 +22,9 @@ jobs:
           sudo apt-get install -yq --no-install-recommends \
             build-essential \
             cmake \
-            libtbb-dev
+            curl \
+            libjansson-dev \
+            libcurl4-openssl-dev
       - name: Build
         env:
           CC: ${{ matrix.compiler }}
@@ -30,5 +32,5 @@ jobs:
         run: |
           mkdir build install
           cd build
-          cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=../install ../misc/experimental/promise
+          cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=../install ../libs/etcdlib
           make -j && make install
