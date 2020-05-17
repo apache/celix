@@ -15,17 +15,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-# Status
+# Apache Celix
 
 ![Celix Ubuntu](https://github.com/apache/celix/workflows/Celix%20Ubuntu/badge.svg)
-
 ![Celix MacOS](https://github.com/apache/celix/workflows/Celix%20MacOS/badge.svg)
-
 [![codecov](https://codecov.io/gh/apache/celix/branch/master/graph/badge.svg)](https://codecov.io/gh/apache/celix) 
- 
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/6685/badge.svg)](https://scan.coverity.com/projects/6685)
-
-# Apache Celix  
 Apache Celix is an implementation of the OSGi specification adapted to C and C++ (C++11). It is a framework to develop (dynamic) modular software applications using component and/or service-oriented programming.
 
 
@@ -37,4 +32,3 @@ For an introduction into Apache Celix see [Apache Celix Intro](documents/intro/R
 
 ## Getting Started with Apache Celix
 For a guide how to start writing your own bundles and services see [Getting Started Guide](documents/getting_started/README.md)
-
