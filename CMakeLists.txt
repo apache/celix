@@ -104,6 +104,10 @@ set(CMAKE_C_FLAGS_DEBUG "-g -DDEBUG ${CMAKE_C_FLAGS}")
 set(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG ${CMAKE_CXX_FLAGS}")
 set(CMAKE_DEBUG_POSTFIX "d")
 
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(CMAKE_EXECUTABLE_SUFFIX ${CMAKE_DEBUG_POSTFIX})
+endif()
+
 # Set version for the framework package/release
 set(CELIX_MAJOR "2")
 set(CELIX_MINOR "2")
