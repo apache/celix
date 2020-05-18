@@ -23,12 +23,14 @@ jobs:
             libxml2-dev \
             libczmq-dev \
             libcpputest-dev \
+            libtbb-dev \
             lcov
       - name: Build
         env:
           BUILD_OPTIONS: |
             -DENABLE_TESTING=ON
             -DENABLE_CODE_COVERAGE=ON
+            -DBUILD_EXPERIMENTAL=ON
         run: |
           mkdir build
           cd build
