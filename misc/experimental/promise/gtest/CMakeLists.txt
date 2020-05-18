@@ -15,10 +15,11 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(EXPERIMENTAL "Options to enable building the experimental - non stable - bundles/libraries. " OFF DEPS FRAMEWORK)
-if (EXPERIMENTAL)
+add_executable(test_promise
+        src/PromiseTestSuite.cc
+)
+target_link_libraries(test_promise PRIVATE GTest::gtest GTest::gtest_main Celix::Promise)
 
-    add_subdirectory(bundles)
-    add_subdirectory(promise)
+add_test(NAME test_promise COMMAND test_promise)
+setup_target_for_coverage(test_promise SCAN_DIR ..)
 
-endif ()

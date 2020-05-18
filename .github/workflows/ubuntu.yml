@@ -45,13 +45,15 @@ jobs:
           libffi-dev \
           libxml2-dev \
           libczmq-dev \
-          libcpputest-dev
+          libcpputest-dev \
+          libtbb-dev
     - name: Build
       env:
         CC: ${{ matrix.compiler }}
         CXX: ${{ matrix.cxx_compiler }}
         BUILD_OPTIONS: |
           -DENABLE_TESTING=ON
+          -DBUILD_EXPERIMENTAL=ON
         BUILD_OPTIONS_SANITIZER: |
           -DENABLE_ADDRESS_SANITIZER=ON
         BUILD_OPTIONS_V3_API: |
