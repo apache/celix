@@ -685,20 +685,26 @@ typedef struct celix_bundle_tracker_options {
     /**
      * Tracker callback when a bundle is installed.
      * @param handle    The handle, contains the value of the callbackHandle.
-     * @param bundle    The bundle which has been started.
+     * @param bundle    The bundle which has been installed.
      *                  The bundle pointer is only guaranteed to be valid during the callback.
      */
-    void (*onStarted)(void *handle, const celix_bundle_t *bundle) OPTS_INIT; //highest ranking
+    void (*onInstalled)(void *handle, const celix_bundle_t *bundle) OPTS_INIT;
 
     /**
-     * Tracker callback when a bundle is removed.
+     * Tracker callback when a bundle is started.
      * @param handle    The handle, contains the value of the callbackHandle.
      * @param bundle    The bundle which has been started.
      *                  The bundle pointer is only guaranteed to be valid during the callback.
      */
-    void (*onStopped)(void *handle, const celix_bundle_t *bundle) OPTS_INIT;
+    void (*onStarted)(void *handle, const celix_bundle_t *bundle) OPTS_INIT;
 
-    //TODO callback for on installed, resolved, uninstalled ??
+    /**
+     * Tracker callback when a bundle is stopped.
+     * @param handle    The handle, contains the value of the callbackHandle.
+     * @param bundle    The bundle which has been stopped.
+     *                  The bundle pointer is only guaranteed to be valid during the callback.
+     */
+    void (*onStopped)(void *handle, const celix_bundle_t *bundle) OPTS_INIT;
 
     /**
      *
@@ -718,7 +724,7 @@ typedef struct celix_bundle_tracker_options {
  * C Macro to create a empty celix_service_filter_options_t type.
  */
 #ifndef __cplusplus
-#define CELIX_EMPTY_BUNDLE_TRACKING_OPTIONS {.callbackHandle = NULL, .onStarted = NULL, .onStopped = NULL, .onBundleEvent = NULL}
+#define CELIX_EMPTY_BUNDLE_TRACKING_OPTIONS {.callbackHandle = NULL, .onInstalled = NULL, .onStarted = NULL, .onStopped = NULL, .onBundleEvent = NULL, .includeFrameworkBundle = false}
 #endif
 
 /**

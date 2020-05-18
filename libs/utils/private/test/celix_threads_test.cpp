@@ -383,11 +383,14 @@ TEST(celix_thread_condition, broadcast) {
 //----------------------CELIX READ-WRITE LOCK TESTS----------------------
 
 TEST(celix_thread_rwlock, create){
-    celix_thread_rwlock_t lock;
+    celix_thread_rwlock_t alock;
     celix_status_t status;
-    status = celixThreadRwlock_create(&lock, NULL);
+    status = celixThreadRwlock_create(&alock, NULL);
+    if (status != CELIX_SUCCESS) {
+        fprintf(stderr, "Found error '%s'\n", strerror(status));
+    }
     LONGS_EQUAL(CELIX_SUCCESS, status);
-    status = celixThreadRwlock_destroy(&lock);
+    status = celixThreadRwlock_destroy(&alock);
     LONGS_EQUAL(CELIX_SUCCESS, status);
 }
 

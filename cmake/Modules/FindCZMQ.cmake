@@ -37,7 +37,7 @@ set(CZMQ_INCLUDE_DIRS ${CZMQ_INCLUDE_DIR} )
 include(FindPackageHandleStandardArgs)
 # handle the QUIETLY and REQUIRED arguments and set CZMQ_FOUND to TRUE
 # if all listed variables are TRUE
-find_package_handle_standard_args(Czmq  DEFAULT_MSG
+find_package_handle_standard_args(CZMQ  DEFAULT_MSG
                                   CZMQ_LIBRARY CZMQ_INCLUDE_DIR)
 
 mark_as_advanced(CZMQ_INCLUDE_DIR CZMQ_LIBRARY)

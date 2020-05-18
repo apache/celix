@@ -62,7 +62,7 @@ struct pubsub_json_serializer {
 
 
 /* Start of serializer specific functions */
-static celix_status_t pubsubMsgSerializer_serialize(void* handle, const void* msg,  struct iovec** output, size_t* outputIovLen);
+static celix_status_t pubsubMsgSerializer_serialize(void* handle, const void* msg, struct iovec** output, size_t* outputIovLen);
 static celix_status_t pubsubMsgSerializer_deserialize(void* handle,const struct iovec* input, size_t inputIovLen, void **out);
 static void pubsubMsgSerializer_freeSerializeMsg(void* handle, struct iovec* input, size_t inputIovLen);
 static void pubsubMsgSerializer_freeDeserializeMsg(void* handle, void *msg);

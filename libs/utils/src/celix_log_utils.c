@@ -156,7 +156,7 @@ void celix_logUtils_vLogToStdoutDetails(const char *logName, celix_log_level_e l
     fprintf(out, "\n");
     fflush(out);
 
-    if (level >= CELIX_LOG_LEVEL_ERROR) {
+    if (level >= CELIX_LOG_LEVEL_FATAL) {
         fprintf(out, "Backtrace:\n");
         fflush(out);
         celix_logUtils_inlinePrintBacktrace(out);

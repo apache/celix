@@ -71,6 +71,13 @@ void celix_utils_extractLocalNameAndNamespaceFromFullyQualifiedName(const char *
  */
 double celix_difftime(const struct timespec *tBegin, const struct timespec *tEnd);
 
+
+/**
+ * Creates a hash from a string
+ */
+unsigned int celix_utils_stringHash(const char* string);
+
+
 #ifdef __cplusplus
 }
 #endif

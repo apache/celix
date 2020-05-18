@@ -53,7 +53,7 @@ typedef struct bundle_event celix_bundle_event_t;
 #include "bundle.h"
 
 struct bundle_event {
-	long bundleId;
+	celix_bundle_t* bnd;
 	char *bundleSymbolicName;
 	bundle_event_type_e type;
 };

@@ -68,6 +68,10 @@ const char* celix_bundle_getGroup(const celix_bundle_t *bnd);
  */
 const char* celix_bundle_getSymbolicName(const celix_bundle_t *bnd);
 
+/**
+ * Returns whether the bundle is the system bundle.
+ */
+bool celix_bundle_isSystemBundle(const celix_bundle_t *bnd);
 
 typedef struct celix_bundle_service_list_entry {
     long serviceId;

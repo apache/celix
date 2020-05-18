@@ -25,6 +25,7 @@ add_celix_bundle(celix_pubsub_serializer_json
     SOURCES
         src/ps_json_serializer_activator.c
         src/pubsub_serializer_impl.c
+        src/pubsub_json_serialization_provider.c
 )
 target_include_directories(celix_pubsub_serializer_json PRIVATE
     src
@@ -37,3 +38,7 @@ install_celix_bundle(celix_pubsub_serializer_json EXPORT celix COMPONENT pubsub)
 
 add_library(Celix::pubsub_serializer_json ALIAS celix_pubsub_serializer_json)
 
+
+if (ENABLE_TESTING)
+    add_subdirectory(gtest)
+endif(ENABLE_TESTING)

@@ -22,10 +22,12 @@
 
 #include "celix_api.h"
 #include "pubsub_avrobin_serializer_impl.h"
+#include "pubsub_avrobin_serialization_provider.h"
 
 typedef struct psav_activator {
     pubsub_avrobin_serializer_t *serializer;
     pubsub_serializer_service_t serializerSvc;
+    pubsub_serialization_provider_t* avrobinSerializationProvider;
     long serializerSvcId;
 } psav_activator_t;
 
@@ -33,6 +35,7 @@ static int psav_start(psav_activator_t *act, celix_bundle_context_t *ctx) {
     act->serializerSvcId = -1L;
 
     celix_status_t status = pubsubAvrobinSerializer_create(ctx, &(act->serializer));
+    act->avrobinSerializationProvider = pubsub_avrobinSerializationProvider_create(ctx);
     if (status == CELIX_SUCCESS) {
         act->serializerSvc.handle = act->serializer;
 
@@ -52,6 +55,7 @@ static int psav_stop(psav_activator_t *act, celix_bundle_context_t *ctx) {
     celix_bundleContext_unregisterService(ctx, act->serializerSvcId);
     act->serializerSvcId = -1L;
     pubsubAvrobinSerializer_destroy(act->serializer);
+    pubsub_avrobinSerializationProvider_destroy(act->avrobinSerializationProvider);
     return CELIX_SUCCESS;
 }
 

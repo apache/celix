@@ -27,18 +27,18 @@ if (CONFIG_ADMIN)
 	if (ENABLE_TESTING)
 		find_package(CppUTest REQUIRED)
 
-	    include_directories(SYSTEM PRIVATE ${CPPUTEST_INCLUDE_DIR})
+	    include_directories(SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR})
 	    add_subdirectory(config_admin_tst)
 #		find_package(CppUTest REQUIRED)
 #
 #	    include_directories(${CUNIT_INCLUDE_DIRS})
-#	    include_directories(${CPPUTEST_INCLUDE_DIR})
+#	    include_directories(${CppUTest_INCLUDE_DIR})
 #	    include_directories("${PROJECT_SOURCE_DIR}/config_admin/service/public/include")
 #	    include_directories("${PROJECT_SOURCE_DIR}/config_admin/service/private/include")
 #	    include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 #	    
 #	    add_executable(config_admin_test config_admin_tst/config_admin_test.cpp)
-#	    target_link_libraries(config_admin_test celix_utils ${CPPUTEST_LIBRARY} pthread)
+#	    target_link_libraries(config_admin_test celix_utils ${CppUTest_LIBRARY} pthread)
 #	    
 #	    
 #		add_test(NAME run_config_admin_test COMMAND config_admin_test)
