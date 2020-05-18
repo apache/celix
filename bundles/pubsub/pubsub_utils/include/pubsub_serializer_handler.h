@@ -106,9 +106,28 @@ celix_status_t pubsub_serializerHandler_deserialize(pubsub_serializer_handler_t*
  */
 celix_status_t pubsub_serializerHandler_freeDeserializedMsg(pubsub_serializer_handler_t* handler, uint32_t msgId, void* msg);
 
-bool pubsub_serializerHandler_supportMsg(pubsub_serializer_handler_t* handler, uint32_t msgId, int majorVersion, int minorVersion);
+/**
+ * Whether the msg is support. More specifically:
+ *  - msg id is known and
+ *  - a serialized msg with the provided major and minor version can be deserialized.
+ */
+bool pubsub_serializerHandler_isMessageSupported(pubsub_serializer_handler_t* handler, uint32_t msgId, int majorVersion, int minorVersion);
+
+/**
+ * Get msg fqn from a msg id.
+ * @return msg fqn or NULL if msg id is not known.
+ */
 char* pubsub_serializerHandler_getMsgFqn(pubsub_serializer_handler_t* handler, uint32_t msgId);
+
+/**
+ * Get a msg id from a msgFqn.
+ * @return msg id or 0 if msg fqn is not known.
+ */
 uint32_t pubsub_serializerHandler_getMsgId(pubsub_serializer_handler_t* handler, const char* msgFqn);
+
+/**
+ * nr of serialization services found.
+ */
 size_t pubsub_serializerHandler_messageSerializationServiceCount(pubsub_serializer_handler_t* handler);
 
 #ifdef __cplusplus

@@ -35,7 +35,7 @@ public:
         ctx = std::shared_ptr<celix_bundle_context_t>{ctxPtr, [](auto*){/*nop*/}};
 
         const char* descBundleFile = DESCRIPTOR_BUNDLE;
-        const char* serBundleFile = SER_BUNDLE;
+        const char* serBundleFile = SERIALIZATION_BUNDLE;
         long bndId;
 
         bndId = celix_bundleContext_installBundle(ctx.get(), descBundleFile, true);

@@ -25,6 +25,7 @@
 
 #include "celix_version.h"
 #include "version.h"
+#include "celix_version.h"
 
 extern "C"
 {
@@ -309,6 +310,28 @@ TEST(version, compare) {
     version_destroy(compare);
     version_destroy(version);
     free(str);
+}
+
+TEST(version, celix_version_compareToMajorMinor) {
+    celix_version_t *version1 = celix_version_createVersion(2, 2, 0, nullptr);
+    celix_version_t *version2 = celix_version_createVersion(2, 2, 4, "qualifier");
+
+    CHECK_EQUAL(0, celix_version_compareToMajorMinor(version1, 2, 2));
+    CHECK_EQUAL(0, celix_version_compareToMajorMinor(version2, 2, 2));
+
+    CHECK_TRUE(celix_version_compareToMajorMinor(version1, 2, 3) < 0);
+    CHECK_TRUE(celix_version_compareToMajorMinor(version2, 2, 3) < 0);
+    CHECK_TRUE(celix_version_compareToMajorMinor(version1, 3, 3) < 0);
+    CHECK_TRUE(celix_version_compareToMajorMinor(version2, 3, 3) < 0);
+
+
+    CHECK_TRUE(celix_version_compareToMajorMinor(version1, 2, 1) > 0);
+    CHECK_TRUE(celix_version_compareToMajorMinor(version2, 2, 1) > 0);
+    CHECK_TRUE(celix_version_compareToMajorMinor(version1, 1, 1) > 0);
+    CHECK_TRUE(celix_version_compareToMajorMinor(version2, 1, 1) > 0);
+
+    celix_version_destroy(version1);
+    celix_version_destroy(version2);
 }
 
 TEST(version, toString) {

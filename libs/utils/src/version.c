@@ -310,3 +310,11 @@ bool celix_version_isUserCompatible(const celix_version_t* user, int providerMaj
 unsigned int celix_version_hash(const celix_version_t* version) {
     return (unsigned int)(version->major | version->minor | version->micro | celix_utils_stringHash(version->qualifier));
 }
+
+int celix_version_compareToMajorMinor(const celix_version_t* version, int majorVersionPart, int minorVersionPart) {
+    int result = version->major - majorVersionPart;
+    if (result == 0) {
+        result = version->minor - minorVersionPart;
+    }
+    return result;
+}

@@ -28,7 +28,7 @@ target_link_libraries(test_pubsub_serializer_avrobin PRIVATE Celix::framework Ce
 target_compile_options(test_pubsub_serializer_avrobin PRIVATE -std=c++14) #Note test code is allowed to be C++14
 
 add_dependencies(test_pubsub_serializer_avrobin celix_pubsub_serializer_avrobin_bundle pubsub_avrobin_serialization_descriptor_bundle)
-target_compile_definitions(test_pubsub_serializer_avrobin PRIVATE -DSER_BUNDLE=\"$<TARGET_PROPERTY:celix_pubsub_serializer_avrobin,BUNDLE_FILE>\")
+target_compile_definitions(test_pubsub_serializer_avrobin PRIVATE -DSERIALIZATION_BUNDLE=\"$<TARGET_PROPERTY:celix_pubsub_serializer_avrobin,BUNDLE_FILE>\")
 target_compile_definitions(test_pubsub_serializer_avrobin PRIVATE -DDESCRIPTOR_BUNDLE=\"$<TARGET_PROPERTY:pubsub_avrobin_serialization_descriptor,BUNDLE_FILE>\")
 
 add_test(NAME test_pubsub_serializer_avrobin COMMAND test_pubsub_serializer_avrobin)

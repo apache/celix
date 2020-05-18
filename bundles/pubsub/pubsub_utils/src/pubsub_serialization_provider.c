@@ -101,7 +101,10 @@ static descriptor_type_e getDescriptorType(const char* filename) {
     }
 }
 
-static bool readPropertiesFile(pubsub_serialization_provider_t* provider, const char* properties_file_name, const char* root, char* avpr_fqn, char* path) {
+/**
+ * Reads an avpr properties file. A properties file which revert to an avpr file and the usaged definition in the avpr.
+ */
+static bool readAvprPropertiesFile(pubsub_serialization_provider_t* provider, const char* properties_file_name, const char* root, char* avpr_fqn, char* path) {
     snprintf(path, MAX_PATH_LEN, "%s/%s", root, properties_file_name); // use path to create path to properties file
     FILE *properties = fopen(path, "r");
     if (!properties) {
@@ -151,7 +154,7 @@ static FILE* openFileStream(pubsub_serialization_provider_t* provider, descripto
             result = fopen(pathOrError, "r");
             break;
         case FIT_AVPR:
-            if (readPropertiesFile(provider, filename, root, avpr_fqn, pathOrError)) {
+            if (readAvprPropertiesFile(provider, filename, root, avpr_fqn, pathOrError)) {
                 result = fopen(pathOrError, "r");
             }
             break;
@@ -256,11 +259,20 @@ static dyn_message_type* pubsub_serializationProvider_parseDfiDescriptor(pubsub_
 //}
 
 /**
- * Returns true if the msgType is valid and uqinue (new msg fqn & msg id).
+ * Validates an pubsub serialization entry and check if this is a new unique entry.
+ *
+ * Checks whether the entry is valid. Specifically checks:
+ *  - If there is not already an entry with the same msg fqn, but a different msg id.
+ *  - If there is not already an entry with the same msg id, but a different msg fqn.
+ *  - If there is not already an entry for the message with a different versions. (this is not supported).
+ *  - If there is not already an entry for the message with a different descriptor content.
+ *
  * Logs error if msg id clashes or versions are different.
  * Logs warning if descriptors are different.
+ *
+ * @return true if the entry is a new (unique) entry.
  */
-static bool pubsub_serializationProvider_isUniqueAndCheckValid(pubsub_serialization_provider_t* provider, pubsub_serialization_entry_t* entry) {
+static bool pubsub_serializationProvider_validateEntry(pubsub_serialization_provider_t* provider, pubsub_serialization_entry_t* entry) {
     bool unique = true;
     
     celixThreadMutex_lock(&provider->mutex);
@@ -285,7 +297,7 @@ static bool pubsub_serializationProvider_isUniqueAndCheckValid(pubsub_serializat
                 entry->invalidReason = "different versions for the same msg type";
                 entry->valid = false;
             } else if (strncmp(visit->descriptorContent, entry->descriptorContent, 1024*1014*10) != 0) {
-                L_ERROR("Error adding descriptor %s. Added descriptor content is different than exising content. Existing: '%s', added: %s.", entry->readFromEntryPath, entry->descriptorContent, visit->descriptorContent);
+                L_ERROR("Error adding descriptor %s. Added descriptor content is different than existing content. Existing: '%s', added: %s.", entry->readFromEntryPath, entry->descriptorContent, visit->descriptorContent);
                 entry->invalidReason = "different versions for the same msg type";
                 entry->valid = false;
             }
@@ -396,7 +408,7 @@ static void pubsub_serializationProvider_parseDescriptors(pubsub_serialization_p
         serEntry->svcId = -1L;
 
 
-        bool unique = pubsub_serializationProvider_isUniqueAndCheckValid(provider, serEntry);
+        bool unique = pubsub_serializationProvider_validateEntry(provider, serEntry);
         if (unique && serEntry->valid) { //note only register if unique and valid
             L_DEBUG("Adding message serialization entry for msg %s with id %d and version %s", serEntry->msgFqn, serEntry->msgId, serEntry->msgVersion);
             pubsub_serializationProvider_registerSerializationEntry(provider, serEntry);

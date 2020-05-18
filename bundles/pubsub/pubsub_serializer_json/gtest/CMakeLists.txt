@@ -28,7 +28,7 @@ target_link_libraries(test_pubsub_serializer_json PRIVATE Celix::framework Celix
 target_compile_options(test_pubsub_serializer_json PRIVATE -std=c++14) #Note test code is allowed to be C++14
 
 add_dependencies(test_pubsub_serializer_json celix_pubsub_serializer_json_bundle pubsub_json_serialization_descriptor_bundle)
-target_compile_definitions(test_pubsub_serializer_json PRIVATE -DSER_BUNDLE=\"$<TARGET_PROPERTY:celix_pubsub_serializer_json,BUNDLE_FILE>\")
+target_compile_definitions(test_pubsub_serializer_json PRIVATE -DSERIALIZATION_BUNDLE=\"$<TARGET_PROPERTY:celix_pubsub_serializer_json,BUNDLE_FILE>\")
 target_compile_definitions(test_pubsub_serializer_json PRIVATE -DDESCRIPTOR_BUNDLE=\"$<TARGET_PROPERTY:pubsub_json_serialization_descriptor,BUNDLE_FILE>\")
 
 add_test(NAME test_pubsub_serializer_json COMMAND test_pubsub_serializer_json)

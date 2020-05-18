@@ -20,6 +20,10 @@
 #ifndef CELIX_CELIX_VERSION_H
 #define CELIX_CELIX_VERSION_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdbool.h>
 
 /**
@@ -157,5 +161,20 @@ bool celix_version_isCompatible(const celix_version_t* user, const celix_version
  * @return Boolean indicating if the versions are compatible
  */
 bool celix_version_isUserCompatible(const celix_version_t* user, int providerMajorVersionPart, int provideMinorVersionPart);
+
+/**
+ * Compare a provider celix version is with a provided major and minor version. Ignoring the patch version part.
+ *
+ * @param version The version to compare.
+ * @param majorVersionPart The major version part to compare.
+ * @param minorVersionPart The minor version part to compare.
+ * @return A negative integer, zero, or a positive integer if <code>version</code> is
+ *         less than, equal to, or greater than the <code>majorVersionPart</code> and <code>minorVersionPart</code>.
+ */
+int celix_version_compareToMajorMinor(const celix_version_t* version, int majorVersionPart, int minorVersionPart);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //CELIX_CELIX_VERSION_H

@@ -54,13 +54,13 @@ struct pubsub_serializer_handler {
     hash_map_t *serializationServices; //key = msg id, value = sorted array list with pubsub_serialization_service_entry_t*
 };
 
-static void addSvc(void *handle, void* svc, const celix_properties_t *props) {
+static void addSerializationService(void *handle, void* svc, const celix_properties_t *props) {
     pubsub_serializer_handler_t* handler = handle;
     pubsub_message_serialization_service_t* serSvc = svc;
     pubsub_serializerHandler_addSerializationService(handler, serSvc, props);
 }
 
-static void remSvc(void *handle, void* svc, const celix_properties_t *props) {
+static void removeSerializationService(void *handle, void* svc, const celix_properties_t *props) {
     pubsub_serializer_handler_t* handler = handle;
     pubsub_message_serialization_service_t* serSvc = svc;
     pubsub_serializerHandler_removeSerializationService(handler, serSvc, props);
@@ -93,9 +93,7 @@ static bool isCompatible(pubsub_serializer_handler_t* handler, pubsub_serializat
     if (handler->backwardCompatible) {
         compatible = celix_version_isUserCompatible(entry->msgVersion, serializedMajorVersion, serializedMinorVersion);
     } else {
-        int major = celix_version_getMajor(entry->msgVersion);
-        int minor = celix_version_getMinor(entry->msgVersion);
-        compatible = major == serializedMajorVersion && minor == serializedMinorVersion;
+        compatible = celix_version_compareToMajorMinor(entry->msgVersion, serializedMajorVersion, serializedMinorVersion) == 0;
     }
     return compatible;
 }
@@ -128,8 +126,8 @@ pubsub_serializer_handler_t* pubsub_serializerHandler_create(celix_bundle_contex
     opts.filter.versionRange = PUBSUB_MESSAGE_SERIALIZATION_SERVICE_RANGE;
     opts.filter.filter = filter;
     opts.callbackHandle = handler;
-    opts.addWithProperties = addSvc;
-    opts.removeWithProperties = remSvc;
+    opts.addWithProperties = addSerializationService;
+    opts.removeWithProperties = removeSerializationService;
     handler->serializationSvcTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
     free(filter);
 
@@ -313,12 +311,12 @@ celix_status_t pubsub_serializerHandler_freeDeserializedMsg(pubsub_serializer_ha
     return status;
 }
 
-bool pubsub_serializerHandler_supportMsg(pubsub_serializer_handler_t* handler, uint32_t msgId, int serializedMajorVersion, int serializedMinorVersion) {
+bool pubsub_serializerHandler_isMessageSupported(pubsub_serializer_handler_t* handler, uint32_t msgId, int majorVersion, int minorVersion) {
     celixThreadRwlock_readLock(&handler->lock);
     bool compatible = false;
     pubsub_serialization_service_entry_t* entry = findEntry(handler, msgId);
     if (entry != NULL) {
-        compatible = isCompatible(handler, entry, serializedMajorVersion, serializedMinorVersion);
+        compatible = isCompatible(handler, entry, majorVersion, minorVersion);
     }
     celixThreadRwlock_unlock(&handler->lock);
     return compatible;

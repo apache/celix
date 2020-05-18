@@ -95,8 +95,8 @@ TEST_F(PubSubSerializationHandlerTestSuite, SerializationServiceFound) {
     auto *fqn = pubsub_serializerHandler_getMsgFqn(handler, 42);
     EXPECT_STREQ("example::Msg",  fqn);
     free(fqn);
-    EXPECT_TRUE(pubsub_serializerHandler_supportMsg(handler, 42, 1, 0));
-    EXPECT_FALSE(pubsub_serializerHandler_supportMsg(handler, 42, 2, 0));
+    EXPECT_TRUE(pubsub_serializerHandler_isMessageSupported(handler, 42, 1, 0));
+    EXPECT_FALSE(pubsub_serializerHandler_isMessageSupported(handler, 42, 2, 0));
 
     celix_bundleContext_unregisterService(ctx.get(), svcId);
     EXPECT_EQ(0, pubsub_serializerHandler_messageSerializationServiceCount(handler));
@@ -156,11 +156,11 @@ TEST_F(PubSubSerializationHandlerTestSuite, MultipleVersions) {
 
     EXPECT_EQ(1, pubsub_serializerHandler_messageSerializationServiceCount(handler));
     EXPECT_TRUE(strstr(output.c_str(), "error") != nullptr);
-    EXPECT_TRUE(pubsub_serializerHandler_supportMsg(handler, 42, 1, 0));
-    EXPECT_TRUE(pubsub_serializerHandler_supportMsg(handler, 42, 1, 1));
-    EXPECT_TRUE(pubsub_serializerHandler_supportMsg(handler, 42, 1, 14));
-    EXPECT_FALSE(pubsub_serializerHandler_supportMsg(handler, 42, 2, 1));
-    EXPECT_FALSE(pubsub_serializerHandler_supportMsg(handler, 42, 2, 0));
+    EXPECT_TRUE(pubsub_serializerHandler_isMessageSupported(handler, 42, 1, 0));
+    EXPECT_TRUE(pubsub_serializerHandler_isMessageSupported(handler, 42, 1, 1));
+    EXPECT_TRUE(pubsub_serializerHandler_isMessageSupported(handler, 42, 1, 14));
+    EXPECT_FALSE(pubsub_serializerHandler_isMessageSupported(handler, 42, 2, 1));
+    EXPECT_FALSE(pubsub_serializerHandler_isMessageSupported(handler, 42, 2, 0));
 
     celix_bundleContext_unregisterService(ctx.get(), svcId1);
     celix_bundleContext_unregisterService(ctx.get(), svcId2);
@@ -174,11 +174,11 @@ TEST_F(PubSubSerializationHandlerTestSuite, NoBackwardsCompatbile) {
     long svcId1 = registerSerSvc("json", 42, "example::Msg1", "1.0.0");
 
     EXPECT_EQ(1, pubsub_serializerHandler_messageSerializationServiceCount(handler));
-    EXPECT_TRUE(pubsub_serializerHandler_supportMsg(handler, 42, 1, 0)); //NOTE only exact is supported
-    EXPECT_FALSE(pubsub_serializerHandler_supportMsg(handler, 42, 1, 1));
-    EXPECT_FALSE(pubsub_serializerHandler_supportMsg(handler, 42, 1, 14));
-    EXPECT_FALSE(pubsub_serializerHandler_supportMsg(handler, 42, 2, 1));
-    EXPECT_FALSE(pubsub_serializerHandler_supportMsg(handler, 42, 2, 0));
+    EXPECT_TRUE(pubsub_serializerHandler_isMessageSupported(handler, 42, 1, 0)); //NOTE only exact is supported
+    EXPECT_FALSE(pubsub_serializerHandler_isMessageSupported(handler, 42, 1, 1));
+    EXPECT_FALSE(pubsub_serializerHandler_isMessageSupported(handler, 42, 1, 14));
+    EXPECT_FALSE(pubsub_serializerHandler_isMessageSupported(handler, 42, 2, 1));
+    EXPECT_FALSE(pubsub_serializerHandler_isMessageSupported(handler, 42, 2, 0));
 
     celix_bundleContext_unregisterService(ctx.get(), svcId1);
     pubsub_serializerHandler_destroy(handler);
