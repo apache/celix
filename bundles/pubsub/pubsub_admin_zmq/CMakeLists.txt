@@ -26,7 +26,7 @@ if (BUILD_ZMQ_SECURITY)
 
     find_package(OpenSSL 1.1.0 REQUIRED)
     include_directories("${OPENSSL_INCLUDE_DIR}")
-    set(OPTIONAL_OPENSSL_LIB OpenSSL::lib)
+    set(OPTIONAL_OPENSSL_LIB OpenSSL::SSL)
 
     set (ZMQ_CRYPTO_C "src/zmq_crypto.c")
 endif()

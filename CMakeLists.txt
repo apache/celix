@@ -134,7 +134,7 @@ option(CELIX_ADD_OPENSSL_DEP "Enabled building Celix framework & etcdlib with Op
 set(CELIX_OPTIONAL_EXTRA_LIBS "")
 if (CELIX_ADD_OPENSSL_DEP)
     find_package(OpenSSL REQUIRED)
-    set(CELIX_OPTIONAL_EXTRA_LIBS "OpenSSL::lib")
+    set(CELIX_OPTIONAL_EXTRA_LIBS "OpenSSL::SSL")
 endif ()
 
 option(CELIX_USE_ZIP_INSTEAD_OF_JAR "Default Celix cmake command will use jar to package bundle (if found). This option enforces Celix to use zip instead." OFF)
