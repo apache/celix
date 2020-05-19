@@ -599,9 +599,7 @@ static void framework_autoStartConfiguredBundles(bundle_context_t *fwCtx) {
             framework_autoInstallConfiguredBundlesForList(fwCtx, autoStart, installedBundles);
         }
     }
-    for (int i = 0; i < len; ++i) {
-        framework_autoStartConfiguredBundlesForList(fwCtx, installedBundles);
-    }
+    framework_autoStartConfiguredBundlesForList(fwCtx, installedBundles);
     celix_arrayList_destroy(installedBundles);
 }
 
