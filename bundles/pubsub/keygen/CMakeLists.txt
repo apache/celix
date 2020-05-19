@@ -25,6 +25,6 @@ if (BUILD_ZMQ_SECURITY)
     target_link_libraries(makecert CZMQ::lib)
     
     add_executable(ed_file ed_file.c)
-    target_link_libraries(ed_file PUBLIC ZMQ::lib CZMQ::lib OpenSSL::lib)
+    target_link_libraries(ed_file PUBLIC ZMQ::lib CZMQ::lib OpenSSL::SSL)
 
 endif()
