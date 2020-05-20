@@ -1571,7 +1571,7 @@ celix_status_t fw_addBundleListener(framework_pt framework, bundle_pt bundle, bu
 celix_status_t fw_removeBundleListener(framework_pt framework, bundle_pt bundle, bundle_listener_pt listener) {
     celix_status_t status = CELIX_SUCCESS;
 
-    fw_bundle_listener_pt bundleListener;
+    fw_bundle_listener_pt bundleListener = NULL;
 
     celixThreadMutex_lock(&framework->bundleListenerLock);
     for (int i = 0; i < arrayList_size(framework->bundleListeners); i++) {
