@@ -176,6 +176,8 @@ static void celix_logAdmin_addLogSvcForName(celix_log_admin_t* admin, const char
 
     celixThreadRwlock_writeLock(&admin->lock);
     celix_log_service_entry_t* found = hashMap_get(admin->loggers, name);
+    long reservedId = -1L;
+    celix_log_service_t *newLogSvc = NULL;
     if (found == NULL) {
         //new
         newEntry = calloc(1, sizeof(*newEntry));
@@ -194,7 +196,11 @@ static void celix_logAdmin_addLogSvcForName(celix_log_admin_t* admin, const char
         newEntry->logSvc.logDetails = celix_logAdmin_logDetails;
         newEntry->logSvc.vlog = celix_logAdmin_vlog;
         newEntry->logSvc.vlogDetails = celix_logAdmin_vlogDetails;
+        newEntry->logSvcId = celix_bundleContext_reserveSvcId(admin->ctx);
         hashMap_put(admin->loggers, (void*)newEntry->name, newEntry);
+
+        reservedId = newEntry->logSvcId;
+        newLogSvc = &newEntry->logSvc;
 
         if (celix_utils_stringEquals(newEntry->name, CELIX_LOG_ADMIN_FRAMEWORK_LOG_NAME)) {
             celix_framework_t* fw = celix_bundleContext_getFramework(admin->ctx);
@@ -205,8 +211,9 @@ static void celix_logAdmin_addLogSvcForName(celix_log_admin_t* admin, const char
     }
     celixThreadRwlock_unlock(&admin->lock);
 
-    if (newEntry != NULL) {
-        //register new instance
+    if (newLogSvc != NULL) {
+        //register new log service outside of the lock using a reserved service id.
+
         celix_properties_t* props = celix_properties_create();
         celix_properties_set(props, CELIX_LOG_SERVICE_PROPERTY_NAME, newEntry->name);
         if (celix_utils_stringEquals(newEntry->name, CELIX_LOG_ADMIN_DEFAULT_LOG_NAME) == 0) {
@@ -218,8 +225,9 @@ static void celix_logAdmin_addLogSvcForName(celix_log_admin_t* admin, const char
         opts.serviceName = CELIX_LOG_SERVICE_NAME;
         opts.serviceVersion = CELIX_LOG_SERVICE_VERSION;
         opts.properties = props;
-        opts.svc = &newEntry->logSvc;
-        newEntry->logSvcId = celix_bundleContext_registerServiceWithOptions(admin->ctx, &opts);
+        opts.svc = newLogSvc;
+        opts.reservedSvcId = reservedId;
+        celix_bundleContext_registerServiceWithOptions(admin->ctx, &opts);
     }
 }
 

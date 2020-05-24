@@ -151,6 +151,8 @@ FRAMEWORK_EXPORT bundle_pt framework_getBundleById(framework_pt framework, long 
  **********************************************************************************************************************
  **********************************************************************************************************************/
 
-service_registration_t* celix_framework_registerServiceFactory(framework_t *fw , const celix_bundle_t *bnd, const char* serviceName, celix_service_factory_t *factory, celix_properties_t *properties);
+service_registration_t* celix_framework_registerServiceFactory(framework_t *fw, celix_bundle_t *bnd, const char* serviceName, celix_service_factory_t *factory, celix_properties_t *properties, long reservedSvcId);
+service_registration_t* celix_framework_registerService(framework_t *fw, celix_bundle_t *bnd, const char* serviceName, void* svc, celix_properties_t *properties, long reservedSvcId);
+
 
 #endif /* FRAMEWORK_PRIVATE_H_ */

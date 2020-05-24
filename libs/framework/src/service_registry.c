@@ -36,11 +36,10 @@
 #define CHECK_DELETED_REFERENCES false
 #endif
 
-static celix_status_t serviceRegistry_registerServiceInternal(service_registry_pt registry, bundle_pt bundle, const char* serviceName, const void * serviceObject, properties_pt dictionary, enum celix_service_type svcType, service_registration_pt *registration);
+static celix_status_t serviceRegistry_registerServiceInternal(service_registry_pt registry, bundle_pt bundle, const char* serviceName, const void * serviceObject, properties_pt dictionary, long reservedId, enum celix_service_type svcType, service_registration_pt *registration);
 static celix_status_t serviceRegistry_addHooks(service_registry_pt registry, const char* serviceName, const void *serviceObject, service_registration_pt registration);
 static celix_status_t serviceRegistry_removeHook(service_registry_pt registry, service_registration_pt registration);
 static void serviceRegistry_logWarningServiceReferenceUsageCount(service_registry_pt registry, bundle_pt bundle, service_reference_pt ref, size_t usageCount, size_t refCount);
-static void serviceRegistry_logWarningServiceRegistration(service_registry_pt registry, service_registration_pt reg);
 static celix_status_t serviceRegistry_checkReference(service_registry_pt registry, service_reference_pt ref,
                                                      reference_status_t *refStatus);
 static void serviceRegistry_logIllegalReference(service_registry_pt registry, service_reference_pt reference,
@@ -79,8 +78,8 @@ celix_status_t serviceRegistry_create(framework_pt framework, service_registry_p
 
 		reg->serviceRegistrations = hashMap_create(NULL, NULL, NULL, NULL);
 		reg->framework = framework;
-		reg->nextServiceId = 1L;
-		reg->serviceReferences = hashMap_create(NULL, NULL, NULL, NULL);
+        reg->nextServiceId = 1L;
+        reg->serviceReferences = hashMap_create(NULL, NULL, NULL, NULL);
 
         reg->checkDeletedReferences = CHECK_DELETED_REFERENCES;
         reg->deletedServiceReferences = hashMap_create(NULL, NULL, NULL, NULL);
@@ -198,16 +197,16 @@ celix_status_t serviceRegistry_getRegisteredServices(service_registry_pt registr
 }
 
 celix_status_t serviceRegistry_registerService(service_registry_pt registry, bundle_pt bundle, const char* serviceName, const void* serviceObject, properties_pt dictionary, service_registration_pt *registration) {
-    return serviceRegistry_registerServiceInternal(registry, bundle, serviceName, serviceObject, dictionary, CELIX_PLAIN_SERVICE, registration);
+    return serviceRegistry_registerServiceInternal(registry, bundle, serviceName, serviceObject, dictionary, 0 /*TODO*/, CELIX_PLAIN_SERVICE, registration);
 }
 
 celix_status_t serviceRegistry_registerServiceFactory(service_registry_pt registry, bundle_pt bundle, const char* serviceName, service_factory_pt factory, properties_pt dictionary, service_registration_pt *registration) {
-    return serviceRegistry_registerServiceInternal(registry, bundle, serviceName, (const void *) factory, dictionary, CELIX_DEPRECATED_FACTORY_SERVICE, registration);
+    return serviceRegistry_registerServiceInternal(registry, bundle, serviceName, (const void *) factory, dictionary, 0 /*TODO*/, CELIX_DEPRECATED_FACTORY_SERVICE, registration);
 }
 
-static celix_status_t serviceRegistry_registerServiceInternal(service_registry_pt registry, bundle_pt bundle, const char* serviceName, const void * serviceObject, properties_pt dictionary, enum celix_service_type svcType, service_registration_pt *registration) {
+static celix_status_t serviceRegistry_registerServiceInternal(service_registry_pt registry, bundle_pt bundle, const char* serviceName, const void * serviceObject, properties_pt dictionary, long reservedId, enum celix_service_type svcType, service_registration_pt *registration) {
 	array_list_pt regs;
-	long svcId = celix_serviceRegistry_nextSvcId(registry);
+	long svcId = reservedId > 0 ? reservedId : celix_serviceRegistry_nextSvcId(registry);
 
 	if (svcType == CELIX_DEPRECATED_FACTORY_SERVICE) {
         *registration = serviceRegistration_createServiceFactory(registry->callback, bundle, serviceName,
@@ -297,50 +296,6 @@ celix_status_t serviceRegistry_unregisterService(service_registry_pt registry, b
     serviceRegistration_release(registration);
 
 	return CELIX_SUCCESS;
-}
-
-celix_status_t serviceRegistry_clearServiceRegistrations(service_registry_pt registry, bundle_pt bundle) {
-    celix_status_t status = CELIX_SUCCESS;
-    array_list_pt registrations = NULL;
-    bool registrationsLeft;
-
-    celixThreadRwlock_writeLock(&registry->lock);
-    registrations = hashMap_get(registry->serviceRegistrations, bundle);
-    registrationsLeft = (registrations != NULL);
-    if (registrationsLeft) {
-        registrationsLeft = (arrayList_size(registrations) > 0);
-    }
-    celixThreadRwlock_unlock(&registry->lock);
-
-    while (registrationsLeft) {
-        service_registration_pt reg = arrayList_get(registrations, 0);
-
-        serviceRegistry_logWarningServiceRegistration(registry, reg);
-
-        if (serviceRegistration_isValid(reg)) {
-            serviceRegistration_unregister(reg);
-        }
-        else {
-            arrayList_remove(registrations, 0);
-        }
-
-        // not removed by last unregister call?
-        celixThreadRwlock_writeLock(&registry->lock);
-        registrations = hashMap_get(registry->serviceRegistrations, bundle);
-        registrationsLeft = (registrations != NULL);
-        if (registrationsLeft) {
-            registrationsLeft = (arrayList_size(registrations) > 0);
-        }
-        celixThreadRwlock_unlock(&registry->lock);
-    }
-
-    return status;
-}
-
-static void serviceRegistry_logWarningServiceRegistration(service_registry_pt registry __attribute__((unused)), service_registration_pt reg) {
-    const char *servName = NULL;
-    serviceRegistration_getServiceName(reg, &servName);
-    fw_log(registry->framework->logger, CELIX_LOG_LEVEL_WARNING, "Dangling service registration for service %s. Look for missing bundleContext_unregisterService/serviceRegistration_unregister calls.", servName);
 }
 
 celix_status_t serviceRegistry_getServiceReference(service_registry_pt registry, bundle_pt owner,
@@ -959,8 +914,21 @@ celix_serviceRegistry_registerServiceFactory(
         const char *serviceName,
         celix_service_factory_t *factory,
         celix_properties_t* props,
+        long reserveId,
         service_registration_t **registration) {
-    return serviceRegistry_registerServiceInternal(reg, (celix_bundle_t*)bnd, serviceName, (const void *) factory, props, CELIX_FACTORY_SERVICE, registration);
+    return serviceRegistry_registerServiceInternal(reg, (celix_bundle_t*)bnd, serviceName, (const void *) factory, props, reserveId, CELIX_FACTORY_SERVICE, registration);
+}
+
+celix_status_t
+celix_serviceRegistry_registerService(
+        celix_service_registry_t *reg,
+        const celix_bundle_t *bnd,
+        const char *serviceName,
+        void* service,
+        celix_properties_t* props,
+        long reserveId,
+        service_registration_t **registration) {
+    return serviceRegistry_registerServiceInternal(reg, (celix_bundle_t*)bnd, serviceName, (const void *) service, props, reserveId, CELIX_PLAIN_SERVICE, registration);
 }
 
 static celix_service_registry_listener_hook_entry_t* celix_createHookEntry(long svcId, celix_listener_hook_service_t *hook) {

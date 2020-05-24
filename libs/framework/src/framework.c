@@ -1104,7 +1104,8 @@ celix_status_t fw_stopBundle(framework_pt framework, long bndId, bool record) {
 
             if (bndId > 0) {
 	            celix_serviceTracker_syncForContext(entry->bnd->context);
-                status = CELIX_DO_IF(status, serviceRegistry_clearServiceRegistrations(framework->registry, entry->bnd));
+	            celix_bundleContext_cleanup(entry->bnd->context);
+                celix_serviceTracker_syncForContext(framework->bundle->context);
                 if (status == CELIX_SUCCESS) {
                     module_pt module = NULL;
                     const char *symbolicName = NULL;
@@ -1112,8 +1113,6 @@ celix_status_t fw_stopBundle(framework_pt framework, long bndId, bool record) {
                     bundle_getCurrentModule(entry->bnd, &module);
                     module_getSymbolicName(module, &symbolicName);
                     bundle_getBundleId(entry->bnd, &id);
-
-                    serviceRegistry_clearReferencesFor(framework->registry, entry->bnd);
                 }
 
                 if (context != NULL) {
@@ -1124,6 +1123,8 @@ celix_status_t fw_stopBundle(framework_pt framework, long bndId, bool record) {
                 status = CELIX_DO_IF(status, framework_setBundleStateAndNotify(framework, entry->bnd, OSGI_FRAMEWORK_BUNDLE_RESOLVED));
             } else if (bndId == 0) {
                 //framework bundle
+                celix_serviceTracker_syncForContext(framework->bundle->context);
+                celix_bundleContext_cleanup(entry->bnd->context);
                 celix_serviceTracker_syncForContext(framework->bundle->context);
             }
 	    }
@@ -2384,9 +2385,9 @@ bool celix_framework_useBundle(framework_t *fw, bool onlyActive, long bundleId, 
     return called;
 }
 
-service_registration_t* celix_framework_registerServiceFactory(framework_t *fw , const celix_bundle_t *bnd, const char* serviceName, celix_service_factory_t *factory, celix_properties_t *properties) {
+service_registration_t* celix_framework_registerServiceFactory(framework_t *fw , celix_bundle_t *bnd, const char* serviceName, celix_service_factory_t *factory, celix_properties_t *properties, long reservedId) {
     const char *error = NULL;
-    celix_status_t status = CELIX_SUCCESS;
+    celix_status_t status;
     service_registration_t *reg = NULL;
 
     long bndId = celix_bundle_getId(bnd);
@@ -2394,7 +2395,33 @@ service_registration_t* celix_framework_registerServiceFactory(framework_t *fw ,
 
 
     if (serviceName != NULL && factory != NULL) {
-        status = CELIX_DO_IF(status, celix_serviceRegistry_registerServiceFactory(fw->registry, bnd, serviceName, factory, properties, &reg));
+        status = celix_serviceRegistry_registerServiceFactory(fw->registry, bnd, serviceName, factory, properties, reservedId, &reg);
+    } else {
+        fw_log(fw->logger, CELIX_LOG_LEVEL_ERROR, "Invalid arguments serviceName and/or factory argument is NULL (%s/%p)", serviceName, factory);
+        status = CELIX_ILLEGAL_ARGUMENT;
+    }
+
+    fw_bundleEntry_decreaseUseCount(entry);
+
+    framework_logIfError(fw->logger, status, error, "Cannot register service factory: %s", serviceName);
+
+    return reg;
+}
+
+service_registration_t* celix_framework_registerService(framework_t *fw , celix_bundle_t *bnd, const char* serviceName, void* svc, celix_properties_t *properties, long reservedId) {
+    const char *error = NULL;
+    celix_status_t status;
+    service_registration_t *reg = NULL;
+
+    long bndId = celix_bundle_getId(bnd);
+    celix_framework_bundle_entry_t *entry = fw_bundleEntry_getBundleEntryAndIncreaseUseCount(fw, bndId);
+
+
+    if (serviceName != NULL && svc != NULL) {
+        status = celix_serviceRegistry_registerService(fw->registry, bnd, serviceName, svc, properties, reservedId, &reg);
+    } else {
+        fw_log(fw->logger, CELIX_LOG_LEVEL_ERROR, "Invalid arguments serviceName and/or svc argument is NULL (%s/%p)", serviceName, svc);
+        status = CELIX_ILLEGAL_ARGUMENT;
     }
 
     fw_bundleEntry_decreaseUseCount(entry);

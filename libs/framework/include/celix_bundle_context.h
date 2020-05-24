@@ -47,7 +47,7 @@ extern "C" {
 * @param svc the service object. Normally a pointer to a service struct (i.e. a struct with function pointers)
 * @param serviceName the service name, cannot be NULL
 * @param properties The meta properties associated with the service. The service registration will take ownership of the properties (i.e. no destroy needed)
-* @return The serviceId (>= 0) or < 0 if the registration was unsuccessful.
+* @return The serviceId (>= 0), -1 if the registration was unsuccessful and -2 if the registration was cancel (only possible when using opts.reservedServiceId.
 */
 long celix_bundleContext_registerService(celix_bundle_context_t *ctx, void *svc, const char *serviceName, celix_properties_t *properties);
 
@@ -126,7 +126,33 @@ typedef struct celix_service_registration_options {
      * for this.
      */
     const char *serviceVersion OPTS_INIT;
+
+    /**
+     * If set to > 0, this svc id will be used to register the service.
+     * The reservedSvcId should be reserved with a call to celix_bundleContext_reserveSvcId
+     */
+    long reservedSvcId OPTS_INIT;
 } celix_service_registration_options_t;
+
+/**
+ * Reserves a service id, which is expected to be used to register a service in the future.
+ *
+ * If a celix_bundleContext_unregisterService with the reserved service id is called earlier than
+ * the celix_bundleContext_registerServiceWithOptions with the reserved service. The registering
+ * of the service will be cancelled instead.
+
+ * This can help in registering/unregistering services outside of locks without creating race
+ * conditions.
+ * Note that if this is used service can "unregistered" before they are actually registered and
+ * as such the service pointer can be invalid at the time of registering.
+ * This means that the service registering can be done outside of locks, but accessing service
+ * should always be done using locks.
+ * 
+ *
+ * @param ctx the bundle context.
+ * @return A service id, bounded to this bundle context. Note in this case the svc id will be > 0.
+ */
+long celix_bundleContext_reserveSvcId(celix_bundle_context_t* ctx);
 
 /**
  * C Macro to create a empty celix_service_registration_options_t type.
@@ -137,7 +163,8 @@ typedef struct celix_service_registration_options {
     .serviceName = NULL, \
     .properties = NULL, \
     .serviceLanguage = NULL, \
-    .serviceVersion = NULL }
+    .serviceVersion = NULL, \
+    .reservedSvcId = 0 }
 #endif
 
 
@@ -192,7 +219,8 @@ celix_array_list_t* celix_bundleContext_findServices(celix_bundle_context_t *ctx
  */
 typedef struct celix_service_filter_options {
     /**
-     * The required service name.
+     * The service name.
+     * If NULL is used any services which matches the filter string will be tracked.
      */
     const char* serviceName OPTS_INIT;
 
@@ -256,7 +284,8 @@ celix_array_list_t* celix_bundleContext_findServicesWithOptions(celix_bundle_con
  * If a service is removed a the callback with be called with next highest ranking service or NULL as service.
  *
  * @param ctx The bundle context.
- * @param serviceName The required service name to track
+ * @param serviceName The required service name to track.
+ *                    If NULL is all service are tracked.
  * @param callbackHandle The data pointer, which will be used in the callbacks
  * @param set is a required callback, which will be called when a new highest ranking service is set.
  * @return the tracker id (>=0) or < 0 if unsuccessful.
@@ -273,6 +302,7 @@ long celix_bundleContext_trackService(
  *
  * @param ctx The bundle context.
  * @param serviceName The required service name to track
+ *                    If NULL is all service are tracked.
  * @param callbackHandle The data pointer, which will be used in the callbacks
  * @param add is a required callback, which will be called when a service is added and initially for the existing service.
  * @param remove is a required callback, which will be called when a service is removed
@@ -815,6 +845,7 @@ typedef struct celix_service_tracker_info {
  *
  * @param ctx The bundle context
  * @param serviceName The target service name for the service tracker to track.
+ *                      If NULL is provided, add/remove callbacks will be called for all service trackers in the framework.
  * @param callbackHandle The callback handle which will be provided as handle in the trackerAdd and trackerRemove callback.
  * @param trackerAdd Called when a service tracker is added, which tracks the provided service name. Will also be called
  *                   for all existing service tracker when this tracker is started.

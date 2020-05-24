@@ -173,7 +173,7 @@ celix_status_t bundle_getEntry(const_bundle_pt bundle, const char* name, char** 
 }
 
 celix_status_t bundle_getState(const_bundle_pt bundle, bundle_state_e *state) {
-	if(bundle==NULL){
+	if (bundle==NULL) {
 		*state = OSGI_FRAMEWORK_BUNDLE_UNKNOWN;
 		return CELIX_BUNDLE_EXCEPTION;
 	}

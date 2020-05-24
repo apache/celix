@@ -60,8 +60,6 @@ serviceRegistry_registerServiceFactory(service_registry_pt registry, celix_bundl
 celix_status_t
 serviceRegistry_unregisterService(service_registry_pt registry, celix_bundle_t *bundle, service_registration_pt registration);
 
-celix_status_t serviceRegistry_clearServiceRegistrations(service_registry_pt registry, celix_bundle_t *bundle);
-
 celix_status_t serviceRegistry_getServiceReference(service_registry_pt registry, celix_bundle_t *bundle,
                                                    service_registration_pt registration,
                                                    service_reference_pt *reference);
@@ -95,6 +93,15 @@ celix_status_t celix_serviceRegistry_addServiceListener(celix_service_registry_t
 
 celix_status_t celix_serviceRegistry_removeServiceListener(celix_service_registry_t *reg, celix_service_listener_t *listener);
 
+celix_status_t
+celix_serviceRegistry_registerService(
+        celix_service_registry_t *reg,
+        const celix_bundle_t *bnd,
+        const char *serviceName,
+        void* service,
+        celix_properties_t* props,
+        long reserveId,
+        service_registration_t **registration);
 
 celix_status_t
 celix_serviceRegistry_registerServiceFactory(
@@ -103,6 +110,7 @@ celix_serviceRegistry_registerServiceFactory(
         const char *serviceName,
         celix_service_factory_t *factory,
         celix_properties_t* props,
+        long reserveId,
         service_registration_t **registration);
 
 /**

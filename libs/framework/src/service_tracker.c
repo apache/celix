@@ -687,11 +687,12 @@ celix_service_tracker_t* celix_serviceTracker_createWithOptions(
         const celix_service_tracking_options_t *opts
 ) {
     celix_service_tracker_t *tracker = NULL;
-    if (ctx != NULL && opts != NULL && opts->filter.serviceName != NULL) {
+    const char* serviceName = opts->filter.serviceName == NULL ? "*" : opts->filter.serviceName;
+    if (ctx != NULL && opts != NULL) {
         tracker = calloc(1, sizeof(*tracker));
         if (tracker != NULL) {
             tracker->context = ctx;
-            tracker->serviceName = celix_utils_strdup(opts->filter.serviceName);
+            tracker->serviceName = celix_utils_strdup(serviceName);
 
             //setting callbacks
             tracker->callbackHandle = opts->callbackHandle;
@@ -738,23 +739,23 @@ celix_service_tracker_t* celix_serviceTracker_createWithOptions(
             //setting filter
             if (opts->filter.ignoreServiceLanguage) {
                 if (opts->filter.filter != NULL && versionRange != NULL) {
-                    asprintf(&tracker->filter, "(&(%s=%s)%s%s)", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, versionRange, opts->filter.filter);
+                    asprintf(&tracker->filter, "(&(%s=%s)%s%s)", OSGI_FRAMEWORK_OBJECTCLASS, serviceName, versionRange, opts->filter.filter);
                 } else if (versionRange != NULL) {
-                    asprintf(&tracker->filter, "(&(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, versionRange);
+                    asprintf(&tracker->filter, "(&(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, serviceName, versionRange);
                 } else if (opts->filter.filter != NULL) {
-                    asprintf(&tracker->filter, "(&(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, opts->filter.filter);
+                    asprintf(&tracker->filter, "(&(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, serviceName, opts->filter.filter);
                 } else {
-                    asprintf(&tracker->filter, "(&(%s=%s))", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName);
+                    asprintf(&tracker->filter, "(&(%s=%s))", OSGI_FRAMEWORK_OBJECTCLASS, serviceName);
                 }
             } else {
                 if (opts->filter.filter != NULL && versionRange != NULL) {
-                    asprintf(&tracker->filter, "(&(%s=%s)(%s=%s)%s%s)", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang, versionRange, opts->filter.filter);
+                    asprintf(&tracker->filter, "(&(%s=%s)(%s=%s)%s%s)", OSGI_FRAMEWORK_OBJECTCLASS, serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang, versionRange, opts->filter.filter);
                 } else if (versionRange != NULL) {
-                    asprintf(&tracker->filter, "(&(%s=%s)(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang, versionRange);
+                    asprintf(&tracker->filter, "(&(%s=%s)(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang, versionRange);
                 } else if (opts->filter.filter != NULL) {
-                    asprintf(&tracker->filter, "(&(%s=%s)(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang, opts->filter.filter);
+                    asprintf(&tracker->filter, "(&(%s=%s)(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang, opts->filter.filter);
                 } else {
-                    asprintf(&tracker->filter, "(&(%s=%s)(%s=%s))", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang);
+                    asprintf(&tracker->filter, "(&(%s=%s)(%s=%s))", OSGI_FRAMEWORK_OBJECTCLASS, serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang);
                 }
             }
 
@@ -765,12 +766,7 @@ celix_service_tracker_t* celix_serviceTracker_createWithOptions(
             serviceTracker_open(tracker);
         }
     } else {
-        if (ctx != NULL && opts != NULL && opts->filter.serviceName == NULL) {
-            framework_log(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__,
-                          "Error incorrect arguments. Missing service name.");
-        } else if (ctx != NULL) {
-            framework_log(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__, "Error incorrect arguments. Required context (%p) or opts (%p) is NULL", ctx, opts);
-        }
+        framework_log(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__, "Error incorrect arguments. Required context (%p) or opts (%p) is NULL", ctx, opts);
     }
     return tracker;
 }

@@ -112,6 +112,7 @@ celix_status_t bundleActivator_stop(void * userData, celix_bundle_context_t *con
     celix_status_t status;
     struct disc_mock_activator * act = userData;
 
+    serviceRegistration_unregister(act->endpointListenerService);
     status = serviceRegistration_unregister(act->reg);
 
     return status;

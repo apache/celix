@@ -56,7 +56,11 @@ struct celix_bundle_context {
 	hash_map_t *bundleTrackers; //key = trackerId, value = celix_bundle_context_bundle_tracker_entry_t*
 	hash_map_t *serviceTrackers; //key = trackerId, value = celix_service_tracker_t*
 	hash_map_t *metaTrackers; //key = trackerId, value = celix_bundle_context_service_tracker_tracker_entry_t*
+	hash_map_t *reservedIds; //key = reserved svc id, value =  cancelled (bool)
 };
+
+
+void celix_bundleContext_cleanup(celix_bundle_context_t *ctx);
 
 
 #endif /* BUNDLE_CONTEXT_PRIVATE_H_ */
