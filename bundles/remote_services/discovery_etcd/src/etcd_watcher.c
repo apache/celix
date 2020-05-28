@@ -42,10 +42,9 @@ struct etcd_watcher {
     celix_log_helper_t **loghelper;
     hash_map_pt entries;
 
-    celix_thread_mutex_t watcherLock;
     celix_thread_t watcherThread;
 
-    volatile bool running;
+    bool running;
 };
 
 
@@ -235,7 +234,7 @@ static void* etcdWatcher_run(void* data) {
 	etcdWatcher_addAlreadyExistingWatchpoints(watcher, watcher->discovery, &highestModified);
 	etcdWatcher_getRootPath(context, rootPath);
 
-	while (watcher->running) {
+    while (__atomic_load_n(&watcher->running, __ATOMIC_ACQUIRE)) {
 
 		char *rkey = NULL;
 		char *value = NULL;
@@ -308,16 +307,12 @@ celix_status_t etcdWatcher_create(discovery_t *discovery, celix_bundle_context_t
 	}
     if (status == CELIX_SUCCESS) {
         etcdWatcher_addOwnFramework(*watcher);
-        status = celixThreadMutex_create(&(*watcher)->watcherLock, NULL);
     }
 
     if (status == CELIX_SUCCESS) {
-        if (celixThreadMutex_lock(&(*watcher)->watcherLock) == CELIX_SUCCESS) {
-            status = celixThread_create(&(*watcher)->watcherThread, NULL, etcdWatcher_run, *watcher);
-            if (status == CELIX_SUCCESS) {
-                (*watcher)->running = true;
-            }
-            celixThreadMutex_unlock(&(*watcher)->watcherLock);
+        status = celixThread_create(&(*watcher)->watcherThread, NULL, etcdWatcher_run, *watcher);
+        if (status == CELIX_SUCCESS) {
+            __atomic_store_n(&(*watcher)->running, true, __ATOMIC_RELEASE);
         }
     }
 
@@ -329,9 +324,7 @@ celix_status_t etcdWatcher_destroy(etcd_watcher_t *watcher) {
 	celix_status_t status = CELIX_SUCCESS;
 	char localNodePath[MAX_LOCALNODE_LENGTH];
 
-	celixThreadMutex_lock(&watcher->watcherLock);
-	watcher->running = false;
-	celixThreadMutex_unlock(&watcher->watcherLock);
+    __atomic_store_n(&watcher->running, false, __ATOMIC_RELEASE);
 
 	celixThread_join(watcher->watcherThread, NULL);
 

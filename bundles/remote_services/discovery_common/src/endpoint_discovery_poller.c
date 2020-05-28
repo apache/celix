@@ -92,7 +92,7 @@ celix_status_t endpointDiscoveryPoller_create(discovery_t *discovery, celix_bund
 	(*poller)->poll_interval = atoi(interval);
 	(*poller)->poll_timeout = atoi(timeout);
 	(*poller)->discovery = discovery;
-	(*poller)->running = false;
+    __atomic_store_n(&(*poller)->running, false, __ATOMIC_RELEASE);
 	(*poller)->entries = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
 
 	const char* sep = ",";
@@ -110,7 +110,7 @@ celix_status_t endpointDiscoveryPoller_create(discovery_t *discovery, celix_bund
 		return CELIX_BUNDLE_EXCEPTION;
 	}
 
-	(*poller)->running = true;
+    __atomic_store_n(&(*poller)->running, true, __ATOMIC_RELEASE);
 
 	status += celixThread_create(&(*poller)->pollerThread, NULL, endpointDiscoveryPoller_performPeriodicPoll, *poller);
 	status += celixThreadMutex_unlock(&(*poller)->pollerLock);
@@ -128,7 +128,7 @@ celix_status_t endpointDiscoveryPoller_create(discovery_t *discovery, celix_bund
 celix_status_t endpointDiscoveryPoller_destroy(endpoint_discovery_poller_t *poller) {
 	celix_status_t status;
 
-	poller->running = false;
+    __atomic_store_n(&poller->running, false, __ATOMIC_RELEASE);
 
 	celixThread_join(poller->pollerThread, NULL);
 
@@ -294,7 +294,7 @@ static void *endpointDiscoveryPoller_performPeriodicPoll(void *data) {
 
 	useconds_t interval = (useconds_t) (poller->poll_interval * 1000000L);
 
-	while (poller->running) {
+	while (__atomic_load_n(&poller->running, __ATOMIC_ACQUIRE)) {
 		usleep(interval);
 		celix_status_t status = celixThreadMutex_lock(&poller->pollerLock);
 

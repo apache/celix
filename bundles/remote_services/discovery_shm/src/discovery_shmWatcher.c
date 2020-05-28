@@ -52,9 +52,8 @@
 struct shm_watcher {
     shmData_t *shmData;
     celix_thread_t watcherThread;
-    celix_thread_mutex_t watcherLock;
 
-    volatile bool running;
+    bool running;
 };
 
 // note that the rootNode shouldn't have a leading slash
@@ -168,7 +167,7 @@ static void* discoveryShmWatcher_run(void* data) {
         snprintf(url, MAX_LOCALNODE_LENGTH, "http://%s:%s/%s", DEFAULT_SERVER_IP, DEFAULT_SERVER_PORT, DEFAULT_SERVER_PATH);
     }
 
-    while (watcher->running) {
+    while (__atomic_load_n(&watcher->running, __ATOMIC_ACQUIRE)) {
         // register own framework
         if (discoveryShm_set(watcher->shmData, localNodePath, url) != CELIX_SUCCESS) {
             celix_logHelper_log(discovery->loghelper, CELIX_LOG_LEVEL_WARNING, "Cannot set local discovery registration.");
@@ -213,11 +212,8 @@ celix_status_t discoveryShmWatcher_create(discovery_t *discovery) {
     }
 
     if (status == CELIX_SUCCESS) {
-        status += celixThreadMutex_create(&watcher->watcherLock, NULL);
-        status += celixThreadMutex_lock(&watcher->watcherLock);
-        watcher->running = true;
+        __atomic_store_n(&watcher->running, true, __ATOMIC_RELEASE);
         status += celixThread_create(&watcher->watcherThread, NULL, discoveryShmWatcher_run, discovery);
-        status += celixThreadMutex_unlock(&watcher->watcherLock);
     }
 
     return status;
@@ -228,9 +224,7 @@ celix_status_t discoveryShmWatcher_destroy(discovery_t *discovery) {
     shm_watcher_t *watcher = discovery->pImpl->watcher;
     char localNodePath[MAX_LOCALNODE_LENGTH];
 
-    celixThreadMutex_lock(&watcher->watcherLock);
-    watcher->running = false;
-    celixThreadMutex_unlock(&watcher->watcherLock);
+    __atomic_store_n(&watcher->running, false, __ATOMIC_RELEASE);
 
     celixThread_join(watcher->watcherThread, NULL);
 

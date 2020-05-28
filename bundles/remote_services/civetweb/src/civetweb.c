@@ -1,4 +1,4 @@
-	/* Copyright (c) 2013-2015 the Civetweb developers
+/* Copyright (c) 2013-2015 the Civetweb developers
  * Copyright (c) 2004-2013 Sergey Lyubka
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -775,7 +775,7 @@ struct mg_request_handler_info {
 };
 
 struct mg_context {
-    volatile int stop_flag;         /* Should we stop event loop */
+    int stop_flag;                  /* Should we stop event loop */
     SSL_CTX *ssl_ctx;               /* SSL context */
     char *config[NUM_OPTIONS];      /* Civetweb configuration parameters */
     struct mg_callbacks callbacks;  /* User-defined callback function */
@@ -939,10 +939,10 @@ void mg_set_thread_name(const char* name)
    /* No option known to set thread name for MinGW */
 #endif
 #elif defined(__linux__)
-   /* Linux */
-   (void)prctl(PR_SET_NAME,threadName,0,0,0);
+    /* Linux */
+    (void)prctl(PR_SET_NAME,threadName,0,0,0);
 #elif defined(__APPLE__) || defined(__MACH__)
-   /* OS X (TODO: test) */
+    /* OS X (TODO: test) */
    (void)pthread_setname_np(threadName);
 #elif defined(BSD) || defined(__FreeBSD__) || defined(__OpenBSD__)
    /* BSD (TODO: test) */
@@ -1453,111 +1453,111 @@ static const char *mg_get_response_code_text(int response_code, struct mg_connec
 {
     switch (response_code)
     {
-    /* RFC2616 Section 10.1 - Informational 1xx */
-    case 100: return "Continue"; /* RFC2616 Section 10.1.1 */
-    case 101: return "Switching Protocols"; /* RFC2616 Section 10.1.2 */
-    case 102: return "Processing"; /* RFC2518 Section 10.1 */
+        /* RFC2616 Section 10.1 - Informational 1xx */
+        case 100: return "Continue"; /* RFC2616 Section 10.1.1 */
+        case 101: return "Switching Protocols"; /* RFC2616 Section 10.1.2 */
+        case 102: return "Processing"; /* RFC2518 Section 10.1 */
 
-    /* RFC2616 Section 10.2 - Successful 2xx */
-    case 200: return "OK"; /* RFC2616 Section 10.2.1 */
-    case 201: return "Created"; /* RFC2616 Section 10.2.2 */
-    case 202: return "Accepted"; /* RFC2616 Section 10.2.3 */
-    case 203: return "Non-Authoritative Information"; /* RFC2616 Section 10.2.4 */
-    case 204: return "No Content"; /* RFC2616 Section 10.2.5 */
-    case 205: return "Reset Content"; /* RFC2616 Section 10.2.6 */
-    case 206: return "Partial Content"; /* RFC2616 Section 10.2.7 */
-    case 207: return "Multi-Status"; /* RFC2518 Section 10.2, RFC4918 Section 11.1 */
+            /* RFC2616 Section 10.2 - Successful 2xx */
+        case 200: return "OK"; /* RFC2616 Section 10.2.1 */
+        case 201: return "Created"; /* RFC2616 Section 10.2.2 */
+        case 202: return "Accepted"; /* RFC2616 Section 10.2.3 */
+        case 203: return "Non-Authoritative Information"; /* RFC2616 Section 10.2.4 */
+        case 204: return "No Content"; /* RFC2616 Section 10.2.5 */
+        case 205: return "Reset Content"; /* RFC2616 Section 10.2.6 */
+        case 206: return "Partial Content"; /* RFC2616 Section 10.2.7 */
+        case 207: return "Multi-Status"; /* RFC2518 Section 10.2, RFC4918 Section 11.1 */
 
-    /* RFC2616 Section 10.3 - Redirection 3xx */
-    case 300: return "Multiple Choices"; /* RFC2616 Section 10.3.1 */
-    case 301: return "Moved Permanently"; /* RFC2616 Section 10.3.2 */
-    case 302: return "Found"; /* RFC2616 Section 10.3.3 */
-    case 303: return "See Other"; /* RFC2616 Section 10.3.4 */
-    case 304: return "Not Modified"; /* RFC2616 Section 10.3.5 */
-    case 305: return "Use Proxy"; /* RFC2616 Section 10.3.6 */
-    case 307: return "Temporary Redirect"; /* RFC2616 Section 10.3.8 */
+            /* RFC2616 Section 10.3 - Redirection 3xx */
+        case 300: return "Multiple Choices"; /* RFC2616 Section 10.3.1 */
+        case 301: return "Moved Permanently"; /* RFC2616 Section 10.3.2 */
+        case 302: return "Found"; /* RFC2616 Section 10.3.3 */
+        case 303: return "See Other"; /* RFC2616 Section 10.3.4 */
+        case 304: return "Not Modified"; /* RFC2616 Section 10.3.5 */
+        case 305: return "Use Proxy"; /* RFC2616 Section 10.3.6 */
+        case 307: return "Temporary Redirect"; /* RFC2616 Section 10.3.8 */
 
-    /* RFC2616 Section 10.4 - Client Error 4xx */
-    case 400: return "Bad Request"; /* RFC2616 Section 10.4.1 */
-    case 401: return "Unauthorized"; /* RFC2616 Section 10.4.2 */
-    case 402: return "Payment Required"; /* RFC2616 Section 10.4.3 */
-    case 403: return "Forbidden"; /* RFC2616 Section 10.4.4 */
-    case 404: return "Not Found"; /* RFC2616 Section 10.4.5 */
-    case 405: return "Method Not Allowed"; /* RFC2616 Section 10.4.6 */
-    case 406: return "Not Acceptable"; /* RFC2616 Section 10.4.7 */
-    case 407: return "Proxy Authentication Required"; /* RFC2616 Section 10.4.8 */
-    case 408: return "Request Time-out"; /* RFC2616 Section 10.4.9 */
-    case 409: return "Conflict"; /* RFC2616 Section 10.4.10 */
-    case 410: return "Gone"; /* RFC2616 Section 10.4.11 */
-    case 411: return "Length Required"; /* RFC2616 Section 10.4.12 */
-    case 412: return "Precondition Failed"; /* RFC2616 Section 10.4.13 */
-    case 413: return "Request Entity Too Large"; /* RFC2616 Section 10.4.14 */
-    case 414: return "Request-URI Too Large"; /* RFC2616 Section 10.4.15 */
-    case 415: return "Unsupported Media Type"; /* RFC2616 Section 10.4.16 */
-    case 416: return "Requested range not satisfiable"; /* RFC2616 Section 10.4.17 */
-    case 417: return "Expectation Failed"; /* RFC2616 Section 10.4.18 */
-    case 422: return "Unproccessable entity"; /* RFC2518 Section 10.3, RFC4918 Section 11.2 */
-    case 423: return "Locked"; /* RFC2518 Section 10.4, RFC4918 Section 11.3 */
-    case 424: return "Failed Dependency"; /* RFC2518 Section 10.5, RFC4918 Section 11.4 */
-    case 428: return "Precondition Required"; /* RFC 6585, Section 3 */
-    case 429: return "Too Many Requests"; /* RFC 6585, Section 4 */
-    case 431: return "Request Header Fields Too Large"; /* RFC 6585, Section 5 */
+            /* RFC2616 Section 10.4 - Client Error 4xx */
+        case 400: return "Bad Request"; /* RFC2616 Section 10.4.1 */
+        case 401: return "Unauthorized"; /* RFC2616 Section 10.4.2 */
+        case 402: return "Payment Required"; /* RFC2616 Section 10.4.3 */
+        case 403: return "Forbidden"; /* RFC2616 Section 10.4.4 */
+        case 404: return "Not Found"; /* RFC2616 Section 10.4.5 */
+        case 405: return "Method Not Allowed"; /* RFC2616 Section 10.4.6 */
+        case 406: return "Not Acceptable"; /* RFC2616 Section 10.4.7 */
+        case 407: return "Proxy Authentication Required"; /* RFC2616 Section 10.4.8 */
+        case 408: return "Request Time-out"; /* RFC2616 Section 10.4.9 */
+        case 409: return "Conflict"; /* RFC2616 Section 10.4.10 */
+        case 410: return "Gone"; /* RFC2616 Section 10.4.11 */
+        case 411: return "Length Required"; /* RFC2616 Section 10.4.12 */
+        case 412: return "Precondition Failed"; /* RFC2616 Section 10.4.13 */
+        case 413: return "Request Entity Too Large"; /* RFC2616 Section 10.4.14 */
+        case 414: return "Request-URI Too Large"; /* RFC2616 Section 10.4.15 */
+        case 415: return "Unsupported Media Type"; /* RFC2616 Section 10.4.16 */
+        case 416: return "Requested range not satisfiable"; /* RFC2616 Section 10.4.17 */
+        case 417: return "Expectation Failed"; /* RFC2616 Section 10.4.18 */
+        case 422: return "Unproccessable entity"; /* RFC2518 Section 10.3, RFC4918 Section 11.2 */
+        case 423: return "Locked"; /* RFC2518 Section 10.4, RFC4918 Section 11.3 */
+        case 424: return "Failed Dependency"; /* RFC2518 Section 10.5, RFC4918 Section 11.4 */
+        case 428: return "Precondition Required"; /* RFC 6585, Section 3 */
+        case 429: return "Too Many Requests"; /* RFC 6585, Section 4 */
+        case 431: return "Request Header Fields Too Large"; /* RFC 6585, Section 5 */
 
-    /* RFC2616 Section 10.5 - Server Error 5xx */
-    case 500: return "Internal Server Error"; /* RFC2616 Section 10.5.1 */
-    case 501: return "Not Implemented"; /* RFC2616 Section 10.5.2 */
-    case 502: return "Bad Gateway"; /* RFC2616 Section 10.5.3 */
-    case 503: return "Service Unavailable"; /* RFC2616 Section 10.5.4 */
-    case 504: return "Gateway Time-out"; /* RFC2616 Section 10.5.5 */
-    case 505: return "HTTP Version not supported"; /* RFC2616 Section 10.5.6 */
-    case 507: return "Insufficient Storage"; /* RFC2518 Section 10.6, , RFC4918 Section 11.5 */
-    case 511: return "Network Authentication Required"; /* RFC 6585, Section 6 */
+            /* RFC2616 Section 10.5 - Server Error 5xx */
+        case 500: return "Internal Server Error"; /* RFC2616 Section 10.5.1 */
+        case 501: return "Not Implemented"; /* RFC2616 Section 10.5.2 */
+        case 502: return "Bad Gateway"; /* RFC2616 Section 10.5.3 */
+        case 503: return "Service Unavailable"; /* RFC2616 Section 10.5.4 */
+        case 504: return "Gateway Time-out"; /* RFC2616 Section 10.5.5 */
+        case 505: return "HTTP Version not supported"; /* RFC2616 Section 10.5.6 */
+        case 507: return "Insufficient Storage"; /* RFC2518 Section 10.6, , RFC4918 Section 11.5 */
+        case 511: return "Network Authentication Required"; /* RFC 6585, Section 6 */
 
-    /* Other RFCs */
-    case 426: return "Upgrade Required"; /* RFC 2817 */
+            /* Other RFCs */
+        case 426: return "Upgrade Required"; /* RFC 2817 */
 
-    /* Return codes from non normative RFCs: */
-    /* Informative and experimental RFCs, "de facto" standards due to common use, ... */
-    case 208: return "Already Reported"; /* RFC5842 Section 7.1 */
-    case 226: return "IM used"; /* RFC3229 Section 10.4.1 */
-    case 308: return "Permanent Redirect"; /* RFC7238 Section 3 */
-    case 418: return "I am a teapot"; /* RFC2324 Section 2.3.2 */
-    case 419: return "Authentication Timeout"; /* common use */
-    case 451: return "Unavailable For Legal Reasons"; /* draft-tbray-http-legally-restricted-status-05, Section 3 */
-    case 506: return "Variant Also Negotiates"; /* RFC 2295, Section 8.1 */
-    case 508: return "Loop Detected"; /* RFC5842 Section 7.1 */
-    case 510: return "Not Extended"; /* RFC 2774, Section 7 */
+            /* Return codes from non normative RFCs: */
+            /* Informative and experimental RFCs, "de facto" standards due to common use, ... */
+        case 208: return "Already Reported"; /* RFC5842 Section 7.1 */
+        case 226: return "IM used"; /* RFC3229 Section 10.4.1 */
+        case 308: return "Permanent Redirect"; /* RFC7238 Section 3 */
+        case 418: return "I am a teapot"; /* RFC2324 Section 2.3.2 */
+        case 419: return "Authentication Timeout"; /* common use */
+        case 451: return "Unavailable For Legal Reasons"; /* draft-tbray-http-legally-restricted-status-05, Section 3 */
+        case 506: return "Variant Also Negotiates"; /* RFC 2295, Section 8.1 */
+        case 508: return "Loop Detected"; /* RFC5842 Section 7.1 */
+        case 510: return "Not Extended"; /* RFC 2774, Section 7 */
 
-    default:
-        /* This error code is unknown. This should not happen. */
-        if (conn) {
-            mg_cry(conn, "Unknown HTTP response code: %u", response_code);
-        }
+        default:
+            /* This error code is unknown. This should not happen. */
+            if (conn) {
+                mg_cry(conn, "Unknown HTTP response code: %u", response_code);
+            }
 
-        /* Return at least a category according to RFC 2616 Section 10. */
-        if (response_code>=100 && response_code<200) {
-            /* Unknown informational status code */
-            return "Information";
-        }
-        if (response_code>=200 && response_code<300) {
-            /* Unknown success code */
-            return "Success";
-        }
-        if (response_code>=300 && response_code<400) {
-            /* Unknown redirection code */
-            return "Redirection";
-        }
-        if (response_code>=400 && response_code<500) {
-            /* Unknown request error code */
-            return "Client Error";
-        }
-        if (response_code>=500 && response_code<600) {
-            /* Unknown server error code */
-            return "Server Error";
-        }
+            /* Return at least a category according to RFC 2616 Section 10. */
+            if (response_code>=100 && response_code<200) {
+                /* Unknown informational status code */
+                return "Information";
+            }
+            if (response_code>=200 && response_code<300) {
+                /* Unknown success code */
+                return "Success";
+            }
+            if (response_code>=300 && response_code<400) {
+                /* Unknown redirection code */
+                return "Redirection";
+            }
+            if (response_code>=400 && response_code<500) {
+                /* Unknown request error code */
+                return "Client Error";
+            }
+            if (response_code>=500 && response_code<600) {
+                /* Unknown server error code */
+                return "Server Error";
+            }
 
-        /* Response code not even within reasonable range */
-        return "";
+            /* Response code not even within reasonable range */
+            return "";
     }
 }
 
@@ -1596,15 +1596,15 @@ static void send_http_error(struct mg_connection *conn, int status,
             if (error_handler != NULL) {
                 for (scope=1; (scope<=3) && !page_handler_found; scope++) {
                     switch (scope) {
-                    case 1:
-                        len = mg_snprintf(conn, buf, sizeof(buf)-32, "%serror%03u.", error_handler, status);
-                        break;
-                    case 2:
-                        len = mg_snprintf(conn, buf, sizeof(buf)-32, "%serror%01uxx.", error_handler, status/100);
-                        break;
-                    default:
-                        len = mg_snprintf(conn, buf, sizeof(buf)-32, "%serror.", error_handler);
-                        break;
+                        case 1:
+                            len = mg_snprintf(conn, buf, sizeof(buf)-32, "%serror%03u.", error_handler, status);
+                            break;
+                        case 2:
+                            len = mg_snprintf(conn, buf, sizeof(buf)-32, "%serror%01uxx.", error_handler, status/100);
+                            break;
+                        default:
+                            len = mg_snprintf(conn, buf, sizeof(buf)-32, "%serror.", error_handler);
+                            break;
                     }
                     tstr = strchr(error_page_file_ext, '.');
                     while (tstr) {
@@ -1647,8 +1647,8 @@ static void send_http_error(struct mg_connection *conn, int status,
                         "Content-Length: %d\r\n"
                         "Date: %s\r\n"
                         "Connection: %s\r\n\r\n",
-                        status, reason, len, date,
-                        suggest_connection_header(conn));
+                  status, reason, len, date,
+                  suggest_connection_header(conn));
         conn->num_bytes_sent += mg_printf(conn, "%s", buf);
     }
 }
@@ -2347,7 +2347,7 @@ static pid_t spawn_process(struct mg_connection *conn, const char *prog,
     if ((pid = fork()) == -1) {
         /* Parent */
         send_http_error(conn, 500, NULL,
-            "Error: Creating CGI process\nfork(): %s", strerror(ERRNO));
+                        "Error: Creating CGI process\nfork(): %s", strerror(ERRNO));
     } else if (pid == 0) {
         /* Child */
         if (chdir(dir) != 0) {
@@ -2416,13 +2416,13 @@ static int64_t push(FILE *fp, SOCKET sock, SSL *ssl, const char *buf, int64_t le
             n = SSL_write(ssl, buf + sent, k);
         } else
 #endif
-            if (fp != NULL) {
-                n = (int) fwrite(buf + sent, 1, (size_t) k, fp);
-                if (ferror(fp))
-                    n = -1;
-            } else {
-                n = send(sock, buf + sent, (size_t) k, MSG_NOSIGNAL);
-            }
+        if (fp != NULL) {
+            n = (int) fwrite(buf + sent, 1, (size_t) k, fp);
+            if (ferror(fp))
+                n = -1;
+        } else {
+            n = send(sock, buf + sent, (size_t) k, MSG_NOSIGNAL);
+        }
 
         if (n <= 0)
             break;
@@ -2453,14 +2453,14 @@ static int pull(FILE *fp, struct mg_connection *conn, char *buf, int len)
         nread = recv(conn->client.sock, buf, (size_t) len, 0);
     }
 
-    return conn->ctx->stop_flag ? -1 : nread;
+    return __atomic_load_n(&conn->ctx->stop_flag, __ATOMIC_ACQUIRE) ? -1 : nread;
 }
 
 static int pull_all(FILE *fp, struct mg_connection *conn, char *buf, int len)
 {
     int n, nread = 0;
 
-    while (len > 0 && conn->ctx->stop_flag == 0) {
+    while (len > 0 && __atomic_load_n(&conn->ctx->stop_flag, __ATOMIC_ACQUIRE) == 0) {
         n = pull(fp, conn, buf + nread, len);
         if (n < 0) {
             nread = n;  /* Propagate the error */
@@ -2541,7 +2541,7 @@ int mg_write(struct mg_connection *conn, const void *buf, size_t len)
                           (int64_t) allowed)) == allowed) {
             buf = (char *) buf + total;
             conn->last_throttle_bytes += total;
-            while (total < (int64_t) len && conn->ctx->stop_flag == 0) {
+            while (total < (int64_t) len && __atomic_load_n(&conn->ctx->stop_flag, __ATOMIC_ACQUIRE) == 0) {
                 allowed = conn->throttle > (int64_t) len - total ?
                           (int64_t) len - total : conn->throttle;
                 if ((n = push(NULL, conn->client.sock, conn->ssl, (const char *) buf,
@@ -2852,12 +2852,12 @@ static void interpret_uri(struct mg_connection *conn,    /* in: request */
                           int * is_script_ressource,     /* out: handled by a script? */
                           int * is_websocket_request,    /* out: websocket connetion? */
                           int * is_put_or_delete_request /* out: put/delete a file? */
-                          )
+)
 {
     struct vec a, b;
     const char *rewrite,
-               *uri = conn->request_info.uri,
-               *root = conn->ctx->config[DOCUMENT_ROOT];
+            *uri = conn->request_info.uri,
+            *root = conn->ctx->config[DOCUMENT_ROOT];
     char *p;
     int match_len;
     char gz_path[PATH_MAX];
@@ -2900,7 +2900,7 @@ static void interpret_uri(struct mg_connection *conn,    /* in: request */
     if (mg_stat(conn, filename, filep)) {
         /* File exists. Check if it is a script type. */
         if (0
-#if !defined(NO_CGI)
+            #if !defined(NO_CGI)
             ||
             match_prefix(conn->ctx->config[CGI_EXTENSIONS],
                          (int)strlen(conn->ctx->config[CGI_EXTENSIONS]), filename) > 0
@@ -2910,15 +2910,15 @@ static void interpret_uri(struct mg_connection *conn,    /* in: request */
             match_prefix(conn->ctx->config[LUA_SCRIPT_EXTENSIONS],
                          (int)strlen(conn->ctx->config[LUA_SCRIPT_EXTENSIONS]), filename) > 0
 #endif
-           ) {
-                /* The request addresses a CGI script or a Lua script. The URI corresponds
-                   to the script itself (like /path/script.cgi), and there is no additional
-                   resource path (like /path/script.cgi/something).
-                   Requests that modify (replace or delete) a resource, like PUT and DELETE
-                   requests, should replace/delete the script file.
-                   Requests that read or write from/to a resource, like GET and POST requests,
-                   should call the script and return the generated response. */
-                *is_script_ressource = !is_put_or_delete_request;
+                ) {
+            /* The request addresses a CGI script or a Lua script. The URI corresponds
+               to the script itself (like /path/script.cgi), and there is no additional
+               resource path (like /path/script.cgi/something).
+               Requests that modify (replace or delete) a resource, like PUT and DELETE
+               requests, should replace/delete the script file.
+               Requests that read or write from/to a resource, like GET and POST requests,
+               should call the script and return the generated response. */
+            *is_script_ressource = !is_put_or_delete_request;
         }
         return;
     }
@@ -2945,13 +2945,13 @@ static void interpret_uri(struct mg_connection *conn,    /* in: request */
         if (*p == '/') {
             *p = '\0';
             if ((0
-#if !defined(NO_CGI)
+                 #if !defined(NO_CGI)
                  ||
                  match_prefix(conn->ctx->config[CGI_EXTENSIONS],
                               (int)strlen(conn->ctx->config[CGI_EXTENSIONS]), filename) > 0
 #endif
 #if defined(USE_LUA)
-                 ||
+                        ||
                  match_prefix(conn->ctx->config[LUA_SCRIPT_EXTENSIONS],
                               (int)strlen(conn->ctx->config[LUA_SCRIPT_EXTENSIONS]), filename) > 0
 #endif
@@ -3022,7 +3022,7 @@ static int num_leap_years(int year)
 static time_t parse_date_string(const char *datetime)
 {
     static const unsigned short days_before_month[] = {
-        0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334
+            0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334
     };
     char month_str[32]={0};
     int second, minute, hour, day, month, year, leap_days, days;
@@ -3259,9 +3259,9 @@ static int check_password(const char *method, const char *ha1, const char *uri,
     /* NOTE(lsm): due to a bug in MSIE, we do not compare the URI */
     /* TODO(lsm): check for authentication timeout */
     if (/* strcmp(dig->uri, c->ouri) != 0 || */
-        strlen(response) != 32
+            strlen(response) != 32
         /* || now - strtoul(dig->nonce, NULL, 10) > 3600 */
-    ) {
+            ) {
         return 0;
     }
 
@@ -3939,7 +3939,7 @@ static void dir_scan_callback(struct de *de, void *data)
     if (dsd->entries == NULL || dsd->num_entries >= dsd->arr_size) {
         dsd->arr_size *= 2;
         dsd->entries = (struct de *) realloc2(dsd->entries, dsd->arr_size *
-                                              sizeof(dsd->entries[0]));
+                                                            sizeof(dsd->entries[0]));
     }
     if (dsd->entries == NULL) {
         /* TODO(lsm): propagate an error to the caller */
@@ -3962,8 +3962,8 @@ static void handle_directory_request(struct mg_connection *conn,
 
     if (!scan_directory(conn, dir, &data, dir_scan_callback)) {
         send_http_error(conn, 500, NULL,
-            "Error: Cannot open directory\nopendir(%s): %s",
-            dir, strerror(ERRNO));
+                        "Error: Cannot open directory\nopendir(%s): %s",
+                        dir, strerror(ERRNO));
         return;
     }
 
@@ -3977,7 +3977,7 @@ static void handle_directory_request(struct mg_connection *conn,
                     "Date: %s\r\n"
                     "Connection: close\r\n"
                     "Content-Type: text/html; charset=utf-8\r\n\r\n",
-                    date);
+              date);
 
     conn->num_bytes_sent += mg_printf(conn,
                                       "<html><head><title>Index of %s</title>"
@@ -4109,8 +4109,8 @@ static void handle_static_file_request(struct mg_connection *conn, const char *p
 
     if (!mg_fopen(conn, path, "rb", filep)) {
         send_http_error(conn, 500, NULL,
-            "Error: Cannot open file\nfopen(%s): %s",
-            path, strerror(ERRNO));
+                        "Error: Cannot open file\nfopen(%s): %s",
+                        path, strerror(ERRNO));
         return;
     }
 
@@ -4125,7 +4125,7 @@ static void handle_static_file_request(struct mg_connection *conn, const char *p
            file (since the range is specified in the uncompressed space) */
         if (filep->gzipped) {
             send_http_error(conn, 501, NULL, "%s",
-                "Error: Range requests in gzipped files are not supported");
+                            "Error: Range requests in gzipped files are not supported");
             mg_fclose(filep);
             return;
         }
@@ -4187,14 +4187,14 @@ void mg_send_file2(struct mg_connection *conn, const char *path, int timeout)
                 handle_directory_request(conn, path);
             } else {
                 send_http_error(conn, 403, NULL, "%s",
-                    "Error: Directory listing denied");
+                                "Error: Directory listing denied");
             }
         } else {
             handle_static_file_request(conn, path, &file);
         }
     } else {
         send_http_error(conn, 404, NULL, "%s",
-            "Error: File not found");
+                        "Error: File not found");
     }
 }
 
@@ -4225,7 +4225,7 @@ static int is_valid_http_method(const char *method)
            !strcmp(method, "PUT") || !strcmp(method, "DELETE") ||
            !strcmp(method, "OPTIONS") || !strcmp(method, "PROPFIND")
            || !strcmp(method, "MKCOL")
-           ;
+            ;
 }
 
 /* Parse HTTP request, fill in mg_request_info structure.
@@ -4283,7 +4283,7 @@ static int read_request(FILE *fp, struct mg_connection *conn,
     }
 
     request_len = get_request_len(buf, *nread);
-    while (conn->ctx->stop_flag == 0 &&
+    while (__atomic_load_n(&conn->ctx->stop_flag, __ATOMIC_ACQUIRE) == 0 &&
            *nread < bufsiz && request_len == 0 &&
            difftime(last_action_time, conn->birth_time) <= request_timout &&
            (n = pull(fp, conn, buf + *nread, bufsiz - *nread)) > 0) {
@@ -4370,11 +4370,11 @@ static int forward_body_data(struct mg_connection *conn, FILE *fp,
     if (conn->content_len == -1) {
         /* Content length is not specified by the client. */
         send_http_error(conn, 411, NULL, "%s",
-            "Error: Client did not specify content length");
+                        "Error: Client did not specify content length");
     } else if ((expect != NULL) && (mg_strcasecmp(expect, "100-continue") != 0)) {
         /* Client sent an "Expect: xyz" header and xyz is not 100-continue. */
         send_http_error(conn, 417, NULL,
-            "Error: Can not fulfill expectation %s", expect);
+                        "Error: Can not fulfill expectation %s", expect);
     } else {
         if (expect != NULL) {
             (void) mg_printf(conn, "%s", "HTTP/1.1 100 Continue\r\n\r\n");
@@ -4629,14 +4629,14 @@ static void handle_cgi_request(struct mg_connection *conn, const char *prog)
 
     if (pipe(fdin) != 0 || pipe(fdout) != 0) {
         send_http_error(conn, 500, NULL,
-            "Error: Cannot create CGI pipe: %s", strerror(ERRNO));
+                        "Error: Cannot create CGI pipe: %s", strerror(ERRNO));
         goto done;
     }
 
     pid = spawn_process(conn, p, blk.buf, blk.vars, fdin[0], fdout[1], dir);
     if (pid == (pid_t) -1) {
         send_http_error(conn, 500, NULL,
-            "Error: Cannot spawn CGI process [%s]: %s", prog, strerror(ERRNO));
+                        "Error: Cannot spawn CGI process [%s]: %s", prog, strerror(ERRNO));
         goto done;
     }
 
@@ -4656,12 +4656,12 @@ static void handle_cgi_request(struct mg_connection *conn, const char *prog)
 
     if ((in = fdopen(fdin[1], "wb")) == NULL) {
         send_http_error(conn, 500, NULL,
-            "Error: CGI can not open fdin\nfopen: %s", strerror(ERRNO));
+                        "Error: CGI can not open fdin\nfopen: %s", strerror(ERRNO));
         goto done;
     }
     if ((out = fdopen(fdout[0], "rb")) == NULL) {
         send_http_error(conn, 500, NULL,
-            "Error: CGI can not open fdout\nfopen: %s", strerror(ERRNO));
+                        "Error: CGI can not open fdout\nfopen: %s", strerror(ERRNO));
         goto done;
     }
 
@@ -4688,15 +4688,15 @@ static void handle_cgi_request(struct mg_connection *conn, const char *prog)
     buf = (char *)mg_malloc(buflen);
     if (buf == NULL) {
         send_http_error(conn, 500, NULL,
-            "Error: Not enough memory for CGI buffer (%u bytes)",
-            (unsigned int) buflen);
+                        "Error: Not enough memory for CGI buffer (%u bytes)",
+                        (unsigned int) buflen);
         goto done;
     }
     headers_len = read_request(out, conn, buf, (int) buflen, &data_len);
     if (headers_len <= 0) {
         send_http_error(conn, 500, NULL,
-            "Error: CGI program sent malformed or too big (>%u bytes) HTTP headers: [%.*s]",
-            (unsigned) buflen, data_len, buf);
+                        "Error: CGI program sent malformed or too big (>%u bytes) HTTP headers: [%.*s]",
+                        (unsigned) buflen, data_len, buf);
         goto done;
     }
     pbuf = buf;
@@ -4888,7 +4888,7 @@ static void put_file(struct mg_connection *conn, const char *path)
             if (file.modification_time == 0) {
                 /* This is an "in-memory" file, that can not be replaced */
                 send_http_error(conn, 405, NULL,
-                    "Error: Put not possible\nReplacing %s is not supported", path);
+                                "Error: Put not possible\nReplacing %s is not supported", path);
                 return;
             }
 
@@ -4899,7 +4899,7 @@ static void put_file(struct mg_connection *conn, const char *path)
                 rc = 1;
             } else {
                 send_http_error(conn, 403, NULL,
-                    "Error: Put not possible\nReplacing %s is not allowed", path);
+                                "Error: Put not possible\nReplacing %s is not allowed", path);
                 return;
             }
         }
@@ -4913,13 +4913,13 @@ static void put_file(struct mg_connection *conn, const char *path)
         /* put_dir returns 0 if path is a directory */
         gmt_time_string(date, sizeof(date), &curtime);
         mg_printf(conn, "HTTP/1.1 %d %s\r\n"
-            "Date: %s\r\n"
-            "Content-Length: 0\r\n"
-            "Connection: %s\r\n\r\n",
-            conn->status_code, mg_get_response_code_text(conn->status_code, NULL),
-            date,
-            suggest_connection_header(conn)
-            );
+                        "Date: %s\r\n"
+                        "Content-Length: 0\r\n"
+                        "Connection: %s\r\n\r\n",
+                  conn->status_code, mg_get_response_code_text(conn->status_code, NULL),
+                  date,
+                  suggest_connection_header(conn)
+        );
 
         /* Request to create a directory has been fulfilled successfully.
         No need to put a file. */
@@ -4929,14 +4929,14 @@ static void put_file(struct mg_connection *conn, const char *path)
     if (rc == -1) {
         /* put_dir returns -1 if the path is too long */
         send_http_error(conn, 414, NULL,
-            "Error: Path too long\nput_dir(%s): %s", path, strerror(ERRNO));
+                        "Error: Path too long\nput_dir(%s): %s", path, strerror(ERRNO));
         return;
     }
 
     if (rc == -2) {
         /* put_dir returns -2 if the directory can not be created */
         send_http_error(conn, 500, NULL,
-            "Error: Can not create directory\nput_dir(%s): %s", path, strerror(ERRNO));
+                        "Error: Can not create directory\nput_dir(%s): %s", path, strerror(ERRNO));
         return;
     }
 
@@ -4944,7 +4944,7 @@ static void put_file(struct mg_connection *conn, const char *path)
     if (!mg_fopen(conn, path, "wb+", &file) || file.fp == NULL) {
         mg_fclose(&file);
         send_http_error(conn, 500, NULL,
-            "Error: Can not create file\nfopen(%s): %s", path, strerror(ERRNO));
+                        "Error: Can not create file\nfopen(%s): %s", path, strerror(ERRNO));
         return;
     }
 
@@ -4965,13 +4965,13 @@ static void put_file(struct mg_connection *conn, const char *path)
 
     gmt_time_string(date, sizeof(date), &curtime);
     mg_printf(conn, "HTTP/1.1 %d %s\r\n"
-        "Date: %s\r\n"
-        "Content-Length: 0\r\n"
-        "Connection: %s\r\n\r\n",
-        conn->status_code, mg_get_response_code_text(conn->status_code, NULL),
-        date,
-        suggest_connection_header(conn)
-        );
+                    "Date: %s\r\n"
+                    "Content-Length: 0\r\n"
+                    "Connection: %s\r\n\r\n",
+              conn->status_code, mg_get_response_code_text(conn->status_code, NULL),
+              date,
+              suggest_connection_header(conn)
+    );
 
     mg_fclose(&file);
 }
@@ -4983,7 +4983,7 @@ static void delete_file(struct mg_connection *conn, const char *path)
     if (!mg_stat(conn, path, &de.file)) {
         /* mg_stat returns 0 if the file does not exist */
         send_http_error(conn, 404, NULL,
-            "Error: Cannot delete file\nFile %s not found", path);
+                        "Error: Cannot delete file\nFile %s not found", path);
         return;
     }
 
@@ -4991,7 +4991,7 @@ static void delete_file(struct mg_connection *conn, const char *path)
         /* mg_stat returns != 0 and modification_time == 0
         if the file is cached in memory */
         send_http_error(conn, 405, NULL,
-            "Error: Delete not possible\nDeleting %s is not supported", path);
+                        "Error: Delete not possible\nDeleting %s is not supported", path);
         return;
     }
 
@@ -5005,18 +5005,18 @@ static void delete_file(struct mg_connection *conn, const char *path)
 
     /* Try to delete path. */
     if (mg_remove(path) == 0) {
-	/* Delete was successful: Return 204 without content. */
-	send_http_error(conn, 204, NULL, "%s", "");
+        /* Delete was successful: Return 204 without content. */
+        send_http_error(conn, 204, NULL, "%s", "");
     } else {
-	/* Delete not successful (no permissions). */
-	if(ERRNO==EPERM || ERRNO==EACCES){
-		send_http_error(conn, 403, NULL,
-				"Error: Delete not possible\nDeleting %s is not allowed", path);
-	} else {
-		/* Delete not successful (file locked). */
-		send_http_error(conn, 423, NULL,
-				"Error: Cannot delete file\nremove(%s): %s", path, strerror(ERRNO));
-	}
+        /* Delete not successful (no permissions). */
+        if(ERRNO==EPERM || ERRNO==EACCES){
+            send_http_error(conn, 403, NULL,
+                            "Error: Delete not possible\nDeleting %s is not allowed", path);
+        } else {
+            /* Delete not successful (file locked). */
+            send_http_error(conn, 423, NULL,
+                            "Error: Cannot delete file\nremove(%s): %s", path, strerror(ERRNO));
+        }
     }
 
 }
@@ -5189,7 +5189,7 @@ static void handle_ssi_file_request(struct mg_connection *conn,
         /* File exists (precondition for calling this function),
            but can not be opened by the server. */
         send_http_error(conn, 500, NULL,
-            "Error: Cannot read file\nfopen(%s): %s", path, strerror(ERRNO));
+                        "Error: Cannot read file\nfopen(%s): %s", path, strerror(ERRNO));
     } else {
         conn->must_close = 1;
         gmt_time_string(date, sizeof(date), &curtime);
@@ -5199,8 +5199,8 @@ static void handle_ssi_file_request(struct mg_connection *conn,
                         "Date: %s\r\n"
                         "Content-Type: text/html\r\n"
                         "Connection: %s\r\n\r\n",
-                        cors1, cors2, cors3,
-                        date, suggest_connection_header(conn));
+                  cors1, cors2, cors3,
+                  date, suggest_connection_header(conn));
         send_ssi_file(conn, path, filep, 0);
         mg_fclose(filep);
     }
@@ -5220,7 +5220,7 @@ static void send_options(struct mg_connection *conn)
                     "Connection: %s\r\n"
                     "Allow: GET, POST, HEAD, CONNECT, PUT, DELETE, OPTIONS, PROPFIND, MKCOL\r\n"
                     "DAV: 1\r\n\r\n",
-                    date, suggest_connection_header(conn));
+              date, suggest_connection_header(conn));
 }
 
 /* Writes PROPFIND properties for a collection element */
@@ -5273,7 +5273,7 @@ static void handle_propfind(struct mg_connection *conn, const char *path,
                     "Date: %s\r\n"
                     "Connection: %s\r\n"
                     "Content-Type: text/xml; charset=utf-8\r\n\r\n",
-                    date, suggest_connection_header(conn));
+              date, suggest_connection_header(conn));
 
     conn->num_bytes_sent += mg_printf(conn,
                                       "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
@@ -5573,7 +5573,7 @@ static void read_websocket(struct mg_connection *conn)
        callback, and waiting repeatedly until an error occurs. */
     /* TODO: Investigate if this next line is needed
     assert(conn->content_len == 0); */
-    while (!conn->ctx->stop_flag) {
+    while (!__atomic_load_n(&conn->ctx->stop_flag, __ATOMIC_ACQUIRE)) {
         header_len = 0;
         assert(conn->data_len >= conn->request_len);
         if ((body_len = conn->data_len - conn->request_len) >= 2) {
@@ -5858,7 +5858,7 @@ int mg_upload2(struct mg_connection *conn, const char *destination_dir, int time
     char buf[MG_BUF_LEN], path[PATH_MAX], tmp_path[PATH_MAX], fname[1024], boundary[100];
     FILE *fp;
     int bl, n, i, headers_len, boundary_len, eof,
-        len = 0, num_uploaded_files = 0;
+            len = 0, num_uploaded_files = 0;
     struct mg_request_info part_request_info;
 
     /* Request looks like this:
@@ -5918,8 +5918,8 @@ int mg_upload2(struct mg_connection *conn, const char *destination_dir, int time
         /* Fetch file name. */
         sc = get_header(&part_request_info, "Content-Disposition");
         if (!sc) {
-           /* invalid part of a multipart message */
-           break;
+            /* invalid part of a multipart message */
+            break;
         }
 
         sc = strstr(sc, "filename");
@@ -5991,10 +5991,10 @@ int mg_upload2(struct mg_connection *conn, const char *destination_dir, int time
         fclose(fp);
         if (eof) {
             if( remove(path) == -1){
-		mg_cry(conn,"Unable to remove %s",path);
+                mg_cry(conn,"Unable to remove %s",path);
             }
             if( rename(tmp_path, path) == -1){
-		mg_cry(conn,"Unable to rename %s to %s",tmp_path,path);
+                mg_cry(conn,"Unable to rename %s to %s",tmp_path,path);
             }
             num_uploaded_files++;
             if (conn->ctx->callbacks.upload != NULL) {
@@ -6002,7 +6002,7 @@ int mg_upload2(struct mg_connection *conn, const char *destination_dir, int time
             }
         } else {
             if( remove(tmp_path) == -1){
-		mg_cry(conn,"Unable to remove %s",tmp_path);
+                mg_cry(conn,"Unable to remove %s",tmp_path);
             }
         }
     }
@@ -6054,7 +6054,7 @@ static void redirect_to_https_port(struct mg_connection *conn, int ssl_index)
               conn->request_info.uri,
               (conn->request_info.query_string == NULL) ? "" : "?",
               (conn->request_info.query_string == NULL) ? "" : conn->request_info.query_string
-              );
+    );
 }
 
 
@@ -6146,7 +6146,7 @@ static int use_request_handler(struct mg_connection *conn)
 
         /* try for pattern match */
         if (match_prefix(tmp_rh->uri, (int)tmp_rh->uri_len, uri) > 0) {
-           return tmp_rh->handler(conn, tmp_rh->cbdata);
+            return tmp_rh->handler(conn, tmp_rh->cbdata);
         }
 
     }
@@ -6179,7 +6179,7 @@ static void handle_request(struct mg_connection *conn)
 
     /* 1.2. decode url (if config says so) */
     if (should_decode_url(conn)) {
-      mg_url_decode(ri->uri, uri_len, (char *) ri->uri, uri_len + 1, 0);
+        mg_url_decode(ri->uri, uri_len, (char *) ri->uri, uri_len + 1, 0);
     }
 
     /* 1.3. clean URIs, so a path like allowed_dir/../forbidden_file is not possible */
@@ -6197,7 +6197,7 @@ static void handle_request(struct mg_connection *conn)
             /* A http to https forward port has been specified,
                but no https port to forward to. */
             send_http_error(conn, 503, NULL, "%s",
-                "Error: SSL forward not configured properly");
+                            "Error: SSL forward not configured properly");
             mg_cry(conn, "Can not redirect to SSL, no SSL port available");
         }
         return;
@@ -6214,15 +6214,15 @@ static void handle_request(struct mg_connection *conn)
            required, use a request_handler instead. */
         i = conn->ctx->callbacks.begin_request(conn);
         switch (i) {
-        case 1:
-            /* callback already processed the request */
-            return;
-        case 0:
-            /* civetweb should process the request */
-            break;
-        default:
-            /* unspecified - may change with the next version */
-            return;
+            case 1:
+                /* callback already processed the request */
+                return;
+            case 0:
+                /* civetweb should process the request */
+                break;
+            default:
+                /* unspecified - may change with the next version */
+                return;
         }
     }
 
@@ -6245,7 +6245,7 @@ static void handle_request(struct mg_connection *conn)
             /* This server does not have any real files, thus the
                PUT/DELETE methods are not valid. */
             send_http_error(conn, 405, NULL,
-                "%s method not allowed", conn->request_info.request_method);
+                            "%s method not allowed", conn->request_info.request_method);
             return;
         }
 
@@ -6319,7 +6319,7 @@ static void handle_request(struct mg_connection *conn)
         }
         /* 11.4. should never reach this point */
         send_http_error(conn, 405, NULL,
-            "%s method not allowed", conn->request_info.request_method);
+                        "%s method not allowed", conn->request_info.request_method);
         return;
     }
 
@@ -6338,7 +6338,7 @@ static void handle_request(struct mg_connection *conn)
                         "Date: %s\r\n"
                         "Content-Length: 0\r\n"
                         "Connection: %s\r\n\r\n",
-                        ri->uri, date, suggest_connection_header(conn));
+                  ri->uri, date, suggest_connection_header(conn));
         return;
     }
 
@@ -6360,7 +6360,7 @@ static void handle_request(struct mg_connection *conn)
     if (0!=strcmp(ri->request_method, "GET") &&
         0!=strcmp(ri->request_method, "HEAD")) {
         send_http_error(conn, 405, NULL,
-            "%s method not allowed", conn->request_info.request_method);
+                        "%s method not allowed", conn->request_info.request_method);
         return;
     }
 
@@ -6376,7 +6376,7 @@ static void handle_request(struct mg_connection *conn)
                 handle_directory_request(conn, path);
             } else {
                 send_http_error(conn, 403, NULL, "%s",
-                    "Error: Directory listing denied");
+                                "Error: Directory listing denied");
             }
             return;
         }
@@ -6396,7 +6396,7 @@ static void handle_file_based_request(struct mg_connection *conn, const char *pa
 {
     if (0) {
 #ifdef USE_LUA
-    } else if (match_prefix(conn->ctx->config[LUA_SERVER_PAGE_EXTENSIONS],
+        } else if (match_prefix(conn->ctx->config[LUA_SERVER_PAGE_EXTENSIONS],
                             (int)strlen(conn->ctx->config[LUA_SERVER_PAGE_EXTENSIONS]),
                             path) > 0) {
         /* Lua server page: an SSI like page containing mostly plain html code plus some tags with server generated contents. */
@@ -6466,7 +6466,7 @@ static int parse_port_string(const struct vec *vec, struct socket *so)
         so->lsa.sin.sin_addr.s_addr = htonl((a << 24) | (b << 16) | (c << 8) | d);
         so->lsa.sin.sin_port = htons((uint16_t) port);
 #if defined(USE_IPV6)
-    } else if (sscanf(vec->ptr, "[%49[^]]]:%u%n", buf, &port, &len) == 2 &&
+        } else if (sscanf(vec->ptr, "[%49[^]]]:%u%n", buf, &port, &len) == 2 &&
                inet_pton(AF_INET6, buf, &so->lsa.sin6.sin6_addr)) {
         /* IPv6 address, e.g. [3ffe:2a00:100:7031::1]:8080 */
         so->lsa.sin6.sin6_family = AF_INET6;
@@ -6520,13 +6520,13 @@ static int set_ports_option(struct mg_context *ctx)
                    /* On Windows, SO_REUSEADDR is recommended only for
                       broadcast UDP sockets */
                    setsockopt(so.sock, SOL_SOCKET, SO_REUSEADDR, (SOCK_OPT_TYPE) &on, sizeof(on)) != 0 ||
-#if defined(USE_IPV6)
+                   #if defined(USE_IPV6)
                    (so.lsa.sa.sa_family == AF_INET6 &&
                     setsockopt(so.sock, IPPROTO_IPV6, IPV6_V6ONLY, (void *) &off,
                                sizeof(off)) != 0) ||
-#endif
+                   #endif
                    bind(so.sock, &so.lsa.sa, so.lsa.sa.sa_family == AF_INET ?
-                        sizeof(so.lsa.sin) : sizeof(so.lsa)) != 0 ||
+                                             sizeof(so.lsa.sin) : sizeof(so.lsa)) != 0 ||
                    listen(so.sock, SOMAXCONN) != 0 ||
                    getsockname(so.sock, &(usa.sa), &len) != 0) {
             mg_cry(fc(ctx), "%s: cannot bind to %.*s: %d (%s)", __func__,
@@ -6537,14 +6537,14 @@ static int set_ports_option(struct mg_context *ctx)
             }
             success = 0;
         } else if ((ptr = (struct socket *) mg_realloc(ctx->listening_sockets,
-                          (ctx->num_listening_sockets + 1) *
-                          sizeof(ctx->listening_sockets[0]))) == NULL) {
+                                                       (ctx->num_listening_sockets + 1) *
+                                                       sizeof(ctx->listening_sockets[0]))) == NULL) {
             closesocket(so.sock);
             so.sock = INVALID_SOCKET;
             success = 0;
         } else if ((portPtr = (in_port_t*) mg_realloc(ctx->listening_ports,
-                          (ctx->num_listening_sockets + 1) *
-                          sizeof(ctx->listening_ports[0]))) == NULL) {
+                                                      (ctx->num_listening_sockets + 1) *
+                                                      sizeof(ctx->listening_ports[0]))) == NULL) {
             closesocket(so.sock);
             so.sock = INVALID_SOCKET;
             mg_free(ptr);
@@ -6972,7 +6972,7 @@ void mg_close_connection(struct mg_connection *conn)
     if (conn->ctx->context_type == 2) {
         client_ctx = conn->ctx;
         /* client context: loops must end */
-        conn->ctx->stop_flag = 1;
+        __atomic_store_n(&conn->ctx->stop_flag, 1, __ATOMIC_RELEASE);
     }
 
 #ifndef NO_SSL
@@ -6994,7 +6994,7 @@ void mg_close_connection(struct mg_connection *conn)
 }
 
 struct mg_connection *mg_connect_client(const char *host, int port, int use_ssl,
-                                 char *ebuf, size_t ebuf_len)
+                                        char *ebuf, size_t ebuf_len)
 {
     static struct mg_context fake_ctx;
     struct mg_connection *conn = NULL;
@@ -7003,12 +7003,12 @@ struct mg_connection *mg_connect_client(const char *host, int port, int use_ssl,
     if ((sock = conn2(&fake_ctx, host, port, use_ssl, ebuf,
                       ebuf_len)) == INVALID_SOCKET) {
     } else if ((conn = (struct mg_connection *)
-                       mg_calloc(1, sizeof(*conn) + MAX_REQUEST_SIZE)) == NULL) {
+            mg_calloc(1, sizeof(*conn) + MAX_REQUEST_SIZE)) == NULL) {
         snprintf(ebuf, ebuf_len, "calloc(): %s", strerror(ERRNO));
         closesocket(sock);
 #ifndef NO_SSL
     } else if (use_ssl && (conn->client_ssl_ctx =
-                               SSL_CTX_new(SSLv23_client_method())) == NULL) {
+                                   SSL_CTX_new(SSLv23_client_method())) == NULL) {
         snprintf(ebuf, ebuf_len, "SSL_CTX_new error");
         closesocket(sock);
         mg_free(conn);
@@ -7057,12 +7057,12 @@ static int getreq(struct mg_connection *conn, char *ebuf, size_t ebuf_len, int t
     if (timeout >= 0) {
         pfd.fd = conn->client.sock;
         switch (poll(&pfd, 1, timeout)) {
-        case 0:
-            snprintf(ebuf, ebuf_len, "%s", "Timed out");
-            return 0;
-        case -1:
-            snprintf(ebuf, ebuf_len, "%s", "Interrupted");
-            return 0;
+            case 0:
+                snprintf(ebuf, ebuf_len, "%s", "Timed out");
+                return 0;
+            case -1:
+                snprintf(ebuf, ebuf_len, "%s", "Interrupted");
+                return 0;
         }
     }
 
@@ -7167,10 +7167,10 @@ static void* websocket_client_thread(void *data)
 #endif
 
 struct mg_connection *mg_connect_websocket_client(const char *host, int port, int use_ssl,
-                                               char *error_buffer, size_t error_buffer_size,
-                                               const char *path, const char *origin,
-                                               websocket_data_func data_func, websocket_close_func close_func,
-                                               void * user_data)
+                                                  char *error_buffer, size_t error_buffer_size,
+                                                  const char *path, const char *origin,
+                                                  websocket_data_func data_func, websocket_close_func close_func,
+                                                  void * user_data)
 {
     struct mg_connection* conn = NULL;
 
@@ -7287,7 +7287,7 @@ static void process_new_connection(struct mg_connection *conn)
            using parsed request, which will be invalid after memmove's below.
            Therefore, memorize should_keep_alive() result now for later use
            in loop exit condition. */
-        keep_alive = conn->ctx->stop_flag == 0 && keep_alive_enabled &&
+        keep_alive = __atomic_load_n(&conn->ctx->stop_flag, __ATOMIC_ACQUIRE) == 0 && keep_alive_enabled &&
                      conn->content_len >= 0 && should_keep_alive(conn);
 
         /* Discard all buffered data for this request */
@@ -7309,7 +7309,7 @@ static int consume_socket(struct mg_context *ctx, struct socket *sp)
     DEBUG_TRACE("%s", "going idle");
 
     /* If the queue is empty, wait. We're idle at this point. */
-    while (ctx->sq_head == ctx->sq_tail && ctx->stop_flag == 0) {
+    while (ctx->sq_head == ctx->sq_tail && __atomic_load_n(&ctx->stop_flag, __ATOMIC_ACQUIRE) == 0) {
         pthread_cond_wait(&ctx->sq_full, &ctx->thread_mutex);
     }
 
@@ -7330,7 +7330,7 @@ static int consume_socket(struct mg_context *ctx, struct socket *sp)
     (void) pthread_cond_signal(&ctx->sq_empty);
     (void) pthread_mutex_unlock(&ctx->thread_mutex);
 
-    return !ctx->stop_flag;
+    return !__atomic_load_n(&ctx->stop_flag, __ATOMIC_ACQUIRE);
 }
 
 static void *worker_thread_run(void *thread_func_param)
@@ -7379,10 +7379,10 @@ static void *worker_thread_run(void *thread_func_param)
             conn->request_info.is_ssl = conn->client.is_ssl;
 
             if (!conn->client.is_ssl
-#ifndef NO_SSL
+                #ifndef NO_SSL
                 || sslize(conn, conn->ctx->ssl_ctx, SSL_accept)
 #endif
-               ) {
+                    ) {
                 process_new_connection(conn);
             }
 
@@ -7429,7 +7429,7 @@ static void produce_socket(struct mg_context *ctx, const struct socket *sp)
     (void) pthread_mutex_lock(&ctx->thread_mutex);
 
     /* If the queue is full, wait */
-    while (ctx->stop_flag == 0 &&
+    while (__atomic_load_n(&ctx->stop_flag, __ATOMIC_ACQUIRE) == 0 &&
            ctx->sq_head - ctx->sq_tail >= (int) ARRAY_SIZE(ctx->queue)) {
         (void) pthread_cond_wait(&ctx->sq_empty, &ctx->thread_mutex);
     }
@@ -7536,7 +7536,7 @@ static void master_thread_run(void *thread_func_param)
 
     /* Allocate memory for the listening sockets, and start the server */
     pfd = (struct pollfd *) mg_calloc(ctx->num_listening_sockets, sizeof(pfd[0]));
-    while (pfd != NULL && ctx->stop_flag == 0) {
+    while (pfd != NULL && __atomic_load_n(&ctx->stop_flag, __ATOMIC_ACQUIRE) == 0) {
         for (i = 0; i < ctx->num_listening_sockets; i++) {
             pfd[i].fd = ctx->listening_sockets[i].sock;
             pfd[i].events = POLLIN;
@@ -7549,7 +7549,7 @@ static void master_thread_run(void *thread_func_param)
                    (POLLRDNORM | POLLRDBAND)
                    Therefore, we're checking pfd[i].revents & POLLIN, not
                    pfd[i].revents == POLLIN. */
-                if (ctx->stop_flag == 0 && (pfd[i].revents & POLLIN)) {
+                if (__atomic_load_n(&ctx->stop_flag, __ATOMIC_ACQUIRE) == 0 && (pfd[i].revents & POLLIN)) {
                     accept_new_connection(&ctx->listening_sockets[i], ctx);
                 }
             }
@@ -7592,7 +7592,7 @@ static void master_thread_run(void *thread_func_param)
     /* Signal mg_stop() that we're done.
        WARNING: This must be the very last thing this
        thread does, as ctx becomes invalid after this line. */
-    ctx->stop_flag = 2;
+    __atomic_store_n(&ctx->stop_flag, 2, __ATOMIC_RELEASE);
 }
 
 /* Threads have different return types on Windows and Unix. */
@@ -7682,10 +7682,10 @@ static void free_context(struct mg_context *ctx)
 
 void mg_stop(struct mg_context *ctx)
 {
-    ctx->stop_flag = 1;
+    __atomic_store_n(&ctx->stop_flag, 1, __ATOMIC_RELEASE);
 
     /* Wait until mg_fini() stops */
-    while (ctx->stop_flag != 2) {
+    while (__atomic_load_n(&ctx->stop_flag, __ATOMIC_ACQUIRE) != 2) {
         (void) mg_sleep(10);
     }
     mg_join_thread(ctx->masterthreadid);
@@ -7761,8 +7761,8 @@ struct mg_context *mg_start(const struct mg_callbacks *callbacks,
             return NULL;
         }
     } else {
-       /* TODO: check if sTlsKey is already initialized */
-       mg_sleep(1);
+        /* TODO: check if sTlsKey is already initialized */
+        mg_sleep(1);
     }
 
     ok =  0==pthread_mutex_init(&ctx->thread_mutex, NULL);
