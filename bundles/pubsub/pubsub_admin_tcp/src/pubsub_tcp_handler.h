@@ -48,7 +48,7 @@
 typedef struct pubsub_tcpHandler pubsub_tcpHandler_t;
 typedef void(*pubsub_tcpHandler_processMessage_callback_t)
     (void *payload, const pubsub_protocol_message_t *header, bool *release, struct timespec *receiveTime);
-typedef void (*pubsub_tcpHandler_receiverConnectMessage_callback_t)(void *payload, const char *url, bool lock);
+typedef void (*pubsub_tcpHandler_receiverConnectMessage_callback_t)(void *payload, const char *url);
 typedef void (*pubsub_tcpHandler_acceptConnectMessage_callback_t)(void *payload, const char *url);
 
 pubsub_tcpHandler_t *pubsub_tcpHandler_create(pubsub_protocol_service_t *protocol, celix_log_helper_t *logHelper);

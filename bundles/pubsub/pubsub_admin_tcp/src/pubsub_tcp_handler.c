@@ -123,7 +123,7 @@ struct pubsub_tcpHandler {
 };
 
 static inline int
-pubsub_tcpHandler_closeConnectionEntry(pubsub_tcpHandler_t *handle, psa_tcp_connection_entry_t *entry, bool lock);
+pubsub_tcpHandler_closeConnectionEntry(pubsub_tcpHandler_t *handle, psa_tcp_connection_entry_t *entry);
 
 static inline int pubsub_tcpHandler_closeInterfaceEntry(pubsub_tcpHandler_t *handle, psa_tcp_connection_entry_t *entry);
 
@@ -171,7 +171,6 @@ pubsub_tcpHandler_t *pubsub_tcpHandler_create(pubsub_protocol_service_t *protoco
         __atomic_store_n(&handle->running, true, __ATOMIC_RELEASE);
         celixThread_create(&handle->thread, NULL, pubsub_tcpHandler_thread, handle);
         // signal(SIGPIPE, SIG_IGN);
-        printf("created tcp handler %lu\n", handle->thread.thread);
     }
     return handle;
 }
@@ -180,11 +179,9 @@ pubsub_tcpHandler_t *pubsub_tcpHandler_create(pubsub_protocol_service_t *protoco
 // Destroys the handle
 //
 void pubsub_tcpHandler_destroy(pubsub_tcpHandler_t *handle) {
-    printf("pubsub_tcpHandler_destroy\n");
     if (handle != NULL) {
         if (__atomic_load_n(&handle->running, __ATOMIC_ACQUIRE)) {
             __atomic_store_n(&handle->running, false, __ATOMIC_RELEASE);
-            printf("joining tcp handler %lu\n", handle->thread.thread);
             celixThread_join(handle->thread, NULL);
         }
         celixThreadRwlock_writeLock(&handle->dbLock);
@@ -200,7 +197,7 @@ void pubsub_tcpHandler_destroy(pubsub_tcpHandler_t *handle) {
         while (hashMapIterator_hasNext(&connection_iter)) {
             psa_tcp_connection_entry_t *entry = hashMapIterator_nextValue(&connection_iter);
             if (entry != NULL) {
-                pubsub_tcpHandler_closeConnectionEntry(handle, entry, true);
+                pubsub_tcpHandler_closeConnectionEntry(handle, entry);
             }
         }
         if (handle->efd >= 0) close(handle->efd);
@@ -284,21 +281,16 @@ int pubsub_tcpHandler_close(pubsub_tcpHandler_t *handle, int fd) {
         entry = hashMap_get(handle->interface_fd_map, (void *) (intptr_t) fd);
         if (entry) {
             entry = hashMap_remove(handle->interface_url_map, (void *) (intptr_t) entry->url);
-            celixThreadRwlock_unlock(&handle->dbLock);
             rc = pubsub_tcpHandler_closeInterfaceEntry(handle, entry);
             entry = NULL;
-        } else {
-            celixThreadRwlock_unlock(&handle->dbLock);
         }
         entry = hashMap_get(handle->connection_fd_map, (void *) (intptr_t) fd);
         if (entry) {
             entry = hashMap_remove(handle->connection_url_map, (void *) (intptr_t) entry->url);
-            celixThreadRwlock_unlock(&handle->dbLock);
-            rc = pubsub_tcpHandler_closeConnectionEntry(handle, entry, true);
+            rc = pubsub_tcpHandler_closeConnectionEntry(handle, entry);
             entry = NULL;
-        } else {
-            celixThreadRwlock_unlock(&handle->dbLock);
         }
+        celixThreadRwlock_unlock(&handle->dbLock);
     }
     return rc;
 }
@@ -474,7 +466,7 @@ int pubsub_tcpHandler_disconnect(pubsub_tcpHandler_t *handle, char *url) {
         psa_tcp_connection_entry_t *entry = NULL;
         entry = hashMap_remove(handle->connection_url_map, url);
         if (entry) {
-            pubsub_tcpHandler_closeConnectionEntry(handle, entry, false);
+            pubsub_tcpHandler_closeConnectionEntry(handle, entry);
         }
         celixThreadRwlock_unlock(&handle->dbLock);
     }
@@ -484,7 +476,7 @@ int pubsub_tcpHandler_disconnect(pubsub_tcpHandler_t *handle, char *url) {
 // loses the connection entry (of receiver)
 //
 static inline int pubsub_tcpHandler_closeConnectionEntry(
-    pubsub_tcpHandler_t *handle, psa_tcp_connection_entry_t *entry, bool lock) {
+    pubsub_tcpHandler_t *handle, psa_tcp_connection_entry_t *entry) {
     int rc = 0;
     if (handle != NULL && entry != NULL) {
         fprintf(stdout, "[TCP Socket] Close connection to url: %s: \n", entry->url);
@@ -504,10 +496,13 @@ static inline int pubsub_tcpHandler_closeConnectionEntry(
             }
         }
         if (entry->fd >= 0) {
+
+            celixThreadRwlock_unlock(&handle->dbLock);
             if (handle->receiverDisconnectMessageCallback)
-                handle->receiverDisconnectMessageCallback(handle->receiverConnectPayload, entry->url, lock);
+                handle->receiverDisconnectMessageCallback(handle->receiverConnectPayload, entry->url);
             if (handle->acceptConnectMessageCallback)
                 handle->acceptConnectMessageCallback(handle->acceptConnectPayload, entry->url);
+            celixThreadRwlock_writeLock(&handle->dbLock);
             pubsub_tcpHandler_freeEntry(entry);
             entry = NULL;
         }
@@ -655,7 +650,7 @@ int pubsub_tcpHandler_createReceiveBufferStore(pubsub_tcpHandler_t *handle,
 void pubsub_tcpHandler_setTimeout(pubsub_tcpHandler_t *handle,
                                   unsigned int timeout) {
     if (handle != NULL) {
-        __atomic_store_n(&handle->timeout, timeout, __ATOMIC_RELEASE);
+        __atomic_store(&handle->timeout, &timeout, __ATOMIC_RELEASE);
     }
 }
 
@@ -1216,14 +1211,16 @@ void pubsub_tcpHandler_connectionHandler(pubsub_tcpHandler_t *handle, int fd) {
     }
     celixThreadRwlock_readLock(&handle->dbLock);
     psa_tcp_connection_entry_t *entry = hashMap_get(handle->connection_fd_map, (void *) (intptr_t) fd);
-    if (entry)
+    if (entry) {
         if ((!entry->connected)) {
             // tell sender that an receiver is connected
             if (handle->receiverConnectMessageCallback)
-                handle->receiverConnectMessageCallback(handle->receiverConnectPayload, entry->url, false);
+                handle->receiverConnectMessageCallback(handle->receiverConnectPayload, entry->url);
             entry->connected = true;
         }
+    }
     celixThreadRwlock_unlock(&handle->dbLock);
+
 }
 
 #if defined(__APPLE__)
@@ -1237,8 +1234,8 @@ void pubsub_tcpHandler_handler(pubsub_tcpHandler_t *handle) {
     int nof_events = 0;
     //  Wait for events.
     struct kevent events[MAX_EVENTS];
-    struct timespec ts = {__atomic_load_n(&handle->timeout, __ATOMIC_ACQUIRE) / 1000, (__atomic_load_n(&handle->timeout, __ATOMIC_ACQUIRE)  % 1000) * 1000000};
-    nof_events = kevent (handle->efd, NULL, 0, &events[0], MAX_EVENTS, __atomic_load_n(&handle->timeout, __ATOMIC_ACQUIRE) ? &ts : NULL);
+    struct timespec ts = {handle->timeout / 1000, (handle->timeout  % 1000) * 1000000};
+    nof_events = kevent (handle->efd, NULL, 0, &events[0], MAX_EVENTS, handle->timeout ? &ts : NULL);
     if (nof_events < 0) {
       if ((errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)) {
       } else
@@ -1287,8 +1284,6 @@ void pubsub_tcpHandler_handler(pubsub_tcpHandler_t *handle) {
     if (handle->efd >= 0) {
         int nof_events = 0;
         struct epoll_event events[MAX_EVENTS];
-
-        printf("epoll_wait %lu\n", handle->thread.thread);
         nof_events = epoll_wait(handle->efd, events, MAX_EVENTS, __atomic_load_n(&handle->timeout, __ATOMIC_ACQUIRE));
         if (nof_events < 0) {
             if ((errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)) {
@@ -1305,9 +1300,9 @@ void pubsub_tcpHandler_handler(pubsub_tcpHandler_t *handle) {
                     pendingConnectionEntry = entry;
             }
             if (pendingConnectionEntry) {
-               int fd = pubsub_tcpHandler_acceptHandler(handle, pendingConnectionEntry);
-               pubsub_tcpHandler_connectionHandler(handle, fd);
                 celixThreadRwlock_unlock(&handle->dbLock);
+                int fd = pubsub_tcpHandler_acceptHandler(handle, pendingConnectionEntry);
+                pubsub_tcpHandler_connectionHandler(handle, fd);
             } else if (events[i].events & EPOLLIN) {
                 celixThreadRwlock_unlock(&handle->dbLock);
                 pubsub_tcpHandler_readHandler(handle, events[i].data.fd);
@@ -1341,10 +1336,8 @@ void pubsub_tcpHandler_handler(pubsub_tcpHandler_t *handle) {
 static void *pubsub_tcpHandler_thread(void *data) {
     pubsub_tcpHandler_t *handle = data;
 
-    printf("starting tcp handler %lu with timeout %u\n", handle->thread.thread, __atomic_load_n(&handle->timeout, __ATOMIC_ACQUIRE));
-    while (__atomic_load_n(&handle->running, __ATOMIC_ACQUIRE) == true) {
+    while (__atomic_load_n(&handle->running, __ATOMIC_ACQUIRE)) {
         pubsub_tcpHandler_handler(handle);
-    }
-    printf("returning from tcp handler %lu\n", handle->thread.thread);
+    } // while
     return NULL;
 }
