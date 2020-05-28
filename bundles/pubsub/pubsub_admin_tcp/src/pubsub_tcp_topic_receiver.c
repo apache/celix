@@ -68,7 +68,6 @@ struct pubsub_tcp_topic_receiver {
 
     struct {
         celix_thread_t thread;
-        celix_thread_mutex_t mutex;
         bool running;
     } thread;
 
@@ -230,7 +229,6 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
 
     celixThreadMutex_create(&receiver->subscribers.mutex, NULL);
     celixThreadMutex_create(&receiver->requestedConnections.mutex, NULL);
-    celixThreadMutex_create(&receiver->thread.mutex, NULL);
 
     receiver->subscribers.map = hashMap_create(NULL, NULL, NULL, NULL);
     receiver->requestedConnections.map = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
@@ -290,10 +288,8 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
 void pubsub_tcpTopicReceiver_destroy(pubsub_tcp_topic_receiver_t *receiver) {
     if (receiver != NULL) {
 
-        celixThreadMutex_lock(&receiver->thread.mutex);
-        if (receiver->thread.running) {
-            receiver->thread.running = false;
-            celixThreadMutex_unlock(&receiver->thread.mutex);
+        if (__atomic_load_n(&receiver->thread.running, __ATOMIC_ACQUIRE)) {
+            __atomic_store_n(&receiver->thread.running, false, __ATOMIC_RELEASE);
             celixThread_join(receiver->thread.thread, NULL);
         }
 
@@ -333,7 +329,6 @@ void pubsub_tcpTopicReceiver_destroy(pubsub_tcp_topic_receiver_t *receiver) {
 
         celixThreadMutex_destroy(&receiver->subscribers.mutex);
         celixThreadMutex_destroy(&receiver->requestedConnections.mutex);
-        celixThreadMutex_destroy(&receiver->thread.mutex);
 
         pubsub_tcpHandler_addMessageHandler(receiver->socketHandler, NULL, NULL);
         pubsub_tcpHandler_addReceiverConnectionCallback(receiver->socketHandler, NULL, NULL, NULL);
@@ -584,10 +579,6 @@ processMsg(void *handle, const pubsub_protocol_message_t *message, bool *release
 static void *psa_tcp_recvThread(void *data) {
     pubsub_tcp_topic_receiver_t *receiver = data;
 
-    celixThreadMutex_lock(&receiver->thread.mutex);
-    bool running = receiver->thread.running;
-    celixThreadMutex_unlock(&receiver->thread.mutex);
-
     celixThreadMutex_lock(&receiver->requestedConnections.mutex);
     bool allConnected = receiver->requestedConnections.allConnected;
     celixThreadMutex_unlock(&receiver->requestedConnections.mutex);
@@ -596,7 +587,7 @@ static void *psa_tcp_recvThread(void *data) {
     bool allInitialized = receiver->subscribers.allInitialized;
     celixThreadMutex_unlock(&receiver->subscribers.mutex);
 
-    while (running) {
+    while (__atomic_load_n(&receiver->thread.running, __ATOMIC_ACQUIRE)) {
         if (!allConnected) {
             psa_tcp_connectToAllRequestedConnections(receiver);
         }
@@ -604,10 +595,6 @@ static void *psa_tcp_recvThread(void *data) {
             psa_tcp_initializeAllSubscribers(receiver);
         }
         usleep(receiver->timeout);
-
-        celixThreadMutex_lock(&receiver->thread.mutex);
-        running = receiver->thread.running;
-        celixThreadMutex_unlock(&receiver->thread.mutex);
 
         celixThreadMutex_lock(&receiver->requestedConnections.mutex);
         allConnected = receiver->requestedConnections.allConnected;

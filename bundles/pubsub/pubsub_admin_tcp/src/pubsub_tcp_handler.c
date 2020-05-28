@@ -1234,14 +1234,16 @@ void pubsub_tcpHandler_handler(pubsub_tcpHandler_t *handle) {
     int nof_events = 0;
     //  Wait for events.
     struct kevent events[MAX_EVENTS];
-    struct timespec ts = {handle->timeout / 1000, (handle->timeout  % 1000) * 1000000};
-    nof_events = kevent (handle->efd, NULL, 0, &events[0], MAX_EVENTS, handle->timeout ? &ts : NULL);
+    unsigned int timeout = __atomic_load_n(&handle->timeout, __ATOMIC_ACQUIRE);
+    struct timespec ts = {timeout / 1000, timeout  % 1000) * 1000000};
+    nof_events = kevent (handle->efd, NULL, 0, &events[0], MAX_EVENTS, timeout ? &ts : NULL);
     if (nof_events < 0) {
       if ((errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)) {
       } else
         L_ERROR("[TCP Socket] Cannot create poll wait (%d) %s\n", nof_events, strerror(errno));
     }
     for (int i = 0; i < nof_events; i++) {
+      celixThreadRwlock_readLock(&handle->dbLock);
       hash_map_iterator_t iter = hashMapIterator_construct(handle->interface_fd_map);
       psa_tcp_connection_entry_t *pendingConnectionEntry = NULL;
       while (hashMapIterator_hasNext(&iter)) {
@@ -1250,11 +1252,14 @@ void pubsub_tcpHandler_handler(pubsub_tcpHandler_t *handle) {
           pendingConnectionEntry = entry;
       }
       if (pendingConnectionEntry) {
+        celixThreadRwlock_unlock(&handle->dbLock);
         int fd = pubsub_tcpHandler_acceptHandler(handle, pendingConnectionEntry);
         pubsub_tcpHandler_connectionHandler(handle, fd);
       } else if (events[i].filter & EVFILT_READ) {
+        celixThreadRwlock_unlock(&handle->dbLock);
         pubsub_tcpHandler_readHandler(handle, events[i].ident);
       } else if (events[i].flags & EV_EOF) {
+        celixThreadRwlock_unlock(&handle->dbLock);
         int err = 0;
         socklen_t len = sizeof(int);
         rc = getsockopt(events[i].ident, SOL_SOCKET, SO_ERROR, &err, &len);
@@ -1264,9 +1269,12 @@ void pubsub_tcpHandler_handler(pubsub_tcpHandler_t *handle) {
         }
         pubsub_tcpHandler_close(handle, events[i].ident);
       } else if (events[i].flags & EV_ERROR) {
+        celixThreadRwlock_unlock(&handle->dbLock);
         L_ERROR("[TCP Socket]:EPOLLERR  ERROR read from socket %s\n", strerror(errno));
         pubsub_tcpHandler_close(handle, events[i].ident);
         continue;
+      } else {
+        celixThreadRwlock_unlock(&handle->dbLock);
       }
     }
   }
