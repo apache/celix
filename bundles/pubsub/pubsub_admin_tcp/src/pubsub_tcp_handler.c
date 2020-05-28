@@ -162,15 +162,16 @@ pubsub_tcpHandler_t *pubsub_tcpHandler_create(pubsub_protocol_service_t *protoco
         handle->connection_fd_map = hashMap_create(NULL, NULL, NULL, NULL);
         handle->interface_url_map = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
         handle->interface_fd_map = hashMap_create(NULL, NULL, NULL, NULL);
-        handle->timeout = 2000; // default 2 sec
+        __atomic_store_n(&handle->timeout, 2000, __ATOMIC_RELEASE); // default 2 sec
         handle->logHelper = logHelper;
         handle->protocol = protocol;
         handle->bufferSize = MAX_DEFAULT_BUFFER_SIZE;
         handle->maxNofBuffer = 1; // Reserved for future Use;
         celixThreadRwlock_create(&handle->dbLock, 0);
-        handle->running = true;
+        __atomic_store_n(&handle->running, true, __ATOMIC_RELEASE);
         celixThread_create(&handle->thread, NULL, pubsub_tcpHandler_thread, handle);
         // signal(SIGPIPE, SIG_IGN);
+        printf("created tcp handler %lu\n", handle->thread.thread);
     }
     return handle;
 }
@@ -179,14 +180,11 @@ pubsub_tcpHandler_t *pubsub_tcpHandler_create(pubsub_protocol_service_t *protoco
 // Destroys the handle
 //
 void pubsub_tcpHandler_destroy(pubsub_tcpHandler_t *handle) {
+    printf("pubsub_tcpHandler_destroy\n");
     if (handle != NULL) {
-        celixThreadRwlock_readLock(&handle->dbLock);
-        bool running = handle->running;
-        celixThreadRwlock_unlock(&handle->dbLock);
-        if (running) {
-            celixThreadRwlock_writeLock(&handle->dbLock);
-            handle->running = false;
-            celixThreadRwlock_unlock(&handle->dbLock);
+        if (__atomic_load_n(&handle->running, __ATOMIC_ACQUIRE)) {
+            __atomic_store_n(&handle->running, false, __ATOMIC_RELEASE);
+            printf("joining tcp handler %lu\n", handle->thread.thread);
             celixThread_join(handle->thread, NULL);
         }
         celixThreadRwlock_writeLock(&handle->dbLock);
@@ -286,16 +284,21 @@ int pubsub_tcpHandler_close(pubsub_tcpHandler_t *handle, int fd) {
         entry = hashMap_get(handle->interface_fd_map, (void *) (intptr_t) fd);
         if (entry) {
             entry = hashMap_remove(handle->interface_url_map, (void *) (intptr_t) entry->url);
+            celixThreadRwlock_unlock(&handle->dbLock);
             rc = pubsub_tcpHandler_closeInterfaceEntry(handle, entry);
             entry = NULL;
+        } else {
+            celixThreadRwlock_unlock(&handle->dbLock);
         }
         entry = hashMap_get(handle->connection_fd_map, (void *) (intptr_t) fd);
         if (entry) {
             entry = hashMap_remove(handle->connection_url_map, (void *) (intptr_t) entry->url);
-            rc = pubsub_tcpHandler_closeConnectionEntry(handle, entry, false);
+            celixThreadRwlock_unlock(&handle->dbLock);
+            rc = pubsub_tcpHandler_closeConnectionEntry(handle, entry, true);
             entry = NULL;
+        } else {
+            celixThreadRwlock_unlock(&handle->dbLock);
         }
-        celixThreadRwlock_unlock(&handle->dbLock);
     }
     return rc;
 }
@@ -652,9 +655,7 @@ int pubsub_tcpHandler_createReceiveBufferStore(pubsub_tcpHandler_t *handle,
 void pubsub_tcpHandler_setTimeout(pubsub_tcpHandler_t *handle,
                                   unsigned int timeout) {
     if (handle != NULL) {
-        celixThreadRwlock_writeLock(&handle->dbLock);
-        handle->timeout = timeout;
-        celixThreadRwlock_unlock(&handle->dbLock);
+        __atomic_store_n(&handle->timeout, timeout, __ATOMIC_RELEASE);
     }
 }
 
@@ -1236,8 +1237,8 @@ void pubsub_tcpHandler_handler(pubsub_tcpHandler_t *handle) {
     int nof_events = 0;
     //  Wait for events.
     struct kevent events[MAX_EVENTS];
-    struct timespec ts = {handle->timeout / 1000, (handle->timeout  % 1000) * 1000000};
-    nof_events = kevent (handle->efd, NULL, 0, &events[0], MAX_EVENTS, handle->timeout ? &ts : NULL);
+    struct timespec ts = {__atomic_load_n(&handle->timeout, __ATOMIC_ACQUIRE) / 1000, (__atomic_load_n(&handle->timeout, __ATOMIC_ACQUIRE)  % 1000) * 1000000};
+    nof_events = kevent (handle->efd, NULL, 0, &events[0], MAX_EVENTS, __atomic_load_n(&handle->timeout, __ATOMIC_ACQUIRE) ? &ts : NULL);
     if (nof_events < 0) {
       if ((errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)) {
       } else
@@ -1286,13 +1287,16 @@ void pubsub_tcpHandler_handler(pubsub_tcpHandler_t *handle) {
     if (handle->efd >= 0) {
         int nof_events = 0;
         struct epoll_event events[MAX_EVENTS];
-        nof_events = epoll_wait(handle->efd, events, MAX_EVENTS, handle->timeout);
+
+        printf("epoll_wait %lu\n", handle->thread.thread);
+        nof_events = epoll_wait(handle->efd, events, MAX_EVENTS, __atomic_load_n(&handle->timeout, __ATOMIC_ACQUIRE));
         if (nof_events < 0) {
             if ((errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)) {
             } else
                 L_ERROR("[TCP Socket] Cannot create epoll wait (%d) %s\n", nof_events, strerror(errno));
         }
         for (int i = 0; i < nof_events; i++) {
+            celixThreadRwlock_readLock(&handle->dbLock);
             hash_map_iterator_t iter = hashMapIterator_construct(handle->interface_fd_map);
             psa_tcp_connection_entry_t *pendingConnectionEntry = NULL;
             while (hashMapIterator_hasNext(&iter)) {
@@ -1303,9 +1307,12 @@ void pubsub_tcpHandler_handler(pubsub_tcpHandler_t *handle) {
             if (pendingConnectionEntry) {
                int fd = pubsub_tcpHandler_acceptHandler(handle, pendingConnectionEntry);
                pubsub_tcpHandler_connectionHandler(handle, fd);
+                celixThreadRwlock_unlock(&handle->dbLock);
             } else if (events[i].events & EPOLLIN) {
+                celixThreadRwlock_unlock(&handle->dbLock);
                 pubsub_tcpHandler_readHandler(handle, events[i].data.fd);
             } else if (events[i].events & EPOLLRDHUP) {
+                celixThreadRwlock_unlock(&handle->dbLock);
                 int err = 0;
                 socklen_t len = sizeof(int);
                 rc = getsockopt(events[i].data.fd, SOL_SOCKET, SO_ERROR, &err, &len);
@@ -1315,9 +1322,12 @@ void pubsub_tcpHandler_handler(pubsub_tcpHandler_t *handle) {
                 }
                 pubsub_tcpHandler_close(handle, events[i].data.fd);
             } else if (events[i].events & EPOLLERR) {
+                celixThreadRwlock_unlock(&handle->dbLock);
                 L_ERROR("[TCP Socket]:EPOLLERR  ERROR read from socket %s\n", strerror(errno));
                 pubsub_tcpHandler_close(handle, events[i].data.fd);
                 continue;
+            } else {
+                celixThreadRwlock_unlock(&handle->dbLock);
             }
         }
     }
@@ -1330,15 +1340,11 @@ void pubsub_tcpHandler_handler(pubsub_tcpHandler_t *handle) {
 //
 static void *pubsub_tcpHandler_thread(void *data) {
     pubsub_tcpHandler_t *handle = data;
-    celixThreadRwlock_readLock(&handle->dbLock);
-    bool running = handle->running;
-    celixThreadRwlock_unlock(&handle->dbLock);
 
-    while (running) {
+    printf("starting tcp handler %lu with timeout %u\n", handle->thread.thread, __atomic_load_n(&handle->timeout, __ATOMIC_ACQUIRE));
+    while (__atomic_load_n(&handle->running, __ATOMIC_ACQUIRE) == true) {
         pubsub_tcpHandler_handler(handle);
-        celixThreadRwlock_readLock(&handle->dbLock);
-        running = handle->running;
-        celixThreadRwlock_unlock(&handle->dbLock);
-    } // while
+    }
+    printf("returning from tcp handler %lu\n", handle->thread.thread);
     return NULL;
 }
