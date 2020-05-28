@@ -1235,7 +1235,7 @@ void pubsub_tcpHandler_handler(pubsub_tcpHandler_t *handle) {
     //  Wait for events.
     struct kevent events[MAX_EVENTS];
     unsigned int timeout = __atomic_load_n(&handle->timeout, __ATOMIC_ACQUIRE);
-    struct timespec ts = {timeout / 1000, timeout  % 1000) * 1000000};
+    struct timespec ts = {timeout / 1000, (timeout  % 1000) * 1000000};
     nof_events = kevent (handle->efd, NULL, 0, &events[0], MAX_EVENTS, timeout ? &ts : NULL);
     if (nof_events < 0) {
       if ((errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)) {
