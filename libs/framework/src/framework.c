@@ -376,6 +376,7 @@ celix_status_t framework_destroy(framework_pt framework) {
 
     }
     celix_arrayList_destroy(framework->installedBundles.entries);
+    celixThreadMutex_unlock(&framework->installedBundles.mutex);
     celixThreadMutex_destroy(&framework->installedBundles.mutex);
 
 	hashMap_destroy(framework->installRequestMap, false, false);
