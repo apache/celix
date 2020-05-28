@@ -155,7 +155,7 @@ TEST(filter, create_misc){
     const char *filter_str3 = "(test_attr3=*attr3)";
     get_filter = celix_filter_create(filter_str3);
     CHECK(get_filter != NULL);
-    LONGS_EQUAL(CELIX_FILTER_OPERAND_SUBSTRING, get_filter->operand)
+    LONGS_EQUAL(CELIX_FILTER_OPERAND_SUBSTRING, get_filter->operand);
     LONGS_EQUAL(2, celix_arrayList_size((celix_array_list_t*) get_filter->children));
     celix_filter_destroy(get_filter);
 
