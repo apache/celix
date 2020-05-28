@@ -195,6 +195,7 @@ static void celix_logAdmin_addLogSvcForName(celix_log_admin_t* admin, const char
         newEntry->logSvc.vlog = celix_logAdmin_vlog;
         newEntry->logSvc.vlogDetails = celix_logAdmin_vlogDetails;
         hashMap_put(admin->loggers, (void*)newEntry->name, newEntry);
+        celixThreadRwlock_unlock(&admin->lock);
 
         if (celix_utils_stringEquals(newEntry->name, CELIX_LOG_ADMIN_FRAMEWORK_LOG_NAME)) {
             celix_framework_t* fw = celix_bundleContext_getFramework(admin->ctx);
@@ -202,8 +203,8 @@ static void celix_logAdmin_addLogSvcForName(celix_log_admin_t* admin, const char
         }
     } else {
         found->count += 1;
+        celixThreadRwlock_unlock(&admin->lock);
     }
-    celixThreadRwlock_unlock(&admin->lock);
 
     if (newEntry != NULL) {
         //register new instance
