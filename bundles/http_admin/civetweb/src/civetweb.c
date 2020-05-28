@@ -4241,7 +4241,7 @@ should_keep_alive(const struct mg_connection *conn)
     const char *header;
 
     /* First satisfy needs of the server */
-    if ((conn == NULL) || conn->must_close) {
+    if ((conn == NULL) || __atomic_load_n(&conn->must_close, __ATOMIC_ACQUIRE)) {
         /* Close, if civetweb framework needs to close */
         return 0;
     }
@@ -4717,7 +4717,7 @@ mg_send_http_error_impl(struct mg_connection *conn,
         /* No custom error page. Send default error page. */
         gmt_time_string(date, sizeof(date), &curtime);
 
-        conn->must_close = 1;
+        __atomic_store_n(&conn->must_close, 1, __ATOMIC_RELEASE);
         mg_printf(conn, "HTTP/1.1 %d %s\r\n", status, status_text);
         send_no_cache_header(conn);
         send_additional_header(conn);
@@ -8541,7 +8541,7 @@ send_authorization_request(struct mg_connection *conn, const char *realm)
 
     nonce ^= conn->dom_ctx->auth_nonce_mask;
     conn->status_code = 401;
-    conn->must_close = 1;
+    __atomic_store_n(&conn->must_close, 1, __ATOMIC_RELEASE);
 
     gmt_time_string(date, sizeof(date), &curtime);
 
@@ -9399,7 +9399,7 @@ handle_directory_request(struct mg_connection *conn, const char *dir)
                      ? 'a'
                      : 'd';
 
-    conn->must_close = 1;
+    __atomic_store_n(&conn->must_close, 1, __ATOMIC_RELEASE);
     mg_printf(conn, "HTTP/1.1 200 OK\r\n");
     send_static_cache_header(conn);
     send_additional_header(conn);
@@ -11235,7 +11235,7 @@ handle_cgi_request(struct mg_connection *conn, const char *prog)
     connection_state =
             get_header(ri.http_headers, ri.num_headers, "Connection");
     if (!header_has_option(connection_state, "keep-alive")) {
-        conn->must_close = 1;
+        __atomic_store_n(&conn->must_close, 1, __ATOMIC_RELEASE);
     }
 
     DEBUG_TRACE("CGI: response %u %s", conn->status_code, status_text);
@@ -11868,7 +11868,7 @@ handle_ssi_file_request(struct mg_connection *conn,
                            path,
                            strerror(ERRNO));
     } else {
-        conn->must_close = 1;
+        __atomic_store_n(&conn->must_close, 1, __ATOMIC_RELEASE);
         gmt_time_string(date, sizeof(date), &curtime);
         fclose_on_exec(&filep->access, conn);
         mg_printf(conn, "HTTP/1.1 200 OK\r\n");
@@ -11903,7 +11903,7 @@ send_options(struct mg_connection *conn)
     }
 
     conn->status_code = 200;
-    conn->must_close = 1;
+    __atomic_store_n(&conn->must_close, 1, __ATOMIC_RELEASE);
     gmt_time_string(date, sizeof(date), &curtime);
 
     /* We do not set a "Cache-Control" header here, but leave the default.
@@ -12009,7 +12009,7 @@ handle_propfind(struct mg_connection *conn,
         return;
     }
 
-    conn->must_close = 1;
+    __atomic_store_n(&conn->must_close, 1, __ATOMIC_RELEASE);
     conn->status_code = 207;
     mg_printf(conn,
               "HTTP/1.1 207 Multi-Status\r\n"
@@ -12101,7 +12101,7 @@ send_websocket_handshake(struct mg_connection *conn, const char *websock_key)
 	/* Calculate Sec-WebSocket-Accept reply from Sec-WebSocket-Key. */
 	mg_snprintf(conn, &truncated, buf, sizeof(buf), "%s%s", websock_key, magic);
 	if (truncated) {
-		conn->must_close = 1;
+        __atomic_store_n(&conn->must_close, 1, __ATOMIC_RELEASE);
 		return 0;
 	}
 
@@ -12111,6 +12111,7 @@ send_websocket_handshake(struct mg_connection *conn, const char *websock_key)
 	SHA1_Update(&sha_ctx, (unsigned char *)buf, (uint32_t)strlen(buf));
 	SHA1_Final((unsigned char *)sha, &sha_ctx);
 	base64_encode((unsigned char *)sha, sizeof(sha), b64_sha);
+    (void)mg_lock_connection(conn);
 	mg_printf(conn,
 	          "HTTP/1.1 101 Switching Protocols\r\n"
 	          "Upgrade: websocket\r\n"
@@ -12124,6 +12125,7 @@ send_websocket_handshake(struct mg_connection *conn, const char *websock_key)
 	} else {
 		mg_printf(conn, "%s", "\r\n");
 	}
+    (void)mg_unlock_connection(conn);
 
 	return 1;
 }
@@ -12198,7 +12200,7 @@ read_websocket(struct mg_connection *conn,
 
 	/* Loop continuously, reading messages from the socket, invoking the
 	 * callback, and waiting repeatedly until an error occurs. */
-	while (!__atomic_load_n(&conn->phys_ctx->stop_flag, __ATOMIC_ACQUIRE) && !conn->must_close) {
+	while (!__atomic_load_n(&conn->phys_ctx->stop_flag, __ATOMIC_ACQUIRE) && !__atomic_load_n(&conn->must_close, __ATOMIC_ACQUIRE)) {
 		header_len = 0;
 		DEBUG_ASSERT(conn->data_len >= conn->request_len);
 		if ((body_len = (size_t)(conn->data_len - conn->request_len)) >= 2) {
@@ -12401,7 +12403,7 @@ read_websocket(struct mg_connection *conn,
 				/* Reset open PING count */
 				ping_count = 0;
 			} else {
-				if (!__atomic_load_n(&conn->phys_ctx->stop_flag, __ATOMIC_ACQUIRE) && !conn->must_close) {
+				if (!__atomic_load_n(&conn->phys_ctx->stop_flag, __ATOMIC_ACQUIRE) && !__atomic_load_n(&conn->must_close, __ATOMIC_ACQUIRE)) {
 					if (ping_count > MG_MAX_UNANSWERED_PING) {
 						/* Stop sending PING */
 						DEBUG_TRACE("Too many (%i) unanswered ping from %s:%u "
@@ -13133,7 +13135,7 @@ redirect_to_https_port(struct mg_connection *conn, int ssl_index)
     char target_url[MG_BUF_LEN];
     int truncated = 0;
 
-    conn->must_close = 1;
+    __atomic_store_n(&conn->must_close, 1, __ATOMIC_RELEASE);
 
     /* Send host, port, uri and (if it exists) ?query_string */
     if (conn->host) {
@@ -16102,7 +16104,7 @@ reset_per_request_attributes(struct mg_connection *conn)
     conn->status_code = -1;
     conn->content_len = -1;
     conn->is_chunked = 0;
-    conn->must_close = 0;
+    __atomic_store_n(&conn->must_close, 0, __ATOMIC_RELEASE);
     conn->request_len = 0;
     conn->throttle = 0;
     conn->accept_gzip = 0;
@@ -16283,7 +16285,7 @@ close_connection(struct mg_connection *conn)
     mg_lock_connection(conn);
 
     /* Set close flag, so keep-alive loops will stop */
-    conn->must_close = 1;
+    __atomic_store_n(&conn->must_close, 1, __ATOMIC_RELEASE);
 
     /* call the connection_close callback if assigned */
     if (conn->phys_ctx->callbacks.connection_close != NULL) {
@@ -16341,7 +16343,7 @@ mg_close_connection(struct mg_connection *conn)
     if (conn->phys_ctx->context_type == CONTEXT_SERVER) {
 		if (conn->in_websocket_handling) {
 			/* Set close flag, so the server thread can exit. */
-			conn->must_close = 1;
+            __atomic_store_n(&conn->must_close, 1, __ATOMIC_RELEASE);
 			return;
 		}
 	}
@@ -16351,7 +16353,7 @@ mg_close_connection(struct mg_connection *conn)
 
 		/* client context: loops must end */
 		__atomic_store_n(&conn->phys_ctx->stop_flag, 1, __ATOMIC_RELEASE);
-		conn->must_close = 1;
+		__atomic_store_n(&conn->must_close, 1, __ATOMIC_RELEASE);
 
 		/* We need to get the client thread out of the select/recv call
 		 * here. */
@@ -16901,7 +16903,7 @@ get_message(struct mg_connection *conn, char *ebuf, size_t ebuf_len, int *err)
             *err = 400;
         } else {
             /* Server did not recv anything -> just close the connection */
-            conn->must_close = 1;
+            __atomic_store_n(&conn->must_close, 1, __ATOMIC_RELEASE);
             mg_snprintf(conn,
                         NULL, /* No truncation check for ebuf */
                         ebuf,
@@ -17425,7 +17427,7 @@ init_connection(struct mg_connection *conn)
             !mg_strcasecmp(conn->dom_ctx->config[ENABLE_KEEP_ALIVE], "yes");
 
     if (!keep_alive_enabled) {
-        conn->must_close = 1;
+        __atomic_store_n(&conn->must_close, 1, __ATOMIC_RELEASE);
     }
 
     /* Important: on new connection, reset the receiving buffer. Credit
@@ -17579,10 +17581,10 @@ process_new_connection(struct mg_connection *conn)
                 log_access(conn);
             } else {
                 /* TODO: handle non-local request (PROXY) */
-                conn->must_close = 1;
+                __atomic_store_n(&conn->must_close, 1, __ATOMIC_RELEASE);
             }
         } else {
-            conn->must_close = 1;
+            __atomic_store_n(&conn->must_close, 1, __ATOMIC_RELEASE);
         }
 
         if (ri->remote_user != NULL) {

@@ -58,6 +58,7 @@ struct pubsub_websocket_topic_sender {
 
     celix_websocket_service_t websockSvc;
     long websockSvcId;
+    celix_thread_mutex_t senderMutex;
     struct mg_connection *sockConnection;
 
     struct {
@@ -66,7 +67,6 @@ struct pubsub_websocket_topic_sender {
     } publisher;
 
     struct {
-        celix_thread_mutex_t mutex;
         hash_map_t *map;  //key = bndId, value = psa_websocket_bounded_service_entry_t
     } boundedServices;
 };
@@ -129,7 +129,8 @@ pubsub_websocket_topic_sender_t* pubsub_websocketTopicSender_create(
         sender->scope = scope == NULL ? NULL : strndup(scope, 1024 * 1024);
         sender->topic = strndup(topic, 1024 * 1024);
 
-        celixThreadMutex_create(&sender->boundedServices.mutex, NULL);
+        celixThreadMutex_create(&sender->senderMutex, NULL);
+
         sender->boundedServices.map = hashMap_create(NULL, NULL, NULL, NULL);
     }
 
@@ -166,7 +167,7 @@ void pubsub_websocketTopicSender_destroy(pubsub_websocket_topic_sender_t *sender
     if (sender != NULL) {
         celix_bundleContext_unregisterService(sender->ctx, sender->publisher.svcId);
 
-        celixThreadMutex_lock(&sender->boundedServices.mutex);
+        celixThreadMutex_lock(&sender->senderMutex);
         hash_map_iterator_t iter = hashMapIterator_construct(sender->boundedServices.map);
         while (hashMapIterator_hasNext(&iter)) {
             psa_websocket_bounded_service_entry_t *entry = hashMapIterator_nextValue(&iter);
@@ -185,9 +186,9 @@ void pubsub_websocketTopicSender_destroy(pubsub_websocket_topic_sender_t *sender
             }
         }
         hashMap_destroy(sender->boundedServices.map, false, false);
-        celixThreadMutex_unlock(&sender->boundedServices.mutex);
+        celixThreadMutex_unlock(&sender->senderMutex);
 
-        celixThreadMutex_destroy(&sender->boundedServices.mutex);
+        celixThreadMutex_destroy(&sender->senderMutex);
 
         celix_bundleContext_unregisterService(sender->ctx, sender->websockSvcId);
 
@@ -226,7 +227,7 @@ static void* psa_websocket_getPublisherService(void *handle, const celix_bundle_
     pubsub_websocket_topic_sender_t *sender = handle;
     long bndId = celix_bundle_getId(requestingBundle);
 
-    celixThreadMutex_lock(&sender->boundedServices.mutex);
+    celixThreadMutex_lock(&sender->senderMutex);
     psa_websocket_bounded_service_entry_t *entry = hashMap_get(sender->boundedServices.map, (void*)bndId);
     if (entry != NULL) {
         entry->getCount += 1;
@@ -264,7 +265,7 @@ static void* psa_websocket_getPublisherService(void *handle, const celix_bundle_
             L_ERROR("Error creating serializer map for websocket TopicSender %s/%s", sender->scope == NULL ? "(null)" : sender->scope, sender->topic);
         }
     }
-    celixThreadMutex_unlock(&sender->boundedServices.mutex);
+    celixThreadMutex_unlock(&sender->senderMutex);
 
     return &entry->service;
 }
@@ -273,7 +274,7 @@ static void psa_websocket_ungetPublisherService(void *handle, const celix_bundle
     pubsub_websocket_topic_sender_t *sender = handle;
     long bndId = celix_bundle_getId(requestingBundle);
 
-    celixThreadMutex_lock(&sender->boundedServices.mutex);
+    celixThreadMutex_lock(&sender->senderMutex);
     psa_websocket_bounded_service_entry_t *entry = hashMap_get(sender->boundedServices.map, (void*)bndId);
     if (entry != NULL) {
         entry->getCount -= 1;
@@ -296,7 +297,7 @@ static void psa_websocket_ungetPublisherService(void *handle, const celix_bundle
         hashMap_destroy(entry->msgTypeIds, true, false);
         free(entry);
     }
-    celixThreadMutex_unlock(&sender->boundedServices.mutex);
+    celixThreadMutex_unlock(&sender->senderMutex);
 }
 
 static int psa_websocket_topicPublicationSend(void* handle, unsigned int msgTypeId, const void *inMsg, celix_properties_t *metadata) {
@@ -305,6 +306,7 @@ static int psa_websocket_topicPublicationSend(void* handle, unsigned int msgType
     pubsub_websocket_topic_sender_t *sender = bound->parent;
     psa_websocket_send_msg_entry_t *entry = hashMap_get(bound->msgEntries, (void *) (uintptr_t) (msgTypeId));
 
+    celixThreadMutex_lock(&sender->senderMutex);
     if (sender->sockConnection != NULL && entry != NULL) {
         delay_first_send_for_late_joiners(sender);
         size_t serializedOutputLen = 0;
@@ -351,6 +353,7 @@ static int psa_websocket_topicPublicationSend(void* handle, unsigned int msgType
     } else if (entry == NULL){
         L_WARN("[PSA_WEBSOCKET_TS] Error sending message with msg type id %i for scope/topic %s/%s", msgTypeId, sender->scope == NULL ? "(null)" : sender->scope, sender->topic);
     }
+    celixThreadMutex_unlock(&sender->senderMutex);
 
     return status;
 }
@@ -358,13 +361,17 @@ static int psa_websocket_topicPublicationSend(void* handle, unsigned int msgType
 static void psa_websocketTopicSender_ready(struct mg_connection *connection, void *handle) {
     //Connection succeeded so save connection to use for sending the messages
     pubsub_websocket_topic_sender_t *sender = (pubsub_websocket_topic_sender_t *) handle;
+    celixThreadMutex_lock(&sender->senderMutex);
     sender->sockConnection = connection;
+    celixThreadMutex_unlock(&sender->senderMutex);
 }
 
 static void psa_websocketTopicSender_close(const struct mg_connection *connection __attribute__((unused)), void *handle) {
     //Connection closed so reset connection
     pubsub_websocket_topic_sender_t *sender = (pubsub_websocket_topic_sender_t *) handle;
+    celixThreadMutex_lock(&sender->senderMutex);
     sender->sockConnection = NULL;
+    celixThreadMutex_unlock(&sender->senderMutex);
 }
 
 static void delay_first_send_for_late_joiners(pubsub_websocket_topic_sender_t *sender) {

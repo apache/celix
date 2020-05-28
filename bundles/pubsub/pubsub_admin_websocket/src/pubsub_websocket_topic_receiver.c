@@ -567,16 +567,18 @@ static void* psa_websocket_recvThread(void * data) {
             psa_websocket_initializeAllSubscribers(receiver);
         }
 
+        celixThreadMutex_lock(&receiver->recvBuffer.mutex);
         while(celix_arrayList_size(receiver->recvBuffer.list) > 0) {
-            celixThreadMutex_lock(&receiver->recvBuffer.mutex);
             pubsub_websocket_msg_entry_t *msg = (pubsub_websocket_msg_entry_t *) celix_arrayList_get(receiver->recvBuffer.list, 0);
             celix_arrayList_removeAt(receiver->recvBuffer.list, 0);
-            celixThreadMutex_unlock(&receiver->recvBuffer.mutex);
 
+            celixThreadMutex_unlock(&receiver->recvBuffer.mutex);
             processMsg(receiver, msg->msgData, msg->msgSize);
             free((void *)msg->msgData);
             free(msg);
+            celixThreadMutex_lock(&receiver->recvBuffer.mutex);
         }
+        celixThreadMutex_unlock(&receiver->recvBuffer.mutex);
 
         celixThreadMutex_lock(&receiver->recvThread.mutex);
         running = receiver->recvThread.running;
