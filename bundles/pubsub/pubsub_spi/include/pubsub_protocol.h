@@ -47,8 +47,6 @@ struct pubsub_protocol_header {
     uint32_t seqNr;
     uint32_t payloadPartSize;
     uint32_t payloadOffset;
-
-    uint32_t padding; //to arrange alignment on 64 bit
 };
 
 typedef struct pubsub_protocol_payload pubsub_protocol_payload_t;
