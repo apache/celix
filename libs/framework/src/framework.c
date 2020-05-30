@@ -437,8 +437,7 @@ celix_status_t fw_init(framework_pt framework) {
 	        status = CELIX_DO_IF(status, bundle_getState(framework->bundle, &state));
 	        if (status == CELIX_SUCCESS) {
 	            if (state == OSGI_FRAMEWORK_BUNDLE_INSTALLED) {
-	                const char *clean = properties_get(framework->configurationMap, OSGI_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_NAME);
-	                bool cleanCache = clean == NULL ? true : strcmp(clean, "false") != 0;
+	                bool cleanCache = celix_properties_getAsBool(framework->configurationMap, OSGI_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_NAME, OSGI_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_DEFAULT);
 	                if (cleanCache) {
 	                    bundleCache_delete(framework->cache);
 	                }
