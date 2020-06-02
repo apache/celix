@@ -17,7 +17,7 @@
 # under the License.
 
 
-set(CELIX_NO_POSTFIX_BUILD_TYPE "RelWithDebInfo" CACHE STRING "The build type used for creating bundle without a build type postfix.")
+set(CELIX_NO_POSTFIX_BUILD_TYPES RelWithDebInfo Release CACHE STRING "The build type used for creating bundle without a build type postfix.")
 
 find_program(JAR_COMMAND jar NO_CMAKE_FIND_ROOT_PATH)
 
@@ -198,7 +198,7 @@ function(add_celix_bundle)
         set(BUNDLE_FILENAME ${BUNDLE_TARGET_NAME})
     endif ()
 
-    if ("${CMAKE_BUILD_TYPE}" STREQUAL "${CELIX_NO_POSTFIX_BUILD_TYPE}")
+    if (${CMAKE_BUILD_TYPE} IN_LIST CELIX_NO_POSTFIX_BUILD_TYPES)
         set(BUNDLE_FILENAME ${BUNDLE_FILENAME}.zip)
     else ()
         set(BUNDLE_FILENAME ${BUNDLE_FILENAME}-${CMAKE_BUILD_TYPE}.zip)
