@@ -38,7 +38,7 @@ celix_bundle_headers(http_admin_sut
 #    VERSION 1.0.0
 #)
 #target_link_libraries(http_admin_tst PRIVATE Celix::framework Celix::http_admin_api)
-#target_include_directories(http_admin_tst SYSTEM PRIVATE ${CPPUTEST_INCLUDE_DIR})
+#target_include_directories(http_admin_tst SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR})
 #celix_bundle_private_libs(http_admin_tst civetweb_shared)
 
 
@@ -53,8 +53,8 @@ add_celix_container(http_websocket_tests
 #            http_admin_tst
 )
 target_sources(http_websocket_tests PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/test/http_websocket_tests.cc ${CMAKE_CURRENT_SOURCE_DIR}/test/http_admin_info_tests.cc)
-target_link_libraries(http_websocket_tests PRIVATE Celix::http_admin_api ${CPPUTEST_LIBRARIES})
-target_include_directories(http_websocket_tests SYSTEM PRIVATE ${CPPUTEST_INCLUDE_DIR})
+target_link_libraries(http_websocket_tests PRIVATE Celix::http_admin_api ${CppUTest_LIBRARIES})
+target_include_directories(http_websocket_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR})
 
 add_test(NAME http_websocket_tests COMMAND http_websocket_tests WORKING_DIRECTORY $<TARGET_PROPERTY:http_websocket_tests,CONTAINER_LOC>)
 setup_target_for_coverage(http_websocket_tests SCAN_DIR ${CMAKE_BINARY_DIR}/bundles/http_admin/http_admin)

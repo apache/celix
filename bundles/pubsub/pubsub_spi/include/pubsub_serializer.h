@@ -38,6 +38,7 @@
 #define PUBSUB_SERIALIZER_SERVICE_VERSION   "1.0.0"
 #define PUBSUB_SERIALIZER_SERVICE_RANGE     "[1,2)"
 
+//NOTE deprecated used the pubsub_message_serialization_service instead
 typedef struct pubsub_msg_serializer {
     void* handle;
 

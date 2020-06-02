@@ -24,11 +24,12 @@ add_celix_bundle(celix_pubsub_serializer_avrobin
         SOURCES
         src/ps_avrobin_serializer_activator.c
         src/pubsub_avrobin_serializer_impl.c
-        )
+        src/pubsub_avrobin_serialization_provider.c
+)
 target_include_directories(celix_pubsub_serializer_avrobin PRIVATE
         src
         ${JANSSON_INCLUDE_DIR}
-        )
+)
 set_target_properties(celix_pubsub_serializer_avrobin PROPERTIES INSTALL_RPATH "$ORIGIN")
 target_link_libraries(celix_pubsub_serializer_avrobin PRIVATE Celix::framework Celix::dfi ${JANSSON_LIBRARIES} Celix::log_helper)
 target_link_libraries(celix_pubsub_serializer_avrobin PRIVATE Celix::pubsub_spi Celix::pubsub_utils )
@@ -36,3 +37,7 @@ target_link_libraries(celix_pubsub_serializer_avrobin PRIVATE Celix::pubsub_spi 
 install_celix_bundle(celix_pubsub_serializer_avrobin EXPORT celix COMPONENT pubsub)
 
 add_library(Celix::pubsub_serializer_avrobin ALIAS celix_pubsub_serializer_avrobin)
+
+if (ENABLE_TESTING)
+    add_subdirectory(gtest)
+endif(ENABLE_TESTING)

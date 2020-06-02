@@ -532,19 +532,20 @@ static celix_status_t bundleContext_bundleChanged(void *listenerSvc, bundle_even
     }
 
     bool handleEvent = true;
-    if (event->bundleId == 0 /*framework bundle*/)  {
+    long bndId = celix_bundle_getId(event->bnd);
+    if (bndId == 0 /*framework bundle*/)  {
         handleEvent = tracker->opts.includeFrameworkBundle;
     }
 
     if (tracker != NULL && handleEvent) {
         void *callbackHandle = tracker->opts.callbackHandle;
 
-        if (event->type == OSGI_FRAMEWORK_BUNDLE_EVENT_STARTED && tracker->opts.onStarted != NULL) {
-            bundle_t *bnd = framework_getBundleById(tracker->ctx->framework, event->bundleId);
-            tracker->opts.onStarted(callbackHandle, bnd);
+        if (event->type == OSGI_FRAMEWORK_BUNDLE_EVENT_INSTALLED && tracker->opts.onInstalled != NULL) {
+            tracker->opts.onInstalled(callbackHandle, event->bnd);
+        } else if (event->type == OSGI_FRAMEWORK_BUNDLE_EVENT_STARTED && tracker->opts.onStarted != NULL) {
+            tracker->opts.onStarted(callbackHandle, event->bnd);
         } else if (event->type == OSGI_FRAMEWORK_BUNDLE_EVENT_STOPPING && tracker->opts.onStopped != NULL) {
-            bundle_t *bnd = framework_getBundleById(tracker->ctx->framework, event->bundleId);
-            tracker->opts.onStopped(callbackHandle, bnd);
+            tracker->opts.onStopped(callbackHandle, event->bnd);
         }
 
         if (tracker->opts.onBundleEvent != NULL) {
@@ -559,28 +560,17 @@ long celix_bundleContext_trackBundlesWithOptions(
         const celix_bundle_tracking_options_t *opts) {
     long trackerId = -1;
     celix_bundle_context_bundle_tracker_entry_t *entry = calloc(1, sizeof(*entry));
-    if (entry != NULL) {
-        memcpy(&entry->opts, opts, sizeof(*opts));
-        entry->ctx = ctx;
-        entry->listener.handle = entry;
-        entry->listener.bundleChanged = bundleContext_bundleChanged;
-        fw_addBundleListener(ctx->framework, ctx->bundle, &entry->listener);
+    memcpy(&entry->opts, opts, sizeof(*opts));
+    entry->ctx = ctx;
+    entry->listener.handle = entry;
+    entry->listener.bundleChanged = bundleContext_bundleChanged;
+    fw_addBundleListener(ctx->framework, ctx->bundle, &entry->listener);
 
-        celixThreadMutex_lock(&ctx->mutex);
-        entry->trackerId = ctx->nextTrackerId++;
-        celixThreadMutex_unlock(&ctx->mutex);
-        trackerId = entry->trackerId;
-
-        //loop through all already installed bundles.
-        if (entry->opts.onStarted != NULL) {
-            celix_framework_useBundles(ctx->framework, entry->opts.includeFrameworkBundle, entry->opts.callbackHandle, entry->opts.onStarted);
-        }
-
-        celixThreadMutex_lock(&ctx->mutex);
-        hashMap_put(ctx->bundleTrackers, (void*)entry->trackerId, entry);
-        celixThreadMutex_unlock(&ctx->mutex);
-
-    }
+    celixThreadMutex_lock(&ctx->mutex);
+    entry->trackerId = ctx->nextTrackerId++;
+    hashMap_put(ctx->bundleTrackers, (void*)entry->trackerId, entry);
+    celixThreadMutex_unlock(&ctx->mutex);
+    trackerId = entry->trackerId;
     return trackerId;
 }
 
@@ -810,6 +800,7 @@ size_t celix_bundleContext_useServicesWithOptions(
         trkOpts.filter.filter = opts->filter.filter;
         trkOpts.filter.versionRange = opts->filter.versionRange;
         trkOpts.filter.serviceLanguage = opts->filter.serviceLanguage;
+        trkOpts.filter.ignoreServiceLanguage = opts->filter.ignoreServiceLanguage;
 
         service_tracker_t *trk = celix_serviceTracker_createWithOptions(ctx, &trkOpts);
         if (trk != NULL) {

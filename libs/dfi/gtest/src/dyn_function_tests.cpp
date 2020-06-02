@@ -156,6 +156,11 @@ TEST_F(DynFunctionTests, DynFuncAccTest) {
 }
 
 extern "C" {
+#ifdef __clang__
+[[clang::optnone]]
+#else
+__attribute__((optimize("0")))
+#endif
 static bool func_test3() {
     dyn_function_type *dynFunc = nullptr;
     void (*fp)(void) = (void(*)(void)) testExample3;

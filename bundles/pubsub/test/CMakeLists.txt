@@ -120,8 +120,8 @@ if (BUILD_PUBSUB_PSA_UDP_MC)
                 pubsub_sut
                 pubsub_tst
     )
-    target_link_libraries(pubsub_udpmc_tests PRIVATE Celix::pubsub_api ${CPPUTEST_LIBRARIES} Jansson Celix::dfi)
-    target_include_directories(pubsub_udpmc_tests SYSTEM PRIVATE ${CPPUTEST_INCLUDE_DIR} test)
+    target_link_libraries(pubsub_udpmc_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi)
+    target_include_directories(pubsub_udpmc_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
 
     #TODO fix issues with UDPMC and reanble test again
     #add_test(NAME pubsub_udpmc_tests COMMAND pubsub_udpmc_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_udpmc_tests,CONTAINER_LOC>)
@@ -145,8 +145,8 @@ if (BUILD_PUBSUB_PSA_TCP)
             pubsub_sut
             pubsub_tst
             )
-    target_link_libraries(pubsub_tcp_tests PRIVATE Celix::pubsub_api ${CPPUTEST_LIBRARIES} Jansson Celix::dfi)
-    target_include_directories(pubsub_tcp_tests SYSTEM PRIVATE ${CPPUTEST_INCLUDE_DIR} test)
+    target_link_libraries(pubsub_tcp_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi)
+    target_include_directories(pubsub_tcp_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
     add_test(NAME pubsub_tcp_tests COMMAND pubsub_tcp_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_tcp_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_tcp_tests SCAN_DIR ..)
 
@@ -168,8 +168,8 @@ if (BUILD_PUBSUB_PSA_TCP)
             pubsub_endpoint_sut
             pubsub_endpoint_tst
             )
-    target_link_libraries(pubsub_tcp_endpoint_tests PRIVATE Celix::pubsub_api ${CPPUTEST_LIBRARIES} Jansson Celix::dfi)
-    target_include_directories(pubsub_tcp_endpoint_tests SYSTEM PRIVATE ${CPPUTEST_INCLUDE_DIR} test)
+    target_link_libraries(pubsub_tcp_endpoint_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi)
+    target_include_directories(pubsub_tcp_endpoint_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
 
     #TCP Endpoint test is disabled because the test is not stable when running on Travis
     if (ENABLE_PUBSUB_PSA_TCP_ENDPOINT_TEST)
@@ -195,13 +195,16 @@ if (BUILD_PUBSUB_PSA_WS)
                 pubsub_sut
                 pubsub_tst
     )
-    target_link_libraries(pubsub_websocket_tests PRIVATE Celix::pubsub_api ${CPPUTEST_LIBRARIES} Jansson Celix::dfi)
-    target_include_directories(pubsub_websocket_tests SYSTEM PRIVATE ${CPPUTEST_INCLUDE_DIR} test)
+    target_link_libraries(pubsub_websocket_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi)
+    target_include_directories(pubsub_websocket_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
     add_test(NAME pubsub_websocket_tests COMMAND pubsub_websocket_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_websocket_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_websocket_tests SCAN_DIR ..)
     endif()
 
 if (BUILD_PUBSUB_PSA_ZMQ)
+    find_package(ZMQ REQUIRED)
+    find_package(CZMQ REQUIRED)
+
     add_celix_container(pubsub_zmq_tests
             USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
             LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_runner.cc
@@ -217,8 +220,8 @@ if (BUILD_PUBSUB_PSA_ZMQ)
                 pubsub_tst
     )
 
-    target_link_libraries(pubsub_zmq_tests PRIVATE Celix::pubsub_api ${CPPUTEST_LIBRARIES} Jansson Celix::dfi)
-    target_include_directories(pubsub_zmq_tests SYSTEM PRIVATE ${CPPUTEST_INCLUDE_DIR} test)
+    target_link_libraries(pubsub_zmq_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi ZMQ::lib CZMQ::lib)
+    target_include_directories(pubsub_zmq_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
     add_test(NAME pubsub_zmq_tests COMMAND pubsub_zmq_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_zmq_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_zmq_tests SCAN_DIR ..)
 
@@ -240,8 +243,8 @@ if (BUILD_PUBSUB_PSA_ZMQ)
                 pubsub_sut
                 pubsub_tst
     )
-    target_link_libraries(pubsub_zmq_zerocopy_tests PRIVATE Celix::pubsub_api ${CPPUTEST_LIBRARIES} Jansson Celix::dfi)
-    target_include_directories(pubsub_zmq_zerocopy_tests SYSTEM PRIVATE ${CPPUTEST_INCLUDE_DIR} test)
+    target_link_libraries(pubsub_zmq_zerocopy_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi ZMQ::lib CZMQ::lib)
+    target_include_directories(pubsub_zmq_zerocopy_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
 
     #TODO fix issues with ZeroCopy and reanble test again
     add_test(NAME pubsub_zmq_zerocopy_tests COMMAND pubsub_zmq_zerocopy_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_zmq_zerocopy_tests,CONTAINER_LOC>)

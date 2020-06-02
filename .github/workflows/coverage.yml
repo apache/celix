@@ -23,12 +23,14 @@ jobs:
             libxml2-dev \
             libczmq-dev \
             libcpputest-dev \
+            libtbb-dev \
             lcov
       - name: Build
         env:
           BUILD_OPTIONS: |
             -DENABLE_TESTING=ON
             -DENABLE_CODE_COVERAGE=ON
+            -DBUILD_EXPERIMENTAL=ON
         run: |
           mkdir build
           cd build
@@ -40,6 +42,12 @@ jobs:
           export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH:$(pwd)/utils:$(pwd)/framework:$(pwd)/dfi
           make coverage
           lcx="lcov --output-file=coverage.info " && for i in `find . -name "*.info.cleaned"`; do lcx+=" --add-tracefile=$i"; done && $lcx
+      - name: Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          file: build/coverage.info
+          name: codecov-celix
+
 #      NOTE For now disabled, need to be able to configure coveralls thresholds
 #      See https://github.com/lemurheavy/coveralls-public/issues/1431
 #      - name: Coveralls

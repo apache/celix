@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-cmake_minimum_required (VERSION 3.2)
+cmake_minimum_required (VERSION 3.14)
 cmake_policy(SET CMP0012 NEW)
 cmake_policy(SET CMP0042 NEW)
 if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.9.0")
@@ -39,27 +39,39 @@ if (ENABLE_TESTING)
     endif()
 endif ()
 
-set(ENABLE_W_ERROR ON)
 set(ENABLE_MORE_WARNINGS OFF)
 
-IF (ANDROID)
-    set(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -Wall ${CMAKE_C_FLAGS}")
-ELSE ()
-    set(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -fPIC ${CMAKE_C_FLAGS}")
-    set(CMAKE_CXX_FLAGS "-std=c++11 -fno-rtti ${CMAKE_CXX_FLAGS}")
-    set(CMAKE_C_FLAGS "-Wall -Werror ${CMAKE_C_FLAGS}")
-    set(CMAKE_CXX_FLAGS "-Wall -Wextra -Weffc++ ${CMAKE_CXX_FLAGS}")
-    set(CMAKE_C_FLAGS_DEBUG "-g -DDEBUG ${CMAKE_C_FLAGS}")
-    set(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG ${CMAKE_CXX_FLAGS}")
-ENDIF()
+# Set C specific flags
+set(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -fPIC ${CMAKE_C_FLAGS}")
+set(CMAKE_C_FLAGS "-Wall -Werror ${CMAKE_C_FLAGS}")
 
-IF(APPLE)
+# Set C++ specific flags
+set(CMAKE_CXX_FLAGS "-std=c++11 -fno-rtti ${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "-Wall -Werror -Wextra -Weffc++ ${CMAKE_CXX_FLAGS}")
+
+if(APPLE)
     set(CMAKE_MACOSX_RPATH 1)
-ELSE ()
+endif()
+
+if(NOT APPLE)
     set(CMAKE_C_FLAGS "-pthread ${CMAKE_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "-pthread ${CMAKE_CXX_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "-pthread ${CMAKE_EXE_LINKER_FLAGS}")
-ENDIF()
+
+    #prevent the linker from optimizing out linked libraries. libraries linked against executable are maybe not used
+    #by the executable, but could be used by the (dynamically) loaded libraries.
+    set(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -Wl,--no-as-needed")
+endif()
+
+# Set compiler specific options
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    set(CMAKE_C_FLAGS "-Wno-nullability-completeness -Wno-expansion-to-defined ${CMAKE_C_FLAGS}")
+endif()
+
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    set(CMAKE_C_FLAGS "-Wno-unused-result -Wno-format-truncation -Wno-stringop-truncation -Wno-stringop-overflow ${CMAKE_C_FLAGS}")
+    set(CMAKE_CXX_FLAGS "-Wno-unused-result -Wno-format-truncation -Wno-stringop-truncation -Wno-stringop-overflow ${CMAKE_CXX_FLAGS}")
+endif()
 
 if (ENABLE_MORE_WARNINGS)
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
@@ -82,20 +94,24 @@ if (ENABLE_MORE_WARNINGS)
             set(CMAKE_CXX_EXTRA_FLAGS "-Wold-style-cast -Wuseless-cast ${CMAKE_CXX_EXTRA_FLAGS}")
         endif()
     endif()
-    
+
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_EXTRA_FLAGS} ${CMAKE_CXX_FLAGS}")
-    set(CMAKE_CXX_FLAGS_DEBUG "-Werror ${CMAKE_CXX_EXTRA_FLAGS} ${CMAKE_CXX_FLAGS_DEBUG}")
 endif()
 
-if(ENABLE_W_ERROR)
-    set(CMAKE_CXX_FLAGS "-Werror ${CMAKE_CXX_FLAGS}")
-    set(CMAKE_CXX_FLAGS_DEBUG "-Werror ${CMAKE_CXX_FLAGS_DEBUG}")
+# Set build type specific flags
+# Debug
+set(CMAKE_C_FLAGS_DEBUG "-g -DDEBUG ${CMAKE_C_FLAGS}")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG ${CMAKE_CXX_FLAGS}")
+set(CMAKE_DEBUG_POSTFIX "d")
+
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(CMAKE_EXECUTABLE_SUFFIX ${CMAKE_DEBUG_POSTFIX})
 endif()
 
 # Set version for the framework package/release
 set(CELIX_MAJOR "2")
 set(CELIX_MINOR "2")
-set(CELIX_MICRO "0")
+set(CELIX_MICRO "1")
 
 # Default bundle version
 set(DEFAULT_VERSION 1.0.0)
@@ -118,7 +134,7 @@ option(CELIX_ADD_OPENSSL_DEP "Enabled building Celix framework & etcdlib with Op
 set(CELIX_OPTIONAL_EXTRA_LIBS "")
 if (CELIX_ADD_OPENSSL_DEP)
     find_package(OpenSSL REQUIRED)
-    set(CELIX_OPTIONAL_EXTRA_LIBS "OpenSSL::lib")
+    set(CELIX_OPTIONAL_EXTRA_LIBS "OpenSSL::SSL")
 endif ()
 
 option(CELIX_USE_ZIP_INSTEAD_OF_JAR "Default Celix cmake command will use jar to package bundle (if found). This option enforces Celix to use zip instead." OFF)
@@ -137,7 +153,7 @@ add_subdirectory(examples/celix-examples examples)
 
 #export targets
 install(EXPORT celix NAMESPACE Celix:: DESTINATION share/celix/cmake FILE Targets.cmake COMPONENT cmake)
-install_celix_targets(celix NAMESPACE Celix:: DESTINATION share/celix/cmake FILE CelixTargets.cmake COMPONENT cmake)
+install_celix_targets(celix NAMESPACE Celix:: DESTINATION share/celix/cmake FILE CelixTargets COMPONENT cmake)
 
 #install celix cmake modules
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/ DESTINATION share/celix/cmake/Modules)

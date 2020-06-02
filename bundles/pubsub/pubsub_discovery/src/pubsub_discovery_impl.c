@@ -66,13 +66,8 @@ pubsub_discovery_t* pubsub_discovery_create(celix_bundle_context_t *context, cel
     celixThreadMutex_create(&disc->discoveredEndpointsListenersMutex, NULL);
     celixThreadMutex_create(&disc->announcedEndpointsMutex, NULL);
     celixThreadMutex_create(&disc->discoveredEndpointsMutex, NULL);
-    pthread_mutex_init(&disc->waitMutex, NULL);
-    pthread_condattr_t attr;
-    pthread_condattr_init(&attr);
-#if !defined(__MACH__)
-    pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
-#endif
-    pthread_cond_init(&disc->waitCond, &attr);
+
+    celixThreadCondition_init(&disc->waitCond, NULL);
     celixThreadMutex_create(&disc->runningMutex, NULL);
     disc->running = true;
 
@@ -116,9 +111,7 @@ celix_status_t pubsub_discovery_destroy(pubsub_discovery_t *ps_discovery) {
     hashMap_destroy(ps_discovery->announcedEndpoints, false, false);
     celixThreadMutex_unlock(&ps_discovery->announcedEndpointsMutex);
     celixThreadMutex_destroy(&ps_discovery->announcedEndpointsMutex);
-
-    pthread_mutex_destroy(&ps_discovery->waitMutex);
-    pthread_cond_destroy(&ps_discovery->waitCond);
+    celixThreadCondition_destroy(&ps_discovery->waitCond);
 
     celixThreadMutex_destroy(&ps_discovery->runningMutex);
 
@@ -245,11 +238,10 @@ void* psd_watch(void *data) {
         psd_watchForChange(disc, &connected, &mIndex);
         psd_cleanupIfDisconnected(disc, &connected);
 
-        if (!connected) {
-            usleep(5000000); //if not connected wait a few seconds
-        }
-
         celixThreadMutex_lock(&disc->runningMutex);
+        if (!connected && disc->running) {
+            celixThreadCondition_timedwaitRelative(&disc->waitCond, &disc->runningMutex, 5, 0); //if not connected wait a few seconds
+        }
         running = disc->running;
         celixThreadMutex_unlock(&disc->runningMutex);
     }
@@ -297,13 +289,8 @@ void* psd_refresh(void *data) {
         }
         celixThreadMutex_unlock(&disc->announcedEndpointsMutex);
 
-        struct timespec waitTill = start;
-        waitTill.tv_sec += disc->sleepInsecBetweenTTLRefresh;
-        pthread_mutex_lock(&disc->waitMutex);
-        pthread_cond_timedwait(&disc->waitCond, &disc->waitMutex, &waitTill); //TODO add timedwait abs for celixThread (including MONOTONIC ..)
-        pthread_mutex_unlock(&disc->waitMutex);
-
         celixThreadMutex_lock(&disc->runningMutex);
+        celixThreadCondition_timedwaitRelative(&disc->waitCond, &disc->runningMutex, disc->sleepInsecBetweenTTLRefresh, 0);
         running = disc->running;
         celixThreadMutex_unlock(&disc->runningMutex);
     }
@@ -326,11 +313,8 @@ celix_status_t pubsub_discovery_stop(pubsub_discovery_t *disc) {
 
     celixThreadMutex_lock(&disc->runningMutex);
     disc->running = false;
-    celixThreadMutex_unlock(&disc->runningMutex);
-
-    celixThreadMutex_lock(&disc->waitMutex);
     celixThreadCondition_broadcast(&disc->waitCond);
-    celixThreadMutex_unlock(&disc->waitMutex);
+    celixThreadMutex_unlock(&disc->runningMutex);
 
     celixThread_join(disc->watchThread, NULL);
     celixThread_join(disc->refreshTTLThread, NULL);
@@ -421,9 +405,9 @@ celix_status_t pubsub_discovery_announceEndpoint(void *handle, const celix_prope
         hashMap_put(disc->announcedEndpoints, (void*)hashKey, entry);
         celixThreadMutex_unlock(&disc->announcedEndpointsMutex);
 
-        celixThreadMutex_lock(&disc->waitMutex);
+        celixThreadMutex_lock(&disc->runningMutex);
         celixThreadCondition_broadcast(&disc->waitCond);
-        celixThreadMutex_unlock(&disc->waitMutex);
+        celixThreadMutex_unlock(&disc->runningMutex);
     } else if (valid) {
         L_DEBUG("[PSD] Ignoring endpoint %s/%s because the visibility is not %s. Configured visibility is %s\n", scope == NULL ? "(null)" : scope, topic, PUBSUB_ENDPOINT_SYSTEM_VISIBILITY, visibility);
     }
