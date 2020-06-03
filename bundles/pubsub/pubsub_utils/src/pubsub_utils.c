@@ -183,14 +183,16 @@ char* pubsub_getMessageDescriptorsDir(celix_bundle_context_t* ctx, const celix_b
 }
 
 const char* pubsub_getEnvironmentVariableWithScopeTopic(const char *envVarName, const char *topic, const char *scope) {
-    char envVar[512 * 1024];
-    memset(envVar, 0, sizeof(envVar));
-    strncpy(envVar, envVarName, sizeof(envVar));
+    char *envVar = malloc(512 * 1024);
+    memset(envVar, 0, 512 * 1024);
+    strncpy(envVar, envVarName, 512 * 1024);
     strncat(envVar, topic, 256 * 1024 - 25);
     if(scope != NULL) {
         strncat(envVar, "_", 1);
         strncat(envVar, scope, 256 * 1024 - 25);
     }
 
-    return getenv(envVar);
+    char *ret = getenv(envVar);
+    free(envVar);
+    return ret;
 }
