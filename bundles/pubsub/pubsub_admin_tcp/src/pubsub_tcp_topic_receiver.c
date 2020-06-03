@@ -37,6 +37,7 @@
 #include "celix_utils_api.h"
 #include <uuid/uuid.h>
 #include <pubsub_admin_metrics.h>
+#include <pubsub_utils.h>
 
 #define MAX_EPOLL_EVENTS     16
 #ifndef UUID_STR_LEN
@@ -163,8 +164,13 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
     const char *staticClientEndPointUrls = NULL;
     const char *staticServerEndPointUrls = NULL;
     const char *staticConnectUrls = NULL;
+
+    staticConnectUrls = pubsub_getEnvironmentVariableWithScopeTopic(PUBSUB_TCP_STATIC_CONNECT_URLS_ENV_NAME, topic, scope);
+
     if (topicProperties != NULL) {
-        staticConnectUrls = celix_properties_get(topicProperties, PUBSUB_TCP_STATIC_CONNECT_URLS, NULL);
+        if(staticConnectUrls == NULL) {
+            staticConnectUrls = celix_properties_get(topicProperties, PUBSUB_TCP_STATIC_CONNECT_URLS, NULL);
+        }
         const char *endPointType = celix_properties_get(topicProperties, PUBSUB_TCP_STATIC_ENDPOINT_TYPE, NULL);
         if (endPointType != NULL) {
             if (strncmp(PUBSUB_TCP_STATIC_ENDPOINT_TYPE_CLIENT, endPointType,

@@ -82,6 +82,15 @@ unsigned int pubsub_msgIdHashFromFqn(const char* fqn);
  */
 char* pubsub_getMessageDescriptorsDir(celix_bundle_context_t*ctx, const celix_bundle_t *bnd);
 
+/**
+ * Combines the name of envVarName with topic and optionally scope and retrieves the value of that environment variable
+ * @param envVarName start of the environment variable name, e.g. PUBSUB_TCP_STATIC_BIND_URL_ENV_NAME
+ * @param topic Name of topic. NULL NOT allowed
+ * @param scope Name of scope. NULL allowed
+ * @return Value of environment variable name, NULL if variable not defined.
+ */
+const char* pubsub_getEnvironmentVariableWithScopeTopic(const char *envVarName, const char *topic, const char *scope);
+
 #ifdef __cplusplus
 }
 #endif

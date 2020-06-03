@@ -34,6 +34,7 @@
 #include <uuid/uuid.h>
 #include <http_admin/api.h>
 #include <jansson.h>
+#include <pubsub_utils.h>
 
 #ifndef UUID_STR_LEN
 #define UUID_STR_LEN 37
@@ -185,7 +186,10 @@ pubsub_websocket_topic_receiver_t* pubsub_websocketTopicReceiver_create(celix_bu
                                                            WEBSOCKET_ADMIN_SERVICE_NAME, props);
     }
 
-    const char *staticConnects = celix_properties_get(topicProperties, PUBSUB_WEBSOCKET_STATIC_CONNECT_SOCKET_ADDRESSES, NULL);
+    const char *staticConnects = pubsub_getEnvironmentVariableWithScopeTopic(PUBSUB_WEBSOCKET_STATIC_CONNECT_SOCKET_ADDRESSES_ENV_NAME, topic, scope);
+    if(staticConnects == NULL) {
+        staticConnects = celix_properties_get(topicProperties, PUBSUB_WEBSOCKET_STATIC_CONNECT_SOCKET_ADDRESSES, NULL);
+    }
     if (staticConnects != NULL) {
         char *copy = strndup(staticConnects, 1024*1024);
         char* addr;

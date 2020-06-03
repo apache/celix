@@ -460,8 +460,10 @@ celix_status_t pubsub_zmqAdmin_setupTopicSender(void *handle, const char *scope,
 
     celix_properties_t *newEndpoint = NULL;
 
-    const char * staticBindUrl = topicProperties != NULL ?
-            celix_properties_get(topicProperties, PUBSUB_ZMQ_STATIC_BIND_URL, NULL) : NULL;
+    const char *staticBindUrl = pubsub_getEnvironmentVariableWithScopeTopic(PUBSUB_ZMQ_STATIC_BIND_URL_ENV_NAME, topic, scope);
+    if(staticBindUrl == NULL && topicProperties != NULL) {
+        staticBindUrl = celix_properties_get(topicProperties, PUBSUB_ZMQ_STATIC_BIND_URL, NULL);
+    }
     char *key = pubsubEndpoint_createScopeTopicKey(scope, topic);
 
     celixThreadMutex_lock(&psa->serializers.mutex);

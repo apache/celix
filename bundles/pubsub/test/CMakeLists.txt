@@ -122,10 +122,9 @@ if (BUILD_PUBSUB_PSA_UDP_MC)
     )
     target_link_libraries(pubsub_udpmc_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi)
     target_include_directories(pubsub_udpmc_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
-
-    #TODO fix issues with UDPMC and reanble test again
-    #add_test(NAME pubsub_udpmc_tests COMMAND pubsub_udpmc_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_udpmc_tests,CONTAINER_LOC>)
-    #setup_target_for_coverage(pubsub_udpmc_tests_cov pubsub_udpmc_tests ${CMAKE_BINARY_DIR}/coverage/pubsub_udpmc_tests/pubsub_udpmc_tests ..)
+    
+    add_test(NAME pubsub_udpmc_tests COMMAND pubsub_udpmc_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_udpmc_tests,CONTAINER_LOC>)
+    setup_target_for_coverage(pubsub_udpmc_tests_cov pubsub_udpmc_tests ${CMAKE_BINARY_DIR}/coverage/pubsub_udpmc_tests/pubsub_udpmc_tests ..)
 endif()
 
 if (BUILD_PUBSUB_PSA_TCP)
@@ -246,7 +245,6 @@ if (BUILD_PUBSUB_PSA_ZMQ)
     target_link_libraries(pubsub_zmq_zerocopy_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi ZMQ::lib CZMQ::lib)
     target_include_directories(pubsub_zmq_zerocopy_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
 
-    #TODO fix issues with ZeroCopy and reanble test again
     add_test(NAME pubsub_zmq_zerocopy_tests COMMAND pubsub_zmq_zerocopy_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_zmq_zerocopy_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_zmq_zerocopy_tests SCAN_DIR ..)
 endif ()

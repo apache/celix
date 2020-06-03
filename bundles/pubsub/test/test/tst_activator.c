@@ -76,9 +76,9 @@ static int tst_receive(void *handle, const char * msgType __attribute__((unused)
     struct activator *act = handle;
 
     msg_t *msg = voidMsg;
-    static int prevSeqNr = 0;
-    int delta = msg->seqNr - prevSeqNr;
-    if (delta != 1) {
+    static uint32_t prevSeqNr = 0;
+    long delta = msg->seqNr - prevSeqNr;
+    if (delta != 1 && msg->seqNr > 1 && prevSeqNr < msg->seqNr) {
         fprintf(stderr, "Warning: missing messages. seq jumped from %i to %i\n", prevSeqNr, msg->seqNr);
     }
     prevSeqNr = msg->seqNr;
