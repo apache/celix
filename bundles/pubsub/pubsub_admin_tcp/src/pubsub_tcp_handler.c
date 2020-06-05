@@ -1275,8 +1275,8 @@ void pubsub_tcpHandler_handler(pubsub_tcpHandler_t *handle) {
         int fd = pubsub_tcpHandler_acceptHandler(handle, pendingConnectionEntry);
         pubsub_tcpHandler_connectionHandler(handle, fd);
       } else if (events[i].filter & EVFILT_READ) {
-        int rc = pubsub_tcpHandler_read(handle, events[i].data.fd);
-        if (rc == 0) pubsub_tcpHandler_close(handle, events[i].data.fd);
+        int rc = pubsub_tcpHandler_read(handle, events[i].ident);
+        if (rc == 0) pubsub_tcpHandler_close(handle, events[i].ident);
       } else if (events[i].flags & EV_EOF) {
         int err = 0;
         socklen_t len = sizeof(int);
