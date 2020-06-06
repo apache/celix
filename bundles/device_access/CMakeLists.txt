@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(DEVICE_ACCESS "Option to enable building the Device Access Service bundles" OFF DEPS LAUNCHER LOG_SERVICE SHELL shell_tui)
+celix_subproject(DEVICE_ACCESS "Option to enable building the Device Access Service bundles" ON DEPS LAUNCHER LOG_SERVICE SHELL shell_tui)
 if(DEVICE_ACCESS)
 
     add_subdirectory(device_access)

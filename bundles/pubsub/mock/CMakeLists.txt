@@ -18,14 +18,14 @@
 #only install if CppuTest is available
 find_package(CppUTest QUIET)
 if (CPPUTEST_FOUND)
-    include_directories(SYSTEM ${CPPUTEST_INCLUDE_DIR})
+    include_directories(SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR})
 
     add_library(pubsub_mock STATIC
             src/publisher_mock.cc
     )
-    target_link_libraries(pubsub_mock PRIVATE Celix::pubsub_spi ${CPPUTEST_LIBRARY})
+    target_link_libraries(pubsub_mock PRIVATE Celix::pubsub_spi ${CppUTest_LIBRARY})
     target_include_directories(pubsub_mock PUBLIC api)
-    target_include_directories(pubsub_mock SYSTEM PRIVATE ${CPPUTEST_INCLUDE_DIR})
+    target_include_directories(pubsub_mock SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR})
 
     if (ENABLE_TESTING)
         add_executable(pubsubmock_test
@@ -33,7 +33,7 @@ if (CPPUTEST_FOUND)
             tst/run_tests.cc
         )
         target_include_directories(pubsubmock_test PRIVATE ${CMAKE_CURRENT_LIST_DIR}/api)
-        target_link_libraries(pubsubmock_test PRIVATE Celix::pubsub_api pubsub_mock ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} Celix::framework)
+        target_link_libraries(pubsubmock_test PRIVATE Celix::pubsub_api pubsub_mock ${CppUTest_LIBRARY} ${CppUTest_EXT_LIBRARIES} Celix::framework)
         add_test(NAME pubsubmock_test COMMAND pubsubmock_test)
     endif()
 endif()

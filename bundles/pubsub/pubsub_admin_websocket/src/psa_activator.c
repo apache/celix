@@ -21,7 +21,7 @@
 
 #include "celix_api.h"
 #include "pubsub_serializer.h"
-#include "log_helper.h"
+#include "celix_log_helper.h"
 
 #include "pubsub_admin.h"
 #include "pubsub_admin_metrics.h"
@@ -29,7 +29,7 @@
 #include "celix_shell_command.h"
 
 typedef struct psa_websocket_activator {
-    log_helper_t *logHelper;
+    celix_log_helper_t *logHelper;
 
     pubsub_websocket_admin_t *admin;
 
@@ -37,9 +37,6 @@ typedef struct psa_websocket_activator {
 
     pubsub_admin_service_t adminService;
     long adminSvcId;
-
-    pubsub_admin_metrics_service_t adminMetricsService;
-    long adminMetricsSvcId;
 
     celix_shell_command_t cmdSvc;
     long cmdSvcId;
@@ -50,8 +47,7 @@ int psa_websocket_start(psa_websocket_activator_t *act, celix_bundle_context_t *
     act->cmdSvcId = -1L;
     act->serializersTrackerId = -1L;
 
-    logHelper_create(ctx, &act->logHelper);
-    logHelper_start(act->logHelper);
+    act->logHelper = celix_logHelper_create(ctx, "celix_psa_admin_websocket");
 
     act->admin = pubsub_websocketAdmin_create(ctx, act->logHelper);
     celix_status_t status = act->admin != NULL ? CELIX_SUCCESS : CELIX_BUNDLE_EXCEPTION;
@@ -88,16 +84,6 @@ int psa_websocket_start(psa_websocket_activator_t *act, celix_bundle_context_t *
         act->adminSvcId = celix_bundleContext_registerService(ctx, psaSvc, PUBSUB_ADMIN_SERVICE_NAME, props);
     }
 
-    if (status == CELIX_SUCCESS) {
-        act->adminMetricsService.handle = act->admin;
-        act->adminMetricsService.metrics = pubsub_websocketAdmin_metrics;
-
-        celix_properties_t *props = celix_properties_create();
-        celix_properties_set(props, PUBSUB_ADMIN_SERVICE_TYPE, PUBSUB_WEBSOCKET_ADMIN_TYPE);
-
-        act->adminMetricsSvcId = celix_bundleContext_registerService(ctx, &act->adminMetricsService, PUBSUB_ADMIN_METRICS_SERVICE_NAME, props);
-    }
-
     //register shell command service
     {
         act->cmdSvc.handle = act->admin;
@@ -115,12 +101,10 @@ int psa_websocket_start(psa_websocket_activator_t *act, celix_bundle_context_t *
 int psa_websocket_stop(psa_websocket_activator_t *act, celix_bundle_context_t *ctx) {
     celix_bundleContext_unregisterService(ctx, act->adminSvcId);
     celix_bundleContext_unregisterService(ctx, act->cmdSvcId);
-    celix_bundleContext_unregisterService(ctx, act->adminMetricsSvcId);
     celix_bundleContext_stopTracker(ctx, act->serializersTrackerId);
     pubsub_websocketAdmin_destroy(act->admin);
 
-    logHelper_stop(act->logHelper);
-    logHelper_destroy(&act->logHelper);
+    celix_logHelper_destroy(act->logHelper);
 
     return CELIX_SUCCESS;
 }

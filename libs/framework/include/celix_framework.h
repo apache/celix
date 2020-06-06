@@ -23,6 +23,7 @@
 
 #include "celix_types.h"
 #include "celix_properties.h"
+#include "celix_log_level.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -134,6 +135,25 @@ bool celix_framework_stopBundle(celix_framework_t *fw, long bndId);
  */
 bool celix_framework_startBundle(celix_framework_t *fw, long bndId);
 
+/**
+ * Wait till the framework event queue is empty.
+ *
+ * The Celix framework has an event queue which (among others) handles bundle events.
+ * This function can be used to ensure that all queue event are handled, mainly useful
+ * for testing.
+ *
+ * @param fw The Celix Framework
+ */
+void celix_framework_waitForEmptyEventQueue(celix_framework_t *fw);
+
+/**
+ * Sets the log function for this framework.
+ * Default the celix framework will log to stdout/stderr.
+ *
+ * A log function can be injected to change how the Celix framework logs.
+ * Can be reset by setting the log function to NULL.
+ */
+void celix_framework_setLogCallback(celix_framework_t* fw, void* logHandle, void (*logFunction)(void* handle, celix_log_level_e level, const char* file, const char *function, int line, const char *format, va_list formatArgs));
 
 
 #ifdef __cplusplus

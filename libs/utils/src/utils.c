@@ -35,18 +35,30 @@
 #endif
 
 unsigned int utils_stringHash(const void* strPtr) {
-    const char* string = strPtr;
+    return celix_utils_stringHash((const char*)strPtr);
+}
+
+int utils_stringEquals(const void* string, const void* toCompare) {
+    return celix_utils_stringEquals((const char*)string, (const char*)toCompare);
+}
+
+unsigned int celix_utils_stringHash(const char* string) {
     unsigned int hc = 5381;
     char ch;
     while((ch = *string++) != '\0'){
         hc = (hc << 5) + hc + ch;
     }
-
     return hc;
 }
 
-int utils_stringEquals(const void* string, const void* toCompare) {
-    return strcmp((const char*)string, (const char*)toCompare) == 0;
+bool celix_utils_stringEquals(const char* a, const char* b) {
+    if (a == NULL && b == NULL) {
+        return true;
+    } else if (a == NULL || b == NULL) {
+        return false;
+    } else {
+        return strncmp(a, b, 1024*124*10) == 0;
+    }
 }
 
 char * string_ndup(const char *s, size_t n) {
@@ -147,9 +159,16 @@ int utils_compareServiceIdsAndRanking(unsigned long servId, long servRank, unsig
 }
 
 double celix_difftime(const struct timespec *tBegin, const struct timespec *tEnd) {
-    float diff_s = tEnd->tv_sec - tBegin->tv_sec;
-    float diff_ns = tEnd->tv_nsec - tBegin->tv_nsec;
-    return diff_s + (diff_ns / 1000000000.0);
+    struct timespec diff;
+    if ((tEnd->tv_nsec - tBegin->tv_nsec) < 0) {
+        diff.tv_sec = tEnd->tv_sec - tBegin->tv_sec - 1;
+        diff.tv_nsec = tEnd->tv_nsec - tBegin->tv_nsec + 1000000000;
+    } else {
+        diff.tv_sec = tEnd->tv_sec - tBegin->tv_sec;
+        diff.tv_nsec = tEnd->tv_nsec - tBegin->tv_nsec;
+    }
+
+    return ((double)diff.tv_sec) + diff.tv_nsec /  1000000000.0;
 }
 
 char* celix_utils_strdup(const char *str) {
@@ -199,7 +218,9 @@ void celix_utils_extractLocalNameAndNamespaceFromFullyQualifiedName(const char *
     fclose(namespaceStream);
     free(cpy);
     *outLocalName = local;
-    if (strncmp("", namespace, 1) == 0)  {
+    if (namespace == NULL) {
+      *outNamespace = NULL;
+    } else if (strncmp("", namespace, 1) == 0)  {
         //empty string -> set to NULL
         *outNamespace = NULL;
         free(namespace);

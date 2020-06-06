@@ -16,7 +16,7 @@
 # under the License.
 
 include_directories(
-        ${CPPUTEST_INCLUDE_DIR}
+        SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR}
         ${PROJECT_SOURCE_DIR}/framework/public/include
         ${PROJECT_SOURCE_DIR}/utils/public/include
 )
@@ -31,4 +31,4 @@ celix_bundle_files(topology_manager_test_bundle
     DESTINATION .
 )
 
-target_link_libraries(topology_manager_test_bundle PRIVATE ${CPPUTEST_LIBRARY} Celix::rsa_spi calculator_api)
+target_link_libraries(topology_manager_test_bundle PRIVATE ${CppUTest_LIBRARY} Celix::rsa_spi calculator_api)

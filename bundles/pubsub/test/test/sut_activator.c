@@ -67,7 +67,7 @@ celix_status_t bnd_stop(struct activator *act, celix_bundle_context_t *ctx) {
     return CELIX_SUCCESS;
 }
 
-CELIX_GEN_BUNDLE_ACTIVATOR(struct activator, bnd_start, bnd_stop);
+CELIX_GEN_BUNDLE_ACTIVATOR(struct activator, bnd_start, bnd_stop)
 
 static void sut_pubSet(void *handle, void *service) {
     struct activator* act = handle;
@@ -93,8 +93,7 @@ static void* sut_sendThread(void *data) {
             if (msgId == 0) {
                 act->pubSvc->localMsgTypeIdForMsgType(act->pubSvc->handle, MSG_NAME, &msgId);
             }
-
-            act->pubSvc->send(act->pubSvc->handle, msgId, &msg);
+            act->pubSvc->send(act->pubSvc->handle, msgId, &msg, NULL);
             if (msg.seqNr % 1000 == 0) {
                 printf("Send %i messages\n", msg.seqNr);
             }

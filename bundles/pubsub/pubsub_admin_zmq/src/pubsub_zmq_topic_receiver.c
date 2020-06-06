@@ -18,22 +18,28 @@
  */
 
 #include <pubsub_serializer.h>
+#include <pubsub_protocol.h>
 #include <stdlib.h>
 #include <pubsub/subscriber.h>
 #include <memory.h>
 #include <pubsub_constants.h>
-#include <sys/epoll.h>
+#if !defined(__APPLE__)
+    #include <sys/epoll.h>
+#endif
 #include <assert.h>
 #include <pubsub_endpoint.h>
 #include <arpa/inet.h>
 #include <czmq.h>
-#include <log_helper.h>
+#include <celix_log_helper.h>
 #include "pubsub_zmq_topic_receiver.h"
 #include "pubsub_psa_zmq_constants.h"
-#include "pubsub_zmq_common.h"
 
 #include <uuid/uuid.h>
 #include <pubsub_admin_metrics.h>
+
+#include "pubsub_interceptors_handler.h"
+
+#include "celix_utils_api.h"
 
 #define PSA_ZMQ_RECV_TIMEOUT 1000
 
@@ -43,26 +49,31 @@
 
 
 #define L_DEBUG(...) \
-    logHelper_log(receiver->logHelper, OSGI_LOGSERVICE_DEBUG, __VA_ARGS__)
+    celix_logHelper_log(receiver->logHelper, CELIX_LOG_LEVEL_DEBUG, __VA_ARGS__)
 #define L_INFO(...) \
-    logHelper_log(receiver->logHelper, OSGI_LOGSERVICE_INFO, __VA_ARGS__)
+    celix_logHelper_log(receiver->logHelper, CELIX_LOG_LEVEL_INFO, __VA_ARGS__)
 #define L_WARN(...) \
-    logHelper_log(receiver->logHelper, OSGI_LOGSERVICE_WARNING, __VA_ARGS__)
+    celix_logHelper_log(receiver->logHelper, CELIX_LOG_LEVEL_WARNING, __VA_ARGS__)
 #define L_ERROR(...) \
-    logHelper_log(receiver->logHelper, OSGI_LOGSERVICE_ERROR, __VA_ARGS__)
+    celix_logHelper_log(receiver->logHelper, CELIX_LOG_LEVEL_ERROR, __VA_ARGS__)
 
 struct pubsub_zmq_topic_receiver {
     celix_bundle_context_t *ctx;
-    log_helper_t *logHelper;
+    celix_log_helper_t *logHelper;
     long serializerSvcId;
     pubsub_serializer_service_t *serializer;
+    long protocolSvcId;
+    pubsub_protocol_service_t *protocol;
     char *scope;
     char *topic;
-    char scopeAndTopicFilter[5];
     bool metricsEnabled;
+
+    pubsub_interceptors_handler_t *interceptorsHandler;
 
     void *zmqCtx;
     void *zmqSock;
+
+    char sync[8];
 
     struct {
         celix_thread_t thread;
@@ -122,26 +133,30 @@ static void psa_zmq_connectToAllRequestedConnections(pubsub_zmq_topic_receiver_t
 static void psa_zmq_initializeAllSubscribers(pubsub_zmq_topic_receiver_t *receiver);
 static void psa_zmq_setupZmqContext(pubsub_zmq_topic_receiver_t *receiver, const celix_properties_t *topicProperties);
 static void psa_zmq_setupZmqSocket(pubsub_zmq_topic_receiver_t *receiver, const celix_properties_t *topicProperties);
-
+static bool psa_zmq_checkVersion(version_pt msgVersion, uint16_t major, uint16_t minor);
 
 
 pubsub_zmq_topic_receiver_t* pubsub_zmqTopicReceiver_create(celix_bundle_context_t *ctx,
-                                                              log_helper_t *logHelper,
+                                                              celix_log_helper_t *logHelper,
                                                               const char *scope,
                                                               const char *topic,
                                                               const celix_properties_t *topicProperties,
                                                               long serializerSvcId,
-                                                              pubsub_serializer_service_t *serializer) {
+                                                              pubsub_serializer_service_t *serializer,
+                                                              long protocolSvcId,
+                                                              pubsub_protocol_service_t *protocol) {
     pubsub_zmq_topic_receiver_t *receiver = calloc(1, sizeof(*receiver));
     receiver->ctx = ctx;
     receiver->logHelper = logHelper;
     receiver->serializerSvcId = serializerSvcId;
     receiver->serializer = serializer;
-    receiver->scope = strndup(scope, 1024 * 1024);
+    receiver->protocolSvcId = protocolSvcId;
+    receiver->protocol = protocol;
+    receiver->scope = scope == NULL ? NULL : strndup(scope, 1024 * 1024);
     receiver->topic = strndup(topic, 1024 * 1024);
-    psa_zmq_setScopeAndTopicFilter(scope, topic, receiver->scopeAndTopicFilter);
     receiver->metricsEnabled = celix_bundleContext_getPropertyAsBool(ctx, PSA_ZMQ_METRICS_ENABLED, PSA_ZMQ_DEFAULT_METRICS_ENABLED);
 
+    pubsubInterceptorsHandler_create(ctx, scope, topic, &receiver->interceptorsHandler);
 
 #ifdef BUILD_WITH_ZMQ_SECURITY
     char* keys_bundle_dir = pubsub_getKeysBundleDir(bundle_context);
@@ -247,16 +262,18 @@ pubsub_zmq_topic_receiver_t* pubsub_zmqTopicReceiver_create(celix_bundle_context
         receiver->recvThread.running = true;
         celixThread_create(&receiver->recvThread.thread, NULL, psa_zmq_recvThread, receiver);
         char name[64];
-        snprintf(name, 64, "ZMQ TR %s/%s", scope, topic);
+        snprintf(name, 64, "ZMQ TR %s/%s", scope == NULL ? "(null)" : scope, topic);
         celixThread_setName(&receiver->recvThread.thread, name);
     }
 
     if (receiver->zmqSock == NULL) {
-        free(receiver->scope);
+        if (receiver->scope != NULL) {
+            free(receiver->scope);
+        }
         free(receiver->topic);
         free(receiver);
         receiver = NULL;
-        L_ERROR("[PSA_ZMQ] Cannot create TopicReceiver for %s/%s", scope, topic);
+        L_ERROR("[PSA_ZMQ] Cannot create TopicReceiver for %s/%s", scope == NULL ? "(null)" : scope, topic);
     }
 
     return receiver;
@@ -312,6 +329,8 @@ void pubsub_zmqTopicReceiver_destroy(pubsub_zmq_topic_receiver_t *receiver) {
         zmq_close(receiver->zmqSock);
         zmq_ctx_term(receiver->zmqCtx);
 
+        pubsubInterceptorsHandler_destroy(receiver->interceptorsHandler);
+
         free(receiver->scope);
         free(receiver->topic);
     }
@@ -327,6 +346,10 @@ const char* pubsub_zmqTopicReceiver_topic(pubsub_zmq_topic_receiver_t *receiver)
 
 long pubsub_zmqTopicReceiver_serializerSvcId(pubsub_zmq_topic_receiver_t *receiver) {
     return receiver->serializerSvcId;
+}
+
+long pubsub_zmqTopicReceiver_protocolSvcId(pubsub_zmq_topic_receiver_t *receiver) {
+    return receiver->protocolSvcId;
 }
 
 void pubsub_zmqTopicReceiver_listConnections(pubsub_zmq_topic_receiver_t *receiver, celix_array_list_t *connectedUrls, celix_array_list_t *unconnectedUrls) {
@@ -349,7 +372,7 @@ void pubsub_zmqTopicReceiver_listConnections(pubsub_zmq_topic_receiver_t *receiv
 void pubsub_zmqTopicReceiver_connectTo(
         pubsub_zmq_topic_receiver_t *receiver,
         const char *url) {
-    L_DEBUG("[PSA_ZMQ] TopicReceiver %s/%s connecting to zmq url %s", receiver->scope, receiver->topic, url);
+    L_DEBUG("[PSA_ZMQ] TopicReceiver %s/%s connecting to zmq url %s", receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic, url);
 
     celixThreadMutex_lock(&receiver->requestedConnections.mutex);
     psa_zmq_requested_connection_entry_t *entry = hashMap_get(receiver->requestedConnections.map, url);
@@ -367,7 +390,7 @@ void pubsub_zmqTopicReceiver_connectTo(
 }
 
 void pubsub_zmqTopicReceiver_disconnectFrom(pubsub_zmq_topic_receiver_t *receiver, const char *url) {
-    L_DEBUG("[PSA ZMQ] TopicReceiver %s/%s disconnect from zmq url %s", receiver->scope, receiver->topic, url);
+    L_DEBUG("[PSA ZMQ] TopicReceiver %s/%s disconnect from zmq url %s", receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic, url);
 
     celixThreadMutex_lock(&receiver->requestedConnections.mutex);
     psa_zmq_requested_connection_entry_t *entry = hashMap_remove(receiver->requestedConnections.map, url);
@@ -389,10 +412,16 @@ static void pubsub_zmqTopicReceiver_addSubscriber(void *handle, void *svc, const
     pubsub_zmq_topic_receiver_t *receiver = handle;
 
     long bndId = celix_bundle_getId(bnd);
-    const char *subScope = celix_properties_get(props, PUBSUB_SUBSCRIBER_SCOPE, "default");
-    if (strncmp(subScope, receiver->scope, strlen(receiver->scope)) != 0) {
-        //not the same scope. ignore
-        return;
+    const char *subScope = celix_properties_get(props, PUBSUB_SUBSCRIBER_SCOPE, NULL);
+    if (receiver->scope == NULL){
+        if (subScope != NULL){
+            return;
+        }
+    } else if (subScope != NULL) {
+        if (strncmp(subScope, receiver->scope, strlen(receiver->scope)) != 0) {
+            //not the same scope. ignore
+            return;
+        }
     }
 
     celixThreadMutex_lock(&receiver->subscribers.mutex);
@@ -421,7 +450,7 @@ static void pubsub_zmqTopicReceiver_addSubscriber(void *handle, void *svc, const
         if (rc == 0) {
             hashMap_put(receiver->subscribers.map, (void*)bndId, entry);
         } else {
-            L_ERROR("[PSA_ZMQ] Cannot create msg serializer map for TopicReceiver %s/%s", receiver->scope, receiver->topic);
+            L_ERROR("[PSA_ZMQ] Cannot create msg serializer map for TopicReceiver %s/%s", receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic);
             free(entry);
         }
     }
@@ -443,7 +472,7 @@ static void pubsub_zmqTopicReceiver_removeSubscriber(void *handle, void *svc, co
         hashMap_remove(receiver->subscribers.map, (void*)bndId);
         int rc = receiver->serializer->destroySerializerMap(receiver->serializer->handle, entry->msgTypes);
         if (rc != 0) {
-            L_ERROR("[PSA_ZMQ] Cannot destroy msg serializers map for TopicReceiver %s/%s", receiver->scope, receiver->topic);
+            L_ERROR("[PSA_ZMQ] Cannot destroy msg serializers map for TopicReceiver %s/%s", receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic);
         }
         hash_map_iterator_t iter = hashMapIterator_construct(entry->metrics);
         while (hashMapIterator_hasNext(&iter)) {
@@ -456,9 +485,9 @@ static void pubsub_zmqTopicReceiver_removeSubscriber(void *handle, void *svc, co
     celixThreadMutex_unlock(&receiver->subscribers.mutex);
 }
 
-static inline void processMsgForSubscriberEntry(pubsub_zmq_topic_receiver_t *receiver, psa_zmq_subscriber_entry_t* entry, const pubsub_zmq_msg_header_t *hdr, const byte* payload, size_t payloadSize, struct timespec *receiveTime) {
+static inline void processMsgForSubscriberEntry(pubsub_zmq_topic_receiver_t *receiver, psa_zmq_subscriber_entry_t* entry, pubsub_protocol_message_t *message, struct timespec *receiveTime) {
     //NOTE receiver->subscribers.mutex locked
-    pubsub_msg_serializer_t* msgSer = hashMap_get(entry->msgTypes, (void*)(uintptr_t)(hdr->type));
+    pubsub_msg_serializer_t* msgSer = hashMap_get(entry->msgTypes, (void*)(uintptr_t)(message->header.msgId));
     pubsub_subscriber_t *svc = entry->svc;
     bool monitor = receiver->metricsEnabled;
 
@@ -470,90 +499,105 @@ static inline void processMsgForSubscriberEntry(pubsub_zmq_topic_receiver_t *rec
 
     if (msgSer!= NULL) {
         void *deserializedMsg = NULL;
-        bool validVersion = psa_zmq_checkVersion(msgSer->msgVersion, hdr);
+        bool validVersion = psa_zmq_checkVersion(msgSer->msgVersion, message->header.msgMajorVersion, message->header.msgMinorVersion);
         if (validVersion) {
             if (monitor) {
                 clock_gettime(CLOCK_REALTIME, &beginSer);
             }
-            celix_status_t status = msgSer->deserialize(msgSer->handle, payload, payloadSize, &deserializedMsg);
+            struct iovec deSerializeBuffer;
+            deSerializeBuffer.iov_base = message->payload.payload;
+            deSerializeBuffer.iov_len  = message->payload.length;
+            celix_status_t status = msgSer->deserialize(msgSer->handle, &deSerializeBuffer, 0, &deserializedMsg);
             if (monitor) {
                 clock_gettime(CLOCK_REALTIME, &endSer);
             }
             if (status == CELIX_SUCCESS) {
-                bool release = true;
-                svc->receive(svc->handle, msgSer->msgName, msgSer->msgId, deserializedMsg, &release);
-                if (release) {
-                    msgSer->freeMsg(msgSer->handle, deserializedMsg);
+
+                const char *msgType = msgSer->msgName;
+                uint32_t msgId = message->header.msgId;
+                celix_properties_t *metadata = message->metadata.metadata;
+                bool cont = pubsubInterceptorHandler_invokePreReceive(receiver->interceptorsHandler, msgType, msgId, deserializedMsg, &metadata);
+                if (cont) {
+                    bool release = true;
+                    svc->receive(svc->handle, msgSer->msgName, msgSer->msgId, deserializedMsg,
+                                 metadata, &release);
+                    if (release) {
+                        msgSer->freeDeserializeMsg(msgSer->handle, deserializedMsg);
+                    }
+
+                    pubsubInterceptorHandler_invokePostReceive(receiver->interceptorsHandler, msgType, msgId, deserializedMsg, metadata);
+
+                    updateReceiveCount += 1;
                 }
-                updateReceiveCount += 1;
             } else {
                 updateSerError += 1;
-                L_WARN("[PSA_ZMQ_TR] Cannot deserialize msg type %s for scope/topic %s/%s", msgSer->msgName, receiver->scope, receiver->topic);
+                L_WARN("[PSA_ZMQ_TR] Cannot deserialize msg type %s for scope/topic %s/%s", msgSer->msgName, receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic);
             }
         }
     } else {
-        L_WARN("[PSA_ZMQ_TR] Cannot find serializer for type id 0x%X", hdr->type);
+        L_WARN("[PSA_ZMQ_TR] Cannot find serializer for type id 0x%X", message->header.msgId);
     }
 
     if (msgSer != NULL && monitor) {
-        hash_map_t *origins = hashMap_get(entry->metrics, (void*)(uintptr_t )hdr->type);
-        char uuidStr[UUID_STR_LEN+1];
-        uuid_unparse(hdr->originUUID, uuidStr);
-        psa_zmq_subscriber_metrics_entry_t *metrics = hashMap_get(origins, uuidStr);
-
-        if (metrics == NULL) {
-            metrics = calloc(1, sizeof(*metrics));
-            hashMap_put(origins, strndup(uuidStr, UUID_STR_LEN+1), metrics);
-            uuid_copy(metrics->origin, hdr->originUUID);
-            metrics->msgTypeId = hdr->type;
-            metrics->maxDelayInSeconds = -INFINITY;
-            metrics->minDelayInSeconds = INFINITY;
-            metrics->lastSeqNr = 0;
-        }
-
-        double diff = celix_difftime(&beginSer, &endSer);
-        long n = metrics->nrOfMessagesReceived;
-        metrics->averageSerializationTimeInSeconds = (metrics->averageSerializationTimeInSeconds * n + diff) / (n+1);
-
-        diff = celix_difftime(&metrics->lastMessageReceived, receiveTime);
-        n = metrics->nrOfMessagesReceived;
-        if (metrics->nrOfMessagesReceived >= 1) {
-            metrics->averageTimeBetweenMessagesInSeconds = (metrics->averageTimeBetweenMessagesInSeconds * n + diff) / (n + 1);
-        }
-        metrics->lastMessageReceived = *receiveTime;
-
-
-        int incr = hdr->seqNr - metrics->lastSeqNr;
-        if (metrics->lastSeqNr >0 && incr > 1) {
-            metrics->nrOfMissingSeqNumbers += (incr - 1);
-            L_WARN("Missing message seq nr went from %i to %i", metrics->lastSeqNr, hdr->seqNr);
-        }
-        metrics->lastSeqNr = hdr->seqNr;
-
-        struct timespec sendTime;
-        sendTime.tv_sec = (time_t)hdr->sendtimeSeconds;
-        sendTime.tv_nsec = (long)hdr->sendTimeNanoseconds; //TODO FIXME the tv_nsec is not correct
-        diff = celix_difftime(&sendTime, receiveTime);
-        metrics->averageDelayInSeconds = (metrics->averageDelayInSeconds * n + diff) / (n+1);
-        if (diff < metrics->minDelayInSeconds) {
-            metrics->minDelayInSeconds = diff;
-        }
-        if (diff > metrics->maxDelayInSeconds) {
-            metrics->maxDelayInSeconds = diff;
-        }
-
-        metrics->nrOfMessagesReceived += updateReceiveCount;
-        metrics->nrOfSerializationErrors += updateSerError;
+        // TODO disabled for now, should move to an interceptor?
+//        hash_map_t *origins = hashMap_get(entry->metrics, (void*)(uintptr_t )message->header.msgId);
+//        char uuidStr[UUID_STR_LEN+1];
+//        uuid_unparse(hdr->originUUID, uuidStr);
+//        psa_zmq_subscriber_metrics_entry_t *metrics = hashMap_get(origins, uuidStr);
+//
+//        if (metrics == NULL) {
+//            metrics = calloc(1, sizeof(*metrics));
+//            hashMap_put(origins, strndup(uuidStr, UUID_STR_LEN+1), metrics);
+//            uuid_copy(metrics->origin, hdr->originUUID);
+//            metrics->msgTypeId = hdr->type;
+//            metrics->maxDelayInSeconds = -INFINITY;
+//            metrics->minDelayInSeconds = INFINITY;
+//            metrics->lastSeqNr = 0;
+//        }
+//
+//        double diff = celix_difftime(&beginSer, &endSer);
+//        long n = metrics->nrOfMessagesReceived;
+//        metrics->averageSerializationTimeInSeconds = (metrics->averageSerializationTimeInSeconds * n + diff) / (n+1);
+//
+//        diff = celix_difftime(&metrics->lastMessageReceived, receiveTime);
+//        n = metrics->nrOfMessagesReceived;
+//        if (metrics->nrOfMessagesReceived >= 1) {
+//            metrics->averageTimeBetweenMessagesInSeconds = (metrics->averageTimeBetweenMessagesInSeconds * n + diff) / (n + 1);
+//        }
+//        metrics->lastMessageReceived = *receiveTime;
+//
+//
+//        int incr = hdr->seqNr - metrics->lastSeqNr;
+//        if (metrics->lastSeqNr >0 && incr > 1) {
+//            metrics->nrOfMissingSeqNumbers += (incr - 1);
+//            L_WARN("Missing message seq nr went from %i to %i", metrics->lastSeqNr, hdr->seqNr);
+//        }
+//        metrics->lastSeqNr = hdr->seqNr;
+//
+//        struct timespec sendTime;
+//        sendTime.tv_sec = (time_t)hdr->sendtimeSeconds;
+//        sendTime.tv_nsec = (long)hdr->sendTimeNanoseconds; //TODO FIXME the tv_nsec is not correct
+//        diff = celix_difftime(&sendTime, receiveTime);
+//        metrics->averageDelayInSeconds = (metrics->averageDelayInSeconds * n + diff) / (n+1);
+//        if (diff < metrics->minDelayInSeconds) {
+//            metrics->minDelayInSeconds = diff;
+//        }
+//        if (diff > metrics->maxDelayInSeconds) {
+//            metrics->maxDelayInSeconds = diff;
+//        }
+//
+//        metrics->nrOfMessagesReceived += updateReceiveCount;
+//        metrics->nrOfSerializationErrors += updateSerError;
     }
 }
 
-static inline void processMsg(pubsub_zmq_topic_receiver_t *receiver, const pubsub_zmq_msg_header_t *hdr, const byte *payload, size_t payloadSize, struct timespec *receiveTime) {
+static inline void processMsg(pubsub_zmq_topic_receiver_t *receiver, pubsub_protocol_message_t *message, struct timespec *receiveTime) {
     celixThreadMutex_lock(&receiver->subscribers.mutex);
     hash_map_iterator_t iter = hashMapIterator_construct(receiver->subscribers.map);
     while (hashMapIterator_hasNext(&iter)) {
         psa_zmq_subscriber_entry_t *entry = hashMapIterator_nextValue(&iter);
         if (entry != NULL) {
-            processMsgForSubscriberEntry(receiver, entry, hdr, payload, payloadSize, receiveTime);
+            processMsgForSubscriberEntry(receiver, entry, message, receiveTime);
         }
     }
     celixThreadMutex_unlock(&receiver->subscribers.mutex);
@@ -574,7 +618,6 @@ static void* psa_zmq_recvThread(void * data) {
     bool allInitialized = receiver->subscribers.allInitialized;
     celixThreadMutex_unlock(&receiver->subscribers.mutex);
 
-
     while (running) {
         if (!allConnected) {
             psa_zmq_connectToAllRequestedConnections(receiver);
@@ -585,24 +628,37 @@ static void* psa_zmq_recvThread(void * data) {
 
         zmsg_t *zmsg = zmsg_recv(receiver->zmqSock);
         if (zmsg != NULL) {
-            if (zmsg_size(zmsg) != 3) {
-                L_WARN("[PSA_ZMQ_TR] Always expecting 3 frames per zmsg (filter + header + payload), got %i frames", (int)zmsg_size(zmsg));
+            if (zmsg_size(zmsg) < 2) {
+                L_WARN("[PSA_ZMQ_TR] Always expecting at least frames per zmsg (header + payload (+ metadata)), got %i frames", (int)zmsg_size(zmsg));
             } else {
-                zframe_t *filter = zmsg_pop(zmsg); //char[5] filter
-                zframe_t *header = zmsg_pop(zmsg); //pubsub_zmq_msg_header_t
-                zframe_t *payload = zmsg_pop(zmsg); //serialized payload
-                if (filter != NULL && strncmp(receiver->scopeAndTopicFilter, (char*)zframe_data(filter), zframe_size(filter)) != 0 ) {
-                    L_ERROR("[PSA_ZMQ_TR] Invalid ZQM filter, Found '%4s'. Expected %s\n", (char*)zframe_data(filter), receiver->scopeAndTopicFilter);
-                } else if (header != NULL && payload != NULL) {
+                zframe_t *header = zmsg_pop(zmsg); // header
+                zframe_t *payload = NULL;
+                zframe_t *metadata = NULL;
+
+                pubsub_protocol_message_t message;
+                receiver->protocol->decodeHeader(receiver->protocol->handle, zframe_data(header), zframe_size(header), &message);
+                if (message.header.payloadSize > 0) {
+                    payload = zmsg_pop(zmsg);
+                    receiver->protocol->decodePayload(receiver->protocol->handle, zframe_data(payload), zframe_size(payload), &message);
+                } else {
+                    message.payload.payload = NULL;
+                    message.payload.length = 0;
+                }
+                if (message.header.metadataSize > 0) {
+                    metadata = zmsg_pop(zmsg);
+                    receiver->protocol->decodeMetadata(receiver->protocol->handle, zframe_data(metadata), zframe_size(metadata), &message);
+                } else {
+                    message.metadata.metadata = NULL;
+                }
+                if (header != NULL && payload != NULL) {
                     struct timespec receiveTime;
                     clock_gettime(CLOCK_REALTIME, &receiveTime);
-                    pubsub_zmq_msg_header_t msgHeader;
-                    psa_zmq_decodeHeader(zframe_data(header), zframe_size(header), &msgHeader);
-                    processMsg(receiver, &msgHeader, zframe_data(payload), zframe_size(payload), &receiveTime);
+                    processMsg(receiver, &message, &receiveTime);
                 }
-                zframe_destroy(&filter);
+                celix_properties_destroy(message.metadata.metadata);
                 zframe_destroy(&header);
                 zframe_destroy(&payload);
+                zframe_destroy(&metadata);
             }
             zmsg_destroy(&zmsg);
         } else {
@@ -633,7 +689,7 @@ static void* psa_zmq_recvThread(void * data) {
 
 pubsub_admin_receiver_metrics_t* pubsub_zmqTopicReceiver_metrics(pubsub_zmq_topic_receiver_t *receiver) {
     pubsub_admin_receiver_metrics_t *result = calloc(1, sizeof(*result));
-    snprintf(result->scope, PUBSUB_AMDIN_METRICS_NAME_MAX, "%s", receiver->scope);
+    snprintf(result->scope, PUBSUB_AMDIN_METRICS_NAME_MAX, "%s", receiver->scope == NULL ? PUBSUB_DEFAULT_ENDPOINT_SCOPE : receiver->scope);
     snprintf(result->topic, PUBSUB_AMDIN_METRICS_NAME_MAX, "%s", receiver->topic);
 
     int msgTypesCount = 0;
@@ -763,10 +819,12 @@ static void psa_zmq_setupZmqContext(pubsub_zmq_topic_receiver_t *receiver, const
         int policy = ZMQ_THREAD_SCHED_POLICY_DFLT;
         if (strncmp("SCHED_OTHER", sched, 16) == 0) {
             policy = SCHED_OTHER;
+#if !defined(__APPLE__)
         } else if (strncmp("SCHED_BATCH", sched, 16) == 0) {
             policy = SCHED_BATCH;
         } else if (strncmp("SCHED_IDLE", sched, 16) == 0) {
             policy = SCHED_IDLE;
+#endif
         } else if (strncmp("SCHED_FIFO", sched, 16) == 0) {
             policy = SCHED_FIFO;
         } else if (strncmp("SCHED_RR", sched, 16) == 0) {
@@ -800,10 +858,32 @@ static void psa_zmq_setupZmqSocket(pubsub_zmq_topic_receiver_t *receiver, const 
     zcert_apply (sub_cert, zmq_s);
     zsock_set_curve_serverkey (zmq_s, pub_key); //apply key of publisher to socket of subscriber
 #endif
-    zsock_set_subscribe(receiver->zmqSock, receiver->scopeAndTopicFilter);
+    receiver->protocol->getSyncHeader(receiver->protocol->handle, receiver->sync);
+    zsock_set_subscribe(receiver->zmqSock, receiver->sync);
 
 #ifdef BUILD_WITH_ZMQ_SECURITY
     ts->zmq_cert = sub_cert;
     ts->zmq_pub_cert = pub_cert;
 #endif
+}
+
+static bool psa_zmq_checkVersion(version_pt msgVersion, uint16_t major, uint16_t minor) {
+    bool check=false;
+
+    if (major == 0 && minor == 0) {
+        //no check
+        return true;
+    }
+
+    int versionMajor;
+    int versionMinor;
+    if (msgVersion!=NULL) {
+        version_getMajor(msgVersion, &versionMajor);
+        version_getMinor(msgVersion, &versionMinor);
+        if (major==((unsigned char)versionMajor)) { /* Different major means incompatible */
+            check = (minor>=((unsigned char)versionMinor)); /* Compatible only if the provider has a minor equals or greater (means compatible update) */
+        }
+    }
+
+    return check;
 }

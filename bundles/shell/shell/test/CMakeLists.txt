@@ -22,8 +22,8 @@ add_executable(test_shell
     src/shell_tests.cpp
 )
 
-target_link_libraries(test_shell PRIVATE Celix::framework CURL::libcurl ${CPPUTEST_LIBRARY} Celix::shell_api)
-target_include_directories(test_shell PRIVATE ${CPPUTEST_INCLUDE_DIRS})
+target_link_libraries(test_shell PRIVATE Celix::framework CURL::libcurl ${CppUTest_LIBRARY} Celix::shell_api)
+target_include_directories(test_shell SYSTEM PRIVATE ${CppUTest_INCLUDE_DIRS})
 add_dependencies(test_shell shell_bundle)
 target_compile_definitions(test_shell PRIVATE -DSHELL_BUNDLE_LOCATION=\"$<TARGET_PROPERTY:shell,BUNDLE_FILE>\")
 target_compile_options(test_shell PRIVATE -Wno-deprecated-declarations)
@@ -32,5 +32,5 @@ if (CELIX_INSTALL_DEPRECATED_API)
 endif ()
 
 add_test(NAME test_shell COMMAND test_shell)
-SETUP_TARGET_FOR_COVERAGE(test_shell_cov test_shell ${CMAKE_BINARY_DIR}/coverage/test_shell/test_shell ..)
+setup_target_for_coverage(test_shell SCAN_DIR ..)
 

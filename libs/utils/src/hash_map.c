@@ -288,10 +288,7 @@ void hashMap_clear(hash_map_pt map, bool freeKey, bool freeValue) {
         while (entry != NULL) {
             hash_map_entry_pt f = entry;
             entry = entry->next;
-            if (freeKey && f->key != NULL)
-                free(f->key);
-            if (freeValue && f->value != NULL)
-                free(f->value);
+            hashMapEntry_clear(f, freeKey, freeValue);
             free(f);
         }
         table[i] = NULL;
@@ -602,6 +599,16 @@ void * hashMapEntry_getValue(hash_map_entry_pt entry) {
     return entry->value;
 }
 
+void  hashMapEntry_clear(hash_map_entry_pt entry, bool freeKey, bool freeValue) {
+    if (freeKey && entry->key != NULL) {
+        free(entry->key);
+        entry->key = NULL;
+    }
+    if (freeValue && entry->value != NULL) {
+        free(entry->value);
+        entry->value = NULL;
+    }
+}
 
 
 

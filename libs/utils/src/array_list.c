@@ -564,3 +564,24 @@ void celix_arrayList_clear(celix_array_list_t *list) {
     }
     list->size = 0;
 }
+
+#if defined(__APPLE__)
+static int celix_arrayList_compare(void *arg, const void * a, const void *b) {
+#else
+static int celix_arrayList_compare(const void * a, const void *b, void *arg) {
+#endif
+    const celix_array_list_entry_t *aEntry = a;
+    const celix_array_list_entry_t *bEntry = b;
+
+    celix_arrayList_sort_fp sort = arg;
+
+    return sort(aEntry->voidPtrVal, bEntry->voidPtrVal);
+}
+
+void celix_arrayList_sort(celix_array_list_t *list, celix_arrayList_sort_fp sortFp) {
+#if defined(__APPLE__)
+    qsort_r(list->elementData, list->size, sizeof(celix_array_list_entry_t), sortFp, celix_arrayList_compare);
+#else
+    qsort_r(list->elementData, list->size, sizeof(celix_array_list_entry_t), celix_arrayList_compare, sortFp);
+#endif
+}

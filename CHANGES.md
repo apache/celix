@@ -15,6 +15,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
+# Changes for 2.2.1
+
+# Fixes
+
+- Fixes etcdlib CMake setup to that etcdlib can be build as a separate project
+
 # Changes for 2.2.0
 
 ## New features:

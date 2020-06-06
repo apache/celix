@@ -81,7 +81,7 @@ typedef struct pubsub_msg {
 static int psa_udpmc_localMsgTypeIdForMsgType(void* handle, const char* msgType, unsigned int* msgTypeId);
 static void* psa_udpmc_getPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties);
 static void psa_udpmc_ungetPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties);
-static int psa_udpmc_topicPublicationSend(void* handle, unsigned int msgTypeId, const void *inMsg);
+static int psa_udpmc_topicPublicationSend(void* handle, unsigned int msgTypeId, const void *inMsg, celix_properties_t *metadata);
 static bool psa_udpmc_sendMsg(psa_udpmc_bounded_service_entry_t *entry, pubsub_udp_msg_t* msg);
 static unsigned int rand_range(unsigned int min, unsigned int max);
 
@@ -98,7 +98,7 @@ pubsub_udpmc_topic_sender_t* pubsub_udpmcTopicSender_create(
     sender->ctx = ctx;
     sender->serializerSvcId = serializerSvcId;
     sender->serializer = serializer;
-    sender->scope = strndup(scope, 1024 * 1024);
+    sender->scope = scope == NULL ? NULL : strndup(scope, 1024 * 1024);
     sender->topic = strndup(topic, 1024 * 1024);
 
     celixThreadMutex_create(&sender->boundedServices.mutex, NULL);
@@ -135,7 +135,9 @@ pubsub_udpmc_topic_sender_t* pubsub_udpmcTopicSender_create(
         {
             celix_properties_t *props = celix_properties_create();
             celix_properties_set(props, PUBSUB_PUBLISHER_TOPIC, sender->topic);
-            celix_properties_set(props, PUBSUB_PUBLISHER_SCOPE, sender->scope);
+            if (sender->scope != NULL) {
+                celix_properties_set(props, PUBSUB_PUBLISHER_SCOPE, sender->scope);
+            }
 
             celix_service_registration_options_t opts = CELIX_EMPTY_SERVICE_REGISTRATION_OPTIONS;
             opts.factory = &sender->publisher.factory;
@@ -159,7 +161,9 @@ void pubsub_udpmcTopicSender_destroy(pubsub_udpmc_topic_sender_t *sender) {
         //TODO loop and cleanup?
         hashMap_destroy(sender->boundedServices.map, false, true);
 
-        free(sender->scope);
+        if (sender->scope != NULL) {
+            free(sender->scope);
+        }
         free(sender->topic);
         free(sender->socketAddress);
         free(sender);
@@ -267,7 +271,7 @@ static void psa_udpmc_ungetPublisherService(void *handle, const celix_bundle_t *
     celixThreadMutex_unlock(&sender->boundedServices.mutex);
 }
 
-static int psa_udpmc_topicPublicationSend(void* handle, unsigned int msgTypeId, const void *inMsg) {
+static int psa_udpmc_topicPublicationSend(void* handle, unsigned int msgTypeId, const void *inMsg, celix_properties_t *metadata) {
     psa_udpmc_bounded_service_entry_t *entry = handle;
     int status = 0;
 
@@ -277,9 +281,8 @@ static int psa_udpmc_topicPublicationSend(void* handle, unsigned int msgTypeId, 
     }
 
     if (msgSer != NULL) {
-        void* serializedOutput = NULL;
         size_t serializedOutputLen = 0;
-
+        struct iovec* serializedOutput = NULL;
         if (msgSer->serialize(msgSer->handle, inMsg, &serializedOutput, &serializedOutputLen) == CELIX_SUCCESS) {
             pubsub_udp_msg_header_t *msg_hdr = calloc(1, sizeof(*msg_hdr));
             msg_hdr->type = msgTypeId;
@@ -294,15 +297,15 @@ static int psa_udpmc_topicPublicationSend(void* handle, unsigned int msgTypeId, 
 
             pubsub_udp_msg_t *msg = calloc(1, sizeof(*msg));
             msg->header = msg_hdr;
-            msg->payload = (char *) serializedOutput;
-            msg->payloadSize = (unsigned int) serializedOutputLen;
+            msg->payload = (char *) serializedOutput->iov_base;
+            msg->payloadSize = (unsigned int)  serializedOutput->iov_len;
 
             if (psa_udpmc_sendMsg(entry, msg) == false) {
                 status = -1;
             }
             free(msg);
             free(msg_hdr);
-            free(serializedOutput);
+            msgSer->freeSerializeMsg(msgSer->handle, serializedOutput, serializedOutputLen);
         } else {
             printf("[PSA_UDPMC/TopicSender] Serialization of msg type id %d failed\n", msgTypeId);
             status = -1;

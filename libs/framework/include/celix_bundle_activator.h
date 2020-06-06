@@ -165,9 +165,9 @@ extern "C" celix_status_t bundleActivator_create(celix_bundle_context_t *context
     int status = CELIX_SUCCESS;                                                                                        \
                                                                                                                        \
     BundleActivatorData* data = nullptr;                                                                               \
-    data = new BundleActivatorData{};                                                                                  \
+    data = new (std::nothrow) BundleActivatorData{};                                                                                  \
     if (data != nullptr) {                                                                                             \
-        data->mng = std::shared_ptr<celix::dm::DependencyManager>{new celix::dm::DependencyManager{context}};          \
+        data->mng = std::shared_ptr<celix::dm::DependencyManager>{new (std::nothrow) celix::dm::DependencyManager{context}};          \
     }                                                                                                                  \
                                                                                                                        \
     if (data == nullptr || data->mng == nullptr) {                                                                     \

@@ -16,20 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * version_private.h
- *
- *  \date       Dec 18, 2012
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
 
 #ifndef VERSION_PRIVATE_H_
 #define VERSION_PRIVATE_H_
 
-#include "version.h"
-
-struct version {
+struct celix_version {
     int major;
     int minor;
     int micro;

@@ -91,7 +91,7 @@ celix_status_t manifestParser_create(module_pt owner, manifest_pt manifest, mani
 		status = CELIX_ENOMEM;
 	}
 
-	framework_logIfError(logger, status, NULL, "Cannot create manifest parser");
+	framework_logIfError(celix_frameworkLogger_globalLogger(), status, NULL, "Cannot create manifest parser");
 
 	return status;
 }

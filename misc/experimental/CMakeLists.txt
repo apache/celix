@@ -19,6 +19,7 @@ celix_subproject(EXPERIMENTAL "Options to enable building the experimental - non
 if (EXPERIMENTAL)
 
     add_subdirectory(bundles)
+    add_subdirectory(promise)
     add_subdirectory(cxx)
 
 endif ()

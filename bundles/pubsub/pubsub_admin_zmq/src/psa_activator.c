@@ -21,7 +21,8 @@
 
 #include "celix_api.h"
 #include "pubsub_serializer.h"
-#include "log_helper.h"
+#include "pubsub_protocol.h"
+#include "celix_log_helper.h"
 
 #include "pubsub_admin.h"
 #include "pubsub_admin_metrics.h"
@@ -29,11 +30,13 @@
 #include "celix_shell_command.h"
 
 typedef struct psa_zmq_activator {
-    log_helper_t *logHelper;
+    celix_log_helper_t *logHelper;
 
     pubsub_zmq_admin_t *admin;
 
     long serializersTrackerId;
+
+    long protocolsTrackerId;
 
     pubsub_admin_service_t adminService;
     long adminSvcId;
@@ -49,9 +52,9 @@ int psa_zmq_start(psa_zmq_activator_t *act, celix_bundle_context_t *ctx) {
     act->adminSvcId = -1L;
     act->cmdSvcId = -1L;
     act->serializersTrackerId = -1L;
+    act->protocolsTrackerId = -1L;
 
-    logHelper_create(ctx, &act->logHelper);
-    logHelper_start(act->logHelper);
+    act->logHelper = celix_logHelper_create(ctx, "celix_psa_discovery");
 
     act->admin = pubsub_zmqAdmin_create(ctx, act->logHelper);
     celix_status_t status = act->admin != NULL ? CELIX_SUCCESS : CELIX_BUNDLE_EXCEPTION;
@@ -65,6 +68,17 @@ int psa_zmq_start(psa_zmq_activator_t *act, celix_bundle_context_t *ctx) {
         opts.addWithProperties = pubsub_zmqAdmin_addSerializerSvc;
         opts.removeWithProperties = pubsub_zmqAdmin_removeSerializerSvc;
         act->serializersTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
+    }
+
+    //track protocols
+    if (status == CELIX_SUCCESS) {
+        celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
+        opts.filter.serviceName = PUBSUB_PROTOCOL_SERVICE_NAME;
+        opts.filter.ignoreServiceLanguage = true;
+        opts.callbackHandle = act->admin;
+        opts.addWithProperties = pubsub_zmqAdmin_addProtocolSvc;
+        opts.removeWithProperties = pubsub_zmqAdmin_removeProtocolSvc;
+        act->protocolsTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
     }
 
     //register pubsub admin service
@@ -116,10 +130,10 @@ int psa_zmq_stop(psa_zmq_activator_t *act, celix_bundle_context_t *ctx) {
     celix_bundleContext_unregisterService(ctx, act->cmdSvcId);
     celix_bundleContext_unregisterService(ctx, act->adminMetricsSvcId);
     celix_bundleContext_stopTracker(ctx, act->serializersTrackerId);
+    celix_bundleContext_stopTracker(ctx, act->protocolsTrackerId);
     pubsub_zmqAdmin_destroy(act->admin);
 
-    logHelper_stop(act->logHelper);
-    logHelper_destroy(&act->logHelper);
+    celix_logHelper_destroy(act->logHelper);
 
     return CELIX_SUCCESS;
 }

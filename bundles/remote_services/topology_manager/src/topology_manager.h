@@ -30,7 +30,7 @@
 #include "endpoint_listener.h"
 #include "service_reference.h"
 #include "bundle_context.h"
-#include "log_helper.h"
+#include "celix_log_helper.h"
 #include "scope.h"
 
 #define OSGI_RSA_REMOTE_SERVICE_ADMIN "remote_service_admin"
@@ -38,7 +38,7 @@
 typedef struct topology_manager topology_manager_t;
 typedef struct topology_manager *topology_manager_pt;
 
-celix_status_t topologyManager_create(celix_bundle_context_t *context, log_helper_t *logHelper, topology_manager_pt *manager, void **scope);
+celix_status_t topologyManager_create(celix_bundle_context_t *context, celix_log_helper_t *logHelper, topology_manager_pt *manager, void **scope);
 celix_status_t topologyManager_destroy(topology_manager_pt manager);
 celix_status_t topologyManager_closeImports(topology_manager_pt manager);
 
@@ -57,8 +57,8 @@ celix_status_t topologyManager_serviceChanged(void *listener, celix_service_even
 celix_status_t topologyManager_addImportedService(void *handle, endpoint_description_t *endpoint, char *matchedFilter);
 celix_status_t topologyManager_removeImportedService(void *handle, endpoint_description_t *endpoint, char *matchedFilter);
 
-celix_status_t topologyManager_addExportedService(topology_manager_pt manager, service_reference_pt reference, char *serviceId);
-celix_status_t topologyManager_removeExportedService(topology_manager_pt manager, service_reference_pt reference, char *serviceId);
+celix_status_t topologyManager_addExportedService(void * handle, service_reference_pt reference, void * service);
+celix_status_t topologyManager_removeExportedService(void * handle, service_reference_pt reference, void * service);
 
 celix_status_t topologyManager_listenerAdded(void *handle, array_list_pt listeners);
 celix_status_t topologyManager_listenerRemoved(void *handle, array_list_pt listeners);

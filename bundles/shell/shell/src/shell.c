@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "log_helper.h"
+#include "celix_log_helper.h"
 #include "celix_constants.h"
 #include "celix_utils.h"
 #include "celix_errno.h"
@@ -32,7 +32,7 @@ shell_t* shell_create(celix_bundle_context_t *ctx) {
     shell_t *shell = calloc(1, sizeof(*shell));
 
     shell->ctx = ctx;
-    logHelper_create(ctx, &shell->logHelper);
+    shell->logHelper = celix_logHelper_create(ctx, "celix_shell");
 
     celix_thread_mutexattr_t attr;
     celixThreadMutexAttr_create(&attr);
@@ -49,7 +49,7 @@ void shell_destroy(shell_t *shell) {
         celixThreadMutex_destroy(&shell->mutex);
         hashMap_destroy(shell->commandServices, false, false);
         hashMap_destroy(shell->legacyCommandServices, false, false);
-        logHelper_destroy(&shell->logHelper);
+        celix_logHelper_destroy(shell->logHelper);
         free(shell);
     }
 }
@@ -60,13 +60,13 @@ celix_status_t shell_addCommand(shell_t *shell, celix_shell_command_t *svc, cons
     const char *name = celix_properties_get(props, CELIX_SHELL_COMMAND_NAME, NULL);
 
     if (name == NULL) {
-        logHelper_log(shell->logHelper, OSGI_LOGSERVICE_WARNING, "Command service must contain a '%s' property!", CELIX_SHELL_COMMAND_NAME);
+        celix_logHelper_log(shell->logHelper, CELIX_LOG_LEVEL_WARNING, "Command service must contain a '%s' property!", CELIX_SHELL_COMMAND_NAME);
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
         long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
         celixThreadMutex_lock(&shell->mutex);
         if (hashMap_containsKey(shell->commandServices, name)) {
-            logHelper_log(shell->logHelper, OSGI_LOGSERVICE_WARNING, "Command with name %s already registered!", name);
+            celix_logHelper_log(shell->logHelper, CELIX_LOG_LEVEL_WARNING, "Command with name %s already registered!", name);
         } else {
             celix_shell_command_entry_t *entry = calloc(1, sizeof(*entry));
             char *localName = NULL;
@@ -90,7 +90,7 @@ celix_status_t shell_removeCommand(shell_t *shell, celix_shell_command_t *svc, c
     const char *name = celix_properties_get(props, CELIX_SHELL_COMMAND_NAME, NULL);
 
     if (name == NULL) {
-        logHelper_log(shell->logHelper, OSGI_LOGSERVICE_WARNING, "Command service must contain a '%s' property!", CELIX_SHELL_COMMAND_NAME);
+        celix_logHelper_log(shell->logHelper, CELIX_LOG_LEVEL_WARNING, "Command service must contain a '%s' property!", CELIX_SHELL_COMMAND_NAME);
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
         long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
@@ -103,10 +103,10 @@ celix_status_t shell_removeCommand(shell_t *shell, celix_shell_command_t *svc, c
                 free(entry->namespace);
                 free(entry);
             } else {
-                logHelper_log(shell->logHelper, OSGI_LOGSERVICE_WARNING, "svc id for command with name %s does not match (%li == %li)!", name, svcId, entry->svcId);
+                celix_logHelper_log(shell->logHelper, CELIX_LOG_LEVEL_WARNING, "svc id for command with name %s does not match (%li == %li)!", name, svcId, entry->svcId);
             }
         } else {
-            logHelper_log(shell->logHelper, OSGI_LOGSERVICE_WARNING, "Cannot find shell command with name %s!", name);
+            celix_logHelper_log(shell->logHelper, CELIX_LOG_LEVEL_WARNING, "Cannot find shell command with name %s!", name);
         }
         celixThreadMutex_unlock(&shell->mutex);
     }
@@ -120,13 +120,13 @@ celix_status_t shell_addLegacyCommand(shell_t *shell, command_service_t *svc, co
     const char *name = celix_properties_get(props, OSGI_SHELL_COMMAND_NAME, NULL);
 
     if (name == NULL) {
-        logHelper_log(shell->logHelper, OSGI_LOGSERVICE_WARNING, "Command service must contain a '%s' property!", CELIX_SHELL_COMMAND_NAME);
+        celix_logHelper_log(shell->logHelper, CELIX_LOG_LEVEL_WARNING, "Command service must contain a '%s' property!", CELIX_SHELL_COMMAND_NAME);
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
         long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
         celixThreadMutex_lock(&shell->mutex);
         if (hashMap_containsKey(shell->legacyCommandServices, name)) {
-            logHelper_log(shell->logHelper, OSGI_LOGSERVICE_WARNING, "Command with name %s already registered!", name);
+            celix_logHelper_log(shell->logHelper, CELIX_LOG_LEVEL_WARNING, "Command with name %s already registered!", name);
         } else {
             celix_legacy_command_entry_t *entry = calloc(1, sizeof(*entry));
             entry->svcId = svcId;
@@ -147,7 +147,7 @@ celix_status_t shell_removeLegacyCommand(shell_t *shell, command_service_t *svc,
     const char *name = celix_properties_get(props, OSGI_SHELL_COMMAND_NAME, NULL);
 
     if (name == NULL) {
-        logHelper_log(shell->logHelper, OSGI_LOGSERVICE_WARNING, "Command service must contain a '%s' property!", OSGI_SHELL_COMMAND_NAME);
+        celix_logHelper_log(shell->logHelper, CELIX_LOG_LEVEL_WARNING, "Command service must contain a '%s' property!", OSGI_SHELL_COMMAND_NAME);
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
         long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
@@ -158,10 +158,10 @@ celix_status_t shell_removeLegacyCommand(shell_t *shell, command_service_t *svc,
                 hashMap_remove(shell->legacyCommandServices, name);
                 free(entry);
             } else {
-                logHelper_log(shell->logHelper, OSGI_LOGSERVICE_WARNING, "svc id for command with name %s does not match (%li == %li)!", name, svcId, entry->svcId);
+                celix_logHelper_log(shell->logHelper, CELIX_LOG_LEVEL_WARNING, "svc id for command with name %s does not match (%li == %li)!", name, svcId, entry->svcId);
             }
         } else {
-            logHelper_log(shell->logHelper, OSGI_LOGSERVICE_WARNING, "Cannot find shell command with name %s!", name);
+            celix_logHelper_log(shell->logHelper, CELIX_LOG_LEVEL_WARNING, "Cannot find shell command with name %s!", name);
         }
         celixThreadMutex_unlock(&shell->mutex);
     }

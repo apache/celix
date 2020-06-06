@@ -100,7 +100,7 @@ void serviceRegistration_release(service_registration_pt registration) {
 }
 
 static celix_status_t serviceRegistration_destroy(service_registration_pt registration) {
-	//fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "Destroying service registration %p\n", registration);
+	//fw_log(logger, CELIX_LOG_LEVEL_DEBUG, "Destroying service registration %p\n", registration);
     free(registration->className);
 	registration->className = NULL;
 
@@ -178,7 +178,7 @@ celix_status_t serviceRegistration_unregister(service_registration_pt registrati
         callback.unregister(callback.handle, bundle, registration);
 	}
 
-	framework_logIfError(logger, status, NULL, "Cannot unregister service registration");
+	framework_logIfError(celix_frameworkLogger_globalLogger(), status, NULL, "Cannot unregister service registration");
 
 	return status;
 }
@@ -223,7 +223,7 @@ celix_status_t serviceRegistration_getProperties(service_registration_pt registr
           status = CELIX_ILLEGAL_ARGUMENT;
      }
 
-    framework_logIfError(logger, status, NULL, "Cannot get registration properties");
+    framework_logIfError(celix_frameworkLogger_globalLogger(), status, NULL, "Cannot get registration properties");
 
     return status;
 }
@@ -231,18 +231,9 @@ celix_status_t serviceRegistration_getProperties(service_registration_pt registr
 celix_status_t serviceRegistration_setProperties(service_registration_pt registration, properties_pt properties) {
     celix_status_t status;
 
-    properties_pt oldProperties = NULL;
-    registry_callback_t callback;
-
     celixThreadRwlock_writeLock(&registration->lock);
-    oldProperties = registration->properties;
     status = serviceRegistration_initializeProperties(registration, properties);
-    callback = registration->callback;
     celixThreadRwlock_unlock(&registration->lock);
-
-    if (status == CELIX_SUCCESS && callback.modified != NULL) {
-        callback.modified(callback.handle, registration, oldProperties);
-    }
 
 	return status;
 }
@@ -262,7 +253,7 @@ celix_status_t serviceRegistration_getBundle(service_registration_pt registratio
 		status = CELIX_ILLEGAL_ARGUMENT;
 	}
 
-    framework_logIfError(logger, status, NULL, "Cannot get bundle");
+    framework_logIfError(celix_frameworkLogger_globalLogger(), status, NULL, "Cannot get bundle");
 
 	return status;
 }
@@ -279,7 +270,7 @@ celix_status_t serviceRegistration_getServiceName(service_registration_pt regist
     }
 
 
-    framework_logIfError(logger, status, NULL, "Cannot get service name");
+    framework_logIfError(celix_frameworkLogger_globalLogger(), status, NULL, "Cannot get service name");
 
 	return status;
 }

@@ -35,7 +35,7 @@ add_executable(test_rsa_shm
 
     ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/endpoint_description.c
 )
-target_link_libraries(test_rsa_shm celix_framework celix_utils CURL::libcurl ${CPPUTEST_LIBRARY})
+target_link_libraries(test_rsa_shm celix_framework celix_utils CURL::libcurl ${CppUTest_LIBRARY})
 
 get_property(rsa_bundle_file TARGET remote_service_admin_shm PROPERTY BUNDLE_FILE)
 get_property(calc_bundle_file TARGET calculator PROPERTY BUNDLE_FILE)
@@ -54,5 +54,5 @@ configure_file(server.properties.in server.properties)
 add_dependencies(test_rsa_shm remote_service_admin_shm calculator org.apache.celix.calc.api.Calculator_proxy org.apache.celix.calc.api.Calculator_endpoint)
  
 #add_test(NAME run_test_rsa_shm COMMAND test_rsa_shm)
-#SETUP_TARGET_FOR_COVERAGE(test_rsa_shm_cov test_rsa_shm ${CMAKE_BINARY_DIR}/coverage/test_rsa_shm/test_rsa_shm)
+#setup_target_for_coverage(test_rsa_shm_cov test_rsa_shm ${CMAKE_BINARY_DIR}/coverage/test_rsa_shm/test_rsa_shm)
 

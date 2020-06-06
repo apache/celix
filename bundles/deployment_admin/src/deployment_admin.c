@@ -104,7 +104,7 @@ celix_status_t deploymentAdmin_create(bundle_context_pt context, deployment_admi
         bundleContext_getProperty(context, IDENTIFICATION_ID, (const char**) &(*admin)->targetIdentification);
         if ((*admin)->targetIdentification == NULL) {
         	(*admin)->targetIdentification = DEFAULT_IDENTIFICATION_ID;
-        	fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "Identification ID not set, using default '%s'. Set id by using '%s'",
+        	fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_INFO, "Identification ID not set, using default '%s'. Set id by using '%s'",
         		DEFAULT_IDENTIFICATION_ID, IDENTIFICATION_ID);
         }
 
@@ -114,13 +114,13 @@ celix_status_t deploymentAdmin_create(bundle_context_pt context, deployment_admi
         (*admin)->auditlogSeqNr = 0;
 
 		if ((*admin)->targetIdentification == NULL ) {
-		    fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Target name must be set using \"deployment_admin_identification\"");
+		    fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_ERROR, "Target name must be set using \"deployment_admin_identification\"");
 		} else {
 			const char *url = NULL;
 			bundleContext_getProperty(context, ADMIN_URL, &url);
 			if (url == NULL) {
 				url = DEFAULT_ADMIN_URL;
-			    fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "Server URL is not set, using default '%s'. Set id by using '%s'",
+			    fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_INFO, "Server URL is not set, using default '%s'. Set id by using '%s'",
         			DEFAULT_ADMIN_URL, ADMIN_URL);
 			}
 		
@@ -196,7 +196,7 @@ static celix_status_t deploymentAdmin_performRequest(deployment_admin_pt admin, 
     if (!curl) {
         status = CELIX_BUNDLE_EXCEPTION;
 
-        fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error initializing curl.");
+        fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_ERROR, "Error initializing curl.");
     }
 
     char url[strlen(admin->auditlogUrl)+6];
@@ -210,7 +210,7 @@ static celix_status_t deploymentAdmin_performRequest(deployment_admin_pt admin, 
 
             if (res != CURLE_OK ) {
                 status = CELIX_BUNDLE_EXCEPTION;
-                fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error sending auditlog, got curl error code %d", res);
+                fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_ERROR, "Error sending auditlog, got curl error code %d", res);
             }
     }
 
@@ -305,7 +305,7 @@ static void *deploymentAdmin_poll(void *deploymentAdmin) {
 					uuid_unparse(uid, uuid);
                     snprintf(tmpDir, 256, "%s%s", entry, uuid);
                     if( mkdir(tmpDir, S_IRWXU) == -1){
-                        fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Failed creating directory %s",tmpDir);
+                        fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_ERROR, "Failed creating directory %s",tmpDir);
                     }
 
 					// TODO: update to use bundle cache DataFile instead of module entries.
@@ -324,7 +324,7 @@ static void *deploymentAdmin_poll(void *deploymentAdmin) {
 					char repoDir[repoDirLength];
 					snprintf(repoDir, repoDirLength, "%srepo", entry);
 					if( mkdir(repoDir, S_IRWXU) == -1){
-						fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Failed creating directory %s",repoDir);
+						fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_ERROR, "Failed creating directory %s",repoDir);
 					}
 
 					int repoCacheLength = strlen(entry) + strlen(name) + 6;
@@ -333,7 +333,7 @@ static void *deploymentAdmin_poll(void *deploymentAdmin) {
 					deploymentAdmin_deleteTree(repoCache);
 					int stat = rename(tmpDir, repoCache);
 					if (stat != 0) {
-						fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "No success");
+						fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_ERROR, "No success");
 					}
 
 					deployment_package_pt target = hashMap_get(admin->packages, name);
@@ -352,7 +352,7 @@ static void *deploymentAdmin_poll(void *deploymentAdmin) {
 					deploymentAdmin_deleteTree(repoCache);
 					deploymentAdmin_deleteTree(tmpDir);
 					if( remove(inputFilename) == -1){
-						fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Remove of %s failed",inputFilename);
+						fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_ERROR, "Remove of %s failed",inputFilename);
 					}
 					admin->current = strdup(last);
 					hashMap_put(admin->packages, (char*)name, source);
@@ -389,7 +389,7 @@ size_t deploymentAdmin_parseVersions(void *contents, size_t size, size_t nmemb, 
 	mem->memory = realloc(mem->memory, mem->size + realsize + 1);
 	if (mem->memory == NULL) {
 		/* out of memory! */
-		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "not enough memory (realloc returned NULL)");
+		fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_ERROR, "not enough memory (realloc returned NULL)");
 		exit(EXIT_FAILURE);
 	}
 
@@ -537,7 +537,7 @@ static celix_status_t deploymentAdmin_deleteTree(char * directory) {
 		}
 	}
 
-	framework_logIfError(logger, status, NULL, "Failed to delete tree");
+	framework_logIfError(celix_frameworkLogger_globalLogger(), status, NULL, "Failed to delete tree");
 
 	return status;
 }
@@ -556,7 +556,7 @@ celix_status_t deploymentAdmin_stopDeploymentPackageBundles(deployment_admin_pt 
 			if (bundle != NULL) {
 				bundle_stop(bundle);
 			} else {
-				fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "DEPLOYMENT_ADMIN: Bundle %s not found", info->symbolicName);
+				fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_ERROR, "DEPLOYMENT_ADMIN: Bundle %s not found", info->symbolicName);
 			}
 		}
 		arrayList_destroy(infos);
@@ -799,7 +799,7 @@ celix_status_t deploymentAdmin_startDeploymentPackageBundles(deployment_admin_pt
 			if (bundle != NULL) {
 				bundle_start(bundle);
 			} else {
-				fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "DEPLOYMENT_ADMIN: Could not start bundle %s", info->symbolicName);
+				fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_ERROR, "DEPLOYMENT_ADMIN: Could not start bundle %s", info->symbolicName);
 			}
 		}
 	}

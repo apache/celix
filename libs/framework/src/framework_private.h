@@ -49,9 +49,6 @@ struct celix_framework {
     long bundleId; //the bundle id of the framework (normally 0)
     hash_map_pt installRequestMap;
 
-    celix_thread_mutex_t serviceListenersLock;
-    array_list_pt serviceListeners;
-
     array_list_pt frameworkListeners;
     celix_thread_mutex_t frameworkListenersLock;
 
@@ -86,9 +83,10 @@ struct celix_framework {
         celix_thread_mutex_t mutex; //protect active and requests
         bool active;
         celix_array_list_t *requests;
+        size_t nrOfLocalRequest;
     } dispatcher;
 
-    framework_logger_pt logger;
+    celix_framework_logger_t* logger;
 };
 
 FRAMEWORK_EXPORT celix_status_t fw_getProperty(framework_pt framework, const char* name, const char* defaultValue, const char** value);
@@ -136,7 +134,7 @@ FRAMEWORK_EXPORT service_registration_pt findRegistration(service_reference_pt r
 FRAMEWORK_EXPORT service_reference_pt listToArray(array_list_pt list);
 FRAMEWORK_EXPORT celix_status_t framework_markResolvedModules(framework_pt framework, linked_list_pt wires);
 
-FRAMEWORK_EXPORT array_list_pt framework_getBundles(framework_pt framework);
+FRAMEWORK_EXPORT array_list_pt framework_getBundles(framework_pt framework) __attribute__((deprecated("not thread safe, use celix_framework_useBundles instead")));
 FRAMEWORK_EXPORT bundle_pt framework_getBundle(framework_pt framework, const char* location);
 FRAMEWORK_EXPORT bundle_pt framework_getBundleById(framework_pt framework, long id);
 

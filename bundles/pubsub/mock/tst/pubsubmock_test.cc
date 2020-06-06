@@ -28,7 +28,6 @@
 
 #include "pubsub/publisher_mock.h"
 
-
 static pubsub_publisher_t mockSrv;
 static void* mockHandle = (void*)0x42;
 
@@ -69,8 +68,8 @@ TEST(pubsubmock, publishermock) {
     CHECK(msgId != 0);
 
     //set msg
-    void *dummyMsg = (void*)0x43; 
-    srv->send(srv->handle, msgId, dummyMsg); //should satisfy the expectOneCalls
+    void *dummyMsg = (void*)0x43;
+    srv->send(srv->handle, msgId, dummyMsg, NULL); //should satisfy the expectOneCalls
     //srv->send(srv->handle, msgId, dummyMsg); //enabling this should fail the test
 
 }

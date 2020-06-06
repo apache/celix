@@ -39,9 +39,9 @@
 #include "pubsub_utils.h"
 
 
-static void pubsubEndpoint_setFields(celix_properties_t *psEp, const char* fwUUID, const char* scope, const char* topic, const char *pubsubType, const char *adminType, const char *serType, const celix_properties_t *topic_props);
+static void pubsubEndpoint_setFields(celix_properties_t *psEp, const char* fwUUID, const char* scope, const char* topic, const char *pubsubType, const char *adminType, const char *serType, const char *protType, const celix_properties_t *topic_props);
 
-static void pubsubEndpoint_setFields(celix_properties_t *ep, const char* fwUUID, const char* scope, const char* topic, const char *pubsubType, const char *adminType, const char *serType, const celix_properties_t *topic_props) {
+static void pubsubEndpoint_setFields(celix_properties_t *ep, const char* fwUUID, const char* scope, const char* topic, const char *pubsubType, const char *adminType, const char *serType, const char *protType, const celix_properties_t *topic_props) {
     assert(ep != NULL);
 
     //copy topic properties
@@ -65,6 +65,8 @@ static void pubsubEndpoint_setFields(celix_properties_t *ep, const char* fwUUID,
 
     if (scope != NULL) {
         celix_properties_set(ep, PUBSUB_ENDPOINT_TOPIC_SCOPE, scope);
+    } else {
+        celix_properties_set(ep, PUBSUB_ENDPOINT_TOPIC_SCOPE, PUBSUB_DEFAULT_ENDPOINT_SCOPE);
     }
 
     if (topic != NULL) {
@@ -82,6 +84,10 @@ static void pubsubEndpoint_setFields(celix_properties_t *ep, const char* fwUUID,
     if (serType != NULL) {
         celix_properties_set(ep, PUBSUB_ENDPOINT_SERIALIZER, serType);
     }
+
+    if (protType != NULL) {
+        celix_properties_set(ep, PUBSUB_ENDPOINT_PROTOCOL, protType);
+    }
 }
 
 celix_properties_t* pubsubEndpoint_create(
@@ -91,9 +97,10 @@ celix_properties_t* pubsubEndpoint_create(
         const char* pubsubType,
         const char* adminType,
         const char *serType,
+        const char *protType,
         celix_properties_t *topic_props) {
     celix_properties_t *ep = celix_properties_create();
-    pubsubEndpoint_setFields(ep, fwUUID, scope, topic, pubsubType, adminType, serType, topic_props);
+    pubsubEndpoint_setFields(ep, fwUUID, scope, topic, pubsubType, adminType, serType, protType, topic_props);
     if (!pubsubEndpoint_isValid(ep, true, true)) {
         celix_properties_destroy(ep);
         ep = NULL;
@@ -104,31 +111,33 @@ celix_properties_t* pubsubEndpoint_create(
 
 struct retrieve_topic_properties_data {
     celix_properties_t *props;
+    const char *scope;
     const char *topic;
     bool isPublisher;
 };
 
 static void retrieveTopicProperties(void *handle, const celix_bundle_t *bnd) {
     struct retrieve_topic_properties_data *data = handle;
-    data->props = pubsub_utils_getTopicProperties(bnd, data->topic, data->isPublisher);
+    data->props = pubsub_utils_getTopicProperties(bnd, data->scope, data->topic, data->isPublisher);
 }
 
 celix_properties_t* pubsubEndpoint_createFromSubscriberSvc(bundle_context_t* ctx, long bundleId, const celix_properties_t *svcProps) {
     celix_properties_t *ep = celix_properties_create();
 
     const char* fwUUID = celix_bundleContext_getProperty(ctx, OSGI_FRAMEWORK_FRAMEWORK_UUID, NULL);
-    const char* scope = celix_properties_get(svcProps,  PUBSUB_SUBSCRIBER_SCOPE, PUBSUB_SUBSCRIBER_SCOPE_DEFAULT);
+    const char* scope = celix_properties_get(svcProps,  PUBSUB_SUBSCRIBER_SCOPE, NULL);
     const char* topic = celix_properties_get(svcProps,  PUBSUB_SUBSCRIBER_TOPIC, NULL);
 
     struct retrieve_topic_properties_data data;
     data.props = NULL;
     data.isPublisher = false;
+    data.scope = scope;
     data.topic = topic;
     celix_bundleContext_useBundle(ctx, bundleId, &data, retrieveTopicProperties);
 
     const char *pubsubType = PUBSUB_SUBSCRIBER_ENDPOINT_TYPE;
 
-    pubsubEndpoint_setFields(ep, fwUUID, scope, topic, pubsubType, NULL, NULL, data.props);
+    pubsubEndpoint_setFields(ep, fwUUID, scope, topic, pubsubType, NULL, NULL, NULL, data.props);
 
     if (data.props != NULL) {
         celix_properties_destroy(data.props); //Can be deleted since setFields invokes properties_copy
@@ -151,17 +160,18 @@ celix_properties_t* pubsubEndpoint_createFromPublisherTrackerInfo(bundle_context
 
     char* topic = NULL;
     char* scopeFromFilter = NULL;
-    pubsub_getPubSubInfoFromFilter(filter, &topic, &scopeFromFilter);
-    const char *scope = scopeFromFilter == NULL ? "default" : scopeFromFilter;
+    pubsub_getPubSubInfoFromFilter(filter, &scopeFromFilter, &topic);
+    const char *scope = scopeFromFilter;
 
     struct retrieve_topic_properties_data data;
     data.props = NULL;
     data.isPublisher = true;
+    data.scope = scope;
     data.topic = topic;
     celix_bundleContext_useBundle(ctx, bundleId, &data, retrieveTopicProperties);
 
     if (data.props != NULL) {
-        pubsubEndpoint_setFields(ep, fwUUID, scope, topic, PUBSUB_PUBLISHER_ENDPOINT_TYPE, NULL, NULL, data.props);
+        pubsubEndpoint_setFields(ep, fwUUID, scope, topic, PUBSUB_PUBLISHER_ENDPOINT_TYPE, NULL, NULL, NULL, data.props);
         celix_properties_destroy(data.props); //safe to delete, properties are copied in pubsubEndpoint_setFields
     }
 
@@ -171,7 +181,9 @@ celix_properties_t* pubsubEndpoint_createFromPublisherTrackerInfo(bundle_context
     }
 
     free(topic);
-    free(scopeFromFilter);
+    if (scope != NULL) {
+        free(scopeFromFilter);
+    }
 
     return ep;
 }
@@ -189,7 +201,11 @@ bool pubsubEndpoint_equals(const celix_properties_t *psEp1, const celix_properti
 
 char* pubsubEndpoint_createScopeTopicKey(const char* scope, const char* topic) {
     char *result = NULL;
-    asprintf(&result, "%s:%s", scope, topic);
+    if (scope != NULL) {
+        asprintf(&result, "%s:%s", scope, topic);
+    } else {
+        asprintf(&result, "default:%s", topic);
+    }
     return result;
 }
 
@@ -215,7 +231,5 @@ bool pubsubEndpoint_isValid(const celix_properties_t *props, bool requireAdminTy
         checkProp(props, PUBSUB_ENDPOINT_SERIALIZER);
     }
     bool p6 = checkProp(props, PUBSUB_ENDPOINT_TOPIC_NAME);
-    bool p7 = checkProp(props, PUBSUB_ENDPOINT_TOPIC_SCOPE);
-
-    return p1 && p2 && p3 && p4 && p5 && p6 && p7;
+    return p1 && p2 && p3 && p4 && p5 && p6;
 }

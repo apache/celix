@@ -32,6 +32,7 @@
 #include "properties.h"
 #include "celix_properties.h"
 #include "utils.h"
+#include "hash_map_private.h"
 #include <errno.h>
 
 
@@ -225,8 +226,7 @@ void celix_properties_destroy(celix_properties_t *properties) {
         hash_map_iterator_pt iter = hashMapIterator_create(properties);
         while (hashMapIterator_hasNext(iter)) {
             hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
-            free(hashMapEntry_getKey(entry));
-            free(hashMapEntry_getValue(entry));
+            hashMapEntry_clear(entry, true, true);
         }
         hashMapIterator_destroy(iter);
         hashMap_destroy(properties, false, false);
@@ -382,6 +382,21 @@ void celix_properties_set(celix_properties_t *properties, const char *key, const
     }
 }
 
+void celix_properties_setWithoutCopy(celix_properties_t *properties, char *key, char *value) {
+    if (properties != NULL) {
+        hash_map_entry_pt entry = hashMap_getEntry(properties, key);
+        char *oldVal = NULL;
+        if (entry != NULL) {
+            char *oldKey = hashMapEntry_getKey(entry);
+            oldVal = hashMapEntry_getValue(entry);
+            hashMap_put(properties, oldKey, value);
+        } else {
+            hashMap_put(properties, key, value);
+        }
+        free(oldVal);
+    }
+}
+
 void celix_properties_unset(celix_properties_t *properties, const char *key) {
     char* oldValue = hashMap_remove(properties, key);
     free(oldValue);
@@ -435,7 +450,7 @@ void celix_properties_setDouble(celix_properties_t *props, const char *key, doub
     }
 }
 
-bool celix_properties_getAsBool(celix_properties_t *props, const char *key, bool defaultValue) {
+bool celix_properties_getAsBool(const celix_properties_t *props, const char *key, bool defaultValue) {
     bool result = defaultValue;
     const char *val = celix_properties_get(props, key, NULL);
     if (val != NULL) {

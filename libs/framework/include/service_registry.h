@@ -38,8 +38,7 @@ extern "C" {
 
 typedef void (*serviceChanged_function_pt)(celix_framework_t*, celix_service_event_type_t, service_registration_pt, celix_properties_t*);
 
-celix_status_t serviceRegistry_create(celix_framework_t *framework, serviceChanged_function_pt serviceChanged,
-                                      service_registry_pt *registry);
+celix_status_t serviceRegistry_create(celix_framework_t *framework, service_registry_pt *registry);
 
 celix_status_t serviceRegistry_destroy(service_registry_pt registry);
 
@@ -87,13 +86,15 @@ serviceRegistry_ungetService(service_registry_pt registry, celix_bundle_t *bundl
 
 celix_status_t serviceRegistry_clearReferencesFor(service_registry_pt registry, celix_bundle_t *bundle);
 
-void serviceRegistry_callHooksForListenerFilter(service_registry_pt registry, celix_bundle_t *owner, const char *filter, bool removed);
-
 size_t serviceRegistry_nrOfHooks(service_registry_pt registry);
 
-celix_status_t
-serviceRegistry_servicePropertiesModified(service_registry_pt registry, service_registration_pt registration,
-                                          celix_properties_t *oldprops);
+/**
+ * Register a service listener. Will also retroactively call the listener with register events for already registered services.
+ */
+celix_status_t celix_serviceRegistry_addServiceListener(celix_service_registry_t *reg, celix_bundle_t *bundle, const char *filter, celix_service_listener_t *listener);
+
+celix_status_t celix_serviceRegistry_removeServiceListener(celix_service_registry_t *reg, celix_service_listener_t *listener);
+
 
 celix_status_t
 celix_serviceRegistry_registerServiceFactory(
@@ -125,6 +126,12 @@ bool celix_serviceRegistry_getServiceInfo(
         char **serviceName,
         celix_properties_t **serviceProperties,
         bool *factory);
+
+
+/**
+ * Returns the next svc id.
+ */
+long celix_serviceRegistry_nextSvcId(celix_service_registry_t* registry);
 
 
 #ifdef __cplusplus

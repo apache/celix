@@ -37,10 +37,10 @@ add_executable(test_tm_scoped
     run_tests.cpp
     tms_tests.cpp
 )
-target_include_directories(test_tm_scoped PRIVATE ../src ../include)
+target_include_directories(test_tm_scoped SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} PRIVATE ../src ../include)
 target_link_libraries(test_tm_scoped PRIVATE
         Celix::framework
-        ${CPPUTEST_LIBRARY}
+        ${CppUTest_LIBRARY}
         Jansson
         calculator_api
         Celix::rsa_common
@@ -71,5 +71,5 @@ configure_file("scope4.json" "scope4.json")
 
 
 add_test(NAME run_test_tm_scoped COMMAND test_tm_scoped)
-SETUP_TARGET_FOR_COVERAGE(test_tm_scoped_cov test_tm_scoped ${CMAKE_BINARY_DIR}/coverage/test_tm_scoped/test_tm_scoped)
+setup_target_for_coverage(test_tm_scoped SCAN_DIR ..)
 

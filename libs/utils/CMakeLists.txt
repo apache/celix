@@ -34,11 +34,11 @@ add_library(utils SHARED
     src/celix_threads.c
     src/version.c
     src/version_range.c
-    src/thpool.c
     src/properties.c
     src/utils.c
     src/ip_utils.c
     src/filter.c
+    src/celix_log_utils.c
     ${MEMSTREAM_SOURCES}
 )
 set_target_properties(utils PROPERTIES OUTPUT_NAME "celix_utils")
@@ -77,54 +77,50 @@ install(DIRECTORY include/ DESTINATION include/celix COMPONENT framework
 add_library(Celix::utils ALIAS utils)
 
 
-celix_subproject(UTILS-TESTS "Option to build the utilities library tests" "OFF")
-if (ENABLE_TESTING AND UTILS-TESTS)
+if (ENABLE_TESTING)
+    add_subdirectory(gtest)
+
     find_package(CppUTest REQUIRED)
 
-    include_directories(SYSTEM ${CPPUTEST_INCLUDE_DIR})
+    include_directories(SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR})
     include_directories(include)
     include_directories(src)
 
     add_executable(hash_map_test private/test/hash_map_test.cpp)
-    target_link_libraries(hash_map_test Celix::utils ${CPPUTEST_LIBRARY} pthread)
+    target_link_libraries(hash_map_test Celix::utils ${CppUTest_LIBRARY} pthread)
 
     add_executable(array_list_test private/test/array_list_test.cpp)
-    target_link_libraries(array_list_test  Celix::utils ${CPPUTEST_LIBRARY} pthread)
+    target_link_libraries(array_list_test  Celix::utils ${CppUTest_LIBRARY} pthread)
 
     add_executable(celix_threads_test private/test/celix_threads_test.cpp)
-    target_link_libraries(celix_threads_test Celix::utils ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} pthread)
+    target_link_libraries(celix_threads_test Celix::utils ${CppUTest_LIBRARY} ${CppUTest_EXT_LIBRARIES} pthread)
 
     add_executable(linked_list_test private/test/linked_list_test.cpp)
-    target_link_libraries(linked_list_test  Celix::utils ${CPPUTEST_LIBRARY} pthread)
-
-    #TODO disabled for now, seems to create a deadlock on host..
-    #add_executable(thread_pool_test private/test/thread_pool_test.cpp)
-    #target_link_libraries(thread_pool_test  Celix::utils ${CPPUTEST_LIBRARY} pthread)
+    target_link_libraries(linked_list_test  Celix::utils ${CppUTest_LIBRARY} pthread)
 
     add_executable(properties_test private/test/properties_test.cpp)
-    target_link_libraries(properties_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY}  Celix::utils pthread)
+    target_link_libraries(properties_test ${CppUTest_LIBRARY} ${CppUTest_EXT_LIBRARIES}  Celix::utils pthread)
 
     add_executable(utils_test private/test/utils_test.cpp)
-    target_link_libraries(utils_test ${CPPUTEST_LIBRARY}  Celix::utils pthread)
+    target_link_libraries(utils_test ${CppUTest_LIBRARY}  Celix::utils pthread)
 
     add_executable(ip_utils_test private/test/ip_utils_test.cpp)
-    target_link_libraries(ip_utils_test ${CPPUTEST_LIBRARY}  Celix::utils pthread)
+    target_link_libraries(ip_utils_test ${CppUTest_LIBRARY}  Celix::utils pthread)
 
     add_executable(filter_test private/test/filter_test.cpp)
-    target_link_libraries(filter_test ${CPPUTEST_LIBRARY}  Celix::utils pthread)
+    target_link_libraries(filter_test ${CppUTest_LIBRARY}  Celix::utils pthread)
 
     add_executable(version_range_test private/test/version_range_test.cpp)
-    target_link_libraries(version_range_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY}  Celix::utils pthread)
+    target_link_libraries(version_range_test ${CppUTest_LIBRARY} ${CppUTest_EXT_LIBRARIES}  Celix::utils pthread)
 
     add_executable(version_test private/test/version_test.cpp)
-    target_link_libraries(version_test ${CPPUTEST_LIBRARY}  Celix::utils pthread)
+    target_link_libraries(version_test ${CppUTest_LIBRARY}  Celix::utils pthread)
 
     configure_file(private/resources-test/properties.txt ${CMAKE_CURRENT_BINARY_DIR}/resources-test/properties.txt COPYONLY)
 
     add_test(NAME run_array_list_test COMMAND array_list_test)
     add_test(NAME run_hash_map_test COMMAND hash_map_test)
     add_test(NAME run_celix_threads_test COMMAND celix_threads_test)
-    #add_test(NAME run_thread_pool_test COMMAND thread_pool_test)
     add_test(NAME run_linked_list_test COMMAND linked_list_test)
     add_test(NAME run_properties_test COMMAND properties_test)
     add_test(NAME run_utils_test COMMAND utils_test)
@@ -133,15 +129,15 @@ if (ENABLE_TESTING AND UTILS-TESTS)
     add_test(NAME version_range_test COMMAND version_range_test)
     add_test(NAME version_test COMMAND version_test)
 
-    SETUP_TARGET_FOR_COVERAGE(array_list_test array_list_test ${CMAKE_BINARY_DIR}/coverage/array_list_test/array_list_test)
-    SETUP_TARGET_FOR_COVERAGE(hash_map hash_map_test ${CMAKE_BINARY_DIR}/coverage/hash_map_test/hash_map_test)
-    SETUP_TARGET_FOR_COVERAGE(celix_threads_test celix_threads_test ${CMAKE_BINARY_DIR}/coverage/celix_threads_test/celix_threads_test)
-    #SETUP_TARGET_FOR_COVERAGE(thread_pool_test thread_pool_test ${CMAKE_BINARY_DIR}/coverage/thread_pool_test/thread_pool_test)
-    SETUP_TARGET_FOR_COVERAGE(linked_list_test linked_list_test ${CMAKE_BINARY_DIR}/coverage/linked_list_test/linked_list_test)
-    SETUP_TARGET_FOR_COVERAGE(properties_test properties_test ${CMAKE_BINARY_DIR}/coverage/properties_test/properties_test)
-    SETUP_TARGET_FOR_COVERAGE(utils_test utils_test ${CMAKE_BINARY_DIR}/coverage/utils_test/utils_test)
-    SETUP_TARGET_FOR_COVERAGE(ip_utils_test ip_utils_test ${CMAKE_BINARY_DIR}/coverage/ip_utils_test/ip_utils_test)
-    SETUP_TARGET_FOR_COVERAGE(version_range_test version_range_test ${CMAKE_BINARY_DIR}/coverage/version_range_test/version_range_test)
-    SETUP_TARGET_FOR_COVERAGE(version_test version_test ${CMAKE_BINARY_DIR}/coverage/version_test/version_test)
+    setup_target_for_coverage(array_list_test)
+    setup_target_for_coverage(hash_map_test)
+    setup_target_for_coverage(celix_threads_test)
+    setup_target_for_coverage(linked_list_test)
+    setup_target_for_coverage(properties_test)
+    setup_target_for_coverage(utils_test)
+    setup_target_for_coverage(ip_utils_test)
+    setup_target_for_coverage(filter_test)
+    setup_target_for_coverage(version_range_test)
+    setup_target_for_coverage(version_test)
 
-endif(ENABLE_TESTING AND UTILS-TESTS)
+endif ()

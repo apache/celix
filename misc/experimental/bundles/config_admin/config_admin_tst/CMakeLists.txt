@@ -32,7 +32,7 @@ SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE) #TODO needed?
 SET(CMAKE_INSTALL_RPATH "${PROJECT_BINARY_DIR}/framework" "${PROJECT_BINARY_DIR}/utils" )
 
 add_executable(config_admin_test config_admin_test.cpp)
-target_link_libraries(config_admin_test Celix::framework ${CELIX_LIBRARIES} ${CPPUTEST_LIBRARY} pthread)
+target_link_libraries(config_admin_test Celix::framework ${CELIX_LIBRARIES} ${CppUTest_LIBRARY} pthread)
 
 
 get_property(config_admin_bundle_file TARGET config_admin PROPERTY BUNDLE_FILE)
@@ -44,4 +44,4 @@ configure_file(config.properties.in config.properties @ONLY)
 
 #ADD_TARGET_FOR_TEST(config_admin_test)
 add_test(NAME run_config_admin_test COMMAND config_admin_test)
-SETUP_TARGET_FOR_COVERAGE(config_admin_test config_admin_test ${CMAKE_BINARY_DIR}/coverage/config_admin_test/config_admin_test)
+setup_target_for_coverage(config_admin_test)

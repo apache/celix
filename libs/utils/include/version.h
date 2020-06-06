@@ -30,7 +30,7 @@ extern "C" {
 /**
  * The definition of the version_pt abstract data type.
  */
-typedef struct version *version_pt;
+typedef struct celix_version *version_pt;
 
 /**
  * Creates a new version_pt using the supplied arguments.
@@ -48,7 +48,7 @@ typedef struct version *version_pt;
  *         - CELIX_ILLEGAL_ARGUMENT If the numerical components are negative
  *           or the qualifier string is invalid.
  */
-celix_status_t version_createVersion(int major, int minor, int micro, char *qualifier, version_pt *version);
+celix_status_t version_createVersion(int major, int minor, int micro, const char *qualifier, version_pt *version);
 
 celix_status_t version_destroy(version_pt version);
 

@@ -23,7 +23,7 @@
 #include "dyn_common.h"
 #include "dyn_type.h"
 #include "dyn_message.h"
-#include "log_helper.h"
+#include "celix_log_helper.h"
 
 #include "pubsub_serializer.h"
 
@@ -36,5 +36,7 @@ celix_status_t pubsubSerializer_destroy(pubsub_json_serializer_t* serializer);
 
 celix_status_t pubsubSerializer_createSerializerMap(void *handle, const celix_bundle_t *bundle, hash_map_pt* serializerMap);
 celix_status_t pubsubSerializer_destroySerializerMap(void *handle, hash_map_pt serializerMap);
+
+void pubsubSerializer_onInstalled(void *handle, const celix_bundle_t *bundle);
 
 #endif /* PUBSUB_SERIALIZER_JSON_H_ */

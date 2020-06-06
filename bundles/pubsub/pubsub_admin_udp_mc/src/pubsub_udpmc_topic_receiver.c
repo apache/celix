@@ -22,33 +22,39 @@
 #include <pubsub/subscriber.h>
 #include <memory.h>
 #include <pubsub_constants.h>
+#if defined(__APPLE__)
+#include <sys/types.h>
+#include <sys/event.h>
+#include <sys/time.h>
+#else
 #include <sys/epoll.h>
+#endif
 #include <assert.h>
 #include <pubsub_endpoint.h>
 #include <arpa/inet.h>
-#include <log_helper.h>
+#include <celix_log_helper.h>
 #include "pubsub_udpmc_topic_receiver.h"
 #include "pubsub_psa_udpmc_constants.h"
 #include "large_udp.h"
 #include "pubsub_udpmc_common.h"
 
-#define MAX_EPOLL_EVENTS        10
+#define MAX_EVENTS        10
 #define RECV_THREAD_TIMEOUT     5
 #define UDP_BUFFER_SIZE         65535
 #define MAX_UDP_SESSIONS        16
 
 #define L_DEBUG(...) \
-    logHelper_log(receiver->logHelper, OSGI_LOGSERVICE_DEBUG, __VA_ARGS__)
+    celix_logHelper_log(receiver->logHelper, CELIX_LOG_LEVEL_DEBUG, __VA_ARGS__)
 #define L_INFO(...) \
-    logHelper_log(receiver->logHelper, OSGI_LOGSERVICE_INFO, __VA_ARGS__)
+    celix_logHelper_log(receiver->logHelper, CELIX_LOG_LEVEL_INFO, __VA_ARGS__)
 #define L_WARN(...) \
-    logHelper_log(receiver->logHelper, OSGI_LOGSERVICE_WARNING, __VA_ARGS__)
+    celix_logHelper_log(receiver->logHelper, CELIX_LOG_LEVEL_WARNING, __VA_ARGS__)
 #define L_ERROR(...) \
-    logHelper_log(receiver->logHelper, OSGI_LOGSERVICE_ERROR, __VA_ARGS__)
+    celix_logHelper_log(receiver->logHelper, CELIX_LOG_LEVEL_ERROR, __VA_ARGS__)
 
 struct pubsub_udpmc_topic_receiver {
     celix_bundle_context_t *ctx;
-    log_helper_t *logHelper;
+    celix_log_helper_t *logHelper;
     long serializerSvcId;
     pubsub_serializer_service_t *serializer;
     char *scope;
@@ -109,7 +115,7 @@ static void psa_udpmc_connectToAllRequestedConnections(pubsub_udpmc_topic_receiv
 static void psa_udpmc_initializeAllSubscribers(pubsub_udpmc_topic_receiver_t *receiver);
 
 pubsub_udpmc_topic_receiver_t* pubsub_udpmcTopicReceiver_create(celix_bundle_context_t *ctx,
-                                                                log_helper_t *logHelper,
+                                                                celix_log_helper_t *logHelper,
                                                                 const char *scope,
                                                                 const char *topic,
                                                                 const char *ifIP,
@@ -121,14 +127,16 @@ pubsub_udpmc_topic_receiver_t* pubsub_udpmcTopicReceiver_create(celix_bundle_con
     receiver->logHelper = logHelper;
     receiver->serializerSvcId = serializerSvcId;
     receiver->serializer = serializer;
-    receiver->scope = strndup(scope, 1024 * 1024);
+    receiver->scope = scope == NULL ? NULL : strndup(scope, 1024 * 1024);
     receiver->topic = strndup(topic, 1024 * 1024);
     receiver->ifIpAddress = strndup(ifIP, 1024 * 1024);
     receiver->recvThread.running = true;
     receiver->largeUdpHandle = largeUdp_create(MAX_UDP_SESSIONS);
+#if defined(__APPLE__)
+    receiver->topicEpollFd = kqueue();
+#else
     receiver->topicEpollFd = epoll_create1(0);
-
-
+#endif
     celixThreadMutex_create(&receiver->subscribers.mutex, NULL);
     celixThreadMutex_create(&receiver->requestedConnections.mutex, NULL);
     celixThreadMutex_create(&receiver->recvThread.mutex, NULL);
@@ -260,7 +268,7 @@ long pubsub_udpmcTopicReceiver_serializerSvcId(pubsub_udpmc_topic_receiver_t *re
 }
 
 void pubsub_udpmcTopicReceiver_connectTo(pubsub_udpmc_topic_receiver_t *receiver, const char *socketAddress, long socketPort) {
-    printf("[PSA UDPMC] TopicReceiver %s/%s connect to socket address = %s:%li\n", receiver->scope, receiver->topic, socketAddress, socketPort);
+    printf("[PSA UDPMC] TopicReceiver %s/%s connect to socket address = %s:%li\n", receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic, socketAddress, socketPort);
 
     char *key = NULL;
     asprintf(&key, "%s:%li", socketAddress, socketPort);
@@ -285,7 +293,7 @@ void pubsub_udpmcTopicReceiver_connectTo(pubsub_udpmc_topic_receiver_t *receiver
 }
 
 void pubsub_udpmcTopicReceiver_disconnectFrom(pubsub_udpmc_topic_receiver_t *receiver, const char *socketAddress, long socketPort) {
-    printf("[PSA UDPMC] TopicReceiver %s/%s disconnect from socket address = %s:%li\n", receiver->scope, receiver->topic, socketAddress, socketPort);
+    printf("[PSA UDPMC] TopicReceiver %s/%s disconnect from socket address = %s:%li\n", receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic, socketAddress, socketPort);
 
     int len = snprintf(NULL, 0, "%s:%li", socketAddress, socketPort);
     char *key = calloc((size_t)len+1, sizeof(char));
@@ -295,11 +303,17 @@ void pubsub_udpmcTopicReceiver_disconnectFrom(pubsub_udpmc_topic_receiver_t *rec
     psa_udpmc_requested_connection_entry_t *entry = hashMap_remove(receiver->requestedConnections.map, key);
     free(key);
     if (entry != NULL && entry->connected) {
+#if defined(__APPLE__)
+        struct kevent ev;
+        EV_SET (&ev, entry->recvSocket, EVFILT_READ, EV_DELETE, 0, 0, 0);
+        int rc = kevent (receiver->topicEpollFd, &ev, 1, NULL, 0, NULL);
+#else
         struct epoll_event ev;
         memset(&ev, 0, sizeof(ev));
         int rc = epoll_ctl(receiver->topicEpollFd, EPOLL_CTL_DEL, entry->recvSocket, &ev);
+#endif
         if (rc < 0) {
-            fprintf(stderr, "[PSA UDPMC] Error disconnecting TopicReceiver %s/%s to %s:%li.\n%s", receiver->scope, receiver->topic, socketAddress, socketPort, strerror(errno));
+            fprintf(stderr, "[PSA UDPMC] Error disconnecting TopicReceiver %s/%s to %s:%li.\n%s", receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic, socketAddress, socketPort, strerror(errno));
         }
     }
     if (entry != NULL) {
@@ -314,10 +328,16 @@ static void pubsub_udpmcTopicReceiver_addSubscriber(void *handle, void *svc, con
     pubsub_udpmc_topic_receiver_t *receiver = handle;
 
     long bndId = celix_bundle_getId(bnd);
-    const char *subScope = celix_properties_get(props, PUBSUB_SUBSCRIBER_SCOPE, "default");
-    if (strncmp(subScope, receiver->scope, strlen(receiver->scope)) != 0) {
-        //not the same scope. ignore
-        return;
+    const char *subScope = celix_properties_get(props, PUBSUB_SUBSCRIBER_SCOPE, NULL);
+    if (receiver->scope == NULL) {
+        if (subScope != NULL) {
+            return;
+        }
+    } else {
+        if (strncmp(subScope, receiver->scope, strlen(receiver->scope)) != 0) {
+            //not the same scope. ignore
+            return;
+        }
     }
 
     celixThreadMutex_lock(&receiver->subscribers.mutex);
@@ -337,7 +357,7 @@ static void pubsub_udpmcTopicReceiver_addSubscriber(void *handle, void *svc, con
             hashMap_put(receiver->subscribers.map, (void*)bndId, entry);
         } else {
             free(entry);
-            fprintf(stderr, "Cannot find serializer for TopicReceiver %s/%s", receiver->scope, receiver->topic);
+            fprintf(stderr, "Cannot find serializer for TopicReceiver %s/%s", receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic);
         }
     }
     celixThreadMutex_unlock(&receiver->subscribers.mutex);
@@ -358,7 +378,7 @@ static void pubsub_udpmcTopicReceiver_removeSubscriber(void *handle, void *svc, 
         hashMap_remove(receiver->subscribers.map, (void*)bndId);
         int rc =  receiver->serializer->destroySerializerMap(receiver->serializer->handle, entry->msgTypes);
         if (rc != 0) {
-            fprintf(stderr, "Cannot find serializer for TopicReceiver %s/%s", receiver->scope, receiver->topic);
+            fprintf(stderr, "Cannot find serializer for TopicReceiver %s/%s", receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic);
         }
         free(entry);
     }
@@ -367,8 +387,6 @@ static void pubsub_udpmcTopicReceiver_removeSubscriber(void *handle, void *svc, 
 
 static void* psa_udpmc_recvThread(void * data) {
     pubsub_udpmc_topic_receiver_t *receiver = data;
-
-    struct epoll_event events[MAX_EPOLL_EVENTS];
 
     celixThreadMutex_lock(&receiver->recvThread.mutex);
     bool running = receiver->recvThread.running;
@@ -390,12 +408,25 @@ static void* psa_udpmc_recvThread(void * data) {
             psa_udpmc_initializeAllSubscribers(receiver);
         }
 
-        int nfds = epoll_wait(receiver->topicEpollFd, events, MAX_EPOLL_EVENTS, RECV_THREAD_TIMEOUT * 1000);
+        unsigned int timeout = RECV_THREAD_TIMEOUT * 1000;
+#if defined(__APPLE__)
+        struct kevent events[MAX_EVENTS];
+        struct timespec ts = {timeout / 1000, (timeout  % 1000) * 1000000};
+        int nfds = kevent (receiver->topicEpollFd, NULL, 0, &events[0], MAX_EVENTS, timeout ? &ts : NULL);
+#else
+        struct epoll_event events[MAX_EVENTS];
+        int nfds = epoll_wait(receiver->topicEpollFd, events, MAX_EVENTS, timeout);
+#endif
         int i;
         for (i = 0; i < nfds; i++ ) {
             unsigned int index;
             unsigned int size;
-            if (largeUdp_dataAvailable(receiver->largeUdpHandle, events[i].data.fd, &index, &size) == true) {
+#if defined(__APPLE__)
+            int fd = events[i].ident;
+#else
+            int fd = events[i].data.fd;
+#endif
+            if (largeUdp_dataAvailable(receiver->largeUdpHandle, fd, &index, &size) == true) {
                 // Handle data
                 pubsub_udp_msg_t *udpMsg = NULL;
                 if (largeUdp_read(receiver->largeUdpHandle, index, (void**) &udpMsg, size) != 0) {
@@ -442,15 +473,18 @@ static void psa_udpmc_processMsg(pubsub_udpmc_topic_receiver_t *receiver, pubsub
             bool validVersion = psa_udpmc_checkVersion(msgSer->msgVersion, &msg->header);
 
             if (validVersion) {
-                celix_status_t status = msgSer->deserialize(msgSer->handle, (const void *)msg->payload, 0, &msgInst);
+                struct iovec deSerializeBuffer;
+                deSerializeBuffer.iov_base = msg->payload;
+                deSerializeBuffer.iov_len  = 0;
+                celix_status_t status = msgSer->deserialize(msgSer->handle, &deSerializeBuffer, 0, &msgInst);
 
                 if (status == CELIX_SUCCESS) {
                     bool release = true;
                     pubsub_subscriber_t *svc = entry->svc;
-                    svc->receive(svc->handle, msgSer->msgName, msg->header.type, msgInst, &release);
+                    svc->receive(svc->handle, msgSer->msgName, msg->header.type, msgInst, NULL, &release);
 
                     if (release) {
-                        msgSer->freeMsg(msgSer->handle, msgInst);
+                        msgSer->freeDeserializeMsg(msgSer->handle, msgInst);
                     }
                 } else {
                     printf("[PSA_UDPMC] Cannot deserialize msgType %s.\n",msgSer->msgName);
@@ -505,15 +539,21 @@ static bool psa_udpmc_connectToEntry(pubsub_udpmc_topic_receiver_t *receiver, ps
         rc = bind(entry->recvSocket, (struct sockaddr*)&mcListenAddr, sizeof(mcListenAddr));
     }
     if (entry->recvSocket >= 0 && rc >= 0) {
-        struct epoll_event ev;
-        memset(&ev, 0, sizeof(ev));
-        ev.events = EPOLLIN;
-        ev.data.fd = entry->recvSocket;
-        rc = epoll_ctl(receiver->topicEpollFd, EPOLL_CTL_ADD, entry->recvSocket, &ev);
+#if defined(__APPLE__)
+      struct kevent ev;
+      EV_SET (&ev, entry->recvSocket, EVFILT_READ, EV_ADD | EV_ENABLE , 0, 0, 0);
+      rc = kevent (receiver->topicEpollFd, &ev, 1, NULL, 0, NULL);
+#else
+      struct epoll_event ev;
+      memset(&ev, 0, sizeof(ev));
+      ev.events = EPOLLIN;
+      ev.data.fd = entry->recvSocket;
+      rc = epoll_ctl(receiver->topicEpollFd, EPOLL_CTL_ADD, entry->recvSocket, &ev);
+#endif
     }
 
     if (entry->recvSocket < 0 || rc < 0) {
-        L_WARN("[PSA UDPMC] Error connecting TopicReceiver %s/%s to %s:%li. (%s)\n", receiver->scope, receiver->topic, entry->socketAddress, entry->socketPort, strerror(errno));
+        L_WARN("[PSA UDPMC] Error connecting TopicReceiver %s/%s to %s:%li. (%s)\n", receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic, entry->socketAddress, entry->socketPort, strerror(errno));
         connected = false;
     }
     return connected;

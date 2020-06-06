@@ -24,6 +24,9 @@
 extern "C" {
 #endif
 
+#include <time.h>
+#include <stdbool.h>
+
 #define CELIX_UTILS_MAX_STRLEN      1024*1024*10
 
 /**
@@ -32,6 +35,19 @@ extern "C" {
  * @return a copy of the string (including null terminator).
  */
 char* celix_utils_strdup(const char *str);
+
+/**
+ * Creates a hash from a string
+ * @param string
+ * @return hash
+ */
+unsigned int celix_utils_stringHash(const char* string);
+
+/**
+ * Compares two strings and returns true if the strings are equal.
+ */
+bool celix_utils_stringEquals(const char* a, const char* b);
+
 
 
 /**
@@ -46,6 +62,21 @@ char* celix_utils_strdup(const char *str);
  * @param outNamespace          A output argument for the (optional) namespace part. Caller is owner of the data.
  */
 void celix_utils_extractLocalNameAndNamespaceFromFullyQualifiedName(const char *fullyQualifiedName, const char *namespaceSeparator, char **outLocalName, char **outNamespace);
+
+/**
+ * Returns the diff in seconds between tBegin and tEnd.
+ * @param tBegin The begin time.
+ * @param tEnd   The end time.
+ * @return       Diff in seconds.
+ */
+double celix_difftime(const struct timespec *tBegin, const struct timespec *tEnd);
+
+
+/**
+ * Creates a hash from a string
+ */
+unsigned int celix_utils_stringHash(const char* string);
+
 
 #ifdef __cplusplus
 }
