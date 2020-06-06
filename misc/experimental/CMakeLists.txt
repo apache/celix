@@ -20,6 +20,6 @@ if (EXPERIMENTAL)
 
     add_subdirectory(bundles)
     add_subdirectory(promise)
-    add_subdirectory(cxx)
+    add_subdirectory(cxx_framework)
 
 endif ()
