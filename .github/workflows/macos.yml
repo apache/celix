@@ -25,6 +25,7 @@ jobs:
         BUILD_OPTIONS: |
           -DENABLE_TESTING=ON
           -DENABLE_ADDRESS_SANITIZER=ON
+          -DBUILD_EXPERIMENTAL=ON
       run: |
         mkdir build install
         cd build
