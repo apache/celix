@@ -305,7 +305,7 @@ static void parseLine(const char* line, celix::Properties &props) {
 
 celix::Properties celix::loadProperties(std::string_view path) {
     std::ifstream file;
-    file.open(path);
+    file.open(std::string{path});
     if (file.fail()) {
         LOGGER->warn("Cannot open file {}. {}", path, std::ifstream::failbit);
         return celix::Properties{};
@@ -318,9 +318,9 @@ celix::Properties celix::loadProperties(std::istream &stream) {
     celix::Properties props{};
 
     if (!stream.fail()) {
-        stream.seekg(0, stream.end);
+        stream.seekg(0, std::istream::end);
         long size = stream.tellg();
-        stream.seekg(0, stream.beg);
+        stream.seekg(0, std::istream::beg);
 
         if (size > 0){
             while (!stream.eof()) {

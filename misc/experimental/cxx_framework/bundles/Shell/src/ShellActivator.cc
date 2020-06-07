@@ -36,8 +36,6 @@ extern const uint8_t resources[]       asm("_binary_celix_cxx_shell_resources_zi
 extern const uint8_t resources_end[]   asm("_binary_celix_cxx_shell_resources_zip_end");
 #endif
 
-#define LOGGER celix::getLogger("celix::bundle::ShellActivator")
-
 namespace {
 
     class Shell : public celix::IShell {
@@ -102,6 +100,8 @@ namespace {
             return commandCalled;
         }
     private:
+        const std::shared_ptr<spdlog::logger> logger{celix::getLogger("celix::bundle::ShellActivator")};
+
         std::shared_ptr<celix::BundleContext> ctx;
     };
 

@@ -46,6 +46,7 @@ jobs:
           libxml2-dev \
           libczmq-dev \
           libcpputest-dev \
+          libzip-dev \
           libtbb-dev
     - name: Build
       env:

@@ -31,12 +31,12 @@ namespace celix {
         ServiceRegistrationBuilder<I>& operator=(ServiceRegistrationBuilder<I>&&);
 
         ServiceRegistrationBuilder<I>& setService(std::shared_ptr<I> svc);
-        ServiceRegistrationBuilder<I>& setService(I *svc);
+        ServiceRegistrationBuilder<I>& setService(I *svc); //TODO do we really want to support naked pointers?
         ServiceRegistrationBuilder<I>& setServiceFactory(std::shared_ptr<celix::IServiceFactory<I>> factory);
         ServiceRegistrationBuilder<I>& setServiceFactory(celix::IServiceFactory<I>* factory);
 
         ServiceRegistrationBuilder<I>& setProperties(celix::Properties);
-        ServiceRegistrationBuilder<I>& addProperty(const std::string &name, const std::string &value);
+        ServiceRegistrationBuilder<I>& addProperty(std::string_view name, std::string_view value);
         ServiceRegistrationBuilder<I>& addProperties(celix::Properties);
 
         ServiceRegistration build();
@@ -124,8 +124,8 @@ inline celix::ServiceRegistrationBuilder<I> &celix::ServiceRegistrationBuilder<I
 
 template<typename I>
 inline celix::ServiceRegistrationBuilder<I>&
-celix::ServiceRegistrationBuilder<I>::addProperty(const std::string &name, const std::string &value) {
-    properties[name] = value;
+celix::ServiceRegistrationBuilder<I>::addProperty(std::string_view key, std::string_view value) {
+    properties[key] = value;
     return *this;
 }
 

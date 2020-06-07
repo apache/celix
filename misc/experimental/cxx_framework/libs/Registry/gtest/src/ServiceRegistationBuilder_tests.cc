@@ -61,6 +61,7 @@ TEST_F(ServiceRegistrationBuilderTest, ServiceRegistrationBuilderTest) {
 
     services = registry()->findServices<Interface1>("(name=val)");
     EXPECT_EQ(services.size(), 0);
+    auto int1 = std::make_shared<Interface1>();
     {
         celix::Properties props0{};
         props0["name0"] = "value0";
@@ -69,7 +70,7 @@ TEST_F(ServiceRegistrationBuilderTest, ServiceRegistrationBuilderTest) {
         celix::Properties props2{};
         props2["name3"] = "value3";
         auto reg = templ.copy()
-                .setService(new Interface1{})
+                .setService(int1.get())
                 .setProperties(props0)
                 .setProperties(std::move(props1)) //overrides props0
                 .addProperty("name1", "value1")

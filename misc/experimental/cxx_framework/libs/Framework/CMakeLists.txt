@@ -26,7 +26,7 @@ add_library(celix_cxx_Framework SHARED
 )
 target_include_directories(celix_cxx_Framework PRIVATE src)
 target_include_directories(celix_cxx_Framework PUBLIC include)
-target_link_libraries(celix_cxx_Framework PRIVATE libzip::libzip bz2 z UUID::lib Threads::Threads)
+target_link_libraries(celix_cxx_Framework PRIVATE libzip::libzip UUID::lib Threads::Threads)
 #NOTE because of libzil libbz2 and libz is also needed. maybe more to other form of resources (i.e. tar)
 target_link_libraries(celix_cxx_Framework PUBLIC celix::cxx::Registry spdlog::spdlog)
 

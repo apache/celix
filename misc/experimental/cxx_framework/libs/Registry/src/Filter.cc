@@ -522,7 +522,7 @@ void celix::Filter::parseFilter(const std::string &filter) {
         valid = true;
     }
     if (!valid) {
-        throw new std::invalid_argument{"invalid filter: " + filter};
+        throw std::invalid_argument{"invalid filter: " + filter};
     }
 }
 

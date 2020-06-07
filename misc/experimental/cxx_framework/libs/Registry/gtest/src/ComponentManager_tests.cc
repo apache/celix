@@ -49,9 +49,13 @@ TEST_F(ComponentManagerTest, CreateDestroyGeneric) {
     EXPECT_TRUE(cmpMng.isResolved()); //no deps -> resolved
     EXPECT_EQ(cmpMng.getState(), celix::ComponentManagerState::ComponentStarted);
 
-    cmpMng.disable().disable().enable();
+    cmpMng.disable().disable().enable().disable();
     EXPECT_FALSE(cmpMng.isEnabled());
     EXPECT_EQ(cmpMng.getState(), celix::ComponentManagerState::Disabled);
+
+    cmpMng.enable().disable().enable().enable();
+    EXPECT_TRUE(cmpMng.isEnabled());
+    EXPECT_EQ(cmpMng.getState(), celix::ComponentManagerState::ComponentStarted);
 }
 
 

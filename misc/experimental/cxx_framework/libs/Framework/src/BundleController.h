@@ -188,21 +188,20 @@ namespace celix {
             bool success = false;
             if (resourcesZip != nullptr) {
                 zip_error_t error;
-                zip_source_t *source = zip_source_buffer_create(resourcesZip, resourcesZipLen, 1, &error);
+                zip_source_t *source = zip_source_buffer_create(resourcesZip, resourcesZipLen, 0, &error);
                 if (source != nullptr) {
                     zip_t *zip = zip_open_from_source(source, ZIP_RDONLY, &error);
                     if (zip != nullptr) {
                         extractZipSource(zip, bundleCache);
-                        //zip_close(zip); ? not needed on zip_source ?
+                        zip_close(zip);
                         zip_source_close(source);
                         success = true;
                     } else {
-                        //TODO move to cc file and add logger
-                        //LOG(WARNING) << "Cannot create zip from source: " << zip_error_strerror(&error) << std::endl;
+                        logger->error("Cannot open zip from source: {}", zip_error_strerror(&error));
+                        zip_source_free(source);
                     }
                 } else {
-                    //TODO move to cc file and add logger
-                    //LOG(WARNING) << "Cannot create zip source: " << zip_error_strerror(&error) << std::endl;
+                    logger->error("Cannot create zip from source: {}", zip_error_strerror(&error));
                 }
             } else {
                 //no resources
@@ -220,8 +219,7 @@ namespace celix {
                 zip_stat_index(zip, i, 0, &st);
                 if (st.name[strlen(st.name) - 1] == '/') {
                     //dir
-                    //TODO move to cc file and add logger
-                    //LOG(ERROR) << "TODO extract dirs" << std::endl;
+                    logger->error("TODO extract dirs");
                     succes = false;
                 } else {
                     //file
@@ -237,14 +235,13 @@ namespace celix {
                                 read = zip_fread(f, buf, 128);
                             }
                             outf.close();
+                            logger->trace("extracted file {}", p);
                         } else {
-                            //TODO move to cc file and add logger
-                            //LOG(WARNING) << "Cannot open file '" << p << "': " << std::endl;
+                            logger->error("Cannot open file '{}'", p);
                         }
                         zip_fclose(f);
                     } else {
-                        //TODO move to cc file and add logger
-                        //LOG(WARNING) << "Cannot read file from zip: " << zip_strerror(zip) << std::endl;
+                        logger->error("Cannot read file from zip: {}", zip_strerror(zip));
                         succes = false;
                         break;
                     }
@@ -252,6 +249,10 @@ namespace celix {
             }
             return succes;
         }
+
+    private:
+        const std::shared_ptr<spdlog::logger> logger{celix::getLogger("celix::bundle::BundleController")};
+
 
         const std::function<celix::IBundleActivator*(std::shared_ptr<celix::BundleContext>)> actFactory;
         const std::shared_ptr<celix::Bundle> bnd;

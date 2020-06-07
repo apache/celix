@@ -19,6 +19,7 @@
 
 #include "celix/Framework.h"
 
+#include <memory>
 #include <utility>
 #include <map>
 #include <mutex>
@@ -152,9 +153,9 @@ public:
 
             std::lock_guard<std::mutex> lck{bundles.mutex};
             bndId = bundles.nextBundleId++;
-            auto bnd = std::shared_ptr<celix::Bundle>{new celix::Bundle{bndId, this->cacheDir(), this->fw, std::move(manifest)}};
-            auto ctx = std::shared_ptr<celix::BundleContext>{new celix::BundleContext{bnd}};
-            bndController = std::shared_ptr<celix::BundleController>{new celix::BundleController{std::move(actFactory), bnd, ctx, resourcesZip, resourcesZipLen}};
+            auto bnd = std::make_shared<celix::Bundle>(bndId, this->cacheDir(), this->fw, std::move(manifest));
+            auto ctx = std::make_shared<celix::BundleContext>(bnd);
+            bndController = std::make_shared<celix::BundleController>(std::move(actFactory), bnd, ctx, resourcesZip, resourcesZipLen);
             bundles.entries.emplace(std::piecewise_construct,
                                      std::forward_as_tuple(bndId),
                                      std::forward_as_tuple(bndController));

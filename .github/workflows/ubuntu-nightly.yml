@@ -47,6 +47,7 @@ jobs:
           libffi-dev \
           libxml2-dev \
           libczmq-dev \
+          libzip-dev \
           libcpputest-dev
     - name: Build
       env:

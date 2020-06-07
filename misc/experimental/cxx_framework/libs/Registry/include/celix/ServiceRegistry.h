@@ -126,7 +126,7 @@ namespace celix {
 
         ServiceRegistry(const ServiceRegistry &rhs) = delete;
 
-        const std::string &name() const;
+        const std::string& name() const;
 
         template<typename I>
         celix::ServiceRegistration registerService(std::shared_ptr<I> svc, celix::Properties props = {}, const std::shared_ptr<celix::IResourceBundle>& owner = {});
@@ -268,7 +268,7 @@ inline celix::ServiceRegistration celix::ServiceRegistry::registerServiceFactory
 
 template<typename F>
 inline celix::ServiceRegistration celix::ServiceRegistry::registerFunctionService(const std::string& functionName, F outerFunction, celix::Properties props, const std::shared_ptr<celix::IResourceBundle>& owner) {
-    auto functionPtr = std::shared_ptr<F>{new F{std::move(outerFunction)}, [](F*){/*nop*/}};
+    auto functionPtr = std::shared_ptr<F>{new F{std::move(outerFunction)}};
     auto voidPtr = std::static_pointer_cast<void>(functionPtr);
     auto svcName = celix::functionServiceName<F>(functionName);
     return registerAnyService(svcName, std::move(voidPtr), std::move(props), owner);
