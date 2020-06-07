@@ -20,6 +20,7 @@
 #include "celix/Filter.h"
 
 #include <sstream>
+#include <utility>
 
 
 
@@ -407,10 +408,10 @@ static bool match_criteria(const celix::Properties &props, const celix::FilterCr
             break;
         }
         case celix::FilterOperator::SUBSTRING: {
-            const std::string &val = celix::getProperty(props, criteria.attribute, "");
-            if (val.empty()) {
+            if (!props.has(criteria.attribute)) {
                 result = false;
             } else {
+                const std::string &val = props[criteria.attribute];
                 bool wildcharAtFront = criteria.value.front() == '*';
                 bool wildcharAtBack = criteria.value.back() == '*';
                 std::string needle = wildcharAtFront ? criteria.value.substr(1) : criteria.value;
@@ -427,33 +428,52 @@ static bool match_criteria(const celix::Properties &props, const celix::FilterCr
             break;
         }
         case celix::FilterOperator::EQUAL: {
-            const std::string &val = celix::getProperty(props, criteria.attribute, "");
-            result = !val.empty() && val == criteria.value;
+            if (!props.has(criteria.attribute)) {
+                result = false;
+            } else {
+                auto& val = props[criteria.attribute];
+                result = val == criteria.value;
+            }
             break;
         }
         case celix::FilterOperator::GREATER_EQUAL: {
-            const std::string &val = celix::getProperty(props, criteria.attribute, "");
-            result = !val.empty() && val >= criteria.value;
+            if (!props.has(criteria.attribute)) {
+                result = false;
+            } else {
+                auto& val = props[criteria.attribute];
+                result = val >= criteria.value;
+            }
             break;
         }
         case celix::FilterOperator::LESS: {
-            const std::string &val = celix::getProperty(props, criteria.attribute, "");
-            result = !val.empty() && val < criteria.value;
+            if (!props.has(criteria.attribute)) {
+                result = false;
+            } else {
+                auto& val = props[criteria.attribute];
+                result = val < criteria.value;
+            }
             break;
         }
         case celix::FilterOperator::LESS_EQUAL: {
-            const std::string &val = celix::getProperty(props, criteria.attribute, "");
-            result = !val.empty() && val <= criteria.value;
+            if (!props.has(criteria.attribute)) {
+                result = false;
+            } else {
+                auto& val = props[criteria.attribute];
+                result = val <= criteria.value;
+            }
             break;
         }
         case celix::FilterOperator::PRESENT: {
-            const std::string &val = celix::getProperty(props, criteria.attribute, "");
-            result = !val.empty();
+            result = props.has(criteria.attribute);
             break;
         }
         case celix::FilterOperator::APPROX: {
-            const std::string &val = celix::getProperty(props, criteria.attribute, "");
-            result = !val.empty() && strcasecmp(val.c_str(), criteria.value.c_str()) == 0;
+            if (!props.has(criteria.attribute)) {
+                result = false;
+            } else {
+                auto& val = props[criteria.attribute];
+                result = !val.empty() && strcasecmp(val.c_str(), criteria.value.c_str()) == 0;
+            }
             break;
         }
         default: {
@@ -561,7 +581,9 @@ std::ostream &operator<<(std::ostream &stream, const celix::Filter &filter) {
     return stream;
 }
 
-celix::FilterCriteria::FilterCriteria(const std::string& _attribute, celix::FilterOperator _op,
-                                      const std::string& _value) : attribute{_attribute}, op{_op}, value{_value} {}
+celix::FilterCriteria::FilterCriteria(
+        std::string  _attribute,
+        celix::FilterOperator _op,
+        std::string  _value) : attribute{std::move(_attribute)}, op{_op}, value{std::move(_value)} {}
 
 celix::FilterCriteria::FilterCriteria() : attribute{}, op{celix::FilterOperator::AND}, value{} {}

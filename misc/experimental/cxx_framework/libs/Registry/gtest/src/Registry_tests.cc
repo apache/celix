@@ -60,8 +60,8 @@ TEST_F(RegistryTest, ServiceRegistrationTest) {
         long svcId = reg.serviceId();
         EXPECT_GE(svcId, -1L);
         EXPECT_TRUE(reg.valid());
-        EXPECT_EQ(reg.properties().at(celix::SERVICE_NAME), celix::typeName<MarkerInterface1>());
-        EXPECT_EQ("VAL", celix::getProperty(reg.properties(), "TEST", ""));
+        EXPECT_EQ(reg.properties()[celix::SERVICE_NAME], celix::typeName<MarkerInterface1>());
+        EXPECT_EQ("VAL", reg.properties()["TEST"]);
 
         EXPECT_EQ(1, registry().nrOfRegisteredServices());
         EXPECT_EQ(1, registry().findServices<MarkerInterface1>().size());
@@ -174,12 +174,12 @@ TEST_F(RegistryTest, UseServices) {
     };
     useOpts.useWithProperties = [&](MarkerInterface1& svc, const celix::Properties &props) -> void {
         EXPECT_EQ(svc1.get(), &svc);
-        long id = celix::getPropertyAsLong(props, celix::SERVICE_ID, 0);
+        long id = props.getAsLong(celix::SERVICE_ID, 0);
         EXPECT_EQ(svcId1, id);
     };
     useOpts.useWithOwner = [&](MarkerInterface1& svc, const celix::Properties &props, const celix::IResourceBundle &bnd) -> void {
         EXPECT_EQ(svc1.get(), &svc);
-        long id = celix::getPropertyAsLong(props, celix::SERVICE_ID, 0L);
+        long id = props.getAsLong(celix::SERVICE_ID, 0L);
         EXPECT_EQ(svcId1, id);
         EXPECT_EQ(LONG_MAX, bnd.id()); //not nullptr -> use empty bundle (bndId 0)
     };
@@ -253,7 +253,7 @@ TEST_F(RegistryTest, StdFunctionTest) {
     EXPECT_TRUE(reg1.valid());
     EXPECT_EQ(1, registry().nrOfRegisteredServices());
 
-    std::function<int(long a, double b, const std::string &ref)> funcWithReturnAndArgs = [](long a, double b, const std::string &ref) -> int {
+    std::function<int(double a, double b, const std::string &ref)> funcWithReturnAndArgs = [](double a, double b, const std::string &ref) -> int {
         return (int)(a/b) + (int)ref.size();
     };
     auto reg2 = registry().registerFunctionService("yet another function", funcWithReturnAndArgs);

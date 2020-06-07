@@ -20,63 +20,59 @@
 #pragma once
 
 #include <string>
-#include <map>
+#include <unordered_map>
 
 namespace celix {
 
-    using Properties = std::map<std::string, std::string>;
+    //NOTE not inheriting from unordered map, because unordered_map does not support heterogeneous comparison needed for string_view
+    class Properties {
+    public:
+        using MapType = std::unordered_map<std::string,std::string>;
+        using iterator = MapType::iterator;
+        using const_iterator = MapType::const_iterator;
 
-    inline const std::string& getProperty(const Properties& props, const std::string &key, const std::string &defaultValue) noexcept {
-        auto it = props.find(key);
-        return it != props.end() ? it->second : defaultValue;
-    }
+        iterator find(std::string_view key);
+        const_iterator find(std::string_view key) const;
 
-    inline long getPropertyAsLong(const Properties& props, const std::string &key, long defaultValue) noexcept {
-        const std::string &strVal = getProperty(props, key, std::to_string(defaultValue));
-        char *endptr[1];
-        long lval = strtol(strVal.c_str(), endptr, 10);
-        return strVal.c_str() == *endptr ? defaultValue : lval;
-    }
+        iterator begin();
+        iterator end();
 
-    inline unsigned long getPropertyAsUnsignedLong(const Properties& props, const std::string &key, unsigned long defaultValue) noexcept {
-        const std::string &strVal = getProperty(props, key, std::to_string(defaultValue));
-        char *endptr[1];
-        unsigned long lval = strtoul(strVal.c_str(), endptr, 10);
-        return strVal.c_str() == *endptr ? defaultValue : lval;
-    }
+        const_iterator begin() const;
+        const_iterator end() const;
 
-    inline int getPropertyAsInt(const Properties& props, const std::string &key, int defaultValue) noexcept {
-        long def = defaultValue;
-        long r = getPropertyAsLong(props, key, def);
-        return (int)r;
-    }
+        void clear();
 
-    inline unsigned int getPropertyAsUnsignedInt(const Properties& props, const std::string &key, unsigned int defaultValue) noexcept {
-        unsigned long def = defaultValue;
-        unsigned long r = getPropertyAsUnsignedLong(props, key, def);
-        return (unsigned int)r;
-    }
+        void insert(const_iterator b, const_iterator e);
 
-    inline bool getPropertyAsBool(const Properties& props, const std::string &key, bool defaultValue) noexcept {
-        const std::string &strVal = getProperty(props, key, std::to_string(defaultValue));
-        return strVal == "true" || strVal == "TRUE";
-    }
+        const std::string& operator[](std::string_view key) const;
+        std::string& operator[](std::string_view key);
 
-    inline double getPropertyAsDouble(const Properties& props, const std::string &key, double defaultValue) noexcept {
-        const std::string &strVal = getProperty(props, key, std::to_string(defaultValue));
-        char *endptr[1];
-        double dval = strtod(strVal.c_str(), endptr);
-        return strVal.c_str() == *endptr ? defaultValue : dval;
-    }
 
-    inline float getPropertyAsFloat(const Properties& props, const std::string &key, float defaultValue) noexcept {
-        const std::string &strVal = getProperty(props, key, std::to_string(defaultValue));
-        char *endptr[1];
-        float fval = strtof(strVal.c_str(), endptr);
-        return strVal.c_str() == *endptr ? defaultValue : fval;
-    }
 
-    celix::Properties loadProperties(const std::string &path);
+        //TODO add variant without default which throws exceptions
+
+        bool has(std::string_view key) const;
+
+        std::string get(std::string_view key, std::string_view defaultValue) const;
+
+        long getAsLong(std::string_view key, long defaultValue) const;
+
+        unsigned long getAsUnsignedLong(std::string_view key, unsigned long defaultValue) const;
+
+        int getAsInt(std::string_view key, int defaultValue) const;
+
+        unsigned int getAsUnsignedInt(std::string_view key, unsigned int defaultValue) const;
+
+        bool getAsBool(std::string_view key, bool defaultValue) const;
+
+        double getPropertyAsDouble(std::string_view key, double defaultValue) const;
+
+        float getAsFloat(std::string_view key, float defaultValue) const;
+    private:
+        MapType map{};
+    };
+
+    celix::Properties loadProperties(std::string_view path);
     celix::Properties loadProperties(std::istream &stream);
     //bool storeProperties(const celix::Properties &props, const std::string &path); TODO
     //bool storeProperties(const celix::Properties &props, std::ofstream &stream); TODO

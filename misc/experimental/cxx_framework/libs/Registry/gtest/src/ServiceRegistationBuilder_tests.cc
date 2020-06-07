@@ -81,9 +81,9 @@ TEST_F(ServiceRegistrationBuilderTest, ServiceRegistrationBuilderTest) {
         celix::UseServiceOptions<Interface1> useOpts{};
         useOpts.useWithProperties = [](Interface1& /*svc*/, const celix::Properties &props) {
             EXPECT_EQ(props.find("name0"), props.end());
-            EXPECT_EQ(props.at("name1"), "value1");
-            EXPECT_EQ(props.at("name2"), "value2");
-            EXPECT_EQ(props.at("name3"), "value3");
+            EXPECT_EQ(props["name1"], "value1");
+            EXPECT_EQ(props["name2"], "value2");
+            EXPECT_EQ(props["name3"], "value3");
         };
 
         auto called = registry()->useService(useOpts);
@@ -130,9 +130,9 @@ TEST_F(ServiceRegistrationBuilderTest, FunctionServiceRegistrationBuilderTest) {
         celix::UseFunctionServiceOptions<std::function<void()>> useOpts{fn};
         useOpts.useWithProperties = [](const std::function<void()>& /*f*/, const celix::Properties &props) {
             EXPECT_EQ(props.find("name0"), props.end());
-            EXPECT_EQ(props.at("name1"), "value1");
-            EXPECT_EQ(props.at("name2"), "value2");
-            EXPECT_EQ(props.at("name3"), "value3");
+            EXPECT_EQ(props["name1"], "value1");
+            EXPECT_EQ(props["name2"], "value2");
+            EXPECT_EQ(props["name3"], "value3");
         };
 
         auto called = registry()->useFunctionService<std::function<void()>>(useOpts);

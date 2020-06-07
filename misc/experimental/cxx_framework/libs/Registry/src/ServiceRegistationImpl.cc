@@ -66,7 +66,7 @@ const celix::Properties& celix::ServiceRegistration::properties() const {
 const std::string& celix::ServiceRegistration::serviceName() const {
     static const std::string empty{};
     if (pimpl) {
-        return celix::getProperty(pimpl->entry->props, celix::SERVICE_NAME, empty);
+        return pimpl->entry->props[celix::SERVICE_NAME];
     }
     return empty;
 }

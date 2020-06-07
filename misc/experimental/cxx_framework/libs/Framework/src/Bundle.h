@@ -54,13 +54,11 @@ namespace celix {
 
         long id() const override { return bndId; }
 
-        const std::string &name() const override { return bndManifest.at(celix::MANIFEST_BUNDLE_NAME); }
+        const std::string &name() const override { return bndManifest[celix::MANIFEST_BUNDLE_NAME]; }
 
-        const std::string &group() const override {
-            return bndManifest.at(celix::MANIFEST_BUNDLE_GROUP);
-        }
+        const std::string &group() const override { return bndManifest[celix::MANIFEST_BUNDLE_GROUP]; }
 
-        const std::string &version() const override { return bndManifest.at(celix::MANIFEST_BUNDLE_VERSION); }
+        const std::string &version() const override { return bndManifest[celix::MANIFEST_BUNDLE_VERSION]; }
 
         const celix::Properties &manifest() const override { return bndManifest; }
 

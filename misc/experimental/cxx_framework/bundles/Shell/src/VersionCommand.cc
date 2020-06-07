@@ -30,9 +30,9 @@ namespace {
         if (ctx->bundle()->hasCacheEntry("version.properties")) {
             auto path = ctx->bundle()->absPathForCacheEntry("version.properties");
             celix::Properties versionInfo = celix::loadProperties(path);
-            std::string version = celix::getProperty(versionInfo, "celix.version", "!Error!");
+            std::string version = versionInfo.get("celix.version", "!Error!");
             out << "Celix Version: " << version << std::endl;
-            std::string commitId = celix::getProperty(versionInfo, "commmit.id", "!Error!");
+            std::string commitId = versionInfo.get("commit.id", "!Error!");
             out << "Commit ID: " << commitId << std::endl;
         } else {
             err << "Cannot find version.properties entry in the " << ctx->bundle()->group() << " " << ctx->bundle()->name() << " bundle" << std::endl;

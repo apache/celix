@@ -32,6 +32,130 @@
 
 #define LOGGER celix::getLogger("celix::Properties")
 
+//Used to temporary capture a string_view in a std::string (needed to access the MapType::find)
+thread_local static std::string tmpKeyStorage{};
+
+celix::Properties::iterator celix::Properties::find(std::string_view key) {
+    tmpKeyStorage.reserve(key.size());
+    tmpKeyStorage.assign(key.data(), key.size());
+    return map.find(tmpKeyStorage);
+}
+
+celix::Properties::const_iterator celix::Properties::find(std::string_view key) const {
+    tmpKeyStorage.reserve(key.size());
+    tmpKeyStorage.assign(key.data(), key.size());
+    return map.find(tmpKeyStorage);
+}
+
+celix::Properties::iterator celix::Properties::begin() { return map.begin(); }
+celix::Properties::iterator celix::Properties::end() { return map.end(); }
+
+celix::Properties::const_iterator celix::Properties::begin() const { return map.begin(); }
+celix::Properties::const_iterator celix::Properties::end() const { return map.end(); }
+
+void celix::Properties::clear() { map.clear(); }
+
+void celix::Properties::insert(const_iterator b, const_iterator e) {
+    map.insert(b, e);
+}
+
+const std::string& celix::Properties::operator[](std::string_view key) const {
+    return find(key)->second;
+}
+
+std::string& celix::Properties::operator[](std::string_view key) {
+    auto it = find(key);
+    if (it == end()) {
+        tmpKeyStorage.reserve(key.size());
+        tmpKeyStorage.assign(key.data(), key.size());
+        return map[tmpKeyStorage];
+    } else {
+        return it->second;
+    }
+}
+
+
+bool celix::Properties::has(std::string_view key) const {
+    return find(key) != end();
+}
+
+std::string celix::Properties::get(std::string_view key, std::string_view defaultValue) const {
+    auto it = find(key);
+    return it != end() ? it->second : std::string{defaultValue};
+}
+
+long celix::Properties::getAsLong(std::string_view key, long defaultValue) const {
+    const auto it = find(key);
+    if (it == end()) {
+        return defaultValue;
+    }
+    char *endptr[1];
+    long lval = strtol(it->second.c_str(), endptr, 10);
+    if (it->second.c_str() == *endptr) {
+        LOGGER->trace("Cannot convert '{}' to long. returning default value {}.", it->second, defaultValue);
+    }
+    return it->second.c_str() == *endptr ? defaultValue : lval;
+}
+
+unsigned long celix::Properties::getAsUnsignedLong(std::string_view key, unsigned long defaultValue) const {
+    const auto it = find(key);
+    if (it == end()) {
+        return defaultValue;
+    }
+    char *endptr[1];
+    unsigned long lval = strtoul(it->second.c_str(), endptr, 10);
+    if (it->second.c_str() == *endptr) {
+        LOGGER->trace("Cannot convert '{}' to unsigned long. returning default value {}.", it->second, defaultValue);
+    }
+    return it->second.c_str() == *endptr ? defaultValue : lval;
+}
+
+int celix::Properties::getAsInt(std::string_view key, int defaultValue) const {
+    long def = defaultValue;
+    long r = getAsLong(key, def);
+    return (int)r;
+}
+
+unsigned int celix::Properties::getAsUnsignedInt(std::string_view key, unsigned int defaultValue) const {
+    unsigned long def = defaultValue;
+    unsigned long r = getAsUnsignedLong(key, def);
+    return (unsigned int)r;
+}
+
+bool celix::Properties::getAsBool(std::string_view key, bool defaultValue) const {
+    const auto it = find(key);
+    if (it == end()) {
+        return defaultValue;
+    }
+    return strcasecmp("true", it->second.c_str());
+}
+
+double celix::Properties::getPropertyAsDouble(std::string_view key, double defaultValue) const {
+    const auto it = find(key);
+    if (it == end()) {
+        return defaultValue;
+    }
+    char *endptr[1];
+    double dval = strtod(it->second.c_str(), endptr);
+    if (it->second.c_str() == *endptr) {
+        LOGGER->trace("Cannot convert '{}' to double. returning default value {}.", it->second, defaultValue);
+    }
+    return it->second.c_str() == *endptr ? defaultValue : dval;
+}
+
+float celix::Properties::getAsFloat(std::string_view key, float defaultValue) const {
+    const auto it = find(key);
+    if (it == end()) {
+        return defaultValue;
+    }
+    char *endptr[1];
+    float fval = strtof(it->second.c_str(), endptr);
+    if (it->second.c_str() == *endptr) {
+        LOGGER->trace("Cannot convert '{}' to float. returning default value {}.", it->second, defaultValue);
+    }
+    return it->second.c_str() == *endptr ? defaultValue : fval;
+}
+
 
 static char * utils_stringTrim(char * string) {
     char* copy = string;
@@ -179,11 +303,11 @@ static void parseLine(const char* line, celix::Properties &props) {
 
 }
 
-celix::Properties celix::loadProperties(const std::string &path) {
+celix::Properties celix::loadProperties(std::string_view path) {
     std::ifstream file;
     file.open(path);
     if (file.fail()) {
-        LOGGER->warn("Cannot open file {}. {}", path, file.failbit);
+        LOGGER->warn("Cannot open file {}. {}", path, std::ifstream::failbit);
         return celix::Properties{};
     } else {
         return celix::loadProperties(file);
@@ -207,7 +331,7 @@ celix::Properties celix::loadProperties(std::istream &stream) {
         }
     }
 
-    //TODO howto singal an error with parsing ...
+    //TODO add exception for parse errors
     return props;
 }
 

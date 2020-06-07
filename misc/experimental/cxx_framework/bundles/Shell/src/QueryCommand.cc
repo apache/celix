@@ -57,10 +57,10 @@ namespace {
         auto reg = ctx->bundle()->framework().registry();
 
         const auto fun = [&](const std::shared_ptr<void>&, const celix::Properties& props, const celix::IResourceBundle&) {
-            long bndId = celix::getPropertyAsLong(props, celix::SERVICE_BUNDLE_ID, -1L); //TODO, FIXME bundle.id not yet registered on services
+            long bndId = props.getAsLong(celix::SERVICE_BUNDLE_ID, -1L); //TODO, FIXME bundle.id not yet registered on services
             bool print = bndIds.empty() || bndIds.find(bndId) != bndIds.end();
             if (print) {
-                out << "|- Service: " << celix::getProperty(props, celix::SERVICE_NAME, "!Error") << std::endl;
+                out << "|- Service: " << props.get(celix::SERVICE_NAME, "!Error") << std::endl;
                 if (verbose) {
                     for (auto &pair : props) {
                         out << "   |- " << pair.first << " = " << pair.second << std::endl;

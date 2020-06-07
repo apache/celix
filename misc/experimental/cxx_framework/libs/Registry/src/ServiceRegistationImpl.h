@@ -41,7 +41,7 @@ namespace celix {
                               celix::Properties &&_props) :
                     owner{std::move(_owner)}, svcId{_svcId}, svcName{std::move(_svcName)},
                     props{std::forward<celix::Properties>(_props)},
-                    ranking{celix::getPropertyAsLong(props, celix::SERVICE_RANKING, 0L)},
+                    ranking{props.getAsLong(celix::SERVICE_RANKING, 0L)},
                     svc{std::move(_svc)}, svcFactory{std::move(_svcFac)} {}
 
             SvcEntry(SvcEntry &&rhs) = delete;
@@ -99,7 +99,7 @@ namespace celix {
         };
 
         struct SvcEntryLess {
-            bool operator()( const std::shared_ptr<const SvcEntry>& lhs, const std::shared_ptr<const SvcEntry>& rhs ) const {
+            bool operator()(const std::shared_ptr<const SvcEntry>& lhs, const std::shared_ptr<const SvcEntry>& rhs) const {
                 if (lhs->ranking == rhs->ranking) {
                     return lhs->svcId < rhs->svcId;
                 } else {

@@ -372,7 +372,7 @@ bool celix::ServiceRegistry::useAnyService(const std::string &svcOrFunctionName,
 }
 
 bool celix::ServiceRegistry::useAnyServiceWithId(const std::string &svcOrFunctionName, long svcId, std::function<void(const std::shared_ptr<void> &svc, const celix::Properties&, const celix::IResourceBundle&)> callback, const std::shared_ptr<celix::IResourceBundle>& requester) const {
-    celix::Filter f{std::string{"("} + celix::SERVICE_ID + "=" + std::to_string(svcId) + ")"};
+    celix::Filter f{std::string{"("} + std::string{celix::SERVICE_ID} + "=" + std::to_string(svcId) + ")"};
     return pimpl->useAnyServices(svcOrFunctionName, std::move(f), std::move(callback), requester, 1) == 1;
 }
 

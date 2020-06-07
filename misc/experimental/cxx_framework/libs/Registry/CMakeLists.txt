@@ -16,6 +16,7 @@
 # under the License.
 
 find_package(UUID REQUIRED)
+find_package(Threads REQUIRED)
 
 add_library(celix_cxx_Registry STATIC
         src/EmptyResourceBundle.cc
@@ -31,8 +32,12 @@ add_library(celix_cxx_Registry STATIC
 
 target_include_directories(celix_cxx_Registry PRIVATE src)
 target_include_directories(celix_cxx_Registry PUBLIC include)
-target_link_libraries(celix_cxx_Registry PRIVATE spdlog::spdlog UUID::lib)
+target_link_libraries(celix_cxx_Registry PRIVATE spdlog::spdlog UUID::lib Threads::Threads)
 target_compile_options(celix_cxx_Registry PRIVATE -fPIC)
+
+#Celix C++ Framework is C++ 17, using a public option on registry to enable this for now.
+#TODO find a better way or doing this. Could not get this to work with temp CMAKE_CXX_FLAGS with -std=c++17 or set(CMAKE_CXX_STANDARD 17)
+target_compile_options(celix_cxx_Registry PUBLIC -std=c++17)
 
 add_library(celix::cxx::Registry ALIAS celix_cxx_Registry)
 

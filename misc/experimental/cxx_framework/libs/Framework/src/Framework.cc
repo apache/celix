@@ -20,7 +20,7 @@
 #include "celix/Framework.h"
 
 #include <utility>
-#include <unordered_map>
+#include <map>
 #include <mutex>
 #include <set>
 #include <vector>
@@ -375,7 +375,7 @@ private:
 
 
     struct {
-        std::unordered_map<long, std::shared_ptr<celix::BundleController>> entries{};
+        std::map<long, std::shared_ptr<celix::BundleController>> entries{};
         long nextBundleId = FRAMEWORK_BUNDLE_ID + 1;
         mutable std::mutex mutex{};
     } bundles{};

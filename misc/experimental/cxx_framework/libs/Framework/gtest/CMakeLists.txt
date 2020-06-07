@@ -16,12 +16,10 @@
 # under the License.
 
 set(SOURCES
-        src/main.cc
         src/Framework_tests.cc
 )
 add_executable(celix_cxx_framework_tests ${SOURCES})
-target_link_libraries(celix_cxx_framework_tests PRIVATE gtest celix::cxx::Framework spdlog::spdlog)
+target_link_libraries(celix_cxx_framework_tests PRIVATE GTest::gtest GTest::gtest_main celix::cxx::Framework spdlog::spdlog)
 
-#NOTE last .. argument for the setup coverage is the scan dir (i.e. not gtest dir, but a dir higher)
 add_test(NAME celix_cxx_framework_tests COMMAND celix_cxx_framework_tests)
-SETUP_TARGET_FOR_COVERAGE(celix_cxx_framework_tests_cov celix_cxx_framework_tests ${CMAKE_BINARY_DIR}/coverage/celix/cxx/Framework ..)
+setup_target_for_coverage(celix_cxx_framework_tests SCAN_DIR ..)

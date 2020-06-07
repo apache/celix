@@ -16,11 +16,10 @@
 # under the License.
 
 set(SOURCES
-        src/main.cc
         src/ShellTui_tests.cc
 )
 add_executable(celix_cxx_shell_tui_tests ${SOURCES})
-target_link_libraries(celix_cxx_shell_tui_tests PRIVATE gtest celix::cxx::Framework celix::bundle::ShellTui_static celix::ShellApi)
+target_link_libraries(celix_cxx_shell_tui_tests PRIVATE GTest::gtest GTest::gtest_main celix::cxx::Framework celix::bundle::ShellTui_static celix::ShellApi)
 
 add_test(NAME celix_cxx_shell_tui_tests COMMAND celix_cxx_shell_tui_tests)
-SETUP_TARGET_FOR_COVERAGE(celix_cxx_shell_tui_tests_cov celix_cxx_shell_tui_tests ${CMAKE_BINARY_DIR}/coverage/celix/cxx/ShellTui ..)
+setup_target_for_coverage(celix_cxx_shell_tui_tests SCAN_DIR ..)

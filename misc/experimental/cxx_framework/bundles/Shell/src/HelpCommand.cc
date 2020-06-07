@@ -33,7 +33,7 @@ namespace {
             std::vector<std::string> commands{};
             ctx->buildUseService<celix::IShellCommand>()
                     .setCallback([&](celix::IShellCommand & /*cmd*/, const celix::Properties &props) {
-                        commands.push_back(celix::getProperty(props, celix::IShellCommand::COMMAND_NAME, "!Error!"));
+                        commands.push_back(props.get(celix::IShellCommand::COMMAND_NAME, "!Error!"));
                     })
                     .setFilter(hasCommandNameFilter)
                     .useAll();
@@ -41,7 +41,7 @@ namespace {
             hasCommandNameFilter = std::string{"("} + celix::SHELL_COMMAND_FUNCTION_COMMAND_NAME + "=*)";
 
             auto use = [&](const celix::ShellCommandFunction&, const celix::Properties &props) {
-                commands.push_back(celix::getProperty(props, celix::SHELL_COMMAND_FUNCTION_COMMAND_NAME, "!Error!"));
+                commands.push_back(props.get(celix::SHELL_COMMAND_FUNCTION_COMMAND_NAME, "!Error!"));
             };
             ctx->buildUseFunctionService<celix::ShellCommandFunction>(celix::SHELL_COMMAND_FUNCTION_SERVICE_NAME)
                     .setFilter(hasCommandNameFilter)
@@ -60,18 +60,18 @@ namespace {
                 bool found = ctx->buildUseService<celix::IShellCommand>()
                         .setFilter(commandNameFilter)
                         .setCallback([&](celix::IShellCommand &, const celix::Properties &props) {
-                            out << "Command Name       : " << celix::getProperty(props, celix::IShellCommand::COMMAND_NAME, "!Error!") << std::endl;
-                            out << "Command Usage      : " << celix::getProperty(props, celix::IShellCommand::COMMAND_USAGE, "!Error!") << std::endl;
-                            out << "Command Description: " << celix::getProperty(props, celix::IShellCommand::COMMAND_DESCRIPTION, "!Error!") << std::endl;
+                            out << "Command Name       : " << props.get(celix::IShellCommand::COMMAND_NAME, "!Error!") << std::endl;
+                            out << "Command Usage      : " << props.get(celix::IShellCommand::COMMAND_USAGE, "!Error!") << std::endl;
+                            out << "Command Description: " << props.get(celix::IShellCommand::COMMAND_DESCRIPTION, "!Error!") << std::endl;
 
                         })
                         .use();
                 if (!found) {
                     commandNameFilter = std::string{"("} + celix::SHELL_COMMAND_FUNCTION_COMMAND_NAME + "=" + cmd + ")";
                     auto use = [&](const celix::ShellCommandFunction &, const celix::Properties &props) {
-                        out << "Command Name       : " << celix::getProperty(props, celix::SHELL_COMMAND_FUNCTION_COMMAND_NAME, "!Error!") << std::endl;
-                        out << "Command Usage      : " << celix::getProperty(props, celix::SHELL_COMMAND_FUNCTION_COMMAND_USAGE, "!Error!") << std::endl;
-                        out << "Command Description: " << celix::getProperty(props, celix::SHELL_COMMAND_FUNCTION_COMMAND_DESCRIPTION, "!Error!") << std::endl;
+                        out << "Command Name       : " << props.get(celix::SHELL_COMMAND_FUNCTION_COMMAND_NAME, "!Error!") << std::endl;
+                        out << "Command Usage      : " << props.get(celix::SHELL_COMMAND_FUNCTION_COMMAND_USAGE, "!Error!") << std::endl;
+                        out << "Command Description: " << props.get(celix::SHELL_COMMAND_FUNCTION_COMMAND_DESCRIPTION, "!Error!") << std::endl;
                     };
                     ctx->buildUseFunctionService<celix::ShellCommandFunction>(celix::SHELL_COMMAND_FUNCTION_SERVICE_NAME)
                             .setFilter(commandNameFilter)

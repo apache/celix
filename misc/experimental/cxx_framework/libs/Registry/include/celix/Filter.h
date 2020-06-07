@@ -43,7 +43,7 @@ namespace celix {
 
     struct FilterCriteria; //forward declr
     struct FilterCriteria {
-        FilterCriteria(const std::string& attribute, celix::FilterOperator op, const std::string& value);
+        FilterCriteria(std::string  attribute, celix::FilterOperator op, std::string  value);
         FilterCriteria();
         std::string attribute;
         celix::FilterOperator op;

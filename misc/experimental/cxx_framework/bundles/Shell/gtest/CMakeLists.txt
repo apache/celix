@@ -16,11 +16,10 @@
 # under the License.
 
 set(SOURCES
-        src/main.cc
         src/Shell_tests.cc
 )
 add_executable(celix_cxx_shell_tests ${SOURCES})
-target_link_libraries(celix_cxx_shell_tests PRIVATE gtest celix::cxx::Framework celix::bundle::Shell celix::ShellApi)
+target_link_libraries(celix_cxx_shell_tests PRIVATE GTest::gtest GTest::gtest_main celix::cxx::Framework celix::bundle::Shell celix::ShellApi)
 
 add_test(NAME celix_cxx_shell_tests COMMAND celix_cxx_shell_tests)
-SETUP_TARGET_FOR_COVERAGE(celix_cxx_shell_tests_cov celix_cxx_shell_tests ${CMAKE_BINARY_DIR}/coverage/celix/cxx/Shell ..)
+setup_target_for_coverage(celix_cxx_shell_tests SCAN_DIR ..)

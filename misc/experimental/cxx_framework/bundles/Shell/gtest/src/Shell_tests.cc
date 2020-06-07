@@ -170,7 +170,7 @@ TEST_F(ShellTest, VersionCommandTest) {
 
     ss.flush();
     std::string output = ss.str();
-    size_t pos = output.find("2.2.0"); //Expect 3.0.0 as version
+    size_t pos = output.find("Celix Version:");
     EXPECT_LE(pos, output.size());
 }
 

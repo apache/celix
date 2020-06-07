@@ -17,22 +17,23 @@
  *under the License.
  */
 
-
 #pragma once
+
+#include <string_view>
 
 namespace celix {
 
     //NOTE manually aligned with celix_constants.h
-    static constexpr const char * const SERVICE_NAME = "service.name";
-    static constexpr const char * const SERVICE_ID = "service.id";
-    static constexpr const char * const SERVICE_RANKING = "service.ranking";
-    static constexpr const char * const SERVICE_BUNDLE_ID = "service.bundle.id";
-    static constexpr const char * const SERVICE_COMPONENT_ID = "service.component.id";
-    static constexpr const char * const FRAMEWORK_UUID = "framework.uuid";
+    static constexpr std::string_view SERVICE_NAME = "service.name";
+    static constexpr std::string_view SERVICE_ID = "service.id";
+    static constexpr std::string_view SERVICE_RANKING = "service.ranking";
+    static constexpr std::string_view SERVICE_BUNDLE_ID = "service.bundle.id";
+    static constexpr std::string_view SERVICE_COMPONENT_ID = "service.component.id";
+    static constexpr std::string_view FRAMEWORK_UUID = "framework.uuid";
 
-    static constexpr const char * const MANIFEST_BUNDLE_NAME = "Bundle-Name";
-    static constexpr const char * const MANIFEST_BUNDLE_VERSION = "Bundle-Version";
-    static constexpr const char * const MANIFEST_BUNDLE_GROUP = "Bundle-Group";
+    static constexpr std::string_view MANIFEST_BUNDLE_NAME = "Bundle-Name";
+    static constexpr std::string_view MANIFEST_BUNDLE_VERSION = "Bundle-Version";
+    static constexpr std::string_view MANIFEST_BUNDLE_GROUP = "Bundle-Group";
 
     static constexpr long FRAMEWORK_BUNDLE_ID = 0L;
 }

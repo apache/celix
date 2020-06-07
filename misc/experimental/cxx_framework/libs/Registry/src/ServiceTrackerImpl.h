@@ -21,6 +21,7 @@
 
 #include <memory>
 #include <cassert>
+#include <map>
 
 #include "celix/IResourceBundle.h"
 #include "celix/ServiceRegistry.h"

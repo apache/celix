@@ -27,14 +27,12 @@
 #include <string_view>
 
 
-namespace celix {
-namespace impl {
+namespace celix::impl {
     std::string typeNameFromPrettyFunction(const std::string &templateName, const std::string &pretty);
 
     template<typename INTERFACE_TYPENAME>
     inline std::string typeNameInternal() {
-        static const std::string templateStr = "INTERFACE_TYPENAME = ";
-        std::string pretty = __PRETTY_FUNCTION__;
+        constexpr auto templateStr = "INTERFACE_TYPENAME = ";
         return celix::impl::typeNameFromPrettyFunction(templateStr, __PRETTY_FUNCTION__);
     }
 
@@ -58,120 +56,103 @@ namespace impl {
         return "std::function<" + typeNameInternal<R>() + "(" + argName<Arg1, Args...>() + ")>";
     }
 
+    //TODO make this work!
 //    template<typename T>
-//    class has_NAME {
-//        struct Fallback {
-//            struct NAME {};
-//            virtual ~Fallback() = default;
-//        };
-//        struct Derived : T, Fallback {
-//            ~Derived() final = default;
+//    struct has_NAME {
+//        template<typename U>
+//        struct SFINAE {
+//            using NAME_TYPE = decltype(U::NAME);
 //        };
 //
-//        using True = float;
-//        using False = double;
-//
-//        //note this works because Fallback::NAME* is a valid type (a pointer to a struct), but T::NAME* (assuming T::NAME is a field member) not.
 //        template<typename U>
-//        static False test(typename U::NAME*) { return 0.0; };
+//        struct FALLBACK {
+//            using NAME_TYPE = uint8_t;
+//        };
+//
+//        using True = int8_t;
+//        using False = int16_t;
 //
 //        template<typename U>
-//        static True test(U*) { return 0.0; };
-//    public:
-//        static constexpr bool value = sizeof(test<Derived>(nullptr)) == sizeof(True);
+//        static True test(SFINAE<U> *) { return 0.0; }
+//
+//        template<typename U>
+//        static False test(FALLBACK<U> *) { return 0.0; }
+//
+//        static constexpr bool value = sizeof(test<T>(nullptr)) == sizeof(True);
 //    };
-
-    template<typename T>
-    struct has_NAME {
-        template<typename U>
-        struct SFINAE {
-            using NAME_TYPE = decltype(U::NAME);
-        };
-
-        template<typename U>
-        struct FALLBACK {
-            using NAME_TYPE = uint8_t;
-        };
-
-        using True = float;
-        using False = double;
-
-        template<typename U>
-        static True test(SFINAE<U> *) { return 0.0; }
-
-        template<typename U>
-        static False test(FALLBACK<U> *) { return 0.0; }
-
-        static constexpr bool value = sizeof(test<T>(nullptr)) == sizeof(True);
-    };
-}}
+}
 
 namespace celix {
 
     /**
-     * the celix::customTypeNameFor<I>() can be specialized to provide a customized type name for a type, without changes the class (i.e. adding a NAME member).
-     * @return This instance will return an empty string, indicating that there is no specialized function for serviceNameFor.
+     * the celix::customTypeNameFor<I>() can be specialized to provide a customized type name for a type,
+     * without changes the class (i.e. adding a NAME member).
+     * @return This instance will return an empty string_view, indicating that there is no specialized function for serviceNameFor.
      */
     template<typename I>
-    constexpr inline const char* customTypeNameFor() { return ""; }
+    constexpr inline const char* customTypeNameFor() { return nullptr; }
 
-    //OR ??
+    //TODO make this work with has_NAME
 //    /**
-//     * the celix::customTypeNameFor(I*) can be specialized to provide a customized service name for a type, without changes the class (i.e. adding a NAME member).
-//     * Note that the pointer argument is not used
-//     * @return This instance will return an empty string, indicating that there is no specialized function for serviceNameFor.
+//     * Returns the service name for a type I, based on the member I::NAME
 //     */
 //    template<typename I>
-//    inline std::string customTypeNameFor(I */*ignored*/) { return std::string{}; }
+//    constexpr inline
+//    typename std::enable_if<::celix::impl::has_NAME<I>::value, std::string_view>::type
+//    typeName() {
+//        return I::NAME;
+//    }
+
+    //TODO make this work with has_NAME
+//    /**
+//     * Returns the type name for a type I
+//     */
+//    template<typename I>
+//    constexpr inline
+//    typename std::enable_if<!::celix::impl::has_NAME<I>::value, std::string_view>::type
+//    typeName() {
+//        using namespace celix;
+//        auto svcName = customTypeNameFor<I>(); //note for C++14 this can be constexpr
+//        return svcName == nullptr ? ::celix::impl::typeNameInternal<I>() : std::string{svcName};
+//    }
 
     /**
-    * Returns the service name for a type I, based on the member I::NAME
-    */
+     * Returns the type name for a type I
+     */
     template<typename I>
-    constexpr inline
-    typename std::enable_if<::celix::impl::has_NAME<I>::value, std::string>::type
-    typeName() {
-        return I::NAME;
-    }
-
-    /**
-    * Returns the type name for a type I
-    */
-    template<typename I>
-    inline
-    typename std::enable_if<!::celix::impl::has_NAME<I>::value, std::string>::type
-    typeName() {
+    inline std::string typeName() {
         using namespace celix;
-        //I* ptr = nullptr;
-        //auto svcName = serviceNameFor(ptr); //note for C++14 this can be constexpr
         auto svcName = customTypeNameFor<I>(); //note for C++14 this can be constexpr
-        return strnlen(svcName, 1) == 0 ? ::celix::impl::typeNameInternal<I>() : std::string{svcName};
+        return svcName == nullptr ? ::celix::impl::typeNameInternal<I>() : std::string{svcName};
     }
 
     /**
-    * Returns the function signature for a std::function F.
-    */
+     * Returns the function signature for a std::function F.
+     */
     template<typename F>
-    //NOTE C++17 typename std::enable_if<std::is_callable<I>::value, std::string>::type
-    inline std::string functionSignature() {
+    inline std::string
+    //typename std::enable_if<std::is_invocable<F>::value, std::string>::type
+    functionSignature() {
         using FunctionType = F;
         return ::celix::impl::functionName<decltype(&FunctionType::operator())>();
     }
 
     /**
-    * Returns the service name for a function name.
-    * Combining the function name and function signature
-    */
+     * Returns the service name for a function name.
+     * Combining the function name and function signature
+     */
     template<typename F>
-    //NOTE C++17 typename std::enable_if<std::is_callable<I>::value, std::string>::type
-    inline std::string functionServiceName(const std::string &fName) {
+    inline std::string
+    //typename std::enable_if<std::is_invocable<F>::value, std::string>::type
+    functionServiceName(const std::string &fName) {
         return fName + " [" + ::celix::functionSignature<F>() + "]";
     }
 
-    //TODO can this really be noexcept?
-    //TODO move to celix/Logging.h and move Utils.h and Logging.h to Utils static lib
+    /**
+     * Get (spd) logger for a provided name. Will create a new logger if it does not already exists.
+     */
+     //TODO Maybe use a log service setup instead of hard coupling to spdlog?
     std::shared_ptr<spdlog::logger> getLogger(const std::string& name);
-
 }
 
 
