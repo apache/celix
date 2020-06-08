@@ -30,13 +30,13 @@
 int readShort(const unsigned char *data, int offset, uint16_t *val) {
     memcpy(val, data + offset, sizeof(uint16_t));
     *val = ntohs(*val);
-    return offset + sizeof(uint16_t);
+    return offset + (int)sizeof(uint16_t);
 }
 
 int readInt(const unsigned char *data, int offset, uint32_t *val) {
     memcpy(val, data + offset, sizeof(uint32_t));
     *val = ntohl(*val);
-    return offset + sizeof(uint32_t);
+    return offset + (int)sizeof(uint32_t);
 }
 
 int readLong(const unsigned char *data, int offset, uint64_t *val) {
@@ -46,19 +46,19 @@ int readLong(const unsigned char *data, int offset, uint64_t *val) {
 #else
     *val = be64toh(*val);
 #endif
-    return offset + sizeof(uint64_t);
+    return offset + (int)sizeof(uint64_t);
 }
 
 int writeShort(unsigned char *data, int offset, uint16_t val) {
     uint16_t nVal = htons(val);
     memcpy(data + offset, &nVal, sizeof(uint16_t));
-    return offset + sizeof(uint16_t);
+    return offset + (int)sizeof(uint16_t);
 }
 
 int writeInt(unsigned char *data, int offset, uint32_t val) {
     uint32_t nVal = htonl(val);
     memcpy(data + offset, &nVal, sizeof(uint32_t));
-    return offset + sizeof(uint32_t);
+    return offset + (int)sizeof(uint32_t);
 }
 
 int writeLong(unsigned char *data, int offset, uint64_t val) {
@@ -68,5 +68,5 @@ int writeLong(unsigned char *data, int offset, uint64_t val) {
     uint64_t nVal = htobe64(val);
 #endif
     memcpy(data + offset, &nVal, sizeof(uint64_t));
-    return offset + sizeof(uint64_t);
+    return offset + (int)sizeof(uint64_t);
 }
