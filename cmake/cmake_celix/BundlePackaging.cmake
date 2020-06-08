@@ -195,14 +195,19 @@ function(add_celix_bundle)
     endif ()
 
     if (NOT DEFINED BUNDLE_FILENAME)
-        set(BUNDLE_FILENAME ${BUNDLE_TARGET_NAME})
+        set(BASE_BUNDLE_FILENAME ${BUNDLE_TARGET_NAME})
+    else ()
+        set(BASE_BUNDLE_FILENAME ${BUNDLE_FILENAME})
     endif ()
 
-    if (${CMAKE_BUILD_TYPE} IN_LIST CELIX_NO_POSTFIX_BUILD_TYPES)
-        set(BUNDLE_FILENAME ${BUNDLE_FILENAME}.zip)
-    else ()
-        set(BUNDLE_FILENAME ${BUNDLE_FILENAME}-${CMAKE_BUILD_TYPE}.zip)
-    endif ()
+
+    set(BUNDLE_FILENAME ${BASE_BUNDLE_FILENAME}-${CMAKE_BUILD_TYPE}.zip)
+    foreach (NO_POSTFIX_BT IN LISTS CELIX_NO_POSTFIX_BUILD_TYPES)
+        if (CMAKE_BUILD_TYPE STREQUAL NO_POSTFIX_BT)
+            #setting bundle file name without postfix
+            set(BUNDLE_FILENAME ${BASE_BUNDLE_FILENAME}.zip)
+        endif ()
+    endforeach ()
 
     set(BUNDLE_FILE "${CMAKE_CURRENT_BINARY_DIR}/${BUNDLE_FILENAME}")
     #set(BUNDLE_CONTENT_DIR "${CMAKE_CURRENT_BINARY_DIR}/${BUNDLE_TARGET_NAME}_content")
