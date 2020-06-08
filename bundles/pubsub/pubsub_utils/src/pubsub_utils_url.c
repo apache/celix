@@ -57,21 +57,27 @@ struct sockaddr_in *pubsub_utils_url_from_fd(int fd) {
 }
 
 struct sockaddr_in *pubsub_utils_url_getInAddr(const char *hostname, int port) {
-    struct hostent *hp;
     struct sockaddr_in *inp = malloc(sizeof(struct sockaddr_in));
     bzero(inp, sizeof(struct sockaddr_in)); // zero the struct
     if (hostname == 0 || hostname[0] == 0) {
         inp->sin_addr.s_addr = INADDR_ANY;
     } else {
         if (!inet_aton(hostname, &inp->sin_addr)) {
-            hp = gethostbyname(hostname);
-            if (hp == NULL) {
-                fprintf(stderr, "pubsub_utils_url_getInAddr: Unknown host name %s, %s\n", hostname, strerror(errno));
+            struct addrinfo *result;
+            struct addrinfo inf;
+            int status;
+            memset(&inf, 0, sizeof(inf));
+            inf.ai_family = AF_INET;
+            inf.ai_socktype = IPPROTO_TCP;
+            if ((status = getaddrinfo(hostname, NULL, &inf, &result)) != 0) {
+                fprintf(stderr, "pubsub_utils_url_getInAddr: Unknown host name %s, %i, %s\n", hostname, status, gai_strerror(status));
                 errno = 0;
                 free(inp);
+                freeaddrinfo(result);
                 return NULL;
             }
-            inp->sin_addr = *(struct in_addr *) hp->h_addr;
+            inp->sin_addr = (*(struct sockaddr_in *) result->ai_addr).sin_addr;
+            freeaddrinfo(result);
         }
     }
     inp->sin_family = AF_INET;

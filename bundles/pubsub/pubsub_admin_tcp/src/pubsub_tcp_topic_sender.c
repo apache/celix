@@ -497,6 +497,7 @@ psa_tcp_topicPublicationSend(void *handle, unsigned int msgTypeId, const void *i
     pubsub_tcp_topic_sender_t *sender = bound->parent;
     bool monitor = sender->metricsEnabled;
 
+    celixThreadMutex_lock(&sender->boundedServices.mutex);
     psa_tcp_send_msg_entry_t *entry = hashMap_get(bound->msgEntries, (void *) (uintptr_t) (msgTypeId));
 
     //metrics updates
@@ -513,7 +514,6 @@ psa_tcp_topicPublicationSend(void *handle, unsigned int msgTypeId, const void *i
         if (monitor) {
             clock_gettime(CLOCK_REALTIME, &serializationStart);
         }
-
         size_t serializedIoVecOutputLen = 0; //entry->serializedIoVecOutputLen;
         struct iovec *serializedIoVecOutput = NULL;
         status = entry->msgSer->serialize(entry->msgSer->handle, inMsg, &serializedIoVecOutput,
@@ -579,6 +579,7 @@ psa_tcp_topicPublicationSend(void *handle, unsigned int msgTypeId, const void *i
         L_WARN("[PSA_TCP_TS] Error cannot serialize message with msg type id %i for scope/topic %s/%s", msgTypeId,
                sender->scope == NULL ? "(null)" : sender->scope, sender->topic);
     }
+    celixThreadMutex_unlock(&sender->boundedServices.mutex);
 
     if (monitor && entry != NULL) {
         celixThreadMutex_lock(&entry->metrics.mutex);
