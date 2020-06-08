@@ -26,7 +26,7 @@
 extern "C" {
 #endif
 
-static const unsigned int PROTOCOL_WIRE_SYNC = 0xABBABAAB;
+static const unsigned int PROTOCOL_WIRE_SYNC_HEADER = 0xABBABAAB;
 static const unsigned int PROTOCOL_WIRE_SYNC_FOOTER = 0xBAABABBA;
 static const unsigned int PROTOCOL_WIRE_ENVELOPE_VERSION = 1;
 

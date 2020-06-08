@@ -78,7 +78,7 @@ celix_status_t pubsubProtocol_getSyncHeaderSize(void* handle,  size_t *length) {
 }
 
 celix_status_t pubsubProtocol_getSyncHeader(void* handle, void *syncHeader) {
-    writeInt(syncHeader, 0, PROTOCOL_WIRE_SYNC);
+    writeInt(syncHeader, 0, PROTOCOL_WIRE_SYNC_HEADER);
     return CELIX_SUCCESS;
 }
 
@@ -97,10 +97,6 @@ celix_status_t pubsubProtocol_encodeHeader(void *handle, pubsub_protocol_message
     size_t headerSize = 0;
     pubsubProtocol_getHeaderSize(handle, &headerSize);
 
-    // Get HeaderSize
-    size_t footerSize = 0;
-    pubsubProtocol_getFooterSize(handle, &footerSize);
-
     if (*outBuffer == NULL) {
         *outBuffer = calloc(1, headerSize);
         *outLength = headerSize;
@@ -109,14 +105,13 @@ celix_status_t pubsubProtocol_encodeHeader(void *handle, pubsub_protocol_message
         status = CELIX_ENOMEM;
     } else {
         int idx = 0;
-        idx = writeInt(*outBuffer, idx, PROTOCOL_WIRE_SYNC);
+        idx = writeInt(*outBuffer, idx, PROTOCOL_WIRE_SYNC_HEADER);
         idx = writeInt(*outBuffer, idx, PROTOCOL_WIRE_ENVELOPE_VERSION);
         idx = writeInt(*outBuffer, idx, message->header.msgId);
         idx = writeShort(*outBuffer, idx, message->header.msgMajorVersion);
         idx = writeShort(*outBuffer, idx, message->header.msgMinorVersion);
         idx = writeInt(*outBuffer, idx, message->header.payloadSize);
         idx = writeInt(*outBuffer, idx, message->header.metadataSize);
-        idx = writeInt(*outBuffer, idx, footerSize);
         *outLength = idx;
     }
 
@@ -211,7 +206,7 @@ celix_status_t pubsubProtocol_decodeHeader(void* handle, void *data, size_t leng
     if (length == headerSize) {
         unsigned int sync;
         idx = readInt(data, idx, &sync);
-        if (sync != PROTOCOL_WIRE_SYNC) {
+        if (sync != PROTOCOL_WIRE_SYNC_HEADER) {
             status = CELIX_ILLEGAL_ARGUMENT;
         } else {
             unsigned int envelopeVersion;
@@ -288,13 +283,8 @@ celix_status_t pubsubProtocol_decodeFooter(void* handle, void *data, size_t leng
     pubsubProtocol_getFooterSize(handle, &footerSize);
     if (length == footerSize) {
         unsigned int footerSync;
-        unsigned int footerSyncValue = PROTOCOL_WIRE_SYNC_FOOTER;
-        unsigned int headerSyncValue = PROTOCOL_WIRE_SYNC;
         idx = readInt(data, idx, &footerSync);
-        if (footerSync != footerSyncValue) {
-            status = CELIX_ILLEGAL_ARGUMENT;
-        }
-        if (footerSync != headerSyncValue) {
+        if (footerSync != PROTOCOL_WIRE_SYNC_FOOTER) {
             status = CELIX_ILLEGAL_ARGUMENT;
         }
     } else {

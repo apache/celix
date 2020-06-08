@@ -253,3 +253,55 @@ TEST_F(WireProtocolV1Test, WireProtocolV1Test_DecodeMetadata_SpecialChars_Test) 
     pubsubProtocol_destroy(wireprotocol);
 }
 
+TEST_F(WireProtocolV1Test, WireProtocolV1Test_EncodeFooter_Test) { // NOLINT(cert-err58-cpp)
+    pubsub_protocol_wire_v1_t *wireprotocol;
+    pubsubProtocol_create(&wireprotocol);
+
+    pubsub_protocol_message_t message;
+
+    void *footerData = nullptr;
+    size_t footerLength = 0;
+    celix_status_t status = pubsubProtocol_encodeFooter(nullptr, &message, &footerData, &footerLength);
+
+    unsigned char exp[4];
+    uint32_t s = 0xBAABABBA;
+    memcpy(exp, &s, sizeof(uint32_t));
+    ASSERT_EQ(status, CELIX_SUCCESS);
+    ASSERT_EQ(4, footerLength);
+    for (int i = 0; i < 4; i++) {
+        ASSERT_EQ(((unsigned char*) footerData)[i], exp[i]);
+    }
+
+    pubsubProtocol_destroy(wireprotocol);
+    free(footerData);
+}
+
+TEST_F(WireProtocolV1Test, WireProtocolV1Test_DecodeFooter_Test) { // NOLINT(cert-err58-cpp)
+    pubsub_protocol_wire_v1_t *wireprotocol;
+    pubsubProtocol_create(&wireprotocol);
+
+    unsigned char exp[4];
+    uint32_t s = 0xBAABABBA;
+    memcpy(exp, &s, sizeof(uint32_t));
+    pubsub_protocol_message_t message;
+
+    celix_status_t status = pubsubProtocol_decodeFooter(nullptr, exp, 4, &message);
+
+    ASSERT_EQ(CELIX_SUCCESS, status);
+    pubsubProtocol_destroy(wireprotocol);
+}
+
+TEST_F(WireProtocolV1Test, WireProtocolV1Test_WireProtocolV1Test_DecodeFooter_IncorrectSync_Test) { // NOLINT(cert-err58-cpp)
+    pubsub_protocol_wire_v1_t *wireprotocol;
+    pubsubProtocol_create(&wireprotocol);
+
+    unsigned char exp[24];
+    uint32_t s = 0xABBABAAB;
+    memcpy(exp, &s, sizeof(uint32_t));
+    pubsub_protocol_message_t message;
+
+    celix_status_t status = pubsubProtocol_decodeFooter(nullptr, exp, 4, &message);
+    ASSERT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
+
+    pubsubProtocol_destroy(wireprotocol);
+}
