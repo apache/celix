@@ -201,13 +201,19 @@ function(add_celix_bundle)
     endif ()
 
 
-    set(BUNDLE_FILENAME ${BASE_BUNDLE_FILENAME}-${CMAKE_BUILD_TYPE}.zip)
-    foreach (NO_POSTFIX_BT IN LISTS CELIX_NO_POSTFIX_BUILD_TYPES)
-        if (CMAKE_BUILD_TYPE STREQUAL NO_POSTFIX_BT)
-            #setting bundle file name without postfix
-            set(BUNDLE_FILENAME ${BASE_BUNDLE_FILENAME}.zip)
-        endif ()
-    endforeach ()
+    if (CMAKE_BUILD_TYPE)
+        set(BUNDLE_FILENAME ${BASE_BUNDLE_FILENAME}-${CMAKE_BUILD_TYPE}.zip)
+        foreach (NO_POSTFIX_BT IN LISTS CELIX_NO_POSTFIX_BUILD_TYPES)
+            if (CMAKE_BUILD_TYPE STREQUAL NO_POSTFIX_BT)
+                #setting bundle file name without postfix
+                set(BUNDLE_FILENAME ${BASE_BUNDLE_FILENAME}.zip)
+            endif ()
+        endforeach ()
+    else ()
+        #note if no CMAKE_BUILD_TYPE is set, do not use a postfix
+        set(BUNDLE_FILENAME ${BASE_BUNDLE_FILENAME}.zip)
+    endif ()
+
 
     set(BUNDLE_FILE "${CMAKE_CURRENT_BINARY_DIR}/${BUNDLE_FILENAME}")
     #set(BUNDLE_CONTENT_DIR "${CMAKE_CURRENT_BINARY_DIR}/${BUNDLE_TARGET_NAME}_content")
@@ -304,7 +310,7 @@ function(add_celix_bundle)
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_DEPEND_TARGETS" "") #bundle target dependencies. Note can be extended after the add_bundle call
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_GEN_DIR" ${BUNDLE_GEN_DIR}) #location for generated output.
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_CREATE_BUNDLE_TARGET" ${BUNDLE_TARGET_NAME}_bundle) #target which creat the bundle zip
-    set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_IMPORTED" FALSE) #whether targer is a imported (bundle) target
+    set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_IMPORTED" FALSE) #whether target is a imported (bundle) target
 
     #bundle specific
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_CONTENT_DIR" ${BUNDLE_CONTENT_DIR}) #location where the content to be jar/zipped.
@@ -845,9 +851,12 @@ function(install_celix_bundle_targets)
         set(EXPORT_FILE ${EXPORT_NAME}BundleTargets)
     endif ()
 
-#    if (NOT CMAKE_BUILD_TYPE STREQUAL "Release")
+    set(BASE_EXPORT_FILE ${EXPORT_FILE})
+    if (CMAKE_BUILD_TYPE)
         set(EXPORT_FILE ${EXPORT_FILE}-${CMAKE_BUILD_TYPE})
-#    endif ()
+    else ()
+        set(EXPORT_FILE ${EXPORT_FILE}-noconfig)
+    endif ()
 
     if (NOT DEFINED EXPORT_PROJECT_NAME)
         string(TOLOWER ${PROJECT_NAME} EXPORT_PROJECT_NAME)
@@ -881,24 +890,43 @@ get_filename_component(_IMPORT_PREFIX \"\${CMAKE_CURRENT_LIST_FILE}\" PATH)
 
     foreach(BUNDLE_TARGET IN LISTS EXPORT_BUNDLES)
         set(TN "${EXPORT_NAMESPACE}${BUNDLE_TARGET}")
-        string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE)
+        if (CMAKE_BUILD_TYPE)
+            string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE)
+        else ()
+            set(BUILD_TYPE "NOCONFIG")
+        endif ()
         file(APPEND "${CONF_IN_FILE}" "
 if (NOT TARGET ${TN}) 
     add_library(${TN} SHARED IMPORTED)
-    set_property(TARGET ${TN} APPEND PROPERTY IMPORTED_CONFIGURATIONS ${BUILD_TYPE})
-    set_target_properties(${TN} PROPERTIES
-        BUNDLE_IMPORTED TRUE
-        BUNDLE_FILE \"\${_IMPORT_PREFIX}/share/${EXPORT_PROJECT_NAME}/bundles/$<TARGET_PROPERTY:${BUNDLE_TARGET},BUNDLE_FILENAME>\"
-        BUNDLE_FILENAME \"$<TARGET_PROPERTY:${BUNDLE_TARGET},BUNDLE_FILENAME>\"
-    )
 endif ()
+set_property(TARGET ${TN} APPEND PROPERTY IMPORTED_CONFIGURATIONS ${BUILD_TYPE})
+set_target_properties(${TN} PROPERTIES
+    BUNDLE_IMPORTED TRUE
+    BUNDLE_FILE_${BUILD_TYPE} \"\${_IMPORT_PREFIX}/share/${EXPORT_PROJECT_NAME}/bundles/$<TARGET_PROPERTY:${BUNDLE_TARGET},BUNDLE_FILENAME>\"
+    BUNDLE_FILENAME_${BUILD_TYPE} \"$<TARGET_PROPERTY:${BUNDLE_TARGET},BUNDLE_FILENAME>\"
+)
 ")
     endforeach()
+
     file(GENERATE OUTPUT "${CONF_FILE}" INPUT "${CONF_IN_FILE}")
+
+
+    #Generate not build type specific targets file
+    set(GEN_CONF_FILE "${CMAKE_BINARY_DIR}/celix/gen/cmake/${EXPORT_NAME}-BundleTargets.cmake")
+    file(GENERATE OUTPUT ${GEN_CONF_FILE} CONTENT "
+# Load bundle information for each installed configuration.
+get_filename_component(_DIR \"\${CMAKE_CURRENT_LIST_FILE}\" PATH)
+file(GLOB CONFIG_FILES \"\${_DIR}/${BASE_EXPORT_FILE}-*.cmake\")
+foreach(f \${CONFIG_FILES})
+  include(\${f})
+endforeach()
+")
 
     if (EXPORT_COMPONENT)
         install(FILES "${CONF_FILE}" DESTINATION ${EXPORT_DESTINATION} RENAME ${EXPORT_FILE}.cmake COMPONENT ${EXPORT_COMPONENT})
+        install(FILES "${GEN_CONF_FILE}" DESTINATION ${EXPORT_DESTINATION} RENAME ${BASE_EXPORT_FILE}.cmake COMPONENT ${EXPORT_COMPONENT})
     else ()
         install(FILES "${CONF_FILE}" DESTINATION ${EXPORT_DESTINATION} RENAME ${EXPORT_FILE}.cmake)
+        install(FILES "${GEN_CONF_FILE}" DESTINATION ${EXPORT_DESTINATION} RENAME ${BASE_EXPORT_FILE}.cmake)
     endif ()
 endfunction()

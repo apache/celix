@@ -364,13 +364,14 @@ function(celix_container_bundles_dir)
             else ()
                 get_target_property(IMP ${BUNDLE} BUNDLE_IMPORTED)
                 if (IMP) #An imported bundle target -> handle target without DEPENDS
+                    _celix_extract_imported_bundle_info(${BUNDLE}) #extracts BUNDLE_FILE and BUNDLE_FILENAME
                     string(MAKE_C_IDENTIFIER ${BUNDLE} BUNDLE_ID) #Create id with no special chars (e.g. for target like Celix::shell)
                     set(OUT "${CMAKE_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/copy-bundle-for-target-${BUNDLE_ID}.timestamp")
-                    set(DEST "${CONTAINER_LOC}/${BD_DIR_NAME}/$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILENAME>")
+                    set(DEST "${CONTAINER_LOC}/${BD_DIR_NAME}/${BUNDLE_FILENAME}")
                     add_custom_command(OUTPUT ${OUT}
                         COMMAND ${CMAKE_COMMAND} -E touch ${OUT}
                         COMMAND ${CMAKE_COMMAND} -E make_directory ${CONTAINER_LOC}/${BD_DIR_NAME}
-                        COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILE>" ${DEST}
+                        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${BUNDLE_FILE}" ${DEST}
                         COMMENT "Copying (imported) bundle '${BUNDLE}' to '${CONTAINER_LOC}/${BD_DIR_NAME}'"
                     )
                     set(HANDLED TRUE)
@@ -461,8 +462,10 @@ function(celix_container_bundles)
                else()
                    get_target_property(IMP ${BUNDLE} BUNDLE_IMPORTED)
                    if (IMP) #An imported bundle target -> handle target without DEPENDS
-                       set(COPY_LOC "$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILENAME>")
-                       set(ABS_LOC "$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILE>")
+                       _celix_extract_imported_bundle_info(${BUNDLE}) #extracts BUNDLE_FILE and BUNDLE_FILENAME
+
+                       set(COPY_LOC "${BUNDLE_FILENAME}")
+                       set(ABS_LOC "${BUNDLE_FILE}")
                        set(HANDLED TRUE)
                    endif ()
                endif ()
@@ -581,3 +584,65 @@ function(celix_container_properties)
         celix_container_embedded_properties(${ARGN})
     endif ()
 endfunction()
+
+
+#[[
+extract the BUNDLE_FILENAME and BUNDLE_FILE from a imported bundle target taking into account the used CMAKE_BUILD_TYPE
+and if configured the MAP_IMPORTED_CONFIG_* or CMAKE_MAP_IMPORTED_CONFIG_*
+]]
+macro(_celix_extract_imported_bundle_info)
+    #get_target_property(_CONFIGS ${ARGV0} "IMPORTED_CONFIGURATIONS") #Not needed?
+
+    if (CMAKE_BUILD_TYPE)
+        string(TOUPPER ${CMAKE_BUILD_TYPE} _BUILD_TYPE)
+    else ()
+        set(_BUILD_TYPE "NOCONFIG")
+    endif ()
+
+    get_target_property(BUNDLE_FILE ${ARGV0} BUNDLE_FILE_${_BUILD_TYPE})
+    get_target_property(BUNDLE_FILENAME ${ARGV0} BUNDLE_FILENAME_${_BUILD_TYPE})
+
+    if (NOT BUNDLE_FILE)
+        #BUNDLE_FILE(NAME) not found for the current BUILD_TYPE looking for MAP value (if there is a cmake build type)
+        get_target_property(_MAP_TO_CONFIG ${ARGV0} MAP_IMPORTED_CONFIG_${_BUILD_TYPE})
+        if (NOT _MAP_TO_CONFIG AND CMAKE_MAP_IMPORTED_CONFIG_${_BUILD_TYPE})
+            set(_MAP_TO_CONFIG CMAKE_MAP_IMPORTED_CONFIG_${_BUILD_TYPE})
+        endif ()
+        if (_MAP_TO_CONFIG)
+            get_target_property(BUNDLE_FILE ${ARGV0} BUNDLE_FILE_${_MAP_TO_CONFIG})
+            get_target_property(BUNDLE_FILENAME ${ARGV0} BUNDLE_FILENAME_${_MAP_TO_CONFIG})
+        endif ()
+        unset(_MAP_TO_CONFIG)
+    endif ()
+
+    if (NOT BUNDLE_FILE)
+        get_target_property(BUNDLE_FILE ${ARGV0} BUNDLE_FILE)
+        get_target_property(BUNDLE_FILENAME ${ARGV0} BUNDLE_FILENAME)
+    endif ()
+
+    #fallback steps
+    #TODO TBD, should we now fall back to "any" release config or fail?
+    if (NOT BUNDLE_FILE)
+        get_target_property(BUNDLE_FILE ${ARGV0} BUNDLE_FILE_RELWITHDEBINFO)
+        get_target_property(BUNDLE_FILENAME ${ARGV0} BUNDLE_FILENAME_RELWITHDEBINFO)
+    endif ()
+    if (NOT BUNDLE_FILE)
+        get_target_property(BUNDLE_FILE ${ARGV0} BUNDLE_FILE_RELEASE)
+        get_target_property(BUNDLE_FILENAME ${ARGV0} BUNDLE_FILENAME_RELEASE)
+    endif ()
+    if (NOT BUNDLE_FILE)
+        get_target_property(BUNDLE_FILE ${ARGV0} BUNDLE_FILE_MINSIZEREL)
+        get_target_property(BUNDLE_FILENAME ${ARGV0} BUNDLE_FILENAME_MINSIZEREL)
+    endif ()
+    if (NOT BUNDLE_FILE)
+        get_target_property(BUNDLE_FILE ${ARGV0} BUNDLE_FILE_NOCONFIG)
+        get_target_property(BUNDLE_FILENAME ${ARGV0} BUNDLE_FILENAME_NOCONFIG)
+    endif ()
+    if (NOT BUNDLE_FILE)
+        get_target_property(BUNDLE_FILE ${ARGV0} BUNDLE_FILE_DEBUG)
+        get_target_property(BUNDLE_FILENAME ${ARGV0} BUNDLE_FILENAME_DEBUG)
+    endif ()
+
+    unset(_CONFIGS)
+    unset(_BUILD_TYPE)
+endmacro()
