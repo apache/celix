@@ -1218,6 +1218,16 @@ void pubsub_tcpHandler_connectionHandler(pubsub_tcpHandler_t *handle, int fd) {
 
 }
 
+#if defined(__APPLE__)
+#define IS_DATA_READY_TO_READ events[i].filter & EVFILT_READ
+#define IS_CONN_CLOSED events[i].flags & EV_EOF
+#define ERROR_HAPPENED events[i].flags & EV_ERROR
+#else
+#define IS_DATA_READY_TO_READ events[i].events & EPOLLIN
+#define IS_CONN_CLOSED events[i].events & EPOLLRDHUP
+#define ERROR_HAPPENED events[i].events & EPOLLERR
+#endif
+
 //
 // The main socket event loop
 //
@@ -1230,6 +1240,7 @@ void pubsub_tcpHandler_handler(pubsub_tcpHandler_t *handle) {
 #if defined(__APPLE__)
         struct kevent events[MAX_EVENTS];
         unsigned int timeout = __atomic_load_n(&handle->timeout, __ATOMIC_ACQUIRE);
+        struct timespec ts = {handle->timeout / 1000, (handle->timeout  % 1000) * 1000000};
         nof_events = kevent (handle->efd, NULL, 0, &events[0], MAX_EVENTS, timeout ? &ts : NULL);
 #else
         struct epoll_event events[MAX_EVENTS];
@@ -1254,9 +1265,9 @@ void pubsub_tcpHandler_handler(pubsub_tcpHandler_t *handle) {
             if (pendingConnectionEntry) {
                 int fd = pubsub_tcpHandler_acceptHandler(handle, pendingConnectionEntry);
                 pubsub_tcpHandler_connectionHandler(handle, fd);
-            } else if (events[i].events & EPOLLIN) {
+            } else if (IS_DATA_READY_TO_READ) {
                 pubsub_tcpHandler_readHandler(handle, events[i].data.fd);
-            } else if (events[i].events & EPOLLRDHUP) {
+            } else if (IS_CONN_CLOSED) {
                 int err = 0;
                 socklen_t len = sizeof(int);
                 rc = getsockopt(events[i].data.fd, SOL_SOCKET, SO_ERROR, &err, &len);
@@ -1265,7 +1276,7 @@ void pubsub_tcpHandler_handler(pubsub_tcpHandler_t *handle) {
                 } else {
                     pubsub_tcpHandler_close(handle, events[i].data.fd);
                 }
-            } else if (events[i].events & EPOLLERR) {
+            } else if (ERROR_HAPPENED) {
                 L_ERROR("[TCP Socket]:EPOLLERR  ERROR read from socket %s\n", strerror(errno));
                 pubsub_tcpHandler_close(handle, events[i].data.fd);
             }
