@@ -1222,10 +1222,12 @@ void pubsub_tcpHandler_connectionHandler(pubsub_tcpHandler_t *handle, int fd) {
 #define IS_DATA_READY_TO_READ events[i].filter & EVFILT_READ
 #define IS_CONN_CLOSED events[i].flags & EV_EOF
 #define ERROR_HAPPENED events[i].flags & EV_ERROR
+#define EVENT_FD ident
 #else
 #define IS_DATA_READY_TO_READ events[i].events & EPOLLIN
 #define IS_CONN_CLOSED events[i].events & EPOLLRDHUP
 #define ERROR_HAPPENED events[i].events & EPOLLERR
+#define EVENT_FD data.fd
 #endif
 
 //
@@ -1258,7 +1260,7 @@ void pubsub_tcpHandler_handler(pubsub_tcpHandler_t *handle) {
             psa_tcp_connection_entry_t *pendingConnectionEntry = NULL;
             while (hashMapIterator_hasNext(&iter)) {
                 psa_tcp_connection_entry_t *entry = hashMapIterator_nextValue(&iter);
-                if (events[i].data.fd == entry->fd) {
+                if (events[i].EVENT_FD == entry->fd) {
                     pendingConnectionEntry = entry;
                 }
             }
@@ -1266,19 +1268,19 @@ void pubsub_tcpHandler_handler(pubsub_tcpHandler_t *handle) {
                 int fd = pubsub_tcpHandler_acceptHandler(handle, pendingConnectionEntry);
                 pubsub_tcpHandler_connectionHandler(handle, fd);
             } else if (IS_DATA_READY_TO_READ) {
-                pubsub_tcpHandler_readHandler(handle, events[i].data.fd);
+                pubsub_tcpHandler_readHandler(handle, events[i].EVENT_FD);
             } else if (IS_CONN_CLOSED) {
                 int err = 0;
                 socklen_t len = sizeof(int);
-                rc = getsockopt(events[i].data.fd, SOL_SOCKET, SO_ERROR, &err, &len);
+                rc = getsockopt(events[i].EVENT_FD, SOL_SOCKET, SO_ERROR, &err, &len);
                 if (rc != 0) {
                     L_ERROR("[TCP Socket]:EPOLLRDHUP ERROR read from socket %s\n", strerror(errno));
                 } else {
-                    pubsub_tcpHandler_close(handle, events[i].data.fd);
+                    pubsub_tcpHandler_close(handle, events[i].EVENT_FD);
                 }
             } else if (ERROR_HAPPENED) {
                 L_ERROR("[TCP Socket]:EPOLLERR  ERROR read from socket %s\n", strerror(errno));
-                pubsub_tcpHandler_close(handle, events[i].data.fd);
+                pubsub_tcpHandler_close(handle, events[i].EVENT_FD);
             }
             celixThreadMutex_unlock(&handle->dbLock);
         }
