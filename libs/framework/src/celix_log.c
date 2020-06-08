@@ -26,6 +26,7 @@
 #include "celix_log.h"
 #include "celix_threads.h"
 #include "celix_array_list.h"
+#include "memstream/open_memstream.h"
 
 #define LOG_NAME        "celix_framework"
 

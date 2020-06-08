@@ -43,15 +43,18 @@ static int ps_wp_start(ps_wp_activator_t *act, celix_bundle_context_t *ctx) {
         act->protocolSvc.getHeaderBufferSize = pubsubProtocol_getHeaderBufferSize;
         act->protocolSvc.getSyncHeaderSize = pubsubProtocol_getSyncHeaderSize;
         act->protocolSvc.getSyncHeader = pubsubProtocol_getSyncHeader;
+        act->protocolSvc.getFooterSize = pubsubProtocol_getFooterSize;
         act->protocolSvc.isMessageSegmentationSupported = pubsubProtocol_isMessageSegmentationSupported;
         
         act->protocolSvc.encodeHeader = pubsubProtocol_encodeHeader;
         act->protocolSvc.encodePayload = pubsubProtocol_encodePayload;
         act->protocolSvc.encodeMetadata = pubsubProtocol_encodeMetadata;
+        act->protocolSvc.encodeFooter = pubsubProtocol_encodeFooter;
 
         act->protocolSvc.decodeHeader = pubsubProtocol_decodeHeader;
         act->protocolSvc.decodePayload = pubsubProtocol_decodePayload;
         act->protocolSvc.decodeMetadata = pubsubProtocol_decodeMetadata;
+        act->protocolSvc.decodeFooter = pubsubProtocol_decodeFooter;
 
         act->wireProtocolSvcId = celix_bundleContext_registerService(ctx, &act->protocolSvc, PUBSUB_PROTOCOL_SERVICE_NAME, props);
     }

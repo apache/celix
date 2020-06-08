@@ -59,15 +59,12 @@ celix_status_t pubsubProtocol_create(pubsub_protocol_wire_v1_t **protocol) {
 
 celix_status_t pubsubProtocol_destroy(pubsub_protocol_wire_v1_t* protocol) {
     celix_status_t status = CELIX_SUCCESS;
-
     free(protocol);
-
     return status;
 }
 
 celix_status_t pubsubProtocol_getHeaderSize(void* handle, size_t *length) {
     *length = sizeof(int) * 5 + sizeof(short) * 2; // header + sync + version = 24
-
     return CELIX_SUCCESS;
 }
 
@@ -85,6 +82,11 @@ celix_status_t pubsubProtocol_getSyncHeader(void* handle, void *syncHeader) {
     return CELIX_SUCCESS;
 }
 
+celix_status_t pubsubProtocol_getFooterSize(void* handle,  size_t *length) {
+    *length = sizeof(int);
+    return CELIX_SUCCESS;
+}
+
 celix_status_t pubsubProtocol_isMessageSegmentationSupported(void* handle, bool *isSupported) {
     *isSupported = false;
     return CELIX_SUCCESS;
@@ -94,6 +96,10 @@ celix_status_t pubsubProtocol_encodeHeader(void *handle, pubsub_protocol_message
     // Get HeaderSize
     size_t headerSize = 0;
     pubsubProtocol_getHeaderSize(handle, &headerSize);
+
+    // Get HeaderSize
+    size_t footerSize = 0;
+    pubsubProtocol_getFooterSize(handle, &footerSize);
 
     if (*outBuffer == NULL) {
         *outBuffer = calloc(1, headerSize);
@@ -110,7 +116,7 @@ celix_status_t pubsubProtocol_encodeHeader(void *handle, pubsub_protocol_message
         idx = writeShort(*outBuffer, idx, message->header.msgMinorVersion);
         idx = writeInt(*outBuffer, idx, message->header.payloadSize);
         idx = writeInt(*outBuffer, idx, message->header.metadataSize);
-
+        idx = writeInt(*outBuffer, idx, footerSize);
         *outLength = idx;
     }
 
@@ -171,6 +177,27 @@ celix_status_t pubsubProtocol_encodeMetadata(void *handle, pubsub_protocol_messa
 
     *outBuffer = line;
     *outLength = idx;
+
+    return status;
+}
+
+celix_status_t pubsubProtocol_encodeFooter(void *handle, pubsub_protocol_message_t *message, void **outBuffer, size_t *outLength) {
+    celix_status_t status = CELIX_SUCCESS;
+    // Get HeaderSize
+    size_t footerSize = 0;
+    pubsubProtocol_getFooterSize(handle, &footerSize);
+
+    if (*outBuffer == NULL) {
+        *outBuffer = calloc(1, footerSize);
+        *outLength = footerSize;
+    }
+    if (*outBuffer == NULL) {
+        status = CELIX_ENOMEM;
+    } else {
+        int idx = 0;
+        idx = writeInt(*outBuffer, idx, PROTOCOL_WIRE_SYNC_FOOTER);
+        *outLength = idx;
+    }
 
     return status;
 }
@@ -250,6 +277,29 @@ celix_status_t pubsubProtocol_decodeMetadata(void* handle, void *data, size_t le
         celix_properties_setWithoutCopy(message->metadata.metadata, key, value);
     }
 
+    return status;
+}
+
+celix_status_t pubsubProtocol_decodeFooter(void* handle, void *data, size_t length, pubsub_protocol_message_t *message) {
+    celix_status_t status = CELIX_SUCCESS;
+
+    int idx = 0;
+    size_t footerSize = 0;
+    pubsubProtocol_getFooterSize(handle, &footerSize);
+    if (length == footerSize) {
+        unsigned int footerSync;
+        unsigned int footerSyncValue = PROTOCOL_WIRE_SYNC_FOOTER;
+        unsigned int headerSyncValue = PROTOCOL_WIRE_SYNC;
+        idx = readInt(data, idx, &footerSync);
+        if (footerSync != footerSyncValue) {
+            status = CELIX_ILLEGAL_ARGUMENT;
+        }
+        if (footerSync != headerSyncValue) {
+            status = CELIX_ILLEGAL_ARGUMENT;
+        }
+    } else {
+        status = CELIX_ILLEGAL_ARGUMENT;
+    }
     return status;
 }
 
