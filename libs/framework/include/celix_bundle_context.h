@@ -47,7 +47,7 @@ extern "C" {
 * @param svc the service object. Normally a pointer to a service struct (i.e. a struct with function pointers)
 * @param serviceName the service name, cannot be NULL
 * @param properties The meta properties associated with the service. The service registration will take ownership of the properties (i.e. no destroy needed)
-* @return The serviceId (>= 0), -1 if the registration was unsuccessful and -2 if the registration was cancel (only possible when using opts.reservedServiceId.
+* @return The serviceId (>=0) or -1 if the registration was unsuccessful.
 */
 long celix_bundleContext_registerService(celix_bundle_context_t *ctx, void *svc, const char *serviceName, celix_properties_t *properties);
 
@@ -173,7 +173,7 @@ long celix_bundleContext_reserveSvcId(celix_bundle_context_t* ctx);
 *
 * @param ctx The bundle context
 * @param opts The pointer to the registration options. The options are only in the during registration call.
-* @return The serviceId (>= 0) or < 0 if the registration was unsuccessful.
+* @return The serviceId (>= 0) or -1 if the registration was unsuccessful and -2 if the registration was cancelled (@see celix_bundleContext_reserveSvcId).
 */
 long celix_bundleContext_registerServiceWithOptions(celix_bundle_context_t *ctx, const celix_service_registration_options_t *opts);
 
