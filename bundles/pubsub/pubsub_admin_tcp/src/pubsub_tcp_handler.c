@@ -174,7 +174,6 @@ pubsub_tcpHandler_t *pubsub_tcpHandler_create(pubsub_protocol_service_t *protoco
         __atomic_store_n(&handle->running, true, __ATOMIC_RELEASE);
         celixThread_create(&handle->thread, NULL, pubsub_tcpHandler_thread, handle);
         // signal(SIGPIPE, SIG_IGN);
-        L_WARN("created tcp handler %p\n", handle);
     }
     return handle;
 }

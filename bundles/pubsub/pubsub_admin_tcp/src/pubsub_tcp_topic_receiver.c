@@ -151,7 +151,6 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
     receiver->ctx = ctx;
     receiver->logHelper = logHelper;
 
-    L_WARN("created receiver %p", receiver);
     receiver->serializerSvcId = serializerSvcId;
     receiver->serializer = serializer;
     receiver->protocolSvcId = protocolSvcId;
