@@ -847,16 +847,16 @@ function(install_celix_bundle_targets)
         message(FATAL_ERROR "Please provide a namespace used for the generated cmake targets.")
     endif ()
 
+    if (CMAKE_BUILD_TYPE)
+        string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE)
+    else ()
+        set(BUILD_TYPE "NOCONFIG")
+    endif ()
+
     if (NOT DEFINED EXPORT_FILE)
         set(EXPORT_FILE ${EXPORT_NAME}BundleTargets)
     endif ()
-
-    set(BASE_EXPORT_FILE ${EXPORT_FILE})
-    if (CMAKE_BUILD_TYPE)
-        set(EXPORT_FILE ${EXPORT_FILE}-${CMAKE_BUILD_TYPE})
-    else ()
-        set(EXPORT_FILE ${EXPORT_FILE}-noconfig)
-    endif ()
+    set(EXPORT_FILE ${EXPORT_FILE}-${BUILD_TYPE})
 
     if (NOT DEFINED EXPORT_PROJECT_NAME)
         string(TOLOWER ${PROJECT_NAME} EXPORT_PROJECT_NAME)
@@ -890,11 +890,6 @@ get_filename_component(_IMPORT_PREFIX \"\${CMAKE_CURRENT_LIST_FILE}\" PATH)
 
     foreach(BUNDLE_TARGET IN LISTS EXPORT_BUNDLES)
         set(TN "${EXPORT_NAMESPACE}${BUNDLE_TARGET}")
-        if (CMAKE_BUILD_TYPE)
-            string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE)
-        else ()
-            set(BUILD_TYPE "NOCONFIG")
-        endif ()
         file(APPEND "${CONF_IN_FILE}" "
 if (NOT TARGET ${TN}) 
     add_library(${TN} SHARED IMPORTED)
@@ -912,8 +907,8 @@ set_target_properties(${TN} PROPERTIES
 
 
     #Generate not build type specific targets file
-    set(GEN_CONF_FILE "${CMAKE_BINARY_DIR}/celix/gen/cmake/${EXPORT_NAME}-BundleTargets.cmake")
-    file(GENERATE OUTPUT ${GEN_CONF_FILE} CONTENT "
+    set(GENERIC_CONF_FILE "${CMAKE_BINARY_DIR}/celix/gen/cmake/${EXPORT_NAME}-BundleTargets.cmake")
+    file(GENERATE OUTPUT ${GENERIC_CONF_FILE} CONTENT "
 # Load bundle information for each installed configuration.
 get_filename_component(_DIR \"\${CMAKE_CURRENT_LIST_FILE}\" PATH)
 file(GLOB CONFIG_FILES \"\${_DIR}/${BASE_EXPORT_FILE}-*.cmake\")
@@ -924,9 +919,9 @@ endforeach()
 
     if (EXPORT_COMPONENT)
         install(FILES "${CONF_FILE}" DESTINATION ${EXPORT_DESTINATION} RENAME ${EXPORT_FILE}.cmake COMPONENT ${EXPORT_COMPONENT})
-        install(FILES "${GEN_CONF_FILE}" DESTINATION ${EXPORT_DESTINATION} RENAME ${BASE_EXPORT_FILE}.cmake COMPONENT ${EXPORT_COMPONENT})
+        install(FILES "${GENERIC_CONF_FILE}" DESTINATION ${EXPORT_DESTINATION} RENAME ${BASE_EXPORT_FILE}.cmake COMPONENT ${EXPORT_COMPONENT})
     else ()
         install(FILES "${CONF_FILE}" DESTINATION ${EXPORT_DESTINATION} RENAME ${EXPORT_FILE}.cmake)
-        install(FILES "${GEN_CONF_FILE}" DESTINATION ${EXPORT_DESTINATION} RENAME ${BASE_EXPORT_FILE}.cmake)
+        install(FILES "${GENERIC_CONF_FILE}" DESTINATION ${EXPORT_DESTINATION} RENAME ${BASE_EXPORT_FILE}.cmake)
     endif ()
 endfunction()
