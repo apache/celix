@@ -138,9 +138,13 @@ typedef struct celix_service_registration_options {
  * Reserves a service id, which is expected to be used to register a service in the future.
  *
  * If a celix_bundleContext_unregisterService with the reserved service id is called earlier than
- * the celix_bundleContext_registerServiceWithOptions with the reserved service. The registering
- * of the service will be cancelled instead.
-
+ * the celix_bundleContext_registerServiceWithOptions with the reserved service, the registration will be be cancelled.
+ * This means then when the expected celix_bundleContext_registerServiceWithOptions call happens this will not
+ * result in a service registration and a  -2 will be returned as service id.
+ *
+ * Subsequent calls to celix_bundleContext_registerServiceWithOptions for an already cancelled service id will
+ * return a -1 error code (and a 'Invalid reservedSvcId' error log entry will be logged).
+ *
  * This can help in registering/unregistering services outside of locks without creating race
  * conditions.
  * Note that if this is used service can "unregistered" before they are actually registered and

@@ -555,7 +555,7 @@ void celix_bundleContext_unregisterService(bundle_context_t *ctx, long serviceId
             bool cancelled = (bool)hashMap_get(ctx->reservedIds, (void*)serviceId);
             if (cancelled) {
                 //already cancelled
-                fw_log(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, "Service registration for service with a svc id %li already cancelled!", serviceId);
+                fw_log(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, "Service registration for service with a svc id %li was already cancelled!", serviceId);
             }
             wasReserved = true;
             hashMap_put(ctx->reservedIds, (void*)serviceId, (void*)true);
