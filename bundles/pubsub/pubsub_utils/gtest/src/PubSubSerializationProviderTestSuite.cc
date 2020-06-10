@@ -34,7 +34,7 @@ public:
         //Cannot reproduce this on host, so testing if a timestamp improves stability.
         const auto t = std::chrono::system_clock::now();
         char *cache = nullptr;
-        asprintf(&cache, ".pubsub_serialization_provider_cache-%lli", (long long int)t.time_since_epoch().count());
+        asprintf(&cache, ".pubsub_serialization_provider_cache-%li", t.time_since_epoch().count());
         celix_properties_set(props, OSGI_FRAMEWORK_FRAMEWORK_STORAGE, cache);
         free(cache);
 
