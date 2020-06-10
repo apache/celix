@@ -92,7 +92,6 @@ typedef struct psa_tcp_connection_entry {
     struct msghdr msg;
     size_t msg_iovlen;        /* Number of elements in the vector.  */
     unsigned int retryCount;
-    unsigned int seqNr;
 } psa_tcp_connection_entry_t;
 
 //
@@ -839,10 +838,7 @@ int pubsub_tcpHandler_read(pubsub_tcpHandler_t *handle, int fd) {
     int nbytes = pubsub_tcpHandler_readSocket(handle, entry, fd, header_buffer, 0, entry->headerSize, MSG_PEEK);
     if (nbytes > 0) {
         // Check header message buffer
-        if (handle->protocol->decodeHeader(handle->protocol->handle,
-                                           header_buffer,
-                                           entry->headerSize,
-                                           &entry->header) != CELIX_SUCCESS) {
+        if (handle->protocol->decodeHeader(handle->protocol->handle, header_buffer, entry->headerSize, &entry->header) != CELIX_SUCCESS) {
             // Did not receive correct header
             // skip sync word and try to read next header
             nbytes = pubsub_tcpHandler_readSocket(handle, entry, fd, header_buffer, 0, entry->syncSize, 0);
@@ -904,18 +900,19 @@ int pubsub_tcpHandler_read(pubsub_tcpHandler_t *handle, int fd) {
                 }
                 // Check for end of message using, footer of message. Because of streaming protocol
                 if (nbytes > 0) {
-                    validMsg = true;
-                    nbytes = pubsub_tcpHandler_readSocket(handle, entry, fd, entry->footerBuffer, 0, entry->footerSize, 0);
-                    if (handle->protocol->decodeFooter(handle->protocol->handle,
-                                                 entry->footerBuffer,
-                                                 entry->footerSize,
-                                                 &entry->header) == CELIX_SUCCESS) {
-                        // valid footer, this means that the message is valid
-                        validMsg = true;
+                    if (entry->footerSize > 0) {
+                        nbytes = pubsub_tcpHandler_readSocket(handle, entry, fd, entry->footerBuffer,0, entry->footerSize,0);
+                        if (handle->protocol->decodeFooter(handle->protocol->handle, entry->footerBuffer, entry->footerSize, &entry->header) == CELIX_SUCCESS) {
+                            // valid footer, this means that the message is valid
+                            validMsg = true;
+                        } else {
+                            // Did not receive correct header
+                            L_ERROR("[TCP Socket] Failed to decode message footer seq %d (received corrupt message, transmit buffer full?) (fd: %d) (url: %s)", entry->header.header.seqNr, entry->fd, entry->url);
+                            entry->bufferReadSize = 0;
+                        }
                     } else {
-                        // Did not receive correct header
-                        L_ERROR("[TCP Socket] Failed to decode message footer seq %d (received corrupt message, transmit buffer full?) (fd: %d) (url: %s)", entry->header.header.seqNr, entry->fd, entry->url);
-                        entry->bufferReadSize = 0;
+                        // No Footer, then complete message is received
+                        validMsg = true;
                     }
                 }
             }
@@ -1039,11 +1036,11 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
                     payloadSize += msgIoVec[i].iov_len;
                 }
             }
-
-            message->header.seqNr = entry->seqNr;
+            message->header.convertEndianess = 0;
             message->header.payloadSize = payloadSize;
             message->header.payloadPartSize = payloadSize;
             message->header.payloadOffset = 0;
+            message->header.isLastSegment = 1;
 
             void *metadataData = NULL;
             size_t metadataSize = 0;
@@ -1146,7 +1143,7 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
             } else if (msgSize) {
                 entry->retryCount = 0;
                 if (nbytes != msgSize) {
-                    L_ERROR("[TCP Socket] seq: %d MsgSize not correct: %d != %d (%s)\n", entry->seqNr, msgSize, nbytes,  strerror(errno));
+                    L_ERROR("[TCP Socket] seq: %d MsgSize not correct: %d != %d (%s)\n", message->header.seqNr, msgSize, nbytes,  strerror(errno));
                 }
             }
             // Release data
@@ -1163,7 +1160,6 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
             if (footerData) {
                 free(footerData);
             }
-            entry->seqNr++;
         }
     }
     celixThreadRwlock_unlock(&handle->dbLock);

@@ -628,14 +628,17 @@ static void* psa_zmq_recvThread(void * data) {
 
         zmsg_t *zmsg = zmsg_recv(receiver->zmqSock);
         if (zmsg != NULL) {
-            if (zmsg_size(zmsg) < 3) {
-                L_WARN("[PSA_ZMQ_TR] Always expecting at least frames per zmsg (header + payload (+ metadata) + footer), got %i frames", (int)zmsg_size(zmsg));
+            if (zmsg_size(zmsg) < 2) {
+                L_WARN("[PSA_ZMQ_TR] Always expecting at least frames per zmsg (header + payload (+ metadata) (+ footer)), got %i frames", (int)zmsg_size(zmsg));
             } else {
                 zframe_t *header = zmsg_pop(zmsg); // header
                 zframe_t *payload = NULL;
                 zframe_t *metadata = NULL;
+                zframe_t *footer = NULL;
 
                 pubsub_protocol_message_t message;
+                size_t footerSize = 0;
+                receiver->protocol->getFooterSize(receiver->protocol->handle, &footerSize);
                 receiver->protocol->decodeHeader(receiver->protocol->handle, zframe_data(header), zframe_size(header), &message);
                 if (message.header.payloadSize > 0) {
                     payload = zmsg_pop(zmsg);
@@ -650,8 +653,10 @@ static void* psa_zmq_recvThread(void * data) {
                 } else {
                     message.metadata.metadata = NULL;
                 }
-                zframe_t *footer = zmsg_pop(zmsg); // footer
-                receiver->protocol->decodeFooter(receiver->protocol->handle, zframe_data(footer), zframe_size(footer), &message);
+                if (footerSize > 0) {
+                    footer = zmsg_pop(zmsg); // footer
+                    receiver->protocol->decodeFooter(receiver->protocol->handle, zframe_data(footer), zframe_size(footer), &message);
+                }
                 if (header != NULL && payload != NULL) {
                     struct timespec receiveTime;
                     clock_gettime(CLOCK_REALTIME, &receiveTime);

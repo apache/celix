@@ -41,11 +41,17 @@ struct pubsub_protocol_header {
     unsigned int payloadSize;
     unsigned int metadataSize;
 
+    /** optional convert Endianess attribute, this attribute is used to indicate the header needs to converted for endianess during encoding
+     *  this attribute is used to indicate the payload needs to converted for endianess after header decoding.
+     *  Note: this attribute is transmitted using the wire protocol, the sync word is used to determine endianess conversion */
+    unsigned int convertEndianess;
+
     /** Optional message segmentation attributes, these attributes are only used/written by the protocol admin.
      *  When message segmentation is supported by the protocol admin */
-    unsigned int seqNr;
-    unsigned int payloadPartSize;
-    unsigned int payloadOffset;
+    unsigned int seqNr; /*!< seqNr contains a pubsub sequence number of the message, can be used for debugging/integration */
+    unsigned int payloadPartSize; /*!< payloadPartSize contains size of payload part that is send by a single segmentation message */
+    unsigned int payloadOffset; /*!< payloadOffset contains offset of payload part in the total message payload */
+    unsigned int isLastSegment; /*!< Indicates that message is the last message of the sequence */
 };
 
 typedef struct pubsub_protocol_payload pubsub_protocol_payload_t;

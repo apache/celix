@@ -141,7 +141,7 @@ if (BUILD_PUBSUB_PSA_TCP)
             Celix::pubsub_serializer_json
             Celix::pubsub_topology_manager
             Celix::pubsub_admin_tcp
-            Celix::pubsub_protocol_wire_v1
+            Celix::pubsub_protocol_wire_v2
             pubsub_sut
             pubsub_tst
             )

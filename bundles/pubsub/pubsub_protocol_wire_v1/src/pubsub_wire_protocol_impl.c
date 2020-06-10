@@ -63,7 +63,7 @@ celix_status_t pubsubProtocol_destroy(pubsub_protocol_wire_v1_t* protocol) {
     return status;
 }
 
-celix_status_t pubsubProtocol_getHeaderSize(void* handle, size_t *length) {
+celix_status_t pubsubProtocol_getHeaderSize(void* handle __attribute__((unused)), size_t *length) {
     *length = sizeof(int) * 5 + sizeof(short) * 2; // header + sync + version = 24
     return CELIX_SUCCESS;
 }
@@ -72,22 +72,22 @@ celix_status_t pubsubProtocol_getHeaderBufferSize(void* handle, size_t *length) 
     return pubsubProtocol_getHeaderSize(handle, length);
 }
 
-celix_status_t pubsubProtocol_getSyncHeaderSize(void* handle,  size_t *length) {
+celix_status_t pubsubProtocol_getSyncHeaderSize(void* handle __attribute__((unused)),  size_t *length) {
     *length = sizeof(int);
     return CELIX_SUCCESS;
 }
 
-celix_status_t pubsubProtocol_getSyncHeader(void* handle, void *syncHeader) {
-    writeInt(syncHeader, 0, PROTOCOL_WIRE_SYNC_HEADER);
+celix_status_t pubsubProtocol_getSyncHeader(void* handle __attribute__((unused)), void *syncHeader) {
+    writeInt(syncHeader, 0, PROTOCOL_WIRE_SYNC);
     return CELIX_SUCCESS;
 }
 
-celix_status_t pubsubProtocol_getFooterSize(void* handle,  size_t *length) {
-    *length = sizeof(int);
+celix_status_t pubsubProtocol_getFooterSize(void* handle __attribute__((unused)),  size_t *length) {
+    *length = 0;
     return CELIX_SUCCESS;
 }
 
-celix_status_t pubsubProtocol_isMessageSegmentationSupported(void* handle, bool *isSupported) {
+celix_status_t pubsubProtocol_isMessageSegmentationSupported(void* handle __attribute__((unused)), bool *isSupported) {
     *isSupported = false;
     return CELIX_SUCCESS;
 }
@@ -105,27 +105,28 @@ celix_status_t pubsubProtocol_encodeHeader(void *handle, pubsub_protocol_message
         status = CELIX_ENOMEM;
     } else {
         int idx = 0;
-        idx = writeInt(*outBuffer, idx, PROTOCOL_WIRE_SYNC_HEADER);
+        idx = writeInt(*outBuffer, idx, PROTOCOL_WIRE_SYNC);
         idx = writeInt(*outBuffer, idx, PROTOCOL_WIRE_ENVELOPE_VERSION);
         idx = writeInt(*outBuffer, idx, message->header.msgId);
         idx = writeShort(*outBuffer, idx, message->header.msgMajorVersion);
         idx = writeShort(*outBuffer, idx, message->header.msgMinorVersion);
         idx = writeInt(*outBuffer, idx, message->header.payloadSize);
         idx = writeInt(*outBuffer, idx, message->header.metadataSize);
+
         *outLength = idx;
     }
 
     return status;
 }
 
-celix_status_t pubsubProtocol_encodePayload(void *handle, pubsub_protocol_message_t *message, void **outBuffer, size_t *outLength) {
+celix_status_t pubsubProtocol_encodePayload(void *handle __attribute__((unused)), pubsub_protocol_message_t *message, void **outBuffer, size_t *outLength) {
     *outBuffer = message->payload.payload;
     *outLength = message->payload.length;
 
     return CELIX_SUCCESS;
 }
 
-celix_status_t pubsubProtocol_encodeMetadata(void *handle, pubsub_protocol_message_t *message, void **outBuffer, size_t *outLength) {
+celix_status_t pubsubProtocol_encodeMetadata(void *handle __attribute__((unused)), pubsub_protocol_message_t *message, void **outBuffer, size_t *outLength) {
     celix_status_t status = CELIX_SUCCESS;
 
     unsigned char *line = calloc(1, 4);
@@ -176,25 +177,9 @@ celix_status_t pubsubProtocol_encodeMetadata(void *handle, pubsub_protocol_messa
     return status;
 }
 
-celix_status_t pubsubProtocol_encodeFooter(void *handle, pubsub_protocol_message_t *message, void **outBuffer, size_t *outLength) {
-    celix_status_t status = CELIX_SUCCESS;
-    // Get HeaderSize
-    size_t footerSize = 0;
-    pubsubProtocol_getFooterSize(handle, &footerSize);
-
-    if (*outBuffer == NULL) {
-        *outBuffer = calloc(1, footerSize);
-        *outLength = footerSize;
-    }
-    if (*outBuffer == NULL) {
-        status = CELIX_ENOMEM;
-    } else {
-        int idx = 0;
-        idx = writeInt(*outBuffer, idx, PROTOCOL_WIRE_SYNC_FOOTER);
-        *outLength = idx;
-    }
-
-    return status;
+celix_status_t pubsubProtocol_encodeFooter(void *handle __attribute__((unused)), pubsub_protocol_message_t *message __attribute__((unused)), void **outBuffer, size_t *outLength) {
+    *outBuffer = NULL;
+    return pubsubProtocol_getFooterSize(handle,  outLength);
 }
 
 celix_status_t pubsubProtocol_decodeHeader(void* handle, void *data, size_t length, pubsub_protocol_message_t *message) {
@@ -206,7 +191,7 @@ celix_status_t pubsubProtocol_decodeHeader(void* handle, void *data, size_t leng
     if (length == headerSize) {
         unsigned int sync;
         idx = readInt(data, idx, &sync);
-        if (sync != PROTOCOL_WIRE_SYNC_HEADER) {
+        if (sync != PROTOCOL_WIRE_SYNC) {
             status = CELIX_ILLEGAL_ARGUMENT;
         } else {
             unsigned int envelopeVersion;
@@ -231,14 +216,14 @@ celix_status_t pubsubProtocol_decodeHeader(void* handle, void *data, size_t leng
     return status;
 }
 
-celix_status_t pubsubProtocol_decodePayload(void* handle, void *data, size_t length, pubsub_protocol_message_t *message){
+celix_status_t pubsubProtocol_decodePayload(void* handle __attribute__((unused)), void *data, size_t length, pubsub_protocol_message_t *message){
     message->payload.payload = data;
     message->payload.length = length;
 
     return CELIX_SUCCESS;
 }
 
-celix_status_t pubsubProtocol_decodeMetadata(void* handle, void *data, size_t length, pubsub_protocol_message_t *message) {
+celix_status_t pubsubProtocol_decodeMetadata(void* handle __attribute__((unused)), void *data, size_t length, pubsub_protocol_message_t *message) {
     celix_status_t status = CELIX_SUCCESS;
 
     uint32_t nOfElements;
@@ -275,21 +260,8 @@ celix_status_t pubsubProtocol_decodeMetadata(void* handle, void *data, size_t le
     return status;
 }
 
-celix_status_t pubsubProtocol_decodeFooter(void* handle, void *data, size_t length, pubsub_protocol_message_t *message) {
+celix_status_t pubsubProtocol_decodeFooter(void* handle __attribute__((unused)), void *data __attribute__((unused)), size_t length __attribute__((unused)), pubsub_protocol_message_t *message __attribute__((unused))) {
     celix_status_t status = CELIX_SUCCESS;
-
-    int idx = 0;
-    size_t footerSize = 0;
-    pubsubProtocol_getFooterSize(handle, &footerSize);
-    if (length == footerSize) {
-        unsigned int footerSync;
-        idx = readInt(data, idx, &footerSync);
-        if (footerSync != PROTOCOL_WIRE_SYNC_FOOTER) {
-            status = CELIX_ILLEGAL_ARGUMENT;
-        }
-    } else {
-        status = CELIX_ILLEGAL_ARGUMENT;
-    }
     return status;
 }
 
