@@ -266,7 +266,7 @@ static dyn_message_type* pubsub_serializationProvider_parseDfiDescriptor(pubsub_
 static bool pubsub_serializationProvider_alreadyAddedEntry(pubsub_serialization_provider_t* provider, pubsub_serialization_entry_t* entry) {
     for (int i = 0; i < celix_arrayList_size(provider->serializationSvcEntries); ++i) {
         pubsub_serialization_entry_t *visit = celix_arrayList_get(provider->serializationSvcEntries, i);
-        if (celix_utils_stringEquals(visit->readFromEntryPath, entry->readFromEntryPath) {
+        if (celix_utils_stringEquals(visit->readFromEntryPath, entry->readFromEntryPath)) {
             return true;
         }
     }
