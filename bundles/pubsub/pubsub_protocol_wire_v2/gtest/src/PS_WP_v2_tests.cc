@@ -196,6 +196,7 @@ TEST_F(WireProtocolV2Test, WireProtocolV2Test_EncodeFooter_Test) { // NOLINT(cer
     pubsubProtocol_wire_v2_create(&wireprotocol);
 
     pubsub_protocol_message_t message;
+    message.header.convertEndianess = 0;
 
     void *footerData = nullptr;
     size_t footerLength = 0;
@@ -221,7 +222,7 @@ TEST_F(WireProtocolV2Test, WireProtocolV2Test_DecodeFooter_Test) { // NOLINT(cer
     uint32_t s = 0xDEAFABBA;
     memcpy(exp, &s, sizeof(uint32_t));
     pubsub_protocol_message_t message;
-
+    message.header.convertEndianess = 0;
     celix_status_t status = pubsubProtocol_wire_v2_decodeFooter(nullptr, exp, 4, &message);
 
     ASSERT_EQ(CELIX_SUCCESS, status);
