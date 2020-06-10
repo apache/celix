@@ -591,6 +591,7 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
                 message.header.payloadPartSize = payloadLength;
                 message.header.payloadOffset = 0;
                 message.header.isLastSegment = 1;
+                message.header.convertEndianess = 0;
 
                 // increase seqNr
                 entry->seqNr++;
