@@ -20,7 +20,6 @@
 #include "gtest/gtest.h"
 
 #include <memory>
-#include <chrono>
 
 #include <celix_api.h>
 #include "pubsub_serialization_provider.h"
@@ -29,15 +28,7 @@ class PubSubSerializationProviderTestSuite : public ::testing::Test {
 public:
     PubSubSerializationProviderTestSuite() {
         auto* props = celix_properties_create();
-
-        //NOTE setting the cache using a timestamp. This test suite fails from time to time on CI.
-        //Cannot reproduce this on host, so testing if a timestamp improves stability.
-        const auto t = std::chrono::system_clock::now();
-        char *cache = nullptr;
-        asprintf(&cache, ".pubsub_serialization_provider_cache-%li", t.time_since_epoch().count());
-        celix_properties_set(props, OSGI_FRAMEWORK_FRAMEWORK_STORAGE, cache);
-        free(cache);
-
+        celix_properties_set(props, OSGI_FRAMEWORK_FRAMEWORK_STORAGE, ".pubsub_serialization_provider_cache");
         auto* fwPtr = celix_frameworkFactory_createFramework(props);
         auto* ctxPtr = celix_framework_getFrameworkContext(fwPtr);
         fw = std::shared_ptr<celix_framework_t>{fwPtr, [](auto* f) {celix_frameworkFactory_destroyFramework(f);}};
