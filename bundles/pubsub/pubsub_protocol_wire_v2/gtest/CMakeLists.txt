@@ -24,5 +24,5 @@ add_executable(celix_pswp_v2_tests ${SOURCES})
 target_include_directories(celix_pswp_v2_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src)
 target_link_libraries(celix_pswp_v2_tests PRIVATE celix_wire_protocol_v2_impl GTest::gtest Celix::pubsub_spi)
 
-add_test(NAME celix_pswp_tests COMMAND celix_pswp_tests)
+add_test(NAME celix_pswp_v2_tests COMMAND celix_pswp_v2_tests)
 setup_target_for_coverage(celix_pswp_v2_tests SCAN_DIR ..)
