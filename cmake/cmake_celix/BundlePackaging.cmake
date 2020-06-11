@@ -201,13 +201,19 @@ function(add_celix_bundle)
     endif ()
 
 
-    set(BUNDLE_FILENAME ${BASE_BUNDLE_FILENAME}-${CMAKE_BUILD_TYPE}.zip)
-    foreach (NO_POSTFIX_BT IN LISTS CELIX_NO_POSTFIX_BUILD_TYPES)
-        if (CMAKE_BUILD_TYPE STREQUAL NO_POSTFIX_BT)
-            #setting bundle file name without postfix
-            set(BUNDLE_FILENAME ${BASE_BUNDLE_FILENAME}.zip)
-        endif ()
-    endforeach ()
+    if (CMAKE_BUILD_TYPE)
+        set(BUNDLE_FILENAME ${BASE_BUNDLE_FILENAME}-${CMAKE_BUILD_TYPE}.zip)
+        foreach (NO_POSTFIX_BT IN LISTS CELIX_NO_POSTFIX_BUILD_TYPES)
+            if (CMAKE_BUILD_TYPE STREQUAL NO_POSTFIX_BT)
+                #setting bundle file name without postfix
+                set(BUNDLE_FILENAME ${BASE_BUNDLE_FILENAME}.zip)
+            endif ()
+        endforeach ()
+    else ()
+        #note if no CMAKE_BUILD_TYPE is set, do not use a postfix
+        set(BUNDLE_FILENAME ${BASE_BUNDLE_FILENAME}.zip)
+    endif ()
+
 
     set(BUNDLE_FILE "${CMAKE_CURRENT_BINARY_DIR}/${BUNDLE_FILENAME}")
     #set(BUNDLE_CONTENT_DIR "${CMAKE_CURRENT_BINARY_DIR}/${BUNDLE_TARGET_NAME}_content")
@@ -304,7 +310,7 @@ function(add_celix_bundle)
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_DEPEND_TARGETS" "") #bundle target dependencies. Note can be extended after the add_bundle call
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_GEN_DIR" ${BUNDLE_GEN_DIR}) #location for generated output.
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_CREATE_BUNDLE_TARGET" ${BUNDLE_TARGET_NAME}_bundle) #target which creat the bundle zip
-    set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_IMPORTED" FALSE) #whether targer is a imported (bundle) target
+    set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_IMPORTED" FALSE) #whether target is a imported (bundle) target
 
     #bundle specific
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_CONTENT_DIR" ${BUNDLE_CONTENT_DIR}) #location where the content to be jar/zipped.
@@ -841,13 +847,21 @@ function(install_celix_bundle_targets)
         message(FATAL_ERROR "Please provide a namespace used for the generated cmake targets.")
     endif ()
 
-    if (NOT DEFINED EXPORT_FILE)
-        set(EXPORT_FILE ${EXPORT_NAME}BundleTargets)
+    if (CMAKE_BUILD_TYPE)
+        string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE)
+    else ()
+        set(BUILD_TYPE "NOCONFIG")
     endif ()
 
-#    if (NOT CMAKE_BUILD_TYPE STREQUAL "Release")
-        set(EXPORT_FILE ${EXPORT_FILE}-${CMAKE_BUILD_TYPE})
-#    endif ()
+    if (DEFINED EXPORT_FILE)
+        #if present replace the .cmake from the export file
+        string(REGEX REPLACE ".cmake" "" EXPORT_FILE "${EXPORT_FILE}")
+
+        set(BASE_EXPORT_FILE ${EXPORT_FILE})
+    else ()
+        set(BASE_EXPORT_FILE ${EXPORT_NAME}BundleTargets)
+    endif ()
+    set(EXPORT_FILE ${BASE_EXPORT_FILE}-${BUILD_TYPE})
 
     if (NOT DEFINED EXPORT_PROJECT_NAME)
         string(TOLOWER ${PROJECT_NAME} EXPORT_PROJECT_NAME)
@@ -881,24 +895,164 @@ get_filename_component(_IMPORT_PREFIX \"\${CMAKE_CURRENT_LIST_FILE}\" PATH)
 
     foreach(BUNDLE_TARGET IN LISTS EXPORT_BUNDLES)
         set(TN "${EXPORT_NAMESPACE}${BUNDLE_TARGET}")
-        string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE)
         file(APPEND "${CONF_IN_FILE}" "
 if (NOT TARGET ${TN}) 
     add_library(${TN} SHARED IMPORTED)
-    set_property(TARGET ${TN} APPEND PROPERTY IMPORTED_CONFIGURATIONS ${BUILD_TYPE})
-    set_target_properties(${TN} PROPERTIES
-        BUNDLE_IMPORTED TRUE
-        BUNDLE_FILE \"\${_IMPORT_PREFIX}/share/${EXPORT_PROJECT_NAME}/bundles/$<TARGET_PROPERTY:${BUNDLE_TARGET},BUNDLE_FILENAME>\"
-        BUNDLE_FILENAME \"$<TARGET_PROPERTY:${BUNDLE_TARGET},BUNDLE_FILENAME>\"
-    )
 endif ()
+set_property(TARGET ${TN} APPEND PROPERTY IMPORTED_CONFIGURATIONS ${BUILD_TYPE})
+set_target_properties(${TN} PROPERTIES
+    BUNDLE_IMPORTED TRUE
+    BUNDLE_FILE_${BUILD_TYPE} \"\${_IMPORT_PREFIX}/share/${EXPORT_PROJECT_NAME}/bundles/$<TARGET_PROPERTY:${BUNDLE_TARGET},BUNDLE_FILENAME>\"
+    BUNDLE_FILENAME_${BUILD_TYPE} \"$<TARGET_PROPERTY:${BUNDLE_TARGET},BUNDLE_FILENAME>\"
+)
 ")
     endforeach()
+
     file(GENERATE OUTPUT "${CONF_FILE}" INPUT "${CONF_IN_FILE}")
+
+
+    #Generate not build type specific targets file
+    set(GENERIC_CONF_FILE "${CMAKE_BINARY_DIR}/celix/gen/cmake/${EXPORT_NAME}-BundleTargets.cmake")
+    file(GENERATE OUTPUT ${GENERIC_CONF_FILE} CONTENT "
+# Load bundle information for each installed configuration.
+get_filename_component(_DIR \"\${CMAKE_CURRENT_LIST_FILE}\" PATH)
+file(GLOB CONFIG_FILES \"\${_DIR}/${BASE_EXPORT_FILE}-*.cmake\")
+foreach(f \${CONFIG_FILES})
+  include(\${f})
+endforeach()
+")
 
     if (EXPORT_COMPONENT)
         install(FILES "${CONF_FILE}" DESTINATION ${EXPORT_DESTINATION} RENAME ${EXPORT_FILE}.cmake COMPONENT ${EXPORT_COMPONENT})
+        install(FILES "${GENERIC_CONF_FILE}" DESTINATION ${EXPORT_DESTINATION} RENAME ${BASE_EXPORT_FILE}.cmake COMPONENT ${EXPORT_COMPONENT})
     else ()
         install(FILES "${CONF_FILE}" DESTINATION ${EXPORT_DESTINATION} RENAME ${EXPORT_FILE}.cmake)
+        install(FILES "${GENERIC_CONF_FILE}" DESTINATION ${EXPORT_DESTINATION} RENAME ${BASE_EXPORT_FILE}.cmake)
     endif ()
 endfunction()
+
+#[[
+Get bundle file (absolute path to bundle) from an (imported) bundle
+target taking into account the used CMAKE_BUILD_TYPE and available
+bundle configurations.
+
+celix_get_bundle_file(<bundle_target> VARIABLE_NAME)
+
+Example: celix_get_bundle_file(Celix::shell SHELL_BUNDLE_FILE)
+
+]]
+function(celix_get_bundle_file)
+
+if (TARGET ${ARGV0})
+    get_target_property(_IMP ${ARGV0} BUNDLE_IMPORTED)
+    if (_IMP)
+        _celix_extract_imported_bundle_info(${ARGV0})
+        set(${ARGV1} ${BUNDLE_FILE} PARENT_SCOPE)
+        unset(BUNDLE_FILE)
+        unset(BUNDLE_FILENAME)
+    else ()
+        get_target_property(BF ${ARGV0} BUNDLE_FILE)
+        set(${ARGV1} ${BF} PARENT_SCOPE)
+    endif ()
+else ()
+    message(FATAL_ERROR "Provided argument is not a CMake target: ${ARGV0}")
+endif ()
+
+endfunction ()
+
+#[[
+Get bundle filename from an (imported) bundle target taking into account the
+used CMAKE_BUILD_TYPE and available bundle configurations.
+
+celix_get_bundle_filename(<bundle_target> VARIABLE_NAME)
+
+Example: celix_get_bundle_filename(Celix::shell SHELL_BUNDLE_FILENAME)
+
+]]
+function(celix_get_bundle_filename)
+
+if (TARGET ${ARGV0})
+    get_target_property(_IMP ${ARGV0} BUNDLE_IMPORTED)
+    if (_IMP)
+        _celix_extract_imported_bundle_info(${ARGV0})
+        set(${ARGV1} ${BUNDLE_FILENAME} PARENT_SCOPE)
+    else ()
+        get_target_property(BF ${ARGV0} BUNDLE_FILENAME)
+        set(${ARGV1} ${BF} PARENT_SCOPE)
+    endif ()
+else ()
+    message(FATAL_ERROR "Provided argument is not a CMake target: ${ARGV0}")
+endif ()
+
+endfunction ()
+
+
+
+
+######################################### "Private" function ###########################################################
+
+
+#[[
+extract the BUNDLE_FILENAME and BUNDLE_FILE from a imported bundle target taking into account the used CMAKE_BUILD_TYPE
+and if configured the MAP_IMPORTED_CONFIG_* or CMAKE_MAP_IMPORTED_CONFIG_*
+
+_celix_extract_imported_bundle_info(<bundle_target>)
+
+Note this is considered a private function
+]]
+function (_celix_extract_imported_bundle_info)
+    set(BUNDLE ${ARGV0})
+    #get_target_property(_CONFIGS ${ARGV0} "IMPORTED_CONFIGURATIONS") #Not needed?
+
+    if (CMAKE_BUILD_TYPE)
+        string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE)
+    else ()
+        set(BUILD_TYPE "NOCONFIG")
+    endif ()
+
+    get_target_property(BF ${BUNDLE} BUNDLE_FILE_${BUILD_TYPE})
+    get_target_property(BFN ${BUNDLE} BUNDLE_FILENAME_${BUILD_TYPE})
+
+    if (NOT BF)
+        #BUNDLE_FILE(NAME) not found for the current BUILD_TYPE looking for MAP value (if there is a cmake build type)
+        get_target_property(MAP_TO_CONFIG ${BUNDLE} MAP_IMPORTED_CONFIG_${BUILD_TYPE})
+        if (NOT MAP_TO_CONFIG AND CMAKE_MAP_IMPORTED_CONFIG_${BUILD_TYPE})
+            set(MAP_TO_CONFIG CMAKE_MAP_IMPORTED_CONFIG_${BUILD_TYPE})
+        endif ()
+        if (MAP_TO_CONFIG)
+            get_target_property(BF ${BUNDLE} BUNDLE_FILE_${MAP_TO_CONFIG})
+            get_target_property(BFN ${BUNDLE} BUNDLE_FILENAME_${MAP_TO_CONFIG})
+        endif ()
+    endif ()
+
+    if (NOT BF)
+        get_target_property(BF ${BUNDLE} BUNDLE_FILE)
+        get_target_property(BFN ${BUNDLE} BUNDLE_FILENAME)
+    endif ()
+
+    #fallback steps
+    if (NOT BF)
+        get_target_property(BF ${BUNDLE} BUNDLE_FILE_RELWITHDEBINFO)
+        get_target_property(BFN ${BUNDLE} BUNDLE_FILENAME_RELWITHDEBINFO)
+    endif ()
+    if (NOT BF)
+        get_target_property(BF ${BUNDLE} BUNDLE_FILE_RELEASE)
+        get_target_property(BFN ${BUNDLE} BUNDLE_FILENAME_RELEASE)
+    endif ()
+    if (NOT BF)
+        get_target_property(BF ${BUNDLE} BUNDLE_FILE_MINSIZEREL)
+        get_target_property(BFN ${BUNDLE} BUNDLE_FILENAME_MINSIZEREL)
+    endif ()
+    if (NOT BF)
+        get_target_property(BF ${BUNDLE} BUNDLE_FILE_NOCONFIG)
+        get_target_property(BFN ${BUNDLE} BUNDLE_FILENAME_NOCONFIG)
+    endif ()
+    if (NOT BF)
+        get_target_property(BF ${BUNDLE} BUNDLE_FILE_DEBUG)
+        get_target_property(BFN ${BUNDLE} BUNDLE_FILENAME_DEBUG)
+    endif ()
+
+
+    set(BUNDLE_FILE ${BF} PARENT_SCOPE)
+    set(BUNDLE_FILENAME ${BFN} PARENT_SCOPE)
+endfunction ()
