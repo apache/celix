@@ -225,6 +225,26 @@ if (BUILD_PUBSUB_PSA_ZMQ)
     add_test(NAME pubsub_zmq_tests COMMAND pubsub_zmq_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_zmq_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_zmq_tests SCAN_DIR ..)
 
+    add_celix_container(pubsub_zmq_wire_v2_tests
+        USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
+        LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_runner.cc
+        DIR ${CMAKE_CURRENT_BINARY_DIR}
+        PROPERTIES
+        LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
+        BUNDLES
+        Celix::pubsub_serializer_json
+        Celix::pubsub_topology_manager
+        Celix::pubsub_admin_zmq
+        Celix::pubsub_protocol_wire_v2
+        pubsub_sut
+        pubsub_tst
+        )
+
+    target_link_libraries(pubsub_zmq_wire_v2_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi ZMQ::lib CZMQ::lib)
+    target_include_directories(pubsub_zmq_wire_v2_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
+    add_test(NAME pubsub_zmq_wire_v2_tests COMMAND pubsub_zmq_wire_v2_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_zmq_wire_v2_tests,CONTAINER_LOC>)
+    setup_target_for_coverage(pubsub_zmq_wire_v2_tests SCAN_DIR ..)
+
 
     add_celix_container(pubsub_zmq_zerocopy_tests
             USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
@@ -249,4 +269,28 @@ if (BUILD_PUBSUB_PSA_ZMQ)
     #TODO fix issues with ZeroCopy and reanble test again
     add_test(NAME pubsub_zmq_zerocopy_tests COMMAND pubsub_zmq_zerocopy_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_zmq_zerocopy_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_zmq_zerocopy_tests SCAN_DIR ..)
+
+    add_celix_container(pubsub_zmq_zerocopy_wire_v2_tests
+        USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
+        LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_runner.cc
+        DIR ${CMAKE_CURRENT_BINARY_DIR}
+        PROPERTIES
+        LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
+        PSA_ZMQ_ZEROCOPY_ENABLED=true
+        BUNDLES
+        Celix::pubsub_serializer_json
+        Celix::pubsub_topology_manager
+        Celix::pubsub_admin_zmq
+        Celix::pubsub_protocol_wire_v2
+        Celix::shell
+        Celix::shell_tui
+        pubsub_sut
+        pubsub_tst
+        )
+    target_link_libraries(pubsub_zmq_zerocopy_wire_v2_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi ZMQ::lib CZMQ::lib)
+    target_include_directories(pubsub_zmq_zerocopy_wire_v2_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
+
+    #TODO fix issues with ZeroCopy and reanble test again
+    add_test(NAME pubsub_zmq_zerocopy_wire_v2_tests COMMAND pubsub_zmq_zerocopy_wire_v2_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_zmq_zerocopy_wire_v2_tests,CONTAINER_LOC>)
+    setup_target_for_coverage(pubsub_zmq_zerocopy_wire_v2_tests SCAN_DIR ..)
 endif ()

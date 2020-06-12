@@ -626,7 +626,7 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
 
                     //send Payload
                     if (rc > 0) {
-                        int flag = ((metadataLength > 0)  && (footerLength > 0)) ? ZMQ_SNDMORE : 0;
+                        int flag = ((metadataLength > 0)  || (footerLength > 0)) ? ZMQ_SNDMORE : 0;
                         zmq_msg_init_data(&msg2, payloadData, payloadLength, psa_zmq_freeMsg, freeMsgEntry);
                         rc = zmq_msg_send(&msg2, socket, flag);
                         if (rc == -1) {
