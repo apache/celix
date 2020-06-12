@@ -20,6 +20,7 @@
 #ifndef PUBSUB_PROTOCOL_SERVICE_H_
 #define PUBSUB_PROTOCOL_SERVICE_H_
 
+#include <stdint.h>
 #include "celix_properties.h"
 
 #define PUBSUB_PROTOCOL_SERVICE_NAME      "pubsub_protocol"
@@ -32,33 +33,33 @@ typedef struct pubsub_protocol_header pubsub_protocol_header_t;
  * The protocol header structure, contains the information about the message payload and metadata
  */
 struct pubsub_protocol_header {
-  /** message payload identification attributes */
-    unsigned int msgId;
-    unsigned short msgMajorVersion;
-    unsigned short msgMinorVersion;
+    /** message payload identification attributes */
+    uint32_t msgId;
+    uint16_t msgMajorVersion;
+    uint16_t msgMinorVersion;
 
     /** Payload and metadata sizes attributes */
-    unsigned int payloadSize;
-    unsigned int metadataSize;
+    uint32_t payloadSize;
+    uint32_t metadataSize;
 
     /** optional convert Endianess attribute, this attribute is used to indicate the header needs to converted for endianess during encoding
      *  this attribute is used to indicate the payload needs to converted for endianess after header decoding.
      *  Note: this attribute is transmitted using the wire protocol, the sync word is used to determine endianess conversion */
-    unsigned int convertEndianess;
+    uint32_t convertEndianess;
 
     /** Optional message segmentation attributes, these attributes are only used/written by the protocol admin.
      *  When message segmentation is supported by the protocol admin */
-    unsigned int seqNr; /*!< seqNr contains a pubsub sequence number of the message, can be used for debugging/integration */
-    unsigned int payloadPartSize; /*!< payloadPartSize contains size of payload part that is send by a single segmentation message */
-    unsigned int payloadOffset; /*!< payloadOffset contains offset of payload part in the total message payload */
-    unsigned int isLastSegment; /*!< Indicates that message is the last message of the sequence */
+    uint32_t seqNr;
+    uint32_t payloadPartSize;
+    uint32_t payloadOffset;
+    uint32_t isLastSegment;
 };
 
 typedef struct pubsub_protocol_payload pubsub_protocol_payload_t;
 
 struct pubsub_protocol_payload {
     void *payload;
-    size_t length;
+    uint32_t length;
 };
 
 typedef struct pubsub_protocol_metadata pubsub_protocol_metadata_t;

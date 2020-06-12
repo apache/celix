@@ -259,6 +259,21 @@ static dyn_message_type* pubsub_serializationProvider_parseDfiDescriptor(pubsub_
 //}
 
 /**
+ * Check if a pubsub serialization entry is already present (exact path)
+ *
+ * @return true if the entry is a already present
+ */
+static bool pubsub_serializationProvider_alreadyAddedEntry(pubsub_serialization_provider_t* provider, pubsub_serialization_entry_t* entry) {
+    for (int i = 0; i < celix_arrayList_size(provider->serializationSvcEntries); ++i) {
+        pubsub_serialization_entry_t *visit = celix_arrayList_get(provider->serializationSvcEntries, i);
+        if (celix_utils_stringEquals(visit->readFromEntryPath, entry->readFromEntryPath)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
  * Validates an pubsub serialization entry and check if this is a new unique entry.
  *
  * Checks whether the entry is valid. Specifically checks:
@@ -407,6 +422,15 @@ static void pubsub_serializationProvider_parseDescriptors(pubsub_serialization_p
         serEntry->svc.freeDeserializedMsg = (void*)provider->freeDeserializeMsg;
         serEntry->svcId = -1L;
 
+        if (pubsub_serializationProvider_alreadyAddedEntry(provider, serEntry)) {
+            L_WARN("Skipping entry %s. Exact entry already present!. Double event triggered?", serEntry->readFromEntryPath);
+            free(serEntry->descriptorContent);
+            free(serEntry->readFromEntryPath);
+            free(serEntry->msgVersionStr);
+            dynMessage_destroy(serEntry->msgType);
+            free(serEntry);
+            continue;
+        }
 
         bool unique = pubsub_serializationProvider_validateEntry(provider, serEntry);
         if (unique && serEntry->valid) { //note only register if unique and valid
