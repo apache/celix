@@ -31,14 +31,14 @@ static const unsigned int PROTOCOL_WIRE_V2_SYNC_FOOTER = 0xDEAFABBA;
 static const unsigned int PROTOCOL_WIRE_V2_ENVELOPE_VERSION = 1;
 
 int pubsubProtocol_wire_v2_readChar(const unsigned char *data, int offset, uint8_t *val);
-int pubsubProtocol_wire_v2_readShort(const unsigned char *data, int offset, unsigned int convert, uint16_t *val);
-int pubsubProtocol_wire_v2_readInt(const unsigned char *data, int offset, unsigned int convert, uint32_t *val);
-int pubsubProtocol_wire_v2_readLong(const unsigned char *data, int offset, unsigned int convert, uint64_t *val);
+int pubsubProtocol_wire_v2_readShort(const unsigned char *data, int offset, uint32_t convert, uint16_t *val);
+int pubsubProtocol_wire_v2_readInt(const unsigned char *data, int offset, uint32_t convert, uint32_t *val);
+int pubsubProtocol_wire_v2_readLong(const unsigned char *data, int offset, uint32_t convert, uint64_t *val);
 
 int pubsubProtocol_wire_v2_writeChar(unsigned char *data, int offset, uint8_t val);
-int pubsubProtocol_wire_v2_writeShort(unsigned char *data, int offset, unsigned int convert, uint16_t val);
-int pubsubProtocol_wire_v2_writeInt(unsigned char *data, int offset, unsigned int convert, uint32_t val);
-int pubsubProtocol_wire_v2_writeLong(unsigned char *data, int offset, unsigned int convert, uint64_t val);
+int pubsubProtocol_wire_v2_writeShort(unsigned char *data, int offset, uint32_t convert, uint16_t val);
+int pubsubProtocol_wire_v2_writeInt(unsigned char *data, int offset, uint32_t convert, uint32_t val);
+int pubsubProtocol_wire_v2_writeLong(unsigned char *data, int offset, uint32_t convert, uint64_t val);
 
 #ifdef __cplusplus
 }

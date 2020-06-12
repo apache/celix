@@ -28,19 +28,19 @@ int pubsubProtocol_wire_v2_readChar(const unsigned char *data, int offset, uint8
     return offset + sizeof(uint16_t);
 }
 
-int pubsubProtocol_wire_v2_readShort(const unsigned char *data, int offset, unsigned int convert, uint16_t *val) {
+int pubsubProtocol_wire_v2_readShort(const unsigned char *data, int offset, uint32_t convert, uint16_t *val) {
     memcpy(val, data + offset, sizeof(uint16_t));
     if (convert) *val = bswap_16(*val);
     return offset + sizeof(uint16_t);
 }
 
-int pubsubProtocol_wire_v2_readInt(const unsigned char *data, int offset, unsigned int convert, uint32_t *val) {
+int pubsubProtocol_wire_v2_readInt(const unsigned char *data, int offset, uint32_t convert, uint32_t *val) {
     memcpy(val, data + offset, sizeof(uint32_t));
     if(convert) *val = bswap_32(*val);
     return offset + sizeof(uint32_t);
 }
 
-int pubsubProtocol_wire_v2_readLong(const unsigned char *data, int offset, unsigned int convert, uint64_t *val) {
+int pubsubProtocol_wire_v2_readLong(const unsigned char *data, int offset, uint32_t convert, uint64_t *val) {
     memcpy(val, data + offset, sizeof(uint64_t));
     if (convert) *val = bswap_64(*val);
     return offset + sizeof(uint64_t);
@@ -51,19 +51,19 @@ int pubsubProtocol_wire_v2_writeChar(unsigned char *data, int offset, uint8_t va
     return offset + sizeof(uint8_t);
 }
 
-int pubsubProtocol_wire_v2_writeShort(unsigned char *data, int offset, unsigned int  convert, uint16_t val) {
+int pubsubProtocol_wire_v2_writeShort(unsigned char *data, int offset, uint32_t convert, uint16_t val) {
     uint16_t nVal = (convert) ? bswap_16(val) : val;
     memcpy(data + offset, &nVal, sizeof(uint16_t));
     return offset + sizeof(uint16_t);
 }
 
-int pubsubProtocol_wire_v2_writeInt(unsigned char *data, int offset, unsigned int  convert, uint32_t val) {
+int pubsubProtocol_wire_v2_writeInt(unsigned char *data, int offset, uint32_t convert, uint32_t val) {
     uint32_t nVal = (convert) ? bswap_32(val)  : val;
     memcpy(data + offset, &nVal, sizeof(uint32_t));
     return offset + sizeof(uint32_t);
 }
 
-int pubsubProtocol_wire_v2_writeLong(unsigned char *data, int offset, unsigned int convert, uint64_t val) {
+int pubsubProtocol_wire_v2_writeLong(unsigned char *data, int offset, uint32_t convert, uint64_t val) {
     uint64_t nVal = (convert) ? bswap_64(val) : val;
     memcpy(data + offset, &nVal, sizeof(uint64_t));
     return offset + sizeof(uint64_t);
