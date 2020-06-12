@@ -67,8 +67,10 @@ struct sockaddr_in *pubsub_utils_url_getInAddr(const char *hostname, int port) {
             struct addrinfo inf;
             int status;
             memset(&inf, 0, sizeof(inf));
-            inf.ai_family = AF_INET;
+            inf.ai_family = AF_UNSPEC; /* both ipv4 and ipv6 */
             inf.ai_socktype = IPPROTO_TCP;
+            inf.ai_flags = AI_PASSIVE; /* For wildcard IP address */
+            inf.ai_protocol = 0; /* Any protocol */
             if ((status = getaddrinfo(hostname, NULL, &inf, &result)) != 0) {
                 fprintf(stderr, "pubsub_utils_url_getInAddr: Unknown host name %s, %i, %s\n", hostname, status, gai_strerror(status));
                 errno = 0;
