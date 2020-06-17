@@ -41,7 +41,7 @@
             this.bold = false;
             this.fg = this.bg = null;
             this._buffer = '';
-            this._url_whitelist = { 'http': 1, 'https': 1 };
+            this._url_allow_list = { 'http': 1, 'https': 1 };
         }
         Object.defineProperty(AnsiUp.prototype, "use_classes", {
             get: function () {
@@ -63,12 +63,12 @@
             enumerable: true,
             configurable: true
         });
-        Object.defineProperty(AnsiUp.prototype, "url_whitelist", {
+        Object.defineProperty(AnsiUp.prototype, "url_allow_list", {
             get: function () {
-                return this._url_whitelist;
+                return this._url_allow_list;
             },
             set: function (arg) {
-                this._url_whitelist = arg;
+                this._url_allow_list = arg;
             },
             enumerable: true,
             configurable: true
@@ -384,7 +384,7 @@
             var parts = pkt.url.split(':');
             if (parts.length < 1)
                 return '';
-            if (!this._url_whitelist[parts[0]])
+            if (!this._url_allow_list[parts[0]])
                 return '';
             var result = "<a href=\"" + this.escape_txt_for_html(pkt.url) + "\">" + this.escape_txt_for_html(pkt.text) + "</a>";
             return result;
