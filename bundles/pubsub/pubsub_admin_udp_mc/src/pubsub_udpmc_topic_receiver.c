@@ -33,6 +33,7 @@
 #include <pubsub_endpoint.h>
 #include <arpa/inet.h>
 #include <celix_log_helper.h>
+#include <celix_api.h>
 #include "pubsub_udpmc_topic_receiver.h"
 #include "pubsub_psa_udpmc_constants.h"
 #include "large_udp.h"
@@ -94,10 +95,8 @@ typedef struct psa_udpmc_requested_connection_entry {
 } psa_udpmc_requested_connection_entry_t;
 
 typedef struct psa_udpmc_subscriber_entry {
-    int usageCount;
     hash_map_t *msgTypes; //map from serializer svc
-    pubsub_subscriber_t *svc;
-
+    hash_map_t *subscriberServices; //key = servide id, value = pubsub_subscriber_t*
     bool initialized; //true if the init function is called through the receive thread
 } psa_udpmc_subscriber_entry_t;
 
@@ -235,6 +234,7 @@ void pubsub_udpmcTopicReceiver_destroy(pubsub_udpmc_topic_receiver_t *receiver) 
                 if (receiver->serializer != NULL && entry->msgTypes != NULL) {
                     receiver->serializer->destroySerializerMap(receiver->serializer->handle, entry->msgTypes);
                 }
+                hashMap_destroy(entry->subscriberServices, false, false);
                 free(entry);
             }
         }
@@ -328,6 +328,7 @@ static void pubsub_udpmcTopicReceiver_addSubscriber(void *handle, void *svc, con
     pubsub_udpmc_topic_receiver_t *receiver = handle;
 
     long bndId = celix_bundle_getId(bnd);
+    long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1);
     const char *subScope = celix_properties_get(props, PUBSUB_SUBSCRIBER_SCOPE, NULL);
     if (receiver->scope == NULL) {
         if (subScope != NULL) {
@@ -343,14 +344,14 @@ static void pubsub_udpmcTopicReceiver_addSubscriber(void *handle, void *svc, con
     celixThreadMutex_lock(&receiver->subscribers.mutex);
     psa_udpmc_subscriber_entry_t *entry = hashMap_get(receiver->subscribers.map, (void*)bndId);
     if (entry != NULL) {
-        entry->usageCount += 1;
+        hashMap_put(entry->subscriberServices, (void*)svcId, svc);
     } else {
         //new create entry
         entry = calloc(1, sizeof(*entry));
-        entry->usageCount = 1;
-        entry->svc = svc;
+        entry->subscriberServices = hashMap_create(NULL, NULL, NULL, NULL);
         entry->initialized = false;
         receiver->subscribers.allInitialized = false;
+        hashMap_put(entry->subscriberServices, (void*)svcId, svc);
 
         int rc = receiver->serializer->createSerializerMap(receiver->serializer->handle, (celix_bundle_t*)bnd, &entry->msgTypes);
         if (rc == 0) {
@@ -367,19 +368,21 @@ static void pubsub_udpmcTopicReceiver_removeSubscriber(void *handle, void *svc, 
     pubsub_udpmc_topic_receiver_t *receiver = handle;
 
     long bndId = celix_bundle_getId(bnd);
+    long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1);
 
     celixThreadMutex_lock(&receiver->subscribers.mutex);
     psa_udpmc_subscriber_entry_t *entry = hashMap_get(receiver->subscribers.map, (void*)bndId);
     if (entry != NULL) {
-        entry->usageCount -= 1;
+        hashMap_remove(entry->subscriberServices, (void*)svcId);
     }
-    if (entry != NULL && entry->usageCount <= 0) {
+    if (entry != NULL && hashMap_size(entry->subscriberServices) == 0) {
         //remove entry
         hashMap_remove(receiver->subscribers.map, (void*)bndId);
         int rc =  receiver->serializer->destroySerializerMap(receiver->serializer->handle, entry->msgTypes);
         if (rc != 0) {
             fprintf(stderr, "Cannot find serializer for TopicReceiver %s/%s", receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic);
         }
+        hashMap_destroy(entry->subscriberServices, false, false);
         free(entry);
     }
     celixThreadMutex_unlock(&receiver->subscribers.mutex);
@@ -479,12 +482,14 @@ static void psa_udpmc_processMsg(pubsub_udpmc_topic_receiver_t *receiver, pubsub
                 celix_status_t status = msgSer->deserialize(msgSer->handle, &deSerializeBuffer, 0, &msgInst);
 
                 if (status == CELIX_SUCCESS) {
-                    bool release = true;
-                    pubsub_subscriber_t *svc = entry->svc;
-                    svc->receive(svc->handle, msgSer->msgName, msg->header.type, msgInst, NULL, &release);
-
-                    if (release) {
-                        msgSer->freeDeserializeMsg(msgSer->handle, msgInst);
+                    hash_map_iterator_t iter2 = hashMapIterator_construct(entry->subscriberServices);
+                    while (hashMapIterator_hasNext(&iter2)) {
+                        bool release = true;
+                        pubsub_subscriber_t *svc = hashMapIterator_nextValue(&iter2);
+                        svc->receive(svc->handle, msgSer->msgName, msg->header.type, msgInst, NULL, &release);
+                        if (release) {
+                            msgSer->freeDeserializeMsg(msgSer->handle, msgInst);
+                        }
                     }
                 } else {
                     printf("[PSA_UDPMC] Cannot deserialize msgType %s.\n",msgSer->msgName);
@@ -589,15 +594,21 @@ static void psa_udpmc_initializeAllSubscribers(pubsub_udpmc_topic_receiver_t *re
         while (hashMapIterator_hasNext(&iter)) {
             psa_udpmc_subscriber_entry_t *entry = hashMapIterator_nextValue(&iter);
             if (!entry->initialized) {
-                int rc = 0;
-                if (entry->svc != NULL && entry->svc->init != NULL) {
-                    rc = entry->svc->init(entry->svc->handle);
-                }
-                if (rc == 0) {
-                    entry->initialized = true;
-                } else {
-                    L_WARN("Cannot initialize subscriber svc. Got rc %i", rc);
-                    allInitialized = false;
+
+                hash_map_iterator_t iter2 = hashMapIterator_construct(entry->subscriberServices);
+                while (hashMapIterator_hasNext(&iter2)) {
+                    pubsub_subscriber_t *svc = hashMapIterator_nextValue(&iter2);
+                    int rc = 0;
+                    if (svc != NULL && svc->init != NULL) {
+                        rc = svc->init(svc->handle);
+                    }
+                    if (rc == 0) {
+                        //note now only initialized on first subscriber entries added.
+                        entry->initialized = true;
+                    } else {
+                        L_WARN("Cannot initialize subscriber svc. Got rc %i", rc);
+                        allInitialized = false;
+                    }
                 }
             }
         }
