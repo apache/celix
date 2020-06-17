@@ -61,15 +61,6 @@ static int http_admin_start(http_admin_activator_t *act, celix_bundle_context_t 
     long prop_port_max = celix_bundleContext_getPropertyAsLong(ctx, HTTP_ADMIN_PORT_RANGE_MAX_KEY, HTTP_ADMIN_PORT_RANGE_MAX_DFT);
     long num_threads = celix_bundleContext_getPropertyAsLong(ctx, HTTP_ADMIN_NUM_THREADS_KEY, HTTP_ADMIN_NUM_THREADS_DFT);
 
-    const char* listPortEnv = getenv(HTTP_ADMIN_LISTENING_PORTS_KEY);
-    if(listPortEnv != NULL) {
-        char *endptr = NULL;
-        long p = strtol(listPortEnv, &endptr, 10);
-        if(endptr != listPortEnv && errno != ERANGE && p >= 0 && p <= 65535) {
-            listPort = p;
-        }
-    }
-
     char prop_port[64];
     snprintf(prop_port, 64, "%li", listPort);
     char prop_timeout[64];

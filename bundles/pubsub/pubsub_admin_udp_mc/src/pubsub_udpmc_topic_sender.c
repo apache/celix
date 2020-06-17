@@ -107,7 +107,7 @@ pubsub_udpmc_topic_sender_t* pubsub_udpmcTopicSender_create(
 
     unsigned int port = rand_range(UDP_BASE_PORT, UDP_MAX_PORT);
 
-    const char *portEnvVar = pubsub_getEnvironmentVariableWithScopeTopic(PUBSUB_UDPMC_STATIC_BIND_PORT_URL_ENV_NAME, topic, scope);
+    const char *portEnvVar = pubsub_getEnvironmentVariableWithScopeTopic(ctx, PUBSUB_UDPMC_STATIC_BIND_PORT_URL_FOR, topic, scope);
     long configuredPort = -1;
     if(portEnvVar != NULL) {
         char *endptr = NULL;
