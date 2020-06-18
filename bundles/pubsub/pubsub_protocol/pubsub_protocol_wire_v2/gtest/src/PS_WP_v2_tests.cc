@@ -19,8 +19,9 @@
 
 #include <sstream>
 #include <arpa/inet.h>
+#include <iostream>
 
-#include <pubsub_wire_v2_protocol_common.h>
+#include <pubsub_wire_protocol_common.h>
 
 #include "gtest/gtest.h"
 
@@ -59,11 +60,11 @@ TEST_F(WireProtocolV2Test, WireProtocolV2Test_EncodeHeader_Test) { // NOLINT(cer
     unsigned char exp[40];
     uint32_t s = bswap_32(0xABBADEAF);
     memcpy(exp, &s, sizeof(uint32_t));
-    uint32_t e = 0x01000000;
+    uint32_t e = 0x02000000; //envelope version
     memcpy(exp+4, &e, sizeof(uint32_t));
-    uint32_t m = 0x01000000;
+    uint32_t m = 0x01000000; //msg id
     memcpy(exp+8, &m, sizeof(uint32_t));
-    uint32_t seq = 0x04000000;
+    uint32_t seq = 0x04000000; //seqnr
     memcpy(exp+12, &seq, sizeof(uint32_t));
     uint32_t v = 0x00000000;
     memcpy(exp+16, &v, sizeof(uint32_t));
@@ -93,13 +94,13 @@ TEST_F(WireProtocolV2Test, WireProtocolV2Test_DecodeHeader_Test) { // NOLINT(cer
     pubsubProtocol_wire_v2_create(&wireprotocol);
 
     unsigned char exp[40];
-    uint32_t s = bswap_32(0xABBADEAF);
+    uint32_t s = bswap_32(0xABBADEAF); //sync
     memcpy(exp, &s, sizeof(uint32_t));
-    uint32_t e = 0x01000000;
+    uint32_t e = 0x02000000; //envelope version
     memcpy(exp+4, &e, sizeof(uint32_t));
-    uint32_t m = 0x01000000;
+    uint32_t m = 0x01000000; //msg id
     memcpy(exp+8, &m, sizeof(uint32_t));
-    uint32_t seq = 0x08000000;
+    uint32_t seq = 0x08000000; //seqnr
     memcpy(exp+12, &seq, sizeof(uint32_t));
     uint32_t v = 0x00000000;
     memcpy(exp+16, &v, sizeof(uint32_t));
@@ -208,6 +209,9 @@ TEST_F(WireProtocolV2Test, WireProtocolV2Test_EncodeFooter_Test) { // NOLINT(cer
     ASSERT_EQ(status, CELIX_SUCCESS);
     ASSERT_EQ(4, footerLength);
     for (int i = 0; i < 4; i++) {
+        if (((unsigned char*) footerData)[i] != exp[i]) {
+            std::cerr << "error at index " << std::to_string(i) << std::endl;
+        }
         ASSERT_EQ(((unsigned char*) footerData)[i], exp[i]);
     }
     pubsubProtocol_wire_v2_destroy(wireprotocol);
@@ -234,7 +238,7 @@ TEST_F(WireProtocolV2Test, WireProtocolV2Test_DecodeFooter_IncorrectSync_Test) {
     pubsubProtocol_wire_v2_create(&wireprotocol);
 
     unsigned char exp[4];
-    uint32_t s = 0xABBADEAF;
+    uint32_t s = 0xABBABAAB;
     memcpy(exp, &s, sizeof(uint32_t));
     pubsub_protocol_message_t message;
 

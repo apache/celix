@@ -26,7 +26,10 @@
 #include "celix_log.h"
 #include "celix_threads.h"
 #include "celix_array_list.h"
+
+#ifdef NO_MEMSTREAM_AVAILABLE
 #include "memstream/open_memstream.h"
+#endif
 
 #define LOG_NAME        "celix_framework"
 

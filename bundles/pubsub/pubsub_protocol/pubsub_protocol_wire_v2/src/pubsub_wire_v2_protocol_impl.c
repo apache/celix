@@ -23,7 +23,7 @@
 #include "celix_properties.h"
 
 #include "pubsub_wire_v2_protocol_impl.h"
-#include "pubsub_wire_v2_protocol_common.h"
+#include "pubsub_wire_protocol_common.h"
 
 struct pubsub_protocol_wire_v2 {
 };
@@ -60,7 +60,7 @@ celix_status_t pubsubProtocol_wire_v2_getSyncHeaderSize(void* handle,  size_t *l
 }
 
 celix_status_t pubsubProtocol_wire_v2_getSyncHeader(void* handle, void *syncHeader) {
-    pubsubProtocol_wire_v2_writeInt(syncHeader, 0, false, PROTOCOL_WIRE_V2_SYNC_HEADER);
+    pubsubProtocol_writeInt(syncHeader, 0, false, PROTOCOL_WIRE_V2_SYNC_HEADER);
     return CELIX_SUCCESS;
 }
 
@@ -89,17 +89,17 @@ celix_status_t pubsubProtocol_wire_v2_encodeHeader(void *handle, pubsub_protocol
     } else {
         int idx = 0;
         unsigned int convert = message->header.convertEndianess;
-        idx = pubsubProtocol_wire_v2_writeInt(*outBuffer, idx, convert, PROTOCOL_WIRE_V2_SYNC_HEADER);
-        idx = pubsubProtocol_wire_v2_writeInt(*outBuffer, idx, convert, PROTOCOL_WIRE_V2_ENVELOPE_VERSION);
-        idx = pubsubProtocol_wire_v2_writeInt(*outBuffer, idx, convert, message->header.msgId);
-        idx = pubsubProtocol_wire_v2_writeInt(*outBuffer, idx, convert, message->header.seqNr);
-        idx = pubsubProtocol_wire_v2_writeShort(*outBuffer, idx, convert, message->header.msgMajorVersion);
-        idx = pubsubProtocol_wire_v2_writeShort(*outBuffer, idx, convert, message->header.msgMinorVersion);
-        idx = pubsubProtocol_wire_v2_writeInt(*outBuffer, idx, convert, message->header.payloadSize);
-        idx = pubsubProtocol_wire_v2_writeInt(*outBuffer, idx, convert, message->header.metadataSize);
-        idx = pubsubProtocol_wire_v2_writeInt(*outBuffer, idx, convert, message->header.payloadPartSize);
-        idx = pubsubProtocol_wire_v2_writeInt(*outBuffer, idx, convert, message->header.payloadOffset);
-        idx = pubsubProtocol_wire_v2_writeInt(*outBuffer, idx, convert, message->header.isLastSegment);
+        idx = pubsubProtocol_writeInt(*outBuffer, idx, convert, PROTOCOL_WIRE_V2_SYNC_HEADER);
+        idx = pubsubProtocol_writeInt(*outBuffer, idx, convert, PROTOCOL_WIRE_V2_ENVELOPE_VERSION);
+        idx = pubsubProtocol_writeInt(*outBuffer, idx, convert, message->header.msgId);
+        idx = pubsubProtocol_writeInt(*outBuffer, idx, convert, message->header.seqNr);
+        idx = pubsubProtocol_writeShort(*outBuffer, idx, convert, message->header.msgMajorVersion);
+        idx = pubsubProtocol_writeShort(*outBuffer, idx, convert, message->header.msgMinorVersion);
+        idx = pubsubProtocol_writeInt(*outBuffer, idx, convert, message->header.payloadSize);
+        idx = pubsubProtocol_writeInt(*outBuffer, idx, convert, message->header.metadataSize);
+        idx = pubsubProtocol_writeInt(*outBuffer, idx, convert, message->header.payloadPartSize);
+        idx = pubsubProtocol_writeInt(*outBuffer, idx, convert, message->header.payloadOffset);
+        idx = pubsubProtocol_writeInt(*outBuffer, idx, convert, message->header.isLastSegment);
         *outLength = idx;
     }
 
@@ -121,7 +121,7 @@ celix_status_t pubsubProtocol_wire_v2_encodeFooter(void *handle, pubsub_protocol
     } else {
         int idx = 0;
         unsigned int convert = message->header.convertEndianess;
-        idx = pubsubProtocol_wire_v2_writeInt(*outBuffer, idx, convert, PROTOCOL_WIRE_V2_SYNC_FOOTER);
+        idx = pubsubProtocol_writeInt(*outBuffer, idx, convert, PROTOCOL_WIRE_V2_SYNC_FOOTER);
         *outLength = idx;
     }
 
@@ -137,27 +137,30 @@ celix_status_t pubsubProtocol_wire_v2_decodeHeader(void* handle, void *data, siz
     if (length == headerSize) {
         unsigned int sync = 0;
         unsigned int sync_endianess = 0;
-        idx = pubsubProtocol_wire_v2_readInt(data, idx, false, &sync);
-        pubsubProtocol_wire_v2_readInt(data, 0, true, &sync_endianess);
+        idx = pubsubProtocol_readInt(data, idx, false, &sync);
+        pubsubProtocol_readInt(data, 0, true, &sync_endianess);
         message->header.convertEndianess = (sync_endianess == PROTOCOL_WIRE_V2_SYNC_HEADER) ? true : false;
-        if ((sync != PROTOCOL_WIRE_V2_SYNC_HEADER)&&(sync_endianess != PROTOCOL_WIRE_V2_SYNC_HEADER)) {
+        if ((sync != PROTOCOL_WIRE_V2_SYNC_HEADER) && (sync_endianess != PROTOCOL_WIRE_V2_SYNC_HEADER)) {
             status = CELIX_ILLEGAL_ARGUMENT;
         } else {
             unsigned int envelopeVersion;
             unsigned int convert = message->header.convertEndianess;
-            idx = pubsubProtocol_wire_v2_readInt(data, idx, convert, &envelopeVersion);
+            idx = pubsubProtocol_readInt(data, idx, convert, &envelopeVersion);
             if (envelopeVersion != PROTOCOL_WIRE_V2_ENVELOPE_VERSION) {
+                fprintf(stderr, "found sync %x and converted sync %x\n", sync, sync_endianess);
+                fprintf(stderr, "wrong envelop version\n");
+                fprintf(stderr, "Got %i, need %i\n", envelopeVersion, PROTOCOL_WIRE_V2_ENVELOPE_VERSION);
                 status = CELIX_ILLEGAL_ARGUMENT;
             } else {
-                idx = pubsubProtocol_wire_v2_readInt(data, idx, convert, &message->header.msgId);
-                idx = pubsubProtocol_wire_v2_readInt(data, idx, convert, &message->header.seqNr);
-                idx = pubsubProtocol_wire_v2_readShort(data, idx, convert, &message->header.msgMajorVersion);
-                idx = pubsubProtocol_wire_v2_readShort(data, idx, convert, &message->header.msgMinorVersion);
-                idx = pubsubProtocol_wire_v2_readInt(data, idx, convert, &message->header.payloadSize);
-                idx = pubsubProtocol_wire_v2_readInt(data, idx, convert, &message->header.metadataSize);
-                idx = pubsubProtocol_wire_v2_readInt(data, idx, convert, &message->header.payloadPartSize);
-                idx = pubsubProtocol_wire_v2_readInt(data, idx, convert, &message->header.payloadOffset);
-                pubsubProtocol_wire_v2_readInt(data, idx, convert, &message->header.isLastSegment);
+                idx = pubsubProtocol_readInt(data, idx, convert, &message->header.msgId);
+                idx = pubsubProtocol_readInt(data, idx, convert, &message->header.seqNr);
+                idx = pubsubProtocol_readShort(data, idx, convert, &message->header.msgMajorVersion);
+                idx = pubsubProtocol_readShort(data, idx, convert, &message->header.msgMinorVersion);
+                idx = pubsubProtocol_readInt(data, idx, convert, &message->header.payloadSize);
+                idx = pubsubProtocol_readInt(data, idx, convert, &message->header.metadataSize);
+                idx = pubsubProtocol_readInt(data, idx, convert, &message->header.payloadPartSize);
+                idx = pubsubProtocol_readInt(data, idx, convert, &message->header.payloadOffset);
+                pubsubProtocol_readInt(data, idx, convert, &message->header.isLastSegment);
             }
         }
     } else {
@@ -175,7 +178,7 @@ celix_status_t pubsubProtocol_wire_v2_decodeFooter(void* handle, void *data, siz
     if (length == footerSize) {
         unsigned int footerSync;
         unsigned int convert = message->header.convertEndianess;
-        idx = pubsubProtocol_wire_v2_readInt(data, idx, convert, &footerSync);
+        idx = pubsubProtocol_readInt(data, idx, convert, &footerSync);
         if (footerSync != PROTOCOL_WIRE_V2_SYNC_FOOTER) {
             status = CELIX_ILLEGAL_ARGUMENT;
         }
@@ -183,4 +186,20 @@ celix_status_t pubsubProtocol_wire_v2_decodeFooter(void* handle, void *data, siz
         status = CELIX_ILLEGAL_ARGUMENT;
     }
     return status;
+}
+
+celix_status_t pubsubProtocol_wire_v2_encodePayload(void* handle __attribute__((unused)), pubsub_protocol_message_t *message, void **outBuffer, size_t *outLength) {
+    return pubsubProtocol_encodePayload(message, outBuffer, outLength);
+}
+
+celix_status_t pubsubProtocol_wire_v2_encodeMetadata(void* handle __attribute__((unused)), pubsub_protocol_message_t *message, void **outBuffer, size_t *outLength) {
+    return pubsubProtocol_encodeMetadata(message, outBuffer, outLength);
+}
+
+celix_status_t pubsubProtocol_wire_v2_decodePayload(void* handle __attribute__((unused)), void *data, size_t length, pubsub_protocol_message_t *message) {
+    return pubsubProtocol_decodePayload(data, length, message);
+}
+
+celix_status_t pubsubProtocol_wire_v2_decodeMetadata(void* handle __attribute__((unused)), void *data, size_t length, pubsub_protocol_message_t *message) {
+    return pubsubProtocol_decodeMetadata(data, length, message);
 }

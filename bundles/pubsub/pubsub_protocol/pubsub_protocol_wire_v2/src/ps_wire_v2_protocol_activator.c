@@ -21,10 +21,10 @@
 #include <pubsub_constants.h>
 
 #include "celix_api.h"
-#include "pubsub_wire_protocol_impl.h"
+#include "pubsub_wire_v2_protocol_impl.h"
 
 typedef struct ps_wp_activator {
-    pubsub_protocol_wire_v1_t *wireprotocol;
+    pubsub_protocol_wire_v2_t *wireprotocol;
 
     pubsub_protocol_service_t protocolSvc;
     long wireProtocolSvcId;
@@ -33,28 +33,28 @@ typedef struct ps_wp_activator {
 static int ps_wp_start(ps_wp_activator_t *act, celix_bundle_context_t *ctx) {
     act->wireProtocolSvcId = -1L;
 
-    celix_status_t status = pubsubProtocol_create(&(act->wireprotocol));
+    celix_status_t status = pubsubProtocol_wire_v2_create(&(act->wireprotocol));
     if (status == CELIX_SUCCESS) {
         /* Set serializertype */
         celix_properties_t *props = celix_properties_create();
-        celix_properties_set(props, PUBSUB_PROTOCOL_TYPE_KEY, PUBSUB_WIRE_PROTOCOL_TYPE);
+        celix_properties_set(props, PUBSUB_PROTOCOL_TYPE_KEY, PUBSUB_WIRE_V2_PROTOCOL_TYPE);
 
-        act->protocolSvc.getHeaderSize = pubsubProtocol_getHeaderSize;
-        act->protocolSvc.getHeaderBufferSize = pubsubProtocol_getHeaderBufferSize;
-        act->protocolSvc.getSyncHeaderSize = pubsubProtocol_getSyncHeaderSize;
-        act->protocolSvc.getSyncHeader = pubsubProtocol_getSyncHeader;
-        act->protocolSvc.getFooterSize = pubsubProtocol_getFooterSize;
-        act->protocolSvc.isMessageSegmentationSupported = pubsubProtocol_isMessageSegmentationSupported;
-        
-        act->protocolSvc.encodeHeader = pubsubProtocol_encodeHeader;
-        act->protocolSvc.encodePayload = pubsubProtocol_encodePayload;
-        act->protocolSvc.encodeMetadata = pubsubProtocol_encodeMetadata;
-        act->protocolSvc.encodeFooter = pubsubProtocol_encodeFooter;
+        act->protocolSvc.getHeaderSize = pubsubProtocol_wire_v2_getHeaderSize;
+        act->protocolSvc.getHeaderBufferSize = pubsubProtocol_wire_v2_getHeaderBufferSize;
+        act->protocolSvc.getSyncHeaderSize = pubsubProtocol_wire_v2_getSyncHeaderSize;
+        act->protocolSvc.getSyncHeader = pubsubProtocol_wire_v2_getSyncHeader;
+        act->protocolSvc.getFooterSize = pubsubProtocol_wire_v2_getFooterSize;
+        act->protocolSvc.isMessageSegmentationSupported = pubsubProtocol_wire_v2_isMessageSegmentationSupported;
 
-        act->protocolSvc.decodeHeader = pubsubProtocol_decodeHeader;
-        act->protocolSvc.decodePayload = pubsubProtocol_decodePayload;
-        act->protocolSvc.decodeMetadata = pubsubProtocol_decodeMetadata;
-        act->protocolSvc.decodeFooter = pubsubProtocol_decodeFooter;
+        act->protocolSvc.encodeHeader = pubsubProtocol_wire_v2_encodeHeader;
+        act->protocolSvc.encodePayload = pubsubProtocol_wire_v2_encodePayload;
+        act->protocolSvc.encodeMetadata = pubsubProtocol_wire_v2_encodeMetadata;
+        act->protocolSvc.encodeFooter = pubsubProtocol_wire_v2_encodeFooter;
+
+        act->protocolSvc.decodeHeader = pubsubProtocol_wire_v2_decodeHeader;
+        act->protocolSvc.decodePayload = pubsubProtocol_wire_v2_decodePayload;
+        act->protocolSvc.decodeMetadata = pubsubProtocol_wire_v2_decodeMetadata;
+        act->protocolSvc.decodeFooter = pubsubProtocol_wire_v2_decodeFooter;
 
         act->wireProtocolSvcId = celix_bundleContext_registerService(ctx, &act->protocolSvc, PUBSUB_PROTOCOL_SERVICE_NAME, props);
     }
@@ -64,7 +64,7 @@ static int ps_wp_start(ps_wp_activator_t *act, celix_bundle_context_t *ctx) {
 static int ps_wp_stop(ps_wp_activator_t *act, celix_bundle_context_t *ctx) {
     celix_bundleContext_unregisterService(ctx, act->wireProtocolSvcId);
     act->wireProtocolSvcId = -1L;
-    pubsubProtocol_destroy(act->wireprotocol);
+    pubsubProtocol_wire_v2_destroy(act->wireprotocol);
     return CELIX_SUCCESS;
 }
 

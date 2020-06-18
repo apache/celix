@@ -842,7 +842,9 @@ int pubsub_tcpHandler_read(pubsub_tcpHandler_t *handle, int fd) {
             // Did not receive correct header
             // skip sync word and try to read next header
             nbytes = pubsub_tcpHandler_readSocket(handle, entry, fd, header_buffer, 0, entry->syncSize, 0);
-            if (!entry->headerError) L_WARN("[TCP Socket] Failed to decode message header (fd: %d) (url: %s)", entry->fd, entry->url);
+            if (!entry->headerError) {
+                L_WARN("[TCP Socket] Failed to decode message header (fd: %d) (url: %s)", entry->fd, entry->url);
+            }
             entry->headerError = true;
             entry->bufferReadSize = 0;
         } else {

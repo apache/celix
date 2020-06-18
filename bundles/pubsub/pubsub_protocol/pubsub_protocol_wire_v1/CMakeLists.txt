@@ -17,11 +17,10 @@
 
 add_library(celix_wire_protocol_v1_impl STATIC
     src/pubsub_wire_protocol_impl.c
-    src/pubsub_wire_protocol_common.c
 )
 target_include_directories(celix_wire_protocol_v1_impl PRIVATE src)
-target_link_libraries(celix_wire_protocol_v1_impl PRIVATE Celix::pubsub_spi )
-
+target_link_libraries(celix_wire_protocol_v1_impl PUBLIC Celix::pubsub_spi)
+target_link_libraries(celix_wire_protocol_v1_impl PUBLIC celix_pubsub_protocol_lib)
 
 add_celix_bundle(celix_pubsub_protocol_wire_v1
     BUNDLE_SYMBOLICNAME "apache_celix_pubsub_protocol_wire_v1"
