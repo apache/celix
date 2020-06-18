@@ -555,17 +555,28 @@ processMsgForSubscriberEntry(pubsub_tcp_topic_receiver_t *receiver, psa_tcp_subs
 
             if (status == CELIX_SUCCESS) {
                 hash_map_iterator_t iter = hashMapIterator_construct(entry->subscriberServices);
+                bool release = true;
                 while (hashMapIterator_hasNext(&iter)) {
-                    bool release = true;
                     pubsub_subscriber_t *svc = hashMapIterator_nextValue(&iter);
                     svc->receive(svc->handle, msgSer->msgName, msgSer->msgId, deSerializedMsg, message->metadata.metadata,
                                  &release);
-                    if (release) {
-                        msgSer->freeDeserializeMsg(msgSer->handle, deSerializedMsg);
+                    if (!release && hashMapIterator_hasNext(&iter)) {
+                        //receive function has taken ownership and still more receive function to come ..
+                        //deserialize again for new message
+                        status = msgSer->deserialize(msgSer->handle, &deSerializeBuffer, 1, &deSerializedMsg);
+                        if (status != CELIX_SUCCESS) {
+                            L_WARN("[PSA_TCP_TR] Cannot deserialize msg type %s for scope/topic %s/%s", msgSer->msgName,
+                                   receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic);
+                            break;
+                        }
+                        release = true;
                     }
-                    if (message->metadata.metadata) {
-                        celix_properties_destroy(message->metadata.metadata);
-                    }
+                }
+                if (release) {
+                    msgSer->freeDeserializeMsg(msgSer->handle, deSerializedMsg);
+                }
+                if (message->metadata.metadata) {
+                    celix_properties_destroy(message->metadata.metadata);
                 }
                 updateReceiveCount += 1;
             } else {

@@ -520,17 +520,26 @@ static inline void processMsgForSubscriberEntry(pubsub_zmq_topic_receiver_t *rec
                 uint32_t msgId = message->header.msgId;
                 celix_properties_t *metadata = message->metadata.metadata;
                 bool cont = pubsubInterceptorHandler_invokePreReceive(receiver->interceptorsHandler, msgType, msgId, deserializedMsg, &metadata);
+                bool release = true;
                 if (cont) {
                     hash_map_iterator_t iter2 = hashMapIterator_construct(entry->subscriberServices);
                     while (hashMapIterator_hasNext(&iter2)) {
-                        bool release = true;
                         pubsub_subscriber_t *svc = hashMapIterator_nextValue(&iter2);
-                        svc->receive(svc->handle, msgSer->msgName, msgSer->msgId, deserializedMsg,
-                                     metadata, &release);
-                        if (release) {
-                            msgSer->freeDeserializeMsg(msgSer->handle, deserializedMsg);
-                        }
+                        svc->receive(svc->handle, msgSer->msgName, msgSer->msgId, deserializedMsg, metadata, &release);
                         pubsubInterceptorHandler_invokePostReceive(receiver->interceptorsHandler, msgType, msgId, deserializedMsg, metadata);
+                        if (!release && hashMapIterator_hasNext(&iter2)) {
+                            //receive function has taken ownership and still more receive function to come ..
+                            //deserialize again for new message
+                            status = msgSer->deserialize(msgSer->handle, &deSerializeBuffer, 0, &deserializedMsg);
+                            if (status != CELIX_SUCCESS) {
+                                L_WARN("[PSA_ZMQ_TR] Cannot deserialize msg type %s for scope/topic %s/%s", msgSer->msgName, receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic);
+                                break;
+                            }
+                            release = true;
+                        }
+                    }
+                    if (release) {
+                        msgSer->freeDeserializeMsg(msgSer->handle, deserializedMsg);
                     }
                     updateReceiveCount += 1;
                 }

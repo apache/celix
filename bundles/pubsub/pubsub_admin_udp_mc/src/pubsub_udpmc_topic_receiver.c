@@ -470,7 +470,7 @@ static void psa_udpmc_processMsg(pubsub_udpmc_topic_receiver_t *receiver, pubsub
             msgSer = hashMap_get(entry->msgTypes, (void *) (uintptr_t) msg->header.type);
         }
         if (msgSer == NULL) {
-            printf("[PSA_UDPMC] Serializer not available for message %d.\n", msg->header.type);
+            L_WARN("[PSA_UDPMC] Serializer not available for message %d.\n", msg->header.type);
         } else {
             void *msgInst = NULL;
             bool validVersion = psa_udpmc_checkVersion(msgSer->msgVersion, &msg->header);
@@ -483,23 +483,33 @@ static void psa_udpmc_processMsg(pubsub_udpmc_topic_receiver_t *receiver, pubsub
 
                 if (status == CELIX_SUCCESS) {
                     hash_map_iterator_t iter2 = hashMapIterator_construct(entry->subscriberServices);
+                    bool release = true;
                     while (hashMapIterator_hasNext(&iter2)) {
-                        bool release = true;
                         pubsub_subscriber_t *svc = hashMapIterator_nextValue(&iter2);
                         svc->receive(svc->handle, msgSer->msgName, msg->header.type, msgInst, NULL, &release);
-                        if (release) {
-                            msgSer->freeDeserializeMsg(msgSer->handle, msgInst);
+                        if (!release && hashMapIterator_hasNext(&iter2)) {
+                            //receive function has taken ownership and still more receive function to come ..
+                            //deserialize again for new message
+                            status = msgSer->deserialize(msgSer->handle, &deSerializeBuffer, 0, &msgInst);
+                            if (status != CELIX_SUCCESS) {
+                                L_WARN("[PSA_UDPMC] Cannot deserialize msgType %s.\n",msgSer->msgName);
+                                break;
+                            }
+                            release = true;
                         }
                     }
+                    if (release) {
+                        msgSer->freeDeserializeMsg(msgSer->handle, msgInst);
+                    }
                 } else {
-                    printf("[PSA_UDPMC] Cannot deserialize msgType %s.\n",msgSer->msgName);
+                    L_WARN("[PSA_UDPMC] Cannot deserialize msgType %s.\n",msgSer->msgName);
                 }
 
             } else {
                 int major = 0, minor = 0;
                 version_getMajor(msgSer->msgVersion, &major);
                 version_getMinor(msgSer->msgVersion, &minor);
-                printf("[PSA_UDPMC] Version mismatch for primary message '%s' (have %d.%d, received %u.%u). NOT sending any part of the whole message.\n",
+                L_WARN("[PSA_UDPMC] Version mismatch for primary message '%s' (have %d.%d, received %u.%u). NOT sending any part of the whole message.\n",
                        msgSer->msgName,major,minor,msg->header.major,msg->header.minor);
             }
 
