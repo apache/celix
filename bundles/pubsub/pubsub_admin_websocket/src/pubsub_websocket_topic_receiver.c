@@ -34,6 +34,7 @@
 #include <uuid/uuid.h>
 #include <http_admin/api.h>
 #include <jansson.h>
+#include <celix_api.h>
 
 #ifndef UUID_STR_LEN
 #define UUID_STR_LEN 37
@@ -107,9 +108,8 @@ typedef struct psa_websocket_requested_connection_entry {
 } psa_websocket_requested_connection_entry_t;
 
 typedef struct psa_websocket_subscriber_entry {
-    int usageCount;
     hash_map_t *msgTypes; //key = msg type id, value = pubsub_msg_serializer_t
-    pubsub_subscriber_t *svc;
+    hash_map_t *subscriberServices; //key = servide id, value = pubsub_subscriber_t*
     bool initialized; //true if the init function is called through the receive thread
 } psa_websocket_subscriber_entry_t;
 
@@ -263,6 +263,7 @@ void pubsub_websocketTopicReceiver_destroy(pubsub_websocket_topic_receiver_t *re
             psa_websocket_subscriber_entry_t *entry = hashMapIterator_nextValue(&iter);
             if (entry != NULL)  {
                 receiver->serializer->destroySerializerMap(receiver->serializer->handle, entry->msgTypes);
+                hashMap_destroy(entry->subscriberServices, false, false);
                 free(entry);
             }
 
@@ -394,6 +395,7 @@ static void pubsub_websocketTopicReceiver_addSubscriber(void *handle, void *svc,
     pubsub_websocket_topic_receiver_t *receiver = handle;
 
     long bndId = celix_bundle_getId(bnd);
+    long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1);
     const char *subScope = celix_properties_get(props, PUBSUB_SUBSCRIBER_SCOPE, NULL);
     if (receiver->scope == NULL){
         if (subScope != NULL){
@@ -409,13 +411,13 @@ static void pubsub_websocketTopicReceiver_addSubscriber(void *handle, void *svc,
     celixThreadMutex_lock(&receiver->subscribers.mutex);
     psa_websocket_subscriber_entry_t *entry = hashMap_get(receiver->subscribers.map, (void*)bndId);
     if (entry != NULL) {
-        entry->usageCount += 1;
+        hashMap_put(entry->subscriberServices, (void*)svcId, svc);
     } else {
         //new create entry
         entry = calloc(1, sizeof(*entry));
-        entry->usageCount = 1;
-        entry->svc = svc;
+        entry->subscriberServices = hashMap_create(NULL, NULL, NULL, NULL);
         entry->initialized = false;
+        hashMap_put(entry->subscriberServices, (void*)svcId, svc);
 
         int rc = receiver->serializer->createSerializerMap(receiver->serializer->handle, (celix_bundle_t*)bnd, &entry->msgTypes);
 
@@ -433,19 +435,22 @@ static void pubsub_websocketTopicReceiver_removeSubscriber(void *handle, void *s
     pubsub_websocket_topic_receiver_t *receiver = handle;
 
     long bndId = celix_bundle_getId(bnd);
+    long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1);
+
 
     celixThreadMutex_lock(&receiver->subscribers.mutex);
     psa_websocket_subscriber_entry_t *entry = hashMap_get(receiver->subscribers.map, (void*)bndId);
     if (entry != NULL) {
-        entry->usageCount -= 1;
+        hashMap_remove(entry->subscriberServices, (void*)svcId);
     }
-    if (entry != NULL && entry->usageCount <= 0) {
+    if (entry != NULL && hashMap_size(entry->subscriberServices) == 0) {
         //remove entry
         hashMap_remove(receiver->subscribers.map, (void*)bndId);
         int rc = receiver->serializer->destroySerializerMap(receiver->serializer->handle, entry->msgTypes);
         if (rc != 0) {
             L_ERROR("[PSA_WEBSOCKET] Cannot destroy msg serializers map for TopicReceiver %s/%s", receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic);
         }
+        hashMap_destroy(entry->subscriberServices, false, false);
         free(entry);
     }
     celixThreadMutex_unlock(&receiver->subscribers.mutex);
@@ -472,7 +477,6 @@ static inline void processMsgForSubscriberEntry(pubsub_websocket_topic_receiver_
     //NOTE receiver->subscribers.mutex locked
     void *msgTypeId = psa_websocket_getMsgTypeIdFromFqn(hdr->id, entry->msgTypes);
     pubsub_msg_serializer_t* msgSer = hashMap_get(entry->msgTypes, msgTypeId);
-    pubsub_subscriber_t *svc = entry->svc;
 
     if (msgSer!= NULL && msgTypeId != 0) {
         void *deSerializedMsg = NULL;
@@ -484,8 +488,22 @@ static inline void processMsgForSubscriberEntry(pubsub_websocket_topic_receiver_
             celix_status_t status = msgSer->deserialize(msgSer->handle, &deSerializeBuffer, 0, &deSerializedMsg);
 
             if (status == CELIX_SUCCESS) {
+                hash_map_iterator_t iter = hashMapIterator_construct(entry->subscriberServices);
                 bool release = true;
-                svc->receive(svc->handle, msgSer->msgName, msgSer->msgId, deSerializedMsg, NULL, &release);
+                while (hashMapIterator_hasNext(&iter)) {
+                    pubsub_subscriber_t *svc = hashMapIterator_nextValue(&iter);
+                    svc->receive(svc->handle, msgSer->msgName, msgSer->msgId, deSerializedMsg, NULL, &release);
+                    if (!release && hashMapIterator_hasNext(&iter)) {
+                        //receive function has taken ownership and still more receive function to come ..
+                        //deserialize again for new message
+                        status = msgSer->deserialize(msgSer->handle, &deSerializeBuffer, 0, &deSerializedMsg);
+                        if (status != CELIX_SUCCESS) {
+                            L_WARN("[PSA_WEBSOCKET_TR] Cannot deserialize msg type %s for scope/topic %s/%s", msgSer->msgName, receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic);
+                            break;
+                        }
+                        release = true;
+                    }
+                }
                 if (release) {
                     msgSer->freeDeserializeMsg(msgSer->handle, deSerializedMsg);
                 }
@@ -727,15 +745,20 @@ static void psa_websocket_initializeAllSubscribers(pubsub_websocket_topic_receiv
         while (hashMapIterator_hasNext(&iter)) {
             psa_websocket_subscriber_entry_t *entry = hashMapIterator_nextValue(&iter);
             if (!entry->initialized) {
-                int rc = 0;
-                if (entry->svc != NULL && entry->svc->init != NULL) {
-                    rc = entry->svc->init(entry->svc->handle);
-                }
-                if (rc == 0) {
-                    entry->initialized = true;
-                } else {
-                    L_WARN("Cannot initialize subscriber svc. Got rc %i", rc);
-                    allInitialized = false;
+                hash_map_iterator_t iter2 = hashMapIterator_construct(entry->subscriberServices);
+                while (hashMapIterator_hasNext(&iter2)) {
+                    pubsub_subscriber_t *svc = hashMapIterator_nextValue(&iter2);
+                    int rc = 0;
+                    if (svc != NULL && svc->init != NULL) {
+                        rc = svc->init(svc->handle);
+                    }
+                    if (rc == 0) {
+                        //note now only initialized on first subscriber entries added.
+                        entry->initialized = true;
+                    } else {
+                        L_WARN("Cannot initialize subscriber svc. Got rc %i", rc);
+                        allInitialized = false;
+                    }
                 }
             }
         }
