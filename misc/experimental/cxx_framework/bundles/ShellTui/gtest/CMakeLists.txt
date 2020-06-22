@@ -19,7 +19,7 @@ set(SOURCES
         src/ShellTui_tests.cc
 )
 add_executable(celix_cxx_shell_tui_tests ${SOURCES})
-target_link_libraries(celix_cxx_shell_tui_tests PRIVATE GTest::gtest GTest::gtest_main Celix::cxx::Framework Celix::cxx::ShellTuiBundle_static Celix::cxx::ShellApi)
+target_link_libraries(celix_cxx_shell_tui_tests PRIVATE GTest::gtest GTest::gtest_main Celix::cxx::Framework celix_ShellTui_static Celix::cxx::ShellApi)
 
 add_test(NAME celix_cxx_shell_tui_tests COMMAND celix_cxx_shell_tui_tests)
 setup_target_for_coverage(celix_cxx_shell_tui_tests SCAN_DIR ..)
