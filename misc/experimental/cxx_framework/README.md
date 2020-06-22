@@ -51,9 +51,9 @@ supported.
 
 # Known Issues
  
-- celix::typeName<I>() should:
-   a) try a specialized celix::customTypeNameFor, b) try to find a `NAME` field in the provided template,  
-    c) fallback to using the value of the `__PRETTY_FUNCTION__` macro to extract a type name. Currently finding a field
+- `celix::typeName<I>()` should:
+1. try a specialized celix::customTypeNameFor, b) try to find a `NAME` field in the provided template,  
+2. fallback to using the value of the `__PRETTY_FUNCTION__` macro to extract a type name. Currently finding a field
     `NAME` is not working.  
 
 # Small introduction in using the Celix C++ Framework
