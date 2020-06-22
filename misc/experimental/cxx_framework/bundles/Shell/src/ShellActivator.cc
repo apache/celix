@@ -156,7 +156,7 @@ namespace {
             read = fread(resources, 1, sect->size, dylib);
         }
         if (dylib == nullptr || read != sect->size) {
-            LOGGER->warn("Error reading resources from dylib {}: {}", info.dli_fname, strerror(errno));
+            celix::getLogger("celix")->error("Error reading resources from dylib {}: {}", info.dli_fname, strerror(errno));
             free(resources);
             resources = nullptr;
             resourcesLen = 0;
