@@ -17,19 +17,10 @@
  *under the License.
  */
 
-#pragma once
+#include "celix/Api.h"
 
-namespace celix {
-    /**
-     * The BundleActivator is a marker interface and contains no virtual methods.
-     *
-     * The Celix Framework will expect a constructor with a std::shared_ptr<celix:IBundleContext> argument for the
-     * concrete bundle activator. RAII will be used to start (on ctor) and stop (on dtor) a bundle.
-     */
-    class IBundleActivator {
-    public:
-        virtual ~IBundleActivator() = default;
-    };
+int main() {
+    auto fw = celix::Framework::create();
+    fw->waitForShutdown();
+    return 0;
 }
-
-#define CELIX_GEN_CONFIGURE_RESOURCES()

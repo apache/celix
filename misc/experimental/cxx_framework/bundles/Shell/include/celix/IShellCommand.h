@@ -35,7 +35,7 @@ namespace celix {
 
         virtual ~IShellCommand() = default;
 
-        virtual void executeCommand(const std::string &cmdName, const std::vector<std::string> &cmdArgs, std::ostream &out, std::ostream &err) noexcept = 0;
+        virtual void executeCommand(const std::string &cmdName, const std::vector<std::string> &cmdArgs, std::ostream &out, std::ostream &err) = 0;
     };
 
     static constexpr const char * const SHELL_COMMAND_FUNCTION_SERVICE_NAME = "[celix::ShellCommandFunction] [version 1]";

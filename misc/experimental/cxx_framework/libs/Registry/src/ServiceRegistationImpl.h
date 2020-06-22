@@ -35,7 +35,6 @@
 namespace celix {
     namespace impl {
 
-        //TODO move impl from header to cc file.
         struct SvcEntry {
             explicit SvcEntry(std::shared_ptr<const celix::IResourceBundle> _owner, long _svcId, std::string _svcName, std::shared_ptr<void> _svc, std::shared_ptr<celix::IServiceFactory<void>> _svcFac,
                               celix::Properties &&_props) :
@@ -65,16 +64,14 @@ namespace celix {
 
             bool factory() const { return svcFactory != nullptr; }
 
-            void incrUsage() const {
-                //TODO look at atomics or shared_ptr to handled to counts / sync
+            void incrUsage() {
                 std::lock_guard<std::mutex> lck{mutex};
                 usage += 1;
             }
 
-            void decrUsage() const {
+            void decrUsage() {
                 std::lock_guard<std::mutex> lck{mutex};
                 if (usage == 0) {
-                    //TODO more to cc file
                     //logger->error("Usage count decrease below 0!");
                 } else {
                     usage -= 1;
@@ -86,16 +83,59 @@ namespace celix {
                 std::unique_lock<std::mutex> lock{mutex};
                 cond.wait(lock, [this]{return usage == 0;});
             }
+
+            //wait until service is done registering or unregistering
+            void wait() const {
+                std::unique_lock<std::mutex> lck{mutex};
+                while (!isDoneUpdatingUnsafe()) {
+                    cond.wait(lck);
+                }
+            }
+
+            void setState(celix::ServiceRegistration::State newState) {
+                std::lock_guard<std::mutex> lck{mutex};
+                currentState = newState;
+                cond.notify_all();
+            }
+
+            celix::ServiceRegistration::State state() const {
+                std::lock_guard<std::mutex> lck{mutex};
+                return currentState;
+            }
+
+            //wait until service is done registering or unregistering
+            template<typename Rep, typename Period>
+            bool waitFor(const std::chrono::duration<Rep, Period>& t) const {
+                std::unique_lock<std::mutex> lck{};
+                if (!isDoneUpdatingUnsafe()) {
+                    cond.wait(lck, t);
+                }
+                return isDoneUpdatingUnsafe();
+            }
+
+            bool isDoneRegistering() const {
+                std::lock_guard<std::mutex> lck{mutex};
+                return currentState == celix::ServiceRegistration::State::Registered ||
+                       currentState ==  celix::ServiceRegistration::State::Unregistering ||
+                       currentState == celix::ServiceRegistration::State::Unregistered;
+            }
+
+            //check whether the svc registration is done, or if the reg is at the end state
+            bool isDoneUpdatingUnsafe() const {
+                //assume mutex is taken!
+                return currentState == celix::ServiceRegistration::State::Registered ||
+                       currentState == celix::ServiceRegistration::State::Unregistered;
+            }
         private:
             //svc, svcSharedPtr or svcFactory is set
             const std::shared_ptr<void> svc;
             const std::shared_ptr<celix::IServiceFactory<void>> svcFactory;
 
-
-            //sync TODO refactor to atomics
+            //sync
             mutable std::mutex mutex{};
             mutable std::condition_variable cond{};
-            mutable int usage{1};
+            int usage{1};
+            celix::ServiceRegistration::State currentState{celix::ServiceRegistration::State::Registering};
         };
 
         struct SvcEntryLess {
@@ -108,6 +148,6 @@ namespace celix {
             }
         };
 
-        celix::ServiceRegistration::Impl* createServiceRegistrationImpl(std::shared_ptr<const celix::impl::SvcEntry> entry, std::function<void()> unregisterCallback, bool registered);
+        celix::ServiceRegistration::Impl* createServiceRegistrationImpl(std::shared_ptr<celix::impl::SvcEntry> entry, std::function<void()> unregisterCallback);
     }
 }

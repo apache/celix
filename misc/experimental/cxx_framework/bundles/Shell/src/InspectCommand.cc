@@ -42,12 +42,15 @@ namespace {
                 out << "Provided Services: \n";
                 for (auto &svcName : servicesNames) {
                     std::string filter = std::string{"("} + std::string{celix::SERVICE_BUNDLE_ID} + "=" + bndId + ")";
-                    ctx->registry()->useAnyServices(svcName, celix::Filter{}, [&out](const std::shared_ptr<void>&, const celix::Properties &props, const celix::IResourceBundle &) {
+                    celix::UseAnyServiceOptions opts;
+                    opts.filter = filter;
+                    opts.useWithProperties = [&out](const std::shared_ptr<void> &, const celix::Properties &props) {
                         out << "|- Service " << props.get(celix::SERVICE_ID, "!Error") << ":\n";
                         for (auto &pair : props) {
                             out << "   |- " << pair.first << " = " << pair.second << std::endl;
                         }
-                    }, ctx->bundle());
+                    };
+                    ctx->registry()->useAnyServices(svcName, std::move(opts), ctx->bundle());
                 }
             }
             if (what == nullptr || *what == "tracked") {

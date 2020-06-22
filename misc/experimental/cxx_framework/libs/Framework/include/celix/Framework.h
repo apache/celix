@@ -49,59 +49,64 @@ namespace celix {
         celix::registerStaticBundle(std::move(symbolicName), std::move(actFactory), std::move(manifest), resourcesZip, resourcesZipLen);
     }
 
-    //TODO create IFramework and move impl to private/cc
     class Framework {
     public:
-        Framework(celix::Properties config = {});
-        ~Framework();
-        Framework(Framework &&rhs);
-        Framework& operator=(Framework&& rhs);
+        static std::shared_ptr<Framework> create(celix::Properties config = {});
 
+        Framework() = default;
+        virtual ~Framework() = default;
+
+        Framework(Framework &&rhs) = delete;
+        Framework& operator=(Framework&& rhs) = delete;
         Framework(const Framework& rhs) = delete;
         Framework& operator=(const Framework &rhs) = delete;
 
         template<typename T>
-        long installBundle(std::string name, celix::Properties manifest = {}, bool autoStart = true, const uint8_t *resourcesZip = nullptr, size_t resourcesZipLen = 0) {
-            auto actFactory = [](std::shared_ptr<celix::BundleContext> ctx) {
-                return new T{std::move(ctx)};
-            };
-            return installBundle(name, std::move(actFactory), std::move(manifest), autoStart, resourcesZip, resourcesZipLen);
-        }
+        long installBundle(std::string name, celix::Properties manifest = {}, bool autoStart = true, const uint8_t *resourcesZip = nullptr, size_t resourcesZipLen = 0);
 
-        long installBundle(
-                std::string name,
+        virtual long installBundle(
+                std::string symbolicName,
                 std::function<celix::IBundleActivator*(std::shared_ptr<celix::BundleContext>)> actFactory,
                 celix::Properties manifest = {},
                 bool autoStart = true,
                 const uint8_t *resourcesZip = nullptr,
-                const size_t resourcesZipLen = 0);
+                size_t resourcesZipLen = 0) = 0;
 
 
         //long installBundle(const std::string &path);
-        bool startBundle(long bndId);
-        bool stopBundle(long bndId);
-        bool uninstallBundle(long bndId);
+        virtual bool startBundle(long bndId) = 0;
+        virtual bool stopBundle(long bndId) = 0;
+        virtual bool uninstallBundle(long bndId) = 0;
 
-        bool useBundle(long bndId, std::function<void(const celix::IBundle &bnd)> use) const;
-        int useBundles(std::function<void(const celix::IBundle &bnd)> use, bool includeFrameworkBundle = false) const;
+        virtual bool useBundle(long bndId, std::function<void(const celix::IBundle &bnd)> use) const = 0;
+        virtual int useBundles(std::function<void(const celix::IBundle &bnd)> use, bool includeFrameworkBundle = false) const = 0;
 
-        std::string cacheDir() const;
-        std::string uuid() const;
-        std::string shortUUID() const; //only the first 4 char of the framework uuid
+        virtual std::string cacheDir() const = 0;
+        virtual std::string uuid() const = 0;
+        virtual std::string shortUUID() const = 0; //only the first 4 char of the framework uuid
 
-        std::shared_ptr<celix::BundleContext> context() const;
+        virtual std::shared_ptr<celix::BundleContext> context() const = 0;
 
         //TODO trackBundles
 
-        //long bundleIdForName(const std::string &bndName) const;
-        std::vector<long> listBundles(bool includeFrameworkBundle = false) const;
+        //virtual long bundleIdForName(const std::string &bndName) const = 0;
 
-        std::shared_ptr<celix::ServiceRegistry> registry() const;
+        virtual std::vector<long> listBundles(bool includeFrameworkBundle = false) const = 0;
 
-        bool waitForShutdown() const;
-    private:
-        class Impl;
-        std::unique_ptr<Impl> pimpl;
+        virtual std::shared_ptr<celix::ServiceRegistry> registry() const = 0;
+
+        virtual bool waitForShutdown() const = 0;
     };
+}
 
+
+/**********************************************************************************************************************
+  Service Framework Template Implementation
+ **********************************************************************************************************************/
+template<typename T>
+inline long celix::Framework::installBundle(std::string name, celix::Properties manifest, bool autoStart, const uint8_t *resourcesZip, size_t resourcesZipLen) {
+    auto actFactory = [](std::shared_ptr<celix::BundleContext> ctx) {
+        return new T{std::move(ctx)};
+    };
+    return installBundle(name, std::move(actFactory), std::move(manifest), autoStart, resourcesZip, resourcesZipLen);
 }

@@ -17,19 +17,28 @@
  *under the License.
  */
 
-#pragma once
+#include <iostream>
+#include <chrono>
+#include "celix/Api.h"
+#include "examples/IHelloWorld.h"
 
-namespace celix {
-    /**
-     * The BundleActivator is a marker interface and contains no virtual methods.
-     *
-     * The Celix Framework will expect a constructor with a std::shared_ptr<celix:IBundleContext> argument for the
-     * concrete bundle activator. RAII will be used to start (on ctor) and stop (on dtor) a bundle.
-     */
-    class IBundleActivator {
+namespace {
+
+    class UseServiceActivator : public celix::IBundleActivator {
     public:
-        virtual ~IBundleActivator() = default;
+        explicit UseServiceActivator(const std::shared_ptr<celix::BundleContext>& ctx) {
+            ctx->buildUseService<examples::IHelloWorld>()
+                    .setFilter("(meta.info=value)")
+                    .waitFor(std::chrono::seconds{1})
+                    .setCallback([](auto &svc) {
+                        std::cout << "Called from UseService: " << svc.sayHello() << std::endl;
+                    })
+                    .use();
+        }
     };
-}
 
-#define CELIX_GEN_CONFIGURE_RESOURCES()
+    __attribute__((constructor))
+    static void registerStaticBundle() {
+        celix::registerStaticBundle<UseServiceActivator>("examples::UseService");
+    }
+}

@@ -31,6 +31,7 @@ namespace celix {
     static constexpr std::string_view SERVICE_COMPONENT_ID = "service.component.id";
     static constexpr std::string_view FRAMEWORK_UUID = "framework.uuid";
 
+    static constexpr std::string_view MANIFEST_BUNDLE_SYMBOLIC_NAME = "Bundle-SymbolicName";
     static constexpr std::string_view MANIFEST_BUNDLE_NAME = "Bundle-Name";
     static constexpr std::string_view MANIFEST_BUNDLE_VERSION = "Bundle-Version";
     static constexpr std::string_view MANIFEST_BUNDLE_GROUP = "Bundle-Group";

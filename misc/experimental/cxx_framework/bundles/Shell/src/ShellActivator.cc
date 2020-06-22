@@ -170,7 +170,7 @@ namespace {
 
 
         celix::Properties manifest{};
-        manifest[celix::MANIFEST_BUNDLE_NAME] = "Shell";
+        manifest[celix::MANIFEST_BUNDLE_NAME] = "Celix Shell";
         manifest[celix::MANIFEST_BUNDLE_GROUP] = "Celix";
         manifest[celix::MANIFEST_BUNDLE_VERSION] = "1.0.0";
         celix::registerStaticBundle<ShellBundleActivator>("celix::Shell", std::move(manifest), resources, resourcesLen);

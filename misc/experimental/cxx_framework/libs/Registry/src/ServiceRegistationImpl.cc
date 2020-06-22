@@ -18,6 +18,7 @@
  */
 
 
+#include <memory>
 #include <ostream>
 
 
@@ -32,15 +33,14 @@
 
 class celix::ServiceRegistration::Impl {
 public:
-    const std::shared_ptr<const celix::impl::SvcEntry> entry;
+    const std::shared_ptr<celix::impl::SvcEntry> entry;
     const std::function<void()> unregisterCallback;
-    bool registered; //TODO make atomic?
 };
 
 
 celix::ServiceRegistration::ServiceRegistration() : pimpl{nullptr} {}
 
-celix::ServiceRegistration::ServiceRegistration(celix::ServiceRegistration::Impl *impl) : pimpl{impl} {}
+celix::ServiceRegistration::ServiceRegistration(celix::ServiceRegistration::Impl* _pimpl) : pimpl{_pimpl} {}
 celix::ServiceRegistration::ServiceRegistration(celix::ServiceRegistration &&) noexcept = default;
 celix::ServiceRegistration& celix::ServiceRegistration::operator=(celix::ServiceRegistration &&) noexcept = default;
 celix::ServiceRegistration::~ServiceRegistration() { unregister(); }
@@ -48,12 +48,20 @@ celix::ServiceRegistration::~ServiceRegistration() { unregister(); }
 long celix::ServiceRegistration::serviceId() const { return pimpl ? pimpl->entry->svcId : -1L; }
 bool celix::ServiceRegistration::valid() const { return serviceId() >= 0; }
 bool celix::ServiceRegistration::factory() const { return pimpl && pimpl->entry->factory(); }
-bool celix::ServiceRegistration::registered() const {return pimpl && pimpl->registered; }
+bool celix::ServiceRegistration::registered() const {return pimpl && pimpl->entry->isDoneRegistering(); }
+
+void celix::ServiceRegistration::wait() const {
+    if (pimpl) {
+        pimpl->entry->wait();
+    }
+}
+
+template<typename Rep, typename Period>
+bool celix::ServiceRegistration::waitFor(const std::chrono::duration<Rep, Period>& period) const { return pimpl && pimpl->entry->waitFor(period); } ;
 
 void celix::ServiceRegistration::unregister() {
-    if (pimpl && pimpl->registered) {
+    if (pimpl) {
         LOGGER->debug("Unregistering service {} with id {}", pimpl->entry->svcName, pimpl->entry->svcId);
-        pimpl->registered = false; //TODO make thread safe
         pimpl->unregisterCallback();
     }
 }
@@ -77,6 +85,6 @@ std::ostream& operator<<(std::ostream &out, const celix::ServiceRegistration& re
 }
 
 
-celix::ServiceRegistration::Impl* celix::impl::createServiceRegistrationImpl(std::shared_ptr<const celix::impl::SvcEntry> entry, std::function<void()> unregisterCallback, bool registered) {
-    return new celix::ServiceRegistration::Impl{.entry = std::move(entry), .unregisterCallback = std::move(unregisterCallback), .registered = registered};
+celix::ServiceRegistration::Impl* celix::impl::createServiceRegistrationImpl(std::shared_ptr<celix::impl::SvcEntry> entry, std::function<void()> unregisterCallback) {
+    return new celix::ServiceRegistration::Impl{ .entry = std::move(entry), .unregisterCallback = std::move(unregisterCallback)};
 }

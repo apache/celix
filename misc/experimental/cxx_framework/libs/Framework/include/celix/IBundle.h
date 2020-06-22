@@ -39,8 +39,6 @@ namespace celix {
 
         virtual bool isFrameworkBundle() const  = 0;
 
-        virtual void* handle() const = 0;
-
         virtual celix::BundleState state() const  = 0;
 
         virtual const std::string& version() const = 0;

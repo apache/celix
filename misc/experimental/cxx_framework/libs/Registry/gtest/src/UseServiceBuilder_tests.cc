@@ -23,14 +23,14 @@
 #include <gtest/gtest.h>
 
 
-#include "celix/UseServiceBuilder.h"
+#include "celix/UseServicesBuilder.h"
 
 class UseServiceBuilderTest : public ::testing::Test {
 public:
     std::shared_ptr<celix::ServiceRegistry> registry() const { return reg; }
     std::shared_ptr<celix::IResourceBundle> bundle() const { return bnd; }
 private:
-    std::shared_ptr<celix::ServiceRegistry> reg{new celix::ServiceRegistry{"test"}};
+    std::shared_ptr<celix::ServiceRegistry> reg{celix::ServiceRegistry::create("test")};
     std::shared_ptr<celix::IResourceBundle> bnd{new celix::EmptyResourceBundle{}};
 };
 
@@ -47,33 +47,34 @@ class Interface3 {
 
 
 TEST_F(UseServiceBuilderTest, UseServiceBuilderTest) {
-    auto builder = celix::UseServiceBuilder<Interface1>{bundle(), registry()};
+    auto builder = celix::UseServicesBuilder<Interface1>{bundle(), registry()};
     //NOTE by design not possible, to prevent wrong use:
     // auto copy = build;
     auto templ = builder.copy(); //this is possible
 
     {
-        auto called = builder.use();
-        EXPECT_FALSE(called);
+        auto nrCalled = builder.use();
+        EXPECT_TRUE(nrCalled == 0);
 
         auto reg = registry()->registerService(std::make_shared<Interface1>());
+        reg.wait();
 
-        called = builder.use();
-        EXPECT_TRUE(called);
+        nrCalled = builder.use();
+        EXPECT_TRUE(nrCalled == 1);
 
         size_t count = 0;
         templ.setCallback([&count](Interface1 &) { ++count; });
-        called = templ.use();
-        EXPECT_TRUE(called);
+        nrCalled = templ.use();
+        EXPECT_TRUE(nrCalled == 1);
         EXPECT_EQ(count, 1);
 
-        int callCount = templ.useAll();
+        int callCount = templ.setLimit(0).use();
         EXPECT_EQ(callCount, 1);
         EXPECT_EQ(count, 2);
     }
 
-    auto called = builder.use();
-    EXPECT_FALSE(called);
+    auto nrCalled = builder.use();
+    EXPECT_TRUE(nrCalled == 0);
 }
 
 TEST_F(UseServiceBuilderTest, UseFunctionServiceBuilderTest) {
@@ -83,25 +84,26 @@ TEST_F(UseServiceBuilderTest, UseFunctionServiceBuilderTest) {
     auto templ = builder.copy(); //this is possible
 
     {
-        auto called = builder.use();
-        EXPECT_FALSE(called);
+        auto nrCalled = builder.use();
+        EXPECT_TRUE(nrCalled == 0);
 
         size_t count = 0;
         auto reg = registry()->registerFunctionService<std::function<void()>>("test", [&count]{++count;});
+        reg.wait();
 
-        called = builder.use();
-        EXPECT_TRUE(called);
+        nrCalled = builder.use();
+        EXPECT_TRUE(nrCalled == 1);
 
         templ.setCallback([](const std::function<void()> &f) { f(); });
-        called = templ.use();
-        EXPECT_TRUE(called);
+        nrCalled = templ.use();
+        EXPECT_TRUE(nrCalled == 1);
         EXPECT_EQ(count, 1);
 
-        int callCount = templ.useAll();
-        EXPECT_EQ(callCount, 1);
+        nrCalled = templ.setLimit(0).use();
+        EXPECT_EQ(nrCalled, 1);
         EXPECT_EQ(count, 2);
     }
 
-    auto called = builder.use();
-    EXPECT_FALSE(called);
+    auto nrCalled = builder.use();
+    EXPECT_TRUE(nrCalled == 0);
 }

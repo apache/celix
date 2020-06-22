@@ -34,10 +34,10 @@ public:
 
     ~RegistryConcurrencyTest() {}
 
-    celix::ServiceRegistry &registry() { return reg; }
+    celix::ServiceRegistry &registry() { return *reg; }
 
 private:
-    celix::ServiceRegistry reg{"test"};
+    std::shared_ptr<celix::ServiceRegistry> reg{celix::ServiceRegistry::create("test")};
 };
 
 
@@ -82,8 +82,8 @@ TEST_F(RegistryConcurrencyTest, ServiceRegistrationTest) {
         celix::UseServiceOptions<calc> opts{};
         opts.targetServiceId = svcReg.serviceId();
         opts.use = use;
-        bool called = registry().useService(opts);
-        EXPECT_TRUE(called);
+        int nrCalled = registry().useServices(opts);
+        EXPECT_TRUE(nrCalled > 0);
         EXPECT_EQ(84, callInfo.result);
     };
     std::thread useThread{call};

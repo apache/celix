@@ -49,10 +49,10 @@ namespace celix {
             ~SvcTrackerEntry() = default;
 
             void clear() {
-                std::vector<std::shared_ptr<const celix::impl::SvcEntry>> removeEntries{};
+                std::vector<std::shared_ptr<celix::impl::SvcEntry>> removeEntries{};
                 {
                     std::lock_guard<std::mutex> lck{tracked.mutex};
-                    for (const auto &entry : tracked.entries) {
+                    for (auto &entry : tracked.entries) {
                         removeEntries.push_back(entry.first);
                     }
                 }
@@ -76,7 +76,7 @@ namespace celix {
                 }
             }
 
-            void addMatch(std::shared_ptr<const celix::impl::SvcEntry> entry) {
+            void addMatch(std::shared_ptr<celix::impl::SvcEntry> entry) {
                 //increase usage so that services cannot be removed while a service tracker is still active
 
                 //new custom deleter which arranges the count & sync for the used services
@@ -106,7 +106,7 @@ namespace celix {
                 }
             }
 
-            void remMatch(const std::shared_ptr<const celix::impl::SvcEntry> &entry) {
+            void remMatch(const std::shared_ptr<celix::impl::SvcEntry> &entry) {
                 std::shared_ptr<void> svc{};
                 {
                     std::lock_guard<std::mutex> lck{tracked.mutex};
@@ -129,7 +129,7 @@ namespace celix {
                 //note sync will be done on the celix::impl::SvcEntry usage, which is controlled by the tracker svc shared ptr
             }
 
-            void callAddRemoveCallbacks(const std::shared_ptr<const celix::impl::SvcEntry>& entry, const std::shared_ptr<void>& svc, bool add) {
+            void callAddRemoveCallbacks(const std::shared_ptr<celix::impl::SvcEntry>& entry, const std::shared_ptr<void>& svc, bool add) {
                 auto& update = add ? opts.add : opts.remove;
                 auto& updateWithProps = add ? opts.addWithProperties : opts.removeWithProperties;
                 auto& updateWithOwner = add ? opts.addWithOwner : opts.removeWithOwner;
@@ -240,7 +240,7 @@ namespace celix {
         private:
             struct {
                 mutable std::mutex mutex{}; //protects matchedEntries & highestRanking
-                std::map<std::shared_ptr<const celix::impl::SvcEntry>, std::shared_ptr<void>, celix::impl::SvcEntryLess> entries{};
+                std::map<std::shared_ptr<celix::impl::SvcEntry>, std::shared_ptr<void>, celix::impl::SvcEntryLess> entries{};
                 std::shared_ptr<void> highest{};
             } tracked{};
 

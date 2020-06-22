@@ -29,13 +29,7 @@
 namespace celix {
     class Bundle : public celix::IBundle {
     public:
-        Bundle(long _bndId, const std::string &cacheDir, celix::Framework *_fw, celix::Properties _manifest) :
-                bndId{_bndId}, fw{_fw}, bndManifest{std::move(_manifest)},
-                bundleCache{cacheDir + "/bundle" + std::to_string(_bndId)},
-                bndState{BundleState::INSTALLED} {
-            bndState.store(BundleState::INSTALLED, std::memory_order_release);
-        }
-
+        Bundle(long _bndId, const std::string &cacheDir, celix::Framework *_fw, celix::Properties _manifest);
         Bundle(const Bundle&) = delete;
         Bundle& operator=(const Bundle&) = delete;
 
@@ -48,31 +42,25 @@ namespace celix {
         const std::string& cacheRoot() const override;
 
         //bundle part
-        bool isFrameworkBundle() const override { return bndId == celix::FRAMEWORK_BUNDLE_ID; }
-
-        void *handle() const override { return nullptr; } //TODO
+        bool isFrameworkBundle() const override;
 
         long id() const override { return bndId; }
 
-        const std::string &name() const override { return bndManifest[celix::MANIFEST_BUNDLE_NAME]; }
+        const std::string& name() const override;
 
-        const std::string &group() const override { return bndManifest[celix::MANIFEST_BUNDLE_GROUP]; }
+        const std::string& group() const override;
 
-        const std::string &version() const override { return bndManifest[celix::MANIFEST_BUNDLE_VERSION]; }
+        const std::string& version() const override;
 
-        const celix::Properties &manifest() const override { return bndManifest; }
+        const celix::Properties& manifest() const override;
 
-        bool isValid() const override { return bndId >= 0; }
+        bool isValid() const override;
 
-        celix::Framework &framework() const override { return *fw; }
+        celix::Framework &framework() const override;
 
-        celix::BundleState state() const override {
-            return bndState.load(std::memory_order_acquire);
-        }
+        celix::BundleState state() const override;
 
-        void setState(celix::BundleState state) {
-            bndState.store(state, std::memory_order_release);
-        }
+        void setState(celix::BundleState state);
 
     private:
         const long bndId;

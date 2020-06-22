@@ -28,9 +28,9 @@ public:
     FrameworkTest() = default;
     ~FrameworkTest() override = default;
 
-    celix::Framework& framework() { return fw; }
+    celix::Framework& framework() { return *fw; }
 private:
-    celix::Framework fw{};
+    std::shared_ptr<celix::Framework> fw{celix::Framework::create()};
 };
 
 
@@ -49,11 +49,11 @@ TEST_F(FrameworkTest, CreateDestroy) {
 class EmbeddedActivator : public celix::IBundleActivator {
 public:
     explicit EmbeddedActivator(const std::shared_ptr<celix::BundleContext>&) {
-        startCount.fetch_add(1);
+        startCount++;
     }
 
     ~EmbeddedActivator() override {
-        stopCount.fetch_add(1);
+        stopCount++;
     }
 
     static std::atomic<int> startCount;
@@ -85,8 +85,8 @@ TEST_F(FrameworkTest, InstallBundle) {
     EXPECT_EQ(1, EmbeddedActivator::stopCount);
 
     {
-        celix::Framework fw{};
-        fw.installBundle<EmbeddedActivator>("embedded3");
+        auto fw = celix::Framework::create();
+        fw->installBundle<EmbeddedActivator>("embedded3");
         EXPECT_EQ(3, EmbeddedActivator::startCount);
         EXPECT_EQ(1, EmbeddedActivator::stopCount);
 
@@ -103,7 +103,7 @@ TEST_F(FrameworkTest, StaticBundleTest) {
         ~EmbeddedActivator() override = default;
     };
 
-    int count = 0;
+    std::atomic<int> count{0};
     auto factory = [&](const std::shared_ptr<celix::BundleContext>&) -> celix::IBundleActivator * {
         count++;
         return new EmbeddedActivator{};
@@ -112,9 +112,9 @@ TEST_F(FrameworkTest, StaticBundleTest) {
     EXPECT_EQ(0, framework().listBundles().size()); //no bundles installed;
     celix::registerStaticBundle("static", factory);
     EXPECT_EQ(1, framework().listBundles().size()); //static bundle instance installed
-    EXPECT_EQ(1, count);
+    EXPECT_EQ(1, count.load());
 
-    celix::Framework fw{};
+    auto fw = celix::Framework::create();
     EXPECT_EQ(1, framework().listBundles().size()); //already registered static bundle instance installed.
-    EXPECT_EQ(2, count);
+    EXPECT_EQ(2, count.load()); //also from the just created framework
 }

@@ -29,9 +29,9 @@ public:
     ShellTuiTest() = default;
     ~ShellTuiTest() override = default;
 
-    celix::Framework& framework() { return fw; }
+    celix::Framework& framework() { return *fw; }
 private:
-    celix::Framework fw{};
+    std::shared_ptr<celix::Framework> fw{celix::Framework::create()};
 };
 
 

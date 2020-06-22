@@ -28,7 +28,7 @@ public:
     std::shared_ptr<celix::ServiceRegistry> registry() { return reg; }
     std::shared_ptr<celix::IResourceBundle> bundle() { return bnd; }
 private:
-    std::shared_ptr<celix::ServiceRegistry> reg{new celix::ServiceRegistry{"test"}};
+    std::shared_ptr<celix::ServiceRegistry> reg{celix::ServiceRegistry::create("test")};
     std::shared_ptr<celix::IResourceBundle> bnd{new celix::EmptyResourceBundle{}};
 };
 
@@ -88,26 +88,6 @@ TEST_F(ComponentManagerTest, CreateDestroyTyped) {
     EXPECT_EQ(cmpMng.getState(), celix::ComponentManagerState::Disabled);
 }
 
-//TODO maybe make special static component manager ....
-//TEST_F(ComponentManagerTest, CreateLazy) {
-//    celix::ComponentManager<Cmp> cmpMng{bundle(), registry()};
-//    EXPECT_FALSE(cmpMng.isEnabled());
-//    EXPECT_FALSE(cmpMng.isResolved()); //disabled -> not resolved
-//    EXPECT_EQ(cmpMng.getState(), celix::ComponentManagerState::Disabled);
-//    EXPECT_EQ(cmpMng.getCmpInstance().get(), nullptr);
-//
-//    cmpMng.enable();
-//    EXPECT_TRUE(cmpMng.isEnabled());
-//    EXPECT_TRUE(cmpMng.isResolved()); //no deps -> resolved
-//    EXPECT_EQ(cmpMng.getState(), celix::ComponentManagerState::ComponentStarted);
-//    EXPECT_NE(cmpMng.getCmpInstance().get(), nullptr); //resolved -> got an instance
-//
-//    cmpMng.disable();
-//    EXPECT_FALSE(cmpMng.isEnabled());
-//    EXPECT_EQ(cmpMng.getState(), celix::ComponentManagerState::Disabled);
-//    EXPECT_NE(cmpMng.getCmpInstance().get(), nullptr); //disabled-> got no instance
-//}
-
 TEST_F(ComponentManagerTest, AddSvcDep) {
     celix::ComponentManager<Cmp> cmpMng{bundle(), registry(), std::make_shared<Cmp>()};
     cmpMng.addServiceDependency<ISvc>()
@@ -122,6 +102,7 @@ TEST_F(ComponentManagerTest, AddSvcDep) {
 
 
     auto svcReg = registry()->registerService(std::make_shared<ISvc>());
+    svcReg.wait();
     //dep available -> cmp manager resolved
     EXPECT_TRUE(cmpMng.isResolved());
     EXPECT_EQ(cmpMng.getState(), celix::ComponentManagerState::ComponentStarted);
@@ -185,6 +166,7 @@ TEST_F(ComponentManagerTest, AddAndEnableSvcDep) {
     EXPECT_FALSE(cmpMng.isResolved());
 
     auto svcReg = registry()->registerService(std::make_shared<ISvc>());
+    svcReg.wait();
     //svc add -> cmp resolved
     EXPECT_TRUE(cmpMng.isResolved());
 
@@ -256,12 +238,14 @@ TEST_F(ComponentManagerTest, SuspenseAndLockingStrategy) {
     celix::Properties props{};
     props["id"] = "locking";
     auto reg1 = registry()->registerService(std::make_shared<ISvc>(), props); //svc registered -> cmp updated, using locking strategy so no suspense triggered.
+    reg1.wait();
     EXPECT_EQ(cmpMng.getState(), celix::ComponentManagerState::ComponentStarted);
     EXPECT_EQ(cmpMng.getSuspendedCount(), 0); //no suspense needed;
 
 
     props["id"] = "suspense";
     auto reg2 = registry()->registerService(std::make_shared<ISvc>(), props); //svc registered -> cmp updated, using suspense strategy so 1 suspense triggered.
+    reg2.wait();
     EXPECT_EQ(cmpMng.getState(), celix::ComponentManagerState::ComponentStarted);
     EXPECT_EQ(cmpMng.getSuspendedCount(), 1); //2x suspense needed (for both services);
 
@@ -280,11 +264,13 @@ TEST_F(ComponentManagerTest, RequiredAndOptionalDependencies) {
     celix::Properties props{};
     props["id"] = "optional";
     auto reg1 = registry()->registerService(std::make_shared<ISvc>(), props);
+    reg1.wait();
     EXPECT_EQ(cmpMng.getState(), celix::ComponentManagerState::ComponentUninitialized);
 
 
     props["id"] = "required";
     auto reg2 = registry()->registerService(std::make_shared<ISvc>(), props);
+    reg2.wait();
     EXPECT_EQ(cmpMng.getState(), celix::ComponentManagerState::ComponentStarted);
 
     cmpMng.addServiceDependency<ISvc>().setFilter("(id=optional2)").setRequired(false).enable();
@@ -295,6 +281,7 @@ TEST_F(ComponentManagerTest, RequiredAndOptionalDependencies) {
 
     props["id"] = "required2";
     auto reg3 = registry()->registerService(std::make_shared<ISvc>(), props); //missing required cmp from started to initialized.
+    reg3.wait();
     EXPECT_EQ(cmpMng.getState(), celix::ComponentManagerState::ComponentStarted);
 }
 

@@ -26,26 +26,30 @@
 namespace celix {
 
     template<typename I>
-    class UseServiceBuilder {
+    class UseServicesBuilder {
     public:
-        UseServiceBuilder(std::shared_ptr<celix::IResourceBundle> requester, std::shared_ptr<celix::ServiceRegistry> registry);
-        UseServiceBuilder(UseServiceBuilder<I> &&); //TODO noexcept
-        UseServiceBuilder<I>& operator=(UseServiceBuilder<I>&&);
+        UseServicesBuilder(std::shared_ptr<celix::IResourceBundle> requester, std::shared_ptr<celix::ServiceRegistry> registry);
+        UseServicesBuilder(UseServicesBuilder<I> &&); //TODO noexcept
+        UseServicesBuilder<I>& operator=(UseServicesBuilder<I>&&);
 
-        UseServiceBuilder<I>& setFilter(celix::Filter f);
+        UseServicesBuilder<I>& setFilter(celix::Filter f);
 
-        UseServiceBuilder<I>& setCallback(std::function<void(I &svc)> f);
-        UseServiceBuilder<I>& setCallback(std::function<void(I &svc, const celix::Properties &props)> f);
-        UseServiceBuilder<I>& setCallback(std::function<void(I &svc, const celix::Properties &props, const celix::IResourceBundle &bnd)> f);
+        template<typename Rep, typename Period>
+        UseServicesBuilder<I>& waitFor(const std::chrono::duration<Rep, Period>& period);
 
-        UseServiceBuilder<I>& setServiceId(long svcId);
+        UseServicesBuilder<I>& setCallback(std::function<void(I &svc)> f);
+        UseServicesBuilder<I>& setCallback(std::function<void(I &svc, const celix::Properties &props)> f);
+        UseServicesBuilder<I>& setCallback(std::function<void(I &svc, const celix::Properties &props, const celix::IResourceBundle &bnd)> f);
 
-        bool use() const;
-        int useAll() const;
-        UseServiceBuilder<I> copy() const;
+        UseServicesBuilder<I>& setServiceId(long svcId);
+
+        UseServicesBuilder<I>& setLimit(int limit);
+
+        int use() const;
+        UseServicesBuilder<I> copy() const;
     private:
-        UseServiceBuilder(const UseServiceBuilder<I>&);
-        UseServiceBuilder<I>& operator=(const UseServiceBuilder<I>&);
+        UseServicesBuilder(const UseServicesBuilder<I>&);
+        UseServicesBuilder<I>& operator=(const UseServicesBuilder<I>&);
 
 
         const std::shared_ptr<celix::IResourceBundle> requester;
@@ -68,8 +72,10 @@ namespace celix {
 
         UseFunctionServiceBuilder& setServiceId(long svcId);
 
-        bool use() const;
-        int useAll() const;
+        UseFunctionServiceBuilder& setLimit(int limit);
+
+
+        int use() const;
         UseFunctionServiceBuilder copy() const;
     private:
         UseFunctionServiceBuilder(const UseFunctionServiceBuilder&);
@@ -88,68 +94,76 @@ namespace celix {
  **********************************************************************************************************************/
 
 template<typename I>
-inline celix::UseServiceBuilder<I>::UseServiceBuilder(
+inline celix::UseServicesBuilder<I>::UseServicesBuilder(
         std::shared_ptr<celix::IResourceBundle> _requester,
         std::shared_ptr<celix::ServiceRegistry> _registry) : requester{std::move(_requester)}, registry{std::move(_registry)} {}
 
 template<typename I>
-inline celix::UseServiceBuilder<I>::UseServiceBuilder(celix::UseServiceBuilder<I> &&) = default;
+inline celix::UseServicesBuilder<I>::UseServicesBuilder(celix::UseServicesBuilder<I> &&) = default;
 
 template<typename I>
-inline celix::UseServiceBuilder<I> &celix::UseServiceBuilder<I>::operator=(celix::UseServiceBuilder<I> &&) = default;
+inline celix::UseServicesBuilder<I> &celix::UseServicesBuilder<I>::operator=(celix::UseServicesBuilder<I> &&) = default;
 
 template<typename I>
-inline celix::UseServiceBuilder<I> &celix::UseServiceBuilder<I>::setFilter(celix::Filter f) {
+inline celix::UseServicesBuilder<I> &celix::UseServicesBuilder<I>::setFilter(celix::Filter f) {
     options.filter = std::move(f);
     return *this;
 }
 
 template<typename I>
-inline celix::UseServiceBuilder<I> &
-celix::UseServiceBuilder<I>::setCallback(std::function<void(I&)> f) {
+inline celix::UseServicesBuilder<I> &
+celix::UseServicesBuilder<I>::setCallback(std::function<void(I&)> f) {
     options.use = std::move(f);
     return *this;
 }
 
 template<typename I>
-inline celix::UseServiceBuilder<I> &celix::UseServiceBuilder<I>::setCallback(std::function<void(I&, const celix::Properties &)> f) {
+inline celix::UseServicesBuilder<I> &celix::UseServicesBuilder<I>::setCallback(std::function<void(I&, const celix::Properties &)> f) {
     options.useWithProperties = std::move(f);
     return *this;
 }
 
 template<typename I>
-inline celix::UseServiceBuilder<I> &celix::UseServiceBuilder<I>::setCallback(std::function<void(I&, const celix::Properties &, const celix::IResourceBundle &)> f) {
+inline celix::UseServicesBuilder<I> &celix::UseServicesBuilder<I>::setCallback(std::function<void(I&, const celix::Properties &, const celix::IResourceBundle &)> f) {
     options.useWithOwner = std::move(f);
     return *this;
 }
 
 
 template<typename I>
-inline celix::UseServiceBuilder<I>& celix::UseServiceBuilder<I>::setServiceId(long svcId) {
+inline celix::UseServicesBuilder<I>& celix::UseServicesBuilder<I>::setServiceId(long svcId) {
     options.targetServiceId = svcId;
     return *this;
 }
 
 template<typename I>
-inline bool celix::UseServiceBuilder<I>::use() const {
-    return registry->useService(options, requester);
-}
-
-template<typename I>
-inline int celix::UseServiceBuilder<I>::useAll() const {
-    return registry->useServices(options, requester);
-}
-
-template<typename I>
-inline celix::UseServiceBuilder<I> celix::UseServiceBuilder<I>::copy() const {
+inline celix::UseServicesBuilder<I>& celix::UseServicesBuilder<I>::setLimit(int limit) {
+    options.limit = limit;
     return *this;
 }
 
 template<typename I>
-inline celix::UseServiceBuilder<I>::UseServiceBuilder(const UseServiceBuilder<I> &) = default;
+inline int celix::UseServicesBuilder<I>::use() const {
+    return registry->useServices(options, requester);
+}
 
 template<typename I>
-inline celix::UseServiceBuilder<I> &celix::UseServiceBuilder<I>::operator=(const UseServiceBuilder<I> &) = default;
+inline celix::UseServicesBuilder<I> celix::UseServicesBuilder<I>::copy() const {
+    return *this;
+}
+
+template<typename I>
+template<typename Rep, typename Period>
+inline celix::UseServicesBuilder<I> &celix::UseServicesBuilder<I>::waitFor(const std::chrono::duration<Rep, Period> &period) {
+    options.waitFor = period;
+    return *this;
+}
+
+template<typename I>
+inline celix::UseServicesBuilder<I>::UseServicesBuilder(const UseServicesBuilder<I> &) = default;
+
+template<typename I>
+inline celix::UseServicesBuilder<I> &celix::UseServicesBuilder<I>::operator=(const UseServicesBuilder<I> &) = default;
 
 /**********************************************************************************************************************
   UseFunctionServiceBuilder Implementation
@@ -202,12 +216,13 @@ inline celix::UseFunctionServiceBuilder<F>& celix::UseFunctionServiceBuilder<F>:
 }
 
 template<typename F>
-inline bool celix::UseFunctionServiceBuilder<F>::use() const {
-    return registry->useFunctionService(options, requester);
+inline celix::UseFunctionServiceBuilder<F>& celix::UseFunctionServiceBuilder<F>::setLimit(int limit) {
+    options.limit = limit;
+    return *this;
 }
 
 template<typename F>
-inline int celix::UseFunctionServiceBuilder<F>::useAll() const {
+inline int celix::UseFunctionServiceBuilder<F>::use() const {
     return registry->useFunctionServices(options, requester);
 }
 

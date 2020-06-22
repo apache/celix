@@ -20,9 +20,11 @@
 #pragma once
 
 #include <queue>
+#include <optional>
 
 namespace celix {
 
+    //TODO the in between states, Initializing, Starting, Stopping, DeInitializing
     enum class ComponentManagerState {
         Disabled,
         ComponentUninitialized,
@@ -165,7 +167,7 @@ namespace celix {
         bool required = true;
         std::string filter{};
         Cardinality cardinality = Cardinality::One;
-        std::vector<ServiceTracker> tracker{}; //max 1 (1 == enabled / 0 = disabled
+        std::vector<ServiceTracker> tracker{}; //max 1 (1 == enabled / 0 = disabled //TODO make optional
     };
 
     class GenericProvidedService {
@@ -181,6 +183,7 @@ namespace celix {
         void unregisterService();
         bool isServiceRegistered();
         virtual void registerService() = 0;
+        void wait() const;
     protected:
         GenericProvidedService(std::string cmpUUID, std::shared_ptr<celix::ServiceRegistry> reg, std::string svcName, std::function<void()> updateServiceRegistrationsCallback, bool valid);
 
@@ -193,7 +196,7 @@ namespace celix {
 
         mutable std::mutex mutex{}; //protects below
         bool enabled = false;
-        std::vector<celix::ServiceRegistration> registration{}; //max size 1 (optional). 0 == disabled, 1 == enabled
+        std::vector<celix::ServiceRegistration> registration{}; //TODO make optional
         celix::Properties properties{};
     };
 

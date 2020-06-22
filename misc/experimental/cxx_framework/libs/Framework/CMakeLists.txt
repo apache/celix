@@ -20,10 +20,9 @@ find_package(LIBZIP REQUIRED)
 find_package(Threads REQUIRED)
 
 add_library(celix_cxx_Framework SHARED
-        src/Framework.cc
-        src/BundleContext.cc
+        src/FrameworkImpl.cc
         src/Bundle.cc
-)
+        )
 target_include_directories(celix_cxx_Framework PRIVATE src)
 target_include_directories(celix_cxx_Framework PUBLIC include)
 target_link_libraries(celix_cxx_Framework PRIVATE libzip::libzip UUID::lib Threads::Threads)

@@ -19,17 +19,14 @@
 
 #pragma once
 
-namespace celix {
-    /**
-     * The BundleActivator is a marker interface and contains no virtual methods.
-     *
-     * The Celix Framework will expect a constructor with a std::shared_ptr<celix:IBundleContext> argument for the
-     * concrete bundle activator. RAII will be used to start (on ctor) and stop (on dtor) a bundle.
-     */
-    class IBundleActivator {
+#include <string>
+#include <string_view>
+
+namespace examples {
+    class IHelloWorld {
     public:
-        virtual ~IBundleActivator() = default;
+        //TODO add support for finding NAME field static constexpr std::string_view NAME = "examples::IHelloWorld";
+        virtual ~IHelloWorld() = default;
+        virtual std::string sayHello() = 0;
     };
 }
-
-#define CELIX_GEN_CONFIGURE_RESOURCES()

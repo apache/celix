@@ -53,6 +53,7 @@ namespace celix {
                 void (T::*stop)(),
                 void (T::*deinit)());
 
+        //TODO rename to addRequireService
         template<typename I>
         ServiceDependency<T,I>& addServiceDependency();
 
@@ -61,6 +62,7 @@ namespace celix {
 
         ComponentManager<T>& extractUUID(std::string& out);
 
+        //TODO rename to addProvideService
         template<typename I>
         ProvidedService<T,I>& addProvidedService();
 

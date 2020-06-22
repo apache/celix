@@ -32,11 +32,12 @@ namespace {
             std::string hasCommandNameFilter = std::string{"("} + celix::IShellCommand::COMMAND_NAME + "=*)";
             std::vector<std::string> commands{};
             ctx->buildUseService<celix::IShellCommand>()
+                    .setLimit(0)
                     .setCallback([&](celix::IShellCommand & /*cmd*/, const celix::Properties &props) {
                         commands.push_back(props.get(celix::IShellCommand::COMMAND_NAME, "!Error!"));
                     })
                     .setFilter(hasCommandNameFilter)
-                    .useAll();
+                    .use();
 
             hasCommandNameFilter = std::string{"("} + celix::SHELL_COMMAND_FUNCTION_COMMAND_NAME + "=*)";
 
@@ -44,9 +45,10 @@ namespace {
                 commands.push_back(props.get(celix::SHELL_COMMAND_FUNCTION_COMMAND_NAME, "!Error!"));
             };
             ctx->buildUseFunctionService<celix::ShellCommandFunction>(celix::SHELL_COMMAND_FUNCTION_SERVICE_NAME)
+                    .setLimit(0)
                     .setFilter(hasCommandNameFilter)
                     .setCallback(use)
-                .useAll();
+                .use();
 
             //TODO useCService with a shell command service struct
 

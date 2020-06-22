@@ -30,7 +30,7 @@ public:
     std::shared_ptr<celix::ServiceRegistry> registry() const { return reg; }
     std::shared_ptr<celix::IResourceBundle> bundle() const { return bnd; }
 private:
-    std::shared_ptr<celix::ServiceRegistry> reg{new celix::ServiceRegistry{"test"}};
+    std::shared_ptr<celix::ServiceRegistry> reg{celix::ServiceRegistry::create("test")};
     std::shared_ptr<celix::IResourceBundle> bnd{new celix::EmptyResourceBundle{}};
 };
 

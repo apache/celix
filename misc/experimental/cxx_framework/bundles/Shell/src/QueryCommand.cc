@@ -56,7 +56,7 @@ namespace {
 
         auto reg = ctx->bundle()->framework().registry();
 
-        const auto fun = [&](const std::shared_ptr<void>&, const celix::Properties& props, const celix::IResourceBundle&) {
+        const auto fun = [&](const std::shared_ptr<void>&, const celix::Properties& props) {
             long bndId = props.getAsLong(celix::SERVICE_BUNDLE_ID, -1L); //TODO, FIXME bundle.id not yet registered on services
             bool print = bndIds.empty() || bndIds.find(bndId) != bndIds.end();
             if (print) {
@@ -71,11 +71,16 @@ namespace {
 
         for (const auto &svcName : svcNames) {
             out << "Result '" << svcName << "':" << std::endl;
-            reg->useAnyServices(svcName, celix::Filter{}, fun, ctx->bundle());
+            celix::UseAnyServiceOptions opts;
+            opts.useWithProperties = fun;
+            reg->useAnyServices(svcName, std::move(opts), ctx->bundle());
         }
         for (const auto &filter: filters) {
             out << "Result '" << filter.toString() << "':" << std::endl;
-            reg->useAnyServices({}, filter, fun, ctx->bundle());
+            celix::UseAnyServiceOptions opts;
+            opts.useWithProperties = fun;
+            opts.filter = filter;
+            reg->useAnyServices({}, std::move(opts), ctx->bundle());
         }
         if (svcNames.empty() && filters.empty()) {
             //TODO handle verbose options

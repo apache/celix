@@ -26,9 +26,9 @@
 
 class ServiceTrackingTest : public ::testing::Test {
 public:
-    celix::ServiceRegistry& registry() { return reg; }
+    celix::ServiceRegistry& registry() { return *reg; }
 private:
-    celix::ServiceRegistry reg{"test"};
+    std::shared_ptr<celix::ServiceRegistry> reg{celix::ServiceRegistry::create("test")};
 };
 
 class MarkerInterface1 {
@@ -83,6 +83,7 @@ TEST_F(ServiceTrackingTest, ServicesCountTrackersTest) {
     {
 
         auto reg3 = registry().registerService(svc1);
+        reg3.wait();
         ASSERT_EQ(2, trk1.trackCount());
         ASSERT_EQ(1, trk2.trackCount());
 
@@ -90,6 +91,9 @@ TEST_F(ServiceTrackingTest, ServicesCountTrackersTest) {
             auto reg4 = registry().registerService(svc1);
             auto reg5 = registry().registerService(svc2);
             auto reg6 = registry().registerService(svc3);
+            reg4.wait();
+            reg5.wait();
+            reg6.wait();
 
             ASSERT_EQ(3, trk1.trackCount());
             ASSERT_EQ(2, trk2.trackCount());
@@ -121,8 +125,11 @@ TEST_F(ServiceTrackingTest, SetServiceTest) {
     };
 
     auto reg1 = registry().registerService(svc1);
+    reg1.wait();
     auto reg2 = registry().registerService(svc2);
+    reg2.wait();
     auto reg3 = registry().registerService(svc3);
+    reg3.wait();
 
     auto trk1 = registry().trackServices(opts);
     EXPECT_EQ(svc1.get(), ptrToSvc); //should be intf1
@@ -132,10 +139,12 @@ TEST_F(ServiceTrackingTest, SetServiceTest) {
 
 
     reg1 = registry().registerService(svc1);
+    reg1.wait();
     EXPECT_EQ(svc1.get(), ptrToSvc); //set to intf1 again
 
     auto svc4 = std::make_shared<MarkerInterface1>();
     auto reg4 = registry().registerService(svc4);
+    reg4.wait();
     EXPECT_EQ(svc1.get(), ptrToSvc); //no change -> intf1 is older
 
     reg1.unregister();
@@ -181,8 +190,11 @@ TEST_F(ServiceTrackingTest, AddRemoveTest) {
     };
 
     auto reg1 = registry().registerService(svc1);
+    reg1.wait();
     auto reg2 = registry().registerService(svc2);
+    reg2.wait();
     auto reg3 = registry().registerService(svc3);
+    reg3.wait();
 
     auto trk1 = registry().trackServices(opts);
     ASSERT_EQ(1, services.size());
@@ -192,11 +204,13 @@ TEST_F(ServiceTrackingTest, AddRemoveTest) {
     EXPECT_EQ(0, services.size());
 
     reg1 = registry().registerService(svc1);
+    reg1.wait();
     ASSERT_EQ(1, services.size());
     EXPECT_EQ(svc1.get(), services[0].get()); //should be intf1 again
 
     auto svc4 = std::make_shared<MarkerInterface1>();
     auto reg4 = registry().registerService(svc4);
+    reg4.wait();
     ASSERT_EQ(2, services.size());
     EXPECT_EQ(svc1.get(), services[0].get());
     EXPECT_EQ(svc4.get(), services[1].get());
@@ -235,8 +249,11 @@ TEST_F(ServiceTrackingTest, UpdateTest) {
     };
 
     auto reg1 = registry().registerService(svc1);
+    reg1.wait();
     auto reg2 = registry().registerService(svc2);
+    reg2.wait();
     auto reg3 = registry().registerService(svc3);
+    reg3.wait();
 
     auto trk1 = registry().trackServices(opts);
     EXPECT_EQ(1, trk1.trackCount());
@@ -247,6 +264,7 @@ TEST_F(ServiceTrackingTest, UpdateTest) {
     EXPECT_EQ(0, services.size());
 
     reg1 = registry().registerService(svc1);
+    reg1.wait();
     ASSERT_EQ(1, services.size());
     EXPECT_EQ(svc1.get(), services[0].get()); //should be intf1 again
 
@@ -254,6 +272,7 @@ TEST_F(ServiceTrackingTest, UpdateTest) {
     celix::Properties properties{};
     properties[celix::SERVICE_RANKING] = "100";
     auto reg4 = registry().registerService(svc4, properties);
+    reg4.wait();
     ASSERT_EQ(2, services.size());
     EXPECT_EQ(svc4.get(), services[0].get()); //note 4 higher ranking
     EXPECT_EQ(svc1.get(), services[1].get());

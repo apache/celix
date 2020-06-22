@@ -61,7 +61,7 @@ namespace {
     __attribute__((constructor))
     static void registerShellBundle() {
         celix::Properties manifest{};
-        manifest[celix::MANIFEST_BUNDLE_NAME] = "Shell Tui";
+        manifest[celix::MANIFEST_BUNDLE_NAME] = "Celix Shell Tui";
         manifest[celix::MANIFEST_BUNDLE_GROUP] = "Celix";
         manifest[celix::MANIFEST_BUNDLE_VERSION] = "1.0.0";
         celix::registerStaticBundle<ShellTuiBundleActivator>("celix::bundle::ShellTui", std::move(manifest));

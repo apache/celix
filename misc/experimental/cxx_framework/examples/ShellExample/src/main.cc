@@ -21,7 +21,7 @@
 
 int main(int /*argc*/, char **/*argv*/) {
     //TODO create launcher, which handles config.properties and command args
-    auto fw = celix::Framework{};
-    fw.waitForShutdown();
+    auto fw = celix::Framework::create();
+    fw->waitForShutdown();
     return 0;
 }

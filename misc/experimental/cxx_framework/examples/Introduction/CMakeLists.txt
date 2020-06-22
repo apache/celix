@@ -16,18 +16,16 @@
 # under the License.
 
 
-set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules")
+add_executable(celix_cxx_introduction_examples
+        src/main.cc
+        src/HelloWorld.cc
+        src/ProvideExample.cc
+        src/UseService.cc
+        src/TrackExample.cc
+        src/ComponentExample.cc
+)
+target_include_directories(celix_cxx_introduction_examples PRIVATE include)
+target_link_libraries(celix_cxx_introduction_examples PRIVATE celix::cxx::Framework)
 
-#find_package(spdlog QUIET)
-if (NOT spdlog_FOUND)
-    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/AddSpdlog.cmake)
-endif()
-
-add_subdirectory(libs/Registry)
-add_subdirectory(libs/Framework)
-
-add_subdirectory(bundles/Shell)
-add_subdirectory(bundles/ShellTui)
-
-add_subdirectory(examples/Introduction)
-add_subdirectory(examples/ShellExample)
+#optional also add the shell and shell tui static bundles
+target_link_libraries(celix_cxx_introduction_examples PRIVATE celix::bundle::Shell celix::bundle::ShellTui celix::ShellApi)

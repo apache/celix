@@ -31,9 +31,9 @@ public:
     RegistryTest() {}
     ~RegistryTest(){}
 
-    celix::ServiceRegistry& registry() { return reg; }
+    celix::ServiceRegistry& registry() { return *reg; }
 private:
-    celix::ServiceRegistry reg{"C++"};
+    std::shared_ptr<celix::ServiceRegistry> reg{celix::ServiceRegistry::create("test")};
 };
 
 class MarkerInterface1 {
@@ -55,6 +55,7 @@ TEST_F(RegistryTest, ServiceRegistrationTest) {
         celix::Properties properties{};
         properties["TEST"] = "VAL";
         celix::ServiceRegistration reg = registry().registerService(svc, properties);
+        reg.wait();
         //no copy possible celix::ServiceRegistration copy = reg;
 
         long svcId = reg.serviceId();
@@ -86,10 +87,13 @@ TEST_F(RegistryTest, ServiceRegistrationTest) {
 
     {
         celix::ServiceRegistration reg1 = registry().registerService(svc1);
+        reg1.wait();
         EXPECT_EQ(1, registry().nrOfRegisteredServices());
         celix::ServiceRegistration reg2 = registry().registerService(svc1);
+        reg2.wait();
         EXPECT_EQ(2, registry().nrOfRegisteredServices());
         celix::ServiceRegistration reg3 = registry().registerService(svc2);
+        reg3.wait();
         EXPECT_EQ(3, registry().nrOfRegisteredServices());
 
         EXPECT_GT(reg1.serviceId(), 0);
@@ -119,6 +123,8 @@ TEST_F(RegistryTest, SimpleFindServicesTest) {
 
     auto reg1 = registry().registerService(svc1);
     auto reg2 = registry().registerService(svc2);
+    reg1.wait();
+    reg2.wait();
 
     long firstSvc = registry().findService<MarkerInterface1>();
     EXPECT_GT(firstSvc, 0);
@@ -127,6 +133,8 @@ TEST_F(RegistryTest, SimpleFindServicesTest) {
 
     auto reg3 = registry().registerService(svc1);
     auto reg4 = registry().registerService(svc2);
+    reg3.wait();
+    reg4.wait();
 
     long foundSvc = registry().findService<MarkerInterface1>(); //should find the first services
     EXPECT_GT(foundSvc, 0);
@@ -139,6 +147,7 @@ TEST_F(RegistryTest, FindServicesTest) {
     auto svc1 = std::make_shared<MarkerInterface1>();
 
     auto reg1 = registry().registerService(svc1); //note no properties
+    reg1.wait();
 
     celix::Properties properties{};
     properties["loc"] = "front";
@@ -164,6 +173,9 @@ TEST_F(RegistryTest, UseServices) {
     auto reg1 = registry().registerService(svc1);
     auto reg2 = registry().registerService(svc1);
     auto reg3 = registry().registerService(svc1);
+    reg1.wait();
+    reg2.wait();
+    reg3.wait();
 
     long svcId1 = reg1.serviceId();
 
@@ -184,8 +196,8 @@ TEST_F(RegistryTest, UseServices) {
         EXPECT_EQ(LONG_MAX, bnd.id()); //not nullptr -> use empty bundle (bndId 0)
     };
 
-    bool called = registry().useService(useOpts);
-    EXPECT_TRUE(called);
+    int nrCalled = registry().useServices(useOpts);
+    EXPECT_TRUE(nrCalled > 0);
 }
 
 TEST_F(RegistryTest, RankingTest) {
@@ -194,9 +206,12 @@ TEST_F(RegistryTest, RankingTest) {
 
     auto reg1 = registry().registerService(svc1); //no props -> ranking 0
     auto reg2 = registry().registerService(svc1); //no props -> ranking 0
+    reg1.wait();
+    reg2.wait();
 
     {
         auto reg3 = registry().registerService(svc1); //no props -> ranking 0
+        reg3.wait();
         auto find = registry().findServices<MarkerInterface1>(); // expecting 3
         EXPECT_EQ(3, find.size());
         EXPECT_EQ(reg1.serviceId(), find[0]); //first registered service should be found first
@@ -210,9 +225,11 @@ TEST_F(RegistryTest, RankingTest) {
     celix::Properties properties{};
     properties[celix::SERVICE_RANKING] = "100";
     auto reg4 = registry().registerService(svc1, properties); // ranking 100 -> before services with ranking 0
+    reg4.wait();
 
     {
         auto reg5 = registry().registerService(svc1, properties); // ranking 100 -> before services with ranking 0
+        reg5.wait();
         auto find = registry().findServices<MarkerInterface1>();
         EXPECT_EQ(4, find.size());
         EXPECT_EQ(reg4.serviceId(), find[0]); //ranking 100, oldest (i.e. highest ranking with lowest svcId)
@@ -225,11 +242,15 @@ TEST_F(RegistryTest, RankingTest) {
 
     properties[celix::SERVICE_RANKING] = "-100";
     auto reg6 = registry().registerService(svc1, properties); // ranking -100 -> after the rest
+    reg6.wait();
     auto reg7 = registry().registerService(svc1, properties); // ranking -100 -> after the rest
+    reg7.wait();
     properties[celix::SERVICE_RANKING] = "110";
     auto reg8 = registry().registerService(svc1, properties); // ranking 110 -> before the rest
+    reg8.wait();
     properties[celix::SERVICE_RANKING] = "80";
     auto reg9 = registry().registerService(svc1, properties); // ranking 80 -> between ranking 0 adn 100
+    reg9.wait();
     {
         auto find = registry().findServices<MarkerInterface1>();
         EXPECT_EQ(7, find.size());
@@ -250,6 +271,7 @@ TEST_F(RegistryTest, StdFunctionTest) {
     };
 
     auto reg1 = registry().registerFunctionService("count", func1);
+    reg1.wait();
     EXPECT_TRUE(reg1.valid());
     EXPECT_EQ(1, registry().nrOfRegisteredServices());
 
@@ -257,6 +279,7 @@ TEST_F(RegistryTest, StdFunctionTest) {
         return (int)(a/b) + (int)ref.size();
     };
     auto reg2 = registry().registerFunctionService("yet another function", funcWithReturnAndArgs);
+    reg2.wait();
     EXPECT_TRUE(reg2.valid());
     EXPECT_EQ(2, registry().nrOfRegisteredServices());
 
@@ -266,8 +289,8 @@ TEST_F(RegistryTest, StdFunctionTest) {
     EXPECT_EQ(0, count);
     celix::UseFunctionServiceOptions<std::function<void()>> useOpts{"count"};
     useOpts.use = use;
-    bool called = registry().useFunctionService(useOpts);
-    EXPECT_TRUE(called);
+    int nrCalled = registry().useFunctionServices(useOpts);
+    EXPECT_TRUE(nrCalled > 0);
     EXPECT_EQ(1, count);
 }
 
@@ -280,11 +303,13 @@ TEST_F(RegistryTest, ListServicesTest) {
 
     {
         auto reg1 = registry().registerFunctionService("nop", nop);
+        reg1.wait();
         serviceNames = registry().listAllRegisteredServiceNames();
         EXPECT_EQ(1, serviceNames.size());
 
         auto svc2 = std::make_shared<MarkerInterface1>();
         auto reg2 = registry().registerService(svc2);
+        reg2.wait();
         serviceNames = registry().listAllRegisteredServiceNames();
         EXPECT_EQ(2, serviceNames.size());
     }

@@ -30,5 +30,5 @@
 //Builders
 #include "celix/ServiceTrackerBuilder.h"
 #include "celix/ServiceRegistrationBuilder.h"
-#include "celix/UseServiceBuilder.h"
+#include "celix/UseServicesBuilder.h"
 

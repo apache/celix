@@ -23,6 +23,7 @@
 #include <vector>
 #include <functional>
 #include <memory>
+#include <string_view>
 
 #include "celix/Constants.h"
 #include "celix/Properties.h"
@@ -37,8 +38,10 @@ namespace celix {
 
     template<typename I>
     struct UseServiceOptions {
+        int limit{1}; //the limit for the services to be found. 0 -> unlimited
         celix::Filter filter{};
         long targetServiceId{-1L}; //note -1 means not targeting a specific service id.
+        std::chrono::milliseconds waitFor{0}; //note not 0, means the use call with wait for 'waitFor' period of time for a service match to become available
         std::function<void(I& svc)> use{};
         std::function<void(I& svc, const celix::Properties &props)> useWithProperties{};
         std::function<void(I& svc, const celix::Properties &props, const celix::IResourceBundle &bundle)> useWithOwner{};
@@ -46,13 +49,25 @@ namespace celix {
 
     template<typename F>
     struct UseFunctionServiceOptions {
-        explicit UseFunctionServiceOptions(const std::string &fn) : functionName{fn} {}
+        explicit UseFunctionServiceOptions(std::string_view fn) : functionName{fn} {}
+        int limit{1}; //the limit for the services to be found. 0 -> unlimited
         const std::string functionName;
         celix::Filter filter{};
         long targetServiceId{-1L}; //note -1 means not targeting a specific service id.
+        std::chrono::milliseconds waitFor{0}; //note not 0, means the use call with wait for 'waitFor' period of time for a service match to become available
         std::function<void(const F& func)> use{};
         std::function<void(const F& func, const celix::Properties &props)> useWithProperties{};
         std::function<void(const F& func, const celix::Properties &props, const celix::IResourceBundle &bundle)> useWithOwner{};
+    };
+
+    struct UseAnyServiceOptions {
+        int limit{1}; //the limit for the services to be found. 0 -> unlimited
+        celix::Filter filter{};
+        long targetServiceId{-1L}; //note -1 means not targeting a specific service id.
+        std::chrono::milliseconds waitFor{0}; //note not 0, means the use call with wait for 'waitFor' period of time for a service match to become available
+        std::function<void(const std::shared_ptr<void>& svc)> use{};
+        std::function<void(const std::shared_ptr<void>& svc, const celix::Properties &props)> useWithProperties{};
+        std::function<void(const std::shared_ptr<void>& svc, const celix::Properties &props, const celix::IResourceBundle &bundle)> useWithOwner{};
     };
 
     template<typename I>
@@ -111,22 +126,19 @@ namespace celix {
         std::function<void()> postServiceUpdateHook{};
     };
 
-    //NOTE access thread safe
+
     class ServiceRegistry {
     public:
-        explicit ServiceRegistry(std::string name);
+        static std::shared_ptr<ServiceRegistry> create(std::string_view name);
 
-        ~ServiceRegistry();
-
-        ServiceRegistry(celix::ServiceRegistry &&rhs) noexcept;
-
-        ServiceRegistry& operator=(celix::ServiceRegistry &&rhs);
-
+        ServiceRegistry() = default;
+        virtual ~ServiceRegistry() = default;
+        ServiceRegistry(celix::ServiceRegistry &&rhs) = delete;
+        ServiceRegistry& operator=(celix::ServiceRegistry &&rhs) = delete;
         ServiceRegistry& operator=(ServiceRegistry &rhs) = delete;
-
         ServiceRegistry(const ServiceRegistry &rhs) = delete;
 
-        const std::string& name() const;
+        virtual const std::string& name() const = 0;
 
         template<typename I>
         celix::ServiceRegistration registerService(std::shared_ptr<I> svc, celix::Properties props = {}, const std::shared_ptr<celix::IResourceBundle>& owner = {});
@@ -146,14 +158,8 @@ namespace celix {
         template<typename I>
         int useServices(celix::UseServiceOptions<I> opts, const std::shared_ptr<celix::IResourceBundle>& requester = {}) const;
 
-        template<typename I>
-        bool useService(celix::UseServiceOptions<I> opts, const std::shared_ptr<celix::IResourceBundle>& requester = {}) const;
-
         template<typename F>
         int useFunctionServices(celix::UseFunctionServiceOptions<F> opts, const std::shared_ptr<celix::IResourceBundle>& requester = {}) const;
-
-        template<typename F>
-        bool useFunctionService(celix::UseFunctionServiceOptions<F> opts, const std::shared_ptr<celix::IResourceBundle>& requester = {}) const;
 
         template<typename I>
         //NOTE C++17 typename std::enable_if<!std::is_callable<I>::value, long>::type
@@ -186,54 +192,30 @@ namespace celix {
 
         //GENERIC / ANY calls. note these work on void use with care
 
-        int useAnyServices(const std::string &svcOrFunctionName, celix::Filter filter, std::function<void(const std::shared_ptr<void> &svc, const celix::Properties&, const celix::IResourceBundle&)> callback, const std::shared_ptr<celix::IResourceBundle>& requester = {}) const;
-        //int useAnyServices(const std::string &svcOrFunctionName, celix::UseServiceOptions<void> opts, const std::shared_ptr<celix::IResourceBundle>& requester = {}) const;
+        virtual int useAnyServices(const std::string &svcOrFunctionName, celix::UseAnyServiceOptions opts, const std::shared_ptr<celix::IResourceBundle>& requester = {}) const = 0;
 
-        bool useAnyService(const std::string &svcOrFunctionName, celix::Filter filter, std::function<void(const std::shared_ptr<void> &svc, const celix::Properties&, const celix::IResourceBundle&)> callback, const std::shared_ptr<celix::IResourceBundle>& requester = {}) const;
-        //bool useAnyService(const std::string &svcOrFunctionName, celix::UseServiceOptions<void> opts, const std::shared_ptr<celix::IResourceBundle>& requester = {}) const;
+        virtual celix::ServiceRegistration registerAnyService(const std::string& svcName, std::shared_ptr<void> service, celix::Properties props = {}, const std::shared_ptr<celix::IResourceBundle>& owner = {}) = 0;
 
-        bool useAnyServiceWithId(const std::string &svcOrFunctionName, long svcId, std::function<void(const std::shared_ptr<void> &svc, const celix::Properties&, const celix::IResourceBundle&)> callback, const std::shared_ptr<celix::IResourceBundle>& requester = {}) const;
+        virtual celix::ServiceRegistration registerAnyServiceFactory(const std::string& svcName, std::shared_ptr<celix::IServiceFactory<void>> factory, celix::Properties props = {}, const std::shared_ptr<celix::IResourceBundle>& owner = {}) = 0;
 
-        celix::ServiceRegistration registerAnyService(const std::string& svcName, std::shared_ptr<void> service, celix::Properties props = {}, const std::shared_ptr<celix::IResourceBundle>& owner = {});
+        virtual celix::ServiceTracker trackAnyServices(const std::string &svcName, celix::ServiceTrackerOptions<void> opts, const std::shared_ptr<celix::IResourceBundle>& requester = {}) = 0;
 
-        celix::ServiceRegistration registerAnyServiceFactory(const std::string& svcName, std::shared_ptr<celix::IServiceFactory<void>> factory, celix::Properties props = {}, const std::shared_ptr<celix::IResourceBundle>& owner = {});
-
-        // TODO now registered through a service factory. Can this be improved?
-        // celix::ServiceRegistration registerAnyFunctionService(const std::string& functionName, std::function<void>&& function, celix::Properties props = {}, const std::shared_ptr<celix::IResourceBundle>& owner = {});
-
-        celix::ServiceTracker trackAnyServices(const std::string &svcName, celix::ServiceTrackerOptions<void> opts, const std::shared_ptr<celix::IResourceBundle>& requester = {});
-
-        // TODO noew function service tracking is done through trackAnyServices. Is this good enough?
-        // celix::ServiceTracker trackAnyFunctionService(celix::FunctionServiceTrackerOptions<void()> opts, const std::shared_ptr<celix::IResourceBundle>& requester = {});
-
-        std::vector<long> findAnyServices(const std::string &svcName, const celix::Filter& filter = celix::Filter{}) const;
+        virtual std::vector<long> findAnyServices(const std::string &svcName, const celix::Filter& filter = celix::Filter{}) const = 0;
 
         //some additional registry info
-        std::vector<std::string> listAllRegisteredServiceNames() const;
+        virtual std::vector<std::string> listAllRegisteredServiceNames() const = 0;
 
-        long nrOfRegisteredServices() const;
+        virtual long nrOfRegisteredServices() const = 0;
 
-        long nrOfServiceTrackers() const;
-
-    private:
-        class Impl;
-
-        std::unique_ptr<celix::ServiceRegistry::Impl> pimpl;
+        virtual long nrOfServiceTrackers() const = 0;
     };
 }
 
 std::ostream& operator<<(std::ostream &out, celix::ServiceRegistration& serviceRegistration);
 
 
-
-
-
-
-
-
-
 /**********************************************************************************************************************
-  Service Registration Implementation
+  Service Registration Template Implementation
  **********************************************************************************************************************/
 
 
@@ -277,74 +259,66 @@ inline celix::ServiceRegistration celix::ServiceRegistry::registerFunctionServic
 
 template<typename I>
 inline int celix::ServiceRegistry::useServices(celix::UseServiceOptions<I> opts, const std::shared_ptr<celix::IResourceBundle>& requester) const {
-    auto voidUse = [opts](const std::shared_ptr<void> &svc, const celix::Properties &props, const celix::IResourceBundle &bnd) -> void {
-        std::shared_ptr<I> typedSvc = std::static_pointer_cast<I>(svc);
-        if (opts.use) {
-            opts.use(*typedSvc);
-        }
-        if (opts.useWithProperties) {
-            opts.useWithProperties(*typedSvc, props);
-        }
-        if (opts.useWithOwner) {
-            opts.useWithOwner(*typedSvc, props, bnd);
-        }
-    };
-    auto svcName = celix::typeName<I>();
-    return useAnyServices(std::move(svcName), std::move(opts.filter), std::move(voidUse), requester);
-}
+    celix::UseAnyServiceOptions anyOpts;
+    anyOpts.limit = opts.limit;
+    anyOpts.targetServiceId = opts.targetServiceId;
+    anyOpts.waitFor = opts.waitFor;
+    anyOpts.filter = std::move(opts.filter);
 
-template<typename I>
-inline bool celix::ServiceRegistry::useService(celix::UseServiceOptions<I> opts, const std::shared_ptr<celix::IResourceBundle>& requester) const {
-    auto voidUse = [opts](std::shared_ptr<void> svc, const celix::Properties &props, const celix::IResourceBundle &bnd) -> void {
-        std::shared_ptr<I> typedSvc = std::static_pointer_cast<I>(svc);
-        if (opts.use) {
+    if (opts.use) {
+        //TODO improve potential 3x copy of opts
+        anyOpts.use = [opts](const std::shared_ptr<void> svc) {
+            std::shared_ptr<I> typedSvc = std::static_pointer_cast<I>(svc);
             opts.use(*typedSvc);
-        }
-        if (opts.useWithProperties) {
+        };
+    }
+    if (opts.useWithProperties) {
+        anyOpts.useWithProperties = [opts](const std::shared_ptr<void> svc, const celix::Properties &props) {
+            std::shared_ptr<I> typedSvc = std::static_pointer_cast<I>(svc);
             opts.useWithProperties(*typedSvc, props);
-        }
-        if (opts.useWithOwner) {
+        };
+    }
+    if (opts.useWithOwner) {
+        anyOpts.useWithOwner = [opts](const std::shared_ptr<void> svc, const celix::Properties &props, const celix::IResourceBundle &bnd) {
+            std::shared_ptr<I> typedSvc = std::static_pointer_cast<I>(svc);
             opts.useWithOwner(*typedSvc, props, bnd);
-        }
-    };
+        };
+    }
+
     auto svcName = celix::typeName<I>();
-    return useAnyService(std::move(svcName), std::move(opts.filter), std::move(voidUse), requester);
+    return useAnyServices(std::move(svcName), std::move(anyOpts), requester);
 }
 
 template<typename F>
 int celix::ServiceRegistry::useFunctionServices(celix::UseFunctionServiceOptions<F> opts, const std::shared_ptr<celix::IResourceBundle>& requester) const {
-    auto voidUse = [opts](const std::shared_ptr<void>& rawFunction, const celix::Properties &props, const celix::IResourceBundle &bnd) -> void {
-        std::shared_ptr<F> function = std::static_pointer_cast<F>(rawFunction);
-        if (opts.use) {
-            opts.use(*function);
-        }
-        if (opts.useWithProperties) {
-            opts.useWithProperties(*function, props);
-        }
-        if (opts.useWithOwner) {
-            opts.useWithOwner(*function, props, bnd);
-        }
-    };
-    auto svcName = celix::functionServiceName<F>(opts.functionName);
-    return useAnyServices(std::move(svcName), std::move(opts.filter), std::move(voidUse), requester);
-}
+    celix::UseAnyServiceOptions anyOpts;
+    anyOpts.limit = opts.limit;
+    anyOpts.targetServiceId = opts.targetServiceId;
+    anyOpts.waitFor = opts.waitFor;
+    anyOpts.filter = std::move(opts.filter);
 
-template<typename F>
-bool celix::ServiceRegistry::useFunctionService(celix::UseFunctionServiceOptions<F> opts, const std::shared_ptr<celix::IResourceBundle>& requester) const {
-    auto voidUse = [opts](const std::shared_ptr<void>& rawFunction, const celix::Properties &props, const celix::IResourceBundle &bnd) -> void {
-        std::shared_ptr<F> function = std::static_pointer_cast<F>(rawFunction);
-        if (opts.use) {
+    if (opts.use) {
+        //TODO improve potential 3x copy of opts
+        anyOpts.use = [opts](const std::shared_ptr<void> rawFunction) {
+            std::shared_ptr<F> function = std::static_pointer_cast<F>(rawFunction);
             opts.use(*function);
-        }
-        if (opts.useWithProperties) {
+        };
+    }
+    if (opts.useWithProperties) {
+        anyOpts.useWithProperties = [opts](const std::shared_ptr<void> rawFunction, const celix::Properties &props) {
+            std::shared_ptr<F> function = std::static_pointer_cast<F>(rawFunction);
             opts.useWithProperties(*function, props);
-        }
-        if (opts.useWithOwner) {
+        };
+    }
+    if (opts.useWithOwner) {
+        anyOpts.useWithOwner = [opts](const std::shared_ptr<void> rawFunction, const celix::Properties &props, const celix::IResourceBundle &bnd) {
+            std::shared_ptr<F> function = std::static_pointer_cast<F>(rawFunction);
             opts.useWithOwner(*function, props, bnd);
-        }
-    };
+        };
+    }
+
     auto svcName = celix::functionServiceName<F>(opts.functionName);
-    return useAnyService(std::move(svcName), std::move(opts.filter), std::move(voidUse), requester);
+    return useAnyServices(std::move(svcName), std::move(anyOpts), requester);
 }
 
 template<typename I>

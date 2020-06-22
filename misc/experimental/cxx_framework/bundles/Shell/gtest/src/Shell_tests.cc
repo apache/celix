@@ -30,9 +30,9 @@ public:
     ShellTest() {}
     ~ShellTest(){}
 
-    celix::Framework& framework() { return fw; }
+    celix::Framework& framework() { return *fw; }
 private:
-    celix::Framework fw{};
+    std::shared_ptr<celix::Framework> fw{celix::Framework::create()};
 };
 
 
@@ -87,9 +87,9 @@ TEST_F(ShellTest, LbCommandTest) {
     ss.flush();
     std::string output = ss.str();
 
-    size_t pos = output.find("0: celix::Framework");
+    size_t pos = output.find("0: Celix Framework");
     EXPECT_LE(pos, output.size());
-    pos = output.find("1: celix::Shell");
+    pos = output.find("1: Celix Shell");
     EXPECT_LE(pos, output.size());
 
 }

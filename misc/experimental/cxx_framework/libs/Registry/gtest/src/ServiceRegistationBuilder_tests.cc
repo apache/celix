@@ -30,7 +30,7 @@ public:
     std::shared_ptr<celix::ServiceRegistry> registry() const { return reg; }
     std::shared_ptr<celix::IResourceBundle> bundle() const { return bnd; }
 private:
-    std::shared_ptr<celix::ServiceRegistry> reg{new celix::ServiceRegistry{"test"}};
+    std::shared_ptr<celix::ServiceRegistry> reg{celix::ServiceRegistry::create("test")};
     std::shared_ptr<celix::IResourceBundle> bnd{new celix::EmptyResourceBundle{}};
 };
 
@@ -87,8 +87,8 @@ TEST_F(ServiceRegistrationBuilderTest, ServiceRegistrationBuilderTest) {
             EXPECT_EQ(props["name3"], "value3");
         };
 
-        auto called = registry()->useService(useOpts);
-        EXPECT_TRUE(called);
+        int nrCalled = registry()->useServices(useOpts);
+        EXPECT_TRUE(nrCalled > 0);
     }
 }
 
@@ -136,7 +136,7 @@ TEST_F(ServiceRegistrationBuilderTest, FunctionServiceRegistrationBuilderTest) {
             EXPECT_EQ(props["name3"], "value3");
         };
 
-        auto called = registry()->useFunctionService<std::function<void()>>(useOpts);
-        EXPECT_TRUE(called);
+        auto nrCalled = registry()->useFunctionServices<std::function<void()>>(useOpts);
+        EXPECT_TRUE(nrCalled > 0);
     }
 }

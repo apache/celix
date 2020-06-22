@@ -24,16 +24,22 @@
 namespace celix {
 
     // RAII service registration: out of scope -> deregister service
-    // NOTE access not thread safe -> TODO make thread save?
+    // A ServiceRegistration will be returned before the actual service is registered in the framework
     class ServiceRegistration {
     public:
         class Impl; //opaque impl class
+
+        enum class State {
+            Registering,
+            Registered,
+            Unregistering,
+            Unregistered
+        };
 
         explicit ServiceRegistration(celix::ServiceRegistration::Impl* impl);
         explicit ServiceRegistration();
 
         ServiceRegistration(ServiceRegistration &&rhs) noexcept;
-
         ServiceRegistration(const ServiceRegistration &rhs) = delete;
 
         ~ServiceRegistration();
@@ -52,10 +58,27 @@ namespace celix {
 
         bool factory() const;
 
+        celix::ServiceRegistration::State state() const;
+
+        /**
+         * Returns whether the state is Registered
+         */
         bool registered() const;
 
         void unregister();
 
+        /**
+         * Wait til the service registration or unregistration is done.
+         * (in other words wait til the State is Registered or Unregistered)
+         */
+        void wait() const;
+
+        /**
+         * Wait til the service registration or unregistration is done or when the time period is expired
+         * Return true if the registration was done before the time period is expired.
+         */
+        template<typename Rep, typename Period>
+        bool waitFor(const std::chrono::duration<Rep, Period>& period) const;
     private:
         std::unique_ptr<celix::ServiceRegistration::Impl> pimpl;
     };
