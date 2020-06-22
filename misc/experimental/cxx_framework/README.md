@@ -60,11 +60,11 @@ supported.
 
 ## Creating a framework
 ```C++
+//main.cc
 #include "celix/Api.h"
-
-int main(int /*argc*/, char **/*argv*/) {
-    auto fw = celix::Framework{};
-    fw.waitForShutdown();
+int main() {
+    auto fw = celix::Framework::create();
+    fw->waitForShutdown();
     return 0;
 }
 ```
