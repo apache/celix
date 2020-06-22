@@ -35,7 +35,7 @@ add_custom_target(create_resources ALL
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/celix_cxx_shell_resources.zip
 )
 
-add_library(celix_Shell SHARED
+add_library(celix_ShellBundle SHARED
         src/ShellActivator.cc
         src/LbCommand.cc
         src/HelpCommand.cc
@@ -45,20 +45,20 @@ add_library(celix_Shell SHARED
         src/VersionCommand.cc
         src/LoggingCommand.cc
 )
-target_include_directories(celix_Shell PRIVATE src)
-target_link_libraries(celix_Shell PRIVATE celix_ShellApi)
-target_link_libraries(celix_Shell PUBLIC celix::cxx::Framework)
-add_dependencies(celix_Shell create_resources)
+target_include_directories(celix_ShellBundle PRIVATE src)
+target_link_libraries(celix_ShellBundle PRIVATE celix_ShellApi)
+target_link_libraries(celix_ShellBundle PUBLIC Celix::cxx::Framework)
+add_dependencies(celix_ShellBundle create_resources)
 
 #TODO should eventually be done by a CMake command (i.e. the add_celix_bundle)
 if (UNIX AND NOT APPLE)
-    target_link_libraries(celix_Shell PRIVATE -Wl,--format=binary -Wl,celix_cxx_shell_resources.zip -Wl,--format=default)
+    target_link_libraries(celix_ShellBundle PRIVATE -Wl,--format=binary -Wl,celix_cxx_shell_resources.zip -Wl,--format=default)
 else ()
-    target_link_libraries(celix_Shell PRIVATE -Wl,-sectcreate -Wl,resources -Wl,celix_cxx_shell -Wl,celix_cxx_shell_resources.zip)
+    target_link_libraries(celix_ShellBundle PRIVATE -Wl,-sectcreate -Wl,resources -Wl,celix_cxx_shell -Wl,celix_cxx_shell_resources.zip)
 endif ()
 
-add_library(celix::ShellApi ALIAS celix_ShellApi)
-add_library(celix::bundle::Shell ALIAS celix_Shell)
+add_library(Celix::cxx::ShellApi ALIAS celix_ShellApi)
+add_library(Celix::cxx::ShellBundle ALIAS celix_ShellBundle)
 
 if (ENABLE_TESTING)
     add_subdirectory(gtest)

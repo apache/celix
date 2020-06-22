@@ -39,7 +39,7 @@ target_compile_options(celix_cxx_Registry PRIVATE -fPIC)
 #TODO find a better way or doing this. Could not get this to work with temp CMAKE_CXX_FLAGS with -std=c++17 or set(CMAKE_CXX_STANDARD 17)
 target_compile_options(celix_cxx_Registry PUBLIC -std=c++17)
 
-add_library(celix::cxx::Registry ALIAS celix_cxx_Registry)
+add_library(Celix::cxx::Registry ALIAS celix_cxx_Registry)
 
 if (ENABLE_TESTING)
     add_subdirectory(gtest)

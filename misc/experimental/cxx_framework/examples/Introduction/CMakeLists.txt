@@ -25,7 +25,7 @@ add_executable(celix_cxx_introduction_examples
         src/ComponentExample.cc
 )
 target_include_directories(celix_cxx_introduction_examples PRIVATE include)
-target_link_libraries(celix_cxx_introduction_examples PRIVATE celix::cxx::Framework)
+target_link_libraries(celix_cxx_introduction_examples PRIVATE Celix::cxx::Framework)
 
 #optional also add the shell and shell tui static bundles
-target_link_libraries(celix_cxx_introduction_examples PRIVATE celix::bundle::Shell celix::bundle::ShellTui celix::ShellApi)
+target_link_libraries(celix_cxx_introduction_examples PRIVATE Celix::cxx::ShellBundle Celix::cxx::ShellTuiBundle Celix::cxx::ShellApi)

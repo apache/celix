@@ -46,6 +46,8 @@ supported.
 - Support for the celix_ C api, including bundle activators. 
 - Choose using builders or not. If using builders remove a alot of the different register service, track services, etc calls
 - Update API for C++17. C++17 is chosen as standard, as such construction can be updated to make of of this (e.g. std::optional)
+- Think of strategy how to handle library names. Now the Celix framework is Celix::framework and the C++ framework Celix::cxx::Framework.
+  TBD Also add a Celix::C::framework alias and swap the Celix::framework alias in the future to Celix::cxx::Framework?
 
 # Known Issues
  

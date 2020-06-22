@@ -27,9 +27,9 @@ target_include_directories(celix_cxx_Framework PRIVATE src)
 target_include_directories(celix_cxx_Framework PUBLIC include)
 target_link_libraries(celix_cxx_Framework PRIVATE libzip::libzip UUID::lib Threads::Threads)
 #NOTE because of libzil libbz2 and libz is also needed. maybe more to other form of resources (i.e. tar)
-target_link_libraries(celix_cxx_Framework PUBLIC celix::cxx::Registry spdlog::spdlog)
+target_link_libraries(celix_cxx_Framework PUBLIC Celix::cxx::Registry spdlog::spdlog)
 
-add_library(celix::cxx::Framework ALIAS celix_cxx_Framework)
+add_library(Celix::cxx::Framework ALIAS celix_cxx_Framework)
 
 if (ENABLE_TESTING)
     add_subdirectory(gtest)

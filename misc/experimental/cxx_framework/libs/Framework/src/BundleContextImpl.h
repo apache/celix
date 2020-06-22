@@ -37,7 +37,7 @@ namespace celix::impl {
         }
 
         bool stopBundle(long bndId) override {
-            return bnd->framework().startBundle(bndId);
+            return bnd->framework().stopBundle(bndId);
         }
 
         bool startBundle(long bndId) override {

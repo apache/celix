@@ -19,7 +19,7 @@ set(SOURCES
         src/Shell_tests.cc
 )
 add_executable(celix_cxx_shell_tests ${SOURCES})
-target_link_libraries(celix_cxx_shell_tests PRIVATE GTest::gtest GTest::gtest_main celix::cxx::Framework celix::bundle::Shell celix::ShellApi)
+target_link_libraries(celix_cxx_shell_tests PRIVATE GTest::gtest GTest::gtest_main Celix::cxx::Framework Celix::cxx::ShellBundle Celix::cxx::ShellApi)
 
 add_test(NAME celix_cxx_shell_tests COMMAND celix_cxx_shell_tests)
 setup_target_for_coverage(celix_cxx_shell_tests SCAN_DIR ..)

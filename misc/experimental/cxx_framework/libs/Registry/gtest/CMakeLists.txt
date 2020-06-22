@@ -29,7 +29,7 @@ set(SOURCES
 
 )
 add_executable(celix_cxx_registry_tests ${SOURCES})
-target_link_libraries(celix_cxx_registry_tests PRIVATE GTest::gtest GTest::gtest_main celix::cxx::Registry spdlog::spdlog)
+target_link_libraries(celix_cxx_registry_tests PRIVATE GTest::gtest GTest::gtest_main Celix::cxx::Registry spdlog::spdlog)
 
 #NOTE last .. argument for the setup coverage is the scan dir (i.e. not gtest dir, but a dir higher)
 add_test(NAME celix_cxx_registry_tests COMMAND celix_cxx_registry_tests)

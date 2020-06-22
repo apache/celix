@@ -15,24 +15,24 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(celix_ShellTui_static STATIC
+add_library(celix_ShellTuiBundle_static STATIC
         src/ShellTui.cc
 )
-target_include_directories(celix_ShellTui_static PUBLIC include)
-target_link_libraries(celix_ShellTui_static PRIVATE celix::cxx::Framework celix::ShellApi)
-target_compile_options(celix_ShellTui_static PRIVATE -fPIC)
+target_include_directories(celix_ShellTuiBundle_static PUBLIC include)
+target_link_libraries(celix_ShellTuiBundle_static PRIVATE Celix::cxx::Framework Celix::cxx::ShellApi)
+target_compile_options(celix_ShellTuiBundle_static PRIVATE -fPIC)
 
 
 #OR static lib, but then with all symbols to force constructor attribute
-add_library(celix_ShellTui SHARED
+add_library(celix_ShellTuiBundle SHARED
         src/ShellTuiActivator.cc
 )
-target_include_directories(celix_ShellTui PRIVATE src)
-target_link_libraries(celix_ShellTui PRIVATE celix_ShellTui_static celix::ShellApi )
-target_link_libraries(celix_ShellTui PUBLIC celix::cxx::Framework)
+target_include_directories(celix_ShellTuiBundle PRIVATE src)
+target_link_libraries(celix_ShellTuiBundle PRIVATE celix_ShellTui_static Celix::cxx::ShellApi )
+target_link_libraries(celix_ShellTuiBundle PUBLIC Celix::cxx::Framework)
 
-add_library(celix::bundle::ShellTui_static ALIAS celix_ShellTui_static)
-add_library(celix::bundle::ShellTui ALIAS celix_ShellTui)
+add_library(Celix::cxx::ShellTuiBundle_static ALIAS celix_ShellTuiBundle_static)
+add_library(Celix::cxx::ShellTuiBundle ALIAS celix_ShellTuiBundle)
 
 if (ENABLE_TESTING)
     add_subdirectory(gtest)
