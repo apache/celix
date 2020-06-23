@@ -65,7 +65,6 @@ struct pubsub_zmq_topic_sender {
     bool isStatic;
 
     struct {
-        celix_thread_mutex_t mutex;
         zsock_t *socket;
         zcert_t *cert;
     } zmq;
@@ -88,7 +87,6 @@ typedef struct psa_zmq_send_msg_entry {
     unsigned char originUUID[16];
     pubsub_msg_serializer_t *msgSer;
     pubsub_protocol_service_t *protSer;
-    celix_thread_mutex_t sendLock; //protects send & Seqnr
     unsigned int seqNr;
     void *headerBuffer;
     size_t headerBufferSize;
@@ -96,6 +94,7 @@ typedef struct psa_zmq_send_msg_entry {
     size_t metadataBufferSize;
     void *footerBuffer;
     size_t footerBufferSize;
+    bool dataLocked; // protected ZMQ functions and seqNr
     struct {
         celix_thread_mutex_t mutex; //protects entries in struct
         unsigned long nrOfMessagesSend;
@@ -274,7 +273,6 @@ pubsub_zmq_topic_sender_t* pubsub_zmqTopicSender_create(
         sender->topic = strndup(topic, 1024 * 1024);
 
         celixThreadMutex_create(&sender->boundedServices.mutex, NULL);
-        celixThreadMutex_create(&sender->zmq.mutex, NULL);
         sender->boundedServices.map = hashMap_create(NULL, NULL, NULL, NULL);
     }
 
@@ -348,7 +346,6 @@ void pubsub_zmqTopicSender_destroy(pubsub_zmq_topic_sender_t *sender) {
         celixThreadMutex_unlock(&sender->boundedServices.mutex);
 
         celixThreadMutex_destroy(&sender->boundedServices.mutex);
-        celixThreadMutex_destroy(&sender->zmq.mutex);
 
         pubsubInterceptorsHandler_destroy(sender->interceptorsHandler);
 
@@ -530,6 +527,11 @@ static void psa_zmq_freeMsg(void *msg, void *hint) {
     free(entry);
 }
 
+static void psa_zmq_unlockData(void *unused __attribute__((unused)), void *hint) {
+    psa_zmq_send_msg_entry_t *entry = hint;
+    __atomic_store_n(&entry->dataLocked, false, __ATOMIC_RELEASE);
+}
+
 static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, const void *inMsg, celix_properties_t *metadata) {
     int status = CELIX_SUCCESS;
     psa_zmq_bounded_service_entry_t *bound = handle;
@@ -564,10 +566,16 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
         }
 
         if (status == CELIX_SUCCESS /*ser ok*/) {
-            celixThreadMutex_lock(&entry->sendLock);
+            // Some ZMQ functions are not thread-safe, but this atomic compare exchange ensures one access at a time.
+            bool expected = false;
+            while(!__atomic_compare_exchange_n(&entry->dataLocked, &expected, true, false, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE)) {
+                expected = false;
+                usleep(500);
+            }
 
             bool cont = pubsubInterceptorHandler_invokePreSend(sender->interceptorsHandler, entry->msgSer->msgName, msgTypeId, inMsg, &metadata);
             if (cont) {
+
                 pubsub_protocol_message_t message;
                 message.payload.payload = serializedOutput->iov_base;
                 message.payload.length = serializedOutput->iov_len;
@@ -605,7 +613,7 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
                 bool sendOk;
 
                 if (bound->parent->zeroCopyEnabled) {
-                    celixThreadMutex_lock(&sender->zmq.mutex);
+
                     zmq_msg_t msg1; // Header
                     zmq_msg_t msg2; // Payload
                     zmq_msg_t msg3; // Metadata
@@ -616,7 +624,7 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
                     freeMsgEntry->serializedOutput = serializedOutput;
                     freeMsgEntry->serializedOutputLen = serializedOutputLen;
 
-                    zmq_msg_init_data(&msg1, entry->headerBuffer, entry->headerBufferSize, NULL, NULL);
+                    zmq_msg_init_data(&msg1, entry->headerBuffer, entry->headerBufferSize, psa_zmq_unlockData, entry);
                     //send header
                     int rc = zmq_msg_send(&msg1, socket, ZMQ_SNDMORE);
                     if (rc == -1) {
@@ -656,8 +664,6 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
                         }
                     }
 
-                    celixThreadMutex_unlock(&sender->zmq.mutex);
-
                     sendOk = rc > 0;
                 } else {
                     //no zero copy
@@ -670,9 +676,7 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
                     if (entry->footerBufferSize > 0) {
                         zmsg_addmem(msg, entry->footerBuffer, entry->footerBufferSize);
                     }
-                    celixThreadMutex_lock(&sender->zmq.mutex);
                     int rc = zmsg_send(&msg, sender->zmq.socket);
-                    celixThreadMutex_unlock(&sender->zmq.mutex);
                     sendOk = rc == 0;
 
                     if (!sendOk) {
@@ -683,6 +687,8 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
                     if (payloadData && (payloadData != message.payload.payload)) {
                         free(payloadData);
                     }
+
+                    __atomic_store_n(&entry->dataLocked, false, __ATOMIC_RELEASE);
                 }
                 pubsubInterceptorHandler_invokePostSend(sender->interceptorsHandler, entry->msgSer->msgName, msgTypeId, inMsg, metadata);
 
@@ -693,7 +699,6 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
                     entry->msgSer->freeSerializeMsg(entry->msgSer->handle, serializedOutput, serializedOutputLen);
                 }
 
-                celixThreadMutex_unlock(&entry->sendLock);
                 if (sendOk) {
                     sendCountUpdate = 1;
                 } else {
