@@ -82,6 +82,7 @@ typedef struct psa_tcp_connection_entry {
     unsigned int headerSize;
     unsigned int headerBufferSize; // Size of headerBuffer, size = 0, no headerBuffer -> included in payload
     void *headerBuffer;
+    unsigned int footerSize;
     void *footerBuffer;
     unsigned int bufferSize;
     void *buffer;
@@ -91,7 +92,6 @@ typedef struct psa_tcp_connection_entry {
     struct msghdr msg;
     size_t msg_iovlen;        /* Number of elements in the vector.  */
     unsigned int retryCount;
-    unsigned int seqNr;
 } psa_tcp_connection_entry_t;
 
 //
@@ -331,6 +331,8 @@ pubsub_tcpHandler_createEntry(pubsub_tcpHandler_t *handle, int fd, char *url, ch
         entry->headerBufferSize = size;
         handle->protocol->getSyncHeaderSize(handle->protocol->handle, &size);
         entry->syncSize = size;
+        handle->protocol->getFooterSize(handle->protocol->handle, &size);
+        entry->footerSize = size;
         entry->bufferSize = handle->bufferSize;
         entry->connected = false;
         entry->msg.msg_iov = calloc(sizeof(struct iovec), IOV_MAX);
@@ -340,8 +342,8 @@ pubsub_tcpHandler_createEntry(pubsub_tcpHandler_t *handle, int fd, char *url, ch
             entry->msg.msg_iov[entry->msg.msg_iovlen].iov_len = entry->headerSize;
             entry->msg_iovlen++;
         }
-        entry->footerBuffer = calloc(sizeof(char), entry->headerSize);
-        entry->buffer = calloc(sizeof(char), entry->bufferSize);
+        if (entry->footerSize) entry->footerBuffer = calloc(sizeof(char), entry->footerSize);
+        if (entry->bufferSize) entry->buffer = calloc(sizeof(char), entry->bufferSize);
         entry->msg.msg_iov[entry->msg.msg_iovlen].iov_base = entry->buffer;
         entry->msg.msg_iov[entry->msg.msg_iovlen].iov_len = entry->bufferSize;
         entry->msg_iovlen++;
@@ -825,7 +827,7 @@ int pubsub_tcpHandler_read(pubsub_tcpHandler_t *handle, int fd) {
 
     // Message buffer is to small, reallocate to make it bigger
     if ((!entry->headerBufferSize) && (entry->headerSize > entry->bufferSize)) {
-        handle->bufferSize = MAX(handle->bufferSize, entry->headerSize);
+        handle->bufferSize = MAX(handle->bufferSize, entry->headerSize );
         if (entry->buffer) free(entry->buffer);
             entry->buffer = malloc((size_t) handle->bufferSize);
             entry->bufferSize = handle->bufferSize;
@@ -836,14 +838,13 @@ int pubsub_tcpHandler_read(pubsub_tcpHandler_t *handle, int fd) {
     int nbytes = pubsub_tcpHandler_readSocket(handle, entry, fd, header_buffer, 0, entry->headerSize, MSG_PEEK);
     if (nbytes > 0) {
         // Check header message buffer
-        if (handle->protocol->decodeHeader(handle->protocol->handle,
-                                           header_buffer,
-                                           entry->headerSize,
-                                           &entry->header) != CELIX_SUCCESS) {
+        if (handle->protocol->decodeHeader(handle->protocol->handle, header_buffer, entry->headerSize, &entry->header) != CELIX_SUCCESS) {
             // Did not receive correct header
             // skip sync word and try to read next header
             nbytes = pubsub_tcpHandler_readSocket(handle, entry, fd, header_buffer, 0, entry->syncSize, 0);
-            if (!entry->headerError) L_WARN("[TCP Socket] Failed to decode message header (fd: %d) (url: %s)", entry->fd, entry->url);
+            if (!entry->headerError) {
+                L_WARN("[TCP Socket] Failed to decode message header (fd: %d) (url: %s)", entry->fd, entry->url);
+            }
             entry->headerError = true;
             entry->bufferReadSize = 0;
         } else {
@@ -899,21 +900,21 @@ int pubsub_tcpHandler_read(pubsub_tcpHandler_t *handle, int fd) {
                         L_ERROR("[TCP Socket] Failed to receive complete payload buffer (fd: %d) nbytes : %d = msgSize %d", entry->fd, nbytes, size);
                     }
                 }
-                // Check for end of message using, header of next message. Because of streaming protocol
-                // TODO: Add to protocol service to decode/EncodeFooter with unique sync word(different then header)
+                // Check for end of message using, footer of message. Because of streaming protocol
                 if (nbytes > 0) {
-                    pubsub_protocol_message_t header;
-                    nbytes = pubsub_tcpHandler_readSocket(handle, entry, fd, entry->footerBuffer, 0, entry->headerSize, MSG_PEEK);
-                    if (handle->protocol->decodeHeader(handle->protocol->handle,
-                                                 entry->footerBuffer,
-                                                 entry->headerSize,
-                                                 &header) == CELIX_SUCCESS) {
-                        // valid header for next buffer, this means that the message is valid
-                        validMsg = true;
+                    if (entry->footerSize > 0) {
+                        nbytes = pubsub_tcpHandler_readSocket(handle, entry, fd, entry->footerBuffer,0, entry->footerSize,0);
+                        if (handle->protocol->decodeFooter(handle->protocol->handle, entry->footerBuffer, entry->footerSize, &entry->header) == CELIX_SUCCESS) {
+                            // valid footer, this means that the message is valid
+                            validMsg = true;
+                        } else {
+                            // Did not receive correct header
+                            L_ERROR("[TCP Socket] Failed to decode message footer seq %d (received corrupt message, transmit buffer full?) (fd: %d) (url: %s)", entry->header.header.seqNr, entry->fd, entry->url);
+                            entry->bufferReadSize = 0;
+                        }
                     } else {
-                        // Did not receive correct header
-                        L_ERROR("[TCP Socket] Failed to decode next message header seq %d (received corrupt message, transmit buffer full?) (fd: %d) (url: %s)", entry->header.header.seqNr, entry->fd, entry->url);
-                        entry->bufferReadSize = 0;
+                        // No Footer, then complete message is received
+                        validMsg = true;
                     }
                 }
             }
@@ -1037,11 +1038,11 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
                     payloadSize += msgIoVec[i].iov_len;
                 }
             }
-
-            message->header.seqNr = entry->seqNr;
+            message->header.convertEndianess = 0;
             message->header.payloadSize = payloadSize;
             message->header.payloadPartSize = payloadSize;
             message->header.payloadOffset = 0;
+            message->header.isLastSegment = 1;
 
             void *metadataData = NULL;
             size_t metadataSize = 0;
@@ -1051,6 +1052,14 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
                                                  &metadataSize);
             }
             message->header.metadataSize = metadataSize;
+
+            void *footerData = NULL;
+            size_t footerDataSize = 0;
+            if (entry->footerSize) {
+                handle->protocol->encodeFooter(handle->protocol->handle, message,
+                                                 &footerData,
+                                                 &footerDataSize);
+            }
 
             size_t msgSize = 0;
             struct msghdr msg;
@@ -1082,6 +1091,14 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
                 msg.msg_iovlen++;
                 msg.msg_iov[msg.msg_iovlen].iov_base = metadataData;
                 msg.msg_iov[msg.msg_iovlen].iov_len = metadataSize;
+                msgSize += msg.msg_iov[msg.msg_iovlen].iov_len;
+            }
+
+            // Write optional footerData in vector buffer
+            if (footerData && footerDataSize) {
+                msg.msg_iovlen++;
+                msg.msg_iov[msg.msg_iovlen].iov_base = footerData;
+                msg.msg_iov[msg.msg_iovlen].iov_len = footerDataSize;
                 msgSize += msg.msg_iov[msg.msg_iovlen].iov_len;
             }
 
@@ -1128,7 +1145,7 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
             } else if (msgSize) {
                 entry->retryCount = 0;
                 if (nbytes != msgSize) {
-                    L_ERROR("[TCP Socket] seq: %d MsgSize not correct: %d != %d (%s)\n", entry->seqNr, msgSize, nbytes,  strerror(errno));
+                    L_ERROR("[TCP Socket] seq: %d MsgSize not correct: %d != %d (%s)\n", message->header.seqNr, msgSize, nbytes,  strerror(errno));
                 }
             }
             // Release data
@@ -1142,7 +1159,9 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
             if (metadataData) {
                 free(metadataData);
             }
-            entry->seqNr++;
+            if (footerData) {
+                free(footerData);
+            }
         }
     }
     celixThreadRwlock_unlock(&handle->dbLock);

@@ -578,20 +578,28 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
                 if(metadataLength > 1000000) {
                     L_WARN("ERR LARGE METADATA DETECTED\n");
                 }
+                void *footerData = NULL;
+                size_t footerLength = 0;
+                entry->protSer->encodeFooter(entry->protSer->handle, &message, &footerData, &footerLength);
 
                 message.header.msgId = msgTypeId;
+                message.header.seqNr = entry->seqNr;
                 message.header.msgMajorVersion = 0;
                 message.header.msgMinorVersion = 0;
                 message.header.payloadSize = payloadLength;
                 message.header.metadataSize = metadataLength;
                 message.header.payloadPartSize = payloadLength;
                 message.header.payloadOffset = 0;
+                message.header.isLastSegment = 1;
+                message.header.convertEndianess = 0;
+
+                // increase seqNr
+                entry->seqNr++;
 
                 void *headerData = NULL;
                 size_t headerLength = 0;
 
                 entry->protSer->encodeHeader(entry->protSer->handle, &message, &headerData, &headerLength);
-
 
                 errno = 0;
                 bool sendOk;
@@ -601,6 +609,7 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
                     zmq_msg_t msg1; // Header
                     zmq_msg_t msg2; // Payload
                     zmq_msg_t msg3; // Metadata
+                    zmq_msg_t msg4; // Footer
                     void *socket = zsock_resolve(sender->zmq.socket);
                     psa_zmq_zerocopy_free_entry *freeMsgEntry = malloc(sizeof(psa_zmq_zerocopy_free_entry));
                     freeMsgEntry->msgSer = entry->msgSer;
@@ -617,16 +626,9 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
 
                     //send Payload
                     if (rc > 0) {
-                        if(metadataLength > 0) {
-                            zmq_msg_init_data(&msg2, payloadData, payloadLength, psa_zmq_freeMsg, NULL);
-                        } else {
-                            zmq_msg_init_data(&msg2, payloadData, payloadLength, psa_zmq_freeMsg, freeMsgEntry);
-                        }
-                        int flags = 0;
-                        if (metadataLength > 0) {
-                            flags = ZMQ_SNDMORE;
-                        }
-                        rc = zmq_msg_send(&msg2, socket, flags);
+                        int flag = ((metadataLength > 0)  || (footerLength > 0)) ? ZMQ_SNDMORE : 0;
+                        zmq_msg_init_data(&msg2, payloadData, payloadLength, psa_zmq_freeMsg, freeMsgEntry);
+                        rc = zmq_msg_send(&msg2, socket, flag);
                         if (rc == -1) {
                             L_WARN("Error sending payload msg. %s", strerror(errno));
                             zmq_msg_close(&msg2);
@@ -635,13 +637,25 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
 
                     //send MetaData
                     if (rc > 0 && metadataLength > 0) {
-                        zmq_msg_init_data(&msg3, metadataData, metadataLength, psa_zmq_freeMsg, freeMsgEntry);
-                        rc = zmq_msg_send(&msg3, socket, 0);
+                        int flag = (footerLength > 0 ) ? ZMQ_SNDMORE : 0;
+                        zmq_msg_init_data(&msg3, metadataData, metadataLength, psa_zmq_freeMsg, NULL);
+                        rc = zmq_msg_send(&msg3, socket, flag);
                         if (rc == -1) {
                             L_WARN("Error sending metadata msg. %s", strerror(errno));
                             zmq_msg_close(&msg3);
                         }
                     }
+
+                    //send Footer
+                    if (rc > 0 && footerLength > 0) {
+                        zmq_msg_init_data(&msg4, footerData, footerLength, psa_zmq_freeMsg, NULL);
+                        rc = zmq_msg_send(&msg4, socket, 0);
+                        if (rc == -1) {
+                            L_WARN("Error sending footer msg. %s", strerror(errno));
+                            zmq_msg_close(&msg4);
+                        }
+                    }
+
                     celixThreadMutex_unlock(&sender->zmq.mutex);
 
                     sendOk = rc > 0;
@@ -652,6 +666,9 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
                     zmsg_addmem(msg, payloadData, payloadLength);
                     if (metadataLength > 0) {
                         zmsg_addmem(msg, metadataData, metadataLength);
+                    }
+                    if (footerLength > 0) {
+                        zmsg_addmem(msg, footerData, footerLength);
                     }
                     celixThreadMutex_lock(&sender->zmq.mutex);
                     int rc = zmsg_send(&msg, sender->zmq.socket);
@@ -672,8 +689,10 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
                     if (metadataData) {
                         free(metadataData);
                     }
+                    if (footerData) {
+                        free(footerData);
+                    }
                 }
-
                 pubsubInterceptorHandler_invokePostSend(sender->interceptorsHandler, entry->msgSer->msgName, msgTypeId, inMsg, metadata);
 
                 if (message.metadata.metadata) {

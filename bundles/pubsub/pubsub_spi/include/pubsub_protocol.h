@@ -42,11 +42,17 @@ struct pubsub_protocol_header {
     uint32_t payloadSize;
     uint32_t metadataSize;
 
+    /** optional convert Endianess attribute, this attribute is used to indicate the header needs to converted for endianess during encoding
+     *  this attribute is used to indicate the payload needs to converted for endianess after header decoding.
+     *  Note: this attribute is transmitted using the wire protocol, the sync word is used to determine endianess conversion */
+    uint32_t convertEndianess;
+
     /** Optional message segmentation attributes, these attributes are only used/written by the protocol admin.
      *  When message segmentation is supported by the protocol admin */
     uint32_t seqNr;
     uint32_t payloadPartSize;
     uint32_t payloadOffset;
+    uint32_t isLastSegment;
 };
 
 typedef struct pubsub_protocol_payload pubsub_protocol_payload_t;
@@ -113,6 +119,18 @@ typedef struct pubsub_protocol_service {
      * @return status code indicating failure or success
      */
     celix_status_t (*getSyncHeader)(void *handle, void *sync);
+
+  /**
+    * Returns the size of the footer.
+    * Is used by the receiver to configure the expected size of the footer.
+    * The receiver reads the footer to know if the complete message including paylaod is received.
+    *
+    * @param handle handle for service
+    * @param length output param for footer size
+    * @return status code indicating failure or success
+    */
+    celix_status_t (*getFooterSize)(void *handle, size_t *length);
+
   /**
     * Returns the if the protocol service supports the message segmentation attributes that is used by the underlying protocol.
     *
@@ -158,6 +176,18 @@ typedef struct pubsub_protocol_service {
     celix_status_t (*encodeMetadata)(void *handle, pubsub_protocol_message_t *message, void **outBuffer, size_t *outLength);
 
     /**
+     * Encodes the footer
+     *
+     * @param handle handle for service
+     * @param message message to use footer from
+     * @param outBuffer byte array containing the encoded footer
+     * @param outLength length of the byte array
+     * @return status code indicating failure or success
+     */
+    celix_status_t (*encodeFooter)(void *handle, pubsub_protocol_message_t *message, void **outBuffer, size_t *outLength);
+
+
+  /**
      * Decodes the given data into message.header.
      *
      * @param handle handle for service
@@ -191,6 +221,17 @@ typedef struct pubsub_protocol_service {
      * @return status code indicating failure or success
      */
     celix_status_t (*decodeMetadata)(void* handle, void *data, size_t length, pubsub_protocol_message_t *message);
+
+    /**
+     * Decodes the given data into message.header.
+     *
+     * @param handle handle for service
+     * @param data incoming byte array to decode
+     * @param length length of the byte array
+     * @param message pointer to message to be filled in with decoded footer
+     * @return status code indicating failure or success
+     */
+    celix_status_t (*decodeFooter)(void* handle, void *data, size_t length, pubsub_protocol_message_t *message);
 } pubsub_protocol_service_t;
 
 #endif /* PUBSUB_PROTOCOL_SERVICE_H_ */

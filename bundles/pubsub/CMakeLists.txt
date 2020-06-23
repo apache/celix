@@ -46,7 +46,7 @@ if (PUBSUB)
     add_subdirectory(pubsub_discovery)
     add_subdirectory(pubsub_serializer_json)
     add_subdirectory(pubsub_serializer_avrobin)
-    add_subdirectory(pubsub_protocol_wire_v1)
+    add_subdirectory(pubsub_protocol)
     add_subdirectory(keygen)
     add_subdirectory(mock)
 
