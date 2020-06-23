@@ -21,14 +21,15 @@
 # To build these example:
 # - build and install celix
 # - Create a new build project dir and cd to it
-# - set the CMAKE_PREFIX_PATH to the install location
+# - set the MAKE_FIND_ROOT_PATH to the install location
 #   of Celix (e.g. /opt/local) if this is different from
 #   /usr or /usr/local
 # - cmake <loc_to_celix_src>/examples
 # - make -j all
 
-cmake_minimum_required (VERSION 3.2)
+cmake_minimum_required (VERSION 3.4)
 project (CelixUse C CXX)
-set(CMAKE_CXX_FLAGS "-std=c++11")
+set(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 ${CMAKE_C_FLAGS}")
+set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
 find_package(Celix REQUIRED)
 add_subdirectory(celix-examples examples)
