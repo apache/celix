@@ -53,6 +53,7 @@ TEST_F(ServiceRegistrationBuilderTest, ServiceRegistrationBuilderTest) {
 
     {
         auto reg = builder.setService(std::make_shared<Interface1>()).build();
+	reg.wait();
         auto services = registry()->findServices<Interface1>();
         EXPECT_EQ(services.size(), 1);
     } //RAII -> deregister service
@@ -76,6 +77,7 @@ TEST_F(ServiceRegistrationBuilderTest, ServiceRegistrationBuilderTest) {
                 .addProperty("name1", "value1")
                 .addProperties(props2)
                 .build();
+	reg.wait();
         services = registry()->findServices<Interface1>("(name1=value1)");
         EXPECT_EQ(services.size(), 1);
 
@@ -103,6 +105,7 @@ TEST_F(ServiceRegistrationBuilderTest, FunctionServiceRegistrationBuilderTest) {
 
     {
         auto reg = builder.setFunctionService([]{/*nop*/}).build();
+	reg.wait();
         auto functions = registry()->findFunctionServices<std::function<void()>>(fn);
         EXPECT_EQ(functions.size(), 1);
     } //RAII -> deregister service

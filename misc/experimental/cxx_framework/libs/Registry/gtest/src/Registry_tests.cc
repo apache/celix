@@ -153,10 +153,12 @@ TEST_F(RegistryTest, FindServicesTest) {
     properties["loc"] = "front";
     properties["answer"] = "42";
     auto reg2 = registry().registerService(svc1, properties);
+    reg2.wait();
 
     properties.clear();
     properties["loc"] = "back";
     auto reg3 = registry().registerService(svc1, properties);
+    reg3.wait();
 
     auto find1 = registry().findServices<MarkerInterface1>("(loc=*)"); // expecting 2
     auto find2 = registry().findServices<MarkerInterface1>("(answer=42)"); // expecting 1

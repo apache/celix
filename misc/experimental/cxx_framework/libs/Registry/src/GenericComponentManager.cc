@@ -157,9 +157,6 @@ void celix::GenericComponentManager::setEnabled(bool e) {
     for (auto& provide : provides) {
         provide->setEnabled(e);
     }
-    for (auto& provide : provides) {
-        provide->wait();
-    }
 
     {
         std::lock_guard<std::mutex> lck{stateMutex};
@@ -537,6 +534,7 @@ void celix::GenericProvidedService::setEnabled(bool e) {
         enabled = e;
     }
     updateServiceRegistrationsCallback();
+    wait();
 }
 
 void celix::GenericProvidedService::unregisterService() {

@@ -75,6 +75,8 @@ TEST_F(ServiceTrackingTest, ServicesCountTrackersTest) {
 
     auto reg1 = registry().registerService(svc1);
     auto reg2 = registry().registerService(svc2);
+    reg1.wait();
+    reg2.wait();
 
     auto trk2 = registry().trackServices(trkOpts2);
     ASSERT_EQ(1, trk1.trackCount());
