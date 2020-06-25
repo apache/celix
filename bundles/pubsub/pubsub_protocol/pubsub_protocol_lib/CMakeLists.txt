@@ -15,21 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 
-# This Project contains some example how to use Apache Celix,
-# including CMake files, C examples and C++ examples.
-
-# To build these example:
-# - build and install celix
-# - Create a new build project dir and cd to it
-# - set the MAKE_FIND_ROOT_PATH to the install location
-#   of Celix (e.g. /opt/local) if this is different from
-#   /usr or /usr/local
-# - cmake <loc_to_celix_src>/examples
-# - make -j all
-
-cmake_minimum_required (VERSION 3.4)
-project (CelixUse C CXX)
-set(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 ${CMAKE_C_FLAGS}")
-set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
-find_package(Celix REQUIRED)
-add_subdirectory(celix-examples examples)
+add_library(celix_pubsub_protocol_lib STATIC
+        src/pubsub_wire_protocol_common.c
+)
+target_link_libraries(celix_pubsub_protocol_lib PUBLIC Celix::pubsub_spi)
+target_include_directories(celix_pubsub_protocol_lib PUBLIC include)

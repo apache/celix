@@ -25,7 +25,7 @@ target_include_directories(civetweb_shared PUBLIC
         $<INSTALL_INTERFACE:include/celix/http_admin>
         )
 target_link_libraries(civetweb_shared PUBLIC CURL::libcurl)
-
+add_library(Celix::civetweb_shared ALIAS civetweb_shared)
 
 #Create static library
 add_library(civetweb_static STATIC

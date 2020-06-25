@@ -5,9 +5,9 @@
 # to you under the Apache License, Version 2.0 (the
 # "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
-# 
+#
 #   http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing,
 # software distributed under the License is distributed on an
 # "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -15,21 +15,14 @@
 # specific language governing permissions and limitations
 # under the License.
 
-# This Project contains some example how to use Apache Celix,
-# including CMake files, C examples and C++ examples.
+set(SOURCES
+        src/main.cc
+        src/PS_WP_v2_tests.cc
+    )
+add_executable(celix_pswp_v2_tests ${SOURCES})
+#target_include_directories(celix_cxx_pswp_tests SYSTEM PRIVATE gtest)
+target_include_directories(celix_pswp_v2_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src)
+target_link_libraries(celix_pswp_v2_tests PRIVATE celix_wire_protocol_v2_impl GTest::gtest Celix::pubsub_spi)
 
-# To build these example:
-# - build and install celix
-# - Create a new build project dir and cd to it
-# - set the MAKE_FIND_ROOT_PATH to the install location
-#   of Celix (e.g. /opt/local) if this is different from
-#   /usr or /usr/local
-# - cmake <loc_to_celix_src>/examples
-# - make -j all
-
-cmake_minimum_required (VERSION 3.4)
-project (CelixUse C CXX)
-set(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 ${CMAKE_C_FLAGS}")
-set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
-find_package(Celix REQUIRED)
-add_subdirectory(celix-examples examples)
+add_test(NAME celix_pswp_v2_tests COMMAND celix_pswp_v2_tests)
+setup_target_for_coverage(celix_pswp_v2_tests SCAN_DIR ..)
