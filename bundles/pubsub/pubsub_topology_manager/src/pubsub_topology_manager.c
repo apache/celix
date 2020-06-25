@@ -803,7 +803,6 @@ static void pstm_findPsaForEndpoints(pubsub_topology_manager_t *manager) {
     celixThreadMutex_unlock(&manager->discoveredEndpoints.mutex);
 }
 
-
 static void pstm_setupTopicSenderCallback(void *handle, void *svc) {
     pstm_topic_receiver_or_sender_entry_t *entry = handle;
     pubsub_admin_service_t *psa = svc;

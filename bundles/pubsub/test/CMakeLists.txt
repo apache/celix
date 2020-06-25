@@ -266,7 +266,6 @@ if (BUILD_PUBSUB_PSA_ZMQ)
     target_link_libraries(pubsub_zmq_zerocopy_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi ZMQ::lib CZMQ::lib)
     target_include_directories(pubsub_zmq_zerocopy_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
 
-    #TODO fix issues with ZeroCopy and reanble test again
     add_test(NAME pubsub_zmq_zerocopy_tests COMMAND pubsub_zmq_zerocopy_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_zmq_zerocopy_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_zmq_zerocopy_tests SCAN_DIR ..)
 
@@ -290,7 +289,57 @@ if (BUILD_PUBSUB_PSA_ZMQ)
     target_link_libraries(pubsub_zmq_zerocopy_wire_v2_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi ZMQ::lib CZMQ::lib)
     target_include_directories(pubsub_zmq_zerocopy_wire_v2_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
 
-    #TODO fix issues with ZeroCopy and reanble test again
     add_test(NAME pubsub_zmq_zerocopy_wire_v2_tests COMMAND pubsub_zmq_zerocopy_wire_v2_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_zmq_zerocopy_wire_v2_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_zmq_zerocopy_wire_v2_tests SCAN_DIR ..)
 endif ()
+
+
+
+
+
+
+
+
+add_celix_bundle(pubsub_deadlock_sut
+        #"Vanilla" bundle which is under test
+        SOURCES
+        test/sut_activator.c
+        VERSION 1.0.0
+        )
+celix_bundle_files(pubsub_deadlock_sut
+        meta_data/msg.descriptor
+        DESTINATION "META-INF/descriptors"
+        )
+celix_bundle_files(pubsub_deadlock_sut
+        meta_data/deadlock.scope.properties
+        DESTINATION "META-INF/topics/pub"
+        )
+celix_bundle_files(pubsub_deadlock_sut
+        meta_data/deadlock.scope2.properties
+        DESTINATION "META-INF/topics/pub"
+        )
+
+
+add_celix_container(pstm_deadlock_test
+        USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
+        LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/pstm_deadlock_test/test_runner.cc
+        DIR ${CMAKE_CURRENT_BINARY_DIR}
+        PROPERTIES
+        LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
+        BUNDLES
+        Celix::pubsub_serializer_json
+        Celix::pubsub_topology_manager
+        Celix::pubsub_admin_zmq
+        Celix::pubsub_protocol_wire_v2
+        Celix::shell
+        Celix::shell_tui
+        #pubsub_deadlock_sut
+#        pubsub_tst
+        )
+celix_get_bundle_file(pubsub_deadlock_sut DEADLOCK_SUT_BUNDLE_FILE)
+target_compile_definitions(pstm_deadlock_test PRIVATE -DDEADLOCK_SUT_BUNDLE_FILE=\"${DEADLOCK_SUT_BUNDLE_FILE}\")
+target_link_libraries(pstm_deadlock_test PRIVATE Celix::pubsub_api GTest::gtest GTest::gtest_main Jansson Celix::dfi ZMQ::lib CZMQ::lib)
+target_include_directories(pstm_deadlock_test SYSTEM PRIVATE pstm_deadlock_test)
+
+add_test(NAME pstm_deadlock_test COMMAND pstm_deadlock_test WORKING_DIRECTORY $<TARGET_PROPERTY:pstm_deadlock_test,CONTAINER_LOC>)
+setup_target_for_coverage(pstm_deadlock_test SCAN_DIR ..)
