@@ -20,6 +20,7 @@
 #ifndef PUBSUB_PROTOCOL_SERVICE_H_
 #define PUBSUB_PROTOCOL_SERVICE_H_
 
+#include <stdint.h>
 #include "celix_properties.h"
 
 #define PUBSUB_PROTOCOL_SERVICE_NAME      "pubsub_protocol"
@@ -32,27 +33,27 @@ typedef struct pubsub_protocol_header pubsub_protocol_header_t;
  * The protocol header structure, contains the information about the message payload and metadata
  */
 struct pubsub_protocol_header {
-  /** message payload identification attributes */
-    unsigned int msgId;
-    unsigned short msgMajorVersion;
-    unsigned short msgMinorVersion;
+    /** message payload identification attributes */
+    uint32_t msgId;
+    uint16_t msgMajorVersion;
+    uint16_t msgMinorVersion;
 
     /** Payload and metadata sizes attributes */
-    unsigned int payloadSize;
-    unsigned int metadataSize;
+    uint32_t payloadSize;
+    uint32_t metadataSize;
 
     /** Optional message segmentation attributes, these attributes are only used/written by the protocol admin.
      *  When message segmentation is supported by the protocol admin */
-    unsigned int seqNr;
-    unsigned int payloadPartSize;
-    unsigned int payloadOffset;
+    uint32_t seqNr;
+    uint32_t payloadPartSize;
+    uint32_t payloadOffset;
 };
 
 typedef struct pubsub_protocol_payload pubsub_protocol_payload_t;
 
 struct pubsub_protocol_payload {
     void *payload;
-    size_t length;
+    uint32_t length;
 };
 
 typedef struct pubsub_protocol_metadata pubsub_protocol_metadata_t;
