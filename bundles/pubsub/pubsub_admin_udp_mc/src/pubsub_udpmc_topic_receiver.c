@@ -162,7 +162,7 @@ pubsub_udpmc_topic_receiver_t* pubsub_udpmcTopicReceiver_create(celix_bundle_con
         receiver->subscriberTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
     }
 
-    const char *staticConnects = pubsub_getEnvironmentVariableWithScopeTopic(PUBSUB_UDPMC_STATIC_CONNECT_URLS_ENV_NAME, topic, scope);
+    const char *staticConnects = pubsub_getEnvironmentVariableWithScopeTopic(ctx, PUBSUB_UDPMC_STATIC_CONNECT_URLS_FOR, topic, scope);
     if(staticConnects == NULL) {
         staticConnects = celix_properties_get(topicProperties, PUBSUB_UDPMC_STATIC_CONNECT_SOCKET_ADDRESSES, NULL);
     }

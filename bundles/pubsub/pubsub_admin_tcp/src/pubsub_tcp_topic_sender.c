@@ -153,7 +153,7 @@ pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
     const char *staticClientEndPointUrls = NULL;
     const char *staticServerEndPointUrls = NULL;
 
-    discUrl = pubsub_getEnvironmentVariableWithScopeTopic(PUBSUB_TCP_STATIC_BIND_URL_ENV_NAME, topic, scope);
+    discUrl = pubsub_getEnvironmentVariableWithScopeTopic(ctx, PUBSUB_TCP_STATIC_BIND_URL_FOR, topic, scope);
 
     if (topicProperties != NULL) {
         if (discUrl == NULL) {

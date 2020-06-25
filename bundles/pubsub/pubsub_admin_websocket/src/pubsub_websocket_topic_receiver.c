@@ -186,7 +186,7 @@ pubsub_websocket_topic_receiver_t* pubsub_websocketTopicReceiver_create(celix_bu
                                                            WEBSOCKET_ADMIN_SERVICE_NAME, props);
     }
 
-    const char *staticConnects = pubsub_getEnvironmentVariableWithScopeTopic(PUBSUB_WEBSOCKET_STATIC_CONNECT_SOCKET_ADDRESSES_ENV_NAME, topic, scope);
+    const char *staticConnects = pubsub_getEnvironmentVariableWithScopeTopic(ctx, PUBSUB_WEBSOCKET_STATIC_CONNECT_SOCKET_ADDRESSES_FOR, topic, scope);
     if(staticConnects == NULL) {
         staticConnects = celix_properties_get(topicProperties, PUBSUB_WEBSOCKET_STATIC_CONNECT_SOCKET_ADDRESSES, NULL);
     }

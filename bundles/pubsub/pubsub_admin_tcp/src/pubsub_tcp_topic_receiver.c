@@ -164,7 +164,7 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
     const char *staticServerEndPointUrls = NULL;
     const char *staticConnectUrls = NULL;
 
-    staticConnectUrls = pubsub_getEnvironmentVariableWithScopeTopic(PUBSUB_TCP_STATIC_CONNECT_URLS_ENV_NAME, topic, scope);
+    staticConnectUrls = pubsub_getEnvironmentVariableWithScopeTopic(ctx, PUBSUB_TCP_STATIC_CONNECT_URLS_FOR, topic, scope);
 
     if (topicProperties != NULL) {
         if(staticConnectUrls == NULL) {

@@ -460,7 +460,7 @@ celix_status_t pubsub_zmqAdmin_setupTopicSender(void *handle, const char *scope,
 
     celix_properties_t *newEndpoint = NULL;
 
-    const char *staticBindUrl = pubsub_getEnvironmentVariableWithScopeTopic(PUBSUB_ZMQ_STATIC_BIND_URL_ENV_NAME, topic, scope);
+    const char *staticBindUrl = pubsub_getEnvironmentVariableWithScopeTopic(psa->ctx, PUBSUB_ZMQ_STATIC_BIND_URL_FOR, topic, scope);
     if(staticBindUrl == NULL && topicProperties != NULL) {
         staticBindUrl = celix_properties_get(topicProperties, PUBSUB_ZMQ_STATIC_BIND_URL, NULL);
     }

@@ -226,7 +226,7 @@ pubsub_zmq_topic_receiver_t* pubsub_zmqTopicReceiver_create(celix_bundle_context
         receiver->requestedConnections.map = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
     }
 
-    const char *staticConnectUrls = pubsub_getEnvironmentVariableWithScopeTopic(PUBSUB_ZMQ_STATIC_CONNECT_URLS_ENV_NAME, topic, scope);
+    const char *staticConnectUrls = pubsub_getEnvironmentVariableWithScopeTopic(ctx, PUBSUB_ZMQ_STATIC_CONNECT_URLS_FOR, topic, scope);
     if(staticConnectUrls == NULL) {
         staticConnectUrls = celix_properties_get(topicProperties, PUBSUB_ZMQ_STATIC_CONNECT_URLS, NULL);
     }
