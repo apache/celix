@@ -22,8 +22,6 @@
 #include <celix/dm/DependencyManager.h>
 #include "pubsub/api.h"
 #include <unistd.h>
-#include <chrono>
-#include <thread>
 #include <memory>
 
 #include <gtest/gtest.h>
@@ -139,8 +137,6 @@ TEST_F(DeadlockTestSuite, test) {
     mng->start();
 
     celix_bundleContext_startBundle(ctx, sutBundleId);
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(4000));
 
     mng->stop();
 }

@@ -75,7 +75,7 @@ celix_status_t pubsub_topologyManager_create(celix_bundle_context_t *context, ce
     status |= celixThreadMutexAttr_settype(&attr, CELIX_THREAD_MUTEX_RECURSIVE);
     status |= celixThreadMutex_create(&manager->topicSenders.mutex, &attr);
     status |= celixThreadMutexAttr_destroy(&attr);
-    
+
     status |= celixThreadMutex_create(&manager->psaMetrics.mutex, NULL);
     status |= celixThreadMutex_create(&manager->psaHandling.mutex, NULL);
 
