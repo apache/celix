@@ -19,10 +19,12 @@
 
 #include "celix_api.h"
 #include <celix/dm/Component.h>
+#include <celix/dm/DependencyManager.h>
 #include "pubsub/api.h"
 #include <unistd.h>
 #include <chrono>
 #include <thread>
+#include <memory>
 
 #include <gtest/gtest.h>
 
@@ -31,13 +33,13 @@ constexpr const char *deadlockSutBundleFile = DEADLOCK_SUT_BUNDLE_FILE;
 struct DeadlockTestSuite : public ::testing::Test {
     celix_framework_t *fw = NULL;
     celix_bundle_context_t *ctx = NULL;
-    DependencyManager *mng = NULL;
+    std::unique_ptr<DependencyManager> mng = NULL;
     long sutBundleId = 0;
 
     DeadlockTestSuite() {
         celixLauncher_launch("config.properties", &fw);
         ctx = celix_framework_getFrameworkContext(fw);
-        mng = new DependencyManager(ctx);
+        mng = std::unique_ptr<DependencyManager>(new DependencyManager(ctx));
         sutBundleId = celix_bundleContext_installBundle(ctx, deadlockSutBundleFile, false);
     }
 
