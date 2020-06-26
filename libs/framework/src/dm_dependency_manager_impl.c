@@ -27,6 +27,7 @@
 #include "dm_dependency_manager_impl.h"
 #include "celix_dependency_manager.h"
 #include "celix_bundle.h"
+#include "celix_framework.h"
 
 
 celix_dependency_manager_t* celix_private_dependencyManager_create(celix_bundle_context_t *context) {
@@ -159,7 +160,8 @@ static void celix_dm_getInfosCallback(void *handle, const celix_bundle_t *bnd) {
 
 celix_array_list_t * celix_dependencyManager_createInfos(celix_dependency_manager_t *manager) {
 	celix_array_list_t *infos = celix_arrayList_create();
-	celix_bundleContext_useBundles(manager->ctx, infos, celix_dm_getInfosCallback);
+	celix_framework_t* fw = celix_bundleContext_getFramework(manager->ctx);
+    celix_framework_useBundles(fw, true, infos, celix_dm_getInfosCallback);
 	return infos;
 }
 

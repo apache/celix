@@ -318,7 +318,7 @@ celix_bundle_files(pubsub_deadlock_sut
         meta_data/deadlock.scope2.properties
         DESTINATION "META-INF/topics/pub"
         )
-
+target_link_libraries(pubsub_deadlock_sut PRIVATE Celix::pubsub_api)
 
 add_celix_container(pstm_deadlock_test
         USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
@@ -340,6 +340,13 @@ celix_get_bundle_file(pubsub_deadlock_sut DEADLOCK_SUT_BUNDLE_FILE)
 target_compile_definitions(pstm_deadlock_test PRIVATE -DDEADLOCK_SUT_BUNDLE_FILE=\"${DEADLOCK_SUT_BUNDLE_FILE}\")
 target_link_libraries(pstm_deadlock_test PRIVATE Celix::pubsub_api GTest::gtest GTest::gtest_main Jansson Celix::dfi ZMQ::lib CZMQ::lib)
 target_include_directories(pstm_deadlock_test SYSTEM PRIVATE pstm_deadlock_test)
+
+#Note we do not link to bundles, as result (to ensure a bundle zip file is created) an dependency on the bundle is needed.
+add_dependencies(pstm_deadlock_test pubsub_deadlock_sut_bundle)
+
+#Framework "bundle" has no cache dir. Default as "cache dir" the cwd is used.
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/meta_data/msg.descriptor ${CMAKE_CURRENT_BINARY_DIR}/pstm_deadlock_test/META-INF/descriptors/msg.descriptor COPYONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/meta_data/deadlock.scope.properties ${CMAKE_CURRENT_BINARY_DIR}/pstm_deadlock_test/META-INF/topics/pub/deadlock.properties COPYONLY)
 
 add_test(NAME pstm_deadlock_test COMMAND pstm_deadlock_test WORKING_DIRECTORY $<TARGET_PROPERTY:pstm_deadlock_test,CONTAINER_LOC>)
 setup_target_for_coverage(pstm_deadlock_test SCAN_DIR ..)
