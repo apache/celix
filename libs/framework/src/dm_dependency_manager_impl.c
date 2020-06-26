@@ -161,7 +161,7 @@ static void celix_dm_getInfosCallback(void *handle, const celix_bundle_t *bnd) {
 celix_array_list_t * celix_dependencyManager_createInfos(celix_dependency_manager_t *manager) {
 	celix_array_list_t *infos = celix_arrayList_create();
 	celix_framework_t* fw = celix_bundleContext_getFramework(manager->ctx);
-    celix_framework_useBundles(fw, true, infos, celix_dm_getInfosCallback);
+	celix_framework_useBundles(fw, true, infos, celix_dm_getInfosCallback);
 	return infos;
 }
 

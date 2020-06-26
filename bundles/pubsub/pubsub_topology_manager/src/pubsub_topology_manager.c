@@ -69,7 +69,13 @@ celix_status_t pubsub_topologyManager_create(celix_bundle_context_t *context, ce
     status |= celixThreadMutex_create(&manager->discoveredEndpoints.mutex, NULL);
     status |= celixThreadMutex_create(&manager->announceEndpointListeners.mutex, NULL);
     status |= celixThreadMutex_create(&manager->topicReceivers.mutex, NULL);
-    status |= celixThreadMutex_create(&manager->topicSenders.mutex, NULL);
+
+    celix_thread_mutexattr_t attr;
+    status |= celixThreadMutexAttr_create(&attr);
+    status |= celixThreadMutexAttr_settype(&attr, CELIX_THREAD_MUTEX_RECURSIVE);
+    status |= celixThreadMutex_create(&manager->topicSenders.mutex, &attr);
+    status |= celixThreadMutexAttr_destroy(&attr);
+    
     status |= celixThreadMutex_create(&manager->psaMetrics.mutex, NULL);
     status |= celixThreadMutex_create(&manager->psaHandling.mutex, NULL);
 
