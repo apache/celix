@@ -39,9 +39,4 @@
  */
 #define PUBSUB_ENDPOINT_LOCAL_VISIBILITY     "local"
 
-/**
- * Default scope, if not scope is specified endpoints are published using this scope
- */
-#define PUBSUB_DEFAULT_ENDPOINT_SCOPE        "default"
-
 #endif /* PUBSUB_CONSTANTS_H_ */
