@@ -325,8 +325,12 @@ bool pubsubEndpoint_match(
 }
 
 bool pubsubEndpoint_matchWithTopicAndScope(const celix_properties_t* endpoint, const char *topic, const char *scope) {
-    const char *endpointScope = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_SCOPE, NULL);
+    const char *endpointScope = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_SCOPE, PUBSUB_DEFAULT_ENDPOINT_SCOPE);
     const char *endpointTopic = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_NAME, NULL);
+    if (scope == NULL) {
+        scope = PUBSUB_DEFAULT_ENDPOINT_SCOPE;
+    }
+
     if (celix_utils_stringEquals(topic, endpointTopic) && celix_utils_stringEquals(scope, endpointScope)) {
         return true;
     }

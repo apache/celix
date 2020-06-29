@@ -32,7 +32,7 @@ TEST_F(PubSubEndpointUtilsTestSuite, pubsubEndpoint_matchWithTopicAndScope) {
 
     EXPECT_TRUE(pubsubEndpoint_matchWithTopicAndScope(endpoint, "topic", nullptr));
     EXPECT_FALSE(pubsubEndpoint_matchWithTopicAndScope(endpoint, "topicaa", nullptr));
-    EXPECT_FALSE(pubsubEndpoint_matchWithTopicAndScope(endpoint, "topic", "default"));
+    EXPECT_TRUE(pubsubEndpoint_matchWithTopicAndScope(endpoint, "topic", "default")); //Note "default" is the same as NULL scope
     EXPECT_FALSE(pubsubEndpoint_matchWithTopicAndScope(endpoint, "topic", "scope"));
 
     celix_properties_set(endpoint, PUBSUB_ENDPOINT_TOPIC_SCOPE, "scope");
@@ -41,6 +41,12 @@ TEST_F(PubSubEndpointUtilsTestSuite, pubsubEndpoint_matchWithTopicAndScope) {
     EXPECT_FALSE(pubsubEndpoint_matchWithTopicAndScope(endpoint, "topic", "default"));
     EXPECT_TRUE(pubsubEndpoint_matchWithTopicAndScope(endpoint, "topic", "scope"));
     EXPECT_FALSE(pubsubEndpoint_matchWithTopicAndScope(endpoint, "topic", "scopeaa"));
+
+    celix_properties_set(endpoint, PUBSUB_ENDPOINT_TOPIC_SCOPE, "default");
+    EXPECT_TRUE(pubsubEndpoint_matchWithTopicAndScope(endpoint, "topic", nullptr)); //Note NULL is the same as "default" scope
+    EXPECT_FALSE(pubsubEndpoint_matchWithTopicAndScope(endpoint, "topicaa", nullptr));
+    EXPECT_TRUE(pubsubEndpoint_matchWithTopicAndScope(endpoint, "topic", "default"));
+    EXPECT_FALSE(pubsubEndpoint_matchWithTopicAndScope(endpoint, "topic", "scope"));
 
     celix_properties_destroy(endpoint);
 }
