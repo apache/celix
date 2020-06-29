@@ -65,7 +65,12 @@ bool pubsubEndpoint_equals(const celix_properties_t *psEp1, const celix_properti
 bool
 pubsubEndpoint_isValid(const celix_properties_t *endpointProperties, bool requireAdminType, bool requireSerializerType);
 
-
+/**
+ * Create a key based on scope an topic.
+ * Scope can be NULL.
+ * Note that NULL, "topic" and "default", "topic" will result in different keys
+ * @return a newly created key. caller is responsible for freeing the string array.
+ */
 char *pubsubEndpoint_createScopeTopicKey(const char *scope, const char *topic);
 
 /**

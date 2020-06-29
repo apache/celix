@@ -415,8 +415,8 @@ static void pubsub_zmqTopicReceiver_addSubscriber(void *handle, void *svc, const
     long bndId = celix_bundle_getId(bnd);
     long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1);
     const char *subScope = celix_properties_get(props, PUBSUB_SUBSCRIBER_SCOPE, NULL);
-    if (receiver->scope == NULL){
-        if (subScope != NULL){
+    if (receiver->scope == NULL) {
+        if (subScope != NULL) {
             return;
         }
     } else if (subScope != NULL) {
