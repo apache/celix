@@ -410,7 +410,7 @@ celix_status_t pubsub_udpmcAdmin_setupTopicReceiver(void *handle, const char *sc
         hash_map_iterator_t iter = hashMapIterator_construct(psa->discoveredEndpoints.map);
         while (hashMapIterator_hasNext(&iter)) {
             celix_properties_t *endpoint = hashMapIterator_nextValue(&iter);
-            if (pubsub_udpmcAdmin_endpointIsPublisher(endpoint)) {
+            if (pubsub_udpmcAdmin_endpointIsPublisher(endpoint) && pubsubEndpoint_matchWithTopicAndScope(endpoint, topic, scope)) {
                 pubsub_udpmcAdmin_connectEndpointToReceiver(psa, receiver, endpoint);
             }
         }

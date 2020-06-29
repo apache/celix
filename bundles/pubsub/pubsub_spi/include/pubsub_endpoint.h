@@ -174,7 +174,14 @@ bool pubsubEndpoint_match(
         long *outSerializerSvcId,
         long *outProtocolSvcId);
 
-
+/**
+ * Match an endpoint with a topic & scope.
+ * @param endpoint The endpoints (mandatory)
+ * @param topic The topic (mandatory)
+ * @param scope The scope (can be NULL)
+ * @return true if the endpoint is for the provide topic and scope);
+ */
+bool pubsubEndpoint_matchWithTopicAndScope(const celix_properties_t* endpoint, const char *topic, const char *scope);
 
 
 #ifdef __cplusplus

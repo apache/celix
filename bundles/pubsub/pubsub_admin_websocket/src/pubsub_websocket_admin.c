@@ -393,7 +393,7 @@ celix_status_t pubsub_websocketAdmin_setupTopicReceiver(void *handle, const char
         while (hashMapIterator_hasNext(&iter)) {
             celix_properties_t *endpoint = hashMapIterator_nextValue(&iter);
             const char *type = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TYPE, NULL);
-            if (type != NULL && strncmp(PUBSUB_PUBLISHER_ENDPOINT_TYPE, type, strlen(PUBSUB_PUBLISHER_ENDPOINT_TYPE)) == 0) {
+            if (type != NULL && strncmp(PUBSUB_PUBLISHER_ENDPOINT_TYPE, type, strlen(PUBSUB_PUBLISHER_ENDPOINT_TYPE)) == 0 && pubsubEndpoint_matchWithTopicAndScope(endpoint, topic, scope)) {
                 pubsub_websocketAdmin_connectEndpointToReceiver(psa, receiver, endpoint);
             }
         }

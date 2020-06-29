@@ -599,7 +599,7 @@ celix_status_t pubsub_zmqAdmin_setupTopicReceiver(void *handle, const char *scop
         hash_map_iterator_t iter = hashMapIterator_construct(psa->discoveredEndpoints.map);
         while (hashMapIterator_hasNext(&iter)) {
             celix_properties_t *endpoint = hashMapIterator_nextValue(&iter);
-            if (pubsub_zmqAdmin_endpointIsPublisher(endpoint)) {
+            if (pubsub_zmqAdmin_endpointIsPublisher(endpoint) && pubsubEndpoint_matchWithTopicAndScope(endpoint, topic, scope)) {
                 pubsub_zmqAdmin_connectEndpointToReceiver(psa, receiver, endpoint);
             }
         }

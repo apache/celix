@@ -22,6 +22,7 @@
 #include <pubsub_endpoint.h>
 #include <pubsub_serializer.h>
 #include <pubsub_protocol.h>
+#include <celix_api.h>
 
 #include "service_reference.h"
 
@@ -321,4 +322,13 @@ bool pubsubEndpoint_match(
     }
 
     return match;
+}
+
+bool pubsubEndpoint_matchWithTopicAndScope(const celix_properties_t* endpoint, const char *topic, const char *scope) {
+    const char *endpointScope = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_SCOPE, NULL);
+    const char *endpointTopic = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_NAME, NULL);
+    if (celix_utils_stringEquals(topic, endpointTopic) && celix_utils_stringEquals(scope, endpointScope)) {
+        return true;
+    }
+    return false;
 }

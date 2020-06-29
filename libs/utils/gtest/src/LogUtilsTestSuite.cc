@@ -20,10 +20,10 @@
 #include <gtest/gtest.h>
 
 #include "celix_log_utils.h"
+#include "hash_map.h"
+#include "utils.h"
 
 class LogUtilsTestSuite : public ::testing::Test {};
-
-
 
 TEST_F(LogUtilsTestSuite, LogLevelToString) {
     EXPECT_STREQ("trace", celix_logUtils_logLevelToString(CELIX_LOG_LEVEL_TRACE));
