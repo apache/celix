@@ -48,7 +48,7 @@ TEST_GROUP(PUBSUB_INT_GROUP) {
 };
 
 TEST(PUBSUB_INT_GROUP, recvTest) {
-    constexpr int TRIES = 25;
+    constexpr int TRIES = 40;
     constexpr int TIMEOUT = 250000;
     constexpr int MSG_COUNT = 100;
 
