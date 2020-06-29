@@ -25,7 +25,7 @@ add_celix_bundle(celix_pubsub_poi_subscriber
 
 target_link_libraries(celix_pubsub_poi_subscriber PRIVATE Celix::framework Celix::pubsub_api)
 target_include_directories(celix_pubsub_poi_subscriber PRIVATE private/include)
-target_compile_definitions(celix_pubsub_poi_subscriber PRIVATE USE_SCOPE)
+
 
 celix_bundle_files(celix_pubsub_poi_subscriber
         ${PROJECT_SOURCE_DIR}/bundles/pubsub/examples/pubsub/msg_descriptors/msg_poi1.descriptor
