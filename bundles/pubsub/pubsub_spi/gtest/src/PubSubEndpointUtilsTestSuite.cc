@@ -21,12 +21,7 @@
 
 #include "pubsub_endpoint.h"
 
-class PubSubEndpointUtilsTestSuite : public ::testing::Test {
-public:
-};
-
-
-TEST_F(PubSubEndpointUtilsTestSuite, pubsubEndpoint_matchWithTopicAndScope) {
+TEST(PubSubEndpointUtilsTestSuite, pubsubEndpoint_matchWithTopicAndScope) {
     celix_properties_t* endpoint = celix_properties_create();
     celix_properties_set(endpoint, PUBSUB_ENDPOINT_TOPIC_NAME, "topic");
 
