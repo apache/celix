@@ -34,6 +34,7 @@
 #include <uuid/uuid.h>
 #include "celix_constants.h"
 #include <signal.h>
+#include <pubsub_utils.h>
 
 #define FIRST_SEND_DELAY_IN_SECONDS              2
 #define TCP_BIND_MAX_RETRY                      10
@@ -151,8 +152,13 @@ pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
     const char *discUrl = NULL;
     const char *staticClientEndPointUrls = NULL;
     const char *staticServerEndPointUrls = NULL;
+
+    discUrl = pubsub_getEnvironmentVariableWithScopeTopic(ctx, PUBSUB_TCP_STATIC_BIND_URL_FOR, topic, scope);
+
     if (topicProperties != NULL) {
-        discUrl = celix_properties_get(topicProperties, PUBSUB_TCP_STATIC_DISCOVER_URL, NULL);
+        if (discUrl == NULL) {
+            discUrl = celix_properties_get(topicProperties, PUBSUB_TCP_STATIC_DISCOVER_URL, NULL);
+        }
         /* Check if it's a static endpoint */
         const char *endPointType = celix_properties_get(topicProperties, PUBSUB_TCP_STATIC_ENDPOINT_TYPE, NULL);
         if (endPointType != NULL) {

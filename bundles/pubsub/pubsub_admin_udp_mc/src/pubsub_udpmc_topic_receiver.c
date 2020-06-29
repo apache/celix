@@ -33,6 +33,7 @@
 #include <pubsub_endpoint.h>
 #include <arpa/inet.h>
 #include <celix_log_helper.h>
+#include <pubsub_utils.h>
 #include <celix_api.h>
 #include "pubsub_udpmc_topic_receiver.h"
 #include "pubsub_psa_udpmc_constants.h"
@@ -161,7 +162,10 @@ pubsub_udpmc_topic_receiver_t* pubsub_udpmcTopicReceiver_create(celix_bundle_con
         receiver->subscriberTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
     }
 
-    const char *staticConnects = celix_properties_get(topicProperties, PUBSUB_UDPMC_STATIC_CONNECT_SOCKET_ADDRESSES, NULL);
+    const char *staticConnects = pubsub_getEnvironmentVariableWithScopeTopic(ctx, PUBSUB_UDPMC_STATIC_CONNECT_URLS_FOR, topic, scope);
+    if(staticConnects == NULL) {
+        staticConnects = celix_properties_get(topicProperties, PUBSUB_UDPMC_STATIC_CONNECT_SOCKET_ADDRESSES, NULL);
+    }
     if (staticConnects != NULL) {
         char *copy = strndup(staticConnects, 1024*1024);
         char* addr;

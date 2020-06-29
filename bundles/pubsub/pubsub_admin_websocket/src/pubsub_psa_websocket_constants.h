@@ -45,4 +45,10 @@
  */
 #define PUBSUB_WEBSOCKET_STATIC_CONNECT_SOCKET_ADDRESSES    "websocket.static.connect.socket_addresses"
 
+/**
+ * Name of environment variable with space-separated list of ips/urls to connect to
+ * e.g. PUBSUB_WEBSOCKET_STATIC_CONNECT_SOCKET_ADDRESSES_FOR_topic_scope="tcp://127.0.0.1:4444 tcp://127.0.0.2:4444"
+ */
+#define PUBSUB_WEBSOCKET_STATIC_CONNECT_SOCKET_ADDRESSES_FOR "PUBSUB_WEBSOCKET_STATIC_CONNECT_SOCKET_ADDRESSES_FOR_"
+
 #endif /* PUBSUB_PSA_WEBSOCKET_CONSTANTS_H_ */
