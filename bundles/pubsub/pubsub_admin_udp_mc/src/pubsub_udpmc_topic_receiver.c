@@ -338,11 +338,14 @@ static void pubsub_udpmcTopicReceiver_addSubscriber(void *handle, void *svc, con
         if (subScope != NULL) {
             return;
         }
-    } else {
+    } else if (subScope != NULL) {
         if (strncmp(subScope, receiver->scope, strlen(receiver->scope)) != 0) {
             //not the same scope. ignore
             return;
         }
+    } else {
+        //receiver scope is not NULL, but subScope is NULL -> ignore
+        return;
     }
 
     celixThreadMutex_lock(&receiver->subscribers.mutex);

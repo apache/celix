@@ -428,6 +428,9 @@ static void pubsub_zmqTopicReceiver_addSubscriber(void *handle, void *svc, const
             //not the same scope. ignore
             return;
         }
+    } else {
+        //receiver scope is not NULL, but subScope is NULL -> ignore
+        return;
     }
 
     celixThreadMutex_lock(&receiver->subscribers.mutex);

@@ -410,6 +410,9 @@ static void pubsub_websocketTopicReceiver_addSubscriber(void *handle, void *svc,
             //not the same scope. ignore
             return;
         }
+    } else {
+        //receiver scope is not NULL, but subScope is NULL -> ignore
+        return;
     }
 
     celixThreadMutex_lock(&receiver->subscribers.mutex);
