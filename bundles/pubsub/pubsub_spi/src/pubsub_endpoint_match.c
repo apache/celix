@@ -331,8 +331,5 @@ bool pubsubEndpoint_matchWithTopicAndScope(const celix_properties_t* endpoint, c
         scope = PUBSUB_DEFAULT_ENDPOINT_SCOPE;
     }
 
-    if (celix_utils_stringEquals(topic, endpointTopic) && celix_utils_stringEquals(scope, endpointScope)) {
-        return true;
-    }
-    return false;
+    return celix_utils_stringEquals(topic, endpointTopic) && celix_utils_stringEquals(scope, endpointScope);
 }

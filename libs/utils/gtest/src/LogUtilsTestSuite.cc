@@ -20,8 +20,6 @@
 #include <gtest/gtest.h>
 
 #include "celix_log_utils.h"
-#include "hash_map.h"
-#include "utils.h"
 
 class LogUtilsTestSuite : public ::testing::Test {};
 
