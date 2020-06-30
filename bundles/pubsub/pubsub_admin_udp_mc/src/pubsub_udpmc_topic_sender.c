@@ -26,6 +26,7 @@
 #include <utils.h>
 #include <zconf.h>
 #include <arpa/inet.h>
+#include <pubsub_utils.h>
 #include "pubsub_udpmc_topic_sender.h"
 #include "pubsub_psa_udpmc_constants.h"
 #include "large_udp.h"
@@ -105,7 +106,21 @@ pubsub_udpmc_topic_sender_t* pubsub_udpmcTopicSender_create(
     sender->boundedServices.map = hashMap_create(NULL, NULL, NULL, NULL);
 
     unsigned int port = rand_range(UDP_BASE_PORT, UDP_MAX_PORT);
-    long configuredPort = celix_properties_getAsLong(topicProperties, PUBSUB_UDPMC_STATIC_BIND_PORT, -1L);
+
+    const char *portEnvVar = pubsub_getEnvironmentVariableWithScopeTopic(ctx, PUBSUB_UDPMC_STATIC_BIND_PORT_URL_FOR, topic, scope);
+    long configuredPort = -1;
+    if(portEnvVar != NULL) {
+        char *endptr = NULL;
+        long p = strtol(portEnvVar, &endptr, 10);
+        if(endptr != portEnvVar && errno != ERANGE && p >= 0 && p <= 65535) {
+            configuredPort = p;
+        }
+    }
+
+    if(configuredPort == -1) {
+        configuredPort = celix_properties_getAsLong(topicProperties, PUBSUB_UDPMC_STATIC_BIND_PORT, -1L);
+    }
+
     if (configuredPort > 0) {
         port = (unsigned int)configuredPort;
         sender->staticallyConfigured = true;

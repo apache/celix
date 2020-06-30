@@ -36,6 +36,7 @@
 
 #include <uuid/uuid.h>
 #include <pubsub_admin_metrics.h>
+#include <pubsub_utils.h>
 #include <celix_api.h>
 
 #include "pubsub_interceptors_handler.h"
@@ -225,7 +226,10 @@ pubsub_zmq_topic_receiver_t* pubsub_zmqTopicReceiver_create(celix_bundle_context
         receiver->requestedConnections.map = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
     }
 
-    const char *staticConnectUrls = celix_properties_get(topicProperties, PUBSUB_ZMQ_STATIC_CONNECT_URLS, NULL);
+    const char *staticConnectUrls = pubsub_getEnvironmentVariableWithScopeTopic(ctx, PUBSUB_ZMQ_STATIC_CONNECT_URLS_FOR, topic, scope);
+    if(staticConnectUrls == NULL) {
+        staticConnectUrls = celix_properties_get(topicProperties, PUBSUB_ZMQ_STATIC_CONNECT_URLS, NULL);
+    }
     if (receiver->zmqSock != NULL && staticConnectUrls != NULL) {
         char *urlsCopy = strndup(staticConnectUrls, 1024*1024);
         char* url;

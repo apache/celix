@@ -109,7 +109,7 @@ if (BUILD_PUBSUB_PSA_TCP)
                 Celix::pubsub_discovery_etcd
                 Celix::pubsub_topology_manager
                 Celix::pubsub_admin_tcp
-                Celix::pubsub_protocol_wire_v1
+                Celix::pubsub_protocol_wire_v2
                 celix_pubsub_poi_publisher
                 celix_pubsub_poi_publisher2
             PROPERTIES
@@ -129,7 +129,7 @@ if (BUILD_PUBSUB_PSA_TCP)
                 Celix::pubsub_discovery_etcd
                 Celix::pubsub_topology_manager
                 Celix::pubsub_admin_tcp
-                Celix::pubsub_protocol_wire_v1
+                Celix::pubsub_protocol_wire_v2
                 celix_pubsub_poi_subscriber
             PROPERTIES
                 PSA_TCP_VERBOSE=true
@@ -148,7 +148,7 @@ if (BUILD_PUBSUB_PSA_TCP)
                 Celix::pubsub_discovery_etcd
                 Celix::pubsub_topology_manager
                 Celix::pubsub_admin_tcp
-                Celix::pubsub_protocol_wire_v1
+                Celix::pubsub_protocol_wire_v2
                 celix_pubsub_poi_subscriber
             PROPERTIES
                 PSA_TCP_VERBOSE=true
