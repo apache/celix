@@ -204,7 +204,8 @@ char* pubsubEndpoint_createScopeTopicKey(const char* scope, const char* topic) {
     if (scope != NULL) {
         asprintf(&result, "%s:%s", scope, topic);
     } else {
-        asprintf(&result, "default:%s", topic);
+        //NOTE scope == NULL, equal to scope="default"
+        asprintf(&result, "%s", topic);
     }
     return result;
 }

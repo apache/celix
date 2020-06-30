@@ -181,7 +181,7 @@ if (BUILD_PUBSUB_PSA_UDP_MC)
 
     #TODO fix issues with UDPMC and reanble test again
     #add_test(NAME pubsub_udpmc_tests COMMAND pubsub_udpmc_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_udpmc_tests,CONTAINER_LOC>)
-    #setup_target_for_coverage(pubsub_udpmc_tests_cov pubsub_udpmc_tests ${CMAKE_BINARY_DIR}/coverage/pubsub_udpmc_tests/pubsub_udpmc_tests ..)
+    #setup_target_for_coverage(pubsub_udpmc_tests SCAN_DIR ..)
 endif()
 
 if (BUILD_PUBSUB_PSA_TCP)
