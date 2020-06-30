@@ -34,3 +34,8 @@ add_library(Celix::pubsub_spi ALIAS pubsub_spi)
 
 install(TARGETS pubsub_spi EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT pubsub)
 install(DIRECTORY include/ DESTINATION include/celix/pubsub_spi COMPONENT pubsub)
+
+
+if (ENABLE_TESTING)
+    add_subdirectory(gtest)
+endif(ENABLE_TESTING)
