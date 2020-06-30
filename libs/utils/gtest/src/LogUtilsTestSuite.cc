@@ -23,8 +23,6 @@
 
 class LogUtilsTestSuite : public ::testing::Test {};
 
-
-
 TEST_F(LogUtilsTestSuite, LogLevelToString) {
     EXPECT_STREQ("trace", celix_logUtils_logLevelToString(CELIX_LOG_LEVEL_TRACE));
     EXPECT_STREQ("debug", celix_logUtils_logLevelToString(CELIX_LOG_LEVEL_DEBUG));

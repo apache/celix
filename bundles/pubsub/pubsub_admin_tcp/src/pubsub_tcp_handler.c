@@ -865,12 +865,12 @@ int pubsub_tcpHandler_read(pubsub_tcpHandler_t *handle, int fd) {
                 }
                 if (entry->header.header.metadataSize > entry->metaBufferSize) {
                     if (entry->metaBuffer) {
-                        free(entry->metaBuffer);
-                        entry->metaBuffer = malloc((size_t) entry->header.header.metadataSize);
-                        entry->bufferSize = handle->bufferSize;
-                        L_WARN("[TCP Socket] socket: %d, url: %s,  realloc read meta buffer: (%d, %d) \n", entry->fd,
-                               entry->url, entry->metaBufferSize, entry->header.header.metadataSize);
+                      free(entry->metaBuffer);
                     }
+                    entry->metaBuffer = malloc((size_t) entry->header.header.metadataSize);
+                    entry->metaBufferSize = entry->header.header.metadataSize;
+                    L_WARN("[TCP Socket] socket: %d, url: %s,  realloc read meta buffer: (%d, %d) \n", entry->fd,
+                      entry->url, entry->metaBufferSize, entry->header.header.metadataSize);
                 }
 
                 if (entry->header.header.payloadSize) {
@@ -1223,7 +1223,7 @@ int pubsub_tcpHandler_acceptHandler(pubsub_tcpHandler_t *handle, psa_tcp_connect
 #else
         struct epoll_event event;
         bzero(&event, sizeof(event)); // zero the struct
-        event.events = EPOLLIN | EPOLLRDHUP | EPOLLERR | EPOLLOUT;
+        event.events = EPOLLIN | EPOLLRDHUP | EPOLLERR;
         event.data.fd = entry->fd;
         // Register Read to epoll
         rc = epoll_ctl(handle->efd, EPOLL_CTL_ADD, entry->fd, &event);

@@ -34,6 +34,7 @@
 #include <uuid/uuid.h>
 #include <http_admin/api.h>
 #include <jansson.h>
+#include <pubsub_utils.h>
 #include <celix_api.h>
 
 #ifndef UUID_STR_LEN
@@ -185,7 +186,10 @@ pubsub_websocket_topic_receiver_t* pubsub_websocketTopicReceiver_create(celix_bu
                                                            WEBSOCKET_ADMIN_SERVICE_NAME, props);
     }
 
-    const char *staticConnects = celix_properties_get(topicProperties, PUBSUB_WEBSOCKET_STATIC_CONNECT_SOCKET_ADDRESSES, NULL);
+    const char *staticConnects = pubsub_getEnvironmentVariableWithScopeTopic(ctx, PUBSUB_WEBSOCKET_STATIC_CONNECT_SOCKET_ADDRESSES_FOR, topic, scope);
+    if(staticConnects == NULL) {
+        staticConnects = celix_properties_get(topicProperties, PUBSUB_WEBSOCKET_STATIC_CONNECT_SOCKET_ADDRESSES, NULL);
+    }
     if (staticConnects != NULL) {
         char *copy = strndup(staticConnects, 1024*1024);
         char* addr;
@@ -406,6 +410,9 @@ static void pubsub_websocketTopicReceiver_addSubscriber(void *handle, void *svc,
             //not the same scope. ignore
             return;
         }
+    } else {
+        //receiver scope is not NULL, but subScope is NULL -> ignore
+        return;
     }
 
     celixThreadMutex_lock(&receiver->subscribers.mutex);

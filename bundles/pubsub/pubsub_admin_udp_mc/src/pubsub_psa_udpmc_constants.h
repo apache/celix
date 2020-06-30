@@ -51,6 +51,12 @@
 #define PUBSUB_UDPMC_STATIC_CONFIGURED                  "updmc.static.configured"
 
 /**
+ * Name of environment variable with ip/url to bind to
+ * e.g. PUBSUB_UDPMC_STATIC_BIND_PORT_URL_FOR_topic_scope="4444"
+ */
+#define PUBSUB_UDPMC_STATIC_BIND_PORT_URL_FOR "PSA_UDPMC_STATIC_BIND_PORT_FOR_"
+
+/**
  * Can be set in the topic properties to fix a static mc port for topic senders
  */
 #define PUBSUB_UDPMC_STATIC_BIND_PORT                   "udpmc.static.bind.port"
@@ -61,5 +67,10 @@
  */
 #define PUBSUB_UDPMC_STATIC_CONNECT_SOCKET_ADDRESSES    "udpmc.static.connect.socket_addresses"
 
+/**
+ * Name of environment variable with space-separated list of ips/urls to connect to
+ * e.g. PSA_UDPMC_STATIC_CONNECT_URLS_FOR_topic_scope="127.0.0.1:4444 127.0.0.2:4444"
+ */
+#define PUBSUB_UDPMC_STATIC_CONNECT_URLS_FOR "PSA_UDPMC_STATIC_CONNECT_URLS_FOR_"
 
 #endif /* PUBSUB_PSA_UDPMC_CONSTANTS_H_ */
