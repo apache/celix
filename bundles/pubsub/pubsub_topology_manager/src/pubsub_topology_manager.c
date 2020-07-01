@@ -955,7 +955,7 @@ static void pstm_setupTopicSenders(pubsub_topology_manager_t *manager) {
         if (called && setupEntry->endpointResult != NULL) {
             celixThreadMutex_lock(&manager->announceEndpointListeners.mutex);
             for (int k = 0; k < celix_arrayList_size(manager->announceEndpointListeners.list); ++k) {
-                pubsub_announce_endpoint_listener_t *listener = celix_arrayList_get(manager->announceEndpointListeners.list, i);
+                pubsub_announce_endpoint_listener_t *listener = celix_arrayList_get(manager->announceEndpointListeners.list, k);
                 listener->announceEndpoint(listener->handle, setupEntry->endpointResult);
             }
             celixThreadMutex_unlock(&manager->announceEndpointListeners.mutex);
@@ -1060,7 +1060,7 @@ static void pstm_setupTopicReceivers(pubsub_topology_manager_t *manager) {
         if (called && setupEntry->endpointResult != NULL) {
             celixThreadMutex_lock(&manager->announceEndpointListeners.mutex);
             for (int k = 0; k < celix_arrayList_size(manager->announceEndpointListeners.list); ++k) {
-                pubsub_announce_endpoint_listener_t *listener = celix_arrayList_get(manager->announceEndpointListeners.list, i);
+                pubsub_announce_endpoint_listener_t *listener = celix_arrayList_get(manager->announceEndpointListeners.list, k);
                 listener->announceEndpoint(listener->handle, setupEntry->endpointResult);
             }
             celixThreadMutex_unlock(&manager->announceEndpointListeners.mutex);
