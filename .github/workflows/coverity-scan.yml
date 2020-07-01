@@ -1,7 +1,7 @@
 name: coverity-scan
 on:
   schedule:
-    - cron: '25 * * * *' # Weekly at 00:00 UTC
+    - cron: '50 * * * *' # Weekly at 00:00 UTC
 
 jobs:
   latest:
@@ -44,13 +44,14 @@ jobs:
           cov-build --dir cov-int make
       - name: Submit the result to Coverity Scan
         run: |
+          cd build
           tar czvf celix.tgz cov-int
-#          curl \
-#            --form project=Apache+Celix \
-#            --form token=$TOKEN \
-#            --form email=a.broekhuis@gmail.com \
-#            --form file=@celix.tgz \
-#            --form version=master \
-#            https://scan.coverity.com/builds?project=Apache+Celix
+          curl \
+            --form project=Apache+Celix \
+            --form token=$TOKEN \
+            --form email=a.broekhuis@gmail.com \
+            --form file=@celix.tgz \
+            --form version=master \
+            https://scan.coverity.com/builds?project=Apache+Celix
         env:
           TOKEN: ${{ secrets.COVERITY_SCAN_TOKEN }}
