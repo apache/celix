@@ -82,7 +82,7 @@ TEST_GROUP(PUBSUB_INT_ENV_GROUP) {
 };
 
 void receiveTest(celix_bundle_context_t *ctx) {
-    constexpr int TRIES = 40;
+    constexpr int TRIES = 50;
     constexpr int TIMEOUT = 250000;
     constexpr int MSG_COUNT = 100;
 
