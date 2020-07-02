@@ -87,16 +87,11 @@ typedef struct pstm_discovered_endpoint_entry {
 } pstm_discovered_endpoint_entry_t;
 
 typedef struct pstm_topic_receiver_or_sender_entry {
-    bool needsMatch; //true if a psa needs to be selected or if a new psa has to be considered.
-
     char *scopeAndTopicKey; //key of the combined value of the scope and topic
     celix_properties_t *endpoint;
     char *topic;
     char *scope;
-    int usageCount; //nr of subscriber service for the topic receiver (matching scope & topic)
-    long selectedPsaSvcId;
-    long selectedSerializerSvcId;
-    long selectedProtocolSvcId;
+    int usageCount; //nr of provided subscriber services for the topic receiver (matching scope & topic) or nr of publisher requested for matching scope & topic.
     long bndId;
     celix_properties_t *topicProperties; //found in META-INF/(pub|sub)/(topic).properties
 
@@ -105,6 +100,13 @@ typedef struct pstm_topic_receiver_or_sender_entry {
 
     //for receiver entry
     celix_properties_t *subscriberProperties;
+
+    struct {
+        bool needsMatch; //true if a psa needs to be selected or if a new psa has to be considered.
+        long selectedPsaSvcId;
+        long selectedSerializerSvcId;
+        long selectedProtocolSvcId;
+    } matching;
 } pstm_topic_receiver_or_sender_entry_t;
 
 celix_status_t pubsub_topologyManager_create(celix_bundle_context_t *context, celix_log_helper_t *logHelper, pubsub_topology_manager_t **manager);
