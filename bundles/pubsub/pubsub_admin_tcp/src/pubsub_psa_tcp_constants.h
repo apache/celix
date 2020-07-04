@@ -61,6 +61,7 @@
 //Time-out settings are only for BLOCKING connections
 #define PUBSUB_TCP_PUBLISHER_SNDTIMEO_KEY       "PUBSUB_TCP_PUBLISHER_SEND_TIMEOUT"
 #define PUBSUB_TCP_PUBLISHER_SNDTIMEO_DEFAULT   5.0
+#define PUBSUB_TCP_PUBLISHER_SNDTIMEO_ENDPOINT_DEFAULT   0.0
 
 #define PUBSUB_TCP_SUBSCRIBER_RCVTIMEO_KEY      "PUBSUB_TCP_SUBSCRIBER_RCV_TIMEOUT"
 #define PUBSUB_TCP_SUBSCRIBER_RCVTIMEO_DEFAULT  5.0
@@ -79,6 +80,12 @@
 #define PUBSUB_TCP_STATIC_BIND_URL              "tcp.static.bind.url"
 
 /**
+ * Name of environment variable with ip/url to bind to
+ * e.g. PSA_TCP_STATIC_BIND_FOR_topic_scope="tcp://0.0.0.0:4444"
+ */
+#define PUBSUB_TCP_STATIC_BIND_URL_FOR "PSA_TCP_STATIC_BIND_URL_FOR_"
+
+/**
  * Can be set in the topic properties to fix a static url used for discovery
  */
 #define PUBSUB_TCP_STATIC_DISCOVER_URL          "tcp.static.bind.url"
@@ -94,6 +101,12 @@
  * Can be set in the topic properties.
  */
 #define PUBSUB_TCP_STATIC_CONNECT_URLS          "tcp.static.connect.urls"
+
+/**
+ * Name of environment variable with space-separated list of ips/urls to connect to
+ * e.g. PSA_TCP_STATIC_CONNECT_FOR_topic_scope="tcp://127.0.0.1:4444 tcp://127.0.0.2:4444"
+ */
+#define PUBSUB_TCP_STATIC_CONNECT_URLS_FOR "PSA_TCP_STATIC_CONNECT_URL_FOR_"
 
 /**
  * The static endpoint type which a static endpoint should be configured.

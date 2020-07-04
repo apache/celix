@@ -27,6 +27,7 @@
 #include "dm_dependency_manager_impl.h"
 #include "celix_dependency_manager.h"
 #include "celix_bundle.h"
+#include "celix_framework.h"
 
 
 celix_dependency_manager_t* celix_private_dependencyManager_create(celix_bundle_context_t *context) {
@@ -41,7 +42,10 @@ celix_dependency_manager_t* celix_private_dependencyManager_create(celix_bundle_
 
 void celix_private_dependencyManager_destroy(celix_dependency_manager_t *manager) {
 	if (manager != NULL) {
+        celixThreadMutex_lock(&manager->mutex);
 		celix_arrayList_destroy(manager->components);
+        celixThreadMutex_unlock(&manager->mutex);
+
 		pthread_mutex_destroy(&manager->mutex);
 		free(manager);
 	}
@@ -50,7 +54,11 @@ void celix_private_dependencyManager_destroy(celix_dependency_manager_t *manager
 
 celix_status_t celix_dependencyManager_add(celix_dependency_manager_t *manager, celix_dm_component_t *component) {
 	celix_status_t status;
+
+    celixThreadMutex_lock(&manager->mutex);
 	celix_arrayList_add(manager->components, component);
+    celixThreadMutex_unlock(&manager->mutex);
+
 	status = celix_private_dmComponent_start(component);
 	return status;
 }
@@ -62,13 +70,18 @@ celix_status_t celix_dependencyManager_remove(celix_dependency_manager_t *manage
 	celix_array_list_entry_t entry;
 	memset(&entry, 0, sizeof(entry));
 	entry.voidPtrVal = component;
+
+    celixThreadMutex_lock(&manager->mutex);
 	int index = celix_arrayList_indexOf(manager->components, entry);
 
 	if (index >= 0) {
         celix_arrayList_removeAt(manager->components, index);
+        celixThreadMutex_unlock(&manager->mutex);
+
         status = celix_private_dmComponent_stop(component);
         component_destroy(component);
 	} else {
+        celixThreadMutex_unlock(&manager->mutex);
 	    fprintf(stderr, "Cannot find component with pointer %p\n", component);
 	    status = CELIX_BUNDLE_EXCEPTION;
 	}
@@ -80,22 +93,24 @@ celix_status_t celix_dependencyManager_remove(celix_dependency_manager_t *manage
 
 celix_status_t celix_dependencyManager_removeAllComponents(celix_dependency_manager_t *manager) {
 	celix_status_t status = CELIX_SUCCESS;
+    celix_array_list_t *toRemoveComponents = celix_arrayList_create();
 
-	int i=0;
-	int size = celix_arrayList_size(manager->components);
+    celixThreadMutex_lock(&manager->mutex);
+    while (!arrayList_isEmpty(manager->components)) {
+        celix_dm_component_t *cmp = celix_arrayList_get(manager->components, 0);
+        celix_arrayList_removeAt(manager->components, 0);
+        celix_arrayList_add(toRemoveComponents, cmp);
+    }
+    celixThreadMutex_unlock(&manager->mutex);
 
-	for(;i<size;i++){
-		celix_dm_component_t *cmp = celix_arrayList_get(manager->components, i);
-//		printf("Stopping comp %s\n", component_getName(cmp));
-		celix_private_dmComponent_stop(cmp);
-	}
+    while (!arrayList_isEmpty(toRemoveComponents)) {
+        celix_dm_component_t *cmp = celix_arrayList_get(toRemoveComponents, 0);
+        celix_arrayList_removeAt(toRemoveComponents, 0);
+        celix_private_dmComponent_stop(cmp);
+        component_destroy(cmp);
+    }
 
-	while (!arrayList_isEmpty(manager->components)) {
-		celix_dm_component_t *cmp = celix_arrayList_get(manager->components, 0);
-		celix_arrayList_removeAt(manager->components, 0);
-//        printf("Removing comp %s\n", component_getName(cmp));
-		component_destroy(cmp);
-	}
+    celix_arrayList_destroy(toRemoveComponents);
 
 	return status;
 }
@@ -159,7 +174,8 @@ static void celix_dm_getInfosCallback(void *handle, const celix_bundle_t *bnd) {
 
 celix_array_list_t * celix_dependencyManager_createInfos(celix_dependency_manager_t *manager) {
 	celix_array_list_t *infos = celix_arrayList_create();
-	celix_bundleContext_useBundles(manager->ctx, infos, celix_dm_getInfosCallback);
+	celix_framework_t* fw = celix_bundleContext_getFramework(manager->ctx);
+	celix_framework_useBundles(fw, true, infos, celix_dm_getInfosCallback);
 	return infos;
 }
 

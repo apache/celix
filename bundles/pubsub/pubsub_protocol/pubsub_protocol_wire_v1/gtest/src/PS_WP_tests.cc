@@ -171,7 +171,7 @@ TEST_F(WireProtocolV1Test, WireProtocolV1Test_EncodeMetadata_Test) { // NOLINT(c
 
     void *data = nullptr;
     size_t length = 0;
-    celix_status_t status = pubsubProtocol_encodeMetadata(nullptr, &message, &data, &length);
+    celix_status_t status = pubsubProtocol_v1_encodeMetadata(nullptr, &message, &data, &length);
 
     unsigned char exp[12];
     uint32_t s = htonl(1);
@@ -199,7 +199,7 @@ TEST_F(WireProtocolV1Test, WireProtocolV1Test_DecodeMetadata_Test) { // NOLINT(c
     memcpy(exp + 4, "1:a,1:b,", 8);
 
     pubsub_protocol_message_t message;
-    celix_status_t status = pubsubProtocol_decodeMetadata(nullptr, exp, 12, &message);
+    celix_status_t status = pubsubProtocol_v1_decodeMetadata(nullptr, exp, 12, &message);
 
     ASSERT_EQ(status, CELIX_SUCCESS);
     ASSERT_EQ(1, celix_properties_size(message.metadata.metadata));
@@ -221,7 +221,7 @@ TEST_F(WireProtocolV1Test, WireProtocolV1Test_DecodeMetadata_EmptyKey_Test) { //
     memcpy(exp + 4, "0:,1:b,", 7);
 
     pubsub_protocol_message_t message;
-    celix_status_t status = pubsubProtocol_decodeMetadata(nullptr, exp, 11, &message);
+    celix_status_t status = pubsubProtocol_v1_decodeMetadata(nullptr, exp, 11, &message);
 
     ASSERT_EQ(status, CELIX_SUCCESS);
     ASSERT_EQ(1, celix_properties_size(message.metadata.metadata));
@@ -242,7 +242,7 @@ TEST_F(WireProtocolV1Test, WireProtocolV1Test_DecodeMetadata_SpecialChars_Test) 
     memcpy(exp + 4, "4:a,:l,1:b,", 11);
 
     pubsub_protocol_message_t message;
-    celix_status_t status = pubsubProtocol_decodeMetadata(nullptr, &exp, 15, &message);
+    celix_status_t status = pubsubProtocol_v1_decodeMetadata(nullptr, &exp, 15, &message);
 
     ASSERT_EQ(status, CELIX_SUCCESS);
     ASSERT_EQ(1, celix_properties_size(message.metadata.metadata));
@@ -253,3 +253,33 @@ TEST_F(WireProtocolV1Test, WireProtocolV1Test_DecodeMetadata_SpecialChars_Test) 
     pubsubProtocol_destroy(wireprotocol);
 }
 
+TEST_F(WireProtocolV1Test, WireProtocolV1Test_EncodeFooter_Test) { // NOLINT(cert-err58-cpp)
+    pubsub_protocol_wire_v1_t *wireprotocol;
+    pubsubProtocol_create(&wireprotocol);
+
+    pubsub_protocol_message_t message;
+
+    void *footerData = nullptr;
+    size_t footerLength = 0;
+    celix_status_t status = pubsubProtocol_encodeFooter(nullptr, &message, &footerData, &footerLength);
+
+    ASSERT_EQ(status, CELIX_SUCCESS);
+    ASSERT_EQ(0, footerLength);
+    ASSERT_EQ(nullptr, footerData);
+    pubsubProtocol_destroy(wireprotocol);
+    free(footerData);
+}
+
+TEST_F(WireProtocolV1Test, WireProtocolV1Test_DecodeFooter_Test) { // NOLINT(cert-err58-cpp)
+    pubsub_protocol_wire_v1_t *wireprotocol;
+    pubsubProtocol_create(&wireprotocol);
+
+    unsigned char exp[4];
+    uint32_t s = 0xBAABABBA;
+    memcpy(exp, &s, sizeof(uint32_t));
+    pubsub_protocol_message_t message;
+
+    celix_status_t status = pubsubProtocol_decodeFooter(nullptr, exp, 4, &message);
+    ASSERT_EQ(CELIX_SUCCESS, status);
+    pubsubProtocol_destroy(wireprotocol);
+}

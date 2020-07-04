@@ -15,28 +15,27 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(celix_wire_protocol_v1_impl STATIC
-    src/pubsub_wire_protocol_impl.c
-    src/pubsub_wire_protocol_common.c
+add_library(celix_wire_protocol_v2_impl STATIC
+        src/pubsub_wire_v2_protocol_impl.c
 )
-target_include_directories(celix_wire_protocol_v1_impl PRIVATE src)
-target_link_libraries(celix_wire_protocol_v1_impl PRIVATE Celix::pubsub_spi )
+target_include_directories(celix_wire_protocol_v2_impl PRIVATE src)
+target_link_libraries(celix_wire_protocol_v2_impl PUBLIC Celix::pubsub_spi)
+target_link_libraries(celix_wire_protocol_v2_impl PUBLIC celix_pubsub_protocol_lib)
 
-
-add_celix_bundle(celix_pubsub_protocol_wire_v1
-    BUNDLE_SYMBOLICNAME "apache_celix_pubsub_protocol_wire_v1"
+add_celix_bundle(celix_pubsub_protocol_wire_v2
+    BUNDLE_SYMBOLICNAME "apache_celix_pubsub_protocol_wire_v2"
     VERSION "1.0.0"
     GROUP "Celix/PubSub"
     SOURCES
-        src/ps_wire_protocol_activator.c
+        src/ps_wire_v2_protocol_activator.c
 )
-target_include_directories(celix_pubsub_protocol_wire_v1 PRIVATE src)
-target_link_libraries(celix_pubsub_protocol_wire_v1 PRIVATE Celix::pubsub_spi Celix::pubsub_utils)
-target_link_libraries(celix_pubsub_protocol_wire_v1 PRIVATE celix_wire_protocol_v1_impl)
+target_include_directories(celix_pubsub_protocol_wire_v2 PRIVATE src)
+target_link_libraries(celix_pubsub_protocol_wire_v2 PRIVATE Celix::pubsub_spi Celix::pubsub_utils)
+target_link_libraries(celix_pubsub_protocol_wire_v2 PRIVATE celix_wire_protocol_v2_impl)
 
-install_celix_bundle(celix_pubsub_protocol_wire_v1 EXPORT celix COMPONENT pubsub)
+install_celix_bundle(celix_pubsub_protocol_wire_v2 EXPORT celix COMPONENT pubsub)
 
-add_library(Celix::pubsub_protocol_wire_v1 ALIAS celix_pubsub_protocol_wire_v1)
+add_library(Celix::pubsub_protocol_wire_v2 ALIAS celix_pubsub_protocol_wire_v2)
 
 if (ENABLE_TESTING)
     add_subdirectory(gtest)

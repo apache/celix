@@ -181,3 +181,18 @@ char* pubsub_getMessageDescriptorsDir(celix_bundle_context_t* ctx, const celix_b
     }
     return root;
 }
+
+const char* pubsub_getEnvironmentVariableWithScopeTopic(celix_bundle_context_t* ctx, const char *key, const char *topic, const char *scope) {
+    char *combinedKey = malloc(512 * 1024);
+    memset(combinedKey, 0, 512 * 1024);
+    strncpy(combinedKey, key, 512 * 1024);
+    strncat(combinedKey, topic, 256 * 1024 - 25);
+    if(scope != NULL) {
+        strncat(combinedKey, "_", 1);
+        strncat(combinedKey, scope, 256 * 1024 - 25);
+    }
+
+    const char *ret = celix_bundleContext_getProperty(ctx, combinedKey, NULL);
+    free(combinedKey);
+    return ret;
+}
