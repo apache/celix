@@ -31,6 +31,7 @@
 #include "pubsub/subscriber.h"
 
 #define PUBSUB_TOPOLOGY_MANAGER_VERBOSE_KEY         "PUBSUB_TOPOLOGY_MANAGER_VERBOSE"
+#define PUBSUB_TOPOLOGY_MANAGER_HANDLING_THREAD_SLEEPTIME_SECONDS_KEY         "PUBSUB_TOPOLOGY_MANAGER_HANDLING_THREAD_SLEEPTIME_SECONDS"
 #define PUBSUB_TOPOLOGY_MANAGER_DEFAULT_VERBOSE     false
 
 
@@ -76,6 +77,7 @@ typedef struct pubsub_topology_manager {
 
     celix_log_helper_t *loghelper;
 
+    unsigned handlingThreadSleepTime;
     bool verbose;
 } pubsub_topology_manager_t;
 
