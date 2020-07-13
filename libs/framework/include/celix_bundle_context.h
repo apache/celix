@@ -40,21 +40,61 @@ extern "C" {
 #define OPTS_INIT
 #endif
 
+
 /**
-* Register a service to the Celix framework.
-*
-* @param ctx The bundle context
-* @param svc the service object. Normally a pointer to a service struct (i.e. a struct with function pointers)
-* @param serviceName the service name, cannot be NULL
-* @param properties The meta properties associated with the service. The service registration will take ownership of the properties (i.e. no destroy needed)
-* @return The serviceId (>=0) or -1 if the registration was unsuccessful.
-*/
-long celix_bundleContext_registerService(celix_bundle_context_t *ctx, void *svc, const char *serviceName, celix_properties_t *properties);
+ * Register a service to the Celix framework.
+ *
+ * The service will be registered async on the Celix event loop thread. This means that service registration is (probably)
+ * not yet concluded when this function returns. Use celix_bundleContext_waitForAsyncRegistration to synchronise with the
+ * actual service registration in the framework's service registry.
+ *
+ * @param ctx The bundle context
+ * @param svc the service object. Normally a pointer to a service struct (i.e. a struct with function pointers)
+ * @param serviceName the service name, cannot be NULL
+ * @param properties The meta properties associated with the service. The service registration will take ownership of the properties (i.e. no destroy needed)
+ * @return The serviceId (>=0) or -1 if the registration was unsuccessful.
+ */
+long celix_bundleContext_registerServiceAsync(celix_bundle_context_t *ctx, void *svc, const char *serviceName, celix_properties_t *properties);
+
+/**
+ * Register a service to the Celix framework.
+ * Note: Please use the celix_bundleContext_registerServiceAsync instead.
+ *
+ * @param ctx The bundle context
+ * @param svc the service object. Normally a pointer to a service struct (i.e. a struct with function pointers)
+ * @param serviceName the service name, cannot be NULL
+ * @param properties The meta properties associated with the service. The service registration will take ownership of the properties (i.e. no destroy needed)
+ * @return The serviceId (>=0) or -1 if the registration was unsuccessful.
+ */
+long celix_bundleContext_registerService(celix_bundle_context_t *ctx, void *svc, const char *serviceName, celix_properties_t *properties); //__attribute__((deprecated("Use celix_bundleContext_registerServiceAsync instead!")));
 
 /**
  * Register a service factory in the framework (for the C language).
  * The service factory will be called for every bundle requesting/de-requesting a service. This gives the provider the
  * option to create bundle specific service instances.
+ *
+ * When a service is requested for a bundle the getService of the factory service will be called. This function must
+ * return a valid pointer to a service conform the registered service name or NULL.
+ * When a service in no longer needed for a bundle (e.g. ending the useService(s) calls or when a service tracker is stopped)
+ * the ungetService function of the service factory will be called.
+ *
+ * The service will be registered async on the Celix event loop thread. This means that service registration is (probably)
+ * not yet concluded when this function returns. Use celix_bundleContext_waitForAsyncRegistration to synchronise with the
+ * actual service registration in the framework's service registry.
+ *
+ * @param ctx The bundle context
+ * @param factory The pointer to the factory service.
+ * @param serviceName The required service name of the services this factory will produce.
+ * @param properties The optional service factory properties. For a service consumer this will be seen as the service properties.
+ * @return The serviceId (>= 0) or < 0 if the registration was unsuccessful.
+ */
+long celix_bundleContext_registerServiceFactoryAsync(celix_bundle_context_t *ctx, celix_service_factory_t *factory, const char *serviceName, celix_properties_t *props);
+
+/**
+ * Register a service factory in the framework (for the C language).
+ * The service factory will be called for every bundle requesting/de-requesting a service. This gives the provider the
+ * option to create bundle specific service instances.
+ * Note: Please use the celix_bundleContext_registerServiceFactoryAsync instead.
  *
  * When a service is requested for a bundle the getService of the factory service will be called. This function must
  * return a valid pointer to a service conform the registered service name or NULL.
@@ -67,7 +107,7 @@ long celix_bundleContext_registerService(celix_bundle_context_t *ctx, void *svc,
  * @param properties The optional service factory properties. For a service consumer this will be seen as the service properties.
  * @return The serviceId (>= 0) or < 0 if the registration was unsuccessful.
  */
-long celix_bundleContext_registerServiceFactory(celix_bundle_context_t *ctx, celix_service_factory_t *factory, const char *serviceName, celix_properties_t *props);
+long celix_bundleContext_registerServiceFactory(celix_bundle_context_t *ctx, celix_service_factory_t *factory, const char *serviceName, celix_properties_t *props); //__attribute__((deprecated("Use celix_bundleContext_registerServiceFactoryAsync instead!")));
 
 /**
  * Service Registration Options when registering services to the Celix framework.
@@ -128,35 +168,16 @@ typedef struct celix_service_registration_options {
     const char *serviceVersion OPTS_INIT;
 
     /**
-     * If set to > 0, this svc id will be used to register the service.
-     * The reservedSvcId should be reserved with a call to celix_bundleContext_reserveSvcId
+     * Async data pointer for the async register callback.
      */
-    long reservedSvcId OPTS_INIT;
-} celix_service_registration_options_t;
+     void *asyncData OPTS_INIT;
 
-/**
- * Reserves a service id, which is expected to be used to register a service in the future.
- *
- * If a celix_bundleContext_unregisterService with the reserved service id is called earlier than
- * the celix_bundleContext_registerServiceWithOptions with the reserved service, the registration will be be cancelled.
- * This means then when the expected celix_bundleContext_registerServiceWithOptions call happens this will not
- * result in a service registration and a  -2 will be returned as service id.
- *
- * Subsequent calls to celix_bundleContext_registerServiceWithOptions for an already cancelled service id will
- * return a -1 error code (and a 'Invalid reservedSvcId' error log entry will be logged).
- *
- * This can help in registering/unregistering services outside of locks without creating race
- * conditions.
- * Note that if this is used service can "unregistered" before they are actually registered and
- * as such the service pointer can be invalid at the time of registering.
- * This means that the service registering can be done outside of locks, but accessing service
- * should always be done using locks.
- * 
- *
- * @param ctx the bundle context.
- * @return A service id, bounded to this bundle context. Note in this case the svc id will be > 0.
- */
-long celix_bundleContext_reserveSvcId(celix_bundle_context_t* ctx);
+    /**
+    * Async callback. Will be called after the a service is registered in the service registry.
+    * Will be called on the Celix event loop.
+    */
+    void (*asyncCallback)(void *data, long serviceId) OPTS_INIT;
+} celix_service_registration_options_t;
 
 /**
  * C Macro to create a empty celix_service_registration_options_t type.
@@ -168,18 +189,38 @@ long celix_bundleContext_reserveSvcId(celix_bundle_context_t* ctx);
     .properties = NULL, \
     .serviceLanguage = NULL, \
     .serviceVersion = NULL, \
-    .reservedSvcId = 0 }
+    .asyncData = NULL, \
+    .asyncCallback = NULL }
 #endif
 
+/**
+ * Register a service to the Celix framework using the provided service registration options.
+ *
+ * The service will be registered async on the Celix event loop thread. This means that service registration is (probably)
+ * not yet concluded when this function returns. Use celix_bundleContext_waitForAsyncRegistration to synchronise with the
+ * actual service registration in the framework's service registry.
+ *
+ * @param ctx The bundle context
+ * @param opts The pointer to the registration options. The options are only in the during registration call.
+ * @return The serviceId (>= 0) or -1 if the registration was unsuccessful and -2 if the registration was cancelled (@see celix_bundleContext_reserveSvcId).
+ */
+long celix_bundleContext_registerServiceAsyncWithOptions(celix_bundle_context_t *ctx, const celix_service_registration_options_t *opts);
 
 /**
-* Register a service to the Celix framework using the provided service registration options.
-*
-* @param ctx The bundle context
-* @param opts The pointer to the registration options. The options are only in the during registration call.
-* @return The serviceId (>= 0) or -1 if the registration was unsuccessful and -2 if the registration was cancelled (@see celix_bundleContext_reserveSvcId).
-*/
-long celix_bundleContext_registerServiceWithOptions(celix_bundle_context_t *ctx, const celix_service_registration_options_t *opts);
+ * Register a service to the Celix framework using the provided service registration options.
+ * Note: Please use the celix_bundleContext_registerServiceAsyncWithOptions instead.
+ *
+ * @param ctx The bundle context
+ * @param opts The pointer to the registration options. The options are only in the during registration call.
+ * @return The serviceId (>= 0) or -1 if the registration was unsuccessful and -2 if the registration was cancelled (@see celix_bundleContext_reserveSvcId).
+ */
+long celix_bundleContext_registerServiceWithOptions(celix_bundle_context_t *ctx, const celix_service_registration_options_t *opts); //__attribute__((deprecated("Use celix_bundleContext_registerServiceAsyncWithOptions instead!")));
+
+/**
+ * Waits til the async service registration for the provided serviceId is done.
+ * Silently ignore service < 0.
+ */
+void celix_bundleContext_waitForAsyncRegistration(celix_bundle_context_t* ctx, long serviceId);
 
 
 /**
@@ -191,11 +232,28 @@ long celix_bundleContext_registerServiceWithOptions(celix_bundle_context_t *ctx,
  * @param ctx The bundle context
  * @param serviceId The service id
  */
-void celix_bundleContext_unregisterService(celix_bundle_context_t *ctx, long serviceId);
+void celix_bundleContext_unregisterService(celix_bundle_context_t *ctx, long serviceId); //__attribute__((deprecated("Use celix_bundleContext_unregisterService instead!")));
 
 
+/**
+ * Unregister the service or service factory with service id.
+ * The service will only be unregistered if the bundle of the bundle context is the owner of the service.
+ *
+ * The service will be umregistered async on the Celix event loop thread. This means that service unregistration is (probably)
+ * not yet concluded when this function returns. Use celix_bundleContext_waitForAsyncUnregistration to synchronise with the
+ * actual service unregistration in the framework's service registry.
+ *
+ * @param ctx The bundle context
+ * @param serviceId The service id
+ */
+void celix_bundleContext_unregisterServiceAsync(celix_bundle_context_t *ctx, long serviceId);
 
 
+/**
+ * Waits til the async service unregistration for the provided serviceId is done.
+ * Silently ignore service < 0.
+ */
+void celix_bundleContext_waitForAsyncUnregistration(celix_bundle_context_t* ctx, long serviceId);
 
 
 

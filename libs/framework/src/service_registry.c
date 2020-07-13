@@ -1253,3 +1253,23 @@ long celix_serviceRegistry_nextSvcId(celix_service_registry_t* registry) {
     long scvId = __atomic_fetch_add(&registry->nextServiceId, 1, __ATOMIC_SEQ_CST);
     return scvId;
 }
+
+void celix_serviceRegistry_unregisterService(celix_service_registry_t* registry, celix_bundle_t* bnd, long serviceId) {
+    service_registration_t *reg = NULL;
+    celixThreadRwlock_readLock(&registry->lock);
+    celix_array_list_t* registrations = hashMap_get(registry->serviceRegistrations, (void*)bnd);
+    for (int i = 0; i < celix_arrayList_size(registrations); ++i) {
+        service_registration_t *entry = celix_arrayList_get(registrations, i);
+        if (serviceRegistration_getServiceId(entry) == serviceId) {
+            reg = entry;
+            break;
+        }
+    }
+    celixThreadRwlock_unlock(&registry->lock);
+
+    if (reg != NULL) {
+        serviceRegistration_unregister(reg);
+    } else {
+        fw_log(registry->framework->logger, CELIX_LOG_LEVEL_ERROR, "Cannot unregister service for service id %li. This id is not present or owned by the provided bundle (bnd id %li)", serviceId, celix_bundle_getId(bnd));
+    }
+}

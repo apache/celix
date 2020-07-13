@@ -65,7 +65,6 @@ celix_status_t bundleContext_create(framework_pt framework, celix_framework_logg
             context->bundleTrackers = hashMap_create(NULL,NULL,NULL,NULL);
             context->serviceTrackers = hashMap_create(NULL,NULL,NULL,NULL);
             context->metaTrackers =  hashMap_create(NULL,NULL,NULL,NULL);
-            context->reservedIds =  hashMap_create(NULL,NULL,NULL,NULL);
             context->nextTrackerId = 1L;
 
             *bundle_context = context;
@@ -93,8 +92,6 @@ celix_status_t bundleContext_destroy(bundle_context_pt context) {
         hashMap_destroy(context->metaTrackers, false, false);
         assert(celix_arrayList_size(context->svcRegistrations) == 0);
         celix_arrayList_destroy(context->svcRegistrations);
-        assert(hashMap_size(context->reservedIds) == 0);
-        hashMap_destroy(context->reservedIds, false, false);
 
         //NOTE still present service registrations will be cleared during bundle stop in the
 	    //service registry (serviceRegistry_clearServiceRegistrations).
@@ -290,7 +287,9 @@ celix_status_t bundleContext_getService(bundle_context_pt context, service_refer
         status = CELIX_ILLEGAL_ARGUMENT;
     }
 
-    framework_logIfError(context->framework->logger, status, NULL, "Failed to get service");
+    if (status != CELIX_SUCCESS) {
+        fw_log(context->framework->logger, CELIX_LOG_LEVEL_ERROR, "Failed to get service");
+    }
 
     return status;
 }
@@ -451,6 +450,13 @@ celix_status_t bundleContext_getPropertyWithDefault(bundle_context_pt context, c
  **********************************************************************************************************************
  **********************************************************************************************************************/
 
+long celix_bundleContext_registerServiceAsync(celix_bundle_context_t *ctx, void *svc, const char *serviceName, celix_properties_t *properties) {
+    celix_service_registration_options_t opts = CELIX_EMPTY_SERVICE_REGISTRATION_OPTIONS;
+    opts.svc = svc;
+    opts.serviceName = serviceName;
+    opts.properties = properties;
+    return celix_bundleContext_registerServiceAsyncWithOptions(ctx, &opts);
+}
 
 long celix_bundleContext_registerService(bundle_context_t *ctx, void *svc, const char *serviceName, celix_properties_t *properties) {
     celix_service_registration_options_t opts = CELIX_EMPTY_SERVICE_REGISTRATION_OPTIONS;
@@ -461,6 +467,14 @@ long celix_bundleContext_registerService(bundle_context_t *ctx, void *svc, const
 }
 
 
+long celix_bundleContext_registerServiceFactoryAsync(celix_bundle_context_t *ctx, celix_service_factory_t *factory, const char *serviceName, celix_properties_t *props) {
+    celix_service_registration_options_t opts = CELIX_EMPTY_SERVICE_REGISTRATION_OPTIONS;
+    opts.factory = factory;
+    opts.serviceName = serviceName;
+    opts.properties = props;
+    return celix_bundleContext_registerServiceAsyncWithOptions(ctx, &opts);
+}
+
 long celix_bundleContext_registerServiceFactory(celix_bundle_context_t *ctx, celix_service_factory_t *factory, const char *serviceName, celix_properties_t *props) {
     celix_service_registration_options_t opts = CELIX_EMPTY_SERVICE_REGISTRATION_OPTIONS;
     opts.factory = factory;
@@ -469,10 +483,17 @@ long celix_bundleContext_registerServiceFactory(celix_bundle_context_t *ctx, cel
     return celix_bundleContext_registerServiceWithOptions(ctx, &opts);
 }
 
-long celix_bundleContext_registerServiceWithOptions(bundle_context_t *ctx, const celix_service_registration_options_t *opts) {
-    long svcId = -1;
-    long reservedId = -1;
-    service_registration_t *reg = NULL;
+static long celix_bundleContext_registerServiceWithOptionsInternal(bundle_context_t *ctx, const celix_service_registration_options_t *opts, bool async) {
+    bool valid = opts->serviceName != NULL && strncmp("", opts->serviceName, 1) != 0;
+    if (!valid) {
+        fw_log(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, "Required serviceName argument is NULL or empty");
+        return -1;
+    }
+    valid = opts->svc != NULL || opts->factory != NULL;
+    if (!valid) {
+        fw_log(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, "Required svc or factory argument is NULL");
+        return -1;
+    }
 
     //set properties
     celix_properties_t *props = opts->properties;
@@ -485,39 +506,26 @@ long celix_bundleContext_registerServiceWithOptions(bundle_context_t *ctx, const
     const char *lang = opts->serviceLanguage != NULL && strncmp("", opts->serviceLanguage, 1) != 0 ? opts->serviceLanguage : CELIX_FRAMEWORK_SERVICE_C_LANGUAGE;
     celix_properties_set(props, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang);
 
-    bool valid = opts->serviceName != NULL && strncmp("", opts->serviceName, 1) != 0;
-    if (!valid) {
-        fw_log(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, "Required serviceName argument is NULL");
-    }
+    long svcId = -1;
+    if (!async && celix_framework_isCurrentThreadTheEventLoop(ctx->framework)) {
+        /*
+         * Note already on event loop, cannot register the service async, because we cannot wait a future event (the
+         * service registration) the event loop.
+         *
+         * So in this case we handle the service registration the "traditional way" and call the sync fw service
+         * registrations versions on the event loop thread
+         */
 
-    //check reserved ids
-    bool cancelled = false;
-    if (valid && opts->reservedSvcId > 0) {
-        celixThreadMutex_lock(&ctx->mutex);
-        if (hashMap_containsKey(ctx->reservedIds, (void*)opts->reservedSvcId)) {
-            cancelled = (bool)hashMap_remove(ctx->reservedIds, (void*)opts->reservedSvcId);
-            if (!cancelled) {
-                reservedId = opts->reservedSvcId;
-            } else {
-                svcId = -2;
-            }
-        } else {
-            //not reserved
-            valid = false;
-            fw_log(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, "Invalid reservedSvcId provided (%li). Ensure that service id are reserved using celix_bundleContext_reserveId and only used once", opts->reservedSvcId);
-        }
-        celixThreadMutex_unlock(&ctx->mutex);
-    }
-
-    if (valid && !cancelled) {
-        if (opts->factory != NULL) {
-            reg = celix_framework_registerServiceFactory(ctx->framework, ctx->bundle, opts->serviceName, opts->factory, props, reservedId);
-        } else {
-            reg = celix_framework_registerService(ctx->framework, ctx->bundle, opts->serviceName, opts->svc, props, reservedId);
-        }
-        svcId = serviceRegistration_getServiceId(reg); //save to call with NULL
+        svcId = celix_framework_registerService(ctx->framework, ctx->bundle, opts->serviceName, opts->svc, opts->factory, props);
     } else {
-        framework_logIfError(ctx->framework->logger, CELIX_ILLEGAL_ARGUMENT, NULL, "Required serviceName argument is NULL");
+        svcId = celix_framework_registerServiceAsync(ctx->framework, ctx->bundle, opts->serviceName, opts->svc, opts->factory, props, opts->asyncData, opts->asyncCallback);
+        if (!async && svcId >= 0) {
+            //note on event loop thread, but in a sync call, so waiting till service registration is concluded
+            celix_bundleContext_waitForAsyncRegistration(ctx, svcId);
+            if (opts->asyncCallback) {
+                opts->asyncCallback(opts->asyncData, svcId);
+            }
+        }
     }
 
 
@@ -525,50 +533,82 @@ long celix_bundleContext_registerServiceWithOptions(bundle_context_t *ctx, const
         properties_destroy(props);
     } else {
         celixThreadMutex_lock(&ctx->mutex);
-        arrayList_add(ctx->svcRegistrations, reg);
+        celix_arrayList_addLong(ctx->svcRegistrations, svcId);
         celixThreadMutex_unlock(&ctx->mutex);
+        if (!async) {
+            if (opts->asyncCallback) {
+                opts->asyncCallback(opts->asyncData, svcId);
+            }
+        }
     }
     return svcId;
 }
 
-void celix_bundleContext_unregisterService(bundle_context_t *ctx, long serviceId) {
-    service_registration_t *found = NULL;
-    bool wasReserved = false;
+long celix_bundleContext_registerServiceWithOptions(bundle_context_t *ctx, const celix_service_registration_options_t *opts) {
+    return celix_bundleContext_registerServiceWithOptionsInternal(ctx, opts, false);
+}
+
+long celix_bundleContext_registerServiceAsyncWithOptions(celix_bundle_context_t *ctx, const celix_service_registration_options_t *opts) {
+    return celix_bundleContext_registerServiceWithOptionsInternal(ctx, opts, true);
+}
+
+void celix_bundleContext_waitForAsyncRegistration(celix_bundle_context_t* ctx, long serviceId) {
+    if (serviceId >= 0) {
+        celix_framework_waitForAsyncRegistration(ctx->framework, serviceId);
+    }
+}
+
+static void celix_bundleContext_unregisterServiceInternal(celix_bundle_context_t *ctx, long serviceId, bool async) {
+    long found = -1L;
     if (ctx != NULL && serviceId >= 0) {
         celixThreadMutex_lock(&ctx->mutex);
-        unsigned int size = arrayList_size(ctx->svcRegistrations);
-        for (unsigned int i = 0; i < size; ++i) {
-            service_registration_t *reg = arrayList_get(ctx->svcRegistrations, i);
-            if (reg != NULL) {
-                long svcId = serviceRegistration_getServiceId(reg);
-                if (svcId == serviceId) {
-                    found = reg;
-                    arrayList_remove(ctx->svcRegistrations, i);
-                    break;
-                }
+        int size = celix_arrayList_size(ctx->svcRegistrations);
+        for (int i = 0; i < size; ++i) {
+            long entryId = celix_arrayList_getLong(ctx->svcRegistrations, i);
+            if (entryId == serviceId) {
+                celix_arrayList_removeAt(ctx->svcRegistrations, i);
+                found = entryId;
+                break;
             }
         }
         celixThreadMutex_unlock(&ctx->mutex);
 
-        celixThreadMutex_lock(&ctx->mutex);
-        if (hashMap_containsKey(ctx->reservedIds, (void*)serviceId)) {
-            bool cancelled = (bool)hashMap_get(ctx->reservedIds, (void*)serviceId);
-            if (cancelled) {
-                //already cancelled
-                fw_log(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, "Service registration for service with a svc id %li was already cancelled!", serviceId);
+        if (found >= 0) {
+            if (async) {
+                celix_framework_unregisterAsync(ctx->framework, ctx->bundle, found);
+            } else if (celix_framework_isCurrentThreadTheEventLoop(ctx->framework)) {
+                /*
+                 * sync unregistration.
+                 * Note already on event loop, cannot unregister the service async, because we cannot wait a future event (the
+                 * service unregistration) the event loop.
+                 *
+                 * So in this case we handle the service unregistration the "traditional way" and call the sync fw service
+                 * unregistrations versions
+                 */
+                celix_framework_unregister(ctx->framework, ctx->bundle, found);
+            } else {
+                celix_framework_unregisterAsync(ctx->framework, ctx->bundle, found);
+                celix_bundleContext_waitForAsyncUnregistration(ctx, serviceId);
             }
-            wasReserved = true;
-            hashMap_put(ctx->reservedIds, (void*)serviceId, (void*)true);
-        }
-        celixThreadMutex_unlock(&ctx->mutex);
-
-        if (found != NULL) {
-            serviceRegistration_unregister(found);
-        } else if (wasReserved) {
-            //nop
         } else {
-            framework_logIfError(ctx->framework->logger, CELIX_ILLEGAL_ARGUMENT, NULL, "No service registered with svc id %li for bundle %s (bundle id: %li)!", serviceId, celix_bundle_getSymbolicName(ctx->bundle), celix_bundle_getId(ctx->bundle));
+            framework_logIfError(ctx->framework->logger, CELIX_ILLEGAL_ARGUMENT, NULL,
+                                 "No service registered with svc id %li for bundle %s (bundle id: %li)!", serviceId,
+                                 celix_bundle_getSymbolicName(ctx->bundle), celix_bundle_getId(ctx->bundle));
         }
+    }
+}
+
+void celix_bundleContext_unregisterServiceAsync(celix_bundle_context_t *ctx, long serviceId) {
+    return celix_bundleContext_unregisterServiceInternal(ctx, serviceId, true);
+}
+
+void celix_bundleContext_unregisterService(bundle_context_t *ctx, long serviceId) {
+    return celix_bundleContext_unregisterServiceInternal(ctx, serviceId, false);
+}
+
+void celix_bundleContext_waitForAsyncUnregistration(celix_bundle_context_t* ctx, long serviceId) {
+    if (serviceId >= 0) {
+        celix_framework_waitForAsyncUnregistration(ctx->framework, serviceId);
     }
 }
 
@@ -777,12 +817,6 @@ static void bundleContext_cleanupServiceRegistration(bundle_context_t* ctx) {
         }
         celix_arrayList_addLong(danglingSvcIds, svcId);
     }
-    hash_map_iterator_t iter = hashMapIterator_construct(ctx->reservedIds);
-    while (hashMapIterator_hasNext(&iter)) {
-        long svcId = (long)hashMapIterator_nextKey(&iter);
-        fw_log(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, "Dangling reserved svc id %li for bundle %s. Add missing 'celix_bundleContext_unregisterService' calls.", svcId, symbolicName);
-    }
-    hashMap_clear(ctx->reservedIds, false, false);
     celixThreadMutex_unlock(&ctx->mutex);
 
     if (danglingSvcIds != NULL) {
@@ -1223,18 +1257,4 @@ char* celix_bundleContext_getBundleSymbolicName(celix_bundle_context_t *ctx, lon
     char *name = NULL;
     celix_framework_useBundle(ctx->framework, false, bndId, &name, celix_bundleContext_getBundleSymbolicNameCallback);
     return name;
-}
-
-long celix_bundleContext_reserveSvcId(celix_bundle_context_t *ctx) {
-    celixThreadMutex_lock(&ctx->mutex);
-    long reservedId = celix_serviceRegistry_nextSvcId(ctx->framework->registry);
-    if (reservedId == 0) {
-        //note svcId is the first and valid id, but for reserved id, we want a service id > 0,
-        //so that a 0 initialized CELIX_EMPTY_SERVICE_REGISTRATION_OPTIONS is configured not to
-        //use a reservedId
-        reservedId = celix_serviceRegistry_nextSvcId(ctx->framework->registry);
-    }
-    hashMap_put(ctx->reservedIds, (void*)reservedId, (void*)false);
-    celixThreadMutex_unlock(&ctx->mutex);
-    return reservedId;
 }

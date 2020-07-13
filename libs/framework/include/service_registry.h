@@ -142,6 +142,13 @@ bool celix_serviceRegistry_getServiceInfo(
 long celix_serviceRegistry_nextSvcId(celix_service_registry_t* registry);
 
 
+/**
+ * Unregister service for the provided service id (owned by bnd).
+ * Will print an error if the service id is invalid
+ */
+void celix_serviceRegistry_unregisterService(celix_service_registry_t* registry, celix_bundle_t* bnd, long serviceId);
+
+
 #ifdef __cplusplus
 }
 #endif

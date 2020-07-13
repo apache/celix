@@ -42,7 +42,6 @@ framework_t* celix_frameworkFactory_createFramework(celix_properties_t *config) 
 void celix_frameworkFactory_destroyFramework(celix_framework_t *fw) {
     if (fw != NULL) {
         framework_stop(fw);
-        framework_waitForStop(fw);
         framework_destroy(fw);
     }
 }

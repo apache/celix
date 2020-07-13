@@ -41,10 +41,54 @@
 #include "celix_threads.h"
 #include "service_registry.h"
 
+#define CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE 64
+
+typedef struct celix_framework_bundle_entry {
+    celix_bundle_t *bnd;
+    long bndId;
+
+    celix_thread_mutex_t useMutex; //protects useCount
+    celix_thread_cond_t useCond;
+    size_t useCount;
+} celix_framework_bundle_entry_t;
+
+enum celix_framework_event_type {
+    CELIX_FRAMEWORK_EVENT_TYPE      = 0x01,
+    CELIX_BUNDLE_EVENT_TYPE         = 0x11,
+    CELIX_REGISTER_SERVICE_EVENT    = 0x21,
+    CELIX_UNREGISTER_SERVICE_EVENT  = 0x22
+};
+
+typedef enum celix_framework_event_type celix_framework_event_type_e;
+
+struct celix_framework_event {
+    celix_framework_event_type_e type;
+    celix_framework_bundle_entry_t* bndEntry;
+
+    //for framework event
+    framework_event_type_e fwEvent;
+    celix_status_t errorCode;
+    const char *error;
+
+    //for bundle event
+    bundle_event_type_e bundleEvent;
+
+    //for register event
+    long registerServiceId;
+    char *serviceName;
+    void *svc;
+    celix_service_factory_t* factory;
+    celix_properties_t* properties;
+    void* registerData;
+    void (*registerCallback)(void *data, long serviceId);
+
+    //for unregister event
+    long unregisterServiceId;
+};
+
+typedef struct celix_framework_event celix_framework_event_t;
+
 struct celix_framework {
-#ifdef WITH_APR
-    apr_pool_t *pool;
-#endif
     celix_bundle_t *bundle;
     long bundleId; //the bundle id of the framework (normally 0)
     hash_map_pt installRequestMap;
@@ -80,10 +124,12 @@ struct celix_framework {
     struct {
         celix_thread_cond_t cond;
         celix_thread_t thread;
-        celix_thread_mutex_t mutex; //protect active and requests
+        celix_thread_mutex_t mutex; //protects below
         bool active;
-        celix_array_list_t *requests;
-        size_t nrOfLocalRequest;
+        celix_framework_event_t eventQueue[CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE]; //ring buffer
+        int eventQueueSize;
+        int eventQueueFirstEntry;
+        celix_array_list_t *dynamicEventQueue; //entry = celix_framework_event_t*. Used when the eventQueue is full
     } dispatcher;
 
     celix_framework_logger_t* logger;
@@ -151,8 +197,50 @@ FRAMEWORK_EXPORT bundle_pt framework_getBundleById(framework_pt framework, long 
  **********************************************************************************************************************
  **********************************************************************************************************************/
 
-service_registration_t* celix_framework_registerServiceFactory(framework_t *fw, celix_bundle_t *bnd, const char* serviceName, celix_service_factory_t *factory, celix_properties_t *properties, long reservedSvcId);
-service_registration_t* celix_framework_registerService(framework_t *fw, celix_bundle_t *bnd, const char* serviceName, void* svc, celix_properties_t *properties, long reservedSvcId);
+/**
+ * register service or service factory. Will return a svc id directly and return a service registration in a callback.
+ * callback is called on the fw event loop thread
+ */
+long celix_framework_registerService(framework_t *fw, celix_bundle_t *bnd, const char* serviceName, void* svc, celix_service_factory_t *factory, celix_properties_t *properties);
+
+/**
+ * register service or service factory async. Will return a svc id directly and return a service registration in a callback.
+ * callback is called on the fw event loop thread
+ */
+long celix_framework_registerServiceAsync(framework_t *fw, celix_bundle_t *bnd, const char* serviceName, void* svc, celix_service_factory_t* factory, celix_properties_t *properties, void* data, void(*callback)(void *data, long serviceId));
+
+/**
+ * Unregister service async on the event loop thread.
+ */
+void celix_framework_unregisterAsync(celix_framework_t* fw, celix_bundle_t* bnd, long serviceId);
+
+/**
+ * Unregister service
+ */
+void celix_framework_unregister(celix_framework_t* fw, celix_bundle_t* bnd, long serviceId);
+
+/**
+ * Wait til all service registration or unregistration events for a specific bundle are no longer present in the event queue.
+ */
+void celix_framework_waitForAsyncRegistrations(celix_framework_t *fw, long bndId);
+
+/**
+ * Wait til the async service registration for the provided service id is no longer present in the event queue.
+ */
+void celix_framework_waitForAsyncRegistration(celix_framework_t *fw, long svcId);
+
+/**
+ * Wait til the async service unregistration for the provided service id is no longer present in the event queue.
+ */
+void celix_framework_waitForAsyncUnregistration(framework_t *fw, long svcId);
+
+/**
+ * Returns whether the current thread is the Celix framework event loop thread.
+ */
+bool celix_framework_isCurrentThreadTheEventLoop(framework_t* fw);
+
+
+
 
 
 #endif /* FRAMEWORK_PRIVATE_H_ */

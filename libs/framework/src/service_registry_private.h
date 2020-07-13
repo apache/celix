@@ -32,6 +32,27 @@
 #include "listener_hook_service.h"
 #include "service_reference.h"
 
+#define CELIX_SERVICE_REGISTRY_STATIC_EVENT_QUEUE_SIZE  64
+
+typedef struct celix_service_registry_event {
+    //TODO call from framework to ensure bundle entries usage count is increased
+    bool isRegistrationEvent;
+
+    //for register event
+    long serviceId;
+    char *serviceName;
+    void *svc;
+    celix_service_factory_t* factory;
+    celix_properties_t* properties;
+    void* registerData;
+    void (*registerCallback)(void *data, service_registration_t*);
+
+    //for unregister event
+    service_registration_t* registration;
+    void* unregisterData;
+    void (*unregisterCallback)(void *data);
+} celix_service_registry_event_t;
+
 struct celix_serviceRegistry {
 	framework_pt framework;
 	registry_callback_t callback;
