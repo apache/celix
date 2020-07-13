@@ -173,12 +173,6 @@ if (BUILD_PUBSUB_PSA_UDP_MC)
     add_test(NAME pstm_deadlock_udpmc_test COMMAND pstm_deadlock_udpmc_test WORKING_DIRECTORY $<TARGET_PROPERTY:pstm_deadlock_udpmc_test,CONTAINER_LOC>)
     setup_target_for_coverage(pstm_deadlock_udpmc_test SCAN_DIR ..)
 
-    #TCP Endpoint test is disabled because the test is not stable when running on Travis
-    if (ENABLE_PUBSUB_PSA_TCP_ENDPOINT_TEST)
-        add_test(NAME pubsub_tcp_endpoint_tests COMMAND pubsub_tcp_endpoint_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_tcp_endpoint_tests,CONTAINER_LOC>)
-        setup_target_for_coverage(pubsub_tcp_endpoint_tests SCAN_DIR ..)
-    endif()
-
     #TODO fix issues with UDPMC and reanble test again
     #add_test(NAME pubsub_udpmc_tests COMMAND pubsub_udpmc_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_udpmc_tests,CONTAINER_LOC>)
     #setup_target_for_coverage(pubsub_udpmc_tests SCAN_DIR ..)

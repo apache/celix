@@ -39,7 +39,7 @@
 #include "pubsub_admin.h"
 #include "../../pubsub_admin_udp_mc/src/pubsub_udpmc_topic_sender.h"
 
-#define PSTM_PSA_HANDLING_SLEEPTIME_IN_SECONDS       30L
+#define PSTM_PSA_HANDLING_DEFAULT_SLEEPTIME_IN_SECONDS       30L
 
 #ifndef UUID_STR_LEN
 #define UUID_STR_LEN    37
@@ -79,6 +79,7 @@ celix_status_t pubsub_topologyManager_create(celix_bundle_context_t *context, ce
 
     manager->loghelper = logHelper;
     manager->verbose = celix_bundleContext_getPropertyAsBool(context, PUBSUB_TOPOLOGY_MANAGER_VERBOSE_KEY, PUBSUB_TOPOLOGY_MANAGER_DEFAULT_VERBOSE);
+    manager->handlingThreadSleepTime = celix_bundleContext_getPropertyAsLong(context, PUBSUB_TOPOLOGY_MANAGER_HANDLING_THREAD_SLEEPTIME_SECONDS_KEY, PSTM_PSA_HANDLING_DEFAULT_SLEEPTIME_IN_SECONDS);
 
     manager->psaHandling.running = true;
     celixThread_create(&manager->psaHandling.thread, NULL, pstm_psaHandlingThread, manager);
@@ -1107,7 +1108,7 @@ static void *pstm_psaHandlingThread(void *data) {
         pstm_findPsaForEndpoints(manager); //trying to find psa and possible set for endpoints with no psa
 
         celixThreadMutex_lock(&manager->psaHandling.mutex);
-        celixThreadCondition_timedwaitRelative(&manager->psaHandling.cond, &manager->psaHandling.mutex, PSTM_PSA_HANDLING_SLEEPTIME_IN_SECONDS, 0L);
+        celixThreadCondition_timedwaitRelative(&manager->psaHandling.cond, &manager->psaHandling.mutex, manager->handlingThreadSleepTime, 0L);
         running = manager->psaHandling.running;
         celixThreadMutex_unlock(&manager->psaHandling.mutex);
     }
