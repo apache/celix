@@ -10522,7 +10522,7 @@ read_message(FILE *fp,
         /* value of request_timeout is in seconds, config in milliseconds */
         request_timeout = atof(conn->dom_ctx->config[REQUEST_TIMEOUT]) / 1000.0;
     } else {
-        request_timeout = -1.0;
+        request_timeout = 30.0;
     }
     if (conn->handled_requests > 0) {
         if (conn->dom_ctx->config[KEEP_ALIVE_TIMEOUT]) {
