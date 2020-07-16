@@ -62,9 +62,6 @@ struct celix_serviceRegistry {
 	hash_map_t *serviceRegistrations; //key = bundle (reg owner), value = list ( registration )
 	hash_map_t *serviceReferences; //key = bundle, value = map (key = serviceId, value = reference)
 
-	bool checkDeletedReferences; //If enabled. check if provided service references are still valid
-	hash_map_t *deletedServiceReferences; //key = ref pointer, value = bool
-
 	long nextServiceId;
 
 	celix_array_list_t *listenerHooks; //celix_service_registry_listener_hook_entry_t*
@@ -102,12 +99,6 @@ typedef struct celix_service_registry_service_listener_entry {
     celix_thread_cond_t cond;
     unsigned int useCount;
 } celix_service_registry_service_listener_entry_t;
-
-typedef enum reference_status_enum {
-	REF_ACTIVE,
-	REF_DELETED,
-	REF_UNKNOWN
-} reference_status_t;
 
 struct usageCount {
 	unsigned int count;

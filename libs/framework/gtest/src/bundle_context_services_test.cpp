@@ -740,7 +740,6 @@ TEST_F(CelixBundleContextServicesTests, servicesTrackerSetTest) {
     void *svc4 = (void*)0x400; //5 ranking
 
     auto set = [](void *handle, void *svc) {
-        ASSERT_TRUE(svc != nullptr);
         static int callCount = 0;
         callCount += 1;
         if (callCount == 1) {
@@ -766,28 +765,28 @@ TEST_F(CelixBundleContextServicesTests, servicesTrackerSetTest) {
     opts.callbackHandle = (void*)&count;
     opts.filter.serviceName = "NA";
     opts.set = set;
-    long trackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
+    long trackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts); //call 1
     ASSERT_TRUE(trackerId >= 0);
 
     //register svc3 should lead to second set call
     properties_t *props3 = celix_properties_create();
     celix_properties_set(props3, OSGI_FRAMEWORK_SERVICE_RANKING, "10");
-    long svcId3 = celix_bundleContext_registerService(ctx, svc3, "NA", props3);
+    long svcId3 = celix_bundleContext_registerService(ctx, svc3, "NA", props3); //call 2
 
     //register svc4 should lead to no set (lower ranking)
     properties_t *props4 = celix_properties_create();
     celix_properties_set(props4, OSGI_FRAMEWORK_SERVICE_RANKING, "10");
-    long svcId4 = celix_bundleContext_registerService(ctx, svc4, "NA", props4);
+    long svcId4 = celix_bundleContext_registerService(ctx, svc4, "NA", props4); //no update
 
     //unregister svc3 should lead to set (new highest ranking)
-    celix_bundleContext_unregisterService(ctx, svcId3);
+    celix_bundleContext_unregisterService(ctx, svcId3); //call 3
 
-    celix_bundleContext_stopTracker(ctx, trackerId);
+    celix_bundleContext_stopTracker(ctx, trackerId); //call 4 (NULL)
     celix_bundleContext_unregisterService(ctx, svcId1);
     celix_bundleContext_unregisterService(ctx, svcId2);
     celix_bundleContext_unregisterService(ctx, svcId4);
 
-    ASSERT_EQ(3, count); //check if the set is called the expected times
+    ASSERT_EQ(4, count); //check if the set is called the expected times
 }
 
 TEST_F(CelixBundleContextServicesTests, trackAllServices) {
@@ -991,10 +990,8 @@ TEST_F(CelixBundleContextServicesTests, trackServiceTrackerTest) {
     ASSERT_EQ(2, count);
 
     celix_bundleContext_stopTracker(ctx, tracker2);
-    celix_serviceTracker_syncForContext(ctx); //service tracker shutdown on separate track -> need sync
     ASSERT_EQ(1, count);
     celix_bundleContext_stopTracker(ctx, tracker3);
-    celix_serviceTracker_syncForContext(ctx); //service tracker shutdown on separate track -> need sync
     ASSERT_EQ(0, count);
 
     celix_bundleContext_stopTracker(ctx, trackerId);
@@ -1029,6 +1026,7 @@ TEST_F(CelixBundleContextServicesTests, floodEventLoopTest) {
         long id = celix_bundleContext_registerServiceAsync(ctx, (void*)0x42, "test", nullptr); //note cannot be completed because the first service registration in blocking in the event loop.
         EXPECT_GE(id, 0);
         svcIds.push_back(id);
+        celix_bundleContext_findService(ctx, "test"); //just to add some entropy
     }
 
     {
@@ -1045,5 +1043,6 @@ TEST_F(CelixBundleContextServicesTests, floodEventLoopTest) {
     celix_bundleContext_unregisterServiceAsync(ctx, svcId);
     for (auto id : svcIds) {
         celix_bundleContext_unregisterServiceAsync(ctx, id);
+        celix_bundleContext_findService(ctx, "test"); //just to add some entropy
     }
 }

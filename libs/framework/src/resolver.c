@@ -288,6 +288,9 @@ void resolver_addModule(module_pt module) {
 }
 
 void resolver_removeModule(module_pt module) {
+    if (m_modules == NULL) {
+        return;
+    }
     linked_list_pt caps = NULL;
     linkedList_removeElement(m_modules, module);
     caps = module_getCapabilities(module);
