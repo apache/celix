@@ -30,18 +30,18 @@ namespace celix {
         //TODO ctor with callbackExecutor and scheduledExecutor
 
         template<typename T>
-        celix::Deferred<T> deferred();
+        [[nodiscard]] celix::Deferred<T> deferred();
 
         template<typename T>
-        celix::Promise<T> failed(const std::exception& e);
+        [[nodiscard]] celix::Promise<T> failed(const std::exception& e);
 
         template<typename T>
-        celix::Promise<T> failed(std::exception_ptr ptr);
+        [[nodiscard]] celix::Promise<T> failed(std::exception_ptr ptr);
 
         template<typename T>
-        celix::Promise<T> resolved(T&& value);
+        [[nodiscard]] celix::Promise<T> resolved(T&& value);
 
-        celix::Promise<void> resolved();
+        [[nodiscard]] celix::Promise<void> resolved();
 
         //TODO rest
     private:

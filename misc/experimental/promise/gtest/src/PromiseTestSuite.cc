@@ -30,6 +30,24 @@ public:
     celix::PromiseFactory factory{ tbb::task_arena{5, 1} };
 };
 
+struct MovableInt {
+    MovableInt(int _val) : val(_val) {}
+    operator int() const { return val; }
+
+    int val;
+};
+
+struct NonMovableInt {
+    NonMovableInt(int _val) : val(_val) {}
+    operator int() const { return val; }
+    NonMovableInt(NonMovableInt&&) = delete;
+    NonMovableInt(const NonMovableInt&) = default;
+    NonMovableInt& operator=(NonMovableInt&&) = delete;
+    NonMovableInt& operator=(const NonMovableInt&) = default;
+
+    int val;
+};
+
 
 
 TEST_F(PromiseTestSuite, simplePromise) {
@@ -45,7 +63,7 @@ TEST_F(PromiseTestSuite, simplePromise) {
 
     EXPECT_EQ(42, promise.getValue()); //note multiple call are valid;
 
-    EXPECT_EQ(42, promise.moveValue()); //data is now moved
+    EXPECT_EQ(42, promise.moveOrGetValue()); //data is now moved
     EXPECT_THROW(promise.getValue(), celix::PromiseInvocationException); //data is already moved -> exception
     t.join();
 }
@@ -371,4 +389,26 @@ TEST_F(PromiseTestSuite, failedResolvedWithPromiseFactory) {
     auto p2 = factory.resolved(42);
     EXPECT_TRUE(p2.isDone());
     EXPECT_EQ(42, p2.getValue());
+}
+
+TEST_F(PromiseTestSuite, movableStruct) {
+    auto deferred =  factory.deferred<MovableInt>();
+    std::thread t{[deferred] () mutable { //TODO TBD make deferred a shared_ptr to prevent need for mutable?
+        std::this_thread::sleep_for(std::chrono::milliseconds{50});
+        deferred.resolve(42);
+    }};
+    auto promise = deferred.getPromise();
+    EXPECT_EQ(42, promise.moveOrGetValue());
+    t.join();
+}
+
+TEST_F(PromiseTestSuite, nonMovableStruct) {
+    auto deferred =  factory.deferred<NonMovableInt>();
+    std::thread t{[deferred] () mutable { //TODO TBD make deferred a shared_ptr to prevent need for mutable?
+        std::this_thread::sleep_for(std::chrono::milliseconds{50});
+        deferred.resolve(42);
+    }};
+    auto promise = deferred.getPromise();
+    EXPECT_EQ(42, promise.moveOrGetValue());
+    t.join();
 }
