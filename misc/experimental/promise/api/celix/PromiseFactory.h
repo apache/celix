@@ -41,6 +41,8 @@ namespace celix {
         template<typename T>
         celix::Promise<T> resolved(T&& value);
 
+        celix::Promise<void> resolved();
+
         //TODO rest
     private:
         tbb::task_arena executor; //TODO look into different thread pool libraries
@@ -78,4 +80,10 @@ inline celix::Promise<T> celix::PromiseFactory::resolved(T &&value) {
     auto p = std::make_shared<celix::impl::SharedPromiseState<T>>(executor);
     p->resolve(std::forward<T>(value));
     return celix::Promise<T>{p};
+}
+
+inline celix::Promise<void> celix::PromiseFactory::resolved() {
+    auto p = std::make_shared<celix::impl::SharedPromiseState<void>>(executor);
+    p->resolve();
+    return celix::Promise<void>{p};
 }
