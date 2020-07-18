@@ -33,3 +33,5 @@ Apache Celix is organized into several subprojects. The following subproject are
 * [Remote Shell](../../bundles/shell/remote_shell/README.md) - A remote (telnet) frontend for the Celix shell.
 * [Bonjour Shell](../../bundles/shell/shell_bonjour) - A remote (Bonjour / mDNS) frontend for the Celix shell.
 * [Deployment Admin](../../bundles/deployment_admin/README.md) - A deployment admin implementation.
+* [Pubsub](../../bundles/pubsub/README.md) - An implementation for a publish-subscribe remote services system, that use dfi library for message serialization.
+

@@ -20,7 +20,7 @@ limitations under the License.
 ## Intro
 This page is intended for first time users of Apache Celix. It should guide you through building & installing Apache Celix, setting up a new project, creating your first bundle, setting up the project for use with Eclipse project and finally running and debugging your bundle directly from eclipse workspace. 
 
-If there are any uncertainties or question, don't hesitate to ask your questions in the [Apache Celix mailing](https://celix.apache.org/support/mailinglist.html).
+If there are any uncertainties or question, don't hesitate to ask your questions on the [Apache Celix mailing list](https://celix.apache.org/support/mailing-list.html).
 
 ## Prerequisite
 Some experience with a command line interface (xterm) is expected to be able to follow this guide. 
