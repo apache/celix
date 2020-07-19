@@ -1,3 +1,7 @@
+---
+title: HTTP Example
+---
+
 <!--
 Licensed to the Apache Software Foundation (ASF) under one or more
 contributor license agreements.  See the NOTICE file distributed with
@@ -25,6 +29,3 @@ bundles to create a `http_example_cnt` Celix container.
 The `http_example_cnt` Celix container shows how you can create a use existing http/websocket services.
 After running the container browse to localhost:8080. 
 Under the /shell uri you find the `Celix::shell_wui` functionality and under /hello uri you find the `http_example` functionality
-
-
-

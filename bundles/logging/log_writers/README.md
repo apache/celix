@@ -1,3 +1,7 @@
+---
+title: Log Writers
+---
+
 # Log Writer
 
 The Celix Log Writers are components that sinks log from the Celix log service to different backends.

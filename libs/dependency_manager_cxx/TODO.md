@@ -1,3 +1,7 @@
+---
+title: TODO C++ Dependency Manager
+---
+
 <!--
 Licensed to the Apache Software Foundation (ASF) under one or more
 contributor license agreements.  See the NOTICE file distributed with
@@ -17,5 +21,5 @@ limitations under the License.
 
 # TODO integrate cxx dep man into framework
 
-- Update documentetion for CELIX_GEN_CXX_BUNDLE_ACTIVATOR usage and removal of dep manager libs  / shell_dm
+- Update documentation for CELIX_GEN_CXX_BUNDLE_ACTIVATOR usage and removal of dep manager libs  / shell_dm
 - Move documentation
