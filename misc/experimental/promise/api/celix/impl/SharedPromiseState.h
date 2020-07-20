@@ -37,6 +37,8 @@ namespace celix::impl {
 
     template<typename T>
     class SharedPromiseState {
+        // Pointers make using promises properly unnecessarily complicated.
+        static_assert(!std::is_pointer_v<T>, "Cannot use pointers with promises.");
     public:
         explicit SharedPromiseState(const tbb::task_arena &executor = {});
 
@@ -54,8 +56,15 @@ namespace celix::impl {
 
         void tryFail(std::exception_ptr e);
 
-        const T &getValue() const; //copy
-        [[nodiscard]] T moveOrGetValue(); //move
+        // copy/move depending on situation
+        T& getValue() &;
+        const T& getValue() const &;
+        [[nodiscard]] T&& getValue() &&;
+        [[nodiscard]] const T&& getValue() const &&;
+
+        // move if T is moveable
+        [[nodiscard]] T moveOrGetValue();
+
         [[nodiscard]] std::exception_ptr getFailure() const;
 
         void wait() const;
@@ -362,16 +371,49 @@ inline void celix::impl::SharedPromiseState<void>::waitForAndCheckData(std::uniq
 }
 
 template<typename T>
-inline const T& celix::impl::SharedPromiseState<T>::getValue() const {
+inline T& celix::impl::SharedPromiseState<T>::getValue() & {
     std::unique_lock<std::mutex> lck{mutex};
     waitForAndCheckData(lck, true);
     return *data;
+}
+
+template<typename T>
+inline const T& celix::impl::SharedPromiseState<T>::getValue() const & {
+    std::unique_lock<std::mutex> lck{mutex};
+    waitForAndCheckData(lck, true);
+    return *data;
+}
+
+template<typename T>
+inline T&& celix::impl::SharedPromiseState<T>::getValue() && {
+    std::unique_lock<std::mutex> lck{mutex};
+    waitForAndCheckData(lck, true);
+    return std::move(*data);
+}
+
+template<typename T>
+inline const T&& celix::impl::SharedPromiseState<T>::getValue() const && {
+    std::unique_lock<std::mutex> lck{mutex};
+    waitForAndCheckData(lck, true);
+    return std::move(*data);
 }
 
 inline bool celix::impl::SharedPromiseState<void>::getValue() const {
     std::unique_lock<std::mutex> lck{mutex};
     waitForAndCheckData(lck, true);
     return true;
+}
+
+template<typename T>
+inline T celix::impl::SharedPromiseState<T>::moveOrGetValue() {
+    std::unique_lock<std::mutex> lck{mutex};
+    waitForAndCheckData(lck, true);
+    if constexpr (std::is_move_constructible_v<T>) {
+        dataMoved = true;
+        return std::move(*data);
+    } else {
+        return *data;
+    }
 }
 
 template<typename T>
@@ -382,18 +424,6 @@ inline tbb::task_arena celix::impl::SharedPromiseState<T>::getExecutor() const {
 inline tbb::task_arena celix::impl::SharedPromiseState<void>::getExecutor() const {
     return executor;
 }
-
-template<typename T>
-inline T celix::impl::SharedPromiseState<T>::moveOrGetValue() {
-    std::unique_lock<std::mutex> lck{mutex};
-    waitForAndCheckData(lck, true);
-    if constexpr (std::is_move_constructible_v<T>) {
-        dataMoved = true;
-        return T(std::move(*data));
-    } else {
-        return *data;
-    }
-};
 
 template<typename T>
 inline void celix::impl::SharedPromiseState<T>::wait() const {

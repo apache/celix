@@ -123,6 +123,7 @@ namespace celix {
          * @throws InterruptedException If the current thread was interrupted while
          *         waiting.
          */
+        T& getValue();
         const T& getValue() const;
 
         [[nodiscard]] T moveOrGetValue();
@@ -345,7 +346,7 @@ namespace celix {
          */
 //        TODO
 //        template<typename R>
-//        celix::Promise<R> flatMap(std::function<celix::Promise<R>(T)> mapper);
+//        [[nodiscard]] celix::Promise<R> flatMap(std::function<celix::Promise<R>(T)> mapper);
 
         /**
          * Chain a new Promise to this Promise with success and failure callbacks.
@@ -381,6 +382,20 @@ namespace celix {
          */
         template<typename U>
         [[nodiscard]] celix::Promise<U> then(std::function<celix::Promise<U>(celix::Promise<T>)> success, std::function<void(celix::Promise<T>)> failure = {});
+
+        /**
+         * Convenience operator calling getValue()
+         */
+        constexpr const T&
+        operator*() const
+        { return this->getValue(); }
+
+        /**
+         * Convenience operator calling getValue()
+         */
+        constexpr T&
+        operator*()
+        { return this->getValue(); }
     private:
         const std::shared_ptr<celix::impl::SharedPromiseState<T>> state;
 
@@ -442,6 +457,11 @@ template<typename T>
 inline celix::Promise<T>::Promise(std::shared_ptr<celix::impl::SharedPromiseState<T>> s) : state{std::move(s)} {
 }
 inline celix::Promise<void>::Promise(std::shared_ptr<celix::impl::SharedPromiseState<void>> s) : state{std::move(s)} {
+}
+
+template<typename T>
+inline T& celix::Promise<T>::getValue() {
+    return state->getValue();
 }
 
 template<typename T>
@@ -596,10 +616,9 @@ inline void celix::Promise<void>::wait() const {
 template<typename T>
 template<typename U>
 inline celix::Promise<U> celix::Promise<T>::then(std::function<celix::Promise<U>(celix::Promise<T>)> success, std::function<void(celix::Promise<T>)> failure) {
-    auto s = state;
     auto p = std::make_shared<celix::impl::SharedPromiseState<U>>(state->getExecutor());
 
-    auto chain = [s, p, success, failure]() {
+    auto chain = [s = state, p, success = std::move(success), failure = std::move(failure)]() {
         //chain is called when s is resolved
         if (s->isSuccessfullyResolved()) {
             try {
@@ -622,10 +641,9 @@ inline celix::Promise<U> celix::Promise<T>::then(std::function<celix::Promise<U>
 
 template<typename U>
 inline celix::Promise<U> celix::Promise<void>::then(std::function<celix::Promise<U>(celix::Promise<void>)> success, std::function<void(celix::Promise<void>)> failure) {
-    auto s = state;
     auto p = std::make_shared<celix::impl::SharedPromiseState<U>>(state->getExecutor());
 
-    auto chain = [s, p, success, failure]() {
+    auto chain = [s = state, p, success = std::move(success), failure = std::move(failure)]() {
         //chain is called when s is resolved
         if (s->isSuccessfullyResolved()) {
             try {

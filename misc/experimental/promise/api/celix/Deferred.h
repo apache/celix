@@ -27,8 +27,13 @@
 
 #include <tbb/task.h>
 #include <tbb/task_group.h>
-#include <tbb/task_scheduler_init.h>
 #include <tbb/task_scheduler_observer.h>
+#if __has_include(<tbb/global_control.h>)
+#include <tbb/global_control.h>
+#else
+// deprecated in newer versions of TBB
+#include <tbb/task_scheduler_init.h>
+#endif
 
 namespace celix {
 
