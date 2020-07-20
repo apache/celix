@@ -349,8 +349,10 @@ inline void celix::impl::SharedPromiseState<T>::waitForAndCheckData(std::unique_
             std::rethrow_exception(exp);
         } catch (const std::exception &e) {
             what = e.what();
+        } catch (...) {
+            what = "unknown exception";
         }
-        throw celix::PromiseInvocationException{"Expected a succeeded promise, but promise failed"};
+        throw celix::PromiseInvocationException{"Expected a succeeded promise, but promise failed with message \"" + what + "\""};
     } else if(!expectValid && !exp && !dataMoved) {
         throw celix::PromiseInvocationException{"Expected a failed promise, but promise succeeded"};
     } else if (dataMoved) {
@@ -364,7 +366,15 @@ inline void celix::impl::SharedPromiseState<void>::waitForAndCheckData(std::uniq
     }
     cond.wait(lck, [this]{return done;});
     if (expectValid && exp) {
-        throw celix::PromiseInvocationException{"Expected a succeeded promise, but promise failed"};
+        std::string what;
+        try {
+            std::rethrow_exception(exp);
+        } catch (const std::exception &e) {
+            what = e.what();
+        } catch (...) {
+            what = "unknown exception";
+        }
+        throw celix::PromiseInvocationException{"Expected a succeeded promise, but promise failed with message \"" + what + "\""};
     } else if(!expectValid && !exp) {
         throw celix::PromiseInvocationException{"Expected a failed promise, but promise succeeded"};
     }

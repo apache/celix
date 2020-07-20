@@ -20,6 +20,7 @@
 #pragma once
 
 #include <exception>
+#include <utility>
 
 
 namespace celix {
@@ -27,6 +28,7 @@ namespace celix {
     class PromiseInvocationException : public std::exception {
     public:
         explicit PromiseInvocationException(const char* what) : w{what} {}
+        explicit PromiseInvocationException(std::string what) : w{std::move(what)} {}
 
         PromiseInvocationException(const PromiseInvocationException&) = delete;
         PromiseInvocationException(PromiseInvocationException&&) noexcept = default;
@@ -34,9 +36,9 @@ namespace celix {
         PromiseInvocationException& operator=(const PromiseInvocationException&) = delete;
         PromiseInvocationException& operator=(PromiseInvocationException&&) noexcept = default;
 
-        const char* what() const noexcept override { return w; }
+        const char* what() const noexcept override { return w.c_str(); }
     private:
-        const char* w;
+        std::string w;
     };
 }
 
