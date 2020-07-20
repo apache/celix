@@ -41,12 +41,7 @@ static celix_status_t serviceTracker_invokeAddingService(service_tracker_t *trac
 static celix_status_t serviceTracker_invokeAddService(service_tracker_t *tracker, celix_tracked_entry_t *tracked);
 static celix_status_t serviceTracker_invokeRemovingService(service_tracker_t *tracker, celix_tracked_entry_t *tracked);
 static void serviceTracker_checkAndInvokeSetService(void *handle, void *highestSvc, const properties_t *props, const bundle_t *bnd);
-static bool serviceTracker_useHighestRankingServiceInternal(service_tracker_t *tracker,
-                                                            const char *serviceName /*sanity*/,
-                                                            void *callbackHandle,
-                                                            void (*use)(void *handle, void *svc),
-                                                            void (*useWithProperties)(void *handle, void *svc, const celix_properties_t *props),
-                                                            void (*useWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner));
+
 
 #ifdef CELIX_SERVICE_TRACKER_USE_SHUTDOWN_THREAD
 static void serviceTracker_addInstanceFromShutdownList(celix_service_tracker_instance_t *instance);
@@ -217,7 +212,7 @@ celix_status_t serviceTracker_close(service_tracker_t* tracker) {
             if (currentSize == 0) {
                 serviceTracker_checkAndInvokeSetService(tracker, NULL, NULL, NULL);
             } else {
-                serviceTracker_useHighestRankingServiceInternal(tracker, tracked->serviceName, tracker, NULL, NULL, serviceTracker_checkAndInvokeSetService);
+                celix_serviceTracker_useHighestRankingService(tracker, tracked->serviceName, tracker, NULL, NULL, serviceTracker_checkAndInvokeSetService);
             }
 
             serviceTracker_untrackTracked(tracker, tracked);
@@ -415,7 +410,7 @@ static celix_status_t serviceTracker_track(service_tracker_t* tracker, service_r
             celixThreadMutex_unlock(&tracker->mutex);
 
             serviceTracker_invokeAddService(tracker, tracked);
-            serviceTracker_useHighestRankingServiceInternal(tracker, tracked->serviceName, tracker, NULL, NULL, serviceTracker_checkAndInvokeSetService);
+            celix_serviceTracker_useHighestRankingService(tracker, tracked->serviceName, tracker, NULL, NULL, serviceTracker_checkAndInvokeSetService);
         }
     } else {
         bundleContext_ungetServiceReference(tracker->context, reference);
@@ -533,7 +528,7 @@ static celix_status_t serviceTracker_untrack(service_tracker_t* tracker, service
         if (size == 0) {
             serviceTracker_checkAndInvokeSetService(tracker, NULL, NULL, NULL);
         } else {
-            serviceTracker_useHighestRankingServiceInternal(tracker, serviceName, tracker, NULL, NULL, serviceTracker_checkAndInvokeSetService);
+            celix_serviceTracker_useHighestRankingService(tracker, serviceName, tracker, NULL, NULL, serviceTracker_checkAndInvokeSetService);
         }
     }
 
@@ -734,7 +729,7 @@ void celix_serviceTracker_destroy(celix_service_tracker_t *tracker) {
     }
 }
 
-static bool serviceTracker_useHighestRankingServiceInternal(service_tracker_t *tracker,
+bool celix_serviceTracker_useHighestRankingService(service_tracker_t *tracker,
                                                             const char *serviceName /*sanity*/,
                                                             void *callbackHandle,
                                                             void (*use)(void *handle, void *svc),
@@ -782,36 +777,6 @@ static bool serviceTracker_useHighestRankingServiceInternal(service_tracker_t *t
         tracked_release(highest);
     }
 
-    return called;
-}
-
-
-bool celix_serviceTracker_useHighestRankingService(
-        celix_service_tracker_t *tracker,
-        const char *serviceName /*sanity*/,
-        double waitTimeoutInSeconds,
-        void *callbackHandle,
-        void (*use)(void *handle, void *svc),
-        void (*useWithProperties)(void *handle, void *svc, const celix_properties_t *props),
-        void (*useWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner)) {
-
-    bool called = false;
-    struct timespec start, now;
-    clock_gettime(CLOCK_MONOTONIC, &start);
-    do {
-        called = serviceTracker_useHighestRankingServiceInternal(tracker, serviceName, callbackHandle, use, useWithProperties, useWithOwner);
-
-        if (waitTimeoutInSeconds <= 0) {
-            break;
-        } else if (!called) {
-            clock_gettime(CLOCK_MONOTONIC, &now);
-            double diff = celix_difftime(&start, &now);
-            if (diff > waitTimeoutInSeconds) {
-                break;
-            }
-            usleep(10);
-        }
-    } while (!called);
     return called;
 }
 

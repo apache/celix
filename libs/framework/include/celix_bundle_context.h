@@ -245,8 +245,10 @@ void celix_bundleContext_unregisterService(celix_bundle_context_t *ctx, long ser
  *
  * @param ctx The bundle context
  * @param serviceId The service id
+ * @param doneData The data used on the doneCallback (if present)
+ * @param doneCallback If not NULL, this callback will be called when the unregisration is done. (will be called on the event loop thread)
  */
-void celix_bundleContext_unregisterServiceAsync(celix_bundle_context_t *ctx, long serviceId);
+void celix_bundleContext_unregisterServiceAsync(celix_bundle_context_t *ctx, long serviceId, void* doneData, void (*doneCallback)(void* doneData));
 
 
 /**
@@ -338,12 +340,35 @@ long celix_bundleContext_findServiceWithOptions(celix_bundle_context_t *ctx, con
  */
 celix_array_list_t* celix_bundleContext_findServicesWithOptions(celix_bundle_context_t *ctx, const celix_service_filter_options_t *opts);
 
+/**
+ * track the highest ranking service with the provided serviceName.
+ * The highest ranking services will used for the callback.
+ * If a new and higher ranking services the callback with be called again with the new service.
+ * If a service is removed a the callback with be called with next highest ranking service or NULL as service.
+ *
+ * The service tracker will be created async on the Celix event loop thread. This means that the function can return
+ * before the tracker is created.
+ *
+ * @param ctx The bundle context.
+ * @param serviceName The required service name to track.
+ *                    If NULL is all service are tracked.
+ * @param callbackHandle The data pointer, which will be used in the callbacks
+ * @param set is a required callback, which will be called when a new highest ranking service is set.
+ * @return the tracker id (>=0) or < 0 if unsuccessful.
+ */
+long celix_bundleContext_trackServiceAsync(
+        celix_bundle_context_t* ctx,
+        const char* serviceName,
+        void* callbackHandle,
+        void (*set)(void* handle, void* svc)
+);
 
 /**
  * track the highest ranking service with the provided serviceName.
  * The highest ranking services will used for the callback.
  * If a new and higher ranking services the callback with be called again with the new service.
  * If a service is removed a the callback with be called with next highest ranking service or NULL as service.
+ * Note: Please use the celix_bundleContext_trackServiceAsync instead.
  *
  * @param ctx The bundle context.
  * @param serviceName The required service name to track.
@@ -357,10 +382,33 @@ long celix_bundleContext_trackService(
         const char* serviceName,
         void* callbackHandle,
         void (*set)(void* handle, void* svc)
+); //__attribute__((deprecated("Use celix_bundleContext_trackServiceSync instead!")));
+
+/**
+ * track services with the provided serviceName.
+ *
+ * The service tracker will be created async on the Celix event loop thread. This means that the function can return
+ * before the tracker is created.
+ *
+ * @param ctx The bundle context.
+ * @param serviceName The required service name to track
+ *                    If NULL is all service are tracked.
+ * @param callbackHandle The data pointer, which will be used in the callbacks
+ * @param add is a required callback, which will be called when a service is added and initially for the existing service.
+ * @param remove is a required callback, which will be called when a service is removed
+ * @return the tracker id (>=0) or < 0 if unsuccessful.
+ */
+long celix_bundleContext_trackServicesAsync(
+        celix_bundle_context_t* ctx,
+        const char* serviceName,
+        void* callbackHandle,
+        void (*add)(void* handle, void* svc),
+        void (*remove)(void* handle, void* svc)
 );
 
 /**
  * track services with the provided serviceName.
+ * Note: Please use the celix_bundleContext_trackServicesAsync instead.
  *
  * @param ctx The bundle context.
  * @param serviceName The required service name to track
@@ -376,7 +424,7 @@ long celix_bundleContext_trackServices(
         void* callbackHandle,
         void (*add)(void* handle, void* svc),
         void (*remove)(void* handle, void* svc)
-);
+); //__attribute__((deprecated("Use celix_bundleContext_trackServicesAsync instead!")));;
 
 /**
  * Service Tracker Options used to fine tune which services to track and the callback to be used for the tracked services.
@@ -454,6 +502,17 @@ typedef struct celix_service_tracking_options {
     * and the bundle owning the service will also be provided to the callback.
     */
     void (*removeWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *svcOwner) OPTS_INIT;
+
+
+    /**
+     * Data for the trackerCreatedCallback.
+     */
+    void *trackerCreatedCallbackData OPTS_INIT;
+
+    /**
+     * The callback called when the tracker has ben created (and is active)
+     */
+    void (*trackerCreatedCallback)(void *trackerCreatedCallbackData) OPTS_INIT;
 } celix_service_tracking_options_t;
 
 /**
@@ -474,30 +533,74 @@ typedef struct celix_service_tracking_options {
     .removeWithProperties = NULL, \
     .setWithOwner = NULL, \
     .addWithOwner = NULL, \
-    .removeWithOwner = NULL}
+    .removeWithOwner = NULL, \
+    .trackerCreatedCallbackData = NULL, \
+    .trackerCreatedCallback = NULL }
 #endif
 
 /**
  * Tracks services using the provided tracker options.
  * The tracker options are only using during this call and can safely be freed/reused after this call returns.
  *
+ * The service tracker will be created async on the Celix event loop thread. This means that the function can return
+ * before the tracker is created.
+ *
  * @param ctx The bundle context.
  * @param opts The pointer to the tracker options.
  * @return the tracker id (>=0) or < 0 if unsuccessful.
  */
-long celix_bundleContext_trackServicesWithOptions(celix_bundle_context_t *ctx, const celix_service_tracking_options_t *opts);
+long celix_bundleContext_trackServicesWithOptionsAsync(celix_bundle_context_t *ctx, const celix_service_tracking_options_t *opts);
+
+/**
+ * Tracks services using the provided tracker options.
+ * The tracker options are only using during this call and can safely be freed/reused after this call returns.
+ * Note: Please use the celix_bundleContext_registerServiceFactoryAsync instead.
+ *
+ *
+ * @param ctx The bundle context.
+ * @param opts The pointer to the tracker options.
+ * @return the tracker id (>=0) or < 0 if unsuccessful.
+ */
+long celix_bundleContext_trackServicesWithOptions(celix_bundle_context_t *ctx, const celix_service_tracking_options_t *opts); //__attribute__((deprecated("Use celix_bundleContext_trackServicesWithOptionsAsync instead!")));
 
 /**
  * Stop the tracker with the provided track id.
  * Could be a service tracker, bundle tracker or service tracker tracker.
  * Only works for the trackers owned by the bundle of the bundle context.
  *
+ * The service tracker will be destroyed async on the Celix event loop thread. This means that the function can return
+ * before the tracker is destroyed.
+ *
+ * if the doneCallback is not NULL, this will be called when the destruction of the service tracker is done.
+ * (will be called on the event loop thread).
+ *
  * Will log a error if the provided tracker id is unknown. Will silently ignore trackerId < 0.
  */
-void celix_bundleContext_stopTracker(celix_bundle_context_t *ctx, long trackerId);
+void celix_bundleContext_stopTrackerAsync(
+        celix_bundle_context_t *ctx,
+        long trackerId,
+        void *doneCallbackData,
+        void (*doneCallback)(void* doneCallbackData));
 
+/**
+ * Wait for (async) creation of tracker
+ */
+void celix_bundleContext_waitForAsyncTracker(celix_bundle_context_t* ctx, long trackerId);
 
+/**
+ * Wait for (async) stopping of tracking.
+ */
+void celix_bundleContext_waitForAsyncStopTracker(celix_bundle_context_t* ctx, long trackerId);
 
+/**
+ * Stop the tracker with the provided track id.
+ * Could be a service tracker, bundle tracker or service tracker tracker.
+ * Only works for the trackers owned by the bundle of the bundle context.
+ * Note: Please use the celix_bundleContext_registerServiceFactoryAsync instead.
+ *
+ * Will log a error if the provided tracker id is unknown. Will silently ignore trackerId < 0.
+ */
+void celix_bundleContext_stopTracker(celix_bundle_context_t *ctx, long trackerId); //__attribute__((deprecated("Use celix_bundleContext_stopTrackerAsync instead!")));
 
 
 
@@ -747,9 +850,32 @@ bool celix_bundleContext_startBundle(celix_bundle_context_t *ctx, long bndId);
  */
 char* celix_bundleContext_getBundleSymbolicName(celix_bundle_context_t *ctx, long bndId);
 
+
 /**
  * track bundles
  * The add bundle callback will also be called for already installed bundles.
+ *
+ * The bundle tracker will be created async on the Celix event loop thread. This means that the function can return
+ * before the tracker is created.
+ *
+ * @param ctx               The bundle context.
+ * @param callbackHandle    The data pointer, which will be used in the callbacks
+ * @param add               The callback which will be called for started bundles.
+ * @param remove            The callback which will be called when bundles are stopped.
+ * @return                  The bundle tracker id or < 0 if unsuccessful.
+ */
+long celix_bundleContext_trackBundlesAsync(
+        celix_bundle_context_t* ctx,
+        void* callbackHandle,
+        void (*onStarted)(void* handle, const celix_bundle_t *bundle),
+        void (*onStopped)(void *handle, const celix_bundle_t *bundle)
+);
+
+/**
+ * track bundles
+ * The add bundle callback will also be called for already installed bundles.
+ *
+ * Note: please use celix_bundleContext_trackBundlesAsync instead.
  *
  * @param ctx               The bundle context.
  * @param callbackHandle    The data pointer, which will be used in the callbacks
@@ -762,7 +888,7 @@ long celix_bundleContext_trackBundles(
         void* callbackHandle,
         void (*onStarted)(void* handle, const celix_bundle_t *bundle),
         void (*onStopped)(void *handle, const celix_bundle_t *bundle)
-);
+); //__attribute__((deprecated("Use celix_bundleContext_trackBundlesAsync instead!")));
 
 
 /**
@@ -824,6 +950,25 @@ typedef struct celix_bundle_tracker_options {
  * The tracker options are only using during this call and can safely be freed/reused after this call returns.
  * (i.e. can be on the stack)
  *
+ * The bundle tracker will be created async on the Celix event loop thread. This means that the function can return
+ * before the tracker is created.
+ *
+ * @param ctx   The bundle context.
+ * @param opts  The pointer to the bundle tracker options.
+ * @return      The bundle tracker id (>=0) or < 0 if unsuccessful.
+ */
+long celix_bundleContext_trackBundlesWithOptionsAsync(
+        celix_bundle_context_t* ctx,
+        const celix_bundle_tracking_options_t *opts
+);
+
+/**
+ * Tracks bundles using the provided bundle tracker options.
+ * The tracker options are only using during this call and can safely be freed/reused after this call returns.
+ * (i.e. can be on the stack)
+ *
+ * Note: please use celix_bundleContext_trackBundlesWithOptionsAsync instead;
+ *
  * @param ctx   The bundle context.
  * @param opts  The pointer to the bundle tracker options.
  * @return      The bundle tracker id (>=0) or < 0 if unsuccessful.
@@ -831,7 +976,7 @@ typedef struct celix_bundle_tracker_options {
 long celix_bundleContext_trackBundlesWithOptions(
         celix_bundle_context_t* ctx,
         const celix_bundle_tracking_options_t *opts
-);
+); //__attribute__((deprecated("Use celix_bundleContext_trackBundlesWithOptionsAsync instead!")));
 
 /**
  * Use the bundle with the provided bundle id if it is in the active (started) state
@@ -905,6 +1050,40 @@ typedef struct celix_service_tracker_info {
  *
  * This tracker can be stopped with the celix_bundleContext_stopTracker function.
  *
+ * The service tracker tracker will be created async on the Celix event loop thread. This means that the function can return
+ * before the tracker is created.
+ *
+ * @param ctx The bundle context
+ * @param serviceName The target service name for the service tracker to track.
+ *                      If NULL is provided, add/remove callbacks will be called for all service trackers in the framework.
+ * @param callbackHandle The callback handle which will be provided as handle in the trackerAdd and trackerRemove callback.
+ * @param trackerAdd Called when a service tracker is added, which tracks the provided service name. Will also be called
+ *                   for all existing service tracker when this tracker is started.
+ * @param trackerRemove Called when a service tracker is removed, which tracks the provided service name
+ * @param doneCallbackData call back data argument provided to the done callback function.
+ * @param doneCallback If not NULL will be called when the service tracker tracker is created.
+ * @return The tracker id or <0 if something went wrong (will log an error).
+ */
+long celix_bundleContext_trackServiceTrackersAsync(
+        celix_bundle_context_t *ctx,
+        const char *serviceName,
+        void *callbackHandle,
+        void (*trackerAdd)(void *handle, const celix_service_tracker_info_t *info),
+        void (*trackerRemove)(void *handle, const celix_service_tracker_info_t *info),
+        void *doneCallbackData,
+        void (*doneCallback)(void* doneCallbackData));
+
+/**
+ * Track the service tracker targeting the provided service name. This can be used to track if there is an interest
+ * in a certain service and ad-hoc act on that interest.
+ *
+ * Note that the celix_service_tracker_info_t pointer in the trackerAdd/trackerRemove callbacks are only valid during
+ * the callback.
+ *
+ * Note: Please use celix_bundleContext_trackServiceTrackersAsync instead.
+ *
+ * This tracker can be stopped with the celix_bundleContext_stopTracker function.
+ *
  * @param ctx The bundle context
  * @param serviceName The target service name for the service tracker to track.
  *                      If NULL is provided, add/remove callbacks will be called for all service trackers in the framework.
@@ -919,7 +1098,7 @@ long celix_bundleContext_trackServiceTrackers(
         const char *serviceName,
         void *callbackHandle,
         void (*trackerAdd)(void *handle, const celix_service_tracker_info_t *info),
-        void (*trackerRemove)(void *handle, const celix_service_tracker_info_t *info));
+        void (*trackerRemove)(void *handle, const celix_service_tracker_info_t *info)); //__attribute__((deprecated("Use celix_bundleContext_trackServiceTrackersAsync instead!")));
 
 /**
  * Gets the dependency manager for this bundle context.

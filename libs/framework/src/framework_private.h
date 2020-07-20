@@ -41,7 +41,7 @@
 #include "celix_threads.h"
 #include "service_registry.h"
 
-#define CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE 64
+#define CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE 256
 
 typedef struct celix_framework_bundle_entry {
     celix_bundle_t *bnd;
@@ -56,7 +56,8 @@ enum celix_framework_event_type {
     CELIX_FRAMEWORK_EVENT_TYPE      = 0x01,
     CELIX_BUNDLE_EVENT_TYPE         = 0x11,
     CELIX_REGISTER_SERVICE_EVENT    = 0x21,
-    CELIX_UNREGISTER_SERVICE_EVENT  = 0x22
+    CELIX_UNREGISTER_SERVICE_EVENT  = 0x22,
+    CELIX_GENERIC_EVENT             = 0x30
 };
 
 typedef enum celix_framework_event_type celix_framework_event_type_e;
@@ -64,6 +65,9 @@ typedef enum celix_framework_event_type celix_framework_event_type_e;
 struct celix_framework_event {
     celix_framework_event_type_e type;
     celix_framework_bundle_entry_t* bndEntry;
+
+    void *doneData;
+    void (*doneCallback)(void*);
 
     //for framework event
     framework_event_type_e fwEvent;
@@ -84,6 +88,13 @@ struct celix_framework_event {
 
     //for unregister event
     long unregisterServiceId;
+
+    //for the generic event
+    long genericEventId;
+    const char* genericEventName;
+    void *genericProcessData;
+    void (*genericProcess)(void*);
+
 };
 
 typedef struct celix_framework_event celix_framework_event_t;
@@ -133,6 +144,8 @@ struct celix_framework {
     } dispatcher;
 
     celix_framework_logger_t* logger;
+
+    long nextGenericEventId;
 };
 
 FRAMEWORK_EXPORT celix_status_t fw_getProperty(framework_pt framework, const char* name, const char* defaultValue, const char** value);
@@ -207,12 +220,22 @@ long celix_framework_registerService(framework_t *fw, celix_bundle_t *bnd, const
  * register service or service factory async. Will return a svc id directly and return a service registration in a callback.
  * callback is called on the fw event loop thread
  */
-long celix_framework_registerServiceAsync(framework_t *fw, celix_bundle_t *bnd, const char* serviceName, void* svc, celix_service_factory_t* factory, celix_properties_t *properties, void* data, void(*callback)(void *data, long serviceId));
+long celix_framework_registerServiceAsync(
+        framework_t *fw,
+        celix_bundle_t *bnd,
+        const char* serviceName,
+        void* svc,
+        celix_service_factory_t* factory,
+        celix_properties_t *properties,
+        void* registerDoneData,
+        void(*registerDoneCallback)(void *registerDoneData, long serviceId),
+        void* eventDoneData,
+        void (*eventDoneCallback)(void* eventDoneData));
 
 /**
  * Unregister service async on the event loop thread.
  */
-void celix_framework_unregisterAsync(celix_framework_t* fw, celix_bundle_t* bnd, long serviceId);
+void celix_framework_unregisterAsync(celix_framework_t* fw, celix_bundle_t* bnd, long serviceId, void *doneData, void (*doneCallback)(void*));
 
 /**
  * Unregister service
@@ -240,7 +263,22 @@ void celix_framework_waitForAsyncUnregistration(framework_t *fw, long svcId);
 bool celix_framework_isCurrentThreadTheEventLoop(framework_t* fw);
 
 
+/**
+ * Fire a generic event. The event will be added to the event loop and handled on the event loop thread.
+ *
+ * if bndId >=0 the bundle usage count will be increased while the event is not yet processed or finished processing.
+ * The eventName is expected to be const char* valid during til the event is finished processing.
+ *
+ * if eventId >=0 this will be used, otherwise a new event id will be generated
+ * return eventId
+ */
+long celix_framework_fireGenericEvent(framework_t* fw, long eventId, long bndId, const char *eventName, void* processData, void (*processCallback)(void *data), void* doneData, void (*doneCallback)(void* doneData));
 
+//get the next event id
+long celix_framework_nextEventId(framework_t *fw);
+
+//wait til generic event is processed.
+void celix_framework_waitForGenericEvent(framework_t *fw, long eventId);
 
 
 #endif /* FRAMEWORK_PRIVATE_H_ */

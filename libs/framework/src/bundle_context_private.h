@@ -25,19 +25,36 @@
 #include "bundle_listener.h"
 #include "celix_bundle_context.h"
 #include "listener_hook_service.h"
+#include "service_tracker.h"
 
 typedef struct celix_bundle_context_bundle_tracker_entry {
 	celix_bundle_context_t *ctx;
 	long trackerId;
 	bundle_listener_t listener;
 	celix_bundle_tracking_options_t opts;
+
+	//used for sync
+	long createEventId;
+	long destroyEventId;
 } celix_bundle_context_bundle_tracker_entry_t;
 
+typedef struct celix_bundle_context_service_tracker_entry {
+	celix_bundle_context_t *ctx;
+	long trackerId;
+    celix_service_tracking_options_t opts;
+	celix_service_tracker_t* tracker;
+
+    //used for sync
+    long createEventId;
+    long destroyEventId;
+} celix_bundle_context_service_tracker_entry_t;
+
 typedef struct celix_bundle_context_service_tracker_tracker_entry {
+	celix_bundle_context_t* ctx;
 	long trackerId;
 
 	struct listener_hook_service hook;
-	service_registration_t *hookReg;
+	long svcId;
 
 	char *serviceName;
 	void *callbackHandle;
