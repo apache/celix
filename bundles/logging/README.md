@@ -1,3 +1,7 @@
+---
+title: Logging Facilities
+---
+
 # Celix Logging Facilities
 
 The Celix Logging facility is service oriented and logging technology agnostic logging solution.

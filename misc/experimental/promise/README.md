@@ -1,3 +1,7 @@
+---
+title: Promises
+---
+
 # Celix Promises
 
 Celix Promises are based on the OSGI Promises (OSGi Compendium Release 7 Specification, Chapter 705).
