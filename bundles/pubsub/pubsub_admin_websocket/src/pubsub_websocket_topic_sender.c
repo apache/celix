@@ -350,6 +350,8 @@ static int psa_websocket_topicPublicationSend(void* handle, unsigned int msgType
         }
     } else if (entry == NULL){
         L_WARN("[PSA_WEBSOCKET_TS] Error sending message with msg type id %i for scope/topic %s/%s", msgTypeId, sender->scope == NULL ? "(null)" : sender->scope, sender->topic);
+    } else { // when (sender->sockConnection == NULL) we dont have a client, but we do have a valid entry
+    	status = CELIX_SUCCESS; // Not an error, just nothing to do
     }
 
     return status;
