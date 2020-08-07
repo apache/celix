@@ -76,8 +76,10 @@ bool operator==( const char *c, const NonTrivialType &ntt) {
     return c == ntt.val;
 }
 
+#ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunused-result"
+#endif 
 
 TEST_F(PromiseTestSuite, simplePromise) {
     auto deferred =  factory.deferred<NonTrivialType>();
@@ -464,4 +466,7 @@ TEST_F(PromiseTestSuite, nonMovableStructTemporary) {
     t.join();
 }
 
+#ifdef __clang__
 #pragma clang diagnostic pop
+#endif
+

@@ -30,9 +30,10 @@ public:
     celix::PromiseFactory factory{ tbb::task_arena{5, 1} };
 };
 
+#ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunused-result"
-
+#endif
 
 TEST_F(VoidPromiseTestSuite, simplePromise) {
     auto deferred =  factory.deferred<void>();
@@ -353,4 +354,6 @@ TEST_F(VoidPromiseTestSuite, failedResolvedWithPromiseFactory) {
     EXPECT_TRUE(p2.getValue());
 }
 
+#ifdef __clang__
 #pragma clang diagnostic pop
+#endif
