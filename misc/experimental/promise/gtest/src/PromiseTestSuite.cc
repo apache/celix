@@ -76,6 +76,9 @@ bool operator==( const char *c, const NonTrivialType &ntt) {
     return c == ntt.val;
 }
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-result"
+
 TEST_F(PromiseTestSuite, simplePromise) {
     auto deferred =  factory.deferred<NonTrivialType>();
     std::thread t{[&deferred] () {
@@ -460,3 +463,5 @@ TEST_F(PromiseTestSuite, nonMovableStructTemporary) {
     EXPECT_EQ(42, deferred.getPromise().getValue());
     t.join();
 }
+
+#pragma clang diagnostic pop

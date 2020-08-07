@@ -30,6 +30,8 @@ public:
     celix::PromiseFactory factory{ tbb::task_arena{5, 1} };
 };
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-result"
 
 
 TEST_F(VoidPromiseTestSuite, simplePromise) {
@@ -350,3 +352,5 @@ TEST_F(VoidPromiseTestSuite, failedResolvedWithPromiseFactory) {
     EXPECT_TRUE(p2.isDone());
     EXPECT_TRUE(p2.getValue());
 }
+
+#pragma clang diagnostic pop
