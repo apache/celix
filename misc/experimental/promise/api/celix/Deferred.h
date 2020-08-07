@@ -29,6 +29,11 @@
 #include <tbb/task_group.h>
 #include <tbb/task_scheduler_observer.h>
 #if __has_include(<tbb/global_control.h>)
+
+#if TBB_INTERFACE_VERSION_MAJOR < 12
+#define TBB_PREVIEW_GLOBAL_CONTROL 1
+#endif
+
 #include <tbb/global_control.h>
 #else
 // deprecated in newer versions of TBB
