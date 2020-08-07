@@ -52,7 +52,7 @@ if (PROMISE OR PROMISE_STANDALONE)
         $<INSTALL_INTERFACE:include/celix/promise>
     )
     target_link_libraries(Promise INTERFACE TBB::tbb Threads::Threads)
-    target_compile_options(Promise INTERFACE -frtti -std=c++17) #Note needed for TBB
+    target_compile_options(Promise INTERFACE -frtti -std=c++17) #Note -frtti needed for TBB
     add_library(Celix::Promise ALIAS Promise)
 
     add_executable(PromiseExamples src/PromiseExamples.cc)
