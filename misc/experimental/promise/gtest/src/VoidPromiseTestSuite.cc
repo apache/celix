@@ -23,35 +23,32 @@
 
 #include "celix/PromiseFactory.h"
 
-class PromiseTestSuite : public ::testing::Test {
+class VoidPromiseTestSuite : public ::testing::Test {
 public:
-    ~PromiseTestSuite() override = default;
+    ~VoidPromiseTestSuite() override = default;
 
     celix::PromiseFactory factory{ tbb::task_arena{5, 1} };
 };
 
 
 
-TEST_F(PromiseTestSuite, simplePromise) {
-    auto deferred =  factory.deferred<long>();
+TEST_F(VoidPromiseTestSuite, simplePromise) {
+    auto deferred =  factory.deferred<void>();
     std::thread t{[deferred] () mutable { //TODO TBD make deferred a shared_ptr to prevent need for mutable?
         std::this_thread::sleep_for(std::chrono::milliseconds{50});
-        deferred.resolve(42);
+        deferred.resolve();
     }};
     auto promise = deferred.getPromise();
-    EXPECT_EQ(42, promise.getValue()); //block until ready
+    EXPECT_TRUE(promise.getValue()); //block until ready
     EXPECT_TRUE(promise.isDone()); //got value, so promise is done
     EXPECT_ANY_THROW(promise.getFailure()); //succeeded, so no exception available
 
-    EXPECT_EQ(42, promise.getValue()); //note multiple call are valid;
-
-    EXPECT_EQ(42, promise.moveValue()); //data is now moved
-    EXPECT_THROW(promise.getValue(), celix::PromiseInvocationException); //data is already moved -> exception
+    EXPECT_TRUE(promise.getValue()); //note multiple call are valid;
     t.join();
 }
 
-TEST_F(PromiseTestSuite, failingPromise) {
-    auto deferred =  factory.deferred<long>();
+TEST_F(VoidPromiseTestSuite, failingPromise) {
+    auto deferred =  factory.deferred<void>();
     auto cpy = deferred;
     std::thread t{[deferred] () mutable {
         deferred.fail(std::logic_error{"failing"});
@@ -62,8 +59,8 @@ TEST_F(PromiseTestSuite, failingPromise) {
     t.join();
 }
 
-TEST_F(PromiseTestSuite, failingPromiseWithExceptionPtr) {
-    auto deferred =  factory.deferred<long>();
+TEST_F(VoidPromiseTestSuite, failingPromiseWithExceptionPtr) {
+    auto deferred =  factory.deferred<void>();
     std::thread t{[&deferred]{
         try {
             std::string{}.at(1); // this generates an std::out_of_range
@@ -78,31 +75,30 @@ TEST_F(PromiseTestSuite, failingPromiseWithExceptionPtr) {
     t.join();
 }
 
-TEST_F(PromiseTestSuite, onSuccessHandling) {
-    auto deferred =  factory.deferred<long>();
+TEST_F(VoidPromiseTestSuite, onSuccessHandling) {
+    auto deferred =  factory.deferred<void>();
     bool called = false;
     bool resolveCalled = false;
     auto p = deferred.getPromise()
-        .onSuccess([&called](long value) {
-            EXPECT_EQ(42, value);
+        .onSuccess([&called]() {
             called = true;
         })
         .onResolve([&resolveCalled]() {
             resolveCalled = true;
         });
-    deferred.resolve(42);
+    deferred.resolve();
     p.wait();
     EXPECT_EQ(true, called);
     EXPECT_EQ(true, resolveCalled);
 }
 
-TEST_F(PromiseTestSuite, onFailureHandling) {
-    auto deferred =  factory.deferred<long>();
+TEST_F(VoidPromiseTestSuite, onFailureHandling) {
+    auto deferred =  factory.deferred<void>();
     bool successCalled = false;
     bool failureCalled = false;
     bool resolveCalled = false;
     auto p = deferred.getPromise()
-            .onSuccess([&](long /*value*/) {
+            .onSuccess([&]() {
                 successCalled = true;
             })
             .onFailure([&](const std::exception &e) {
@@ -124,14 +120,13 @@ TEST_F(PromiseTestSuite, onFailureHandling) {
     EXPECT_EQ(true, resolveCalled);
 }
 
-TEST_F(PromiseTestSuite, resolveSuccessWith) {
-    auto deferred1 = factory.deferred<long>();
-    auto deferred2 = factory.deferred<long>();
+TEST_F(VoidPromiseTestSuite, resolveSuccessWith) {
+    auto deferred1 = factory.deferred<void>();
+    auto deferred2 = factory.deferred<void>();
 
     bool called = false;
     deferred1.getPromise()
-            .onSuccess([&called](long value) {
-                EXPECT_EQ(42, value);
+            .onSuccess([&called]() {
                 called = true;
             });
 
@@ -139,18 +134,18 @@ TEST_F(PromiseTestSuite, resolveSuccessWith) {
     //now resolving deferred2 with the promise of deferred1
     deferred2.resolveWith(deferred1.getPromise());
     auto p = deferred2.getPromise();
-    deferred1.resolve(42);
+    deferred1.resolve();
     p.wait();
     EXPECT_EQ(true, called);
 }
 
-TEST_F(PromiseTestSuite, resolveFailureWith) {
-    auto deferred1 = factory.deferred<long>();
-    auto deferred2 = factory.deferred<long>();
+TEST_F(VoidPromiseTestSuite, resolveFailureWith) {
+    auto deferred1 = factory.deferred<void>();
+    auto deferred2 = factory.deferred<void>();
     bool failureCalled = false;
     bool successCalled = false;
     deferred2.getPromise()
-            .onSuccess([&](long /*value*/) {
+            .onSuccess([&]() {
                 successCalled = true;
             })
             .onFailure([&](const std::exception &e) {
@@ -173,12 +168,12 @@ TEST_F(PromiseTestSuite, resolveFailureWith) {
     EXPECT_EQ(true, failureCalled);
 }
 
-TEST_F(PromiseTestSuite, resolveWithTimeout) {
-    auto deferred1 = factory.deferred<long>();
+TEST_F(VoidPromiseTestSuite, resolveWithTimeout) {
+    auto deferred1 = factory.deferred<void>();
     std::thread t{[&deferred1]{
         std::this_thread::sleep_for(std::chrono::milliseconds{50});
         try {
-            deferred1.resolve(42);
+            deferred1.resolve();
         } catch(...) {
             //note resolve with throws an exception if promise is already resolved
         }
@@ -188,13 +183,11 @@ TEST_F(PromiseTestSuite, resolveWithTimeout) {
     bool secondSuccessCalled = false;
     bool secondFailedCalled = false;
     auto p = deferred1.getPromise()
-            .onSuccess([&firstSuccessCalled](long value) {
-                EXPECT_EQ(42, value);
+            .onSuccess([&firstSuccessCalled]() {
                 firstSuccessCalled = true;
             })
             .timeout(std::chrono::milliseconds{10})
-            .onSuccess([&secondSuccessCalled](long value) {
-                EXPECT_EQ(42, value);
+            .onSuccess([&secondSuccessCalled]() {
                 secondSuccessCalled = true;
             })
             .onFailure([&secondFailedCalled](const std::exception&) {
@@ -210,13 +203,11 @@ TEST_F(PromiseTestSuite, resolveWithTimeout) {
     secondSuccessCalled = false;
     secondFailedCalled = false;
     auto p2 = deferred1.getPromise()
-            .onSuccess([&firstSuccessCalled](long value) {
-                EXPECT_EQ(42, value);
+            .onSuccess([&firstSuccessCalled]() {
                 firstSuccessCalled = true;
             })
             .timeout(std::chrono::milliseconds{50})
-            .onSuccess([&secondSuccessCalled](long value) {
-                EXPECT_EQ(42, value);
+            .onSuccess([&secondSuccessCalled]() {
                 secondSuccessCalled = true;
             })
             .onFailure([&secondFailedCalled](const std::exception&) {
@@ -228,23 +219,22 @@ TEST_F(PromiseTestSuite, resolveWithTimeout) {
     EXPECT_EQ(false, secondFailedCalled);
 }
 
-TEST_F(PromiseTestSuite, resolveWithDelay) {
-    auto deferred1 = factory.deferred<long>();
+TEST_F(VoidPromiseTestSuite, resolveWithDelay) {
+    auto deferred1 = factory.deferred<void>();
     bool successCalled = false;
     bool failedCalled = false;
     auto t1 = std::chrono::system_clock::now();
     std::chrono::system_clock::time_point t2;
     auto p = deferred1.getPromise()
             .delay(std::chrono::milliseconds{50})
-            .onSuccess([&successCalled, &t2](long value) {
-                EXPECT_EQ(42, value);
+            .onSuccess([&successCalled, &t2]() {
                 successCalled = true;
                 t2 = std::chrono::system_clock::now();
             })
             .onFailure([&failedCalled](const std::exception&) {
                 failedCalled = true;
             });
-    deferred1.resolve(42);
+    deferred1.resolve();
     p.wait();
     EXPECT_EQ(true, successCalled);
     EXPECT_EQ(false, failedCalled);
@@ -253,13 +243,12 @@ TEST_F(PromiseTestSuite, resolveWithDelay) {
 }
 
 
-TEST_F(PromiseTestSuite, resolveWithRecover) {
-    auto deferred1 = factory.deferred<long>();
+TEST_F(VoidPromiseTestSuite, resolveWithRecover) {
+    auto deferred1 = factory.deferred<void>();
     bool successCalled = false;
     deferred1.getPromise()
             .recover([]{ return 42; })
-            .onSuccess([&successCalled](long v) {
-                EXPECT_EQ(42, v);
+            .onSuccess([&successCalled]() {
                 successCalled = true;
             });
     try {
@@ -270,62 +259,50 @@ TEST_F(PromiseTestSuite, resolveWithRecover) {
     EXPECT_EQ(true, successCalled);
 }
 
-TEST_F(PromiseTestSuite, chainAndMapResult) {
-    auto deferred1 = factory.deferred<long>();
+TEST_F(VoidPromiseTestSuite, chainAndMapResult) {
+    auto deferred1 = factory.deferred<void>();
     std::thread t{[&deferred1]{
-        deferred1.resolve(42);
+        deferred1.resolve();
     }};
-    int half = deferred1.getPromise()
-            .map<int>([](long v) {
-                return (int)v/2;
+    int two = deferred1.getPromise()
+            .map<int>([]() {
+                return 2;
             }).getValue();
     t.join();
-    EXPECT_EQ(21, half);
+    EXPECT_EQ(2, two);
 }
 
-TEST_F(PromiseTestSuite, chainWithThenAccept) {
-    auto deferred1 = factory.deferred<long>();
+TEST_F(VoidPromiseTestSuite, chainWithThenAccept) {
+    auto deferred1 = factory.deferred<void>();
     bool called = false;
     deferred1.getPromise()
-            .thenAccept([&called](long v){
-                EXPECT_EQ(42, v);
+            .thenAccept([&called](){
                 called = true;
             });
-    deferred1.resolve(42);
+    deferred1.resolve();
     EXPECT_TRUE(called);
 }
 
-TEST_F(PromiseTestSuite, promiseWithFallbackTo) {
-    celix::Deferred<long> deferred1 = factory.deferred<long>();
+TEST_F(VoidPromiseTestSuite, promiseWithFallbackTo) {
+    auto deferred1 = factory.deferred<void>();
     try {
         throw std::logic_error("failure");
     } catch (...) {
         deferred1.fail(std::current_exception());
     }
 
-    auto deferred2 = factory.deferred<long>();
-    deferred2.resolve(42);
+    auto deferred2 = factory.deferred<void>();
+    deferred2.resolve();
 
 
     long val = deferred1.getPromise().fallbackTo(deferred2.getPromise()).getValue();
-    EXPECT_EQ(42, val);
+    EXPECT_TRUE(val);
 }
 
-TEST_F(PromiseTestSuite, promiseWithPredicate) {
-    auto deferred1 = factory.deferred<long>();
-    std::thread t1{[&deferred1]{
-        deferred1.resolve(42);
-    }};
-
-    EXPECT_ANY_THROW(deferred1.getPromise().filter([](long v) {return v == 0; }).getValue());
-    EXPECT_EQ(42, deferred1.getPromise().filter([](long v) {return v == 42; }).getValue());
-    t1.join();
-}
-
-TEST_F(PromiseTestSuite, outOfScopeUnresolvedPromises) {
+TEST_F(VoidPromiseTestSuite, outOfScopeUnresolvedPromises) {
     bool called = false;
     {
-        auto deferred1 = factory.deferred<long>();
+        auto deferred1 = factory.deferred<void>();
         deferred1.getPromise().onResolve([&]{
             called = true;
         });
@@ -334,41 +311,42 @@ TEST_F(PromiseTestSuite, outOfScopeUnresolvedPromises) {
     EXPECT_FALSE(called);
 }
 
-TEST_F(PromiseTestSuite, chainPromises) {
-    auto success = [](celix::Promise<long> p) -> celix::Promise<long> {
+TEST_F(VoidPromiseTestSuite, chainPromises) {
+    auto success = [](celix::Promise<void> p) -> celix::Promise<long> {
         //TODO Promises::resolved(p.getValue() + p.getValue())
         celix::Deferred<long> result;
-        result.resolve(p.getValue() + p.getValue());
+        p.getValue();
+        result.resolve(42);
         return result.getPromise();
     };
-    celix::Deferred<long> initial;
-    initial.resolve(42);
-    long result = initial.getPromise().then<long>(success).then<long>(success).getValue();
-    EXPECT_EQ(168, result);
+    celix::Deferred<void> initial;
+    initial.resolve();
+    long result = initial.getPromise().then<long>(success).getValue();
+    EXPECT_EQ(42, result);
 }
 
-TEST_F(PromiseTestSuite, chainFailedPromises) {
+TEST_F(VoidPromiseTestSuite, chainFailedPromises) {
     bool called = false;
-    auto success = [](celix::Promise<long> p) -> celix::Promise<long> {
+    auto success = [](celix::Promise<void> p) -> celix::Promise<void> {
         //nop
         return p;
     };
-    auto failed = [&called](const celix::Promise<long>& /*p*/) -> void {
+    auto failed = [&called](const celix::Promise<void>& /*p*/) -> void {
         called = true;
     };
-    celix::Deferred<long> deferred;
+    celix::Deferred<void> deferred;
     deferred.fail(std::logic_error{"fail"});
-    deferred.getPromise().then<long>(success, failed).wait();
+    deferred.getPromise().then<void>(success, failed).wait();
     EXPECT_TRUE(called);
 }
 
-TEST_F(PromiseTestSuite, failedResolvedWithPromiseFactory) {
+TEST_F(VoidPromiseTestSuite, failedResolvedWithPromiseFactory) {
     auto factory = celix::PromiseFactory{};
-    auto p1 = factory.failed<long>(std::logic_error{"test"});
+    auto p1 = factory.failed<void>(std::logic_error{"test"});
     EXPECT_TRUE(p1.isDone());
     EXPECT_NE(nullptr, p1.getFailure());
 
-    auto p2 = factory.resolved(42);
+    auto p2 = factory.resolved();
     EXPECT_TRUE(p2.isDone());
-    EXPECT_EQ(42, p2.getValue());
+    EXPECT_TRUE(p2.getValue());
 }

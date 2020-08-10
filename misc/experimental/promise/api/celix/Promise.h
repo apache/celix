@@ -241,7 +241,7 @@ namespace celix {
          * @param the consumer callback
          * @returns A new Promise which is chained to this Promise. The returned Promise must be resolved when this Promise is resolved after the specified Consumer is executed.
          */
-         Promise<T> thenAccept(std::function<void(T)> consumer);
+        Promise<T> thenAccept(std::function<void(T)> consumer);
 
         /**
          * Fall back to the value of the specified Promise if this Promise fails.
@@ -384,6 +384,52 @@ namespace celix {
         celix::Promise<U> then(std::function<celix::Promise<U>(celix::Promise<T>)> success, std::function<void(celix::Promise<T>)> failure = {});
     private:
         const std::shared_ptr<celix::impl::SharedPromiseState<T>> state;
+
+        friend class Promise<void>;
+    };
+
+    template<>
+    class Promise<void> {
+    public:
+        using type = void;
+
+        explicit Promise(std::shared_ptr<celix::impl::SharedPromiseState<void>> s);
+
+        bool isDone() const;
+
+        bool isSuccessfullyResolved() const;
+
+        std::exception_ptr getFailure() const;
+
+        bool getValue() const; // NOLINT(modernize-use-nodiscard)
+
+        void wait() const; //NOTE not part of the OSGI promise, wait till resolved (used in testing)
+
+        Promise<void>& onSuccess(std::function<void()> success);
+
+        Promise<void>& onFailure(std::function<void(const std::exception&)> failure);
+
+        Promise<void>& onResolve(std::function<void()> callback);
+
+        Promise<void> recover(std::function<void()> recover);
+
+        Promise<void> thenAccept(std::function<void()> consumer);
+
+        Promise<void> fallbackTo(celix::Promise<void> fallback);
+
+        template<typename R>
+        celix::Promise<R> map(std::function<R()> mapper);
+
+        template<typename Rep, typename Period>
+        Promise<void> timeout(std::chrono::duration<Rep, Period> duration);
+
+        template<typename Rep, typename Period>
+        Promise<void> delay(std::chrono::duration<Rep, Period> duration);
+
+        template<typename U>
+        celix::Promise<U> then(std::function<celix::Promise<U>(celix::Promise<void>)> success, std::function<void(celix::Promise<void>)> failure = {});
+    private:
+        const std::shared_ptr<celix::impl::SharedPromiseState<void>> state;
     };
 }
 
@@ -396,9 +442,15 @@ namespace celix {
 template<typename T>
 inline celix::Promise<T>::Promise(std::shared_ptr<celix::impl::SharedPromiseState<T>> s) : state{std::move(s)} {
 }
+inline celix::Promise<void>::Promise(std::shared_ptr<celix::impl::SharedPromiseState<void>> s) : state{std::move(s)} {
+}
 
 template<typename T>
 inline const T& celix::Promise<T>::getValue() const {
+    return state->getValue();
+}
+
+inline bool celix::Promise<void>::getValue() const {
     return state->getValue();
 }
 
@@ -412,8 +464,16 @@ inline bool celix::Promise<T>::isDone() const {
     return state->isDone();
 }
 
+inline bool celix::Promise<void>::isDone() const {
+    return state->isDone();
+}
+
 template<typename T>
 inline bool celix::Promise<T>::isSuccessfullyResolved() const  {
+    return state->isSuccessfullyResolved();
+}
+
+inline bool celix::Promise<void>::isSuccessfullyResolved() const  {
     return state->isSuccessfullyResolved();
 }
 
@@ -422,8 +482,17 @@ inline std::exception_ptr celix::Promise<T>::getFailure() const {
     return state->getFailure();
 }
 
+inline std::exception_ptr celix::Promise<void>::getFailure() const {
+    return state->getFailure();
+}
+
 template<typename T>
 inline celix::Promise<T>& celix::Promise<T>::onSuccess(std::function<void(T)> success) {
+    state->addOnSuccessConsumeCallback(std::move(success));
+    return *this;
+}
+
+inline celix::Promise<void>& celix::Promise<void>::onSuccess(std::function<void()> success) {
     state->addOnSuccessConsumeCallback(std::move(success));
     return *this;
 }
@@ -434,8 +503,18 @@ inline celix::Promise<T>& celix::Promise<T>::onFailure(std::function<void(const 
     return *this;
 }
 
+inline celix::Promise<void>& celix::Promise<void>::onFailure(std::function<void(const std::exception&)> failure) {
+    state->addOnFailureConsumeCallback(std::move(failure));
+    return *this;
+}
+
 template<typename T>
 inline celix::Promise<T>& celix::Promise<T>::onResolve(std::function<void()> callback) {
+    state->addChain(std::move(callback));
+    return *this;
+}
+
+inline celix::Promise<void>& celix::Promise<void>::onResolve(std::function<void()> callback) {
     state->addChain(std::move(callback));
     return *this;
 }
@@ -446,20 +525,39 @@ inline celix::Promise<T> celix::Promise<T>::timeout(std::chrono::duration<Rep, P
     return celix::Promise<T>{celix::impl::SharedPromiseState<T>::timeout(state, duration)};
 }
 
+template<typename Rep, typename Period>
+inline celix::Promise<void> celix::Promise<void>::timeout(std::chrono::duration<Rep, Period> duration) {
+    return celix::Promise<void>{celix::impl::SharedPromiseState<void>::timeout(state, duration)};
+}
+
 template<typename T>
 template<typename Rep, typename Period>
 inline celix::Promise<T> celix::Promise<T>::delay(std::chrono::duration<Rep, Period> duration) {
     return celix::Promise<T>{state->delay(duration)};
 }
 
+template<typename Rep, typename Period>
+inline celix::Promise<void> celix::Promise<void>::delay(std::chrono::duration<Rep, Period> duration) {
+    return celix::Promise<void>{state->delay(duration)};
+}
+
 template<typename T>
 inline celix::Promise<T> celix::Promise<T>::recover(std::function<T()> recover) {
     return celix::Promise<T>{state->recover(std::move(recover))};
-};
+}
+
+inline celix::Promise<void> celix::Promise<void>::recover(std::function<void()> recover) {
+    return celix::Promise<void>{state->recover(std::move(recover))};
+}
 
 template<typename T>
 template<typename R>
 inline celix::Promise<R> celix::Promise<T>::map(std::function<R(T)> mapper) {
+    return celix::Promise<R>{state->map(std::move(mapper))};
+}
+
+template<typename R>
+inline celix::Promise<R> celix::Promise<void>::map(std::function<R()> mapper) {
     return celix::Promise<R>{state->map(std::move(mapper))};
 }
 
@@ -469,9 +567,17 @@ inline celix::Promise<T> celix::Promise<T>::thenAccept(std::function<void(T)> co
     return celix::Promise<T>{state->thenAccept(std::move(consumer))};
 }
 
+inline celix::Promise<void> celix::Promise<void>::thenAccept(std::function<void()> consumer) {
+    return celix::Promise<void>{state->thenAccept(std::move(consumer))};
+}
+
 template<typename T>
 inline celix::Promise<T> celix::Promise<T>::fallbackTo(celix::Promise<T> fallback) {
     return celix::Promise<T>{state->fallbackTo(fallback.state)};
+}
+
+inline celix::Promise<void> celix::Promise<void>::fallbackTo(celix::Promise<void> fallback) {
+    return celix::Promise<void>{state->fallbackTo(fallback.state)};
 }
 
 template<typename T>
@@ -481,6 +587,10 @@ inline celix::Promise<T> celix::Promise<T>::filter(std::function<bool(T)> predic
 
 template<typename T>
 inline void celix::Promise<T>::wait() const {
+    state->wait();
+}
+
+inline void celix::Promise<void>::wait() const {
     state->wait();
 }
 
@@ -503,6 +613,32 @@ inline celix::Promise<U> celix::Promise<T>::then(std::function<celix::Promise<U>
         } else {
             if (failure) {
                 failure(celix::Promise<T>{s});
+            }
+            p->fail(s->getFailure());
+        }
+    };
+    state->addChain(std::move(chain));
+    return celix::Promise<U>{p};
+}
+
+template<typename U>
+inline celix::Promise<U> celix::Promise<void>::then(std::function<celix::Promise<U>(celix::Promise<void>)> success, std::function<void(celix::Promise<void>)> failure) {
+    auto s = state;
+    auto p = std::make_shared<celix::impl::SharedPromiseState<U>>(state->getExecutor());
+
+    auto chain = [s, p, success, failure]() {
+        //chain is called when s is resolved
+        if (s->isSuccessfullyResolved()) {
+            try {
+                auto tmpPromise = success(celix::Promise<void>{s});
+                p->resolveWith(tmpPromise.state);
+            } catch (...) {
+                //failure(); TODO not sure if this needs to be called
+                p->fail(std::current_exception());
+            }
+        } else {
+            if (failure) {
+                failure(celix::Promise<void>{s});
             }
             p->fail(s->getFailure());
         }
