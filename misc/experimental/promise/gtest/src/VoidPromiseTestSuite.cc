@@ -30,11 +30,14 @@ public:
     celix::PromiseFactory factory{ tbb::task_arena{5, 1} };
 };
 
-
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-result"
+#endif
 
 TEST_F(VoidPromiseTestSuite, simplePromise) {
     auto deferred =  factory.deferred<void>();
-    std::thread t{[deferred] () mutable { //TODO TBD make deferred a shared_ptr to prevent need for mutable?
+    std::thread t{[&deferred] () {
         std::this_thread::sleep_for(std::chrono::milliseconds{50});
         deferred.resolve();
     }};
@@ -50,7 +53,7 @@ TEST_F(VoidPromiseTestSuite, simplePromise) {
 TEST_F(VoidPromiseTestSuite, failingPromise) {
     auto deferred =  factory.deferred<void>();
     auto cpy = deferred;
-    std::thread t{[deferred] () mutable {
+    std::thread t{[&deferred] () {
         deferred.fail(std::logic_error{"failing"});
     }};
     auto promise = deferred.getPromise();
@@ -350,3 +353,7 @@ TEST_F(VoidPromiseTestSuite, failedResolvedWithPromiseFactory) {
     EXPECT_TRUE(p2.isDone());
     EXPECT_TRUE(p2.getValue());
 }
+
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif

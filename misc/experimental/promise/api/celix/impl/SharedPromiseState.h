@@ -26,175 +26,180 @@
 #include <utility>
 #include <vector>
 #include <thread>
+#include <optional>
 
 #include <tbb/task_arena.h>
 
 #include "celix/PromiseInvocationException.h"
 #include "celix/PromiseTimeoutException.h"
 
-namespace celix {
-    namespace impl {
+namespace celix::impl {
 
-        template<typename T>
-        class SharedPromiseState {
-        public:
-            typedef typename std::aligned_storage<sizeof(T), std::alignment_of<T>::value>::type DataType;
+    template<typename T>
+    class SharedPromiseState {
+        // Pointers make using promises properly unnecessarily complicated.
+        static_assert(!std::is_pointer_v<T>, "Cannot use pointers with promises.");
+    public:
+        explicit SharedPromiseState(const tbb::task_arena &executor = {});
 
-            explicit SharedPromiseState(const tbb::task_arena &executor = {});
+        ~SharedPromiseState() = default;
 
-            ~SharedPromiseState();
+        void resolve(T&& value);
 
-            void resolve(T &&value);
+        void resolve(const T& value);
 
-            void resolve(const T& value);
+        void fail(std::exception_ptr e);
 
-            void fail(std::exception_ptr p);
+        void fail(const std::exception &e);
 
-            void fail(const std::exception &e);
+        void tryResolve(T &&value);
 
-            void tryResolve(T &&value);
+        void tryFail(std::exception_ptr e);
 
-            void tryFail(std::exception_ptr p);
+        // copy/move depending on situation
+        T& getValue() &;
+        const T& getValue() const &;
+        [[nodiscard]] T&& getValue() &&;
+        [[nodiscard]] const T&& getValue() const &&;
 
-            const T &getValue() const; //copy
-            T moveValue(); //move
-            std::exception_ptr getFailure() const;
+        // move if T is moveable
+        [[nodiscard]] T moveOrGetValue();
 
-            void wait() const;
+        [[nodiscard]] std::exception_ptr getFailure() const;
 
-            bool isDone() const;
+        void wait() const;
 
-            bool isSuccessfullyResolved() const;
+        [[nodiscard]] bool isDone() const;
 
-            void addOnSuccessConsumeCallback(std::function<void(T)> callback);
+        [[nodiscard]] bool isSuccessfullyResolved() const;
 
-            void addOnFailureConsumeCallback(std::function<void(const std::exception &)> callback);
+        void addOnSuccessConsumeCallback(std::function<void(T)> callback);
 
-            void addOnResolve(std::function<void(bool succeeded, T *val, std::exception_ptr exp)> callback);
+        void addOnFailureConsumeCallback(std::function<void(const std::exception &)> callback);
 
-            template<typename Rep, typename Period>
-            std::shared_ptr<SharedPromiseState<T>> delay(std::chrono::duration<Rep, Period> duration);
+        void addOnResolve(std::function<void(std::optional<T> val, std::exception_ptr exp)> callback);
 
-            std::shared_ptr<SharedPromiseState<T>> recover(std::function<T()> recover);
+        template<typename Rep, typename Period>
+        [[nodiscard]] std::shared_ptr<SharedPromiseState<T>> delay(std::chrono::duration<Rep, Period> duration);
 
-            std::shared_ptr<SharedPromiseState<T>> filter(std::function<bool(T)> predicate);
+        [[nodiscard]] std::shared_ptr<SharedPromiseState<T>> recover(std::function<T()> recover);
 
-            std::shared_ptr<SharedPromiseState<T>> fallbackTo(std::shared_ptr<SharedPromiseState<T>> fallbackTo);
+        [[nodiscard]] std::shared_ptr<SharedPromiseState<T>> filter(std::function<bool(const T&)> predicate);
 
-            void resolveWith(std::shared_ptr<SharedPromiseState<T>> with);
+        [[nodiscard]] std::shared_ptr<SharedPromiseState<T>> fallbackTo(std::shared_ptr<SharedPromiseState<T>> fallbackTo);
 
-            template<typename R>
-            std::shared_ptr<SharedPromiseState<R>> map(std::function<R(T)> mapper);
+        void resolveWith(std::shared_ptr<SharedPromiseState<T>> with);
 
-            std::shared_ptr<SharedPromiseState<T>> thenAccept(std::function<void(T)> consumer);
+        template<typename R>
+        [[nodiscard]] std::shared_ptr<SharedPromiseState<R>> map(std::function<R(T)> mapper);
 
-            template<typename Rep, typename Period>
-            static std::shared_ptr<SharedPromiseState<T>>
-            timeout(std::shared_ptr<SharedPromiseState<T>> state, std::chrono::duration<Rep, Period> duration);
+        [[nodiscard]] std::shared_ptr<SharedPromiseState<T>> thenAccept(std::function<void(T)> consumer);
 
-            void addChain(std::function<void()> chainFunction);
+        template<typename Rep, typename Period>
+        [[nodiscard]] static std::shared_ptr<SharedPromiseState<T>>
+        timeout(std::shared_ptr<SharedPromiseState<T>> state, std::chrono::duration<Rep, Period> duration);
 
-            tbb::task_arena getExecutor() const;
-        private:
-            /**
-             * Complete the resolving and call the registered tasks
-             * A reference to the possible locked unique_lock.
-             */
-            void complete(std::unique_lock<std::mutex> &lck);
+        void addChain(std::function<void()> chainFunction);
 
-            /**
-             * Wait for data and check if it resolved as expected (expects mutex locked)
-             */
-            void waitForAndCheckData(std::unique_lock<std::mutex> &lck, bool expectValid) const;
+        tbb::task_arena getExecutor() const;
+    private:
+        /**
+         * Complete the resolving and call the registered tasks
+         * A reference to the possible locked unique_lock.
+         */
+        void complete(std::unique_lock<std::mutex> &lck);
 
-            tbb::task_arena executor; //TODO look into different thread pool libraries
-            //TODO add ScheduledExecutorService like object
+        /**
+         * Wait for data and check if it resolved as expected (expects mutex locked)
+         */
+        void waitForAndCheckData(std::unique_lock<std::mutex> &lck, bool expectValid) const;
 
-            mutable std::mutex mutex{}; //protects below
-            mutable std::condition_variable cond{};
-            bool done = false;
-            bool dataMoved = false;
-            std::vector<std::function<void()>> chain{}; //chain tasks are executed on thread pool.
-            std::exception_ptr exp{nullptr};
-            DataType data{};
-        };
+        tbb::task_arena executor; //TODO look into different thread pool libraries
+        //TODO add ScheduledExecutorService like object
 
-        template<>
-        class SharedPromiseState<void> {
-        public:
-            explicit SharedPromiseState(const tbb::task_arena &executor = {});
+        mutable std::mutex mutex{}; //protects below
+        mutable std::condition_variable cond{};
+        bool done = false;
+        bool dataMoved = false;
+        std::vector<std::function<void()>> chain{}; //chain tasks are executed on thread pool.
+        std::exception_ptr exp{nullptr};
+        std::optional<T> data{};
+    };
 
-            ~SharedPromiseState() = default;
+    template<>
+    class SharedPromiseState<void> {
+    public:
+        explicit SharedPromiseState(const tbb::task_arena &executor = {});
 
-            void resolve();
+        ~SharedPromiseState() = default;
 
-            void fail(std::exception_ptr p);
+        void resolve();
 
-            void fail(const std::exception &e);
+        void fail(std::exception_ptr e);
 
-            void tryResolve();
+        void fail(const std::exception &e);
 
-            void tryFail(std::exception_ptr p);
+        void tryResolve();
 
-            bool getValue() const; //copy
-            std::exception_ptr getFailure() const;
+        void tryFail(std::exception_ptr e);
 
-            void wait() const;
+        bool getValue() const;
+        std::exception_ptr getFailure() const;
 
-            bool isDone() const;
+        void wait() const;
 
-            bool isSuccessfullyResolved() const;
+        bool isDone() const;
 
-            void addOnSuccessConsumeCallback(std::function<void()> callback);
+        bool isSuccessfullyResolved() const;
 
-            void addOnFailureConsumeCallback(std::function<void(const std::exception &)> callback);
+        void addOnSuccessConsumeCallback(std::function<void()> callback);
 
-            void addOnResolve(std::function<void(bool succeeded, std::exception_ptr exp)> callback);
+        void addOnFailureConsumeCallback(std::function<void(const std::exception &)> callback);
 
-            template<typename Rep, typename Period>
-            std::shared_ptr<SharedPromiseState<void>> delay(std::chrono::duration<Rep, Period> duration);
+        void addOnResolve(std::function<void(std::optional<std::exception_ptr> exp)> callback);
 
-            std::shared_ptr<SharedPromiseState<void>> recover(std::function<void()> recover);
+        template<typename Rep, typename Period>
+        std::shared_ptr<SharedPromiseState<void>> delay(std::chrono::duration<Rep, Period> duration);
 
-            std::shared_ptr<SharedPromiseState<void>> fallbackTo(std::shared_ptr<SharedPromiseState<void>> fallbackTo);
+        std::shared_ptr<SharedPromiseState<void>> recover(std::function<void()> recover);
 
-            void resolveWith(std::shared_ptr<SharedPromiseState<void>> with);
+        std::shared_ptr<SharedPromiseState<void>> fallbackTo(std::shared_ptr<SharedPromiseState<void>> fallbackTo);
 
-            template<typename R>
-            std::shared_ptr<SharedPromiseState<R>> map(std::function<R(void)> mapper);
+        void resolveWith(std::shared_ptr<SharedPromiseState<void>> with);
 
-            std::shared_ptr<SharedPromiseState<void>> thenAccept(std::function<void()> consumer);
+        template<typename R>
+        std::shared_ptr<SharedPromiseState<R>> map(std::function<R(void)> mapper);
 
-            template<typename Rep, typename Period>
-            static std::shared_ptr<SharedPromiseState<void>>
-            timeout(std::shared_ptr<SharedPromiseState<void>> state, std::chrono::duration<Rep, Period> duration);
+        std::shared_ptr<SharedPromiseState<void>> thenAccept(std::function<void()> consumer);
 
-            void addChain(std::function<void()> chainFunction);
+        template<typename Rep, typename Period>
+        static std::shared_ptr<SharedPromiseState<void>>
+        timeout(std::shared_ptr<SharedPromiseState<void>> state, std::chrono::duration<Rep, Period> duration);
 
-            tbb::task_arena getExecutor() const;
-        private:
-            /**
-             * Complete the resolving and call the registered tasks
-             * A reference to the possible locked unique_lock.
-             */
-            void complete(std::unique_lock<std::mutex> &lck);
+        void addChain(std::function<void()> chainFunction);
 
-            /**
-             * Wait for data and check if it resolved as expected (expects mutex locked)
-             */
-            void waitForAndCheckData(std::unique_lock<std::mutex> &lck, bool expectValid) const;
+        tbb::task_arena getExecutor() const;
+    private:
+        /**
+         * Complete the resolving and call the registered tasks
+         * A reference to the possible locked unique_lock.
+         */
+        void complete(std::unique_lock<std::mutex> &lck);
 
-            tbb::task_arena executor; //TODO look into different thread pool libraries
-            //TODO add ScheduledExecutorService like object
+        /**
+         * Wait for data and check if it resolved as expected (expects mutex locked)
+         */
+        void waitForAndCheckData(std::unique_lock<std::mutex> &lck, bool expectValid) const;
 
-            mutable std::mutex mutex{}; //protects below
-            mutable std::condition_variable cond{};
-            bool done = false;
-            bool dataMoved = false;
-            std::vector<std::function<void()>> chain{}; //chain tasks are executed on thread pool.
-            std::exception_ptr exp{nullptr};
-        };
-    }
+        tbb::task_arena executor; //TODO look into different thread pool libraries
+        //TODO add ScheduledExecutorService like object
+
+        mutable std::mutex mutex{}; //protects below
+        mutable std::condition_variable cond{};
+        bool done = false;
+        std::vector<std::function<void()>> chain{}; //chain tasks are executed on thread pool.
+        std::exception_ptr exp{nullptr};
+    };
 }
 
 
@@ -208,25 +213,17 @@ inline celix::impl::SharedPromiseState<T>::SharedPromiseState(const tbb::task_ar
 inline celix::impl::SharedPromiseState<void>::SharedPromiseState(const tbb::task_arena& _executor) : executor{_executor} {}
 
 template<typename T>
-inline celix::impl::SharedPromiseState<T>::~SharedPromiseState() {
-    std::unique_lock<std::mutex> lck{mutex};
-
-    //Note for now, not waiting until promise is met.
-    //Else if a deferred goes out of scope without resolving, a wait will block
-    //cond.wait(lck, [this]{return done;});
-
-    if (done && !exp && !dataMoved) {
-        static_cast<T*>(static_cast<void*>(&data))->~T();
-    }
-}
-
-template<typename T>
 inline void celix::impl::SharedPromiseState<T>::resolve(T&& value) {
     std::unique_lock<std::mutex> lck{mutex};
     if (done) {
         throw celix::PromiseInvocationException("Cannot resolve Promise. Promise is already done");
     }
-    new(&data) T{std::forward<T>(value)};
+    dataMoved = false;
+    if constexpr (std::is_move_constructible_v<T>) {
+        data = std::forward<T>(value);
+    } else {
+        data = value;
+    }
     exp = nullptr;
     complete(lck);
 }
@@ -238,7 +235,8 @@ inline void celix::impl::SharedPromiseState<T>::resolve(const T& value) {
     if (done) {
         throw celix::PromiseInvocationException("Cannot resolve Promise. Promise is already done");
     }
-    new(&data) T{value};
+    dataMoved = false;
+    data = value;
     exp = nullptr;
     complete(lck);
 }
@@ -284,7 +282,8 @@ template<typename T>
 inline void celix::impl::SharedPromiseState<T>::tryResolve(T&& value) {
     std::unique_lock<std::mutex> lck{mutex};
     if (!done) {
-        new(&data) T(std::forward<T>(value));
+        dataMoved = false;
+        data = std::forward<T>(value);
         exp = nullptr;
         complete(lck);
     }
@@ -345,7 +344,15 @@ inline void celix::impl::SharedPromiseState<T>::waitForAndCheckData(std::unique_
     }
     cond.wait(lck, [this]{return done;});
     if (expectValid && exp) {
-        throw celix::PromiseInvocationException{"Expected a succeeded promise, but promise failed"};
+        std::string what;
+        try {
+            std::rethrow_exception(exp);
+        } catch (const std::exception &e) {
+            what = e.what();
+        } catch (...) {
+            what = "unknown exception";
+        }
+        throw celix::PromiseInvocationException{"Expected a succeeded promise, but promise failed with message \"" + what + "\""};
     } else if(!expectValid && !exp && !dataMoved) {
         throw celix::PromiseInvocationException{"Expected a failed promise, but promise succeeded"};
     } else if (dataMoved) {
@@ -359,26 +366,64 @@ inline void celix::impl::SharedPromiseState<void>::waitForAndCheckData(std::uniq
     }
     cond.wait(lck, [this]{return done;});
     if (expectValid && exp) {
-        throw celix::PromiseInvocationException{"Expected a succeeded promise, but promise failed"};
-    } else if(!expectValid && !exp && !dataMoved) {
+        std::string what;
+        try {
+            std::rethrow_exception(exp);
+        } catch (const std::exception &e) {
+            what = e.what();
+        } catch (...) {
+            what = "unknown exception";
+        }
+        throw celix::PromiseInvocationException{"Expected a succeeded promise, but promise failed with message \"" + what + "\""};
+    } else if(!expectValid && !exp) {
         throw celix::PromiseInvocationException{"Expected a failed promise, but promise succeeded"};
-    } else if (dataMoved) {
-        throw celix::PromiseInvocationException{"Invalid use of promise, data is moved and not available anymore!"};
     }
 }
 
 template<typename T>
-inline const T& celix::impl::SharedPromiseState<T>::getValue() const {
+inline T& celix::impl::SharedPromiseState<T>::getValue() & {
     std::unique_lock<std::mutex> lck{mutex};
     waitForAndCheckData(lck, true);
-    const T* ptr = reinterpret_cast<const T*>(&data);
-    return *ptr;
+    return *data;
+}
+
+template<typename T>
+inline const T& celix::impl::SharedPromiseState<T>::getValue() const & {
+    std::unique_lock<std::mutex> lck{mutex};
+    waitForAndCheckData(lck, true);
+    return *data;
+}
+
+template<typename T>
+inline T&& celix::impl::SharedPromiseState<T>::getValue() && {
+    std::unique_lock<std::mutex> lck{mutex};
+    waitForAndCheckData(lck, true);
+    return std::move(*data);
+}
+
+template<typename T>
+inline const T&& celix::impl::SharedPromiseState<T>::getValue() const && {
+    std::unique_lock<std::mutex> lck{mutex};
+    waitForAndCheckData(lck, true);
+    return std::move(*data);
 }
 
 inline bool celix::impl::SharedPromiseState<void>::getValue() const {
     std::unique_lock<std::mutex> lck{mutex};
     waitForAndCheckData(lck, true);
     return true;
+}
+
+template<typename T>
+inline T celix::impl::SharedPromiseState<T>::moveOrGetValue() {
+    std::unique_lock<std::mutex> lck{mutex};
+    waitForAndCheckData(lck, true);
+    if constexpr (std::is_move_constructible_v<T>) {
+        dataMoved = true;
+        return std::move(*data);
+    } else {
+        return *data;
+    }
 }
 
 template<typename T>
@@ -389,15 +434,6 @@ inline tbb::task_arena celix::impl::SharedPromiseState<T>::getExecutor() const {
 inline tbb::task_arena celix::impl::SharedPromiseState<void>::getExecutor() const {
     return executor;
 }
-
-template<typename T>
-inline T celix::impl::SharedPromiseState<T>::moveValue() {
-    std::unique_lock<std::mutex> lck{mutex};
-    waitForAndCheckData(lck, true);
-    dataMoved = true;
-    T* ptr = reinterpret_cast<T*>(&data);
-    return T{std::move(*ptr)};
-};
 
 template<typename T>
 inline void celix::impl::SharedPromiseState<T>::wait() const {
@@ -425,9 +461,9 @@ inline std::exception_ptr celix::impl::SharedPromiseState<void>::getFailure() co
 
 template<typename T>
 inline void celix::impl::SharedPromiseState<T>::resolveWith(std::shared_ptr<SharedPromiseState<T>> with) {
-    with->addOnResolve([this](bool succeeded, T* v, std::exception_ptr e) {
-        if (succeeded) {
-            tryResolve(std::forward<T>(*v));
+    with->addOnResolve([this](std::optional<T> v, std::exception_ptr e) {
+        if (v) {
+            tryResolve(std::move(*v));
         } else {
             tryFail(std::move(e));
         }
@@ -435,11 +471,11 @@ inline void celix::impl::SharedPromiseState<T>::resolveWith(std::shared_ptr<Shar
 }
 
 inline void celix::impl::SharedPromiseState<void>::resolveWith(std::shared_ptr<SharedPromiseState<void>> with) {
-    with->addOnResolve([this](bool succeeded, std::exception_ptr e) {
-        if (succeeded) {
+    with->addOnResolve([this](std::optional<std::exception_ptr> e) {
+        if (!e) {
             tryResolve();
         } else {
-            tryFail(std::move(e));
+            tryFail(std::move(*e));
         }
     });
 }
@@ -474,11 +510,11 @@ template<typename Rep, typename Period>
 inline std::shared_ptr<celix::impl::SharedPromiseState<T>> celix::impl::SharedPromiseState<T>::delay(std::chrono::duration<Rep, Period> duration) {
     auto p = std::make_shared<celix::impl::SharedPromiseState<T>>(executor);
 
-    addOnResolve([p, duration](bool succeeded, T* v, std::exception_ptr e) {
+    addOnResolve([p, duration](std::optional<T> v, std::exception_ptr e) {
         std::this_thread::sleep_for(duration); //TODO use scheduler instead of sleep on thread (using unnecessary resources)
         try {
-            if (succeeded) {
-                p->resolve(std::forward<T>(*v));
+            if (v) {
+                p->resolve(std::move(*v));
             } else {
                 p->fail(std::move(e));
             }
@@ -496,13 +532,13 @@ template<typename Rep, typename Period>
 inline std::shared_ptr<celix::impl::SharedPromiseState<void>> celix::impl::SharedPromiseState<void>::delay(std::chrono::duration<Rep, Period> duration) {
     auto p = std::make_shared<celix::impl::SharedPromiseState<void>>(executor);
 
-    addOnResolve([p, duration](bool succeeded, std::exception_ptr e) {
+    addOnResolve([p, duration](std::optional<std::exception_ptr> e) {
         std::this_thread::sleep_for(duration); //TODO use scheduler instead of sleep on thread (using unnecessary resources)
         try {
-            if (succeeded) {
+            if (!e) {
                 p->resolve();
             } else {
-                p->fail(std::move(e));
+                p->fail(std::move(*e));
             }
         } catch (celix::PromiseInvocationException&) {
             //somebody already resolved p?
@@ -521,9 +557,9 @@ inline std::shared_ptr<celix::impl::SharedPromiseState<T>> celix::impl::SharedPr
     }
     auto p = std::make_shared<celix::impl::SharedPromiseState<T>>(executor);
 
-    addOnResolve([p, recover](bool succeeded, T *v, const std::exception_ptr& /*e*/) {
-        if (succeeded) {
-            p->resolve(std::forward<T>(*v));
+    addOnResolve([p, recover = std::move(recover)](std::optional<T> v, const std::exception_ptr& /*e*/) {
+        if (v) {
+            p->resolve(std::move(*v));
         }  else {
             try {
                 p->resolve(recover());
@@ -541,8 +577,8 @@ inline std::shared_ptr<celix::impl::SharedPromiseState<void>> celix::impl::Share
     }
     auto p = std::make_shared<celix::impl::SharedPromiseState<void>>(executor);
 
-    addOnResolve([p, recover](bool succeeded, const std::exception_ptr& /*e*/) {
-        if (succeeded) {
+    addOnResolve([p, recover = std::move(recover)](std::optional<std::exception_ptr> e) {
+        if (!e) {
             p->resolve();
         }  else {
             try {
@@ -557,17 +593,16 @@ inline std::shared_ptr<celix::impl::SharedPromiseState<void>> celix::impl::Share
 }
 
 template<typename T>
-inline std::shared_ptr<celix::impl::SharedPromiseState<T>> celix::impl::SharedPromiseState<T>::filter(std::function<bool(T)> predicate) {
+inline std::shared_ptr<celix::impl::SharedPromiseState<T>> celix::impl::SharedPromiseState<T>::filter(std::function<bool(const T&)> predicate) {
     if (!predicate) {
         throw celix::PromiseInvocationException{"provided predicate callback is not valid"};
     }
     auto p = std::make_shared<celix::impl::SharedPromiseState<T>>(executor);
-    auto chainFunction = [this, p, predicate] {
+    auto chainFunction = [this, p, predicate = std::move(predicate)] {
         if (isSuccessfullyResolved()) {
-            T val = getValue();
             try {
-                if (predicate(std::forward<T>(val))) {
-                    p->resolve(std::forward<T>(val));
+                if (predicate(getValue())) {
+                    p->resolve(moveOrGetValue());
                 } else {
                     throw celix::PromiseInvocationException{"predicate does not accept value"};
                 }
@@ -586,14 +621,12 @@ inline std::shared_ptr<celix::impl::SharedPromiseState<T>> celix::impl::SharedPr
 template<typename T>
 inline std::shared_ptr<celix::impl::SharedPromiseState<T>> celix::impl::SharedPromiseState<T>::fallbackTo(std::shared_ptr<celix::impl::SharedPromiseState<T>> fallbackTo) {
     auto p = std::make_shared<celix::impl::SharedPromiseState<T>>(executor);
-    auto chainFunction = [this, p, fallbackTo] {
+    auto chainFunction = [this, p, fallbackTo = std::move(fallbackTo)] {
         if (isSuccessfullyResolved()) {
-            T val = getValue();
-            p->resolve(std::forward<T>(val));
+            p->resolve(moveOrGetValue());
         } else {
             if (fallbackTo->isSuccessfullyResolved()) {
-                T val = fallbackTo->getValue();
-                p->resolve(std::forward<T>(val));
+                p->resolve(fallbackTo->moveOrGetValue());
             } else {
                 p->fail(getFailure());
             }
@@ -605,7 +638,7 @@ inline std::shared_ptr<celix::impl::SharedPromiseState<T>> celix::impl::SharedPr
 
 inline std::shared_ptr<celix::impl::SharedPromiseState<void>> celix::impl::SharedPromiseState<void>::fallbackTo(std::shared_ptr<celix::impl::SharedPromiseState<void>> fallbackTo) {
     auto p = std::make_shared<celix::impl::SharedPromiseState<void>>(executor);
-    auto chainFunction = [this, p, fallbackTo] {
+    auto chainFunction = [this, p, fallbackTo = std::move(fallbackTo)] {
         if (isSuccessfullyResolved()) {
             getValue();
             p->resolve();
@@ -626,7 +659,6 @@ template<typename T>
 inline void celix::impl::SharedPromiseState<T>::addChain(std::function<void()> chainFunction) {
     std::function<void()> localChain{};
     {
-
         std::lock_guard<std::mutex> lck{mutex};
         if (!done) {
             chain.push_back(std::move(chainFunction));
@@ -642,7 +674,6 @@ inline void celix::impl::SharedPromiseState<T>::addChain(std::function<void()> c
 inline void celix::impl::SharedPromiseState<void>::addChain(std::function<void()> chainFunction) {
     std::function<void()> localChain{};
     {
-
         std::lock_guard<std::mutex> lck{mutex};
         if (!done) {
             chain.push_back(std::move(chainFunction));
@@ -662,11 +693,10 @@ inline std::shared_ptr<celix::impl::SharedPromiseState<R>> celix::impl::SharedPr
         throw celix::PromiseInvocationException("provided mapper is not valid");
     }
     auto p = std::make_shared<celix::impl::SharedPromiseState<R>>(executor);
-    auto chainFunction = [this, p, mapper] {
+    auto chainFunction = [this, p, mapper = std::move(mapper)] {
         try {
             if (isSuccessfullyResolved()) {
-                R val = mapper(getValue());
-                p->resolve(std::forward<R>(val));
+                p->resolve(mapper(moveOrGetValue()));
             } else {
                 p->fail(getFailure());
             }
@@ -684,12 +714,11 @@ inline std::shared_ptr<celix::impl::SharedPromiseState<R>> celix::impl::SharedPr
         throw celix::PromiseInvocationException("provided mapper is not valid");
     }
     auto p = std::make_shared<celix::impl::SharedPromiseState<R>>(executor);
-    auto chainFunction = [this, p, mapper] {
+    auto chainFunction = [this, p, mapper = std::move(mapper)] {
         try {
             if (isSuccessfullyResolved()) {
                 getValue();
-                R val = mapper();
-                p->resolve(std::forward<R>(val));
+                p->resolve(mapper());
             } else {
                 p->fail(getFailure());
             }
@@ -707,12 +736,11 @@ inline std::shared_ptr<celix::impl::SharedPromiseState<T>> celix::impl::SharedPr
         throw celix::PromiseInvocationException("provided consumer is not valid");
     }
     auto p = std::make_shared<celix::impl::SharedPromiseState<T>>(executor);
-    auto chainFunction = [this, p, consumer] {
+    auto chainFunction = [this, p, consumer = std::move(consumer)] {
         if (isSuccessfullyResolved()) {
             try {
-                T val = getValue();
-                consumer(std::forward<T>(val));
-                p->resolve(std::forward<T>(val));
+                consumer(getValue());
+                p->resolve(moveOrGetValue());
             } catch (...) {
                 p->fail(std::current_exception());
             }
@@ -729,7 +757,7 @@ inline std::shared_ptr<celix::impl::SharedPromiseState<void>> celix::impl::Share
         throw celix::PromiseInvocationException("provided consumer is not valid");
     }
     auto p = std::make_shared<celix::impl::SharedPromiseState<void>>(executor);
-    auto chainFunction = [this, p, consumer] {
+    auto chainFunction = [this, p, consumer = std::move(consumer)] {
         if (isSuccessfullyResolved()) {
             try {
                 getValue();
@@ -747,35 +775,37 @@ inline std::shared_ptr<celix::impl::SharedPromiseState<void>> celix::impl::Share
 }
 
 template<typename T>
-inline void celix::impl::SharedPromiseState<T>::addOnResolve(std::function<void(bool succeeded, T* val, std::exception_ptr exp)> callback) {
-    std::function<void()> task = [this, callback] {
+inline void celix::impl::SharedPromiseState<T>::addOnResolve(std::function<void(std::optional<T> val, std::exception_ptr exp)> callback) {
+    std::function<void()> task = [this, callback = std::move(callback)] {
         std::exception_ptr e = nullptr;
-        T* val = nullptr;
         {
             std::lock_guard<std::mutex> lck{mutex};
             e = exp;
-            val = e ? nullptr : reinterpret_cast<T*>(&data);
         }
-        callback(!e, val, e);
+        if(e) {
+            callback({}, e);
+        } else {
+            callback(getValue(), e);
+        }
     };
     addChain(task);
 }
 
-inline void celix::impl::SharedPromiseState<void>::addOnResolve(std::function<void(bool succeeded, std::exception_ptr exp)> callback) {
-    std::function<void()> task = [this, callback] {
+inline void celix::impl::SharedPromiseState<void>::addOnResolve(std::function<void(std::optional<std::exception_ptr> exp)> callback) {
+    std::function<void()> task = [this, callback = std::move(callback)] {
         std::exception_ptr e = nullptr;
         {
             std::lock_guard<std::mutex> lck{mutex};
             e = exp;
         }
-        callback(!e, e);
+        callback(e);
     };
     addChain(task);
 }
 
 template<typename T>
 inline void celix::impl::SharedPromiseState<T>::addOnSuccessConsumeCallback(std::function<void(T)> callback) {
-    std::function<void()> task = [this, callback] {
+    std::function<void()> task = [this, callback = std::move(callback)] {
         if (isSuccessfullyResolved()) {
             callback(getValue());
         }
@@ -784,7 +814,7 @@ inline void celix::impl::SharedPromiseState<T>::addOnSuccessConsumeCallback(std:
 }
 
 inline void celix::impl::SharedPromiseState<void>::addOnSuccessConsumeCallback(std::function<void()> callback) {
-    std::function<void()> task = [this, callback] {
+    std::function<void()> task = [this, callback = std::move(callback)] {
         if (isSuccessfullyResolved()) {
             getValue();
             callback();
@@ -795,7 +825,7 @@ inline void celix::impl::SharedPromiseState<void>::addOnSuccessConsumeCallback(s
 
 template<typename T>
 inline void celix::impl::SharedPromiseState<T>::addOnFailureConsumeCallback(std::function<void(const std::exception&)> callback) {
-    std::function<void()> task = [this, callback] {
+    std::function<void()> task = [this, callback = std::move(callback)] {
         if (!isSuccessfullyResolved()) {
             try {
                 std::rethrow_exception(getFailure());
@@ -812,7 +842,7 @@ inline void celix::impl::SharedPromiseState<T>::addOnFailureConsumeCallback(std:
 }
 
 inline void celix::impl::SharedPromiseState<void>::addOnFailureConsumeCallback(std::function<void(const std::exception&)> callback) {
-    std::function<void()> task = [this, callback] {
+    std::function<void()> task = [this, callback = std::move(callback)] {
         if (!isSuccessfullyResolved()) {
             try {
                 std::rethrow_exception(getFailure());

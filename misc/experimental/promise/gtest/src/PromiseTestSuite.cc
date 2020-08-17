@@ -20,6 +20,7 @@
 #include <gtest/gtest.h>
 
 #include <future>
+#include <utility>
 
 #include "celix/PromiseFactory.h"
 
@@ -30,22 +31,70 @@ public:
     celix::PromiseFactory factory{ tbb::task_arena{5, 1} };
 };
 
+struct MovableInt {
+    MovableInt(int _val) : val(_val) {}
+    operator int() const { return val; }
 
+    int val;
+};
+
+struct NonMovableInt {
+    NonMovableInt(int _val) : val(_val) {}
+    operator int() const { return val; }
+    NonMovableInt(NonMovableInt&&) = delete;
+    NonMovableInt(const NonMovableInt&) = default;
+    NonMovableInt& operator=(NonMovableInt&&) = delete;
+    NonMovableInt& operator=(const NonMovableInt&) = default;
+
+    int val;
+};
+
+struct NonTrivialType {
+    NonTrivialType(std::string _val) : val(std::move(_val)) {}
+    operator std::string() const { return val; }
+    NonTrivialType(NonTrivialType&&) = default;
+    NonTrivialType(const NonTrivialType&) = default;
+    NonTrivialType& operator=(NonTrivialType&&) = default;
+    NonTrivialType& operator=(const NonTrivialType&) = default;
+
+
+    NonTrivialType(const char *c) : val(c) {}
+
+    NonTrivialType& operator=(const char *c) {
+        val = c;
+        return *this;
+    }
+
+    bool operator==(const char *c) const {
+        return c == val;
+    }
+
+    std::string val;
+};
+
+bool operator==( const char *c, const NonTrivialType &ntt) {
+    return c == ntt.val;
+}
+
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-result"
+#endif 
 
 TEST_F(PromiseTestSuite, simplePromise) {
-    auto deferred =  factory.deferred<long>();
-    std::thread t{[deferred] () mutable { //TODO TBD make deferred a shared_ptr to prevent need for mutable?
+    auto deferred =  factory.deferred<NonTrivialType>();
+    std::thread t{[&deferred] () {
         std::this_thread::sleep_for(std::chrono::milliseconds{50});
-        deferred.resolve(42);
+        deferred.resolve("test");
     }};
     auto promise = deferred.getPromise();
-    EXPECT_EQ(42, promise.getValue()); //block until ready
+    EXPECT_EQ("test", promise.getValue()); //block until ready
     EXPECT_TRUE(promise.isDone()); //got value, so promise is done
     EXPECT_ANY_THROW(promise.getFailure()); //succeeded, so no exception available
 
-    EXPECT_EQ(42, promise.getValue()); //note multiple call are valid;
+    EXPECT_EQ("test", promise.getValue()); //note multiple call are valid;
 
-    EXPECT_EQ(42, promise.moveValue()); //data is now moved
+    EXPECT_EQ("test", promise.moveOrGetValue()); //data is now moved
     EXPECT_THROW(promise.getValue(), celix::PromiseInvocationException); //data is already moved -> exception
     t.join();
 }
@@ -53,7 +102,7 @@ TEST_F(PromiseTestSuite, simplePromise) {
 TEST_F(PromiseTestSuite, failingPromise) {
     auto deferred =  factory.deferred<long>();
     auto cpy = deferred;
-    std::thread t{[deferred] () mutable {
+    std::thread t{[&deferred] () {
         deferred.fail(std::logic_error{"failing"});
     }};
     auto promise = deferred.getPromise();
@@ -372,3 +421,52 @@ TEST_F(PromiseTestSuite, failedResolvedWithPromiseFactory) {
     EXPECT_TRUE(p2.isDone());
     EXPECT_EQ(42, p2.getValue());
 }
+
+TEST_F(PromiseTestSuite, movableStruct) {
+    auto deferred =  factory.deferred<MovableInt>();
+    std::thread t{[&deferred] () {
+        std::this_thread::sleep_for(std::chrono::milliseconds{50});
+        deferred.resolve(42);
+    }};
+    auto promise = deferred.getPromise();
+    EXPECT_EQ(42, promise.getValue());
+    EXPECT_EQ(42, *promise);
+    t.join();
+}
+
+TEST_F(PromiseTestSuite, movableStructTemporary) {
+    auto deferred =  factory.deferred<MovableInt>();
+    std::thread t{[&deferred] () {
+        std::this_thread::sleep_for(std::chrono::milliseconds{50});
+        deferred.resolve(42);
+    }};
+    EXPECT_EQ(42, deferred.getPromise().getValue());
+    t.join();
+}
+
+TEST_F(PromiseTestSuite, nonMovableStruct) {
+    auto deferred =  factory.deferred<NonMovableInt>();
+    std::thread t{[&deferred] () {
+        std::this_thread::sleep_for(std::chrono::milliseconds{50});
+        deferred.resolve(42);
+    }};
+    auto promise = deferred.getPromise();
+    EXPECT_EQ(42, promise.getValue());
+    EXPECT_EQ(42, *promise);
+    t.join();
+}
+
+TEST_F(PromiseTestSuite, nonMovableStructTemporary) {
+    auto deferred =  factory.deferred<NonMovableInt>();
+    std::thread t{[&deferred] () {
+        std::this_thread::sleep_for(std::chrono::milliseconds{50});
+        deferred.resolve(42);
+    }};
+    EXPECT_EQ(42, deferred.getPromise().getValue());
+    t.join();
+}
+
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
+

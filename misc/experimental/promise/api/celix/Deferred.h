@@ -27,8 +27,18 @@
 
 #include <tbb/task.h>
 #include <tbb/task_group.h>
-#include <tbb/task_scheduler_init.h>
 #include <tbb/task_scheduler_observer.h>
+#if __has_include(<tbb/global_control.h>)
+
+#if TBB_INTERFACE_VERSION_MAJOR < 12
+#define TBB_PREVIEW_GLOBAL_CONTROL 1
+#endif
+
+#include <tbb/global_control.h>
+#else
+// deprecated in newer versions of TBB
+#include <tbb/task_scheduler_init.h>
+#endif
 
 namespace celix {
 
@@ -96,7 +106,7 @@ namespace celix {
          *
          * @return The Promise associated with this Deferred.
          */
-        Promise<T> getPromise();
+        [[nodiscard]] Promise<T> getPromise();
 
         /**
          * Successfully resolve the Promise associated with this Deferred.
@@ -188,7 +198,7 @@ namespace celix {
          *
          * @return The Promise associated with this Deferred.
          */
-        Promise<void> getPromise();
+        [[nodiscard]] Promise<void> getPromise();
 
         /**
          * Successfully resolve the Promise associated with this Deferred.
@@ -257,11 +267,9 @@ inline celix::Promise<void> celix::Deferred<void>::getPromise() {
 template<typename T>
 template<typename U>
 inline void celix::Deferred<T>::resolveWith(celix::Promise<U> with) {
-    auto s = state;
-    with.onResolve([s, with]{
+    with.onResolve([s = state, with] () mutable {
         if (with.isSuccessfullyResolved()) {
-            U val = with.getValue();
-            s->resolve(std::forward<T>(val));
+            s->resolve(with.moveOrGetValue());
         } else {
             s->fail(with.getFailure());
         }
@@ -269,8 +277,7 @@ inline void celix::Deferred<T>::resolveWith(celix::Promise<U> with) {
 }
 
 inline void celix::Deferred<void>::resolveWith(celix::Promise<void> with) {
-    auto s = state;
-    with.onResolve([s, with]{
+    with.onResolve([s = state, with]{
         if (with.isSuccessfullyResolved()) {
             with.getValue();
             s->resolve();
