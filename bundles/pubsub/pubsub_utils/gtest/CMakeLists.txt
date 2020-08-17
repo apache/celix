@@ -26,6 +26,7 @@ celix_bundle_files(pubsub_serialization_provider_descriptors
 		${CMAKE_CURRENT_SOURCE_DIR}/msg_descriptors/msg_poi3_variant2.descriptor
 		${CMAKE_CURRENT_SOURCE_DIR}/msg_descriptors/msg_poi4_variant1.descriptor
 		${CMAKE_CURRENT_SOURCE_DIR}/msg_descriptors/msg_poi4_variant2.descriptor
+		${CMAKE_CURRENT_SOURCE_DIR}/msg_descriptors/int_calc.descriptor
 		DESTINATION "META-INF/descriptors"
 )
 

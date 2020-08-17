@@ -29,6 +29,7 @@
 #include "celix_version.h"
 #include "celix_utils.h"
 #include "dyn_message.h"
+#include "dyn_interface.h"
 #include "pubsub_utils.h"
 #include "celix_log_helper.h"
 #include "pubsub_message_serialization_service.h"
@@ -211,6 +212,20 @@ static dyn_message_type* pubsub_serializationProvider_parseDfiDescriptor(pubsub_
     return msg;
 }
 
+static bool pubsub_serializationProvider_isDescriptorInterface(pubsub_serialization_provider_t* provider, FILE* stream) {
+    dyn_interface_type *msg = NULL;
+    bool isInterface = false;
+
+    int rc = dynInterface_parse(stream, &msg);
+    if (rc == 0 && msg != NULL) {
+        isInterface = true;
+        dynInterface_destroy(msg);
+    }
+    fseek(stream, 0, SEEK_SET);
+
+    return isInterface;
+}
+
 //TODO FIXME, see #158
 //
 //    static dyn_message_type* pubsub_serializationProvider_parseAvprDescriptor(pubsub_serialization_provider_t* provider, FILE* stream, const char *entryName, const char* fqn) {
@@ -373,7 +388,11 @@ static void pubsub_serializationProvider_parseDescriptors(pubsub_serialization_p
 
         dyn_message_type *msgType = NULL;
         if (descriptorType == FIT_DESCRIPTOR) {
-            msgType = pubsub_serializationProvider_parseDfiDescriptor(provider, stream, entryPath);
+            if(!pubsub_serializationProvider_isDescriptorInterface(provider, stream)) {
+                msgType = pubsub_serializationProvider_parseDfiDescriptor(provider, stream, entry_name);
+            } else {
+                L_DEBUG("Ignoring interface file");
+            }
         } else if (descriptorType == FIT_AVPR) {
             L_DEBUG("Ignoring avpr files for now, needs fixing!");
             //msgType = pubsub_serializationProvider_parseAvprDescriptor(provider, stream, entry_name, /*TODO FQN*/fqn);
