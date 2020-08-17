@@ -219,8 +219,8 @@ static bool pubsub_serializationProvider_isDescriptorInterface(pubsub_serializat
     int rc = dynInterface_parse(stream, &msg);
     if (rc == 0 && msg != NULL) {
         isInterface = true;
-        dynInterface_destroy(msg);
     }
+    dynInterface_destroy(msg);
     fseek(stream, 0, SEEK_SET);
 
     return isInterface;
