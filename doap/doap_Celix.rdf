@@ -53,5 +53,11 @@
         <browse rdf:resource="https://github.com/apache/celix"/>
       </GitRepository>
     </repository>
+    <repository>
+      <GitRepository>
+        <location rdf:resource="https://gitbox.apache.org/repos/asf/celix-site.git"/>
+        <browse rdf:resource="https://github.com/apache/celix-site"/>
+      </GitRepository>
+    </repository>
   </Project>
 </rdf:RDF>
