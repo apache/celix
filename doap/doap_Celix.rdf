@@ -41,7 +41,7 @@
     <description>
       Apache Celix is an implementation of the OSGi specification adapted to C and C++ (C++11). It is a framework to develop (dynamic) modular software applications using component and/or service-oriented programming.
     </description>
-    <bug-database rdf:resource="https://issues.apache.org/jira/browse/CELIX" />
+    <bug-database rdf:resource="https://github.com/apache/celix/issues" />
     <download-page rdf:resource="https://celix.apache.org/download.cgi" />
     <mailing-list rdf:resource="https://celix.apache.org/support/mailing-list.html" />
     <programming-language>C</programming-language>
