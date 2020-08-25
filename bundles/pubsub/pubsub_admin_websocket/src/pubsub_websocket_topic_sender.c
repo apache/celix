@@ -329,7 +329,7 @@ static int psa_websocket_topicPublicationSend(void* handle, unsigned int msgType
                 json_object_set_new_nocheck(jsMsg, "data", jsData);
                 const char *msg = json_dumps(jsMsg, 0);
                 size_t bytes_to_write = strlen(msg);
-                int bytes_written = mg_websocket_client_write(sender->sockConnection, MG_WEBSOCKET_OPCODE_TEXT, msg,
+                int bytes_written = mg_websocket_write(sender->sockConnection, MG_WEBSOCKET_OPCODE_TEXT, msg,
                                                               bytes_to_write);
                 free((void *) msg);
                 json_decref(jsData); //Decrease ref count means freeing the object
