@@ -97,6 +97,8 @@ typedef struct psa_tcp_connection_entry {
     size_t writeMetaBufferSize;
     void *writeMetaBuffer;
     unsigned int retryCount;
+    celix_thread_mutex_t writeMutex;
+    celix_thread_mutex_t readMutex;
 } psa_tcp_connection_entry_t;
 
 //
@@ -129,6 +131,7 @@ struct pubsub_tcpHandler {
     celix_thread_t thread;
     bool running;
     bool isEndPoint;
+    bool isBlocking;
 };
 
 static inline int pubsub_tcpHandler_closeConnectionEntry(pubsub_tcpHandler_t *handle, psa_tcp_connection_entry_t *entry, bool lock);
@@ -304,6 +307,8 @@ pubsub_tcpHandler_createEntry(pubsub_tcpHandler_t *handle, int fd, char *url, ch
     if (fd >= 0) {
         entry = calloc(sizeof(psa_tcp_connection_entry_t), 1);
         entry->fd = fd;
+        celixThreadMutex_create(&entry->writeMutex, NULL);
+        celixThreadMutex_create(&entry->readMutex, NULL);
         if (url)
             entry->url = strndup(url, 1024 * 1024);
         if (interface_url) {
@@ -359,6 +364,8 @@ pubsub_tcpHandler_freeEntry(psa_tcp_connection_entry_t *entry) {
         if (entry->writeFooterBuffer) free(entry->writeFooterBuffer);
         if (entry->readMetaBuffer) free(entry->readMetaBuffer);
         if (entry->writeMetaBuffer) free(entry->writeMetaBuffer);
+        celixThreadMutex_destroy(&entry->writeMutex);
+        celixThreadMutex_destroy(&entry->readMutex);
         free(entry);
     }
 }
@@ -421,7 +428,9 @@ int pubsub_tcpHandler_connect(pubsub_tcpHandler_t *handle, char *url) {
                 L_ERROR("[TCP Socket] Cannot create poll event %s\n", strerror(errno));
                 entry = NULL;
             }
-            rc = pubsub_tcpHandler_makeNonBlocking(handle, entry->fd);
+            if (!handle->isBlocking) {
+                rc = pubsub_tcpHandler_makeNonBlocking(handle, entry->fd);
+            }
             if (rc < 0) {
                 pubsub_tcpHandler_freeEntry(entry);
                 L_ERROR("[TCP Socket] Cannot make not blocking %s\n", strerror(errno));
@@ -750,6 +759,14 @@ void pubsub_tcpHandler_setEndPoint(pubsub_tcpHandler_t *handle,bool isEndPoint) 
     }
 }
 
+void pubsub_tcpHandler_setBlocking(pubsub_tcpHandler_t *handle,bool isBlocking) {
+    if (handle != NULL) {
+        celixThreadRwlock_writeLock(&handle->dbLock);
+        handle->isBlocking = isBlocking;
+        celixThreadRwlock_unlock(&handle->dbLock);
+    }
+}
+
 static inline
 void pubsub_tcpHandler_decodePayload(pubsub_tcpHandler_t *handle, psa_tcp_connection_entry_t *entry) {
 
@@ -774,7 +791,7 @@ void pubsub_tcpHandler_decodePayload(pubsub_tcpHandler_t *handle, psa_tcp_connec
 // If the message is completely reassembled true is returned and the index and size have valid values
 //
 int pubsub_tcpHandler_read(pubsub_tcpHandler_t *handle, int fd) {
-    celixThreadRwlock_writeLock(&handle->dbLock);
+    celixThreadRwlock_readLock(&handle->dbLock);
     psa_tcp_connection_entry_t *entry = hashMap_get(handle->interface_fd_map, (void *) (intptr_t) fd);
     if (entry == NULL)
         entry = hashMap_get(handle->connection_fd_map, (void *) (intptr_t) fd);
@@ -788,7 +805,7 @@ int pubsub_tcpHandler_read(pubsub_tcpHandler_t *handle, int fd) {
         celixThreadRwlock_unlock(&handle->dbLock);
         return -1;
     }
-
+    celixThreadMutex_lock(&entry->readMutex);
     if (entry->readHeaderBufferSize && entry->readHeaderBuffer) {
         entry->readHeaderBuffer = malloc(entry->readHeaderBufferSize);
     }
@@ -936,6 +953,7 @@ int pubsub_tcpHandler_read(pubsub_tcpHandler_t *handle, int fd) {
             nbytes = 0; //Return 0 as indicator to close the connection
         }
     }
+    celixThreadMutex_unlock(&entry->readMutex);
     celixThreadRwlock_unlock(&handle->dbLock);
     return (int)nbytes;
 }
@@ -984,12 +1002,13 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
     int connFdCloseQueue[hashMap_size(handle->connection_fd_map)];
     int nofConnToClose = 0;
     if (handle) {
-        celixThreadRwlock_writeLock(&handle->dbLock);
+        celixThreadRwlock_readLock(&handle->dbLock);
         hash_map_iterator_t iter = hashMapIterator_construct(handle->connection_fd_map);
         size_t max_msg_iov_len = IOV_MAX - 2; // header , footer, padding
         while (hashMapIterator_hasNext(&iter)) {
             psa_tcp_connection_entry_t *entry = hashMapIterator_nextValue(&iter);
             if (!entry->connected) continue;
+            celixThreadMutex_lock(&entry->writeMutex);
             void *payloadData = NULL;
             size_t payloadSize = 0;
             if (msg_iov_len == 1) {
@@ -1029,6 +1048,7 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
                 ((!isMessageSegmentationSupported) && (totalMessageSize > entry->maxMsgSize))) {
                 L_WARN("[TCP Socket] Failed to send message (fd: %d), Message segmentation is not supported\n",
                        entry->fd);
+                celixThreadMutex_unlock(&entry->writeMutex);
                 continue;
             }
 
@@ -1174,6 +1194,7 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
                     free(payloadData);
                 }
             }
+            celixThreadMutex_unlock(&entry->writeMutex);
         }
         celixThreadRwlock_unlock(&handle->dbLock);
     }

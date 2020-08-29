@@ -97,9 +97,7 @@ static void* sut_sendThread(void *data) {
             if (msg.seqNr % 1000 == 0) {
                 printf("Send %i messages\n", msg.seqNr);
             }
-
 		    msg.seqNr += 1;
-
         }
         pthread_mutex_unlock(&act->mutex);
 
