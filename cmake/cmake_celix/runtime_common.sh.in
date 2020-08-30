@@ -7,17 +7,21 @@ DEPLOY_DIR="${DEPLOY_DIR:-${BUILD_DIR}/deploy}"
 
 #Name & Group
 RUNTIME_NAME="${RUNTIME_NAME:-$<TARGET_PROPERTY:@RUNTIME_TARGET_NAME@,RUNTIME_NAME>}"
-RUNTIME_GROUP="${RUNTIME_NAME:-$<TARGET_PROPERTY:@RUNTIME_TARGET_NAME@,RUNTIME_GROUP>}"
+RUNTIME_GROUP="${RUNTIME_GROUP:-$<TARGET_PROPERTY:@RUNTIME_TARGET_NAME@,RUNTIME_GROUP>}"
 
 #commands
 COMMANDS=${COMMANDS:-"$<JOIN:$<TARGET_PROPERTY:@RUNTIME_TARGET_NAME@,RUNTIME_COMMANDS>, >"}
 
-#deployments
-$<JOIN:$<TARGET_PROPERTY:@RUNTIME_TARGET_NAME@,RUNTIME_DEPLOYMENTS>,
+#containers
+$<JOIN:$<TARGET_PROPERTY:@RUNTIME_TARGET_NAME@,RUNTIME_CONTAINERS>,
 >
 
-#deployment arguments
+#container arguments
 $<JOIN:$<TARGET_PROPERTY:@RUNTIME_TARGET_NAME@,RUNTIME_ARGUMENTS>,
+>
+
+#release files
+$<JOIN:$<TARGET_PROPERTY:@RUNTIME_TARGET_NAME@,RELEASE_FILES>,
 >
 
 #Options
@@ -25,14 +29,13 @@ TERM_CMD="${TERM_CMD:-xterm}"
 TERM_OPTS="${TERM_OPTS:-}"
 USE_TERM="${USE_TERM:-$<TARGET_PROPERTY:@RUNTIME_TARGET_NAME@,RUNTIME_USE_TERM>}"
 RELEASE_SH="${RELEASE_SH:-}"
-WAIT_FOR_DEPLOYMENT="${WAIT_FOR_DEPLOYMENT:-$<TARGET_PROPERTY:@RUNTIME_TARGET_NAME@,RUNTIME_WAIT_FOR_DEPLOYMENT>}"
+WAIT_FOR_CONTAINER="${WAIT_FOR_CONTAINER:-$<TARGET_PROPERTY:@RUNTIME_TARGET_NAME@,RUNTIME_WAIT_FOR_CONTAINER>}"
 WAIT_FOR_CMD="${WAIT_FOR_CMD:-$<TARGET_PROPERTY:@RUNTIME_TARGET_NAME@,RUNTIME_WAIT_FOR_COMMAND>}"
 LOG_TO_FILES="${LOG_TO_FILES:-$<TARGET_PROPERTY:@RUNTIME_TARGET_NAME@,RUNTIME_LOG_TO_FILES>}"
 KILL_OPTS="${KILL_OPTS:--2}" #default is -2, e.g. SIGINT
 PATIENCE="${PATIENCE:-5}" #in seconds
 
 PIDS=""
-WAIT_FOR_PID=""
 RUNTIME_STARTTIME=$(date +"%s")
 trap stop_all INT
 
@@ -50,9 +53,9 @@ function rt_start_all() {
     echo ""
     echo ""
     echo "********** Starting runtime ${RUNTIME_NAME} **********"
-    for DEPLOYMENT_INDEX in "${!DEPLOYMENT_NAMES[@]}"
+    for CONTAINERS_INDEX in "${!CONTAINERS_NAMES[@]}"
     do
-        rt_run_deployment ${DEPLOYMENT_INDEX}
+        rt_run_deployment ${CONTAINERS_INDEX}
     done
 
     for CMD in ${COMMANDS}; do
@@ -64,33 +67,35 @@ function rt_stop_all() {
     echo "********** Stopping runtime ${RUNTIME_NAME} **********"
     for PID in ${PIDS}; do
         echo "Sending signal to ${PID}"
-        kill ${KILL_OPTS} ${PID}
+        kill ${KILL_OPTS} ${PID} 2> /dev/null; true
     done
 }
 
 function rt_stop() {
     PIDS=$@
     echo "Stopping pids ${PIDS}"
-    kill ${KILL_OPTS} ${PIDS}
+    kill ${KILL_OPTS} ${PIDS} 2> /dev/null; true
 }
 
 function rt_run_deployment() {
     INDEX=$1
-    DEPLOYMENT=${DEPLOYMENT_NAMES[${INDEX}]}
-    DEPLOYMENT_DIR=${DEPLOYMENT_DIRS[${INDEX}]}
-    ARGS=${DEPLOYMENT_ARGUMENTS[${INDEX}]}
+    DEPLOYMENT=${CONTAINERS_NAMES[${INDEX}]}
+    CONTAINERS_DIR=${CONTAINERS_DIRS[${INDEX}]}
+    ARGS=${CONTAINERS_ARGUMENTS[${INDEX}]}
     LOG_FILE="${RUNTIME_DIR}/logs/${DEPLOYMENT}.log"
-    DEBUG_OPTS=${DEPLOYMENT_DEBUG_OPTS[${INDEX}]}
+    DEBUG_OPTS=${CONTAINERS_DEBUG_OPTS[${INDEX}]}
 
     echo ""
     echo "Starting deployment ${DEPLOYMENT}"
-    cd ${DEPLOYMENT_DIR}
+    cd ${CONTAINERS_DIR}
     if [ -d .cache ] ; then
         echo "  Clearing cache"
         rm -fr .cache
     fi
-    . ./release.sh #run deployment release
-    echo "  Workdir: ${DEPLOYMENT_DIR}"
+    if [ -e release.sh ] ; then
+        . ./release.sh #run deployment release
+    fi
+    echo "  Workdir: ${CONTAINERS_DIR}"
     echo "  Cmd used: '${DEBUG_OPTS} ./${DEPLOYMENT} ${ARGS}'"
     if [ "${USE_TERM}" = "TRUE" ] ; then
         if [ "${LOG_TO_FILES}" = "TRUE" ] ; then
@@ -109,7 +114,7 @@ function rt_run_deployment() {
     fi
     PID=$!
     echo "  Pid of deployment '${DEPLOYMENT}' is ${PID}"
-    if [ ! -z "${WAIT_FOR_DEPLOYMENT}" -a "${DEPLOYMENT_DIR}" = "${WAIT_FOR_DEPLOYMENT}" ] ; then
+    if [ ! -z "${WAIT_FOR_CONTAINER}" -a "${CONTAINERS_DIR}" = "${WAIT_FOR_CONTAINER}" ] ; then
         WAIT_FOR_PID=${PID}
         echo "${PID}" > ${RUNTIME_DIR}/run/wait_for_pid
     else

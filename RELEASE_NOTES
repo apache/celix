@@ -13,31 +13,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Release Notes for Apache Celix 2.1.0
+# Release Notes for Apache Celix 2.2.0
+
+## Known shortcomings:
+
+- Uninstall of bundle is not working correctly.
+- Importing and exported of bundle libraries is not working correctly.
 
 ## Versions
 
 ### Libraries:
- - Celix Framework library: 2.1.0
- - Celix Utils library: 2.1.0
- - Dependency Manager:
-   - C : 1.1.0
-   - C++ : 2.0.0
- - Celix DFI library: 1.1.0
- - Celix etcdlib: 1.0.0
+ - Celix Framework library: 2.2.0
+ - Celix Utils library: 2.2.0
+ - Celix DFI library: 1.2.0
+ - Celix etcdlib: 1.1.0
 
 ### Bundles
  - Shell Tui: 1.1.0
  - Shell Bonjour: 0.1.0 
  - Shell: 2.1.0
  - Remote Shell: 0.0.2 
- - Log Writer: 1.1.0
- - Log Service: 1.1.0 
+ - Log Writer: 1.2.0
+ - Log Service: 1.2.0
  - Event Admin: 0.0.0 
  - Device Access: 0.0.2 
  - Deployment Admin: 0.0.2 
  - Config Admin: 0.0.1 
- - Dm Shell Bundle: 1.0.0 
  - Remote Services
    - Remote Service Admin Dfi: 0.9.0 
    - Remote Service Admin HTTP: 0.9.0 
@@ -47,7 +48,10 @@
    - Configured Discovery: 0.9.0 
  - PubSub
    - PubSubAdmin UDP Multicast : 1.0.0
-   - PubSubAdmin ZMQ : 1.0.0
-   - PubSub ETCD Discovery: 1.0.0
-   - PubSub Topology Manager: 1.0.0
-   - PubSub JSON Serializer : 1.0.0
+   - PubSubAdmin ZMQ : 1.1.0
+   - PubSub ETCD Discovery: 1.1.0
+   - PubSub Topology Manager: 1.1.0
+   - PubSub JSON Serializer : 1.1.0
+   - PubSub Avrobin Serializer : 1.0.0
+   - PubSub Websocket: 1.0.0
+   - PubSub TCP: 1.0.0

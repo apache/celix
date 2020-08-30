@@ -1,0 +1,78 @@
+name: Celix Ubuntu
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        #os: [ubuntu-18.04, ubuntu-16.04]
+        #compiler: [gcc, clang]
+        include:
+          - os: ubuntu-18.04
+            name: clang
+            sanitizer: false #note sanitizer on clang with cpputest does not work
+            compiler: clang
+            cxx_compiler: clang++
+          - os: ubuntu-18.04
+            name: gcc
+            sanitizer: true
+            compiler: gcc
+            cxx_compiler: g++
+          - os: ubuntu-18.04
+            name: only v3 api
+            sanitizer: true
+            compiler: gcc
+            cxx_compiler: g++
+            v3_api: true
+    timeout-minutes: 120
+    steps:
+    - name: Checkout source code
+      uses: actions/checkout@master
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -yq --no-install-recommends \
+          build-essential \
+          curl \
+          uuid-dev \
+          libjansson-dev \
+          libcurl4-openssl-dev \
+          default-jdk \
+          cmake \
+          libffi-dev \
+          libxml2-dev \
+          libczmq-dev \
+          libcpputest-dev \
+          libtbb-dev
+    - name: Build
+      env:
+        CC: ${{ matrix.compiler }}
+        CXX: ${{ matrix.cxx_compiler }}
+        BUILD_OPTIONS: |
+          -DENABLE_TESTING=ON
+          -DBUILD_EXPERIMENTAL=ON
+        BUILD_OPTIONS_SANITIZER: |
+          -DENABLE_ADDRESS_SANITIZER=ON
+        BUILD_OPTIONS_V3_API: |
+          -DCELIX_USE_ZIP_INSTEAD_OF_JAR=ON
+          -DCELIX_INSTALL_DEPRECATED_API=OFF
+      run: |
+        mkdir build install
+        cd build
+        if [[ "${{ matrix.v3_api }}" == "true" ]]; then
+          export BUILD_OPTIONS="${BUILD_OPTIONS} ${BUILD_OPTIONS_V3_API}"
+        fi
+        if [[ "${{ matrix.sanitizer }}" == "true" ]]; then
+          export BUILD_OPTIONS="${BUILD_OPTIONS} ${BUILD_OPTIONS_SANITIZER}"
+        fi
+        cmake -DCMAKE_BUILD_TYPE=Debug ${BUILD_OPTIONS} -DCMAKE_INSTALL_PREFIX=../install ..
+        make -j && make install
+    - name: Test
+      run: |
+        cd $GITHUB_WORKSPACE/build
+        export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH:$(pwd)/utils:$(pwd)/framework:$(pwd)/dfi
+        make test ARGS="-V"
+
