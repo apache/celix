@@ -204,7 +204,7 @@ typedef struct celix_service_registration_options {
  * @param opts The pointer to the registration options. The options are only in the during registration call.
  * @return The serviceId (>= 0) or -1 if the registration was unsuccessful and -2 if the registration was cancelled (@see celix_bundleContext_reserveSvcId).
  */
-long celix_bundleContext_registerServiceAsyncWithOptions(celix_bundle_context_t *ctx, const celix_service_registration_options_t *opts);
+long celix_bundleContext_registerServiceWithOptionsAsync(celix_bundle_context_t *ctx, const celix_service_registration_options_t *opts);
 
 /**
  * Register a service to the Celix framework using the provided service registration options.
@@ -1106,6 +1106,12 @@ long celix_bundleContext_trackServiceTrackers(
  * @return the dependency manager or NULL if unsuccessful.
  */
 celix_dependency_manager_t* celix_bundleContext_getDependencyManager(celix_bundle_context_t *ctx);
+
+
+/**
+ * Wait till there are event for the bundle of this bundle context.
+ */
+void celix_bundleContext_waitForEvents(celix_bundle_context_t* ctx);
 
 
 /**

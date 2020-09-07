@@ -457,7 +457,7 @@ long celix_bundleContext_registerServiceAsync(celix_bundle_context_t *ctx, void 
     opts.svc = svc;
     opts.serviceName = serviceName;
     opts.properties = properties;
-    return celix_bundleContext_registerServiceAsyncWithOptions(ctx, &opts);
+    return celix_bundleContext_registerServiceWithOptionsAsync(ctx, &opts);
 }
 
 long celix_bundleContext_registerService(bundle_context_t *ctx, void *svc, const char *serviceName, celix_properties_t *properties) {
@@ -474,7 +474,7 @@ long celix_bundleContext_registerServiceFactoryAsync(celix_bundle_context_t *ctx
     opts.factory = factory;
     opts.serviceName = serviceName;
     opts.properties = props;
-    return celix_bundleContext_registerServiceAsyncWithOptions(ctx, &opts);
+    return celix_bundleContext_registerServiceWithOptionsAsync(ctx, &opts);
 }
 
 long celix_bundleContext_registerServiceFactory(celix_bundle_context_t *ctx, celix_service_factory_t *factory, const char *serviceName, celix_properties_t *props) {
@@ -547,7 +547,7 @@ long celix_bundleContext_registerServiceWithOptions(bundle_context_t *ctx, const
     return celix_bundleContext_registerServiceWithOptionsInternal(ctx, opts, false);
 }
 
-long celix_bundleContext_registerServiceAsyncWithOptions(celix_bundle_context_t *ctx, const celix_service_registration_options_t *opts) {
+long celix_bundleContext_registerServiceWithOptionsAsync(celix_bundle_context_t *ctx, const celix_service_registration_options_t *opts) {
     return celix_bundleContext_registerServiceWithOptionsInternal(ctx, opts, true);
 }
 
@@ -1482,6 +1482,10 @@ long celix_bundleContext_trackServiceTrackersAsync(
         void *doneCallbackData,
         void (*doneCallback)(void* doneCallbackData)) {
     return celix_bundleContext_trackServiceTrackersInternal(ctx, serviceName, callbackHandle, trackerAdd, trackerRemove, true, doneCallbackData, doneCallback);
+}
+
+void celix_bundleContext_waitForEvents(celix_bundle_context_t* ctx) {
+    celix_framework_waitForEvents(ctx->framework, celix_bundle_getId(ctx->bundle));
 }
 
 celix_bundle_t* celix_bundleContext_getBundle(const celix_bundle_context_t *ctx) {

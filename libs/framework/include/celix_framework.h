@@ -156,6 +156,12 @@ void celix_framework_waitForEmptyEventQueue(celix_framework_t *fw);
 void celix_framework_setLogCallback(celix_framework_t* fw, void* logHandle, void (*logFunction)(void* handle, celix_log_level_e level, const char* file, const char *function, int line, const char *format, va_list formatArgs));
 
 
+/**
+ * wait till all events for the bundle identified by the bndId are processed.
+ */
+void celix_framework_waitForEvents(celix_framework_t* fw, long bndId);
+
+
 #ifdef __cplusplus
 }
 #endif

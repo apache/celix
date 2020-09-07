@@ -210,7 +210,7 @@ static void celix_logAdmin_addLogSvcForName(celix_log_admin_t* admin, const char
             opts.serviceVersion = CELIX_LOG_SERVICE_VERSION;
             opts.properties = props;
             opts.svc = &newEntry->logSvc;
-            newEntry->logSvcId = celix_bundleContext_registerServiceAsyncWithOptions(admin->ctx, &opts);
+            newEntry->logSvcId = celix_bundleContext_registerServiceWithOptionsAsync(admin->ctx, &opts);
         }
 
         if (celix_utils_stringEquals(newEntry->name, CELIX_LOG_ADMIN_FRAMEWORK_LOG_NAME)) {
@@ -232,31 +232,28 @@ static void celix_logAdmin_trackerAdd(void *handle, const celix_service_tracker_
     celix_logAdmin_addLogSvcForName(admin, name);
 }
 
-static void celix_logAdmin_remLogSvcForName(celix_log_admin_t* admin, const char* name) {
-    celix_log_service_entry_t* remEntry = NULL;
+static void celix_logAdmin_freeLogEntry(void *data) {
+    celix_log_service_entry_t* entry = data;
+    if (celix_utils_stringEquals(entry->name, CELIX_LOG_ADMIN_FRAMEWORK_LOG_NAME)) {
+        celix_framework_t* fw = celix_bundleContext_getFramework(entry->admin->ctx);
+        celix_framework_setLogCallback(fw, NULL, NULL);
+    }
+    free(entry->name);
+    free(entry);
+}
 
+static void celix_logAdmin_remLogSvcForName(celix_log_admin_t* admin, const char* name) {
     celixThreadRwlock_writeLock(&admin->lock);
     celix_log_service_entry_t* found = hashMap_get(admin->loggers, name);
     if (found != NULL) {
         found->count -= 1;
         if (found->count == 0) {
             //remove
-            remEntry = found;
             hashMap_remove(admin->loggers, name);
+            celix_bundleContext_unregisterServiceAsync(admin->ctx, found->logSvcId, found, celix_logAdmin_freeLogEntry);
         }
     }
     celixThreadRwlock_unlock(&admin->lock);
-
-    if (remEntry != NULL) {
-        if (celix_utils_stringEquals(remEntry->name, CELIX_LOG_ADMIN_FRAMEWORK_LOG_NAME)) {
-            celix_framework_t* fw = celix_bundleContext_getFramework(admin->ctx);
-            celix_framework_setLogCallback(fw, NULL, NULL);
-        }
-
-        celix_bundleContext_unregisterService(admin->ctx, remEntry->logSvcId);
-        free(remEntry->name);
-        free(remEntry);
-    }
 }
 
 
@@ -591,10 +588,10 @@ celix_log_admin_t* celix_logAdmin_create(celix_bundle_context_t *ctx) {
         opts.callbackHandle = admin;
         opts.addWithProperties = celix_logAdmin_addSink;
         opts.removeWithProperties = celix_logAdmin_remSink;
-        admin->logWriterTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
+        admin->logWriterTrackerId = celix_bundleContext_trackServicesWithOptionsAsync(ctx, &opts);
     }
 
-    admin->logServiceMetaTrackerId = celix_bundleContext_trackServiceTrackers(ctx, CELIX_LOG_SERVICE_NAME, admin, celix_logAdmin_trackerAdd, celix_logAdmin_trackerRem);
+    admin->logServiceMetaTrackerId = celix_bundleContext_trackServiceTrackersAsync(ctx, CELIX_LOG_SERVICE_NAME, admin, celix_logAdmin_trackerAdd, celix_logAdmin_trackerRem, NULL, NULL);
 
     {
         admin->controlSvc.handle = admin;
@@ -612,7 +609,7 @@ celix_log_admin_t* celix_logAdmin_create(celix_bundle_context_t *ctx) {
         opts.serviceName = CELIX_LOG_CONTROL_NAME;
         opts.serviceVersion = CELIX_LOG_CONTROL_VERSION;
         opts.svc = &admin->controlSvc;
-        admin->controlSvcId = celix_bundleContext_registerServiceWithOptions(ctx, &opts);
+        admin->controlSvcId = celix_bundleContext_registerServiceWithOptionsAsync(ctx, &opts);
     }
 
     {
@@ -629,12 +626,11 @@ celix_log_admin_t* celix_logAdmin_create(celix_bundle_context_t *ctx) {
         opts.serviceVersion = CELIX_SHELL_COMMAND_SERVICE_VERSION;
         opts.properties = props;
         opts.svc = &admin->cmdSvc;
-        admin->cmdSvcId = celix_bundleContext_registerServiceWithOptions(ctx, &opts);
+        admin->cmdSvcId = celix_bundleContext_registerServiceWithOptionsAsync(ctx, &opts);
     }
 
     //add log service for the framework
     celix_logAdmin_addLogSvcForName(admin, CELIX_LOG_ADMIN_FRAMEWORK_LOG_NAME);
-
     return admin;
 }
 
@@ -642,10 +638,11 @@ void celix_logAdmin_destroy(celix_log_admin_t *admin) {
     if (admin != NULL) {
         celix_logAdmin_remLogSvcForName(admin, CELIX_LOG_ADMIN_FRAMEWORK_LOG_NAME);
 
-        celix_bundleContext_unregisterService(admin->ctx, admin->cmdSvcId);
-        celix_bundleContext_unregisterService(admin->ctx, admin->controlSvcId);
-        celix_bundleContext_stopTracker(admin->ctx, admin->logServiceMetaTrackerId);
-        celix_bundleContext_stopTracker(admin->ctx, admin->logWriterTrackerId);
+        celix_bundleContext_unregisterServiceAsync(admin->ctx, admin->cmdSvcId, NULL, NULL);
+        celix_bundleContext_unregisterServiceAsync(admin->ctx, admin->controlSvcId, NULL, NULL);
+        celix_bundleContext_stopTrackerAsync(admin->ctx, admin->logServiceMetaTrackerId, NULL, NULL);
+        celix_bundleContext_stopTrackerAsync(admin->ctx, admin->logWriterTrackerId, NULL, NULL);
+        celix_bundleContext_waitForEvents(admin->ctx);
 
         assert(hashMap_size(admin->loggers) == 0); //note stopping service tracker tracker should triggered all needed remove events
         hashMap_destroy(admin->loggers, false, false);

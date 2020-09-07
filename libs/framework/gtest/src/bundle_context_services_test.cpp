@@ -1052,7 +1052,7 @@ TEST_F(CelixBundleContextServicesTests, floodEventLoopTest) {
         localData->cond.wait_for(lck, std::chrono::seconds{30}, [&]{ return localData->ready; }); //wait til ready.
         EXPECT_TRUE(localData->ready);
     };
-    long svcId = celix_bundleContext_registerServiceAsyncWithOptions(ctx, &opts);
+    long svcId = celix_bundleContext_registerServiceWithOptionsAsync(ctx, &opts);
     EXPECT_GE(svcId, 0);
 
     int nrOfAdditionalRegistrations = 300;
