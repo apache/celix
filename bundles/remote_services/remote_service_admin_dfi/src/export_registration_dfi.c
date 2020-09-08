@@ -36,14 +36,16 @@ struct export_reference {
 };
 
 struct export_registration {
+    celix_log_helper_t* helper;
     celix_bundle_context_t * context;
     struct export_reference exportReference;
     char *servId;
     dyn_interface_type *intf; //owner
-    service_tracker_t *tracker;
+
 
     celix_thread_mutex_t mutex;
     void *service; //protected by mutex
+    long trackerId; //protected by mutex
 
     //TODO add tracker and lock
     bool closed;
@@ -54,8 +56,8 @@ struct export_registration {
 };
 
 static celix_status_t exportRegistration_findAndParseInterfaceDescriptor(celix_log_helper_t *helper, celix_bundle_context_t * const context, celix_bundle_t * const bundle, char const * const name, dyn_interface_type **out);
-static void exportRegistration_addServ(export_registration_t *reg, service_reference_pt ref, void *service);
-static void exportRegistration_removeServ(export_registration_t *reg, service_reference_pt ref, void *service);
+static void exportRegistration_addServ(void *data, void *service);
+static void exportRegistration_removeServ(void *data, void *service);
 
 celix_status_t exportRegistration_create(celix_log_helper_t *helper, service_reference_pt reference, endpoint_description_t *endpoint, celix_bundle_context_t *context, FILE *logFile, export_registration_t **out) {
     celix_status_t status = CELIX_SUCCESS;
@@ -76,12 +78,14 @@ celix_status_t exportRegistration_create(celix_log_helper_t *helper, service_ref
 
 
     if (status == CELIX_SUCCESS) {
+        reg->helper = helper;
         reg->context = context;
         reg->exportReference.endpoint = endpoint;
         reg->exportReference.reference = reference;
         reg->closed = false;
         reg->logFile = logFile;
         reg->servId = strndup(servId, 1024);
+        reg->trackerId = -1L;
 
         remoteInterceptorsHandler_create(context, &reg->interceptorsHandler);
 
@@ -114,17 +118,6 @@ celix_status_t exportRegistration_create(celix_log_helper_t *helper, service_ref
     }
 
     if (status == CELIX_SUCCESS) {
-        service_tracker_customizer_t *cust = NULL;
-        status = serviceTrackerCustomizer_create(reg, NULL, (void *) exportRegistration_addServ, NULL,
-                                                 (void *) exportRegistration_removeServ, &cust);
-        if (status == CELIX_SUCCESS) {
-            char filter[32];
-            snprintf(filter, 32, "(service.id=%s)", servId);
-            status = serviceTracker_createWithFilter(reg->context, filter, cust, &reg->tracker);
-        }
-    }
-
-    if (status == CELIX_SUCCESS) {
         *out = reg;
     } else {
         celix_logHelper_log(helper, CELIX_LOG_LEVEL_ERROR, "Error creating export registration");
@@ -146,7 +139,12 @@ celix_status_t exportRegistration_call(export_registration_t *export, char *data
             bool cont = remoteInterceptorHandler_invokePreExportCall(export->interceptorsHandler, export->exportReference.endpoint->properties, sig, &metadata);
             if (cont) {
                 celixThreadMutex_lock(&export->mutex);
-                status = jsonRpc_call(export->intf, export->service, data, responseOut);
+                if (export->service != NULL) {
+                    status = jsonRpc_call(export->intf, export->service, data, responseOut);
+                } else {
+                    status = CELIX_ILLEGAL_STATE;
+                    celix_logHelper_error(export->helper, "export service pointer is NULL");
+                }
                 celixThreadMutex_unlock(&export->mutex);
 
                 remoteInterceptorHandler_invokePostExportCall(export->interceptorsHandler, export->exportReference.endpoint->properties, sig, metadata);
@@ -212,8 +210,8 @@ void exportRegistration_destroy(export_registration_t *reg) {
             reg->exportReference.endpoint = NULL;
             endpointDescription_destroy(ep);
         }
-        if (reg->tracker != NULL) {
-            serviceTracker_destroy(reg->tracker);
+        if (reg->trackerId >= 0) {
+            celix_bundleContext_stopTracker(reg->context, reg->trackerId);
         }
         if (reg->servId != NULL) {
             free(reg->servId);
@@ -230,7 +228,27 @@ void exportRegistration_destroy(export_registration_t *reg) {
 celix_status_t exportRegistration_start(export_registration_t *reg) {
     celix_status_t status = CELIX_SUCCESS;
 
-    serviceTracker_open(reg->tracker);
+    char filter[32];
+    snprintf(filter, 32, "(service.id=%s)", reg->servId);
+    celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
+    opts.filter.filter = filter;
+    opts.filter.serviceName = "*";
+    opts.filter.ignoreServiceLanguage = true;
+    opts.callbackHandle = reg;
+    opts.add = exportRegistration_addServ;
+    opts.remove = exportRegistration_removeServ;
+    long newTrkId = celix_bundleContext_trackServicesWithOptions(reg->context, &opts);
+
+    celixThreadMutex_lock(&reg->mutex);
+    long prevTrkId = reg->trackerId;
+    reg->trackerId = newTrkId;
+    celixThreadMutex_unlock(&reg->mutex);
+
+    if (prevTrkId >= 0) {
+        celix_logHelper_error(reg->helper, "Error staring export registration. The export registration already has an active service tracker");
+        celix_bundleContext_stopTracker(reg->context, prevTrkId);
+    }
+
     return status;
 }
 
@@ -239,18 +257,26 @@ celix_status_t exportRegistration_stop(export_registration_t *reg) {
     celix_status_t status = CELIX_SUCCESS;
     if (status == CELIX_SUCCESS) {
         status = bundleContext_ungetServiceReference(reg->context, reg->exportReference.reference);
-        serviceTracker_close(reg->tracker);
+
+        celixThreadMutex_lock(&reg->mutex);
+        long trkId = reg->trackerId;
+        reg->trackerId = -1L;
+        celixThreadMutex_unlock(&reg->mutex);
+        celix_bundleContext_stopTracker(reg->context, trkId);
+
     }
     return status;
 }
 
-static void exportRegistration_addServ(export_registration_t *reg, service_reference_pt ref, void *service) {
+static void exportRegistration_addServ(void *data, void *service) {
+    export_registration_t *reg = data;
     celixThreadMutex_lock(&reg->mutex);
     reg->service = service;
     celixThreadMutex_unlock(&reg->mutex);
 }
 
-static void exportRegistration_removeServ(export_registration_t *reg, service_reference_pt ref, void *service) {
+static void exportRegistration_removeServ(void *data, void *service) {
+    export_registration_t *reg = data;
     celixThreadMutex_lock(&reg->mutex);
     if (reg->service == service) {
         reg->service = NULL;
