@@ -19,7 +19,6 @@
 
 #include <jansson.h>
 #include <dyn_interface.h>
-#include <json_serializer.h>
 #include <remote_constants.h>
 #include <remote_service_admin.h>
 #include <service_tracker_customizer.h>
@@ -44,6 +43,7 @@ struct export_registration {
 
 
     celix_thread_mutex_t mutex;
+    bool active; //protected by mutex
     void *service; //protected by mutex
     long trackerId; //protected by mutex
 
@@ -86,6 +86,7 @@ celix_status_t exportRegistration_create(celix_log_helper_t *helper, service_ref
         reg->logFile = logFile;
         reg->servId = strndup(servId, 1024);
         reg->trackerId = -1L;
+        reg->active = true;
 
         remoteInterceptorsHandler_create(context, &reg->interceptorsHandler);
 
@@ -139,8 +140,11 @@ celix_status_t exportRegistration_call(export_registration_t *export, char *data
             bool cont = remoteInterceptorHandler_invokePreExportCall(export->interceptorsHandler, export->exportReference.endpoint->properties, sig, &metadata);
             if (cont) {
                 celixThreadMutex_lock(&export->mutex);
-                if (export->service != NULL) {
+                if (export->active && export->service != NULL) {
                     status = jsonRpc_call(export->intf, export->service, data, responseOut);
+                } else if (!export->active) {
+                    status = CELIX_ILLEGAL_STATE;
+                    celix_logHelper_warning(export->helper, "Cannot call an inactive service export");
                 } else {
                     status = CELIX_ILLEGAL_STATE;
                     celix_logHelper_error(export->helper, "export service pointer is NULL");
@@ -245,7 +249,7 @@ celix_status_t exportRegistration_start(export_registration_t *reg) {
     celixThreadMutex_unlock(&reg->mutex);
 
     if (prevTrkId >= 0) {
-        celix_logHelper_error(reg->helper, "Error staring export registration. The export registration already has an active service tracker");
+        celix_logHelper_error(reg->helper, "Error starting export registration. The export registration already had an active service tracker");
         celix_bundleContext_stopTracker(reg->context, prevTrkId);
     }
 
@@ -268,6 +272,12 @@ celix_status_t exportRegistration_stop(export_registration_t *reg) {
     return status;
 }
 
+void exportRegistration_setActive(export_registration_t *reg, bool active) {
+    celixThreadMutex_lock(&reg->mutex);
+    reg->active = active;
+    celixThreadMutex_unlock(&reg->mutex);
+}
+
 static void exportRegistration_addServ(void *data, void *service) {
     export_registration_t *reg = data;
     celixThreadMutex_lock(&reg->mutex);
@@ -283,14 +293,6 @@ static void exportRegistration_removeServ(void *data, void *service) {
     }
     celixThreadMutex_unlock(&reg->mutex);
 }
-
-
-celix_status_t exportRegistration_close(export_registration_t *reg) {
-    celix_status_t status = CELIX_SUCCESS;
-    exportRegistration_stop(reg);
-    return status;
-}
-
 
 celix_status_t exportRegistration_getException(export_registration_t *registration) {
     celix_status_t status = CELIX_SUCCESS;
