@@ -65,7 +65,7 @@
  * celix_bundleContext_stopTrackerAsync is available.
  *
  */
-#define CELIX_RSA_USE_STOP_EXPORT_THREAD false
+#define CELIX_RSA_USE_STOP_EXPORT_THREAD true
 
 struct remote_service_admin {
     celix_bundle_context_t *context;
