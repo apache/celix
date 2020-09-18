@@ -55,7 +55,7 @@ typedef void (*etcdlib_key_value_callback) (const char *key, const char *value, 
  * @param const char* server. String containing the IP-number of the server.
  * @param int port. Port number of the server.
  * @param int flags. bitwise flags to control etcdlib initialization. 
- * @return 0 on success, non zero otherwise.
+ * @return Pointer to the etcdlib_t struct needed by subsequent api calls
  */
 etcdlib_t* etcdlib_create(const char* server, int port, int flags);
 
