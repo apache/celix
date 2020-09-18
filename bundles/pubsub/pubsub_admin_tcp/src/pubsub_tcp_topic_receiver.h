@@ -32,7 +32,7 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
                                                             const char *scope,
                                                             const char *topic,
                                                             const celix_properties_t *topicProperties,
-                                                            pubsub_tcp_endPointStore_t *endPointStore,
+                                                            pubsub_tcp_endPointStore_t *handlerStore,
                                                             long serializerSvcId,
                                                             pubsub_serializer_service_t *serializer,
                                                             long protocolSvcId,
@@ -47,6 +47,7 @@ long pubsub_tcpTopicReceiver_protocolSvcId(pubsub_tcp_topic_receiver_t *receiver
 void pubsub_tcpTopicReceiver_listConnections(pubsub_tcp_topic_receiver_t *receiver,
                                              celix_array_list_t *connectedUrls,
                                              celix_array_list_t *unconnectedUrls);
+bool pubsub_tcpTopicReceiver_isPassive(pubsub_tcp_topic_receiver_t *sender);
 
 void pubsub_tcpTopicReceiver_connectTo(pubsub_tcp_topic_receiver_t *receiver, const char *url);
 void pubsub_tcpTopicReceiver_disconnectFrom(pubsub_tcp_topic_receiver_t *receiver, const char *url);

@@ -16,18 +16,23 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+#include <stdio.h>
+#include <string.h>
+#include "pubsub_tcp_common.h"
 
-#ifndef CELIX_PUBSUB_TCP_COMMON_H
-#define CELIX_PUBSUB_TCP_COMMON_H
 
-#include <utils.h>
-#include <hash_map.h>
-
-typedef struct pubsub_tcp_endPointStore {
-    celix_thread_mutex_t mutex;
-    hash_map_t *map;
-} pubsub_tcp_endPointStore_t;
-
-bool psa_tcp_isPassive(const char* buffer);
-
-#endif //CELIX_PUBSUB_TCP_COMMON_H
+bool psa_tcp_isPassive(const char* buffer) {
+    bool isPassive = false;
+    // Parse Properties
+    if (buffer != NULL) {
+        char buf[32];
+        snprintf(buf, 32, "%s", buffer);
+        char *trimmed = utils_stringTrim(buf);
+        if (strncasecmp("true", trimmed, strlen("true")) == 0) {
+            isPassive = true;
+        } else if (strncasecmp("false", trimmed, strlen("false")) == 0) {
+            isPassive = false;
+        }
+    }
+    return isPassive;
+}

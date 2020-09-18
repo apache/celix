@@ -130,7 +130,7 @@ struct pubsub_tcpHandler {
     double rcvTimeout;
     celix_thread_t thread;
     bool running;
-    bool isEndPoint;
+    bool enableReceiveEvent;
     bool isBlocking;
 };
 
@@ -354,16 +354,16 @@ pubsub_tcpHandler_createEntry(pubsub_tcpHandler_t *handle, int fd, char *url, ch
 static inline void
 pubsub_tcpHandler_freeEntry(psa_tcp_connection_entry_t *entry) {
     if (entry) {
-        if (entry->url) free(entry->url);
-        if (entry->interface_url) free(entry->interface_url);
+        free(entry->url);
+        free(entry->interface_url);
         if (entry->fd >= 0) close(entry->fd);
-        if (entry->buffer) free(entry->buffer);
-        if (entry->readHeaderBuffer) free(entry->readHeaderBuffer);
-        if (entry->writeHeaderBuffer) free(entry->writeHeaderBuffer);
-        if (entry->readFooterBuffer) free(entry->readFooterBuffer);
-        if (entry->writeFooterBuffer) free(entry->writeFooterBuffer);
-        if (entry->readMetaBuffer) free(entry->readMetaBuffer);
-        if (entry->writeMetaBuffer) free(entry->writeMetaBuffer);
+        free(entry->buffer);
+        free(entry->readHeaderBuffer);
+        free(entry->writeHeaderBuffer);
+        free(entry->readFooterBuffer);
+        free(entry->writeFooterBuffer);
+        free(entry->readMetaBuffer);
+        free(entry->writeMetaBuffer);
         celixThreadMutex_destroy(&entry->writeMutex);
         celixThreadMutex_destroy(&entry->readMutex);
         free(entry);
@@ -401,8 +401,7 @@ int pubsub_tcpHandler_connect(pubsub_tcpHandler_t *handle, char *url) {
         if ((rc >= 0) && addr) {
             rc = connect(fd, (struct sockaddr *) addr, sizeof(struct sockaddr));
             if (rc < 0 && errno != EINPROGRESS) {
-                L_ERROR("[TCP Socket] Cannot connect to %s:%d: using; %s err(%d): %s\n", url_info->hostname, url_info->port_nr, interface_url, errno,
-                        strerror(errno));
+                L_ERROR("[TCP Socket] Cannot connect to %s:%d: using; %s err(%d): %s\n", url_info->hostname, url_info->port_nr, interface_url, errno, strerror(errno));
                 close(fd);
             } else {
                 entry = pubsub_tcpHandler_createEntry(handle, fd, url, interface_url, &sin);
@@ -751,10 +750,10 @@ void pubsub_tcpHandler_setReceiveTimeOut(pubsub_tcpHandler_t *handle, double tim
     }
 }
 
-void pubsub_tcpHandler_setEndPoint(pubsub_tcpHandler_t *handle,bool isEndPoint) {
+void pubsub_tcpHandler_enableReceiveEvent(pubsub_tcpHandler_t *handle,bool enable) {
     if (handle != NULL) {
         celixThreadRwlock_writeLock(&handle->dbLock);
-        handle->isEndPoint = isEndPoint;
+        handle->enableReceiveEvent = enable;
         celixThreadRwlock_unlock(&handle->dbLock);
     }
 }
@@ -904,8 +903,9 @@ int pubsub_tcpHandler_read(pubsub_tcpHandler_t *handle, int fd) {
         if (nofBytesInReadBuffer >= msgSize) {
             nbytes = recvmsg(fd, &msg, MSG_NOSIGNAL);
         } else {
-            // Not enough to read return the amount in the socket read buffer
-            nbytes = nofBytesInReadBuffer;
+            // Not enough to read return the amount in the socket read buffer.
+            // Do not return 0, because then connection is closed
+            nbytes = (!nofBytesInReadBuffer) ? msgSize : nofBytesInReadBuffer;
         }
     }
     if ((nbytes >= msgSize)&&(!entry->headerError))  {
@@ -952,6 +952,8 @@ int pubsub_tcpHandler_read(pubsub_tcpHandler_t *handle, int fd) {
                     entry->fd, handle->maxRcvRetryCount, strerror(errno));
             nbytes = 0; //Return 0 as indicator to close the connection
         }
+    } else {
+        L_WARN("[TCP Socket] No message received (fd: %d), error(%d): %s, nbytes : %d", entry->fd, errno, strerror(errno), (int)nbytes);
     }
     celixThreadMutex_unlock(&entry->readMutex);
     celixThreadRwlock_unlock(&handle->dbLock);
@@ -1209,18 +1211,44 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
 // get interface URL
 //
 char *pubsub_tcpHandler_get_interface_url(pubsub_tcpHandler_t *handle) {
-    hash_map_iterator_t interface_iter =
+    hash_map_iterator_t iter =
         hashMapIterator_construct(handle->interface_url_map);
     char *url = NULL;
-    while (hashMapIterator_hasNext(&interface_iter)) {
+    while (hashMapIterator_hasNext(&iter)) {
         psa_tcp_connection_entry_t *entry =
-            hashMapIterator_nextValue(&interface_iter);
+            hashMapIterator_nextValue(&iter);
         if (entry && entry->url) {
             if (!url) {
                 url = celix_utils_strdup(entry->url);
             } else {
                 char *tmp = url;
                 asprintf(&url, "%s %s", tmp, entry->url);
+                free(tmp);
+            }
+        }
+    }
+    return url;
+}
+//
+// get interface URL
+//
+char *pubsub_tcpHandler_get_connection_url(pubsub_tcpHandler_t *handle) {
+    hash_map_iterator_t iter =
+            hashMapIterator_construct(handle->connection_url_map);
+    char *url = NULL;
+    while (hashMapIterator_hasNext(&iter)) {
+        psa_tcp_connection_entry_t *entry =
+                hashMapIterator_nextValue(&iter);
+        if (entry && entry->url) {
+            if (!url) {
+                pubsub_utils_url_t *url_info = pubsub_utils_url_parse(entry->url);
+                url = celix_utils_strdup(url_info->interface_url ? url_info->interface_url : entry->url);
+                pubsub_utils_url_free(url_info);
+            } else {
+                char *tmp = url;
+                pubsub_utils_url_t *url_info = pubsub_utils_url_parse(entry->url);
+                asprintf(&url, "%s %s", tmp, url_info->interface_url ? url_info->interface_url : entry->url);
+                pubsub_utils_url_free(url_info);
                 free(tmp);
             }
         }
@@ -1257,7 +1285,7 @@ int pubsub_tcpHandler_acceptHandler(pubsub_tcpHandler_t *handle, psa_tcp_connect
         struct epoll_event event;
         bzero(&event, sizeof(event)); // zero the struct
         event.events = EPOLLRDHUP | EPOLLERR;
-        if (handle->isEndPoint) event.events |= EPOLLIN;
+        if (handle->enableReceiveEvent) event.events |= EPOLLIN;
         event.data.fd = entry->fd;
         // Register Read to epoll
         rc = epoll_ctl(handle->efd, EPOLL_CTL_ADD, entry->fd, &event);

@@ -65,7 +65,7 @@ void pubsub_tcpHandler_setSendRetryCnt(pubsub_tcpHandler_t *handle, unsigned int
 void pubsub_tcpHandler_setReceiveRetryCnt(pubsub_tcpHandler_t *handle, unsigned int count);
 void pubsub_tcpHandler_setSendTimeOut(pubsub_tcpHandler_t *handle, double timeout);
 void pubsub_tcpHandler_setReceiveTimeOut(pubsub_tcpHandler_t *handle, double timeout);
-void pubsub_tcpHandler_setEndPoint(pubsub_tcpHandler_t *handle, bool isEndPoint);
+void pubsub_tcpHandler_enableReceiveEvent(pubsub_tcpHandler_t *handle, bool enable);
 void pubsub_tcpHandler_setBlocking(pubsub_tcpHandler_t *handle, bool isBlocking);
 
 int pubsub_tcpHandler_read(pubsub_tcpHandler_t *handle, int fd);
@@ -86,6 +86,7 @@ int pubsub_tcpHandler_addAcceptConnectionCallback(pubsub_tcpHandler_t *handle,
                                                   pubsub_tcpHandler_acceptConnectMessage_callback_t connectMessageCallback,
                                                   pubsub_tcpHandler_acceptConnectMessage_callback_t disconnectMessageCallback);
 char *pubsub_tcpHandler_get_interface_url(pubsub_tcpHandler_t *handle);
+char *pubsub_tcpHandler_get_connection_url(pubsub_tcpHandler_t *handle);
 void pubsub_tcpHandler_setThreadPriority(pubsub_tcpHandler_t *handle, long prio, const char *sched);
 void pubsub_tcpHandler_setThreadName(pubsub_tcpHandler_t *handle, const char *topic, const char *scope);
 

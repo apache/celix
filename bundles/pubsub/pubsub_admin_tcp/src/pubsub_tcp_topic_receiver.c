@@ -62,6 +62,7 @@ struct pubsub_tcp_topic_receiver {
     char *topic;
     size_t timeout;
     bool metricsEnabled;
+    bool isPassive;
     pubsub_tcpHandler_t *socketHandler;
     pubsub_tcpHandler_t *sharedSocketHandler;
     pubsub_interceptors_handler_t *interceptorsHandler;
@@ -131,7 +132,7 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
                                                             const char *scope,
                                                             const char *topic,
                                                             const celix_properties_t *topicProperties,
-                                                            pubsub_tcp_endPointStore_t *endPointStore,
+                                                            pubsub_tcp_endPointStore_t *handlerStore,
                                                             long serializerSvcId,
                                                             pubsub_serializer_service_t *serializer,
                                                             long protocolSvcId,
@@ -145,53 +146,43 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
     receiver->protocol = protocol;
     receiver->scope = scope == NULL ? NULL : strndup(scope, 1024 * 1024);
     receiver->topic = strndup(topic, 1024 * 1024);
-    bool isServerEndPoint = false;
-
-    /* Check if it's a static endpoint */
-    const char *staticClientEndPointUrls = NULL;
-    const char *staticServerEndPointUrls = NULL;
-    const char *staticConnectUrls = NULL;
-
     pubsubInterceptorsHandler_create(ctx, scope, topic, &receiver->interceptorsHandler);
-    staticConnectUrls = pubsub_getEnvironmentVariableWithScopeTopic(ctx, PUBSUB_TCP_STATIC_CONNECT_URLS_FOR, topic, scope);
+    const char *staticConnectUrls = pubsub_getEnvironmentVariableWithScopeTopic(ctx, PUBSUB_TCP_STATIC_CONNECT_URLS_FOR, topic, scope);
+    const char *isPassive = pubsub_getEnvironmentVariableWithScopeTopic(ctx, PUBSUB_TCP_PASSIVE_ENABLED, topic, scope);
+    const char *passiveKey = pubsub_getEnvironmentVariableWithScopeTopic(ctx, PUBSUB_TCP_PASSIVE_SELECTION_KEY, topic, scope);
 
     if (topicProperties != NULL) {
         if(staticConnectUrls == NULL) {
             staticConnectUrls = celix_properties_get(topicProperties, PUBSUB_TCP_STATIC_CONNECT_URLS, NULL);
         }
-        const char *endPointType = celix_properties_get(topicProperties, PUBSUB_TCP_STATIC_ENDPOINT_TYPE, NULL);
-        if (endPointType != NULL) {
-            if (strncmp(PUBSUB_TCP_STATIC_ENDPOINT_TYPE_CLIENT, endPointType,
-                        strlen(PUBSUB_TCP_STATIC_ENDPOINT_TYPE_CLIENT)) == 0) {
-                staticClientEndPointUrls = staticConnectUrls;
-            }
-            if (strncmp(PUBSUB_TCP_STATIC_ENDPOINT_TYPE_SERVER, endPointType,
-                        strlen(PUBSUB_TCP_STATIC_ENDPOINT_TYPE_SERVER)) == 0) {
-                staticServerEndPointUrls = celix_properties_get(topicProperties, PUBSUB_TCP_STATIC_BIND_URL, NULL);
-                isServerEndPoint = true;
-            }
+        if (isPassive == NULL) {
+            isPassive = celix_properties_get(topicProperties, PUBSUB_TCP_PASSIVE_CONFIGURED, NULL);
+        }
+        if (passiveKey == NULL) {
+            passiveKey = celix_properties_get(topicProperties, PUBSUB_TCP_PASSIVE_KEY, NULL);
         }
     }
+    receiver->isPassive = psa_tcp_isPassive(isPassive);
+
     // Set receiver connection thread timeout.
     // property is in ms, timeout value in us. (convert ms to us).
     receiver->timeout = celix_bundleContext_getPropertyAsLong(ctx, PSA_TCP_SUBSCRIBER_CONNECTION_TIMEOUT,
                                                               PSA_TCP_SUBSCRIBER_CONNECTION_DEFAULT_TIMEOUT) * 1000;
     /* When it's an endpoint share the socket with the sender */
-    if ((staticClientEndPointUrls != NULL) || (staticServerEndPointUrls)) {
-        celixThreadMutex_lock(&endPointStore->mutex);
-        const char *endPointUrl = (staticServerEndPointUrls) ? staticServerEndPointUrls : staticClientEndPointUrls;
-        pubsub_tcpHandler_t *entry = hashMap_get(endPointStore->map, endPointUrl);
+    if (passiveKey != NULL) {
+        celixThreadMutex_lock(&handlerStore->mutex);
+        pubsub_tcpHandler_t *entry = hashMap_get(handlerStore->map, passiveKey);
         if (entry == NULL) {
             if (receiver->socketHandler == NULL)
                 receiver->socketHandler = pubsub_tcpHandler_create(receiver->protocol, receiver->logHelper);
             entry = receiver->socketHandler;
             receiver->sharedSocketHandler = receiver->socketHandler;
-            hashMap_put(endPointStore->map, (void *) endPointUrl, entry);
+            hashMap_put(handlerStore->map, (void *) passiveKey, entry);
         } else {
             receiver->socketHandler = entry;
             receiver->sharedSocketHandler = entry;
         }
-        celixThreadMutex_unlock(&endPointStore->mutex);
+        celixThreadMutex_unlock(&handlerStore->mutex);
     } else {
         receiver->socketHandler = pubsub_tcpHandler_create(receiver->protocol, receiver->logHelper);
     }
@@ -227,7 +218,7 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
     receiver->subscribers.map = hashMap_create(NULL, NULL, NULL, NULL);
     receiver->requestedConnections.map = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
 
-    if ((staticConnectUrls != NULL) && (receiver->socketHandler != NULL) && (staticServerEndPointUrls == NULL)) {
+    if ((staticConnectUrls != NULL) && (receiver->socketHandler != NULL) && (!receiver->isPassive)) {
         char *urlsCopy = strndup(staticConnectUrls, 1024 * 1024);
         char *url;
         char *save = urlsCopy;
@@ -243,7 +234,7 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
         free(urlsCopy);
     }
 
-    if (receiver->socketHandler != NULL && (!isServerEndPoint)) {
+    if (receiver->socketHandler != NULL && (!receiver->isPassive)) {
         // Configure Receiver thread
         receiver->thread.running = true;
         celixThread_create(&receiver->thread.thread, NULL, psa_tcp_recvThread, receiver);
@@ -359,8 +350,20 @@ long pubsub_tcpTopicReceiver_protocolSvcId(pubsub_tcp_topic_receiver_t *receiver
     return receiver->protocolSvcId;
 }
 
-void pubsub_tcpTopicReceiver_listConnections(pubsub_tcp_topic_receiver_t *receiver, celix_array_list_t *connectedUrls, celix_array_list_t *unconnectedUrls) {
+void pubsub_tcpTopicReceiver_listConnections(pubsub_tcp_topic_receiver_t *receiver, celix_array_list_t *connectedUrls,
+                                             celix_array_list_t *unconnectedUrls) {
     celixThreadMutex_lock(&receiver->requestedConnections.mutex);
+    if (receiver->isPassive) {
+        char* interface_url = pubsub_tcpHandler_get_interface_url(receiver->socketHandler);
+        char *url = NULL;
+        asprintf(&url, "%s (passive)", interface_url ? interface_url : "");
+        if (interface_url) {
+            celix_arrayList_add(connectedUrls, url);
+        } else {
+            celix_arrayList_add(unconnectedUrls, url);
+        }
+        free(interface_url);
+    } else {
     hash_map_iterator_t iter = hashMapIterator_construct(receiver->requestedConnections.map);
     while (hashMapIterator_hasNext(&iter)) {
         psa_tcp_requested_connection_entry_t *entry = hashMapIterator_nextValue(&iter);
@@ -370,9 +373,14 @@ void pubsub_tcpTopicReceiver_listConnections(pubsub_tcp_topic_receiver_t *receiv
             celix_arrayList_add(connectedUrls, url);
         } else {
             celix_arrayList_add(unconnectedUrls, url);
+            }
         }
     }
     celixThreadMutex_unlock(&receiver->requestedConnections.mutex);
+}
+
+bool pubsub_tcpTopicReceiver_isPassive(pubsub_tcp_topic_receiver_t *receiver) {
+    return receiver->isPassive;
 }
 
 void pubsub_tcpTopicReceiver_connectTo(
@@ -708,7 +716,7 @@ static void psa_tcp_connectToAllRequestedConnections(pubsub_tcp_topic_receiver_t
         hash_map_iterator_t iter = hashMapIterator_construct(receiver->requestedConnections.map);
         while (hashMapIterator_hasNext(&iter)) {
             psa_tcp_requested_connection_entry_t *entry = hashMapIterator_nextValue(&iter);
-            if ((entry) && (!entry->connected)) {
+            if ((entry) && (!entry->connected) && (!receiver->isPassive)) {
                 int rc = pubsub_tcpHandler_connect(entry->parent->socketHandler, entry->url);
                 if (rc < 0) {
                     allConnected = false;

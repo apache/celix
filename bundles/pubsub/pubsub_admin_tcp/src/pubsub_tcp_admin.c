@@ -434,17 +434,19 @@ celix_status_t pubsub_tcpAdmin_setupTopicSender(void *handle, const char *scope,
             const char *psaType = PUBSUB_TCP_ADMIN_TYPE;
             const char *serType = serEntry->serType;
             const char *protType = protEntry->protType;
-            newEndpoint = pubsubEndpoint_create(psa->fwUUID, scope, topic, PUBSUB_PUBLISHER_ENDPOINT_TYPE, psaType,
-                                                serType, protType, NULL);
+            newEndpoint = pubsubEndpoint_create(psa->fwUUID, scope, topic, PUBSUB_PUBLISHER_ENDPOINT_TYPE, psaType, serType, protType, NULL);
             celix_properties_set(newEndpoint, PUBSUB_TCP_URL_KEY, pubsub_tcpTopicSender_url(sender));
 
             celix_properties_setBool(newEndpoint, PUBSUB_TCP_STATIC_CONFIGURED, pubsub_tcpTopicSender_isStatic(sender));
-            celix_properties_set(newEndpoint, PUBSUB_ENDPOINT_VISIBILITY, PUBSUB_ENDPOINT_SYSTEM_VISIBILITY);
-
+            if (pubsub_tcpTopicSender_isPassive(sender)) {
+                celix_properties_set(newEndpoint, PUBSUB_ENDPOINT_VISIBILITY, PUBSUB_ENDPOINT_LOCAL_VISIBILITY);
+            } else {
+                celix_properties_set(newEndpoint, PUBSUB_ENDPOINT_VISIBILITY, PUBSUB_ENDPOINT_SYSTEM_VISIBILITY);
+            }
             //if available also set container name
             const char *cn = celix_bundleContext_getProperty(psa->ctx, "CELIX_CONTAINER_NAME", NULL);
             if (cn != NULL)
-                celix_properties_set(newEndpoint, "container_name", cn);
+              celix_properties_set(newEndpoint, "container_name", cn);
             hashMap_put(psa->topicSenders.map, key, sender);
         } else {
             L_ERROR("[PSA TCP] Error creating a TopicSender");
@@ -678,8 +680,6 @@ bool pubsub_tcpAdmin_executeCommand(void *handle, const char *commandLine __attr
                                     FILE *errStream __attribute__((unused))) {
     pubsub_tcp_admin_t *psa = handle;
     celix_status_t status = CELIX_SUCCESS;
-
-
     char *line = celix_utils_strdup(commandLine);
     char *token = line;
     strtok_r(line, " ", &token); //first token is command name
@@ -713,11 +713,12 @@ bool pubsub_tcpAdmin_executeCommand(void *handle, const char *commandLine __attr
         const char *scope = pubsub_tcpTopicSender_scope(sender);
         const char *topic = pubsub_tcpTopicSender_topic(sender);
         const char *url = pubsub_tcpTopicSender_url(sender);
+        const char *isPassive = pubsub_tcpTopicSender_isPassive(sender) ? " (passive)" : "";
         const char *postUrl = pubsub_tcpTopicSender_isStatic(sender) ? " (static)" : "";
         fprintf(out, "|- Topic Sender %s/%s\n", scope == NULL ? "(null)" : scope, topic);
         fprintf(out, "   |- serializer type = %s\n", serType);
         fprintf(out, "   |- protocol type = %s\n", protType);
-        fprintf(out, "   |- url            = %s%s\n", url, postUrl);
+        fprintf(out, "   |- url            = %s%s%s\n", url, postUrl, isPassive);
     }
     celixThreadMutex_unlock(&psa->topicSenders.mutex);
     celixThreadMutex_unlock(&psa->protocols.mutex);

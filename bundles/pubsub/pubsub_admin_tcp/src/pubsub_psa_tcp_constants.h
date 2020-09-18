@@ -104,21 +104,30 @@
  */
 #define PUBSUB_TCP_STATIC_CONNECT_URLS          "tcp.static.connect.urls"
 
+
+/**
+ * Defines if the publisher / subscriber is a passive endpoint and shares
+ * the connection with publisher / subscriber endpoint with the matching (passive) key
+ */
+#define PUBSUB_TCP_PASSIVE_CONFIGURED            "tcp.passive.configured"
+#define PUBSUB_TCP_PASSIVE_KEY                   "tcp.passive.key"
+
+/**
+ * Name of environment variable to indicate that passive endpoint is configured
+ * e.g. PSA_TCP_PASSIVE_CONFIGURED_topic_scope="true"
+ */
+#define PUBSUB_TCP_PASSIVE_ENABLED               "PSA_TCP_PASSIVE_CONFIGURED_"
+/**
+ * Name of environment variable to configure the passive key (see PUBSUB_TCP_PASSIVE_KEY )
+ * e.g. PSA_TCP_PASSIVE_KEY__topic_scope="tcp://localhost:4444"
+ */
+#define PUBSUB_TCP_PASSIVE_SELECTION_KEY         "PSA_TCP_PASSIVE_KEY_"
+
 /**
  * Name of environment variable with space-separated list of ips/urls to connect to
  * e.g. PSA_TCP_STATIC_CONNECT_FOR_topic_scope="tcp://127.0.0.1:4444 tcp://127.0.0.2:4444"
  */
 #define PUBSUB_TCP_STATIC_CONNECT_URLS_FOR "PSA_TCP_STATIC_CONNECT_URL_FOR_"
-
-/**
- * The static endpoint type which a static endpoint should be configured.
- * Can be set in the topic properties.
- */
-#define PUBSUB_TCP_STATIC_ENDPOINT_TYPE         "tcp.static.endpoint.type"
-
-#define PUBSUB_TCP_STATIC_ENDPOINT_TYPE_SERVER  "server"
-#define PUBSUB_TCP_STATIC_ENDPOINT_TYPE_CLIENT  "client"
-
 
 /**
  * Realtime thread prio and scheduling information. This is used to setup the thread prio/sched of the
