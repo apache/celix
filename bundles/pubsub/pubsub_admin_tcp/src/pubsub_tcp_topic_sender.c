@@ -213,29 +213,29 @@ pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
             urls = pubsub_utils_url_get_url(sin, NULL);
             free(sin);
         }
-    }
-    if (!sender->url) {
-        char *urlsCopy = strndup(urls, 1024 * 1024);
-        char *url;
-        char *save = urlsCopy;
-        while ((url = strtok_r(save, " ", &save))) {
-            int retry = 0;
-            while (url && retry < TCP_BIND_MAX_RETRY) {
-                pubsub_utils_url_t *urlInfo = pubsub_utils_url_parse(url);
-                int rc = pubsub_tcpHandler_listen(sender->socketHandler, urlInfo->url);
-                if (rc < 0) {
-                    L_WARN("Error for tcp_bind using dynamic bind url '%s'. %s", urlInfo->url, strerror(errno));
-                } else {
-                    url = NULL;
+        if (!sender->url) {
+            char *urlsCopy = strndup(urls, 1024 * 1024);
+            char *url;
+            char *save = urlsCopy;
+            while ((url = strtok_r(save, " ", &save))) {
+                int retry = 0;
+                while (url && retry < TCP_BIND_MAX_RETRY) {
+                    pubsub_utils_url_t *urlInfo = pubsub_utils_url_parse(url);
+                    int rc = pubsub_tcpHandler_listen(sender->socketHandler, urlInfo->url);
+                    if (rc < 0) {
+                        L_WARN("Error for tcp_bind using dynamic bind url '%s'. %s", urlInfo->url, strerror(errno));
+                    } else {
+                        url = NULL;
+                    }
+                    pubsub_utils_url_free(urlInfo);
+                    retry++;
                 }
-                pubsub_utils_url_free(urlInfo);
-                retry++;
             }
+            free(urlsCopy);
+            sender->url = pubsub_tcpHandler_get_interface_url(sender->socketHandler);
         }
-        free(urlsCopy);
-        sender->url = pubsub_tcpHandler_get_interface_url(sender->socketHandler);
+        free(urls);
     }
-    free(urls);
 
     //register publisher services using a service factory
     if ((sender->url != NULL) ||  (sender->isPassive)) {
