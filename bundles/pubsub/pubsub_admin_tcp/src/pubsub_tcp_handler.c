@@ -332,6 +332,10 @@ pubsub_tcpHandler_createEntry(pubsub_tcpHandler_t *handle, int fd, char *url, ch
         entry->readFooterSize = size;
         entry->writeFooterSize = size;
         entry->bufferSize = handle->bufferSize;
+        // incase header is included in the payload buffer, make at least the payload buffer the size of the header
+        if (!entry->readHeaderBufferSize) {
+            entry->bufferSize = MAX(handle->bufferSize, entry->headerSize);
+        }
         entry->connected = false;
         unsigned minimalMsgSize = entry->writeHeaderBufferSize + entry->writeFooterSize;
         if ((minimalMsgSize > handle->maxMsgSize) && (handle->maxMsgSize)) {
@@ -805,18 +809,10 @@ int pubsub_tcpHandler_read(pubsub_tcpHandler_t *handle, int fd) {
         return -1;
     }
     celixThreadMutex_lock(&entry->readMutex);
-    if (entry->readHeaderBufferSize && entry->readHeaderBuffer) {
-        entry->readHeaderBuffer = malloc(entry->readHeaderBufferSize);
-    }
-
-    // Message buffer is to small, reallocate to make it bigger
-    if ((!entry->readHeaderBufferSize) && (entry->headerSize > entry->bufferSize)) {
-        handle->bufferSize = MAX(handle->bufferSize, entry->headerSize);
-        char *buffer = realloc(entry->buffer, (size_t) handle->bufferSize);
-        if (buffer) {
-            entry->buffer = buffer;
-            entry->bufferSize = handle->bufferSize;
-        }
+    // When header is included in payload buffer, allocate buffer.
+    // bufferSize is at least the header size
+    if ((entry->buffer == NULL) && (entry->readHeaderBufferSize == 0)) {
+        entry->buffer  = malloc((size_t) handle->bufferSize);
     }
     struct msghdr msg;
     struct iovec msg_iov[IOV_MAX];
