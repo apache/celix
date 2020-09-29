@@ -353,6 +353,21 @@ static void remoteServiceAdmin_teardownStopExportsThread(remote_service_admin_t*
     }
 }
 
+static void remoteServiceAdmin_stopExport(remote_service_admin_t *admin, export_registration_t* export) {
+    if (export != NULL) {
+        if (CELIX_RSA_USE_STOP_EXPORT_THREAD) {
+            celixThreadMutex_lock(&admin->stopExportsMutex);
+            exportRegistration_setActive(export, false);
+            celix_arrayList_add(admin->stopExports, export);
+            celixThreadCondition_broadcast(&admin->stopExportsCond);
+            celixThreadMutex_unlock(&admin->stopExportsMutex);
+        } else {
+            exportRegistration_waitTillNotUsed(export);
+            exportRegistration_stop(export);
+            exportRegistration_destroy(export);
+        }
+    }
+}
 
 celix_status_t remoteServiceAdmin_stop(remote_service_admin_t *admin) {
     celix_status_t status = CELIX_SUCCESS;
@@ -365,18 +380,7 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_t *admin) {
         int i;
         for (i = 0; i < arrayList_size(exports); i++) {
             export_registration_t *export = arrayList_get(exports, i);
-            if (export != NULL) {
-                if (CELIX_RSA_USE_STOP_EXPORT_THREAD) {
-                    celixThreadMutex_lock(&admin->stopExportsMutex);
-                    exportRegistration_setActive(export, false);
-                    celix_arrayList_add(admin->stopExports, export);
-                    celixThreadCondition_broadcast(&admin->stopExportsCond);
-                    celixThreadMutex_unlock(&admin->stopExportsMutex);
-                } else {
-                    exportRegistration_stop(export);
-                    exportRegistration_destroy(export);
-                }
-            }
+            remoteServiceAdmin_stopExport(admin, export);
         }
         arrayList_destroy(exports);
     }
@@ -420,6 +424,8 @@ celix_status_t importRegistration_getFactory(import_registration_t *import, serv
 
 static int remoteServiceAdmin_callback(struct mg_connection *conn) {
     int result = 1; // zero means: let civetweb handle it further, any non-zero value means it is handled by us...
+    export_registration_t *export = NULL;
+    celix_properties_t *metadata = NULL;
 
     const struct mg_request_info *request_info = mg_get_request_info(conn);
     if (request_info->uri != NULL) {
@@ -440,8 +446,6 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
             service[pos] = '\0';
             unsigned long serviceId = strtoul(service,NULL,10);
 
-            celix_properties_t *metadata = NULL;
-
             for (int i = 0; i < request_info->num_headers; i++) {
                 struct mg_header header = request_info->http_headers[i];
                 if (strncmp(header.name, "X-RSA-Metadata-", 15) == 0) {
@@ -455,7 +459,6 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
             celixThreadRwlock_readLock(&rsa->exportedServicesLock);
 
             //find endpoint
-            export_registration_t *export = NULL;
             hash_map_iterator_pt iter = hashMapIterator_create(rsa->exportedServices);
             while (hashMapIterator_hasNext(iter)) {
                 hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
@@ -478,36 +481,41 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
             hashMapIterator_destroy(iter);
 
             if (export != NULL) {
-
-                uint64_t datalength = request_info->content_length;
-                char* data = malloc(datalength + 1);
-                mg_read(conn, data, datalength);
-                data[datalength] = '\0';
-
-                char *response = NULL;
-                int responceLength = 0;
-                int rc = exportRegistration_call(export, data, -1, metadata, &response, &responceLength);
-                if (rc != CELIX_SUCCESS) {
-                    RSA_LOG_ERROR(rsa, "Error trying to invoke remove service, got error %i\n", rc);
-                }
-
-                if (rc == CELIX_SUCCESS && response != NULL) {
-                    mg_write(conn, data_response_headers, strlen(data_response_headers));
-                    mg_write(conn, response, strlen(response));
-                    free(response);
-                } else {
-                    mg_write(conn, no_content_response_headers, strlen(no_content_response_headers));
-                }
-                result = 1;
-
-                free(data);
+                exportRegistration_increaseUsage(export);
             } else {
                 result = 0;
                 RSA_LOG_WARNING(rsa, "No export registration found for service id %lu", serviceId);
             }
-
             celixThreadRwlock_unlock(&rsa->exportedServicesLock);
+        }
 
+
+        if (export != NULL) {
+            uint64_t datalength = request_info->content_length;
+            char* data = malloc(datalength + 1);
+            mg_read(conn, data, datalength);
+            data[datalength] = '\0';
+
+            char *response = NULL;
+            int responceLength = 0;
+            int rc = exportRegistration_call(export, data, -1, metadata, &response, &responceLength);
+            if (rc != CELIX_SUCCESS) {
+                RSA_LOG_ERROR(rsa, "Error trying to invoke remove service, got error %i\n", rc);
+            }
+
+            if (rc == CELIX_SUCCESS && response != NULL) {
+                mg_write(conn, data_response_headers, strlen(data_response_headers));
+                mg_write(conn, response, strlen(response));
+                free(response);
+            } else {
+                mg_write(conn, no_content_response_headers, strlen(no_content_response_headers));
+            }
+            result = 1;
+
+            free(data);
+            exportRegistration_decreaseUsage(export);
+
+            //TODO free metadata?
         }
     }
 
@@ -633,17 +641,7 @@ celix_status_t remoteServiceAdmin_removeExportedService(remote_service_admin_t *
             arrayList_destroy(exports);
         }
 
-        if (CELIX_RSA_USE_STOP_EXPORT_THREAD) {
-            celixThreadMutex_lock(&admin->stopExportsMutex);
-            exportRegistration_setActive(registration, false);
-            celix_arrayList_add(admin->stopExports, registration);
-            celixThreadCondition_broadcast(&admin->stopExportsCond);
-            celixThreadMutex_unlock(&admin->stopExportsMutex);
-        } else {
-            exportRegistration_stop(registration);
-            exportRegistration_destroy(registration);
-        }
-
+        remoteServiceAdmin_stopExport(admin, registration);
         celixThreadRwlock_unlock(&admin->exportedServicesLock);
 
         free(ref);

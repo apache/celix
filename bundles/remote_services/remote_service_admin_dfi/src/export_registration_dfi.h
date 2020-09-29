@@ -34,5 +34,9 @@ void exportRegistration_setActive(export_registration_t *registration, bool acti
 
 celix_status_t exportRegistration_call(export_registration_t *export, char *data, int datalength, celix_properties_t *metadata, char **response, int *responseLength);
 
+void exportRegistration_increaseUsage(export_registration_t *export);
+void exportRegistration_decreaseUsage(export_registration_t *export);
+void exportRegistration_waitTillNotUsed(export_registration_t *export);
+
 
 #endif //CELIX_EXPORT_REGISTRATION_DFI_H

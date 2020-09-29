@@ -291,6 +291,14 @@ static bool bndTestCreateDestroyComponentWithRemoteService(void *handle) {
     return true;
 }
 
+static bool testCreateRemoteServiceInRemoteCall(void *handle) {
+    struct activator *act = handle;
+    int rc;
+    TIMED_EXPR(rc = act->remoteExample->createAdditionalRemoteService(act->remoteExample->handle));
+    printf("Call createAdditionalRemoteService took %f ms\n", diff);
+    return rc == 0;
+}
+
 static celix_status_t bndStart(struct activator *act, celix_bundle_context_t* ctx) {
     //initialize service struct
     act->ctx = ctx;
@@ -304,6 +312,7 @@ static celix_status_t bndStart(struct activator *act, celix_bundle_context_t* ct
     act->testSvc.testRemoteEnum = bndTestRemoteEnum;
     act->testSvc.testRemoteAction = bndTestRemoteAction;
     act->testSvc.testRemoteComplex = bndTestRemoteComplex;
+    act->testSvc.testCreateRemoteServiceInRemoteCall = testCreateRemoteServiceInRemoteCall;
     act->testSvc.testCreateDestroyComponentWithRemoteService = bndTestCreateDestroyComponentWithRemoteService;
 
 

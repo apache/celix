@@ -43,9 +43,11 @@ struct export_registration {
 
 
     celix_thread_mutex_t mutex;
+    celix_thread_cond_t  cond;
     bool active; //protected by mutex
     void *service; //protected by mutex
     long trackerId; //protected by mutex
+    int useCount; //protected by mutex
 
     //TODO add tracker and lock
     bool closed;
@@ -91,6 +93,7 @@ celix_status_t exportRegistration_create(celix_log_helper_t *helper, service_ref
         remoteInterceptorsHandler_create(context, &reg->interceptorsHandler);
 
         celixThreadMutex_create(&reg->mutex, NULL);
+        celixThreadCondition_init(&reg->cond, NULL);
     }
 
     const char *exports = NULL;
@@ -126,6 +129,28 @@ celix_status_t exportRegistration_create(celix_log_helper_t *helper, service_ref
     }
 
     return status;
+}
+
+
+void exportRegistration_increaseUsage(export_registration_t *export) {
+    celixThreadMutex_lock(&export->mutex);
+    export->useCount += 1;
+    celixThreadMutex_unlock(&export->mutex);
+}
+
+void exportRegistration_decreaseUsage(export_registration_t *export) {
+    celixThreadMutex_lock(&export->mutex);
+    export->useCount -= 1;
+    celixThreadCondition_broadcast(&export->cond);
+    celixThreadMutex_unlock(&export->mutex);
+}
+
+void exportRegistration_waitTillNotUsed(export_registration_t *export) {
+    celixThreadMutex_lock(&export->mutex);
+    while (export->useCount > 0) {
+        celixThreadCondition_wait(&export->cond, &export->mutex);
+    }
+    celixThreadMutex_unlock(&export->mutex);
 }
 
 celix_status_t exportRegistration_call(export_registration_t *export, char *data, int datalength, celix_properties_t *metadata, char **responseOut, int *responseLength) {
@@ -224,7 +249,7 @@ void exportRegistration_destroy(export_registration_t *reg) {
         remoteInterceptorsHandler_destroy(reg->interceptorsHandler);
 
         celixThreadMutex_destroy(&reg->mutex);
-
+        celixThreadCondition_destroy(&reg->cond);
         free(reg);
     }
 }
