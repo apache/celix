@@ -40,6 +40,7 @@
     } while(0)
 
 struct activator {
+    celix_bundle_context_t *ctx;
     long svcId;
     struct tst_service testSvc;
 
@@ -269,8 +270,38 @@ static bool bndTestRemoteComplex(void *handle) {
     return ok;
 }
 
+static bool bndTestCreateDestroyComponentWithRemoteService(void *handle) {
+    struct activator *act = handle;
+
+    celix_properties_t *properties = celix_properties_create();
+    celix_properties_set(properties, "service.exported.interfaces", CALCULATOR_SERVICE);
+
+    calculator_service_t calcSvc;
+    calcSvc.handle = NULL;
+    calcSvc.add = NULL; //note for this test case the actual services can be NULL
+    calcSvc.sub = NULL; //note for this test case the actual services can be NULL
+    calcSvc.sqrt = NULL; //note for this test case the actual services can be NULL
+
+    celix_dm_component_t *cmp = celix_dmComponent_create(act->ctx, "test");
+    celix_dmComponent_addInterface(cmp, CALCULATOR_SERVICE, NULL, &calcSvc, properties);
+
+    celix_dependency_manager_t *dm = celix_bundleContext_getDependencyManager(act->ctx);
+    dependencyManager_add(dm, cmp);
+    dependencyManager_removeAllComponents(dm); //note should not deadlock
+    return true;
+}
+
+static bool testCreateRemoteServiceInRemoteCall(void *handle) {
+    struct activator *act = handle;
+    int rc;
+    TIMED_EXPR(rc = act->remoteExample->createAdditionalRemoteService(act->remoteExample->handle));
+    printf("Call createAdditionalRemoteService took %f ms\n", diff);
+    return rc == 0;
+}
+
 static celix_status_t bndStart(struct activator *act, celix_bundle_context_t* ctx) {
     //initialize service struct
+    act->ctx = ctx;
     act->testSvc.handle = act;
     act->testSvc.isCalcDiscovered = bndIsCalculatorDiscovered;
     act->testSvc.isRemoteExampleDiscovered = bndIsRemoteExampleDiscovered;
@@ -281,6 +312,8 @@ static celix_status_t bndStart(struct activator *act, celix_bundle_context_t* ct
     act->testSvc.testRemoteEnum = bndTestRemoteEnum;
     act->testSvc.testRemoteAction = bndTestRemoteAction;
     act->testSvc.testRemoteComplex = bndTestRemoteComplex;
+    act->testSvc.testCreateRemoteServiceInRemoteCall = testCreateRemoteServiceInRemoteCall;
+    act->testSvc.testCreateDestroyComponentWithRemoteService = bndTestCreateDestroyComponentWithRemoteService;
 
 
     //create mutex

@@ -61,6 +61,8 @@ typedef struct remote_example {
 
     int (*setComplex)(void *handle, struct complex_input_example *exmpl, struct complex_output_example **out);
 
+    int (*createAdditionalRemoteService)(void *handle);
+
 } remote_example_t;
 
 #endif //CELIX_REMOTE_EXAMPLE_H
