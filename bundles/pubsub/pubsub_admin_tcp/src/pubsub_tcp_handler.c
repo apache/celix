@@ -131,7 +131,6 @@ struct pubsub_tcpHandler {
     celix_thread_t thread;
     bool running;
     bool enableReceiveEvent;
-    bool isBlocking;
 };
 
 static inline int pubsub_tcpHandler_closeConnectionEntry(pubsub_tcpHandler_t *handle, psa_tcp_connection_entry_t *entry, bool lock);
@@ -429,14 +428,6 @@ int pubsub_tcpHandler_connect(pubsub_tcpHandler_t *handle, char *url) {
             if (rc < 0) {
                 pubsub_tcpHandler_freeEntry(entry);
                 L_ERROR("[TCP Socket] Cannot create poll event %s\n", strerror(errno));
-                entry = NULL;
-            }
-            if (!handle->isBlocking) {
-                rc = pubsub_tcpHandler_makeNonBlocking(handle, entry->fd);
-            }
-            if (rc < 0) {
-                pubsub_tcpHandler_freeEntry(entry);
-                L_ERROR("[TCP Socket] Cannot make not blocking %s\n", strerror(errno));
                 entry = NULL;
             }
         }
@@ -762,14 +753,6 @@ void pubsub_tcpHandler_enableReceiveEvent(pubsub_tcpHandler_t *handle,bool enabl
     }
 }
 
-void pubsub_tcpHandler_setBlocking(pubsub_tcpHandler_t *handle,bool isBlocking) {
-    if (handle != NULL) {
-        celixThreadRwlock_writeLock(&handle->dbLock);
-        handle->isBlocking = isBlocking;
-        celixThreadRwlock_unlock(&handle->dbLock);
-    }
-}
-
 static inline
 void pubsub_tcpHandler_decodePayload(pubsub_tcpHandler_t *handle, psa_tcp_connection_entry_t *entry) {
 
@@ -896,12 +879,16 @@ int pubsub_tcpHandler_read(pubsub_tcpHandler_t *handle, int fd) {
         if (ioctl(fd, FIONREAD, &nofBytesInReadBuffer)) {
             L_ERROR("[TCP Socket] socket: %d, url: %s, cannot  read nof bytes in socket read buffer \n", entry->fd, entry->url);
         }
-        if (nofBytesInReadBuffer >= msgSize) {
-            nbytes = recvmsg(fd, &msg, MSG_NOSIGNAL);
+        // If there is data in buffer, read the data. using blocking read
+        if (nofBytesInReadBuffer) {
+            nbytes = recvmsg(fd, &msg, MSG_NOSIGNAL | MSG_WAITALL);
+            if (nbytes < msgSize) {
+                L_ERROR("[TCP Socket] socket: %d, url: %s, read nbytes %d != msgSize %d\n", entry->fd, entry->url, (int)nbytes, (int)msgSize);
+            }
         } else {
             // Not enough to read return the amount in the socket read buffer.
             // Do not return 0, because then connection is closed
-            nbytes = (!nofBytesInReadBuffer) ? msgSize : nofBytesInReadBuffer;
+            nbytes = msgSize - 1;
         }
     }
     if ((nbytes >= msgSize)&&(!entry->headerError))  {
