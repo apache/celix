@@ -89,8 +89,6 @@ typedef struct psa_tcp_connection_entry {
     unsigned int bufferReadSize;
     unsigned int metaBufferSize;
     void *metaBuffer;
-    struct msghdr msg;
-    size_t msg_iovlen;        /* Number of elements in the vector.  */
     unsigned int retryCount;
 } psa_tcp_connection_entry_t;
 
@@ -335,18 +333,11 @@ pubsub_tcpHandler_createEntry(pubsub_tcpHandler_t *handle, int fd, char *url, ch
         entry->footerSize = size;
         entry->bufferSize = handle->bufferSize;
         entry->connected = false;
-        entry->msg.msg_iov = calloc(sizeof(struct iovec), IOV_MAX);
         if (entry->headerBufferSize) {
             entry->headerBuffer = calloc(sizeof(char), entry->headerSize);
-            entry->msg.msg_iov[entry->msg.msg_iovlen].iov_base = entry->headerBuffer;
-            entry->msg.msg_iov[entry->msg.msg_iovlen].iov_len = entry->headerSize;
-            entry->msg_iovlen++;
         }
         if (entry->footerSize) entry->footerBuffer = calloc(sizeof(char), entry->footerSize);
         if (entry->bufferSize) entry->buffer = calloc(sizeof(char), entry->bufferSize);
-        entry->msg.msg_iov[entry->msg.msg_iovlen].iov_base = entry->buffer;
-        entry->msg.msg_iov[entry->msg.msg_iovlen].iov_len = entry->bufferSize;
-        entry->msg_iovlen++;
     }
     return entry;
 }
@@ -357,11 +348,6 @@ pubsub_tcpHandler_createEntry(pubsub_tcpHandler_t *handle, int fd, char *url, ch
 static inline void
 pubsub_tcpHandler_freeEntry(psa_tcp_connection_entry_t *entry) {
     if (entry) {
-        if (entry->msg.msg_iov) {
-            free(entry->msg.msg_iov);
-            entry->msg.msg_iov = NULL;
-            entry->msg.msg_iovlen = 0;
-        }
         if (entry->url) {
             free(entry->url);
             entry->url = NULL;
@@ -794,6 +780,7 @@ void pubsub_tcpHandler_decodePayload(pubsub_tcpHandler_t *handle, psa_tcp_connec
   if (entry->header.header.metadataSize > 0) {
     handle->protocol->decodeMetadata(handle->protocol->handle, entry->metaBuffer,
                                      entry->header.header.metadataSize, &entry->header);
+    entry->metaBufferSize = entry->header.header.metadataSize;
   }
   if (handle->processMessageCallback && entry->header.payload.payload != NULL && entry->header.payload.length) {
     struct timespec receiveTime;
@@ -1047,18 +1034,22 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
             void *metadataData = NULL;
             size_t metadataSize = 0;
             if (message->metadata.metadata) {
+                metadataData = entry->metaBuffer;
                 handle->protocol->encodeMetadata(handle->protocol->handle, message,
                                                  &metadataData,
                                                  &metadataSize);
+                entry->metaBufferSize = metadataSize;
             }
             message->header.metadataSize = metadataSize;
 
             void *footerData = NULL;
             size_t footerDataSize = 0;
             if (entry->footerSize) {
+                footerData = entry->footerBuffer;
                 handle->protocol->encodeFooter(handle->protocol->handle, message,
                                                  &footerData,
                                                  &footerDataSize);
+                entry->footerSize = footerDataSize;
             }
 
             size_t msgSize = 0;
@@ -1106,10 +1097,12 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
             size_t headerSize = 0;
             // check if header is not part of the payload (=> headerBufferSize = 0)s
             if (entry->headerBufferSize) {
+              headerData = entry->headerBuffer;
               // Encode the header, with payload size and metadata size
               handle->protocol->encodeHeader(handle->protocol->handle, message,
                                              &headerData,
                                              &headerSize);
+              entry->headerBufferSize = headerSize;
             }
             if (!entry->headerBufferSize) {
               // Skip header buffer, when header is part of payload;
@@ -1149,17 +1142,17 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
                 }
             }
             // Release data
-            if (headerData) {
+            if (headerData && headerData != entry->headerBuffer) {
                 free(headerData);
             }
             // Note: serialized Payload is deleted by serializer
             if (payloadData && (payloadData != message->payload.payload)) {
                 free(payloadData);
             }
-            if (metadataData) {
+            if (metadataData && metadataData != entry->metaBuffer) {
                 free(metadataData);
             }
-            if (footerData) {
+            if (footerData && footerData != entry->footerBuffer) {
                 free(footerData);
             }
         }

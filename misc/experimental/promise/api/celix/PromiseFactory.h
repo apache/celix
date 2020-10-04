@@ -30,16 +30,18 @@ namespace celix {
         //TODO ctor with callbackExecutor and scheduledExecutor
 
         template<typename T>
-        celix::Deferred<T> deferred();
+        [[nodiscard]] celix::Deferred<T> deferred();
 
         template<typename T>
-        celix::Promise<T> failed(const std::exception& e);
+        [[nodiscard]] celix::Promise<T> failed(const std::exception& e);
 
         template<typename T>
-        celix::Promise<T> failed(std::exception_ptr ptr);
+        [[nodiscard]] celix::Promise<T> failed(std::exception_ptr ptr);
 
         template<typename T>
-        celix::Promise<T> resolved(T&& value);
+        [[nodiscard]] celix::Promise<T> resolved(T&& value);
+
+        [[nodiscard]] celix::Promise<void> resolved();
 
         //TODO rest
     private:
@@ -78,4 +80,10 @@ inline celix::Promise<T> celix::PromiseFactory::resolved(T &&value) {
     auto p = std::make_shared<celix::impl::SharedPromiseState<T>>(executor);
     p->resolve(std::forward<T>(value));
     return celix::Promise<T>{p};
+}
+
+inline celix::Promise<void> celix::PromiseFactory::resolved() {
+    auto p = std::make_shared<celix::impl::SharedPromiseState<void>>(executor);
+    p->resolve();
+    return celix::Promise<void>{p};
 }

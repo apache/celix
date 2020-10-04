@@ -17,6 +17,10 @@
 
 add_library(celix_pubsub_protocol_lib STATIC
         src/pubsub_wire_protocol_common.c
-)
+        )
 target_link_libraries(celix_pubsub_protocol_lib PUBLIC Celix::pubsub_spi)
 target_include_directories(celix_pubsub_protocol_lib PUBLIC include)
+
+if (ENABLE_TESTING)
+    add_subdirectory(gtest)
+endif()

@@ -42,7 +42,6 @@ int simplewritetest() {
 		res = -1;
 	}
 	free(value);
-	etcdlib_destroy(etcdlib);
 	return res;
 }
 
@@ -98,6 +97,7 @@ int waitforchangetest() {
 	sleep(1);
 	etcdlib_set(etcdlib, "hier/ar/chi/cal", "testvalue3", 5, false);
 	void *resVal = NULL;
+	printf("joining\n");
 	pthread_join(waitThread, &resVal);
 	if(resVal == NULL || strcmp((char*)resVal,"testvalue3" ) != 0) {
 		printf("etcdtest::waitforchange1 expected 'testvalue3', got '%s'\n", (char*)resVal);

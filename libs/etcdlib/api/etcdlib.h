@@ -55,7 +55,7 @@ typedef void (*etcdlib_key_value_callback) (const char *key, const char *value, 
  * @param const char* server. String containing the IP-number of the server.
  * @param int port. Port number of the server.
  * @param int flags. bitwise flags to control etcdlib initialization. 
- * @return 0 on success, non zero otherwise.
+ * @return Pointer to the etcdlib_t struct needed by subsequent api calls
  */
 etcdlib_t* etcdlib_create(const char* server, int port, int flags);
 
@@ -83,7 +83,7 @@ int etcdlib_port(etcdlib_t *etcdlib);
  * @param int* modifiedIndex. If not NULL the Etcd-index of the last modified value.
  * @return 0 on success, non zero otherwise
  */
-int etcdlib_get(const etcdlib_t *etcdlib, const char* key, char** value, int* modifiedIndex);
+int etcdlib_get(etcdlib_t *etcdlib, const char* key, char** value, int* modifiedIndex);
 
 /**
  * @desc Retrieve the contents of a directory. For every found key/value pair the given callback function is called.
@@ -94,7 +94,7 @@ int etcdlib_get(const etcdlib_t *etcdlib, const char* key, char** value, int* mo
  * @param int* modifiedIndex. If not NULL the Etcd-index of the last modified value.
  * @return 0 on success, non zero otherwise
  */
-int etcdlib_get_directory(const etcdlib_t *etcdlib, const char* directory, etcdlib_key_value_callback callback, void *arg, long long* modifiedIndex);
+int etcdlib_get_directory(etcdlib_t *etcdlib, const char* directory, etcdlib_key_value_callback callback, void *arg, long long* modifiedIndex);
 
 /**
  * @desc Setting an Etcd-key/value
@@ -105,7 +105,7 @@ int etcdlib_get_directory(const etcdlib_t *etcdlib, const char* directory, etcdl
  * @param bool prevExist. If true the value is only set when the key already exists, if false it is always set
  * @return 0 on success, non zero otherwise
  */
-int etcdlib_set(const etcdlib_t *etcdlib, const char* key, const char* value, int ttl, bool prevExist);
+int etcdlib_set(etcdlib_t *etcdlib, const char* key, const char* value, int ttl, bool prevExist);
 
 /**
  * @desc Refresh the ttl of an existing key.
@@ -114,7 +114,7 @@ int etcdlib_set(const etcdlib_t *etcdlib, const char* key, const char* value, in
  * @param ttl the ttl value to use.
  * @return 0 on success, non zero otherwise.
  */
-int etcdlib_refresh(const etcdlib_t *etcdlib, const char *key, int ttl);
+int etcdlib_refresh(etcdlib_t *etcdlib, const char *key, int ttl);
 
 /**
  * @desc Setting an Etcd-key/value and checks if there is a different previous value
@@ -125,7 +125,7 @@ int etcdlib_refresh(const etcdlib_t *etcdlib, const char *key, int ttl);
  * @param bool always_write. If true the value is written, if false only when the given value is equal to the value in etcd.
  * @return 0 on success, non zero otherwise
  */
-int etcdlib_set_with_check(const etcdlib_t *etcdlib, const char* key, const char* value, int ttl, bool always_write);
+int etcdlib_set_with_check(etcdlib_t *etcdlib, const char* key, const char* value, int ttl, bool always_write);
 
 /**
  * @desc Deleting an Etcd-key
@@ -133,7 +133,7 @@ int etcdlib_set_with_check(const etcdlib_t *etcdlib, const char* key, const char
  * @param const char* key. The Etcd-key (Note: a leading '/' should be avoided)
  * @return 0 on success, non zero otherwise
  */
-int etcdlib_del(const etcdlib_t *etcdlib, const char* key);
+int etcdlib_del(etcdlib_t *etcdlib, const char* key);
 
 /**
  * @desc Watching an etcd directory for changes
@@ -147,7 +147,7 @@ int etcdlib_del(const etcdlib_t *etcdlib, const char* key);
  * @param long long* modifiedIndex. If not NULL, the index of the modification is written.
  * @return ETCDLIB_RC_OK (0) on success, non zero otherwise. Note that a timeout is signified by a ETCDLIB_RC_TIMEOUT return code.
  */
-int etcdlib_watch(const etcdlib_t *etcdlib, const char* key, long long index, char** action, char** prevValue, char** value, char** rkey, long long* modifiedIndex);
+int etcdlib_watch(etcdlib_t *etcdlib, const char* key, long long index, char** action, char** prevValue, char** value, char** rkey, long long* modifiedIndex);
 
 #ifdef __cplusplus
 }

@@ -16,3 +16,4 @@ setName2=setName2(#am=handle;P#const=true;t#am=out;*t)N
 setEnum=setEnum(#am=handle;Plenum_example;#am=pre;Lenum_example;)N
 action=action(#am=handle;P)N
 setComplex=setComplex(#am=handle;PLcomplex_input;#am=out;*Lcomplex_output;)N
+createAdditionalRemoteService=createAdditionalRemoteService(#am=handle;P)N

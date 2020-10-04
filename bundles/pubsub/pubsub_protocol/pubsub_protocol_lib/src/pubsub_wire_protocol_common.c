@@ -25,13 +25,17 @@
 #include <ctype.h>
 #include "celix_byteswap.h"
 
-static celix_status_t pubsubProtocol_createNetstring(const char* string, char** netstringOut) {
+static celix_status_t pubsubProtocol_createNetstring(const char* string, char** netstringOut, int *netstringOutLength, int *netstringMemoryOutLength) {
     celix_status_t status = CELIX_SUCCESS;
 
     size_t str_len = strlen(string);
     if (str_len == 0) {
         // 0:,
-        *netstringOut = calloc(1, 4);
+        if(*netstringOut == NULL) {
+            *netstringMemoryOutLength = 1024;
+            *netstringOut = calloc(1, 1024);
+            *netstringOutLength = 3;
+        }
         if (*netstringOut == NULL) {
             status = CELIX_ENOMEM;
         } else {
@@ -42,12 +46,24 @@ static celix_status_t pubsubProtocol_createNetstring(const char* string, char** 
         }
     } else {
         size_t numlen = ceil(log10(str_len + 1));
-        *netstringOut = calloc(1, numlen + str_len + 3);
-        if (*netstringOut == NULL) {
-            status = CELIX_ENOMEM;
-        } else {
-            sprintf(*netstringOut, "%zu:%s,", str_len, string);
+        if(*netstringOut == NULL) {
+            *netstringMemoryOutLength = 1024;
+            *netstringOut = calloc(1, *netstringMemoryOutLength);
+            if (*netstringOut == NULL) {
+                return CELIX_ENOMEM;
+            }
+        } else if (*netstringMemoryOutLength < numlen + str_len + 2) {
+            free(*netstringOut);
+            while(*netstringMemoryOutLength < numlen + str_len + 2) {
+                *netstringMemoryOutLength *= 2;
+            }
+            *netstringOut = calloc(1, *netstringMemoryOutLength);
+            if (*netstringOut == NULL) {
+                return CELIX_ENOMEM;
+            }
         }
+        *netstringOutLength = numlen + str_len + 2;
+        sprintf(*netstringOut, "%zu:%s,", str_len, string);
     }
 
     return status;
@@ -177,44 +193,63 @@ celix_status_t pubsubProtocol_encodePayload(pubsub_protocol_message_t *message, 
 celix_status_t pubsubProtocol_encodeMetadata(pubsub_protocol_message_t *message, void **outBuffer, size_t *outLength) {
     celix_status_t status = CELIX_SUCCESS;
 
-    unsigned char *line = calloc(1, 4);
+    size_t lineMemoryLength = *outBuffer == NULL ? 1024 : *outLength;
+    unsigned char *line = *outBuffer == NULL ? calloc(1, lineMemoryLength) : *outBuffer;
     size_t idx = 4;
     size_t len = 0;
 
-    const char *key;
     if (message->metadata.metadata != NULL && celix_properties_size(message->metadata.metadata) > 0) {
+        const char *key;
+        char *keyNetString = NULL;
+        int netStringMemoryLength = 0;
+
         CELIX_PROPERTIES_FOR_EACH(message->metadata.metadata, key) {
             const char *val = celix_properties_get(message->metadata.metadata, key, "!Error!");
-            char *keyNetString = NULL;
-            char *valueNetString = NULL;
 
-            status = pubsubProtocol_createNetstring(key, &keyNetString);
-            if (status != CELIX_SUCCESS) {
-                break;
-            }
-            status = pubsubProtocol_createNetstring(val, &valueNetString);
+            //refactoring these two copies to a function leads to a slow down of about 2x
+            int strlenKeyNetString = 0;
+            status = pubsubProtocol_createNetstring(key, &keyNetString, &strlenKeyNetString, &netStringMemoryLength);
             if (status != CELIX_SUCCESS) {
                 break;
             }
 
-            len += strlen(keyNetString);
-            len += strlen(valueNetString);
-            unsigned char *tmp = realloc(line, len + sizeof(uint32_t));
-            if (!tmp) {
-                free(line);
-                status = CELIX_ENOMEM;
-                return status;
+            len += strlenKeyNetString;
+            if(lineMemoryLength < len + 1) {
+                lineMemoryLength *= 2;
+                unsigned char *tmp = realloc(line, lineMemoryLength);
+                if (!tmp) {
+                    free(line);
+                    status = CELIX_ENOMEM;
+                    break;
+                }
+                line = tmp;
             }
-            line = tmp;
+            memcpy(line + idx, keyNetString, strlenKeyNetString);
+            idx += strlenKeyNetString;
 
-            memcpy(line + idx, keyNetString, strlen(keyNetString));
-            idx += strlen(keyNetString);
-            memcpy(line + idx, valueNetString, strlen(valueNetString));
-            idx += strlen(valueNetString);
+            status = pubsubProtocol_createNetstring(val, &keyNetString, &strlenKeyNetString, &netStringMemoryLength);
+            if (status != CELIX_SUCCESS) {
+                break;
+            }
 
-            free(keyNetString);
-            free(valueNetString);
+            len += strlenKeyNetString;
+            if(lineMemoryLength < len + 1) {
+                while(lineMemoryLength < len + 1) {
+                    lineMemoryLength *= 2;
+                }
+                unsigned char *tmp = realloc(line, lineMemoryLength);
+                if (!tmp) {
+                    free(line);
+                    status = CELIX_ENOMEM;
+                    break;
+                }
+                line = tmp;
+            }
+            memcpy(line + idx, keyNetString, strlenKeyNetString);
+            idx += strlenKeyNetString;
         }
+
+        free(keyNetString);
     }
     int size = celix_properties_size(message->metadata.metadata);
     pubsubProtocol_writeInt((unsigned char *) line, 0, true, size);

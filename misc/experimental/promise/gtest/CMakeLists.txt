@@ -17,6 +17,7 @@
 
 add_executable(test_promise
         src/PromiseTestSuite.cc
+        src/VoidPromiseTestSuite.cc
 )
 target_link_libraries(test_promise PRIVATE GTest::gtest GTest::gtest_main Celix::Promise)
 

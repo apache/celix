@@ -1,3 +1,7 @@
+---
+title: Introduction
+---
+
 <!--
 Licensed to the Apache Software Foundation (ASF) under one or more
 contributor license agreements.  See the NOTICE file distributed with
@@ -123,7 +127,7 @@ Consumers can dynamically lookup the services providing a filter to specify what
 ## C services in Apache Celix
 As mentioned OSGi uses Java Interfaces to define a service. Since C does not have Interfaces as compilable unit, this is not possible for Celix.  To be able to define a service which hides implementation details, Celix uses structs with function pointers.
  
-See [Apache Celix - Getting Started Guide](https://github.com/apache/celix/blob/master/documents/getting_started/readme.md) for a more in depth look at services and service usage.
+See [Apache Celix - Getting Started Guide](../getting_started/README.md) for a more in depth look at services and service usage.
  
 ## Impact of dynamic services
 Services in Apache Celix are dynamic, meaning that they can come and go at any moment. 

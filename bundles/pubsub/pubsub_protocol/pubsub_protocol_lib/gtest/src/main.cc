@@ -17,28 +17,10 @@
  *under the License.
  */
 
-#pragma once
+#include <gtest/gtest.h>
 
-#include <exception>
-#include <utility>
-
-
-namespace celix {
-
-    class PromiseInvocationException : public std::exception {
-    public:
-        explicit PromiseInvocationException(const char* what) : w{what} {}
-        explicit PromiseInvocationException(std::string what) : w{std::move(what)} {}
-
-        PromiseInvocationException(const PromiseInvocationException&) = delete;
-        PromiseInvocationException(PromiseInvocationException&&) noexcept = default;
-
-        PromiseInvocationException& operator=(const PromiseInvocationException&) = delete;
-        PromiseInvocationException& operator=(PromiseInvocationException&&) noexcept = default;
-
-        const char* what() const noexcept override { return w.c_str(); }
-    private:
-        std::string w;
-    };
+int main(int argc, char **argv) {
+    ::testing::InitGoogleTest(&argc, argv);
+    int rc = RUN_ALL_TESTS();
+    return rc;
 }
-

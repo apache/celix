@@ -492,7 +492,7 @@ static void serviceRegistry_logWarningServiceReferenceUsageCount(service_registr
         fw_log(registry->framework->logger, CELIX_LOG_LEVEL_WARNING, "Dangling service reference. Reference count is %zu, expected 1.  Look for missing bundleContext_ungetServiceReference calls.", refCount);
     }
 
-    if(usageCount > 0 || refCount > 0) {
+    if (usageCount > 0 || refCount > 0) {
         const char* bundle_name = celix_bundle_getSymbolicName(bundle);
         const char* service_name = "unknown";
         const char* bundle_provider_name = "unknown";
@@ -501,8 +501,12 @@ static void serviceRegistry_logWarningServiceReferenceUsageCount(service_registr
             service_registration_pt reg = NULL;
             bundle_pt providedBnd = NULL;
             serviceReference_getServiceRegistration(ref, &reg);
-            serviceRegistration_getBundle(reg, &providedBnd);
-            bundle_provider_name = celix_bundle_getSymbolicName(providedBnd);
+            if (reg != NULL) {
+                serviceRegistration_getBundle(reg, &providedBnd);
+                if (providedBnd != NULL) {
+                    bundle_provider_name = celix_bundle_getSymbolicName(providedBnd);
+                }
+            }
         }
 
         fw_log(registry->framework->logger, CELIX_LOG_LEVEL_WARNING, "Previous Dangling service reference warnings caused by bundle '%s', for service '%s', provided by bundle '%s'", bundle_name, service_name, bundle_provider_name);
