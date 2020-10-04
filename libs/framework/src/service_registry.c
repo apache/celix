@@ -1167,6 +1167,26 @@ long celix_serviceRegistry_nextSvcId(celix_service_registry_t* registry) {
     return scvId;
 }
 
+bool celix_serviceRegistry_isServiceRegistered(celix_service_registry_t* reg, long serviceId) {
+    bool isRegistered = false;
+    if (serviceId >= 0) {
+        celixThreadRwlock_readLock(&reg->lock);
+        hash_map_iterator_t iter = hashMapIterator_construct(reg->serviceRegistrations);
+        while (!isRegistered && hashMapIterator_hasNext(&iter)) {
+            celix_array_list_t *regs = hashMapIterator_nextValue(&iter);
+            for (int i = 0; i < celix_arrayList_size(regs); ++i) {
+                service_registration_t* r = celix_arrayList_get(regs, i);
+                if (serviceId == serviceRegistration_getServiceId(r)) {
+                    isRegistered = true;
+                    break;
+                }
+            }
+        }
+        celixThreadRwlock_unlock(&reg->lock);
+    }
+    return isRegistered;
+}
+
 void celix_serviceRegistry_unregisterService(celix_service_registry_t* registry, celix_bundle_t* bnd, long serviceId) {
     service_registration_t *reg = NULL;
     celixThreadRwlock_readLock(&registry->lock);

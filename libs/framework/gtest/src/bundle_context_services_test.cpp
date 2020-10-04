@@ -1063,6 +1063,9 @@ TEST_F(CelixBundleContextServicesTests, floodEventLoopTest) {
         EXPECT_GE(id, 0);
         svcIds.push_back(id);
         trackerIds.push_back(celix_bundleContext_trackServicesAsync(ctx, "test", nullptr, nullptr, nullptr));
+
+        //CHECK if celix_bundleContext_isServiceRegistered work
+        EXPECT_FALSE(celix_bundleContext_isServiceRegistered(ctx, id));
     }
 
     {
@@ -1073,6 +1076,7 @@ TEST_F(CelixBundleContextServicesTests, floodEventLoopTest) {
     }
 
     celix_bundleContext_waitForAsyncRegistration(ctx, svcId);
+    EXPECT_TRUE(celix_bundleContext_isServiceRegistered(ctx, svcId));
     long foundId = celix_bundleContext_findService(ctx, "test");
     EXPECT_GE(foundId, 0);
 

@@ -557,6 +557,10 @@ void celix_bundleContext_waitForAsyncRegistration(celix_bundle_context_t* ctx, l
     }
 }
 
+bool celix_bundleContext_isServiceRegistered(celix_bundle_context_t* ctx, long serviceId) {
+    return celix_serviceRegistry_isServiceRegistered(ctx->framework->registry, serviceId);
+}
+
 static void celix_bundleContext_unregisterServiceInternal(celix_bundle_context_t *ctx, long serviceId, bool async, void *data, void (*done)(void*)) {
     long found = -1L;
     if (ctx != NULL && serviceId >= 0) {
@@ -1136,8 +1140,12 @@ bool celix_bundleContext_useServiceWithOptions(
         struct timespec start;
         clock_gettime(CLOCK_MONOTONIC, &start);
 
-        long id = celix_framework_fireGenericEvent(ctx->framework, -1, celix_bundle_getId(ctx->bundle), "use service", &data, celix_bundleContext_useServiceWithOptionsCallback, NULL, NULL);
-        celix_framework_waitForGenericEvent(ctx->framework, id);
+        if (celix_framework_isCurrentThreadTheEventLoop(ctx->framework)) {
+            celix_bundleContext_useServiceWithOptionsCallback(&data);
+        } else {
+            long id = celix_framework_fireGenericEvent(ctx->framework, -1, celix_bundle_getId(ctx->bundle), "use service", &data, celix_bundleContext_useServiceWithOptionsCallback, NULL, NULL);
+            celix_framework_waitForGenericEvent(ctx->framework, id);
+        }
 
         while (!data.called && opts->waitTimeoutInSeconds > 0) {
             struct timespec now;
@@ -1147,8 +1155,12 @@ bool celix_bundleContext_useServiceWithOptions(
                 break;
             }
             usleep(10);
-            id = celix_framework_fireGenericEvent(ctx->framework, -1, celix_bundle_getId(ctx->bundle), "use service", &data, celix_bundleContext_useServiceWithOptionsCallback, NULL, NULL);
-            celix_framework_waitForGenericEvent(ctx->framework, id);
+            if (celix_framework_isCurrentThreadTheEventLoop(ctx->framework)) {
+                celix_bundleContext_useServiceWithOptionsCallback(&data);
+            } else {
+                long id = celix_framework_fireGenericEvent(ctx->framework, -1, celix_bundle_getId(ctx->bundle), "use service", &data, celix_bundleContext_useServiceWithOptionsCallback, NULL, NULL);
+                celix_framework_waitForGenericEvent(ctx->framework, id);
+            }
         }
         return data.called;
     }
@@ -1181,8 +1193,12 @@ size_t celix_bundleContext_useServicesWithOptions(
         data.opts = *opts;
         data.called = false;
 
-        long id = celix_framework_fireGenericEvent(ctx->framework, -1, celix_bundle_getId(ctx->bundle), "use services", &data, celix_bundleContext_useServicesWithOptionsCallback, NULL, NULL);
-        celix_framework_waitForGenericEvent(ctx->framework, id);
+        if (celix_framework_isCurrentThreadTheEventLoop(ctx->framework)) {
+            celix_bundleContext_useServiceWithOptionsCallback(&data);
+        } else {
+            long id = celix_framework_fireGenericEvent(ctx->framework, -1, celix_bundle_getId(ctx->bundle),"use services", &data, celix_bundleContext_useServicesWithOptionsCallback, NULL, NULL);
+            celix_framework_waitForGenericEvent(ctx->framework, id);
+        }
         count = data.count;
     }
     return count;

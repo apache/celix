@@ -45,7 +45,8 @@ extern "C" {
  * Register a service to the Celix framework.
  *
  * The service will be registered async on the Celix event loop thread. This means that service registration is (probably)
- * not yet concluded when this function returns. Use celix_bundleContext_waitForAsyncRegistration to synchronise with the
+ * not yet concluded when this function returns, but is added to the event loop.
+ * Use celix_bundleContext_waitForAsyncRegistration to synchronise with the
  * actual service registration in the framework's service registry.
  *
  * @param ctx The bundle context
@@ -79,7 +80,8 @@ long celix_bundleContext_registerService(celix_bundle_context_t *ctx, void *svc,
  * the ungetService function of the service factory will be called.
  *
  * The service will be registered async on the Celix event loop thread. This means that service registration is (probably)
- * not yet concluded when this function returns. Use celix_bundleContext_waitForAsyncRegistration to synchronise with the
+ * not yet concluded when this function returns, but is added to the event loop.
+ * Use celix_bundleContext_waitForAsyncRegistration to synchronise with the
  * actual service registration in the framework's service registry.
  *
  * @param ctx The bundle context
@@ -197,7 +199,8 @@ typedef struct celix_service_registration_options {
  * Register a service to the Celix framework using the provided service registration options.
  *
  * The service will be registered async on the Celix event loop thread. This means that service registration is (probably)
- * not yet concluded when this function returns. Use celix_bundleContext_waitForAsyncRegistration to synchronise with the
+ * not yet concluded when this function returns, but is added to the event loop..
+ * Use celix_bundleContext_waitForAsyncRegistration to synchronise with the
  * actual service registration in the framework's service registry.
  *
  * @param ctx The bundle context
@@ -218,9 +221,19 @@ long celix_bundleContext_registerServiceWithOptions(celix_bundle_context_t *ctx,
 
 /**
  * Waits til the async service registration for the provided serviceId is done.
- * Silently ignore service < 0.
+ * Silently ignore service ids < 0.
+ * Will directly return if there is no pending service registration for the provided service id.
  */
 void celix_bundleContext_waitForAsyncRegistration(celix_bundle_context_t* ctx, long serviceId);
+
+/**
+ * Checks whether a service for the provided service id is registered in the service registry.
+ * Note return false if the service for the provided service id is still pending in the event loop.
+ * Silently ignore service ids < 0 (returns false).
+ *
+ * Returns true if the service is registered in the service registry.
+ */
+bool celix_bundleContext_isServiceRegistered(celix_bundle_context_t* ctx, long serviceId);
 
 
 /**

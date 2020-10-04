@@ -93,6 +93,8 @@ celix_status_t celix_serviceRegistry_addServiceListener(celix_service_registry_t
 
 celix_status_t celix_serviceRegistry_removeServiceListener(celix_service_registry_t *reg, celix_service_listener_t *listener);
 
+bool celix_serviceRegistry_isServiceRegistered(celix_service_registry_t* reg, long serviceId);
+
 celix_status_t
 celix_serviceRegistry_registerService(
         celix_service_registry_t *reg,
