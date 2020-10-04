@@ -1310,6 +1310,7 @@ static long celix_bundleContext_trackServicesWithOptionsInternal(celix_bundle_co
             entry->destroyEventId = celix_framework_nextEventId(ctx->framework);
             celixThreadMutex_lock(&ctx->mutex);
             entry->trackerId = ctx->nextTrackerId++;
+            trackerId = entry->trackerId;
             hashMap_put(ctx->serviceTrackers, (void *) trackerId, entry);
             celixThreadMutex_unlock(&ctx->mutex);
         }

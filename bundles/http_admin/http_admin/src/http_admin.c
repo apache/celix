@@ -122,17 +122,17 @@ void httpAdmin_destroy(http_admin_manager_t *admin) {
 
     //Destroy alias map by removing symbolic links first.
     unsigned int size = celix_arrayList_size(admin->aliasList);
-    for (unsigned int i = (size - 1); i < size; i--) {
+    for (int i = 0; i < size; ++i) {
         http_alias_t *alias = celix_arrayList_get(admin->aliasList, i);
 
         //Delete alias in cache directory
-        if (remove(alias->alias_path) < 0)
+        if (remove(alias->alias_path) < 0) {
             fprintf(stdout, "remove of %s failed\n", alias->alias_path);
+        }
 
         free(alias->url);
         free(alias->alias_path);
         free(alias);
-        celix_arrayList_removeAt(admin->aliasList, i);
     }
     celix_arrayList_destroy(admin->aliasList);
 
@@ -520,6 +520,7 @@ void http_admin_stopBundle(void *data, const celix_bundle_t *bundle) {
         http_alias_t *alias = arrayList_get(admin->aliasList, i);
         if(alias->bundle_id == bundle_id) {
             remove(alias->alias_path); //Delete alias in cache directory
+            free(alias->url);
             free(alias->alias_path);
             free(alias);
             celix_arrayList_removeAt(admin->aliasList, i);
