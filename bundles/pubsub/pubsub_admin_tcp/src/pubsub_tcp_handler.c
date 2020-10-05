@@ -404,7 +404,7 @@ int pubsub_tcpHandler_connect(pubsub_tcpHandler_t *handle, char *url) {
         if ((rc >= 0) && addr) {
             rc = connect(fd, (struct sockaddr *) addr, sizeof(struct sockaddr));
             if (rc < 0 && errno != EINPROGRESS) {
-                L_ERROR("[TCP Socket] Cannot connect to %s:%d: using; %s err(%d): %s\n", url_info->hostname, url_info->port_nr, interface_url, errno, strerror(errno));
+                L_ERROR("[TCP Socket] Cannot connect to %s:%d: using %s err(%d): %s\n", url_info->hostname, url_info->port_nr, interface_url, errno, strerror(errno));
                 close(fd);
             } else {
                 entry = pubsub_tcpHandler_createEntry(handle, fd, url, interface_url, &sin);
@@ -555,6 +555,7 @@ int pubsub_tcpHandler_listen(pubsub_tcpHandler_t *handle, char *url) {
     if (entry == NULL) {
         char protocol[] = "tcp";
         int fd = pubsub_tcpHandler_open(handle, url);
+        rc = fd;
         struct sockaddr_in *sin = pubsub_utils_url_from_fd(fd);
         // Make handler fd entry
         char *pUrl = pubsub_utils_url_get_url(sin, protocol);
@@ -564,7 +565,6 @@ int pubsub_tcpHandler_listen(pubsub_tcpHandler_t *handle, char *url) {
             free(pUrl);
             free(sin);
             celixThreadRwlock_writeLock(&handle->dbLock);
-            rc = fd;
             if (rc >= 0) {
                 rc = listen(fd, SOMAXCONN);
                 if (rc != 0) {
@@ -792,6 +792,15 @@ int pubsub_tcpHandler_read(pubsub_tcpHandler_t *handle, int fd) {
         return -1;
     }
     celixThreadMutex_lock(&entry->readMutex);
+    int nofBytesInReadBuffer = 0;
+    if (ioctl(fd, FIONREAD, &nofBytesInReadBuffer)) {
+        L_ERROR("[TCP Socket] socket: %d, url: %s, cannot  read nof bytes in socket read buffer \n", entry->fd, entry->url);
+    }
+    // if socket buffer is not filled, return out of function
+    if (!nofBytesInReadBuffer) {
+        celixThreadRwlock_unlock(&handle->dbLock);
+        return 1;
+    }
     // When header is included in payload buffer, allocate buffer.
     // bufferSize is at least the header size
     if ((entry->buffer == NULL) && (entry->readHeaderBufferSize == 0)) {
@@ -875,20 +884,10 @@ int pubsub_tcpHandler_read(pubsub_tcpHandler_t *handle, int fd) {
                 msg.msg_iovlen++;
             }
         }
-        int nofBytesInReadBuffer = 0;
-        if (ioctl(fd, FIONREAD, &nofBytesInReadBuffer)) {
-            L_ERROR("[TCP Socket] socket: %d, url: %s, cannot  read nof bytes in socket read buffer \n", entry->fd, entry->url);
-        }
         // If there is data in buffer, read the data. using blocking read
-        if (nofBytesInReadBuffer) {
-            nbytes = recvmsg(fd, &msg, MSG_NOSIGNAL | MSG_WAITALL);
-            if (nbytes < msgSize) {
-                L_ERROR("[TCP Socket] socket: %d, url: %s, read nbytes %d != msgSize %d\n", entry->fd, entry->url, (int)nbytes, (int)msgSize);
-            }
-        } else {
-            // Not enough to read return the amount in the socket read buffer.
-            // Do not return 0, because then connection is closed
-            nbytes = msgSize - 1;
+        nbytes = recvmsg(fd, &msg, MSG_NOSIGNAL | MSG_WAITALL);
+        if (nbytes < msgSize) {
+            L_ERROR("[TCP Socket] socket: %d, url: %s, read nbytes %d != msgSize %d\n", entry->fd, entry->url, (int)nbytes, (int)msgSize);
         }
     }
     if ((nbytes >= msgSize)&&(!entry->headerError))  {
