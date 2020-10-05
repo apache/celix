@@ -966,6 +966,9 @@ TEST_F(CelixBundleContextServicesTests, asyncServiceFactoryTest) {
 TEST_F(CelixBundleContextServicesTests, findServicesTest) {
     long svcId1 = celix_bundleContext_registerService(ctx, (void*)0x100, "example", nullptr);
     long svcId2 = celix_bundleContext_registerService(ctx, (void*)0x100, "example", nullptr);
+    long svcId3 = celix_bundleContext_registerService(ctx, (void*)0x100, "example", nullptr);
+    long svcId4 = celix_bundleContext_registerService(ctx, (void*)0x100, "example", nullptr);
+
 
     long foundId = celix_bundleContext_findService(ctx, "non existing service name");
     ASSERT_EQ(-1L, foundId);
@@ -978,10 +981,12 @@ TEST_F(CelixBundleContextServicesTests, findServicesTest) {
     arrayList_destroy(list);
 
     list = celix_bundleContext_findServices(ctx, "example");
-    ASSERT_EQ(2, celix_arrayList_size(list));
+    ASSERT_EQ(4, celix_arrayList_size(list));
     arrayList_destroy(list);
 
     celix_bundleContext_unregisterService(ctx, svcId1);
+    celix_bundleContext_unregisterService(ctx, svcId3);
+    celix_bundleContext_unregisterService(ctx, svcId4);
 
     celix_service_filter_options_t opts{};
     opts.serviceName = "example";

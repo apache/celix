@@ -658,60 +658,14 @@ celix_service_tracker_t* celix_serviceTracker_createWithOptions(
 
             tracker->listener.handle = tracker;
             tracker->listener.serviceChanged = (void *) serviceTracker_serviceChanged;
+            tracker->filter = celix_serviceRegistry_createFilterFor(ctx->framework->registry, opts->filter.serviceName, opts->filter.versionRange, opts->filter.filter, opts->filter.serviceLanguage, opts->filter.ignoreServiceLanguage);
 
-            //setting lang
-            const char *lang = opts->filter.serviceLanguage;
-            if (lang == NULL || strncmp("", lang, 1) == 0) {
-                lang = CELIX_FRAMEWORK_SERVICE_C_LANGUAGE;
-            }
-
-            char* versionRange = NULL;
-            if(opts->filter.versionRange != NULL) {
-                version_range_pt range;
-                celix_status_t status = versionRange_parse(opts->filter.versionRange, &range);
-                if(status != CELIX_SUCCESS) {
-                    framework_log(tracker->context->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__,
-                    "Error incorrect version range.");
-                    free(tracker->serviceName);
-                    free(tracker);
-                    return NULL;
-                }
-                versionRange = versionRange_createLDAPFilter(range, CELIX_FRAMEWORK_SERVICE_VERSION);
-                versionRange_destroy(range);
-                if(versionRange == NULL) {
-                    framework_log(tracker->context->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__,
-                                  "Error creating LDAP filter.");
-                    free(tracker->serviceName);
-                    free(tracker);
-                    return NULL;
-                }
-            }
-
-            //setting filter
-            if (opts->filter.ignoreServiceLanguage) {
-                if (opts->filter.filter != NULL && versionRange != NULL) {
-                    asprintf(&tracker->filter, "(&(%s=%s)%s%s)", OSGI_FRAMEWORK_OBJECTCLASS, serviceName, versionRange, opts->filter.filter);
-                } else if (versionRange != NULL) {
-                    asprintf(&tracker->filter, "(&(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, serviceName, versionRange);
-                } else if (opts->filter.filter != NULL) {
-                    asprintf(&tracker->filter, "(&(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, serviceName, opts->filter.filter);
-                } else {
-                    asprintf(&tracker->filter, "(&(%s=%s))", OSGI_FRAMEWORK_OBJECTCLASS, serviceName);
-                }
-            } else {
-                if (opts->filter.filter != NULL && versionRange != NULL) {
-                    asprintf(&tracker->filter, "(&(%s=%s)(%s=%s)%s%s)", OSGI_FRAMEWORK_OBJECTCLASS, serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang, versionRange, opts->filter.filter);
-                } else if (versionRange != NULL) {
-                    asprintf(&tracker->filter, "(&(%s=%s)(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang, versionRange);
-                } else if (opts->filter.filter != NULL) {
-                    asprintf(&tracker->filter, "(&(%s=%s)(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang, opts->filter.filter);
-                } else {
-                    asprintf(&tracker->filter, "(&(%s=%s)(%s=%s))", OSGI_FRAMEWORK_OBJECTCLASS, serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang);
-                }
-            }
-
-            if (versionRange != NULL){
-                free(versionRange);
+            if (tracker->filter == NULL) {
+                framework_log(tracker->context->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__,
+                              "Error cannot create filter.");
+                free(tracker->serviceName);
+                free(tracker);
+                return NULL;
             }
 
             serviceTracker_open(tracker);

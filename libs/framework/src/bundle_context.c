@@ -1295,10 +1295,6 @@ static long celix_bundleContext_trackServicesWithOptionsInternal(celix_bundle_co
 
     if (!async && celix_framework_isCurrentThreadTheEventLoop(ctx->framework)) {
         //already in event loop thread. To keep the old behavior just create the tracker traditionally (chained in the current thread).
-        if (opts->filter.serviceName == NULL) {
-            fw_log(ctx->framework->logger, CELIX_LOG_LEVEL_DEBUG, "Starting a tracker for any services");
-        }
-
         celix_service_tracker_t *tracker = celix_serviceTracker_createWithOptions(ctx, opts);
         long trackerId = -1L;
         if (tracker != NULL) {
@@ -1352,19 +1348,19 @@ long celix_bundleContext_findService(celix_bundle_context_t *ctx, const char *se
     return celix_bundleContext_findServiceWithOptions(ctx, &opts);
 }
 
-static void bundleContext_retrieveSvcId(void *handle, void *svc __attribute__((unused)), const celix_properties_t *props) {
-    long *svcId = handle;
-    *svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
-}
-
 long celix_bundleContext_findServiceWithOptions(celix_bundle_context_t *ctx, const celix_service_filter_options_t *opts) {
-    long svcId = -1L;
-    celix_service_use_options_t useOpts = CELIX_EMPTY_SERVICE_USE_OPTIONS;
-    memcpy(&useOpts.filter, opts, sizeof(useOpts.filter));
-    useOpts.callbackHandle = &svcId;
-    useOpts.useWithProperties = bundleContext_retrieveSvcId;
-    celix_bundleContext_useServiceWithOptions(ctx, &useOpts);
-    return svcId;
+    long result = -1L;
+    char* filter = celix_serviceRegistry_createFilterFor(ctx->framework->registry, opts->serviceName, opts->versionRange, opts->filter, opts->serviceLanguage, opts->ignoreServiceLanguage);
+    if (filter != NULL) {
+        celix_array_list_t *svcIds = celix_serviceRegisrty_findServices(ctx->framework->registry, filter);
+        if (svcIds != NULL && celix_arrayList_size(svcIds) > 0) {
+            result = celix_arrayList_getLong(svcIds, 0);
+        }
+        if (svcIds != NULL) {
+            celix_arrayList_destroy(svcIds);
+        }
+    }
+    return result;
 }
 
 
@@ -1374,22 +1370,13 @@ celix_array_list_t* celix_bundleContext_findServices(celix_bundle_context_t *ctx
     return celix_bundleContext_findServicesWithOptions(ctx, &opts);
 }
 
-static void bundleContext_retrieveSvcIds(void *handle, void *svc __attribute__((unused)), const celix_properties_t *props) {
-    celix_array_list_t *list = handle;
-    if (list != NULL) {
-        long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
-        celix_arrayList_addLong(list, svcId);
-    }
-}
-
 celix_array_list_t* celix_bundleContext_findServicesWithOptions(celix_bundle_context_t *ctx, const celix_service_filter_options_t *opts) {
-    celix_array_list_t* list = celix_arrayList_create();
-    celix_service_use_options_t useOpts = CELIX_EMPTY_SERVICE_USE_OPTIONS;
-    memcpy(&useOpts.filter, opts, sizeof(useOpts.filter));
-    useOpts.callbackHandle = list;
-    useOpts.useWithProperties = bundleContext_retrieveSvcIds;
-    celix_bundleContext_useServicesWithOptions(ctx, &useOpts);
-    return list;
+    celix_array_list_t* result = NULL;
+    char* filter = celix_serviceRegistry_createFilterFor(ctx->framework->registry, opts->serviceName, opts->versionRange, opts->filter, opts->serviceLanguage, opts->ignoreServiceLanguage);
+    if (filter != NULL) {
+        result = celix_serviceRegisrty_findServices(ctx->framework->registry, filter);
+    }
+    return result;
 }
 
 static celix_status_t bundleContext_callServicedTrackerTrackerCallback(void *handle, celix_array_list_t *listeners, bool add) {

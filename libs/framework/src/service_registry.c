@@ -920,6 +920,136 @@ static inline void celix_waitAndDestroyServiceListener(celix_service_registry_se
     free(entry);
 }
 
+/**
+ * Create a LDAP filter for the provided filter parts.
+ * @param serviceName       The optional service name
+ * @param versionRange      The optional version range
+ * @param filter            The optional filter
+ * @param serviceLanguage   The optional service lang. if NULL, lang C will be used.
+ * @param ignoreServiceLanguage   The whether the service lang filter needs to be added to the filter.
+ * @return a LDAP filter. Caller is responsible for freeing the filter.
+ */
+char* celix_serviceRegistry_createFilterFor(celix_service_registry_t* registry, const char* serviceName, const char* versionRangeStr, const char* additionalFilterIn, const char* lang, bool ignoreServiceLanguage) {
+    char* filter = NULL;
+
+    //setting lang
+    if (lang == NULL || strncmp("", lang, 1) == 0) {
+        lang = CELIX_FRAMEWORK_SERVICE_C_LANGUAGE;
+    }
+
+    if (serviceName == NULL) {
+        serviceName = "*";
+    }
+
+    char* versionRange = NULL;
+    if (versionRangeStr != NULL) {
+        version_range_pt range;
+        celix_status_t status = versionRange_parse(versionRangeStr, &range);
+        if(status != CELIX_SUCCESS) {
+            framework_log(registry->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__,
+                          "Error incorrect version range.");
+            return NULL;
+        }
+        versionRange = versionRange_createLDAPFilter(range, CELIX_FRAMEWORK_SERVICE_VERSION);
+        versionRange_destroy(range);
+        if (versionRange == NULL) {
+            framework_log(registry->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__,
+                          "Error creating LDAP filter.");
+            return NULL;
+        }
+    }
+
+    //setting filter
+    if (ignoreServiceLanguage) {
+        if (additionalFilterIn != NULL && versionRange != NULL) {
+            asprintf(&filter, "(&(%s=%s)%s%s)", OSGI_FRAMEWORK_OBJECTCLASS, serviceName, versionRange, additionalFilterIn);
+        } else if (versionRange != NULL) {
+            asprintf(&filter, "(&(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, serviceName, versionRange);
+        } else if (additionalFilterIn != NULL) {
+            asprintf(&filter, "(&(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, serviceName, additionalFilterIn);
+        } else {
+            asprintf(&filter, "(&(%s=%s))", OSGI_FRAMEWORK_OBJECTCLASS, serviceName);
+        }
+    } else {
+        if (additionalFilterIn != NULL && versionRange != NULL) {
+            asprintf(&filter, "(&(%s=%s)(%s=%s)%s%s)", OSGI_FRAMEWORK_OBJECTCLASS, serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang, versionRange, additionalFilterIn);
+        } else if (versionRange != NULL) {
+            asprintf(&filter, "(&(%s=%s)(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang, versionRange);
+        } else if (additionalFilterIn != NULL) {
+            asprintf(&filter, "(&(%s=%s)(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang, additionalFilterIn);
+        } else {
+            asprintf(&filter, "(&(%s=%s)(%s=%s))", OSGI_FRAMEWORK_OBJECTCLASS, serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang);
+        }
+    }
+
+    if (versionRange != NULL){
+        free(versionRange);
+    }
+
+    return filter;
+}
+
+static int celix_serviceRegistry_compareRegistrations(const void *a, const void *b) {
+    const service_registration_t* regA = a;
+    const service_registration_t* regB = b;
+
+    celix_properties_t* propsA = NULL;
+    celix_properties_t* propsB = NULL;
+    serviceRegistration_getProperties((service_registration_t*)regA, &propsA);
+    serviceRegistration_getProperties((service_registration_t*)regB, &propsB);
+
+    long servIdA = celix_properties_getAsLong(propsA, OSGI_FRAMEWORK_SERVICE_ID, 0);
+    long servIdB = celix_properties_getAsLong(propsB, OSGI_FRAMEWORK_SERVICE_ID, 0);
+
+    long servRankingA = celix_properties_getAsLong(propsA, OSGI_FRAMEWORK_SERVICE_RANKING, 0);
+    long servRankingB = celix_properties_getAsLong(propsB, OSGI_FRAMEWORK_SERVICE_RANKING, 0);
+
+    return utils_compareServiceIdsAndRanking(servIdA, servRankingA, servIdB, servRankingB);
+}
+
+celix_array_list_t* celix_serviceRegisrty_findServices(
+        celix_service_registry_t* registry,
+        const char* filterStr) {
+
+    celix_filter_t* filter = celix_filter_create(filterStr);
+    if (filter == NULL) {
+        framework_log(registry->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__,
+                      "Error incorrect filter.");
+        return NULL;
+    }
+
+    celix_array_list_t *result = celix_arrayList_create();
+    celix_array_list_t* matchedRegistrations = celix_arrayList_create();
+
+    celixThreadRwlock_readLock(&registry->lock);
+
+    hash_map_iterator_t iter = hashMapIterator_construct(registry->serviceRegistrations);
+    while (hashMapIterator_hasNext(&iter)) {
+        celix_array_list_t *regs = hashMapIterator_nextValue(&iter);
+        for (int i = 0; i < celix_arrayList_size(regs); ++i) {
+            service_registration_t *reg = celix_arrayList_get(regs, i);
+            celix_properties_t* svcProps = NULL;
+            serviceRegistration_getProperties(reg, &svcProps);
+            if (svcProps != NULL && celix_filter_match(filter, svcProps)) {
+                celix_arrayList_add(matchedRegistrations, reg);
+            }
+        }
+    }
+
+    //sort matched registration and add the svc id to the result list.
+    celix_arrayList_sort(matchedRegistrations, celix_serviceRegistry_compareRegistrations);
+    for (int i = 0; i < celix_arrayList_size(matchedRegistrations); ++i) {
+        service_registration_t* reg = celix_arrayList_get(matchedRegistrations, i);
+        celix_arrayList_addLong(result, serviceRegistration_getServiceId(reg));
+    }
+
+    celixThreadRwlock_unlock(&registry->lock);
+
+    celix_filter_destroy(filter);
+    celix_arrayList_destroy(matchedRegistrations);
+    return result;
+}
+
 
 celix_array_list_t* celix_serviceRegistry_listServiceIdsForOwner(celix_service_registry_t* registry, long bndId) {
     celix_array_list_t *result = celix_arrayList_create();

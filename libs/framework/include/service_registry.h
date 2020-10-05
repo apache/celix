@@ -151,6 +151,30 @@ long celix_serviceRegistry_nextSvcId(celix_service_registry_t* registry);
 void celix_serviceRegistry_unregisterService(celix_service_registry_t* registry, celix_bundle_t* bnd, long serviceId);
 
 
+/**
+ * Create a LDAP filter for the provided filter parts.
+ * @param serviceName       The optional service name
+ * @param versionRange      The optional version range
+ * @param filter            The optional filter
+ * @param serviceLanguage   The optional service lang. if NULL, lang C will be used.
+ * @param ignoreServiceLanguage   The whether the service lang filter needs to be added to the filter.
+ * @return a LDAP filter. Caller is responsible for freeing the filter.
+ */
+char* celix_serviceRegistry_createFilterFor(
+        celix_service_registry_t* registry,
+        const char* serviceName,
+        const char* versionRange,
+        const char* additionalFilter,
+        const char* serviceLanguage,
+        bool ignoreServiceLanguage);
+
+/**
+ * Find services and return a array list of service ids (long).
+ * Caller is responsible for freeing the returned array list.
+ */
+celix_array_list_t* celix_serviceRegisrty_findServices(celix_service_registry_t* registry, const char* filter);
+
+
 #ifdef __cplusplus
 }
 #endif

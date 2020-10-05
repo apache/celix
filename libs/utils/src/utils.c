@@ -150,9 +150,9 @@ int utils_compareServiceIdsAndRanking(unsigned long servId, long servRank, unsig
     if (servId == otherServId) {
         result = 0;
     } else if (servRank != otherServRank) {
-        result = servRank < otherServRank ? -1 : 1;
+        result = servRank < otherServRank ? 1 : -1;
     } else { //equal service rank, compare service ids
-        result = servId < otherServId ? 1 : -1;
+        result = servId < otherServId ? -1 : 1;
     }
 
     return result;
