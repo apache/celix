@@ -1359,6 +1359,7 @@ long celix_bundleContext_findServiceWithOptions(celix_bundle_context_t *ctx, con
         if (svcIds != NULL) {
             celix_arrayList_destroy(svcIds);
         }
+        free(filter);
     }
     return result;
 }
@@ -1375,6 +1376,7 @@ celix_array_list_t* celix_bundleContext_findServicesWithOptions(celix_bundle_con
     char* filter = celix_serviceRegistry_createFilterFor(ctx->framework->registry, opts->serviceName, opts->versionRange, opts->filter, opts->serviceLanguage, opts->ignoreServiceLanguage);
     if (filter != NULL) {
         result = celix_serviceRegisrty_findServices(ctx->framework->registry, filter);
+        free(filter);
     }
     return result;
 }

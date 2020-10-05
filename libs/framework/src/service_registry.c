@@ -1037,12 +1037,13 @@ celix_array_list_t* celix_serviceRegisrty_findServices(
     }
 
     //sort matched registration and add the svc id to the result list.
-    celix_arrayList_sort(matchedRegistrations, celix_serviceRegistry_compareRegistrations);
+    if (celix_arrayList_size(matchedRegistrations) > 1) {
+        celix_arrayList_sort(matchedRegistrations, celix_serviceRegistry_compareRegistrations);
+    }
     for (int i = 0; i < celix_arrayList_size(matchedRegistrations); ++i) {
         service_registration_t* reg = celix_arrayList_get(matchedRegistrations, i);
         celix_arrayList_addLong(result, serviceRegistration_getServiceId(reg));
     }
-
     celixThreadRwlock_unlock(&registry->lock);
 
     celix_filter_destroy(filter);
