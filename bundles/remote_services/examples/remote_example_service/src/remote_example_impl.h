@@ -21,11 +21,12 @@
 #define CELIX_REMOTE_EXAMPLE_IMPL_H
 
 #include <stdlib.h>
+#include <celix_api.h>
 
 typedef struct remote_example_impl remote_example_impl_t;
 
 
-remote_example_impl_t* remoteExample_create(void);
+remote_example_impl_t* remoteExample_create(celix_bundle_context_t *ctx);
 void remoteExample_destroy(remote_example_impl_t* impl);
 
 int remoteExample_pow(remote_example_impl_t* impl, double a, double b, double *out);
@@ -35,6 +36,7 @@ int remoteExample_setName1(remote_example_impl_t* impl, char *n, char **out);
 int remoteExample_setName2(remote_example_impl_t* impl, const char *n, char **out);
 int remoteExample_action(remote_example_impl_t* impl);
 int remoteExample_setComplex(remote_example_impl_t *impl, struct complex_input_example *exmpl, struct complex_output_example **out);
+int remoteExample_createAdditionalRemoteService(remote_example_impl_t* impl);
 
 //TODO complex
 #endif //CELIX_REMOTE_EXAMPLE_IMPL_H

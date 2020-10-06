@@ -33,7 +33,7 @@ struct activator {
 
 celix_status_t remoteExampleBndStart(struct activator *act, celix_bundle_context_t *ctx) {
     act->svcId = -1L;
-    act->impl = remoteExample_create();
+    act->impl = remoteExample_create(ctx);
     if (act->impl != NULL) {
         act->service.handle = act->impl;
         act->service.pow = (void*)remoteExample_pow;
@@ -43,6 +43,7 @@ celix_status_t remoteExampleBndStart(struct activator *act, celix_bundle_context
         act->service.setEnum = (void*)remoteExample_setEnum;
         act->service.action = (void*)remoteExample_action;
         act->service.setComplex = (void*)remoteExample_setComplex;
+        act->service.createAdditionalRemoteService = (void*)remoteExample_createAdditionalRemoteService;
 
         celix_properties_t *properties = celix_properties_create();
         celix_properties_set(properties, OSGI_RSA_SERVICE_EXPORTED_INTERFACES, REMOTE_EXAMPLE_NAME);
