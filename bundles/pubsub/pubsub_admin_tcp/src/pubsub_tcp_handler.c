@@ -791,7 +791,6 @@ int pubsub_tcpHandler_read(pubsub_tcpHandler_t *handle, int fd) {
         celixThreadRwlock_unlock(&handle->dbLock);
         return -1;
     }
-    celixThreadMutex_lock(&entry->readMutex);
     int nofBytesInReadBuffer = 0;
     if (ioctl(fd, FIONREAD, &nofBytesInReadBuffer)) {
         L_ERROR("[TCP Socket] socket: %d, url: %s, cannot  read nof bytes in socket read buffer \n", entry->fd, entry->url);
@@ -801,6 +800,7 @@ int pubsub_tcpHandler_read(pubsub_tcpHandler_t *handle, int fd) {
         celixThreadRwlock_unlock(&handle->dbLock);
         return 1;
     }
+    celixThreadMutex_lock(&entry->readMutex);
     // When header is included in payload buffer, allocate buffer.
     // bufferSize is at least the header size
     if ((entry->buffer == NULL) && (entry->readHeaderBufferSize == 0)) {
