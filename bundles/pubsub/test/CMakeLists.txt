@@ -153,9 +153,9 @@ if (BUILD_PUBSUB_PSA_UDP_MC)
             LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
             BUNDLES
             Celix::pubsub_serializer_json
+            Celix::pubsub_protocol_wire_v2
             Celix::pubsub_topology_manager
             Celix::pubsub_admin_zmq
-            Celix::pubsub_protocol_wire_v2
             Celix::shell
             Celix::shell_tui
             )
@@ -229,9 +229,9 @@ if (BUILD_PUBSUB_PSA_TCP)
             LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
             BUNDLES
             Celix::pubsub_serializer_json
+            Celix::pubsub_protocol_wire_v2
             Celix::pubsub_topology_manager
             Celix::pubsub_admin_zmq
-            Celix::pubsub_protocol_wire_v2
             Celix::shell
             Celix::shell_tui
             )
@@ -286,9 +286,9 @@ if (BUILD_PUBSUB_PSA_WS)
             LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
             BUNDLES
             Celix::pubsub_serializer_json
+            Celix::pubsub_protocol_wire_v2
             Celix::pubsub_topology_manager
             Celix::pubsub_admin_zmq
-            Celix::pubsub_protocol_wire_v2
             Celix::shell
             Celix::shell_tui
             )
@@ -319,9 +319,9 @@ if (BUILD_PUBSUB_PSA_ZMQ)
                 LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
             BUNDLES
                 Celix::pubsub_serializer_json
+                Celix::pubsub_protocol_wire_v1
                 Celix::pubsub_topology_manager
                 Celix::pubsub_admin_zmq
-                Celix::pubsub_protocol_wire_v1
                 pubsub_sut
                 pubsub_tst
     )
@@ -339,9 +339,9 @@ if (BUILD_PUBSUB_PSA_ZMQ)
         LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
         BUNDLES
         Celix::pubsub_serializer_json
+        Celix::pubsub_protocol_wire_v2
         Celix::pubsub_topology_manager
         Celix::pubsub_admin_zmq
-        Celix::pubsub_protocol_wire_v2
         pubsub_sut
         pubsub_tst
         )
@@ -361,9 +361,9 @@ if (BUILD_PUBSUB_PSA_ZMQ)
                 PSA_ZMQ_ZEROCOPY_ENABLED=true
             BUNDLES
                 Celix::pubsub_serializer_json
+                Celix::pubsub_protocol_wire_v1
                 Celix::pubsub_topology_manager
                 Celix::pubsub_admin_zmq
-                Celix::pubsub_protocol_wire_v1
                 Celix::shell
                 Celix::shell_tui
                 pubsub_sut
@@ -384,9 +384,9 @@ if (BUILD_PUBSUB_PSA_ZMQ)
         PSA_ZMQ_ZEROCOPY_ENABLED=true
         BUNDLES
         Celix::pubsub_serializer_json
+        Celix::pubsub_protocol_wire_v2
         Celix::pubsub_topology_manager
         Celix::pubsub_admin_zmq
-        Celix::pubsub_protocol_wire_v2
         Celix::shell
         Celix::shell_tui
         pubsub_sut
@@ -406,9 +406,9 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
             BUNDLES
             Celix::pubsub_serializer_json
+            Celix::pubsub_protocol_wire_v2
             Celix::pubsub_topology_manager
             Celix::pubsub_admin_zmq
-            Celix::pubsub_protocol_wire_v2
             Celix::shell
             Celix::shell_tui
             )
