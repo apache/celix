@@ -934,8 +934,6 @@ int pubsub_tcpHandler_read(pubsub_tcpHandler_t *handle, int fd) {
                     entry->fd, handle->maxRcvRetryCount, strerror(errno));
             nbytes = 0; //Return 0 as indicator to close the connection
         }
-    } else {
-        L_WARN("[TCP Socket] No message received (fd: %d), error(%d): %s, nbytes : %d", entry->fd, errno, strerror(errno), (int)nbytes);
     }
     celixThreadMutex_unlock(&entry->readMutex);
     celixThreadRwlock_unlock(&handle->dbLock);
