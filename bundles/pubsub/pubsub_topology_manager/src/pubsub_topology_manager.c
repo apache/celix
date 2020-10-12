@@ -718,8 +718,11 @@ static void pstm_teardownTopicSenders(pubsub_topology_manager_t *manager) {
         for (int k = 0; k < celix_arrayList_size(revokeEndpoints); ++k) {
             celix_properties_t* endpoint = celix_arrayList_get(revokeEndpoints, k);
             listener->revokeEndpoint(listener->handle, endpoint);
-            celix_properties_destroy(endpoint);
         }
+    }
+    for (int k = 0; k < celix_arrayList_size(revokeEndpoints); ++k) {
+        celix_properties_t* endpoint = celix_arrayList_get(revokeEndpoints, k);
+        celix_properties_destroy(endpoint);
     }
     celixThreadMutex_unlock(&manager->announceEndpointListeners.mutex);
     celix_arrayList_destroy(revokeEndpoints);
