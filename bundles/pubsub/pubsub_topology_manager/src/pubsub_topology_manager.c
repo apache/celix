@@ -758,7 +758,6 @@ static void pstm_teardownTopicReceivers(pubsub_topology_manager_t *manager) {
                               "Tearing down TopicReceiver for scope/topic %s/%s with psa admin type %s and serializer %s\n",
                               entry->scope == NULL ? "(null)" : entry->scope, entry->topic, adminType, serType);
             }
-
             if (entry->endpoint != NULL) {
                 celix_arrayList_add(revokeEndpoints, celix_properties_copy(entry->endpoint));
                 struct pstm_teardown_entry* teardownEntry = malloc(sizeof(*teardownEntry));
@@ -808,8 +807,12 @@ static void pstm_teardownTopicReceivers(pubsub_topology_manager_t *manager) {
         for (int k = 0; k < celix_arrayList_size(revokeEndpoints); ++k) {
             celix_properties_t* endpoint = celix_arrayList_get(revokeEndpoints, k);
             listener->revokeEndpoint(listener->handle, endpoint);
-            celix_properties_destroy(endpoint);
         }
+    }
+    // Clean-up properties
+    for (int k = 0; k < celix_arrayList_size(revokeEndpoints); ++k) {
+        celix_properties_t* endpoint = celix_arrayList_get(revokeEndpoints, k);
+        celix_properties_destroy(endpoint);
     }
     celixThreadMutex_unlock(&manager->announceEndpointListeners.mutex);
     celix_arrayList_destroy(revokeEndpoints);
