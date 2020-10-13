@@ -99,6 +99,7 @@ typedef struct psa_tcp_connection_entry {
     unsigned int retryCount;
     celix_thread_mutex_t writeMutex;
     celix_thread_mutex_t readMutex;
+    struct msghdr readMsg;
 } psa_tcp_connection_entry_t;
 
 //
@@ -139,10 +140,16 @@ static inline int pubsub_tcpHandler_makeNonBlocking(pubsub_tcpHandler_t *handle,
 static inline psa_tcp_connection_entry_t* pubsub_tcpHandler_createEntry(pubsub_tcpHandler_t *handle, int fd, char *url, char *external_url, struct sockaddr_in *addr);
 static inline void pubsub_tcpHandler_freeEntry(psa_tcp_connection_entry_t *entry);
 static inline void pubsub_tcpHandler_releaseEntryBuffer(pubsub_tcpHandler_t *handle, int fd, unsigned int index);
+static inline long int pubsub_tcpHandler_getMsgSize(psa_tcp_connection_entry_t *entry);
+static inline void pubsub_tcpHandler_ensureReadBufferCapacity(pubsub_tcpHandler_t *handle, psa_tcp_connection_entry_t *entry);
+static inline bool pubsub_tcpHandler_readHeader(pubsub_tcpHandler_t *handle, int fd, psa_tcp_connection_entry_t *entry, long int* msgSize);
 static inline void pubsub_tcpHandler_decodePayload(pubsub_tcpHandler_t *handle, psa_tcp_connection_entry_t *entry);
+static inline long int pubsub_tcpHandler_readPayload(pubsub_tcpHandler_t *handle, int fd, psa_tcp_connection_entry_t *entry);
 static inline void pubsub_tcpHandler_connectionHandler(pubsub_tcpHandler_t *handle, int fd);
 static inline void pubsub_tcpHandler_handler(pubsub_tcpHandler_t *handle);
 static void *pubsub_tcpHandler_thread(void *data);
+
+
 
 //
 // Create a handle
@@ -330,11 +337,7 @@ pubsub_tcpHandler_createEntry(pubsub_tcpHandler_t *handle, int fd, char *url, ch
         handle->protocol->getFooterSize(handle->protocol->handle, &size);
         entry->readFooterSize = size;
         entry->writeFooterSize = size;
-        entry->bufferSize = handle->bufferSize;
-        // incase header is included in the payload buffer, make at least the payload buffer the size of the header
-        if (!entry->readHeaderBufferSize) {
-            entry->bufferSize = MAX(handle->bufferSize, entry->headerSize);
-        }
+        entry->bufferSize = MAX(handle->bufferSize, entry->headerSize);
         entry->connected = false;
         unsigned minimalMsgSize = entry->writeHeaderBufferSize + entry->writeFooterSize;
         if ((minimalMsgSize > handle->maxMsgSize) && (handle->maxMsgSize)) {
@@ -342,11 +345,14 @@ pubsub_tcpHandler_createEntry(pubsub_tcpHandler_t *handle, int fd, char *url, ch
         } else {
             entry->maxMsgSize = (handle->maxMsgSize) ? handle->maxMsgSize : UINT32_MAX;
         }
-        if (entry->readHeaderBufferSize) entry->readHeaderBuffer = calloc(sizeof(char), entry->readHeaderBufferSize);
-        if (entry->writeHeaderBufferSize) entry->writeHeaderBuffer = calloc(sizeof(char), entry->writeHeaderBufferSize);
+        entry->readHeaderBuffer = calloc(sizeof(char), entry->headerSize);
+        entry->writeHeaderBuffer = calloc(sizeof(char), entry->headerSize);
         if (entry->readFooterSize) entry->readFooterBuffer = calloc(sizeof(char), entry->readFooterSize);
         if (entry->writeFooterSize) entry->writeFooterBuffer = calloc(sizeof(char), entry->writeFooterSize);
         if (entry->bufferSize) entry->buffer = calloc(sizeof(char), entry->bufferSize);
+
+        memset(&entry->readMsg, 0x00, sizeof(struct msghdr));
+        entry->readMsg.msg_iov = calloc(sizeof(struct iovec), IOV_MAX);
     }
     return entry;
 }
@@ -367,6 +373,7 @@ pubsub_tcpHandler_freeEntry(psa_tcp_connection_entry_t *entry) {
         free(entry->writeFooterBuffer);
         free(entry->readMetaBuffer);
         free(entry->writeMetaBuffer);
+        free(entry->readMsg.msg_iov);
         celixThreadMutex_destroy(&entry->writeMutex);
         celixThreadMutex_destroy(&entry->readMutex);
         free(entry);
@@ -437,7 +444,7 @@ int pubsub_tcpHandler_connect(pubsub_tcpHandler_t *handle, char *url) {
             hashMap_put(handle->connection_fd_map, (void *) (intptr_t) entry->fd, entry);
             celixThreadRwlock_unlock(&handle->dbLock);
             pubsub_tcpHandler_connectionHandler(handle, fd);
-            L_INFO("[TCP Socket] Connect to %s using; %s\n", entry->url, entry->interface_url);
+            L_INFO("[TCP Socket] Connect to %s using: %s\n", entry->url, entry->interface_url);
         }
         pubsub_utils_url_free(url_info);
     }
@@ -753,6 +760,67 @@ void pubsub_tcpHandler_enableReceiveEvent(pubsub_tcpHandler_t *handle,bool enabl
     }
 }
 
+static inline long int pubsub_tcpHandler_getMsgSize(psa_tcp_connection_entry_t *entry) {
+    return entry->readHeaderBufferSize + entry->header.header.payloadPartSize + entry->header.header.metadataSize + entry->readFooterSize;
+}
+
+static inline 
+bool pubsub_tcpHandler_readHeader(pubsub_tcpHandler_t *handle, int fd, psa_tcp_connection_entry_t *entry, long int* msgSize) {
+    bool result = false;
+    entry->readMsg.msg_iovlen = 0;
+    entry->readMsg.msg_iov[entry->readMsg.msg_iovlen].iov_base = entry->readHeaderBuffer;
+    entry->readMsg.msg_iov[entry->readMsg.msg_iovlen].iov_len  = entry->headerSize;
+    entry->readMsg.msg_iovlen++;
+
+    // Read the message
+    long int nbytes = recvmsg(fd, &(entry->readMsg), MSG_PEEK | MSG_NOSIGNAL);
+    if (nbytes >= entry->headerSize) {
+        if (handle->protocol->decodeHeader(handle->protocol->handle,
+                                           entry->readMsg.msg_iov[0].iov_base,
+                                           entry->readMsg.msg_iov[0].iov_len,
+                                           &entry->header) == CELIX_SUCCESS) {
+            entry->headerError = false;
+            result = true;
+        } else {
+            // Did not receive correct header
+            // skip sync word and try to read next header
+            if (!entry->headerError) {
+                L_WARN("[TCP Socket] Failed to decode message header (fd: %d) (url: %s)", entry->fd, entry->url);
+            }
+            entry->headerError = true;
+            entry->readMsg.msg_iovlen = 0;
+            entry->readMsg.msg_iov[entry->readMsg.msg_iovlen].iov_len = entry->syncSize;
+            entry->readMsg.msg_iovlen++;
+            // remove sync item from the queue
+            nbytes = recvmsg(fd, &(entry->readMsg), MSG_NOSIGNAL | MSG_WAITALL);
+        }
+    }
+    if (msgSize) *msgSize = nbytes;
+    return result;
+}
+
+
+static inline void pubsub_tcpHandler_ensureReadBufferCapacity(pubsub_tcpHandler_t *handle, psa_tcp_connection_entry_t *entry) {
+    if (entry->header.header.payloadSize > entry->bufferSize) {
+        handle->bufferSize = MAX(handle->bufferSize, entry->header.header.payloadSize);
+        char *buffer = realloc(entry->buffer, (size_t) handle->bufferSize);
+        if (buffer) {
+            entry->buffer = buffer;
+            entry->bufferSize = handle->bufferSize;
+        }
+    }
+
+    if (entry->header.header.metadataSize > entry->readMetaBufferSize) {
+        char *buffer = realloc(entry->readMetaBuffer, (size_t) entry->header.header.metadataSize);
+        if (buffer) {
+            entry->readMetaBuffer = buffer;
+            entry->readMetaBufferSize = entry->header.header.metadataSize;
+            L_WARN("[TCP Socket] socket: %d, url: %s,  realloc read meta buffer: (%d, %d) \n", entry->fd,
+                   entry->url, entry->readMetaBufferSize, entry->header.header.metadataSize);
+        }
+    }
+}
+
 static inline
 void pubsub_tcpHandler_decodePayload(pubsub_tcpHandler_t *handle, psa_tcp_connection_entry_t *entry) {
 
@@ -772,138 +840,38 @@ void pubsub_tcpHandler_decodePayload(pubsub_tcpHandler_t *handle, psa_tcp_connec
   }
 }
 
-//
-// Reads data from the filedescriptor which has date (determined by epoll()) and stores it in the internal structure
-// If the message is completely reassembled true is returned and the index and size have valid values
-//
-int pubsub_tcpHandler_read(pubsub_tcpHandler_t *handle, int fd) {
-    celixThreadRwlock_readLock(&handle->dbLock);
-    psa_tcp_connection_entry_t *entry = hashMap_get(handle->interface_fd_map, (void *) (intptr_t) fd);
-    if (entry == NULL)
-        entry = hashMap_get(handle->connection_fd_map, (void *) (intptr_t) fd);
-    // Find FD entry
-    if (entry == NULL) {
-        celixThreadRwlock_unlock(&handle->dbLock);
-        return -1;
+static inline
+long int pubsub_tcpHandler_readPayload(pubsub_tcpHandler_t *handle, int fd, psa_tcp_connection_entry_t *entry) {
+    entry->readMsg.msg_iovlen = 0;
+    if (entry->readHeaderBufferSize) {
+        entry->readMsg.msg_iov[entry->readMsg.msg_iovlen].iov_base = entry->readHeaderBuffer;
+        entry->readMsg.msg_iov[entry->readMsg.msg_iovlen].iov_len  = entry->headerSize;
+        entry->readMsg.msg_iovlen++;
     }
-    // If it's not connected return from function
-    if (!entry->connected) {
-        celixThreadRwlock_unlock(&handle->dbLock);
-        return -1;
+    if (entry->header.header.payloadPartSize) {
+        char* buffer = entry->buffer;
+        entry->readMsg.msg_iov[entry->readMsg.msg_iovlen].iov_base = &buffer[entry->header.header.payloadOffset];
+        entry->readMsg.msg_iov[entry->readMsg.msg_iovlen].iov_len = entry->header.header.payloadPartSize;
+        entry->readMsg.msg_iovlen++;
     }
-    int nofBytesInReadBuffer = 0;
-    if (ioctl(fd, FIONREAD, &nofBytesInReadBuffer)) {
-        L_ERROR("[TCP Socket] socket: %d, url: %s, cannot  read nof bytes in socket read buffer \n", entry->fd, entry->url);
+    if (entry->header.header.metadataSize) {
+        entry->readMsg.msg_iov[entry->readMsg.msg_iovlen].iov_base = entry->readMetaBuffer;
+        entry->readMsg.msg_iov[entry->readMsg.msg_iovlen].iov_len  = entry->header.header.metadataSize;
+        entry->readMsg.msg_iovlen++;
     }
-    // if socket buffer is not filled, return out of function
-    if (!nofBytesInReadBuffer) {
-        celixThreadRwlock_unlock(&handle->dbLock);
-        return 1;
+    if (entry->readFooterSize) {
+        entry->readMsg.msg_iov[entry->readMsg.msg_iovlen].iov_base = entry->readFooterBuffer;
+        entry->readMsg.msg_iov[entry->readMsg.msg_iovlen].iov_len = entry->readFooterSize;
+        entry->readMsg.msg_iovlen++;
     }
-    celixThreadMutex_lock(&entry->readMutex);
-    // When header is included in payload buffer, allocate buffer.
-    // bufferSize is at least the header size
-    if ((entry->buffer == NULL) && (entry->readHeaderBufferSize == 0)) {
-        entry->buffer  = malloc((size_t) handle->bufferSize);
-    }
-    struct msghdr msg;
-    struct iovec msg_iov[IOV_MAX];
-    memset(&msg, 0x00, sizeof(struct msghdr));
-    msg.msg_iov = msg_iov;
 
-    // Read the message
-    msg.msg_iovlen = 0;
-    msg.msg_iov[msg.msg_iovlen].iov_base = (entry->readHeaderBufferSize) ? entry->readHeaderBuffer : entry->buffer;
-    msg.msg_iov[msg.msg_iovlen].iov_len  = entry->headerSize;
-    msg.msg_iovlen++;
-    long int msgSize = 0;
-    long int nbytes = recvmsg(fd, &msg, MSG_PEEK | MSG_NOSIGNAL);
-    if (nbytes >= entry->headerSize) {
-        msg.msg_iovlen--;
-        if (handle->protocol->decodeHeader(handle->protocol->handle,
-                                           msg.msg_iov[msg.msg_iovlen].iov_base,
-                                           msg.msg_iov[msg.msg_iovlen].iov_len,
-                                           &entry->header) != CELIX_SUCCESS) {
-            // Did not receive correct header
-            // skip sync word and try to read next header
-            if (!entry->headerError) {
-                L_WARN("[TCP Socket] Failed to decode message header (fd: %d) (url: %s)", entry->fd, entry->url);
-            }
-            entry->headerError = true;
-            msg.msg_iov[msg.msg_iovlen].iov_len = entry->syncSize;
-            msgSize += msg.msg_iov[msg.msg_iovlen].iov_len;
-            msg.msg_iovlen++;
-        } else {
-            // Alloc message buffers
-            if (entry->header.header.payloadSize > entry->bufferSize) {
-                handle->bufferSize = MAX(handle->bufferSize, entry->header.header.payloadSize);
-                char *buffer = realloc(entry->buffer, (size_t) handle->bufferSize);
-                if (buffer) {
-                    entry->buffer = buffer;
-                    entry->bufferSize = handle->bufferSize;
-                }
-            }
-
-#ifdef USE_TCP_PUB_SUB_BUFFER_MEMSET
-            // For Debugging
-            if ((entry->header.header.payloadOffset == 0 ) && (msgSize == entry->headerSize)) {
-                memset(entry->buffer, 0x00, entry->bufferSize);
-            }
-#endif
-            entry->headerError = false;
-            if (entry->readHeaderBufferSize) {
-                msgSize += msg.msg_iov[msg.msg_iovlen].iov_len;
-                msg.msg_iovlen++;
-            }
-            if (entry->header.header.payloadPartSize) {
-                char* buffer = entry->buffer;
-                msg.msg_iov[msg.msg_iovlen].iov_base = &buffer[entry->header.header.payloadOffset];
-                msg.msg_iov[msg.msg_iovlen].iov_len = entry->header.header.payloadPartSize;
-                msgSize += msg.msg_iov[msg.msg_iovlen].iov_len;
-                msg.msg_iovlen++;
-            }
-            if (entry->header.header.metadataSize) {
-                if (entry->header.header.metadataSize > entry->readMetaBufferSize) {
-                    char *buffer = realloc(entry->readMetaBuffer, (size_t) entry->header.header.metadataSize);
-                    if (buffer) {
-                        entry->readMetaBuffer = buffer;
-                        entry->readMetaBufferSize = entry->header.header.metadataSize;
-                        L_WARN("[TCP Socket] socket: %d, url: %s,  realloc read meta buffer: (%d, %d) \n", entry->fd,
-                               entry->url, entry->readMetaBufferSize, entry->header.header.metadataSize);
-                    }
-                }
-                msg.msg_iov[msg.msg_iovlen].iov_base = entry->readMetaBuffer;
-                msg.msg_iov[msg.msg_iovlen].iov_len  = entry->header.header.metadataSize;
-                msgSize += msg.msg_iov[msg.msg_iovlen].iov_len;
-                msg.msg_iovlen++;
-            }
-            if (entry->readFooterSize) {
-                msg.msg_iov[msg.msg_iovlen].iov_base = entry->readFooterBuffer;
-                msg.msg_iov[msg.msg_iovlen].iov_len = entry->readFooterSize;
-                msgSize += msg.msg_iov[msg.msg_iovlen].iov_len;
-                msg.msg_iovlen++;
-            }
-        }
-        // If there is data in buffer, read the data. using blocking read
-        nbytes = recvmsg(fd, &msg, MSG_NOSIGNAL | MSG_WAITALL);
-        if (nbytes < msgSize) {
-            L_ERROR("[TCP Socket] socket: %d, url: %s, read nbytes %d != msgSize %d\n", entry->fd, entry->url, (int)nbytes, (int)msgSize);
-        }
-    }
-    if ((nbytes >= msgSize)&&(!entry->headerError))  {
+    long int nbytes = recvmsg(fd, &(entry->readMsg), MSG_NOSIGNAL | MSG_WAITALL);
+    if (nbytes >= pubsub_tcpHandler_getMsgSize(entry)) {
         bool valid = true;
         if (entry->readFooterSize) {
-            if (handle->protocol->decodeFooter(handle->protocol->handle,
-                                               entry->readFooterBuffer,
-                                               entry->readFooterSize,
-                                               &entry->header) != CELIX_SUCCESS) {
-
+            if (handle->protocol->decodeFooter(handle->protocol->handle, entry->readFooterBuffer, entry->readFooterSize, &entry->header) != CELIX_SUCCESS) {
                 // Did not receive correct footer
-                L_ERROR(
-                    "[TCP Socket] Failed to decode message footer seq %d (received corrupt message, transmit buffer full?) (fd: %d) (url: %s)",
-                    entry->header.header.seqNr,
-                    entry->fd,
-                    entry->url);
+                L_ERROR("[TCP Socket] Failed to decode message footer seq %d (received corrupt message, transmit buffer full?) (fd: %d) (url: %s)", entry->header.header.seqNr, entry->fd, entry->url);
                 valid = false;
             }
         }
@@ -917,18 +885,48 @@ int pubsub_tcpHandler_read(pubsub_tcpHandler_t *handle, int fd) {
             pubsub_tcpHandler_decodePayload(handle, entry);
         }
     }
+    return nbytes;
+}
 
+//
+// Reads data from the filedescriptor which has date (determined by epoll()) and stores it in the internal structure
+// If the message is completely reassembled true is returned and the index and size have valid values
+//
+int pubsub_tcpHandler_read(pubsub_tcpHandler_t *handle, int fd) {
+    celixThreadRwlock_readLock(&handle->dbLock);
+    psa_tcp_connection_entry_t *entry = hashMap_get(handle->interface_fd_map, (void *) (intptr_t) fd);
+    if (entry == NULL) {
+        entry = hashMap_get(handle->connection_fd_map, (void *) (intptr_t) fd);
+    }
+    // Find FD entry
+    if (entry == NULL) {
+        celixThreadRwlock_unlock(&handle->dbLock);
+        return -1;
+    }
+    // If it's not connected return from function
+    if (!entry->connected) {
+        celixThreadRwlock_unlock(&handle->dbLock);
+        return -1;
+    }
+    celixThreadMutex_lock(&entry->readMutex);
+    long int nbytes = 0;
+    // if not yet enough bytes are received the header can not be read
+    if (pubsub_tcpHandler_readHeader(handle, fd, entry, &nbytes)) {
+        // from the header can be determined how large buffers should be. Even before receiving all data these buffers can be allocated
+        pubsub_tcpHandler_ensureReadBufferCapacity(handle, entry);
+        nbytes = pubsub_tcpHandler_readPayload(handle, fd, entry);
+    }
     if (nbytes > 0) {
         entry->retryCount = 0;
     } else if (nbytes < 0) {
-        if ((errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
             // Non blocking interrupt
             entry->retryCount = 0;
         } else if (entry->retryCount < handle->maxRcvRetryCount) {
             entry->retryCount++;
             L_WARN(
-                "[TCP Socket] Failed to receive message (fd: %d), try again. error(%d): %s, Retry count %u of %u.",
-                entry->fd, errno, strerror(errno), entry->retryCount, handle->maxSendRetryCount);
+                    "[TCP Socket] Failed to receive message (fd: %d), try again. error(%d): %s, Retry count %u of %u.",
+                    entry->fd, errno, strerror(errno), entry->retryCount, handle->maxSendRetryCount);
         } else {
             L_ERROR("[TCP Socket] Failed to receive message (fd: %d) after %u retries! Closing connection... Error: %s",
                     entry->fd, handle->maxRcvRetryCount, strerror(errno));
@@ -989,7 +987,14 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
         size_t max_msg_iov_len = IOV_MAX - 2; // header , footer, padding
         while (hashMapIterator_hasNext(&iter)) {
             psa_tcp_connection_entry_t *entry = hashMapIterator_nextValue(&iter);
-            if (!entry->connected) continue;
+            if (!entry->connected) {
+                continue;
+            }
+            // When maxMsgSize is zero then payloadSize is disabled
+            if (entry->maxMsgSize == 0) {
+                // if max msg size is set to zero nothing will be send
+                continue;
+            }
             celixThreadMutex_lock(&entry->writeMutex);
             void *payloadData = NULL;
             size_t payloadSize = 0;
@@ -1000,8 +1005,15 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
                     payloadSize += msgIoVec[i].iov_len;
                 }
             }
-            // When maxMsgSize is zero then payloadSize is disabled
-            if (!entry->maxMsgSize) payloadSize = 0;
+
+            // check if message is not too large
+            bool isMessageSegmentationSupported = false;
+            handle->protocol->isMessageSegmentationSupported(handle->protocol->handle, &isMessageSegmentationSupported);
+            if (!isMessageSegmentationSupported && (msg_iov_len > max_msg_iov_len || payloadSize > entry->maxMsgSize)) {
+                L_WARN("[TCP Socket] Failed to send message (fd: %d), Message segmentation is not supported\n", entry->fd);
+                celixThreadMutex_unlock(&entry->writeMutex);
+                continue;
+            }
 
             message->header.convertEndianess = 0;
             message->header.payloadSize = payloadSize;
@@ -1014,44 +1026,32 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
             if (message->metadata.metadata) {
                 metadataSize = entry->writeMetaBufferSize;
                 metadataData = entry->writeMetaBuffer;
-                handle->protocol->encodeMetadata(handle->protocol->handle, message,
-                                                 &metadataData,
-                                                 &metadataSize);
+                // When maxMsgSize is smaller then meta data is disabled
+                if (metadataSize > entry->maxMsgSize) {
+                    metadataSize = 0;
+                }
+                handle->protocol->encodeMetadata(handle->protocol->handle, message, &metadataData, &metadataSize);
             }
-            // When maxMsgSize is smaller then meta data is disabled
-            if (!entry->maxMsgSize || (metadataSize > entry->maxMsgSize)) metadataSize = 0;
 
             message->header.metadataSize = metadataSize;
-            size_t totalMessageSize = payloadSize + metadataSize;
-
-            bool isMessageSegmentationSupported = false;
-            handle->protocol->isMessageSegmentationSupported(handle->protocol->handle, &isMessageSegmentationSupported);
-            if (((!isMessageSegmentationSupported) && (msg_iov_len > max_msg_iov_len)) ||
-                ((!isMessageSegmentationSupported) && (totalMessageSize > entry->maxMsgSize))) {
-                L_WARN("[TCP Socket] Failed to send message (fd: %d), Message segmentation is not supported\n",
-                       entry->fd);
-                celixThreadMutex_unlock(&entry->writeMutex);
-                continue;
-            }
+            size_t totalMsgSize = payloadSize + metadataSize;
 
             void *footerData = NULL;
             size_t footerDataSize = 0;
             if (entry->writeFooterSize) {
                 footerDataSize = entry->writeFooterSize;
                 footerData = entry->writeFooterBuffer;
-                handle->protocol->encodeFooter(handle->protocol->handle, message,
-                                                 &footerData,
-                                                 &footerDataSize);
+                handle->protocol->encodeFooter(handle->protocol->handle, message, &footerData, &footerDataSize);
                 entry->writeFooterSize = MAX(footerDataSize, entry->writeFooterSize);
                 if (footerData && entry->writeFooterBuffer != footerData) entry->writeFooterBuffer = footerData;
             }
 
-            size_t msgSize = 0;
-            size_t msgPayloadSize = 0;
-            size_t msgMetaDataSize = 0;
-            size_t msgIovLen = 0;
+            size_t sendMsgSize = 0;
+            size_t msgPayloadOffset = 0;
+            size_t msgIovOffset     = 0;
+            bool allPayloadAdded = (payloadSize == 0);
             long int nbytes = UINT32_MAX;
-            while (msgSize < totalMessageSize && nbytes > 0) {
+            while (sendMsgSize < totalMsgSize && nbytes > 0) {
                 struct msghdr msg;
                 struct iovec msg_iov[IOV_MAX];
                 memset(&msg, 0x00, sizeof(struct msghdr));
@@ -1059,96 +1059,100 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
                 msg.msg_namelen = entry->len;
                 msg.msg_flags = flags;
                 msg.msg_iov = msg_iov;
+
                 size_t msgPartSize = 0;
                 message->header.payloadPartSize = 0;
                 message->header.payloadOffset = 0;
                 message->header.metadataSize = 0;
                 message->header.isLastSegment = 0;
 
+                // reserve space for the header if required, header is added later when size of message is known (message can split in parts)
+                if (entry->writeHeaderBufferSize) {
+                    msg.msg_iovlen++;
+                }
                 // Write generic seralized payload in vector buffer
-                if (msgPayloadSize < payloadSize) {
+                if (!allPayloadAdded) {
                     if (payloadSize && payloadData && entry->maxMsgSize) {
                         char *buffer = payloadData;
-                        msg.msg_iovlen++;
-                        msg.msg_iov[msg.msg_iovlen].iov_base = &buffer[msgPayloadSize];
-                        msg.msg_iov[msg.msg_iovlen].iov_len = MIN((payloadSize - msgPayloadSize), entry->maxMsgSize);
+                        msg.msg_iov[msg.msg_iovlen].iov_base = &buffer[msgPayloadOffset];
+                        msg.msg_iov[msg.msg_iovlen].iov_len = MIN((payloadSize - msgPayloadOffset), entry->maxMsgSize);
                         msgPartSize += msg.msg_iov[msg.msg_iovlen].iov_len;
-                        message->header.payloadPartSize = msgPartSize;
-                        message->header.payloadOffset   = msgPayloadSize;
-                        msgPayloadSize += message->header.payloadPartSize;
-                        msgSize = msgPayloadSize;
+                        msg.msg_iovlen++;
+
                     } else {
                         // copy serialized vector into vector buffer
-                        for (size_t i = 0; i < MIN(msg_iov_len, max_msg_iov_len); i++) {
-                            msg.msg_iovlen++;
-                            msg.msg_iov[msg.msg_iovlen].iov_base = msgIoVec[msgIovLen + i].iov_base;
-                            msg.msg_iov[msg.msg_iovlen].iov_len = msgIoVec[msgIovLen + i].iov_len;
-                            if ((msgPartSize + msg.msg_iov[msg.msg_iovlen].iov_len) > entry->maxMsgSize) {
-                                msg.msg_iovlen--;
+                        size_t i;
+                        for (i = msgIovOffset; i < MIN(msg_iov_len, msgIovOffset + max_msg_iov_len); i++) {
+                            if ((msgPartSize + msgIoVec[i].iov_len) > entry->maxMsgSize) {
                                 break;
                             }
+                            msg.msg_iov[msg.msg_iovlen].iov_base = msgIoVec[i].iov_base;
+                            msg.msg_iov[msg.msg_iovlen].iov_len = msgIoVec[i].iov_len;
                             msgPartSize += msg.msg_iov[msg.msg_iovlen].iov_len;
+                            msg.msg_iovlen++;
                         }
-                        msgIovLen += msg.msg_iovlen;
-                        message->header.payloadOffset = msgPayloadSize;
-                        message->header.payloadPartSize = msgPartSize;
-                        msgPayloadSize  += message->header.payloadPartSize;
-                        msgSize = msgPayloadSize;
+                        // if no entry could be added
+                        if (i == msgIovOffset) {
+                            // TODO element can be split in parts?
+                            L_ERROR("[TCP Socket] vector io element is larger than max msg size");
+                            break;
+                        }
+                        msgIovOffset = i;
                     }
+                    message->header.payloadPartSize = msgPartSize;
+                    message->header.payloadOffset   = msgPayloadOffset;
+                    msgPayloadOffset += message->header.payloadPartSize;
+                    sendMsgSize = msgPayloadOffset;
+                    allPayloadAdded= msgPayloadOffset >= payloadSize;
                 }
 
                 // Write optional metadata in vector buffer
-                if ((msgPayloadSize >= payloadSize) &&
-                    (msgMetaDataSize < metadataSize) &&
+                if (allPayloadAdded &&
+                    (metadataSize != 0 && metadataData) &&
                     (msgPartSize < entry->maxMsgSize) &&
-                    (msg.msg_iovlen+1 < max_msg_iov_len-1) &&
-                    (metadataSize && metadataData)) {
-                    msg.msg_iovlen++;
+                    (msg.msg_iovlen-1 < max_msg_iov_len)) {  // header is already included
                     msg.msg_iov[msg.msg_iovlen].iov_base = metadataData;
                     msg.msg_iov[msg.msg_iovlen].iov_len = metadataSize;
-                    msgPartSize += msg.msg_iov[msg.msg_iovlen].iov_len;
+                    msg.msg_iovlen++;
+                    msgPartSize += metadataSize;
                     message->header.metadataSize = metadataSize;
-                    msgSize += metadataSize;
+                    sendMsgSize += metadataSize;
                 }
-                if (msgSize >= totalMessageSize) {
+                if (sendMsgSize >= totalMsgSize) {
                     message->header.isLastSegment = 0x1;
                 }
 
                 // Write optional footerData in vector buffer
                 if (footerData && footerDataSize) {
-                    msg.msg_iovlen++;
                     msg.msg_iov[msg.msg_iovlen].iov_base = footerData;
                     msg.msg_iov[msg.msg_iovlen].iov_len = footerDataSize;
-                    msgPartSize += msg.msg_iov[msg.msg_iovlen].iov_len;
+                    msgPartSize += footerDataSize;
+                    msg.msg_iovlen++;
                 }
 
                 void *headerData = NULL;
                 size_t headerSize = entry->writeHeaderBufferSize;
                 // check if header is not part of the payload (=> headerBufferSize = 0)s
                 if (entry->writeHeaderBufferSize) {
-                    headerSize = entry->writeHeaderBufferSize;
                     headerData = entry->writeHeaderBuffer;
                     // Encode the header, with payload size and metadata size
-                    handle->protocol->encodeHeader(handle->protocol->handle, message,
-                                                   &headerData,
-                                                   &headerSize);
+                    handle->protocol->encodeHeader(handle->protocol->handle, message, &headerData, &headerSize);
                     entry->writeHeaderBufferSize = MAX(headerSize, entry->writeHeaderBufferSize);
-                    if (headerData && entry->writeHeaderBuffer != headerData) entry->writeHeaderBuffer = headerData;
-                }
-                if (!entry->writeHeaderBufferSize) {
-                    // Skip header buffer, when header is part of payload;
-                    msg.msg_iov = &msg_iov[1];
-                } else if (headerSize && headerData) {
-                    // Write header in 1st vector buffer item
-                    msg.msg_iov[0].iov_base = headerData;
-                    msg.msg_iov[0].iov_len = headerSize;
-                    msgPartSize += msg.msg_iov[0].iov_len;
-                    msg.msg_iovlen++;
-                } else {
-                    L_ERROR("[TCP Socket] No header buffer is generated");
-                    msg.msg_iovlen = 0;
+                    if (headerData && entry->writeHeaderBuffer != headerData) {
+                        entry->writeHeaderBuffer = headerData;
+                    }
+                    if (headerSize && headerData) {
+                        // Write header in 1st vector buffer item
+                        msg.msg_iov[0].iov_base = headerData;
+                        msg.msg_iov[0].iov_len = headerSize;
+                        msgPartSize += msg.msg_iov[0].iov_len;
+                    } else {
+                        L_ERROR("[TCP Socket] No header buffer is generated");
+                        break;
+                    }
                 }
                 nbytes = sendmsg(entry->fd, &msg, flags | MSG_NOSIGNAL);
+
                 //  When a specific socket keeps reporting errors can indicate a subscriber
                 //  which is not active anymore, the connection will remain until the retry
                 //  counter exceeds the maximum retry count.
@@ -1168,7 +1172,7 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
                 } else if (msgPartSize) {
                     entry->retryCount = 0;
                     if (nbytes != msgPartSize) {
-                        L_ERROR("[TCP Socket] seq: %d MsgSize not correct: %d != %d (%s)\n", message->header.seqNr, msgSize, nbytes, strerror(errno));
+                        L_ERROR("[TCP Socket] seq: %d MsgSize not correct: %d != %d (%s)\n", message->header.seqNr, msgPartSize, nbytes, strerror(errno));
                     }
                 }
                 // Note: serialized Payload is deleted by serializer
