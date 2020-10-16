@@ -21,24 +21,46 @@
 #include <stdio.h>
 #include <string.h>
 #include <pthread.h>
+#include <remote_constants.h>
 
 #include "remote_example.h"
 #include "remote_example_impl.h"
 
 struct remote_example_impl {
+    celix_bundle_context_t* ctx;
     pthread_mutex_t mutex; //protects below
     char *name;
     enum enum_example e;
+
+    remote_example_t additionalSvc;
+    long additionalSvcId;
 };
 
-remote_example_impl_t* remoteExample_create(void) {
+remote_example_impl_t* remoteExample_create(celix_bundle_context_t* ctx) {
     remote_example_impl_t* impl = calloc(1, sizeof(remote_example_impl_t));
+    impl->ctx = ctx;
+    impl->additionalSvcId = -1L;
     impl->e = ENUM_EXAMPLE_VAL1;
     pthread_mutex_init(&impl->mutex, NULL);
+
+    //note the additional service, is just the same service under a new svc registration.
+    impl->additionalSvc.handle = impl;
+    impl->additionalSvc.pow = (void*)remoteExample_pow;
+    impl->additionalSvc.fib = (void*)remoteExample_fib;
+    impl->additionalSvc.setName1 = (void*)remoteExample_setName1;
+    impl->additionalSvc.setName2 = (void*)remoteExample_setName2;
+    impl->additionalSvc.setEnum = (void*)remoteExample_setEnum;
+    impl->additionalSvc.action = (void*)remoteExample_action;
+    impl->additionalSvc.setComplex = (void*)remoteExample_setComplex;
+    impl->additionalSvc.createAdditionalRemoteService = (void*)remoteExample_createAdditionalRemoteService;
+
     return impl;
 }
 void remoteExample_destroy(remote_example_impl_t* impl) {
     if (impl != NULL) {
+        pthread_mutex_lock(&impl->mutex);
+        celix_bundleContext_unregisterService(impl->ctx, impl->additionalSvcId);
+        pthread_mutex_unlock(&impl->mutex);
         pthread_mutex_destroy(&impl->mutex);
         free(impl->name);
     }
@@ -125,5 +147,30 @@ int remoteExample_setComplex(remote_example_impl_t *impl, struct complex_input_e
         free(result);
     }
 
+    return rc;
+}
+
+int remoteExample_createAdditionalRemoteService(remote_example_impl_t* impl) {
+    int rc = 0;
+    pthread_mutex_lock(&impl->mutex);
+    long prevSvcId = impl->additionalSvcId;
+    pthread_mutex_unlock(&impl->mutex);
+    if (prevSvcId >= 0) {
+        fprintf(stdout, "additional remote already created\n");
+    } else {
+        celix_properties_t *properties = celix_properties_create();
+        celix_properties_set(properties, OSGI_RSA_SERVICE_EXPORTED_INTERFACES, REMOTE_EXAMPLE_NAME);
+        long newSvcId = celix_bundleContext_registerService(impl->ctx, &impl->additionalSvc, REMOTE_EXAMPLE_NAME, properties);
+        pthread_mutex_lock(&impl->mutex);
+        prevSvcId = impl->additionalSvcId;
+        if (prevSvcId == -1L) {
+            impl->additionalSvcId = newSvcId;
+        }
+        pthread_mutex_unlock(&impl->mutex);
+        if (prevSvcId >= 0) {
+            fprintf(stdout, "additional remote service already registered. unregistering dup\n");
+            celix_bundleContext_unregisterService(impl->ctx, newSvcId);
+        }
+    }
     return rc;
 }
