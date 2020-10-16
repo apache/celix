@@ -136,6 +136,18 @@ extern "C" {
         ASSERT_TRUE(ok);
     };
 
+    static void testCreateDestroyComponentWithRemoteService(void *handle __attribute__((unused)), void *svc) {
+        auto *tst = static_cast<tst_service_t *>(svc);
+        bool ok = tst->testCreateDestroyComponentWithRemoteService(tst->handle);
+        ASSERT_TRUE(ok);
+    };
+
+    static void testAddRemoteServiceInRemoteService(void *handle __attribute__((unused)), void *svc) {
+        auto *tst = static_cast<tst_service_t *>(svc);
+        bool ok = tst->testCreateRemoteServiceInRemoteCall(tst->handle);
+        ASSERT_TRUE(ok);
+    };
+
 }
 
 template<typename F>
@@ -187,4 +199,12 @@ TEST_F(RsaDfiClientServerTests, TestRemoteEnum) {
 
 TEST_F(RsaDfiClientServerTests, TestRemoteAction) {
     test(testAction);
+}
+
+TEST_F(RsaDfiClientServerTests, CreateDestroyComponentWithRemoteService) {
+    test(testCreateDestroyComponentWithRemoteService);
+}
+
+TEST_F(RsaDfiClientServerTests, AddRemoteServiceInRemoteService) {
+    test(testAddRemoteServiceInRemoteService);
 }

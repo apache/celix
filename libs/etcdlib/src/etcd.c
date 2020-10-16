@@ -664,8 +664,6 @@ static size_t WriteHeaderCallback(void *contents, size_t size, size_t nmemb, voi
     return realsize;
 }
 
-
-
 static int performRequest(CURL **curl, pthread_mutex_t *mutex, char* url, request_t request, void* reqData, void* repData) {
 	CURLcode res = 0;
 	if(mutex != NULL) {
@@ -673,22 +671,21 @@ static int performRequest(CURL **curl, pthread_mutex_t *mutex, char* url, reques
     }
 	if(*curl == NULL) {
         *curl = curl_easy_init();
-        curl_easy_setopt(*curl, CURLOPT_NOSIGNAL, 1);
-        curl_easy_setopt(*curl, CURLOPT_TIMEOUT, DEFAULT_CURL_TIMEOUT);
-        curl_easy_setopt(*curl, CURLOPT_CONNECTTIMEOUT, DEFAULT_CURL_CONNECT_TIMEOUT);
-        curl_easy_setopt(*curl, CURLOPT_FOLLOWLOCATION, 1L);
-        curl_easy_setopt(*curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
-        //curl_easy_setopt(*curl, CURLOPT_VERBOSE, 1L);
+    } else {
+	    curl_easy_reset(*curl);
     }
 
+    curl_easy_setopt(*curl, CURLOPT_NOSIGNAL, 1);
+    curl_easy_setopt(*curl, CURLOPT_TIMEOUT, DEFAULT_CURL_TIMEOUT);
+    curl_easy_setopt(*curl, CURLOPT_CONNECTTIMEOUT, DEFAULT_CURL_CONNECT_TIMEOUT);
+    curl_easy_setopt(*curl, CURLOPT_FOLLOWLOCATION, 1L);
+    //curl_easy_setopt(*curl, CURLOPT_VERBOSE, 1L);
     curl_easy_setopt(*curl, CURLOPT_URL, url);
+    curl_easy_setopt(*curl, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
     curl_easy_setopt(*curl, CURLOPT_WRITEDATA, repData);
     if (((struct MemoryStruct*)repData)->header) {
         curl_easy_setopt(*curl, CURLOPT_HEADERDATA, repData);
         curl_easy_setopt(*curl, CURLOPT_HEADERFUNCTION, WriteHeaderCallback);
-    } else {
-        curl_easy_setopt(*curl, CURLOPT_HEADERDATA, NULL);
-        curl_easy_setopt(*curl, CURLOPT_HEADERFUNCTION, NULL);
     }
 
     if (request == PUT) {
@@ -697,12 +694,8 @@ static int performRequest(CURL **curl, pthread_mutex_t *mutex, char* url, reques
         curl_easy_setopt(*curl, CURLOPT_POSTFIELDS, reqData);
     } else if (request == DELETE) {
         curl_easy_setopt(*curl, CURLOPT_CUSTOMREQUEST, "DELETE");
-        curl_easy_setopt(*curl, CURLOPT_POST, 0);
-        curl_easy_setopt(*curl, CURLOPT_POSTFIELDS, NULL);
     } else if (request == GET) {
         curl_easy_setopt(*curl, CURLOPT_CUSTOMREQUEST, "GET");
-        curl_easy_setopt(*curl, CURLOPT_POST, 0);
-        curl_easy_setopt(*curl, CURLOPT_POSTFIELDS, NULL);
     }
 
 	res = curl_easy_perform(*curl);

@@ -33,6 +33,8 @@ struct tst_service {
     bool (*testRemoteEnum)(void *handle);
     bool (*testRemoteAction)(void *handle);
     bool (*testRemoteComplex)(void *handle);
+    bool (*testCreateDestroyComponentWithRemoteService)(void *handle);
+    bool (*testCreateRemoteServiceInRemoteCall)(void *handle);
 };
 
 typedef struct tst_service tst_service_t;
