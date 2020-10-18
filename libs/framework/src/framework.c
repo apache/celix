@@ -316,7 +316,11 @@ celix_status_t framework_destroy(framework_pt framework) {
     //because a shutdown can be initiated from a bundle.
     //A bundle cannot be stopped when it is waiting for a framework shutdown -> hence a shutdown thread which
     //has not been joined yet.
-    celixThread_join(framework->shutdown.thread, NULL);
+    if (!framework->shutdown.joined) {
+        celixThread_join(framework->shutdown.thread, NULL);
+        framework->shutdown.joined = true;
+    }
+
 
     serviceRegistry_destroy(framework->registry);
 
@@ -365,6 +369,7 @@ celix_status_t framework_destroy(framework_pt framework) {
         bundle_destroy(bnd);
 
     }
+    celixThreadMutex_unlock(&framework->installedBundles.mutex);
     celix_arrayList_destroy(framework->installedBundles.entries);
     celixThreadMutex_destroy(&framework->installedBundles.mutex);
 
@@ -405,6 +410,7 @@ celix_status_t fw_init(framework_pt framework) {
 
     celixThreadMutex_lock(&framework->shutdown.mutex);
     framework->shutdown.done = false;
+    framework->shutdown.joined = false;
     framework->shutdown.initialized = false;
     celixThreadMutex_unlock(&framework->shutdown.mutex);
 
@@ -1763,6 +1769,11 @@ celix_status_t framework_waitForStop(framework_pt framework) {
     while (!framework->shutdown.done) {
         celixThreadCondition_wait(&framework->shutdown.cond, &framework->shutdown.mutex);
     }
+    if (!framework->shutdown.joined) {
+        celixThread_join(framework->shutdown.thread, NULL);
+        framework->shutdown.joined = true;
+    }
+
     celixThreadMutex_unlock(&framework->shutdown.mutex);
 
     return CELIX_SUCCESS;
@@ -1922,7 +1933,6 @@ static void celix_framework_addToEventQueue(celix_framework_t *fw, const celix_f
 
 static void fw_handleEventRequest(celix_framework_t *framework, celix_framework_event_t* event) {
     if (event->type == CELIX_BUNDLE_EVENT_TYPE) {
-        //fw_log(framework->logger, CELIX_LOG_LEVEL_TRACE, "Handling fw bundle event for bundle %s", event->bndEntry->bnd->symbolicName);
         celix_array_list_t *localListeners = celix_arrayList_create();
         celixThreadMutex_lock(&framework->bundleListenerLock);
         for (int i = 0; i < celix_arrayList_size(framework->bundleListeners); ++i) {
@@ -1944,7 +1954,6 @@ static void fw_handleEventRequest(celix_framework_t *framework, celix_framework_
         }
         celix_arrayList_destroy(localListeners);
     } else if (event->type == CELIX_FRAMEWORK_EVENT_TYPE) {
-        //fw_log(framework->logger, CELIX_LOG_LEVEL_TRACE, "Handling fw event");
         celixThreadMutex_lock(&framework->frameworkListenersLock);
         for (int i = 0; i < celix_arrayList_size(framework->frameworkListeners); ++i) {
             fw_framework_listener_pt listener = celix_arrayList_get(framework->frameworkListeners, i);
@@ -1958,7 +1967,6 @@ static void fw_handleEventRequest(celix_framework_t *framework, celix_framework_
         }
         celixThreadMutex_unlock(&framework->frameworkListenersLock);
     } else if (event->type == CELIX_REGISTER_SERVICE_EVENT) {
-        //fw_log(framework->logger, CELIX_LOG_LEVEL_TRACE, "Handling fw service registration event for service '%s' with svc id %li", event->serviceName, event->registerServiceId);
         service_registration_t* reg = NULL;
         celix_status_t status;
         if (event->factory != NULL) {
@@ -1972,10 +1980,8 @@ static void fw_handleEventRequest(celix_framework_t *framework, celix_framework_
             event->registerCallback(event->registerData, serviceRegistration_getServiceId(reg));
         }
     } else if (event->type == CELIX_UNREGISTER_SERVICE_EVENT) {
-        //fw_log(framework->logger, CELIX_LOG_LEVEL_TRACE, "Handling fw service unregister event for service id %li", event->unregisterServiceId);
         celix_serviceRegistry_unregisterService(framework->registry, event->bndEntry->bnd, event->unregisterServiceId);
     } else if (event->type == CELIX_GENERIC_EVENT) {
-        //fw_log(framework->logger, CELIX_LOG_LEVEL_TRACE, "Handling event %s", event->eventName);
         if (event->genericProcess != NULL) {
             event->genericProcess(event->genericProcessData);
         }
@@ -2640,7 +2646,7 @@ void celix_framework_waitForEmptyEventQueue(celix_framework_t *fw) {
     celixThreadMutex_unlock(&fw->dispatcher.mutex);
 }
 
-void celix_framework_waitForEvents(celix_framework_t* fw, long bndId) {
+void celix_framework_waitUntilNoEventsForBnd(celix_framework_t* fw, long bndId) {
     assert(!celix_framework_isCurrentThreadTheEventLoop(fw));
 
     celixThreadMutex_lock(&fw->dispatcher.mutex);
@@ -2705,7 +2711,7 @@ long celix_framework_fireGenericEvent(framework_t* fw, long eventId, long bndId,
 }
 
 long celix_framework_nextEventId(framework_t *fw) {
-    return __atomic_fetch_add(&fw->nextGenericEventId, 1, __ATOMIC_SEQ_CST);;
+    return __atomic_fetch_add(&fw->nextGenericEventId, 1, __ATOMIC_RELAXED);
 }
 
 void celix_framework_waitForGenericEvent(framework_t *fw, long eventId) {

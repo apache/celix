@@ -171,10 +171,7 @@ celix_properties_t* pubsubEndpoint_createFromPublisherTrackerInfo(bundle_context
     celix_bundleContext_useBundle(ctx, bundleId, &data, retrieveTopicProperties);
 
     pubsubEndpoint_setFields(ep, fwUUID, scope, topic, PUBSUB_PUBLISHER_ENDPOINT_TYPE, NULL, NULL, NULL, data.props);
-
-    if (data.props != NULL) {
-        celix_properties_destroy(data.props); //safe to delete, properties are copied in pubsubEndpoint_setFields
-    }
+    celix_properties_destroy(data.props); //safe to delete, properties are copied in pubsubEndpoint_setFields
 
     if (!pubsubEndpoint_isValid(ep, false, false)) {
         celix_properties_destroy(ep);

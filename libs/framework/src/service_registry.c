@@ -920,15 +920,6 @@ static inline void celix_waitAndDestroyServiceListener(celix_service_registry_se
     free(entry);
 }
 
-/**
- * Create a LDAP filter for the provided filter parts.
- * @param serviceName       The optional service name
- * @param versionRange      The optional version range
- * @param filter            The optional filter
- * @param serviceLanguage   The optional service lang. if NULL, lang C will be used.
- * @param ignoreServiceLanguage   The whether the service lang filter needs to be added to the filter.
- * @return a LDAP filter. Caller is responsible for freeing the filter.
- */
 char* celix_serviceRegistry_createFilterFor(celix_service_registry_t* registry, const char* serviceName, const char* versionRangeStr, const char* additionalFilterIn, const char* lang, bool ignoreServiceLanguage) {
     char* filter = NULL;
 
@@ -1294,7 +1285,7 @@ static void celix_waitForPendingRegisteredEvents(celix_service_registry_t *regis
 }
 
 long celix_serviceRegistry_nextSvcId(celix_service_registry_t* registry) {
-    long scvId = __atomic_fetch_add(&registry->nextServiceId, 1, __ATOMIC_SEQ_CST);
+    long scvId = __atomic_fetch_add(&registry->nextServiceId, 1, __ATOMIC_RELAXED);
     return scvId;
 }
 

@@ -159,7 +159,7 @@ void celix_framework_setLogCallback(celix_framework_t* fw, void* logHandle, void
 /**
  * wait till all events for the bundle identified by the bndId are processed.
  */
-void celix_framework_waitForEvents(celix_framework_t* fw, long bndId);
+void celix_framework_waitUntilNoEventsForBnd(celix_framework_t* fw, long bndId);
 
 
 #ifdef __cplusplus

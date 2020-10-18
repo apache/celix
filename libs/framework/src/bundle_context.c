@@ -1491,7 +1491,7 @@ long celix_bundleContext_trackServiceTrackersAsync(
 }
 
 void celix_bundleContext_waitForEvents(celix_bundle_context_t* ctx) {
-    celix_framework_waitForEvents(ctx->framework, celix_bundle_getId(ctx->bundle));
+    celix_framework_waitUntilNoEventsForBnd(ctx->framework, celix_bundle_getId(ctx->bundle));
 }
 
 celix_bundle_t* celix_bundleContext_getBundle(const celix_bundle_context_t *ctx) {
