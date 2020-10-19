@@ -109,7 +109,7 @@ TEST_F(PubSubJsonSerializationProviderTestSuite, DeserializeTest) {
         poi1 *p = nullptr;
         iovec inVec;
         inVec.iov_base = static_cast<void*>(const_cast<char*>(data));
-        inVec.iov_len = strlen(data) + 1;
+        inVec.iov_len = strlen(data);
         ser->deserialize(ser->handle, &inVec, 1, (void**)(&p));
         EXPECT_EQ(42,p->location.lat);
         EXPECT_EQ(43,p->location.lon);
