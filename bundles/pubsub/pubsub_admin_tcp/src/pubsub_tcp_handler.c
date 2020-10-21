@@ -31,7 +31,6 @@
 #include <errno.h>
 #include <array_list.h>
 #include <pthread.h>
-#include <sys/ioctl.h>
 #if defined(__APPLE__)
 #include <sys/types.h>
 #include <sys/event.h>
@@ -40,10 +39,6 @@
 #include <sys/epoll.h>
 #endif
 #include <limits.h>
-#include <assert.h>
-#include "ctype.h"
-#include <netdb.h>
-#include <signal.h>
 #include <fcntl.h>
 #include <arpa/inet.h>
 #include <netinet/tcp.h>
@@ -79,18 +74,18 @@ typedef struct psa_tcp_connection_entry {
     bool connected;
     bool headerError;
     pubsub_protocol_message_t header;
-    unsigned int maxMsgSize;
-    unsigned int syncSize;
-    unsigned int headerSize;
-    unsigned int readHeaderBufferSize; // Size of headerBuffer, size = 0, no headerBuffer -> included in payload
+    size_t maxMsgSize;
+    size_t readHeaderSize;
+    size_t readHeaderBufferSize; // Size of headerBuffer
     void *readHeaderBuffer;
-    unsigned int writeHeaderBufferSize; // Size of headerBuffer, size = 0, no headerBuffer -> included in payload
+    size_t writeHeaderBufferSize; // Size of headerBuffer
     void *writeHeaderBuffer;
-    unsigned int readFooterSize;
+    size_t readFooterSize;
+    size_t readFooterBufferSize;
     void *readFooterBuffer;
-    unsigned int writeFooterSize;
+    size_t writeFooterBufferSize;
     void *writeFooterBuffer;
-    unsigned int bufferSize;
+    size_t bufferSize;
     void *buffer;
     size_t readMetaBufferSize;
     void *readMetaBuffer;
@@ -137,7 +132,7 @@ struct pubsub_tcpHandler {
 static inline int pubsub_tcpHandler_closeConnectionEntry(pubsub_tcpHandler_t *handle, psa_tcp_connection_entry_t *entry, bool lock);
 static inline int pubsub_tcpHandler_closeInterfaceEntry(pubsub_tcpHandler_t *handle, psa_tcp_connection_entry_t *entry);
 static inline int pubsub_tcpHandler_makeNonBlocking(pubsub_tcpHandler_t *handle, int fd);
-static inline psa_tcp_connection_entry_t* pubsub_tcpHandler_createEntry(pubsub_tcpHandler_t *handle, int fd, char *url, char *external_url, struct sockaddr_in *addr);
+static inline psa_tcp_connection_entry_t* pubsub_tcpHandler_createEntry(pubsub_tcpHandler_t *handle, int fd, char *url, char *interface_url, struct sockaddr_in *addr);
 static inline void pubsub_tcpHandler_freeEntry(psa_tcp_connection_entry_t *entry);
 static inline void pubsub_tcpHandler_releaseEntryBuffer(pubsub_tcpHandler_t *handle, int fd, unsigned int index);
 static inline long int pubsub_tcpHandler_getMsgSize(psa_tcp_connection_entry_t *entry);
@@ -315,42 +310,42 @@ pubsub_tcpHandler_createEntry(pubsub_tcpHandler_t *handle, int fd, char *url, ch
         entry->fd = fd;
         celixThreadMutex_create(&entry->writeMutex, NULL);
         celixThreadMutex_create(&entry->readMutex, NULL);
-        if (url)
+        if (url) {
             entry->url = strndup(url, 1024 * 1024);
+        }
         if (interface_url) {
             entry->interface_url = strndup(interface_url, 1024 * 1024);
         } else {
-            if (url)
+            if (url) {
                 entry->interface_url = strndup(url, 1024 * 1024);
+            }
         }
-        if (addr)
+        if (addr) {
             entry->addr = *addr;
+        }
         entry->len = sizeof(struct sockaddr_in);
-        size_t size = 0;
-        handle->protocol->getHeaderSize(handle->protocol->handle, &size);
-        entry->headerSize = size;
-        handle->protocol->getHeaderBufferSize(handle->protocol->handle, &size);
-        entry->readHeaderBufferSize = size;
-        entry->writeHeaderBufferSize = size;
-        handle->protocol->getSyncHeaderSize(handle->protocol->handle, &size);
-        entry->syncSize = size;
-        handle->protocol->getFooterSize(handle->protocol->handle, &size);
-        entry->readFooterSize = size;
-        entry->writeFooterSize = size;
-        entry->bufferSize = MAX(handle->bufferSize, entry->headerSize);
+        size_t headerSize = 0;
+        size_t footerSize = 0;
+        handle->protocol->getHeaderSize(handle->protocol->handle, &headerSize);
+        handle->protocol->getFooterSize(handle->protocol->handle, &footerSize);
+        entry->readHeaderBufferSize = headerSize;
+        entry->writeHeaderBufferSize = headerSize;
+
+        entry->readFooterBufferSize = footerSize;
+        entry->writeFooterBufferSize = footerSize;
+        entry->bufferSize = MAX(handle->bufferSize, headerSize);
         entry->connected = false;
-        unsigned minimalMsgSize = entry->writeHeaderBufferSize + entry->writeFooterSize;
+        unsigned minimalMsgSize = entry->writeHeaderBufferSize + entry->writeFooterBufferSize;
         if ((minimalMsgSize > handle->maxMsgSize) && (handle->maxMsgSize)) {
             L_ERROR("[TCP Socket] maxMsgSize (%d) < headerSize + FooterSize (%d): %s\n", handle->maxMsgSize, minimalMsgSize);
         } else {
-            entry->maxMsgSize = (handle->maxMsgSize) ? handle->maxMsgSize : UINT32_MAX;
+            entry->maxMsgSize = (handle->maxMsgSize) ? handle->maxMsgSize : LONG_MAX;
         }
-        entry->readHeaderBuffer = calloc(sizeof(char), entry->headerSize);
-        entry->writeHeaderBuffer = calloc(sizeof(char), entry->headerSize);
-        if (entry->readFooterSize) entry->readFooterBuffer = calloc(sizeof(char), entry->readFooterSize);
-        if (entry->writeFooterSize) entry->writeFooterBuffer = calloc(sizeof(char), entry->writeFooterSize);
+        entry->readHeaderBuffer = calloc(sizeof(char), headerSize);
+        entry->writeHeaderBuffer = calloc(sizeof(char), headerSize);
+        if (entry->readFooterBufferSize ) entry->readFooterBuffer = calloc(sizeof(char), entry->readFooterBufferSize );
+        if (entry->writeFooterBufferSize) entry->writeFooterBuffer = calloc(sizeof(char), entry->writeFooterBufferSize);
         if (entry->bufferSize) entry->buffer = calloc(sizeof(char), entry->bufferSize);
-
         memset(&entry->readMsg, 0x00, sizeof(struct msghdr));
         entry->readMsg.msg_iov = calloc(sizeof(struct iovec), IOV_MAX);
     }
@@ -761,24 +756,42 @@ void pubsub_tcpHandler_enableReceiveEvent(pubsub_tcpHandler_t *handle,bool enabl
 }
 
 static inline long int pubsub_tcpHandler_getMsgSize(psa_tcp_connection_entry_t *entry) {
-    return entry->readHeaderBufferSize + entry->header.header.payloadPartSize + entry->header.header.metadataSize + entry->readFooterSize;
+    // Note header message is already read
+    return (long int)entry->header.header.payloadPartSize + (long int)entry->header.header.metadataSize + (long int)entry->readFooterSize;
 }
 
 static inline 
 bool pubsub_tcpHandler_readHeader(pubsub_tcpHandler_t *handle, int fd, psa_tcp_connection_entry_t *entry, long int* msgSize) {
     bool result = false;
+    size_t syncSize = 0;
+    size_t protocolHeaderBufferSize = 0;
+    // Get Sync Size
+    handle->protocol->getSyncHeaderSize(handle->protocol->handle, &syncSize);
+    // Get HeaderSize of the Protocol Header
+    handle->protocol->getHeaderSize(handle->protocol->handle, &entry->readHeaderSize);
+    // Get HeaderBufferSize of the Protocol Header, when headerBufferSize == 0, the protocol header is included in the payload (needed for endpoints)
+    handle->protocol->getHeaderBufferSize(handle->protocol->handle, &protocolHeaderBufferSize);
+
+    // Ensure capacity in header buffer
+    pubsub_tcpHandler_ensureReadBufferCapacity(handle, entry);
+
     entry->readMsg.msg_iovlen = 0;
     entry->readMsg.msg_iov[entry->readMsg.msg_iovlen].iov_base = entry->readHeaderBuffer;
-    entry->readMsg.msg_iov[entry->readMsg.msg_iovlen].iov_len  = entry->headerSize;
+    entry->readMsg.msg_iov[entry->readMsg.msg_iovlen].iov_len  = entry->readHeaderBufferSize;
     entry->readMsg.msg_iovlen++;
 
     // Read the message
-    long int nbytes = recvmsg(fd, &(entry->readMsg), MSG_PEEK | MSG_NOSIGNAL);
-    if (nbytes >= entry->headerSize) {
+    long int nbytes = 0;
+    // Use peek flag to find sync word or when header is part of the payload
+    unsigned int flag = (entry->headerError || (!protocolHeaderBufferSize)) ? MSG_PEEK : 0;
+    if (entry->readHeaderSize) nbytes = recvmsg(fd, &(entry->readMsg), MSG_NOSIGNAL | MSG_WAITALL | flag);
+    if (nbytes >= entry->readHeaderSize) {
         if (handle->protocol->decodeHeader(handle->protocol->handle,
                                            entry->readMsg.msg_iov[0].iov_base,
                                            entry->readMsg.msg_iov[0].iov_len,
                                            &entry->header) == CELIX_SUCCESS) {
+            // read header from queue, when recovered from headerError and when header is not part of the payload. (Because of MSG_PEEK)
+            if (entry->headerError && protocolHeaderBufferSize && entry->readHeaderSize) nbytes = recvmsg(fd, &(entry->readMsg), MSG_NOSIGNAL | MSG_WAITALL);
             entry->headerError = false;
             result = true;
         } else {
@@ -789,10 +802,10 @@ bool pubsub_tcpHandler_readHeader(pubsub_tcpHandler_t *handle, int fd, psa_tcp_c
             }
             entry->headerError = true;
             entry->readMsg.msg_iovlen = 0;
-            entry->readMsg.msg_iov[entry->readMsg.msg_iovlen].iov_len = entry->syncSize;
+            entry->readMsg.msg_iov[entry->readMsg.msg_iovlen].iov_len = syncSize;
             entry->readMsg.msg_iovlen++;
             // remove sync item from the queue
-            nbytes = recvmsg(fd, &(entry->readMsg), MSG_NOSIGNAL | MSG_WAITALL);
+            if (syncSize) nbytes = recvmsg(fd, &(entry->readMsg), MSG_NOSIGNAL | MSG_WAITALL);
         }
     }
     if (msgSize) *msgSize = nbytes;
@@ -801,6 +814,14 @@ bool pubsub_tcpHandler_readHeader(pubsub_tcpHandler_t *handle, int fd, psa_tcp_c
 
 
 static inline void pubsub_tcpHandler_ensureReadBufferCapacity(pubsub_tcpHandler_t *handle, psa_tcp_connection_entry_t *entry) {
+    if (entry->readHeaderSize > entry->readHeaderBufferSize) {
+        char *buffer = realloc(entry->readHeaderBuffer, (size_t) entry->readHeaderSize);
+        if (buffer) {
+            entry->readHeaderBuffer = buffer;
+            entry->readHeaderBufferSize = entry->readHeaderSize;
+        }
+    }
+
     if (entry->header.header.payloadSize > entry->bufferSize) {
         handle->bufferSize = MAX(handle->bufferSize, entry->header.header.payloadSize);
         char *buffer = realloc(entry->buffer, (size_t) handle->bufferSize);
@@ -815,8 +836,14 @@ static inline void pubsub_tcpHandler_ensureReadBufferCapacity(pubsub_tcpHandler_
         if (buffer) {
             entry->readMetaBuffer = buffer;
             entry->readMetaBufferSize = entry->header.header.metadataSize;
-            L_WARN("[TCP Socket] socket: %d, url: %s,  realloc read meta buffer: (%d, %d) \n", entry->fd,
-                   entry->url, entry->readMetaBufferSize, entry->header.header.metadataSize);
+        }
+    }
+
+    if (entry->readFooterSize > entry->readFooterBufferSize) {
+        char *buffer = realloc(entry->readFooterBuffer, (size_t) entry->readFooterSize);
+        if (buffer) {
+            entry->readFooterBuffer = buffer;
+            entry->readFooterBufferSize = entry->readFooterSize;
         }
     }
 }
@@ -843,11 +870,11 @@ void pubsub_tcpHandler_decodePayload(pubsub_tcpHandler_t *handle, psa_tcp_connec
 static inline
 long int pubsub_tcpHandler_readPayload(pubsub_tcpHandler_t *handle, int fd, psa_tcp_connection_entry_t *entry) {
     entry->readMsg.msg_iovlen = 0;
-    if (entry->readHeaderBufferSize) {
-        entry->readMsg.msg_iov[entry->readMsg.msg_iovlen].iov_base = entry->readHeaderBuffer;
-        entry->readMsg.msg_iov[entry->readMsg.msg_iovlen].iov_len  = entry->headerSize;
-        entry->readMsg.msg_iovlen++;
-    }
+    handle->protocol->getFooterSize(handle->protocol->handle, &entry->readFooterSize);
+
+    // from the header can be determined how large buffers should be. Even before receiving all data these buffers can be allocated
+    pubsub_tcpHandler_ensureReadBufferCapacity(handle, entry);
+
     if (entry->header.header.payloadPartSize) {
         char* buffer = entry->buffer;
         entry->readMsg.msg_iov[entry->readMsg.msg_iovlen].iov_base = &buffer[entry->header.header.payloadOffset];
@@ -859,9 +886,10 @@ long int pubsub_tcpHandler_readPayload(pubsub_tcpHandler_t *handle, int fd, psa_
         entry->readMsg.msg_iov[entry->readMsg.msg_iovlen].iov_len  = entry->header.header.metadataSize;
         entry->readMsg.msg_iovlen++;
     }
+
     if (entry->readFooterSize) {
         entry->readMsg.msg_iov[entry->readMsg.msg_iovlen].iov_base = entry->readFooterBuffer;
-        entry->readMsg.msg_iov[entry->readMsg.msg_iovlen].iov_len = entry->readFooterSize;
+        entry->readMsg.msg_iov[entry->readMsg.msg_iovlen].iov_len  = entry->readFooterSize;
         entry->readMsg.msg_iovlen++;
     }
 
@@ -869,7 +897,7 @@ long int pubsub_tcpHandler_readPayload(pubsub_tcpHandler_t *handle, int fd, psa_
     if (nbytes >= pubsub_tcpHandler_getMsgSize(entry)) {
         bool valid = true;
         if (entry->readFooterSize) {
-            if (handle->protocol->decodeFooter(handle->protocol->handle, entry->readFooterBuffer, entry->readFooterSize, &entry->header) != CELIX_SUCCESS) {
+            if (handle->protocol->decodeFooter(handle->protocol->handle, entry->readFooterBuffer, entry->readFooterBufferSize, &entry->header) != CELIX_SUCCESS) {
                 // Did not receive correct footer
                 L_ERROR("[TCP Socket] Failed to decode message footer seq %d (received corrupt message, transmit buffer full?) (fd: %d) (url: %s)", entry->header.header.seqNr, entry->fd, entry->url);
                 valid = false;
@@ -912,8 +940,6 @@ int pubsub_tcpHandler_read(pubsub_tcpHandler_t *handle, int fd) {
     long int nbytes = 0;
     // if not yet enough bytes are received the header can not be read
     if (pubsub_tcpHandler_readHeader(handle, fd, entry, &nbytes)) {
-        // from the header can be determined how large buffers should be. Even before receiving all data these buffers can be allocated
-        pubsub_tcpHandler_ensureReadBufferCapacity(handle, entry);
         nbytes = pubsub_tcpHandler_readPayload(handle, fd, entry);
     }
     if (nbytes > 0) {
@@ -1036,21 +1062,11 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
             message->header.metadataSize = metadataSize;
             size_t totalMsgSize = payloadSize + metadataSize;
 
-            void *footerData = NULL;
-            size_t footerDataSize = 0;
-            if (entry->writeFooterSize) {
-                footerDataSize = entry->writeFooterSize;
-                footerData = entry->writeFooterBuffer;
-                handle->protocol->encodeFooter(handle->protocol->handle, message, &footerData, &footerDataSize);
-                entry->writeFooterSize = MAX(footerDataSize, entry->writeFooterSize);
-                if (footerData && entry->writeFooterBuffer != footerData) entry->writeFooterBuffer = footerData;
-            }
-
             size_t sendMsgSize = 0;
             size_t msgPayloadOffset = 0;
             size_t msgIovOffset     = 0;
             bool allPayloadAdded = (payloadSize == 0);
-            long int nbytes = UINT32_MAX;
+            long int nbytes = LONG_MAX;
             while (sendMsgSize < totalMsgSize && nbytes > 0) {
                 struct msghdr msg;
                 struct iovec msg_iov[IOV_MAX];
@@ -1122,18 +1138,19 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
                     message->header.isLastSegment = 0x1;
                 }
 
-                // Write optional footerData in vector buffer
-                if (footerData && footerDataSize) {
-                    msg.msg_iov[msg.msg_iovlen].iov_base = footerData;
-                    msg.msg_iov[msg.msg_iovlen].iov_len = footerDataSize;
-                    msgPartSize += footerDataSize;
-                    msg.msg_iovlen++;
-                }
-
                 void *headerData = NULL;
-                size_t headerSize = entry->writeHeaderBufferSize;
-                // check if header is not part of the payload (=> headerBufferSize = 0)s
-                if (entry->writeHeaderBufferSize) {
+                size_t headerSize = 0;
+                size_t protocolHeaderBufferSize = 0;
+                size_t footerSize = 0;
+                // Get HeaderSize of the Protocol Header
+                handle->protocol->getHeaderSize(handle->protocol->handle, &headerSize);
+                // Get HeaderBufferSize of the Protocol Header, when headerBufferSize == 0, the protocol header is included in the payload (needed for endpoints)
+                handle->protocol->getHeaderBufferSize(handle->protocol->handle, &protocolHeaderBufferSize);
+                // Get HeaderSize of the Protocol Footer
+                handle->protocol->getFooterSize(handle->protocol->handle, &footerSize);
+
+                // check if header is not part of the payload (=> headerBufferSize = 0)
+                if (protocolHeaderBufferSize) {
                     headerData = entry->writeHeaderBuffer;
                     // Encode the header, with payload size and metadata size
                     handle->protocol->encodeHeader(handle->protocol->handle, message, &headerData, &headerSize);
@@ -1149,6 +1166,23 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
                     } else {
                         L_ERROR("[TCP Socket] No header buffer is generated");
                         break;
+                    }
+                }
+
+                void *footerData = NULL;
+                // Write optional footerData in vector buffer
+                if (footerSize) {
+                    footerData = entry->writeFooterBuffer;
+                    handle->protocol->encodeFooter(handle->protocol->handle, message, &footerData, &footerSize);
+                    if (footerData && entry->writeFooterBuffer != footerData) {
+                        entry->writeFooterBuffer = footerData;
+                        entry->writeFooterBufferSize = footerSize;
+                    }
+                    if (footerData) {
+                        msg.msg_iov[msg.msg_iovlen].iov_base = footerData;
+                        msg.msg_iov[msg.msg_iovlen].iov_len  = footerSize;
+                        msg.msg_iovlen++;
+                        msgPartSize += footerSize;
                     }
                 }
                 nbytes = sendmsg(entry->fd, &msg, flags | MSG_NOSIGNAL);
@@ -1408,7 +1442,6 @@ void pubsub_tcpHandler_handler(pubsub_tcpHandler_t *handle) {
             }
         }
     }
-    return;
 }
 #endif
 
