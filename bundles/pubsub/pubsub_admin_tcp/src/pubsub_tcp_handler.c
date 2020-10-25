@@ -1082,8 +1082,12 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
                 message->header.metadataSize = 0;
                 message->header.isLastSegment = 0;
 
+                size_t protocolHeaderBufferSize = 0;
+                // Get HeaderBufferSize of the Protocol Header, when headerBufferSize == 0, the protocol header is included in the payload (needed for endpoints)
+                handle->protocol->getHeaderBufferSize(handle->protocol->handle, &protocolHeaderBufferSize);
+
                 // reserve space for the header if required, header is added later when size of message is known (message can split in parts)
-                if (entry->writeHeaderBufferSize) {
+                if (protocolHeaderBufferSize) {
                     msg.msg_iovlen++;
                 }
                 // Write generic seralized payload in vector buffer
@@ -1140,12 +1144,9 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
 
                 void *headerData = NULL;
                 size_t headerSize = 0;
-                size_t protocolHeaderBufferSize = 0;
                 size_t footerSize = 0;
                 // Get HeaderSize of the Protocol Header
                 handle->protocol->getHeaderSize(handle->protocol->handle, &headerSize);
-                // Get HeaderBufferSize of the Protocol Header, when headerBufferSize == 0, the protocol header is included in the payload (needed for endpoints)
-                handle->protocol->getHeaderBufferSize(handle->protocol->handle, &protocolHeaderBufferSize);
                 // Get HeaderSize of the Protocol Footer
                 handle->protocol->getFooterSize(handle->protocol->handle, &footerSize);
 
