@@ -1154,7 +1154,9 @@ celix_status_t celix_serviceRegistry_addServiceListener(celix_service_registry_t
         service_registration_pt reg = celix_arrayList_get(registrations, i);
         long svcId = serviceRegistration_getServiceId(reg);
         service_reference_pt ref = NULL;
+        celixThreadRwlock_writeLock(&registry->lock);
         serviceRegistry_getServiceReference_internal(registry, bundle, reg, &ref);
+        celixThreadRwlock_unlock(&registry->lock);
         celix_service_event_t event;
         event.reference = ref;
         event.type = OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED;
