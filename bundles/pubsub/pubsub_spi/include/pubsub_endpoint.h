@@ -20,6 +20,7 @@
 #ifndef PUBSUB_ENDPOINT_H_
 #define PUBSUB_ENDPOINT_H_
 
+#include "celix_log_helper.h"
 #include "celix_bundle_context.h"
 #include "celix_properties.h"
 
@@ -173,6 +174,7 @@ double pubsubEndpoint_matchSubscriber(
  */
 bool pubsubEndpoint_match(
         celix_bundle_context_t *ctx,
+        celix_log_helper_t *logHelper,
         const celix_properties_t *endpoint,
         const char *adminType,
         bool matchProtocol,
