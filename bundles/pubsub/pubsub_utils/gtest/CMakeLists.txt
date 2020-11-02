@@ -33,6 +33,7 @@ celix_bundle_files(pubsub_serialization_provider_descriptors
 add_executable(test_pubsub_utils
 		src/PubSubSerializationHandlerTestSuite.cc
 		src/PubSubSerializationProviderTestSuite.cc
+		src/PubSubMatchingTestSuite.cpp
 )
 target_link_libraries(test_pubsub_utils PRIVATE Celix::framework Celix::pubsub_utils GTest::gtest GTest::gtest_main)
 target_compile_options(test_pubsub_utils PRIVATE -std=c++14) #Note test code is allowed to be C++14
