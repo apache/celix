@@ -46,11 +46,12 @@ public:
     PubSubMatchingTestSuite() {
         auto* props = celix_properties_create();
         celix_properties_set(props, OSGI_FRAMEWORK_FRAMEWORK_STORAGE, ".pubsub_utils_cache");
-        celix_properties_set(props, PUBSUB_ENDPOINT_SERIALIZER, "fiets");
         auto* fwPtr = celix_frameworkFactory_createFramework(props);
         auto* ctxPtr = celix_framework_getFrameworkContext(fwPtr);
         fw = std::shared_ptr<celix_framework_t>{fwPtr, [](auto* f) {celix_frameworkFactory_destroyFramework(f);}};
         ctx = std::shared_ptr<celix_bundle_context_t>{ctxPtr, [](auto*){/*nop*/}};
+
+        bndId = celix_bundleContext_installBundle(ctx.get(), MATCHING_BUNDLE, true);
 
         dynMessage_logSetup(stdLog, NULL, 1);
 
@@ -65,6 +66,10 @@ public:
         };
         msgSerSvc.freeDeserializedMsg = [](void*, void*) {
         };
+    }
+
+    ~PubSubMatchingTestSuite() override {
+        celix_bundleContext_uninstallBundle(ctx.get(), bndId);
     }
 
     long registerSerSvc(const char* type, uint32_t msgId, const char* msgFqn, const char* msgVersion, long ranking) {
@@ -86,34 +91,35 @@ public:
     std::shared_ptr<celix_bundle_context_t> ctx{};
     pubsub_message_serialization_service_t  msgSerSvc{};
     pubsub_protocol_service_t protocolSvc{};
+    long bndId{};
 };
 
 TEST_F(PubSubMatchingTestSuite, MatchPublisherSimple) {
     auto serId = registerSerSvc("fiets", 1, "fiets", "1", 0);
 
-    auto bundle = celix_framework_getFrameworkBundle(fw.get());
     long foundSvcId = -1;
 
-    pubsub_utils_matchPublisher(ctx.get(), celix_bundle_getId(bundle), "filter?", "admin?", 0, 0, 0, false, NULL, &foundSvcId, NULL);
+    pubsub_utils_matchPublisher(ctx.get(), bndId, "(&(objectClass=pubsub.publisher)(service.lang=C)(topic=fiets))", "admin?", 0, 0, 0, false, NULL, &foundSvcId, NULL);
 
-    ASSERT_EQ(foundSvcId, serId);
+    EXPECT_EQ(foundSvcId, serId);
 
     celix_bundleContext_unregisterService(ctx.get(), serId);
 }
 
 TEST_F(PubSubMatchingTestSuite, MatchPublisherMultiple) {
     auto serFietsId = registerSerSvc("fiets", 1, "fiets", "1", 0);
-    auto serAutoId = registerSerSvc("auto", 1, "auto", "1", 5);
-    auto serBelId = registerSerSvc("bel", 1, "bel", "1", 10);
+    auto serFiets2Id = registerSerSvc("fiets", 1, "fiets", "1", 8);
+    auto serAutoId = registerSerSvc("auto", 2, "auto", "1", 5);
+    auto serBelId = registerSerSvc("bel", 3, "bel", "1", 10);
 
-    auto bundle = celix_framework_getFrameworkBundle(fw.get());
     long foundSvcId = -1;
 
-    pubsub_utils_matchPublisher(ctx.get(), celix_bundle_getId(bundle), "filter?", "admin?", 0, 0, 0, false, NULL, &foundSvcId, NULL);
+    pubsub_utils_matchPublisher(ctx.get(), bndId, "(&(objectClass=pubsub.publisher)(service.lang=C)(topic=fiets))", "admin?", 0, 0, 0, false, NULL, &foundSvcId, NULL);
 
-    ASSERT_EQ(foundSvcId, serBelId);
+    EXPECT_EQ(foundSvcId, serFiets2Id);
 
     celix_bundleContext_unregisterService(ctx.get(), serFietsId);
+    celix_bundleContext_unregisterService(ctx.get(), serFiets2Id);
     celix_bundleContext_unregisterService(ctx.get(), serAutoId);
     celix_bundleContext_unregisterService(ctx.get(), serBelId);
 }
@@ -121,15 +127,14 @@ TEST_F(PubSubMatchingTestSuite, MatchPublisherMultiple) {
 TEST_F(PubSubMatchingTestSuite, MatchSubscriberSimple) {
     auto serId = registerSerSvc("fiets", 1, "fiets", "1", 0);
 
-    auto bundle = celix_framework_getFrameworkBundle(fw.get());
     long foundSvcId = -1;
-    auto* p =celix_properties_create();
+    auto* p = celix_properties_create();
     celix_properties_set(p, PUBSUB_SUBSCRIBER_SCOPE, "scope");
-    celix_properties_set(p, PUBSUB_SUBSCRIBER_TOPIC, "topic");
+    celix_properties_set(p, PUBSUB_SUBSCRIBER_TOPIC, "fiets");
 
-    pubsub_utils_matchSubscriber(ctx.get(), celix_bundle_getId(bundle), p, "admin?", 0, 0, 0, false, NULL, &foundSvcId, NULL);
+    pubsub_utils_matchSubscriber(ctx.get(), bndId, p, "admin?", 0, 0, 0, false, NULL, &foundSvcId, NULL);
 
-    ASSERT_EQ(foundSvcId, serId);
+    EXPECT_EQ(foundSvcId, serId);
 
     celix_properties_destroy(p);
     celix_bundleContext_unregisterService(ctx.get(), serId);
@@ -137,22 +142,23 @@ TEST_F(PubSubMatchingTestSuite, MatchSubscriberSimple) {
 
 TEST_F(PubSubMatchingTestSuite, MatchSubscriberMultiple) {
     auto serFietsId = registerSerSvc("fiets", 1, "fiets", "1", 0);
-    auto serAutoId = registerSerSvc("auto", 1, "auto", "1", 5);
-    auto serBelId = registerSerSvc("bel", 1, "bel", "1", 10);
+    auto serFiets2Id = registerSerSvc("fiets", 1, "fiets", "1", 8);
+    auto serAutoId = registerSerSvc("auto", 2, "auto", "1", 5);
+    auto serBelId = registerSerSvc("bel", 3, "bel", "1", 10);
 
-    auto bundle = celix_framework_getFrameworkBundle(fw.get());
     long foundSvcId = -1;
 
-    auto* p =celix_properties_create();
+    auto* p = celix_properties_create();
     celix_properties_set(p, PUBSUB_SUBSCRIBER_SCOPE, "scope");
-    celix_properties_set(p, PUBSUB_SUBSCRIBER_TOPIC, "topic");
+    celix_properties_set(p, PUBSUB_SUBSCRIBER_TOPIC, "fiets");
 
-    pubsub_utils_matchSubscriber(ctx.get(), celix_bundle_getId(bundle), p, "admin?", 0, 0, 0, false, NULL, &foundSvcId, NULL);
+    pubsub_utils_matchSubscriber(ctx.get(), bndId, p, "admin?", 0, 0, 0, false, NULL, &foundSvcId, NULL);
 
-    ASSERT_EQ(foundSvcId, serBelId);
+    EXPECT_EQ(foundSvcId, serFiets2Id);
 
     celix_properties_destroy(p);
     celix_bundleContext_unregisterService(ctx.get(), serFietsId);
+    celix_bundleContext_unregisterService(ctx.get(), serFiets2Id);
     celix_bundleContext_unregisterService(ctx.get(), serAutoId);
     celix_bundleContext_unregisterService(ctx.get(), serBelId);
 }
@@ -163,13 +169,13 @@ TEST_F(PubSubMatchingTestSuite, MatchEndpointSimple) {
     long foundSvcId = -1;
 
     auto logHelper = celix_logHelper_create(ctx.get(), "logger");
-    auto* ep =celix_properties_create();
+    auto* ep = celix_properties_create();
     celix_properties_set(ep, PUBSUB_ENDPOINT_ADMIN_TYPE, "admin?");
     celix_properties_set(ep, PUBSUB_ENDPOINT_SERIALIZER, "fiets");
 
     pubsub_utils_matchEndpoint(ctx.get(), logHelper, ep, "admin?", false, &foundSvcId, NULL);
 
-    ASSERT_EQ(foundSvcId, serId);
+    EXPECT_EQ(foundSvcId, serId);
 
     celix_properties_destroy(ep);
     celix_logHelper_destroy(logHelper);
@@ -178,23 +184,25 @@ TEST_F(PubSubMatchingTestSuite, MatchEndpointSimple) {
 
 TEST_F(PubSubMatchingTestSuite, MatchEndpointMultiple) {
     auto serFietsId = registerSerSvc("fiets", 1, "fiets", "1", 0);
-    auto serFiets2Id = registerSerSvc("fiets", 1, "fiets", "1", 5);
-    auto serFiets3Id = registerSerSvc("fiets", 1, "fiets", "1", 10);
+    auto serFiets2Id = registerSerSvc("fiets", 1, "fiets", "1", 8);
+    auto serAutoId = registerSerSvc("auto", 2, "auto", "1", 5);
+    auto serBelId = registerSerSvc("bel", 3, "bel", "1", 10);
 
     long foundSvcId = -1;
 
     auto logHelper = celix_logHelper_create(ctx.get(), "logger");
-    auto* ep =celix_properties_create();
+    auto* ep = celix_properties_create();
     celix_properties_set(ep, PUBSUB_ENDPOINT_ADMIN_TYPE, "admin?");
     celix_properties_set(ep, PUBSUB_ENDPOINT_SERIALIZER, "fiets");
 
     pubsub_utils_matchEndpoint(ctx.get(), logHelper, ep, "admin?", false, &foundSvcId, NULL);
 
-    ASSERT_EQ(foundSvcId, serFiets3Id);
+    EXPECT_EQ(foundSvcId, serFiets2Id);
 
     celix_properties_destroy(ep);
     celix_logHelper_destroy(logHelper);
     celix_bundleContext_unregisterService(ctx.get(), serFietsId);
     celix_bundleContext_unregisterService(ctx.get(), serFiets2Id);
-    celix_bundleContext_unregisterService(ctx.get(), serFiets3Id);
+    celix_bundleContext_unregisterService(ctx.get(), serAutoId);
+    celix_bundleContext_unregisterService(ctx.get(), serBelId);
 }

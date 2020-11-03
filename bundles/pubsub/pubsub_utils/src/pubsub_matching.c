@@ -169,10 +169,8 @@ double pubsub_utils_matchPublisher(
     celix_properties_t *ep = pubsubEndpoint_createFromPublisherTrackerInfo(ctx, bundleId, filter);
     const char *requested_admin         = NULL;
     const char *requested_qos            = NULL;
-    if (ep != NULL) {
-        requested_admin = celix_properties_get(ep, PUBSUB_ENDPOINT_ADMIN_TYPE, NULL);
-        requested_qos = celix_properties_get(ep, PUBSUB_UTILS_QOS_ATTRIBUTE_KEY, NULL);
-    }
+    requested_admin = celix_properties_get(ep, PUBSUB_ENDPOINT_ADMIN_TYPE, NULL);
+    requested_qos = celix_properties_get(ep, PUBSUB_UTILS_QOS_ATTRIBUTE_KEY, NULL);
 
     double score = getPSScore(requested_admin, requested_qos, adminType, sampleScore, controlScore, defaultScore);
 
@@ -202,9 +200,8 @@ double pubsub_utils_matchPublisher(
 
     if (outTopicProperties != NULL) {
         *outTopicProperties = ep;
-    } else if (ep != NULL) {
-        celix_properties_destroy(ep);
     }
+    celix_properties_destroy(ep);
 
     return score;
 }
@@ -234,13 +231,11 @@ double pubsub_utils_matchSubscriber(
     const char *requested_qos            = NULL;
     const char *requested_serializer     = NULL;
     const char *requested_protocol = NULL;
-    if (ep != NULL) {
-        requested_admin = celix_properties_get(ep, PUBSUB_ENDPOINT_ADMIN_TYPE, NULL);
-        requested_qos = celix_properties_get(ep, PUBSUB_UTILS_QOS_ATTRIBUTE_KEY, NULL);
-        requested_serializer = celix_properties_get(ep, PUBSUB_ENDPOINT_SERIALIZER, NULL);
-        if (matchProtocol) {
-            requested_protocol = celix_properties_get(ep, PUBSUB_ENDPOINT_PROTOCOL, NULL);
-        }
+    requested_admin = celix_properties_get(ep, PUBSUB_ENDPOINT_ADMIN_TYPE, NULL);
+    requested_qos = celix_properties_get(ep, PUBSUB_UTILS_QOS_ATTRIBUTE_KEY, NULL);
+    requested_serializer = celix_properties_get(ep, PUBSUB_ENDPOINT_SERIALIZER, NULL);
+    if (matchProtocol) {
+        requested_protocol = celix_properties_get(ep, PUBSUB_ENDPOINT_PROTOCOL, NULL);
     }
 
     double score = getPSScore(requested_admin, requested_qos, adminType, sampleScore, controlScore, defaultScore);
@@ -267,9 +262,8 @@ double pubsub_utils_matchSubscriber(
 
     if (outTopicProperties != NULL) {
         *outTopicProperties = ep;
-    } else if (ep != NULL) {
-        celix_properties_destroy(ep);
     }
+    celix_properties_destroy(ep);
 
     return score;
 }
