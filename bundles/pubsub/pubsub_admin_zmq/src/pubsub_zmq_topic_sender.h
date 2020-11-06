@@ -20,6 +20,7 @@
 #ifndef CELIX_PUBSUB_ZMQ_TOPIC_SENDER_H
 #define CELIX_PUBSUB_ZMQ_TOPIC_SENDER_H
 
+#include <pubsub_message_serialization_service.h>
 #include "celix_bundle_context.h"
 #include "pubsub_admin_metrics.h"
 #include "celix_log_helper.h"
@@ -31,8 +32,8 @@ pubsub_zmq_topic_sender_t* pubsub_zmqTopicSender_create(
         celix_log_helper_t *logHelper,
         const char *scope,
         const char *topic,
-        long serializerSvcId,
-        pubsub_serializer_service_t *ser,
+        const char* serializerType,
+        void *admin,
         long protocolSvcId,
         pubsub_protocol_service_t *prot,
         const char *bindIP,
@@ -46,7 +47,7 @@ const char* pubsub_zmqTopicSender_topic(pubsub_zmq_topic_sender_t *sender);
 const char* pubsub_zmqTopicSender_url(pubsub_zmq_topic_sender_t *sender);
 bool pubsub_zmqTopicSender_isStatic(pubsub_zmq_topic_sender_t *sender);
 
-long pubsub_zmqTopicSender_serializerSvcId(pubsub_zmq_topic_sender_t *sender);
+const char* pubsub_zmqTopicSender_serializerType(pubsub_zmq_topic_sender_t *sender);
 long pubsub_zmqTopicSender_protocolSvcId(pubsub_zmq_topic_sender_t *sender);
 
 void pubsub_zmqTopicSender_connectTo(pubsub_zmq_topic_sender_t *sender, const celix_properties_t *endpoint);

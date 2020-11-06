@@ -128,6 +128,15 @@ target_link_libraries(pubsub_deadlock_sut PRIVATE Celix::pubsub_api)
 
 celix_get_bundle_file(pubsub_deadlock_sut DEADLOCK_SUT_BUNDLE_FILE)
 
+add_celix_bundle(pubsub_serializer
+        #serializer bundle
+        SOURCES
+        test/serializer_activator.cc
+        VERSION 1.0.0
+        )
+target_include_directories(pubsub_serializer PRIVATE test)
+target_link_libraries(pubsub_serializer PRIVATE Celix::pubsub_api)
+
 if (BUILD_PUBSUB_PSA_UDP_MC)
     add_celix_container(pubsub_udpmc_tests
             USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
@@ -154,13 +163,13 @@ if (BUILD_PUBSUB_PSA_UDP_MC)
             BUNDLES
             Celix::pubsub_serializer_json
             Celix::pubsub_topology_manager
-            Celix::pubsub_admin_zmq
+            Celix::pubsub_admin_udp_multicast
             Celix::pubsub_protocol_wire_v2
             Celix::shell
             Celix::shell_tui
             )
     target_compile_definitions(pstm_deadlock_udpmc_test PRIVATE -DDEADLOCK_SUT_BUNDLE_FILE=\"${DEADLOCK_SUT_BUNDLE_FILE}\")
-    target_link_libraries(pstm_deadlock_udpmc_test PRIVATE Celix::pubsub_api GTest::gtest GTest::gtest_main Jansson Celix::dfi ZMQ::lib CZMQ::lib)
+    target_link_libraries(pstm_deadlock_udpmc_test PRIVATE Celix::pubsub_api GTest::gtest GTest::gtest_main Jansson Celix::dfi)
     target_include_directories(pstm_deadlock_udpmc_test SYSTEM PRIVATE pstm_deadlock_udpmc_test)
 
     #Note we do not link to bundles, as result (to ensure a bundle zip file is created) an dependency on the bundle is needed.
@@ -230,13 +239,13 @@ if (BUILD_PUBSUB_PSA_TCP)
             BUNDLES
             Celix::pubsub_serializer_json
             Celix::pubsub_topology_manager
-            Celix::pubsub_admin_zmq
+            Celix::pubsub_admin_tcp
             Celix::pubsub_protocol_wire_v2
             Celix::shell
             Celix::shell_tui
             )
     target_compile_definitions(pstm_deadlock_tcp_test PRIVATE -DDEADLOCK_SUT_BUNDLE_FILE=\"${DEADLOCK_SUT_BUNDLE_FILE}\")
-    target_link_libraries(pstm_deadlock_tcp_test PRIVATE Celix::pubsub_api GTest::gtest GTest::gtest_main Jansson Celix::dfi ZMQ::lib CZMQ::lib)
+    target_link_libraries(pstm_deadlock_tcp_test PRIVATE Celix::pubsub_api GTest::gtest GTest::gtest_main Jansson Celix::dfi)
     target_include_directories(pstm_deadlock_tcp_test SYSTEM PRIVATE pstm_deadlock_tcp_test)
 
     #Note we do not link to bundles, as result (to ensure a bundle zip file is created) an dependency on the bundle is needed.
@@ -287,13 +296,13 @@ if (BUILD_PUBSUB_PSA_WS)
             BUNDLES
             Celix::pubsub_serializer_json
             Celix::pubsub_topology_manager
-            Celix::pubsub_admin_zmq
+            Celix::pubsub_admin_websocket
             Celix::pubsub_protocol_wire_v2
             Celix::shell
             Celix::shell_tui
             )
     target_compile_definitions(pstm_deadlock_websocket_test PRIVATE -DDEADLOCK_SUT_BUNDLE_FILE=\"${DEADLOCK_SUT_BUNDLE_FILE}\")
-    target_link_libraries(pstm_deadlock_websocket_test PRIVATE Celix::pubsub_api GTest::gtest GTest::gtest_main Jansson Celix::dfi ZMQ::lib CZMQ::lib)
+    target_link_libraries(pstm_deadlock_websocket_test PRIVATE Celix::pubsub_api GTest::gtest GTest::gtest_main Jansson Celix::dfi)
     target_include_directories(pstm_deadlock_websocket_test SYSTEM PRIVATE pstm_deadlock_websocket_test)
 
     #Note we do not link to bundles, as result (to ensure a bundle zip file is created) an dependency on the bundle is needed.
@@ -324,6 +333,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
                 Celix::pubsub_protocol_wire_v1
                 pubsub_sut
                 pubsub_tst
+                pubsub_serializer
     )
 
     target_link_libraries(pubsub_zmq_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi ZMQ::lib CZMQ::lib)
@@ -344,6 +354,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
         Celix::pubsub_protocol_wire_v2
         pubsub_sut
         pubsub_tst
+        pubsub_serializer
         )
 
     target_link_libraries(pubsub_zmq_wire_v2_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi ZMQ::lib CZMQ::lib)
@@ -368,6 +379,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
                 Celix::shell_tui
                 pubsub_sut
                 pubsub_tst
+                pubsub_serializer
     )
     target_link_libraries(pubsub_zmq_zerocopy_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi ZMQ::lib CZMQ::lib)
     target_include_directories(pubsub_zmq_zerocopy_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
@@ -391,6 +403,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
         Celix::shell_tui
         pubsub_sut
         pubsub_tst
+        pubsub_serializer
         )
     target_link_libraries(pubsub_zmq_zerocopy_wire_v2_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi ZMQ::lib CZMQ::lib)
     target_include_directories(pubsub_zmq_zerocopy_wire_v2_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)

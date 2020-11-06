@@ -18,9 +18,9 @@
  */
 
 #include <stdlib.h>
+#include <pubsub_message_serialization_service.h>
 
 #include "celix_api.h"
-#include "pubsub_serializer.h"
 #include "pubsub_protocol.h"
 #include "celix_log_helper.h"
 
@@ -62,7 +62,7 @@ int psa_zmq_start(psa_zmq_activator_t *act, celix_bundle_context_t *ctx) {
     //track serializers
     if (status == CELIX_SUCCESS) {
         celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
-        opts.filter.serviceName = PUBSUB_SERIALIZER_SERVICE_NAME;
+        opts.filter.serviceName = PUBSUB_MESSAGE_SERIALIZATION_SERVICE_NAME;
         opts.filter.ignoreServiceLanguage = true;
         opts.callbackHandle = act->admin;
         opts.addWithProperties = pubsub_zmqAdmin_addSerializerSvc;

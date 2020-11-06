@@ -1,17 +1,13 @@
 #include <string.h>
-#include <stdlib.h>
 
 #include "celix_constants.h"
 #include "celix_filter.h"
-#include "filter.h"
 
-#include "pubsub/publisher.h"
 #include "pubsub_utils.h"
 
 #include "celix_bundle.h"
 
 #include <pubsub_endpoint.h>
-#include <pubsub_serializer.h>
 #include <pubsub_admin.h>
 #include <pubsub_protocol.h>
 #include <pubsub_message_serialization_service.h>
@@ -73,7 +69,7 @@ static long getPSSerializer(celix_bundle_context_t *ctx, const char *requested_s
         struct ps_utils_serializer_selection_data data;
         data.requested_serializer = requested_serializer;
         data.matchingSvcId = -1L;
-        data.matchingRanking = -1L;
+        data.matchingRanking = -2L;
 
         celix_service_use_options_t opts = CELIX_EMPTY_SERVICE_USE_OPTIONS;
         opts.filter.serviceName = PUBSUB_MESSAGE_SERIALIZATION_SERVICE_NAME;
@@ -200,8 +196,9 @@ double pubsub_utils_matchPublisher(
 
     if (outTopicProperties != NULL) {
         *outTopicProperties = ep;
+    } else {
+        celix_properties_destroy(ep);
     }
-    celix_properties_destroy(ep);
 
     return score;
 }
@@ -262,8 +259,9 @@ double pubsub_utils_matchSubscriber(
 
     if (outTopicProperties != NULL) {
         *outTopicProperties = ep;
+    } else {
+        celix_properties_destroy(ep);
     }
-    celix_properties_destroy(ep);
 
     return score;
 }
