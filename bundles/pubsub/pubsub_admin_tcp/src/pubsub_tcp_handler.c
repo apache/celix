@@ -1085,6 +1085,10 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
                 size_t protocolHeaderBufferSize = 0;
                 // Get HeaderBufferSize of the Protocol Header, when headerBufferSize == 0, the protocol header is included in the payload (needed for endpoints)
                 handle->protocol->getHeaderBufferSize(handle->protocol->handle, &protocolHeaderBufferSize);
+                size_t footerSize = 0;
+                // Get size of the Protocol Footer
+                handle->protocol->getFooterSize(handle->protocol->handle, &footerSize);
+                size_t maxMsgSize = entry->maxMsgSize - protocolHeaderBufferSize - footerSize;
 
                 // reserve space for the header if required, header is added later when size of message is known (message can split in parts)
                 if (protocolHeaderBufferSize) {
@@ -1092,10 +1096,10 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
                 }
                 // Write generic seralized payload in vector buffer
                 if (!allPayloadAdded) {
-                    if (payloadSize && payloadData && entry->maxMsgSize) {
+                    if (payloadSize && payloadData && maxMsgSize) {
                         char *buffer = payloadData;
                         msg.msg_iov[msg.msg_iovlen].iov_base = &buffer[msgPayloadOffset];
-                        msg.msg_iov[msg.msg_iovlen].iov_len = MIN((payloadSize - msgPayloadOffset), entry->maxMsgSize);
+                        msg.msg_iov[msg.msg_iovlen].iov_len = MIN((payloadSize - msgPayloadOffset), maxMsgSize);
                         msgPartSize += msg.msg_iov[msg.msg_iovlen].iov_len;
                         msg.msg_iovlen++;
 
@@ -1103,7 +1107,7 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
                         // copy serialized vector into vector buffer
                         size_t i;
                         for (i = msgIovOffset; i < MIN(msg_iov_len, msgIovOffset + max_msg_iov_len); i++) {
-                            if ((msgPartSize + msgIoVec[i].iov_len) > entry->maxMsgSize) {
+                            if ((msgPartSize + msgIoVec[i].iov_len) > maxMsgSize) {
                                 break;
                             }
                             msg.msg_iov[msg.msg_iovlen].iov_base = msgIoVec[i].iov_base;
@@ -1129,7 +1133,7 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
                 // Write optional metadata in vector buffer
                 if (allPayloadAdded &&
                     (metadataSize != 0 && metadataData) &&
-                    (msgPartSize < entry->maxMsgSize) &&
+                    (msgPartSize < maxMsgSize) &&
                     (msg.msg_iovlen-1 < max_msg_iov_len)) {  // header is already included
                     msg.msg_iov[msg.msg_iovlen].iov_base = metadataData;
                     msg.msg_iov[msg.msg_iovlen].iov_len = metadataSize;
@@ -1144,11 +1148,8 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
 
                 void *headerData = NULL;
                 size_t headerSize = 0;
-                size_t footerSize = 0;
                 // Get HeaderSize of the Protocol Header
                 handle->protocol->getHeaderSize(handle->protocol->handle, &headerSize);
-                // Get HeaderSize of the Protocol Footer
-                handle->protocol->getFooterSize(handle->protocol->handle, &footerSize);
 
                 // check if header is not part of the payload (=> headerBufferSize = 0)
                 if (protocolHeaderBufferSize) {
