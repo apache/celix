@@ -164,7 +164,7 @@ void celix_framework_waitUntilNoEventsForBnd(celix_framework_t* fw, long bndId);
 /**
  * Returns whether the current thread is the Celix framework event loop thread.
  */
-bool celix_framework_isCurrentThreadTheEventLoop(framework_t* fw);
+bool celix_framework_isCurrentThreadTheEventLoop(celix_framework_t* fw);
 
 
 /**
@@ -176,7 +176,7 @@ bool celix_framework_isCurrentThreadTheEventLoop(framework_t* fw);
  * if eventId >=0 this will be used, otherwise a new event id will be generated
  * return eventId
  */
-long celix_framework_fireGenericEvent(framework_t* fw, long eventId, long bndId, const char *eventName, void* processData, void (*processCallback)(void *data), void* doneData, void (*doneCallback)(void* doneData));
+long celix_framework_fireGenericEvent(celix_framework_t* fw, long eventId, long bndId, const char *eventName, void* processData, void (*processCallback)(void *data), void* doneData, void (*doneCallback)(void* doneData));
 
 /**
  * Get the next event id.
@@ -185,13 +185,13 @@ long celix_framework_fireGenericEvent(framework_t* fw, long eventId, long bndId,
  * The returned event id will not be used by the framework itself unless followed up with a
  * celix_framework_fireGenericEvent call using the returned event id.
  */
-long celix_framework_nextEventId(framework_t *fw);
+long celix_framework_nextEventId(celix_framework_t *fw);
 
 /**
  * Wait til a event with the provided event id is completely handled.
  * This function will directly return if the provided event id is not in the event loop (already done or never issued).
  */
-void celix_framework_waitForGenericEvent(framework_t *fw, long eventId);
+void celix_framework_waitForGenericEvent(celix_framework_t *fw, long eventId);
 
 
 #ifdef __cplusplus
