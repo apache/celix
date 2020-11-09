@@ -263,23 +263,4 @@ void celix_framework_waitForAsyncUnregistration(framework_t *fw, long svcId);
  */
 bool celix_framework_isCurrentThreadTheEventLoop(framework_t* fw);
 
-
-/**
- * Fire a generic event. The event will be added to the event loop and handled on the event loop thread.
- *
- * if bndId >=0 the bundle usage count will be increased while the event is not yet processed or finished processing.
- * The eventName is expected to be const char* valid during til the event is finished processing.
- *
- * if eventId >=0 this will be used, otherwise a new event id will be generated
- * return eventId
- */
-long celix_framework_fireGenericEvent(framework_t* fw, long eventId, long bndId, const char *eventName, void* processData, void (*processCallback)(void *data), void* doneData, void (*doneCallback)(void* doneData));
-
-//get the next event id
-long celix_framework_nextEventId(framework_t *fw);
-
-//wait til generic event is processed.
-void celix_framework_waitForGenericEvent(framework_t *fw, long eventId);
-
-
 #endif /* FRAMEWORK_PRIVATE_H_ */
