@@ -398,7 +398,7 @@ pubsub_tcpAdmin_matchDiscoveredEndpoint(void *handle, const celix_properties_t *
     pubsub_tcp_admin_t *psa = handle;
     L_DEBUG("[PSA_TCP] pubsub_tcpAdmin_matchEndpoint");
     celix_status_t status = CELIX_SUCCESS;
-    bool match = pubsubEndpoint_match(psa->ctx, endpoint, PUBSUB_TCP_ADMIN_TYPE, true, NULL, NULL);
+    bool match = pubsubEndpoint_match(psa->ctx, psa->log, endpoint, PUBSUB_TCP_ADMIN_TYPE, true, NULL, NULL);
     if (outMatch != NULL) {
         *outMatch = match;
     }

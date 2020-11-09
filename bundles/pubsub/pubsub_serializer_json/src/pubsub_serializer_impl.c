@@ -177,7 +177,7 @@ celix_status_t pubsubMsgSerializer_serialize(void *handle, const void* msg, stru
 
     if (status == CELIX_SUCCESS) {
         (**output).iov_base = (void*)jsonOutput;
-        (**output).iov_len  = strlen(jsonOutput) + 1;
+        (**output).iov_len  = strlen(jsonOutput);
         if (outputIovLen) *outputIovLen = 1;
     }
 
@@ -192,7 +192,7 @@ celix_status_t pubsubMsgSerializer_deserialize(void* handle, const struct iovec*
     dyn_type* dynType;
     dynMessage_getMessageType(impl->msgType, &dynType);
 
-    if (jsonSerializer_deserialize(dynType, (const char*)input->iov_base, &msg) != 0) {
+    if (jsonSerializer_deserialize(dynType, (const char*)input->iov_base, input->iov_len, &msg) != 0) {
         status = CELIX_BUNDLE_EXCEPTION;
     }
     else{
