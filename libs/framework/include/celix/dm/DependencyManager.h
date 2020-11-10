@@ -119,7 +119,7 @@ namespace celix { namespace dm {
                 }
                 for (auto it = toBeStartedComponents.begin(); it != toBeStartedComponents.end(); ++it) {
 
-                        celix_dependencyManager_add(cDepMan, (*it)->cComponent());
+                        (*it)->runBuild();
                         {
                                 std::lock_guard<std::recursive_mutex> lock(componentsMutex);
                                 startedComponents.push_back(std::move(*it));
@@ -149,6 +149,10 @@ namespace celix { namespace dm {
             }
             clearStarted.clear();
             clearQueued.clear();
+        }
+
+        std::size_t getNrOfComponents() const {
+            return celix_dependencyManager_nrOfComponents(cDepMan);
         }
     private:
         celix_bundle_context_t *context {nullptr};

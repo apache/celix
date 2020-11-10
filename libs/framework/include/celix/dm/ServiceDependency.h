@@ -42,7 +42,9 @@ namespace celix { namespace dm {
 
     class BaseServiceDependency {
     private:
+        celix_dm_component_t* cCmp;
         bool valid;
+        std::atomic<bool> depAddedToCmp{false};
     protected:
         celix_dm_service_dependency_t *cServiceDep {nullptr};
 
@@ -59,7 +61,7 @@ namespace celix { namespace dm {
             }
         }
     public:
-        BaseServiceDependency(bool v)  : valid{v} {
+        BaseServiceDependency(celix_dm_component_t* c, bool v)  : cCmp{c}, valid{v} {
             if (this->valid) {
                 this->cServiceDep = celix_dmServiceDependency_create();
                 //NOTE using suspend as default strategy
@@ -83,6 +85,8 @@ namespace celix { namespace dm {
          * Returns the C DM service dependency
          */
         celix_dm_service_dependency_t *cServiceDependency() const { return cServiceDep; }
+
+        void runBuild();
     };
 
     template<class T>
@@ -91,7 +95,7 @@ namespace celix { namespace dm {
     protected:
         T* componentInstance {nullptr};
     public:
-        TypedServiceDependency(bool valid) : BaseServiceDependency(valid) {}
+        TypedServiceDependency(celix_dm_component_t* cCmp, bool valid) : BaseServiceDependency(cCmp, valid) {}
         ~TypedServiceDependency() override = default;
 
         TypedServiceDependency(const TypedServiceDependency&) = delete;
@@ -109,7 +113,7 @@ namespace celix { namespace dm {
     class CServiceDependency : public TypedServiceDependency<T> {
         using type = I;
     public:
-        CServiceDependency(const std::string &name, bool valid = true);
+        CServiceDependency(celix_dm_component_t* cCmp, const std::string &name, bool valid = true);
         ~CServiceDependency() override = default;
 
         CServiceDependency(const CServiceDependency&) = delete;
@@ -200,6 +204,13 @@ namespace celix { namespace dm {
          * For C service dependencies 'service.lang=C' will be added.
          */
         CServiceDependency<T,I>& setAddLanguageFilter(bool addLang);
+
+        /**
+         * "Build" the service dependency.
+         * A service dependency added to an active component will only become active if the build is called
+         * @return
+         */
+        CServiceDependency<T,I>& build();
     private:
         std::string name {};
         std::string filter {};
@@ -219,7 +230,7 @@ namespace celix { namespace dm {
     class ServiceDependency : public TypedServiceDependency<T> {
         using type = I;
     public:
-        ServiceDependency(const std::string &name = std::string{}, bool valid = true);
+        ServiceDependency(celix_dm_component_t* cCmp, const std::string &name, bool valid = true);
         ~ServiceDependency() override = default;
 
         ServiceDependency(const ServiceDependency&) = delete;
@@ -316,6 +327,14 @@ namespace celix { namespace dm {
          * Should be called before
          */
         ServiceDependency<T,I>& setAddLanguageFilter(bool addLang);
+
+
+        /**
+         * "Build" the service dependency.
+         * A service dependency added to an active component will only become active if the build is called
+         * @return
+         */
+        ServiceDependency<T,I>& build();
     private:
         bool addCxxLanguageFilter {true};
         std::string name {};

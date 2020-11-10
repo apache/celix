@@ -20,10 +20,10 @@
 using namespace celix::dm;
 
 template<class T>
-Component<T>& DependencyManager::createComponent(std::string name) {
+inline Component<T>& DependencyManager::createComponent(std::string name) {
     Component<T>* cmp = name.empty() ?
-                        Component<T>::create(this->context) :
-                        Component<T>::create(this->context, name);
+                        Component<T>::create(this->context, this->cDepMan) :
+                        Component<T>::create(this->context, this->cDepMan, name);
     if (cmp->isValid()) {
         std::lock_guard<std::recursive_mutex> lock(componentsMutex);
         this->queuedComponents.push_back(std::unique_ptr<BaseComponent> {cmp});
@@ -32,16 +32,17 @@ Component<T>& DependencyManager::createComponent(std::string name) {
 }
 
 template<class T>
-Component<T>& DependencyManager::createComponent(std::unique_ptr<T>&& rhs, std::string name) {
+inline Component<T>& DependencyManager::createComponent(std::unique_ptr<T>&& rhs, std::string name) {
     return this->createComponent<T>(name).setInstance(std::move(rhs));
 }
 
 template<class T>
-Component<T>& DependencyManager::createComponent(std::shared_ptr<T> rhs, std::string name) {
+inline Component<T>& DependencyManager::createComponent(std::shared_ptr<T> rhs, std::string name) {
     return this->createComponent<T>(name).setInstance(rhs);
 }
 
 template<class T>
-Component<T>& DependencyManager::createComponent(T rhs, std::string name) {
+inline Component<T>& DependencyManager::createComponent(T rhs, std::string name) {
     return this->createComponent<T>(name).setInstance(std::forward<T>(rhs));
 }
+

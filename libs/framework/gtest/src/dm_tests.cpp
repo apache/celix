@@ -75,3 +75,33 @@ TEST_F(DepenencyManagerTests, TestCheckActive) {
     celix_dependencyManager_add(mng, cmp);
     ASSERT_FALSE(celix_dependencyManager_areComponentsActive(mng));
 }
+
+class TestComponent {
+
+};
+
+TEST_F(DepenencyManagerTests, OnlyActiveAfterBuildCheck) {
+    celix::dm::DependencyManager dm{ctx};
+    EXPECT_EQ(0, dm.getNrOfComponents());
+
+    auto& cmp = dm.createComponent<TestComponent>(std::make_shared<TestComponent>(), "test1");
+    EXPECT_EQ(0, dm.getNrOfComponents()); //dm not started yet / comp not build yet
+    EXPECT_TRUE(cmp.isValid());
+
+    cmp.build();
+    EXPECT_EQ(1, dm.getNrOfComponents()); //cmp "build", so active
+}
+
+TEST_F(DepenencyManagerTests, StartDmWillBuildCmp) {
+    celix::dm::DependencyManager dm{ctx};
+    EXPECT_EQ(0, dm.getNrOfComponents());
+
+    auto& cmp = dm.createComponent<TestComponent>(std::make_shared<TestComponent>(), "test1");
+    EXPECT_EQ(0, dm.getNrOfComponents()); //dm not started yet / comp not build yet
+    EXPECT_TRUE(cmp.isValid());
+
+    dm.start();
+    EXPECT_EQ(1, dm.getNrOfComponents()); //cmp "build", so active
+}
+
+//TODO add test where not all svc dependency are active and active them by a build call

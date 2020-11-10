@@ -26,15 +26,13 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <atomic>
 
 namespace celix { namespace dm {
 
     class BaseComponent {
-    private:
-        celix_bundle_context_t *context {nullptr};
-        celix_dm_component_t *cCmp {nullptr};
     public:
-        BaseComponent(celix_bundle_context_t *con, const std::string &name) : context{con}, cCmp{nullptr} {
+        BaseComponent(celix_bundle_context_t *con, celix_dependency_manager_t* cdm, const std::string &name) : context{con}, cDepMan{cdm}, cCmp{nullptr} {
             this->cCmp = celix_dmComponent_create(this->context, name.c_str());
             celix_dmComponent_setImplementation(this->cCmp, this);
         }
@@ -52,6 +50,22 @@ namespace celix { namespace dm {
          * Returns the C bundle context
          */
         celix_bundle_context_t* bundleContext() const { return this->context; }
+
+        void runBuild();
+    protected:
+        std::vector<std::shared_ptr<BaseServiceDependency>> dependencies{};
+
+        // 0 = service name
+        // 1 = service version
+        // 2 = properties
+        // 3 = is C++ service (true -> C++, false -> C)
+        // 4 = service pointer
+        std::vector<std::tuple<std::string, std::string, Properties, bool, void*>> inactiveProvidedServices{};
+    private:
+        celix_bundle_context_t* context;
+        celix_dependency_manager_t* cDepMan;
+        celix_dm_component_t *cCmp;
+        std::atomic<bool> cmpAddedToDepMan{false};
     };
 
 
@@ -62,7 +76,6 @@ namespace celix { namespace dm {
         std::unique_ptr<T> instance {nullptr};
         std::shared_ptr<T> sharedInstance {nullptr};
         std::vector<T> valInstance {};
-        std::vector<std::shared_ptr<BaseServiceDependency>> dependencies {};
 
         void (T::*initFp)() = {};
         void (T::*startFp)() = {};
@@ -74,7 +87,7 @@ namespace celix { namespace dm {
         int (T::*stopFpNoExc)() = {};
         int (T::*deinitFpNoExc)() = {};
     public:
-        Component(celix_bundle_context_t *context, const std::string &name);
+        Component(celix_bundle_context_t *context, celix_dependency_manager_t* cDepMan, const std::string &name);
         ~Component() override;
 
         /**
@@ -83,14 +96,14 @@ namespace celix { namespace dm {
          * Will use new(nothrow) if exceptions are disabled.
          * @return newly created DM Component or nullptr
          */
-        static Component<T>* create(celix_bundle_context_t*, const std::string &name);
+        static Component<T>* create(celix_bundle_context_t*, celix_dependency_manager_t* cDepMan, const std::string &name);
 
         /**
          * Creates a Component using the provided bundle context.
          * Will use new(nothrow) if exceptions are disabled.
          * @return newly created DM Component or nullptr
          */
-        static Component<T>* create(celix_bundle_context_t*);
+        static Component<T>* create(celix_bundle_context_t*, celix_dependency_manager_t* cDepMan);
 
         /**
          * Whether the component is valid. Invalid component can occurs when no new components can be created and
@@ -243,6 +256,14 @@ namespace celix { namespace dm {
          * @return the DM Component reference for chaining (fluent API)
          */
         Component<T>& removeCallbacks();
+
+        /**
+         * 'Build' the component.
+         *  build all the inactive service dependencies.
+         *
+         *  Inactive service dependencies are service dependencies where the `build()` is not yet called.
+         */
+         Component<T>& build();
     };
 }}
 
