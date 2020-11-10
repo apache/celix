@@ -73,8 +73,8 @@ namespace celix { namespace dm {
 
         BaseServiceDependency(const BaseServiceDependency&) = delete;
         BaseServiceDependency& operator=(const BaseServiceDependency&) = delete;
-        BaseServiceDependency(BaseServiceDependency&&) noexcept = default;
-        BaseServiceDependency& operator=(BaseServiceDependency&&) noexcept = default;
+        BaseServiceDependency(BaseServiceDependency&&) noexcept = delete;
+        BaseServiceDependency& operator=(BaseServiceDependency&&) noexcept = delete;
 
         /**
          * Whether the service dependency is valid.
@@ -100,8 +100,8 @@ namespace celix { namespace dm {
 
         TypedServiceDependency(const TypedServiceDependency&) = delete;
         TypedServiceDependency& operator=(const TypedServiceDependency&) = delete;
-        TypedServiceDependency(TypedServiceDependency&&) noexcept = default;
-        TypedServiceDependency& operator=(TypedServiceDependency&&) noexcept = default;
+        TypedServiceDependency(TypedServiceDependency&&) noexcept = delete;
+        TypedServiceDependency& operator=(TypedServiceDependency&&) noexcept = delete;
 
         /**
          * Set the component instance with a pointer
@@ -118,8 +118,8 @@ namespace celix { namespace dm {
 
         CServiceDependency(const CServiceDependency&) = delete;
         CServiceDependency& operator=(const CServiceDependency&) = delete;
-        CServiceDependency(CServiceDependency&&) noexcept = default;
-        CServiceDependency& operator=(CServiceDependency&&) noexcept = default;
+        CServiceDependency(CServiceDependency&&) noexcept = delete;
+        CServiceDependency& operator=(CServiceDependency&&) noexcept = delete;
 
         /**
          * Sets the service version range for the C service dependency.
@@ -235,8 +235,8 @@ namespace celix { namespace dm {
 
         ServiceDependency(const ServiceDependency&) = delete;
         ServiceDependency& operator=(const ServiceDependency&) = delete;
-        ServiceDependency(ServiceDependency&&) noexcept = default;
-        ServiceDependency& operator=(ServiceDependency&&) noexcept = default;
+        ServiceDependency(ServiceDependency&&) noexcept = delete;
+        ServiceDependency& operator=(ServiceDependency&&) noexcept = delete;
 
         /**
          * Set the service name of the service dependency.
