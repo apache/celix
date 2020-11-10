@@ -57,9 +57,9 @@ inline void BaseComponent::runBuild() {
         dep->runBuild();
     }
 
-    bool alreadyAdded = cmpAddedToDepMan.exchange(true);
-    if (!alreadyAdded) {
+    if (!cmpAddedToDepMan) {
         celix_dependencyManager_add(cDepMan, cCmp);
+        cmpAddedToDepMan = true;
     }
 }
 

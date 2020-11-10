@@ -65,7 +65,7 @@ namespace celix { namespace dm {
         celix_bundle_context_t* context;
         celix_dependency_manager_t* cDepMan;
         celix_dm_component_t *cCmp;
-        std::atomic<bool> cmpAddedToDepMan{false};
+        bool cmpAddedToDepMan{false};
     };
 
 

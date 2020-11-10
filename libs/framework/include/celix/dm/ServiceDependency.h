@@ -44,7 +44,7 @@ namespace celix { namespace dm {
     private:
         celix_dm_component_t* cCmp;
         bool valid;
-        std::atomic<bool> depAddedToCmp{false};
+        bool depAddedToCmp{false};
     protected:
         celix_dm_service_dependency_t *cServiceDep {nullptr};
 

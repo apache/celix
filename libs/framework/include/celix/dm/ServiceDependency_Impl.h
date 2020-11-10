@@ -26,9 +26,9 @@
 using namespace celix::dm;
 
 inline void BaseServiceDependency::runBuild() {
-    bool alreadyAdded = depAddedToCmp.exchange(true);
-    if (!alreadyAdded) {
+    if (!depAddedToCmp) {
         celix_dmComponent_addServiceDependency(cCmp, cServiceDep);
+        depAddedToCmp = true;
     }
 }
 
