@@ -128,8 +128,8 @@ namespace celix { namespace dm {
          */
         std::size_t getNrOfComponents() const;
     private:
-        const std::shared_ptr<celix_bundle_context_t> context;
-        const std::shared_ptr<celix_dependency_manager_t> cDepMan;
+        std::shared_ptr<celix_bundle_context_t> context;
+        std::shared_ptr<celix_dependency_manager_t> cDepMan;
         std::vector<std::shared_ptr<BaseComponent>> components {};
     };
 
