@@ -223,7 +223,8 @@ inline int CServiceDependency<T,I>::invokeCallback(std::function<void(const I*, 
 
 template<class T, class I>
 inline CServiceDependency<T,I>& CServiceDependency<T,I>::build() {
-    this->callBuildCallback();
+    this->runBuild();
+    return *this;
 }
 
 template<class T, class I>

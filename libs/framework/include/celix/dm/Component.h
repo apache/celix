@@ -17,8 +17,7 @@
  * under the License.
  */
 
-#ifndef CELIX_DM_COMPONENT_H
-#define CELIX_DM_COMPONENT_H
+#pragma once
 
 #include "celix/dm/types.h"
 #include "dm_component.h"
@@ -258,15 +257,17 @@ namespace celix { namespace dm {
         Component<T>& removeCallbacks();
 
         /**
-         * 'Build' the component.
-         *  build all the inactive service dependencies.
+         * Build the component.
          *
-         *  Inactive service dependencies are service dependencies where the `build()` is not yet called.
+         * When building the component all provided services and services dependencies are enabled.
+         * This is not done automatically so that user can firs construct component with their provided
+         * service and service dependencies.
+         *
+         * If a component is updated after the component build is called, an new build call will result in
+         * that the changes to the component are enabled.
          */
          Component<T>& build();
     };
 }}
 
 #include "celix/dm/Component_Impl.h"
-
-#endif //CELIX_DM_COMPONENT_H

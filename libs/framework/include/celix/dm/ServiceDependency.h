@@ -17,8 +17,7 @@
  * under the License.
  */
 
-#ifndef CELIX_DM_SERVICEDEPENDENCY_H
-#define CELIX_DM_SERVICEDEPENDENCY_H
+#pragma once
 
 #include "dm_service_dependency.h"
 #include "celix/dm/types.h"
@@ -330,9 +329,11 @@ namespace celix { namespace dm {
 
 
         /**
-         * "Build" the service dependency.
-         * A service dependency added to an active component will only become active if the build is called
-         * @return
+         * Build the service dependency.
+         *
+         * When building the service dependency will make will enabled service dependency.
+         * If this is done on a already build component, this will result in an additional service dependency for the
+         * component.
          */
         ServiceDependency<T,I>& build();
     private:
@@ -353,6 +354,3 @@ namespace celix { namespace dm {
 }}
 
 #include "celix/dm/ServiceDependency_Impl.h"
-
-
-#endif //CELIX_DM_SERVICEDEPENDENCY_H

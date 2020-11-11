@@ -17,9 +17,7 @@
  * under the License.
  */
 
-#ifndef CELIX_DM_ACTIVATOR_H
-#define CELIX_DM_ACTIVATOR_H
-
+#pragma once
 
 #include <utility>
 
@@ -93,5 +91,3 @@ namespace celix { namespace dm {
         friend int ::bundleActivator_destroy(void*, ::celix_bundle_context_t*);
     };
 }}
-
-#endif //CELIX_DM_ACTIVATOR_H

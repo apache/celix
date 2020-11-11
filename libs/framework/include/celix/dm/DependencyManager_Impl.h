@@ -17,16 +17,24 @@
  * under the License.
  */
 
+#include "DependencyManager.h"
+
 using namespace celix::dm;
+
+inline DependencyManager::DependencyManager(celix_bundle_context_t *ctx) :
+    context{ctx, [](celix_bundle_context_t*){/*nop*/}},
+    cDepMan{celix_bundleContext_getDependencyManager(ctx), [](celix_dependency_manager_t*){/*nop*/}} {}
+
+inline DependencyManager::~DependencyManager() {/*nop*/}
 
 template<class T>
 inline Component<T>& DependencyManager::createComponent(std::string name) {
     Component<T>* cmp = name.empty() ?
-                        Component<T>::create(this->context, this->cDepMan) :
-                        Component<T>::create(this->context, this->cDepMan, name);
+                        Component<T>::create(this->context.get(), this->cDepMan.get()) :
+                        Component<T>::create(this->context.get(), this->cDepMan.get(), name);
     if (cmp->isValid()) {
         std::lock_guard<std::recursive_mutex> lock(componentsMutex);
-        this->queuedComponents.push_back(std::unique_ptr<BaseComponent> {cmp});
+        this->components.push_back(std::unique_ptr<BaseComponent> {cmp});
     }
     return *cmp;
 }
@@ -44,5 +52,43 @@ inline Component<T>& DependencyManager::createComponent(std::shared_ptr<T> rhs, 
 template<class T>
 inline Component<T>& DependencyManager::createComponent(T rhs, std::string name) {
     return this->createComponent<T>(name).setInstance(std::forward<T>(rhs));
+}
+
+inline void DependencyManager::start() {
+    build();
+}
+
+inline void DependencyManager::build() {
+    std::vector<std::shared_ptr<BaseComponent>> toBeStartedComponents {};
+    {
+        std::lock_guard<std::recursive_mutex> lock(componentsMutex);
+        for (auto& cmp : components) {
+            toBeStartedComponents.push_back(cmp);
+        }
+    }
+    for (auto& cmp : toBeStartedComponents) {
+        cmp->runBuild();
+    }
+}
+
+template<typename T>
+inline void DependencyManager::destroyComponent(Component<T> &component) {
+    celix_dependencyManager_remove(cDepMan, component.cComponent());
+}
+
+inline void DependencyManager::clear() {
+    celix_dependencyManager_removeAllComponents(cDepMan.get());
+    {
+        std::lock_guard<std::recursive_mutex> lock(componentsMutex);
+        components.clear();
+    }
+}
+
+inline void DependencyManager::stop() {
+    clear();
+}
+
+inline std::size_t DependencyManager::getNrOfComponents() const {
+    return celix_dependencyManager_nrOfComponents(cDepMan.get());
 }
 

@@ -17,6 +17,8 @@
  * under the License.
  */
 
+#pragma once
+
 #include "celix/dm/types.h"
 #include "celix/dm/Component.h"
 #include "celix/dm/ServiceDependency.h"
@@ -28,46 +30,22 @@
 #include <vector>
 #include <mutex>
 
-#ifndef CELIX_DM_DEPENDENCYMANAGER_H
-#define CELIX_DM_DEPENDENCYMANAGER_H
-
 namespace celix { namespace dm {
 
     class DependencyManager {
     public:
-        DependencyManager(celix_bundle_context_t *ctx) : context(ctx) {
-                this->cDepMan = celix_bundleContext_getDependencyManager(ctx);
-        }
+        DependencyManager(celix_bundle_context_t *ctx);
 
-        virtual ~DependencyManager() {
-                this->cDepMan = nullptr;
-        }
+        virtual ~DependencyManager();
 
-        DependencyManager(DependencyManager&& mgr) : componentsMutex{} {
-                std::lock_guard<std::recursive_mutex> lock(this->componentsMutex);
-                mgr.context = this->context;
-                mgr.queuedComponents = std::move(this->queuedComponents);
-                mgr.startedComponents = std::move(this->startedComponents);
-                mgr.cDepMan = this->cDepMan;
-                this->cDepMan = nullptr;
-                this->context = nullptr;
-        }
-        DependencyManager& operator=(DependencyManager&& rhs) {
-            std::lock_guard<std::recursive_mutex> lock(rhs.componentsMutex);
-            context = rhs.context;
-            queuedComponents = std::move(rhs.queuedComponents);
-            startedComponents = std::move(rhs.startedComponents);
-            cDepMan = rhs.cDepMan;
-            rhs.cDepMan = nullptr;
-            rhs.context = nullptr;
-            return *this;
-        };
+        DependencyManager(DependencyManager&& mgr) = default;
+        DependencyManager& operator=(DependencyManager&& rhs) = default;
 
         DependencyManager(const DependencyManager&) = delete;
         DependencyManager& operator=(const DependencyManager&) = delete;
 
-        celix_bundle_context_t* bundleContext() const { return context; }
-        celix_dependency_manager_t *cDependencyManager() const { return cDepMan; }
+        celix_bundle_context_t* bundleContext() const { return context.get(); }
+        celix_dependency_manager_t *cDependencyManager() const { return cDepMan.get(); }
 
 
         /**
@@ -106,64 +84,54 @@ namespace celix { namespace dm {
         Component<T>& createComponent(T rhs, std::string name = std::string{});
 
         /**
-         * Starts the Dependency Manager
+         * Build the dependency manager.
+         *
+         * When building the dependency manager all created components are build.
+         * A build is needed to to enable the components.
+         * This is not done automatically so that user can firs construct component with their provided
+         * service and service dependencies and when to components are complete call the build.
+         *
+         * If a component is updated after the dependency manager build is called, an new build call will result in
+         * that the changes to the component are enabled.
          */
-        void start() {
-                std::vector<std::unique_ptr<BaseComponent>> toBeStartedComponents {};
-                {
-                        std::lock_guard<std::recursive_mutex> lock(componentsMutex);
-                        for (auto it = queuedComponents.begin(); it != queuedComponents.end(); ++it) {
-                                toBeStartedComponents.push_back(std::move(*it));
-                        }
-                        queuedComponents.clear();
-                }
-                for (auto it = toBeStartedComponents.begin(); it != toBeStartedComponents.end(); ++it) {
+        void build();
 
-                        (*it)->runBuild();
-                        {
-                                std::lock_guard<std::recursive_mutex> lock(componentsMutex);
-                                startedComponents.push_back(std::move(*it));
-                        }
-                }
-        }
+        /**
+        * Starts the Dependency Manager
+        * Note this call is considered deprecated, please use build() instead.
+        */
+        void start();
+
 
         /**
          * Removes a component from the  Dependency Manager and destroys it
          */
         template<typename T>
-        void destroyComponent(Component<T> &component) {
-            celix_dependencyManager_remove(cDepMan, component.cComponent());
-        }
+        void destroyComponent(Component<T> &component);
+
+        /**
+         * Clears the dependency manager, which removes all configured components.
+         */
+        void clear();
 
         /**
          * Stops the Dependency Manager
+         * Note this call is considered deprecated, please use clear() instead.
          */
-        void stop() {
-            std::vector<std::unique_ptr<BaseComponent>> clearStarted{};
-            std::vector<std::unique_ptr<BaseComponent>> clearQueued{};
-            celix_dependencyManager_removeAllComponents(cDepMan);
-            {
-                std::lock_guard<std::recursive_mutex> lock(componentsMutex);
-                std::swap(startedComponents, clearStarted);
-                std::swap(queuedComponents, clearQueued);
-            }
-            clearStarted.clear();
-            clearQueued.clear();
-        }
+        void stop();
 
-        std::size_t getNrOfComponents() const {
-            return celix_dependencyManager_nrOfComponents(cDepMan);
-        }
+        /**
+         * Returns the nr of configured components for this dependency manager.
+         */
+        std::size_t getNrOfComponents() const;
     private:
-        celix_bundle_context_t *context {nullptr};
-        std::vector<std::unique_ptr<BaseComponent>> queuedComponents {};
-        std::vector<std::unique_ptr<BaseComponent>> startedComponents {};
-        celix_dependency_manager_t* cDepMan {nullptr};
+        const std::shared_ptr<celix_bundle_context_t> context;
+        const std::shared_ptr<celix_dependency_manager_t> cDepMan;
+        //TODO TBD, The Dependency Manager (and underlining classes are not designed for thread safety.. so can this mutex be removed?
         std::recursive_mutex componentsMutex{};
+        std::vector<std::shared_ptr<BaseComponent>> components {};
     };
 
 }}
 
 #include "celix/dm/DependencyManager_Impl.h"
-
-#endif //CELIX_DM_DEPENDENCYMANAGER_H

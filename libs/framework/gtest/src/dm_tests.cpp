@@ -89,7 +89,12 @@ TEST_F(DepenencyManagerTests, OnlyActiveAfterBuildCheck) {
     EXPECT_TRUE(cmp.isValid());
 
     cmp.build();
+    cmp.build(); //should be ok to call twice
     EXPECT_EQ(1, dm.getNrOfComponents()); //cmp "build", so active
+
+    dm.clear();
+    dm.clear(); //should be ok to call twice
+    EXPECT_EQ(0, dm.getNrOfComponents()); //dm cleared so no components
 }
 
 TEST_F(DepenencyManagerTests, StartDmWillBuildCmp) {
@@ -102,6 +107,78 @@ TEST_F(DepenencyManagerTests, StartDmWillBuildCmp) {
 
     dm.start();
     EXPECT_EQ(1, dm.getNrOfComponents()); //cmp "build", so active
+
+    dm.stop();
+    EXPECT_EQ(0, dm.getNrOfComponents()); //dm cleared so no components
 }
 
-//TODO add test where not all svc dependency are active and active them by a build call
+struct TestService {
+    void *handle;
+};
+
+TEST_F(DepenencyManagerTests, AddSvcProvideAfterBuild) {
+    celix::dm::DependencyManager dm{ctx};
+    EXPECT_EQ(0, dm.getNrOfComponents());
+
+    auto& cmp = dm.createComponent<TestComponent>(std::make_shared<TestComponent>(), "test1");
+    EXPECT_EQ(0, dm.getNrOfComponents()); //dm not started yet / comp not build yet
+    EXPECT_TRUE(cmp.isValid());
+
+    cmp.build();
+    EXPECT_EQ(1, dm.getNrOfComponents()); //cmp "build", so active
+
+    TestService svc{nullptr};
+    cmp.addCInterface(&svc, "TestService");
+
+    long svcId = celix_bundleContext_findService(ctx, "TestService");
+    EXPECT_EQ(-1, svcId); //not build -> not found
+
+    cmp.build();
+    cmp.build(); //should be ok to call twice
+    svcId = celix_bundleContext_findService(ctx, "TestService");
+    EXPECT_GE(svcId, -1); //(re)build -> found
+
+    dm.clear();
+    EXPECT_EQ(0, dm.getNrOfComponents()); //dm cleared so no components
+    svcId = celix_bundleContext_findService(ctx, "TestService");
+    EXPECT_EQ(svcId, -1); //cleared -> not found
+}
+
+TEST_F(DepenencyManagerTests, AddSvcDepAfterBuild) {
+    celix::dm::DependencyManager dm{ctx};
+    EXPECT_EQ(0, dm.getNrOfComponents());
+
+    auto& cmp = dm.createComponent<TestComponent>(std::make_shared<TestComponent>(), "test1");
+    EXPECT_EQ(0, dm.getNrOfComponents()); //dm not started yet / comp not build yet
+    EXPECT_TRUE(cmp.isValid());
+
+    cmp.build();
+    cmp.build(); //should be ok to call twice
+    EXPECT_EQ(1, dm.getNrOfComponents()); //cmp "build", so active
+
+    std::atomic<int> count{0};
+    auto& dep = cmp.createCServiceDependency<TestService>("TestService")
+            .setCallbacks([&count](const TestService*, celix::dm::Properties&&) {
+                count++;
+            });
+
+    TestService svc{nullptr};
+    long svcId = celix_bundleContext_registerService(ctx, &svc, "TestService", nullptr);
+    ASSERT_EQ(0, count); //service dep not yet build -> so no set call
+
+    dep.build();
+    dep.build(); //should be ok to call twice
+    ASSERT_EQ(1, count); //service dep build -> so count is 1;
+
+    //create another service dep
+    cmp.createCServiceDependency<TestService>("TestService")
+            .setCallbacks([&count](const TestService*, celix::dm::Properties&&) {
+                count++;
+            });
+    ASSERT_EQ(1, count); //new service dep not yet build -> so count still 1
+
+    cmp.build(); //cmp build, which will build svc dep
+    ASSERT_EQ(2, count); //new service dep build -> so count is 2
+
+    celix_bundleContext_unregisterService(ctx, svcId);
+}

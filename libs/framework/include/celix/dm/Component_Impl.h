@@ -20,6 +20,7 @@
 #include "celix/dm/Component.h"
 #include "celix/dm/DependencyManager.h"
 #include "celix/dm/ServiceDependency.h"
+#include "celix_dependency_manager.h"
 
 #include <memory>
 #include <iostream>
