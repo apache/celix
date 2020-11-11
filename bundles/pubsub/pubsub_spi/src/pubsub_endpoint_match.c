@@ -280,6 +280,7 @@ double pubsubEndpoint_matchSubscriber(
 
 bool pubsubEndpoint_match(
         celix_bundle_context_t *ctx,
+        celix_log_helper_t *logHelper,
         const celix_properties_t *ep,
         const char *adminType,
         bool matchProtocol,
@@ -298,6 +299,10 @@ bool pubsubEndpoint_match(
         const char *configured_serializer = celix_properties_get(ep, PUBSUB_ENDPOINT_SERIALIZER, NULL);
         serializerSvcId = getPSASerializer(ctx, configured_serializer);
         serMatch = serializerSvcId >= 0;
+
+        if(!serMatch) {
+            celix_logHelper_log(logHelper, CELIX_LOG_LEVEL_ERROR, "Matching endpoint for technology %s but couldn't get serializer %i", configured_admin, configured_serializer);
+        }
     }
 
     bool match = psaMatch && serMatch;
@@ -309,6 +314,10 @@ bool pubsubEndpoint_match(
             const char *configured_protocol = celix_properties_get(ep, PUBSUB_ENDPOINT_PROTOCOL, NULL);
             protocolSvcId = getPSAProtocol(ctx, configured_protocol);
             protMatch = protocolSvcId >= 0;
+
+            if(!protMatch) {
+                celix_logHelper_log(logHelper, CELIX_LOG_LEVEL_ERROR, "Matching endpoint for technology %s but couldn't get protocol %i", configured_admin, configured_protocol);
+            }
         }
         match = match && protMatch;
 
