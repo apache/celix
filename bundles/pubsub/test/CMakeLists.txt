@@ -336,10 +336,31 @@ if (BUILD_PUBSUB_PSA_ZMQ)
                 pubsub_serializer
     )
 
+    add_celix_container(pubsub_zmq_v2_tests
+            USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
+            LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_runner.cc
+            DIR ${CMAKE_CURRENT_BINARY_DIR}
+            PROPERTIES
+                LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
+            BUNDLES
+                Celix::pubsub_serializer_json
+                Celix::pubsub_topology_manager
+                Celix::pubsub_admin_zmq_v2
+                Celix::pubsub_protocol_wire_v2
+                pubsub_sut
+                pubsub_tst
+                pubsub_serializer
+            )
+
     target_link_libraries(pubsub_zmq_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi ZMQ::lib CZMQ::lib)
     target_include_directories(pubsub_zmq_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
     add_test(NAME pubsub_zmq_tests COMMAND pubsub_zmq_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_zmq_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_zmq_tests SCAN_DIR ..)
+
+    target_link_libraries(pubsub_zmq_v2_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi ZMQ::lib CZMQ::lib)
+    target_include_directories(pubsub_zmq_v2_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
+    add_test(NAME pubsub_zmq_v2_tests COMMAND pubsub_zmq_v2_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_zmq_v2_tests,CONTAINER_LOC>)
+    setup_target_for_coverage(pubsub_zmq_v2_tests SCAN_DIR ..)
 
     add_celix_container(pubsub_zmq_wire_v2_tests
         USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
@@ -381,11 +402,36 @@ if (BUILD_PUBSUB_PSA_ZMQ)
                 pubsub_tst
                 pubsub_serializer
     )
+
+    add_celix_container(pubsub_zmq_v2_zerocopy_tests
+            USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
+            LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_runner.cc
+            DIR ${CMAKE_CURRENT_BINARY_DIR}
+            PROPERTIES
+                LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
+                PSA_ZMQ_ZEROCOPY_ENABLED=true
+            BUNDLES
+                Celix::pubsub_serializer_json
+                Celix::pubsub_topology_manager
+                Celix::pubsub_admin_zmq_v2
+                Celix::pubsub_protocol_wire_v2
+                Celix::shell
+                Celix::shell_tui
+                pubsub_sut
+                pubsub_tst
+                pubsub_serializer
+            )
     target_link_libraries(pubsub_zmq_zerocopy_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi ZMQ::lib CZMQ::lib)
     target_include_directories(pubsub_zmq_zerocopy_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
 
     add_test(NAME pubsub_zmq_zerocopy_tests COMMAND pubsub_zmq_zerocopy_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_zmq_zerocopy_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_zmq_zerocopy_tests SCAN_DIR ..)
+
+    target_link_libraries(pubsub_zmq_v2_zerocopy_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi ZMQ::lib CZMQ::lib)
+    target_include_directories(pubsub_zmq_v2_zerocopy_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
+
+    add_test(NAME pubsub_zmq_v2_zerocopy_tests COMMAND pubsub_zmq_v2_zerocopy_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_zmq_v2_zerocopy_tests,CONTAINER_LOC>)
+    setup_target_for_coverage(pubsub_zmq_v2_zerocopy_tests SCAN_DIR ..)
 
     add_celix_container(pubsub_zmq_zerocopy_wire_v2_tests
         USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
@@ -425,6 +471,22 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             Celix::shell
             Celix::shell_tui
             )
+
+
+    add_celix_container(pstm_deadlock_zmq_v2_test
+            USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
+            LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/pstm_deadlock_test/test_runner.cc
+            DIR ${CMAKE_CURRENT_BINARY_DIR}
+            PROPERTIES
+            LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
+            BUNDLES
+            Celix::pubsub_serializer_json
+            Celix::pubsub_topology_manager
+            Celix::pubsub_admin_zmq_v2
+            Celix::pubsub_protocol_wire_v2
+            Celix::shell
+            Celix::shell_tui
+            )
     target_compile_definitions(pstm_deadlock_zmq_test PRIVATE -DDEADLOCK_SUT_BUNDLE_FILE=\"${DEADLOCK_SUT_BUNDLE_FILE}\")
     target_link_libraries(pstm_deadlock_zmq_test PRIVATE Celix::pubsub_api GTest::gtest GTest::gtest_main Jansson Celix::dfi ZMQ::lib CZMQ::lib)
     target_include_directories(pstm_deadlock_zmq_test SYSTEM PRIVATE pstm_deadlock_zmq_test)
@@ -438,4 +500,18 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 
     add_test(NAME pstm_deadlock_zmq_test COMMAND pstm_deadlock_zmq_test WORKING_DIRECTORY $<TARGET_PROPERTY:pstm_deadlock_zmq_test,CONTAINER_LOC>)
     setup_target_for_coverage(pstm_deadlock_zmq_test SCAN_DIR ..)
+
+    target_compile_definitions(pstm_deadlock_zmq_v2_test PRIVATE -DDEADLOCK_SUT_BUNDLE_FILE=\"${DEADLOCK_SUT_BUNDLE_FILE}\")
+    target_link_libraries(pstm_deadlock_zmq_v2_test PRIVATE Celix::pubsub_api GTest::gtest GTest::gtest_main Jansson Celix::dfi ZMQ::lib CZMQ::lib)
+    target_include_directories(pstm_deadlock_zmq_v2_test SYSTEM PRIVATE pstm_deadlock_zmq_v2_test)
+
+    #Note we do not link to bundles, as result (to ensure a bundle zip file is created) an dependency on the bundle is needed.
+    add_dependencies(pstm_deadlock_zmq_v2_test pubsub_deadlock_sut_bundle)
+
+    #Framework "bundle" has no cache dir. Default as "cache dir" the cwd is used.
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/meta_data/msg.descriptor ${CMAKE_CURRENT_BINARY_DIR}/pstm_deadlock_zmq_v2_test/META-INF/descriptors/msg.descriptor COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/meta_data/deadlock.scope.properties ${CMAKE_CURRENT_BINARY_DIR}/pstm_deadlock_zmq_v2_test/META-INF/topics/pub/deadlock.properties COPYONLY)
+
+    add_test(NAME pstm_deadlock_zmq_v2_test COMMAND pstm_deadlock_zmq_v2_test WORKING_DIRECTORY $<TARGET_PROPERTY:pstm_deadlock_zmq_v2_test,CONTAINER_LOC>)
+    setup_target_for_coverage(pstm_deadlock_zmq_v2_test SCAN_DIR ..)
 endif ()
