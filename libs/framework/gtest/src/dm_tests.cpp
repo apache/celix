@@ -164,6 +164,8 @@ TEST_F(DepenencyManagerTests, AddSvcDepAfterBuild) {
 
     TestService svc{nullptr};
     long svcId = celix_bundleContext_registerService(ctx, &svc, "TestService", nullptr);
+    long svcId2 = celix_bundleContext_registerService(ctx, &svc, "AnotherService", nullptr); //note should not be found.
+
     ASSERT_EQ(0, count); //service dep not yet build -> so no set call
 
     dep.build();
@@ -181,4 +183,5 @@ TEST_F(DepenencyManagerTests, AddSvcDepAfterBuild) {
     ASSERT_EQ(2, count); //new service dep build -> so count is 2
 
     celix_bundleContext_unregisterService(ctx, svcId);
+    celix_bundleContext_unregisterService(ctx, svcId2);
 }
