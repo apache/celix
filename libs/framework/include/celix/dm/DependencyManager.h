@@ -32,6 +32,9 @@
 
 namespace celix { namespace dm {
 
+    /**
+     * The Dependency Manager, Component, ServiceDependency and Properties are not thread safe!
+     */
     class DependencyManager {
     public:
         DependencyManager(celix_bundle_context_t *ctx);
@@ -127,8 +130,6 @@ namespace celix { namespace dm {
     private:
         const std::shared_ptr<celix_bundle_context_t> context;
         const std::shared_ptr<celix_dependency_manager_t> cDepMan;
-        //TODO TBD, The Dependency Manager (and underlining classes are not designed for thread safety.. so can this mutex be removed?
-        std::recursive_mutex componentsMutex{};
         std::vector<std::shared_ptr<BaseComponent>> components {};
     };
 

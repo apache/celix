@@ -33,7 +33,6 @@ inline Component<T>& DependencyManager::createComponent(std::string name) {
                         Component<T>::create(this->context.get(), this->cDepMan.get()) :
                         Component<T>::create(this->context.get(), this->cDepMan.get(), name);
     if (cmp->isValid()) {
-        std::lock_guard<std::recursive_mutex> lock(componentsMutex);
         this->components.push_back(std::unique_ptr<BaseComponent> {cmp});
     }
     return *cmp;
@@ -59,14 +58,7 @@ inline void DependencyManager::start() {
 }
 
 inline void DependencyManager::build() {
-    std::vector<std::shared_ptr<BaseComponent>> toBeStartedComponents {};
-    {
-        std::lock_guard<std::recursive_mutex> lock(componentsMutex);
-        for (auto& cmp : components) {
-            toBeStartedComponents.push_back(cmp);
-        }
-    }
-    for (auto& cmp : toBeStartedComponents) {
+    for (auto& cmp : components) {
         cmp->runBuild();
     }
 }
@@ -78,10 +70,7 @@ inline void DependencyManager::destroyComponent(Component<T> &component) {
 
 inline void DependencyManager::clear() {
     celix_dependencyManager_removeAllComponents(cDepMan.get());
-    {
-        std::lock_guard<std::recursive_mutex> lock(componentsMutex);
-        components.clear();
-    }
+    components.clear();
 }
 
 inline void DependencyManager::stop() {
