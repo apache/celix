@@ -19,10 +19,10 @@
 
 #include "celix_constants.h"
 #include <unistd.h>
+#include <pubsub_message_serialization_service.h>
+#include <pubsub_constants.h>
 
 #include "celix_api.h"
-#include "../../pubsub_spi/include/pubsub_message_serialization_service.h"
-#include "../../pubsub_spi/include/pubsub_constants.h"
 #include "msg.h"
 
 struct activator {

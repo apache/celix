@@ -135,7 +135,7 @@ add_celix_bundle(pubsub_serializer
         VERSION 1.0.0
         )
 target_include_directories(pubsub_serializer PRIVATE test)
-target_link_libraries(pubsub_serializer PRIVATE Celix::pubsub_api)
+target_link_libraries(pubsub_serializer PRIVATE Celix::pubsub_api Celix::pubsub_spi)
 
 if (BUILD_PUBSUB_PSA_UDP_MC)
     add_celix_container(pubsub_udpmc_tests
