@@ -28,7 +28,6 @@
 #include "celix_dependency_manager.h"
 
 #include <vector>
-#include <mutex>
 
 namespace celix { namespace dm {
 
@@ -57,7 +56,8 @@ namespace celix { namespace dm {
          * @return Returns a reference to the DM Component
          */
         template<class T>
-        Component<T>& createComponent(std::string name = std::string{});
+        typename std::enable_if<std::is_default_constructible<T>::value, Component<T>&>::type
+        createComponent(std::string name = std::string{});
 
         /**
          * Creates and adds a new DM Component for a component of type T and setting
@@ -128,6 +128,9 @@ namespace celix { namespace dm {
          */
         std::size_t getNrOfComponents() const;
     private:
+        template<class T>
+        Component<T>& createComponentInternal(std::string name);
+
         std::shared_ptr<celix_bundle_context_t> context;
         std::shared_ptr<celix_dependency_manager_t> cDepMan;
         std::vector<std::shared_ptr<BaseComponent>> components {};

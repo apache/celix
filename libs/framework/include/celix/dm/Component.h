@@ -25,7 +25,6 @@
 #include <map>
 #include <string>
 #include <vector>
-#include <atomic>
 
 namespace celix { namespace dm {
 
@@ -53,13 +52,8 @@ namespace celix { namespace dm {
         void runBuild();
     protected:
         std::vector<std::shared_ptr<BaseServiceDependency>> dependencies{};
+        std::vector<std::shared_ptr<BaseProvidedService>> providedServices{};
 
-        // 0 = service name
-        // 1 = service version
-        // 2 = properties
-        // 3 = is C++ service (true -> C++, false -> C)
-        // 4 = service pointer
-        std::vector<std::tuple<std::string, std::string, Properties, bool, void*>> inactiveProvidedServices{};
     private:
         celix_bundle_context_t* context;
         celix_dependency_manager_t* cDepMan;
@@ -169,8 +163,23 @@ namespace celix { namespace dm {
          * @param version The version of the interface (e.g. "1.0.0"), can be an empty string
          * @param properties To (meta) properties to provide with the service
          */
-        template<class I> Component<T>& addCInterface(const I* svc, const std::string &serviceName, const std::string &version = std::string{}, const Properties &properties = Properties{});
+        template<class I> Component<T>& addCInterface(I* svc, const std::string &serviceName, const std::string &version = std::string{}, const Properties &properties = Properties{});
 
+
+        /**
+         * Creates a provided C services. The provided service can be fine tuned and build using a fluent API
+         * @param svc  The pointer to a C service (c struct)
+         * @param serviceName The service name to use
+         */
+        template<class I> ProvidedService<T,I>& createProvidedCService(I* svc, std::string serviceName);
+
+        /**
+         * Creates a provided C++ services. The provided service can be fine tuned and build using a fluent API
+         * The service pointer is based on the component instance.
+         *
+         * @param serviceName The optional service name. If not provided the service name is inferred from I.
+         */
+        template<class I> ProvidedService<T,I>& createProvidedService(std::string serviceName = {});
 
         /**
          * Adds a C interface to provide as service to the Celix framework.
@@ -260,7 +269,7 @@ namespace celix { namespace dm {
          * Build the component.
          *
          * When building the component all provided services and services dependencies are enabled.
-         * This is not done automatically so that user can firs construct component with their provided
+         * This is not done automatically so that user can first construct component with their provided
          * service and service dependencies.
          *
          * If a component is updated after the component build is called, an new build call will result in

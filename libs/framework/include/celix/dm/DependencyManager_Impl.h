@@ -28,7 +28,7 @@ inline DependencyManager::DependencyManager(celix_bundle_context_t *ctx) :
 inline DependencyManager::~DependencyManager() {/*nop*/}
 
 template<class T>
-inline Component<T>& DependencyManager::createComponent(std::string name) {
+Component<T>& DependencyManager::createComponentInternal(std::string name) {
     Component<T>* cmp = name.empty() ?
                         Component<T>::create(this->context.get(), this->cDepMan.get()) :
                         Component<T>::create(this->context.get(), this->cDepMan.get(), name);
@@ -39,18 +39,25 @@ inline Component<T>& DependencyManager::createComponent(std::string name) {
 }
 
 template<class T>
+inline
+typename std::enable_if<std::is_default_constructible<T>::value, Component<T>&>::type
+DependencyManager::createComponent(std::string name) {
+    return createComponentInternal<T>(name);
+}
+
+template<class T>
 inline Component<T>& DependencyManager::createComponent(std::unique_ptr<T>&& rhs, std::string name) {
-    return this->createComponent<T>(name).setInstance(std::move(rhs));
+    return createComponentInternal<T>(name).setInstance(std::move(rhs));
 }
 
 template<class T>
 inline Component<T>& DependencyManager::createComponent(std::shared_ptr<T> rhs, std::string name) {
-    return this->createComponent<T>(name).setInstance(rhs);
+    return createComponentInternal<T>(name).setInstance(rhs);
 }
 
 template<class T>
 inline Component<T>& DependencyManager::createComponent(T rhs, std::string name) {
-    return this->createComponent<T>(name).setInstance(std::forward<T>(rhs));
+    return createComponentInternal<T>(name).setInstance(std::forward<T>(rhs));
 }
 
 inline void DependencyManager::start() {
