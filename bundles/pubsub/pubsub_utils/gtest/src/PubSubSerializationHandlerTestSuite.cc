@@ -70,7 +70,7 @@ public:
     }
 
     long registerSerSvc(const char* type, uint32_t msgId, const char* msgFqn, const char* msgVersion) {
-        auto* p =celix_properties_create();
+        auto* p = celix_properties_create();
         celix_properties_set(p, PUBSUB_MESSAGE_SERIALIZATION_SERVICE_SERIALIZATION_TYPE_PROPERTY, type);
         celix_properties_set(p, PUBSUB_MESSAGE_SERIALIZATION_SERVICE_MSG_ID_PROPERTY, std::to_string(msgId).c_str());
         celix_properties_set(p, PUBSUB_MESSAGE_SERIALIZATION_SERVICE_MSG_FQN_PROPERTY, msgFqn);

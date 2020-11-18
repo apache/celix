@@ -50,16 +50,14 @@ celix_status_t bnd_start(struct activator *act, celix_bundle_context_t *ctx) {
     opts.filter.filter = filter;
     act->pubTrkId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
 
-    act->running = true;
+    __atomic_store_n(&act->running, true, __ATOMIC_RELEASE);
     pthread_create(&act->sendThread, NULL, sut_sendThread, act);
 
     return CELIX_SUCCESS;
 }
 
 celix_status_t bnd_stop(struct activator *act, celix_bundle_context_t *ctx) {
-    pthread_mutex_lock(&act->mutex);
-    act->running = false;
-    pthread_mutex_unlock(&act->mutex);
+    __atomic_store_n(&act->running, false, __ATOMIC_RELEASE);
     pthread_join(act->sendThread, NULL);
     pthread_mutex_destroy(&act->mutex);
 
@@ -79,15 +77,11 @@ static void sut_pubSet(void *handle, void *service) {
 static void* sut_sendThread(void *data) {
     struct activator *act = data;
 
-    pthread_mutex_lock(&act->mutex);
-    bool running = act->running;
-    pthread_mutex_unlock(&act->mutex);
-
     unsigned int msgId = 0;
     msg_t msg;
     msg.seqNr = 1;
 
-    while (running) {
+    while (__atomic_load_n(&act->running, __ATOMIC_ACQUIRE)) {
         pthread_mutex_lock(&act->mutex);
         if (act->pubSvc != NULL) {
             if (msgId == 0) {
@@ -104,10 +98,6 @@ static void* sut_sendThread(void *data) {
         pthread_mutex_unlock(&act->mutex);
 
         usleep(10000);
-
-        pthread_mutex_lock(&act->mutex);
-        running = act->running;
-        pthread_mutex_unlock(&act->mutex);
     }
     printf("Send %i messages\n", msg.seqNr);
 

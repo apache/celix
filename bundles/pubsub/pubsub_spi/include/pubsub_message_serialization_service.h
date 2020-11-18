@@ -101,21 +101,4 @@ typedef struct pubsub_message_serialization_service {
 
 } pubsub_message_serialization_service_t;
 
-#define PUBSUB_MESSAGE_SERIALIZATION_MARKER_NAME      "pubsub_serialization_marker"
-#define PUBSUB_MESSAGE_SERIALIZATION_MARKER_VERSION   "1.0.0"
-#define PUBSUB_MESSAGE_SERIALIZATION_MARKER_RANGE     "[1,2)"
-
-#define PUBSUB_MESSAGE_SERIALIZATION_MARKER_SERIALIZATION_TYPE_PROPERTY     "serialization.type"
-
-/**
- * Marker which should be registered to mark the presence of this type of
- * serialization service for the different message types.
- *
- * Mandatory property is PUBSUB_SERIALIZATION_MARKER_SERIALIZATION_TYPE_PROPERTY (e.g. json)
- */
-typedef struct pubsub_message_serialization_marker {
-    void *handle;
-    //TODO maybe a match function with qos as input?
-} pubsub_message_serialization_marker_t;
-
 #endif /* PUBSUB_MESSAGE_SERIALIZATION_SERVICE_H_ */
