@@ -46,17 +46,17 @@ DependencyManager::createComponent(std::string name) {
 }
 
 template<class T>
-inline Component<T>& DependencyManager::createComponent(std::unique_ptr<T>&& rhs, std::string name) {
+Component<T>& DependencyManager::createComponent(std::unique_ptr<T>&& rhs, std::string name) {
     return createComponentInternal<T>(name).setInstance(std::move(rhs));
 }
 
 template<class T>
-inline Component<T>& DependencyManager::createComponent(std::shared_ptr<T> rhs, std::string name) {
+Component<T>& DependencyManager::createComponent(std::shared_ptr<T> rhs, std::string name) {
     return createComponentInternal<T>(name).setInstance(rhs);
 }
 
 template<class T>
-inline Component<T>& DependencyManager::createComponent(T rhs, std::string name) {
+Component<T>& DependencyManager::createComponent(T rhs, std::string name) {
     return createComponentInternal<T>(name).setInstance(std::forward<T>(rhs));
 }
 
@@ -71,7 +71,7 @@ inline void DependencyManager::build() {
 }
 
 template<typename T>
-inline void DependencyManager::destroyComponent(Component<T> &component) {
+void DependencyManager::destroyComponent(Component<T> &component) {
     celix_dependencyManager_remove(cDepMan, component.cComponent());
 }
 

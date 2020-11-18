@@ -33,27 +33,27 @@ inline void BaseServiceDependency::runBuild() {
 }
 
 template<class T, typename I>
-inline CServiceDependency<T,I>::CServiceDependency(celix_dm_component_t* cCmp, const std::string &name, bool valid) : TypedServiceDependency<T>(cCmp, valid) {
+CServiceDependency<T,I>::CServiceDependency(celix_dm_component_t* cCmp, const std::string &name, bool valid) : TypedServiceDependency<T>(cCmp, valid) {
     this->name = name;
     this->setupService();
 }
 
 template<class T, typename I>
-inline CServiceDependency<T,I>& CServiceDependency<T,I>::setVersionRange(const std::string &serviceVersionRange) {
+CServiceDependency<T,I>& CServiceDependency<T,I>::setVersionRange(const std::string &serviceVersionRange) {
     this->versionRange = serviceVersionRange;
     this->setupService();
     return *this;
 }
 
 template<class T, typename I>
-inline CServiceDependency<T,I>& CServiceDependency<T,I>::setFilter(const std::string &_filter) {
+CServiceDependency<T,I>& CServiceDependency<T,I>::setFilter(const std::string &_filter) {
     filter = _filter;
     this->setupService();
     return *this;
 }
 
 template<class T, typename I>
-inline void CServiceDependency<T,I>::setupService() {
+void CServiceDependency<T,I>::setupService() {
     if (!this->isValid()) {
         return;
     }
@@ -63,7 +63,7 @@ inline void CServiceDependency<T,I>::setupService() {
 }
 
 template<class T, typename I>
-inline CServiceDependency<T,I>& CServiceDependency<T,I>::setAddLanguageFilter(bool addLang) {
+CServiceDependency<T,I>& CServiceDependency<T,I>::setAddLanguageFilter(bool addLang) {
 //    if (!this->isValid()) {
 //        *this;
 //    }
@@ -73,7 +73,7 @@ inline CServiceDependency<T,I>& CServiceDependency<T,I>::setAddLanguageFilter(bo
 }
 
 template<class T, typename I>
-inline CServiceDependency<T,I>& CServiceDependency<T,I>::setRequired(bool req) {
+CServiceDependency<T,I>& CServiceDependency<T,I>::setRequired(bool req) {
     if (!this->isValid()) {
         return *this;
     }
@@ -82,7 +82,7 @@ inline CServiceDependency<T,I>& CServiceDependency<T,I>::setRequired(bool req) {
 }
 
 template<class T, typename I>
-inline CServiceDependency<T,I>& CServiceDependency<T,I>::setStrategy(DependencyUpdateStrategy strategy) {
+CServiceDependency<T,I>& CServiceDependency<T,I>::setStrategy(DependencyUpdateStrategy strategy) {
     if (!this->isValid()) {
         return *this;
     }
@@ -92,7 +92,7 @@ inline CServiceDependency<T,I>& CServiceDependency<T,I>::setStrategy(DependencyU
 
 //set callbacks
 template<class T, typename I>
-inline CServiceDependency<T,I>& CServiceDependency<T,I>::setCallbacks(void (T::*set)(const I* service)) {
+CServiceDependency<T,I>& CServiceDependency<T,I>::setCallbacks(void (T::*set)(const I* service)) {
     this->setCallbacks([this, set](const I* service, [[gnu::unused]] Properties&& properties) {
         T *cmp = this->componentInstance;
         (cmp->*set)(service);
@@ -101,7 +101,7 @@ inline CServiceDependency<T,I>& CServiceDependency<T,I>::setCallbacks(void (T::*
 }
 
 template<class T, typename I>
-inline CServiceDependency<T,I>& CServiceDependency<T,I>::setCallbacks(void (T::*set)(const I* service, Properties&& properties)) {
+CServiceDependency<T,I>& CServiceDependency<T,I>::setCallbacks(void (T::*set)(const I* service, Properties&& properties)) {
     this->setCallbacks([this, set](const I* service, Properties&& properties) {
         T *cmp = this->componentInstance;
         (cmp->*set)(service, std::move(properties));
@@ -110,7 +110,7 @@ inline CServiceDependency<T,I>& CServiceDependency<T,I>::setCallbacks(void (T::*
 }
 
 template<class T, typename I>
-inline CServiceDependency<T,I>& CServiceDependency<T,I>::setCallbacks(std::function<void(const I* service, Properties&& properties)> set) {
+CServiceDependency<T,I>& CServiceDependency<T,I>::setCallbacks(std::function<void(const I* service, Properties&& properties)> set) {
     this->setFp = set;
     this->setupCallbacks();
     return *this;
@@ -118,7 +118,7 @@ inline CServiceDependency<T,I>& CServiceDependency<T,I>::setCallbacks(std::funct
 
 //add remove callbacks
 template<class T, typename I>
-inline CServiceDependency<T,I>& CServiceDependency<T,I>::setCallbacks(
+CServiceDependency<T,I>& CServiceDependency<T,I>::setCallbacks(
         void (T::*add)(const I* service),
         void (T::*remove)(const I* service)) {
     this->setCallbacks(
@@ -135,7 +135,7 @@ inline CServiceDependency<T,I>& CServiceDependency<T,I>::setCallbacks(
 }
 
 template<class T, typename I>
-inline CServiceDependency<T,I>& CServiceDependency<T,I>::setCallbacks(
+CServiceDependency<T,I>& CServiceDependency<T,I>::setCallbacks(
         void (T::*add)(const I* service, Properties&& properties),
         void (T::*remove)(const I* service, Properties&& properties)
 ) {
@@ -153,7 +153,7 @@ inline CServiceDependency<T,I>& CServiceDependency<T,I>::setCallbacks(
 }
 
 template<class T, typename I>
-inline CServiceDependency<T,I>& CServiceDependency<T,I>::setCallbacks(std::function<void(const I* service, Properties&& properties)> add, std::function<void(const I* service, Properties&& properties)> remove) {
+CServiceDependency<T,I>& CServiceDependency<T,I>::setCallbacks(std::function<void(const I* service, Properties&& properties)> add, std::function<void(const I* service, Properties&& properties)> remove) {
     this->addFp = add;
     this->removeFp = remove;
     this->setupCallbacks();
@@ -162,7 +162,7 @@ inline CServiceDependency<T,I>& CServiceDependency<T,I>::setCallbacks(std::funct
 
 
 template<class T, typename I>
-inline void CServiceDependency<T,I>::setupCallbacks() {
+void CServiceDependency<T,I>::setupCallbacks() {
     if (!this->isValid()) {
         return;
     }
@@ -199,7 +199,7 @@ inline void CServiceDependency<T,I>::setupCallbacks() {
 }
 
 template<class T, typename I>
-inline int CServiceDependency<T,I>::invokeCallback(std::function<void(const I*, Properties&&)> fp, const celix_properties_t *props, const void* service) {
+int CServiceDependency<T,I>::invokeCallback(std::function<void(const I*, Properties&&)> fp, const celix_properties_t *props, const void* service) {
     Properties properties {};
     const char* key {nullptr};
     const char* value {nullptr};
@@ -222,13 +222,13 @@ inline int CServiceDependency<T,I>::invokeCallback(std::function<void(const I*, 
 
 
 template<class T, class I>
-inline CServiceDependency<T,I>& CServiceDependency<T,I>::build() {
+CServiceDependency<T,I>& CServiceDependency<T,I>::build() {
     this->runBuild();
     return *this;
 }
 
 template<class T, class I>
-inline ServiceDependency<T,I>::ServiceDependency(celix_dm_component_t* cCmp, const std::string &name, bool valid) : TypedServiceDependency<T>(cCmp, valid) {
+ServiceDependency<T,I>::ServiceDependency(celix_dm_component_t* cCmp, const std::string &name, bool valid) : TypedServiceDependency<T>(cCmp, valid) {
     if (!name.empty()) {
         this->setName(name);
     } else {
@@ -237,7 +237,7 @@ inline ServiceDependency<T,I>::ServiceDependency(celix_dm_component_t* cCmp, con
 }
 
 template<class T, class I>
-inline void ServiceDependency<T,I>::setupService() {
+void ServiceDependency<T,I>::setupService() {
     if (!this->isValid()) {
         return;
     }
@@ -290,21 +290,21 @@ inline void ServiceDependency<T,I>::setupService() {
 }
 
 template<class T, class I>
-inline ServiceDependency<T,I>& ServiceDependency<T,I>::setName(const std::string &_name) {
+ServiceDependency<T,I>& ServiceDependency<T,I>::setName(const std::string &_name) {
     name = _name;
     setupService();
     return *this;
 }
 
 template<class T, class I>
-inline ServiceDependency<T,I>& ServiceDependency<T,I>::setFilter(const std::string &_filter) {
+ServiceDependency<T,I>& ServiceDependency<T,I>::setFilter(const std::string &_filter) {
     filter = _filter;
     setupService();
     return *this;
 }
 
 template<class T, class I>
-inline ServiceDependency<T,I>& ServiceDependency<T,I>::setVersionRange(const std::string &_versionRange) {
+ServiceDependency<T,I>& ServiceDependency<T,I>::setVersionRange(const std::string &_versionRange) {
     versionRange = _versionRange;
     setupService();
     return *this;
@@ -312,7 +312,7 @@ inline ServiceDependency<T,I>& ServiceDependency<T,I>::setVersionRange(const std
 
 
 template<class T, class I>
-inline ServiceDependency<T,I>& ServiceDependency<T,I>::setAddLanguageFilter(bool addLang) {
+ServiceDependency<T,I>& ServiceDependency<T,I>::setAddLanguageFilter(bool addLang) {
     this->addCxxLanguageFilter = addLang;
     setupService();
     return *this;
@@ -320,7 +320,7 @@ inline ServiceDependency<T,I>& ServiceDependency<T,I>::setAddLanguageFilter(bool
 
 //set callbacks
 template<class T, class I>
-inline ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(void (T::*set)(I* service)) {
+ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(void (T::*set)(I* service)) {
     this->setCallbacks([this, set](I* srv, [[gnu::unused]] Properties&& props) {
         T *cmp = this->componentInstance;
         (cmp->*set)(srv);
@@ -329,7 +329,7 @@ inline ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(void (T::*se
 }
 
 template<class T, class I>
-inline ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(void (T::*set)(I* service, Properties&& properties)) {
+ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(void (T::*set)(I* service, Properties&& properties)) {
     this->setCallbacks([this, set](I* srv, Properties&& props) {
         T *cmp = this->componentInstance;
         (cmp->*set)(srv, std::move(props));
@@ -338,7 +338,7 @@ inline ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(void (T::*se
 }
 
 template<class T, class I>
-inline ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(std::function<void(I* service, Properties&& properties)> set) {
+ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(std::function<void(I* service, Properties&& properties)> set) {
     this->setFp = set;
     this->setupCallbacks();
     return *this;
@@ -346,7 +346,7 @@ inline ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(std::functio
 
 //add remove callbacks
 template<class T, class I>
-inline ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(
+ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(
         void (T::*add)(I* service),
         void (T::*remove)(I* service)) {
     this->setCallbacks(
@@ -363,7 +363,7 @@ inline ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(
 }
 
 template<class T, class I>
-inline ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(
+ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(
         void (T::*add)(I* service, Properties&& properties),
         void (T::*remove)(I* service, Properties&& properties)
 ) {
@@ -381,7 +381,7 @@ inline ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(
 }
 
 template<class T, class I>
-inline ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(
+ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(
         std::function<void(I* service, Properties&& properties)> add,
         std::function<void(I* service, Properties&& properties)> remove) {
     this->addFp = add;
@@ -391,19 +391,19 @@ inline ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(
 }
 
 template<class T, class I>
-inline ServiceDependency<T,I>& ServiceDependency<T,I>::setRequired(bool req) {
+ServiceDependency<T,I>& ServiceDependency<T,I>::setRequired(bool req) {
     celix_dmServiceDependency_setRequired(this->cServiceDependency(), req);
     return *this;
 }
 
 template<class T, class I>
-inline ServiceDependency<T,I>& ServiceDependency<T,I>::setStrategy(DependencyUpdateStrategy strategy) {
+ServiceDependency<T,I>& ServiceDependency<T,I>::setStrategy(DependencyUpdateStrategy strategy) {
     this->setDepStrategy(strategy);
     return *this;
 }
 
 template<class T, class I>
-inline int ServiceDependency<T,I>::invokeCallback(std::function<void(I*, Properties&&)> fp, const celix_properties_t *props, const void* service) {
+int ServiceDependency<T,I>::invokeCallback(std::function<void(I*, Properties&&)> fp, const celix_properties_t *props, const void* service) {
     I *svc = (I*)service;
 
     Properties properties {};
@@ -425,7 +425,7 @@ inline int ServiceDependency<T,I>::invokeCallback(std::function<void(I*, Propert
 }
 
 template<class T, class I>
-inline void ServiceDependency<T,I>::setupCallbacks() {
+void ServiceDependency<T,I>::setupCallbacks() {
     if (!this->isValid()) {
         return;
     }
@@ -463,7 +463,7 @@ inline void ServiceDependency<T,I>::setupCallbacks() {
 }
 
 template<class T, class I>
-inline ServiceDependency<T,I>& ServiceDependency<T,I>::build() {
+ServiceDependency<T,I>& ServiceDependency<T,I>::build() {
     this->runBuild();
     return *this;
 }

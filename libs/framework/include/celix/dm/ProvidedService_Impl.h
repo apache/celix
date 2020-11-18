@@ -56,17 +56,16 @@ inline void BaseProvidedService::runBuild() {
 }
 
 template<typename T, typename I>
-inline ProvidedService<T,I>& celix::dm::ProvidedService<T,I>::setVersion(std::string v) {
+ProvidedService<T,I>& celix::dm::ProvidedService<T,I>::setVersion(std::string v) {
     svcVersion = std::move(v);
     return *this;
 }
 
 template<typename T, typename I>
-inline ProvidedService<T, I> &ProvidedService<T, I>::setProperties(celix::dm::Properties p) {
+ProvidedService<T, I> &ProvidedService<T, I>::setProperties(celix::dm::Properties p) {
     properties = std::move(p);
     return *this;
 }
-
 
 template<typename T, typename I>
 template<typename U>
@@ -76,13 +75,13 @@ ProvidedService<T, I> &ProvidedService<T, I>::addProperty(const std::string &key
 }
 
 template<typename T, typename I>
-inline ProvidedService<T, I> &ProvidedService<T, I>::build() {
+ProvidedService<T, I> &ProvidedService<T, I>::build() {
     this->runBuild();
     return *this;
 }
 
 template<typename T, typename I>
-inline ProvidedService<T, I>::ProvidedService(celix_dm_component_t *_cmp, std::string svcName, I* _svc, bool _cppService)
+ProvidedService<T, I>::ProvidedService(celix_dm_component_t *_cmp, std::string svcName, I* _svc, bool _cppService)
         :BaseProvidedService(_cmp, svcName, static_cast<void*>(_svc), _cppService) {
 
 }
