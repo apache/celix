@@ -1681,15 +1681,15 @@ DEBUG_TRACE_FUNC(const char *func, unsigned line, const char *fmt, ...)
 	nsnow = ((uint64_t)tsnow.tv_sec) * ((uint64_t)1000000000)
 	        + ((uint64_t)tsnow.tv_nsec);
 
-	if (!nslast) {
-		nslast = nsnow;
+	if (!__atomic_load_n(&nslast, __ATOMIC_ACQUIRE)) {
+	    __atomic_store_n(&nslast, nsnow, __ATOMIC_RELEASE);
 	}
 
 	flockfile(stdout);
 	printf("*** %lu.%09lu %12" INT64_FMT " %lu %s:%u: ",
 	       (unsigned long)tsnow.tv_sec,
 	       (unsigned long)tsnow.tv_nsec,
-	       nsnow - nslast,
+	       nsnow - __atomic_load_n(&nslast, __ATOMIC_ACQUIRE),
 	       thread_id,
 	       func,
 	       line);
@@ -1699,7 +1699,7 @@ DEBUG_TRACE_FUNC(const char *func, unsigned line, const char *fmt, ...)
 	putchar('\n');
 	fflush(stdout);
 	funlockfile(stdout);
-	nslast = nsnow;
+    __atomic_store_n(&nslast, nsnow, __ATOMIC_RELEASE);
 }
 #endif /* NEED_DEBUG_TRACE_FUNC */
 
@@ -2629,7 +2629,7 @@ struct mg_context {
 #endif
 
     /* Thread related */
-    volatile int stop_flag;       /* Should we stop event loop */
+    int stop_flag;       /* Should we stop event loop */
     pthread_mutex_t thread_mutex; /* Protects (max|num)_threads */
 
     pthread_t masterthreadid; /* The master thread ID */
@@ -4241,7 +4241,7 @@ should_keep_alive(const struct mg_connection *conn)
     const char *header;
 
     /* First satisfy needs of the server */
-    if ((conn == NULL) || conn->must_close) {
+    if ((conn == NULL) || __atomic_load_n(&conn->must_close, __ATOMIC_ACQUIRE)) {
         /* Close, if civetweb framework needs to close */
         return 0;
     }
@@ -4717,7 +4717,7 @@ mg_send_http_error_impl(struct mg_connection *conn,
         /* No custom error page. Send default error page. */
         gmt_time_string(date, sizeof(date), &curtime);
 
-        conn->must_close = 1;
+        __atomic_store_n(&conn->must_close, 1, __ATOMIC_RELEASE);
         mg_printf(conn, "HTTP/1.1 %d %s\r\n", status, status_text);
         send_no_cache_header(conn);
         send_additional_header(conn);
@@ -6108,7 +6108,7 @@ static int
 mg_poll(struct mg_pollfd *pfd,
         unsigned int n,
         int milliseconds,
-        volatile int *stop_server)
+        int *stop_server)
 {
     /* Call poll, but only for a maximum time of a few seconds.
 	 * This will allow to stop the server after some seconds, instead
@@ -6118,7 +6118,7 @@ mg_poll(struct mg_pollfd *pfd,
     do {
         int result;
 
-        if (*stop_server) {
+        if (__atomic_load_n(stop_server, __ATOMIC_ACQUIRE)) {
             /* Shut down signal */
             return -2;
         }
@@ -6239,7 +6239,7 @@ push_inner(struct mg_context *ctx,
             }
         }
 
-        if (ctx->stop_flag) {
+        if (__atomic_load_n(&ctx->stop_flag, __ATOMIC_ACQUIRE)) {
             return -2;
         }
 
@@ -6275,7 +6275,7 @@ push_inner(struct mg_context *ctx,
             pfd[0].fd = sock;
             pfd[0].events = POLLOUT;
             pollres = mg_poll(pfd, 1, (int)(ms_wait), &(ctx->stop_flag));
-            if (ctx->stop_flag) {
+            if (__atomic_load_n(&ctx->stop_flag, __ATOMIC_ACQUIRE)) {
                 return -2;
             }
             if (pollres > 0) {
@@ -6318,7 +6318,7 @@ push_all(struct mg_context *ctx,
         timeout = atoi(ctx->dd.config[REQUEST_TIMEOUT]) / 1000.0;
     }
 
-    while ((len > 0) && (ctx->stop_flag == 0)) {
+    while ((len > 0) && (__atomic_load_n(&ctx->stop_flag, __ATOMIC_ACQUIRE) == 0)) {
         n = push_inner(ctx, fp, sock, ssl, buf + nwritten, len, timeout);
         if (n < 0) {
             if (nwritten == 0) {
@@ -6422,7 +6422,7 @@ pull_inner(FILE *fp,
                           1,
                           (int)(timeout * 1000.0),
                           &(conn->phys_ctx->stop_flag));
-        if (conn->phys_ctx->stop_flag) {
+        if (__atomic_load_n(&conn->phys_ctx->stop_flag, __ATOMIC_ACQUIRE)) {
             return -2;
         }
         if (pollres > 0) {
@@ -6461,7 +6461,7 @@ pull_inner(FILE *fp,
                           1,
                           (int)(timeout * 1000.0),
                           &(conn->phys_ctx->stop_flag));
-        if (conn->phys_ctx->stop_flag) {
+        if (__atomic_load_n(&conn->phys_ctx->stop_flag, __ATOMIC_ACQUIRE)) {
             return -2;
         }
         if (pollres > 0) {
@@ -6480,7 +6480,7 @@ pull_inner(FILE *fp,
         }
     }
 
-    if (conn->phys_ctx->stop_flag) {
+    if (__atomic_load_n(&conn->phys_ctx->stop_flag, __ATOMIC_ACQUIRE)) {
         return -2;
     }
 
@@ -6552,7 +6552,7 @@ pull_all(FILE *fp, struct mg_connection *conn, char *buf, int len)
         timeout_ns = (uint64_t)(timeout * 1.0E9);
     }
 
-    while ((len > 0) && (conn->phys_ctx->stop_flag == 0)) {
+    while ((len > 0) && (__atomic_load_n(&conn->phys_ctx->stop_flag, __ATOMIC_ACQUIRE) == 0)) {
         n = pull_inner(fp, conn, buf + nread, len, timeout);
         if (n == -2) {
             if (nread == 0) {
@@ -6791,7 +6791,7 @@ mg_write(struct mg_connection *conn, const void *buf, size_t len)
             == allowed) {
             buf = (const char *)buf + total;
             conn->last_throttle_bytes += total;
-            while ((total < (int)len) && (conn->phys_ctx->stop_flag == 0)) {
+            while ((total < (int)len) && (__atomic_load_n(&conn->phys_ctx->stop_flag, __ATOMIC_ACQUIRE) == 0)) {
                 allowed = (conn->throttle > ((int)len - total))
                           ? (int)len - total
                           : conn->throttle;
@@ -8541,7 +8541,7 @@ send_authorization_request(struct mg_connection *conn, const char *realm)
 
     nonce ^= conn->dom_ctx->auth_nonce_mask;
     conn->status_code = 401;
-    conn->must_close = 1;
+    __atomic_store_n(&conn->must_close, 1, __ATOMIC_RELEASE);
 
     gmt_time_string(date, sizeof(date), &curtime);
 
@@ -9399,7 +9399,7 @@ handle_directory_request(struct mg_connection *conn, const char *dir)
                      ? 'a'
                      : 'd';
 
-    conn->must_close = 1;
+    __atomic_store_n(&conn->must_close, 1, __ATOMIC_RELEASE);
     mg_printf(conn, "HTTP/1.1 200 OK\r\n");
     send_static_cache_header(conn);
     send_additional_header(conn);
@@ -10535,7 +10535,7 @@ read_message(FILE *fp,
 
     while (request_len == 0) {
         /* Full request not yet received */
-        if (conn->phys_ctx->stop_flag != 0) {
+        if (__atomic_load_n(&conn->phys_ctx->stop_flag, __ATOMIC_ACQUIRE) != 0) {
             /* Server is to be stopped. */
             return -1;
         }
@@ -11235,7 +11235,7 @@ handle_cgi_request(struct mg_connection *conn, const char *prog)
     connection_state =
             get_header(ri.http_headers, ri.num_headers, "Connection");
     if (!header_has_option(connection_state, "keep-alive")) {
-        conn->must_close = 1;
+        __atomic_store_n(&conn->must_close, 1, __ATOMIC_RELEASE);
     }
 
     DEBUG_TRACE("CGI: response %u %s", conn->status_code, status_text);
@@ -11868,7 +11868,7 @@ handle_ssi_file_request(struct mg_connection *conn,
                            path,
                            strerror(ERRNO));
     } else {
-        conn->must_close = 1;
+        __atomic_store_n(&conn->must_close, 1, __ATOMIC_RELEASE);
         gmt_time_string(date, sizeof(date), &curtime);
         fclose_on_exec(&filep->access, conn);
         mg_printf(conn, "HTTP/1.1 200 OK\r\n");
@@ -11903,7 +11903,7 @@ send_options(struct mg_connection *conn)
     }
 
     conn->status_code = 200;
-    conn->must_close = 1;
+    __atomic_store_n(&conn->must_close, 1, __ATOMIC_RELEASE);
     gmt_time_string(date, sizeof(date), &curtime);
 
     /* We do not set a "Cache-Control" header here, but leave the default.
@@ -12009,7 +12009,7 @@ handle_propfind(struct mg_connection *conn,
         return;
     }
 
-    conn->must_close = 1;
+    __atomic_store_n(&conn->must_close, 1, __ATOMIC_RELEASE);
     conn->status_code = 207;
     mg_printf(conn,
               "HTTP/1.1 207 Multi-Status\r\n"
@@ -12101,7 +12101,7 @@ send_websocket_handshake(struct mg_connection *conn, const char *websock_key)
 	/* Calculate Sec-WebSocket-Accept reply from Sec-WebSocket-Key. */
 	mg_snprintf(conn, &truncated, buf, sizeof(buf), "%s%s", websock_key, magic);
 	if (truncated) {
-		conn->must_close = 1;
+        __atomic_store_n(&conn->must_close, 1, __ATOMIC_RELEASE);
 		return 0;
 	}
 
@@ -12111,6 +12111,7 @@ send_websocket_handshake(struct mg_connection *conn, const char *websock_key)
 	SHA1_Update(&sha_ctx, (unsigned char *)buf, (uint32_t)strlen(buf));
 	SHA1_Final((unsigned char *)sha, &sha_ctx);
 	base64_encode((unsigned char *)sha, sizeof(sha), b64_sha);
+    (void)mg_lock_connection(conn);
 	mg_printf(conn,
 	          "HTTP/1.1 101 Switching Protocols\r\n"
 	          "Upgrade: websocket\r\n"
@@ -12124,6 +12125,7 @@ send_websocket_handshake(struct mg_connection *conn, const char *websock_key)
 	} else {
 		mg_printf(conn, "%s", "\r\n");
 	}
+    (void)mg_unlock_connection(conn);
 
 	return 1;
 }
@@ -12198,7 +12200,7 @@ read_websocket(struct mg_connection *conn,
 
 	/* Loop continuously, reading messages from the socket, invoking the
 	 * callback, and waiting repeatedly until an error occurs. */
-	while (!conn->phys_ctx->stop_flag && !conn->must_close) {
+	while (!__atomic_load_n(&conn->phys_ctx->stop_flag, __ATOMIC_ACQUIRE) && !__atomic_load_n(&conn->must_close, __ATOMIC_ACQUIRE)) {
 		header_len = 0;
 		DEBUG_ASSERT(conn->data_len >= conn->request_len);
 		if ((body_len = (size_t)(conn->data_len - conn->request_len)) >= 2) {
@@ -12401,7 +12403,7 @@ read_websocket(struct mg_connection *conn,
 				/* Reset open PING count */
 				ping_count = 0;
 			} else {
-				if (!conn->phys_ctx->stop_flag && !conn->must_close) {
+				if (!__atomic_load_n(&conn->phys_ctx->stop_flag, __ATOMIC_ACQUIRE) && !__atomic_load_n(&conn->must_close, __ATOMIC_ACQUIRE)) {
 					if (ping_count > MG_MAX_UNANSWERED_PING) {
 						/* Stop sending PING */
 						DEBUG_TRACE("Too many (%i) unanswered ping from %s:%u "
@@ -13133,7 +13135,7 @@ redirect_to_https_port(struct mg_connection *conn, int ssl_index)
     char target_url[MG_BUF_LEN];
     int truncated = 0;
 
-    conn->must_close = 1;
+    __atomic_store_n(&conn->must_close, 1, __ATOMIC_RELEASE);
 
     /* Send host, port, uri and (if it exists) ?query_string */
     if (conn->host) {
@@ -15069,7 +15071,7 @@ static int
 sslize(struct mg_connection *conn,
        SSL_CTX *s,
        int (*func)(SSL *),
-       volatile int *stop_server,
+       int *stop_server,
        const struct mg_client_options *client_options)
 {
     int ret, err;
@@ -15132,7 +15134,7 @@ sslize(struct mg_connection *conn,
                 || (err == SSL_ERROR_WANT_ACCEPT)
                 || (err == SSL_ERROR_WANT_READ) || (err == SSL_ERROR_WANT_WRITE)
                 || (err == SSL_ERROR_WANT_X509_LOOKUP)) {
-                if (*stop_server) {
+                if (__atomic_load_n(stop_server, __ATOMIC_ACQUIRE)) {
                     /* Don't wait if the server is going to be stopped. */
                     break;
                 }
@@ -16102,7 +16104,7 @@ reset_per_request_attributes(struct mg_connection *conn)
     conn->status_code = -1;
     conn->content_len = -1;
     conn->is_chunked = 0;
-    conn->must_close = 0;
+    __atomic_store_n(&conn->must_close, 0, __ATOMIC_RELEASE);
     conn->request_len = 0;
     conn->throttle = 0;
     conn->accept_gzip = 0;
@@ -16283,7 +16285,7 @@ close_connection(struct mg_connection *conn)
     mg_lock_connection(conn);
 
     /* Set close flag, so keep-alive loops will stop */
-    conn->must_close = 1;
+    __atomic_store_n(&conn->must_close, 1, __ATOMIC_RELEASE);
 
     /* call the connection_close callback if assigned */
     if (conn->phys_ctx->callbacks.connection_close != NULL) {
@@ -16341,7 +16343,7 @@ mg_close_connection(struct mg_connection *conn)
     if (conn->phys_ctx->context_type == CONTEXT_SERVER) {
 		if (conn->in_websocket_handling) {
 			/* Set close flag, so the server thread can exit. */
-			conn->must_close = 1;
+            __atomic_store_n(&conn->must_close, 1, __ATOMIC_RELEASE);
 			return;
 		}
 	}
@@ -16350,8 +16352,8 @@ mg_close_connection(struct mg_connection *conn)
 		unsigned int i;
 
 		/* client context: loops must end */
-		conn->phys_ctx->stop_flag = 1;
-		conn->must_close = 1;
+		__atomic_store_n(&conn->phys_ctx->stop_flag, 1, __ATOMIC_RELEASE);
+		__atomic_store_n(&conn->must_close, 1, __ATOMIC_RELEASE);
 
 		/* We need to get the client thread out of the select/recv call
 		 * here. */
@@ -16901,7 +16903,7 @@ get_message(struct mg_connection *conn, char *ebuf, size_t ebuf_len, int *err)
             *err = 400;
         } else {
             /* Server did not recv anything -> just close the connection */
-            conn->must_close = 1;
+            __atomic_store_n(&conn->must_close, 1, __ATOMIC_RELEASE);
             mg_snprintf(conn,
                         NULL, /* No truncation check for ebuf */
                         ebuf,
@@ -17246,7 +17248,7 @@ websocket_client_thread(void *data)
 
 	/* The websocket_client context has only this thread. If it runs out,
 	   set the stop_flag to 2 (= "stopped"). */
-	cdata->conn->phys_ctx->stop_flag = 2;
+	__atomic_store_n(&cdata->conn->phys_ctx->stop_flag, 2, __ATOMIC_RELEASE);
 
 	if (cdata->conn->phys_ctx->callbacks.exit_thread) {
 		cdata->conn->phys_ctx->callbacks.exit_thread(cdata->conn->phys_ctx,
@@ -17425,7 +17427,7 @@ init_connection(struct mg_connection *conn)
             !mg_strcasecmp(conn->dom_ctx->config[ENABLE_KEEP_ALIVE], "yes");
 
     if (!keep_alive_enabled) {
-        conn->must_close = 1;
+        __atomic_store_n(&conn->must_close, 1, __ATOMIC_RELEASE);
     }
 
     /* Important: on new connection, reset the receiving buffer. Credit
@@ -17579,10 +17581,10 @@ process_new_connection(struct mg_connection *conn)
                 log_access(conn);
             } else {
                 /* TODO: handle non-local request (PROXY) */
-                conn->must_close = 1;
+                __atomic_store_n(&conn->must_close, 1, __ATOMIC_RELEASE);
             }
         } else {
-            conn->must_close = 1;
+            __atomic_store_n(&conn->must_close, 1, __ATOMIC_RELEASE);
         }
 
         if (ri->remote_user != NULL) {
@@ -17598,7 +17600,7 @@ process_new_connection(struct mg_connection *conn)
 		 * Therefore, memorize should_keep_alive() result now for later
 		 * use in loop exit condition. */
         /* Enable it only if this request is completely discardable. */
-        keep_alive = (conn->phys_ctx->stop_flag == 0) && should_keep_alive(conn)
+        keep_alive = (__atomic_load_n(&conn->phys_ctx->stop_flag, __ATOMIC_ACQUIRE) == 0) && should_keep_alive(conn)
                      && (conn->content_len >= 0) && (conn->request_len > 0)
                      && ((conn->is_chunked == 4)
                          || (!conn->is_chunked
@@ -17655,14 +17657,14 @@ produce_socket(struct mg_context *ctx, const struct socket *sp)
 {
     unsigned int i;
 
-    while (!ctx->stop_flag) {
+    while (!__atomic_load_n(&ctx->stop_flag, __ATOMIC_ACQUIRE)) {
         for (i = 0; i < ctx->cfg_worker_threads; i++) {
             /* find a free worker slot and signal it */
-            if (ctx->client_socks[i].in_use == 2) {
+            if (__atomic_load_n(&ctx->client_socks[i].in_use, __ATOMIC_ACQUIRE) == 2) {
                 (void)pthread_mutex_lock(&ctx->thread_mutex);
-                if ((ctx->client_socks[i].in_use == 2) && !ctx->stop_flag) {
+                if ((__atomic_load_n(&ctx->client_socks[i].in_use, __ATOMIC_ACQUIRE) == 2) && !__atomic_load_n(&ctx->stop_flag, __ATOMIC_ACQUIRE)) {
                     ctx->client_socks[i] = *sp;
-                    ctx->client_socks[i].in_use = 1;
+                    __atomic_store_n(&ctx->client_socks[i].in_use, 1, __ATOMIC_RELEASE);
                     /* socket has been moved to the consumer */
                     (void)pthread_mutex_unlock(&ctx->thread_mutex);
                     (void)event_signal(ctx->client_wait_events[i]);
@@ -17684,17 +17686,15 @@ static int
 consume_socket(struct mg_context *ctx, struct socket *sp, int thread_index)
 {
     DEBUG_TRACE("%s", "going idle");
-    (void)pthread_mutex_lock(&ctx->thread_mutex);
-    ctx->client_socks[thread_index].in_use = 2;
-    (void)pthread_mutex_unlock(&ctx->thread_mutex);
+    __atomic_store_n(&ctx->client_socks[thread_index].in_use, 2, __ATOMIC_RELEASE);
 
     event_wait(ctx->client_wait_events[thread_index]);
 
     (void)pthread_mutex_lock(&ctx->thread_mutex);
     *sp = ctx->client_socks[thread_index];
-    if (ctx->stop_flag) {
+    if (__atomic_load_n(&ctx->stop_flag, __ATOMIC_ACQUIRE)) {
         (void)pthread_mutex_unlock(&ctx->thread_mutex);
-        if (sp->in_use == 1) {
+        if (__atomic_load_n(&sp->in_use, __ATOMIC_ACQUIRE) == 1) {
             /* must consume */
             set_blocking_mode(sp->sock);
             closesocket(sp->sock);
@@ -17702,7 +17702,7 @@ consume_socket(struct mg_context *ctx, struct socket *sp, int thread_index)
         return 0;
     }
     (void)pthread_mutex_unlock(&ctx->thread_mutex);
-    if (sp->in_use == 1) {
+    if (__atomic_load_n(&sp->in_use, __ATOMIC_ACQUIRE) == 1) {
         DEBUG_TRACE("grabbed socket %d, going busy", sp->sock);
         return 1;
     }
@@ -17725,7 +17725,7 @@ consume_socket(struct mg_context *ctx, struct socket *sp, int thread_index)
 	DEBUG_TRACE("%s", "going idle");
 
 	/* If the queue is empty, wait. We're idle at this point. */
-	while ((ctx->sq_head == ctx->sq_tail) && (ctx->stop_flag == 0)) {
+	while ((ctx->sq_head == ctx->sq_tail) && (__atomic_load_n(&ctx->stop_flag, __ATOMIC_ACQUIRE) == 0)) {
 		pthread_cond_wait(&ctx->sq_full, &ctx->thread_mutex);
 	}
 
@@ -17747,7 +17747,7 @@ consume_socket(struct mg_context *ctx, struct socket *sp, int thread_index)
 	(void)pthread_cond_signal(&ctx->sq_empty);
 	(void)pthread_mutex_unlock(&ctx->thread_mutex);
 
-	return !ctx->stop_flag;
+	return !__atomic_load_n(&ctx->stop_flag, __ATOMIC_ACQUIRE);
 #undef QUEUE_SIZE
 }
 
@@ -17763,7 +17763,7 @@ produce_socket(struct mg_context *ctx, const struct socket *sp)
 	(void)pthread_mutex_lock(&ctx->thread_mutex);
 
 	/* If the queue is full, wait */
-	while ((ctx->stop_flag == 0)
+	while ((__atomic_load_n(&ctx->stop_flag, __ATOMIC_ACQUIRE) == 0)
 	       && (ctx->sq_head - ctx->sq_tail >= QUEUE_SIZE(ctx))) {
 		(void)pthread_cond_wait(&ctx->sq_empty, &ctx->thread_mutex);
 	}
@@ -18112,7 +18112,7 @@ master_thread_run(struct mg_context *ctx)
 
     /* Start the server */
     pfd = ctx->listening_socket_fds;
-    while (ctx->stop_flag == 0) {
+    while (__atomic_load_n(&ctx->stop_flag, __ATOMIC_ACQUIRE) == 0) {
         for (i = 0; i < ctx->num_listening_sockets; i++) {
             pfd[i].fd = ctx->listening_sockets[i].sock;
             pfd[i].events = POLLIN;
@@ -18125,7 +18125,7 @@ master_thread_run(struct mg_context *ctx)
 				 * (POLLRDNORM | POLLRDBAND)
 				 * Therefore, we're checking pfd[i].revents & POLLIN, not
 				 * pfd[i].revents == POLLIN. */
-                if ((ctx->stop_flag == 0) && (pfd[i].revents & POLLIN)) {
+                if ((__atomic_load_n(&ctx->stop_flag, __ATOMIC_ACQUIRE) == 0) && (pfd[i].revents & POLLIN)) {
                     accept_new_connection(&ctx->listening_sockets[i], ctx);
                 }
             }
@@ -18188,7 +18188,7 @@ master_thread_run(struct mg_context *ctx)
     /* Signal mg_stop() that we're done.
 	 * WARNING: This must be the very last thing this
 	 * thread does, as ctx becomes invalid after this line. */
-    ctx->stop_flag = 2;
+    __atomic_store_n(&ctx->stop_flag, 2, __ATOMIC_RELEASE);
 }
 
 
@@ -18323,10 +18323,10 @@ mg_stop(struct mg_context *ctx)
     ctx->masterthreadid = 0;
 
     /* Set stop flag, so all threads know they have to exit. */
-    ctx->stop_flag = 1;
+    __atomic_store_n(&ctx->stop_flag, 1, __ATOMIC_RELEASE);
 
     /* Wait until everything has stopped. */
-    while (ctx->stop_flag != 2) {
+    while (__atomic_load_n(&ctx->stop_flag, __ATOMIC_ACQUIRE) != 2) {
         (void)mg_sleep(10);
     }
 
@@ -18744,7 +18744,7 @@ mg_start_domain(struct mg_context *ctx, const char **options)
 	struct mg_domain_context *dom;
 	int idx, i;
 
-	if ((ctx == NULL) || (ctx->stop_flag != 0) || (options == NULL)) {
+	if ((ctx == NULL) || (__atomic_load_n(&ctx->stop_flag, __ATOMIC_ACQUIRE) != 0) || (options == NULL)) {
 		return -1;
 	}
 

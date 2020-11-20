@@ -96,7 +96,8 @@ typedef struct psa_tcp_connection_entry {
 // Handle administration
 //
 struct pubsub_tcpHandler {
-    celix_thread_rwlock_t dbLock;
+    celix_thread_mutex_t dbLock;
+    celix_thread_mutexattr_t dbLockAttr;
     unsigned int timeout;
     hash_map_t *connection_url_map;
     hash_map_t *connection_fd_map;
@@ -124,7 +125,7 @@ struct pubsub_tcpHandler {
 };
 
 static inline int
-pubsub_tcpHandler_closeConnectionEntry(pubsub_tcpHandler_t *handle, psa_tcp_connection_entry_t *entry, bool lock);
+pubsub_tcpHandler_closeConnectionEntry(pubsub_tcpHandler_t *handle, psa_tcp_connection_entry_t *entry);
 
 static inline int pubsub_tcpHandler_closeInterfaceEntry(pubsub_tcpHandler_t *handle, psa_tcp_connection_entry_t *entry);
 
@@ -163,13 +164,15 @@ pubsub_tcpHandler_t *pubsub_tcpHandler_create(pubsub_protocol_service_t *protoco
         handle->connection_fd_map = hashMap_create(NULL, NULL, NULL, NULL);
         handle->interface_url_map = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
         handle->interface_fd_map = hashMap_create(NULL, NULL, NULL, NULL);
-        handle->timeout = 2000; // default 2 sec
+        __atomic_store_n(&handle->timeout, 2000, __ATOMIC_RELEASE); // default 2 sec
         handle->logHelper = logHelper;
         handle->protocol = protocol;
         handle->bufferSize = MAX_DEFAULT_BUFFER_SIZE;
         handle->maxNofBuffer = 1; // Reserved for future Use;
-        celixThreadRwlock_create(&handle->dbLock, 0);
-        handle->running = true;
+        celixThreadMutexAttr_create(&handle->dbLockAttr);
+        celixThreadMutexAttr_settype(&handle->dbLockAttr, CELIX_THREAD_MUTEX_RECURSIVE);
+        celixThreadMutex_create(&handle->dbLock, &handle->dbLockAttr);
+        __atomic_store_n(&handle->running, true, __ATOMIC_RELEASE);
         celixThread_create(&handle->thread, NULL, pubsub_tcpHandler_thread, handle);
         // signal(SIGPIPE, SIG_IGN);
     }
@@ -181,16 +184,11 @@ pubsub_tcpHandler_t *pubsub_tcpHandler_create(pubsub_protocol_service_t *protoco
 //
 void pubsub_tcpHandler_destroy(pubsub_tcpHandler_t *handle) {
     if (handle != NULL) {
-        celixThreadRwlock_readLock(&handle->dbLock);
-        bool running = handle->running;
-        celixThreadRwlock_unlock(&handle->dbLock);
-        if (running) {
-            celixThreadRwlock_writeLock(&handle->dbLock);
-            handle->running = false;
-            celixThreadRwlock_unlock(&handle->dbLock);
+        if (__atomic_load_n(&handle->running, __ATOMIC_ACQUIRE)) {
+            __atomic_store_n(&handle->running, false, __ATOMIC_RELEASE);
             celixThread_join(handle->thread, NULL);
         }
-        celixThreadRwlock_writeLock(&handle->dbLock);
+        celixThreadMutex_lock(&handle->dbLock);
         hash_map_iterator_t interface_iter = hashMapIterator_construct(handle->interface_url_map);
         while (hashMapIterator_hasNext(&interface_iter)) {
             psa_tcp_connection_entry_t *entry = hashMapIterator_nextValue(&interface_iter);
@@ -203,16 +201,20 @@ void pubsub_tcpHandler_destroy(pubsub_tcpHandler_t *handle) {
         while (hashMapIterator_hasNext(&connection_iter)) {
             psa_tcp_connection_entry_t *entry = hashMapIterator_nextValue(&connection_iter);
             if (entry != NULL) {
-                pubsub_tcpHandler_closeConnectionEntry(handle, entry, true);
+                pubsub_tcpHandler_closeConnectionEntry(handle, entry);
             }
         }
-        if (handle->efd >= 0) close(handle->efd);
+        if (handle->efd >= 0) {
+            close(handle->efd);
+            handle->efd = 0;
+        }
         hashMap_destroy(handle->connection_url_map, false, false);
         hashMap_destroy(handle->connection_fd_map, false, false);
         hashMap_destroy(handle->interface_url_map, false, false);
         hashMap_destroy(handle->interface_fd_map, false, false);
-        celixThreadRwlock_unlock(&handle->dbLock);
-        celixThreadRwlock_destroy(&handle->dbLock);
+        celixThreadMutex_unlock(&handle->dbLock);
+        celixThreadMutex_destroy(&handle->dbLock);
+        celixThreadMutexAttr_destroy(&handle->dbLockAttr);
         free(handle);
     }
 }
@@ -222,7 +224,6 @@ void pubsub_tcpHandler_destroy(pubsub_tcpHandler_t *handle) {
 //
 int pubsub_tcpHandler_open(pubsub_tcpHandler_t *handle, char *url) {
     int rc = 0;
-    celixThreadRwlock_readLock(&handle->dbLock);
     pubsub_utils_url_t *url_info = pubsub_utils_url_parse(url);
     int fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (rc >= 0) {
@@ -272,7 +273,6 @@ int pubsub_tcpHandler_open(pubsub_tcpHandler_t *handle, char *url) {
         }
     }
     pubsub_utils_url_free(url_info);
-    celixThreadRwlock_unlock(&handle->dbLock);
     return (!rc) ? fd : rc;
 }
 
@@ -283,7 +283,6 @@ int pubsub_tcpHandler_close(pubsub_tcpHandler_t *handle, int fd) {
     int rc = 0;
     if (handle != NULL) {
         psa_tcp_connection_entry_t *entry = NULL;
-        celixThreadRwlock_writeLock(&handle->dbLock);
         entry = hashMap_get(handle->interface_fd_map, (void *) (intptr_t) fd);
         if (entry) {
             entry = hashMap_remove(handle->interface_url_map, (void *) (intptr_t) entry->url);
@@ -293,10 +292,9 @@ int pubsub_tcpHandler_close(pubsub_tcpHandler_t *handle, int fd) {
         entry = hashMap_get(handle->connection_fd_map, (void *) (intptr_t) fd);
         if (entry) {
             entry = hashMap_remove(handle->connection_url_map, (void *) (intptr_t) entry->url);
-            rc = pubsub_tcpHandler_closeConnectionEntry(handle, entry, false);
+            rc = pubsub_tcpHandler_closeConnectionEntry(handle, entry);
             entry = NULL;
         }
-        celixThreadRwlock_unlock(&handle->dbLock);
     }
     return rc;
 }
@@ -403,6 +401,7 @@ pubsub_tcpHandler_releaseEntryBuffer(pubsub_tcpHandler_t *handle, int fd, unsign
 //
 int pubsub_tcpHandler_connect(pubsub_tcpHandler_t *handle, char *url) {
     int rc = 0;
+    celixThreadMutex_lock(&handle->dbLock);
     psa_tcp_connection_entry_t *entry =
         hashMap_get(handle->connection_url_map, (void *) (intptr_t) url);
     if (entry == NULL) {
@@ -447,15 +446,14 @@ int pubsub_tcpHandler_connect(pubsub_tcpHandler_t *handle, char *url) {
             }
         }
         if ((rc >= 0) && (entry)) {
-            celixThreadRwlock_writeLock(&handle->dbLock);
             hashMap_put(handle->connection_url_map, entry->url, entry);
             hashMap_put(handle->connection_fd_map, (void *) (intptr_t) entry->fd, entry);
-            celixThreadRwlock_unlock(&handle->dbLock);
             pubsub_tcpHandler_connectionHandler(handle, fd);
             L_INFO("[TCP Socket] Connect to %s using; %s\n", entry->url, entry->interface_url);
         }
         pubsub_utils_url_free(url_info);
     }
+    celixThreadMutex_unlock(&handle->dbLock);
     return rc;
 }
 
@@ -465,13 +463,13 @@ int pubsub_tcpHandler_connect(pubsub_tcpHandler_t *handle, char *url) {
 int pubsub_tcpHandler_disconnect(pubsub_tcpHandler_t *handle, char *url) {
     int rc = 0;
     if (handle != NULL) {
-        celixThreadRwlock_writeLock(&handle->dbLock);
+        celixThreadMutex_lock(&handle->dbLock);
         psa_tcp_connection_entry_t *entry = NULL;
         entry = hashMap_remove(handle->connection_url_map, url);
         if (entry) {
-            pubsub_tcpHandler_closeConnectionEntry(handle, entry, false);
+            pubsub_tcpHandler_closeConnectionEntry(handle, entry);
         }
-        celixThreadRwlock_unlock(&handle->dbLock);
+        celixThreadMutex_unlock(&handle->dbLock);
     }
     return rc;
 }
@@ -479,7 +477,7 @@ int pubsub_tcpHandler_disconnect(pubsub_tcpHandler_t *handle, char *url) {
 // loses the connection entry (of receiver)
 //
 static inline int pubsub_tcpHandler_closeConnectionEntry(
-    pubsub_tcpHandler_t *handle, psa_tcp_connection_entry_t *entry, bool lock) {
+    pubsub_tcpHandler_t *handle, psa_tcp_connection_entry_t *entry) {
     int rc = 0;
     if (handle != NULL && entry != NULL) {
         fprintf(stdout, "[TCP Socket] Close connection to url: %s: \n", entry->url);
@@ -499,10 +497,15 @@ static inline int pubsub_tcpHandler_closeConnectionEntry(
             }
         }
         if (entry->fd >= 0) {
+
+            // This is not an error: the callbacks do their own locking and could cause a priority-inversion
+            // Hence, we unlock the locks while calling callbacks and lock them when done.
+            celixThreadMutex_unlock(&handle->dbLock);
             if (handle->receiverDisconnectMessageCallback)
-                handle->receiverDisconnectMessageCallback(handle->receiverConnectPayload, entry->url, lock);
+                handle->receiverDisconnectMessageCallback(handle->receiverConnectPayload, entry->url);
             if (handle->acceptConnectMessageCallback)
                 handle->acceptConnectMessageCallback(handle->acceptConnectPayload, entry->url);
+            celixThreadMutex_lock(&handle->dbLock);
             pubsub_tcpHandler_freeEntry(entry);
             entry = NULL;
         }
@@ -563,12 +566,13 @@ static inline int pubsub_tcpHandler_makeNonBlocking(pubsub_tcpHandler_t *handle,
 //
 int pubsub_tcpHandler_listen(pubsub_tcpHandler_t *handle, char *url) {
     int rc = 0;
-    celixThreadRwlock_readLock(&handle->dbLock);
+    celixThreadMutex_lock(&handle->dbLock);
     psa_tcp_connection_entry_t *entry =
         hashMap_get(handle->connection_url_map, (void *) (intptr_t) url);
-    celixThreadRwlock_unlock(&handle->dbLock);
+    celixThreadMutex_unlock(&handle->dbLock);
     if (entry == NULL) {
         char protocol[] = "tcp";
+        celixThreadMutex_lock(&handle->dbLock);
         int fd = pubsub_tcpHandler_open(handle, url);
         struct sockaddr_in *sin = pubsub_utils_url_from_fd(fd);
         // Make handler fd entry
@@ -578,7 +582,6 @@ int pubsub_tcpHandler_listen(pubsub_tcpHandler_t *handle, char *url) {
             entry->connected = true;
             free(pUrl);
             free(sin);
-            celixThreadRwlock_writeLock(&handle->dbLock);
             rc = fd;
             if (rc >= 0) {
                 rc = listen(fd, SOMAXCONN);
@@ -619,7 +622,7 @@ int pubsub_tcpHandler_listen(pubsub_tcpHandler_t *handle, char *url) {
                     hashMap_put(handle->interface_url_map, entry->url, entry);
                 }
             }
-            celixThreadRwlock_unlock(&handle->dbLock);
+            celixThreadMutex_unlock(&handle->dbLock);
         } else {
             L_ERROR("[TCP Socket] Error listen socket cannot bind to %s: %s\n", url ? url : "", strerror(errno));
         }
@@ -635,10 +638,10 @@ int pubsub_tcpHandler_createReceiveBufferStore(pubsub_tcpHandler_t *handle,
                                                __attribute__((__unused__)),
                                                unsigned int bufferSize) {
     if (handle != NULL) {
-        celixThreadRwlock_writeLock(&handle->dbLock);
+        celixThreadMutex_lock(&handle->dbLock);
         handle->bufferSize = bufferSize;
         handle->maxNofBuffer = maxNofBuffers;
-        celixThreadRwlock_unlock(&handle->dbLock);
+        celixThreadMutex_unlock(&handle->dbLock);
     }
     return 0;
 }
@@ -649,9 +652,7 @@ int pubsub_tcpHandler_createReceiveBufferStore(pubsub_tcpHandler_t *handle,
 void pubsub_tcpHandler_setTimeout(pubsub_tcpHandler_t *handle,
                                   unsigned int timeout) {
     if (handle != NULL) {
-        celixThreadRwlock_writeLock(&handle->dbLock);
-        handle->timeout = timeout;
-        celixThreadRwlock_unlock(&handle->dbLock);
+        __atomic_store(&handle->timeout, &timeout, __ATOMIC_RELEASE);
     }
 }
 
@@ -666,9 +667,9 @@ void pubsub_tcpHandler_setThreadName(pubsub_tcpHandler_t *handle,
             asprintf(&thread_name, "TCP TS %s/%s", scope, topic);
         else
             asprintf(&thread_name, "TCP TS %s", topic);
-        celixThreadRwlock_writeLock(&handle->dbLock);
+        celixThreadMutex_lock(&handle->dbLock);
         celixThread_setName(&handle->thread, thread_name);
-        celixThreadRwlock_unlock(&handle->dbLock);
+        celixThreadMutex_unlock(&handle->dbLock);
         free(thread_name);
     }
 }
@@ -704,7 +705,7 @@ void pubsub_tcpHandler_setThreadPriority(pubsub_tcpHandler_t *handle, long prio,
             policy = SCHED_RR;
         }
         if (gotPermission) {
-            celixThreadRwlock_writeLock(&handle->dbLock);
+            celixThreadMutex_lock(&handle->dbLock);
             if (prio > 0 && prio < 100) {
                 struct sched_param sch;
                 bzero(&sch, sizeof(struct sched_param));
@@ -715,40 +716,40 @@ void pubsub_tcpHandler_setThreadPriority(pubsub_tcpHandler_t *handle, long prio,
                        "scheduling to %s. No permission\n",
                        (int) prio, sched);
             }
-            celixThreadRwlock_unlock(&handle->dbLock);
+            celixThreadMutex_unlock(&handle->dbLock);
         }
     }
 }
 
 void pubsub_tcpHandler_setSendRetryCnt(pubsub_tcpHandler_t *handle, unsigned int count) {
     if (handle != NULL) {
-        celixThreadRwlock_writeLock(&handle->dbLock);
+        celixThreadMutex_lock(&handle->dbLock);
         handle->maxSendRetryCount = count;
-        celixThreadRwlock_unlock(&handle->dbLock);
+        celixThreadMutex_unlock(&handle->dbLock);
     }
 }
 
 void pubsub_tcpHandler_setReceiveRetryCnt(pubsub_tcpHandler_t *handle, unsigned int count) {
     if (handle != NULL) {
-        celixThreadRwlock_writeLock(&handle->dbLock);
+        celixThreadMutex_lock(&handle->dbLock);
         handle->maxRcvRetryCount = count;
-        celixThreadRwlock_unlock(&handle->dbLock);
+        celixThreadMutex_unlock(&handle->dbLock);
     }
 }
 
 void pubsub_tcpHandler_setSendTimeOut(pubsub_tcpHandler_t *handle, double timeout) {
     if (handle != NULL) {
-        celixThreadRwlock_writeLock(&handle->dbLock);
+        celixThreadMutex_lock(&handle->dbLock);
         handle->sendTimeout = timeout;
-        celixThreadRwlock_unlock(&handle->dbLock);
+        celixThreadMutex_unlock(&handle->dbLock);
     }
 }
 
 void pubsub_tcpHandler_setReceiveTimeOut(pubsub_tcpHandler_t *handle, double timeout) {
     if (handle != NULL) {
-        celixThreadRwlock_writeLock(&handle->dbLock);
+        celixThreadMutex_lock(&handle->dbLock);
         handle->rcvTimeout = timeout;
-        celixThreadRwlock_unlock(&handle->dbLock);
+        celixThreadMutex_unlock(&handle->dbLock);
     }
 }
 
@@ -797,18 +798,15 @@ void pubsub_tcpHandler_decodePayload(pubsub_tcpHandler_t *handle, psa_tcp_connec
 // If the message is completely reassembled true is returned and the index and size have valid values
 //
 int pubsub_tcpHandler_read(pubsub_tcpHandler_t *handle, int fd) {
-    celixThreadRwlock_writeLock(&handle->dbLock);
     psa_tcp_connection_entry_t *entry = hashMap_get(handle->interface_fd_map, (void *) (intptr_t) fd);
     if (entry == NULL)
         entry = hashMap_get(handle->connection_fd_map, (void *) (intptr_t) fd);
     // Find FD entry
     if (entry == NULL) {
-        celixThreadRwlock_unlock(&handle->dbLock);
         return -1;
     }
     // If it's not connected return from function
     if (!entry->connected) {
-        celixThreadRwlock_unlock(&handle->dbLock);
         return -1;
     }
 
@@ -925,18 +923,16 @@ int pubsub_tcpHandler_read(pubsub_tcpHandler_t *handle, int fd) {
             nbytes = 0; //Return 0 as indicator to close the connection
         }
     }
-    celixThreadRwlock_unlock(&handle->dbLock);
     return nbytes;
 }
-
 
 int pubsub_tcpHandler_addMessageHandler(pubsub_tcpHandler_t *handle, void *payload,
                                         pubsub_tcpHandler_processMessage_callback_t processMessageCallback) {
     int result = 0;
-    celixThreadRwlock_writeLock(&handle->dbLock);
+    celixThreadMutex_lock(&handle->dbLock);
     handle->processMessageCallback = processMessageCallback;
     handle->processMessagePayload = payload;
-    celixThreadRwlock_unlock(&handle->dbLock);
+    celixThreadMutex_unlock(&handle->dbLock);
     return result;
 }
 
@@ -944,11 +940,11 @@ int pubsub_tcpHandler_addReceiverConnectionCallback(pubsub_tcpHandler_t *handle,
                                                     pubsub_tcpHandler_receiverConnectMessage_callback_t connectMessageCallback,
                                                     pubsub_tcpHandler_receiverConnectMessage_callback_t disconnectMessageCallback) {
     int result = 0;
-    celixThreadRwlock_writeLock(&handle->dbLock);
+    celixThreadMutex_lock(&handle->dbLock);
     handle->receiverConnectMessageCallback = connectMessageCallback;
     handle->receiverDisconnectMessageCallback = disconnectMessageCallback;
     handle->receiverConnectPayload = payload;
-    celixThreadRwlock_unlock(&handle->dbLock);
+    celixThreadMutex_unlock(&handle->dbLock);
     return result;
 }
 
@@ -956,11 +952,11 @@ int pubsub_tcpHandler_addAcceptConnectionCallback(pubsub_tcpHandler_t *handle, v
                                                   pubsub_tcpHandler_acceptConnectMessage_callback_t connectMessageCallback,
                                                   pubsub_tcpHandler_acceptConnectMessage_callback_t disconnectMessageCallback) {
     int result = 0;
-    celixThreadRwlock_writeLock(&handle->dbLock);
+    celixThreadMutex_lock(&handle->dbLock);
     handle->acceptConnectMessageCallback = connectMessageCallback;
     handle->acceptDisconnectMessageCallback = disconnectMessageCallback;
     handle->acceptConnectPayload = payload;
-    celixThreadRwlock_unlock(&handle->dbLock);
+    celixThreadMutex_unlock(&handle->dbLock);
     return result;
 }
 
@@ -1004,10 +1000,12 @@ int pubsub_tcpHandler_writeSocket(pubsub_tcpHandler_t *handle, psa_tcp_connectio
 }
 //
 // Write large data to TCP. .
+// This function is the only reason that dbLock is recursive. This can get called from all over the place.
+// Including somewhere from a subscriber that also sends.
 //
 int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message_t *message, struct iovec *msgIoVec,
                             size_t msg_iov_len, int flags) {
-    celixThreadRwlock_readLock(&handle->dbLock);
+    celixThreadMutex_lock(&handle->dbLock);
     int result = 0;
     int connFdCloseQueue[hashMap_size(handle->connection_fd_map)];
     int nofConnToClose = 0;
@@ -1157,11 +1155,12 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
             }
         }
     }
-    celixThreadRwlock_unlock(&handle->dbLock);
-    //Force close all connections that are queued in a list, done outside of locking handle->dbLock to prevent deadlock
+
+    //Force close all connections that are queued in a list
     for (int i = 0; i < nofConnToClose; i++) {
         pubsub_tcpHandler_close(handle, connFdCloseQueue[i]);
     }
+    celixThreadMutex_unlock(&handle->dbLock);
     return result;
 }
 
@@ -1193,8 +1192,7 @@ char *pubsub_tcpHandler_get_interface_url(pubsub_tcpHandler_t *handle) {
 //
 static inline
 int pubsub_tcpHandler_acceptHandler(pubsub_tcpHandler_t *handle, psa_tcp_connection_entry_t *pendingConnectionEntry) {
-    celixThreadRwlock_writeLock(&handle->dbLock);
-    // new connection available
+    // new connection available, requires dbLock to be write locked
     struct sockaddr_in their_addr;
     socklen_t len = sizeof(struct sockaddr_in);
     int fd = accept(pendingConnectionEntry->fd, (struct sockaddr*)&their_addr, &len);
@@ -1236,79 +1234,35 @@ int pubsub_tcpHandler_acceptHandler(pubsub_tcpHandler_t *handle, psa_tcp_connect
         free(url);
         free(interface_url);
     }
-    celixThreadRwlock_unlock(&handle->dbLock);
     return fd;
 }
 
-//
 // Handle sockets connection (sender)
 //
 static inline
 void pubsub_tcpHandler_connectionHandler(pubsub_tcpHandler_t *handle, int fd) {
-    celixThreadRwlock_readLock(&handle->dbLock);
     psa_tcp_connection_entry_t *entry = hashMap_get(handle->connection_fd_map, (void *) (intptr_t) fd);
-    if (entry)
+    if (entry) {
         if ((!entry->connected)) {
             // tell sender that an receiver is connected
             if (handle->receiverConnectMessageCallback)
-                handle->receiverConnectMessageCallback(handle->receiverConnectPayload, entry->url, false);
+                handle->receiverConnectMessageCallback(handle->receiverConnectPayload, entry->url);
             entry->connected = true;
         }
-    celixThreadRwlock_unlock(&handle->dbLock);
+    }
 }
 
 #if defined(__APPLE__)
-//
-// The main socket event loop
-//
-static inline
-void pubsub_tcpHandler_handler(pubsub_tcpHandler_t *handle) {
-  int rc = 0;
-  if (handle->efd >= 0) {
-    int nof_events = 0;
-    //  Wait for events.
-    struct kevent events[MAX_EVENTS];
-    struct timespec ts = {handle->timeout / 1000, (handle->timeout  % 1000) * 1000000};
-    nof_events = kevent (handle->efd, NULL, 0, &events[0], MAX_EVENTS, handle->timeout ? &ts : NULL);
-    if (nof_events < 0) {
-      if ((errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)) {
-      } else
-        L_ERROR("[TCP Socket] Cannot create poll wait (%d) %s\n", nof_events, strerror(errno));
-    }
-    for (int i = 0; i < nof_events; i++) {
-      hash_map_iterator_t iter = hashMapIterator_construct(handle->interface_fd_map);
-      psa_tcp_connection_entry_t *pendingConnectionEntry = NULL;
-      while (hashMapIterator_hasNext(&iter)) {
-        psa_tcp_connection_entry_t *entry = hashMapIterator_nextValue(&iter);
-        if (events[i].ident == entry->fd)
-          pendingConnectionEntry = entry;
-      }
-      if (pendingConnectionEntry) {
-        int fd = pubsub_tcpHandler_acceptHandler(handle, pendingConnectionEntry);
-        pubsub_tcpHandler_connectionHandler(handle, fd);
-      } else if (events[i].filter & EVFILT_READ) {
-        int rc = pubsub_tcpHandler_read(handle, events[i].ident);
-        if (rc == 0) pubsub_tcpHandler_close(handle, events[i].ident);
-      } else if (events[i].flags & EV_EOF) {
-        int err = 0;
-        socklen_t len = sizeof(int);
-        rc = getsockopt(events[i].ident, SOL_SOCKET, SO_ERROR, &err, &len);
-        if (rc != 0) {
-          L_ERROR("[TCP Socket]:EPOLLRDHUP ERROR read from socket %s\n", strerror(errno));
-          continue;
-        }
-        pubsub_tcpHandler_close(handle, events[i].ident);
-      } else if (events[i].flags & EV_ERROR) {
-        L_ERROR("[TCP Socket]:EPOLLERR  ERROR read from socket %s\n", strerror(errno));
-        pubsub_tcpHandler_close(handle, events[i].ident);
-        continue;
-      }
-    }
-  }
-  return;
-}
-
+#define IS_DATA_READY_TO_READ events[i].filter & EVFILT_READ
+#define IS_CONN_CLOSED events[i].flags & EV_EOF
+#define ERROR_HAPPENED events[i].flags & EV_ERROR
+#define EVENT_FD ident
 #else
+#define IS_DATA_READY_TO_READ events[i].events & EPOLLIN
+#define IS_CONN_CLOSED events[i].events & EPOLLRDHUP
+#define ERROR_HAPPENED events[i].events & EPOLLERR
+#define EVENT_FD data.fd
+#endif
 
 //
 // The main socket event loop
@@ -1318,61 +1272,64 @@ void pubsub_tcpHandler_handler(pubsub_tcpHandler_t *handle) {
     int rc = 0;
     if (handle->efd >= 0) {
         int nof_events = 0;
+
+#if defined(__APPLE__)
+        struct kevent events[MAX_EVENTS];
+        unsigned int timeout = __atomic_load_n(&handle->timeout, __ATOMIC_ACQUIRE);
+        struct timespec ts = {handle->timeout / 1000, (handle->timeout  % 1000) * 1000000};
+        nof_events = kevent (handle->efd, NULL, 0, &events[0], MAX_EVENTS, timeout ? &ts : NULL);
+#else
         struct epoll_event events[MAX_EVENTS];
-        nof_events = epoll_wait(handle->efd, events, MAX_EVENTS, handle->timeout);
+        nof_events = epoll_wait(handle->efd, events, MAX_EVENTS, __atomic_load_n(&handle->timeout, __ATOMIC_ACQUIRE));
+#endif
+
         if (nof_events < 0) {
             if ((errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)) {
             } else
                 L_ERROR("[TCP Socket] Cannot create epoll wait (%d) %s\n", nof_events, strerror(errno));
         }
         for (int i = 0; i < nof_events; i++) {
+            celixThreadMutex_lock(&handle->dbLock);
             hash_map_iterator_t iter = hashMapIterator_construct(handle->interface_fd_map);
             psa_tcp_connection_entry_t *pendingConnectionEntry = NULL;
             while (hashMapIterator_hasNext(&iter)) {
                 psa_tcp_connection_entry_t *entry = hashMapIterator_nextValue(&iter);
-                if (events[i].data.fd == entry->fd)
+                if (events[i].EVENT_FD == entry->fd) {
                     pendingConnectionEntry = entry;
+                }
             }
             if (pendingConnectionEntry) {
-               int fd = pubsub_tcpHandler_acceptHandler(handle, pendingConnectionEntry);
-               pubsub_tcpHandler_connectionHandler(handle, fd);
-            } else if (events[i].events & EPOLLIN) {
-                rc = pubsub_tcpHandler_read(handle, events[i].data.fd);
-                if (rc == 0) pubsub_tcpHandler_close(handle, events[i].data.fd);
-            } else if (events[i].events & EPOLLRDHUP) {
+                int fd = pubsub_tcpHandler_acceptHandler(handle, pendingConnectionEntry);
+                pubsub_tcpHandler_connectionHandler(handle, fd);
+            } else if (IS_DATA_READY_TO_READ) {
+                rc = pubsub_tcpHandler_read(handle, events[i].EVENT_FD);
+                if (rc == 0) pubsub_tcpHandler_close(handle, events[i].EVENT_FD);
+            } else if (IS_CONN_CLOSED) {
                 int err = 0;
                 socklen_t len = sizeof(int);
-                rc = getsockopt(events[i].data.fd, SOL_SOCKET, SO_ERROR, &err, &len);
+                rc = getsockopt(events[i].EVENT_FD, SOL_SOCKET, SO_ERROR, &err, &len);
                 if (rc != 0) {
                     L_ERROR("[TCP Socket]:EPOLLRDHUP ERROR read from socket %s\n", strerror(errno));
-                    continue;
+                } else {
+                    pubsub_tcpHandler_close(handle, events[i].EVENT_FD);
                 }
-                pubsub_tcpHandler_close(handle, events[i].data.fd);
-            } else if (events[i].events & EPOLLERR) {
+            } else if (ERROR_HAPPENED) {
                 L_ERROR("[TCP Socket]:EPOLLERR  ERROR read from socket %s\n", strerror(errno));
-                pubsub_tcpHandler_close(handle, events[i].data.fd);
-                continue;
+                pubsub_tcpHandler_close(handle, events[i].EVENT_FD);
             }
+            celixThreadMutex_unlock(&handle->dbLock);
         }
     }
-    return;
 }
-#endif
 
 //
 // The socket thread
 //
 static void *pubsub_tcpHandler_thread(void *data) {
     pubsub_tcpHandler_t *handle = data;
-    celixThreadRwlock_readLock(&handle->dbLock);
-    bool running = handle->running;
-    celixThreadRwlock_unlock(&handle->dbLock);
 
-    while (running) {
+    while (__atomic_load_n(&handle->running, __ATOMIC_ACQUIRE)) {
         pubsub_tcpHandler_handler(handle);
-        celixThreadRwlock_readLock(&handle->dbLock);
-        running = handle->running;
-        celixThreadRwlock_unlock(&handle->dbLock);
     } // while
     return NULL;
 }

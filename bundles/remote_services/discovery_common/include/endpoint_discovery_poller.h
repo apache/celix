@@ -44,7 +44,7 @@ struct endpoint_discovery_poller {
     unsigned int poll_interval;
     unsigned int poll_timeout;
 
-    volatile bool running;
+    bool running;
 };
 
 celix_status_t endpointDiscoveryPoller_create(discovery_t *discovery, celix_bundle_context_t *context, const char* defaultPollEndpoints, endpoint_discovery_poller_t **poller);

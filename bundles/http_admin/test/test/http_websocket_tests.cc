@@ -222,7 +222,8 @@ TEST(HTTP_ADMIN_INT_GROUP, websocket_echo_test) {
 
     usleep(1000000); //Sleep for one second to let Civetweb handle the request
 
-    //Check if data received is the same as the data sent!
+    // ThreadSanitizer reports a potential data race on the data field, but can be ignored.
+    // Check if data received is the same as the data sent!
     CHECK(strncmp(echo_data.data, data_str, bytes_written) == 0);
 
     //Free/close used resources
