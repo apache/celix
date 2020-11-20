@@ -20,7 +20,8 @@
 #include <gtest/gtest.h>
 #include <atomic>
 
-#include "celix_api.h"
+#include "celix/dm/DependencyManager.h"
+#include "celix_framework_factory.h"
 
 class DependencyManagerTestSuite : public ::testing::Test {
 public:

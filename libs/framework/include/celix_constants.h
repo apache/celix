@@ -26,64 +26,62 @@
 extern "C" {
 #endif
 
-static const char *const OSGI_FRAMEWORK_OBJECTCLASS = "objectClass";
-static const char *const OSGI_FRAMEWORK_SERVICE_ID = "service.id";
-static const char *const OSGI_FRAMEWORK_SERVICE_PID = "service.pid";
+#define OSGI_FRAMEWORK_OBJECTCLASS "objectClass"
+#define OSGI_FRAMEWORK_SERVICE_ID "service.id"
+#define OSGI_FRAMEWORK_SERVICE_PID "service.pid"
 
 /**
  * Service property (named "service.ranking") identifying a service's ranking number (of type long).
  * The default ranking is 0. A service with a ranking of LONG_MAX is very likely to be returned as the default service, whereas a service with a ranking of LONG_MIN is very unlikely to be returned.
  * If the supplied property value cannot converted to long, a ranking value of 0 is used.
  */
-static const char *const OSGI_FRAMEWORK_SERVICE_RANKING = "service.ranking";
+#define OSGI_FRAMEWORK_SERVICE_RANKING "service.ranking"
 
-static const char *const CELIX_FRAMEWORK_SERVICE_VERSION = "service.version";
-static const char *const CELIX_FRAMEWORK_SERVICE_LANGUAGE = "service.lang";
-static const char *const CELIX_FRAMEWORK_SERVICE_C_LANGUAGE = "C";
-static const char *const CELIX_FRAMEWORK_SERVICE_CXX_LANGUAGE = "C++";
-static const char *const CELIX_FRAMEWORK_SERVICE_SHARED_LANGUAGE = "shared"; //e.g. marker services
+#define CELIX_FRAMEWORK_SERVICE_VERSION "service.version"
 
-static const char *const OSGI_FRAMEWORK_BUNDLE_ACTIVATOR = "Bundle-Activator";
+/**
+ * The service language property and values are deprecated
+ */
+//#define CELIX_FRAMEWORK_SERVICE_LANGUAGE "service.lang"
+//#define CELIX_FRAMEWORK_SERVICE_C_LANGUAGE "C"
+//#define CELIX_FRAMEWORK_SERVICE_CXX_LANGUAGE "C++"
+//#define CELIX_FRAMEWORK_SERVICE_SHARED_LANGUAGE "shared" //e.g. marker services
 
-static const char *const OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_CREATE = "celix_bundleActivator_create";
-static const char *const OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_START = "celix_bundleActivator_start";
-static const char *const OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_STOP = "celix_bundleActivator_stop";
-static const char *const OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_DESTROY = "celix_bundleActivator_destroy";
+#define OSGI_FRAMEWORK_BUNDLE_ACTIVATOR "Bundle-Activator"
 
-static const char *const OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_CREATE = "bundleActivator_create";
-static const char *const OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_START = "bundleActivator_start";
-static const char *const OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_STOP = "bundleActivator_stop";
-static const char *const OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_DESTROY = "bundleActivator_destroy";
+#define OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_CREATE "celix_bundleActivator_create"
+#define OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_START "celix_bundleActivator_start"
+#define OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_STOP "celix_bundleActivator_stop"
+#define OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_DESTROY "celix_bundleActivator_destroy"
 
+#define OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_CREATE "bundleActivator_create"
+#define OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_START "bundleActivator_start"
+#define OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_STOP "bundleActivator_stop"
+#define OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_DESTROY "bundleActivator_destroy"
 
-static const char *const OSGI_FRAMEWORK_BUNDLE_DM_ACTIVATOR_CREATE = "dm_create";
-static const char *const OSGI_FRAMEWORK_BUNDLE_DM_ACTIVATOR_INIT = "dm_init";
-static const char *const OSGI_FRAMEWORK_BUNDLE_DM_ACTIVATOR_DESTROY = "dm_destroy";
+#define OSGI_FRAMEWORK_BUNDLE_SYMBOLICNAME "Bundle-SymbolicName"
+#define OSGI_FRAMEWORK_BUNDLE_VERSION "Bundle-Version"
+#define OSGI_FRAMEWORK_PRIVATE_LIBRARY "Private-Library"
+#define OSGI_FRAMEWORK_EXPORT_LIBRARY "Export-Library"
+#define OSGI_FRAMEWORK_IMPORT_LIBRARY "Import-Library"
 
+#define OSGI_FRAMEWORK_FRAMEWORK_STORAGE "org.osgi.framework.storage"
+#define OSGI_FRAMEWORK_STORAGE_USE_TMP_DIR "org.osgi.framework.storage.use.tmp.dir"
+#define OSGI_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_NAME "org.osgi.framework.storage.clean"
+#define OSGI_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_DEFAULT true
+#define OSGI_FRAMEWORK_FRAMEWORK_UUID "org.osgi.framework.uuid"
 
-static const char *const OSGI_FRAMEWORK_BUNDLE_SYMBOLICNAME = "Bundle-SymbolicName";
-static const char *const OSGI_FRAMEWORK_BUNDLE_VERSION = "Bundle-Version";
-static const char *const OSGI_FRAMEWORK_PRIVATE_LIBRARY = "Private-Library";
-static const char *const OSGI_FRAMEWORK_EXPORT_LIBRARY = "Export-Library";
-static const char *const OSGI_FRAMEWORK_IMPORT_LIBRARY = "Import-Library";
+#define CELIX_BUNDLES_PATH_NAME "CELIX_BUNDLES_PATH"
+#define CELIX_BUNDLES_PATH_DEFAULT "bundles"
 
-static const char *const OSGI_FRAMEWORK_FRAMEWORK_STORAGE = "org.osgi.framework.storage";
-static const char *const OSGI_FRAMEWORK_STORAGE_USE_TMP_DIR = "org.osgi.framework.storage.use.tmp.dir";
-static const char *const OSGI_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_NAME = "org.osgi.framework.storage.clean";
-static const bool        OSGI_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_DEFAULT = true;
-static const char *const OSGI_FRAMEWORK_FRAMEWORK_UUID = "org.osgi.framework.uuid";
-
-static const char *const CELIX_BUNDLES_PATH_NAME = "CELIX_BUNDLES_PATH";
-static const char *const CELIX_BUNDLES_PATH_DEFAULT = "bundles";
-
-static const char *const CELIX_LOAD_BUNDLES_WITH_NODELETE = "CELIX_LOAD_BUNDLES_WITH_NODELETE";
+#define CELIX_LOAD_BUNDLES_WITH_NODELETE "CELIX_LOAD_BUNDLES_WITH_NODELETE"
 
 /**
  * The path used getting entries from the framework bundle.
  * Normal bundles have an archive directory.
  * For the celix framework by default the working directory is used, with this configuration this can be changed.
  */
-static const char *const CELIX_SYSTEM_BUNDLE_ARCHIVE_PATH = "CELIX_SYSTEM_BUNDLE_ARCHIVE_PATH";
+#define CELIX_SYSTEM_BUNDLE_ARCHIVE_PATH "CELIX_SYSTEM_BUNDLE_ARCHIVE_PATH"
 
 
 #define CELIX_AUTO_START_0 "CELIX_AUTO_START_0"

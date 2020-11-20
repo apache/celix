@@ -17,7 +17,6 @@
  * under the License.
  */
 
-#include "DependencyManager.h"
 
 using namespace celix::dm;
 

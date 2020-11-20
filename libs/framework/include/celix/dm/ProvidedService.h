@@ -22,7 +22,6 @@
 #include <string>
 #include <memory>
 
-#include "celix_api.h"
 #include "celix/dm/Properties.h"
 
 namespace celix { namespace dm {

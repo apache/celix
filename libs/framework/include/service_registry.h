@@ -164,9 +164,7 @@ char* celix_serviceRegistry_createFilterFor(
         celix_service_registry_t* registry,
         const char* serviceName,
         const char* versionRange,
-        const char* additionalFilter,
-        const char* serviceLanguage,
-        bool ignoreServiceLanguage);
+        const char* additionalFilter);
 
 /**
  * Find services and return a array list of service ids (long).

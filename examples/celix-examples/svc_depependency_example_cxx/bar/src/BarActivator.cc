@@ -17,7 +17,7 @@
  * under the License.
  */
 
-#include <celix_api.h>
+#include <celix/BundleActivator.h>
 
 #include "Bar.h"
 #include "BarActivator.h"

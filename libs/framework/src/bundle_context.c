@@ -23,6 +23,7 @@
 #include <utils.h>
 #include <assert.h>
 #include <unistd.h>
+#include <stdarg.h>
 
 #include "celix_utils.h"
 #include "celix_constants.h"
@@ -501,8 +502,6 @@ static long celix_bundleContext_registerServiceWithOptionsInternal(bundle_contex
     if (opts->serviceVersion != NULL && strncmp("", opts->serviceVersion, 1) != 0) {
         celix_properties_set(props, CELIX_FRAMEWORK_SERVICE_VERSION, opts->serviceVersion);
     }
-    const char *lang = opts->serviceLanguage != NULL && strncmp("", opts->serviceLanguage, 1) != 0 ? opts->serviceLanguage : CELIX_FRAMEWORK_SERVICE_C_LANGUAGE;
-    celix_properties_set(props, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang);
 
     long svcId = -1;
     if (!async && celix_framework_isCurrentThreadTheEventLoop(ctx->framework)) {
@@ -1425,7 +1424,7 @@ long celix_bundleContext_findService(celix_bundle_context_t *ctx, const char *se
 
 long celix_bundleContext_findServiceWithOptions(celix_bundle_context_t *ctx, const celix_service_filter_options_t *opts) {
     long result = -1L;
-    char* filter = celix_serviceRegistry_createFilterFor(ctx->framework->registry, opts->serviceName, opts->versionRange, opts->filter, opts->serviceLanguage, opts->ignoreServiceLanguage);
+    char* filter = celix_serviceRegistry_createFilterFor(ctx->framework->registry, opts->serviceName, opts->versionRange, opts->filter);
     if (filter != NULL) {
         celix_array_list_t *svcIds = celix_serviceRegisrty_findServices(ctx->framework->registry, filter);
         if (svcIds != NULL && celix_arrayList_size(svcIds) > 0) {
@@ -1448,7 +1447,7 @@ celix_array_list_t* celix_bundleContext_findServices(celix_bundle_context_t *ctx
 
 celix_array_list_t* celix_bundleContext_findServicesWithOptions(celix_bundle_context_t *ctx, const celix_service_filter_options_t *opts) {
     celix_array_list_t* result = NULL;
-    char* filter = celix_serviceRegistry_createFilterFor(ctx->framework->registry, opts->serviceName, opts->versionRange, opts->filter, opts->serviceLanguage, opts->ignoreServiceLanguage);
+    char* filter = celix_serviceRegistry_createFilterFor(ctx->framework->registry, opts->serviceName, opts->versionRange, opts->filter);
     if (filter != NULL) {
         result = celix_serviceRegisrty_findServices(ctx->framework->registry, filter);
         free(filter);
@@ -1470,7 +1469,6 @@ static celix_status_t bundleContext_callServicedTrackerTrackerCallback(void *han
             trkInfo.bundleId = celix_bundle_getId(bnd);
             trkInfo.filter = celix_filter_create(info->filter);
             trkInfo.serviceName = celix_filter_findAttribute(trkInfo.filter, OSGI_FRAMEWORK_OBJECTCLASS);
-            trkInfo.serviceLanguage = celix_filter_findAttribute(trkInfo.filter, CELIX_FRAMEWORK_SERVICE_LANGUAGE);
             const char *filterSvcName = celix_filter_findAttribute(trkInfo.filter, OSGI_FRAMEWORK_OBJECTCLASS);
 
             bool match = entry->serviceName == NULL || (filterSvcName != NULL && strncmp(filterSvcName, entry->serviceName, 1024*1024) == 0);
@@ -1648,4 +1646,15 @@ char* celix_bundleContext_getBundleSymbolicName(celix_bundle_context_t *ctx, lon
     char *name = NULL;
     celix_framework_useBundle(ctx->framework, false, bndId, &name, celix_bundleContext_getBundleSymbolicNameCallback);
     return name;
+}
+
+void celix_bundleContext_log(celix_bundle_context_t *ctx, celix_log_level_e level, const char* format, ...) {
+    va_list args;
+    va_start(args, format);
+    celix_bundleContext_vlog(ctx, level, format, args);
+    va_end(args);
+}
+
+void celix_bundleContext_vlog(celix_bundle_context_t *ctx, celix_log_level_e level, const char *format, va_list formatArgs) {
+    celix_framework_vlog(ctx->framework->logger, level, NULL, NULL, NULL, 0, format, formatArgs);
 }

@@ -20,24 +20,20 @@
 #include <memory>
 #include <iostream>
 
-#include <celix_api.h>
+#include "celix/BundleActivator.h"
 
 namespace /*anon*/ {
 
     class BundleActivator {
     public:
-        BundleActivator(std::shared_ptr<celix::dm::DependencyManager> _mng) : mng{std::move(_mng)} {
-            std::cout << "Hello world from C++ bundle with id " << bndId() << std::endl;
+        explicit BundleActivator(std::shared_ptr<celix::BundleContext> _ctx) : ctx{std::move(_ctx)} {
+            std::cout << "Hello world from C++ bundle with id " << ctx->getBundle().getId() << std::endl;
         }
         ~BundleActivator() {
-            std::cout << "Goodbye world from C++ bundle with id " << bndId() << std::endl;
+            std::cout << "Goodbye world from C++ bundle with id " << ctx->getBundle().getId() << std::endl;
         }
     private:
-        long bndId() const {
-            return celix_bundle_getId(celix_bundleContext_getBundle(mng->bundleContext()));
-        }
-
-        std::shared_ptr<celix::dm::DependencyManager> mng;
+        const std::shared_ptr<celix::BundleContext> ctx;
     };
 
 }

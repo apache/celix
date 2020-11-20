@@ -173,7 +173,6 @@ celix_status_t bundleActivator_create(celix_bundle_context_t* ctx, void **_pptr)
             celix_properties_set(activator->std_commands[i].props, CELIX_SHELL_COMMAND_NAME, activator->std_commands[i].name);
             celix_properties_set(activator->std_commands[i].props, CELIX_SHELL_COMMAND_USAGE, activator->std_commands[i].usage);
             celix_properties_set(activator->std_commands[i].props, CELIX_SHELL_COMMAND_DESCRIPTION, activator->std_commands[i].description);
-            celix_properties_set(activator->std_commands[i].props, CELIX_FRAMEWORK_SERVICE_LANGUAGE, CELIX_FRAMEWORK_SERVICE_C_LANGUAGE);
 
             activator->std_commands[i].service.handle = ctx;
             activator->std_commands[i].service.executeCommand = activator->std_commands[i].exec;

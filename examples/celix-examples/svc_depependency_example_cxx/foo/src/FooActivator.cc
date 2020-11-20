@@ -19,7 +19,7 @@
 
 #include "Foo.h"
 #include "FooActivator.h"
-#include <celix_api.h>
+#include <celix/BundleActivator.h>
 
 using namespace celix::dm;
 

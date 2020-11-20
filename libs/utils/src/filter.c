@@ -714,7 +714,7 @@ const char* celix_filter_findAttribute(const celix_filter_t *filter, const char 
                 }
             }
         } else if (strncmp(filter->attribute, attribute, 1024 * 1024) == 0) {
-            result = filter->value;
+            result = filter->operand == CELIX_FILTER_OPERAND_PRESENT ? "*" : filter->value;
         }
     }
     return result;

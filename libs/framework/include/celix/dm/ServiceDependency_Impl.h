@@ -17,14 +17,6 @@
  * under the License.
  */
 
-#include <vector>
-#include <iostream>
-#include <cstring>
-#include "celix_constants.h"
-#include "celix_properties.h"
-#include "ServiceDependency.h"
-
-
 using namespace celix::dm;
 
 inline void BaseServiceDependency::runBuild() {
@@ -253,7 +245,7 @@ void ServiceDependency<T,I>::setupService() {
     std::string n = name;
 
     if (n.empty()) {
-        n = typeName<I>();
+        n = celix::typeName<I>();
         if (n.empty()) {
             std::cerr << "Error in service dependency. Type name cannot be inferred, using '<TYPE_NAME_ERROR>'. function: '" << __PRETTY_FUNCTION__ << "'\n";
             n = "<TYPE_NAME_ERROR>";
@@ -261,40 +253,7 @@ void ServiceDependency<T,I>::setupService() {
     }
 
     const char* v =  versionRange.empty() ? nullptr : versionRange.c_str();
-
-
-    if (this->addCxxLanguageFilter) {
-
-        char langFilter[128];
-        snprintf(langFilter, sizeof(langFilter), "(%s=%s)", CELIX_FRAMEWORK_SERVICE_LANGUAGE,
-                 CELIX_FRAMEWORK_SERVICE_CXX_LANGUAGE);
-
-        //setting modified filter. which is in a filter including a lang=c++
-        modifiedFilter = std::string{langFilter};
-        if (!filter.empty()) {
-            char needle[128];
-            snprintf(needle, sizeof(needle), "(%s=", CELIX_FRAMEWORK_SERVICE_LANGUAGE);
-            size_t langFilterPos = filter.find(needle);
-            if (langFilterPos != std::string::npos) {
-                //do nothing filter already contains a language part.
-            } else if (strncmp(filter.c_str(), "(&", 2) == 0 && filter[filter.size() - 1] == ')') {
-                modifiedFilter = filter.substr(0, filter.size() - 1); //remove closing ')'
-                modifiedFilter = modifiedFilter.append(langFilter);
-                modifiedFilter = modifiedFilter.append(")"); //add closing ')'
-            } else if (filter[0] == '(' && filter[filter.size() - 1] == ')') {
-                modifiedFilter = "(&";
-                modifiedFilter = modifiedFilter.append(filter);
-                modifiedFilter = modifiedFilter.append(langFilter);
-                modifiedFilter = modifiedFilter.append(")");
-            } else {
-                std::cerr << "Unexpected filter layout: '" << filter << "'\n";
-            }
-        }
-    } else {
-        this->modifiedFilter = this->filter;
-    }
-
-    celix_dmServiceDependency_setService(this->cServiceDependency(), n.c_str(), v, this->modifiedFilter.c_str());
+    celix_dmServiceDependency_setService(this->cServiceDependency(), n.c_str(), v, this->filter.c_str());
 }
 
 template<class T, class I>

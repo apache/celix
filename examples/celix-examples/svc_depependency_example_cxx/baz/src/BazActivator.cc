@@ -19,7 +19,7 @@
 
 #include "Baz.h"
 #include "BazActivator.h"
-#include <celix_api.h>
+#include <celix/BundleActivator.h>
 
 using namespace celix::dm;
 

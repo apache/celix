@@ -214,23 +214,6 @@ celix_status_t celix_dmServiceDependency_setService(celix_dm_service_dependency_
 			arrayList_add(filterElements, strdup(filter));
 		}
 
-
-
-        bool needLangFilter = true;
-		if (filter != NULL) {
-            char needle[128];
-            snprintf(needle, sizeof(needle), "(%s=", CELIX_FRAMEWORK_SERVICE_LANGUAGE);
-            if (strstr(filter, needle) != NULL) {
-                needLangFilter = false;
-            }
-        }
-
-        if (needLangFilter && dependency->addCLanguageFilter) {
-			char langFilter[128];
-			snprintf(langFilter, sizeof(langFilter), "(%s=%s)", CELIX_FRAMEWORK_SERVICE_LANGUAGE, CELIX_FRAMEWORK_SERVICE_C_LANGUAGE);
-            arrayList_add(filterElements, strdup(langFilter));
-		}
-
 		if (arrayList_size(filterElements) > 0) {
 			array_list_iterator_pt filterElementsIter = arrayListIterator_create(filterElements);
 

@@ -315,14 +315,15 @@ typedef struct celix_service_filter_options {
     const char* filter OPTS_INIT;
 
     /**
-     * The optional service language to filter for. If this is NULL or "" the C language will be used.
+     * @deprecated This value is not used any more. If a service language filter is still required add it to the
+     * filter.
      */
     const char* serviceLanguage OPTS_INIT;
 
 
     /**
-     * Whether to ignore (not filter for) the service.lang property.
-     * If this is set the serviceLanguage field is ignored and the (service.lang=<>) part is not added tot he filter
+     * @deprecated This value is not used any more. If a service language filter is still required add it to the
+     * filter.
      */
     bool ignoreServiceLanguage OPTS_INIT;
 } celix_service_filter_options_t;
@@ -1055,7 +1056,8 @@ typedef struct celix_service_tracker_info {
     const char *serviceName;
 
     /**
-     * The service language filter attribute parsed from the service filter. Can be null
+     * @deprecated
+     * Deprecated. the value will be NULL.
      */
     const char *serviceLanguage;
 
@@ -1183,7 +1185,16 @@ double celix_bundleContext_getPropertyAsDouble(celix_bundle_context_t *ctx, cons
  */
 bool celix_bundleContext_getPropertyAsBool(celix_bundle_context_t *ctx, const char *key, bool defaultValue);
 
-//TODO getPropertyAs for int, uint, ulong, bool, etc
+/**
+ * Logs a message to the Celix framework logger using the provided log level.
+ */
+void celix_bundleContext_log(celix_bundle_context_t *ctx, celix_log_level_e level, const char* format, ...);
+
+/**
+ * Logs a message to Celix framework logger using the provided log level.
+ */
+void celix_bundleContext_vlog(celix_bundle_context_t *ctx, celix_log_level_e level, const char *format, va_list formatArgs);
+
 
 #undef OPTS_INIT
 

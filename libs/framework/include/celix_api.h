@@ -46,8 +46,8 @@
 #include "celix_framework_factory.h"
 
 #ifdef __cplusplus
-#include "celix/dm/DependencyManager.h"
+#include "celix/BundleActivator.h"
+#include "celix/BundleContext.h"
 #endif
-
 
 #endif //CELIX_CELIX_API_H_

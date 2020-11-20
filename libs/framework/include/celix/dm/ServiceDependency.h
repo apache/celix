@@ -19,9 +19,6 @@
 
 #pragma once
 
-#include "dm_service_dependency.h"
-#include "celix/dm/types.h"
-
 #include <map>
 #include <string>
 #include <list>
@@ -30,10 +27,16 @@
 #include <iostream>
 #include <functional>
 #include <atomic>
+#include <vector>
+#include <cstring>
+
+#include "dm_service_dependency.h"
+#include "celix_constants.h"
+#include "celix_properties.h"
+#include "celix/Utils.h"
+#include "celix/dm/Properties.h"
 
 namespace celix { namespace dm {
-
-    class DependencyManager; //forward declaration
 
     enum class DependencyUpdateStrategy {
         suspend,
@@ -338,11 +341,9 @@ namespace celix { namespace dm {
          */
         ServiceDependency<T,I>& build();
     private:
-        bool addCxxLanguageFilter {true};
         std::string name {};
         std::string filter {};
         std::string versionRange {};
-        std::string modifiedFilter {};
 
         std::function<void(I* service, Properties&& properties)> setFp{nullptr};
         std::function<void(I* service, Properties&& properties)> addFp{nullptr};

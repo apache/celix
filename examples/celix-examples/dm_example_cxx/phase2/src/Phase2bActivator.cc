@@ -20,7 +20,8 @@
 #include "Phase2Cmp.h"
 #include "Phase2Activator.h"
 #include "celix_log_service.h"
-#include <celix_bundle_activator.h>
+#include <celix/BundleActivator.h>
+
 
 using namespace celix::dm;
 

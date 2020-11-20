@@ -50,8 +50,6 @@ struct celix_dm_component_struct {
     bool isStarted;
     bool active;
 
-    bool setCLanguageProperty;
-
     hash_map_pt dependencyEvents; //protected by mutex
 
     dm_executor_pt executor;
@@ -151,8 +149,6 @@ celix_dm_component_t* celix_dmComponent_create(bundle_context_t *context, const 
     component->state = DM_CMP_STATE_INACTIVE;
     component->isStarted = false;
     component->active = false;
-
-    component->setCLanguageProperty = false;
 
     component->dependencyEvents = hashMap_create(NULL, NULL, NULL, NULL);
 
@@ -360,7 +356,7 @@ celix_status_t component_setCLanguageProperty(celix_dm_component_t *component, b
 }
 
 celix_status_t celix_dmComponent_setCLanguageProperty(celix_dm_component_t *component, bool setCLangProp) {
-    component->setCLanguageProperty = setCLangProp;
+    //nop
     return CELIX_SUCCESS;
 }
 
@@ -380,10 +376,6 @@ celix_status_t celix_dmComponent_addInterface(celix_dm_component_t *component, c
 
     if ((properties_get(properties, CELIX_FRAMEWORK_SERVICE_VERSION) == NULL) && (serviceVersion != NULL)) {
         celix_properties_set(properties, CELIX_FRAMEWORK_SERVICE_VERSION, serviceVersion);
-    }
-
-    if (component->setCLanguageProperty && properties_get(properties, CELIX_FRAMEWORK_SERVICE_LANGUAGE) == NULL) { //always set default lang to C
-        celix_properties_set(properties, CELIX_FRAMEWORK_SERVICE_LANGUAGE, CELIX_FRAMEWORK_SERVICE_C_LANGUAGE);
     }
 
     celix_properties_set(properties, CELIX_DM_COMPONENT_UUID, (char*)component->id);
@@ -1256,7 +1248,6 @@ static celix_status_t component_registerServices(celix_dm_component_t *component
                 opts.properties = regProps;
                 opts.svc = (void*)interface->service;
                 opts.serviceName = interface->serviceName;
-                opts.serviceLanguage = celix_properties_get(regProps, CELIX_FRAMEWORK_SERVICE_LANGUAGE, NULL);
                 interface->svcId = celix_bundleContext_registerServiceWithOptions(component->context, &opts);
             }
         }

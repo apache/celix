@@ -19,9 +19,8 @@
 
 #pragma once
 
-#include <map>
-#include <string>
+#include "celix/Properties.h"
 
 namespace celix { namespace dm {
-    using Properties = std::map<std::string, std::string>;
+    using Properties = celix::Properties;
 }}

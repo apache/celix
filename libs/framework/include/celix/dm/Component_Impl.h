@@ -17,19 +17,6 @@
  * under the License.
  */
 
-#include "celix/dm/Component.h"
-#include "celix/dm/DependencyManager.h"
-#include "celix/dm/ServiceDependency.h"
-#include "celix/dm/ProvidedService.h"
-#include "celix_dependency_manager.h"
-
-#include <memory>
-#include <iostream>
-#include <iomanip>
-#include <type_traits>
-#include <algorithm>
-#include <atomic>
-
 using namespace celix::dm;
 
 inline void BaseComponent::runBuild() {

@@ -103,7 +103,7 @@ void celix_frameworkLogger_setLogCallback(celix_framework_logger_t* logger, void
 }
 
 
-static void vlog(celix_framework_logger_t* logger, celix_log_level_e level, celix_status_t *optionalStatus, const char* file, const char* function, int line, const char* format, va_list args) {
+void celix_framework_vlog(celix_framework_logger_t* logger, celix_log_level_e level, celix_status_t *optionalStatus, const char* file, const char* function, int line, const char* format, va_list args) {
     if (level == CELIX_LOG_LEVEL_DISABLED) {
         return;
     }
@@ -130,13 +130,13 @@ static void vlog(celix_framework_logger_t* logger, celix_log_level_e level, celi
 void framework_log(celix_framework_logger_t*  logger, celix_log_level_e level, const char *func, const char *file, int line, const char *format, ...) {
     va_list args;
     va_start(args, format);
-    vlog(logger, level, NULL, file, func, line, format, args);
+    celix_framework_vlog(logger, level, NULL, file, func, line, format, args);
     va_end(args);
 }
 
 void framework_logCode(celix_framework_logger_t*  logger, celix_log_level_e level, const char *func, const char *file, int line, celix_status_t code, const char *format, ...) {
     va_list args;
     va_start(args, format);
-    vlog(logger, level, &code, file, func, line, format, args);
+    celix_framework_vlog(logger, level, &code, file, func, line, format, args);
     va_end(args);
 }

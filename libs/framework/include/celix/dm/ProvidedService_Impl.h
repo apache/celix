@@ -43,8 +43,6 @@ inline void BaseProvidedService::runBuild() {
     if (!provideAddedToCmp) {
         //setup c properties
         celix_properties_t *cProperties = properties_create();
-        properties_set(cProperties, CELIX_FRAMEWORK_SERVICE_LANGUAGE,
-                       cppService ? CELIX_FRAMEWORK_SERVICE_CXX_LANGUAGE : CELIX_FRAMEWORK_SERVICE_C_LANGUAGE);
         for (const auto &pair : properties) {
             properties_set(cProperties, pair.first.c_str(), pair.second.c_str());
         }

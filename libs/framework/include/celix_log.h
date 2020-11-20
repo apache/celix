@@ -64,6 +64,8 @@ void framework_log(celix_framework_logger_t* logger, celix_log_level_e level, co
 void framework_logCode(celix_framework_logger_t* logger, celix_log_level_e level, const char *func, const char *file, int line,
                   celix_status_t code, const char *format, ...);
 
+void celix_framework_vlog(celix_framework_logger_t* logger, celix_log_level_e level, celix_status_t *optionalStatus, const char* file, const char* function, int line, const char* format, va_list args);
+
 #ifdef __cplusplus
 }
 #endif
