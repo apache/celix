@@ -57,7 +57,7 @@ struct pubsub_publisher {
     int (*localMsgTypeIdForMsgType)(void *handle, const char *msgType, unsigned int *msgTypeId);
 
     /**
-     * send block untill the message is either copied or serialized.
+     * send block until the message is either copied or serialized.
      * Whether the message is already provided to the network layer or whether send through the network is up to the pubsubadmins.
      * If and how meta data is handled can be different between pubsubadmins.
      *

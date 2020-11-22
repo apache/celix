@@ -15,6 +15,22 @@
 # specific language governing permissions and limitations
 # under the License.
 
+add_celix_bundle(pubsub_serialization_matching_descriptors NO_ACTIVATOR VERSION 1.0.0)
+celix_bundle_files(pubsub_serialization_matching_descriptors
+		${CMAKE_CURRENT_SOURCE_DIR}/msg_descriptors/msg_poi1.descriptor
+		DESTINATION "META-INF/descriptors"
+		)
+
+celix_bundle_files(pubsub_serialization_matching_descriptors
+		${CMAKE_CURRENT_SOURCE_DIR}/msg_descriptors/fiets.properties
+		DESTINATION "META-INF/topics/pub"
+		)
+
+celix_bundle_files(pubsub_serialization_matching_descriptors
+		${CMAKE_CURRENT_SOURCE_DIR}/msg_descriptors/fiets.properties
+		DESTINATION "META-INF/topics/sub"
+		)
+
 add_celix_bundle(pubsub_serialization_provider_descriptors NO_ACTIVATOR VERSION 1.0.0)
 celix_bundle_files(pubsub_serialization_provider_descriptors
 		${CMAKE_CURRENT_SOURCE_DIR}/msg_descriptors/garbage.descriptor
@@ -33,11 +49,13 @@ celix_bundle_files(pubsub_serialization_provider_descriptors
 add_executable(test_pubsub_utils
 		src/PubSubSerializationHandlerTestSuite.cc
 		src/PubSubSerializationProviderTestSuite.cc
+		src/PubSubMatchingTestSuite.cpp
 )
 target_link_libraries(test_pubsub_utils PRIVATE Celix::framework Celix::pubsub_utils GTest::gtest GTest::gtest_main)
 target_compile_options(test_pubsub_utils PRIVATE -std=c++14) #Note test code is allowed to be C++14
 add_test(NAME test_pubsub_utils COMMAND test_pubsub_utils)
 setup_target_for_coverage(test_pubsub_utils SCAN_DIR ..)
 
-add_dependencies(test_pubsub_utils pubsub_serialization_provider_descriptors_bundle)
+add_dependencies(test_pubsub_utils pubsub_serialization_matching_descriptors pubsub_serialization_provider_descriptors_bundle)
 target_compile_definitions(test_pubsub_utils PRIVATE -DDESCRIPTOR_BUNDLE=\"$<TARGET_PROPERTY:pubsub_serialization_provider_descriptors,BUNDLE_FILE>\")
+target_compile_definitions(test_pubsub_utils PRIVATE -DMATCHING_BUNDLE=\"$<TARGET_PROPERTY:pubsub_serialization_matching_descriptors,BUNDLE_FILE>\")

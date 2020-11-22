@@ -17,66 +17,18 @@
  * under the License.
  */
 
-#ifndef PUBSUB_ENDPOINT_H_
-#define PUBSUB_ENDPOINT_H_
+#ifndef PUBSUB_MATCHING_H_
+#define PUBSUB_MATCHING_H_
 
-#include "celix_log_helper.h"
+#include <celix_log_helper.h>
+#include "bundle_context.h"
+#include "celix_array_list.h"
 #include "celix_bundle_context.h"
-#include "celix_properties.h"
-
-#include "pubsub/publisher.h"
-#include "pubsub/subscriber.h"
-
-#include "pubsub_constants.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
-//required for valid endpoint
-#define PUBSUB_ENDPOINT_TOPIC_NAME      "pubsub.topic.name"
-#define PUBSUB_ENDPOINT_TOPIC_SCOPE     "pubsub.topic.scope"
-
-#define PUBSUB_ENDPOINT_UUID            "pubsub.endpoint.uuid" //required
-#define PUBSUB_ENDPOINT_FRAMEWORK_UUID  "pubsub.framework.uuid" //required
-#define PUBSUB_ENDPOINT_TYPE            "pubsub.endpoint.type" //PUBSUB_PUBLISHER_ENDPOINT_TYPE or PUBSUB_SUBSCRIBER_ENDPOINT_TYPE
-#define PUBSUB_ENDPOINT_VISIBILITY      "pubsub.endpoint.visibility" //local, host or system. e.g. for IPC host
-#define PUBSUB_ENDPOINT_ADMIN_TYPE       PUBSUB_ADMIN_TYPE_KEY
-#define PUBSUB_ENDPOINT_SERIALIZER       PUBSUB_SERIALIZER_TYPE_KEY
-#define PUBSUB_ENDPOINT_PROTOCOL         PUBSUB_PROTOCOL_TYPE_KEY
-
-
-#define PUBSUB_PUBLISHER_ENDPOINT_TYPE      "publisher"
-#define PUBSUB_SUBSCRIBER_ENDPOINT_TYPE     "subscriber"
-#define PUBSUB_ENDPOINT_VISIBILITY_DEFAULT  PUBSUB_ENDPOINT_SYSTEM_VISIBILITY
-
-
-celix_properties_t *
-pubsubEndpoint_create(const char *fwUUID, const char *scope, const char *topic, const char *pubsubType,
-                      const char *adminType, const char *serType, const char *protType, celix_properties_t *topic_props);
-
-celix_properties_t *
-pubsubEndpoint_createFromSubscriberSvc(bundle_context_t *ctx, long svcBndId, const celix_properties_t *svcProps);
-
-celix_properties_t *
-pubsubEndpoint_createFromPublisherTrackerInfo(bundle_context_t *ctx, long bundleId, const char *filter);
-
-bool pubsubEndpoint_equals(const celix_properties_t *psEp1, const celix_properties_t *psEp2);
-
-//check if the required properties are available for the endpoint
-bool
-pubsubEndpoint_isValid(const celix_properties_t *endpointProperties, bool requireAdminType, bool requireSerializerType);
 
 /**
- * Create a key based on scope an topic.
- * Scope can be NULL.
- * Note that NULL, "topic" and "default", "topic" will result in different keys
- * @return a newly created key. caller is responsible for freeing the string array.
- */
-char *pubsubEndpoint_createScopeTopicKey(const char *scope, const char *topic);
-
-/**
- * @deprecated Please use pubsub_utils_matchPublisher
- *
  * Match a publisher for a provided bnd (using the bundleId) and service filter.
  *
  * The match function will try to find a topic properties for the requesting bundle (bundleId) using the topic
@@ -106,8 +58,7 @@ char *pubsubEndpoint_createScopeTopicKey(const char *scope, const char *topic);
  * @param outSerializerSvcId    Output svc id for the matching serializer. If not found will be -1L.
  * @return                      The matching score.
  */
-//__attribute__((__deprecated__))
-double pubsubEndpoint_matchPublisher(
+double pubsub_utils_matchPublisher(
         celix_bundle_context_t *ctx,
         long bundleId,
         const char *filter,
@@ -121,8 +72,6 @@ double pubsubEndpoint_matchPublisher(
         long *outProtocolSvcId);
 
 /**
- * @deprecated Please use pubsub_utils_matchSubscriber
- *
  * Match a subscriber for a provided bnd (using the bundleId) and provided service properties.
  *
  * The match function will try to find a topic properties for the requesting bundle (bundleId) - using topic in the
@@ -152,10 +101,9 @@ double pubsubEndpoint_matchPublisher(
  * @param outSerializerSvcId    Output svc id for the matching serializer. If not found will be -1L.
  * @return                      The matching score.
  */
-//__attribute__((__deprecated__))
-double pubsubEndpoint_matchSubscriber(
+double pubsub_utils_matchSubscriber(
         celix_bundle_context_t *ctx,
-        long svcProviderBundleId,
+        const long svcProviderBundleId,
         const celix_properties_t *svcProperties,
         const char *adminType,
         double sampleScore,
@@ -167,8 +115,6 @@ double pubsubEndpoint_matchSubscriber(
         long *outProtocolSvcId);
 
 /**
- * @deprecated Please use pubsub_utils_matchEndpoint
- *
  * Match an endpoint (subscriber or publisher endpoint) for the provided admin type.
  *
  * Also tries to found the matching serializer configured in the endpoint.
@@ -180,27 +126,16 @@ double pubsubEndpoint_matchSubscriber(
  *                              configured/found.
  * @return                      true if there is a match.
  */
-//__attribute__((__deprecated__))
-bool pubsubEndpoint_match(
+bool pubsub_utils_matchEndpoint(
         celix_bundle_context_t *ctx,
         celix_log_helper_t *logHelper,
-        const celix_properties_t *endpoint,
+        const celix_properties_t *ep,
         const char *adminType,
         bool matchProtocol,
         long *outSerializerSvcId,
         long *outProtocolSvcId);
-
-/**
- * Match an endpoint with a topic & scope.
- * @param endpoint The endpoints (mandatory)
- * @param topic The topic (mandatory)
- * @param scope The scope (can be NULL)
- * @return true if the endpoint is for the provide topic and scope);
- */
-bool pubsubEndpoint_matchWithTopicAndScope(const celix_properties_t* endpoint, const char *topic, const char *scope);
-
-
 #ifdef __cplusplus
 }
 #endif
-#endif /* PUBSUB_ENDPOINT_H_ */
+
+#endif /* PUBSUB_MATCHING_H_ */
