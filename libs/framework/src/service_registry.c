@@ -665,6 +665,7 @@ static celix_status_t serviceRegistry_addHooks(service_registry_pt registry, con
             celix_increaseCountServiceListener(listenerEntry);
             celix_arrayList_add(listeners, listenerEntry);
 		}
+		celixThreadRwlock_unlock(&registry->lock);
 	}
 
 	if (infos != NULL && listeners != NULL) {
