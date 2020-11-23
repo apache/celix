@@ -459,6 +459,12 @@ celix_status_t pubsub_zmqAdmin_matchDiscoveredEndpoint(void *handle, const celix
     return status;
 }
 
+static void pubsub_zmqAdmin_getSerType(void *handle, void *svc __attribute__((unused)), const celix_properties_t* props) {
+    const char** out = handle;
+    *out = celix_properties_get(props, PUBSUB_MESSAGE_SERIALIZATION_SERVICE_SERIALIZATION_TYPE_PROPERTY, NULL);
+}
+
+
 celix_status_t pubsub_zmqAdmin_setupTopicSender(void *handle, const char *scope, const char *topic, const celix_properties_t *topicProperties, long serializerSvcId __attribute__((unused)), long protocolSvcId, celix_properties_t **outPublisherEndpoint) {
     pubsub_zmq_admin_t *psa = handle;
     celix_status_t  status = CELIX_SUCCESS;
@@ -475,7 +481,17 @@ celix_status_t pubsub_zmqAdmin_setupTopicSender(void *handle, const char *scope,
         staticBindUrl = celix_properties_get(topicProperties, PUBSUB_ZMQ_STATIC_BIND_URL, NULL);
     }
     char *key = pubsubEndpoint_createScopeTopicKey(scope, topic);
-    const char *serType = celix_properties_get(topicProperties, PUBSUB_SERIALIZER_TYPE_KEY, NULL);
+
+    //get serializer type
+    const char *serType = NULL;
+    celix_service_use_options_t opts = CELIX_EMPTY_SERVICE_USE_OPTIONS;
+    opts.callbackHandle = &serType;
+    opts.useWithProperties = pubsub_zmqAdmin_getSerType;
+    opts.filter.serviceName = PUBSUB_MESSAGE_SERIALIZATION_SERVICE_NAME;
+    char filter[32];
+    snprintf(filter, 32, "(%s=%li)", OSGI_FRAMEWORK_SERVICE_ID, serializerSvcId);
+    opts.filter.filter = filter;
+    celix_bundleContext_useServiceWithOptions(psa->ctx, &opts);
 
     celixThreadMutex_lock(&psa->protocols.mutex);
     celixThreadMutex_lock(&psa->topicSenders.mutex);
@@ -570,7 +586,17 @@ celix_status_t pubsub_zmqAdmin_setupTopicReceiver(void *handle, const char *scop
     celix_properties_t *newEndpoint = NULL;
 
     char *key = pubsubEndpoint_createScopeTopicKey(scope, topic);
-    const char *serType = celix_properties_get(topicProperties, PUBSUB_SERIALIZER_TYPE_KEY, NULL);
+
+    //get serializer type
+    const char *serType = NULL;
+    celix_service_use_options_t opts = CELIX_EMPTY_SERVICE_USE_OPTIONS;
+    opts.callbackHandle = &serType;
+    opts.useWithProperties = pubsub_zmqAdmin_getSerType;
+    opts.filter.serviceName = PUBSUB_MESSAGE_SERIALIZATION_SERVICE_NAME;
+    char filter[32];
+    snprintf(filter, 32, "(%s=%li)", OSGI_FRAMEWORK_SERVICE_ID, serializerSvcId);
+    opts.filter.filter = filter;
+    celix_bundleContext_useServiceWithOptions(psa->ctx, &opts);
 
     celixThreadMutex_lock(&psa->protocols.mutex);
     celixThreadMutex_lock(&psa->topicReceivers.mutex);
