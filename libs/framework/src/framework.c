@@ -1202,6 +1202,7 @@ static celix_status_t fw_uninstallBundleEntry(celix_framework_t *framework, celi
             } else {
                 celix_framework_waitForEmptyEventQueue(framework); //to ensure that the uninstall event is triggered and handled
                 bundleArchive_destroy(archive);
+                status = CELIX_DO_IF(status, bundle_closeModules(bnd));
                 status = CELIX_DO_IF(status, bundle_destroy(bnd));
             }
         }
