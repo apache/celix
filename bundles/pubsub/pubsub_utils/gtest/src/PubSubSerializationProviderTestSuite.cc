@@ -51,14 +51,6 @@ TEST_F(PubSubSerializationProviderTestSuite, CreateDestroy) {
     pubsub_serializationProvider_destroy(provider);
 }
 
-TEST_F(PubSubSerializationProviderTestSuite, FindSerializationMarkerSvc) {
-    auto* provider = pubsub_serializationProvider_create(ctx.get(), "test", 0, nullptr, nullptr, nullptr, nullptr);
-    auto* services = celix_bundleContext_findServices(ctx.get(), PUBSUB_MESSAGE_SERIALIZATION_MARKER_NAME);
-    EXPECT_EQ(1, celix_arrayList_size(services));
-    celix_arrayList_destroy(services);
-    pubsub_serializationProvider_destroy(provider);
-}
-
 TEST_F(PubSubSerializationProviderTestSuite, FindSerializationServices) {
     auto* provider = pubsub_serializationProvider_create(ctx.get(), "test", 0, nullptr, nullptr, nullptr, nullptr);
 
