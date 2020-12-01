@@ -2252,6 +2252,16 @@ static celix_status_t framework_loadLibraries(framework_pt framework, const char
         status = framework_loadLibrary(framework, trimmedLib, archive, &handle);
 
         if ( (status == CELIX_SUCCESS) && (activator != NULL) && (strcmp(trimmedLib, activator) == 0) ) {
+            bundle_revision_pt revision = NULL;
+            array_list_pt handles = NULL;
+
+            status = CELIX_DO_IF(status, bundleArchive_getCurrentRevision(archive, &revision));
+            status = CELIX_DO_IF(status, bundleRevision_getHandles(revision, &handles));
+
+            if(handles != NULL){
+                arrayList_add(handles, handle);
+            }
+
             *activatorHandle = handle;
         }
         else if(handle!=NULL){
@@ -2307,16 +2317,6 @@ static celix_status_t framework_loadLibrary(framework_pt framework, const char *
         if (*handle == NULL) {
             error = celix_libloader_getLastError();
             status =  CELIX_BUNDLE_EXCEPTION;
-        } else {
-            bundle_revision_pt revision = NULL;
-            array_list_pt handles = NULL;
-
-            status = CELIX_DO_IF(status, bundleArchive_getCurrentRevision(archive, &revision));
-            status = CELIX_DO_IF(status, bundleRevision_getHandles(revision, &handles));
-
-            if(handles != NULL){
-                arrayList_add(handles, *handle);
-            }
         }
     }
 
