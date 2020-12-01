@@ -2259,7 +2259,7 @@ static celix_status_t framework_loadLibraries(framework_pt framework, const char
             status = CELIX_DO_IF(status, bundleRevision_getHandles(revision, &handles));
 
             if(handles != NULL){
-                arrayList_add(handles, *handle);
+                arrayList_add(handles, handle);
             }
 
             *activatorHandle = handle;
