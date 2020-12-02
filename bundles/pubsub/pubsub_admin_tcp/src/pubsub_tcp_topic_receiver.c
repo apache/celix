@@ -289,15 +289,14 @@ void pubsub_tcpTopicReceiver_destroy(pubsub_tcp_topic_receiver_t *receiver) {
             if (entry != NULL) {
                 receiver->serializer->destroySerializerMap(receiver->serializer->handle, entry->msgTypes);
                 hashMap_destroy(entry->subscriberServices, false, false);
+                hash_map_iterator_t iter2 = hashMapIterator_construct(entry->metrics);
+                while (hashMapIterator_hasNext(&iter2)) {
+                    hash_map_t *origins = hashMapIterator_nextValue(&iter2);
+                    hashMap_destroy(origins, true, true);
+                }
+                hashMap_destroy(entry->metrics, false, false);
                 free(entry);
             }
-
-            hash_map_iterator_t iter2 = hashMapIterator_construct(entry->metrics);
-            while (hashMapIterator_hasNext(&iter2)) {
-                hash_map_t *origins = hashMapIterator_nextValue(&iter2);
-                hashMap_destroy(origins, true, true);
-            }
-            hashMap_destroy(entry->metrics, false, false);
         }
         hashMap_destroy(receiver->subscribers.map, false, false);
 
