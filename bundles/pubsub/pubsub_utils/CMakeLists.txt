@@ -20,6 +20,7 @@ add_library(pubsub_utils STATIC
         src/pubsub_utils_url.c
         src/pubsub_serializer_handler.c
         src/pubsub_serialization_provider.c
+        src/pubsub_matching.c
 )
 
 set_target_properties(pubsub_utils PROPERTIES OUTPUT_NAME "celix_pubsub_utils")

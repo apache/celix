@@ -38,6 +38,7 @@ static int ps_wp_start(ps_wp_activator_t *act, celix_bundle_context_t *ctx) {
         /* Set serializertype */
         celix_properties_t *props = celix_properties_create();
         celix_properties_set(props, PUBSUB_PROTOCOL_TYPE_KEY, PUBSUB_WIRE_PROTOCOL_TYPE);
+        celix_properties_setLong(props, OSGI_FRAMEWORK_SERVICE_RANKING, 5);
 
         act->protocolSvc.getHeaderSize = pubsubProtocol_getHeaderSize;
         act->protocolSvc.getHeaderBufferSize = pubsubProtocol_getHeaderBufferSize;

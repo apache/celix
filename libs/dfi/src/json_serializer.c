@@ -45,12 +45,12 @@ static int ERROR = 1;
 
 DFI_SETUP_LOG(jsonSerializer);
 
-int jsonSerializer_deserialize(dyn_type *type, const char *input, void **result) {
+int jsonSerializer_deserialize(dyn_type *type, const char *input, size_t length, void **result) {
     assert(dynType_type(type) == DYN_TYPE_COMPLEX || dynType_type(type) == DYN_TYPE_SEQUENCE);
     int status = 0;
 
     json_error_t error;
-    json_t *root = json_loads(input, JSON_DECODE_ANY, &error);
+    json_t *root = json_loadb(input, length, JSON_DECODE_ANY, &error);
 
     if (root != NULL) {
         status = jsonSerializer_deserializeJson(type, root, result);

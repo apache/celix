@@ -54,12 +54,6 @@ TEST_F(PubSubJsonSerializationProviderTestSuite, CreateDestroy) {
     //checks if the bundles are started and stopped correctly (no mem leaks).
 }
 
-TEST_F(PubSubJsonSerializationProviderTestSuite, FindSerializationMarkerSvc) {
-    auto* services = celix_bundleContext_findServices(ctx.get(), PUBSUB_MESSAGE_SERIALIZATION_MARKER_NAME);
-    EXPECT_EQ(1, celix_arrayList_size(services));
-    celix_arrayList_destroy(services);
-}
-
 TEST_F(PubSubJsonSerializationProviderTestSuite, FindSerializationServices) {
     auto* services = celix_bundleContext_findServices(ctx.get(), PUBSUB_MESSAGE_SERIALIZATION_SERVICE_NAME);
     EXPECT_EQ(1, celix_arrayList_size(services));
@@ -109,7 +103,7 @@ TEST_F(PubSubJsonSerializationProviderTestSuite, DeserializeTest) {
         poi1 *p = nullptr;
         iovec inVec;
         inVec.iov_base = static_cast<void*>(const_cast<char*>(data));
-        inVec.iov_len = strlen(data) + 1;
+        inVec.iov_len = strlen(data);
         ser->deserialize(ser->handle, &inVec, 1, (void**)(&p));
         EXPECT_EQ(42,p->location.lat);
         EXPECT_EQ(43,p->location.lon);

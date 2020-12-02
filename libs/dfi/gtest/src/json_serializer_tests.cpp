@@ -795,7 +795,7 @@ static void parseAvprTests() {
     inst = nullptr;
     type = dynType_parseAvprWithStr(avpr_example1_descriptor, avpr_example1_fqn);
     ASSERT_TRUE(type != nullptr);
-	rc = jsonSerializer_deserialize(type, example1_input, &inst);
+	rc = jsonSerializer_deserialize(type, example1_input, strlen(example1_input), &inst);
 	ASSERT_EQ(0, rc);
 	check_example1(inst);
 	dynType_free(type, inst);
@@ -804,7 +804,7 @@ static void parseAvprTests() {
     inst = nullptr;
     type = dynType_parseAvprWithStr(avpr_example2_descriptor, avpr_example2_fqn);
     ASSERT_TRUE(type != nullptr);
-	rc = jsonSerializer_deserialize(type, example2_input, &inst);
+	rc = jsonSerializer_deserialize(type, example2_input, strlen(example2_input), &inst);
 	ASSERT_EQ(0, rc);
 	check_example2(inst);
 	dynType_free(type, inst);
@@ -813,7 +813,7 @@ static void parseAvprTests() {
     inst = nullptr;
     type = dynType_parseAvprWithStr(avpr_example3_descriptor, avpr_example3_fqn);
     ASSERT_TRUE(type != nullptr);
-	rc = jsonSerializer_deserialize(type, example3_input, &inst);
+	rc = jsonSerializer_deserialize(type, example3_input, strlen(example3_input), &inst);
 	ASSERT_EQ(0, rc);
 	check_example3(inst);
 	dynType_free(type, inst);
@@ -822,7 +822,7 @@ static void parseAvprTests() {
     inst = nullptr;
     type = dynType_parseAvprWithStr(avpr_example4_descriptor, avpr_example4_fqn);
     ASSERT_TRUE(type != nullptr);
-	rc = jsonSerializer_deserialize(type, example4_input, &inst);
+	rc = jsonSerializer_deserialize(type, example4_input, strlen(example4_input), &inst);
 	ASSERT_EQ(0, rc);
 	check_example4(inst);
 	dynType_free(type, inst);
@@ -831,7 +831,7 @@ static void parseAvprTests() {
     inst = nullptr;
     type = dynType_parseAvprWithStr(avpr_example5_descriptor, avpr_example5_fqn);
     ASSERT_TRUE(type != nullptr);
-	rc = jsonSerializer_deserialize(type, example5_input, &inst);
+	rc = jsonSerializer_deserialize(type, example5_input, strlen(example5_input), &inst);
 	ASSERT_EQ(0, rc);
 	check_example5(inst);
 	dynType_free(type, inst);
@@ -841,7 +841,7 @@ static void parseAvprTests() {
     inst = nullptr;
     type = dynType_parseAvprWithStr(avpr_example6_descriptor, avpr_example6_fqn);
     ASSERT_TRUE(type != nullptr);
-	rc = jsonSerializer_deserialize(type, avpr_example6_input, &inst);
+	rc = jsonSerializer_deserialize(type, avpr_example6_input, strlen(avpr_example6_input), &inst);
 	ASSERT_EQ(0, rc);
 	check_example6_avpr(inst);
 	dynType_free(type, inst);
@@ -850,7 +850,7 @@ static void parseAvprTests() {
     inst = nullptr;
     type = dynType_parseAvprWithStr(avpr_example7_descriptor, avpr_example7_fqn);
     ASSERT_TRUE(type != nullptr);
-	rc = jsonSerializer_deserialize(type, example7_input, &inst);
+	rc = jsonSerializer_deserialize(type, example7_input, strlen(example7_input), &inst);
 	ASSERT_EQ(0, rc);
 	check_example7(inst);
 	dynType_free(type, inst);
@@ -859,7 +859,7 @@ static void parseAvprTests() {
     inst = nullptr;
     type = dynType_parseAvprWithStr(avpr_example8_descriptor, avpr_example8_fqn);
     ASSERT_TRUE(type != nullptr);
-	rc = jsonSerializer_deserialize(type, example8_input, &inst);
+	rc = jsonSerializer_deserialize(type, example8_input, strlen(example8_input), &inst);
 	ASSERT_EQ(0, rc);
 	check_example8(inst);
 	dynType_free(type, inst);
@@ -868,15 +868,15 @@ static void parseAvprTests() {
     inst = nullptr;
     type = dynType_parseAvprWithStr(avpr_example9_descriptor, avpr_example9_fqn);
     ASSERT_TRUE(type != nullptr);
-	rc = jsonSerializer_deserialize(type, example9_input_1, &inst);
+	rc = jsonSerializer_deserialize(type, example9_input_1, strlen(example9_input_1), &inst);
 	ASSERT_EQ(0, rc);
 	check_example9_1(inst);
 	dynType_free(type, inst);
-	rc = jsonSerializer_deserialize(type, example9_input_2, &inst);
+	rc = jsonSerializer_deserialize(type, example9_input_2, strlen(example9_input_2), &inst);
 	ASSERT_EQ(0, rc);
 	check_example9_2(inst);
 	dynType_free(type, inst);
-    rc = jsonSerializer_deserialize(type, example9_input_3, &inst);
+    rc = jsonSerializer_deserialize(type, example9_input_3, strlen(example9_input_3), &inst);
     ASSERT_EQ(0, rc);
     check_example9_3(inst);
     dynType_free(type, inst);
@@ -892,7 +892,7 @@ static void parseTests() {
 	inst = nullptr;
 	rc = dynType_parseWithStr(example1_descriptor, nullptr, nullptr, &type);
 	ASSERT_EQ(0, rc);
-	rc = jsonSerializer_deserialize(type, example1_input, &inst);
+	rc = jsonSerializer_deserialize(type, example1_input, strlen(example1_input), &inst);
 	ASSERT_EQ(0, rc);
 	check_example1(inst);
 	dynType_free(type, inst);
@@ -902,7 +902,7 @@ static void parseTests() {
 	inst = nullptr;
 	rc = dynType_parseWithStr(example2_descriptor, nullptr, nullptr, &type);
 	ASSERT_EQ(0, rc);
-	rc = jsonSerializer_deserialize(type, example2_input, &inst);
+	rc = jsonSerializer_deserialize(type, example2_input, strlen(example2_input), &inst);
 	ASSERT_EQ(0, rc);
 	check_example2(inst);
 	dynType_free(type, inst);
@@ -912,7 +912,7 @@ static void parseTests() {
 	inst = nullptr;
 	rc = dynType_parseWithStr(example3_descriptor, nullptr, nullptr, &type);
 	ASSERT_EQ(0, rc);
-	rc = jsonSerializer_deserialize(type, example3_input, &inst);
+	rc = jsonSerializer_deserialize(type, example3_input, strlen(example3_input), &inst);
 	ASSERT_EQ(0, rc);
 	check_example3(inst);
 	dynType_free(type, inst);
@@ -922,7 +922,7 @@ static void parseTests() {
 	inst = nullptr;
 	rc = dynType_parseWithStr(example4_descriptor, nullptr, nullptr, &type);
 	ASSERT_EQ(0, rc);
-	rc = jsonSerializer_deserialize(type, example4_input, &inst);
+	rc = jsonSerializer_deserialize(type, example4_input, strlen(example4_input), &inst);
 	ASSERT_EQ(0, rc);
 	check_example4(inst);
 	dynType_free(type, inst);
@@ -932,7 +932,7 @@ static void parseTests() {
 	inst = nullptr;
 	rc = dynType_parseWithStr(example5_descriptor, nullptr, nullptr, &type);
 	ASSERT_EQ(0, rc);
-	rc = jsonSerializer_deserialize(type, example5_input, &inst);
+	rc = jsonSerializer_deserialize(type, example5_input, strlen(example5_input), &inst);
 	ASSERT_EQ(0, rc);
 	check_example5(inst);
 	dynType_free(type, inst);
@@ -942,7 +942,7 @@ static void parseTests() {
 	struct ex6_sequence *seq;
 	rc = dynType_parseWithStr(example6_descriptor, nullptr, nullptr, &type);
 	ASSERT_EQ(0, rc);
-	rc = jsonSerializer_deserialize(type, example6_input, (void **)&seq);
+	rc = jsonSerializer_deserialize(type, example6_input, strlen(example6_input), (void **)&seq);
 	ASSERT_EQ(0, rc);
 	check_example6((*seq));
 	dynType_free(type, seq);
@@ -952,7 +952,7 @@ static void parseTests() {
 	inst = nullptr;
 	rc = dynType_parseWithStr(example7_descriptor, nullptr, nullptr, &type);
 	ASSERT_EQ(0, rc);
-	rc = jsonSerializer_deserialize(type, example7_input, &inst);
+	rc = jsonSerializer_deserialize(type, example7_input, strlen(example7_input), &inst);
 	ASSERT_EQ(0, rc);
 	check_example7(inst);
 	dynType_free(type, inst);
@@ -962,7 +962,7 @@ static void parseTests() {
 	inst = nullptr;
 	rc = dynType_parseWithStr(example8_descriptor, nullptr, nullptr, &type);
 	ASSERT_EQ(0, rc);
-	rc = jsonSerializer_deserialize(type, example8_input, &inst);
+	rc = jsonSerializer_deserialize(type, example8_input, strlen(example8_input), &inst);
 	ASSERT_EQ(0, rc);
 	check_example8(inst);
 	dynType_free(type, inst);
@@ -972,11 +972,11 @@ static void parseTests() {
 	inst = nullptr;
 	rc = dynType_parseWithStr(example9_descriptor, nullptr, nullptr, &type);
 	ASSERT_EQ(0, rc);
-	rc = jsonSerializer_deserialize(type, example9_input_1, &inst);
+	rc = jsonSerializer_deserialize(type, example9_input_1, strlen(example9_input_1), &inst);
 	ASSERT_EQ(0, rc);
 	check_example9_1(inst);
 	dynType_free(type, inst);
-	rc = jsonSerializer_deserialize(type, example9_input_2, &inst);
+	rc = jsonSerializer_deserialize(type, example9_input_2, strlen(example9_input_2), &inst);
 	ASSERT_EQ(0, rc);
 	check_example9_2(inst);
 	dynType_free(type, inst);
@@ -986,7 +986,7 @@ static void parseTests() {
     inst = nullptr;
     rc = dynType_parseWithStr(exampleA_descriptor, nullptr, nullptr, &type);
     ASSERT_EQ(0, rc);
-    rc = jsonSerializer_deserialize(type, exampleA_input, &inst);
+    rc = jsonSerializer_deserialize(type, exampleA_input, strlen(exampleA_input), &inst);
     ASSERT_EQ(0, rc);
     check_exampleA(inst);
     dynType_free(type, inst);

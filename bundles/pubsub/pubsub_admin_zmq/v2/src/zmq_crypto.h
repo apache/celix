@@ -16,31 +16,26 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+/**
+ * zmq_crypto.h
+ *
+ *  \date       Dec 2, 2016
+ *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
+ *  \copyright  Apache License, Version 2.0
+ */
 
-#ifndef __JSON_SERIALIZER_H_
-#define __JSON_SERIALIZER_H_
+#ifndef ZMQ_CRYPTO_H_
+#define ZMQ_CRYPTO_H_
 
-#include <jansson.h>
-#include "dfi_log_util.h"
-#include "dyn_type.h"
-#include "dyn_function.h"
-#include "dyn_interface.h"
+#include <czmq.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#define PROPERTY_KEYS_FILE_PATH "keys.file.path"
+#define PROPERTY_KEYS_FILE_NAME "keys.file.name"
+#define DEFAULT_KEYS_FILE_PATH "/etc/"
+#define DEFAULT_KEYS_FILE_NAME "pubsub.keys"
 
-//logging
-DFI_SETUP_LOG_HEADER(jsonSerializer);
-
-int jsonSerializer_deserialize(dyn_type *type, const char *input, size_t length, void **result);
-int jsonSerializer_deserializeJson(dyn_type *type, json_t *input, void **result);
-
-int jsonSerializer_serialize(dyn_type *type, const void* input, char **output);
-int jsonSerializer_serializeJson(dyn_type *type, const void* input, json_t **out);
-
-#ifdef __cplusplus
-}
-#endif
+zcert_t* get_zcert_from_encoded_file(char* keysFilePath, char* keysFileName, char* file_path);
+int generate_sha256_hash(char* text, unsigned char* digest);
+int decrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *key, unsigned char *iv, unsigned char *plaintext);
 
 #endif
