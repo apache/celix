@@ -27,7 +27,6 @@
 #define PSA_TCP_RECV_BUFFER_SIZE                "PSA_TCP_RECV_BUFFER_SIZE"
 #define PSA_TCP_TIMEOUT                         "PSA_TCP_TIMEOUT"
 #define PSA_TCP_SUBSCRIBER_CONNECTION_TIMEOUT   "PSA_TCP_SUBSCRIBER_CONNECTION_TIMEOUT"
-#define PSA_TCP_SEND_DELAY                      "PSA_TCP_SEND_DELAY"
 
 #define PSA_TCP_DEFAULT_BASE_PORT               5501
 #define PSA_TCP_DEFAULT_MAX_PORT                6000
@@ -36,7 +35,6 @@
 #define PSA_TCP_DEFAULT_RECV_BUFFER_SIZE        65 * 1024
 #define PSA_TCP_DEFAULT_TIMEOUT                 2000 // 2 seconds
 #define PSA_TCP_SUBSCRIBER_CONNECTION_DEFAULT_TIMEOUT 250 // 250 ms
-#define PSA_TCP_DEFAULT_SEND_DELAY              250 //  250 ms
 
 #define PSA_TCP_DEFAULT_QOS_SAMPLE_SCORE        30
 #define PSA_TCP_DEFAULT_QOS_CONTROL_SCORE       70
@@ -107,6 +105,9 @@
 /**
  * Defines if the publisher / subscriber is a passive endpoint and shares
  * the connection with publisher / subscriber endpoint with the matching (passive) key
+ * e.g. tcp.passive.configured="true" means that a publisher / subscriber is passive,
+ * when a publisher / subscriber is found with a matching key (for example tcp.passive.key="localhost").
+ * This creates full-duplex connection using a single socket.
  */
 #define PUBSUB_TCP_PASSIVE_CONFIGURED            "tcp.passive.configured"
 #define PUBSUB_TCP_PASSIVE_KEY                   "tcp.passive.key"

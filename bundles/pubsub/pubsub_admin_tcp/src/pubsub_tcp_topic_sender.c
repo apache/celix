@@ -155,19 +155,20 @@ pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
     const char *isPassive = pubsub_getEnvironmentVariableWithScopeTopic(ctx, PUBSUB_TCP_PASSIVE_ENABLED, topic, scope);
     const char *passiveKey = pubsub_getEnvironmentVariableWithScopeTopic(ctx, PUBSUB_TCP_PASSIVE_SELECTION_KEY, topic, scope);
 
+    if (isPassive) {
+        sender->isPassive = psa_tcp_isPassive(isPassive);
+    }
     if (topicProperties != NULL) {
         if (discUrl == NULL) {
             discUrl = celix_properties_get(topicProperties, PUBSUB_TCP_STATIC_DISCOVER_URL, NULL);
         }
         if (isPassive == NULL) {
-            isPassive = celix_properties_get(topicProperties, PUBSUB_TCP_PASSIVE_CONFIGURED, NULL);
+            sender->isPassive = celix_properties_getAsBool(topicProperties, PUBSUB_TCP_PASSIVE_CONFIGURED, false);
         }
         if (passiveKey == NULL) {
             passiveKey = celix_properties_get(topicProperties, PUBSUB_TCP_PASSIVE_KEY, NULL);
         }
     }
-    sender->isPassive = psa_tcp_isPassive(isPassive);
-
     /* When it's an endpoint share the socket with the receiver */
     if (passiveKey != NULL) {
         celixThreadMutex_lock(&handlerStore->mutex);
@@ -194,12 +195,14 @@ pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
         double sendTimeout = celix_properties_getAsDouble(topicProperties, PUBSUB_TCP_PUBLISHER_SNDTIMEO_KEY, PUBSUB_TCP_PUBLISHER_SNDTIMEO_DEFAULT);
         long maxMsgSize = celix_properties_getAsLong(topicProperties, PSA_TCP_MAX_MESSAGE_SIZE, PSA_TCP_DEFAULT_MAX_MESSAGE_SIZE);
         long timeout = celix_bundleContext_getPropertyAsLong(ctx, PSA_TCP_TIMEOUT, PSA_TCP_DEFAULT_TIMEOUT);
-        sender->send_delay = celix_bundleContext_getPropertyAsLong(ctx,  PSA_TCP_SEND_DELAY, PSA_TCP_DEFAULT_SEND_DELAY);
+        sender->send_delay = celix_bundleContext_getPropertyAsLong(ctx,  PUBSUB_UTILS_PSA_SEND_DELAY, PUBSUB_UTILS_PSA_DEFAULT_SEND_DELAY);
         pubsub_tcpHandler_setThreadName(sender->socketHandler, topic, scope);
         pubsub_tcpHandler_setThreadPriority(sender->socketHandler, prio, sched);
         pubsub_tcpHandler_setSendRetryCnt(sender->socketHandler, (unsigned int) retryCnt);
         pubsub_tcpHandler_setSendTimeOut(sender->socketHandler, sendTimeout);
         pubsub_tcpHandler_setMaxMsgSize(sender->socketHandler, (unsigned int) maxMsgSize);
+        // Hhen passiveKey is specified, enable receive event for full-duplex connection using key.
+        // Because the topic receiver is already started, enable the receive event.
         pubsub_tcpHandler_enableReceiveEvent(sender->socketHandler, (passiveKey) ? true : false);
         pubsub_tcpHandler_setTimeout(sender->socketHandler, (unsigned int) timeout);
     }
@@ -529,8 +532,11 @@ psa_tcp_topicPublicationSend(void *handle, unsigned int msgTypeId, const void *i
             clock_gettime(CLOCK_REALTIME, &serializationEnd);
         }
 
-        bool cont = pubsubInterceptorHandler_invokePreSend(sender->interceptorsHandler, entry->msgSer->msgName, msgTypeId, inMsg, &metadata);
-        if (status == CELIX_SUCCESS /*ser ok*/ && cont) {
+        bool cont = false;
+        if (status == CELIX_SUCCESS) /*ser ok*/ {
+            cont = pubsubInterceptorHandler_invokePreSend(sender->interceptorsHandler, entry->msgSer->msgName, msgTypeId, inMsg, &metadata);
+        }
+        if (cont) {
             pubsub_protocol_message_t message;
             message.metadata.metadata = NULL;
             message.payload.payload = NULL;
@@ -614,7 +620,9 @@ static void delay_first_send_for_late_joiners(pubsub_tcp_topic_sender_t *sender)
     static bool firstSend = true;
 
     if (firstSend) {
-        if (sender->send_delay ) L_INFO("PSA_TCP_TP: Delaying first send for late joiners...\n");
+        if (sender->send_delay ) {
+            L_INFO("PSA_TCP_TP: Delaying first send for late joiners...\n");
+        }
         usleep(sender->send_delay * 1000);
         firstSend = false;
     }

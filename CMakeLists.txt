@@ -32,13 +32,6 @@ IF (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} EQUAL 3.3 AND ${CMAKE_GENERATO
     message( FATAL_ERROR "Building Celix using CMake 3.3 and makefiles is not supported due to a bug in the Makefile Generator (see Bug 15696). Please change the used CMake version - both, CMake 3.2 and CMake 3.4 are working fine. Or use a different generator (e.g. Ninja)." )
 ENDIF()
 
-if (ENABLE_TESTING)
-    find_package(GTest CONFIG QUIET)
-    if (NOT GTest_FOUND)
-        include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/AddGTest.cmake)
-    endif()
-endif ()
-
 set(ENABLE_MORE_WARNINGS OFF)
 
 # Set C specific flags
@@ -121,9 +114,13 @@ set(CELIX_MICRO "1")
 set(DEFAULT_VERSION 1.0.0)
 
 # Options
-option(ENABLE_TESTING "Enables unit/bundle testing" FALSE)
+option(ENABLE_TESTING "Enables unit/bundle testing" TRUE)
 if (ENABLE_TESTING)
     enable_testing()
+    find_package(GTest CONFIG QUIET)
+    if (NOT GTest_FOUND)
+        include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/AddGTest.cmake)
+    endif()
 endif()
 
 option(CELIX_INSTALL_DEPRECATED_API "whether to install (and use) deprecated apis (i.e. header without a celix_ prefix." ON)

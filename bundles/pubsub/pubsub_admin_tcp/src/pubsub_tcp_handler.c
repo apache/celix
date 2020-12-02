@@ -815,36 +815,27 @@ bool pubsub_tcpHandler_readHeader(pubsub_tcpHandler_t *handle, int fd, psa_tcp_c
 
 static inline void pubsub_tcpHandler_ensureReadBufferCapacity(pubsub_tcpHandler_t *handle, psa_tcp_connection_entry_t *entry) {
     if (entry->readHeaderSize > entry->readHeaderBufferSize) {
-        char *buffer = realloc(entry->readHeaderBuffer, (size_t) entry->readHeaderSize);
-        if (buffer) {
-            entry->readHeaderBuffer = buffer;
-            entry->readHeaderBufferSize = entry->readHeaderSize;
-        }
+        free(entry->readHeaderBuffer);
+        entry->readHeaderBuffer = malloc((size_t) entry->readHeaderSize);
+        entry->readHeaderBufferSize = entry->readHeaderSize;
     }
 
     if (entry->header.header.payloadSize > entry->bufferSize) {
-        handle->bufferSize = MAX(handle->bufferSize, entry->header.header.payloadSize);
-        char *buffer = realloc(entry->buffer, (size_t) handle->bufferSize);
-        if (buffer) {
-            entry->buffer = buffer;
-            entry->bufferSize = handle->bufferSize;
-        }
+        free(entry->buffer);
+        entry->buffer = malloc((size_t)entry->header.header.payloadSize);
+        entry->bufferSize = entry->header.header.payloadSize;
     }
 
     if (entry->header.header.metadataSize > entry->readMetaBufferSize) {
-        char *buffer = realloc(entry->readMetaBuffer, (size_t) entry->header.header.metadataSize);
-        if (buffer) {
-            entry->readMetaBuffer = buffer;
-            entry->readMetaBufferSize = entry->header.header.metadataSize;
-        }
+        free(entry->readMetaBuffer);
+        entry->readMetaBuffer = malloc((size_t) entry->header.header.metadataSize);
+        entry->readMetaBufferSize = entry->header.header.metadataSize;
     }
 
     if (entry->readFooterSize > entry->readFooterBufferSize) {
-        char *buffer = realloc(entry->readFooterBuffer, (size_t) entry->readFooterSize);
-        if (buffer) {
-            entry->readFooterBuffer = buffer;
-            entry->readFooterBufferSize = entry->readFooterSize;
-        }
+        free(entry->readFooterBuffer);
+        entry->readFooterBuffer = malloc( (size_t) entry->readFooterSize);
+        entry->readFooterBufferSize = entry->readFooterSize;
     }
 }
 
@@ -1005,6 +996,9 @@ int pubsub_tcpHandler_addAcceptConnectionCallback(pubsub_tcpHandler_t *handle, v
 int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message_t *message, struct iovec *msgIoVec,
                             size_t msg_iov_len, int flags) {
     int result = 0;
+    if (handle == NULL) {
+        return -1;
+    }
     int connFdCloseQueue[hashMap_size(handle->connection_fd_map)];
     int nofConnToClose = 0;
     if (handle) {

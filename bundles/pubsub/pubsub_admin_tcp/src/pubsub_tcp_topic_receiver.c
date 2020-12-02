@@ -151,18 +151,20 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
     const char *isPassive = pubsub_getEnvironmentVariableWithScopeTopic(ctx, PUBSUB_TCP_PASSIVE_ENABLED, topic, scope);
     const char *passiveKey = pubsub_getEnvironmentVariableWithScopeTopic(ctx, PUBSUB_TCP_PASSIVE_SELECTION_KEY, topic, scope);
 
+    if (isPassive) {
+        receiver->isPassive = psa_tcp_isPassive(isPassive);
+    }
     if (topicProperties != NULL) {
         if(staticConnectUrls == NULL) {
             staticConnectUrls = celix_properties_get(topicProperties, PUBSUB_TCP_STATIC_CONNECT_URLS, NULL);
         }
         if (isPassive == NULL) {
-            isPassive = celix_properties_get(topicProperties, PUBSUB_TCP_PASSIVE_CONFIGURED, NULL);
+            receiver->isPassive = celix_properties_getAsBool(topicProperties, PUBSUB_TCP_PASSIVE_CONFIGURED, false);
         }
         if (passiveKey == NULL) {
             passiveKey = celix_properties_get(topicProperties, PUBSUB_TCP_PASSIVE_KEY, NULL);
         }
     }
-    receiver->isPassive = psa_tcp_isPassive(isPassive);
 
     // Set receiver connection thread timeout.
     // property is in ms, timeout value in us. (convert ms to us).
@@ -362,15 +364,15 @@ void pubsub_tcpTopicReceiver_listConnections(pubsub_tcp_topic_receiver_t *receiv
         }
         free(interface_url);
     } else {
-    hash_map_iterator_t iter = hashMapIterator_construct(receiver->requestedConnections.map);
-    while (hashMapIterator_hasNext(&iter)) {
-        psa_tcp_requested_connection_entry_t *entry = hashMapIterator_nextValue(&iter);
-        char *url = NULL;
-        asprintf(&url, "%s%s", entry->url, entry->statically ? " (static)" : "");
-        if (entry->connected) {
-            celix_arrayList_add(connectedUrls, url);
-        } else {
-            celix_arrayList_add(unconnectedUrls, url);
+        hash_map_iterator_t iter = hashMapIterator_construct(receiver->requestedConnections.map);
+        while (hashMapIterator_hasNext(&iter)) {
+            psa_tcp_requested_connection_entry_t *entry = hashMapIterator_nextValue(&iter);
+            char *url = NULL;
+            asprintf(&url, "%s%s", entry->url, entry->statically ? " (static)" : "");
+            if (entry->connected) {
+                celix_arrayList_add(connectedUrls, url);
+            } else {
+                celix_arrayList_add(unconnectedUrls, url);
             }
         }
     }
@@ -700,7 +702,7 @@ pubsub_admin_receiver_metrics_t *pubsub_tcpTopicReceiver_metrics(pubsub_tcp_topi
                            metrics->msgTypeId);
                 }
             }
-            i +=1 ;
+            i += 1;
         }
     }
     celixThreadMutex_unlock(&receiver->subscribers.mutex);

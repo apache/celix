@@ -47,7 +47,7 @@ celix_bundle_files(pubsub_endpoint_tst
         DESTINATION "META-INF/descriptors"
         )
 celix_bundle_files(pubsub_endpoint_tst
-        meta_data/ping3.properties
+        meta_data/pong3.properties
         DESTINATION "META-INF/topics/sub"
         )
 
@@ -65,7 +65,7 @@ celix_bundle_files(pubsub_loopback
         DESTINATION "META-INF/descriptors"
         )
 celix_bundle_files(pubsub_loopback
-        meta_data/pong3.properties
+        meta_data/ping3.properties
         DESTINATION "META-INF/topics/pub"
         )
 celix_bundle_files(pubsub_loopback
@@ -214,9 +214,9 @@ if (BUILD_PUBSUB_PSA_TCP)
             Celix::pubsub_protocol_wire_v2
             Celix::pubsub_topology_manager
             Celix::pubsub_admin_tcp
-            pubsub_loopback
             pubsub_endpoint_tst
             pubsub_endpoint_sut
+            pubsub_loopback
             )
     target_link_libraries(pubsub_tcp_endpoint_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi)
     target_include_directories(pubsub_tcp_endpoint_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
@@ -250,10 +250,10 @@ if (BUILD_PUBSUB_PSA_TCP)
     setup_target_for_coverage(pstm_deadlock_tcp_test SCAN_DIR ..)
 
     #TCP Endpoint test is disabled because the test is not stable when running on Travis
-    if (ENABLE_PUBSUB_PSA_TCP_ENDPOINT_TEST)
+    #if (ENABLE_PUBSUB_PSA_TCP_ENDPOINT_TEST)
         add_test(NAME pubsub_tcp_endpoint_tests COMMAND pubsub_tcp_endpoint_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_tcp_endpoint_tests,CONTAINER_LOC>)
         setup_target_for_coverage(pubsub_tcp_endpoint_tests SCAN_DIR ..)
-    endif()
+    #endif()
 endif()
 
 if (BUILD_PUBSUB_PSA_WS)
