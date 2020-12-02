@@ -250,10 +250,10 @@ if (BUILD_PUBSUB_PSA_TCP)
     setup_target_for_coverage(pstm_deadlock_tcp_test SCAN_DIR ..)
 
     #TCP Endpoint test is disabled because the test is not stable when running on Travis
-    #if (ENABLE_PUBSUB_PSA_TCP_ENDPOINT_TEST)
+    if (ENABLE_PUBSUB_PSA_TCP_ENDPOINT_TEST)
         add_test(NAME pubsub_tcp_endpoint_tests COMMAND pubsub_tcp_endpoint_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_tcp_endpoint_tests,CONTAINER_LOC>)
         setup_target_for_coverage(pubsub_tcp_endpoint_tests SCAN_DIR ..)
-    #endif()
+    endif()
 endif()
 
 if (BUILD_PUBSUB_PSA_WS)
