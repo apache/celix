@@ -103,6 +103,7 @@ celix_status_t discovery_destroy(discovery_t *discovery) {
 
     celix_logHelper_destroy(discovery->loghelper);
 
+    free(discovery->pImpl);
     free(discovery);
 
     return status;
