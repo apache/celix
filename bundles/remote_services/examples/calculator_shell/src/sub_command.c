@@ -64,7 +64,7 @@ bool subCommand_execute(void *handle, const char *const_line, FILE *out, FILE *e
             data.rc = 0;
             bool called = celix_bundleContext_useService(context, CALCULATOR_SERVICE, &data, calcCallback);
             if (called && data.rc == 0) {
-                fprintf(out, "CALCULATOR_SHELL: Add: %f + %f = %f\n", data.a, data.b, data.result);
+                fprintf(out, "CALCULATOR_SHELL: Sub: %f - %f = %f\n", data.a, data.b, data.result);
             } else if (!called) {
                 fprintf(err, "Sub: calculator service not available\n");
                 ok = false;
