@@ -2,42 +2,21 @@
 
 WARNING: The PubSub Serialization Services are still work in progress. The current PubSubAdmins still work differently.
 
-PubSub serialization is realized by providing a single marker serialization service
-(`pubsub_message_serialization_marker_t`) and multiple message serialization services
+PubSub serialization is realized by providing multiple message serialization services
 (`pubsub_message_serialization_service_t`), a message serialization service per msg type.
 
-Both the serialization marker service and message serialization services must provide a mandatory `serialization.type`.
+The message serialization services must provide a mandatory `serialization.type`.
 This is used to identify the serialization "type" they belong to, for example "json" or "avrobin".
 
-The serialization marker services are used by the PubSubAdmins to find a matching serializer.
+The serialization services are used by the PubSubAdmins to find a matching serializer.
 This is done by checking if a publisher requester or subscriber provider has configured a serialization type and
-if this is not the case select the highest ranking available serialization marker service.
+if this is not the case select the highest ranking available serialization service.
 
-The serialization services are used by the PubSub Admins to send (serialize) and receive (deserialize) messages.
+The serialization services are also used by the PubSub Admins to send (serialize) and receive (deserialize) messages.
 The PubSub Admins realizes the transport for messages and the serialization services serializes the serializations.
 
 Currently the Celix PubSub facilities delivers two serialiation types: "json" and "avrobin".
 <<PubSub Serialization Provider>> can be used to create additional serialization types.
-
-pubsub_message_serialization_marker_t
-[source,c]
-----
-#define PUBSUB_MESSAGE_SERIALIZATION_MARKER_NAME      "pubsub_serialization_marker"
-#define PUBSUB_MESSAGE_SERIALIZATION_MARKER_VERSION   "1.0.0"
-#define PUBSUB_MESSAGE_SERIALIZATION_MARKER_RANGE     "[1,2)"
-
-#define PUBSUB_MESSAGE_SERIALIZATION_MARKER_SERIALIZATION_TYPE_PROPERTY     "serialization.type"
-
-/**
- * Marker which should be registered to mark the presence of this type of
- * serialization service for the different message types.
- *
- * Mandatory property is PUBSUB_SERIALIZATION_MARKER_SERIALIZATION_TYPE_PROPERTY (e.g. json)
- */
-typedef struct pubsub_message_serialization_marker {
-    void *handle;
-} pubsub_message_serialization_marker_t;
-----
 
 pubsub_message_serialization_service_t
 [source,c]
@@ -72,7 +51,7 @@ typedef struct pubsub_message_serialization_service {
 
 == PubSub Serialization Matching
 
-TODO: Explain matching and usage service ranking on serialization marker service.
+TODO: Explain matching and usage service ranking on serialization service.
 
 
 === Match Serializer for Subscriber
