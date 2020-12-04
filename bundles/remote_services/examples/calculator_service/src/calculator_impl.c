@@ -47,7 +47,7 @@ int calculator_sub(calculator_t *calculator __attribute__((unused)), double a, d
     int status = CELIX_SUCCESS;
 
     *result = a - b;
-    printf("CALCULATOR: Sub: %f + %f = %f\n", a, b, *result);
+    printf("CALCULATOR: Sub: %f - %f = %f\n", a, b, *result);
 
     return status;
 }
