@@ -16,23 +16,24 @@
 # under the License.
 
 if(NOT APPLE)
+    include_directories(include)
     #Importing and exporting libraries not (yet) work under OSX.
 
     add_library(hello_testlib SHARED
-        private/src/test
+        src/test
     )
     set_library_version(hello_testlib "4.3.2") # sets target propery VERSION to 4.3.2 and SOVERSION to 4
 
 
     add_library(hello_test2lib SHARED
-            private/src/test2
+            src/test2
     )
     set_library_version(hello_test2lib "3.3.3")
 
     add_celix_bundle(hello_bundle
         VERSION "1.2"
         SOURCES
-            private/src/activator.c
+            src/activator.c
         IMPORT_LIBRARIES hello_test2lib
     )
 
@@ -48,12 +49,20 @@ if(NOT APPLE)
 
     add_celix_container(helloworld_byref
         GROUP hello
-        BUNDLES hello_export hello_bundle ${CELIX_SHELL_BUNDLE} ${CELIX_SHELL_TUI_BUNDLE}
+        BUNDLES 
+            hello_export 
+            hello_bundle
+            Celix::shell
+            Celix::shell_tui
     )
 
     add_celix_container(helloworld_withcopy
         GROUP hello
         COPY #Ensures that bundles are copied in the deploy location
-        BUNDLES hello_export hello_bundle ${SHELL_BUNDLE} ${SHELL_TUI_BUNDLE}
+        BUNDLES
+            hello_export
+            hello_bundle
+            Celix::shell
+            Celix::shell_tui
     )
 endif()

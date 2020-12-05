@@ -33,7 +33,7 @@ if (EXAMPLES)
     add_subdirectory(services_example_cxx)
 
     #TODO refactor export_import
-    #add_subdirectory(export_import)
+    add_subdirectory(export_import)
 
     add_subdirectory(http_example)
     add_subdirectory(embedding)
