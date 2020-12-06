@@ -171,6 +171,21 @@ double celix_difftime(const struct timespec *tBegin, const struct timespec *tEnd
     return ((double)diff.tv_sec) + diff.tv_nsec /  1000000000.0;
 }
 
+struct timespec celix_gettime(clockid_t clockId) {
+    struct timespec t;
+    errno = 0;
+    int rc = clock_gettime(clockId, &t);
+    if (rc != 0) {
+        fprintf(stderr, "Cannot get time from clock_gettime. Error is %s\n", strerror(errno));
+    }
+    return t;
+}
+
+double celix_elapsedtime(clockid_t clockId, struct timespec startTime) {
+    struct timespec now = celix_gettime(clockId);
+    return celix_difftime(&startTime, &now);
+}
+
 char* celix_utils_strdup(const char *str) {
     if (str != NULL) {
         return strndup(str, CELIX_UTILS_MAX_STRLEN);

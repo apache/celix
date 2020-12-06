@@ -555,3 +555,24 @@ TEST_F(CelixBundleContextBundlesTests, bundleInfoTests) {
     celix_bundleContext_unregisterService(ctx, svcId);
     celix_bundleContext_stopTracker(ctx, trackerId);
 }
+
+TEST_F(CelixBundleContextBundlesTests, startStopBundleTrackerAsync) {
+    std::atomic<int> count{0};
+
+    auto cb = [](void* data) {
+        auto* c = static_cast<std::atomic<int>*>(data);
+        (*c)++;
+    };
+
+    celix_bundle_tracking_options_t opts{};
+    opts.trackerCreatedCallbackData = &count;
+    opts.trackerCreatedCallback = cb;
+    long trkId = celix_bundleContext_trackBundlesWithOptionsAsync(ctx, &opts);
+    EXPECT_GE(trkId, 0);
+    celix_bundleContext_waitForAsyncTracker(ctx, trkId);
+    EXPECT_EQ(count.load(), 1); //1x tracker started
+
+    celix_bundleContext_stopTrackerAsync(ctx, trkId, &count, cb);
+    celix_bundleContext_waitForAsyncStopTracker(ctx, trkId);
+    EXPECT_EQ(2, count.load()); //1x tracker started, 1x tracker stopped
+}

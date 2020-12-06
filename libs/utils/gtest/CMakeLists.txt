@@ -18,6 +18,7 @@
 
 add_executable(test_utils
         src/LogUtilsTestSuite.cc
+        src/TimeUtilsTestSuite.cc
 )
 
 target_link_libraries(test_utils PRIVATE Celix::utils GTest::gtest GTest::gtest_main)

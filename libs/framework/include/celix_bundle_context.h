@@ -949,13 +949,23 @@ typedef struct celix_bundle_tracker_options {
      * This is done, because the framework bundle is a special bundle which is generally not needed in the callbacks.
      */
     bool includeFrameworkBundle OPTS_INIT;
+
+    /**
+     * Data for the trackerCreatedCallback.
+     */
+    void *trackerCreatedCallbackData OPTS_INIT;
+
+    /**
+     * The callback called when the tracker has ben created (and is active)
+     */
+    void (*trackerCreatedCallback)(void *trackerCreatedCallbackData) OPTS_INIT;
 } celix_bundle_tracking_options_t;
 
 /**
  * C Macro to create a empty celix_service_filter_options_t type.
  */
 #ifndef __cplusplus
-#define CELIX_EMPTY_BUNDLE_TRACKING_OPTIONS {.callbackHandle = NULL, .onInstalled = NULL, .onStarted = NULL, .onStopped = NULL, .onBundleEvent = NULL, .includeFrameworkBundle = false}
+#define CELIX_EMPTY_BUNDLE_TRACKING_OPTIONS {.callbackHandle = NULL, .onInstalled = NULL, .onStarted = NULL, .onStopped = NULL, .onBundleEvent = NULL, .includeFrameworkBundle = false, .trackerCreatedCallbackData = NULL, .trackerCreatedCallback = NULL}
 #endif
 
 /**

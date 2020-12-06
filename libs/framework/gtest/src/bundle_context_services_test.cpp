@@ -1094,3 +1094,72 @@ TEST_F(CelixBundleContextServicesTests, floodEventLoopTest) {
         celix_bundleContext_stopTrackerAsync(ctx, id, nullptr, nullptr);
     }
 }
+
+
+TEST_F(CelixBundleContextServicesTests, serviceOnDemandWithAsyncRegisterTest) {
+    //NOTE that even though service are registered async, they should be found by a useService call.
+
+    bool called = celix_bundleContext_useService(ctx, "test", nullptr, [](void*, void*){/*nop*/});
+    EXPECT_FALSE(called); //service not available
+
+    struct test_service {
+        void* handle;
+    };
+
+    struct callback_data {
+        celix_bundle_context_t* ctx;
+        long svcId;
+        test_service ts;
+    };
+    callback_data cbData{ctx, -1L, {nullptr}};
+
+    long trkId = celix_bundleContext_trackServiceTrackers(ctx, "test", &cbData, [](void *voidData, const celix_service_tracker_info_t*) {
+        auto* data = static_cast<callback_data*>(voidData);
+        data->svcId = celix_bundleContext_registerServiceAsync(data->ctx, &data->ts, "test", nullptr);
+    }, nullptr);
+
+    called = celix_bundleContext_useService(ctx, "test", nullptr, nullptr);
+    EXPECT_TRUE(called); //service created on demand.
+
+    celix_bundleContext_unregisterService(ctx, cbData.svcId);
+    celix_bundleContext_stopTracker(ctx, trkId);
+}
+
+TEST_F(CelixBundleContextServicesTests, startStopServiceTrackerAsync) {
+    std::atomic<int> count{0};
+
+    auto cb = [](void* data) {
+        auto* c = static_cast<std::atomic<int>*>(data);
+        (*c)++;
+    };
+
+    celix_service_tracking_options_t opts{};
+    opts.trackerCreatedCallbackData = &count;
+    opts.trackerCreatedCallback = cb;
+    long trkId = celix_bundleContext_trackServicesWithOptionsAsync(ctx, &opts);
+    EXPECT_GE(trkId, 0);
+    celix_bundleContext_waitForAsyncTracker(ctx, trkId);
+    EXPECT_EQ(count.load(), 1); //1x tracker started
+
+    celix_bundleContext_stopTrackerAsync(ctx, trkId, &count, cb);
+    celix_bundleContext_waitForAsyncStopTracker(ctx, trkId);
+    EXPECT_EQ(2, count.load()); //1x tracker started, 1x tracker stopped
+}
+
+TEST_F(CelixBundleContextServicesTests, startStopMetaServiceTrackerAsync) {
+    std::atomic<int> count{0};
+
+    auto cb = [](void* data) {
+        auto* c = static_cast<std::atomic<int>*>(data);
+        (*c)++;
+    };
+
+    long trkId = celix_bundleContext_trackServiceTrackersAsync(ctx, "test", nullptr, nullptr, nullptr, &count, cb);
+    EXPECT_GE(trkId, 0);
+    celix_bundleContext_waitForAsyncTracker(ctx, trkId);
+    EXPECT_EQ(count.load(), 1); //1x tracker started
+
+    celix_bundleContext_stopTrackerAsync(ctx, trkId, &count, cb);
+    celix_bundleContext_waitForAsyncStopTracker(ctx, trkId);
+    EXPECT_EQ(2, count.load()); //1x tracker started, 1x tracker stopped
+}
