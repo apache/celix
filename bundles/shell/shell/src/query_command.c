@@ -122,7 +122,7 @@ static void queryCommand_callback(void *handle, const celix_bundle_t *bnd) {
                 queryCommand_printBundleHeader(data->sout, bnd, &printBundleCalled);
                 fprintf(data->sout, "|- Service tracker '%s'\n", entry->filter);
                 if (data->opts->verbose) {
-                    fprintf(data->sout,"   |- nr of tracked services %lu\n", entry->nrOfTrackedServices);
+                    fprintf(data->sout,"   |- nr of tracked services %lu\n", (long unsigned int) entry->nrOfTrackedServices);
                 }
             }
         }
@@ -164,8 +164,8 @@ static void queryCommand_listServices(celix_bundle_context_t *ctx, const struct 
         fprintf(sout, "No results\n");
     } else {
         fprintf(sout, "Query result:\n");
-        fprintf(sout, "|- Provided services found %lu\n", data.nrOfProvidedServicesFound);
-        fprintf(sout, "|- Requested services found %lu\n", data.nrOfRequestedServicesFound);
+        fprintf(sout, "|- Provided services found %lu\n", (long unsigned int) data.nrOfProvidedServicesFound);
+        fprintf(sout, "|- Requested services found %lu\n", (long unsigned int) data.nrOfRequestedServicesFound);
         fprintf(sout, "\n");
     }
 }

@@ -719,7 +719,7 @@ static inline bool dynAvprType_metaEntrySetValue(struct meta_entry * meta_entry_
         const size_t bufsize = sizeof(index) * CHAR_BIT + 1;
         meta_entry_ptr->value = calloc(bufsize, sizeof(char));
 
-        snprintf(meta_entry_ptr->value, bufsize, "%lu", index);
+        snprintf(meta_entry_ptr->value, bufsize, "%lu", (long unsigned int) index);
     }
 
     return true;
