@@ -1144,6 +1144,7 @@ static celix_status_t fw_uninstallBundleEntry(celix_framework_t *framework, celi
             } else {
                 celix_framework_waitForEmptyEventQueue(framework); //to ensure that the uninstall event is triggered and handled
                 bundleArchive_destroy(archive);
+                status = CELIX_DO_IF(status, bundle_closeModules(bnd));
                 status = CELIX_DO_IF(status, bundle_destroy(bnd));
             }
         }
@@ -2679,7 +2680,6 @@ void celix_framework_waitUntilNoEventsForBnd(celix_framework_t* fw, long bndId) 
 void celix_framework_setLogCallback(celix_framework_t* fw, void* logHandle, void (*logFunction)(void* handle, celix_log_level_e level, const char* file, const char *function, int line, const char *format, va_list formatArgs)) {
     celix_frameworkLogger_setLogCallback(fw->logger, logHandle, logFunction);
 }
-
 
 long celix_framework_fireGenericEvent(framework_t* fw, long eventId, long bndId, const char *eventName, void* processData, void (*processCallback)(void *data), void* doneData, void (*doneCallback)(void* doneData)) {
     celix_framework_bundle_entry_t* bndEntry = NULL;
