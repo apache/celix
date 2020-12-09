@@ -262,7 +262,7 @@ celix_properties_t* celix_properties_loadWithStream(FILE *file) {
             if (filebuffer) {
                 size_t rs = fread(filebuffer, sizeof(char), file_size, file);
                 if (rs != file_size) {
-                    fprintf(stderr,"fread read only %lu bytes out of %lu\n", rs, file_size);
+                    fprintf(stderr,"fread read only %lu bytes out of %lu\n", (long unsigned int) rs, (long unsigned int) file_size);
                 }
                 filebuffer[file_size]='\0';
                 line = strtok_r(filebuffer, "\n", &saveptr);
