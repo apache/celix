@@ -53,5 +53,5 @@ TEST_F(TimeUtilsTestSuite, ElapsedTimeTest) {
     std::this_thread::sleep_for(std::chrono::microseconds {10} );
     auto diff = celix_elapsedtime(CLOCK_MONOTONIC, t1);
     EXPECT_GE(diff, 0.00001 /*10 us*/);
-    EXPECT_LT(diff, 0.001 /*1 ms*/);
+    EXPECT_LT(diff, 0.1 /*1/10 s, note do want to rely on accuracy of sleep_for*/);
 }
