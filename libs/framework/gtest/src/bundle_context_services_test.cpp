@@ -490,15 +490,15 @@ TEST_F(CelixBundleContextServicesTests, servicesTrackerTest) {
 }
 
 TEST_F(CelixBundleContextServicesTests, servicesTrackerTestAsync) {
-    int count = 0;
+    std::atomic<int> count {0};
     auto add = [](void *handle, void *svc) {
         ASSERT_TRUE(svc != nullptr);
-        int *c = static_cast<int*>(handle);
+        auto *c = static_cast<std::atomic<int>*>(handle);
         *c += 1;
     };
     auto remove = [](void *handle, void *svc) {
         ASSERT_TRUE(svc != nullptr);
-        int *c = static_cast<int*>(handle);
+        auto *c = static_cast<std::atomic<int>*>(handle);
         *c -= 1;
     };
 
@@ -522,6 +522,8 @@ TEST_F(CelixBundleContextServicesTests, servicesTrackerTestAsync) {
 
     celix_bundleContext_stopTrackerAsync(ctx, trackerId, NULL, NULL);
     celix_bundleContext_unregisterServiceAsync(ctx, svcId2, NULL, NULL);
+
+    celix_framework_waitForEmptyEventQueue(fw);
 }
 
 TEST_F(CelixBundleContextServicesTests, servicesTrackerInvalidArgsTest) {
