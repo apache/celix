@@ -2571,6 +2571,12 @@ bool celix_framework_isBundleActive(celix_framework_t *fw, long bndId) {
     return isActive;
 }
 
+static void celix_framework_waitForBundleEvents(celix_framework_t *fw, long bndId) {
+    if (bndId >= 0 && !celix_framework_isCurrentThreadTheEventLoop(fw)) {
+        celix_framework_waitUntilNoEventsForBnd(fw, bndId);
+    }
+}
+
 long celix_framework_installBundle(celix_framework_t *fw, const char *bundleLoc, bool autoStart) {
     long bundleId = -1;
     bundle_t *bnd = NULL;
@@ -2580,9 +2586,11 @@ long celix_framework_installBundle(celix_framework_t *fw, const char *bundleLoc,
         status = bundle_getBundleId(bnd, &bundleId);
         if (status == CELIX_SUCCESS && autoStart) {
             status = bundle_start(bnd);
+
         }
     }
 
+    celix_framework_waitForBundleEvents(fw, bundleId);
     framework_logIfError(fw->logger, status, NULL, "Failed to install bundle '%s'", bundleLoc);
 
     return bundleId;
@@ -2604,6 +2612,7 @@ bool celix_framework_uninstallBundle(celix_framework_t *fw, long bndId) {
             uninstalled = status == CELIX_SUCCESS;
         }
     }
+    celix_framework_waitForBundleEvents(fw, bndId);
     return uninstalled;
 }
 
@@ -2620,6 +2629,7 @@ bool celix_framework_stopBundle(celix_framework_t *fw, long bndId) {
         }
         fw_bundleEntry_decreaseUseCount(entry);
     }
+    celix_framework_waitForBundleEvents(fw, bndId);
     return stopped;
 }
 
@@ -2634,6 +2644,7 @@ bool celix_framework_startBundle(celix_framework_t *fw, long bndId) {
         }
         fw_bundleEntry_decreaseUseCount(entry);
     }
+    celix_framework_waitForBundleEvents(fw, bndId);
     return started;
 }
 
