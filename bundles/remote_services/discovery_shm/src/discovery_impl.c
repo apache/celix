@@ -107,9 +107,7 @@ celix_status_t discovery_destroy(discovery_t *discovery) {
 
 	celixThreadMutex_destroy(&discovery->listenerReferencesMutex);
 
-
-
-
+    free(discovery->pImpl);
 	free(discovery);
 
 	return status;
