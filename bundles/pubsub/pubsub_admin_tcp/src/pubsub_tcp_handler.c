@@ -54,7 +54,9 @@
 #define MAX_DEFAULT_BUFFER_SIZE 4u
 
 #if defined(__APPLE__)
+#ifndef MSG_NOSIGNAL
 #define MSG_NOSIGNAL (0)
+#endif
 #endif
 
 #define L_DEBUG(...) \
