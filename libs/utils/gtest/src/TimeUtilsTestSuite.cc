@@ -45,7 +45,7 @@ TEST_F(TimeUtilsTestSuite, DiffTimeTest) {
     auto t2 = celix_gettime(CLOCK_MONOTONIC);
     auto diff = celix_difftime(&t1, &t2);
     EXPECT_GE(diff, 0.00001 /*10 us*/);
-    EXPECT_LT(diff, 0.001 /*1 ms*/);
+    EXPECT_LT(diff, 0.01 /*1 ms*/);
 }
 
 TEST_F(TimeUtilsTestSuite, ElapsedTimeTest) {
