@@ -87,6 +87,7 @@ static void callCommand(std::shared_ptr<celix_bundle_context_t>& ctx, const char
 TEST_F(ShellTestSuite, testAllCommandsAreCallable) {
     callCommand(ctx, "non-existing", false);
     callCommand(ctx, "install a-bundle-loc.zip", false);
+    callCommand(ctx, "help", true);
     callCommand(ctx, "help lb", false); //note need namespace
     callCommand(ctx, "help celix::lb", true);
     callCommand(ctx, "help non-existing-command", false);

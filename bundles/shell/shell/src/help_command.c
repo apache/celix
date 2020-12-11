@@ -57,6 +57,7 @@ static void printHelp(void *handle, void *svc) {
         for (i = 0; i < arrayList_size(commands); i++) {
             char *name = arrayList_get(commands, i);
             fprintf(out, "%s\n", name);
+            free(name);
         }
         fprintf(out, "\nUse 'help <command-name>' for more information.\n");
         celix_arrayList_destroy(commands);
