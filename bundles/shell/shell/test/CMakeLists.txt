@@ -18,7 +18,7 @@
 find_package(CppUTest REQUIRED)
 
 add_executable(test_shell
-        src/shell_tests.cpp
+        src/ShellTestSuite.cpp
 )
 
 target_link_libraries(test_shell PRIVATE Celix::framework CURL::libcurl Celix::shell_api GTest::gtest GTest::gtest_main)
