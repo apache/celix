@@ -37,7 +37,6 @@
 #include "pubsub_interceptors_handler.h"
 #include <celix_api.h>
 
-#define MAX_EPOLL_EVENTS     16
 #ifndef UUID_STR_LEN
 #define UUID_STR_LEN  37
 #endif
@@ -106,7 +105,6 @@ typedef struct psa_tcp_subscriber_metrics_entry_t {
     double averageDelayInSeconds;
     double maxDelayInSeconds;
     double minDelayInSeconds;
-    unsigned int lastSeqNr;
     unsigned long nrOfMissingSeqNumbers;
 } psa_tcp_subscriber_metrics_entry_t;
 
@@ -484,7 +482,7 @@ static void pubsub_tcpTopicReceiver_addSubscriber(void *handle, void *svc, const
     celixThreadMutex_unlock(&receiver->subscribers.mutex);
 }
 
-static void pubsub_tcpTopicReceiver_removeSubscriber(void *handle, void *svc, const celix_properties_t *props,
+static void pubsub_tcpTopicReceiver_removeSubscriber(void *handle, void *svc __attribute__((unused)), const celix_properties_t *props,
                                                      const celix_bundle_t *bnd) {
     pubsub_tcp_topic_receiver_t *receiver = handle;
 
@@ -519,7 +517,7 @@ static void pubsub_tcpTopicReceiver_removeSubscriber(void *handle, void *svc, co
 
 static inline void
 processMsgForSubscriberEntry(pubsub_tcp_topic_receiver_t *receiver, psa_tcp_subscriber_entry_t *entry,
-                             const pubsub_protocol_message_t *message, bool *releaseMsg, struct timespec *receiveTime) {
+                             const pubsub_protocol_message_t *message, bool *releaseMsg, struct timespec *receiveTime __attribute__((unused))) {
     //NOTE receiver->subscribers.mutex locked
     pubsub_msg_serializer_t *msgSer = hashMap_get(entry->msgTypes, (void *) (uintptr_t) (message->header.msgId));
     bool monitor = receiver->metricsEnabled;

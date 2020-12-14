@@ -1404,7 +1404,7 @@ void pubsub_tcpHandler_handler(pubsub_tcpHandler_t *handle) {
     if (handle->efd >= 0) {
         int nof_events = 0;
         struct epoll_event events[MAX_EVENTS];
-        nof_events = epoll_wait(handle->efd, events, MAX_EVENTS, handle->timeout);
+        nof_events = epoll_wait(handle->efd, events, MAX_EVENTS, (int)handle->timeout);
         if (nof_events < 0) {
             if ((errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)) {
             } else

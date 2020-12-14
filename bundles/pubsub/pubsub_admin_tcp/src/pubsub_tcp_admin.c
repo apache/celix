@@ -18,11 +18,6 @@
  */
 
 #include <memory.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <ifaddrs.h>
 #include <pubsub_endpoint.h>
 #include <pubsub_serializer.h>
 #include <ip_utils.h>
@@ -51,7 +46,6 @@ struct pubsub_tcp_admin {
     char *ipAddress;
 
     unsigned int basePort;
-    unsigned int maxPort;
 
     double qosSampleScore;
     double qosControlScore;
@@ -119,9 +113,7 @@ pubsub_tcp_admin_t *pubsub_tcpAdmin_create(celix_bundle_context_t *ctx, celix_lo
     psa->verbose = celix_bundleContext_getPropertyAsBool(ctx, PUBSUB_TCP_VERBOSE_KEY, PUBSUB_TCP_VERBOSE_DEFAULT);
     psa->fwUUID = celix_bundleContext_getProperty(ctx, OSGI_FRAMEWORK_FRAMEWORK_UUID, NULL);
     long basePort = celix_bundleContext_getPropertyAsLong(ctx, PSA_TCP_BASE_PORT, PSA_TCP_DEFAULT_BASE_PORT);
-    long maxPort = celix_bundleContext_getPropertyAsLong(ctx, PSA_TCP_MAX_PORT, PSA_TCP_DEFAULT_MAX_PORT);
     psa->basePort = (unsigned int) basePort;
-    psa->maxPort = (unsigned int) maxPort;
     psa->defaultScore = celix_bundleContext_getPropertyAsDouble(ctx, PSA_TCP_DEFAULT_SCORE_KEY, PSA_TCP_DEFAULT_SCORE);
     psa->qosSampleScore = celix_bundleContext_getPropertyAsDouble(ctx, PSA_TCP_QOS_SAMPLE_SCORE_KEY,
                                                                   PSA_TCP_DEFAULT_QOS_SAMPLE_SCORE);
@@ -460,10 +452,6 @@ celix_status_t pubsub_tcpAdmin_setupTopicSender(void *handle, const char *scope,
     celixThreadMutex_unlock(&psa->protocols.mutex);
     celixThreadMutex_unlock(&psa->serializers.mutex);
 
-    if (sender != NULL && newEndpoint != NULL) {
-        //TODO connect endpoints to sender, NOTE is this needed for a tcp topic sender?
-    }
-
     if (newEndpoint != NULL && outPublisherEndpoint != NULL) {
         *outPublisherEndpoint = newEndpoint;
     }
@@ -485,7 +473,6 @@ celix_status_t pubsub_tcpAdmin_teardownTopicSender(void *handle, const char *sco
         char *mapKey = hashMapEntry_getKey(entry);
         pubsub_tcp_topic_sender_t *sender = hashMap_remove(psa->topicSenders.map, key);
         free(mapKey);
-        //TODO disconnect endpoints to sender. note is this needed for a tcp topic sender?
         pubsub_tcpTopicSender_destroy(sender);
     } else {
         L_ERROR("[PSA TCP] Cannot teardown TopicSender with scope/topic %s/%s. Does not exists",

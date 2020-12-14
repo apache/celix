@@ -33,7 +33,6 @@
 #include "pubsub_tcp_common.h"
 #include <uuid/uuid.h>
 #include "celix_constants.h"
-#include <signal.h>
 #include <pubsub_utils.h>
 #include "pubsub_interceptors_handler.h"
 
@@ -350,11 +349,11 @@ bool pubsub_tcpTopicSender_isPassive(pubsub_tcp_topic_sender_t *sender) {
     return sender->isPassive;
 }
 
-void pubsub_tcpTopicSender_connectTo(pubsub_tcp_topic_sender_t *sender, const celix_properties_t *endpoint) {
+void pubsub_tcpTopicSender_connectTo(pubsub_tcp_topic_sender_t *sender __attribute__((unused)), const celix_properties_t *endpoint __attribute__((unused))) {
     //TODO subscriber count -> topic info
 }
 
-void pubsub_tcpTopicSender_disconnectFrom(pubsub_tcp_topic_sender_t *sender, const celix_properties_t *endpoint) {
+void pubsub_tcpTopicSender_disconnectFrom(pubsub_tcp_topic_sender_t *sender __attribute__((unused)), const celix_properties_t *endpoint __attribute__((unused))) {
     //TODO
 }
 
