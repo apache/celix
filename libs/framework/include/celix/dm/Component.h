@@ -25,6 +25,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <atomic>
 
 namespace celix { namespace dm {
 
@@ -34,7 +35,7 @@ namespace celix { namespace dm {
             this->cCmp = celix_dmComponent_create(this->context, name.c_str());
             celix_dmComponent_setImplementation(this->cCmp, this);
         }
-        virtual ~BaseComponent() = default;
+        virtual ~BaseComponent() noexcept;
 
         BaseComponent(const BaseComponent&) = delete;
         BaseComponent& operator=(const BaseComponent&) = delete;
@@ -58,7 +59,7 @@ namespace celix { namespace dm {
         celix_bundle_context_t* context;
         celix_dependency_manager_t* cDepMan;
         celix_dm_component_t *cCmp;
-        bool cmpAddedToDepMan{false};
+        std::atomic<bool> cmpAddedToDepMan{false};
     };
 
 

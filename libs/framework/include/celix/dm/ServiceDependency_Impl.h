@@ -22,13 +22,21 @@
 #include <cstring>
 #include "celix_constants.h"
 #include "celix_properties.h"
+#include "ServiceDependency.h"
+
 
 using namespace celix::dm;
 
 inline void BaseServiceDependency::runBuild() {
-    if (!depAddedToCmp) {
+    bool alreadyAdded = depAddedToCmp.exchange(true);
+    if (!alreadyAdded) {
         celix_dmComponent_addServiceDependency(cCmp, cServiceDep);
-        depAddedToCmp = true;
+    }
+}
+
+inline BaseServiceDependency::~BaseServiceDependency() {
+    if (!depAddedToCmp) {
+        celix_dmServiceDependency_destroy(cServiceDep);
     }
 }
 

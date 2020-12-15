@@ -22,13 +22,13 @@
 
 #include "celix_api.h"
 
-class DependencyManagerTests : public ::testing::Test {
+class DependencyManagerTestSuite : public ::testing::Test {
 public:
     celix_framework_t* fw = nullptr;
     celix_bundle_context_t *ctx = nullptr;
     celix_properties_t *properties = nullptr;
 
-    DependencyManagerTests() {
+    DependencyManagerTestSuite() {
         properties = properties_create();
         properties_set(properties, "LOGHELPER_ENABLE_STDOUT_FALLBACK", "true");
         properties_set(properties, "org.osgi.framework.storage.clean", "onFirstInit");
@@ -38,17 +38,17 @@ public:
         ctx = framework_getContext(fw);
     }
 
-    ~DependencyManagerTests() override {
+    ~DependencyManagerTestSuite() override {
         celix_frameworkFactory_destroyFramework(fw);
     }
 
-    DependencyManagerTests(DependencyManagerTests&&) = delete;
-    DependencyManagerTests(const DependencyManagerTests&) = delete;
-    DependencyManagerTests& operator=(DependencyManagerTests&&) = delete;
-    DependencyManagerTests& operator=(const DependencyManagerTests&) = delete;
+    DependencyManagerTestSuite(DependencyManagerTestSuite&&) = delete;
+    DependencyManagerTestSuite(const DependencyManagerTestSuite&) = delete;
+    DependencyManagerTestSuite& operator=(DependencyManagerTestSuite&&) = delete;
+    DependencyManagerTestSuite& operator=(const DependencyManagerTestSuite&) = delete;
 };
 
-TEST_F(DependencyManagerTests, DmCreateComponent) {
+TEST_F(DependencyManagerTestSuite, DmCreateComponent) {
     auto *mng = celix_bundleContext_getDependencyManager(ctx);
     auto *cmp = celix_dmComponent_create(ctx, "test1");
     celix_dependencyManager_add(mng, cmp);
@@ -63,7 +63,7 @@ TEST_F(DependencyManagerTests, DmCreateComponent) {
     ASSERT_TRUE(celix_dependencyManager_allComponentsActive(mng));
 }
 
-TEST_F(DependencyManagerTests, TestCheckActive) {
+TEST_F(DependencyManagerTestSuite, TestCheckActive) {
     auto *mng = celix_bundleContext_getDependencyManager(ctx);
     auto *cmp = celix_dmComponent_create(ctx, "test1");
 
@@ -81,7 +81,7 @@ class TestComponent {
 
 };
 
-TEST_F(DependencyManagerTests, OnlyActiveAfterBuildCheck) {
+TEST_F(DependencyManagerTestSuite, OnlyActiveAfterBuildCheck) {
     celix::dm::DependencyManager dm{ctx};
     EXPECT_EQ(0, dm.getNrOfComponents());
 
@@ -98,7 +98,7 @@ TEST_F(DependencyManagerTests, OnlyActiveAfterBuildCheck) {
     EXPECT_EQ(0, dm.getNrOfComponents()); //dm cleared so no components
 }
 
-TEST_F(DependencyManagerTests, StartDmWillBuildCmp) {
+TEST_F(DependencyManagerTestSuite, StartDmWillBuildCmp) {
     celix::dm::DependencyManager dm{ctx};
     EXPECT_EQ(0, dm.getNrOfComponents());
 
@@ -128,7 +128,7 @@ public:
     }
 };
 
-TEST_F(DependencyManagerTests, CreateComponentVariant) {
+TEST_F(DependencyManagerTestSuite, CreateComponentVariant) {
     celix::dm::DependencyManager dm{ctx};
 
     dm.createComponent<Cmp1>().addInterface<TestService>(); //lazy
@@ -144,7 +144,7 @@ TEST_F(DependencyManagerTests, CreateComponentVariant) {
     dm.start();
 }
 
-TEST_F(DependencyManagerTests, AddSvcProvideAfterBuild) {
+TEST_F(DependencyManagerTestSuite, AddSvcProvideAfterBuild) {
     celix::dm::DependencyManager dm{ctx};
     EXPECT_EQ(0, dm.getNrOfComponents());
 
@@ -172,7 +172,7 @@ TEST_F(DependencyManagerTests, AddSvcProvideAfterBuild) {
     EXPECT_EQ(svcId, -1); //cleared -> not found
 }
 
-TEST_F(DependencyManagerTests, BuildSvcProvide) {
+TEST_F(DependencyManagerTestSuite, BuildSvcProvide) {
     celix::dm::DependencyManager dm{ctx};
     EXPECT_EQ(0, dm.getNrOfComponents());
 
@@ -216,7 +216,7 @@ TEST_F(DependencyManagerTests, BuildSvcProvide) {
     EXPECT_EQ(svcId, -1); //cleared -> not found
 }
 
-TEST_F(DependencyManagerTests, AddSvcDepAfterBuild) {
+TEST_F(DependencyManagerTestSuite, AddSvcDepAfterBuild) {
     celix::dm::DependencyManager dm{ctx};
     EXPECT_EQ(0, dm.getNrOfComponents());
 
@@ -256,4 +256,17 @@ TEST_F(DependencyManagerTests, AddSvcDepAfterBuild) {
 
     celix_bundleContext_unregisterService(ctx, svcId);
     celix_bundleContext_unregisterService(ctx, svcId2);
+}
+
+TEST_F(DependencyManagerTestSuite, InCompleteBuildShouldNotLeak) {
+    celix::dm::DependencyManager dm{ctx};
+    dm.createComponent<TestComponent>(std::make_shared<TestComponent>(), "test1"); //note not build
+
+    auto& cmp2 = dm.createComponent<Cmp1>(std::make_shared<Cmp1>(), "test2").build();
+    cmp2.createCServiceDependency<TestService>("TestService").setFilter("(key=value"); //note not build
+    cmp2.createServiceDependency<TestService>().setFilter("(key=value)"); //note not build
+
+    TestService svc{nullptr};
+    cmp2.createProvidedCService(&svc, "CTestService").addProperty("key1", "val1"); //note not build
+    cmp2.createProvidedService<TestService>().setVersion("1.0.0").build(); //note not build
 }

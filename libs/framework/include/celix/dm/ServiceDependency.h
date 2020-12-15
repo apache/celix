@@ -29,6 +29,7 @@
 #include <memory>
 #include <iostream>
 #include <functional>
+#include <atomic>
 
 namespace celix { namespace dm {
 
@@ -43,7 +44,7 @@ namespace celix { namespace dm {
     private:
         celix_dm_component_t* cCmp;
         bool valid;
-        bool depAddedToCmp{false};
+        std::atomic<bool> depAddedToCmp{false};
     protected:
         celix_dm_service_dependency_t *cServiceDep {nullptr};
 
@@ -68,7 +69,7 @@ namespace celix { namespace dm {
             }
         }
 
-        virtual ~BaseServiceDependency() = default;
+        virtual ~BaseServiceDependency() noexcept;
 
         BaseServiceDependency(const BaseServiceDependency&) = delete;
         BaseServiceDependency& operator=(const BaseServiceDependency&) = delete;

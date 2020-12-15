@@ -28,6 +28,7 @@
 #include <iomanip>
 #include <type_traits>
 #include <algorithm>
+#include <atomic>
 
 using namespace celix::dm;
 
@@ -44,9 +45,15 @@ inline void BaseComponent::runBuild() {
         dep->runBuild();
     }
 
-    if (!cmpAddedToDepMan) {
+    bool alreadyAdded = cmpAddedToDepMan.exchange(true);
+    if (!alreadyAdded) {
         celix_dependencyManager_add(cDepMan, cCmp);
-        cmpAddedToDepMan = true;
+    }
+}
+
+inline BaseComponent::~BaseComponent() noexcept {
+    if (!cmpAddedToDepMan) {
+        celix_dmComponent_destroy(cCmp);
     }
 }
 
