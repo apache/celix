@@ -34,7 +34,7 @@ inline void BaseServiceDependency::runBuild() {
     }
 }
 
-inline BaseServiceDependency::~BaseServiceDependency() {
+inline BaseServiceDependency::~BaseServiceDependency() noexcept {
     if (!depAddedToCmp) {
         celix_dmServiceDependency_destroy(cServiceDep);
     }
