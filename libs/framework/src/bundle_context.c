@@ -84,9 +84,6 @@ celix_status_t bundleContext_destroy(bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (context != NULL) {
-	    celixThreadMutex_lock(&context->mutex);
-
-
 	    assert(hashMap_size(context->bundleTrackers) == 0);
         hashMap_destroy(context->bundleTrackers, false, false);
         assert(hashMap_size(context->serviceTrackers) == 0);
@@ -99,7 +96,6 @@ celix_status_t bundleContext_destroy(bundle_context_pt context) {
 
         //NOTE still present service registrations will be cleared during bundle stop in the
 	    //service registry (serviceRegistry_clearServiceRegistrations).
-        celixThreadMutex_unlock(&context->mutex);
 	    celixThreadMutex_destroy(&context->mutex);
 
 	    if (context->mng != NULL) {
