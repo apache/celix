@@ -1233,6 +1233,7 @@ char *pubsub_tcpHandler_get_interface_url(pubsub_tcpHandler_t *handle) {
 // get interface URL
 //
 char *pubsub_tcpHandler_get_connection_url(pubsub_tcpHandler_t *handle) {
+    celixThreadRwlock_writeLock(&handle->dbLock);
     hash_map_iterator_t iter =
             hashMapIterator_construct(handle->connection_url_map);
     char *url = NULL;
@@ -1253,6 +1254,7 @@ char *pubsub_tcpHandler_get_connection_url(pubsub_tcpHandler_t *handle) {
             }
         }
     }
+    celixThreadRwlock_unlock(&handle->dbLock);
     return url;
 }
 
