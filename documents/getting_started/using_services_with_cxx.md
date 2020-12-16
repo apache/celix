@@ -265,7 +265,8 @@ BarActivator::BarActivator(std::shared_ptr<DependencyManager> mng) {
     mng->createComponent(std::move(bar))  //using a pointer a instance. Also supported is lazy initialization (default constructor needed) or a rvalue reference (move)
         .addInterface<IAnotherExample>(IANOTHER_EXAMPLE_VERSION, props)
         .addCInterface(&this->cExample, EXAMPLE_NAME, EXAMPLE_VERSION, cProps)
-        .setCallbacks(&Bar::init, &Bar::start, &Bar::stop, &Bar::deinit);
+        .setCallbacks(&Bar::init, &Bar::start, &Bar::stop, &Bar::deinit)
+        .build();
 }
 
 CELIX_GEN_CXX_BUNDLE_ACTIVATOR(BarActivator)
@@ -392,6 +393,8 @@ FooActivator::FooActivator(std::shared_ptr<DependencyManager> mng) {
             .setRequired(false)
             .setVersionRange(EXAMPLE_CONSUMER_RANGE)
             .setCallbacks(&Foo::setExample);
+ 
+    cmp.build();    
 }
 
 CELIX_GEN_CXX_BUNDLE_ACTIVATOR(FooActivator)
@@ -552,6 +555,8 @@ BazActivator::BazActivator(std::shared_ptr<DependencyManager> mng) {
             .setStrategy(DependencyUpdateStrategy::locking)
             .setVersionRange(EXAMPLE_CONSUMER_RANGE)
             .setCallbacks(&Baz::addExample, &Baz::removeExample);
+ 
+    cmp.build();
 }
 
 CELIX_GEN_CXX_BUNDLE_ACTIVATOR(BazActivator)

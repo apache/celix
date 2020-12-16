@@ -92,7 +92,8 @@ public:
                 .setFilter("(topic=deadlock)(scope=scope2)")
                 .setStrategy(celix::dm::DependencyUpdateStrategy::suspend)
                 .setCallbacks([](const pubsub_publisher_t *, Properties&&) { std::cout << "success\n"; })
-                .setRequired(true);
+                .setRequired(true)
+                .build();
     }
 
     int init() {
