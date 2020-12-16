@@ -69,19 +69,19 @@ namespace celix { namespace dm {
         ProvidedService<T,I>& setProperties(celix::dm::Properties);
 
         /**
-         * Add a single property to the service properties.
+         * Add/override a single property to the service properties.
          * U should support std::to_string.
          */
         template<typename U>
         ProvidedService<T,I>& addProperty(const std::string& key, const U& value);
 
         /**
-         * Add a single property to the service properties.
+         * Add/override a single property to the service properties.
          */
         ProvidedService<T,I>& addProperty(const std::string& key, const char* value);
 
         /**
-         * Add a single property to the service properties.
+         * Add/override a single property to the service properties.
          */
         ProvidedService<T,I>& addProperty(const std::string& key, const std::string& value);
 
