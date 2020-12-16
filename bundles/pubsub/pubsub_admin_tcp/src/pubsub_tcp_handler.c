@@ -95,7 +95,6 @@ typedef struct psa_tcp_connection_entry {
     void *writeMetaBuffer;
     unsigned int retryCount;
     celix_thread_mutex_t writeMutex;
-    celix_thread_mutex_t readMutex;
     struct msghdr readMsg;
 } psa_tcp_connection_entry_t;
 
@@ -311,7 +310,6 @@ pubsub_tcpHandler_createEntry(pubsub_tcpHandler_t *handle, int fd, char *url, ch
         entry = calloc(sizeof(psa_tcp_connection_entry_t), 1);
         entry->fd = fd;
         celixThreadMutex_create(&entry->writeMutex, NULL);
-        celixThreadMutex_create(&entry->readMutex, NULL);
         if (url) {
             entry->url = strndup(url, 1024 * 1024);
         }
@@ -372,7 +370,6 @@ pubsub_tcpHandler_freeEntry(psa_tcp_connection_entry_t *entry) {
         free(entry->writeMetaBuffer);
         free(entry->readMsg.msg_iov);
         celixThreadMutex_destroy(&entry->writeMutex);
-        celixThreadMutex_destroy(&entry->readMutex);
         free(entry);
     }
 }
@@ -617,7 +614,9 @@ int pubsub_tcpHandler_listen(pubsub_tcpHandler_t *handle, char *url) {
 }
 
 //
-// Setup receive buffer size
+// Setup default receive buffer size.
+// This size is used to allocated the initial read buffer, to avoid receive buffer reallocting.
+// The default receive buffer is allocated in the createEntry when the connection is establised
 //
 int pubsub_tcpHandler_setReceiveBufferSize(pubsub_tcpHandler_t *handle, unsigned int size) {
     if (handle != NULL) {
@@ -929,7 +928,6 @@ int pubsub_tcpHandler_read(pubsub_tcpHandler_t *handle, int fd) {
         celixThreadRwlock_unlock(&handle->dbLock);
         return -1;
     }
-    celixThreadMutex_lock(&entry->readMutex);
     long int nbytes = 0;
     // if not yet enough bytes are received the header can not be read
     if (pubsub_tcpHandler_readHeader(handle, fd, entry, &nbytes)) {
@@ -952,7 +950,6 @@ int pubsub_tcpHandler_read(pubsub_tcpHandler_t *handle, int fd) {
             nbytes = 0; //Return 0 as indicator to close the connection
         }
     }
-    celixThreadMutex_unlock(&entry->readMutex);
     celixThreadRwlock_unlock(&handle->dbLock);
     return (int)nbytes;
 }
@@ -978,19 +975,6 @@ int pubsub_tcpHandler_addReceiverConnectionCallback(pubsub_tcpHandler_t *handle,
     celixThreadRwlock_unlock(&handle->dbLock);
     return result;
 }
-
-int pubsub_tcpHandler_addAcceptConnectionCallback(pubsub_tcpHandler_t *handle, void *payload,
-                                                  pubsub_tcpHandler_acceptConnectMessage_callback_t connectMessageCallback,
-                                                  pubsub_tcpHandler_acceptConnectMessage_callback_t disconnectMessageCallback) {
-    int result = 0;
-    celixThreadRwlock_writeLock(&handle->dbLock);
-    handle->acceptConnectMessageCallback = connectMessageCallback;
-    handle->acceptDisconnectMessageCallback = disconnectMessageCallback;
-    handle->acceptConnectPayload = payload;
-    celixThreadRwlock_unlock(&handle->dbLock);
-    return result;
-}
-
 
 //
 // Write large data to TCP. .

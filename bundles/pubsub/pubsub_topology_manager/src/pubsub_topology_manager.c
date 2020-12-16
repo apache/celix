@@ -39,7 +39,7 @@
 #include "pubsub_admin.h"
 #include "../../pubsub_admin_udp_mc/src/pubsub_udpmc_topic_sender.h"
 
-#define PSTM_PSA_HANDLING_DEFAULT_SLEEPTIME       250 // 250 msecond
+#define PSTM_PSA_HANDLING_SLEEPTIME_IN_SECONDS       30L
 
 #ifndef UUID_STR_LEN
 #define UUID_STR_LEN    37
@@ -79,11 +79,11 @@ celix_status_t pubsub_topologyManager_create(celix_bundle_context_t *context, ce
 
     manager->loghelper = logHelper;
     manager->verbose = celix_bundleContext_getPropertyAsBool(context, PUBSUB_TOPOLOGY_MANAGER_VERBOSE_KEY, PUBSUB_TOPOLOGY_MANAGER_DEFAULT_VERBOSE);
-    manager->handlingThreadSleepTime = celix_bundleContext_getPropertyAsLong(context, PUBSUB_TOPOLOGY_MANAGER_HANDLING_THREAD_SLEEPTIME_MS_KEY, PSTM_PSA_HANDLING_DEFAULT_SLEEPTIME);
-    unsigned handlingThreadSleepTime = celix_bundleContext_getPropertyAsLong(context, PUBSUB_TOPOLOGY_MANAGER_HANDLING_THREAD_SLEEPTIME_KEY, -1L);
+    unsigned handlingThreadSleepTime = celix_bundleContext_getPropertyAsLong(context, PUBSUB_TOPOLOGY_MANAGER_HANDLING_THREAD_SLEEPTIME_SECONDS_KEY, PSTM_PSA_HANDLING_SLEEPTIME_IN_SECONDS);
     if ( handlingThreadSleepTime >= 0 ) {
         manager->handlingThreadSleepTime = handlingThreadSleepTime * 1000L;
     }
+    manager->handlingThreadSleepTime = celix_bundleContext_getPropertyAsLong(context, PUBSUB_TOPOLOGY_MANAGER_HANDLING_THREAD_SLEEPTIME_MS_KEY,  manager->handlingThreadSleepTime);
     manager->psaHandling.running = true;
     celixThread_create(&manager->psaHandling.thread, NULL, pstm_psaHandlingThread, manager);
     celixThread_setName(&manager->psaHandling.thread, "PubSub TopologyManager");
