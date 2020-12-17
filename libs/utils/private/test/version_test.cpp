@@ -401,3 +401,14 @@ TEST(version,semanticCompatibility) {
     version_destroy(incompatible_user_by_minor);
 }
 
+TEST(version, compareEmptyAndNullQualifier) {
+    //nullptr or "" qualifier should be the same
+    auto* v1 = celix_version_createVersion(0, 0, 0, nullptr);
+    auto* v2 = celix_version_createVersion(0, 0, 0, "");
+    CHECK_EQUAL(0, celix_version_compareTo(v1, v1));
+    CHECK_EQUAL(0, celix_version_compareTo(v1, v2));
+    CHECK_EQUAL(0, celix_version_compareTo(v2, v2));
+
+    celix_version_destroy(v1);
+    celix_version_destroy(v2);
+}

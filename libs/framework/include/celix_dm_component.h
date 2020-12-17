@@ -47,10 +47,16 @@ typedef enum celix_dm_component_state_enum {
 typedef int (*celix_dm_cmp_lifecycle_fpt)(void *userData);
 
 /**
- * Creates a DM Component
+ * Creates a DM Component with a random generated UUID.
  * Caller has ownership.
  */
 celix_dm_component_t* celix_dmComponent_create(celix_bundle_context_t *context, const char* name);
+
+/**
+ * Creates a DM Component with a provided UUID.
+ * Caller has ownership.
+ */
+celix_dm_component_t* celix_dmComponent_createWithUUID(celix_bundle_context_t *context, const char* name, const char* UUID);
 
 /**
  * Destroys a DM Component

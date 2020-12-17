@@ -18,9 +18,11 @@
 
 add_executable(test_utils
         src/LogUtilsTestSuite.cc
+        src/VersionRangeTestSuite.cc
 )
 
 target_link_libraries(test_utils PRIVATE Celix::utils GTest::gtest GTest::gtest_main)
+target_include_directories(test_utils PRIVATE ../src) #for version_private (needs refactoring of test)
 
 add_test(NAME test_utils COMMAND test_utils)
 setup_target_for_coverage(test_utils SCAN_DIR ..)

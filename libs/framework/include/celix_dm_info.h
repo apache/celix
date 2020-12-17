@@ -40,7 +40,9 @@ typedef struct celix_dm_interface_info_struct dm_interface_info_t;  //deprecated
 typedef struct celix_dm_interface_info_struct celix_dm_interface_info_t;
 
 struct celix_dm_service_dependency_info_struct {
+    char *serviceName;
     char *filter;
+    char *versionRange;
     bool available;
     bool required;
     size_t count;

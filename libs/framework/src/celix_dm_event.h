@@ -17,31 +17,31 @@
  * under the License.
  */
 
-#ifndef REQUIREMENT_H_
-#define REQUIREMENT_H_
+#ifndef CELIX_DM_EVENT_H_
+#define CELIX_DM_EVENT_H_
 
-typedef struct requirement *requirement_pt;
-
-#include "capability.h"
-#include "hash_map.h"
-#include "celix_version_range.h"
-#include "version_range.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-celix_status_t requirement_create(hash_map_pt directives, hash_map_pt attributes, requirement_pt *requirement);
+#include "celix_types.h"
+#include "celix_properties.h"
 
-celix_status_t requirement_destroy(requirement_pt requirement);
+typedef enum celix_dm_event_type {
+	CELIX_DM_EVENT_SVC_ADD,
+	CELIX_DM_EVENT_SVC_REM,
+    CELIX_DM_EVENT_SVC_SET
+} celix_dm_event_type_e;
 
-celix_status_t requirement_getVersionRange(requirement_pt requirement, celix_version_range_t **range);
-
-celix_status_t requirement_getTargetName(requirement_pt requirement, const char **targetName);
-
-celix_status_t requirement_isSatisfied(requirement_pt requirement, capability_pt capability, bool *inRange);
+typedef struct celix_dm_event {
+	celix_dm_service_dependency_t* dep;
+    celix_dm_event_type_e eventType;
+    void* svc;
+    const celix_properties_t* props;
+} celix_dm_event_t;
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* REQUIREMENT_H_ */
+#endif /* CELIX_DM_EVENT_H_ */

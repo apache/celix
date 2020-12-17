@@ -46,12 +46,12 @@ typedef struct celix_dm_service_dependency_callback_options {
 	celix_dm_service_update_fp set;
 	celix_dm_service_update_fp add;
 	celix_dm_service_update_fp remove;
-	celix_dm_service_swap_fp swap;
+	celix_dm_service_swap_fp swap; //not used, deprecated
 
 	celix_dm_service_update_with_props_fp setWithProps;
 	celix_dm_service_update_with_props_fp addWithProps;
 	celix_dm_service_update_with_props_fp removeWithProps;
-	celix_dm_service_swap_with_props_fp swapWithProps;
+	celix_dm_service_swap_with_props_fp swapWithProps; //not used, deprecated
 } celix_dm_service_dependency_callback_options_t;
 
 #define CELIX_EMPTY_DM_SERVICE_DEPENDENCY_CALLBACK_OPTIONS { .set = NULL, \
@@ -66,6 +66,9 @@ typedef struct celix_dm_service_dependency_callback_options {
 /**
  * Create a service dependency.
  * Caller has ownership.
+ *
+ * \warning The dmServiceDependency is not thread safe when constructing or modifying.
+ *          The handling of service updates is thread safe.
  */
 celix_dm_service_dependency_t* celix_dmServiceDependency_create(void);
 

@@ -110,9 +110,6 @@ if (ENABLE_TESTING)
     add_executable(filter_test private/test/filter_test.cpp)
     target_link_libraries(filter_test ${CppUTest_LIBRARY}  Celix::utils pthread)
 
-    add_executable(version_range_test private/test/version_range_test.cpp)
-    target_link_libraries(version_range_test ${CppUTest_LIBRARY} ${CppUTest_EXT_LIBRARIES}  Celix::utils pthread)
-
     add_executable(version_test private/test/version_test.cpp)
     target_link_libraries(version_test ${CppUTest_LIBRARY}  Celix::utils pthread)
 
@@ -126,7 +123,6 @@ if (ENABLE_TESTING)
     add_test(NAME run_utils_test COMMAND utils_test)
     add_test(NAME run_ip_utils_test COMMAND ip_utils_test)
     add_test(NAME filter_test COMMAND filter_test)
-    add_test(NAME version_range_test COMMAND version_range_test)
     add_test(NAME version_test COMMAND version_test)
 
     setup_target_for_coverage(array_list_test)

@@ -16,13 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * version_range.c
- *
- *  \date       Jul 12, 2010
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
+
 
 #include <stdlib.h>
 #include <string.h>
@@ -30,102 +24,34 @@
 #include <assert.h>
 
 #include "version_private.h"
+#include "version_range.h"
+#include "celix_version_range.h"
 #include "version_range_private.h"
+#include "celix_version_range.h"
 
 celix_status_t versionRange_createVersionRange(version_pt low, bool isLowInclusive,
             version_pt high, bool isHighInclusive, version_range_pt *range) {
-    assert(low != high);
-    celix_status_t status = CELIX_SUCCESS;
-    *range = (version_range_pt) malloc(sizeof(**range));
-    if (!*range) {
-        status = CELIX_ENOMEM;
-    } else {
-        (*range)->low = low;
-        (*range)->isLowInclusive = isLowInclusive;
-        (*range)->high = high;
-        (*range)->isHighInclusive = isHighInclusive;
-    }
-
-    return status;
+    *range = celix_versionRange_createVersionRange(low, isLowInclusive, high, isHighInclusive);
+    return CELIX_SUCCESS;
 }
 
 celix_status_t versionRange_destroy(version_range_pt range) {
-    if (range->high != NULL) {
-        version_destroy(range->high);
-    }
-    if (range->low != NULL) {
-        version_destroy(range->low);
-    }
-
-    range->high = NULL;
-    range->isHighInclusive = false;
-    range->low = NULL;
-    range->isLowInclusive = false;
-
-    free(range);
-
+    celix_versionRange_destroy(range);
     return CELIX_SUCCESS;
 }
 
 celix_status_t versionRange_createInfiniteVersionRange(version_range_pt *range) {
-    celix_status_t status;
-
-    version_pt version = NULL;
-    status = version_createEmptyVersion(&version);
-    if (status == CELIX_SUCCESS) {
-        status = versionRange_createVersionRange(version, true, NULL, true, range);
-    }
-
-    return status;
+    *range = celix_versionRange_createInfiniteVersionRange();
+    return CELIX_SUCCESS;
 }
 
 celix_status_t versionRange_isInRange(version_range_pt versionRange, version_pt version, bool *inRange) {
-    celix_status_t status;
-    if (versionRange->high == NULL) {
-        int cmp;
-        status = version_compareTo(version, versionRange->low, &cmp);
-        if (status == CELIX_SUCCESS) {
-            *inRange = (cmp >= 0);
-        }
-    } else if (versionRange->isLowInclusive && versionRange->isHighInclusive) {
-        int low, high;
-        status = version_compareTo(version, versionRange->low, &low);
-        if (status == CELIX_SUCCESS) {
-            status = version_compareTo(version, versionRange->high, &high);
-            if (status == CELIX_SUCCESS) {
-                *inRange = (low >= 0) && (high <= 0);
-            }
-        }
-    } else if (versionRange->isHighInclusive) {
-        int low, high;
-        status = version_compareTo(version, versionRange->low, &low);
-        if (status == CELIX_SUCCESS) {
-            status = version_compareTo(version, versionRange->high, &high);
-            if (status == CELIX_SUCCESS) {
-                *inRange = (low > 0) && (high <= 0);
-            }
-        }
-    } else if (versionRange->isLowInclusive) {
-        int low, high;
-        status = version_compareTo(version, versionRange->low, &low);
-        if (status == CELIX_SUCCESS) {
-            status = version_compareTo(version, versionRange->high, &high);
-            if (status == CELIX_SUCCESS) {
-                *inRange = (low >= 0) && (high < 0);
-            }
-        }
+    if (versionRange != NULL && version != NULL) {
+        *inRange = celix_versionRange_isInRange(versionRange, version);
+        return CELIX_SUCCESS;
     } else {
-        int low, high;
-        status = version_compareTo(version, versionRange->low, &low);
-        if (status == CELIX_SUCCESS) {
-            status = version_compareTo(version, versionRange->high, &high);
-            if (status == CELIX_SUCCESS) {
-                *inRange = (low > 0) && (high < 0);
-            }
-        }
+        return CELIX_ILLEGAL_ARGUMENT;
     }
-
-    return status;
 }
 
 celix_status_t versionRange_getLowVersion(version_range_pt versionRange, version_pt *lowVersion) {
@@ -182,61 +108,139 @@ celix_status_t versionRange_isHighInclusive(version_range_pt versionRange, bool 
 
 
 celix_status_t versionRange_parse(const char * rangeStr, version_range_pt *range) {
-    celix_status_t status;
-    if (strchr(rangeStr, ',') != NULL) {
-            int vlowL = strcspn(rangeStr+1, ",");
-            char * vlow = (char *) malloc(sizeof(char) * (vlowL + 1));
-            if (!vlow) {
-                status = CELIX_ENOMEM;
-            } else {
-                int vhighL;
-                char * vhigh;
-                vlow = strncpy(vlow, rangeStr+1, vlowL);
-                vlow[vlowL] = '\0';
-                vhighL = strlen(rangeStr+1) - vlowL - 2;
-                vhigh = (char *) malloc(sizeof(char) * (vhighL+1));
-                if (!vhigh) {
-                    status = CELIX_ENOMEM;
-                } else {                    
-                    version_pt versionLow = NULL;
-                    int rangeL = strlen(rangeStr);
-                    char start = rangeStr[0];
-                    char end = rangeStr[rangeL-1];
-
-                    vhigh = strncpy(vhigh, rangeStr+vlowL+2, vhighL);
-                    vhigh[vhighL] = '\0';
-                    status = version_createVersionFromString(vlow, &versionLow);
-                    if (status == CELIX_SUCCESS) {
-                        version_pt versionHigh = NULL;
-                        status = version_createVersionFromString(vhigh, &versionHigh);
-                        if (status == CELIX_SUCCESS) {
-                            status = versionRange_createVersionRange(
-                                    versionLow,
-                                    start == '[',
-                                    versionHigh,
-                                    end ==']',
-                                    range
-                                );
-                        }
-                    }
-                    free(vhigh);
-                }
-                free(vlow);
-
-        }
+    *range = celix_versionRange_parse(rangeStr);
+    if (*range == NULL) {
+        return CELIX_ILLEGAL_ARGUMENT;
     } else {
-        version_pt version = NULL;
-        status = version_createVersionFromString(rangeStr, &version);
-        if (status == CELIX_SUCCESS) {
-            status = versionRange_createVersionRange(version, true, NULL, false, range);
-        }
+        return CELIX_SUCCESS;
     }
-
-    return status;
 }
 
 char* versionRange_createLDAPFilter(version_range_pt range, const char *serviceVersionAttributeName) {
-    char *output;
+    return celix_versionRange_createLDAPFilter(range, serviceVersionAttributeName);
+}
+
+
+
+bool versionRange_createLDAPFilterInPlace(version_range_pt range, const char *serviceVersionAttributeName, char* buffer, size_t bufferLength) {
+    return celix_versionRange_createLDAPFilterInPlace(range, serviceVersionAttributeName, buffer, bufferLength);
+}
+
+celix_version_range_t* celix_versionRange_createVersionRange(celix_version_t* low, bool isLowInclusive, celix_version_t* high, bool isHighInclusive) {
+    assert(low != high);
+    celix_version_range_t* range = malloc(sizeof(*range));
+    range->low = low;
+    range->isLowInclusive = isLowInclusive;
+    range->high = high;
+    range->isHighInclusive = isHighInclusive;
+    return range;
+}
+
+
+celix_version_range_t* celix_versionRange_createInfiniteVersionRange() {
+    return celix_versionRange_createVersionRange(celix_version_createEmptyVersion(), true, NULL, true);
+}
+
+void celix_versionRange_destroy(celix_version_range_t* range) {
+    if (range->high != NULL) {
+        celix_version_destroy(range->high);
+    }
+    if (range->low != NULL) {
+        celix_version_destroy(range->low);
+    }
+    free(range);
+}
+
+
+bool celix_versionRange_isInRange(const celix_version_range_t* versionRange, const celix_version_t* version) {
+    bool inRange = false;
+    int high;
+    int low;
+    if (versionRange->high != NULL) {
+        high = celix_version_compareTo(version, versionRange->high);
+    }
+    if (versionRange->low != NULL) {
+        low = celix_version_compareTo(version, versionRange->low);
+    }
+
+    if (versionRange->high == NULL) {
+        inRange = (low >= 0);
+    } else if (versionRange->isLowInclusive && versionRange->isHighInclusive) {
+        inRange = (low >= 0) && (high <= 0);
+    } else if (versionRange->isHighInclusive) {
+        inRange = (low > 0) && (high <= 0);
+    } else if (versionRange->isLowInclusive) {
+        inRange = (low >= 0) && (high < 0);
+    } else {
+        inRange = (low > 0) && (high < 0);
+    }
+
+    return inRange;
+}
+
+
+bool celix_versionRange_isLowInclusive(const celix_version_range_t* versionRange) {
+    return versionRange->isLowInclusive;
+}
+
+
+bool celix_versionRange_isHighInclusive(const celix_version_range_t* versionRange) {
+    return versionRange->isHighInclusive;
+}
+
+
+celix_version_t* celix_versionRange_getLowVersion(const celix_version_range_t* versionRange) {
+    return versionRange->low;
+}
+
+
+celix_version_t* celix_versionRange_getHighVersion(const celix_version_range_t* versionRange) {
+    return versionRange->high;
+}
+
+celix_version_range_t* celix_versionRange_parse(const char *rangeString) {
+    celix_version_range_t* range = NULL;
+    if (strchr(rangeString, ',') != NULL) {
+        int vlowL = strcspn(rangeString+1, ",");
+        char * vlow = malloc(sizeof(char) * (vlowL + 1));
+        int vhighL;
+        char * vhigh;
+        vlow = strncpy(vlow, rangeString+1, vlowL);
+        vlow[vlowL] = '\0';
+        vhighL = strlen(rangeString+1) - vlowL - 2;
+        vhigh = (char *) malloc(sizeof(char) * (vhighL+1));
+        int rangeL = strlen(rangeString);
+        char start = rangeString[0];
+        char end = rangeString[rangeL-1];
+
+        vhigh = strncpy(vhigh, rangeString+vlowL+2, vhighL);
+        vhigh[vhighL] = '\0';
+        celix_version_t* versionLow = celix_version_createVersionFromString(vlow);
+        if (versionLow != NULL) {
+            celix_version_t* versionHigh = celix_version_createVersionFromString(vhigh);
+            if (versionHigh != NULL) {
+                range = celix_versionRange_createVersionRange(
+                        versionLow,
+                        start == '[',
+                        versionHigh,
+                        end ==']'
+                );
+            }
+        }
+        free(vhigh);
+        free(vlow);
+    } else {
+        celix_version_t* version = celix_version_createVersionFromString(rangeString);
+        if (version != NULL) {
+            range = celix_versionRange_createVersionRange(version, true, NULL, false);
+        }
+    }
+
+    return range;
+}
+
+char* celix_versionRange_createLDAPFilter(const celix_version_range_t* range, const char *serviceVersionAttributeName) {
+    char *output = NULL;
 
     int ret = -1;
     if(range->high == NULL) {
@@ -258,9 +262,7 @@ char* versionRange_createLDAPFilter(version_range_pt range, const char *serviceV
     return output;
 }
 
-
-
-bool versionRange_createLDAPFilterInPlace(version_range_pt range, const char *serviceVersionAttributeName, char* buffer, size_t bufferLength) {
+bool celix_versionRange_createLDAPFilterInPlace(const celix_version_range_t* range, const char *serviceVersionAttributeName, char* buffer, size_t bufferLength) {
     if(buffer == NULL || bufferLength == 0) {
         return false;
     }
