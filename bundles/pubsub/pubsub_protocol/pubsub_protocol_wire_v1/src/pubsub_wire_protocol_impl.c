@@ -162,6 +162,7 @@ celix_status_t pubsubProtocol_decodeHeader(void *handle, void *data, size_t leng
                 message->header.seqNr           = 0;
                 message->header.payloadPartSize = message->header.payloadSize;
                 message->header.payloadOffset   = 0;
+                message->header.isLastSegment   = 0x1;
             }
         }
     } else {

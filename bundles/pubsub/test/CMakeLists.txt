@@ -188,7 +188,7 @@ if (BUILD_PUBSUB_PSA_UDP_MC)
 endif()
 
 if (BUILD_PUBSUB_PSA_TCP)
-    add_celix_container(pubsub_tcp_tests
+    add_celix_container(pubsub_tcp_wire_v2_tests
             USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
             LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_runner.cc
             DIR ${CMAKE_CURRENT_BINARY_DIR}
@@ -204,10 +204,31 @@ if (BUILD_PUBSUB_PSA_TCP)
             pubsub_sut
             pubsub_tst
             )
-    target_link_libraries(pubsub_tcp_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi)
-    target_include_directories(pubsub_tcp_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
-    add_test(NAME pubsub_tcp_tests COMMAND pubsub_tcp_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_tcp_tests,CONTAINER_LOC>)
-    setup_target_for_coverage(pubsub_tcp_tests SCAN_DIR ..)
+    target_link_libraries(pubsub_tcp_wire_v2_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi)
+    target_include_directories(pubsub_tcp_wire_v2_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
+    add_test(NAME pubsub_tcp_wire_v2_tests COMMAND pubsub_tcp_wire_v2_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_tcp_wire_v2_tests,CONTAINER_LOC>)
+    setup_target_for_coverage(pubsub_tcp_wire_v2_tests SCAN_DIR ..)
+
+    add_celix_container(pubsub_tcp_wire_v1_tests
+            USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
+            LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_runner.cc
+            DIR ${CMAKE_CURRENT_BINARY_DIR}
+            PROPERTIES
+            LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
+            BUNDLES
+            Celix::shell
+            Celix::shell_tui
+            Celix::pubsub_serializer_json
+            Celix::pubsub_protocol_wire_v1
+            Celix::pubsub_topology_manager
+            Celix::pubsub_admin_tcp
+            pubsub_sut
+            pubsub_tst
+            )
+    target_link_libraries(pubsub_tcp_wire_v1_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi)
+    target_include_directories(pubsub_tcp_wire_v1_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
+    add_test(NAME pubsub_tcp_wire_v1_tests COMMAND pubsub_tcp_wire_v1_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_tcp_wire_v1_tests,CONTAINER_LOC>)
+    setup_target_for_coverage(pubsub_tcp_wire_v1_tests SCAN_DIR ..)
 
 
     add_celix_container(pubsub_tcp_endpoint_tests
