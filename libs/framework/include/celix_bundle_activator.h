@@ -165,7 +165,7 @@ extern "C" celix_status_t bundleActivator_create(celix_bundle_context_t *context
     int status = CELIX_SUCCESS;                                                                                        \
                                                                                                                        \
     BundleActivatorData* data = nullptr;                                                                               \
-    data = new (std::nothrow) BundleActivatorData{};                                                                                  \
+    data = new (std::nothrow) BundleActivatorData{};                                                                   \
     if (data != nullptr) {                                                                                             \
         data->mng = std::shared_ptr<celix::dm::DependencyManager>{new (std::nothrow) celix::dm::DependencyManager{context}};          \
     }                                                                                                                  \
@@ -203,9 +203,7 @@ extern "C" celix_status_t bundleActivator_stop(void *userData, celix_bundle_cont
                                                                                                                        \
 extern "C" celix_status_t bundleActivator_destroy(void *userData, celix_bundle_context_t*) {                           \
     auto* data = static_cast<BundleActivatorData*>(userData);                                                          \
-    if (data != nullptr) {                                                                                             \
-        delete data;                                                                                                   \
-    }                                                                                                                  \
+    delete data;                                                                                                       \
     return CELIX_SUCCESS;                                                                                              \
 }                                                                                                                      \
 

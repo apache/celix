@@ -26,7 +26,7 @@ namespace /*anon*/ {
 
     class BundleActivator {
     public:
-        BundleActivator(std::shared_ptr<celix::dm::DependencyManager> _mng) : mng{_mng} {
+        BundleActivator(std::shared_ptr<celix::dm::DependencyManager> _mng) : mng{std::move(_mng)} {
             std::cout << "Hello world from C++ bundle with id " << bndId() << std::endl;
         }
         ~BundleActivator() {

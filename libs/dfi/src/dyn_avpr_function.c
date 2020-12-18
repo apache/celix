@@ -201,7 +201,7 @@ inline static bool dynAvprFunction_parseArgument(dyn_function_type * func, size_
     const char * entry_name = json_string_value(json_object_get(entry, "name"));
     if (!entry_name)  {
         LOG_INFO("ParseArgument: Could not find argument name for %d, using default", index);
-        snprintf(argBuffer, ARG_SIZE, "arg%04lu", index);
+        snprintf(argBuffer, ARG_SIZE, "arg%04lu", (long unsigned int) index);
         entry_name = argBuffer;
     }
 

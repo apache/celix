@@ -20,40 +20,60 @@
 #include "celix/dm/Component.h"
 #include "celix/dm/DependencyManager.h"
 #include "celix/dm/ServiceDependency.h"
+#include "celix/dm/ProvidedService.h"
+#include "celix_dependency_manager.h"
 
 #include <memory>
 #include <iostream>
 #include <iomanip>
 #include <type_traits>
 #include <algorithm>
+#include <atomic>
 
 using namespace celix::dm;
 
-template<class T>
-Component<T>::Component(celix_bundle_context_t *context, const std::string &name) : BaseComponent(context, name) {}
+inline void BaseComponent::runBuild() {
+    if (context == nullptr || cDepMan == nullptr) {
+        return;
+    }
+
+    for (auto& provide : providedServices) {
+        provide->runBuild();
+    }
+
+    for (auto &dep : dependencies) {
+        dep->runBuild();
+    }
+
+    bool alreadyAdded = cmpAddedToDepMan.exchange(true);
+    if (!alreadyAdded) {
+        celix_dependencyManager_add(cDepMan, cCmp);
+    }
+}
+
+inline BaseComponent::~BaseComponent() noexcept {
+    if (!cmpAddedToDepMan) {
+        celix_dmComponent_destroy(cCmp);
+    }
+}
 
 template<class T>
-Component<T>::~Component() {
-    this->dependencies.clear();
-}
+Component<T>::Component(celix_bundle_context_t *context, celix_dependency_manager_t* cDepMan, const std::string &name) : BaseComponent(context, cDepMan, name) {}
+
+template<class T>
+Component<T>::~Component() = default;
 
 template<class T>
 template<class I>
 Component<T>& Component<T>::addInterfaceWithName(const std::string &serviceName, const std::string &version, const Properties &properties) {
     if (!serviceName.empty()) {
-        //setup c properties
-        celix_properties_t *cProperties = properties_create();
-        properties_set(cProperties, CELIX_FRAMEWORK_SERVICE_LANGUAGE, CELIX_FRAMEWORK_SERVICE_CXX_LANGUAGE);
-        for (const auto& pair : properties) {
-            properties_set(cProperties, pair.first.c_str(), pair.second.c_str());
-        }
-
         T* cmpPtr = &this->getInstance();
         I* intfPtr = static_cast<I*>(cmpPtr); //NOTE T should implement I
 
-        const char *cVersion = version.empty() ? nullptr : version.c_str();
-        celix_dmComponent_addInterface(this->cComponent(), serviceName.c_str(), cVersion,
-                                       intfPtr, cProperties);
+        auto provide = std::make_shared<ProvidedService<T,I>>(cComponent(), serviceName, intfPtr, true);
+        provide->setVersion(version);
+        provide->setProperties(properties);
+        providedServices.push_back(provide);
     } else {
         std::cerr << "Cannot add interface with a empty name\n";
     }
@@ -76,38 +96,37 @@ Component<T>& Component<T>::addInterface(const std::string &version, const Prope
 
 template<class T>
 template<class I>
-Component<T>& Component<T>::addCInterface(const I* svc, const std::string &serviceName, const std::string &version, const Properties &properties) {
-    static_assert(std::is_standard_layout<I>::value, "Service I must be an object with a standard layout");
-    celix_properties_t *cProperties = properties_create();
-    properties_set(cProperties, CELIX_FRAMEWORK_SERVICE_LANGUAGE, CELIX_FRAMEWORK_SERVICE_C_LANGUAGE);
-    for (const auto& pair : properties) {
-        properties_set(cProperties, pair.first.c_str(), pair.second.c_str());
-    }
-
-    const char *cVersion = version.empty() ? nullptr : version.c_str();
-    celix_dmComponent_addInterface(this->cComponent(), serviceName.c_str(), cVersion, svc, cProperties);
-
+Component<T>& Component<T>::addCInterface(I* svc, const std::string &serviceName, const std::string &version, const Properties &properties) {
+    auto provide = std::make_shared<ProvidedService<T,I>>(cComponent(), serviceName, svc, false);
+    provide->setVersion(version);
+    provide->setProperties(properties);
+    providedServices.push_back(provide);
     return *this;
 }
 
 template<class T>
 template<class I>
 Component<T>& Component<T>::removeCInterface(const I* svc){
-    static_assert(std::is_standard_layout<I>::value, "Service I must be an object with a standard layout");
     celix_dmComponent_removeInterface(this->cComponent(), svc);
+    for (auto it = providedServices.begin(); it != providedServices.end(); ++it) {
+        std::shared_ptr<BaseProvidedService> provide = *it;
+        if (provide->getService() == static_cast<const void*>(svc)) {
+            providedServices.erase(it);
+            break;
+        }
+    }
     return *this;
 }
 
 template<class T>
 template<class I>
 ServiceDependency<T,I>& Component<T>::createServiceDependency(const std::string &name) {
-    static ServiceDependency<T,I> invalidDep{std::string{}, false};
-    auto dep = std::shared_ptr<ServiceDependency<T,I>> {new ServiceDependency<T,I>(name)};
+    static ServiceDependency<T,I> invalidDep{cComponent(), std::string{}, false};
+    auto dep = std::shared_ptr<ServiceDependency<T,I>> {new ServiceDependency<T,I>(cComponent(), name)};
     if (dep == nullptr) {
         return invalidDep;
     }
-    this->dependencies.push_back(dep);
-    celix_dmComponent_addServiceDependency(cComponent(), dep->cServiceDependency());
+    dependencies.push_back(dep);
     dep->setComponentInstance(&getInstance());
     return *dep;
 }
@@ -123,13 +142,12 @@ Component<T>& Component<T>::remove(ServiceDependency<T,I>& dep) {
 template<class T>
 template<typename I>
 CServiceDependency<T,I>& Component<T>::createCServiceDependency(const std::string &name) {
-    static CServiceDependency<T,I> invalidDep{std::string{}, false};
-    auto dep = std::shared_ptr<CServiceDependency<T,I>> {new CServiceDependency<T,I>(name)};
+    static CServiceDependency<T,I> invalidDep{cComponent(), std::string{}, false};
+    auto dep = std::shared_ptr<CServiceDependency<T,I>> {new CServiceDependency<T,I>(cComponent(), name)};
     if (dep == nullptr) {
         return invalidDep;
     }
-    this->dependencies.push_back(dep);
-    celix_dmComponent_addServiceDependency(cComponent(), dep->cServiceDependency());
+    dependencies.push_back(dep);
     dep->setComponentInstance(&getInstance());
     return *dep;
 }
@@ -143,15 +161,15 @@ Component<T>& Component<T>::remove(CServiceDependency<T,I>& dep) {
 }
 
 template<class T>
-Component<T>* Component<T>::create(celix_bundle_context_t *context) {
+Component<T>* Component<T>::create(celix_bundle_context_t *context, celix_dependency_manager_t* cDepMan) {
     std::string name = typeName<T>();
-    return Component<T>::create(context, name);
+    return Component<T>::create(context, cDepMan, name);
 }
 
 template<class T>
-Component<T>* Component<T>::create(celix_bundle_context_t *context, const std::string &name) {
-    static Component<T> invalid{nullptr, std::string{}};
-    Component<T>* cmp = new (std::nothrow) Component<T>(context, name);
+Component<T>* Component<T>::create(celix_bundle_context_t *context, celix_dependency_manager_t* cDepMan, const std::string &name) {
+    static Component<T> invalid{nullptr, nullptr, std::string{}};
+    Component<T>* cmp = new (std::nothrow) Component<T>(context, cDepMan, name);
     if (cmp == nullptr) {
         cmp = &invalid;
     }
@@ -163,17 +181,33 @@ bool Component<T>::isValid() const {
     return this->bundleContext() != nullptr;
 }
 
+
+template<typename T>
+static
+typename std::enable_if<std::is_default_constructible<T>::value, T*>::type
+createInstance() {
+    return new T{};
+}
+
+template<typename T>
+static
+typename std::enable_if<!std::is_default_constructible<T>::value, T*>::type
+createInstance() {
+    return nullptr;
+}
+
 template<class T>
 T& Component<T>::getInstance() {
-    if (this->valInstance.size() == 1) {
+    if (!valInstance.empty()) {
         return valInstance.front();
-    } else if (this->sharedInstance.get() != nullptr) {
-        return *this->sharedInstance;
+    } else if (sharedInstance) {
+        return *sharedInstance;
+    } else if (instance) {
+        return *instance;
     } else {
-        if (this->instance.get() == nullptr) {
-            this->instance = std::unique_ptr<T> {new T()};
-        }
-        return *this->instance;
+        T* newInstance = createInstance<T>(); //uses SFINAE to detect if default ctor exists
+        instance = std::unique_ptr<T>{newInstance};
+        return *instance;
     }
 }
 
@@ -316,5 +350,36 @@ Component<T>& Component<T>::removeCallbacks() {
     celix_dmComponent_setCallbacks(this->cComponent(), nullptr, nullptr, nullptr, nullptr);
 
     return *this;
+}
+
+template<typename T>
+Component<T>& Component<T>::build() {
+    runBuild();
+    return *this;
+}
+
+template<class T>
+template<class I>
+ProvidedService<T, I> &Component<T>::createProvidedCService(I *svc, std::string serviceName) {
+    auto provide = std::make_shared<ProvidedService<T,I>>(cComponent(), serviceName, svc, false);
+    providedServices.push_back(provide);
+    return *provide;
+}
+
+template<class T>
+template<class I>
+ProvidedService<T, I> &Component<T>::createProvidedService(std::string serviceName) {
+    static_assert(std::is_base_of<I,T>::value, "Component T must implement Interface I");
+    if (serviceName.empty()) {
+        serviceName = typeName<I>();
+    }
+    if (serviceName.empty()) {
+        std::cerr << "Cannot add interface, because type name could not be inferred. function: '"  << __PRETTY_FUNCTION__ << "'\n";
+    }
+
+    I* svcPtr = &this->getInstance();
+    auto provide = std::make_shared<ProvidedService<T,I>>(cComponent(), serviceName, svcPtr, true);
+    providedServices.push_back(provide);
+    return *provide;
 }
 

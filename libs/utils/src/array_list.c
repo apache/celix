@@ -79,7 +79,7 @@ void arrayList_trimToSize(array_list_pt list) {
     list->modCount++;
     size_t oldCapacity = list->capacity;
     if (list->size < oldCapacity) {
-        celix_array_list_entry_t * newList = realloc(list->elementData, sizeof(void *) * list->size);
+        celix_array_list_entry_t * newList = realloc(list->elementData, sizeof(celix_array_list_entry_t) * list->size);
         list->capacity = list->size;
         list->elementData = newList;
     }
@@ -94,7 +94,7 @@ void arrayList_ensureCapacity(array_list_pt list, int capacity) {
         if (newCapacity < capacity) {
             newCapacity = capacity;
         }
-        newList = realloc(list->elementData, sizeof(void *) * newCapacity);
+        newList = realloc(list->elementData, sizeof(celix_array_list_entry_t) * newCapacity);
         list->capacity = newCapacity;
         list->elementData = newList;
     }
@@ -365,7 +365,7 @@ celix_array_list_t* celix_arrayList_createWithEquals(celix_arrayList_equals_fp e
     array_list_t *list = calloc(1, sizeof(*list));
     if (list != NULL) {
         list->capacity = 10;
-        list->elementData = malloc(sizeof(void*) * list->capacity);
+        list->elementData = malloc(sizeof(celix_array_list_entry_t) * list->capacity);
         list->equals = equals;
     }
     return list;

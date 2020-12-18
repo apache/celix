@@ -17,31 +17,74 @@
  * under the License.
  */
 
+#include "DependencyManager.h"
+
 using namespace celix::dm;
 
+inline DependencyManager::DependencyManager(celix_bundle_context_t *ctx) :
+    context{ctx, [](celix_bundle_context_t*){/*nop*/}},
+    cDepMan{celix_bundleContext_getDependencyManager(ctx), [](celix_dependency_manager_t*){/*nop*/}} {}
+
+inline DependencyManager::~DependencyManager() {/*nop*/}
+
 template<class T>
-Component<T>& DependencyManager::createComponent(std::string name) {
+Component<T>& DependencyManager::createComponentInternal(std::string name) {
     Component<T>* cmp = name.empty() ?
-                        Component<T>::create(this->context) :
-                        Component<T>::create(this->context, name);
+                        Component<T>::create(this->context.get(), this->cDepMan.get()) :
+                        Component<T>::create(this->context.get(), this->cDepMan.get(), name);
     if (cmp->isValid()) {
-        std::lock_guard<std::recursive_mutex> lock(componentsMutex);
-        this->queuedComponents.push_back(std::unique_ptr<BaseComponent> {cmp});
+        this->components.push_back(std::unique_ptr<BaseComponent> {cmp});
     }
     return *cmp;
 }
 
 template<class T>
+inline
+typename std::enable_if<std::is_default_constructible<T>::value, Component<T>&>::type
+DependencyManager::createComponent(std::string name) {
+    return createComponentInternal<T>(name);
+}
+
+template<class T>
 Component<T>& DependencyManager::createComponent(std::unique_ptr<T>&& rhs, std::string name) {
-    return this->createComponent<T>(name).setInstance(std::move(rhs));
+    return createComponentInternal<T>(name).setInstance(std::move(rhs));
 }
 
 template<class T>
 Component<T>& DependencyManager::createComponent(std::shared_ptr<T> rhs, std::string name) {
-    return this->createComponent<T>(name).setInstance(rhs);
+    return createComponentInternal<T>(name).setInstance(rhs);
 }
 
 template<class T>
 Component<T>& DependencyManager::createComponent(T rhs, std::string name) {
-    return this->createComponent<T>(name).setInstance(std::forward<T>(rhs));
+    return createComponentInternal<T>(name).setInstance(std::forward<T>(rhs));
 }
+
+inline void DependencyManager::start() {
+    build();
+}
+
+inline void DependencyManager::build() {
+    for (auto& cmp : components) {
+        cmp->runBuild();
+    }
+}
+
+template<typename T>
+void DependencyManager::destroyComponent(Component<T> &component) {
+    celix_dependencyManager_remove(cDepMan, component.cComponent());
+}
+
+inline void DependencyManager::clear() {
+    celix_dependencyManager_removeAllComponents(cDepMan.get());
+    components.clear();
+}
+
+inline void DependencyManager::stop() {
+    clear();
+}
+
+inline std::size_t DependencyManager::getNrOfComponents() const {
+    return celix_dependencyManager_nrOfComponents(cDepMan.get());
+}
+
