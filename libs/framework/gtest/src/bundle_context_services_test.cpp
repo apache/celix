@@ -1165,3 +1165,32 @@ TEST_F(CelixBundleContextServicesTests, startStopMetaServiceTrackerAsync) {
     celix_bundleContext_waitForAsyncStopTracker(ctx, trkId);
     EXPECT_EQ(2, count.load()); //1x tracker started, 1x tracker stopped
 }
+
+TEST_F(CelixBundleContextServicesTests, onlyCallAsyncCallbackWithAsyncApi) {
+    celix_service_tracking_options_t opts{};
+    opts.trackerCreatedCallback = [](void *) {
+        FAIL();
+    };
+    long trkId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
+    EXPECT_GT(trkId, 0);
+    celix_bundleContext_stopTracker(ctx, trkId);
+
+    celix_service_registration_options_t opts2{};
+    opts2.serviceName = "test";
+    opts2.svc = (void*)0x42;
+    opts2.asyncCallback = [](void*, long) {
+        FAIL();
+    };
+    long svcId = celix_bundleContext_registerServiceWithOptions(ctx, &opts2);
+    EXPECT_GT(svcId, 0);
+    celix_bundleContext_waitForEvents(ctx);
+    celix_bundleContext_unregisterService(ctx, trkId);
+
+    celix_bundle_tracking_options_t opts3{};
+    opts3.trackerCreatedCallback = [](void *) {
+        FAIL();
+    };
+    trkId = celix_bundleContext_trackBundlesWithOptions(ctx, &opts3);
+    EXPECT_GT(trkId, 0);
+    celix_bundleContext_stopTracker(ctx, trkId);
+}

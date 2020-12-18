@@ -42,6 +42,9 @@ typedef struct celix_bundle_context_service_tracker_entry {
 	long trackerId;
     celix_service_tracking_options_t opts;
 	celix_service_tracker_t* tracker;
+    void *trackerCreatedCallbackData;
+    void (*trackerCreatedCallback)(void *trackerCreatedCallbackData);
+
 
     //used for sync
     long createEventId;

@@ -175,7 +175,7 @@ typedef struct celix_service_registration_options {
      void *asyncData OPTS_INIT;
 
     /**
-    * Async callback. Will be called after the a service is registered in the service registry.
+    * Async callback. Will be called after the a service is registered in the service registry using a async call.
     * Will be called on the Celix event loop.
     */
     void (*asyncCallback)(void *data, long serviceId) OPTS_INIT;
@@ -523,7 +523,7 @@ typedef struct celix_service_tracking_options {
     void *trackerCreatedCallbackData OPTS_INIT;
 
     /**
-     * The callback called when the tracker has ben created (and is active)
+     * The callback called when the tracker has ben created (and is active) when using a async call.
      */
     void (*trackerCreatedCallback)(void *trackerCreatedCallbackData) OPTS_INIT;
 } celix_service_tracking_options_t;
@@ -956,7 +956,8 @@ typedef struct celix_bundle_tracker_options {
     void *trackerCreatedCallbackData OPTS_INIT;
 
     /**
-     * The callback called when the tracker has ben created (and is active)
+     * The callback called when the tracker has ben created (and is active) when using the
+     * track bundles ascync calls.
      */
     void (*trackerCreatedCallback)(void *trackerCreatedCallbackData) OPTS_INIT;
 } celix_bundle_tracking_options_t;

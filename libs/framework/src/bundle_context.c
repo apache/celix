@@ -518,7 +518,8 @@ static long celix_bundleContext_registerServiceWithOptionsInternal(bundle_contex
 
         svcId = celix_framework_registerService(ctx->framework, ctx->bundle, opts->serviceName, opts->svc, opts->factory, props);
     } else {
-        svcId = celix_framework_registerServiceAsync(ctx->framework, ctx->bundle, opts->serviceName, opts->svc, opts->factory, props, opts->asyncData, opts->asyncCallback, NULL, NULL);
+        void (*asyncCallback)(void *data, long serviceId) = async ? opts->asyncCallback : NULL; //NOTE for not async call do not use the callback.
+        svcId = celix_framework_registerServiceAsync(ctx->framework, ctx->bundle, opts->serviceName, opts->svc, opts->factory, props, opts->asyncData, asyncCallback, NULL, NULL);
         if (!async && svcId >= 0) {
             //note on event loop thread, but in a sync call, so waiting till service registration is concluded
             celix_bundleContext_waitForAsyncRegistration(ctx, svcId);
@@ -532,11 +533,6 @@ static long celix_bundleContext_registerServiceWithOptionsInternal(bundle_contex
         celixThreadMutex_lock(&ctx->mutex);
         celix_arrayList_addLong(ctx->svcRegistrations, svcId);
         celixThreadMutex_unlock(&ctx->mutex);
-        if (!async) {
-            if (opts->asyncCallback) {
-                opts->asyncCallback(opts->asyncData, svcId);
-            }
-        }
     }
     return svcId;
 }
@@ -688,6 +684,10 @@ static long celix_bundleContext_trackBundlesWithOptionsInternal(
     trackerId = entry->trackerId;
     celixThreadMutex_unlock(&ctx->mutex);
 
+    void (*trackerCreatedCallback)(void *trackerCreatedCallbackData) = NULL;
+    if (async) { //note only using the async callback if this is a async call.
+        trackerCreatedCallback = opts->trackerCreatedCallback;
+    }
     long id = celix_framework_fireGenericEvent(
             ctx->framework,
             entry->createEventId,
@@ -696,7 +696,7 @@ static long celix_bundleContext_trackBundlesWithOptionsInternal(
             entry,
             celix_bundleContext_trackBundlesWithOptionsCallback,
             opts->trackerCreatedCallbackData,
-            opts->trackerCreatedCallback);
+            trackerCreatedCallback);
 
     if (!async) {
         celix_framework_waitForGenericEvent(ctx->framework, id);
@@ -1349,8 +1349,8 @@ static void celix_bundleContext_createTrackerOnEventLoop(void *data) {
 
 static void celix_bundleContext_doneCreatingTrackerOnEventLoop(void *data) {
     celix_bundle_context_service_tracker_entry_t* entry = data;
-    if (entry->opts.trackerCreatedCallback != NULL) {
-        entry->opts.trackerCreatedCallback(entry->opts.trackerCreatedCallbackData);
+    if (entry->trackerCreatedCallback != NULL) {
+        entry->trackerCreatedCallback(entry->trackerCreatedCallbackData);
     }
 }
 
@@ -1386,11 +1386,19 @@ static long celix_bundleContext_trackServicesWithOptionsInternal(celix_bundle_co
         }
         return trackerId;
     } else {
+        if (!async) {
+
+        }
+
         celix_bundle_context_service_tracker_entry_t* entry = calloc(1, sizeof(*entry));
         entry->ctx = ctx;
         entry->createEventId = celix_framework_nextEventId(ctx->framework);
         entry->tracker = NULL; //will be set async
         entry->opts = *opts;
+        if (async) { //note only setting the async callback if this is a async call
+            entry->trackerCreatedCallbackData = opts->trackerCreatedCallbackData;
+            entry->trackerCreatedCallback = opts->trackerCreatedCallback;
+        }
         celixThreadMutex_lock(&ctx->mutex);
         entry->trackerId = ctx->nextTrackerId++;
         long trackerId = entry->trackerId;
