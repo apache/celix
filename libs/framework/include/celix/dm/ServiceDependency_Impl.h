@@ -22,11 +22,26 @@
 #include <cstring>
 #include "celix_constants.h"
 #include "celix_properties.h"
+#include "ServiceDependency.h"
+
 
 using namespace celix::dm;
 
+inline void BaseServiceDependency::runBuild() {
+    bool alreadyAdded = depAddedToCmp.exchange(true);
+    if (!alreadyAdded) {
+        celix_dmComponent_addServiceDependency(cCmp, cServiceDep);
+    }
+}
+
+inline BaseServiceDependency::~BaseServiceDependency() noexcept {
+    if (!depAddedToCmp) {
+        celix_dmServiceDependency_destroy(cServiceDep);
+    }
+}
+
 template<class T, typename I>
-CServiceDependency<T,I>::CServiceDependency(const std::string &name, bool valid) : TypedServiceDependency<T>(valid) {
+CServiceDependency<T,I>::CServiceDependency(celix_dm_component_t* cCmp, const std::string &name, bool valid) : TypedServiceDependency<T>(cCmp, valid) {
     this->name = name;
     this->setupService();
 }
@@ -213,8 +228,15 @@ int CServiceDependency<T,I>::invokeCallback(std::function<void(const I*, Propert
     return 0;
 }
 
+
 template<class T, class I>
-ServiceDependency<T,I>::ServiceDependency(const std::string &name, bool valid) : TypedServiceDependency<T>(valid) {
+CServiceDependency<T,I>& CServiceDependency<T,I>::build() {
+    this->runBuild();
+    return *this;
+}
+
+template<class T, class I>
+ServiceDependency<T,I>::ServiceDependency(celix_dm_component_t* cCmp, const std::string &name, bool valid) : TypedServiceDependency<T>(cCmp, valid) {
     if (!name.empty()) {
         this->setName(name);
     } else {
@@ -446,4 +468,10 @@ void ServiceDependency<T,I>::setupCallbacks() {
     opts.addWithProps = cadd;
     opts.removeWithProps = crem;
     celix_dmServiceDependency_setCallbacksWithOptions(this->cServiceDependency(), &opts);
+}
+
+template<class T, class I>
+ServiceDependency<T,I>& ServiceDependency<T,I>::build() {
+    this->runBuild();
+    return *this;
 }

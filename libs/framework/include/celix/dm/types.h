@@ -17,8 +17,7 @@
  * under the License.
  */
 
-#ifndef CELIX_DM_TYPES_H
-#define CELIX_DM_TYPES_H
+#pragma once
 
 #include <map>
 #include <string>
@@ -36,8 +35,12 @@ namespace celix { namespace dm {
     //forward declarations
     class DependencyManager;
 
-
     class BaseServiceDependency;
+
+    class BaseProvidedService;
+
+    template<typename T, typename I>
+    class ProvidedService;
 
     template<class T, typename I>
     class CServiceDependency;
@@ -86,5 +89,3 @@ namespace celix { namespace dm {
     }
 
 }}
-
-#endif //CELIX_DM_TYPES_H

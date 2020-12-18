@@ -480,7 +480,7 @@ static void pubsub_serializationProvider_printEntryDetails(pubsub_serialization_
     fprintf(outStream, "|- %20s = %li\n", "svc id", entry->svcId);
     fprintf(outStream, "|- %20s = %s (bundle id %li)\n", "read from bundle", bndName, entry->readFromBndId);
     fprintf(outStream, "|- %20s = %s\n", "bundle entry name", entry->readFromEntryPath);
-    fprintf(outStream, "|- %20s = %lu\n", "nr of times found", entry->nrOfTimesRead);
+    fprintf(outStream, "|- %20s = %lu\n", "nr of times found", (long unsigned int) entry->nrOfTimesRead);
     fprintf(outStream, "|- %20s = %s\n", "valid", entry->valid ? "true" : "false");
     if (!entry->valid) {
         fprintf(outStream, "|- %20s = %s\n", "invalid reason", entry->invalidReason);

@@ -36,7 +36,7 @@ add_executable(test_framework
     src/multiple_frameworks_test.cpp
     src/bundle_context_bundles_tests.cpp
     src/bundle_context_services_test.cpp
-    src/dm_tests.cpp
+    src/DependencyManagerTestSuite.cc
 )
 
 target_link_libraries(test_framework Celix::framework CURL::libcurl GTest::gtest GTest::gtest_main)

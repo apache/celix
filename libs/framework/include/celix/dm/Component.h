@@ -17,8 +17,7 @@
  * under the License.
  */
 
-#ifndef CELIX_DM_COMPONENT_H
-#define CELIX_DM_COMPONENT_H
+#pragma once
 
 #include "celix/dm/types.h"
 #include "dm_component.h"
@@ -26,19 +25,17 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <atomic>
 
 namespace celix { namespace dm {
 
     class BaseComponent {
-    private:
-        celix_bundle_context_t *context {nullptr};
-        celix_dm_component_t *cCmp {nullptr};
     public:
-        BaseComponent(celix_bundle_context_t *con, const std::string &name) : context{con}, cCmp{nullptr} {
+        BaseComponent(celix_bundle_context_t *con, celix_dependency_manager_t* cdm, const std::string &name) : context{con}, cDepMan{cdm}, cCmp{nullptr} {
             this->cCmp = celix_dmComponent_create(this->context, name.c_str());
             celix_dmComponent_setImplementation(this->cCmp, this);
         }
-        virtual ~BaseComponent() = default;
+        virtual ~BaseComponent() noexcept;
 
         BaseComponent(const BaseComponent&) = delete;
         BaseComponent& operator=(const BaseComponent&) = delete;
@@ -52,6 +49,17 @@ namespace celix { namespace dm {
          * Returns the C bundle context
          */
         celix_bundle_context_t* bundleContext() const { return this->context; }
+
+        void runBuild();
+    protected:
+        std::vector<std::shared_ptr<BaseServiceDependency>> dependencies{};
+        std::vector<std::shared_ptr<BaseProvidedService>> providedServices{};
+
+    private:
+        celix_bundle_context_t* context;
+        celix_dependency_manager_t* cDepMan;
+        celix_dm_component_t *cCmp;
+        std::atomic<bool> cmpAddedToDepMan{false};
     };
 
 
@@ -62,7 +70,6 @@ namespace celix { namespace dm {
         std::unique_ptr<T> instance {nullptr};
         std::shared_ptr<T> sharedInstance {nullptr};
         std::vector<T> valInstance {};
-        std::vector<std::shared_ptr<BaseServiceDependency>> dependencies {};
 
         void (T::*initFp)() = {};
         void (T::*startFp)() = {};
@@ -74,7 +81,7 @@ namespace celix { namespace dm {
         int (T::*stopFpNoExc)() = {};
         int (T::*deinitFpNoExc)() = {};
     public:
-        Component(celix_bundle_context_t *context, const std::string &name);
+        Component(celix_bundle_context_t *context, celix_dependency_manager_t* cDepMan, const std::string &name);
         ~Component() override;
 
         /**
@@ -83,14 +90,14 @@ namespace celix { namespace dm {
          * Will use new(nothrow) if exceptions are disabled.
          * @return newly created DM Component or nullptr
          */
-        static Component<T>* create(celix_bundle_context_t*, const std::string &name);
+        static Component<T>* create(celix_bundle_context_t*, celix_dependency_manager_t* cDepMan, const std::string &name);
 
         /**
          * Creates a Component using the provided bundle context.
          * Will use new(nothrow) if exceptions are disabled.
          * @return newly created DM Component or nullptr
          */
-        static Component<T>* create(celix_bundle_context_t*);
+        static Component<T>* create(celix_bundle_context_t*, celix_dependency_manager_t* cDepMan);
 
         /**
          * Whether the component is valid. Invalid component can occurs when no new components can be created and
@@ -157,8 +164,23 @@ namespace celix { namespace dm {
          * @param version The version of the interface (e.g. "1.0.0"), can be an empty string
          * @param properties To (meta) properties to provide with the service
          */
-        template<class I> Component<T>& addCInterface(const I* svc, const std::string &serviceName, const std::string &version = std::string{}, const Properties &properties = Properties{});
+        template<class I> Component<T>& addCInterface(I* svc, const std::string &serviceName, const std::string &version = std::string{}, const Properties &properties = Properties{});
 
+
+        /**
+         * Creates a provided C services. The provided service can be fine tuned and build using a fluent API
+         * @param svc  The pointer to a C service (c struct)
+         * @param serviceName The service name to use
+         */
+        template<class I> ProvidedService<T,I>& createProvidedCService(I* svc, std::string serviceName);
+
+        /**
+         * Creates a provided C++ services. The provided service can be fine tuned and build using a fluent API
+         * The service pointer is based on the component instance.
+         *
+         * @param serviceName The optional service name. If not provided the service name is inferred from I.
+         */
+        template<class I> ProvidedService<T,I>& createProvidedService(std::string serviceName = {});
 
         /**
          * Adds a C interface to provide as service to the Celix framework.
@@ -243,9 +265,19 @@ namespace celix { namespace dm {
          * @return the DM Component reference for chaining (fluent API)
          */
         Component<T>& removeCallbacks();
+
+        /**
+         * Build the component.
+         *
+         * When building the component all provided services and services dependencies are enabled.
+         * This is not done automatically so that user can first construct component with their provided
+         * service and service dependencies.
+         *
+         * If a component is updated after the component build is called, an new build call will result in
+         * that the changes to the component are enabled.
+         */
+         Component<T>& build();
     };
 }}
 
 #include "celix/dm/Component_Impl.h"
-
-#endif //CELIX_DM_COMPONENT_H
