@@ -75,19 +75,30 @@ celix_dm_component_t* celix_dmComponent_create(bundle_context_t *context, const 
     return celix_dmComponent_createWithUUID(context, name, NULL);
 }
 
-celix_dm_component_t* celix_dmComponent_createWithUUID(bundle_context_t *context, const char* name, const char *uuid) {
+celix_dm_component_t* celix_dmComponent_createWithUUID(bundle_context_t *context, const char* name, const char *uuidIn) {
     celix_dm_component_t *component = calloc(1, sizeof(*component));
 
-    char randomUUID[DM_COMPONENT_MAX_ID_LENGTH];
-    if (uuid == NULL) {
-        //gen uuid
-        uuid_t uid;
-        uuid_generate(uid);
-        uuid_unparse(uid, randomUUID);
-        uuid = randomUUID;
+    char uuidStr[DM_COMPONENT_MAX_ID_LENGTH];
+    bool genRandomUUID = true;
+    if (uuidIn != NULL) {
+        uuid_t uuid;
+        int rc = uuid_parse(uuidIn, uuid);
+        if (rc == 0) {
+            uuid_unparse(uuid, uuidStr);
+            genRandomUUID = false;
+        } else {
+            //parsing went wrong
+            //TODO print error
+        }
     }
-    snprintf(component->uuid, DM_COMPONENT_MAX_ID_LENGTH, "%s", uuid);
 
+    if (genRandomUUID) {
+        //gen uuid
+        uuid_t uuid;
+        uuid_generate(uuid);
+        uuid_unparse(uuid, uuidStr);
+    }
+    snprintf(component->uuid, DM_COMPONENT_MAX_ID_LENGTH, "%s", uuidStr);
 
     snprintf(component->name, DM_COMPONENT_MAX_NAME_LENGTH, "%s", name == NULL ? "n/a" : name);
 

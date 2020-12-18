@@ -165,8 +165,6 @@ if (BUILD_PUBSUB_PSA_UDP_MC)
             Celix::pubsub_topology_manager
             Celix::pubsub_admin_udp_multicast
             Celix::pubsub_protocol_wire_v2
-            Celix::shell
-            Celix::shell_tui
             )
     target_compile_definitions(pstm_deadlock_udpmc_test PRIVATE -DDEADLOCK_SUT_BUNDLE_FILE=\"${DEADLOCK_SUT_BUNDLE_FILE}\")
     target_link_libraries(pstm_deadlock_udpmc_test PRIVATE Celix::pubsub_api GTest::gtest GTest::gtest_main Jansson Celix::dfi)
@@ -241,8 +239,6 @@ if (BUILD_PUBSUB_PSA_TCP)
             Celix::pubsub_topology_manager
             Celix::pubsub_admin_tcp
             Celix::pubsub_protocol_wire_v2
-            Celix::shell
-            Celix::shell_tui
             )
     target_compile_definitions(pstm_deadlock_tcp_test PRIVATE -DDEADLOCK_SUT_BUNDLE_FILE=\"${DEADLOCK_SUT_BUNDLE_FILE}\")
     target_link_libraries(pstm_deadlock_tcp_test PRIVATE Celix::pubsub_api GTest::gtest GTest::gtest_main Jansson Celix::dfi)
@@ -298,8 +294,6 @@ if (BUILD_PUBSUB_PSA_WS)
             Celix::pubsub_topology_manager
             Celix::pubsub_admin_websocket
             Celix::pubsub_protocol_wire_v2
-            Celix::shell
-            Celix::shell_tui
             )
     target_compile_definitions(pstm_deadlock_websocket_test PRIVATE -DDEADLOCK_SUT_BUNDLE_FILE=\"${DEADLOCK_SUT_BUNDLE_FILE}\")
     target_link_libraries(pstm_deadlock_websocket_test PRIVATE Celix::pubsub_api GTest::gtest GTest::gtest_main Jansson Celix::dfi)
@@ -468,8 +462,6 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             Celix::pubsub_topology_manager
             Celix::pubsub_admin_zmq
             Celix::pubsub_protocol_wire_v2
-            Celix::shell
-            Celix::shell_tui
             )
 
 
@@ -484,8 +476,6 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             Celix::pubsub_topology_manager
             Celix::pubsub_admin_zmq_v2
             Celix::pubsub_protocol_wire_v2
-            Celix::shell
-            Celix::shell_tui
             )
     target_compile_definitions(pstm_deadlock_zmq_test PRIVATE -DDEADLOCK_SUT_BUNDLE_FILE=\"${DEADLOCK_SUT_BUNDLE_FILE}\")
     target_link_libraries(pstm_deadlock_zmq_test PRIVATE Celix::pubsub_api GTest::gtest GTest::gtest_main Jansson Celix::dfi ZMQ::lib CZMQ::lib)
