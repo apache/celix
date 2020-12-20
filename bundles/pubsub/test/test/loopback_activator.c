@@ -42,7 +42,7 @@ struct activator {
 celix_status_t bnd_start(struct activator *act, celix_bundle_context_t *ctx) {
 
 	char filter[512];
-	snprintf(filter, 512, "(%s=%s)", PUBSUB_PUBLISHER_TOPIC, "pong2");
+	snprintf(filter, 512, "(%s=%s)", PUBSUB_PUBLISHER_TOPIC, "ping3");
 	celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
 	opts.set = sut_pubSet;
 	opts.callbackHandle = act;
@@ -86,6 +86,7 @@ static int tst_receive(void *handle, const char *msgType, unsigned int msgTypeId
   msg_t *msg = voidMsg;
   msg_t send_msg = *msg;
   pthread_mutex_lock(&act->mutex);
+
   if (act->pubSvc != NULL) {
     if (act->count == 0) {
       act->pubSvc->localMsgTypeIdForMsgType(act->pubSvc->handle, MSG_NAME, &act->msgId);

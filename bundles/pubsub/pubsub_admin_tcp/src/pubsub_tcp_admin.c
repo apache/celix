@@ -18,11 +18,6 @@
  */
 
 #include <memory.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <ifaddrs.h>
 #include <pubsub_endpoint.h>
 #include <pubsub_serializer.h>
 #include <ip_utils.h>
@@ -51,7 +46,6 @@ struct pubsub_tcp_admin {
     char *ipAddress;
 
     unsigned int basePort;
-    unsigned int maxPort;
 
     double qosSampleScore;
     double qosControlScore;
@@ -119,9 +113,7 @@ pubsub_tcp_admin_t *pubsub_tcpAdmin_create(celix_bundle_context_t *ctx, celix_lo
     psa->verbose = celix_bundleContext_getPropertyAsBool(ctx, PUBSUB_TCP_VERBOSE_KEY, PUBSUB_TCP_VERBOSE_DEFAULT);
     psa->fwUUID = celix_bundleContext_getProperty(ctx, OSGI_FRAMEWORK_FRAMEWORK_UUID, NULL);
     long basePort = celix_bundleContext_getPropertyAsLong(ctx, PSA_TCP_BASE_PORT, PSA_TCP_DEFAULT_BASE_PORT);
-    long maxPort = celix_bundleContext_getPropertyAsLong(ctx, PSA_TCP_MAX_PORT, PSA_TCP_DEFAULT_MAX_PORT);
     psa->basePort = (unsigned int) basePort;
-    psa->maxPort = (unsigned int) maxPort;
     psa->defaultScore = celix_bundleContext_getPropertyAsDouble(ctx, PSA_TCP_DEFAULT_SCORE_KEY, PSA_TCP_DEFAULT_SCORE);
     psa->qosSampleScore = celix_bundleContext_getPropertyAsDouble(ctx, PSA_TCP_QOS_SAMPLE_SCORE_KEY,
                                                                   PSA_TCP_DEFAULT_QOS_SAMPLE_SCORE);
@@ -434,17 +426,19 @@ celix_status_t pubsub_tcpAdmin_setupTopicSender(void *handle, const char *scope,
             const char *psaType = PUBSUB_TCP_ADMIN_TYPE;
             const char *serType = serEntry->serType;
             const char *protType = protEntry->protType;
-            newEndpoint = pubsubEndpoint_create(psa->fwUUID, scope, topic, PUBSUB_PUBLISHER_ENDPOINT_TYPE, psaType,
-                                                serType, protType, NULL);
+            newEndpoint = pubsubEndpoint_create(psa->fwUUID, scope, topic, PUBSUB_PUBLISHER_ENDPOINT_TYPE, psaType, serType, protType, NULL);
             celix_properties_set(newEndpoint, PUBSUB_TCP_URL_KEY, pubsub_tcpTopicSender_url(sender));
 
             celix_properties_setBool(newEndpoint, PUBSUB_TCP_STATIC_CONFIGURED, pubsub_tcpTopicSender_isStatic(sender));
-            celix_properties_set(newEndpoint, PUBSUB_ENDPOINT_VISIBILITY, PUBSUB_ENDPOINT_SYSTEM_VISIBILITY);
-
+            if (pubsub_tcpTopicSender_isPassive(sender)) {
+                celix_properties_set(newEndpoint, PUBSUB_ENDPOINT_VISIBILITY, PUBSUB_ENDPOINT_LOCAL_VISIBILITY);
+            } else {
+                celix_properties_set(newEndpoint, PUBSUB_ENDPOINT_VISIBILITY, PUBSUB_ENDPOINT_SYSTEM_VISIBILITY);
+            }
             //if available also set container name
             const char *cn = celix_bundleContext_getProperty(psa->ctx, "CELIX_CONTAINER_NAME", NULL);
             if (cn != NULL)
-                celix_properties_set(newEndpoint, "container_name", cn);
+              celix_properties_set(newEndpoint, "container_name", cn);
             hashMap_put(psa->topicSenders.map, key, sender);
         } else {
             L_ERROR("[PSA TCP] Error creating a TopicSender");
@@ -457,10 +451,6 @@ celix_status_t pubsub_tcpAdmin_setupTopicSender(void *handle, const char *scope,
     celixThreadMutex_unlock(&psa->topicSenders.mutex);
     celixThreadMutex_unlock(&psa->protocols.mutex);
     celixThreadMutex_unlock(&psa->serializers.mutex);
-
-    if (sender != NULL && newEndpoint != NULL) {
-        //TODO connect endpoints to sender, NOTE is this needed for a tcp topic sender?
-    }
 
     if (newEndpoint != NULL && outPublisherEndpoint != NULL) {
         *outPublisherEndpoint = newEndpoint;
@@ -483,7 +473,6 @@ celix_status_t pubsub_tcpAdmin_teardownTopicSender(void *handle, const char *sco
         char *mapKey = hashMapEntry_getKey(entry);
         pubsub_tcp_topic_sender_t *sender = hashMap_remove(psa->topicSenders.map, key);
         free(mapKey);
-        //TODO disconnect endpoints to sender. note is this needed for a tcp topic sender?
         pubsub_tcpTopicSender_destroy(sender);
     } else {
         L_ERROR("[PSA TCP] Cannot teardown TopicSender with scope/topic %s/%s. Does not exists",
@@ -636,24 +625,13 @@ pubsub_tcpAdmin_disconnectEndpointFromReceiver(pubsub_tcp_admin_t *psa, pubsub_t
     //note can be called with discoveredEndpoint.mutex lock
     celix_status_t status = CELIX_SUCCESS;
 
-    const char *scope = pubsub_tcpTopicReceiver_scope(receiver);
-    const char *topic = pubsub_tcpTopicReceiver_topic(receiver);
-
-    const char *eScope = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_SCOPE, NULL);
-    const char *eTopic = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_NAME, NULL);
     const char *url = celix_properties_get(endpoint, PUBSUB_TCP_URL_KEY, NULL);
 
     if (url == NULL) {
         L_WARN("[PSA TCP] Error got endpoint without tcp url");
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
-        if (eTopic != NULL && topic != NULL && strncmp(eTopic, topic, 1024 * 1024) == 0) {
-            if (scope == NULL && eScope == NULL) {
-                pubsub_tcpTopicReceiver_disconnectFrom(receiver, url);
-            } else if (scope != NULL && eScope != NULL && strncmp(eScope, scope, 1024 * 1024) == 0) {
-                pubsub_tcpTopicReceiver_disconnectFrom(receiver, url);
-            }
-        }
+        pubsub_tcpTopicReceiver_disconnectFrom(receiver, url);
     }
 
     return status;
@@ -689,6 +667,21 @@ bool pubsub_tcpAdmin_executeCommand(void *handle, const char *commandLine __attr
                                     FILE *errStream __attribute__((unused))) {
     pubsub_tcp_admin_t *psa = handle;
     celix_status_t status = CELIX_SUCCESS;
+    char *line = celix_utils_strdup(commandLine);
+    char *token = line;
+    strtok_r(line, " ", &token); //first token is command name
+    strtok_r(NULL, " ", &token); //second token is sub command
+
+    if (celix_utils_stringEquals(token, "nr_of_receivers")) {
+        celixThreadMutex_lock(&psa->topicReceivers.mutex);
+        fprintf(out,"%i\n", hashMap_size(psa->topicReceivers.map));
+        celixThreadMutex_unlock(&psa->topicReceivers.mutex);
+    }
+    if (celix_utils_stringEquals(token, "nr_of_senders")) {
+        celixThreadMutex_lock(&psa->topicSenders.mutex);
+        fprintf(out, "%i\n", hashMap_size(psa->topicSenders.map));
+        celixThreadMutex_unlock(&psa->topicSenders.mutex);
+    }
 
     fprintf(out, "\n");
     fprintf(out, "Topic Senders:\n");
@@ -707,11 +700,12 @@ bool pubsub_tcpAdmin_executeCommand(void *handle, const char *commandLine __attr
         const char *scope = pubsub_tcpTopicSender_scope(sender);
         const char *topic = pubsub_tcpTopicSender_topic(sender);
         const char *url = pubsub_tcpTopicSender_url(sender);
+        const char *isPassive = pubsub_tcpTopicSender_isPassive(sender) ? " (passive)" : "";
         const char *postUrl = pubsub_tcpTopicSender_isStatic(sender) ? " (static)" : "";
         fprintf(out, "|- Topic Sender %s/%s\n", scope == NULL ? "(null)" : scope, topic);
         fprintf(out, "   |- serializer type = %s\n", serType);
         fprintf(out, "   |- protocol type = %s\n", protType);
-        fprintf(out, "   |- url            = %s%s\n", url, postUrl);
+        fprintf(out, "   |- url            = %s%s%s\n", url, postUrl, isPassive);
     }
     celixThreadMutex_unlock(&psa->topicSenders.mutex);
     celixThreadMutex_unlock(&psa->protocols.mutex);
