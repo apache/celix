@@ -195,6 +195,7 @@ static void celix_logAdmin_addLogSvcForName(celix_log_admin_t* admin, const char
         newEntry->logSvc.vlog = celix_logAdmin_vlog;
         newEntry->logSvc.vlogDetails = celix_logAdmin_vlogDetails;
         hashMap_put(admin->loggers, (void*)newEntry->name, newEntry);
+        celixThreadRwlock_unlock(&admin->lock);
 
         {
             //register new log service async
@@ -219,8 +220,8 @@ static void celix_logAdmin_addLogSvcForName(celix_log_admin_t* admin, const char
         }
     } else {
         found->count += 1;
+        celixThreadRwlock_unlock(&admin->lock);
     }
-    celixThreadRwlock_unlock(&admin->lock);
 }
 
 static void celix_logAdmin_trackerAdd(void *handle, const celix_service_tracker_info_t *info) {
@@ -308,7 +309,7 @@ static void celix_logAdmin_remSink(void *handle, void *svc __attribute__((unused
 
     celixThreadRwlock_writeLock(&admin->lock);
     celix_log_sink_entry_t* entry = hashMap_get(admin->sinks, sinkName);
-    if (entry->svcId != svcId) {
+    if (entry != NULL && entry->svcId != svcId) {
         //no match (note there can be invalid log sinks with the same name, but different svc ids.
         entry = NULL;
     }
