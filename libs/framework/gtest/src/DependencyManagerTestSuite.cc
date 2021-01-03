@@ -63,6 +63,48 @@ TEST_F(DependencyManagerTestSuite, DmCreateComponent) {
     ASSERT_TRUE(celix_dependencyManager_allComponentsActive(mng));
 }
 
+TEST_F(DependencyManagerTestSuite, DmComponentAddRemove) {
+    auto *mng = celix_bundleContext_getDependencyManager(ctx);
+    auto *cmp = celix_dmComponent_create(ctx, "test1");
+    celix_dependencyManager_add(mng, cmp);
+    ASSERT_EQ(1, celix_dependencyManager_nrOfComponents(mng));
+
+    celix_dependencyManager_remove(mng, cmp);
+    ASSERT_EQ(0, celix_dependencyManager_nrOfComponents(mng));
+
+    auto *cmp2 = celix_dmComponent_create(ctx, "test2");
+    auto *cmp3 = celix_dmComponent_create(ctx, "test3");
+    celix_dependencyManager_add(mng, cmp2);
+    celix_dependencyManager_add(mng, cmp3);
+    ASSERT_EQ(2, celix_dependencyManager_nrOfComponents(mng));
+
+    celix_dependencyManager_removeAllComponents(mng);
+    ASSERT_EQ(0, celix_dependencyManager_nrOfComponents(mng));
+}
+
+TEST_F(DependencyManagerTestSuite, DmGetInfo) {
+    auto* mng = celix_bundleContext_getDependencyManager(ctx);
+    auto* cmp = celix_dmComponent_create(ctx, "test1");
+
+    auto* p = celix_properties_create();
+    celix_properties_set(p, "key", "value");
+    celix_dmComponent_addInterface(cmp, "test-interface", nullptr, (void*)0x42, p);
+
+    auto* dep = celix_dmServiceDependency_create();
+    celix_dmServiceDependency_setService(dep, "test-interface", nullptr, nullptr);
+    celix_dmComponent_addServiceDependency(cmp, dep);
+
+    celix_dependencyManager_add(mng, cmp);
+
+    auto* infos = celix_dependencyManager_createInfos(mng);
+    EXPECT_EQ(1, celix_arrayList_size(infos));
+    auto* info = (celix_dm_component_info_t*)celix_arrayList_get(infos, 0);
+    EXPECT_EQ(1, celix_arrayList_size(info->interfaces));
+    EXPECT_EQ(1, celix_arrayList_size(info->dependency_list));
+    celix_dependencyManager_destroyInfos(mng, infos);
+}
+
+
 TEST_F(DependencyManagerTestSuite, TestCheckActive) {
     auto *mng = celix_bundleContext_getDependencyManager(ctx);
     auto *cmp = celix_dmComponent_create(ctx, "test1");

@@ -133,7 +133,6 @@ if (ENABLE_TESTING)
     setup_target_for_coverage(utils_test)
     setup_target_for_coverage(ip_utils_test)
     setup_target_for_coverage(filter_test)
-    setup_target_for_coverage(version_range_test)
     setup_target_for_coverage(version_test)
 
 endif ()
