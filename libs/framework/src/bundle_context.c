@@ -46,7 +46,7 @@ static void bundleContext_cleanupServiceTrackerTrackers(bundle_context_t *ctx);
 static void bundleContext_cleanupServiceRegistration(bundle_context_t* ctx);
 static long celix_bundleContext_trackServicesWithOptionsInternal(celix_bundle_context_t *ctx, const celix_service_tracking_options_t *opts, bool async);
 
-    celix_status_t bundleContext_create(framework_pt framework, celix_framework_logger_t*  logger, bundle_pt bundle, bundle_context_pt *bundle_context) {
+celix_status_t bundleContext_create(framework_pt framework, celix_framework_logger_t*  logger, bundle_pt bundle, bundle_context_pt *bundle_context) {
 	celix_status_t status = CELIX_SUCCESS;
 	bundle_context_pt context = NULL;
 
@@ -94,8 +94,6 @@ celix_status_t bundleContext_destroy(bundle_context_pt context) {
         celix_arrayList_destroy(context->svcRegistrations);
         hashMap_destroy(context->stoppingTrackerEventIds, false, false);
 
-        //NOTE still present service registrations will be cleared during bundle stop in the
-	    //service registry (serviceRegistry_clearServiceRegistrations).
 	    celixThreadMutex_destroy(&context->mutex);
 
 	    if (context->mng != NULL) {
@@ -116,7 +114,7 @@ celix_status_t bundleContext_destroy(bundle_context_pt context) {
 
 void celix_bundleContext_cleanup(celix_bundle_context_t *ctx) {
     //NOTE not perfect, because stopping of registrations/tracker when the activator is destroyed can lead to segfault.
-    //but atleast we can try to warn the bundle implementer that some cleanup is missing.
+    //but at least we can try to warn the bundle implementer that some cleanup is missing.
     bundleContext_cleanupBundleTrackers(ctx);
     bundleContext_cleanupServiceTrackers(ctx);
     bundleContext_cleanupServiceTrackerTrackers(ctx);
@@ -1386,10 +1384,6 @@ static long celix_bundleContext_trackServicesWithOptionsInternal(celix_bundle_co
         }
         return trackerId;
     } else {
-        if (!async) {
-
-        }
-
         celix_bundle_context_service_tracker_entry_t* entry = calloc(1, sizeof(*entry));
         entry->ctx = ctx;
         entry->createEventId = celix_framework_nextEventId(ctx->framework);
