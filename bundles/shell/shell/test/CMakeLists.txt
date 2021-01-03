@@ -18,12 +18,10 @@
 find_package(CppUTest REQUIRED)
 
 add_executable(test_shell
-    src/run_tests.cpp
-    src/shell_tests.cpp
+        src/ShellTestSuite.cpp
 )
 
-target_link_libraries(test_shell PRIVATE Celix::framework CURL::libcurl ${CppUTest_LIBRARY} Celix::shell_api)
-target_include_directories(test_shell SYSTEM PRIVATE ${CppUTest_INCLUDE_DIRS})
+target_link_libraries(test_shell PRIVATE Celix::framework CURL::libcurl Celix::shell_api GTest::gtest GTest::gtest_main)
 add_dependencies(test_shell shell_bundle)
 target_compile_definitions(test_shell PRIVATE -DSHELL_BUNDLE_LOCATION=\"$<TARGET_PROPERTY:shell,BUNDLE_FILE>\")
 target_compile_options(test_shell PRIVATE -Wno-deprecated-declarations)

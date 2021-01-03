@@ -150,9 +150,9 @@ int utils_compareServiceIdsAndRanking(unsigned long servId, long servRank, unsig
     if (servId == otherServId) {
         result = 0;
     } else if (servRank != otherServRank) {
-        result = servRank < otherServRank ? -1 : 1;
+        result = servRank < otherServRank ? 1 : -1;
     } else { //equal service rank, compare service ids
-        result = servId < otherServId ? 1 : -1;
+        result = servId < otherServId ? -1 : 1;
     }
 
     return result;
@@ -169,6 +169,21 @@ double celix_difftime(const struct timespec *tBegin, const struct timespec *tEnd
     }
 
     return ((double)diff.tv_sec) + diff.tv_nsec /  1000000000.0;
+}
+
+struct timespec celix_gettime(clockid_t clockId) {
+    struct timespec t;
+    errno = 0;
+    int rc = clock_gettime(clockId, &t);
+    if (rc != 0) {
+        fprintf(stderr, "Cannot get time from clock_gettime. Error is %s\n", strerror(errno));
+    }
+    return t;
+}
+
+double celix_elapsedtime(clockid_t clockId, struct timespec startTime) {
+    struct timespec now = celix_gettime(clockId);
+    return celix_difftime(&startTime, &now);
 }
 
 char* celix_utils_strdup(const char *str) {

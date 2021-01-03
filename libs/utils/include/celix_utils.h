@@ -71,6 +71,17 @@ void celix_utils_extractLocalNameAndNamespaceFromFullyQualifiedName(const char *
  */
 double celix_difftime(const struct timespec *tBegin, const struct timespec *tEnd);
 
+/**
+ * Returns the current time as struct timespec
+ * @param clockId The clock to use (see time.h)
+ */
+struct timespec celix_gettime(clockid_t clockId);
+
+/**
+ * Returns the elapsed time - in seconds - relative to the startTime
+ * using the clock for the provided clockid.
+ */
+double celix_elapsedtime(clockid_t clockId, struct timespec startTime);
 
 /**
  * Creates a hash from a string

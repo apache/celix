@@ -32,7 +32,6 @@ endif()
 add_dependencies(unresolveable_bundle sublib)
 
 add_executable(test_framework
-    src/run_tests.cpp
     src/single_framework_test.cpp
     src/multiple_frameworks_test.cpp
     src/bundle_context_bundles_tests.cpp
@@ -40,7 +39,7 @@ add_executable(test_framework
     src/DependencyManagerTestSuite.cc
 )
 
-target_link_libraries(test_framework Celix::framework CURL::libcurl GTest::gtest)
+target_link_libraries(test_framework Celix::framework CURL::libcurl GTest::gtest GTest::gtest_main)
 add_dependencies(test_framework simple_test_bundle1_bundle simple_test_bundle2_bundle simple_test_bundle3_bundle simple_test_bundle4_bundle simple_test_bundle5_bundle bundle_with_exception_bundle unresolveable_bundle_bundle)
 target_include_directories(test_framework PRIVATE ../src)
 

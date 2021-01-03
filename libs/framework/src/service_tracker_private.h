@@ -23,51 +23,14 @@
 #include "service_tracker.h"
 #include "celix_types.h"
 
-//instance for an active per open statement and removed per close statement
-typedef struct celix_service_tracker_instance {
-	celix_thread_mutex_t closingLock; //projects closing and activeServiceChangeCalls
-	bool closing; //when true the service tracker instance is being closed and all calls from the service listener are ignored
-	size_t activeServiceChangeCalls;
-	celix_thread_cond_t activeServiceChangeCallsCond;
-
-	bundle_context_t *context;
-	char * filter;
-
-	service_tracker_customizer_t customizer;
-	celix_service_listener_t listener;
-
-	void *callbackHandle;
-
-	void (*set)(void *handle, void *svc); //highest ranking
-	void (*add)(void *handle, void *svc);
-	void (*remove)(void *handle, void *svc);
-	void (*modified)(void *handle, void *svc);
-
-	void (*setWithProperties)(void *handle, void *svc, const properties_t *props); //highest ranking
-	void (*addWithProperties)(void *handle, void *svc, const properties_t *props);
-	void (*removeWithProperties)(void *handle, void *svc, const properties_t *props);
-	void (*modifiedWithProperties)(void *handle, void *svc, const properties_t *props);
-
-	void (*setWithOwner)(void *handle, void *svc, const properties_t *props, const bundle_t *owner); //highest ranking
-	void (*addWithOwner)(void *handle, void *svc, const properties_t *props, const bundle_t *owner);
-	void (*removeWithOwner)(void *handle, void *svc, const properties_t *props, const bundle_t *owner);
-	void (*modifiedWithOwner)(void *handle, void *svc, const properties_t *props, const bundle_t *owner);
-
-	celix_thread_rwlock_t lock; //projects trackedServices
-	array_list_t *trackedServices;
-
-	celix_thread_mutex_t mutex; //protect current highest service id
-	long currentHighestServiceId;
-
-	celix_thread_t shutdownThread; //will be created when this instance is shutdown
-} celix_service_tracker_instance_t;
-
 struct celix_serviceTracker {
 	bundle_context_t *context;
 
 	char* serviceName;
 	char* filter;
-	service_tracker_customizer_t *customizer;
+
+    service_tracker_customizer_t customizer;
+    celix_service_listener_t listener;
 
 	void *callbackHandle;
 
@@ -86,9 +49,19 @@ struct celix_serviceTracker {
 	void (*removeWithOwner)(void *handle, void *svc, const properties_t *props, const bundle_t *owner);
 	void (*modifiedWithOwner)(void *handle, void *svc, const properties_t *props, const bundle_t *owner);
 
-	celix_thread_rwlock_t instanceLock;
-	celix_service_tracker_instance_t *instance; /*NULL -> close, !NULL->open*/
+    struct {
+        celix_thread_mutex_t mutex; //projects below
+        celix_thread_cond_t cond;
+        bool closing; //if closing is true, no new service registrations are added to the serice tracker
+        size_t activeCalls; // >0 if there is still a serviceChange for a service registration call active
+    } closeSync;
 
+    celix_thread_mutex_t mutex; //projects below
+    celix_thread_cond_t  cond;
+    celix_array_list_t *trackedServices;
+    celix_array_list_t *untrackingServices;
+    bool open;
+    long currentHighestServiceId;
 };
 
 typedef struct celix_tracked_entry {

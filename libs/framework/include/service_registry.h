@@ -60,8 +60,6 @@ serviceRegistry_registerServiceFactory(service_registry_pt registry, celix_bundl
 celix_status_t
 serviceRegistry_unregisterService(service_registry_pt registry, celix_bundle_t *bundle, service_registration_pt registration);
 
-celix_status_t serviceRegistry_clearServiceRegistrations(service_registry_pt registry, celix_bundle_t *bundle);
-
 celix_status_t serviceRegistry_getServiceReference(service_registry_pt registry, celix_bundle_t *bundle,
                                                    service_registration_pt registration,
                                                    service_reference_pt *reference);
@@ -95,6 +93,17 @@ celix_status_t celix_serviceRegistry_addServiceListener(celix_service_registry_t
 
 celix_status_t celix_serviceRegistry_removeServiceListener(celix_service_registry_t *reg, celix_service_listener_t *listener);
 
+bool celix_serviceRegistry_isServiceRegistered(celix_service_registry_t* reg, long serviceId);
+
+celix_status_t
+celix_serviceRegistry_registerService(
+        celix_service_registry_t *reg,
+        const celix_bundle_t *bnd,
+        const char *serviceName,
+        void* service,
+        celix_properties_t* props,
+        long reserveId,
+        service_registration_t **registration);
 
 celix_status_t
 celix_serviceRegistry_registerServiceFactory(
@@ -103,6 +112,7 @@ celix_serviceRegistry_registerServiceFactory(
         const char *serviceName,
         celix_service_factory_t *factory,
         celix_properties_t* props,
+        long reserveId,
         service_registration_t **registration);
 
 /**
@@ -132,6 +142,37 @@ bool celix_serviceRegistry_getServiceInfo(
  * Returns the next svc id.
  */
 long celix_serviceRegistry_nextSvcId(celix_service_registry_t* registry);
+
+
+/**
+ * Unregister service for the provided service id (owned by bnd).
+ * Will print an error if the service id is invalid
+ */
+void celix_serviceRegistry_unregisterService(celix_service_registry_t* registry, celix_bundle_t* bnd, long serviceId);
+
+
+/**
+ * Create a LDAP filter for the provided filter parts.
+ * @param serviceName       The optional service name
+ * @param versionRange      The optional version range
+ * @param filter            The optional filter
+ * @param serviceLanguage   The optional service lang. if NULL, lang C will be used.
+ * @param ignoreServiceLanguage   The whether the service lang filter needs to be added to the filter.
+ * @return a LDAP filter. Caller is responsible for freeing the filter.
+ */
+char* celix_serviceRegistry_createFilterFor(
+        celix_service_registry_t* registry,
+        const char* serviceName,
+        const char* versionRange,
+        const char* additionalFilter,
+        const char* serviceLanguage,
+        bool ignoreServiceLanguage);
+
+/**
+ * Find services and return a array list of service ids (long).
+ * Caller is responsible for freeing the returned array list.
+ */
+celix_array_list_t* celix_serviceRegisrty_findServices(celix_service_registry_t* registry, const char* filter);
 
 
 #ifdef __cplusplus

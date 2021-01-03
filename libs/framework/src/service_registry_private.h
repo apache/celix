@@ -32,6 +32,27 @@
 #include "listener_hook_service.h"
 #include "service_reference.h"
 
+#define CELIX_SERVICE_REGISTRY_STATIC_EVENT_QUEUE_SIZE  64
+
+typedef struct celix_service_registry_event {
+    //TODO call from framework to ensure bundle entries usage count is increased
+    bool isRegistrationEvent;
+
+    //for register event
+    long serviceId;
+    char *serviceName;
+    void *svc;
+    celix_service_factory_t* factory;
+    celix_properties_t* properties;
+    void* registerData;
+    void (*registerCallback)(void *data, service_registration_t*);
+
+    //for unregister event
+    service_registration_t* registration;
+    void* unregisterData;
+    void (*unregisterCallback)(void *data);
+} celix_service_registry_event_t;
+
 struct celix_serviceRegistry {
 	framework_pt framework;
 	registry_callback_t callback;
@@ -40,9 +61,6 @@ struct celix_serviceRegistry {
 
 	hash_map_t *serviceRegistrations; //key = bundle (reg owner), value = list ( registration )
 	hash_map_t *serviceReferences; //key = bundle, value = map (key = serviceId, value = reference)
-
-	bool checkDeletedReferences; //If enabled. check if provided service references are still valid
-	hash_map_t *deletedServiceReferences; //key = ref pointer, value = bool
 
 	long nextServiceId;
 
@@ -81,12 +99,6 @@ typedef struct celix_service_registry_service_listener_entry {
     celix_thread_cond_t cond;
     unsigned int useCount;
 } celix_service_registry_service_listener_entry_t;
-
-typedef enum reference_status_enum {
-	REF_ACTIVE,
-	REF_DELETED,
-	REF_UNKNOWN
-} reference_status_t;
 
 struct usageCount {
 	unsigned int count;

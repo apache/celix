@@ -378,6 +378,90 @@ TEST_F(CelixBundleContextBundlesTests, trackBundlesTest) {
     celix_bundleContext_stopTracker(ctx, trackerId);
 };
 
+
+TEST_F(CelixBundleContextBundlesTests, trackBundlesTestAsync) {
+    struct data {
+        std::atomic<int> installedCount{0};
+        std::atomic<int> startedCount{0};
+        std::atomic<int> stoppedCount{0};
+    };
+    struct data data;
+
+    auto installed = [](void *handle, const bundle_t *bnd) {
+        auto *d = static_cast<struct data*>(handle);
+        EXPECT_TRUE(bnd != nullptr);
+        d->installedCount.fetch_add(1);
+    };
+
+    auto started = [](void *handle, const bundle_t *bnd) {
+        auto *d = static_cast<struct data*>(handle);
+        EXPECT_TRUE(bnd != nullptr);
+        d->startedCount.fetch_add(1);
+    };
+
+    auto stopped = [](void *handle, const bundle_t *bnd) {
+        auto *d = static_cast<struct data*>(handle);
+        if (bnd == nullptr) {
+            celix_logUtils_logToStdout("test", CELIX_LOG_LEVEL_ERROR, "bnd should not be null");
+        }
+        EXPECT_TRUE(bnd != nullptr);
+        d->stoppedCount.fetch_add(1);
+    };
+
+    celix_bundle_tracking_options_t opts{};
+    opts.callbackHandle = static_cast<void*>(&data);
+    opts.onInstalled = installed;
+    opts.onStarted = started;
+    opts.onStopped = stopped;
+
+    long bundleId1 = celix_bundleContext_installBundle(ctx, TEST_BND1_LOC, true);
+    celix_framework_waitForEmptyEventQueue(fw);
+    EXPECT_TRUE(bundleId1 >= 0);
+
+    /*
+     * NOTE for bundles already installed (TEST_BND1) the callbacks are called on the
+     * thread of celix_bundleContext_trackBundlesWithOptions.
+     * For Bundles installed after the celix_bundleContext_trackBundlesWithOptions function
+     * the called are called on the Celix framework event queue thread.
+     */
+    long trackerId = celix_bundleContext_trackBundlesWithOptionsAsync(ctx, &opts);
+    celix_bundleContext_waitForAsyncTracker(ctx, trackerId);
+    EXPECT_EQ(1, data.installedCount.load());
+    EXPECT_EQ(1, data.startedCount.load());
+    EXPECT_EQ(0, data.stoppedCount.load());
+
+
+    long bundleId2 = celix_bundleContext_installBundle(ctx, TEST_BND2_LOC, true);
+    celix_framework_waitForEmptyEventQueue(fw);
+    EXPECT_TRUE(bundleId2 >= 0);
+    EXPECT_EQ(2, data.installedCount.load());
+    EXPECT_EQ(2, data.startedCount.load());
+    EXPECT_EQ(0, data.stoppedCount.load());
+
+    celix_bundleContext_uninstallBundle(ctx, bundleId2);
+    celix_framework_waitForEmptyEventQueue(fw);
+    EXPECT_EQ(2, data.installedCount.load());
+    EXPECT_EQ(2, data.startedCount.load());
+    EXPECT_EQ(1, data.stoppedCount.load());
+
+    long bundleId3 = celix_bundleContext_installBundle(ctx, TEST_BND3_LOC, true);
+    celix_framework_waitForEmptyEventQueue(fw);
+    EXPECT_TRUE(bundleId3 >= 0);
+    EXPECT_EQ(3, data.installedCount.load());
+    EXPECT_EQ(3, data.startedCount.load());
+    EXPECT_EQ(1, data.stoppedCount.load());
+
+    bundleId2 = celix_bundleContext_installBundle(ctx, TEST_BND2_LOC, true);
+    celix_framework_waitForEmptyEventQueue(fw);
+    EXPECT_TRUE(bundleId2 >= 0);
+    EXPECT_EQ(4, data.installedCount.load());
+    EXPECT_EQ(4, data.startedCount.load());
+    EXPECT_EQ(1, data.stoppedCount.load());
+
+    celix_bundleContext_stopTrackerAsync(ctx, trackerId, nullptr, nullptr);
+    celix_bundleContext_waitForAsyncStopTracker(ctx, trackerId);
+};
+
 TEST_F(CelixBundleContextBundlesTests, useBundlesConcurrentTest) {
 
     struct data {
@@ -455,19 +539,40 @@ TEST_F(CelixBundleContextBundlesTests, bundleInfoTests) {
     };
 
     bool called = celix_bundleContext_useBundle(ctx, 0, &data, updateCountFp);
-    ASSERT_TRUE(called);
-    ASSERT_EQ(0, data.provideCount);
-    ASSERT_EQ(0, data.requestedCount);
+    EXPECT_TRUE(called);
+    EXPECT_EQ(0, data.provideCount);
+    EXPECT_EQ(0, data.requestedCount);
 
 
     long svcId = celix_bundleContext_registerService(ctx, (void*)0x42, "NopService", NULL);
     long trackerId = celix_bundleContext_trackServices(ctx, "AService", NULL, NULL, NULL);
 
     called = celix_bundleContext_useBundle(ctx, 0, &data, updateCountFp);
-    ASSERT_TRUE(called);
-    ASSERT_EQ(1, data.provideCount);
-    ASSERT_EQ(1, data.requestedCount);
+    EXPECT_TRUE(called);
+    EXPECT_EQ(1, data.provideCount);
+    EXPECT_EQ(1, data.requestedCount);
 
     celix_bundleContext_unregisterService(ctx, svcId);
     celix_bundleContext_stopTracker(ctx, trackerId);
+}
+
+TEST_F(CelixBundleContextBundlesTests, startStopBundleTrackerAsync) {
+    std::atomic<int> count{0};
+
+    auto cb = [](void* data) {
+        auto* c = static_cast<std::atomic<int>*>(data);
+        (*c)++;
+    };
+
+    celix_bundle_tracking_options_t opts{};
+    opts.trackerCreatedCallbackData = &count;
+    opts.trackerCreatedCallback = cb;
+    long trkId = celix_bundleContext_trackBundlesWithOptionsAsync(ctx, &opts);
+    EXPECT_GE(trkId, 0);
+    celix_bundleContext_waitForAsyncTracker(ctx, trkId);
+    EXPECT_EQ(count.load(), 1); //1x tracker started
+
+    celix_bundleContext_stopTrackerAsync(ctx, trkId, &count, cb);
+    celix_bundleContext_waitForAsyncStopTracker(ctx, trkId);
+    EXPECT_EQ(2, count.load()); //1x tracker started, 1x tracker stopped
 }

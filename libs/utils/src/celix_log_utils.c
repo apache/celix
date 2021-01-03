@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <string.h>
+#include <pthread.h>
 
 static const char * const CELIX_STRING_VALUE_DISABLED  = "disabled";
 static const char * const CELIX_STRING_VALUE_FATAL     = "fatal";
@@ -127,6 +128,8 @@ void celix_logUtils_vLogToStdout(const char *logName, celix_log_level_e level, c
     celix_logUtils_vLogToStdoutDetails(logName, level, NULL, NULL, 0, format, formatArgs);
 }
 
+static pthread_mutex_t globalMutex = PTHREAD_MUTEX_INITIALIZER;
+
 void celix_logUtils_vLogToStdoutDetails(const char *logName, celix_log_level_e level, const char* file, const char* function, int line, const char *format, va_list formatArgs) {
     if (level == CELIX_LOG_LEVEL_DISABLED) {
         //silently ignore
@@ -143,22 +146,21 @@ void celix_logUtils_vLogToStdoutDetails(const char *logName, celix_log_level_e l
         out = stderr;
     }
 
+    pthread_mutex_lock(&globalMutex);
     fprintf(out, "[%i-%02i-%02iT%02i:%02i:%02i] ", local.tm_year + 1900, local.tm_mon+1, local.tm_mday, local.tm_hour, local.tm_min, local.tm_sec);
     if (file != NULL && function != NULL) {
         (void)file; //note not using file
-        fprintf(out, "[%s] [%s] [%s:%i] ", celix_logUtils_logLevelToString(level), logName, function, line);
+        fprintf(out, "[%7s] [%s] [%s:%i] ", celix_logUtils_logLevelToString(level), logName, function, line);
     } else {
-        fprintf(out, "[%s] [%s] ", celix_logUtils_logLevelToString(level), logName);
+        fprintf(out, "[%7s] [%s] ", celix_logUtils_logLevelToString(level), logName);
     }
-
     vfprintf(out, format, formatArgs);
-
     fprintf(out, "\n");
-    fflush(out);
 
     if (level >= CELIX_LOG_LEVEL_FATAL) {
         fprintf(out, "Backtrace:\n");
-        fflush(out);
         celix_logUtils_inlinePrintBacktrace(out);
     }
+    fflush(out);
+    pthread_mutex_unlock(&globalMutex);
 }
