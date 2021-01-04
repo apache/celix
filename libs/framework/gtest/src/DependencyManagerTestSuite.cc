@@ -266,7 +266,7 @@ TEST_F(DependencyManagerTestSuite, InCompleteBuildShouldNotLeak) {
     cmp2.createCServiceDependency<TestService>("TestService").setFilter("(key=value"); //note not build
     cmp2.createServiceDependency<TestService>().setFilter("(key=value)"); //note not build
 
-    TestService svc{nullptr};
+    TestService svc{};
     cmp2.createProvidedCService(&svc, "CTestService").addProperty("key1", "val1"); //note not build
     cmp2.createProvidedService<TestService>().setVersion("1.0.0"); //note not build
 }
