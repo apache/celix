@@ -114,11 +114,7 @@ TEST_F(DependencyManagerTestSuite, StartDmWillBuildCmp) {
 }
 
 struct TestService {
-public:
-    TestService() : handle(nullptr) {};
-    TestService(void *_handle) : handle(_handle) {};
-
-    void *handle;
+    void *handle = nullptr;
 };
 
 class Cmp1 : public TestService {
@@ -159,7 +155,7 @@ TEST_F(DependencyManagerTestSuite, AddSvcProvideAfterBuild) {
     cmp.build();
     EXPECT_EQ(1, dm.getNrOfComponents()); //cmp "build", so active
 
-    TestService svc{nullptr};
+    TestService svc{};
     cmp.addCInterface(&svc, "TestService");
 
     long svcId = celix_bundleContext_findService(ctx, "TestService");
@@ -187,7 +183,7 @@ TEST_F(DependencyManagerTestSuite, BuildSvcProvide) {
     cmp.build();
     EXPECT_EQ(1, dm.getNrOfComponents()); //cmp "build", so active
 
-    TestService svc{nullptr};
+    TestService svc{};
     cmp.createProvidedCService(&svc, "CTestService").addProperty("key1", "val1").addProperty("key2", 3);
 
     long svcId = celix_bundleContext_findService(ctx, "CTestService");
@@ -238,7 +234,7 @@ TEST_F(DependencyManagerTestSuite, AddSvcDepAfterBuild) {
                 count++;
             });
 
-    TestService svc{nullptr};
+    TestService svc{};
     long svcId = celix_bundleContext_registerService(ctx, &svc, "TestService", nullptr);
     long svcId2 = celix_bundleContext_registerService(ctx, &svc, "AnotherService", nullptr); //note should not be found.
 
