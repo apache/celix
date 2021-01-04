@@ -18,9 +18,11 @@
  */
 
 #include <gtest/gtest.h>
+#include <atomic>
 
 #include "celix_launcher.h"
 #include "celix_framework_factory.h"
+#include "celix_framework.h"
 
 
 class CelixFramework : public ::testing::Test {
@@ -44,6 +46,24 @@ TEST_F(CelixFramework, testFramework) {
     celixLauncher_stop(framework);
     celixLauncher_waitForShutdown(framework);
     celixLauncher_destroy(framework);
+}
+
+TEST_F(CelixFramework, testEventQueue) {
+    long eid = celix_framework_nextEventId(framework);
+    EXPECT_GE(eid, 0);
+    celix_framework_waitForGenericEvent(framework, eid); //event never issued so should return directly
+
+    std::atomic<int> count{0};
+    celix_framework_fireGenericEvent(framework, eid, -1L, "test", static_cast<void*>(&count), [](void* data) {
+       auto *c = static_cast<std::atomic<int>*>(data);
+       *c += 1;
+    }, static_cast<void*>(&count), [](void* data) {
+        auto *c = static_cast<std::atomic<int>*>(data);
+        *c += 3;
+    });
+
+    celix_framework_waitForGenericEvent(framework, eid);
+    EXPECT_EQ(4, count);
 }
 
 class FrameworkFactory : public ::testing::Test {
@@ -135,6 +155,11 @@ TEST_F(FrameworkFactory, restartFramework) {
     framework_start(fw);
     framework_stop(fw);
     framework_waitForStop(fw);
+
+    framework_start(fw);
+    framework_stop(fw);
+    framework_waitForStop(fw);
+
     framework_destroy(fw);
 }
 

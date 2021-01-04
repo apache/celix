@@ -315,6 +315,7 @@ static celix_status_t bndStart(struct activator *act, celix_bundle_context_t* ct
     act->testSvc.testCreateRemoteServiceInRemoteCall = testCreateRemoteServiceInRemoteCall;
     act->testSvc.testCreateDestroyComponentWithRemoteService = bndTestCreateDestroyComponentWithRemoteService;
 
+    act->testSvc.testCreateRemoteServiceInRemoteCall = testCreateRemoteServiceInRemoteCall;
 
     //create mutex
     pthread_mutex_init(&act->mutex, NULL);

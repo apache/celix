@@ -53,7 +53,6 @@ celix_log_level_e celix_logUtils_logLevelFromStringWithCheck(const char *level, 
  * Logs a message to stdout/stderr using the provided logName and log level.
  * If the provided log level is higher than info, stderr will be used.
  *
- * function is not thread safe (multiple printf's are used).
  */
 void celix_logUtils_logToStdout(const char *logName, celix_log_level_e level, const char *format, ...);
 
@@ -66,7 +65,6 @@ void celix_logUtils_logToStdout(const char *logName, celix_log_level_e level, co
  *
  * If the argument file or function is NULL, the arguments file, function and line are not used.
  *
- * function is not thread safe (multiple printf's are used).
  */
 void celix_logUtils_logToStdoutDetails(const char *logName, celix_log_level_e level, const char* file, const char* function, int line, const char *format, ...);
 
@@ -75,7 +73,6 @@ void celix_logUtils_logToStdoutDetails(const char *logName, celix_log_level_e le
  * Logs a message to stdout/stderr using the provided logName and log level.
  * If the provided log level is higher than info, stderr will be used.
  *
- * function is not thread safe (multiple printf's are used).
  */
 void celix_logUtils_vLogToStdout(const char *logName, celix_log_level_e level, const char *format, va_list formatArgs);
 
@@ -88,14 +85,12 @@ void celix_logUtils_vLogToStdout(const char *logName, celix_log_level_e level, c
  *
  * If the argument file or function is NULL, the arguments file, function and line are not used.
  *
- * function is not thread safe (multiple printf's are used).
  */
 void celix_logUtils_vLogToStdoutDetails(const char *logName, celix_log_level_e level, const char* file, const char* function, int line, const char *format, va_list formatArgs);
 
 /**
  * Prints a backtrace to the provided output stream.
  *
- * function is not thread safe (multiple printf's are used).
  */
 void celix_logUtils_printBacktrace(FILE* stream);
 

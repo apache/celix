@@ -45,10 +45,6 @@ set_target_properties(framework PROPERTIES "SOVERSION" 2)
 target_link_libraries(framework PUBLIC Celix::utils Celix::dfi ${CELIX_OPTIONAL_EXTRA_LIBS})
 target_link_libraries(framework PUBLIC UUID::lib CURL::libcurl ZLIB::ZLIB)
 
-#Note option to ensure celix uses separate shutdown thread for closing service trackers.
-#This can prevent deadlocks, but those deadlock are bugs which need to be solved instead of this approach.
-#target_compile_definitions(framework PRIVATE -DCELIX_SERVICE_TRACKER_USE_SHUTDOWN_THREAD)
-
 install(TARGETS framework EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework)
 install(DIRECTORY include/ DESTINATION include/celix COMPONENT framework)
 

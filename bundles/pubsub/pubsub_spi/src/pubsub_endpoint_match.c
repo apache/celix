@@ -56,38 +56,21 @@ static double getPSAScore(const char *requested_admin, const char *request_qos, 
     return score;
 }
 
-struct psa_serializer_selection_data {
-    const char *requested_serializer;
-    long matchingSvcId;
-};
-
-void psa_serializer_selection_callback(void *handle, void *svc __attribute__((unused)), const celix_properties_t *props) {
-    struct psa_serializer_selection_data *data = handle;
-    const char *serType = celix_properties_get(props, PUBSUB_SERIALIZER_TYPE_KEY, NULL);
-    if (serType == NULL) {
-        fprintf(stderr, "Warning found serializer without mandatory serializer type key (%s)\n", PUBSUB_SERIALIZER_TYPE_KEY);
-    } else {
-        if (strncmp(data->requested_serializer, serType, 1024 * 1024) == 0) {
-            data->matchingSvcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
-        }
-    }
-}
-
 static long getPSASerializer(celix_bundle_context_t *ctx, const char *requested_serializer) {
-    long svcId;
+    long svcId = -1L;
 
     if (requested_serializer != NULL) {
-        struct psa_serializer_selection_data data;
-        data.requested_serializer = requested_serializer;
-        data.matchingSvcId = -1L;
+        char filter[512];
+        snprintf(filter, 512, "(%s=%s)", PUBSUB_SERIALIZER_TYPE_KEY, requested_serializer);
 
-        celix_service_use_options_t opts = CELIX_EMPTY_SERVICE_USE_OPTIONS;
-        opts.filter.serviceName = PUBSUB_SERIALIZER_SERVICE_NAME;
-        opts.filter.ignoreServiceLanguage = true;
-        opts.callbackHandle = &data;
-        opts.useWithProperties = psa_serializer_selection_callback;
-        celix_bundleContext_useServicesWithOptions(ctx, &opts);
-        svcId = data.matchingSvcId;
+        celix_service_filter_options_t opts = CELIX_EMPTY_SERVICE_FILTER_OPTIONS;
+        opts.serviceName = PUBSUB_SERIALIZER_SERVICE_NAME;
+        opts.filter = filter;
+
+        svcId = celix_bundleContext_findServiceWithOptions(ctx, &opts);
+        if (svcId == -1) {
+            fprintf(stderr, "Warning cannot find serializer with requested serializer type '%s'\n", requested_serializer);
+        }
     } else {
         celix_service_filter_options_t opts = CELIX_EMPTY_SERVICE_FILTER_OPTIONS;
         opts.serviceName = PUBSUB_SERIALIZER_SERVICE_NAME;

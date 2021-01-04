@@ -33,10 +33,9 @@
 #include "pubsub_tcp_common.h"
 #include <uuid/uuid.h>
 #include "celix_constants.h"
-#include <signal.h>
 #include <pubsub_utils.h>
+#include "pubsub_interceptors_handler.h"
 
-#define FIRST_SEND_DELAY_IN_SECONDS              2
 #define TCP_BIND_MAX_RETRY                      10
 
 #define L_DEBUG(...) \
@@ -59,13 +58,15 @@ struct pubsub_tcp_topic_sender {
     bool metricsEnabled;
     pubsub_tcpHandler_t *socketHandler;
     pubsub_tcpHandler_t *sharedSocketHandler;
+    pubsub_interceptors_handler_t *interceptorsHandler;
 
     char *scope;
     char *topic;
     char *url;
     bool isStatic;
-
+    bool isPassive;
     bool verbose;
+    unsigned long send_delay;
 
     struct {
         long svcId;
@@ -128,7 +129,7 @@ pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
     const char *scope,
     const char *topic,
     const celix_properties_t *topicProperties,
-    pubsub_tcp_endPointStore_t *endPointStore,
+    pubsub_tcp_endPointStore_t *handlerStore,
     long serializerSvcId,
     pubsub_serializer_service_t *ser,
     long protocolSvcId,
@@ -144,52 +145,44 @@ pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
     if (uuid != NULL) {
         uuid_parse(uuid, sender->fwUUID);
     }
-    sender->metricsEnabled = celix_bundleContext_getPropertyAsBool(ctx, PSA_TCP_METRICS_ENABLED,
-                                                                   PSA_TCP_DEFAULT_METRICS_ENABLED);
-    bool isEndpoint = false;
+    pubsubInterceptorsHandler_create(ctx, scope, topic, &sender->interceptorsHandler);
+    sender->isPassive = false;
+    sender->metricsEnabled = celix_bundleContext_getPropertyAsBool(ctx, PSA_TCP_METRICS_ENABLED, PSA_TCP_DEFAULT_METRICS_ENABLED);
     char *urls = NULL;
     const char *ip = celix_bundleContext_getProperty(ctx, PUBSUB_TCP_PSA_IP_KEY, NULL);
-    const char *discUrl = NULL;
-    const char *staticClientEndPointUrls = NULL;
-    const char *staticServerEndPointUrls = NULL;
+    const char *discUrl = pubsub_getEnvironmentVariableWithScopeTopic(ctx, PUBSUB_TCP_STATIC_BIND_URL_FOR, topic, scope);
+    const char *isPassive = pubsub_getEnvironmentVariableWithScopeTopic(ctx, PUBSUB_TCP_PASSIVE_ENABLED, topic, scope);
+    const char *passiveKey = pubsub_getEnvironmentVariableWithScopeTopic(ctx, PUBSUB_TCP_PASSIVE_SELECTION_KEY, topic, scope);
 
-    discUrl = pubsub_getEnvironmentVariableWithScopeTopic(ctx, PUBSUB_TCP_STATIC_BIND_URL_FOR, topic, scope);
-
+    if (isPassive) {
+        sender->isPassive = psa_tcp_isPassive(isPassive);
+    }
     if (topicProperties != NULL) {
         if (discUrl == NULL) {
             discUrl = celix_properties_get(topicProperties, PUBSUB_TCP_STATIC_DISCOVER_URL, NULL);
         }
-        /* Check if it's a static endpoint */
-        const char *endPointType = celix_properties_get(topicProperties, PUBSUB_TCP_STATIC_ENDPOINT_TYPE, NULL);
-        if (endPointType != NULL) {
-            isEndpoint = true;
-            if (strncmp(PUBSUB_TCP_STATIC_ENDPOINT_TYPE_CLIENT, endPointType,
-                        strlen(PUBSUB_TCP_STATIC_ENDPOINT_TYPE_CLIENT)) == 0) {
-                staticClientEndPointUrls = celix_properties_get(topicProperties, PUBSUB_TCP_STATIC_CONNECT_URLS, NULL);
-            }
-            if (strncmp(PUBSUB_TCP_STATIC_ENDPOINT_TYPE_SERVER, endPointType,
-                        strlen(PUBSUB_TCP_STATIC_ENDPOINT_TYPE_SERVER)) == 0) {
-                staticServerEndPointUrls = discUrl;
-            }
+        if (isPassive == NULL) {
+            sender->isPassive = celix_properties_getAsBool(topicProperties, PUBSUB_TCP_PASSIVE_CONFIGURED, false);
+        }
+        if (passiveKey == NULL) {
+            passiveKey = celix_properties_get(topicProperties, PUBSUB_TCP_PASSIVE_KEY, NULL);
         }
     }
-
     /* When it's an endpoint share the socket with the receiver */
-    if ((staticClientEndPointUrls != NULL) || (staticServerEndPointUrls)) {
-        celixThreadMutex_lock(&endPointStore->mutex);
-        const char *endPointUrl = (staticClientEndPointUrls) ? staticClientEndPointUrls : staticServerEndPointUrls;
-        pubsub_tcpHandler_t *entry = hashMap_get(endPointStore->map, endPointUrl);
+    if (passiveKey != NULL) {
+        celixThreadMutex_lock(&handlerStore->mutex);
+        pubsub_tcpHandler_t *entry = hashMap_get(handlerStore->map, passiveKey);
         if (entry == NULL) {
             if (sender->socketHandler == NULL)
                 sender->socketHandler = pubsub_tcpHandler_create(sender->protocol, sender->logHelper);
             entry = sender->socketHandler;
             sender->sharedSocketHandler = sender->socketHandler;
-            hashMap_put(endPointStore->map, (void *) endPointUrl, entry);
+            hashMap_put(handlerStore->map, (void *) passiveKey, entry);
         } else {
             sender->socketHandler = entry;
             sender->sharedSocketHandler = entry;
         }
-        celixThreadMutex_unlock(&endPointStore->mutex);
+        celixThreadMutex_unlock(&handlerStore->mutex);
     } else {
         sender->socketHandler = pubsub_tcpHandler_create(sender->protocol, sender->logHelper);
     }
@@ -197,66 +190,66 @@ pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
     if ((sender->socketHandler != NULL) && (topicProperties != NULL)) {
         long prio = celix_properties_getAsLong(topicProperties, PUBSUB_TCP_THREAD_REALTIME_PRIO, -1L);
         const char *sched = celix_properties_get(topicProperties, PUBSUB_TCP_THREAD_REALTIME_SCHED, NULL);
-        long retryCnt = celix_properties_getAsLong(topicProperties, PUBSUB_TCP_PUBLISHER_RETRY_CNT_KEY,
-                                                   PUBSUB_TCP_PUBLISHER_RETRY_CNT_DEFAULT);
-        double timeout = celix_properties_getAsDouble(topicProperties, PUBSUB_TCP_PUBLISHER_SNDTIMEO_KEY,
-                                                                       (!isEndpoint) ? PUBSUB_TCP_PUBLISHER_SNDTIMEO_DEFAULT :
-                                                                                       PUBSUB_TCP_PUBLISHER_SNDTIMEO_ENDPOINT_DEFAULT);
+        long retryCnt = celix_properties_getAsLong(topicProperties, PUBSUB_TCP_PUBLISHER_RETRY_CNT_KEY, PUBSUB_TCP_PUBLISHER_RETRY_CNT_DEFAULT);
+        double sendTimeout = celix_properties_getAsDouble(topicProperties, PUBSUB_TCP_PUBLISHER_SNDTIMEO_KEY, PUBSUB_TCP_PUBLISHER_SNDTIMEO_DEFAULT);
+        long maxMsgSize = celix_properties_getAsLong(topicProperties, PSA_TCP_MAX_MESSAGE_SIZE, PSA_TCP_DEFAULT_MAX_MESSAGE_SIZE);
+        long timeout = celix_bundleContext_getPropertyAsLong(ctx, PSA_TCP_TIMEOUT, PSA_TCP_DEFAULT_TIMEOUT);
+        sender->send_delay = celix_bundleContext_getPropertyAsLong(ctx,  PUBSUB_UTILS_PSA_SEND_DELAY, PUBSUB_UTILS_PSA_DEFAULT_SEND_DELAY);
         pubsub_tcpHandler_setThreadName(sender->socketHandler, topic, scope);
         pubsub_tcpHandler_setThreadPriority(sender->socketHandler, prio, sched);
         pubsub_tcpHandler_setSendRetryCnt(sender->socketHandler, (unsigned int) retryCnt);
-        pubsub_tcpHandler_setSendTimeOut(sender->socketHandler, timeout);
+        pubsub_tcpHandler_setSendTimeOut(sender->socketHandler, sendTimeout);
+        pubsub_tcpHandler_setMaxMsgSize(sender->socketHandler, (unsigned int) maxMsgSize);
+        // Hhen passiveKey is specified, enable receive event for full-duplex connection using key.
+        // Because the topic receiver is already started, enable the receive event.
+        pubsub_tcpHandler_enableReceiveEvent(sender->socketHandler, (passiveKey) ? true : false);
+        pubsub_tcpHandler_setTimeout(sender->socketHandler, (unsigned int) timeout);
     }
 
-    //setting up tcp socket for TCP TopicSender
-    if (staticClientEndPointUrls != NULL) {
-        // Store url for client static endpoint
-        sender->url = strndup(staticClientEndPointUrls, 1024 * 1024);
-        sender->isStatic = true;
-    } else if (discUrl != NULL) {
-        urls = strndup(discUrl, 1024 * 1024);
-        sender->isStatic = true;
-    } else if (ip != NULL) {
-        urls = strndup(ip, 1024 * 1024);
-    } else {
-        struct sockaddr_in *sin = pubsub_utils_url_getInAddr(NULL, 0);
-        urls = pubsub_utils_url_get_url(sin, NULL);
-        free(sin);
-    }
-    if (!sender->url) {
-        char *urlsCopy = strndup(urls, 1024 * 1024);
-        char *url;
-        char *save = urlsCopy;
-        while ((url = strtok_r(save, " ", &save))) {
-            int retry = 0;
-            while (url && retry < TCP_BIND_MAX_RETRY) {
-                pubsub_utils_url_t *urlInfo = pubsub_utils_url_parse(url);
-                int rc = pubsub_tcpHandler_listen(sender->socketHandler, urlInfo->url);
-                if (rc < 0) {
-                    L_WARN("Error for tcp_bind using dynamic bind url '%s'. %s", urlInfo->url, strerror(errno));
-                } else {
-                    url = NULL;
-                }
-                pubsub_utils_url_free(urlInfo);
-                retry++;
-            }
+    if (!sender->isPassive) {
+        //setting up tcp socket for TCP TopicSender
+        if (discUrl != NULL) {
+            urls = strndup(discUrl, 1024 * 1024);
+            sender->isStatic = true;
+        } else if (ip != NULL) {
+            urls = strndup(ip, 1024 * 1024);
+        } else {
+            struct sockaddr_in *sin = pubsub_utils_url_getInAddr(NULL, 0);
+            urls = pubsub_utils_url_get_url(sin, NULL);
+            free(sin);
         }
-        free(urlsCopy);
-        sender->url = pubsub_tcpHandler_get_interface_url(sender->socketHandler);
-    }
-    if (urls)
+        if (!sender->url) {
+            char *urlsCopy = strndup(urls, 1024 * 1024);
+            char *url;
+            char *save = urlsCopy;
+            while ((url = strtok_r(save, " ", &save))) {
+                int retry = 0;
+                while (url && retry < TCP_BIND_MAX_RETRY) {
+                    pubsub_utils_url_t *urlInfo = pubsub_utils_url_parse(url);
+                    int rc = pubsub_tcpHandler_listen(sender->socketHandler, urlInfo->url);
+                    if (rc < 0) {
+                        L_WARN("Error for tcp_bind using dynamic bind url '%s'. %s", urlInfo->url, strerror(errno));
+                    } else {
+                        url = NULL;
+                    }
+                    pubsub_utils_url_free(urlInfo);
+                    retry++;
+                }
+            }
+            free(urlsCopy);
+            sender->url = pubsub_tcpHandler_get_interface_url(sender->socketHandler);
+        }
         free(urls);
+    }
 
-    if (sender->url != NULL) {
+    //register publisher services using a service factory
+    if ((sender->url != NULL) ||  (sender->isPassive)) {
         sender->scope = scope == NULL ? NULL : strndup(scope, 1024 * 1024);
         sender->topic = strndup(topic, 1024 * 1024);
 
         celixThreadMutex_create(&sender->boundedServices.mutex, NULL);
         sender->boundedServices.map = hashMap_create(NULL, NULL, NULL, NULL);
-    }
 
-    //register publisher services using a service factory
-    if (sender->url != NULL) {
         sender->publisher.factory.handle = sender;
         sender->publisher.factory.getService = psa_tcp_getPublisherService;
         sender->publisher.factory.ungetService = psa_tcp_ungetPublisherService;
@@ -274,9 +267,7 @@ pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
         opts.properties = props;
 
         sender->publisher.svcId = celix_bundleContext_registerServiceWithOptions(ctx, &opts);
-    }
-
-    if (sender->url == NULL) {
+    } else {
         free(sender);
         sender = NULL;
     }
@@ -312,6 +303,7 @@ void pubsub_tcpTopicSender_destroy(pubsub_tcp_topic_sender_t *sender) {
         celixThreadMutex_unlock(&sender->boundedServices.mutex);
         celixThreadMutex_destroy(&sender->boundedServices.mutex);
 
+        pubsubInterceptorsHandler_destroy(sender->interceptorsHandler);
         if ((sender->socketHandler) && (sender->sharedSocketHandler == NULL)) {
             pubsub_tcpHandler_destroy(sender->socketHandler);
             sender->socketHandler = NULL;
@@ -343,18 +335,25 @@ const char *pubsub_tcpTopicSender_topic(pubsub_tcp_topic_sender_t *sender) {
 }
 
 const char *pubsub_tcpTopicSender_url(pubsub_tcp_topic_sender_t *sender) {
-    return sender->url;
+    if (sender->isPassive) {
+        return pubsub_tcpHandler_get_connection_url(sender->socketHandler);
+    } else {
+        return sender->url;
+    }
 }
-
 bool pubsub_tcpTopicSender_isStatic(pubsub_tcp_topic_sender_t *sender) {
     return sender->isStatic;
 }
 
-void pubsub_tcpTopicSender_connectTo(pubsub_tcp_topic_sender_t *sender, const celix_properties_t *endpoint) {
+bool pubsub_tcpTopicSender_isPassive(pubsub_tcp_topic_sender_t *sender) {
+    return sender->isPassive;
+}
+
+void pubsub_tcpTopicSender_connectTo(pubsub_tcp_topic_sender_t *sender __attribute__((unused)), const celix_properties_t *endpoint __attribute__((unused))) {
     //TODO subscriber count -> topic info
 }
 
-void pubsub_tcpTopicSender_disconnectFrom(pubsub_tcp_topic_sender_t *sender, const celix_properties_t *endpoint) {
+void pubsub_tcpTopicSender_disconnectFrom(pubsub_tcp_topic_sender_t *sender __attribute__((unused)), const celix_properties_t *endpoint __attribute__((unused))) {
     //TODO
 }
 
@@ -483,8 +482,7 @@ pubsub_admin_sender_metrics_t *pubsub_tcpTopicSender_metrics(pubsub_tcp_topic_se
             result->msgMetrics[i].nrOfMessagesSendFailed = mEntry->metrics.nrOfMessagesSendFailed;
             result->msgMetrics[i].nrOfSerializationErrors = mEntry->metrics.nrOfSerializationErrors;
             result->msgMetrics[i].averageSerializationTimeInSeconds = mEntry->metrics.averageSerializationTimeInSeconds;
-            result->msgMetrics[i].averageTimeBetweenMessagesInSeconds =
-                mEntry->metrics.averageTimeBetweenMessagesInSeconds;
+            result->msgMetrics[i].averageTimeBetweenMessagesInSeconds = mEntry->metrics.averageTimeBetweenMessagesInSeconds;
             result->msgMetrics[i].lastMessageSend = mEntry->metrics.lastMessageSend;
             result->msgMetrics[i].bndId = entry->bndId;
             result->msgMetrics[i].typeId = mEntry->type;
@@ -533,7 +531,11 @@ psa_tcp_topicPublicationSend(void *handle, unsigned int msgTypeId, const void *i
             clock_gettime(CLOCK_REALTIME, &serializationEnd);
         }
 
-        if (status == CELIX_SUCCESS /*ser ok*/) {
+        bool cont = false;
+        if (status == CELIX_SUCCESS) /*ser ok*/ {
+            cont = pubsubInterceptorHandler_invokePreSend(sender->interceptorsHandler, entry->msgSer->msgName, msgTypeId, inMsg, &metadata);
+        }
+        if (cont) {
             pubsub_protocol_message_t message;
             message.metadata.metadata = NULL;
             message.payload.payload = NULL;
@@ -555,12 +557,12 @@ psa_tcp_topicPublicationSend(void *handle, unsigned int msgTypeId, const void *i
             entry->seqNr++;
             bool sendOk = true;
             {
-                int rc = pubsub_tcpHandler_write(sender->socketHandler, &message, serializedIoVecOutput,
-                                                 serializedIoVecOutputLen, 0);
+                int rc = pubsub_tcpHandler_write(sender->socketHandler, &message, serializedIoVecOutput, serializedIoVecOutputLen, 0);
                 if (rc < 0) {
                     status = -1;
                     sendOk = false;
                 }
+                pubsubInterceptorHandler_invokePostSend(sender->interceptorsHandler, entry->msgSer->msgName, msgTypeId, inMsg, metadata);
                 if (message.metadata.metadata)
                     celix_properties_destroy(message.metadata.metadata);
                 if (serializedIoVecOutput) {
@@ -617,8 +619,10 @@ static void delay_first_send_for_late_joiners(pubsub_tcp_topic_sender_t *sender)
     static bool firstSend = true;
 
     if (firstSend) {
-        L_INFO("PSA_TCP_TP: Delaying first send for late joiners...\n");
-        sleep(FIRST_SEND_DELAY_IN_SECONDS);
+        if (sender->send_delay ) {
+            L_INFO("PSA_TCP_TP: Delaying first send for late joiners...\n");
+        }
+        usleep(sender->send_delay * 1000);
         firstSend = false;
     }
 }

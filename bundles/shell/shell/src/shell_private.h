@@ -63,7 +63,7 @@ typedef struct celix_legacy_command_entry {
 struct shell {
 	celix_bundle_context_t *ctx;
     celix_log_helper_t *logHelper;
-    celix_thread_mutex_t mutex; //protects below
+    celix_thread_rwlock_t lock; //protects below
     hash_map_t *commandServices; //key = char* (fully qualified command name), value = celix_shell_command_entry_t*
     hash_map_t *legacyCommandServices; //key = char* (command name), value = celix_legacy_command_entry_t*
 };

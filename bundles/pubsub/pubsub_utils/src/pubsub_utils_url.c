@@ -56,7 +56,7 @@ struct sockaddr_in *pubsub_utils_url_from_fd(int fd) {
     return inp;
 }
 
-struct sockaddr_in *pubsub_utils_url_getInAddr(const char *hostname, int port) {
+struct sockaddr_in *pubsub_utils_url_getInAddr(const char *hostname, unsigned int port) {
     struct hostent *hp;
     struct sockaddr_in *inp = malloc(sizeof(struct sockaddr_in));
     bzero(inp, sizeof(struct sockaddr_in)); // zero the struct
@@ -220,11 +220,11 @@ void pubsub_utils_url_parse_url(char *_url, pubsub_utils_url_t *url_info) {
                 maxPortnr += 1;
                 unsigned int minDigits = (unsigned int) atoi(portnr);
                 unsigned int maxDigits = (unsigned int) atoi(maxPortnr);
-                url_info->portnr = pubsub_utils_url_rand_range(minDigits, maxDigits);
+                url_info->port_nr = pubsub_utils_url_rand_range(minDigits, maxDigits);
             } else {
                 unsigned int portDigits = (unsigned int) atoi(portnr);
                 if (portDigits != 0)
-                    url_info->portnr = portDigits;
+                    url_info->port_nr = portDigits;
                 uri = strstr(port, "/");
                 if ((uri) && (!url_info->uri))
                     url_info->uri = celix_utils_strdup(uri);
@@ -256,11 +256,11 @@ void pubsub_utils_url_parse_url(char *_url, pubsub_utils_url_t *url_info) {
                 maxPortnr += 1;
                 unsigned int minDigits = (unsigned int) atoi(portnr);
                 unsigned int maxDigits = (unsigned int) atoi(maxPortnr);
-                url_info->interface_portnr = pubsub_utils_url_rand_range(minDigits, maxDigits);
+                url_info->interface_port_nr = pubsub_utils_url_rand_range(minDigits, maxDigits);
             } else {
                 unsigned int portDigits = (unsigned int) atoi(portnr);
                 if (portDigits != 0)
-                    url_info->interface_portnr = portDigits;
+                    url_info->interface_port_nr = portDigits;
                 uri = strstr(port, "/");
                 if ((uri) && (!url_info->uri))
                     url_info->uri = celix_utils_strdup(uri);
@@ -289,13 +289,13 @@ pubsub_utils_url_t *pubsub_utils_url_parse(char *url) {
             free(url_info->interface);
             url_info->interface = ip;
         }
-        struct sockaddr_in *m_sin = pubsub_utils_url_getInAddr(url_info->interface, url_info->interface_portnr);
+        struct sockaddr_in *m_sin = pubsub_utils_url_getInAddr(url_info->interface, url_info->interface_port_nr);
         url_info->interface_url = pubsub_utils_url_get_url(m_sin, NULL);
         free(m_sin);
         pubsub_utils_url_parse_url(url_info->interface_url, &interface_url_info);
         free(url_info->interface);
         url_info->interface = interface_url_info.hostname;
-        url_info->interface_portnr = interface_url_info.portnr;
+        url_info->interface_port_nr = interface_url_info.port_nr;
     }
 
     if (url_info->hostname) {
@@ -306,11 +306,11 @@ pubsub_utils_url_t *pubsub_utils_url_parse(char *url) {
             free(url_info->hostname);
             url_info->hostname = ip;
         }
-        struct sockaddr_in *sin = pubsub_utils_url_getInAddr(url_info->hostname, url_info->portnr);
+        struct sockaddr_in *sin = pubsub_utils_url_getInAddr(url_info->hostname, url_info->port_nr);
         url_info->url = pubsub_utils_url_get_url(sin, url_info->protocol);
         free(url_info->hostname);
         free(sin);
-        url_info->portnr = 0;
+        url_info->port_nr = 0;
         url_info->hostname = NULL;
         pubsub_utils_url_parse_url(url_info->url, url_info);
     }
@@ -338,7 +338,7 @@ void pubsub_utils_url_free(pubsub_utils_url_t *url_info) {
     url_info->hostname = NULL;
     url_info->protocol = NULL;
     url_info->interface = NULL;
-    url_info->portnr = 0;
-    url_info->interface_portnr = 0;
+    url_info->port_nr = 0;
+    url_info->interface_port_nr = 0;
     free(url_info);
 }

@@ -173,7 +173,7 @@ celix_status_t bundle_getEntry(const_bundle_pt bundle, const char* name, char** 
 }
 
 celix_status_t bundle_getState(const_bundle_pt bundle, bundle_state_e *state) {
-	if(bundle==NULL){
+	if (bundle==NULL) {
 		*state = OSGI_FRAMEWORK_BUNDLE_UNKNOWN;
 		return CELIX_BUNDLE_EXCEPTION;
 	}
@@ -674,23 +674,25 @@ void celix_bundle_destroyRegisteredServicesList(celix_array_list_t* list) {
 
 celix_array_list_t* celix_bundle_listServiceTrackers(const celix_bundle_t *bnd) {
     celix_array_list_t* result = celix_arrayList_create();
-    //FIXME: should not fall back to bundle context, but for now that is were the trackers are stored.
     celixThreadMutex_lock(&bnd->context->mutex);
     hash_map_iterator_t iter = hashMapIterator_construct(bnd->context->serviceTrackers);
     while (hashMapIterator_hasNext(&iter)) {
-        celix_service_tracker_t *tracker = hashMapIterator_nextValue(&iter);
-        celix_bundle_service_tracker_list_entry_t *entry = calloc(1, sizeof(*entry));
-        entry->filter = celix_utils_strdup(tracker->filter);
-        entry->nrOfTrackedServices = serviceTracker_nrOfTrackedServices(tracker);
-        entry->serviceName = celix_utils_strdup(tracker->serviceName);
-        entry->bundleOwner = celix_bundle_getId(bnd);
+        celix_bundle_context_service_tracker_entry_t *trkEntry = hashMapIterator_nextValue(&iter);
+        if (trkEntry->tracker != NULL) {
+            celix_bundle_service_tracker_list_entry_t *entry = calloc(1, sizeof(*entry));
+            entry->filter = celix_utils_strdup(trkEntry->tracker->filter);
+            entry->nrOfTrackedServices = serviceTracker_nrOfTrackedServices(trkEntry->tracker);
+            entry->serviceName = celix_utils_strdup(trkEntry->tracker->serviceName);
+            entry->bundleOwner = celix_bundle_getId(bnd);
 
-        if (entry->serviceName != NULL) {
-            celix_arrayList_add(result, entry);
-        } else {
-            framework_logIfError(bnd->framework->logger, CELIX_BUNDLE_EXCEPTION, NULL, "Failed to get service name from tracker. filter is %s", entry->filter);
-            free(entry->filter);
-            free(entry);
+            if (entry->serviceName != NULL) {
+                celix_arrayList_add(result, entry);
+            } else {
+                framework_logIfError(bnd->framework->logger, CELIX_BUNDLE_EXCEPTION, NULL,
+                                     "Failed to get service name from tracker. filter is %s", entry->filter);
+                free(entry->filter);
+                free(entry);
+            }
         }
     }
     celixThreadMutex_unlock(&bnd->context->mutex);

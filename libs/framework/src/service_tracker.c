@@ -34,19 +34,14 @@
 #include "bundle_context_private.h"
 #include "celix_array_list.h"
 
-static celix_status_t serviceTracker_track(celix_service_tracker_instance_t *tracker, service_reference_pt reference, celix_service_event_t *event);
-static celix_status_t serviceTracker_untrack(celix_service_tracker_instance_t *tracker, service_reference_pt reference, celix_service_event_t *event);
-static void serviceTracker_untrackTracked(celix_service_tracker_instance_t *tracker, celix_tracked_entry_t *tracked);
-static celix_status_t serviceTracker_invokeAddingService(celix_service_tracker_instance_t *tracker, service_reference_pt ref, void **svcOut);
-static celix_status_t serviceTracker_invokeAddService(celix_service_tracker_instance_t *tracker, celix_tracked_entry_t *tracked);
-static celix_status_t serviceTracker_invokeRemovingService(celix_service_tracker_instance_t *tracker, celix_tracked_entry_t *tracked);
+static celix_status_t serviceTracker_track(service_tracker_t *tracker, service_reference_pt reference, celix_service_event_t *event);
+static celix_status_t serviceTracker_untrack(service_tracker_t *tracker, service_reference_pt reference);
+static void serviceTracker_untrackTracked(service_tracker_t *tracker, celix_tracked_entry_t *tracked);
+static celix_status_t serviceTracker_invokeAddingService(service_tracker_t *tracker, service_reference_pt ref, void **svcOut);
+static celix_status_t serviceTracker_invokeAddService(service_tracker_t *tracker, celix_tracked_entry_t *tracked);
+static celix_status_t serviceTracker_invokeRemovingService(service_tracker_t *tracker, celix_tracked_entry_t *tracked);
 static void serviceTracker_checkAndInvokeSetService(void *handle, void *highestSvc, const properties_t *props, const bundle_t *bnd);
-static bool serviceTracker_useHighestRankingServiceInternal(celix_service_tracker_instance_t *instance,
-                                                            const char *serviceName /*sanity*/,
-                                                            void *callbackHandle,
-                                                            void (*use)(void *handle, void *svc),
-                                                            void (*useWithProperties)(void *handle, void *svc, const celix_properties_t *props),
-                                                            void (*useWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner));
+
 
 #ifdef CELIX_SERVICE_TRACKER_USE_SHUTDOWN_THREAD
 static void serviceTracker_addInstanceFromShutdownList(celix_service_tracker_instance_t *instance);
@@ -56,18 +51,6 @@ static void* shutdownServiceTrackerInstanceHandler(void *data);
 
 static void serviceTracker_serviceChanged(void *handle, celix_service_event_t *event);
 
-static celix_thread_once_t g_once = CELIX_THREAD_ONCE_INIT; //once for g_shutdownMutex, g_shutdownCond
-
-
-static celix_thread_mutex_t g_shutdownMutex;
-static celix_thread_cond_t g_shutdownCond;
-static celix_array_list_t *g_shutdownInstances = NULL; //value = celix_service_tracker_instance -> used for syncing with shutdown threads
-
-
-static void serviceTracker_once(void) {
-    celixThreadMutex_create(&g_shutdownMutex, NULL);
-    celixThreadCondition_init(&g_shutdownCond, NULL);
-}
 
 static inline celix_tracked_entry_t* tracked_create(service_reference_pt ref, void *svc, celix_properties_t *props, celix_bundle_t *bnd) {
     celix_tracked_entry_t *tracked = calloc(1, sizeof(*tracked));
@@ -128,332 +111,272 @@ celix_status_t serviceTracker_create(bundle_context_pt context, const char * ser
 	return status;
 }
 
-celix_status_t serviceTracker_createWithFilter(bundle_context_pt context, const char * filter, service_tracker_customizer_pt customizer, service_tracker_pt *tracker) {
-	celix_status_t status = CELIX_SUCCESS;
-	*tracker = (service_tracker_pt) calloc(1, sizeof(**tracker));
-	if (!*tracker) {
-		status = CELIX_ENOMEM;
-	} else {
-		(*tracker)->context = context;
-		(*tracker)->filter = strdup(filter);
-        (*tracker)->customizer = customizer;
-	}
+celix_status_t serviceTracker_createWithFilter(bundle_context_pt context, const char * filter, service_tracker_customizer_pt customizer, service_tracker_pt *out) {
+	service_tracker_t* tracker = calloc(1, sizeof(*tracker));
+	*out = tracker;
+    tracker->context = context;
+    tracker->filter = celix_utils_strdup(filter);
+    tracker->customizer = *customizer;
+    free(customizer);
 
-	framework_logIfError(celix_frameworkLogger_globalLogger(), status, NULL, "Cannot create service tracker [filter=%s]", filter);
+    celixThreadMutex_create(&tracker->closeSync.mutex, NULL);
+    celixThreadCondition_init(&tracker->closeSync.cond, NULL);
 
-	return status;
+    celixThreadMutex_create(&tracker->mutex, NULL);
+    celixThreadCondition_init(&tracker->cond, NULL);
+    tracker->trackedServices = celix_arrayList_create();
+    tracker->untrackingServices = celix_arrayList_create();
+
+    celixThreadMutex_create(&tracker->mutex, NULL);
+    tracker->currentHighestServiceId = -1;
+
+    tracker->listener.handle = tracker;
+    tracker->listener.serviceChanged = (void *) serviceTracker_serviceChanged;
+
+    tracker->callbackHandle = tracker->callbackHandle;
+
+    tracker->add = tracker->add;
+    tracker->addWithProperties = tracker->addWithProperties;
+    tracker->addWithOwner = tracker->addWithOwner;
+    tracker->set = tracker->set;
+    tracker->setWithProperties = tracker->setWithProperties;
+    tracker->setWithOwner = tracker->setWithOwner;
+    tracker->remove = tracker->remove;
+    tracker->removeWithProperties = tracker->removeWithProperties;
+    tracker->removeWithOwner = tracker->removeWithOwner;
+
+	return CELIX_SUCCESS;
 }
 
 celix_status_t serviceTracker_destroy(service_tracker_pt tracker) {
-    if (tracker->customizer != NULL) {
-	    serviceTrackerCustomizer_destroy(tracker->customizer);
-	}
-
     free(tracker->serviceName);
 	free(tracker->filter);
-	free(tracker);
-
+    celixThreadMutex_destroy(&tracker->closeSync.mutex);
+    celixThreadCondition_destroy(&tracker->closeSync.cond);
+    celixThreadMutex_destroy(&tracker->mutex);
+    celixThreadCondition_destroy(&tracker->cond);
+    celix_arrayList_destroy(tracker->trackedServices);
+    celix_arrayList_destroy(tracker->untrackingServices);
+    free(tracker);
 	return CELIX_SUCCESS;
 }
 
 celix_status_t serviceTracker_open(service_tracker_pt tracker) {
-    celix_service_listener_t *listener = NULL;
-    celix_service_tracker_instance_t *instance = NULL;
-    celix_status_t status = CELIX_SUCCESS;
+    celixThreadMutex_lock(&tracker->mutex);
+    bool alreadyOpen = tracker->open;
+    tracker->open = true;
+    celixThreadMutex_unlock(&tracker->mutex);
 
-    bool addListener = false;
-
-    celixThreadRwlock_writeLock(&tracker->instanceLock);
-    if (tracker->instance == NULL) {
-        instance = calloc(1, sizeof(*instance));
-        instance->context = tracker->context;
-
-        instance->closing = false;
-        instance->activeServiceChangeCalls = 0;
-        celixThreadMutex_create(&instance->closingLock, NULL);
-        celixThreadCondition_init(&instance->activeServiceChangeCallsCond, NULL);
-
-
-        celixThreadRwlock_create(&instance->lock, NULL);
-        instance->trackedServices = celix_arrayList_create();
-
-        celixThreadMutex_create(&instance->mutex, NULL);
-        instance->currentHighestServiceId = -1;
-
-        instance->listener.handle = instance;
-        instance->listener.serviceChanged = (void *) serviceTracker_serviceChanged;
-        listener = &instance->listener;
-
-        instance->callbackHandle = tracker->callbackHandle;
-        instance->filter = strdup(tracker->filter);
-        if (tracker->customizer != NULL) {
-            memcpy(&instance->customizer, tracker->customizer, sizeof(instance->customizer));
-        }
-        instance->add = tracker->add;
-        instance->addWithProperties = tracker->addWithProperties;
-        instance->addWithOwner = tracker->addWithOwner;
-        instance->set = tracker->set;
-        instance->setWithProperties = tracker->setWithProperties;
-        instance->setWithOwner = tracker->setWithOwner;
-        instance->remove = tracker->remove;
-        instance->removeWithProperties = tracker->removeWithProperties;
-        instance->removeWithOwner = tracker->removeWithOwner;
-
-        tracker->instance = instance;
-
-        addListener = true;
-    } else {
-        //already open
-        framework_logIfError(tracker->context->framework->logger, status, NULL, "Tracker already open");
-
+    if (!alreadyOpen) {
+        bundleContext_addServiceListener(tracker->context, &tracker->listener, tracker->filter);
     }
-    celixThreadRwlock_unlock(&tracker->instanceLock);
-
-	if (addListener) {
-	    bundleContext_addServiceListener(tracker->context, listener, tracker->filter);
-	}
 	return CELIX_SUCCESS;
 }
 
-celix_status_t serviceTracker_close(service_tracker_pt tracker) {
+celix_status_t serviceTracker_close(service_tracker_t* tracker) {
 	//put all tracked entries in tmp array list, so that the untrack (etc) calls are not blocked.
     //set state to close to prevent service listener events
 
-    celixThreadRwlock_writeLock(&tracker->instanceLock);
-    celix_service_tracker_instance_t *instance = tracker->instance;
-    tracker->instance = NULL;
-    if (instance != NULL) {
-        celixThreadMutex_lock(&instance->closingLock);
-        //prevent service listener events
-        instance->closing = true;
-        celixThreadMutex_unlock(&instance->closingLock);
+    celixThreadMutex_lock(&tracker->mutex);
+    bool open = tracker->open;
+    tracker->open = false;
+    celixThreadMutex_unlock(&tracker->mutex);
+
+    if (!open) {
+        return CELIX_SUCCESS;
     }
-    celixThreadRwlock_unlock(&tracker->instanceLock);
 
-    if (instance != NULL) {
-        celixThreadRwlock_writeLock(&instance->lock);
-        unsigned int size = celix_arrayList_size(instance->trackedServices);
-        if(size > 0) {
-            celix_tracked_entry_t *trackedEntries[size];
-            for (unsigned int i = 0u; i < size; i++) {
-                trackedEntries[i] = (celix_tracked_entry_t *) arrayList_get(instance->trackedServices, i);
-            }
-            arrayList_clear(instance->trackedServices);
-            celixThreadRwlock_unlock(&instance->lock);
 
-            //loop trough tracked entries an untrack
-            for (unsigned int i = 0u; i < size; i++) {
-                serviceTracker_untrackTracked(instance, trackedEntries[i]);
+    //indicate that the service tracking is closing and wait for the still pending service registration events.
+    celixThreadMutex_lock(&tracker->closeSync.mutex);
+    tracker->closeSync.closing = true;
+    while (tracker->closeSync.activeCalls > 0) {
+        celixThreadCondition_wait(&tracker->closeSync.cond, &tracker->closeSync.mutex);
+    }
+    celixThreadMutex_unlock(&tracker->closeSync.mutex);
+
+    int nrOfTrackedEntries;
+    do {
+        celixThreadMutex_lock(&tracker->mutex);
+        celix_tracked_entry_t* tracked = NULL;
+        nrOfTrackedEntries = celix_arrayList_size(tracker->trackedServices);
+        if (nrOfTrackedEntries > 0) {
+            tracked = celix_arrayList_get(tracker->trackedServices, 0);
+            celix_arrayList_removeAt(tracker->trackedServices, 0);
+            celix_arrayList_add(tracker->untrackingServices, tracked);
+        }
+        celixThreadMutex_unlock(&tracker->mutex);
+
+        if (tracked != NULL) {
+            int currentSize = nrOfTrackedEntries - 1;
+            if (currentSize == 0) {
+                serviceTracker_checkAndInvokeSetService(tracker, NULL, NULL, NULL);
+            } else {
+                celix_serviceTracker_useHighestRankingService(tracker, tracked->serviceName, tracker, NULL, NULL, serviceTracker_checkAndInvokeSetService);
             }
-        } else {
-            celixThreadRwlock_unlock(&instance->lock);
+
+            serviceTracker_untrackTracked(tracker, tracked);
+            celixThreadMutex_lock(&tracker->mutex);
+            celix_arrayList_remove(tracker->untrackingServices, tracked);
+            celixThreadCondition_broadcast(&tracker->cond);
+            celixThreadMutex_unlock(&tracker->mutex);
         }
 
-        celixThreadMutex_lock(&instance->closingLock);
-        while (instance->activeServiceChangeCalls > 0) {
-            celixThreadCondition_wait(&instance->activeServiceChangeCallsCond, &instance->closingLock);
-        }
-        celixThreadMutex_unlock(&instance->closingLock);
+
+        celixThreadMutex_lock(&tracker->mutex);
+        nrOfTrackedEntries = celix_arrayList_size(tracker->trackedServices);
+        celixThreadMutex_unlock(&tracker->mutex);
+    } while (nrOfTrackedEntries > 0);
 
 
-#ifdef CELIX_SERVICE_TRACKER_USE_SHUTDOWN_THREAD
-        //NOTE Separate thread is needed to prevent deadlock where closing is triggered from a serviceChange event and the
-        // untrack -> removeServiceListener will try to remove a service listener which is being invoked and is the
-        // actual thread calling the removeServiceListener.
-        //
-        // This can be detached -> because service listener events are ignored (closing=true) and so no callbacks
-        // are made back to the celix framework / tracker owner.
-        serviceTracker_addInstanceFromShutdownList(instance);
-        celix_thread_t localThread;
-        celixThread_create(&localThread, NULL, shutdownServiceTrackerInstanceHandler, instance);
-        celixThread_detach(localThread);
-#else
-        fw_removeServiceListener(instance->context->framework, instance->context->bundle, &instance->listener);
-
-        celixThreadMutex_destroy(&instance->closingLock);
-        celixThreadCondition_destroy(&instance->activeServiceChangeCallsCond);
-        celixThreadMutex_destroy(&instance->mutex);
-        celixThreadRwlock_destroy(&instance->lock);
-        celix_arrayList_destroy(instance->trackedServices);
-        free(instance->filter);
-        free(instance);
-#endif
-    }
+    fw_removeServiceListener(tracker->context->framework, tracker->context->bundle, &tracker->listener);
 
 	return CELIX_SUCCESS;
 }
 
-service_reference_pt serviceTracker_getServiceReference(service_tracker_pt tracker) {
+service_reference_pt serviceTracker_getServiceReference(service_tracker_t* tracker) {
     //TODO deprecated warning -> not locked
-	celix_tracked_entry_t *tracked;
-    service_reference_pt result = NULL;
-	unsigned int i;
 
-	celixThreadRwlock_readLock(&tracker->instanceLock);
-	celix_service_tracker_instance_t *instance = tracker->instance;
-	if (instance != NULL) {
-        celixThreadRwlock_readLock(&instance->lock);
-        for (i = 0; i < arrayList_size(instance->trackedServices); ++i) {
-            tracked = (celix_tracked_entry_t *) arrayList_get(instance->trackedServices, i);
-            result = tracked->reference;
-            break;
-        }
-        celixThreadRwlock_unlock(&instance->lock);
+    service_reference_pt result = NULL;
+
+    celixThreadMutex_lock(&tracker->mutex);
+    for (int i = 0; i < celix_arrayList_size(tracker->trackedServices); ++i) {
+        celix_tracked_entry_t *tracked = celix_arrayList_get(tracker->trackedServices, i);
+        result = tracked->reference;
+        break;
     }
-    celixThreadRwlock_unlock(&tracker->instanceLock);
+    celixThreadMutex_unlock(&tracker->mutex);
 
 	return result;
 }
 
-array_list_pt serviceTracker_getServiceReferences(service_tracker_pt tracker) {
+array_list_pt serviceTracker_getServiceReferences(service_tracker_t* tracker) {
     //TODO deprecated warning -> not locked
-    celix_tracked_entry_t *tracked;
-	unsigned int i;
 	array_list_pt references = NULL;
 	arrayList_create(&references);
 
-    celixThreadRwlock_readLock(&tracker->instanceLock);
-	celix_service_tracker_instance_t *instance = tracker->instance;
-	if (instance != NULL) {
-        celixThreadRwlock_readLock(&instance->lock);
-        for (i = 0; i < arrayList_size(instance->trackedServices); i++) {
-            tracked = (celix_tracked_entry_t*) arrayList_get(instance->trackedServices, i);
-            arrayList_add(references, tracked->reference);
-        }
-        celixThreadRwlock_unlock(&instance->lock);
+    celixThreadMutex_lock(&tracker->mutex);
+    for (int i = 0; i < celix_arrayList_size(tracker->trackedServices); i++) {
+        celix_tracked_entry_t *tracked = celix_arrayList_get(tracker->trackedServices, i);
+        arrayList_add(references, tracked->reference);
     }
-    celixThreadRwlock_unlock(&tracker->instanceLock);
+    celixThreadMutex_unlock(&tracker->mutex);
 
 	return references;
 }
 
-void *serviceTracker_getService(service_tracker_pt tracker) {
+void *serviceTracker_getService(service_tracker_t* tracker) {
     //TODO deprecated warning -> not locked
-    celix_tracked_entry_t* tracked;
     void *service = NULL;
-	unsigned int i;
 
-	celixThreadRwlock_readLock(&tracker->instanceLock);
-	celix_service_tracker_instance_t *instance = tracker->instance;
-	if (instance != NULL) {
-        celixThreadRwlock_readLock(&instance->lock);
-        for (i = 0; i < arrayList_size(instance->trackedServices); i++) {
-            tracked = (celix_tracked_entry_t*) arrayList_get(instance->trackedServices, i);
-            service = tracked->service;
-            break;
-        }
-        celixThreadRwlock_unlock(&instance->lock);
+    celixThreadMutex_lock(&tracker->mutex);
+    for (int i = 0; i < celix_arrayList_size(tracker->trackedServices); i++) {
+        celix_tracked_entry_t* tracked = celix_arrayList_get(tracker->trackedServices, i);
+        service = tracked->service;
+        break;
     }
-    celixThreadRwlock_unlock(&tracker->instanceLock);
+    celixThreadMutex_unlock(&tracker->mutex);
 
     return service;
 }
 
-array_list_pt serviceTracker_getServices(service_tracker_pt tracker) {
+array_list_pt serviceTracker_getServices(service_tracker_t* tracker) {
     //TODO deprecated warning -> not locked, also make locked variant
-    celix_tracked_entry_t *tracked;
-	unsigned int i;
 	array_list_pt references = NULL;
 	arrayList_create(&references);
 
-    celixThreadRwlock_readLock(&tracker->instanceLock);
-    celix_service_tracker_instance_t *instance = tracker->instance;
-    if (instance != NULL) {
-        celixThreadRwlock_readLock(&instance->lock);
-        for (i = 0; i < arrayList_size(instance->trackedServices); i++) {
-            tracked = (celix_tracked_entry_t *) arrayList_get(instance->trackedServices, i);
-            arrayList_add(references, tracked->service);
-        }
-        celixThreadRwlock_unlock(&instance->lock);
+    celixThreadMutex_lock(&tracker->mutex);
+    for (int i = 0; i < celix_arrayList_size(tracker->trackedServices); i++) {
+        celix_tracked_entry_t *tracked = celix_arrayList_get(tracker->trackedServices, i);
+        arrayList_add(references, tracked->service);
     }
-    celixThreadRwlock_unlock(&tracker->instanceLock);
+    celixThreadMutex_unlock(&tracker->mutex);
 
     return references;
 }
 
 void *serviceTracker_getServiceByReference(service_tracker_pt tracker, service_reference_pt reference) {
     //TODO deprecated warning -> not locked
-    celix_tracked_entry_t *tracked;
     void *service = NULL;
-	unsigned int i;
 
-    celixThreadRwlock_readLock(&tracker->instanceLock);
-    celix_service_tracker_instance_t *instance = tracker->instance;
-    if (instance != NULL) {
-        celixThreadRwlock_readLock(&instance->lock);
-        for (i = 0; i < arrayList_size(instance->trackedServices); i++) {
-            bool equals = false;
-            tracked = (celix_tracked_entry_t *) arrayList_get(instance->trackedServices, i);
-            serviceReference_equals(reference, tracked->reference, &equals);
-            if (equals) {
-                service = tracked->service;
-                break;
-            }
+    celixThreadMutex_lock(&tracker->mutex);
+    for (int i = 0; i < celix_arrayList_size(tracker->trackedServices); i++) {
+        bool equals = false;
+        celix_tracked_entry_t *tracked = celix_arrayList_get(tracker->trackedServices, i);
+        serviceReference_equals(reference, tracked->reference, &equals);
+        if (equals) {
+            service = tracked->service;
+            break;
         }
-        celixThreadRwlock_unlock(&instance->lock);
     }
-    celixThreadRwlock_unlock(&tracker->instanceLock);
+    celixThreadMutex_unlock(&tracker->mutex);
 
 	return service;
 }
 
 static void serviceTracker_serviceChanged(void *handle, celix_service_event_t *event) {
-	celix_service_tracker_instance_t *instance = handle;
+    service_tracker_t *tracker = handle;
 
-    celixThreadMutex_lock(&instance->closingLock);
-    bool closing = instance->closing;
+    celixThreadMutex_lock(&tracker->closeSync.mutex);
+    bool closing = tracker->closeSync.closing;
     if (!closing) {
-        instance->activeServiceChangeCalls += 1;
+        tracker->closeSync.activeCalls += 1;
     }
-    celixThreadMutex_unlock(&instance->closingLock);
+    celixThreadMutex_unlock(&tracker->closeSync.mutex);
 
     if (!closing) {
         switch (event->type) {
             case OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED:
-                serviceTracker_track(instance, event->reference, event);
+                serviceTracker_track(tracker, event->reference, event);
                 break;
             case OSGI_FRAMEWORK_SERVICE_EVENT_MODIFIED:
-                serviceTracker_track(instance, event->reference, event);
+                serviceTracker_track(tracker, event->reference, event);
                 break;
             case OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING:
-                serviceTracker_untrack(instance, event->reference, event);
+                serviceTracker_untrack(tracker, event->reference);
                 break;
-            case OSGI_FRAMEWORK_SERVICE_EVENT_MODIFIED_ENDMATCH:
-                //TODO
+            default:
+                //nop
                 break;
         }
-        celixThreadMutex_lock(&instance->closingLock);
-        assert(instance->activeServiceChangeCalls > 0);
-        instance->activeServiceChangeCalls -= 1;
-        if (instance->activeServiceChangeCalls == 0) {
-            celixThreadCondition_broadcast(&instance->activeServiceChangeCallsCond);
+    } else {
+        switch (event->type) {
+            case OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING:
+                //untrack the service reference, because after this call the registration can be gone
+                serviceTracker_untrack(tracker, event->reference);
+                break;
+            default:
+                //nop
+                break;
         }
-        celixThreadMutex_unlock(&instance->closingLock);
+    }
+
+    if (!closing) {
+        celixThreadMutex_lock(&tracker->closeSync.mutex);
+        tracker->closeSync.activeCalls -= 1;
+        celixThreadCondition_broadcast(&tracker->closeSync.cond);
+        celixThreadMutex_unlock(&tracker->closeSync.mutex);
     }
 }
 
 size_t serviceTracker_nrOfTrackedServices(service_tracker_t *tracker) {
-    size_t result = 0;
-    celixThreadRwlock_readLock(&tracker->instanceLock);
-    celixThreadRwlock_readLock(&tracker->instance->lock);
-    result = (size_t) arrayList_size(tracker->instance->trackedServices);
-    celixThreadRwlock_unlock(&tracker->instance->lock);
-    celixThreadRwlock_unlock(&tracker->instanceLock);
+    celixThreadMutex_lock(&tracker->mutex);
+    size_t result = (size_t) arrayList_size(tracker->trackedServices);
+    celixThreadMutex_unlock(&tracker->mutex);
     return result;
 }
 
-static celix_status_t serviceTracker_track(celix_service_tracker_instance_t *instance, service_reference_pt reference, celix_service_event_t *event) {
+static celix_status_t serviceTracker_track(service_tracker_t* tracker, service_reference_pt reference, celix_service_event_t *event) {
 	celix_status_t status = CELIX_SUCCESS;
 
     celix_tracked_entry_t *found = NULL;
-    unsigned int i;
-    
-    bundleContext_retainServiceReference(instance->context, reference);
 
-    celixThreadRwlock_readLock(&instance->lock);
-    for (i = 0; i < arrayList_size(instance->trackedServices); i++) {
+    bundleContext_retainServiceReference(tracker->context, reference);
+
+    celixThreadMutex_lock(&tracker->mutex);
+    for (int i = 0; i < celix_arrayList_size(tracker->trackedServices); i++) {
         bool equals = false;
-        celix_tracked_entry_t *visit = (celix_tracked_entry_t*) arrayList_get(instance->trackedServices, i);
+        celix_tracked_entry_t *visit = (celix_tracked_entry_t*) arrayList_get(tracker->trackedServices, i);
         serviceReference_equals(reference, visit->reference, &equals);
         if (equals) {
             //NOTE it is possible to get two REGISTERED events, second one can be ignored.
@@ -461,12 +384,12 @@ static celix_status_t serviceTracker_track(celix_service_tracker_instance_t *ins
             break;
         }
     }
-    celixThreadRwlock_unlock(&instance->lock);
+    celixThreadMutex_unlock(&tracker->mutex);
 
     if (found == NULL) {
         //NEW entry
         void *service = NULL;
-        status = serviceTracker_invokeAddingService(instance, reference, &service);
+        status = serviceTracker_invokeAddingService(tracker, reference, &service);
         if (status == CELIX_SUCCESS && service != NULL) {
             assert(reference != NULL);
 
@@ -482,22 +405,24 @@ static celix_status_t serviceTracker_track(celix_service_tracker_instance_t *ins
 
             celix_tracked_entry_t *tracked = tracked_create(reference, service, props, bnd); //use count 1
 
-            celixThreadRwlock_writeLock(&instance->lock);
-            arrayList_add(instance->trackedServices, tracked);
-            celixThreadRwlock_unlock(&instance->lock);
+            celixThreadMutex_lock(&tracker->mutex);
+            arrayList_add(tracker->trackedServices, tracked);
+            celixThreadMutex_unlock(&tracker->mutex);
 
-            serviceTracker_invokeAddService(instance, tracked);
-            serviceTracker_useHighestRankingServiceInternal(instance, tracked->serviceName, instance, NULL, NULL, serviceTracker_checkAndInvokeSetService);
+            serviceTracker_invokeAddService(tracker, tracked);
+            celix_serviceTracker_useHighestRankingService(tracker, tracked->serviceName, tracker, NULL, NULL, serviceTracker_checkAndInvokeSetService);
         }
+    } else {
+        bundleContext_ungetServiceReference(tracker->context, reference);
     }
 
-    framework_logIfError(instance->context->framework->logger, status, NULL, "Cannot track reference");
+    framework_logIfError(tracker->context->framework->logger, status, NULL, "Cannot track reference");
 
     return status;
 }
 
 static void serviceTracker_checkAndInvokeSetService(void *handle, void *highestSvc, const celix_properties_t *props, const celix_bundle_t *bnd) {
-    celix_service_tracker_instance_t *instance = handle;
+    service_tracker_t *tracker = handle;
     bool update = false;
     long svcId = -1;
     if (highestSvc == NULL) {
@@ -507,117 +432,131 @@ static void serviceTracker_checkAndInvokeSetService(void *handle, void *highestS
         svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1);
     }
     if (svcId >= 0) {
-        celixThreadMutex_lock(&instance->mutex);
-        if (instance->currentHighestServiceId != svcId) {
-            instance->currentHighestServiceId = svcId;
+        celixThreadMutex_lock(&tracker->mutex);
+        if (tracker->currentHighestServiceId != svcId) {
+            tracker->currentHighestServiceId = svcId;
             update = true;
             //update
         }
-        celixThreadMutex_unlock(&instance->mutex);
+        celixThreadMutex_unlock(&tracker->mutex);
     }
     if (update) {
-        void *h = instance->callbackHandle;
-        if (instance->set != NULL) {
-            instance->set(h, highestSvc);
+        void *h = tracker->callbackHandle;
+        if (tracker->set != NULL) {
+            tracker->set(h, highestSvc);
         }
-        if (instance->setWithProperties != NULL) {
-            instance->setWithProperties(h, highestSvc, props);
+        if (tracker->setWithProperties != NULL) {
+            tracker->setWithProperties(h, highestSvc, props);
         }
-        if (instance->setWithOwner != NULL) {
-            instance->setWithOwner(h, highestSvc, props, bnd);
+        if (tracker->setWithOwner != NULL) {
+            tracker->setWithOwner(h, highestSvc, props, bnd);
         }
     }
 }
 
-static celix_status_t serviceTracker_invokeAddService(celix_service_tracker_instance_t *instance, celix_tracked_entry_t *tracked) {
+static celix_status_t serviceTracker_invokeAddService(service_tracker_t *tracker, celix_tracked_entry_t *tracked) {
     celix_status_t status = CELIX_SUCCESS;
 
     void *customizerHandle = NULL;
     added_callback_pt function = NULL;
 
-    serviceTrackerCustomizer_getHandle(&instance->customizer, &customizerHandle);
-    serviceTrackerCustomizer_getAddedFunction(&instance->customizer, &function);
+    serviceTrackerCustomizer_getHandle(&tracker->customizer, &customizerHandle);
+    serviceTrackerCustomizer_getAddedFunction(&tracker->customizer, &function);
     if (function != NULL) {
         function(customizerHandle, tracked->reference, tracked->service);
     }
 
-    void *handle = instance->callbackHandle;
-    if (instance->add != NULL) {
-        instance->add(handle, tracked->service);
+    void *handle = tracker->callbackHandle;
+    if (tracker->add != NULL) {
+        tracker->add(handle, tracked->service);
     }
-    if (instance->addWithProperties != NULL) {
-        instance->addWithProperties(handle, tracked->service, tracked->properties);
+    if (tracker->addWithProperties != NULL) {
+        tracker->addWithProperties(handle, tracked->service, tracked->properties);
     }
-    if (instance->addWithOwner != NULL) {
-        instance->addWithOwner(handle, tracked->service, tracked->properties, tracked->serviceOwner);
+    if (tracker->addWithOwner != NULL) {
+        tracker->addWithOwner(handle, tracked->service, tracked->properties, tracked->serviceOwner);
     }
     return status;
 }
 
-static celix_status_t serviceTracker_invokeAddingService(celix_service_tracker_instance_t *instance, service_reference_pt ref, void **svcOut) {
+static celix_status_t serviceTracker_invokeAddingService(service_tracker_t *tracker, service_reference_pt ref, void **svcOut) {
 	celix_status_t status = CELIX_SUCCESS;
 
     void *handle = NULL;
     adding_callback_pt function = NULL;
 
-    status = serviceTrackerCustomizer_getHandle(&instance->customizer, &handle);
+    status = serviceTrackerCustomizer_getHandle(&tracker->customizer, &handle);
 
     if (status == CELIX_SUCCESS) {
-        status = serviceTrackerCustomizer_getAddingFunction(&instance->customizer, &function);
+        status = serviceTrackerCustomizer_getAddingFunction(&tracker->customizer, &function);
     }
 
     if (status == CELIX_SUCCESS && function != NULL) {
         status = function(handle, ref, svcOut);
     } else if (status == CELIX_SUCCESS) {
-        status = bundleContext_getService(instance->context, ref, svcOut);
+        status = bundleContext_getService(tracker->context, ref, svcOut);
     }
 
-    framework_logIfError(instance->context->framework->logger, status, NULL, "Cannot handle addingService");
+    framework_logIfError(tracker->context->framework->logger, status, NULL, "Cannot handle addingService");
 
     return status;
 }
 
-static celix_status_t serviceTracker_untrack(celix_service_tracker_instance_t* instance, service_reference_pt reference, celix_service_event_t *event) {
+static celix_status_t serviceTracker_untrack(service_tracker_t* tracker, service_reference_pt reference) {
     celix_status_t status = CELIX_SUCCESS;
     celix_tracked_entry_t *remove = NULL;
-    unsigned int i;
-    unsigned int size;
     const char *serviceName = NULL;
 
-    celixThreadRwlock_writeLock(&instance->lock);
-    size = arrayList_size(instance->trackedServices);
-    for (i = 0; i < size; i++) {
+    celixThreadMutex_lock(&tracker->mutex);
+    for (int i = 0; i < celix_arrayList_size(tracker->trackedServices); i++) {
         bool equals;
-        celix_tracked_entry_t *tracked = (celix_tracked_entry_t*) arrayList_get(instance->trackedServices, i);
+        celix_tracked_entry_t *tracked = (celix_tracked_entry_t*) arrayList_get(tracker->trackedServices, i);
         serviceName = tracked->serviceName;
         serviceReference_equals(reference, tracked->reference, &equals);
         if (equals) {
             remove = tracked;
             //remove from trackedServices to prevent getting this service, but don't destroy yet, can be in use
-            arrayList_remove(instance->trackedServices, i);
+            celix_arrayList_removeAt(tracker->trackedServices, i);
+            celix_arrayList_add(tracker->untrackingServices, remove);
             break;
         }
     }
-    size = arrayList_size(instance->trackedServices); //updated size
-    celixThreadRwlock_unlock(&instance->lock);
+    int size = celix_arrayList_size(tracker->trackedServices); //updated size
+    celixThreadMutex_unlock(&tracker->mutex);
 
-    if (size == 0) {
-        serviceTracker_checkAndInvokeSetService(instance, NULL, NULL, NULL);
-    } else {
-        serviceTracker_useHighestRankingServiceInternal(instance, serviceName, instance, NULL, NULL, serviceTracker_checkAndInvokeSetService);
+    if (remove != NULL) {
+        if (size == 0) {
+            serviceTracker_checkAndInvokeSetService(tracker, NULL, NULL, NULL);
+        } else {
+            celix_serviceTracker_useHighestRankingService(tracker, serviceName, tracker, NULL, NULL, serviceTracker_checkAndInvokeSetService);
+        }
     }
 
-    serviceTracker_untrackTracked(instance, remove);
+    //note also syncing on untracking entries, to ensure no untrack is parallel in progress
+    if (remove != NULL) {
+        serviceTracker_untrackTracked(tracker, remove);
+        celixThreadMutex_lock(&tracker->mutex);
+        celix_arrayList_remove(tracker->untrackingServices, remove);
+        celixThreadMutex_unlock(&tracker->mutex);
+    } else {
+        //ensure no untrack is still happening (to ensure it safe to unregister service)
+        celixThreadMutex_lock(&tracker->mutex);
+        while (celix_arrayList_size(tracker->untrackingServices) > 0) {
+            celixThreadCondition_wait(&tracker->cond, &tracker->mutex);
+        }
+        celixThreadMutex_unlock(&tracker->mutex);
+    }
 
-    framework_logIfError(instance->context->framework->logger, status, NULL, "Cannot untrack reference");
+    framework_logIfError(tracker->context->framework->logger, status, NULL, "Cannot untrack reference");
 
     return status;
 }
 
-static void serviceTracker_untrackTracked(celix_service_tracker_instance_t *instance, celix_tracked_entry_t *tracked) {
+static void serviceTracker_untrackTracked(service_tracker_t *tracker, celix_tracked_entry_t *tracked) {
     if (tracked != NULL) {
-        serviceTracker_invokeRemovingService(instance, tracked);
-        bundleContext_ungetServiceReference(instance->context, tracked->reference);
+        serviceTracker_invokeRemovingService(tracker, tracked);
+
+        bundleContext_ungetServiceReference(tracker->context, tracked->reference);
         tracked_release(tracked);
 
         //Wait till the useCount is 0, because the untrack should only return if the service is not used anymore.
@@ -625,37 +564,37 @@ static void serviceTracker_untrackTracked(celix_service_tracker_instance_t *inst
     }
 }
 
-static celix_status_t serviceTracker_invokeRemovingService(celix_service_tracker_instance_t *instance, celix_tracked_entry_t *tracked) {
+static celix_status_t serviceTracker_invokeRemovingService(service_tracker_t *tracker, celix_tracked_entry_t *tracked) {
     celix_status_t status = CELIX_SUCCESS;
     bool ungetSuccess = true;
 
     void *customizerHandle = NULL;
     removed_callback_pt function = NULL;
 
-    serviceTrackerCustomizer_getHandle(&instance->customizer, &customizerHandle);
-    serviceTrackerCustomizer_getRemovedFunction(&instance->customizer, &function);
+    serviceTrackerCustomizer_getHandle(&tracker->customizer, &customizerHandle);
+    serviceTrackerCustomizer_getRemovedFunction(&tracker->customizer, &function);
 
     if (function != NULL) {
         status = function(customizerHandle, tracked->reference, tracked->service);
     }
 
-    void *handle = instance->callbackHandle;
-    if (instance->remove != NULL) {
-        instance->remove(handle, tracked->service);
+    void *handle = tracker->callbackHandle;
+    if (tracker->remove != NULL) {
+        tracker->remove(handle, tracked->service);
     }
-    if (instance->addWithProperties != NULL) {
-        instance->removeWithProperties(handle, tracked->service, tracked->properties);
+    if (tracker->addWithProperties != NULL) {
+        tracker->removeWithProperties(handle, tracked->service, tracked->properties);
     }
-    if (instance->removeWithOwner != NULL) {
-        instance->removeWithOwner(handle, tracked->service, tracked->properties, tracked->serviceOwner);
+    if (tracker->removeWithOwner != NULL) {
+        tracker->removeWithOwner(handle, tracked->service, tracked->properties, tracked->serviceOwner);
     }
 
     if (status == CELIX_SUCCESS) {
-        status = bundleContext_ungetService(instance->context, tracked->reference, &ungetSuccess);
+        status = bundleContext_ungetService(tracker->context, tracked->reference, &ungetSuccess);
     }
 
     if (!ungetSuccess) {
-        framework_log(instance->context->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__, "Error ungetting service");
+        framework_log(tracker->context->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__, "Error ungetting service");
         status = CELIX_BUNDLE_EXCEPTION;
     }
 
@@ -687,11 +626,12 @@ celix_service_tracker_t* celix_serviceTracker_createWithOptions(
         const celix_service_tracking_options_t *opts
 ) {
     celix_service_tracker_t *tracker = NULL;
-    if (ctx != NULL && opts != NULL && opts->filter.serviceName != NULL) {
+    const char* serviceName = opts->filter.serviceName == NULL ? "*" : opts->filter.serviceName;
+    if (ctx != NULL && opts != NULL) {
         tracker = calloc(1, sizeof(*tracker));
         if (tracker != NULL) {
             tracker->context = ctx;
-            tracker->serviceName = celix_utils_strdup(opts->filter.serviceName);
+            tracker->serviceName = celix_utils_strdup(serviceName);
 
             //setting callbacks
             tracker->callbackHandle = opts->callbackHandle;
@@ -705,72 +645,33 @@ celix_service_tracker_t* celix_serviceTracker_createWithOptions(
             tracker->addWithOwner = opts->addWithOwner;
             tracker->removeWithOwner = opts->removeWithOwner;
 
-            celixThreadRwlock_create(&tracker->instanceLock, NULL);
+            celixThreadMutex_create(&tracker->closeSync.mutex, NULL);
+            celixThreadCondition_init(&tracker->closeSync.cond, NULL);
 
-            //setting lang
-            const char *lang = opts->filter.serviceLanguage;
-            if (lang == NULL || strncmp("", lang, 1) == 0) {
-                lang = CELIX_FRAMEWORK_SERVICE_C_LANGUAGE;
-            }
+            celixThreadMutex_create(&tracker->mutex, NULL);
+            celixThreadCondition_init(&tracker->cond, NULL);
+            tracker->trackedServices = celix_arrayList_create();
+            tracker->untrackingServices = celix_arrayList_create();
 
-            char* versionRange = NULL;
-            if(opts->filter.versionRange != NULL) {
-                version_range_pt range;
-                celix_status_t status = versionRange_parse(opts->filter.versionRange, &range);
-                if(status != CELIX_SUCCESS) {
-                    framework_log(tracker->context->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__,
-                    "Error incorrect version range.");
-                    celixThreadRwlock_destroy(&tracker->instanceLock);
-                    free(tracker);
-                    return NULL;
-                }
-                versionRange = versionRange_createLDAPFilter(range, CELIX_FRAMEWORK_SERVICE_VERSION);
-                versionRange_destroy(range);
-                if(versionRange == NULL) {
-                    framework_log(tracker->context->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__,
-                                  "Error creating LDAP filter.");
-                    celixThreadRwlock_destroy(&tracker->instanceLock);
-                    free(tracker);
-                    return NULL;
-                }
-            }
+            celixThreadMutex_create(&tracker->mutex, NULL);
+            tracker->currentHighestServiceId = -1;
 
-            //setting filter
-            if (opts->filter.ignoreServiceLanguage) {
-                if (opts->filter.filter != NULL && versionRange != NULL) {
-                    asprintf(&tracker->filter, "(&(%s=%s)%s%s)", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, versionRange, opts->filter.filter);
-                } else if (versionRange != NULL) {
-                    asprintf(&tracker->filter, "(&(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, versionRange);
-                } else if (opts->filter.filter != NULL) {
-                    asprintf(&tracker->filter, "(&(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, opts->filter.filter);
-                } else {
-                    asprintf(&tracker->filter, "(&(%s=%s))", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName);
-                }
-            } else {
-                if (opts->filter.filter != NULL && versionRange != NULL) {
-                    asprintf(&tracker->filter, "(&(%s=%s)(%s=%s)%s%s)", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang, versionRange, opts->filter.filter);
-                } else if (versionRange != NULL) {
-                    asprintf(&tracker->filter, "(&(%s=%s)(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang, versionRange);
-                } else if (opts->filter.filter != NULL) {
-                    asprintf(&tracker->filter, "(&(%s=%s)(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang, opts->filter.filter);
-                } else {
-                    asprintf(&tracker->filter, "(&(%s=%s)(%s=%s))", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang);
-                }
-            }
+            tracker->listener.handle = tracker;
+            tracker->listener.serviceChanged = (void *) serviceTracker_serviceChanged;
+            tracker->filter = celix_serviceRegistry_createFilterFor(ctx->framework->registry, opts->filter.serviceName, opts->filter.versionRange, opts->filter.filter, opts->filter.serviceLanguage, opts->filter.ignoreServiceLanguage);
 
-            if(versionRange != NULL){
-                free(versionRange);
+            if (tracker->filter == NULL) {
+                framework_log(tracker->context->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__,
+                              "Error cannot create filter.");
+                free(tracker->serviceName);
+                free(tracker);
+                return NULL;
             }
 
             serviceTracker_open(tracker);
         }
     } else {
-        if (ctx != NULL && opts != NULL && opts->filter.serviceName == NULL) {
-            framework_log(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__,
-                          "Error incorrect arguments. Missing service name.");
-        } else if (ctx != NULL) {
-            framework_log(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__, "Error incorrect arguments. Required context (%p) or opts (%p) is NULL", ctx, opts);
-        }
+        framework_log(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__, "Error incorrect arguments. Required context (%p) or opts (%p) is NULL", ctx, opts);
     }
     return tracker;
 }
@@ -782,7 +683,7 @@ void celix_serviceTracker_destroy(celix_service_tracker_t *tracker) {
     }
 }
 
-static bool serviceTracker_useHighestRankingServiceInternal(celix_service_tracker_instance_t *instance,
+bool celix_serviceTracker_useHighestRankingService(service_tracker_t *tracker,
                                                             const char *serviceName /*sanity*/,
                                                             void *callbackHandle,
                                                             void (*use)(void *handle, void *svc),
@@ -795,11 +696,11 @@ static bool serviceTracker_useHighestRankingServiceInternal(celix_service_tracke
     unsigned int i;
 
     //first lock tracker and get highest tracked entry
-    celixThreadRwlock_readLock(&instance->lock);
-    unsigned int size = arrayList_size(instance->trackedServices);
+    celixThreadMutex_lock(&tracker->mutex);
+    unsigned int size = arrayList_size(tracker->trackedServices);
 
     for (i = 0; i < size; i++) {
-        tracked = (celix_tracked_entry_t *) arrayList_get(instance->trackedServices, i);
+        tracked = (celix_tracked_entry_t *) arrayList_get(tracker->trackedServices, i);
         if (serviceName != NULL && tracked->serviceName != NULL && strncmp(tracked->serviceName, serviceName, 10*1024) == 0) {
             const char *val = properties_getWithDefault(tracked->properties, OSGI_FRAMEWORK_SERVICE_RANKING, "0");
             long rank = strtol(val, NULL, 10);
@@ -813,7 +714,7 @@ static bool serviceTracker_useHighestRankingServiceInternal(celix_service_tracke
         tracked_retain(highest);
     }
     //unlock tracker so that the tracked entry can be removed from the trackedServices list if unregistered.
-    celixThreadRwlock_unlock(&instance->lock);
+    celixThreadMutex_unlock(&tracker->mutex);
 
     if (highest != NULL) {
         //got service, call, decrease use count an signal useCond after.
@@ -833,40 +734,6 @@ static bool serviceTracker_useHighestRankingServiceInternal(celix_service_tracke
     return called;
 }
 
-
-bool celix_serviceTracker_useHighestRankingService(
-        celix_service_tracker_t *tracker,
-        const char *serviceName /*sanity*/,
-        double waitTimeoutInSeconds,
-        void *callbackHandle,
-        void (*use)(void *handle, void *svc),
-        void (*useWithProperties)(void *handle, void *svc, const celix_properties_t *props),
-        void (*useWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner)) {
-
-    bool called = false;
-    struct timespec start, now;
-    clock_gettime(CLOCK_MONOTONIC, &start);
-    do {
-        celixThreadRwlock_readLock(&tracker->instanceLock);
-        if (tracker->instance != NULL) {
-            called = serviceTracker_useHighestRankingServiceInternal(tracker->instance, serviceName, callbackHandle, use, useWithProperties, useWithOwner);
-        }
-        celixThreadRwlock_unlock(&tracker->instanceLock);
-
-        if (waitTimeoutInSeconds <= 0) {
-            break;
-        } else if (!called) {
-            clock_gettime(CLOCK_MONOTONIC, &now);
-            double diff = celix_difftime(&start, &now);
-            if (diff > waitTimeoutInSeconds) {
-                break;
-            }
-            usleep(10);
-        }
-    } while (!called);
-    return called;
-}
-
 size_t celix_serviceTracker_useServices(
         service_tracker_t *tracker,
         const char* serviceName /*sanity*/,
@@ -875,141 +742,34 @@ size_t celix_serviceTracker_useServices(
         void (*useWithProperties)(void *handle, void *svc, const celix_properties_t *props),
         void (*useWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner)) {
     size_t count = 0;
-    celixThreadRwlock_readLock(&tracker->instanceLock);
-    celix_service_tracker_instance_t *instance = tracker->instance;
-    if (instance != NULL) {
-        //first lock tracker, get tracked entries and increase use count
-        celixThreadRwlock_readLock(&instance->lock);
-        int size = celix_arrayList_size(instance->trackedServices);
-        count = (size_t)size;
-        celix_tracked_entry_t *entries[size];
-        for (int i = 0; i < size; i++) {
-            celix_tracked_entry_t *tracked = (celix_tracked_entry_t *) arrayList_get(instance->trackedServices, i);
-            tracked_retain(tracked);
-            entries[i] = tracked;
-        }
-        //unlock tracker so that the tracked entry can be removed from the trackedServices list if unregistered.
-        celixThreadRwlock_unlock(&instance->lock);
-
-        //then use entries and decrease use count
-        for (int i = 0; i < size; i++) {
-            celix_tracked_entry_t *entry = entries[i];
-            //got service, call, decrease use count an signal useCond after.
-            if (use != NULL) {
-                use(callbackHandle, entry->service);
-            }
-            if (useWithProperties != NULL) {
-                useWithProperties(callbackHandle, entry->service, entry->properties);
-            }
-            if (useWithOwner != NULL) {
-                useWithOwner(callbackHandle, entry->service, entry->properties, entry->serviceOwner);
-            }
-
-            tracked_release(entry);
-        }
+    //first lock tracker, get tracked entries and increase use count
+    celixThreadMutex_lock(&tracker->mutex);
+    int size = celix_arrayList_size(tracker->trackedServices);
+    count = (size_t)size;
+    celix_tracked_entry_t *entries[size];
+    for (int i = 0; i < size; i++) {
+        celix_tracked_entry_t *tracked = (celix_tracked_entry_t *) arrayList_get(tracker->trackedServices, i);
+        tracked_retain(tracked);
+        entries[i] = tracked;
     }
-    celixThreadRwlock_unlock(&tracker->instanceLock);
+    //unlock tracker so that the tracked entry can be removed from the trackedServices list if unregistered.
+    celixThreadMutex_unlock(&tracker->mutex);
+
+    //then use entries and decrease use count
+    for (int i = 0; i < size; i++) {
+        celix_tracked_entry_t *entry = entries[i];
+        //got service, call, decrease use count an signal useCond after.
+        if (use != NULL) {
+            use(callbackHandle, entry->service);
+        }
+        if (useWithProperties != NULL) {
+            useWithProperties(callbackHandle, entry->service, entry->properties);
+        }
+        if (useWithOwner != NULL) {
+            useWithOwner(callbackHandle, entry->service, entry->properties, entry->serviceOwner);
+        }
+
+        tracked_release(entry);
+    }
     return count;
 }
-
-void celix_serviceTracker_syncForFramework(void *fw) {
-    celixThread_once(&g_once, serviceTracker_once);
-    celixThreadMutex_lock(&g_shutdownMutex);
-    size_t count = 0;
-    do {
-        count = 0;
-        if (g_shutdownInstances != NULL) {
-            for (int i = 0; i < celix_arrayList_size(g_shutdownInstances); ++i) {
-                celix_service_tracker_instance_t *instance = celix_arrayList_get(g_shutdownInstances, i);
-                if (instance->context->framework == fw) {
-                    count += 1;
-                }
-            }
-        }
-        if (count > 0) {
-            pthread_cond_wait(&g_shutdownCond, &g_shutdownMutex);
-        }
-    } while (count > 0);
-
-    if (g_shutdownInstances != NULL && celix_arrayList_size(g_shutdownInstances) == 0) {
-        celix_arrayList_destroy(g_shutdownInstances);
-        g_shutdownInstances = NULL;
-    }
-    celixThreadMutex_unlock(&g_shutdownMutex);
-}
-
-void celix_serviceTracker_syncForContext(void *ctx) {
-    celixThread_once(&g_once, serviceTracker_once);
-    celixThreadMutex_lock(&g_shutdownMutex);
-    size_t count;
-    do {
-        count = 0;
-        if (g_shutdownInstances != NULL) {
-            for (int i = 0; i < celix_arrayList_size(g_shutdownInstances); ++i) {
-                celix_service_tracker_instance_t *instance = celix_arrayList_get(g_shutdownInstances, i);
-                if (instance->context == ctx) {
-                    count += 1;
-                }
-            }
-        }
-        if (count > 0) {
-            pthread_cond_wait(&g_shutdownCond, &g_shutdownMutex);
-        }
-    } while (count > 0);
-
-    if (g_shutdownInstances != NULL && celix_arrayList_size(g_shutdownInstances) == 0) {
-        celix_arrayList_destroy(g_shutdownInstances);
-        g_shutdownInstances = NULL;
-    }
-    celixThreadMutex_unlock(&g_shutdownMutex);
-}
-
-#ifdef CELIX_SERVICE_TRACKER_USE_SHUTDOWN_THREAD
-static void serviceTracker_addInstanceFromShutdownList(celix_service_tracker_instance_t *instance) {
-    celixThread_once(&g_once, serviceTracker_once);
-    celixThreadMutex_lock(&g_shutdownMutex);
-    if (g_shutdownInstances == NULL) {
-        g_shutdownInstances = celix_arrayList_create();
-    }
-    celix_arrayList_add(g_shutdownInstances, instance);
-    celixThreadMutex_unlock(&g_shutdownMutex);
-}
-
-static void serviceTracker_remInstanceFromShutdownList(celix_service_tracker_instance_t *instance) {
-    celixThread_once(&g_once, serviceTracker_once);
-    celixThreadMutex_lock(&g_shutdownMutex);
-    if (g_shutdownInstances != NULL) {
-        size_t size = celix_arrayList_size(g_shutdownInstances);
-        for (size_t i = 0; i < size; ++i) {
-            celix_array_list_entry_t entry;
-            memset(&entry, 0, sizeof(entry));
-            entry.voidPtrVal = instance;
-            celix_arrayList_removeEntry(g_shutdownInstances, entry);
-        }
-        if (celix_arrayList_size(g_shutdownInstances) == 0) {
-            celix_arrayList_destroy(g_shutdownInstances);
-            g_shutdownInstances = NULL;
-        }
-        celixThreadCondition_broadcast(&g_shutdownCond);
-    }
-    celixThreadMutex_unlock(&g_shutdownMutex);
-}
-
-static void* shutdownServiceTrackerInstanceHandler(void *data) {
-    celix_service_tracker_instance_t *instance = data;
-
-    fw_removeServiceListener(instance->context->framework, instance->context->bundle, &instance->listener);
-
-    celixThreadMutex_destroy(&instance->closingLock);
-    celixThreadCondition_destroy(&instance->activeServiceChangeCallsCond);
-    celixThreadMutex_destroy(&instance->mutex);
-    celixThreadRwlock_destroy(&instance->lock);
-    celix_arrayList_destroy(instance->trackedServices);
-    free(instance->filter);
-
-    serviceTracker_remInstanceFromShutdownList(instance);
-    free(instance);
-
-    return NULL;
-}
-#endif

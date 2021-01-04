@@ -33,28 +33,23 @@ pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
     const char *scope,
     const char *topic,
     const celix_properties_t *topicProperties,
-    pubsub_tcp_endPointStore_t *endPointStore,
+    pubsub_tcp_endPointStore_t *handlerStore,
     long serializerSvcId,
     pubsub_serializer_service_t *ser,
     long protocolSvcId,
     pubsub_protocol_service_t *prot);
 
 void pubsub_tcpTopicSender_destroy(pubsub_tcp_topic_sender_t *sender);
-
 const char *pubsub_tcpTopicSender_scope(pubsub_tcp_topic_sender_t *sender);
-
 const char *pubsub_tcpTopicSender_topic(pubsub_tcp_topic_sender_t *sender);
-
 const char *pubsub_tcpTopicSender_url(pubsub_tcp_topic_sender_t *sender);
-
 bool pubsub_tcpTopicSender_isStatic(pubsub_tcp_topic_sender_t *sender);
-
+bool pubsub_tcpTopicSender_isPassive(pubsub_tcp_topic_sender_t *sender);
 long pubsub_tcpTopicSender_serializerSvcId(pubsub_tcp_topic_sender_t *sender);
-
 long pubsub_tcpTopicSender_protocolSvcId(pubsub_tcp_topic_sender_t *sender);
-
+/* Note this functions are deprecated and not used */
 void pubsub_tcpTopicSender_connectTo(pubsub_tcp_topic_sender_t *sender, const celix_properties_t *endpoint);
-
+/* Note this functions are deprecated and not used */
 void pubsub_tcpTopicSender_disconnectFrom(pubsub_tcp_topic_sender_t *sender, const celix_properties_t *endpoint);
 
 /**

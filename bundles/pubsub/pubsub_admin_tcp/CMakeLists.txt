@@ -28,6 +28,7 @@ add_celix_bundle(celix_pubsub_admin_tcp
         src/pubsub_tcp_topic_sender.c
         src/pubsub_tcp_topic_receiver.c
         src/pubsub_tcp_handler.c
+        src/pubsub_tcp_common.c
 )
 
 set_target_properties(celix_pubsub_admin_tcp PROPERTIES INSTALL_RPATH "$ORIGIN")

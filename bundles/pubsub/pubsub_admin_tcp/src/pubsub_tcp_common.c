@@ -16,11 +16,23 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+#include <stdio.h>
+#include <string.h>
+#include "pubsub_tcp_common.h"
 
-#include <gtest/gtest.h>
 
-int main(int argc, char **argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    int rc = RUN_ALL_TESTS();
-    return rc;
+bool psa_tcp_isPassive(const char* buffer) {
+    bool isPassive = false;
+    // Parse Properties
+    if (buffer != NULL) {
+        char buf[32];
+        snprintf(buf, 32, "%s", buffer);
+        char *trimmed = utils_stringTrim(buf);
+        if (strncasecmp("true", trimmed, strlen("true")) == 0) {
+            isPassive = true;
+        } else if (strncasecmp("false", trimmed, strlen("false")) == 0) {
+            isPassive = false;
+        }
+    }
+    return isPassive;
 }

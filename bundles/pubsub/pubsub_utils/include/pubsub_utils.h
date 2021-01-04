@@ -29,7 +29,8 @@ extern "C" {
 #define PUBSUB_UTILS_QOS_ATTRIBUTE_KEY      "qos"
 #define PUBSUB_UTILS_QOS_TYPE_SAMPLE        "sample"    /* A.k.a. unreliable connection */
 #define PUBSUB_UTILS_QOS_TYPE_CONTROL       "control"   /* A.k.a. reliable connection */
-
+#define PUBSUB_UTILS_PSA_SEND_DELAY         "PSA_SEND_DELAY"
+#define PUBSUB_UTILS_PSA_DEFAULT_SEND_DELAY 250 //  250 ms
 
 /**
  * Returns the pubsub info from the provided filter. A pubsub filter should have a topic and can 

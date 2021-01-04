@@ -121,9 +121,7 @@ int psa_tcp_start(psa_tcp_activator_t *act, celix_bundle_context_t *ctx) {
         celix_properties_t *props = celix_properties_create();
         celix_properties_set(props, CELIX_SHELL_COMMAND_NAME, "celix::psa_tcp");
         celix_properties_set(props, CELIX_SHELL_COMMAND_USAGE, "psa_tcp");
-        celix_properties_set(props,
-                             CELIX_SHELL_COMMAND_DESCRIPTION,
-                             "Print the information about the TopicSender and TopicReceivers for the TCP PSA");
+        celix_properties_set(props, CELIX_SHELL_COMMAND_DESCRIPTION, "Print the information about the TopicSender and TopicReceivers for the TCP PSA");
         act->cmdSvcId = celix_bundleContext_registerService(ctx, &act->cmdSvc, CELIX_SHELL_COMMAND_SERVICE_NAME, props);
     }
 
