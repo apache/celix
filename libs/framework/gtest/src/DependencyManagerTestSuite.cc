@@ -114,6 +114,10 @@ TEST_F(DependencyManagerTestSuite, StartDmWillBuildCmp) {
 }
 
 struct TestService {
+public:
+    TestService() : handle(nullptr) {};
+    TestService(void *_handle) : handle(_handle) {};
+
     void *handle;
 };
 
