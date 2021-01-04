@@ -634,6 +634,7 @@ static celix_status_t component_registerServices(celix_dm_component_t *component
             opts.svc = (void*)interface->service;
             opts.serviceName = interface->serviceName;
             opts.serviceLanguage = celix_properties_get(regProps, CELIX_FRAMEWORK_SERVICE_LANGUAGE, NULL);
+            interface->svcId = 99999999; //TODO remove, not needed when using async svc registration
             celixThreadMutex_unlock(&component->mutex);
             long svcId = celix_bundleContext_registerServiceWithOptions(component->context, &opts); //TODO fix race condition with async branch -> registerAsync
             celixThreadMutex_lock(&component->mutex);
@@ -701,18 +702,11 @@ celix_status_t component_getComponentInfo(celix_dm_component_t *component, dm_co
 }
 
 celix_status_t celix_dmComponent_getComponentInfo(celix_dm_component_t *component, dm_component_info_pt *out) {
-    celix_status_t status = CELIX_SUCCESS;
-    int i;
-    int size;
-    dm_component_info_pt info = NULL;
-    info = calloc(1, sizeof(*info));
+    dm_component_info_pt info = calloc(1, sizeof(*info));
+    info->dependency_list = celix_arrayList_create();
+    celix_dmComponent_getInterfaces(component, &info->interfaces);
 
-    if (info == NULL) {
-        return CELIX_ENOMEM;
-    }
-
-    arrayList_create(&info->dependency_list);
-    component_getInterfaces(component, &info->interfaces);
+    celixThreadMutex_lock(&component->mutex);
     info->active = false;
     memcpy(info->id, component->uuid, DM_COMPONENT_MAX_ID_LENGTH);
     memcpy(info->name, component->name, DM_COMPONENT_MAX_NAME_LENGTH);
@@ -736,27 +730,16 @@ celix_status_t celix_dmComponent_getComponentInfo(celix_dm_component_t *componen
             break;
     }
 
-    celixThreadMutex_lock(&component->mutex);
-    size = celix_arrayList_size(component->dependencies);
-    for (i = 0; i < size; i += 1) {
+    for (int i = 0; i < celix_arrayList_size(component->dependencies); i += 1) {
         celix_dm_service_dependency_t *dep = celix_arrayList_get(component->dependencies, i);
-        dm_service_dependency_info_pt depInfo = NULL;
-        status = serviceDependency_getServiceDependencyInfo(dep, &depInfo);
-        if (status == CELIX_SUCCESS) {
-            celix_arrayList_add(info->dependency_list, depInfo);
-        } else {
-            break;
-        }
+        dm_service_dependency_info_pt depInfo = celix_dmServiceDependency_createInfo(dep);
+        celix_arrayList_add(info->dependency_list, depInfo);
     }
+
     celixThreadMutex_unlock(&component->mutex);
 
-    if (status == CELIX_SUCCESS) {
-        *out = info;
-    } else if (info != NULL) {
-        component_destroyComponentInfo(info);
-    }
-
-    return status;
+    *out = info;
+    return CELIX_SUCCESS;
 }
 void component_destroyComponentInfo(dm_component_info_pt info) {
     return celix_dmComponent_destroyComponentInfo(info);

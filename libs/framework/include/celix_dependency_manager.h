@@ -59,13 +59,14 @@ celix_status_t celix_dependencyManager_removeAllComponents(celix_dependency_mana
 celix_dependency_manager_info_t* celix_dependencyManager_createInfo(celix_dependency_manager_t *manager, long bndId);
 
 /**
- * Create and returns a dependency manager info structd for all started bundles.
+ * Create and returns a dependency manager info struct for all started bundles.
  * The dependency manager info contains information about the state of the dependency manager components
  *
  * Caller has ownership of the return values (use celix_dependencyManager_destroyInfos to free the memory).
  *
  * @param manager The dependency manager
- * @returns A celix array of dependency manager infos for the provided bundle id or NULL if the bundle id is invalid.
+ * @returns A Celix array of dependency manager infos (celix_dependency_manager_info_t*)
+ * for the provided bundle id or NULL if the bundle id is invalid.
  */
 celix_array_list_t * /*celix_dependency_manager_info_t entries*/ celix_dependencyManager_createInfos(celix_dependency_manager_t *manager);
 

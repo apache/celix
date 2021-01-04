@@ -156,19 +156,17 @@ static void celix_dm_getInfosCallback(void *handle, const celix_bundle_t *bnd) {
 
 	celix_dependency_manager_info_t *info = calloc(1, sizeof(*info));
 	celixThreadMutex_lock(&mng->mutex);
-	if (info != NULL) {
-		info->bndId = celix_bundle_getId(bnd);
-		info->components = celix_arrayList_create();
-		int size = celix_arrayList_size(mng->components);
-		for (int i = 0; i < size; i += 1) {
-			celix_dm_component_t *cmp = celix_arrayList_get(mng->components, i);
-			celix_dm_component_info_t *cmpInfo = NULL;
-			component_getComponentInfo(cmp, &cmpInfo);
-			celix_arrayList_add(info->components, cmpInfo);
-		}
+    info->bndId = celix_bundle_getId(bnd);
+    info->components = celix_arrayList_create();
+    int size = celix_arrayList_size(mng->components);
+    for (int i = 0; i < size; i += 1) {
+        celix_dm_component_t *cmp = celix_arrayList_get(mng->components, i);
+        celix_dm_component_info_t *cmpInfo = NULL;
+        celix_dmComponent_getComponentInfo(cmp, &cmpInfo);
+        celix_arrayList_add(info->components, cmpInfo);
+    }
 
-		celix_arrayList_add(infos, info);
-	}
+    celix_arrayList_add(infos, info);
 	celixThreadMutex_unlock(&mng->mutex);
 }
 

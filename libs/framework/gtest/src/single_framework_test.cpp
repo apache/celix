@@ -19,66 +19,31 @@
 
 #include <gtest/gtest.h>
 
-extern "C" {
-
-#include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
-
 #include "celix_launcher.h"
 #include "celix_framework_factory.h"
 
 
-    static celix_framework_t *framework = nullptr;
-    static celix_bundle_context_t *context = nullptr;
-
-    static void setupFm(void) {
-        int rc = 0;
-
-        rc = celixLauncher_launch("config.properties", &framework);
-        ASSERT_EQ(CELIX_SUCCESS, rc);
-
-        bundle_pt bundle = nullptr;
-        rc = framework_getFrameworkBundle(framework, &bundle);
-        ASSERT_EQ(CELIX_SUCCESS, rc);
-
-        rc = bundle_getContext(bundle, &context);
-        ASSERT_EQ(CELIX_SUCCESS, rc);
-    }
-
-    static void teardownFm(void) {
-
-        celixLauncher_stop(framework);
-        celixLauncher_waitForShutdown(framework);
-        celixLauncher_destroy(framework);
-
-        context = nullptr;
-        framework = nullptr;
-    }
-
-    static void testFramework(void) {
-        //intentional empty. start/shutdown test
-        printf("testing startup/shutdown single framework\n");
-    }
-
-}
-
-
 class CelixFramework : public ::testing::Test {
-public:
-    CelixFramework() {
-        setupFm();
-    }
-
-    ~CelixFramework() override {
-        teardownFm();
-    }
 };
 
 TEST_F(CelixFramework, testFramework) {
-    testFramework();
+    int rc;
+    celix_framework_t *framework = nullptr;
+    celix_bundle_context_t *context = nullptr;
+
+    rc = celixLauncher_launch("config.properties", &framework);
+    EXPECT_EQ(CELIX_SUCCESS, rc);
+
+    bundle_pt bundle = nullptr;
+    rc = framework_getFrameworkBundle(framework, &bundle);
+    EXPECT_EQ(CELIX_SUCCESS, rc);
+
+    rc = bundle_getContext(bundle, &context);
+    EXPECT_EQ(CELIX_SUCCESS, rc);
+
+    celixLauncher_stop(framework);
+    celixLauncher_waitForShutdown(framework);
+    celixLauncher_destroy(framework);
 }
 
 class FrameworkFactory : public ::testing::Test {

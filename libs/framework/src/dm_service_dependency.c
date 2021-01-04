@@ -186,7 +186,6 @@ celix_status_t celix_serviceDependency_start(celix_dm_service_dependency_t *depe
     celix_bundle_context_t* ctx = celix_dmComponent_getBundleContext(dependency->component);
 
     if (dependency->serviceName == NULL && dependency->filter == NULL) {
-        //TODO improve log (via bundle context?)
         fw_log(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR,
                "Cannot start a service dependency without a service name and filter");
         return CELIX_ILLEGAL_ARGUMENT;
@@ -212,7 +211,7 @@ celix_status_t celix_serviceDependency_start(celix_dm_service_dependency_t *depe
         } else {
             opts.filter.ignoreServiceLanguage = true;
         }
-        long newTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
+        long newTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts); //TODO async
 
         celixThreadMutex_lock(&dependency->mutex);
         dependency->svcTrackerId = newTrackerId;

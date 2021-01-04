@@ -97,11 +97,15 @@ TEST_F(DependencyManagerTestSuite, DmGetInfo) {
     celix_dependencyManager_add(mng, cmp);
 
     auto* infos = celix_dependencyManager_createInfos(mng);
-    EXPECT_EQ(1, celix_arrayList_size(infos));
-    auto* info = (celix_dm_component_info_t*)celix_arrayList_get(infos, 0);
+    ASSERT_EQ(1, celix_arrayList_size(infos));
+    auto* dmInfo = (celix_dependency_manager_info_t*)celix_arrayList_get(infos, 0);
+    ASSERT_EQ(1, celix_arrayList_size(dmInfo->components));
+    auto *info = (celix_dm_component_info_t*)celix_arrayList_get(dmInfo->components, 0);
     EXPECT_EQ(1, celix_arrayList_size(info->interfaces));
     EXPECT_EQ(1, celix_arrayList_size(info->dependency_list));
     celix_dependencyManager_destroyInfos(mng, infos);
+
+    celix_dependencyManager_removeAllComponents(mng);
 }
 
 
