@@ -24,7 +24,7 @@
 #include <memory>
 
 #include "celix_properties.h"
-#include "utils.h"
+#include "celix_utils.h"
 #include "hash_map.h"
 
 namespace celix {

@@ -140,6 +140,27 @@ TEST_F(CxxBundleContextTestSuite, UseServicesTest) {
     EXPECT_EQ(countFromFunction.load(), 4);
 }
 
+TEST_F(CxxBundleContextTestSuite, UseServicesWithFilterTest) {
+    auto *cCtx = celix_framework_getFrameworkContext(fw.get());
+    auto ctx = std::make_shared<celix::BundleContext>(cCtx);
+
+    auto svc = std::make_shared<CInterface>(CInterface{nullptr, nullptr});
+    auto svcReg1 = ctx->registerService<CInterface>(svc).build();
+    auto svcReg2 = ctx->registerService<CInterface>(svc).addProperty("key", "val1").build();
+    auto svcReg3 = ctx->registerService<CInterface>(svc).addProperty("key", "val2").build();
+
+    EXPECT_EQ(3, ctx->useServices<CInterface>().build());
+    EXPECT_EQ(1, ctx->useServices<CInterface>().setFilter("(key=val1)").build());
+    EXPECT_EQ(2, ctx->useServices<CInterface>().setFilter("(key=*)").build());
+    EXPECT_EQ(3, ctx->useServices<CInterface>().setFilter(celix::Filter{}).build());
+
+    celix::Filter f{"(key=val2)"};
+    EXPECT_EQ(1, ctx->useServices<CInterface>().setFilter(f).build());
+
+    EXPECT_THROW(ctx->useServices<CInterface>().setFilter(celix::Filter{"bla"}).build(), celix::Exception);
+}
+
+
 TEST_F(CxxBundleContextTestSuite, FindServicesTest) {
     auto *cCtx = celix_framework_getFrameworkContext(fw.get());
     celix::BundleContext ctx{cCtx};
@@ -201,8 +222,12 @@ TEST_F(CxxBundleContextTestSuite, TrackServicesTest) {
     tracker2->wait();
     EXPECT_EQ(1, tracker2->getServiceCount());
 
+    auto tracker3 = ctx.trackServices<CInterface>().setFilter(celix::Filter{"(key1=value1)"}).build();
+    tracker3->wait();
+    EXPECT_EQ(1, tracker3->getServiceCount());
+
     std::atomic<int> count{0};
-    auto tracker3 = ctx.trackServices<CInterface>()
+    auto tracker4 = ctx.trackServices<CInterface>()
             .addAddCallback([&count](const std::shared_ptr<CInterface>&) {
                 count += 1;
             })
@@ -210,13 +235,13 @@ TEST_F(CxxBundleContextTestSuite, TrackServicesTest) {
                 count += 1;
             })
             .build();
-    tracker3->wait();
+    tracker4->wait();
     EXPECT_EQ(2, count); //2x add called
     svcReg1->unregister();
     svcReg1->wait();
     EXPECT_EQ(3, count); //2x add called, 1x rem called
-    tracker3->close();
-    tracker3->wait();
+    tracker4->close();
+    tracker4->wait();
     EXPECT_EQ(4, count); //2x add called, 2x rem called (1 rem call for closing the tracker)
 
     EXPECT_EQ(1, tracker->getServiceCount()); //only 1 left

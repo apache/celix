@@ -27,22 +27,29 @@ public:
 
 
 TEST_F(CxxFilterTestSuite, CreateDestroy) {
-    //TODO support empty filter
-//    celix::Filter filter{};
-//    EXPECT_TRUE(filter.getCFilter() != nullptr);
+    celix::Filter filter{};
+    EXPECT_TRUE(filter.empty());
+    EXPECT_TRUE(filter.getCFilter() == nullptr); //TODO tbd add support for empty filter to C?
+    EXPECT_TRUE(filter.getFilterString().empty());
 }
 
 TEST_F(CxxFilterTestSuite, FilterString) {
-    //TODO
-//    celix::Filter filter1{};
-//    EXPECT_EQ(std::string{}, filter1.getFilterString());
+    celix::Filter filter1{};
+    EXPECT_EQ(std::string{}, filter1.getFilterString());
 
     celix::Filter filter2{"(key=value)"};
+    EXPECT_FALSE(filter2.empty());
     EXPECT_EQ(std::string{"(key=value)"}, filter2.getFilterString());
 }
 
+TEST_F(CxxFilterTestSuite, InvalidFilter) {
+    EXPECT_THROW(celix::Filter{"bla"}, celix::Exception);
+}
+
 TEST_F(CxxFilterTestSuite, EmptyFilterTest) {
-    //TODO match test that match is always true
+    celix::Filter filter{};
+    celix::Properties props{};
+    EXPECT_TRUE(filter.match(props));
 }
 
 TEST_F(CxxFilterTestSuite, MatchTest) {

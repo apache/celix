@@ -21,8 +21,9 @@
 
 #include <memory>
 
-#include "celix/Properties.h"
 #include "celix_filter.h"
+#include "celix/Properties.h"
+#include "celix/Exception.h"
 
 namespace celix {
 
@@ -53,8 +54,15 @@ namespace celix {
         }
 
         std::string getFilterString() const {
-            auto cStr = celix_filter_getFilterString(cFilter.get());
+            auto cStr = getFilterCString();
             return cStr == nullptr ? std::string{} : std::string{cStr};
+        }
+
+        /**
+         * Get the C string. valid as long as the filter object is valid.
+         */
+        const char* getFilterCString() const {
+            return celix_filter_getFilterString(cFilter.get());
         }
 
         bool match(const celix::Properties& props)  const {
@@ -73,11 +81,21 @@ namespace celix {
         celix_filter_t* getCFilter() const {
             return cFilter.get();
         }
+
+        /**
+         * Return whether the filter is empty.
+         */
+        bool empty() const {
+            return cFilter == nullptr;
+        }
     private:
         static std::shared_ptr<celix_filter_t> createFilter(const std::string& filterStr) {
-            auto *cf = celix_filter_create(filterStr.c_str());
+            if (filterStr.empty()) {
+                return nullptr;
+            }
+            auto* cf = celix_filter_create(filterStr.c_str());
             if (cf == nullptr) {
-                throw std::logic_error{"TODO create and throw celix (filter?) error. Invalid filter: '" + filterStr + "'"};
+                throw celix::Exception{"Invalid LDAP filter '" + filterStr + "'"};
             }
             return std::shared_ptr<celix_filter_t>{cf, [](celix_filter_t *f) {
                 celix_filter_destroy(f);

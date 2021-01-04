@@ -165,7 +165,12 @@ namespace celix {
          * The filter must be LDAP filter.
          * Example: "(property_key=value)"
          */
-        UseServiceBuilder& setFilter(std::string f) { filter = std::move(f); return *this; }
+        UseServiceBuilder& setFilter(std::string f) { filter = celix::Filter{std::move(f)}; return *this; }
+
+        /**
+         * Set filter to be used to matching services.
+         */
+        UseServiceBuilder& setFilter(celix::Filter f) { filter = std::move(f); return *this; }
 
         /**
          * Sets a optional timeout.
@@ -232,7 +237,7 @@ namespace celix {
             celix_service_use_options_t opts{};
             opts.filter.serviceName = name.empty() ? nullptr : name.c_str();
             opts.filter.ignoreServiceLanguage = true;
-            opts.filter.filter = filter.empty() ? nullptr : filter.c_str();
+            opts.filter.filter = filter.empty() ? nullptr : filter.getFilterCString();
             opts.filter.versionRange = versionRange.empty() ? nullptr : versionRange.c_str();
             opts.waitTimeoutInSeconds = timeoutInSeconds;
             opts.callbackHandle = this;
@@ -264,7 +269,7 @@ namespace celix {
         const std::string name;
         const bool useSingleService;
         double timeoutInSeconds{0};
-        std::string filter{};
+        celix::Filter filter{};
         std::string versionRange{};
         std::vector<std::function<void(I&)>> callbacks{};
         std::vector<std::function<void(I&, const celix::Properties&)>> callbacksWithProperties{};
@@ -298,7 +303,12 @@ namespace celix {
          * The filter must be LDAP filter.
          * Example: "(property_key=value)"
          */
-        ServiceTrackerBuilder& setFilter(std::string f) { filter = std::move(f); return *this; }
+        ServiceTrackerBuilder& setFilter(std::string f) { filter = celix::Filter{std::move(f)}; return *this; }
+
+        /**
+         * Set filter to be used to matching services.
+         */
+        ServiceTrackerBuilder& setFilter(celix::Filter f) { filter = std::move(f); return *this; }
 
         /**
          * Adds a add callback function, which will be called - on the Celix event thread -
@@ -434,13 +444,13 @@ namespace celix {
             return *this;
         }
 
-        /**
-         * TODO
-         */
-        ServiceTrackerBuilder& addUpdateCallback(std::function<void(std::vector<std::shared_ptr<I>>)> update) {
-            //TODO update -> vector of ordered (svc rank) services
-            return *this;
-        }
+//        /**
+//         * TODO
+//         */
+//        ServiceTrackerBuilder& addUpdateCallback(std::function<void(std::vector<std::shared_ptr<I>>)> update) {
+//            //TODO update -> vector of ordered (svc rank) services
+//            return *this;
+//        }
 
         //TODO add function to register done call backs -> addOnStarted / addOnStopped (inheritance?)
 
@@ -458,7 +468,7 @@ namespace celix {
     private:
         const std::shared_ptr<celix_bundle_context_t> cCtx;
         std::string name;
-        std::string filter{};
+        celix::Filter filter{};
         std::string versionRange{};
         std::vector<std::function<void(std::shared_ptr<I>, std::shared_ptr<const celix::Properties>, std::shared_ptr<const celix::Bundle>)>> setCallbacks{};
         std::vector<std::function<void(std::shared_ptr<I>, std::shared_ptr<const celix::Properties>, const celix::Bundle&)>> addCallbacks{}; //TODO make bundle arg std::shared_ptr

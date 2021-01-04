@@ -127,7 +127,7 @@ namespace celix {
     class GenericServiceTracker : public AbstractTracker {
     public:
         GenericServiceTracker(std::shared_ptr<celix_bundle_context_t> _cCtx, std::string _svcName,
-                              std::string _svcVersionRange, std::string _filter) : AbstractTracker{std::move(_cCtx)}, svcName{std::move(_svcName)},
+                              std::string _svcVersionRange, celix::Filter _filter) : AbstractTracker{std::move(_cCtx)}, svcName{std::move(_svcName)},
                                                                                    svcVersionRange{std::move(_svcVersionRange)}, filter{std::move(_filter)} {
             opts.trackerCreatedCallbackData = this;
             opts.trackerCreatedCallback = [](void *data) {
@@ -154,7 +154,7 @@ namespace celix {
 
         const std::string& getServiceRange() const { return svcVersionRange; }
 
-        const std::string& getFilter() const { return filter; }
+        const celix::Filter& getFilter() const { return filter; }
 
         std::size_t getServiceCount() const {
             return svcCount;
@@ -162,7 +162,7 @@ namespace celix {
     protected:
         const std::string svcName;
         const std::string svcVersionRange;
-        const std::string filter;
+        const celix::Filter filter;
         celix_service_tracking_options opts{}; //note only set in the ctor
         std::atomic<size_t> svcCount{0};
     };
@@ -175,7 +175,7 @@ namespace celix {
     class ServiceTracker : public GenericServiceTracker {
     public:
         ServiceTracker(std::shared_ptr<celix_bundle_context_t> _cCtx, std::string _svcName,
-                       std::string _svcVersionRange, std::string _filter,
+                       std::string _svcVersionRange, celix::Filter _filter,
                        std::vector<std::function<void(std::shared_ptr<I>, std::shared_ptr<const celix::Properties>, std::shared_ptr<const celix::Bundle>)>> _setCallbacks,
                        std::vector<std::function<void(std::shared_ptr<I>, std::shared_ptr<const celix::Properties>, const celix::Bundle&)>> _addCallbacks,
                        std::vector<std::function<void(std::shared_ptr<I>, std::shared_ptr<const celix::Properties>, const celix::Bundle&)>> _remCallbacks) :
@@ -186,7 +186,7 @@ namespace celix {
 
             opts.filter.serviceName = svcName.empty() ? nullptr : svcName.c_str();
             opts.filter.versionRange = svcVersionRange.empty() ? nullptr : svcVersionRange.c_str();
-            opts.filter.filter = filter.empty() ? nullptr : filter.c_str();
+            opts.filter.filter = filter.empty() ? nullptr : filter.getFilterCString();
             opts.callbackHandle = this;
             opts.addWithOwner = [](void *handle, void *voidSvc, const celix_properties_t* cProps, const celix_bundle_t* cBnd) {
                 auto tracker = static_cast<ServiceTracker<I>*>(handle);

@@ -58,11 +58,15 @@ void filter_destroy(celix_filter_t * filter) {
 static celix_filter_t * filter_parseFilter(char * filterString, int * pos) {
     celix_filter_t * filter;
     filter_skipWhiteSpace(filterString, pos);
-    if (filterString[*pos] != '(') {
+    if (filterString[*pos] == '\0') {
+        //empty filter
+        fprintf(stderr, "Filter Error: Cannot create LDAP filter from an empty string.\n");
+        return NULL;
+    } else if (filterString[*pos] != '(') {
         fprintf(stderr, "Filter Error: Missing '(' in filter string '%s'.\n", filterString);
         return NULL;
     }
-    (*pos)++;
+    (*pos)++; //eat '('
 
     filter = filter_parseFilterComp(filterString, pos);
 
@@ -75,7 +79,7 @@ static celix_filter_t * filter_parseFilter(char * filterString, int * pos) {
         }
         return NULL;
     }
-    (*pos)++;
+    (*pos)++; //eat ')'
     filter_skipWhiteSpace(filterString, pos);
 
     return filter;
@@ -593,6 +597,9 @@ void celix_filter_destroy(celix_filter_t *filter) {
 }
 
 bool celix_filter_match(const celix_filter_t *filter, const celix_properties_t* properties) {
+    if (filter == NULL) {
+        return true; //matching on null(empty) filter is always true
+    }
     bool result = false;
     switch (filter->operand) {
         case CELIX_FILTER_OPERAND_AND: {
