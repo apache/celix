@@ -72,7 +72,7 @@ inline void DependencyManager::build() {
 
 template<typename T>
 void DependencyManager::destroyComponent(Component<T> &component) {
-    celix_dependencyManager_remove(cDepMan, component.cComponent());
+    celix_dependencyManager_remove(cDepMan.get(), component.cComponent());
 }
 
 inline void DependencyManager::clear() {
