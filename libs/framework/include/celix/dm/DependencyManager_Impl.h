@@ -25,7 +25,7 @@ inline DependencyManager::DependencyManager(celix_bundle_context_t *ctx) :
     context{ctx, [](celix_bundle_context_t*){/*nop*/}},
     cDepMan{celix_bundleContext_getDependencyManager(ctx), [](celix_dependency_manager_t*){/*nop*/}} {}
 
-inline DependencyManager::~DependencyManager() {/*nop}
+inline DependencyManager::~DependencyManager() {/*nop*/}
 
 template<class T>
 Component<T>& DependencyManager::createComponentInternal(std::string name) {
