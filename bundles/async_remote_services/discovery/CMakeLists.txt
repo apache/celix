@@ -15,11 +15,24 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_subdirectory(device_access)
-add_subdirectory(deployment_admin)
-add_subdirectory(async_remote_services)
-add_subdirectory(remote_services)
-add_subdirectory(http_admin)
-add_subdirectory(shell)
-add_subdirectory(logging)
-add_subdirectory(pubsub)
+add_celix_bundle(async_rsa_discovery
+        VERSION 0.9.0
+        SYMBOLIC_NAME "apache_celix_async_remote_service_admin_discovery"
+        NAME "Apache Celix Async Remote Service Admin Discovery"
+        GROUP "Celix/AsyncRSA"
+        SOURCES
+        src/discovery.cc
+        )
+target_include_directories(async_rsa_discovery PRIVATE include)
+target_link_libraries(async_rsa_discovery PRIVATE
+        Celix::async_rsa_common
+        )
+
+#if (ENABLE_TESTING)
+#    add_subdirectory(gtest)
+#endif()
+
+
+install_celix_bundle(async_rsa_discovery EXPORT celix COMPONENT async_rsa_discovery)
+#Setup target aliases to match external usage
+add_library(Celix::async_rsa_discovery ALIAS async_rsa_discovery)

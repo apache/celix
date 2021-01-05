@@ -15,11 +15,10 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_subdirectory(device_access)
-add_subdirectory(deployment_admin)
-add_subdirectory(async_remote_services)
-add_subdirectory(remote_services)
-add_subdirectory(http_admin)
-add_subdirectory(shell)
-add_subdirectory(logging)
-add_subdirectory(pubsub)
+celix_subproject(ASYNC_REMOTE_SERVICE_ADMIN "Option to enable building the C++17 async Remote Service Admin Service bundles" OFF)
+if (ASYNC_REMOTE_SERVICE_ADMIN)
+    add_subdirectory(common)
+    add_subdirectory(admin)
+    add_subdirectory(discovery)
+    add_subdirectory(examples)
+endif()

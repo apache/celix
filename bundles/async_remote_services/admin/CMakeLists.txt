@@ -15,11 +15,24 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_subdirectory(device_access)
-add_subdirectory(deployment_admin)
-add_subdirectory(async_remote_services)
-add_subdirectory(remote_services)
-add_subdirectory(http_admin)
-add_subdirectory(shell)
-add_subdirectory(logging)
-add_subdirectory(pubsub)
+add_celix_bundle(async_rsa
+        VERSION 0.9.0
+        SYMBOLIC_NAME "apache_celix_async_remote_service_admin_dfi"
+        NAME "Apache Celix Async Remote Service Admin"
+        GROUP "Celix/AsyncRSA"
+        SOURCES
+        src/admin.cc
+        )
+#target_include_directories(async_rsa PRIVATE $<TARGET_PROPERTY:Celix::civetweb,INCLUDE_DIRECTORIES>)
+target_link_libraries(async_rsa PRIVATE
+        Celix::rsa_common
+        )
+
+#if (ENABLE_TESTING)
+#    add_subdirectory(gtest)
+#endif()
+
+
+install_celix_bundle(async_rsa EXPORT celix COMPONENT async_rsa)
+#Setup target aliases to match external usage
+add_library(Celix::async_rsa ALIAS async_rsa)
