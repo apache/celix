@@ -79,7 +79,7 @@ bool celix_serviceDependency_hasRemoveCallback(const celix_dm_service_dependency
 
 bool celix_serviceDependency_isAvailable(celix_dm_service_dependency_t *dependency);
 bool celix_dmServiceDependency_isRequired(const celix_dm_service_dependency_t* dependency);
-bool celix_dmServiceDependency_isStarted(celix_dm_service_dependency_t* dependency);
+bool celix_dmServiceDependency_isTrackerOpen(celix_dm_service_dependency_t* dependency);
 
 #ifdef __cplusplus
 }

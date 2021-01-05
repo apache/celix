@@ -77,9 +77,7 @@ celix_status_t celix_dependencyManager_remove(celix_dependency_manager_t *manage
 	if (index >= 0) {
         celix_arrayList_removeAt(manager->components, index);
         celixThreadMutex_unlock(&manager->mutex);
-
-        status = celix_private_dmComponent_stop(component);
-        component_destroy(component);
+        celix_dmComponent_destroy(component);
 	} else {
         celixThreadMutex_unlock(&manager->mutex);
 	    fprintf(stderr, "Cannot find component with pointer %p\n", component);
@@ -106,8 +104,7 @@ celix_status_t celix_dependencyManager_removeAllComponents(celix_dependency_mana
     while (!arrayList_isEmpty(toRemoveComponents)) {
         celix_dm_component_t *cmp = celix_arrayList_get(toRemoveComponents, 0);
         celix_arrayList_removeAt(toRemoveComponents, 0);
-        celix_private_dmComponent_stop(cmp);
-        component_destroy(cmp);
+        celix_dmComponent_destroy(cmp);
     }
 
     celix_arrayList_destroy(toRemoveComponents);

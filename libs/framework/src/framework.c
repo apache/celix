@@ -70,14 +70,13 @@ static inline celix_framework_bundle_entry_t* fw_bundleEntry_create(celix_bundle
 static inline void fw_bundleEntry_waitTillUseCountIs(celix_framework_bundle_entry_t *entry, size_t desiredUseCount) {
     celixThreadMutex_lock(&entry->useMutex);
     time_t start = time(NULL);
-    bool warningPrinted = false;
     while (entry->useCount != desiredUseCount) {
         celixThreadCondition_timedwaitRelative(&entry->useCond, &entry->useMutex, 5, 0);
         if (entry->useCount != desiredUseCount) {
             time_t now = time(NULL);
-            if (!warningPrinted && (now-start) > 5) {
-                fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_WARNING, "Bundle %s (%li) still in use. Use count is %u, desired is %li", celix_bundle_getSymbolicName(entry->bnd), entry->bndId, entry->useCount, desiredUseCount);
-                warningPrinted = true;
+            if ((now-start) > 5) {
+                fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_WARNING, "Bundle '%s' (bnd id = %li) still in use. Use count is %u, desired is %li", celix_bundle_getSymbolicName(entry->bnd), entry->bndId, entry->useCount, desiredUseCount);
+                start = time(NULL);
             }
         }
     }

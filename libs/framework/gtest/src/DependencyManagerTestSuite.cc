@@ -104,8 +104,6 @@ TEST_F(DependencyManagerTestSuite, DmGetInfo) {
     EXPECT_EQ(1, celix_arrayList_size(info->interfaces));
     EXPECT_EQ(1, celix_arrayList_size(info->dependency_list));
     celix_dependencyManager_destroyInfos(mng, infos);
-
-    celix_dependencyManager_removeAllComponents(mng);
 }
 
 

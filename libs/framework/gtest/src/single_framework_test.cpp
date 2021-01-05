@@ -26,35 +26,43 @@
 
 
 class CelixFramework : public ::testing::Test {
+public:
+    CelixFramework() {
+        int rc;
+        celix_framework_t *fw = nullptr;
+        celix_bundle_context_t *context = nullptr;
+
+        rc = celixLauncher_launch("config.properties", &fw);
+        EXPECT_EQ(CELIX_SUCCESS, rc);
+
+        bundle_pt bundle = nullptr;
+        rc = framework_getFrameworkBundle(fw, &bundle);
+        EXPECT_EQ(CELIX_SUCCESS, rc);
+
+        rc = bundle_getContext(bundle, &context);
+        EXPECT_EQ(CELIX_SUCCESS, rc);
+
+        framework = std::shared_ptr<celix_framework_t>{fw, [](celix_framework_t* cFw) {
+            celixLauncher_stop(cFw);
+            celixLauncher_waitForShutdown(cFw);
+            celixLauncher_destroy(cFw);
+        }};
+    }
+
+    std::shared_ptr<celix_framework_t> framework{};
 };
 
 TEST_F(CelixFramework, testFramework) {
-    int rc;
-    celix_framework_t *framework = nullptr;
-    celix_bundle_context_t *context = nullptr;
-
-    rc = celixLauncher_launch("config.properties", &framework);
-    EXPECT_EQ(CELIX_SUCCESS, rc);
-
-    bundle_pt bundle = nullptr;
-    rc = framework_getFrameworkBundle(framework, &bundle);
-    EXPECT_EQ(CELIX_SUCCESS, rc);
-
-    rc = bundle_getContext(bundle, &context);
-    EXPECT_EQ(CELIX_SUCCESS, rc);
-
-    celixLauncher_stop(framework);
-    celixLauncher_waitForShutdown(framework);
-    celixLauncher_destroy(framework);
+    //nop
 }
 
 TEST_F(CelixFramework, testEventQueue) {
-    long eid = celix_framework_nextEventId(framework);
+    long eid = celix_framework_nextEventId(framework.get());
     EXPECT_GE(eid, 0);
-    celix_framework_waitForGenericEvent(framework, eid); //event never issued so should return directly
+    celix_framework_waitForGenericEvent(framework.get(), eid); //event never issued so should return directly
 
     std::atomic<int> count{0};
-    celix_framework_fireGenericEvent(framework, eid, -1L, "test", static_cast<void*>(&count), [](void* data) {
+    celix_framework_fireGenericEvent(framework.get(), eid, -1L, "test", static_cast<void*>(&count), [](void* data) {
        auto *c = static_cast<std::atomic<int>*>(data);
        *c += 1;
     }, static_cast<void*>(&count), [](void* data) {
@@ -62,7 +70,7 @@ TEST_F(CelixFramework, testEventQueue) {
         *c += 3;
     });
 
-    celix_framework_waitForGenericEvent(framework, eid);
+    celix_framework_waitForGenericEvent(framework.get(), eid);
     EXPECT_EQ(4, count);
 }
 

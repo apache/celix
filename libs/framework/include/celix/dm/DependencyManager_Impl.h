@@ -25,7 +25,7 @@ inline DependencyManager::DependencyManager(celix_bundle_context_t *ctx) :
     context{ctx, [](celix_bundle_context_t*){/*nop*/}},
     cDepMan{celix_bundleContext_getDependencyManager(ctx), [](celix_dependency_manager_t*){/*nop*/}} {}
 
-inline DependencyManager::~DependencyManager() {/*nop*/}
+inline DependencyManager::~DependencyManager() {/*nop}
 
 template<class T>
 Component<T>& DependencyManager::createComponentInternal(std::string name) {
@@ -33,8 +33,9 @@ Component<T>& DependencyManager::createComponentInternal(std::string name) {
                         Component<T>::create(this->context.get(), this->cDepMan.get()) :
                         Component<T>::create(this->context.get(), this->cDepMan.get(), name);
     if (cmp->isValid()) {
-        this->components.push_back(std::unique_ptr<BaseComponent> {cmp});
+        this->components.push_back(std::shared_ptr<BaseComponent>{cmp});
     }
+
     return *cmp;
 }
 

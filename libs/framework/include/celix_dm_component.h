@@ -59,6 +59,11 @@ celix_dm_component_t* celix_dmComponent_create(celix_bundle_context_t *context, 
 celix_dm_component_t* celix_dmComponent_createWithUUID(celix_bundle_context_t *context, const char* name, const char* UUID);
 
 /**
+ * Get the UUID of the component.
+ */
+const char* celix_dmComponent_getUUID(celix_dm_component_t* cmp);
+
+/**
  * Destroys a DM Component
  */
 void celix_dmComponent_destroy(celix_dm_component_t *cmp);

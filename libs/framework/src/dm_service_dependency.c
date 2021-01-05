@@ -60,6 +60,9 @@ celix_status_t serviceDependency_destroy(celix_dm_service_dependency_t **depende
 
 void celix_dmServiceDependency_destroy(celix_dm_service_dependency_t *dep) {
 	if (dep != NULL) {
+        celix_bundle_context_t* ctx = celix_dmComponent_getBundleContext(dep->component);
+        celix_bundleContext_waitForAsyncStopTracker(ctx, dep->svcTrackerId);
+        celixThreadMutex_destroy(&dep->mutex);
         free(dep->serviceName);
         free(dep->versionRange);
         free(dep->filter);
@@ -192,11 +195,8 @@ celix_status_t celix_serviceDependency_start(celix_dm_service_dependency_t *depe
     }
 
     celixThreadMutex_lock(&dependency->mutex);
-    bool open = dependency->isTrackerOpen;
-    dependency->isTrackerOpen = true;
-    celixThreadMutex_unlock(&dependency->mutex);
-
-    if (!open) {
+    if (!dependency->isTrackerOpen) {
+        dependency->isTrackerOpen = true;
         celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
         opts.filter.filter = dependency->filter;
         opts.filter.serviceName = dependency->serviceName;
@@ -211,12 +211,9 @@ celix_status_t celix_serviceDependency_start(celix_dm_service_dependency_t *depe
         } else {
             opts.filter.ignoreServiceLanguage = true;
         }
-        long newTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts); //TODO async
-
-        celixThreadMutex_lock(&dependency->mutex);
-        dependency->svcTrackerId = newTrackerId;
-        celixThreadMutex_unlock(&dependency->mutex);
+        dependency->svcTrackerId = celix_bundleContext_trackServicesWithOptionsAsync(ctx, &opts);
 	}
+    celixThreadMutex_unlock(&dependency->mutex);
 
 	return CELIX_SUCCESS;
 }
@@ -225,22 +222,25 @@ celix_status_t celix_serviceDependency_stop(celix_dm_service_dependency_t *depen
     celix_bundle_context_t* ctx = celix_dmComponent_getBundleContext(dependency->component);
 
     celixThreadMutex_lock(&dependency->mutex);
-    long stopTrackerId = dependency->svcTrackerId;
-    dependency->svcTrackerId = -1l;
     bool open = dependency->isTrackerOpen;
     dependency->isTrackerOpen = false;
-    celixThreadMutex_unlock(&dependency->mutex);
-
-    //TODO if async branch is available this can be done with the lock using a async stop service tracker call
-    if (open && stopTrackerId >= 0) {
-        celix_bundleContext_stopTracker(ctx, stopTrackerId);
+    if (open && dependency->svcTrackerId >= 0) {
+        celix_bundleContext_stopTrackerAsync(ctx, dependency->svcTrackerId, NULL, NULL);
     }
+    celixThreadMutex_unlock(&dependency->mutex);
 
 	return CELIX_SUCCESS;
 }
 
 static void serviceDependency_setServiceTrackerCallback(void *handle, void *svc, const celix_properties_t *props) {
     celix_dm_service_dependency_t* dependency = handle;
+
+    const char *uuid = celix_dmComponent_getUUID(dependency->component);
+    const char *svcCmpUUID = celix_properties_get(props, CELIX_DM_COMPONENT_UUID, NULL);
+    if (svcCmpUUID != NULL && strncmp(uuid, svcCmpUUID, DM_COMPONENT_MAX_ID_LENGTH) == 0) {
+        fprintf(stderr, "TODO warning: ignoring svc of own component\n"); //TODO
+        return;
+    }
 
     celix_dm_event_t event;
     event.dep = dependency;
@@ -262,6 +262,13 @@ celix_status_t celix_serviceDependency_invokeSet(celix_dm_service_dependency_t *
 
 static void serviceDependency_addServiceTrackerCallback(void *handle, void *svc, const celix_properties_t *props) {
     celix_dm_service_dependency_t* dependency = handle;
+
+    const char *uuid = celix_dmComponent_getUUID(dependency->component);
+    const char *svcCmpUUID = celix_properties_get(props, CELIX_DM_COMPONENT_UUID, NULL);
+    if (svcCmpUUID != NULL && strncmp(uuid, svcCmpUUID, DM_COMPONENT_MAX_ID_LENGTH) == 0) {
+        fprintf(stderr, "TODO warning: ignoring svc of own component\n"); //TODO
+        return;
+    }
 
     celixThreadMutex_lock(&dependency->mutex);
     dependency->trackedSvcCount += 1;
@@ -287,6 +294,13 @@ celix_status_t celix_serviceDependency_invokeAdd(celix_dm_service_dependency_t *
 
 static void serviceDependency_removeServiceTrackerCallback(void *handle, void *svc, const celix_properties_t *props) {
     celix_dm_service_dependency_t* dependency = handle;
+
+    const char *uuid = celix_dmComponent_getUUID(dependency->component);
+    const char *svcCmpUUID = celix_properties_get(props, CELIX_DM_COMPONENT_UUID, NULL);
+    if (svcCmpUUID != NULL && strncmp(uuid, svcCmpUUID, DM_COMPONENT_MAX_ID_LENGTH) == 0) {
+        fprintf(stderr, "TODO warning: ignoring svc of own component\n"); //TODO
+        return;
+    }
 
     celixThreadMutex_lock(&dependency->mutex);
     dependency->trackedSvcCount -= 1;
@@ -334,7 +348,7 @@ bool celix_dmServiceDependency_isRequired(const celix_dm_service_dependency_t* d
     return dep->required;
 }
 
-bool celix_dmServiceDependency_isStarted(celix_dm_service_dependency_t* dependency) {
+bool celix_dmServiceDependency_isTrackerOpen(celix_dm_service_dependency_t* dependency) {
     celixThreadMutex_lock(&dependency->mutex);
     bool started = dependency->isTrackerOpen;
     celixThreadMutex_unlock(&dependency->mutex);

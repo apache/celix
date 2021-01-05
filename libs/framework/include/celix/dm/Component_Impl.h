@@ -52,7 +52,7 @@ inline void BaseComponent::runBuild() {
 }
 
 inline BaseComponent::~BaseComponent() noexcept {
-    if (!cmpAddedToDepMan) {
+    if (context != nullptr && !cmpAddedToDepMan) {
         celix_dmComponent_destroy(cCmp);
     }
 }
