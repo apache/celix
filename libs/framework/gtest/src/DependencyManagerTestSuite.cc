@@ -114,7 +114,7 @@ TEST_F(DependencyManagerTestSuite, StartDmWillBuildCmp) {
 }
 
 struct TestService {
-    void *handle;
+    void *handle = nullptr;
 };
 
 class Cmp1 : public TestService {
@@ -155,7 +155,7 @@ TEST_F(DependencyManagerTestSuite, AddSvcProvideAfterBuild) {
     cmp.build();
     EXPECT_EQ(1, dm.getNrOfComponents()); //cmp "build", so active
 
-    TestService svc{nullptr};
+    TestService svc{};
     cmp.addCInterface(&svc, "TestService");
 
     long svcId = celix_bundleContext_findService(ctx, "TestService");
@@ -183,7 +183,7 @@ TEST_F(DependencyManagerTestSuite, BuildSvcProvide) {
     cmp.build();
     EXPECT_EQ(1, dm.getNrOfComponents()); //cmp "build", so active
 
-    TestService svc{nullptr};
+    TestService svc{};
     cmp.createProvidedCService(&svc, "CTestService").addProperty("key1", "val1").addProperty("key2", 3);
 
     long svcId = celix_bundleContext_findService(ctx, "CTestService");
@@ -234,7 +234,7 @@ TEST_F(DependencyManagerTestSuite, AddSvcDepAfterBuild) {
                 count++;
             });
 
-    TestService svc{nullptr};
+    TestService svc{};
     long svcId = celix_bundleContext_registerService(ctx, &svc, "TestService", nullptr);
     long svcId2 = celix_bundleContext_registerService(ctx, &svc, "AnotherService", nullptr); //note should not be found.
 
@@ -266,7 +266,7 @@ TEST_F(DependencyManagerTestSuite, InCompleteBuildShouldNotLeak) {
     cmp2.createCServiceDependency<TestService>("TestService").setFilter("(key=value"); //note not build
     cmp2.createServiceDependency<TestService>().setFilter("(key=value)"); //note not build
 
-    TestService svc{nullptr};
+    TestService svc{};
     cmp2.createProvidedCService(&svc, "CTestService").addProperty("key1", "val1"); //note not build
     cmp2.createProvidedService<TestService>().setVersion("1.0.0"); //note not build
 }
