@@ -36,8 +36,8 @@ namespace celix::async_rsa {
         ~DefaultImportedServiceFactory() final = default;
 
         celix::dm::BaseComponent& create(std::shared_ptr<celix::dm::DependencyManager> &dm, celix::dm::Properties&& properties) final {
-            return &dm->template createComponent<Implementation>()
-                .template addInterface<Interface>(Interface::VERSION, std::forward<celix::dm::Properties>(properties))
+            return dm->template createComponent<Implementation>()
+                .template addInterface<Interface>(std::string{Interface::VERSION}, std::forward<celix::dm::Properties>(properties))
                 .build();
         }
     };

@@ -19,6 +19,7 @@
 
 #include <celix_api.h>
 #include <string>
+#include "HardcodedExampleSerializer.h"
 
 struct IHardcodedService {
     virtual ~IHardcodedService() = default;
@@ -60,33 +61,29 @@ struct ExportedHardcodedService final : public IHardcodedService {
     }
 };
 
-struct ImportedHardcodedService final : public IHardcodedService {
-    ImportedHardcodedService() {
-
-    }
-    ~ImportedHardcodedService() final = default;
-
-    int add(int a, int b) noexcept final {
-        return a + b;
-    }
-
-    int subtract(int a, int b) noexcept final {
-        return a - b;
-    }
-
-    std::string toString(int a) noexcept final {
-        return std::to_string(a);
-    }
-};
-
 class ExampleActivator {
 public:
     explicit ExampleActivator([[maybe_unused]] std::shared_ptr<celix::dm::DependencyManager> mng) {
+        _addArgsSerializer = AddArgsSerializer{mng};
+        _subtractArgsSerializer = SubtractArgsSerializer{mng};
+        _toStringSerializer = ToStringArgsSerializer{mng};
 
+
+    }
+
+    ~ExampleActivator() {
+        _addArgsSerializer.reset();
+        _subtractArgsSerializer.reset();
+        _toStringSerializer.reset();
     }
 
     ExampleActivator(const ExampleActivator &) = delete;
     ExampleActivator &operator=(const ExampleActivator &) = delete;
+
+private:
+    std::optional<AddArgsSerializer> _addArgsSerializer{};
+    std::optional<SubtractArgsSerializer> _subtractArgsSerializer{};
+    std::optional<ToStringArgsSerializer> _toStringSerializer{};
 };
 
 CELIX_GEN_CXX_BUNDLE_ACTIVATOR(ExampleActivator)

@@ -31,10 +31,17 @@ add_celix_bundle(hardcoded_example_subscriber
 target_link_libraries(hardcoded_example_provider PRIVATE Celix::framework Celix::async_rsa_discovery Celix::async_rsa_common Celix::async_rsa)
 target_link_libraries(hardcoded_example_subscriber PRIVATE Celix::framework Celix::async_rsa_discovery Celix::async_rsa_common Celix::async_rsa)
 
-set(PUBSUB_CONTAINER_LIBS Jansson Celix::dfi ZMQ::lib CZMQ::lib)
+set(PUBSUB_CONTAINER_LIBS
+        Jansson
+        ZMQ::lib
+        CZMQ::lib
+        Celix::pubsub_api
+        Celix::pubsub_spi
+        Celix::async_rsa_common)
 
 find_package(ZMQ REQUIRED)
 find_package(CZMQ REQUIRED)
+find_package(Jansson REQUIRED)
 add_celix_container(hardcoded_example_provider_cnt
         GROUP pubsub
         BUNDLES
@@ -45,9 +52,11 @@ add_celix_container(hardcoded_example_provider_cnt
         Celix::pubsub_topology_manager
         Celix::pubsub_admin_zmq_v2
         Celix::pubsub_protocol_wire_v2
+        Celix::async_rsa_discovery
+        Celix::async_rsa
         hardcoded_example_provider
         )
-target_link_libraries(hardcoded_example_provider_cnt PRIVATE ${PUBSUB_CONTAINER_LIBS})
+target_link_libraries(hardcoded_example_provider PRIVATE ${PUBSUB_CONTAINER_LIBS})
 add_celix_container(hardcoded_example_subscriber_cnt
         GROUP pubsub
         BUNDLES
@@ -59,6 +68,8 @@ add_celix_container(hardcoded_example_subscriber_cnt
         Celix::pubsub_topology_manager
         Celix::pubsub_admin_zmq_v2
         Celix::pubsub_protocol_wire_v2
+        Celix::async_rsa_discovery
+        Celix::async_rsa
         hardcoded_example_subscriber
         )
-target_link_libraries(hardcoded_example_subscriber_cnt PRIVATE ${PUBSUB_CONTAINER_LIBS})
+target_link_libraries(hardcoded_example_subscriber PRIVATE ${PUBSUB_CONTAINER_LIBS})

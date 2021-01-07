@@ -19,6 +19,8 @@
 
 #include <celix_api.h>
 #include <string>
+#include <ImportedServiceFactory.h>
+#include <pubsub/api.h>
 
 struct IHardcodedService {
     virtual ~IHardcodedService() = default;
@@ -26,6 +28,8 @@ struct IHardcodedService {
     virtual int add(int a, int b) noexcept = 0;
     virtual int subtract(int a, int b) noexcept = 0;
     virtual std::string toString(int a) = 0;
+
+    static constexpr std::string_view VERSION = "1.0.0";
 };
 
 struct HardcodedService final : public IHardcodedService {
@@ -44,26 +48,14 @@ struct HardcodedService final : public IHardcodedService {
     }
 };
 
-struct ExportedHardcodedService final : public IHardcodedService {
-    ~ExportedHardcodedService() final = default;
-
-    int add(int a, int b) noexcept final {
-        return a + b;
-    }
-
-    int subtract(int a, int b) noexcept final {
-        return a - b;
-    }
-
-    std::string toString(int a) noexcept final {
-        return std::to_string(a);
-    }
-};
-
 struct ImportedHardcodedService final : public IHardcodedService {
+//    ImportedHardcodedService(pubsub_publisher_t *publisher) : _publisher(publisher) {
+//
+//    }
     ~ImportedHardcodedService() final = default;
 
     int add(int a, int b) noexcept final {
+//        _publisher->send(_publisher->handle, );
         return a + b;
     }
 
@@ -74,12 +66,15 @@ struct ImportedHardcodedService final : public IHardcodedService {
     std::string toString(int a) noexcept final {
         return std::to_string(a);
     }
+
+private:
+//    pubsub_publisher_t *_publisher;
 };
 
 class ExampleActivator {
 public:
     explicit ExampleActivator([[maybe_unused]] std::shared_ptr<celix::dm::DependencyManager> mng) {
-
+        mng->createComponent<celix::async_rsa::DefaultImportedServiceFactory<IHardcodedService, ImportedHardcodedService>>().build();
     }
 
     ExampleActivator(const ExampleActivator &) = delete;
