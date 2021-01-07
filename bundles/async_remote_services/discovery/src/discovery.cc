@@ -20,18 +20,38 @@
 #include <discovery.h>
 #include <celix_api.h>
 
-celix::async_rsa::StaticDiscovery::StaticDiscovery(std::shared_ptr<celix::dm::DependencyManager> &mng) noexcept : _endpoints(), _mng(mng) {
+struct StaticEndpoint final : celix::async_rsa::IEndpoint {
+    explicit StaticEndpoint() noexcept = default;
+    ~StaticEndpoint() final = default;
+};
 
+celix::async_rsa::StaticDiscovery::StaticDiscovery(std::shared_ptr<celix::dm::DependencyManager> &mng) noexcept : _endpoints(), _mng(mng) {
+    readImportedEndpointsFromFile("test");
 }
 
-class DiscoveryActivator {
-public:
-    explicit DiscoveryActivator([[maybe_unused]] std::shared_ptr<celix::dm::DependencyManager> mng) {
+void celix::async_rsa::StaticDiscovery::readImportedEndpointsFromFile(std::string_view) {
+    _endpoints.emplace_back(&_mng->createComponent(std::make_unique<StaticEndpoint>()).addInterface<IEndpoint>("1.0.0", celix::dm::Properties{
+            {"service.imported", "*"},
+            {"objectClass", "IHardcodedExample"},
+            {"service.exported.interfaces", "IHardcodedExample"},
+            {"endpoint.id", "1"},
+    }).build().getInstance());
+}
+
+void celix::async_rsa::StaticDiscovery::addExportedEndpoint([[maybe_unused]] celix::async_rsa::IEndpoint *endpoint) {
+    // NOP
+}
+
+struct DiscoveryActivator {
+    explicit DiscoveryActivator([[maybe_unused]] std::shared_ptr<celix::dm::DependencyManager> mng) : _cmp(mng->createComponent(std::make_unique<celix::async_rsa::StaticDiscovery>(mng)).build()) {
 
     }
 
     DiscoveryActivator(const DiscoveryActivator &) = delete;
     DiscoveryActivator &operator=(const DiscoveryActivator &) = delete;
+
+private:
+    celix::dm::Component<celix::async_rsa::StaticDiscovery>& _cmp;
 };
 
 CELIX_GEN_CXX_BUNDLE_ACTIVATOR(DiscoveryActivator)

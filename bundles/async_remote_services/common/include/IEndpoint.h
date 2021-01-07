@@ -23,7 +23,5 @@
 namespace celix::async_rsa {
     struct IEndpoint {
         virtual ~IEndpoint() = default;
-
-        virtual std::string getAddress() = 0;
     };
 }

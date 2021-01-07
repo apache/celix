@@ -23,9 +23,12 @@ add_celix_bundle(async_rsa_discovery
         SOURCES
         src/discovery.cc
         )
-target_include_directories(async_rsa_discovery PRIVATE include)
-target_link_libraries(async_rsa_discovery PRIVATE
+target_include_directories(async_rsa_discovery PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
+        $<INSTALL_INTERFACE:include/celix/async_rsa_discovery>)
+target_link_libraries(async_rsa_discovery PUBLIC
         Celix::async_rsa_common
+        Celix::framework
         )
 
 #if (ENABLE_TESTING)
@@ -36,3 +39,5 @@ target_link_libraries(async_rsa_discovery PRIVATE
 install_celix_bundle(async_rsa_discovery EXPORT celix COMPONENT async_rsa_discovery)
 #Setup target aliases to match external usage
 add_library(Celix::async_rsa_discovery ALIAS async_rsa_discovery)
+install(TARGETS async_rsa_discovery EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT async_rsa_discovery)
+install(DIRECTORY include/ DESTINATION include/celix/async_rsa_discovery COMPONENT async_rsa_discovery)

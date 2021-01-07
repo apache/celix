@@ -17,15 +17,19 @@
 
 add_celix_bundle(async_rsa
         VERSION 0.9.0
-        SYMBOLIC_NAME "apache_celix_async_remote_service_admin_dfi"
+        SYMBOLIC_NAME "apache_celix_async_remote_service_admin"
         NAME "Apache Celix Async Remote Service Admin"
         GROUP "Celix/AsyncRSA"
         SOURCES
         src/admin.cc
         )
-#target_include_directories(async_rsa PRIVATE $<TARGET_PROPERTY:Celix::civetweb,INCLUDE_DIRECTORIES>)
+target_include_directories(async_rsa PRIVATE include)
 target_link_libraries(async_rsa PRIVATE
-        Celix::rsa_common
+        Celix::async_rsa_common
+        Celix::async_rsa_discovery
+        Celix::pubsub_api
+        Celix::pubsub_spi
+        Celix::framework
         )
 
 #if (ENABLE_TESTING)
