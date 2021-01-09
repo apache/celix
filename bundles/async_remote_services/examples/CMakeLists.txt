@@ -37,7 +37,8 @@ set(PUBSUB_CONTAINER_LIBS
         CZMQ::lib
         Celix::pubsub_api
         Celix::pubsub_spi
-        Celix::async_rsa_common)
+        Celix::async_rsa_common
+        Celix::Promise)
 
 find_package(ZMQ REQUIRED)
 find_package(CZMQ REQUIRED)

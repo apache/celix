@@ -19,62 +19,109 @@
 
 #include <celix_api.h>
 #include <string>
+#include <mutex>
+#include <memory_resource>
 #include <ImportedServiceFactory.h>
 #include <pubsub/api.h>
-
-struct IHardcodedService {
-    virtual ~IHardcodedService() = default;
-
-    virtual int add(int a, int b) noexcept = 0;
-    virtual int subtract(int a, int b) noexcept = 0;
-    virtual std::string toString(int a) = 0;
-
-    static constexpr std::string_view VERSION = "1.0.0";
-};
-
-struct HardcodedService final : public IHardcodedService {
-    ~HardcodedService() final = default;
-
-    int add(int a, int b) noexcept final {
-        return a + b;
-    }
-
-    int subtract(int a, int b) noexcept final {
-        return a - b;
-    }
-
-    std::string toString(int a) noexcept final {
-        return std::to_string(a);
-    }
-};
+#include <celix/Deferred.h>
+#include "IHardcodedService.h"
+#include "HardcodedExampleSerializer.h"
 
 struct ImportedHardcodedService final : public IHardcodedService {
-//    ImportedHardcodedService(pubsub_publisher_t *publisher) : _publisher(publisher) {
-//
-//    }
+    ImportedHardcodedService() = default;
     ~ImportedHardcodedService() final = default;
 
-    int add(int a, int b) noexcept final {
-//        _publisher->send(_publisher->handle, );
-        return a + b;
+    ImportedHardcodedService(const ImportedHardcodedService&) = delete;
+    ImportedHardcodedService(ImportedHardcodedService&&) = delete;
+    ImportedHardcodedService& operator=(const ImportedHardcodedService&) = delete;
+    ImportedHardcodedService& operator=(ImportedHardcodedService&&) = delete;
+
+    celix::Promise<int> add(int a, int b) noexcept final {
+        std::unique_lock l(_m);
+        AddArgs args{_idCounter++, a, b, {}};
+        _publisher->send(_publisher->handle, 1, &args, nullptr);
+
+        auto deferred = celix::Deferred<int>{};
+        auto id = _idCounter++;
+        auto it = _intPromises.emplace(id, std::move(deferred));
+        return it.first->second.getPromise();
     }
 
-    int subtract(int a, int b) noexcept final {
-        return a - b;
+    celix::Promise<int> subtract(int a, int b) noexcept final {
+        std::unique_lock l(_m);
+        SubtractArgs args{_idCounter++, a, b, {}};
+        _publisher->send(_publisher->handle, 2, &args, nullptr);
+
+        auto deferred = celix::Deferred<int>{};
+        auto id = _idCounter++;
+        auto it = _intPromises.emplace(id, std::move(deferred));
+        return it.first->second.getPromise();
     }
 
-    std::string toString(int a) noexcept final {
-        return std::to_string(a);
+    celix::Promise<std::string> toString(int a) noexcept final {
+        std::unique_lock l(_m);
+        ToStringArgs args{_idCounter++, a, {}};
+        _publisher->send(_publisher->handle, 3, &args, nullptr);
+
+        auto deferred = celix::Deferred<std::string>{};
+        auto id = _idCounter++;
+        auto it = _stringPromises.emplace(id, std::move(deferred));
+        return it.first->second.getPromise();
+    }
+
+    void setPublisher(pubsub_publisher_t const * publisher, Properties&&) {
+        _publisher = publisher;
+    }
+
+    int receiveMessage(const char *, unsigned int msgTypeId, void *msg, const celix_properties_t *) {
+        std::unique_lock l(_m);
+        if(msgTypeId == 1) {
+            auto response = static_cast<AddArgs*>(msg);
+            auto deferred = _intPromises.find(response->id);
+            if(deferred == end(_intPromises) || !response->ret) {
+                return 1;
+            }
+            deferred->second.resolve(response->ret.value());
+            _intPromises.erase(deferred);
+        }
+        if(msgTypeId == 2) {
+            auto response = static_cast<SubtractArgs*>(msg);
+            auto deferred = _intPromises.find(response->id);
+            if(deferred == end(_intPromises) || !response->ret) {
+                return 1;
+            }
+            deferred->second.resolve(response->ret.value());
+            _intPromises.erase(deferred);
+        }
+        if(msgTypeId == 3) {
+            auto response = static_cast<ToStringArgs*>(msg);
+            auto deferred = _stringPromises.find(response->id);
+            if(deferred == end(_stringPromises) || !response->ret) {
+                return 1;
+            }
+            deferred->second.resolve(response->ret.value());
+            _stringPromises.erase(deferred);
+        }
+
+        return 0;
     }
 
 private:
-//    pubsub_publisher_t *_publisher;
+    std::mutex _m{};
+    pubsub_publisher_t const *_publisher{};
+    std::pmr::unsynchronized_pool_resource _resource{};
+    std::pmr::unordered_map<int, celix::Deferred<int>> _intPromises{&_resource};
+    std::pmr::unordered_map<int, celix::Deferred<std::string>> _stringPromises{&_resource};
+    static std::atomic<int> _idCounter;
 };
+
+std::atomic<int> ImportedHardcodedService::_idCounter = 0;
 
 class ExampleActivator {
 public:
-    explicit ExampleActivator([[maybe_unused]] std::shared_ptr<celix::dm::DependencyManager> mng) {
-        mng->createComponent<celix::async_rsa::DefaultImportedServiceFactory<IHardcodedService, ImportedHardcodedService>>().build();
+    explicit ExampleActivator(std::shared_ptr<celix::dm::DependencyManager>& mng) {
+        auto &cmp = mng->createComponent(std::make_unique<celix::async_rsa::DefaultImportedServiceFactory<IHardcodedService, ImportedHardcodedService>>(mng));
+        cmp.build();
     }
 
     ExampleActivator(const ExampleActivator &) = delete;

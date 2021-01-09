@@ -25,17 +25,23 @@
 #include <bits/types/struct_iovec.h>
 
 struct AddArgs {
-    int a;
-    int b;
+    int id{};
+    int a{};
+    int b{};
+    std::optional<int> ret{};
 };
 
 struct SubtractArgs {
-    int a;
-    int b;
+    int id{};
+    int a{};
+    int b{};
+    std::optional<int> ret{};
 };
 
 struct ToStringArgs {
-    int a;
+    int id{};
+    int a{};
+    std::optional<std::string> ret{};
 };
 
 struct AddArgsSerializer {
@@ -53,13 +59,17 @@ struct AddArgsSerializer {
                 return CELIX_ILLEGAL_ARGUMENT;
             }
 
+            auto idObj = json_object_get(js_request, "id");
             auto aObj = json_object_get(js_request, "a");
             auto bObj = json_object_get(js_request, "b");
+            auto retObj = json_object_get(js_request, "ret");
 
+            int id = json_integer_value(idObj);
             int a = json_integer_value(aObj);
             int b = json_integer_value(bObj);
+            decltype(AddArgs::ret) ret = retObj != nullptr ? json_integer_value(retObj) : decltype(AddArgs::ret){};
 
-            *out = new AddArgs{a, b};
+            *out = new AddArgs{id, a, b, ret};
             json_decref(js_request);
 
             return CELIX_SUCCESS;
@@ -79,8 +89,12 @@ struct AddArgsSerializer {
             }
 
             auto *js = json_object();
+            json_object_set(js, "id", json_integer(args->id));
             json_object_set(js, "a", json_integer(args->a));
             json_object_set(js, "b", json_integer(args->b));
+            if(args->ret) {
+                json_object_set(js, "ret", json_integer(args->ret.value()));
+            }
 
             (*output)->iov_base = json_dumps(js, JSON_DECODE_ANY);
             (*output)->iov_len = std::strlen(static_cast<const char *>((*output)->iov_base));
@@ -135,13 +149,17 @@ struct SubtractArgsSerializer {
                 return CELIX_ILLEGAL_ARGUMENT;
             }
 
+            auto idObj = json_object_get(js_request, "id");
             auto aObj = json_object_get(js_request, "a");
             auto bObj = json_object_get(js_request, "b");
+            auto retObj = json_object_get(js_request, "ret");
 
+            int id = json_integer_value(idObj);
             int a = json_integer_value(aObj);
             int b = json_integer_value(bObj);
+            decltype(SubtractArgs::ret) ret = retObj != nullptr ? json_integer_value(retObj) : decltype(SubtractArgs::ret){};
 
-            *out = new SubtractArgs{a, b};
+            *out = new SubtractArgs{id, a, b, ret};
             json_decref(js_request);
 
             return CELIX_SUCCESS;
@@ -161,8 +179,12 @@ struct SubtractArgsSerializer {
             }
 
             auto *js = json_object();
+            json_object_set(js, "id", json_integer(args->id));
             json_object_set(js, "a", json_integer(args->a));
             json_object_set(js, "b", json_integer(args->b));
+            if(args->ret) {
+                json_object_set(js, "ret", json_integer(args->ret.value()));
+            }
 
             (*output)->iov_base = json_dumps(js, JSON_DECODE_ANY);
             (*output)->iov_len = std::strlen(static_cast<const char *>((*output)->iov_base));
@@ -217,11 +239,15 @@ struct ToStringArgsSerializer {
                 return CELIX_ILLEGAL_ARGUMENT;
             }
 
+            auto idObj = json_object_get(js_request, "id");
             auto aObj = json_object_get(js_request, "a");
+            auto retObj = json_object_get(js_request, "ret");
 
+            int id = json_integer_value(idObj);
             int a = json_integer_value(aObj);
+            decltype(ToStringArgs::ret) ret = retObj != nullptr ? json_string_value(retObj) : decltype(ToStringArgs::ret){};
 
-            *out = new ToStringArgs{a};
+            *out = new ToStringArgs{id, a, ret};
             json_decref(js_request);
 
             return CELIX_SUCCESS;
@@ -241,7 +267,11 @@ struct ToStringArgsSerializer {
             }
 
             auto *js = json_object();
+            json_object_set(js, "id", json_integer(args->id));
             json_object_set(js, "a", json_integer(args->a));
+            if(args->ret) {
+                json_object_set(js, "ret", json_string(args->ret.value().c_str()));
+            }
 
             (*output)->iov_base = json_dumps(js, JSON_DECODE_ANY);
             (*output)->iov_len = std::strlen(static_cast<const char *>((*output)->iov_base));
@@ -257,9 +287,9 @@ struct ToStringArgsSerializer {
         };
 
         celix_properties_t* props = celix_properties_create();
-        celix_properties_set(props, PUBSUB_MESSAGE_SERIALIZATION_SERVICE_MSG_FQN_PROPERTY, "SubtractArgs");
+        celix_properties_set(props, PUBSUB_MESSAGE_SERIALIZATION_SERVICE_MSG_FQN_PROPERTY, "ToStringArgs");
         celix_properties_set(props, PUBSUB_MESSAGE_SERIALIZATION_SERVICE_MSG_VERSION_PROPERTY, "1.0.0");
-        celix_properties_setLong(props, PUBSUB_MESSAGE_SERIALIZATION_SERVICE_MSG_ID_PROPERTY, 2LL);
+        celix_properties_setLong(props, PUBSUB_MESSAGE_SERIALIZATION_SERVICE_MSG_ID_PROPERTY, 3LL);
         celix_properties_set(props, PUBSUB_MESSAGE_SERIALIZATION_SERVICE_SERIALIZATION_TYPE_PROPERTY, "json");
 
         celix_service_registration_options_t opts{};

@@ -20,14 +20,7 @@
 #include <celix_api.h>
 #include <string>
 #include "HardcodedExampleSerializer.h"
-
-struct IHardcodedService {
-    virtual ~IHardcodedService() = default;
-
-    virtual int add(int a, int b) noexcept = 0;
-    virtual int subtract(int a, int b) noexcept = 0;
-    virtual std::string toString(int a) = 0;
-};
+#include "IHardcodedService.h"
 
 struct HardcodedService final : public IHardcodedService {
     ~HardcodedService() final = default;
@@ -67,7 +60,7 @@ public:
         _addArgsSerializer = AddArgsSerializer{mng};
         _subtractArgsSerializer = SubtractArgsSerializer{mng};
         _toStringSerializer = ToStringArgsSerializer{mng};
-
+//        DefaultImportedServiceFactory
 
     }
 
