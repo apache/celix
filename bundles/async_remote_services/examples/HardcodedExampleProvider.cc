@@ -19,48 +19,77 @@
 
 #include <celix_api.h>
 #include <string>
+#include <celix/Deferred.h>
+#include <pubsub/api.h>
 #include "HardcodedExampleSerializer.h"
 #include "IHardcodedService.h"
 
 struct HardcodedService final : public IHardcodedService {
     ~HardcodedService() final = default;
 
-    int add(int a, int b) noexcept final {
-        return a + b;
+    celix::Promise<int> add(int a, int b) noexcept final {
+        auto deferred = celix::Deferred<int>{};
+        deferred.resolve(a + b);
+        return deferred.getPromise();
     }
 
-    int subtract(int a, int b) noexcept final {
-        return a - b;
+    celix::Promise<int> subtract(int a, int b) noexcept final {
+        auto deferred = celix::Deferred<int>{};
+        deferred.resolve(a - b);
+        return deferred.getPromise();
     }
 
-    std::string toString(int a) noexcept final {
-        return std::to_string(a);
+    celix::Promise<std::string> toString(int a) noexcept final {
+        auto deferred = celix::Deferred<std::string>{};
+        deferred.resolve(std::to_string(a));
+        return deferred.getPromise();
     }
 };
 
-struct ExportedHardcodedService final : public IHardcodedService {
-    ~ExportedHardcodedService() final = default;
+struct ExportedHardcodedService {
+    ~ExportedHardcodedService() = default;
 
-    int add(int a, int b) noexcept final {
-        return a + b;
+    void setService(IHardcodedService * svc, Properties&&) {
+        _svc = svc;
     }
 
-    int subtract(int a, int b) noexcept final {
-        return a - b;
+    int receiveMessage(const char *, unsigned int msgTypeId, void *msg, const celix_properties_t *) {
+        if(msgTypeId == 1) {
+            auto response = static_cast<AddArgs*>(msg);
+            response->ret = _svc->add(response->a, response->b).getValue();
+            _publisher->send(_publisher->handle, 1, response, nullptr);
+        } else if(msgTypeId == 2) {
+            auto response = static_cast<SubtractArgs*>(msg);
+            response->ret = _svc->subtract(response->a, response->b).getValue();
+            _publisher->send(_publisher->handle, 1, response, nullptr);
+        } else if(msgTypeId == 3) {
+            auto response = static_cast<ToStringArgs*>(msg);
+            response->ret = _svc->toString(response->a).getValue();
+            _publisher->send(_publisher->handle, 1, response, nullptr);
+        }
+
+        return 0;
     }
 
-    std::string toString(int a) noexcept final {
-        return std::to_string(a);
-    }
+private:
+    IHardcodedService *_svc{};
+    pubsub_publisher_t const *_publisher{};
 };
 
 class ExampleActivator {
 public:
-    explicit ExampleActivator([[maybe_unused]] std::shared_ptr<celix::dm::DependencyManager> mng) {
+    explicit ExampleActivator(std::shared_ptr<celix::dm::DependencyManager> mng) {
         _addArgsSerializer = AddArgsSerializer{mng};
         _subtractArgsSerializer = SubtractArgsSerializer{mng};
         _toStringSerializer = ToStringArgsSerializer{mng};
 //        DefaultImportedServiceFactory
+
+        auto &hardcodedCmp = mng->createComponent<HardcodedService>().addInterfaceWithName<IHardcodedService>(std::string{IHardcodedService::NAME}, std::string{IHardcodedService::VERSION}).build();
+        auto &exportedCmp = mng->createComponent<ExportedHardcodedService>();
+        auto &dep = exportedCmp.createServiceDependency<IHardcodedService>(std::string{IHardcodedService::NAME}).setCallbacks([&exportedCmp](IHardcodedService *svc, Properties&& props){
+            exportedCmp.getInstance().setService(svc, std::forward<Properties>(props));
+        }).build();
+        exportedCmp.build();
 
     }
 

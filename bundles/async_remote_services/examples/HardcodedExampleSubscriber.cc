@@ -42,8 +42,7 @@ struct ImportedHardcodedService final : public IHardcodedService {
         _publisher->send(_publisher->handle, 1, &args, nullptr);
 
         auto deferred = celix::Deferred<int>{};
-        auto id = _idCounter++;
-        auto it = _intPromises.emplace(id, std::move(deferred));
+        auto it = _intPromises.emplace(args.id, std::move(deferred));
         return it.first->second.getPromise();
     }
 
@@ -53,8 +52,7 @@ struct ImportedHardcodedService final : public IHardcodedService {
         _publisher->send(_publisher->handle, 2, &args, nullptr);
 
         auto deferred = celix::Deferred<int>{};
-        auto id = _idCounter++;
-        auto it = _intPromises.emplace(id, std::move(deferred));
+        auto it = _intPromises.emplace(args.id, std::move(deferred));
         return it.first->second.getPromise();
     }
 
@@ -64,8 +62,7 @@ struct ImportedHardcodedService final : public IHardcodedService {
         _publisher->send(_publisher->handle, 3, &args, nullptr);
 
         auto deferred = celix::Deferred<std::string>{};
-        auto id = _idCounter++;
-        auto it = _stringPromises.emplace(id, std::move(deferred));
+        auto it = _stringPromises.emplace(args.id, std::move(deferred));
         return it.first->second.getPromise();
     }
 
@@ -83,8 +80,7 @@ struct ImportedHardcodedService final : public IHardcodedService {
             }
             deferred->second.resolve(response->ret.value());
             _intPromises.erase(deferred);
-        }
-        if(msgTypeId == 2) {
+        } else if(msgTypeId == 2) {
             auto response = static_cast<SubtractArgs*>(msg);
             auto deferred = _intPromises.find(response->id);
             if(deferred == end(_intPromises) || !response->ret) {
@@ -92,8 +88,7 @@ struct ImportedHardcodedService final : public IHardcodedService {
             }
             deferred->second.resolve(response->ret.value());
             _intPromises.erase(deferred);
-        }
-        if(msgTypeId == 3) {
+        } else if(msgTypeId == 3) {
             auto response = static_cast<ToStringArgs*>(msg);
             auto deferred = _stringPromises.find(response->id);
             if(deferred == end(_stringPromises) || !response->ret) {
