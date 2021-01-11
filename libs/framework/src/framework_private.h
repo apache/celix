@@ -79,6 +79,7 @@ struct celix_framework_event {
 
     //for register event
     long registerServiceId;
+    bool cancelled;
     char *serviceName;
     void *svc;
     celix_service_factory_t* factory;

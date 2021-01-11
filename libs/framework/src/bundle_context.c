@@ -661,7 +661,17 @@ static celix_status_t bundleContext_bundleChanged(void *listenerSvc, bundle_even
 void celix_bundleContext_trackBundlesWithOptionsCallback(void *data) {
     celix_bundle_context_bundle_tracker_entry_t* entry = data;
     assert(celix_framework_isCurrentThreadTheEventLoop(entry->ctx->framework));
-    fw_addBundleListener(entry->ctx->framework, entry->ctx->bundle, &entry->listener);
+    celixThreadMutex_lock(&entry->ctx->mutex);
+    bool cancelled = entry->cancelled;
+    entry->created = true;
+    celixThreadMutex_unlock(&entry->ctx->mutex);
+    if (cancelled) {
+        fw_log(entry->ctx->framework->logger, CELIX_LOG_LEVEL_DEBUG, "Creation of bundle tracker cancelled. trk id = %li", entry->trackerId);
+        free(entry);
+    } else {
+        fw_addBundleListener(entry->ctx->framework, entry->ctx->bundle, &entry->listener);
+    }
+
 }
 
 static long celix_bundleContext_trackBundlesWithOptionsInternal(
@@ -910,6 +920,7 @@ static void celix_bundleContext_stopTrackerInternal(bundle_context_t *ctx, long 
     }
 
     bool found = false;
+    bool cancelled = false;
     celix_bundle_context_bundle_tracker_entry_t *bundleTracker = NULL;
     celix_bundle_context_service_tracker_entry_t *serviceTracker = NULL;
     celix_bundle_context_service_tracker_tracker_entry_t *svcTrackerTracker = NULL;
@@ -919,15 +930,29 @@ static void celix_bundleContext_stopTrackerInternal(bundle_context_t *ctx, long 
     if (hashMap_containsKey(ctx->bundleTrackers, (void *) trackerId)) {
         found = true;
         bundleTracker = hashMap_remove(ctx->bundleTrackers, (void *) trackerId);
+        if (!bundleTracker->created && !async) {
+            //note tracker not yet created, so cancel instead of removing
+            bundleTracker->cancelled = true;
+            cancelled = true;
+        }
     } else if (hashMap_containsKey(ctx->serviceTrackers, (void *) trackerId)) {
         found = true;
         serviceTracker = hashMap_remove(ctx->serviceTrackers, (void *) trackerId);
+        if (serviceTracker->tracker == NULL && !async) {
+            //note tracker not yet created, so cancel instead of removing
+            serviceTracker->cancelled = true;
+            cancelled = true;
+        }
     } else if (hashMap_containsKey(ctx->metaTrackers, (void *) trackerId)) {
         found = true;
         svcTrackerTracker = hashMap_remove(ctx->metaTrackers, (void *) trackerId);
+        //note because a meta tracker is a service listener hook under waiter, no additional cancel is needed (svc reg will be cancelled)
     }
 
-    if (found && !async && celix_framework_isCurrentThreadTheEventLoop(ctx->framework)) {
+    if (found && cancelled) {
+        //nop
+        celixThreadMutex_unlock(&ctx->mutex);
+    } else if (found && !async && celix_framework_isCurrentThreadTheEventLoop(ctx->framework)) {
         //already on the event loop, stop tracker "traditionally" to keep old behavior
         celixThreadMutex_unlock(&ctx->mutex); //note calling remove/stops/unregister out side of locks
 
@@ -1335,20 +1360,35 @@ long celix_bundleContext_trackServicesAsync(
 static void celix_bundleContext_createTrackerOnEventLoop(void *data) {
     celix_bundle_context_service_tracker_entry_t* entry = data;
     assert(celix_framework_isCurrentThreadTheEventLoop(entry->ctx->framework));
-    celix_service_tracker_t *tracker = celix_serviceTracker_createWithOptions(entry->ctx, &entry->opts);
-    if (tracker != NULL) {
-        celixThreadMutex_lock(&entry->ctx->mutex);
-        entry->tracker = tracker;
-        celixThreadMutex_unlock(&entry->ctx->mutex);
+    celixThreadMutex_lock(&entry->ctx->mutex);
+    bool cancelled = entry->cancelled;
+    celixThreadMutex_unlock(&entry->ctx->mutex);
+    if (cancelled) {
+        fw_log(entry->ctx->framework->logger, CELIX_LOG_LEVEL_DEBUG, "Creating of service tracker was cancelled. trk id = %li, svc name tracked = %s", entry->trackerId, entry->opts.filter.serviceName);
     } else {
-        fw_log(entry->ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, "Cannot create tracker for bnd %s (%li)", celix_bundle_getSymbolicName(entry->ctx->bundle), celix_bundle_getId(entry->ctx->bundle));
+        celix_service_tracker_t *tracker = celix_serviceTracker_createWithOptions(entry->ctx, &entry->opts);
+        if (tracker != NULL) {
+            celixThreadMutex_lock(&entry->ctx->mutex);
+            entry->tracker = tracker;
+            celixThreadMutex_unlock(&entry->ctx->mutex);
+        } else {
+            fw_log(entry->ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, "Cannot create tracker for bnd %s (%li)", celix_bundle_getSymbolicName(entry->ctx->bundle), celix_bundle_getId(entry->ctx->bundle));
+            celix_serviceTracker_destroy(tracker);
+        }
     }
 }
 
 static void celix_bundleContext_doneCreatingTrackerOnEventLoop(void *data) {
     celix_bundle_context_service_tracker_entry_t* entry = data;
+    celixThreadMutex_lock(&entry->ctx->mutex);
+    bool cancelled = entry->cancelled;
+    celixThreadMutex_unlock(&entry->ctx->mutex);
     if (entry->trackerCreatedCallback != NULL) {
         entry->trackerCreatedCallback(entry->trackerCreatedCallbackData);
+    }
+    if (cancelled) {
+        //tracker creation cancelled -> entry already removed from map, but memory needs to be freed.
+        free(entry);
     }
 }
 

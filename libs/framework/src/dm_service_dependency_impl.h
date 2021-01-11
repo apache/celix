@@ -40,9 +40,6 @@ struct celix_dm_service_dependency_svc_entry {
 };
 
 struct celix_dm_service_dependency {
-	celix_dm_component_t *component;
-
-	void* callbackHandle; //This handle can be set to be used instead of the component implementation
 	celix_dm_service_update_fp set;
 	celix_dm_service_update_fp add;
 	celix_dm_service_update_fp remove;
@@ -57,11 +54,21 @@ struct celix_dm_service_dependency {
     bool required;
     dm_service_dependency_strategy_t strategy;
     bool addCLanguageFilter;
+    celix_dm_component_t *component;
 
     celix_thread_mutex_t mutex; //protects below
     long svcTrackerId;
     bool isTrackerOpen;
     size_t trackedSvcCount;
+    void* callbackHandle; //This handle can be set to be used instead of the component implementation
+
+    /**
+     * If a component provides the same service type as it depends on, this types need to be filtered out to prevent
+     * a deadlock.
+     * The deadlock occurs when service cannot be unregistered, because it is still in use in due to the a service tracker
+     * of a service dependency of the same type (for the same component)
+     */
+    bool filterOutOwnSvcDependencies;
 };
 
 celix_status_t celix_serviceDependency_start(celix_dm_service_dependency_t *dependency);
@@ -80,6 +87,10 @@ bool celix_serviceDependency_hasRemoveCallback(const celix_dm_service_dependency
 bool celix_serviceDependency_isAvailable(celix_dm_service_dependency_t *dependency);
 bool celix_dmServiceDependency_isRequired(const celix_dm_service_dependency_t* dependency);
 bool celix_dmServiceDependency_isTrackerOpen(celix_dm_service_dependency_t* dependency);
+
+
+bool celix_dmServiceDependency_filterOutOwnSvcDependencies(celix_dm_service_dependency_t* dependency);
+void celix_dmServiceDependency_setFilterOutOwnSvcDependencies(celix_dm_service_dependency_t* dependency, bool filterOut);
 
 #ifdef __cplusplus
 }

@@ -1314,11 +1314,13 @@ void celix_serviceRegistry_unregisterService(celix_service_registry_t* registry,
     service_registration_t *reg = NULL;
     celixThreadRwlock_readLock(&registry->lock);
     celix_array_list_t* registrations = hashMap_get(registry->serviceRegistrations, (void*)bnd);
-    for (int i = 0; i < celix_arrayList_size(registrations); ++i) {
-        service_registration_t *entry = celix_arrayList_get(registrations, i);
-        if (serviceRegistration_getServiceId(entry) == serviceId) {
-            reg = entry;
-            break;
+    if (registrations != NULL) {
+        for (int i = 0; i < celix_arrayList_size(registrations); ++i) {
+            service_registration_t *entry = celix_arrayList_get(registrations, i);
+            if (serviceRegistration_getServiceId(entry) == serviceId) {
+                reg = entry;
+                break;
+            }
         }
     }
     celixThreadRwlock_unlock(&registry->lock);

@@ -232,13 +232,23 @@ celix_status_t celix_serviceDependency_stop(celix_dm_service_dependency_t *depen
 	return CELIX_SUCCESS;
 }
 
+/**
+ * checks whether the service dependency needs to be ignore. This can be needed if a component depends on the same service types as it provides
+ */
+static bool serviceDependency_ignoreSvcCallback(celix_dm_service_dependency_t* dependency, const celix_properties_t* props) {
+   bool filterOut = celix_dmServiceDependency_filterOutOwnSvcDependencies(dependency);
+   if (filterOut) {
+       const char *uuid = celix_dmComponent_getUUID(dependency->component);
+       const char *svcCmpUUID = celix_properties_get(props, CELIX_DM_COMPONENT_UUID, NULL);
+       return svcCmpUUID != NULL && celix_utils_stringEquals(uuid, svcCmpUUID);
+   }
+   return false;
+}
+
 static void serviceDependency_setServiceTrackerCallback(void *handle, void *svc, const celix_properties_t *props) {
     celix_dm_service_dependency_t* dependency = handle;
 
-    const char *uuid = celix_dmComponent_getUUID(dependency->component);
-    const char *svcCmpUUID = celix_properties_get(props, CELIX_DM_COMPONENT_UUID, NULL);
-    if (svcCmpUUID != NULL && strncmp(uuid, svcCmpUUID, DM_COMPONENT_MAX_ID_LENGTH) == 0) {
-        fprintf(stderr, "TODO warning: ignoring svc of own component\n"); //TODO
+    if (serviceDependency_ignoreSvcCallback(dependency, props)) {
         return;
     }
 
@@ -263,10 +273,7 @@ celix_status_t celix_serviceDependency_invokeSet(celix_dm_service_dependency_t *
 static void serviceDependency_addServiceTrackerCallback(void *handle, void *svc, const celix_properties_t *props) {
     celix_dm_service_dependency_t* dependency = handle;
 
-    const char *uuid = celix_dmComponent_getUUID(dependency->component);
-    const char *svcCmpUUID = celix_properties_get(props, CELIX_DM_COMPONENT_UUID, NULL);
-    if (svcCmpUUID != NULL && strncmp(uuid, svcCmpUUID, DM_COMPONENT_MAX_ID_LENGTH) == 0) {
-        fprintf(stderr, "TODO warning: ignoring svc of own component\n"); //TODO
+    if (serviceDependency_ignoreSvcCallback(dependency, props)) {
         return;
     }
 
@@ -283,11 +290,12 @@ static void serviceDependency_addServiceTrackerCallback(void *handle, void *svc,
 }
 
 celix_status_t celix_serviceDependency_invokeAdd(celix_dm_service_dependency_t *dependency, void* svc, const celix_properties_t* props) {
+    void *handle = serviceDependency_getCallbackHandle(dependency);
     if (dependency->add) {
-        dependency->add(serviceDependency_getCallbackHandle(dependency), svc);
+        dependency->add(handle, svc);
     }
     if (dependency->addWithProperties) {
-        dependency->addWithProperties(serviceDependency_getCallbackHandle(dependency), svc, props);
+        dependency->addWithProperties(handle, svc, props);
     }
     return CELIX_SUCCESS;
 }
@@ -295,10 +303,7 @@ celix_status_t celix_serviceDependency_invokeAdd(celix_dm_service_dependency_t *
 static void serviceDependency_removeServiceTrackerCallback(void *handle, void *svc, const celix_properties_t *props) {
     celix_dm_service_dependency_t* dependency = handle;
 
-    const char *uuid = celix_dmComponent_getUUID(dependency->component);
-    const char *svcCmpUUID = celix_properties_get(props, CELIX_DM_COMPONENT_UUID, NULL);
-    if (svcCmpUUID != NULL && strncmp(uuid, svcCmpUUID, DM_COMPONENT_MAX_ID_LENGTH) == 0) {
-        fprintf(stderr, "TODO warning: ignoring svc of own component\n"); //TODO
+    if (serviceDependency_ignoreSvcCallback(dependency, props)) {
         return;
     }
 
@@ -355,6 +360,19 @@ bool celix_dmServiceDependency_isTrackerOpen(celix_dm_service_dependency_t* depe
     return started;
 }
 
+bool celix_dmServiceDependency_filterOutOwnSvcDependencies(celix_dm_service_dependency_t* dependency) {
+    celixThreadMutex_lock(&dependency->mutex);
+    bool filterOut = dependency->filterOutOwnSvcDependencies;
+    celixThreadMutex_unlock(&dependency->mutex);
+    return filterOut;
+}
+
+void celix_dmServiceDependency_setFilterOutOwnSvcDependencies(celix_dm_service_dependency_t* dependency, bool filterOut) {
+    celixThreadMutex_lock(&dependency->mutex);
+    dependency->filterOutOwnSvcDependencies = filterOut;
+    celixThreadMutex_unlock(&dependency->mutex);
+}
+
 celix_status_t serviceDependency_getServiceDependencyInfo(celix_dm_service_dependency_t *dep, dm_service_dependency_info_t **out) {
 	if (out != NULL) {
 		*out = celix_dmServiceDependency_createInfo(dep);
@@ -399,7 +417,6 @@ celix_status_t celix_dmServiceDependency_setCallbackHandle(celix_dm_service_depe
 	dependency->callbackHandle = handle;
     return CELIX_SUCCESS;
 }
-
 
 static void* serviceDependency_getCallbackHandle(celix_dm_service_dependency_t *dependency) {
     return dependency->callbackHandle == NULL ? component_getImplementation(dependency->component) : dependency->callbackHandle;

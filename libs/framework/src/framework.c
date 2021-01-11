@@ -1968,8 +1968,11 @@ static void fw_handleEventRequest(celix_framework_t *framework, celix_framework_
         celixThreadMutex_unlock(&framework->frameworkListenersLock);
     } else if (event->type == CELIX_REGISTER_SERVICE_EVENT) {
         service_registration_t* reg = NULL;
-        celix_status_t status;
-        if (event->factory != NULL) {
+        celix_status_t status = CELIX_SUCCESS;
+        if (event->cancelled) {
+            fw_log(framework->logger, CELIX_LOG_LEVEL_DEBUG, "CELIX_REGISTER_SERVICE_EVENT for svcId %li (service name = %s) was cancelled. Skipping registration", event->registerServiceId, event->serviceName);
+            celix_properties_destroy(event->properties);
+        } else if (event->factory != NULL) {
             status = celix_serviceRegistry_registerServiceFactory(framework->registry, event->bndEntry->bnd, event->serviceName, event->factory, event->properties, event->registerServiceId, &reg);
         } else {
             status = celix_serviceRegistry_registerService(framework->registry, event->bndEntry->bnd, event->serviceName, event->svc, event->properties, event->registerServiceId, &reg);
@@ -2415,8 +2418,39 @@ void celix_framework_unregisterAsync(celix_framework_t* fw, celix_bundle_t* bnd,
     celix_framework_addToEventQueue(fw, &event);
 }
 
+/**
+ * Checks if there is a pending service registration in the event queue and canels this.
+ *
+ * This can be needed when a service is regsitered async and still on the event queue when an sync unregistration
+ * is made.
+ * @returns true if a service registration is cancelled.
+ */
+static bool celix_framework_cancelServiceRegistrationIfPending(celix_framework_t* fw, celix_bundle_t* bnd, long serviceId) {
+    bool cancelled = false;
+    celixThreadMutex_lock(&fw->dispatcher.mutex);
+    for (int i = 0; i < celix_arrayList_size(fw->dispatcher.dynamicEventQueue); ++i) {
+        celix_framework_event_t *event = celix_arrayList_get(fw->dispatcher.dynamicEventQueue, i);
+        if (event->type == CELIX_REGISTER_SERVICE_EVENT && event->registerServiceId == serviceId) {
+            event->cancelled = true;
+            cancelled = true;
+        }
+    }
+    for (size_t i = 0; i < fw->dispatcher.eventQueueSize; ++i) {
+        size_t index = (fw->dispatcher.eventQueueFirstEntry + i) % CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE;
+        celix_framework_event_t *event = &fw->dispatcher.eventQueue[index];
+        if (event->type == CELIX_REGISTER_SERVICE_EVENT && event->registerServiceId == serviceId) {
+            event->cancelled = true;
+            cancelled = true;
+        }
+    }
+    celixThreadMutex_unlock(&fw->dispatcher.mutex);
+    return cancelled;
+}
+
 void celix_framework_unregister(celix_framework_t* fw, celix_bundle_t* bnd, long serviceId) {
-    celix_serviceRegistry_unregisterService(fw->registry, bnd, serviceId);
+    if (!celix_framework_cancelServiceRegistrationIfPending(fw, bnd, serviceId)) {
+        celix_serviceRegistry_unregisterService(fw->registry, bnd, serviceId);
+    }
 }
 
 void celix_framework_waitForAsyncRegistration(framework_t *fw, long svcId) {

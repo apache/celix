@@ -1194,3 +1194,89 @@ TEST_F(CelixBundleContextServicesTests, onlyCallAsyncCallbackWithAsyncApi) {
     EXPECT_GT(trkId, 0);
     celix_bundleContext_stopTracker(ctx, trkId);
 }
+
+TEST_F(CelixBundleContextServicesTests, unregisterSvcBeforeAsyncRegistration) {
+    celix_framework_fireGenericEvent(
+            fw,
+            -1,
+            celix_bundle_getId(celix_framework_getFrameworkBundle(fw)),
+            "registerAsync",
+            (void*)ctx,
+            [](void *data) {
+                auto context = (celix_bundle_context_t*)data;
+
+                //note register async. So a event on the event queue, but because this is done on the event queue this cannot be completed
+                long svcId = celix_bundleContext_registerServiceAsync(context, (void*)0x42, "test-service", nullptr);
+
+                celix_bundleContext_unregisterService(context, svcId); //trying to unregister still queued svc registration -> should cancel event.
+            },
+            nullptr,
+            nullptr);
+
+    celix_bundleContext_waitForEvents(ctx);
+    long svcId = celix_bundleContext_findService(ctx, "test-service");
+    EXPECT_LT(svcId, 0);
+}
+
+TEST_F(CelixBundleContextServicesTests, stopSvcTrackerBeforeAsyncTrackerIsCreated) {
+    celix_framework_fireGenericEvent(
+            fw,
+            -1,
+            celix_bundle_getId(celix_framework_getFrameworkBundle(fw)),
+            "create tracker async",
+            (void*)ctx,
+            [](void *data) {
+                auto context = (celix_bundle_context_t*)data;
+
+                //note register async. So a event on the event queue, but because this is done on the event queue this cannot be completed
+                long trkId = celix_bundleContext_trackServicesAsync(context, "test-service", nullptr, nullptr,nullptr);
+
+                celix_bundleContext_stopTracker(context, trkId);
+            },
+            nullptr,
+            nullptr);
+
+    celix_bundleContext_waitForEvents(ctx);
+}
+
+TEST_F(CelixBundleContextServicesTests, stopBundleTrackerBeforeAsyncTrackerIsCreated) {
+    celix_framework_fireGenericEvent(
+            fw,
+            -1,
+            celix_bundle_getId(celix_framework_getFrameworkBundle(fw)),
+            "create tracker async",
+            (void*)ctx,
+            [](void *data) {
+                auto context = (celix_bundle_context_t*)data;
+
+                //note register async. So a event on the event queue, but because this is done on the event queue this cannot be completed
+                long trkId = celix_bundleContext_trackBundlesAsync(context, nullptr, nullptr,nullptr);
+
+                celix_bundleContext_stopTracker(context, trkId);
+            },
+            nullptr,
+            nullptr);
+
+    celix_bundleContext_waitForEvents(ctx);
+}
+
+TEST_F(CelixBundleContextServicesTests, stopMetaTrackerBeforeAsyncTrackerIsCreated) {
+    celix_framework_fireGenericEvent(
+            fw,
+            -1,
+            celix_bundle_getId(celix_framework_getFrameworkBundle(fw)),
+            "create tracker async",
+            (void*)ctx,
+            [](void *data) {
+                auto context = (celix_bundle_context_t*)data;
+
+                //note register async. So a event on the event queue, but because this is done on the event queue this cannot be completed
+                long trkId = celix_bundleContext_trackServiceTrackers(context, "test-service", nullptr, nullptr,nullptr);
+
+                celix_bundleContext_stopTracker(context, trkId);
+            },
+            nullptr,
+            nullptr);
+
+    celix_bundleContext_waitForEvents(ctx);
+}
