@@ -53,6 +53,10 @@ struct ExportedHardcodedService {
         _svc = svc;
     }
 
+    void setPublisher(pubsub_publisher_t const * publisher, Properties&&) {
+        _publisher = publisher;
+    }
+
     int receiveMessage(const char *, unsigned int msgTypeId, void *msg, const celix_properties_t *) {
         if(msgTypeId == 1) {
             auto response = static_cast<AddArgs*>(msg);
@@ -78,17 +82,32 @@ private:
 
 class ExampleActivator {
 public:
-    explicit ExampleActivator(std::shared_ptr<celix::dm::DependencyManager> mng) {
+    explicit ExampleActivator(std::shared_ptr<celix::dm::DependencyManager> &mng) : _mng(mng) {
         _addArgsSerializer = AddArgsSerializer{mng};
         _subtractArgsSerializer = SubtractArgsSerializer{mng};
         _toStringSerializer = ToStringArgsSerializer{mng};
 //        DefaultImportedServiceFactory
 
-        auto &hardcodedCmp = mng->createComponent<HardcodedService>().addInterfaceWithName<IHardcodedService>(std::string{IHardcodedService::NAME}, std::string{IHardcodedService::VERSION}).build();
+        mng->createComponent<HardcodedService>().addInterfaceWithName<IHardcodedService>(std::string{IHardcodedService::NAME}, std::string{IHardcodedService::VERSION}).build();
         auto &exportedCmp = mng->createComponent<ExportedHardcodedService>();
-        auto &dep = exportedCmp.createServiceDependency<IHardcodedService>(std::string{IHardcodedService::NAME}).setCallbacks([&exportedCmp](IHardcodedService *svc, Properties&& props){
+        exportedCmp.createServiceDependency<IHardcodedService>(std::string{IHardcodedService::NAME}).setCallbacks([&exportedCmp](IHardcodedService *svc, Properties&& props){
             exportedCmp.getInstance().setService(svc, std::forward<Properties>(props));
         }).build();
+
+        _sub.handle = &exportedCmp.getInstance();
+        _sub.receive = [](void *handle, const char *msgType, unsigned int msgTypeId, void *msg, const celix_properties_t *metadata, bool *){ return static_cast<ExportedHardcodedService*>(handle)->receiveMessage(msgType, msgTypeId, msg, metadata); };
+
+        auto *props = celix_properties_create();
+        celix_properties_set(props, PUBSUB_SUBSCRIBER_TOPIC, IHardcodedService::NAME.data());
+
+        celix_service_registration_options_t opts{};
+        opts.serviceName = PUBSUB_SUBSCRIBER_SERVICE_NAME;
+        opts.serviceVersion = PUBSUB_SUBSCRIBER_SERVICE_VERSION;
+        opts.svc = &_sub;
+        opts.properties = props;
+
+        _subId = celix_bundleContext_registerServiceWithOptions(mng->bundleContext(), &opts);
+
         exportedCmp.build();
 
     }
@@ -97,6 +116,7 @@ public:
         _addArgsSerializer.reset();
         _subtractArgsSerializer.reset();
         _toStringSerializer.reset();
+        celix_bundleContext_unregisterService(_mng->bundleContext(), _subId);
     }
 
     ExampleActivator(const ExampleActivator &) = delete;
@@ -106,6 +126,9 @@ private:
     std::optional<AddArgsSerializer> _addArgsSerializer{};
     std::optional<SubtractArgsSerializer> _subtractArgsSerializer{};
     std::optional<ToStringArgsSerializer> _toStringSerializer{};
+    std::shared_ptr<celix::dm::DependencyManager> _mng{};
+    long _subId{};
+    pubsub_subscriber_t _sub{};
 };
 
 CELIX_GEN_CXX_BUNDLE_ACTIVATOR(ExampleActivator)

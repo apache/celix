@@ -275,14 +275,14 @@ void pubsub_zmqAdmin_destroy(pubsub_zmq_admin_t *psa) {
 void pubsub_zmqAdmin_addSerializerSvc(void *handle, void *svc, const celix_properties_t *props) {
     pubsub_zmq_admin_t *psa = handle;
 
-    const char *serType = celix_properties_get(props, PUBSUB_SERIALIZER_TYPE_KEY, NULL);
+    const char *serType = celix_properties_get(props, PUBSUB_MESSAGE_SERIALIZATION_SERVICE_SERIALIZATION_TYPE_PROPERTY, NULL);
     long msgId = celix_properties_getAsLong(props, PUBSUB_MESSAGE_SERIALIZATION_SERVICE_MSG_ID_PROPERTY, -1L);
     const char *msgFqn = celix_properties_get(props, PUBSUB_MESSAGE_SERIALIZATION_SERVICE_MSG_FQN_PROPERTY, NULL);
     const char *msgVersion = celix_properties_get(props, PUBSUB_MESSAGE_SERIALIZATION_SERVICE_MSG_VERSION_PROPERTY, "0.0.0");
 
     if (serType == NULL || msgId == -1L || msgFqn == NULL) {
         L_INFO("[PSA_ZMQ] Ignoring serializer service without one of the following properties: %s or %s or %s",
-               PUBSUB_SERIALIZER_TYPE_KEY, PUBSUB_MESSAGE_SERIALIZATION_SERVICE_MSG_ID_PROPERTY, PUBSUB_MESSAGE_SERIALIZATION_SERVICE_MSG_FQN_PROPERTY);
+               PUBSUB_MESSAGE_SERIALIZATION_SERVICE_SERIALIZATION_TYPE_PROPERTY, PUBSUB_MESSAGE_SERIALIZATION_SERVICE_MSG_ID_PROPERTY, PUBSUB_MESSAGE_SERIALIZATION_SERVICE_MSG_FQN_PROPERTY);
 
         L_INFO("[PSA_ZMQ] Ignored serializer type %s msgId %li fqn %s\n", serType, msgId, msgFqn);
         return;
@@ -307,7 +307,7 @@ void pubsub_zmqAdmin_addSerializerSvc(void *handle, void *svc, const celix_prope
 
 void pubsub_zmqAdmin_removeSerializerSvc(void *handle, void *svc, const celix_properties_t *props) {
     pubsub_zmq_admin_t *psa = handle;
-    const char *serType = celix_properties_get(props, PUBSUB_SERIALIZER_TYPE_KEY, NULL);
+    const char *serType = celix_properties_get(props, PUBSUB_MESSAGE_SERIALIZATION_SERVICE_SERIALIZATION_TYPE_PROPERTY, NULL);
     long msgId = celix_properties_getAsLong(props, PUBSUB_MESSAGE_SERIALIZATION_SERVICE_MSG_ID_PROPERTY, -1L);
 
     celixThreadRwlock_writeLock(&psa->serializers.mutex);

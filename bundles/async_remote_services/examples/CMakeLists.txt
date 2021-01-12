@@ -44,7 +44,7 @@ find_package(ZMQ REQUIRED)
 find_package(CZMQ REQUIRED)
 find_package(Jansson REQUIRED)
 add_celix_container(hardcoded_example_provider_cnt
-        GROUP pubsub
+        GROUP async_rsa
         BUNDLES
         Celix::shell
         Celix::shell_tui
@@ -58,8 +58,19 @@ add_celix_container(hardcoded_example_provider_cnt
         hardcoded_example_provider
         )
 target_link_libraries(hardcoded_example_provider PRIVATE ${PUBSUB_CONTAINER_LIBS})
+
+celix_bundle_files(hardcoded_example_provider
+        pubsub_properties/IHardcodedService.properties
+        DESTINATION "META-INF/topics/pub"
+        )
+celix_bundle_files(hardcoded_example_provider
+        pubsub_properties/IHardcodedService.properties
+        DESTINATION "META-INF/topics/sub"
+        )
+
+
 add_celix_container(hardcoded_example_subscriber_cnt
-        GROUP pubsub
+        GROUP async_rsa
         BUNDLES
         Celix::log_admin
         Celix::shell
