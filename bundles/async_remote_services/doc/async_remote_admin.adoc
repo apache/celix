@@ -1,0 +1,43 @@
+= Async Remote Admin
+
+WARNING: The Async Remote Admin is still a work in progress. 
+
+[plantuml]
+----
+@startuml
+class admin
+class discovery
+interface IHardcodedInterface {
+    + celix::Promise<int> add(int a, int b)
+    + celix::Promise<int> subtract(int a, int b)
+    + celix::Promise<std::string> toString(int a)
+}
+class HardcodedService
+class ImportedHardcodedService
+class ExportedHardcodedService
+class subscriber {
+    + int init()
+    + int receive()
+}
+class publisher {
+    + int localMsgTypeIdForMsgType()
+    + int send()
+}
+interface IImportedServiceFactory
+class HardcodedServiceFactory<InterfaceT, ImplementationT> {
+    + celix::dm::BaseComponent& create() // creates an instance of type ImplementationT
+}
+
+admin --> "1" discovery
+admin --> "0..*" IImportedServiceFactory
+HardcodedServiceFactory <|-- IImportedServiceFactory
+HardcodedServiceFactory --> "0..*" subscriber
+ImportedHardcodedService <|-- IHardcodedInterface
+ImportedHardcodedService --> "1" subscriber
+ImportedHardcodedService --> "1" publisher
+HardcodedService <|-- IHardcodedInterface
+ExportedHardcodedService --> "1" HardcodedService
+ExportedHardcodedService --> "1" subscriber
+ExportedHardcodedService --> "1" publisher
+@enduml
+----
