@@ -55,7 +55,7 @@ namespace celix::async_rsa {
 
         void addSerializer(pubsub_message_serialization_service_t *svc, const celix_properties_t *props);
         void removeSerializer(pubsub_message_serialization_service_t *svc, const celix_properties_t *props);
-
+//
         int receiveMessage(std::string_view interface, const char *msgType, unsigned int msgId, void *msg, const celix_properties_t *metadata);
 
     private:

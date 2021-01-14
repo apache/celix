@@ -47,17 +47,23 @@ struct HardcodedService final : public IHardcodedService {
 };
 
 struct ExportedHardcodedService {
+    ExportedHardcodedService() {
+        std::cout << "[ExportedHardcodedService] ExportedHardcodedService" << std::endl;
+    }
     ~ExportedHardcodedService() = default;
 
     void setService(IHardcodedService * svc, Properties&&) {
+        std::cout << "[ExportedHardcodedService] setService" << std::endl;
         _svc = svc;
     }
 
     void setPublisher(pubsub_publisher_t const * publisher, Properties&&) {
+        std::cout << "[ExportedHardcodedService] setPublisher" << std::endl;
         _publisher = publisher;
     }
 
     int receiveMessage(const char *, unsigned int msgTypeId, void *msg, const celix_properties_t *) {
+        std::cout << "[ExportedHardcodedService] receiveMessage" << std::endl;
         if(msgTypeId == 1) {
             auto response = static_cast<AddArgs*>(msg);
             response->ret = _svc->add(response->a, response->b).getValue();
@@ -83,15 +89,17 @@ private:
 class ExampleActivator {
 public:
     explicit ExampleActivator(std::shared_ptr<celix::dm::DependencyManager> &mng) : _mng(mng) {
-        _addArgsSerializer = AddArgsSerializer{mng};
-        _subtractArgsSerializer = SubtractArgsSerializer{mng};
-        _toStringSerializer = ToStringArgsSerializer{mng};
+        std::cout << "[ExampleActivator] ExampleActivator" << std::endl;
+        _addArgsSerializer.emplace(mng);
+        _subtractArgsSerializer.emplace(mng);
+        _toStringSerializer.emplace(mng);
 //        DefaultImportedServiceFactory
 
         mng->createComponent<HardcodedService>().addInterfaceWithName<IHardcodedService>(std::string{IHardcodedService::NAME}, std::string{IHardcodedService::VERSION}).build();
         auto &exportedCmp = mng->createComponent<ExportedHardcodedService>();
-        exportedCmp.createServiceDependency<IHardcodedService>(std::string{IHardcodedService::NAME}).setCallbacks([&exportedCmp](IHardcodedService *svc, Properties&& props){
-            exportedCmp.getInstance().setService(svc, std::forward<Properties>(props));
+        _exportedCmp = &exportedCmp;
+        exportedCmp.createServiceDependency<IHardcodedService>(std::string{IHardcodedService::NAME}).setCallbacks([this](IHardcodedService *svc, Properties&& props){
+            _exportedCmp->getInstance().setService(svc, std::forward<Properties>(props));
         }).build();
 
         _sub.handle = &exportedCmp.getInstance();
@@ -108,11 +116,19 @@ public:
 
         _subId = celix_bundleContext_registerServiceWithOptions(mng->bundleContext(), &opts);
 
+        exportedCmp.template createCServiceDependency<pubsub_publisher_t>(PUBSUB_PUBLISHER_SERVICE_NAME)
+                .setVersionRange("[3.0.0,4)")
+                .setFilter(std::string{"(topic="}.append(IHardcodedService::NAME).append(")"))
+                .setCallbacks([this](const pubsub_publisher_t * pub, Properties&& props){ _exportedCmp->getInstance().setPublisher(pub, std::forward<Properties&&>(props)); })
+                .setRequired(true)
+                .build();
+
         exportedCmp.build();
 
     }
 
     ~ExampleActivator() {
+        std::cout << "[ExampleActivator] ~ExampleActivator" << std::endl;
         _addArgsSerializer.reset();
         _subtractArgsSerializer.reset();
         _toStringSerializer.reset();
@@ -127,6 +143,7 @@ private:
     std::optional<SubtractArgsSerializer> _subtractArgsSerializer{};
     std::optional<ToStringArgsSerializer> _toStringSerializer{};
     std::shared_ptr<celix::dm::DependencyManager> _mng{};
+    celix::dm::Component<ExportedHardcodedService> *_exportedCmp{};
     long _subId{};
     pubsub_subscriber_t _sub{};
 };

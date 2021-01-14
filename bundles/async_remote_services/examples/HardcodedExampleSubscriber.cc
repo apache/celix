@@ -112,15 +112,66 @@ private:
 
 std::atomic<int> ImportedHardcodedService::_idCounter = 0;
 
+struct UsingHardcodedServiceService {
+
+    void setService(IHardcodedService * svc, Properties&&) {
+        std::cout << "[UsingHardcodedServiceService] setService" << std::endl;
+        _svc = svc;
+    }
+
+    void start() {
+        std::cout << "[UsingHardcodedServiceService] start" << std::endl;
+        auto ret = _svc->add(14, 123).getValue();
+        std::cout << "[UsingHardcodedServiceService] " << ret << std::endl;
+    }
+
+    void stop() {
+
+    }
+
+private:
+    IHardcodedService *_svc{};
+};
+
 class ExampleActivator {
 public:
     explicit ExampleActivator(std::shared_ptr<celix::dm::DependencyManager>& mng) {
-        auto &cmp = mng->createComponent(std::make_unique<celix::async_rsa::DefaultImportedServiceFactory<IHardcodedService, ImportedHardcodedService>>(mng));
-        cmp.build();
+        std::cout << "[ExampleActivator] ExampleActivator" << std::endl;
+        _addArgsSerializer.emplace(mng);
+        _subtractArgsSerializer.emplace(mng);
+        _toStringSerializer.emplace(mng);
+
+        mng->createComponent(std::make_unique<celix::async_rsa::DefaultImportedServiceFactory<IHardcodedService, ImportedHardcodedService>>(mng))
+            .addInterface<celix::async_rsa::IImportedServiceFactory>().build();
+
+        auto &usingCmp = mng->createComponent<UsingHardcodedServiceService>()
+                .setCallbacks(nullptr, &UsingHardcodedServiceService::start, &UsingHardcodedServiceService::stop, nullptr);
+        _usingSvc = &usingCmp.getInstance();
+        usingCmp.createServiceDependency<IHardcodedService>().setCallbacks([this](IHardcodedService *svc, Properties&& props) {
+            _usingSvc->setService(svc, std::forward<Properties>(props));
+        })
+        .setRequired(true)
+        .build();
+
+        usingCmp.build();
+    }
+
+    ~ExampleActivator() {
+        std::cout << "[ExampleActivator] ~ExampleActivator" << std::endl;
+        _addArgsSerializer.reset();
+        _subtractArgsSerializer.reset();
+        _toStringSerializer.reset();
     }
 
     ExampleActivator(const ExampleActivator &) = delete;
     ExampleActivator &operator=(const ExampleActivator &) = delete;
+
+private:
+    UsingHardcodedServiceService *_usingSvc{};
+
+    std::optional<AddArgsSerializer> _addArgsSerializer{};
+    std::optional<SubtractArgsSerializer> _subtractArgsSerializer{};
+    std::optional<ToStringArgsSerializer> _toStringSerializer{};
 };
 
 CELIX_GEN_CXX_BUNDLE_ACTIVATOR(ExampleActivator)

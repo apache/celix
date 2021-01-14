@@ -28,6 +28,24 @@ add_celix_bundle(hardcoded_example_subscriber
         VERSION 0.0.1
         )
 
+celix_bundle_files(hardcoded_example_provider
+        ${CMAKE_CURRENT_SOURCE_DIR}/pubsub_properties/IHardcodedService.properties
+        DESTINATION "META-INF/topics/pub"
+        )
+celix_bundle_files(hardcoded_example_provider
+        ${CMAKE_CURRENT_SOURCE_DIR}/pubsub_properties/IHardcodedService.properties
+        DESTINATION "META-INF/topics/sub"
+        )
+
+celix_bundle_files(hardcoded_example_subscriber
+        ${CMAKE_CURRENT_SOURCE_DIR}/pubsub_properties/IHardcodedService.properties
+        DESTINATION "META-INF/topics/pub"
+        )
+celix_bundle_files(hardcoded_example_subscriber
+        ${CMAKE_CURRENT_SOURCE_DIR}/pubsub_properties/IHardcodedService.properties
+        DESTINATION "META-INF/topics/sub"
+        )
+
 target_link_libraries(hardcoded_example_provider PRIVATE Celix::framework Celix::async_rsa_discovery Celix::async_rsa_common Celix::async_rsa)
 target_link_libraries(hardcoded_example_subscriber PRIVATE Celix::framework Celix::async_rsa_discovery Celix::async_rsa_common Celix::async_rsa)
 
@@ -56,18 +74,10 @@ add_celix_container(hardcoded_example_provider_cnt
         Celix::async_rsa_discovery
         Celix::async_rsa
         hardcoded_example_provider
+        PROPERTIES
+        "org.osgi.framework.storage=.publisherCache"
         )
 target_link_libraries(hardcoded_example_provider PRIVATE ${PUBSUB_CONTAINER_LIBS})
-
-celix_bundle_files(hardcoded_example_provider
-        pubsub_properties/IHardcodedService.properties
-        DESTINATION "META-INF/topics/pub"
-        )
-celix_bundle_files(hardcoded_example_provider
-        pubsub_properties/IHardcodedService.properties
-        DESTINATION "META-INF/topics/sub"
-        )
-
 
 add_celix_container(hardcoded_example_subscriber_cnt
         GROUP async_rsa
@@ -83,5 +93,7 @@ add_celix_container(hardcoded_example_subscriber_cnt
         Celix::async_rsa_discovery
         Celix::async_rsa
         hardcoded_example_subscriber
+        PROPERTIES
+        "org.osgi.framework.storage=.subscriberCache"
         )
 target_link_libraries(hardcoded_example_subscriber PRIVATE ${PUBSUB_CONTAINER_LIBS})

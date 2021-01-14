@@ -34,9 +34,12 @@ namespace celix::async_rsa {
     /// \tparam Implementation
     template <typename Interface, typename Implementation>
     struct DefaultImportedServiceFactory final : public IImportedServiceFactory {
-        explicit DefaultImportedServiceFactory(std::shared_ptr<celix::dm::DependencyManager> &mng) noexcept : _mng(mng) {}
+        explicit DefaultImportedServiceFactory(std::shared_ptr<celix::dm::DependencyManager> &mng) noexcept : _mng(mng) {
+            std::cout << "[DefaultImportedServiceFactory] DefaultImportedServiceFactory" << std::endl;
+        }
 
         ~DefaultImportedServiceFactory() final {
+            std::cout << "[DefaultImportedServiceFactory] ~DefaultImportedServiceFactory" << std::endl;
             for (auto &[id, cmp] : _subCmps) {
                 celix_bundleContext_unregisterService(_mng->bundleContext(), id);
             }
@@ -48,6 +51,7 @@ namespace celix::async_rsa {
         }
 
         celix::dm::BaseComponent& create(std::shared_ptr<celix::dm::DependencyManager> &dm, celix::dm::Properties&& properties) final {
+            std::cout << "[DefaultImportedServiceFactory] create" << std::endl;
             auto &cmp = dm->template createComponent<Implementation>()
                 .template addInterface<Interface>(std::string{Interface::VERSION}, std::forward<celix::dm::Properties>(properties));
 

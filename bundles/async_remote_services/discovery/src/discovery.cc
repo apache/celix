@@ -21,29 +21,36 @@
 #include <celix_api.h>
 
 struct StaticEndpoint final : celix::async_rsa::IEndpoint {
-    explicit StaticEndpoint() noexcept = default;
-    ~StaticEndpoint() final = default;
+    explicit StaticEndpoint() noexcept {
+        std::cout << "[StaticEndpoint] StaticEndpoint" << std::endl;
+    }
+    ~StaticEndpoint() final {
+        std::cout << "[StaticEndpoint] ~StaticEndpoint" << std::endl;
+    }
 };
 
 celix::async_rsa::StaticDiscovery::StaticDiscovery(std::shared_ptr<celix::dm::DependencyManager> &mng) noexcept : _endpoints(), _mng(mng) {
+    std::cout << "[StaticDiscovery] StaticDiscovery" << std::endl;
     readImportedEndpointsFromFile("test");
 }
 
 void celix::async_rsa::StaticDiscovery::readImportedEndpointsFromFile(std::string_view) {
-    _endpoints.emplace_back(&_mng->createComponent(std::make_unique<StaticEndpoint>()).addInterface<IEndpoint>("1.0.0", celix::dm::Properties{
+    std::cout << "[StaticDiscovery] readImportedEndpointsFromFile" << std::endl;
+    _endpoints.emplace_back(&_mng->createComponent<StaticEndpoint>().addInterface<IEndpoint>("1.0.0"/*, celix::dm::Properties{
             {"service.imported", "*"},
             {"objectClass", "IHardcodedExample"},
             {"service.exported.interfaces", "IHardcodedExample"},
             {"endpoint.id", "1"},
-    }).build().getInstance());
+    }*/).build().getInstance());
 }
 
 void celix::async_rsa::StaticDiscovery::addExportedEndpoint([[maybe_unused]] celix::async_rsa::IEndpoint *endpoint) {
+    std::cout << "[StaticDiscovery] addExportedEndpoint" << std::endl;
     // NOP
 }
 
 struct DiscoveryActivator {
-    explicit DiscoveryActivator([[maybe_unused]] std::shared_ptr<celix::dm::DependencyManager> mng) : _cmp(mng->createComponent(std::make_unique<celix::async_rsa::StaticDiscovery>(mng)).build()) {
+    explicit DiscoveryActivator([[maybe_unused]] std::shared_ptr<celix::dm::DependencyManager> mng) : _cmp(mng->createComponent(std::make_unique<celix::async_rsa::StaticDiscovery>(mng)).addInterface<celix::async_rsa::IDiscovery>().build()) {
 
     }
 

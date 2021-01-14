@@ -23,6 +23,7 @@
 #include <pubsub_serializer.h>
 #include <pubsub_protocol.h>
 #include <celix_api.h>
+#include <pubsub_message_serialization_service.h>
 
 #include "service_reference.h"
 
@@ -61,10 +62,10 @@ static long getPSASerializer(celix_bundle_context_t *ctx, const char *requested_
 
     if (requested_serializer != NULL) {
         char filter[512];
-        snprintf(filter, 512, "(%s=%s)", PUBSUB_SERIALIZER_TYPE_KEY, requested_serializer);
+        snprintf(filter, 512, "(%s=%s)", PUBSUB_MESSAGE_SERIALIZATION_SERVICE_SERIALIZATION_TYPE_PROPERTY, requested_serializer);
 
         celix_service_filter_options_t opts = CELIX_EMPTY_SERVICE_FILTER_OPTIONS;
-        opts.serviceName = PUBSUB_SERIALIZER_SERVICE_NAME;
+        opts.serviceName = PUBSUB_MESSAGE_SERIALIZATION_SERVICE_NAME;
         opts.filter = filter;
 
         svcId = celix_bundleContext_findServiceWithOptions(ctx, &opts);
@@ -73,7 +74,7 @@ static long getPSASerializer(celix_bundle_context_t *ctx, const char *requested_
         }
     } else {
         celix_service_filter_options_t opts = CELIX_EMPTY_SERVICE_FILTER_OPTIONS;
-        opts.serviceName = PUBSUB_SERIALIZER_SERVICE_NAME;
+        opts.serviceName = PUBSUB_MESSAGE_SERIALIZATION_SERVICE_NAME;
         opts.ignoreServiceLanguage = true;
 
         //note findService will automatically return the highest ranking service id
@@ -284,7 +285,7 @@ bool pubsubEndpoint_match(
         serMatch = serializerSvcId >= 0;
 
         if(!serMatch) {
-            celix_logHelper_log(logHelper, CELIX_LOG_LEVEL_ERROR, "Matching endpoint for technology %s but couldn't get serializer %i", configured_admin, configured_serializer);
+            celix_logHelper_log(logHelper, CELIX_LOG_LEVEL_ERROR, "Matching endpoint for technology %s but couldn't get serializer %s", configured_admin, configured_serializer);
         }
     }
 
@@ -299,7 +300,7 @@ bool pubsubEndpoint_match(
             protMatch = protocolSvcId >= 0;
 
             if(!protMatch) {
-                celix_logHelper_log(logHelper, CELIX_LOG_LEVEL_ERROR, "Matching endpoint for technology %s but couldn't get protocol %i", configured_admin, configured_protocol);
+                celix_logHelper_log(logHelper, CELIX_LOG_LEVEL_ERROR, "Matching endpoint for technology %s but couldn't get protocol %s", configured_admin, configured_protocol);
             }
         }
         match = match && protMatch;

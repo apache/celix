@@ -22,15 +22,18 @@
 #include <pubsub_message_serialization_service.h>
 
 celix::async_rsa::AsyncAdmin::AsyncAdmin(std::shared_ptr<celix::dm::DependencyManager> &mng) noexcept : _mng(mng) {
+    std::cout << "[AsyncAdmin] AsyncAdmin" << std::endl;
 
 }
 
 void celix::async_rsa::AsyncAdmin::addEndpoint(celix::async_rsa::IEndpoint *endpoint, Properties &&properties) {
+    std::cout << "[AsyncAdmin] addEndpoint" << std::endl;
     std::unique_lock l(_m);
     addEndpointInternal(endpoint, properties);
 }
 
 void celix::async_rsa::AsyncAdmin::removeEndpoint([[maybe_unused]] celix::async_rsa::IEndpoint *endpoint, [[maybe_unused]] Properties &&properties) {
+    std::cout << "[AsyncAdmin] removeEndpoint" << std::endl;
     auto interfaceIt = properties.find("objectClass");
 
     if(interfaceIt == end(properties)) {
@@ -60,6 +63,7 @@ void celix::async_rsa::AsyncAdmin::removeEndpoint([[maybe_unused]] celix::async_
 }
 
 void celix::async_rsa::AsyncAdmin::addImportedServiceFactory(celix::async_rsa::IImportedServiceFactory *factory, Properties &&properties) {
+    std::cout << "[AsyncAdmin] addImportedServiceFactory" << std::endl;
     auto interfaceIt = properties.find("objectClass");
 
     if(interfaceIt == end(properties)) {
@@ -89,6 +93,7 @@ void celix::async_rsa::AsyncAdmin::addImportedServiceFactory(celix::async_rsa::I
 }
 
 void celix::async_rsa::AsyncAdmin::removeImportedServiceFactory([[maybe_unused]] celix::async_rsa::IImportedServiceFactory *factory, Properties &&properties) {
+    std::cout << "[AsyncAdmin] removeImportedServiceFactory" << std::endl;
     std::unique_lock l(_m);
     auto interfaceIt = properties.find("objectClass");
 
@@ -100,6 +105,7 @@ void celix::async_rsa::AsyncAdmin::removeImportedServiceFactory([[maybe_unused]]
 }
 
 void celix::async_rsa::AsyncAdmin::addEndpointInternal(celix::async_rsa::IEndpoint *endpoint, Properties &properties) {
+    std::cout << "[AsyncAdmin] addEndpointInternal" << std::endl;
     auto interfaceIt = properties.find("objectClass");
 
     if(interfaceIt == end(properties)) {
@@ -139,6 +145,7 @@ void celix::async_rsa::AsyncAdmin::addEndpointInternal(celix::async_rsa::IEndpoi
 /// \param msgId
 /// \return
 int celix::async_rsa::AsyncAdmin::receiveMessage(std::string_view , const char *, unsigned int msgId, void *, const celix_properties_t *) {
+    std::cout << "[AsyncAdmin] receiveMessage" << std::endl;
     std::unique_lock l(_m);
     auto des = _serializers.find(msgId);
 
@@ -152,6 +159,7 @@ int celix::async_rsa::AsyncAdmin::receiveMessage(std::string_view , const char *
 }
 
 void celix::async_rsa::AsyncAdmin::addSerializer(pubsub_message_serialization_service_t *svc, const celix_properties_t *props) {
+    std::cout << "[AsyncAdmin] addSerializer" << std::endl;
     std::unique_lock l(_m);
 //    long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
     const char *msgFqn = celix_properties_get(props, PUBSUB_MESSAGE_SERIALIZATION_SERVICE_MSG_FQN_PROPERTY, NULL);
@@ -166,6 +174,7 @@ void celix::async_rsa::AsyncAdmin::addSerializer(pubsub_message_serialization_se
 }
 
 void celix::async_rsa::AsyncAdmin::removeSerializer(pubsub_message_serialization_service_t *, const celix_properties_t *props) {
+    std::cout << "[AsyncAdmin] removeSerializer" << std::endl;
     std::unique_lock l(_m);
 //    long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
     const char *msgFqn = celix_properties_get(props, PUBSUB_MESSAGE_SERIALIZATION_SERVICE_MSG_FQN_PROPERTY, NULL);
@@ -184,11 +193,13 @@ public:
     explicit AdminActivator([[maybe_unused]] std::shared_ptr<celix::dm::DependencyManager> mng) : _cmp(mng->createComponent(std::make_unique<celix::async_rsa::AsyncAdmin>(mng))), _mng(mng) {
         _cmp.createServiceDependency<celix::async_rsa::IEndpoint>()
                 .setRequired(false)
-                .setCallbacks(&celix::async_rsa::AsyncAdmin::addEndpoint, &celix::async_rsa::AsyncAdmin::removeEndpoint);
+                .setCallbacks(&celix::async_rsa::AsyncAdmin::addEndpoint, &celix::async_rsa::AsyncAdmin::removeEndpoint)
+                .build();
 
         _cmp.createServiceDependency<celix::async_rsa::IImportedServiceFactory>()
                 .setRequired(false)
-                .setCallbacks(&celix::async_rsa::AsyncAdmin::addImportedServiceFactory, &celix::async_rsa::AsyncAdmin::removeImportedServiceFactory);
+                .setCallbacks(&celix::async_rsa::AsyncAdmin::addImportedServiceFactory, &celix::async_rsa::AsyncAdmin::removeImportedServiceFactory)
+                .build();
 
         celix_service_tracking_options_t opts{};
         opts.filter.serviceName = PUBSUB_MESSAGE_SERIALIZATION_SERVICE_NAME;

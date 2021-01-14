@@ -23,6 +23,7 @@
 #include <pubsub_message_serialization_service.h>
 #include <jansson.h>
 #include <bits/types/struct_iovec.h>
+#include <pubsub_constants.h>
 
 struct AddArgs {
     int id{};
@@ -121,6 +122,7 @@ struct AddArgsSerializer {
         opts.serviceVersion = PUBSUB_MESSAGE_SERIALIZATION_SERVICE_VERSION;
         opts.properties = props;
         _svcId = celix_bundleContext_registerServiceWithOptions(_mng->bundleContext(), &opts);
+        std::cout << "created serializer AddArgsSerializer id " << _svcId << std::endl;
     }
 
     ~AddArgsSerializer() {
@@ -211,6 +213,7 @@ struct SubtractArgsSerializer {
         opts.serviceVersion = PUBSUB_MESSAGE_SERIALIZATION_SERVICE_VERSION;
         opts.properties = props;
         _svcId = celix_bundleContext_registerServiceWithOptions(_mng->bundleContext(), &opts);
+        std::cout << "created serializer SubtractArgsSerializer id " << _svcId << std::endl;
     }
 
     ~SubtractArgsSerializer() {
@@ -298,7 +301,13 @@ struct ToStringArgsSerializer {
         opts.serviceVersion = PUBSUB_MESSAGE_SERIALIZATION_SERVICE_VERSION;
         opts.properties = props;
         _svcId = celix_bundleContext_registerServiceWithOptions(_mng->bundleContext(), &opts);
+        std::cout << "created serializer ToStringArgsSerializer id " << _svcId << std::endl;
     }
+
+    ToStringArgsSerializer(ToStringArgsSerializer const &) = delete;
+    ToStringArgsSerializer(ToStringArgsSerializer&&) = default;
+    ToStringArgsSerializer& operator=(ToStringArgsSerializer const &) = delete;
+    ToStringArgsSerializer& operator=(ToStringArgsSerializer &&) = default;
 
     ~ToStringArgsSerializer() {
         celix_bundleContext_unregisterService(_mng->bundleContext(), _svcId);
