@@ -64,7 +64,6 @@ class dis as "ConfiguredDiscoveryManager" {
 class rsa as "AsyncRemoteServiceAdmin" {
     + void importService(Endpoint& ep);
     + void exportService(void* svc, properties* prop, long bundleId);
-    - IServiceFactory setupServiceFactory();
     - vector<IServiceFactory> _factories;
 }
 
