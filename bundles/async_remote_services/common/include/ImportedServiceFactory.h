@@ -51,13 +51,13 @@ namespace celix::async_rsa {
         }
 
         celix::dm::BaseComponent& create(std::shared_ptr<celix::dm::DependencyManager> &dm, celix::dm::Properties&&) final {
-            std::cout << "[DefaultImportedServiceFactory] create topic " << Interface::NAME << std::endl;
+            std::cout << "[DefaultImportedServiceFactory] create topic async_rsa." << Interface::NAME << std::endl;
             auto &cmp = dm->template createComponent<Implementation>(std::string{Interface::NAME})
                 .template addInterface<Interface>(std::string{Interface::VERSION});
 
             cmp.template createCServiceDependency<pubsub_publisher_t>(PUBSUB_PUBLISHER_SERVICE_NAME)
                     .setVersionRange("[3.0.0,4)")
-                    .setFilter(std::string{"(topic="}.append(Interface::NAME).append(")"))
+                    .setFilter(std::string{"(topic=async_rsa."}.append(Interface::NAME).append(")"))
                     .setCallbacks([&cmp](const pubsub_publisher_t * pub, Properties&& props){ cmp.getInstance().setPublisher(pub, std::forward<Properties&&>(props)); })
                     .setRequired(true)
                     .build();
@@ -73,7 +73,7 @@ namespace celix::async_rsa {
             sub->receive = [](void *handle, const char *msgType, unsigned int msgTypeId, void *msg, const celix_properties_t *metadata, bool *){ return static_cast<Implementation*>(handle)->receiveMessage(msgType, msgTypeId, msg, metadata); };
 
             auto *props = celix_properties_create();
-            celix_properties_set(props, PUBSUB_SUBSCRIBER_TOPIC, Interface::NAME.data());
+            celix_properties_set(props, PUBSUB_SUBSCRIBER_TOPIC, std::string{"async_rsa."}.append(Interface::NAME).data());
 
             celix_service_registration_options_t opts{};
             opts.serviceName = PUBSUB_SUBSCRIBER_SERVICE_NAME;
@@ -83,7 +83,7 @@ namespace celix::async_rsa {
 
             long id = celix_bundleContext_registerServiceWithOptions(_mng->bundleContext(), &opts);
 
-            _subCmps.template emplace_back(id, std::move(sub));
+            _subCmps.emplace_back(id, std::move(sub));
 
             return cmp;
         }

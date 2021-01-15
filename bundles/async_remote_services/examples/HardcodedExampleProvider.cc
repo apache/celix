@@ -114,7 +114,7 @@ public:
         };
 
         auto *props = celix_properties_create();
-        celix_properties_set(props, PUBSUB_SUBSCRIBER_TOPIC, IHardcodedService::NAME.data());
+        celix_properties_set(props, PUBSUB_SUBSCRIBER_TOPIC, std::string{"async_rsa."}.append(IHardcodedService::NAME).data());
 
         celix_service_registration_options_t opts{};
         opts.serviceName = PUBSUB_SUBSCRIBER_SERVICE_NAME;
@@ -124,11 +124,11 @@ public:
 
         _subId = celix_bundleContext_registerServiceWithOptions(mng->bundleContext(), &opts);
 
-        std::cout << "[ExampleActivator] ExampleActivator topic " << IHardcodedService::NAME << std::endl;
+        std::cout << "[ExampleActivator] ExampleActivator topic async_rsa." << IHardcodedService::NAME << std::endl;
 
         exportedCmp.template createCServiceDependency<pubsub_publisher_t>(PUBSUB_PUBLISHER_SERVICE_NAME)
                 .setVersionRange("[3.0.0,4)")
-                .setFilter(std::string{"(topic="}.append(IHardcodedService::NAME).append(")"))
+                .setFilter(std::string{"(topic=async_rsa."}.append(IHardcodedService::NAME).append(")"))
                 .setCallbacks([this](const pubsub_publisher_t * pub, Properties&& props){ _exportedCmp->getInstance().setPublisher(pub, std::forward<Properties&&>(props)); })
                 .setRequired(true)
                 .build();

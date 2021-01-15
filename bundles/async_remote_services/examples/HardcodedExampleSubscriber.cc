@@ -38,6 +38,7 @@ struct ImportedHardcodedService final : public IHardcodedService {
 
     celix::Promise<int> add(int a, int b) noexcept final {
         std::cout << "[ImportedHardcodedService] add" << std::endl;
+//        std::this_thread::sleep_for(std::chrono::milliseconds(5000))
         std::unique_lock l(_m);
         AddArgs args{_idCounter++, a, b, {}};
         _publisher->send(_publisher->handle, 1, &args, nullptr);

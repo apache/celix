@@ -728,6 +728,7 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
 
         celixThreadMutex_unlock(&entry->metrics.mutex);
     }
+    L_WARN("sent to topic %s", sender->topic);
 
     return status;
 }

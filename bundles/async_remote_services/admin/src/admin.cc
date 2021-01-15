@@ -136,7 +136,7 @@ void celix::async_rsa::AsyncAdmin::addEndpointInternal(celix::async_rsa::IEndpoi
     if(_subscribers.find(interfaceIt->second) == end(_subscribers)) {
         auto newSub = _subscribers.emplace(interfaceIt->second, std::make_pair(pubsub_subscriber_t{}, std::make_unique<subscriber_handle>(0, this, interfaceIt->second)));
         celix_properties_t *props = celix_properties_create();
-        celix_properties_set(props, PUBSUB_SUBSCRIBER_TOPIC, std::string("async_rsa_ping." + interfaceIt->second).c_str());
+        celix_properties_set(props, PUBSUB_SUBSCRIBER_TOPIC, std::string("async_rsa." + interfaceIt->second).c_str());
         newSub.first->second.first.handle = newSub.first->second.second.get();
         newSub.first->second.first.receive = [](void *handle, const char *msgType, unsigned int msgId, void *msg, const celix_properties_t *metadata, bool *) -> int {
             auto subHandle = static_cast<subscriber_handle*>(handle);
