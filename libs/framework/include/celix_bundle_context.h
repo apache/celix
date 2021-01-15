@@ -177,6 +177,10 @@ typedef struct celix_service_registration_options {
     /**
     * Async callback. Will be called after the a service is registered in the service registry using a async call.
     * Will be called on the Celix event loop.
+     *
+     * If a asyns service registration is combined with a _sync_ service unregistration, it can happen that
+     * unregistration happens before the registration event is processed. In this case the asyncCallback
+     * will not be called.
     */
     void (*asyncCallback)(void *data, long serviceId) OPTS_INIT;
 } celix_service_registration_options_t;
@@ -524,6 +528,10 @@ typedef struct celix_service_tracking_options {
 
     /**
      * The callback called when the tracker has ben created (and is active) when using a async call.
+     *
+     * If a asyns track service is combined with a _sync_ stop tracker, it can happen that
+     * "stop tracker" happens before the "create tracker" event is processed. In this case the asyncCallback
+     * will not be called.
      */
     void (*trackerCreatedCallback)(void *trackerCreatedCallbackData) OPTS_INIT;
 } celix_service_tracking_options_t;
@@ -958,6 +966,10 @@ typedef struct celix_bundle_tracker_options {
     /**
      * The callback called when the tracker has ben created (and is active) when using the
      * track bundles ascync calls.
+     *
+     * If a asyns track service is combined with a _sync_ stop tracker, it can happen that
+     * "stop tracker" happens before the "create tracker" event is processed. In this case the asyncCallback
+     * will not be called.
      */
     void (*trackerCreatedCallback)(void *trackerCreatedCallbackData) OPTS_INIT;
 } celix_bundle_tracking_options_t;
@@ -1086,6 +1098,9 @@ typedef struct celix_service_tracker_info {
  * @param trackerRemove Called when a service tracker is removed, which tracks the provided service name
  * @param doneCallbackData call back data argument provided to the done callback function.
  * @param doneCallback If not NULL will be called when the service tracker tracker is created.
+ *                          If a asyns track service is combined with a _sync_ stop tracker, it can happen that
+ *                          "stop tracker" happens before the "create tracker" event is processed.
+ *                          In this case the doneCallback will not be called.
  * @return The tracker id or <0 if something went wrong (will log an error).
  */
 long celix_bundleContext_trackServiceTrackersAsync(

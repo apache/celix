@@ -42,6 +42,11 @@ celix_status_t celix_dependencyManager_add(celix_dependency_manager_t *manager, 
 celix_status_t celix_dependencyManager_remove(celix_dependency_manager_t *manager, celix_dm_component_t *component);
 
 /**
+ * Removes a DM component from the dependency manager.
+ */
+celix_status_t celix_dependencyManager_removeWithoutDestroy(celix_dependency_manager_t *manager, celix_dm_component_t *component);
+
+/**
  * Removes all DM components from the dependency manager
  */
 celix_status_t celix_dependencyManager_removeAllComponents(celix_dependency_manager_t *manager);

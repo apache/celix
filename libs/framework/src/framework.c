@@ -69,14 +69,14 @@ static inline celix_framework_bundle_entry_t* fw_bundleEntry_create(celix_bundle
 
 static inline void fw_bundleEntry_waitTillUseCountIs(celix_framework_bundle_entry_t *entry, size_t desiredUseCount) {
     celixThreadMutex_lock(&entry->useMutex);
-    time_t start = time(NULL);
+    struct timespec start = celix_gettime(CLOCK_MONOTONIC);
     while (entry->useCount != desiredUseCount) {
         celixThreadCondition_timedwaitRelative(&entry->useCond, &entry->useMutex, 5, 0);
         if (entry->useCount != desiredUseCount) {
-            time_t now = time(NULL);
-            if ((now-start) > 5) {
+            struct timespec now = celix_gettime(CLOCK_MONOTONIC);
+            if (celix_difftime(&start, &now) > 5) {
                 fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_WARNING, "Bundle '%s' (bnd id = %li) still in use. Use count is %u, desired is %li", celix_bundle_getSymbolicName(entry->bnd), entry->bndId, entry->useCount, desiredUseCount);
-                start = time(NULL);
+                start = celix_gettime(CLOCK_MONOTONIC);
             }
         }
     }
@@ -1990,7 +1990,7 @@ static void fw_handleEventRequest(celix_framework_t *framework, celix_framework_
         }
     }
 
-    if (event->doneCallback != NULL) {
+    if (event->doneCallback != NULL && !event->cancelled) {
         event->doneCallback(event->doneData);
     }
 }

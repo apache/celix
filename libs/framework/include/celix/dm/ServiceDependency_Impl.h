@@ -22,6 +22,8 @@
 #include <cstring>
 #include "celix_constants.h"
 #include "celix_properties.h"
+#include "celix_bundle_context.h"
+#include "celix_framework.h"
 #include "ServiceDependency.h"
 
 
@@ -32,11 +34,18 @@ inline void BaseServiceDependency::runBuild() {
     if (!alreadyAdded) {
         celix_dmComponent_addServiceDependency(cCmp, cServiceDep);
     }
+    auto* ctx = celix_dmComponent_getBundleContext(cCmp);
+    if (ctx != nullptr) {
+        auto* fw = celix_bundleContext_getFramework(ctx);
+        if (!celix_framework_isCurrentThreadTheEventLoop(fw)) {
+            celix_framework_waitForEmptyEventQueue(fw);
+        }
+    }
 }
 
 inline BaseServiceDependency::~BaseServiceDependency() noexcept {
     if (!depAddedToCmp) {
-        celix_dmServiceDependency_destroy(cServiceDep);
+        celix_dmServiceDependency_destroyAsync(cServiceDep, nullptr, nullptr);
     }
 }
 

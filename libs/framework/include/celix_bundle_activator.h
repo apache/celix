@@ -194,7 +194,7 @@ extern "C" celix_status_t bundleActivator_start(void *userData, celix_bundle_con
 extern "C" celix_status_t bundleActivator_stop(void *userData, celix_bundle_context_t*) {                              \
     auto* data = static_cast<BundleActivatorData*>(userData);                                                          \
     if (data != nullptr) {                                                                                             \
-        data->mng->stop();                                                                                             \
+        data->mng->clear()                                                                                             \
         data->activator = nullptr;                                                                                     \
         data->mng = nullptr;                                                                                           \
     }                                                                                                                  \

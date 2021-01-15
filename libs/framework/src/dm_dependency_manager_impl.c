@@ -28,7 +28,8 @@
 #include "celix_dependency_manager.h"
 #include "celix_bundle.h"
 #include "celix_framework.h"
-
+#include "bundle_context_private.h"
+#include "framework_private.h"
 
 celix_dependency_manager_t* celix_private_dependencyManager_create(celix_bundle_context_t *context) {
 	celix_dependency_manager_t *manager = calloc(1, sizeof(*manager));
@@ -59,32 +60,38 @@ celix_status_t celix_dependencyManager_add(celix_dependency_manager_t *manager, 
 	celix_arrayList_add(manager->components, component);
     celixThreadMutex_unlock(&manager->mutex);
 
-	status = celix_private_dmComponent_start(component);
+	status = celix_private_dmComponent_enable(component);
 	return status;
 }
 
-
-celix_status_t celix_dependencyManager_remove(celix_dependency_manager_t *manager, celix_dm_component_t *component) {
-	celix_status_t status;
-
-	celix_array_list_entry_t entry;
-	memset(&entry, 0, sizeof(entry));
-	entry.voidPtrVal = component;
+celix_status_t celix_dependencyManager_removeWithoutDestroy(celix_dependency_manager_t *manager, celix_dm_component_t *component) {
+    celix_status_t status;
 
     celixThreadMutex_lock(&manager->mutex);
-	int index = celix_arrayList_indexOf(manager->components, entry);
+    bool found = false;
+    for (int i = 0; i < celix_arrayList_size(manager->components); ++i) {
+        celix_dm_component_t* visit = celix_arrayList_get(manager->components, i);
+        if (visit == component) {
+            celix_arrayList_removeAt(manager->components, i);
+            found = true;
+            break;
+        }
+    }
+    celixThreadMutex_unlock(&manager->mutex);
 
-	if (index >= 0) {
-        celix_arrayList_removeAt(manager->components, index);
-        celixThreadMutex_unlock(&manager->mutex);
-        celix_dmComponent_destroy(component);
-	} else {
-        celixThreadMutex_unlock(&manager->mutex);
-	    fprintf(stderr, "Cannot find component with pointer %p\n", component);
-	    status = CELIX_BUNDLE_EXCEPTION;
-	}
+    if (!found) {
+        fw_log(manager->ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, "Cannot find component %s (uuid=%s)",
+            celix_dmComponent_getName(component),
+            celix_dmComponent_getUUID(component));
+        status = CELIX_BUNDLE_EXCEPTION;
+    }
 
+    return status;
+}
 
+celix_status_t celix_dependencyManager_remove(celix_dependency_manager_t *manager, celix_dm_component_t *component) {
+    celix_status_t  status = celix_dependencyManager_removeWithoutDestroy(manager, component);
+	celix_dmComponent_destroy(component);
 	return status;
 }
 

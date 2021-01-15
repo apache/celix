@@ -57,7 +57,7 @@ namespace celix { namespace dm {
          */
         template<class T>
         typename std::enable_if<std::is_default_constructible<T>::value, Component<T>&>::type
-        createComponent(std::string name = std::string{});
+        createComponent(std::string name = std::string{}, std::string uuid = {});
 
         /**
          * Creates and adds a new DM Component for a component of type T and setting
@@ -66,7 +66,7 @@ namespace celix { namespace dm {
          * @return Returns a reference to the DM Component
          */
         template<class T>
-        Component<T>& createComponent(std::unique_ptr<T>&& rhs, std::string name = std::string{});
+        Component<T>& createComponent(std::unique_ptr<T>&& rhs, std::string name = std::string{}, std::string uuid = {});
 
         /**
          * Creates and adds a new DM Component for a component of type T and setting
@@ -75,7 +75,7 @@ namespace celix { namespace dm {
          * @return Returns a reference to the DM Component
          */
         template<class T>
-        Component<T>& createComponent(std::shared_ptr<T> rhs, std::string name = std::string{});
+        Component<T>& createComponent(std::shared_ptr<T> rhs, std::string name = std::string{}, std::string uuid = {});
 
         /**
          * Creates and adds a new DM Component for a component of type T and setting
@@ -84,7 +84,7 @@ namespace celix { namespace dm {
          * @return Returns a reference to the DM Component
          */
         template<class T>
-        Component<T>& createComponent(T rhs, std::string name = std::string{});
+        Component<T>& createComponent(T rhs, std::string name = std::string{}, std::string uuid = {});
 
         /**
          * Build the dependency manager.
@@ -127,9 +127,25 @@ namespace celix { namespace dm {
          * Returns the nr of configured components for this dependency manager.
          */
         std::size_t getNrOfComponents() const;
+
+        /**
+         * Tries to find the component with UUID and staticly cast it to
+         * dm component of type T
+         * @return pointer to found component or null if the component cannot be found.
+         *
+         * Note: DependencyManager is not thread safe!
+         */
+        template<typename T>
+        std::shared_ptr<Component<T>> findComponent(const std::string& uuid) const;
     private:
         template<class T>
-        Component<T>& createComponentInternal(std::string name);
+        Component<T>& createComponentInternal(std::string name, std::string uuid);
+
+        /**
+         * Wait until current Celix event queue is empty.
+         * Note: will just return if the current thread is the Celix event thread
+         */
+        void wait() const;
 
         std::shared_ptr<celix_bundle_context_t> context;
         std::shared_ptr<celix_dependency_manager_t> cDepMan;

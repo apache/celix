@@ -26,14 +26,16 @@
 #include <string>
 #include <vector>
 #include <atomic>
+#include <mutex>
 
 namespace celix { namespace dm {
 
     class BaseComponent {
     public:
-        BaseComponent(celix_bundle_context_t *con, celix_dependency_manager_t* cdm, const std::string &name) : context{con}, cDepMan{cdm}, cCmp{nullptr} {
-            this->cCmp = celix_dmComponent_create(this->context, name.c_str());
+        BaseComponent(celix_bundle_context_t *con, celix_dependency_manager_t* cdm, std::string name, std::string uuid) : context{con}, cDepMan{cdm}, cCmp{nullptr} {
+            this->cCmp = celix_dmComponent_createWithUUID(this->context, name.c_str(), uuid.empty() ? nullptr : uuid.c_str());
             celix_dmComponent_setImplementation(this->cCmp, this);
+            cmpUUID = std::string{celix_dmComponent_getUUID(this->cCmp)};
         }
         virtual ~BaseComponent() noexcept;
 
@@ -50,15 +52,19 @@ namespace celix { namespace dm {
          */
         celix_bundle_context_t* bundleContext() const { return this->context; }
 
+        const std::string& getUUID() const {
+            return cmpUUID;
+        }
+
         void runBuild();
     protected:
         std::vector<std::shared_ptr<BaseServiceDependency>> dependencies{};
         std::vector<std::shared_ptr<BaseProvidedService>> providedServices{};
 
-    private:
         celix_bundle_context_t* context;
         celix_dependency_manager_t* cDepMan;
         celix_dm_component_t *cCmp;
+        std::string cmpUUID{};
         std::atomic<bool> cmpAddedToDepMan{false};
     };
 
@@ -67,6 +73,7 @@ namespace celix { namespace dm {
     class Component : public BaseComponent {
         using type = T;
     private:
+        std::mutex instanceMutex{};
         std::unique_ptr<T> instance {nullptr};
         std::shared_ptr<T> sharedInstance {nullptr};
         std::vector<T> valInstance {};
@@ -80,24 +87,23 @@ namespace celix { namespace dm {
         int (T::*startFpNoExc)() = {};
         int (T::*stopFpNoExc)() = {};
         int (T::*deinitFpNoExc)() = {};
+
+        /**
+         * Ctor is private, use static create function member instead
+         * @param context
+         * @param cDepMan
+         * @param name
+         */
+        Component(celix_bundle_context_t *context, celix_dependency_manager_t* cDepMan, std::string name, std::string uuid);
     public:
-        Component(celix_bundle_context_t *context, celix_dependency_manager_t* cDepMan, const std::string &name);
         ~Component() override;
 
         /**
          * Creates a Component using the provided bundle context
          * and component name.
-         * Will use new(nothrow) if exceptions are disabled.
-         * @return newly created DM Component or nullptr
+         * @return newly created DM Component.
          */
-        static Component<T>* create(celix_bundle_context_t*, celix_dependency_manager_t* cDepMan, const std::string &name);
-
-        /**
-         * Creates a Component using the provided bundle context.
-         * Will use new(nothrow) if exceptions are disabled.
-         * @return newly created DM Component or nullptr
-         */
-        static Component<T>* create(celix_bundle_context_t*, celix_dependency_manager_t* cDepMan);
+        static std::shared_ptr<Component<T>> create(celix_bundle_context_t*, celix_dependency_manager_t* cDepMan, std::string name, std::string uuid);
 
         /**
          * Whether the component is valid. Invalid component can occurs when no new components can be created and

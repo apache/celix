@@ -670,6 +670,9 @@ void celix_bundleContext_trackBundlesWithOptionsCallback(void *data) {
         free(entry);
     } else {
         fw_addBundleListener(entry->ctx->framework, entry->ctx->bundle, &entry->listener);
+        if (entry->opts.trackerCreatedCallback) {
+            entry->opts.trackerCreatedCallback(entry->opts.trackerCreatedCallbackData);
+        }
     }
 
 }
@@ -692,9 +695,8 @@ static long celix_bundleContext_trackBundlesWithOptionsInternal(
     trackerId = entry->trackerId;
     celixThreadMutex_unlock(&ctx->mutex);
 
-    void (*trackerCreatedCallback)(void *trackerCreatedCallbackData) = NULL;
-    if (async) { //note only using the async callback if this is a async call.
-        trackerCreatedCallback = opts->trackerCreatedCallback;
+    if (!async) { //note only using the async callback if this is a async call.
+        entry->opts.callbackHandle = NULL;
     }
     long id = celix_framework_fireGenericEvent(
             ctx->framework,
@@ -703,8 +705,8 @@ static long celix_bundleContext_trackBundlesWithOptionsInternal(
             "add bundle listener",
             entry,
             celix_bundleContext_trackBundlesWithOptionsCallback,
-            opts->trackerCreatedCallbackData,
-            trackerCreatedCallback);
+            NULL,
+            NULL);
 
     if (!async) {
         celix_framework_waitForGenericEvent(ctx->framework, id);
@@ -1383,12 +1385,11 @@ static void celix_bundleContext_doneCreatingTrackerOnEventLoop(void *data) {
     celixThreadMutex_lock(&entry->ctx->mutex);
     bool cancelled = entry->cancelled;
     celixThreadMutex_unlock(&entry->ctx->mutex);
-    if (entry->trackerCreatedCallback != NULL) {
-        entry->trackerCreatedCallback(entry->trackerCreatedCallbackData);
-    }
     if (cancelled) {
         //tracker creation cancelled -> entry already removed from map, but memory needs to be freed.
         free(entry);
+    } else if (entry->trackerCreatedCallback != NULL) {
+        entry->trackerCreatedCallback(entry->trackerCreatedCallbackData);
     }
 }
 

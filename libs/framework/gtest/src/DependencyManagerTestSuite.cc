@@ -33,6 +33,8 @@ public:
         properties_set(properties, "LOGHELPER_ENABLE_STDOUT_FALLBACK", "true");
         properties_set(properties, "org.osgi.framework.storage.clean", "onFirstInit");
         properties_set(properties, "org.osgi.framework.storage", ".cacheBundleContextTestFramework");
+        properties_set(properties, "CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "trace");
+
 
         fw = celix_frameworkFactory_createFramework(properties);
         ctx = framework_getContext(fw);
@@ -286,6 +288,7 @@ TEST_F(DependencyManagerTestSuite, AddSvcDepAfterBuild) {
 
     dep.build();
     dep.build(); //should be ok to call twice
+    celix_bundleContext_waitForEvents(ctx);
     ASSERT_EQ(1, count); //service dep build -> so count is 1;
 
     //create another service dep
@@ -304,9 +307,9 @@ TEST_F(DependencyManagerTestSuite, AddSvcDepAfterBuild) {
 
 TEST_F(DependencyManagerTestSuite, InCompleteBuildShouldNotLeak) {
     celix::dm::DependencyManager dm{ctx};
-    dm.createComponent<TestComponent>(std::make_shared<TestComponent>(), "test1"); //note not build
+    dm.createComponent<TestComponent>(std::make_shared<TestComponent>(), "test1"); //NOTE NOT BUILD
 
-    auto& cmp2 = dm.createComponent<Cmp1>(std::make_shared<Cmp1>(), "test2").build();
+    auto& cmp2 = dm.createComponent<Cmp1>(std::make_shared<Cmp1>(), "test2").build(); //NOTE BUILD
     cmp2.createCServiceDependency<TestService>("TestService").setFilter("(key=value"); //note not build
     cmp2.createServiceDependency<TestService>().setFilter("(key=value)"); //note not build
 

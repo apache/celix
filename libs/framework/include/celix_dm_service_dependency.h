@@ -78,6 +78,14 @@ celix_dm_service_dependency_t* celix_dmServiceDependency_create(void);
  */
 void celix_dmServiceDependency_destroy(celix_dm_service_dependency_t *dep);
 
+void celix_dmServiceDependency_destroyAsync(celix_dm_service_dependency_t *dep, void *doneData, void (*doneCallback)(void*));
+
+/**
+ * Note free resource of dm service dependency.
+ * Should only be called on a disabled service dependency.
+ */
+void celix_dmServiceDependency_free(celix_dm_service_dependency_t *dep);
+
 /**
  * Specify if the service dependency is required. default is false
  */

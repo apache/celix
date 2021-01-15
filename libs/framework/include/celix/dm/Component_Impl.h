@@ -49,16 +49,19 @@ inline void BaseComponent::runBuild() {
     if (!alreadyAdded) {
         celix_dependencyManager_add(cDepMan, cCmp);
     }
-}
 
-inline BaseComponent::~BaseComponent() noexcept {
-    if (context != nullptr && !cmpAddedToDepMan) {
-        celix_dmComponent_destroy(cCmp);
+    if (context) {
+        auto *fw = celix_bundleContext_getFramework(context);
+        if (!celix_framework_isCurrentThreadTheEventLoop(fw)) {
+            celix_framework_waitForEmptyEventQueue(fw);
+        }
     }
 }
 
+inline BaseComponent::~BaseComponent() noexcept = default;
+
 template<class T>
-Component<T>::Component(celix_bundle_context_t *context, celix_dependency_manager_t* cDepMan, const std::string &name) : BaseComponent(context, cDepMan, name) {}
+Component<T>::Component(celix_bundle_context_t *context, celix_dependency_manager_t* cDepMan, std::string name, std::string uuid) : BaseComponent(context, cDepMan, std::move(name), std::move(uuid)) {}
 
 template<class T>
 Component<T>::~Component() = default;
@@ -161,19 +164,19 @@ Component<T>& Component<T>::remove(CServiceDependency<T,I>& dep) {
 }
 
 template<class T>
-Component<T>* Component<T>::create(celix_bundle_context_t *context, celix_dependency_manager_t* cDepMan) {
-    std::string name = typeName<T>();
-    return Component<T>::create(context, cDepMan, name);
-}
-
-template<class T>
-Component<T>* Component<T>::create(celix_bundle_context_t *context, celix_dependency_manager_t* cDepMan, const std::string &name) {
-    static Component<T> invalid{nullptr, nullptr, std::string{}};
-    Component<T>* cmp = new (std::nothrow) Component<T>(context, cDepMan, name);
-    if (cmp == nullptr) {
-        cmp = &invalid;
-    }
-    return cmp;
+std::shared_ptr<Component<T>> Component<T>::create(celix_bundle_context_t *context, celix_dependency_manager_t* cDepMan, std::string name, std::string uuid) {
+    std::string cmpName = name.empty() ? celix::dm::typeName<T>() : std::move(name);
+    return std::shared_ptr<Component<T>>{new Component<T>(context, cDepMan, std::move(cmpName), std::move(uuid)), [](Component<T>* cmp){
+        if (cmp->cmpAddedToDepMan) {
+            celix_dependencyManager_removeWithoutDestroy(cmp->cDepMan, cmp->cCmp); //remove
+        }
+        //NOTE using a callback of async destroy to ensure that the cmp instance is still exist while the
+        //dm component is async disabled and destroyed.
+        celix_dmComponent_destroyAsync(cmp->cCmp, cmp, [](void *data) {
+            auto* c = static_cast<Component<T>*>(data);
+            delete c;
+        });
+    }};
 }
 
 template<class T>
@@ -198,6 +201,7 @@ createInstance() {
 
 template<class T>
 T& Component<T>::getInstance() {
+    std::lock_guard<std::mutex> lck{instanceMutex};
     if (!valInstance.empty()) {
         return valInstance.front();
     } else if (sharedInstance) {
@@ -213,6 +217,7 @@ T& Component<T>::getInstance() {
 
 template<class T>
 Component<T>& Component<T>::setInstance(std::shared_ptr<T> inst) {
+    std::lock_guard<std::mutex> lck{instanceMutex};
     this->valInstance.clear();
     this->instance = std::unique_ptr<T> {nullptr};
     this->sharedInstance = std::move(inst);
@@ -221,6 +226,7 @@ Component<T>& Component<T>::setInstance(std::shared_ptr<T> inst) {
 
 template<class T>
 Component<T>& Component<T>::setInstance(std::unique_ptr<T>&& inst) {
+    std::lock_guard<std::mutex> lck{instanceMutex};
     this->valInstance.clear();
     this->sharedInstance = std::shared_ptr<T> {nullptr};
     this->instance = std::move(inst);
@@ -229,6 +235,7 @@ Component<T>& Component<T>::setInstance(std::unique_ptr<T>&& inst) {
 
 template<class T>
 Component<T>& Component<T>::setInstance(T&& inst) {
+    std::lock_guard<std::mutex> lck{instanceMutex};
     this->instance = std::unique_ptr<T> {nullptr};
     this->sharedInstance = std::shared_ptr<T> {nullptr};
     this->valInstance.clear();
