@@ -28,18 +28,21 @@ struct HardcodedService final : public IHardcodedService {
     ~HardcodedService() final = default;
 
     celix::Promise<int> add(int a, int b) noexcept final {
+        std::cout << "[HardcodedService] add" << std::endl;
         auto deferred = celix::Deferred<int>{};
         deferred.resolve(a + b);
         return deferred.getPromise();
     }
 
     celix::Promise<int> subtract(int a, int b) noexcept final {
+        std::cout << "[HardcodedService] subtract" << std::endl;
         auto deferred = celix::Deferred<int>{};
         deferred.resolve(a - b);
         return deferred.getPromise();
     }
 
     celix::Promise<std::string> toString(int a) noexcept final {
+        std::cout << "[HardcodedService] toString" << std::endl;
         auto deferred = celix::Deferred<std::string>{};
         deferred.resolve(std::to_string(a));
         return deferred.getPromise();
@@ -103,7 +106,12 @@ public:
         }).build();
 
         _sub.handle = &exportedCmp.getInstance();
-        _sub.receive = [](void *handle, const char *msgType, unsigned int msgTypeId, void *msg, const celix_properties_t *metadata, bool *){ return static_cast<ExportedHardcodedService*>(handle)->receiveMessage(msgType, msgTypeId, msg, metadata); };
+        _sub.init = [](void *) -> int {
+            return 0;
+        };
+        _sub.receive = [](void *handle, const char *msgType, unsigned int msgTypeId, void *msg, const celix_properties_t *metadata, bool *){
+            return static_cast<ExportedHardcodedService*>(handle)->receiveMessage(msgType, msgTypeId, msg, metadata);
+        };
 
         auto *props = celix_properties_create();
         celix_properties_set(props, PUBSUB_SUBSCRIBER_TOPIC, IHardcodedService::NAME.data());
@@ -115,6 +123,8 @@ public:
         opts.properties = props;
 
         _subId = celix_bundleContext_registerServiceWithOptions(mng->bundleContext(), &opts);
+
+        std::cout << "[ExampleActivator] ExampleActivator topic " << IHardcodedService::NAME << std::endl;
 
         exportedCmp.template createCServiceDependency<pubsub_publisher_t>(PUBSUB_PUBLISHER_SERVICE_NAME)
                 .setVersionRange("[3.0.0,4)")

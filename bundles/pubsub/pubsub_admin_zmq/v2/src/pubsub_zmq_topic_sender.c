@@ -157,6 +157,8 @@ pubsub_zmq_topic_sender_t* pubsub_zmqTopicSender_create(
     sender->metricsEnabled = celix_bundleContext_getPropertyAsBool(ctx, PSA_ZMQ_METRICS_ENABLED, PSA_ZMQ_DEFAULT_METRICS_ENABLED);
     sender->zeroCopyEnabled = celix_bundleContext_getPropertyAsBool(ctx, PSA_ZMQ_ZEROCOPY_ENABLED, PSA_ZMQ_DEFAULT_ZEROCOPY_ENABLED);
 
+    L_WARN("new sender topic %s", topic);
+
     pubsubInterceptorsHandler_create(ctx, scope, topic, &sender->interceptorsHandler);
 
     //setting up zmq socket for ZMQ TopicSender
@@ -506,6 +508,7 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
     psa_zmq_bounded_service_entry_t *bound = handle;
     pubsub_zmq_topic_sender_t *sender = bound->parent;
     bool monitor = sender->metricsEnabled;
+    L_WARN("trying to send to topic %s msgId %i", sender->topic, msgTypeId);
 
     psa_zmq_serializer_entry_t *serializer = pubsub_zmqAdmin_acquireSerializerForMessageId(sender->admin, sender->serializerType, msgTypeId);
 

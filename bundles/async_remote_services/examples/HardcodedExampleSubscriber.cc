@@ -37,6 +37,7 @@ struct ImportedHardcodedService final : public IHardcodedService {
     ImportedHardcodedService& operator=(ImportedHardcodedService&&) = delete;
 
     celix::Promise<int> add(int a, int b) noexcept final {
+        std::cout << "[ImportedHardcodedService] add" << std::endl;
         std::unique_lock l(_m);
         AddArgs args{_idCounter++, a, b, {}};
         _publisher->send(_publisher->handle, 1, &args, nullptr);
@@ -47,6 +48,7 @@ struct ImportedHardcodedService final : public IHardcodedService {
     }
 
     celix::Promise<int> subtract(int a, int b) noexcept final {
+        std::cout << "[ImportedHardcodedService] subtract" << std::endl;
         std::unique_lock l(_m);
         SubtractArgs args{_idCounter++, a, b, {}};
         _publisher->send(_publisher->handle, 2, &args, nullptr);
@@ -57,6 +59,7 @@ struct ImportedHardcodedService final : public IHardcodedService {
     }
 
     celix::Promise<std::string> toString(int a) noexcept final {
+        std::cout << "[ImportedHardcodedService] toString" << std::endl;
         std::unique_lock l(_m);
         ToStringArgs args{_idCounter++, a, {}};
         _publisher->send(_publisher->handle, 3, &args, nullptr);
@@ -67,10 +70,12 @@ struct ImportedHardcodedService final : public IHardcodedService {
     }
 
     void setPublisher(pubsub_publisher_t const * publisher, Properties&&) {
+        std::cout << "[ImportedHardcodedService] setPublisher" << std::endl;
         _publisher = publisher;
     }
 
     int receiveMessage(const char *, unsigned int msgTypeId, void *msg, const celix_properties_t *) {
+        std::cout << "[ImportedHardcodedService] receiveMessage" << std::endl;
         std::unique_lock l(_m);
         if(msgTypeId == 1) {
             auto response = static_cast<AddArgs*>(msg);
@@ -121,8 +126,9 @@ struct UsingHardcodedServiceService {
 
     void start() {
         std::cout << "[UsingHardcodedServiceService] start" << std::endl;
-        auto ret = _svc->add(14, 123).getValue();
-        std::cout << "[UsingHardcodedServiceService] " << ret << std::endl;
+        _svc->add(14, 123).thenAccept([](int val) {
+            std::cout << "[UsingHardcodedServiceService] " << val << std::endl;
+        });
     }
 
     void stop() {
@@ -142,7 +148,7 @@ public:
         _toStringSerializer.emplace(mng);
 
         mng->createComponent(std::make_unique<celix::async_rsa::DefaultImportedServiceFactory<IHardcodedService, ImportedHardcodedService>>(mng))
-            .addInterface<celix::async_rsa::IImportedServiceFactory>().build();
+            .addInterface<celix::async_rsa::IImportedServiceFactory>("1.0.0", Properties{{"service.exported.interfaces", "IHardcodedService"}}).build();
 
         auto &usingCmp = mng->createComponent<UsingHardcodedServiceService>()
                 .setCallbacks(nullptr, &UsingHardcodedServiceService::start, &UsingHardcodedServiceService::stop, nullptr);

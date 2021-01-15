@@ -29,9 +29,9 @@
 #include <pubsub_protocol.h>
 #include <ip_utils.h>
 #include <pubsub_matching.h>
+#include <pubsub_utils.h>
 #include <pubsub_message_serialization_service.h>
 
-#include "pubsub_utils.h"
 #include "pubsub_zmq_admin.h"
 #include "pubsub_psa_zmq_constants.h"
 #include "pubsub_zmq_topic_sender.h"
@@ -429,7 +429,7 @@ celix_status_t pubsub_zmqAdmin_matchPublisher(void *handle, long svcRequesterBnd
     pubsub_zmq_admin_t *psa = handle;
     L_DEBUG("[PSA_ZMQ] pubsub_zmqAdmin_matchPublisher");
     celix_status_t  status = CELIX_SUCCESS;
-    double score = pubsub_utils_matchPublisher(psa->ctx, svcRequesterBndId, svcFilter->filterStr, PUBSUB_ZMQ_ADMIN_TYPE,
+    double score = pubsubEndpoint_matchPublisher(psa->ctx, svcRequesterBndId, svcFilter->filterStr, PUBSUB_ZMQ_ADMIN_TYPE,
                                                 psa->qosSampleScore, psa->qosControlScore, psa->defaultScore, true, topicProperties, outSerializerSvcId, outProtocolSvcId);
     *outScore = score;
 
@@ -440,7 +440,7 @@ celix_status_t pubsub_zmqAdmin_matchSubscriber(void *handle, long svcProviderBnd
     pubsub_zmq_admin_t *psa = handle;
     L_DEBUG("[PSA_ZMQ] pubsub_zmqAdmin_matchSubscriber");
     celix_status_t  status = CELIX_SUCCESS;
-    double score = pubsub_utils_matchSubscriber(psa->ctx, svcProviderBndId, svcProperties, PUBSUB_ZMQ_ADMIN_TYPE,
+    double score = pubsubEndpoint_matchSubscriber(psa->ctx, svcProviderBndId, svcProperties, PUBSUB_ZMQ_ADMIN_TYPE,
             psa->qosSampleScore, psa->qosControlScore, psa->defaultScore, true, topicProperties, outSerializerSvcId, outProtocolSvcId);
     if (outScore != NULL) {
         *outScore = score;
@@ -452,7 +452,7 @@ celix_status_t pubsub_zmqAdmin_matchDiscoveredEndpoint(void *handle, const celix
     pubsub_zmq_admin_t *psa = handle;
     L_DEBUG("[PSA_ZMQ] pubsub_zmqAdmin_matchEndpoint");
     celix_status_t  status = CELIX_SUCCESS;
-    bool match = pubsub_utils_matchEndpoint(psa->ctx, psa->log, endpoint, PUBSUB_ZMQ_ADMIN_TYPE, true, NULL, NULL);
+    bool match = pubsubEndpoint_match(psa->ctx, psa->log, endpoint, PUBSUB_ZMQ_ADMIN_TYPE, true, NULL, NULL);
     if (outMatch != NULL) {
         *outMatch = match;
     }

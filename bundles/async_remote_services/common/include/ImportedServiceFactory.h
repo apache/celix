@@ -50,10 +50,10 @@ namespace celix::async_rsa {
             _cmps.clear();
         }
 
-        celix::dm::BaseComponent& create(std::shared_ptr<celix::dm::DependencyManager> &dm, celix::dm::Properties&& properties) final {
-            std::cout << "[DefaultImportedServiceFactory] create" << std::endl;
-            auto &cmp = dm->template createComponent<Implementation>()
-                .template addInterface<Interface>(std::string{Interface::VERSION}, std::forward<celix::dm::Properties>(properties));
+        celix::dm::BaseComponent& create(std::shared_ptr<celix::dm::DependencyManager> &dm, celix::dm::Properties&&) final {
+            std::cout << "[DefaultImportedServiceFactory] create topic " << Interface::NAME << std::endl;
+            auto &cmp = dm->template createComponent<Implementation>(std::string{Interface::NAME})
+                .template addInterface<Interface>(std::string{Interface::VERSION});
 
             cmp.template createCServiceDependency<pubsub_publisher_t>(PUBSUB_PUBLISHER_SERVICE_NAME)
                     .setVersionRange("[3.0.0,4)")
@@ -67,12 +67,17 @@ namespace celix::async_rsa {
 
             auto sub = std::make_unique<pubsub_subscriber_t>();
             sub->handle = &cmp.getInstance();
+            sub->init = [](void *) -> int {
+                return 0;
+            };
             sub->receive = [](void *handle, const char *msgType, unsigned int msgTypeId, void *msg, const celix_properties_t *metadata, bool *){ return static_cast<Implementation*>(handle)->receiveMessage(msgType, msgTypeId, msg, metadata); };
 
             auto *props = celix_properties_create();
             celix_properties_set(props, PUBSUB_SUBSCRIBER_TOPIC, Interface::NAME.data());
 
             celix_service_registration_options_t opts{};
+            opts.serviceName = PUBSUB_SUBSCRIBER_SERVICE_NAME;
+            opts.serviceVersion = PUBSUB_SUBSCRIBER_SERVICE_VERSION;
             opts.svc = sub.get();
             opts.properties = props;
 

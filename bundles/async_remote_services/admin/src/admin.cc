@@ -28,13 +28,16 @@ celix::async_rsa::AsyncAdmin::AsyncAdmin(std::shared_ptr<celix::dm::DependencyMa
 
 void celix::async_rsa::AsyncAdmin::addEndpoint(celix::async_rsa::IEndpoint *endpoint, Properties &&properties) {
     std::cout << "[AsyncAdmin] addEndpoint" << std::endl;
+    for(auto const &[key, value] : properties) {
+        std::cout << "[AsyncAdmin] addEndpoint " << key << ", " << value << std::endl;
+    }
     std::unique_lock l(_m);
     addEndpointInternal(endpoint, properties);
 }
 
 void celix::async_rsa::AsyncAdmin::removeEndpoint([[maybe_unused]] celix::async_rsa::IEndpoint *endpoint, [[maybe_unused]] Properties &&properties) {
     std::cout << "[AsyncAdmin] removeEndpoint" << std::endl;
-    auto interfaceIt = properties.find("objectClass");
+    auto interfaceIt = properties.find("service.exported.interfaces");
 
     if(interfaceIt == end(properties)) {
         return;
@@ -43,7 +46,7 @@ void celix::async_rsa::AsyncAdmin::removeEndpoint([[maybe_unused]] celix::async_
     std::unique_lock l(_m);
 
     _toBeCreatedImportedEndpoints.erase(std::remove_if(_toBeCreatedImportedEndpoints.begin(), _toBeCreatedImportedEndpoints.end(), [&interfaceIt](auto const &endpoint){
-        auto endpointInterfaceIt = endpoint.second.find("objectClass");
+        auto endpointInterfaceIt = endpoint.second.find("service.exported.interfaces");
         return endpointInterfaceIt != end(endpoint.second) && endpointInterfaceIt->second == interfaceIt->second;
     }), _toBeCreatedImportedEndpoints.end());
 
@@ -64,9 +67,14 @@ void celix::async_rsa::AsyncAdmin::removeEndpoint([[maybe_unused]] celix::async_
 
 void celix::async_rsa::AsyncAdmin::addImportedServiceFactory(celix::async_rsa::IImportedServiceFactory *factory, Properties &&properties) {
     std::cout << "[AsyncAdmin] addImportedServiceFactory" << std::endl;
-    auto interfaceIt = properties.find("objectClass");
+    auto interfaceIt = properties.find("service.exported.interfaces");
+
+    for(auto const &[key, value] : properties) {
+        std::cout << "[AsyncAdmin] addImportedServiceFactory " << key << ", " << value << std::endl;
+    }
 
     if(interfaceIt == end(properties)) {
+        std::cout << "[AsyncAdmin] addImportedServiceFactory no interface" << std::endl;
         return;
     }
 
@@ -75,13 +83,18 @@ void celix::async_rsa::AsyncAdmin::addImportedServiceFactory(celix::async_rsa::I
     auto existingFactory = _factories.find(interfaceIt->second);
 
     if(existingFactory != end(_factories)) {
+        std::cout << "[AsyncAdmin] addImportedServiceFactory factory already exists" << std::endl;
         return;
     }
 
     _factories.emplace(interfaceIt->second, factory);
 
     for(auto it = _toBeCreatedImportedEndpoints.begin(); it != _toBeCreatedImportedEndpoints.end(); ) {
-        auto interfaceToBeCreatedIt = it->second.find("objectClass");
+        auto interfaceToBeCreatedIt = it->second.find("service.exported.interfaces");
+
+        for(auto const &[key, value] : it->second) {
+            std::cout << "[AsyncAdmin] addImportedServiceFactory to be created endpoint " << key << ", " << value << std::endl;
+        }
 
         if(interfaceToBeCreatedIt == end(it->second) || interfaceToBeCreatedIt->second != interfaceIt->second) {
             it++;
@@ -95,7 +108,7 @@ void celix::async_rsa::AsyncAdmin::addImportedServiceFactory(celix::async_rsa::I
 void celix::async_rsa::AsyncAdmin::removeImportedServiceFactory([[maybe_unused]] celix::async_rsa::IImportedServiceFactory *factory, Properties &&properties) {
     std::cout << "[AsyncAdmin] removeImportedServiceFactory" << std::endl;
     std::unique_lock l(_m);
-    auto interfaceIt = properties.find("objectClass");
+    auto interfaceIt = properties.find("service.exported.interfaces");
 
     if(interfaceIt == end(properties)) {
         return;
@@ -106,22 +119,24 @@ void celix::async_rsa::AsyncAdmin::removeImportedServiceFactory([[maybe_unused]]
 
 void celix::async_rsa::AsyncAdmin::addEndpointInternal(celix::async_rsa::IEndpoint *endpoint, Properties &properties) {
     std::cout << "[AsyncAdmin] addEndpointInternal" << std::endl;
-    auto interfaceIt = properties.find("objectClass");
+    auto interfaceIt = properties.find("service.exported.interfaces");
 
     if(interfaceIt == end(properties)) {
+        std::cout << "[AsyncAdmin] addEndpointInternal no interface" << std::endl;
         return;
     }
 
     auto svcId = properties.find(OSGI_FRAMEWORK_SERVICE_ID);
 
     if(svcId == end(properties)) {
+        std::cout << "[AsyncAdmin] addEndpointInternal no svcid" << std::endl;
         return;
     }
 
     if(_subscribers.find(interfaceIt->second) == end(_subscribers)) {
         auto newSub = _subscribers.emplace(interfaceIt->second, std::make_pair(pubsub_subscriber_t{}, std::make_unique<subscriber_handle>(0, this, interfaceIt->second)));
         celix_properties_t *props = celix_properties_create();
-        celix_properties_set(props, PUBSUB_SUBSCRIBER_TOPIC, std::string("async_rsa_ping" + interfaceIt->second).c_str());
+        celix_properties_set(props, PUBSUB_SUBSCRIBER_TOPIC, std::string("async_rsa_ping." + interfaceIt->second).c_str());
         newSub.first->second.first.handle = newSub.first->second.second.get();
         newSub.first->second.first.receive = [](void *handle, const char *msgType, unsigned int msgId, void *msg, const celix_properties_t *metadata, bool *) -> int {
             auto subHandle = static_cast<subscriber_handle*>(handle);
@@ -133,11 +148,13 @@ void celix::async_rsa::AsyncAdmin::addEndpointInternal(celix::async_rsa::IEndpoi
     auto existingFactory = _factories.find(interfaceIt->second);
 
     if(existingFactory == end(_factories)) {
+        std::cout << "[AsyncAdmin] addEndpointInternal delaying creation" << std::endl;
         _toBeCreatedImportedEndpoints.emplace_back(std::make_pair(endpoint, properties));
         return;
     }
 
     // TODO remove copy of Properties
+    std::cout << "[AsyncAdmin] addEndpointInternal created service" << std::endl;
     _serviceInstances.emplace(std::stol(svcId->second), existingFactory->second->create(_mng, Properties{properties}));
 }
 

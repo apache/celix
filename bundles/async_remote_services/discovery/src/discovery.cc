@@ -36,12 +36,11 @@ celix::async_rsa::StaticDiscovery::StaticDiscovery(std::shared_ptr<celix::dm::De
 
 void celix::async_rsa::StaticDiscovery::readImportedEndpointsFromFile(std::string_view) {
     std::cout << "[StaticDiscovery] readImportedEndpointsFromFile" << std::endl;
-    _endpoints.emplace_back(&_mng->createComponent<StaticEndpoint>().addInterface<IEndpoint>("1.0.0"/*, celix::dm::Properties{
+    _endpoints.emplace_back(&_mng->createComponent<StaticEndpoint>().addInterface<IEndpoint>("1.0.0", celix::dm::Properties{
             {"service.imported", "*"},
-            {"objectClass", "IHardcodedExample"},
-            {"service.exported.interfaces", "IHardcodedExample"},
+            {"service.exported.interfaces", "IHardcodedService"},
             {"endpoint.id", "1"},
-    }*/).build().getInstance());
+    }).build().getInstance());
 }
 
 void celix::async_rsa::StaticDiscovery::addExportedEndpoint([[maybe_unused]] celix::async_rsa::IEndpoint *endpoint) {
