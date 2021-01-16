@@ -16,13 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * celix_launcher.c
- *
- *  \date       Mar 23, 2010
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
+
 
 #include "celix_launcher.h"
 
@@ -143,7 +137,7 @@ int celixLauncher_launch(const char *configFile, framework_pt *framework) {
 
 static int celixLauncher_launchWithConfigAndProps(const char *configFile, framework_pt *framework, properties_pt packedConfig) {
 	if (packedConfig == NULL) {
-		packedConfig = properties_create();
+		packedConfig = celix_properties_create();
 	}
 
 	FILE *config = fopen(configFile, "r");
@@ -161,7 +155,7 @@ static int celixLauncher_launchWithConfigAndProps(const char *configFile, framew
 int celixLauncher_launchWithProperties(properties_pt config, framework_pt *framework) {
 	celix_status_t status;
 	if (config == NULL) {
-		config = properties_create();
+		config = celix_properties_create();
 	}
 #ifndef CELIX_NO_CURLINIT
 	// Before doing anything else, let's setup Curl

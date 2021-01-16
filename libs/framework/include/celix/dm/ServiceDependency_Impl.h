@@ -34,18 +34,24 @@ inline void BaseServiceDependency::runBuild() {
     if (!alreadyAdded) {
         celix_dmComponent_addServiceDependency(cCmp, cServiceDep);
     }
-    auto* ctx = celix_dmComponent_getBundleContext(cCmp);
-    if (ctx != nullptr) {
+}
+
+inline void BaseServiceDependency::wait() const {
+    if (cCmp) {
+        auto* ctx = celix_dmComponent_getBundleContext(cCmp);
         auto* fw = celix_bundleContext_getFramework(ctx);
         if (!celix_framework_isCurrentThreadTheEventLoop(fw)) {
             celix_framework_waitForEmptyEventQueue(fw);
+        } else {
+            celix_bundleContext_log(ctx, CELIX_LOG_LEVEL_ERROR,
+                                    "Cannot wait for empty Celix event queue of the Celix event queue thread!");
         }
     }
 }
 
 inline BaseServiceDependency::~BaseServiceDependency() noexcept {
     if (!depAddedToCmp) {
-        celix_dmServiceDependency_destroyAsync(cServiceDep, nullptr, nullptr);
+        celix_dmServiceDependency_destroy(cServiceDep);
     }
 }
 
@@ -240,6 +246,13 @@ int CServiceDependency<T,I>::invokeCallback(std::function<void(const I*, Propert
 
 template<class T, class I>
 CServiceDependency<T,I>& CServiceDependency<T,I>::build() {
+    this->runBuild();
+    this->wait();
+    return *this;
+}
+
+template<class T, class I>
+CServiceDependency<T,I>& CServiceDependency<T,I>::buildAsync() {
     this->runBuild();
     return *this;
 }
@@ -481,6 +494,13 @@ void ServiceDependency<T,I>::setupCallbacks() {
 
 template<class T, class I>
 ServiceDependency<T,I>& ServiceDependency<T,I>::build() {
+    this->runBuild();
+    this->wait();
+    return *this;
+}
+
+template<class T, class I>
+ServiceDependency<T,I>& ServiceDependency<T,I>::buildAsync() {
     this->runBuild();
     return *this;
 }

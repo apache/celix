@@ -86,6 +86,19 @@ namespace celix { namespace dm {
          */
         celix_dm_service_dependency_t *cServiceDependency() const { return cServiceDep; }
 
+        /**
+         * Wait for an empty Celix event queue.
+         * Should not be called on the Celix event queue thread.
+         *
+         * Can be used to ensure that the service dependency is completely processed (service trackers are created).
+         */
+        void wait() const;
+
+        /**
+         * Run the service dependency build. After this call the service dependency is added to the component and
+         * is enabled.
+         * The underlining service tracker will be created async.
+         */
         void runBuild();
     };
 
@@ -207,10 +220,20 @@ namespace celix { namespace dm {
 
         /**
          * "Build" the service dependency.
-         * A service dependency added to an active component will only become active if the build is called
-         * @return
+         * When build the service dependency is active and the service tracker is created.
+         *
+         * Should not be called on the Celix event thread.
          */
         CServiceDependency<T,I>& build();
+
+        /**
+         * Same a build, but will not wait till the underlining service tracker is created.
+         * Can be called on the Celix event thread.
+         */
+        CServiceDependency<T,I>& buildAsync();
+
+
+
     private:
         std::string name {};
         std::string filter {};
@@ -330,13 +353,18 @@ namespace celix { namespace dm {
 
 
         /**
-         * Build the service dependency.
+         * "Build" the service dependency.
+         * When build the service dependency is active and the service tracker is created.
          *
-         * When building the service dependency will make will enabled service dependency.
-         * If this is done on a already build component, this will result in an additional service dependency for the
-         * component.
+         * Should not be called on the Celix event thread.
          */
         ServiceDependency<T,I>& build();
+
+        /**
+         * Same a build, but will not wait till the underlining service tracker is created.
+         * Can be called on the Celix event thread.
+         */
+        ServiceDependency<T,I>& buildAsync();
     private:
         bool addCxxLanguageFilter {true};
         std::string name {};

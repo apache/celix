@@ -49,16 +49,13 @@ inline void BaseComponent::runBuild() {
     if (!alreadyAdded) {
         celix_dependencyManager_add(cDepMan, cCmp);
     }
-
-    if (context) {
-        auto *fw = celix_bundleContext_getFramework(context);
-        if (!celix_framework_isCurrentThreadTheEventLoop(fw)) {
-            celix_framework_waitForEmptyEventQueue(fw);
-        }
-    }
 }
 
 inline BaseComponent::~BaseComponent() noexcept = default;
+
+inline void BaseComponent::wait() const {
+    celix_dependencyManager_wait(cDepMan);
+}
 
 template<class T>
 Component<T>::Component(celix_bundle_context_t *context, celix_dependency_manager_t* cDepMan, std::string name, std::string uuid) : BaseComponent(context, cDepMan, std::move(name), std::move(uuid)) {}
@@ -362,6 +359,13 @@ Component<T>& Component<T>::removeCallbacks() {
 template<typename T>
 Component<T>& Component<T>::build() {
     runBuild();
+    return *this;
+}
+
+template<typename T>
+Component<T>& Component<T>::buildAsync() {
+    runBuild();
+    wait();
     return *this;
 }
 

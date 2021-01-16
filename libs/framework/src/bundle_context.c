@@ -23,6 +23,7 @@
 #include <utils.h>
 #include <assert.h>
 #include <unistd.h>
+#include <stdarg.h>
 
 #include "celix_utils.h"
 #include "celix_constants.h"
@@ -63,7 +64,7 @@ celix_status_t bundleContext_create(framework_pt framework, celix_framework_logg
 
             celixThreadMutex_create(&context->mutex, NULL);
 
-            arrayList_create(&context->svcRegistrations);
+            context->svcRegistrations = celix_arrayList_create();
             context->bundleTrackers = hashMap_create(NULL,NULL,NULL,NULL);
             context->serviceTrackers = hashMap_create(NULL,NULL,NULL,NULL);
             context->metaTrackers =  hashMap_create(NULL,NULL,NULL,NULL);
@@ -696,7 +697,7 @@ static long celix_bundleContext_trackBundlesWithOptionsInternal(
     celixThreadMutex_unlock(&ctx->mutex);
 
     if (!async) { //note only using the async callback if this is a async call.
-        entry->opts.callbackHandle = NULL;
+        entry->opts.trackerCreatedCallback = NULL;
     }
     long id = celix_framework_fireGenericEvent(
             ctx->framework,
@@ -867,11 +868,8 @@ static void bundleContext_cleanupServiceRegistration(bundle_context_t* ctx) {
 
     celixThreadMutex_lock(&ctx->mutex);
     for (int i = 0; i < celix_arrayList_size(ctx->svcRegistrations); ++i) {
-        service_registration_pt reg = celix_arrayList_get(ctx->svcRegistrations, i);
-        long svcId = serviceRegistration_getServiceId(reg);
-        const char* svcName = NULL;
-        serviceRegistration_getServiceName(reg, &svcName);
-        fw_log(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, "Dangling service registration with svcId %li, for bundle %s and with service name %s. Add missing 'celix_bundleContext_unregisterService' calls.", svcId, symbolicName, svcName);
+        long svcId = celix_arrayList_getLong(ctx->svcRegistrations, i);
+        fw_log(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, "Dangling service registration with svcId %li, for bundle %s. Add missing 'celix_bundleContext_unregisterService' calls.", svcId, symbolicName);
         if (danglingSvcIds == NULL) {
             danglingSvcIds = celix_arrayList_create();
         }
@@ -882,7 +880,7 @@ static void bundleContext_cleanupServiceRegistration(bundle_context_t* ctx) {
     if (danglingSvcIds != NULL) {
         for (int i = 0; i < celix_arrayList_size(danglingSvcIds); ++i) {
             long svcId = celix_arrayList_getLong(danglingSvcIds, i);
-            celix_bundleContext_unregisterService(ctx, svcId);
+            celix_framework_unregister(ctx->framework, ctx->bundle, svcId);
         }
         celix_arrayList_destroy(danglingSvcIds);
     }
@@ -1580,7 +1578,7 @@ long celix_bundleContext_trackServiceTrackersInternal(
         celixThreadMutex_unlock(&ctx->mutex);
         return trkId;
     } else {
-        framework_log(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__, "Error registering service listener hook for service tracker tracker\n");
+        celix_framework_log(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__, "Error registering service listener hook for service tracker tracker\n");
         free(entry);
         return -1L;
     }
@@ -1624,6 +1622,18 @@ celix_framework_t* celix_bundleContext_getFramework(const celix_bundle_context_t
         fw = ctx->framework;
     }
     return fw;
+}
+
+void celix_bundleContext_log(const celix_bundle_context_t* ctx, celix_log_level_e level, const char* format, ...) {
+    va_list args;
+    va_start(args, format);
+    celix_logUtils_vLog(ctx, level, format, args);
+    va_end(args);
+}
+
+
+void celix_logUtils_vLog(const celix_bundle_context_t* ctx, celix_log_level_e level, const char* format, va_list formatArgs) {
+    celix_framework_vlog(ctx->framework->logger, level, NULL, NULL, -1,  format, formatArgs);
 }
 
 

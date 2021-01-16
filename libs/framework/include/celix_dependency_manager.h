@@ -47,7 +47,9 @@ celix_status_t celix_dependencyManager_remove(celix_dependency_manager_t *manage
 celix_status_t celix_dependencyManager_removeWithoutDestroy(celix_dependency_manager_t *manager, celix_dm_component_t *component);
 
 /**
- * Removes all DM components from the dependency manager
+ * Removes all DM components from the dependency manager.
+ *
+ * This function cannot be called on the Celix event thread.
  */
 celix_status_t celix_dependencyManager_removeAllComponents(celix_dependency_manager_t *manager);
 
@@ -100,6 +102,15 @@ bool celix_dependencyManager_allComponentsActive(celix_dependency_manager_t *man
  * Return the nr of components for this dependency manager
  */
 size_t celix_dependencyManager_nrOfComponents(celix_dependency_manager_t *manager);
+
+/**
+ * Wait for an empty Celix event queue.
+ * Should not be called on the Celix event queue thread.
+ *
+ * Can be used to ensure that all created/updated components are completely processed (services registered
+ * and/or service trackers are created).
+ */
+void celix_dependencyManager_wait(celix_dependency_manager_t* manager);
 
 #ifdef __cplusplus
 }

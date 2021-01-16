@@ -90,10 +90,6 @@ bool celix_dmServiceDependency_isAvailable(celix_dm_service_dependency_t *depend
 bool celix_dmServiceDependency_isRequired(const celix_dm_service_dependency_t* dependency);
 bool celix_dmServiceDependency_isTrackerOpen(celix_dm_service_dependency_t* dependency);
 
-
-bool celix_dmServiceDependency_filterOutOwnSvcDependencies(celix_dm_service_dependency_t* dependency);
-void celix_dmServiceDependency_setFilterOutOwnSvcDependencies(celix_dm_service_dependency_t* dependency, bool filterOut);
-
 #ifdef __cplusplus
 }
 #endif

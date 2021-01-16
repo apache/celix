@@ -205,6 +205,16 @@ size_t celix_dependencyManager_nrOfComponents(celix_dependency_manager_t *mng) {
     return nr;
 }
 
+void celix_dependencyManager_wait(celix_dependency_manager_t *mng) {
+    celix_framework_t *fw = celix_bundleContext_getFramework(mng->ctx);
+    if (!celix_framework_isCurrentThreadTheEventLoop(fw)) {
+        celix_framework_waitForEmptyEventQueue(fw);
+    } else {
+        celix_bundleContext_log(mng->ctx, CELIX_LOG_LEVEL_ERROR,
+                                "Cannot wait for empty Celix event queue of the Celix event queue thread!");
+    }
+}
+
 bool celix_dependencyManager_areComponentsActive(celix_dependency_manager_t *mng) {
     bool allActive = true;
     celixThreadMutex_lock(&mng->mutex);

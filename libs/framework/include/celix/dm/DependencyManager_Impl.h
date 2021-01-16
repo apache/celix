@@ -74,6 +74,10 @@ inline void DependencyManager::build() {
     wait();
 }
 
+inline void DependencyManager::buildAsync() {
+    build();
+}
+
 template<typename T>
 void DependencyManager::destroyComponent(Component<T> &component) {
     for (auto it = components.begin(); it != components.end(); ++it) {
@@ -83,21 +87,14 @@ void DependencyManager::destroyComponent(Component<T> &component) {
             break;
         }
     }
-    wait();
 }
 
 inline void DependencyManager::clear() {
     components.clear();
-    wait();
 }
 
 inline void DependencyManager::wait() const {
-    if (context) {
-        auto *fw = celix_bundleContext_getFramework(context.get());
-        if (!celix_framework_isCurrentThreadTheEventLoop(fw)) {
-            celix_framework_waitForEmptyEventQueue(fw);
-        }
-    }
+    celix_dependencyManager_wait(cDepMan.get());
 }
 
 inline void DependencyManager::stop() {

@@ -157,7 +157,7 @@ FRAMEWORK_EXPORT celix_status_t fw_uninstallBundle(framework_pt framework, bundl
 
 FRAMEWORK_EXPORT celix_status_t framework_getBundleEntry(framework_pt framework, const_bundle_pt bundle, const char* name, char** entry);
 
-FRAMEWORK_EXPORT celix_status_t fw_startBundle(framework_pt framework, long bndId, int options);
+FRAMEWORK_EXPORT celix_status_t fw_startBundle(framework_pt framework, long bndId);
 FRAMEWORK_EXPORT celix_status_t framework_updateBundle(framework_pt framework, bundle_pt bundle, const char* inputFile);
 FRAMEWORK_EXPORT celix_status_t fw_stopBundle(framework_pt framework, long bndId, bool record);
 

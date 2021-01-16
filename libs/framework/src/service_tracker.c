@@ -594,7 +594,7 @@ static celix_status_t serviceTracker_invokeRemovingService(service_tracker_t *tr
     }
 
     if (!ungetSuccess) {
-        framework_log(tracker->context->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__, "Error ungetting service");
+        celix_framework_log(tracker->context->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__, "Error ungetting service");
         status = CELIX_BUNDLE_EXCEPTION;
     }
 
@@ -661,7 +661,7 @@ celix_service_tracker_t* celix_serviceTracker_createWithOptions(
             tracker->filter = celix_serviceRegistry_createFilterFor(ctx->framework->registry, opts->filter.serviceName, opts->filter.versionRange, opts->filter.filter, opts->filter.serviceLanguage, opts->filter.ignoreServiceLanguage);
 
             if (tracker->filter == NULL) {
-                framework_log(tracker->context->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__,
+                celix_framework_log(tracker->context->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__,
                               "Error cannot create filter.");
                 free(tracker->serviceName);
                 free(tracker);
@@ -671,7 +671,7 @@ celix_service_tracker_t* celix_serviceTracker_createWithOptions(
             serviceTracker_open(tracker);
         }
     } else {
-        framework_log(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__, "Error incorrect arguments. Required context (%p) or opts (%p) is NULL", ctx, opts);
+        celix_framework_log(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__, "Error incorrect arguments. Required context (%p) or opts (%p) is NULL", ctx, opts);
     }
     return tracker;
 }

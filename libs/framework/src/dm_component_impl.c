@@ -108,7 +108,7 @@ celix_dm_component_t* celix_dmComponent_createWithUUID(bundle_context_t *context
             genRandomUUID = false;
         } else {
             //parsing went wrong
-            fw_log(context->framework->logger, CELIX_LOG_LEVEL_WARNING,
+            celix_bundleContext_log(component->context, CELIX_LOG_LEVEL_WARNING,
                    "Cannot parse provided uuid '%s'. Not a valid UUID?. UUID will be generated", uuidIn);
         }
     }
@@ -156,29 +156,11 @@ void component_destroy(celix_dm_component_t *component) {
     celix_dmComponent_destroy(component);
 }
 
-//static void celix_dmComponent_waitForNoAddRemOrSetDependencyInProgress(celix_dm_component_t* component, bool lockOnMutex) {
-//    if (lockOnMutex) {
-//        celixThreadMutex_lock(&component->mutex);
-//    }
-//    struct timespec start = celix_gettime(CLOCK_MONOTONIC);
-//    while (component->nrOfSvcDepependenciesInProgress > 0) {
-//        celixThreadCondition_timedwaitRelative(&component->cond, &component->mutex, 1, 0);
-//        struct timespec now = celix_gettime(CLOCK_MONOTONIC);
-//        if (celix_difftime(&start, &now) > 5) {
-//            start = celix_gettime(CLOCK_MONOTONIC);
-//            fw_log(component->context->framework->logger, CELIX_LOG_LEVEL_WARNING, "Add, remove or set dependency call still in progress or a stop service tracker is still in progress for component %s (uuid=%s)", component->name, component->uuid);
-//        }
-//    }
-//    if (lockOnMutex) {
-//        celixThreadMutex_unlock(&component->mutex);
-//    }
-//}
-
 void celix_dmComponent_destroy(celix_dm_component_t *component) {
     if (component != NULL) {
         celix_dmComponent_destroyAsync(component, NULL, NULL);
         if (celix_framework_isCurrentThreadTheEventLoop(component->context->framework)) {
-            fw_log(component->context->framework->logger, CELIX_LOG_LEVEL_ERROR,
+            celix_bundleContext_log(component->context, CELIX_LOG_LEVEL_ERROR,
                    "Cannot synchonized destroy dm component on Celix event thread. Use celix_dmComponent_destroyAsync instead!");
         } else {
             //TODO use done callback to sync (note that eventid is not enough, because another destroy event can be created.
@@ -211,13 +193,13 @@ static void celix_dmComponent_destroyCallback(void *voidData) {
 
         for (int i = 0; i < celix_arrayList_size(component->dependencies); ++i) {
             celix_dm_service_dependency_t *dep = celix_arrayList_get(component->dependencies, i);
-            celix_dmServiceDependency_free(dep);
+            celix_dmServiceDependency_destroy(dep);
         }
         celix_arrayList_destroy(component->dependencies);
 
         for (int i = 0; i < celix_arrayList_size(component->removedDependencies); ++i) {
             celix_dm_service_dependency_t *dep = celix_arrayList_get(component->removedDependencies, i);
-            celix_dmServiceDependency_free(dep);
+            celix_dmServiceDependency_destroy(dep);
         }
         celix_arrayList_destroy(component->removedDependencies);
 
@@ -265,22 +247,6 @@ const char* celix_dmComponent_getUUID(celix_dm_component_t* cmp) {
     return cmp->uuid;
 }
 
-////call with lock
-//static void celix_dmComponent_updateFilterOutOwnSvcDependencies(celix_dm_component_t* component) {
-//    for (int i = 0; i < celix_arrayList_size(component->dependencies); ++i) {
-//        celix_dm_service_dependency_t* dep = celix_arrayList_get(component->dependencies, i);
-//        bool filterOut = false;
-//        for (int k = 0; k < celix_arrayList_size(component->providedInterfaces); ++k) {
-//            dm_interface_t* intf = celix_arrayList_get(component->providedInterfaces, k);
-//            if (celix_utils_stringEquals(intf->serviceName, dep->serviceName)) {
-//                filterOut = true;
-//                break;
-//            }
-//        }
-//        celix_dmServiceDependency_setFilterOutOwnSvcDependencies(dep, filterOut);
-//    }
-//}
-
 celix_status_t component_addServiceDependency(celix_dm_component_t *component, celix_dm_service_dependency_t *dep) {
     return celix_dmComponent_addServiceDependency(component, dep);
 }
@@ -306,14 +272,12 @@ celix_status_t celix_dmComponent_addServiceDependency(celix_dm_component_t *comp
 celix_status_t celix_dmComponent_removeServiceDependency(celix_dm_component_t *component, celix_dm_service_dependency_t *dep) {
 
     celixThreadMutex_lock(&component->mutex);
-    //celix_dmComponent_waitForNoAddRemOrSetDependencyInProgress(component, false);
     celix_arrayList_remove(component->dependencies, dep);
     bool disableDependency = component->state != DM_CMP_STATE_INACTIVE;
     if (disableDependency) {
         celix_dmServiceDependency_disable(dep);
     }
     celix_arrayList_add(component->removedDependencies, dep);
-    //celix_dmComponent_updateFilterOutOwnSvcDependencies(component);
     celix_dmComponent_cleanupRemovedDependencies(component);
     celixThreadMutex_unlock(&component->mutex);
 
@@ -542,7 +506,7 @@ static celix_status_t celix_dmComponent_suspend(celix_dm_component_t *component,
 	celix_status_t status = CELIX_SUCCESS;
 	dm_service_dependency_strategy_t strategy = celix_dmServiceDependency_getStrategy(dependency);
 	if (strategy == DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND &&  component->callbackStop != NULL) {
-        fw_log(component->context->framework->logger, CELIX_LOG_LEVEL_TRACE,
+        celix_bundleContext_log(component->context, CELIX_LOG_LEVEL_TRACE,
                "Suspending component %s (uuid=%s)",
                component->name,
                component->uuid);
@@ -556,7 +520,7 @@ static celix_status_t celix_dmComponent_resume(celix_dm_component_t *component, 
 	celix_status_t status = CELIX_SUCCESS;
     dm_service_dependency_strategy_t strategy = celix_dmServiceDependency_getStrategy(dependency);
 	if (strategy == DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND &&  component->callbackStop != NULL) {
-        fw_log(component->context->framework->logger, CELIX_LOG_LEVEL_TRACE,
+        celix_bundleContext_log(component->context, CELIX_LOG_LEVEL_TRACE,
                "Resuming component %s (uuid=%s)",
                component->name,
                component->uuid);
@@ -584,7 +548,7 @@ static celix_status_t celix_dmComponent_handleEvent(celix_dm_component_t *compon
     if (needSuspend) {
         celix_dmComponent_suspend(component, event->dep);
     }
-    fw_log(component->context->framework->logger, CELIX_LOG_LEVEL_TRACE,
+    celix_bundleContext_log(component->context, CELIX_LOG_LEVEL_TRACE,
         "Calling %s service for component %s (uuid=%s) on service dependency with type %s",
         invokeName,
         component->name,
@@ -764,7 +728,7 @@ static celix_status_t celix_dmComponent_performTransition(celix_dm_component_t *
         return CELIX_SUCCESS;
     }
 
-    fw_log(component->context->framework->logger,
+    celix_bundleContext_log(component->context,
            CELIX_LOG_LEVEL_TRACE,
            "performing transition for component '%s' (uuid=%s) from state %s to state %s",
            component->name,
@@ -841,7 +805,7 @@ static celix_status_t celix_dmComponent_registerServices(celix_dm_component_t *c
             opts.svc = (void*)interface->service;
             opts.serviceName = interface->serviceName;
             opts.serviceLanguage = celix_properties_get(regProps, CELIX_FRAMEWORK_SERVICE_LANGUAGE, NULL);
-            fw_log(component->context->framework->logger, CELIX_LOG_LEVEL_TRACE,
+            celix_bundleContext_log(component->context, CELIX_LOG_LEVEL_TRACE,
                    "Async registering service %s for component %s (uuid=%s)",
                    interface->serviceName,
                    component->name,
@@ -870,7 +834,7 @@ static celix_status_t celix_dmComponent_unregisterServices(celix_dm_component_t 
 	    }
 	    celix_arrayList_addLong(ids, interface->svcId);
 	    interface->svcId = -1L;
-        fw_log(component->context->framework->logger, CELIX_LOG_LEVEL_TRACE,
+        celix_bundleContext_log(component->context, CELIX_LOG_LEVEL_TRACE,
                "Unregistering service %s for component %s (uuid=%s)",
                interface->serviceName,
                component->name,

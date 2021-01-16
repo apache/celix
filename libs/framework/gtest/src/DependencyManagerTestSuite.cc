@@ -170,7 +170,7 @@ class Cmp1 : public TestService {
 class Cmp2 : public TestService {
 public:
     explicit Cmp2(const std::string& name) {
-        std::cout << "usage arg: " << name;
+        std::cout << "usage arg: " << name << std::endl;
     }
 };
 
@@ -213,6 +213,7 @@ TEST_F(DependencyManagerTestSuite, AddSvcProvideAfterBuild) {
     EXPECT_GT(svcId, -1); //(re)build -> found
 
     dm.clear();
+    dm.wait();
     EXPECT_EQ(0, dm.getNrOfComponents()); //dm cleared so no components
     svcId = celix_bundleContext_findService(ctx, "TestService");
     EXPECT_EQ(svcId, -1); //cleared -> not found
@@ -237,6 +238,7 @@ TEST_F(DependencyManagerTestSuite, BuildSvcProvide) {
 
     cmp.build();
     cmp.build(); //should be ok to call twice
+    dm.wait();
     svcId = celix_bundleContext_findService(ctx, "CTestService");
     EXPECT_GT(svcId, -1); //(re)build -> found
 
@@ -257,6 +259,7 @@ TEST_F(DependencyManagerTestSuite, BuildSvcProvide) {
     EXPECT_GT(svcId, -1); //found, so properties present
 
     dm.clear();
+    dm.wait();
     EXPECT_EQ(0, dm.getNrOfComponents()); //dm cleared so no components
     svcId = celix_bundleContext_findService(ctx, "CTestService");
     EXPECT_EQ(svcId, -1); //cleared -> not found

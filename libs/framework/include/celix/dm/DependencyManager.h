@@ -91,13 +91,25 @@ namespace celix { namespace dm {
          *
          * When building the dependency manager all created components are build.
          * A build is needed to to enable the components.
-         * This is not done automatically so that user can firs construct component with their provided
+         * This is not done automatically so that user can first construct component with their provided
          * service and service dependencies and when to components are complete call the build.
          *
          * If a component is updated after the dependency manager build is called, an new build call will result in
          * that the changes to the component are enabled.
+         *
+         * Note that the after this call the components will be created and if the components can be started, they
+         * will be started and the services will be registered.
+         *
+         * Should not be called from the Celix event  thread.
          */
         void build();
+
+        /**
+         * Same as build, but this call will not wait until all service registrations and tracker are created on the
+         * Celix event thread.
+         * Can also be called on the Celix event thread.
+         */
+         void buildAsync();
 
         /**
         * Starts the Dependency Manager
@@ -105,6 +117,14 @@ namespace celix { namespace dm {
         */
         void start();
 
+        /**
+         * Wait for an empty Celix event queue.
+         * Should not be called on the Celix event queue thread.
+         *
+         * Can be used to ensure that all created/updated components are completely processed (services registered
+         * and/or service trackers are created).
+         */
+        void wait() const;
 
         /**
          * Removes a component from the  Dependency Manager and destroys it
@@ -140,12 +160,6 @@ namespace celix { namespace dm {
     private:
         template<class T>
         Component<T>& createComponentInternal(std::string name, std::string uuid);
-
-        /**
-         * Wait until current Celix event queue is empty.
-         * Note: will just return if the current thread is the Celix event thread
-         */
-        void wait() const;
 
         std::shared_ptr<celix_bundle_context_t> context;
         std::shared_ptr<celix_dependency_manager_t> cDepMan;

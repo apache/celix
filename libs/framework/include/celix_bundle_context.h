@@ -1161,6 +1161,21 @@ celix_bundle_t* celix_bundleContext_getBundle(const celix_bundle_context_t *ctx)
 celix_framework_t* celix_bundleContext_getFramework(const celix_bundle_context_t* ctx);
 
 /**
+ * Logs a message to Celix framework logger with the provided log level.
+ * @param ctx       The bundle context
+ * @param level     The log level to use
+ * @param format    printf style format string
+ * @param ...       printf style format arguments
+ */
+void celix_bundleContext_log(const celix_bundle_context_t* ctx, celix_log_level_e level, const char* format, ...);
+
+/**
+ * Logs a message to Celix framework logger with the provided log level.
+ */
+void celix_logUtils_vLog(const celix_bundle_context_t* ctx, celix_log_level_e level, const char* format, va_list formatArgs);
+
+
+/**
  * Gets the config property - or environment variable if the config property does not exist - for the provided name.
  * @param key The key of the property to receive.
  * @param defaultVal The default value to use if the property is not found (can be NULL).
@@ -1198,7 +1213,7 @@ double celix_bundleContext_getPropertyAsDouble(celix_bundle_context_t *ctx, cons
  */
 bool celix_bundleContext_getPropertyAsBool(celix_bundle_context_t *ctx, const char *key, bool defaultValue);
 
-//TODO getPropertyAs for int, uint, ulong, bool, etc
+
 
 #undef OPTS_INIT
 

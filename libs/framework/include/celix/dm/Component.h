@@ -56,16 +56,30 @@ namespace celix { namespace dm {
             return cmpUUID;
         }
 
+        /**
+         * Wait for an empty Celix event queue.
+         * Should not be called on the Celix event queue thread.
+         *
+         * Can be used to ensure that all created/updated components are completely processed (services registered
+         * and/or service trackers are created).
+         */
+        void wait() const;
+
+        /**
+         * Run the dm component build. After this call the component is added to the dependency manager and
+         * is enabled.
+         * The underlining service registration and service tracker will be registered/created async.
+         */
         void runBuild();
     protected:
+
         std::vector<std::shared_ptr<BaseServiceDependency>> dependencies{};
         std::vector<std::shared_ptr<BaseProvidedService>> providedServices{};
-
+        std::string cmpUUID{};
+        std::atomic<bool> cmpAddedToDepMan{false};
         celix_bundle_context_t* context;
         celix_dependency_manager_t* cDepMan;
         celix_dm_component_t *cCmp;
-        std::string cmpUUID{};
-        std::atomic<bool> cmpAddedToDepMan{false};
     };
 
 
@@ -279,10 +293,19 @@ namespace celix { namespace dm {
          * This is not done automatically so that user can first construct component with their provided
          * service and service dependencies.
          *
-         * If a component is updated after the component build is called, an new build call will result in
-         * that the changes to the component are enabled.
+         * Note that the after this call the component will be created and if the component can be started, it
+         * will be started and the services will be registered.
+         *
+         * Should not be called from the Celix event  thread.
          */
          Component<T>& build();
+
+        /**
+         * Same as build, but this call will not wait until all service registrations and tracker are created on the
+         * Celix event thread.
+         * Can also be called on the Celix event thread.
+         */
+        Component<T>& buildAsync();
     };
 }}
 

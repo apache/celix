@@ -62,7 +62,10 @@ celix_status_t serviceDependency_create(celix_dm_service_dependency_t **dep) CEL
 
 /**
  * Destroys a service dependency.
- * Caller has ownership.
+ * Will normally be done the by the DM Component.
+ *
+ * Can only be called if the serviceDependency is disabled (note that a service dependency not added to a
+ * component is disabled).
  */
 celix_status_t serviceDependency_destroy(celix_dm_service_dependency_t **dep) CELIX_DEPRECATED_ATTR;
 
