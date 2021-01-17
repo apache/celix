@@ -36,6 +36,7 @@ namespace celix { namespace dm {
             this->cCmp = celix_dmComponent_createWithUUID(this->context, name.c_str(), uuid.empty() ? nullptr : uuid.c_str());
             celix_dmComponent_setImplementation(this->cCmp, this);
             cmpUUID = std::string{celix_dmComponent_getUUID(this->cCmp)};
+            cmpName = std::string{celix_dmComponent_getName(this->cCmp)};
         }
         virtual ~BaseComponent() noexcept;
 
@@ -52,8 +53,18 @@ namespace celix { namespace dm {
          */
         celix_bundle_context_t* bundleContext() const { return this->context; }
 
+        /**
+         * Returns the cmp uuid.
+         */
         const std::string& getUUID() const {
             return cmpUUID;
+        }
+
+        /**
+         * Returns the cmp name.
+         */
+        const std::string& getName() const {
+            return cmpName;
         }
 
         /**
@@ -72,14 +83,17 @@ namespace celix { namespace dm {
          */
         void runBuild();
     protected:
-
-        std::vector<std::shared_ptr<BaseServiceDependency>> dependencies{};
-        std::vector<std::shared_ptr<BaseProvidedService>> providedServices{};
-        std::string cmpUUID{};
-        std::atomic<bool> cmpAddedToDepMan{false};
         celix_bundle_context_t* context;
         celix_dependency_manager_t* cDepMan;
         celix_dm_component_t *cCmp;
+        std::string cmpUUID{};
+        std::string cmpName{};
+
+        std::atomic<bool> cmpAddedToDepMan{false};
+
+        std::mutex mutex{}; //protects below
+        std::vector<std::shared_ptr<BaseServiceDependency>> dependencies{};
+        std::vector<std::shared_ptr<BaseProvidedService>> providedServices{};
     };
 
 
