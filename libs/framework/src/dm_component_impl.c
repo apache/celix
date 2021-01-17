@@ -63,6 +63,9 @@ struct celix_dm_component_struct {
      */
     size_t nrOfSvcDepependenciesInProgress;
 
+    size_t nrOfTimesStarted;
+    size_t nrOfTimesResumed;
+
 
     bool isEnabled;
 };
@@ -519,13 +522,14 @@ static celix_status_t celix_dmComponent_suspend(celix_dm_component_t *component,
 static celix_status_t celix_dmComponent_resume(celix_dm_component_t *component, celix_dm_service_dependency_t *dependency) {
 	celix_status_t status = CELIX_SUCCESS;
     dm_service_dependency_strategy_t strategy = celix_dmServiceDependency_getStrategy(dependency);
-	if (strategy == DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND &&  component->callbackStop != NULL) {
+	if (strategy == DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND &&  component->callbackStart != NULL) {
         celix_bundleContext_log(component->context, CELIX_LOG_LEVEL_TRACE,
                "Resuming component %s (uuid=%s)",
                component->name,
                component->uuid);
         celix_dmComponent_registerServices(component);
 		status = component->callbackStart(component->implementation);
+		component->nrOfTimesResumed += 1;
 	}
 	return status;
 }
@@ -750,6 +754,7 @@ static celix_status_t celix_dmComponent_performTransition(celix_dm_component_t *
         	status = component->callbackStart(component->implementation);
         }
         celix_dmComponent_registerServices(component);
+        component->nrOfTimesStarted += 1;
         *transition = true;
     } else if (oldState == DM_CMP_STATE_TRACKING_OPTIONAL && newState == DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED) {
         celix_dmComponent_unregisterServices(component);
@@ -901,6 +906,8 @@ celix_status_t celix_dmComponent_getComponentInfo(celix_dm_component_t *componen
     info->active = false;
     memcpy(info->id, component->uuid, DM_COMPONENT_MAX_ID_LENGTH);
     memcpy(info->name, component->name, DM_COMPONENT_MAX_NAME_LENGTH);
+    info->nrOfTimesStarted = component->nrOfTimesStarted;
+    info->nrOfTimesResumed = component->nrOfTimesResumed;
 
     switch (component->state) {
         case DM_CMP_STATE_INACTIVE :

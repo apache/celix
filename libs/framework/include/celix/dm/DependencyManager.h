@@ -22,6 +22,7 @@
 #include "celix/dm/types.h"
 #include "celix/dm/Component.h"
 #include "celix/dm/ServiceDependency.h"
+#include "celix/dm/DependencyManagerInfo.h"
 
 #include "bundle_context.h"
 #include "celix_bundle_context.h"
@@ -32,7 +33,15 @@
 namespace celix { namespace dm {
 
     /**
-     * The Dependency Manager, Component, ServiceDependency and Properties are not thread safe!
+     *
+     * The build() methods For celix::dm::DependencyManager, celix::dm::Component and
+     * celix::dm::(C)ServiceDependency should be called outside the Celix event thread.
+     * Note that bundle activators are started and stopped outside the Celix event thread and thus the build()
+     * methods can be used in bundle activators.
+     *
+     * Inside the Celix event thread - i.e. during a useService callback or add/rem/set call from a service tracker -
+     * the buildAsync version should be used. After a buildASync method has returned, service registration and opening
+     * service trackers are (possibly) still in progress.
      */
     class DependencyManager {
     public:
@@ -40,8 +49,8 @@ namespace celix { namespace dm {
 
         virtual ~DependencyManager();
 
-        DependencyManager(DependencyManager&& mgr) = default;
-        DependencyManager& operator=(DependencyManager&& rhs) = default;
+        DependencyManager(DependencyManager&& mgr) = delete;
+        DependencyManager& operator=(DependencyManager&& rhs) = delete;
 
         DependencyManager(const DependencyManager&) = delete;
         DependencyManager& operator=(const DependencyManager&) = delete;
@@ -97,17 +106,17 @@ namespace celix { namespace dm {
          * If a component is updated after the dependency manager build is called, an new build call will result in
          * that the changes to the component are enabled.
          *
-         * Note that the after this call the components will be created and if the components can be started, they
+         * After this call the components will be created and if the components can be started, they
          * will be started and the services will be registered.
          *
-         * Should not be called from the Celix event  thread.
+         * Should not be called from the Celix event thread.
          */
         void build();
 
         /**
-         * Same as build, but this call will not wait until all service registrations and tracker are created on the
-         * Celix event thread.
-         * Can also be called on the Celix event thread.
+         * Same as build, but this call will not wait until all service registrations and tracker are registered/opened
+         * on the Celix event thread.
+         * Can be called on the Celix event thread.
          */
          void buildAsync();
 
@@ -149,21 +158,33 @@ namespace celix { namespace dm {
         std::size_t getNrOfComponents() const;
 
         /**
-         * Tries to find the component with UUID and staticly cast it to
+         * Tries to find the component with UUID and statically cast it to
          * dm component of type T
          * @return pointer to found component or null if the component cannot be found.
          *
-         * Note: DependencyManager is not thread safe!
          */
         template<typename T>
         std::shared_ptr<Component<T>> findComponent(const std::string& uuid) const;
+
+        /**
+         * Get Dependency Management info for this component manager.
+         * @return A DependencyManagerInfo struct.
+         */
+        celix::dm::DependencyManagerInfo getInfo() const;
+
+        /**
+         * Get Dependency Management info for all component manager (for all bundles).
+         * @return A vector of DependencyManagerInfo structs.
+         */
+        std::vector<celix::dm::DependencyManagerInfo> getInfos() const;
     private:
         template<class T>
         Component<T>& createComponentInternal(std::string name, std::string uuid);
 
         std::shared_ptr<celix_bundle_context_t> context;
         std::shared_ptr<celix_dependency_manager_t> cDepMan;
-        std::vector<std::shared_ptr<BaseComponent>> components {};
+        mutable std::mutex mutex{}; //protects below
+        std::vector<std::shared_ptr<BaseComponent>> components{};
     };
 
 }}

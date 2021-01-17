@@ -47,7 +47,7 @@ inline void BaseComponent::runBuild() {
 
     bool alreadyAdded = cmpAddedToDepMan.exchange(true);
     if (!alreadyAdded) {
-        celix_dependencyManager_add(cDepMan, cCmp);
+        celix_dependencyManager_addAsync(cDepMan, cCmp);
     }
 }
 
@@ -58,7 +58,15 @@ inline void BaseComponent::wait() const {
 }
 
 template<class T>
-Component<T>::Component(celix_bundle_context_t *context, celix_dependency_manager_t* cDepMan, std::string name, std::string uuid) : BaseComponent(context, cDepMan, std::move(name), std::move(uuid)) {}
+Component<T>::Component(
+        celix_bundle_context_t *context,
+        celix_dependency_manager_t* cDepMan,
+        std::string name,
+        std::string uuid) : BaseComponent(
+                context,
+                cDepMan,
+                name.empty() ? celix::dm::typeName<T>() : std::move(name),
+                std::move(uuid)) {}
 
 template<class T>
 Component<T>::~Component() = default;

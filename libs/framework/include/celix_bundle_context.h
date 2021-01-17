@@ -1158,6 +1158,12 @@ void celix_bundleContext_waitForEvents(celix_bundle_context_t* ctx);
  */
 celix_bundle_t* celix_bundleContext_getBundle(const celix_bundle_context_t *ctx);
 
+
+/**
+ * Returns the bundle if for the bundle of this bundle context.
+ */
+long celix_bundleContext_getBundleId(const celix_bundle_context_t *ctx);
+
 celix_framework_t* celix_bundleContext_getFramework(const celix_bundle_context_t* ctx);
 
 /**

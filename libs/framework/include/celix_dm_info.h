@@ -55,9 +55,11 @@ struct celix_dm_component_info_struct {
     char id[64];
     char name[128];
     bool active;
-    char * state;
-    celix_array_list_t *interfaces;   // type dm_interface_info_pt
-    celix_array_list_t *dependency_list;  // type dm_service_dependency_info_pt
+    char* state;
+    size_t nrOfTimesStarted;
+    size_t nrOfTimesResumed;
+    celix_array_list_t *interfaces;   // type dm_interface_info_t*
+    celix_array_list_t *dependency_list;  // type dm_service_dependency_info_t*
 };
 typedef struct celix_dm_component_info_struct *dm_component_info_pt; //deprecated
 typedef struct celix_dm_component_info_struct dm_component_info_t; //deprecated
@@ -65,7 +67,8 @@ typedef struct celix_dm_component_info_struct celix_dm_component_info_t;
 
 struct celix_dm_dependency_manager_info_struct {
     long bndId;
-    celix_array_list_t *components;      // type dm_component_info
+    char* bndSymbolicName;
+    celix_array_list_t *components;      // type dm_component_info_t*
 };
 typedef struct celix_dm_dependency_manager_info_struct *dm_dependency_manager_info_pt; //deprecated
 typedef struct celix_dm_dependency_manager_info_struct dm_dependency_manager_info_t; //deprecated

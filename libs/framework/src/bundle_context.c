@@ -1616,6 +1616,11 @@ celix_bundle_t* celix_bundleContext_getBundle(const celix_bundle_context_t *ctx)
     return bnd;
 }
 
+long celix_bundleContext_getBundleId(const celix_bundle_context_t *ctx) {
+    celix_bundle_t *bnd = celix_bundleContext_getBundle(ctx);
+    return bnd == NULL ? -1L : celix_bundle_getId(bnd);
+}
+
 celix_framework_t* celix_bundleContext_getFramework(const celix_bundle_context_t *ctx) {
     celix_framework_t *fw = NULL;
     if (ctx != NULL) {

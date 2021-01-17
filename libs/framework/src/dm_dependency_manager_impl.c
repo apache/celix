@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <dm_dependency_manager.h>
 #include <memory.h>
+#include <celix_utils.h>
 
 #include "bundle_context.h"
 #include "dm_component_impl.h"
@@ -52,20 +53,22 @@ void celix_private_dependencyManager_destroy(celix_dependency_manager_t *manager
 	}
 }
 
-
 celix_status_t celix_dependencyManager_add(celix_dependency_manager_t *manager, celix_dm_component_t *component) {
-	celix_status_t status;
+	celix_status_t status = celix_dependencyManager_addAsync(manager, component);
+	celix_dependencyManager_wait(manager);
+	return status;
+}
 
+celix_status_t celix_dependencyManager_addAsync(celix_dependency_manager_t *manager, celix_dm_component_t *component) {
     celixThreadMutex_lock(&manager->mutex);
 	celix_arrayList_add(manager->components, component);
     celixThreadMutex_unlock(&manager->mutex);
 
-	status = celix_private_dmComponent_enable(component);
-	return status;
+	return celix_private_dmComponent_enable(component);
 }
 
 celix_status_t celix_dependencyManager_removeWithoutDestroy(celix_dependency_manager_t *manager, celix_dm_component_t *component) {
-    celix_status_t status;
+    celix_status_t status = CELIX_SUCCESS;
 
     celixThreadMutex_lock(&manager->mutex);
     bool found = false;
@@ -90,13 +93,24 @@ celix_status_t celix_dependencyManager_removeWithoutDestroy(celix_dependency_man
 }
 
 celix_status_t celix_dependencyManager_remove(celix_dependency_manager_t *manager, celix_dm_component_t *component) {
+	celix_status_t  status = celix_dependencyManager_removeAsync(manager, component);
+	celix_dependencyManager_wait(manager);
+	return status;
+}
+
+celix_status_t celix_dependencyManager_removeAsync(celix_dependency_manager_t *manager, celix_dm_component_t *component) {
     celix_status_t  status = celix_dependencyManager_removeWithoutDestroy(manager, component);
 	celix_dmComponent_destroy(component);
 	return status;
 }
 
-
 celix_status_t celix_dependencyManager_removeAllComponents(celix_dependency_manager_t *manager) {
+	celix_status_t status = celix_dependencyManager_removeAllComponentsAsync(manager);
+	celix_dependencyManager_wait(manager);
+	return status;
+}
+
+celix_status_t celix_dependencyManager_removeAllComponentsAsync(celix_dependency_manager_t *manager) {
 	celix_status_t status = CELIX_SUCCESS;
     celix_array_list_t *toRemoveComponents = celix_arrayList_create();
 
@@ -119,7 +133,6 @@ celix_status_t celix_dependencyManager_removeAllComponents(celix_dependency_mana
 	return status;
 }
 
-
 static void celix_dm_getInfoCallback(void *handle, const celix_bundle_t *bnd) {
 	celix_dependency_manager_info_t **out = handle;
 
@@ -128,6 +141,8 @@ static void celix_dm_getInfoCallback(void *handle, const celix_bundle_t *bnd) {
 	celix_dependency_manager_t *mng = celix_bundleContext_getDependencyManager(context);
 
 	celix_dependency_manager_info_t *info = calloc(1, sizeof(*info));
+    info->bndId = celix_bundle_getId(bnd);
+    info->bndSymbolicName = celix_utils_strdup(celix_bundle_getSymbolicName(bnd));
 	celixThreadMutex_lock(&mng->mutex);
 	if (info != NULL) {
 		info->components = celix_arrayList_create();
@@ -161,6 +176,7 @@ static void celix_dm_getInfosCallback(void *handle, const celix_bundle_t *bnd) {
 	celix_dependency_manager_info_t *info = calloc(1, sizeof(*info));
 	celixThreadMutex_lock(&mng->mutex);
     info->bndId = celix_bundle_getId(bnd);
+    info->bndSymbolicName = celix_utils_strdup(celix_bundle_getSymbolicName(bnd));
     info->components = celix_arrayList_create();
     int size = celix_arrayList_size(mng->components);
     for (int i = 0; i < size; i += 1) {
@@ -236,6 +252,7 @@ void celix_dependencyManager_destroyInfo(celix_dependency_manager_t *manager __a
 		component_destroyComponentInfo(cmpinfo);
 	}
 	arrayList_destroy(info->components);
+	free(info->bndSymbolicName);
 	free(info);
 }
 

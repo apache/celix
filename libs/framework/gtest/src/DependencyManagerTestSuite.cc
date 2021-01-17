@@ -84,7 +84,7 @@ TEST_F(DependencyManagerTestSuite, DmComponentAddRemove) {
     ASSERT_EQ(0, celix_dependencyManager_nrOfComponents(mng));
 }
 
-TEST_F(DependencyManagerTestSuite, DmGetInfo) {
+TEST_F(DependencyManagerTestSuite, CDmGetInfo) {
     auto* mng = celix_bundleContext_getDependencyManager(ctx);
     auto* cmp = celix_dmComponent_create(ctx, "test1");
 
@@ -108,7 +108,6 @@ TEST_F(DependencyManagerTestSuite, DmGetInfo) {
     celix_dependencyManager_destroyInfos(mng, infos);
 }
 
-
 TEST_F(DependencyManagerTestSuite, TestCheckActive) {
     auto *mng = celix_bundleContext_getDependencyManager(ctx);
     auto *cmp = celix_dmComponent_create(ctx, "test1");
@@ -126,6 +125,64 @@ TEST_F(DependencyManagerTestSuite, TestCheckActive) {
 class TestComponent {
 
 };
+
+struct TestService {
+    void *handle = nullptr;
+};
+
+class Cmp1 : public TestService {
+
+};
+
+class Cmp2 : public TestService {
+public:
+    explicit Cmp2(const std::string& name) {
+        std::cout << "usage arg: " << name << std::endl;
+    }
+};
+
+
+TEST_F(DependencyManagerTestSuite, CxxDmGetInfo) {
+    celix::dm::DependencyManager mng{ctx};
+
+    auto& cmp = mng.createComponent<Cmp1>();
+    cmp.createProvidedService<TestService>().addProperty("key", "value");
+    cmp.createServiceDependency<TestService>().setVersionRange("[1,2)").setRequired(true);
+
+    auto infos = mng.getInfos();
+    EXPECT_EQ(infos.size(), 1);
+
+    auto info = mng.getInfo();
+    EXPECT_EQ(info.bndId, 0);
+    EXPECT_EQ(info.bndSymbolicName, "Framework");
+    EXPECT_EQ(info.components.size(), 0); //not build yet
+
+    mng.build();
+    info = mng.getInfo(); //new info
+    ASSERT_EQ(info.components.size(), 1); //build
+
+    auto& cmpInfo = info.components[0];
+    EXPECT_TRUE(!cmpInfo.uuid.empty());
+    EXPECT_EQ(cmpInfo.name, "Cmp1");
+    EXPECT_EQ(cmpInfo.state, "WAITING_FOR_REQUIRED");
+    EXPECT_FALSE(cmpInfo.isActive);
+    EXPECT_EQ(cmpInfo.nrOfTimesStarted, 0);
+    EXPECT_EQ(cmpInfo.nrOfTimesResumed, 0);
+
+    ASSERT_EQ(cmpInfo.interfacesInfo.size(), 1);
+    auto& intf = cmpInfo.interfacesInfo[0];
+    EXPECT_EQ(intf.serviceName, "TestService");
+    EXPECT_TRUE(intf.properties.size() > 0);
+    EXPECT_NE(intf.properties.find("key"), intf.properties.end());
+
+    ASSERT_EQ(cmpInfo.dependenciesInfo.size(), 1);
+    auto& dep = cmpInfo.dependenciesInfo[0];
+    EXPECT_EQ(dep.serviceName, "TestService");
+    EXPECT_EQ(dep.isRequired, true);
+    EXPECT_EQ(dep.versionRange, "[1,2)");
+    EXPECT_EQ(dep.isAvailable, false);
+    EXPECT_EQ(dep.nrOfTrackedServices, 0);
+}
 
 TEST_F(DependencyManagerTestSuite, OnlyActiveAfterBuildCheck) {
     celix::dm::DependencyManager dm{ctx};
@@ -158,21 +215,6 @@ TEST_F(DependencyManagerTestSuite, StartDmWillBuildCmp) {
     dm.stop();
     EXPECT_EQ(0, dm.getNrOfComponents()); //dm cleared so no components
 }
-
-struct TestService {
-    void *handle = nullptr;
-};
-
-class Cmp1 : public TestService {
-
-};
-
-class Cmp2 : public TestService {
-public:
-    explicit Cmp2(const std::string& name) {
-        std::cout << "usage arg: " << name << std::endl;
-    }
-};
 
 TEST_F(DependencyManagerTestSuite, CreateComponentVariant) {
     celix::dm::DependencyManager dm{ctx};

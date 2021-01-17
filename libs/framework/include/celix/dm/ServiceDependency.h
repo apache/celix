@@ -361,7 +361,7 @@ namespace celix { namespace dm {
         ServiceDependency<T,I>& build();
 
         /**
-         * Same a build, but will not wait till the underlining service tracker is created.
+         * Same a build, but will not wait till the underlining service trackers are opened.
          * Can be called on the Celix event thread.
          */
         ServiceDependency<T,I>& buildAsync();

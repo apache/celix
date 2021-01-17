@@ -301,9 +301,9 @@ namespace celix { namespace dm {
          Component<T>& build();
 
         /**
-         * Same as build, but this call will not wait until all service registrations and tracker are created on the
-         * Celix event thread.
-         * Can also be called on the Celix event thread.
+         * Same as build, but this call will not wait til all service registrations and tracker are registered/openend
+         * on the Celix event thread.
+         * Can be called on the Celix event thread.
          */
         Component<T>& buildAsync();
     };

@@ -30,16 +30,51 @@
 extern "C" {
 #endif
 
+/**
+ * The `celix_dependencyManager_add`, `celix_dependencyManager_remove` and `celix_dependencyManager_removeAllComponents`
+ * funcions for celix_dependency_manager_t should be called outside the Celix event thread.
+ * Note that bundle activators are started and stopped outside the Celix event thread and thus these
+ * functions can be used in bundle activators.
+ *
+ * Inside the Celix event thread - i.e. during a useService callback or add/rem/set call from a service tracker -
+ * the async versions should be used. After a async function has returned, service registration and opening
+ * service trackers are (possibly) still in progress.
+ */
+
 
 /**
  * Adds a DM component to the dependency manager
+ *
+ * After this call the components will be created and if the components can be started, they
+ * will be started and the services will be registered.
+ *
+ * Should not be called from the Celix event thread.
  */
 celix_status_t celix_dependencyManager_add(celix_dependency_manager_t *manager, celix_dm_component_t *component);
 
 /**
+ * Same as celix_dependencyManager_add, but this call will not wait until all service registrations and
+ * tracker are registered/opened on the Celix event thread.
+ * Can be called on the Celix event thread.
+ */
+celix_status_t celix_dependencyManager_addAsync(celix_dependency_manager_t *manager, celix_dm_component_t *component);
+
+/**
  * Removes a DM component from the dependency manager and destroys it
+ *
+ * After this call the components will be destroyed and if the components was started, the service registrations
+ * and service tracked of this component will be unregistered and closed.
+ *
+ * Should not be called from the Celix event thread.
  */
 celix_status_t celix_dependencyManager_remove(celix_dependency_manager_t *manager, celix_dm_component_t *component);
+
+/**
+ * Same as celix_dependencyManager_remove, but this call will not wait until all service registrations and
+ * tracker are unregistered/closed on the Celix event thread.
+ * Can be called on the Celix event thread.
+ */
+celix_status_t celix_dependencyManager_removeAsync(celix_dependency_manager_t *manager, celix_dm_component_t *component);
 
 /**
  * Removes a DM component from the dependency manager.
@@ -49,9 +84,17 @@ celix_status_t celix_dependencyManager_removeWithoutDestroy(celix_dependency_man
 /**
  * Removes all DM components from the dependency manager.
  *
- * This function cannot be called on the Celix event thread.
+ * Should not be called from the Celix event thread.
  */
 celix_status_t celix_dependencyManager_removeAllComponents(celix_dependency_manager_t *manager);
+
+/**
+ * Same as celix_dependencyManager_removeAllComponents, but this call will not wait til all
+ * service registration and service trackers are unregistered/closed.
+ *
+ * Can be called on the Celix event thread.
+ */
+celix_status_t celix_dependencyManager_removeAllComponentsAsync(celix_dependency_manager_t *manager);
 
 /**
  * Create and returns a dependency manager info struct for the specified bundle.
@@ -75,7 +118,7 @@ celix_dependency_manager_info_t* celix_dependencyManager_createInfo(celix_depend
  * @returns A Celix array of dependency manager infos (celix_dependency_manager_info_t*)
  * for the provided bundle id or NULL if the bundle id is invalid.
  */
-celix_array_list_t * /*celix_dependency_manager_info_t entries*/ celix_dependencyManager_createInfos(celix_dependency_manager_t *manager);
+celix_array_list_t * /*celix_dependency_manager_info_t* entries*/ celix_dependencyManager_createInfos(celix_dependency_manager_t *manager);
 
 /**
  * Destroys a DM info struct.
