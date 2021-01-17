@@ -139,11 +139,7 @@ Component<T>& Component<T>::removeCInterface(const I* svc){
 template<class T>
 template<class I>
 ServiceDependency<T,I>& Component<T>::createServiceDependency(const std::string &name) {
-    static ServiceDependency<T,I> invalidDep{cComponent(), std::string{}, false};
     auto dep = std::shared_ptr<ServiceDependency<T,I>> {new ServiceDependency<T,I>(cComponent(), name)};
-    if (dep == nullptr) {
-        return invalidDep;
-    }
     std::lock_guard<std::mutex> lck{mutex};
     dependencies.push_back(dep);
     dep->setComponentInstance(&getInstance());
@@ -162,11 +158,7 @@ Component<T>& Component<T>::remove(ServiceDependency<T,I>& dep) {
 template<class T>
 template<typename I>
 CServiceDependency<T,I>& Component<T>::createCServiceDependency(const std::string &name) {
-    static CServiceDependency<T,I> invalidDep{cComponent(), std::string{}, false};
     auto dep = std::shared_ptr<CServiceDependency<T,I>> {new CServiceDependency<T,I>(cComponent(), name)};
-    if (dep == nullptr) {
-        return invalidDep;
-    }
     std::lock_guard<std::mutex> lck{mutex};
     dependencies.push_back(dep);
     dep->setComponentInstance(&getInstance());

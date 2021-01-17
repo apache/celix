@@ -43,30 +43,22 @@ namespace celix { namespace dm {
     class BaseServiceDependency {
     private:
         celix_dm_component_t* cCmp;
-        bool valid;
         std::atomic<bool> depAddedToCmp{false};
     protected:
         celix_dm_service_dependency_t *cServiceDep {nullptr};
 
         void setDepStrategy(DependencyUpdateStrategy strategy) {
-            if (!valid) {
-                return;
-            }
             if (strategy == DependencyUpdateStrategy::locking) {
                 celix_dmServiceDependency_setStrategy(this->cServiceDependency(), DM_SERVICE_DEPENDENCY_STRATEGY_LOCKING);
-            } else if (strategy == DependencyUpdateStrategy::suspend) {
+            } else { /*suspend*/
                 celix_dmServiceDependency_setStrategy(this->cServiceDependency(), DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND);
-            } else {
-                std::cerr << "Unexpected dependency update strategy. Cannot convert for dm_dependency\n";
             }
         }
     public:
-        BaseServiceDependency(celix_dm_component_t* c, bool v)  : cCmp{c}, valid{v} {
-            if (this->valid) {
-                this->cServiceDep = celix_dmServiceDependency_create();
-                //NOTE using suspend as default strategy
-                celix_dmServiceDependency_setStrategy(this->cServiceDep,  DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND);
-            }
+        BaseServiceDependency(celix_dm_component_t* c)  : cCmp{c} {
+            this->cServiceDep = celix_dmServiceDependency_create();
+            //NOTE using suspend as default strategy
+            celix_dmServiceDependency_setStrategy(this->cServiceDep,  DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND);
         }
 
         virtual ~BaseServiceDependency() noexcept;
@@ -78,8 +70,10 @@ namespace celix { namespace dm {
 
         /**
          * Whether the service dependency is valid.
+         *
+         * Depcrated -> will always return true.
          */
-        bool isValid() const { return valid; }
+        bool isValid() const __attribute__((deprecated)) { return true; }
 
         /**
          * Returns the C DM service dependency
@@ -108,7 +102,7 @@ namespace celix { namespace dm {
     protected:
         T* componentInstance {nullptr};
     public:
-        TypedServiceDependency(celix_dm_component_t* cCmp, bool valid) : BaseServiceDependency(cCmp, valid) {}
+        TypedServiceDependency(celix_dm_component_t* cCmp) : BaseServiceDependency(cCmp) {}
         ~TypedServiceDependency() override = default;
 
         TypedServiceDependency(const TypedServiceDependency&) = delete;
@@ -126,7 +120,7 @@ namespace celix { namespace dm {
     class CServiceDependency : public TypedServiceDependency<T> {
         using type = I;
     public:
-        CServiceDependency(celix_dm_component_t* cCmp, const std::string &name, bool valid = true);
+        CServiceDependency(celix_dm_component_t* cCmp, const std::string &name);
         ~CServiceDependency() override = default;
 
         CServiceDependency(const CServiceDependency&) = delete;
@@ -253,7 +247,7 @@ namespace celix { namespace dm {
     class ServiceDependency : public TypedServiceDependency<T> {
         using type = I;
     public:
-        ServiceDependency(celix_dm_component_t* cCmp, const std::string &name, bool valid = true);
+        ServiceDependency(celix_dm_component_t* cCmp, const std::string &name);
         ~ServiceDependency() override = default;
 
         ServiceDependency(const ServiceDependency&) = delete;

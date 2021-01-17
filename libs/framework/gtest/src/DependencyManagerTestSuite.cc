@@ -356,7 +356,7 @@ TEST_F(DependencyManagerTestSuite, InCompleteBuildShouldNotLeak) {
 
     auto& cmp2 = dm.createComponent<Cmp1>(std::make_shared<Cmp1>(), "test2").build(); //NOTE BUILD
     cmp2.createCServiceDependency<TestService>("TestService").setFilter("(key=value"); //note not build
-    cmp2.createServiceDependency<TestService>().setFilter("(key=value)"); //note not build
+    cmp2.createServiceDependency<TestService>().setFilter("(key=value)").setName("alternative name"); //note not build
 
     TestService svc{};
     cmp2.createProvidedCService(&svc, "CTestService").addProperty("key1", "val1"); //note not build
