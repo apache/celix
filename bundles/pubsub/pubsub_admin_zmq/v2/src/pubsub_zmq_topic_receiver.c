@@ -140,6 +140,7 @@ pubsub_zmq_topic_receiver_t* pubsub_zmqTopicReceiver_create(celix_bundle_context
     receiver->scope = scope == NULL ? NULL : strndup(scope, 1024 * 1024);
     receiver->topic = strndup(topic, 1024 * 1024);
     receiver->metricsEnabled = celix_bundleContext_getPropertyAsBool(ctx, PSA_ZMQ_METRICS_ENABLED, PSA_ZMQ_DEFAULT_METRICS_ENABLED);
+    L_WARN("new receiver topic %s", topic);
 
     pubsubInterceptorsHandler_create(ctx, scope, topic, &receiver->interceptorsHandler);
 
@@ -446,6 +447,7 @@ static inline void processMsgForSubscriberEntry(pubsub_zmq_topic_receiver_t *rec
     //NOTE receiver->subscribers.mutex locked
     bool monitor = receiver->metricsEnabled;
     psa_zmq_serializer_entry_t *msgSer = pubsub_zmqAdmin_acquireSerializerForMessageId(receiver->admin, receiver->serializerType, message->header.msgId);
+    L_WARN("trying to receive on topic %s id %i", receiver->topic, message->header.msgId);
 
     //monitoring
     struct timespec beginSer;

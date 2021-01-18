@@ -16,12 +16,19 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 #pragma once
 
-namespace celix::async_rsa {
-    template <typename T>
-    class IExportedService {
+#include <string>
+#include <celix/Promise.h>
 
-        T service;
-    };
-}
+struct IHardcodedService {
+    virtual ~IHardcodedService() = default;
+
+    virtual celix::Promise<int> add(int a, int b) noexcept = 0;
+    virtual celix::Promise<int> subtract(int a, int b) noexcept = 0;
+    virtual celix::Promise<std::string> toString(int a) = 0;
+
+    static constexpr std::string_view VERSION = "1.0.0";
+    static constexpr std::string_view NAME = "IHardcodedService";
+};

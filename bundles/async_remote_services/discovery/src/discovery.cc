@@ -20,18 +20,44 @@
 #include <discovery.h>
 #include <celix_api.h>
 
-celix::async_rsa::StaticDiscovery::StaticDiscovery(std::shared_ptr<celix::dm::DependencyManager> &mng) noexcept : _endpoints(), _mng(mng) {
+struct StaticEndpoint final : celix::async_rsa::IEndpoint {
+    explicit StaticEndpoint() noexcept {
+        std::cout << "[StaticEndpoint] StaticEndpoint" << std::endl;
+    }
+    ~StaticEndpoint() final {
+        std::cout << "[StaticEndpoint] ~StaticEndpoint" << std::endl;
+    }
+};
 
+celix::async_rsa::StaticDiscovery::StaticDiscovery(std::shared_ptr<celix::dm::DependencyManager> &mng) noexcept : _endpoints(), _mng(mng) {
+    std::cout << "[StaticDiscovery] StaticDiscovery" << std::endl;
+    readImportedEndpointsFromFile("test");
 }
 
-class DiscoveryActivator {
-public:
-    explicit DiscoveryActivator([[maybe_unused]] std::shared_ptr<celix::dm::DependencyManager> mng) {
+void celix::async_rsa::StaticDiscovery::readImportedEndpointsFromFile(std::string_view) {
+    std::cout << "[StaticDiscovery] readImportedEndpointsFromFile" << std::endl;
+    _endpoints.emplace_back(&_mng->createComponent<StaticEndpoint>().addInterface<IEndpoint>("1.0.0", celix::dm::Properties{
+            {"service.imported", "*"},
+            {"service.exported.interfaces", "IHardcodedService"},
+            {"endpoint.id", "1"},
+    }).build().getInstance());
+}
+
+void celix::async_rsa::StaticDiscovery::addExportedEndpoint([[maybe_unused]] celix::async_rsa::IEndpoint *endpoint) {
+    std::cout << "[StaticDiscovery] addExportedEndpoint" << std::endl;
+    // NOP
+}
+
+struct DiscoveryActivator {
+    explicit DiscoveryActivator([[maybe_unused]] std::shared_ptr<celix::dm::DependencyManager> mng) : _cmp(mng->createComponent(std::make_unique<celix::async_rsa::StaticDiscovery>(mng)).addInterface<celix::async_rsa::IDiscovery>().build()) {
 
     }
 
     DiscoveryActivator(const DiscoveryActivator &) = delete;
     DiscoveryActivator &operator=(const DiscoveryActivator &) = delete;
+
+private:
+    celix::dm::Component<celix::async_rsa::StaticDiscovery>& _cmp;
 };
 
 CELIX_GEN_CXX_BUNDLE_ACTIVATOR(DiscoveryActivator)

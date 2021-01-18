@@ -18,13 +18,13 @@
 add_library(async_rsa_common INTERFACE)
 target_include_directories(async_rsa_common INTERFACE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
-        $<INSTALL_INTERFACE:include/celix/async_rsa>
+        $<INSTALL_INTERFACE:include/celix/async_rsa_common>
         )
 #set_target_properties(async_rsa_common PROPERTIES OUTPUT_NAME "celix_async_rsa_common")
 #target_include_directories(async_rsa_common PRIVATE src)
-#target_link_libraries(async_rsa_common PUBLIC Celix::framework)
+#target_link_libraries(async_rsa_common INTERFACE Celix::framework)
 
 #Setup target aliases to match external usage
 add_library(Celix::async_rsa_common ALIAS async_rsa_common)
-install(TARGETS async_rsa_common EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT async_rsa)
-install(DIRECTORY include/ DESTINATION include/celix/async_rsa COMPONENT async_rsa)
+install(TARGETS async_rsa_common EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT async_rsa_common)
+install(DIRECTORY include/ DESTINATION include/celix/async_rsa_common COMPONENT async_rsa_common)

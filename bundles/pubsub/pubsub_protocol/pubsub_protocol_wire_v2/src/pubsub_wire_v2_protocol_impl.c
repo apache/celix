@@ -65,7 +65,7 @@ celix_status_t pubsubProtocol_wire_v2_getSyncHeader(void* handle, void *syncHead
 }
 
 celix_status_t pubsubProtocol_wire_v2_getFooterSize(void* handle,  size_t *length) {
-    *length = sizeof(int);;
+    *length = sizeof(int);
     return CELIX_SUCCESS;
 }
 

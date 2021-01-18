@@ -36,7 +36,6 @@
 #include "celix_log_helper.h"
 #include "discovery.h"
 #include "endpoint_discovery_server.h"
-#include "../../../async_remote_services/discovery/include/discovery.h"
 
 
 celix_status_t discovery_endpointAdded(void *handle, endpoint_description_t *endpoint, char *matchedFilter) {
@@ -230,9 +229,4 @@ celix_status_t discovery_removeDiscoveredEndpoint(discovery_t *discovery, endpoi
     }
 
 	return status;
-}
-
-celix::async_rsa::StaticDiscovery::StaticDiscovery(std::shared_ptr<celix::dm::DependencyManager>
-& mng){
-
 }
