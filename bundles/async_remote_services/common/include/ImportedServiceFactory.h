@@ -61,8 +61,6 @@ namespace celix::async_rsa {
                     .setCallbacks([&cmp](const pubsub_publisher_t * pub, Properties&& props){ cmp.getInstance().setPublisher(pub, std::forward<Properties&&>(props)); })
                     .setRequired(true)
                     .build();
-
-            cmp.build();
             _cmps.push_back(&cmp);
 
             auto sub = std::make_unique<pubsub_subscriber_t>();
@@ -84,6 +82,7 @@ namespace celix::async_rsa {
             long id = celix_bundleContext_registerServiceWithOptions(_mng->bundleContext(), &opts);
 
             _subCmps.emplace_back(id, std::move(sub));
+            cmp.build();
 
             return cmp;
         }

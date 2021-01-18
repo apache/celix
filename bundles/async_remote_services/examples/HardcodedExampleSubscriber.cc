@@ -80,6 +80,11 @@ struct ImportedHardcodedService final : public IHardcodedService {
         std::unique_lock l(_m);
         if(msgTypeId == 1) {
             auto response = static_cast<AddArgs*>(msg);
+
+            if(!response->ret) {
+                return 0;
+            }
+
             auto deferred = _intPromises.find(response->id);
             if(deferred == end(_intPromises) || !response->ret) {
                 return 1;
@@ -88,6 +93,11 @@ struct ImportedHardcodedService final : public IHardcodedService {
             _intPromises.erase(deferred);
         } else if(msgTypeId == 2) {
             auto response = static_cast<SubtractArgs*>(msg);
+
+            if(!response->ret) {
+                return 0;
+            }
+
             auto deferred = _intPromises.find(response->id);
             if(deferred == end(_intPromises) || !response->ret) {
                 return 1;
@@ -96,6 +106,11 @@ struct ImportedHardcodedService final : public IHardcodedService {
             _intPromises.erase(deferred);
         } else if(msgTypeId == 3) {
             auto response = static_cast<ToStringArgs*>(msg);
+
+            if(!response->ret) {
+                return 0;
+            }
+
             auto deferred = _stringPromises.find(response->id);
             if(deferred == end(_stringPromises) || !response->ret) {
                 return 1;
@@ -127,17 +142,23 @@ struct UsingHardcodedServiceService {
 
     void start() {
         std::cout << "[UsingHardcodedServiceService] start" << std::endl;
-        _svc->add(14, 123).thenAccept([](int val) {
-            std::cout << "[UsingHardcodedServiceService] " << val << std::endl;
+        _t = std::thread([this]() {
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            _svc->add(14, 123).thenAccept([](int val) {
+                std::cout << "[UsingHardcodedServiceService] " << val << std::endl;
+            });
         });
     }
 
     void stop() {
-
+        if(_t.joinable()) {
+            _t.join();
+        }
     }
 
 private:
     IHardcodedService *_svc{};
+    std::thread _t{};
 };
 
 class ExampleActivator {

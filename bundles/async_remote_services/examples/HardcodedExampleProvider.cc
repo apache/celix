@@ -69,14 +69,29 @@ struct ExportedHardcodedService {
         std::cout << "[ExportedHardcodedService] receiveMessage" << std::endl;
         if(msgTypeId == 1) {
             auto response = static_cast<AddArgs*>(msg);
+
+            if(response->ret) {
+                return 0;
+            }
+
             response->ret = _svc->add(response->a, response->b).getValue();
             _publisher->send(_publisher->handle, 1, response, nullptr);
         } else if(msgTypeId == 2) {
             auto response = static_cast<SubtractArgs*>(msg);
+
+            if(response->ret) {
+                return 0;
+            }
+
             response->ret = _svc->subtract(response->a, response->b).getValue();
             _publisher->send(_publisher->handle, 1, response, nullptr);
         } else if(msgTypeId == 3) {
             auto response = static_cast<ToStringArgs*>(msg);
+
+            if(response->ret) {
+                return 0;
+            }
+
             response->ret = _svc->toString(response->a).getValue();
             _publisher->send(_publisher->handle, 1, response, nullptr);
         }
