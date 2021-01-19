@@ -28,21 +28,21 @@ struct HardcodedService final : public IHardcodedService {
     ~HardcodedService() final = default;
 
     celix::Promise<int> add(int a, int b) noexcept final {
-        std::cout << "[HardcodedService] add" << std::endl;
+        std::cout << "[HardcodedService] add " << a << " + " << b << std::endl;
         auto deferred = celix::Deferred<int>{};
         deferred.resolve(a + b);
         return deferred.getPromise();
     }
 
     celix::Promise<int> subtract(int a, int b) noexcept final {
-        std::cout << "[HardcodedService] subtract" << std::endl;
+        std::cout << "[HardcodedService] subtract " << a << " + " << b << std::endl;
         auto deferred = celix::Deferred<int>{};
         deferred.resolve(a - b);
         return deferred.getPromise();
     }
 
     celix::Promise<std::string> toString(int a) noexcept final {
-        std::cout << "[HardcodedService] toString" << std::endl;
+        std::cout << "[HardcodedService] toString " << a << std::endl;
         auto deferred = celix::Deferred<std::string>{};
         deferred.resolve(std::to_string(a));
         return deferred.getPromise();
@@ -50,18 +50,14 @@ struct HardcodedService final : public IHardcodedService {
 };
 
 struct ExportedHardcodedService {
-    ExportedHardcodedService() {
-        std::cout << "[ExportedHardcodedService] ExportedHardcodedService" << std::endl;
-    }
+    ExportedHardcodedService() noexcept = default;
     ~ExportedHardcodedService() = default;
 
     void setService(IHardcodedService * svc, Properties&&) {
-        std::cout << "[ExportedHardcodedService] setService" << std::endl;
         _svc = svc;
     }
 
     void setPublisher(pubsub_publisher_t const * publisher, Properties&&) {
-        std::cout << "[ExportedHardcodedService] setPublisher" << std::endl;
         _publisher = publisher;
     }
 
@@ -107,11 +103,9 @@ private:
 class ExampleActivator {
 public:
     explicit ExampleActivator(std::shared_ptr<celix::dm::DependencyManager> &mng) : _mng(mng) {
-        std::cout << "[ExampleActivator] ExampleActivator" << std::endl;
         _addArgsSerializer.emplace(mng);
         _subtractArgsSerializer.emplace(mng);
         _toStringSerializer.emplace(mng);
-//        DefaultImportedServiceFactory
 
         mng->createComponent<HardcodedService>().addInterfaceWithName<IHardcodedService>(std::string{IHardcodedService::NAME}, std::string{IHardcodedService::VERSION}).build();
         auto &exportedCmp = mng->createComponent<ExportedHardcodedService>();
@@ -139,12 +133,15 @@ public:
 
         _subId = celix_bundleContext_registerServiceWithOptions(mng->bundleContext(), &opts);
 
-        std::cout << "[ExampleActivator] ExampleActivator topic async_rsa." << IHardcodedService::NAME << std::endl;
-
         exportedCmp.template createCServiceDependency<pubsub_publisher_t>(PUBSUB_PUBLISHER_SERVICE_NAME)
                 .setVersionRange("[3.0.0,4)")
                 .setFilter(std::string{"(topic=async_rsa."}.append(IHardcodedService::NAME).append(")"))
                 .setCallbacks([this](const pubsub_publisher_t * pub, Properties&& props){ _exportedCmp->getInstance().setPublisher(pub, std::forward<Properties&&>(props)); })
+                .setRequired(true)
+                .build();
+        exportedCmp.template createCServiceDependency<pubsub_subscriber_t>(PUBSUB_PUBLISHER_SERVICE_NAME)
+                .setVersionRange("[3.0.0,4)")
+                .setFilter(std::string{"(topic=async_rsa."}.append(IHardcodedService::NAME).append(")"))
                 .setRequired(true)
                 .build();
 

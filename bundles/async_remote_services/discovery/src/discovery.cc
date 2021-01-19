@@ -21,21 +21,15 @@
 #include <celix_api.h>
 
 struct StaticEndpoint final : celix::async_rsa::IEndpoint {
-    explicit StaticEndpoint() noexcept {
-        std::cout << "[StaticEndpoint] StaticEndpoint" << std::endl;
-    }
-    ~StaticEndpoint() final {
-        std::cout << "[StaticEndpoint] ~StaticEndpoint" << std::endl;
-    }
+    explicit StaticEndpoint() noexcept = default;
+    ~StaticEndpoint() final = default;
 };
 
 celix::async_rsa::StaticDiscovery::StaticDiscovery(std::shared_ptr<celix::dm::DependencyManager> &mng) noexcept : _endpoints(), _mng(mng) {
-    std::cout << "[StaticDiscovery] StaticDiscovery" << std::endl;
     readImportedEndpointsFromFile("test");
 }
 
 void celix::async_rsa::StaticDiscovery::readImportedEndpointsFromFile(std::string_view) {
-    std::cout << "[StaticDiscovery] readImportedEndpointsFromFile" << std::endl;
     _endpoints.emplace_back(&_mng->createComponent<StaticEndpoint>().addInterface<IEndpoint>("1.0.0", celix::dm::Properties{
             {"service.imported", "*"},
             {"service.exported.interfaces", "IHardcodedService"},
@@ -44,7 +38,6 @@ void celix::async_rsa::StaticDiscovery::readImportedEndpointsFromFile(std::strin
 }
 
 void celix::async_rsa::StaticDiscovery::addExportedEndpoint([[maybe_unused]] celix::async_rsa::IEndpoint *endpoint) {
-    std::cout << "[StaticDiscovery] addExportedEndpoint" << std::endl;
     // NOP
 }
 
