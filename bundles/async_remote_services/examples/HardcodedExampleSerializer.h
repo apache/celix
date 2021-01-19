@@ -48,17 +48,14 @@ struct ToStringArgs {
 struct AddArgsSerializer {
     explicit AddArgsSerializer(std::shared_ptr<celix::dm::DependencyManager> &mng) : _mng(mng) {
         _svc.deserialize = [](void*, const struct iovec* input, size_t, void** out) -> celix_status_t {
-            std::cout << "[AddArgsSerializer] deserialize" << std::endl;
             json_error_t error;
             json_t *js_request = json_loads(static_cast<char*>(input->iov_base), 0, &error);
 
             if(!js_request) {
-                std::cout << "[AddArgsSerializer] deserialize no js_request" << std::endl;
                 return CELIX_ILLEGAL_ARGUMENT;
             }
 
             if(!json_is_object(js_request)) {
-                std::cout << "[AddArgsSerializer] deserialize is not object" << std::endl;
                 json_decref(js_request);
                 return CELIX_ILLEGAL_ARGUMENT;
             }
@@ -83,7 +80,6 @@ struct AddArgsSerializer {
         };
 
         _svc.serialize = [](void*, const void* input, struct iovec** output, size_t* outputIovLen) -> celix_status_t {
-            std::cout << "[AddArgsSerializer] serialize" << std::endl;
             auto *args = static_cast<AddArgs const *>(input);
 
             if (*output == nullptr) {
@@ -126,7 +122,6 @@ struct AddArgsSerializer {
         opts.serviceVersion = PUBSUB_MESSAGE_SERIALIZATION_SERVICE_VERSION;
         opts.properties = props;
         _svcId = celix_bundleContext_registerServiceWithOptions(_mng->bundleContext(), &opts);
-        std::cout << "created serializer AddArgsSerializer id " << _svcId << std::endl;
     }
 
     ~AddArgsSerializer() {
@@ -143,7 +138,6 @@ struct SubtractArgsSerializer {
     explicit SubtractArgsSerializer(std::shared_ptr<celix::dm::DependencyManager> &mng) : _mng(mng) {
         _svc.handle = this;
         _svc.deserialize = [](void*, const struct iovec* input, size_t, void** out) -> celix_status_t {
-            std::cout << "[SubtractArgsSerializer] deserialize" << std::endl;
             json_error_t error;
             json_t *js_request = json_loads(static_cast<char*>(input->iov_base), 0, &error);
 
@@ -176,7 +170,6 @@ struct SubtractArgsSerializer {
         };
 
         _svc.serialize = [](void*, const void* input, struct iovec** output, size_t* outputIovLen) -> celix_status_t {
-            std::cout << "[SubtractArgsSerializer] serialize" << std::endl;
             auto *args = static_cast<SubtractArgs const *>(input);
 
             if (*output == nullptr) {
@@ -219,7 +212,6 @@ struct SubtractArgsSerializer {
         opts.serviceVersion = PUBSUB_MESSAGE_SERIALIZATION_SERVICE_VERSION;
         opts.properties = props;
         _svcId = celix_bundleContext_registerServiceWithOptions(_mng->bundleContext(), &opts);
-        std::cout << "created serializer SubtractArgsSerializer id " << _svcId << std::endl;
     }
 
     ~SubtractArgsSerializer() {
@@ -236,7 +228,6 @@ struct ToStringArgsSerializer {
     explicit ToStringArgsSerializer(std::shared_ptr<celix::dm::DependencyManager> &mng) : _mng(mng) {
         _svc.handle = this;
         _svc.deserialize = [](void*, const struct iovec* input, size_t, void** out) -> celix_status_t {
-            std::cout << "[ToStringArgsSerializer] deserialize" << std::endl;
             json_error_t error;
             json_t *js_request = json_loads(static_cast<char*>(input->iov_base), 0, &error);
 
@@ -267,7 +258,6 @@ struct ToStringArgsSerializer {
         };
 
         _svc.serialize = [](void*, const void* input, struct iovec** output, size_t* outputIovLen) -> celix_status_t {
-            std::cout << "[ToStringArgsSerializer] serialize" << std::endl;
             auto *args = static_cast<ToStringArgs const *>(input);
 
             if (*output == nullptr) {
@@ -309,7 +299,6 @@ struct ToStringArgsSerializer {
         opts.serviceVersion = PUBSUB_MESSAGE_SERIALIZATION_SERVICE_VERSION;
         opts.properties = props;
         _svcId = celix_bundleContext_registerServiceWithOptions(_mng->bundleContext(), &opts);
-        std::cout << "created serializer ToStringArgsSerializer id " << _svcId << std::endl;
     }
 
     ToStringArgsSerializer(ToStringArgsSerializer const &) = delete;
