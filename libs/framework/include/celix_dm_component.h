@@ -70,7 +70,7 @@ void celix_dmComponent_destroy(celix_dm_component_t *cmp);
 
 /**
  * Destroys a DM Component on the event thread.
- * Will call doneCallback when done.
+ * Will call doneCallback (if not NULL) when done.
  *
  */
 void celix_dmComponent_destroyAsync(celix_dm_component_t *cmp, void *doneData, void (*doneCallback)(void*));

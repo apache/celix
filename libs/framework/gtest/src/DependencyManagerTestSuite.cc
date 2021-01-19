@@ -84,6 +84,44 @@ TEST_F(DependencyManagerTestSuite, DmComponentAddRemove) {
     ASSERT_EQ(0, celix_dependencyManager_nrOfComponents(mng));
 }
 
+
+TEST_F(DependencyManagerTestSuite, DmComponentAddRemoveAsync) {
+    auto *mng = celix_bundleContext_getDependencyManager(ctx);
+    auto *cmp1 = celix_dmComponent_create(ctx, "test1");
+    celix_dependencyManager_addAsync(mng, cmp1);
+    celix_dependencyManager_wait(mng);
+    EXPECT_EQ(1, celix_dependencyManager_nrOfComponents(mng));
+
+    std::atomic<std::size_t> count{0};
+    auto cb = [](void *data) {
+        auto* c = static_cast<std::atomic<std::size_t>*>(data);
+        c->fetch_add(1);
+    };
+
+    celix_dependencyManager_removeAsync(mng, cmp1, &count, cb);
+    celix_dependencyManager_wait(mng);
+    EXPECT_EQ(0, celix_dependencyManager_nrOfComponents(mng));
+    EXPECT_EQ(1, count.load());
+}
+
+TEST_F(DependencyManagerTestSuite, DmComponentRemoveAllAsync) {
+    auto *mng = celix_bundleContext_getDependencyManager(ctx);
+    auto *cmp1 = celix_dmComponent_create(ctx, "test1");
+    auto *cmp2 = celix_dmComponent_create(ctx, "test2");
+    celix_dependencyManager_add(mng, cmp1);
+    celix_dependencyManager_add(mng, cmp2);
+    EXPECT_EQ(2, celix_dependencyManager_nrOfComponents(mng));
+
+    std::atomic<std::size_t> count{0};
+    celix_dependencyManager_removeAllComponentsAsync(mng, &count, [](void *data) {
+        auto* c = static_cast<std::atomic<std::size_t>*>(data);
+        c->fetch_add(1);
+    });
+    celix_dependencyManager_wait(mng);
+    EXPECT_EQ(0, celix_dependencyManager_nrOfComponents(mng));
+    EXPECT_EQ(1, count.load());
+}
+
 TEST_F(DependencyManagerTestSuite, CDmGetInfo) {
     auto* mng = celix_bundleContext_getDependencyManager(ctx);
     auto* cmp = celix_dmComponent_create(ctx, "test1");
@@ -362,3 +400,4 @@ TEST_F(DependencyManagerTestSuite, InCompleteBuildShouldNotLeak) {
     cmp2.createProvidedCService(&svc, "CTestService").addProperty("key1", "val1"); //note not build
     cmp2.createProvidedService<TestService>().setVersion("1.0.0"); //note not build
 }
+

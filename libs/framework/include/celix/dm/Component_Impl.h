@@ -178,15 +178,18 @@ template<class T>
 std::shared_ptr<Component<T>> Component<T>::create(celix_bundle_context_t *context, celix_dependency_manager_t* cDepMan, std::string name, std::string uuid) {
     std::string cmpName = name.empty() ? celix::dm::typeName<T>() : std::move(name);
     return std::shared_ptr<Component<T>>{new Component<T>(context, cDepMan, std::move(cmpName), std::move(uuid)), [](Component<T>* cmp){
-        if (cmp->cmpAddedToDepMan) {
-            celix_dependencyManager_removeWithoutDestroy(cmp->cDepMan, cmp->cCmp); //remove
-        }
-        //NOTE using a callback of async destroy to ensure that the cmp instance is still exist while the
+        //Using a callback of async destroy to ensure that the cmp instance is still exist while the
         //dm component is async disabled and destroyed.
-        celix_dmComponent_destroyAsync(cmp->cCmp, cmp, [](void *data) {
+        auto cb = [](void *data) {
             auto* c = static_cast<Component<T>*>(data);
             delete c;
-        });
+        };
+
+        if (cmp->cmpAddedToDepMan) {
+            celix_dependencyManager_removeAsync(cmp->cDepMan, cmp->cCmp, cmp, cb);
+        } else {
+            celix_dmComponent_destroyAsync(cmp->cCmp, cmp, cb);
+        }
     }};
 }
 

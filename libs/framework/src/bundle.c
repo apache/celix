@@ -251,38 +251,13 @@ celix_status_t bundle_createModule(bundle_pt bundle, module_pt *module) {
 	return status;
 }
 
-static celix_status_t celix_bundle_startBundleInternal(celix_bundle_t* bundle) {
-    celix_status_t status = CELIX_SUCCESS;
-    if (celix_bundle_isSystemBundle(bundle)) {
-        status = framework_start(bundle->framework);
-    } else {
-        long bndId = celix_bundle_getId(bundle);
-        status = fw_startBundle(bundle->framework, bndId);
-    }
-    framework_logIfError(bundle->framework->logger, status, NULL, "Failed to start bundle");
-    return status;
-}
-
-static void* celix_bundle_startBundleOnThread(void* data) {
-    celix_bundle_t* bundle = data;
-    celix_bundle_startBundleInternal(bundle);
-    return NULL;
-}
-
 celix_status_t bundle_start(celix_bundle_t* bundle) {
-    if (celix_framework_isCurrentThreadTheEventLoop(bundle->framework)) {
-        fw_log(bundle->framework->logger, CELIX_LOG_LEVEL_WARNING,
-               "Cannot start bundle from Celix event thread!. Starting bundle on detached thread instead.");
-        celix_thread_t thread;
-        celixThread_create(&thread, NULL, celix_bundle_startBundleOnThread, bundle);
-        celixThread_detach(thread);
-        return CELIX_SUCCESS;
-    } else {
-        return celix_bundle_startBundleInternal(bundle);
-    }
+    //note deprecated call use celix_bundleContext_startBundle instead
+    return celix_framework_startBundle(bundle->framework, celix_bundle_getId(bundle));
 }
 
 celix_status_t bundle_update(bundle_pt bundle, const char *inputFile) {
+    fw_log(bundle->framework->logger, CELIX_LOG_LEVEL_WARNING, "Bundle update functionality is deprecated. Do not use!");
     assert(!celix_framework_isCurrentThreadTheEventLoop(bundle->framework));
 	celix_status_t status = CELIX_SUCCESS;
 	if (bundle != NULL) {
@@ -302,54 +277,15 @@ celix_status_t bundle_update(bundle_pt bundle, const char *inputFile) {
 	return status;
 }
 
-static celix_status_t celix_bundle_stopBundleInternal(celix_bundle_t* bundle) {
-    celix_status_t status = CELIX_SUCCESS;
-    if (celix_bundle_isSystemBundle(bundle)) {
-        status = framework_stop(bundle->framework);
-    } else {
-        long bndId = celix_bundle_getId(bundle);
-        status = fw_stopBundle(bundle->framework, bndId, false);
-    }
-    framework_logIfError(bundle->framework->logger, status, NULL, "Failed to start bundle");
-    return status;
-}
-
-static void* celix_bundle_stopBundleOnThread(void* data) {
-    celix_bundle_t* bundle = data;
-    celix_bundle_stopBundleInternal(bundle);
-    return NULL;
-}
 
 celix_status_t bundle_stop(bundle_pt bundle) {
-    if (celix_framework_isCurrentThreadTheEventLoop(bundle->framework)) {
-        fw_log(bundle->framework->logger, CELIX_LOG_LEVEL_WARNING,
-               "Cannot stop bundle from Celix event thread!. Stopping bundle on detached thread instead.");
-        celix_thread_t thread;
-        celixThread_create(&thread, NULL, celix_bundle_stopBundleOnThread, bundle);
-        celixThread_detach(thread);
-        return CELIX_SUCCESS;
-    } else {
-        return celix_bundle_stopBundleInternal(bundle);
-    }
+    //note deprecated call use celix_bundleContext_startBundle instead
+    return celix_framework_startBundle(bundle->framework, celix_bundle_getId(bundle));
 }
 
 celix_status_t bundle_uninstall(bundle_pt bundle) {
-	celix_status_t status = CELIX_SUCCESS;
-	if (bundle != NULL) {
-		bool systemBundle = false;
-		status = bundle_isSystemBundle(bundle, &systemBundle);
-		if (status == CELIX_SUCCESS) {
-			if (systemBundle) {
-				status = CELIX_BUNDLE_EXCEPTION;
-			} else {
-				status = fw_uninstallBundle(bundle->framework, bundle);
-			}
-		}
-	}
-
-	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to uninstall bundle");
-
-	return status;
+    //note deprecated call use celix_bundleContext_uninstallBundle instead
+    return celix_framework_uninstallBundle(bundle->framework, celix_bundle_getId(bundle));
 }
 
 celix_status_t bundle_setPersistentStateInactive(bundle_pt bundle) {

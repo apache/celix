@@ -23,6 +23,7 @@
 #include "celix_launcher.h"
 #include "celix_framework_factory.h"
 #include "celix_framework.h"
+#include "framework.h"
 
 
 class CelixFramework : public ::testing::Test {
@@ -35,12 +36,11 @@ public:
         rc = celixLauncher_launch("config.properties", &fw);
         EXPECT_EQ(CELIX_SUCCESS, rc);
 
-        bundle_pt bundle = nullptr;
-        rc = framework_getFrameworkBundle(fw, &bundle);
-        EXPECT_EQ(CELIX_SUCCESS, rc);
+        celix_bundle_t* bundle = celix_framework_getFrameworkBundle(fw);
+        EXPECT_TRUE(bundle != nullptr);
 
-        rc = bundle_getContext(bundle, &context);
-        EXPECT_EQ(CELIX_SUCCESS, rc);
+        context = celix_framework_getFrameworkContext(fw);
+        EXPECT_TRUE(context != nullptr);
 
         framework = std::shared_ptr<celix_framework_t>{fw, [](celix_framework_t* cFw) {
             celixLauncher_stop(cFw);

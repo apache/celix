@@ -67,7 +67,7 @@ celix_status_t celix_dependencyManager_addAsync(celix_dependency_manager_t *mana
 	return celix_private_dmComponent_enable(component);
 }
 
-celix_status_t celix_dependencyManager_removeWithoutDestroy(celix_dependency_manager_t *manager, celix_dm_component_t *component) {
+static celix_status_t celix_dependencyManager_removeWithoutDestroy(celix_dependency_manager_t *manager, celix_dm_component_t *component) {
     celix_status_t status = CELIX_SUCCESS;
 
     celixThreadMutex_lock(&manager->mutex);
@@ -93,42 +93,69 @@ celix_status_t celix_dependencyManager_removeWithoutDestroy(celix_dependency_man
 }
 
 celix_status_t celix_dependencyManager_remove(celix_dependency_manager_t *manager, celix_dm_component_t *component) {
-	celix_status_t  status = celix_dependencyManager_removeAsync(manager, component);
+	celix_status_t  status = celix_dependencyManager_removeAsync(manager, component, NULL, NULL);
 	celix_dependencyManager_wait(manager);
 	return status;
 }
 
-celix_status_t celix_dependencyManager_removeAsync(celix_dependency_manager_t *manager, celix_dm_component_t *component) {
+celix_status_t celix_dependencyManager_removeAsync(
+        celix_dependency_manager_t *manager,
+        celix_dm_component_t *component,
+        void* doneData,
+        void (*doneCallback)(void* data)) {
     celix_status_t  status = celix_dependencyManager_removeWithoutDestroy(manager, component);
-	celix_dmComponent_destroy(component);
+	celix_dmComponent_destroyAsync(component, doneData, doneCallback);
 	return status;
 }
 
 celix_status_t celix_dependencyManager_removeAllComponents(celix_dependency_manager_t *manager) {
-	celix_status_t status = celix_dependencyManager_removeAllComponentsAsync(manager);
-	celix_dependencyManager_wait(manager);
+    celix_status_t status = celix_dependencyManager_removeAllComponentsAsync(manager, NULL, NULL);
+    celix_dependencyManager_wait(manager);
 	return status;
 }
 
-celix_status_t celix_dependencyManager_removeAllComponentsAsync(celix_dependency_manager_t *manager) {
+struct celix_dependency_manager_removeall_data {
+    size_t destroysInProgress;
+    void *doneData;
+    void (*doneCallback)(void* data);
+};
+
+static void celix_dependencyManager_removeAllComponentsAsyncCallback(void *data) {
+    struct celix_dependency_manager_removeall_data* callbackData = data;
+    callbackData->destroysInProgress -= 1;
+    if (callbackData->destroysInProgress == 0) {
+        callbackData->doneCallback(callbackData->doneData);
+        free(callbackData);
+    }
+}
+
+celix_status_t celix_dependencyManager_removeAllComponentsAsync(celix_dependency_manager_t *manager, void *doneData, void (*doneCallback)(void *data)) {
 	celix_status_t status = CELIX_SUCCESS;
-    celix_array_list_t *toRemoveComponents = celix_arrayList_create();
 
+	//setup callback data struct to synchronize when all components are destroyed (if doneCallback is not NULL)
+    struct celix_dependency_manager_removeall_data* callbackData = NULL;
+    if (doneCallback != NULL) {
+        callbackData = malloc(sizeof(*callbackData));
+        callbackData->destroysInProgress = 0;
+        callbackData->doneData = doneData;
+        callbackData->doneCallback = doneCallback;
+    }
+
+    //remove components and queue a async component destroy
     celixThreadMutex_lock(&manager->mutex);
-    while (!arrayList_isEmpty(manager->components)) {
-        celix_dm_component_t *cmp = celix_arrayList_get(manager->components, 0);
-        celix_arrayList_removeAt(manager->components, 0);
-        celix_arrayList_add(toRemoveComponents, cmp);
+    if (doneCallback != NULL) {
+        callbackData->destroysInProgress = celix_arrayList_size(manager->components);
     }
+    for (int i = 0; i < celix_arrayList_size(manager->components); ++i) {
+        celix_dm_component_t *cmp = celix_arrayList_get(manager->components, i);
+        if (doneCallback != NULL) {
+            celix_dmComponent_destroyAsync(cmp, callbackData, celix_dependencyManager_removeAllComponentsAsyncCallback);
+        } else {
+            celix_dmComponent_destroyAsync(cmp, NULL, NULL);
+        }
+    }
+    celix_arrayList_clear(manager->components);
     celixThreadMutex_unlock(&manager->mutex);
-
-    while (!arrayList_isEmpty(toRemoveComponents)) {
-        celix_dm_component_t *cmp = celix_arrayList_get(toRemoveComponents, 0);
-        celix_arrayList_removeAt(toRemoveComponents, 0);
-        celix_dmComponent_destroy(cmp);
-    }
-
-    celix_arrayList_destroy(toRemoveComponents);
 
 	return status;
 }

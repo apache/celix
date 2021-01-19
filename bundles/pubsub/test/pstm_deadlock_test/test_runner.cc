@@ -153,6 +153,7 @@ TEST_F(DeadlockTestSuite, test) {
 
     celix_bundleContext_startBundle(ctx, sutBundleId);
 
-    act.promise.get_future().wait(); //wait till setPublisher has added an service dependency (NOTE dep man is not thread safe!)
+    //wait till setPublisher has added an service dependency. If not the findComponent can return NULL
+    act.promise.get_future().wait();
     mng->stop();
 }

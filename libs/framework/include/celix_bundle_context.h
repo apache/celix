@@ -824,6 +824,11 @@ bool celix_bundleContext_isBundleActive(celix_bundle_context_t *ctx, long bndId)
  * Install and optional start a bundle.
  * Will silently ignore bundle ids < 0.
  *
+ * If this function is called on the Celix event thread and autoStart is true,
+ * the actual starting of the bundle will be done async and on a separate thread.
+ * If this function is called from a different thread than the Celix event thread and the autoStart is true,
+ * then the function will return after the bundle is started.
+ *
  * @param ctx The bundle context
  * @param bundleLoc The bundle location to the bundle zip file.
  * @param autoStart If the bundle should also be started.
@@ -835,6 +840,11 @@ long celix_bundleContext_installBundle(celix_bundle_context_t *ctx, const char *
  * Uninstall the bundle with the provided bundle id. If needed the bundle will be stopped first.
  * Will silently ignore bundle ids < 0.
  *
+ * If this function is called on the Celix event thread, the actual stopping of the bundle will be done async and
+ * on a separate thread.
+ * If this function is called from a different thread than the Celix event thread, then the function will return after
+ * the bundle is stopped.
+ *
  * @param ctx The bundle context
  * @param bndId The bundle id to uninstall.
  * @return true if the bundle is correctly uninstalled. False if not.
@@ -845,6 +855,11 @@ bool celix_bundleContext_uninstallBundle(celix_bundle_context_t *ctx, long bndId
  * Stop the bundle with the provided bundle id.
  * Will silently ignore bundle ids < 0.
  *
+ * If this function is called on the Celix event thread, the actual stopping of the bundle will be done async and
+ * on a separate thread.
+ * If this function is called from a different thread than the Celix event thread, then the function will return after
+ * the bundle is stopped.
+ *
  * @param ctx The bundle context
  * @param bndId The bundle id to stop.
  * @return true if the bundle is found & correctly stop. False if not.
@@ -854,6 +869,11 @@ bool celix_bundleContext_stopBundle(celix_bundle_context_t *ctx, long bndId);
 /**
  * Start the bundle with the provided bundle id.
  * Will silently ignore bundle ids < 0.
+ *
+ * If this function is called on the Celix event thread, the actual starting of the bundle will be done async and
+ * on a separate thread.
+ * If this function is called from a different thread than the Celix event thread, then the function will return after
+ * the bundle is started.
  *
  * @param ctx The bundle context
  * @param bndId The bundle id to start.

@@ -73,13 +73,16 @@ celix_status_t celix_dependencyManager_remove(celix_dependency_manager_t *manage
  * Same as celix_dependencyManager_remove, but this call will not wait until all service registrations and
  * tracker are unregistered/closed on the Celix event thread.
  * Can be called on the Celix event thread.
+ *
+ * The doneCallback will be called (if not NULL) with doneData as argument when the component is removed
+ * and destroyed.
+ *
  */
-celix_status_t celix_dependencyManager_removeAsync(celix_dependency_manager_t *manager, celix_dm_component_t *component);
-
-/**
- * Removes a DM component from the dependency manager.
- */
-celix_status_t celix_dependencyManager_removeWithoutDestroy(celix_dependency_manager_t *manager, celix_dm_component_t *component);
+celix_status_t celix_dependencyManager_removeAsync(
+        celix_dependency_manager_t *manager,
+        celix_dm_component_t *component,
+        void* doneData,
+        void (*doneCallback)(void* data));
 
 /**
  * Removes all DM components from the dependency manager.
@@ -92,9 +95,12 @@ celix_status_t celix_dependencyManager_removeAllComponents(celix_dependency_mana
  * Same as celix_dependencyManager_removeAllComponents, but this call will not wait til all
  * service registration and service trackers are unregistered/closed.
  *
+ * The doneCallback will be called (if not NULL) with doneData as argument when the all component are removed
+ * and destroyed.
+ *
  * Can be called on the Celix event thread.
  */
-celix_status_t celix_dependencyManager_removeAllComponentsAsync(celix_dependency_manager_t *manager);
+celix_status_t celix_dependencyManager_removeAllComponentsAsync(celix_dependency_manager_t *manager, void *doneData, void (*doneCallback)(void *data));
 
 /**
  * Create and returns a dependency manager info struct for the specified bundle.

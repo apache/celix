@@ -17,31 +17,23 @@
  * under the License.
  */
 
-#ifndef CELIX_FRAMEWORK_FACTORY_H_
-#define CELIX_FRAMEWORK_FACTORY_H_
+#include "bundle_state.h"
 
-#include "celix_framework.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/**
- * Creates a new framework. The framework will be in the started state.
- * @param config The framework configuration. Can be NULL.
- * @return a started framework or NULL
- */
-celix_framework_t* celix_frameworkFactory_createFramework(celix_properties_t *config);
-
-/**
- * Stop and destroys a Celix framework
- * Note that this call block till the Celix framework is stopped
- */
-void celix_frameworkFactory_destroyFramework(celix_framework_t *fw);
-
-
-#ifdef __cplusplus
+const char* celix_bundleState_getName(celix_bundle_state_e state) {
+    switch (state) {
+        case OSGI_FRAMEWORK_BUNDLE_UNKNOWN:
+            return "UNKNOWN";
+        case OSGI_FRAMEWORK_BUNDLE_UNINSTALLED:
+            return "UNINSTALLED";
+        case OSGI_FRAMEWORK_BUNDLE_INSTALLED:
+            return "INSTALLED";
+        case OSGI_FRAMEWORK_BUNDLE_RESOLVED:
+            return "RESOLVED";
+        case OSGI_FRAMEWORK_BUNDLE_STARTING:
+            return "STARTING";
+        case OSGI_FRAMEWORK_BUNDLE_STOPPING:
+            return "STOPPING";
+        default:
+            return "ACTIVE";
+    }
 }
-#endif
-
-#endif /* CELIX_FRAMEWORK_FACTORY_H_ */

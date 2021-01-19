@@ -96,9 +96,25 @@ struct celix_framework_event {
     void *genericProcessData;
     void (*genericProcess)(void*);
 
+
 };
 
 typedef struct celix_framework_event celix_framework_event_t;
+
+enum celix_bundle_lifecycle_command {
+    CELIX_BUNDLE_LIFECYCLE_START,
+    CELIX_BUNDLE_LIFECYCLE_STOP,
+    CELIX_BUNDLE_LIFECYCLE_UNINSTALL
+};
+
+typedef struct celix_framework_bundle_lifecycle_handler {
+    celix_thread_t thread;
+    celix_framework_t* framework;
+    celix_framework_bundle_entry_t* bndEntry;
+    long bndId;
+    enum celix_bundle_lifecycle_command command;
+    int done; //NOTE atomic -> 0 not done, 1 done (thread can be joined)
+} celix_framework_bundle_lifecycle_handler_t;
 
 struct celix_framework {
     celix_bundle_t *bundle;
@@ -148,6 +164,11 @@ struct celix_framework {
     celix_framework_logger_t* logger;
 
     long nextGenericEventId;
+
+    struct {
+        celix_thread_mutex_t mutex; //protects below
+        celix_array_list_t* bundleLifecycleHandlers; //entry = celix_framework_bundle_lifecycle_handler_t*
+    } bundleLifecycleHandling;
 };
 
 FRAMEWORK_EXPORT celix_status_t fw_getProperty(framework_pt framework, const char* name, const char* defaultValue, const char** value);
@@ -156,10 +177,7 @@ FRAMEWORK_EXPORT celix_status_t fw_installBundle(framework_pt framework, bundle_
 FRAMEWORK_EXPORT celix_status_t fw_uninstallBundle(framework_pt framework, bundle_pt bundle);
 
 FRAMEWORK_EXPORT celix_status_t framework_getBundleEntry(framework_pt framework, const_bundle_pt bundle, const char* name, char** entry);
-
-FRAMEWORK_EXPORT celix_status_t fw_startBundle(framework_pt framework, long bndId);
 FRAMEWORK_EXPORT celix_status_t framework_updateBundle(framework_pt framework, bundle_pt bundle, const char* inputFile);
-FRAMEWORK_EXPORT celix_status_t fw_stopBundle(framework_pt framework, long bndId, bool record);
 
 FRAMEWORK_EXPORT celix_status_t fw_registerService(framework_pt framework, service_registration_pt * registration, long bundleId, const char* serviceName, const void* svcObj, properties_pt properties);
 FRAMEWORK_EXPORT celix_status_t fw_registerServiceFactory(framework_pt framework, service_registration_pt * registration, long bundleId, const char* serviceName, service_factory_pt factory, properties_pt properties);
@@ -257,11 +275,67 @@ void celix_framework_waitForAsyncRegistration(celix_framework_t *fw, long svcId)
 /**
  * Wait til the async service unregistration for the provided service id is no longer present in the event queue.
  */
-void celix_framework_waitForAsyncUnregistration(framework_t *fw, long svcId);
+void celix_framework_waitForAsyncUnregistration(celix_framework_t *fw, long svcId);
 
 /**
  * Returns whether the current thread is the Celix framework event loop thread.
  */
-bool celix_framework_isCurrentThreadTheEventLoop(framework_t* fw);
+bool celix_framework_isCurrentThreadTheEventLoop(celix_framework_t* fw);
+
+/**
+ * Increase the use count of a bundle and ensure that a bundle cannot be uninstalled.
+ */
+void celix_framework_bundleEntry_increaseUseCount(celix_framework_bundle_entry_t *entry);
+
+/**
+ * Decrease the use count of a bundle.
+ */
+void celix_framework_bundleEntry_decreaseUseCount(celix_framework_bundle_entry_t *entry);
+
+/**
+ * Find the bundle entry for the bnd id and increase use count
+ */
+celix_framework_bundle_entry_t* celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(celix_framework_t *fw, long bndId);
+
+/**
+ * Start a bundle and ensure that this is not done on the Celix event thread.
+ * Will spawn a thread if needed.
+ */
+celix_status_t celix_framework_startBundleOnANonCelixEventThread(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry);
+
+/**
+ * Stop a bundle and ensure that this is not done on the Celix event thread.
+ * Will spawn a thread if needed.
+ */
+celix_status_t celix_framework_stopBundleOnANonCelixEventThread(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry);
+
+/**
+ * Uninstall (and if needed stop) a bundle and ensure that this is not done on the Celix event thread.
+ * Will spawn a thread if needed.
+ */
+celix_status_t celix_framework_uninstallBundleOnANonCelixEventThread(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry);
+
+
+/**
+ * cleanup finished bundle lifecyles threads.
+ * @param fw                The framework.
+ * @param waitTillEmpty     Whether to wait for all threads to be finished.
+ */
+void celix_framework_cleanupBundleLifecycleHandlers(celix_framework_t* fw, bool waitTillEmpty);
+
+/**
+ * Start a bundle. Cannot be called on the Celix event thread.
+ */
+celix_status_t celix_framework_startBundleEntry(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry);
+
+/**
+ * Stop a bundle. Cannot be called on the Celix event thread.
+ */
+celix_status_t celix_framework_stopBundleEntry(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry);
+
+/**
+ * Uinstall a bundle. Cannot be called on the Celix event thread.
+ */
+celix_status_t celix_framework_uninstallBundleEntry(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry);
 
 #endif /* FRAMEWORK_PRIVATE_H_ */

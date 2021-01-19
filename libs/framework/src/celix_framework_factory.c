@@ -18,12 +18,13 @@
  */
 
 #include "celix_framework_factory.h"
+#include "framework.h"
 
 framework_t* celix_frameworkFactory_createFramework(celix_properties_t *config) {
     framework_t* fw = NULL;
 
     if (config == NULL) {
-        config = properties_create();
+        config = celix_properties_create();
     }
 
     if (config != NULL) {

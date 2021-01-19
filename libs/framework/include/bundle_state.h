@@ -43,6 +43,9 @@ enum celix_bundleState {
 
 typedef enum celix_bundleState bundle_state_e;
 typedef enum celix_bundleState celix_bundle_state_e;
+
+const char* celix_bundleState_getName(celix_bundle_state_e state);
+
 #ifdef __cplusplus
 }
 #endif
