@@ -55,6 +55,20 @@ inline void BaseProvidedService::runBuild() {
     provideAddedToCmp = true;
 }
 
+inline void BaseProvidedService::wait() const {
+    if (cCmp) {
+        auto* ctx = celix_dmComponent_getBundleContext(cCmp);
+        auto* fw = celix_bundleContext_getFramework(ctx);
+        if (!celix_framework_isCurrentThreadTheEventLoop(fw)) {
+            celix_bundleContext_waitForEvents(ctx);
+        } else {
+            celix_bundleContext_log(ctx, CELIX_LOG_LEVEL_WARNING,
+                                    "BaseProvidedService::wait: Cannot wait for Celix event queue on the Celix event queue thread! "
+                                    "Use async DepMan API instead.");
+        }
+    }
+}
+
 template<typename T, typename I>
 ProvidedService<T,I>& celix::dm::ProvidedService<T,I>::setVersion(std::string v) {
     svcVersion = std::move(v);
@@ -76,6 +90,13 @@ ProvidedService<T, I> &ProvidedService<T, I>::addProperty(const std::string &key
 
 template<typename T, typename I>
 ProvidedService<T, I> &ProvidedService<T, I>::build() {
+    this->runBuild();
+    this->wait();
+    return *this;
+}
+
+template<typename T, typename I>
+ProvidedService<T, I> &ProvidedService<T, I>::buildAsync() {
     this->runBuild();
     return *this;
 }
