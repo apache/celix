@@ -511,13 +511,23 @@ static celix_status_t celix_dmComponent_resume(celix_dm_component_t *component, 
 	celix_status_t status = CELIX_SUCCESS;
     dm_service_dependency_strategy_t strategy = celix_dmServiceDependency_getStrategy(dependency);
 	if (strategy == DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND &&  component->callbackStart != NULL) {
-        celix_bundleContext_log(component->context, CELIX_LOG_LEVEL_TRACE,
-               "Resuming component %s (uuid=%s)",
-               component->name,
-               component->uuid);
-        celix_dmComponent_registerServices(component, true);
-		status = component->callbackStart(component->implementation);
-		component->nrOfTimesResumed += 1;
+	    //ensure that the current state is still TRACKING_OPTION. Else during a add/rem/set call a required svc dep has been added.
+        celixThreadMutex_lock(&component->mutex);
+        celix_dm_component_state_t currentState = component->state;
+        celixThreadMutex_unlock(&component->mutex);
+        if (currentState == DM_CMP_STATE_TRACKING_OPTIONAL) {
+            celix_bundleContext_log(component->context, CELIX_LOG_LEVEL_TRACE,
+                                    "Resuming component %s (uuid=%s)",
+                                    component->name,
+                                    component->uuid);
+            celix_dmComponent_registerServices(component, true);
+            status = component->callbackStart(component->implementation);
+            component->nrOfTimesResumed += 1;
+        } else {
+            celix_bundleContext_log(component->context, CELIX_LOG_LEVEL_TRACE,
+                                    "Skipping resume because cmp state is now %s",
+                                    celix_dmComponent_stateToString(currentState));
+        }
 	}
 	return status;
 }
@@ -761,11 +771,7 @@ static celix_status_t celix_dmComponent_registerServices(celix_dm_component_t *c
     if (needLock) {
         celixThreadMutex_lock(&component->mutex);
     }
-    bool activeState = component->state == DM_CMP_STATE_TRACKING_OPTIONAL; //ensure that service need to be registered (after a set, add, remove svc deps can be added -> resume should not register services)
-    if (!activeState) {
-        celix_bundleContext_log(component->context, CELIX_LOG_LEVEL_TRACE, "Skipping service registration, because cmp state is not DM_CMP_STATE_TRACKING_OPTIONAL anymore.");
-    }
-    for (int i = 0; activeState && i < celix_arrayList_size(component->providedInterfaces); i++) {
+    for (int i = 0; i < celix_arrayList_size(component->providedInterfaces); i++) {
         dm_interface_t *interface = arrayList_get(component->providedInterfaces, i);
         if (interface->svcId == -1L) {
             celix_properties_t *regProps = celix_properties_copy(interface->properties);
