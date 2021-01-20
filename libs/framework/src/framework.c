@@ -570,15 +570,16 @@ static void framework_autoStartConfiguredBundlesForList(celix_framework_t* fw, c
         long bndId = -1;
         bundle_t *bnd = celix_arrayList_get(installedBundles, i);
         bundle_getBundleId(bnd, &bndId);
-        celix_status_t rc = bundle_start(bnd);
-        if (rc != CELIX_SUCCESS) {
-            printf("Could not start bundle %li\n", bndId);
+        bool started = celix_framework_startBundle(fw, bndId);
+        if (!started) {
+            fw_log(fw->logger, CELIX_LOG_LEVEL_ERROR, "Could not start bundle %s (bnd id = %li)\n", bnd->symbolicName, bndId);
         }
     }
 }
 
 celix_status_t framework_stop(framework_pt framework) {
-    return celix_framework_stopBundle(framework, CELIX_FRAMEWORK_BUNDLE_ID);
+    bool stopped = celix_framework_stopBundle(framework, CELIX_FRAMEWORK_BUNDLE_ID);
+    return stopped ? CELIX_SUCCESS : CELIX_ILLEGAL_STATE;
 }
 
 celix_status_t fw_getProperty(framework_pt framework, const char* name, const char* defaultValue, const char** out) {
@@ -2290,6 +2291,8 @@ bool celix_framework_stopBundle(celix_framework_t *fw, long bndId) {
         if (state == OSGI_FRAMEWORK_BUNDLE_ACTIVE) {
             celix_status_t rc = celix_framework_stopBundleOnANonCelixEventThread(fw, bndEntry);
             stopped = rc == CELIX_SUCCESS;
+        } else if (state == OSGI_FRAMEWORK_BUNDLE_RESOLVED) {
+            //already stopped, silently ignore.
         } else {
             fw_log(fw->logger, CELIX_LOG_LEVEL_WARNING, "Cannot stop bundle, bundle state is %s", celix_bundleState_getName(state));
         }

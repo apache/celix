@@ -376,13 +376,13 @@ Component<T>& Component<T>::removeCallbacks() {
 template<typename T>
 Component<T>& Component<T>::build() {
     runBuild();
+    wait();
     return *this;
 }
 
 template<typename T>
 Component<T>& Component<T>::buildAsync() {
     runBuild();
-    wait();
     return *this;
 }
 

@@ -61,14 +61,6 @@ struct celix_dm_service_dependency {
     size_t nrOfActiveStoppingTrackers; //nr of async stop tracker still active (should be 0 or 1)
     size_t trackedSvcCount;
     void* callbackHandle; //This handle can be set to be used instead of the component implementation
-
-    /**
-     * If a component provides the same service type as it depends on, this types need to be filtered out to prevent
-     * a deadlock.
-     * The deadlock occurs when service cannot be unregistered, because it is still in use in due to the a service tracker
-     * of a service dependency of the same type (for the same component)
-     */
-    bool filterOutOwnSvcDependencies;
 };
 
 celix_status_t celix_dmServiceDependency_enable(celix_dm_service_dependency_t *dependency);
@@ -81,10 +73,6 @@ celix_status_t celix_dmServiceDependency_setComponent(celix_dm_service_dependenc
 celix_status_t celix_dmServiceDependency_invokeSet(celix_dm_service_dependency_t *dependency, void* svc, const celix_properties_t* props);
 celix_status_t celix_dmServiceDependency_invokeAdd(celix_dm_service_dependency_t *dependency, void* svc, const celix_properties_t* props);
 celix_status_t celix_dmServiceDependency_invokeRemove(celix_dm_service_dependency_t *dependency, void* svc, const celix_properties_t* props);
-
-bool celix_dmServiceDependency_hasSetCallback(const celix_dm_service_dependency_t *dependency);
-bool celix_dmServiceDependency_hasAddCallback(const celix_dm_service_dependency_t *dependency);
-bool celix_dmServiceDependency_hasRemoveCallback(const celix_dm_service_dependency_t *dependency);
 
 bool celix_dmServiceDependency_isAvailable(celix_dm_service_dependency_t *dependency);
 bool celix_dmServiceDependency_isRequired(const celix_dm_service_dependency_t* dependency);

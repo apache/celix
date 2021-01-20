@@ -144,6 +144,7 @@ if (BUILD_PUBSUB_PSA_UDP_MC)
             DIR ${CMAKE_CURRENT_BINARY_DIR}
             PROPERTIES
                 LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
+                CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
             BUNDLES
                 Celix::pubsub_serializer_json
                 Celix::pubsub_topology_manager
@@ -160,6 +161,7 @@ if (BUILD_PUBSUB_PSA_UDP_MC)
             DIR ${CMAKE_CURRENT_BINARY_DIR}
             PROPERTIES
             LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
+            CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
             BUNDLES
             Celix::pubsub_serializer_json
             Celix::pubsub_protocol_wire_v2
@@ -194,6 +196,7 @@ if (BUILD_PUBSUB_PSA_TCP)
             DIR ${CMAKE_CURRENT_BINARY_DIR}
             PROPERTIES
             LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
+            CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
             BUNDLES
             Celix::shell
             Celix::shell_tui
@@ -215,6 +218,7 @@ if (BUILD_PUBSUB_PSA_TCP)
             DIR ${CMAKE_CURRENT_BINARY_DIR}
             PROPERTIES
             LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
+            CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
             BUNDLES
             Celix::shell
             Celix::shell_tui
@@ -236,6 +240,7 @@ if (BUILD_PUBSUB_PSA_TCP)
             DIR ${CMAKE_CURRENT_BINARY_DIR}
             PROPERTIES
             LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
+            CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
             BUNDLES
             Celix::shell
             Celix::shell_tui
@@ -256,6 +261,7 @@ if (BUILD_PUBSUB_PSA_TCP)
             DIR ${CMAKE_CURRENT_BINARY_DIR}
             PROPERTIES
             LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
+            CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
             BUNDLES
             Celix::pubsub_serializer_json
             Celix::pubsub_protocol_wire_v2
@@ -292,6 +298,7 @@ if (BUILD_PUBSUB_PSA_WS)
             DIR ${CMAKE_CURRENT_BINARY_DIR}
             PROPERTIES
                 LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
+                CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
                 USE_WEBSOCKETS=true
                 LISTENING_PORTS=8080
             BUNDLES
@@ -313,6 +320,7 @@ if (BUILD_PUBSUB_PSA_WS)
             DIR ${CMAKE_CURRENT_BINARY_DIR}
             PROPERTIES
             LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
+            CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
             BUNDLES
             Celix::pubsub_serializer_json
             Celix::pubsub_protocol_wire_v2
@@ -346,6 +354,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             DIR ${CMAKE_CURRENT_BINARY_DIR}
             PROPERTIES
                 LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
+                CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
             BUNDLES
                 Celix::pubsub_serializer_json
                 Celix::pubsub_protocol_wire_v1
@@ -362,6 +371,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             DIR ${CMAKE_CURRENT_BINARY_DIR}
             PROPERTIES
                 LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
+                CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
             BUNDLES
                 Celix::pubsub_serializer_json
                 Celix::pubsub_topology_manager
@@ -388,6 +398,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
         DIR ${CMAKE_CURRENT_BINARY_DIR}
         PROPERTIES
         LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
+        CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
         BUNDLES
         Celix::pubsub_serializer_json
         Celix::pubsub_protocol_wire_v2
@@ -411,6 +422,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             PROPERTIES
                 LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
                 PSA_ZMQ_ZEROCOPY_ENABLED=true
+                CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
             BUNDLES
                 Celix::pubsub_serializer_json
                 Celix::pubsub_protocol_wire_v1
@@ -430,6 +442,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             PROPERTIES
                 LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
                 PSA_ZMQ_ZEROCOPY_ENABLED=true
+                CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
             BUNDLES
                 Celix::pubsub_serializer_json
                 Celix::pubsub_topology_manager
@@ -460,6 +473,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
         PROPERTIES
         LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
         PSA_ZMQ_ZEROCOPY_ENABLED=true
+        CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
         BUNDLES
         Celix::pubsub_serializer_json
         Celix::pubsub_protocol_wire_v2
@@ -483,6 +497,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             DIR ${CMAKE_CURRENT_BINARY_DIR}
             PROPERTIES
             LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
+            CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
             BUNDLES
             Celix::pubsub_serializer_json
             Celix::pubsub_protocol_wire_v2
@@ -499,6 +514,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             DIR ${CMAKE_CURRENT_BINARY_DIR}
             PROPERTIES
             LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
+            CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
             BUNDLES
             Celix::pubsub_serializer_json
             Celix::pubsub_topology_manager

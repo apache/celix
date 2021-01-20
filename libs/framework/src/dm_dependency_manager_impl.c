@@ -29,8 +29,6 @@
 #include "celix_dependency_manager.h"
 #include "celix_bundle.h"
 #include "celix_framework.h"
-#include "bundle_context_private.h"
-#include "framework_private.h"
 
 celix_dependency_manager_t* celix_private_dependencyManager_create(celix_bundle_context_t *context) {
 	celix_dependency_manager_t *manager = calloc(1, sizeof(*manager));
@@ -83,7 +81,7 @@ static celix_status_t celix_dependencyManager_removeWithoutDestroy(celix_depende
     celixThreadMutex_unlock(&manager->mutex);
 
     if (!found) {
-        fw_log(manager->ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, "Cannot find component %s (uuid=%s)",
+        celix_bundleContext_log(manager->ctx, CELIX_LOG_LEVEL_ERROR, "Cannot find component %s (uuid=%s)",
             celix_dmComponent_getName(component),
             celix_dmComponent_getUUID(component));
         status = CELIX_BUNDLE_EXCEPTION;
@@ -251,10 +249,11 @@ size_t celix_dependencyManager_nrOfComponents(celix_dependency_manager_t *mng) {
 void celix_dependencyManager_wait(celix_dependency_manager_t *mng) {
     celix_framework_t *fw = celix_bundleContext_getFramework(mng->ctx);
     if (!celix_framework_isCurrentThreadTheEventLoop(fw)) {
-        celix_framework_waitForEmptyEventQueue(fw);
+        celix_bundleContext_waitForEvents(mng->ctx);
     } else {
-        celix_bundleContext_log(mng->ctx, CELIX_LOG_LEVEL_ERROR,
-                                "Cannot wait for empty Celix event queue of the Celix event queue thread!");
+        celix_bundleContext_log(mng->ctx, CELIX_LOG_LEVEL_WARNING,
+        "celix_dependencyManager_wait: Cannot wait for Celix event queue on the Celix event queue thread! "
+        "Use async dep man API instead.");
     }
 }
 

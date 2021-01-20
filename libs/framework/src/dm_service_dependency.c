@@ -19,16 +19,12 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
-#include <celix_bundle.h>
 
+#include "celix_bundle.h"
 #include "celix_constants.h"
 #include "celix_utils.h"
-
 #include "dm_service_dependency_impl.h"
 #include "dm_component_impl.h"
-#include "bundle_context_private.h"
-#include "framework_private.h"
 
 #define DM_SERVICE_DEPENDENCY_DEFAULT_STRATEGY DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND
 
@@ -68,7 +64,7 @@ void celix_dmServiceDependency_destroy(celix_dm_service_dependency_t *dep) {
     } else {
         if (!celix_dmServiceDependency_isDisabled(dep)) {
             celix_bundle_context_t* ctx = celix_dmComponent_getBundleContext(dep->component);
-            fw_log(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR,
+            celix_bundleContext_log(ctx, CELIX_LOG_LEVEL_ERROR,
                        "Cannot destroy a service dependency this is still enabled.");
         } else {
             celixThreadMutex_destroy(&dep->mutex);
@@ -325,18 +321,6 @@ celix_status_t celix_dmServiceDependency_invokeRemove(celix_dm_service_dependenc
         dependency->addWithProperties(serviceDependency_getCallbackHandle(dependency), svc, props);
     }
     return CELIX_SUCCESS;
-}
-
-bool celix_dmServiceDependency_hasSetCallback(const celix_dm_service_dependency_t *dependency) {
-    return dependency->set != NULL || dependency->setWithProperties != NULL;
-}
-
-bool celix_dmServiceDependency_hasAddCallback(const celix_dm_service_dependency_t *dependency) {
-    return dependency->add != NULL || dependency->addWithProperties != NULL;
-}
-
-bool celix_dmServiceDependency_hasRemoveCallback(const celix_dm_service_dependency_t *dependency) {
-    return dependency->remove != NULL || dependency->remWithProperties != NULL;
 }
 
 bool celix_dmServiceDependency_isAvailable(celix_dm_service_dependency_t *dependency) {

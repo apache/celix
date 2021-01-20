@@ -41,10 +41,11 @@ inline void BaseServiceDependency::wait() const {
         auto* ctx = celix_dmComponent_getBundleContext(cCmp);
         auto* fw = celix_bundleContext_getFramework(ctx);
         if (!celix_framework_isCurrentThreadTheEventLoop(fw)) {
-            celix_framework_waitForEmptyEventQueue(fw);
+            celix_bundleContext_waitForEvents(ctx);
         } else {
-            celix_bundleContext_log(ctx, CELIX_LOG_LEVEL_ERROR,
-                                    "Cannot wait for empty Celix event queue of the Celix event queue thread!");
+            celix_bundleContext_log(ctx, CELIX_LOG_LEVEL_WARNING,
+                    "BaseServiceDependency::wait: Cannot wait for Celix event queue on the Celix event queue thread! "
+                            "Use async DepMan API instead.");
         }
     }
 }
