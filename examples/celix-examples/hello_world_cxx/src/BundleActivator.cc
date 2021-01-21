@@ -17,25 +17,14 @@
  * under the License.
  */
 
-#include <memory>
 #include <iostream>
-
 #include "celix/BundleActivator.h"
 
-namespace /*anon*/ {
+class MyBundleActivator {
+public:
+    explicit MyBundleActivator(const std::shared_ptr<celix::BundleContext>& ctx) {
+        std::cout << "Hello world from bundle with id " << ctx->getBundle().getId() << std::endl;
+    }
+};
 
-    class BundleActivator {
-    public:
-        explicit BundleActivator(std::shared_ptr<celix::BundleContext> _ctx) : ctx{std::move(_ctx)} {
-            std::cout << "Hello world from C++ bundle with id " << ctx->getBundle().getId() << std::endl;
-        }
-        ~BundleActivator() {
-            std::cout << "Goodbye world from C++ bundle with id " << ctx->getBundle().getId() << std::endl;
-        }
-    private:
-        const std::shared_ptr<celix::BundleContext> ctx;
-    };
-
-}
-
-CELIX_GEN_CXX_BUNDLE_ACTIVATOR(BundleActivator)
+CELIX_GEN_CXX_BUNDLE_ACTIVATOR(MyBundleActivator)
