@@ -96,7 +96,7 @@ int remoteExample_setName1(remote_example_impl_t* impl, char *n, char **out) {
         free(impl->name);
     }
     impl->name = n;
-    *out = strndup(impl->name, 1024 * 1024);
+    *out = celix_utils_strdup(n);
     pthread_mutex_unlock(&impl->mutex);
     return 0;
 }

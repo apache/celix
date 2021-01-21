@@ -27,7 +27,7 @@ extern "C" {
 #include <time.h>
 #include <stdbool.h>
 
-#define CELIX_UTILS_MAX_STRLEN      1024*1024*10
+#define CELIX_UTILS_MAX_STRLEN      1024*1024*1024
 
 /**
  * Creates a copy of a provided string.
