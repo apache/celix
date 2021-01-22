@@ -23,6 +23,7 @@
 #include <pubsub/api.h>
 #include "HardcodedExampleSerializer.h"
 #include "IHardcodedService.h"
+#include <IExportedService.h>
 
 struct HardcodedService final : public IHardcodedService {
     ~HardcodedService() final = default;
@@ -49,9 +50,14 @@ struct HardcodedService final : public IHardcodedService {
     }
 };
 
-struct ExportedHardcodedService {
+struct ExportedHardcodedService final : public celix::async_rsa::IExportedService {
     ExportedHardcodedService() noexcept = default;
-    ~ExportedHardcodedService() = default;
+    ~ExportedHardcodedService() final = default;
+
+    ExportedHardcodedService(ExportedHardcodedService const &) = delete;
+    ExportedHardcodedService(ExportedHardcodedService &&) = default;
+    ExportedHardcodedService& operator=(ExportedHardcodedService const &) = delete;
+    ExportedHardcodedService& operator=(ExportedHardcodedService &&) = default;
 
     void setService(IHardcodedService * svc, Properties&&) {
         _svc = svc;
@@ -108,7 +114,8 @@ public:
         _toStringSerializer.emplace(mng);
 
         mng->createComponent<HardcodedService>().addInterfaceWithName<IHardcodedService>(std::string{IHardcodedService::NAME}, std::string{IHardcodedService::VERSION}).build();
-        auto &exportedCmp = mng->createComponent<ExportedHardcodedService>();
+        auto &exportedCmp = mng->createComponent<ExportedHardcodedService>()
+                .addInterface<celix::async_rsa::IExportedService>(std::string{IHardcodedService::VERSION}, Properties{{"service.exported.interfaces", std::string{IHardcodedService::NAME}}});
         _exportedCmp = &exportedCmp;
         exportedCmp.createServiceDependency<IHardcodedService>(std::string{IHardcodedService::NAME}).setCallbacks([this](IHardcodedService *svc, Properties&& props){
             _exportedCmp->getInstance().setService(svc, std::forward<Properties>(props));

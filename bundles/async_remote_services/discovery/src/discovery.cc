@@ -37,7 +37,11 @@ void celix::async_rsa::StaticDiscovery::readImportedEndpointsFromFile(std::strin
     }).build().getInstance());
 }
 
-void celix::async_rsa::StaticDiscovery::addExportedEndpoint([[maybe_unused]] celix::async_rsa::IEndpoint *endpoint) {
+void celix::async_rsa::StaticDiscovery::addExportedEndpoint([[maybe_unused]] celix::async_rsa::IEndpoint *endpoint, [[maybe_unused]] Properties&& properties) {
+    // NOP
+}
+
+void celix::async_rsa::StaticDiscovery::removeExportedEndpoint([[maybe_unused]] celix::async_rsa::IEndpoint *endpoint, [[maybe_unused]] Properties&& properties) {
     // NOP
 }
 

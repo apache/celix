@@ -17,12 +17,13 @@
  * under the License.
  */
 
-#include <discovery.h>
+#include <IEndpoint.h>
 #include <celix_api.h>
 #include <ImportedServiceFactory.h>
 #include <mutex>
 #include <pubsub/api.h>
 #include <pubsub_message_serialization_service.h>
+#include <memory_resource>
 
 namespace celix::async_rsa {
     class AsyncAdmin;
@@ -43,7 +44,7 @@ namespace celix::async_rsa {
     class AsyncAdmin {
     public:
         explicit AsyncAdmin(std::shared_ptr<celix::dm::DependencyManager> &mng) noexcept;
-        ~AsyncAdmin() = default;
+        ~AsyncAdmin();
 
         AsyncAdmin(AsyncAdmin const &) = delete;
         AsyncAdmin(AsyncAdmin&&) = delete;
@@ -63,11 +64,12 @@ namespace celix::async_rsa {
         std::shared_ptr<celix::dm::DependencyManager> _mng{};
         celix_log_helper_t *_logger;
         std::mutex _m{}; // protects below
-        std::unordered_map<std::string, celix::async_rsa::IImportedServiceFactory*> _factories{};
-        std::unordered_map<long, celix::dm::BaseComponent&> _serviceInstances{};
+        std::pmr::unsynchronized_pool_resource _memResource{};
+        std::pmr::unordered_map<std::string, celix::async_rsa::IImportedServiceFactory*> _factories{&_memResource};
+        std::pmr::unordered_map<long, celix::dm::BaseComponent&> _serviceInstances{&_memResource};
         std::vector<std::pair<celix::async_rsa::IEndpoint*, Properties>> _toBeCreatedImportedEndpoints{};
 
         // Internal functions for code re-use
-        void addEndpointInternal(celix::async_rsa::IEndpoint *endpoint, Properties& properties);
+        void addEndpointInternal(celix::async_rsa::IEndpoint *endpoint, Properties&& properties);
     };
 }

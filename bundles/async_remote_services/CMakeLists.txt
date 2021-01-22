@@ -19,6 +19,7 @@ celix_subproject(ASYNC_REMOTE_SERVICE_ADMIN "Option to enable building the C++17
 if (ASYNC_REMOTE_SERVICE_ADMIN)
     add_subdirectory(common)
     add_subdirectory(admin)
+    add_subdirectory(topology_manager)
     add_subdirectory(discovery)
     add_subdirectory(examples)
 endif()

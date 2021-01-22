@@ -27,7 +27,8 @@ namespace celix::async_rsa {
 
         /// Adds a newly exported endpoint
         /// \param endpoint
-        virtual void addExportedEndpoint(celix::async_rsa::IEndpoint *endpoint) = 0;
+        virtual void addExportedEndpoint(celix::async_rsa::IEndpoint *endpoint, Properties&& properties) = 0;
+        virtual void removeExportedEndpoint(celix::async_rsa::IEndpoint *endpoint, Properties&& properties) = 0;
     };
 
     struct StaticDiscovery final : public IDiscovery {
@@ -36,7 +37,8 @@ namespace celix::async_rsa {
 
         /// StaticDiscovery only supports preconfigured endpoints, this function is a NOP.
         /// \param endpoint
-        void addExportedEndpoint(celix::async_rsa::IEndpoint *endpoint) final;
+        void addExportedEndpoint(celix::async_rsa::IEndpoint *endpoint, Properties&& properties) final;
+        void removeExportedEndpoint(celix::async_rsa::IEndpoint *endpoint, Properties&& properties) final;
 
     private:
         std::vector<IEndpoint*> _endpoints;

@@ -34,9 +34,13 @@ celix::async_rsa::AsyncAdmin::AsyncAdmin(std::shared_ptr<celix::dm::DependencyMa
 
 }
 
+celix::async_rsa::AsyncAdmin::~AsyncAdmin() {
+    celix_logHelper_destroy(_logger);
+}
+
 void celix::async_rsa::AsyncAdmin::addEndpoint(celix::async_rsa::IEndpoint *endpoint, Properties &&properties) {
     std::unique_lock l(_m);
-    addEndpointInternal(endpoint, properties);
+    addEndpointInternal(endpoint, std::forward<Properties>(properties));
 }
 
 void celix::async_rsa::AsyncAdmin::removeEndpoint([[maybe_unused]] celix::async_rsa::IEndpoint *endpoint, [[maybe_unused]] Properties &&properties) {
@@ -95,7 +99,7 @@ void celix::async_rsa::AsyncAdmin::addImportedServiceFactory(celix::async_rsa::I
         if(interfaceToBeCreatedIt == end(it->second) || interfaceToBeCreatedIt->second != interfaceIt->second) {
             it++;
         } else {
-            addEndpointInternal(it->first, it->second);
+            addEndpointInternal(it->first, std::move(it->second));
             it = _toBeCreatedImportedEndpoints.erase(it);
         }
     }
@@ -113,7 +117,7 @@ void celix::async_rsa::AsyncAdmin::removeImportedServiceFactory([[maybe_unused]]
     _factories.erase(interfaceIt->second);
 }
 
-void celix::async_rsa::AsyncAdmin::addEndpointInternal(celix::async_rsa::IEndpoint *endpoint, Properties &properties) {
+void celix::async_rsa::AsyncAdmin::addEndpointInternal(celix::async_rsa::IEndpoint *endpoint, Properties &&properties) {
     auto interfaceIt = properties.find("service.exported.interfaces");
 
     if(interfaceIt == end(properties)) {
@@ -132,13 +136,12 @@ void celix::async_rsa::AsyncAdmin::addEndpointInternal(celix::async_rsa::IEndpoi
 
     if(existingFactory == end(_factories)) {
         L_DEBUG("Adding endpoint but no factory available yet, delaying creation");
-        _toBeCreatedImportedEndpoints.emplace_back(std::make_pair(endpoint, properties));
+        _toBeCreatedImportedEndpoints.emplace_back(std::make_pair(endpoint, std::move(properties)));
         return;
     }
 
-    // TODO remove copy of Properties
     L_DEBUG("Adding endpoint, created service");
-    _serviceInstances.emplace(std::stol(svcId->second), existingFactory->second->create(_mng, Properties{properties}));
+    _serviceInstances.emplace(std::stol(svcId->second), existingFactory->second->create(_mng, std::move(properties)));
 }
 
 class AdminActivator {
