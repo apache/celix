@@ -99,7 +99,7 @@ namespace celix {
          * Adds an on registered callback for the service registration.
          * This callback will be called on the Celix event thread when the service is registered (REGISTERED state)
          */
-        ServiceRegistrationBuilder& addOnRegistered(std::function<void(const std::shared_ptr<ServiceRegistration>&)> callback) {
+        ServiceRegistrationBuilder& addOnRegistered(std::function<void(ServiceRegistration&)> callback) {
             onRegisteredCallbacks.emplace_back(std::move(callback));
             return *this;
         }
@@ -108,23 +108,70 @@ namespace celix {
          * Adds an on unregistered callback for the service registration.
          * This callback will be called on the Celix event thread when the service is unregistered (UNREGISTERED state)
          */
-        ServiceRegistrationBuilder& addOnUnregistered(std::function<void(const std::shared_ptr<ServiceRegistration>&)> callback) {
+        ServiceRegistrationBuilder& addOnUnregistered(std::function<void(ServiceRegistration&)> callback) {
             onUnregisteredCallbacks.emplace_back(std::move(callback));
+            return *this;
+        }
+
+        /**
+         * Configure if the service registration will be done synchronized or asynchronized.
+         * When a service registration is done synchronized the underlining service will be registered in the Celix
+         * framework (and all service trackers will have been informed) when the build() returns.
+         * For asynchronized the build() will not wait until this is done.
+         *
+         * The benefit of synchronized is the user is ensured a service registration is completely done, but extra
+         * care has te be taking into account to prevent deadlocks:
+         * lock object -> register service -> trigger service tracker -> trying to update a locked object.
+         *
+         * The benefit of asynchronized is that service registration can safely be done inside a lock.
+         *
+         * Default behavior is asynchronized.
+         */
+        ServiceRegistrationBuilder& setRegisterAsync(bool async) {
+            registerAsync = async;
+            return *this;
+        }
+
+        /**
+         * Configure if the service un-registration will be done synchronized or asynchronized.
+         * When a service un-registration is done synchronized the underlining service will be unregistered in the Celix
+         * framework (and all service trackers will have been informed) when the ServiceRegration::unregister is
+         * called of when the ServiceRegistration goes out of scope (with a still REGISTERED service).
+         * For asynchronized this will be done asynchronously and the actual ServiceRegistration object will only be
+         * deleted if the un-registration is completed async.
+         *
+         * The benefit of synchronized is the user is ensured a service un-registration is completely done when
+         * calling unregister() / letting ServiceRegistration out of scope, but extra
+         * care has te be taking into account to prevent deadlocks:
+         * lock object -> unregister service -> trigger service tracker -> trying to update a locked object.
+         *
+         * The benefit of asynchronized is that service un-registration can safely be called inside a lock.
+         *
+         * Default behavior is asynchronized.
+         */
+        ServiceRegistrationBuilder& setUnregisterAsync(bool async) {
+            unregisterAsync = async;
             return *this;
         }
 
         /**
          * "Builds" the service registration and return a ServiceRegistration.
          *
-         * The ServiceRegistration will async register the service to the Celix framwork and unregister the service if
-         * the ServiceRegistration is destroyed.
+         * The ServiceRegistration will register the service to the Celix framework and unregister the service if
+         * the shared ptr for the ServiceRegistration goes out of scope.
          *
          */
         std::shared_ptr<ServiceRegistration> build() {
-            auto result = std::make_shared<ServiceRegistration>(cCtx, std::move(svc), std::move(name), std::move(version), std::move(properties), std::move(onRegisteredCallbacks), std::move(onUnregisteredCallbacks));
-            result->setSelf(result);
-            //TODO after moves , builder is not valid anymore. TBD howto handle this
-            return result;
+            return ServiceRegistration::create(
+                    cCtx,
+                    std::move(svc),
+                    std::move(name),
+                    std::move(version),
+                    std::move(properties),
+                    registerAsync,
+                    unregisterAsync,
+                    std::move(onRegisteredCallbacks),
+                    std::move(onUnregisteredCallbacks));
         }
     private:
         const std::shared_ptr<celix_bundle_context_t> cCtx;
@@ -132,8 +179,10 @@ namespace celix {
         std::string name;
         std::string version{};
         celix::Properties properties{};
-        std::vector<std::function<void(const std::shared_ptr<ServiceRegistration>&)>> onRegisteredCallbacks{};
-        std::vector<std::function<void(const std::shared_ptr<ServiceRegistration>&)>> onUnregisteredCallbacks{};
+        bool registerAsync{true};
+        bool unregisterAsync{true};
+        std::vector<std::function<void(ServiceRegistration&)>> onRegisteredCallbacks{};
+        std::vector<std::function<void(ServiceRegistration&)>> onUnregisteredCallbacks{};
     };
 
     /**
@@ -460,10 +509,7 @@ namespace celix {
          * The ServiceTracker will be started async.
          */
         std::shared_ptr<ServiceTracker<I>> build() {
-            auto tracker = std::make_shared<ServiceTracker<I>>(cCtx, std::move(name), std::move(versionRange), std::move(filter), std::move(setCallbacks), std::move(addCallbacks), std::move(remCallbacks));
-            tracker->open();
-            //TODO after moves , builder is not valid anymore. TBD howto handle this
-            return tracker;
+            return ServiceTracker<I>::create(cCtx, std::move(name), std::move(versionRange), std::move(filter), std::move(setCallbacks), std::move(addCallbacks), std::move(remCallbacks));
         }
     private:
         const std::shared_ptr<celix_bundle_context_t> cCtx;
@@ -536,9 +582,7 @@ namespace celix {
          * The BundleTracker will be started async.
          */
         std::shared_ptr<BundleTracker> build() {
-            auto tracker = std::make_shared<BundleTracker>(cCtx, includeFrameworkBundle, std::move(onInstallCallbacks), std::move(onStartCallbacks), std::move(onStopCallbacks));
-            tracker->open();
-            return tracker;
+            return BundleTracker::create(cCtx, includeFrameworkBundle, std::move(onInstallCallbacks), std::move(onStartCallbacks), std::move(onStopCallbacks));
         }
     private:
         const std::shared_ptr<celix_bundle_context_t> cCtx;
@@ -597,9 +641,7 @@ namespace celix {
          * The MetaTracker will be started async.
          */
         std::shared_ptr<MetaTracker> build() {
-            auto tracker = std::make_shared<MetaTracker>(cCtx, std::move(serviceName), std::move(onTrackerCreated), std::move(onTrackerDestroyed));
-            tracker->open();
-            return tracker;
+            return MetaTracker::create(cCtx, std::move(serviceName), std::move(onTrackerCreated), std::move(onTrackerDestroyed));
         }
     private:
         const std::shared_ptr<celix_bundle_context_t> cCtx;

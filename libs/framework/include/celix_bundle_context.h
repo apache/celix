@@ -625,7 +625,7 @@ void celix_bundleContext_stopTracker(celix_bundle_context_t *ctx, long trackerId
  * The svc is should only be considered valid during the callback.
  * If no service is found the callback will not be invoked.
  *
- * This function will block till the callback is finished. As result it is possible to provide callback data from the
+ * This function will block until the callback is finished. As result it is possible to provide callback data from the
  * stack.
  *
  * @param ctx The bundle context
@@ -650,7 +650,7 @@ bool celix_bundleContext_useServiceWithId(
  * The svc is should only be considered valid during the callback.
  * If no service is found the callback will not be invoked.
  *
- * This function will block till the callback is finished. As result it is possible to provide callback data from the
+ * This function will block until the callback is finished. As result it is possible to provide callback data from the
  * stack.
  *
  * @param   ctx The bundle context
@@ -673,7 +673,7 @@ bool celix_bundleContext_useService(
  * The svc is should only be considered valid during the callback.
  * If no service is found the callback will not be invoked.
  *
- * This function will block till the callback is finished. As result it is possible to provide callback data from the
+ * This function will block until the callback is finished. As result it is possible to provide callback data from the
  * stack.
  *
  * @param   ctx The bundle context
@@ -699,7 +699,7 @@ typedef struct celix_service_use_options {
     celix_service_filter_options_t filter OPTS_INIT;
 
     /**
-     * An optional timeout (in seconds), if > 0 the use service call will block untill the timeout is expired or
+     * An optional timeout (in seconds), if > 0 the use service call will block until the timeout is expired or
      * when at least one service is found.
      * Default (0)
      */
@@ -754,7 +754,7 @@ typedef struct celix_service_use_options {
  * The svc is should only be considered valid during the callback.
  * If no service is found the callback will not be invoked.
  *
- * This function will block till the callback is finished. As result it is possible to provide callback data from the
+ * This function will block until the callback is finished. As result it is possible to provide callback data from the
  * stack.
  *
  * @param   ctx The bundle context.
@@ -773,7 +773,7 @@ bool celix_bundleContext_useServiceWithOptions(
  * The svc is should only be considered valid during the callback.
  * If no service is found the callback will not be invoked.
  *
- * This function will block till the callback is finished. As result it is possible to provide callback data from the
+ * This function will block until the callback is finished. As result it is possible to provide callback data from the
  * stack.
  *
  * @param   ctx The bundle context.
@@ -1135,7 +1135,7 @@ celix_dependency_manager_t* celix_bundleContext_getDependencyManager(celix_bundl
 
 
 /**
- * Wait till there are event for the bundle of this bundle context.
+ * Wait until all Celix event for this bundle are completed.
  */
 void celix_bundleContext_waitForEvents(celix_bundle_context_t* ctx);
 

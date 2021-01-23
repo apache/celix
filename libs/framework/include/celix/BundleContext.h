@@ -407,6 +407,13 @@ namespace celix {
         }
 
         /**
+         * Get the bundle id for the bundle of this bundle context
+         */
+         long getBundleId() const {
+             return bnd.getId();
+         }
+
+        /**
          * Get the Celix framework for this bundle context.
          */
         std::shared_ptr<Framework> getFramework() const {
@@ -495,6 +502,12 @@ namespace celix {
             va_end(args);
         }
 
+        /**
+         * Wait until all Celix event for this bundle are completed.
+         */
+        void waitForEvents() const {
+            celix_bundleContext_waitForEvents(cCtx.get());
+        }
     private:
         const std::shared_ptr<celix_bundle_context_t> cCtx;
         const std::shared_ptr<celix::dm::DependencyManager> dm;

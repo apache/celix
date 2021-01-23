@@ -117,7 +117,7 @@ function(add_celix_container)
     list(GET ARGN 0 CONTAINER_TARGET)
     list(REMOVE_AT ARGN 0)
 
-    set(OPTIONS COPY CXX USE_CONFIG)
+    set(OPTIONS COPY C CXX USE_CONFIG)
     set(ONE_VAL_ARGS GROUP NAME LAUNCHER LAUNCHER_SRC DIR)
     set(MULTI_VAL_ARGS BUNDLES PROPERTIES EMBEDDED_PROPERTIES RUNTIME_PROPERTIES)
     cmake_parse_arguments(CONTAINER "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
@@ -161,10 +161,12 @@ function(add_celix_container)
         set(LAUNCHER_ORG "${CONTAINER_LAUNCHER_SRC}")
         file(GENERATE OUTPUT "${LAUNCHER_SRC}" INPUT "${LAUNCHER_ORG}")
     else () #generate custom launcher
-        if (CONTAINER_CXX)
+        if (CONTAINER_C)
+            set(LAUNCHER_SRC "${CMAKE_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/main.c")
+        elseif (CONTAINER_CXX)
             set(LAUNCHER_SRC "${CMAKE_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/main.cc")
         else()
-            set(LAUNCHER_SRC "${CMAKE_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/main.c")
+            set(LAUNCHER_SRC "${CMAKE_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/main.cc") #note default is C++
         endif()
         set(STAGE1_LAUNCHER_SRC "${CMAKE_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/main.stage1.c")
 

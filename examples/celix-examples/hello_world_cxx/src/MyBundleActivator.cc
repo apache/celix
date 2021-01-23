@@ -23,7 +23,7 @@
 class MyBundleActivator {
 public:
     explicit MyBundleActivator(const std::shared_ptr<celix::BundleContext>& ctx) {
-        std::cout << "Hello world from bundle with id " << ctx->getBundle().getId() << std::endl;
+        std::cout << "Hello world from bundle with id " << ctx->getBundleId() << std::endl;
     }
 };
 

@@ -75,7 +75,6 @@ namespace celix {
         }
 
         void close() {
-            wait(); //if state is OPENING, wait till tracker is opened
             std::lock_guard<std::mutex> lck{mutex};
             if (state == TrackerState::OPEN) {
                 //not yet closed
@@ -114,6 +113,40 @@ namespace celix {
             }
         }
     protected:
+        template<typename T>
+        static std::function<void(T*)> delCallback() {
+            return [](T *tracker) {
+                if (tracker->getCurrentState() == TrackerState::CLOSED) {
+                    delete tracker;
+                } else {
+                    /*
+                     * if open/opening -> close() -> new event on the Celix event thread
+                     * if closing -> nop close() -> there is already a event on the Celix event thread to close
+                     */
+                    tracker->close();
+
+                    /*
+                     * Creating event on the Event loop, this will be after the close is done
+                     */
+                    auto *fw = celix_bundleContext_getFramework(tracker->cCtx.get());
+                    auto *bnd = celix_bundleContext_getBundle(tracker->cCtx.get());
+                    long bndId = celix_bundle_getId(bnd);
+                    celix_framework_fireGenericEvent(
+                            fw,
+                            -1,
+                            bndId,
+                            "celix::AbstractTracker delete callback",
+                            tracker,
+                            [](void *data) {
+                                auto *t = static_cast<AbstractTracker *>(data);
+                                delete t;
+                            },
+                            nullptr,
+                            nullptr);
+                }
+            };
+        }
+
         const std::shared_ptr<celix_bundle_context_t> cCtx;
         mutable std::mutex mutex{}; //protects below
         long trkId{-1L};
@@ -140,7 +173,6 @@ namespace celix {
         ~GenericServiceTracker() override = default;
 
         void open() override {
-            wait(); //if state is CLOSING, wait till tracker is closed
             std::lock_guard<std::mutex> lck{mutex};
             if (state == TrackerState::CLOSED) {
                 state = TrackerState::OPENING;
@@ -174,15 +206,38 @@ namespace celix {
     template<typename I>
     class ServiceTracker : public GenericServiceTracker {
     public:
+        static std::shared_ptr<ServiceTracker<I>> create(
+                std::shared_ptr<celix_bundle_context_t> cCtx,
+                std::string svcName,
+                std::string svcVersionRange,
+                celix::Filter filter,
+                std::vector<std::function<void(std::shared_ptr<I>, std::shared_ptr<const celix::Properties>, std::shared_ptr<const celix::Bundle>)>> setCallbacks,
+                std::vector<std::function<void(std::shared_ptr<I>, std::shared_ptr<const celix::Properties>, const celix::Bundle&)>> addCallbacks,
+                std::vector<std::function<void(std::shared_ptr<I>, std::shared_ptr<const celix::Properties>, const celix::Bundle&)>> remCallbacks) {
+
+            auto tracker = std::shared_ptr<ServiceTracker<I>>{
+                new ServiceTracker<I>{
+                    std::move(cCtx),
+                    std::move(svcName),
+                    std::move(svcVersionRange),
+                    std::move(filter),
+                    std::move(setCallbacks),
+                    std::move(addCallbacks),
+                    std::move(remCallbacks)},
+                AbstractTracker::delCallback<ServiceTracker<I>>()};
+            tracker->open();
+            return tracker;
+        }
+    private:
         ServiceTracker(std::shared_ptr<celix_bundle_context_t> _cCtx, std::string _svcName,
                        std::string _svcVersionRange, celix::Filter _filter,
                        std::vector<std::function<void(std::shared_ptr<I>, std::shared_ptr<const celix::Properties>, std::shared_ptr<const celix::Bundle>)>> _setCallbacks,
                        std::vector<std::function<void(std::shared_ptr<I>, std::shared_ptr<const celix::Properties>, const celix::Bundle&)>> _addCallbacks,
                        std::vector<std::function<void(std::shared_ptr<I>, std::shared_ptr<const celix::Properties>, const celix::Bundle&)>> _remCallbacks) :
-                       GenericServiceTracker{std::move(_cCtx), std::move(_svcName), std::move(_svcVersionRange), std::move(_filter)},
-                       setCallbacks{std::move(_setCallbacks)},
-                       addCallbacks{std::move(_addCallbacks)},
-                       remCallbacks{std::move(_remCallbacks)} {
+                GenericServiceTracker{std::move(_cCtx), std::move(_svcName), std::move(_svcVersionRange), std::move(_filter)},
+                setCallbacks{std::move(_setCallbacks)},
+                addCallbacks{std::move(_addCallbacks)},
+                remCallbacks{std::move(_remCallbacks)} {
 
             opts.filter.serviceName = svcName.empty() ? nullptr : svcName.c_str();
             opts.filter.versionRange = svcVersionRange.empty() ? nullptr : svcVersionRange.c_str();
@@ -259,11 +314,6 @@ namespace celix {
             };
         }
 
-        ~ServiceTracker() override {
-            close(); //if state is OPEN, queue stop tracker.
-            wait(); //if state is CLOSING, wait till closing is complete.
-        }
-    private:
         std::shared_ptr<I> getServiceForId(long id, void* voidSvc) {
             std::lock_guard<std::mutex> lck{mutex};
             auto it = services.find(id);
@@ -330,6 +380,35 @@ namespace celix {
      */
     class BundleTracker : public AbstractTracker {
     public:
+        static std::shared_ptr<BundleTracker> create(
+                std::shared_ptr<celix_bundle_context_t> cCtx,
+                bool includeFrameworkBundle,
+                std::vector<std::function<void(const celix::Bundle&)>> onInstallCallbacks,
+                std::vector<std::function<void(const celix::Bundle&)>> onStartCallbacks,
+                std::vector<std::function<void(const celix::Bundle&)>> onStopCallbacks) {
+
+            auto tracker = std::shared_ptr<BundleTracker>{
+                    new BundleTracker{
+                            std::move(cCtx),
+                            includeFrameworkBundle,
+                            std::move(onInstallCallbacks),
+                            std::move(onStartCallbacks),
+                            std::move(onStopCallbacks)},
+                    AbstractTracker::delCallback<BundleTracker>()};
+            tracker->open();
+            return tracker;
+        }
+
+        void open() override {
+            std::lock_guard<std::mutex> lck{mutex};
+            if (state == TrackerState::CLOSED) {
+                state = TrackerState::OPENING;
+
+                //NOTE the opts already configured the callbacks
+                trkId = celix_bundleContext_trackBundlesWithOptionsAsync(cCtx.get(), &opts);
+            }
+        }
+    private:
         BundleTracker(
                 std::shared_ptr<celix_bundle_context_t> _cCtx,
                 bool _includeFrameworkBundle,
@@ -341,6 +420,7 @@ namespace celix {
                 onInstallCallbacks{std::move(_onInstallCallbacks)},
                 onStartCallbacks{std::move(_onStartCallbacks)},
                 onStopCallbacks{std::move(_onStopCallbacks)} {
+
 
             opts.includeFrameworkBundle = includeFrameworkBundle;
             opts.callbackHandle = this;
@@ -373,22 +453,6 @@ namespace celix {
             };
         }
 
-        ~BundleTracker() override {
-            close(); //if state is OPEN, queue stop tracker.
-            wait(); //if state is CLOSING, wait till closing is complete.
-        }
-
-        void open() override {
-            wait(); //if state is CLOSING, wait till tracker is closed
-            std::lock_guard<std::mutex> lck{mutex};
-            if (state == TrackerState::CLOSED) {
-                state = TrackerState::OPENING;
-
-                //NOTE the opts already configured the callbacks
-                trkId = celix_bundleContext_trackBundlesWithOptionsAsync(cCtx.get(), &opts);
-            }
-        }
-    private:
         const bool includeFrameworkBundle;
         const std::vector<std::function<void(const celix::Bundle&)>> onInstallCallbacks;
         const std::vector<std::function<void(const celix::Bundle&)>> onStartCallbacks;
@@ -423,23 +487,24 @@ namespace celix {
      */
     class MetaTracker : public AbstractTracker {
     public:
-        MetaTracker(
-                std::shared_ptr<celix_bundle_context_t> _cCtx,
-                std::string _serviceName,
-                std::vector<std::function<void(const ServiceTrackerInfo&)>> _onTrackerCreated,
-                std::vector<std::function<void(const ServiceTrackerInfo&)>> _onTrackerDestroyed) :
-                AbstractTracker{std::move(_cCtx)},
-                serviceName{std::move(_serviceName)},
-                onTrackerCreated{std::move(_onTrackerCreated)},
-                onTrackerDestroyed{std::move(_onTrackerDestroyed)} {}
+        static std::shared_ptr<MetaTracker> create(
+                std::shared_ptr<celix_bundle_context_t> cCtx,
+                std::string serviceName,
+                std::vector<std::function<void(const ServiceTrackerInfo&)>> onTrackerCreated,
+                std::vector<std::function<void(const ServiceTrackerInfo&)>> onTrackerDestroyed) {
 
-        ~MetaTracker() override {
-            close(); //if state is OPEN, queue stop tracker.
-            wait(); //if state is CLOSING, wait till closing is complete.
+            auto tracker = std::shared_ptr<MetaTracker>{
+                    new MetaTracker{
+                            std::move(cCtx),
+                            std::move(serviceName),
+                            std::move(onTrackerCreated),
+                            std::move(onTrackerDestroyed)},
+                    AbstractTracker::delCallback<MetaTracker>()};
+            tracker->open();
+            return tracker;
         }
 
         void open() override {
-            wait(); //if state is CLOSING, wait till tracker is closed
             std::lock_guard<std::mutex> lck{mutex};
             if (state == TrackerState::CLOSED) {
                 state = TrackerState::OPENING;
@@ -472,10 +537,20 @@ namespace celix {
             }
         }
 
-        private:
-            const std::string serviceName;
-            const std::vector<std::function<void(const ServiceTrackerInfo&)>> onTrackerCreated; //TODO check if the callback are done on started/stopped or created/destroyed
-            const std::vector<std::function<void(const ServiceTrackerInfo&)>> onTrackerDestroyed;
-        };
+    private:
+        MetaTracker(
+                std::shared_ptr<celix_bundle_context_t> _cCtx,
+                std::string _serviceName,
+                std::vector<std::function<void(const ServiceTrackerInfo&)>> _onTrackerCreated,
+                std::vector<std::function<void(const ServiceTrackerInfo&)>> _onTrackerDestroyed) :
+                AbstractTracker{std::move(_cCtx)},
+                serviceName{std::move(_serviceName)},
+                onTrackerCreated{std::move(_onTrackerCreated)},
+                onTrackerDestroyed{std::move(_onTrackerDestroyed)} {}
+
+        const std::string serviceName;
+        const std::vector<std::function<void(const ServiceTrackerInfo&)>> onTrackerCreated; //TODO check if the callback are done on started/stopped or created/destroyed
+        const std::vector<std::function<void(const ServiceTrackerInfo&)>> onTrackerDestroyed;
+    };
 
 }
