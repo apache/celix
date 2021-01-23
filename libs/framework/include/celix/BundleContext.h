@@ -26,10 +26,9 @@
 
 #include "celix_bundle_context.h"
 
-#include "celix/Builders.h"
-#include "celix/Properties.h"
-#include "celix/ServiceRegistration.h"
-#include "celix/Trackers.h"
+#include "celix/ServiceRegistrationBuilder.h"
+#include "celix/UseServiceBuilder.h"
+#include "celix/TrackerBuilders.h"
 #include "celix/Bundle.h"
 #include "celix/Framework.h"
 
