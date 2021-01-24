@@ -88,6 +88,20 @@ double celix_elapsedtime(clockid_t clockId, struct timespec startTime);
  */
 unsigned int celix_utils_stringHash(const char* string);
 
+/**
+ * Compare services using the service id and ranking.
+ *
+ * If the service id are the same -> compare return 0.
+ *
+ * If the service ranking of A is higher -> return -1; (smaller -> A is sorted before B)
+ *
+ * If the service rankings are the same, but the svcId of A is smaller (older service) -> return -1:
+ * (smaller A is sorted before B)
+ *
+ * And vica versa.
+ */
+int celix_utils_compareServiceIdsAndRanking(long svcIdA, long svcRankA, long svcIdB, long svcRankB);
+
 
 #ifdef __cplusplus
 }

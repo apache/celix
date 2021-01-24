@@ -134,7 +134,7 @@ namespace celix {
         /**
          * Configure if the service un-registration will be done synchronized or asynchronized.
          * When a service un-registration is done synchronized the underlining service will be unregistered in the Celix
-         * framework (and all service trackers will have been informed) when the ServiceRegration::unregister is
+         * framework (and all service trackers will have been informed) when the ServiceRegistration::unregister is
          * called of when the ServiceRegistration goes out of scope (with a still REGISTERED service).
          * For asynchronized this will be done asynchronously and the actual ServiceRegistration object will only be
          * deleted if the un-registration is completed async.

@@ -51,6 +51,39 @@ namespace celix {
         std::shared_ptr<celix::BundleContext> getFrameworkBundleContext() const {
             return fwCtx;
         }
+
+        /**
+         * Fire a generic event. The event will be added to the event loop and handled on the event loop thread.
+         *
+         * if bndId >=0 the bundle usage count will be increased while the event is not yet processed or finished processing.
+         * The eventName is expected to be const char* valid during til the event is finished processing.
+         *
+         * if eventId >=0 this will be used, otherwise a new event id will be generated.
+         *
+         * @return the event id (can be used in Framework::waitForEvent).
+         */
+        long fireGenericEvent(long bndId, const char* eventName, std::function<void()> processEventCallback, long eventId = -1) {
+            auto* callbackOnHeap = new std::function<void()>{};
+            *callbackOnHeap = std::move(processEventCallback);
+            return celix_framework_fireGenericEvent(
+                    cFw.get(),
+                    eventId,
+                    bndId,
+                    eventName,
+                    static_cast<void*>(callbackOnHeap),
+                    [](void *data) {
+                        auto* callback = static_cast<std::function<void()>*>(data);
+                        (*callback)();
+                        delete callback;
+                    },
+                    nullptr,
+                    nullptr);
+        }
+
+        void waitForEvent(long eventId) {
+            celix_framework_waitForGenericEvent(cFw.get(), eventId);
+        }
+
     private:
         const std::shared_ptr<celix::BundleContext> fwCtx;
         const std::shared_ptr<celix_framework_t> cFw;

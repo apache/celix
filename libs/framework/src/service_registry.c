@@ -979,7 +979,7 @@ static int celix_serviceRegistry_compareRegistrations(const void *a, const void 
     long servRankingA = celix_properties_getAsLong(propsA, OSGI_FRAMEWORK_SERVICE_RANKING, 0);
     long servRankingB = celix_properties_getAsLong(propsB, OSGI_FRAMEWORK_SERVICE_RANKING, 0);
 
-    return utils_compareServiceIdsAndRanking(servIdA, servRankingA, servIdB, servRankingB);
+    return celix_utils_compareServiceIdsAndRanking(servIdA, servRankingA, servIdB, servRankingB);
 }
 
 celix_array_list_t* celix_serviceRegisrty_findServices(

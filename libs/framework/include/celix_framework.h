@@ -136,7 +136,7 @@ bool celix_framework_stopBundle(celix_framework_t *fw, long bndId);
 bool celix_framework_startBundle(celix_framework_t *fw, long bndId);
 
 /**
- * Wait till the framework event queue is empty.
+ * Wait until the framework event queue is empty.
  *
  * The Celix framework has an event queue which (among others) handles bundle events.
  * This function can be used to ensure that all queue event are handled, mainly useful
@@ -157,7 +157,7 @@ void celix_framework_setLogCallback(celix_framework_t* fw, void* logHandle, void
 
 
 /**
- * wait till all events for the bundle identified by the bndId are processed.
+ * wait until all events for the bundle identified by the bndId are processed.
  */
 void celix_framework_waitUntilNoEventsForBnd(celix_framework_t* fw, long bndId);
 
@@ -188,7 +188,7 @@ long celix_framework_fireGenericEvent(celix_framework_t* fw, long eventId, long 
 long celix_framework_nextEventId(celix_framework_t *fw);
 
 /**
- * Wait til a event with the provided event id is completely handled.
+ * Wait until a event with the provided event id is completely handled.
  * This function will directly return if the provided event id is not in the event loop (already done or never issued).
  */
 void celix_framework_waitForGenericEvent(celix_framework_t *fw, long eventId);

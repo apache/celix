@@ -238,6 +238,36 @@ TEST_F(CxxBundleContextTestSuite, TrackServicesTest) {
 
 }
 
+
+TEST_F(CxxBundleContextTestSuite, TrackServicesRanked) {
+    auto tracker = ctx->trackServices<CInterface>().build();
+
+    auto svc1 = std::make_shared<CInterface>(CInterface{nullptr, nullptr});
+    auto svcReg1 = ctx->registerService<CInterface>(svc1).build();
+
+    auto svc2 = std::make_shared<CInterface>(CInterface{nullptr, nullptr});
+    auto svcReg2 = ctx->registerService<CInterface>(svc2).build();
+
+    auto svc3 = std::make_shared<CInterface>(CInterface{nullptr, nullptr});
+    auto svcReg3 = ctx->registerService<CInterface>(svc3)
+            .addProperty(celix::SERVICE_RANKING, 100)
+            .build();
+    ctx->waitForEvents();
+
+    auto trackedServices = tracker->getTrackedServices();
+    ASSERT_EQ(trackedServices.size(), 3);
+
+    //NOTE expected order:
+    // svc3 is first: highest ranking service
+    // svc1 is second: same ranking as svc2, but older (lower service id)
+    // svc2 is last
+    EXPECT_EQ(trackedServices[0].get(), svc3.get());
+    EXPECT_EQ(trackedServices[1].get(), svc1.get());
+    EXPECT_EQ(trackedServices[2].get(), svc2.get());
+
+    EXPECT_EQ(tracker->getHighestRankingService().get(), svc3.get());
+}
+
 TEST_F(CxxBundleContextTestSuite, TrackBundlesTest) {
     std::atomic<int> count{0};
     auto cb = [&count](const celix::Bundle& bnd) {
@@ -251,7 +281,7 @@ TEST_F(CxxBundleContextTestSuite, TrackBundlesTest) {
             .addOnStopCallback(cb)
             .build();
     tracker->wait();
-    EXPECT_EQ(celix::TrackerState::OPEN, tracker->getCurrentState());
+    EXPECT_EQ(celix::TrackerState::OPEN, tracker->getState());
     EXPECT_TRUE(tracker->isOpen());
     EXPECT_EQ(0, count.load());
 
@@ -280,11 +310,11 @@ TEST_F(CxxBundleContextTestSuite, TrackBundlesTest) {
 TEST_F(CxxBundleContextTestSuite, OnRegisterAndUnregisterCallbacks) {
     std::atomic<int> count{};
     auto callback1 = [&count](celix::ServiceRegistration& reg) {
-        EXPECT_EQ(celix::ServiceRegistrationState::REGISTERED, reg.getCurrentState());
+        EXPECT_EQ(celix::ServiceRegistrationState::REGISTERED, reg.getState());
         count++;
     };
     auto callback2 = [&count](celix::ServiceRegistration& reg) {
-        EXPECT_EQ(celix::ServiceRegistrationState::UNREGISTERED, reg.getCurrentState());
+        EXPECT_EQ(celix::ServiceRegistrationState::UNREGISTERED, reg.getState());
         count--;
     };
 
@@ -351,7 +381,7 @@ TEST_F(CxxBundleContextTestSuite, TrackAnyServices) {
     EXPECT_EQ(2, trk->getServiceCount());
 }
 
-TEST_F(CxxBundleContextTestSuite, TrackServiceTracker) {
+TEST_F(CxxBundleContextTestSuite, TrackServices) {
     std::atomic<int> count{0};
 
     auto metaTracker = ctx->trackServiceTrackers<TestInterface>()
@@ -436,8 +466,36 @@ TEST_F(CxxBundleContextTestSuite, SyncServiceRegistration) {
                 .setUnregisterAsync(false) //default is true
                 .build();
         svcId = ctx->findService<TestInterface>();
+        EXPECT_EQ(svcReg->getState(), celix::ServiceRegistrationState::REGISTERED);
         EXPECT_GE(svcId, 0L);
     }
     svcId = ctx->findService<TestInterface>();
     EXPECT_EQ(svcId, -1L);
+}
+
+TEST_F(CxxBundleContextTestSuite, UnregisterServiceWhileRegistering) {
+    auto context = ctx;
+    ctx->getFramework()->fireGenericEvent(
+            ctx->getBundleId(),
+            "register/unregister in Celix event thread",
+            [context]() {
+                //NOTE only testing register async in combination with unregister async/sync, because a synchronized
+                //service registration will return as REGISTERED.
+                auto reg1 = context->registerService<TestInterface>(std::make_shared<TestImplementation>())
+                        .build(); //register & unregister async
+                EXPECT_EQ(reg1->getState(), celix::ServiceRegistrationState::REGISTERING);
+                reg1->unregister();
+                EXPECT_EQ(reg1->getState(), celix::ServiceRegistrationState::UNREGISTERING);
+
+                //TODO wait for async dep man, this pr has support for cancel svc registration
+//                auto reg2 = context->registerService<TestInterface>(std::make_shared<TestImplementation>())
+//                        .setUnregisterAsync(false)
+//                        .build();
+//                EXPECT_EQ(reg2->getState(), celix::ServiceRegistrationState::REGISTERING);
+//                reg2->unregister(); //sync unregister -> cancel registration
+//                EXPECT_EQ(reg1->getState(), celix::ServiceRegistrationState::UNREGISTERED);
+            }
+    );
+    //TODO check if this is still needed for cancel service registration with async dep man PR
+//    ctx->waitForEvents();
 }

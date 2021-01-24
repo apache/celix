@@ -19,7 +19,7 @@ add_celix_bundle(simple_test_bundle1 NO_ACTIVATOR VERSION 1.0.0)
 add_celix_bundle(simple_test_bundle2 NO_ACTIVATOR VERSION 1.0.0)
 add_celix_bundle(simple_test_bundle3 NO_ACTIVATOR VERSION 1.0.0)
 add_celix_bundle(bundle_with_exception SOURCES src/nop_activator.c VERSION 1.0.0)
-add_celix_bundle(simple_cxx_bundle SOURCES src/HelloWorldCxxActivator.cpp VERSION 1.0.0)
+add_celix_bundle(simple_cxx_bundle SOURCES src/HelloWorldCxxActivator.cc VERSION 1.0.0)
 add_subdirectory(subdir) #simple_test_bundle4, simple_test_bundle5 and sublib
 
 add_celix_bundle(unresolveable_bundle SOURCES src/nop_activator.c VERSION 1.0.0)
@@ -38,10 +38,10 @@ add_executable(test_framework
     src/bundle_context_bundles_tests.cpp
     src/bundle_context_services_test.cpp
     src/DependencyManagerTestSuite.cc
-    src/CxxBundleContext_tests.cpp
-    src/CxxProperties_tests.cpp
-    src/HelloWorldCxxActivator.cpp
-    src/CxxFilter_tests.cpp
+        src/CxxBundleContextTestSuite.cc
+        src/CxxPropertiesTestSuite.cc
+        src/HelloWorldCxxActivator.cc
+        src/CxxFilterTestSuite.cc
 )
 
 target_link_libraries(test_framework Celix::framework CURL::libcurl GTest::gtest GTest::gtest_main)

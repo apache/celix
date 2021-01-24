@@ -56,7 +56,7 @@ namespace celix {
                                                            std::vector<std::function<void(ServiceRegistration&)>> onRegisteredCallbacks,
                                                            std::vector<std::function<void(ServiceRegistration&)>> onUnregisteredCallbacks) {
             auto delCallback = [](ServiceRegistration* reg) {
-                if (reg->getCurrentState() == ServiceRegistrationState::UNREGISTERED) {
+                if (reg->getState() == ServiceRegistrationState::UNREGISTERED) {
                     delete reg;
                 } else {
                     /*
@@ -108,7 +108,7 @@ namespace celix {
         const std::string& getServiceVersion() const { return version; }
         const celix::Properties& getServiceProperties() const { return properties; }
 
-        ServiceRegistrationState getCurrentState() const {
+        ServiceRegistrationState getState() const {
             std::lock_guard<std::mutex> lck{mutex};
             return state;
         }
@@ -147,7 +147,7 @@ namespace celix {
         void unregister() {
             if (unregisterAsync) {
                 std::lock_guard<std::mutex> lck{mutex};
-                if (state == ServiceRegistrationState::REGISTERED) {
+                if (state == ServiceRegistrationState::REGISTERED || state == ServiceRegistrationState::REGISTERING) {
                     //not yet unregistering
                     state = ServiceRegistrationState::UNREGISTERING;
 
@@ -167,7 +167,7 @@ namespace celix {
                 long localSvcId = -1;
                 {
                     std::lock_guard<std::mutex> lck{mutex};
-                    if (state == ServiceRegistrationState::REGISTERED) {
+                    if (state == ServiceRegistrationState::REGISTERED || state == ServiceRegistrationState::REGISTERING) {
                         state = ServiceRegistrationState::UNREGISTERING;
                         localSvcId = svcId;
                         svcId = -1;
