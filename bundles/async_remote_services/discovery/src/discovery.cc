@@ -21,9 +21,11 @@
 #include <celix_api.h>
 
 struct StaticEndpoint final : celix::async_rsa::IEndpoint {
+
     explicit StaticEndpoint() noexcept {
         std::cout << "[StaticEndpoint] StaticEndpoint" << std::endl;
     }
+
     ~StaticEndpoint() final {
         std::cout << "[StaticEndpoint] ~StaticEndpoint" << std::endl;
     }
@@ -35,12 +37,18 @@ celix::async_rsa::StaticDiscovery::StaticDiscovery(std::shared_ptr<celix::dm::De
 }
 
 void celix::async_rsa::StaticDiscovery::readImportedEndpointsFromFile(std::string_view) {
+
     std::cout << "[StaticDiscovery] readImportedEndpointsFromFile" << std::endl;
-    _endpoints.emplace_back(&_mng->createComponent<StaticEndpoint>().addInterface<IEndpoint>("1.0.0", celix::dm::Properties{
-            {"service.imported", "*"},
-            {"service.exported.interfaces", "IHardcodedService"},
-            {"endpoint.id", "1"},
-    }).build().getInstance());
+
+    _endpoints.emplace_back(
+            &_mng->createComponent<StaticEndpoint>().addInterface<IEndpoint>(
+                    "1.0.0", celix::dm::Properties{
+                        {"service.imported", "*"},
+                        {"service.exported.interfaces", "IHardcodedService"},
+                        {"endpoint.id", "1"},
+                    })
+            .build()
+            .getInstance());
 }
 
 void celix::async_rsa::StaticDiscovery::addExportedEndpoint([[maybe_unused]] celix::async_rsa::IEndpoint *endpoint) {
@@ -49,11 +57,15 @@ void celix::async_rsa::StaticDiscovery::addExportedEndpoint([[maybe_unused]] cel
 }
 
 struct DiscoveryActivator {
-    explicit DiscoveryActivator([[maybe_unused]] std::shared_ptr<celix::dm::DependencyManager> mng) : _cmp(mng->createComponent(std::make_unique<celix::async_rsa::StaticDiscovery>(mng)).addInterface<celix::async_rsa::IDiscovery>().build()) {
+
+    explicit DiscoveryActivator([[maybe_unused]] std::shared_ptr<celix::dm::DependencyManager> mng) :
+            _cmp(mng->createComponent(
+                    std::make_unique<celix::async_rsa::StaticDiscovery>(mng)).addInterface<celix::async_rsa::IDiscovery>().build()) {
 
     }
 
     DiscoveryActivator(const DiscoveryActivator &) = delete;
+
     DiscoveryActivator &operator=(const DiscoveryActivator &) = delete;
 
 private:

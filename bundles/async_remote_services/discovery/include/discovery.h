@@ -22,6 +22,7 @@
 #include <celix_api.h>
 
 namespace celix::async_rsa {
+
     struct IDiscovery {
         virtual ~IDiscovery() = default;
 
