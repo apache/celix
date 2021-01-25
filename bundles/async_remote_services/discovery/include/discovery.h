@@ -32,7 +32,10 @@ namespace celix::async_rsa {
     };
 
     struct StaticDiscovery final : public IDiscovery {
+    public:
+
         explicit StaticDiscovery(std::shared_ptr<celix::dm::DependencyManager> &mng) noexcept;
+
         ~StaticDiscovery() final = default;
 
         /// StaticDiscovery only supports preconfigured endpoints, this function is a NOP.
@@ -40,9 +43,10 @@ namespace celix::async_rsa {
         void addExportedEndpoint(celix::async_rsa::IEndpoint *endpoint) final;
 
     private:
-        std::vector<IEndpoint*> _endpoints;
-        std::shared_ptr<celix::dm::DependencyManager> _mng;
 
         void readImportedEndpointsFromFile(std::string_view);
+
+        std::vector<IEndpoint*> _endpoints;
+        std::shared_ptr<celix::dm::DependencyManager> _mng;
     };
 }
