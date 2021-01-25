@@ -23,6 +23,7 @@ add_celix_bundle(async_rsa_discovery
         SOURCES
         src/discovery.cc
         src/ConfiguredDiscoveryManager.cc
+        src/ConfiguredDiscoveryManagerActivator.cc
         )
 target_include_directories(async_rsa_discovery PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>

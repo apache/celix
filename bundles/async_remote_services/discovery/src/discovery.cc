@@ -56,20 +56,20 @@ void celix::async_rsa::StaticDiscovery::addExportedEndpoint([[maybe_unused]] cel
     // NOP
 }
 
-struct DiscoveryActivator {
+//struct DiscoveryActivator {
+//
+//    explicit DiscoveryActivator([[maybe_unused]] std::shared_ptr<celix::dm::DependencyManager> mng) :
+//            _cmp(mng->createComponent(
+//                    std::make_unique<celix::async_rsa::StaticDiscovery>(mng)).addInterface<celix::async_rsa::IDiscovery>().build()) {
+//
+//    }
+//
+//    DiscoveryActivator(const DiscoveryActivator &) = delete;
+//
+//    DiscoveryActivator &operator=(const DiscoveryActivator &) = delete;
+//
+//private:
+//    celix::dm::Component<celix::async_rsa::StaticDiscovery>& _cmp;
+//};
 
-    explicit DiscoveryActivator([[maybe_unused]] std::shared_ptr<celix::dm::DependencyManager> mng) :
-            _cmp(mng->createComponent(
-                    std::make_unique<celix::async_rsa::StaticDiscovery>(mng)).addInterface<celix::async_rsa::IDiscovery>().build()) {
-
-    }
-
-    DiscoveryActivator(const DiscoveryActivator &) = delete;
-
-    DiscoveryActivator &operator=(const DiscoveryActivator &) = delete;
-
-private:
-    celix::dm::Component<celix::async_rsa::StaticDiscovery>& _cmp;
-};
-
-CELIX_GEN_CXX_BUNDLE_ACTIVATOR(DiscoveryActivator)
+//CELIX_GEN_CXX_BUNDLE_ACTIVATOR(DiscoveryActivator)

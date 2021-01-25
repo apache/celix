@@ -16,30 +16,20 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-#pragma once
 
-#include <IEndpoint.h>
+#include <ConfiguredDiscoveryManagerActivator.h>
+#include <ConfiguredDiscoveryManager.h>
 
-namespace celix::async_rsa::discovery {
+namespace {
 
-class IEndpointEventListener {
-public:
+ConfiguredDiscoveryManagerActivator::ConfiguredDiscoveryManagerActivator(
+        const std::shared_ptr<celix::dm::DependencyManager>& dependencyManager) :
+            _component{dependencyManager->createComponent(
+                std::make_unique<celix::async_rsa::discovery::ConfiguredDiscoveryManager>(dependencyManager))
+                    .addInterface<celix::async_rsa::discovery::IDiscoveryManager>().build()} {
+}
 
-    /**
-     * Defaulted constructor.
-     */
-    IEndpointEventListener() = default;
+// define this class as the bundle activator.
+CELIX_GEN_CXX_BUNDLE_ACTIVATOR(ConfiguredDiscoveryManagerActivator)
 
-    /**
-     * Defaulted virtual destructor.
-     */
-    virtual ~IEndpointEventListener() = default;
-
-    /**
-     * Function that is called when a new endpoint event is triggered by a discovery-manager.
-     * @param endpoint The endpoint in question for this new event.
-     */
-    virtual void incomingEndpointEvent(std::shared_ptr<IEndpoint> endpoint) = 0;
-};
-
-} // end namespace celix::async_rsa::discovery.
+} // end anonymous namespace.

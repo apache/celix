@@ -18,6 +18,8 @@
  */
 #pragma once
 
+#include <IDiscoveryManager.h>
+
 #include <memory>
 #include <vector>
 
@@ -32,7 +34,7 @@ namespace celix::async_rsa::discovery {
  * The ConfiguredDiscoveryManager class is responsible for finding and announcing endpoints from
  * a local configuration JSON file. This discovery manager announces local exported endpoints and imported endpoints from the JSON file.
  */
-class ConfiguredDiscoveryManager {
+class ConfiguredDiscoveryManager final : public IDiscoveryManager {
 public:
 
     /**
@@ -45,11 +47,6 @@ public:
      * @param dependencyManager shared_ptr to the context/container dependency manager.
      */
     explicit ConfiguredDiscoveryManager(std::shared_ptr<DependencyManager> dependencyManager);
-
-    /**
-     * Defaulted destructor.
-     */
-    ~ConfiguredDiscoveryManager() = default;
 
     /**
      * Defaulted copy-constructor.
@@ -67,10 +64,14 @@ public:
     ConfiguredDiscoveryManager& operator=(const ConfiguredDiscoveryManager&) = default;
 
     /**
-     * Add a endpoint event listener that will be updated by this discovery-manager whenever a new endpoint event is happening.
-     * @param endpointEventListener The new endpoint event listener objectref.
+     * @see IDiscoveryManager::addEndpointEventListener.
      */
-    void addEndpointEventListener(const std::shared_ptr<IEndpointEventListener>& endpointEventListener);
+    void addEndpointEventListener(const std::shared_ptr<IEndpointEventListener>& endpointEventListener) override;
+
+    /**
+     * @see IDiscoveryManager::discoverEndpoints.
+     */
+    void discoverEndpoints() override;
 
 private:
 

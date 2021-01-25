@@ -36,6 +36,11 @@ void ConfiguredDiscoveryManager::addEndpointEventListener(const std::shared_ptr<
     }
 }
 
+void ConfiguredDiscoveryManager::discoverEndpoints() {
+
+    // TODO search JSON files/directory for configured endpoints within.
+}
+
 void ConfiguredDiscoveryManager::updateListeners(const std::shared_ptr<IEndpoint>& endpoint) {
 
     for(const auto& listener : _endpointEventListeners) {

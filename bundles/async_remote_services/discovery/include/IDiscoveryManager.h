@@ -18,28 +18,37 @@
  */
 #pragma once
 
-#include <IEndpoint.h>
+#include <memory>
+#include <IEndpointEventListener.h>
 
 namespace celix::async_rsa::discovery {
 
-class IEndpointEventListener {
+/**
+ * Interface defining functions for all compatible discovery-manager classes.
+ */
+class IDiscoveryManager {
 public:
 
     /**
      * Defaulted constructor.
      */
-    IEndpointEventListener() = default;
+    IDiscoveryManager() = default;
 
     /**
      * Defaulted virtual destructor.
      */
-    virtual ~IEndpointEventListener() = default;
+    virtual ~IDiscoveryManager() = default;
 
     /**
-     * Function that is called when a new endpoint event is triggered by a discovery-manager.
-     * @param endpoint The endpoint in question for this new event.
+     * Add a endpoint event listener that will be updated by this discovery-manager whenever a new endpoint event is happening.
+     * @param endpointEventListener The new endpoint event listener as a shared_ptr ref.
      */
-    virtual void incomingEndpointEvent(std::shared_ptr<IEndpoint> endpoint) = 0;
+    virtual void addEndpointEventListener(const std::shared_ptr<IEndpointEventListener>& endpointEventListener) = 0;
+
+    /**
+     * Task the discovery-manager to find endpoints from remote frameworks or local files.
+     */
+    virtual void discoverEndpoints() = 0;
 };
 
 } // end namespace celix::async_rsa::discovery.
