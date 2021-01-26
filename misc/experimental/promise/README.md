@@ -24,8 +24,9 @@ NOTE: this implementation is still experiment and the api and behaviour will pro
  * A simple example of a promise.
  * Note this is not an ideal use of a promise.
  */
-celix::Promise<Integer> foo(int n) {
-    auto deferred = new Deferred<int>();
+celix::Promise<int> foo(int n) {
+    static celix::PromiseFactory factory{} 
+    celix::Deferred<int> deferred = factory.deferred<int>();
 
     if (n > 10) {
         deferred.resolve(n);
@@ -56,7 +57,8 @@ static long calc_fib(long n) {
  * A more complex example where a heavy work load is done on a separate thread.
  */
 celix::Promise<long> fib(long n) {
-    auto deferred = celix::Deferred<long>{};
+    static celix::PromiseFactory factory{}
+    auto deferred = factory.deferred<long>{};
 
     if (n <= 0) {
         deferred.fail(std::logic_error{"argument must be positive"});
@@ -96,13 +98,23 @@ void processPayload(celix::Promise<std::shared_ptr<RestApi::Payload>> promise) {
 
 ## Open Issues & TODOs
 
-- TODO: refactors use of std::function as function arguments to templates.
-- Currently the Promises implementation uses the Intel Threading Building Block (TBB) library (apache license 2.0) for its async communication.
-It is not yet clear whether the TBB library is the correct library to use and if the library is used correctly at all.
-- There is no solution chosen yet for scheduling task, like the ScheduledExecutorService used in Java. 
-- It also unclear if the "out of scope" handling of Promises and Deferred is good enough. As it is implemented now,
- unresolved promises can be kept in memory if they also have a (direct or indirect) reference to it self. 
- If promises are resolved (successfully or not) they will destruct correctly.
+### Circular References in the execution model
+
+There is a issue with circular references of shared_ptr between the executor and
+SharedPromiseState. SharedPromiseState has a shared_ptr to the executor to delegate 
+execution of chains (onResolve, onSuccess, etc) and the executor accept 
+SharedPromiseState - in the form of tasks - to really execute those chains. 
+This will lead to the situation where the process exists, but the destructor of 
+the executor any some SharedPromiseState are not called leading to mem leaks.
+  
+<b>TODO Discuss</b>: One way to solve this is that the SharedPromiseState has a weak_ptr to the 
+executor and only delegates chain execution if the executor still exists. 
+If the executor is gone the chains will not be executor resulting into a error situation. 
+
+This mean that the end user is responsible to keep the executor lifecycle longer than the 
+PromiseFactory users. 
+
+### Other issues  
 - PromiseFactory is not complete yet
 - The static helper class Promises is not implemented yet (e.g. all/any)
 - Promise::flatMap not implemented yet

@@ -37,13 +37,6 @@ else ()
 endif ()
 
 if (PROMISE OR PROMISE_STANDALONE)
-
-    find_package(TBB QUIET)
-    if (NOT TBB_FOUND)
-        #NOTE: TBB does not yet deliver a TBBConfig.cmake on Ubuntu 18, using a FindTBB.cmake file
-        set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-    endif ()
-    find_package(TBB REQUIRED)
     find_package(Threads)
 
     add_library(Promise INTERFACE)
@@ -51,7 +44,7 @@ if (PROMISE OR PROMISE_STANDALONE)
         $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/api>
         $<INSTALL_INTERFACE:include/celix/promise>
     )
-    target_link_libraries(Promise INTERFACE TBB::tbb Threads::Threads)
+    target_link_libraries(Promise INTERFACE Threads::Threads)
     target_compile_options(Promise INTERFACE -frtti -std=c++17) #Note -frtti needed for TBB
     add_library(Celix::Promise ALIAS Promise)
 

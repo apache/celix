@@ -24,21 +24,7 @@
 
 #include "celix/impl/SharedPromiseState.h"
 #include "celix/Promise.h"
-
-#include <tbb/task.h>
-#include <tbb/task_group.h>
-#include <tbb/task_scheduler_observer.h>
-#if __has_include(<tbb/global_control.h>)
-
-#if TBB_INTERFACE_VERSION_MAJOR < 12
-#define TBB_PREVIEW_GLOBAL_CONTROL 1
-#endif
-
-#include <tbb/global_control.h>
-#else
-// deprecated in newer versions of TBB
-#include <tbb/task_scheduler_init.h>
-#endif
+#include "celix/DefaultExecutor.h"
 
 namespace celix {
 
@@ -64,11 +50,7 @@ namespace celix {
     public:
         using type = T;
 
-        Deferred();
-
         explicit Deferred(std::shared_ptr<celix::impl::SharedPromiseState<T>> state);
-
-        //TODO deferred ctor with factory
 
         /**
          * Fail the Promise associated with this Deferred.
@@ -156,8 +138,6 @@ namespace celix {
     public:
         using type = void;
 
-        Deferred();
-
         explicit Deferred(std::shared_ptr<celix::impl::SharedPromiseState<void>> state);
 
         //TODO deferred ctor with factory
@@ -228,17 +208,12 @@ namespace celix {
 *********************************************************************************/
 
 template<typename T>
-inline celix::Deferred<T>::Deferred() : state{std::make_shared<celix::impl::SharedPromiseState<T>>()} {}
-
-inline celix::Deferred<void>::Deferred() : state{std::make_shared<celix::impl::SharedPromiseState<void>>()} {}
-
-template<typename T>
-inline celix::Deferred<T>::Deferred(std::shared_ptr<celix::impl::SharedPromiseState<T>> _state) : state{std::move(_state)} {}
+celix::Deferred<T>::Deferred(std::shared_ptr<celix::impl::SharedPromiseState<T>> _state) : state{std::move(_state)} {}
 
 inline celix::Deferred<void>::Deferred(std::shared_ptr<celix::impl::SharedPromiseState<void>> _state) : state{std::move(_state)} {}
 
 template<typename T>
-inline void celix::Deferred<T>::fail(std::exception_ptr failure) {
+void celix::Deferred<T>::fail(std::exception_ptr failure) {
     state->fail(std::move(failure));
 }
 
@@ -247,7 +222,7 @@ inline void celix::Deferred<void>::fail(std::exception_ptr failure) {
 }
 
 template<typename T>
-inline void celix::Deferred<T>::fail(const std::exception& failure) {
+void celix::Deferred<T>::fail(const std::exception& failure) {
     state->fail(failure);
 }
 
@@ -256,7 +231,7 @@ inline void celix::Deferred<void>::fail(const std::exception& failure) {
 }
 
 template<typename T>
-inline celix::Promise<T> celix::Deferred<T>::getPromise() {
+celix::Promise<T> celix::Deferred<T>::getPromise() {
     return celix::Promise<T>{state};
 }
 
@@ -266,7 +241,7 @@ inline celix::Promise<void> celix::Deferred<void>::getPromise() {
 
 template<typename T>
 template<typename U>
-inline void celix::Deferred<T>::resolveWith(celix::Promise<U> with) {
+void celix::Deferred<T>::resolveWith(celix::Promise<U> with) {
     with.onResolve([s = state, with] () mutable {
         if (with.isSuccessfullyResolved()) {
             s->resolve(with.moveOrGetValue());
@@ -277,7 +252,7 @@ inline void celix::Deferred<T>::resolveWith(celix::Promise<U> with) {
 }
 
 inline void celix::Deferred<void>::resolveWith(celix::Promise<void> with) {
-    with.onResolve([s = state, with]{
+    with.onResolve([s = state, with] {
         if (with.isSuccessfullyResolved()) {
             with.getValue();
             s->resolve();
@@ -288,12 +263,12 @@ inline void celix::Deferred<void>::resolveWith(celix::Promise<void> with) {
 }
 
 template<typename T>
-inline void celix::Deferred<T>::resolve(T&& value) {
+void celix::Deferred<T>::resolve(T&& value) {
     state->resolve(std::forward<T>(value));
 }
 
 template<typename T>
-inline void celix::Deferred<T>::resolve(const T& value) {
+void celix::Deferred<T>::resolve(const T& value) {
     state->resolve(value);
 }
 
