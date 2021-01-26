@@ -161,10 +161,15 @@ namespace celix { namespace dm {
          * Tries to find the component with UUID and statically cast it to
          * dm component of type T
          * @return pointer to found component or null if the component cannot be found.
-         *
          */
         template<typename T>
         std::shared_ptr<Component<T>> findComponent(const std::string& uuid) const;
+
+        /**
+         * Removes component with provided UUID from the dependency manager.
+         * @return whether the component is found and removed.
+         */
+        bool removeComponent(const std::string& uuid);
 
         /**
          * Get Dependency Management info for this component manager.

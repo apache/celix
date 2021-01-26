@@ -81,9 +81,11 @@ static celix_status_t celix_dependencyManager_removeWithoutDestroy(celix_depende
     celixThreadMutex_unlock(&manager->mutex);
 
     if (!found) {
-        celix_bundleContext_log(manager->ctx, CELIX_LOG_LEVEL_ERROR, "Cannot find component %s (uuid=%s)",
-            celix_dmComponent_getName(component),
-            celix_dmComponent_getUUID(component));
+        celix_bundleContext_log(
+                manager->ctx,
+                CELIX_LOG_LEVEL_ERROR,
+                "Cannot find component with ptr %p",
+                component);
         status = CELIX_BUNDLE_EXCEPTION;
     }
 
@@ -102,7 +104,9 @@ celix_status_t celix_dependencyManager_removeAsync(
         void* doneData,
         void (*doneCallback)(void* data)) {
     celix_status_t  status = celix_dependencyManager_removeWithoutDestroy(manager, component);
-	celix_dmComponent_destroyAsync(component, doneData, doneCallback);
+    if (status == CELIX_SUCCESS) {
+        celix_dmComponent_destroyAsync(component, doneData, doneCallback);
+    }
 	return status;
 }
 

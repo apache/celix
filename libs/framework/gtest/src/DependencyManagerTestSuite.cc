@@ -401,3 +401,19 @@ TEST_F(DependencyManagerTestSuite, InCompleteBuildShouldNotLeak) {
     cmp2.createProvidedService<TestService>().setVersion("1.0.0"); //note not build
 }
 
+
+TEST_F(DependencyManagerTestSuite, RemoveAndClear) {
+    celix::dm::DependencyManager dm{ctx};
+    auto& cmp1 = dm.createComponent<TestComponent>(std::make_shared<TestComponent>()).build();
+    auto& cmp2 = dm.createComponent<TestComponent>(std::make_shared<TestComponent>()).build();
+    dm.createComponent<TestComponent>(std::make_shared<TestComponent>()).build();
+    auto& cmp4 = dm.createComponent<TestComponent>(std::make_shared<TestComponent>());
+    dm.wait();
+
+    dm.destroyComponent(cmp1);
+    bool removed = dm.removeComponent(cmp2.getUUID());
+    EXPECT_TRUE(removed);
+    removed = dm.removeComponent(cmp4.getUUID());
+    EXPECT_TRUE(removed);
+    dm.clear();
+}

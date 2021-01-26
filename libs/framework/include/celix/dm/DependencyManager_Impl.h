@@ -82,11 +82,15 @@ inline void DependencyManager::buildAsync() {
 
 template<typename T>
 void DependencyManager::destroyComponent(Component<T> &component) {
+    removeComponent(component.getUUID());
+}
+
+inline bool DependencyManager::removeComponent(const std::string& uuid) {
     std::shared_ptr<BaseComponent> tmpStore{};
     {
         std::lock_guard<std::mutex> lck{mutex};
         for (auto it = components.begin(); it != components.end(); ++it) {
-            if ( (*it).get() == &component) {
+            if ( (*it)->getUUID() == uuid) {
                 //found
                 tmpStore = *it; //prevents destruction in lock
                 components.erase(it);
@@ -94,6 +98,7 @@ void DependencyManager::destroyComponent(Component<T> &component) {
             }
         }
     }
+    return tmpStore != nullptr;
 }
 
 inline void DependencyManager::clear() {
