@@ -31,37 +31,57 @@ if (SHELL)
 		install(DIRECTORY deprecated_api/ DESTINATION include/celix/shell COMPONENT shell)
 	endif ()
 
+	add_library(shell_commands STATIC
+			src/lb_command
+			src/start_command
+			src/stop_command
+			src/install_command
+			src/update_command
+			src/uninstall_command
+			src/help_command
+			src/dm_shell_list_command
+			src/query_command.c
+			src/quit_command.c
+			src/std_commands.c
+	)
+	target_include_directories(shell_commands PRIVATE src)
+	target_link_libraries(shell_commands PRIVATE Celix::shell_api Celix::log_service_api Celix::log_helper)
+
     add_celix_bundle(shell
-        SYMBOLIC_NAME "apache_celix_shell"
+        SYMBOLIC_NAME "apache_celix_c_shell"
         VERSION "2.1.0"
-        NAME "Apache Celix Shell"
+        NAME "Apache Celix C Shell"
 		GROUP "Celix/Shell"
         SOURCES
-          src/activator
-          src/shell
-          src/lb_command
-          src/start_command
-          src/stop_command
-          src/install_command
-          src/update_command
-          src/uninstall_command
-          src/help_command
-		  src/dm_shell_list_command
-		  src/query_command.c
-		  src/quit_command.c
+			src/c_shell_activator.c
+			src/c_shell.c
 	)
 	target_include_directories(shell PRIVATE src)
-	target_link_libraries(shell PRIVATE Celix::shell_api CURL::libcurl Celix::log_service_api Celix::log_helper)
+	target_link_libraries(shell PRIVATE shell_commands Celix::shell_api Celix::log_service_api Celix::log_helper)
 	target_compile_options(shell PRIVATE -Wno-deprecated-declarations)
 	if (CELIX_INSTALL_DEPRECATED_API)
 		target_compile_definitions(shell PRIVATE CELIX_INSTALL_DEPRECATED_API)
 	endif ()
-
 	install_celix_bundle(shell EXPORT celix COMPONENT shell)
+
+
+	add_celix_bundle(ShellCxx
+		SYMBOLIC_NAME "ApacheCelixCxxShell"
+		VERSION "2.1.0"
+		NAME "Apache Celix CXX Shell"
+		GROUP "Celix/Shell"
+		SOURCES
+			src/Shell.cc
+	)
+	target_include_directories(ShellCxx PRIVATE src)
+	target_link_libraries(ShellCxx PRIVATE shell_commands Celix::shell_api Celix::log_service_api Celix::log_helper)
+	install_celix_bundle(ShellCxx EXPORT celix COMPONENT shell)
+
 
 	#Setup target aliases to match external usage
 	add_library(Celix::shell_api ALIAS shell_api)
 	add_library(Celix::shell ALIAS shell)
+	add_library(Celix::ShellCxx ALIAS ShellCxx)
 
 
 	if (ENABLE_TESTING)

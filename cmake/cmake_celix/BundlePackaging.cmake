@@ -185,7 +185,6 @@ function(add_celix_bundle)
     #setting defaults
     if(NOT BUNDLE_VERSION) 
         set(BUNDLE_VERSION "0.0.0")
-        message(WARNING "Bundle version for ${BUNDLE_NAME} not provided. Using 0.0.0")
     endif ()
     if (NOT DEFINED BUNDLE_NAME)
         set(BUNDLE_NAME ${BUNDLE_TARGET_NAME})

@@ -17,36 +17,23 @@
  * under the License.
  */
 
+#include <mutex>
+#include "ICalc.h"
 #include "celix/BundleActivator.h"
-#include "examples/ICalc.h"
 
-
-class CalcImpl : public examples::ICalc {
+class CalcTrackerBundleActivator {
 public:
-    explicit CalcImpl(int _seed) : seed{_seed} {}
-    ~CalcImpl() override = default;
-
-    int calc(int input) override {
-        return seed * input;
-    }
-private:
-    const int seed;
-};
-
-class SimpleProviderBundleActivator {
-public:
-    explicit SimpleProviderBundleActivator(std::shared_ptr<celix::BundleContext> ctx) :
-        registration{createCalcService(ctx)} {}
-
-private:
-    static std::shared_ptr<celix::ServiceRegistration> createCalcService(std::shared_ptr<celix::BundleContext>& ctx) {
-        int seed = 42;
-        return ctx->registerService<examples::ICalc>(std::make_shared<CalcImpl>(seed))
-                .addProperty("seed", seed)
+    explicit CalcTrackerBundleActivator(const std::shared_ptr<celix::BundleContext>& ctx) {
+        tracker = ctx->trackServices<ICalc>()
                 .build();
+        tracker->wait(); //wait until service trackers is finished opening and all services are found
+        for (auto calc : tracker->getServices()) {
+            std::cout << "result is " << std::to_string(calc->add(2, 3)) << std::endl;
+        }
     }
 
-    const std::shared_ptr<celix::ServiceRegistration> registration;
+private:
+    std::shared_ptr<celix::ServiceTracker<ICalc>> tracker{};
 };
 
-CELIX_GEN_CXX_BUNDLE_ACTIVATOR(SimpleProviderBundleActivator)
+CELIX_GEN_CXX_BUNDLE_ACTIVATOR(CalcTrackerBundleActivator)

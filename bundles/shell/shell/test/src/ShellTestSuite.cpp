@@ -185,3 +185,55 @@ TEST_F(ShellTestSuite, legacyCommandTest) {
     celix_bundleContext_unregisterService(ctx.get(), svcId);
 }
 #endif
+
+#ifdef CXX_SHELL
+#include "celix/BundleContext.h"
+#include "celix/IShellCommand.h"
+
+class ShellCommandImpl : public celix::IShellCommand {
+public:
+    ~ShellCommandImpl() noexcept override = default;
+    void executeCommand(std::string commandLine, std::vector<std::string> commandArgs, FILE* outStream, FILE* errorStream) override {
+        fprintf(outStream, "called cxx command with cmd line %s\n", commandLine.c_str());
+        fprintf(errorStream, "Arguments size is %i\n", (int)commandArgs.size());
+    }
+};
+
+TEST_F(ShellTestSuite, CxxShellTest) {
+    auto cxxCtx = celix::BundleContext{ctx.get()};
+    std::atomic<std::size_t> commandCount{0};
+    auto countCb = [&commandCount](celix_shell& shell) {
+        celix_array_list_t* result = nullptr;
+        shell.getCommands(shell.handle, &result);
+        commandCount = celix_arrayList_size(result);
+        for (int i = 0; i < celix_arrayList_size(result); ++i) {
+            free(celix_arrayList_get(result, i));
+        }
+        celix_arrayList_destroy(result);
+    };
+    auto callCount = cxxCtx.useService<celix_shell>(CELIX_SHELL_SERVICE_NAME)
+            .addUseCallback(countCb)
+            .build();
+    EXPECT_EQ(1, callCount);
+    std::size_t initialCount = commandCount.load();
+    EXPECT_GT(initialCount, 0);
+
+    callCommand(ctx, "example", false);
+
+    auto reg = cxxCtx.registerService<celix::IShellCommand>(std::make_shared<ShellCommandImpl>())
+            .addProperty(celix::IShellCommand::COMMAND_NAME, "cxx::example")
+            .addProperty(celix::IShellCommand::COMMAND_USAGE, "usage")
+            .addProperty(celix::IShellCommand::COMMAND_DESCRIPTION, "desc")
+            .build();
+    reg->wait();
+
+    callCount = cxxCtx.useService<celix_shell>(CELIX_SHELL_SERVICE_NAME)
+            .addUseCallback(countCb)
+            .build();
+    EXPECT_EQ(1, callCount);
+    EXPECT_EQ(commandCount.load(), initialCount + 1);
+
+    callCommand(ctx, "example", true);
+    callCommand(ctx, "cxx::example bla boe", true);
+}
+#endif

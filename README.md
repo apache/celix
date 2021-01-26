@@ -29,9 +29,54 @@ Apache Celix is an implementation of the OSGi specification adapted to C and C++
 - [Apache Celix Intro](documents/intro/README.md)
 - [Getting Started Guide](documents/getting_started/README.md)
 
+## Building in a nut shell
+
+### Building Celix
+```bash
+#bash
+git clone git@github.com:apache/celix.git
+mkdir celix/build
+cd celix/build
+cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ..
+make -j
+sudo make install
+```
+
+### Building Celix Promises library standalone
+```bash
+#bash
+git clone git@github.com:apache/celix.git
+mkdir celix/build
+cd celix/build
+cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ../libs/promises
+make -j
+sudo make install
+```
+
+### Building etcdlib library standalone
+```bash
+#bash
+git clone git@github.com:apache/celix.git
+mkdir celix/build
+cd celix/build
+cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ../libs/etcdlib
+make -j
+sudo make install
+```
+
 ## C++ Usage Samples
 
 ### Hello World Bundle
+
+Modularity in Celix is achieved by runtime installable bundles and dynamic - in process - services.  
+A Celix bundle is set of resources packed in a zip containing at least a manifest and almost always
+some shared library containing the bundle functionality.
+A Celix bundle can be created using the Celix CMake function `add_celix_bundle`.
+A Celix bundle is activated by executing the bundle entry points. For C++ bundles these bundle entry points are generated using the `CELIX_GEN_CXX_BUNDLE_ACTIVATOR` macro. 
+
+Celix applications (Celix containers) can be created with the Celix CMake function `add_celix_container`.
+This function generates a C++ main function and is also used to configure default installed bundles. 
+This can be bundles provided by Celix, an other project or build by the project self. 
 
 ```C++
 //src/MyBundleActivator.cc
@@ -43,6 +88,10 @@ public:
     explicit MyBundleActivator(const std::shared_ptr<celix::BundleContext>& ctx) {
         std::cout << "Hello world from bundle with id " << ctx->getBundleId() << std::endl;
     }
+
+    ~MyBundleActivator() noexcept {
+        std::cout << "Goodbye world" << std::endl;
+    }
 };
 
 CELIX_GEN_CXX_BUNDLE_ACTIVATOR(MyBundleActivator)
@@ -52,22 +101,46 @@ CELIX_GEN_CXX_BUNDLE_ACTIVATOR(MyBundleActivator)
 #CMakeLists.txt
 find_package(Celix REQUIRED)
 
-add_celix_bundle(HelloWorldBundle
+add_celix_bundle(MyBundle
     SOURCES src/MyBundleActivator.cc
 )
 
-add_celix_container(HelloWorldCelixContainer
+add_celix_container(MyContainer
     BUNDLES
-        Celix::shell
+        Celix::ShellCxx
         Celix::shell_tui
-        HelloWorldBundle
+        MyBundle
 )
+```
+
+```sh
+#bash
+#goto project dir
+cd cmake-build-debug #assuming clion cmake-build-debug dir
+cd deploy/MyContainer
+./MyContainer
+#Celix shell
+-> lb -a
+#list of all installed bundles
+-> help
+#list of all available Celix shell commands
+-> help celix::lb
+#Help info about the shell command `celix::lb`
+-> stop 3
+#stops MyBundle
+-> start 3
+#start MyBundle
+-> stop 0 
+#stops Celix framework
 ```
 
 ### Register a service
 
+TODO a short intro about services (dynamic interfaces + meta data)
+
 ```C++
-//ICalc.h
+//include/ICalc.h
+#pragma once
 class ICalc {
 public:
     virtual ~ICalc() noexcept = default;
@@ -76,7 +149,7 @@ public:
 ```
 
 ```C++
-//CalcProviderBundleActivator.cc
+//src/CalcProviderBundleActivator.cc
 #include "ICalc.h"
 #include "celix/BundleActivator.h"
 
@@ -99,10 +172,36 @@ private:
 CELIX_GEN_CXX_BUNDLE_ACTIVATOR(CalcProviderBundleActivator)
 ```
 
+```CMake
+#CMakeLists.txt
+find_package(Celix REQUIRED)
+
+add_celix_bundle(CalcProviderBundle
+    SOURCES src/CalcProviderBundleActivator.cc
+)
+target_include_directories(CalcProviderBundle PRIVATE include)
+
+add_celix_container(CalcProviderContainer
+    BUNDLES
+        Celix::ShellCxx
+        Celix::shell_tui
+        CalcProviderBundle
+)
+```
+
+```bash
+#bash
+#goto project dir
+cd cmake-build-debug #assuming clion cmake-build-debug dir
+cd deploy/CalcProviderBundle
+./CalcProviderBundle
+```
+
 ### Use a service (add hoc)
 
 ```C++
-//ICalc.h
+//include/ICalc.h
+#pragma once
 class ICalc {
 public:
     virtual ~ICalc() noexcept = default;
@@ -112,7 +211,7 @@ public:
 
 
 ```C++
-//CalcUserBundleActivator.cc
+//src/CalcUserBundleActivator.cc
 #include <iostream>
 #include "ICalc.h"
 #include "celix/BundleActivator.h"
@@ -132,10 +231,37 @@ public:
 CELIX_GEN_CXX_BUNDLE_ACTIVATOR(CalcUserBundleActivator)
 ```
 
+```CMake
+#CMakeLists.txt
+find_package(Celix REQUIRED)
+
+add_celix_bundle(CalcUserBundle
+    SOURCES src/CalcUserBundleActivator.cc
+)
+target_include_directories(CalcUserBundle PRIVATE include)
+
+add_celix_container(CalcUserContainer
+    BUNDLES
+        Celix::ShellCxx
+        Celix::shell_tui
+        CalcProviderBundle
+        CalcUserBundle
+)
+```
+
+```bash
+#bash
+#goto project dir
+cd cmake-build-debug #assuming clion cmake-build-debug dir
+cd deploy/CalcUserContainer
+./CalcUserContainer
+```
+
 ### Track services 
 
 ```C++
-//ICalc.h
+//include/ICalc.h
+#pragma once
 class ICalc {
 public:
     virtual ~ICalc() noexcept = default;
@@ -144,32 +270,51 @@ public:
 ```
 
 ```C++
-//CalcTrackerBundleActivator.cc
-#include <set>
+//src/CalcTrackerBundleActivator.cc
 #include <mutex>
+#include "ICalc.h"
 #include "celix/BundleActivator.h"
 
 class CalcTrackerBundleActivator {
 public:
     explicit CalcTrackerBundleActivator(const std::shared_ptr<celix::BundleContext>& ctx) {
         tracker = ctx->trackServices<ICalc>()
-                .addAddCallback([this](std::shared_ptr<ICalc> calc) {
-                    std::lock_guard<std::mutex> lck{mutex};
-                    foundServices.insert(std::move(calc));
-                })
-                .addRemCallback([this](const std::shared_ptr<ICalc>& calc) {
-                    std::lock_guard<std::mutex> lck{mutex};
-                    foundServices.erase(calc);
-                })
-                .build();
+            .build();
+        tracker->wait(); //wait until service trackers is finished opening and all services are found
+        for (auto calc : tracker->getServices()) {
+            std::cout << "result is " << std::to_string(calc->add(2, 3)) << std::endl;
+        }
     }
+    
 private:
     std::shared_ptr<celix::ServiceTracker<ICalc>> tracker{};
-    std::mutex mutex{}; //protects foundServices
-    std::set<std::shared_ptr<ICalc>> foundServices{}; //TODO maybe udpate to a vector with an addUpdateCallback
 };
 
 CELIX_GEN_CXX_BUNDLE_ACTIVATOR(CalcTrackerBundleActivator)
+```
+```CMake
+find_package(Celix REQUIRED)
+
+add_celix_bundle(CalcTrackerBundle
+    SOURCES src/CalcTrackerBundleActivator.cc
+)
+target_include_directories(CalcTrackerBundle PRIVATE include)
+
+add_celix_container(CalcTrackerContainer
+    BUNDLES
+        Celix::ShellCxx
+        Celix::shell_tui
+        CalcProviderBundle
+        CalcTrackerBundle
+)
+```
+
+```bash
+#bash
+#goto project dir
+cd cmake-build-debug #assuming clion cmake-build-debug dir
+cd deploy/CalcTrackerContainer
+./CalcTrackerContainer
 ```
 
 ### Service properties and filters
@@ -178,37 +323,35 @@ CELIX_GEN_CXX_BUNDLE_ACTIVATOR(CalcTrackerBundleActivator)
 //src/FilterExampleBundleActivator.cc
 #include <iostream>
 #include "celix/BundleActivator.h"
-#include "celix_shell_command.h"
+#include "celix/IShellCommand.h"
+
+class HelloWorldShellCommand : public celix::IShellCommand {
+public:
+    void executeCommand(std::string /*commandLine*/, std::vector<std::string> /*commandArgs*/, FILE* outStream, FILE* /*errorStream*/) {
+        fprintf(outStream, "Hello World\n");
+    }
+};
 
 class FilterExampleBundleActivator {
 public:
     explicit FilterExampleBundleActivator(const std::shared_ptr<celix::BundleContext>& ctx) {
-        auto* cmd1 = new celix_shell_command{.handle = nullptr, .executeCommand = [](void */*handle*/, const char */*commandLine*/, FILE *outStream, FILE */*errorStream*/) -> bool {
-            fprintf(outStream, "command1\n");
-            return true;
-        }};
-        auto* cmd2 = new celix_shell_command{.handle = nullptr, .executeCommand = [](void */*handle*/, const char */*commandLine*/, FILE *outStream, FILE */*errorStream*/) -> bool {
-            fprintf(outStream, "command2\n");
-            return true;
-        }};
-
-        auto reg1 = ctx->registerService<celix_shell_command>(std::shared_ptr<celix_shell_command>{cmd1})
-                .addProperty(CELIX_SHELL_COMMAND_NAME, "command1")
+        auto reg1 = ctx->registerService<celix::IShellCommand>(std::make_shared<HelloWorldShellCommand>())
+                .addProperty(celix::IShellCommand::COMMAND_NAME, "command1")
                 .build();
-        auto reg2 = ctx->registerService<celix_shell_command>(std::shared_ptr<celix_shell_command>{cmd2})
-                .addProperty(CELIX_SHELL_COMMAND_NAME, "command2")
+        auto reg2 = ctx->registerService<celix::IShellCommand>(std::make_shared<HelloWorldShellCommand>())
+                .addProperty(celix::IShellCommand::COMMAND_NAME, "command2")
                 .build();
         regs.push_back(reg1);
         regs.push_back(reg2);
 
-        long nrOfServicesCalled = ctx->useService<celix_shell_command>()
-            .addUseCallback([](celix_shell_command& cmd) {
-                cmd.executeCommand(cmd.handle, "", stdout, stderr);
-            })
-            .setFilter(std::string{"("} + CELIX_SHELL_COMMAND_NAME + "=" + "command1)")
-            .build();
-        //NOTE nrOfServicesCalled should be one, because use call filtered for a shell command with name 'command1'
-        std::cout << "Called " << std::to_string(nrOfServicesCalled) << " shell command services" << std::endl;
+        //wait until both services are registered
+        reg1->wait();
+        reg2->wait();
+
+        auto serviceIdsNoFilter  = ctx->findServices<celix::IShellCommand>();
+        auto serviceIdsWithFilter = ctx->findServices<celix::IShellCommand>(std::string{"("} + celix::IShellCommand::COMMAND_NAME + "=" + "command1)");
+        std::cout << "Found " << std::to_string(serviceIdsNoFilter.size()) << " IShelLCommand services and found ";
+        std::cout << std::to_string(serviceIdsWithFilter.size()) << " IShellCommand service with name command1" << std::endl;
     }
 private:
     std::vector<std::shared_ptr<celix::ServiceRegistration>> regs{};
@@ -224,12 +367,24 @@ find_package(Celix REQUIRED)
 add_celix_bundle(FilterExampleBundle
     SOURCES src/FilterExampleBundleActivator.cc
 )
-target_link_libraries(FilterExampleBundle PRIVATE Celix::shell_api) #adds celix_shell_command.h to the include path
+target_link_libraries(FilterExampleBundle PRIVATE Celix::shell_api) #adds celix/IShellCommand.h to the include path
 
-add_celix_container(HelloWorldCelixContainer
+add_celix_container(FilterExampleContainer
     BUNDLES
-        Celix::shell
+        Celix::ShellCxx
         Celix::shell_tui
         FilterExampleBundle
 )
+```
+
+```bash
+#bash
+#goto project dir
+cd cmake-build-debug #assuming clion cmake-build-debug dir
+cd deploy/FilterExampleContainer
+./FilterExampleContainer
+#Celix shell
+-> command1
+-> command2
+-> help
 ```

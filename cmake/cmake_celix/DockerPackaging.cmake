@@ -15,6 +15,9 @@
 # specific language governing permissions and limitations
 # under the License.
 
+set(CELIX_DEFAULT_CONTAINER_CXX_OPTION ON CACHE BOOL "Whether the default docker options is CXX. If OFF this will be C")
+
+
 ##### setup docker target
 option(CELIX_BUILD_DOCKER_USE_DOCKER "Use docker to build docker images" ON)
 option(CELIX_BUILD_DOCKER_USE_DOCKER_DIR_TAR "Use docker directory tar packages packing" OFF)
@@ -68,8 +71,9 @@ There are three variants of 'add_celix_docker':
 - If a LAUNCHER (absolute path to a executable of CMake `add_executable` target) is provided that will be used as Celix launcher.
 
 Optional arguments:
-- CXX: With this option the generated Celix launcher (if used) will be a C++ source instead of a C source.
-  A additional result of this is that Celix launcher is also linked against stdlibc++.
+- CXX: With this option the generated Celix launcher (if used) will be a C++ source.
+  This ensures that the Celix launcher is linked against stdlibc++.
+- C: With this option the generated Celix launcher (if used) will be a C source.
 - GROUP: If configured the build location will be prefixed the GROUP. Default is empty.
 - NAME: The name of the executable. Default is <docker_target_name>. Only useful for generated/LAUNCHER_SRC Celix launchers.
 - FROM: Configured the docker image base. Default is scratch.
@@ -84,6 +88,7 @@ Optional arguments:
 ```CMake
 add_celix_docker(<docker_target_name>
     [CXX]
+    [C]
     [GROUP group_name]
     [NAME deploy_name]
     [FROM docker_from_image]
@@ -100,6 +105,7 @@ add_celix_docker(<docker_target_name>
 add_celix_docker(<docker_target_name>
     LAUNCHER_SRC launcher_src
     [CXX]
+    [C]
     [GROUP group_name]
     [NAME deploy_name]
     [FROM docker_from_image]
@@ -116,6 +122,7 @@ add_celix_docker(<docker_target_name>
 add_celix_docker(<docker_target_name>
     LAUNCHER launcher
     [CXX]
+    [C]
     [GROUP group_name]
     [NAME deploy_name]
     [FROM docker_from_image]
@@ -132,7 +139,7 @@ function(add_celix_docker)
   list(GET ARGN 0 DOCKER_TARGET)
   list(REMOVE_AT ARGN 0)
 
-  set(OPTIONS CXX)
+  set(OPTIONS C CXX)
   set(ONE_VAL_ARGS GROUP NAME FROM BUNDLES_DIR FILES_DIR WORKDIR IMAGE_NAME LAUNCHER LAUNCHER_SRC TAR_LOCATION)
   set(MULTI_VAL_ARGS BUNDLES PROPERTIES INSTRUCTIONS FILES)
   cmake_parse_arguments(DOCKER "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
@@ -186,8 +193,14 @@ function(add_celix_docker)
   else ()
     if (DOCKER_CXX)
       set(LAUNCHER_SRC "${CMAKE_CURRENT_BINARY_DIR}/${DOCKER_TARGET}-docker-main.cc")
-    else ()
+    elseif (DOCKER_C)
       set(LAUNCHER_SRC "${CMAKE_CURRENT_BINARY_DIR}/${DOCKER_TARGET}-docker-main.c")
+    else()
+      if (CELIX_DEFAULT_CONTAINER_CXX_OPTION)
+        set(LAUNCHER_SRC "${CMAKE_CURRENT_BINARY_DIR}/${DOCKER_TARGET}-docker-main.cc")
+      else()
+        set(LAUNCHER_SRC "${CMAKE_CURRENT_BINARY_DIR}/${DOCKER_TARGET}-docker-main.c")
+      endif()
     endif ()
 
     file(GENERATE

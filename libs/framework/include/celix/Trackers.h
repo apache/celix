@@ -309,13 +309,13 @@ namespace celix {
         }
 
         /**
-         * Get the a vector of all the currently found services this tracker.
-         * This vector is ordered by higgest ranking service (descending).
+         * Get a vector of all the currently found services for this tracker.
+         * This vector is ordered by service ranking (descending, highest ranking service first).
          *
          * The returned result not be stored and only be used shortly, otherwise the
-         * framework can hangs during service unregistrations.
+         * framework can hangs during service un-registrations.
          */
-        std::vector<std::shared_ptr<I>> getTrackedServices() {
+        std::vector<std::shared_ptr<I>> getServices() {
             std::vector<std::shared_ptr<I>> result{};
             std::lock_guard<std::mutex> lck{mutex};
             result.reserve(entries.size());

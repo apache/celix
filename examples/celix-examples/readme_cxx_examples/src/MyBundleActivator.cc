@@ -17,16 +17,18 @@
  * under the License.
  */
 
-#ifndef CELIX_PHASE2AACTIVATOR_H
-#define CELIX_PHASE2AACTIVATOR_H
+#include <iostream>
+#include "celix/BundleActivator.h"
 
-#include "celix/dm/DependencyManager.h"
-
-using namespace celix::dm;
-
-class Phase2Activator {
+class MyBundleActivator {
 public:
-    Phase2Activator(std::shared_ptr<DependencyManager> mng);
+    explicit MyBundleActivator(const std::shared_ptr<celix::BundleContext>& ctx) {
+        std::cout << "Hello world from bundle with id " << ctx->getBundleId() << std::endl;
+    }
+
+    ~MyBundleActivator() noexcept {
+        std::cout << "Goodbye world" << std::endl;
+    }
 };
 
-#endif //CELIX_PHASE2AACTIVATOR_H
+CELIX_GEN_CXX_BUNDLE_ACTIVATOR(MyBundleActivator)

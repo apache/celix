@@ -51,6 +51,8 @@ namespace celix {
          * Register a service in the Celix framework using a fluent builder API.
          * The service registration can be fine tuned using the returned ServiceRegistrationBuilder API.
          *
+         * By default the service registration is configure to register and unregsiter the service async.
+         *
          * Example:
          *  shared_ptr<celix::BundleContext> ctx = ...
          *  auto svcReg = ctx->registerService<IExample>(std::make_shared<ExampleImpl>())
@@ -77,11 +79,14 @@ namespace celix {
          * Same as registerService, but then with an unmanaged service pointer.
          * Note that the user is responsible for ensuring that the service pointer is valid as long
          * as the service is registered in the Celix framework.
+         *
+         * By default the service registration is configure to register the service async, but to unregister the
+         * service sync (because the svc pointer is unmanaged).
          */
         template<typename I>
         ServiceRegistrationBuilder<I> registerUnmanagedService(I* svc, const std::string& name = {}) {
             auto unmanagedSvc = std::shared_ptr<I>{svc, [](I*){/*nop*/}};
-            return ServiceRegistrationBuilder<I>{cCtx, std::move(unmanagedSvc), celix::typeName<I>(name)};
+            return ServiceRegistrationBuilder<I>{cCtx, std::move(unmanagedSvc), celix::typeName<I>(name), true, false};
         }
 
         //TODO registerServiceFactory<I>()

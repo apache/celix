@@ -32,6 +32,8 @@ if (EXAMPLES)
     add_subdirectory(services_example_c)
     add_subdirectory(services_example_cxx)
 
+    add_subdirectory(readme_cxx_examples)
+
     add_subdirectory(svc_depependency_example_cxx)
 
     #TODO refactor export_import

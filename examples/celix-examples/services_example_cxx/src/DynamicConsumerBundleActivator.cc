@@ -46,12 +46,12 @@ namespace /*anon*/ {
         }
     private:
         void run() {
-  //          std::unique_lock<std::mutex> lck{mutex,  std::defer_lock};
+            std::unique_lock<std::mutex> lck{mutex,  std::defer_lock};
             int count = 1;
             while (active) {
-//                lck.lock();
+                lck.lock();
                 auto localCalc = calc;
-//                lck.unlock();
+                lck.unlock();
 
                 /*
                  * note it is safe to use the localCalc outside a mutex,

@@ -33,6 +33,7 @@ celix_bundle_headers(hellotest
 celix_bundle_private_libs(hellotest tlib)
 
 add_celix_container(hello_world_test_cnt
+    GROUP c_examples
     BUNDLES
         hellotest
 )

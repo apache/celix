@@ -80,6 +80,9 @@ namespace celix {
                     nullptr);
         }
 
+        /**
+         * Wait until all Celix event for this framework are completed.
+         */
         void waitForEvent(long eventId) {
             celix_framework_waitForGenericEvent(cFw.get(), eventId);
         }

@@ -17,28 +17,10 @@
  * under the License.
  */
 
-#include "Phase2Cmp.h"
-#include "celix_log_service.h"
-#include <celix/BundleActivator.h>
+#pragma once
 
-class Phase2bActivator {
+class ICalc {
 public:
-    Phase2bActivator(const std::shared_ptr<DependencyManager> &mng) {
-
-        Properties props{};
-        props["name"] = "phase2b";
-
-        Component<Phase2Cmp> &cmp = mng->createComponent<Phase2Cmp>()
-                .addInterface<IPhase2>(IPHASE2_VERSION, props);
-
-        cmp.createServiceDependency<IPhase1>()
-                .setRequired(true)
-                .setCallbacks(&Phase2Cmp::setPhase1);
-
-        cmp.createCServiceDependency<celix_log_service_t>(CELIX_LOG_SERVICE_NAME)
-                .setRequired(false)
-                .setCallbacks(&Phase2Cmp::setLogService);
-    }
+    virtual ~ICalc() noexcept = default;
+    virtual int add(int a, int b) = 0;
 };
-
-CELIX_GEN_CXX_BUNDLE_ACTIVATOR(Phase2bActivator)

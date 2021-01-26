@@ -254,7 +254,7 @@ TEST_F(CxxBundleContextTestSuite, TrackServicesRanked) {
             .build();
     ctx->waitForEvents();
 
-    auto trackedServices = tracker->getTrackedServices();
+    auto trackedServices = tracker->getServices();
     ASSERT_EQ(trackedServices.size(), 3);
 
     //NOTE expected order:

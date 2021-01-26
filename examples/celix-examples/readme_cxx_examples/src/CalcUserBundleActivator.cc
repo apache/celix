@@ -17,33 +17,20 @@
  * under the License.
  */
 
-#include "Phase2Cmp.h"
 #include <iostream>
-#include <stdlib.h>
-#include <stdio.h>
+#include "ICalc.h"
+#include "celix/BundleActivator.h"
 
-Phase2Cmp::Phase2Cmp(Phase2Cmp&& other) noexcept : phase1(other.phase1), logSrv{other.logSrv} {
-    std::cout << "Move constructor Phase2aCmp called\n";
-    other.phase1 = nullptr;
-    other.logSrv = nullptr;
-}
-
-void Phase2Cmp::setPhase1(IPhase1* p1) {
-    std::cout << "setting phase1 for phase2\n";
-    this->phase1 = p1;
-}
-
-void Phase2Cmp::setLogService(const celix_log_service_t* ls) {
-    this->logSrv = ls;
-}
-
-double Phase2Cmp::getData() {
-    if (this->logSrv != nullptr) {
-        this->logSrv->info(this->logSrv->handle, (char *) "getting data from phase2cmp A\n");
+class CalcUserBundleActivator {
+public:
+    explicit CalcUserBundleActivator(const std::shared_ptr<celix::BundleContext>& ctx) {
+        ctx->useService<ICalc>()
+                .addUseCallback([](ICalc& calc) {
+                    std::cout << "result is " << std::to_string(calc.add(2, 3)) << std::endl;
+                })
+                .setTimeout(std::chrono::seconds{1}) //wait for 1 second if service is not directly available
+                .build();
     }
-    return phase1->getData() * 42.0;
-}
-
-void Phase2Cmp::setName(srv::info::IName *name) {
-    std::cout << "Setting IName with name: " << (name != nullptr ? name->getName() : "null") << std::endl;
 };
+
+CELIX_GEN_CXX_BUNDLE_ACTIVATOR(CalcUserBundleActivator)

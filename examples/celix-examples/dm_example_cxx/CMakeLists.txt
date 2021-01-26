@@ -22,14 +22,16 @@ add_subdirectory(phase2)
 add_subdirectory(phase3)
 add_subdirectory(phase3_locking)
 
-
+#TODO,fixme this is example is currently broken
+message("services_example_cxx is currently broken!")
 add_celix_container("dm_example_cxx"
     COPY
     CXX
+    #GROUP cxx_examples
+    GROUP fixme
     BUNDLES
-        Celix::shell
+        Celix::ShellCxx
         Celix::shell_tui
-        Celix::dm_shell
 
         dm_example_cxx_phase1
         dm_example_cxx_phase2a

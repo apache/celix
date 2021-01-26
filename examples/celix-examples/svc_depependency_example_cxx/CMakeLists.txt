@@ -22,11 +22,14 @@ add_subdirectory(bar)
 add_subdirectory(foo)
 add_subdirectory(baz)
 
+#TODO,fixme this is example is currently broken
+message("services_example_cxx is currently broken!")
 add_celix_container(services_example_cxx
-    GROUP services_example
+    GROUP fixme
+    #GROUP cxx_examples
     COPY
     BUNDLES
-        Celix::shell
+        Celix::ShellCxx
         Celix::shell_tui
         bar_cxx
         foo_cxx

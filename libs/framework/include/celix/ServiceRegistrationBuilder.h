@@ -40,12 +40,17 @@ namespace celix {
         //NOTE private to prevent move so that a build() call cannot be forgotten
         ServiceRegistrationBuilder(ServiceRegistrationBuilder&&) = default;
     public:
-        ServiceRegistrationBuilder(std::shared_ptr<celix_bundle_context_t> _cCtx, std::shared_ptr<I> _svc, std::string _name) :
+        ServiceRegistrationBuilder(
+                std::shared_ptr<celix_bundle_context_t> _cCtx,
+                std::shared_ptr<I> _svc,
+                std::string _name,
+                bool _registerAsync = true,
+                bool _unregisterAsync = true) :
                 cCtx{std::move(_cCtx)},
                 svc{std::move(_svc)},
-                name{std::move(_name)} {
-
-        }
+                name{std::move(_name)},
+                registerAsync{_registerAsync},
+                unregisterAsync{_unregisterAsync}{}
 
         ServiceRegistrationBuilder& operator=(ServiceRegistrationBuilder&&) = delete;
         ServiceRegistrationBuilder(const ServiceRegistrationBuilder&) = delete;
@@ -176,10 +181,10 @@ namespace celix {
         const std::shared_ptr<celix_bundle_context_t> cCtx;
         std::shared_ptr<I> svc;
         std::string name;
+        bool registerAsync;
+        bool unregisterAsync;
         std::string version{};
         celix::Properties properties{};
-        bool registerAsync{true};
-        bool unregisterAsync{true};
         std::vector<std::function<void(ServiceRegistration&)>> onRegisteredCallbacks{};
         std::vector<std::function<void(ServiceRegistration&)>> onUnregisteredCallbacks{};
     };

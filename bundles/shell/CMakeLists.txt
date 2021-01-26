@@ -16,7 +16,7 @@
 # under the License.
 
 add_subdirectory(shell)
-add_subdirectory(remote_shell)
-add_subdirectory(shell_bonjour)
 add_subdirectory(shell_tui)
 add_subdirectory(shell_wui)
+add_subdirectory(remote_shell)
+add_subdirectory(shell_bonjour)

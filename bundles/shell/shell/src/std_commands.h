@@ -16,31 +16,48 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * std_commands.h
- *
- *  \date       March 27, 2014
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
+
 
 #ifndef __STD_COMMANDS_H_
 #define __STD_COMMANDS_H_
 
+#include "celix_bundle_context.h"
 #include "celix_errno.h"
 
 #define OSGI_SHELL_COMMAND_SEPARATOR " "
 
-bool lbCommand_execute(void *handle, const char* commandLine, FILE *outhandle, FILE *errhandle);
-bool queryCommand_execute(void *handle, const char* commandLine, FILE *outhandle, FILE *errhandle);
-bool startCommand_execute(void *handle, const char* commandLine, FILE *outhandle, FILE *errhandle);
-bool stopCommand_execute(void *handle, const char* commandLine, FILE *outStream, FILE *errStream);
-bool installCommand_execute(void *handle, const char* commandLine, FILE *outStream, FILE *errStream);
-bool uninstallCommand_execute(void *handle, const char* commandLine, FILE *outStream, FILE *errStream);
-bool updateCommand_execute(void *handle, const char* commandLine, FILE *outStream, FILE *errStream);
-bool helpCommand_execute(void *handle, const char* commandLine, FILE *outStream, FILE *errStream);
-bool dmListCommand_execute(void* handle, const char* commandLine, FILE *out, FILE *err);
-bool quitCommand_execute(void *handle, const char* commandLine, FILE *sout, FILE *serr);
+#ifdef __cplusplus
+extern "C" {
+#endif
 
+typedef struct celix_std_commands celix_std_commands_t; //opaque
+
+celix_std_commands_t *celix_stdCommands_create(celix_bundle_context_t *ctx);
+
+void celix_stdCommands_destroy(celix_std_commands_t *);
+
+bool lbCommand_execute(void *handle, const char *commandLine, FILE *outhandle, FILE *errhandle);
+
+bool queryCommand_execute(void *handle, const char *commandLine, FILE *outhandle, FILE *errhandle);
+
+bool startCommand_execute(void *handle, const char *commandLine, FILE *outhandle, FILE *errhandle);
+
+bool stopCommand_execute(void *handle, const char *commandLine, FILE *outStream, FILE *errStream);
+
+bool installCommand_execute(void *handle, const char *commandLine, FILE *outStream, FILE *errStream);
+
+bool uninstallCommand_execute(void *handle, const char *commandLine, FILE *outStream, FILE *errStream);
+
+bool updateCommand_execute(void *handle, const char *commandLine, FILE *outStream, FILE *errStream);
+
+bool helpCommand_execute(void *handle, const char *commandLine, FILE *outStream, FILE *errStream);
+
+bool dmListCommand_execute(void *handle, const char *commandLine, FILE *out, FILE *err);
+
+bool quitCommand_execute(void *handle, const char *commandLine, FILE *sout, FILE *serr);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

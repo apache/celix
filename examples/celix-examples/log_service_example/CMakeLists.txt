@@ -26,6 +26,6 @@ target_include_directories(log_service_example PRIVATE src)
 target_link_libraries(log_service_example PRIVATE Celix::log_helper)
 
 add_celix_container(log_example
-    GROUP log_service
+    GROUP c_examples
     BUNDLES log_service_example Celix::log_admin Celix::shell Celix::shell_tui
 )

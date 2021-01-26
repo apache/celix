@@ -24,20 +24,24 @@ target_link_libraries(SimpleProvider PRIVATE ServiceExamplesApi)
 add_celix_bundle(SimpleConsumer SOURCES src/SimpleConsumerBundleActivator.cc VERSION 1.0.0)
 target_link_libraries(SimpleConsumer PRIVATE ServiceExamplesApi)
 
-add_celix_container(SimpleServicesExample CXX BUNDLES
-        Celix::shell
-        Celix::shell_tui
-        SimpleProvider
-        SimpleConsumer
+add_celix_container(SimpleServicesExample CXX
+        GROUP cxx_examples
+        BUNDLES
+            Celix::ShellCxx
+            Celix::shell_tui
+            SimpleProvider
+            SimpleConsumer
 )
 
 
 add_celix_bundle(DynamicConsumer SOURCES src/DynamicConsumerBundleActivator.cc VERSION 1.0.0)
 target_link_libraries(DynamicConsumer PRIVATE ServiceExamplesApi)
 
-add_celix_container(DynamicServicesExample CXX BUNDLES
-        Celix::shell
-        Celix::shell_tui
-        SimpleProvider
-        DynamicConsumer
+add_celix_container(DynamicServicesExample CXX
+        GROUP cxx_examples
+        BUNDLES
+            Celix::ShellCxx
+            Celix::shell_tui
+            SimpleProvider
+            DynamicConsumer
 )

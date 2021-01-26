@@ -17,36 +17,23 @@
  * under the License.
  */
 
+#include "ICalc.h"
 #include "celix/BundleActivator.h"
-#include "examples/ICalc.h"
 
-
-class CalcImpl : public examples::ICalc {
+class CalcProvider : public ICalc {
 public:
-    explicit CalcImpl(int _seed) : seed{_seed} {}
-    ~CalcImpl() override = default;
-
-    int calc(int input) override {
-        return seed * input;
-    }
-private:
-    const int seed;
+    ~CalcProvider() noexcept override = default;
+    int add(int a, int b) override { return a + b; }
 };
 
-class SimpleProviderBundleActivator {
+class CalcProviderBundleActivator {
 public:
-    explicit SimpleProviderBundleActivator(std::shared_ptr<celix::BundleContext> ctx) :
-        registration{createCalcService(ctx)} {}
-
-private:
-    static std::shared_ptr<celix::ServiceRegistration> createCalcService(std::shared_ptr<celix::BundleContext>& ctx) {
-        int seed = 42;
-        return ctx->registerService<examples::ICalc>(std::make_shared<CalcImpl>(seed))
-                .addProperty("seed", seed)
+    explicit CalcProviderBundleActivator(const std::shared_ptr<celix::BundleContext>& ctx) {
+        reg = ctx->registerService<ICalc>(std::make_shared<CalcProvider>())
                 .build();
     }
-
-    const std::shared_ptr<celix::ServiceRegistration> registration;
+private:
+    std::shared_ptr<celix::ServiceRegistration> reg{};
 };
 
-CELIX_GEN_CXX_BUNDLE_ACTIVATOR(SimpleProviderBundleActivator)
+CELIX_GEN_CXX_BUNDLE_ACTIVATOR(CalcProviderBundleActivator)

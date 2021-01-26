@@ -86,7 +86,7 @@ namespace celix {
  */
 #define CELIX_GEN_CXX_BUNDLE_ACTIVATOR(actType)                                                                        \
 extern "C" celix_status_t bundleActivator_create(celix_bundle_context_t *context, void** userData) {                   \
-    return celix::impl::createActivator<actType>(context, userData);                                                         \
+    return celix::impl::createActivator<actType>(context, userData);                                                   \
 }                                                                                                                      \
                                                                                                                        \
 extern "C" celix_status_t bundleActivator_start(void *, celix_bundle_context_t *) {                                    \
@@ -100,6 +100,6 @@ extern "C" celix_status_t bundleActivator_stop(void *, celix_bundle_context_t*) 
 }                                                                                                                      \
                                                                                                                        \
 extern "C" celix_status_t bundleActivator_destroy(void *userData, celix_bundle_context_t*) {                           \
-    return celix::impl::destroyActivator<actType>(userData);                                                                 \
+    return celix::impl::destroyActivator<actType>(userData);                                                           \
 }                                                                                                                      \
 

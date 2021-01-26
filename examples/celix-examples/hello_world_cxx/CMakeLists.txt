@@ -21,8 +21,10 @@ add_celix_bundle(HelloWorldBundle
 target_link_libraries(HelloWorldBundle PRIVATE Celix::shell_api) #adds celix_shell_command.h to the include path
 
 add_celix_container(HelloWorldCelixContainer
+    CXX
+    GROUP cxx_examples
     BUNDLES
-        Celix::shell
+        Celix::ShellCxx
         Celix::shell_tui
         HelloWorldBundle
 )
