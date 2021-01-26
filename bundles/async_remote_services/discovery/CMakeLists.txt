@@ -15,6 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 
+find_package(RapidJSON REQUIRED)
+
 add_celix_bundle(async_rsa_discovery
         VERSION 0.9.0
         SYMBOLIC_NAME "apache_celix_async_remote_service_admin_discovery"

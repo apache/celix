@@ -28,6 +28,9 @@
 
 #include <IEndpointEventListener.h>
 
+#include <rapidjson/document.h>
+#include <rapidjson/stringbuffer.h>
+
 namespace celix::async_rsa::discovery {
 
 /**
@@ -59,9 +62,9 @@ public:
     ConfiguredDiscoveryManager(ConfiguredDiscoveryManager&&) = default;
 
     /**
-     * Defaulted assignment-operator.
+     * Deleted assignment-operator, since rapidjson document has no copy-constructor.
      */
-    ConfiguredDiscoveryManager& operator=(const ConfiguredDiscoveryManager&) = default;
+    ConfiguredDiscoveryManager& operator=(const ConfiguredDiscoveryManager&) = delete;
 
     /**
      * @see IDiscoveryManager::addEndpointEventListener.
@@ -79,6 +82,9 @@ private:
 
     std::shared_ptr<DependencyManager> _dependencyManager;
     std::vector<std::shared_ptr<IEndpointEventListener>> _endpointEventListeners;
+
+    rapidjson::Document _json;
+    rapidjson::StringBuffer _jsonPrinter;
 };
 
 } // end namespace celix::async_rsa::discovery.
