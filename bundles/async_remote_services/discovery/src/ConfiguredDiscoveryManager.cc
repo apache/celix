@@ -35,6 +35,43 @@ constexpr const char* ENDPOINT_OBJECTCLASS = "endpoint.objectClass";
 constexpr const char* ENDPOINT_SCOPE = "endpoint.scope";
 constexpr const char* ENDPOINT_TOPIC = "endpoint.topic";
 
+class ConfiguredEndpoint : public IEndpoint {
+public:
+
+    ConfiguredEndpoint() = delete;
+
+    ConfiguredEndpoint(std::string id,
+                       bool imported,
+                       std::vector<std::string> importConfigs,
+                       std::string exports,
+                       std::vector<std::string> objectClass,
+                       std::string scope,
+                       std::string topic) :
+                               _id{std::move(id)},
+                               _imported{imported},
+                               _importConfigs{std::move(importConfigs)},
+                               _exports{std::move(exports)},
+                               _objectClass{std::move(objectClass)},
+                               _scope{std::move(scope)},
+                               _topic{std::move(topic)} {
+    }
+
+    std::string ToString() {
+        return "[ConfiguredEndpoint][ID: " + _id + "][Imported: " + std::to_string(_imported) +
+        "][Import (count): " + std::to_string(_importConfigs.size()) + "][Exports: " + _exports +
+        "][ObjectClass (count) " + std::to_string(_objectClass.size()) + "][Scope: " + _scope + "][Topic: " + _topic + "]";
+    }
+
+private:
+    std::string _id;
+    bool _imported;
+    std::vector<std::string> _importConfigs;
+    std::string _exports;
+    std::vector<std::string> _objectClass;
+    std::string _scope;
+    std::string _topic;
+};
+
 rapidjson::Document parseJSONFile(const std::string& filePath)  {
 
     rapidjson::Document resultDocument{};
@@ -43,6 +80,19 @@ rapidjson::Document parseJSONFile(const std::string& filePath)  {
     auto fileStream = rapidjson::FileReadStream(filePtr, readBuffer, sizeof(readBuffer));
     resultDocument.ParseStream(fileStream);
     return resultDocument;
+}
+
+std::vector<std::string> parseJSONStringArray(const rapidjson::Value& jsonArray) {
+
+    std::vector<std::string> resultVec{};
+    if (jsonArray.IsArray() && (jsonArray.Size() > 0)) {
+        for (rapidjson::Value::ConstValueIterator iter = jsonArray.Begin(); iter != jsonArray.End(); iter++) {
+            if (iter->IsString()) {
+                resultVec.emplace_back(iter->GetString());
+            }
+        }
+    }
+    return resultVec;
 }
 
 ConfiguredDiscoveryManager::ConfiguredDiscoveryManager(std::shared_ptr<DependencyManager> dependencyManager,
@@ -102,36 +152,36 @@ void ConfiguredDiscoveryManager::discoverEndpoints() {
 
     if (parsedJson.IsObject()) {
         const rapidjson::Value& endpointJsonArray = parsedJson[ENDPOINT_ARRAY];
+
         if (endpointJsonArray.IsArray() && ( endpointJsonArray.Size() > 0)) {
 
-            for (rapidjson::Value::ConstValueIterator endpointIter = endpointJsonArray.Begin(); endpointIter != endpointJsonArray.End(); endpointIter++) {
+            for (rapidjson::Value::ConstValueIterator endpointIter = endpointJsonArray.Begin();
+                        endpointIter != endpointJsonArray.End(); endpointIter++) {
+
                 if (endpointIter->IsObject()) {
 
                     const auto& endpointJson = endpointIter->GetObject();
-                    std::cout << std::boolalpha << std::endl;
-                    std::cout << "Identifier: " << endpointJson[ENDPOINT_IDENTIFIER].GetString() << std::endl;
-                    std::cout << "Imported: " << endpointJson[ENDPOINT_IMPORTED].GetBool() << std::endl;
+                    const auto endpointId = endpointJson[ENDPOINT_IDENTIFIER].GetString();
+                    const auto endpointImported = endpointJson[ENDPOINT_IMPORTED].GetBool();
+                    const auto endpointImportConfigs = parseJSONStringArray(endpointJson[ENDPOINT_IMPORT_CONFIGS]);
+                    const auto endpointExports = endpointJson[ENDPOINT_EXPORTS].GetString();
+                    const auto endpointObjectClass = parseJSONStringArray(endpointJson[ENDPOINT_OBJECTCLASS]);
+                    const auto endpointScope = endpointJson[ENDPOINT_SCOPE].GetString();
+                    const auto endpointTopic = endpointJson[ENDPOINT_TOPIC].GetString();
 
-                    const rapidjson::Value& importsJsonArray = endpointJson[ENDPOINT_IMPORT_CONFIGS];
-                    if (importsJsonArray.IsArray() && ( importsJsonArray.Size() > 0)) {
-                        std::cout << " -> [";
-                        for (rapidjson::Value::ConstValueIterator importIter = importsJsonArray.Begin(); importIter != importsJsonArray.End(); importIter++) {
-                            if (importIter->IsString()) {
-                                const auto& importConfigJsonStr = importIter->GetString();
-                                std::cout << importConfigJsonStr;
-                            }
-                        }
-                        std::cout << "]" << std::endl;
-                    }
+                    const auto newEndpointPtr = std::make_shared<ConfiguredEndpoint>(endpointId,
+                                                                                     endpointImported,
+                                                                                     endpointImportConfigs,
+                                                                                     endpointExports,
+                                                                                     endpointObjectClass,
+                                                                                     endpointScope,
+                                                                                     endpointTopic);
+                    std::cout << newEndpointPtr->ToString() << std::endl;
 
-                    std::cout << "ExportedServices: " << endpointJson[ENDPOINT_EXPORTS].GetString() << std::endl;
-                    std::cout << "ObjectClass: " << endpointJson[ENDPOINT_OBJECTCLASS].GetString() << std::endl;
-                    std::cout << "Scope: " << endpointJson[ENDPOINT_SCOPE].GetString() << std::endl;
-                    std::cout << "Topic: " << endpointJson[ENDPOINT_TOPIC].GetString() << std::endl;
-                    std::cout << std::endl;
+                } else {
+                    // TODO invalid endpoint JSON object.
                 }
             }
-
         } else {
             // TODO no available/valid endpoints in array.
         }
