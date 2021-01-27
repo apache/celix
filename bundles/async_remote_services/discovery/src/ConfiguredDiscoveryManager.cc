@@ -22,13 +22,34 @@
 #include <IEndpointEventListener.h>
 #include <rapidjson/writer.h>
 
+#include <rapidjson/filereadstream.h>
+
 namespace celix::async_rsa::discovery {
 
-ConfiguredDiscoveryManager::ConfiguredDiscoveryManager(std::shared_ptr<DependencyManager> dependencyManager) :
+constexpr const char* ENDPOINT_ARRAY = "endpoints";
+constexpr const char* ENDPOINT_IDENTIFIER = "endpoint.id";
+constexpr const char* ENDPOINT_IMPORTED = "service.imported";
+constexpr const char* ENDPOINT_IMPORT_CONFIGS = "service.imported.configs";
+constexpr const char* ENDPOINT_EXPORTS = "service.exported.interfaces";
+constexpr const char* ENDPOINT_OBJECTCLASS = "endpoint.objectClass";
+constexpr const char* ENDPOINT_SCOPE = "endpoint.scope";
+constexpr const char* ENDPOINT_TOPIC = "endpoint.topic";
+
+rapidjson::Document parseJSONFile(const std::string& filePath)  {
+
+    rapidjson::Document resultDocument{};
+    FILE* filePtr = fopen(filePath.c_str(), "r");
+    char readBuffer[65536];
+    auto fileStream = rapidjson::FileReadStream(filePtr, readBuffer, sizeof(readBuffer));
+    resultDocument.ParseStream(fileStream);
+    return resultDocument;
+}
+
+ConfiguredDiscoveryManager::ConfiguredDiscoveryManager(std::shared_ptr<DependencyManager> dependencyManager,
+                                                       std::string configurationFilePath) :
         _dependencyManager{std::move(dependencyManager)},
         _endpointEventListeners{},
-        _json{},
-        _jsonPrinter{} {
+        _configurationFilePath{std::move(configurationFilePath)} {
 
     discoverEndpoints(); // TODO this call should probably come from the topology manager?
 }
@@ -77,23 +98,46 @@ void ConfiguredDiscoveryManager::discoverEndpoints() {
      *       .getInstance());
      */
 
-    const char* jsonStr = "{"
-                          "\"hello\": \"world\", "
-                          "\"t\": true,"
-                          "\"f\": false,"
-                          "\"n\": null,"
-                          "\"i\": 123,"
-                          "\"pi\": 3.1416,"
-                          "\"a\": [1, 2, 3, 4]"
-                          "}";
+    const rapidjson::Document& parsedJson = parseJSONFile(_configurationFilePath);
 
-    _json.Parse(jsonStr);
+    if (parsedJson.IsObject()) {
+        const rapidjson::Value& endpointJsonArray = parsedJson[ENDPOINT_ARRAY];
+        if (endpointJsonArray.IsArray() && ( endpointJsonArray.Size() > 0)) {
 
-    // configure a JSON printer for logging purposes.
-    auto writer = rapidjson::Writer<rapidjson::StringBuffer>(_jsonPrinter);
-    _json.Accept(writer);
+            for (rapidjson::Value::ConstValueIterator endpointIter = endpointJsonArray.Begin(); endpointIter != endpointJsonArray.End(); endpointIter++) {
+                if (endpointIter->IsObject()) {
 
-    std::cout << "BLABLABLA: " << _jsonPrinter.GetString() << std::endl;
+                    const auto& endpointJson = endpointIter->GetObject();
+                    std::cout << std::boolalpha << std::endl;
+                    std::cout << "Identifier: " << endpointJson[ENDPOINT_IDENTIFIER].GetString() << std::endl;
+                    std::cout << "Imported: " << endpointJson[ENDPOINT_IMPORTED].GetBool() << std::endl;
+
+                    const rapidjson::Value& importsJsonArray = endpointJson[ENDPOINT_IMPORT_CONFIGS];
+                    if (importsJsonArray.IsArray() && ( importsJsonArray.Size() > 0)) {
+                        std::cout << " -> [";
+                        for (rapidjson::Value::ConstValueIterator importIter = importsJsonArray.Begin(); importIter != importsJsonArray.End(); importIter++) {
+                            if (importIter->IsString()) {
+                                const auto& importConfigJsonStr = importIter->GetString();
+                                std::cout << importConfigJsonStr;
+                            }
+                        }
+                        std::cout << "]" << std::endl;
+                    }
+
+                    std::cout << "ExportedServices: " << endpointJson[ENDPOINT_EXPORTS].GetString() << std::endl;
+                    std::cout << "ObjectClass: " << endpointJson[ENDPOINT_OBJECTCLASS].GetString() << std::endl;
+                    std::cout << "Scope: " << endpointJson[ENDPOINT_SCOPE].GetString() << std::endl;
+                    std::cout << "Topic: " << endpointJson[ENDPOINT_TOPIC].GetString() << std::endl;
+                    std::cout << std::endl;
+                }
+            }
+
+        } else {
+            // TODO no available/valid endpoints in array.
+        }
+    } else {
+        // TODO parsed json invalid.
+    }
 }
 
 void ConfiguredDiscoveryManager::updateListeners(const std::shared_ptr<IEndpoint>& endpoint) {

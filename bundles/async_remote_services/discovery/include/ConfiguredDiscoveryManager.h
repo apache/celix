@@ -22,6 +22,7 @@
 
 #include <memory>
 #include <vector>
+#include <string>
 
 #include <IEndpoint.h>
 #include <celix_api.h>
@@ -48,13 +49,15 @@ public:
     /**
      *  Constructor for the ConfiguredDiscoveryManager.
      * @param dependencyManager shared_ptr to the context/container dependency manager.
+     * @param configurationFilePath string path indicating location of the configuration file.
      */
-    explicit ConfiguredDiscoveryManager(std::shared_ptr<DependencyManager> dependencyManager);
+    ConfiguredDiscoveryManager(std::shared_ptr<DependencyManager> dependencyManager,
+                               std::string configurationFilePath);
 
     /**
-     * Defaulted copy-constructor.
+     * Deleted copy-constructor, since rapidjson members have no copy-constructor.
      */
-    ConfiguredDiscoveryManager(const ConfiguredDiscoveryManager&) = default;
+    ConfiguredDiscoveryManager(const ConfiguredDiscoveryManager&) = delete;
 
     /**
      * Defaulted move-constructor.
@@ -62,7 +65,7 @@ public:
     ConfiguredDiscoveryManager(ConfiguredDiscoveryManager&&) = default;
 
     /**
-     * Deleted assignment-operator, since rapidjson document has no copy-constructor.
+     * Deleted assignment-operator, since rapidjson members have no copy-constructor.
      */
     ConfiguredDiscoveryManager& operator=(const ConfiguredDiscoveryManager&) = delete;
 
@@ -83,8 +86,7 @@ private:
     std::shared_ptr<DependencyManager> _dependencyManager;
     std::vector<std::shared_ptr<IEndpointEventListener>> _endpointEventListeners;
 
-    rapidjson::Document _json;
-    rapidjson::StringBuffer _jsonPrinter;
+    const std::string _configurationFilePath;
 };
 
 } // end namespace celix::async_rsa::discovery.
