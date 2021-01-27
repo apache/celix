@@ -495,69 +495,102 @@ celix_status_t celix_private_dmComponent_handleEvent(celix_dm_component_t *compo
 
 static celix_status_t celix_dmComponent_suspend(celix_dm_component_t *component, celix_dm_service_dependency_t *dependency) {
 	celix_status_t status = CELIX_SUCCESS;
-	dm_service_dependency_strategy_t strategy = celix_dmServiceDependency_getStrategy(dependency);
-	if (strategy == DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND &&  component->callbackStop != NULL) {
+	if (component->callbackStop != NULL) {
         celix_bundleContext_log(component->context, CELIX_LOG_LEVEL_TRACE,
                "Suspending component %s (uuid=%s)",
                component->name,
                component->uuid);
         celix_dmComponent_unregisterServices(component, true);
 		status = component->callbackStop(component->implementation);
+		if (status != CELIX_SUCCESS) {
+            celix_bundleContext_log(component->context, CELIX_LOG_LEVEL_ERROR,
+                                    "Error stopping component %s (uuid=%s) using the stop callback",
+                                    component->name,
+                                    component->uuid);
+        }
 	}
 	return status;
 }
 
 static celix_status_t celix_dmComponent_resume(celix_dm_component_t *component, celix_dm_service_dependency_t *dependency) {
 	celix_status_t status = CELIX_SUCCESS;
-    dm_service_dependency_strategy_t strategy = celix_dmServiceDependency_getStrategy(dependency);
-	if (strategy == DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND &&  component->callbackStart != NULL) {
+	if (component->callbackStart != NULL) {
 	    //ensure that the current state is still TRACKING_OPTION. Else during a add/rem/set call a required svc dep has been added.
-        celixThreadMutex_lock(&component->mutex);
-        celix_dm_component_state_t currentState = component->state;
-        celixThreadMutex_unlock(&component->mutex);
-        if (currentState == DM_CMP_STATE_TRACKING_OPTIONAL) {
-            celix_bundleContext_log(component->context, CELIX_LOG_LEVEL_TRACE,
-                                    "Resuming component %s (uuid=%s)",
-                                    component->name,
-                                    component->uuid);
+        celix_bundleContext_log(component->context, CELIX_LOG_LEVEL_TRACE,
+                                "Resuming component %s (uuid=%s)",
+                                component->name,
+                                component->uuid);
+        status = component->callbackStart(component->implementation);
+        if (status == CELIX_SUCCESS) {
             celix_dmComponent_registerServices(component, true);
-            status = component->callbackStart(component->implementation);
             component->nrOfTimesResumed += 1;
         } else {
-            celix_bundleContext_log(component->context, CELIX_LOG_LEVEL_TRACE,
-                                    "Skipping resume because cmp state is now %s",
-                                    celix_dmComponent_stateToString(currentState));
+            celix_bundleContext_log(component->context, CELIX_LOG_LEVEL_ERROR,
+                                    "Error starting component %s (uuid=%s) using the start callback",
+                                    component->name,
+                                    component->uuid);
         }
 	}
 	return status;
 }
 
-static celix_status_t celix_dmComponent_handleEvent(celix_dm_component_t *component, const celix_dm_event_t* event, celix_status_t (*setAddOrRemFp)(celix_dm_service_dependency_t *dependency, void* svc, const celix_properties_t* props), const char *invokeName) {
-    bool needSuspend = false;
+static bool celix_dmComponent_needsSuspend(celix_dm_component_t *component, const celix_dm_event_t* event) {
+    bool cmpActive = false;
     celixThreadMutex_lock(&component->mutex);
     switch (component->state) {
         case DM_CMP_STATE_TRACKING_OPTIONAL:
-            needSuspend = true;
+            cmpActive = true;
             break;
         default: //DM_CMP_STATE_INACTIVE
             break;
     }
     celixThreadMutex_unlock(&component->mutex);
-    if (needSuspend) {
-        celix_dmComponent_suspend(component, event->dep);
+    if (cmpActive) {
+        dm_service_dependency_strategy_t strategy = celix_dmServiceDependency_getStrategy(event->dep);
+        return strategy == DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND;
+    } else {
+        return false;
     }
+}
+
+static celix_status_t celix_dmComponent_handleEvent(celix_dm_component_t *component, const celix_dm_event_t* event, celix_status_t (*setAddOrRemFp)(celix_dm_service_dependency_t *dependency, void* svc, const celix_properties_t* props), const char *invokeName) {
+    assert(celix_framework_isCurrentThreadTheEventLoop(celix_bundleContext_getFramework(component->context)));
+
     celix_bundleContext_log(component->context, CELIX_LOG_LEVEL_TRACE,
-        "Calling %s service for component %s (uuid=%s) on service dependency with type %s",
-        invokeName,
-        component->name,
-        component->uuid,
-        event->dep->serviceName);
-    setAddOrRemFp(event->dep, event->svc, event->props);
-    //note that after after a set/add/rem a new svc dependency can be added, removed, etc
-    if (needSuspend) {
-        celix_dmComponent_resume(component, event->dep);
-    }
+                            "Calling %s service for component %s (uuid=%s) on service dependency with type %s",
+                            invokeName,
+                            component->name,
+                            component->uuid,
+                            event->dep->serviceName);
+
+    bool eventHandled = false;
+    if (event->eventType == CELIX_DM_EVENT_SVC_ADD || (event->eventType == CELIX_DM_EVENT_SVC_SET && event->svc != NULL)) {
+        //note adding service or setting new service, so cmp will not be stopped in handleChange -> use suspend / resume now
+        eventHandled = true;
+        bool needSuspend = celix_dmComponent_needsSuspend(component, event);
+        if (needSuspend) {
+            celix_dmComponent_suspend(component, event->dep);
+        }
+        setAddOrRemFp(event->dep, event->svc, event->props);
+        if (needSuspend) {
+            celix_dmComponent_resume(component, event->dep);
+        }
+    };
+
     celix_dmComponent_handleChange(component);
+
+    if (!eventHandled /*remove or set null*/) {
+        //removing svc or set svc to null -> if still active check if suspend is needed before invoking
+        bool needSuspend = celix_dmComponent_needsSuspend(component, event);
+        if (needSuspend) {
+            celix_dmComponent_suspend(component, event->dep);
+        }
+        setAddOrRemFp(event->dep, event->svc, event->props);
+        if (needSuspend) {
+            celix_dmComponent_resume(component, event->dep);
+        }
+    }
+
     return CELIX_SUCCESS;
 }
 
@@ -627,7 +660,7 @@ static celix_status_t celix_dmComponent_handleChange(celix_dm_component_t *compo
     if (celix_framework_isCurrentThreadTheEventLoop(fw)) {
         celix_dmComponent_handleChangeOnEventThread(component);
     } else {
-        long eventId = celix_framework_fireGenericEvent(
+        celix_framework_fireGenericEvent(
                 fw,
                 -1,
                 celix_bundleContext_getBundleId(component->context),
@@ -636,7 +669,6 @@ static celix_status_t celix_dmComponent_handleChange(celix_dm_component_t *compo
                 celix_dmComponent_handleChangeOnEventThread,
                 NULL,
                 NULL);
-        celix_framework_waitForGenericEvent(fw, eventId);
     }
     return CELIX_SUCCESS;
 }

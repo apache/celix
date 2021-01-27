@@ -417,3 +417,65 @@ TEST_F(DependencyManagerTestSuite, RemoveAndClear) {
     EXPECT_TRUE(removed);
     dm.clear();
 }
+
+TEST_F(DependencyManagerTestSuite, RequiredDepsAreInjectedDuringStartStop) {
+    class LifecycleComponent {
+    public:
+        void start() {
+            std::lock_guard<std::mutex> lck{mutex};
+            EXPECT_TRUE(setSvc != nullptr);
+            EXPECT_EQ(services.size(), 1);
+        }
+
+        void stop() {
+            std::lock_guard<std::mutex> lck{mutex};
+            EXPECT_TRUE(setSvc != nullptr);
+            EXPECT_EQ(services.size(), 1);
+        }
+
+        void setService(TestService* svc) {
+            std::lock_guard<std::mutex> lck{mutex};
+            setSvc = svc;
+        }
+
+        void addService(TestService* svc) {
+            std::lock_guard<std::mutex> lck{mutex};
+            services.emplace_back(svc);
+        }
+
+        void remService(TestService* svc) {
+            std::lock_guard<std::mutex> lck{mutex};
+            for (auto it = services.begin(); it != services.end(); ++it) {
+                if (*it == svc) {
+                    services.erase(it);
+                    break;
+                }
+            }
+        }
+    private:
+        std::mutex mutex{};
+        TestService* setSvc{};
+        std::vector<TestService*> services{};
+    };
+
+    celix::dm::DependencyManager dm{ctx};
+    auto& cmp = dm.createComponent<LifecycleComponent>()
+            .setCallbacks(nullptr, &LifecycleComponent::start, &LifecycleComponent::stop, nullptr);
+    cmp.createServiceDependency<TestService>()
+            .setRequired(true)
+            .setCallbacks(&LifecycleComponent::setService)
+            .setCallbacks(&LifecycleComponent::addService, &LifecycleComponent::remService);
+    cmp.build();
+
+    TestService svc;
+    std::string svcName = celix::dm::typeName<TestService>();
+    celix_service_registration_options opts{};
+    opts.svc = &svc;
+    opts.serviceName = svcName.c_str();
+    opts.serviceLanguage = CELIX_FRAMEWORK_SERVICE_CXX_LANGUAGE;
+    long svcId = celix_bundleContext_registerServiceWithOptions(dm.bundleContext(), &opts);
+    EXPECT_GE(svcId, 0);
+
+    EXPECT_EQ(cmp.getState(), ComponentState::TRACKING_OPTIONAL);
+    celix_bundleContext_unregisterService(dm.bundleContext(), svcId);
+}

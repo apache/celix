@@ -30,6 +30,13 @@
 
 namespace celix { namespace dm {
 
+    enum class ComponentState {
+        INACTIVE = 1,
+        WAITING_FOR_REQUIRED = 2,
+        INSTANTIATED_AND_WAITING_FOR_REQUIRED = 3,
+        TRACKING_OPTIONAL = 4,
+    };
+
     class BaseComponent {
     public:
         BaseComponent(celix_bundle_context_t *con, celix_dependency_manager_t* cdm, std::string name, std::string uuid) : context{con}, cDepMan{cdm}, cCmp{nullptr} {
@@ -66,6 +73,23 @@ namespace celix { namespace dm {
         const std::string& getName() const {
             return cmpName;
         }
+
+        /**
+         * Return the cmp state
+         */
+        ComponentState getState() const {
+             auto cState = celix_dmComponent_currentState(cCmp);
+             switch (cState) {
+                 case DM_CMP_STATE_INACTIVE:
+                     return ComponentState::INACTIVE;
+                 case DM_CMP_STATE_WAITING_FOR_REQUIRED:
+                     return ComponentState::WAITING_FOR_REQUIRED;
+                 case DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED:
+                     return ComponentState::INSTANTIATED_AND_WAITING_FOR_REQUIRED;
+                 default:
+                     return ComponentState::TRACKING_OPTIONAL;
+             }
+         }
 
         /**
          * Wait for an empty Celix event queue.

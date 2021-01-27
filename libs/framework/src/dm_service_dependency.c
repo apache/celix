@@ -318,7 +318,7 @@ celix_status_t celix_dmServiceDependency_invokeRemove(celix_dm_service_dependenc
         dependency->remove(serviceDependency_getCallbackHandle(dependency), svc);
     }
     if (dependency->remWithProperties) {
-        dependency->addWithProperties(serviceDependency_getCallbackHandle(dependency), svc, props);
+        dependency->remWithProperties(serviceDependency_getCallbackHandle(dependency), svc, props);
     }
     return CELIX_SUCCESS;
 }
