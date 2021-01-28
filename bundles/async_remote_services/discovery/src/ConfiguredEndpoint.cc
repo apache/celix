@@ -56,6 +56,7 @@ std::vector<std::string> parseJSONStringArray(const rapidjson::Value& jsonArray)
 ConfiguredEndpoint::ConfiguredEndpoint(const rapidjson::Value& endpointJson) : _properties{} {
 
     if (isValidEndpointJson(endpointJson)) {
+
         _properties = std::make_shared<ConfiguredEndpointProperties>(
                 endpointJson[ENDPOINT_IDENTIFIER].GetString(),
                 endpointJson[ENDPOINT_IMPORTED].GetBool(),

@@ -80,7 +80,6 @@ private:
     void publishParsedEndpoints();
 
     std::shared_ptr<DependencyManager> _dependencyManager;
-    std::vector<std::shared_ptr<IEndpointEventListener>> _endpointEventListeners;
 
     const std::string _configurationFilePath;
 

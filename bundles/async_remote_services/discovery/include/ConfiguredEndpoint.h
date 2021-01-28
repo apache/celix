@@ -41,46 +41,46 @@ public:
                             _scope{std::move(scope)}, _topic{std::move(topic)} {
     }
 
-    [[nodiscard]] const std::string& getId() const {
+     const std::string& getId() const {
 
         return _id;
     }
 
-    [[nodiscard]] bool isImported() const {
+     bool isImported() const {
 
         return _imported;
     }
 
-    [[nodiscard]] const std::vector<std::string>& getImportConfigs() const {
+     const std::vector<std::string>& getImportConfigs() const {
 
         return _importConfigs;
     }
 
-    [[nodiscard]] const std::string& getExports() const {
+     const std::string& getExports() const {
 
         return _exports;
     }
 
-    [[nodiscard]] const std::vector<std::string>& getObjectClass() const {
+     const std::vector<std::string>& getObjectClass() const {
 
         return _objectClass;
     }
 
-    [[nodiscard]] const std::string& getScope() const {
+     const std::string& getScope() const {
 
         return _scope;
     }
 
-    [[nodiscard]] const std::string& getTopic() const {
+     const std::string& getTopic() const {
 
         return _topic;
     }
 
-    [[nodiscard]] std::string ToString() const {
-        return "[ID: " + _id + ", Imported: " + std::to_string(_imported) +
-               ", Import (count): " + std::to_string(_importConfigs.size()) + ", Exports: " + _exports +
-               ", ObjectClass (count) " + std::to_string(_objectClass.size()) + ", Scope: "
-               + _scope + ", Topic: " + _topic + "]";
+     std::string ToString() const {
+        return "id: " + _id + ", imported: " + std::to_string(_imported) +
+               ", imports (size): " + std::to_string(_importConfigs.size()) + ", exports: " + _exports +
+               ", objclass (size) " + std::to_string(_objectClass.size()) + ", scope: "
+               + _scope + ", topic: " + _topic;
     }
 
 private:
@@ -103,8 +103,8 @@ public:
 
     const ConfiguredEndpointProperties& getProperties() const;
 
-    [[nodiscard]] std::string ToString() const {
-        return "[ConfiguredEndpoint] Properties: " + _properties->ToString();
+    std::string ToString() const {
+        return "[ConfiguredEndpoint (" + _properties->ToString() + ")]";
     }
 
 private:
