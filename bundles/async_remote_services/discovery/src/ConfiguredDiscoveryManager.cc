@@ -20,57 +20,14 @@
 #include <ConfiguredDiscoveryManager.h>
 
 #include <IEndpointEventListener.h>
-#include <rapidjson/writer.h>
+#include <ConfiguredEndpoint.h>
 
+#include <rapidjson/writer.h>
 #include <rapidjson/filereadstream.h>
 
 namespace celix::async_rsa::discovery {
 
 constexpr const char* ENDPOINT_ARRAY = "endpoints";
-constexpr const char* ENDPOINT_IDENTIFIER = "endpoint.id";
-constexpr const char* ENDPOINT_IMPORTED = "service.imported";
-constexpr const char* ENDPOINT_IMPORT_CONFIGS = "service.imported.configs";
-constexpr const char* ENDPOINT_EXPORTS = "service.exported.interfaces";
-constexpr const char* ENDPOINT_OBJECTCLASS = "endpoint.objectClass";
-constexpr const char* ENDPOINT_SCOPE = "endpoint.scope";
-constexpr const char* ENDPOINT_TOPIC = "endpoint.topic";
-
-class ConfiguredEndpoint : public IEndpoint {
-public:
-
-    ConfiguredEndpoint() = delete;
-
-    ConfiguredEndpoint(std::string id,
-                       bool imported,
-                       std::vector<std::string> importConfigs,
-                       std::string exports,
-                       std::vector<std::string> objectClass,
-                       std::string scope,
-                       std::string topic) :
-                               _id{std::move(id)},
-                               _imported{imported},
-                               _importConfigs{std::move(importConfigs)},
-                               _exports{std::move(exports)},
-                               _objectClass{std::move(objectClass)},
-                               _scope{std::move(scope)},
-                               _topic{std::move(topic)} {
-    }
-
-    std::string ToString() {
-        return "[ConfiguredEndpoint][ID: " + _id + "][Imported: " + std::to_string(_imported) +
-        "][Import (count): " + std::to_string(_importConfigs.size()) + "][Exports: " + _exports +
-        "][ObjectClass (count) " + std::to_string(_objectClass.size()) + "][Scope: " + _scope + "][Topic: " + _topic + "]";
-    }
-
-private:
-    std::string _id;
-    bool _imported;
-    std::vector<std::string> _importConfigs;
-    std::string _exports;
-    std::vector<std::string> _objectClass;
-    std::string _scope;
-    std::string _topic;
-};
 
 rapidjson::Document parseJSONFile(const std::string& filePath)  {
 
@@ -82,24 +39,13 @@ rapidjson::Document parseJSONFile(const std::string& filePath)  {
     return resultDocument;
 }
 
-std::vector<std::string> parseJSONStringArray(const rapidjson::Value& jsonArray) {
-
-    std::vector<std::string> resultVec{};
-    if (jsonArray.IsArray() && (jsonArray.Size() > 0)) {
-        for (rapidjson::Value::ConstValueIterator iter = jsonArray.Begin(); iter != jsonArray.End(); iter++) {
-            if (iter->IsString()) {
-                resultVec.emplace_back(iter->GetString());
-            }
-        }
-    }
-    return resultVec;
-}
-
 ConfiguredDiscoveryManager::ConfiguredDiscoveryManager(std::shared_ptr<DependencyManager> dependencyManager,
                                                        std::string configurationFilePath) :
         _dependencyManager{std::move(dependencyManager)},
         _endpointEventListeners{},
-        _configurationFilePath{std::move(configurationFilePath)} {
+        _configurationFilePath{std::move(configurationFilePath)},
+        _endpoints{},
+        _publishedEndpoints{} {
 
     discoverEndpoints(); // TODO this call should probably come from the topology manager?
 }
@@ -161,22 +107,7 @@ void ConfiguredDiscoveryManager::discoverEndpoints() {
                 if (endpointIter->IsObject()) {
 
                     const auto& endpointJson = endpointIter->GetObject();
-                    const auto endpointId = endpointJson[ENDPOINT_IDENTIFIER].GetString();
-                    const auto endpointImported = endpointJson[ENDPOINT_IMPORTED].GetBool();
-                    const auto endpointImportConfigs = parseJSONStringArray(endpointJson[ENDPOINT_IMPORT_CONFIGS]);
-                    const auto endpointExports = endpointJson[ENDPOINT_EXPORTS].GetString();
-                    const auto endpointObjectClass = parseJSONStringArray(endpointJson[ENDPOINT_OBJECTCLASS]);
-                    const auto endpointScope = endpointJson[ENDPOINT_SCOPE].GetString();
-                    const auto endpointTopic = endpointJson[ENDPOINT_TOPIC].GetString();
-
-                    const auto newEndpointPtr = std::make_shared<ConfiguredEndpoint>(endpointId,
-                                                                                     endpointImported,
-                                                                                     endpointImportConfigs,
-                                                                                     endpointExports,
-                                                                                     endpointObjectClass,
-                                                                                     endpointScope,
-                                                                                     endpointTopic);
-                    std::cout << newEndpointPtr->ToString() << std::endl;
+                    _endpoints.emplace_back(std::make_shared<ConfiguredEndpoint>(endpointJson));
 
                 } else {
                     // TODO invalid endpoint JSON object.
@@ -187,6 +118,23 @@ void ConfiguredDiscoveryManager::discoverEndpoints() {
         }
     } else {
         // TODO parsed json invalid.
+    }
+
+    publishParsedEndpoints();
+}
+
+void ConfiguredDiscoveryManager::publishParsedEndpoints() {
+
+    for (const auto& endpoint : _endpoints) {
+
+        const auto endpointProperties = endpoint->getProperties();
+        const auto celixProperties = celix::dm::Properties{{"service.imported",
+                                                           std::to_string(endpointProperties.isImported()).c_str()},
+                                                           {"service.exported.interfaces", endpointProperties.getExports()},
+                                                           {"endpoint.id", endpointProperties.getId()}};
+        _publishedEndpoints.emplace_back(
+                &_dependencyManager->createComponent<IEndpoint>().addInterface<IEndpoint>(
+                        "1.0.0", celixProperties).build().getInstance());
     }
 }
 

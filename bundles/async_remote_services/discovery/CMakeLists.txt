@@ -24,6 +24,7 @@ add_celix_bundle(async_rsa_discovery
         GROUP "Celix/AsyncRSA"
         SOURCES
         src/discovery.cc
+        src/ConfiguredEndpoint.cc
         src/ConfiguredDiscoveryManager.cc
         src/ConfiguredDiscoveryManagerActivator.cc
         )

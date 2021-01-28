@@ -28,6 +28,7 @@
 #include <celix_api.h>
 
 #include <IEndpointEventListener.h>
+#include <ConfiguredEndpoint.h>
 
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
@@ -83,10 +84,15 @@ private:
 
     void updateListeners(const std::shared_ptr<IEndpoint>& endpoint);
 
+    void publishParsedEndpoints();
+
     std::shared_ptr<DependencyManager> _dependencyManager;
     std::vector<std::shared_ptr<IEndpointEventListener>> _endpointEventListeners;
 
     const std::string _configurationFilePath;
+
+    std::vector<std::shared_ptr<ConfiguredEndpoint>> _endpoints;
+    std::vector<IEndpoint*> _publishedEndpoints;
 };
 
 } // end namespace celix::async_rsa::discovery.
