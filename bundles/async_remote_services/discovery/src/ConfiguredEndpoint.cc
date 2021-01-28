@@ -29,6 +29,17 @@ constexpr const char* ENDPOINT_OBJECTCLASS = "endpoint.objectClass";
 constexpr const char* ENDPOINT_SCOPE = "endpoint.scope";
 constexpr const char* ENDPOINT_TOPIC = "endpoint.topic";
 
+bool isValidEndpointJson(const rapidjson::Value& endpointJson) {
+
+    return (endpointJson.HasMember(ENDPOINT_IDENTIFIER)
+         && endpointJson.HasMember(ENDPOINT_IMPORTED)
+         && endpointJson.HasMember(ENDPOINT_IMPORT_CONFIGS)
+         && endpointJson.HasMember(ENDPOINT_EXPORTS)
+         && endpointJson.HasMember(ENDPOINT_OBJECTCLASS)
+         && endpointJson.HasMember(ENDPOINT_SCOPE)
+         && endpointJson.HasMember(ENDPOINT_TOPIC));
+}
+
 std::vector<std::string> parseJSONStringArray(const rapidjson::Value& jsonArray) {
 
     std::vector<std::string> resultVec{};
@@ -42,19 +53,24 @@ std::vector<std::string> parseJSONStringArray(const rapidjson::Value& jsonArray)
     return resultVec;
 }
 
-ConfiguredEndpoint::ConfiguredEndpoint(const rapidjson::Value& endpointJson) :
-            _properties{endpointJson[ENDPOINT_IDENTIFIER].GetString(),
-                        endpointJson[ENDPOINT_IMPORTED].GetBool(),
-                        parseJSONStringArray(endpointJson[ENDPOINT_IMPORT_CONFIGS]),
-                        endpointJson[ENDPOINT_EXPORTS].GetString(),
-                        parseJSONStringArray(endpointJson[ENDPOINT_OBJECTCLASS]),
-                        endpointJson[ENDPOINT_SCOPE].GetString(),
-                        endpointJson[ENDPOINT_TOPIC].GetString()} {
+ConfiguredEndpoint::ConfiguredEndpoint(const rapidjson::Value& endpointJson) : _properties{} {
+
+    if (isValidEndpointJson(endpointJson)) {
+        _properties = std::make_shared<ConfiguredEndpointProperties>(
+                endpointJson[ENDPOINT_IDENTIFIER].GetString(),
+                endpointJson[ENDPOINT_IMPORTED].GetBool(),
+                parseJSONStringArray(endpointJson[ENDPOINT_IMPORT_CONFIGS]),
+                endpointJson[ENDPOINT_EXPORTS].GetString(),
+                parseJSONStringArray(endpointJson[ENDPOINT_OBJECTCLASS]),
+                endpointJson[ENDPOINT_SCOPE].GetString(),
+                endpointJson[ENDPOINT_TOPIC].GetString()
+        );
+    }
 }
 
 const ConfiguredEndpointProperties& ConfiguredEndpoint::getProperties() const {
 
-    return _properties;
+    return *_properties;
 }
 
 } // end namespace celix::async_rsa::discovery.

@@ -40,12 +40,6 @@ public:
     virtual ~IDiscoveryManager() = default;
 
     /**
-     * Add a endpoint event listener that will be updated by this discovery-manager whenever a new endpoint event is happening.
-     * @param endpointEventListener The new endpoint event listener as a shared_ptr ref.
-     */
-    virtual void addEndpointEventListener(const std::shared_ptr<IEndpointEventListener>& endpointEventListener) = 0;
-
-    /**
      * Task the discovery-manager to find endpoints from remote frameworks or local files.
      */
     virtual void discoverEndpoints() = 0;

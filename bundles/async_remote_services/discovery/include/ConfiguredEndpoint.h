@@ -104,12 +104,12 @@ public:
     const ConfiguredEndpointProperties& getProperties() const;
 
     [[nodiscard]] std::string ToString() const {
-        return "[ConfiguredEndpoint] Properties: " + _properties.ToString();
+        return "[ConfiguredEndpoint] Properties: " + _properties->ToString();
     }
 
 private:
 
-    const ConfiguredEndpointProperties _properties;
+    std::shared_ptr<ConfiguredEndpointProperties> _properties;
 };
 
 } // end namespace celix::async_rsa::discovery.

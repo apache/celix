@@ -71,18 +71,11 @@ public:
     ConfiguredDiscoveryManager& operator=(const ConfiguredDiscoveryManager&) = delete;
 
     /**
-     * @see IDiscoveryManager::addEndpointEventListener.
-     */
-    void addEndpointEventListener(const std::shared_ptr<IEndpointEventListener>& endpointEventListener) override;
-
-    /**
      * @see IDiscoveryManager::discoverEndpoints.
      */
     void discoverEndpoints() override;
 
 private:
-
-    void updateListeners(const std::shared_ptr<IEndpoint>& endpoint);
 
     void publishParsedEndpoints();
 

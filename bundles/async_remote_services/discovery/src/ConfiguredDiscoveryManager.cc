@@ -50,83 +50,33 @@ ConfiguredDiscoveryManager::ConfiguredDiscoveryManager(std::shared_ptr<Dependenc
     discoverEndpoints(); // TODO this call should probably come from the topology manager?
 }
 
-void ConfiguredDiscoveryManager::addEndpointEventListener(const std::shared_ptr<IEndpointEventListener>& endpointEventListener) {
-
-    // search for duplicates, only add new listeners.
-    const auto eventListenerIter = std::find(_endpointEventListeners.begin(), _endpointEventListeners.end(), endpointEventListener);
-    if(eventListenerIter == _endpointEventListeners.end()) {
-        _endpointEventListeners.push_back(endpointEventListener);
-    }
-}
-
 void ConfiguredDiscoveryManager::discoverEndpoints() {
-
-    // TODO search JSON files/directory for configured endpoints within.
-
-    /**
-     * ENDPOINT FROM 'ROAD TO INTEROPERABILITY' JSON-EXAMPLE:
-     *
-     * {
-     *    "org.apache.aries.rsa.discovery.config~ComponentName": {
-     *          "endpoint.id": "id-01",
-     *          "service.imported": true,
-     *          "service.imported.configs:String[]": [
-     *              "pubsub"
-     *          ],
-     *          "objectClass:String[]": [
-     *              "com.temp.componentName"
-     *          ],
-     *          "scope:String": "ComponentName",
-     *          "topic:String": "com.temp.ComponentName"
-     *    }
-     * }
-     */
-
-    /**
-     *     _endpoints.emplace_back(
-     *       &_mng->createComponent<StaticEndpoint>().addInterface<IEndpoint>(
-     *               "1.0.0", celix::dm::Properties{
-     *                   {"service.imported", "*"},
-     *                   {"service.exported.interfaces", "IHardcodedService"},
-     *                   {"endpoint.id", "1"},
-     *               })
-     *       .build()
-     *       .getInstance());
-     */
 
     const rapidjson::Document& parsedJson = parseJSONFile(_configurationFilePath);
 
     if (parsedJson.IsObject()) {
-        const rapidjson::Value& endpointJsonArray = parsedJson[ENDPOINT_ARRAY];
+        if (parsedJson.HasMember(ENDPOINT_ARRAY)) {
 
-        if (endpointJsonArray.IsArray() && ( endpointJsonArray.Size() > 0)) {
+            const rapidjson::Value& endpointJsonArray = parsedJson[ENDPOINT_ARRAY];
+            if (endpointJsonArray.IsArray() && ( endpointJsonArray.Size() > 0 )) {
 
-            for (rapidjson::Value::ConstValueIterator endpointIter = endpointJsonArray.Begin();
-                        endpointIter != endpointJsonArray.End(); endpointIter++) {
+                for (rapidjson::Value::ConstValueIterator endpointIter = endpointJsonArray.Begin();
+                     endpointIter != endpointJsonArray.End(); endpointIter++) {
 
-                if (endpointIter->IsObject()) {
-
-                    const auto& endpointJson = endpointIter->GetObject();
-                    _endpoints.emplace_back(std::make_shared<ConfiguredEndpoint>(endpointJson));
-
-                } else {
-                    // TODO invalid endpoint JSON object.
+                    if (endpointIter->IsObject()) {
+                        const auto& endpointJson = endpointIter->GetObject();
+                        _endpoints.emplace_back(std::make_shared<ConfiguredEndpoint>(endpointJson));
+                    }
                 }
             }
-        } else {
-            // TODO no available/valid endpoints in array.
         }
-    } else {
-        // TODO parsed json invalid.
     }
-
     publishParsedEndpoints();
 }
 
 void ConfiguredDiscoveryManager::publishParsedEndpoints() {
 
     for (const auto& endpoint : _endpoints) {
-
         const auto endpointProperties = endpoint->getProperties();
         const auto celixProperties = celix::dm::Properties{{"service.imported",
                                                            std::to_string(endpointProperties.isImported()).c_str()},
@@ -135,13 +85,8 @@ void ConfiguredDiscoveryManager::publishParsedEndpoints() {
         _publishedEndpoints.emplace_back(
                 &_dependencyManager->createComponent<IEndpoint>().addInterface<IEndpoint>(
                         "1.0.0", celixProperties).build().getInstance());
-    }
-}
 
-void ConfiguredDiscoveryManager::updateListeners(const std::shared_ptr<IEndpoint>& endpoint) {
-
-    for(const auto& listener : _endpointEventListeners) {
-        listener->incomingEndpointEvent(endpoint);
+        std::cout << endpoint->ToString() << std::endl;
     }
 }
 
