@@ -515,7 +515,7 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
                     RSA_LOG_WARNING(rsa, "nr of bytes to send for a remote call is > INT_MAX, this can lead to issues\n");
                 }
                 while (bytesLeft > 0) {
-                    int send = mg_write(conn, response, strlen(response));
+                    int send = mg_write(conn, bufLoc, strlen(bufLoc));
                     if (send > 0) {
                         bytesLeft -= send;
                         bufLoc += send;
