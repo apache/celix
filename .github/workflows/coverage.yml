@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
       - name: Checkout source code
-        uses: actions/checkout@master
+        uses: actions/checkout@v2
       - name: Install dependencies
         run: |
           sudo apt-get update
@@ -43,7 +43,7 @@ jobs:
           make coverage
           lcx="lcov --output-file=coverage.info " && for i in `find . -name "*.info.cleaned"`; do lcx+=" --add-tracefile=$i"; done && $lcx
       - name: Codecov
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@e156083f13aff6830c92fc5faa23505779fbf649
         with:
           file: build/coverage.info
           name: codecov-celix
