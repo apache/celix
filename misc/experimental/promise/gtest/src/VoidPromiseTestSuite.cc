@@ -94,7 +94,7 @@ TEST_F(VoidPromiseTestSuite, onSuccessHandling) {
             resolveCalled = true;
         });
     deferred.resolve();
-    p.wait();
+    executor->wait();
     EXPECT_EQ(true, called);
     EXPECT_EQ(true, resolveCalled);
 }
@@ -121,7 +121,7 @@ TEST_F(VoidPromiseTestSuite, onFailureHandling) {
     } catch (...) {
         deferred.fail(std::current_exception());
     }
-    p.wait();
+    executor->wait();
     EXPECT_EQ(false, successCalled);
     EXPECT_EQ(true, failureCalled);
     EXPECT_EQ(true, resolveCalled);
@@ -142,7 +142,7 @@ TEST_F(VoidPromiseTestSuite, resolveSuccessWith) {
     deferred2.resolveWith(deferred1.getPromise());
     auto p = deferred2.getPromise();
     deferred1.resolve();
-    p.wait();
+    executor->wait();
     EXPECT_EQ(true, called);
 }
 

@@ -459,7 +459,8 @@ TEST_F(PromiseTestSuite, chainFailedPromises) {
     };
     auto deferred = factory->deferred<long>();
     deferred.fail(std::logic_error{"fail"});
-    deferred.getPromise().then<long>(success, failed).wait();
+    deferred.getPromise().then<long>(success, failed);
+    executor->wait();
     EXPECT_TRUE(called);
 }
 
