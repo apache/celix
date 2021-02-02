@@ -249,7 +249,7 @@ TEST_F(PromiseTestSuite, resolveFailureWith) {
 TEST_F(PromiseTestSuite, resolveWithTimeout) {
     auto deferred1 = factory->deferred<long>();
     std::thread t{[&deferred1]{
-        std::this_thread::sleep_for(std::chrono::milliseconds{50});
+        std::this_thread::sleep_for(std::chrono::milliseconds{250});
         try {
             deferred1.resolve(42);
         } catch(...) {

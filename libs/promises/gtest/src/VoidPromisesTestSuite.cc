@@ -178,7 +178,7 @@ TEST_F(VoidPromiseTestSuite, resolveFailureWith) {
 TEST_F(VoidPromiseTestSuite, resolveWithTimeout) {
     auto deferred1 = factory->deferred<void>();
     std::thread t{[&deferred1]{
-        std::this_thread::sleep_for(std::chrono::milliseconds{50});
+        std::this_thread::sleep_for(std::chrono::milliseconds{250});
         try {
             deferred1.resolve();
         } catch(...) {
