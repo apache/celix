@@ -306,21 +306,29 @@ celix_status_t component_removeServiceDependency(celix_dm_component_t *component
 
 celix_status_t celix_private_dmComponent_enable(celix_dm_component_t *component) {
     celixThreadMutex_lock(&component->mutex);
+    bool changed = false;
     if (!component->isEnabled) {
+        changed = !component->isEnabled;
         component->isEnabled = true;
     }
     celixThreadMutex_unlock(&component->mutex);
-    celix_dmComponent_handleChange(component);
+    if (changed) {
+        celix_dmComponent_handleChange(component);
+    }
     return CELIX_SUCCESS;
 }
 
 static celix_status_t celix_dmComponent_disable(celix_dm_component_t *component) {
     celixThreadMutex_lock(&component->mutex);
+    bool changed = false;
     if (component->isEnabled) {
+        changed = component->isEnabled;
         component->isEnabled = false;
     }
     celixThreadMutex_unlock(&component->mutex);
-    celix_dmComponent_handleChange(component);
+    if (changed) {
+        celix_dmComponent_handleChange(component);
+    }
     return CELIX_SUCCESS;
 }
 
@@ -630,7 +638,7 @@ static celix_status_t celix_dmComponent_disableDependencies(celix_dm_component_t
 
 
 /**
- * Calculate and handle state change. This function should be called with the component->mutex locked.
+ * Calculate and handle state change.
  */
 static void celix_dmComponent_handleChangeOnEventThread(void *data) {
     celix_dm_component_t* component = data;
@@ -797,7 +805,6 @@ static bool celix_dmComponent_areAllRequiredServiceDependenciesResolved(celix_dm
 
 /**
  * Register component services (if not already registered).
- * If needLock is false, this function should be called with the component->mutex locked.
  */
 static celix_status_t celix_dmComponent_registerServices(celix_dm_component_t *component, bool needLock) {
     if (needLock) {

@@ -71,7 +71,7 @@ namespace celix { namespace dm {
         /**
          * Whether the service dependency is valid.
          *
-         * Depcrated -> will always return true.
+         * Deprecated -> will always return true.
          */
         bool isValid() const __attribute__((deprecated)) { return true; }
 

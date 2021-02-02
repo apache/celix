@@ -25,7 +25,6 @@ typedef struct requirement *requirement_pt;
 #include "capability.h"
 #include "hash_map.h"
 #include "celix_version_range.h"
-#include "version_range.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
