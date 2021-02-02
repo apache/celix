@@ -149,16 +149,13 @@ TEST_F(VoidPromiseTestSuite, resolveSuccessWith) {
 TEST_F(VoidPromiseTestSuite, resolveFailureWith) {
     auto deferred1 = factory->deferred<void>();
     auto deferred2 = factory->deferred<void>();
-    std::mutex mutex{};
-    bool failureCalled = false;
-    bool successCalled = false;
+    std::atomic<bool> failureCalled = false;
+    std::atomic<bool> successCalled = false;
     deferred2.getPromise()
             .onSuccess([&]() {
-                std::lock_guard<std::mutex> lck{mutex};
                 successCalled = true;
             })
             .onFailure([&](const std::exception &e) {
-                std::unique_lock<std::mutex> lck{mutex};
                 failureCalled = true;
                 std::cout << "got error: " << e.what() << std::endl;
             });
@@ -189,22 +186,18 @@ TEST_F(VoidPromiseTestSuite, resolveWithTimeout) {
         }
     }};
 
-    std::mutex mutex{};
-    bool firstSuccessCalled = false;
-    bool secondSuccessCalled = false;
-    bool secondFailedCalled = false;
+    std::atomic<bool> firstSuccessCalled = false;
+    std::atomic<bool> secondSuccessCalled = false;
+    std::atomic<bool> secondFailedCalled = false;
     auto p = deferred1.getPromise()
             .onSuccess([&]() {
-                std::lock_guard<std::mutex> lock{mutex};
                 firstSuccessCalled = true;
             })
             .timeout(std::chrono::milliseconds{10})
             .onSuccess([&]() {
-                std::lock_guard<std::mutex> lock{mutex};
                 secondSuccessCalled = true;
             })
             .onFailure([&](const std::exception&) {
-                std::lock_guard<std::mutex> lock{mutex};
                 secondFailedCalled = true;
             });
     t.join();
@@ -236,39 +229,34 @@ TEST_F(VoidPromiseTestSuite, resolveWithTimeout) {
 TEST_F(VoidPromiseTestSuite, resolveWithDelay) {
     auto deferred1 = factory->deferred<void>();
 
-    std::mutex mutex{};
-    bool successCalled = false;
-    bool failedCalled = false;
+    std::atomic<bool> successCalled = false;
+    std::atomic<bool> failedCalled = false;
     auto t1 = std::chrono::system_clock::now();
-    std::chrono::system_clock::time_point t2;
+    std::atomic<std::chrono::system_clock::time_point> t2{t1};
     auto p = deferred1.getPromise()
             .delay(std::chrono::milliseconds{50})
             .onSuccess([&]() {
-                std::lock_guard<std::mutex> lock{mutex};
                 successCalled = true;
                 t2 = std::chrono::system_clock::now();
             })
             .onFailure([&](const std::exception&) {
-                std::lock_guard<std::mutex> lock{mutex};
                 failedCalled = true;
             });
     deferred1.resolve();
     executor->wait();
     EXPECT_EQ(true, successCalled);
     EXPECT_EQ(false, failedCalled);
-    auto durationInMs = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
+    auto durationInMs = std::chrono::duration_cast<std::chrono::milliseconds>(t2.load() - t1);
     EXPECT_GE(durationInMs, std::chrono::milliseconds{10});
 }
 
 
 TEST_F(VoidPromiseTestSuite, resolveWithRecover) {
     auto deferred1 = factory->deferred<void>();
-    std::mutex mutex{};
-    bool successCalled = false;
+    std::atomic<bool> successCalled = false;
     deferred1.getPromise()
             .recover([]{ return 42; })
             .onSuccess([&]() {
-                std::lock_guard<std::mutex> lock{mutex};
                 successCalled = true;
             });
     try {
@@ -296,11 +284,9 @@ TEST_F(VoidPromiseTestSuite, chainAndMapResult) {
 
 TEST_F(VoidPromiseTestSuite, chainWithThenAccept) {
     auto deferred1 = factory->deferred<void>();
-    std::mutex mutex{};
-    bool called = false;
+    std::atomic<bool> called = false;
     deferred1.getPromise()
             .thenAccept([&](){
-                std::lock_guard<std::mutex> lock{mutex};
                 called = true;
             });
     deferred1.resolve();
@@ -325,12 +311,10 @@ TEST_F(VoidPromiseTestSuite, promiseWithFallbackTo) {
 }
 
 TEST_F(VoidPromiseTestSuite, outOfScopeUnresolvedPromises) {
-    std::mutex mutex{};
-    bool called = false;
+    std::atomic<bool> called = false;
     {
         auto deferred1 = factory->deferred<void>();
         deferred1.getPromise().onResolve([&]{
-            std::lock_guard<std::mutex> lock{mutex};
             called = true;
         });
         //promise and deferred out of scope
@@ -354,14 +338,12 @@ TEST_F(VoidPromiseTestSuite, chainPromises) {
 }
 
 TEST_F(VoidPromiseTestSuite, chainFailedPromises) {
-    std::mutex mutex{};
-    bool called = false;
+    std::atomic<bool> called = false;
     auto success = [](celix::Promise<void> p) -> celix::Promise<void> {
         //nop
         return p;
     };
     auto failed = [&](const celix::Promise<void>& /*p*/) -> void {
-        std::lock_guard<std::mutex> lock{mutex};
         called = true;
     };
     auto deferred = factory->deferred<void>();

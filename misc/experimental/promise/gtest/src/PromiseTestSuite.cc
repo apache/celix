@@ -153,17 +153,14 @@ TEST_F(PromiseTestSuite, failingPromiseWithExceptionPtr) {
 
 TEST_F(PromiseTestSuite, onSuccessHandling) {
     auto deferred =  factory->deferred<long>();
-    std::mutex mutex{};
-    bool called = false;
-    bool resolveCalled = false;
+    std::atomic<bool> called = false;
+    std::atomic<bool> resolveCalled = false;
     auto p = deferred.getPromise()
         .onSuccess([&](long value) {
-            std::lock_guard<std::mutex> lck{mutex};
             EXPECT_EQ(42, value);
             called = true;
         })
         .onResolve([&]() {
-            std::lock_guard<std::mutex> lck{mutex};
             resolveCalled = true;
         });
     deferred.resolve(42);
@@ -175,22 +172,18 @@ TEST_F(PromiseTestSuite, onSuccessHandling) {
 
 TEST_F(PromiseTestSuite, onFailureHandling) {
     auto deferred =  factory->deferred<long>();
-    std::mutex mutex{};
-    bool successCalled = false;
-    bool failureCalled = false;
-    bool resolveCalled = false;
+    std::atomic<bool> successCalled = false;
+    std::atomic<bool> failureCalled = false;
+    std::atomic<bool> resolveCalled = false;
     auto p = deferred.getPromise()
             .onSuccess([&](long /*value*/) {
-                std::lock_guard<std::mutex> lck{mutex};
                 successCalled = true;
             })
             .onFailure([&](const std::exception &e) {
-                std::lock_guard<std::mutex> lck{mutex};
                 failureCalled = true;
                 std::cout << "got error: " << e.what() << std::endl;
             })
             .onResolve([&]() {
-                std::lock_guard<std::mutex> lck{mutex};
                 resolveCalled = true;
             });
     try {
@@ -209,14 +202,10 @@ TEST_F(PromiseTestSuite, onFailureHandling) {
 TEST_F(PromiseTestSuite, resolveSuccessWith) {
     auto deferred1 = factory->deferred<long>();
     auto deferred2 = factory->deferred<long>();
-
-    std::mutex mutex{};
-    bool called = false;
-
+    std::atomic<bool> called = false;
     deferred1.getPromise()
             .onSuccess([&](long value) {
                 EXPECT_EQ(42, value);
-                std::lock_guard<std::mutex> lck{mutex};
                 called = true;
             });
 
@@ -234,13 +223,11 @@ TEST_F(PromiseTestSuite, resolveFailureWith) {
     auto deferred1 = factory->deferred<long>();
     auto deferred2 = factory->deferred<long>();
 
-    std::mutex mutex{};
-    bool failureCalled = false;
+   std::atomic<bool> failureCalled = false;
 
     deferred2.getPromise()
             .onFailure([&](const std::exception &e) {
                 std::cout << "got error: " << e.what() << std::endl;
-                std::lock_guard<std::mutex> lck{mutex};
                 failureCalled = true;
             });
 
@@ -270,24 +257,20 @@ TEST_F(PromiseTestSuite, resolveWithTimeout) {
         }
     }};
 
-    std::mutex mutex{};
-    bool firstSuccessCalled = false;
-    bool secondSuccessCalled = false;
-    bool secondFailedCalled = false;
+    std::atomic<bool> firstSuccessCalled = false;
+    std::atomic<bool> secondSuccessCalled = false;
+    std::atomic<bool> secondFailedCalled = false;
     auto p = deferred1.getPromise()
             .onSuccess([&](long value) {
                 EXPECT_EQ(42, value);
-                std::lock_guard<std::mutex> lck{mutex};
                 firstSuccessCalled = true;
             })
             .timeout(std::chrono::milliseconds{10})
             .onSuccess([&](long value) {
                 EXPECT_EQ(42, value);
-                std::lock_guard<std::mutex> lck{mutex};
                 secondSuccessCalled = true;
             })
             .onFailure([&](const std::exception&) {
-                std::lock_guard<std::mutex> lck{mutex};
                 secondFailedCalled = true;
             });
 
@@ -303,17 +286,14 @@ TEST_F(PromiseTestSuite, resolveWithTimeout) {
     auto p2 = deferred1.getPromise()
             .onSuccess([&](long value) {
                 EXPECT_EQ(42, value);
-                std::lock_guard<std::mutex> lck{mutex};
                 firstSuccessCalled = true;
             })
             .timeout(std::chrono::milliseconds{250}) /*NOTE: more than the possible delay introduced by the executor*/
             .onSuccess([&](long value) {
                 EXPECT_EQ(42, value);
-                std::lock_guard<std::mutex> lck{mutex};
                 secondSuccessCalled = true;
             })
             .onFailure([&](const std::exception&) {
-                std::lock_guard<std::mutex> lck{mutex};
                 secondFailedCalled = true;
             });
     executor->wait();
@@ -324,15 +304,13 @@ TEST_F(PromiseTestSuite, resolveWithTimeout) {
 
 TEST_F(PromiseTestSuite, resolveWithDelay) {
     auto deferred1 = factory->deferred<long>();
-    std::mutex mutex{};
-    bool successCalled = false;
+    std::atomic<bool> successCalled = false;
     auto t1 = std::chrono::system_clock::now();
-    std::chrono::system_clock::time_point t2;
+    std::atomic<std::chrono::system_clock::time_point> t2{t1};
     auto p = deferred1.getPromise()
             .delay(std::chrono::milliseconds{50})
             .onSuccess([&](long value) {
                 EXPECT_EQ(42, value);
-                std::lock_guard<std::mutex> lck{mutex};
                 t2 = std::chrono::system_clock::now();
                 successCalled = true;
             });
@@ -340,20 +318,18 @@ TEST_F(PromiseTestSuite, resolveWithDelay) {
 
     executor->wait();
     EXPECT_EQ(true, successCalled);
-    auto durationInMs = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1);
+    auto durationInMs = std::chrono::duration_cast<std::chrono::milliseconds>(t2.load() - t1);
     EXPECT_GE(durationInMs, std::chrono::milliseconds{50});
 }
 
 
 TEST_F(PromiseTestSuite, resolveWithRecover) {
     auto deferred1 = factory->deferred<long>();
-    std::mutex mutex{};
-    bool successCalled = false;
+    std::atomic<bool> successCalled = false;
     deferred1.getPromise()
             .recover([]{ return 42; })
             .onSuccess([&](long v) {
                 EXPECT_EQ(42, v);
-                std::lock_guard<std::mutex> lck{mutex};
                 successCalled = true;
             });
     try {
@@ -380,18 +356,13 @@ TEST_F(PromiseTestSuite, chainAndMapResult) {
 
 TEST_F(PromiseTestSuite, chainWithThenAccept) {
     auto deferred1 = factory->deferred<long>();
-    std::mutex mutex{};
-    bool called = false;
+    std::atomic<bool> called = false;
     deferred1.getPromise()
             .thenAccept([&](long v){
                 EXPECT_EQ(42, v);
-                std::lock_guard<std::mutex> lck{mutex};
                 called = true;
             });
     deferred1.resolve(42);
-    {
-        std::unique_lock<std::mutex> lck{mutex};
-    }
     executor->wait();
     EXPECT_TRUE(called);
 }
