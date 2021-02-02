@@ -226,15 +226,13 @@ namespace celix::impl {
 template<typename T>
 std::shared_ptr<celix::impl::SharedPromiseState<T>> celix::impl::SharedPromiseState<T>::create(std::shared_ptr<celix::IExecutor> _executor, int priority) {
     auto state = std::shared_ptr<celix::impl::SharedPromiseState<T>>{new celix::impl::SharedPromiseState<T>{std::move(_executor), priority}};
-    std::weak_ptr<celix::impl::SharedPromiseState<T>> self = state;
-    state->setSelf(std::move(self));
+    state->setSelf(state);
     return state;
 }
 
 inline std::shared_ptr<celix::impl::SharedPromiseState<void>> celix::impl::SharedPromiseState<void>::create(std::shared_ptr<celix::IExecutor> _executor, int priority) {
     auto state = std::shared_ptr<celix::impl::SharedPromiseState<void>>{new celix::impl::SharedPromiseState<void>{std::move(_executor), priority}};
-    std::weak_ptr<celix::impl::SharedPromiseState<void>> self = state;
-    state->setSelf(std::move(self));
+    state->setSelf(state);
     return state;
 }
 

@@ -24,7 +24,6 @@
 
 #include "celix/impl/SharedPromiseState.h"
 #include "celix/Promise.h"
-#include "celix/DefaultExecutor.h"
 
 namespace celix {
 

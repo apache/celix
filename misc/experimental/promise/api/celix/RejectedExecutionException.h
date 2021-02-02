@@ -23,7 +23,7 @@ namespace celix {
 
     struct RejectedExecutionException  : public std::exception
     {
-        [[nodiscard]] const char * what () const throw ()
+        [[nodiscard]] const char * what () const noexcept override
         {
             return "Cannot accept task for execution";
         }

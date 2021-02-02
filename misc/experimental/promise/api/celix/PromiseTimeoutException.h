@@ -26,7 +26,9 @@ namespace celix {
 
     class PromiseTimeoutException : public std::exception {
     public:
-        const char* what() const noexcept override { return "Timeout"; }
+        [[nodiscard]] const char* what() const noexcept override {
+            return "Timeout";
+        }
     };
 }
 

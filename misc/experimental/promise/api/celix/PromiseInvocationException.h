@@ -36,7 +36,7 @@ namespace celix {
         PromiseInvocationException& operator=(const PromiseInvocationException&) = delete;
         PromiseInvocationException& operator=(PromiseInvocationException&&) noexcept = default;
 
-        const char* what() const noexcept override { return w.c_str(); }
+        [[nodiscard]] const char* what() const noexcept override { return w.c_str(); }
     private:
         std::string w;
     };
