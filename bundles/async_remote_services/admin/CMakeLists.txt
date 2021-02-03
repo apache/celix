@@ -26,7 +26,7 @@ add_celix_bundle(async_rsa
 target_include_directories(async_rsa PRIVATE include)
 target_link_libraries(async_rsa PRIVATE
         Celix::async_rsa_common
-        Celix::async_rsa_discovery
+        Celix::async_rsa_discovery_configured
         Celix::pubsub_api
         Celix::pubsub_spi
         Celix::framework

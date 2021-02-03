@@ -46,8 +46,8 @@ celix_bundle_files(hardcoded_example_subscriber
         DESTINATION "META-INF/topics/sub"
         )
 
-target_link_libraries(hardcoded_example_provider PRIVATE Celix::framework Celix::async_rsa_discovery Celix::async_rsa_common Celix::async_rsa)
-target_link_libraries(hardcoded_example_subscriber PRIVATE Celix::framework Celix::async_rsa_discovery Celix::async_rsa_common Celix::async_rsa)
+target_link_libraries(hardcoded_example_provider PRIVATE Celix::framework Celix::async_rsa_discovery_configured Celix::async_rsa_common Celix::async_rsa)
+target_link_libraries(hardcoded_example_subscriber PRIVATE Celix::framework Celix::async_rsa_discovery_configured Celix::async_rsa_common Celix::async_rsa)
 
 set(PUBSUB_CONTAINER_LIBS
         Jansson
@@ -71,7 +71,7 @@ add_celix_container(hardcoded_example_provider_cnt
         Celix::pubsub_topology_manager
         Celix::pubsub_admin_zmq_v2
         Celix::pubsub_protocol_wire_v2
-        Celix::async_rsa_discovery
+        Celix::async_rsa_discovery_configured
         Celix::async_rsa
         hardcoded_example_provider
         PROPERTIES
@@ -90,7 +90,7 @@ add_celix_container(hardcoded_example_subscriber_cnt
         Celix::pubsub_topology_manager
         Celix::pubsub_admin_zmq_v2
         Celix::pubsub_protocol_wire_v2
-        Celix::async_rsa_discovery
+        Celix::async_rsa_discovery_configured
         Celix::async_rsa
         hardcoded_example_subscriber
         PROPERTIES
