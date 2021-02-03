@@ -18,9 +18,6 @@
  */
 #pragma once
 
-#include <memory>
-#include <IEndpointEventListener.h>
-
 namespace celix::async_rsa::discovery {
 
 /**

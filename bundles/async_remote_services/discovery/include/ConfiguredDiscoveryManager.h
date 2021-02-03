@@ -27,7 +27,6 @@
 #include <IEndpoint.h>
 #include <celix_api.h>
 
-#include <IEndpointEventListener.h>
 #include <ConfiguredEndpoint.h>
 
 #include <rapidjson/document.h>

@@ -23,7 +23,7 @@ add_celix_bundle(async_rsa_discovery
         NAME "Apache Celix Async Remote Service Admin Discovery"
         GROUP "Celix/AsyncRSA"
         SOURCES
-        src/discovery.cc
+#        src/discovery.cc
         src/ConfiguredEndpoint.cc
         src/ConfiguredDiscoveryManager.cc
         src/ConfiguredDiscoveryManagerActivator.cc

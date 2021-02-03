@@ -17,7 +17,8 @@
  * under the License.
  */
 
-#include <discovery.h>
+//#include <discovery.h>
+#include <IEndpoint.h>
 #include <celix_api.h>
 #include <ImportedServiceFactory.h>
 #include <mutex>

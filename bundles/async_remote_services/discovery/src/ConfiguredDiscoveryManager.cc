@@ -19,7 +19,6 @@
 
 #include <ConfiguredDiscoveryManager.h>
 
-#include <IEndpointEventListener.h>
 #include <ConfiguredEndpoint.h>
 
 #include <rapidjson/writer.h>
@@ -39,10 +38,16 @@ rapidjson::Document parseJSONFile(const std::string& filePath)  {
     return resultDocument;
 }
 
+celix::dm::Properties convertEndpointPropertiesToCelix(const ConfiguredEndpointProperties& endpointProperties) {
+
+    return celix::dm::Properties{{"service.imported", std::to_string(endpointProperties.isImported()).c_str()},
+                                 {"service.exported.interfaces", endpointProperties.getExports()},
+                                 {"endpoint.id", endpointProperties.getId()}};
+}
+
 ConfiguredDiscoveryManager::ConfiguredDiscoveryManager(std::shared_ptr<DependencyManager> dependencyManager,
                                                        std::string configurationFilePath) :
         _dependencyManager{std::move(dependencyManager)},
-        _endpointEventListeners{},
         _configurationFilePath{std::move(configurationFilePath)},
         _endpoints{},
         _publishedEndpoints{} {
@@ -77,14 +82,13 @@ void ConfiguredDiscoveryManager::discoverEndpoints() {
 void ConfiguredDiscoveryManager::publishParsedEndpoints() {
 
     for (const auto& endpoint : _endpoints) {
-        const auto endpointProperties = endpoint->getProperties();
-        const auto celixProperties = celix::dm::Properties{{"service.imported",
-                                                           std::to_string(endpointProperties.isImported()).c_str()},
-                                                           {"service.exported.interfaces", endpointProperties.getExports()},
-                                                           {"endpoint.id", endpointProperties.getId()}};
+
         _publishedEndpoints.emplace_back(
                 &_dependencyManager->createComponent<IEndpoint>().addInterface<IEndpoint>(
-                        "1.0.0", celixProperties).build().getInstance());
+                        "1.0.0",
+                        convertEndpointPropertiesToCelix(endpoint->getProperties()))
+                        .build().getInstance()
+        );
 
         std::cout << endpoint->ToString() << std::endl;
     }
