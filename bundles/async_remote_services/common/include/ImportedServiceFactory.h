@@ -35,11 +35,9 @@ namespace celix::async_rsa {
     template <typename Interface, typename Implementation>
     struct DefaultImportedServiceFactory final : public IImportedServiceFactory {
         explicit DefaultImportedServiceFactory(std::shared_ptr<celix::dm::DependencyManager> &mng) noexcept : _mng(mng) {
-            std::cout << "[DefaultImportedServiceFactory] DefaultImportedServiceFactory" << std::endl;
         }
 
         ~DefaultImportedServiceFactory() final {
-            std::cout << "[DefaultImportedServiceFactory] ~DefaultImportedServiceFactory" << std::endl;
             for (auto &[id, cmp] : _subCmps) {
                 celix_bundleContext_unregisterService(_mng->bundleContext(), id);
             }
@@ -51,7 +49,6 @@ namespace celix::async_rsa {
         }
 
         celix::dm::BaseComponent& create(std::shared_ptr<celix::dm::DependencyManager> &dm, celix::dm::Properties&&) final {
-            std::cout << "[DefaultImportedServiceFactory] create topic async_rsa." << Interface::NAME << std::endl;
             auto &cmp = dm->template createComponent<Implementation>(std::string{Interface::NAME})
                 .template addInterface<Interface>(std::string{Interface::VERSION});
 
@@ -59,6 +56,11 @@ namespace celix::async_rsa {
                     .setVersionRange("[3.0.0,4)")
                     .setFilter(std::string{"(topic=async_rsa."}.append(Interface::NAME).append(")"))
                     .setCallbacks([&cmp](const pubsub_publisher_t * pub, Properties&& props){ cmp.getInstance().setPublisher(pub, std::forward<Properties&&>(props)); })
+                    .setRequired(true)
+                    .build();
+            cmp.template createCServiceDependency<pubsub_subscriber_t>(PUBSUB_PUBLISHER_SERVICE_NAME)
+                    .setVersionRange("[3.0.0,4)")
+                    .setFilter(std::string{"(topic=async_rsa."}.append(Interface::NAME).append(")"))
                     .setRequired(true)
                     .build();
             _cmps.push_back(&cmp);

@@ -37,8 +37,7 @@ struct ImportedHardcodedService final : public IHardcodedService {
     ImportedHardcodedService& operator=(ImportedHardcodedService&&) = delete;
 
     celix::Promise<int> add(int a, int b) noexcept final {
-        std::cout << "[ImportedHardcodedService] add" << std::endl;
-//        std::this_thread::sleep_for(std::chrono::milliseconds(5000))
+        std::cout << "[ImportedHardcodedService] add " << a << " + " << b << std::endl;
         std::unique_lock l(_m);
         AddArgs args{_idCounter++, a, b, {}};
         _publisher->send(_publisher->handle, 1, &args, nullptr);
@@ -49,7 +48,7 @@ struct ImportedHardcodedService final : public IHardcodedService {
     }
 
     celix::Promise<int> subtract(int a, int b) noexcept final {
-        std::cout << "[ImportedHardcodedService] subtract" << std::endl;
+        std::cout << "[ImportedHardcodedService] subtract " << a << " + " << b << std::endl;
         std::unique_lock l(_m);
         SubtractArgs args{_idCounter++, a, b, {}};
         _publisher->send(_publisher->handle, 2, &args, nullptr);
@@ -60,7 +59,7 @@ struct ImportedHardcodedService final : public IHardcodedService {
     }
 
     celix::Promise<std::string> toString(int a) noexcept final {
-        std::cout << "[ImportedHardcodedService] toString" << std::endl;
+        std::cout << "[ImportedHardcodedService] toString " << a << std::endl;
         std::unique_lock l(_m);
         ToStringArgs args{_idCounter++, a, {}};
         _publisher->send(_publisher->handle, 3, &args, nullptr);
@@ -71,7 +70,6 @@ struct ImportedHardcodedService final : public IHardcodedService {
     }
 
     void setPublisher(pubsub_publisher_t const * publisher, Properties&&) {
-        std::cout << "[ImportedHardcodedService] setPublisher" << std::endl;
         _publisher = publisher;
     }
 
@@ -136,16 +134,13 @@ std::atomic<int> ImportedHardcodedService::_idCounter = 0;
 struct UsingHardcodedServiceService {
 
     void setService(IHardcodedService * svc, Properties&&) {
-        std::cout << "[UsingHardcodedServiceService] setService" << std::endl;
         _svc = svc;
     }
 
     void start() {
-        std::cout << "[UsingHardcodedServiceService] start" << std::endl;
         _t = std::thread([this]() {
-            std::this_thread::sleep_for(std::chrono::milliseconds(500));
             _svc->add(14, 123).thenAccept([](int val) {
-                std::cout << "[UsingHardcodedServiceService] " << val << std::endl;
+                std::cout << "[UsingHardcodedServiceService] add(14, 123) returned " << val << std::endl;
             });
         });
     }
@@ -164,7 +159,6 @@ private:
 class ExampleActivator {
 public:
     explicit ExampleActivator(std::shared_ptr<celix::dm::DependencyManager>& mng) {
-        std::cout << "[ExampleActivator] ExampleActivator" << std::endl;
         _addArgsSerializer.emplace(mng);
         _subtractArgsSerializer.emplace(mng);
         _toStringSerializer.emplace(mng);
@@ -175,6 +169,7 @@ public:
         auto &usingCmp = mng->createComponent<UsingHardcodedServiceService>()
                 .setCallbacks(nullptr, &UsingHardcodedServiceService::start, &UsingHardcodedServiceService::stop, nullptr);
         _usingSvc = &usingCmp.getInstance();
+
         usingCmp.createServiceDependency<IHardcodedService>().setCallbacks([this](IHardcodedService *svc, Properties&& props) {
             _usingSvc->setService(svc, std::forward<Properties>(props));
         })
@@ -185,7 +180,6 @@ public:
     }
 
     ~ExampleActivator() {
-        std::cout << "[ExampleActivator] ~ExampleActivator" << std::endl;
         _addArgsSerializer.reset();
         _subtractArgsSerializer.reset();
         _toStringSerializer.reset();

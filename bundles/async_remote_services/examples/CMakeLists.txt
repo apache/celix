@@ -72,6 +72,7 @@ add_celix_container(hardcoded_example_provider_cnt
         Celix::pubsub_admin_zmq_v2
         Celix::pubsub_protocol_wire_v2
         Celix::async_rsa_discovery_configured
+        Celix::async_topology_manager
         Celix::async_rsa
         hardcoded_example_provider
         PROPERTIES
@@ -90,6 +91,7 @@ add_celix_container(hardcoded_example_subscriber_cnt
         Celix::pubsub_topology_manager
         Celix::pubsub_admin_zmq_v2
         Celix::pubsub_protocol_wire_v2
+        Celix::async_topology_manager
         Celix::async_rsa_discovery_configured
         Celix::async_rsa
         hardcoded_example_subscriber

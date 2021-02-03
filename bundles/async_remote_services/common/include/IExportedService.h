@@ -19,7 +19,7 @@
 #pragma once
 
 namespace celix::async_rsa {
-    struct IEndpoint {
-        virtual ~IEndpoint() = default;
+    struct IExportedService {
+        virtual ~IExportedService() = default;
     };
 }

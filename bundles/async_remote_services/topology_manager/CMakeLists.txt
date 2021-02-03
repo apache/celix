@@ -15,19 +15,18 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_celix_bundle(async_rsa
+add_celix_bundle(async_topology_manager
         VERSION 0.9.0
-        SYMBOLIC_NAME "apache_celix_async_remote_service_admin"
-        NAME "Apache Celix Async Remote Service Admin"
+        SYMBOLIC_NAME "apache_celix_async_topology_manager"
+        NAME "Apache Celix Async Topology Manager"
         GROUP "Celix/AsyncRSA"
         SOURCES
-        src/admin.cc
+        src/topology_manager.cc
         )
-target_include_directories(async_rsa PRIVATE include)
-target_link_libraries(async_rsa PRIVATE
+target_include_directories(async_topology_manager PRIVATE include)
+target_link_libraries(async_topology_manager PRIVATE
         Celix::async_rsa_common
-        Celix::pubsub_api
-        Celix::pubsub_spi
+        Celix::async_rsa_discovery_configured
         Celix::framework
         Celix::log_helper
         )
@@ -37,6 +36,6 @@ target_link_libraries(async_rsa PRIVATE
 #endif()
 
 
-install_celix_bundle(async_rsa EXPORT celix COMPONENT async_rsa)
+install_celix_bundle(async_topology_manager EXPORT celix COMPONENT async_rsa)
 #Setup target aliases to match external usage
-add_library(Celix::async_rsa ALIAS async_rsa)
+add_library(Celix::async_topology_manager ALIAS async_topology_manager)
