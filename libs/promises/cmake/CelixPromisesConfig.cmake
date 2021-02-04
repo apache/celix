@@ -25,4 +25,4 @@ get_filename_component(REL_INSTALL_DIR "${REL_INSTALL_DIR}" PATH)
 get_filename_component(REL_INSTALL_DIR "${REL_INSTALL_DIR}" PATH)
 get_filename_component(REL_INSTALL_DIR "${REL_INSTALL_DIR}" PATH)
 
-include("${REL_INSTALL_DIR}/share/CelixPromise/cmake/Targets.cmake") #imports lib and exe targets (e.g. Celix::framework)
+include("${REL_INSTALL_DIR}/share/CelixPromises/cmake/Targets.cmake") #imports lib and exe targets (e.g. Celix::framework)

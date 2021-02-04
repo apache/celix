@@ -17,8 +17,5 @@
 
 celix_subproject(EXPERIMENTAL "Options to enable building the experimental - non stable - bundles/libraries. " OFF DEPS FRAMEWORK)
 if (EXPERIMENTAL)
-
     add_subdirectory(bundles)
-    add_subdirectory(promise)
-
 endif ()

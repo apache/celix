@@ -20,7 +20,7 @@
 
 #include <thread>
 #include <iostream>
-#include "celix/Deferred.h"
+#include "celix/PromiseFactory.h"
 
 static long calc_fib(long n) {
     long m = 1;
@@ -33,39 +33,32 @@ static long calc_fib(long n) {
     return m;
 }
 
-celix::Promise<long> fib(long n) {
-    auto deferred = celix::Deferred<long>{};
-
-    if (n <= 0) {
-        deferred.fail(std::logic_error{"argument must be positive"});
-    } else if (n < 10 ) {
+celix::Promise<long> fib(celix::PromiseFactory& factory, long n) {
+    return factory.deferredTask<long>([n](auto deferred) {
         deferred.resolve(calc_fib(n));
-    } else {
-        std::thread t{[deferred, n] () mutable {
-            deferred.resolve(calc_fib(n));
-        }};
-        t.detach();
-    }
-
-    return deferred.getPromise();
+    });
 }
 
 int main() {
-    auto p1 = fib(39);
-    p1.timeout(std::chrono::milliseconds{100})
-    .onSuccess([](long val) {
-        std::cout << "Success p1 : " << val << std::endl;
-    })
-    .onFailure([](const std::exception& e) {
-        std::cerr << "Failure p1 : " << e.what() << std::endl;
-    });
-    auto p2 = fib(1000000000);
-    p2.timeout(std::chrono::milliseconds {100}).onSuccess([](long val) {
-        std::cout << "Success p2 : " << std::to_string(val) << std::endl;
-    })
-    .onFailure([](const std::exception& e) {
-        std::cerr << "Failure p2 : " << e.what() << std::endl;
-    });
-    p1.wait();
-    p2.wait();
+    celix::PromiseFactory factory{};
+
+    fib(factory, 1000000000)
+        .timeout(std::chrono::milliseconds {100})
+        .onSuccess([](long val) {
+            std::cout << "Success p1 : " << std::to_string(val) << std::endl;
+        })
+        .onFailure([](const std::exception& e) {
+            std::cerr << "Failure p1 : " << e.what() << std::endl;
+        });
+
+    fib(factory, 39)
+        .timeout(std::chrono::milliseconds{100})
+        .onSuccess([](long val) {
+            std::cout << "Success p2 : " << std::to_string(val) << std::endl;
+        })
+        .onFailure([](const std::exception& e) {
+            std::cerr << "Failure p2 : " << e.what() << std::endl;
+        });
+
+    //NOTE the program can only exit if the executor is done executing all task (even the timeout version).
 }
