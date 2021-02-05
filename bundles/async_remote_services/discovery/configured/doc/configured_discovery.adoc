@@ -18,8 +18,12 @@ package "common" {
 
 package "discovery/configured" {
 
+    class discact as "ConfiguredDiscoveryManagerActivator" {
+        + Activator(std::shared_ptr<celix::dm::DependencyManager>)
+    }
+
     class disc as "ConfiguredDiscoveryManager" {
-        + void discoverEndpoints() //override//;
+        + void discoverEndpoints() override;
         - void publishDiscoveredEndpoints();
         - std::vector<ConfiguredEndpoint> _endpoints;
     }
@@ -35,11 +39,13 @@ package "discovery/configured" {
     }
 }
 
+discact *-u-> disc
 disc -u-|> idisc
-disc --> json : reads
+disc -> json : reads
 disc *-> cend
+disc -> iend : publishes
 cend -u-|> iend
-cend *-> cendprop
+cend *--> cendprop
 
 topo -d-> idisc : service dependency
 rsa -d-> iend : service dependency
