@@ -1,0 +1,48 @@
+[plantuml]
+.RSA Design - (Configured) Discovery
+----
+@startuml
+
+class topo as "TopologyManager"
+class rsa as "RemoteServiceAdmin"
+interface json as "JSON"
+
+package "common" {
+
+    interface idisc as "IDiscovery" {
+        + virtual void discoverEndpoints() = 0;
+    }
+
+    interface iend as "IEndpoint"
+}
+
+package "discovery/configured" {
+
+    class disc as "ConfiguredDiscoveryManager" {
+        + void discoverEndpoints() //override//;
+        - void publishDiscoveredEndpoints();
+        - std::vector<ConfiguredEndpoint> _endpoints;
+    }
+
+    class cend as "ConfiguredEndpoint" <<IEndpoint>> {
+        - ConfiguredEndpointProperties _properties;
+    }
+
+    class cendprop as "ConfiguredEndpointProperties" {
+        - std::string _endpointId;
+        - std::vector<std::string> _imports;
+        ...
+    }
+}
+
+disc -u-|> idisc
+disc --> json : reads
+disc *-> cend
+cend -u-|> iend
+cend *-> cendprop
+
+topo -d-> idisc : service dependency
+rsa -d-> iend : service dependency
+
+@enduml
+----
