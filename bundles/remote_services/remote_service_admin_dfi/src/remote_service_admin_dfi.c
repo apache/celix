@@ -27,6 +27,7 @@
 #include <string.h>
 #include <uuid/uuid.h>
 #include <curl/curl.h>
+#include <limits.h>
 
 #include <jansson.h>
 #include "json_serializer.h"
@@ -96,14 +97,15 @@ struct remote_service_admin {
     pthread_mutex_t curlMutexDns;
 };
 
-struct post {
+struct celix_post_data {
     const char *readptr;
     size_t size;
     size_t read;
 };
 
-struct get {
-    char *writeptr;
+struct celix_get_data_reply {
+    FILE* stream;
+    char* buf;
     size_t size;
 };
 
@@ -505,7 +507,24 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
 
             if (rc == CELIX_SUCCESS && response != NULL) {
                 mg_write(conn, data_response_headers, strlen(data_response_headers));
-                mg_write(conn, response, strlen(response));
+
+                char *bufLoc = response;
+                size_t bytesLeft = strlen(response);
+                if (bytesLeft > INT_MAX) {
+                    //NOTE arcording to civetweb mg_write, there is a limit on mg_write for INT_MAX.
+                    RSA_LOG_WARNING(rsa, "nr of bytes to send for a remote call is > INT_MAX, this can lead to issues\n");
+                }
+                while (bytesLeft > 0) {
+                    int send = mg_write(conn, bufLoc, strlen(bufLoc));
+                    if (send > 0) {
+                        bytesLeft -= send;
+                        bufLoc += send;
+                    } else {
+                        RSA_LOG_ERROR(rsa, "Error sending response: %s", strerror(errno));
+                        break;
+                    }
+                }
+
                 free(response);
             } else {
                 mg_write(conn, no_content_response_headers, strlen(no_content_response_headers));
@@ -869,14 +888,15 @@ celix_status_t remoteServiceAdmin_removeImportedService(remote_service_admin_t *
 
 static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description_t *endpointDescription, char *request, celix_properties_t *metadata, char **reply, int* replyStatus) {
     remote_service_admin_t * rsa = handle;
-    struct post post;
+    struct celix_post_data post;
     post.readptr = request;
     post.size = strlen(request);
     post.read = 0;
 
-    struct get get;
+    struct celix_get_data_reply get;
+    get.buf = NULL;
     get.size = 0;
-    get.writeptr = NULL;
+    get.stream = open_memstream(&get.buf, &get.size);
 
     const char *serviceUrl = celix_properties_get(endpointDescription->properties, (char*) RSA_DFI_ENDPOINT_URL, NULL);
     char url[256];
@@ -935,7 +955,9 @@ static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description
         //celix_logHelper_log(rsa->loghelper, CELIX_LOG_LEVEL_DEBUG, "RSA: Performing curl post\n");
         res = curl_easy_perform(curl);
 
-        *reply = get.writeptr;
+        fputc('\0', get.stream);
+        fclose(get.stream);
+        *reply = get.buf;
         *replyStatus = res;
 
         curl_easy_cleanup(curl);
@@ -946,7 +968,7 @@ static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description
 }
 
 static size_t remoteServiceAdmin_readCallback(void *voidBuffer, size_t size, size_t nmemb, void *userp) {
-    struct post *post = userp;
+    struct celix_post_data *post = userp;
     size_t buffSize = size * nmemb;
     size_t readSize = post->size - post->read;
     if (readSize > buffSize) {
@@ -959,20 +981,9 @@ static size_t remoteServiceAdmin_readCallback(void *voidBuffer, size_t size, siz
 }
 
 static size_t remoteServiceAdmin_write(void *contents, size_t size, size_t nmemb, void *userp) {
-    size_t realsize = size * nmemb;
-    struct get *mem = (struct get *)userp;
-
-    mem->writeptr =malloc(realsize + 1);
-    if (mem->writeptr == NULL) {
-        /* out of memory! */
-        fprintf(stderr, "not enough memory (malloc returned NULL)");
-        return 0;
-    } else {
-        memcpy(&(mem->writeptr[mem->size]), contents, realsize);
-        mem->size += realsize;
-        mem->writeptr[mem->size] = 0;
-        return realsize;
-    }
+    struct celix_get_data_reply *get = userp;
+    fwrite(contents, size, nmemb, get->stream);
+    return size * nmemb;
 }
 
 

@@ -156,6 +156,7 @@ void exportRegistration_waitTillNotUsed(export_registration_t *export) {
 celix_status_t exportRegistration_call(export_registration_t *export, char *data, int datalength, celix_properties_t *metadata, char **responseOut, int *responseLength) {
     int status = CELIX_SUCCESS;
 
+    char* response = NULL;
     *responseLength = -1;
     json_error_t error;
     json_t *js_request = json_loads(data, 0, &error);
@@ -166,7 +167,7 @@ celix_status_t exportRegistration_call(export_registration_t *export, char *data
             if (cont) {
                 celixThreadMutex_lock(&export->mutex);
                 if (export->active && export->service != NULL) {
-                    status = jsonRpc_call(export->intf, export->service, data, responseOut);
+                    status = jsonRpc_call(export->intf, export->service, data, &response);
                 } else if (!export->active) {
                     status = CELIX_ILLEGAL_STATE;
                     celix_logHelper_warning(export->helper, "Cannot call an inactive service export");
@@ -178,13 +179,14 @@ celix_status_t exportRegistration_call(export_registration_t *export, char *data
 
                 remoteInterceptorHandler_invokePostExportCall(export->interceptorsHandler, export->exportReference.endpoint->properties, sig, metadata);
             }
+            *responseOut = response;
 
             //printf("calling for '%s'\n");
             if (export->logFile != NULL) {
                 static int callCount = 0;
                 char *name = NULL;
                 dynInterface_getName(export->intf, &name);
-                fprintf(export->logFile, "REMOTE CALL %i\n\tservice=%s\n\tservice_id=%s\n\trequest_payload=%s\n\tstatus=%i\n", callCount, name, export->servId, data, status);
+                fprintf(export->logFile, "REMOTE CALL %i\n\tservice=%s\n\tservice_id=%s\n\trequest_payload=%s\n\trequest_response=%s\n\tstatus=%i\n", callCount, name, export->servId, data, response, status);
                 fflush(export->logFile);
                 callCount += 1;
             }
