@@ -83,8 +83,8 @@ namespace celix {
          * By default the service registration is configure to register the service async, but to unregister the
          * service sync (because the svc pointer is unmanaged).
          */
-        template<typename I>
-        ServiceRegistrationBuilder<I> registerUnmanagedService(I* svc, const std::string& name = {}) {
+        template<typename I, typename Implementer>
+        ServiceRegistrationBuilder<I> registerUnmanagedService(Implementer* svc, const std::string& name = {}) {
             auto unmanagedSvc = std::shared_ptr<I>{svc, [](I*){/*nop*/}};
             return ServiceRegistrationBuilder<I>{cCtx, std::move(unmanagedSvc), celix::typeName<I>(name), true, false};
         }

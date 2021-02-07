@@ -19,6 +19,7 @@
 
 #include <utility>
 
+#include "celix/IShellCommand.h"
 #include "celix/BundleActivator.h"
 #include "examples/ICalc.h"
 
@@ -29,10 +30,7 @@ namespace /*anon*/ {
         explicit DynamicConsumer(int _id) : id{_id} {}
 
         ~DynamicConsumer() {
-            active = false;
-            calcThread.join();
-            auto msg = std::string{"Destroying consumer nr "} + std::to_string(id) + "\n";
-            std::cout << msg;
+            stop();
         }
 
         void start() {
@@ -40,9 +38,35 @@ namespace /*anon*/ {
             calcThread = std::thread{&DynamicConsumer::run, this};
         }
 
-        void setCalc(std::shared_ptr<examples::ICalc> _calc) {
+        void stop() {
+            active = false;
+            if (calcThread.joinable()) {
+                calcThread.join();
+                auto msg = std::string{"Destroying consumer nr "} + std::to_string(id) + "\n";
+                std::cout << msg;
+            }
+        }
+
+        void setCalc(std::shared_ptr<examples::ICalc> _calc, const std::shared_ptr<const celix::Properties>& props) {
             std::lock_guard<std::mutex> lck{mutex};
-            calc = std::move(_calc);
+            if (_calc) {
+                calc = std::move(_calc);
+                svcId = props->getAsLong(celix::SERVICE_ID, -1);
+                ranking = props->getAsLong(celix::SERVICE_RANKING, 0);
+
+                std::string msg = "Setted calc svc for consumer nr " +  std::to_string(id);
+                msg += ". svc id is  "  + std::to_string(svcId);
+                msg += ", and ranking is " + std::to_string(ranking);
+                msg += "\n";
+                std::cout << msg;
+            } else {
+                std::string msg = "Resetting calc svc for consumer " + std::to_string(id)  + " to nullptr\n";
+                std::cout << msg;
+
+                calc = nullptr;
+                svcId = -1;
+                ranking = 0;
+            }
         }
     private:
         void run() {
@@ -58,93 +82,76 @@ namespace /*anon*/ {
                  * because the shared_prt count will ensure the service cannot be unregistered while in use.
                  */
                 if (localCalc) {
-                    auto msg = std::string{"Calc result for consumer nr "} + std::to_string(id) + " with input " + std::to_string(count) + " is " + std::to_string(localCalc->calc(count)) + "\n";
+                    auto msg = std::string{"Calc result is "} + std::to_string(localCalc->calc(count)) + "\n";
                     std::cout << msg;
-                } else {
-                    auto msg = std::string{"Calc service not available for consumer nr "} + std::to_string(id) + "\n";
-                    std::cout << msg;
+                    localCalc = nullptr;
                 }
 
-                //NOTE the sleep also keeps the localCalc shared_ptr activate and as result block the removal of the service
                 std::this_thread::sleep_for(std::chrono::seconds{2});
-
                 ++count;
             }
         }
 
         const int id;
         std::atomic<bool> active{true};
-        std::shared_ptr<examples::ICalc> calc{};
 
         std::mutex mutex{}; //protects below
+        std::shared_ptr<examples::ICalc> calc{};
+        long svcId{-1};
+        long ranking{0};
         std::thread calcThread{};
     };
 
-    class DynamicConsumerFactory {
+    class DynamicConsumerFactory : public celix::IShellCommand {
     public:
-        static constexpr std::size_t MAX_CONSUMERS = 5;
+        static constexpr std::size_t MAX_CONSUMERS = 10;
 
         explicit DynamicConsumerFactory(std::shared_ptr<celix::BundleContext>  _ctx) : ctx{std::move(_ctx)} {}
 
-        ~DynamicConsumerFactory() {
-            ctx->logInfo("Destroying DynamicConsumerFactory");
-            active = false;
-            factoryThread.join();
+        void executeCommand(std::string /*commandLine*/, std::vector<std::string> /*commandArgs*/, FILE* /*outStream*/, FILE* /*errorStream*/) override {
+            clearConsumer();
+            createConsumers();
         }
 
-
-        void start() {
-            std::lock_guard<std::mutex> lck{mutex};
-            factoryThread = std::thread{&DynamicConsumerFactory::run, this};
-        }
-
-        void run() {
-            std::unique_lock<std::mutex> lck{mutex,  std::defer_lock};
+        void createConsumers() {
+            std::lock_guard<std::mutex> lock{mutex};
             int nextConsumerId = 1;
-            while (active) {
-                lck.lock();
-                if (consumers.size() < MAX_CONSUMERS) {
-                    ctx->logInfo("Creating dynamic consumer nr %i", consumers.size());
-                    auto consumer = std::make_shared<DynamicConsumer>(nextConsumerId++);
-                    trackers.push_back(createTracker(ctx, consumer)); //NOTE is this possible after a move?
-                    consumers.push_back(consumer);
-                    consumer->start();
-                } else {
-                    ctx->logInfo("Resetting all trackers and consumers");
-                    trackers.clear();
-                    ctx->logInfo("Done resetting trackers");
-                    consumers.clear();
-                    ctx->logInfo("Done resetting consumer");
-                }
-                lck.unlock();
-                std::this_thread::sleep_for(std::chrono::seconds{1});
+            while (consumers.size() < MAX_CONSUMERS) {
+                ctx->logInfo("Creating dynamic consumer nr %i", consumers.size());
+                auto consumer = std::make_shared<DynamicConsumer>(nextConsumerId++);
+                consumers[consumer] = ctx->trackServices<examples::ICalc>()
+                        .addSetWithPropertiesCallback([consumer](std::shared_ptr<examples::ICalc> calc, std::shared_ptr<const celix::Properties> properties) {
+                            consumer->setCalc(std::move(calc), std::move(properties));
+                        })
+                        .build();
+                consumer->start();
             }
         }
-    private:
-        static std::shared_ptr<celix::GenericServiceTracker> createTracker(const std::shared_ptr<celix::BundleContext>& ctx, const std::shared_ptr<DynamicConsumer>& consumer) {
-            return ctx->trackServices<examples::ICalc>()
-                    .addSetCallback([consumer](std::shared_ptr<examples::ICalc> svc) {
-                        consumer->setCalc(std::move(svc));
-                    })
-                    .build();
-        }
 
+        void clearConsumer() {
+            ctx->logInfo("Resetting all trackers and consumers");
+            std::lock_guard<std::mutex> lock{mutex};
+            consumers.clear();
+            ctx->logInfo("Done resetting consumers");
+        }
+    private:
         const std::shared_ptr<celix::BundleContext> ctx;
-        std::atomic<bool> active{true};
 
         std::mutex mutex{}; //protects below
-        std::thread factoryThread{};
-        std::vector<std::shared_ptr<DynamicConsumer>> consumers{};
-        std::vector<std::shared_ptr<celix::GenericServiceTracker>> trackers{};
+        std::unordered_map<std::shared_ptr<DynamicConsumer>, std::shared_ptr<celix::GenericServiceTracker>> consumers{};
     };
 
     class DynamicConsumerBundleActivator {
     public:
-        explicit DynamicConsumerBundleActivator(const std::shared_ptr<celix::BundleContext>& ctx) : factory{ctx} {
-            factory.start();
+        explicit DynamicConsumerBundleActivator(const std::shared_ptr<celix::BundleContext>& ctx) : factory{std::make_shared<DynamicConsumerFactory>(ctx)} {
+            factory->createConsumers();
+            cmdReg = ctx->registerService<celix::IShellCommand>(factory)
+                    .addProperty(celix::IShellCommand::COMMAND_NAME, "consumers_reset")
+                    .build();
         }
     private:
-        DynamicConsumerFactory factory;
+        std::shared_ptr<DynamicConsumerFactory> factory;
+        std::shared_ptr<celix::ServiceRegistration> cmdReg{};
     };
 
 }

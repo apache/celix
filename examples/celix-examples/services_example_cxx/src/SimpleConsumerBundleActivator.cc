@@ -23,13 +23,26 @@
 class SimpleConsumer {
 public:
     ~SimpleConsumer() {
-        active = false;
-        calcThread.join();
+        stop();
     }
+
+    SimpleConsumer() = default;
+    SimpleConsumer(SimpleConsumer&&) = delete;
+    SimpleConsumer& operator=(SimpleConsumer&&) = delete;
+    SimpleConsumer(const SimpleConsumer&) = delete;
+    SimpleConsumer& operator=(const SimpleConsumer&) = delete;
 
     void start() {
         std::lock_guard<std::mutex> lck{mutex};
         calcThread = std::thread{&SimpleConsumer::run, this};
+    }
+
+    void stop() {
+        active = false;
+        std::lock_guard<std::mutex> lck{mutex};
+        if (calcThread.joinable()) {
+            calcThread.join();
+        }
     }
 
     void setCalc(std::shared_ptr<examples::ICalc> _calc) {

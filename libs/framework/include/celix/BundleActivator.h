@@ -38,7 +38,7 @@ namespace celix {
 
         template<typename I>
         typename std::enable_if<std::is_constructible<I, std::shared_ptr<celix::BundleContext>>::value, celix_status_t>::type
-        createActivator(celix_bundle_context_t *cCtx, void **out) {
+        inline createActivator(celix_bundle_context_t *cCtx, void **out) {
             auto ctx = std::make_shared<celix::BundleContext>(cCtx);
             auto dm = std::make_shared<celix::dm::DependencyManager>(cCtx);
             auto act = std::unique_ptr<I>(new I{ctx});
@@ -49,7 +49,7 @@ namespace celix {
 
         template<typename I>
         typename std::enable_if<std::is_constructible<I, std::shared_ptr<celix::dm::DependencyManager>>::value, celix_status_t>::type
-        createActivator(celix_bundle_context_t *cCtx, void **out) {
+        inline createActivator(celix_bundle_context_t *cCtx, void **out) {
             auto ctx = std::make_shared<celix::BundleContext>(cCtx);
             auto dm = std::make_shared<celix::dm::DependencyManager>(cCtx);
             auto act = std::unique_ptr<I>(new I{dm});
@@ -59,14 +59,25 @@ namespace celix {
             return CELIX_SUCCESS;
         }
 
+        template<typename T>
+        inline void waitForExpired(std::weak_ptr<T> observe) {
+            auto start = std::chrono::system_clock::now();
+            while (!observe.expired()) {
+                auto now = std::chrono::system_clock::now();
+                auto durationInSec = std::chrono::duration_cast<std::chrono::seconds>(now - start);
+                if (durationInSec > std::chrono::seconds{5}) {
+                    std::cerr << "Cannot destroy bundle. Bundle context is still in use. Count is " << observe.use_count() << std::endl;
+                    start = now;
+                }
+                std::this_thread::sleep_for(std::chrono::milliseconds{50});
+            }
+        }
+
         template<typename I>
-        celix_status_t destroyActivator(void *userData) {
+        inline celix_status_t destroyActivator(void *userData) {
             auto *data = static_cast<BundleActivatorData<I> *>(userData);
             data->bundleActivator = nullptr;
-            while (!data->ctx.expired()) {
-                std::cerr << "Cannot destroy bundle. Bundle context is still in use. Count is " << data->ctx.use_count()
-                          << std::endl;
-            }
+            waitForExpired(data->ctx);
             delete data;
             return CELIX_SUCCESS;
         }

@@ -413,9 +413,15 @@ namespace celix {
 
         template<typename U>
         void waitForExpired(std::weak_ptr<U> observe, long svcId, const char* objName) {
+            auto start = std::chrono::system_clock::now();
             while (!observe.expired()) {
-                celix_bundleContext_log(cCtx.get(), CELIX_LOG_LEVEL_WARNING, "Cannot remove %s associated with service.id %li, because it is still in use. Current shared_ptr use count is %i\n", objName, svcId, (int)observe.use_count());
-                std::this_thread::sleep_for(std::chrono::seconds (1));
+                auto now = std::chrono::system_clock::now();
+                auto durationInMilli = std::chrono::duration_cast<std::chrono::milliseconds>(now - start);
+                if (durationInMilli > warningTimoutForNonExpiredSvcObject) {
+                    celix_bundleContext_log(cCtx.get(), CELIX_LOG_LEVEL_WARNING, "Cannot remove %s associated with service.id %li, because it is still in use. Current shared_ptr use count is %i\n", objName, svcId, (int)observe.use_count());
+                    start = now;
+                }
+                std::this_thread::sleep_for(std::chrono::milliseconds{50});
             }
         }
 
@@ -428,7 +434,10 @@ namespace celix {
             {
                 std::lock_guard<std::mutex> lck{mutex};
                 auto it = entries.begin();
-                long newHighestSvcId = it == entries.end() ? -1 : (*it)->svcId;
+                long newHighestSvcId = -1;
+                if (it != entries.end()) {
+                    newHighestSvcId = (*it)->svcId; //note begin of the entries should be highest ranking svc.
+                }
                 if (newHighestSvcId != highestSvcId) {
                     highestSvcId = newHighestSvcId;
                     if (newHighestSvcId != -1) {
@@ -490,6 +499,7 @@ namespace celix {
             }
         }
 
+        const std::chrono::milliseconds warningTimoutForNonExpiredSvcObject{1000}; //TODO make configureable with uidler
         const std::vector<std::function<void(std::shared_ptr<I>, std::shared_ptr<const celix::Properties>, std::shared_ptr<const celix::Bundle>)>> setCallbacks;
         const std::vector<std::function<void(std::shared_ptr<I>, std::shared_ptr<const celix::Properties>, std::shared_ptr<const celix::Bundle>)>> addCallbacks;
         const std::vector<std::function<void(std::shared_ptr<I>, std::shared_ptr<const celix::Properties>, std::shared_ptr<const celix::Bundle>)>> remCallbacks;

@@ -96,7 +96,7 @@ TEST_F(CxxBundleContextTestSuite, RegisterCServiceTest) {
     EXPECT_GE(svcId, -1);
 
     CInterface svc2{nullptr, nullptr};
-    auto svcReg2 = ctx->registerUnmanagedService(&svc2).build();
+    auto svcReg2 = ctx->registerUnmanagedService<CInterface>(&svc2).build();
 
     ctx->waitForEvents();
     svcId = ctx->findService<CInterface>();
@@ -170,10 +170,13 @@ TEST_F(CxxBundleContextTestSuite, FindServicesTest) {
     auto svcReg1 = ctx->registerService<CInterface>(svc)
             .setProperties(props)
             .addProperty("key2", "value2")
+            .addProperty(celix::SERVICE_RANKING, 11)
             .build();
     svcReg1->wait();
+    EXPECT_EQ(11, svcReg1->getServiceRanking());
     auto svcReg2 = ctx->registerService<CInterface>(svc).build();
     svcReg2->wait();
+    EXPECT_EQ(0, svcReg2->getServiceRanking()); //no explicit svc ranking -> 0
 
     svcId = ctx->findService<CInterface>();
     EXPECT_EQ(svcId, svcReg1->getServiceId()); //svcReg1 -> registered first
@@ -498,4 +501,17 @@ TEST_F(CxxBundleContextTestSuite, UnregisterServiceWhileRegistering) {
     );
     //TODO check if this is still needed for cancel service registration with async dep man PR
 //    ctx->waitForEvents();
+}
+
+TEST_F(CxxBundleContextTestSuite, KeepSharedPtrActiveWhileDeregistering) {
+    auto svcReg = ctx->registerService<TestInterface>(std::make_shared<TestImplementation>())
+            .build();
+    auto tracker = ctx->trackServices<TestInterface>().build();
+    tracker->wait();
+    auto svc = tracker->getHighestRankingService();
+    EXPECT_TRUE(svc.get() != nullptr);
+
+    svcReg->unregister();
+    std::this_thread::sleep_for(std::chrono::milliseconds {1500});
+    EXPECT_EQ(svcReg->getState(), celix::ServiceRegistrationState::UNREGISTERING); //not still unregistering, because svc is still in use.
 }

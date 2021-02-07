@@ -24,6 +24,7 @@
 #include <vector>
 #include <functional>
 
+#include "celix/Constants.h"
 #include "celix/Properties.h"
 #include "celix_bundle_context.h"
 #include "celix_bundle.h"
@@ -116,6 +117,10 @@ namespace celix {
         long getServiceId() const {
             std::lock_guard<std::mutex> lck{mutex};
             return svcId;
+        }
+
+        long getServiceRanking() const {
+            return properties.getAsLong(celix::SERVICE_RANKING, 0);
         }
 
         void wait() const {

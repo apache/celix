@@ -18,10 +18,10 @@
 add_library(ServiceExamplesApi INTERFACE)
 target_include_directories(ServiceExamplesApi INTERFACE api)
 
-add_celix_bundle(SimpleProvider SOURCES src/SimpleProviderBundleActivator.cc VERSION 1.0.0)
+add_celix_bundle(SimpleProvider SOURCES src/SimpleProviderBundleActivator.cc)
 target_link_libraries(SimpleProvider PRIVATE ServiceExamplesApi)
 
-add_celix_bundle(SimpleConsumer SOURCES src/SimpleConsumerBundleActivator.cc VERSION 1.0.0)
+add_celix_bundle(SimpleConsumer SOURCES src/SimpleConsumerBundleActivator.cc)
 target_link_libraries(SimpleConsumer PRIVATE ServiceExamplesApi)
 
 add_celix_container(SimpleServicesExample CXX
@@ -34,14 +34,17 @@ add_celix_container(SimpleServicesExample CXX
 )
 
 
-add_celix_bundle(DynamicConsumer SOURCES src/DynamicConsumerBundleActivator.cc VERSION 1.0.0)
-target_link_libraries(DynamicConsumer PRIVATE ServiceExamplesApi)
+add_celix_bundle(DynamicConsumer SOURCES src/DynamicConsumerBundleActivator.cc)
+target_link_libraries(DynamicConsumer PRIVATE Celix::shell_api ServiceExamplesApi)
+
+add_celix_bundle(DynamicProvider SOURCES src/DynamicProviderBundleActivator.cc)
+target_link_libraries(DynamicProvider PRIVATE Celix::shell_api ServiceExamplesApi)
 
 add_celix_container(DynamicServicesExample CXX
         GROUP cxx_examples
         BUNDLES
             Celix::ShellCxx
             Celix::shell_tui
-            SimpleProvider
+            DynamicProvider
             DynamicConsumer
 )
