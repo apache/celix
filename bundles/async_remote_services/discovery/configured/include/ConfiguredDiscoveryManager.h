@@ -74,7 +74,18 @@ public:
      */
     void discoverEndpoints() override;
 
+    /**
+     * Exports incoming new service exported endpoint to the JSON document.
+     * @param endpoint the endpoint object.
+     * @param properties the celix properties concerning the endpoint.
+     */
     void addExportedEndpoint(IEndpoint *endpoint, celix::dm::Properties&& properties) override;
+
+    /**
+     * Searches for the endpoint in the JSON document and removes it if found.
+     * @param endpoint the endpoint object.
+     * @param properties the celix properties concerning the endpoint.
+     */
     void removeExportedEndpoint(IEndpoint *endpoint, celix::dm::Properties&& properties) override;
 
 private:
@@ -85,8 +96,8 @@ private:
 
     const std::string _configurationFilePath;
 
-    std::vector<std::shared_ptr<ConfiguredEndpoint>> _endpoints;
-    std::vector<IEndpoint*> _publishedEndpoints;
+    std::vector<std::shared_ptr<ConfiguredEndpoint>> _discoveredEndpoints;
+    std::vector<IEndpoint*> _publishedDiscoveredEndpoints;
 };
 
 } // end namespace celix::async_rsa::discovery.

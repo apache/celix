@@ -44,7 +44,18 @@ public:
      */
     virtual void discoverEndpoints() = 0;
 
+    /**
+     * Task the discovery-manager to make the given endpoint visible for discovery by other managers/ frameworks.
+     * @param endpoint The endpoint pointer in question.
+     * @param properties The celix properties concerning the endpoint.
+     */
     virtual void addExportedEndpoint(IEndpoint *endpoint, celix::dm::Properties&& properties) = 0;
+
+    /**
+     * Task the discovery-manager to remove the discoverability of a given endpoint.
+     * @param endpoint The endpoint pointer in question.
+     * @param properties The celix properties concerning the endpoint, used for lookup.
+     */
     virtual void removeExportedEndpoint(IEndpoint *endpoint, celix::dm::Properties&& properties) = 0;
 };
 

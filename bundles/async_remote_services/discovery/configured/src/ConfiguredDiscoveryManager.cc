@@ -50,7 +50,6 @@ ConfiguredEndpointProperties convertCelixPropertiesToEndpoint(const celix::dm::P
     auto endpointId = celixProperties.at("endpoint.id");
     auto exports = celixProperties.at("service.exported.interfaces");
     auto imported = celixProperties.at("service.imported");
-
     return ConfiguredEndpointProperties{endpointId,
                                         (std::strcmp(imported.c_str(), "true") == 0),
                                         {}, exports, {}, "", ""};
@@ -60,26 +59,22 @@ ConfiguredDiscoveryManager::ConfiguredDiscoveryManager(std::shared_ptr<Dependenc
                                                        std::string configurationFilePath) :
         _dependencyManager{std::move(dependencyManager)},
         _configurationFilePath{std::move(configurationFilePath)},
-        _endpoints{},
-        _publishedEndpoints{} {
+        _discoveredEndpoints{},
+        _publishedDiscoveredEndpoints{} {
 }
 
 void ConfiguredDiscoveryManager::discoverEndpoints() {
 
     const rapidjson::Document& parsedJson = parseJSONFile(_configurationFilePath);
-
     if (parsedJson.IsObject()) {
         if (parsedJson.HasMember(ENDPOINT_ARRAY)) {
-
             const rapidjson::Value& endpointJsonArray = parsedJson[ENDPOINT_ARRAY];
             if (endpointJsonArray.IsArray() && ( endpointJsonArray.Size() > 0 )) {
-
                 for (rapidjson::Value::ConstValueIterator endpointIter = endpointJsonArray.Begin();
                      endpointIter != endpointJsonArray.End(); endpointIter++) {
-
                     if (endpointIter->IsObject()) {
                         const auto& endpointJson = endpointIter->GetObject();
-                        _endpoints.emplace_back(std::make_shared<ConfiguredEndpoint>(endpointJson));
+                        _discoveredEndpoints.emplace_back(std::make_shared<ConfiguredEndpoint>(endpointJson));
                     }
                 }
             }
@@ -90,16 +85,15 @@ void ConfiguredDiscoveryManager::discoverEndpoints() {
 
 void ConfiguredDiscoveryManager::publishParsedEndpoints() {
 
-    for (const auto& endpoint : _endpoints) {
-
-        _publishedEndpoints.emplace_back(
+    for (const auto& endpoint : _discoveredEndpoints) {
+        _publishedDiscoveredEndpoints.emplace_back(
                 &_dependencyManager->createComponent<IEndpoint>().addInterface<IEndpoint>(
                         "1.0.0",
                         convertEndpointPropertiesToCelix(endpoint->getProperties()))
                         .build().getInstance()
         );
 
-        std::cout << endpoint->ToString() << std::endl;
+        std::cout << endpoint->ToString() << std::endl; // TODO remove.
     }
 }
 
@@ -129,12 +123,13 @@ void ConfiguredDiscoveryManager::removeExportedEndpoint(IEndpoint* /*endpoint*/,
         if (parsedDocument.HasMember(ENDPOINT_ARRAY)) {
             rapidjson::Value& endpointJsonArray = parsedDocument[ENDPOINT_ARRAY];
             if (endpointJsonArray.IsArray()){
-
-                for (rapidjson::Value::ValueIterator itr = endpointJsonArray.Begin(); itr != endpointJsonArray.End();)
-                    if ((*itr)["endpoint.id"].GetString() == endpointJSON["endpoint.id"].GetString())
+                for (rapidjson::Value::ValueIterator itr = endpointJsonArray.Begin(); itr != endpointJsonArray.End();) {
+                    if (std::strcmp(( *itr )["endpoint.id"].GetString(), endpointJSON["endpoint.id"].GetString()) == 0) {
                         itr = endpointJsonArray.Erase(itr);
-                    else
+                    } else {
                         ++itr;
+                    }
+                }
             }
         }
     }

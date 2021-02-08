@@ -11,6 +11,8 @@ package "common" {
 
     interface idisc as "IDiscovery" {
         + virtual void discoverEndpoints() = 0;
+        + virtual void addExportedEndpoint(Properties&&) = 0;
+        + virtual void removeExportedEndpoint(Properties&&) = 0;
     }
 
     interface iend as "IEndpoint"
@@ -24,6 +26,8 @@ package "discovery/configured" {
 
     class disc as "ConfiguredDiscoveryManager" {
         + void discoverEndpoints() override;
+        + void addExportedEndpoint(Properties&&) override;
+        + void removeExportedEndpoint(Properties&&) override;
         - void publishDiscoveredEndpoints();
         - std::vector<ConfiguredEndpoint> _endpoints;
     }
