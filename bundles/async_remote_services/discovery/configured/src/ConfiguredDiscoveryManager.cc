@@ -94,4 +94,7 @@ void ConfiguredDiscoveryManager::publishParsedEndpoints() {
     }
 }
 
+void ConfiguredDiscoveryManager::addExportedEndpoint(IEndpoint* /*endpoint*/, celix::dm::Properties&& /*properties*/) { /* not used */ }
+void ConfiguredDiscoveryManager::removeExportedEndpoint(IEndpoint* /*endpoint*/, celix::dm::Properties&& /*properties*/) { /* not used */ }
+
 } // end namespace celix::async_rsa::discovery.

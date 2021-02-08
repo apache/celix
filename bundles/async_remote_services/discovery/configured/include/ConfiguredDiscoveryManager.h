@@ -74,6 +74,9 @@ public:
      */
     void discoverEndpoints() override;
 
+    void addExportedEndpoint(IEndpoint *endpoint, celix::dm::Properties&& properties) override;
+    void removeExportedEndpoint(IEndpoint *endpoint, celix::dm::Properties&& properties) override;
+
 private:
 
     void publishParsedEndpoints();

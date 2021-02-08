@@ -18,6 +18,9 @@
  */
 #pragma once
 
+#include <IEndpoint.h>
+#include <celix/dm/Properties.h>
+
 namespace celix::async_rsa::discovery {
 
 /**
@@ -40,6 +43,9 @@ public:
      * Task the discovery-manager to find endpoints from remote frameworks or local files.
      */
     virtual void discoverEndpoints() = 0;
+
+    virtual void addExportedEndpoint(IEndpoint *endpoint, celix::dm::Properties&& properties) = 0;
+    virtual void removeExportedEndpoint(IEndpoint *endpoint, celix::dm::Properties&& properties) = 0;
 };
 
 } // end namespace celix::async_rsa::discovery.
