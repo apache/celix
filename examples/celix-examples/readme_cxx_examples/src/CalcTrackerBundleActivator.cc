@@ -26,7 +26,6 @@ public:
     explicit CalcTrackerBundleActivator(const std::shared_ptr<celix::BundleContext>& ctx) {
         tracker = ctx->trackServices<ICalc>()
                 .build();
-        tracker->wait(); //wait until service trackers is finished opening and all services are found
         for (auto calc : tracker->getServices()) {
             std::cout << "result is " << std::to_string(calc->add(2, 3)) << std::endl;
         }

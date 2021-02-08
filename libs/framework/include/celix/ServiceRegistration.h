@@ -42,7 +42,11 @@ namespace celix {
     class ServiceRegistration;
 
     /**
-     * TODO
+     * \brief A registered service.
+     *
+     * Represent a registered service. If the ServiceRegistration is destroy the underlining service is unregistered
+     * in the Celix framework.
+     *
      * \note Thread safe.
      */
     class ServiceRegistration  {
@@ -105,24 +109,49 @@ namespace celix {
             return reg;
         }
 
+        /**
+         * \brief The service name for this service registration.
+         */
         const std::string& getServiceName() const { return name; }
+
+        /**
+         * \brief The service version for this service registration.
+         *
+         * Empty string if there is no service version.
+         */
         const std::string& getServiceVersion() const { return version; }
+
+        /**
+         * \brief The service properties for this service registration.
+         */
         const celix::Properties& getServiceProperties() const { return properties; }
 
+        /**
+         * \brief The state of the service registration.
+         */
         ServiceRegistrationState getState() const {
             std::lock_guard<std::mutex> lck{mutex};
             return state;
         }
 
+        /**
+         * \brief The service id for this service registration.
+         */
         long getServiceId() const {
             std::lock_guard<std::mutex> lck{mutex};
             return svcId;
         }
 
+        /**
+         * \brief The service ranking for this service registration.
+         */
         long getServiceRanking() const {
             return properties.getAsLong(celix::SERVICE_RANKING, 0);
         }
 
+        /**
+         * \brief If the service registration is REGISTERING or UNREGISTERING, wait until state is REGISTERED OR UNREGISTERED.
+         */
         void wait() const {
             bool needWaitUnregistering = false;
             bool needWaitRegistering = false;
@@ -145,7 +174,8 @@ namespace celix {
         }
 
         /**
-         * Unregister the managed service from the Celix framework if the state is REGISTERED.
+         * \brief Unregister the service from the Celix framework if the state is REGISTERED.
+         *
          * If ServiceRegistration::unregisterAsync is true still will be done async, if not this will be done
          * synchronized.
          */
@@ -192,7 +222,8 @@ namespace celix {
         }
 
         /**
-         * Returns the shared_ptr of for this object.
+         * \brief Returns the shared_ptr of for this object.
+         *
          * This method can return null when the ServiceRegistration in UNREGISTERED.
          */
         std::shared_ptr<ServiceRegistration> getSelf() const {
@@ -226,7 +257,8 @@ namespace celix {
 
 
         /**
-         * Register service in the Celix framework.
+         * \brief Register service in the Celix framework.
+         *
          * This is done async if ServiceRegistration::registerAsync is true and sync otherwise.
          *
          * Note that 'register' is a keyword in C and that is why this method is called
@@ -271,7 +303,7 @@ namespace celix {
         }
 
         /**
-         * Ensure this this object can create a std::shared_ptr to it self.
+         * \brief Ensure this this object can create a std::shared_ptr to it self.
          */
         void setSelf(const std::shared_ptr<ServiceRegistration>& s) {
             std::lock_guard<std::mutex> lck{mutex};

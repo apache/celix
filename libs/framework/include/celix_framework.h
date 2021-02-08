@@ -193,6 +193,12 @@ long celix_framework_nextEventId(celix_framework_t *fw);
  */
 void celix_framework_waitForGenericEvent(celix_framework_t *fw, long eventId);
 
+/**
+ * Wait until the framework is stopped.
+ */
+void celix_framework_waitForStop(celix_framework_t *framework);
+
+
 
 #ifdef __cplusplus
 }

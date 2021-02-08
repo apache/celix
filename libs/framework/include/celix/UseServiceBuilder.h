@@ -29,9 +29,21 @@
 
 namespace celix {
     /**
-     * Fluent builder API to use a service(s) of type I.
+     * @brief Fluent builder API to use a service or services.
      *
-     * \warning Not thread safe.
+     * The UseServiceBuilder can be used to use a service or a set of services registered in the celix
+     * framework. The builder can be used to specify additional match filtering for services, configure use callbacks
+     * and whether a single or multiple services will be used. For a single service the highest ranking service will
+     * be used. The builder should be finished with a `build` call.
+     *
+     *      ctx->useService<ICalc>()
+     *          .addUseCallback([](ICalc& calc) {
+     *              std::cout << "result is " << calc.add(2, 3) << std::endl;
+     *           })
+     *           .build();
+     *
+     *
+     * \note Not thread safe.
      * @tparam I The service type to use
      */
     template<typename I>
@@ -53,19 +65,22 @@ namespace celix {
         UseServiceBuilder operator=(const UseServiceBuilder&) = delete;
 
         /**
-         * Set filter to be used to select a service.
+         * \brief Set filter to be used to select a service.
+         *
          * The filter must be LDAP filter.
-         * Example: "(property_key=value)"
+         * Example:
+         *      "(property_key=value)"
          */
         UseServiceBuilder& setFilter(std::string f) { filter = celix::Filter{std::move(f)}; return *this; }
 
         /**
-         * Set filter to be used to matching services.
+         * \brief Set filter to be used to matching services.
          */
         UseServiceBuilder& setFilter(celix::Filter f) { filter = std::move(f); return *this; }
 
         /**
-         * Sets a optional timeout.
+         * \brief Sets a optional timeout.
+         *
          * If the timeout is > 0 and there is no matching service, the "build" will block
          * until a matching service is found or the timeout is expired.
          *
@@ -80,7 +95,7 @@ namespace celix {
         }
 
         /**
-         * Adds a use callback function which will be called when the UseServiceBuilder is
+         * \brief Adds a use callback function which will be called when the UseServiceBuilder is
          * "build".
          *
          * The use callback function has 1 argument: a reference to the matching service.
@@ -91,7 +106,7 @@ namespace celix {
         }
 
         /**
-         * Adds a use callback function which will be called when the UseServiceBuilder is
+         * \brief Adds a use callback function which will be called when the UseServiceBuilder is
          * "build".
          *
          * The use callback function has 2 arguments:
@@ -104,7 +119,7 @@ namespace celix {
         }
 
         /**
-         * Adds a use callback function which will be called when the UseServiceBuilder is
+         * \brief Adds a use callback function which will be called when the UseServiceBuilder is
          * "build".
          *
          * The use callback function has 3 arguments:
@@ -118,12 +133,16 @@ namespace celix {
         }
 
         /**
-         * "Builds" the UseServiceBuild and returns directly if no matching service is found
-         * or blocks until:
+         * \brief "Builds" the UseServiceBuild.
+         *
+         * Blocks until:
          *  - All the use callback functions are called with the highest ranking matching service
          *  - The timeout has expired
          *
-         * \returns the number of service called (1 or 0).
+         *  This means this if no services are found and the timeout is 0 (default) the function will
+         *  return without blocking.
+         *
+         * \returns the number of services found and provided to the callback(s).
          */
         std::size_t build() {
             celix_service_use_options_t opts{};

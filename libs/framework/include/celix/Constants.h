@@ -23,8 +23,16 @@
 
 namespace celix {
 
+    /**
+     * The service name property used in service registrations.
+     */
     constexpr const char * const SERVICE_NAME = OSGI_FRAMEWORK_OBJECTCLASS;
+
+    /**
+     * The service id property used in service registrations.
+     */
     constexpr const char * const SERVICE_ID = OSGI_FRAMEWORK_SERVICE_ID;
+
     constexpr const char * const SERVICE_PID = OSGI_FRAMEWORK_SERVICE_PID;
 
     constexpr const char * const SERVICE_RANKING = OSGI_FRAMEWORK_SERVICE_RANKING;

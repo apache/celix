@@ -37,7 +37,15 @@
 namespace celix {
 
     /**
-     * TODO
+     * \brief The bundle context is used to interact with the Celix framework.
+     *
+     * The bundle context represent a bundle and can be used to:
+     *  - Register, use and track services
+     *  - Install, start, stop and uninstall bundles (runtime)
+     *  - log on framework level
+     *  - Access bundles
+     *  - Get config properties
+     *
      * \note Thread safe.
      */
     class BundleContext {
@@ -48,20 +56,20 @@ namespace celix {
             bnd{celix_bundleContext_getBundle(_cCtx)} {}
 
         /**
-         * Register a service in the Celix framework using a fluent builder API.
+         * \brief Register a service in the Celix framework using a fluent builder API.
+         *
          * The service registration can be fine tuned using the returned ServiceRegistrationBuilder API.
          *
-         * By default the service registration is configure to register and unregsiter the service async.
+         *      std::shared_ptr<celix::BundleContext> ctx = ...
+         *      auto svcReg = ctx->registerService<IExample>(std::make_shared<ExampleImpl>())
+         *          .setVersion("1.0.0")
+         *          .addProperty("key1", "value1")
+         *          .addOnRegistered([](const std::shared_ptr<celix::ServiceRegistration>& reg) {
+         *              std::cout << "Done registering service '" << reg->getServiceName() << "' with id " << reg->getServiceId() << std::endl;
+         *          })
+         *          .build();
          *
-         * Example:
-         *  shared_ptr<celix::BundleContext> ctx = ...
-         *  auto svcReg = ctx->registerService<IExample>(std::make_shared<ExampleImpl>())
-         *       .setVersion("1.0.0")
-         *       .addProperty("key1", "value1")
-         *       .addOnRegistered([](const std::shared_ptr<celix::ServiceRegistration>& reg) {
-         *           std::cout << "Done registering service '" << reg->getServiceName() << "' with id " << reg->getServiceId() << std::endl;
-         *       })
-         *       .build();
+         * By default the service registration is configure to register and unregister the service async.
          *
          * @tparam I The service type (Note should be the abstract interface, not the interface implementer)
          * @tparam Implementer The service implementer.
@@ -76,6 +84,8 @@ namespace celix {
         }
 
         /**
+         * \brief Register a (unmanaged) service in the Celix framework using a fluent builder API.
+         *
          * Same as registerService, but then with an unmanaged service pointer.
          * Note that the user is responsible for ensuring that the service pointer is valid as long
          * as the service is registered in the Celix framework.
@@ -92,7 +102,8 @@ namespace celix {
         //TODO registerServiceFactory<I>()
 
         /**
-         * Use a service registered in the Celix framework using a fluent builder API.
+         * \brief Use a service registered in the Celix framework using a fluent builder API.
+         *
          * The service use can be fine tuned using the returned UseServiceBuilder API.
          *
          * With this API a Celix service can be used by providing use functions.
@@ -103,15 +114,14 @@ namespace celix {
          * If no service can be found the use callbacks with not be called.
          *
          *
-         * Example:
-         *  shared_ptr<celix::BundleContext> ctx = ...
-         *  auto callCount = ctx->useService<IExample>()
-         *       .setTimeout(std::chrono::seconds{1})
-         *       .addUseCallback([](IExample& service, const celix::Properties& props){
-         *           std::cout << "Calling service with id " << props.get("service.id", "-1") << std::endl;
-         *           service.method();
-         *       })
-         *       .build();
+         *      std::shared_ptr<celix::BundleContext> ctx = ...
+         *      auto callCount = ctx->useService<IExample>()
+         *          .setTimeout(std::chrono::seconds{1})
+         *          .addUseCallback([](IExample& service, const celix::Properties& props){
+         *              std::cout << "Calling service with id " << props.get("service.id", "-1") << std::endl;
+         *              service.method();
+         *          })
+         *          .build();
          *
          * @tparam I The service type to use
          * @param name The optional service name to use. If not provided celix::typeName<I> will be used to defer the service name.
@@ -123,7 +133,8 @@ namespace celix {
         }
 
         /**
-         * Use services registered in the Celix framework using a fluent builder API.
+         * \brief Use services registered in the Celix framework using a fluent builder API.
+         *
          * The service use can be fine tuned using the returned UseServiceBuilder API.
          *
          * With this API Celix services can be used by providing use functions.
@@ -132,14 +143,13 @@ namespace celix {
          *
          * The use callbacks will be called for every matching service found.
          *
-         * Example:
-         *  shared_ptr<celix::BundleContext> ctx = ...
-         *  auto callCount = ctx->useServices<IExample>()
-         *       .addUseCallback([](IExample& service, const celix::Properties& props){
-         *           std::cout << "Calling service with id " << props.get("service.id", "-1") << std::endl;
-         *           service.method();
-         *       })
-         *       .build();
+         *      std::shared_ptr<celix::BundleContext> ctx = ...
+         *      auto callCount = ctx->useServices<IExample>()
+         *          .addUseCallback([](IExample& service, const celix::Properties& props){
+         *              std::cout << "Calling service with id " << props.get("service.id", "-1") << std::endl;
+         *              service.method();
+         *          })
+         *          .build();
          *
          * @tparam I The service type to use
          * @param name The optional service name to use. If not provided celix::typeName<I> will be used to defer the service name.
@@ -151,9 +161,10 @@ namespace celix {
         }
 
         /**
-         * Finds the highest ranking service using the optional provided (LDAP) filter
+         * \brief Finds the highest ranking service using the optional provided (LDAP) filter
          * and version range.
-         * Note uses celix::typeName<I> to defer the service name.
+         *
+         * Uses celix::typeName<I> to defer the service name.
          *
          * @tparam I the service type to found.
          * @param filter An optional LDAP filter.
@@ -166,7 +177,7 @@ namespace celix {
         }
 
         /**
-         * Finds the highest ranking service using the provided service name and
+         * \brief Finds the highest ranking service using the provided service name and
          * the optional (LDAP) filter and version range.
          *
          * @tparam I the service type to found.
@@ -177,6 +188,7 @@ namespace celix {
          */
         template<typename I>
         long findServiceWithName(const std::string& name, const std::string& filter = {}, const std::string& versionRange = {}) {
+            waitIfAble();
             celix_service_filter_options_t opts{};
             opts.serviceName = name.empty() ? nullptr : name.c_str();
             opts.filter = filter.empty() ? nullptr : filter.c_str();
@@ -185,8 +197,9 @@ namespace celix {
         }
 
         /**
-         * Finds all services matching the optional provided (LDAP) filter
+         * \brief Finds all services matching the optional provided (LDAP) filter
          * and version range.
+         *
          * Note uses celix::typeName<I> to defer the service name.
          *
          * @tparam I the service type to found.
@@ -200,7 +213,7 @@ namespace celix {
         }
 
         /**
-         * Finds all service matching the provided service name and the optional (LDAP) filter
+         * \brief Finds all service matching the provided service name and the optional (LDAP) filter
          * and version range.
          *
          * @tparam I the service type to found.
@@ -211,6 +224,7 @@ namespace celix {
          */
         template<typename I>
         std::vector<long> findServicesWithName(const std::string& name, const std::string& filter = {}, const std::string& versionRange = {}) {
+            waitIfAble();
             celix_service_filter_options_t opts{};
             opts.serviceName = name.empty() ? nullptr : name.c_str();
             opts.filter = filter.empty() ? nullptr : filter.c_str();
@@ -227,20 +241,20 @@ namespace celix {
         }
 
         /**
-         * Track services in the Celix framework using a fluent builder API.
+         * \brief Track services in the Celix framework using a fluent builder API.
+         *
          * The service tracker can be fine tuned using the returned ServiceTrackerBuilder API.
          *
-         * Example:
-         *  shared_ptr<celix::BundleContext> ctx = ...
-         *  auto tracker = ctx->trackServices<IExample>()
-         *       .setFilter("(property_key=value)")
-         *       .addAddCallback([](std::shared_ptr<IExample>, std::shared_ptr<const celix::Properties> props) {
-         *           std::cout << "Adding service with id '" << props->get("service.id", "-1") << std::endl;
-         *       })
-         *       .addRemCallback([](std::shared_ptr<IExample>, std::shared_ptr<const celix::Properties> props) {
-         *           std::cout << "Removing service with id '" << props->get("service.id", "-1") << std::endl;
-         *       })
-         *       .build();
+         *      std::shared_ptr<celix::BundleContext> ctx = ...
+         *      auto tracker = ctx->trackServices<IExample>()
+         *          .setFilter("(property_key=value)")
+         *          .addAddCallback([](std::shared_ptr<IExample>, std::shared_ptr<const celix::Properties> props) {
+         *              std::cout << "Adding service with id '" << props->get("service.id", "-1") << std::endl;
+         *          })
+         *          .addRemCallback([](std::shared_ptr<IExample>, std::shared_ptr<const celix::Properties> props) {
+         *              std::cout << "Removing service with id '" << props->get("service.id", "-1") << std::endl;
+         *          })
+         *          .build();
          *
          * @tparam I The service type to track
          * @param name The optional service name. If empty celix::typeName<I> will be used to defer the service name.
@@ -252,6 +266,8 @@ namespace celix {
         }
 
         /**
+         * \brief Track services in the Celix framework using a fluent builder API.
+         *
          * Same as trackerService, but than for any service.
          * Note that the service shared ptr is of the type std::shared_ptr<void>.
          */
@@ -260,16 +276,16 @@ namespace celix {
         }
 
         /**
-         * Track bundles in the Celix framework using a fluent builder API.
+         * \brief Track bundles in the Celix framework using a fluent builder API.
+         *
          * The bundle tracker can be fine tuned using the returned BundleTrackerBuilder API.
          *
-         * Example:
-         *  shared_ptr<celix::BundleContext> ctx = ...
-         *  auto tracker = ctx->trackBundles<>()
-         *       .addOnInstallCallback([](const celix::Bundle& bnd) {
-         *           std::cout << "Bundle installed with id '" << bnd.getId() << std::endl;
-         *       })
-         *       .build();
+         *      std::shared_ptr<celix::BundleContext> ctx = ...
+         *      auto tracker = ctx->trackBundles<>()
+         *          .addOnInstallCallback([](const celix::Bundle& bnd) {
+         *              std::cout << "Bundle installed with id '" << bnd.getId() << std::endl;
+         *          })
+         *          .build();
          *
          * @return A BundleTrackerBuilder object.
          */
@@ -278,20 +294,20 @@ namespace celix {
         }
 
         /**
-         * Track service trackers in the Celix framework using a fluent builder API.
+         * \brief Track service trackers in the Celix framework using a fluent builder API.
+         *
          * The meta tracker (service tracker tracker) can be fine tuned using the returned
          * MetaTrackerBuilder API.
          *
-         * Example:
-         *  shared_ptr<celix::BundleContext> ctx = ...
-         *  auto tracker = ctx->trackServiceTrackers<IExample>()
-         *       .addOnTrackerCreatedCallback([](const ServiceTrackerInfo& info) {
-         *           std::cout << "Tracker created for service name '" << info.serviceName << std::endl;
-         *       })
-         *       .addOnTrackerDestroyedCallback([](const ServiceTrackerInfo& info) {
-         *           std::cout << "Tracker destroyed for service name '" << info.serviceName << std::endl;
-         *       })
-         *       .build();
+         *      std::shared_ptr<celix::BundleContext> ctx = ...
+         *      auto tracker = ctx->trackServiceTrackers<IExample>()
+         *          .addOnTrackerCreatedCallback([](const ServiceTrackerInfo& info) {
+         *              std::cout << "Tracker created for service name '" << info.serviceName << std::endl;
+         *          })
+         *          .addOnTrackerDestroyedCallback([](const ServiceTrackerInfo& info) {
+         *              std::cout << "Tracker destroyed for service name '" << info.serviceName << std::endl;
+         *          })
+         *          .build();
          *
          * @tparam I The service tracker service type to track.
          * @param name The optional service name. If empty celix::typeName<I> will be used to defer the service name.
@@ -303,6 +319,8 @@ namespace celix {
         }
 
         /**
+         * \brief Track service trackers in the Celix framework using a fluent builder API.
+         *
          * Same as trackServiceTrackers, but than for service tracker for any service types.
          */
         MetaTrackerBuilder trackAnyServiceTrackers() {
@@ -310,7 +328,8 @@ namespace celix {
         }
 
         /**
-         * Install and optional start a bundle.
+         * \brief Install and optional start a bundle.
+         *
          * Will silently ignore bundle ids < 0.
          *
          * @param bndLocation The bundle location to the bundle zip file.
@@ -322,7 +341,9 @@ namespace celix {
         }
 
         /**
-         * Uninstall the bundle with the provided bundle id. If needed the bundle will be stopped first.
+         * \brief Uninstall the bundle with the provided bundle id.
+         *
+         * If needed the bundle will be stopped first.
          * Will silently ignore bundle ids < 0.
          *
          * @param bndId The bundle id to uninstall.
@@ -333,7 +354,8 @@ namespace celix {
         }
 
         /**
-         * Start the bundle with the provided bundle id.
+         * \brief Start the bundle with the provided bundle id.
+         *
          * Will silently ignore bundle ids < 0.
          *
          * @param bndId The bundle id to start.
@@ -344,7 +366,8 @@ namespace celix {
         }
 
         /**
-         * Stop the bundle with the provided bundle id.
+         * \brief Stop the bundle with the provided bundle id.
+         *
          * Will silently ignore bundle ids < 0.
          *
          * @param bndId The bundle id to stop.
@@ -355,7 +378,12 @@ namespace celix {
         }
 
         /**
-         * Gets the config property - or environment variable if the config property does not exist - for the provided name.
+         * \brief Gets the config property for the provided name.
+         *
+         * First the provided name will be used to lookup an environment variable of that name. If this is not found,
+         * the config properties of the Celix framework will be used (config.properties).
+         * Note that by design this means that environment variable can be used to override config properties.
+         *
          * @param name The name of the property to receive.
          * @param defaultVal The default value to use if the property is not found.
          * @return The config property value for the provided key or the provided defaultValue is the name is not found.
@@ -365,8 +393,11 @@ namespace celix {
         }
 
         /**
-         * Gets the config property - or environment variable if the config property does not exist - for the provided name.
-         * Only returns the value if it is a valid long.
+         * \brief Gets the config property for the provided name and returns it as a long.
+         *
+         * First the provided name will be used to lookup an environment variable of that name. If no this is not found
+         * or not a valid long, the config properties of the Celix framework will be used (config.properties).
+         * Note that by design this means that environment variable can be used to override config properties.
          *
          * @param name The name of the property to receive.
          * @param defaultVal The default value to use if the property is not found.
@@ -378,8 +409,11 @@ namespace celix {
         }
 
         /**
-         * Gets the config property - or environment variable if the config property does not exist - for the provided name.
-         * Only returns the value if it is a valid double.
+         * \brief Gets the config property for the provided name and returns it as a double.
+         *
+         * First the provided name will be used to lookup an environment variable of that name. If no this is not found
+         * or not a valid double, the config properties of the Celix framework will be used (config.properties).
+         * Note that by design this means that environment variable can be used to override config properties.
          *
          * @param name The name of the property to receive.
          * @param defaultVal The default value to use if the property is not found.
@@ -391,8 +425,13 @@ namespace celix {
         }
 
         /**
-         * Gets the config property - or environment variable if the config property does not exist - for the provided name.
-         * Only returns the value if it is a valid boolean.
+         * \brief Gets the config property for the provided name and returns it as a bool.
+         *
+         * First the provided name will be used to lookup an environment variable of that name. If no this is not found
+         * or not a valid bool, the config properties of the Celix framework will be used (config.properties).
+         * Note that by design this means that environment variable can be used to override config properties.
+         *
+         * Valid bools are "true" and "false" (case insensitive)
          *
          * @param name The name of the property to receive.
          * @param defaultVal The default value to use if the property is not found.
@@ -404,21 +443,21 @@ namespace celix {
         }
 
         /**
-         * Get the bundle of this bundle context.
+         * \brief Get the bundle of this bundle context.
          */
         const Bundle& getBundle() const {
             return bnd;
         }
 
         /**
-         * Get the bundle id for the bundle of this bundle context
+         * \brief Get the bundle id for the bundle of this bundle context
          */
          long getBundleId() const {
              return bnd.getId();
          }
 
         /**
-         * Get the Celix framework for this bundle context.
+         * \brief Get the Celix framework for this bundle context.
          */
         std::shared_ptr<Framework> getFramework() const {
             auto* cFw = celix_bundleContext_getFramework(cCtx.get());
@@ -427,22 +466,26 @@ namespace celix {
         }
 
         /**
-         * Get the Celix dependency manager for this bundle context
+         * \brief Get the Celix dependency manager for this bundle context
          */
         std::shared_ptr<dm::DependencyManager> getDependencyManager() const {
             return dm;
         }
 
         /**
-         * Get the C bundle context.
+         * \brief Get the C bundle context.
+         *
+         * \warning Try not the depend on the C API from a C++ bundle. If features are missing these should be added to
+         * the C++ API.
          */
         celix_bundle_context_t* getCBundleContext() const {
             return cCtx.get();
         }
 
         /**
-         * Logs a message to the Celix framework logger using the TRACE log level.
-         * NOTE only supports printf style call (so use c_str() instead of std::string)
+         * \brief Logs a message to the Celix framework logger using the TRACE log level.
+         *
+         * \note Only supports printf style call (so use c_str() instead of std::string)
          */
         void logTrace(const char* format...) {
             va_list args;
@@ -452,8 +495,9 @@ namespace celix {
         }
 
         /**
-         * Logs a message to the Celix framework logger using the DEBUG log level.
-         * NOTE only supports printf style call (so use c_str() instead of std::string)
+         * \brief Logs a message to the Celix framework logger using the DEBUG log level.
+         *
+         * \note Only supports printf style call (so use c_str() instead of std::string)
          */
         void logDebug(const char* format...) {
             va_list args;
@@ -463,8 +507,9 @@ namespace celix {
         }
 
         /**
-         * Logs a message to the Celix framework logger using the INFO log level.
-         * NOTE only supports printf style call (so use c_str() instead of std::string)
+         * \brief Logs a message to the Celix framework logger using the INFO log level.
+         *
+         * \note Only supports printf style call (so use c_str() instead of std::string)
          */
         void logInfo(const char* format...) {
             va_list args;
@@ -474,8 +519,9 @@ namespace celix {
         }
 
         /**
-         * Logs a message to the Celix framework logger using the WARNING log level.
-         * NOTE only supports printf style call (so use c_str() instead of std::string)
+         * \brief Logs a message to the Celix framework logger using the WARNING log level.
+         *
+         * \note Only supports printf style call (so use c_str() instead of std::string)
          */
         void logWarn(const char* format...) {
             va_list args;
@@ -485,8 +531,9 @@ namespace celix {
         }
 
         /**
-         * Logs a message to the Celix framework logger using the ERROR log level.
-         * NOTE only supports printf style call (so use c_str() instead of std::string)
+         * \brief Logs a message to the Celix framework logger using the ERROR log level.
+         *
+         * \note Only supports printf style call (so use c_str() instead of std::string)
          */
         void logError(const char* format...) {
             va_list args;
@@ -496,8 +543,9 @@ namespace celix {
         }
 
         /**
-         * Logs a message to the Celix framework logger using the FATAL log level.
-         * NOTE only supports printf style call (so use c_str() instead of std::string)
+         * \brief Logs a message to the Celix framework logger using the FATAL log level.
+         *
+         * \note Only supports printf style call (so use c_str() instead of std::string)
          */
         void logFatal(const char* format...) {
             va_list args;
@@ -507,12 +555,22 @@ namespace celix {
         }
 
         /**
-         * Wait until all Celix event for this bundle are completed.
+         * \brief Wait until all Celix event for this bundle are completed.
          */
         void waitForEvents() const {
             celix_bundleContext_waitForEvents(cCtx.get());
         }
     private:
+        /**
+         * \brief Wait (if not on the Celix event thread) for all events for this bundle context to be finished.
+         */
+        void waitIfAble() const {
+            auto* fw = celix_bundleContext_getFramework(cCtx.get());
+            if (celix_framework_isCurrentThreadTheEventLoop(fw)) {
+                celix_bundleContext_waitForEvents(cCtx.get());
+            }
+        }
+
         const std::shared_ptr<celix_bundle_context_t> cCtx;
         const std::shared_ptr<celix::dm::DependencyManager> dm;
         const Bundle bnd;

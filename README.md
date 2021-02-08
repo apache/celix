@@ -129,14 +129,14 @@ cd deploy/MyContainer
 -> stop 3
 #stops MyBundle
 -> start 3
-#start MyBundle
+#starts MyBundle
 -> stop 0 
-#stops Celix framework
+#stops the Celix framework
 ```
 
 ### Register a service
 
-TODO a short intro about services (dynamic interfaces + meta data)
+In the Celix framework, a service is a C++ object or C struct registered in the Celix framework service registry under one interface together with properties (meta information). Services can be discovered and used by bundles.
 
 ```C++
 //include/ICalc.h
@@ -197,7 +197,7 @@ cd deploy/CalcProviderBundle
 ./CalcProviderBundle
 ```
 
-### Use a service (add hoc)
+### Use a service (ad hoc)
 
 ```C++
 //include/ICalc.h
@@ -221,9 +221,9 @@ public:
     explicit CalcUserBundleActivator(const std::shared_ptr<celix::BundleContext>& ctx) {
         ctx->useService<ICalc>()
             .addUseCallback([](ICalc& calc) {
-                std::cout << "result is " << std::to_string(calc.add(2, 3)) << std::endl;
+                std::cout << "result is " << calc.add(2, 3) << std::endl;
             })
-            .setTimeout(std::chrono::seconds{1}) //wait for 1 second if service is not directly available
+            .setTimeout(std::chrono::seconds{1}) //wait for 1 second if a service is not directly found
             .build();
     }
 };
@@ -280,7 +280,6 @@ public:
     explicit CalcTrackerBundleActivator(const std::shared_ptr<celix::BundleContext>& ctx) {
         tracker = ctx->trackServices<ICalc>()
             .build();
-        tracker->wait(); //wait until service trackers is finished opening and all services are found
         for (auto calc : tracker->getServices()) {
             std::cout << "result is " << std::to_string(calc->add(2, 3)) << std::endl;
         }
@@ -343,11 +342,7 @@ public:
                 .build();
         regs.push_back(reg1);
         regs.push_back(reg2);
-
-        //wait until both services are registered
-        reg1->wait();
-        reg2->wait();
-
+        
         auto serviceIdsNoFilter  = ctx->findServices<celix::IShellCommand>();
         auto serviceIdsWithFilter = ctx->findServices<celix::IShellCommand>(std::string{"("} + celix::IShellCommand::COMMAND_NAME + "=" + "command1)");
         std::cout << "Found " << std::to_string(serviceIdsNoFilter.size()) << " IShelLCommand services and found ";

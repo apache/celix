@@ -49,7 +49,7 @@ DOXYFILE_ENCODING      = UTF-8
 # title of most generated pages and in a few other places.
 # The default value is: My Project.
 
-PROJECT_NAME           = Celix
+PROJECT_NAME           = "Apache Celix"
 
 # The PROJECT_NUMBER tag can be used to enter a project or revision number. This
 # could be handy for archiving the generated documentation or if some version
@@ -788,7 +788,7 @@ WARN_LOGFILE           =
 # spaces. See also FILE_PATTERNS and EXTENSION_MAPPING
 # Note: If this tag is empty the current directory is searched.
 
-INPUT                  = README.md libs/framework/include/celix_api.h libs/framework/include/celix_bundle.h libs/framework/include/celix_bundle_activator.h libs/framework/include/celix_bundle_context.h libs/framework/include/celix_framework.h libs/framework/include/celix_dm_component.h libs/framework/include/celix_dm_info.h libs/framework/include/celix_dm_service_dependency.h
+INPUT                  = libs/framework/doxygen.md libs/framework/include/celix_api.h libs/framework/include/celix_bundle.h libs/framework/include/celix_bundle_activator.h libs/framework/include/celix_bundle_context.h libs/framework/include/celix_framework.h libs/framework/include/celix_dm_component.h libs/framework/include/celix_dm_info.h libs/framework/include/celix_dm_service_dependency.h libs/framework/include/celix
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses
@@ -942,7 +942,7 @@ FILTER_SOURCE_PATTERNS =
 # (index.html). This can be useful if you have a project on for instance GitHub
 # and want to reuse the introduction page also for the doxygen output.
 
-USE_MDFILE_AS_MAINPAGE = README.md
+USE_MDFILE_AS_MAINPAGE = libs/framework/doxygen.md
 
 #---------------------------------------------------------------------------
 # Configuration options related to source browsing

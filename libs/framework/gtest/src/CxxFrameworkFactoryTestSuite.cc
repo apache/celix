@@ -17,20 +17,26 @@
  * under the License.
  */
 
-#include <iostream>
-#include "ICalc.h"
-#include "celix/BundleActivator.h"
+#include <gtest/gtest.h>
 
-class CalcUserBundleActivator {
-public:
-    explicit CalcUserBundleActivator(const std::shared_ptr<celix::BundleContext>& ctx) {
-        ctx->useService<ICalc>()
-                .addUseCallback([](ICalc& calc) {
-                    std::cout << "result is " << calc.add(2, 3) << std::endl;
-                })
-                .setTimeout(std::chrono::seconds{1}) //wait for 1 second if a service is not directly found
-                .build();
-    }
+#include <future>
+
+#include "celix/FrameworkFactory.h"
+
+class CxxFrameworkFactoryTestSuite : public ::testing::Test {
+    public:
 };
 
-CELIX_GEN_CXX_BUNDLE_ACTIVATOR(CalcUserBundleActivator)
+TEST_F(CxxFrameworkFactoryTestSuite, CreateDestroy) {
+    auto fw = celix::FrameworkFactory::createFramework();
+}
+
+TEST_F(CxxFrameworkFactoryTestSuite, WaitForStop) {
+    auto fw = celix::FrameworkFactory::createFramework();
+    std::future<void> sync;
+    std::thread wait{[fw] {
+        fw->waitForStop();
+    }};
+    fw->getFrameworkBundleContext()->stopBundle(0);
+    wait.join();
+}

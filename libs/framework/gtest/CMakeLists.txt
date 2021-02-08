@@ -42,6 +42,7 @@ add_executable(test_framework
         src/CxxPropertiesTestSuite.cc
         src/HelloWorldCxxActivator.cc
         src/CxxFilterTestSuite.cc
+        src/CxxFrameworkFactoryTestSuite.cc
 )
 
 target_link_libraries(test_framework Celix::framework CURL::libcurl GTest::gtest GTest::gtest_main)

@@ -40,10 +40,6 @@ public:
         regs.push_back(reg1);
         regs.push_back(reg2);
 
-        //wait until both services are registered
-        reg1->wait();
-        reg2->wait();
-
         auto serviceIdsNoFilter  = ctx->findServices<celix::IShellCommand>();
         auto serviceIdsWithFilter = ctx->findServices<celix::IShellCommand>(std::string{"("} + celix::IShellCommand::COMMAND_NAME + "=" + "command1)");
         std::cout << "Found " << std::to_string(serviceIdsNoFilter.size()) << " IShelLCommand services and found ";

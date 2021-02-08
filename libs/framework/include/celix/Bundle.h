@@ -26,15 +26,28 @@
 namespace celix {
 
     /**
-     * TODO
+     * \brief An installed bundle in the Celix framework.
+     *
+     * Each bundle installed in the Celix framework must have an associated Bundle object.
+     * A bundle must have a unique identity, a long, chosen by the Celix framework.
+     *
      * \note Thread safe.
      */
     class Bundle {
     public:
         explicit Bundle(celix_bundle_t *_cBnd) : cBnd{_cBnd, [](celix_bundle_t*){/*nop*/}}{}
 
+        /**
+         * \brief get the bundle id.
+         * @return
+         */
         long getId() const { return celix_bundle_getId(cBnd.get()); }
 
+        /**
+         * \brief Get the absolute path for a entry path relative in the bundle cache.
+         * @return The absolute entry path or an empty string if the bundle does not have the entry for the given
+         * relative path.
+         */
         std::string getEntry(const std::string& path) const {
             std::string result{};
             const char* entry = celix_bundle_getEntry(cBnd.get(), path.c_str());

@@ -1766,17 +1766,7 @@ bundle_pt framework_getBundle(framework_pt framework, const char* location) {
 }
 
 celix_status_t framework_waitForStop(framework_pt framework) {
-    celixThreadMutex_lock(&framework->shutdown.mutex);
-    while (!framework->shutdown.done) {
-        celixThreadCondition_wait(&framework->shutdown.cond, &framework->shutdown.mutex);
-    }
-    if (!framework->shutdown.joined) {
-        celixThread_join(framework->shutdown.thread, NULL);
-        framework->shutdown.joined = true;
-    }
-
-    celixThreadMutex_unlock(&framework->shutdown.mutex);
-
+    celix_framework_waitForStop(framework);
     return CELIX_SUCCESS;
 }
 
@@ -2752,4 +2742,17 @@ void celix_framework_waitForGenericEvent(framework_t *fw, long eventId) {
         }
     }
     celixThreadMutex_unlock(&fw->dispatcher.mutex);
+}
+
+void celix_framework_waitForStop(celix_framework_t *framework) {
+    celixThreadMutex_lock(&framework->shutdown.mutex);
+    while (!framework->shutdown.done) {
+        celixThreadCondition_wait(&framework->shutdown.cond, &framework->shutdown.mutex);
+    }
+    if (!framework->shutdown.joined) {
+        celixThread_join(framework->shutdown.thread, NULL);
+        framework->shutdown.joined = true;
+    }
+
+    celixThreadMutex_unlock(&framework->shutdown.mutex);
 }

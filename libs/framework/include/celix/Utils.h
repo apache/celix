@@ -26,7 +26,7 @@
 
 namespace celix {
     /**
-     * Returns the deferred type name for the template I
+     * \brief Returns the deferred type name for the template I
      */
     template<typename INTERFACE_TYPENAME>
     std::string typeName() {
@@ -66,8 +66,9 @@ namespace celix {
     }
 
     /**
-     * Returns the deferred type name for the template I if hte providedTypeName is empty.
-     * Else returns the providedTypeName
+     * \brief Returns the deferred type name for the template I if the providedTypeName is empty.
+     *
+     * If the providedTypeName is not empty, the providedTypeName will be returned.
      */
     template<typename I>
     std::string typeName(const std::string& providedTypeName) {
