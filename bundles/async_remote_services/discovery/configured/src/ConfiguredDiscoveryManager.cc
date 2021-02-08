@@ -45,14 +45,23 @@ celix::dm::Properties convertEndpointPropertiesToCelix(const ConfiguredEndpointP
                                  {"endpoint.id", endpointProperties.getId()}};
 }
 
+ConfiguredEndpointProperties convertCelixPropertiesToEndpoint(const celix::dm::Properties& celixProperties) {
+
+    auto endpointId = celixProperties.at("endpoint.id");
+    auto exports = celixProperties.at("service.exported.interfaces");
+    auto imported = celixProperties.at("service.imported");
+
+    return ConfiguredEndpointProperties{endpointId,
+                                        (std::strcmp(imported.c_str(), "true") == 0),
+                                        {}, exports, {}, "", ""};
+}
+
 ConfiguredDiscoveryManager::ConfiguredDiscoveryManager(std::shared_ptr<DependencyManager> dependencyManager,
                                                        std::string configurationFilePath) :
         _dependencyManager{std::move(dependencyManager)},
         _configurationFilePath{std::move(configurationFilePath)},
         _endpoints{},
         _publishedEndpoints{} {
-
-    discoverEndpoints(); // TODO this call should probably come from the topology manager?
 }
 
 void ConfiguredDiscoveryManager::discoverEndpoints() {
@@ -94,7 +103,23 @@ void ConfiguredDiscoveryManager::publishParsedEndpoints() {
     }
 }
 
-void ConfiguredDiscoveryManager::addExportedEndpoint(IEndpoint* /*endpoint*/, celix::dm::Properties&& /*properties*/) { /* not used */ }
+void ConfiguredDiscoveryManager::addExportedEndpoint(IEndpoint* /*endpoint*/, celix::dm::Properties&& properties) {
+
+    auto endpoint = std::make_shared<ConfiguredEndpoint>(convertCelixPropertiesToEndpoint(properties));
+    auto parsedJson = parseJSONFile(_configurationFilePath);
+    auto endpointJSON = endpoint->exportToJSON(parsedJson);
+
+    if (parsedJson.IsObject()) {
+        if (parsedJson.HasMember(ENDPOINT_ARRAY)) {
+            rapidjson::Value& endpointJsonArray = parsedJson[ENDPOINT_ARRAY];
+            if (endpointJsonArray.IsArray()){
+                endpointJsonArray.PushBack(endpointJSON, parsedJson.GetAllocator());
+            }
+        }
+    }
+
+}
+
 void ConfiguredDiscoveryManager::removeExportedEndpoint(IEndpoint* /*endpoint*/, celix::dm::Properties&& /*properties*/) { /* not used */ }
 
 } // end namespace celix::async_rsa::discovery.

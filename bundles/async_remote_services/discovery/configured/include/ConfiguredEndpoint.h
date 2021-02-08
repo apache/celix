@@ -41,7 +41,7 @@ public:
                             _scope{std::move(scope)}, _topic{std::move(topic)} {
     }
 
-     const std::string& getId() const {
+     std::string getId() const {
 
         return _id;
     }
@@ -101,7 +101,11 @@ public:
 
     explicit ConfiguredEndpoint(const rapidjson::Value& endpointJson);
 
+    explicit ConfiguredEndpoint(const ConfiguredEndpointProperties& endpointProperties);
+
     const ConfiguredEndpointProperties& getProperties() const;
+
+    rapidjson::Value exportToJSON(rapidjson::Document& document);
 
     std::string ToString() const {
         return "[ConfiguredEndpoint (" + _properties->ToString() + ")]";

@@ -88,6 +88,7 @@ void celix::async_rsa::AsyncTopologyManager::removeExportedService([[maybe_unuse
 void celix::async_rsa::AsyncTopologyManager::setDiscovery(celix::async_rsa::discovery::IDiscoveryManager *discovery, [[maybe_unused]] Properties &&properties) {
     std::unique_lock l(_m);
     _discovery = discovery;
+    _discovery->discoverEndpoints();
 }
 
 class TopologyManagerActivator {
