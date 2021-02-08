@@ -106,20 +106,38 @@ void ConfiguredDiscoveryManager::publishParsedEndpoints() {
 void ConfiguredDiscoveryManager::addExportedEndpoint(IEndpoint* /*endpoint*/, celix::dm::Properties&& properties) {
 
     auto endpoint = std::make_shared<ConfiguredEndpoint>(convertCelixPropertiesToEndpoint(properties));
-    auto parsedJson = parseJSONFile(_configurationFilePath);
-    auto endpointJSON = endpoint->exportToJSON(parsedJson);
+    auto parsedDocument = parseJSONFile(_configurationFilePath);
+    auto endpointJSON = endpoint->exportToJSON(parsedDocument);
 
-    if (parsedJson.IsObject()) {
-        if (parsedJson.HasMember(ENDPOINT_ARRAY)) {
-            rapidjson::Value& endpointJsonArray = parsedJson[ENDPOINT_ARRAY];
+    if (parsedDocument.IsObject()) {
+        if (parsedDocument.HasMember(ENDPOINT_ARRAY)) {
+            rapidjson::Value& endpointJsonArray = parsedDocument[ENDPOINT_ARRAY];
             if (endpointJsonArray.IsArray()){
-                endpointJsonArray.PushBack(endpointJSON, parsedJson.GetAllocator());
+                endpointJsonArray.PushBack(endpointJSON, parsedDocument.GetAllocator());
             }
         }
     }
-
 }
 
-void ConfiguredDiscoveryManager::removeExportedEndpoint(IEndpoint* /*endpoint*/, celix::dm::Properties&& /*properties*/) { /* not used */ }
+void ConfiguredDiscoveryManager::removeExportedEndpoint(IEndpoint* /*endpoint*/, celix::dm::Properties&& properties) {
+
+    auto endpoint = std::make_shared<ConfiguredEndpoint>(convertCelixPropertiesToEndpoint(properties));
+    auto parsedDocument = parseJSONFile(_configurationFilePath);
+    auto endpointJSON = endpoint->exportToJSON(parsedDocument);
+
+    if (parsedDocument.IsObject()) {
+        if (parsedDocument.HasMember(ENDPOINT_ARRAY)) {
+            rapidjson::Value& endpointJsonArray = parsedDocument[ENDPOINT_ARRAY];
+            if (endpointJsonArray.IsArray()){
+
+                for (rapidjson::Value::ValueIterator itr = endpointJsonArray.Begin(); itr != endpointJsonArray.End();)
+                    if ((*itr)["endpoint.id"].GetString() == endpointJSON["endpoint.id"].GetString())
+                        itr = endpointJsonArray.Erase(itr);
+                    else
+                        ++itr;
+            }
+        }
+    }
+}
 
 } // end namespace celix::async_rsa::discovery.
