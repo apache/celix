@@ -22,33 +22,26 @@
 #include <celix_api.h>
 
 namespace celix::async_rsa {
-
     struct IDiscovery {
         virtual ~IDiscovery() = default;
 
         /// Adds a newly exported endpoint
         /// \param endpoint
-        virtual void addExportedEndpoint(celix::async_rsa::IEndpoint *endpoint, Properties&& properties) = 0;
-        virtual void removeExportedEndpoint(celix::async_rsa::IEndpoint *endpoint, Properties&& properties) = 0;
+        virtual void addExportedEndpoint(celix::async_rsa::IEndpoint *endpoint) = 0;
     };
 
     struct StaticDiscovery final : public IDiscovery {
-    public:
-
         explicit StaticDiscovery(std::shared_ptr<celix::dm::DependencyManager> &mng) noexcept;
-
         ~StaticDiscovery() final = default;
 
         /// StaticDiscovery only supports preconfigured endpoints, this function is a NOP.
         /// \param endpoint
-        void addExportedEndpoint(celix::async_rsa::IEndpoint *endpoint, Properties&& properties) final;
-        void removeExportedEndpoint(celix::async_rsa::IEndpoint *endpoint, Properties&& properties) final;
+        void addExportedEndpoint(celix::async_rsa::IEndpoint *endpoint) final;
 
     private:
-
-        void readImportedEndpointsFromFile(std::string_view);
-
         std::vector<IEndpoint*> _endpoints;
         std::shared_ptr<celix::dm::DependencyManager> _mng;
+
+        void readImportedEndpointsFromFile(std::string_view);
     };
 }
