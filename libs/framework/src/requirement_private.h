@@ -31,7 +31,7 @@
 
 struct requirement {
 	char * targetName;
-	version_range_pt versionRange;
+	celix_version_range_t* versionRange;
 	hash_map_pt attributes;
 	hash_map_pt directives;
 };

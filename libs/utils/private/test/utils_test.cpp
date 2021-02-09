@@ -362,3 +362,14 @@ TEST(utils, extractLocalNameAndNamespaceTest) {
     free(name);
     free(ns);
 }
+
+TEST(utils, isStringNullOrEmpty) {
+    bool empty = celix_utils_isStringNullOrEmpty(nullptr);
+    CHECK_TRUE(empty);
+    empty = celix_utils_isStringNullOrEmpty("");
+    CHECK_TRUE(empty);
+    empty = celix_utils_isStringNullOrEmpty(" ");
+    CHECK_FALSE(empty);
+    empty = celix_utils_isStringNullOrEmpty("foo");
+    CHECK_FALSE(empty);
+}

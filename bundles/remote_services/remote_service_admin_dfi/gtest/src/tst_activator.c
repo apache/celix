@@ -296,9 +296,9 @@ static bool bndTestCreateDestroyComponentWithRemoteService(void *handle) {
 
     calculator_service_t calcSvc;
     calcSvc.handle = NULL;
-    calcSvc.add = NULL; //note for this test case the actual services can be NULL
-    calcSvc.sub = NULL; //note for this test case the actual services can be NULL
-    calcSvc.sqrt = NULL; //note for this test case the actual services can be NULL
+    calcSvc.add = NULL; //note for this test case the actual service methods can be NULL
+    calcSvc.sub = NULL; //note for this test case the actual service methods can be NULL
+    calcSvc.sqrt = NULL; //note for this test case the actual service methods can be NULL
 
     celix_dm_component_t *cmp = celix_dmComponent_create(act->ctx, "test");
     celix_dmComponent_addInterface(cmp, CALCULATOR_SERVICE, NULL, &calcSvc, properties);

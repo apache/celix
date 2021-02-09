@@ -54,59 +54,64 @@ static void parseCommandLine(const char*line, celix_array_list_t **requestedBund
     free (str);
 }
 
-static void printFullInfo(FILE *out, bool colors, long bundleId, dm_component_info_pt compInfo) {
+static void printFullInfo(FILE *out, bool colors, long bundleId, const char* bndName, dm_component_info_pt compInfo) {
     const char *startColors = "";
     const char *endColors = "";
     if (colors) {
         startColors = compInfo->active ? OK_COLOR : NOK_COLOR;
         endColors = END_COLOR;
     }
-    fprintf(out, "Component: Name=%s\n|- ID=%s, %sActive=%s%s, State=%s, Bundle=%li\n", compInfo->name, compInfo->id,
-            startColors, compInfo->active ? "true " : "false", endColors, compInfo->state, bundleId);
-    fprintf(out, "|- Interfaces (%d):\n", arrayList_size(compInfo->interfaces));
-    for (unsigned int interfCnt = 0; interfCnt < arrayList_size(compInfo->interfaces); interfCnt++) {
-        dm_interface_info_pt intfInfo = arrayList_get(compInfo->interfaces, interfCnt);
-        fprintf(out, "   |- Interface: %s\n", intfInfo->name);
+    fprintf(out, "%sComponent: Name=%s%s\n", startColors, compInfo->name, endColors);
+    fprintf(out, "|- UUID   = %s\n", compInfo->id);
+    fprintf(out, "|- Active = %s\n", compInfo->active ? "true" : "false");
+    fprintf(out, "|- State  = %s\n", compInfo->state);
+    fprintf(out, "|- Bundle = %li (%s)\n", bundleId, bndName);
+    fprintf(out, "|- Nr of times started = %i\n", (int)compInfo->nrOfTimesStarted);
+    fprintf(out, "|- Nr of times resumed = %i\n", (int)compInfo->nrOfTimesResumed);
+
+    fprintf(out, "|- Interfaces (%d):\n", celix_arrayList_size(compInfo->interfaces));
+    for (int interfCnt = 0; interfCnt < celix_arrayList_size(compInfo->interfaces); interfCnt++) {
+        dm_interface_info_pt intfInfo = celix_arrayList_get(compInfo->interfaces, interfCnt);
+        fprintf(out, "   |- %sInterface %i: %s%s\n", startColors, (interfCnt+1), intfInfo->name, endColors);
 
         hash_map_iterator_t iter = hashMapIterator_construct((hash_map_pt) intfInfo->properties);
         char *key = NULL;
         while ((key = hashMapIterator_nextKey(&iter)) != NULL) {
-            fprintf(out, "      | %15s = %s\n", key, properties_get(intfInfo->properties, key));
+            fprintf(out, "      | %15s = %s\n", key, celix_properties_get(intfInfo->properties, key, "!ERROR!"));
         }
     }
 
-    fprintf(out, "|- Dependencies (%d):\n", arrayList_size(compInfo->dependency_list));
-    for (unsigned int depCnt = 0; depCnt < arrayList_size(compInfo->dependency_list); depCnt++) {
+    fprintf(out, "|- Dependencies (%d):\n", celix_arrayList_size(compInfo->dependency_list));
+    for (int depCnt = 0; depCnt < celix_arrayList_size(compInfo->dependency_list); ++depCnt) {
         dm_service_dependency_info_pt dependency;
-        dependency = arrayList_get(compInfo->dependency_list, depCnt);
+        dependency = celix_arrayList_get(compInfo->dependency_list, depCnt);
         const char *depStartColors = "";
-        const char *depEndColors = "";
         if (colors) {
             if (dependency->required) {
                 depStartColors = dependency->available ? OK_COLOR : NOK_COLOR;
             } else {
                 depStartColors = dependency->available ? OK_COLOR : WARNING_COLOR;
             }
-
-            depEndColors = END_COLOR;
         }
-        fprintf(out, "   |- Dependency: %sAvailable = %s%s, Required = %s, Filter = %s\n", depStartColors,
-                dependency->available ? "true " : "false", depEndColors,
-                dependency->required ? "true " : "false", dependency->filter);
+        fprintf(out, "   |- %sDependency %i: %s%s\n", depStartColors, (depCnt+1), dependency->serviceName == NULL ? "(any)" : dependency->serviceName, endColors);
+        fprintf(out, "      | %15s = %s\n", "Available", dependency->available ? "true " : "false");
+        fprintf(out, "      | %15s = %s\n", "Required", dependency->required ? "true " : "false");
+        fprintf(out, "      | %15s = %s\n", "Version Range", dependency->versionRange == NULL ? "N/A" : dependency->versionRange);
+        fprintf(out, "      | %15s = %s\n", "Filter", dependency->filter == NULL ? "N/A" : dependency->filter);
     }
     fprintf(out, "\n");
 
 }
 
-static void printBasicInfo(FILE *out, bool colors, long bundleId, dm_component_info_pt compInfo) {
+static void printBasicInfo(FILE *out, bool colors, long bundleId, const char* bndName, dm_component_info_pt compInfo) {
     const char *startColors = "";
     const char *endColors = "";
     if (colors) {
         startColors = compInfo->active ? OK_COLOR : NOK_COLOR;
         endColors = END_COLOR;
     }
-    fprintf(out, "Component: Name=%s, ID=%s, %sActive=%s%s, State=%s, Bundle=%li\n", compInfo->name, compInfo->id,
-            startColors, compInfo->active ? "true " : "false", endColors, compInfo->state, bundleId);
+    fprintf(out, "Component: Name=%s, ID=%s, %sActive=%s%s, State=%s, Bundle=%li (%s)\n", compInfo->name, compInfo->id,
+            startColors, compInfo->active ? "true " : "false", endColors, compInfo->state, bundleId, bndName);
 
 }
 
@@ -117,9 +122,9 @@ static void dm_printInfo(FILE *out, bool useColors, bool fullInfo, celix_depende
             for (unsigned int cmpCnt = 0; cmpCnt < size; cmpCnt++) {
                 dm_component_info_pt compInfo = celix_arrayList_get(info->components, cmpCnt);
                 if (fullInfo) {
-                    printFullInfo(out, useColors, info->bndId, compInfo);
+                    printFullInfo(out, useColors, info->bndId, info->bndSymbolicName, compInfo);
                 } else {
-                    printBasicInfo(out, useColors, info->bndId, compInfo);
+                    printBasicInfo(out, useColors, info->bndId, info->bndSymbolicName, compInfo);
                 }
             }
             fprintf(out, "\n");
@@ -152,7 +157,7 @@ celix_status_t dmListCommand_execute(void* handle, char * line, FILE *out, FILE 
                 nrOfComponents += 1;
                 if (!cmpInfo->active) {
                     allActive = false;
-                    printFullInfo(out, useColors, info->bndId, cmpInfo);
+                    printFullInfo(out, useColors, info->bndId, info->bndSymbolicName, cmpInfo);
                 }
             }
         }

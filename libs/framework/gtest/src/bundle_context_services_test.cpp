@@ -1194,3 +1194,148 @@ TEST_F(CelixBundleContextServicesTests, onlyCallAsyncCallbackWithAsyncApi) {
     EXPECT_GT(trkId, 0);
     celix_bundleContext_stopTracker(ctx, trkId);
 }
+
+TEST_F(CelixBundleContextServicesTests, unregisterSvcBeforeAsyncRegistration) {
+    struct callback_data {
+        std::atomic<int> count{};
+        celix_bundle_context_t* ctx{nullptr};
+    };
+    callback_data cbData{};
+    cbData.ctx = ctx;
+
+    celix_framework_fireGenericEvent(
+            fw,
+            -1,
+            celix_bundle_getId(celix_framework_getFrameworkBundle(fw)),
+            "registerAsync",
+            (void*)&cbData,
+            [](void *data) {
+                auto cbd = static_cast<struct callback_data*>(data);
+
+                celix_service_registration_options_t opts{};
+                opts.serviceName = "test-service";
+                opts.svc = (void*)0x42;
+                opts.asyncData = data;
+                opts.asyncCallback = [](void *data, long /*svcId*/) {
+                    auto* cbd = static_cast<struct callback_data*>(data);
+                    cbd->count.fetch_add(1);
+                };
+
+                //note register async. So a event on the event queue, but because this is done on the event queue this cannot be completed
+                long svcId = celix_bundleContext_registerServiceAsync(cbd->ctx, (void*)0x42, "test-service", nullptr);
+
+                celix_bundleContext_unregisterService(cbd->ctx, svcId); //trying to unregister still queued svc registration -> should cancel event.
+            },
+            nullptr,
+            nullptr);
+
+    celix_bundleContext_waitForEvents(ctx);
+    long svcId = celix_bundleContext_findService(ctx, "test-service");
+    EXPECT_LT(svcId, 0);
+    EXPECT_EQ(0, cbData.count.load()); //note create tracker canceled -> no callback
+}
+
+TEST_F(CelixBundleContextServicesTests, stopSvcTrackerBeforeAsyncTrackerIsCreated) {
+    struct callback_data {
+        std::atomic<int> count{};
+        celix_bundle_context_t* ctx{nullptr};
+    };
+    callback_data cbData{};
+    cbData.ctx = ctx;
+
+    celix_framework_fireGenericEvent(
+            fw,
+            -1,
+            celix_bundle_getId(celix_framework_getFrameworkBundle(fw)),
+            "create tracker async",
+            (void*)&cbData,
+            [](void *data) {
+                auto cbd = static_cast<struct callback_data*>(data);
+
+                celix_service_tracking_options_t opts{};
+                opts.filter.serviceName = "test-service";
+                opts.trackerCreatedCallbackData = data;
+                opts.trackerCreatedCallback = [](void *data) {
+                    auto* cbd = static_cast<struct callback_data*>(data);
+                    cbd->count.fetch_add(1);
+                };
+
+                //note create async. So a event on the event queue, but because this is done on the event queue this cannot be completed
+                long trkId = celix_bundleContext_trackServicesWithOptionsAsync(cbd->ctx, &opts);
+
+                celix_bundleContext_stopTracker(cbd->ctx, trkId);
+            },
+            nullptr,
+            nullptr);
+
+    celix_bundleContext_waitForEvents(ctx);
+    EXPECT_EQ(0, cbData.count.load()); //note create tracker canceled -> no callback
+}
+
+TEST_F(CelixBundleContextServicesTests, stopBundleTrackerBeforeAsyncTrackerIsCreated) {
+    struct callback_data {
+        std::atomic<int> count{};
+        celix_bundle_context_t* ctx{nullptr};
+    };
+    callback_data cbData{};
+    cbData.ctx = ctx;
+
+    celix_framework_fireGenericEvent(
+            fw,
+            -1,
+            celix_bundle_getId(celix_framework_getFrameworkBundle(fw)),
+            "create tracker async",
+            (void*)&cbData,
+            [](void *data) {
+                auto cbd = static_cast<struct callback_data*>(data);
+
+                celix_bundle_tracking_options_t opts{};
+                opts.trackerCreatedCallbackData = data;
+                opts.trackerCreatedCallback = [](void *data) {
+                    auto* cbd = static_cast<struct callback_data*>(data);
+                    cbd->count.fetch_add(1);
+                };
+
+                //note create async. So a event on the event queue, but because this is done on the event queue this cannot be completed
+                long trkId = celix_bundleContext_trackBundlesWithOptionsAsync(cbd->ctx, &opts);
+
+                celix_bundleContext_stopTracker(cbd->ctx, trkId);
+            },
+            nullptr,
+            nullptr);
+
+    celix_bundleContext_waitForEvents(ctx);
+    EXPECT_EQ(0, cbData.count.load()); //note create tracker canceled -> no callback
+}
+
+TEST_F(CelixBundleContextServicesTests, stopMetaTrackerBeforeAsyncTrackerIsCreated) {
+    struct callback_data {
+        std::atomic<int> count{};
+        celix_bundle_context_t* ctx{nullptr};
+    };
+    callback_data cbData{};
+    cbData.ctx = ctx;
+
+    celix_framework_fireGenericEvent(
+            fw,
+            -1,
+            celix_bundle_getId(celix_framework_getFrameworkBundle(fw)),
+            "create tracker async",
+            (void*)&cbData,
+            [](void *data) {
+                auto cbd = static_cast<struct callback_data*>(data);
+
+                //note create async. So a event on the event queue, but because this is done on the event queue this cannot be completed
+                long trkId = celix_bundleContext_trackServiceTrackersAsync(cbd->ctx, "test-service", nullptr, nullptr, nullptr, data, [](void *data) {
+                    auto* cbd = static_cast<struct callback_data*>(data);
+                    cbd->count.fetch_add(1);
+                });
+
+                celix_bundleContext_stopTracker(cbd->ctx, trkId);
+            },
+            nullptr,
+            nullptr);
+
+    celix_bundleContext_waitForEvents(ctx);
+    EXPECT_EQ(0, cbData.count.load()); //note create tracker canceled -> no callback
+}

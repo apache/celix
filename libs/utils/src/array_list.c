@@ -372,9 +372,11 @@ celix_array_list_t* celix_arrayList_createWithEquals(celix_arrayList_equals_fp e
 }
 
 void celix_arrayList_destroy(celix_array_list_t *list) {
-    list->size = 0;
-    free(list->elementData);
-    free(list);
+    if (list != NULL) {
+        list->size = 0;
+        free(list->elementData);
+        free(list);
+    }
 }
 
 int celix_arrayList_size(const celix_array_list_t *list) {

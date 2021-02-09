@@ -23,26 +23,29 @@
 #include "pubsub/api.h"
 #include <unistd.h>
 #include <memory>
+#include <mutex>
 
 #include <gtest/gtest.h>
+#include <future>
 
 constexpr const char *deadlockSutBundleFile = DEADLOCK_SUT_BUNDLE_FILE;
 
 struct DeadlockTestSuite : public ::testing::Test {
     celix_framework_t *fw = NULL;
     celix_bundle_context_t *ctx = NULL;
-    std::unique_ptr<DependencyManager> mng = NULL;
+    std::shared_ptr<DependencyManager> mng = NULL;
     long sutBundleId = 0;
 
     DeadlockTestSuite() {
         celixLauncher_launch("config.properties", &fw);
         ctx = celix_framework_getFrameworkContext(fw);
-        mng = std::unique_ptr<DependencyManager>(new DependencyManager(ctx));
+        mng = std::shared_ptr<DependencyManager>(new DependencyManager(ctx));
         sutBundleId = celix_bundleContext_installBundle(ctx, deadlockSutBundleFile, false);
     }
 
     ~DeadlockTestSuite() override {
         celix_bundleContext_uninstallBundle(ctx, sutBundleId);
+        mng = nullptr;
         celixLauncher_stop(fw);
         celixLauncher_waitForShutdown(fw);
         celixLauncher_destroy(fw);
@@ -57,8 +60,10 @@ struct DeadlockTestSuite : public ::testing::Test {
 class DependencyCmp;
 
 struct activator {
-    Component<DependencyCmp> *cmp;
-    celix_bundle_context_t *ctx;
+    std::string cmpUUID{};
+    celix_bundle_context_t *ctx{};
+    std::promise<void> promise{};
+    std::shared_ptr<celix::dm::DependencyManager> mng{};
 };
 
 class IDependency {
@@ -86,14 +91,22 @@ public:
         return 1.0;
     }
 
-    void setPublisher(const pubsub_publisher_t *pub __attribute__((unused))) {
-        act->cmp->createCServiceDependency<pubsub_publisher_t>(PUBSUB_PUBLISHER_SERVICE_NAME)
-                .setVersionRange("[3.0.0,4)")
-                .setFilter("(topic=deadlock)(scope=scope2)")
-                .setStrategy(celix::dm::DependencyUpdateStrategy::suspend)
-                .setCallbacks([](const pubsub_publisher_t *, Properties&&) { std::cout << "success\n"; })
-                .setRequired(true)
-                .build();
+    void setPublisher(const pubsub_publisher_t *pub) {
+        if (pub == nullptr) {
+            return; //nothing on "unsetting" svc
+        }
+        auto cmp = act->mng->findComponent<DependencyCmp>(act->cmpUUID);
+        EXPECT_TRUE(cmp);
+        if (cmp) {
+            cmp->createCServiceDependency<pubsub_publisher_t>(PUBSUB_PUBLISHER_SERVICE_NAME)
+                    .setVersionRange("[3.0.0,4)")
+                    .setFilter("(topic=deadlock)(scope=scope2)")
+                    .setStrategy(celix::dm::DependencyUpdateStrategy::suspend)
+                    .setCallbacks([](const pubsub_publisher_t *, Properties&&) { std::cout << "success\n"; })
+                    .setRequired(true)
+                    .build();
+        }
+        act->promise.set_value();
     }
 
     int init() {
@@ -124,7 +137,8 @@ TEST_F(DeadlockTestSuite, test) {
 
     activator act{};
     act.ctx = ctx;
-    act.cmp = &cmp;
+    act.mng = mng;
+    act.cmpUUID = cmp.getUUID();
     cmp.getInstance().act = &act;
 
     cmp.createCServiceDependency<pubsub_publisher_t>(PUBSUB_PUBLISHER_SERVICE_NAME)
@@ -139,5 +153,7 @@ TEST_F(DeadlockTestSuite, test) {
 
     celix_bundleContext_startBundle(ctx, sutBundleId);
 
+    //wait till setPublisher has added an service dependency. If not the findComponent can return NULL
+    act.promise.get_future().wait();
     mng->stop();
 }

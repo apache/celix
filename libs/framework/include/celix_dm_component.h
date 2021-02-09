@@ -47,15 +47,33 @@ typedef enum celix_dm_component_state_enum {
 typedef int (*celix_dm_cmp_lifecycle_fpt)(void *userData);
 
 /**
- * Creates a DM Component
+ * Creates a DM Component with a random generated UUID.
  * Caller has ownership.
  */
 celix_dm_component_t* celix_dmComponent_create(celix_bundle_context_t *context, const char* name);
 
 /**
+ * Creates a DM Component with a provided UUID.
+ * Caller has ownership.
+ */
+celix_dm_component_t* celix_dmComponent_createWithUUID(celix_bundle_context_t *context, const char* name, const char* UUID);
+
+/**
+ * Get the UUID of the component.
+ */
+const char* celix_dmComponent_getUUID(celix_dm_component_t* cmp);
+
+/**
  * Destroys a DM Component
  */
 void celix_dmComponent_destroy(celix_dm_component_t *cmp);
+
+/**
+ * Destroys a DM Component on the event thread.
+ * Will call doneCallback (if not NULL) when done.
+ *
+ */
+void celix_dmComponent_destroyAsync(celix_dm_component_t *cmp, void *doneData, void (*doneCallback)(void*));
 
 /**
  * Specify if a default 'service.lang=C' should be added to the properties of interfaces if no 'service.lang' has been
@@ -150,6 +168,11 @@ bool celix_dmComponent_isActive(celix_dm_component_t *component);
  * Destroys a DM Component info struct.
  */
 void celix_dmComponent_destroyComponentInfo(dm_component_info_pt info);
+
+/**
+ * Returns the string value of a provided state
+ */
+const char* celix_dmComponent_stateToString(celix_dm_component_state_t state);
 
 #ifdef __cplusplus
 }

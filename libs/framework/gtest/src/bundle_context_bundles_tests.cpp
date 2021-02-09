@@ -68,6 +68,11 @@ TEST_F(CelixBundleContextBundlesTests, StartStopTest) {
     //nop
 }
 
+TEST_F(CelixBundleContextBundlesTests, installABundleTest) {
+    long bndId = celix_bundleContext_installBundle(ctx, TEST_BND1_LOC, true);
+    ASSERT_TRUE(bndId >= 0);
+}
+
 TEST_F(CelixBundleContextBundlesTests, installBundlesTest) {
     long bndId = celix_bundleContext_installBundle(ctx, "non-existing.zip", true);
     ASSERT_TRUE(bndId < 0);

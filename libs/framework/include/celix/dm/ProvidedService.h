@@ -43,6 +43,7 @@ namespace celix { namespace dm {
         const celix::dm::Properties& getProperties() const;
 
         void runBuild();
+        void wait() const;
     protected:
         celix_dm_component_t* cCmp;
         std::string svcName;
@@ -87,9 +88,19 @@ namespace celix { namespace dm {
 
         /**
          * Build the provided service
-         * A provided service added to an active component will only become active if the build is called
+         * A provided service added to an active component will only become active if the build is called.
+         *
+         * When build and the component is active, the service will be registered when this call is done.
+         *
+         * Should not be called on the Celix event thread.
          */
         ProvidedService<T,I>& build();
+
+        /**
+         * Same a build, but will not wait till the underlining service is registered
+         * Can be called on the Celix event thread.
+         */
+        ProvidedService<T,I>& buildAsync();
     };
 
 }}

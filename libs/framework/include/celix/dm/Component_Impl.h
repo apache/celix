@@ -37,28 +37,43 @@ inline void BaseComponent::runBuild() {
         return;
     }
 
-    for (auto& provide : providedServices) {
-        provide->runBuild();
+    {
+        std::lock_guard<std::mutex> lck{mutex};
+        for (auto& provide : providedServices) {
+            provide->runBuild();
+        }
     }
 
-    for (auto &dep : dependencies) {
-        dep->runBuild();
+    {
+        std::lock_guard<std::mutex> lck{mutex};
+        for (auto &dep : dependencies) {
+            dep->runBuild();
+        }
     }
+
 
     bool alreadyAdded = cmpAddedToDepMan.exchange(true);
     if (!alreadyAdded) {
-        celix_dependencyManager_add(cDepMan, cCmp);
+        celix_dependencyManager_addAsync(cDepMan, cCmp);
     }
 }
 
-inline BaseComponent::~BaseComponent() noexcept {
-    if (!cmpAddedToDepMan) {
-        celix_dmComponent_destroy(cCmp);
-    }
+inline BaseComponent::~BaseComponent() noexcept = default;
+
+inline void BaseComponent::wait() const {
+    celix_dependencyManager_wait(cDepMan);
 }
 
 template<class T>
-Component<T>::Component(celix_bundle_context_t *context, celix_dependency_manager_t* cDepMan, const std::string &name) : BaseComponent(context, cDepMan, name) {}
+Component<T>::Component(
+        celix_bundle_context_t *context,
+        celix_dependency_manager_t* cDepMan,
+        std::string name,
+        std::string uuid) : BaseComponent(
+                context,
+                cDepMan,
+                name.empty() ? celix::dm::typeName<T>() : std::move(name),
+                std::move(uuid)) {}
 
 template<class T>
 Component<T>::~Component() = default;
@@ -73,6 +88,7 @@ Component<T>& Component<T>::addInterfaceWithName(const std::string &serviceName,
         auto provide = std::make_shared<ProvidedService<T,I>>(cComponent(), serviceName, intfPtr, true);
         provide->setVersion(version);
         provide->setProperties(properties);
+        std::lock_guard<std::mutex> lck{mutex};
         providedServices.push_back(provide);
     } else {
         std::cerr << "Cannot add interface with a empty name\n";
@@ -100,6 +116,7 @@ Component<T>& Component<T>::addCInterface(I* svc, const std::string &serviceName
     auto provide = std::make_shared<ProvidedService<T,I>>(cComponent(), serviceName, svc, false);
     provide->setVersion(version);
     provide->setProperties(properties);
+    std::lock_guard<std::mutex> lck{mutex};
     providedServices.push_back(provide);
     return *this;
 }
@@ -108,6 +125,7 @@ template<class T>
 template<class I>
 Component<T>& Component<T>::removeCInterface(const I* svc){
     celix_dmComponent_removeInterface(this->cComponent(), svc);
+    std::lock_guard<std::mutex> lck{mutex};
     for (auto it = providedServices.begin(); it != providedServices.end(); ++it) {
         std::shared_ptr<BaseProvidedService> provide = *it;
         if (provide->getService() == static_cast<const void*>(svc)) {
@@ -121,11 +139,8 @@ Component<T>& Component<T>::removeCInterface(const I* svc){
 template<class T>
 template<class I>
 ServiceDependency<T,I>& Component<T>::createServiceDependency(const std::string &name) {
-    static ServiceDependency<T,I> invalidDep{cComponent(), std::string{}, false};
     auto dep = std::shared_ptr<ServiceDependency<T,I>> {new ServiceDependency<T,I>(cComponent(), name)};
-    if (dep == nullptr) {
-        return invalidDep;
-    }
+    std::lock_guard<std::mutex> lck{mutex};
     dependencies.push_back(dep);
     dep->setComponentInstance(&getInstance());
     return *dep;
@@ -135,6 +150,7 @@ template<class T>
 template<class I>
 Component<T>& Component<T>::remove(ServiceDependency<T,I>& dep) {
     celix_component_removeServiceDependency(cComponent(), dep.cServiceDependency());
+    std::lock_guard<std::mutex> lck{mutex};
     this->dependencies.erase(std::remove(this->dependencies.begin(), this->dependencies.end(), dep));
     return *this;
 }
@@ -142,11 +158,8 @@ Component<T>& Component<T>::remove(ServiceDependency<T,I>& dep) {
 template<class T>
 template<typename I>
 CServiceDependency<T,I>& Component<T>::createCServiceDependency(const std::string &name) {
-    static CServiceDependency<T,I> invalidDep{cComponent(), std::string{}, false};
     auto dep = std::shared_ptr<CServiceDependency<T,I>> {new CServiceDependency<T,I>(cComponent(), name)};
-    if (dep == nullptr) {
-        return invalidDep;
-    }
+    std::lock_guard<std::mutex> lck{mutex};
     dependencies.push_back(dep);
     dep->setComponentInstance(&getInstance());
     return *dep;
@@ -156,24 +169,28 @@ template<class T>
 template<typename I>
 Component<T>& Component<T>::remove(CServiceDependency<T,I>& dep) {
     celix_component_removeServiceDependency(cComponent(), dep.cServiceDependency());
+    std::lock_guard<std::mutex> lck{mutex};
     this->dependencies.erase(std::remove(this->dependencies.begin(), this->dependencies.end(), dep));
     return *this;
 }
 
 template<class T>
-Component<T>* Component<T>::create(celix_bundle_context_t *context, celix_dependency_manager_t* cDepMan) {
-    std::string name = typeName<T>();
-    return Component<T>::create(context, cDepMan, name);
-}
+std::shared_ptr<Component<T>> Component<T>::create(celix_bundle_context_t *context, celix_dependency_manager_t* cDepMan, std::string name, std::string uuid) {
+    std::string cmpName = name.empty() ? celix::dm::typeName<T>() : std::move(name);
+    return std::shared_ptr<Component<T>>{new Component<T>(context, cDepMan, std::move(cmpName), std::move(uuid)), [](Component<T>* cmp){
+        //Using a callback of async destroy to ensure that the cmp instance is still exist while the
+        //dm component is async disabled and destroyed.
+        auto cb = [](void *data) {
+            auto* c = static_cast<Component<T>*>(data);
+            delete c;
+        };
 
-template<class T>
-Component<T>* Component<T>::create(celix_bundle_context_t *context, celix_dependency_manager_t* cDepMan, const std::string &name) {
-    static Component<T> invalid{nullptr, nullptr, std::string{}};
-    Component<T>* cmp = new (std::nothrow) Component<T>(context, cDepMan, name);
-    if (cmp == nullptr) {
-        cmp = &invalid;
-    }
-    return cmp;
+        if (cmp->cmpAddedToDepMan) {
+            celix_dependencyManager_removeAsync(cmp->cDepMan, cmp->cCmp, cmp, cb);
+        } else {
+            celix_dmComponent_destroyAsync(cmp->cCmp, cmp, cb);
+        }
+    }};
 }
 
 template<class T>
@@ -198,6 +215,7 @@ createInstance() {
 
 template<class T>
 T& Component<T>::getInstance() {
+    std::lock_guard<std::mutex> lck{instanceMutex};
     if (!valInstance.empty()) {
         return valInstance.front();
     } else if (sharedInstance) {
@@ -213,6 +231,7 @@ T& Component<T>::getInstance() {
 
 template<class T>
 Component<T>& Component<T>::setInstance(std::shared_ptr<T> inst) {
+    std::lock_guard<std::mutex> lck{instanceMutex};
     this->valInstance.clear();
     this->instance = std::unique_ptr<T> {nullptr};
     this->sharedInstance = std::move(inst);
@@ -221,6 +240,7 @@ Component<T>& Component<T>::setInstance(std::shared_ptr<T> inst) {
 
 template<class T>
 Component<T>& Component<T>::setInstance(std::unique_ptr<T>&& inst) {
+    std::lock_guard<std::mutex> lck{instanceMutex};
     this->valInstance.clear();
     this->sharedInstance = std::shared_ptr<T> {nullptr};
     this->instance = std::move(inst);
@@ -229,6 +249,7 @@ Component<T>& Component<T>::setInstance(std::unique_ptr<T>&& inst) {
 
 template<class T>
 Component<T>& Component<T>::setInstance(T&& inst) {
+    std::lock_guard<std::mutex> lck{instanceMutex};
     this->instance = std::unique_ptr<T> {nullptr};
     this->sharedInstance = std::shared_ptr<T> {nullptr};
     this->valInstance.clear();
@@ -355,6 +376,13 @@ Component<T>& Component<T>::removeCallbacks() {
 template<typename T>
 Component<T>& Component<T>::build() {
     runBuild();
+    wait();
+    return *this;
+}
+
+template<typename T>
+Component<T>& Component<T>::buildAsync() {
+    runBuild();
     return *this;
 }
 
@@ -362,6 +390,7 @@ template<class T>
 template<class I>
 ProvidedService<T, I> &Component<T>::createProvidedCService(I *svc, std::string serviceName) {
     auto provide = std::make_shared<ProvidedService<T,I>>(cComponent(), serviceName, svc, false);
+    std::lock_guard<std::mutex> lck{mutex};
     providedServices.push_back(provide);
     return *provide;
 }
@@ -379,6 +408,7 @@ ProvidedService<T, I> &Component<T>::createProvidedService(std::string serviceNa
 
     I* svcPtr = &this->getInstance();
     auto provide = std::make_shared<ProvidedService<T,I>>(cComponent(), serviceName, svcPtr, true);
+    std::lock_guard<std::mutex> lck{mutex};
     providedServices.push_back(provide);
     return *provide;
 }

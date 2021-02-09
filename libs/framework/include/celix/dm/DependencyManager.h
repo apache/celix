@@ -22,6 +22,7 @@
 #include "celix/dm/types.h"
 #include "celix/dm/Component.h"
 #include "celix/dm/ServiceDependency.h"
+#include "celix/dm/DependencyManagerInfo.h"
 
 #include "bundle_context.h"
 #include "celix_bundle_context.h"
@@ -32,7 +33,15 @@
 namespace celix { namespace dm {
 
     /**
-     * The Dependency Manager, Component, ServiceDependency and Properties are not thread safe!
+     *
+     * The build() methods For celix::dm::DependencyManager, celix::dm::Component and
+     * celix::dm::(C)ServiceDependency should be called outside the Celix event thread.
+     * Note that bundle activators are started and stopped outside the Celix event thread and thus the build()
+     * methods can be used in bundle activators.
+     *
+     * Inside the Celix event thread - i.e. during a useService callback or add/rem/set call from a service tracker -
+     * the buildAsync version should be used. After a buildASync method has returned, service registration and opening
+     * service trackers are (possibly) still in progress.
      */
     class DependencyManager {
     public:
@@ -40,8 +49,8 @@ namespace celix { namespace dm {
 
         virtual ~DependencyManager();
 
-        DependencyManager(DependencyManager&& mgr) = default;
-        DependencyManager& operator=(DependencyManager&& rhs) = default;
+        DependencyManager(DependencyManager&& mgr) = delete;
+        DependencyManager& operator=(DependencyManager&& rhs) = delete;
 
         DependencyManager(const DependencyManager&) = delete;
         DependencyManager& operator=(const DependencyManager&) = delete;
@@ -57,7 +66,7 @@ namespace celix { namespace dm {
          */
         template<class T>
         typename std::enable_if<std::is_default_constructible<T>::value, Component<T>&>::type
-        createComponent(std::string name = std::string{});
+        createComponent(std::string name = std::string{}, std::string uuid = {});
 
         /**
          * Creates and adds a new DM Component for a component of type T and setting
@@ -66,7 +75,7 @@ namespace celix { namespace dm {
          * @return Returns a reference to the DM Component
          */
         template<class T>
-        Component<T>& createComponent(std::unique_ptr<T>&& rhs, std::string name = std::string{});
+        Component<T>& createComponent(std::unique_ptr<T>&& rhs, std::string name = std::string{}, std::string uuid = {});
 
         /**
          * Creates and adds a new DM Component for a component of type T and setting
@@ -75,7 +84,7 @@ namespace celix { namespace dm {
          * @return Returns a reference to the DM Component
          */
         template<class T>
-        Component<T>& createComponent(std::shared_ptr<T> rhs, std::string name = std::string{});
+        Component<T>& createComponent(std::shared_ptr<T> rhs, std::string name = std::string{}, std::string uuid = {});
 
         /**
          * Creates and adds a new DM Component for a component of type T and setting
@@ -84,20 +93,32 @@ namespace celix { namespace dm {
          * @return Returns a reference to the DM Component
          */
         template<class T>
-        Component<T>& createComponent(T rhs, std::string name = std::string{});
+        Component<T>& createComponent(T rhs, std::string name = std::string{}, std::string uuid = {});
 
         /**
          * Build the dependency manager.
          *
          * When building the dependency manager all created components are build.
          * A build is needed to to enable the components.
-         * This is not done automatically so that user can firs construct component with their provided
+         * This is not done automatically so that user can first construct component with their provided
          * service and service dependencies and when to components are complete call the build.
          *
          * If a component is updated after the dependency manager build is called, an new build call will result in
          * that the changes to the component are enabled.
+         *
+         * After this call the components will be created and if the components can be started, they
+         * will be started and the services will be registered.
+         *
+         * Should not be called from the Celix event thread.
          */
         void build();
+
+        /**
+         * Same as build, but this call will not wait until all service registrations and tracker are registered/opened
+         * on the Celix event thread.
+         * Can be called on the Celix event thread.
+         */
+         void buildAsync();
 
         /**
         * Starts the Dependency Manager
@@ -105,6 +126,14 @@ namespace celix { namespace dm {
         */
         void start();
 
+        /**
+         * Wait for an empty Celix event queue.
+         * Should not be called on the Celix event queue thread.
+         *
+         * Can be used to ensure that all created/updated components are completely processed (services registered
+         * and/or service trackers are created).
+         */
+        void wait() const;
 
         /**
          * Removes a component from the  Dependency Manager and destroys it
@@ -127,13 +156,40 @@ namespace celix { namespace dm {
          * Returns the nr of configured components for this dependency manager.
          */
         std::size_t getNrOfComponents() const;
+
+        /**
+         * Tries to find the component with UUID and statically cast it to
+         * dm component of type T
+         * @return pointer to found component or null if the component cannot be found.
+         */
+        template<typename T>
+        std::shared_ptr<Component<T>> findComponent(const std::string& uuid) const;
+
+        /**
+         * Removes component with provided UUID from the dependency manager.
+         * @return whether the component is found and removed.
+         */
+        bool removeComponent(const std::string& uuid);
+
+        /**
+         * Get Dependency Management info for this component manager.
+         * @return A DependencyManagerInfo struct.
+         */
+        celix::dm::DependencyManagerInfo getInfo() const;
+
+        /**
+         * Get Dependency Management info for all component manager (for all bundles).
+         * @return A vector of DependencyManagerInfo structs.
+         */
+        std::vector<celix::dm::DependencyManagerInfo> getInfos() const;
     private:
         template<class T>
-        Component<T>& createComponentInternal(std::string name);
+        Component<T>& createComponentInternal(std::string name, std::string uuid);
 
         std::shared_ptr<celix_bundle_context_t> context;
         std::shared_ptr<celix_dependency_manager_t> cDepMan;
-        std::vector<std::shared_ptr<BaseComponent>> components {};
+        mutable std::mutex mutex{}; //protects below
+        std::vector<std::shared_ptr<BaseComponent>> components{};
     };
 
 }}

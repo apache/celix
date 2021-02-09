@@ -34,10 +34,11 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+    
 /**
  * Type definition for the version_range_pt abstract data type.
  */
-typedef struct versionRange *version_range_pt;
+typedef struct celix_version_range *version_range_pt;
 
 /**
  * Creates a new <code>version_range_pt</code>.

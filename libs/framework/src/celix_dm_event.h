@@ -17,31 +17,31 @@
  * under the License.
  */
 
-#ifndef CELIX_FRAMEWORK_FACTORY_H_
-#define CELIX_FRAMEWORK_FACTORY_H_
-
-#include "celix_framework.h"
+#ifndef CELIX_DM_EVENT_H_
+#define CELIX_DM_EVENT_H_
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/**
- * Creates a new framework. The framework will be in the started state.
- * @param config The framework configuration. Can be NULL.
- * @return a started framework or NULL
- */
-celix_framework_t* celix_frameworkFactory_createFramework(celix_properties_t *config);
+#include "celix_types.h"
+#include "celix_properties.h"
 
-/**
- * Stop and destroys a Celix framework
- * Note that this call block till the Celix framework is stopped
- */
-void celix_frameworkFactory_destroyFramework(celix_framework_t *fw);
+typedef enum celix_dm_event_type {
+	CELIX_DM_EVENT_SVC_ADD,
+	CELIX_DM_EVENT_SVC_REM,
+    CELIX_DM_EVENT_SVC_SET
+} celix_dm_event_type_e;
 
+typedef struct celix_dm_event {
+	celix_dm_service_dependency_t* dep;
+    celix_dm_event_type_e eventType;
+    void* svc;
+    const celix_properties_t* props;
+} celix_dm_event_t;
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* CELIX_FRAMEWORK_FACTORY_H_ */
+#endif /* CELIX_DM_EVENT_H_ */

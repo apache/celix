@@ -61,6 +61,10 @@ bool celix_utils_stringEquals(const char* a, const char* b) {
     }
 }
 
+bool celix_utils_isStringNullOrEmpty(const char* s) {
+    return s == NULL || s[0] == '\0';
+}
+
 char * string_ndup(const char *s, size_t n) {
     size_t len = strlen(s);
     char *ret;
