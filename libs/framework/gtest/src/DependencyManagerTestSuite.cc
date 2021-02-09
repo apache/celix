@@ -473,7 +473,7 @@ TEST_F(DependencyManagerTestSuite, RequiredDepsAreInjectedDuringStartStop) {
     cmp.build();
 
     TestService svc;
-    std::string svcName = celix::dm::typeName<TestService>();
+    std::string svcName = celix::typeName<TestService>();
     celix_service_registration_options opts{};
     opts.svc = &svc;
     opts.serviceName = svcName.c_str();

@@ -1626,19 +1626,6 @@ celix_framework_t* celix_bundleContext_getFramework(const celix_bundle_context_t
     return fw;
 }
 
-void celix_bundleContext_log(const celix_bundle_context_t* ctx, celix_log_level_e level, const char* format, ...) {
-    va_list args;
-    va_start(args, format);
-    celix_logUtils_vLog(ctx, level, format, args);
-    va_end(args);
-}
-
-
-void celix_logUtils_vLog(const celix_bundle_context_t* ctx, celix_log_level_e level, const char* format, va_list formatArgs) {
-    celix_framework_vlog(ctx->framework->logger, level, NULL, NULL, -1,  format, formatArgs);
-}
-
-
 const char* celix_bundleContext_getProperty(celix_bundle_context_t *ctx, const char *key, const char *defaultVal) {
     const char *val = NULL;
     if (ctx != NULL) {
@@ -1703,13 +1690,13 @@ char* celix_bundleContext_getBundleSymbolicName(celix_bundle_context_t *ctx, lon
     return name;
 }
 
-void celix_bundleContext_log(celix_bundle_context_t *ctx, celix_log_level_e level, const char* format, ...) {
+void celix_bundleContext_log(const celix_bundle_context_t *ctx, celix_log_level_e level, const char* format, ...) {
     va_list args;
     va_start(args, format);
     celix_bundleContext_vlog(ctx, level, format, args);
     va_end(args);
 }
 
-void celix_bundleContext_vlog(celix_bundle_context_t *ctx, celix_log_level_e level, const char *format, va_list formatArgs) {
-    celix_framework_vlog(ctx->framework->logger, level, NULL, NULL, NULL, 0, format, formatArgs);
+void celix_bundleContext_vlog(const celix_bundle_context_t *ctx, celix_log_level_e level, const char *format, va_list formatArgs) {
+    celix_framework_vlog(ctx->framework->logger, level, NULL, NULL, 0, format, formatArgs);
 }

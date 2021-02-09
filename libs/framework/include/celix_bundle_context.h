@@ -1200,7 +1200,7 @@ void celix_bundleContext_log(const celix_bundle_context_t* ctx, celix_log_level_
 /**
  * Logs a message to Celix framework logger with the provided log level.
  */
-void celix_logUtils_vLog(const celix_bundle_context_t* ctx, celix_log_level_e level, const char* format, va_list formatArgs);
+void celix_bundleContext_vlog(const celix_bundle_context_t* ctx, celix_log_level_e level, const char* format, va_list formatArgs);
 
 
 /**

@@ -490,17 +490,15 @@ TEST_F(CxxBundleContextTestSuite, UnregisterServiceWhileRegistering) {
                 reg1->unregister();
                 EXPECT_EQ(reg1->getState(), celix::ServiceRegistrationState::UNREGISTERING);
 
-                //TODO wait for async dep man, this pr has support for cancel svc registration
-//                auto reg2 = context->registerService<TestInterface>(std::make_shared<TestImplementation>())
-//                        .setUnregisterAsync(false)
-//                        .build();
-//                EXPECT_EQ(reg2->getState(), celix::ServiceRegistrationState::REGISTERING);
-//                reg2->unregister(); //sync unregister -> cancel registration
-//                EXPECT_EQ(reg1->getState(), celix::ServiceRegistrationState::UNREGISTERED);
+                auto reg2 = context->registerService<TestInterface>(std::make_shared<TestImplementation>())
+                        .setUnregisterAsync(false)
+                        .build();
+                EXPECT_EQ(reg2->getState(), celix::ServiceRegistrationState::REGISTERING);
+                reg2->unregister(); //sync unregister -> cancel registration
+                EXPECT_EQ(reg2->getState(), celix::ServiceRegistrationState::UNREGISTERED);
             }
     );
-    //TODO check if this is still needed for cancel service registration with async dep man PR
-//    ctx->waitForEvents();
+    ctx->waitForEvents();
 }
 
 TEST_F(CxxBundleContextTestSuite, KeepSharedPtrActiveWhileDeregistering) {

@@ -406,7 +406,7 @@ celix_status_t celix_dmComponent_addInterface(celix_dm_component_t *component, c
         celix_properties_set(properties, CELIX_FRAMEWORK_SERVICE_VERSION, serviceVersion);
     }
 
-    celix_properties_set(properties, CELIX_DM_COMPONENT_UUID, (char*)component->id);
+    celix_properties_set(properties, CELIX_DM_COMPONENT_UUID, (char*)component->uuid);
 
     if (interface && name) {
         celixThreadMutex_lock(&component->mutex);
