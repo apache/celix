@@ -154,8 +154,8 @@ void celix_versionRange_destroy(celix_version_range_t* range) {
 
 bool celix_versionRange_isInRange(const celix_version_range_t* versionRange, const celix_version_t* version) {
     bool inRange = false;
-    int high;
-    int low;
+    int high = 0;
+    int low = 0;
     if (versionRange->high != NULL) {
         high = celix_version_compareTo(version, versionRange->high);
     }
