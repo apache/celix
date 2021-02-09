@@ -15,12 +15,12 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_executable(test_promise
-        src/PromiseTestSuite.cc
-        src/VoidPromiseTestSuite.cc
+add_executable(test_celix_promises
+        src/PromisesTestSuite.cc
+        src/VoidPromisesTestSuite.cc
 )
-target_link_libraries(test_promise PRIVATE GTest::gtest GTest::gtest_main Celix::Promise)
+target_link_libraries(test_celix_promises PRIVATE GTest::gtest GTest::gtest_main Celix::Promises)
 
-add_test(NAME test_promise COMMAND test_promise)
-setup_target_for_coverage(test_promise SCAN_DIR ..)
+add_test(NAME test_celix_promises COMMAND test_celix_promises)
+setup_target_for_coverage(test_celix_promises SCAN_DIR ..)
 
