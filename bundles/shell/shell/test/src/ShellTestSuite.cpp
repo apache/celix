@@ -18,6 +18,7 @@
  */
 
 #include <gtest/gtest.h>
+#include <thread>
 
 #include "celix_shell_command.h"
 #include "celix_api.h"
@@ -33,6 +34,7 @@ public:
         auto properties = properties_create();
         properties_set(properties, "LOGHELPER_ENABLE_STDOUT_FALLBACK", "true");
         properties_set(properties, "org.osgi.framework.storage", ".cacheShellTestSuite");
+        properties_set(properties, "CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "trace");
 
         auto* cFw = celix_frameworkFactory_createFramework(properties);
         auto cCtx = framework_getContext(cFw);
@@ -103,10 +105,16 @@ TEST_F(ShellTestSuite, testAllCommandsAreCallable) {
 
 TEST_F(ShellTestSuite, quitTest) {
     callCommand(ctx, "quit", true);
+
+    //ensure that the command can be executed, before framework stop
+    std::this_thread::sleep_for(std::chrono::milliseconds{100});
 }
 
 TEST_F(ShellTestSuite, stopFrameworkTest) {
     callCommand(ctx, "stop 0", true);
+
+    //ensure that the command can be executed, before framework stop
+    std::this_thread::sleep_for(std::chrono::milliseconds{100});
 }
 
 TEST_F(ShellTestSuite, queryTest) {

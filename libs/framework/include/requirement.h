@@ -16,13 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * requirement.h
- *
- *  \date       Jul 12, 2010
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
 
 #ifndef REQUIREMENT_H_
 #define REQUIREMENT_H_
@@ -31,7 +24,7 @@ typedef struct requirement *requirement_pt;
 
 #include "capability.h"
 #include "hash_map.h"
-#include "version_range.h"
+#include "celix_version_range.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -40,7 +33,7 @@ celix_status_t requirement_create(hash_map_pt directives, hash_map_pt attributes
 
 celix_status_t requirement_destroy(requirement_pt requirement);
 
-celix_status_t requirement_getVersionRange(requirement_pt requirement, version_range_pt *range);
+celix_status_t requirement_getVersionRange(requirement_pt requirement, celix_version_range_t **range);
 
 celix_status_t requirement_getTargetName(requirement_pt requirement, const char **targetName);
 

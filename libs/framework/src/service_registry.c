@@ -933,14 +933,14 @@ char* celix_serviceRegistry_createFilterFor(celix_service_registry_t* registry, 
         version_range_pt range;
         celix_status_t status = versionRange_parse(versionRangeStr, &range);
         if(status != CELIX_SUCCESS) {
-            framework_log(registry->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__,
+            celix_framework_log(registry->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__,
                           "Error incorrect version range.");
             return NULL;
         }
         versionRange = versionRange_createLDAPFilter(range, CELIX_FRAMEWORK_SERVICE_VERSION);
         versionRange_destroy(range);
         if (versionRange == NULL) {
-            framework_log(registry->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__,
+            celix_framework_log(registry->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__,
                           "Error creating LDAP filter.");
             return NULL;
         }
@@ -988,7 +988,7 @@ celix_array_list_t* celix_serviceRegisrty_findServices(
 
     celix_filter_t* filter = celix_filter_create(filterStr);
     if (filter == NULL) {
-        framework_log(registry->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__,
+        celix_framework_log(registry->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__,
                       "Error incorrect filter.");
         return NULL;
     }
@@ -1297,11 +1297,13 @@ void celix_serviceRegistry_unregisterService(celix_service_registry_t* registry,
     service_registration_t *reg = NULL;
     celixThreadRwlock_readLock(&registry->lock);
     celix_array_list_t* registrations = hashMap_get(registry->serviceRegistrations, (void*)bnd);
-    for (int i = 0; i < celix_arrayList_size(registrations); ++i) {
-        service_registration_t *entry = celix_arrayList_get(registrations, i);
-        if (serviceRegistration_getServiceId(entry) == serviceId) {
-            reg = entry;
-            break;
+    if (registrations != NULL) {
+        for (int i = 0; i < celix_arrayList_size(registrations); ++i) {
+            service_registration_t *entry = celix_arrayList_get(registrations, i);
+            if (serviceRegistration_getServiceId(entry) == serviceId) {
+                reg = entry;
+                break;
+            }
         }
     }
     celixThreadRwlock_unlock(&registry->lock);

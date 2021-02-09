@@ -16,13 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * celix_launcher.c
- *
- *  \date       Mar 23, 2010
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
+
 
 #include "celix_launcher.h"
 
@@ -39,18 +33,16 @@
 #include <string.h>
 #include <curl/curl.h>
 #include <signal.h>
-#include <libgen.h>
-#include "celix_array_list.h"
-#include "celix_launcher.h"
+#include "celix_framework_factory.h"
 #include "framework.h"
-#include "linked_list_iterator.h"
+#include "celix_constants.h"
 
 static void show_usage(char* prog_name);
 static void show_properties(celix_properties_t *embeddedProps, const char *configFile);
 static void shutdown_framework(int signal);
 static void ignore(int signal);
 
-static int celixLauncher_launchWithConfigAndProps(const char *configFile, framework_pt *framework, properties_pt packedConfig);
+static int celixLauncher_launchWithConfigAndProps(const char *configFile, celix_framework_t* *framework, celix_properties_t* packedConfig);
 
 static void combine_properties(celix_properties_t *original, const celix_properties_t *append);
 
@@ -58,8 +50,8 @@ static void combine_properties(celix_properties_t *original, const celix_propert
 
 static framework_t *g_fw = NULL;
 
-int celixLauncher_launchAndWaitForShutdown(int argc, char *argv[], properties_pt packedConfig) {
-	framework_pt framework = NULL;
+int celixLauncher_launchAndWaitForShutdown(int argc, char *argv[], celix_properties_t* packedConfig) {
+	celix_framework_t* framework = NULL;
 
 
 	// Perform some minimal command-line option parsing...
@@ -89,7 +81,7 @@ int celixLauncher_launchAndWaitForShutdown(int argc, char *argv[], properties_pt
 	}
 
 	if (packedConfig == NULL) {
-		packedConfig = properties_create();
+		packedConfig = celix_properties_create();
 	}
 
 	if (showProps) {
@@ -137,13 +129,13 @@ static void ignore(int signal) {
 	//ignoring for signal SIGUSR1, SIGUSR2. Can be used on threads
 }
 
-int celixLauncher_launch(const char *configFile, framework_pt *framework) {
+int celixLauncher_launch(const char *configFile, celix_framework_t* *framework) {
 	return celixLauncher_launchWithConfigAndProps(configFile, framework, NULL);
 }
 
-static int celixLauncher_launchWithConfigAndProps(const char *configFile, framework_pt *framework, properties_pt packedConfig) {
+static int celixLauncher_launchWithConfigAndProps(const char *configFile, celix_framework_t* *framework, celix_properties_t* packedConfig) {
 	if (packedConfig == NULL) {
-		packedConfig = properties_create();
+		packedConfig = celix_properties_create();
 	}
 
 	FILE *config = fopen(configFile, "r");
@@ -158,39 +150,29 @@ static int celixLauncher_launchWithConfigAndProps(const char *configFile, framew
 }
 
 
-int celixLauncher_launchWithProperties(properties_pt config, framework_pt *framework) {
-	celix_status_t status;
-	if (config == NULL) {
-		config = properties_create();
-	}
+int celixLauncher_launchWithProperties(celix_properties_t* config, celix_framework_t* *framework) {
 #ifndef CELIX_NO_CURLINIT
 	// Before doing anything else, let's setup Curl
 	curl_global_init(CURL_GLOBAL_NOTHING);
 #endif
-	status = framework_create(framework, config);
-	if (status == CELIX_SUCCESS) {
-		status = framework_start(*framework);
-	}
-	return status;
+	*framework = celix_frameworkFactory_createFramework(config);
+	return *framework != NULL ? CELIX_SUCCESS : CELIX_ILLEGAL_STATE;
 }
 
-void celixLauncher_waitForShutdown(framework_pt framework) {
+void celixLauncher_waitForShutdown(celix_framework_t* framework) {
 	framework_waitForStop(framework);
 }
 
-void celixLauncher_destroy(framework_pt framework) {
-	framework_destroy(framework);
+void celixLauncher_destroy(celix_framework_t* framework) {
+    celix_frameworkFactory_destroyFramework(framework);
 #ifndef CELIX_NO_CURLINIT
 	// Cleanup Curl
 	curl_global_cleanup();
 #endif
 }
 
-void celixLauncher_stop(framework_pt framework) {
-	bundle_pt fwBundle = NULL;
-	if( framework_getFrameworkBundle(framework, &fwBundle) == CELIX_SUCCESS){
-		bundle_stop(fwBundle);
-	}
+void celixLauncher_stop(celix_framework_t* framework) {
+    celix_framework_stopBundle(framework, CELIX_FRAMEWORK_BUNDLE_ID);
 }
 
 static void show_properties(celix_properties_t *embeddedProps, const char *configFile) {

@@ -86,7 +86,7 @@ celix_status_t requirement_destroy(requirement_pt requirement) {
 	return CELIX_SUCCESS;
 }
 
-celix_status_t requirement_getVersionRange(requirement_pt requirement, version_range_pt *range) {
+celix_status_t requirement_getVersionRange(requirement_pt requirement, celix_version_range_t **range) {
 	*range = requirement->versionRange;
 	return CELIX_SUCCESS;
 }

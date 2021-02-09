@@ -48,6 +48,11 @@ unsigned int celix_utils_stringHash(const char* string);
  */
 bool celix_utils_stringEquals(const char* a, const char* b);
 
+/**
+ * Check if a string is NULL or empty "".
+ */
+bool celix_utils_isStringNullOrEmpty(const char* s);
+
 
 
 /**

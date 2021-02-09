@@ -46,30 +46,22 @@ namespace celix { namespace dm {
     class BaseServiceDependency {
     private:
         celix_dm_component_t* cCmp;
-        bool valid;
         std::atomic<bool> depAddedToCmp{false};
     protected:
         celix_dm_service_dependency_t *cServiceDep {nullptr};
 
         void setDepStrategy(DependencyUpdateStrategy strategy) {
-            if (!valid) {
-                return;
-            }
             if (strategy == DependencyUpdateStrategy::locking) {
                 celix_dmServiceDependency_setStrategy(this->cServiceDependency(), DM_SERVICE_DEPENDENCY_STRATEGY_LOCKING);
-            } else if (strategy == DependencyUpdateStrategy::suspend) {
+            } else { /*suspend*/
                 celix_dmServiceDependency_setStrategy(this->cServiceDependency(), DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND);
-            } else {
-                std::cerr << "Unexpected dependency update strategy. Cannot convert for dm_dependency\n";
             }
         }
     public:
-        BaseServiceDependency(celix_dm_component_t* c, bool v)  : cCmp{c}, valid{v} {
-            if (this->valid) {
-                this->cServiceDep = celix_dmServiceDependency_create();
-                //NOTE using suspend as default strategy
-                celix_dmServiceDependency_setStrategy(this->cServiceDep,  DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND);
-            }
+        BaseServiceDependency(celix_dm_component_t* c)  : cCmp{c} {
+            this->cServiceDep = celix_dmServiceDependency_create();
+            //NOTE using suspend as default strategy
+            celix_dmServiceDependency_setStrategy(this->cServiceDep,  DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND);
         }
 
         virtual ~BaseServiceDependency() noexcept;
@@ -81,14 +73,29 @@ namespace celix { namespace dm {
 
         /**
          * Whether the service dependency is valid.
+         *
+         * Deprecated -> will always return true.
          */
-        bool isValid() const { return valid; }
+        bool isValid() const __attribute__((deprecated)) { return true; }
 
         /**
          * Returns the C DM service dependency
          */
         celix_dm_service_dependency_t *cServiceDependency() const { return cServiceDep; }
 
+        /**
+         * Wait for an empty Celix event queue.
+         * Should not be called on the Celix event queue thread.
+         *
+         * Can be used to ensure that the service dependency is completely processed (service trackers are created).
+         */
+        void wait() const;
+
+        /**
+         * Run the service dependency build. After this call the service dependency is added to the component and
+         * is enabled.
+         * The underlining service tracker will be created async.
+         */
         void runBuild();
     };
 
@@ -98,7 +105,7 @@ namespace celix { namespace dm {
     protected:
         T* componentInstance {nullptr};
     public:
-        TypedServiceDependency(celix_dm_component_t* cCmp, bool valid) : BaseServiceDependency(cCmp, valid) {}
+        TypedServiceDependency(celix_dm_component_t* cCmp) : BaseServiceDependency(cCmp) {}
         ~TypedServiceDependency() override = default;
 
         TypedServiceDependency(const TypedServiceDependency&) = delete;
@@ -116,7 +123,7 @@ namespace celix { namespace dm {
     class CServiceDependency : public TypedServiceDependency<T> {
         using type = I;
     public:
-        CServiceDependency(celix_dm_component_t* cCmp, const std::string &name, bool valid = true);
+        CServiceDependency(celix_dm_component_t* cCmp, const std::string &name);
         ~CServiceDependency() override = default;
 
         CServiceDependency(const CServiceDependency&) = delete;
@@ -210,10 +217,20 @@ namespace celix { namespace dm {
 
         /**
          * "Build" the service dependency.
-         * A service dependency added to an active component will only become active if the build is called
-         * @return
+         * When build the service dependency is active and the service tracker is created.
+         *
+         * Should not be called on the Celix event thread.
          */
         CServiceDependency<T,I>& build();
+
+        /**
+         * Same a build, but will not wait till the underlining service tracker is created.
+         * Can be called on the Celix event thread.
+         */
+        CServiceDependency<T,I>& buildAsync();
+
+
+
     private:
         std::string name {};
         std::string filter {};
@@ -233,7 +250,7 @@ namespace celix { namespace dm {
     class ServiceDependency : public TypedServiceDependency<T> {
         using type = I;
     public:
-        ServiceDependency(celix_dm_component_t* cCmp, const std::string &name, bool valid = true);
+        ServiceDependency(celix_dm_component_t* cCmp, const std::string &name);
         ~ServiceDependency() override = default;
 
         ServiceDependency(const ServiceDependency&) = delete;
@@ -333,13 +350,18 @@ namespace celix { namespace dm {
 
 
         /**
-         * Build the service dependency.
+         * "Build" the service dependency.
+         * When build the service dependency is active and the service tracker is created.
          *
-         * When building the service dependency will make will enabled service dependency.
-         * If this is done on a already build component, this will result in an additional service dependency for the
-         * component.
+         * Should not be called on the Celix event thread.
          */
         ServiceDependency<T,I>& build();
+
+        /**
+         * Same a build, but will not wait till the underlining service trackers are opened.
+         * Can be called on the Celix event thread.
+         */
+        ServiceDependency<T,I>& buildAsync();
     private:
         std::string name {};
         std::string filter {};

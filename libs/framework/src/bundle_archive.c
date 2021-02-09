@@ -27,6 +27,7 @@
 #include <unistd.h>
 #include <string.h>
 
+#include "celix_constants.h"
 #include "celix_utils_api.h"
 #include "bundle_archive.h"
 #include "linked_list_iterator.h"
@@ -71,7 +72,7 @@ celix_status_t bundleArchive_createSystemBundleArchive(bundle_archive_pt *bundle
 		} else {
 			status = linkedList_create(&archive->revisions);
 			if (status == CELIX_SUCCESS) {
-				archive->id = 0L;
+				archive->id = CELIX_FRAMEWORK_BUNDLE_ID;
 				archive->location = strndup("System Bundle", 1024);
 				archive->archiveRoot = NULL;
 				archive->archiveRootDir = NULL;

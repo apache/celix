@@ -22,6 +22,7 @@
 #include <service_tracker.h>
 #include <celix_constants.h>
 #include <celix_api.h>
+#include <assert.h>
 
 #include "framework_private.h"
 #include "bundle_private.h"
@@ -250,31 +251,14 @@ celix_status_t bundle_createModule(bundle_pt bundle, module_pt *module) {
 	return status;
 }
 
-celix_status_t bundle_start(bundle_pt bundle) {
-	return bundle_startWithOptions(bundle, 0);
-}
-
-celix_status_t bundle_startWithOptions(bundle_pt bundle, int options) {
-	celix_status_t status = CELIX_SUCCESS;
-    if (bundle != NULL) {
-    	bool systemBundle = false;
-    	status = bundle_isSystemBundle(bundle, &systemBundle);
-    	if (status == CELIX_SUCCESS) {
-    		if (systemBundle) {
-    			framework_start(bundle->framework);
-    		} else {
-    		    long bndId = celix_bundle_getId(bundle);
-    			status = fw_startBundle(bundle->framework, bndId, options);
-    		}
-    	}
-    }
-
-	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to start bundle");
-
-    return status;
+celix_status_t bundle_start(celix_bundle_t* bundle) {
+    //note deprecated call use celix_bundleContext_startBundle instead
+    return celix_framework_startBundle(bundle->framework, celix_bundle_getId(bundle));
 }
 
 celix_status_t bundle_update(bundle_pt bundle, const char *inputFile) {
+    fw_log(bundle->framework->logger, CELIX_LOG_LEVEL_WARNING, "Bundle update functionality is deprecated. Do not use!");
+    assert(!celix_framework_isCurrentThreadTheEventLoop(bundle->framework));
 	celix_status_t status = CELIX_SUCCESS;
 	if (bundle != NULL) {
 		bool systemBundle = false;
@@ -293,47 +277,15 @@ celix_status_t bundle_update(bundle_pt bundle, const char *inputFile) {
 	return status;
 }
 
+
 celix_status_t bundle_stop(bundle_pt bundle) {
-	return bundle_stopWithOptions(bundle, 0);
-}
-
-celix_status_t bundle_stopWithOptions(bundle_pt bundle, int options) {
-	celix_status_t status = CELIX_SUCCESS;
-	if (bundle != NULL) {
-		bool systemBundle = false;
-		status = bundle_isSystemBundle(bundle, &systemBundle);
-		if (status == CELIX_SUCCESS) {
-			if (systemBundle) {
-				framework_stop(bundle->framework);
-			} else {
-                long bndId = celix_bundle_getId(bundle);
-				status = fw_stopBundle(bundle->framework, bndId, options);
-			}
-		}
-	}
-
-	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to stop bundle");
-
-	return status;
+    //note deprecated call use celix_bundleContext_startBundle instead
+    return celix_framework_startBundle(bundle->framework, celix_bundle_getId(bundle));
 }
 
 celix_status_t bundle_uninstall(bundle_pt bundle) {
-	celix_status_t status = CELIX_SUCCESS;
-	if (bundle != NULL) {
-		bool systemBundle = false;
-		status = bundle_isSystemBundle(bundle, &systemBundle);
-		if (status == CELIX_SUCCESS) {
-			if (systemBundle) {
-				status = CELIX_BUNDLE_EXCEPTION;
-			} else {
-				status = fw_uninstallBundle(bundle->framework, bundle);
-			}
-		}
-	}
-
-	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to uninstall bundle");
-
-	return status;
+    //note deprecated call use celix_bundleContext_uninstallBundle instead
+    return celix_framework_uninstallBundle(bundle->framework, celix_bundle_getId(bundle));
 }
 
 celix_status_t bundle_setPersistentStateInactive(bundle_pt bundle) {

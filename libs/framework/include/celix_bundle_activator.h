@@ -139,7 +139,6 @@ celix_status_t celix_bundleActivator_destroy(void *userData, celix_bundle_contex
 
 #ifdef __cplusplus
 }
-
 #endif
 
 #endif /* CELIX_BUNDLE_ACTIVATOR_H_ */
