@@ -19,6 +19,8 @@
 
 #include <ConfiguredDiscoveryManager.h>
 
+#include <fstream>
+
 #include <ConfiguredEndpoint.h>
 
 #include <rapidjson/writer.h>
@@ -28,13 +30,28 @@ namespace celix::async_rsa::discovery {
 
 constexpr const char* ENDPOINT_ARRAY = "endpoints";
 
+std::optional<std::string> read_whole_file(const std::string& path) {
+
+    std::string contents;
+    std::ifstream file(path);
+
+    if(!file) {
+        return {};
+    }
+
+    file.seekg(0, std::ios::end);
+    contents.resize(file.tellg());
+    file.seekg(0, std::ios::beg);
+    file.read(&contents[0], contents.size());
+    file.close();
+
+    return contents;
+}
+
 rapidjson::Document parseJSONFile(const std::string& filePath)  {
 
     rapidjson::Document resultDocument{};
-    FILE* filePtr = fopen(filePath.c_str(), "r");
-    char readBuffer[65536];
-    auto fileStream = rapidjson::FileReadStream(filePtr, readBuffer, sizeof(readBuffer));
-    resultDocument.ParseStream(fileStream);
+    resultDocument.Parse(read_whole_file(filePath)->c_str());
     return resultDocument;
 }
 
@@ -51,7 +68,7 @@ ConfiguredEndpointProperties convertCelixPropertiesToEndpoint(const celix::dm::P
     auto exports = celixProperties.at("service.exported.interfaces");
     auto imported = celixProperties.at("service.imported");
     return ConfiguredEndpointProperties{endpointId,
-                                        (std::strcmp(imported.c_str(), "true") == 0),
+                                        (imported == "true"),
                                         {}, exports, {}, "", ""};
 }
 
@@ -65,18 +82,11 @@ ConfiguredDiscoveryManager::ConfiguredDiscoveryManager(std::shared_ptr<Dependenc
 
 void ConfiguredDiscoveryManager::discoverEndpoints() {
 
-    const rapidjson::Document& parsedJson = parseJSONFile(_configurationFilePath);
+    auto parsedJson = parseJSONFile(_configurationFilePath);
     if (parsedJson.IsObject()) {
-        if (parsedJson.HasMember(ENDPOINT_ARRAY)) {
-            const rapidjson::Value& endpointJsonArray = parsedJson[ENDPOINT_ARRAY];
-            if (endpointJsonArray.IsArray() && ( endpointJsonArray.Size() > 0 )) {
-                for (rapidjson::Value::ConstValueIterator endpointIter = endpointJsonArray.Begin();
-                     endpointIter != endpointJsonArray.End(); endpointIter++) {
-                    if (endpointIter->IsObject()) {
-                        const auto& endpointJson = endpointIter->GetObject();
-                        _discoveredEndpoints.emplace_back(std::make_shared<ConfiguredEndpoint>(endpointJson));
-                    }
-                }
+        if(parsedJson.HasMember(ENDPOINT_ARRAY) && parsedJson[ENDPOINT_ARRAY].IsArray()) {
+            for(auto& endpoint : parsedJson[ENDPOINT_ARRAY].GetArray()) {
+                _discoveredEndpoints.emplace_back(std::make_shared<ConfiguredEndpoint>(endpoint.GetObject()));
             }
         }
     }

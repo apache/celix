@@ -43,10 +43,11 @@ bool isValidEndpointJson(const rapidjson::Value& endpointJson) {
 std::vector<std::string> parseJSONStringArray(const rapidjson::Value& jsonArray) {
 
     std::vector<std::string> resultVec{};
-    if (jsonArray.IsArray() && (jsonArray.Size() > 0)) {
-        for (rapidjson::Value::ConstValueIterator iter = jsonArray.Begin(); iter != jsonArray.End(); iter++) {
-            if (iter->IsString()) {
-                resultVec.emplace_back(iter->GetString());
+    if(jsonArray.IsArray()) {
+        resultVec.reserve(jsonArray.Size());
+        for(auto& element : jsonArray.GetArray()) {
+            if(element.IsString()) {
+                resultVec.emplace_back(element.GetString());
             }
         }
     }

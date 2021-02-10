@@ -17,7 +17,7 @@
  * under the License.
  */
 
-#include <ConfiguredDiscoveryManager.h>
+#include <IDiscoveryManager.h>
 #include <IExportedService.h>
 #include <celix_api.h>
 #include <mutex>
