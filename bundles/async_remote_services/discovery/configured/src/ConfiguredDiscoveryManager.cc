@@ -48,10 +48,10 @@ std::optional<std::string> read_whole_file(const std::string& path) {
     return contents;
 }
 
-rapidjson::Document parseJSONFile(const std::string& filePath)  {
+rapidjson::Document parseJSONFile(std::string& contents)  {
 
     rapidjson::Document resultDocument{};
-    resultDocument.Parse(read_whole_file(filePath)->c_str());
+    resultDocument.ParseInsitu(contents.data());
     return resultDocument;
 }
 
@@ -82,7 +82,8 @@ ConfiguredDiscoveryManager::ConfiguredDiscoveryManager(std::shared_ptr<Dependenc
 
 void ConfiguredDiscoveryManager::discoverEndpoints() {
 
-    auto parsedJson = parseJSONFile(_configurationFilePath);
+    auto contents = read_whole_file(_configurationFilePath);
+    auto parsedJson = parseJSONFile(contents.value());
     if (parsedJson.IsObject()) {
         if(parsedJson.HasMember(ENDPOINT_ARRAY) && parsedJson[ENDPOINT_ARRAY].IsArray()) {
             for(auto& endpoint : parsedJson[ENDPOINT_ARRAY].GetArray()) {
@@ -110,14 +111,15 @@ void ConfiguredDiscoveryManager::publishParsedEndpoints() {
 void ConfiguredDiscoveryManager::addExportedEndpoint(IEndpoint* /*endpoint*/, celix::dm::Properties&& properties) {
 
     auto endpoint = std::make_shared<ConfiguredEndpoint>(convertCelixPropertiesToEndpoint(properties));
-    auto parsedDocument = parseJSONFile(_configurationFilePath);
-    auto endpointJSON = endpoint->exportToJSON(parsedDocument);
+    auto contents = read_whole_file(_configurationFilePath);
+    auto parsedJson = parseJSONFile(contents.value());
+    auto endpointJSON = endpoint->exportToJSON(parsedJson);
 
-    if (parsedDocument.IsObject()) {
-        if (parsedDocument.HasMember(ENDPOINT_ARRAY)) {
-            rapidjson::Value& endpointJsonArray = parsedDocument[ENDPOINT_ARRAY];
+    if (parsedJson.IsObject()) {
+        if (parsedJson.HasMember(ENDPOINT_ARRAY)) {
+            rapidjson::Value& endpointJsonArray = parsedJson[ENDPOINT_ARRAY];
             if (endpointJsonArray.IsArray()){
-                endpointJsonArray.PushBack(endpointJSON, parsedDocument.GetAllocator());
+                endpointJsonArray.PushBack(endpointJSON, parsedJson.GetAllocator());
             }
         }
     }
@@ -126,12 +128,13 @@ void ConfiguredDiscoveryManager::addExportedEndpoint(IEndpoint* /*endpoint*/, ce
 void ConfiguredDiscoveryManager::removeExportedEndpoint(IEndpoint* /*endpoint*/, celix::dm::Properties&& properties) {
 
     auto endpoint = std::make_shared<ConfiguredEndpoint>(convertCelixPropertiesToEndpoint(properties));
-    auto parsedDocument = parseJSONFile(_configurationFilePath);
-    auto endpointJSON = endpoint->exportToJSON(parsedDocument);
+    auto contents = read_whole_file(_configurationFilePath);
+    auto parsedJson = parseJSONFile(contents.value());
+    auto endpointJSON = endpoint->exportToJSON(parsedJson);
 
-    if (parsedDocument.IsObject()) {
-        if (parsedDocument.HasMember(ENDPOINT_ARRAY)) {
-            rapidjson::Value& endpointJsonArray = parsedDocument[ENDPOINT_ARRAY];
+    if (parsedJson.IsObject()) {
+        if (parsedJson.HasMember(ENDPOINT_ARRAY)) {
+            rapidjson::Value& endpointJsonArray = parsedJson[ENDPOINT_ARRAY];
             if (endpointJsonArray.IsArray()){
                 for (rapidjson::Value::ValueIterator itr = endpointJsonArray.Begin(); itr != endpointJsonArray.End();) {
                     if (std::strcmp(( *itr )["endpoint.id"].GetString(), endpointJSON["endpoint.id"].GetString()) == 0) {
