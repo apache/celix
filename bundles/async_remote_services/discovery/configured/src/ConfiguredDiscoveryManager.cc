@@ -20,6 +20,7 @@
 #include <ConfiguredDiscoveryManager.h>
 
 #include <fstream>
+#include <filesystem>
 
 #include <ConfiguredEndpoint.h>
 
@@ -34,17 +35,14 @@ std::optional<std::string> read_whole_file(const std::string& path) {
 
     std::string contents;
     std::ifstream file(path);
-
     if(!file) {
         return {};
     }
-
     file.seekg(0, std::ios::end);
     contents.resize(file.tellg());
     file.seekg(0, std::ios::beg);
     file.read(&contents[0], contents.size());
     file.close();
-
     return contents;
 }
 
@@ -62,6 +60,11 @@ celix::dm::Properties convertEndpointPropertiesToCelix(const ConfiguredEndpointP
                                  {"endpoint.id", endpointProperties.getId()}};
 }
 
+std::string getDefaultEndpointFilePath() {
+
+    return (std::filesystem::current_path().string() + "/endpoint.json");
+}
+
 ConfiguredEndpointProperties convertCelixPropertiesToEndpoint(const celix::dm::Properties& celixProperties) {
 
     auto endpointId = celixProperties.at("endpoint.id");
@@ -72,22 +75,28 @@ ConfiguredEndpointProperties convertCelixPropertiesToEndpoint(const celix::dm::P
                                         {}, exports, {}, "", ""};
 }
 
-ConfiguredDiscoveryManager::ConfiguredDiscoveryManager(std::shared_ptr<DependencyManager> dependencyManager,
-                                                       std::string configurationFilePath) :
+ConfiguredDiscoveryManager::ConfiguredDiscoveryManager(std::shared_ptr<DependencyManager> dependencyManager) :
         _dependencyManager{std::move(dependencyManager)},
-        _configurationFilePath{std::move(configurationFilePath)},
+        _configurationFilePath{},
         _discoveredEndpoints{},
         _publishedDiscoveredEndpoints{} {
+
+    _configurationFilePath = celix_bundleContext_getProperty(
+            _dependencyManager->bundleContext(),
+            CELIX_ASYNC_RSA_CONFIGURED_DISCOVERY_FILE,
+            getDefaultEndpointFilePath().c_str());
 }
 
 void ConfiguredDiscoveryManager::discoverEndpoints() {
 
     auto contents = read_whole_file(_configurationFilePath);
-    auto parsedJson = parseJSONFile(contents.value());
-    if (parsedJson.IsObject()) {
-        if(parsedJson.HasMember(ENDPOINT_ARRAY) && parsedJson[ENDPOINT_ARRAY].IsArray()) {
-            for(auto& endpoint : parsedJson[ENDPOINT_ARRAY].GetArray()) {
-                _discoveredEndpoints.emplace_back(std::make_shared<ConfiguredEndpoint>(endpoint.GetObject()));
+    if (contents) {
+        auto parsedJson = parseJSONFile(contents.value());
+        if (parsedJson.IsObject()) {
+            if (parsedJson.HasMember(ENDPOINT_ARRAY) && parsedJson[ENDPOINT_ARRAY].IsArray()) {
+                for (auto& endpoint : parsedJson[ENDPOINT_ARRAY].GetArray()) {
+                    _discoveredEndpoints.emplace_back(std::make_shared<ConfiguredEndpoint>(endpoint.GetObject()));
+                }
             }
         }
     }
@@ -103,7 +112,6 @@ void ConfiguredDiscoveryManager::publishParsedEndpoints() {
                         convertEndpointPropertiesToCelix(endpoint->getProperties()))
                         .build().getInstance()
         );
-
         std::cout << endpoint->ToString() << std::endl; // TODO remove.
     }
 }
@@ -112,14 +120,15 @@ void ConfiguredDiscoveryManager::addExportedEndpoint(IEndpoint* /*endpoint*/, ce
 
     auto endpoint = std::make_shared<ConfiguredEndpoint>(convertCelixPropertiesToEndpoint(properties));
     auto contents = read_whole_file(_configurationFilePath);
-    auto parsedJson = parseJSONFile(contents.value());
-    auto endpointJSON = endpoint->exportToJSON(parsedJson);
-
-    if (parsedJson.IsObject()) {
-        if (parsedJson.HasMember(ENDPOINT_ARRAY)) {
-            rapidjson::Value& endpointJsonArray = parsedJson[ENDPOINT_ARRAY];
-            if (endpointJsonArray.IsArray()){
-                endpointJsonArray.PushBack(endpointJSON, parsedJson.GetAllocator());
+    if (contents) {
+        auto parsedJson = parseJSONFile(contents.value());
+        auto endpointJSON = endpoint->exportToJSON(parsedJson);
+        if (parsedJson.IsObject()) {
+            if (parsedJson.HasMember(ENDPOINT_ARRAY)) {
+                rapidjson::Value& endpointJsonArray = parsedJson[ENDPOINT_ARRAY];
+                if (endpointJsonArray.IsArray()) {
+                    endpointJsonArray.PushBack(endpointJSON, parsedJson.GetAllocator());
+                }
             }
         }
     }
@@ -129,18 +138,19 @@ void ConfiguredDiscoveryManager::removeExportedEndpoint(IEndpoint* /*endpoint*/,
 
     auto endpoint = std::make_shared<ConfiguredEndpoint>(convertCelixPropertiesToEndpoint(properties));
     auto contents = read_whole_file(_configurationFilePath);
-    auto parsedJson = parseJSONFile(contents.value());
-    auto endpointJSON = endpoint->exportToJSON(parsedJson);
-
-    if (parsedJson.IsObject()) {
-        if (parsedJson.HasMember(ENDPOINT_ARRAY)) {
-            rapidjson::Value& endpointJsonArray = parsedJson[ENDPOINT_ARRAY];
-            if (endpointJsonArray.IsArray()){
-                for (rapidjson::Value::ValueIterator itr = endpointJsonArray.Begin(); itr != endpointJsonArray.End();) {
-                    if (std::strcmp(( *itr )["endpoint.id"].GetString(), endpointJSON["endpoint.id"].GetString()) == 0) {
-                        itr = endpointJsonArray.Erase(itr);
-                    } else {
-                        ++itr;
+    if (contents) {
+        auto parsedJson = parseJSONFile(contents.value());
+        auto endpointJSON = endpoint->exportToJSON(parsedJson);
+        if (parsedJson.IsObject()) {
+            if (parsedJson.HasMember(ENDPOINT_ARRAY)) {
+                rapidjson::Value& endpointJsonArray = parsedJson[ENDPOINT_ARRAY];
+                if (endpointJsonArray.IsArray()) {
+                    for (rapidjson::Value::ValueIterator itr = endpointJsonArray.Begin(); itr != endpointJsonArray.End();) {
+                        if (std::strcmp(( *itr )["endpoint.id"].GetString(), endpointJSON["endpoint.id"].GetString()) == 0) {
+                            itr = endpointJsonArray.Erase(itr);
+                        } else {
+                            ++itr;
+                        }
                     }
                 }
             }

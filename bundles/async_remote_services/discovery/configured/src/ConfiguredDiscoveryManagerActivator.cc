@@ -22,13 +22,11 @@
 
 namespace {
 
-const char* ENDPOINT_JSON_FILE_PATH = "/home/rpl/rapid.json";
-
 ConfiguredDiscoveryManagerActivator::ConfiguredDiscoveryManagerActivator(
         const std::shared_ptr<celix::dm::DependencyManager>& dependencyManager) :
             _component{dependencyManager->createComponent(
-                std::make_unique<celix::async_rsa::discovery::ConfiguredDiscoveryManager>(
-                        dependencyManager, ENDPOINT_JSON_FILE_PATH)).addInterface<celix::async_rsa::discovery::IDiscoveryManager>().build()} {
+                std::make_unique<celix::async_rsa::discovery::ConfiguredDiscoveryManager>(dependencyManager))
+                    .addInterface<celix::async_rsa::discovery::IDiscoveryManager>().build()} {
 }
 
 // define this class as the bundle activator.

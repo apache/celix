@@ -49,10 +49,8 @@ public:
     /**
      *  Constructor for the ConfiguredDiscoveryManager.
      * @param dependencyManager shared_ptr to the context/container dependency manager.
-     * @param configurationFilePath string path indicating location of the configuration file.
      */
-    ConfiguredDiscoveryManager(std::shared_ptr<DependencyManager> dependencyManager,
-                               std::string configurationFilePath);
+    explicit ConfiguredDiscoveryManager(std::shared_ptr<DependencyManager> dependencyManager);
 
     /**
      * Deleted copy-constructor, since rapidjson members have no copy-constructor.
@@ -94,7 +92,7 @@ private:
 
     std::shared_ptr<DependencyManager> _dependencyManager;
 
-    const std::string _configurationFilePath;
+    std::string _configurationFilePath;
 
     std::vector<std::shared_ptr<ConfiguredEndpoint>> _discoveredEndpoints;
     std::vector<IEndpoint*> _publishedDiscoveredEndpoints;

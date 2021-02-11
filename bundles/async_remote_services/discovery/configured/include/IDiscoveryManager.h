@@ -18,6 +18,9 @@
  */
 #pragma once
 
+/** Path for configured endpoint/ discovery file. */
+#define CELIX_ASYNC_RSA_CONFIGURED_DISCOVERY_FILE "CELIX_ASYNC_RSA_CONFIGURED_DISCOVERY_FILE"
+
 #include <IEndpoint.h>
 #include <celix/dm/Properties.h>
 
