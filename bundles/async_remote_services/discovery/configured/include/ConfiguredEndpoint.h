@@ -20,7 +20,7 @@
 
 #include <IEndpoint.h>
 
-#include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -113,7 +113,7 @@ public:
 
 private:
 
-    std::shared_ptr<ConfiguredEndpointProperties> _properties;
+    std::optional<ConfiguredEndpointProperties> _properties;
 };
 
 } // end namespace celix::async_rsa::discovery.

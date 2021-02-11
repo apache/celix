@@ -58,20 +58,18 @@ ConfiguredEndpoint::ConfiguredEndpoint(const rapidjson::Value& endpointJson) : _
 
     if (isValidEndpointJson(endpointJson)) {
 
-        _properties = std::make_shared<ConfiguredEndpointProperties>(
-                endpointJson[ENDPOINT_IDENTIFIER].GetString(),
-                endpointJson[ENDPOINT_IMPORTED].GetBool(),
-                parseJSONStringArray(endpointJson[ENDPOINT_IMPORT_CONFIGS]),
-                endpointJson[ENDPOINT_EXPORTS].GetString(),
-                parseJSONStringArray(endpointJson[ENDPOINT_OBJECTCLASS]),
-                endpointJson[ENDPOINT_SCOPE].GetString(),
-                endpointJson[ENDPOINT_TOPIC].GetString()
-        );
+        _properties = {endpointJson[ENDPOINT_IDENTIFIER].GetString(),
+                       endpointJson[ENDPOINT_IMPORTED].GetBool(),
+                       parseJSONStringArray(endpointJson[ENDPOINT_IMPORT_CONFIGS]),
+                       endpointJson[ENDPOINT_EXPORTS].GetString(),
+                       parseJSONStringArray(endpointJson[ENDPOINT_OBJECTCLASS]),
+                       endpointJson[ENDPOINT_SCOPE].GetString(),
+                       endpointJson[ENDPOINT_TOPIC].GetString()};
     }
 }
 
 ConfiguredEndpoint::ConfiguredEndpoint(const ConfiguredEndpointProperties& endpointProperties) :
-            _properties{std::make_shared<ConfiguredEndpointProperties>(endpointProperties)} {
+            _properties{endpointProperties} {
 }
 
 rapidjson::Value ConfiguredEndpoint::exportToJSON(rapidjson::Document& document) {
