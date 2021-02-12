@@ -34,7 +34,7 @@ namespace celix {
     public:
         explicit DefaultExecutor(std::launch _policy = std::launch::async | std::launch::deferred) : policy{_policy} {}
 
-        void execute(std::function<void()> task, int /*priority*/) override {
+        void execute(int /*priority*/, std::function<void()> task) override {
             std::lock_guard<std::mutex> lck{mutex};
             futures.emplace_back(std::async(policy, std::move(task)));
             removeCompletedFutures();

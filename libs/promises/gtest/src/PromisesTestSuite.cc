@@ -32,14 +32,14 @@ class ExecutorWithRandomPrePostSleep : public celix::DefaultExecutor {
 public:
     ExecutorWithRandomPrePostSleep() : celix::DefaultExecutor{std::launch::async} {}
 
-    void execute(std::function<void()> task, int priority) override {
+    void execute( int priority, std::function<void()> task) override {
         int roll1 = distribution(generator); //1-100
         int roll2 = distribution(generator); //1-100
-        celix::DefaultExecutor::execute([roll1, roll2, task = std::move(task)] {
+        celix::DefaultExecutor::execute(priority, [roll1, roll2, task = std::move(task)] {
             std::this_thread::sleep_for(std::chrono::milliseconds{roll1});
             task();
             std::this_thread::sleep_for(std::chrono::milliseconds{roll2});
-        }, priority);
+        });
     }
 
 private:
@@ -305,13 +305,13 @@ TEST_F(PromiseTestSuite, resolveWithTimeout) {
 TEST_F(PromiseTestSuite, resolveWithDelay) {
     auto deferred1 = factory->deferred<long>();
     std::atomic<bool> successCalled = false;
-    auto t1 = std::chrono::system_clock::now();
-    std::atomic<std::chrono::system_clock::time_point> t2{t1};
+    auto t1 = std::chrono::steady_clock::now();
+    std::atomic<std::chrono::steady_clock::time_point> t2{t1};
     auto p = deferred1.getPromise()
             .delay(std::chrono::milliseconds{50})
             .onSuccess([&](long value) {
                 EXPECT_EQ(42, value);
-                t2 = std::chrono::system_clock::now();
+                t2 = std::chrono::steady_clock::now();
                 successCalled = true;
             });
     deferred1.resolve(42);
