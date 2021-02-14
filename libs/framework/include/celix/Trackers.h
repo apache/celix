@@ -218,8 +218,11 @@ namespace celix {
             opts.trackerCreatedCallbackData = this;
             opts.trackerCreatedCallback = [](void *data) {
                 auto* trk = static_cast<GenericServiceTracker*>(data);
-                std::lock_guard<std::mutex> callbackLock{trk->mutex};
-                trk->state = TrackerState::OPEN;
+                {
+                    std::lock_guard<std::mutex> callbackLock{trk->mutex};
+                    trk->state = TrackerState::OPEN;
+                }
+                trk->invokeSetCallbacks();
             };
         }
 
@@ -266,6 +269,8 @@ namespace celix {
             return svcCount;
         }
     protected:
+        virtual void invokeSetCallbacks() = 0;
+
         const std::string svcName;
         const std::string svcVersionRange;
         const celix::Filter filter;
@@ -360,7 +365,7 @@ namespace celix {
             }
             return result;
         }
-    private:
+    protected:
         struct SvcEntry {
             SvcEntry(long _svcId, long _svcRanking, const std::shared_ptr<I> _svc,
                      const std::shared_ptr<const celix::Properties> _properties,
@@ -461,11 +466,15 @@ namespace celix {
             }
         }
 
-        void invokeSetCallbacks() {
+        void invokeSetCallbacks() override {
             if (setCallbacks.empty()) {
                 return;
             }
-            bool callSetCallbacks = false;
+            if (getState() == celix::TrackerState::OPENING) {
+                //not updating set callback during opening (prevent entropy)
+                return;
+            }
+            bool setNeeded = false;
             std::shared_ptr<SvcEntry> entry{};
             {
                 std::lock_guard<std::mutex> lck{mutex};
@@ -479,10 +488,10 @@ namespace celix {
                     if (newHighestSvcId != -1) {
                         entry = *it;
                     }
-                    callSetCallbacks = true;
+                    setNeeded = true;
                 }
             }
-            if (callSetCallbacks) {
+            if (setNeeded) {
                 for (const auto& cb : setCallbacks) {
                     if (entry) {
                         cb(entry->svc, entry->properties, entry->owner);
