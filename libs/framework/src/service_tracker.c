@@ -163,14 +163,33 @@ celix_status_t serviceTracker_destroy(service_tracker_pt tracker) {
 
 celix_status_t serviceTracker_open(service_tracker_pt tracker) {
     celixThreadMutex_lock(&tracker->mutex);
-    bool alreadyOpen = tracker->open;
-    tracker->open = true;
+    bool addListener = false;
+    switch (tracker->state) {
+        case CELIX_SERVICE_TRACKER_CLOSED:
+            tracker->state = CELIX_SERVICE_TRACKER_OPENING;
+            addListener = true;
+            break;
+        case CELIX_SERVICE_TRACKER_CLOSING:
+            celix_bundleContext_log(tracker->context, CELIX_LOG_LEVEL_WARNING, "Cannot open closing tracker");
+            break;
+        default:
+            //nop
+            break;
+    }
     celixThreadMutex_unlock(&tracker->mutex);
 
-    if (!alreadyOpen) {
+    if (!addListener) {
         bundleContext_addServiceListener(tracker->context, &tracker->listener, tracker->filter);
     }
-	return CELIX_SUCCESS;
+
+    celixThreadMutex_lock(&tracker->mutex);
+    tracker->state = CELIX_SERVICE_TRACKER_OPEN;
+    celixThreadMutex_unlock(&tracker->mutex);
+
+    //ensure that the set callback is called once the tracker is open.
+    celix_serviceTracker_useHighestRankingService(tracker, tracker->serviceName, tracker, NULL, NULL, serviceTracker_checkAndInvokeSetService);
+
+    return CELIX_SUCCESS;
 }
 
 celix_status_t serviceTracker_close(service_tracker_t* tracker) {
@@ -178,11 +197,22 @@ celix_status_t serviceTracker_close(service_tracker_t* tracker) {
     //set state to close to prevent service listener events
 
     celixThreadMutex_lock(&tracker->mutex);
-    bool open = tracker->open;
-    tracker->open = false;
+    bool needClosing = false;
+    switch (tracker->state) {
+        case CELIX_SERVICE_TRACKER_OPEN:
+            tracker->state = CELIX_SERVICE_TRACKER_CLOSING;
+            needClosing = true;
+            break;
+        case CELIX_SERVICE_TRACKER_OPENING:
+            celix_bundleContext_log(tracker->context, CELIX_LOG_LEVEL_WARNING, "Cannot close opening tracker");
+            break;
+        default:
+            //nop
+            break;
+    }
     celixThreadMutex_unlock(&tracker->mutex);
 
-    if (!open) {
+    if (!needClosing) {
         return CELIX_SUCCESS;
     }
 
@@ -224,6 +254,10 @@ celix_status_t serviceTracker_close(service_tracker_t* tracker) {
 
 
     fw_removeServiceListener(tracker->context->framework, tracker->context->bundle, &tracker->listener);
+
+    celixThreadMutex_lock(&tracker->mutex);
+    tracker->state = CELIX_SERVICE_TRACKER_CLOSED;
+    celixThreadMutex_unlock(&tracker->mutex);
 
 	return CELIX_SUCCESS;
 }

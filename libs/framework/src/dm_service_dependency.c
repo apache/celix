@@ -342,6 +342,22 @@ bool celix_dmServiceDependency_isTrackerOpen(celix_dm_service_dependency_t* depe
     return isOpen;
 }
 
+bool celix_dmServiceDependency_isSetCallbackConfigured(celix_dm_service_dependency_t* dependency) {
+    bool isUsed;
+    celixThreadMutex_lock(&dependency->mutex);
+    isUsed = dependency->set != NULL || dependency->setWithProperties != NULL;
+    celixThreadMutex_unlock(&dependency->mutex);
+    return isUsed;
+}
+bool celix_dmServiceDependency_isAddRemCallbacksConfigured(celix_dm_service_dependency_t* dependency) {
+    bool isUsed;
+    celixThreadMutex_lock(&dependency->mutex);
+    isUsed = dependency->add != NULL || dependency->addWithProperties != NULL ||
+            dependency->remove != NULL || dependency->remWithProperties != NULL;
+    celixThreadMutex_unlock(&dependency->mutex);
+    return isUsed;
+}
+
 celix_status_t serviceDependency_getServiceDependencyInfo(celix_dm_service_dependency_t *dep, dm_service_dependency_info_t **out) {
 	if (out != NULL) {
 		*out = celix_dmServiceDependency_createInfo(dep);

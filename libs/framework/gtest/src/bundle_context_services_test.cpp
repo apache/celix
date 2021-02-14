@@ -1339,3 +1339,34 @@ TEST_F(CelixBundleContextServicesTests, stopMetaTrackerBeforeAsyncTrackerIsCreat
     celix_bundleContext_waitForEvents(ctx);
     EXPECT_EQ(0, cbData.count.load()); //note create tracker canceled -> no callback
 }
+
+
+TEST_F(CelixBundleContextServicesTests, setServicesWithTrackerWhenMultipleRegistrationAlreadyExists) {
+    void* dummySvc = (void*)0x42;
+    long svcId1 = celix_bundleContext_registerService(ctx, &dummySvc, "TestService", nullptr);
+    long svcId2 = celix_bundleContext_registerService(ctx, &dummySvc, "TestService", nullptr);
+    long svcId3 = celix_bundleContext_registerService(ctx, &dummySvc, "TestService", nullptr);
+    ASSERT_GE(svcId1, 0);
+    ASSERT_GE(svcId2, 0);
+    ASSERT_GE(svcId3, 0);
+
+    std::atomic<int> count{0};
+    celix_service_tracking_options_t opts{};
+    opts.callbackHandle = &count;
+    opts.set = [](void *handle, void* /*svc*/) {
+        auto* c = static_cast<std::atomic<int>*>(handle);
+        (*c)++;
+    };
+    long trkId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
+    ASSERT_GE(trkId, 0);
+    EXPECT_EQ(1, count.load()); //NOTE ensure that the service tracker only calls set once for opening tracker even if 3 service exists.
+
+    count = 0;
+    celix_bundleContext_stopTracker(ctx, trkId);
+    EXPECT_EQ(1, count.load());
+
+
+    celix_bundleContext_unregisterService(ctx, svcId1);
+    celix_bundleContext_unregisterService(ctx, svcId2);
+    celix_bundleContext_unregisterService(ctx, svcId3);
+}

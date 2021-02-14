@@ -483,3 +483,74 @@ TEST_F(DependencyManagerTestSuite, RequiredDepsAreInjectedDuringStartStop) {
     EXPECT_EQ(cmp.getState(), ComponentState::TRACKING_OPTIONAL);
     celix_bundleContext_unregisterService(dm.bundleContext(), svcId);
 }
+
+TEST_F(DependencyManagerTestSuite, UnneededSuspendIsPrevented) {
+    class CounterComponent {
+    public:
+        void start() {
+            startCount++;
+        }
+
+        void stop() {
+            stopCount++;
+        }
+
+        void setService(TestService* /*svc*/) {
+            //nop
+        }
+
+        void addService(TestService* /*svc*/) {
+            //nop
+        }
+
+        void remService(TestService* /*svc*/) {
+            //nop
+        }
+
+        std::atomic<int> startCount{0};
+        std::atomic<int> stopCount{0};
+    };
+
+    celix::dm::DependencyManager dm{ctx};
+    //cmp1 has lifecycle callbacks, but not set or add/rem callbacks for the service dependency -> should not trigger suspend
+    auto& cmp1 = dm.createComponent<CounterComponent>()
+            .setCallbacks(nullptr, &CounterComponent::start, &CounterComponent::stop, nullptr);
+    cmp1.createServiceDependency<TestService>();
+    cmp1.build();
+
+    //cmp2 has lifecycle callbacks and set, add/rem callbacks for the service dependency -> should trigger suspend 2x
+    auto& cmp2 = dm.createComponent<CounterComponent>()
+            .setCallbacks(nullptr, &CounterComponent::start, &CounterComponent::stop, nullptr);
+    cmp2.createServiceDependency<TestService>()
+            .setCallbacks(&CounterComponent::setService)
+            .setCallbacks(&CounterComponent::addService, &CounterComponent::remService);
+    cmp2.build();
+
+    EXPECT_EQ(cmp1.getState(), celix::dm::ComponentState::TRACKING_OPTIONAL);
+    EXPECT_EQ(cmp2.getState(), celix::dm::ComponentState::TRACKING_OPTIONAL);
+
+    TestService svc;
+    std::string svcName = celix::dm::typeName<TestService>();
+    celix_service_registration_options opts{};
+    opts.svc = &svc;
+    opts.serviceName = svcName.c_str();
+    opts.serviceLanguage = CELIX_FRAMEWORK_SERVICE_CXX_LANGUAGE;
+    long svcId = celix_bundleContext_registerServiceWithOptions(dm.bundleContext(), &opts);
+    EXPECT_GE(svcId, 0);
+
+    EXPECT_EQ(cmp1.getInstance().startCount, 1); //only once during creation
+    EXPECT_EQ(cmp1.getInstance().stopCount, 0);
+    EXPECT_EQ(cmp2.getInstance().startCount, 3); //1x creation, 1x suspend for set, 1x suspend for add
+    EXPECT_EQ(cmp2.getInstance().stopCount, 2); //1x suspend for set, 1x suspend for add
+
+    cmp1.getInstance().startCount = 0;
+    cmp1.getInstance().stopCount = 0;
+    cmp2.getInstance().startCount = 0;
+    cmp2.getInstance().stopCount = 0;
+    celix_bundleContext_unregisterService(dm.bundleContext(), svcId);
+
+    EXPECT_EQ(cmp1.getInstance().startCount, 0);
+    EXPECT_EQ(cmp1.getInstance().stopCount, 0);
+    EXPECT_EQ(cmp2.getInstance().startCount, 2); //1x suspend for set nullptr, 1x suspend for rem
+    EXPECT_EQ(cmp2.getInstance().stopCount, 2); //1x suspend for set nullptr, 1x suspend for rem
+}
