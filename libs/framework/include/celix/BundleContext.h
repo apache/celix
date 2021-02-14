@@ -37,7 +37,7 @@
 namespace celix {
 
     /**
-     * \brief The bundle context is used to interact with the Celix framework.
+     * @brief The bundle context is used to interact with the Celix framework.
      *
      * The bundle context represent a bundle and can be used to:
      *  - Register, use and track services
@@ -46,7 +46,7 @@ namespace celix {
      *  - Access bundles
      *  - Get config properties
      *
-     * \note Thread safe.
+     * @note Thread safe.
      */
     class BundleContext {
     public:
@@ -56,7 +56,7 @@ namespace celix {
             bnd{celix_bundleContext_getBundle(_cCtx)} {}
 
         /**
-         * \brief Register a service in the Celix framework using a fluent builder API.
+         * @brief Register a service in the Celix framework using a fluent builder API.
          *
          * The service registration can be fine tuned using the returned ServiceRegistrationBuilder API.
          *
@@ -84,7 +84,7 @@ namespace celix {
         }
 
         /**
-         * \brief Register a (unmanaged) service in the Celix framework using a fluent builder API.
+         * @brief Register a (unmanaged) service in the Celix framework using a fluent builder API.
          *
          * Same as registerService, but then with an unmanaged service pointer.
          * Note that the user is responsible for ensuring that the service pointer is valid as long
@@ -102,7 +102,7 @@ namespace celix {
         //TODO registerServiceFactory<I>()
 
         /**
-         * \brief Use a service registered in the Celix framework using a fluent builder API.
+         * @brief Use a service registered in the Celix framework using a fluent builder API.
          *
          * The service use can be fine tuned using the returned UseServiceBuilder API.
          *
@@ -133,7 +133,7 @@ namespace celix {
         }
 
         /**
-         * \brief Use services registered in the Celix framework using a fluent builder API.
+         * @brief Use services registered in the Celix framework using a fluent builder API.
          *
          * The service use can be fine tuned using the returned UseServiceBuilder API.
          *
@@ -161,7 +161,7 @@ namespace celix {
         }
 
         /**
-         * \brief Finds the highest ranking service using the optional provided (LDAP) filter
+         * @brief Finds the highest ranking service using the optional provided (LDAP) filter
          * and version range.
          *
          * Uses celix::typeName<I> to defer the service name.
@@ -177,7 +177,7 @@ namespace celix {
         }
 
         /**
-         * \brief Finds the highest ranking service using the provided service name and
+         * @brief Finds the highest ranking service using the provided service name and
          * the optional (LDAP) filter and version range.
          *
          * @tparam I the service type to found.
@@ -197,7 +197,7 @@ namespace celix {
         }
 
         /**
-         * \brief Finds all services matching the optional provided (LDAP) filter
+         * @brief Finds all services matching the optional provided (LDAP) filter
          * and version range.
          *
          * Note uses celix::typeName<I> to defer the service name.
@@ -213,7 +213,7 @@ namespace celix {
         }
 
         /**
-         * \brief Finds all service matching the provided service name and the optional (LDAP) filter
+         * @brief Finds all service matching the provided service name and the optional (LDAP) filter
          * and version range.
          *
          * @tparam I the service type to found.
@@ -241,7 +241,7 @@ namespace celix {
         }
 
         /**
-         * \brief Track services in the Celix framework using a fluent builder API.
+         * @brief Track services in the Celix framework using a fluent builder API.
          *
          * The service tracker can be fine tuned using the returned ServiceTrackerBuilder API.
          *
@@ -266,7 +266,7 @@ namespace celix {
         }
 
         /**
-         * \brief Track services in the Celix framework using a fluent builder API.
+         * @brief Track services in the Celix framework using a fluent builder API.
          *
          * Same as trackerService, but than for any service.
          * Note that the service shared ptr is of the type std::shared_ptr<void>.
@@ -276,7 +276,7 @@ namespace celix {
         }
 
         /**
-         * \brief Track bundles in the Celix framework using a fluent builder API.
+         * @brief Track bundles in the Celix framework using a fluent builder API.
          *
          * The bundle tracker can be fine tuned using the returned BundleTrackerBuilder API.
          *
@@ -294,7 +294,7 @@ namespace celix {
         }
 
         /**
-         * \brief Track service trackers in the Celix framework using a fluent builder API.
+         * @brief Track service trackers in the Celix framework using a fluent builder API.
          *
          * The meta tracker (service tracker tracker) can be fine tuned using the returned
          * MetaTrackerBuilder API.
@@ -319,7 +319,7 @@ namespace celix {
         }
 
         /**
-         * \brief Track service trackers in the Celix framework using a fluent builder API.
+         * @brief Track service trackers in the Celix framework using a fluent builder API.
          *
          * Same as trackServiceTrackers, but than for service tracker for any service types.
          */
@@ -328,7 +328,7 @@ namespace celix {
         }
 
         /**
-         * \brief Install and optional start a bundle.
+         * @brief Install and optional start a bundle.
          *
          * Will silently ignore bundle ids < 0.
          *
@@ -341,7 +341,7 @@ namespace celix {
         }
 
         /**
-         * \brief Uninstall the bundle with the provided bundle id.
+         * @brief Uninstall the bundle with the provided bundle id.
          *
          * If needed the bundle will be stopped first.
          * Will silently ignore bundle ids < 0.
@@ -354,7 +354,7 @@ namespace celix {
         }
 
         /**
-         * \brief Start the bundle with the provided bundle id.
+         * @brief Start the bundle with the provided bundle id.
          *
          * Will silently ignore bundle ids < 0.
          *
@@ -366,7 +366,7 @@ namespace celix {
         }
 
         /**
-         * \brief Stop the bundle with the provided bundle id.
+         * @brief Stop the bundle with the provided bundle id.
          *
          * Will silently ignore bundle ids < 0.
          *
@@ -378,7 +378,7 @@ namespace celix {
         }
 
         /**
-         * \brief Gets the config property for the provided name.
+         * @brief Gets the config property for the provided name.
          *
          * First the provided name will be used to lookup an environment variable of that name. If this is not found,
          * the config properties of the Celix framework will be used (config.properties).
@@ -393,7 +393,7 @@ namespace celix {
         }
 
         /**
-         * \brief Gets the config property for the provided name and returns it as a long.
+         * @brief Gets the config property for the provided name and returns it as a long.
          *
          * First the provided name will be used to lookup an environment variable of that name. If no this is not found
          * or not a valid long, the config properties of the Celix framework will be used (config.properties).
@@ -409,7 +409,7 @@ namespace celix {
         }
 
         /**
-         * \brief Gets the config property for the provided name and returns it as a double.
+         * @brief Gets the config property for the provided name and returns it as a double.
          *
          * First the provided name will be used to lookup an environment variable of that name. If no this is not found
          * or not a valid double, the config properties of the Celix framework will be used (config.properties).
@@ -425,7 +425,7 @@ namespace celix {
         }
 
         /**
-         * \brief Gets the config property for the provided name and returns it as a bool.
+         * @brief Gets the config property for the provided name and returns it as a bool.
          *
          * First the provided name will be used to lookup an environment variable of that name. If no this is not found
          * or not a valid bool, the config properties of the Celix framework will be used (config.properties).
@@ -443,21 +443,21 @@ namespace celix {
         }
 
         /**
-         * \brief Get the bundle of this bundle context.
+         * @brief Get the bundle of this bundle context.
          */
         const Bundle& getBundle() const {
             return bnd;
         }
 
         /**
-         * \brief Get the bundle id for the bundle of this bundle context
+         * @brief Get the bundle id for the bundle of this bundle context
          */
          long getBundleId() const {
              return bnd.getId();
          }
 
         /**
-         * \brief Get the Celix framework for this bundle context.
+         * @brief Get the Celix framework for this bundle context.
          */
         std::shared_ptr<Framework> getFramework() const {
             auto* cFw = celix_bundleContext_getFramework(cCtx.get());
@@ -466,16 +466,16 @@ namespace celix {
         }
 
         /**
-         * \brief Get the Celix dependency manager for this bundle context
+         * @brief Get the Celix dependency manager for this bundle context
          */
         std::shared_ptr<dm::DependencyManager> getDependencyManager() const {
             return dm;
         }
 
         /**
-         * \brief Get the C bundle context.
+         * @brief Get the C bundle context.
          *
-         * \warning Try not the depend on the C API from a C++ bundle. If features are missing these should be added to
+         * @warning Try not the depend on the C API from a C++ bundle. If features are missing these should be added to
          * the C++ API.
          */
         celix_bundle_context_t* getCBundleContext() const {
@@ -483,9 +483,9 @@ namespace celix {
         }
 
         /**
-         * \brief Logs a message to the Celix framework logger using the TRACE log level.
+         * @brief Logs a message to the Celix framework logger using the TRACE log level.
          *
-         * \note Only supports printf style call (so use c_str() instead of std::string)
+         * @note Only supports printf style call (so use c_str() instead of std::string)
          */
         void logTrace(const char* format...) {
             va_list args;
@@ -495,9 +495,9 @@ namespace celix {
         }
 
         /**
-         * \brief Logs a message to the Celix framework logger using the DEBUG log level.
+         * @brief Logs a message to the Celix framework logger using the DEBUG log level.
          *
-         * \note Only supports printf style call (so use c_str() instead of std::string)
+         * @note Only supports printf style call (so use c_str() instead of std::string)
          */
         void logDebug(const char* format...) {
             va_list args;
@@ -507,9 +507,9 @@ namespace celix {
         }
 
         /**
-         * \brief Logs a message to the Celix framework logger using the INFO log level.
+         * @brief Logs a message to the Celix framework logger using the INFO log level.
          *
-         * \note Only supports printf style call (so use c_str() instead of std::string)
+         * @note Only supports printf style call (so use c_str() instead of std::string)
          */
         void logInfo(const char* format...) {
             va_list args;
@@ -519,9 +519,9 @@ namespace celix {
         }
 
         /**
-         * \brief Logs a message to the Celix framework logger using the WARNING log level.
+         * @brief Logs a message to the Celix framework logger using the WARNING log level.
          *
-         * \note Only supports printf style call (so use c_str() instead of std::string)
+         * @note Only supports printf style call (so use c_str() instead of std::string)
          */
         void logWarn(const char* format...) {
             va_list args;
@@ -531,9 +531,9 @@ namespace celix {
         }
 
         /**
-         * \brief Logs a message to the Celix framework logger using the ERROR log level.
+         * @brief Logs a message to the Celix framework logger using the ERROR log level.
          *
-         * \note Only supports printf style call (so use c_str() instead of std::string)
+         * @note Only supports printf style call (so use c_str() instead of std::string)
          */
         void logError(const char* format...) {
             va_list args;
@@ -543,9 +543,9 @@ namespace celix {
         }
 
         /**
-         * \brief Logs a message to the Celix framework logger using the FATAL log level.
+         * @brief Logs a message to the Celix framework logger using the FATAL log level.
          *
-         * \note Only supports printf style call (so use c_str() instead of std::string)
+         * @note Only supports printf style call (so use c_str() instead of std::string)
          */
         void logFatal(const char* format...) {
             va_list args;
@@ -555,14 +555,14 @@ namespace celix {
         }
 
         /**
-         * \brief Wait until all Celix event for this bundle are completed.
+         * @brief Wait until all Celix event for this bundle are completed.
          */
         void waitForEvents() const {
             celix_bundleContext_waitForEvents(cCtx.get());
         }
     private:
         /**
-         * \brief Wait (if not on the Celix event thread) for all events for this bundle context to be finished.
+         * @brief Wait (if not on the Celix event thread) for all events for this bundle context to be finished.
          */
         void waitIfAble() const {
             auto* fw = celix_bundleContext_getFramework(cCtx.get());

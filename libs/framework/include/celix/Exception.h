@@ -4,6 +4,9 @@
 
 namespace celix {
 
+    /**
+     * @brief Celix runtime Exception
+     */
     class Exception : public std::exception {
     public:
         explicit Exception(std::string msg) : w{std::move(msg)} {}

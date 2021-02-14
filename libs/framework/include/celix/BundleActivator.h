@@ -97,13 +97,15 @@ namespace celix {
 }
 
 /**
- * This macro generates the required bundle activator functions for C++.
+ * @brief Macro to generate the required bundle activator functions for C++.
  * This can be used to more type safe bundle activator entries.
  *
- * The macro will create the following bundle activator functions:
- * - bundleActivator_create which allocates a pointer to the provided type.
- * - bundleActivator_start/stop which will call the respectively provided typed start/stop functions.
- * - bundleActivator_destroy will free the allocated for the provided type.
+ * The macro will create the following bundle activator C functions:
+ * - bundleActivator_create which will create the required C++ object (bundle context and dependency manager) and create
+ *   the C++ bundle activator class (RAII)
+ * - bundleActivator_start/stop functions, which for C++ will do nothing.
+ * - bundleActivator_destroy trigger the destruction of the C++ BundleActivator and ensure that there is no dangling
+ *   usage of the bundle context and/or dependency manager.
  *
  * @param type The activator type (e.g. 'ShellActivator'). A type which should have a constructor with a single arugment of std::shared_ptr<DependencyManager>.
  */

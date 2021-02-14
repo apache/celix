@@ -28,11 +28,11 @@ namespace celix {
     class BundleContext; //forward declaration
 
     /**
-     * \brief A Celix framework instance. A framework is also known as a system bundle.
+     * @brief A Celix framework instance. A framework is also known as a system bundle.
      *
      * Celix framework instances are created using a FrameworkFactory.
      *
-     * \note Thread safe.
+     * @note Thread safe.
      */
     class Framework {
     public:
@@ -42,21 +42,21 @@ namespace celix {
             {}
 
         /**
-         * \brief Get the framework UUID.
+         * @brief Get the framework UUID.
          */
         std::string getUUID() const {
             return std::string{celix_framework_getUUID(cFw.get())};
         }
 
         /**
-         * \brief Get the bundle context for the framework.
+         * @brief Get the bundle context for the framework.
          */
         std::shared_ptr<celix::BundleContext> getFrameworkBundleContext() const {
             return fwCtx;
         }
 
         /**
-         * \brief Fire a generic Celix framework event.
+         * @brief Fire a generic Celix framework event.
          *
          * The event will be added to the event loop and handled on the event loop thread.
          *
@@ -86,23 +86,23 @@ namespace celix {
         }
 
         /**
-         * \brief Block until the framework is stopped.
+         * @brief Block until the framework is stopped.
          */
          void waitForStop() {
             celix_framework_waitForStop(cFw.get());
         }
 
         /**
-         * \brief Wait until all Celix event for this framework are completed.
+         * @brief Wait until all Celix event for this framework are completed.
          */
         void waitForEvent(long eventId) {
             celix_framework_waitForGenericEvent(cFw.get(), eventId);
         }
 
         /**
-         * \brief Get the C framework.
+         * @brief Get the C framework.
          *
-         * \warning Try not the depend on the C API from a C++ bundle. If features are missing these should be added to
+         * @warning Try not the depend on the C API from a C++ bundle. If features are missing these should be added to
          * the C++ API.
          */
         celix_framework_t * getCFramework() const {

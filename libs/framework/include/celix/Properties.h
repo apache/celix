@@ -30,7 +30,7 @@
 namespace celix {
 
     /**
-     * \brief A iterator for celix::Properties.
+     * @brief A iterator for celix::Properties.
      */
     class PropertiesIterator {
     public:
@@ -87,8 +87,8 @@ namespace celix {
     };
 
     /**
-     * \brief A collection of strings key values mainly used as meta data for registered services.
-     * \note Not thread safe.
+     * @brief A collection of strings key values mainly used as meta data for registered services.
+     * @note Not thread safe.
      */
     class Properties {
     public:
@@ -132,7 +132,7 @@ namespace celix {
             cProps{celix_properties_copy(rhs.cProps.get()), [](celix_properties_t* p) { celix_properties_destroy(p); }} {}
 
         /**
-         * \brief Wraps C properties, but does not take ownership -> dtor will not destroy properties
+         * @brief Wraps C properties, but does not take ownership -> dtor will not destroy properties
          */
         static std::shared_ptr<const Properties> wrap(const celix_properties_t* wrapProps) {
             auto* cp = const_cast<celix_properties_t*>(wrapProps);
@@ -142,7 +142,7 @@ namespace celix {
         /**
          * Get the C properties object.
          *
-         * \warning Try not the depend on the C API from a C++ bundle. If features are missing these should be added to
+         * @warning Try not the depend on the C API from a C++ bundle. If features are missing these should be added to
          * the C++ API.
          */
         celix_properties_t* getCProperties() const {
@@ -150,21 +150,21 @@ namespace celix {
         }
 
         /**
-         * \brief Get the value for a property key
+         * @brief Get the value for a property key
          */
         ValueRef operator[](std::string key) {
             return ValueRef{cProps, std::move(key)};
         }
 
         /**
-         * \brief begin iterator
+         * @brief begin iterator
          */
         const_iterator begin() const noexcept {
             return PropertiesIterator{cProps.get()};
         }
 
         /**
-         * \brief end iterator
+         * @brief end iterator
          */
         const_iterator end() const noexcept {
             auto iter = PropertiesIterator{cProps.get()};
@@ -173,14 +173,14 @@ namespace celix {
         }
 
         /**
-         * \brief constant begin iterator
+         * @brief constant begin iterator
          */
         const_iterator cbegin() const noexcept {
             return PropertiesIterator{cProps.get()};
         }
 
         /**
-         * \brief constant end iterator
+         * @brief constant end iterator
          */
         const_iterator cend() const noexcept {
             auto iter = PropertiesIterator{cProps.get()};
@@ -189,7 +189,7 @@ namespace celix {
         }
 
         /**
-         * \brief Get the value for a property key or return the defaultValue if the key does not exists.
+         * @brief Get the value for a property key or return the defaultValue if the key does not exists.
          */
         std::string get(const std::string& key, const std::string& defaultValue = {}) const {
             const char* found = celix_properties_get(cProps.get(), key.c_str(), nullptr);
@@ -197,49 +197,49 @@ namespace celix {
         }
 
         /**
-         * \brief Get the value as long for a property key or return the defaultValue if the key does not exists.
+         * @brief Get the value as long for a property key or return the defaultValue if the key does not exists.
          */
         long getAsLong(const std::string& key, long defaultValue) const {
             return celix_properties_getAsLong(cProps.get(), key.c_str(), defaultValue);
         }
 
         /**
-         * \brief Get the value as double for a property key or return the defaultValue if the key does not exists.
+         * @brief Get the value as double for a property key or return the defaultValue if the key does not exists.
          */
         double getAsDouble(const std::string &key, double defaultValue) const {
             return celix_properties_getAsDouble(cProps.get(), key.c_str(), defaultValue);
         }
 
         /**
-         * \brief Get the value as bool for a property key or return the defaultValue if the key does not exists.
+         * @brief Get the value as bool for a property key or return the defaultValue if the key does not exists.
          */
         bool getAsBool(const std::string &key, bool defaultValue) const {
             return celix_properties_getAsBool(cProps.get(), key.c_str(), defaultValue);
         }
 
         /**
-         * \brief Sets a property
+         * @brief Sets a property
          */
         void set(const std::string& key, const std::string& value) {
             celix_properties_set(cProps.get(), key.c_str(), value.c_str());
         }
 
         /**
-         * \brief Sets a property
+         * @brief Sets a property
          */
         void set(const std::string& key, const char* value) {
             celix_properties_set(cProps.get(), key.c_str(), value);
         }
 
         /**
-         * \brief Sets a bool property
+         * @brief Sets a bool property
          */
         void set(const std::string& key, bool value) {
             celix_properties_setBool(cProps.get(), key.c_str(), value);
         }
 
         /**
-         * \brief Sets a T property. Will use std::to_string to convert the value to string.
+         * @brief Sets a T property. Will use std::to_string to convert the value to string.
          */
         template<typename T>
         void set(const std::string& key, T value) {
@@ -248,7 +248,7 @@ namespace celix {
         }
 
         /**
-         * \brief Returns the nr of properties.
+         * @brief Returns the nr of properties.
          */
         std::size_t size() const {
             return celix_properties_size(cProps.get());

@@ -26,6 +26,7 @@
 
 #include "celix/Constants.h"
 #include "celix/Properties.h"
+#include "celix/Exception.h"
 #include "celix_bundle_context.h"
 #include "celix_bundle.h"
 #include "celix_framework.h"
@@ -42,15 +43,30 @@ namespace celix {
     class ServiceRegistration;
 
     /**
-     * \brief A registered service.
+     * @brief A registered service.
      *
      * Represent a registered service. If the ServiceRegistration is destroy the underlining service is unregistered
      * in the Celix framework.
      *
-     * \note Thread safe.
+     * @note Thread safe.
      */
     class ServiceRegistration  {
     public:
+
+        /**
+         *
+         * @param cCtx The C bundle context.
+         * @param svc  The service (shared ptr) to register
+         * @param name  The name of the service (objectClass) for the registration.
+         * @param version The optional version of the service.
+         * @param properties The meta properties to register with to the service.
+         * @param registerAsync Whether the registration will be done async.
+         * @param unregisterAsync Whether the un-registration will be done async.
+         * @param onRegisteredCallbacks The callback which will be called when the service is registered.
+         * @param onUnregisteredCallbacks  The callback wich will be called when the service is unregistered.
+         * @return The new ServiceRegistration object as shared ptr.
+         * @throws celix::Exception
+         */
         static std::shared_ptr<ServiceRegistration> create(std::shared_ptr<celix_bundle_context_t> cCtx,
                                                            std::shared_ptr<void> svc,
                                                            std::string name,
@@ -110,24 +126,24 @@ namespace celix {
         }
 
         /**
-         * \brief The service name for this service registration.
+         * @brief The service name for this service registration.
          */
         const std::string& getServiceName() const { return name; }
 
         /**
-         * \brief The service version for this service registration.
+         * @brief The service version for this service registration.
          *
          * Empty string if there is no service version.
          */
         const std::string& getServiceVersion() const { return version; }
 
         /**
-         * \brief The service properties for this service registration.
+         * @brief The service properties for this service registration.
          */
         const celix::Properties& getServiceProperties() const { return properties; }
 
         /**
-         * \brief The state of the service registration.
+         * @brief The state of the service registration.
          */
         ServiceRegistrationState getState() const {
             std::lock_guard<std::mutex> lck{mutex};
@@ -135,7 +151,7 @@ namespace celix {
         }
 
         /**
-         * \brief The service id for this service registration.
+         * @brief The service id for this service registration.
          */
         long getServiceId() const {
             std::lock_guard<std::mutex> lck{mutex};
@@ -143,14 +159,14 @@ namespace celix {
         }
 
         /**
-         * \brief The service ranking for this service registration.
+         * @brief The service ranking for this service registration.
          */
         long getServiceRanking() const {
             return properties.getAsLong(celix::SERVICE_RANKING, 0);
         }
 
         /**
-         * \brief If the service registration is REGISTERING or UNREGISTERING, wait until state is REGISTERED OR UNREGISTERED.
+         * @brief If the service registration is REGISTERING or UNREGISTERING, wait until state is REGISTERED OR UNREGISTERED.
          */
         void wait() const {
             bool needWaitUnregistering = false;
@@ -174,7 +190,7 @@ namespace celix {
         }
 
         /**
-         * \brief Unregister the service from the Celix framework if the state is REGISTERED.
+         * @brief Unregister the service from the Celix framework if the state is REGISTERED.
          *
          * If ServiceRegistration::unregisterAsync is true still will be done async, if not this will be done
          * synchronized.
@@ -222,7 +238,7 @@ namespace celix {
         }
 
         /**
-         * \brief Returns the shared_ptr of for this object.
+         * @brief Returns the shared_ptr of for this object.
          *
          * This method can return null when the ServiceRegistration in UNREGISTERED.
          */
@@ -233,7 +249,7 @@ namespace celix {
 
     private:
         /**
-         * Private ctor, use static create method to create a shared_ptr for this object.
+         * @brief private ctor, use static create method to create a shared_ptr for this object.
          */
         ServiceRegistration(
                 std::shared_ptr<celix_bundle_context_t> _cCtx,
@@ -257,7 +273,7 @@ namespace celix {
 
 
         /**
-         * \brief Register service in the Celix framework.
+         * @brief Register service in the Celix framework.
          *
          * This is done async if ServiceRegistration::registerAsync is true and sync otherwise.
          *
@@ -289,8 +305,14 @@ namespace celix {
                 };
                 std::lock_guard<std::mutex> lck{mutex};
                 svcId = celix_bundleContext_registerServiceWithOptionsAsync(cCtx.get(), &opts);
+                if (svcId < 0) {
+                    throw celix::Exception{"Cannot register service"};
+                }
             } else /*sync*/ {
                 long localSvcId = celix_bundleContext_registerServiceWithOptions(cCtx.get(), &opts);
+                if (localSvcId < 0) {
+                    throw celix::Exception{"Cannot register service"};
+                }
                 {
                     std::lock_guard<std::mutex> lck{mutex};
                     svcId = localSvcId;
@@ -303,7 +325,7 @@ namespace celix {
         }
 
         /**
-         * \brief Ensure this this object can create a std::shared_ptr to it self.
+         * @brief Ensure this this object can create a std::shared_ptr to it self.
          */
         void setSelf(const std::shared_ptr<ServiceRegistration>& s) {
             std::lock_guard<std::mutex> lck{mutex};

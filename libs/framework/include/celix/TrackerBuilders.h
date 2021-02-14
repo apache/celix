@@ -28,11 +28,11 @@
 namespace celix {
 
     /**
-     * \brief Fluent builder API to track services.
+     * @brief Fluent builder API to track services.
      *
-     * \see celix::BundleContext::trackServices for more info.
+     * @see celix::BundleContext::trackServices for more info.
      * @tparam I The service type to track.
-     * \note Not thread safe.
+     * @note Not thread safe.
      */
     template<typename I>
     class ServiceTrackerBuilder {
@@ -51,7 +51,7 @@ namespace celix {
         ServiceTrackerBuilder operator=(const ServiceTrackerBuilder&) = delete;
 
         /**
-         * \brief Set filter to be used to matching services.
+         * @brief Set filter to be used to matching services.
          *
          * The filter must be LDAP filter.
          * Example:
@@ -60,12 +60,12 @@ namespace celix {
         ServiceTrackerBuilder& setFilter(std::string f) { filter = celix::Filter{std::move(f)}; return *this; }
 
         /**
-         * \brief Set filter to be used to matching services.
+         * @brief Set filter to be used to matching services.
          */
         ServiceTrackerBuilder& setFilter(celix::Filter f) { filter = std::move(f); return *this; }
 
         /**
-         * \brief Adds a add callback function, which will be called - on the Celix event thread -
+         * @brief Adds a add callback function, which will be called - on the Celix event thread -
          * when a new service match is found.
          *
          * The add callback function has 1 argument: A shared ptr to the added service.
@@ -78,7 +78,7 @@ namespace celix {
         }
 
         /**
-         * \brief Adds a add callback function, which will be called - on the Celix event thread -
+         * @brief Adds a add callback function, which will be called - on the Celix event thread -
          * when a new service match is found.
          *
          * The add callback function has 2 arguments:
@@ -93,7 +93,7 @@ namespace celix {
         }
 
         /**
-         * \brief Adds a add callback function, which will be called - on the Celix event thread -
+         * @brief Adds a add callback function, which will be called - on the Celix event thread -
          * when a new service match is found.
          *
          * The add callback function has 3 arguments:
@@ -107,7 +107,7 @@ namespace celix {
         }
 
         /**
-         * \brief Adds a remove callback function, which will be called - on the Celix event thread -
+         * @brief Adds a remove callback function, which will be called - on the Celix event thread -
          * when a service match is being removed.
          *
          * The remove callback function has 1 arguments: A shared ptr to the removing service.
@@ -120,7 +120,7 @@ namespace celix {
         }
 
         /**
-         * \brief Adds a remove callback function, which will be called - on the Celix event thread -
+         * @brief Adds a remove callback function, which will be called - on the Celix event thread -
          * when a service match is being removed.
          *
          * The remove callback function has 2 arguments:
@@ -135,7 +135,7 @@ namespace celix {
         }
 
         /**
-         * \brief Adds a remove callback function, which will be called - on the Celix event thread -
+         * @brief Adds a remove callback function, which will be called - on the Celix event thread -
          * when a service match is being removed.
          *
          * The remove callback function has 3 arguments:
@@ -149,7 +149,7 @@ namespace celix {
         }
 
         /**
-         * \brief Adds a set callback function, which will be called - on the Celix event thread -
+         * @brief Adds a set callback function, which will be called - on the Celix event thread -
          * when there is a new highest ranking service match.
          * This can can also be an empty match (nullptr).
          *
@@ -164,7 +164,7 @@ namespace celix {
         }
 
         /**
-         * \brief Adds a set callback function, which will be called - on the Celix event thread -
+         * @brief Adds a set callback function, which will be called - on the Celix event thread -
          * when there is a new highest ranking service match.
          * This can can also be an empty match (nullptr).
          *
@@ -180,7 +180,7 @@ namespace celix {
         }
 
         /**
-         * \brief Adds a set callback function, which will be called - on the Celix event thread -
+         * @brief Adds a set callback function, which will be called - on the Celix event thread -
          * when there is a new highest ranking service match.
          *
          * This can can also be an empty match (nullptr).
@@ -207,7 +207,7 @@ namespace celix {
 
 
         /**
-         * \brief "Builds" the service tracker and returns a ServiceTracker.
+         * @brief "Builds" the service tracker and returns a ServiceTracker.
          *
          * The ServiceTracker will be started async.
          */
@@ -225,10 +225,10 @@ namespace celix {
     };
 
     /**
-     * \brief Fluent builder API to track bundles.
+     * @brief Fluent builder API to track bundles.
      *
-     * \see celix::BundleContext::trackBundles for more info.
-     * \note Not thread safe.
+     * @see celix::BundleContext::trackBundles for more info.
+     * @note Not thread safe.
      */
     class BundleTrackerBuilder {
     private:
@@ -249,7 +249,7 @@ namespace celix {
         }
 
         /**
-         * \brief Adds a "on install" callback function, which will be called - on the Celix event thread -
+         * @brief Adds a "on install" callback function, which will be called - on the Celix event thread -
          * when a new bundle has been installed.
          *
          * The "on install" callback function has 1 arguments: A const reference to the installed bundle.
@@ -260,7 +260,7 @@ namespace celix {
         }
 
         /**
-         * \brief Adds a "on start" callback function, which will be called - on the Celix event thread -
+         * @brief Adds a "on start" callback function, which will be called - on the Celix event thread -
          * when a new bundle has been started.
          *
          * The "on start" callback function has 1 arguments: A const reference to the started bundle.
@@ -271,7 +271,7 @@ namespace celix {
         }
 
         /**
-         * \brief Adds a "on stop" callback function, which will be called - on the Celix event thread -
+         * @brief Adds a "on stop" callback function, which will be called - on the Celix event thread -
          * when a new bundle has been stopped.
          *
          * The "on stop" callback function has 1 arguments: A const reference to the stopped bundle.
@@ -282,7 +282,7 @@ namespace celix {
         }
 
         /**
-         * \brief "Builds" the bundle tracker and returns a BundleTracker.
+         * @brief "Builds" the bundle tracker and returns a BundleTracker.
          *
          * The BundleTracker will be started async.
          */
@@ -298,10 +298,10 @@ namespace celix {
     };
 
     /**
-     * \brief Fluent builder API to track service trackers.
+     * @brief Fluent builder API to track service trackers.
      *
-     * \see See celix::BundleContext::trackServiceTrackers for more info.
-     * \note Not thread safe.
+     * @see See celix::BundleContext::trackServiceTrackers for more info.
+     * @note Not thread safe.
      */
     class MetaTrackerBuilder {
     private:
@@ -320,7 +320,7 @@ namespace celix {
         MetaTrackerBuilder operator=(const MetaTrackerBuilder &) = delete;
 
         /**
-         * \brief Adds a "on tracker created" callback function, which will be called - on the Celix event thread -
+         * @brief Adds a "on tracker created" callback function, which will be called - on the Celix event thread -
          * when a new service tracker has been created.
          *
          * The "on tracker created" callback function has 1 arguments: A const reference to a ServiceTrackerInfo object.
@@ -331,7 +331,7 @@ namespace celix {
         }
 
         /**
-         * \brief Adds a "on tracker destroyed" callback function, which will be called - on the Celix event thread -
+         * @brief Adds a "on tracker destroyed" callback function, which will be called - on the Celix event thread -
          * when a new service tracker has been destroyed.
          *
          * The "on tracker destroyed" callback function has 1 arguments: A const reference to a ServiceTrackerInfo object.
@@ -342,7 +342,7 @@ namespace celix {
         }
 
         /**
-         * \brief "Builds" the meta tracker and returns a MetaTracker.
+         * @brief "Builds" the meta tracker and returns a MetaTracker.
          *
          * The MetaTracker will be started async.
          */

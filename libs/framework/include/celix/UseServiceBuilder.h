@@ -43,7 +43,7 @@ namespace celix {
      *           .build();
      *
      *
-     * \note Not thread safe.
+     * @note Not thread safe.
      * @tparam I The service type to use
      */
     template<typename I>
@@ -65,7 +65,7 @@ namespace celix {
         UseServiceBuilder operator=(const UseServiceBuilder&) = delete;
 
         /**
-         * \brief Set filter to be used to select a service.
+         * @brief Set filter to be used to select a service.
          *
          * The filter must be LDAP filter.
          * Example:
@@ -74,12 +74,12 @@ namespace celix {
         UseServiceBuilder& setFilter(std::string f) { filter = celix::Filter{std::move(f)}; return *this; }
 
         /**
-         * \brief Set filter to be used to matching services.
+         * @brief Set filter to be used to matching services.
          */
         UseServiceBuilder& setFilter(celix::Filter f) { filter = std::move(f); return *this; }
 
         /**
-         * \brief Sets a optional timeout.
+         * @brief Sets a optional timeout.
          *
          * If the timeout is > 0 and there is no matching service, the "build" will block
          * until a matching service is found or the timeout is expired.
@@ -95,7 +95,7 @@ namespace celix {
         }
 
         /**
-         * \brief Adds a use callback function which will be called when the UseServiceBuilder is
+         * @brief Adds a use callback function which will be called when the UseServiceBuilder is
          * "build".
          *
          * The use callback function has 1 argument: a reference to the matching service.
@@ -106,7 +106,7 @@ namespace celix {
         }
 
         /**
-         * \brief Adds a use callback function which will be called when the UseServiceBuilder is
+         * @brief Adds a use callback function which will be called when the UseServiceBuilder is
          * "build".
          *
          * The use callback function has 2 arguments:
@@ -119,7 +119,7 @@ namespace celix {
         }
 
         /**
-         * \brief Adds a use callback function which will be called when the UseServiceBuilder is
+         * @brief Adds a use callback function which will be called when the UseServiceBuilder is
          * "build".
          *
          * The use callback function has 3 arguments:
@@ -133,7 +133,7 @@ namespace celix {
         }
 
         /**
-         * \brief "Builds" the UseServiceBuild.
+         * @brief "Builds" the UseServiceBuild.
          *
          * Blocks until:
          *  - All the use callback functions are called with the highest ranking matching service

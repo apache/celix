@@ -38,7 +38,7 @@ namespace celix {
 
 
     /**
-     * \brief The tracker state.
+     * @brief The tracker state.
      */
     enum class TrackerState {
         OPENING,
@@ -48,7 +48,7 @@ namespace celix {
     };
 
     /**
-     * \brief The AbstractTracker class is the base of all C++ Celix trackers.
+     * @brief The AbstractTracker class is the base of all C++ Celix trackers.
      *
      * It defines how trackers are closed and manages the tracker state.
      *
@@ -63,7 +63,7 @@ namespace celix {
      *  |
      *  ServiceTracker<I>
      *
-     * \note Thread safe.
+     * @note Thread safe.
      */
     class AbstractTracker {
     public:
@@ -73,7 +73,7 @@ namespace celix {
         virtual ~AbstractTracker() noexcept = default;
 
         /**
-         * \brief Check if the tracker is open (state == OPEN)
+         * @brief Check if the tracker is open (state == OPEN)
          */
         bool isOpen() const {
             std::lock_guard<std::mutex> lck{mutex};
@@ -81,7 +81,7 @@ namespace celix {
         }
 
         /**
-         * \brief Get the current state of the tracker.
+         * @brief Get the current state of the tracker.
          */
         TrackerState getState() const {
             std::lock_guard<std::mutex> lck{mutex};
@@ -89,7 +89,7 @@ namespace celix {
         }
 
         /**
-         * \brief Close the tracker (of the state is not CLOSED or CLOSING).
+         * @brief Close the tracker (of the state is not CLOSED or CLOSING).
          *
          * This will be done sync so then the close() method return the
          * tracker is closed and all the needed callbacks have been called.
@@ -115,15 +115,17 @@ namespace celix {
         }
 
         /**
-         * \brief Open the tracker (if the state is not OPEN or OPENING).
+         * @brief Open the tracker (if the state is not OPEN or OPENING).
          *
          * This is done async, meaning that the actual opening of the tracker will be
          * done a a Celix event processed on the Celix event thread.
+         *
+         * @throws celix::Exception
          */
         virtual void open() {}
 
         /**
-         * \brief Wait until a service tracker is completely OPEN or CLOSED.
+         * @brief Wait until a service tracker is completely OPEN or CLOSED.
          *
          * This method cannot be called on the Celix event thread.
          */
@@ -149,7 +151,7 @@ namespace celix {
         }
     protected:
         /**
-         * \brief Wait (if not on the Celix event thread) for the tracker to be OPEN or CLOSED.
+         * @brief Wait (if not on the Celix event thread) for the tracker to be OPEN or CLOSED.
          */
         void waitIfAble() const {
             auto* fw = celix_bundleContext_getFramework(cCtx.get());
@@ -200,13 +202,13 @@ namespace celix {
     };
 
     /**
-     * \brief he GenericServiceTracker class is a specialization of the AbstractTracker
+     * @brief he GenericServiceTracker class is a specialization of the AbstractTracker
      * for managing a service tracker.
      *
      * It defines how service trackers are opened ands manages some shared service tracker
      * fields.
      *
-     * \note Thread safe.
+     * @note Thread safe.
      */
     class GenericServiceTracker : public AbstractTracker {
     public:
@@ -224,7 +226,7 @@ namespace celix {
         ~GenericServiceTracker() override = default;
 
         /**
-         * \see celix::AbstractTracker::open
+         * @see celix::AbstractTracker::open
          */
         void open() override {
             std::lock_guard<std::mutex> lck{mutex};
@@ -233,21 +235,24 @@ namespace celix {
 
                 //NOTE assuming the opts already configured the callbacks
                 trkId = celix_bundleContext_trackServicesWithOptionsAsync(cCtx.get(), &opts);
+                if (trkId < 0) {
+                    throw celix::Exception{"Cannot open service tracker"};
+                }
             }
         }
 
         /**
-         * \brief The service name tracked by this service tracker.
+         * @brief The service name tracked by this service tracker.
          */
         const std::string& getServiceName() const { return svcName; }
 
         /**
-         * \brief The service version range tracked by this service tracker.
+         * @brief The service version range tracked by this service tracker.
          */
         const std::string& getServiceRange() const { return svcVersionRange; }
 
         /**
-         * \brief The additional filter for services tracked by this service tracker.
+         * @brief The additional filter for services tracked by this service tracker.
          *
          * This filter is additional to the service name and optional service
          * version range.
@@ -255,7 +260,7 @@ namespace celix {
         const celix::Filter& getFilter() const { return filter; }
 
         /**
-         * \brief The nr of services currently tracked by this tracker.
+         * @brief The nr of services currently tracked by this tracker.
          */
         std::size_t getServiceCount() const {
             return svcCount;
@@ -269,7 +274,7 @@ namespace celix {
     };
 
     /**
-     * \brief The ServiceTracker class tracks services
+     * @brief The ServiceTracker class tracks services
      *
      * Tracking in this case means that the ServiceTracker maintains and informs
      * - through the use of callbacks - a set services matching
@@ -277,12 +282,24 @@ namespace celix {
      * version range and matches with the LDAP filter).
      *
      *
-     * \note Thread safe.
+     * @note Thread safe.
      * \tparam I The service type to track
      */
     template<typename I>
     class ServiceTracker : public GenericServiceTracker {
     public:
+        /**
+         * @brief Creates a new service tracker and opens the tracker.
+         * @param cCtx The c bundle context.
+         * @param svcName The service name to filter for.
+         * @param svcVersionRange The optional service range to filter for.
+         * @param filter The optional (and additional with respect to svcName and svcVersionRange) LDAP filter to filter for.
+         * @param setCallbacks The callback which is called when a new service needs te be set which matches the trackers filter.
+         * @param addCallbacks The callback which is called when a new service is added to the Celix framework which matches the trackers filter.
+         * @param remCallbacks The callback which is called when a service is removed from the Celix framework which matches the trackers filter.
+         * @return The new service tracker as shared ptr.
+         * @throws celix::Exception
+         */
         static std::shared_ptr<ServiceTracker<I>> create(
                 std::shared_ptr<celix_bundle_context_t> cCtx,
                 std::string svcName,
@@ -307,7 +324,7 @@ namespace celix {
         }
 
         /**
-         * \brief Get the current highest ranking service tracked by this tracker.
+         * @brief Get the current highest ranking service tracked by this tracker.
          *
          * Note that this can be a nullptr if there are no services found.
          *
@@ -326,7 +343,7 @@ namespace celix {
         }
 
         /**
-         * \brief Get a vector of all the currently found services for this tracker.
+         * @brief Get a vector of all the currently found services for this tracker.
          *
          * This vector is ordered by service ranking (descending, highest ranking service first).
          *
@@ -540,12 +557,22 @@ namespace celix {
     };
 
     /**
-     * \brief The BundleTracker class tracks bundles
-     *
-     * \note Thread safe.
+     * @brief The BundleTracker class tracks bundles
+     * @note Thread safe.
      */
     class BundleTracker : public AbstractTracker {
     public:
+        /**
+         * @brief Creates a new bundle tracker and opens the tracker.
+         *
+         * @param cCtx The c bundle context.
+         * @param includeFrameworkBundle  Whether the Celix framework bundle should be included in the callbacks.
+         * @param onInstallCallbacks The callback which is called for every bundle being installed (also called retroactively for already installed bundles).
+         * @param onStartCallbacks The callback which is called for every bundle being started (also called retroactively for already started bundles).
+         * @param onStopCallbacks The callback which is called for every bundle being stopped (also called retroactively for already stopped bundles).
+         * @return The new bundle tracker as shared ptr.
+         * @throws celix::Exception.
+         */
         static std::shared_ptr<BundleTracker> create(
                 std::shared_ptr<celix_bundle_context_t> cCtx,
                 bool includeFrameworkBundle,
@@ -566,7 +593,7 @@ namespace celix {
         }
 
         /**
-         * \see AbstractTracker::open
+         * @see AbstractTracker::open
          */
         void open() override {
             std::lock_guard<std::mutex> lck{mutex};
@@ -574,6 +601,9 @@ namespace celix {
                 state = TrackerState::OPENING;
                 //NOTE the opts already configured the callbacks
                 trkId = celix_bundleContext_trackBundlesWithOptionsAsync(cCtx.get(), &opts);
+                if (trkId < 0) {
+                    throw celix::Exception{"Cannot open bundle tracker"};
+                }
             }
         }
     private:
@@ -630,33 +660,45 @@ namespace celix {
 
 
     /**
-     * \brief A trivial struct containing information about a service tracker.
+     * @brief A trivial struct containing information about a service tracker.
      */
     struct ServiceTrackerInfo {
         /**
-         * \brief The service name the service tracker is tracking.
+         * @brief The service name the service tracker is tracking.
          *
          * Will be '*' if the service tracker is tracking any services.
          */
         const std::string serviceName;
 
         /**
-         * \brief The service filter the service tracker is using for tracking.
+         * @brief The service filter the service tracker is using for tracking.
          */
         const celix::Filter filter;
 
         /**
-         * \brief The bundle id of the owner of the service tracker.
+         * @brief The bundle id of the owner of the service tracker.
          */
         const long trackerOwnerBundleId;
     };
 
     /**
-     * \brief The MetaTracker track service trackers.
-     * \note Thread safe.
+     * @brief The MetaTracker track service trackers.
+     * @throws celix::Exception
+     * @note Thread safe.
      */
     class MetaTracker : public AbstractTracker {
     public:
+
+        /**
+         * @brief Creates a new meta tracker and opens the tracker.
+         *
+         * @param cCtx The c bundle context.
+         * @param serviceName The service name used in the service tracker to track for.
+         * @param onTrackerCreated The callback which will be called when the tracker is created.
+         * @param onTrackerDestroyed The callback which will be called when the tracker is destroyed.
+         * @return The new meta tracker as shared ptr.
+         * @throws celix::Exception.
+         */
         static std::shared_ptr<MetaTracker> create(
                 std::shared_ptr<celix_bundle_context_t> cCtx,
                 std::string serviceName,
@@ -675,7 +717,7 @@ namespace celix {
         }
 
         /**
-         * \see AbstractTracker::open
+         * @see AbstractTracker::open
          */
         void open() override {
             std::lock_guard<std::mutex> lck{mutex};
@@ -707,6 +749,9 @@ namespace celix {
                             std::lock_guard<std::mutex> callbackLock{trk->mutex};
                             trk->state = TrackerState::OPEN;
                         });
+                if (trkId < 0) {
+                    throw celix::Exception{"Cannot open meta tracker"};
+                }
             }
         }
 

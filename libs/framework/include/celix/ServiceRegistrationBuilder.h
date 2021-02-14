@@ -27,11 +27,11 @@
 
 namespace celix {
     /**
-     * \brief Fluent builder API to build a new service registration for a service.
+     * @brief Fluent builder API to build a new service registration for a service.
      *
-     * \see celix::BundleContext::registerService for more info.
+     * @see celix::BundleContext::registerService for more info.
      * @tparam I The service type (Note should be the abstract interface, not the interface implementer)
-     * \note Not thread safe.
+     * @note Not thread safe.
      */
     template<typename I>
     class ServiceRegistrationBuilder {
@@ -58,28 +58,28 @@ namespace celix {
         ServiceRegistrationBuilder operator=(const ServiceRegistrationBuilder&) = delete;
 
         /**
-         * \brief Set the service version.
+         * @brief Set the service version.
          *
          * This will lead to a 'service.version' service property.
          */
         ServiceRegistrationBuilder& setVersion(std::string v) { version = std::move(v); return *this; }
 
         /**
-         * \brief Add a property to the service properties.
+         * @brief Add a property to the service properties.
          *
          * If a key is already present the value will be overridden.
          */
         ServiceRegistrationBuilder& addProperty(std::string key, std::string value) { properties.set(std::move(key), std::move(value)); return *this; }
 
         /**
-         * \brief Add a property to the service properties.
+         * @brief Add a property to the service properties.
          *
          * If a key is already present the value will be overridden.
          */
         ServiceRegistrationBuilder& addProperty(std::string key, const char* value) { properties.set(std::move(key), std::string{value}); return *this; }
 
         /**
-         * \brief Add a property to the service properties.
+         * @brief Add a property to the service properties.
          *
          * If a key is already present the value will be overridden.
          */
@@ -87,14 +87,14 @@ namespace celix {
         ServiceRegistrationBuilder& addProperty(std::string key, T value) { properties.set(std::move(key), std::to_string(std::move(value))); return *this; }
 
         /**
-         * \brief Set the service properties.
+         * @brief Set the service properties.
          *
          * Note this call will clear any already set properties.
          */
         ServiceRegistrationBuilder& setProperties(celix::Properties p) { properties = std::move(p); return *this; }
 
         /**
-         * \brief Add the properties to the service properties.
+         * @brief Add the properties to the service properties.
          *
          * Note this call will add these properties to the already set properties.
          * If a key is already present the value will be overridden.
@@ -107,7 +107,7 @@ namespace celix {
         }
 
         /**
-         * \brief Adds an on registered callback for the service registration.
+         * @brief Adds an on registered callback for the service registration.
          *
          * This callback will be called on the Celix event thread when the service is registered (REGISTERED state)
          */
@@ -117,7 +117,7 @@ namespace celix {
         }
 
         /**
-         * \brief Adds an on unregistered callback for the service registration.
+         * @brief Adds an on unregistered callback for the service registration.
          *
          * This callback will be called on the Celix event thread when the service is unregistered (UNREGISTERED state)
          */
@@ -127,7 +127,7 @@ namespace celix {
         }
 
         /**
-         * \brief Configure if the service registration will be done synchronized or asynchronized.
+         * @brief Configure if the service registration will be done synchronized or asynchronized.
          *
          * When a service registration is done synchronized the underlining service will be registered in the Celix
          * framework (and all service trackers will have been informed) when the build() returns.
@@ -147,7 +147,7 @@ namespace celix {
         }
 
         /**
-         * \brief Configure if the service un-registration will be done synchronized or asynchronized.
+         * @brief Configure if the service un-registration will be done synchronized or asynchronized.
          *
          * When a service un-registration is done synchronized the underlining service will be unregistered in the Celix
          * framework (and all service trackers will have been informed) when the ServiceRegistration::unregister is
@@ -170,7 +170,7 @@ namespace celix {
         }
 
         /**
-         * \brief "Builds" the service registration and return a ServiceRegistration.
+         * @brief "Builds" the service registration and return a ServiceRegistration.
          *
          * The ServiceRegistration will register the service to the Celix framework and unregister the service if
          * the shared ptr for the ServiceRegistration goes out of scope.

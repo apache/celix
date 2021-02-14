@@ -28,14 +28,14 @@
 namespace celix {
 
     /**
-     * \brief An RFC 1960-based (LDAP) Filter.
+     * @brief An RFC 1960-based (LDAP) Filter.
      *
      * Some examples:
      *        "(cn=Babs Jensen)"
      *        "(!(cn=Tim Howes))"
      *        "(&(" + celix::Constants::SERVICE_NAME + "=Person)(|(sn=Jensen)(cn=Babs J*)))"
      *
-     * \note Not thread safe.
+     * @note Not thread safe.
      */
     class Filter {
     public:
@@ -55,15 +55,15 @@ namespace celix {
         }
 
         /**
-         * \brief Warps a C filter to a C++ filter
-         * \warning Takes no ownership. Dealloction still has to be done the "C way".
+         * @brief Warps a C filter to a C++ filter
+         * @warning Takes no ownership. Dealloction still has to be done the "C way".
          */
         static Filter wrap(celix_filter_t* f) {
             return Filter{f};
         }
 
         /**
-         * \brief Gets the filter string
+         * @brief Gets the filter string
          */
         std::string getFilterString() const {
             auto cStr = getFilterCString();
@@ -71,21 +71,21 @@ namespace celix {
         }
 
         /**
-         * Get the C string. valid as long as the filter object is valid.
+         * @brief Get the C string. valid as long as the filter object is valid.
          */
         const char* getFilterCString() const {
             return celix_filter_getFilterString(cFilter.get());
         }
 
         /**
-         * \brief match the filter against the provided properties
+         * @brief match the filter against the provided properties
          */
         bool match(const celix::Properties& properties)  const {
             return celix_filter_match(cFilter.get(), properties.getCProperties());
         }
 
         /**
-         * \brief Find the attribute based on the provided key.
+         * @brief Find the attribute based on the provided key.
          * @return The found attribute value or an empty string if the attribute was not found.
          */
         std::string findAttribute(const std::string& attributeKey) const {
@@ -94,16 +94,16 @@ namespace celix {
         }
 
         /**
-         * \brief Check whether the filter has a attribute with the provided attribute key.
+         * @brief Check whether the filter has a attribute with the provided attribute key.
          */
         bool hasAttribute(const std::string& attributeKey) const {
             return celix_filter_findAttribute(cFilter.get(), attributeKey.c_str()) != nullptr;
         }
 
         /**
-         * \brief Get the underlining C filter object.
+         * @brief Get the underlining C filter object.
          *
-         * \warning Try not the depend on the C API from a C++ bundle. If features are missing these should be added to
+         * @warning Try not the depend on the C API from a C++ bundle. If features are missing these should be added to
          * the C++ API.
          */
         celix_filter_t* getCFilter() const {
@@ -111,7 +111,7 @@ namespace celix {
         }
 
         /**
-         * \brief Return whether the filter is empty.
+         * @brief Return whether the filter is empty.
          */
         bool empty() const {
             return cFilter == nullptr;

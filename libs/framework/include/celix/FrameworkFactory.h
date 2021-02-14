@@ -29,13 +29,13 @@
 namespace celix {
 
     /**
-     * \brief A factory for creating Celix framework instances.
+     * @brief A factory for creating Celix framework instances.
      */
     class FrameworkFactory {
     public:
 
         /**
-         * \brief Create a new celix Framework instance.
+         * @brief Create a new celix Framework instance.
          */
         static std::shared_ptr<celix::Framework> createFramework(const celix::Properties& properties = {}) {
             auto* copy = celix_properties_copy(properties.getCProperties());
