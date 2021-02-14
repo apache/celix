@@ -24,6 +24,7 @@
 
 #include "celix/PromiseFactory.h"
 #include "celix/DefaultExecutor.h"
+#include "celix/DefaultScheduledExecutor.h"
 
 /**
  * A special executor which introduces some sleeps to ensure some entropy during testing
@@ -52,7 +53,8 @@ public:
     ~PromiseTestSuite() noexcept override = default;
 
     std::shared_ptr<celix::IExecutor> executor = std::make_shared<ExecutorWithRandomPrePostSleep>();
-    std::shared_ptr<celix::PromiseFactory> factory = std::make_shared<celix::PromiseFactory>(executor);
+    std::shared_ptr<celix::IScheduledExecutor> scheduledExecutor = std::make_shared<celix::DefaultScheduledExecutor>();
+    std::shared_ptr<celix::PromiseFactory> factory = std::make_shared<celix::PromiseFactory>(executor, scheduledExecutor);
 };
 
 struct MovableInt {
@@ -274,8 +276,8 @@ TEST_F(PromiseTestSuite, resolveWithTimeout) {
                 secondFailedCalled = true;
             });
 
+    p.wait();
     t.join();
-    executor->wait();
     EXPECT_EQ(true, firstSuccessCalled);
     EXPECT_EQ(false, secondSuccessCalled);
     EXPECT_EQ(true, secondFailedCalled);
@@ -296,7 +298,7 @@ TEST_F(PromiseTestSuite, resolveWithTimeout) {
             .onFailure([&](const std::exception&) {
                 secondFailedCalled = true;
             });
-    executor->wait();
+    p2.wait();
     EXPECT_EQ(true, firstSuccessCalled);
     EXPECT_EQ(true, secondSuccessCalled);
     EXPECT_EQ(false, secondFailedCalled);
@@ -316,8 +318,8 @@ TEST_F(PromiseTestSuite, resolveWithDelay) {
             });
     deferred1.resolve(42);
 
-    executor->wait();
-    EXPECT_EQ(true, successCalled);
+    p.wait();
+    EXPECT_EQ(true, successCalled.load());
     auto durationInMs = std::chrono::duration_cast<std::chrono::milliseconds>(t2.load() - t1);
     EXPECT_GE(durationInMs, std::chrono::milliseconds{50});
 }

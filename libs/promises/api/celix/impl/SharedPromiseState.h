@@ -580,10 +580,10 @@ std::shared_ptr<celix::impl::SharedPromiseState<T>> celix::impl::SharedPromiseSt
                 if (v) {
                     state->resolve(std::move(*v));
                 } else {
-                    state->fail(std::move(e));
+                    state->fail(e);
                 }
             } catch (celix::PromiseInvocationException &) {
-                //somebody already resolved p?
+                //somebody already resolved promise?
             } catch (...) {
                 state->fail(std::current_exception());
             }
@@ -604,7 +604,7 @@ std::shared_ptr<celix::impl::SharedPromiseState<void>> celix::impl::SharedPromis
                     state->fail(*e);
                 }
             } catch (celix::PromiseInvocationException &) {
-                //somebody already resolved p?
+                //somebody already resolved promise?
             } catch (...) {
                 state->fail(std::current_exception());
             }

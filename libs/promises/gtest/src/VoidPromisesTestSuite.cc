@@ -200,8 +200,8 @@ TEST_F(VoidPromiseTestSuite, resolveWithTimeout) {
             .onFailure([&](const std::exception&) {
                 secondFailedCalled = true;
             });
+    p.wait();
     t.join();
-    executor->wait();
     EXPECT_EQ(true, firstSuccessCalled);
     EXPECT_EQ(false, secondSuccessCalled);
     EXPECT_EQ(true, secondFailedCalled);
@@ -243,7 +243,7 @@ TEST_F(VoidPromiseTestSuite, resolveWithDelay) {
                 failedCalled = true;
             });
     deferred1.resolve();
-    executor->wait();
+    p.wait();
     EXPECT_EQ(true, successCalled);
     EXPECT_EQ(false, failedCalled);
     auto durationInMs = std::chrono::duration_cast<std::chrono::milliseconds>(t2.load() - t1);
