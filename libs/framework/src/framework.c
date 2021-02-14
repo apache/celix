@@ -1531,7 +1531,7 @@ static void fw_handleEventRequest(celix_framework_t *framework, celix_framework_
         }
         if (status != CELIX_SUCCESS) {
             fw_log(framework->logger, CELIX_LOG_LEVEL_ERROR, "Could not register service async. svc name is %s, error is %s", event->serviceName, celix_strerror(status));
-        } else if (event->registerCallback != NULL) {
+        } else if (!event->cancelled && event->registerCallback != NULL) {
             event->registerCallback(event->registerData, serviceRegistration_getServiceId(reg));
         }
     } else if (event->type == CELIX_UNREGISTER_SERVICE_EVENT) {
@@ -1986,6 +1986,7 @@ static bool celix_framework_cancelServiceRegistrationIfPending(celix_framework_t
         if (event->type == CELIX_REGISTER_SERVICE_EVENT && event->registerServiceId == serviceId) {
             event->cancelled = true;
             cancelled = true;
+            break;
         }
     }
     for (size_t i = 0; i < fw->dispatcher.eventQueueSize; ++i) {
@@ -1994,6 +1995,7 @@ static bool celix_framework_cancelServiceRegistrationIfPending(celix_framework_t
         if (event->type == CELIX_REGISTER_SERVICE_EVENT && event->registerServiceId == serviceId) {
             event->cancelled = true;
             cancelled = true;
+            break;
         }
     }
     celixThreadMutex_unlock(&fw->dispatcher.mutex);
