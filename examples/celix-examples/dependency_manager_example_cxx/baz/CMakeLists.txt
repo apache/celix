@@ -15,12 +15,11 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_celix_bundle(foo_cxx
-    SYMBOLIC_NAME Foo
+add_celix_bundle(baz_cxx
+    SYMBOLIC_NAME Baz
     VERSION 1.0.0
     SOURCES
-        src/Foo.cc
-        src/FooActivator.cc
+        src/Baz.cc
+        src/BazActivator.cc
 )
-target_link_libraries(foo_cxx PRIVATE services_example_cxx_api)
-
+target_link_libraries(baz_cxx PRIVATE depman_example_cxx_api)

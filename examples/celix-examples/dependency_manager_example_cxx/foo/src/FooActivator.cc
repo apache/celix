@@ -17,26 +17,27 @@
  * under the License.
  */
 
-#include "Foo.h"
-#include "FooActivator.h"
 #include <celix/BundleActivator.h>
 
-using namespace celix::dm;
+#include "Foo.h"
 
-FooActivator::FooActivator(std::shared_ptr<DependencyManager> mng) {
+class FooActivator {
+public:
+    explicit FooActivator(const std::shared_ptr<DependencyManager>& mng) {
 
-    Component<Foo>& cmp = mng->createComponent<Foo>()
-        .setCallbacks(nullptr, &Foo::start, &Foo::stop, nullptr);
+        Component<Foo>& cmp = mng->createComponent<Foo>()
+                .setCallbacks(nullptr, &Foo::start, &Foo::stop, nullptr);
 
-    cmp.createServiceDependency<IAnotherExample>()
-            .setRequired(true)
-            .setVersionRange(IANOTHER_EXAMPLE_CONSUMER_RANGE)
-            .setCallbacks(&Foo::setAnotherExample);
+        cmp.createServiceDependency<IAnotherExample>()
+                .setRequired(true)
+                .setVersionRange(IANOTHER_EXAMPLE_CONSUMER_RANGE)
+                .setCallbacks(&Foo::setAnotherExample);
 
-    cmp.createCServiceDependency<example_t>(EXAMPLE_NAME)
-            .setRequired(false)
-            .setVersionRange(EXAMPLE_CONSUMER_RANGE)
-            .setCallbacks(&Foo::setExample);
-}
+        cmp.createCServiceDependency<example_t>(EXAMPLE_NAME)
+                .setRequired(false)
+                .setVersionRange(EXAMPLE_CONSUMER_RANGE)
+                .setCallbacks(&Foo::setExample);
+    }
+};
 
 CELIX_GEN_CXX_BUNDLE_ACTIVATOR(FooActivator)

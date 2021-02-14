@@ -22,4 +22,4 @@ add_celix_bundle(bar_cxx
         src/Bar.cc
         src/BarActivator.cc
 )
-target_link_libraries(bar_cxx PRIVATE services_example_cxx_api)
+target_link_libraries(bar_cxx PRIVATE depman_example_cxx_api)

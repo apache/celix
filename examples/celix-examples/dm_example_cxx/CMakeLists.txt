@@ -22,13 +22,8 @@ add_subdirectory(phase2)
 add_subdirectory(phase3)
 add_subdirectory(phase3_locking)
 
-#TODO,fixme this is example is currently broken
-message("services_example_cxx is currently broken!")
 add_celix_container("dm_example_cxx"
-    COPY
-    CXX
-    #GROUP cxx_examples
-    GROUP fixme
+    GROUP cxx_examples
     BUNDLES
         Celix::ShellCxx
         Celix::shell_tui
@@ -38,9 +33,6 @@ add_celix_container("dm_example_cxx"
         dm_example_cxx_phase2b
         dm_example_cxx_phase3
         dm_example_cxx_phase3_locking
-    PROPERTIES
-        LOGHELPER_ENABLE_STDOUT_FALLBACK=true
-    USE_CONFIG
 )
 
 

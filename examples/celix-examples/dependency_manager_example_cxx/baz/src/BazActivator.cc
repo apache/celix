@@ -17,28 +17,28 @@
  * under the License.
  */
 
-#include "Baz.h"
-#include "BazActivator.h"
 #include <celix/BundleActivator.h>
 
-using namespace celix::dm;
+#include "Baz.h"
 
-BazActivator::BazActivator(std::shared_ptr<DependencyManager> mng) {
+class BazActivator {
+public:
+    explicit BazActivator(const std::shared_ptr<DependencyManager> &mng) {
+        Component<Baz> &cmp = mng->createComponent<Baz>()
+                .setCallbacks(nullptr, &Baz::start, &Baz::stop, nullptr);
 
-    Component<Baz>& cmp = mng->createComponent<Baz>()
-        .setCallbacks(nullptr, &Baz::start, &Baz::stop, nullptr);
+        cmp.createServiceDependency<IAnotherExample>()
+                .setRequired(true)
+                .setStrategy(DependencyUpdateStrategy::locking)
+                .setVersionRange(IANOTHER_EXAMPLE_CONSUMER_RANGE)
+                .setCallbacks(&Baz::addAnotherExample, &Baz::removeAnotherExample);
 
-    cmp.createServiceDependency<IAnotherExample>()
-            .setRequired(true)
-            .setStrategy(DependencyUpdateStrategy::locking)
-            .setVersionRange(IANOTHER_EXAMPLE_CONSUMER_RANGE)
-            .setCallbacks(&Baz::addAnotherExample, &Baz::removeAnotherExample);
-
-    cmp.createCServiceDependency<example_t>(EXAMPLE_NAME)
-            .setRequired(false)
-            .setStrategy(DependencyUpdateStrategy::locking)
-            .setVersionRange(EXAMPLE_CONSUMER_RANGE)
-            .setCallbacks(&Baz::addExample, &Baz::removeExample);
-}
+        cmp.createCServiceDependency<example_t>(EXAMPLE_NAME)
+                .setRequired(false)
+                .setStrategy(DependencyUpdateStrategy::locking)
+                .setVersionRange(EXAMPLE_CONSUMER_RANGE)
+                .setCallbacks(&Baz::addExample, &Baz::removeExample);
+    }
+};
 
 CELIX_GEN_CXX_BUNDLE_ACTIVATOR(BazActivator)

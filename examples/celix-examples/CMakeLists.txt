@@ -34,7 +34,7 @@ if (EXAMPLES)
 
     add_subdirectory(readme_cxx_examples)
 
-    add_subdirectory(svc_depependency_example_cxx)
+    add_subdirectory(dependency_manager_example_cxx)
 
     #TODO refactor export_import
     #add_subdirectory(export_import)

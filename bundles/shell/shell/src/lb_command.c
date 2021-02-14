@@ -208,7 +208,23 @@ static void lbCommand_listBundles(celix_bundle_context_t *ctx, const lb_options_
         }
 
         if (sub_status == CELIX_SUCCESS) {
-            sub_status = module_getSymbolicName(module_ptr, &name_str);
+            if (id == CELIX_FRAMEWORK_BUNDLE_ID) {
+                name_str = "Celix framework";
+            } else {
+                bundle_archive_t* arch = NULL;
+                bundle_revision_t* rev = NULL;
+                manifest_pt man = NULL;
+                bundle_getArchive(bundle_ptr, &arch);
+                if (arch != NULL) {
+                    bundleArchive_getCurrentRevision(arch, &rev);
+                    if (rev != NULL) {
+                        bundleRevision_getManifest(rev, &man);
+                        if (man != NULL) {
+                            name_str = manifest_getValue(man, "Bundle-Name");
+                        }
+                    }
+                }
+            }
         }
 
         if (sub_status == CELIX_SUCCESS) {
@@ -219,7 +235,7 @@ static void lbCommand_listBundles(celix_bundle_context_t *ctx, const lb_options_
             if (opts->show_location) {
                 sub_status = bundleArchive_getLocation(archive_ptr, &name_str);
             } else if (opts->show_symbolic_name) {
-                // do nothing
+                sub_status = module_getSymbolicName(module_ptr, &name_str);
             } else if (opts->show_update_location) {
                 sub_status = bundleArchive_getLocation(archive_ptr, &name_str);
             }

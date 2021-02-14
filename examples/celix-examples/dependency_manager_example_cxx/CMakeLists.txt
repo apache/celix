@@ -15,19 +15,15 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(services_example_cxx_api INTERFACE)
-target_include_directories(services_example_cxx_api INTERFACE api)
+add_library(depman_example_cxx_api INTERFACE)
+target_include_directories(depman_example_cxx_api INTERFACE api)
 
 add_subdirectory(bar)
 add_subdirectory(foo)
 add_subdirectory(baz)
 
-#TODO,fixme this is example is currently broken
-message("services_example_cxx is currently broken!")
-add_celix_container(services_example_cxx
-    GROUP fixme
-    #GROUP cxx_examples
-    COPY
+add_celix_container(depman_example_cxx
+    GROUP cxx_examples
     BUNDLES
         Celix::ShellCxx
         Celix::shell_tui
