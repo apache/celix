@@ -114,6 +114,7 @@ celix_status_t serviceTracker_create(bundle_context_pt context, const char * ser
 celix_status_t serviceTracker_createWithFilter(bundle_context_pt context, const char * filter, service_tracker_customizer_pt customizer, service_tracker_pt *out) {
 	service_tracker_t* tracker = calloc(1, sizeof(*tracker));
 	*out = tracker;
+	tracker->state = CELIX_SERVICE_TRACKER_CLOSED;
     tracker->context = context;
     tracker->filter = celix_utils_strdup(filter);
     tracker->customizer = *customizer;
@@ -178,7 +179,7 @@ celix_status_t serviceTracker_open(service_tracker_pt tracker) {
     }
     celixThreadMutex_unlock(&tracker->mutex);
 
-    if (!addListener) {
+    if (addListener) {
         bundleContext_addServiceListener(tracker->context, &tracker->listener, tracker->filter);
     }
 
@@ -657,6 +658,7 @@ celix_service_tracker_t* celix_serviceTracker_createWithOptions(
         if (tracker != NULL) {
             tracker->context = ctx;
             tracker->serviceName = celix_utils_strdup(serviceName);
+            tracker->state = CELIX_SERVICE_TRACKER_CLOSED;
 
             //setting callbacks
             tracker->callbackHandle = opts->callbackHandle;
