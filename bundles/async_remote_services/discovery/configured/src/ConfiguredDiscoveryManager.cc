@@ -23,15 +23,16 @@
 #include <filesystem>
 
 #include <ConfiguredEndpoint.h>
+#include <celix_bundle_context.h>
 
 #include <rapidjson/writer.h>
 #include <rapidjson/filereadstream.h>
 
-namespace celix::async_rsa::discovery {
+namespace celix::async_rsa {
 
 constexpr const char* ENDPOINT_ARRAY = "endpoints";
 
-std::optional<std::string> read_whole_file(const std::string& path) {
+std::optional<std::string> readFile(const std::string& path) {
 
     std::string contents;
     std::ifstream file(path);
@@ -60,11 +61,6 @@ celix::dm::Properties convertEndpointPropertiesToCelix(const ConfiguredEndpointP
                                  {"endpoint.id", endpointProperties.getId()}};
 }
 
-std::string getDefaultEndpointFilePath() {
-
-    return (std::filesystem::current_path().string() + "/endpoint.json");
-}
-
 ConfiguredEndpointProperties convertCelixPropertiesToEndpoint(const celix::dm::Properties& celixProperties) {
 
     auto endpointId = celixProperties.at("endpoint.id");
@@ -84,12 +80,14 @@ ConfiguredDiscoveryManager::ConfiguredDiscoveryManager(std::shared_ptr<Dependenc
     _configurationFilePath = celix_bundleContext_getProperty(
             _dependencyManager->bundleContext(),
             CELIX_ASYNC_RSA_CONFIGURED_DISCOVERY_FILE,
-            getDefaultEndpointFilePath().c_str());
+            "");
+
+    discoverEndpoints();
 }
 
 void ConfiguredDiscoveryManager::discoverEndpoints() {
 
-    auto contents = read_whole_file(_configurationFilePath);
+    auto contents = readFile(_configurationFilePath);
     if (contents) {
         auto parsedJson = parseJSONFile(contents.value());
         if (parsedJson.IsObject()) {
@@ -119,7 +117,7 @@ void ConfiguredDiscoveryManager::publishParsedEndpoints() {
 void ConfiguredDiscoveryManager::addExportedEndpoint(IEndpoint* /*endpoint*/, celix::dm::Properties&& properties) {
 
     auto endpoint = std::make_shared<ConfiguredEndpoint>(convertCelixPropertiesToEndpoint(properties));
-    auto contents = read_whole_file(_configurationFilePath);
+    auto contents = readFile(_configurationFilePath);
     if (contents) {
         auto parsedJson = parseJSONFile(contents.value());
         auto endpointJSON = endpoint->exportToJSON(parsedJson);
@@ -137,7 +135,7 @@ void ConfiguredDiscoveryManager::addExportedEndpoint(IEndpoint* /*endpoint*/, ce
 void ConfiguredDiscoveryManager::removeExportedEndpoint(IEndpoint* /*endpoint*/, celix::dm::Properties&& properties) {
 
     auto endpoint = std::make_shared<ConfiguredEndpoint>(convertCelixPropertiesToEndpoint(properties));
-    auto contents = read_whole_file(_configurationFilePath);
+    auto contents = readFile(_configurationFilePath);
     if (contents) {
         auto parsedJson = parseJSONFile(contents.value());
         auto endpointJSON = endpoint->exportToJSON(parsedJson);
@@ -158,4 +156,4 @@ void ConfiguredDiscoveryManager::removeExportedEndpoint(IEndpoint* /*endpoint*/,
     }
 }
 
-} // end namespace celix::async_rsa::discovery.
+} // end namespace celix::async_rsa.

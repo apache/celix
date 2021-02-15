@@ -32,7 +32,7 @@
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
 
-namespace celix::async_rsa::discovery {
+namespace celix::async_rsa {
 
 /**
  * The ConfiguredDiscoveryManager class is responsible for finding and announcing endpoints from
@@ -98,4 +98,4 @@ private:
     std::vector<IEndpoint*> _publishedDiscoveredEndpoints;
 };
 
-} // end namespace celix::async_rsa::discovery.
+} // end namespace celix::async_rsa.

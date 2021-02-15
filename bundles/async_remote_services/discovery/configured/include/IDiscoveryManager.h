@@ -24,7 +24,7 @@
 #include <IEndpoint.h>
 #include <celix/dm/Properties.h>
 
-namespace celix::async_rsa::discovery {
+namespace celix::async_rsa {
 
 /**
  * Interface defining functions for all compatible discovery-manager classes.
@@ -62,4 +62,4 @@ public:
     virtual void removeExportedEndpoint(IEndpoint *endpoint, celix::dm::Properties&& properties) = 0;
 };
 
-} // end namespace celix::async_rsa::discovery.
+} // end namespace celix::async_rsa.

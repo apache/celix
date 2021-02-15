@@ -19,7 +19,7 @@
 
 #include <ConfiguredEndpoint.h>
 
-namespace celix::async_rsa::discovery {
+namespace celix::async_rsa {
 
 constexpr const char* ENDPOINT_IDENTIFIER = "endpoint.id";
 constexpr const char* ENDPOINT_IMPORTED = "service.imported";
@@ -109,4 +109,4 @@ const ConfiguredEndpointProperties& ConfiguredEndpoint::getProperties() const {
     return *_properties;
 }
 
-} // end namespace celix::async_rsa::discovery.
+} // end namespace celix::async_rsa.

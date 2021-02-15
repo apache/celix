@@ -77,6 +77,7 @@ add_celix_container(hardcoded_example_provider_cnt
         hardcoded_example_provider
         PROPERTIES
         "org.osgi.framework.storage=.publisherCache"
+        "CELIX_ASYNC_RSA_CONFIGURED_DISCOVERY_FILE=/home/rpl/rapid.json"
         )
 target_link_libraries(hardcoded_example_provider PRIVATE ${PUBSUB_CONTAINER_LIBS})
 

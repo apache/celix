@@ -26,7 +26,7 @@
 
 #include <rapidjson/document.h>
 
-namespace celix::async_rsa::discovery {
+namespace celix::async_rsa {
 
 class ConfiguredEndpointProperties {
 public:
@@ -116,4 +116,4 @@ private:
     std::optional<ConfiguredEndpointProperties> _properties;
 };
 
-} // end namespace celix::async_rsa::discovery.
+} // end namespace celix::async_rsa.

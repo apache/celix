@@ -85,10 +85,9 @@ void celix::async_rsa::AsyncTopologyManager::removeExportedService([[maybe_unuse
     }
 }
 
-void celix::async_rsa::AsyncTopologyManager::setDiscovery(celix::async_rsa::discovery::IDiscoveryManager *discovery, [[maybe_unused]] Properties &&properties) {
+void celix::async_rsa::AsyncTopologyManager::setDiscovery(celix::async_rsa::IDiscoveryManager *discovery, [[maybe_unused]] Properties &&properties) {
     std::unique_lock l(_m);
     _discovery = discovery;
-    _discovery->discoverEndpoints();
 }
 
 class TopologyManagerActivator {
@@ -100,7 +99,7 @@ public:
                 .setCallbacks(&celix::async_rsa::AsyncTopologyManager::addExportedService, &celix::async_rsa::AsyncTopologyManager::removeExportedService)
                 .build();
 
-        _cmp.createServiceDependency<celix::async_rsa::discovery::IDiscoveryManager>()
+        _cmp.createServiceDependency<celix::async_rsa::IDiscoveryManager>()
                 .setRequired(true)
                 .setCallbacks(&celix::async_rsa::AsyncTopologyManager::setDiscovery)
                 .build();
