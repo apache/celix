@@ -102,7 +102,7 @@ namespace celix {
                 future.wait_for(std::chrono::seconds{0}); //trigger async execution
                 std::lock_guard<std::mutex> lck{mutex};
                 futures[scheduledFuture] = std::move(future);
-
+                removeCompletedFutures();
                 return scheduledFuture;
             } catch (std::system_error& /*sysExp*/) {
                 throw celix::RejectedExecutionException{};
