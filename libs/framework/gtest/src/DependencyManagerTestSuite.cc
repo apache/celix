@@ -531,7 +531,7 @@ TEST_F(DependencyManagerTestSuite, UnneededSuspendIsPrevented) {
     EXPECT_EQ(cmp2.getState(), celix::dm::ComponentState::TRACKING_OPTIONAL);
 
     TestService svc;
-    std::string svcName = celix::dm::typeName<TestService>();
+    std::string svcName = celix::typeName<TestService>();
     celix_service_registration_options opts{};
     opts.svc = &svc;
     opts.serviceName = svcName.c_str();

@@ -19,16 +19,7 @@
 
 #pragma once
 
-#include <map>
-#include <string>
-#include <list>
-#include <tuple>
-#include <typeinfo>
-#include <memory>
-#include <cxxabi.h>
-#include <string.h>
-#include <stdlib.h>
-#include <iostream>
+#include "celix/Utils.h"
 
 namespace celix { namespace dm {
     //forward declarations
@@ -47,4 +38,8 @@ namespace celix { namespace dm {
     template<class T, class I>
     class ServiceDependency;
 
+    template<typename T>
+    std::string typeName() {
+        return celix::typeName<T>();
+    }
 }}
