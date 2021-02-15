@@ -167,7 +167,7 @@ TEST_F(PromiseTestSuite, onSuccessHandling) {
         });
     deferred.resolve(42);
 
-    executor->wait();
+    factory->wait();
     EXPECT_EQ(true, called);
     EXPECT_EQ(true, resolveCalled);
 }
@@ -195,7 +195,7 @@ TEST_F(PromiseTestSuite, onFailureHandling) {
         deferred.fail(std::current_exception());
     }
 
-    executor->wait();
+    factory->wait();
     EXPECT_EQ(false, successCalled);
     EXPECT_EQ(true, failureCalled);
     EXPECT_EQ(true, resolveCalled);
@@ -217,7 +217,7 @@ TEST_F(PromiseTestSuite, resolveSuccessWith) {
     auto p = deferred2.getPromise();
     deferred1.resolve(42);
 
-    executor->wait();
+    factory->wait();
     EXPECT_EQ(true, called);
 }
 
@@ -244,25 +244,24 @@ TEST_F(PromiseTestSuite, resolveFailureWith) {
         deferred1.fail(std::current_exception());
     }
 
-    executor->wait();
+    factory->wait();
     EXPECT_EQ(true, failureCalled);
 }
 
 TEST_F(PromiseTestSuite, resolveWithTimeout) {
-    auto deferred1 = factory->deferred<long>();
-    std::thread t{[&deferred1]{
-        std::this_thread::sleep_for(std::chrono::milliseconds{250});
+    auto promise1 = factory->deferredTask<long>([](auto d) {
+        std::this_thread::sleep_for(std::chrono::milliseconds{50});
         try {
-            deferred1.resolve(42);
+            d.resolve(42);
         } catch(...) {
             //note resolve with throws an exception if promise is already resolved
         }
-    }};
+    });
 
     std::atomic<bool> firstSuccessCalled = false;
     std::atomic<bool> secondSuccessCalled = false;
     std::atomic<bool> secondFailedCalled = false;
-    auto p = deferred1.getPromise()
+    promise1
             .onSuccess([&](long value) {
                 EXPECT_EQ(42, value);
                 firstSuccessCalled = true;
@@ -276,8 +275,8 @@ TEST_F(PromiseTestSuite, resolveWithTimeout) {
                 secondFailedCalled = true;
             });
 
-    p.wait();
-    t.join();
+    promise1.wait();
+    factory->wait();
     EXPECT_EQ(true, firstSuccessCalled);
     EXPECT_EQ(false, secondSuccessCalled);
     EXPECT_EQ(true, secondFailedCalled);
@@ -285,7 +284,11 @@ TEST_F(PromiseTestSuite, resolveWithTimeout) {
     firstSuccessCalled = false;
     secondSuccessCalled = false;
     secondFailedCalled = false;
-    auto p2 = deferred1.getPromise()
+    auto promise2 = factory->deferredTask<long>([](auto d) {
+        d.resolve(42);
+    });
+
+    promise2
             .onSuccess([&](long value) {
                 EXPECT_EQ(42, value);
                 firstSuccessCalled = true;
@@ -298,7 +301,8 @@ TEST_F(PromiseTestSuite, resolveWithTimeout) {
             .onFailure([&](const std::exception&) {
                 secondFailedCalled = true;
             });
-    p2.wait();
+    promise2.wait();
+    factory->wait();
     EXPECT_EQ(true, firstSuccessCalled);
     EXPECT_EQ(true, secondSuccessCalled);
     EXPECT_EQ(false, secondFailedCalled);
@@ -319,6 +323,7 @@ TEST_F(PromiseTestSuite, resolveWithDelay) {
     deferred1.resolve(42);
 
     p.wait();
+    factory->wait();
     EXPECT_EQ(true, successCalled.load());
     auto durationInMs = std::chrono::duration_cast<std::chrono::milliseconds>(t2.load() - t1);
     EXPECT_GE(durationInMs, std::chrono::milliseconds{50});
@@ -339,7 +344,7 @@ TEST_F(PromiseTestSuite, resolveWithRecover) {
     } catch (...) {
         deferred1.fail(std::current_exception());
     }
-    executor->wait();
+    factory->wait();
     EXPECT_EQ(true, successCalled);
 }
 
@@ -365,7 +370,7 @@ TEST_F(PromiseTestSuite, chainWithThenAccept) {
                 called = true;
             });
     deferred1.resolve(42);
-    executor->wait();
+    factory->wait();
     EXPECT_TRUE(called);
 }
 
@@ -433,7 +438,7 @@ TEST_F(PromiseTestSuite, chainFailedPromises) {
     auto deferred = factory->deferred<long>();
     deferred.fail(std::logic_error{"fail"});
     deferred.getPromise().then<long>(success, failed);
-    executor->wait();
+    factory->wait();
     EXPECT_TRUE(called);
 }
 

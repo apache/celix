@@ -29,13 +29,9 @@ namespace celix {
 
     class DefaultDelayedScheduledFuture : public celix::IScheduledFuture {
     public:
-        static std::shared_ptr<DefaultDelayedScheduledFuture> create(std::function<void()> task, std::chrono::duration<double, std::milli> delayInMs) {
-            auto delayedFuture = std::shared_ptr<DefaultDelayedScheduledFuture>{new DefaultDelayedScheduledFuture{std::move(task), delayInMs}};
-            delayedFuture->start();
-            return delayedFuture;
-        }
+        explicit DefaultDelayedScheduledFuture(std::chrono::duration<double, std::milli> _delayInMs) : delayInMs{_delayInMs} {}
 
-        virtual ~DefaultDelayedScheduledFuture() noexcept override = default;
+        ~DefaultDelayedScheduledFuture() noexcept override = default;
 
         bool isCancelled() const override {
             std::lock_guard<std::mutex> lock{mutex};
@@ -47,51 +43,34 @@ namespace celix {
             return done;
         }
 
+        void setDone() {
+            std::lock_guard<std::mutex> lock{mutex};
+            done = true;
+            cond.notify_all();
+        }
+
         void cancel() override {
             std::lock_guard<std::mutex> lock{mutex};
             cancelled = true;
+            cond.notify_all();
         }
 
-        void start() {
+        std::chrono::duration<double, std::milli> getDelayInMs() const {
             std::lock_guard<std::mutex> lock{mutex};
-            //TODO ensure that async is possible or throw RejectedExecutionException
-            future = std::async(std::launch::async, [this] {
-                auto t = std::chrono::steady_clock::now();
-                std::unique_lock<std::mutex> lock{mutex};
-                while (!cancelled && std::chrono::duration_cast<std::chrono::milliseconds>(t - startTime) < delayInMs) {
-                    auto timeLeft = delayInMs - std::chrono::duration_cast<std::chrono::milliseconds>(t - startTime);
-                    cond.wait_for(lock, timeLeft);
-                    t = std::chrono::steady_clock::now();
-                }
-                if (!cancelled) {
-                    task();
-                }
-                done = true;
-            });
-
-            //trigger async future for execution
-            future.wait_for(std::chrono::seconds{0});
-        }
-
-        const std::future<void>& getFuture() const {
-            std::lock_guard<std::mutex> lock{mutex};
-            return future;
-        }
-    private:
-        explicit DefaultDelayedScheduledFuture(std::function<void()> _task, std::chrono::duration<double, std::milli> _delay) :
-                startTime{std::chrono::steady_clock::now()},
-                task{std::move(_task)},
-                delayInMs{_delay} {}
-
-        std::chrono::duration<double, std::milli> getDelayOrPeriodInMilli() const override {
             return delayInMs;
         }
 
-        const std::chrono::steady_clock::time_point startTime;
-        const std::function<void()> task;
+        void waitFor(std::chrono::duration<double, std::milli> time) {
+            std::unique_lock<std::mutex> lock{mutex};
+            cond.wait_for(lock, time);
+        }
+    private:
+        [[nodiscard]] std::chrono::duration<double, std::milli> getDelayOrPeriodInMilli() const override {
+            return delayInMs;
+        }
+
         const std::chrono::duration<double, std::milli> delayInMs;
         mutable std::mutex mutex{}; //protects below
-        std::future<void> future{};
         std::condition_variable cond{};
         bool cancelled{false};
         bool done{false};
@@ -105,11 +84,29 @@ namespace celix {
     class DefaultScheduledExecutor : public celix::IScheduledExecutor {
     public:
         std::shared_ptr<celix::IScheduledFuture> scheduleInMilli(int /*priority*/, std::chrono::duration<double, std::milli> delay, std::function<void()> task) override {
-            std::lock_guard<std::mutex> lck{mutex};
-            auto scheduledFuture = DefaultDelayedScheduledFuture::create(std::move(task), delay);
-            futures.emplace_back(scheduledFuture);
-            removeCompletedFutures();
-            return scheduledFuture;
+            auto scheduledFuture = std::make_shared<DefaultDelayedScheduledFuture>(delay);
+            try {
+                auto future = std::async(std::launch::async, [task = std::move(task), scheduledFuture] {
+                    auto startTime = std::chrono::steady_clock::now();
+                    auto t = std::chrono::steady_clock::now();
+                    while (!scheduledFuture->isCancelled() && std::chrono::duration_cast<std::chrono::milliseconds>(t - startTime) < scheduledFuture->getDelayInMs()) {
+                        auto timeLeft = scheduledFuture->getDelayInMs() - std::chrono::duration_cast<std::chrono::milliseconds>(t - startTime);
+                        scheduledFuture->waitFor(timeLeft);
+                        t = std::chrono::steady_clock::now();
+                    }
+                    if (!scheduledFuture->isCancelled()) {
+                        task();
+                    }
+                    scheduledFuture->setDone();
+                });
+                future.wait_for(std::chrono::seconds{0}); //trigger async execution
+                std::lock_guard<std::mutex> lck{mutex};
+                futures[scheduledFuture] = std::move(future);
+
+                return scheduledFuture;
+            } catch (std::system_error& /*sysExp*/) {
+                throw celix::RejectedExecutionException{};
+            }
         }
 
         void wait() override {
@@ -125,7 +122,7 @@ namespace celix {
             //note should be called while mutex is lock.
             auto it = futures.begin();
             while (it != futures.end()) {
-                if ((*it)->isDone()) {
+                if (it->first->isDone()) {
                     //remove scheduled future
                     it = futures.erase(it);
                 } else {
@@ -135,6 +132,6 @@ namespace celix {
         }
 
         std::mutex mutex{}; //protect futures.
-        std::vector<std::shared_ptr<DefaultDelayedScheduledFuture>> futures{};
+        std::unordered_map<std::shared_ptr<DefaultDelayedScheduledFuture>, std::future<void>> futures{};
     };
 }

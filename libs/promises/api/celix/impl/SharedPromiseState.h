@@ -548,7 +548,7 @@ template<typename Rep, typename Period>
 std::shared_ptr<celix::impl::SharedPromiseState<T>> celix::impl::SharedPromiseState<T>::timeout(std::shared_ptr<SharedPromiseState<T>> state, std::chrono::duration<Rep, Period> duration) {
     auto p = celix::impl::SharedPromiseState<T>::create(state->executor, state->scheduledExecutor, state->priority);
     p->resolveWith(state);
-    auto schedFuture = state->scheduledExecutor->schedule(state->priority, duration, [p]{
+    auto schedFuture = p->scheduledExecutor->schedule(p->priority, duration, [p]{
         p->tryFail(std::make_exception_ptr(celix::PromiseTimeoutException{}));
     });
     p->addOnSuccessConsumeCallback([schedFuture](T /*val*/){
@@ -561,7 +561,7 @@ template<typename Rep, typename Period>
 std::shared_ptr<celix::impl::SharedPromiseState<void>> celix::impl::SharedPromiseState<void>::timeout(std::shared_ptr<SharedPromiseState<void>> state, std::chrono::duration<Rep, Period> duration) {
     auto p = celix::impl::SharedPromiseState<void>::create(state->executor, state->scheduledExecutor, state->priority);
     p->resolveWith(state);
-    auto schedFuture = state->scheduledExecutor->schedule(state->priority, duration, [p]{
+    auto schedFuture = p->scheduledExecutor->schedule(p->priority, duration, [p]{
             p->tryFail(std::make_exception_ptr(celix::PromiseTimeoutException{}));
     });
     p->addOnSuccessConsumeCallback([schedFuture]{
@@ -935,8 +935,6 @@ void celix::impl::SharedPromiseState<T>::complete(std::unique_lock<std::mutex>& 
     }
     done = true;
     cond.notify_all();
-
-
     while (!chain.empty()) {
         std::vector<std::function<void()>> localChains{};
         localChains.swap(chain);
@@ -958,8 +956,6 @@ inline void celix::impl::SharedPromiseState<void>::complete(std::unique_lock<std
     }
     done = true;
     cond.notify_all();
-
-
     while (!chain.empty()) {
         std::vector<std::function<void()>> localChains{};
         localChains.swap(chain);

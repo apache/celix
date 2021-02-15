@@ -26,8 +26,7 @@
 class VoidPromiseTestSuite : public ::testing::Test {
 public:
     ~VoidPromiseTestSuite() noexcept override {
-        //TODO improve, see PromiseTestSuite
-        executor->wait();
+        factory->wait();
     }
 
     std::shared_ptr<celix::DefaultExecutor> executor = std::make_shared<celix::DefaultExecutor>();
@@ -94,7 +93,7 @@ TEST_F(VoidPromiseTestSuite, onSuccessHandling) {
             resolveCalled = true;
         });
     deferred.resolve();
-    executor->wait();
+    factory->wait();
     EXPECT_EQ(true, called);
     EXPECT_EQ(true, resolveCalled);
 }
@@ -121,7 +120,7 @@ TEST_F(VoidPromiseTestSuite, onFailureHandling) {
     } catch (...) {
         deferred.fail(std::current_exception());
     }
-    executor->wait();
+    factory->wait();
     EXPECT_EQ(false, successCalled);
     EXPECT_EQ(true, failureCalled);
     EXPECT_EQ(true, resolveCalled);
@@ -142,7 +141,7 @@ TEST_F(VoidPromiseTestSuite, resolveSuccessWith) {
     deferred2.resolveWith(deferred1.getPromise());
     auto p = deferred2.getPromise();
     deferred1.resolve();
-    executor->wait();
+    factory->wait();
     EXPECT_EQ(true, called);
 }
 
@@ -170,26 +169,25 @@ TEST_F(VoidPromiseTestSuite, resolveFailureWith) {
     } catch (...) {
         deferred1.fail(std::current_exception());
     }
-    executor->wait();
+    factory->wait();
     EXPECT_EQ(false, successCalled);
     EXPECT_EQ(true, failureCalled);
 }
 
 TEST_F(VoidPromiseTestSuite, resolveWithTimeout) {
-    auto deferred1 = factory->deferred<void>();
-    std::thread t{[&deferred1]{
-        std::this_thread::sleep_for(std::chrono::milliseconds{250});
+    auto promise1 = factory->deferredTask<void>([](auto d) {
+        std::this_thread::sleep_for(std::chrono::milliseconds{50});
         try {
-            deferred1.resolve();
+            d.resolve();
         } catch(...) {
             //note resolve with throws an exception if promise is already resolved
         }
-    }};
+    });
 
     std::atomic<bool> firstSuccessCalled = false;
     std::atomic<bool> secondSuccessCalled = false;
     std::atomic<bool> secondFailedCalled = false;
-    auto p = deferred1.getPromise()
+    promise1
             .onSuccess([&]() {
                 firstSuccessCalled = true;
             })
@@ -200,8 +198,9 @@ TEST_F(VoidPromiseTestSuite, resolveWithTimeout) {
             .onFailure([&](const std::exception&) {
                 secondFailedCalled = true;
             });
-    p.wait();
-    t.join();
+
+    promise1.wait();
+    factory->wait();
     EXPECT_EQ(true, firstSuccessCalled);
     EXPECT_EQ(false, secondSuccessCalled);
     EXPECT_EQ(true, secondFailedCalled);
@@ -209,18 +208,23 @@ TEST_F(VoidPromiseTestSuite, resolveWithTimeout) {
     firstSuccessCalled = false;
     secondSuccessCalled = false;
     secondFailedCalled = false;
-    auto p2 = deferred1.getPromise()
-            .onSuccess([&firstSuccessCalled]() {
+    auto promise2 = factory->deferredTask<void>([](auto d) {
+        d.resolve();
+    });
+
+    promise2
+            .onSuccess([&]() {
                 firstSuccessCalled = true;
             })
-            .timeout(std::chrono::milliseconds{50})
-            .onSuccess([&secondSuccessCalled]() {
+            .timeout(std::chrono::milliseconds{250}) /*NOTE: more than the possible delay introduced by the executor*/
+            .onSuccess([&]() {
                 secondSuccessCalled = true;
             })
-            .onFailure([&secondFailedCalled](const std::exception&) {
+            .onFailure([&](const std::exception&) {
                 secondFailedCalled = true;
             });
-    p2.wait();
+    promise2.wait();
+    factory->wait();
     EXPECT_EQ(true, firstSuccessCalled);
     EXPECT_EQ(true, secondSuccessCalled);
     EXPECT_EQ(false, secondFailedCalled);
@@ -244,6 +248,7 @@ TEST_F(VoidPromiseTestSuite, resolveWithDelay) {
             });
     deferred1.resolve();
     p.wait();
+    factory->wait();
     EXPECT_EQ(true, successCalled);
     EXPECT_EQ(false, failedCalled);
     auto durationInMs = std::chrono::duration_cast<std::chrono::milliseconds>(t2.load() - t1);
@@ -264,7 +269,7 @@ TEST_F(VoidPromiseTestSuite, resolveWithRecover) {
     } catch (...) {
         deferred1.fail(std::current_exception());
     }
-    executor->wait();
+    factory->wait();
     EXPECT_EQ(true, successCalled);
 }
 
@@ -278,7 +283,7 @@ TEST_F(VoidPromiseTestSuite, chainAndMapResult) {
                 return 2;
             }).getValue();
     t.join();
-    executor->wait();
+    factory->wait();
     EXPECT_EQ(2, two);
 }
 
@@ -290,7 +295,7 @@ TEST_F(VoidPromiseTestSuite, chainWithThenAccept) {
                 called = true;
             });
     deferred1.resolve();
-    executor->wait();
+    factory->wait();
     EXPECT_TRUE(called);
 }
 
@@ -319,7 +324,7 @@ TEST_F(VoidPromiseTestSuite, outOfScopeUnresolvedPromises) {
         });
         //promise and deferred out of scope
     }
-    executor->wait();
+    factory->wait();
     EXPECT_FALSE(called);
 }
 
@@ -349,7 +354,7 @@ TEST_F(VoidPromiseTestSuite, chainFailedPromises) {
     auto deferred = factory->deferred<void>();
     deferred.fail(std::logic_error{"fail"});
     deferred.getPromise().then<void>(success, failed);
-    executor->wait();
+    factory->wait();
     EXPECT_TRUE(called);
 }
 

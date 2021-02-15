@@ -67,6 +67,11 @@ namespace celix {
 
         //TODO
         //[[nodiscard]] std::shared_ptr<celix::IScheduledExecutor> getScheduledExecutor() const;
+
+        /**
+         * @brief Wait (block) until all tasks for the executor and scheduled executor are completed
+         */
+         void wait();
     private:
         std::shared_ptr<celix::IExecutor> executor;
         std::shared_ptr<celix::IScheduledExecutor> scheduledExecutor;
@@ -86,8 +91,7 @@ inline celix::PromiseFactory::PromiseFactory(
 
 inline celix::PromiseFactory::~PromiseFactory() noexcept {
     //ensure that the executors tasks are empty before allowing the to be deallocated.
-    executor->wait();
-    scheduledExecutor->wait();
+    wait();
 }
 
 template<typename T>
@@ -142,4 +146,9 @@ inline celix::Promise<void> celix::PromiseFactory::resolvedWithPrio(int priority
 
 inline std::shared_ptr<celix::IExecutor> celix::PromiseFactory::getExecutor() const {
     return executor;
+}
+
+inline void celix::PromiseFactory::wait() {
+    scheduledExecutor->wait();
+    executor->wait();
 }
