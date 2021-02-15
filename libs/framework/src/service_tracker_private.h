@@ -23,6 +23,13 @@
 #include "service_tracker.h"
 #include "celix_types.h"
 
+enum celix_service_tracker_state {
+    CELIX_SERVICE_TRACKER_OPENING,
+    CELIX_SERVICE_TRACKER_OPEN,
+    CELIX_SERVICE_TRACKER_CLOSING,
+    CELIX_SERVICE_TRACKER_CLOSED
+};
+
 struct celix_serviceTracker {
 	bundle_context_t *context;
 
@@ -60,7 +67,7 @@ struct celix_serviceTracker {
     celix_thread_cond_t  cond;
     celix_array_list_t *trackedServices;
     celix_array_list_t *untrackingServices;
-    bool open;
+    enum celix_service_tracker_state state;
     long currentHighestServiceId;
 };
 

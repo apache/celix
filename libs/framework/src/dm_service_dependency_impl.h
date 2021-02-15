@@ -78,6 +78,10 @@ bool celix_dmServiceDependency_isAvailable(celix_dm_service_dependency_t *depend
 bool celix_dmServiceDependency_isRequired(const celix_dm_service_dependency_t* dependency);
 bool celix_dmServiceDependency_isTrackerOpen(celix_dm_service_dependency_t* dependency);
 
+
+bool celix_dmServiceDependency_isSetCallbackConfigured(celix_dm_service_dependency_t* dependency);
+bool celix_dmServiceDependency_isAddRemCallbacksConfigured(celix_dm_service_dependency_t* dependency);
+
 #ifdef __cplusplus
 }
 #endif
