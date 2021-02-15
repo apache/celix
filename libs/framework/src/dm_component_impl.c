@@ -550,8 +550,12 @@ static bool celix_dmComponent_needsSuspend(celix_dm_component_t *component, cons
     }
     celixThreadMutex_unlock(&component->mutex);
     if (cmpActive) {
+        bool callbackConfigured = event->eventType == CELIX_DM_EVENT_SVC_SET ?
+                                  celix_dmServiceDependency_isSetCallbackConfigured(event->dep) :
+                                 /*add or rem*/ celix_dmServiceDependency_isAddRemCallbacksConfigured(event->dep);
         dm_service_dependency_strategy_t strategy = celix_dmServiceDependency_getStrategy(event->dep);
-        return strategy == DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND;
+        bool suspendStrategy = strategy == DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND;
+        return suspendStrategy && callbackConfigured;
     } else {
         return false;
     }
