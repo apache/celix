@@ -68,11 +68,6 @@ public:
     ConfiguredDiscoveryManager& operator=(const ConfiguredDiscoveryManager&) = delete;
 
     /**
-     * @see IDiscoveryManager::discoverEndpoints.
-     */
-    void discoverEndpoints() override;
-
-    /**
      * Exports incoming new service exported endpoint to the JSON document.
      * @param endpoint the endpoint object.
      * @param properties the celix properties concerning the endpoint.
@@ -87,6 +82,8 @@ public:
     void removeExportedEndpoint(IEndpoint *endpoint, celix::dm::Properties&& properties) override;
 
 private:
+
+    void discoverEndpoints();
 
     void publishParsedEndpoints();
 

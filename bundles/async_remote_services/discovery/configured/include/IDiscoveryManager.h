@@ -43,11 +43,6 @@ public:
     virtual ~IDiscoveryManager() = default;
 
     /**
-     * Task the discovery-manager to find endpoints from remote frameworks or local files.
-     */
-    virtual void discoverEndpoints() = 0;
-
-    /**
      * Task the discovery-manager to make the given endpoint visible for discovery by other managers/ frameworks.
      * @param endpoint The endpoint pointer in question.
      * @param properties The celix properties concerning the endpoint.
