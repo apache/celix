@@ -244,9 +244,8 @@ celix_status_t celix_dmServiceDependency_disable(celix_dm_service_dependency_t *
 }
 
 bool celix_dmServiceDependency_isDisabled(celix_dm_service_dependency_t *dependency) {
-    bool isStopped;
     celixThreadMutex_lock(&dependency->mutex);
-    isStopped = dependency->svcTrackerId == -1L && dependency->nrOfActiveStoppingTrackers == 0;
+    bool isStopped = dependency->svcTrackerId == -1L && dependency->nrOfActiveStoppingTrackers == 0;
     celixThreadMutex_unlock(&dependency->mutex);
     return isStopped;
 }
@@ -324,9 +323,8 @@ celix_status_t celix_dmServiceDependency_invokeRemove(celix_dm_service_dependenc
 }
 
 bool celix_dmServiceDependency_isAvailable(celix_dm_service_dependency_t *dependency) {
-    bool avail;
     celixThreadMutex_lock(&dependency->mutex);
-    avail = dependency->trackedSvcCount > 0;
+    bool avail = dependency->trackedSvcCount > 0;
     celixThreadMutex_unlock(&dependency->mutex);
     return avail;
 }
@@ -343,18 +341,12 @@ bool celix_dmServiceDependency_isTrackerOpen(celix_dm_service_dependency_t* depe
 }
 
 bool celix_dmServiceDependency_isSetCallbackConfigured(celix_dm_service_dependency_t* dependency) {
-    bool isUsed;
-    celixThreadMutex_lock(&dependency->mutex);
-    isUsed = dependency->set != NULL || dependency->setWithProperties != NULL;
-    celixThreadMutex_unlock(&dependency->mutex);
+    bool isUsed = dependency->set != NULL || dependency->setWithProperties != NULL;
     return isUsed;
 }
 bool celix_dmServiceDependency_isAddRemCallbacksConfigured(celix_dm_service_dependency_t* dependency) {
-    bool isUsed;
-    celixThreadMutex_lock(&dependency->mutex);
-    isUsed = dependency->add != NULL || dependency->addWithProperties != NULL ||
+    bool isUsed = dependency->add != NULL || dependency->addWithProperties != NULL ||
             dependency->remove != NULL || dependency->remWithProperties != NULL;
-    celixThreadMutex_unlock(&dependency->mutex);
     return isUsed;
 }
 
