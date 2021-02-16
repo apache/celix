@@ -22,6 +22,7 @@
 #include <memory>
 #include <future>
 #include <functional>
+#include <unordered_map>
 
 #include "celix/IScheduledExecutor.h"
 
