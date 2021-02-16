@@ -105,8 +105,6 @@ public:
 
     const ConfiguredEndpointProperties& getProperties() const;
 
-    rapidjson::Value exportToJSON(rapidjson::Document& document);
-
     std::string ToString() const {
         return "[ConfiguredEndpoint (" + _properties->ToString() + ")]";
     }

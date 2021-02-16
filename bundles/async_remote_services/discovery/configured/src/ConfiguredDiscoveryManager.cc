@@ -26,7 +26,6 @@
 #include <celix_bundle_context.h>
 
 #include <rapidjson/writer.h>
-//#include <rapidjson/filereadstream.h>
 
 namespace celix::async_rsa {
 
@@ -116,50 +115,12 @@ void ConfiguredDiscoveryManager::publishParsedEndpoints() {
 
 void ConfiguredDiscoveryManager::addExportedEndpoint(IEndpoint* /*endpoint*/, celix::dm::Properties&& /*properties*/) {
 
-    // Currently unused for configured discovery manager.
-    // See below for an example implementation whenever it is needed later.
-
-    /* auto endpoint = std::make_shared<ConfiguredEndpoint>(convertCelixPropertiesToEndpoint(properties));
-     * auto contents = readFile(_configurationFilePath);
-     * if (contents) {
-     *   auto parsedJson = parseJSONFile(contents.value());
-     *   auto endpointJSON = endpoint->exportToJSON(parsedJson);
-     *   if (parsedJson.IsObject()) {
-     *     if (parsedJson.HasMember(ENDPOINT_ARRAY)) {
-     *       rapidjson::Value& endpointJsonArray = parsedJson[ENDPOINT_ARRAY];
-     *       if (endpointJsonArray.IsArray()) {
-     *         endpointJsonArray.PushBack(endpointJSON, parsedJson.GetAllocator());
-     *       }
-     *     }
-     *   }
-     * } */
+    // unused with configured discovery.
 }
 
 void ConfiguredDiscoveryManager::removeExportedEndpoint(IEndpoint* /*endpoint*/, celix::dm::Properties&& /*properties*/) {
 
-    // Currently unused for configured discovery manager.
-    // See below for an example implementation whenever it is needed later.
-
-    /*  auto endpoint = std::make_shared<ConfiguredEndpoint>(convertCelixPropertiesToEndpoint(properties));
-     *  auto contents = readFile(_configurationFilePath);
-     *  if (contents) {
-     *    auto parsedJson = parseJSONFile(contents.value());
-     *    auto endpointJSON = endpoint->exportToJSON(parsedJson);
-     *    if (parsedJson.IsObject()) {
-     *      if (parsedJson.HasMember(ENDPOINT_ARRAY)) {
-     *        rapidjson::Value& endpointJsonArray = parsedJson[ENDPOINT_ARRAY];
-     *        if (endpointJsonArray.IsArray()) {
-     *          for (rapidjson::Value::ValueIterator itr = endpointJsonArray.Begin(); itr != endpointJsonArray.End();) {
-     *            if (std::strcmp(( *itr )["endpoint.id"].GetString(), endpointJSON["endpoint.id"].GetString()) == 0) {
-     *              itr = endpointJsonArray.Erase(itr);
-     *            } else {
-     *               ++itr;
-     *            }
-     *          }
-     *        }
-     *      }
-     *    }
-     *  }*/
+    // unused with configured discovery.
 }
 
 } // end namespace celix::async_rsa.

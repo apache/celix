@@ -72,38 +72,6 @@ ConfiguredEndpoint::ConfiguredEndpoint(const ConfiguredEndpointProperties& endpo
             _properties{endpointProperties} {
 }
 
-rapidjson::Value ConfiguredEndpoint::exportToJSON(rapidjson::Document& document) {
-
-    auto& allocator = document.GetAllocator();
-    auto result = rapidjson::Value(rapidjson::kObjectType);
-
-    rapidjson::Value id;
-    id.SetString(rapidjson::StringRef(_properties->getId().c_str()));
-    result.AddMember("endpoint.id", id, allocator);
-
-    result.AddMember("service.imported", _properties->isImported(), allocator);
-
-//    result.AddMember("service.imported.configs", _properties->getImportConfigs(), allocator);
-
-    rapidjson::Value exports;
-    exports.SetString(rapidjson::StringRef(_properties->getExports().c_str()));
-    result.AddMember("service.exported.interfaces", exports, allocator);
-
-//    result.AddMember("endpoint.objectClass", _properties->getObjectClass(), allocator);
-
-    rapidjson::Value scope;
-    scope.SetString(rapidjson::StringRef(_properties->getScope().c_str()));
-    result.AddMember("endpoint.scope", scope, allocator);
-
-    rapidjson::Value topic;
-    topic.SetString(rapidjson::StringRef(_properties->getTopic().c_str()));
-    result.AddMember("endpoint.topic", topic, allocator);
-
-//    document.AddMember("endpoint", result, document.GetAllocator());
-
-    return result;
-}
-
 const ConfiguredEndpointProperties& ConfiguredEndpoint::getProperties() const {
 
     return *_properties;

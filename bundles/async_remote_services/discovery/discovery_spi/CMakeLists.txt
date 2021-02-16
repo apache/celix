@@ -15,5 +15,15 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_subdirectory(discovery_spi)
-add_subdirectory(configured)
+add_library(discovery_spi STATIC
+        src/do_not_remove.cc)
+
+set_target_properties(discovery_spi PROPERTIES OUTPUT_NAME "celix_discovery_spi")
+target_include_directories(discovery_spi PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
+        $<INSTALL_INTERFACE:include/celix/discovery_spi>)
+
+install(TARGETS discovery_spi EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT async_rsa_discovery_configured)
+install(DIRECTORY include/ DESTINATION include/celix/discovery_spi COMPONENT async_rsa_discovery_configured)
+
+add_library(Celix::discovery_spi ALIAS discovery_spi)
