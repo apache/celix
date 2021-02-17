@@ -46,7 +46,7 @@
 #define PUBSUB_UDPMC_VERBOSE_DEFAULT                true
 
 /**
- * If set true on the endpoint, the udp mc TopicSender bind and/or discovery url is statically configured.
+ * If set true on the endpoint, the udp mc TopicSender bind and/or async_discovery_configured url is statically configured.
  */
 #define PUBSUB_UDPMC_STATIC_CONFIGURED                  "updmc.static.configured"
 

@@ -18,43 +18,40 @@
  */
 #pragma once
 
-/** Path for configured endpoint/ discovery file. */
-#define CELIX_ASYNC_RSA_CONFIGURED_DISCOVERY_FILE "CELIX_ASYNC_RSA_CONFIGURED_DISCOVERY_FILE"
-
-#include <IEndpoint.h>
+#include <endpoint.h>
 #include <celix/dm/Properties.h>
 
-namespace celix::async_rsa {
+namespace celix::rsa {
 
 /**
- * Interface defining functions for all compatible discovery-manager classes.
+ * Interface defining functions for all compatible endpoint announcer classes.
  */
-class IDiscoveryManager {
+class IEndpointAnnouncer {
 public:
 
     /**
      * Defaulted constructor.
      */
-    IDiscoveryManager() = default;
+    IEndpointAnnouncer() = default;
 
     /**
      * Defaulted virtual destructor.
      */
-    virtual ~IDiscoveryManager() = default;
+    virtual ~IEndpointAnnouncer() = default;
 
     /**
-     * Task the discovery-manager to make the given endpoint visible for discovery by other managers/ frameworks.
+     * Task the endpoint announcer to make the given endpoint visible for async_discovery_configured by other managers/ frameworks.
      * @param endpoint The endpoint pointer in question.
      * @param properties The celix properties concerning the endpoint.
      */
-    virtual void addExportedEndpoint(IEndpoint *endpoint, celix::dm::Properties&& properties) = 0;
+    virtual void announceEndpoint(IEndpoint *endpoint, celix::dm::Properties&& properties) = 0;
 
     /**
-     * Task the discovery-manager to remove the discoverability of a given endpoint.
+     * Task the endpoint announcer to remove the discoverability of a given endpoint.
      * @param endpoint The endpoint pointer in question.
      * @param properties The celix properties concerning the endpoint, used for lookup.
      */
-    virtual void removeExportedEndpoint(IEndpoint *endpoint, celix::dm::Properties&& properties) = 0;
+    virtual void revokeEndpoint(IEndpoint *endpoint, celix::dm::Properties&& properties) = 0;
 };
 
-} // end namespace celix::async_rsa.
+} // end namespace celix::rsa.

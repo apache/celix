@@ -38,12 +38,12 @@ celix::async_rsa::AsyncAdmin::~AsyncAdmin() {
     celix_logHelper_destroy(_logger);
 }
 
-void celix::async_rsa::AsyncAdmin::addEndpoint(celix::async_rsa::IEndpoint *endpoint, Properties &&properties) {
+void celix::async_rsa::AsyncAdmin::addEndpoint(celix::rsa::IEndpoint *endpoint, Properties &&properties) {
     std::unique_lock l(_m);
     addEndpointInternal(endpoint, std::forward<Properties>(properties));
 }
 
-void celix::async_rsa::AsyncAdmin::removeEndpoint([[maybe_unused]] celix::async_rsa::IEndpoint *endpoint, [[maybe_unused]] Properties &&properties) {
+void celix::async_rsa::AsyncAdmin::removeEndpoint([[maybe_unused]] celix::rsa::IEndpoint *endpoint, [[maybe_unused]] Properties &&properties) {
     auto interfaceIt = properties.find("service.exported.interfaces");
 
     if(interfaceIt == end(properties)) {
@@ -117,7 +117,7 @@ void celix::async_rsa::AsyncAdmin::removeImportedServiceFactory([[maybe_unused]]
     _factories.erase(interfaceIt->second);
 }
 
-void celix::async_rsa::AsyncAdmin::addEndpointInternal(celix::async_rsa::IEndpoint *endpoint, Properties &&properties) {
+void celix::async_rsa::AsyncAdmin::addEndpointInternal(celix::rsa::IEndpoint *endpoint, Properties &&properties) {
     auto interfaceIt = properties.find("service.exported.interfaces");
 
     if(interfaceIt == end(properties)) {
@@ -147,7 +147,7 @@ void celix::async_rsa::AsyncAdmin::addEndpointInternal(celix::async_rsa::IEndpoi
 class AdminActivator {
 public:
     explicit AdminActivator([[maybe_unused]] std::shared_ptr<celix::dm::DependencyManager> mng) : _cmp(mng->createComponent(std::make_unique<celix::async_rsa::AsyncAdmin>(mng))) {
-        _cmp.createServiceDependency<celix::async_rsa::IEndpoint>()
+        _cmp.createServiceDependency<celix::rsa::IEndpoint>()
                 .setRequired(false)
                 .setCallbacks(&celix::async_rsa::AsyncAdmin::addEndpoint, &celix::async_rsa::AsyncAdmin::removeEndpoint)
                 .build();

@@ -294,7 +294,7 @@ celix_status_t pubsub_websocketAdmin_setupTopicSender(void *handle, const char *
             newEndpoint = pubsubEndpoint_create(psa->fwUUID, scope, topic, PUBSUB_PUBLISHER_ENDPOINT_TYPE, psaType,
                                                 serType, NULL, NULL);
 
-            //Set endpoint visibility to local because the http server handles discovery
+            //Set endpoint visibility to local because the http server handles async_discovery_configured
             celix_properties_set(newEndpoint, PUBSUB_ENDPOINT_VISIBILITY, PUBSUB_ENDPOINT_LOCAL_VISIBILITY);
 
             //if available also set container name
@@ -367,7 +367,7 @@ celix_status_t pubsub_websocketAdmin_setupTopicReceiver(void *handle, const char
             newEndpoint = pubsubEndpoint_create(psa->fwUUID, scope, topic,
                                                 PUBSUB_SUBSCRIBER_ENDPOINT_TYPE, psaType, serType, NULL, NULL);
 
-            //Set endpoint visibility to local because the http server handles discovery
+            //Set endpoint visibility to local because the http server handles async_discovery_configured
             celix_properties_set(newEndpoint, PUBSUB_ENDPOINT_VISIBILITY, PUBSUB_ENDPOINT_LOCAL_VISIBILITY);
 
             //if available also set container name

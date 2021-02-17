@@ -382,7 +382,7 @@ extern "C" {
 			CHECK_EQUAL(CELIX_SUCCESS, status);
 
             /* we need to sleep here for a bit to ensure
-             * that the client has flushed the old discovery
+             * that the client has flushed the old async_discovery_configured
              * values
              */
             sleep(2);

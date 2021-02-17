@@ -196,7 +196,7 @@ celix_status_t endpointDiscoveryPoller_addDiscoveryEndpoint(endpoint_discovery_p
 		status = arrayList_createWithEquals(endpointDiscoveryPoller_endpointDescriptionEquals, &endpoints);
 
 		if (status == CELIX_SUCCESS) {
-            celix_logHelper_debug(*poller->loghelper, "ENDPOINT_POLLER: add new discovery endpoint with url %s", url);
+            celix_logHelper_debug(*poller->loghelper, "ENDPOINT_POLLER: add new async_discovery_configured endpoint with url %s", url);
 			hashMap_put(poller->entries, strdup(url), endpoints);
 			endpointDiscoveryPoller_poll(poller, url, endpoints);
 		}
@@ -223,7 +223,7 @@ celix_status_t endpointDiscoveryPoller_removeDiscoveryEndpoint(endpoint_discover
 		} else {
 			char* origKey = hashMapEntry_getKey(entry);
 
-            celix_logHelper_debug(*poller->loghelper, "ENDPOINT_POLLER: remove discovery endpoint with url %s", url);
+            celix_logHelper_debug(*poller->loghelper, "ENDPOINT_POLLER: remove async_discovery_configured endpoint with url %s", url);
 
 			array_list_pt entries = hashMap_remove(poller->entries, url);
 

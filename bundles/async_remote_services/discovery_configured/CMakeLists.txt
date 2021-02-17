@@ -33,7 +33,7 @@ target_include_directories(async_rsa_discovery_configured PUBLIC
 target_link_libraries(async_rsa_discovery_configured PUBLIC
         Celix::async_rsa_common
         Celix::framework
-        Celix::discovery_spi
+        Celix::rsa_spi
         )
 install_celix_bundle(async_rsa_discovery_configured EXPORT celix COMPONENT async_rsa_discovery_configured)
 add_library(Celix::async_rsa_discovery_configured ALIAS async_rsa_discovery_configured)

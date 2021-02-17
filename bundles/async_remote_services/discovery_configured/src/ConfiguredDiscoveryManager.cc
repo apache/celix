@@ -27,7 +27,7 @@
 
 #include <rapidjson/writer.h>
 
-namespace celix::async_rsa {
+namespace celix::rsa {
 
 constexpr const char* ENDPOINT_ARRAY = "endpoints";
 
@@ -113,14 +113,14 @@ void ConfiguredDiscoveryManager::publishParsedEndpoints() {
     }
 }
 
-void ConfiguredDiscoveryManager::addExportedEndpoint(IEndpoint* /*endpoint*/, celix::dm::Properties&& /*properties*/) {
+void ConfiguredDiscoveryManager::announceEndpoint(IEndpoint* /*endpoint*/, celix::dm::Properties&& /*properties*/) {
 
-    // unused with configured discovery.
+    // unused with configured async_discovery_configured.
 }
 
-void ConfiguredDiscoveryManager::removeExportedEndpoint(IEndpoint* /*endpoint*/, celix::dm::Properties&& /*properties*/) {
+void ConfiguredDiscoveryManager::revokeEndpoint(IEndpoint* /*endpoint*/, celix::dm::Properties&& /*properties*/) {
 
-    // unused with configured discovery.
+    // unused with configured async_discovery_configured.
 }
 
-} // end namespace celix::async_rsa.
+} // end namespace celix::rsa.

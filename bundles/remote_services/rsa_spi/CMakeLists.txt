@@ -5,9 +5,9 @@
 # to you under the Apache License, Version 2.0 (the
 # "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
-#
+# 
 #   http://www.apache.org/licenses/LICENSE-2.0
-#
+# 
 # Unless required by applicable law or agreed to in writing,
 # software distributed under the License is distributed on an
 # "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -15,15 +15,15 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(discovery_spi STATIC
-        src/do_not_remove.cc)
+add_library(rsa_spi INTERFACE)
+target_include_directories(rsa_spi INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
+    $<INSTALL_INTERFACE:include/celix/rsa>
+)
+target_link_libraries(rsa_spi INTERFACE Celix::async_rsa_discovery_configured)
 
-set_target_properties(discovery_spi PROPERTIES OUTPUT_NAME "celix_discovery_spi")
-target_include_directories(discovery_spi PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
-        $<INSTALL_INTERFACE:include/celix/discovery_spi>)
+install(TARGETS rsa_spi EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT rsa)
+install(DIRECTORY include/ DESTINATION include/celix/rsa COMPONENT rsa)
 
-install(TARGETS discovery_spi EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT async_rsa_discovery_configured)
-install(DIRECTORY include/ DESTINATION include/celix/discovery_spi COMPONENT async_rsa_discovery_configured)
-
-add_library(Celix::discovery_spi ALIAS discovery_spi)
+#Setup target aliases to match external usage
+add_library(Celix::rsa_spi ALIAS rsa_spi)

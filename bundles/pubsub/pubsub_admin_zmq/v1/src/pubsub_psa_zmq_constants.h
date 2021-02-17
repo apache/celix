@@ -73,12 +73,12 @@
 #define PUBSUB_ZMQ_STATIC_BIND_URL_FOR "PSA_ZMQ_STATIC_BIND_URL_FOR_"
 
 /**
- * Can be set in the topic properties to fix a static url used for discovery
+ * Can be set in the topic properties to fix a static url used for async_discovery_configured
  */
 #define PUBSUB_ZMQ_STATIC_DISCOVER_URL       "zmq.static.bind.url"
 
 /**
- * If set true on the endpoint, the zmq TopicSender bind and/or discovery url is statically configured.
+ * If set true on the endpoint, the zmq TopicSender bind and/or async_discovery_configured url is statically configured.
  */
 #define PUBSUB_ZMQ_STATIC_CONFIGURED       "zmq.static.configured"
 

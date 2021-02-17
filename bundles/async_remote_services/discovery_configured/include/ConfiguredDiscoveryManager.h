@@ -18,13 +18,13 @@
  */
 #pragma once
 
-#include <IDiscoveryManager.h>
+#include <endpoint_announcer.h>
 
 #include <memory>
 #include <vector>
 #include <string>
 
-#include <IEndpoint.h>
+#include <endpoint.h>
 #include <celix_api.h>
 
 #include <ConfiguredEndpoint.h>
@@ -32,13 +32,16 @@
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
 
-namespace celix::async_rsa {
+/** Path for configured endpoint/ async_discovery_configured file. */
+#define CELIX_ASYNC_RSA_CONFIGURED_DISCOVERY_FILE "CELIX_ASYNC_RSA_CONFIGURED_DISCOVERY_FILE"
+
+namespace celix::rsa {
 
 /**
  * The ConfiguredDiscoveryManager class is responsible for finding and announcing endpoints from
- * a local configuration JSON file. This discovery manager announces local exported endpoints and imported endpoints from the JSON file.
+ * a local configuration JSON file. This async_discovery_configured manager announces local exported endpoints and imported endpoints from the JSON file.
  */
-class ConfiguredDiscoveryManager final : public IDiscoveryManager {
+class ConfiguredDiscoveryManager final : public IEndpointAnnouncer {
 public:
 
     /**
@@ -72,14 +75,14 @@ public:
      * @param endpoint the endpoint object.
      * @param properties the celix properties concerning the endpoint.
      */
-    void addExportedEndpoint(IEndpoint *endpoint, celix::dm::Properties&& properties) override;
+    void announceEndpoint(IEndpoint *endpoint, celix::dm::Properties&& properties) override;
 
     /**
      * Searches for the endpoint in the JSON document and removes it if found.
      * @param endpoint the endpoint object.
      * @param properties the celix properties concerning the endpoint.
      */
-    void removeExportedEndpoint(IEndpoint *endpoint, celix::dm::Properties&& properties) override;
+    void revokeEndpoint(IEndpoint *endpoint, celix::dm::Properties&& properties) override;
 
 private:
 
@@ -95,4 +98,4 @@ private:
     std::vector<IEndpoint*> _publishedDiscoveredEndpoints;
 };
 
-} // end namespace celix::async_rsa.
+} // end namespace celix::rsa.

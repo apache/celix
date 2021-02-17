@@ -42,8 +42,8 @@
 
 #define DEFAULT_SERVER_IP   "127.0.0.1"
 #define DEFAULT_SERVER_PORT "9999"
-#define DEFAULT_SERVER_PATH "/org.apache.celix.discovery.shm"
-#define DEFAULT_POLL_ENDPOINTS "http://localhost:9999/org.apache.celix.discovery.shm"
+#define DEFAULT_SERVER_PATH "/org.apache.celix.async_discovery_configured.shm"
+#define DEFAULT_POLL_ENDPOINTS "http://localhost:9999/org.apache.celix.async_discovery_configured.shm"
 
 #define MAX_ROOTNODE_LENGTH		 64
 #define MAX_LOCALNODE_LENGTH	256
@@ -61,7 +61,7 @@ struct shm_watcher {
 static celix_status_t discoveryShmWatcher_getRootPath(char* rootNode) {
     celix_status_t status = CELIX_SUCCESS;
 
-    strcpy(rootNode, "discovery");
+    strcpy(rootNode, "async_discovery_configured");
 
     return status;
 }
@@ -109,7 +109,7 @@ static celix_status_t discoveryShmWatcher_syncEndpoints(discovery_t *discovery) 
     // get all locally registered endpoints
     endpointDiscoveryPoller_getDiscoveryEndpoints(discovery->poller, registeredKeyArr);
 
-    // add discovery points which are in shm, but not local yet
+    // add async_discovery_configured points which are in shm, but not local yet
     for (i = 0; i < shmSize; i++) {
         char url[SHM_ENTRY_MAX_VALUE_LENGTH];
 
@@ -161,7 +161,7 @@ static void* discoveryShmWatcher_run(void* data) {
     char url[MAX_LOCALNODE_LENGTH];
 
     if (discoveryShmWatcher_getLocalNodePath(discovery->context, &localNodePath[0]) != CELIX_SUCCESS) {
-        celix_logHelper_log(discovery->loghelper, CELIX_LOG_LEVEL_WARNING, "Cannot retrieve local discovery path.");
+        celix_logHelper_log(discovery->loghelper, CELIX_LOG_LEVEL_WARNING, "Cannot retrieve local async_discovery_configured path.");
     }
 
     if (endpointDiscoveryServer_getUrl(discovery->server, &url[0]) != CELIX_SUCCESS) {
@@ -171,7 +171,7 @@ static void* discoveryShmWatcher_run(void* data) {
     while (watcher->running) {
         // register own framework
         if (discoveryShm_set(watcher->shmData, localNodePath, url) != CELIX_SUCCESS) {
-            celix_logHelper_log(discovery->loghelper, CELIX_LOG_LEVEL_WARNING, "Cannot set local discovery registration.");
+            celix_logHelper_log(discovery->loghelper, CELIX_LOG_LEVEL_WARNING, "Cannot set local async_discovery_configured registration.");
         }
 
         discoveryShmWatcher_syncEndpoints(discovery);
@@ -246,7 +246,7 @@ celix_status_t discoveryShmWatcher_destroy(discovery_t *discovery) {
         free(watcher);
     }
     else {
-        celix_logHelper_log(discovery->loghelper, CELIX_LOG_LEVEL_WARNING, "Cannot remove local discovery registration.");
+        celix_logHelper_log(discovery->loghelper, CELIX_LOG_LEVEL_WARNING, "Cannot remove local async_discovery_configured registration.");
     }
 
 

@@ -18,7 +18,7 @@
  */
 #pragma once
 
-#include <IEndpoint.h>
+#include <endpoint.h>
 
 #include <optional>
 #include <string>
@@ -26,7 +26,7 @@
 
 #include <rapidjson/document.h>
 
-namespace celix::async_rsa {
+namespace celix::rsa {
 
 class ConfiguredEndpointProperties {
 public:
@@ -114,4 +114,4 @@ private:
     std::optional<ConfiguredEndpointProperties> _properties;
 };
 
-} // end namespace celix::async_rsa.
+} // end namespace celix::rsa.

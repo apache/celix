@@ -54,7 +54,7 @@ struct etcd_watcher {
 #define MAX_VALUE_LENGTH			256
 
 #define CFG_ETCD_ROOT_PATH			"DISCOVERY_ETCD_ROOT_PATH"
-#define DEFAULT_ETCD_ROOTPATH		"discovery"
+#define DEFAULT_ETCD_ROOTPATH		"async_discovery_configured"
 
 #define CFG_ETCD_SERVER_IP			"DISCOVERY_ETCD_SERVER_IP"
 #define DEFAULT_ETCD_SERVER_IP		"127.0.0.1"
@@ -109,11 +109,11 @@ static void add_node(const char *key, const char *value, void* arg) {
 }
 
 /*
- * retrieves all already existing discovery endpoints
+ * retrieves all already existing async_discovery_configured endpoints
  * from etcd and adds them to the poller.
  *
  * returns the modifiedIndex of the last modified
- * discovery endpoint (see etcd documentation).
+ * async_discovery_configured endpoint (see etcd documentation).
  */
 static celix_status_t etcdWatcher_addAlreadyExistingWatchpoints(etcd_watcher_t *watcher, discovery_t *discovery, long long* highestModified) {
 	celix_status_t status = CELIX_SUCCESS;
@@ -159,7 +159,7 @@ static celix_status_t etcdWatcher_addOwnFramework(etcd_watcher_t *watcher)
 	if (etcdlib_get(watcher->etcdlib, localNodePath, &value, &modIndex) != ETCDLIB_RC_OK) {
 		etcdlib_set(watcher->etcdlib, localNodePath, endpoints, watcher->ttl, false);
 	} else if (etcdlib_set(watcher->etcdlib, localNodePath, endpoints, watcher->ttl , true) != ETCDLIB_RC_OK)  {
-		celix_logHelper_log(*watcher->loghelper, CELIX_LOG_LEVEL_WARNING, "Cannot register local discovery");
+		celix_logHelper_log(*watcher->loghelper, CELIX_LOG_LEVEL_WARNING, "Cannot register local async_discovery_configured");
     }
 
 	FREE_MEM(value);
@@ -222,7 +222,7 @@ static celix_status_t etcdWatcher_removeEntry(etcd_watcher_t *watcher, char* key
 
 /*
  * performs (blocking) etcd_watch calls to check for
- * changing discovery endpoint information within etcd.
+ * changing async_discovery_configured endpoint information within etcd.
  */
 static void* etcdWatcher_run(void* data) {
 	etcd_watcher_t *watcher = (etcd_watcher_t *) data;
@@ -340,7 +340,7 @@ celix_status_t etcdWatcher_destroy(etcd_watcher_t *watcher) {
 
 	if (status != CELIX_SUCCESS || etcdlib_del(watcher->etcdlib, localNodePath) == false)
 	{
-		celix_logHelper_log(*watcher->loghelper, CELIX_LOG_LEVEL_WARNING, "Cannot remove local discovery registration.");
+		celix_logHelper_log(*watcher->loghelper, CELIX_LOG_LEVEL_WARNING, "Cannot remove local async_discovery_configured registration.");
 	}
 
 	watcher->loghelper = NULL;

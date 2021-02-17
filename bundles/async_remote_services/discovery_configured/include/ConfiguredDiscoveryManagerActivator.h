@@ -57,7 +57,7 @@ public:
 
 private:
 
-    celix::dm::Component<celix::async_rsa::ConfiguredDiscoveryManager>& _component;
+    celix::dm::Component<celix::rsa::ConfiguredDiscoveryManager>& _component;
 };
 
 } // end anonymous namespace.

@@ -33,9 +33,9 @@
 typedef struct endpoint_discovery_server endpoint_discovery_server_t;
 
 /**
- * Creates and starts a new instance of an endpoint discovery server.
+ * Creates and starts a new instance of an endpoint async_discovery_configured server.
  *
- * @param discovery [in] the discovery service itself;
+ * @param discovery [in] the async_discovery_configured service itself;
  * @param context [in] the bundle context;
  * @param server [out] the pointer to the created instance.
  * @return CELIX_SUCCESS when successful.
@@ -49,7 +49,7 @@ celix_status_t endpointDiscoveryServer_create(
         endpoint_discovery_server_t **server);
 
 /**
- * Stops and destroys a given instance of an endpoint discovery server.
+ * Stops and destroys a given instance of an endpoint async_discovery_configured server.
  *
  * @param server [in] the pointer to the instance to destroy.
  * @return CELIX_SUCCESS when successful.
@@ -57,27 +57,27 @@ celix_status_t endpointDiscoveryServer_create(
 celix_status_t endpointDiscoveryServer_destroy(endpoint_discovery_server_t *server);
 
 /**
- * Adds a given endpoint description to expose through the given discovery server.
+ * Adds a given endpoint description to expose through the given async_discovery_configured server.
  *
- * @param server [in] the endpoint discovery server to expose the endpoint through;
+ * @param server [in] the endpoint async_discovery_configured server to expose the endpoint through;
  * @param endpoint [in] the endpoint description to expose.
  * @return CELIX_SUCCESS when successful.
  */
 celix_status_t endpointDiscoveryServer_addEndpoint(endpoint_discovery_server_t *server, endpoint_description_t *endpoint);
 
 /**
- * Removes a given endpoint description from exposure through the given discovery server.
+ * Removes a given endpoint description from exposure through the given async_discovery_configured server.
  *
- * @param server [in] the endpoint discovery server to remove the endpoint from;
+ * @param server [in] the endpoint async_discovery_configured server to remove the endpoint from;
  * @param endpoint [in] the endpoint description to remove.
  * @return CELIX_SUCCESS when successful.
  */
 celix_status_t endpointDiscoveryServer_removeEndpoint(endpoint_discovery_server_t *server, endpoint_description_t *endpoint);
 
 /**
- * Returns the url, which is used by the discovery server to announce the endpoints
+ * Returns the url, which is used by the async_discovery_configured server to announce the endpoints
  *
- * @param server [in] the endpoint discovery server to retrieve the url from
+ * @param server [in] the endpoint async_discovery_configured server to retrieve the url from
  * @param url [out] url which is used to announce the endpoints.
  * @return CELIX_SUCCESS when successful.
  */

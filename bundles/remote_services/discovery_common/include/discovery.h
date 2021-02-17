@@ -17,7 +17,7 @@
  * under the License.
  */
 /**
- * discovery.h
+ * async_discovery_configured.h
  *
  *  \date       Sep 29, 2011
  *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
@@ -64,7 +64,7 @@ struct discovery {
 };
 
 
-/* those one could be put into a general discovery.h - file */
+/* those one could be put into a general async_discovery_configured.h - file */
 celix_status_t discovery_create(celix_bundle_context_t *context, discovery_t **discovery);
 celix_status_t discovery_destroy(discovery_t *discovery);
 
