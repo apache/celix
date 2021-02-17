@@ -115,12 +115,12 @@ void ConfiguredDiscoveryManager::publishParsedEndpoints() {
 
 void ConfiguredDiscoveryManager::announceEndpoint(IEndpoint* /*endpoint*/, celix::dm::Properties&& /*properties*/) {
 
-    // unused with configured discovery_configured.
+    // unused with configured discovery.
 }
 
 void ConfiguredDiscoveryManager::revokeEndpoint(IEndpoint* /*endpoint*/, celix::dm::Properties&& /*properties*/) {
 
-    // unused with configured discovery_configured.
+    // unused with configured discovery.
 }
 
 } // end namespace celix::rsa.
