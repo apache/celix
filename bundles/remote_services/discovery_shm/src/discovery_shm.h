@@ -35,7 +35,7 @@
 // defines the time-to-live in seconds
 #define SHM_ENTRY_DEFAULT_TTL		60
 
-// we currently support 64 separate async_discovery_configured instances
+// we currently support 64 separate discovery instances
 #define SHM_DATA_MAX_ENTRIES		64
 
 typedef struct shmData shmData_t;

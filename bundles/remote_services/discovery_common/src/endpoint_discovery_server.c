@@ -173,7 +173,7 @@ celix_status_t endpointDiscoveryServer_create(discovery_t *discovery,
 
         if ((*server)->ctx != NULL)
         {
-            celix_logHelper_info(discovery->loghelper, "Starting async_discovery_configured server on port %s...", port);
+            celix_logHelper_info(discovery->loghelper, "Starting discovery server on port %s...", port);
         }
         else {
             errno = 0;
@@ -187,7 +187,7 @@ celix_status_t endpointDiscoveryServer_create(discovery_t *discovery,
             port_counter++;
             snprintf(&newPort[0], 10,  "%ld", (currentPort+1));
 
-            celix_logHelper_warning(discovery->loghelper, "Error while starting async_discovery_configured server on port %s - retrying on port %s...", port, newPort);
+            celix_logHelper_warning(discovery->loghelper, "Error while starting discovery server on port %s - retrying on port %s...", port, newPort);
             port = newPort;
 
         }

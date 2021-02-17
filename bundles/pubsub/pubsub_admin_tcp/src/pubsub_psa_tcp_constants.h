@@ -85,12 +85,12 @@
 #define PUBSUB_TCP_STATIC_BIND_URL_FOR          "PSA_TCP_STATIC_BIND_URL_FOR_"
 
 /**
- * Can be set in the topic properties to fix a static url used for async_discovery_configured
+ * Can be set in the topic properties to fix a static url used for discovery
  */
 #define PUBSUB_TCP_STATIC_DISCOVER_URL          "tcp.static.bind.url"
 
 /**
- * If set true on the endpoint, the tcp TopicSender bind and/or async_discovery_configured url is statically configured.
+ * If set true on the endpoint, the tcp TopicSender bind and/or discovery url is statically configured.
  */
 #define PUBSUB_TCP_STATIC_CONFIGURED            "tcp.static.configured"
 

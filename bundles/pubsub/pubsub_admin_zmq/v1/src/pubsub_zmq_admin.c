@@ -492,7 +492,7 @@ celix_status_t pubsub_zmqAdmin_setupTopicSender(void *handle, const char *scope,
             }
             celix_properties_setBool(newEndpoint, PUBSUB_ZMQ_STATIC_CONFIGURED, staticBindUrl != NULL || staticDiscUrl != NULL);
 
-            //if url starts with ipc:// constrain async_discovery_configured to host visibility, else use system visibility
+            //if url starts with ipc:// constrain discovery to host visibility, else use system visibility
             const char *u = celix_properties_get(newEndpoint, PUBSUB_ZMQ_URL_KEY, "");
             if (strncmp("ipc://", u, strlen("ipc://")) == 0) {
                 celix_properties_set(newEndpoint, PUBSUB_ENDPOINT_VISIBILITY, PUBSUB_ENDPOINT_HOST_VISIBILITY);

@@ -32,14 +32,15 @@
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
 
-/** Path for configured endpoint/ async_discovery_configured file. */
+/** Path for configured endpoint file. */
 #define CELIX_ASYNC_RSA_CONFIGURED_DISCOVERY_FILE "CELIX_ASYNC_RSA_CONFIGURED_DISCOVERY_FILE"
 
 namespace celix::rsa {
 
 /**
  * The ConfiguredDiscoveryManager class is responsible for finding and announcing endpoints from
- * a local configuration JSON file. This async_discovery_configured manager announces local exported endpoints and imported endpoints from the JSON file.
+ * a local configuration JSON file.
+ * This configured discovery manager announces local exported endpoints and imported endpoints from the JSON file.
  */
 class ConfiguredDiscoveryManager final : public IEndpointAnnouncer {
 public:

@@ -40,7 +40,7 @@ public:
     virtual ~IEndpointAnnouncer() = default;
 
     /**
-     * Task the endpoint announcer to make the given endpoint visible for async_discovery_configured by other managers/ frameworks.
+     * Task the endpoint announcer to make the given endpoint visible for discovery by other managers/ frameworks.
      * @param endpoint The endpoint pointer in question.
      * @param properties The celix properties concerning the endpoint.
      */

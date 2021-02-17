@@ -78,7 +78,7 @@ Provides service discovery for the RSA SHM implementation.
 
 Provides a service discovery with preconfigured discovery endpoints, allowing a static mesh of nodes for remote service invocation to be created. The configured discovery bundle in Celix is compatible with the configured discovery implementation provided by [Amdatu Remote](https://amdatu.atlassian.net/wiki/display/AMDATUDEV/Amdatu+Remote).
 
-| **Bundle** | `discovery_configured.zip` |
+| **Bundle** | `discovery.zip` |
 |--|--|
 | **Configuration** | `DISCOVERY_CFG_POLL_ENDPOINTS`: defines a comma-separated list of discovery endpoints that should be used to query for remote services. Defaults to `http://localhost:9999/org.apache.celix.discovery.configured`; |
 | | `DISCOVERY_CFG_POLL_INTERVAL`: defines the interval (in seconds) in which the discovery endpoints should be polled. Defaults to `10` seconds. |
@@ -164,7 +164,7 @@ Also the following libraries are required for building and/or using the Remote S
 * [Remote Service Admin DFI](remote_service_admin_dfi) - A Dynamic Function Interface (DFI) implementation of the RSA.
 * [Remote Service Admin SHM](remote_service_admin_shm) - A shared memory implementation of the RSA.
 * [Topology Manager](topology_manager) - A (scoped) RSA Topology Manager implementation.
-* [Discovery Configured](discovery_configured) - A RSA Discovery implementation using static configuration (xml).
+* [Discovery Configured](discovery) - A RSA Discovery implementation using static configuration (xml).
 * [Discovery Etcd](discovery_etcd/README.md) - A RSA Discovery implementation using etcd.
 * [Discovery SHM](discovery_shm) - A RSA Discovery implementation using shared memory.
 

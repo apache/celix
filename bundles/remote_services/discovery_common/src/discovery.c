@@ -17,7 +17,7 @@
  * under the License.
  */
 /**
- * async_discovery_configured.c
+ * discovery.c
  *
  * \date        Aug 8, 2014
  * \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>

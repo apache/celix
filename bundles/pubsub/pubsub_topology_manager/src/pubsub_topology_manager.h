@@ -85,7 +85,7 @@ typedef struct pubsub_topology_manager {
 typedef struct pstm_discovered_endpoint_entry {
     const char *uuid;
     long selectedPsaSvcId; // -1L, indicates no selected psa
-    int usageCount; //note that discovered endpoints can be found multiple times by different pubsub async_discovery_configured components
+    int usageCount; //note that discovered endpoints can be found multiple times by different pubsub discovery components
     celix_properties_t *endpoint;
 } pstm_discovered_endpoint_entry_t;
 

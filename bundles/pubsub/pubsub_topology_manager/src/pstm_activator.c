@@ -65,7 +65,7 @@ static int pstm_start(pstm_activator_t *act, celix_bundle_context_t *ctx) {
 
     status = pubsub_topologyManager_create(ctx, act->loghelper, &act->manager);
 
-    //track pubsub announce endpoint listener services (pubsub async_discovery_configured components)
+    //track pubsub announce endpoint listener services (pubsub discovery components)
     if (status == CELIX_SUCCESS) {
         celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
         opts.addWithProperties = pubsub_topologyManager_pubsubAnnounceEndpointListenerAdded;
@@ -116,7 +116,7 @@ static int pstm_start(pstm_activator_t *act, celix_bundle_context_t *ctx) {
         act->pubsubPSAMetricsTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
     }
 
-    //register discovered endpoints listener service (called by pubsub async_discovery_configured components)
+    //register discovered endpoints listener service (called by pubsub discovery components)
     if (status == CELIX_SUCCESS) {
         act->discListenerSvc.handle = act->manager;
         act->discListenerSvc.addDiscoveredEndpoint = pubsub_topologyManager_addDiscoveredEndpoint;

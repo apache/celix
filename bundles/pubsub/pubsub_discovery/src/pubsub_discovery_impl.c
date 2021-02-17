@@ -580,7 +580,7 @@ bool pubsub_discovery_executeCommand(void *handle, const char * commandLine __at
     fprintf(os, "   |- etcd port                = %i\n", etcdlib_port(disc->etcdlib));
     fprintf(os, "   |- entries ttl              = %i seconds\n", disc->ttlForEntries);
     fprintf(os, "   |- entries refresh time     = %i seconds\n", disc->sleepInsecBetweenTTLRefresh);
-    fprintf(os, "   |- pubsub async_discovery_configured path    = %s\n", disc->pubsubPath);
+    fprintf(os, "   |- pubsub discovery path    = %s\n", disc->pubsubPath);
 
     fprintf(os, "\n");
     fprintf(os, "Discovered Endpoints:\n");
