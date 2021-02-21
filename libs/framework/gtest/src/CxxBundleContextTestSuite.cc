@@ -513,3 +513,34 @@ TEST_F(CxxBundleContextTestSuite, KeepSharedPtrActiveWhileDeregistering) {
     std::this_thread::sleep_for(std::chrono::milliseconds {1500});
     EXPECT_EQ(svcReg->getState(), celix::ServiceRegistrationState::UNREGISTERING); //not still unregistering, because svc is still in use.
 }
+
+TEST_F(CxxBundleContextTestSuite, setServicesWithTrackerWhenMultipleRegistrationAlreadyExists) {
+    auto reg1 = ctx->registerService<TestInterface>(std::make_shared<TestImplementation>()).build();
+    auto reg2 = ctx->registerService<TestInterface>(std::make_shared<TestImplementation>()).build();
+    auto reg3 = ctx->registerService<TestInterface>(std::make_shared<TestImplementation>()).build();
+    ASSERT_GE(reg1->getServiceId(), 0);
+    ASSERT_GE(reg2->getServiceId(), 0);
+    ASSERT_GE(reg3->getServiceId(), 0);
+
+    std::atomic<int> count{0};
+    auto tracker = ctx->trackServices<TestInterface>()
+            .addSetWithPropertiesCallback([&count](std::shared_ptr<TestInterface> /*svc*/, std::shared_ptr<const celix::Properties> props) {
+                if (props) {
+                    std::cout << "Setting svc with svc id " << props->getAsLong(celix::SERVICE_ID, -1) << std::endl;
+                } else {
+                    std::cout << "Unsetting svc" << std::endl;
+                }
+                count++;
+            })
+            .build();
+    tracker->wait();
+    EXPECT_EQ(1, count.load()); //NOTE ensure that the service tracker only calls set once for opening tracker even if 3 service exists.
+
+    count = 0;
+    tracker->close();
+    tracker->wait();
+
+    //TODO improve this. For now closing a tracker will inject other service before getting to nullptr.
+    //Also look into why this is not happening in the C service tracker test.
+    EXPECT_EQ(3, count.load());
+}

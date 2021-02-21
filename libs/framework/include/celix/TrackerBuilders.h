@@ -153,7 +153,7 @@ namespace celix {
          * when there is a new highest ranking service match.
          * This can can also be an empty match (nullptr).
          *
-         * The set callback function has 2 arguments: A shared ptr to the highest
+         * The set callback function has a single argument: A shared ptr to the highest
          * ranking service match or nullptr.
          */
         ServiceTrackerBuilder& addSetCallback(std::function<void(std::shared_ptr<I>)> set) {

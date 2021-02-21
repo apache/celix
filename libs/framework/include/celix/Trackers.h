@@ -222,7 +222,6 @@ namespace celix {
                     std::lock_guard<std::mutex> callbackLock{trk->mutex};
                     trk->state = TrackerState::OPEN;
                 }
-                trk->invokeSetCallbacks();
             };
         }
 
@@ -269,8 +268,6 @@ namespace celix {
             return svcCount;
         }
     protected:
-        virtual void invokeSetCallbacks() = 0;
-
         const std::string svcName;
         const std::string svcVersionRange;
         const celix::Filter filter;
@@ -390,29 +387,24 @@ namespace celix {
                 addCallbacks{std::move(_addCallbacks)},
                 remCallbacks{std::move(_remCallbacks)} {
 
+            //note that that the ServiceTracker depends on addWithOwner being called before setWithOwner and
+            //that setWithOwner(nullptr) is called before removeWithOwner.
             opts.filter.serviceName = svcName.empty() ? nullptr : svcName.c_str();
             opts.filter.versionRange = svcVersionRange.empty() ? nullptr : svcVersionRange.c_str();
             opts.filter.filter = filter.empty() ? nullptr : filter.getFilterCString();
             opts.callbackHandle = this;
             opts.addWithOwner = [](void *handle, void *voidSvc, const celix_properties_t* cProps, const celix_bundle_t* cBnd) {
                 auto tracker = static_cast<ServiceTracker<I>*>(handle);
-                long svcId = celix_properties_getAsLong(cProps, OSGI_FRAMEWORK_SERVICE_ID, -1L);
-                long svcRanking = celix_properties_getAsLong(cProps, OSGI_FRAMEWORK_SERVICE_RANKING, 0);
-                auto svc = std::shared_ptr<I>{static_cast<I*>(voidSvc), [](I*){/*nop*/}};
-                auto props = celix::Properties::wrap(cProps);
-                auto owner = std::make_shared<const celix::Bundle>(const_cast<celix_bundle_t*>(cBnd));
-                auto entry = std::make_shared<SvcEntry>(svcId, svcRanking, svc, props, owner);
-
+                auto entry = createEntry(voidSvc, cProps, cBnd);
                 {
                     std::lock_guard<std::mutex> lck{tracker->mutex};
                     tracker->entries.insert(entry);
-                    tracker->cachedEntries[svcId] = std::move(entry);
+                    tracker->cachedEntries[entry->svcId] = entry;
                 }
                 tracker->svcCount.fetch_add(1, std::memory_order_relaxed);
                 for (const auto& cb : tracker->addCallbacks) {
-                    cb(svc, props, owner);
+                    cb(entry->svc, entry->properties, entry->owner);
                 }
-                tracker->invokeSetCallbacks();
                 tracker->invokeUpdateCallbacks();
             };
             opts.removeWithOwner = [](void *handle, void* voidSvc, const celix_properties_t* cProps, const celix_bundle_t*) {
@@ -431,25 +423,52 @@ namespace celix {
                 for (const auto& cb : tracker->remCallbacks) {
                     cb(entry->svc, entry->properties, entry->owner);
                 }
-
-                tracker->invokeSetCallbacks();
                 tracker->invokeUpdateCallbacks();
                 tracker->svcCount.fetch_sub(1, std::memory_order_relaxed);
-
                 tracker->waitForExpiredSvcEntry(entry);
+            };
+            opts.setWithOwner = [](void *handle, void *voidSvc, const celix_properties_t *cProps, const celix_bundle_t *cBnd) {
+                auto tracker = static_cast<ServiceTracker<I>*>(handle);
+                std::lock_guard<std::mutex> lck{tracker->mutex};
+                auto prevEntry = tracker->highestRankingServiceEntry;
+                if (voidSvc) {
+                    tracker->highestRankingServiceEntry = createEntry(voidSvc, cProps, cBnd);
+                } else {
+                    tracker->highestRankingServiceEntry = nullptr;
+                }
+                for (const auto& cb : tracker->setCallbacks) {
+                    if (tracker->highestRankingServiceEntry) {
+                        auto& e = tracker->highestRankingServiceEntry;
+                        cb(e->svc, e->properties, e->owner);
+                    } else /*"unset"*/ {
+                        cb(nullptr, nullptr, nullptr);
+                    }
+                }
+                tracker->waitForExpiredSvcEntry(prevEntry);
             };
         }
 
+        static std::shared_ptr<SvcEntry> createEntry(void* voidSvc, const celix_properties_t* cProps, const celix_bundle_t* cBnd) {
+            long svcId = celix_properties_getAsLong(cProps, OSGI_FRAMEWORK_SERVICE_ID, -1L);
+            long svcRanking = celix_properties_getAsLong(cProps, OSGI_FRAMEWORK_SERVICE_RANKING, 0);
+            auto svc = std::shared_ptr<I>{static_cast<I*>(voidSvc), [](I*){/*nop*/}};
+            auto props = celix::Properties::wrap(cProps);
+            auto owner = std::make_shared<const celix::Bundle>(const_cast<celix_bundle_t*>(cBnd));
+            return std::make_shared<SvcEntry>(svcId, svcRanking, svc, props, owner);
+        }
+
         void waitForExpiredSvcEntry(std::shared_ptr<SvcEntry>& entry) {
-            std::weak_ptr<void> svcObserve = entry->svc;
-            std::weak_ptr<const celix::Properties> propsObserve = entry->properties;
-            std::weak_ptr<const celix::Bundle> ownerObserve = entry->owner;
-            entry->svc = nullptr;
-            entry->properties = nullptr;
-            entry->owner = nullptr;
-            waitForExpired(svcObserve, entry->svcId, "service");
-            waitForExpired(propsObserve, entry->svcId, "service properties");
-            waitForExpired(ownerObserve, entry->svcId, "service bundle (owner)");
+            if (entry) {
+                std::weak_ptr<void> svcObserve = entry->svc;
+                std::weak_ptr<const celix::Properties> propsObserve = entry->properties;
+                std::weak_ptr<const celix::Bundle> ownerObserve = entry->owner;
+                entry->svc = nullptr;
+                entry->properties = nullptr;
+                entry->owner = nullptr;
+                waitForExpired(svcObserve, entry->svcId, "service");
+                waitForExpired(propsObserve, entry->svcId, "service properties");
+                waitForExpired(ownerObserve, entry->svcId, "service bundle (owner)");
+            }
         }
 
         template<typename U>
@@ -463,42 +482,6 @@ namespace celix {
                     start = now;
                 }
                 std::this_thread::sleep_for(std::chrono::milliseconds{50});
-            }
-        }
-
-        void invokeSetCallbacks() override {
-            if (setCallbacks.empty()) {
-                return;
-            }
-            if (getState() == celix::TrackerState::OPENING) {
-                //not updating set callback during opening (prevent entropy)
-                return;
-            }
-            bool setNeeded = false;
-            std::shared_ptr<SvcEntry> entry{};
-            {
-                std::lock_guard<std::mutex> lck{mutex};
-                auto it = entries.begin();
-                long newHighestSvcId = -1;
-                if (it != entries.end()) {
-                    newHighestSvcId = (*it)->svcId; //note begin of the entries should be highest ranking svc.
-                }
-                if (newHighestSvcId != highestSvcId) {
-                    highestSvcId = newHighestSvcId;
-                    if (newHighestSvcId != -1) {
-                        entry = *it;
-                    }
-                    setNeeded = true;
-                }
-            }
-            if (setNeeded) {
-                for (const auto& cb : setCallbacks) {
-                    if (entry) {
-                        cb(entry->svc, entry->properties, entry->owner);
-                    } else /*"unset"*/ {
-                        cb(nullptr, nullptr, nullptr);
-                    }
-                }
             }
         }
 
@@ -562,7 +545,7 @@ namespace celix {
         mutable std::mutex mutex{}; //protect below
         std::set<std::shared_ptr<SvcEntry>, SvcEntryCompare> entries{};
         std::unordered_map<long, std::shared_ptr<SvcEntry>> cachedEntries{};
-        long highestSvcId{-1}; //for set call
+        std::shared_ptr<SvcEntry> highestRankingServiceEntry{};
     };
 
     /**

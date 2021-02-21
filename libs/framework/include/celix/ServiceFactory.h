@@ -30,7 +30,6 @@ namespace celix {
         virtual ~ServiceFactory() = default;
 
         virtual std::shared_ptr<I> createBundleSpecificService(const celix::Bundle& requestingBundle, const celix::Properties svcFactoryProperties) = 0;
-        //TODO,TBD need ungetService variant?
     };
 
 }
