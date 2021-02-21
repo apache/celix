@@ -138,7 +138,7 @@ namespace /*anon*/ {
         /**
          * @brief Executes the factory command by clearing all consumers and creating new ones.
          */
-        void executeCommand(std::string /*commandLine*/, std::vector<std::string> /*commandArgs*/, FILE* /*outStream*/, FILE* /*errorStream*/) override {
+        void executeCommand(const std::string& /*commandLine*/, const std::vector<std::string>& /*commandArgs*/, FILE* /*outStream*/, FILE* /*errorStream*/) override {
             clearConsumer();
             createConsumers();
         }

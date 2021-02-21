@@ -54,7 +54,7 @@ public:
     /**
      * @brief Executes the factory command by clearing all providers and creating new ones.
      */
-    void executeCommand(std::string /*commandLine*/, std::vector<std::string> /*commandArgs*/, FILE* /*outStream*/, FILE* /*errorStream*/) override {
+    void executeCommand(const std::string& /*commandLine*/, const std::vector<std::string>& /*commandArgs*/, FILE* /*outStream*/, FILE* /*errorStream*/) override {
         clearCalcs();
         registerCalcs();
     }

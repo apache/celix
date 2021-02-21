@@ -23,7 +23,7 @@
 
 class HelloWorldShellCommand : public celix::IShellCommand {
 public:
-    void executeCommand(std::string /*commandLine*/, std::vector<std::string> /*commandArgs*/, FILE* outStream, FILE* /*errorStream*/) {
+    void executeCommand(const std::string& /*commandLine*/, const std::vector<std::string>& /*commandArgs*/, FILE* outStream, FILE* /*errorStream*/) {
         fprintf(outStream, "Hello World\n");
     }
 };

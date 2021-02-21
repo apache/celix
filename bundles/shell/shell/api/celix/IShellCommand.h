@@ -52,12 +52,12 @@ namespace celix {
 
         /**
          * Calls the shell command.
-         * @param commandLine   The complete provided command line (e.g. for a 'stop' command -> 'stop 42')
-         * @param commandArgs   A list of the arguments for the command (e.g. for a "stop 42 43" commandLine -> {"42", "43"}).
+         * @param commandLine   The complete provided command line (e.g. for a 'stop' command -> 'stop 42'). Only valid during the call.
+         * @param commandArgs   A list of the arguments for the command (e.g. for a "stop 42 43" commandLine -> {"42", "43"}). Only valid during the call.
          * @param outStream     The C output stream, to use for printing normal flow info.
          * @param errorStream   The C error stream, to use for printing error flow info.
          * @return              Whether the command has been executed correctly.
          */
-        virtual void executeCommand(std::string commandLine, std::vector<std::string> commandArgs, FILE* outStream, FILE* errorStream) = 0;
+        virtual void executeCommand(const std::string& commandLine, const std::vector<std::string>& commandArgs, FILE* outStream, FILE* errorStream) = 0;
     };
 }
