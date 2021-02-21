@@ -21,11 +21,17 @@
 #include "examples/ICalc.h"
 
 
+/**
+ * @brief Simple implementation of ICalc.
+ */
 class CalcImpl : public examples::ICalc {
 public:
     explicit CalcImpl(int _seed) : seed{_seed} {}
     ~CalcImpl() override = default;
 
+    /**
+     * @brief "Calculates" a value based on the provided input and the class field seed.
+     */
     int calc(int input) override {
         return seed * input;
     }
@@ -33,12 +39,18 @@ private:
     const int seed;
 };
 
+/**
+ * @brief A bundle activator for a simple ICalc provider.
+ */
 class SimpleProviderBundleActivator {
 public:
     explicit SimpleProviderBundleActivator(std::shared_ptr<celix::BundleContext> ctx) :
         registration{createCalcService(ctx)} {}
 
 private:
+    /**
+     * @brief Creates and registers a single ICalc provider service.
+     */
     static std::shared_ptr<celix::ServiceRegistration> createCalcService(std::shared_ptr<celix::BundleContext>& ctx) {
         int seed = 42;
         return ctx->registerService<examples::ICalc>(std::make_shared<CalcImpl>(seed))

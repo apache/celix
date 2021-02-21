@@ -20,36 +20,55 @@
 #include "celix/BundleActivator.h"
 #include "examples/ICalc.h"
 
+/**
+ * @brief A simple active consumer of the ICalc service.
+ */
 class SimpleConsumer {
 public:
-    ~SimpleConsumer() {
-        stop();
+    /**
+     * @brief create and start a new SimpleConsumer.
+     */
+    static std::shared_ptr<SimpleConsumer> create() {
+        std::shared_ptr<SimpleConsumer> instance{new SimpleConsumer{}, [](SimpleConsumer *consumer) {
+           consumer->stop();
+           delete consumer;
+        }};
+        instance->start();
+        return instance;
     }
 
-    SimpleConsumer() = default;
-    SimpleConsumer(SimpleConsumer&&) = delete;
-    SimpleConsumer& operator=(SimpleConsumer&&) = delete;
-    SimpleConsumer(const SimpleConsumer&) = delete;
-    SimpleConsumer& operator=(const SimpleConsumer&) = delete;
-
-    void start() {
-        std::lock_guard<std::mutex> lck{mutex};
-        calcThread = std::thread{&SimpleConsumer::run, this};
-    }
-
-    void stop() {
-        active = false;
-        std::lock_guard<std::mutex> lck{mutex};
-        if (calcThread.joinable()) {
-            calcThread.join();
-        }
-    }
-
+    /**
+     * @brief Sets the calc service
+     */
     void setCalc(std::shared_ptr<examples::ICalc> _calc) {
         std::lock_guard<std::mutex> lck{mutex};
         calc = std::move(_calc);
     }
 private:
+    SimpleConsumer() = default;
+
+    /**
+     * @brief Start the dynamic consumer thread.
+     *
+     * Should be called during creation.
+     */
+    void start() {
+        calcThread = std::thread{&SimpleConsumer::run, this};
+    }
+
+    /**
+     * @brief Stops the dynamic consumer thread.
+     */
+    void stop() {
+        bool wasActive = active.exchange(false);
+        if (wasActive) {
+            calcThread.join();
+        }
+    }
+
+    /**
+     * @brief The run method. Calls the calc service (if not nullptr) and sleeps for 2 seconds
+     */
     void run() {
         std::unique_lock<std::mutex> lck{mutex,  std::defer_lock};
         int count = 1;
@@ -73,27 +92,28 @@ private:
     }
 
     std::atomic<bool> active{true};
+    std::thread calcThread{};
 
     std::mutex mutex{}; //protects below
     std::shared_ptr<examples::ICalc> calc{};
-    std::thread calcThread{};
 };
 
+/**
+ * @brief A bundle activator for a simple ICalc consumer.
+ */
 class SimpleConsumerBundleActivator {
 public:
     explicit SimpleConsumerBundleActivator(const std::shared_ptr<celix::BundleContext>& ctx) :
-            tracker{createTracker(ctx)} {
-        consumer.start();
-    }
+            consumer{SimpleConsumer::create()}, tracker{createTracker(ctx)} {}
 private:
     std::shared_ptr<celix::GenericServiceTracker> createTracker(const std::shared_ptr<celix::BundleContext>& ctx) {
         return ctx->trackServices<examples::ICalc>()
-                .addSetCallback(std::bind(&SimpleConsumer::setCalc, &consumer, std::placeholders::_1))
+                .addSetCallback(std::bind(&SimpleConsumer::setCalc, consumer, std::placeholders::_1))
                 .build();
     }
 
+    const std::shared_ptr<SimpleConsumer> consumer;
     const std::shared_ptr<celix::GenericServiceTracker> tracker;
-    SimpleConsumer consumer{};
 };
 
 CELIX_GEN_CXX_BUNDLE_ACTIVATOR(SimpleConsumerBundleActivator)

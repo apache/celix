@@ -25,28 +25,28 @@
 
 namespace /*anon*/ {
 
+    /**
+     * @brief A simple active consumer of the ICalc service.
+     */
     class DynamicConsumer {
     public:
-        explicit DynamicConsumer(int _id) : id{_id} {}
-
-        ~DynamicConsumer() {
-            stop();
+        /**
+         * @brief create and start a new DynamicConsumer.
+         * @param id The consumer id
+         * @return A shared ptr to the newly created DynamicConsumer
+         */
+        static std::shared_ptr<DynamicConsumer> create(int id) {
+            std::shared_ptr<DynamicConsumer> instance{new DynamicConsumer{id}, [](DynamicConsumer* consumer) {
+               consumer->stop();
+               delete consumer;
+            }};
+            instance->start();
+            return instance;
         }
 
-        void start() {
-            std::lock_guard<std::mutex> lck{mutex};
-            calcThread = std::thread{&DynamicConsumer::run, this};
-        }
-
-        void stop() {
-            active = false;
-            if (calcThread.joinable()) {
-                calcThread.join();
-                auto msg = std::string{"Destroying consumer nr "} + std::to_string(id) + "\n";
-                std::cout << msg;
-            }
-        }
-
+        /**
+         * @brief Sets the calc service
+         */
         void setCalc(std::shared_ptr<examples::ICalc> _calc, const std::shared_ptr<const celix::Properties>& props) {
             std::lock_guard<std::mutex> lck{mutex};
             if (_calc) {
@@ -69,6 +69,30 @@ namespace /*anon*/ {
             }
         }
     private:
+        explicit DynamicConsumer(int _id) : id{_id} {}
+
+        /**
+         * @brief Start the dynamic consumer thread.
+         *
+         * Should be called during creation.
+         */
+        void start() {
+            calcThread = std::thread{&DynamicConsumer::run, this};
+        }
+
+        /**
+         * @brief Stops the dynamic consumer thread.
+         */
+        void stop() {
+            bool wasActive = active.exchange(false);
+            if (wasActive) {
+                calcThread.join();
+            }
+        }
+
+        /**
+         * @brief The run method. Calls the calc service (if not nullptr) and sleeps for 2 seconds
+         */
         void run() {
             std::unique_lock<std::mutex> lck{mutex,  std::defer_lock};
             int count = 1;
@@ -94,40 +118,51 @@ namespace /*anon*/ {
 
         const int id;
         std::atomic<bool> active{true};
+        std::thread calcThread{};
 
         std::mutex mutex{}; //protects below
         std::shared_ptr<examples::ICalc> calc{};
         long svcId{-1};
         long ranking{0};
-        std::thread calcThread{};
     };
 
+    /**
+     * @brief A ICalc consumer factory which can be trigger with a Celix shell command.
+     */
     class DynamicConsumerFactory : public celix::IShellCommand {
     public:
         static constexpr std::size_t MAX_CONSUMERS = 10;
 
         explicit DynamicConsumerFactory(std::shared_ptr<celix::BundleContext>  _ctx) : ctx{std::move(_ctx)} {}
 
+        /**
+         * @brief Executes the factory command by clearing all consumers and creating new ones.
+         */
         void executeCommand(std::string /*commandLine*/, std::vector<std::string> /*commandArgs*/, FILE* /*outStream*/, FILE* /*errorStream*/) override {
             clearConsumer();
             createConsumers();
         }
 
+        /**
+         * @brief Create new consumers (as long as MAX_CONSUMERS is not reached)
+         */
         void createConsumers() {
             std::lock_guard<std::mutex> lock{mutex};
             int nextConsumerId = 1;
             while (consumers.size() < MAX_CONSUMERS) {
                 ctx->logInfo("Creating dynamic consumer nr %i", consumers.size());
-                auto consumer = std::make_shared<DynamicConsumer>(nextConsumerId++);
+                auto consumer = DynamicConsumer::create(nextConsumerId++);
                 consumers[consumer] = ctx->trackServices<examples::ICalc>()
                         .addSetWithPropertiesCallback([consumer](std::shared_ptr<examples::ICalc> calc, std::shared_ptr<const celix::Properties> properties) {
                             consumer->setCalc(std::move(calc), std::move(properties));
                         })
                         .build();
-                consumer->start();
             }
         }
 
+        /**
+         * @brief Clears all consumers.
+         */
         void clearConsumer() {
             ctx->logInfo("Resetting all trackers and consumers");
             std::lock_guard<std::mutex> lock{mutex};
@@ -141,6 +176,9 @@ namespace /*anon*/ {
         std::unordered_map<std::shared_ptr<DynamicConsumer>, std::shared_ptr<celix::GenericServiceTracker>> consumers{};
     };
 
+    /**
+     * @brief A bundle activator for a dynamic ICalc consumer factory.
+     */
     class DynamicConsumerBundleActivator {
     public:
         explicit DynamicConsumerBundleActivator(const std::shared_ptr<celix::BundleContext>& ctx) : factory{std::make_shared<DynamicConsumerFactory>(ctx)} {
