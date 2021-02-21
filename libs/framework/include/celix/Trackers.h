@@ -386,9 +386,6 @@ namespace celix {
                 setCallbacks{std::move(_setCallbacks)},
                 addCallbacks{std::move(_addCallbacks)},
                 remCallbacks{std::move(_remCallbacks)} {
-
-            //note that that the ServiceTracker depends on addWithOwner being called before setWithOwner and
-            //that setWithOwner(nullptr) is called before removeWithOwner.
             opts.filter.serviceName = svcName.empty() ? nullptr : svcName.c_str();
             opts.filter.versionRange = svcVersionRange.empty() ? nullptr : svcVersionRange.c_str();
             opts.filter.filter = filter.empty() ? nullptr : filter.getFilterCString();
