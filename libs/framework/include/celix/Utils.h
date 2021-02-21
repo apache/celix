@@ -24,6 +24,21 @@
 #include <string.h>
 #include <iostream>
 
+//NOTE based on has_rtti.cpp
+#if defined(__clang__)
+#if __has_feature(cxx_rtti)
+#define CELIX_RTTI_ENABLED
+#endif
+#elif defined(__GNUG__)
+#if defined(__GXX_RTTI)
+#define CELIX_RTTI_ENABLED
+#endif
+#elif defined(_MSC_VER)
+#if defined(_CPPRTTI)
+#define CELIX_RTTI_ENABLED
+#endif
+#endif
+
 namespace celix {
     /**
      * @brief Returns the deferred type name for the template I
@@ -32,7 +47,7 @@ namespace celix {
     std::string typeName() {
         std::string result;
 
-#ifdef __GXX_RTTI
+#ifdef CELIX_RTTI_ENABLED
         result = typeid(INTERFACE_TYPENAME).name();
         int status = 0;
         char* demangled_name {abi::__cxa_demangle(result.c_str(), NULL, NULL, &status)};
@@ -75,3 +90,5 @@ namespace celix {
         return providedTypeName.empty() ? celix::typeName<I>() : providedTypeName;
     }
 }
+
+#undef CELIX_RTTI_ENABLED

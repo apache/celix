@@ -122,7 +122,7 @@ namespace celix {
          *
          * @throws celix::Exception
          */
-        virtual void open() {}
+        virtual void open() = 0;
 
         /**
          * @brief Wait until a service tracker is completely OPEN or CLOSED.

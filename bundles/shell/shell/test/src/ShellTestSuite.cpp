@@ -201,7 +201,7 @@ TEST_F(ShellTestSuite, legacyCommandTest) {
 class ShellCommandImpl : public celix::IShellCommand {
 public:
     ~ShellCommandImpl() noexcept override = default;
-    void executeCommand(std::string commandLine, std::vector<std::string> commandArgs, FILE* outStream, FILE* errorStream) override {
+    void executeCommand(const std::string& commandLine, const std::vector<std::string>& commandArgs, FILE* outStream, FILE* errorStream) override {
         fprintf(outStream, "called cxx command with cmd line %s\n", commandLine.c_str());
         fprintf(errorStream, "Arguments size is %i\n", (int)commandArgs.size());
     }

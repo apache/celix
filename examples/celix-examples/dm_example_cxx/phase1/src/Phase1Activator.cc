@@ -39,7 +39,7 @@ struct InvalidCServ {
 
 Phase1Activator::Phase1Activator(std::shared_ptr<celix::dm::DependencyManager> mng) {
     dm = mng;
-    auto& cmp = mng->createComponent<Phase1Cmp>();  //using a pointer a instance. Also supported is lazy initialization (default constructor needed) or a rvalue reference (move)
+    auto& cmp = mng->createComponent<Phase1Cmp>();
     cmpUUID = cmp.getUUID();
 
     cmp.addInterface<IPhase1>(IPHASE1_VERSION);

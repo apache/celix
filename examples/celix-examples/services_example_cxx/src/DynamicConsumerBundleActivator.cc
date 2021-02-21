@@ -106,8 +106,7 @@ namespace /*anon*/ {
                  * because the shared_prt count will ensure the service cannot be unregistered while in use.
                  */
                 if (localCalc) {
-                    auto msg = std::string{"Calc result is "} + std::to_string(localCalc->calc(count)) + "\n";
-                    std::cout << msg;
+                    std::cout << "Calc result is " << std::to_string(localCalc->calc(count)) << std::endl;
                     localCalc = nullptr;
                 }
 
