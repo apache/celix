@@ -38,18 +38,7 @@ namespace celix {
         virtual bool isDone() const = 0;
 
         virtual void cancel() = 0;
-
-        template<typename Rep, typename Period>
-        std::chrono::duration<Rep, Period> getDelayOrPeriod() const {
-            auto milli = getDelayOrPeriodInMilli();
-            return std::chrono::duration<Rep, Period>{milli};
-        }
-
-    private:
-        virtual std::chrono::duration<double, std::milli> getDelayOrPeriodInMilli() const = 0;
     };
-
-
 
     /**
      * @brief An ScheduledExecutor that can schedule commands to run after a given delay.

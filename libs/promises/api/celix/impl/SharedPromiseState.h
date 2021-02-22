@@ -105,9 +105,9 @@ namespace celix::impl {
 
         void addChain(std::function<void()> chainFunction);
 
-        std::shared_ptr<celix::IExecutor> getExecutor() const;
+        [[nodiscard]] std::shared_ptr<celix::IExecutor> getExecutor() const;
 
-        std::shared_ptr<celix::IScheduledExecutor> getScheduledExecutor() const;
+        [[nodiscard]] std::shared_ptr<celix::IScheduledExecutor> getScheduledExecutor() const;
 
         int getPriority() const;
     private:
@@ -191,9 +191,9 @@ namespace celix::impl {
 
         void addChain(std::function<void()> chainFunction);
 
-        std::shared_ptr<celix::IExecutor> getExecutor() const;
+        [[nodiscard]] std::shared_ptr<celix::IExecutor> getExecutor() const;
 
-        std::shared_ptr<celix::IScheduledExecutor> getScheduledExecutor() const;
+        [[nodiscard]] std::shared_ptr<celix::IScheduledExecutor> getScheduledExecutor() const;
 
         int getPriority() const;
     private:
@@ -361,23 +361,23 @@ inline void celix::impl::SharedPromiseState<void>::tryFail(std::exception_ptr e)
 
 template<typename T>
 bool celix::impl::SharedPromiseState<T>::isDone() const {
-    std::lock_guard<std::mutex> lck{mutex};
+    std::lock_guard lck{mutex};
     return done;
 }
 
 inline bool celix::impl::SharedPromiseState<void>::isDone() const {
-    std::lock_guard<std::mutex> lck{mutex};
+    std::lock_guard lck{mutex};
     return done;
 }
 
 template<typename T>
 bool celix::impl::SharedPromiseState<T>::isSuccessfullyResolved() const {
-    std::lock_guard<std::mutex> lck{mutex};
+    std::lock_guard lck{mutex};
     return done && !exp;
 }
 
 inline bool celix::impl::SharedPromiseState<void>::isSuccessfullyResolved() const {
-    std::lock_guard<std::mutex> lck{mutex};
+    std::lock_guard lck{mutex};
     return done && !exp;
 }
 
@@ -722,7 +722,7 @@ template<typename T>
 void celix::impl::SharedPromiseState<T>::addChain(std::function<void()> chainFunction) {
     std::function<void()> localChain{};
     {
-        std::lock_guard<std::mutex> lck{mutex};
+        std::lock_guard lck{mutex};
         if (!done) {
             chain.emplace_back([func = std::move(chainFunction)]() {
                 func();
@@ -739,7 +739,7 @@ void celix::impl::SharedPromiseState<T>::addChain(std::function<void()> chainFun
 inline void celix::impl::SharedPromiseState<void>::addChain(std::function<void()> chainFunction) {
     std::function<void()> localChain{};
     {
-        std::lock_guard<std::mutex> lck{mutex};
+        std::lock_guard lck{mutex};
         if (!done) {
             chain.emplace_back([func = std::move(chainFunction)]() {
                 func();

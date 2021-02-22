@@ -35,41 +35,36 @@ namespace celix {
         ~DefaultDelayedScheduledFuture() noexcept override = default;
 
         bool isCancelled() const override {
-            std::lock_guard<std::mutex> lock{mutex};
+            std::lock_guard lock{mutex};
             return cancelled;
         }
 
         bool isDone() const override {
-            std::lock_guard<std::mutex> lock{mutex};
+            std::lock_guard lock{mutex};
             return done;
         }
 
         void setDone() {
-            std::lock_guard<std::mutex> lock{mutex};
+            std::lock_guard lock{mutex};
             done = true;
             cond.notify_all();
         }
 
         void cancel() override {
-            std::lock_guard<std::mutex> lock{mutex};
+            std::lock_guard lock{mutex};
             cancelled = true;
             cond.notify_all();
         }
 
         std::chrono::duration<double, std::milli> getDelayInMs() const {
-            std::lock_guard<std::mutex> lock{mutex};
             return delayInMs;
         }
 
         void waitFor(std::chrono::duration<double, std::milli> time) {
-            std::unique_lock<std::mutex> lock{mutex};
+            std::unique_lock lock{mutex};
             cond.wait_for(lock, time);
         }
     private:
-        [[nodiscard]] std::chrono::duration<double, std::milli> getDelayOrPeriodInMilli() const override {
-            return delayInMs;
-        }
-
         const std::chrono::duration<double, std::milli> delayInMs;
         mutable std::mutex mutex{}; //protects below
         std::condition_variable cond{};

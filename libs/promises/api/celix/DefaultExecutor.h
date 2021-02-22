@@ -35,7 +35,7 @@ namespace celix {
         explicit DefaultExecutor(std::launch _policy = std::launch::async | std::launch::deferred) : policy{_policy} {}
 
         void execute(int /*priority*/, std::function<void()> task) override {
-            std::lock_guard<std::mutex> lck{mutex};
+            std::lock_guard lck{mutex};
             futures.emplace_back(std::async(policy, std::move(task)));
             removeCompletedFutures();
         }
@@ -43,7 +43,7 @@ namespace celix {
         void wait() override {
             bool done = false;
             while (!done) {
-                std::lock_guard<std::mutex> lck{mutex};
+                std::lock_guard lck{mutex};
                 removeCompletedFutures();
                 done = futures.empty();
             }
