@@ -64,7 +64,7 @@ make -j
 sudo make install
 ```
 
-## Small C++ Usage Examples
+## C++ Usage
 
 ### Hello World Bundle
 

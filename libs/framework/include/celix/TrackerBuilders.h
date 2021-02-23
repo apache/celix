@@ -71,7 +71,8 @@ namespace celix {
          * The add callback function has 1 argument: A shared ptr to the added service.
          */
         ServiceTrackerBuilder& addAddCallback(std::function<void(std::shared_ptr<I>)> add) {
-            addCallbacks.emplace_back([add](std::shared_ptr<I> svc, std::shared_ptr<const celix::Properties>, std::shared_ptr<const celix::Bundle>) {
+            //TODO improve capture with move when for C++14 is available
+            addCallbacks.emplace_back([add](const std::shared_ptr<I>& svc, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&) {
                 add(svc);
             });
             return *this;
@@ -85,8 +86,9 @@ namespace celix {
          *  - A shared ptr to the added service.
          *  - A shared ptr to the added service properties.
          */
-        ServiceTrackerBuilder& addAddWithPropertiesCallback(std::function<void(std::shared_ptr<I>, std::shared_ptr<const celix::Properties>)> add) {
-            addCallbacks.emplace_back([add](std::shared_ptr<I> svc, std::shared_ptr<const celix::Properties> props, std::shared_ptr<const celix::Bundle>) {
+        ServiceTrackerBuilder& addAddWithPropertiesCallback(std::function<void(std::shared_ptr<I>, const std::shared_ptr<const celix::Properties>&)> add) {
+            //TODO improve capture with move when for C++14 is available
+            addCallbacks.emplace_back([add](const std::shared_ptr<I>& svc, const std::shared_ptr<const celix::Properties>& props, const std::shared_ptr<const celix::Bundle>&) {
                 add(svc, props);
             });
             return *this;
@@ -101,7 +103,7 @@ namespace celix {
          *  - A shared ptr to the added service properties.
          *  - A shared ptr to the bundle owning the added service.
          */
-        ServiceTrackerBuilder& addAddWithOwnerCallback(std::function<void(std::shared_ptr<I>, std::shared_ptr<const celix::Properties>, std::shared_ptr<const celix::Bundle>)> add) {
+        ServiceTrackerBuilder& addAddWithOwnerCallback(std::function<void(std::shared_ptr<I>, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&)> add) {
             addCallbacks.emplace_back(std::move(add));
             return *this;
         }
@@ -113,7 +115,8 @@ namespace celix {
          * The remove callback function has 1 arguments: A shared ptr to the removing service.
          */
         ServiceTrackerBuilder& addRemCallback(std::function<void(std::shared_ptr<I>)> remove) {
-            remCallbacks.emplace_back([remove](std::shared_ptr<I> svc, std::shared_ptr<const celix::Properties>, std::shared_ptr<const celix::Bundle>) {
+            //TODO improve capture with move when for C++14 is available
+            remCallbacks.emplace_back([remove](const std::shared_ptr<I>& svc, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&) {
                 remove(svc);
             });
             return *this;
@@ -127,8 +130,9 @@ namespace celix {
          *  - A shared ptr to the removing service.
          *  - A shared ptr to the removing service properties.
          */
-        ServiceTrackerBuilder& addRemWithPropertiesCallback(std::function<void(std::shared_ptr<I>, std::shared_ptr<const celix::Properties>)> remove) {
-            remCallbacks.emplace_back([remove](std::shared_ptr<I> svc, std::shared_ptr<const celix::Properties> props, std::shared_ptr<const celix::Bundle>) {
+        ServiceTrackerBuilder& addRemWithPropertiesCallback(std::function<void(std::shared_ptr<I>, const std::shared_ptr<const celix::Properties>&)> remove) {
+            //TODO improve capture with move when for C++14 is available
+            remCallbacks.emplace_back([remove](const std::shared_ptr<I>& svc, const std::shared_ptr<const celix::Properties>& props, const std::shared_ptr<const celix::Bundle>&) {
                 remove(svc, props);
             });
             return *this;
@@ -143,7 +147,7 @@ namespace celix {
          *  - A shared ptr to the removing service properties.
          *  - A shared ptr to the bundle owning the removing service.
          */
-        ServiceTrackerBuilder& addRemWithOwnerCallback(std::function<void(std::shared_ptr<I>, std::shared_ptr<const celix::Properties>, std::shared_ptr<const celix::Bundle>)> remove) {
+        ServiceTrackerBuilder& addRemWithOwnerCallback(std::function<void(const std::shared_ptr<I>&, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&)> remove) {
             remCallbacks.emplace_back(std::move(remove));
             return *this;
         }
@@ -157,8 +161,9 @@ namespace celix {
          * ranking service match or nullptr.
          */
         ServiceTrackerBuilder& addSetCallback(std::function<void(std::shared_ptr<I>)> set) {
-            setCallbacks.emplace_back([set](std::shared_ptr<I> svc, std::shared_ptr<const celix::Properties>, std::shared_ptr<const celix::Bundle>) {
-                set(std::move(svc));
+            //TODO improve capture with move when for C++14 is available
+            setCallbacks.emplace_back([set](const std::shared_ptr<I>& svc, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&) {
+                set(svc);
             });
             return *this;
         }
@@ -172,9 +177,10 @@ namespace celix {
          *  - A shared ptr to the highest ranking service match or nullptr.
          *  - A const shared ptr to the set service properties or nullptr (if the service is nullptr).
          */
-        ServiceTrackerBuilder& addSetWithPropertiesCallback(std::function<void(std::shared_ptr<I>, std::shared_ptr<const celix::Properties>)> set) {
-            setCallbacks.emplace_back([set](std::shared_ptr<I> svc, std::shared_ptr<const celix::Properties> props, std::shared_ptr<const celix::Bundle>) {
-                set(std::move(svc), std::move(props));
+        ServiceTrackerBuilder& addSetWithPropertiesCallback(std::function<void(std::shared_ptr<I>, const std::shared_ptr<const celix::Properties>&)> set) {
+            //TODO improve capture with move when for C++14 is available
+            setCallbacks.emplace_back([set](const std::shared_ptr<I>& svc, const std::shared_ptr<const celix::Properties>& props, const std::shared_ptr<const celix::Bundle>&) {
+                set(svc, std::move(props));
             });
             return *this;
         }
@@ -190,7 +196,7 @@ namespace celix {
          *  - A const shared ptr to the set service properties or nullptr (if the service is nullptr).
          *  - A const shared ptr to the bundle owning the set service or nullptr (if the service is nullptr).
          */
-        ServiceTrackerBuilder& addSetWithOwner(std::function<void(std::shared_ptr<I>, std::shared_ptr<const celix::Properties>, std::shared_ptr<const celix::Bundle>)> set) {
+        ServiceTrackerBuilder& addSetWithOwner(std::function<void(std::shared_ptr<I>, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&)> set) {
             setCallbacks.emplace_back(std::move(set));
             return *this;
         }
@@ -219,9 +225,9 @@ namespace celix {
         std::string name;
         celix::Filter filter{};
         std::string versionRange{};
-        std::vector<std::function<void(std::shared_ptr<I>, std::shared_ptr<const celix::Properties>, std::shared_ptr<const celix::Bundle>)>> setCallbacks{};
-        std::vector<std::function<void(std::shared_ptr<I>, std::shared_ptr<const celix::Properties>, std::shared_ptr<const celix::Bundle>)>> addCallbacks{};
-        std::vector<std::function<void(std::shared_ptr<I>, std::shared_ptr<const celix::Properties>, std::shared_ptr<const celix::Bundle>)>> remCallbacks{};
+        std::vector<std::function<void(const std::shared_ptr<I>&, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&)>> setCallbacks{};
+        std::vector<std::function<void(const std::shared_ptr<I>&, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&)>> addCallbacks{};
+        std::vector<std::function<void(const std::shared_ptr<I>&, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&)>> remCallbacks{};
     };
 
     /**

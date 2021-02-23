@@ -307,9 +307,9 @@ namespace celix {
                 std::string svcName,
                 std::string svcVersionRange,
                 celix::Filter filter,
-                std::vector<std::function<void(std::shared_ptr<I>, std::shared_ptr<const celix::Properties>, std::shared_ptr<const celix::Bundle>)>> setCallbacks,
-                std::vector<std::function<void(std::shared_ptr<I>, std::shared_ptr<const celix::Properties>, std::shared_ptr<const celix::Bundle>)>> addCallbacks,
-                std::vector<std::function<void(std::shared_ptr<I>, std::shared_ptr<const celix::Properties>, std::shared_ptr<const celix::Bundle>)>> remCallbacks) {
+                std::vector<std::function<void(const std::shared_ptr<I>&, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&)>> setCallbacks,
+                std::vector<std::function<void(const std::shared_ptr<I>&, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&)>> addCallbacks,
+                std::vector<std::function<void(const std::shared_ptr<I>&, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&)>> remCallbacks) {
 
             auto tracker = std::shared_ptr<ServiceTracker<I>>{
                 new ServiceTracker<I>{
@@ -379,9 +379,9 @@ namespace celix {
 
         ServiceTracker(std::shared_ptr<celix_bundle_context_t> _cCtx, std::string _svcName,
                        std::string _svcVersionRange, celix::Filter _filter,
-                       std::vector<std::function<void(std::shared_ptr<I>, std::shared_ptr<const celix::Properties>, std::shared_ptr<const celix::Bundle>)>> _setCallbacks,
-                       std::vector<std::function<void(std::shared_ptr<I>, std::shared_ptr<const celix::Properties>, std::shared_ptr<const celix::Bundle>)>> _addCallbacks,
-                       std::vector<std::function<void(std::shared_ptr<I>, std::shared_ptr<const celix::Properties>, std::shared_ptr<const celix::Bundle>)>> _remCallbacks) :
+                       std::vector<std::function<void(const std::shared_ptr<I>&, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&)>> _setCallbacks,
+                       std::vector<std::function<void(const std::shared_ptr<I>&, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&)>> _addCallbacks,
+                       std::vector<std::function<void(const std::shared_ptr<I>&, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&)>> _remCallbacks) :
                 GenericServiceTracker{std::move(_cCtx), std::move(_svcName), std::move(_svcVersionRange), std::move(_filter)},
                 setCallbacks{std::move(_setCallbacks)},
                 addCallbacks{std::move(_addCallbacks)},
@@ -524,13 +524,15 @@ namespace celix {
             }
         }
 
-        const std::chrono::milliseconds warningTimoutForNonExpiredSvcObject{1000}; //TODO make configureable with uidler
-        const std::vector<std::function<void(std::shared_ptr<I>, std::shared_ptr<const celix::Properties>, std::shared_ptr<const celix::Bundle>)>> setCallbacks;
-        const std::vector<std::function<void(std::shared_ptr<I>, std::shared_ptr<const celix::Properties>, std::shared_ptr<const celix::Bundle>)>> addCallbacks;
-        const std::vector<std::function<void(std::shared_ptr<I>, std::shared_ptr<const celix::Properties>, std::shared_ptr<const celix::Bundle>)>> remCallbacks;
-        const std::vector<std::function<void(std::vector<std::shared_ptr<I>>)>> updateCallbacks{}; //TODO add to ctor, builder and test
-        const std::vector<std::function<void(std::vector<std::pair<std::shared_ptr<I>, std::shared_ptr<const celix::Properties>>>)>> updateWithPropertiesCallbacks{}; //TODO add to ctor, builder and test
-        const std::vector<std::function<void(std::vector<std::tuple<std::shared_ptr<I>, std::shared_ptr<const celix::Properties>, std::shared_ptr<const celix::Bundle>>>)>> updateWithOwnerCallbacks{}; //TODO add to ctor, builder and test
+        const std::chrono::milliseconds warningTimoutForNonExpiredSvcObject{1000}; //TODO make configureable with buidler
+
+        const std::vector<std::function<void(const std::shared_ptr<I>&, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&)>> setCallbacks;
+        const std::vector<std::function<void(const std::shared_ptr<I>&, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&)>> addCallbacks;
+        const std::vector<std::function<void(const std::shared_ptr<I>&, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&)>> remCallbacks;
+
+        const std::vector<std::function<void(const std::vector<std::shared_ptr<I>>)>> updateCallbacks{}; //TODO add to ctor, builder and test
+        const std::vector<std::function<void(const std::vector<std::pair<std::shared_ptr<I>, std::shared_ptr<const celix::Properties>>>)>> updateWithPropertiesCallbacks{}; //TODO add to ctor, builder and test
+        const std::vector<std::function<void(const std::vector<std::tuple<std::shared_ptr<I>, std::shared_ptr<const celix::Properties>, std::shared_ptr<const celix::Bundle>>>)>> updateWithOwnerCallbacks{}; //TODO add to ctor, builder and test
 
         struct SvcEntryCompare {
             bool operator() (const std::shared_ptr<SvcEntry>& a, const std::shared_ptr<SvcEntry>& b) const {
@@ -756,7 +758,7 @@ namespace celix {
                 onTrackerDestroyed{std::move(_onTrackerDestroyed)} {}
 
         const std::string serviceName;
-        const std::vector<std::function<void(const ServiceTrackerInfo&)>> onTrackerCreated; //TODO check if the callback are done on started/stopped or created/destroyed
+        const std::vector<std::function<void(const ServiceTrackerInfo&)>> onTrackerCreated;
         const std::vector<std::function<void(const ServiceTrackerInfo&)>> onTrackerDestroyed;
     };
 
