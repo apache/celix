@@ -38,12 +38,12 @@ celix::async_rsa::AsyncAdmin::~AsyncAdmin() {
     celix_logHelper_destroy(_logger);
 }
 
-void celix::async_rsa::AsyncAdmin::addEndpoint(celix::rsa::IEndpoint *endpoint, Properties &&properties) {
+void celix::async_rsa::AsyncAdmin::addEndpoint(celix::rsa::Endpoint* endpoint, [[maybe_unused]] Properties &&properties) {
     std::unique_lock l(_m);
-    addEndpointInternal(endpoint, std::forward<Properties>(properties));
+    addEndpointInternal(*endpoint);
 }
 
-void celix::async_rsa::AsyncAdmin::removeEndpoint([[maybe_unused]] celix::rsa::IEndpoint *endpoint, [[maybe_unused]] Properties &&properties) {
+void celix::async_rsa::AsyncAdmin::removeEndpoint([[maybe_unused]] celix::rsa::Endpoint* endpoint, [[maybe_unused]] Properties &&properties) {
     auto interfaceIt = properties.find("service.exported.interfaces");
 
     if(interfaceIt == end(properties)) {
@@ -54,8 +54,8 @@ void celix::async_rsa::AsyncAdmin::removeEndpoint([[maybe_unused]] celix::rsa::I
     std::unique_lock l(_m);
 
     _toBeCreatedImportedEndpoints.erase(std::remove_if(_toBeCreatedImportedEndpoints.begin(), _toBeCreatedImportedEndpoints.end(), [&interfaceIt](auto const &endpoint){
-        auto endpointInterfaceIt = endpoint.second.find("service.exported.interfaces");
-        return endpointInterfaceIt != end(endpoint.second) && endpointInterfaceIt->second == interfaceIt->second;
+        auto endpointInterfaceIt = endpoint.getProperties().find("service.exported.interfaces");
+        return endpointInterfaceIt != end(endpoint.getProperties()) && endpointInterfaceIt->second == interfaceIt->second;
     }), _toBeCreatedImportedEndpoints.end());
 
     auto svcId = properties.find(OSGI_FRAMEWORK_SERVICE_ID);
@@ -93,16 +93,24 @@ void celix::async_rsa::AsyncAdmin::addImportedServiceFactory(celix::async_rsa::I
 
     _factories.emplace(interfaceIt->second, factory);
 
-    for(auto it = _toBeCreatedImportedEndpoints.begin(); it != _toBeCreatedImportedEndpoints.end(); ) {
-        auto interfaceToBeCreatedIt = it->second.find("service.exported.interfaces");
+    for (auto& tbce : _toBeCreatedImportedEndpoints) {
 
-        if(interfaceToBeCreatedIt == end(it->second) || interfaceToBeCreatedIt->second != interfaceIt->second) {
-            it++;
-        } else {
-            addEndpointInternal(it->first, std::move(it->second));
-            it = _toBeCreatedImportedEndpoints.erase(it);
+        auto tbceIter = tbce.getProperties().find("service.exported.interfaces");
+        if (!(tbceIter == end(tbce.getProperties()) || tbceIter->second != interfaceIt->second)) {
+            addEndpointInternal(tbce);
         }
     }
+
+//    for(auto it = _toBeCreatedImportedEndpoints.begin(); it != _toBeCreatedImportedEndpoints.end(); ) {
+//        auto interfaceToBeCreatedIt = it->getProperties().find("service.exported.interfaces");
+//
+//        if(interfaceToBeCreatedIt == end(it->getProperties()) || interfaceToBeCreatedIt->second != interfaceIt->second) {
+//            it++;
+//        } else {
+//            addEndpointInternal(it);
+//            it = _toBeCreatedImportedEndpoints.erase(it);
+//        }
+//    }
 }
 
 void celix::async_rsa::AsyncAdmin::removeImportedServiceFactory([[maybe_unused]] celix::async_rsa::IImportedServiceFactory *factory, Properties &&properties) {
@@ -117,7 +125,9 @@ void celix::async_rsa::AsyncAdmin::removeImportedServiceFactory([[maybe_unused]]
     _factories.erase(interfaceIt->second);
 }
 
-void celix::async_rsa::AsyncAdmin::addEndpointInternal(celix::rsa::IEndpoint *endpoint, Properties &&properties) {
+void celix::async_rsa::AsyncAdmin::addEndpointInternal(celix::rsa::Endpoint endpoint) {
+
+    const auto& properties = endpoint.getProperties();
     auto interfaceIt = properties.find("service.exported.interfaces");
 
     if(interfaceIt == end(properties)) {
@@ -136,18 +146,20 @@ void celix::async_rsa::AsyncAdmin::addEndpointInternal(celix::rsa::IEndpoint *en
 
     if(existingFactory == end(_factories)) {
         L_DEBUG("Adding endpoint but no factory available yet, delaying creation");
-        _toBeCreatedImportedEndpoints.emplace_back(std::make_pair(endpoint, std::move(properties)));
+        _toBeCreatedImportedEndpoints.emplace_back(celix::rsa::Endpoint{properties});
         return;
     }
 
     L_DEBUG("Adding endpoint, created service");
-    _serviceInstances.emplace(std::stol(svcId->second), existingFactory->second->create(_mng, std::move(properties)));
+    _serviceInstances.emplace(std::stol(svcId->second), existingFactory->second->create(_mng, (Properties&&) properties));
 }
 
 class AdminActivator {
 public:
-    explicit AdminActivator([[maybe_unused]] std::shared_ptr<celix::dm::DependencyManager> mng) : _cmp(mng->createComponent(std::make_unique<celix::async_rsa::AsyncAdmin>(mng))) {
-        _cmp.createServiceDependency<celix::rsa::IEndpoint>()
+    explicit AdminActivator([[maybe_unused]] std::shared_ptr<celix::dm::DependencyManager> mng) :
+            _cmp(mng->createComponent(std::make_unique<celix::async_rsa::AsyncAdmin>(mng))) {
+
+        _cmp.createServiceDependency<celix::rsa::Endpoint>()
                 .setRequired(false)
                 .setCallbacks(&celix::async_rsa::AsyncAdmin::addEndpoint, &celix::async_rsa::AsyncAdmin::removeEndpoint)
                 .build();

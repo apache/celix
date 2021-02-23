@@ -17,7 +17,7 @@
  * under the License.
  */
 
-#include <endpoint.h>
+#include <Endpoint.h>
 #include <celix_api.h>
 #include <ImportedServiceFactory.h>
 #include <mutex>
@@ -52,8 +52,8 @@ namespace celix::async_rsa {
         AsyncAdmin& operator=(AsyncAdmin&&) = delete;
 
         // Imported endpoint add/remove functions
-        void addEndpoint(celix::rsa::IEndpoint *endpoint, Properties&& properties);
-        void removeEndpoint(celix::rsa::IEndpoint *endpoint, Properties&& properties);
+        void addEndpoint(celix::rsa::Endpoint* endpoint, Properties &&properties);
+        void removeEndpoint(celix::rsa::Endpoint* endpoint, Properties &&properties);
 
         // Imported endpoint add/remove functions
         void addImportedServiceFactory(celix::async_rsa::IImportedServiceFactory *factory, Properties&& properties);
@@ -67,9 +67,9 @@ namespace celix::async_rsa {
         std::pmr::unsynchronized_pool_resource _memResource{};
         std::pmr::unordered_map<std::string, celix::async_rsa::IImportedServiceFactory*> _factories{&_memResource};
         std::pmr::unordered_map<long, celix::dm::BaseComponent&> _serviceInstances{&_memResource};
-        std::vector<std::pair<celix::rsa::IEndpoint*, Properties>> _toBeCreatedImportedEndpoints{};
+        std::vector<celix::rsa::Endpoint> _toBeCreatedImportedEndpoints{};
 
         // Internal functions for code re-use
-        void addEndpointInternal(celix::rsa::IEndpoint *endpoint, Properties&& properties);
+        void addEndpointInternal(celix::rsa::Endpoint endpoint);
     };
 }

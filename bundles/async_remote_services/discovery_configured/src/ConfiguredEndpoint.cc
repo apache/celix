@@ -29,6 +29,23 @@ constexpr const char* ENDPOINT_OBJECTCLASS = "endpoint.objectClass";
 constexpr const char* ENDPOINT_SCOPE = "endpoint.scope";
 constexpr const char* ENDPOINT_TOPIC = "endpoint.topic";
 
+celix::dm::Properties convertEndpointPropertiesToCelix(const ConfiguredEndpointProperties& endpointProperties) {
+
+    return celix::dm::Properties{{"service.imported", std::to_string(endpointProperties.isImported()).c_str()},
+                                 {"service.exported.interfaces", endpointProperties.getExports()},
+                                 {"endpoint.id", endpointProperties.getId()}};
+}
+
+ConfiguredEndpointProperties convertCelixPropertiesToEndpoint(const celix::dm::Properties& celixProperties) {
+
+    auto endpointId = celixProperties.at("endpoint.id");
+    auto exports = celixProperties.at("service.exported.interfaces");
+    auto imported = celixProperties.at("service.imported");
+    return ConfiguredEndpointProperties{endpointId,
+                                        (imported == "true"),
+                                        {}, exports, {}, "", ""};
+}
+
 bool isValidEndpointJson(const rapidjson::Value& endpointJson) {
 
     return (endpointJson.HasMember(ENDPOINT_IDENTIFIER)
@@ -54,27 +71,27 @@ std::vector<std::string> parseJSONStringArray(const rapidjson::Value& jsonArray)
     return resultVec;
 }
 
-ConfiguredEndpoint::ConfiguredEndpoint(const rapidjson::Value& endpointJson) : _properties{} {
+ConfiguredEndpoint::ConfiguredEndpoint(const rapidjson::Value& endpointJson) :
+        Endpoint(celix::dm::Properties{}),
+        _configuredProperties{} {
 
     if (isValidEndpointJson(endpointJson)) {
 
-        _properties = {endpointJson[ENDPOINT_IDENTIFIER].GetString(),
-                       endpointJson[ENDPOINT_IMPORTED].GetBool(),
-                       parseJSONStringArray(endpointJson[ENDPOINT_IMPORT_CONFIGS]),
-                       endpointJson[ENDPOINT_EXPORTS].GetString(),
-                       parseJSONStringArray(endpointJson[ENDPOINT_OBJECTCLASS]),
-                       endpointJson[ENDPOINT_SCOPE].GetString(),
-                       endpointJson[ENDPOINT_TOPIC].GetString()};
+        _configuredProperties = {endpointJson[ENDPOINT_IDENTIFIER].GetString(),
+                                 endpointJson[ENDPOINT_IMPORTED].GetBool(),
+                                 parseJSONStringArray(endpointJson[ENDPOINT_IMPORT_CONFIGS]),
+                                 endpointJson[ENDPOINT_EXPORTS].GetString(),
+                                 parseJSONStringArray(endpointJson[ENDPOINT_OBJECTCLASS]),
+                                 endpointJson[ENDPOINT_SCOPE].GetString(),
+                                 endpointJson[ENDPOINT_TOPIC].GetString()};
+
+        _celixProperties = convertEndpointPropertiesToCelix(*_configuredProperties);
     }
 }
 
-ConfiguredEndpoint::ConfiguredEndpoint(const ConfiguredEndpointProperties& endpointProperties) :
-            _properties{endpointProperties} {
-}
+const ConfiguredEndpointProperties& ConfiguredEndpoint::getConfiguredProperties() const {
 
-const ConfiguredEndpointProperties& ConfiguredEndpoint::getProperties() const {
-
-    return *_properties;
+    return *_configuredProperties;
 }
 
 } // end namespace celix::rsa.

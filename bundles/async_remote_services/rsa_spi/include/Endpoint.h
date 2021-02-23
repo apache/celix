@@ -18,35 +18,38 @@
  */
 #pragma once
 
-#include <Endpoint.h>
-#include <ConfiguredEndpointProperties.h>
-
-#include <optional>
 #include <string>
+#include <map>
 
-#include <rapidjson/document.h>
+#include <celix/dm/Properties.h>
 
 namespace celix::rsa {
 
 /**
- * This subclass of Endpoint contains logic to parse (rapid) JSON values into endpoint celix properties.
+ * Endpoint class for celix::rsa namespace.
+ * This class holds data for discovered remote services or published local services.
  */
-class ConfiguredEndpoint : public Endpoint {
+class Endpoint {
 public:
 
-    ConfiguredEndpoint() = delete;
-
-    explicit ConfiguredEndpoint(const rapidjson::Value& endpointJson);
-
-    const ConfiguredEndpointProperties& getConfiguredProperties() const;
-
-    std::string ToString() const {
-        return "[ConfiguredEndpoint (" + _configuredProperties->ToString() + ")]";
+    /**
+     * Endpoint constructor.
+     * @param properties celix properties with information about this endpoint and what its documenting.
+     */
+    explicit Endpoint(std::map<std::string, std::string> properties) : _celixProperties{std::move(properties)} {
+        // TODO validate mandatory properties are set.
     }
 
-private:
+    const celix::dm::Properties& getProperties() const {
+        return _celixProperties;
+    }
 
-    std::optional<ConfiguredEndpointProperties> _configuredProperties;
+    const std::string& getEndpointId() const {
+        return _celixProperties.at("endpoint.id");
+    }
+
+protected:
+    celix::dm::Properties _celixProperties;
+
 };
-
 } // end namespace celix::rsa.

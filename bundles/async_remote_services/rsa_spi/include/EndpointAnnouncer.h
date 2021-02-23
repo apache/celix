@@ -18,40 +18,45 @@
  */
 #pragma once
 
-#include <endpoint.h>
+#include <Endpoint.h>
+
+#include <memory>
+
 #include <celix/dm/Properties.h>
 
 namespace celix::rsa {
 
 /**
- * Interface defining functions for all compatible endpoint announcer classes.
+ * Base class defining functions for all compatible endpoint announcer classes.
  */
-class IEndpointAnnouncer {
+class EndpointAnnouncer {
 public:
 
     /**
      * Defaulted constructor.
      */
-    IEndpointAnnouncer() = default;
+    EndpointAnnouncer() = default;
 
     /**
      * Defaulted virtual destructor.
      */
-    virtual ~IEndpointAnnouncer() = default;
+    virtual ~EndpointAnnouncer() = default;
 
     /**
      * Task the endpoint announcer to make the given endpoint visible for discovery by other managers/ frameworks.
-     * @param endpoint The endpoint pointer in question.
-     * @param properties The celix properties concerning the endpoint.
+     * @param endpoint The endpoint pointer in question, with valid properties within.
      */
-    virtual void announceEndpoint(IEndpoint *endpoint, celix::dm::Properties&& properties) = 0;
+    virtual void announceEndpoint([[maybe_unused]] std::unique_ptr<Endpoint> endpoint) {
+        // default implementation ignores this function.
+    }
 
     /**
      * Task the endpoint announcer to remove the discoverability of a given endpoint.
-     * @param endpoint The endpoint pointer in question.
-     * @param properties The celix properties concerning the endpoint, used for lookup.
+     * @param endpoint The endpoint pointer in question, with valid properties within.
      */
-    virtual void revokeEndpoint(IEndpoint *endpoint, celix::dm::Properties&& properties) = 0;
+    virtual void revokeEndpoint([[maybe_unused]] std::unique_ptr<Endpoint> endpoint) {
+        // default implementation ignores this function.
+    }
 };
 
 } // end namespace celix::rsa.

@@ -18,13 +18,13 @@
  */
 #pragma once
 
-#include <endpoint_announcer.h>
+#include <EndpointAnnouncer.h>
 
 #include <memory>
 #include <vector>
 #include <string>
 
-#include <endpoint.h>
+#include <Endpoint.h>
 #include <celix_api.h>
 
 #include <ConfiguredEndpoint.h>
@@ -42,7 +42,7 @@ namespace celix::rsa {
  * a local configuration JSON file.
  * This configured discovery manager announces local exported endpoints and imported endpoints from the JSON file.
  */
-class ConfiguredDiscoveryManager final : public IEndpointAnnouncer {
+class ConfiguredDiscoveryManager final : public EndpointAnnouncer {
 public:
 
     /**
@@ -71,32 +71,12 @@ public:
      */
     ConfiguredDiscoveryManager& operator=(const ConfiguredDiscoveryManager&) = delete;
 
-    /**
-     * Exports incoming new service exported endpoint to the JSON document.
-     * @param endpoint the endpoint object.
-     * @param properties the celix properties concerning the endpoint.
-     */
-    void announceEndpoint(IEndpoint *endpoint, celix::dm::Properties&& properties) override;
-
-    /**
-     * Searches for the endpoint in the JSON document and removes it if found.
-     * @param endpoint the endpoint object.
-     * @param properties the celix properties concerning the endpoint.
-     */
-    void revokeEndpoint(IEndpoint *endpoint, celix::dm::Properties&& properties) override;
-
 private:
 
     void discoverEndpoints();
 
-    void publishParsedEndpoints();
-
     std::shared_ptr<DependencyManager> _dependencyManager;
-
     std::string _configurationFilePath;
-
-    std::vector<std::shared_ptr<ConfiguredEndpoint>> _discoveredEndpoints;
-    std::vector<IEndpoint*> _publishedDiscoveredEndpoints;
 };
 
 } // end namespace celix::rsa.

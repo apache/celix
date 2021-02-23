@@ -55,7 +55,7 @@ void celix::async_rsa::AsyncTopologyManager::addExportedService(celix::async_rsa
     }
 
     if(_discovery != nullptr) {
-        _discovery->announceEndpoint(nullptr, std::move(properties));
+        _discovery->announceEndpoint(std::make_unique<celix::rsa::Endpoint>(std::move(properties)));
     } else {
         L_WARN("Discovery null");
         return;
@@ -77,7 +77,7 @@ void celix::async_rsa::AsyncTopologyManager::removeExportedService([[maybe_unuse
 
     if(_exportedServices.erase(interfaceIt->second) > 0) {
         if(_discovery != nullptr) {
-            _discovery->revokeEndpoint(nullptr, std::move(properties));
+            _discovery->revokeEndpoint(std::make_unique<celix::rsa::Endpoint>(std::move(properties)));
         } else {
             L_WARN("Discovery null");
             return;
@@ -85,7 +85,7 @@ void celix::async_rsa::AsyncTopologyManager::removeExportedService([[maybe_unuse
     }
 }
 
-void celix::async_rsa::AsyncTopologyManager::setDiscovery(celix::rsa::IEndpointAnnouncer *discovery, [[maybe_unused]] Properties &&properties) {
+void celix::async_rsa::AsyncTopologyManager::setDiscovery(celix::rsa::EndpointAnnouncer *discovery, [[maybe_unused]] Properties &&properties) {
     std::unique_lock l(_m);
     _discovery = discovery;
 }
@@ -99,7 +99,7 @@ public:
                 .setCallbacks(&celix::async_rsa::AsyncTopologyManager::addExportedService, &celix::async_rsa::AsyncTopologyManager::removeExportedService)
                 .build();
 
-        _cmp.createServiceDependency<celix::rsa::IEndpointAnnouncer>()
+        _cmp.createServiceDependency<celix::rsa::EndpointAnnouncer>()
                 .setRequired(true)
                 .setCallbacks(&celix::async_rsa::AsyncTopologyManager::setDiscovery)
                 .build();

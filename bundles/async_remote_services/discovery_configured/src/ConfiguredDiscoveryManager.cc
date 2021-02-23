@@ -53,28 +53,9 @@ rapidjson::Document parseJSONFile(std::string& contents)  {
     return resultDocument;
 }
 
-celix::dm::Properties convertEndpointPropertiesToCelix(const ConfiguredEndpointProperties& endpointProperties) {
-
-    return celix::dm::Properties{{"service.imported", std::to_string(endpointProperties.isImported()).c_str()},
-                                 {"service.exported.interfaces", endpointProperties.getExports()},
-                                 {"endpoint.id", endpointProperties.getId()}};
-}
-
-ConfiguredEndpointProperties convertCelixPropertiesToEndpoint(const celix::dm::Properties& celixProperties) {
-
-    auto endpointId = celixProperties.at("endpoint.id");
-    auto exports = celixProperties.at("service.exported.interfaces");
-    auto imported = celixProperties.at("service.imported");
-    return ConfiguredEndpointProperties{endpointId,
-                                        (imported == "true"),
-                                        {}, exports, {}, "", ""};
-}
-
 ConfiguredDiscoveryManager::ConfiguredDiscoveryManager(std::shared_ptr<DependencyManager> dependencyManager) :
         _dependencyManager{std::move(dependencyManager)},
-        _configurationFilePath{},
-        _discoveredEndpoints{},
-        _publishedDiscoveredEndpoints{} {
+        _configurationFilePath{} {
 
     _configurationFilePath = celix_bundleContext_getProperty(
             _dependencyManager->bundleContext(),
@@ -91,36 +72,21 @@ void ConfiguredDiscoveryManager::discoverEndpoints() {
         auto parsedJson = parseJSONFile(contents.value());
         if (parsedJson.IsObject()) {
             if (parsedJson.HasMember(ENDPOINT_ARRAY) && parsedJson[ENDPOINT_ARRAY].IsArray()) {
+
                 for (auto& endpoint : parsedJson[ENDPOINT_ARRAY].GetArray()) {
-                    _discoveredEndpoints.emplace_back(std::make_shared<ConfiguredEndpoint>(endpoint.GetObject()));
+
+                    const auto& configuredEndpointPtr = std::make_shared<ConfiguredEndpoint>(endpoint.GetObject());
+                    const auto endpointProperties = configuredEndpointPtr->getProperties();
+
+                    std::cout << configuredEndpointPtr->ToString() << std::endl;
+
+                    _dependencyManager->createComponent<Endpoint>(configuredEndpointPtr)
+                                       .addInterface<Endpoint>("1.0.0", endpointProperties)
+                                       .build();
                 }
             }
         }
     }
-    publishParsedEndpoints();
-}
-
-void ConfiguredDiscoveryManager::publishParsedEndpoints() {
-
-    for (const auto& endpoint : _discoveredEndpoints) {
-        _publishedDiscoveredEndpoints.emplace_back(
-                &_dependencyManager->createComponent<IEndpoint>().addInterface<IEndpoint>(
-                        "1.0.0",
-                        convertEndpointPropertiesToCelix(endpoint->getProperties()))
-                        .build().getInstance()
-        );
-        std::cout << endpoint->ToString() << std::endl; // TODO remove.
-    }
-}
-
-void ConfiguredDiscoveryManager::announceEndpoint(IEndpoint* /*endpoint*/, celix::dm::Properties&& /*properties*/) {
-
-    // unused with configured discovery.
-}
-
-void ConfiguredDiscoveryManager::revokeEndpoint(IEndpoint* /*endpoint*/, celix::dm::Properties&& /*properties*/) {
-
-    // unused with configured discovery.
 }
 
 } // end namespace celix::rsa.
