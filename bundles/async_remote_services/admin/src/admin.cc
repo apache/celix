@@ -100,17 +100,6 @@ void celix::async_rsa::AsyncAdmin::addImportedServiceFactory(celix::async_rsa::I
             addEndpointInternal(tbce);
         }
     }
-
-//    for(auto it = _toBeCreatedImportedEndpoints.begin(); it != _toBeCreatedImportedEndpoints.end(); ) {
-//        auto interfaceToBeCreatedIt = it->getProperties().find("service.exported.interfaces");
-//
-//        if(interfaceToBeCreatedIt == end(it->getProperties()) || interfaceToBeCreatedIt->second != interfaceIt->second) {
-//            it++;
-//        } else {
-//            addEndpointInternal(it);
-//            it = _toBeCreatedImportedEndpoints.erase(it);
-//        }
-//    }
 }
 
 void celix::async_rsa::AsyncAdmin::removeImportedServiceFactory([[maybe_unused]] celix::async_rsa::IImportedServiceFactory *factory, Properties &&properties) {
