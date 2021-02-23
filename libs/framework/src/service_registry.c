@@ -921,13 +921,8 @@ static inline void celix_waitAndDestroyServiceListener(celix_service_registry_se
     free(entry);
 }
 
-char* celix_serviceRegistry_createFilterFor(celix_service_registry_t* registry, const char* serviceName, const char* versionRangeStr, const char* additionalFilterIn, const char* lang, bool ignoreServiceLanguage) {
+char* celix_serviceRegistry_createFilterFor(celix_service_registry_t* registry, const char* serviceName, const char* versionRangeStr, const char* additionalFilterIn) {
     char* filter = NULL;
-
-    //setting lang
-    if (lang == NULL || strncmp("", lang, 1) == 0) {
-        lang = CELIX_FRAMEWORK_SERVICE_C_LANGUAGE;
-    }
 
     if (serviceName == NULL) {
         serviceName = "*";
@@ -952,26 +947,14 @@ char* celix_serviceRegistry_createFilterFor(celix_service_registry_t* registry, 
     }
 
     //setting filter
-    if (ignoreServiceLanguage) {
-        if (additionalFilterIn != NULL && versionRange != NULL) {
-            asprintf(&filter, "(&(%s=%s)%s%s)", OSGI_FRAMEWORK_OBJECTCLASS, serviceName, versionRange, additionalFilterIn);
-        } else if (versionRange != NULL) {
-            asprintf(&filter, "(&(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, serviceName, versionRange);
-        } else if (additionalFilterIn != NULL) {
-            asprintf(&filter, "(&(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, serviceName, additionalFilterIn);
-        } else {
-            asprintf(&filter, "(&(%s=%s))", OSGI_FRAMEWORK_OBJECTCLASS, serviceName);
-        }
+    if (additionalFilterIn != NULL && versionRange != NULL) {
+        asprintf(&filter, "(&(%s=%s)%s%s)", OSGI_FRAMEWORK_OBJECTCLASS, serviceName, versionRange, additionalFilterIn);
+    } else if (versionRange != NULL) {
+        asprintf(&filter, "(&(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, serviceName, versionRange);
+    } else if (additionalFilterIn != NULL) {
+        asprintf(&filter, "(&(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, serviceName, additionalFilterIn);
     } else {
-        if (additionalFilterIn != NULL && versionRange != NULL) {
-            asprintf(&filter, "(&(%s=%s)(%s=%s)%s%s)", OSGI_FRAMEWORK_OBJECTCLASS, serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang, versionRange, additionalFilterIn);
-        } else if (versionRange != NULL) {
-            asprintf(&filter, "(&(%s=%s)(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang, versionRange);
-        } else if (additionalFilterIn != NULL) {
-            asprintf(&filter, "(&(%s=%s)(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang, additionalFilterIn);
-        } else {
-            asprintf(&filter, "(&(%s=%s)(%s=%s))", OSGI_FRAMEWORK_OBJECTCLASS, serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang);
-        }
+        asprintf(&filter, "(&(%s=%s))", OSGI_FRAMEWORK_OBJECTCLASS, serviceName);
     }
 
     if (versionRange != NULL){
@@ -996,7 +979,7 @@ static int celix_serviceRegistry_compareRegistrations(const void *a, const void 
     long servRankingA = celix_properties_getAsLong(propsA, OSGI_FRAMEWORK_SERVICE_RANKING, 0);
     long servRankingB = celix_properties_getAsLong(propsB, OSGI_FRAMEWORK_SERVICE_RANKING, 0);
 
-    return utils_compareServiceIdsAndRanking(servIdA, servRankingA, servIdB, servRankingB);
+    return celix_utils_compareServiceIdsAndRanking(servIdA, servRankingA, servIdB, servRankingB);
 }
 
 celix_array_list_t* celix_serviceRegisrty_findServices(

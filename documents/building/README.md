@@ -119,7 +119,7 @@ Apache Celix uses [CMake](https://cmake.org) as build system. CMake can generate
 cd ${WS}/celix
 mkdir build
 cd build
-cmake .. 
+cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo .. 
 make 
 ```
 

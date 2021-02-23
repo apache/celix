@@ -18,34 +18,35 @@
  */
 
 #include <IName.h>
-#include <celix_api.h>
+#include <celix/BundleActivator.h>
 #include "Phase2Cmp.h"
-#include "Phase2Activator.h"
 #include "celix_log_service.h"
 
 using namespace celix::dm;
 
+class Phase2aActivator {
+public:
+    Phase2aActivator(const std::shared_ptr<celix::dm::DependencyManager>& mng) {
 
-Phase2Activator::Phase2Activator(std::shared_ptr<celix::dm::DependencyManager> mng) {
+        Properties props{};
+        props["name"] = "phase2a";
 
-    Properties props {};
-    props["name"] = "phase2a";
+        Component<Phase2Cmp> &cmp = mng->createComponent<Phase2Cmp>()
+                .setInstance(Phase2Cmp())
+                .addInterface<IPhase2>(IPHASE2_VERSION, props);
 
-    Component<Phase2Cmp>& cmp = mng->createComponent<Phase2Cmp>()
-            .setInstance(Phase2Cmp())
-            .addInterface<IPhase2>(IPHASE2_VERSION, props);
+        cmp.createServiceDependency<IPhase1>()
+                .setRequired(true)
+                .setCallbacks(&Phase2Cmp::setPhase1);
 
-    cmp.createServiceDependency<IPhase1>()
-            .setRequired(true)
-            .setCallbacks(&Phase2Cmp::setPhase1);
+        cmp.createServiceDependency<srv::info::IName>()
+                .setVersionRange("[1.0.0,2)")
+                .setCallbacks(&Phase2Cmp::setName);
 
-    cmp.createServiceDependency<srv::info::IName>()
-            .setVersionRange("[1.0.0,2)")
-            .setCallbacks(&Phase2Cmp::setName);
+        cmp.createCServiceDependency<celix_log_service_t>(CELIX_LOG_SERVICE_NAME)
+                .setRequired(false)
+                .setCallbacks(&Phase2Cmp::setLogService);
+    }
+};
 
-    cmp.createCServiceDependency<celix_log_service_t>(CELIX_LOG_SERVICE_NAME)
-            .setRequired(false)
-            .setCallbacks(&Phase2Cmp::setLogService);
-}
-
-CELIX_GEN_CXX_BUNDLE_ACTIVATOR(Phase2Activator)
+CELIX_GEN_CXX_BUNDLE_ACTIVATOR(Phase2aActivator)

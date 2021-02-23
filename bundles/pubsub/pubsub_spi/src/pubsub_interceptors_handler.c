@@ -206,5 +206,5 @@ int referenceCompare(const void *a, const void *b) {
     long servRankingA = celix_properties_getAsLong(aEntry->properties, OSGI_FRAMEWORK_SERVICE_RANKING, 0);
     long servRankingB = celix_properties_getAsLong(bEntry->properties, OSGI_FRAMEWORK_SERVICE_RANKING, 0);
 
-    return utils_compareServiceIdsAndRanking(servIdA, servRankingA, servIdB, servRankingB);
+    return celix_utils_compareServiceIdsAndRanking(servIdA, servRankingA, servIdB, servRankingB);
 }

@@ -17,19 +17,6 @@
  * under the License.
  */
 
-#include "celix/dm/Component.h"
-#include "celix/dm/DependencyManager.h"
-#include "celix/dm/ServiceDependency.h"
-#include "celix/dm/ProvidedService.h"
-#include "celix_dependency_manager.h"
-
-#include <memory>
-#include <iostream>
-#include <iomanip>
-#include <type_traits>
-#include <algorithm>
-#include <atomic>
-
 using namespace celix::dm;
 
 inline void BaseComponent::runBuild() {
@@ -72,7 +59,7 @@ Component<T>::Component(
         std::string uuid) : BaseComponent(
                 context,
                 cDepMan,
-                name.empty() ? celix::dm::typeName<T>() : std::move(name),
+                name.empty() ? celix::typeName<T>() : std::move(name),
                 std::move(uuid)) {}
 
 template<class T>
@@ -176,7 +163,7 @@ Component<T>& Component<T>::remove(CServiceDependency<T,I>& dep) {
 
 template<class T>
 std::shared_ptr<Component<T>> Component<T>::create(celix_bundle_context_t *context, celix_dependency_manager_t* cDepMan, std::string name, std::string uuid) {
-    std::string cmpName = name.empty() ? celix::dm::typeName<T>() : std::move(name);
+    std::string cmpName = name.empty() ? celix::typeName<T>() : std::move(name);
     return std::shared_ptr<Component<T>>{new Component<T>(context, cDepMan, std::move(cmpName), std::move(uuid)), [](Component<T>* cmp){
         //Using a callback of async destroy to ensure that the cmp instance is still exist while the
         //dm component is async disabled and destroyed.

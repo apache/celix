@@ -384,7 +384,7 @@ celix_status_t component_setCLanguageProperty(celix_dm_component_t *component, b
 }
 
 celix_status_t celix_dmComponent_setCLanguageProperty(celix_dm_component_t *component, bool setCLangProp) {
-    component->setCLanguageProperty = setCLangProp;
+    //nop
     return CELIX_SUCCESS;
 }
 
@@ -404,10 +404,6 @@ celix_status_t celix_dmComponent_addInterface(celix_dm_component_t *component, c
 
     if ((properties_get(properties, CELIX_FRAMEWORK_SERVICE_VERSION) == NULL) && (serviceVersion != NULL)) {
         celix_properties_set(properties, CELIX_FRAMEWORK_SERVICE_VERSION, serviceVersion);
-    }
-
-    if (component->setCLanguageProperty && properties_get(properties, CELIX_FRAMEWORK_SERVICE_LANGUAGE) == NULL) { //always set default lang to C
-        celix_properties_set(properties, CELIX_FRAMEWORK_SERVICE_LANGUAGE, CELIX_FRAMEWORK_SERVICE_C_LANGUAGE);
     }
 
     celix_properties_set(properties, CELIX_DM_COMPONENT_UUID, (char*)component->uuid);

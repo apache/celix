@@ -19,14 +19,24 @@
 
 #pragma once
 
-#include "celix/dm/types.h"
-#include "dm_component.h"
-
 #include <map>
 #include <string>
 #include <vector>
 #include <atomic>
 #include <mutex>
+#include <memory>
+#include <iostream>
+#include <type_traits>
+#include <algorithm>
+
+
+#include "dm_component.h"
+#include "celix/dm/types.h"
+#include "celix/dm/ServiceDependency.h"
+#include "celix/dm/ProvidedService.h"
+#include "celix_dependency_manager.h"
+
+
 
 namespace celix { namespace dm {
 

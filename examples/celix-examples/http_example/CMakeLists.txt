@@ -31,6 +31,7 @@ if (TARGET Celix::http_admin AND TARGET Celix::shell AND TARGET Celix::shell_wui
     celix_bundle_headers(http_example "X-Web-Resource: /hello$<SEMICOLON>/resources")
 
     add_celix_container(http_example_cnt
+            GROUP c_examples
             BUNDLES
                 Celix::http_admin
                 Celix::shell

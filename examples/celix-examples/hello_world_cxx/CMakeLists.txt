@@ -15,14 +15,16 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_celix_bundle(hello_world_cxx
-    VERSION 1.0.0
-    SOURCES src/BundleActivator.cc
+add_celix_bundle(HelloWorldBundle
+    SOURCES src/MyBundleActivator.cc
 )
+target_link_libraries(HelloWorldBundle PRIVATE Celix::shell_api) #adds celix_shell_command.h to the include path
 
-add_celix_container(hello_world_cxx_container
+add_celix_container(HelloWorldCelixContainer
+    CXX
+    GROUP cxx_examples
     BUNDLES
-        Celix::shell
+        Celix::ShellCxx
         Celix::shell_tui
-        hello_world_cxx
+        HelloWorldBundle
 )

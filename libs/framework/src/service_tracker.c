@@ -691,7 +691,7 @@ celix_service_tracker_t* celix_serviceTracker_createWithOptions(
 
             tracker->listener.handle = tracker;
             tracker->listener.serviceChanged = (void *) serviceTracker_serviceChanged;
-            tracker->filter = celix_serviceRegistry_createFilterFor(ctx->framework->registry, opts->filter.serviceName, opts->filter.versionRange, opts->filter.filter, opts->filter.serviceLanguage, opts->filter.ignoreServiceLanguage);
+            tracker->filter = celix_serviceRegistry_createFilterFor(ctx->framework->registry, opts->filter.serviceName, opts->filter.versionRange, opts->filter.filter);
 
             if (tracker->filter == NULL) {
                 celix_framework_log(tracker->context->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__,

@@ -42,4 +42,8 @@ double Phase2Cmp::getData() {
         this->logSrv->info(this->logSrv->handle, (char *) "getting data from phase2cmp A\n");
     }
     return phase1->getData() * 42.0;
+}
+
+void Phase2Cmp::setName(srv::info::IName *name) {
+    std::cout << "Setting IName with name: " << (name != nullptr ? name->getName() : "null") << std::endl;
 };

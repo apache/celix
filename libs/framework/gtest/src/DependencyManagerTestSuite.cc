@@ -20,7 +20,8 @@
 #include <gtest/gtest.h>
 #include <atomic>
 
-#include "celix_api.h"
+#include "celix/dm/DependencyManager.h"
+#include "celix_framework_factory.h"
 
 class DependencyManagerTestSuite : public ::testing::Test {
 public:
@@ -472,7 +473,7 @@ TEST_F(DependencyManagerTestSuite, RequiredDepsAreInjectedDuringStartStop) {
     cmp.build();
 
     TestService svc;
-    std::string svcName = celix::dm::typeName<TestService>();
+    std::string svcName = celix::typeName<TestService>();
     celix_service_registration_options opts{};
     opts.svc = &svc;
     opts.serviceName = svcName.c_str();
@@ -530,7 +531,7 @@ TEST_F(DependencyManagerTestSuite, UnneededSuspendIsPrevented) {
     EXPECT_EQ(cmp2.getState(), celix::dm::ComponentState::TRACKING_OPTIONAL);
 
     TestService svc;
-    std::string svcName = celix::dm::typeName<TestService>();
+    std::string svcName = celix::typeName<TestService>();
     celix_service_registration_options opts{};
     opts.svc = &svc;
     opts.serviceName = svcName.c_str();

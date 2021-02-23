@@ -24,8 +24,8 @@ limitations under the License.
 These examples shows howto create and interact with services by example.
 
 In both examples there is a provider and consumer bundle.
-The provider bundle creates services and registers them to the Celix framework so that these services are available for use (provide).
-And the consumer bundle request the services from the Celix framework and uses (consumes) them.
+The provider bundle creates services and registers them to the Celix framework so that these services are available for use.
+And the consumer bundle request the services from the Celix framework and uses them.
 
 The examples use the `celix_bundleContext_registerService` to provide
 services and uses a combination of `celix_bundleContext_useService`,
@@ -48,9 +48,9 @@ See the `bundle_context.h` for documentation about these - and other -functions
 
 The simple provider/consumer example can be executed by launching the
 `services_example_c` executable target
-(build in `${CMAKE_BUILD_DIR}/deploy/services_example/services_example_c`)
+(build in the directory `${CMAKE_BUILD_DIR}/deploy/c_examples/services_example_c`)
 
-In this example the provider bundle only register one calc service. And
+In this example the provider bundle only registers 1 calc service. And
 the consumer bundle tries to use this during startup and registered
 a service tracker for the calc service.
 
@@ -75,7 +75,7 @@ I.e. type `stop 3`, `stop 4`, `start 3`, `start 4` in different combinations.
 
 The dynamic provider/consumer example can be executed by launching the
 `dynamic_services_example_c` executable target
-(build in `${CMAKE_BUILD_DIR}/deploy/services_example/dynamic_services_example_c`)
+(build in `${CMAKE_BUILD_DIR}/deploy/c_examples/dynamic_services_example_c`)
 
 The dynamic service provide / consumer example show how the framework copes
 with the dynamic behaviour of services.

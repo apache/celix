@@ -54,11 +54,10 @@ celix_framework_logger_t* celix_frameworkLogger_globalLogger(); //TODO do not us
 void celix_framework_log(celix_framework_logger_t* logger, celix_log_level_e level, const char *func, const char *file, int line,
               const char *format, ...);
 
-void celix_framework_vlog(celix_framework_logger_t* logger, celix_log_level_e level, const char *func, const char *file, int line,
-                   const char *format, va_list formatArgs);
-
 void celix_framework_logCode(celix_framework_logger_t* logger, celix_log_level_e level, const char *func, const char *file, int line,
                   celix_status_t code, const char *format, ...);
+
+void celix_framework_vlog(celix_framework_logger_t* logger, celix_log_level_e level, const char* file, const char* function, int line, const char* format, va_list args);
 
 #ifdef __cplusplus
 }

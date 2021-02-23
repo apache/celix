@@ -22,6 +22,7 @@ add_celix_bundle(track_tracker_example
 )
 
 add_celix_container(track_tracker_example_cnt
+    GROUP c_examples
     BUNDLES
         Celix::shell
         Celix::shell_tui

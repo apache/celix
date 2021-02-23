@@ -332,7 +332,7 @@ celix_status_t serviceReference_compareTo(service_reference_pt reference, servic
 	rank = rank_str == NULL ? 0 : atol(rank_str);
 	other_rank = other_rank_str == NULL ? 0 : atol(other_rank_str);
 
-    *compare = utils_compareServiceIdsAndRanking(id, rank, other_id, other_rank);
+    *compare = celix_utils_compareServiceIdsAndRanking(id, rank, other_id, other_rank);
 
 	return status;
 }

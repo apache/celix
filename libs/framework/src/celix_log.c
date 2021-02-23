@@ -102,6 +102,7 @@ void celix_frameworkLogger_setLogCallback(celix_framework_logger_t* logger, void
     celixThreadMutex_unlock(&logger->mutex);
 }
 
+
 static void celix_framework_vlogInternal(celix_framework_logger_t* logger, celix_log_level_e level, celix_status_t *optionalStatus, const char* file, const char* function, int line, const char* format, va_list args) {
     if (level == CELIX_LOG_LEVEL_DISABLED) {
         return;

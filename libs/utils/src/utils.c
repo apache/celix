@@ -147,16 +147,19 @@ celix_status_t utils_isNumeric(const char *number, bool *ret) {
     return status;
 }
 
+int utils_compareServiceIdsAndRanking(long svcIdA, long svcRankA, long svcIdB, long svcRankB) {
+    return celix_utils_compareServiceIdsAndRanking(svcIdA, svcRankA, svcIdB, svcRankB);
+}
 
-int utils_compareServiceIdsAndRanking(unsigned long servId, long servRank, unsigned long otherServId, long otherServRank) {
+int celix_utils_compareServiceIdsAndRanking(long svcIdA, long svcRankA, long svcIdB, long svcRankB) {
     int result;
 
-    if (servId == otherServId) {
+    if (svcIdA == svcIdB) {
         result = 0;
-    } else if (servRank != otherServRank) {
-        result = servRank < otherServRank ? 1 : -1;
+    } else if (svcRankA != svcRankB) {
+        result = svcRankA < svcRankB ? 1 : -1;
     } else { //equal service rank, compare service ids
-        result = servId < otherServId ? -1 : 1;
+        result = svcIdA < svcIdB ? -1 : 1;
     }
 
     return result;

@@ -43,3 +43,7 @@ double Phase2Cmp::getData() {
     }
     return phase1->getData() * 24.0;
 };
+
+void Phase2Cmp::setName(srv::info::IName *name) {
+    std::cout << "Setting IName with name: " << (name != nullptr ? name->getName() : "null") << std::endl;
+};
