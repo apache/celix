@@ -27,7 +27,7 @@ add_celix_bundle(rsa_topology_manager
 )
 target_include_directories(rsa_topology_manager PRIVATE src)
 target_include_directories(rsa_topology_manager PRIVATE include)
-target_link_libraries(rsa_topology_manager PRIVATE Celix::log_helper Celix::rsa_spi)
+target_link_libraries(rsa_topology_manager PRIVATE Celix::log_helper Celix::deprecated_rsa_spi)
 
 if (ENABLE_TESTING)
     find_package(CppUTest REQUIRED)

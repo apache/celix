@@ -16,10 +16,20 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-#pragma once
 
-namespace celix::async_rsa {
-    struct IEndpoint {
-        virtual ~IEndpoint() = default;
-    };
+#include <ConfiguredDiscoveryManagerActivator.h>
+#include <ConfiguredDiscoveryManager.h>
+
+namespace {
+
+ConfiguredDiscoveryManagerActivator::ConfiguredDiscoveryManagerActivator(
+        const std::shared_ptr<celix::dm::DependencyManager>& dependencyManager) :
+            _component{dependencyManager->createComponent(
+                std::make_unique<celix::rsa::ConfiguredDiscoveryManager>(dependencyManager))
+                                        .addInterface<celix::rsa::EndpointAnnouncer>().build()} {
 }
+
+// define this class as the bundle activator.
+CELIX_GEN_CXX_BUNDLE_ACTIVATOR(ConfiguredDiscoveryManagerActivator)
+
+} // end anonymous namespace.

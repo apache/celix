@@ -115,7 +115,7 @@ public:
 
         mng->createComponent<HardcodedService>().addInterfaceWithName<IHardcodedService>(std::string{IHardcodedService::NAME}, std::string{IHardcodedService::VERSION}).build();
         auto &exportedCmp = mng->createComponent<ExportedHardcodedService>()
-                .addInterface<celix::async_rsa::IExportedService>(std::string{IHardcodedService::VERSION}, Properties{{"service.exported.interfaces", std::string{IHardcodedService::NAME}}});
+                .addInterface<celix::async_rsa::IExportedService>(std::string{IHardcodedService::VERSION}, Properties{{"service.exported.interfaces", std::string{IHardcodedService::NAME}}, {"service.imported", "false"}, {"endpoint.id", "1"}});
         _exportedCmp = &exportedCmp;
         exportedCmp.createServiceDependency<IHardcodedService>(std::string{IHardcodedService::NAME}).setCallbacks([this](IHardcodedService *svc, Properties&& props){
             _exportedCmp->getInstance().setService(svc, std::forward<Properties>(props));

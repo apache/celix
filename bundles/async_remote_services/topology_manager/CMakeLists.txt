@@ -26,7 +26,7 @@ add_celix_bundle(async_topology_manager
 target_include_directories(async_topology_manager PRIVATE include)
 target_link_libraries(async_topology_manager PRIVATE
         Celix::async_rsa_common
-        Celix::async_rsa_discovery
+        Celix::async_rsa_discovery_configured
         Celix::framework
         Celix::log_helper
         )

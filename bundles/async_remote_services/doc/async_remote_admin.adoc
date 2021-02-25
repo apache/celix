@@ -1,6 +1,6 @@
 = Async Remote Admin
 
-WARNING: The Async Remote Admin is still a work in progress. 
+WARNING: The Async Remote Admin is still a work in progress.
 
 [plantuml]
 ----
@@ -39,5 +39,87 @@ HardcodedService <|-- IHardcodedInterface
 ExportedHardcodedService --> "1" HardcodedService
 ExportedHardcodedService --> "1" subscriber
 ExportedHardcodedService --> "1" publisher
+@enduml
+----
+
+[plantuml]
+.RSA Design - Jan 2021
+----
+@startuml
+
+class client as "ClientBundle"
+
+class top as "AsyncTopologyManager" {
+    + void importEndpoint();
+    + void exportEndpoint();
+    - AsyncRemoteServiceAdmin& setupAsyncRSA();
+    - AsyncRemoteServiceAdmin _rsa;
+}
+
+class dis as "ConfiguredDiscoveryManager" {
+    + Endpoint& announceEndpoint();
+    + void discoverEndpoints(); // from JSON
+}
+
+class rsa as "AsyncRemoteServiceAdmin" {
+    + void importService(Endpoint& ep);
+    + void exportService(void* svc, properties* prop, long bundleId);
+    - vector<IServiceFactory> _factories;
+}
+
+interface isf as "IServiceFactory" {
+}
+
+class hsf as "HardcodedServiceFactory" <INTERFACE, IMPLEMENTATION> {
+    + BaseComponent& create();
+}
+
+class hs as "HardcodedService" {
+}
+
+class ehs as "ExportedHardcodedService" {
+}
+
+class ihs as "ImportedHardcodedService" {
+}
+
+interface ihi as "IHardcodedInterface" {
+    + celix::Promise<int> add(int lhs, int rhs);
+}
+
+package "celix pubsub" {
+    class sub as "subscriber" {
+        + int receive()
+    }
+
+    class pub as "publisher" {
+        + int send()
+    }
+}
+
+
+hs --|> ihi
+ihs -l|> ihi
+
+hsf -|> isf
+hsf --> ihi : //INTERFACE//
+hsf --> hs : //IMPLEMENTATION//
+
+ehs --> sub
+ehs --> pub
+ehs --> hs
+
+ihs -u-> sub
+ihs --> pub
+
+rsa --> isf
+
+top *-> rsa : creates & manages
+
+dis --> top : announces endpoints to
+
+top -u-> client : service import
+client --> top : service export
+
 @enduml
 ----

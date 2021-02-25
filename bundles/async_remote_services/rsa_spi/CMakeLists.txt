@@ -20,7 +20,7 @@ target_include_directories(rsa_spi INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
     $<INSTALL_INTERFACE:include/celix/rsa>
 )
-target_link_libraries(rsa_spi INTERFACE Celix::remote_services_api)
+target_link_libraries(rsa_spi INTERFACE Celix::async_rsa_discovery_configured)
 
 install(TARGETS rsa_spi EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT rsa)
 install(DIRECTORY include/ DESTINATION include/celix/rsa COMPONENT rsa)

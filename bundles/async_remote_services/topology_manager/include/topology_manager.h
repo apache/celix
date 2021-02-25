@@ -17,7 +17,7 @@
  * under the License.
  */
 
-#include <discovery.h>
+#include <EndpointAnnouncer.h>
 #include <IExportedService.h>
 #include <celix_api.h>
 #include <mutex>
@@ -39,14 +39,13 @@ namespace celix::async_rsa {
             void addExportedService(celix::async_rsa::IExportedService *endpoint, Properties&& properties);
             void removeExportedService(celix::async_rsa::IExportedService *endpoint, Properties&& properties);
 
-            void setDiscovery(celix::async_rsa::IDiscovery *discovery, Properties&& properties);
-
+            void setDiscovery(celix::rsa::EndpointAnnouncer *discovery, Properties&& properties);
 
         private:
             celix_log_helper_t *_logger;
             std::mutex _m{}; // protects below
             std::pmr::unsynchronized_pool_resource _memResource{};
             std::pmr::unordered_map<std::string, celix::async_rsa::IExportedService*> _exportedServices{&_memResource};
-            celix::async_rsa::IDiscovery *_discovery{};
+            celix::rsa::EndpointAnnouncer *_discovery{};
         };
 }

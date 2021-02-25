@@ -15,15 +15,15 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_celix_bundle(remote_example_service
-    SOURCES
-        src/remote_example_activator.c
-        src/remote_example_impl.c
-    SYMBOLIC_NAME "apache_celix_remote_example_service"
-    VERSION 0.0.1
+add_library(deprecated_rsa_spi INTERFACE)
+target_include_directories(deprecated_rsa_spi INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
+    $<INSTALL_INTERFACE:include/celix/rsa>
 )
-target_include_directories(remote_example_service PRIVATE src)
-target_link_libraries(remote_example_service PRIVATE Celix::deprecated_rsa_spi remote_example_api)
+target_link_libraries(deprecated_rsa_spi INTERFACE Celix::remote_services_api)
 
-get_target_property(DESCR remote_example_api INTERFACE_DESCRIPTOR)
-celix_bundle_files(remote_example_service ${DESCR} DESTINATION .)
+install(TARGETS deprecated_rsa_spi EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT rsa)
+install(DIRECTORY include/ DESTINATION include/celix/rsa COMPONENT rsa)
+
+#Setup target aliases to match external usage
+add_library(Celix::deprecated_rsa_spi ALIAS deprecated_rsa_spi)

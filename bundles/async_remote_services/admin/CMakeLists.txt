@@ -28,6 +28,7 @@ target_link_libraries(async_rsa PRIVATE
         Celix::async_rsa_common
         Celix::pubsub_api
         Celix::pubsub_spi
+        Celix::rsa_spi
         Celix::framework
         Celix::log_helper
         )
