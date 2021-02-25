@@ -16,13 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * celix_log.h
- *
- *  \date       Jan 12, 2012
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
 
 #ifndef CELIX_LOG_H_
 #define CELIX_LOG_H_
@@ -39,9 +32,9 @@ extern "C" {
 
 typedef struct celix_framework_logger celix_framework_logger_t; //opaque
 
-#define fw_log(logger, level, fmsg, args...) framework_log(logger, level, __func__, __FILE__, __LINE__, fmsg, ## args)
+#define fw_log(logger, level, fmsg, args...) celix_framework_log(logger, level, __func__, __FILE__, __LINE__, fmsg, ## args)
 
-#define fw_logCode(logger, level, code, fmsg, args...) framework_logCode(logger, level, __func__, __FILE__, __LINE__, code, fmsg, ## args)
+#define fw_logCode(logger, level, code, fmsg, args...) celix_framework_logCode(logger, level, __func__, __FILE__, __LINE__, code, fmsg, ## args)
 
 #define framework_logIfError(logger, status, error, fmsg, args...) \
     if (status != CELIX_SUCCESS) { \
@@ -58,11 +51,13 @@ void celix_frameworkLogger_destroy(celix_framework_logger_t* logger);
 void celix_frameworkLogger_setLogCallback(celix_framework_logger_t* logger, void* logHandle, void (*logFunction)(void* handle, celix_log_level_e level, const char* file, const char *function, int line, const char *format, va_list formatArgs));
 celix_framework_logger_t* celix_frameworkLogger_globalLogger(); //TODO do not use global logger, make this deprecated __attribute__((deprecated));
 
-void framework_log(celix_framework_logger_t* logger, celix_log_level_e level, const char *func, const char *file, int line,
+void celix_framework_log(celix_framework_logger_t* logger, celix_log_level_e level, const char *func, const char *file, int line,
               const char *format, ...);
 
-void framework_logCode(celix_framework_logger_t* logger, celix_log_level_e level, const char *func, const char *file, int line,
+void celix_framework_logCode(celix_framework_logger_t* logger, celix_log_level_e level, const char *func, const char *file, int line,
                   celix_status_t code, const char *format, ...);
+
+void celix_framework_vlog(celix_framework_logger_t* logger, celix_log_level_e level, const char* file, const char* function, int line, const char* format, va_list args);
 
 #ifdef __cplusplus
 }

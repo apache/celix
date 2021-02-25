@@ -18,11 +18,9 @@
  */
 
 #include <stdlib.h>
-#include <jansson.h>
 #include <json_rpc.h>
 #include <assert.h>
 #include "version.h"
-#include "json_serializer.h"
 #include "dyn_interface.h"
 #include "import_registration.h"
 #include "import_registration_dfi.h"

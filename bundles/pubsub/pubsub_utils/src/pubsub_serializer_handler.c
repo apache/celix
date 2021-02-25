@@ -76,7 +76,7 @@ int compareEntries(const void *a, const void *b) {
     long servRankingA = celix_properties_getAsLong(aEntry->properties, OSGI_FRAMEWORK_SERVICE_RANKING, 0);
     long servRankingB = celix_properties_getAsLong(bEntry->properties, OSGI_FRAMEWORK_SERVICE_RANKING, 0);
 
-    return utils_compareServiceIdsAndRanking(servIdA, servRankingA, servIdB, servRankingB);
+    return celix_utils_compareServiceIdsAndRanking(servIdA, servRankingA, servIdB, servRankingB);
 }
 
 static pubsub_serialization_service_entry_t* findEntry(pubsub_serializer_handler_t* handler, uint32_t msgId) {

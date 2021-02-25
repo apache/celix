@@ -15,11 +15,11 @@
 # specific language governing permissions and limitations
 # under the License.
 
+add_subdirectory(http_admin)
+add_subdirectory(logging)
+add_subdirectory(shell)
 add_subdirectory(device_access)
 add_subdirectory(deployment_admin)
 add_subdirectory(async_remote_services)
 add_subdirectory(remote_services)
-add_subdirectory(http_admin)
-add_subdirectory(shell)
-add_subdirectory(logging)
 add_subdirectory(pubsub)

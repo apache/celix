@@ -92,7 +92,7 @@ TEST_F(CelixBundleContextServicesTests, registerServiceAsync) {
     celix_bundleContext_waitForAsyncRegistration(ctx, svcId);
     ASSERT_GE(celix_bundleContext_findService(ctx, calcName), 0L);
 
-    celix_bundleContext_unregisterServiceAsync(ctx, svcId, NULL, NULL);
+    celix_bundleContext_unregisterServiceAsync(ctx, svcId, nullptr, nullptr);
     celix_bundleContext_waitForAsyncUnregistration(ctx, svcId);
     ASSERT_LT(celix_bundleContext_findService(ctx, calcName), 0L);
 };
@@ -105,10 +105,10 @@ TEST_F(CelixBundleContextServicesTests, incorrectUnregisterCalls) {
 };
 
 TEST_F(CelixBundleContextServicesTests, incorrectAsyncUnregisterCalls) {
-    celix_bundleContext_unregisterServiceAsync(ctx, 1, NULL, NULL);
-    celix_bundleContext_unregisterServiceAsync(ctx, 2, NULL, NULL);
-    celix_bundleContext_unregisterServiceAsync(ctx, -1, NULL, NULL);
-    celix_bundleContext_unregisterServiceAsync(ctx, -2, NULL, NULL);
+    celix_bundleContext_unregisterServiceAsync(ctx, 1, nullptr, nullptr);
+    celix_bundleContext_unregisterServiceAsync(ctx, 2, nullptr, nullptr);
+    celix_bundleContext_unregisterServiceAsync(ctx, -1, nullptr, nullptr);
+    celix_bundleContext_unregisterServiceAsync(ctx, -2, nullptr, nullptr);
 };
 
 TEST_F(CelixBundleContextServicesTests, registerMultipleAndUseServices) {
@@ -286,7 +286,7 @@ TEST_F(CelixBundleContextServicesTests, registerAsyncAndUseServiceWithTimeout) {
         EXPECT_TRUE(result.get()); //should return true after waiting for the registered service.
 
 
-        celix_bundleContext_unregisterServiceAsync(ctx, svcId, NULL, NULL);
+        celix_bundleContext_unregisterServiceAsync(ctx, svcId, nullptr, nullptr);
         celix_bundleContext_waitForAsyncUnregistration(ctx, svcId);
 
 
@@ -516,7 +516,7 @@ TEST_F(CelixBundleContextServicesTests, servicesTrackerTestAsync) {
     ASSERT_TRUE(svcId2 >= 0);
     ASSERT_EQ(2, count);
 
-    celix_bundleContext_unregisterServiceAsync(ctx, svcId1, NULL, NULL);
+    celix_bundleContext_unregisterServiceAsync(ctx, svcId1, nullptr, nullptr);
     celix_bundleContext_waitForAsyncUnregistration(ctx, svcId1);
     ASSERT_EQ(1, count);
 
@@ -593,13 +593,13 @@ TEST_F(CelixBundleContextServicesTests, servicesTrackerTestWithProperties) {
     int count = 0;
     auto add = [](void *handle, void *svc, const properties_t *props) {
         ASSERT_TRUE(svc != nullptr);
-        ASSERT_STRCASEEQ("C", celix_properties_get(props, CELIX_FRAMEWORK_SERVICE_LANGUAGE, nullptr));
+        ASSERT_TRUE(props != nullptr);
         int *c = static_cast<int*>(handle);
         *c += 1;
     };
     auto remove = [](void *handle, void *svc, const properties_t *props) {
         ASSERT_TRUE(svc != nullptr);
-        ASSERT_STRCASEEQ("C", celix_properties_get(props, CELIX_FRAMEWORK_SERVICE_LANGUAGE, nullptr));
+        ASSERT_TRUE(props != nullptr);
         int *c = static_cast<int*>(handle);
         *c -= 1;
     };
@@ -630,14 +630,14 @@ TEST_F(CelixBundleContextServicesTests, servicesTrackerTestWithOwner) {
     int count = 0;
     auto add = [](void *handle, void *svc, const properties_t *props, const bundle_t *svcOwner) {
         ASSERT_TRUE(svc != nullptr);
-        ASSERT_STRCASEEQ("C", celix_properties_get(props, CELIX_FRAMEWORK_SERVICE_LANGUAGE, nullptr));
+        ASSERT_TRUE(props != nullptr);
         ASSERT_TRUE(celix_bundle_getId(svcOwner) >= 0);
         int *c = static_cast<int*>(handle);
         *c += 1;
     };
     auto remove = [](void *handle, void *svc, const properties_t *props, const bundle_t *svcOwner) {
         ASSERT_TRUE(svc != nullptr);
-        ASSERT_STRCASEEQ("C", celix_properties_get(props, CELIX_FRAMEWORK_SERVICE_LANGUAGE, nullptr));
+        ASSERT_TRUE(props != nullptr);
         ASSERT_TRUE(celix_bundle_getId(svcOwner) >= 0);
         int *c = static_cast<int*>(handle);
         *c -= 1;
@@ -818,7 +818,7 @@ TEST_F(CelixBundleContextServicesTests, servicesTrackerSetTest) {
     //unregister svc3 should lead to set (new highest ranking)
     celix_bundleContext_unregisterService(ctx, svcId3); //call 3
 
-    celix_bundleContext_stopTracker(ctx, trackerId); //call 4 (NULL)
+    celix_bundleContext_stopTracker(ctx, trackerId); //call 4 (nullptr)
     celix_bundleContext_unregisterService(ctx, svcId1);
     celix_bundleContext_unregisterService(ctx, svcId2);
     celix_bundleContext_unregisterService(ctx, svcId4);
@@ -962,7 +962,7 @@ TEST_F(CelixBundleContextServicesTests, asyncServiceFactoryTest) {
     ASSERT_EQ(2, count); //expecting getService & unGetService to be called during the useService call.
 
 
-    celix_bundleContext_unregisterServiceAsync(ctx, facId, NULL, NULL);
+    celix_bundleContext_unregisterServiceAsync(ctx, facId, nullptr, nullptr);
 }
 
 TEST_F(CelixBundleContextServicesTests, findServicesTest) {
@@ -1004,13 +1004,11 @@ TEST_F(CelixBundleContextServicesTests, trackServiceTrackerTest) {
 
     auto add = [](void *handle, const celix_service_tracker_info_t *info) {
         EXPECT_STRCASEEQ("example", info->serviceName);
-        EXPECT_STRCASEEQ(CELIX_FRAMEWORK_SERVICE_C_LANGUAGE, info->serviceLanguage);
         auto *c = static_cast<int*>(handle);
         *c += 1;
     };
     auto remove = [](void *handle, const celix_service_tracker_info_t *info) {
         EXPECT_STRCASEEQ("example", info->serviceName);
-        EXPECT_STRCASEEQ(CELIX_FRAMEWORK_SERVICE_C_LANGUAGE, info->serviceLanguage);
         auto *c = static_cast<int*>(handle);
         *c -= 1;
     };
@@ -1193,4 +1191,180 @@ TEST_F(CelixBundleContextServicesTests, onlyCallAsyncCallbackWithAsyncApi) {
     trkId = celix_bundleContext_trackBundlesWithOptions(ctx, &opts3);
     EXPECT_GT(trkId, 0);
     celix_bundleContext_stopTracker(ctx, trkId);
+}
+
+TEST_F(CelixBundleContextServicesTests, unregisterSvcBeforeAsyncRegistration) {
+    struct callback_data {
+        std::atomic<int> count{};
+        celix_bundle_context_t* ctx{nullptr};
+    };
+    callback_data cbData{};
+    cbData.ctx = ctx;
+
+    celix_framework_fireGenericEvent(
+            fw,
+            -1,
+            celix_bundle_getId(celix_framework_getFrameworkBundle(fw)),
+            "registerAsync",
+            (void*)&cbData,
+            [](void *data) {
+                auto cbd = static_cast<struct callback_data*>(data);
+
+                celix_service_registration_options_t opts{};
+                opts.serviceName = "test-service";
+                opts.svc = (void*)0x42;
+                opts.asyncData = data;
+                opts.asyncCallback = [](void *data, long /*svcId*/) {
+                    auto* cbd = static_cast<struct callback_data*>(data);
+                    cbd->count.fetch_add(1);
+                };
+
+                //note register async. So a event on the event queue, but because this is done on the event queue this cannot be completed
+                long svcId = celix_bundleContext_registerServiceAsync(cbd->ctx, (void*)0x42, "test-service", nullptr);
+
+                celix_bundleContext_unregisterService(cbd->ctx, svcId); //trying to unregister still queued svc registration -> should cancel event.
+            },
+            nullptr,
+            nullptr);
+
+    celix_bundleContext_waitForEvents(ctx);
+    long svcId = celix_bundleContext_findService(ctx, "test-service");
+    EXPECT_LT(svcId, 0);
+    EXPECT_EQ(0, cbData.count.load()); //note create tracker canceled -> no callback
+}
+
+TEST_F(CelixBundleContextServicesTests, stopSvcTrackerBeforeAsyncTrackerIsCreated) {
+    struct callback_data {
+        std::atomic<int> count{};
+        celix_bundle_context_t* ctx{nullptr};
+    };
+    callback_data cbData{};
+    cbData.ctx = ctx;
+
+    celix_framework_fireGenericEvent(
+            fw,
+            -1,
+            celix_bundle_getId(celix_framework_getFrameworkBundle(fw)),
+            "create tracker async",
+            (void*)&cbData,
+            [](void *data) {
+                auto cbd = static_cast<struct callback_data*>(data);
+
+                celix_service_tracking_options_t opts{};
+                opts.filter.serviceName = "test-service";
+                opts.trackerCreatedCallbackData = data;
+                opts.trackerCreatedCallback = [](void *data) {
+                    auto* cbd = static_cast<struct callback_data*>(data);
+                    cbd->count.fetch_add(1);
+                };
+
+                //note create async. So a event on the event queue, but because this is done on the event queue this cannot be completed
+                long trkId = celix_bundleContext_trackServicesWithOptionsAsync(cbd->ctx, &opts);
+
+                celix_bundleContext_stopTracker(cbd->ctx, trkId);
+            },
+            nullptr,
+            nullptr);
+
+    celix_bundleContext_waitForEvents(ctx);
+    EXPECT_EQ(0, cbData.count.load()); //note create tracker canceled -> no callback
+}
+
+TEST_F(CelixBundleContextServicesTests, stopBundleTrackerBeforeAsyncTrackerIsCreated) {
+    struct callback_data {
+        std::atomic<int> count{};
+        celix_bundle_context_t* ctx{nullptr};
+    };
+    callback_data cbData{};
+    cbData.ctx = ctx;
+
+    celix_framework_fireGenericEvent(
+            fw,
+            -1,
+            celix_bundle_getId(celix_framework_getFrameworkBundle(fw)),
+            "create tracker async",
+            (void*)&cbData,
+            [](void *data) {
+                auto cbd = static_cast<struct callback_data*>(data);
+
+                celix_bundle_tracking_options_t opts{};
+                opts.trackerCreatedCallbackData = data;
+                opts.trackerCreatedCallback = [](void *data) {
+                    auto* cbd = static_cast<struct callback_data*>(data);
+                    cbd->count.fetch_add(1);
+                };
+
+                //note create async. So a event on the event queue, but because this is done on the event queue this cannot be completed
+                long trkId = celix_bundleContext_trackBundlesWithOptionsAsync(cbd->ctx, &opts);
+
+                celix_bundleContext_stopTracker(cbd->ctx, trkId);
+            },
+            nullptr,
+            nullptr);
+
+    celix_bundleContext_waitForEvents(ctx);
+    EXPECT_EQ(0, cbData.count.load()); //note create tracker canceled -> no callback
+}
+
+TEST_F(CelixBundleContextServicesTests, stopMetaTrackerBeforeAsyncTrackerIsCreated) {
+    struct callback_data {
+        std::atomic<int> count{};
+        celix_bundle_context_t* ctx{nullptr};
+    };
+    callback_data cbData{};
+    cbData.ctx = ctx;
+
+    celix_framework_fireGenericEvent(
+            fw,
+            -1,
+            celix_bundle_getId(celix_framework_getFrameworkBundle(fw)),
+            "create tracker async",
+            (void*)&cbData,
+            [](void *data) {
+                auto cbd = static_cast<struct callback_data*>(data);
+
+                //note create async. So a event on the event queue, but because this is done on the event queue this cannot be completed
+                long trkId = celix_bundleContext_trackServiceTrackersAsync(cbd->ctx, "test-service", nullptr, nullptr, nullptr, data, [](void *data) {
+                    auto* cbd = static_cast<struct callback_data*>(data);
+                    cbd->count.fetch_add(1);
+                });
+
+                celix_bundleContext_stopTracker(cbd->ctx, trkId);
+            },
+            nullptr,
+            nullptr);
+
+    celix_bundleContext_waitForEvents(ctx);
+    EXPECT_EQ(0, cbData.count.load()); //note create tracker canceled -> no callback
+}
+
+
+TEST_F(CelixBundleContextServicesTests, setServicesWithTrackerWhenMultipleRegistrationAlreadyExists) {
+    void* dummySvc = (void*)0x42;
+    long svcId1 = celix_bundleContext_registerService(ctx, &dummySvc, "TestService", nullptr);
+    long svcId2 = celix_bundleContext_registerService(ctx, &dummySvc, "TestService", nullptr);
+    long svcId3 = celix_bundleContext_registerService(ctx, &dummySvc, "TestService", nullptr);
+    ASSERT_GE(svcId1, 0);
+    ASSERT_GE(svcId2, 0);
+    ASSERT_GE(svcId3, 0);
+
+    std::atomic<int> count{0};
+    celix_service_tracking_options_t opts{};
+    opts.callbackHandle = &count;
+    opts.set = [](void *handle, void* /*svc*/) {
+        auto* c = static_cast<std::atomic<int>*>(handle);
+        (*c)++;
+    };
+    long trkId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
+    ASSERT_GE(trkId, 0);
+    EXPECT_EQ(1, count.load()); //NOTE ensure that the service tracker only calls set once for opening tracker even if 3 service exists.
+
+    count = 0;
+    celix_bundleContext_stopTracker(ctx, trkId);
+    EXPECT_EQ(1, count.load());
+
+
+    celix_bundleContext_unregisterService(ctx, svcId1);
+    celix_bundleContext_unregisterService(ctx, svcId2);
+    celix_bundleContext_unregisterService(ctx, svcId3);
 }

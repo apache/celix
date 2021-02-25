@@ -62,7 +62,10 @@ celix_status_t serviceDependency_create(celix_dm_service_dependency_t **dep) CEL
 
 /**
  * Destroys a service dependency.
- * Caller has ownership.
+ * Will normally be done the by the DM Component.
+ *
+ * Can only be called if the serviceDependency is disabled (note that a service dependency not added to a
+ * component is disabled).
  */
 celix_status_t serviceDependency_destroy(celix_dm_service_dependency_t **dep) CELIX_DEPRECATED_ATTR;
 
@@ -119,21 +122,6 @@ celix_status_t serviceDependency_getFilter(celix_dm_service_dependency_t *depend
  * The second the argument a pointer to an instance of a service struct of the specified service dependency.
  */
 celix_status_t serviceDependency_setCallbacks(celix_dm_service_dependency_t *dependency, service_set_fpt set, service_add_fpt add, service_change_fpt change, service_remove_fpt remove, service_swap_fpt swap) CELIX_DEPRECATED_ATTR;
-
-/**
- * Set the set, add, change, remove and swap function callbacks when services specified by the service dependency
- * are (respectively) set, added, changed, removed or swapped.
- * The first argument of the callbacks will be the component implement (@see component_getImplementation)
- * The second argument of th callbacks will be a pointer to an instance of a service struct of the specified service dependency.
- * The third argument of th callbacks will be a pointer to a service reference of the a service instance of the specified service dependency.
- */
-celix_status_t serviceDependency_setCallbacksWithServiceReference(celix_dm_service_dependency_t *dependency, service_set_with_ref_fpt set, service_add_with_ref_fpt add, service_change_with_ref_fpt change, service_remove_with_ref_fpt remove, service_swap_with_ref_fpt swap) CELIX_DEPRECATED_ATTR;
-
-/**
- * Specifies which field member (pointer to) to update when a service dependencies is set.
- * If provided the provided service_lock will be used for locking when updating the service instance.
- */
-celix_status_t serviceDependency_setAutoConfigure(celix_dm_service_dependency_t *dependency, celix_thread_mutex_t *service_lock, const void** field) CELIX_DEPRECATED_ATTR;
 
 #define serviceDependency_setCallbacksSafe(dep, cmpType, servType, set, add, change, remove, swap) \
 	do { \

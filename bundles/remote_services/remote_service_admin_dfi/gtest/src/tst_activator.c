@@ -135,12 +135,30 @@ static bool bndTestRemoteString(void *handle) {
     pthread_mutex_lock(&act->mutex);
     if (act->remoteExample != NULL) {
         //test string Call with taking ownership
-        char *tmp = strndup("test1", 1024);
+
+        //test with a large very large string to verify mg_write limits.
+        int testLength = 1024 * 1024 * 5; //5mb
+        char *buf = NULL;
+        size_t bufLen = 0;
+        FILE* stream = open_memstream(&buf, &bufLen);
+        for (int i =0; i < testLength; i++) {
+            fputc('A', stream);
+        }
+        fputc('\0', stream);
+        fclose(stream);
         char *result = NULL;
-        TIMED_EXPR(act->remoteExample->setName1(act->remoteExample->handle, tmp, &result));
+        TIMED_EXPR(act->remoteExample->setName1(act->remoteExample->handle, buf, &result));
         printf("Call setName1 took %f ms\n", diff);
         //note setName1 should take ownership of tmp, so no free(tmp) needed.
-        ok = strncmp("test1", result, 1024) == 0;
+        ok = strncmp("AAAA", result, 4) == 0;
+        if (ok) {
+            ok = strlen(result) == testLength;
+            if (!ok) {
+                fprintf(stderr, "result length is not currect. expected %i, but len is %li\n", testLength, strlen(result));
+            }
+        } else {
+            fprintf(stderr, "result does not start with AAAA\n");
+        }
         free(result);
     } else {
         fprintf(stderr, "remote example service not available");
@@ -278,9 +296,9 @@ static bool bndTestCreateDestroyComponentWithRemoteService(void *handle) {
 
     calculator_service_t calcSvc;
     calcSvc.handle = NULL;
-    calcSvc.add = NULL; //note for this test case the actual services can be NULL
-    calcSvc.sub = NULL; //note for this test case the actual services can be NULL
-    calcSvc.sqrt = NULL; //note for this test case the actual services can be NULL
+    calcSvc.add = NULL; //note for this test case the actual service methods can be NULL
+    calcSvc.sub = NULL; //note for this test case the actual service methods can be NULL
+    calcSvc.sqrt = NULL; //note for this test case the actual service methods can be NULL
 
     celix_dm_component_t *cmp = celix_dmComponent_create(act->ctx, "test");
     celix_dmComponent_addInterface(cmp, CALCULATOR_SERVICE, NULL, &calcSvc, properties);

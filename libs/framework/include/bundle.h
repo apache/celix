@@ -71,13 +71,9 @@ FRAMEWORK_EXPORT celix_status_t bundle_getEntry(const celix_bundle_t *bundle, co
 
 FRAMEWORK_EXPORT celix_status_t bundle_start(celix_bundle_t *bundle);
 
-FRAMEWORK_EXPORT celix_status_t bundle_startWithOptions(celix_bundle_t *bundle, int options);
-
 FRAMEWORK_EXPORT celix_status_t bundle_update(celix_bundle_t *bundle, const char *inputFile);
 
 FRAMEWORK_EXPORT celix_status_t bundle_stop(celix_bundle_t *bundle);
-
-FRAMEWORK_EXPORT celix_status_t bundle_stopWithOptions(celix_bundle_t *bundle, int options);
 
 FRAMEWORK_EXPORT celix_status_t bundle_uninstall(celix_bundle_t *bundle);
 

@@ -44,7 +44,7 @@ public:
     Phase2Cmp operator=(const Phase2Cmp&) = delete;
 
     void setPhase1(IPhase1* phase); //injector used by dependency manager
-    void setName(srv::info::IName* name) { std::cout << "Setting IName with name: " << (name != nullptr ? name->getName() : "null") << std::endl; }
+    void setName(srv::info::IName* name);
     void setLogService(const celix_log_service_t* logSrv);
 
     double getData() override; //implements IPhase2

@@ -30,7 +30,7 @@ jobs:
     timeout-minutes: 120
     steps:
     - name: Checkout source code
-      uses: actions/checkout@master
+      uses: actions/checkout@v2
     - name: Install dependencies
       run: |
         sudo apt-get update
@@ -45,8 +45,7 @@ jobs:
           libffi-dev \
           libxml2-dev \
           libczmq-dev \
-          libcpputest-dev \
-          libtbb-dev
+          libcpputest-dev
     - name: Build
       env:
         CC: ${{ matrix.compiler }}

@@ -177,6 +177,10 @@ typedef struct celix_service_registration_options {
     /**
     * Async callback. Will be called after the a service is registered in the service registry using a async call.
     * Will be called on the Celix event loop.
+     *
+     * If a asyns service registration is combined with a _sync_ service unregistration, it can happen that
+     * unregistration happens before the registration event is processed. In this case the asyncCallback
+     * will not be called.
     */
     void (*asyncCallback)(void *data, long serviceId) OPTS_INIT;
 } celix_service_registration_options_t;
@@ -315,14 +319,15 @@ typedef struct celix_service_filter_options {
     const char* filter OPTS_INIT;
 
     /**
-     * The optional service language to filter for. If this is NULL or "" the C language will be used.
+     * @deprecated This value is not used any more. If a service language filter is still required add it to the
+     * filter.
      */
     const char* serviceLanguage OPTS_INIT;
 
 
     /**
-     * Whether to ignore (not filter for) the service.lang property.
-     * If this is set the serviceLanguage field is ignored and the (service.lang=<>) part is not added tot he filter
+     * @deprecated This value is not used any more. If a service language filter is still required add it to the
+     * filter.
      */
     bool ignoreServiceLanguage OPTS_INIT;
 } celix_service_filter_options_t;
@@ -524,6 +529,10 @@ typedef struct celix_service_tracking_options {
 
     /**
      * The callback called when the tracker has ben created (and is active) when using a async call.
+     *
+     * If a asyns track service is combined with a _sync_ stop tracker, it can happen that
+     * "stop tracker" happens before the "create tracker" event is processed. In this case the asyncCallback
+     * will not be called.
      */
     void (*trackerCreatedCallback)(void *trackerCreatedCallbackData) OPTS_INIT;
 } celix_service_tracking_options_t;
@@ -624,7 +633,7 @@ void celix_bundleContext_stopTracker(celix_bundle_context_t *ctx, long trackerId
  * The svc is should only be considered valid during the callback.
  * If no service is found the callback will not be invoked.
  *
- * This function will block till the callback is finished. As result it is possible to provide callback data from the
+ * This function will block until the callback is finished. As result it is possible to provide callback data from the
  * stack.
  *
  * @param ctx The bundle context
@@ -649,7 +658,7 @@ bool celix_bundleContext_useServiceWithId(
  * The svc is should only be considered valid during the callback.
  * If no service is found the callback will not be invoked.
  *
- * This function will block till the callback is finished. As result it is possible to provide callback data from the
+ * This function will block until the callback is finished. As result it is possible to provide callback data from the
  * stack.
  *
  * @param   ctx The bundle context
@@ -672,7 +681,7 @@ bool celix_bundleContext_useService(
  * The svc is should only be considered valid during the callback.
  * If no service is found the callback will not be invoked.
  *
- * This function will block till the callback is finished. As result it is possible to provide callback data from the
+ * This function will block until the callback is finished. As result it is possible to provide callback data from the
  * stack.
  *
  * @param   ctx The bundle context
@@ -698,7 +707,7 @@ typedef struct celix_service_use_options {
     celix_service_filter_options_t filter OPTS_INIT;
 
     /**
-     * An optional timeout (in seconds), if > 0 the use service call will block untill the timeout is expired or
+     * An optional timeout (in seconds), if > 0 the use service call will block until the timeout is expired or
      * when at least one service is found.
      * Default (0)
      */
@@ -753,7 +762,7 @@ typedef struct celix_service_use_options {
  * The svc is should only be considered valid during the callback.
  * If no service is found the callback will not be invoked.
  *
- * This function will block till the callback is finished. As result it is possible to provide callback data from the
+ * This function will block until the callback is finished. As result it is possible to provide callback data from the
  * stack.
  *
  * @param   ctx The bundle context.
@@ -772,7 +781,7 @@ bool celix_bundleContext_useServiceWithOptions(
  * The svc is should only be considered valid during the callback.
  * If no service is found the callback will not be invoked.
  *
- * This function will block till the callback is finished. As result it is possible to provide callback data from the
+ * This function will block until the callback is finished. As result it is possible to provide callback data from the
  * stack.
  *
  * @param   ctx The bundle context.
@@ -816,6 +825,11 @@ bool celix_bundleContext_isBundleActive(celix_bundle_context_t *ctx, long bndId)
  * Install and optional start a bundle.
  * Will silently ignore bundle ids < 0.
  *
+ * If this function is called on the Celix event thread and autoStart is true,
+ * the actual starting of the bundle will be done async and on a separate thread.
+ * If this function is called from a different thread than the Celix event thread and the autoStart is true,
+ * then the function will return after the bundle is started.
+ *
  * @param ctx The bundle context
  * @param bundleLoc The bundle location to the bundle zip file.
  * @param autoStart If the bundle should also be started.
@@ -827,6 +841,11 @@ long celix_bundleContext_installBundle(celix_bundle_context_t *ctx, const char *
  * Uninstall the bundle with the provided bundle id. If needed the bundle will be stopped first.
  * Will silently ignore bundle ids < 0.
  *
+ * If this function is called on the Celix event thread, the actual stopping of the bundle will be done async and
+ * on a separate thread.
+ * If this function is called from a different thread than the Celix event thread, then the function will return after
+ * the bundle is stopped.
+ *
  * @param ctx The bundle context
  * @param bndId The bundle id to uninstall.
  * @return true if the bundle is correctly uninstalled. False if not.
@@ -837,6 +856,11 @@ bool celix_bundleContext_uninstallBundle(celix_bundle_context_t *ctx, long bndId
  * Stop the bundle with the provided bundle id.
  * Will silently ignore bundle ids < 0.
  *
+ * If this function is called on the Celix event thread, the actual stopping of the bundle will be done async and
+ * on a separate thread.
+ * If this function is called from a different thread than the Celix event thread, then the function will return after
+ * the bundle is stopped.
+ *
  * @param ctx The bundle context
  * @param bndId The bundle id to stop.
  * @return true if the bundle is found & correctly stop. False if not.
@@ -846,6 +870,11 @@ bool celix_bundleContext_stopBundle(celix_bundle_context_t *ctx, long bndId);
 /**
  * Start the bundle with the provided bundle id.
  * Will silently ignore bundle ids < 0.
+ *
+ * If this function is called on the Celix event thread, the actual starting of the bundle will be done async and
+ * on a separate thread.
+ * If this function is called from a different thread than the Celix event thread, then the function will return after
+ * the bundle is started.
  *
  * @param ctx The bundle context
  * @param bndId The bundle id to start.
@@ -958,6 +987,10 @@ typedef struct celix_bundle_tracker_options {
     /**
      * The callback called when the tracker has ben created (and is active) when using the
      * track bundles ascync calls.
+     *
+     * If a asyns track service is combined with a _sync_ stop tracker, it can happen that
+     * "stop tracker" happens before the "create tracker" event is processed. In this case the asyncCallback
+     * will not be called.
      */
     void (*trackerCreatedCallback)(void *trackerCreatedCallbackData) OPTS_INIT;
 } celix_bundle_tracking_options_t;
@@ -1055,7 +1088,8 @@ typedef struct celix_service_tracker_info {
     const char *serviceName;
 
     /**
-     * The service language filter attribute parsed from the service filter. Can be null
+     * @deprecated
+     * Deprecated. the value will be NULL.
      */
     const char *serviceLanguage;
 
@@ -1086,6 +1120,9 @@ typedef struct celix_service_tracker_info {
  * @param trackerRemove Called when a service tracker is removed, which tracks the provided service name
  * @param doneCallbackData call back data argument provided to the done callback function.
  * @param doneCallback If not NULL will be called when the service tracker tracker is created.
+ *                          If a asyns track service is combined with a _sync_ stop tracker, it can happen that
+ *                          "stop tracker" happens before the "create tracker" event is processed.
+ *                          In this case the doneCallback will not be called.
  * @return The tracker id or <0 if something went wrong (will log an error).
  */
 long celix_bundleContext_trackServiceTrackersAsync(
@@ -1133,7 +1170,7 @@ celix_dependency_manager_t* celix_bundleContext_getDependencyManager(celix_bundl
 
 
 /**
- * Wait till there are event for the bundle of this bundle context.
+ * Wait until all Celix event for this bundle are completed.
  */
 void celix_bundleContext_waitForEvents(celix_bundle_context_t* ctx);
 
@@ -1143,7 +1180,28 @@ void celix_bundleContext_waitForEvents(celix_bundle_context_t* ctx);
  */
 celix_bundle_t* celix_bundleContext_getBundle(const celix_bundle_context_t *ctx);
 
+
+/**
+ * Returns the bundle if for the bundle of this bundle context.
+ */
+long celix_bundleContext_getBundleId(const celix_bundle_context_t *ctx);
+
 celix_framework_t* celix_bundleContext_getFramework(const celix_bundle_context_t* ctx);
+
+/**
+ * Logs a message to Celix framework logger with the provided log level.
+ * @param ctx       The bundle context
+ * @param level     The log level to use
+ * @param format    printf style format string
+ * @param ...       printf style format arguments
+ */
+void celix_bundleContext_log(const celix_bundle_context_t* ctx, celix_log_level_e level, const char* format, ...);
+
+/**
+ * Logs a message to Celix framework logger with the provided log level.
+ */
+void celix_bundleContext_vlog(const celix_bundle_context_t* ctx, celix_log_level_e level, const char* format, va_list formatArgs);
+
 
 /**
  * Gets the config property - or environment variable if the config property does not exist - for the provided name.
@@ -1182,8 +1240,6 @@ double celix_bundleContext_getPropertyAsDouble(celix_bundle_context_t *ctx, cons
  * @return The property value for the provided key or the provided defaultValue is the key is not found.
  */
 bool celix_bundleContext_getPropertyAsBool(celix_bundle_context_t *ctx, const char *key, bool defaultValue);
-
-//TODO getPropertyAs for int, uint, ulong, bool, etc
 
 #undef OPTS_INIT
 

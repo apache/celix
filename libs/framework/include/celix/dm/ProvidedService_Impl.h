@@ -43,8 +43,6 @@ inline void BaseProvidedService::runBuild() {
     if (!provideAddedToCmp) {
         //setup c properties
         celix_properties_t *cProperties = properties_create();
-        properties_set(cProperties, CELIX_FRAMEWORK_SERVICE_LANGUAGE,
-                       cppService ? CELIX_FRAMEWORK_SERVICE_CXX_LANGUAGE : CELIX_FRAMEWORK_SERVICE_C_LANGUAGE);
         for (const auto &pair : properties) {
             properties_set(cProperties, pair.first.c_str(), pair.second.c_str());
         }
@@ -53,6 +51,20 @@ inline void BaseProvidedService::runBuild() {
         celix_dmComponent_addInterface(cCmp, svcName.c_str(), cVersion, svcPointer, cProperties);
     }
     provideAddedToCmp = true;
+}
+
+inline void BaseProvidedService::wait() const {
+    if (cCmp) {
+        auto* ctx = celix_dmComponent_getBundleContext(cCmp);
+        auto* fw = celix_bundleContext_getFramework(ctx);
+        if (!celix_framework_isCurrentThreadTheEventLoop(fw)) {
+            celix_bundleContext_waitForEvents(ctx);
+        } else {
+            celix_bundleContext_log(ctx, CELIX_LOG_LEVEL_WARNING,
+                                    "BaseProvidedService::wait: Cannot wait for Celix event queue on the Celix event queue thread! "
+                                    "Use async DepMan API instead.");
+        }
+    }
 }
 
 template<typename T, typename I>
@@ -76,6 +88,13 @@ ProvidedService<T, I> &ProvidedService<T, I>::addProperty(const std::string &key
 
 template<typename T, typename I>
 ProvidedService<T, I> &ProvidedService<T, I>::build() {
+    this->runBuild();
+    this->wait();
+    return *this;
+}
+
+template<typename T, typename I>
+ProvidedService<T, I> &ProvidedService<T, I>::buildAsync() {
     this->runBuild();
     return *this;
 }

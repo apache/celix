@@ -20,7 +20,7 @@
 #include "Phase1Cmp.h"
 #include "Phase1Activator.h"
 #include "IPhase2.h"
-#include <celix_api.h>
+#include <celix/BundleActivator.h>
 
 using namespace celix::dm;
 
@@ -38,7 +38,12 @@ struct InvalidCServ {
 };
 
 Phase1Activator::Phase1Activator(std::shared_ptr<celix::dm::DependencyManager> mng) {
-    auto cmp = std::shared_ptr<Phase1Cmp>(new Phase1Cmp());
+    dm = mng;
+    auto& cmp = mng->createComponent<Phase1Cmp>();
+    cmpUUID = cmp.getUUID();
+
+    cmp.addInterface<IPhase1>(IPHASE1_VERSION);
+                    //.addInterface<IPhase2>() -> Compile error (static assert), because Phase1Cmp does not implement IPhase2
 
     Properties cmdProps;
     cmdProps[CELIX_SHELL_COMMAND_NAME] = "phase1_info";
@@ -46,9 +51,9 @@ Phase1Activator::Phase1Activator(std::shared_ptr<celix::dm::DependencyManager> m
     cmdProps[CELIX_SHELL_COMMAND_DESCRIPTION] = "Print information about the Phase1Cmp";
 
 
-    cmd.handle = cmp.get();
+    cmd.handle = &cmp.getInstance();
     cmd.executeCommand = [](void *handle, const char* line, FILE* out, FILE *err) -> bool {
-        Phase1Cmp* cmp = (Phase1Cmp*)handle;
+        auto* cmp = (Phase1Cmp*)handle;
         return cmp->infoCmd(line, out, err) == 0;
     };
 
@@ -60,9 +65,12 @@ Phase1Activator::Phase1Activator(std::shared_ptr<celix::dm::DependencyManager> m
 
     addCmd.handle = this;
     addCmd.executeCommand = [](void *handle, const char* /*line*/, FILE* out, FILE */*err*/) -> bool  {
-        Phase1Activator* act = (Phase1Activator*)handle;
+        auto* act = (Phase1Activator*)handle;
         fprintf(out, "Adding dummy interface");
-        act->phase1cmp->addCInterface(act->dummySvc, "DUMMY_SERVICE");
+        auto c = act->dm->findComponent<Phase1Cmp>(act->cmpUUID);
+        if (c) {
+            c->addCInterface(act->dummySvc, "DUMMY_SERVICE");
+        }
         return true;
     };
 
@@ -74,27 +82,25 @@ Phase1Activator::Phase1Activator(std::shared_ptr<celix::dm::DependencyManager> m
 
     removeCmd.handle = this;
     removeCmd.executeCommand = [](void *handle, const char* /*line*/, FILE* out, FILE */*err*/) -> bool {
-        Phase1Activator* act = (Phase1Activator*)handle;
+        auto* act = (Phase1Activator*)handle;
         fprintf(out, "Removing dummy interface");
-        act->phase1cmp->removeCInterface(act->dummySvc);
+        auto c = act->dm->findComponent<Phase1Cmp>(act->cmpUUID);
+        if (c) {
+            c->removeCInterface(act->dummySvc);
+        }
         return true;
     };
 
     auto tst = std::unique_ptr<InvalidCServ>(new InvalidCServ{});
-    tst->handle = cmp.get();
+    tst->handle = &cmp.getInstance();
 
-    phase1cmp = &mng->createComponent(cmp);  //using a pointer a instance. Also supported is lazy initialization (default constructor needed) or a rvalue reference (move)
-
-    phase1cmp->addInterface<IPhase1>(IPHASE1_VERSION)
-                    //.addInterface<IPhase2>() -> Compile error (static assert), because Phase1Cmp does not implement IPhase2
-            .addCInterface(&cmd, CELIX_SHELL_COMMAND_SERVICE_NAME, "", cmdProps)
-            .addCInterface(&addCmd, CELIX_SHELL_COMMAND_SERVICE_NAME, "", addProps)
-            .addCInterface(&removeCmd, CELIX_SHELL_COMMAND_SERVICE_NAME, "", removeProps)
-                    //.addCInterface(tst.get(), "TEST_SRV") -> Compile error (static assert), because InvalidCServ is not a pod
-            .addInterface<srv::info::IName>(INAME_VERSION)
-            .setCallbacks(&Phase1Cmp::init, &Phase1Cmp::start, &Phase1Cmp::stop, &Phase1Cmp::deinit);
-
-
+    cmp.addCInterface(&cmd, CELIX_SHELL_COMMAND_SERVICE_NAME, "", cmdProps);
+    cmp.addCInterface(&addCmd, CELIX_SHELL_COMMAND_SERVICE_NAME, "", addProps);
+    cmp.addCInterface(&removeCmd, CELIX_SHELL_COMMAND_SERVICE_NAME, "", removeProps);
+    //.addCInterface(tst.get(), "TEST_SRV") -> Compile error (static assert), because InvalidCServ is not a pod
+    cmp.addInterface<srv::info::IName>(INAME_VERSION);
+    cmp.setCallbacks(&Phase1Cmp::init, &Phase1Cmp::start, &Phase1Cmp::stop, &Phase1Cmp::deinit);
+    cmp.build();
 }
 
 CELIX_GEN_CXX_BUNDLE_ACTIVATOR(Phase1Activator)

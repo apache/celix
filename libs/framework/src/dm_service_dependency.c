@@ -16,31 +16,21 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * dm_service_dependency.c
- *
- *  \date       17 Oct 2014
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <limits.h>
-#include <assert.h>
 
+#include "celix_bundle.h"
 #include "celix_constants.h"
-
+#include "celix_utils.h"
 #include "dm_service_dependency_impl.h"
 #include "dm_component_impl.h"
 
-#define DEFAULT_RANKING     0
 #define DM_SERVICE_DEPENDENCY_DEFAULT_STRATEGY DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND
 
-static celix_status_t serviceDependency_addedService(void *_ptr, service_reference_pt reference, void *service);
-static celix_status_t serviceDependency_modifiedService(void *_ptr, service_reference_pt reference, void *service);
-static celix_status_t serviceDependency_removedService(void *_ptr, service_reference_pt reference, void *service);
+static void serviceDependency_addServiceTrackerCallback(void *handle, void *svc, const celix_properties_t *props);
+static void serviceDependency_removeServiceTrackerCallback(void *handle, void *svc, const celix_properties_t *props);
+static void serviceDependency_setServiceTrackerCallback(void *handle, void *svc, const celix_properties_t *props);
 static void* serviceDependency_getCallbackHandle(celix_dm_service_dependency_t *dep);
 
 celix_status_t serviceDependency_create(celix_dm_service_dependency_t **dependency_ptr) {
@@ -56,6 +46,8 @@ celix_status_t serviceDependency_create(celix_dm_service_dependency_t **dependen
 celix_dm_service_dependency_t* celix_dmServiceDependency_create() {
 	celix_dm_service_dependency_t *dep = calloc(1, sizeof(*dep));
 	dep->strategy = DM_SERVICE_DEPENDENCY_DEFAULT_STRATEGY;
+	dep->svcTrackerId = -1;
+	celixThreadMutex_create(&dep->mutex, NULL);
     return dep;
 }
 
@@ -67,22 +59,21 @@ celix_status_t serviceDependency_destroy(celix_dm_service_dependency_t **depende
 }
 
 void celix_dmServiceDependency_destroy(celix_dm_service_dependency_t *dep) {
-	if (dep != NULL) {
-		free(dep->tracked_service);
-		free(dep->tracked_filter);
-		free(dep->tracked_filter_unmodified);
-		free(dep);
-	}
-}
-
-celix_status_t serviceDependency_lock(celix_dm_service_dependency_t *dependency) {
-	celixThreadMutex_lock(&dependency->lock);
-	return CELIX_SUCCESS;
-}
-
-celix_status_t serviceDependency_unlock(celix_dm_service_dependency_t *dependency) {
-	celixThreadMutex_unlock(&dependency->lock);
-	return CELIX_SUCCESS;
+    if (dep == NULL) {
+        return;
+    } else {
+        if (!celix_dmServiceDependency_isDisabled(dep)) {
+            celix_bundle_context_t* ctx = celix_dmComponent_getBundleContext(dep->component);
+            celix_bundleContext_log(ctx, CELIX_LOG_LEVEL_ERROR,
+                       "Cannot destroy a service dependency this is still enabled.");
+        } else {
+            celixThreadMutex_destroy(&dep->mutex);
+            free(dep->serviceName);
+            free(dep->versionRange);
+            free(dep->filter);
+            free(dep);
+        }
+    }
 }
 
 celix_status_t serviceDependency_setRequired(celix_dm_service_dependency_t *dependency, bool required) {
@@ -117,15 +108,8 @@ celix_status_t serviceDependency_setStrategy(celix_dm_service_dependency_t *depe
 }
 
 celix_status_t celix_dmServiceDependency_setStrategy(celix_dm_service_dependency_t *dependency, dm_service_dependency_strategy_t strategy) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	if (!dependency) {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	} else {
-		dependency->strategy = strategy;
-	}
-
-	return status;
+    dependency->strategy = strategy;
+	return CELIX_SUCCESS;
 }
 
 celix_status_t serviceDependency_getStrategy(celix_dm_service_dependency_t *dependency, dm_service_dependency_strategy_t* strategy) {
@@ -145,131 +129,21 @@ celix_status_t serviceDependency_setService(celix_dm_service_dependency_t *depen
 }
 
 celix_status_t celix_dmServiceDependency_setService(celix_dm_service_dependency_t *dependency, const char* serviceName, const char* serviceVersionRange, const char* filter) {
-	celix_status_t status = CELIX_SUCCESS;
-	if (!dependency || !serviceName) {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	}
-
-	if (status == CELIX_SUCCESS) {
-		array_list_pt filterElements = NULL;
-		arrayList_create(&filterElements);
-
-		free(dependency->tracked_service);
-		dependency->tracked_service = strdup(serviceName);
-
-		if (serviceVersionRange != NULL) {
-			version_range_pt versionRange = NULL;
-
-			if (versionRange_parse(serviceVersionRange, &versionRange) == CELIX_SUCCESS) {
-				version_pt lowVersion = NULL;
-				version_pt highVersion = NULL;
-
-				if ((versionRange_getHighVersion(versionRange, &highVersion) == CELIX_SUCCESS) && (highVersion != NULL)) {
-					bool isHighInclusive;
-					char* highOperator;
-					char* highVersionStr = NULL;
-
-					versionRange_isHighInclusive(versionRange, &isHighInclusive);
-					version_toString(highVersion, &highVersionStr);
-
-					highOperator = isHighInclusive ? "<=" : "<";
-
-					if(highVersionStr != NULL){
-						size_t len = strlen(CELIX_FRAMEWORK_SERVICE_VERSION) + strlen(highVersionStr) + strlen(highOperator) + 3;
-						char serviceVersionFilter[len];
-						snprintf(serviceVersionFilter, len, "(%s%s%s)", CELIX_FRAMEWORK_SERVICE_VERSION, highOperator, highVersionStr);
-						arrayList_add(filterElements, strdup(serviceVersionFilter));
-						free(highVersionStr);
-					}
-				}
-
-				if ((versionRange_getLowVersion(versionRange, &lowVersion) == CELIX_SUCCESS) && (lowVersion != NULL)) {
-					bool isLowInclusive;
-					char* lowOperator;
-					char* lowVersionStr = NULL;
-
-					versionRange_isLowInclusive(versionRange, &isLowInclusive);
-					version_toString(lowVersion, &lowVersionStr);
-
-					lowOperator = isLowInclusive ? ">=" : ">";
-
-					if(lowVersionStr != NULL){
-						size_t len = strlen(CELIX_FRAMEWORK_SERVICE_VERSION) + strlen(lowVersionStr) + strlen(lowOperator) + 3;
-						char serviceVersionFilter[len];
-						snprintf(serviceVersionFilter, len, "(%s%s%s)", CELIX_FRAMEWORK_SERVICE_VERSION, lowOperator, lowVersionStr);
-						arrayList_add(filterElements, strdup(serviceVersionFilter));
-						free(lowVersionStr);
-					}
-				}
-			}
-
-			if(versionRange!=NULL){
-				versionRange_destroy(versionRange);
-			}
-		}
-
-		if (filter != NULL) {
-			free(dependency->tracked_filter_unmodified);
-			dependency->tracked_filter_unmodified = strdup(filter);
-			arrayList_add(filterElements, strdup(filter));
-		}
-
-
-
-        bool needLangFilter = true;
-		if (filter != NULL) {
-            char needle[128];
-            snprintf(needle, sizeof(needle), "(%s=", CELIX_FRAMEWORK_SERVICE_LANGUAGE);
-            if (strstr(filter, needle) != NULL) {
-                needLangFilter = false;
-            }
-        }
-
-        if (needLangFilter && dependency->addCLanguageFilter) {
-			char langFilter[128];
-			snprintf(langFilter, sizeof(langFilter), "(%s=%s)", CELIX_FRAMEWORK_SERVICE_LANGUAGE, CELIX_FRAMEWORK_SERVICE_C_LANGUAGE);
-            arrayList_add(filterElements, strdup(langFilter));
-		}
-
-		if (arrayList_size(filterElements) > 0) {
-			array_list_iterator_pt filterElementsIter = arrayListIterator_create(filterElements);
-
-			size_t len = strlen(serviceName) + strlen(OSGI_FRAMEWORK_OBJECTCLASS) + 4;
-			free(dependency->tracked_filter);
-			dependency->tracked_filter = calloc(len, sizeof(*dependency->tracked_filter));
-			snprintf(dependency->tracked_filter, len, "(%s=%s)", OSGI_FRAMEWORK_OBJECTCLASS, serviceName);
-
-			while (arrayListIterator_hasNext(filterElementsIter) == true) {
-				char* filterElement = (char*) arrayListIterator_next(filterElementsIter);
-				size_t len = strnlen(dependency->tracked_filter, 1024*1024) + strnlen(filterElement, 1024*1024) + 4;
-				char* newFilter = calloc(len, sizeof(*newFilter));
-
-				if (dependency->tracked_filter[0] == '(' && dependency->tracked_filter[1] == '&') {
-					//already have an & (AND) can combine with additional filter -> easier to read
-					size_t orgLen = strnlen(dependency->tracked_filter, 1024*1024);
-					snprintf(newFilter, len, "%.*s%s)", (int)orgLen -1, dependency->tracked_filter, filterElement);
-				} else {
-					snprintf(newFilter, len, "(&%s%s)", dependency->tracked_filter, filterElement);
-				}
-
-				free(dependency->tracked_filter);
-				free(filterElement);
-
-				dependency->tracked_filter = newFilter;
-			}
-
-			arrayListIterator_destroy(filterElementsIter);
-		}
-		else {
-			free(dependency->tracked_filter);
-			dependency->tracked_filter = NULL;
-		}
-
-		arrayList_destroy(filterElements);
-	}
-
-	return status;
+    if (dependency->serviceName != NULL) {
+        free(dependency->serviceName);
+    }
+    if (dependency->versionRange != NULL) {
+        free(dependency->versionRange);
+    }
+    if (dependency->filter != NULL) {
+        free(dependency->filter);
+    }
+    dependency->serviceName = celix_utils_strdup(serviceName);
+    dependency->versionRange = celix_utils_strdup(serviceVersionRange);
+    dependency->filter = celix_utils_strdup(filter);
+    return CELIX_SUCCESS;
 }
+
 celix_status_t serviceDependency_getFilter(celix_dm_service_dependency_t *dependency, const char** filter) {
 	const char *f =  celix_dmServiceDependency_getFilter(dependency);
 	if (filter != NULL) {
@@ -279,46 +153,14 @@ celix_status_t serviceDependency_getFilter(celix_dm_service_dependency_t *depend
 }
 
 const char* celix_dmServiceDependency_getFilter(celix_dm_service_dependency_t *dependency) {
-	return (const char*)dependency->tracked_filter;
+	return (const char*)dependency->filter;
 }
 
-celix_status_t serviceDependency_setCallbacks(celix_dm_service_dependency_t *dependency, service_set_fpt set, service_add_fpt add, service_change_fpt change, service_remove_fpt remove, service_swap_fpt swap) {
-	celix_status_t status = CELIX_SUCCESS;
-
-    //printf("Setting callbacks set %p, add %p, change %p, remove %p and swap %p\n", set, add, change, remove, swap);
-
-	if (!dependency) {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	}
-
-	if (status == CELIX_SUCCESS) {
-		dependency->set = (celix_dm_service_update_fp)set;
-		dependency->add = (celix_dm_service_update_fp)add;
-		dependency->change = (celix_dm_service_update_fp)change;
-		dependency->remove = (celix_dm_service_update_fp)remove;
-		dependency->swap = (celix_dm_service_swap_fp)swap;
-	}
-
-	return status;
-}
-
-celix_status_t serviceDependency_setCallbacksWithServiceReference(celix_dm_service_dependency_t *dependency, service_set_with_ref_fpt set, service_add_with_ref_fpt add, service_change_with_ref_fpt change, service_remove_with_ref_fpt remove,
-		service_swap_with_ref_fpt swap) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	if (!dependency) {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	}
-
-	if (status == CELIX_SUCCESS) {
-		dependency->set_with_ref = set;
-		dependency->add_with_ref = add;
-		dependency->change_with_ref = change;
-		dependency->remove_with_ref = remove;
-		dependency->swap_with_ref = swap;
-	}
-
-	return status;
+celix_status_t serviceDependency_setCallbacks(celix_dm_service_dependency_t *dependency, service_set_fpt set, service_add_fpt add, service_change_fpt change __attribute__((unused)), service_remove_fpt remove, service_swap_fpt swap  __attribute__((unused))) {
+    dependency->set = (celix_dm_service_update_fp)set;
+    dependency->add = (celix_dm_service_update_fp)add;
+    dependency->remove = (celix_dm_service_update_fp)remove;
+    return CELIX_SUCCESS;
 }
 
 celix_status_t celix_dmServiceDependency_setCallback(celix_dm_service_dependency_t *dependency, celix_dm_service_update_fp set) {
@@ -328,7 +170,7 @@ celix_status_t celix_dmServiceDependency_setCallback(celix_dm_service_dependency
 
 
 celix_status_t celix_dmServiceDependency_setCallbackWithProperties(celix_dm_service_dependency_t *dependency, celix_dm_service_update_with_props_fp set) {
-	dependency->set_with_props = set;
+	dependency->setWithProperties = set;
 	return CELIX_SUCCESS;
 }
 
@@ -337,486 +179,175 @@ celix_status_t celix_dmServiceDependency_setCallbacksWithOptions(celix_dm_servic
 	dependency->set = opts->set;
 	dependency->add = opts->add;
 	dependency->remove = opts->remove;
-	dependency->swap = opts->swap;
 
-	dependency->set_with_props = opts->setWithProps;
-	dependency->add_with_props = opts->addWithProps;
-	dependency->rem_with_props = opts->removeWithProps;
-	dependency->swap_with_props = opts->swapWithProps;
+	dependency->setWithProperties = opts->setWithProps;
+	dependency->addWithProperties = opts->addWithProps;
+	dependency->remWithProperties = opts->removeWithProps;
 	return CELIX_SUCCESS;
 }
 
-celix_status_t serviceDependency_setAutoConfigure(celix_dm_service_dependency_t *dependency, celix_thread_mutex_t *service_lock, const void **field) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	celix_thread_mutex_t lock;
-
-	if (!dependency) {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	}
-
-	if (status == CELIX_SUCCESS) {
-		dependency->autoConfigure = field;
-		celixThreadMutex_create(&lock, NULL);
-		*service_lock = lock;
-		dependency->lock = lock;
-	}
-
-	return status;
+celix_status_t celix_dmServiceDependency_setComponent(celix_dm_service_dependency_t *dependency, celix_dm_component_t *component) {
+    dependency->component = component;
+	return CELIX_SUCCESS;
 }
 
-celix_status_t serviceDependency_setComponent(celix_dm_service_dependency_t *dependency, celix_dm_component_t *component) {
-	celix_status_t status = CELIX_SUCCESS;
+celix_status_t celix_dmServiceDependency_enable(celix_dm_service_dependency_t *dependency) {
+    celix_bundle_context_t* ctx = celix_dmComponent_getBundleContext(dependency->component);
 
-	if (!dependency) {
-		status = CELIX_ILLEGAL_ARGUMENT;
+    if (dependency->serviceName == NULL && dependency->filter == NULL) {
+        celix_bundleContext_log(ctx, CELIX_LOG_LEVEL_ERROR,
+               "Cannot start a service dependency without a service name and filter");
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
+
+    celixThreadMutex_lock(&dependency->mutex);
+    if (dependency->svcTrackerId == -1L) {
+        celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
+        opts.filter.filter = dependency->filter;
+        opts.filter.serviceName = dependency->serviceName;
+        opts.filter.versionRange = dependency->versionRange;
+        opts.callbackHandle = dependency;
+        opts.addWithProperties = serviceDependency_addServiceTrackerCallback;
+        opts.removeWithProperties = serviceDependency_removeServiceTrackerCallback;
+        opts.setWithProperties = serviceDependency_setServiceTrackerCallback;
+        if (dependency->addCLanguageFilter) {
+            opts.filter.ignoreServiceLanguage = false;
+            opts.filter.serviceLanguage = CELIX_FRAMEWORK_SERVICE_C_LANGUAGE;
+        } else {
+            opts.filter.ignoreServiceLanguage = true;
+        }
+        dependency->svcTrackerId = celix_bundleContext_trackServicesWithOptionsAsync(ctx, &opts);
 	}
+    celixThreadMutex_unlock(&dependency->mutex);
 
-	if (status == CELIX_SUCCESS) {
-		dependency->component = component;
-	}
-
-	return status;
+	return CELIX_SUCCESS;
 }
 
-celix_status_t serviceDependency_start(celix_dm_service_dependency_t *dependency) {
-	celix_status_t status = CELIX_SUCCESS;
-	bundle_context_pt context = NULL;
-
-	if (!dependency || !dependency->component || (!dependency->tracked_service && !dependency->tracked_filter)) {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	}
-	if (status == CELIX_SUCCESS) {
-		status = component_getBundleContext(dependency->component, &context);
-		if (!context) {
-			status = CELIX_BUNDLE_EXCEPTION;
-		}
-	}
-	if (status == CELIX_SUCCESS) {
-		dependency->tracker_customizer = NULL;
-		status = serviceTrackerCustomizer_create(dependency, NULL, serviceDependency_addedService, serviceDependency_modifiedService, serviceDependency_removedService, &dependency->tracker_customizer);
-	}
-	if (status == CELIX_SUCCESS) {
-		if (dependency->tracked_filter) {
-			status = serviceTracker_createWithFilter(context, dependency->tracked_filter, dependency->tracker_customizer, &dependency->tracker);
-		} else if (dependency->tracked_service) {
-			status = serviceTracker_create(context, dependency->tracked_service, dependency->tracker_customizer, &dependency->tracker);
-		}
-	}
-
-	if (status == CELIX_SUCCESS) {
-		status = serviceTracker_open(dependency->tracker);
-	}
-
-	if (status == CELIX_SUCCESS) {
-		dependency->isStarted = true;
-	}
-
-	return status;
+static void celix_serviceDependency_stopCallback(void *data) {
+    celix_dm_service_dependency_t* dependency = data;
+    celixThreadMutex_lock(&dependency->mutex);
+    dependency->nrOfActiveStoppingTrackers -= 1;
+    celixThreadMutex_unlock(&dependency->mutex);
 }
 
-celix_status_t serviceDependency_stop(celix_dm_service_dependency_t *dependency) {
-	celix_status_t status = CELIX_SUCCESS;
+celix_status_t celix_dmServiceDependency_disable(celix_dm_service_dependency_t *dependency) {
+    celixThreadMutex_lock(&dependency->mutex);
+    if (dependency->svcTrackerId >= 0) {
+        celix_bundle_context_t* ctx = celix_dmComponent_getBundleContext(dependency->component);
+        celix_bundleContext_stopTrackerAsync(ctx, dependency->svcTrackerId, dependency, celix_serviceDependency_stopCallback);
+        dependency->svcTrackerId = -1;
+        dependency->nrOfActiveStoppingTrackers += 1;
+    }
+    celixThreadMutex_unlock(&dependency->mutex);
 
-	if (!dependency) {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	}
-
-	if (status == CELIX_SUCCESS) {
-		dependency->isStarted = false;
-	}
-
-	if (status == CELIX_SUCCESS && dependency->tracker) {
-		status = serviceTracker_close(dependency->tracker);
-		if (status == CELIX_SUCCESS) {
-			serviceTracker_destroy(dependency->tracker);
-			dependency->tracker = NULL;
-		}
-	}
-
-	return status;
+	return CELIX_SUCCESS;
 }
 
-celix_status_t serviceDependency_setInstanceBound(celix_dm_service_dependency_t *dependency, bool instanceBound) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	if (!dependency) {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	}
-
-	if (status == CELIX_SUCCESS) {
-		dependency->instanceBound = instanceBound;
-	}
-
-	return status;
+bool celix_dmServiceDependency_isDisabled(celix_dm_service_dependency_t *dependency) {
+    celixThreadMutex_lock(&dependency->mutex);
+    bool isStopped = dependency->svcTrackerId == -1L && dependency->nrOfActiveStoppingTrackers == 0;
+    celixThreadMutex_unlock(&dependency->mutex);
+    return isStopped;
 }
 
-celix_status_t serviceDependency_setAvailable(celix_dm_service_dependency_t *dependency, bool available) {
-	celix_status_t status = CELIX_SUCCESS;
+static void serviceDependency_setServiceTrackerCallback(void *handle, void *svc, const celix_properties_t *props) {
+    celix_dm_service_dependency_t* dependency = handle;
 
-	if (!dependency) {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	}
-
-	if (status == CELIX_SUCCESS) {
-		dependency->available = available;
-	}
-
-	return status;
+    celix_dm_event_t event;
+    event.dep = dependency;
+    event.eventType = CELIX_DM_EVENT_SVC_SET;
+    event.svc = svc;
+    event.props = props;
+    celix_private_dmComponent_handleEvent(dependency->component, &event);
 }
 
-celix_status_t serviceDependency_invokeSet(celix_dm_service_dependency_t *dependency, dm_event_pt event) {
-	celix_status_t status = CELIX_SUCCESS;
-	assert(dependency->isStarted == true);
-	array_list_pt serviceReferences = NULL;
-	int i;
-	int curRanking = INT_MIN;
-	service_reference_pt curServRef = NULL;
-	void *service = NULL;
-
-	serviceReferences = serviceTracker_getServiceReferences(dependency->tracker);
-
-	/* Find the service with the highest ranking */
-	for (i = 0; i < arrayList_size(serviceReferences); i++) {
-		service_reference_pt serviceReference = arrayList_get(serviceReferences, i);
-		const char* ranking_value;
-		int ranking = 0;
-
-		status = serviceReference_getProperty(serviceReference, ((char *) OSGI_FRAMEWORK_SERVICE_RANKING), &ranking_value);
-
-		if (status == CELIX_SUCCESS) {
-			if (ranking_value == NULL) {
-				ranking = DEFAULT_RANKING;
-			} else {
-				char *end;
-				ranking = strtol(ranking_value, &end, 10);
-				if (end == ranking_value) {
-					ranking = DEFAULT_RANKING;
-				}
-			}
-
-			if (ranking > curRanking) {
-				curRanking = ranking;
-				curServRef = serviceReference;
-			}
-		} else {
-			break;
-		}
-
-	}
-
-	arrayList_destroy(serviceReferences);
-
-	if (status == CELIX_SUCCESS) {
-		if (curServRef) {
-			status = bundleContext_getService(event->context, curServRef, &service);
-		} else {
-			service = NULL;
-		}
-
-		if (dependency->set) {
-			dependency->set(serviceDependency_getCallbackHandle(dependency), service);
-		}
-		if (dependency->set_with_ref) {
-			dependency->set_with_ref(serviceDependency_getCallbackHandle(dependency), curServRef, service);
-		}
-		if (dependency->set_with_props) {
-			service_registration_pt reg = NULL;
-			celix_properties_t *props = NULL;
-			serviceReference_getServiceRegistration(curServRef, &reg);
-			if (reg != NULL) {
-				serviceRegistration_getProperties(reg, &props);
-			}
-			dependency->set_with_props(serviceDependency_getCallbackHandle(dependency), service, props);
-		}
-
-		if (curServRef) {
-			bundleContext_ungetService(event->context, curServRef, NULL);
-		}
-	}
-
-	return status;
+celix_status_t celix_dmServiceDependency_invokeSet(celix_dm_service_dependency_t *dependency, void* svc, const celix_properties_t* props) {
+    if (dependency->set) {
+        dependency->set(serviceDependency_getCallbackHandle(dependency), svc);
+    }
+    if (dependency->setWithProperties) {
+        dependency->setWithProperties(serviceDependency_getCallbackHandle(dependency), svc, props);
+    }
+    return CELIX_SUCCESS;
 }
 
-celix_status_t serviceDependency_invokeAdd(celix_dm_service_dependency_t *dependency, dm_event_pt event) {
-	celix_status_t status = CELIX_SUCCESS;
+static void serviceDependency_addServiceTrackerCallback(void *handle, void *svc, const celix_properties_t *props) {
+    celix_dm_service_dependency_t* dependency = handle;
 
-	if (!dependency) {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	}
+    celixThreadMutex_lock(&dependency->mutex);
+    dependency->trackedSvcCount += 1;
+    celixThreadMutex_unlock(&dependency->mutex);
 
-	if (status == CELIX_SUCCESS) {
-		if (dependency->add) {
-			dependency->add(serviceDependency_getCallbackHandle(dependency), (void*)event->service);
-		}
-		if (dependency->add_with_ref) {
-			dependency->add_with_ref(serviceDependency_getCallbackHandle(dependency), event->reference, (void*)event->service);
-		}
-		if (dependency->add_with_props) {
-			service_registration_pt reg = NULL;
-			celix_properties_t *props = NULL;
-			serviceReference_getServiceRegistration(event->reference, &reg);
-			if (reg != NULL) {
-				serviceRegistration_getProperties(reg, &props);
-			}
-			dependency->add_with_props(serviceDependency_getCallbackHandle(dependency), (void*)event->service, props);
-		}
-	}
-
-	return status;
+    celix_dm_event_t event;
+    event.dep = dependency;
+    event.eventType = CELIX_DM_EVENT_SVC_ADD;
+    event.svc = svc;
+    event.props = props;
+    celix_private_dmComponent_handleEvent(dependency->component, &event);
 }
 
-celix_status_t serviceDependency_invokeChange(celix_dm_service_dependency_t *dependency, dm_event_pt event) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	if (!dependency) {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	}
-
-	if (status == CELIX_SUCCESS) {
-		if (dependency->change) {
-			dependency->change(serviceDependency_getCallbackHandle(dependency), (void*)event->service);
-		}
-		if (dependency->change_with_ref) {
-			dependency->change_with_ref(serviceDependency_getCallbackHandle(dependency), event->reference, event->service);
-		}
-	}
-
-	return status;
+celix_status_t celix_dmServiceDependency_invokeAdd(celix_dm_service_dependency_t *dependency, void* svc, const celix_properties_t* props) {
+    void *handle = serviceDependency_getCallbackHandle(dependency);
+    if (dependency->add) {
+        dependency->add(handle, svc);
+    }
+    if (dependency->addWithProperties) {
+        dependency->addWithProperties(handle, svc, props);
+    }
+    return CELIX_SUCCESS;
 }
 
-celix_status_t serviceDependency_invokeRemove(celix_dm_service_dependency_t *dependency, dm_event_pt event) {
-	celix_status_t status = CELIX_SUCCESS;
+static void serviceDependency_removeServiceTrackerCallback(void *handle, void *svc, const celix_properties_t *props) {
+    celix_dm_service_dependency_t* dependency = handle;
 
-	if (!dependency) {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	}
+    celixThreadMutex_lock(&dependency->mutex);
+    dependency->trackedSvcCount -= 1;
+    celixThreadMutex_unlock(&dependency->mutex);
 
-	if (status == CELIX_SUCCESS) {
-		if (dependency->remove) {
-			dependency->remove(serviceDependency_getCallbackHandle(dependency), (void*)event->service);
-		}
-		if (dependency->remove_with_ref) {
-			dependency->remove_with_ref(serviceDependency_getCallbackHandle(dependency), event->reference, event->service);
-		}
-		if (dependency->rem_with_props) {
-			service_registration_pt reg = NULL;
-			celix_properties_t *props = NULL;
-			serviceReference_getServiceRegistration(event->reference, &reg);
-			if (reg != NULL) {
-				serviceRegistration_getProperties(reg, &props);
-			}
-			dependency->rem_with_props(serviceDependency_getCallbackHandle(dependency), (void*)event->service, props);
-		}
-	}
-
-	return status;
+    celix_dm_event_t event;
+    event.dep = dependency;
+    event.eventType = CELIX_DM_EVENT_SVC_REM;
+    event.svc = svc;
+    event.props = props;
+    celix_private_dmComponent_handleEvent(dependency->component, &event);
 }
 
-celix_status_t serviceDependency_invokeSwap(celix_dm_service_dependency_t *dependency, dm_event_pt event, dm_event_pt newEvent) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	if (!dependency) {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	}
-
-	if (status == CELIX_SUCCESS) {
-		if (dependency->swap) {
-			dependency->swap(serviceDependency_getCallbackHandle(dependency), (void*)event->service, (void*)newEvent->service);
-		}
-		if (dependency->swap_with_ref) {
-			dependency->swap_with_ref(serviceDependency_getCallbackHandle(dependency), event->reference, event->service, newEvent->reference, newEvent->service);
-		}
-		if (dependency->swap_with_props) {
-			service_registration_pt reg = NULL;
-			celix_properties_t *props = NULL;
-			serviceReference_getServiceRegistration(newEvent->reference, &reg);
-			if (reg != NULL) {
-				serviceRegistration_getProperties(reg, &props);
-			}
-			dependency->swap_with_props(serviceDependency_getCallbackHandle(dependency),(void*) event->service, (void*)newEvent->service, props);
-		}
-	}
-
-	return status;
+celix_status_t celix_dmServiceDependency_invokeRemove(celix_dm_service_dependency_t *dependency, void* svc, const celix_properties_t* props) {
+    if (dependency->remove) {
+        dependency->remove(serviceDependency_getCallbackHandle(dependency), svc);
+    }
+    if (dependency->remWithProperties) {
+        dependency->remWithProperties(serviceDependency_getCallbackHandle(dependency), svc, props);
+    }
+    return CELIX_SUCCESS;
 }
 
-celix_status_t serviceDependency_isAvailable(celix_dm_service_dependency_t *dependency, bool *available) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	if (!dependency) {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	}
-
-	if (status == CELIX_SUCCESS) {
-		*available = dependency->available;
-	}
-
-	return status;
+bool celix_dmServiceDependency_isAvailable(celix_dm_service_dependency_t *dependency) {
+    celixThreadMutex_lock(&dependency->mutex);
+    bool avail = dependency->trackedSvcCount > 0;
+    celixThreadMutex_unlock(&dependency->mutex);
+    return avail;
 }
 
-celix_status_t serviceDependency_isRequired(celix_dm_service_dependency_t *dependency, bool *required) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	if (!dependency) {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	}
-
-	if (status == CELIX_SUCCESS) {
-		*required = dependency->required;
-	}
-
-	return status;
+bool celix_dmServiceDependency_isRequired(const celix_dm_service_dependency_t* dep) {
+    return dep->required;
 }
 
-celix_status_t serviceDependency_isInstanceBound(celix_dm_service_dependency_t *dependency, bool *instanceBound) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	if (!dependency) {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	}
-
-	if (status == CELIX_SUCCESS) {
-		*instanceBound = dependency->instanceBound;
-	}
-
-	return status;
+bool celix_dmServiceDependency_isTrackerOpen(celix_dm_service_dependency_t* dependency) {
+    celixThreadMutex_lock(&dependency->mutex);
+    bool isOpen = dependency->svcTrackerId >= 0;
+    celixThreadMutex_unlock(&dependency->mutex);
+    return isOpen;
 }
 
-celix_status_t serviceDependency_isAutoConfig(celix_dm_service_dependency_t *dependency, bool *autoConfig) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	if (!dependency) {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	}
-
-	if (status == CELIX_SUCCESS) {
-		*autoConfig = dependency->autoConfigure != NULL;
-	}
-
-	return status;
+bool celix_dmServiceDependency_isSetCallbackConfigured(celix_dm_service_dependency_t* dependency) {
+    bool isUsed = dependency->set != NULL || dependency->setWithProperties != NULL;
+    return isUsed;
 }
-
-celix_status_t serviceDependency_getAutoConfig(celix_dm_service_dependency_t *dependency, const void*** autoConfigure) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	if (!dependency) {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	}
-
-	if (status == CELIX_SUCCESS) {
-		*autoConfigure = dependency->autoConfigure;
-	}
-
-	return status;
-}
-
-static celix_status_t serviceDependency_addedService(void *_ptr, service_reference_pt reference, void *service) {
-	celix_status_t status = CELIX_SUCCESS;
-	bundle_context_pt context = NULL;
-	bundle_pt bundle = NULL;
-	dm_event_pt event = NULL;
-	celix_dm_service_dependency_t *dependency = _ptr;
-
-	if (!dependency || !reference || !service) {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	}
-
-	if (status == CELIX_SUCCESS) {
-		status = component_getBundleContext(dependency->component, &context);
-		if (!context) {
-			status = CELIX_BUNDLE_EXCEPTION;
-		}
-	}
-
-	if (status == CELIX_SUCCESS) {
-		status = bundleContext_getBundle(context, &bundle);
-		if (!bundle) {
-			status = CELIX_BUNDLE_EXCEPTION;
-		}
-	}
-
-	if (status == CELIX_SUCCESS) {
-		status = event_create(DM_EVENT_ADDED, bundle, context, reference, service, &event);
-	}
-
-	if (status == CELIX_SUCCESS) {
-		celix_private_dmComponent_handleEvent(dependency->component, dependency, event);
-	}
-
-	return status;
-}
-
-static celix_status_t serviceDependency_modifiedService(void *_ptr, service_reference_pt reference, void *service) {
-	celix_status_t status = CELIX_SUCCESS;
-	bundle_context_pt context = NULL;
-	bundle_pt bundle = NULL;
-	dm_event_pt event = NULL;
-	celix_dm_service_dependency_t *dependency = _ptr;
-
-	if (!dependency || !reference || !service) {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	}
-
-	if (status == CELIX_SUCCESS) {
-		status = component_getBundleContext(dependency->component, &context);
-		if (!context) {
-			status = CELIX_BUNDLE_EXCEPTION;
-		}
-	}
-
-	if (status == CELIX_SUCCESS) {
-		status = bundleContext_getBundle(context, &bundle);
-		if (!bundle) {
-			status = CELIX_BUNDLE_EXCEPTION;
-		}
-	}
-
-	if (status == CELIX_SUCCESS) {
-		status = event_create(DM_EVENT_CHANGED, bundle, context, reference, service, &event);
-	}
-
-	if (status == CELIX_SUCCESS) {
-		celix_private_dmComponent_handleEvent(dependency->component, dependency, event);
-	}
-
-	return status;
-}
-
-static celix_status_t serviceDependency_removedService(void *_ptr, service_reference_pt reference, void *service) {
-	celix_status_t status = CELIX_SUCCESS;
-	bundle_context_pt context = NULL;
-	bundle_pt bundle = NULL;
-	dm_event_pt event = NULL;
-	celix_dm_service_dependency_t *dependency = _ptr;
-
-	if (!dependency || !reference || !service) {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	}
-
-	if (status == CELIX_SUCCESS) {
-		status = component_getBundleContext(dependency->component, &context);
-		if (!context) {
-			status = CELIX_BUNDLE_EXCEPTION;
-		}
-	}
-
-	if (status == CELIX_SUCCESS) {
-		status = bundleContext_getBundle(context, &bundle);
-		if (!bundle) {
-			status = CELIX_BUNDLE_EXCEPTION;
-		}
-	}
-
-	if (status == CELIX_SUCCESS) {
-		status = event_create(DM_EVENT_REMOVED, bundle, context, reference, service, &event);
-	}
-
-	if (status == CELIX_SUCCESS) {
-		celix_private_dmComponent_handleEvent(dependency->component, dependency, event);
-	}
-
-	return status;
+bool celix_dmServiceDependency_isAddRemCallbacksConfigured(celix_dm_service_dependency_t* dependency) {
+    bool isUsed = dependency->add != NULL || dependency->addWithProperties != NULL ||
+            dependency->remove != NULL || dependency->remWithProperties != NULL;
+    return isUsed;
 }
 
 celix_status_t serviceDependency_getServiceDependencyInfo(celix_dm_service_dependency_t *dep, dm_service_dependency_info_t **out) {
@@ -829,21 +360,14 @@ celix_status_t serviceDependency_getServiceDependencyInfo(celix_dm_service_depen
 dm_service_dependency_info_t* celix_dmServiceDependency_createInfo(celix_dm_service_dependency_t* dep) {
 	celix_dm_service_dependency_info_t *info = calloc(1, sizeof(*info));
 	if (info != NULL) {
-		celixThreadMutex_lock(&dep->lock);
-		info->available = dep->available;
-		info->filter = dep->tracked_filter != NULL ? strdup(dep->tracked_filter) : NULL;
-		if (info->filter == NULL) {
-			info->filter = dep->tracked_service != NULL ? strdup(dep->tracked_service) : NULL;
-		}
+		celixThreadMutex_lock(&dep->mutex);
+		info->available = dep->trackedSvcCount > 0;
+		info->serviceName = celix_utils_strdup(dep->serviceName);
+		info->filter = celix_utils_strdup(dep->filter);
+		info->versionRange = celix_utils_strdup(dep->versionRange);
 		info->required = dep->required;
-
-		array_list_pt refs = serviceTracker_getServiceReferences(dep->tracker);
-		if (refs != NULL) {
-			info->count = arrayList_size(refs);
-		}
-		arrayList_destroy(refs);
-
-		celixThreadMutex_unlock(&dep->lock);
+		info->count = dep->trackedSvcCount;
+		celixThreadMutex_unlock(&dep->mutex);
 	}
 	return info;
 }
@@ -855,7 +379,9 @@ void dependency_destroyDependencyInfo(dm_service_dependency_info_pt info) {
 
 void celix_dmServiceDependency_destroyInfo(celix_dm_service_dependency_t *dep __attribute__((unused)), dm_service_dependency_info_t *info) {
 	if (info != NULL) {
+	    free(info->serviceName);
 		free(info->filter);
+		free(info->versionRange);
 	}
 	free(info);
 }

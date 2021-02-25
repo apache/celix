@@ -16,19 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * celix_launcher.h
- *
- *  \date       Jul 30, 2015
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
+
 
 #ifndef CELIX_LAUNCHER_H
 #define CELIX_LAUNCHER_H
 
 #include <stdio.h>
-#include "framework.h"
+#include "celix_framework.h"
 
 #ifdef __cplusplus
 extern "C" {

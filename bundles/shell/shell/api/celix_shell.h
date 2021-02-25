@@ -51,7 +51,7 @@ struct celix_shell {
 	celix_status_t (*getCommandDescription)(void *handle, const char *commandName, char **commandDescription);
 
 	/**
-	 * Try to execute a commmand using the provided command line.
+	 * Try to execute a command using the provided command line.
 	 */
 	celix_status_t (*executeCommand)(void *handle, const char *commandLine, FILE *out, FILE *err);
 };

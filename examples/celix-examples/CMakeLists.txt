@@ -32,6 +32,10 @@ if (EXAMPLES)
     add_subdirectory(services_example_c)
     add_subdirectory(services_example_cxx)
 
+    add_subdirectory(readme_cxx_examples)
+
+    add_subdirectory(dependency_manager_example_cxx)
+
     #TODO refactor export_import
     #add_subdirectory(export_import)
 

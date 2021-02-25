@@ -27,7 +27,7 @@ extern "C" {
 #include <time.h>
 #include <stdbool.h>
 
-#define CELIX_UTILS_MAX_STRLEN      1024*1024*10
+#define CELIX_UTILS_MAX_STRLEN      1024*1024*1024
 
 /**
  * Creates a copy of a provided string.
@@ -47,6 +47,11 @@ unsigned int celix_utils_stringHash(const char* string);
  * Compares two strings and returns true if the strings are equal.
  */
 bool celix_utils_stringEquals(const char* a, const char* b);
+
+/**
+ * Check if a string is NULL or empty "".
+ */
+bool celix_utils_isStringNullOrEmpty(const char* s);
 
 
 
@@ -87,6 +92,20 @@ double celix_elapsedtime(clockid_t clockId, struct timespec startTime);
  * Creates a hash from a string
  */
 unsigned int celix_utils_stringHash(const char* string);
+
+/**
+ * Compare services using the service id and ranking.
+ *
+ * If the service id are the same -> compare return 0.
+ *
+ * If the service ranking of A is higher -> return -1; (smaller -> A is sorted before B)
+ *
+ * If the service rankings are the same, but the svcId of A is smaller (older service) -> return -1:
+ * (smaller A is sorted before B)
+ *
+ * And vica versa.
+ */
+int celix_utils_compareServiceIdsAndRanking(long svcIdA, long svcRankA, long svcIdB, long svcRankB);
 
 
 #ifdef __cplusplus

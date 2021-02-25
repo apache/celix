@@ -33,8 +33,11 @@ typedef struct celix_bundle_context_bundle_tracker_entry {
 	bundle_listener_t listener;
 	celix_bundle_tracking_options_t opts;
 
-	//used for sync
-	long createEventId;
+    bool created;
+    bool cancelled;
+
+    //used for sync
+    long createEventId;
 } celix_bundle_context_bundle_tracker_entry_t;
 
 typedef struct celix_bundle_context_service_tracker_entry {
@@ -48,6 +51,7 @@ typedef struct celix_bundle_context_service_tracker_entry {
 
     //used for sync
     long createEventId;
+    bool cancelled; //if tracker is stopped before created async
 } celix_bundle_context_service_tracker_entry_t;
 
 typedef struct celix_bundle_context_service_tracker_tracker_entry {
