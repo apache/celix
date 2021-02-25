@@ -24,15 +24,17 @@
 #include "celix/FrameworkFactory.h"
 
 class CxxFrameworkFactoryTestSuite : public ::testing::Test {
-    public:
+public:
+    std::shared_ptr<celix::Framework> framework{};
+    std::vector<std::shared_ptr<celix::ServiceRegistration>> registrations{};
 };
 
 TEST_F(CxxFrameworkFactoryTestSuite, CreateDestroy) {
-    auto fw = celix::FrameworkFactory::createFramework();
+    auto fw = celix::createFramework();
 }
 
 TEST_F(CxxFrameworkFactoryTestSuite, WaitForStop) {
-    auto fw = celix::FrameworkFactory::createFramework();
+    auto fw = celix::createFramework();
     std::future<void> sync;
     std::thread wait{[fw] {
         fw->waitForStop();
@@ -40,3 +42,16 @@ TEST_F(CxxFrameworkFactoryTestSuite, WaitForStop) {
     fw->getFrameworkBundleContext()->stopBundle(0);
     wait.join();
 }
+
+struct cService{};
+
+TEST_F(CxxFrameworkFactoryTestSuite, DestroyFrameworkAndUnregisterServices) {
+    framework = celix::createFramework();
+    auto ctx = framework->getFrameworkBundleContext();
+    for (int i = 0; i < 10; ++i) {
+        auto reg = ctx->registerService<cService>(std::make_shared<cService>())
+                .build();
+        registrations.emplace_back(std::move(reg));
+    }
+}
+
