@@ -63,8 +63,7 @@ void component_destroy(celix_dm_component_t *component) CELIX_DEPRECATED_ATTR;
 
 
 /**
- * Specify if a default 'service.lang=C' should be added to the properties of interfaces if no 'service.lang' has been
- * provided. Default is false. Note that this should be set before using component_addInterface.
+ * @deprecated Deprecated. not used ny mowre
  */
 celix_status_t component_setCLanguageProperty(celix_dm_component_t *component, bool setCLangProp) CELIX_DEPRECATED_ATTR;
 

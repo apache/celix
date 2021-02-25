@@ -50,7 +50,7 @@ if ("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
 endif()
 
 add_celix_container(services_example_c
-    GROUP services_example
+    GROUP c_examples
     BUNDLES
         Celix::shell
         Celix::shell_tui
@@ -59,7 +59,7 @@ add_celix_container(services_example_c
 )
 
 add_celix_container(dynamic_services_example_c
-    GROUP services_example
+    GROUP c_examples
     BUNDLES
       Celix::shell
       Celix::shell_tui

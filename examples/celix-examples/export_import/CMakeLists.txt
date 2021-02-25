@@ -47,12 +47,12 @@ if(NOT APPLE)
     )
 
     add_celix_container(helloworld_byref
-        GROUP hello
+        GROUP experimental #import/export feature is experimental
         BUNDLES hello_export hello_bundle ${CELIX_SHELL_BUNDLE} ${CELIX_SHELL_TUI_BUNDLE}
     )
 
     add_celix_container(helloworld_withcopy
-        GROUP hello
+        GROUP experimental #import/export feature is experimental
         COPY #Ensures that bundles are copied in the deploy location
         BUNDLES hello_export hello_bundle ${SHELL_BUNDLE} ${SHELL_TUI_BUNDLE}
     )

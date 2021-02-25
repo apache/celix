@@ -22,11 +22,42 @@
 #include <cstring>
 #include "celix_constants.h"
 #include "celix_properties.h"
+#include "celix_bundle_context.h"
+#include "celix_framework.h"
+#include "ServiceDependency.h"
+
 
 using namespace celix::dm;
 
+inline void BaseServiceDependency::runBuild() {
+    bool alreadyAdded = depAddedToCmp.exchange(true);
+    if (!alreadyAdded) {
+        celix_dmComponent_addServiceDependency(cCmp, cServiceDep);
+    }
+}
+
+inline void BaseServiceDependency::wait() const {
+    if (cCmp) {
+        auto* ctx = celix_dmComponent_getBundleContext(cCmp);
+        auto* fw = celix_bundleContext_getFramework(ctx);
+        if (!celix_framework_isCurrentThreadTheEventLoop(fw)) {
+            celix_bundleContext_waitForEvents(ctx);
+        } else {
+            celix_bundleContext_log(ctx, CELIX_LOG_LEVEL_WARNING,
+                    "BaseServiceDependency::wait: Cannot wait for Celix event queue on the Celix event queue thread! "
+                            "Use async DepMan API instead.");
+        }
+    }
+}
+
+inline BaseServiceDependency::~BaseServiceDependency() noexcept {
+    if (!depAddedToCmp) {
+        celix_dmServiceDependency_destroy(cServiceDep);
+    }
+}
+
 template<class T, typename I>
-CServiceDependency<T,I>::CServiceDependency(const std::string &name, bool valid) : TypedServiceDependency<T>(valid) {
+CServiceDependency<T,I>::CServiceDependency(celix_dm_component_t* cCmp, const std::string &name) : TypedServiceDependency<T>(cCmp) {
     this->name = name;
     this->setupService();
 }
@@ -47,9 +78,6 @@ CServiceDependency<T,I>& CServiceDependency<T,I>::setFilter(const std::string &_
 
 template<class T, typename I>
 void CServiceDependency<T,I>::setupService() {
-    if (!this->isValid()) {
-        return;
-    }
     const char* cversion = this->versionRange.empty() ? nullptr : versionRange.c_str();
     const char* cfilter = filter.empty() ? nullptr : filter.c_str();
     celix_dmServiceDependency_setService(this->cServiceDependency(), this->name.c_str(), cversion, cfilter);
@@ -57,9 +85,6 @@ void CServiceDependency<T,I>::setupService() {
 
 template<class T, typename I>
 CServiceDependency<T,I>& CServiceDependency<T,I>::setAddLanguageFilter(bool addLang) {
-//    if (!this->isValid()) {
-//        *this;
-//    }
     celix_serviceDependency_setAddCLanguageFilter(this->cServiceDependency(), addLang);
     this->setupService();
     return *this;
@@ -67,18 +92,12 @@ CServiceDependency<T,I>& CServiceDependency<T,I>::setAddLanguageFilter(bool addL
 
 template<class T, typename I>
 CServiceDependency<T,I>& CServiceDependency<T,I>::setRequired(bool req) {
-    if (!this->isValid()) {
-        return *this;
-    }
     celix_dmServiceDependency_setRequired(this->cServiceDependency(), req);
     return *this;
 }
 
 template<class T, typename I>
 CServiceDependency<T,I>& CServiceDependency<T,I>::setStrategy(DependencyUpdateStrategy strategy) {
-    if (!this->isValid()) {
-        return *this;
-    }
     this->setDepStrategy(strategy);
     return *this;
 }
@@ -156,10 +175,6 @@ CServiceDependency<T,I>& CServiceDependency<T,I>::setCallbacks(std::function<voi
 
 template<class T, typename I>
 void CServiceDependency<T,I>::setupCallbacks() {
-    if (!this->isValid()) {
-        return;
-    }
-
     int(*cset)(void*, void *, const celix_properties_t*) {nullptr};
     int(*cadd)(void*, void *, const celix_properties_t*) {nullptr};
     int(*crem)(void*, void *, const celix_properties_t*) {nullptr};
@@ -213,8 +228,22 @@ int CServiceDependency<T,I>::invokeCallback(std::function<void(const I*, Propert
     return 0;
 }
 
+
 template<class T, class I>
-ServiceDependency<T,I>::ServiceDependency(const std::string &name, bool valid) : TypedServiceDependency<T>(valid) {
+CServiceDependency<T,I>& CServiceDependency<T,I>::build() {
+    this->runBuild();
+    this->wait();
+    return *this;
+}
+
+template<class T, class I>
+CServiceDependency<T,I>& CServiceDependency<T,I>::buildAsync() {
+    this->runBuild();
+    return *this;
+}
+
+template<class T, class I>
+ServiceDependency<T,I>::ServiceDependency(celix_dm_component_t* cCmp, const std::string &name) : TypedServiceDependency<T>(cCmp) {
     if (!name.empty()) {
         this->setName(name);
     } else {
@@ -224,55 +253,13 @@ ServiceDependency<T,I>::ServiceDependency(const std::string &name, bool valid) :
 
 template<class T, class I>
 void ServiceDependency<T,I>::setupService() {
-    if (!this->isValid()) {
-        return;
-    }
-
     std::string n = name;
-
     if (n.empty()) {
-        n = typeName<I>();
-        if (n.empty()) {
-            std::cerr << "Error in service dependency. Type name cannot be inferred, using '<TYPE_NAME_ERROR>'. function: '" << __PRETTY_FUNCTION__ << "'\n";
-            n = "<TYPE_NAME_ERROR>";
-        }
+        n = celix::typeName<I>();
     }
 
     const char* v =  versionRange.empty() ? nullptr : versionRange.c_str();
-
-
-    if (this->addCxxLanguageFilter) {
-
-        char langFilter[128];
-        snprintf(langFilter, sizeof(langFilter), "(%s=%s)", CELIX_FRAMEWORK_SERVICE_LANGUAGE,
-                 CELIX_FRAMEWORK_SERVICE_CXX_LANGUAGE);
-
-        //setting modified filter. which is in a filter including a lang=c++
-        modifiedFilter = std::string{langFilter};
-        if (!filter.empty()) {
-            char needle[128];
-            snprintf(needle, sizeof(needle), "(%s=", CELIX_FRAMEWORK_SERVICE_LANGUAGE);
-            size_t langFilterPos = filter.find(needle);
-            if (langFilterPos != std::string::npos) {
-                //do nothing filter already contains a language part.
-            } else if (strncmp(filter.c_str(), "(&", 2) == 0 && filter[filter.size() - 1] == ')') {
-                modifiedFilter = filter.substr(0, filter.size() - 1); //remove closing ')'
-                modifiedFilter = modifiedFilter.append(langFilter);
-                modifiedFilter = modifiedFilter.append(")"); //add closing ')'
-            } else if (filter[0] == '(' && filter[filter.size() - 1] == ')') {
-                modifiedFilter = "(&";
-                modifiedFilter = modifiedFilter.append(filter);
-                modifiedFilter = modifiedFilter.append(langFilter);
-                modifiedFilter = modifiedFilter.append(")");
-            } else {
-                std::cerr << "Unexpected filter layout: '" << filter << "'\n";
-            }
-        }
-    } else {
-        this->modifiedFilter = this->filter;
-    }
-
-    celix_dmServiceDependency_setService(this->cServiceDependency(), n.c_str(), v, this->modifiedFilter.c_str());
+    celix_dmServiceDependency_setService(this->cServiceDependency(), n.c_str(), v, this->filter.c_str());
 }
 
 template<class T, class I>
@@ -412,10 +399,6 @@ int ServiceDependency<T,I>::invokeCallback(std::function<void(I*, Properties&&)>
 
 template<class T, class I>
 void ServiceDependency<T,I>::setupCallbacks() {
-    if (!this->isValid()) {
-        return;
-    }
-
     int(*cset)(void*, void *, const celix_properties_t*) {nullptr};
     int(*cadd)(void*, void *, const celix_properties_t*) {nullptr};
     int(*crem)(void*, void *, const celix_properties_t*) {nullptr};
@@ -446,4 +429,17 @@ void ServiceDependency<T,I>::setupCallbacks() {
     opts.addWithProps = cadd;
     opts.removeWithProps = crem;
     celix_dmServiceDependency_setCallbacksWithOptions(this->cServiceDependency(), &opts);
+}
+
+template<class T, class I>
+ServiceDependency<T,I>& ServiceDependency<T,I>::build() {
+    this->runBuild();
+    this->wait();
+    return *this;
+}
+
+template<class T, class I>
+ServiceDependency<T,I>& ServiceDependency<T,I>::buildAsync() {
+    this->runBuild();
+    return *this;
 }

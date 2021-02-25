@@ -17,11 +17,7 @@
  * under the License.
  */
 
-#ifndef CELIX_DM_SERVICEDEPENDENCY_H
-#define CELIX_DM_SERVICEDEPENDENCY_H
-
-#include "dm_service_dependency.h"
-#include "celix/dm/types.h"
+#pragma once
 
 #include <map>
 #include <string>
@@ -30,10 +26,17 @@
 #include <memory>
 #include <iostream>
 #include <functional>
+#include <atomic>
+#include <vector>
+#include <cstring>
+
+#include "dm_service_dependency.h"
+#include "celix_constants.h"
+#include "celix_properties.h"
+#include "celix/Utils.h"
+#include "celix/dm/Properties.h"
 
 namespace celix { namespace dm {
-
-    class DependencyManager; //forward declaration
 
     enum class DependencyUpdateStrategy {
         suspend,
@@ -42,47 +45,58 @@ namespace celix { namespace dm {
 
     class BaseServiceDependency {
     private:
-        bool valid;
+        celix_dm_component_t* cCmp;
+        std::atomic<bool> depAddedToCmp{false};
     protected:
         celix_dm_service_dependency_t *cServiceDep {nullptr};
 
         void setDepStrategy(DependencyUpdateStrategy strategy) {
-            if (!valid) {
-                return;
-            }
             if (strategy == DependencyUpdateStrategy::locking) {
                 celix_dmServiceDependency_setStrategy(this->cServiceDependency(), DM_SERVICE_DEPENDENCY_STRATEGY_LOCKING);
-            } else if (strategy == DependencyUpdateStrategy::suspend) {
+            } else { /*suspend*/
                 celix_dmServiceDependency_setStrategy(this->cServiceDependency(), DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND);
-            } else {
-                std::cerr << "Unexpected dependency update strategy. Cannot convert for dm_dependency\n";
             }
         }
     public:
-        BaseServiceDependency(bool v)  : valid{v} {
-            if (this->valid) {
-                this->cServiceDep = celix_dmServiceDependency_create();
-                //NOTE using suspend as default strategy
-                celix_dmServiceDependency_setStrategy(this->cServiceDep,  DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND);
-            }
+        BaseServiceDependency(celix_dm_component_t* c)  : cCmp{c} {
+            this->cServiceDep = celix_dmServiceDependency_create();
+            //NOTE using suspend as default strategy
+            celix_dmServiceDependency_setStrategy(this->cServiceDep,  DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND);
         }
 
-        virtual ~BaseServiceDependency() = default;
+        virtual ~BaseServiceDependency() noexcept;
 
         BaseServiceDependency(const BaseServiceDependency&) = delete;
         BaseServiceDependency& operator=(const BaseServiceDependency&) = delete;
-        BaseServiceDependency(BaseServiceDependency&&) noexcept = default;
-        BaseServiceDependency& operator=(BaseServiceDependency&&) noexcept = default;
+        BaseServiceDependency(BaseServiceDependency&&) noexcept = delete;
+        BaseServiceDependency& operator=(BaseServiceDependency&&) noexcept = delete;
 
         /**
          * Whether the service dependency is valid.
+         *
+         * Deprecated -> will always return true.
          */
-        bool isValid() const { return valid; }
+        bool isValid() const __attribute__((deprecated)) { return true; }
 
         /**
          * Returns the C DM service dependency
          */
         celix_dm_service_dependency_t *cServiceDependency() const { return cServiceDep; }
+
+        /**
+         * Wait for an empty Celix event queue.
+         * Should not be called on the Celix event queue thread.
+         *
+         * Can be used to ensure that the service dependency is completely processed (service trackers are created).
+         */
+        void wait() const;
+
+        /**
+         * Run the service dependency build. After this call the service dependency is added to the component and
+         * is enabled.
+         * The underlining service tracker will be created async.
+         */
+        void runBuild();
     };
 
     template<class T>
@@ -91,13 +105,13 @@ namespace celix { namespace dm {
     protected:
         T* componentInstance {nullptr};
     public:
-        TypedServiceDependency(bool valid) : BaseServiceDependency(valid) {}
+        TypedServiceDependency(celix_dm_component_t* cCmp) : BaseServiceDependency(cCmp) {}
         ~TypedServiceDependency() override = default;
 
         TypedServiceDependency(const TypedServiceDependency&) = delete;
         TypedServiceDependency& operator=(const TypedServiceDependency&) = delete;
-        TypedServiceDependency(TypedServiceDependency&&) noexcept = default;
-        TypedServiceDependency& operator=(TypedServiceDependency&&) noexcept = default;
+        TypedServiceDependency(TypedServiceDependency&&) noexcept = delete;
+        TypedServiceDependency& operator=(TypedServiceDependency&&) noexcept = delete;
 
         /**
          * Set the component instance with a pointer
@@ -109,13 +123,13 @@ namespace celix { namespace dm {
     class CServiceDependency : public TypedServiceDependency<T> {
         using type = I;
     public:
-        CServiceDependency(const std::string &name, bool valid = true);
+        CServiceDependency(celix_dm_component_t* cCmp, const std::string &name);
         ~CServiceDependency() override = default;
 
         CServiceDependency(const CServiceDependency&) = delete;
         CServiceDependency& operator=(const CServiceDependency&) = delete;
-        CServiceDependency(CServiceDependency&&) noexcept = default;
-        CServiceDependency& operator=(CServiceDependency&&) noexcept = default;
+        CServiceDependency(CServiceDependency&&) noexcept = delete;
+        CServiceDependency& operator=(CServiceDependency&&) noexcept = delete;
 
         /**
          * Sets the service version range for the C service dependency.
@@ -200,6 +214,23 @@ namespace celix { namespace dm {
          * For C service dependencies 'service.lang=C' will be added.
          */
         CServiceDependency<T,I>& setAddLanguageFilter(bool addLang);
+
+        /**
+         * "Build" the service dependency.
+         * When build the service dependency is active and the service tracker is created.
+         *
+         * Should not be called on the Celix event thread.
+         */
+        CServiceDependency<T,I>& build();
+
+        /**
+         * Same a build, but will not wait till the underlining service tracker is created.
+         * Can be called on the Celix event thread.
+         */
+        CServiceDependency<T,I>& buildAsync();
+
+
+
     private:
         std::string name {};
         std::string filter {};
@@ -219,13 +250,13 @@ namespace celix { namespace dm {
     class ServiceDependency : public TypedServiceDependency<T> {
         using type = I;
     public:
-        ServiceDependency(const std::string &name = std::string{}, bool valid = true);
+        ServiceDependency(celix_dm_component_t* cCmp, const std::string &name);
         ~ServiceDependency() override = default;
 
         ServiceDependency(const ServiceDependency&) = delete;
         ServiceDependency& operator=(const ServiceDependency&) = delete;
-        ServiceDependency(ServiceDependency&&) noexcept = default;
-        ServiceDependency& operator=(ServiceDependency&&) noexcept = default;
+        ServiceDependency(ServiceDependency&&) noexcept = delete;
+        ServiceDependency& operator=(ServiceDependency&&) noexcept = delete;
 
         /**
          * Set the service name of the service dependency.
@@ -316,12 +347,25 @@ namespace celix { namespace dm {
          * Should be called before
          */
         ServiceDependency<T,I>& setAddLanguageFilter(bool addLang);
+
+
+        /**
+         * "Build" the service dependency.
+         * When build the service dependency is active and the service tracker is created.
+         *
+         * Should not be called on the Celix event thread.
+         */
+        ServiceDependency<T,I>& build();
+
+        /**
+         * Same a build, but will not wait till the underlining service trackers are opened.
+         * Can be called on the Celix event thread.
+         */
+        ServiceDependency<T,I>& buildAsync();
     private:
-        bool addCxxLanguageFilter {true};
         std::string name {};
         std::string filter {};
         std::string versionRange {};
-        std::string modifiedFilter {};
 
         std::function<void(I* service, Properties&& properties)> setFp{nullptr};
         std::function<void(I* service, Properties&& properties)> addFp{nullptr};
@@ -334,6 +378,3 @@ namespace celix { namespace dm {
 }}
 
 #include "celix/dm/ServiceDependency_Impl.h"
-
-
-#endif //CELIX_DM_SERVICEDEPENDENCY_H

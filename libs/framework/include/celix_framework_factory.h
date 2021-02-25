@@ -20,7 +20,7 @@
 #ifndef CELIX_FRAMEWORK_FACTORY_H_
 #define CELIX_FRAMEWORK_FACTORY_H_
 
-#include "framework.h"
+#include "celix_framework.h"
 
 #ifdef __cplusplus
 extern "C" {

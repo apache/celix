@@ -39,7 +39,7 @@
 #include "pubsub_admin.h"
 #include "../../pubsub_admin_udp_mc/src/pubsub_udpmc_topic_sender.h"
 
-#define PSTM_PSA_HANDLING_DEFAULT_SLEEPTIME_IN_SECONDS       30L
+#define PSTM_PSA_HANDLING_SLEEPTIME_IN_SECONDS       30L
 
 #ifndef UUID_STR_LEN
 #define UUID_STR_LEN    37
@@ -79,8 +79,11 @@ celix_status_t pubsub_topologyManager_create(celix_bundle_context_t *context, ce
 
     manager->loghelper = logHelper;
     manager->verbose = celix_bundleContext_getPropertyAsBool(context, PUBSUB_TOPOLOGY_MANAGER_VERBOSE_KEY, PUBSUB_TOPOLOGY_MANAGER_DEFAULT_VERBOSE);
-    manager->handlingThreadSleepTime = celix_bundleContext_getPropertyAsLong(context, PUBSUB_TOPOLOGY_MANAGER_HANDLING_THREAD_SLEEPTIME_SECONDS_KEY, PSTM_PSA_HANDLING_DEFAULT_SLEEPTIME_IN_SECONDS);
-
+    unsigned handlingThreadSleepTime = celix_bundleContext_getPropertyAsLong(context, PUBSUB_TOPOLOGY_MANAGER_HANDLING_THREAD_SLEEPTIME_SECONDS_KEY, PSTM_PSA_HANDLING_SLEEPTIME_IN_SECONDS);
+    if ( handlingThreadSleepTime >= 0 ) {
+        manager->handlingThreadSleepTime = handlingThreadSleepTime * 1000L;
+    }
+    manager->handlingThreadSleepTime = celix_bundleContext_getPropertyAsLong(context, PUBSUB_TOPOLOGY_MANAGER_HANDLING_THREAD_SLEEPTIME_MS_KEY,  manager->handlingThreadSleepTime);
     manager->psaHandling.running = true;
     celixThread_create(&manager->psaHandling.thread, NULL, pstm_psaHandlingThread, manager);
     celixThread_setName(&manager->psaHandling.thread, "PubSub TopologyManager");
@@ -718,8 +721,11 @@ static void pstm_teardownTopicSenders(pubsub_topology_manager_t *manager) {
         for (int k = 0; k < celix_arrayList_size(revokeEndpoints); ++k) {
             celix_properties_t* endpoint = celix_arrayList_get(revokeEndpoints, k);
             listener->revokeEndpoint(listener->handle, endpoint);
-            celix_properties_destroy(endpoint);
         }
+    }
+    for (int k = 0; k < celix_arrayList_size(revokeEndpoints); ++k) {
+        celix_properties_t* endpoint = celix_arrayList_get(revokeEndpoints, k);
+        celix_properties_destroy(endpoint);
     }
     celixThreadMutex_unlock(&manager->announceEndpointListeners.mutex);
     celix_arrayList_destroy(revokeEndpoints);
@@ -758,7 +764,6 @@ static void pstm_teardownTopicReceivers(pubsub_topology_manager_t *manager) {
                               "Tearing down TopicReceiver for scope/topic %s/%s with psa admin type %s and serializer %s\n",
                               entry->scope == NULL ? "(null)" : entry->scope, entry->topic, adminType, serType);
             }
-
             if (entry->endpoint != NULL) {
                 celix_arrayList_add(revokeEndpoints, celix_properties_copy(entry->endpoint));
                 struct pstm_teardown_entry* teardownEntry = malloc(sizeof(*teardownEntry));
@@ -808,8 +813,12 @@ static void pstm_teardownTopicReceivers(pubsub_topology_manager_t *manager) {
         for (int k = 0; k < celix_arrayList_size(revokeEndpoints); ++k) {
             celix_properties_t* endpoint = celix_arrayList_get(revokeEndpoints, k);
             listener->revokeEndpoint(listener->handle, endpoint);
-            celix_properties_destroy(endpoint);
         }
+    }
+    // Clean-up properties
+    for (int k = 0; k < celix_arrayList_size(revokeEndpoints); ++k) {
+        celix_properties_t* endpoint = celix_arrayList_get(revokeEndpoints, k);
+        celix_properties_destroy(endpoint);
     }
     celixThreadMutex_unlock(&manager->announceEndpointListeners.mutex);
     celix_arrayList_destroy(revokeEndpoints);
@@ -1108,7 +1117,7 @@ static void *pstm_psaHandlingThread(void *data) {
         pstm_findPsaForEndpoints(manager); //trying to find psa and possible set for endpoints with no psa
 
         celixThreadMutex_lock(&manager->psaHandling.mutex);
-        celixThreadCondition_timedwaitRelative(&manager->psaHandling.cond, &manager->psaHandling.mutex, manager->handlingThreadSleepTime, 0L);
+        celixThreadCondition_timedwaitRelative(&manager->psaHandling.cond, &manager->psaHandling.mutex, manager->handlingThreadSleepTime  / 1000, (manager->handlingThreadSleepTime  % 1000) * 1000000);
         running = manager->psaHandling.running;
         celixThreadMutex_unlock(&manager->psaHandling.mutex);
     }

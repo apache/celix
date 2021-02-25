@@ -15,6 +15,9 @@
 # specific language governing permissions and limitations
 # under the License.
 
+
+set(CELIX_DEFAULT_CONTAINER_CXX_OPTION ON CACHE BOOL "Whether the default container options is CXX. If OFF this will be C")
+
 ##### setup bundles/container target
 if (NOT TARGET celix-containers)
 	add_custom_target(celix-containers ALL
@@ -52,8 +55,14 @@ These targets can be used to run/debug Celix containers from a IDE (if the IDE s
 Optional Arguments:
 - COPY: With this option the used bundles are copied to the container build dir in the 'bundles' dir.
   A additional result of this is that the configured references to the bundles are then relative instead of absolute.
-- CXX: With this option the generated Celix launcher (if used) will be a C++ source instead of a C source.
-  A additional result of this is that Celix launcher is also linked against stdlibc++.
+  Default is COPY
+- NO_COPY: With this option the used bundles configured for the container with absolute paths.
+  Default is COPY
+- CXX: With this option the generated Celix launcher (if used) will be a C++ source. (Default is CXX)
+  This ensures that the Celix launcher is linked against stdlibc++.
+  Default is CXX
+- C: With this option the generated Celix launcher (if used) will be a C source.
+  Default is CXX
 - USE_CONFIG: With this option config properties are generated in a 'config.properties' instead of embedded in the Celix launcher.
 - GROUP: If configured the build location will be prefixed the GROUP. Default is empty.
 - NAME: The name of the executable. Default is <celix_container_name>. Only useful for generated/LAUNCHER_SRC Celix launchers.
@@ -69,7 +78,9 @@ Optional Arguments:
 ```CMake
 add_celix_container(<celix_container_name>
     [COPY]
+    [NO_COPY]
     [CXX]
+    [C]
     [USE_CONFIG]
     [GROUP group_name]
     [NAME celix_container_name]
@@ -85,7 +96,9 @@ add_celix_container(<celix_container_name>
 add_celix_container(<celix_container_name>
     LAUNCHER launcher
     [COPY]
+    [NO_COPY]
     [CXX]
+    [C]
     [USE_CONFIG]
     [GROUP group_name]
     [NAME celix_container_name]
@@ -101,7 +114,9 @@ add_celix_container(<celix_container_name>
 add_celix_container(<celix_container_name>
     LAUNCHER_SRC launcher_src
     [COPY]
+    [NO_COPY]
     [CXX]
+    [C]
     [USE_CONFIG]
     [GROUP group_name]
     [NAME celix_container_name]
@@ -117,7 +132,7 @@ function(add_celix_container)
     list(GET ARGN 0 CONTAINER_TARGET)
     list(REMOVE_AT ARGN 0)
 
-    set(OPTIONS COPY CXX USE_CONFIG)
+    set(OPTIONS COPY C CXX USE_CONFIG)
     set(ONE_VAL_ARGS GROUP NAME LAUNCHER LAUNCHER_SRC DIR)
     set(MULTI_VAL_ARGS BUNDLES PROPERTIES EMBEDDED_PROPERTIES RUNTIME_PROPERTIES)
     cmake_parse_arguments(CONTAINER "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
@@ -161,10 +176,16 @@ function(add_celix_container)
         set(LAUNCHER_ORG "${CONTAINER_LAUNCHER_SRC}")
         file(GENERATE OUTPUT "${LAUNCHER_SRC}" INPUT "${LAUNCHER_ORG}")
     else () #generate custom launcher
-        if (CONTAINER_CXX)
+        if (CONTAINER_C)
+            set(LAUNCHER_SRC "${CMAKE_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/main.c")
+        elseif (CONTAINER_CXX)
             set(LAUNCHER_SRC "${CMAKE_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/main.cc")
         else()
-            set(LAUNCHER_SRC "${CMAKE_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/main.c")
+            if (CELIX_DEFAULT_CONTAINER_CXX_OPTION)
+                set(LAUNCHER_SRC "${CMAKE_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/main.cc")
+            else ()
+                set(LAUNCHER_SRC "${CMAKE_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/main.c")
+            endif ()
         endif()
         set(STAGE1_LAUNCHER_SRC "${CMAKE_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/main.stage1.c")
 
@@ -273,6 +294,14 @@ $<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_RUNTIME_PROPERTIES>,
             $<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_TARGET_DEPS>
     )
     add_dependencies(${CONTAINER_TARGET} ${CONTAINER_TARGET}-deps)
+
+    if (CONTAINER_COPY)
+        #nop
+    elseif (CONTAINER_NO_COPY)
+        set(CONTAINER_COPY FALSE)
+    else ()
+        set(CONTAINER_COPY TRUE)
+    endif ()
 
     ##### Container Target Properties #####
     #internal use
@@ -392,7 +421,7 @@ function(celix_container_bundles_dir)
         endif ()
 
         if (NOT HANDLED) #not a imported bundle target so (assuming) a future bundle target
-		message(FATAL_ERROR "Cannot add bundle in container ${CONTAINER_TARGET}. Provided bundle is not a abs path to an existing file nor a cmake target (${BUNDLE}).")
+    		message(FATAL_ERROR "Cannot add bundle in container ${CONTAINER_TARGET}. Provided bundle is not a abs path to an existing file nor a cmake target (${BUNDLE}).")
         endif()
         list(APPEND DEPS "${OUT}")
     endforeach()

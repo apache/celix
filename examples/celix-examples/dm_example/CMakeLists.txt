@@ -23,6 +23,7 @@ add_subdirectory(phase3)
 
 add_celix_container(dm_example
     COPY
+    GROUP c_examples
     BUNDLES
         Celix::shell
         Celix::shell_tui

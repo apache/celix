@@ -113,7 +113,6 @@ void celix_serviceTracker_destroy(celix_service_tracker_t *tracker);
 bool celix_serviceTracker_useHighestRankingService(
         celix_service_tracker_t *tracker,
         const char *serviceName /*sanity*/,
-        double waitTimeoutInSeconds /*0 -> do not wait */,
         void *callbackHandle,
         void (*use)(void *handle, void *svc),
         void (*useWithProperties)(void *handle, void *svc, const celix_properties_t *props),
@@ -133,16 +132,6 @@ size_t celix_serviceTracker_useServices(
         void (*useWithProperties)(void *handle, void *svc, const celix_properties_t *props),
         void (*useWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner)
 );
-
-/**
- * blocks until all shutdown threads for the service tracker instances for the provided framework are done.
- */
-void celix_serviceTracker_syncForFramework(void *fw);
-
-/**
- * blocks until all shutdown threads for the service tracker instances for the provided bundle context are done.
- */
-void celix_serviceTracker_syncForContext(void *ctx);
 
 
 #ifdef __cplusplus

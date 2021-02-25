@@ -109,7 +109,6 @@ celix_status_t bundleActivator_start(void * userData, celix_bundle_context_t *co
     logFactory_create(activator->logger, &activator->factory);
 
 	celix_properties_t *props = celix_properties_create();
-	celix_properties_set(props, CELIX_FRAMEWORK_SERVICE_LANGUAGE, CELIX_FRAMEWORK_SERVICE_C_LANGUAGE);
 
 
 	bundleContext_registerServiceFactory(context, (char *) OSGI_LOGSERVICE_NAME, activator->factory, props, &activator->logServiceFactoryReg);
@@ -124,7 +123,6 @@ celix_status_t bundleActivator_start(void * userData, celix_bundle_context_t *co
     activator->reader_service->removeAllLogListener = logReaderService_removeAllLogListener;
 
 	props = celix_properties_create();
-	celix_properties_set(props, CELIX_FRAMEWORK_SERVICE_LANGUAGE, CELIX_FRAMEWORK_SERVICE_C_LANGUAGE);
 
     bundleContext_registerService(context, (char *) OSGI_LOGSERVICE_READER_SERVICE_NAME, activator->reader_service, props, &activator->logReaderServiceReg);
     return status;

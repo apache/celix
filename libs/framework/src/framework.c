@@ -55,16 +55,6 @@ struct celix_bundle_activator {
     destroy_function_fp destroy;
 };
 
-typedef struct celix_framework_bundle_entry {
-    celix_bundle_t *bnd;
-    long bndId;
-
-    celix_thread_mutex_t useMutex; //protects useCount
-    celix_thread_cond_t useCond;
-    size_t useCount;
-} celix_framework_bundle_entry_t;
-
-
 static inline celix_framework_bundle_entry_t* fw_bundleEntry_create(celix_bundle_t *bnd) {
     celix_framework_bundle_entry_t *entry = calloc(1, sizeof(*entry));
     entry->bnd = bnd;
@@ -79,10 +69,15 @@ static inline celix_framework_bundle_entry_t* fw_bundleEntry_create(celix_bundle
 
 static inline void fw_bundleEntry_waitTillUseCountIs(celix_framework_bundle_entry_t *entry, size_t desiredUseCount) {
     celixThreadMutex_lock(&entry->useMutex);
+    struct timespec start = celix_gettime(CLOCK_MONOTONIC);
     while (entry->useCount != desiredUseCount) {
         celixThreadCondition_timedwaitRelative(&entry->useCond, &entry->useMutex, 5, 0);
         if (entry->useCount != desiredUseCount) {
-            fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_WARNING, "Bundle %s (%li) still in use. Use count is %u, desired is ", celix_bundle_getSymbolicName(entry->bnd), entry->bndId, entry->useCount, desiredUseCount);
+            struct timespec now = celix_gettime(CLOCK_MONOTONIC);
+            if (celix_difftime(&start, &now) > 5) {
+                fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_WARNING, "Bundle '%s' (bnd id = %li) still in use. Use count is %u, desired is %li", celix_bundle_getSymbolicName(entry->bnd), entry->bndId, entry->useCount, desiredUseCount);
+                start = celix_gettime(CLOCK_MONOTONIC);
+            }
         }
     }
     celixThreadMutex_unlock(&entry->useMutex);
@@ -101,14 +96,14 @@ static inline void fw_bundleEntry_destroy(celix_framework_bundle_entry_t *entry,
     free(entry);
 }
 
-static inline void fw_bundleEntry_increaseUseCount(celix_framework_bundle_entry_t *entry) {
+void celix_framework_bundleEntry_increaseUseCount(celix_framework_bundle_entry_t *entry) {
     assert(entry != NULL);
     celixThreadMutex_lock(&entry->useMutex);
     ++entry->useCount;
     celixThreadMutex_unlock(&entry->useMutex);
 }
 
-static inline void fw_bundleEntry_decreaseUseCount(celix_framework_bundle_entry_t *entry) {
+void celix_framework_bundleEntry_decreaseUseCount(celix_framework_bundle_entry_t *entry) {
     celixThreadMutex_lock(&entry->useMutex);
     assert(entry->useCount > 0);
     --entry->useCount;
@@ -116,13 +111,13 @@ static inline void fw_bundleEntry_decreaseUseCount(celix_framework_bundle_entry_
     celixThreadMutex_unlock(&entry->useMutex);
 }
 
-static inline celix_framework_bundle_entry_t* fw_bundleEntry_getBundleEntryAndIncreaseUseCount(celix_framework_t *fw, long bndId) {
+celix_framework_bundle_entry_t* celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(celix_framework_t *fw, long bndId) {
     celix_framework_bundle_entry_t* found = NULL;
     celixThreadMutex_lock(&fw->installedBundles.mutex);
     for (int i = 0; i < celix_arrayList_size(fw->installedBundles.entries); ++i) {
         celix_framework_bundle_entry_t *entry = celix_arrayList_get(fw->installedBundles.entries, i);
         if (entry->bndId == bndId) {
-            fw_bundleEntry_increaseUseCount(entry);
+            celix_framework_bundleEntry_increaseUseCount(entry);
             found = entry;
             break;
         }
@@ -138,7 +133,7 @@ static inline celix_framework_bundle_entry_t* fw_bundleEntry_removeBundleEntryAn
         celix_framework_bundle_entry_t *entry = celix_arrayList_get(fw->installedBundles.entries, i);
         if (entry->bndId == bndId) {
             found = entry;
-            fw_bundleEntry_increaseUseCount(entry);
+            celix_framework_bundleEntry_increaseUseCount(entry);
             celix_arrayList_removeAt(fw->installedBundles.entries, i);
             break;
         }
@@ -147,8 +142,7 @@ static inline celix_framework_bundle_entry_t* fw_bundleEntry_removeBundleEntryAn
     return found;
 }
 
-celix_status_t framework_setBundleStateAndNotify(framework_pt framework, bundle_pt bundle, int state);
-celix_status_t framework_markBundleResolved(framework_pt framework, module_pt module);
+static celix_status_t framework_markBundleResolved(framework_pt framework, module_pt module);
 
 long framework_getNextBundleId(framework_pt framework);
 
@@ -159,8 +153,8 @@ celix_status_t fw_refreshBundle(framework_pt framework, long bndId);
 
 celix_status_t fw_populateDependentGraph(framework_pt framework, bundle_pt exporter, hash_map_pt *map);
 
-celix_status_t fw_fireBundleEvent(framework_pt framework, bundle_event_type_e, celix_framework_bundle_entry_t* entry);
-celix_status_t fw_fireFrameworkEvent(framework_pt framework, framework_event_type_e eventType, celix_status_t errorCode);
+void fw_fireBundleEvent(framework_pt framework, bundle_event_type_e, celix_framework_bundle_entry_t* entry);
+void fw_fireFrameworkEvent(framework_pt framework, framework_event_type_e eventType, celix_status_t errorCode);
 static void *fw_eventDispatcher(void *fw);
 
 celix_status_t fw_invokeBundleListener(framework_pt framework, bundle_listener_pt listener, bundle_event_pt event, bundle_pt bundle);
@@ -174,19 +168,10 @@ static celix_status_t frameworkActivator_start(void * userData, bundle_context_t
 static celix_status_t frameworkActivator_stop(void * userData, bundle_context_t *context);
 static celix_status_t frameworkActivator_destroy(void * userData, bundle_context_t *context);
 
-static void framework_autoStartConfiguredBundles(bundle_context_t *fwCtx);
-static void framework_autoInstallConfiguredBundlesForList(bundle_context_t *fwCtx, const char *autoStart, celix_array_list_t *installedBundles);
-static void framework_autoStartConfiguredBundlesForList(bundle_context_t *fwCtx, const celix_array_list_t *installedBundles);
-
-struct fw_refreshHelper {
-    framework_pt framework;
-    bundle_pt bundle;
-    bundle_state_e oldState;
-};
-
-celix_status_t fw_refreshHelper_refreshOrRemove(struct fw_refreshHelper * refreshHelper);
-celix_status_t fw_refreshHelper_restart(struct fw_refreshHelper * refreshHelper);
-celix_status_t fw_refreshHelper_stop(struct fw_refreshHelper * refreshHelper);
+static void framework_autoStartConfiguredBundles(celix_framework_t *fw);
+static void framework_autoInstallConfiguredBundlesForList(celix_framework_t *fw, const char *autoStart, celix_array_list_t *installedBundles);
+static void framework_autoStartConfiguredBundlesForList(celix_framework_t* fw, const celix_array_list_t *installedBundles);
+static void celix_framework_addToEventQueue(celix_framework_t *fw, const celix_framework_event_t* event);
 
 struct fw_bundleListener {
 	bundle_pt bundle;
@@ -238,95 +223,94 @@ struct fw_frameworkListener {
 
 typedef struct fw_frameworkListener * fw_framework_listener_pt;
 
-enum event_type {
-	FRAMEWORK_EVENT_TYPE,
-	BUNDLE_EVENT_TYPE,
-	EVENT_TYPE_SERVICE,
-};
 
-typedef enum event_type event_type_e;
+celix_status_t framework_create(framework_pt *out, properties_pt config) {
+    celix_framework_t* framework = calloc(1, sizeof(*framework));
 
-struct request {
-	event_type_e type;
+    celixThreadCondition_init(&framework->shutdown.cond, NULL);
+    celixThreadMutex_create(&framework->shutdown.mutex, NULL);
+    celixThreadMutex_create(&framework->dispatcher.mutex, NULL);
+    celixThreadMutex_create(&framework->frameworkListenersLock, NULL);
+    celixThreadMutex_create(&framework->bundleListenerLock, NULL);
+    celixThreadMutex_create(&framework->installedBundles.mutex, NULL);
+    celixThreadCondition_init(&framework->dispatcher.cond, NULL);
+    framework->dispatcher.active = true;
+    framework->nextBundleId = CELIX_FRAMEWORK_BUNDLE_ID + 1;
+    framework->installRequestMap = hashMap_create(utils_stringHash, utils_stringHash, utils_stringEquals, utils_stringEquals);
+    framework->installedBundles.entries = celix_arrayList_create();
+    framework->configurationMap = config;
+    framework->bundleListeners = celix_arrayList_create();
+    framework->frameworkListeners = celix_arrayList_create();
+    framework->dispatcher.dynamicEventQueue = celix_arrayList_create();
 
-	int eventType;
-	celix_status_t errorCode;
-	const char *error;
+    //create and store framework uuid
+    char uuid[37];
+    uuid_t uid;
+    uuid_generate(uid);
+    uuid_unparse(uid, uuid);
+    properties_set(framework->configurationMap, (char*) OSGI_FRAMEWORK_FRAMEWORK_UUID, uuid);
 
-	char *filter;
-	celix_framework_bundle_entry_t* bndEntry;
-};
+    //setup framework logger
+    const char* logStr = getenv(CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL_CONFIG_NAME);
+    if (logStr == NULL) {
+        logStr = celix_properties_get(config, CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL_CONFIG_NAME, CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL_DEFAULT_VALUE);
+    }
+    framework->logger = celix_frameworkLogger_create(celix_logUtils_logLevelFromString(logStr, CELIX_LOG_LEVEL_INFO));
 
-typedef struct request request_t;
+    celix_status_t status =bundle_create(&framework->bundle);
+    status = CELIX_DO_IF(status, bundle_getBundleId(framework->bundle, &framework->bundleId));
+    status = CELIX_DO_IF(status, bundle_setFramework(framework->bundle, framework));
+    status = CELIX_DO_IF(status, bundleCache_create(uuid, framework->configurationMap, &framework->cache));
+    status = CELIX_DO_IF(status, serviceRegistry_create(framework, &framework->registry));
+    bundle_context_t *context = NULL;
+    status = CELIX_DO_IF(status, bundleContext_create(framework, framework->logger, framework->bundle, &context));
+    status = CELIX_DO_IF(status, bundle_setContext(framework->bundle, context));
 
+    //create framework bundle entry
+    long bndId = -1L;
+    bundle_getBundleId(framework->bundle, &bndId);
+    celix_framework_bundle_entry_t *entry = fw_bundleEntry_create(framework->bundle);
+    celixThreadMutex_lock(&framework->installedBundles.mutex);
+    celix_arrayList_add(framework->installedBundles.entries, entry);
+    celixThreadMutex_unlock(&framework->installedBundles.mutex);
 
-celix_status_t framework_create(framework_pt *framework, properties_pt config) {
-    celix_status_t status = CELIX_SUCCESS;
-
-    *framework = (framework_pt) malloc(sizeof(**framework));
-    if (*framework != NULL) {
-        celix_thread_mutexattr_t attr;
-        celixThreadMutexAttr_create(&attr);
-        celixThreadMutexAttr_settype(&attr, CELIX_THREAD_MUTEX_RECURSIVE);
-
-        status = CELIX_DO_IF(status, celixThreadCondition_init(&(*framework)->shutdown.cond, NULL));
-        status = CELIX_DO_IF(status, celixThreadMutex_create(&(*framework)->shutdown.mutex, NULL));
-        status = CELIX_DO_IF(status, celixThreadMutex_create(&(*framework)->dispatcher.mutex, NULL));
-        status = CELIX_DO_IF(status, celixThreadMutex_create(&(*framework)->frameworkListenersLock, &attr));
-        status = CELIX_DO_IF(status, celixThreadMutex_create(&(*framework)->bundleListenerLock, NULL));
-        status = CELIX_DO_IF(status, celixThreadMutex_create(&(*framework)->installedBundles.mutex, NULL));
-        status = CELIX_DO_IF(status, celixThreadCondition_init(&(*framework)->dispatcher.cond, NULL));
-        if (status == CELIX_SUCCESS) {
-            (*framework)->bundle = NULL;
-            (*framework)->registry = NULL;
-            (*framework)->shutdown.done = false;
-            (*framework)->shutdown.initialized = false;
-            (*framework)->dispatcher.active = true;
-            (*framework)->nextBundleId = 1L; //system bundle is 0
-            (*framework)->cache = NULL;
-            (*framework)->installRequestMap = hashMap_create(utils_stringHash, utils_stringHash, utils_stringEquals, utils_stringEquals);
-            (*framework)->installedBundles.entries = celix_arrayList_create();
-            (*framework)->bundleListeners = NULL;
-            (*framework)->frameworkListeners = NULL;
-            (*framework)->dispatcher.requests = NULL;
-            (*framework)->dispatcher.nrOfLocalRequest = 0;
-            (*framework)->configurationMap = config;
-
-            const char* logStr = getenv(CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL_CONFIG_NAME);
-            if (logStr == NULL) {
-                logStr = celix_properties_get(config, CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL_CONFIG_NAME, CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL_DEFAULT_VALUE);
-            }
-            (*framework)->logger = celix_frameworkLogger_create(celix_logUtils_logLevelFromString(logStr, CELIX_LOG_LEVEL_INFO));
-
-            status = CELIX_DO_IF(status, bundle_create(&(*framework)->bundle));
-            status = CELIX_DO_IF(status, bundle_getBundleId((*framework)->bundle, &(*framework)->bundleId));
-            status = CELIX_DO_IF(status, bundle_setFramework((*framework)->bundle, (*framework)));
-            if (status == CELIX_SUCCESS) {
-                //nop
-            } else {
-                status = CELIX_FRAMEWORK_EXCEPTION;
-                fw_logCode((*framework)->logger, CELIX_LOG_LEVEL_ERROR, status, "Could not create framework");
-            }
-        } else {
-            status = CELIX_FRAMEWORK_EXCEPTION;
-            fw_logCode((*framework)->logger, CELIX_LOG_LEVEL_ERROR, status, "Could not create framework");
-        }
-    } else {
-        status = CELIX_FRAMEWORK_EXCEPTION;
-        fw_logCode((*framework)->logger, CELIX_LOG_LEVEL_ERROR, CELIX_ENOMEM, "Could not create framework");
+    if (status != CELIX_SUCCESS) {
+        fw_logCode(framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Could not create framework");
+        free(framework);
+        framework = NULL;
     }
 
+    //setup framework bundle lifecycle handling
+    celixThreadMutex_create(&framework->bundleLifecycleHandling.mutex, NULL);
+    framework->bundleLifecycleHandling.bundleLifecycleHandlers = celix_arrayList_create();
+
+    *out = framework;
     return status;
 }
 
 celix_status_t framework_destroy(framework_pt framework) {
     celix_status_t status = CELIX_SUCCESS;
 
+    celixThreadMutex_lock(&framework->shutdown.mutex);
+    bool shutdownInitialized = framework->shutdown.initialized;
+    celixThreadMutex_unlock(&framework->shutdown.mutex);
+
+    if (shutdownInitialized) {
+        framework_waitForStop(framework);
+    } else {
+        fw_log(framework->logger, CELIX_LOG_LEVEL_FATAL, "Cannot destroy framework. framework is not stopped or stopping!");
+        return CELIX_ILLEGAL_STATE;
+    }
+
     //Note the shutdown thread can not be joined on the framework_shutdown (which is normally more logical),
     //because a shutdown can be initiated from a bundle.
     //A bundle cannot be stopped when it is waiting for a framework shutdown -> hence a shutdown thread which
     //has not been joined yet.
-    celixThread_join(framework->shutdown.thread, NULL);
+    if (!framework->shutdown.joined) {
+        celixThread_join(framework->shutdown.thread, NULL);
+        framework->shutdown.joined = true;
+    }
+
 
     serviceRegistry_destroy(framework->registry);
 
@@ -341,7 +325,7 @@ celix_status_t framework_destroy(framework_pt framework) {
             const char *bndName = celix_bundle_getSymbolicName(bnd);
             fw_log(framework->logger, CELIX_LOG_LEVEL_FATAL, "Cannot destroy framework. The use count of bundle %s (bnd id %li) is not 0, but %u.", bndName, entry->bndId, count);
             celixThreadMutex_lock(&framework->dispatcher.mutex);
-            int nrOfRequests = celix_arrayList_size(framework->dispatcher.requests);
+            int nrOfRequests = framework->dispatcher.eventQueueSize + celix_arrayList_size(framework->dispatcher.dynamicEventQueue);
             celixThreadMutex_unlock(&framework->dispatcher.mutex);
             fw_log(framework->logger, CELIX_LOG_LEVEL_WARNING, "nr of request left: %i (should be 0).", nrOfRequests);
         }
@@ -375,10 +359,16 @@ celix_status_t framework_destroy(framework_pt framework) {
         bundle_destroy(bnd);
 
     }
+    celixThreadMutex_unlock(&framework->installedBundles.mutex);
     celix_arrayList_destroy(framework->installedBundles.entries);
     celixThreadMutex_destroy(&framework->installedBundles.mutex);
 
-	hashMap_destroy(framework->installRequestMap, false, false);
+    //teardown framework bundle lifecycle handling
+    celixThreadMutex_destroy(&framework->bundleLifecycleHandling.mutex);
+    assert(celix_arrayList_size(framework->bundleLifecycleHandling.bundleLifecycleHandlers) == 0);
+    celix_arrayList_destroy(framework->bundleLifecycleHandling.bundleLifecycleHandlers);
+
+    hashMap_destroy(framework->installRequestMap, false, false);
 
     if (framework->bundleListeners) {
         arrayList_destroy(framework->bundleListeners);
@@ -387,8 +377,8 @@ celix_status_t framework_destroy(framework_pt framework) {
         arrayList_destroy(framework->frameworkListeners);
     }
 
-    assert(celix_arrayList_size(framework->dispatcher.requests) == 0);
-    celix_arrayList_destroy(framework->dispatcher.requests);
+    assert(celix_arrayList_size(framework->dispatcher.dynamicEventQueue) == 0);
+    celix_arrayList_destroy(framework->dispatcher.dynamicEventQueue);
 
 	bundleCache_destroy(&framework->cache);
 
@@ -409,66 +399,27 @@ celix_status_t framework_destroy(framework_pt framework) {
 }
 
 celix_status_t fw_init(framework_pt framework) {
-	bundle_state_e state = OSGI_FRAMEWORK_BUNDLE_UNKNOWN;
-	const char *location = NULL;
-	module_pt module = NULL;
-	linked_list_pt wires = NULL;
-	array_list_pt archives = NULL;
-	bundle_archive_pt archive = NULL;
+    celixThreadMutex_lock(&framework->dispatcher.mutex);
+    framework->dispatcher.active = true;
+    celixThreadMutex_unlock(&framework->dispatcher.mutex);
 
-    /*create and store framework uuid*/
-    char uuid[37];
+    celixThreadMutex_lock(&framework->shutdown.mutex);
+    framework->shutdown.done = false;
+    framework->shutdown.joined = false;
+    framework->shutdown.initialized = false;
+    celixThreadMutex_unlock(&framework->shutdown.mutex);
 
-    uuid_t uid;
-    uuid_generate(uid);
-    uuid_unparse(uid, uuid);
 
-    properties_set(framework->configurationMap, (char*) OSGI_FRAMEWORK_FRAMEWORK_UUID, uuid);
+	celixThread_create(&framework->dispatcher.thread, NULL, fw_eventDispatcher, framework);
+	celixThread_setName(&framework->dispatcher.thread, "CelixEvent");
 
-	celix_status_t status = CELIX_SUCCESS;
-	status = CELIX_DO_IF(status, arrayList_create(&framework->bundleListeners));
-	status = CELIX_DO_IF(status, arrayList_create(&framework->frameworkListeners));
-	status = CELIX_DO_IF(status, arrayList_create(&framework->dispatcher.requests));
-	status = CELIX_DO_IF(status, celixThread_create(&framework->dispatcher.thread, NULL, fw_eventDispatcher, framework));
-	status = CELIX_DO_IF(status, bundle_getState(framework->bundle, &state));
-	if (status == CELIX_SUCCESS) {
-	    if ((state == OSGI_FRAMEWORK_BUNDLE_INSTALLED) || (state == OSGI_FRAMEWORK_BUNDLE_RESOLVED)) {
-	        status = CELIX_DO_IF(status, bundleCache_create(uuid, framework->configurationMap,&framework->cache));
-	        status = CELIX_DO_IF(status, bundle_getState(framework->bundle, &state));
-	        if (status == CELIX_SUCCESS) {
-	            if (state == OSGI_FRAMEWORK_BUNDLE_INSTALLED) {
-	                const char *clean = properties_get(framework->configurationMap, OSGI_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_NAME);
-	                bool cleanCache = clean == NULL ? true : strcmp(clean, "false") != 0;
-	                if (cleanCache) {
-	                    bundleCache_delete(framework->cache);
-	                }
-	            }
-            }
-        }
-	}
-
-    status = CELIX_DO_IF(status, bundle_getArchive(framework->bundle, &archive));
-    status = CELIX_DO_IF(status, bundleArchive_getLocation(archive, &location));
-    if (status == CELIX_SUCCESS) {
-        long bndId = -1L;
-        bundle_getBundleId(framework->bundle, &bndId);
-        celix_framework_bundle_entry_t *entry = fw_bundleEntry_create(framework->bundle);
-        celixThreadMutex_lock(&framework->installedBundles.mutex);
-        celix_arrayList_add(framework->installedBundles.entries, entry);
-        celixThreadMutex_unlock(&framework->installedBundles.mutex);
-    }
-    status = CELIX_DO_IF(status, bundle_getCurrentModule(framework->bundle, &module));
-    if (status == CELIX_SUCCESS) {
-        wires = resolver_resolve(module);
-        if (wires != NULL) {
-            framework_markResolvedModules(framework, wires);
-        } else {
-            status = CELIX_BUNDLE_EXCEPTION;
-            fw_logCode(framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Unresolved constraints in System Bundle");
-        }
+    bool cleanCache = celix_properties_getAsBool(framework->configurationMap, OSGI_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_NAME, OSGI_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_DEFAULT);
+    if (cleanCache) {
+        bundleCache_delete(framework->cache);
     }
 
-    status = CELIX_DO_IF(status, bundleCache_getArchives(framework->cache, &archives));
+    celix_array_list_t* archives = NULL;
+    celix_status_t status = bundleCache_getArchives(framework->cache, &archives);
     if (status == CELIX_SUCCESS) {
         unsigned int arcIdx;
         for (arcIdx = 0; arcIdx < arrayList_size(archives); arcIdx++) {
@@ -491,12 +442,9 @@ celix_status_t fw_init(framework_pt framework) {
         arrayList_destroy(archives);
     }
 
-    status = CELIX_DO_IF(status, serviceRegistry_create(framework, &framework->registry));
-    status = CELIX_DO_IF(status, framework_setBundleStateAndNotify(framework, framework->bundle, OSGI_FRAMEWORK_BUNDLE_STARTING));
 
-    bundle_context_t *context = NULL;
-    status = CELIX_DO_IF(status, bundleContext_create(framework, framework->logger, framework->bundle, &context));
-    status = CELIX_DO_IF(status, bundle_setContext(framework->bundle, context));
+    status = CELIX_DO_IF(status, bundle_setState(framework->bundle, OSGI_FRAMEWORK_BUNDLE_STARTING));
+
     if (status == CELIX_SUCCESS) {
         celix_bundle_activator_t *activator = calloc(1,(sizeof(*activator)));
         if (activator != NULL) {
@@ -515,19 +463,11 @@ celix_status_t fw_init(framework_pt framework) {
             status = CELIX_DO_IF(status, bundle_getContext(framework->bundle, &validateContext));
 
             if (status == CELIX_SUCCESS) {
-                /* This code part is in principle dead, but in future it may do something.
-                 * That's why it's outcommented and not deleted
-		        if (create != NULL) {
-                    create(context, &userData);
-                }
-                */
                 activator->userData = userData;
-
                 if (start != NULL) {
                     start(userData, validateContext);
                 }
-            }
-            else{
+            } else {
             	free(activator);
             }
         } else {
@@ -554,17 +494,16 @@ celix_status_t framework_start(framework_pt framework) {
 	}
 
 	status = CELIX_DO_IF(status, bundle_getState(framework->bundle, &state));
-	if (status == CELIX_SUCCESS) {
-	    if (state == OSGI_FRAMEWORK_BUNDLE_STARTING) {
-	        status = CELIX_DO_IF(status, framework_setBundleStateAndNotify(framework, framework->bundle, OSGI_FRAMEWORK_BUNDLE_ACTIVE));
-	    }
+	if (status == CELIX_SUCCESS && state == OSGI_FRAMEWORK_BUNDLE_STARTING) {
+        bundle_setState(framework->bundle, OSGI_FRAMEWORK_BUNDLE_ACTIVE);
 	}
 
-	celix_framework_bundle_entry_t* entry = fw_bundleEntry_getBundleEntryAndIncreaseUseCount(framework, framework->bundleId);
-	status = CELIX_DO_IF(status, fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_STARTED, entry));
-    fw_bundleEntry_decreaseUseCount(entry);
+	celix_framework_bundle_entry_t* entry = celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(framework,
+                                                                                                          framework->bundleId);
+	CELIX_DO_IF(status, fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_STARTED, entry));
+    celix_framework_bundleEntry_decreaseUseCount(entry);
 
-	status = CELIX_DO_IF(status, fw_fireFrameworkEvent(framework, OSGI_FRAMEWORK_EVENT_STARTED, framework->bundleId));
+	CELIX_DO_IF(status, fw_fireFrameworkEvent(framework, OSGI_FRAMEWORK_EVENT_STARTED, framework->bundleId));
 
 	if (status != CELIX_SUCCESS) {
        status = CELIX_BUNDLE_EXCEPTION;
@@ -572,10 +511,7 @@ celix_status_t framework_start(framework_pt framework) {
        fw_fireFrameworkEvent(framework, OSGI_FRAMEWORK_EVENT_ERROR, status);
     }
 
-    bundle_context_t *fwCtx = framework_getContext(framework);
-	if (fwCtx != NULL) {
-        framework_autoStartConfiguredBundles(fwCtx);
-    }
+    framework_autoStartConfiguredBundles(framework);
 
 	if (status == CELIX_SUCCESS) {
         fw_log(framework->logger, CELIX_LOG_LEVEL_INFO, "Celix framework started");
@@ -585,7 +521,8 @@ celix_status_t framework_start(framework_pt framework) {
 	return status;
 }
 
-static void framework_autoStartConfiguredBundles(bundle_context_t *fwCtx) {
+static void framework_autoStartConfiguredBundles(celix_framework_t* fw) {
+    bundle_context_t *fwCtx = framework_getContext(fw);
     const char* cosgiKeys[] = {"cosgi.auto.start.0","cosgi.auto.start.1","cosgi.auto.start.2","cosgi.auto.start.3","cosgi.auto.start.4","cosgi.auto.start.5","cosgi.auto.start.6"};
     const char* celixKeys[] = {CELIX_AUTO_START_0, CELIX_AUTO_START_1, CELIX_AUTO_START_2, CELIX_AUTO_START_3, CELIX_AUTO_START_4, CELIX_AUTO_START_5, CELIX_AUTO_START_6};
     celix_array_list_t *installedBundles = celix_arrayList_create();
@@ -596,15 +533,16 @@ static void framework_autoStartConfiguredBundles(bundle_context_t *fwCtx) {
             autoStart = celix_bundleContext_getProperty(fwCtx, cosgiKeys[i], NULL);
         }
         if (autoStart != NULL) {
-            framework_autoInstallConfiguredBundlesForList(fwCtx, autoStart, installedBundles);
+            framework_autoInstallConfiguredBundlesForList(fw, autoStart, installedBundles);
         }
     }
-    framework_autoStartConfiguredBundlesForList(fwCtx, installedBundles);
+    framework_autoStartConfiguredBundlesForList(fw, installedBundles);
     celix_arrayList_destroy(installedBundles);
 }
 
 
-static void framework_autoInstallConfiguredBundlesForList(bundle_context_t *fwCtx, const char *autoStartIn, celix_array_list_t *installedBundles) {
+static void framework_autoInstallConfiguredBundlesForList(celix_framework_t* fw, const char *autoStartIn, celix_array_list_t *installedBundles) {
+    bundle_context_t *fwCtx = framework_getContext(fw);
     char delims[] = " ";
     char *save_ptr = NULL;
     char *autoStart = celix_utils_strdup(autoStartIn);
@@ -626,25 +564,22 @@ static void framework_autoInstallConfiguredBundlesForList(bundle_context_t *fwCt
     free(autoStart);
 }
 
-static void framework_autoStartConfiguredBundlesForList(bundle_context_t *fwCtx, const celix_array_list_t *installedBundles) {
+static void framework_autoStartConfiguredBundlesForList(celix_framework_t* fw, const celix_array_list_t *installedBundles) {
+    assert(!celix_framework_isCurrentThreadTheEventLoop(fw));
     for (int i = 0; i < celix_arrayList_size(installedBundles); ++i) {
         long bndId = -1;
         bundle_t *bnd = celix_arrayList_get(installedBundles, i);
         bundle_getBundleId(bnd, &bndId);
-        celix_status_t rc = bundle_startWithOptions(bnd, 0);
-        if (rc != CELIX_SUCCESS) {
-            printf("Could not start bundle %li\n", bndId);
+        bool started = celix_framework_startBundle(fw, bndId);
+        if (!started) {
+            fw_log(fw->logger, CELIX_LOG_LEVEL_ERROR, "Could not start bundle %s (bnd id = %li)\n", bnd->symbolicName, bndId);
         }
     }
 }
 
 celix_status_t framework_stop(framework_pt framework) {
-	celix_status_t status = fw_stopBundle(framework, framework->bundleId, true);
-	if (status == CELIX_SUCCESS) {
-	    fw_log(framework->logger, CELIX_LOG_LEVEL_INFO, "Celix framework stopped");
-        fw_log(framework->logger, CELIX_LOG_LEVEL_TRACE, "Celix framework stopped for uuid %s", celix_framework_getUUID(framework));
-	}
-	return status;
+    bool stopped = celix_framework_stopBundle(framework, CELIX_FRAMEWORK_BUNDLE_ID);
+    return stopped ? CELIX_SUCCESS : CELIX_ILLEGAL_STATE;
 }
 
 celix_status_t fw_getProperty(framework_pt framework, const char* name, const char* defaultValue, const char** out) {
@@ -721,7 +656,8 @@ celix_status_t fw_installBundle2(framework_pt framework, bundle_pt * bundle, lon
     }
 
     //increase use count of framework bundle to prevent a stop.
-    celix_framework_bundle_entry_t *entry = fw_bundleEntry_getBundleEntryAndIncreaseUseCount(framework, framework->bundleId);
+    celix_framework_bundle_entry_t *entry = celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(framework,
+                                                                                                          framework->bundleId);
 
   	status = CELIX_DO_IF(status, bundle_getState(framework->bundle, &state));
   	if (status == CELIX_SUCCESS) {
@@ -734,7 +670,7 @@ celix_status_t fw_installBundle2(framework_pt framework, bundle_pt * bundle, lon
     if (status == CELIX_SUCCESS) {
         *bundle = framework_getBundle(framework, location);
         if (*bundle != NULL) {
-            fw_bundleEntry_decreaseUseCount(entry);
+            celix_framework_bundleEntry_decreaseUseCount(entry);
             free(location);
             return CELIX_SUCCESS;
         }
@@ -760,12 +696,12 @@ celix_status_t fw_installBundle2(framework_pt framework, bundle_pt * bundle, lon
             long bndId = -1L;
             bundle_getBundleId(*bundle, &bndId);
             celix_framework_bundle_entry_t *bEntry = fw_bundleEntry_create(*bundle);
-            fw_bundleEntry_increaseUseCount(bEntry);
+            celix_framework_bundleEntry_increaseUseCount(bEntry);
             celixThreadMutex_lock(&framework->installedBundles.mutex);
             celix_arrayList_add(framework->installedBundles.entries, bEntry);
             celixThreadMutex_unlock(&framework->installedBundles.mutex);
             fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_INSTALLED, bEntry);
-            fw_bundleEntry_decreaseUseCount(bEntry);
+            celix_framework_bundleEntry_decreaseUseCount(bEntry);
         } else {
             status = CELIX_BUNDLE_EXCEPTION;
             status = CELIX_DO_IF(status, bundleArchive_closeAndDelete(archive));
@@ -776,7 +712,7 @@ celix_status_t fw_installBundle2(framework_pt framework, bundle_pt * bundle, lon
         fw_logCode(framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Could not install bundle");
     }
 
-    fw_bundleEntry_decreaseUseCount(entry);
+    celix_framework_bundleEntry_decreaseUseCount(entry);
 
     free(location);
 
@@ -813,158 +749,9 @@ celix_status_t framework_getBundleEntry(framework_pt framework, const_bundle_pt 
 	return status;
 }
 
-celix_status_t fw_startBundle(framework_pt framework, long bndId, int options __attribute__((unused))) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	linked_list_pt wires = NULL;
-	bundle_context_t *context = NULL;
-	bundle_state_e state;
-	module_pt module = NULL;
-    celix_bundle_activator_t *activator = NULL;
-	char *error = NULL;
-	const char *name = NULL;
-
-    celix_framework_bundle_entry_t *entry = fw_bundleEntry_getBundleEntryAndIncreaseUseCount(framework, bndId);
-
-    status = entry->bnd != NULL ? CELIX_SUCCESS : CELIX_ILLEGAL_ARGUMENT;
-
-	status = CELIX_DO_IF(status, bundle_getState(entry->bnd, &state));
-
-	if (status == CELIX_SUCCESS) {
-	    switch (state) {
-            case OSGI_FRAMEWORK_BUNDLE_UNKNOWN:
-                error = "state is unknown";
-                status = CELIX_ILLEGAL_STATE;
-                break;
-            case OSGI_FRAMEWORK_BUNDLE_UNINSTALLED:
-                error = "bundle is uninstalled";
-                status = CELIX_ILLEGAL_STATE;
-                break;
-            case OSGI_FRAMEWORK_BUNDLE_STARTING:
-                error = "bundle is starting";
-                status = CELIX_BUNDLE_EXCEPTION;
-                break;
-            case OSGI_FRAMEWORK_BUNDLE_STOPPING:
-                error = "bundle is stopping";
-                status = CELIX_BUNDLE_EXCEPTION;
-                break;
-            case OSGI_FRAMEWORK_BUNDLE_ACTIVE:
-                break;
-            case OSGI_FRAMEWORK_BUNDLE_INSTALLED:
-                bundle_getCurrentModule(entry->bnd, &module);
-                module_getSymbolicName(module, &name);
-                if (!module_isResolved(module)) {
-                    wires = resolver_resolve(module);
-                    if (wires == NULL) {
-                        fw_bundleEntry_decreaseUseCount(entry);
-                        return CELIX_BUNDLE_EXCEPTION;
-                    }
-                    status = framework_markResolvedModules(framework, wires);
-                    if (status != CELIX_SUCCESS) {
-                        break;
-                    }
-                }
-                /* no break */
-            case OSGI_FRAMEWORK_BUNDLE_RESOLVED:
-                module = NULL;
-                name = NULL;
-                bundle_getCurrentModule(entry->bnd, &module);
-                module_getSymbolicName(module, &name);
-                status = CELIX_DO_IF(status, bundleContext_create(framework, framework->logger, entry->bnd, &context));
-                status = CELIX_DO_IF(status, bundle_setContext(entry->bnd, context));
-
-                if (status == CELIX_SUCCESS) {
-                    activator = calloc(1,(sizeof(*activator)));
-                    if (activator == NULL) {
-                        status = CELIX_ENOMEM;
-                    } else {
-                        void * userData = NULL;
-                        create_function_fp create = (create_function_fp) celix_libloader_getSymbol((celix_library_handle_t*) bundle_getHandle(entry->bnd), OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_CREATE);
-                        if (create == NULL) {
-                            create = celix_libloader_getSymbol(bundle_getHandle(entry->bnd), OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_CREATE);
-                        }
-                        start_function_fp start = (start_function_fp) celix_libloader_getSymbol((celix_library_handle_t*) bundle_getHandle(entry->bnd), OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_START);
-                        if (start == NULL) {
-                            start = (start_function_fp) celix_libloader_getSymbol((celix_library_handle_t*) bundle_getHandle(entry->bnd), OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_START);
-                        }
-                        stop_function_fp stop = (stop_function_fp) celix_libloader_getSymbol((celix_library_handle_t*) bundle_getHandle(entry->bnd), OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_STOP);
-                        if (stop == NULL) {
-                            stop = (stop_function_fp) celix_libloader_getSymbol((celix_library_handle_t*) bundle_getHandle(entry->bnd), OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_STOP);
-                        }
-                        destroy_function_fp destroy = (destroy_function_fp) celix_libloader_getSymbol((celix_library_handle_t*) bundle_getHandle(entry->bnd), OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_DESTROY);
-                        if (destroy == NULL) {
-                            destroy = (destroy_function_fp) celix_libloader_getSymbol((celix_library_handle_t*) bundle_getHandle(entry->bnd), OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_DESTROY);
-                        }
-
-                        activator->create = create;
-                        activator->start = start;
-                        activator->stop = stop;
-                        activator->destroy = destroy;
-
-                        status = CELIX_DO_IF(status, bundle_setActivator(entry->bnd, activator));
-
-                        status = CELIX_DO_IF(status, framework_setBundleStateAndNotify(framework, entry->bnd, OSGI_FRAMEWORK_BUNDLE_STARTING));
-                        status = CELIX_DO_IF(status, fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_STARTING, entry));
-
-                        status = CELIX_DO_IF(status, bundle_getContext(entry->bnd, &context));
-
-                        if (status == CELIX_SUCCESS) {
-                            if (create != NULL) {
-                                status = CELIX_DO_IF(status, create(context, &userData));
-                                if (status == CELIX_SUCCESS) {
-                                    activator->userData = userData;
-                                }
-                            }
-                        }
-                        if (status == CELIX_SUCCESS) {
-                            if (start != NULL) {
-                                status = CELIX_DO_IF(status, start(userData, context));
-                            }
-                        }
-
-                        status = CELIX_DO_IF(status, framework_setBundleStateAndNotify(framework, entry->bnd, OSGI_FRAMEWORK_BUNDLE_ACTIVE));
-                        status = CELIX_DO_IF(status, fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_STARTED, entry));
-
-                        if (status != CELIX_SUCCESS) {
-                            //state is still STARTING, back to resolved
-                            bool createCalled = activator != NULL && activator->userData != NULL;
-                            if (createCalled) {
-                                destroy(activator->userData, context);
-                            }
-                            bundle_setContext(entry->bnd, NULL);
-                            bundle_setActivator(entry->bnd, NULL);
-                            bundleContext_destroy(context);
-                            free(activator);
-                            framework_setBundleStateAndNotify(framework, entry->bnd, OSGI_FRAMEWORK_BUNDLE_RESOLVED);
-                        }
-                    }
-                }
-
-            break;
-        }
-	}
-
-	if (status != CELIX_SUCCESS) {
-	    const char *symbolicName = NULL;
-	    long id = 0;
-	    bundle_getCurrentModule(entry->bnd, &module);
-	    module_getSymbolicName(module, &symbolicName);
-	    bundle_getBundleId(entry->bnd, &id);
-	    if (error != NULL) {
-	        fw_logCode(framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Could not start bundle: %s [%ld]; cause: %s", symbolicName, id, error);
-	    } else {
-	        fw_logCode(framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Could not start bundle: %s [%ld]", symbolicName, id);
-	    }
-	}
-
-	if (entry != NULL) {
-	    fw_bundleEntry_decreaseUseCount(entry);
-    }
-
-	return status;
-}
 
 celix_status_t framework_updateBundle(framework_pt framework, bundle_pt bundle, const char *inputFile) {
+    fw_log(framework->logger, CELIX_LOG_LEVEL_WARNING, "Update bundle functionality deprecated. Do not use!");
 	celix_status_t status = CELIX_SUCCESS;
 	bundle_state_e oldState;
 	const char *location;
@@ -972,12 +759,13 @@ celix_status_t framework_updateBundle(framework_pt framework, bundle_pt bundle, 
 	char *error = NULL;
 
 	long bndId = celix_bundle_getId(bundle);
-    celix_framework_bundle_entry_t *entry = fw_bundleEntry_getBundleEntryAndIncreaseUseCount(framework, bndId);
+    celix_framework_bundle_entry_t *entry = celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(framework,
+                                                                                                          bndId);
 
     status = CELIX_DO_IF(status, bundle_getState(bundle, &oldState));
 	if (status == CELIX_SUCCESS) {
         if (oldState == OSGI_FRAMEWORK_BUNDLE_ACTIVE) {
-            fw_stopBundle(framework, bndId, false);
+            celix_framework_stopBundle(framework, bndId);
         }
 	}
 	status = CELIX_DO_IF(status, bundle_getArchive(bundle, &archive));
@@ -986,7 +774,7 @@ celix_status_t framework_updateBundle(framework_pt framework, bundle_pt bundle, 
 	status = CELIX_DO_IF(status, bundle_revise(bundle, location, inputFile));
 
 	status = CELIX_DO_IF(status, bundleArchive_setLastModified(archive, time(NULL)));
-	status = CELIX_DO_IF(status, framework_setBundleStateAndNotify(framework, bundle, OSGI_FRAMEWORK_BUNDLE_INSTALLED));
+	status = CELIX_DO_IF(status, bundle_setState(bundle, OSGI_FRAMEWORK_BUNDLE_INSTALLED));
 
 	bundle_revision_pt revision = NULL;
 	array_list_pt handles = NULL;
@@ -1001,19 +789,19 @@ celix_status_t framework_updateBundle(framework_pt framework, bundle_pt bundle, 
     }
 
 
-	status = CELIX_DO_IF(status, fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_UNRESOLVED, entry));
-	status = CELIX_DO_IF(status, fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_UPDATED, entry));
+	CELIX_DO_IF(status, fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_UNRESOLVED, entry));
+	CELIX_DO_IF(status, fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_UPDATED, entry));
 
     // Refresh packages?
 
 	if (status == CELIX_SUCCESS) {
 	    if (oldState == OSGI_FRAMEWORK_BUNDLE_ACTIVE) {
-	        status = CELIX_DO_IF(status, fw_startBundle(framework, bndId, 1));
+	        status = CELIX_DO_IF(status, celix_framework_startBundle(framework, bndId));
 	    }
 	}
 
 
-	fw_bundleEntry_decreaseUseCount(entry);
+    celix_framework_bundleEntry_decreaseUseCount(entry);
 
 	if (status != CELIX_SUCCESS) {
 	    module_pt module = NULL;
@@ -1032,268 +820,13 @@ celix_status_t framework_updateBundle(framework_pt framework, bundle_pt bundle, 
 	return status;
 }
 
-celix_status_t fw_stopBundle(framework_pt framework, long bndId, bool record) {
-	celix_status_t status = CELIX_SUCCESS;
-	bundle_state_e state;
-    celix_bundle_activator_t *activator = NULL;
-    bundle_context_t *context = NULL;
-    bool wasActive = false;
-    char *error = NULL;
-
-    celix_framework_bundle_entry_t *entry = fw_bundleEntry_getBundleEntryAndIncreaseUseCount(framework, bndId);
-    if (entry == NULL) {
-      status = CELIX_ILLEGAL_STATE;
-      fw_logCode(framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Cannot stop bundle [%ld]: cannot find bundle entry", bndId);
-      return status;
-    }
-
-    if (record) {
-	    status = CELIX_DO_IF(status, bundle_setPersistentStateInactive(entry->bnd));
-    }
-
-	status = CELIX_DO_IF(status, bundle_getState(entry->bnd, &state));
-	if (status == CELIX_SUCCESS) {
-	    switch (state) {
-            case OSGI_FRAMEWORK_BUNDLE_UNKNOWN:
-                status = CELIX_ILLEGAL_STATE;
-                error = "state is unknown";
-                break;
-            case OSGI_FRAMEWORK_BUNDLE_UNINSTALLED:
-                status = CELIX_ILLEGAL_STATE;
-                error = "bundle is uninstalled";
-                break;
-            case OSGI_FRAMEWORK_BUNDLE_STARTING:
-                status = CELIX_BUNDLE_EXCEPTION;
-                error = "bundle is starting";
-                break;
-            case OSGI_FRAMEWORK_BUNDLE_STOPPING:
-                status = CELIX_BUNDLE_EXCEPTION;
-                error = "bundle is stopping";
-                break;
-            case OSGI_FRAMEWORK_BUNDLE_INSTALLED:
-            case OSGI_FRAMEWORK_BUNDLE_RESOLVED:
-                break;
-            case OSGI_FRAMEWORK_BUNDLE_ACTIVE:
-                wasActive = true;
-                break;
-        }
-	}
-
-
-	status = CELIX_DO_IF(status, framework_setBundleStateAndNotify(framework, entry->bnd, OSGI_FRAMEWORK_BUNDLE_STOPPING));
-	status = CELIX_DO_IF(status, fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_STOPPING, entry));
-	if (status == CELIX_SUCCESS) {
-	    if (wasActive || (bndId == 0)) {
-	        activator = bundle_getActivator(entry->bnd);
-
-	        status = CELIX_DO_IF(status, bundle_getContext(entry->bnd, &context));
-	        if (status == CELIX_SUCCESS) {
-                if (activator->stop != NULL) {
-                    status = CELIX_DO_IF(status, activator->stop(activator->userData, context));
-                    if (status == CELIX_SUCCESS) {
-                        celix_dependency_manager_t *mng = celix_bundleContext_getDependencyManager(context);
-                        celix_dependencyManager_removeAllComponents(mng);
-                    }
-                }
-	        }
-            if (status == CELIX_SUCCESS) {
-                if (activator->destroy != NULL) {
-                    status = CELIX_DO_IF(status, activator->destroy(activator->userData, context));
-                }
-	        }
-
-            if (bndId > 0) {
-	            celix_serviceTracker_syncForContext(entry->bnd->context);
-                status = CELIX_DO_IF(status, serviceRegistry_clearServiceRegistrations(framework->registry, entry->bnd));
-                if (status == CELIX_SUCCESS) {
-                    module_pt module = NULL;
-                    const char *symbolicName = NULL;
-                    long id = 0;
-                    bundle_getCurrentModule(entry->bnd, &module);
-                    module_getSymbolicName(module, &symbolicName);
-                    bundle_getBundleId(entry->bnd, &id);
-
-                    serviceRegistry_clearReferencesFor(framework->registry, entry->bnd);
-                }
-
-                if (context != NULL) {
-                    status = CELIX_DO_IF(status, bundleContext_destroy(context));
-                    status = CELIX_DO_IF(status, bundle_setContext(entry->bnd, NULL));
-                }
-
-                status = CELIX_DO_IF(status, framework_setBundleStateAndNotify(framework, entry->bnd, OSGI_FRAMEWORK_BUNDLE_RESOLVED));
-            } else if (bndId == 0) {
-                //framework bundle
-                celix_serviceTracker_syncForContext(framework->bundle->context);
-            }
-	    }
-
-	    if (activator != NULL) {
-	        bundle_setActivator(entry->bnd, NULL);
-	        free(activator);
-	    }
-	}
-
-	if (status != CELIX_SUCCESS) {
-	    module_pt module = NULL;
-        const char *symbolicName = NULL;
-        long id = 0;
-        bundle_getCurrentModule(entry->bnd, &module);
-        module_getSymbolicName(module, &symbolicName);
-        bundle_getBundleId(entry->bnd, &id);
-        if (error != NULL) {
-            fw_logCode(framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Cannot stop bundle: %s [%ld]; cause: %s", symbolicName, id, error);
-        } else {
-            fw_logCode(framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Cannot stop bundle: %s [%ld]", symbolicName, id);
-        }
- 	} else {
-        fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_STOPPED, entry);
- 	}
-
-	fw_bundleEntry_decreaseUseCount(entry);
-    celix_serviceTracker_syncForFramework(framework);
-
-	return status;
-}
-
-static celix_status_t fw_uninstallBundleEntry(celix_framework_t *framework, celix_framework_bundle_entry_t *entry) {
-    celix_status_t status = CELIX_SUCCESS;
-
-    celix_bundle_t *bnd = NULL;
-    long bndId = -1L;
-
-    if (entry == NULL) {
-        status = CELIX_ILLEGAL_ARGUMENT;
-    } else {
-        bnd = entry->bnd;
-        bndId = entry->bndId;
-    }
-
-    if (status == CELIX_SUCCESS) {
-        bundle_archive_t *archive = NULL;
-        bundle_revision_t *revision = NULL;
-        array_list_pt handles = NULL;
-        status = CELIX_DO_IF(status, bundle_getArchive(bnd, &archive));
-        status = CELIX_DO_IF(status, bundleArchive_setPersistentState(archive, OSGI_FRAMEWORK_BUNDLE_UNINSTALLED)); //set state to uninstalled, so that next framework start will not start bundle.
-        status = CELIX_DO_IF(status, bundleArchive_getCurrentRevision(archive, &revision));
-        status = CELIX_DO_IF(status, bundleRevision_getHandles(revision, &handles));
-        if (handles != NULL) {
-            for (int i = celix_arrayList_size(handles) - 1; i >= 0; i--) {
-                celix_library_handle_t *handle = arrayList_get(handles, i);
-                celix_libloader_close(handle);
-            }
-        }
-
-        status = CELIX_DO_IF(status, fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_UNRESOLVED, entry));
-
-        status = CELIX_DO_IF(status, framework_setBundleStateAndNotify(framework, bnd, OSGI_FRAMEWORK_BUNDLE_UNINSTALLED));
-        status = CELIX_DO_IF(status, bundleArchive_setLastModified(archive, time(NULL)));
-
-        status = CELIX_DO_IF(status, fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_UNINSTALLED, entry));
-
-        //NOTE wait outside installedBundles.mutex
-        fw_bundleEntry_decreaseUseCount(entry);
-        fw_bundleEntry_destroy(entry, true); //wait till use count is 0 -> e.g. not used
-
-        if (status == CELIX_SUCCESS) {
-            celix_status_t refreshStatus = fw_refreshBundle(framework, bndId);
-            if (refreshStatus != CELIX_SUCCESS) {
-                printf("Could not refresh bundle");
-            } else {
-                celix_framework_waitForEmptyEventQueue(framework); //to ensure that the uninstall event is triggered and handled
-                bundleArchive_destroy(archive);
-                status = CELIX_DO_IF(status, bundle_closeModules(bnd));
-                status = CELIX_DO_IF(status, bundle_destroy(bnd));
-            }
-        }
-    }
-
-
-    if (status != CELIX_SUCCESS) {
-        framework_logIfError(framework->logger, status, "", "Cannot uninstall bundle");
-    }
-
-    return status;
-}
-
-celix_status_t fw_uninstallBundle(framework_pt framework, bundle_pt bundle) {
-    long bndId = celix_bundle_getId(bundle);
-    celix_framework_bundle_entry_t *entry = fw_bundleEntry_removeBundleEntryAndIncreaseUseCount(framework, bndId);
-
-    if (entry != NULL) {
-        return fw_uninstallBundleEntry(framework, entry);
-    } else {
-        return CELIX_ILLEGAL_ARGUMENT;
-    }
-}
-
-//celix_status_t fw_refreshBundles(framework_pt framework, long bundleIds[], int size) {
-//    celix_status_t status = CELIX_SUCCESS;
-//
-//    hash_map_values_pt values;
-//    bundle_pt *newTargets;
-//    unsigned int nrofvalues;
-//    bool restart = false;
-//    hash_map_pt map = hashMap_create(NULL, NULL, NULL, NULL);
-//    int targetIdx = 0;
-//    for (targetIdx = 0; targetIdx < size; targetIdx++) {
-//        long bndId = bundles[targetIdx];
-//        hashMap_put(map, bundle, bundle);
-//        fw_populateDependentGraph(framework, bundle, &map);
-//    }
-//    values = hashMapValues_create(map);
-//    hashMapValues_toArray(values, (void ***) &newTargets, &nrofvalues);
-//    hashMapValues_destroy(values);
-//
-//    hashMap_destroy(map, false, false);
-//
-//    if (newTargets != NULL) {
-//        int i = 0;
-//        struct fw_refreshHelper * helpers;
-//        for (i = 0; i < nrofvalues && !restart; i++) {
-//            bundle_pt bundle = (bundle_pt) newTargets[i];
-//            if (framework->bundle == bundle) {
-//                restart = true;
-//            }
-//        }
-//
-//        helpers = (struct fw_refreshHelper * )malloc(nrofvalues * sizeof(struct fw_refreshHelper));
-//        for (i = 0; i < nrofvalues && !restart; i++) {
-//            bundle_pt bundle = (bundle_pt) newTargets[i];
-//            helpers[i].framework = framework;
-//            helpers[i].bundle = bundle;
-//            helpers[i].oldState = OSGI_FRAMEWORK_BUNDLE_INSTALLED;
-//        }
-//
-//        for (i = 0; i < nrofvalues; i++) {
-//            struct fw_refreshHelper helper = helpers[i];
-//            fw_refreshHelper_stop(&helper);
-//            fw_refreshHelper_refreshOrRemove(&helper);
-//        }
-//
-//        for (i = 0; i < nrofvalues; i++) {
-//            struct fw_refreshHelper helper = helpers[i];
-//            fw_refreshHelper_restart(&helper);
-//        }
-//
-//        if (restart) {
-//            bundle_update(framework->bundle, NULL);
-//        }
-//        free(helpers);
-//        free(newTargets);
-//    }
-//
-//    framework_logIfError(framework->logger, status, NULL, "Cannot refresh bundles");
-//
-//    return status;
-//}
-
 celix_status_t fw_refreshBundle(framework_pt framework, long bndId) {
     celix_status_t status = CELIX_SUCCESS;
     bundle_state_e state;
 
 
-    celix_framework_bundle_entry_t *entry = fw_bundleEntry_getBundleEntryAndIncreaseUseCount(framework, bndId);
+    celix_framework_bundle_entry_t *entry = celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(framework,
+                                                                                                          bndId);
     if (entry != NULL) {
         bool fire;
         bundle_getState(entry->bnd, &state);
@@ -1301,50 +834,17 @@ celix_status_t fw_refreshBundle(framework_pt framework, long bndId) {
         bundle_refresh(entry->bnd);
 
         if (fire) {
-            framework_setBundleStateAndNotify(framework, entry->bnd, OSGI_FRAMEWORK_BUNDLE_INSTALLED);
+            bundle_setState(entry->bnd, OSGI_FRAMEWORK_BUNDLE_INSTALLED);
             fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_UNRESOLVED, entry);
         }
 
-        fw_bundleEntry_decreaseUseCount(entry);
+        celix_framework_bundleEntry_decreaseUseCount(entry);
     } else {
         framework_logIfError(framework->logger, status, NULL, "Cannot refresh bundle");
     }
 
 
     return status;
-}
-
-celix_status_t fw_refreshHelper_stop(struct fw_refreshHelper * refreshHelper) {
-	bundle_state_e state;
-	bundle_getState(refreshHelper->bundle, &state);
-    if (state == OSGI_FRAMEWORK_BUNDLE_ACTIVE) {
-        refreshHelper->oldState = OSGI_FRAMEWORK_BUNDLE_ACTIVE;
-        long bndId = celix_bundle_getId(refreshHelper->bundle);
-        fw_stopBundle(refreshHelper->framework, bndId, false);
-    }
-
-    return CELIX_SUCCESS;
-}
-
-celix_status_t fw_refreshHelper_refreshOrRemove(struct fw_refreshHelper * refreshHelper) {
-	bundle_state_e state;
-	bundle_getState(refreshHelper->bundle, &state);
-    if (state == OSGI_FRAMEWORK_BUNDLE_UNINSTALLED) {
-        bundle_closeAndDelete(refreshHelper->bundle);
-        refreshHelper->bundle = NULL;
-    } else {
-        long bndId = celix_bundle_getId(refreshHelper->bundle);
-        fw_refreshBundle(refreshHelper->framework, bndId);
-    }
-    return CELIX_SUCCESS;
-}
-
-celix_status_t fw_refreshHelper_restart(struct fw_refreshHelper * refreshHelper) {
-    if ((refreshHelper->bundle != NULL) && (refreshHelper->oldState == OSGI_FRAMEWORK_BUNDLE_ACTIVE)) {
-        long bndId = celix_bundle_getId(refreshHelper->bundle);
-        fw_startBundle(refreshHelper->framework, bndId, 0);
-    }
-    return CELIX_SUCCESS;
 }
 
 celix_status_t fw_getDependentBundles(framework_pt framework, bundle_pt exporter, array_list_pt *list) {
@@ -1411,9 +911,10 @@ celix_status_t fw_registerService(framework_pt framework, service_registration_p
 	    error = "ServiceName and SvcObj cannot be null";
 	}
 
-    celix_framework_bundle_entry_t *entry = fw_bundleEntry_getBundleEntryAndIncreaseUseCount(framework, bndId);
+    celix_framework_bundle_entry_t *entry = celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(framework,
+                                                                                                          bndId);
     status = CELIX_DO_IF(status, serviceRegistry_registerService(framework->registry, entry->bnd, serviceName, svcObj, properties, registration));
-	fw_bundleEntry_decreaseUseCount(entry);
+    celix_framework_bundleEntry_decreaseUseCount(entry);
     framework_logIfError(framework->logger, status, error, "Cannot register service: %s", serviceName);
 	return status;
 }
@@ -1426,11 +927,12 @@ celix_status_t fw_registerServiceFactory(framework_pt framework, service_registr
         error = "Service name and factory cannot be null";
     }
 
-    celix_framework_bundle_entry_t *entry = fw_bundleEntry_getBundleEntryAndIncreaseUseCount(framework, bndId);
+    celix_framework_bundle_entry_t *entry = celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(framework,
+                                                                                                          bndId);
 
 	status = CELIX_DO_IF(status, serviceRegistry_registerServiceFactory(framework->registry, entry->bnd, serviceName, factory, properties, registration));
 
-	fw_bundleEntry_decreaseUseCount(entry);
+    celix_framework_bundleEntry_decreaseUseCount(entry);
 
     framework_logIfError(framework->logger, status, error, "Cannot register service factory: %s", serviceName);
 
@@ -1527,7 +1029,7 @@ celix_status_t fw_addBundleListener(framework_pt framework, bundle_pt bundle, bu
     int size = celix_arrayList_size(framework->installedBundles.entries);
     for (int i = 0; i < size; ++i) {
         celix_framework_bundle_entry_t *entry = celix_arrayList_get(framework->installedBundles.entries, i);
-        fw_bundleEntry_increaseUseCount(entry);
+        celix_framework_bundleEntry_increaseUseCount(entry);
         installed_bundle_entry_t* installedEntry = calloc(1, sizeof(*installedEntry));
         installedEntry->entry = entry;
         installedEntry->currentState = celix_bundle_getState(entry->bnd);
@@ -1560,7 +1062,7 @@ celix_status_t fw_addBundleListener(framework_pt framework, bundle_pt bundle, bu
             event.type = OSGI_FRAMEWORK_BUNDLE_EVENT_STARTED;
             listener->bundleChanged(listener, &event);
         }
-        fw_bundleEntry_decreaseUseCount(installedEntry->entry);
+        celix_framework_bundleEntry_decreaseUseCount(installedEntry->entry);
         free(installedEntry);
     }
     fw_bundleListener_decreaseUseCount(bundleListener);
@@ -1738,16 +1240,15 @@ celix_status_t framework_markResolvedModules(framework_pt framework, linked_list
     return status;
 }
 
-celix_status_t framework_markBundleResolved(framework_pt framework, module_pt module) {
+static celix_status_t framework_markBundleResolved(framework_pt framework, module_pt module) {
     celix_status_t status = CELIX_SUCCESS;
     bundle_pt bundle = module_getBundle(module);
     bundle_state_e state;
     char *error = NULL;
 
     if (bundle != NULL) {
-
         long bndId = celix_bundle_getId(bundle);
-        celix_framework_bundle_entry_t *entry = fw_bundleEntry_getBundleEntryAndIncreaseUseCount(framework, bndId);
+        celix_framework_bundle_entry_t *entry = celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(framework,bndId);
 
         bundle_getState(bundle, &state);
         if (state != OSGI_FRAMEWORK_BUNDLE_INSTALLED) {
@@ -1761,8 +1262,8 @@ celix_status_t framework_markBundleResolved(framework_pt framework, module_pt mo
                 status = CELIX_DO_IF(status, framework_loadBundleLibraries(framework, bundle));
             }
 
-            status = CELIX_DO_IF(status, framework_setBundleStateAndNotify(framework, bundle, OSGI_FRAMEWORK_BUNDLE_RESOLVED));
-            status = CELIX_DO_IF(status, fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_RESOLVED, entry));
+            status = CELIX_DO_IF(status, bundle_setState(bundle, OSGI_FRAMEWORK_BUNDLE_RESOLVED));
+            CELIX_DO_IF(status, fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_RESOLVED, entry));
         }
 
         if (status != CELIX_SUCCESS) {
@@ -1778,7 +1279,7 @@ celix_status_t framework_markBundleResolved(framework_pt framework, module_pt mo
         }
 
 
-        fw_bundleEntry_decreaseUseCount(entry);
+        celix_framework_bundleEntry_decreaseUseCount(entry);
     }
 
     return status;
@@ -1823,19 +1324,8 @@ bundle_pt framework_getBundle(framework_pt framework, const char* location) {
     return bnd;
 }
 
-celix_status_t framework_setBundleStateAndNotify(framework_pt framework, bundle_pt bundle, int state) {
-    int ret = CELIX_SUCCESS;
-    bundle_setState(bundle, state);
-    return ret;
-}
-
 celix_status_t framework_waitForStop(framework_pt framework) {
-    celixThreadMutex_lock(&framework->shutdown.mutex);
-    while (!framework->shutdown.done) {
-        celixThreadCondition_wait(&framework->shutdown.cond, &framework->shutdown.mutex);
-    }
-    celixThreadMutex_unlock(&framework->shutdown.mutex);
-
+    celix_framework_waitForStop(framework);
     return CELIX_SUCCESS;
 }
 
@@ -1844,13 +1334,15 @@ static void* framework_shutdown(void *framework) {
 
     fw_log(fw->logger, CELIX_LOG_LEVEL_TRACE, "Celix framework shutting down");
 
+    celix_framework_cleanupBundleLifecycleHandlers(fw, true);
+
     celix_array_list_t *stopEntries = celix_arrayList_create();
     celix_framework_bundle_entry_t *fwEntry = NULL;
     celixThreadMutex_lock(&fw->installedBundles.mutex);
     int size = celix_arrayList_size(fw->installedBundles.entries);
     for (int i = 0; i < size; ++i) {
         celix_framework_bundle_entry_t *entry = celix_arrayList_get(fw->installedBundles.entries, i);
-        fw_bundleEntry_increaseUseCount(entry);
+        celix_framework_bundleEntry_increaseUseCount(entry);
         if (entry->bndId != 0) { //i.e. not framework bundle
             celix_arrayList_add(stopEntries, entry);
         } else {
@@ -1872,10 +1364,10 @@ static void* framework_shutdown(void *framework) {
         bundle_state_e state;
         bundle_getState(bnd, &state);
         if (state == OSGI_FRAMEWORK_BUNDLE_ACTIVE || state == OSGI_FRAMEWORK_BUNDLE_STARTING) {
-            fw_stopBundle(fw, entry->bndId, 0);
+            celix_framework_stopBundleEntry(fw, entry);
         }
         bundle_close(bnd);
-        fw_bundleEntry_decreaseUseCount(entry);
+        celix_framework_bundleEntry_decreaseUseCount(entry);
     }
     celix_arrayList_destroy(stopEntries);
 
@@ -1888,11 +1380,20 @@ static void* framework_shutdown(void *framework) {
         bundle_state_e state;
         bundle_getState(bnd, &state);
         if (state == OSGI_FRAMEWORK_BUNDLE_ACTIVE || state == OSGI_FRAMEWORK_BUNDLE_STARTING) {
-            fw_stopBundle(fw, fwEntry->bndId, 0);
+            celix_framework_stopBundleEntry(fw, fwEntry);
         }
         bundle_close(bnd);
-        fw_bundleEntry_decreaseUseCount(fwEntry);
+        celix_framework_bundleEntry_decreaseUseCount(fwEntry);
     }
+
+    //join dispatcher thread
+    celixThreadMutex_lock(&fw->dispatcher.mutex);
+    fw->dispatcher.active = false;
+    celixThreadCondition_broadcast(&fw->dispatcher.cond);
+    celixThreadMutex_unlock(&fw->dispatcher.mutex);
+    celixThread_join(fw->dispatcher.thread, NULL);
+    fw_log(fw->logger, CELIX_LOG_LEVEL_TRACE, "Joined event loop thread for framework %s", celix_framework_getUUID(framework));
+
 
     celixThreadMutex_lock(&fw->shutdown.mutex);
     fw->shutdown.done = true;
@@ -1923,88 +1424,67 @@ bundle_context_t* framework_getContext(const_framework_pt framework) {
     return result;
 }
 
-celix_status_t fw_fireBundleEvent(framework_pt framework, bundle_event_type_e eventType, celix_framework_bundle_entry_t* entry) {
-    celix_status_t status = CELIX_SUCCESS;
-
+void fw_fireBundleEvent(framework_pt framework, bundle_event_type_e eventType, celix_framework_bundle_entry_t* entry) {
     if (eventType == OSGI_FRAMEWORK_BUNDLE_EVENT_STOPPING || eventType == OSGI_FRAMEWORK_BUNDLE_EVENT_UNINSTALLED || eventType == OSGI_FRAMEWORK_BUNDLE_EVENT_STOPPED) {
         if (entry->bndId == framework->bundleId) {
             //NOTE for framework bundle not triggering events while framework is stopped (and as result in use)
-            return CELIX_SUCCESS;
+            return;
         }
     }
 
-    request_t* request = (request_t*) calloc(1, sizeof(*request));
-    if (!request) {
-        status = CELIX_ENOMEM;
-    } else {
-        fw_bundleEntry_increaseUseCount(entry);
+    celix_framework_bundleEntry_increaseUseCount(entry);
 
-        request->eventType = eventType;
-        request->filter = NULL;
-        request->type = BUNDLE_EVENT_TYPE;
-        request->error = NULL;
-        request->bndEntry = entry;
-
-        celixThreadMutex_lock(&framework->dispatcher.mutex);
-        if (framework->dispatcher.active) {
-            //fw_log(framework->logger, CELIX_LOG_LEVEL_TRACE, "Adding dispatcher bundle event request for bnd id %li with event type %i", entry->bndId, eventType);
-            celix_arrayList_add(framework->dispatcher.requests, request);
-            celixThreadCondition_broadcast(&framework->dispatcher.cond);
-        } else {
-            /*
-             * NOTE because stopping the framework is done through stopping the framework bundle,
-             * most bundle stopping / stopped events cannot be fired.
-             *
-             * TBD if this needs to addressed.
-             */
-            fw_log(framework->logger, CELIX_LOG_LEVEL_TRACE, "Cannot fire event dispatcher not active. Event is %x for bundle %s", eventType, celix_bundle_getSymbolicName(entry->bnd));
-            fw_bundleEntry_decreaseUseCount(entry);
-            free(request);
-        }
-        celixThreadMutex_unlock(&framework->dispatcher.mutex);
-    }
-
-    framework_logIfError(framework->logger, status, NULL, "Failed to fire bundle event");
-
-    return status;
+    celix_framework_event_t event;
+    memset(&event, 0, sizeof(event));
+    event.type = CELIX_BUNDLE_EVENT_TYPE;
+    event.bndEntry = entry;
+    event.bundleEvent = eventType;
+    celix_framework_addToEventQueue(framework, &event);
 }
 
-celix_status_t fw_fireFrameworkEvent(framework_pt framework, framework_event_type_e eventType, celix_status_t errorCode) {
-    celix_status_t status = CELIX_SUCCESS;
-
-    request_t* request = calloc(1, sizeof(*request));
-    if (!request) {
-        status = CELIX_ENOMEM;
-    } else {
-        request->eventType = eventType;
-        request->filter = NULL;
-        request->type = FRAMEWORK_EVENT_TYPE;
-        request->errorCode = errorCode;
-        request->error = "";
-
-        if (errorCode != CELIX_SUCCESS) {
-            request->error = celix_strerror(errorCode);
-        }
-
-        celixThreadMutex_lock(&framework->dispatcher.mutex);
-        if (framework->dispatcher.active) {
-            //fw_log(framework->logger, CELIX_LOG_LEVEL_TRACE, "Adding dispatcher framework event request for event type %i", eventType);
-            celix_arrayList_add(framework->dispatcher.requests, request);
-            celixThreadCondition_broadcast(&framework->dispatcher.cond);
-        } else {
-            free(request);
-        }
-        celixThreadMutex_unlock(&framework->dispatcher.mutex);
+void fw_fireFrameworkEvent(framework_pt framework, framework_event_type_e eventType, celix_status_t errorCode) {
+    celix_framework_event_t event;
+    memset(&event, 0, sizeof(event));
+    event.type = CELIX_FRAMEWORK_EVENT_TYPE;
+    event.fwEvent = eventType;
+    event.errorCode = errorCode;
+    event.error = "";
+    if (errorCode != CELIX_SUCCESS) {
+        event.error = celix_strerror(errorCode);
     }
 
-    framework_logIfError(framework->logger, status, NULL, "Failed to fire framework event");
-
-    return status;
+    celix_framework_addToEventQueue(framework, &event);
 }
 
+static void celix_framework_addToEventQueue(celix_framework_t *fw, const celix_framework_event_t* event) {
+    celixThreadMutex_lock(&fw->dispatcher.mutex);
+    //try to add to static queue
+    if (celix_arrayList_size(fw->dispatcher.dynamicEventQueue) > 0) { //always to dynamic queue if not empty (to ensure order)
+        celix_framework_event_t *e = malloc(sizeof(*e));
+        *e = *event; //shallow copy
+        celix_arrayList_add(fw->dispatcher.dynamicEventQueue, e);
+        if (celix_arrayList_size(fw->dispatcher.dynamicEventQueue) % 100 == 0) {
+            fw_log(fw->logger, CELIX_LOG_LEVEL_WARNING, "dynamic event queue size is %i. Is there a bundle blocking on the event loop thread?", celix_arrayList_size(fw->dispatcher.dynamicEventQueue));
+        }
+    } else if (fw->dispatcher.eventQueueSize < CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE) {
+        size_t index = (fw->dispatcher.eventQueueFirstEntry + fw->dispatcher.eventQueueSize) %
+                       CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE;
+        fw->dispatcher.eventQueue[index] = *event; //shallow copy
+        fw->dispatcher.eventQueueSize += 1;
+    } else {
+        //static queue is full, dynamics queue is empty. Add first entry to dynamic queue
+        fw_log(fw->logger, CELIX_LOG_LEVEL_WARNING,
+               "Static event queue for celix framework is full, falling back to dynamic allocated events. Increase static event queue size, current size is %i", CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE);
+        celix_framework_event_t *e = malloc(sizeof(*e));
+        *e = *event; //shallow copy
+        celix_arrayList_add(fw->dispatcher.dynamicEventQueue, e);
+    }
+    celixThreadCondition_broadcast(&fw->dispatcher.cond);
+    celixThreadMutex_unlock(&fw->dispatcher.mutex);
+}
 
-static void fw_handleEventRequest(celix_framework_t *framework, request_t* request) {
-    if (request->type == BUNDLE_EVENT_TYPE) {
+static void fw_handleEventRequest(celix_framework_t *framework, celix_framework_event_t* event) {
+    if (event->type == CELIX_BUNDLE_EVENT_TYPE) {
         celix_array_list_t *localListeners = celix_arrayList_create();
         celixThreadMutex_lock(&framework->bundleListenerLock);
         for (int i = 0; i < celix_arrayList_size(framework->bundleListeners); ++i) {
@@ -2016,67 +1496,111 @@ static void fw_handleEventRequest(celix_framework_t *framework, request_t* reque
         for (int i = 0; i < celix_arrayList_size(localListeners); ++i) {
             fw_bundle_listener_pt listener = arrayList_get(localListeners, i);
 
-            bundle_event_t event;
-            memset(&event, 0, sizeof(event));
-            event.bnd = request->bndEntry->bnd;
-            event.type = request->eventType;
-            fw_invokeBundleListener(framework, listener->listener, &event, listener->bundle);
+            bundle_event_t bEvent;
+            memset(&bEvent, 0, sizeof(bEvent));
+            bEvent.bnd = event->bndEntry->bnd;
+            bEvent.type = event->bundleEvent;
+            fw_invokeBundleListener(framework, listener->listener, &bEvent, listener->bundle);
 
             fw_bundleListener_decreaseUseCount(listener);
         }
         celix_arrayList_destroy(localListeners);
-    } else  if (request->type == FRAMEWORK_EVENT_TYPE) {
+    } else if (event->type == CELIX_FRAMEWORK_EVENT_TYPE) {
         celixThreadMutex_lock(&framework->frameworkListenersLock);
-        //TODO refactor use of framework listeners to use a useCount + conditition.
         for (int i = 0; i < celix_arrayList_size(framework->frameworkListeners); ++i) {
             fw_framework_listener_pt listener = celix_arrayList_get(framework->frameworkListeners, i);
-            framework_event_t event;
-            memset(&event, 0, sizeof(event));
-            event.type = request->eventType;
-            event.error = request->error;
-            event.errorCode = request->errorCode;
+            framework_event_t fEvent;
+            memset(&fEvent, 0, sizeof(fEvent));
+            fEvent.type = event->fwEvent;
+            fEvent.error = event->error;
+            fEvent.errorCode = event->errorCode;
 
-            fw_invokeFrameworkListener(framework, listener->listener, &event, listener->bundle);
+            fw_invokeFrameworkListener(framework, listener->listener, &fEvent, listener->bundle);
         }
         celixThreadMutex_unlock(&framework->frameworkListenersLock);
+    } else if (event->type == CELIX_REGISTER_SERVICE_EVENT) {
+        service_registration_t* reg = NULL;
+        celix_status_t status = CELIX_SUCCESS;
+        if (event->cancelled) {
+            fw_log(framework->logger, CELIX_LOG_LEVEL_DEBUG, "CELIX_REGISTER_SERVICE_EVENT for svcId %li (service name = %s) was cancelled. Skipping registration", event->registerServiceId, event->serviceName);
+            celix_properties_destroy(event->properties);
+        } else if (event->factory != NULL) {
+            status = celix_serviceRegistry_registerServiceFactory(framework->registry, event->bndEntry->bnd, event->serviceName, event->factory, event->properties, event->registerServiceId, &reg);
+        } else {
+            status = celix_serviceRegistry_registerService(framework->registry, event->bndEntry->bnd, event->serviceName, event->svc, event->properties, event->registerServiceId, &reg);
+        }
+        if (status != CELIX_SUCCESS) {
+            fw_log(framework->logger, CELIX_LOG_LEVEL_ERROR, "Could not register service async. svc name is %s, error is %s", event->serviceName, celix_strerror(status));
+        } else if (!event->cancelled && event->registerCallback != NULL) {
+            event->registerCallback(event->registerData, serviceRegistration_getServiceId(reg));
+        }
+    } else if (event->type == CELIX_UNREGISTER_SERVICE_EVENT) {
+        celix_serviceRegistry_unregisterService(framework->registry, event->bndEntry->bnd, event->unregisterServiceId);
+    } else if (event->type == CELIX_GENERIC_EVENT) {
+        if (event->genericProcess != NULL) {
+            event->genericProcess(event->genericProcessData);
+        }
+    }
+
+    if (event->doneCallback != NULL && !event->cancelled) {
+        event->doneCallback(event->doneData);
     }
 }
 
-static inline void fw_handleEvents(celix_framework_t* framework, celix_array_list_t* localRequests) {
+static inline celix_framework_event_t* fw_topEventFromQueue(celix_framework_t* fw) {
+    celix_framework_event_t* e = NULL;
+    celixThreadMutex_lock(&fw->dispatcher.mutex);
+    if (fw->dispatcher.eventQueueSize > 0) {
+        e = &fw->dispatcher.eventQueue[fw->dispatcher.eventQueueFirstEntry];
+    } else if (celix_arrayList_size(fw->dispatcher.dynamicEventQueue) > 0) {
+        e = celix_arrayList_get(fw->dispatcher.dynamicEventQueue, 0);
+    }
+    celixThreadMutex_unlock(&fw->dispatcher.mutex);
+    return e;
+}
+
+static inline bool fw_removeTopEventFromQueue(celix_framework_t* fw) {
+    bool dynamicallyAllocated = false;
+    celixThreadMutex_lock(&fw->dispatcher.mutex);
+    if (fw->dispatcher.eventQueueSize > 0) {
+        fw->dispatcher.eventQueueFirstEntry = (fw->dispatcher.eventQueueFirstEntry+1) % CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE;
+        fw->dispatcher.eventQueueSize -= 1;
+    } else if (celix_arrayList_size(fw->dispatcher.dynamicEventQueue) > 0) {
+        celix_arrayList_removeAt(fw->dispatcher.dynamicEventQueue, 0);
+        dynamicallyAllocated = true;
+    }
+    celixThreadMutex_unlock(&fw->dispatcher.mutex);
+    return dynamicallyAllocated;
+}
+
+
+static inline void fw_handleEvents(celix_framework_t* framework) {
     celixThreadMutex_lock(&framework->dispatcher.mutex);
-    if (celix_arrayList_size(framework->dispatcher.requests) == 0) {
-        //TODO needs a timed wait, because this loop sometimes misses the active=false/broadcast.
-        //FIXME an go back to 'normal' cond wait.
+    int size = framework->dispatcher.eventQueueSize + celix_arrayList_size(framework->dispatcher.dynamicEventQueue);
+    if (size == 0) {
         celixThreadCondition_timedwaitRelative(&framework->dispatcher.cond, &framework->dispatcher.mutex, 1, 0);
     }
-    for (int i = 0; i < celix_arrayList_size(framework->dispatcher.requests); ++i) {
-        request_t* r = celix_arrayList_get(framework->dispatcher.requests, i);
-        celix_arrayList_add(localRequests, r);
-//        if (r->type == BUNDLE_EVENT_TYPE) {
-//            fw_log(framework->logger, CELIX_LOG_LEVEL_TRACE,
-//                   "Removing dispatcher bundle event request for bnd id %li with event type %i", r->bndEntry->bndId, r->eventType);
-//        } else {
-//            fw_log(framework->logger, CELIX_LOG_LEVEL_TRACE,
-//                   "Removing dispatcher framework event request for event type %i", r->eventType);
-//        }
-    }
-    celix_arrayList_clear(framework->dispatcher.requests);
-    framework->dispatcher.nrOfLocalRequest = celix_arrayList_size(localRequests);
+    size = framework->dispatcher.eventQueueSize + celix_arrayList_size(framework->dispatcher.dynamicEventQueue);
     celixThreadMutex_unlock(&framework->dispatcher.mutex);
 
-    for (int i = 0; i < celix_arrayList_size(localRequests); ++i) {
-        request_t* request = celix_arrayList_get(localRequests, i);
-        fw_handleEventRequest(framework, request);
-        if (request->bndEntry != NULL) {
-            fw_bundleEntry_decreaseUseCount(request->bndEntry);
+    while (size > 0) {
+        celix_framework_event_t* topEvent = fw_topEventFromQueue(framework);
+        fw_handleEventRequest(framework, topEvent);
+        bool dynamiclyAllocatedEvent = fw_removeTopEventFromQueue(framework);
+
+        if (topEvent->bndEntry != NULL) {
+            celix_framework_bundleEntry_decreaseUseCount(topEvent->bndEntry);
         }
-        free(request);
-    }
-    celix_arrayList_clear(localRequests);
+        free(topEvent->serviceName);
+        if (dynamiclyAllocatedEvent) {
+            free(topEvent);
+        }
 
-    celixThreadMutex_lock(&framework->dispatcher.mutex);
-    framework->dispatcher.nrOfLocalRequest = 0;
-    celixThreadMutex_unlock(&framework->dispatcher.mutex);
+        celixThreadMutex_lock(&framework->dispatcher.mutex);
+        size = framework->dispatcher.eventQueueSize + celix_arrayList_size(framework->dispatcher.dynamicEventQueue);
+        celixThreadCondition_broadcast(&framework->dispatcher.cond);
+        celixThreadMutex_unlock(&framework->dispatcher.mutex);
+    }
 }
 
 static void *fw_eventDispatcher(void *fw) {
@@ -2086,27 +1610,21 @@ static void *fw_eventDispatcher(void *fw) {
     bool active = framework->dispatcher.active;
     celixThreadMutex_unlock(&framework->dispatcher.mutex);
 
-    celix_array_list_t *localRequests = celix_arrayList_create();
-
     while (active) {
-        fw_handleEvents(framework, localRequests);
-
+        fw_handleEvents(framework);
         celixThreadMutex_lock(&framework->dispatcher.mutex);
-        celixThreadCondition_broadcast(&framework->dispatcher.cond); //trigger threads waiting for an empty event queue (after local events are handled)
         active = framework->dispatcher.active;
         celixThreadMutex_unlock(&framework->dispatcher.mutex);
     }
 
     //not active any more, last run for possible request left overs
     celixThreadMutex_lock(&framework->dispatcher.mutex);
-    bool needLastRun = celix_arrayList_size(framework->dispatcher.requests) > 0;
+    bool needLastRun = framework->dispatcher.eventQueueSize > 0 || celix_arrayList_size(framework->dispatcher.dynamicEventQueue) > 0;
     celixThreadMutex_unlock(&framework->dispatcher.mutex);
     if (needLastRun) {
-        fw_handleEvents(framework, localRequests);
+        fw_handleEvents(framework);
     }
 
-
-    celix_arrayList_destroy(localRequests);
     celixThread_exit(NULL);
     return NULL;
 
@@ -2153,14 +1671,7 @@ static celix_status_t frameworkActivator_stop(void * userData, bundle_context_t 
         celixThreadMutex_unlock(&framework->shutdown.mutex);
 
         if (!alreadyInitialized) {
-            celixThreadMutex_lock(&framework->dispatcher.mutex);
-            framework->dispatcher.active = false;
-            celixThreadCondition_broadcast(&framework->dispatcher.cond);
-            celixThreadMutex_unlock(&framework->dispatcher.mutex);
-            celixThread_join(framework->dispatcher.thread, NULL);
-            fw_log(framework->logger, CELIX_LOG_LEVEL_TRACE, "Joined shutdown thread for framework %s", celix_framework_getUUID(framework));
-
-            celixThread_create(&framework->shutdown.thread, NULL, &framework_shutdown, framework);
+            celixThread_create(&framework->shutdown.thread, NULL, framework_shutdown, framework);
         }
     } else {
         status = CELIX_FRAMEWORK_EXCEPTION;
@@ -2366,7 +1877,8 @@ void celix_framework_useBundles(framework_t *fw, bool includeFrameworkBundle, vo
 bool celix_framework_useBundle(framework_t *fw, bool onlyActive, long bundleId, void *callbackHandle, void(*use)(void *handle, const bundle_t *bnd)) {
     bool called = false;
     if (bundleId >= 0) {
-        celix_framework_bundle_entry_t *entry = fw_bundleEntry_getBundleEntryAndIncreaseUseCount(fw, bundleId);
+        celix_framework_bundle_entry_t *entry = celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(fw,
+                                                                                                              bundleId);
 
         if (entry != NULL) {
             celix_bundle_state_e bndState = celix_bundle_getState(entry->bnd);
@@ -2377,7 +1889,7 @@ bool celix_framework_useBundle(framework_t *fw, bool onlyActive, long bundleId, 
                 use(callbackHandle, entry->bnd);
                 called = true;
             }
-            fw_bundleEntry_decreaseUseCount(entry);
+            celix_framework_bundleEntry_decreaseUseCount(entry);
         } else {
             framework_logIfError(fw->logger, CELIX_FRAMEWORK_EXCEPTION, NULL, "Bundle with id %li is not installed", bundleId);
         }
@@ -2385,24 +1897,209 @@ bool celix_framework_useBundle(framework_t *fw, bool onlyActive, long bundleId, 
     return called;
 }
 
-service_registration_t* celix_framework_registerServiceFactory(framework_t *fw , const celix_bundle_t *bnd, const char* serviceName, celix_service_factory_t *factory, celix_properties_t *properties) {
+long celix_framework_registerService(framework_t *fw, celix_bundle_t *bnd, const char* serviceName, void* svc, celix_service_factory_t *factory, celix_properties_t *properties) {
     const char *error = NULL;
-    celix_status_t status = CELIX_SUCCESS;
+    celix_status_t status;
     service_registration_t *reg = NULL;
 
     long bndId = celix_bundle_getId(bnd);
-    celix_framework_bundle_entry_t *entry = fw_bundleEntry_getBundleEntryAndIncreaseUseCount(fw, bndId);
+    celix_framework_bundle_entry_t *entry = celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(fw, bndId);
 
 
     if (serviceName != NULL && factory != NULL) {
-        status = CELIX_DO_IF(status, celix_serviceRegistry_registerServiceFactory(fw->registry, bnd, serviceName, factory, properties, &reg));
+        status = celix_serviceRegistry_registerServiceFactory(fw->registry, bnd, serviceName, factory, properties, 0, &reg);
+    } else if (serviceName != NULL) {
+        status = celix_serviceRegistry_registerService(fw->registry, bnd, serviceName, svc, properties, 0, &reg);
+    } else {
+        fw_log(fw->logger, CELIX_LOG_LEVEL_ERROR, "Invalid arguments serviceName", serviceName);
+        status = CELIX_ILLEGAL_ARGUMENT;
     }
 
-    fw_bundleEntry_decreaseUseCount(entry);
+    celix_framework_bundleEntry_decreaseUseCount(entry);
 
-    framework_logIfError(fw->logger, status, error, "Cannot register service factory: %s", serviceName);
+    framework_logIfError(fw->logger, status, error, "Cannot register %s '%s'", factory == NULL ? "service" : "service factory", serviceName);
 
-    return reg;
+    return serviceRegistration_getServiceId(reg);
+}
+
+long celix_framework_registerServiceAsync(
+        framework_t *fw,
+        celix_bundle_t *bnd,
+        const char* serviceName,
+        void* svc,
+        celix_service_factory_t* factory,
+        celix_properties_t *properties,
+        void* registerDoneData,
+        void(*registerDoneCallback)(void *registerDoneData, long serviceId),
+        void* eventDoneData,
+        void (*eventDoneCallback)(void* eventDoneData)) {
+    long bndId = celix_bundle_getId(bnd);
+    celix_framework_bundle_entry_t *entry = celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(fw, bndId);
+
+    long svcId = celix_serviceRegistry_nextSvcId(fw->registry);
+
+    celix_framework_event_t event;
+    memset(&event, 0, sizeof(event));
+    event.type = CELIX_REGISTER_SERVICE_EVENT;
+    event.bndEntry = entry;
+    event.registerServiceId = svcId;
+    event.serviceName = celix_utils_strdup(serviceName);
+    event.properties = properties;
+    event.svc = svc;
+    event.factory = factory;
+    event.registerData = registerDoneData;
+    event.registerCallback = registerDoneCallback;
+    event.doneData = eventDoneData;
+    event.doneCallback = eventDoneCallback;
+    celix_framework_addToEventQueue(fw, &event);
+
+    return svcId;
+}
+
+void celix_framework_unregisterAsync(celix_framework_t* fw, celix_bundle_t* bnd, long serviceId, void *doneData, void (*doneCallback)(void*)) {
+    long bndId = celix_bundle_getId(bnd);
+    celix_framework_bundle_entry_t *entry = celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(fw, bndId);
+
+    celix_framework_event_t event;
+    memset(&event, 0, sizeof(event));
+    event.type = CELIX_UNREGISTER_SERVICE_EVENT;
+    event.bndEntry = entry;
+    event.unregisterServiceId = serviceId;
+    event.doneData = doneData;
+    event.doneCallback = doneCallback;
+
+    celix_framework_addToEventQueue(fw, &event);
+}
+
+/**
+ * Checks if there is a pending service registration in the event queue and canels this.
+ *
+ * This can be needed when a service is regsitered async and still on the event queue when an sync unregistration
+ * is made.
+ * @returns true if a service registration is cancelled.
+ */
+static bool celix_framework_cancelServiceRegistrationIfPending(celix_framework_t* fw, celix_bundle_t* bnd, long serviceId) {
+    bool cancelled = false;
+    celixThreadMutex_lock(&fw->dispatcher.mutex);
+    for (int i = 0; i < celix_arrayList_size(fw->dispatcher.dynamicEventQueue); ++i) {
+        celix_framework_event_t *event = celix_arrayList_get(fw->dispatcher.dynamicEventQueue, i);
+        if (event->type == CELIX_REGISTER_SERVICE_EVENT && event->registerServiceId == serviceId) {
+            event->cancelled = true;
+            cancelled = true;
+            break;
+        }
+    }
+    for (size_t i = 0; i < fw->dispatcher.eventQueueSize; ++i) {
+        size_t index = (fw->dispatcher.eventQueueFirstEntry + i) % CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE;
+        celix_framework_event_t *event = &fw->dispatcher.eventQueue[index];
+        if (event->type == CELIX_REGISTER_SERVICE_EVENT && event->registerServiceId == serviceId) {
+            event->cancelled = true;
+            cancelled = true;
+            break;
+        }
+    }
+    celixThreadMutex_unlock(&fw->dispatcher.mutex);
+    return cancelled;
+}
+
+void celix_framework_unregister(celix_framework_t* fw, celix_bundle_t* bnd, long serviceId) {
+    if (!celix_framework_cancelServiceRegistrationIfPending(fw, bnd, serviceId)) {
+        celix_serviceRegistry_unregisterService(fw->registry, bnd, serviceId);
+    }
+}
+
+void celix_framework_waitForAsyncRegistration(framework_t *fw, long svcId) {
+    assert(!celix_framework_isCurrentThreadTheEventLoop(fw));
+
+    celixThreadMutex_lock(&fw->dispatcher.mutex);
+    bool registrationsInProgress = true;
+    while (registrationsInProgress) {
+        registrationsInProgress = false;
+        for (int i = 0; i < fw->dispatcher.eventQueueSize; ++i) {
+            int index = (fw->dispatcher.eventQueueFirstEntry + i) % CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE;
+            celix_framework_event_t* e = &fw->dispatcher.eventQueue[index];
+            if (e->type == CELIX_REGISTER_SERVICE_EVENT && e->registerServiceId == svcId) {
+                registrationsInProgress = true;
+                break;
+            }
+        }
+        for (int i = 0; !registrationsInProgress && i < celix_arrayList_size(fw->dispatcher.dynamicEventQueue); ++i) {
+            celix_framework_event_t* e = celix_arrayList_get(fw->dispatcher.dynamicEventQueue, i);
+            if (e->type == CELIX_REGISTER_SERVICE_EVENT && e->registerServiceId == svcId) {
+                registrationsInProgress = true;
+                break;
+            }
+        }
+        if (registrationsInProgress) {
+            celixThreadCondition_timedwaitRelative(&fw->dispatcher.cond, &fw->dispatcher.mutex, 5, 0);
+        }
+    }
+
+    celixThreadMutex_unlock(&fw->dispatcher.mutex);
+}
+
+void celix_framework_waitForAsyncUnregistration(framework_t *fw, long svcId) {
+    assert(!celix_framework_isCurrentThreadTheEventLoop(fw));
+
+    celixThreadMutex_lock(&fw->dispatcher.mutex);
+    bool registrationsInProgress = true;
+    while (registrationsInProgress) {
+        registrationsInProgress = false;
+        for (int i = 0; i < fw->dispatcher.eventQueueSize; ++i) {
+            int index = (fw->dispatcher.eventQueueFirstEntry + i) % CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE;
+            celix_framework_event_t* e = &fw->dispatcher.eventQueue[index];
+            if (e->type == CELIX_UNREGISTER_SERVICE_EVENT && e->unregisterServiceId == svcId) {
+                registrationsInProgress = true;
+                break;
+            }
+        }
+        for (int i = 0; !registrationsInProgress && i < celix_arrayList_size(fw->dispatcher.dynamicEventQueue); ++i) {
+            celix_framework_event_t* e = celix_arrayList_get(fw->dispatcher.dynamicEventQueue, i);
+            if (e->type == CELIX_UNREGISTER_SERVICE_EVENT && e->unregisterServiceId == svcId) {
+                registrationsInProgress = true;
+                break;
+            }
+        }
+        if (registrationsInProgress) {
+            celixThreadCondition_timedwaitRelative(&fw->dispatcher.cond, &fw->dispatcher.mutex, 5, 0);
+        }
+    }
+
+    celixThreadMutex_unlock(&fw->dispatcher.mutex);
+}
+
+void celix_framework_waitForAsyncRegistrations(framework_t *fw, long bndId) {
+    assert(!celix_framework_isCurrentThreadTheEventLoop(fw));
+
+    celixThreadMutex_lock(&fw->dispatcher.mutex);
+    bool registrationsInProgress = true;
+    while (registrationsInProgress) {
+        registrationsInProgress = false;
+        for (int i = 0; i < fw->dispatcher.eventQueueSize; ++i) {
+            int index = (fw->dispatcher.eventQueueFirstEntry + i) % CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE;
+            celix_framework_event_t* e = &fw->dispatcher.eventQueue[index];
+            if ((e->type == CELIX_REGISTER_SERVICE_EVENT || e->type == CELIX_UNREGISTER_SERVICE_EVENT) && e->bndEntry->bndId == bndId) {
+                registrationsInProgress = true;
+                break;
+            }
+        }
+        for (int i = 0; i < !registrationsInProgress && celix_arrayList_size(fw->dispatcher.dynamicEventQueue); ++i) {
+            celix_framework_event_t* e = celix_arrayList_get(fw->dispatcher.dynamicEventQueue, i);
+            if ((e->type == CELIX_REGISTER_SERVICE_EVENT || e->type == CELIX_UNREGISTER_SERVICE_EVENT) && e->bndEntry->bndId == bndId) {
+                registrationsInProgress = true;
+                break;
+            }
+        }
+        if (registrationsInProgress) {
+            celixThreadCondition_timedwaitRelative(&fw->dispatcher.cond, &fw->dispatcher.mutex, 5, 0);
+        }
+    }
+
+    celixThreadMutex_unlock(&fw->dispatcher.mutex);
+}
+
+bool celix_framework_isCurrentThreadTheEventLoop(framework_t* fw) {
+    return celixThread_equals(celixThread_self(), fw->dispatcher.thread);
 }
 
 const char* celix_framework_getUUID(const celix_framework_t *fw) {
@@ -2433,10 +2130,10 @@ celix_bundle_t* celix_framework_getFrameworkBundle(const celix_framework_t *fw) 
 
 bundle_pt framework_getBundleById(framework_pt framework, long id) {
     celix_bundle_t *bnd = NULL;
-    celix_framework_bundle_entry_t *entry = fw_bundleEntry_getBundleEntryAndIncreaseUseCount(framework, id);
+    celix_framework_bundle_entry_t *entry = celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(framework, id);
     if (entry != NULL) {
         bnd = entry->bnd;
-        fw_bundleEntry_decreaseUseCount(entry); //NOTE returning bundle without increased use count -> FIXME make all getBundle api private (use bundle id instead)
+        celix_framework_bundleEntry_decreaseUseCount(entry); //NOTE returning bundle without increased use count -> FIXME make all getBundle api private (use bundle id instead)
     }
     return bnd;
 }
@@ -2444,22 +2141,28 @@ bundle_pt framework_getBundleById(framework_pt framework, long id) {
 
 bool celix_framework_isBundleInstalled(celix_framework_t *fw, long bndId) {
     bool isInstalled = false;
-    celix_framework_bundle_entry_t *entry = fw_bundleEntry_getBundleEntryAndIncreaseUseCount(fw, bndId);
+    celix_framework_bundle_entry_t *entry = celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(fw, bndId);
     if (entry != NULL) {
         isInstalled = true;
-        fw_bundleEntry_decreaseUseCount(entry);
+        celix_framework_bundleEntry_decreaseUseCount(entry);
     }
     return isInstalled;
 }
 
 bool celix_framework_isBundleActive(celix_framework_t *fw, long bndId) {
     bool isActive = false;
-    celix_framework_bundle_entry_t *entry = fw_bundleEntry_getBundleEntryAndIncreaseUseCount(fw, bndId);
+    celix_framework_bundle_entry_t *entry = celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(fw, bndId);
     if (entry != NULL) {
         isActive = celix_bundle_getState(entry->bnd) == OSGI_FRAMEWORK_BUNDLE_ACTIVE;
-        fw_bundleEntry_decreaseUseCount(entry);
+        celix_framework_bundleEntry_decreaseUseCount(entry);
     }
     return isActive;
+}
+
+static void celix_framework_waitForBundleEvents(celix_framework_t *fw, long bndId) {
+    if (bndId >= 0 && !celix_framework_isCurrentThreadTheEventLoop(fw)) {
+        celix_framework_waitUntilNoEventsForBnd(fw, bndId);
+    }
 }
 
 long celix_framework_installBundle(celix_framework_t *fw, const char *bundleLoc, bool autoStart) {
@@ -2470,10 +2173,18 @@ long celix_framework_installBundle(celix_framework_t *fw, const char *bundleLoc,
     if (fw_installBundle(fw, &bnd, bundleLoc, NULL) == CELIX_SUCCESS) {
         status = bundle_getBundleId(bnd, &bundleId);
         if (status == CELIX_SUCCESS && autoStart) {
-            status = bundle_start(bnd);
+            celix_framework_bundle_entry_t* bndEntry = celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(fw,
+                                                                                                                     bundleId);
+            if (bndEntry != NULL) {
+                status = celix_framework_startBundleOnANonCelixEventThread(fw, bndEntry);
+                celix_framework_bundleEntry_decreaseUseCount(bndEntry);
+            } else {
+                status = CELIX_ILLEGAL_STATE;
+            }
         }
     }
 
+    celix_framework_waitForBundleEvents(fw, bundleId);
     framework_logIfError(fw->logger, status, NULL, "Failed to install bundle '%s'", bundleLoc);
 
     return bundleId;
@@ -2481,61 +2192,489 @@ long celix_framework_installBundle(celix_framework_t *fw, const char *bundleLoc,
 
 bool celix_framework_uninstallBundle(celix_framework_t *fw, long bndId) {
     bool uninstalled = false;
-    celix_framework_bundle_entry_t *entry = fw_bundleEntry_getBundleEntryAndIncreaseUseCount(fw, bndId);
-    if (entry != NULL) {
-        celix_bundle_state_e bndState = celix_bundle_getState(entry->bnd);
-        if (bndState == OSGI_FRAMEWORK_BUNDLE_ACTIVE) {
-            fw_stopBundle(fw, bndId, false);
-        }
-
-        celix_framework_bundle_entry_t* removedEntry = fw_bundleEntry_removeBundleEntryAndIncreaseUseCount(fw, bndId);
-        fw_bundleEntry_decreaseUseCount(entry);
-        if (removedEntry != NULL) {
-            celix_status_t status = fw_uninstallBundleEntry(fw, removedEntry); //also decreases use count
-            uninstalled = status == CELIX_SUCCESS;
-        }
+    celix_framework_bundle_entry_t *bndEntry = celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(fw, bndId);
+    if (bndEntry != NULL) {
+        celix_status_t status = celix_framework_uninstallBundleOnANonCelixEventThread(fw, bndEntry);
+        celix_framework_waitForBundleEvents(fw, bndId);
+        //note not decreasing bndEntry, because this is not deleted (uninstalled)
+        uninstalled = status == CELIX_SUCCESS;
     }
     return uninstalled;
 }
 
+celix_status_t celix_framework_uninstallBundleEntry(celix_framework_t* framework, celix_framework_bundle_entry_t* bndEntry) {
+    assert(!celix_framework_isCurrentThreadTheEventLoop(framework));
+    celix_bundle_state_e bndState = celix_bundle_getState(bndEntry->bnd);
+    if (bndState == OSGI_FRAMEWORK_BUNDLE_ACTIVE) {
+        celix_framework_stopBundleEntry(framework, bndEntry);
+    }
+
+    celix_framework_bundle_entry_t* removedEntry = fw_bundleEntry_removeBundleEntryAndIncreaseUseCount(framework, bndEntry->bndId);
+    celix_framework_bundleEntry_decreaseUseCount(bndEntry);
+    if (removedEntry != NULL) {
+        celix_status_t status = CELIX_SUCCESS;
+
+        celix_bundle_t *bnd = NULL;
+        long bndId = -1L;
+
+        if (removedEntry == NULL) {
+            status = CELIX_ILLEGAL_ARGUMENT;
+        } else {
+            bnd = removedEntry->bnd;
+            bndId = removedEntry->bndId;
+        }
+
+        if (status == CELIX_SUCCESS) {
+            bundle_archive_t *archive = NULL;
+            bundle_revision_t *revision = NULL;
+            array_list_pt handles = NULL;
+            status = CELIX_DO_IF(status, bundle_getArchive(bnd, &archive));
+            status = CELIX_DO_IF(status, bundleArchive_setPersistentState(archive, OSGI_FRAMEWORK_BUNDLE_UNINSTALLED)); //set state to uninstalled, so that next framework start will not start bundle.
+            status = CELIX_DO_IF(status, bundleArchive_getCurrentRevision(archive, &revision));
+            status = CELIX_DO_IF(status, bundleRevision_getHandles(revision, &handles));
+            if (handles != NULL) {
+                for (int i = celix_arrayList_size(handles) - 1; i >= 0; i--) {
+                    celix_library_handle_t *handle = arrayList_get(handles, i);
+                    celix_libloader_close(handle);
+                }
+            }
+
+            CELIX_DO_IF(status, fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_UNRESOLVED, removedEntry));
+
+            status = CELIX_DO_IF(status, bundle_setState(bnd, OSGI_FRAMEWORK_BUNDLE_UNINSTALLED));
+            status = CELIX_DO_IF(status, bundleArchive_setLastModified(archive, time(NULL)));
+
+            CELIX_DO_IF(status, fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_UNINSTALLED, removedEntry));
+
+            //NOTE wait outside installedBundles.mutex
+            celix_framework_bundleEntry_decreaseUseCount(removedEntry);
+            fw_bundleEntry_destroy(removedEntry , true); //wait till use count is 0 -> e.g. not used
+
+            if (status == CELIX_SUCCESS) {
+                celix_status_t refreshStatus = fw_refreshBundle(framework, bndId);
+                if (refreshStatus != CELIX_SUCCESS) {
+                    printf("Could not refresh bundle");
+                } else {
+                    celix_framework_waitForEmptyEventQueue(framework); //to ensure that the uninstall event is triggered and handled
+                    bundleArchive_destroy(archive);
+                    status = CELIX_DO_IF(status, bundle_closeModules(bnd));
+                    status = CELIX_DO_IF(status, bundle_destroy(bnd));
+                }
+            }
+        }
+
+
+        if (status != CELIX_SUCCESS) {
+            framework_logIfError(framework->logger, status, "", "Cannot uninstall bundle");
+        }
+
+        return status;
+
+    } else {
+        return CELIX_ILLEGAL_STATE;
+    }
+}
+
 bool celix_framework_stopBundle(celix_framework_t *fw, long bndId) {
     bool stopped = false;
-    celix_framework_bundle_entry_t *entry = fw_bundleEntry_getBundleEntryAndIncreaseUseCount(fw, bndId);
-    if (entry != NULL) {
-        celix_bundle_state_e state = celix_bundle_getState(entry->bnd);
+    celix_framework_bundle_entry_t *bndEntry = celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(fw, bndId);
+    if (bndEntry != NULL) {
+        celix_bundle_state_e state = celix_bundle_getState(bndEntry->bnd);
         if (state == OSGI_FRAMEWORK_BUNDLE_ACTIVE) {
-            celix_status_t rc = bundle_stop(entry->bnd);
+            celix_status_t rc = celix_framework_stopBundleOnANonCelixEventThread(fw, bndEntry);
             stopped = rc == CELIX_SUCCESS;
+        } else if (state == OSGI_FRAMEWORK_BUNDLE_RESOLVED) {
+            //already stopped, silently ignore.
         } else {
-            fw_log(fw->logger, CELIX_LOG_LEVEL_WARNING, "Cannot stop bundle state is %i", state);
+            fw_log(fw->logger, CELIX_LOG_LEVEL_WARNING, "Cannot stop bundle, bundle state is %s", celix_bundleState_getName(state));
         }
-        fw_bundleEntry_decreaseUseCount(entry);
+        celix_framework_bundleEntry_decreaseUseCount(bndEntry);
+        celix_framework_waitForBundleEvents(fw, bndId);
     }
     return stopped;
 }
 
+celix_status_t celix_framework_stopBundleEntry(celix_framework_t* framework, celix_framework_bundle_entry_t* bndEntry) {
+    assert(!celix_framework_isCurrentThreadTheEventLoop(framework));
+
+    celix_bundle_activator_t *activator = NULL;
+    bundle_context_t *context = NULL;
+    bool wasActive = false;
+    char *error = NULL;
+
+    celix_status_t status = CELIX_SUCCESS;
+    celix_bundle_state_e state = celix_bundle_getState(bndEntry->bnd);
+    switch (state) {
+        case OSGI_FRAMEWORK_BUNDLE_UNKNOWN:
+            status = CELIX_ILLEGAL_STATE;
+            error = "state is unknown";
+            break;
+        case OSGI_FRAMEWORK_BUNDLE_UNINSTALLED:
+            status = CELIX_ILLEGAL_STATE;
+            error = "bundle is uninstalled";
+            break;
+        case OSGI_FRAMEWORK_BUNDLE_STARTING:
+            status = CELIX_BUNDLE_EXCEPTION;
+            error = "bundle is starting";
+            break;
+        case OSGI_FRAMEWORK_BUNDLE_STOPPING:
+            status = CELIX_BUNDLE_EXCEPTION;
+            error = "bundle is stopping";
+            break;
+        case OSGI_FRAMEWORK_BUNDLE_INSTALLED:
+        case OSGI_FRAMEWORK_BUNDLE_RESOLVED:
+            break;
+        case OSGI_FRAMEWORK_BUNDLE_ACTIVE:
+            wasActive = true;
+            break;
+    }
+
+
+    if (status == CELIX_SUCCESS && wasActive) {
+        CELIX_DO_IF(status, bundle_setState(bndEntry->bnd, OSGI_FRAMEWORK_BUNDLE_STOPPING));
+        CELIX_DO_IF(status, fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_STOPPING, bndEntry));
+        activator = bundle_getActivator(bndEntry->bnd);
+
+        status = CELIX_DO_IF(status, bundle_getContext(bndEntry->bnd, &context));
+        if (status == CELIX_SUCCESS) {
+            if (activator->stop != NULL) {
+                status = CELIX_DO_IF(status, activator->stop(activator->userData, context));
+                if (status == CELIX_SUCCESS) {
+                    celix_dependency_manager_t *mng = celix_bundleContext_getDependencyManager(context);
+                    celix_dependencyManager_removeAllComponents(mng);
+                }
+            }
+        }
+        if (status == CELIX_SUCCESS) {
+            if (activator->destroy != NULL) {
+                status = CELIX_DO_IF(status, activator->destroy(activator->userData, context));
+            }
+        }
+
+        if (bndEntry->bndId >= CELIX_FRAMEWORK_BUNDLE_ID) {
+            //framework and "normal" bundle
+            celix_framework_waitUntilNoEventsForBnd(framework, bndEntry->bndId);
+            celix_bundleContext_cleanup(bndEntry->bnd->context);
+        }
+        if (bndEntry->bndId > CELIX_FRAMEWORK_BUNDLE_ID) {
+            //"normal" bundle
+            if (status == CELIX_SUCCESS) {
+                module_pt module = NULL;
+                const char *symbolicName = NULL;
+                long id = 0;
+                bundle_getCurrentModule(bndEntry->bnd, &module);
+                module_getSymbolicName(module, &symbolicName);
+                bundle_getBundleId(bndEntry->bnd, &id);
+            }
+
+            if (context != NULL) {
+                status = CELIX_DO_IF(status, bundleContext_destroy(context));
+                status = CELIX_DO_IF(status, bundle_setContext(bndEntry->bnd, NULL));
+            }
+
+            status = CELIX_DO_IF(status, bundle_setState(bndEntry->bnd, OSGI_FRAMEWORK_BUNDLE_RESOLVED));
+            CELIX_DO_IF(status, fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_STOPPED, bndEntry));
+        } else if (bndEntry->bndId == CELIX_FRAMEWORK_BUNDLE_ID) {
+            //framework bundle
+            status = CELIX_DO_IF(status, bundle_setState(bndEntry->bnd, OSGI_FRAMEWORK_BUNDLE_RESOLVED));
+            CELIX_DO_IF(status, fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_STOPPED, bndEntry));
+        }
+
+        if (activator != NULL) {
+            bundle_setActivator(bndEntry->bnd, NULL);
+            free(activator);
+        }
+    }
+
+    if (status != CELIX_SUCCESS) {
+        module_pt module = NULL;
+        const char *symbolicName = NULL;
+        long id = 0;
+        bundle_getCurrentModule(bndEntry->bnd, &module);
+        module_getSymbolicName(module, &symbolicName);
+        bundle_getBundleId(bndEntry->bnd, &id);
+        if (error != NULL) {
+            fw_logCode(framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Cannot stop bundle: %s [%ld]; cause: %s", symbolicName, id, error);
+        } else {
+            fw_logCode(framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Cannot stop bundle: %s [%ld]", symbolicName, id);
+        }
+    } else {
+        fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_STOPPED, bndEntry);
+    }
+
+    return status;
+}
+
 bool celix_framework_startBundle(celix_framework_t *fw, long bndId) {
     bool started = false;
-    celix_framework_bundle_entry_t *entry = fw_bundleEntry_getBundleEntryAndIncreaseUseCount(fw, bndId);
-    if (entry != NULL) {
-        celix_bundle_state_e state = celix_bundle_getState(entry->bnd);
+    celix_framework_bundle_entry_t *bndEntry = celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(fw, bndId);
+    if (bndEntry != NULL) {
+        celix_bundle_state_e state = celix_bundle_getState(bndEntry->bnd);
         if (state == OSGI_FRAMEWORK_BUNDLE_INSTALLED || state == OSGI_FRAMEWORK_BUNDLE_RESOLVED) {
-            celix_status_t rc = bundle_start(entry->bnd);
+            celix_status_t rc = celix_framework_startBundleOnANonCelixEventThread(fw, bndEntry);
             started = rc == CELIX_SUCCESS;
         }
-        fw_bundleEntry_decreaseUseCount(entry);
+        celix_framework_bundleEntry_decreaseUseCount(bndEntry);
+        celix_framework_waitForBundleEvents(fw, bndId);
     }
     return started;
 }
 
+celix_status_t celix_framework_startBundleEntry(celix_framework_t* framework, celix_framework_bundle_entry_t* bndEntry) {
+    assert(!celix_framework_isCurrentThreadTheEventLoop(framework));
+    celix_status_t status = CELIX_SUCCESS;
+    const char* error = "";
+    const char* name = "";
+    module_pt module = NULL;
+    linked_list_pt wires = NULL;
+    celix_bundle_context_t* context = NULL;
+    celix_bundle_activator_t* activator = NULL;
+
+    celix_bundle_state_e state = celix_bundle_getState(bndEntry->bnd);
+
+    switch (state) {
+        case OSGI_FRAMEWORK_BUNDLE_UNKNOWN:
+            error = "state is unknown";
+            status = CELIX_ILLEGAL_STATE;
+            break;
+        case OSGI_FRAMEWORK_BUNDLE_UNINSTALLED:
+            error = "bundle is uninstalled";
+            status = CELIX_ILLEGAL_STATE;
+            break;
+        case OSGI_FRAMEWORK_BUNDLE_STARTING:
+            error = "bundle is starting";
+            status = CELIX_BUNDLE_EXCEPTION;
+            break;
+        case OSGI_FRAMEWORK_BUNDLE_STOPPING:
+            error = "bundle is stopping";
+            status = CELIX_BUNDLE_EXCEPTION;
+            break;
+        case OSGI_FRAMEWORK_BUNDLE_ACTIVE:
+            break;
+        case OSGI_FRAMEWORK_BUNDLE_INSTALLED:
+            bundle_getCurrentModule(bndEntry->bnd, &module);
+            module_getSymbolicName(module, &name);
+            if (!module_isResolved(module)) {
+                wires = resolver_resolve(module);
+                if (wires == NULL) {
+                    celix_framework_bundleEntry_decreaseUseCount(bndEntry);
+                    return CELIX_BUNDLE_EXCEPTION;
+                }
+                status = framework_markResolvedModules(framework, wires);
+                if (status != CELIX_SUCCESS) {
+                    break;
+                }
+            }
+            /* no break */
+        case OSGI_FRAMEWORK_BUNDLE_RESOLVED:
+            module = NULL;
+            name = NULL;
+            bundle_getCurrentModule(bndEntry->bnd, &module);
+            module_getSymbolicName(module, &name);
+            status = CELIX_DO_IF(status, bundleContext_create(framework, framework->logger, bndEntry->bnd, &context));
+            status = CELIX_DO_IF(status, bundle_setContext(bndEntry->bnd, context));
+
+            if (status == CELIX_SUCCESS) {
+                activator = calloc(1,(sizeof(*activator)));
+                if (activator == NULL) {
+                    status = CELIX_ENOMEM;
+                } else {
+                    void * userData = NULL;
+                    create_function_fp create = (create_function_fp) celix_libloader_getSymbol((celix_library_handle_t*) bundle_getHandle(bndEntry->bnd), OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_CREATE);
+                    if (create == NULL) {
+                        create = celix_libloader_getSymbol(bundle_getHandle(bndEntry->bnd), OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_CREATE);
+                    }
+                    start_function_fp start = (start_function_fp) celix_libloader_getSymbol((celix_library_handle_t*) bundle_getHandle(bndEntry->bnd), OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_START);
+                    if (start == NULL) {
+                        start = (start_function_fp) celix_libloader_getSymbol((celix_library_handle_t*) bundle_getHandle(bndEntry->bnd), OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_START);
+                    }
+                    stop_function_fp stop = (stop_function_fp) celix_libloader_getSymbol((celix_library_handle_t*) bundle_getHandle(bndEntry->bnd), OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_STOP);
+                    if (stop == NULL) {
+                        stop = (stop_function_fp) celix_libloader_getSymbol((celix_library_handle_t*) bundle_getHandle(bndEntry->bnd), OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_STOP);
+                    }
+                    destroy_function_fp destroy = (destroy_function_fp) celix_libloader_getSymbol((celix_library_handle_t*) bundle_getHandle(bndEntry->bnd), OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_DESTROY);
+                    if (destroy == NULL) {
+                        destroy = (destroy_function_fp) celix_libloader_getSymbol((celix_library_handle_t*) bundle_getHandle(bndEntry->bnd), OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_DESTROY);
+                    }
+
+                    activator->create = create;
+                    activator->start = start;
+                    activator->stop = stop;
+                    activator->destroy = destroy;
+
+                    status = CELIX_DO_IF(status, bundle_setActivator(bndEntry->bnd, activator));
+
+                    status = CELIX_DO_IF(status, bundle_setState(bndEntry->bnd, OSGI_FRAMEWORK_BUNDLE_STARTING));
+                    CELIX_DO_IF(status, fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_STARTING, bndEntry));
+
+                    status = CELIX_DO_IF(status, bundle_getContext(bndEntry->bnd, &context));
+
+                    if (status == CELIX_SUCCESS) {
+                        if (create != NULL) {
+                            status = CELIX_DO_IF(status, create(context, &userData));
+                            if (status == CELIX_SUCCESS) {
+                                activator->userData = userData;
+                            }
+                        }
+                    }
+                    if (status == CELIX_SUCCESS) {
+                        if (start != NULL) {
+                            status = CELIX_DO_IF(status, start(userData, context));
+                        }
+                    }
+
+                    status = CELIX_DO_IF(status, bundle_setState(bndEntry->bnd, OSGI_FRAMEWORK_BUNDLE_ACTIVE));
+                    CELIX_DO_IF(status, fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_STARTED, bndEntry));
+
+                    if (status != CELIX_SUCCESS) {
+                        //state is still STARTING, back to resolved
+                        bool createCalled = activator != NULL && activator->userData != NULL;
+                        if (createCalled) {
+                            destroy(activator->userData, context);
+                        }
+                        bundle_setContext(bndEntry->bnd, NULL);
+                        bundle_setActivator(bndEntry->bnd, NULL);
+                        bundleContext_destroy(context);
+                        free(activator);
+                        status = bundle_setState(bndEntry->bnd, OSGI_FRAMEWORK_BUNDLE_RESOLVED);
+                    }
+                }
+            }
+
+            break;
+    }
+
+    if (status != CELIX_SUCCESS) {
+        const char *symbolicName = NULL;
+        long id = 0;
+        bundle_getCurrentModule(bndEntry->bnd, &module);
+        module_getSymbolicName(module, &symbolicName);
+        bundle_getBundleId(bndEntry->bnd, &id);
+        if (error != NULL) {
+            fw_logCode(framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Could not start bundle: %s [%ld]; cause: %s", symbolicName, id, error);
+        } else {
+            fw_logCode(framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Could not start bundle: %s [%ld]", symbolicName, id);
+        }
+    }
+
+    return status;
+}
+
 void celix_framework_waitForEmptyEventQueue(celix_framework_t *fw) {
+    assert(!celix_framework_isCurrentThreadTheEventLoop(fw));
+
     celixThreadMutex_lock(&fw->dispatcher.mutex);
-    while ((celix_arrayList_size(fw->dispatcher.requests) + fw->dispatcher.nrOfLocalRequest) != 0) {
+    while (fw->dispatcher.eventQueueSize > 0 || celix_arrayList_size(fw->dispatcher.dynamicEventQueue) > 0) {
         celixThreadCondition_wait(&fw->dispatcher.cond, &fw->dispatcher.mutex);
     }
     celixThreadMutex_unlock(&fw->dispatcher.mutex);
 }
 
+void celix_framework_waitUntilNoEventsForBnd(celix_framework_t* fw, long bndId) {
+    assert(!celix_framework_isCurrentThreadTheEventLoop(fw));
+
+    celixThreadMutex_lock(&fw->dispatcher.mutex);
+    bool eventInProgress = true;
+    while (eventInProgress) {
+        eventInProgress = false;
+        for (int i = 0; i < fw->dispatcher.eventQueueSize; ++i) {
+            int index = (fw->dispatcher.eventQueueFirstEntry + i) % CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE;
+            celix_framework_event_t* e = &fw->dispatcher.eventQueue[index];
+            if (e->bndEntry != NULL && e->bndEntry->bndId == bndId) {
+                eventInProgress = true;
+                break;
+            }
+        }
+        for (int i = 0; !eventInProgress && i < celix_arrayList_size(fw->dispatcher.dynamicEventQueue); ++i) {
+            celix_framework_event_t* e = celix_arrayList_get(fw->dispatcher.dynamicEventQueue, i);
+            if (e->bndEntry != NULL && e->bndEntry->bndId == bndId) {
+                eventInProgress = true;
+                break;
+            }
+        }
+        if (eventInProgress) {
+            celixThreadCondition_timedwaitRelative(&fw->dispatcher.cond, &fw->dispatcher.mutex, 5, 0);
+        }
+    }
+    celixThreadMutex_unlock(&fw->dispatcher.mutex);
+}
+
+
 void celix_framework_setLogCallback(celix_framework_t* fw, void* logHandle, void (*logFunction)(void* handle, celix_log_level_e level, const char* file, const char *function, int line, const char *format, va_list formatArgs)) {
     celix_frameworkLogger_setLogCallback(fw->logger, logHandle, logFunction);
+}
+
+long celix_framework_fireGenericEvent(framework_t* fw, long eventId, long bndId, const char *eventName, void* processData, void (*processCallback)(void *data), void* doneData, void (*doneCallback)(void* doneData)) {
+    celix_framework_bundle_entry_t* bndEntry = NULL;
+    if (bndId >=0) {
+        bndEntry = celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(fw, bndId);
+        if (bndEntry == NULL) {
+            fw_log(fw->logger, CELIX_LOG_LEVEL_ERROR, "Cannot find bundle for id %li", bndId);
+            return -1L;
+        }
+    }
+
+    if (eventId < 0) {
+        eventId = celix_framework_nextEventId(fw);
+    }
+
+    celix_framework_event_t event;
+    memset(&event, 0, sizeof(event));
+    event.type = CELIX_GENERIC_EVENT;
+    event.bndEntry = bndEntry;
+    event.genericEventId = eventId;
+    event.genericEventName = eventName;
+    event.genericProcessData = processData;
+    event.genericProcess = processCallback;
+    event.doneData = doneData;
+    event.doneCallback = doneCallback;
+    celix_framework_addToEventQueue(fw, &event);
+
+    return eventId;
+}
+
+long celix_framework_nextEventId(framework_t *fw) {
+    return __atomic_fetch_add(&fw->nextGenericEventId, 1, __ATOMIC_RELAXED);
+}
+
+void celix_framework_waitForGenericEvent(framework_t *fw, long eventId) {
+    assert(!celix_framework_isCurrentThreadTheEventLoop(fw));
+
+    celixThreadMutex_lock(&fw->dispatcher.mutex);
+    bool eventInProgress = true;
+    while (eventInProgress) {
+        eventInProgress = false;
+        for (int i = 0; i < fw->dispatcher.eventQueueSize; ++i) {
+            int index = (fw->dispatcher.eventQueueFirstEntry + i) % CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE;
+            celix_framework_event_t* e = &fw->dispatcher.eventQueue[index];
+            if (e->type == CELIX_GENERIC_EVENT && e->genericEventId == eventId) {
+                eventInProgress = true;
+                break;
+            }
+        }
+        for (int i = 0; !eventInProgress && i < celix_arrayList_size(fw->dispatcher.dynamicEventQueue); ++i) {
+            celix_framework_event_t* e = celix_arrayList_get(fw->dispatcher.dynamicEventQueue, i);
+            if (e->type == CELIX_GENERIC_EVENT && e->genericEventId == eventId) {
+                eventInProgress = true;
+                break;
+            }
+        }
+        if (eventInProgress) {
+            celixThreadCondition_timedwaitRelative(&fw->dispatcher.cond, &fw->dispatcher.mutex, 5, 0);
+        }
+    }
+    celixThreadMutex_unlock(&fw->dispatcher.mutex);
+}
+
+void celix_framework_waitForStop(celix_framework_t *framework) {
+    celixThreadMutex_lock(&framework->shutdown.mutex);
+    while (!framework->shutdown.done) {
+        celixThreadCondition_wait(&framework->shutdown.cond, &framework->shutdown.mutex);
+    }
+    if (!framework->shutdown.joined) {
+        celixThread_join(framework->shutdown.thread, NULL);
+        framework->shutdown.joined = true;
+    }
+
+    celixThreadMutex_unlock(&framework->shutdown.mutex);
 }

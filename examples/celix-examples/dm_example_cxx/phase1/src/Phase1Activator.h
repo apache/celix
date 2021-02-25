@@ -34,10 +34,11 @@ public:
     Phase1Activator(const Phase1Activator&) = delete;
     Phase1Activator& operator=(const Phase1Activator&) = delete;
 private:
+    std::shared_ptr<celix::dm::DependencyManager> dm{};
+    std::string cmpUUID{};
     celix_shell_command_t cmd {nullptr, nullptr};
     celix_shell_command_t addCmd {nullptr, nullptr};
     celix_shell_command_t removeCmd {nullptr, nullptr};
-    Component<Phase1Cmp> *phase1cmp{nullptr};
     DummyService *dummySvc{new DummyService};
 };
 

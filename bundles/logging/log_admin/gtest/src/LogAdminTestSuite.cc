@@ -34,6 +34,7 @@ public:
         auto* properties = celix_properties_create();
         celix_properties_set(properties, "org.osgi.framework.storage", ".cacheLogBundleTestSuite");
 
+
         auto* fwPtr = celix_frameworkFactory_createFramework(properties);
         auto* ctxPtr = celix_framework_getFrameworkContext(fwPtr);
         fw = std::shared_ptr<celix_framework_t>{fwPtr, [](celix_framework_t* f) {celix_frameworkFactory_destroyFramework(f);}};
@@ -120,6 +121,10 @@ TEST_F(LogBundleTestSuite, NrOfLogSinks) {
     EXPECT_EQ(0, control->nrOfSinks(control->handle, nullptr));
 
     celix_log_sink_t logSink;
+    logSink.handle = nullptr;
+    logSink.sinkLog = [](void */*handle*/, celix_log_level_e /*level*/, long /*logServiceId*/, const char* /*logServiceName*/, const char* /*file*/, const char* /*function*/, int /*line*/, const char */*format*/, va_list /*formatArgs*/) {
+        //nop
+    };
     celix_service_registration_options_t opts{};
     opts.serviceName = CELIX_LOG_SINK_NAME;
     opts.serviceVersion = CELIX_LOG_SINK_VERSION;
@@ -147,6 +152,11 @@ TEST_F(LogBundleTestSuite, NrOfLogSinks) {
 
 TEST_F(LogBundleTestSuite, SinkLogControl) {
     celix_log_sink_t logSink;
+    logSink.handle = nullptr;
+    logSink.sinkLog = [](void */*handle*/, celix_log_level_e /*level*/, long /*logServiceId*/, const char* /*logServiceName*/, const char* /*file*/, const char* /*function*/, int /*line*/, const char */*format*/, va_list /*formatArgs*/) {
+        //nop
+    };
+
     celix_service_registration_options_t opts{};
     opts.serviceName = CELIX_LOG_SINK_NAME;
     opts.serviceVersion = CELIX_LOG_SINK_VERSION;
@@ -214,6 +224,7 @@ TEST_F(LogBundleTestSuite, SinkLogControl) {
 TEST_F(LogBundleTestSuite, LogServiceControl) {
     //request "default" log service
     long trkId1 = celix_bundleContext_trackService(ctx.get(), CELIX_LOG_SERVICE_NAME, NULL, NULL);
+    celix_framework_waitForEmptyEventQueue(fw.get());
     EXPECT_EQ(2, control->nrOfLogServices(control->handle, nullptr));
 
     //request a 'logger1' log service
@@ -221,10 +232,12 @@ TEST_F(LogBundleTestSuite, LogServiceControl) {
     opts.filter.serviceName = CELIX_LOG_SERVICE_NAME;
     opts.filter.filter = "(name=test::group::Log1)";
     long trkId2 = celix_bundleContext_trackServicesWithOptions(ctx.get(), &opts);
+    celix_framework_waitForEmptyEventQueue(fw.get());
     EXPECT_EQ(3, control->nrOfLogServices(control->handle, nullptr));
 
     opts.filter.filter = "(name=test::group::Log2)";
     long trkId3 = celix_bundleContext_trackServicesWithOptions(ctx.get(), &opts);
+    celix_framework_waitForEmptyEventQueue(fw.get());
     EXPECT_EQ(4, control->nrOfLogServices(control->handle, nullptr));
     EXPECT_EQ(2, control->nrOfLogServices(control->handle, "test::group"));
 
@@ -267,7 +280,9 @@ static void logSinkFunction(void *handle, celix_log_level_e level, long logServi
 
     EXPECT_GE(level, CELIX_LOG_LEVEL_TRACE);
     EXPECT_GE(logServiceId, 0);
-    EXPECT_STREQ("test::Log1", logServiceName);
+    if (level == CELIX_LOG_LEVEL_FATAL) {
+        EXPECT_STREQ("test::Log1", logServiceName);
+    }
 
     vfprintf(stdout, format, formatArgs);
 
@@ -276,6 +291,11 @@ static void logSinkFunction(void *handle, celix_log_level_e level, long logServi
 
 TEST_F(LogBundleTestSuite, LogServiceAndSink) {
     celix_log_sink_t logSink;
+    logSink.handle = nullptr;
+    logSink.sinkLog = [](void */*handle*/, celix_log_level_e /*level*/, long /*logServiceId*/, const char* /*logServiceName*/, const char* /*file*/, const char* /*function*/, int /*line*/, const char */*format*/, va_list /*formatArgs*/) {
+        //nop
+    };
+
     std::atomic<size_t> count{0};
     logSink.handle = (void*)&count;
     logSink.sinkLog = logSinkFunction;
@@ -307,31 +327,32 @@ TEST_F(LogBundleTestSuite, LogServiceAndSink) {
         };
         trkId = celix_bundleContext_trackServicesWithOptions(ctx.get(), &opts);
     }
+    celix_framework_waitForEmptyEventQueue(fw.get());
 
     ASSERT_TRUE(logSvc.load() != nullptr);
-    EXPECT_EQ(0, count.load());
+    auto initial = count.load();
     celix_log_service_t *ls = logSvc.load();
     ls->info(ls->handle, "test %i %i %i", 1, 2, 3); //active log level
-    EXPECT_EQ(1, count.load());
+    EXPECT_EQ(initial +1, count.load());
     ls->debug(ls->handle, "test %i %i %i", 1, 2, 3); //note not a active log level
-    EXPECT_EQ(1, count.load());
+    EXPECT_EQ(initial +1, count.load());
 
     control->setActiveLogLevels(control->handle, "test::Log1", CELIX_LOG_LEVEL_DEBUG);
     ls->debug(ls->handle, "test %i %i %i", 1, 2, 3); //active log level
-    EXPECT_EQ(2, count.load());
+    EXPECT_EQ(initial +2, count.load());
 
     control->setActiveLogLevels(control->handle, "test::Log1", CELIX_LOG_LEVEL_DISABLED);
     ls->debug(ls->handle, "test %i %i %i", 1, 2, 3); //log service disable
-    EXPECT_EQ(2, count.load());
+    EXPECT_EQ(initial +2, count.load());
 
     control->setActiveLogLevels(control->handle, "test::Log1", CELIX_LOG_LEVEL_TRACE);
     control->setSinkEnabled(control->handle, "test::Sink1", false);
     ls->debug(ls->handle, "test %i %i %i", 1, 2, 3); //active log level and enabled log service, but sink disabled.
-    EXPECT_EQ(2, count.load());
+    EXPECT_EQ(initial +2, count.load());
 
     control->setSinkEnabled(control->handle, "test::Sink1", true);
     ls->debug(ls->handle, "test %i %i %i", 1, 2, 3); //all enabled and active again
-    EXPECT_EQ(3, count.load());
+    EXPECT_EQ(initial +3, count.load());
 
     ls->trace(ls->handle, "test %i %i %i", 1, 2, 3); //+1
     ls->debug(ls->handle, "test %i %i %i", 1, 2, 3); //+1
@@ -341,18 +362,23 @@ TEST_F(LogBundleTestSuite, LogServiceAndSink) {
     ls->fatal(ls->handle, "test %i %i %i", 1, 2, 3); //+1
     ls->log(ls->handle, CELIX_LOG_LEVEL_ERROR, "error"); //+1
     ls->logDetails(ls->handle, CELIX_LOG_LEVEL_ERROR, __FILE__, __FUNCTION__, __LINE__, "error"); //+1
-    EXPECT_EQ(11, count.load());
+    EXPECT_EQ(initial +11, count.load());
 
     celix_bundleContext_unregisterService(ctx.get(), svcId); //no log sink anymore
 
     ls->fatal(ls->handle, "test %i %i %i", 1, 2, 3); //+0 (no log to sink, fallback to stdout)
-    EXPECT_EQ(11, count.load());
+    EXPECT_EQ(initial +11, count.load());
 
     celix_bundleContext_stopTracker(ctx.get(), trkId);
 }
 
 TEST_F(LogBundleTestSuite, LogAdminCmd) {
     celix_log_sink_t logSink;
+    logSink.handle = nullptr;
+    logSink.sinkLog = [](void */*handle*/, celix_log_level_e /*level*/, long /*logServiceId*/, const char* /*logServiceName*/, const char* /*file*/, const char* /*function*/, int /*line*/, const char */*format*/, va_list /*formatArgs*/) {
+        //nop
+    };
+
     long svcId;
     {
         auto *svcProps = celix_properties_create();

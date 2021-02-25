@@ -23,19 +23,15 @@ limitations under the License.
 
 Apache Celix is organized into several subprojects. The following subproject are currently available:
 
-* [Framework](../../libs/framework) - The Apache Celix framework, an implementation of OSGi adapted to C.
-* [C Dependency Manager](../../libs/dependency_manager/README.md) - A C component/dependency model for use through an API provided as library.
-* [C++ Dependency Manager](../../libs/dependency_manager_cxx/README.md) - A C++ component/dependency model for use through an API provided as library.
-* [Device Access](../../bundles/device_access/README.md) - An implementation of the OSGi Device Access specification adapted to C.
-* [Etcd library](../../libs/etcdlib/README.md) - A C library that interfaces with ETCD.
+* [Framework](../../libs/framework) - The Apache Celix framework, an implementation of OSGi adapted to C and C++11.
+* [Etcd library](../../libs/etcdlib) - A C library that interfaces with ETCD.
 * [Examples](../../examples) - A Selection of examples showing how the framework can be used.
-* [Log Service](../../bundles/log_service/README.md) - An implementation of the OSGi Log Service adapted to C.
-* [Log Writer](../../bundles/log_writer/README.md) - A simple log writer for use in combination with the Log Service.
-* [Remote Service Admin](../../bundles/remote_services/README.md) - An implementation of the OSGi Remote Service Admin Service - for several protocols - adapted to C.
-* [Shell](../../bundles/shell/shell/README.md) - A OSGi shell implementation.
-* [Shell TUI](../../bundles/shell/shell_tui/README.md) - A textual UI for the Celix Shell.
-* [Remote Shell](../../bundles/shell/remote_shell/README.md) - A remote (telnet) frontend for the Celix shell.
+* [Log Service](../../bundles/logging) - An implementation of the OSGi Log Service adapted to C.
+* [Log Writer](../../bundles/loggin/log_writersr) - A simple log writer for use in combination with the Log Service.
+* [Shell](../../bundles/shell/shell/README.md) - A OSGi C and C++11 shell implementation.
+* [Shell TUI](../../bundles/shell/shell_tui) - A textual UI for the Celix Shell.
+* [Remote Shell](../../bundles/shell/remote_shell) - A remote (telnet) frontend for the Celix shell.
 * [Bonjour Shell](../../bundles/shell/shell_bonjour) - A remote (Bonjour / mDNS) frontend for the Celix shell.
-* [Deployment Admin](../../bundles/deployment_admin/README.md) - A deployment admin implementation.
-* [Pubsub](../../bundles/pubsub/README.md) - An implementation for a publish-subscribe remote services system, that use dfi library for message serialization.
-
+* [Web Shell](../../bundles/shell/shell_wui) - A web (websocket) frontend for the Celix shell.
+* [Pubsub](../../bundles/pubsub) - An implementation for a publish-subscribe remote services system, that use dfi library for message serialization.
+* [HTTP Admin](../../bundles/http_admin) - An implementation for the OSGi HTTP whiteboard adapted to C and based on civetweb.

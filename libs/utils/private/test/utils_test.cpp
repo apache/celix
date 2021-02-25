@@ -271,23 +271,24 @@ TEST(utils, isNumeric) {
 
 TEST(utils, compareServiceIdsAndRanking){
     int ret;
-    //service 1 is higher ranked and has a irrelevant ID
-    ret = utils_compareServiceIdsAndRanking(2,2,1,1);
-    LONGS_EQUAL(1, ret);
-
-    //service 1 is equally ranked and has a lower ID
-    ret = utils_compareServiceIdsAndRanking(1,1,2,1);
-    LONGS_EQUAL(1, ret);
-
-    //service 1 is equally ranked and has a higher ID
-    ret = utils_compareServiceIdsAndRanking(2,1,1,1);
+    //service 1 is higher ranked and has a irrelevant ID, so result is -1 (smaller -> sorted before service 2)
+    ret = celix_utils_compareServiceIdsAndRanking(2,2,1,1);
     LONGS_EQUAL(-1, ret);
 
-    //service 1 is lower ranked and has a irrelevant ID
-    ret = utils_compareServiceIdsAndRanking(1,1,2,2);
+    //service 1 is equally ranked and has a lower ID. so result is -1 (smaller -> sorted before service 2)
+    ret = celix_utils_compareServiceIdsAndRanking(1,1,2,1);
     LONGS_EQUAL(-1, ret);
+
+    //service 1 is equally ranked and has a higher ID, so result is 1 (larger -> sorted after service 2)
+    ret = celix_utils_compareServiceIdsAndRanking(2,1,1,1);
+    LONGS_EQUAL(1, ret);
+
+    //service 1 is lower ranked and has a irrelevant ID, so result is -1 (larger -> sorted after service 2)
+    ret = celix_utils_compareServiceIdsAndRanking(1,1,2,2);
+    LONGS_EQUAL(1, ret);
 
     //service 1 is equal in ID and irrelevantly ranked
+    //note ensure that also the call without celix_ is tested
     ret = utils_compareServiceIdsAndRanking(1,1,1,1);
     LONGS_EQUAL(0, ret);
 
@@ -361,4 +362,15 @@ TEST(utils, extractLocalNameAndNamespaceTest) {
     CHECK_TRUE(ns == NULL);
     free(name);
     free(ns);
+}
+
+TEST(utils, isStringNullOrEmpty) {
+    bool empty = celix_utils_isStringNullOrEmpty(nullptr);
+    CHECK_TRUE(empty);
+    empty = celix_utils_isStringNullOrEmpty("");
+    CHECK_TRUE(empty);
+    empty = celix_utils_isStringNullOrEmpty(" ");
+    CHECK_FALSE(empty);
+    empty = celix_utils_isStringNullOrEmpty("foo");
+    CHECK_FALSE(empty);
 }

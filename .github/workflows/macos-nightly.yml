@@ -15,11 +15,11 @@ jobs:
     timeout-minutes: 120
     steps:
     - name: Checkout source code
-      uses: actions/checkout@master
+      uses: actions/checkout@v2
     - name: Install dependencies
       run: |
         brew update
-        brew install lcov zeromq czmq openssl cpputest
+        brew install lcov zeromq czmq openssl cpputest jansson
         brew unlink openssl && brew link openssl --force
     - name: Build
       env:

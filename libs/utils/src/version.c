@@ -134,11 +134,7 @@ celix_version_t* celix_version_createVersion(int major, int minor, int micro, co
 
 void celix_version_destroy(celix_version_t* version) {
     if (version != NULL) {
-        version->major = 0;
-        version->minor = 0;
-        version->micro = 0;
         free(version->qualifier);
-        version->qualifier = NULL;
         free(version);
     }
 }
@@ -265,9 +261,9 @@ int celix_version_compareTo(const celix_version_t* version, const celix_version_
                 if (res != 0) {
                     result = res;
                 } else {
-                    if(version->qualifier == NULL && compare->qualifier == NULL) {
+                    if(celix_utils_isStringNullOrEmpty(version->qualifier) && celix_utils_isStringNullOrEmpty(version->qualifier)) {
                         result = 0;
-                    } else if (version->qualifier == NULL || compare->qualifier == NULL) {
+                    } else if (celix_utils_isStringNullOrEmpty(version->qualifier) || celix_utils_isStringNullOrEmpty(version->qualifier)) {
                         result = -1;
                     } else {
                         result = strcmp(version->qualifier, compare->qualifier);

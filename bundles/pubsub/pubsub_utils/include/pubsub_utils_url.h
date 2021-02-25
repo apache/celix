@@ -28,16 +28,16 @@ typedef struct pubsub_utils_url {
   char *url;
   char *protocol;
   char *hostname;
-  unsigned int portnr;
+  unsigned int port_nr;
   char *uri;
   char *interface;
-  unsigned int interface_portnr;
+  unsigned int interface_port_nr;
   char *interface_url;
 } pubsub_utils_url_t;
 
 struct sockaddr_in *pubsub_utils_url_from_fd(int fd);
-struct sockaddr_in *pubsub_utils_url_getInAddr(const char *hostname, int port);
-char *pubsub_utils_url_generate_url(char *hostname, unsigned int portnr, char *protocol);
+struct sockaddr_in *pubsub_utils_url_getInAddr(const char *hostname, unsigned int port);
+char *pubsub_utils_url_generate_url(char *hostname, unsigned int port_nr, char *protocol);
 char *pubsub_utils_url_get_url(struct sockaddr_in *inp, char *protocol);
 bool pubsub_utils_url_is_multicast(char *hostname);
 char *pubsub_utils_url_get_multicast_ip(char *hostname);

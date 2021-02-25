@@ -165,25 +165,21 @@ The C++ Bundle Activator:
 #include <memory>
 #include <iostream>
 
-#include <celix_api.h>
+#include "celix/BundleActivator.h"
 
 namespace /*anon*/ {
 
-    class BundleActivator {
-    public:
-        BundleActivator(std::shared_ptr<celix::dm::DependencyManager> _mng) : mng{_mng} {
-            std::cout << "Hello world from C++ bundle with id " << bndId() << std::endl;
-        }
-        ~BundleActivator() {
-            std::cout << "Goodbye world from C++ bundle with id " << bndId() << std::endl;
-        }
-    private:
-        long bndId() const {
-            return celix_bundle_getId(celix_bundleContext_getBundle(mng->bundleContext()));
-        }
-
-        std::shared_ptr<celix::dm::DependencyManager> mng;
-    };
+	class BundleActivator {
+	public:
+		explicit BundleActivator(std::shared_ptr<celix::BundleContext> _ctx) : ctx{std::move(_ctx)} {
+			std::cout << "Hello world from C++ bundle with id " << ctx->getBundle().getId() << std::endl;
+		}
+		~BundleActivator() {
+			std::cout << "Goodbye world from C++ bundle with id " << ctx->getBundle().getId() << std::endl;
+		}
+	private:
+		const std::shared_ptr<celix::BundleContext> ctx;
+	};
 
 }
 

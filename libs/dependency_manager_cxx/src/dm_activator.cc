@@ -29,7 +29,7 @@
  * Deprecated. Use the CELIX_GEN_CXX_BUNDLE_ACTIVATOR marco from celix_bundle_activator.h instead
  */
 struct BundleActivatorData {
-    DependencyManager mng;
+    std::shared_ptr<DependencyManager> mng;
     std::unique_ptr<celix::dm::DmActivator> act;
 };
 
@@ -39,7 +39,7 @@ extern "C" celix_status_t bundleActivator_create(celix_bundle_context_t *context
     BundleActivatorData* data = nullptr;
 #ifdef __EXCEPTIONS
     data = new BundleActivatorData{
-        .mng = celix::dm::DependencyManager{context},
+        .mng = std::make_shared<celix::dm::DependencyManager>(context),
         .act = nullptr
     };
 #else
@@ -49,7 +49,7 @@ extern "C" celix_status_t bundleActivator_create(celix_bundle_context_t *context
     };
 #endif
     if (data != nullptr) {
-        data->act = std::unique_ptr<celix::dm::DmActivator>{celix::dm::DmActivator::create(data->mng)};
+        data->act = std::unique_ptr<celix::dm::DmActivator>{celix::dm::DmActivator::create(*data->mng)};
     }
 
     if (data == nullptr || data->act == nullptr) {

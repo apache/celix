@@ -17,28 +17,45 @@
  * under the License.
  */
 
-#ifndef CELIX_DM_COMPONENT_H
-#define CELIX_DM_COMPONENT_H
-
-#include "celix/dm/types.h"
-#include "dm_component.h"
+#pragma once
 
 #include <map>
 #include <string>
 #include <vector>
+#include <atomic>
+#include <mutex>
+#include <memory>
+#include <iostream>
+#include <type_traits>
+#include <algorithm>
+
+
+#include "dm_component.h"
+#include "celix/dm/types.h"
+#include "celix/dm/ServiceDependency.h"
+#include "celix/dm/ProvidedService.h"
+#include "celix_dependency_manager.h"
+
+
 
 namespace celix { namespace dm {
 
+    enum class ComponentState {
+        INACTIVE = 1,
+        WAITING_FOR_REQUIRED = 2,
+        INSTANTIATED_AND_WAITING_FOR_REQUIRED = 3,
+        TRACKING_OPTIONAL = 4,
+    };
+
     class BaseComponent {
-    private:
-        celix_bundle_context_t *context {nullptr};
-        celix_dm_component_t *cCmp {nullptr};
     public:
-        BaseComponent(celix_bundle_context_t *con, const std::string &name) : context{con}, cCmp{nullptr} {
-            this->cCmp = celix_dmComponent_create(this->context, name.c_str());
+        BaseComponent(celix_bundle_context_t *con, celix_dependency_manager_t* cdm, std::string name, std::string uuid) : context{con}, cDepMan{cdm}, cCmp{nullptr} {
+            this->cCmp = celix_dmComponent_createWithUUID(this->context, name.c_str(), uuid.empty() ? nullptr : uuid.c_str());
             celix_dmComponent_setImplementation(this->cCmp, this);
+            cmpUUID = std::string{celix_dmComponent_getUUID(this->cCmp)};
+            cmpName = std::string{celix_dmComponent_getName(this->cCmp)};
         }
-        virtual ~BaseComponent() = default;
+        virtual ~BaseComponent() noexcept;
 
         BaseComponent(const BaseComponent&) = delete;
         BaseComponent& operator=(const BaseComponent&) = delete;
@@ -52,6 +69,65 @@ namespace celix { namespace dm {
          * Returns the C bundle context
          */
         celix_bundle_context_t* bundleContext() const { return this->context; }
+
+        /**
+         * Returns the cmp uuid.
+         */
+        const std::string& getUUID() const {
+            return cmpUUID;
+        }
+
+        /**
+         * Returns the cmp name.
+         */
+        const std::string& getName() const {
+            return cmpName;
+        }
+
+        /**
+         * Return the cmp state
+         */
+        ComponentState getState() const {
+             auto cState = celix_dmComponent_currentState(cCmp);
+             switch (cState) {
+                 case DM_CMP_STATE_INACTIVE:
+                     return ComponentState::INACTIVE;
+                 case DM_CMP_STATE_WAITING_FOR_REQUIRED:
+                     return ComponentState::WAITING_FOR_REQUIRED;
+                 case DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED:
+                     return ComponentState::INSTANTIATED_AND_WAITING_FOR_REQUIRED;
+                 default:
+                     return ComponentState::TRACKING_OPTIONAL;
+             }
+         }
+
+        /**
+         * Wait for an empty Celix event queue.
+         * Should not be called on the Celix event queue thread.
+         *
+         * Can be used to ensure that all created/updated components are completely processed (services registered
+         * and/or service trackers are created).
+         */
+        void wait() const;
+
+        /**
+         * Run the dm component build. After this call the component is added to the dependency manager and
+         * is enabled.
+         * The underlining service registration and service tracker will be registered/created async.
+         */
+        void runBuild();
+    protected:
+        celix_bundle_context_t* context;
+        celix_dependency_manager_t* cDepMan;
+        celix_dm_component_t *cCmp;
+        std::string cmpUUID{};
+        std::string cmpName{};
+
+        std::atomic<bool> cmpAddedToDepMan{false};
+
+        std::mutex mutex{}; //protects below
+        std::vector<std::shared_ptr<BaseServiceDependency>> dependencies{};
+        std::vector<std::shared_ptr<BaseProvidedService>> providedServices{};
     };
 
 
@@ -59,10 +135,10 @@ namespace celix { namespace dm {
     class Component : public BaseComponent {
         using type = T;
     private:
+        std::mutex instanceMutex{};
         std::unique_ptr<T> instance {nullptr};
         std::shared_ptr<T> sharedInstance {nullptr};
         std::vector<T> valInstance {};
-        std::vector<std::shared_ptr<BaseServiceDependency>> dependencies {};
 
         void (T::*initFp)() = {};
         void (T::*startFp)() = {};
@@ -73,24 +149,23 @@ namespace celix { namespace dm {
         int (T::*startFpNoExc)() = {};
         int (T::*stopFpNoExc)() = {};
         int (T::*deinitFpNoExc)() = {};
+
+        /**
+         * Ctor is private, use static create function member instead
+         * @param context
+         * @param cDepMan
+         * @param name
+         */
+        Component(celix_bundle_context_t *context, celix_dependency_manager_t* cDepMan, std::string name, std::string uuid);
     public:
-        Component(celix_bundle_context_t *context, const std::string &name);
         ~Component() override;
 
         /**
          * Creates a Component using the provided bundle context
          * and component name.
-         * Will use new(nothrow) if exceptions are disabled.
-         * @return newly created DM Component or nullptr
+         * @return newly created DM Component.
          */
-        static Component<T>* create(celix_bundle_context_t*, const std::string &name);
-
-        /**
-         * Creates a Component using the provided bundle context.
-         * Will use new(nothrow) if exceptions are disabled.
-         * @return newly created DM Component or nullptr
-         */
-        static Component<T>* create(celix_bundle_context_t*);
+        static std::shared_ptr<Component<T>> create(celix_bundle_context_t*, celix_dependency_manager_t* cDepMan, std::string name, std::string uuid);
 
         /**
          * Whether the component is valid. Invalid component can occurs when no new components can be created and
@@ -157,8 +232,23 @@ namespace celix { namespace dm {
          * @param version The version of the interface (e.g. "1.0.0"), can be an empty string
          * @param properties To (meta) properties to provide with the service
          */
-        template<class I> Component<T>& addCInterface(const I* svc, const std::string &serviceName, const std::string &version = std::string{}, const Properties &properties = Properties{});
+        template<class I> Component<T>& addCInterface(I* svc, const std::string &serviceName, const std::string &version = std::string{}, const Properties &properties = Properties{});
 
+
+        /**
+         * Creates a provided C services. The provided service can be fine tuned and build using a fluent API
+         * @param svc  The pointer to a C service (c struct)
+         * @param serviceName The service name to use
+         */
+        template<class I> ProvidedService<T,I>& createProvidedCService(I* svc, std::string serviceName);
+
+        /**
+         * Creates a provided C++ services. The provided service can be fine tuned and build using a fluent API
+         * The service pointer is based on the component instance.
+         *
+         * @param serviceName The optional service name. If not provided the service name is inferred from I.
+         */
+        template<class I> ProvidedService<T,I>& createProvidedService(std::string serviceName = {});
 
         /**
          * Adds a C interface to provide as service to the Celix framework.
@@ -243,9 +333,28 @@ namespace celix { namespace dm {
          * @return the DM Component reference for chaining (fluent API)
          */
         Component<T>& removeCallbacks();
+
+        /**
+         * Build the component.
+         *
+         * When building the component all provided services and services dependencies are enabled.
+         * This is not done automatically so that user can first construct component with their provided
+         * service and service dependencies.
+         *
+         * Note that the after this call the component will be created and if the component can be started, it
+         * will be started and the services will be registered.
+         *
+         * Should not be called from the Celix event  thread.
+         */
+         Component<T>& build();
+
+        /**
+         * Same as build, but this call will not wait til all service registrations and tracker are registered/openend
+         * on the Celix event thread.
+         * Can be called on the Celix event thread.
+         */
+        Component<T>& buildAsync();
     };
 }}
 
 #include "celix/dm/Component_Impl.h"
-
-#endif //CELIX_DM_COMPONENT_H

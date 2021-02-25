@@ -16,23 +16,16 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * version_range_private.h
- *
- *  \date       Dec 18, 2012
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
 
 #ifndef VERSION_RANGE_PRIVATE_H_
 #define VERSION_RANGE_PRIVATE_H_
 
-#include "version_range.h"
+#include "celix_version.h"
 
-struct versionRange {
-    version_pt low;
+struct celix_version_range {
+    celix_version_t* low;
     bool isLowInclusive;
-    version_pt high;
+    celix_version_t* high;
     bool isHighInclusive;
 };
 

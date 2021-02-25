@@ -17,9 +17,7 @@
  * under the License.
  */
 
-#ifndef CELIX_DM_ACTIVATOR_H
-#define CELIX_DM_ACTIVATOR_H
-
+#pragma once
 
 #include <utility>
 
@@ -28,6 +26,9 @@
 
 namespace celix { namespace dm {
 
+    /**
+     * This class is considered deprecated. Use CELIX_CXX_GEN_BUNDLE_ACTIVATOR instead.
+     */
     class DmActivator {
     public:
         DmActivator(DependencyManager& m) : mng(m), ctx{m.bundleContext()}  {}
@@ -71,19 +72,14 @@ namespace celix { namespace dm {
         int start() {
             celix_status_t status = CELIX_SUCCESS;
             this->init();
-            this->mng.start();
-
+            this->mng.build();
             return status;
         }
 
         int stop() {
             celix_status_t status = CELIX_SUCCESS;
-
             this->deinit();
-
-            // Remove all components
-            celix_dependencyManager_removeAllComponents(this->mng.cDependencyManager());
-
+            this->mng.clear();
             return status;
         }
 
@@ -93,5 +89,3 @@ namespace celix { namespace dm {
         friend int ::bundleActivator_destroy(void*, ::celix_bundle_context_t*);
     };
 }}
-
-#endif //CELIX_DM_ACTIVATOR_H

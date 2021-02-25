@@ -30,3 +30,4 @@ build
 cmake-build*
 nbproject
 target
+html

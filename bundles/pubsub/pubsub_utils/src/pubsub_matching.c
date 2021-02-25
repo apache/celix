@@ -33,51 +33,20 @@ typedef struct ps_utils_retrieve_topic_properties_data {
     celix_properties_t *outEndpoint;
 } ps_utils_retrieve_topic_properties_data_t;
 
-void ps_utils_serializer_selection_callback(void *handle, void *svc __attribute__((unused)), const celix_properties_t *props) {
-    struct ps_utils_serializer_selection_data *data = handle;
-    const char *serType = celix_properties_get(props, PUBSUB_MESSAGE_SERIALIZATION_SERVICE_SERIALIZATION_TYPE_PROPERTY, NULL);
-    long foundRanking = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_RANKING, -1);
-    if (serType == NULL) {
-        fprintf(stderr, "Warning found serializer without mandatory serializer type key (%s)\n", PUBSUB_MESSAGE_SERIALIZATION_SERVICE_SERIALIZATION_TYPE_PROPERTY);
-    } else {
-        if (strncmp(data->requested_serializer, serType, 1024 * 1024) == 0 && foundRanking > data->matchingRanking) {
-            data->matchingRanking = foundRanking;
-            data->matchingSvcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
-        }
-    }
-}
-
-
-
-void ps_protocol_selection_callback(void *handle, void *svc __attribute__((unused)), const celix_properties_t *props) {
-    struct ps_utils_protocol_selection_data *data = handle;
-    const char *serType = celix_properties_get(props, PUBSUB_PROTOCOL_TYPE_KEY, NULL);
-    if (serType == NULL) {
-        fprintf(stderr, "Warning found protocol without mandatory protocol type key (%s)\n", PUBSUB_PROTOCOL_TYPE_KEY);
-    } else {
-        if (strncmp(data->requested_protocol, serType, 1024 * 1024) == 0) {
-            data->matchingSvcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
-        }
-    }
-}
-
-
 static long getPSSerializer(celix_bundle_context_t *ctx, const char *requested_serializer) {
-    long svcId;
+    long svcId = -1L;
 
     if (requested_serializer != NULL) {
-        struct ps_utils_serializer_selection_data data;
-        data.requested_serializer = requested_serializer;
-        data.matchingSvcId = -1L;
-        data.matchingRanking = -2L;
-
-        celix_service_use_options_t opts = CELIX_EMPTY_SERVICE_USE_OPTIONS;
-        opts.filter.serviceName = PUBSUB_MESSAGE_SERIALIZATION_SERVICE_NAME;
-        opts.filter.ignoreServiceLanguage = true;
-        opts.callbackHandle = &data;
-        opts.useWithProperties = ps_utils_serializer_selection_callback;
-        celix_bundleContext_useServicesWithOptions(ctx, &opts);
-        svcId = data.matchingSvcId;
+        char filter[512];
+        int written = snprintf(filter, 512, "(%s=%s)", PUBSUB_MESSAGE_SERIALIZATION_SERVICE_SERIALIZATION_TYPE_PROPERTY, requested_serializer);
+        if (written > 512) {
+            fprintf(stderr, "Cannot create serializer filter. need more than 512 char array\n");
+        } else {
+            celix_service_filter_options_t opts = CELIX_EMPTY_SERVICE_FILTER_OPTIONS;
+            opts.serviceName = PUBSUB_MESSAGE_SERIALIZATION_SERVICE_NAME;
+            opts.filter = filter;
+            svcId = celix_bundleContext_findServiceWithOptions(ctx, &opts);
+        }
     } else {
         celix_service_filter_options_t opts = CELIX_EMPTY_SERVICE_FILTER_OPTIONS;
         opts.serviceName = PUBSUB_MESSAGE_SERIALIZATION_SERVICE_NAME;
@@ -118,20 +87,19 @@ static double getPSScore(const char *requested_admin, const char *request_qos, c
 }
 
 static long getPSProtocol(celix_bundle_context_t *ctx, const char *requested_protocol) {
-    long svcId;
+    long svcId = -1L;
 
     if (requested_protocol != NULL) {
-        struct ps_utils_protocol_selection_data data;
-        data.requested_protocol = requested_protocol;
-        data.matchingSvcId = -1L;
-
-        celix_service_use_options_t opts = CELIX_EMPTY_SERVICE_USE_OPTIONS;
-        opts.filter.serviceName = PUBSUB_PROTOCOL_SERVICE_NAME;
-        opts.filter.ignoreServiceLanguage = true;
-        opts.callbackHandle = &data;
-        opts.useWithProperties = ps_protocol_selection_callback;
-        celix_bundleContext_useServicesWithOptions(ctx, &opts);
-        svcId = data.matchingSvcId;
+        char filter[512];
+        int written = snprintf(filter, 512, "(%s=%s)", PUBSUB_PROTOCOL_TYPE_KEY, requested_protocol);
+        if (written > 512) {
+            fprintf(stderr, "Cannot create protocol filter. need more than 512 char array\n");
+        } else {
+            celix_service_filter_options_t opts = CELIX_EMPTY_SERVICE_FILTER_OPTIONS;
+            opts.serviceName = PUBSUB_PROTOCOL_SERVICE_NAME;
+            opts.filter = filter;
+            svcId = celix_bundleContext_findServiceWithOptions(ctx, &opts);
+        }
     } else {
         celix_service_filter_options_t opts = CELIX_EMPTY_SERVICE_FILTER_OPTIONS;
         opts.serviceName = PUBSUB_PROTOCOL_SERVICE_NAME;

@@ -128,6 +128,6 @@ static size_t tst_count(void *handle) {
     count1 = act->count1;
     count2 = act->count2;
     pthread_mutex_unlock(&act->mutex);
-    printf("msg count1 is %lu and msg count 2 is %lu\n", count1, count2);
+    printf("msg count1 is %lu and msg count 2 is %lu\n", (long unsigned int) count1, (long unsigned int) count2);
     return count1 >= count2 ? count1 : count2;
 }

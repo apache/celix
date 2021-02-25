@@ -136,7 +136,7 @@ bool celix_framework_stopBundle(celix_framework_t *fw, long bndId);
 bool celix_framework_startBundle(celix_framework_t *fw, long bndId);
 
 /**
- * Wait till the framework event queue is empty.
+ * Wait until the framework event queue is empty.
  *
  * The Celix framework has an event queue which (among others) handles bundle events.
  * This function can be used to ensure that all queue event are handled, mainly useful
@@ -154,6 +154,50 @@ void celix_framework_waitForEmptyEventQueue(celix_framework_t *fw);
  * Can be reset by setting the log function to NULL.
  */
 void celix_framework_setLogCallback(celix_framework_t* fw, void* logHandle, void (*logFunction)(void* handle, celix_log_level_e level, const char* file, const char *function, int line, const char *format, va_list formatArgs));
+
+
+/**
+ * wait until all events for the bundle identified by the bndId are processed.
+ */
+void celix_framework_waitUntilNoEventsForBnd(celix_framework_t* fw, long bndId);
+
+/**
+ * Returns whether the current thread is the Celix framework event loop thread.
+ */
+bool celix_framework_isCurrentThreadTheEventLoop(celix_framework_t* fw);
+
+
+/**
+ * Fire a generic event. The event will be added to the event loop and handled on the event loop thread.
+ *
+ * if bndId >=0 the bundle usage count will be increased while the event is not yet processed or finished processing.
+ * The eventName is expected to be const char* valid during til the event is finished processing.
+ *
+ * if eventId >=0 this will be used, otherwise a new event id will be generated
+ * return eventId
+ */
+long celix_framework_fireGenericEvent(celix_framework_t* fw, long eventId, long bndId, const char *eventName, void* processData, void (*processCallback)(void *data), void* doneData, void (*doneCallback)(void* doneData));
+
+/**
+ * Get the next event id.
+ *
+ * This can be used to ensure celix_framework_waitForGenericEvent can be used to wait for an event.
+ * The returned event id will not be used by the framework itself unless followed up with a
+ * celix_framework_fireGenericEvent call using the returned event id.
+ */
+long celix_framework_nextEventId(celix_framework_t *fw);
+
+/**
+ * Wait until a event with the provided event id is completely handled.
+ * This function will directly return if the provided event id is not in the event loop (already done or never issued).
+ */
+void celix_framework_waitForGenericEvent(celix_framework_t *fw, long eventId);
+
+/**
+ * Wait until the framework is stopped.
+ */
+void celix_framework_waitForStop(celix_framework_t *framework);
+
 
 
 #ifdef __cplusplus

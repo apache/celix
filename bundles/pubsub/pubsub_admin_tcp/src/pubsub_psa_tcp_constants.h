@@ -23,7 +23,7 @@
 #define PSA_TCP_BASE_PORT                       "PSA_TCP_BASE_PORT"
 #define PSA_TCP_MAX_PORT                        "PSA_TCP_MAX_PORT"
 
-#define PSA_TCP_MAX_RECV_SESSIONS               "PSA_TCP_MAX_RECV_SESSIONS"
+#define PSA_TCP_MAX_MESSAGE_SIZE                "PSA_TCP_MAX_MESSAGE_SIZE"
 #define PSA_TCP_RECV_BUFFER_SIZE                "PSA_TCP_RECV_BUFFER_SIZE"
 #define PSA_TCP_TIMEOUT                         "PSA_TCP_TIMEOUT"
 #define PSA_TCP_SUBSCRIBER_CONNECTION_TIMEOUT   "PSA_TCP_SUBSCRIBER_CONNECTION_TIMEOUT"
@@ -31,8 +31,7 @@
 #define PSA_TCP_DEFAULT_BASE_PORT               5501
 #define PSA_TCP_DEFAULT_MAX_PORT                6000
 
-#define PSA_TCP_DEFAULT_MAX_RECV_SESSIONS       1
-
+#define PSA_TCP_DEFAULT_MAX_MESSAGE_SIZE        UINT32_MAX
 #define PSA_TCP_DEFAULT_RECV_BUFFER_SIZE        65 * 1024
 #define PSA_TCP_DEFAULT_TIMEOUT                 2000 // 2 seconds
 #define PSA_TCP_SUBSCRIBER_CONNECTION_DEFAULT_TIMEOUT 250 // 250 ms
@@ -83,7 +82,7 @@
  * Name of environment variable with ip/url to bind to
  * e.g. PSA_TCP_STATIC_BIND_FOR_topic_scope="tcp://0.0.0.0:4444"
  */
-#define PUBSUB_TCP_STATIC_BIND_URL_FOR "PSA_TCP_STATIC_BIND_URL_FOR_"
+#define PUBSUB_TCP_STATIC_BIND_URL_FOR          "PSA_TCP_STATIC_BIND_URL_FOR_"
 
 /**
  * Can be set in the topic properties to fix a static url used for discovery
@@ -102,21 +101,33 @@
  */
 #define PUBSUB_TCP_STATIC_CONNECT_URLS          "tcp.static.connect.urls"
 
+
+/**
+ * Defines if the publisher / subscriber is a passive endpoint and shares
+ * the connection with publisher / subscriber endpoint with the matching (passive) key
+ * e.g. tcp.passive.configured="true" means that a publisher / subscriber is passive,
+ * when a publisher / subscriber is found with a matching key (for example tcp.passive.key="localhost").
+ * This creates full-duplex connection using a single socket.
+ */
+#define PUBSUB_TCP_PASSIVE_CONFIGURED            "tcp.passive.configured"
+#define PUBSUB_TCP_PASSIVE_KEY                   "tcp.passive.key"
+
+/**
+ * Name of environment variable to indicate that passive endpoint is configured
+ * e.g. PSA_TCP_PASSIVE_CONFIGURED_topic_scope="true"
+ */
+#define PUBSUB_TCP_PASSIVE_ENABLED               "PSA_TCP_PASSIVE_CONFIGURED_"
+/**
+ * Name of environment variable to configure the passive key (see PUBSUB_TCP_PASSIVE_KEY )
+ * e.g. PSA_TCP_PASSIVE_KEY__topic_scope="tcp://localhost:4444"
+ */
+#define PUBSUB_TCP_PASSIVE_SELECTION_KEY         "PSA_TCP_PASSIVE_KEY_"
+
 /**
  * Name of environment variable with space-separated list of ips/urls to connect to
  * e.g. PSA_TCP_STATIC_CONNECT_FOR_topic_scope="tcp://127.0.0.1:4444 tcp://127.0.0.2:4444"
  */
-#define PUBSUB_TCP_STATIC_CONNECT_URLS_FOR "PSA_TCP_STATIC_CONNECT_URL_FOR_"
-
-/**
- * The static endpoint type which a static endpoint should be configured.
- * Can be set in the topic properties.
- */
-#define PUBSUB_TCP_STATIC_ENDPOINT_TYPE         "tcp.static.endpoint.type"
-
-#define PUBSUB_TCP_STATIC_ENDPOINT_TYPE_SERVER  "server"
-#define PUBSUB_TCP_STATIC_ENDPOINT_TYPE_CLIENT  "client"
-
+#define PUBSUB_TCP_STATIC_CONNECT_URLS_FOR       "PSA_TCP_STATIC_CONNECT_URL_FOR_"
 
 /**
  * Realtime thread prio and scheduling information. This is used to setup the thread prio/sched of the

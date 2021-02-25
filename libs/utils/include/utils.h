@@ -43,7 +43,7 @@ UTILS_EXPORT char *utils_stringTrim(char *string);
 UTILS_EXPORT bool utils_isStringEmptyOrNull(const char *const str);
 
 UTILS_EXPORT int
-utils_compareServiceIdsAndRanking(unsigned long servId, long servRank, unsigned long otherServId, long otherServRank);
+utils_compareServiceIdsAndRanking(long servId, long servRank, long otherServId, long otherServRank);
 
 UTILS_EXPORT celix_status_t thread_equalsSelf(celix_thread_t thread, bool *equals);
 

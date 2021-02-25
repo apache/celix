@@ -15,14 +15,13 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout source code
-        uses: actions/checkout@master
+        uses: actions/checkout@v2
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -yq --no-install-recommends \
             build-essential \
-            cmake \
-            libtbb-dev
+            cmake
       - name: Build
         env:
           CC: ${{ matrix.compiler }}
@@ -30,5 +29,5 @@ jobs:
         run: |
           mkdir build install
           cd build
-          cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=../install ../misc/experimental/promise
+          cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=../install ../libs/promises
           make -j && make install

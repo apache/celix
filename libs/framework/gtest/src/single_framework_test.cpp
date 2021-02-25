@@ -18,67 +18,60 @@
  */
 
 #include <gtest/gtest.h>
-
-extern "C" {
-
-#include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
+#include <atomic>
 
 #include "celix_launcher.h"
 #include "celix_framework_factory.h"
-
-
-    static celix_framework_t *framework = nullptr;
-    static celix_bundle_context_t *context = nullptr;
-
-    static void setupFm(void) {
-        int rc = 0;
-
-        rc = celixLauncher_launch("config.properties", &framework);
-        ASSERT_EQ(CELIX_SUCCESS, rc);
-
-        bundle_pt bundle = nullptr;
-        rc = framework_getFrameworkBundle(framework, &bundle);
-        ASSERT_EQ(CELIX_SUCCESS, rc);
-
-        rc = bundle_getContext(bundle, &context);
-        ASSERT_EQ(CELIX_SUCCESS, rc);
-    }
-
-    static void teardownFm(void) {
-
-        celixLauncher_stop(framework);
-        celixLauncher_waitForShutdown(framework);
-        celixLauncher_destroy(framework);
-
-        context = nullptr;
-        framework = nullptr;
-    }
-
-    static void testFramework(void) {
-        //intentional empty. start/shutdown test
-        printf("testing startup/shutdown single framework\n");
-    }
-
-}
+#include "celix_framework.h"
+#include "framework.h"
 
 
 class CelixFramework : public ::testing::Test {
 public:
     CelixFramework() {
-        setupFm();
+        int rc;
+        celix_framework_t *fw = nullptr;
+        celix_bundle_context_t *context = nullptr;
+
+        rc = celixLauncher_launch("config.properties", &fw);
+        EXPECT_EQ(CELIX_SUCCESS, rc);
+
+        celix_bundle_t* bundle = celix_framework_getFrameworkBundle(fw);
+        EXPECT_TRUE(bundle != nullptr);
+
+        context = celix_framework_getFrameworkContext(fw);
+        EXPECT_TRUE(context != nullptr);
+
+        framework = std::shared_ptr<celix_framework_t>{fw, [](celix_framework_t* cFw) {
+            celixLauncher_stop(cFw);
+            celixLauncher_waitForShutdown(cFw);
+            celixLauncher_destroy(cFw);
+        }};
     }
 
-    ~CelixFramework() override {
-        teardownFm();
-    }
+    std::shared_ptr<celix_framework_t> framework{};
 };
 
 TEST_F(CelixFramework, testFramework) {
-    testFramework();
+    //nop
+}
+
+TEST_F(CelixFramework, testEventQueue) {
+    long eid = celix_framework_nextEventId(framework.get());
+    EXPECT_GE(eid, 0);
+    celix_framework_waitForGenericEvent(framework.get(), eid); //event never issued so should return directly
+
+    std::atomic<int> count{0};
+    celix_framework_fireGenericEvent(framework.get(), eid, -1L, "test", static_cast<void*>(&count), [](void* data) {
+       auto *c = static_cast<std::atomic<int>*>(data);
+       *c += 1;
+    }, static_cast<void*>(&count), [](void* data) {
+        auto *c = static_cast<std::atomic<int>*>(data);
+        *c += 3;
+    });
+
+    celix_framework_waitForGenericEvent(framework.get(), eid);
+    EXPECT_EQ(4, count);
 }
 
 class FrameworkFactory : public ::testing::Test {
@@ -170,6 +163,11 @@ TEST_F(FrameworkFactory, restartFramework) {
     framework_start(fw);
     framework_stop(fw);
     framework_waitForStop(fw);
+
+    framework_start(fw);
+    framework_stop(fw);
+    framework_waitForStop(fw);
+
     framework_destroy(fw);
 }
 
