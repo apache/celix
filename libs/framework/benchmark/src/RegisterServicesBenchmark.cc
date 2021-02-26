@@ -20,7 +20,7 @@
 #include <benchmark/benchmark.h>
 #include "celix/FrameworkFactory.h"
 
-//note using c++ service for both the C and C++ lookup, because this should not impact the lookup performance per language.
+//note using c++ service for both the C and C++ benchmark, because this should not impact the performance.
 class IService {
 public:
     static constexpr const char * const NAME = "IService";
@@ -148,11 +148,14 @@ static void RegisterServicesBenchmark_cxxRegistration(benchmark::State& state) {
     registrationTest(state, false);
 }
 
-BENCHMARK(RegisterServicesBenchmark_cRegistrationAndUnregistration)->Unit(benchmark::kMillisecond)->RangeMultiplier(10)->Range(1, 10000);
-BENCHMARK(RegisterServicesBenchmark_cxxRegistrationAndUnregistration)->Unit(benchmark::kMillisecond)->RangeMultiplier(10)->Range(1, 10000);
+#define CELIX_BENCHMARK(name) \
+    BENCHMARK(name)->MeasureProcessCPUTime()->UseRealTime()->Unit(benchmark::kMillisecond)
 
-BENCHMARK(RegisterServicesBenchmark_cRegistrationAndUnregistrationWith100Trackers)->Unit(benchmark::kMillisecond)->RangeMultiplier(10)->Range(1, 1000);
-BENCHMARK(RegisterServicesBenchmark_cxxRegistrationAndUnregistrationWith100Trackers)->Unit(benchmark::kMillisecond)->RangeMultiplier(10)->Range(1, 1000);
+CELIX_BENCHMARK(RegisterServicesBenchmark_cRegistrationAndUnregistration)->RangeMultiplier(10)->Range(1, 10000);
+CELIX_BENCHMARK(RegisterServicesBenchmark_cxxRegistrationAndUnregistration)->RangeMultiplier(10)->Range(1, 10000);
 
-BENCHMARK(RegisterServicesBenchmark_cRegistration)->Unit(benchmark::kMillisecond)->RangeMultiplier(10)->Range(1, 1000);
-BENCHMARK(RegisterServicesBenchmark_cxxRegistration)->Unit(benchmark::kMillisecond)->RangeMultiplier(10)->Range(1, 1000);
+CELIX_BENCHMARK(RegisterServicesBenchmark_cRegistrationAndUnregistrationWith100Trackers)->RangeMultiplier(10)->Range(1, 1000);
+CELIX_BENCHMARK(RegisterServicesBenchmark_cxxRegistrationAndUnregistrationWith100Trackers)->RangeMultiplier(10)->Range(1, 1000);
+
+CELIX_BENCHMARK(RegisterServicesBenchmark_cRegistration)->RangeMultiplier(10)->Range(1, 1000);
+CELIX_BENCHMARK(RegisterServicesBenchmark_cxxRegistration)->RangeMultiplier(10)->Range(1, 1000);

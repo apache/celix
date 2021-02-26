@@ -20,7 +20,7 @@
 #include <benchmark/benchmark.h>
 #include "celix/FrameworkFactory.h"
 
-//note using c++ service for both the C and C++ lookup, because this should not impact the lookup performance per language.
+//note using c++ service for both the C and C++ benchmark, because this should not impact the performance.
 class IService {
 public:
     static constexpr const char * const NAME = "IService";
@@ -155,11 +155,14 @@ static void LookupServicesBenchmark_cxxCreateDestroyTracker(benchmark::State& st
     createDestroyServiceTracker(state, false);
 }
 
-BENCHMARK(LookupServicesBenchmark_cFindSingleService)->Unit(benchmark::kMillisecond)->RangeMultiplier(10)->Range(1, 10000);
-BENCHMARK(LookupServicesBenchmark_cxxFindSingleService)->Unit(benchmark::kMillisecond)->RangeMultiplier(10)->Range(1, 10000);
+#define CELIX_BENCHMARK(name) \
+    BENCHMARK(name)->MeasureProcessCPUTime()->UseRealTime()->Unit(benchmark::kMillisecond)
 
-BENCHMARK(LookupServicesBenchmark_cFindServiceWithFilter)->Unit(benchmark::kMillisecond)->RangeMultiplier(10)->Range(1, 10000);
-BENCHMARK(LookupServicesBenchmark_cxxFindServiceWithFilter)->Unit(benchmark::kMillisecond)->RangeMultiplier(10)->Range(1, 10000);
+CELIX_BENCHMARK(LookupServicesBenchmark_cFindSingleService)->RangeMultiplier(10)->Range(1, 10000);
+CELIX_BENCHMARK(LookupServicesBenchmark_cxxFindSingleService)->RangeMultiplier(10)->Range(1, 10000);
 
-BENCHMARK(LookupServicesBenchmark_cCreateDestroyTracker)->Unit(benchmark::kMillisecond)->RangeMultiplier(10)->Range(1, 1000);
-BENCHMARK(LookupServicesBenchmark_cxxCreateDestroyTracker)->Unit(benchmark::kMillisecond)->RangeMultiplier(10)->Range(1, 1000);
+CELIX_BENCHMARK(LookupServicesBenchmark_cFindServiceWithFilter)->RangeMultiplier(10)->Range(1, 10000);
+CELIX_BENCHMARK(LookupServicesBenchmark_cxxFindServiceWithFilter)->RangeMultiplier(10)->Range(1, 10000);
+
+CELIX_BENCHMARK(LookupServicesBenchmark_cCreateDestroyTracker)->RangeMultiplier(10)->Range(1, 1000);
+CELIX_BENCHMARK(LookupServicesBenchmark_cxxCreateDestroyTracker)->RangeMultiplier(10)->Range(1, 1000);
