@@ -124,47 +124,39 @@ TEST_F(FileUtilsTestSuite, ExtractZipFileTest) {
 }
 
 #ifdef __APPLE__
-//TODO
+#include <mach-o/getsect.h>
+#include <mach-o/ldsyms.h>
+
 TEST_F(FileUtilsTestSuite, ExtractZipDataTest) {
-        static uint8_t *zipContent = nullptr;//get library info using a addr in the lib (the bundle register function)
+    //Given a zip files linked against the execute-able, can this be handled as a zip data entry.
+    unsigned long dataSize;
+    char *data = (char*)getsectiondata(&_mh_execute_header, "resources",
+                               "test_zip", &dataSize);
 
-        Dl_info info;
-        dladdr((void*)celix_utils_fileExists, &info);
+    const char* extractLocation = "extract_location";
+    const char* file1 = "extract_location/top.properties";
+    const char* file2 = "extract_location/subdir/sub.properties";
+    celix_utils_deleteDirectory(extractLocation, nullptr);
 
-        //get mach header from Dl_info
-        auto *header = static_cast<struct mach_header_64*>(info.dli_fbase);
+    //Given test zip data, I can extract this to a provided location and the correct files are extracted
+    EXPECT_FALSE(celix_utils_fileExists(extractLocation));
+    auto status = celix_utils_extractZipData(data, dataSize, extractLocation, nullptr);
+    EXPECT_EQ(status, CELIX_SUCCESS);
 
-        //get section from mach header based on the seg and sect name
-        const struct section_64 *sect = getsectbynamefromheader_64(header, "resources", "test_zip");
+    EXPECT_TRUE(celix_utils_fileExists(file1));
+    auto* props = celix_properties_load(file1);
+    EXPECT_NE(props, nullptr);
+    EXPECT_EQ(celix_properties_getAsLong(props, "level", 0), 1);
+    celix_properties_destroy(props);
 
-        //NOTE reading directly form the sect->addr is not possible (BAD_ACCESS), so copy sect part from dylib file.
-
-        //alloc buffer to store resources zip
-        zipContent = (uint8_t*)malloc(sect->size);
-
-        //read from dylib. note that the dylib location is in the Dl_info struct.
-        errno = 0;
-        FILE *dylib = fopen(info.dli_fname, "r");
-        size_t read = 0;
-        if (dylib != nullptr) {
-            fseek(dylib, sect->offset, SEEK_SET);
-            read = fread(zipContent, 1, sect->size, dylib);
-        }
-        if (dylib == nullptr || read != sect->size) {
-            "Error reading resources from dylib."
-            free(zipContent);
-            zipContent = nullptr;
-            resourcesLen = 0;
-        }
-        if (dylib != nullptr) {
-            fclose(dylib);
-        }
-
-        //TODO extract zip
-
-        free(zipContent);
+    EXPECT_TRUE(celix_utils_fileExists(file2));
+    props = celix_properties_load(file2);
+    EXPECT_NE(props, nullptr);
+    EXPECT_EQ(celix_properties_getAsLong(props, "level", 0), 2);
+    celix_properties_destroy(props);
 }
 #else
+//Given a zip files linked against the execute-able, can this be handled as a zip data entry.
 extern const uint8_t test_data_start[]  asm("_binary_test_zip_start");
 extern const uint8_t test_data_end[]    asm("_binary_test_zip_end");
 
