@@ -95,6 +95,19 @@ namespace celix {
      */
     constexpr const char * const FRAMEWORK_UUID = OSGI_FRAMEWORK_FRAMEWORK_UUID;
 
+    /**
+     * @brief Celix framework environment property (named "CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE") which configures
+     * the static event size queue used by the Celix framework.
+     *
+     * The Celix framework handle service events in a event thread. This thread uses a static allocated event queue with
+     * a fixed size and dynamic event queue if the static event queue is full.
+     * The decrease the memory footprint a smaller static event queue size can be used and to improve performance during
+     * heavy load a bigger static event queue size can be used.
+     *
+     * Default is CELIX_FRAMEWORK_DEFAULT_STATIC_EVENT_QUEUE_SIZE which is 1024, but can be override with a compiler
+     * define (same name).
+     */
+    constexpr const char * const FRAMEWORK_STATIC_EVENT_QUEUE_SIZE = CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE;
 
     /**
      * @brief Celix framework environment property (named "CELIX_AUTO_START_0") which specified a (ordered) space
