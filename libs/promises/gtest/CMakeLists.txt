@@ -16,6 +16,7 @@
 # under the License.
 
 add_executable(test_celix_promises
+        src/ExecutorTestSuite.cc
         src/PromisesTestSuite.cc
         src/VoidPromisesTestSuite.cc
 )

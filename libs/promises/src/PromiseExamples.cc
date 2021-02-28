@@ -18,7 +18,6 @@
  */
 
 
-#include <thread>
 #include <iostream>
 #include "celix/PromiseFactory.h"
 
@@ -45,20 +44,20 @@ int main() {
     fib(factory, 1000000000)
         .timeout(std::chrono::milliseconds {100})
         .onSuccess([](long val) {
-            std::cout << "Success p1 : " << std::to_string(val) << std::endl;
+            std::cout << "Success promise 1 : " << std::to_string(val) << std::endl;
         })
         .onFailure([](const std::exception& e) {
-            std::cerr << "Failure p1 : " << e.what() << std::endl;
+            std::cerr << "Failure promise 1 : " << e.what() << std::endl;
         });
 
     fib(factory, 39)
         .timeout(std::chrono::milliseconds{100})
         .onSuccess([](long val) {
-            std::cout << "Success p2 : " << std::to_string(val) << std::endl;
+            std::cout << "Success promise 2 : " << std::to_string(val) << std::endl;
         })
         .onFailure([](const std::exception& e) {
-            std::cerr << "Failure p2 : " << e.what() << std::endl;
+            std::cerr << "Failure promise 2 : " << e.what() << std::endl;
         });
 
-    //NOTE the program can only exit if the executor is done executing all task (even the timeout version).
+    //NOTE the program can only exit if the executor in the PromiseFactory is done executing all tasks.
 }
