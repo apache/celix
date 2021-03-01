@@ -28,6 +28,7 @@ if (FRAMEWORK_BENCHMARK)
     add_executable(celix_framework_benchmark
             src/RegisterServicesBenchmark.cc
             src/LookupServicesBenchmark.cc
+            src/DependencyManagerBenchmark.cc
     )
     target_link_libraries(celix_framework_benchmark PRIVATE Celix::framework benchmark::benchmark_main benchmark::benchmark)
 endif ()
