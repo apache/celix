@@ -133,7 +133,7 @@ pubsub_zmq_topic_receiver_t* pubsub_zmqTopicReceiver_create(celix_bundle_context
     pubsub_zmq_topic_receiver_t *receiver = calloc(1, sizeof(*receiver));
     receiver->ctx = ctx;
     receiver->logHelper = logHelper;
-    receiver->serializerType = serializerType;
+    receiver->serializerType = strndup(serializerType, 1024*1024);
     receiver->admin = admin;
     receiver->protocolSvcId = protocolSvcId;
     receiver->protocol = protocol;
@@ -313,6 +313,7 @@ void pubsub_zmqTopicReceiver_destroy(pubsub_zmq_topic_receiver_t *receiver) {
 
         free(receiver->scope);
         free(receiver->topic);
+        free((void*)receiver->serializerType);
     }
     free(receiver);
 }

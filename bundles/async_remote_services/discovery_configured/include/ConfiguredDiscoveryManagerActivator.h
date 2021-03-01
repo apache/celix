@@ -23,41 +23,19 @@
 
 namespace {
 
-/**
- * Activator class for the ConfiguredDiscoveryManager object.
- */
 class ConfiguredDiscoveryManagerActivator {
 public:
-
-    /**
-     * Deleted default constructor, dependencyManager parameter is required.
-     */
-    ConfiguredDiscoveryManagerActivator() = delete;
-
-    /**
-     *  Constructor for the ConfiguredDiscoveryManager.
-     * @param dependencyManager shared_ptr to the context/container dependency manager.
-     */
     explicit ConfiguredDiscoveryManagerActivator(const std::shared_ptr<celix::dm::DependencyManager>& dependencyManager);
 
-    /**
-     * Defaulted destructor.
-     */
-    ~ConfiguredDiscoveryManagerActivator() = default;
+    ~ConfiguredDiscoveryManagerActivator();
 
-    /**
-     * Defaulted copy-constructor.
-     */
     ConfiguredDiscoveryManagerActivator(const ConfiguredDiscoveryManagerActivator&) = default;
-
-    /**
-     * Defaulted move-constructor.
-     */
     ConfiguredDiscoveryManagerActivator(ConfiguredDiscoveryManagerActivator&&) = default;
 
 private:
 
     celix::dm::Component<celix::rsa::ConfiguredDiscoveryManager>& _component;
+    std::shared_ptr<celix::dm::DependencyManager> _mng;
 };
 
 } // end anonymous namespace.

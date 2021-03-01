@@ -44,28 +44,28 @@ void celix::async_rsa::AsyncAdmin::addEndpoint(celix::rsa::Endpoint* endpoint, [
 }
 
 void celix::async_rsa::AsyncAdmin::removeEndpoint([[maybe_unused]] celix::rsa::Endpoint* endpoint, [[maybe_unused]] Properties &&properties) {
-    auto interfaceIt = properties.find("service.exported.interfaces");
+    auto interface = properties.get("service.exported.interfaces");
 
-    if(interfaceIt == end(properties)) {
+    if(interface.empty()) {
         L_DEBUG("Removing endpoint but no exported interfaces");
         return;
     }
 
     std::unique_lock l(_m);
 
-    _toBeCreatedImportedEndpoints.erase(std::remove_if(_toBeCreatedImportedEndpoints.begin(), _toBeCreatedImportedEndpoints.end(), [&interfaceIt](auto const &endpoint){
-        auto endpointInterfaceIt = endpoint.getProperties().find("service.exported.interfaces");
-        return endpointInterfaceIt != end(endpoint.getProperties()) && endpointInterfaceIt->second == interfaceIt->second;
+    _toBeCreatedImportedEndpoints.erase(std::remove_if(_toBeCreatedImportedEndpoints.begin(), _toBeCreatedImportedEndpoints.end(), [&interface](auto const &endpoint){
+        auto endpointInterface = endpoint.getProperties().get("service.exported.interfaces");
+        return !endpointInterface.empty() && endpointInterface == interface;
     }), _toBeCreatedImportedEndpoints.end());
 
-    auto svcId = properties.find(OSGI_FRAMEWORK_SERVICE_ID);
+    auto svcId = properties.get(OSGI_FRAMEWORK_SERVICE_ID);
 
-    if(svcId == end(properties)) {
+    if(svcId.empty()) {
         L_DEBUG("Removing endpoint but no service instance");
         return;
     }
 
-    auto instanceIt = _serviceInstances.find(std::stol(svcId->second));
+    auto instanceIt = _serviceInstances.find(std::stol(svcId));
 
     if(instanceIt == end(_serviceInstances)) {
         return;
@@ -75,63 +75,65 @@ void celix::async_rsa::AsyncAdmin::removeEndpoint([[maybe_unused]] celix::rsa::E
 }
 
 void celix::async_rsa::AsyncAdmin::addImportedServiceFactory(celix::async_rsa::IImportedServiceFactory *factory, Properties &&properties) {
-    auto interfaceIt = properties.find("service.exported.interfaces");
+    auto interface = properties.get("service.exported.interfaces");
 
-    if(interfaceIt == end(properties)) {
+    if(interface.empty()) {
         L_DEBUG("Adding service factory but no exported interfaces");
         return;
     }
 
     std::unique_lock l(_m);
 
-    auto existingFactory = _factories.find(interfaceIt->second);
+    auto existingFactory = _factories.find(interface);
 
     if(existingFactory != end(_factories)) {
         L_WARN("Adding service factory but factory already exists");
         return;
     }
 
-    _factories.emplace(interfaceIt->second, factory);
+    _factories.emplace(interface, factory);
 
-    for (auto& tbce : _toBeCreatedImportedEndpoints) {
-
-        auto tbceIter = tbce.getProperties().find("service.exported.interfaces");
-        if (!(tbceIter == end(tbce.getProperties()) || tbceIter->second != interfaceIt->second)) {
-            addEndpointInternal(tbce);
+    for(auto it = _toBeCreatedImportedEndpoints.begin(); it != _toBeCreatedImportedEndpoints.end();) {
+        auto tbceInterface = it->getProperties().get("service.exported.interfaces");
+        if(tbceInterface.empty() || tbceInterface != interface) {
+            it++;
+        } else {
+            addEndpointInternal(*it);
+            _toBeCreatedImportedEndpoints.erase(it);
         }
     }
 }
 
 void celix::async_rsa::AsyncAdmin::removeImportedServiceFactory([[maybe_unused]] celix::async_rsa::IImportedServiceFactory *factory, Properties &&properties) {
     std::unique_lock l(_m);
-    auto interfaceIt = properties.find("service.exported.interfaces");
+    auto interface = properties.get("service.exported.interfaces");
 
-    if(interfaceIt == end(properties)) {
+    if(interface.empty()) {
         L_WARN("Removing service factory but missing exported interfaces");
         return;
     }
 
-    _factories.erase(interfaceIt->second);
+    _factories.erase(interface);
 }
 
-void celix::async_rsa::AsyncAdmin::addEndpointInternal(celix::rsa::Endpoint endpoint) {
+void celix::async_rsa::AsyncAdmin::addEndpointInternal(celix::rsa::Endpoint& endpoint) {
 
     const auto& properties = endpoint.getProperties();
-    auto interfaceIt = properties.find("service.exported.interfaces");
+    auto interface = properties.get("service.exported.interfaces");
 
-    if(interfaceIt == end(properties)) {
+    if(interface.empty()) {
         L_WARN("Adding endpoint but missing exported interfaces");
         return;
     }
 
-    auto svcId = properties.find(OSGI_FRAMEWORK_SERVICE_ID);
+    auto svcId = properties.get(OSGI_FRAMEWORK_SERVICE_ID);
 
-    if(svcId == end(properties)) {
+    if(svcId.empty()) {
         L_WARN("Adding endpoint but missing service id");
         return;
     }
 
-    auto existingFactory = _factories.find(interfaceIt->second);
+    auto existingFactory = _factories.find(interface);
 
     if(existingFactory == end(_factories)) {
         L_DEBUG("Adding endpoint but no factory available yet, delaying creation");
@@ -140,13 +142,13 @@ void celix::async_rsa::AsyncAdmin::addEndpointInternal(celix::rsa::Endpoint endp
     }
 
     L_DEBUG("Adding endpoint, created service");
-    _serviceInstances.emplace(std::stol(svcId->second), existingFactory->second->create(_mng, (Properties&&) properties));
+    _serviceInstances.emplace(std::stol(svcId), existingFactory->second->create(_mng, (Properties&&) properties));
 }
 
 class AdminActivator {
 public:
-    explicit AdminActivator([[maybe_unused]] std::shared_ptr<celix::dm::DependencyManager> mng) :
-            _cmp(mng->createComponent(std::make_unique<celix::async_rsa::AsyncAdmin>(mng))) {
+    explicit AdminActivator(std::shared_ptr<celix::dm::DependencyManager> mng) :
+            _cmp(mng->createComponent(std::make_unique<celix::async_rsa::AsyncAdmin>(mng))), _mng(std::move(mng)) {
 
         _cmp.createServiceDependency<celix::rsa::Endpoint>()
                 .setRequired(false)
@@ -161,10 +163,15 @@ public:
         _cmp.build();
     }
 
+    ~AdminActivator() noexcept {
+        _mng->destroyComponent(_cmp);
+    }
+
     AdminActivator(const AdminActivator &) = delete;
     AdminActivator &operator=(const AdminActivator &) = delete;
 private:
     celix::dm::Component<celix::async_rsa::AsyncAdmin>& _cmp;
+    std::shared_ptr<celix::dm::DependencyManager> _mng;
 };
 
 CELIX_GEN_CXX_BUNDLE_ACTIVATOR(AdminActivator)

@@ -24,6 +24,7 @@
 #include <ImportedServiceFactory.h>
 #include <pubsub/api.h>
 #include <celix/Deferred.h>
+#include <celix/PromiseFactory.h>
 #include "IHardcodedService.h"
 #include "HardcodedExampleSerializer.h"
 
@@ -42,7 +43,7 @@ struct ImportedHardcodedService final : public IHardcodedService {
         AddArgs args{_idCounter++, a, b, {}};
         _publisher->send(_publisher->handle, 1, &args, nullptr);
 
-        auto deferred = celix::Deferred<int>{};
+        auto deferred = _factory.deferred<int>();
         auto it = _intPromises.emplace(args.id, std::move(deferred));
         return it.first->second.getPromise();
     }
@@ -53,7 +54,7 @@ struct ImportedHardcodedService final : public IHardcodedService {
         SubtractArgs args{_idCounter++, a, b, {}};
         _publisher->send(_publisher->handle, 2, &args, nullptr);
 
-        auto deferred = celix::Deferred<int>{};
+        auto deferred = _factory.deferred<int>();
         auto it = _intPromises.emplace(args.id, std::move(deferred));
         return it.first->second.getPromise();
     }
@@ -64,7 +65,7 @@ struct ImportedHardcodedService final : public IHardcodedService {
         ToStringArgs args{_idCounter++, a, {}};
         _publisher->send(_publisher->handle, 3, &args, nullptr);
 
-        auto deferred = celix::Deferred<std::string>{};
+        auto deferred = _factory.deferred<std::string>();
         auto it = _stringPromises.emplace(args.id, std::move(deferred));
         return it.first->second.getPromise();
     }
@@ -127,6 +128,7 @@ private:
     std::pmr::unordered_map<int, celix::Deferred<int>> _intPromises{&_resource};
     std::pmr::unordered_map<int, celix::Deferred<std::string>> _stringPromises{&_resource};
     static std::atomic<int> _idCounter;
+    celix::PromiseFactory _factory{};
 };
 
 std::atomic<int> ImportedHardcodedService::_idCounter = 0;
@@ -141,7 +143,7 @@ struct UsingHardcodedServiceService {
         _t = std::thread([this]() {
             _svc->add(14, 123).thenAccept([](int val) {
                 std::cout << "[UsingHardcodedServiceService] add(14, 123) returned " << val << std::endl;
-            });
+            }).wait();
         });
     }
 
@@ -158,20 +160,20 @@ private:
 
 class ExampleActivator {
 public:
-    explicit ExampleActivator(std::shared_ptr<celix::dm::DependencyManager>& mng) {
+    explicit ExampleActivator(std::shared_ptr<celix::dm::DependencyManager> mng) {
         _addArgsSerializer.emplace(mng);
         _subtractArgsSerializer.emplace(mng);
         _toStringSerializer.emplace(mng);
 
-        mng->createComponent(std::make_unique<celix::async_rsa::DefaultImportedServiceFactory<IHardcodedService, ImportedHardcodedService>>(mng))
+        auto& factory = mng->createComponent(std::make_unique<celix::async_rsa::DefaultImportedServiceFactory<IHardcodedService, ImportedHardcodedService>>(mng))
             .addInterface<celix::async_rsa::IImportedServiceFactory>("1.0.0", Properties{{"service.exported.interfaces", "IHardcodedService"}}).build();
+        _factory = &factory;
 
         auto &usingCmp = mng->createComponent<UsingHardcodedServiceService>()
                 .setCallbacks(nullptr, &UsingHardcodedServiceService::start, &UsingHardcodedServiceService::stop, nullptr);
-        _usingSvc = &usingCmp.getInstance();
 
-        usingCmp.createServiceDependency<IHardcodedService>().setCallbacks([this](IHardcodedService *svc, Properties&& props) {
-            _usingSvc->setService(svc, std::forward<Properties>(props));
+        usingCmp.createServiceDependency<IHardcodedService>().setCallbacks([cmp = &usingCmp](IHardcodedService *svc, Properties&& props) {
+            cmp->getInstance().setService(svc, std::forward<Properties>(props));
         })
         .setRequired(true)
         .build();
@@ -179,21 +181,19 @@ public:
         usingCmp.build();
     }
 
-    ~ExampleActivator() {
-        _addArgsSerializer.reset();
-        _subtractArgsSerializer.reset();
-        _toStringSerializer.reset();
+    ~ExampleActivator() noexcept {
+        std::cout << "~ExampleActivator" << std::endl;
+        _factory->getInstance().destroy();
     }
 
     ExampleActivator(const ExampleActivator &) = delete;
     ExampleActivator &operator=(const ExampleActivator &) = delete;
 
 private:
-    UsingHardcodedServiceService *_usingSvc{};
-
     std::optional<AddArgsSerializer> _addArgsSerializer{};
     std::optional<SubtractArgsSerializer> _subtractArgsSerializer{};
     std::optional<ToStringArgsSerializer> _toStringSerializer{};
+    Component<celix::async_rsa::DefaultImportedServiceFactory<IHardcodedService, ImportedHardcodedService>> *_factory{};
 };
 
 CELIX_GEN_CXX_BUNDLE_ACTIVATOR(ExampleActivator)

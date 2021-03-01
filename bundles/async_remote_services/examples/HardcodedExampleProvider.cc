@@ -24,30 +24,34 @@
 #include "HardcodedExampleSerializer.h"
 #include "IHardcodedService.h"
 #include <IExportedService.h>
+#include <celix/PromiseFactory.h>
 
 struct HardcodedService final : public IHardcodedService {
     ~HardcodedService() final = default;
 
     celix::Promise<int> add(int a, int b) noexcept final {
         std::cout << "[HardcodedService] add " << a << " + " << b << std::endl;
-        auto deferred = celix::Deferred<int>{};
+        auto deferred = _factory.deferred<int>();
         deferred.resolve(a + b);
         return deferred.getPromise();
     }
 
     celix::Promise<int> subtract(int a, int b) noexcept final {
         std::cout << "[HardcodedService] subtract " << a << " + " << b << std::endl;
-        auto deferred = celix::Deferred<int>{};
+        auto deferred = _factory.deferred<int>();
         deferred.resolve(a - b);
         return deferred.getPromise();
     }
 
     celix::Promise<std::string> toString(int a) noexcept final {
         std::cout << "[HardcodedService] toString " << a << std::endl;
-        auto deferred = celix::Deferred<std::string>{};
+        auto deferred = _factory.deferred<std::string>();
         deferred.resolve(std::to_string(a));
         return deferred.getPromise();
     }
+
+private:
+    celix::PromiseFactory _factory{};
 };
 
 struct ExportedHardcodedService final : public celix::async_rsa::IExportedService {
@@ -108,7 +112,7 @@ private:
 
 class ExampleActivator {
 public:
-    explicit ExampleActivator(std::shared_ptr<celix::dm::DependencyManager> &mng) : _mng(mng) {
+    explicit ExampleActivator(const std::shared_ptr<celix::dm::DependencyManager>& mng) : _mng(mng) {
         _addArgsSerializer.emplace(mng);
         _subtractArgsSerializer.emplace(mng);
         _toStringSerializer.emplace(mng);
@@ -116,9 +120,8 @@ public:
         mng->createComponent<HardcodedService>().addInterfaceWithName<IHardcodedService>(std::string{IHardcodedService::NAME}, std::string{IHardcodedService::VERSION}).build();
         auto &exportedCmp = mng->createComponent<ExportedHardcodedService>()
                 .addInterface<celix::async_rsa::IExportedService>(std::string{IHardcodedService::VERSION}, Properties{{"service.exported.interfaces", std::string{IHardcodedService::NAME}}, {"service.imported", "false"}, {"endpoint.id", "1"}});
-        _exportedCmp = &exportedCmp;
-        exportedCmp.createServiceDependency<IHardcodedService>(std::string{IHardcodedService::NAME}).setCallbacks([this](IHardcodedService *svc, Properties&& props){
-            _exportedCmp->getInstance().setService(svc, std::forward<Properties>(props));
+        exportedCmp.createServiceDependency<IHardcodedService>(std::string{IHardcodedService::NAME}).setCallbacks([cmp = &exportedCmp](IHardcodedService *svc, Properties&& props){
+            cmp->getInstance().setService(svc, std::forward<Properties>(props));
         }).build();
 
         _sub.handle = &exportedCmp.getInstance();
@@ -143,7 +146,7 @@ public:
         exportedCmp.template createCServiceDependency<pubsub_publisher_t>(PUBSUB_PUBLISHER_SERVICE_NAME)
                 .setVersionRange("[3.0.0,4)")
                 .setFilter(std::string{"(topic=async_rsa."}.append(IHardcodedService::NAME).append(")"))
-                .setCallbacks([this](const pubsub_publisher_t * pub, Properties&& props){ _exportedCmp->getInstance().setPublisher(pub, std::forward<Properties&&>(props)); })
+                .setCallbacks([cmp = &exportedCmp](const pubsub_publisher_t * pub, Properties&& props){ cmp->getInstance().setPublisher(pub, std::forward<Properties&&>(props)); })
                 .setRequired(true)
                 .build();
         exportedCmp.template createCServiceDependency<pubsub_subscriber_t>(PUBSUB_PUBLISHER_SERVICE_NAME)
@@ -157,10 +160,6 @@ public:
     }
 
     ~ExampleActivator() {
-        std::cout << "[ExampleActivator] ~ExampleActivator" << std::endl;
-        _addArgsSerializer.reset();
-        _subtractArgsSerializer.reset();
-        _toStringSerializer.reset();
         celix_bundleContext_unregisterService(_mng->bundleContext(), _subId);
     }
 
@@ -172,7 +171,6 @@ private:
     std::optional<SubtractArgsSerializer> _subtractArgsSerializer{};
     std::optional<ToStringArgsSerializer> _toStringSerializer{};
     std::shared_ptr<celix::dm::DependencyManager> _mng{};
-    celix::dm::Component<ExportedHardcodedService> *_exportedCmp{};
     long _subId{};
     pubsub_subscriber_t _sub{};
 };

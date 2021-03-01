@@ -38,9 +38,9 @@ celix::dm::Properties convertEndpointPropertiesToCelix(const ConfiguredEndpointP
 
 ConfiguredEndpointProperties convertCelixPropertiesToEndpoint(const celix::dm::Properties& celixProperties) {
 
-    auto endpointId = celixProperties.at("endpoint.id");
-    auto exports = celixProperties.at("service.exported.interfaces");
-    auto imported = celixProperties.at("service.imported");
+    auto endpointId = celixProperties.get("endpoint.id");
+    auto exports = celixProperties.get("service.exported.interfaces");
+    auto imported = celixProperties.get("service.imported");
     return ConfiguredEndpointProperties{endpointId,
                                         (imported == "true"),
                                         {}, exports, {}, "", ""};

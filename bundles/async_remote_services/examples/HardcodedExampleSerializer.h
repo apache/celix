@@ -25,6 +25,8 @@
 #include <bits/types/struct_iovec.h>
 #include <pubsub_constants.h>
 
+#include <utility>
+
 struct AddArgs {
     int id{};
     int a{};
@@ -46,7 +48,7 @@ struct ToStringArgs {
 };
 
 struct AddArgsSerializer {
-    explicit AddArgsSerializer(std::shared_ptr<celix::dm::DependencyManager> &mng) : _mng(mng) {
+    explicit AddArgsSerializer(std::shared_ptr<celix::dm::DependencyManager> mng) : _mng(std::move(mng)) {
         _svc.deserialize = [](void*, const struct iovec* input, size_t, void** out) -> celix_status_t {
             json_error_t error;
             json_t *js_request = json_loads(static_cast<char*>(input->iov_base), 0, &error);
@@ -135,7 +137,7 @@ private:
 };
 
 struct SubtractArgsSerializer {
-    explicit SubtractArgsSerializer(std::shared_ptr<celix::dm::DependencyManager> &mng) : _mng(mng) {
+    explicit SubtractArgsSerializer(std::shared_ptr<celix::dm::DependencyManager> mng) : _mng(std::move(mng)) {
         _svc.handle = this;
         _svc.deserialize = [](void*, const struct iovec* input, size_t, void** out) -> celix_status_t {
             json_error_t error;
@@ -225,7 +227,7 @@ private:
 };
 
 struct ToStringArgsSerializer {
-    explicit ToStringArgsSerializer(std::shared_ptr<celix::dm::DependencyManager> &mng) : _mng(mng) {
+    explicit ToStringArgsSerializer(std::shared_ptr<celix::dm::DependencyManager> mng) : _mng(std::move(mng)) {
         _svc.handle = this;
         _svc.deserialize = [](void*, const struct iovec* input, size_t, void** out) -> celix_status_t {
             json_error_t error;

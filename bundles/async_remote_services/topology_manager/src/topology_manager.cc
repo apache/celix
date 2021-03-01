@@ -38,16 +38,16 @@ celix::async_rsa::AsyncTopologyManager::~AsyncTopologyManager() {
 }
 
 void celix::async_rsa::AsyncTopologyManager::addExportedService(celix::async_rsa::IExportedService *exportedService, Properties &&properties) {
-    auto interfaceIt = properties.find("service.exported.interfaces");
+    auto interface = properties.get("service.exported.interfaces");
 
-    if(interfaceIt == end(properties)) {
+    if(interface.empty()) {
         L_DEBUG("Adding exported service but no exported interfaces");
         return;
     }
 
     std::unique_lock l(_m);
 
-    auto existingFactory = _exportedServices.find(interfaceIt->second);
+    auto existingFactory = _exportedServices.find(interface);
 
     if(existingFactory != end(_exportedServices)) {
         L_WARN("Adding service factory but factory already exists");
@@ -61,21 +61,20 @@ void celix::async_rsa::AsyncTopologyManager::addExportedService(celix::async_rsa
         return;
     }
 
-    _exportedServices.emplace(interfaceIt->second, exportedService);
+    _exportedServices.emplace(interface, exportedService);
 }
 
 void celix::async_rsa::AsyncTopologyManager::removeExportedService([[maybe_unused]] celix::async_rsa::IExportedService *exportedService, Properties &&properties) {
+    auto interface = properties.get("service.exported.interfaces");
 
-    auto interfaceIt = properties.find("service.exported.interfaces");
-
-    if(interfaceIt == end(properties)) {
+    if(interface.empty()) {
         L_WARN("Removing exported service but missing exported interfaces");
         return;
     }
 
     std::unique_lock l(_m);
 
-    if(_exportedServices.erase(interfaceIt->second) > 0) {
+    if(_exportedServices.erase(interface) > 0) {
         if(_discovery != nullptr) {
             _discovery->revokeEndpoint(std::make_unique<celix::rsa::Endpoint>(std::move(properties)));
         } else {

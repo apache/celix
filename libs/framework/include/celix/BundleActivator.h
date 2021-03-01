@@ -66,7 +66,7 @@ namespace celix {
             while (!observe.expired()) {
                 auto now = std::chrono::system_clock::now();
                 auto durationInSec = std::chrono::duration_cast<std::chrono::seconds>(now - start);
-                if (durationInSec > std::chrono::seconds{5}) {
+                if (durationInSec > std::chrono::seconds{2}) {
                     auto msg =  std::string{"Cannot destroy bundle "} + std::to_string(bndId) + ". " + name + " is still in use. std::shared_ptr use count is " + std::to_string(observe.use_count()) + "\n";
                     auto ctx = weakCtx.lock();
                     if (ctx) {
@@ -85,12 +85,10 @@ namespace celix {
             auto *data = static_cast<BundleActivatorData<I> *>(userData);
             std::weak_ptr<celix::BundleContext> ctx = data->ctx;
             std::weak_ptr<celix::dm::DependencyManager> dm = data->dm;
-            data->bundleActivator = nullptr;
-            data->dm = nullptr;
-            data->ctx = nullptr;
-            waitForExpired(data->bndId, ctx, "celix::BundleContext", ctx);
-            waitForExpired(data->bndId, ctx, "celix::dm::DependencyManager", dm);
+            auto bndId = data->bndId;
             delete data;
+            waitForExpired(bndId, ctx, "celix::BundleContext", ctx);
+            waitForExpired(bndId, ctx, "celix::dm::DependencyManager", dm);
             return CELIX_SUCCESS;
         }
     }

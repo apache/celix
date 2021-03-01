@@ -292,14 +292,14 @@ void pubsub_zmqAdmin_addSerializerSvc(void *handle, void *svc, const celix_prope
     hash_map_t *typeEntries = hashMap_get(psa->serializers.map, serType);
     if(typeEntries == NULL) {
         typeEntries = hashMap_create(NULL, NULL, NULL, NULL);
-        hashMap_put(psa->serializers.map, (void*)serType, typeEntries);
+        hashMap_put(psa->serializers.map, (void*)strndup(serType, 1024*1024), typeEntries);
     }
     psa_zmq_serializer_entry_t *entry = hashMap_get(typeEntries, (void*)msgId);
     if (entry == NULL) {
         entry = calloc(1, sizeof(psa_zmq_serializer_entry_t));
         entry->svc = svc;
-        entry->fqn = msgFqn;
-        entry->version = msgVersion;
+        entry->fqn = strndup(msgFqn, 1024*1024);
+        entry->version = strndup(msgVersion, 1024*1024);
         hashMap_put(typeEntries, (void*)msgId, entry);
     }
     celixThreadRwlock_unlock(&psa->serializers.mutex);
@@ -313,11 +313,14 @@ void pubsub_zmqAdmin_removeSerializerSvc(void *handle, void *svc, const celix_pr
     celixThreadRwlock_writeLock(&psa->serializers.mutex);
     hash_map_t *typeEntries = hashMap_get(psa->serializers.map, serType);
     if(typeEntries != NULL) {
-        free(hashMap_remove(typeEntries, (void*)msgId));
+        psa_zmq_serializer_entry_t *entry = hashMap_remove(typeEntries, (void*)msgId);
+        free((void*)entry->fqn);
+        free((void*)entry->version);
+        free(entry);
 
         // check if there are no remaining serializers for the given type. If not, remove all senders and receivers for this type.
         if(hashMap_size(typeEntries) == 0) {
-            hashMap_destroy(hashMap_remove(psa->serializers.map, serType), false, false);
+            hashMap_destroy(hashMap_removeFreeKey(psa->serializers.map, serType), true, false);
             celixThreadRwlock_unlock(&psa->serializers.mutex);
 
             celixThreadMutex_lock(&psa->topicSenders.mutex);

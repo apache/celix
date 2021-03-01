@@ -70,6 +70,6 @@ namespace celix::async_rsa {
         std::vector<celix::rsa::Endpoint> _toBeCreatedImportedEndpoints{};
 
         // Internal functions for code re-use
-        void addEndpointInternal(celix::rsa::Endpoint endpoint);
+        void addEndpointInternal(celix::rsa::Endpoint& endpoint);
     };
 }

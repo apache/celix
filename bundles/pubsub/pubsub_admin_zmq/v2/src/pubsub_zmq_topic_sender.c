@@ -146,7 +146,7 @@ pubsub_zmq_topic_sender_t* pubsub_zmqTopicSender_create(
     pubsub_zmq_topic_sender_t *sender = calloc(1, sizeof(*sender));
     sender->ctx = ctx;
     sender->logHelper = logHelper;
-    sender->serializerType = serializerType;
+    sender->serializerType = strndup(serializerType, 1024*1024);
     sender->admin = admin;
     sender->protocolSvcId = protocolSvcId;
     sender->protocol = prot;
@@ -354,6 +354,7 @@ void pubsub_zmqTopicSender_destroy(pubsub_zmq_topic_sender_t *sender) {
         }
         free(sender->topic);
         free(sender->url);
+        free((void*)sender->serializerType);
         free(sender);
     }
 }

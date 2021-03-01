@@ -26,8 +26,12 @@ ConfiguredDiscoveryManagerActivator::ConfiguredDiscoveryManagerActivator(
         const std::shared_ptr<celix::dm::DependencyManager>& dependencyManager) :
             _component{dependencyManager->createComponent(
                 std::make_unique<celix::rsa::ConfiguredDiscoveryManager>(dependencyManager))
-                                        .addInterface<celix::rsa::EndpointAnnouncer>().build()} {
+                                        .addInterface<celix::rsa::EndpointAnnouncer>().build()}, _mng(dependencyManager) {
 }
+
+    ConfiguredDiscoveryManagerActivator::~ConfiguredDiscoveryManagerActivator() {
+        _mng->destroyComponent(_component);
+    }
 
 // define this class as the bundle activator.
 CELIX_GEN_CXX_BUNDLE_ACTIVATOR(ConfiguredDiscoveryManagerActivator)

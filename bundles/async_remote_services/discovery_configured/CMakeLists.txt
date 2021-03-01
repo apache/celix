@@ -20,7 +20,7 @@ find_package(RapidJSON REQUIRED)
 add_celix_bundle(async_rsa_discovery_configured
         VERSION 0.9.0
         SYMBOLIC_NAME "apache_celix_async_remote_service_admin_discovery_configured"
-        NAME "Apache Celix Async Remote Service Admin Configured Discovery"
+        NAME "Apache Celix Async Configured Discovery"
         GROUP "Celix/AsyncRSA"
         SOURCES
         src/ConfiguredEndpoint.cc

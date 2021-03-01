@@ -36,16 +36,16 @@ public:
      * Endpoint constructor.
      * @param properties celix properties with information about this endpoint and what its documenting.
      */
-    explicit Endpoint(std::map<std::string, std::string> properties) : _celixProperties{std::move(properties)} {
+    explicit Endpoint(celix::dm::Properties properties) : _celixProperties{std::move(properties)} {
         // TODO validate mandatory properties are set.
     }
 
-    const celix::dm::Properties& getProperties() const {
+    [[nodiscard]] const celix::dm::Properties& getProperties() const {
         return _celixProperties;
     }
 
-    const std::string& getEndpointId() const {
-        return _celixProperties.at("endpoint.id");
+    [[nodiscard]] std::string getEndpointId() const {
+        return _celixProperties.get("endpoint.id");
     }
 
 protected:

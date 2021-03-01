@@ -80,8 +80,7 @@ inline void DependencyManager::buildAsync() {
     }
 }
 
-template<typename T>
-void DependencyManager::destroyComponent(Component<T> &component) {
+inline void DependencyManager::destroyComponent(BaseComponent &component) {
     removeComponent(component.getUUID());
 }
 

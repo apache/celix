@@ -38,17 +38,12 @@ namespace celix::async_rsa {
         }
 
         ~DefaultImportedServiceFactory() final {
-            for (auto &[id, cmp] : _subCmps) {
-                celix_bundleContext_unregisterService(_mng->bundleContext(), id);
-            }
-            _subCmps.clear();
-            for (auto cmp : _cmps) {
-                _mng->destroyComponent(*cmp);
-            }
-            _cmps.clear();
+            std::cout << "~DefaultImportedServiceFactory" << std::endl;
+            destroy();
         }
 
         celix::dm::BaseComponent& create(std::shared_ptr<celix::dm::DependencyManager> &dm, celix::dm::Properties&&) final {
+            std::cout << "create" << std::endl;
             auto &cmp = dm->template createComponent<Implementation>(std::string{Interface::NAME})
                 .template addInterface<Interface>(std::string{Interface::VERSION});
 
@@ -63,7 +58,6 @@ namespace celix::async_rsa {
                     .setFilter(std::string{"(topic=async_rsa."}.append(Interface::NAME).append(")"))
                     .setRequired(true)
                     .build();
-            _cmps.push_back(&cmp);
 
             auto sub = std::make_unique<pubsub_subscriber_t>();
             sub->handle = &cmp.getInstance();
@@ -81,7 +75,7 @@ namespace celix::async_rsa {
             opts.svc = sub.get();
             opts.properties = props;
 
-            long id = celix_bundleContext_registerServiceWithOptions(_mng->bundleContext(), &opts);
+            long id = celix_bundleContext_registerServiceWithOptions(dm->bundleContext(), &opts);
 
             _subCmps.emplace_back(id, std::move(sub));
             cmp.build();
@@ -89,9 +83,20 @@ namespace celix::async_rsa {
             return cmp;
         }
 
+        void destroy() {
+            if(!_destroyed.exchange(true)) {
+                std::cout << "destroy" << std::endl;
+                for (auto &[id, cmp] : _subCmps) {
+                    celix_bundleContext_unregisterService(_mng->bundleContext(), id);
+                }
+                _subCmps.clear();
+                _mng = nullptr;
+            }
+        }
+
     private:
         std::shared_ptr<celix::dm::DependencyManager> _mng{};
-        std::vector<celix::dm::BaseComponent*> _cmps{};
         std::vector<std::pair<long, std::unique_ptr<pubsub_subscriber_t>>> _subCmps{};
+        std::atomic<bool> _destroyed{};
     };
 }
