@@ -25,12 +25,12 @@
 class FileUtilsTestSuite : public ::testing::Test {};
 
 TEST_F(FileUtilsTestSuite, TestFileAndDirectoryExists) {
-    EXPECT_TRUE(celix_utils_fileExists("/etc"));
-    EXPECT_TRUE(celix_utils_fileExists("/etc/shadow"));
+    EXPECT_TRUE(celix_utils_fileExists(TEST_A_DIR_LOCATION));
+    EXPECT_TRUE(celix_utils_fileExists(TEST_A_FILE_LOCATION));
     EXPECT_FALSE(celix_utils_fileExists("/file-does-not-exists/check"));
 
-    EXPECT_TRUE(celix_utils_directoryExists("/etc"));
-    EXPECT_FALSE(celix_utils_directoryExists("/etc/shadow"));
+    EXPECT_TRUE(celix_utils_directoryExists(TEST_A_DIR_LOCATION));
+    EXPECT_FALSE(celix_utils_directoryExists(TEST_A_FILE_LOCATION));
     EXPECT_FALSE(celix_utils_directoryExists("/file-does-not-exists/check"));
 }
 
@@ -116,7 +116,7 @@ TEST_F(FileUtilsTestSuite, ExtractZipFileTest) {
     EXPECT_NE(error, nullptr);
 
     //Given an non zip file to extractZipFile fails
-    const char* invalidZip = "/etc/shadow";
+    const char* invalidZip = TEST_A_DIR_LOCATION;
     EXPECT_TRUE(celix_utils_fileExists(invalidZip));
     status = celix_utils_extractZipFile(invalidZip, extractLocation, &error);
     EXPECT_NE(status, CELIX_SUCCESS);

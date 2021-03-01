@@ -48,6 +48,8 @@ endif()
 add_custom_target(test_utils_resources DEPENDS ${TEST_ZIP_FILE})
 add_dependencies(test_utils test_utils_resources)
 target_compile_definitions(test_utils PRIVATE -DTEST_ZIP_LOCATION=\"${TEST_ZIP_FILE}\")
+target_compile_definitions(test_utils PRIVATE -DTEST_A_FILE_LOCATION=\"${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt\")
+target_compile_definitions(test_utils PRIVATE -DTEST_A_DIR_LOCATION=\"${CMAKE_CURRENT_SOURCE_DIR}\")
 
 ####### linkig zip against test executable to text extract zip from data ###############################################
 if (UNIX AND NOT APPLE)
