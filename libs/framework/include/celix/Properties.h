@@ -34,8 +34,14 @@ namespace celix {
      */
     class PropertiesIterator {
     public:
-        explicit PropertiesIterator(celix_properties_t* props) : iter{hashMapIterator_construct((hash_map_t*)props)} { next(); }
-        explicit PropertiesIterator(const celix_properties_t* props) : iter{hashMapIterator_construct((hash_map_t*)props)} { next(); }
+        explicit PropertiesIterator(celix_properties_t* props) {
+            iter = hashMapIterator_construct((hash_map_t*)props);
+            next();
+        }
+        explicit PropertiesIterator(const celix_properties_t* props) {
+            iter = hashMapIterator_construct((hash_map_t*)props);
+            next();
+        }
 
         PropertiesIterator& operator++() {
             next();
@@ -82,7 +88,7 @@ namespace celix {
         std::string first{};
         std::string second{};
     private:
-        hash_map_iterator_t iter;
+        hash_map_iterator_t iter{nullptr, nullptr, nullptr, 0, 0};
         bool end{false};
     };
 
