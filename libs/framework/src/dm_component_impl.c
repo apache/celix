@@ -69,7 +69,7 @@ typedef struct dm_interface_struct {
 static celix_status_t celix_dmComponent_registerServices(celix_dm_component_t *component, bool needLock);
 static celix_status_t celix_dmComponent_unregisterServices(celix_dm_component_t *component, bool needLock);
 static bool celix_dmComponent_areAllRequiredServiceDependenciesResolved(celix_dm_component_t *component);
-static celix_status_t celix_dmComponent_performTransition(celix_dm_component_t *component, celix_dm_component_state_t oldState, celix_dm_component_state_t newState, bool *transition);
+static bool celix_dmComponent_performTransition(celix_dm_component_t *component, celix_dm_component_state_t oldState, celix_dm_component_state_t newState);
 static celix_status_t celix_dmComponent_calculateNewState(celix_dm_component_t *component, celix_dm_component_state_t currentState, celix_dm_component_state_t *newState);
 static celix_status_t celix_dmComponent_handleChange(celix_dm_component_t *component);
 static celix_status_t celix_dmComponent_handleAdd(celix_dm_component_t *component, const celix_dm_event_t* event);
@@ -79,6 +79,8 @@ static celix_status_t celix_dmComponent_enableDependencies(celix_dm_component_t 
 static celix_status_t celix_dmComponent_suspend(celix_dm_component_t *component, celix_dm_service_dependency_t *dependency);
 static celix_status_t celix_dmComponent_resume(celix_dm_component_t *component, celix_dm_service_dependency_t *dependency);
 static celix_status_t celix_dmComponent_disable(celix_dm_component_t *component);
+static void celix_dmComponent_disableDirectly(celix_dm_component_t *component);
+static celix_status_t celix_dmComponent_disableDependencies(celix_dm_component_t *component);
 static bool celix_dmComponent_isDisabled(celix_dm_component_t *component);
 static void celix_dmComponent_cleanupRemovedDependencies(celix_dm_component_t* component);
 
@@ -318,6 +320,9 @@ celix_status_t celix_private_dmComponent_enable(celix_dm_component_t *component)
     return CELIX_SUCCESS;
 }
 
+/**
+ * @brief disables component and effectualize this through normal component transitions.
+ */
 static celix_status_t celix_dmComponent_disable(celix_dm_component_t *component) {
     celixThreadMutex_lock(&component->mutex);
     bool changed = false;
@@ -330,6 +335,18 @@ static celix_status_t celix_dmComponent_disable(celix_dm_component_t *component)
         celix_dmComponent_handleChange(component);
     }
     return CELIX_SUCCESS;
+}
+
+/**
+ * Disables component directly, this is needed for an error flow.
+ *
+ * Should be called with component mutex locked.
+ */
+static void celix_dmComponent_disableDirectly(celix_dm_component_t *component) {
+    component->isEnabled = false;
+    component->state = DM_CMP_STATE_INACTIVE;
+    celix_dmComponent_unregisterServices(component, false);
+    celix_dmComponent_disableDependencies(component);
 }
 
 static void celix_dmComponent_cleanupRemovedDependencies(celix_dm_component_t* component) {
@@ -562,8 +579,6 @@ static bool celix_dmComponent_needsSuspend(celix_dm_component_t *component, cons
 }
 
 static celix_status_t celix_dmComponent_handleEvent(celix_dm_component_t *component, const celix_dm_event_t* event, celix_status_t (*setAddOrRemFp)(celix_dm_service_dependency_t *dependency, void* svc, const celix_properties_t* props), const char *invokeName) {
-    assert(celix_framework_isCurrentThreadTheEventLoop(celix_bundleContext_getFramework(component->context)));
-
     celix_bundleContext_log(component->context, CELIX_LOG_LEVEL_TRACE,
                             "Calling %s service for component %s (uuid=%s) on service dependency with type %s",
                             invokeName,
@@ -652,8 +667,10 @@ static void celix_dmComponent_handleChangeOnEventThread(void *data) {
         oldState = component->state;
         celix_status_t status = celix_dmComponent_calculateNewState(component, oldState, &newState);
         if (status == CELIX_SUCCESS) {
-            status = celix_dmComponent_performTransition(component, oldState, newState, &transition);
-            component->state = newState;
+            transition = celix_dmComponent_performTransition(component, oldState, newState);
+            if (transition) {
+                component->state = newState;
+            }
         }
 
         if (status != CELIX_SUCCESS) {
@@ -731,11 +748,13 @@ static celix_status_t celix_dmComponent_calculateNewState(celix_dm_component_t *
 
 /**
  * perform state transition. This function should be called with the component->mutex locked.
+ *
+ * Function can also indicate if the component needs to be disabled. This can be needed if a stop or deinit fails,
+ * because the component cannot be destroyed but apparently also not cleanly stopped
  */
-static celix_status_t celix_dmComponent_performTransition(celix_dm_component_t *component, celix_dm_component_state_t oldState, celix_dm_component_state_t newState, bool *transition) {
-    if (oldState == newState) {
-        *transition = false;
-        return CELIX_SUCCESS;
+static bool celix_dmComponent_performTransition(celix_dm_component_t *component, celix_dm_component_state_t currentState, celix_dm_component_state_t desiredState) {
+    if (currentState == desiredState) {
+        return false;
     }
 
     celix_bundleContext_log(component->context,
@@ -743,42 +762,54 @@ static celix_status_t celix_dmComponent_performTransition(celix_dm_component_t *
            "performing transition for component '%s' (uuid=%s) from state %s to state %s",
            component->name,
            component->uuid,
-           celix_dmComponent_stateToString(oldState),
-           celix_dmComponent_stateToString(newState));
+           celix_dmComponent_stateToString(currentState),
+           celix_dmComponent_stateToString(desiredState));
 
     celix_status_t status = CELIX_SUCCESS;
-    if (oldState == DM_CMP_STATE_INACTIVE && newState == DM_CMP_STATE_WAITING_FOR_REQUIRED) {
+    if (currentState == DM_CMP_STATE_INACTIVE && desiredState == DM_CMP_STATE_WAITING_FOR_REQUIRED) {
         celix_dmComponent_enableDependencies(component);
-        *transition = true;
-    } else if (oldState == DM_CMP_STATE_WAITING_FOR_REQUIRED && newState == DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED) {
+    } else if (currentState == DM_CMP_STATE_WAITING_FOR_REQUIRED && desiredState == DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED) {
         if (component->callbackInit) {
         	status = component->callbackInit(component->implementation);
         }
-        *transition = true;
-    } else if (oldState == DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED && newState == DM_CMP_STATE_TRACKING_OPTIONAL) {
+    } else if (currentState == DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED && desiredState == DM_CMP_STATE_TRACKING_OPTIONAL) {
         if (component->callbackStart) {
         	status = component->callbackStart(component->implementation);
         }
-        celix_dmComponent_registerServices(component, false);
-        component->nrOfTimesStarted += 1;
-        *transition = true;
-    } else if (oldState == DM_CMP_STATE_TRACKING_OPTIONAL && newState == DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED) {
+        if (status == CELIX_SUCCESS) {
+            celix_dmComponent_registerServices(component, false);
+            component->nrOfTimesStarted += 1;
+        }
+    } else if (currentState == DM_CMP_STATE_TRACKING_OPTIONAL && desiredState == DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED) {
         celix_dmComponent_unregisterServices(component, false);
         if (component->callbackStop) {
         	status = component->callbackStop(component->implementation);
         }
-        *transition = true;
-    } else if (oldState == DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED && newState == DM_CMP_STATE_WAITING_FOR_REQUIRED) {
+    } else if (currentState == DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED && desiredState == DM_CMP_STATE_WAITING_FOR_REQUIRED) {
         if (component->callbackDeinit) {
             status = component->callbackDeinit(component->implementation);
         }
-        *transition = true;
-    } else if (oldState == DM_CMP_STATE_WAITING_FOR_REQUIRED && newState == DM_CMP_STATE_INACTIVE) {
+    } else if (currentState == DM_CMP_STATE_WAITING_FOR_REQUIRED && desiredState == DM_CMP_STATE_INACTIVE) {
         celix_dmComponent_disableDependencies(component);
-        *transition = true;
+    } else {
+        assert(false); //should not be reached.
     }
 
-    return status;
+    bool transition = true;
+    if (status != CELIX_SUCCESS) {
+        celix_bundleContext_log(component->context, CELIX_LOG_LEVEL_ERROR,
+                                "Error in component %s (uuid=%s) transition from %s to %s. Disabling component.",
+                                component->name,
+                                component->uuid,
+                                celix_dmComponent_stateToString(currentState),
+                                celix_dmComponent_stateToString(desiredState));
+
+        //If a lifecycle method fails, the component will disable itself (but no higher level transition is needed anymore)
+        transition = false;
+        celix_dmComponent_disableDirectly(component);
+    }
+
+    return transition;
 }
 
 /**

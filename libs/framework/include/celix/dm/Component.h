@@ -354,6 +354,12 @@ namespace celix { namespace dm {
          * Can be called on the Celix event thread.
          */
         Component<T>& buildAsync();
+    private:
+        /**
+         * @brief try to invoke a lifecycle method (init, start, stop and deinit) and catch and log a possible exception.
+         * @returns 0 if no exception occurred else -1.
+         */
+        int invokeLifecycleMethod(const std::string& methodName, void (T::*lifecycleMethod)());
     };
 }}
 
