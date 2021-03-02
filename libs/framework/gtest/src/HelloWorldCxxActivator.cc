@@ -22,12 +22,9 @@
 namespace {
     class BundleActivator {
     public:
-        explicit BundleActivator(std::shared_ptr<celix::dm::DependencyManager> mng) : _mng(mng) {
-//            ctx->logInfo("Cxx Bundle Started");
-            celix_bundleContext_log(_mng->bundleContext(), CELIX_LOG_LEVEL_INFO, "Cxx Bundle Started");
+        explicit BundleActivator(const std::shared_ptr<celix::BundleContext>& ctx) {
+            ctx->logInfo("Cxx Bundle Started");
         }
-
-        std::shared_ptr<celix::dm::DependencyManager> _mng;
     };
 }
 
