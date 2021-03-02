@@ -74,7 +74,6 @@ void ConfiguredDiscoveryManager::discoverEndpoints() {
             if (parsedJson.HasMember(ENDPOINT_ARRAY) && parsedJson[ENDPOINT_ARRAY].IsArray()) {
 
                 for (auto& endpoint : parsedJson[ENDPOINT_ARRAY].GetArray()) {
-
                     const auto& configuredEndpointPtr = std::make_shared<ConfiguredEndpoint>(endpoint.GetObject());
                     const auto endpointProperties = configuredEndpointPtr->getProperties();
 

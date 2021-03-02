@@ -25,6 +25,7 @@
 #include <pubsub/api.h>
 #include <celix/Deferred.h>
 #include <celix/PromiseFactory.h>
+#include <ConfiguredEndpoint.h>
 #include "IHardcodedService.h"
 #include "HardcodedExampleSerializer.h"
 
@@ -70,7 +71,7 @@ struct ImportedHardcodedService final : public IHardcodedService {
         return it.first->second.getPromise();
     }
 
-    void setPublisher(pubsub_publisher_t const * publisher, Properties&&) {
+    void setPublisher(pubsub_publisher_t const * publisher) {
         _publisher = publisher;
     }
 
@@ -143,7 +144,7 @@ struct UsingHardcodedServiceService {
         _t = std::thread([this]() {
             _svc->add(14, 123).thenAccept([](int val) {
                 std::cout << "[UsingHardcodedServiceService] add(14, 123) returned " << val << std::endl;
-            }).wait();
+            }).timeout(std::chrono::seconds(10)).wait();
         });
     }
 
@@ -166,7 +167,7 @@ public:
         _toStringSerializer.emplace(mng);
 
         auto& factory = mng->createComponent(std::make_unique<celix::async_rsa::DefaultImportedServiceFactory<IHardcodedService, ImportedHardcodedService>>(mng))
-            .addInterface<celix::async_rsa::IImportedServiceFactory>("1.0.0", Properties{{"service.exported.interfaces", "IHardcodedService"}}).build();
+            .addInterface<celix::async_rsa::IImportedServiceFactory>("1.0.0", Properties{{ENDPOINT_EXPORTS, "IHardcodedService"}}).build();
         _factory = &factory;
 
         auto &usingCmp = mng->createComponent<UsingHardcodedServiceService>()

@@ -28,7 +28,7 @@ namespace celix::async_rsa {
         class AsyncTopologyManager {
         public:
             explicit AsyncTopologyManager(celix_log_helper_t *logger) noexcept;
-            ~AsyncTopologyManager();
+            ~AsyncTopologyManager() ;
 
             AsyncTopologyManager(AsyncTopologyManager const &) = delete;
             AsyncTopologyManager(AsyncTopologyManager&&) = delete;
@@ -39,7 +39,7 @@ namespace celix::async_rsa {
             void addExportedService(celix::async_rsa::IExportedService *endpoint, Properties&& properties);
             void removeExportedService(celix::async_rsa::IExportedService *endpoint, Properties&& properties);
 
-            void setDiscovery(celix::rsa::EndpointAnnouncer *discovery, Properties&& properties);
+            void setDiscovery(celix::rsa::EndpointAnnouncer *discovery);
 
         private:
             celix_log_helper_t *_logger;

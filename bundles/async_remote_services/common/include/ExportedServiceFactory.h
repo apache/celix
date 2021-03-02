@@ -20,43 +20,48 @@
 
 #include <celix/dm/DependencyManager.h>
 #include <pubsub_endpoint.h>
+#include <IExportedService.h>
+#include <ConfiguredEndpoint.h>
 
 namespace celix::async_rsa {
     /// Service factory interface.
-    struct IImportedServiceFactory {
-        virtual ~IImportedServiceFactory() = default;
+    struct IExportedServiceFactory {
+        virtual ~IExportedServiceFactory() = default;
 
-        virtual celix::dm::BaseComponent& create() = 0;
+        virtual celix::dm::BaseComponent& create(void* svc, long endpointId) = 0;
     };
 
-    /// Default templated imported service factory. If more than a simple creation is needed, please create your own factory derived from IImportedServiceFactory
+    /// Default templated Exported service factory. If more than a simple creation is needed, please create your own factory derived from IExportedServiceFactory
     /// \tparam Interface
     /// \tparam Implementation
-    template <typename Interface, typename Implementation>
-    struct DefaultImportedServiceFactory final : public IImportedServiceFactory {
-        static_assert(std::is_base_of_v<Interface, Implementation>, "Implementation needs to implement Interface");
+    template <typename SvcInterfaceT, typename WrapperT>
+    struct DefaultExportedServiceFactory final : public IExportedServiceFactory {
+        static_assert(std::is_constructible_v<WrapperT, SvcInterfaceT*>, "Wrapper needs to be constructible from a pointer to the type of svc it wraps");
+        static_assert(std::is_base_of_v<celix::async_rsa::IExportedService, WrapperT>, "Wrapper needs to implement the IExportedService interface");
 
-        explicit DefaultImportedServiceFactory(std::shared_ptr<celix::dm::DependencyManager> &mng) noexcept : _mng(mng) {
+        explicit DefaultExportedServiceFactory(const std::shared_ptr<celix::dm::DependencyManager> &mng) noexcept : _mng(mng) {
+            std::cout << "[DefaultExportedServiceFactory::DefaultExportedServiceFactory]" << std::endl;
         }
 
-        ~DefaultImportedServiceFactory() noexcept final {
-            std::cout << "~DefaultImportedServiceFactory" << std::endl;
+        ~DefaultExportedServiceFactory() noexcept final {
+            std::cout << "[DefaultExportedServiceFactory::~DefaultExportedServiceFactory]" << std::endl;
             destroy();
         }
 
-        celix::dm::BaseComponent& create() final {
-            auto &cmp = _mng->template createComponent<Implementation>(std::string{Interface::NAME})
-                .template addInterface<Interface>(std::string{Interface::VERSION});
+        celix::dm::BaseComponent& create(void* svc, long endpointId) final {
+            std::cout << "[DefaultExportedServiceFactory::create]" << std::endl;
+            auto &cmp = _mng->template createComponent<WrapperT>(std::make_unique<WrapperT>(static_cast<SvcInterfaceT*>(svc)), std::string{WrapperT::NAME})
+                    .template addInterface<celix::async_rsa::IExportedService>(std::string{SvcInterfaceT::VERSION}, Properties{{ENDPOINT_EXPORTS, std::string{SvcInterfaceT::NAME}}, {ENDPOINT_IMPORTED, "false"}, {ENDPOINT_IDENTIFIER, std::to_string(endpointId)}});
 
             cmp.template createCServiceDependency<pubsub_publisher_t>(PUBSUB_PUBLISHER_SERVICE_NAME)
                     .setVersionRange("[3.0.0,4)")
-                    .setFilter(std::string{"(topic=async_rsa."}.append(Interface::NAME).append(")"))
-                    .setCallbacks([&cmp](const pubsub_publisher_t * pub, Properties&&){ cmp.getInstance().setPublisher(pub); })
+                    .setFilter(std::string{"(topic=async_rsa."}.append(SvcInterfaceT::NAME).append(")"))
+                    .setCallbacks([&cmp](const pubsub_publisher_t * pub, Properties&& props){ cmp.getInstance().setPublisher(pub, std::forward<Properties&&>(props)); })
                     .setRequired(true)
                     .build();
             cmp.template createCServiceDependency<pubsub_subscriber_t>(PUBSUB_SUBSCRIBER_SERVICE_NAME)
                     .setVersionRange("[3.0.0,4)")
-                    .setFilter(std::string{"(topic=async_rsa."}.append(Interface::NAME).append(")"))
+                    .setFilter(std::string{"(topic=async_rsa."}.append(SvcInterfaceT::NAME).append(")"))
                     .setRequired(true)
                     .build();
 
@@ -65,10 +70,10 @@ namespace celix::async_rsa {
             sub->init = [](void *) -> int {
                 return 0;
             };
-            sub->receive = [](void *handle, const char *msgType, unsigned int msgTypeId, void *msg, const celix_properties_t *metadata, bool *){ return static_cast<Implementation*>(handle)->receiveMessage(msgType, msgTypeId, msg, metadata); };
+            sub->receive = [](void *handle, const char *msgType, unsigned int msgTypeId, void *msg, const celix_properties_t *metadata, bool *){ return static_cast<WrapperT*>(handle)->receiveMessage(msgType, msgTypeId, msg, metadata); };
 
             auto *props = celix_properties_create();
-            celix_properties_set(props, PUBSUB_SUBSCRIBER_TOPIC, std::string{"async_rsa."}.append(Interface::NAME).data());
+            celix_properties_set(props, PUBSUB_SUBSCRIBER_TOPIC, std::string{"async_rsa."}.append(SvcInterfaceT::NAME).data());
 
             celix_service_registration_options_t opts{};
             opts.serviceName = PUBSUB_SUBSCRIBER_SERVICE_NAME;

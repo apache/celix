@@ -20,6 +20,7 @@
 #include <Endpoint.h>
 #include <celix_api.h>
 #include <ImportedServiceFactory.h>
+#include <ExportedServiceFactory.h>
 #include <mutex>
 #include <pubsub/api.h>
 #include <pubsub_message_serialization_service.h>
@@ -59,15 +60,28 @@ namespace celix::async_rsa {
         void addImportedServiceFactory(celix::async_rsa::IImportedServiceFactory *factory, Properties&& properties);
         void removeImportedServiceFactory(celix::async_rsa::IImportedServiceFactory *factory, Properties&& properties);
 
+        // Exported endpoint add/remove functions
+        void addExportedServiceFactory(celix::async_rsa::IExportedServiceFactory *factory, Properties&& properties);
+        void removeExportedServiceFactory(celix::async_rsa::IExportedServiceFactory *factory, Properties&& properties);
+
+        // Add/remove services, used to track all services registered with celix and check if remote = true.
+        void addService(void *svc, const celix_properties_t *props);
+        void removeService(void *svc, const celix_properties_t *props);
+
 
     private:
         std::shared_ptr<celix::dm::DependencyManager> _mng{};
         celix_log_helper_t *_logger;
+        long _serviceTrackerId{-1};
+        long _endpointIdCounter{0};
         std::mutex _m{}; // protects below
         std::pmr::unsynchronized_pool_resource _memResource{};
-        std::pmr::unordered_map<std::string, celix::async_rsa::IImportedServiceFactory*> _factories{&_memResource};
-        std::pmr::unordered_map<long, celix::dm::BaseComponent&> _serviceInstances{&_memResource};
+        std::pmr::unordered_map<std::string, celix::async_rsa::IExportedServiceFactory*> _exportedServiceFactories{&_memResource};
+        std::pmr::unordered_map<std::string, celix::async_rsa::IImportedServiceFactory*> _importedServiceFactories{&_memResource};
+        std::pmr::unordered_map<std::string, celix::dm::BaseComponent&> _importedServiceInstances{&_memResource};
+        std::pmr::unordered_map<std::string, celix::dm::BaseComponent&> _exportedServiceInstances{&_memResource};
         std::vector<celix::rsa::Endpoint> _toBeCreatedImportedEndpoints{};
+        std::vector<std::pair<void*, Properties>> _toBeCreatedExportedEndpoints{};
 
         // Internal functions for code re-use
         void addEndpointInternal(celix::rsa::Endpoint& endpoint);

@@ -21,26 +21,18 @@
 
 namespace celix::rsa {
 
-constexpr const char* ENDPOINT_IDENTIFIER = "endpoint.id";
-constexpr const char* ENDPOINT_IMPORTED = "service.imported";
-constexpr const char* ENDPOINT_IMPORT_CONFIGS = "service.imported.configs";
-constexpr const char* ENDPOINT_EXPORTS = "service.exported.interfaces";
-constexpr const char* ENDPOINT_OBJECTCLASS = "endpoint.objectClass";
-constexpr const char* ENDPOINT_SCOPE = "endpoint.scope";
-constexpr const char* ENDPOINT_TOPIC = "endpoint.topic";
-
 celix::dm::Properties convertEndpointPropertiesToCelix(const ConfiguredEndpointProperties& endpointProperties) {
 
-    return celix::dm::Properties{{"service.imported", std::to_string(endpointProperties.isImported()).c_str()},
-                                 {"service.exported.interfaces", endpointProperties.getExports()},
-                                 {"endpoint.id", endpointProperties.getId()}};
+    return celix::dm::Properties{{ENDPOINT_IMPORTED, std::to_string(endpointProperties.isImported()).c_str()},
+                                 {ENDPOINT_EXPORTS, endpointProperties.getExports()},
+                                 {ENDPOINT_IDENTIFIER, endpointProperties.getId()}};
 }
 
 ConfiguredEndpointProperties convertCelixPropertiesToEndpoint(const celix::dm::Properties& celixProperties) {
 
-    auto endpointId = celixProperties.get("endpoint.id");
-    auto exports = celixProperties.get("service.exported.interfaces");
-    auto imported = celixProperties.get("service.imported");
+    auto endpointId = celixProperties.get(ENDPOINT_IDENTIFIER);
+    auto exports = celixProperties.get(ENDPOINT_EXPORTS);
+    auto imported = celixProperties.get(ENDPOINT_IMPORTED);
     return ConfiguredEndpointProperties{endpointId,
                                         (imported == "true"),
                                         {}, exports, {}, "", ""};
