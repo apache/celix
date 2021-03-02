@@ -82,6 +82,23 @@ TEST_F(CxxBundleContextTestSuite, RegisterServiceTest) {
     EXPECT_EQ(svcId, -1L);
 }
 
+TEST_F(CxxBundleContextTestSuite, RegisterServiceWithNameTest) {
+    long svcId = ctx->findServiceWithName<TestInterface>("foo");
+    EXPECT_EQ(svcId, -1L);
+
+    {
+        auto impl = std::make_shared<TestImplementation>();
+        auto svcReg = ctx->registerService<TestInterface>(impl, "foo").build();
+        svcReg->wait();
+        svcId = ctx->findServiceWithName<TestInterface>("foo");
+        EXPECT_GE(svcId, 0L);
+    }
+
+    ctx->waitForEvents();
+    svcId = ctx->findServiceWithName<TestInterface>("foo");
+    EXPECT_EQ(svcId, -1L);
+}
+
 TEST_F(CxxBundleContextTestSuite, RegisterCServiceTest) {
     auto svc = std::make_shared<CInterface>(CInterface{nullptr, nullptr});
     auto svcReg = ctx->registerService<CInterface>(svc).build();

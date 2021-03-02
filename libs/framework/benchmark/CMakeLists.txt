@@ -15,13 +15,19 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_executable(test_celix_promises
-        src/ExecutorTestSuite.cc
-        src/PromisesTestSuite.cc
-        src/VoidPromisesTestSuite.cc
-)
-target_link_libraries(test_celix_promises PRIVATE GTest::gtest GTest::gtest_main Celix::Promises)
+set(FRAMEWORK_BENCHMARK_DEFAULT "OFF")
+find_package(benchmark QUIET)
+if (benchmark_FOUND)
+    set(FRAMEWORK_BENCHMARK_DEFAULT "ON")
+endif ()
 
-add_test(NAME test_celix_promises COMMAND test_celix_promises)
-setup_target_for_coverage(test_celix_promises SCAN_DIR ..)
+celix_subproject(FRAMEWORK_BENCHMARK "Option to enable Celix framework benchmark" ${FRAMEWORK_BENCHMARK_DEFAULT})
+if (FRAMEWORK_BENCHMARK)
+    find_package(benchmark REQUIRED)
 
+    add_executable(celix_framework_benchmark
+            src/RegisterServicesBenchmark.cc
+            src/LookupServicesBenchmark.cc
+    )
+    target_link_libraries(celix_framework_benchmark PRIVATE Celix::framework benchmark::benchmark_main benchmark::benchmark)
+endif ()
