@@ -78,13 +78,17 @@ static void findSingleService(benchmark::State& state, bool cTest, bool useFilte
             for (auto _ : state) {
                 // This code gets timed
                 long svcId = celix_bundleContext_findServiceWithOptions(cCtx, &opts);
-                assert(svcId > 0);
+                if (svcId < 0) {
+                    state.SkipWithError("invalid svc id");
+                }
             }
         } else {
             for (auto _ : state) {
                 // This code gets timed
                 long svcId = celix_bundleContext_findService(cCtx, IService::NAME);
-                assert(svcId >= 0);
+                if (svcId < 0) {
+                    state.SkipWithError("invalid svc id");
+                }
             }
         }
     } else {
@@ -92,13 +96,17 @@ static void findSingleService(benchmark::State& state, bool cTest, bool useFilte
             for (auto _ : state) {
                 // This code gets timed
                 long svcId = ctx->findServiceWithName<IService>(IService::NAME, filter);
-                assert(svcId >= 0);
+                if (svcId < 0) {
+                    state.SkipWithError("invalid svc id");
+                }
             }
         } else {
             for (auto _ : state) {
                 // This code gets timed
                 long svcId = ctx->findServiceWithName<IService>(IService::NAME);
-                assert(svcId >= 0);
+                if (svcId < 0) {
+                    state.SkipWithError("invalid svc id");
+                }
             }
         }
 
