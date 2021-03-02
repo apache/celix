@@ -21,8 +21,6 @@
 #  LIBZIP_FOUND - System has libffi
 #  libzip::libzip target (if found)
 
-mark_as_advanced(GNUTLS_INCLUDE_DIR GNUTLS_LIBRARY)
-
 find_library(LIBZIP_LIBRARY NAMES zip
         PATHS $ENV{LIBZIP_DIR} ${LIBZIP_DIR} /usr /usr/local /opt/local
         PATH_SUFFIXES lib lib64 x86_64-linux-gnu lib/x86_64-linux-gnu
