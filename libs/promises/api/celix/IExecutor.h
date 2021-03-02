@@ -26,7 +26,7 @@
 namespace celix {
 
     /**
-     * An object that executes submitted Runnable tasks. This interface provides a way of decoupling task submission
+     * @brief An object that executes submitted Runnable tasks. This interface provides a way of decoupling task submission
      * from the mechanics of how each task will be run, including details of thread use, scheduling, etc.
      *
      * Note that supporting the priority argument is optional. If not priority values are ignored.
@@ -36,17 +36,30 @@ namespace celix {
         virtual ~IExecutor() noexcept = default;
 
         /**
-         * Executes the given command at some time in the future. The command may execute in a new thread,
+         * @brief Executes the given command at some time in the future. The command may execute in a new thread,
          * in a pooled thread, or in the calling thread, at the discretion of the Executor implementation.
          *
-         * @param command the "runnable" task
          * @param priority the priority of the task. It depends on the executor implementation whether this is supported.
+         * @param command the "runnable" task
          * @throws celix::RejectedExecutionException if this task cannot be accepted for execution.
          */
-        virtual void execute(std::function<void()> task, int priority = 0) = 0;
+        virtual void execute(int priority, std::function<void()> task) = 0;
 
         /**
-         * Wait until the executor has no pending task left.
+         * @brief Executes the given command at some time in the future. The command may execute in a new thread,
+         * in a pooled thread, or in the calling thread, at the discretion of the Executor implementation.
+         *
+         * Task will be executed int the default priority (0)
+         *
+         * @param command the "runnable" task
+         * @throws celix::RejectedExecutionException if this task cannot be accepted for execution.
+         */
+        void execute(std::function<void()> task) {
+            execute(0, std::move(task));
+        }
+
+        /**
+         * @brief Wait until the executor has no pending task left.
          */
         virtual void wait() = 0;
     };
