@@ -29,6 +29,7 @@ if (FRAMEWORK_BENCHMARK)
             src/BenchmarkMain.cc
             src/RegisterServicesBenchmark.cc
             src/LookupServicesBenchmark.cc
+            src/DependencyManagerBenchmark.cc
     )
     target_link_libraries(celix_framework_benchmark PRIVATE Celix::framework benchmark::benchmark)
 endif ()
