@@ -90,7 +90,7 @@ namespace celix {
             data->dm = nullptr;
             data->ctx = nullptr;
             waitForExpired(data->bndId, ctx, "celix::BundleContext", ctx);
-             waitForExpired(data->bndId, ctx, "celix::dm::DependencyManager", dm);
+            waitForExpired(data->bndId, ctx, "celix::dm::DependencyManager", dm);
             delete data;
             return CELIX_SUCCESS;
         }
