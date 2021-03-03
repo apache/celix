@@ -292,14 +292,14 @@ void pubsub_zmqAdmin_addSerializerSvc(void *handle, void *svc, const celix_prope
     hash_map_t *typeEntries = hashMap_get(psa->serializers.map, serType);
     if(typeEntries == NULL) {
         typeEntries = hashMap_create(NULL, NULL, NULL, NULL);
-        hashMap_put(psa->serializers.map, (void*)strndup(serType, 1024*1024), typeEntries);
+        hashMap_put(psa->serializers.map, (void*)celix_utils_strdup(serType), typeEntries);
     }
     psa_zmq_serializer_entry_t *entry = hashMap_get(typeEntries, (void*)msgId);
     if (entry == NULL) {
         entry = calloc(1, sizeof(psa_zmq_serializer_entry_t));
         entry->svc = svc;
-        entry->fqn = strndup(msgFqn, 1024*1024);
-        entry->version = strndup(msgVersion, 1024*1024);
+        entry->fqn = celix_utils_strdup(msgFqn);
+        entry->version = celix_utils_strdup(msgVersion);
         hashMap_put(typeEntries, (void*)msgId, entry);
     }
     celixThreadRwlock_unlock(&psa->serializers.mutex);
