@@ -57,10 +57,15 @@ celix_status_t pubsub_getPubSubInfoFromFilter(const char* filterstr, char **scop
     objectClass = (char *) celix_filter_findAttribute(filter, OSGI_FRAMEWORK_OBJECTCLASS);
 
     if (topic != NULL && objectClass != NULL && strncmp(objectClass, PUBSUB_PUBLISHER_SERVICE_NAME, 128) == 0) {
-        //NOTE topic must be present, scope can be present in the filter.
-        *topicOut = strdup(topic);
+        //NOTE topic must be present, scope can be present in the filter
+        *topicOut = celix_utils_strdup(topic);
         if (scope != NULL) {
-            *scopeOut = strdup(scope);
+            if (strncmp("*", scope, 2) == 0) {
+                //if scope attribute is present with a *, assume this is a negative test e.g. (&(topic=foo)(!(scope=*)))
+                *scopeOut = NULL;
+            } else {
+                *scopeOut = celix_utils_strdup(scope);
+            }
         } else {
             *scopeOut = NULL;
         }
@@ -70,8 +75,8 @@ celix_status_t pubsub_getPubSubInfoFromFilter(const char* filterstr, char **scop
     }
 
     if (filter != NULL) {
-             filter_destroy(filter);
-        }
+         filter_destroy(filter);
+    }
     return status;
 }
 
