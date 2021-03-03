@@ -29,9 +29,9 @@
 #include <pubsub_protocol.h>
 #include <ip_utils.h>
 #include <pubsub_matching.h>
+#include <pubsub_utils.h>
 #include <pubsub_message_serialization_service.h>
 
-#include "pubsub_utils.h"
 #include "pubsub_zmq_admin.h"
 #include "pubsub_psa_zmq_constants.h"
 #include "pubsub_zmq_topic_sender.h"
@@ -275,14 +275,14 @@ void pubsub_zmqAdmin_destroy(pubsub_zmq_admin_t *psa) {
 void pubsub_zmqAdmin_addSerializerSvc(void *handle, void *svc, const celix_properties_t *props) {
     pubsub_zmq_admin_t *psa = handle;
 
-    const char *serType = celix_properties_get(props, PUBSUB_SERIALIZER_TYPE_KEY, NULL);
+    const char *serType = celix_properties_get(props, PUBSUB_MESSAGE_SERIALIZATION_SERVICE_SERIALIZATION_TYPE_PROPERTY, NULL);
     long msgId = celix_properties_getAsLong(props, PUBSUB_MESSAGE_SERIALIZATION_SERVICE_MSG_ID_PROPERTY, -1L);
     const char *msgFqn = celix_properties_get(props, PUBSUB_MESSAGE_SERIALIZATION_SERVICE_MSG_FQN_PROPERTY, NULL);
     const char *msgVersion = celix_properties_get(props, PUBSUB_MESSAGE_SERIALIZATION_SERVICE_MSG_VERSION_PROPERTY, "0.0.0");
 
     if (serType == NULL || msgId == -1L || msgFqn == NULL) {
         L_INFO("[PSA_ZMQ] Ignoring serializer service without one of the following properties: %s or %s or %s",
-               PUBSUB_SERIALIZER_TYPE_KEY, PUBSUB_MESSAGE_SERIALIZATION_SERVICE_MSG_ID_PROPERTY, PUBSUB_MESSAGE_SERIALIZATION_SERVICE_MSG_FQN_PROPERTY);
+               PUBSUB_MESSAGE_SERIALIZATION_SERVICE_SERIALIZATION_TYPE_PROPERTY, PUBSUB_MESSAGE_SERIALIZATION_SERVICE_MSG_ID_PROPERTY, PUBSUB_MESSAGE_SERIALIZATION_SERVICE_MSG_FQN_PROPERTY);
 
         L_INFO("[PSA_ZMQ] Ignored serializer type %s msgId %li fqn %s\n", serType, msgId, msgFqn);
         return;
@@ -292,14 +292,14 @@ void pubsub_zmqAdmin_addSerializerSvc(void *handle, void *svc, const celix_prope
     hash_map_t *typeEntries = hashMap_get(psa->serializers.map, serType);
     if(typeEntries == NULL) {
         typeEntries = hashMap_create(NULL, NULL, NULL, NULL);
-        hashMap_put(psa->serializers.map, (void*)serType, typeEntries);
+        hashMap_put(psa->serializers.map, (void*)celix_utils_strdup(serType), typeEntries);
     }
     psa_zmq_serializer_entry_t *entry = hashMap_get(typeEntries, (void*)msgId);
     if (entry == NULL) {
         entry = calloc(1, sizeof(psa_zmq_serializer_entry_t));
         entry->svc = svc;
-        entry->fqn = msgFqn;
-        entry->version = msgVersion;
+        entry->fqn = celix_utils_strdup(msgFqn);
+        entry->version = celix_utils_strdup(msgVersion);
         hashMap_put(typeEntries, (void*)msgId, entry);
     }
     celixThreadRwlock_unlock(&psa->serializers.mutex);
@@ -307,17 +307,20 @@ void pubsub_zmqAdmin_addSerializerSvc(void *handle, void *svc, const celix_prope
 
 void pubsub_zmqAdmin_removeSerializerSvc(void *handle, void *svc, const celix_properties_t *props) {
     pubsub_zmq_admin_t *psa = handle;
-    const char *serType = celix_properties_get(props, PUBSUB_SERIALIZER_TYPE_KEY, NULL);
+    const char *serType = celix_properties_get(props, PUBSUB_MESSAGE_SERIALIZATION_SERVICE_SERIALIZATION_TYPE_PROPERTY, NULL);
     long msgId = celix_properties_getAsLong(props, PUBSUB_MESSAGE_SERIALIZATION_SERVICE_MSG_ID_PROPERTY, -1L);
 
     celixThreadRwlock_writeLock(&psa->serializers.mutex);
     hash_map_t *typeEntries = hashMap_get(psa->serializers.map, serType);
     if(typeEntries != NULL) {
-        free(hashMap_remove(typeEntries, (void*)msgId));
+        psa_zmq_serializer_entry_t *entry = hashMap_remove(typeEntries, (void*)msgId);
+        free((void*)entry->fqn);
+        free((void*)entry->version);
+        free(entry);
 
         // check if there are no remaining serializers for the given type. If not, remove all senders and receivers for this type.
         if(hashMap_size(typeEntries) == 0) {
-            hashMap_destroy(hashMap_remove(psa->serializers.map, serType), false, false);
+            hashMap_destroy(hashMap_removeFreeKey(psa->serializers.map, serType), true, false);
             celixThreadRwlock_unlock(&psa->serializers.mutex);
 
             celixThreadMutex_lock(&psa->topicSenders.mutex);

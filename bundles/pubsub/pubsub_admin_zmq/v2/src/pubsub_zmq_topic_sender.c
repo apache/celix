@@ -146,7 +146,7 @@ pubsub_zmq_topic_sender_t* pubsub_zmqTopicSender_create(
     pubsub_zmq_topic_sender_t *sender = calloc(1, sizeof(*sender));
     sender->ctx = ctx;
     sender->logHelper = logHelper;
-    sender->serializerType = serializerType;
+    sender->serializerType = celix_utils_strdup(serializerType);
     sender->admin = admin;
     sender->protocolSvcId = protocolSvcId;
     sender->protocol = prot;
@@ -232,7 +232,7 @@ pubsub_zmq_topic_sender_t* pubsub_zmqTopicSender_create(
             if (rv == -1) {
                 L_WARN("Error for zmq_bind using static bind url '%s'. %s", staticBindUrl, strerror(errno));
             } else {
-                sender->url = strndup(staticBindUrl, 1024*1024);
+                sender->url = celix_utils_strdup(staticBindUrl);
                 sender->isStatic = true;
             }
         } else if (zmqSocket != NULL) {
@@ -269,8 +269,8 @@ pubsub_zmq_topic_sender_t* pubsub_zmqTopicSender_create(
     }
 
     if (sender->url != NULL) {
-        sender->scope = scope == NULL ? NULL : strndup(scope, 1024 * 1024);
-        sender->topic = strndup(topic, 1024 * 1024);
+        sender->scope = scope == NULL ? NULL : celix_utils_strdup(scope);
+        sender->topic = celix_utils_strdup(topic);
 
         celixThreadMutex_create(&sender->boundedServices.mutex, NULL);
         sender->boundedServices.map = hashMap_create(NULL, NULL, NULL, NULL);
@@ -352,6 +352,7 @@ void pubsub_zmqTopicSender_destroy(pubsub_zmq_topic_sender_t *sender) {
         }
         free(sender->topic);
         free(sender->url);
+        free((void*)sender->serializerType);
         free(sender);
     }
 }

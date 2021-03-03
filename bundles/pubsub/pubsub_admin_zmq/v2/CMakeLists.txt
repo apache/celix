@@ -17,7 +17,6 @@
 
 find_package(ZMQ REQUIRED)
 find_package(CZMQ REQUIRED)
-find_package(Jansson REQUIRED)
 find_package(UUID REQUIRED)
 
 set(OPTIONAL_OPENSSL_LIB )
