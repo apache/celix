@@ -259,6 +259,38 @@ namespace celix {
         std::size_t size() const {
             return celix_properties_size(cProps.get());
         }
+
+        /**
+         * @brief Converts the properties a (new) std::string, std::string map.
+         */
+        std::map<std::string, std::string> convertToMap() const {
+            std::map<std::string, std::string> result{};
+            for (const auto& pair : *this) {
+                result[pair.first] = pair.second;
+            }
+            return result;
+        }
+
+        /**
+         * @brief Converts the properties a (new) std::string, std::string unordered map.
+         */
+        std::unordered_map<std::string, std::string> convertToUnorderedMap() const {
+            std::unordered_map<std::string, std::string> result{};
+            for (const auto& pair : *this) {
+                result[pair.first] = pair.second;
+            }
+            return result;
+        }
+
+        /**
+         * @brief cast the celix::Properties to a std::string, std::string map.
+         * @warning This method is added to ensure backwards compatibility with the celix::dm::Properties, but the
+         * use of this cast should be avoided.
+         * This method will eventually be removed.
+         */
+        operator std::map<std::string, std::string>() const {
+            return convertToMap();
+        }
     private:
         explicit Properties(celix_properties_t* props) : cProps{props, [](celix_properties_t*) { /*nop*/ }} {}
 
