@@ -33,7 +33,8 @@ if (NOT COMMAND celix_subproject)
 
     set(PROMISES_STANDALONE ON)
 else ()
-    celix_subproject(PROMISES "Option to build the Promises library" ON)
+    set(PROMISES_DEFAULT_ON ${CELIX_CXX})
+    celix_subproject(PROMISES "Option to build the Promises library" ${PROMISES_DEFAULT_ON})
 endif ()
 
 if (PROMISES OR PROMISES_STANDALONE)

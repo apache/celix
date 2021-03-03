@@ -35,7 +35,7 @@ namespace celix {
      */
     class Bundle {
     public:
-        explicit Bundle(celix_bundle_t *_cBnd) : cBnd{_cBnd, [](celix_bundle_t*){/*nop*/}}{}
+        explicit Bundle(celix_bundle_t* _cBnd) : cBnd{_cBnd, [](celix_bundle_t*){/*nop*/}}{}
 
         /**
          * @brief get the bundle id.
