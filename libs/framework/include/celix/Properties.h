@@ -282,6 +282,7 @@ namespace celix {
             return result;
         }
 
+#ifdef CELIX_PROPERTIES_ALLOW_IMPLICIT_MAP_CAST
         /**
          * @brief cast the celix::Properties to a std::string, std::string map.
          * @warning This method is added to ensure backwards compatibility with the celix::dm::Properties, but the
@@ -291,6 +292,7 @@ namespace celix {
         operator std::map<std::string, std::string>() const {
             return convertToMap();
         }
+#endif
     private:
         explicit Properties(celix_properties_t* props) : cProps{props, [](celix_properties_t*) { /*nop*/ }} {}
 
