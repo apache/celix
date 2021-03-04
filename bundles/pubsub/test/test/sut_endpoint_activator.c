@@ -42,7 +42,12 @@ struct activator {
 celix_status_t bnd_start(struct activator *act, celix_bundle_context_t *ctx) {
 
 	char filter[512];
-	snprintf(filter, 512, "(%s=%s)", PUBSUB_PUBLISHER_TOPIC, "ping2");
+    bool useNegativeScopeFilter = celix_bundleContext_getPropertyAsBool(ctx, "CELIX_PUBSUB_TEST_USE_NEGATIVE_SCOPE_FILTER", true);
+    if (useNegativeScopeFilter) {
+        snprintf(filter, 512, "(%s=%s)(!(scope=*))", PUBSUB_PUBLISHER_TOPIC, "ping");
+    } else {
+        snprintf(filter, 512, "(%s=%s)", PUBSUB_PUBLISHER_TOPIC, "ping");
+    }
 	celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
 	opts.set = sut_pubSet;
 	opts.callbackHandle = act;

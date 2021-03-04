@@ -5,7 +5,7 @@ title: Promises
 # Celix Promises
 
 Celix Promises are based on the OSGI Promises (OSGi Compendium Release 7 Specification, Chapter 705).
-It follows the specification as close as possible, but some adjustments are mode for C++11.
+It follows the specification as close as possible, but some adjustments are mode for C++17.
 
 NOTE: this implementation is still experiment and the api and behaviour will probably still change.  
 
@@ -18,28 +18,8 @@ NOTE: this implementation is still experiment and the api and behaviour will pro
 ## Usage
 
 ```C++
-#include "celix/PromiseFactory.h"
-
-/**
- * A simple example of a promise.
- * Note this is not an ideal use of a promise.
- */
-celix::Promise<int> foo(int n) {
-    static celix::PromiseFactory factory{} 
-    celix::Deferred<int> deferred = factory.deferred<int>();
-
-    if (n > 10) {
-        deferred.resolve(n);
-    } else {
-        deferred.fail(std::logic_error{"Requires more than 10"});
-    }
-
-    return deferred.getPromise();
-}
-```
-
-```C++
-#include <thread>
+//PromiseExample.cc
+#include <iostream>
 #include "celix/PromiseFactory.h"
 
 static long calc_fib(long n) {
@@ -53,34 +33,34 @@ static long calc_fib(long n) {
     return m;
 }
 
-/**
- * A more complex example where a heavy work load is done on a separate thread.
- */
 celix::Promise<long> fib(celix::PromiseFactory& factory, long n) {
-    return factory.deferredTask<long>([n](auto deferred) {
+    return factory.deferredTask<long>([n](celix::Deferred deferred) {
         deferred.resolve(calc_fib(n));
     });
 }
-```
 
-```C++
-#include <memory>
-#include "celix/Promise.h"
+int main() {
+    celix::PromiseFactory factory{};
 
-#include "example/RestApi.h" //note a external rest api lib
-
-/**
- * A more complex example where work has to be finished in a certain time limit.
- */
-void processPayload(celix::Promise<std::shared_ptr<RestApi::Payload>> promise) {
-    promise
-        .timeout(std::chrono::seconds{2})
-        .onFailure(const std::exception& e) {
-            //log failure
+    fib(factory, 1000000000)
+        .timeout(std::chrono::milliseconds {100})
+        .onSuccess([](long val) {
+            std::cout << "Success promise 1 : " << std::to_string(val) << std::endl;
         })
-        .onSuccess([](const std::shared_ptr<RestApi::Payload> payload) {
-            //handle payload
+        .onFailure([](const std::exception& e) {
+            std::cerr << "Failure promise 1 : " << e.what() << std::endl;
         });
+
+    fib(factory, 39)
+        .timeout(std::chrono::milliseconds{100})
+        .onSuccess([](long val) {
+            std::cout << "Success promise 2 : " << std::to_string(val) << std::endl;
+        })
+        .onFailure([](const std::exception& e) {
+            std::cerr << "Failure promise 2 : " << e.what() << std::endl;
+        });
+
+    //NOTE the program can only exit if the executor in the PromiseFactory is done executing all tasks.
 }
 ```
 
@@ -98,4 +78,3 @@ void processPayload(celix::Promise<std::shared_ptr<RestApi::Payload>> promise) {
 - PromiseFactory is not complete yet
 - The static helper class Promises is not implemented yet (e.g. all/any)
 - Promise::flatMap not implemented yet
-- The ScheduledExecutorService concept is not added yet.

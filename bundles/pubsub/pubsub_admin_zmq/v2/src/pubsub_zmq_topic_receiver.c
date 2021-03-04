@@ -133,12 +133,12 @@ pubsub_zmq_topic_receiver_t* pubsub_zmqTopicReceiver_create(celix_bundle_context
     pubsub_zmq_topic_receiver_t *receiver = calloc(1, sizeof(*receiver));
     receiver->ctx = ctx;
     receiver->logHelper = logHelper;
-    receiver->serializerType = serializerType;
+    receiver->serializerType = celix_utils_strdup(serializerType);
     receiver->admin = admin;
     receiver->protocolSvcId = protocolSvcId;
     receiver->protocol = protocol;
-    receiver->scope = scope == NULL ? NULL : strndup(scope, 1024 * 1024);
-    receiver->topic = strndup(topic, 1024 * 1024);
+    receiver->scope = scope == NULL ? NULL : celix_utils_strdup(scope);
+    receiver->topic = celix_utils_strdup(topic);
     receiver->metricsEnabled = celix_bundleContext_getPropertyAsBool(ctx, PSA_ZMQ_METRICS_ENABLED, PSA_ZMQ_DEFAULT_METRICS_ENABLED);
 
     pubsubInterceptorsHandler_create(ctx, scope, topic, &receiver->interceptorsHandler);
@@ -215,7 +215,7 @@ pubsub_zmq_topic_receiver_t* pubsub_zmqTopicReceiver_create(celix_bundle_context
         staticConnectUrls = celix_properties_get(topicProperties, PUBSUB_ZMQ_STATIC_CONNECT_URLS, NULL);
     }
     if (receiver->zmqSock != NULL && staticConnectUrls != NULL) {
-        char *urlsCopy = strndup(staticConnectUrls, 1024*1024);
+        char *urlsCopy = celix_utils_strdup(staticConnectUrls);
         char* url;
         char* save = urlsCopy;
 
@@ -223,7 +223,7 @@ pubsub_zmq_topic_receiver_t* pubsub_zmqTopicReceiver_create(celix_bundle_context
             psa_zmq_requested_connection_entry_t *entry = calloc(1, sizeof(*entry));
             entry->statically = true;
             entry->connected = false;
-            entry->url = strndup(url, 1024*1024);
+            entry->url = celix_utils_strdup(url);
             hashMap_put(receiver->requestedConnections.map, entry->url, entry);
             receiver->requestedConnections.allConnected = false;
         }
@@ -312,6 +312,7 @@ void pubsub_zmqTopicReceiver_destroy(pubsub_zmq_topic_receiver_t *receiver) {
 
         free(receiver->scope);
         free(receiver->topic);
+        free((void*)receiver->serializerType);
     }
     free(receiver);
 }
@@ -357,7 +358,7 @@ void pubsub_zmqTopicReceiver_connectTo(
     psa_zmq_requested_connection_entry_t *entry = hashMap_get(receiver->requestedConnections.map, url);
     if (entry == NULL) {
         entry = calloc(1, sizeof(*entry));
-        entry->url = strndup(url, 1024*1024);
+        entry->url = celix_utils_strdup(url);
         entry->connected = false;
         entry->statically = false;
         hashMap_put(receiver->requestedConnections.map, (void*)entry->url, entry);

@@ -56,3 +56,5 @@ add_library(Celix::framework ALIAS framework)
 if (ENABLE_TESTING)
     add_subdirectory(gtest)
 endif()
+
+add_subdirectory(benchmark)

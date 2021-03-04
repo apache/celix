@@ -404,7 +404,7 @@ namespace celix {
                 }
                 tracker->invokeUpdateCallbacks();
             };
-            opts.removeWithOwner = [](void *handle, void* voidSvc, const celix_properties_t* cProps, const celix_bundle_t*) {
+            opts.removeWithOwner = [](void *handle, void*, const celix_properties_t* cProps, const celix_bundle_t*) {
                 auto tracker = static_cast<ServiceTracker<I>*>(handle);
                 long svcId = celix_properties_getAsLong(cProps, OSGI_FRAMEWORK_SERVICE_ID, -1L);
                 std::shared_ptr<SvcEntry> entry{};
@@ -413,7 +413,6 @@ namespace celix {
                     auto it = tracker->cachedEntries.find(svcId);
                     assert(it != tracker->cachedEntries.end()); //should not happen, added during add callback
                     entry = it->second;
-                    assert(entry->svc.get() == voidSvc);
                     tracker->cachedEntries.erase(it);
                     tracker->entries.erase(entry);
                 }
@@ -450,7 +449,7 @@ namespace celix {
             long svcRanking = celix_properties_getAsLong(cProps, OSGI_FRAMEWORK_SERVICE_RANKING, 0);
             auto svc = std::shared_ptr<I>{static_cast<I*>(voidSvc), [](I*){/*nop*/}};
             auto props = celix::Properties::wrap(cProps);
-            auto owner = std::make_shared<const celix::Bundle>(const_cast<celix_bundle_t*>(cBnd));
+            auto owner = std::make_shared<celix::Bundle>(const_cast<celix_bundle_t*>(cBnd));
             return std::make_shared<SvcEntry>(svcId, svcRanking, svc, props, owner);
         }
 
