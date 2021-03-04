@@ -555,3 +555,87 @@ TEST_F(DependencyManagerTestSuite, UnneededSuspendIsPrevented) {
     EXPECT_EQ(cmp2.getInstance().startCount, 2); //1x suspend for set nullptr, 1x suspend for rem
     EXPECT_EQ(cmp2.getInstance().stopCount, 2); //1x suspend for set nullptr, 1x suspend for rem
 }
+
+TEST_F(DependencyManagerTestSuite, ExceptionsInLifecycle) {
+    class ExceptionComponent {
+    public:
+        enum class LifecycleMethod {
+            INIT,
+            START,
+            STOP,
+            DEINIT
+        };
+
+        explicit ExceptionComponent(LifecycleMethod _failAt) : failAt{_failAt} {}
+
+        void failFor(LifecycleMethod lm) {
+            if (lm == failAt) {
+                throw std::logic_error("fail test");
+            }
+        }
+
+        void init() {
+            failFor(LifecycleMethod::INIT);
+        }
+
+        void start() {
+            failFor(LifecycleMethod::START);
+        }
+
+        void stop() {
+            failFor(LifecycleMethod::STOP);
+        }
+
+        void deinit() {
+            failFor(LifecycleMethod::DEINIT);
+        }
+
+    private:
+        const LifecycleMethod failAt;
+    };
+
+    celix::dm::DependencyManager dm{ctx};
+
+    {
+        auto& cmp = dm.createComponent(std::make_shared<ExceptionComponent>(ExceptionComponent::LifecycleMethod::INIT), "FailAtInitCmp")
+                .setCallbacks(&ExceptionComponent::init, &ExceptionComponent::start, &ExceptionComponent::stop, &ExceptionComponent::deinit);
+        EXPECT_EQ(cmp.getState(), ComponentState::INACTIVE);
+        cmp.build(); //fails at init and should disable
+        EXPECT_EQ(cmp.getState(), ComponentState::INACTIVE);
+        dm.clear();
+    }
+
+    {
+        auto& cmp = dm.createComponent(std::make_shared<ExceptionComponent>(ExceptionComponent::LifecycleMethod::START), "FailAtStartCmp")
+                .setCallbacks(&ExceptionComponent::init, &ExceptionComponent::start, &ExceptionComponent::stop, &ExceptionComponent::deinit);
+        EXPECT_EQ(cmp.getState(), ComponentState::INACTIVE);
+        cmp.build(); //fails at init and should disable
+        EXPECT_EQ(cmp.getState(), ComponentState::INACTIVE);
+        dm.clear();
+    }
+
+    {
+        auto& cmp = dm.createComponent(std::make_shared<ExceptionComponent>(ExceptionComponent::LifecycleMethod::STOP), "FailAtStopCmp")
+                .setCallbacks(&ExceptionComponent::init, &ExceptionComponent::start, &ExceptionComponent::stop, &ExceptionComponent::deinit);
+        EXPECT_EQ(cmp.getState(), ComponentState::INACTIVE);
+        cmp.build();
+        EXPECT_EQ(cmp.getState(), ComponentState::TRACKING_OPTIONAL);
+
+        //required service -> should stop, but fails at stop and should become inactive (component will disable itself)
+        cmp.createServiceDependency<TestService>().setRequired(true).build();
+        cmp.wait();
+        EXPECT_EQ(cmp.getState(), ComponentState::INACTIVE);
+        dm.clear();
+    }
+
+    {
+        auto& cmp = dm.createComponent(std::make_shared<ExceptionComponent>(ExceptionComponent::LifecycleMethod::DEINIT), "FailAtDeinit")
+                .setCallbacks(&ExceptionComponent::init, &ExceptionComponent::start, &ExceptionComponent::stop, &ExceptionComponent::deinit);
+        EXPECT_EQ(cmp.getState(), ComponentState::INACTIVE);
+        cmp.build();
+        EXPECT_EQ(cmp.getState(), ComponentState::TRACKING_OPTIONAL);
+
+        //required service -> should stop, but fails at stop and should become inactive (component will disable itself)
+        dm.clear(); //dm clear will deinit component and this should fail, but not deadlock
+    }
+}

@@ -147,6 +147,8 @@ endif ()
 
 option(CELIX_USE_ZIP_INSTEAD_OF_JAR "Default Celix cmake command will use jar to package bundle (if found). This option enforces Celix to use zip instead." OFF)
 
+option(CELIX_CXX "Build C++ libraries and bundles. Note for tests C++ is always used." ON)
+
 #Libraries and Launcher
 add_subdirectory(libs)
 

@@ -86,6 +86,7 @@ namespace celix {
             std::weak_ptr<celix::BundleContext> ctx = data->ctx;
             std::weak_ptr<celix::dm::DependencyManager> dm = data->dm;
             auto bndId = data->bndId;
+            data->dm->clear();
             delete data;
             waitForExpired(bndId, ctx, "celix::BundleContext", ctx);
             waitForExpired(bndId, ctx, "celix::dm::DependencyManager", dm);

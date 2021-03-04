@@ -39,6 +39,14 @@
 #endif
 #endif
 
+//FORCE DISABLE RTTI
+//TODO #323 add test CI job to test rtti based type name infer
+#undef CELIX_RTTI_ENABLED
+
+#ifdef CELIX_RTTI_ENABLED
+#include <cxxabi.h>
+#endif
+
 namespace celix {
     /**
      * @brief Returns the deferred type name for the template I
