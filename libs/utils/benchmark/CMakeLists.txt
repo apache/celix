@@ -18,11 +18,11 @@
 set(UTILS_BENCHMARK_DEFAULT "OFF")
 find_package(benchmark QUIET)
 if (benchmark_FOUND)
-    set(FRAMEWORK_BENCHMARK_DEFAULT "ON")
+    set(UTILS_BENCHMARK_DEFAULT "ON")
 endif ()
 
-celix_subproject(UTILS_BENCHMARK_DEFAULT "Option to enable Celix framework benchmark" ${FRAMEWORK_BENCHMARK_DEFAULT})
-if (UTILS_BENCHMARK_DEFAULT)
+celix_subproject(UTILS_BENCHMARK "Option to enable Celix framework benchmark" ${UTILS_BENCHMARK_DEFAULT})
+if (UTILS_BENCHMARK)
     find_package(benchmark REQUIRED)
 
     add_executable(celix_utils_benchmark
