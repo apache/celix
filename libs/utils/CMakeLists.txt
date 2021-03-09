@@ -136,3 +136,5 @@ if (ENABLE_TESTING)
     setup_target_for_coverage(version_test)
 
 endif ()
+
+add_subdirectory(benchmark)
