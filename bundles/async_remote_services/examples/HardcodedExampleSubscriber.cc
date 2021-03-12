@@ -182,11 +182,6 @@ public:
         usingCmp.build();
     }
 
-    ~ExampleActivator() noexcept {
-        std::cout << "~ExampleActivator" << std::endl;
-        _factory->getInstance().destroy();
-    }
-
     ExampleActivator(const ExampleActivator &) = delete;
     ExampleActivator &operator=(const ExampleActivator &) = delete;
 

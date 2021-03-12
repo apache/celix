@@ -129,10 +129,6 @@ public:
         _factory = &factory;
     }
 
-    ~ExampleActivator() noexcept {
-        _factory->getInstance().destroy();
-    }
-
     ExampleActivator(const ExampleActivator &) = delete;
     ExampleActivator &operator=(const ExampleActivator &) = delete;
 
