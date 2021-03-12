@@ -21,7 +21,7 @@
 
 #include <celix/dm/DependencyManager.h>
 #include <pubsub_message_serialization_service.h>
-#include <bits/types/struct_iovec.h>
+#include <sys/uio.h>
 #include <pubsub_constants.h>
 
 #include <utility>

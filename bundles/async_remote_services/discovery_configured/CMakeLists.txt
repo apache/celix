@@ -28,6 +28,7 @@ add_celix_bundle(async_rsa_discovery_configured
         src/ConfiguredDiscoveryManagerActivator.cc
         )
 target_include_directories(async_rsa_discovery_configured PUBLIC
+        $<BUILD_INTERFACE:${RapidJSON_INCLUDE_DIR}>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
         $<INSTALL_INTERFACE:include/celix/async_rsa_discovery_configured>)
 target_link_libraries(async_rsa_discovery_configured PUBLIC

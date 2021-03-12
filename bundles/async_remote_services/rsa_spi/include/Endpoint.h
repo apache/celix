@@ -23,6 +23,14 @@
 
 #include <celix/dm/Properties.h>
 
+constexpr const char* ENDPOINT_IDENTIFIER = "endpoint.id";
+constexpr const char* ENDPOINT_IMPORTED = "service.imported";
+constexpr const char* ENDPOINT_IMPORT_CONFIGS = "service.imported.configs";
+constexpr const char* ENDPOINT_EXPORTS = "service.exported.interfaces";
+constexpr const char* ENDPOINT_OBJECTCLASS = "endpoint.objectClass";
+constexpr const char* ENDPOINT_SCOPE = "endpoint.scope";
+constexpr const char* ENDPOINT_TOPIC = "endpoint.topic";
+
 namespace celix::rsa {
 
 /**
