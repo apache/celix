@@ -63,7 +63,7 @@ namespace celix::async_rsa {
             cmp.template createCServiceDependency<pubsub_publisher_t>(PUBSUB_PUBLISHER_SERVICE_NAME)
                     .setVersionRange("[3.0.0,4)")
                     .setFilter(std::string{"(topic="}.append(_topic).append("Ret)"))
-                    .setCallbacks([&cmp](const pubsub_publisher_t * pub, Properties&& props){ cmp.getInstance().setPublisher(pub, std::forward<Properties&&>(props)); })
+                    .setCallbacks([&cmp](const pubsub_publisher_t * pub, Properties&& props){ cmp.getInstance().setPublisher(pub); })
                     .setRequired(true)
                     .build();
             cmp.template createCServiceDependency<pubsub_subscriber_t>(PUBSUB_SUBSCRIBER_SERVICE_NAME)

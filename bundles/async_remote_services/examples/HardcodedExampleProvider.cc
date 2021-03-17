@@ -71,7 +71,7 @@ struct ExportedHardcodedService final : public celix::async_rsa::IExportedServic
     ExportedHardcodedService& operator=(ExportedHardcodedService const &) = delete;
     ExportedHardcodedService& operator=(ExportedHardcodedService &&) = default;
 
-    void setPublisher(pubsub_publisher_t const * publisher, Properties&&) {
+    void setPublisher(pubsub_publisher_t const * publisher) {
         _publisher = publisher;
     }
 
