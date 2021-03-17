@@ -62,13 +62,13 @@ namespace celix::async_rsa {
 
             cmp.template createCServiceDependency<pubsub_publisher_t>(PUBSUB_PUBLISHER_SERVICE_NAME)
                     .setVersionRange("[3.0.0,4)")
-                    .setFilter(std::string{"(topic="}.append(_topic).append(")"))
+                    .setFilter(std::string{"(topic="}.append(_topic).append("Ret)"))
                     .setCallbacks([&cmp](const pubsub_publisher_t * pub, Properties&& props){ cmp.getInstance().setPublisher(pub, std::forward<Properties&&>(props)); })
                     .setRequired(true)
                     .build();
             cmp.template createCServiceDependency<pubsub_subscriber_t>(PUBSUB_SUBSCRIBER_SERVICE_NAME)
                     .setVersionRange("[3.0.0,4)")
-                    .setFilter(std::string{"(topic="}.append(_topic).append(")"))
+                    .setFilter(std::string{"(topic="}.append(_topic).append("Args)"))
                     .setRequired(true)
                     .build();
 
@@ -80,7 +80,7 @@ namespace celix::async_rsa {
             sub->receive = [](void *handle, const char *msgType, unsigned int msgTypeId, void *msg, const celix_properties_t *metadata, bool *){ return static_cast<WrapperT*>(handle)->receiveMessage(msgType, msgTypeId, msg, metadata); };
 
             auto *props = celix_properties_create();
-            celix_properties_set(props, PUBSUB_SUBSCRIBER_TOPIC, _topic.c_str());
+            celix_properties_set(props, PUBSUB_SUBSCRIBER_TOPIC, std::string{""}.append(_topic).append("Args").c_str());
 
             celix_service_registration_options_t opts{};
             opts.serviceName = PUBSUB_SUBSCRIBER_SERVICE_NAME;
