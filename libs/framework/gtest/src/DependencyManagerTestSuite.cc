@@ -299,6 +299,7 @@ TEST_F(DependencyManagerTestSuite, AddSvcProvideAfterBuild) {
 
     dm.clear();
     dm.wait();
+    dm.waitIfAble();
     EXPECT_EQ(0, dm.getNrOfComponents()); //dm cleared so no components
     svcId = celix_bundleContext_findService(ctx, "TestService");
     EXPECT_EQ(svcId, -1); //cleared -> not found
@@ -418,7 +419,7 @@ TEST_F(DependencyManagerTestSuite, RemoveAndClear) {
     dm.destroyComponent(cmp1);
     bool removed = dm.removeComponent(cmp2.getUUID());
     EXPECT_TRUE(removed);
-    removed = dm.removeComponent(cmp4.getUUID());
+    removed = dm.removeComponentAsync(cmp4.getUUID());
     EXPECT_TRUE(removed);
     dm.clear();
 }
@@ -638,4 +639,12 @@ TEST_F(DependencyManagerTestSuite, ExceptionsInLifecycle) {
         //required service -> should stop, but fails at stop and should become inactive (component will disable itself)
         dm.clear(); //dm clear will deinit component and this should fail, but not deadlock
     }
+}
+
+TEST_F(DependencyManagerTestSuite, ComponentContext) {
+    celix::dm::DependencyManager dm{ctx};
+    dm.createComponent<TestComponent>()
+            .addContext(std::make_shared<std::vector<std::string>>())
+            .build();
+    //note should not leak mem
 }
