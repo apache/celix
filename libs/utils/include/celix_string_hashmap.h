@@ -1,0 +1,54 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+#ifndef CELIX_STRING_HASHMAP_H_
+#define CELIX_STRING_HASHMAP_H_
+
+#include <stddef.h>
+
+#include "celixbool.h"
+#include "exports.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef struct celix_string_hashmap celix_string_hashmap_t;
+//TODO typedef struct celix_long_hashmap celix_long_hashmap_t;
+
+/**
+ * @brief Creates a new empty hashmap with a 'const char*' as key.
+ */
+celix_string_hashmap_t* celix_stringHashmap_create();
+
+/**
+ * @brief frees the hashmap, but will not free the key and values.
+ */
+void celix_stringHashmap_destroy(celix_string_hashmap_t* map);
+
+/**
+ * @brief Returns the size of the hashmap
+ */
+size_t celix_stringHashMap_size(celix_string_hashmap_t* map);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* CELIX_STRING_HASHMAP_H_ */
