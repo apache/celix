@@ -26,7 +26,7 @@ namespace celix::async_rsa {
     struct IImportedServiceFactory {
         virtual ~IImportedServiceFactory() = default;
 
-        virtual celix::dm::BaseComponent& create() = 0;
+        virtual celix::dm::BaseComponent& create(std::string endpointId) = 0;
     };
 
     /// Default templated imported service factory. If more than a simple creation is needed, please create your own factory derived from IImportedServiceFactory
@@ -51,19 +51,19 @@ namespace celix::async_rsa {
             _mng = nullptr;
         }
 
-        celix::dm::BaseComponent& create() final {
+        celix::dm::BaseComponent& create(std::string endpointId) final {
             auto &cmp = _mng->template createComponent<Implementation>(std::string{Interface::NAME})
                 .template addInterface<Interface>(std::string{Interface::VERSION});
 
             cmp.template createCServiceDependency<pubsub_publisher_t>(PUBSUB_PUBLISHER_SERVICE_NAME)
                     .setVersionRange("[3.0.0,4)")
-                    .setFilter(std::string{"(topic="}.append(_topic).append("Args)"))
+                    .setFilter(std::string{"(topic="}.append(_topic).append("Args_").append(endpointId).append(")"))
                     .setCallbacks([&cmp](const pubsub_publisher_t * pub, Properties&&){ cmp.getInstance().setPublisher(pub); })
                     .setRequired(true)
                     .build();
             cmp.template createCServiceDependency<pubsub_subscriber_t>(PUBSUB_SUBSCRIBER_SERVICE_NAME)
                     .setVersionRange("[3.0.0,4)")
-                    .setFilter(std::string{"(topic="}.append(_topic).append("Ret)"))
+                    .setFilter(std::string{"(topic="}.append(_topic).append("Ret_").append(endpointId).append(")"))
                     .setRequired(true)
                     .build();
 
@@ -75,7 +75,7 @@ namespace celix::async_rsa {
             sub->receive = [](void *handle, const char *msgType, unsigned int msgTypeId, void *msg, const celix_properties_t *metadata, bool *){ return static_cast<Implementation*>(handle)->receiveMessage(msgType, msgTypeId, msg, metadata); };
 
             auto *props = celix_properties_create();
-            celix_properties_set(props, PUBSUB_SUBSCRIBER_TOPIC, std::string{""}.append(_topic).append("Ret").c_str());
+            celix_properties_set(props, PUBSUB_SUBSCRIBER_TOPIC, std::string{""}.append(_topic).append("Ret_").append(endpointId).c_str());
 
             celix_service_registration_options_t opts{};
             opts.serviceName = PUBSUB_SUBSCRIBER_SERVICE_NAME;

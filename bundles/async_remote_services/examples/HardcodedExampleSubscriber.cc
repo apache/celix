@@ -20,7 +20,6 @@
 #include <celix_api.h>
 #include <string>
 #include <mutex>
-#include <memory_resource>
 #include <ImportedServiceFactory.h>
 #include <pubsub/api.h>
 #include <celix/Deferred.h>
@@ -28,6 +27,14 @@
 #include <ConfiguredEndpoint.h>
 #include "IHardcodedService.h"
 #include "HardcodedExampleSerializer.h"
+
+#if defined(__has_include) && __has_include(<version>)
+#include <version>
+#endif
+
+#if __cpp_lib_memory_resource
+#include <memory_resource>
+#endif
 
 struct ImportedHardcodedService final : public IHardcodedService {
     ImportedHardcodedService() = default;
@@ -125,9 +132,14 @@ struct ImportedHardcodedService final : public IHardcodedService {
 private:
     std::mutex _m{};
     pubsub_publisher_t const *_publisher{};
+#if __cpp_lib_memory_resource
     std::pmr::unsynchronized_pool_resource _resource{};
     std::pmr::unordered_map<int, celix::Deferred<int>> _intPromises{&_resource};
     std::pmr::unordered_map<int, celix::Deferred<std::string>> _stringPromises{&_resource};
+#else
+    std::unordered_map<int, celix::Deferred<int>> _intPromises{};
+    std::unordered_map<int, celix::Deferred<std::string>> _stringPromises{};
+#endif
     static std::atomic<int> _idCounter;
     celix::PromiseFactory _factory{};
 };

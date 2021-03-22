@@ -24,7 +24,14 @@
 #include <mutex>
 #include <pubsub/api.h>
 #include <pubsub_message_serialization_service.h>
+
+#if defined(__has_include) && __has_include(<version>)
+#include <version>
+#endif
+
+#if __cpp_lib_memory_resource
 #include <memory_resource>
+#endif
 
 namespace celix::async_rsa {
     class AsyncAdmin;
@@ -73,13 +80,20 @@ namespace celix::async_rsa {
         std::shared_ptr<celix::dm::DependencyManager> _mng{};
         celix_log_helper_t *_logger;
         long _serviceTrackerId{-1};
-        long _endpointIdCounter{0};
         std::mutex _m{}; // protects below
+
+#if __cpp_lib_memory_resource
         std::pmr::unsynchronized_pool_resource _memResource{};
         std::pmr::unordered_map<std::string, celix::async_rsa::IExportedServiceFactory*> _exportedServiceFactories{&_memResource};
         std::pmr::unordered_map<std::string, celix::async_rsa::IImportedServiceFactory*> _importedServiceFactories{&_memResource};
         std::pmr::unordered_map<std::string, celix::dm::BaseComponent&> _importedServiceInstances{&_memResource};
         std::pmr::unordered_map<std::string, celix::dm::BaseComponent&> _exportedServiceInstances{&_memResource};
+#else
+        std::unordered_map<std::string, celix::async_rsa::IExportedServiceFactory*> _exportedServiceFactories{};
+        std::unordered_map<std::string, celix::async_rsa::IImportedServiceFactory*> _importedServiceFactories{};
+        std::unordered_map<std::string, celix::dm::BaseComponent&> _importedServiceInstances{};
+        std::unordered_map<std::string, celix::dm::BaseComponent&> _exportedServiceInstances{};
+#endif
         std::vector<celix::rsa::Endpoint> _toBeCreatedImportedEndpoints{};
         std::vector<std::pair<void*, Properties>> _toBeCreatedExportedEndpoints{};
 

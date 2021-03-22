@@ -22,7 +22,14 @@
 #include <celix_api.h>
 #include <mutex>
 #include <celix_log_helper.h>
+
+#if defined(__has_include) && __has_include(<version>)
+#include <version>
+#endif
+
+#if __cpp_lib_memory_resource
 #include <memory_resource>
+#endif
 
 namespace celix::async_rsa {
         class AsyncTopologyManager {
@@ -44,8 +51,13 @@ namespace celix::async_rsa {
         private:
             celix_log_helper_t *_logger;
             std::mutex _m{}; // protects below
+
+#if __cpp_lib_memory_resource
             std::pmr::unsynchronized_pool_resource _memResource{};
             std::pmr::unordered_map<std::string, celix::async_rsa::IExportedService*> _exportedServices{&_memResource};
+#else
+            std::unordered_map<std::string, celix::async_rsa::IExportedService*> _exportedServices{};
+#endif
             celix::rsa::EndpointAnnouncer *_discovery{};
         };
 }

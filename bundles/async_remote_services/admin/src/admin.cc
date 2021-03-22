@@ -161,8 +161,8 @@ void celix::async_rsa::AsyncAdmin::addExportedServiceFactory(celix::async_rsa::I
         if(interfaceToBeCreated.empty() || interfaceToBeCreated != interface) {
             it++;
         } else {
-            auto svcId = it->second.get(ENDPOINT_IDENTIFIER);
-            _exportedServiceInstances.emplace(svcId, factory->create(it->first, 1));
+            auto endpointId = it->second.get(ENDPOINT_IDENTIFIER);
+            _exportedServiceInstances.emplace(endpointId, factory->create(it->first, endpointId));
             it = _toBeCreatedExportedEndpoints.erase(it);
         }
     }
@@ -183,7 +183,7 @@ void celix::async_rsa::AsyncAdmin::removeExportedServiceFactory(celix::async_rsa
 void celix::async_rsa::AsyncAdmin::addService(void *svc, const celix_properties_t *props) {
     auto *objectClass = celix_properties_get(props, OSGI_FRAMEWORK_OBJECTCLASS, nullptr);
     auto *remote = celix_properties_get(props, "remote", nullptr);
-    auto svcId = celix_properties_get(props, ENDPOINT_IDENTIFIER, nullptr);
+    auto endpointId = celix_properties_get(props, ENDPOINT_IDENTIFIER, nullptr);
 
     if(objectClass == nullptr) {
         L_WARN("Adding service to be exported but missing objectclass");
@@ -197,7 +197,7 @@ void celix::async_rsa::AsyncAdmin::addService(void *svc, const celix_properties_
         L_WARN("found remote service %s", objectClass);
     }
 
-    if(svcId == nullptr) {
+    if(endpointId == nullptr) {
         L_WARN("Adding service to be exported but missing endpoint.id");
         return;
     }
@@ -220,7 +220,7 @@ void celix::async_rsa::AsyncAdmin::addService(void *svc, const celix_properties_
         return;
     }
 
-    _exportedServiceInstances.emplace(svcId, factory->second->create(svc, 1));
+    _exportedServiceInstances.emplace(endpointId, factory->second->create(svc, endpointId));
 }
 
 void celix::async_rsa::AsyncAdmin::removeService(void *, const celix_properties_t *props) {
@@ -264,15 +264,10 @@ void celix::async_rsa::AsyncAdmin::addEndpointInternal(celix::rsa::Endpoint& end
         return;
     }
 
-    auto svcId = properties.get(ENDPOINT_IDENTIFIER);
+    auto endpointId = properties.get(ENDPOINT_IDENTIFIER);
 
-    if(svcId.empty()) {
+    if(endpointId.empty()) {
         L_WARN("Adding endpoint but missing service id");
-
-        for(auto &prop : properties) {
-            L_WARN("prop: %s %s", prop.first.c_str(), prop.second.c_str());
-        }
-
         return;
     }
 
@@ -285,7 +280,7 @@ void celix::async_rsa::AsyncAdmin::addEndpointInternal(celix::rsa::Endpoint& end
     }
 
     L_DEBUG("Adding endpoint, created service");
-    _importedServiceInstances.emplace(svcId, existingFactory->second->create());
+    _importedServiceInstances.emplace(endpointId, existingFactory->second->create(endpointId));
 }
 
 class AdminActivator {
