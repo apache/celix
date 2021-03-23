@@ -37,6 +37,7 @@ target_link_libraries(async_rsa_discovery_configured PUBLIC
         Celix::rsa_spi
         )
 install_celix_bundle(async_rsa_discovery_configured EXPORT celix COMPONENT async_rsa_discovery_configured)
+target_compile_options(async_rsa_discovery_configured INTERFACE -std=c++17)
 add_library(Celix::async_rsa_discovery_configured ALIAS async_rsa_discovery_configured)
 install(TARGETS async_rsa_discovery_configured EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT async_rsa_discovery_configured)
 install(DIRECTORY include/ DESTINATION include/celix/async_rsa_discovery_configured COMPONENT async_rsa_discovery_configured)

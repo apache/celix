@@ -20,6 +20,7 @@ target_include_directories(async_rsa_common INTERFACE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
         $<INSTALL_INTERFACE:include/celix/async_rsa_common>
         )
+target_compile_options(async_rsa_common INTERFACE -std=c++17)
 #set_target_properties(async_rsa_common PROPERTIES OUTPUT_NAME "celix_async_rsa_common")
 #target_include_directories(async_rsa_common PRIVATE src)
 #target_link_libraries(async_rsa_common INTERFACE Celix::framework)

@@ -50,6 +50,8 @@ celix_bundle_files(hardcoded_example_subscriber
 
 target_link_libraries(hardcoded_example_provider PRIVATE Celix::framework Celix::async_rsa_discovery_configured Celix::async_rsa_common Celix::async_rsa)
 target_link_libraries(hardcoded_example_subscriber PRIVATE Celix::framework Celix::async_rsa_discovery_configured Celix::async_rsa_common Celix::async_rsa)
+target_compile_options(hardcoded_example_provider INTERFACE -std=c++17)
+target_compile_options(hardcoded_example_subscriber INTERFACE -std=c++17)
 
 set(PUBSUB_CONTAINER_LIBS
         Jansson
