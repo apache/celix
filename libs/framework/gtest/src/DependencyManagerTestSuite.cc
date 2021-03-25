@@ -641,7 +641,7 @@ TEST_F(DependencyManagerTestSuite, ExceptionsInLifecycle) {
     }
 }
 
-TEST_F(DependencyManagerTestSuite, ComponentContext) {
+TEST_F(DependencyManagerTestSuite, ComponentContextShouldNotLeak) {
     celix::dm::DependencyManager dm{ctx};
     dm.createComponent<TestComponent>()
             .addContext(std::make_shared<std::vector<std::string>>())

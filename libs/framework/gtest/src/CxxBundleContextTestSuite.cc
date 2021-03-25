@@ -77,7 +77,6 @@ TEST_F(CxxBundleContextTestSuite, RegisterServiceTest) {
         EXPECT_GE(svcId, 0L);
     }
 
-    ctx->waitForEvents();
     ctx->waitIfAbleForEvents();
     svcId = ctx->findService<TestInterface>();
     EXPECT_EQ(svcId, -1L);
@@ -578,7 +577,6 @@ TEST_F(CxxBundleContextTestSuite, WaitForAllEvents) {
         EXPECT_GE(svcId, 0L);
     }
 
-    ctx->waitForAllEvents();
     ctx->waitIfAbleForAllEvents();
     svcId = ctx->findService<TestInterface>();
     EXPECT_EQ(svcId, -1L);
