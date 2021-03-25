@@ -216,7 +216,7 @@ TEST_F(VoidPromiseTestSuite, resolveWithTimeout) {
             .onSuccess([&]() {
                 firstSuccessCalled = true;
             })
-            .timeout(std::chrono::milliseconds{250}) /*NOTE: more than the possible delay introduced by the executor*/
+            .timeout(std::chrono::milliseconds{500}) /*NOTE: more than the possible delay introduced by the executor*/
             .onSuccess([&]() {
                 secondSuccessCalled = true;
             })
