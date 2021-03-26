@@ -173,20 +173,18 @@ namespace celix {
          */
         template<typename I>
         long findService(const std::string& filter = {}, const std::string& versionRange = {}) {
-            return findServiceWithName<I>(celix::typeName<I>(), filter, versionRange);
+            return findServiceWithName(celix::typeName<I>(), filter, versionRange);
         }
 
         /**
          * @brief Finds the highest ranking service using the provided service name and
          * the optional (LDAP) filter and version range.
          *
-         * @tparam I the service type to found.
          * @param The service name. (Can be empty to find service with any name).
          * @param filter An optional LDAP filter.
          * @param versionRange An optional version range.
          * @return The service id of the found service or -1 if the service was not found.
          */
-        template<typename I>
         long findServiceWithName(const std::string& name, const std::string& filter = {}, const std::string& versionRange = {}) {
             waitIfAbleForEvents();
             celix_service_filter_options_t opts{};
@@ -209,20 +207,18 @@ namespace celix {
          */
         template<typename I>
         std::vector<long> findServices(const std::string& filter = {}, const std::string& versionRange = {}) {
-            return findServicesWithName<I>(celix::typeName<I>(), filter, versionRange);
+            return findServicesWithName(celix::typeName<I>(), filter, versionRange);
         }
 
         /**
          * @brief Finds all service matching the provided service name and the optional (LDAP) filter
          * and version range.
          *
-         * @tparam I the service type to found.
          * @param The service name. (Can be empty to find service with any name).
          * @param filter An optional LDAP filter.
          * @param versionRange An optional version range.
          * @return A vector of service ids.
          */
-        template<typename I>
         std::vector<long> findServicesWithName(const std::string& name, const std::string& filter = {}, const std::string& versionRange = {}) {
             waitIfAbleForEvents();
             celix_service_filter_options_t opts{};
