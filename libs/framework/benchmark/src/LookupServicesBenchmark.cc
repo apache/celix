@@ -95,7 +95,7 @@ static void findSingleService(benchmark::State& state, bool cTest, bool useFilte
         if (useFilter) {
             for (auto _ : state) {
                 // This code gets timed
-                long svcId = ctx->findServiceWithName<IService>(IService::NAME, filter);
+                long svcId = ctx->findServiceWithName(IService::NAME, filter);
                 if (svcId < 0) {
                     state.SkipWithError("invalid svc id");
                 }
@@ -103,7 +103,7 @@ static void findSingleService(benchmark::State& state, bool cTest, bool useFilte
         } else {
             for (auto _ : state) {
                 // This code gets timed
-                long svcId = ctx->findServiceWithName<IService>(IService::NAME);
+                long svcId = ctx->findServiceWithName(IService::NAME);
                 if (svcId < 0) {
                     state.SkipWithError("invalid svc id");
                 }

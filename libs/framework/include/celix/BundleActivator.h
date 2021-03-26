@@ -85,8 +85,8 @@ namespace celix {
             auto *data = static_cast<BundleActivatorData<I> *>(userData);
             std::weak_ptr<celix::BundleContext> ctx = data->ctx;
             std::weak_ptr<celix::dm::DependencyManager> dm = data->dm;
-            data->bundleActivator = nullptr;
             data->dm->clear();
+            data->bundleActivator = nullptr;
             data->dm = nullptr;
             data->ctx = nullptr;
             waitForExpired(data->bndId, ctx, "celix::BundleContext", ctx);

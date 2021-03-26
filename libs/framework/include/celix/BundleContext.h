@@ -173,22 +173,20 @@ namespace celix {
          */
         template<typename I>
         long findService(const std::string& filter = {}, const std::string& versionRange = {}) {
-            return findServiceWithName<I>(celix::typeName<I>(), filter, versionRange);
+            return findServiceWithName(celix::typeName<I>(), filter, versionRange);
         }
 
         /**
          * @brief Finds the highest ranking service using the provided service name and
          * the optional (LDAP) filter and version range.
          *
-         * @tparam I the service type to found.
          * @param The service name. (Can be empty to find service with any name).
          * @param filter An optional LDAP filter.
          * @param versionRange An optional version range.
          * @return The service id of the found service or -1 if the service was not found.
          */
-        template<typename I>
         long findServiceWithName(const std::string& name, const std::string& filter = {}, const std::string& versionRange = {}) {
-            waitIfAble();
+            waitIfAbleForEvents();
             celix_service_filter_options_t opts{};
             opts.serviceName = name.empty() ? nullptr : name.c_str();
             opts.filter = filter.empty() ? nullptr : filter.c_str();
@@ -209,22 +207,20 @@ namespace celix {
          */
         template<typename I>
         std::vector<long> findServices(const std::string& filter = {}, const std::string& versionRange = {}) {
-            return findServicesWithName<I>(celix::typeName<I>(), filter, versionRange);
+            return findServicesWithName(celix::typeName<I>(), filter, versionRange);
         }
 
         /**
          * @brief Finds all service matching the provided service name and the optional (LDAP) filter
          * and version range.
          *
-         * @tparam I the service type to found.
          * @param The service name. (Can be empty to find service with any name).
          * @param filter An optional LDAP filter.
          * @param versionRange An optional version range.
          * @return A vector of service ids.
          */
-        template<typename I>
         std::vector<long> findServicesWithName(const std::string& name, const std::string& filter = {}, const std::string& versionRange = {}) {
-            waitIfAble();
+            waitIfAbleForEvents();
             celix_service_filter_options_t opts{};
             opts.serviceName = name.empty() ? nullptr : name.c_str();
             opts.filter = filter.empty() ? nullptr : filter.c_str();
@@ -375,6 +371,21 @@ namespace celix {
          */
         bool stopBundle(long bndId) {
             return celix_bundleContext_stopBundle(cCtx.get(), bndId);
+        }
+
+        /**
+         * @brief List the installed and started bundle ids.
+         * The bundle ids does not include the framework bundle (bundle id celix::FRAMEWORK_BUNDLE_ID).
+         */
+        std::vector<long> listBundleIds() const {
+            std::vector<long> result{};
+            auto* ids = celix_bundleContext_listBundles(cCtx.get());
+            result.reserve(celix_arrayList_size(ids));
+            for (int i = 0 ; i < celix_arrayList_size(ids); ++i) {
+                result.push_back(celix_arrayList_getLong(ids, i));
+            }
+            celix_arrayList_destroy(ids);
+            return result;
         }
 
         /**
@@ -555,21 +566,40 @@ namespace celix {
         }
 
         /**
-         * @brief Wait until all Celix event for this bundle are completed.
+         * @brief Wait until all Celix events for this bundle are completed.
          */
         void waitForEvents() const {
             celix_bundleContext_waitForEvents(cCtx.get());
         }
-    private:
+
         /**
-         * @brief Wait (if not on the Celix event thread) for all events for this bundle context to be finished.
+         * @brief Wait (if not on the Celix event thread) until all Celix events for this bundle are completed.
          */
-        void waitIfAble() const {
+        void waitIfAbleForEvents() const {
             auto* fw = celix_bundleContext_getFramework(cCtx.get());
-            if (celix_framework_isCurrentThreadTheEventLoop(fw)) {
+            if (!celix_framework_isCurrentThreadTheEventLoop(fw)) {
                 celix_bundleContext_waitForEvents(cCtx.get());
             }
         }
+
+        /**
+         * @brief Wait until all Celix events (for all bundles) are completed.
+         */
+        void waitForAllEvents() const {
+            auto* fw = celix_bundleContext_getFramework(cCtx.get());
+            celix_framework_waitForEmptyEventQueue(fw);
+        }
+
+        /**
+         * @brief Wait (if not on the Celix event thread) until all Celix events (for all bundles) are completed.
+         */
+         void waitIfAbleForAllEvents() const {
+            auto* fw = celix_bundleContext_getFramework(cCtx.get());
+            if (!celix_framework_isCurrentThreadTheEventLoop(fw)) {
+                celix_framework_waitForEmptyEventQueue(fw);
+            }
+         }
+    private:
 
         const std::shared_ptr<celix_bundle_context_t> cCtx;
         const std::shared_ptr<celix::dm::DependencyManager> dm;
