@@ -30,8 +30,9 @@ namespace celix {
     //TODO documentation
     class PromiseFactory {
     public:
+        PromiseFactory();
         explicit PromiseFactory(
-                std::shared_ptr<celix::IExecutor> _executor = std::make_shared<celix::DefaultExecutor>(),
+                std::shared_ptr<celix::IExecutor> _executor,
                 std::shared_ptr<celix::IScheduledExecutor> _scheduledExecutor = std::make_shared<celix::DefaultScheduledExecutor>());
 
         ~PromiseFactory() noexcept;
@@ -82,6 +83,11 @@ namespace celix {
 /*********************************************************************************
  Implementation
 *********************************************************************************/
+
+inline celix::PromiseFactory::PromiseFactory() :
+        executor{std::make_shared<celix::DefaultExecutor>()},
+        scheduledExecutor{std::make_shared<celix::DefaultScheduledExecutor>()} {}
+
 
 inline celix::PromiseFactory::PromiseFactory(
         std::shared_ptr<celix::IExecutor> _executor,
