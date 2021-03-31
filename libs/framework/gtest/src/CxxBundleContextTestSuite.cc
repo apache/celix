@@ -77,25 +77,25 @@ TEST_F(CxxBundleContextTestSuite, RegisterServiceTest) {
         EXPECT_GE(svcId, 0L);
     }
 
-    ctx->waitForEvents();
+    ctx->waitIfAbleForEvents();
     svcId = ctx->findService<TestInterface>();
     EXPECT_EQ(svcId, -1L);
 }
 
 TEST_F(CxxBundleContextTestSuite, RegisterServiceWithNameTest) {
-    long svcId = ctx->findServiceWithName<TestInterface>("foo");
+    long svcId = ctx->findServiceWithName("foo");
     EXPECT_EQ(svcId, -1L);
 
     {
         auto impl = std::make_shared<TestImplementation>();
         auto svcReg = ctx->registerService<TestInterface>(impl, "foo").build();
         svcReg->wait();
-        svcId = ctx->findServiceWithName<TestInterface>("foo");
+        svcId = ctx->findServiceWithName("foo");
         EXPECT_GE(svcId, 0L);
     }
 
     ctx->waitForEvents();
-    svcId = ctx->findServiceWithName<TestInterface>("foo");
+    svcId = ctx->findServiceWithName("foo");
     EXPECT_EQ(svcId, -1L);
 }
 
@@ -359,10 +359,13 @@ TEST_F(CxxBundleContextTestSuite, OnRegisterAndUnregisterCallbacks) {
 }
 
 TEST_F(CxxBundleContextTestSuite, InstallCxxBundle) {
+    EXPECT_EQ(0, ctx->listBundleIds().size());
+
     std::string loc{SIMPLE_CXX_BUNDLE_LOC};
     ASSERT_FALSE(loc.empty());
     long bndId = ctx->installBundle(loc);
     EXPECT_GE(bndId, 0);
+    EXPECT_EQ(1, ctx->listBundleIds().size());
 }
 
 TEST_F(CxxBundleContextTestSuite, LoggingUsingContext) {
@@ -560,4 +563,21 @@ TEST_F(CxxBundleContextTestSuite, setServicesWithTrackerWhenMultipleRegistration
     //TODO improve this. For now closing a tracker will inject other service before getting to nullptr.
     //Also look into why this is not happening in the C service tracker test.
     EXPECT_EQ(3, count.load());
+}
+
+TEST_F(CxxBundleContextTestSuite, WaitForAllEvents) {
+    long svcId = ctx->findService<TestInterface>();
+    EXPECT_EQ(svcId, -1L);
+
+    {
+        auto impl = std::make_shared<TestImplementation>();
+        auto svcReg = ctx->registerService<TestInterface>(impl).build();
+        svcReg->wait();
+        svcId = ctx->findService<TestInterface>();
+        EXPECT_GE(svcId, 0L);
+    }
+
+    ctx->waitIfAbleForAllEvents();
+    svcId = ctx->findService<TestInterface>();
+    EXPECT_EQ(svcId, -1L);
 }

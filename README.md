@@ -29,7 +29,7 @@ Apache Celix is an implementation of the OSGi specification adapted to C and C++
 - [Apache Celix Intro](documents/intro/README.md)
 - [Getting Started Guide](documents/getting_started/README.md)
 
-## Building in a nutshell
+## Building in a Nutshell
 
 ### Building Celix
 ```bash

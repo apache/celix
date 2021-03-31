@@ -359,9 +359,14 @@ Component<T>& Component<T>::setCallbacks(
 
 template<class T>
 Component<T>& Component<T>::removeCallbacks() {
-
     celix_dmComponent_setCallbacks(this->cComponent(), nullptr, nullptr, nullptr, nullptr);
+    return *this;
+}
 
+template<class T>
+Component<T>& Component<T>::addContext(std::shared_ptr<void> context) {
+    std::lock_guard<std::mutex> lock{mutex};
+    componentContexts.template emplace_back(std::move(context));
     return *this;
 }
 
