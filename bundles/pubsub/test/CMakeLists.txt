@@ -333,7 +333,7 @@ if (BUILD_PUBSUB_PSA_TCP)
             pubsub_tst
             pubsub_serializer
             )
-    target_link_libraries(pubsub_tcp_v2_wire_v1_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi)
+    target_link_libraries(pubsub_tcp_v2_wire_v1_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Celix::dfi)
     target_include_directories(pubsub_tcp_v2_wire_v1_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
     add_test(NAME pubsub_tcp_v2_wire_v1_tests COMMAND pubsub_tcp_v2_wire_v1_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_tcp_v2_wire_v1_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_tcp_v2_wire_v1_tests SCAN_DIR ..)
@@ -356,7 +356,7 @@ if (BUILD_PUBSUB_PSA_TCP)
             pubsub_tst
             pubsub_serializer
             )
-    target_link_libraries(pubsub_tcp_v2_wire_v2_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi)
+    target_link_libraries(pubsub_tcp_v2_wire_v2_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Celix::dfi)
     target_include_directories(pubsub_tcp_v2_wire_v2_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
     add_test(NAME pubsub_tcp_v2_wire_v2_tests COMMAND pubsub_tcp_v2_wire_v2_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_tcp_v2_wire_v2_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_tcp_v2_wire_v2_tests SCAN_DIR ..)
@@ -380,7 +380,7 @@ if (BUILD_PUBSUB_PSA_TCP)
             pubsub_tst
             pubsub_serializer
             )
-    target_link_libraries(pubsub_tcp_v2_wire_v2_with_no_scope_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi)
+    target_link_libraries(pubsub_tcp_v2_wire_v2_with_no_scope_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Celix::dfi)
     target_include_directories(pubsub_tcp_v2_wire_v2_with_no_scope_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
     add_test(NAME pubsub_tcp_v2_wire_v2_with_no_scope_tests COMMAND pubsub_tcp_v2_wire_v2_with_no_scope_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_tcp_v2_wire_v2_with_no_scope_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_tcp_v2_wire_v2_with_no_scope_tests SCAN_DIR ..)
@@ -404,7 +404,7 @@ if (BUILD_PUBSUB_PSA_TCP)
             pubsub_loopback
             pubsub_serializer
             )
-    target_link_libraries(pubsub_tcp_v2_endpoint_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi)
+    target_link_libraries(pubsub_tcp_v2_endpoint_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Celix::dfi)
     target_include_directories(pubsub_tcp_v2_endpoint_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
 
     add_celix_container(pstm_deadlock_tcp_v2_test
@@ -424,7 +424,7 @@ if (BUILD_PUBSUB_PSA_TCP)
             pubsub_serializer
             )
     target_compile_definitions(pstm_deadlock_tcp_v2_test PRIVATE -DDEADLOCK_SUT_BUNDLE_FILE=\"${DEADLOCK_SUT_BUNDLE_FILE}\")
-    target_link_libraries(pstm_deadlock_tcp_v2_test PRIVATE Celix::pubsub_api GTest::gtest GTest::gtest_main Jansson Celix::dfi)
+    target_link_libraries(pstm_deadlock_tcp_v2_test PRIVATE Celix::pubsub_api GTest::gtest GTest::gtest_main Celix::dfi)
     target_include_directories(pstm_deadlock_tcp_v2_test SYSTEM PRIVATE pstm_deadlock_tcp_v2_test)
 
     #Note we do not link to bundles, as result (to ensure a bundle zip file is created) an dependency on the bundle is needed.
@@ -535,12 +535,12 @@ if (BUILD_PUBSUB_PSA_ZMQ)
                 pubsub_serializer
             )
 
-    target_link_libraries(pubsub_zmq_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi ZMQ::lib CZMQ::lib)
+    target_link_libraries(pubsub_zmq_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Celix::dfi ZMQ::lib CZMQ::lib)
     target_include_directories(pubsub_zmq_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
     add_test(NAME pubsub_zmq_tests COMMAND pubsub_zmq_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_zmq_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_zmq_tests SCAN_DIR ..)
 
-    target_link_libraries(pubsub_zmq_v2_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi ZMQ::lib CZMQ::lib)
+    target_link_libraries(pubsub_zmq_v2_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Celix::dfi ZMQ::lib CZMQ::lib)
     target_include_directories(pubsub_zmq_v2_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
     add_test(NAME pubsub_zmq_v2_tests COMMAND pubsub_zmq_v2_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_zmq_v2_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_zmq_v2_tests SCAN_DIR ..)
@@ -613,7 +613,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
     add_test(NAME pubsub_zmq_zerocopy_tests COMMAND pubsub_zmq_zerocopy_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_zmq_zerocopy_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_zmq_zerocopy_tests SCAN_DIR ..)
 
-    target_link_libraries(pubsub_zmq_v2_zerocopy_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi ZMQ::lib CZMQ::lib)
+    target_link_libraries(pubsub_zmq_v2_zerocopy_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Celix::dfi ZMQ::lib CZMQ::lib)
     target_include_directories(pubsub_zmq_v2_zerocopy_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
 
     add_test(NAME pubsub_zmq_v2_zerocopy_tests COMMAND pubsub_zmq_v2_zerocopy_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_zmq_v2_zerocopy_tests,CONTAINER_LOC>)
@@ -675,7 +675,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             Celix::pubsub_protocol_wire_v2
             )
     target_compile_definitions(pstm_deadlock_zmq_test PRIVATE -DDEADLOCK_SUT_BUNDLE_FILE=\"${DEADLOCK_SUT_BUNDLE_FILE}\")
-    target_link_libraries(pstm_deadlock_zmq_test PRIVATE Celix::pubsub_api GTest::gtest GTest::gtest_main Jansson Celix::dfi ZMQ::lib CZMQ::lib)
+    target_link_libraries(pstm_deadlock_zmq_test PRIVATE Celix::pubsub_api GTest::gtest GTest::gtest_main Celix::dfi ZMQ::lib CZMQ::lib)
     target_include_directories(pstm_deadlock_zmq_test SYSTEM PRIVATE pstm_deadlock_zmq_test)
 
     #Note we do not link to bundles, as result (to ensure a bundle zip file is created) an dependency on the bundle is needed.
@@ -689,7 +689,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
     setup_target_for_coverage(pstm_deadlock_zmq_test SCAN_DIR ..)
 
     target_compile_definitions(pstm_deadlock_zmq_v2_test PRIVATE -DDEADLOCK_SUT_BUNDLE_FILE=\"${DEADLOCK_SUT_BUNDLE_FILE}\")
-    target_link_libraries(pstm_deadlock_zmq_v2_test PRIVATE Celix::pubsub_api GTest::gtest GTest::gtest_main Jansson Celix::dfi ZMQ::lib CZMQ::lib)
+    target_link_libraries(pstm_deadlock_zmq_v2_test PRIVATE Celix::pubsub_api GTest::gtest GTest::gtest_main Celix::dfi ZMQ::lib CZMQ::lib)
     target_include_directories(pstm_deadlock_zmq_v2_test SYSTEM PRIVATE pstm_deadlock_zmq_v2_test)
 
     #Note we do not link to bundles, as result (to ensure a bundle zip file is created) an dependency on the bundle is needed.

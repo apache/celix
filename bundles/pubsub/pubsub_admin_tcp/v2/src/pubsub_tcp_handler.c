@@ -562,7 +562,7 @@ int pubsub_tcpHandler_listen(pubsub_tcpHandler_t *handle, char *url) {
         char *pUrl = pubsub_utils_url_get_url(sin, protocol);
         entry = pubsub_tcpHandler_createEntry(handle, fd, pUrl, NULL, sin);
         if (entry != NULL) {
-            entry->connected = true;
+            __atomic_store_n(&entry->connected, true, __ATOMIC_RELEASE);
             free(pUrl);
             free(sin);
             celixThreadRwlock_writeLock(&handle->dbLock);
@@ -924,7 +924,7 @@ int pubsub_tcpHandler_read(pubsub_tcpHandler_t *handle, int fd) {
         return -1;
     }
     // If it's not connected return from function
-    if (!entry->connected) {
+    if (!__atomic_load_n(&entry->connected, __ATOMIC_ACQUIRE)) {
         celixThreadRwlock_unlock(&handle->dbLock);
         return -1;
     }
@@ -993,7 +993,7 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
         size_t max_msg_iov_len = IOV_MAX - 2; // header , footer, padding
         while (hashMapIterator_hasNext(&iter)) {
             psa_tcp_connection_entry_t *entry = hashMapIterator_nextValue(&iter);
-            if (!entry->connected) {
+            if (!__atomic_load_n(&entry->connected, __ATOMIC_ACQUIRE)) {
                 continue;
             }
             // When maxMsgSize is zero then payloadSize is disabled
@@ -1319,11 +1319,10 @@ void pubsub_tcpHandler_connectionHandler(pubsub_tcpHandler_t *handle, int fd) {
     celixThreadRwlock_readLock(&handle->dbLock);
     psa_tcp_connection_entry_t *entry = hashMap_get(handle->connection_fd_map, (void *) (intptr_t) fd);
     if (entry)
-        if ((!entry->connected)) {
+        if (!__atomic_exchange_n(&entry->connected, true, __ATOMIC_ACQ_REL)) {
             // tell sender that an receiver is connected
             if (handle->receiverConnectMessageCallback)
                 handle->receiverConnectMessageCallback(handle->receiverConnectPayload, entry->url, false);
-            entry->connected = true;
         }
     celixThreadRwlock_unlock(&handle->dbLock);
 }

@@ -15,7 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 
-find_package(Jansson REQUIRED)
 find_package(UUID REQUIRED)
 
 add_celix_bundle(celix_pubsub_admin_tcp_v2
