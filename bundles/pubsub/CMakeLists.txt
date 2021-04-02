@@ -27,7 +27,8 @@ if (PUBSUB)
 
     option(BUILD_PUBSUB_PSA_TCP "Build TCP PubSub Admin" ON)
     if (BUILD_PUBSUB_PSA_TCP)
-        add_subdirectory(pubsub_admin_tcp)
+        add_subdirectory(pubsub_admin_tcp/v1)
+        add_subdirectory(pubsub_admin_tcp/v2)
     endif (BUILD_PUBSUB_PSA_TCP)
 
     option(BUILD_PUBSUB_PSA_UDP_MC "Build UDP MC PubSub Admin" ON)

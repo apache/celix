@@ -45,8 +45,8 @@ const char *pubsub_tcpTopicSender_topic(pubsub_tcp_topic_sender_t *sender);
 const char *pubsub_tcpTopicSender_url(pubsub_tcp_topic_sender_t *sender);
 bool pubsub_tcpTopicSender_isStatic(pubsub_tcp_topic_sender_t *sender);
 bool pubsub_tcpTopicSender_isPassive(pubsub_tcp_topic_sender_t *sender);
-long pubsub_tcpTopicSender_serializerSvcId(pubsub_tcp_topic_sender_t *sender);
 long pubsub_tcpTopicSender_protocolSvcId(pubsub_tcp_topic_sender_t *sender);
+long pubsub_tcpTopicSender_serializerSvcId(pubsub_tcp_topic_sender_t *sender);
 /* Note this functions are deprecated and not used */
 void pubsub_tcpTopicSender_connectTo(pubsub_tcp_topic_sender_t *sender, const celix_properties_t *endpoint);
 /* Note this functions are deprecated and not used */

@@ -206,7 +206,7 @@ if (BUILD_PUBSUB_PSA_TCP)
             Celix::pubsub_admin_tcp
             pubsub_sut
             pubsub_tst
-    )
+            )
     target_link_libraries(pubsub_tcp_wire_v1_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi)
     target_include_directories(pubsub_tcp_wire_v1_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
     add_test(NAME pubsub_tcp_wire_v1_tests COMMAND pubsub_tcp_wire_v1_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_tcp_wire_v1_tests,CONTAINER_LOC>)
@@ -228,7 +228,7 @@ if (BUILD_PUBSUB_PSA_TCP)
             Celix::pubsub_admin_tcp
             pubsub_sut
             pubsub_tst
-    )
+            )
     target_link_libraries(pubsub_tcp_wire_v2_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi)
     target_include_directories(pubsub_tcp_wire_v2_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
     add_test(NAME pubsub_tcp_wire_v2_tests COMMAND pubsub_tcp_wire_v2_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_tcp_wire_v2_tests,CONTAINER_LOC>)
@@ -311,6 +311,136 @@ if (BUILD_PUBSUB_PSA_TCP)
     if (ENABLE_PUBSUB_PSA_TCP_ENDPOINT_TEST)
         add_test(NAME pubsub_tcp_endpoint_tests COMMAND pubsub_tcp_endpoint_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_tcp_endpoint_tests,CONTAINER_LOC>)
         setup_target_for_coverage(pubsub_tcp_endpoint_tests SCAN_DIR ..)
+    endif()
+
+    # TCP v2 tests
+
+    add_celix_container(pubsub_tcp_v2_wire_v1_tests
+            USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
+            LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_runner.cc
+            DIR ${CMAKE_CURRENT_BINARY_DIR}
+            PROPERTIES
+            LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
+            CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
+            BUNDLES
+            Celix::shell
+            Celix::shell_tui
+            Celix::pubsub_serializer_json
+            Celix::pubsub_protocol_wire_v1
+            Celix::pubsub_topology_manager
+            Celix::pubsub_admin_tcp_v2
+            pubsub_sut
+            pubsub_tst
+            pubsub_serializer
+            )
+    target_link_libraries(pubsub_tcp_v2_wire_v1_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi)
+    target_include_directories(pubsub_tcp_v2_wire_v1_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
+    add_test(NAME pubsub_tcp_v2_wire_v1_tests COMMAND pubsub_tcp_v2_wire_v1_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_tcp_v2_wire_v1_tests,CONTAINER_LOC>)
+    setup_target_for_coverage(pubsub_tcp_v2_wire_v1_tests SCAN_DIR ..)
+
+    add_celix_container(pubsub_tcp_v2_wire_v2_tests
+            USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
+            LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_runner.cc
+            DIR ${CMAKE_CURRENT_BINARY_DIR}
+            PROPERTIES
+            LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
+            CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
+            BUNDLES
+            Celix::shell
+            Celix::shell_tui
+            Celix::pubsub_serializer_json
+            Celix::pubsub_protocol_wire_v2
+            Celix::pubsub_topology_manager
+            Celix::pubsub_admin_tcp_v2
+            pubsub_sut
+            pubsub_tst
+            pubsub_serializer
+            )
+    target_link_libraries(pubsub_tcp_v2_wire_v2_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi)
+    target_include_directories(pubsub_tcp_v2_wire_v2_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
+    add_test(NAME pubsub_tcp_v2_wire_v2_tests COMMAND pubsub_tcp_v2_wire_v2_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_tcp_v2_wire_v2_tests,CONTAINER_LOC>)
+    setup_target_for_coverage(pubsub_tcp_v2_wire_v2_tests SCAN_DIR ..)
+
+    add_celix_container(pubsub_tcp_v2_wire_v2_with_no_scope_tests
+            USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
+            LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_runner.cc
+            DIR ${CMAKE_CURRENT_BINARY_DIR}
+            PROPERTIES
+            LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
+            CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
+            CELIX_PUBSUB_TEST_USE_NEGATIVE_SCOPE_FILTER=false
+            BUNDLES
+            Celix::shell
+            Celix::shell_tui
+            Celix::pubsub_serializer_json
+            Celix::pubsub_protocol_wire_v2
+            Celix::pubsub_topology_manager
+            Celix::pubsub_admin_tcp_v2
+            pubsub_sut
+            pubsub_tst
+            pubsub_serializer
+            )
+    target_link_libraries(pubsub_tcp_v2_wire_v2_with_no_scope_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi)
+    target_include_directories(pubsub_tcp_v2_wire_v2_with_no_scope_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
+    add_test(NAME pubsub_tcp_v2_wire_v2_with_no_scope_tests COMMAND pubsub_tcp_v2_wire_v2_with_no_scope_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_tcp_v2_wire_v2_with_no_scope_tests,CONTAINER_LOC>)
+    setup_target_for_coverage(pubsub_tcp_v2_wire_v2_with_no_scope_tests SCAN_DIR ..)
+
+    add_celix_container(pubsub_tcp_v2_endpoint_tests
+            USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
+            LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_endpoint_runner.cc
+            DIR ${CMAKE_CURRENT_BINARY_DIR}
+            PROPERTIES
+            LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
+            CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
+            BUNDLES
+            Celix::shell
+            Celix::shell_tui
+            Celix::pubsub_serializer_json
+            Celix::pubsub_protocol_wire_v2
+            Celix::pubsub_topology_manager
+            Celix::pubsub_admin_tcp_v2
+            pubsub_endpoint_tst
+            pubsub_endpoint_sut
+            pubsub_loopback
+            pubsub_serializer
+            )
+    target_link_libraries(pubsub_tcp_v2_endpoint_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi)
+    target_include_directories(pubsub_tcp_v2_endpoint_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
+
+    add_celix_container(pstm_deadlock_tcp_v2_test
+            USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
+            LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/pstm_deadlock_test/test_runner.cc
+            DIR ${CMAKE_CURRENT_BINARY_DIR}
+            PROPERTIES
+            LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
+            CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
+            BUNDLES
+            Celix::pubsub_serializer_json
+            Celix::pubsub_protocol_wire_v2
+            Celix::pubsub_topology_manager
+            Celix::pubsub_admin_tcp_v2
+            Celix::shell
+            Celix::shell_tui
+            pubsub_serializer
+            )
+    target_compile_definitions(pstm_deadlock_tcp_v2_test PRIVATE -DDEADLOCK_SUT_BUNDLE_FILE=\"${DEADLOCK_SUT_BUNDLE_FILE}\")
+    target_link_libraries(pstm_deadlock_tcp_v2_test PRIVATE Celix::pubsub_api GTest::gtest GTest::gtest_main Jansson Celix::dfi)
+    target_include_directories(pstm_deadlock_tcp_v2_test SYSTEM PRIVATE pstm_deadlock_tcp_v2_test)
+
+    #Note we do not link to bundles, as result (to ensure a bundle zip file is created) an dependency on the bundle is needed.
+    add_dependencies(pstm_deadlock_tcp_v2_test pubsub_deadlock_sut_bundle)
+
+    #Framework "bundle" has no cache dir. Default as "cache dir" the cwd is used.
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/meta_data/msg.descriptor ${CMAKE_CURRENT_BINARY_DIR}/pstm_deadlock_tcp_test/META-INF/descriptors/msg.descriptor COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/meta_data/deadlock.scope.properties ${CMAKE_CURRENT_BINARY_DIR}/pstm_deadlock_tcp_test/META-INF/topics/pub/deadlock.properties COPYONLY)
+
+    add_test(NAME pstm_deadlock_tcp_v2_test COMMAND pstm_deadlock_tcp_v2_test WORKING_DIRECTORY $<TARGET_PROPERTY:pstm_deadlock_tcp_v2_test,CONTAINER_LOC>)
+    setup_target_for_coverage(pstm_deadlock_tcp_v2_test SCAN_DIR ..)
+
+    #TCP Endpoint test is disabled because the test is not stable when running on Travis
+    if (ENABLE_PUBSUB_PSA_TCP_ENDPOINT_TEST)
+        add_test(NAME pubsub_tcp_v2_endpoint_tests COMMAND pubsub_tcp_v2_endpoint_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_tcp_v2_endpoint_tests,CONTAINER_LOC>)
+        setup_target_for_coverage(pubsub_tcp_v2_endpoint_tests SCAN_DIR ..)
     endif()
 endif()
 
