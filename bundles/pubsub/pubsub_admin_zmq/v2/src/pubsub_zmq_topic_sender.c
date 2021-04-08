@@ -381,14 +381,6 @@ bool pubsub_zmqTopicSender_isStatic(pubsub_zmq_topic_sender_t *sender) {
     return sender->isStatic;
 }
 
-void pubsub_zmqTopicSender_connectTo(pubsub_zmq_topic_sender_t *sender  __attribute__((unused)), const celix_properties_t *endpoint __attribute__((unused))) {
-    /*nop*/
-}
-
-void pubsub_zmqTopicSender_disconnectFrom(pubsub_zmq_topic_sender_t *sender __attribute__((unused)), const celix_properties_t *endpoint __attribute__((unused))) {
-    /*nop*/
-}
-
 static int psa_zmq_localMsgTypeIdForMsgType(void* handle, const char* msgType, unsigned int* msgTypeId) {
     psa_zmq_bounded_service_entry_t *entry = (psa_zmq_bounded_service_entry_t *) handle;
     int64_t rc = pubsub_zmqAdmin_getMessageIdForMessageFqn(entry->parent->admin, entry->parent->serializerType, msgType);

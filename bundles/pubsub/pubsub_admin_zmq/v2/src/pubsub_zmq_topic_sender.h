@@ -50,9 +50,6 @@ bool pubsub_zmqTopicSender_isStatic(pubsub_zmq_topic_sender_t *sender);
 const char* pubsub_zmqTopicSender_serializerType(pubsub_zmq_topic_sender_t *sender);
 long pubsub_zmqTopicSender_protocolSvcId(pubsub_zmq_topic_sender_t *sender);
 
-void pubsub_zmqTopicSender_connectTo(pubsub_zmq_topic_sender_t *sender, const celix_properties_t *endpoint);
-void pubsub_zmqTopicSender_disconnectFrom(pubsub_zmq_topic_sender_t *sender, const celix_properties_t *endpoint);
-
 /**
  * Returns a array of pubsub_admin_sender_msg_type_metrics_t entries for every msg_type/bundle send with the topic sender.
  */

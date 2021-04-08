@@ -64,9 +64,8 @@ celix_status_t bnd_start(struct activator *act, celix_bundle_context_t *ctx) {
 celix_status_t bnd_stop(struct activator *act, celix_bundle_context_t *ctx) {
     __atomic_store_n(&act->running, false, __ATOMIC_RELEASE);
     pthread_join(act->sendThread, NULL);
-    pthread_mutex_destroy(&act->mutex);
-
     celix_bundleContext_stopTracker(ctx, act->pubTrkId);
+    pthread_mutex_destroy(&act->mutex);
     return CELIX_SUCCESS;
 }
 
