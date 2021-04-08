@@ -85,6 +85,12 @@ inline void DependencyManager::destroyComponent(BaseComponent &component) {
 }
 
 inline bool DependencyManager::removeComponent(const std::string& uuid) {
+    bool removed = removeComponentAsync(uuid);
+    wait();
+    return removed;
+}
+
+inline bool DependencyManager::removeComponentAsync(const std::string& uuid) {
     std::shared_ptr<BaseComponent> tmpStore{};
     {
         std::lock_guard<std::mutex> lck{mutex};
@@ -101,6 +107,11 @@ inline bool DependencyManager::removeComponent(const std::string& uuid) {
 }
 
 inline void DependencyManager::clear() {
+    clearAsync();
+    wait();
+}
+
+inline void DependencyManager::clearAsync() {
     std::vector<std::shared_ptr<BaseComponent>> swappedComponents{};
     {
         std::lock_guard<std::mutex> lck{mutex};
@@ -111,6 +122,13 @@ inline void DependencyManager::clear() {
 
 inline void DependencyManager::wait() const {
     celix_dependencyManager_wait(cDepMan.get());
+}
+
+inline void DependencyManager::waitIfAble() const {
+    auto* fw = celix_bundleContext_getFramework(context.get());
+    if (!celix_framework_isCurrentThreadTheEventLoop(fw)) {
+        celix_dependencyManager_wait(cDepMan.get());
+    }
 }
 
 inline void DependencyManager::stop() {

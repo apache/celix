@@ -26,16 +26,15 @@
 
 #include "pubsub_admin.h"
 #include "pubsub_admin_metrics.h"
-#include "pubsub_zmq_admin.h"
+#include "pubsub_tcp_admin.h"
 #include "celix_shell_command.h"
 
-typedef struct psa_zmq_activator {
+typedef struct psa_tcp_activator {
     celix_log_helper_t *logHelper;
 
-    pubsub_zmq_admin_t *admin;
+    pubsub_tcp_admin_t *admin;
 
     long serializersTrackerId;
-
     long protocolsTrackerId;
 
     pubsub_admin_service_t adminService;
@@ -46,27 +45,27 @@ typedef struct psa_zmq_activator {
 
     celix_shell_command_t cmdSvc;
     long cmdSvcId;
-} psa_zmq_activator_t;
+} psa_tcp_activator_t;
 
-int psa_zmq_start(psa_zmq_activator_t *act, celix_bundle_context_t *ctx) {
+int psa_tcp_start(psa_tcp_activator_t *act, celix_bundle_context_t *ctx) {
     act->adminSvcId = -1L;
     act->cmdSvcId = -1L;
     act->serializersTrackerId = -1L;
     act->protocolsTrackerId = -1L;
 
-    act->logHelper = celix_logHelper_create(ctx, "celix_psa_zmq");
+    act->logHelper = celix_logHelper_create(ctx, "celix_psa_admin_tcp_v2");
 
-    act->admin = pubsub_zmqAdmin_create(ctx, act->logHelper);
+    act->admin = pubsub_tcpAdmin_create(ctx, act->logHelper);
     celix_status_t status = act->admin != NULL ? CELIX_SUCCESS : CELIX_BUNDLE_EXCEPTION;
 
     //track serializers
     if (status == CELIX_SUCCESS) {
         celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
-        opts.filter.serviceName = PUBSUB_SERIALIZER_SERVICE_NAME;
+        opts.filter.serviceName = PUBSUB_MESSAGE_SERIALIZATION_SERVICE_NAME;
         opts.filter.ignoreServiceLanguage = true;
         opts.callbackHandle = act->admin;
-        opts.addWithProperties = pubsub_zmqAdmin_addSerializerSvc;
-        opts.removeWithProperties = pubsub_zmqAdmin_removeSerializerSvc;
+        opts.addWithProperties = pubsub_tcpAdmin_addSerializerSvc;
+        opts.removeWithProperties = pubsub_tcpAdmin_removeSerializerSvc;
         act->serializersTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
     }
 
@@ -76,8 +75,8 @@ int psa_zmq_start(psa_zmq_activator_t *act, celix_bundle_context_t *ctx) {
         opts.filter.serviceName = PUBSUB_PROTOCOL_SERVICE_NAME;
         opts.filter.ignoreServiceLanguage = true;
         opts.callbackHandle = act->admin;
-        opts.addWithProperties = pubsub_zmqAdmin_addProtocolSvc;
-        opts.removeWithProperties = pubsub_zmqAdmin_removeProtocolSvc;
+        opts.addWithProperties = pubsub_tcpAdmin_addProtocolSvc;
+        opts.removeWithProperties = pubsub_tcpAdmin_removeProtocolSvc;
         act->protocolsTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
     }
 
@@ -85,57 +84,61 @@ int psa_zmq_start(psa_zmq_activator_t *act, celix_bundle_context_t *ctx) {
     if (status == CELIX_SUCCESS) {
         pubsub_admin_service_t *psaSvc = &act->adminService;
         psaSvc->handle = act->admin;
-        psaSvc->matchPublisher = pubsub_zmqAdmin_matchPublisher;
-        psaSvc->matchSubscriber = pubsub_zmqAdmin_matchSubscriber;
-        psaSvc->matchDiscoveredEndpoint = pubsub_zmqAdmin_matchDiscoveredEndpoint;
-        psaSvc->setupTopicSender = pubsub_zmqAdmin_setupTopicSender;
-        psaSvc->teardownTopicSender = pubsub_zmqAdmin_teardownTopicSender;
-        psaSvc->setupTopicReceiver = pubsub_zmqAdmin_setupTopicReceiver;
-        psaSvc->teardownTopicReceiver = pubsub_zmqAdmin_teardownTopicReceiver;
-        psaSvc->addDiscoveredEndpoint = pubsub_zmqAdmin_addDiscoveredEndpoint;
-        psaSvc->removeDiscoveredEndpoint = pubsub_zmqAdmin_removeDiscoveredEndpoint;
+        psaSvc->matchPublisher = pubsub_tcpAdmin_matchPublisher;
+        psaSvc->matchSubscriber = pubsub_tcpAdmin_matchSubscriber;
+        psaSvc->matchDiscoveredEndpoint = pubsub_tcpAdmin_matchDiscoveredEndpoint;
+        psaSvc->setupTopicSender = pubsub_tcpAdmin_setupTopicSender;
+        psaSvc->teardownTopicSender = pubsub_tcpAdmin_teardownTopicSender;
+        psaSvc->setupTopicReceiver = pubsub_tcpAdmin_setupTopicReceiver;
+        psaSvc->teardownTopicReceiver = pubsub_tcpAdmin_teardownTopicReceiver;
+        psaSvc->addDiscoveredEndpoint = pubsub_tcpAdmin_addDiscoveredEndpoint;
+        psaSvc->removeDiscoveredEndpoint = pubsub_tcpAdmin_removeDiscoveredEndpoint;
 
         celix_properties_t *props = celix_properties_create();
-        celix_properties_set(props, PUBSUB_ADMIN_SERVICE_TYPE, PUBSUB_ZMQ_ADMIN_TYPE);
+        celix_properties_set(props, PUBSUB_ADMIN_SERVICE_TYPE, PUBSUB_TCP_ADMIN_TYPE);
 
         act->adminSvcId = celix_bundleContext_registerService(ctx, psaSvc, PUBSUB_ADMIN_SERVICE_NAME, props);
     }
 
     if (status == CELIX_SUCCESS) {
         act->adminMetricsService.handle = act->admin;
-        act->adminMetricsService.metrics = pubsub_zmqAdmin_metrics;
+        act->adminMetricsService.metrics = pubsub_tcpAdmin_metrics;
 
         celix_properties_t *props = celix_properties_create();
-        celix_properties_set(props, PUBSUB_ADMIN_SERVICE_TYPE, PUBSUB_ZMQ_ADMIN_TYPE);
+        celix_properties_set(props, PUBSUB_ADMIN_SERVICE_TYPE, PUBSUB_TCP_ADMIN_TYPE);
 
-        act->adminMetricsSvcId = celix_bundleContext_registerService(ctx, &act->adminMetricsService, PUBSUB_ADMIN_METRICS_SERVICE_NAME, props);
+        act->adminMetricsSvcId =
+            celix_bundleContext_registerService(ctx,
+                                                &act->adminMetricsService,
+                                                PUBSUB_ADMIN_METRICS_SERVICE_NAME,
+                                                props);
     }
 
     //register shell command service
     {
         act->cmdSvc.handle = act->admin;
-        act->cmdSvc.executeCommand = pubsub_zmqAdmin_executeCommand;
+        act->cmdSvc.executeCommand = pubsub_tcpAdmin_executeCommand;
         celix_properties_t *props = celix_properties_create();
-        celix_properties_set(props, CELIX_SHELL_COMMAND_NAME, "celix::psa_zmq");
-        celix_properties_set(props, CELIX_SHELL_COMMAND_USAGE, "psa_zmq");
-        celix_properties_set(props, CELIX_SHELL_COMMAND_DESCRIPTION, "Print the information about the TopicSender and TopicReceivers for the ZMQ PSA");
+        celix_properties_set(props, CELIX_SHELL_COMMAND_NAME, "celix::psa_tcp");
+        celix_properties_set(props, CELIX_SHELL_COMMAND_USAGE, "psa_tcp");
+        celix_properties_set(props, CELIX_SHELL_COMMAND_DESCRIPTION, "Print the information about the TopicSender and TopicReceivers for the TCP PSA");
         act->cmdSvcId = celix_bundleContext_registerService(ctx, &act->cmdSvc, CELIX_SHELL_COMMAND_SERVICE_NAME, props);
     }
 
     return status;
 }
 
-int psa_zmq_stop(psa_zmq_activator_t *act, celix_bundle_context_t *ctx) {
+int psa_tcp_stop(psa_tcp_activator_t *act, celix_bundle_context_t *ctx) {
     celix_bundleContext_unregisterService(ctx, act->adminSvcId);
     celix_bundleContext_unregisterService(ctx, act->cmdSvcId);
     celix_bundleContext_unregisterService(ctx, act->adminMetricsSvcId);
     celix_bundleContext_stopTracker(ctx, act->serializersTrackerId);
     celix_bundleContext_stopTracker(ctx, act->protocolsTrackerId);
-    pubsub_zmqAdmin_destroy(act->admin);
+    pubsub_tcpAdmin_destroy(act->admin);
 
     celix_logHelper_destroy(act->logHelper);
 
     return CELIX_SUCCESS;
 }
 
-CELIX_GEN_BUNDLE_ACTIVATOR(psa_zmq_activator_t, psa_zmq_start, psa_zmq_stop);
+CELIX_GEN_BUNDLE_ACTIVATOR(psa_tcp_activator_t, psa_tcp_start, psa_tcp_stop);

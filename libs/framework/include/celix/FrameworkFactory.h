@@ -35,9 +35,10 @@ namespace celix {
         auto* cFw= celix_frameworkFactory_createFramework(copy);
         auto fwCtx = std::make_shared<celix::BundleContext>(celix_framework_getFrameworkContext(cFw));
         std::shared_ptr<celix::Framework> framework{new celix::Framework{std::move(fwCtx), cFw}, [](celix::Framework* fw) {
-            celix_framework_waitForEmptyEventQueue(fw->getCFramework());
-            celix_frameworkFactory_destroyFramework(fw->getCFramework());
+            auto* cFw = fw->getCFramework();
             delete fw;
+            celix_framework_waitForEmptyEventQueue(cFw);
+            celix_frameworkFactory_destroyFramework(cFw);
         }};
         return framework;
     }
