@@ -25,6 +25,8 @@
 #include <cassert>
 #include <set>
 #include <unordered_map>
+#include <functional>
+#include <thread>
 
 #include "celix_utils.h"
 #include "celix/Properties.h"
@@ -33,6 +35,8 @@
 #include "celix/Constants.h"
 #include "celix/Filter.h"
 #include "celix_bundle_context.h"
+#include "celix_framework.h"
+
 
 namespace celix {
 
