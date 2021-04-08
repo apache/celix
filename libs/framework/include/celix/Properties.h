@@ -137,6 +137,12 @@ namespace celix {
         Properties(const Properties& rhs) :
             cProps{celix_properties_copy(rhs.cProps.get()), [](celix_properties_t* p) { celix_properties_destroy(p); }} {}
 
+        Properties(std::initializer_list<std::pair<std::string, std::string>> list) : cProps{celix_properties_create(), [](celix_properties_t* p) { celix_properties_destroy(p); }} {
+            for(auto &entry : list) {
+                celix_properties_set(cProps.get(), entry.first.c_str(), entry.second.c_str());
+            }
+        }
+
         /**
          * @brief Wraps C properties, but does not take ownership -> dtor will not destroy properties
          */

@@ -1,0 +1,26 @@
+{
+  "endpoints": [
+    {
+      "endpoint.id": "id-01",
+      "service.imported": true,
+      "service.imported.configs": [
+        "pubsub"
+      ],
+      "service.exported.interfaces": "IHardcodedService",
+      "endpoint.objectClass": "TestComponentName",
+      "endpoint.scope": "default",
+      "endpoint.topic": "default"
+    },
+    {
+      "endpoint.id": "id-02",
+      "service.imported": true,
+      "service.imported.configs": [
+        "pubsub"
+      ],
+      "service.exported.interfaces": "*",
+      "endpoint.objectClass": "TestComponentName",
+      "endpoint.scope": "default",
+      "endpoint.topic": "default"
+    }
+  ]
+}

@@ -149,8 +149,8 @@ namespace celix { namespace dm {
          *
          * The use of removeComponent is preferred.
          */
-        template<typename T>
-        void destroyComponent(Component<T> &component);
+        void destroyComponent(BaseComponent &component);
+
 
         /**
          * @brief Clears the dependency manager, which removes all configured components and waits until all components

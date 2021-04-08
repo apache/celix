@@ -284,7 +284,7 @@ bool pubsubEndpoint_match(
         serMatch = serializerSvcId >= 0;
 
         if(!serMatch) {
-            celix_logHelper_log(logHelper, CELIX_LOG_LEVEL_ERROR, "Matching endpoint for technology %s but couldn't get serializer %i", configured_admin, configured_serializer);
+            celix_logHelper_log(logHelper, CELIX_LOG_LEVEL_ERROR, "Matching endpoint for technology %s but couldn't get serializer %s", configured_admin, configured_serializer);
         }
     }
 
@@ -299,7 +299,7 @@ bool pubsubEndpoint_match(
             protMatch = protocolSvcId >= 0;
 
             if(!protMatch) {
-                celix_logHelper_log(logHelper, CELIX_LOG_LEVEL_ERROR, "Matching endpoint for technology %s but couldn't get protocol %i", configured_admin, configured_protocol);
+                celix_logHelper_log(logHelper, CELIX_LOG_LEVEL_ERROR, "Matching endpoint for technology %s but couldn't get protocol %s", configured_admin, configured_protocol);
             }
         }
         match = match && protMatch;

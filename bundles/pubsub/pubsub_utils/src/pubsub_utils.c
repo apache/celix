@@ -52,9 +52,9 @@ celix_status_t pubsub_getPubSubInfoFromFilter(const char* filterstr, char **scop
     const char *topic = NULL;
     const char *objectClass = NULL;
     celix_filter_t *filter = celix_filter_create(filterstr);
-    scope = (char *) celix_filter_findAttribute(filter, PUBSUB_PUBLISHER_SCOPE);
-    topic = (char *) celix_filter_findAttribute(filter, PUBSUB_PUBLISHER_TOPIC);
-    objectClass = (char *) celix_filter_findAttribute(filter, OSGI_FRAMEWORK_OBJECTCLASS);
+    scope = celix_filter_findAttribute(filter, PUBSUB_PUBLISHER_SCOPE);
+    topic = celix_filter_findAttribute(filter, PUBSUB_PUBLISHER_TOPIC);
+    objectClass = celix_filter_findAttribute(filter, OSGI_FRAMEWORK_OBJECTCLASS);
 
     if (topic != NULL && objectClass != NULL && strncmp(objectClass, PUBSUB_PUBLISHER_SERVICE_NAME, 128) == 0) {
         //NOTE topic must be present, scope can be present in the filter
@@ -151,7 +151,7 @@ celix_properties_t *pubsub_utils_getTopicProperties(const celix_bundle_t *bundle
               asprintf(&topicPropertiesPath, "%s/META-INF/topics/%s/%s.properties", bundleRoot, isPublisher ? "pub" : "sub", topic);
               topic_props = celix_properties_load(topicPropertiesPath);
               if (topic_props == NULL) {
-                  printf("PubSub: Could not load properties for %s on scope %s / topic %s. Searched location %s, bundleId=%ld\n", isPublisher ? "publication" : "subscription", scope == NULL ? "(null)" : scope, topic, topicPropertiesPath, bundleId);
+                  printf("[Debug] PubSub: Could not load properties for %s on scope %s / topic %s. Searched location %s, bundleId=%ld\n", isPublisher ? "publication" : "subscription", scope == NULL ? "(null)" : scope, topic, topicPropertiesPath, bundleId);
               }
             }
             free(topicPropertiesPath);

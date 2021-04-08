@@ -324,7 +324,7 @@ celix_status_t pubsub_udpmcAdmin_setupTopicSender(void *handle, const char *scop
             hashMap_put(psa->topicSenders.map, key, sender);
         } else {
             free(key);
-            L_ERROR("[PSA UDPMC] Error creating a valid TopicSender. Endpoints are not valid");
+            L_ERROR("[PSA UDPMC] Error creating a valid TopicSender. Endpoints are not valid %i", serializerSvcId);
         }
     } else {
         free(key);
@@ -605,6 +605,7 @@ void pubsub_udpmcAdmin_addSerializerSvc(void *handle, void *svc, const celix_pro
         L_INFO("[PSA_UDPMC] Ignoring serializer service without %s property", PUBSUB_SERIALIZER_TYPE_KEY);
         return;
     }
+    L_WARN("[PSA_UDPM] adding serializer %s %i", serType, svcId);
 
     celixThreadMutex_lock(&psa->serializers.mutex);
     psa_udpmc_serializer_entry_t *entry = hashMap_get(psa->serializers.map, (void*)svcId);
