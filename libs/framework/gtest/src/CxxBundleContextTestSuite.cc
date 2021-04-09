@@ -238,21 +238,51 @@ TEST_F(CxxBundleContextTestSuite, TrackServicesTest) {
 
     std::atomic<int> count{0};
     auto tracker4 = ctx->trackServices<CInterface>()
-            .addAddCallback([&count](const std::shared_ptr<CInterface>&) {
+            .addAddCallback([&count](const std::shared_ptr<CInterface>& svc) {
+                EXPECT_TRUE(svc);
                 count += 1;
             })
-            .addRemCallback([&count](const std::shared_ptr<CInterface>&) {
+            .addRemCallback([&count](const std::shared_ptr<CInterface>& svc) {
+                EXPECT_TRUE(svc);
                 count += 1;
             })
             .build();
-    tracker4->wait();
-    EXPECT_EQ(2, count); //2x add called
+    auto tracker5 = ctx->trackServices<CInterface>()
+            .addAddWithPropertiesCallback([&count](std::shared_ptr<CInterface> svc /*note not the default expect const std::sharer_ptr<I>&*/, const std::shared_ptr<const celix::Properties>& props) {
+                EXPECT_TRUE(svc);
+                EXPECT_TRUE(props);
+                count += 1;
+            })
+            .addRemWithPropertiesCallback([&count](const std::shared_ptr<CInterface>& svc, const std::shared_ptr<const celix::Properties>& props) {
+                EXPECT_TRUE(svc);
+                EXPECT_TRUE(props);
+                count += 1;
+            })
+            .build();
+    auto tracker6 = ctx->trackServices<CInterface>()
+            .addAddWithOwnerCallback([&count](const std::shared_ptr<CInterface>& svc, std::shared_ptr<const celix::Properties> props /*note not the default expected const ref*/, std::shared_ptr<const celix::Bundle> bundle /*note not the default expected const ref*/) {
+                EXPECT_TRUE(svc);
+                EXPECT_TRUE(props);
+                EXPECT_TRUE(bundle);
+                count += 1;
+            })
+            .addRemWithOwnerCallback([&count](const std::shared_ptr<CInterface>& svc, const std::shared_ptr<const celix::Properties>& props, const std::shared_ptr<const celix::Bundle>& bundle) {
+                EXPECT_TRUE(svc);
+                EXPECT_TRUE(props);
+                EXPECT_TRUE(bundle);
+                count += 1;
+            })
+            .build();
+    ctx->waitForEvents();
+    EXPECT_EQ(6, count); //2x3 add called
     svcReg1->unregister();
     svcReg1->wait();
-    EXPECT_EQ(3, count); //2x add called, 1x rem called
+    EXPECT_EQ(9, count); //2x3 add called, 1x3 rem called
     tracker4->close();
-    tracker4->wait();
-    EXPECT_EQ(4, count); //2x add called, 2x rem called (1 rem call for closing the tracker)
+    tracker5->close();
+    tracker6->close();
+    ctx->waitForEvents();
+    EXPECT_EQ(12, count); //2x3 add called, 2x3 rem called (1 rem call for closing the tracker)
 
     EXPECT_EQ(1, tracker->getServiceCount()); //only 1 left
 
