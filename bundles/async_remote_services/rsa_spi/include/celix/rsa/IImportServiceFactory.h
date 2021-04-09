@@ -58,8 +58,8 @@ namespace celix::rsa {
          * @brief Imports the service identified with svcId
          * @param svcId The service id of the exported service.
          * @return A ImportService.
-         * @throws celix::rsa::Exception if the import failed.
+         * @throws celix::rsa::RemoteServicesException if the import failed.
          */
-        virtual std::unique_ptr<ImportedService> importService(celix::rsa::Endpoint& endpoint) = 0;
+        virtual std::unique_ptr<ImportedService> importService(const celix::rsa::Endpoint& endpoint) = 0;
     };
 }

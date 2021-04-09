@@ -540,14 +540,14 @@ void ServiceDependency<T,I>::setupCallbacks() {
             }
             if (dep->setFpUsingSharedPtr) {
                 auto svcId = dep->setService.second ? dep->setService.second->getAsLong(celix::SERVICE_ID, -1) : -1;
-                std::weak_ptr<I> currentSvc = dep->setService.first;
-                std::weak_ptr<const celix::Properties> currentProps = dep->setService.second;
+                std::weak_ptr<I> replacedSvc = dep->setService.first;
+                std::weak_ptr<const celix::Properties> replacedProps = dep->setService.second;
                 auto svc = std::shared_ptr<I>{static_cast<I*>(rawSvc), [](I*){/*nop*/}};
                 auto props = rawProps ? celix::Properties::wrap(rawProps) : nullptr;
                 dep->setService = std::make_pair(std::move(svc), std::move(props));
                 dep->setFpUsingSharedPtr(dep->setService.first, dep->setService.second);
-                dep->waitForExpired(currentSvc, svcId, "service pointer");
-                dep->waitForExpired(currentProps, svcId, "service properties");
+                dep->waitForExpired(replacedSvc, svcId, "service pointer");
+                dep->waitForExpired(replacedProps, svcId, "service properties");
             }
             return rc;
         };
@@ -580,12 +580,12 @@ void ServiceDependency<T,I>::setupCallbacks() {
                 auto svcId = celix_properties_getAsLong(rawProps, celix::SERVICE_ID, -1);
                 auto it = dep->addedServices.find(svcId);
                 if (it != dep->addedServices.end()) {
-                    std::weak_ptr<I> currentSvc = it->second.first;
-                    std::weak_ptr<const celix::Properties> currentProps = it->second.second;
+                    std::weak_ptr<I> removedSvc = it->second.first;
+                    std::weak_ptr<const celix::Properties> removedProps = it->second.second;
                     dep->removeFpUsingSharedPtr(it->second.first, it->second.second);
                     dep->addedServices.erase(it);
-                    dep->template waitForExpired(currentSvc, svcId, "service pointer");
-                    dep->template waitForExpired(currentProps, svcId, "service properties");
+                    dep->template waitForExpired(removedSvc, svcId, "service pointer");
+                    dep->template waitForExpired(removedProps, svcId, "service properties");
                 }
             }
             return rc;

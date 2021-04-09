@@ -5,9 +5,9 @@
 namespace celix::rsa {
 
     /**
-     * @brief Celix Remote Service Admin Exception
+     * @brief Celix exception for remote services.
      */
-    class Exception : public std::exception {
+    class RemoteServicesException : public std::exception {
     public:
         explicit Exception(std::string msg) : w{std::move(msg)} {}
 

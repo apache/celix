@@ -58,7 +58,7 @@ namespace celix::rsa {
          * @brief Exports the service identified with svcId
          * @param svcId The service id of the exported service.
          * @return A ExportService.
-         * @throws celix::rsa::Exception if the export failed.
+         * @throws celix::rsa::RemoteServicesException if the export failed.
          */
         virtual std::unique_ptr<ExportedService> exportService(const celix::Properties& serviceProperties) = 0;
     };
