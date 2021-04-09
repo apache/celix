@@ -19,27 +19,13 @@
 
 #pragma once
 
-#include "celix/Utils.h"
 
-namespace celix { namespace dm {
-    //forward declarations
-//    class DependencyManager;
+namespace celix::rsa {
 
-    class BaseServiceDependency;
+    /**
+     * @brief Service property (named "remote") to mark a service as a remote service.
+     * Present means -> export service as a remote service.
+     */
+    constexpr const char *const REMOTE_SERVICE_PROPERTY_NAME = "remote";
 
-    class BaseProvidedService;
-
-    template<typename T, typename I>
-    class ProvidedService;
-
-    template<class T, class I>
-    class ServiceDependency;
-
-    template<class T, typename I>
-    class CServiceDependency;
-
-    template<typename T>
-    std::string typeName() {
-        return celix::typeName<T>();
-    }
-}}
+}

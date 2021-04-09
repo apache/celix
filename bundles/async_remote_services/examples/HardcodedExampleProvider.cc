@@ -122,9 +122,9 @@ public:
         _subtractArgsSerializer.emplace(mng);
         _toStringSerializer.emplace(mng);
 
-        mng->createComponent<HardcodedService>().addInterfaceWithName<IHardcodedService>(std::string{IHardcodedService::NAME}, std::string{IHardcodedService::VERSION}, Properties{{"remote", "true"}, {ENDPOINT_IDENTIFIER, "id-01"}, {ENDPOINT_EXPORTS, "IHardcodedService"}}).build();
+        mng->createComponent<HardcodedService>().addInterfaceWithName<IHardcodedService>(std::string{IHardcodedService::NAME}, std::string{IHardcodedService::VERSION}, Properties{{"remote", "true"}, {celix::rsa::Endpoint::IDENTIFIER, "id-01"}, {celix::rsa::Endpoint::EXPORTS, "IHardcodedService"}}).build();
         auto& factory = mng->createComponent(std::make_unique<celix::async_rsa::DefaultExportedServiceFactory<IHardcodedService, ExportedHardcodedService>>(mng))
-                .addInterface<celix::async_rsa::IExportedServiceFactory>("1.0.0", Properties{{ENDPOINT_EXPORTS, "IHardcodedService"}}).build();
+                .addInterface<celix::async_rsa::IExportedServiceFactory>("1.0.0", Properties{{celix::rsa::Endpoint::EXPORTS, "IHardcodedService"}}).build();
 
         _factory = &factory;
     }

@@ -21,7 +21,7 @@
 #include <celix/dm/DependencyManager.h>
 #include <pubsub_endpoint.h>
 #include <IExportedService.h>
-#include <Endpoint.h>
+#include "celix/rsa/Endpoint.h"
 
 namespace celix::async_rsa {
     /// Service factory interface.
@@ -59,7 +59,7 @@ namespace celix::async_rsa {
             std::cout << "[DefaultExportedServiceFactory::create]" << std::endl;
 
             auto &cmp = _mng->template createComponent<WrapperT>(std::make_unique<WrapperT>(static_cast<SvcInterfaceT*>(svc)), std::string{WrapperT::NAME})
-                    .template addInterface<celix::async_rsa::IExportedService>(std::string{SvcInterfaceT::VERSION}, Properties{{ENDPOINT_EXPORTS, std::string{SvcInterfaceT::NAME}}, {ENDPOINT_IMPORTED, "false"}, {ENDPOINT_IDENTIFIER, endpointId}});
+                    .template addInterface<celix::async_rsa::IExportedService>(std::string{SvcInterfaceT::VERSION}, Properties{{celix::rsa::Endpoint::EXPORTS, std::string{SvcInterfaceT::NAME}}, {celix::rsa::Endpoint::IMPORTED, "false"}, {celix::rsa::Endpoint::IDENTIFIER, endpointId}});
 
             cmp.template createCServiceDependency<pubsub_publisher_t>(PUBSUB_PUBLISHER_SERVICE_NAME)
                     .setVersionRange("[3.0.0,4)")

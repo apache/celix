@@ -16,30 +16,22 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 #pragma once
 
-#include "celix/Utils.h"
+#include "celix/rsa/Endpoint.h"
 
-namespace celix { namespace dm {
-    //forward declarations
-//    class DependencyManager;
+namespace celix::rsa {
 
-    class BaseServiceDependency;
+    /**
+     * @brief IExportedService represents an exported interface
+     */
+    class IExportedService {
+    public:
+        virtual ~IExportedService() noexcept = default;
 
-    class BaseProvidedService;
-
-    template<typename T, typename I>
-    class ProvidedService;
-
-    template<class T, class I>
-    class ServiceDependency;
-
-    template<class T, typename I>
-    class CServiceDependency;
-
-    template<typename T>
-    std::string typeName() {
-        return celix::typeName<T>();
-    }
-}}
+        /**
+         * @brief the endpoint which can be used to announce this exported service to the network.
+         */
+        virtual std::shared_ptr<celix::rsa::Endpoint> getEndpoint() = 0;
+    };
+}

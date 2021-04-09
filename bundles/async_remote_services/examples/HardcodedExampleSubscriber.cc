@@ -179,7 +179,7 @@ public:
         _toStringSerializer.emplace(mng);
 
         auto& factory = mng->createComponent(std::make_unique<celix::async_rsa::DefaultImportedServiceFactory<IHardcodedService, ImportedHardcodedService>>(mng))
-            .addInterface<celix::async_rsa::IImportedServiceFactory>("1.0.0", Properties{{ENDPOINT_EXPORTS, "IHardcodedService"}}).build();
+            .addInterface<celix::async_rsa::IImportedServiceFactory>("1.0.0", Properties{{celix::rsa::Endpoint::EXPORTS, "IHardcodedService"}}).build();
         _factory = &factory;
 
         auto &usingCmp = mng->createComponent<UsingHardcodedServiceService>()

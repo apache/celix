@@ -39,7 +39,7 @@ celix::async_rsa::AsyncTopologyManager::~AsyncTopologyManager() {
 }
 
 void celix::async_rsa::AsyncTopologyManager::addExportedService(celix::async_rsa::IExportedService *exportedService, Properties &&properties) {
-    auto interface = properties.get(ENDPOINT_EXPORTS);
+    auto interface = properties.get(celix::rsa::Endpoint::EXPORTS);
 
     if(interface.empty()) {
         L_DEBUG("Adding exported service but no exported interfaces");
@@ -66,7 +66,7 @@ void celix::async_rsa::AsyncTopologyManager::addExportedService(celix::async_rsa
 }
 
 void celix::async_rsa::AsyncTopologyManager::removeExportedService([[maybe_unused]] celix::async_rsa::IExportedService *exportedService, Properties &&properties) {
-    auto interface = properties.get(ENDPOINT_EXPORTS);
+    auto interface = properties.get(celix::rsa::Endpoint::EXPORTS);
 
     if(interface.empty()) {
         L_WARN("Removing exported service but missing exported interfaces");
@@ -85,7 +85,7 @@ void celix::async_rsa::AsyncTopologyManager::removeExportedService([[maybe_unuse
     }
 }
 
-void celix::async_rsa::AsyncTopologyManager::setDiscovery(celix::rsa::EndpointAnnouncer *discovery) {
+void celix::async_rsa::AsyncTopologyManager::setDiscovery(celix::rsa::IEndpointAnnouncer *discovery) {
     std::unique_lock l(_m);
     _discovery = discovery;
 }
@@ -99,7 +99,7 @@ public:
                 .setCallbacks(&celix::async_rsa::AsyncTopologyManager::addExportedService, &celix::async_rsa::AsyncTopologyManager::removeExportedService)
                 .build();
 
-        _cmp.createServiceDependency<celix::rsa::EndpointAnnouncer>()
+        _cmp.createServiceDependency<celix::rsa::IEndpointAnnouncer>()
                 .setRequired(true)
                 .setCallbacks(&celix::async_rsa::AsyncTopologyManager::setDiscovery)
                 .build();

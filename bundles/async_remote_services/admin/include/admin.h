@@ -17,13 +17,14 @@
  * under the License.
  */
 
-#include <Endpoint.h>
+#include "celix/rsa/Endpoint.h"
 #include <celix_api.h>
 #include <ImportedServiceFactory.h>
 #include <ExportedServiceFactory.h>
 #include <mutex>
 #include <pubsub/api.h>
 #include <pubsub_message_serialization_service.h>
+#include "celix_log_service.h"
 
 #if defined(__has_include) && __has_include(<version>)
 #include <version>
@@ -51,8 +52,8 @@ namespace celix::async_rsa {
 
     class AsyncAdmin {
     public:
-        explicit AsyncAdmin(std::shared_ptr<celix::dm::DependencyManager> &mng) noexcept;
-        ~AsyncAdmin();
+        explicit AsyncAdmin(std::shared_ptr<celix::BundleContext> ctx) noexcept;
+        ~AsyncAdmin() noexcept = default;
 
         AsyncAdmin(AsyncAdmin const &) = delete;
         AsyncAdmin(AsyncAdmin&&) = delete;
@@ -60,44 +61,44 @@ namespace celix::async_rsa {
         AsyncAdmin& operator=(AsyncAdmin&&) = delete;
 
         // Imported endpoint add/remove functions
-        void addEndpoint(celix::rsa::Endpoint* endpoint, Properties &&properties);
-        void removeEndpoint(celix::rsa::Endpoint* endpoint, Properties &&properties);
+        void addEndpoint(const std::shared_ptr<celix::rsa::Endpoint>& endpoint);
+        void removeEndpoint(const std::shared_ptr<celix::rsa::Endpoint>& endpoint);
 
         // Imported endpoint add/remove functions
-        void addImportedServiceFactory(celix::async_rsa::IImportedServiceFactory *factory, Properties&& properties);
-        void removeImportedServiceFactory(celix::async_rsa::IImportedServiceFactory *factory, Properties&& properties);
+        void addImportedServiceFactory(const std::shared_ptr<celix::async_rsa::IImportedServiceFactory>& factory, const std::shared_ptr<const celix::Properties>& properties);
+        void removeImportedServiceFactory(const std::shared_ptr<celix::async_rsa::IImportedServiceFactory>& factory, const std::shared_ptr<const celix::Properties>& properties);
 
         // Exported endpoint add/remove functions
-        void addExportedServiceFactory(celix::async_rsa::IExportedServiceFactory *factory, Properties&& properties);
-        void removeExportedServiceFactory(celix::async_rsa::IExportedServiceFactory *factory, Properties&& properties);
+        void addExportedServiceFactory(const std::shared_ptr<celix::async_rsa::IExportedServiceFactory>& factory, const std::shared_ptr<const celix::Properties>& properties);
+        void removeExportedServiceFactory(const std::shared_ptr<celix::async_rsa::IExportedServiceFactory>& factory, const std::shared_ptr<const celix::Properties>& properties);
 
         // Add/remove services, used to track all services registered with celix and check if remote = true.
-        void addService(void *svc, const celix_properties_t *props);
-        void removeService(void *svc, const celix_properties_t *props);
+        void addService(const std::shared_ptr<void>& svc, const std::shared_ptr<const celix::Properties>& properties);
+        void removeService(const std::shared_ptr<void>& svc, const std::shared_ptr<const celix::Properties>& properties);
 
-
+        // Set logging service
+        void setLogger(const std::shared_ptr<celix_log_service>& logService);
     private:
-        std::shared_ptr<celix::dm::DependencyManager> _mng{};
-        celix_log_helper_t *_logger;
-        long _serviceTrackerId{-1};
+        void createExportServices();
+        void createImportServices();
+
+        std::shared_ptr<celix::BundleContext> _ctx;
+        std::shared_ptr<celix_log_service> _logService{};
         std::mutex _m{}; // protects below
 
 #if __cpp_lib_memory_resource
         std::pmr::unsynchronized_pool_resource _memResource{};
-        std::pmr::unordered_map<std::string, celix::async_rsa::IExportedServiceFactory*> _exportedServiceFactories{&_memResource};
-        std::pmr::unordered_map<std::string, celix::async_rsa::IImportedServiceFactory*> _importedServiceFactories{&_memResource};
-        std::pmr::unordered_map<std::string, celix::dm::BaseComponent&> _importedServiceInstances{&_memResource};
-        std::pmr::unordered_map<std::string, celix::dm::BaseComponent&> _exportedServiceInstances{&_memResource};
+        std::pmr::unordered_map<std::string, std::shared_ptr<celix::async_rsa::IExportedServiceFactory>> _exportedServiceFactories{&_memResource};
+        std::pmr::unordered_map<std::string, std::shared_ptr<celix::async_rsa::IImportedServiceFactory>> _importedServiceFactories{&_memResource};
+        std::pmr::unordered_map<std::string, std::string> _importedServiceInstances{&_memResource}; //key = endpoint id, value = cmp uuid.
+        std::pmr::unordered_map<long, std::string> _exportedServiceInstances{&_memResource}; //key = service id, value = cmp uuid.
 #else
-        std::unordered_map<std::string, celix::async_rsa::IExportedServiceFactory*> _exportedServiceFactories{};
-        std::unordered_map<std::string, celix::async_rsa::IImportedServiceFactory*> _importedServiceFactories{};
-        std::unordered_map<std::string, celix::dm::BaseComponent&> _importedServiceInstances{};
-        std::unordered_map<std::string, celix::dm::BaseComponent&> _exportedServiceInstances{};
+        std::unordered_map<std::string, std::shared_ptr<celix::async_rsa::IExportedServiceFactory>> _exportedServiceFactories{};
+        std::unordered_map<std::string, std::shared_ptr<celix::async_rsa::IImportedServiceFactory>> _importedServiceFactories{};
+        std::unordered_map<std::string, std::string> _importedServiceInstances{};
+        std::unordered_map<long, std::string> _exportedServiceInstances{};
 #endif
-        std::vector<celix::rsa::Endpoint> _toBeCreatedImportedEndpoints{};
-        std::vector<std::pair<void*, Properties>> _toBeCreatedExportedEndpoints{};
-
-        // Internal functions for code re-use
-        void addEndpointInternal(celix::rsa::Endpoint& endpoint);
+        std::vector<std::shared_ptr<celix::rsa::Endpoint>> _toBeImportedServices{};
+        std::vector<std::pair<std::shared_ptr<void>, std::shared_ptr<const celix::Properties>>> _toBeExportedServices{};
     };
 }

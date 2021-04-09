@@ -23,16 +23,16 @@ namespace celix::rsa {
 
 celix::dm::Properties convertEndpointPropertiesToCelix(const ConfiguredEndpointProperties& endpointProperties) {
 
-    return celix::dm::Properties{{ENDPOINT_IMPORTED, std::to_string(endpointProperties.isImported()).c_str()},
-                                 {ENDPOINT_EXPORTS, endpointProperties.getExports()},
-                                 {ENDPOINT_IDENTIFIER, endpointProperties.getId()}};
+    return celix::dm::Properties{{celix::rsa::Endpoint::IMPORTED, std::to_string(endpointProperties.isImported()).c_str()},
+                                 {celix::rsa::Endpoint::EXPORTS, endpointProperties.getExports()},
+                                 {celix::rsa::Endpoint::IDENTIFIER, endpointProperties.getId()}};
 }
 
 ConfiguredEndpointProperties convertCelixPropertiesToEndpoint(const celix::dm::Properties& celixProperties) {
 
-    auto endpointId = celixProperties.get(ENDPOINT_IDENTIFIER);
-    auto exports = celixProperties.get(ENDPOINT_EXPORTS);
-    auto imported = celixProperties.get(ENDPOINT_IMPORTED);
+    auto endpointId = celixProperties.get(celix::rsa::Endpoint::IDENTIFIER);
+    auto exports = celixProperties.get(celix::rsa::Endpoint::EXPORTS);
+    auto imported = celixProperties.get(celix::rsa::Endpoint::IMPORTED);
     return ConfiguredEndpointProperties{endpointId,
                                         (imported == "true"),
                                         {}, exports, {}, "", ""};
@@ -40,13 +40,13 @@ ConfiguredEndpointProperties convertCelixPropertiesToEndpoint(const celix::dm::P
 
 bool isValidEndpointJson(const rapidjson::Value& endpointJson) {
 
-    return (endpointJson.HasMember(ENDPOINT_IDENTIFIER)
-         && endpointJson.HasMember(ENDPOINT_IMPORTED)
-         && endpointJson.HasMember(ENDPOINT_IMPORT_CONFIGS)
-         && endpointJson.HasMember(ENDPOINT_EXPORTS)
-         && endpointJson.HasMember(ENDPOINT_OBJECTCLASS)
-         && endpointJson.HasMember(ENDPOINT_SCOPE)
-         && endpointJson.HasMember(ENDPOINT_TOPIC));
+    return (endpointJson.HasMember(celix::rsa::Endpoint::IDENTIFIER)
+         && endpointJson.HasMember(celix::rsa::Endpoint::IMPORTED)
+         && endpointJson.HasMember(celix::rsa::Endpoint::IMPORT_CONFIGS)
+         && endpointJson.HasMember(celix::rsa::Endpoint::EXPORTS)
+         && endpointJson.HasMember(celix::rsa::Endpoint::OBJECTCLASS)
+         && endpointJson.HasMember(celix::rsa::Endpoint::SCOPE)
+         && endpointJson.HasMember(celix::rsa::Endpoint::TOPIC));
 }
 
 std::vector<std::string> parseJSONStringArray(const rapidjson::Value& jsonArray) {
@@ -69,13 +69,13 @@ ConfiguredEndpoint::ConfiguredEndpoint(const rapidjson::Value& endpointJson) :
 
     if (isValidEndpointJson(endpointJson)) {
 
-        _configuredProperties = {endpointJson[ENDPOINT_IDENTIFIER].GetString(),
-                                 endpointJson[ENDPOINT_IMPORTED].GetBool(),
-                                 parseJSONStringArray(endpointJson[ENDPOINT_IMPORT_CONFIGS]),
-                                 endpointJson[ENDPOINT_EXPORTS].GetString(),
-                                 parseJSONStringArray(endpointJson[ENDPOINT_OBJECTCLASS]),
-                                 endpointJson[ENDPOINT_SCOPE].GetString(),
-                                 endpointJson[ENDPOINT_TOPIC].GetString()};
+        _configuredProperties = {endpointJson[celix::rsa::Endpoint::IDENTIFIER].GetString(),
+                                 endpointJson[celix::rsa::Endpoint::IMPORTED].GetBool(),
+                                 parseJSONStringArray(endpointJson[celix::rsa::Endpoint::IMPORT_CONFIGS]),
+                                 endpointJson[celix::rsa::Endpoint::EXPORTS].GetString(),
+                                 parseJSONStringArray(endpointJson[celix::rsa::Endpoint::OBJECTCLASS]),
+                                 endpointJson[celix::rsa::Endpoint::SCOPE].GetString(),
+                                 endpointJson[celix::rsa::Endpoint::TOPIC].GetString()};
 
         _celixProperties = convertEndpointPropertiesToCelix(*_configuredProperties);
     }
