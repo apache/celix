@@ -67,13 +67,13 @@ namespace celix::async_rsa {
 
         std::pmr::unordered_map<std::string, std::shared_ptr<celix::rsa::IExportServiceFactory>> _exportServiceFactories{&_memResource}; //key = service name
         std::pmr::unordered_map<std::string, std::shared_ptr<celix::rsa::IImportServiceFactory>> _importServiceFactories{&_memResource}; //key = service name
-        std::pmr::unordered_map<std::string, std::unique_ptr<celix::rsa::IImportServiceRegistration>> _importedServices{&_memResource}; //key = endpoint id
-        std::pmr::unordered_map<long, std::unique_ptr<celix::rsa::IExportServiceRegistration>> _exportedServices{&_memResource}; //key = service id
+        std::pmr::unordered_map<std::string, std::unique_ptr<celix::rsa::IImportServiceGuard>> _importedServices{&_memResource}; //key = endpoint id
+        std::pmr::unordered_map<long, std::unique_ptr<celix::rsa::IExportServiceGuard>> _exportedServices{&_memResource}; //key = service id
 #else
         std::unordered_map<std::string, std::shared_ptr<celix::rsa::IExportServiceFactory>> _exportServiceFactories{}; //key = service name
         std::unordered_map<std::string, std::shared_ptr<celix::rsa::IImportServiceFactory>> _importServiceFactories{}; //key = service name
-        std::unordered_map<std::string, std::unique_ptr<celix::rsa::IImportServiceRegistration>> _importedServices{}; //key = endpoint id
-        std::unordered_map<long, std::unique_ptr<celix::rsa::IExportServiceRegistration>> _exportedServices{}; //key = service id
+        std::unordered_map<std::string, std::unique_ptr<celix::rsa::IImportServiceGuard>> _importedServices{}; //key = endpoint id
+        std::unordered_map<long, std::unique_ptr<celix::rsa::IExportServiceGuard>> _exportedServices{}; //key = service id
 #endif
         std::vector<std::shared_ptr<celix::rsa::Endpoint>> _toBeImportedServices{};
         std::vector<std::shared_ptr<const celix::Properties>> _toBeExportedServices{};

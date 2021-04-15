@@ -24,12 +24,12 @@
 namespace celix::rsa {
 
     /**
-     * @brief ExportServiceRegistration class which represent a (opaque) exported service.
-     * The lifetime of this object should be coupled with the lifetime of the exported service.
-     */
-    class IExportServiceRegistration {
+     * @brief IExportServiceGuard class which represent a (opaque) exported service.
+     * If lifetime of this object expires it should remove the underlining exported service.
+     * */
+    class IExportServiceGuard {
     public:
-        virtual ~IExportServiceRegistration() noexcept = default;
+        virtual ~IExportServiceGuard() noexcept = default;
     };
 
     /**
@@ -54,6 +54,6 @@ namespace celix::rsa {
          * @return A ExportService.
          * @throws celix::rsa::RemoteServicesException if the export failed.
          */
-        virtual std::unique_ptr<celix::rsa::IExportServiceRegistration> exportService(const celix::Properties& serviceProperties) = 0;
+        virtual std::unique_ptr<celix::rsa::IExportServiceGuard> exportService(const celix::Properties& serviceProperties) = 0;
     };
 }

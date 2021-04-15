@@ -66,7 +66,7 @@ void celix::async_rsa::AsyncAdmin::removeEndpoint(const std::shared_ptr<celix::r
         return;
     }
 
-    std::shared_ptr<celix::rsa::IImportServiceRegistration> tmpStore{}; //to ensure destruction outside of lock
+    std::shared_ptr<celix::rsa::IImportServiceGuard> tmpStore{}; //to ensure destruction outside of lock
     {
         std::lock_guard l(_m);
 
@@ -167,22 +167,18 @@ void celix::async_rsa::AsyncAdmin::removeService(const std::shared_ptr<void>& /*
         return;
     }
 
-    std::unique_ptr<celix::rsa::IExportServiceRegistration> tmpStore{}; //to ensure destruction outside of lock
-    {
-        std::lock_guard l(_m);
+    std::lock_guard l(_m);
 
-        auto instanceIt = _exportedServices.find(svcId);
-        if (instanceIt != end(_exportedServices)) {
-            tmpStore = std::move(instanceIt->second);
-            _exportedServices.erase(instanceIt);
-        }
+    auto instanceIt = _exportedServices.find(svcId);
+    if (instanceIt != end(_exportedServices)) {
+        _exportedServices.erase(instanceIt);
+    }
 
-        //remove to be exported endpoint (if present)
-        for (auto it = _toBeExportedServices.begin(); it != _toBeExportedServices.end(); ++it) {
-            if ((*it)->getAsBool(celix::SERVICE_ID, -1) == svcId) {
-                _toBeExportedServices.erase(it);
-                break;
-            }
+    //remove to be exported endpoint (if present)
+    for (auto it = _toBeExportedServices.begin(); it != _toBeExportedServices.end(); ++it) {
+        if ((*it)->getAsBool(celix::SERVICE_ID, -1) == svcId) {
+            _toBeExportedServices.erase(it);
+            break;
         }
     }
 }

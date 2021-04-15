@@ -24,12 +24,12 @@
 namespace celix::rsa {
 
     /**
-     * @brief ImportServiceRegistration class which represent a (opaque) imported service.
-     * The lifetime of this object should be coupled with the lifetime of the imported service.
+     * @brief IImportServiceGuard class which represent a (opaque) imported service.
+     * If lifetime of this object expires it should remove the underlining imported service.
      */
-    class IImportServiceRegistration {
+    class IImportServiceGuard {
     public:
-        virtual ~IImportServiceRegistration() noexcept = default;
+        virtual ~IImportServiceGuard() noexcept = default;
     };
 
     /**
@@ -54,6 +54,6 @@ namespace celix::rsa {
          * @return A ImportService.
          * @throws celix::rsa::RemoteServicesException if the import failed.
          */
-        virtual std::unique_ptr<celix::rsa::IImportServiceRegistration> importService(const celix::rsa::Endpoint& endpoint) = 0;
+        virtual std::unique_ptr<celix::rsa::IImportServiceGuard> importService(const celix::rsa::Endpoint& endpoint) = 0;
     };
 }

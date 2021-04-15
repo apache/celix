@@ -59,48 +59,62 @@ private:
     std::shared_ptr<celix::rsa::Endpoint> endpoint = std::make_shared<celix::rsa::Endpoint>(celix::Properties{}); //can be empty for stub
 };
 
-class StubExportedServiceGuard {
-public:
-    explicit StubExportedServiceGuard(std::shared_ptr<celix::ServiceRegistration> _reg) : reg{std::move(_reg)} {}
 
-    void close() {
-        reg->unregister();
+class StubExportedServiceEntry {
+public:
+    explicit StubExportedServiceEntry(std::shared_ptr<celix::BundleContext> _ctx) : ctx{std::move(_ctx)} {
+        auto& cmp = ctx->getDependencyManager()->createComponent<StubExportedService>();
+        cmp.createProvidedService<celix::rsa::IExportedService>();
+        //NOTE normally add svc dep to the service to be exported publisher
+        //NOTE normally also provide subscriber
+        cmp.buildAsync();
+        cmpUUID = cmp.getUUID();
+    }
+
+    ~StubExportedServiceEntry() noexcept {
+        close();
+    }
+
+    void close() noexcept {
+        if (!cmpUUID.empty()) {
+            ctx->getDependencyManager()->removeComponentAsync(cmpUUID);
+        }
+        cmpUUID = "";
     }
 private:
-    const std::shared_ptr<celix::ServiceRegistration> reg;
+    const std::shared_ptr<celix::BundleContext> ctx;
+    std::string cmpUUID{};
 };
 
-class StubExportServiceRegistration : public celix::rsa::IExportServiceRegistration {
+class StubExportServiceGuard : public celix::rsa::IExportServiceGuard {
 public:
-    explicit StubExportServiceRegistration(std::weak_ptr<StubExportedServiceGuard> _guard) : guard{std::move(_guard)} {}
-    ~StubExportServiceRegistration() noexcept override {
-        auto g = guard.lock();
-        if (g) {
-            g->close();
+    explicit StubExportServiceGuard(std::weak_ptr<StubExportedServiceEntry> _entry) : entry{std::move(_entry)} {}
+    ~StubExportServiceGuard() noexcept override {
+        auto e = entry.lock();
+        if (e) {
+            e->close();
         }
     }
 
 private:
-    const std::weak_ptr<StubExportedServiceGuard> guard;
+    const std::weak_ptr<StubExportedServiceEntry> entry;
 };
 
 class StubExportServiceFactory : public celix::rsa::IExportServiceFactory {
 public:
     explicit StubExportServiceFactory(std::shared_ptr<celix::BundleContext> _ctx) : ctx{std::move(_ctx)} {}
 
-    std::unique_ptr<celix::rsa::IExportServiceRegistration> exportService(const celix::Properties& /*serviceProperties*/) override {
-        auto svcReg= ctx->registerService<celix::rsa::IExportedService>(std::make_shared<StubExportedService>()).build();
-        auto guard = std::make_shared<StubExportedServiceGuard>(std::move(svcReg));
-
+    std::unique_ptr<celix::rsa::IExportServiceGuard> exportService(const celix::Properties& /*serviceProperties*/) override {
+        auto entry = std::make_shared<StubExportedServiceEntry>(ctx);
         std::lock_guard<std::mutex> lock{mutex};
-        guards.emplace_back(guard);
-        return std::make_unique<StubExportServiceRegistration>(guard);
+        entries.emplace_back(entry);
+        return std::make_unique<StubExportServiceGuard>(entry);
     }
 
 private:
     const std::shared_ptr<celix::BundleContext> ctx;
     std::mutex mutex{};
-    std::vector<std::shared_ptr<StubExportedServiceGuard>> guards{};
+    std::vector<std::shared_ptr<StubExportedServiceEntry>> entries{};
 };
 
 class IDummyService {
@@ -143,6 +157,9 @@ TEST_F(RemoteServiceAdminTestSuite, exportService) {
     EXPECT_EQ(1, count);
 
 
+    /**
+     * When I remove the export service factory, the IExportService will be removed.
+     */
     reg1->unregister();
 
     //removed factory -> removed exported interface
@@ -189,44 +206,60 @@ TEST_F(RemoteServiceAdminTestSuite, exportServiceDifferentOrder) {
  * the RemoteServiceAdmin.
  */
 
-class StubImportedServiceGuard {
+class StubImportedService : public IDummyService {
 public:
-    explicit StubImportedServiceGuard(std::shared_ptr<celix::ServiceRegistration> _reg) : reg{std::move(_reg)} {}
-
-    void close() {
-        reg->unregister();
-    }
-private:
-    const std::shared_ptr<celix::ServiceRegistration> reg;
+    ~StubImportedService() noexcept override = default;
 };
 
-class StubImportServiceRegistration : public celix::rsa::IImportServiceRegistration {
+class StubImportedServiceEntry {
 public:
-    explicit StubImportServiceRegistration(std::weak_ptr<StubImportedServiceGuard> _guard) : guard{std::move(_guard)} {}
-    ~StubImportServiceRegistration() noexcept override {
-        auto g = guard.lock();
-        if (g) {
-            g->close();
+    explicit StubImportedServiceEntry(std::shared_ptr<celix::BundleContext> _ctx) : ctx{std::move(_ctx)} {
+        auto& cmp = ctx->getDependencyManager()->createComponent<StubImportedService>();
+        cmp.createProvidedService<IDummyService>()
+                .addProperty(celix::rsa::REMOTE_SERVICE_IMPORTED_PROPERTY_NAME, true);
+        cmp.buildAsync();
+        cmpUUID = cmp.getUUID();
+    }
+
+    ~StubImportedServiceEntry() noexcept {
+        close();
+    }
+
+    void close() noexcept {
+        if (!cmpUUID.empty()) {
+            ctx->getDependencyManager()->removeComponentAsync(cmpUUID);
+        }
+        cmpUUID = "";
+    }
+private:
+    const std::shared_ptr<celix::BundleContext> ctx;
+    std::string cmpUUID{};
+};
+
+class StubImportServiceGuard : public celix::rsa::IImportServiceGuard {
+public:
+    explicit StubImportServiceGuard(std::weak_ptr<StubImportedServiceEntry> _entry) : entry{std::move(_entry)} {}
+    ~StubImportServiceGuard() noexcept override {
+        auto e = entry.lock();
+        if (e) {
+            e->close();
         }
     }
 
 private:
-    const std::weak_ptr<StubImportedServiceGuard> guard;
+    const std::weak_ptr<StubImportedServiceEntry> entry;
 };
 
 class StubImportServiceFactory : public celix::rsa::IImportServiceFactory {
 public:
     explicit StubImportServiceFactory(std::shared_ptr<celix::BundleContext> _ctx) : ctx{std::move(_ctx)} {}
 
-    virtual std::unique_ptr<celix::rsa::IImportServiceRegistration> importService(const celix::rsa::Endpoint& endpoint) {
+    virtual std::unique_ptr<celix::rsa::IImportServiceGuard> importService(const celix::rsa::Endpoint& endpoint) {
            if (endpoint.getExportedInterfaces() == celix::typeName<IDummyService>()) {
-               auto reg = ctx->registerService<IDummyService>(std::make_shared<DummyServiceImpl>())
-                       .addProperty(celix::rsa::REMOTE_SERVICE_IMPORTED_PROPERTY_NAME, true)
-                       .build();
                std::lock_guard<std::mutex> lock{mutex};
-               auto guard = std::make_shared<StubImportedServiceGuard>(std::move(reg));
-               guards.emplace_back(guard);
-               return std::make_unique<StubImportServiceRegistration>(guard);
+               auto entry = std::make_shared<StubImportedServiceEntry>(ctx);
+               entries.emplace_back(entry);
+               return std::make_unique<StubImportServiceGuard>(entry);
            } else {
                return {};
            }
@@ -235,7 +268,7 @@ public:
 private:
     const std::shared_ptr<celix::BundleContext> ctx;
     std::mutex mutex{};
-    std::vector<std::shared_ptr<StubImportedServiceGuard>> guards{};
+    std::vector<std::shared_ptr<StubImportedServiceEntry>> entries{};
 };
 
 TEST_F(RemoteServiceAdminTestSuite, importService) {
@@ -244,7 +277,7 @@ TEST_F(RemoteServiceAdminTestSuite, importService) {
 
     /**
      * When I add a import service factory and register a Endpoint/
-     * RemoteServiceAdmin will create a imported service (proxy for remote service described by the endpoint).
+     * RemoteServiceAdmin will create a imported service through the factory (proxy for remote service described by the endpoint).
      */
     auto count = ctx->useService<IDummyService>()
             .build();
@@ -270,6 +303,9 @@ TEST_F(RemoteServiceAdminTestSuite, importService) {
     EXPECT_EQ(1, count);
 
 
+    /**
+     * When I remove the import service factory, the imported service (proxy) will be removed.
+     */
     reg1->unregister();
 
     //removed factory -> removed imported interface
