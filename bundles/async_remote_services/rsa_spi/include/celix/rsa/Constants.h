@@ -23,9 +23,15 @@
 namespace celix::rsa {
 
     /**
-     * @brief Service property (named "remote") to mark a service as a remote service.
+     * @brief Service property (named "service.exported") to mark a service as wanting to be exported (remote).
      * Present means -> export service as a remote service.
      */
-    constexpr const char *const REMOTE_SERVICE_PROPERTY_NAME = "remote";
+    constexpr const char * const REMOTE_SERVICE_EXPORTED_PROPERTY_NAME = "service.exported";
+
+    /**
+     * @brief Service property (named "remote") to mark a service as a imported service.
+     * Present means -> service is a imported service (proxy of a remote service).
+     */
+    constexpr const char * const REMOTE_SERVICE_IMPORTED_PROPERTY_NAME = "service.imported";
 
 }

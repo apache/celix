@@ -15,12 +15,16 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(REMOTE_SERVICE_ADMIN "Option to enable building the C++17 Remote Service Admin Service bundles" OFF)
-if (REMOTE_SERVICE_ADMIN)
-    #add_subdirectory(common)
-    add_subdirectory(rsa_spi)
-    add_subdirectory(admin)
-    #add_subdirectory(topology_manager)
-    #add_subdirectory(discovery_configured)
-    #add_subdirectory(examples)
-endif()
+add_executable(test_cxx_remote_service_admin
+    src/RemoteServiceAdminTestSuite.cc
+)
+
+target_link_libraries(test_cxx_remote_service_admin PRIVATE Celix::framework GTest::gtest GTest::gtest_main Celix::rsa_spi)
+add_dependencies(test_cxx_remote_service_admin RemoteServiceAdmin_bundle)
+
+celix_get_bundle_file(RemoteServiceAdmin REMOTE_SERVICE_ADMIN_BUNDLE_LOCATION)
+target_compile_definitions(test_cxx_remote_service_admin PRIVATE REMOTE_SERVICE_ADMIN_BUNDLE_LOCATION="${REMOTE_SERVICE_ADMIN_BUNDLE_LOCATION}")
+
+
+add_test(NAME test_cxx_remote_service_admin COMMAND test_cxx_remote_service_admin)
+setup_target_for_coverage(test_cxx_remote_service_admin SCAN_DIR ..)

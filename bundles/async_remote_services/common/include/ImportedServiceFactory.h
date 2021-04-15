@@ -19,7 +19,6 @@
 #pragma once
 
 #include <celix/dm/DependencyManager.h>
-#include <pubsub_endpoint.h>
 
 namespace celix::async_rsa {
     /// Service factory interface.

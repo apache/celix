@@ -19,21 +19,17 @@
 #pragma once
 
 #include <memory>
+#include "celix/rsa/Endpoint.h"
 
 namespace celix::rsa {
 
     /**
-     * @brief ImportService class which represent a (opaque) imported service.
+     * @brief ImportServiceRegistration class which represent a (opaque) imported service.
      * The lifetime of this object should be coupled with the lifetime of the imported service.
      */
-    class ImportedService {
+    class IImportServiceRegistration {
     public:
-        virtual ~ImportedService() noexcept = default;
-
-        /**
-         * @brief returns the endpoint used for this imported service.
-         */
-        virtual const celix::rsa::Endpoint& getEndpoint() const = 0;
+        virtual ~IImportServiceRegistration() noexcept = default;
     };
 
     /**
@@ -45,14 +41,12 @@ namespace celix::rsa {
      */
     class IImportServiceFactory {
     public:
-        static constexpr std::string_view TARGET_SERVICE_NAME = "target.service.name";
-
-        virtual ~IImportServiceFactory() noexcept = default;
-
         /**
          * @brief The service name for which this factory can created exported services.
          */
-        std::string& const getTargetServiceName() const = 0;
+        static constexpr const char * const TARGET_SERVICE_NAME = "target.service.name";
+
+        virtual ~IImportServiceFactory() noexcept = default;
 
         /**
          * @brief Imports the service identified with svcId
@@ -60,6 +54,6 @@ namespace celix::rsa {
          * @return A ImportService.
          * @throws celix::rsa::RemoteServicesException if the import failed.
          */
-        virtual std::unique_ptr<ImportedService> importService(const celix::rsa::Endpoint& endpoint) = 0;
+        virtual std::unique_ptr<celix::rsa::IImportServiceRegistration> importService(const celix::rsa::Endpoint& endpoint) = 0;
     };
 }

@@ -31,12 +31,12 @@ namespace celix::rsa {
     class Endpoint {
     public:
         static constexpr const char * const IDENTIFIER = "endpoint.id";
-        static constexpr const char * const IMPORTED = "service.imported";
-        static constexpr const char * const IMPORT_CONFIGS = "service.imported.configs";
+//        static constexpr const char * const IMPORTED = "service.imported";
+//        static constexpr const char * const IMPORT_CONFIGS = "service.imported.configs";
         static constexpr const char * const EXPORTS = "service.exported.interfaces";
-        static constexpr const char * const OBJECTCLASS = "endpoint.objectClass";
-        static constexpr const char * const SCOPE = "endpoint.scope";
-        static constexpr const char * const TOPIC = "endpoint.topic";
+//        static constexpr const char * const OBJECTCLASS = "endpoint.objectClass";
+//        static constexpr const char * const SCOPE = "endpoint.scope";
+//        static constexpr const char * const TOPIC = "endpoint.topic";
 
 
         /**
@@ -58,8 +58,6 @@ namespace celix::rsa {
         [[nodiscard]] std::string getExportedInterfaces() const {
             return _celixProperties.get(EXPORTS);
         }
-
-
 
     protected:
         celix::dm::Properties _celixProperties;

@@ -27,7 +27,7 @@ inline DependencyManager::DependencyManager(celix_bundle_context_t *ctx) :
     cDepMan{celix_bundleContext_getDependencyManager(ctx), [](celix_dependency_manager_t*){/*nop*/}} {}
 
 inline DependencyManager::~DependencyManager() {
-    clear();
+    clearAsync();
 }
 
 template<class T>

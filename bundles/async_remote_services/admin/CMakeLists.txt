@@ -15,29 +15,27 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_celix_bundle(async_rsa
+add_celix_bundle(RemoteServiceAdmin
         VERSION 0.9.0
-        SYMBOLIC_NAME "apache_celix_async_remote_service_admin"
-        NAME "Apache Celix Async Remote Service Admin"
-        GROUP "Celix/AsyncRSA"
+        SYMBOLIC_NAME "celix::RemoteServiceAdmin"
+        NAME "Apache Celix Remote Service Admin"
+        GROUP "Celix/RSA"
+        FILENAME "Celix_RemoteServiceAdmin"
         SOURCES
-        src/admin.cc
-        )
-target_include_directories(async_rsa PRIVATE include)
-target_link_libraries(async_rsa PRIVATE
-        Celix::async_rsa_common
-        Celix::pubsub_api
-        Celix::pubsub_spi
+            src/admin.cc
+)
+target_include_directories(RemoteServiceAdmin PRIVATE include)
+target_link_libraries(RemoteServiceAdmin PRIVATE
         Celix::rsa_spi
         Celix::framework
         Celix::log_helper
-        )
+)
 
-#if (ENABLE_TESTING)
-#    add_subdirectory(gtest)
-#endif()
+if (ENABLE_TESTING)
+    add_subdirectory(gtest)
+endif()
 
 
-install_celix_bundle(async_rsa EXPORT celix COMPONENT async_rsa)
+install_celix_bundle(RemoteServiceAdmin EXPORT celix COMPONENT rsa)
 #Setup target aliases to match external usage
-add_library(Celix::async_rsa ALIAS async_rsa)
+add_library(Celix::RemoteServiceAdmin ALIAS RemoteServiceAdmin)

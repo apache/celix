@@ -19,21 +19,17 @@
 #pragma once
 
 #include <memory>
+#include "celix/rsa/Endpoint.h"
 
 namespace celix::rsa {
 
     /**
-     * @brief ExportService class which represent a (opaque) exported service.
+     * @brief ExportServiceRegistration class which represent a (opaque) exported service.
      * The lifetime of this object should be coupled with the lifetime of the exported service.
      */
-    class ExportedService {
+    class IExportServiceRegistration {
     public:
-        virtual ~ExportedService() noexcept = default;
-
-        /**
-         * @brief returns the endpoint for this exported service (to be used in discovery).
-         */
-        virtual const celix::rsa::Endpoint& getEndpoint() const = 0;
+        virtual ~IExportServiceRegistration() noexcept = default;
     };
 
     /**
@@ -45,14 +41,12 @@ namespace celix::rsa {
      */
     class IExportServiceFactory {
     public:
-        static constexpr std::string_view TARGET_SERVICE_NAME = "target.service.name";
-
-        virtual ~IExportServiceFactory() noexcept = default;
-
         /**
          * @brief The service name for which this factory can created exported services.
          */
-        std::string& const getTargetServiceName() const = 0;
+        static constexpr const char * const TARGET_SERVICE_NAME = "target.service.name";
+
+        virtual ~IExportServiceFactory() noexcept = default;
 
         /**
          * @brief Exports the service identified with svcId
@@ -60,6 +54,6 @@ namespace celix::rsa {
          * @return A ExportService.
          * @throws celix::rsa::RemoteServicesException if the export failed.
          */
-        virtual std::unique_ptr<ExportedService> exportService(const celix::Properties& serviceProperties) = 0;
+        virtual std::unique_ptr<celix::rsa::IExportServiceRegistration> exportService(const celix::Properties& serviceProperties) = 0;
     };
 }
