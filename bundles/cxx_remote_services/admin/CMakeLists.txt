@@ -22,13 +22,13 @@ add_celix_bundle(RemoteServiceAdmin
         GROUP "Celix/RSA"
         FILENAME "Celix_RemoteServiceAdmin"
         SOURCES
-            src/admin.cc
+            src/RemoteServiceAdmin.cc
 )
 target_include_directories(RemoteServiceAdmin PRIVATE include)
 target_link_libraries(RemoteServiceAdmin PRIVATE
         Celix::rsa_spi
         Celix::framework
-        Celix::log_helper
+        Celix::log_service_api
 )
 
 if (ENABLE_TESTING)

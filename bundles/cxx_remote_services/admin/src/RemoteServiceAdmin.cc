@@ -17,7 +17,7 @@
  * under the License.
  */
 
-#include <admin.h>
+#include "RemoteServiceAdmin.h"
 #include "celix/rsa/Constants.h"
 
 #define L_DEBUG(...) \
@@ -37,7 +37,7 @@
         _logService->error(_logService->handle, __VA_ARGS__);           \
     }
 
-void celix::async_rsa::AsyncAdmin::addEndpoint(const std::shared_ptr<celix::rsa::Endpoint>& endpoint) {
+void celix::rsa::RemoteServiceAdmin::addEndpoint(const std::shared_ptr<celix::rsa::Endpoint>& endpoint) {
     assert(endpoint);
 
     auto interface = endpoint->getExportedInterfaces();
@@ -57,7 +57,7 @@ void celix::async_rsa::AsyncAdmin::addEndpoint(const std::shared_ptr<celix::rsa:
     createImportServices();
 }
 
-void celix::async_rsa::AsyncAdmin::removeEndpoint(const std::shared_ptr<celix::rsa::Endpoint>& endpoint) {
+void celix::rsa::RemoteServiceAdmin::removeEndpoint(const std::shared_ptr<celix::rsa::Endpoint>& endpoint) {
     assert(endpoint);
 
     auto id = endpoint->getEndpointId();
@@ -82,7 +82,7 @@ void celix::async_rsa::AsyncAdmin::removeEndpoint(const std::shared_ptr<celix::r
     }
 }
 
-void celix::async_rsa::AsyncAdmin::addImportedServiceFactory(
+void celix::rsa::RemoteServiceAdmin::addImportedServiceFactory(
         const std::shared_ptr<celix::rsa::IImportServiceFactory> &factory,
         const std::shared_ptr<const celix::Properties> &properties) {
     auto targetServiceName = properties->get(celix::rsa::IImportServiceFactory::TARGET_SERVICE_NAME);
@@ -104,7 +104,7 @@ void celix::async_rsa::AsyncAdmin::addImportedServiceFactory(
     createImportServices();
 }
 
-void celix::async_rsa::AsyncAdmin::removeImportedServiceFactory(
+void celix::rsa::RemoteServiceAdmin::removeImportedServiceFactory(
         const std::shared_ptr<celix::rsa::IImportServiceFactory> &/*factory*/,
         const std::shared_ptr<const celix::Properties> &properties) {
     auto targetServiceName = properties->get(celix::rsa::IImportServiceFactory::TARGET_SERVICE_NAME);
@@ -119,7 +119,7 @@ void celix::async_rsa::AsyncAdmin::removeImportedServiceFactory(
     //TODO remove imported services from this factory ??needed
 }
 
-void celix::async_rsa::AsyncAdmin::addExportedServiceFactory(
+void celix::rsa::RemoteServiceAdmin::addExportedServiceFactory(
         const std::shared_ptr<celix::rsa::IExportServiceFactory> &factory,
         const std::shared_ptr<const celix::Properties> &properties) {
     auto targetServiceName = properties->get(celix::rsa::IExportServiceFactory::TARGET_SERVICE_NAME);
@@ -133,7 +133,7 @@ void celix::async_rsa::AsyncAdmin::addExportedServiceFactory(
     createExportServices();
 }
 
-void celix::async_rsa::AsyncAdmin::removeExportedServiceFactory(
+void celix::rsa::RemoteServiceAdmin::removeExportedServiceFactory(
         const std::shared_ptr<celix::rsa::IExportServiceFactory> &/*factory*/,
         const std::shared_ptr<const celix::Properties> &properties) {
     auto targetServiceName = properties->get(celix::rsa::IExportServiceFactory::TARGET_SERVICE_NAME);
@@ -148,7 +148,7 @@ void celix::async_rsa::AsyncAdmin::removeExportedServiceFactory(
     //TODO remove exported services from this factory ??needed
 }
 
-void celix::async_rsa::AsyncAdmin::addService(const std::shared_ptr<void>& /*svc*/, const std::shared_ptr<const celix::Properties>& props) {
+void celix::rsa::RemoteServiceAdmin::addService(const std::shared_ptr<void>& /*svc*/, const std::shared_ptr<const celix::Properties>& props) {
     auto serviceName = props->get(celix::SERVICE_NAME, "");
     if (serviceName.empty()) {
         L_WARN("Adding service to be exported but missing objectclass");
@@ -160,7 +160,7 @@ void celix::async_rsa::AsyncAdmin::addService(const std::shared_ptr<void>& /*svc
     createExportServices();
 }
 
-void celix::async_rsa::AsyncAdmin::removeService(const std::shared_ptr<void>& /*svc*/, const std::shared_ptr<const celix::Properties>& props) {
+void celix::rsa::RemoteServiceAdmin::removeService(const std::shared_ptr<void>& /*svc*/, const std::shared_ptr<const celix::Properties>& props) {
     long svcId = props->getAsLong(celix::SERVICE_ID, -1);
     if (svcId < 0) {
         L_WARN("Removing service to be exported but missing service.id");
@@ -183,7 +183,7 @@ void celix::async_rsa::AsyncAdmin::removeService(const std::shared_ptr<void>& /*
     }
 }
 
-void celix::async_rsa::AsyncAdmin::createImportServices() {
+void celix::rsa::RemoteServiceAdmin::createImportServices() {
     auto it = _toBeImportedServices.begin();
     while (it != _toBeImportedServices.end()) {
         auto interface = (*it)->getExportedInterfaces();
@@ -200,7 +200,7 @@ void celix::async_rsa::AsyncAdmin::createImportServices() {
     }
 }
 
-void celix::async_rsa::AsyncAdmin::createExportServices() {
+void celix::rsa::RemoteServiceAdmin::createExportServices() {
     auto it = _toBeExportedServices.begin();
     while (it != _toBeExportedServices.end()) {
         const auto& svcProperties = **it;
@@ -221,33 +221,33 @@ void celix::async_rsa::AsyncAdmin::createExportServices() {
     }
 }
 
-void celix::async_rsa::AsyncAdmin::setLogger(const std::shared_ptr<celix_log_service>& logService) {
+void celix::rsa::RemoteServiceAdmin::setLogger(const std::shared_ptr<celix_log_service>& logService) {
     _logService = logService;
 }
 
 class AdminActivator {
 public:
     explicit AdminActivator(const std::shared_ptr<celix::BundleContext>& ctx) {
-        auto admin = std::make_shared<celix::async_rsa::AsyncAdmin>();
+        auto admin = std::make_shared<celix::rsa::RemoteServiceAdmin>();
 
         auto& cmp = ctx->getDependencyManager()->createComponent(admin);
         cmp.createServiceDependency<celix::rsa::Endpoint>()
                 .setRequired(false)
                 .setStrategy(celix::dm::DependencyUpdateStrategy::locking)
-                .setCallbacks(&celix::async_rsa::AsyncAdmin::addEndpoint, &celix::async_rsa::AsyncAdmin::removeEndpoint);
+                .setCallbacks(&celix::rsa::RemoteServiceAdmin::addEndpoint, &celix::rsa::RemoteServiceAdmin::removeEndpoint);
         cmp.createServiceDependency<celix::rsa::IImportServiceFactory>()
                 .setRequired(false)
                 .setStrategy(celix::dm::DependencyUpdateStrategy::locking)
-                .setCallbacks(&celix::async_rsa::AsyncAdmin::addImportedServiceFactory, &celix::async_rsa::AsyncAdmin::removeImportedServiceFactory);
+                .setCallbacks(&celix::rsa::RemoteServiceAdmin::addImportedServiceFactory, &celix::rsa::RemoteServiceAdmin::removeImportedServiceFactory);
         cmp.createServiceDependency<celix::rsa::IExportServiceFactory>()
                 .setRequired(false)
                 .setStrategy(celix::dm::DependencyUpdateStrategy::locking)
-                .setCallbacks(&celix::async_rsa::AsyncAdmin::addExportedServiceFactory, &celix::async_rsa::AsyncAdmin::removeExportedServiceFactory);
+                .setCallbacks(&celix::rsa::RemoteServiceAdmin::addExportedServiceFactory, &celix::rsa::RemoteServiceAdmin::removeExportedServiceFactory);
         cmp.createServiceDependency<celix_log_service>(CELIX_LOG_SERVICE_NAME)
                 .setRequired(false)
                 .setFilter(std::string{"("}.append(CELIX_LOG_SERVICE_PROPERTY_NAME).append("=celix::rsa::RemoteServiceAdmin)"))
                 .setStrategy(celix::dm::DependencyUpdateStrategy::suspend)
-                .setCallbacks(&celix::async_rsa::AsyncAdmin::setLogger);
+                .setCallbacks(&celix::rsa::RemoteServiceAdmin::setLogger);
         cmp.build();
 
         //note adding void service dependencies is not supported for the dependency manager, using a service tracker instead.

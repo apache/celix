@@ -33,9 +33,9 @@
 
 #endif
 
-namespace celix::async_rsa {
+namespace celix::rsa {
 
-    class AsyncAdmin {
+    class RemoteServiceAdmin {
     public:
         // Imported endpoint add/remove functions
         void addEndpoint(const std::shared_ptr<celix::rsa::Endpoint>& endpoint);
