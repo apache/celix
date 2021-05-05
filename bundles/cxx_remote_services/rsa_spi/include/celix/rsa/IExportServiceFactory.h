@@ -19,7 +19,7 @@
 #pragma once
 
 #include <memory>
-#include "celix/rsa/Endpoint.h"
+#include "celix/rsa/EndpointDescription.h"
 
 namespace celix::rsa {
 

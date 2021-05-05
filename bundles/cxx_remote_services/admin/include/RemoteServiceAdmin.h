@@ -17,7 +17,7 @@
  * under the License.
  */
 
-#include "celix/rsa/Endpoint.h"
+#include "celix/rsa/EndpointDescription.h"
 #include <celix_api.h>
 #include <mutex>
 #include "celix_log_service.h"
@@ -38,8 +38,8 @@ namespace celix::rsa {
     class RemoteServiceAdmin {
     public:
         // Imported endpoint add/remove functions
-        void addEndpoint(const std::shared_ptr<celix::rsa::Endpoint>& endpoint);
-        void removeEndpoint(const std::shared_ptr<celix::rsa::Endpoint>& endpoint);
+        void addEndpoint(const std::shared_ptr<celix::rsa::EndpointDescription>& endpoint);
+        void removeEndpoint(const std::shared_ptr<celix::rsa::EndpointDescription>& endpoint);
 
         // import service factory. used to create new imported services
         void addImportedServiceFactory(const std::shared_ptr<celix::rsa::IImportServiceFactory>& factory, const std::shared_ptr<const celix::Properties>& properties);
@@ -75,7 +75,7 @@ namespace celix::rsa {
         std::unordered_map<std::string, std::unique_ptr<celix::rsa::IImportServiceGuard>> _importedServices{}; //key = endpoint id
         std::unordered_map<long, std::unique_ptr<celix::rsa::IExportServiceGuard>> _exportedServices{}; //key = service id
 #endif
-        std::vector<std::shared_ptr<celix::rsa::Endpoint>> _toBeImportedServices{};
+        std::vector<std::shared_ptr<celix::rsa::EndpointDescription>> _toBeImportedServices{};
         std::vector<std::shared_ptr<const celix::Properties>> _toBeExportedServices{};
     };
 }

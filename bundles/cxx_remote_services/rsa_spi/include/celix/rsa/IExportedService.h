@@ -18,7 +18,7 @@
  */
 #pragma once
 
-#include "celix/rsa/Endpoint.h"
+#include "celix/rsa/EndpointDescription.h"
 
 namespace celix::rsa {
 
@@ -32,6 +32,6 @@ namespace celix::rsa {
         /**
          * @brief the endpoint which can be used to announce this exported service to the network.
          */
-        virtual std::shared_ptr<celix::rsa::Endpoint> getEndpoint() = 0;
+        virtual std::shared_ptr<celix::rsa::EndpointDescription> getEndpoint() = 0;
     };
 }

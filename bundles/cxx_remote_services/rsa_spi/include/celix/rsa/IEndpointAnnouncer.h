@@ -20,7 +20,7 @@
 
 #include <memory>
 
-#include "celix/rsa/Endpoint.h"
+#include "celix/rsa/EndpointDescription.h"
 #include "celix/dm/Properties.h"
 
 namespace celix::rsa {
@@ -39,13 +39,13 @@ public:
      * Task the endpoint announcer to make the given endpoint visible for discovery by other managers/ frameworks.
      * @param endpoint The endpoint pointer in question, with valid properties within.
      */
-    virtual void announceEndpoint(std::unique_ptr<Endpoint> endpoint) = 0;
+    virtual void announceEndpoint(std::unique_ptr<EndpointDescription> endpoint) = 0;
 
     /**
      * Task the endpoint announcer to remove the discoverability of a given endpoint.
      * @param endpoint The endpoint pointer in question, with valid properties within.
      */
-    virtual void revokeEndpoint(std::unique_ptr<Endpoint> endpoint) = 0;
+    virtual void revokeEndpoint(std::unique_ptr<EndpointDescription> endpoint) = 0;
 };
 
 } // end namespace celix::rsa.

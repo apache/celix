@@ -22,16 +22,13 @@
 #include <fstream>
 #include <filesystem>
 
-#include <ConfiguredEndpoint.h>
 #include <celix_bundle_context.h>
 
 #include <rapidjson/writer.h>
 
-namespace celix::rsa {
+static constexpr const char* ENDPOINT_ARRAY = "endpoints";
 
-constexpr const char* ENDPOINT_ARRAY = "endpoints";
-
-std::optional<std::string> readFile(const std::string& path) {
+static std::optional<std::string> readFile(const std::string& path) {
 
     std::string contents;
     std::ifstream file(path);
@@ -41,51 +38,97 @@ std::optional<std::string> readFile(const std::string& path) {
     file.seekg(0, std::ios::end);
     contents.resize(file.tellg());
     file.seekg(0, std::ios::beg);
-    file.read(&contents[0], contents.size());
+    file.read(&contents[0], (std::streamsize)contents.size());
     file.close();
     return contents;
 }
 
-rapidjson::Document parseJSONFile(std::string& contents)  {
+static rapidjson::Document parseJSONFile(std::string& contents)  {
 
     rapidjson::Document resultDocument{};
     resultDocument.ParseInsitu(contents.data());
     return resultDocument;
 }
 
-ConfiguredDiscoveryManager::ConfiguredDiscoveryManager(std::shared_ptr<DependencyManager> dependencyManager) :
-        _dependencyManager{std::move(dependencyManager)},
-        _configurationFilePath{} {
-
-    _configurationFilePath = celix_bundleContext_getProperty(
-            _dependencyManager->bundleContext(),
-            CELIX_ASYNC_RSA_CONFIGURED_DISCOVERY_FILE,
-            "");
-
-    discoverEndpoints();
+celix::rsa::ConfiguredDiscoveryManager::ConfiguredDiscoveryManager(std::shared_ptr<celix::BundleContext> _ctx) :
+        ctx{std::move(_ctx)},
+        configuredDiscoveryFiles{ctx->getConfigProperty(celix::rsa::CONFIGURED_DISCOVERY_DISCOVERY_FILES, "")} {
+    readConfiguredDiscoveryFiles();
 }
 
-void ConfiguredDiscoveryManager::discoverEndpoints() {
+void celix::rsa::ConfiguredDiscoveryManager::readConfiguredDiscoveryFiles() {
+    //TODO split configuredDiscoveryFiles
+    if (!configuredDiscoveryFiles.empty()) {
+        for (auto path : celix::split(configuredDiscoveryFiles)) {
+            addConfiguredDiscoveryFile(path);
+        }
+    }
+}
 
-    auto contents = readFile(_configurationFilePath);
+//static std::vector<std::string> parseJSONStringArray(const rapidjson::Value& jsonArray) {
+//    std::vector<std::string> resultVec{};
+//    if (jsonArray.IsArray()) {
+//        resultVec.reserve(jsonArray.Size());
+//        for (auto& element : jsonArray.GetArray()) {
+//            if (element.IsString()) {
+//                resultVec.emplace_back(element.GetString());
+//            }
+//        }
+//    }
+//    return resultVec;
+//}
+
+celix::Properties celix::rsa::ConfiguredDiscoveryManager::convertToEndpointProperties(const rapidjson::Value &endpointJSON) {
+    celix::Properties result{};
+    result.set(celix::rsa::ENDPOINT_FRAMEWORK_UUID, ctx->getFramework()->getUUID());
+    for (auto it = endpointJSON.MemberBegin(); it != endpointJSON.MemberEnd(); ++it) {
+        if (it->value.GetType() == rapidjson::Type::kStringType) {
+            if (celix_utils_stringEquals(it->name.GetString(), "endpoint.objectClass")) { //TODO improve
+                result.set(celix::SERVICE_NAME, it->value.GetString());
+            } else {
+                result.set(it->name.GetString(), it->value.GetString());
+            }
+        } else if (it->value.GetType() == rapidjson::Type::kTrueType || it->value.GetType() == rapidjson::Type::kFalseType) {
+            result.set(it->name.GetString(), it->value.GetBool());
+        } else {
+            std::cout << "TODO member " << it->name.GetString() << std::endl;
+        }
+    }
+    return result;
+}
+
+void celix::rsa::ConfiguredDiscoveryManager::addConfiguredDiscoveryFile(const std::string& path) {
+    std::vector<std::shared_ptr<celix::ServiceRegistration>> newEndpoints{};
+    auto contents = readFile(path);
     if (contents) {
         auto parsedJson = parseJSONFile(contents.value());
         if (parsedJson.IsObject()) {
             if (parsedJson.HasMember(ENDPOINT_ARRAY) && parsedJson[ENDPOINT_ARRAY].IsArray()) {
 
-                for (auto& endpoint : parsedJson[ENDPOINT_ARRAY].GetArray()) {
-                    const auto& configuredEndpointPtr = std::make_shared<ConfiguredEndpoint>(endpoint.GetObject());
-                    const auto endpointProperties = configuredEndpointPtr->getProperties();
+                for (auto& jsonEndpoint : parsedJson[ENDPOINT_ARRAY].GetArray()) {
+                    try {
+                        auto endpointProperties = convertToEndpointProperties(jsonEndpoint);
+                        auto endpointDescription = std::make_shared<EndpointDescription>(std::move(endpointProperties));
 
-                    std::cout << configuredEndpointPtr->ToString() << std::endl;
+                        //TODO log service
+                        std::cout << endpointDescription->toString() << std::endl;
 
-                    _dependencyManager->createComponent<Endpoint>(configuredEndpointPtr)
-                                       .addInterface<Endpoint>("1.0.0", endpointProperties)
-                                       .build();
+                        auto reg = ctx->registerService<celix::rsa::EndpointDescription>(std::move(endpointDescription))
+                                .build();
+                        newEndpoints.emplace_back(std::move(reg));
+                    } catch (celix::rsa::RemoteServicesException& exp) {
+                        //TODO log service
+                        std::cerr << exp.what() << std::endl;
+                    }
                 }
             }
         }
+        std::lock_guard<std::mutex> lock{mutex};
+        endpointRegistrations.emplace(path, std::move(newEndpoints));
     }
 }
 
-} // end namespace celix::rsa.
+void celix::rsa::ConfiguredDiscoveryManager::removeConfiguredDiscoveryFile(const std::string& path) {
+    std::lock_guard<std::mutex> lock{mutex};
+    endpointRegistrations.erase(path);
+}

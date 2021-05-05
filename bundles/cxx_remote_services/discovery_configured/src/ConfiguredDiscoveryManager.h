@@ -24,16 +24,14 @@
 #include <vector>
 #include <string>
 
-#include "celix/rsa/Endpoint.h"
-#include <celix_api.h>
-
-#include <ConfiguredEndpoint.h>
+#include "celix/rsa/EndpointDescription.h"
+#include "celix/rsa/IConfiguredDiscoveryManager.h"
+#include "celix_api.h"
 
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
 
-/** Path for configured endpoint file. */
-#define CELIX_ASYNC_RSA_CONFIGURED_DISCOVERY_FILE "CELIX_ASYNC_RSA_CONFIGURED_DISCOVERY_FILE"
+/** Path for configured endpoints file. */
 
 namespace celix::rsa {
 
@@ -42,45 +40,30 @@ namespace celix::rsa {
  * a local configuration JSON file.
  * This configured discovery manager announces local exported endpoints and imported endpoints from the JSON file.
  */
-class ConfiguredDiscoveryManager final : public IEndpointAnnouncer {
+class ConfiguredDiscoveryManager final : public IConfiguredDiscoveryManager, public IEndpointAnnouncer {
 public:
-
-    /**
-     * Deleted default constructor, dependencyManager parameter is required.
-     */
-    ConfiguredDiscoveryManager() = delete;
-
     /**
      *  Constructor for the ConfiguredDiscoveryManager.
      * @param dependencyManager shared_ptr to the context/container dependency manager.
      */
-    explicit ConfiguredDiscoveryManager(std::shared_ptr<DependencyManager> dependencyManager);
+    explicit ConfiguredDiscoveryManager(std::shared_ptr<celix::BundleContext> ctx);
 
-    /**
-     * Deleted copy-constructor, since rapidjson members have no copy-constructor.
-     */
-    ConfiguredDiscoveryManager(const ConfiguredDiscoveryManager&) = delete;
+    void announceEndpoint(std::unique_ptr<EndpointDescription> /*endpoint*/) override {/*nop*/}
 
-    /**
-     * Defaulted move-constructor.
-     */
-    ConfiguredDiscoveryManager(ConfiguredDiscoveryManager&&) = default;
+    void revokeEndpoint(std::unique_ptr<EndpointDescription> /*endpoint*/) override {/*nop*/}
 
-    /**
-     * Deleted assignment-operator, since rapidjson members have no copy-constructor.
-     */
-    ConfiguredDiscoveryManager& operator=(const ConfiguredDiscoveryManager&) = delete;
+    void addConfiguredDiscoveryFile(const std::string& path) override;
 
-    void announceEndpoint(std::unique_ptr<Endpoint> /*endpoint*/) override {/*nop*/}
-
-    void revokeEndpoint(std::unique_ptr<Endpoint> /*endpoint*/) override {/*nop*/}
-
+    void removeConfiguredDiscoveryFile(const std::string& path) override;
 private:
+    celix::Properties convertToEndpointProperties(const rapidjson::Value &endpointJSON);
+    void readConfiguredDiscoveryFiles();
 
-    void discoverEndpoints();
+    const std::shared_ptr<celix::BundleContext> ctx;
+    const std::string configuredDiscoveryFiles;
 
-    std::shared_ptr<DependencyManager> _dependencyManager;
-    std::string _configurationFilePath;
+    std::mutex mutex{}; //protects below
+    std::unordered_map<std::string, std::vector<std::shared_ptr<celix::ServiceRegistration>>> endpointRegistrations{}; //key = configured discovery file path
 };
 
 } // end namespace celix::rsa.

@@ -19,7 +19,7 @@
 #pragma once
 
 #include <memory>
-#include "celix/rsa/Endpoint.h"
+#include "celix/rsa/EndpointDescription.h"
 
 namespace celix::rsa {
 
@@ -54,6 +54,6 @@ namespace celix::rsa {
          * @return A ImportService.
          * @throws celix::rsa::RemoteServicesException if the import failed.
          */
-        virtual std::unique_ptr<celix::rsa::IImportServiceGuard> importService(const celix::rsa::Endpoint& endpoint) = 0;
+        virtual std::unique_ptr<celix::rsa::IImportServiceGuard> importService(const celix::rsa::EndpointDescription& endpoint) = 0;
     };
 }

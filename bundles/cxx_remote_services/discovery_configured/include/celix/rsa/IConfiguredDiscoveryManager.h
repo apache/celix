@@ -16,22 +16,25 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 #pragma once
 
-
 namespace celix::rsa {
+    /**
+     * @brief Config property for the ',' seperated paths for  configured endpoints files.
+     */
+    constexpr const char *const CONFIGURED_DISCOVERY_DISCOVERY_FILES = "CELIX_RSA_CONFIGURED_DISCOVERY_DISCOVERY_FILES";
 
     /**
-     * @brief Service property (named "service.exported") to mark a service as wanting to be exported (remote).
-     * Present means -> export service as a remote service.
+     * @brief The IConfiguredDiscoveryManager interface.
+     *
+     * TODO document the expect json format.
      */
-    constexpr const char * const REMOTE_SERVICE_EXPORTED_PROPERTY_NAME = "service.exported";
+    class IConfiguredDiscoveryManager {
+    public:
+        virtual ~IConfiguredDiscoveryManager() noexcept = default;
 
-    /**
-     * @brief Service property (named "remote") to mark a service as a imported service.
-     * Present means -> service is a imported service (proxy of a remote service).
-     */
-    constexpr const char * const REMOTE_SERVICE_IMPORTED_PROPERTY_NAME = "service.imported";
+        virtual void addConfiguredDiscoveryFile(const std::string& path) = 0;
 
+        virtual void removeConfiguredDiscoveryFile(const std::string& path) = 0;
+    };
 }

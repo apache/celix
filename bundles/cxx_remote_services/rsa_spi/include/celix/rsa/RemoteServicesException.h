@@ -9,7 +9,7 @@ namespace celix::rsa {
      */
     class RemoteServicesException : public std::exception {
     public:
-        explicit Exception(std::string msg) : w{std::move(msg)} {}
+        explicit RemoteServicesException(std::string msg) : w{std::move(msg)} {}
 
         const char* what() const noexcept override {
             return w.c_str();

@@ -104,7 +104,6 @@ TEST_F(CxxBundleContextTestSuite, RegisterCServiceTest) {
     auto svcReg = ctx->registerService<CInterface>(svc).build();
     svcReg->wait();
 
-    std::cout << "Name is " << celix::typeName<CInterface>() << std::endl;
     long svcId = ctx->findService<CInterface>();
     EXPECT_GE(svcId, 0L);
 

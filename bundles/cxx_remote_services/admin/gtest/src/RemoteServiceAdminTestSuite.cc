@@ -23,7 +23,7 @@
 #include "celix/rsa/IExportServiceFactory.h"
 #include "celix/rsa/IExportedService.h"
 #include "celix/rsa/IImportServiceFactory.h"
-#include "celix/rsa/Constants.h"
+#include "celix/rsa/RemoteConstants.h"
 
 class RemoteServiceAdminTestSuite : public ::testing::Test {
 public:
@@ -52,11 +52,9 @@ TEST_F(RemoteServiceAdminTestSuite, startStopStartStopBundle) {
 class StubExportedService : public celix::rsa::IExportedService {
 public:
     ~StubExportedService() noexcept override = default;
-    std::shared_ptr<celix::rsa::Endpoint> getEndpoint() override {
-        return endpoint;
+    std::shared_ptr<celix::rsa::EndpointDescription> getEndpoint() override {
+        return nullptr; //can by nullptr for dummy
     }
-private:
-    std::shared_ptr<celix::rsa::Endpoint> endpoint = std::make_shared<celix::rsa::Endpoint>(celix::Properties{}); //can be empty for stub
 };
 
 
@@ -148,7 +146,7 @@ TEST_F(RemoteServiceAdminTestSuite, exportService) {
     EXPECT_EQ(0, count);
 
      auto reg2 = ctx->registerService<IDummyService>(std::make_shared<DummyServiceImpl>())
-             .addProperty(celix::rsa::REMOTE_SERVICE_EXPORTED_PROPERTY_NAME, true)
+             .addProperty(celix::rsa::SERVICE_EXPORTED_INTERFACES, "*")
              .build();
 
     //rsa called export service factory which created a IExportServiceRegistration, which register the marker interface IExportedService indicating an exported service
@@ -181,7 +179,7 @@ TEST_F(RemoteServiceAdminTestSuite, exportServiceDifferentOrder) {
     EXPECT_EQ(0, count);
 
     auto reg1 = ctx->registerService<IDummyService>(std::make_shared<DummyServiceImpl>())
-            .addProperty(celix::rsa::REMOTE_SERVICE_EXPORTED_PROPERTY_NAME, true)
+            .addProperty(celix::rsa::SERVICE_EXPORTED_INTERFACES, "*")
             .build();
 
     count = ctx->useService<celix::rsa::IExportedService>()
@@ -216,7 +214,7 @@ public:
     explicit StubImportedServiceEntry(std::shared_ptr<celix::BundleContext> _ctx) : ctx{std::move(_ctx)} {
         auto& cmp = ctx->getDependencyManager()->createComponent<StubImportedService>();
         cmp.createProvidedService<IDummyService>()
-                .addProperty(celix::rsa::REMOTE_SERVICE_IMPORTED_PROPERTY_NAME, true);
+                .addProperty(celix::rsa::SERVICE_EXPORTED_INTERFACES, "*");
         cmp.buildAsync();
         cmpUUID = cmp.getUUID();
     }
@@ -254,8 +252,8 @@ class StubImportServiceFactory : public celix::rsa::IImportServiceFactory {
 public:
     explicit StubImportServiceFactory(std::shared_ptr<celix::BundleContext> _ctx) : ctx{std::move(_ctx)} {}
 
-    virtual std::unique_ptr<celix::rsa::IImportServiceGuard> importService(const celix::rsa::Endpoint& endpoint) {
-           if (endpoint.getExportedInterfaces() == celix::typeName<IDummyService>()) {
+    virtual std::unique_ptr<celix::rsa::IImportServiceGuard> importService(const celix::rsa::EndpointDescription& endpoint) {
+           if (endpoint.getInterface() == celix::typeName<IDummyService>()) {
                std::lock_guard<std::mutex> lock{mutex};
                auto entry = std::make_shared<StubImportedServiceEntry>(ctx);
                entries.emplace_back(entry);
@@ -291,10 +289,10 @@ TEST_F(RemoteServiceAdminTestSuite, importService) {
             .build();
     EXPECT_EQ(0, count);
 
-    auto endpoint = std::make_shared<celix::rsa::Endpoint>(celix::Properties{
-        {celix::rsa::Endpoint::IDENTIFIER, "endpoint-id-1"},
-        {celix::rsa::Endpoint::EXPORTS, celix::typeName<IDummyService>()}});
-    auto reg2 = ctx->registerService<celix::rsa::Endpoint>(std::move(endpoint))
+    auto endpoint = std::make_shared<celix::rsa::EndpointDescription>(celix::Properties{
+        {celix::rsa::ENDPOINT_ID, "endpoint-id-1"},
+        {celix::SERVICE_NAME,celix::typeName<IDummyService>()}});
+    auto reg2 = ctx->registerService<celix::rsa::EndpointDescription>(std::move(endpoint))
             .build();
 
     //rsa called import service factory which created a IImportService, which register a IDummtService

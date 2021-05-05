@@ -17,27 +17,31 @@
 
 find_package(RapidJSON REQUIRED)
 
-add_celix_bundle(async_rsa_discovery_configured
-        VERSION 0.9.0
-        SYMBOLIC_NAME "apache_celix_async_remote_service_admin_discovery_configured"
-        NAME "Apache Celix Async Configured Discovery"
-        GROUP "Celix/AsyncRSA"
-        SOURCES
-        src/ConfiguredEndpoint.cc
+#TODO alias and install lib
+add_library(RsaConfiguredDiscovery_api INTERFACE)
+target_include_directories(RsaConfiguredDiscovery_api INTERFACE
+        include
+)
+
+add_celix_bundle(RsaConfiguredDiscovery
+    VERSION 0.9.0
+    SYMBOLIC_NAME "apache::celix::RsaConfiguredDiscovery"
+    NAME "Apache Celix Async Configured Discovery"
+    GROUP "Celix/RSA"
+    SOURCES
         src/ConfiguredDiscoveryManager.cc
         src/ConfiguredDiscoveryManagerActivator.cc
-        )
-target_include_directories(async_rsa_discovery_configured PUBLIC
-        $<BUILD_INTERFACE:${RapidJSON_INCLUDE_DIR}>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
-        $<INSTALL_INTERFACE:include/celix/async_rsa_discovery_configured>)
-target_link_libraries(async_rsa_discovery_configured PUBLIC
-        Celix::async_rsa_common
+)
+target_link_libraries(RsaConfiguredDiscovery PRIVATE
+        RsaConfiguredDiscovery_api
         Celix::framework
         Celix::rsa_spi
-        )
-install_celix_bundle(async_rsa_discovery_configured EXPORT celix COMPONENT async_rsa_discovery_configured)
-target_compile_options(async_rsa_discovery_configured INTERFACE -std=c++17)
-add_library(Celix::async_rsa_discovery_configured ALIAS async_rsa_discovery_configured)
-install(TARGETS async_rsa_discovery_configured EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT async_rsa_discovery_configured)
-install(DIRECTORY include/ DESTINATION include/celix/async_rsa_discovery_configured COMPONENT async_rsa_discovery_configured)
+)
+target_include_directories(RsaConfiguredDiscovery PRIVATE src)
+install_celix_bundle(RsaConfiguredDiscovery EXPORT celix COMPONENT rsa)
+target_compile_options(RsaConfiguredDiscovery INTERFACE -std=c++17)
+add_library(Celix::RsaConfiguredDiscovery ALIAS RsaConfiguredDiscovery)
+
+if (ENABLE_TESTING)
+    add_subdirectory(gtest)
+endif()

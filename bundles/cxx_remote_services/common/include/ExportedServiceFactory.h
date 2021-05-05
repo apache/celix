@@ -21,7 +21,7 @@
 #include <celix/dm/DependencyManager.h>
 #include <pubsub_endpoint.h>
 #include <IExportedService.h>
-#include "celix/rsa/Endpoint.h"
+#include "celix/rsa/EndpointDescription.h"
 
 namespace celix::async_rsa {
     /// Service factory interface.

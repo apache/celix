@@ -17,7 +17,7 @@
 
 add_celix_bundle(RemoteServiceAdmin
         VERSION 0.9.0
-        SYMBOLIC_NAME "celix::RemoteServiceAdmin"
+        SYMBOLIC_NAME "apache::celix::RemoteServiceAdmin"
         NAME "Apache Celix Remote Service Admin"
         GROUP "Celix/RSA"
         FILENAME "Celix_RemoteServiceAdmin"
@@ -31,11 +31,10 @@ target_link_libraries(RemoteServiceAdmin PRIVATE
         Celix::log_service_api
 )
 
-if (ENABLE_TESTING)
-    add_subdirectory(gtest)
-endif()
-
-
 install_celix_bundle(RemoteServiceAdmin EXPORT celix COMPONENT rsa)
 #Setup target aliases to match external usage
 add_library(Celix::RemoteServiceAdmin ALIAS RemoteServiceAdmin)
+
+if (ENABLE_TESTING)
+    add_subdirectory(gtest)
+endif()
