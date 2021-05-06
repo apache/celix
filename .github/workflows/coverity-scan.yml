@@ -23,7 +23,8 @@ jobs:
             libffi-dev \
             libxml2-dev \
             libczmq-dev \
-            libcpputest-dev
+            libcpputest-dev \
+            rapidjson-dev
       - name: Download Coverity Build Tool
         run: |
           mkdir -p build/cov-analysis-linux64
