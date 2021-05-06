@@ -81,10 +81,10 @@ namespace celix {
         template<typename I>
         celix_status_t destroyActivator(void *userData) {
             auto *data = static_cast<BundleActivatorData<I> *>(userData);
+            data->ctx->getDependencyManager()->clear();
             std::weak_ptr<celix::BundleContext> ctx = data->ctx;
             std::weak_ptr<celix::dm::DependencyManager> dm = data->ctx->getDependencyManager();
             auto bndId = data->bndId;
-            data->ctx->getDependencyManager()->clear();
             delete data;
             waitForExpired(bndId, ctx, "celix::BundleContext", ctx);
             waitForExpired(bndId, ctx, "celix::dm::DependencyManager", dm);

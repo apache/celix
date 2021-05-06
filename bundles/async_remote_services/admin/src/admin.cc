@@ -152,7 +152,7 @@ void celix::async_rsa::AsyncAdmin::removeExportedServiceFactory(const std::share
 }
 
 void celix::async_rsa::AsyncAdmin::addService(const std::shared_ptr<void>& svc, const std::shared_ptr<const celix::Properties>& props) {
-    assert(props->getAsBool(celix::rsa::REMOTE_SERVICE_PROPERTY_NAME, false)); //"only remote services should be tracker by the service tracker");
+    assert(!props->get(celix::rsa::REMOTE_SERVICE_PROPERTY_NAME).empty()); //"only remote services should be tracker by the service tracker");
 
     auto serviceName = props->get(celix::SERVICE_NAME, "");
     if (serviceName.empty()) {
@@ -187,7 +187,7 @@ void celix::async_rsa::AsyncAdmin::removeService(const std::shared_ptr<void>& /*
 
     //remove to be exported endpoint (if present)
     for (auto it = _toBeExportedServices.begin(); it != _toBeExportedServices.end(); ++it) {
-        if (it->second->getAsBool(celix::SERVICE_ID, -1) == svcId) {
+        if (it->second->getAsLong(celix::SERVICE_ID, -1) == svcId) {
             _toBeExportedServices.erase(it);
             break;
         }
@@ -201,6 +201,7 @@ void celix::async_rsa::AsyncAdmin::createImportServices() {
         auto existingFactory = _importedServiceFactories.find(interface);
         if (existingFactory == end(_importedServiceFactories)) {
             L_DEBUG("Adding endpoint to be imported but no factory available yet, delaying import");
+            continue;
         }
         auto endpointId = (*it)->getEndpointId();
         L_DEBUG("Adding endpoint, created service");
