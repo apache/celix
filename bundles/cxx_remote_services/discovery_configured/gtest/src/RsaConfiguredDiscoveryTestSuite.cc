@@ -66,9 +66,9 @@ TEST_F(RsaConfiguredDiscoveryTestSuite, discoverConfiguredEndpoints) {
 }
 
 TEST_F(RsaConfiguredDiscoveryTestSuite, removeConfiguredEndpointFile) {
-    //When I install a configured discovery bundle with also a configured discovery file and will find
+    //When I install a configured discovery bundle with also a configured discovery file, I will find
     //2 EndpointDescriptions.
-    //If I then remove the configured discovery file using the IConfiguredDiscoveryManager service I will find
+    //If I then remove the configured discovery file using the IConfiguredDiscoveryManager service, I will find
     //0 EndpointDescriptions.
 
     auto bndId = ctx->installBundle(RSA_CONFIGURED_DISCOVERY_BUNDLE_LOCATION);
@@ -80,7 +80,8 @@ TEST_F(RsaConfiguredDiscoveryTestSuite, removeConfiguredEndpointFile) {
     count = ctx->useService<celix::rsa::IConfiguredDiscoveryManager>()
                 .addUseCallback([](auto& svc) {
                     auto files = svc.getConfiguredDiscoveryFiles();
-                    EXPECT_EQ(files.size(), 1);
+                    ASSERT_EQ(files.size(), 1);
+                    EXPECT_EQ(files[0], RSA_CONFIGURED_DISCOVERY_DISCOVERY_FILE);
                     svc.removeConfiguredDiscoveryFile(RSA_CONFIGURED_DISCOVERY_DISCOVERY_FILE);
                 })
                 .build();

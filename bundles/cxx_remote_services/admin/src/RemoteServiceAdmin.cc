@@ -180,13 +180,11 @@ void celix::rsa::RemoteServiceAdmin::removeService(const std::shared_ptr<void>& 
 }
 
 void celix::rsa::RemoteServiceAdmin::createImportServices() {
-    auto it = _toBeImportedServices.begin();
-    while (it != _toBeImportedServices.end()) {
+    for (auto it = _toBeImportedServices.begin(); it != _toBeImportedServices.end(); ++it) {
         auto interface = (*it)->getInterface();
         auto existingFactory = _importServiceFactories.find(interface);
         if (existingFactory == end(_importServiceFactories)) {
             L_DEBUG("Adding endpoint to be imported but no factory available yet, delaying import");
-            ++it;
             continue;
         }
         auto endpointId = (*it)->getId();
@@ -197,8 +195,8 @@ void celix::rsa::RemoteServiceAdmin::createImportServices() {
 }
 
 void celix::rsa::RemoteServiceAdmin::createExportServices() {
-    auto it = _toBeExportedServices.begin();
-    while (it != _toBeExportedServices.end()) {
+
+    for (auto it = _toBeExportedServices.begin(); it != _toBeExportedServices.end(); ++it) {
         const auto& svcProperties = **it;
         auto serviceName = svcProperties.get(celix::SERVICE_NAME, "");
         auto svcId = svcProperties.getAsLong(celix::SERVICE_ID, -1);
@@ -209,7 +207,6 @@ void celix::rsa::RemoteServiceAdmin::createExportServices() {
         auto factory = _exportServiceFactories.find(serviceName);
         if (factory == end(_exportServiceFactories)) {
             L_DEBUG("Adding service to be exported but no factory available yet, delaying creation");
-            ++it;
             continue;
         }
         _exportedServices.emplace(svcId, factory->second->exportService(svcProperties));
