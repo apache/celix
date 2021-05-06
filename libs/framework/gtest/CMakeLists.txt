@@ -20,6 +20,7 @@ add_celix_bundle(simple_test_bundle2 NO_ACTIVATOR VERSION 1.0.0)
 add_celix_bundle(simple_test_bundle3 NO_ACTIVATOR VERSION 1.0.0)
 add_celix_bundle(bundle_with_exception SOURCES src/nop_activator.c VERSION 1.0.0)
 add_celix_bundle(simple_cxx_bundle SOURCES src/HelloWorldCxxActivator.cc VERSION 1.0.0)
+add_celix_bundle(cmp_test_bundle SOURCES src/CmpTestBundleActivator.cc)
 add_subdirectory(subdir) #simple_test_bundle4, simple_test_bundle5 and sublib
 
 add_celix_bundle(unresolveable_bundle SOURCES src/nop_activator.c VERSION 1.0.0)
@@ -43,6 +44,7 @@ add_executable(test_framework
         src/HelloWorldCxxActivator.cc
         src/CxxFilterTestSuite.cc
         src/CxxFrameworkFactoryTestSuite.cc
+        src/CxxBundleActivatorTestSuite.cc
         src/CxxUtilsTestSuite.cc
 )
 
@@ -51,15 +53,17 @@ add_dependencies(test_framework simple_test_bundle1_bundle simple_test_bundle2_b
 target_include_directories(test_framework PRIVATE ../src)
 
 celix_get_bundle_file(simple_cxx_bundle SIMPLE_CXX_BUNDLE_LOC)
+celix_get_bundle_file(cmp_test_bundle CMP_TEST_BUNDLE_LOC)
 target_compile_definitions(test_framework PRIVATE
-        -DSIMPLE_TEST_BUNDLE1_LOCATION="$<TARGET_PROPERTY:simple_test_bundle1,BUNDLE_FILE>"
-        -DSIMPLE_TEST_BUNDLE2_LOCATION="$<TARGET_PROPERTY:simple_test_bundle2,BUNDLE_FILE>"
-        -DSIMPLE_TEST_BUNDLE3_LOCATION="$<TARGET_PROPERTY:simple_test_bundle3,BUNDLE_FILE>"
-        -DSIMPLE_TEST_BUNDLE4_LOCATION="$<TARGET_PROPERTY:simple_test_bundle4,BUNDLE_FILENAME>"
-        -DSIMPLE_TEST_BUNDLE5_LOCATION="$<TARGET_PROPERTY:simple_test_bundle5,BUNDLE_FILENAME>"
-        -DTEST_BUNDLE_WITH_EXCEPTION_LOCATION="$<TARGET_PROPERTY:bundle_with_exception,BUNDLE_FILE>"
-        -DTEST_BUNDLE_UNRESOLVEABLE_LOCATION="$<TARGET_PROPERTY:unresolveable_bundle,BUNDLE_FILE>"
-        -DSIMPLE_CXX_BUNDLE_LOC="${SIMPLE_CXX_BUNDLE_LOC}"
+        SIMPLE_TEST_BUNDLE1_LOCATION="$<TARGET_PROPERTY:simple_test_bundle1,BUNDLE_FILE>"
+        SIMPLE_TEST_BUNDLE2_LOCATION="$<TARGET_PROPERTY:simple_test_bundle2,BUNDLE_FILE>"
+        SIMPLE_TEST_BUNDLE3_LOCATION="$<TARGET_PROPERTY:simple_test_bundle3,BUNDLE_FILE>"
+        SIMPLE_TEST_BUNDLE4_LOCATION="$<TARGET_PROPERTY:simple_test_bundle4,BUNDLE_FILENAME>"
+        SIMPLE_TEST_BUNDLE5_LOCATION="$<TARGET_PROPERTY:simple_test_bundle5,BUNDLE_FILENAME>"
+        TEST_BUNDLE_WITH_EXCEPTION_LOCATION="$<TARGET_PROPERTY:bundle_with_exception,BUNDLE_FILE>"
+        TEST_BUNDLE_UNRESOLVEABLE_LOCATION="$<TARGET_PROPERTY:unresolveable_bundle,BUNDLE_FILE>"
+        SIMPLE_CXX_BUNDLE_LOC="${SIMPLE_CXX_BUNDLE_LOC}"
+        CMP_TEST_BUNDLE_LOC="${CMP_TEST_BUNDLE_LOC}"
 )
 
 configure_file(config.properties.in config.properties @ONLY)

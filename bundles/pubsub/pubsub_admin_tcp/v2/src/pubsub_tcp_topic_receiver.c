@@ -23,7 +23,6 @@
 #include <unistd.h>
 #include <pubsub/subscriber.h>
 #include <memory.h>
-#include <pubsub_constants.h>
 #include <arpa/inet.h>
 #include <celix_log_helper.h>
 #include "pubsub_tcp_handler.h"

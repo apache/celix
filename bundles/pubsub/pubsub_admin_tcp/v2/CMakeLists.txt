@@ -32,7 +32,7 @@ add_celix_bundle(celix_pubsub_admin_tcp_v2
 
 set_target_properties(celix_pubsub_admin_tcp_v2 PROPERTIES INSTALL_RPATH "$ORIGIN")
 target_link_libraries(celix_pubsub_admin_tcp_v2 PRIVATE Celix::pubsub_spi Celix::pubsub_utils)
-target_link_libraries(celix_pubsub_admin_tcp_v2 PRIVATE Celix::framework Celix::dfi Celix::log_helper)
+target_link_libraries(celix_pubsub_admin_tcp_v2 PRIVATE Celix::framework Celix::log_helper)
 target_include_directories(celix_pubsub_admin_tcp_v2 PRIVATE src)
 # cmake find package UUID set the wrong include dir for OSX
 if (NOT APPLE)

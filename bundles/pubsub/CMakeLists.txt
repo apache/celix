@@ -38,7 +38,8 @@ if (PUBSUB)
 
     option(BUILD_PUBSUB_PSA_WS "Build WebSocket PubSub Admin" ON)
     if (BUILD_PUBSUB_PSA_WS)
-        add_subdirectory(pubsub_admin_websocket)
+        add_subdirectory(pubsub_admin_websocket/v1)
+        add_subdirectory(pubsub_admin_websocket/v2)
     endif (BUILD_PUBSUB_PSA_WS)
 
     add_subdirectory(pubsub_api)
