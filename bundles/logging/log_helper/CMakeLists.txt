@@ -33,7 +33,7 @@ install(DIRECTORY include/ DESTINATION include/celix/log_helper COMPONENT loggin
 
 if (CELIX_INSTALL_DEPRECATED_API)
 	target_include_directories(log_helper PUBLIC
-		$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include_v2>
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include_v1>
 		$<INSTALL_INTERFACE:include/celix/log_helper>
 	)
 	install(DIRECTORY include_v2/ DESTINATION include/celix/log_helper)

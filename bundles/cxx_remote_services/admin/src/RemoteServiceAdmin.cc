@@ -23,21 +23,15 @@
 #include "celix/rsa/IExportServiceFactory.h"
 
 #define L_DEBUG(...) \
-    if (_logService) {                                                  \
-        _logService->debug(_logService->handle, __VA_ARGS__);           \
-    }
+        _logHelper.debug(__VA_ARGS__);
 #define L_INFO(...) \
-    if (_logService) {                                                  \
-        _logService->info(_logService->handle, __VA_ARGS__);            \
-    }
+        _logHelper.info(__VA_ARGS__);
 #define L_WARN(...) \
-    if (_logService) {                                                  \
-        _logService->warning(_logService->handle, __VA_ARGS__);         \
-    }
+        _logHelper.warning(__VA_ARGS__);
 #define L_ERROR(...) \
-    if (_logService) {                                                  \
-        _logService->error(_logService->handle, __VA_ARGS__);           \
-    }
+        _logHelper.error(__VA_ARGS__);
+
+celix::rsa::RemoteServiceAdmin::RemoteServiceAdmin(celix::LogHelper logHelper) : _logHelper{std::move(logHelper)} {}
 
 void celix::rsa::RemoteServiceAdmin::addEndpoint(const std::shared_ptr<celix::rsa::EndpointDescription>& endpoint) {
     assert(endpoint);
@@ -223,14 +217,10 @@ void celix::rsa::RemoteServiceAdmin::createExportServices() {
     }
 }
 
-void celix::rsa::RemoteServiceAdmin::setLogger(const std::shared_ptr<celix_log_service>& logService) {
-    _logService = logService;
-}
-
 class AdminActivator {
 public:
     explicit AdminActivator(const std::shared_ptr<celix::BundleContext>& ctx) {
-        auto admin = std::make_shared<celix::rsa::RemoteServiceAdmin>();
+        auto admin = std::make_shared<celix::rsa::RemoteServiceAdmin>(celix::LogHelper{ctx, celix::typeName<celix::rsa::RemoteServiceAdmin>()});
 
         auto& cmp = ctx->getDependencyManager()->createComponent(admin);
         cmp.createServiceDependency<celix::rsa::EndpointDescription>()
@@ -245,11 +235,6 @@ public:
                 .setRequired(false)
                 .setStrategy(celix::dm::DependencyUpdateStrategy::locking)
                 .setCallbacks(&celix::rsa::RemoteServiceAdmin::addExportedServiceFactory, &celix::rsa::RemoteServiceAdmin::removeExportedServiceFactory);
-        cmp.createServiceDependency<celix_log_service>(CELIX_LOG_SERVICE_NAME)
-                .setRequired(false)
-                .setFilter(std::string{"("}.append(CELIX_LOG_SERVICE_PROPERTY_NAME).append("=celix::rsa::RemoteServiceAdmin)"))
-                .setStrategy(celix::dm::DependencyUpdateStrategy::suspend)
-                .setCallbacks(&celix::rsa::RemoteServiceAdmin::setLogger);
         cmp.build();
 
         //note adding void service dependencies is not supported for the dependency manager, using a service tracker instead.

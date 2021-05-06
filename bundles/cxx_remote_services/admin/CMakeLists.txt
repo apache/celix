@@ -28,7 +28,7 @@ target_include_directories(RemoteServiceAdmin PRIVATE include)
 target_link_libraries(RemoteServiceAdmin PRIVATE
         Celix::rsa_spi
         Celix::framework
-        Celix::log_service_api
+        Celix::log_helper
 )
 
 install_celix_bundle(RemoteServiceAdmin EXPORT celix COMPONENT rsa)

@@ -36,6 +36,7 @@ target_link_libraries(RsaConfiguredDiscovery PRIVATE
         RsaConfiguredDiscovery_api
         Celix::framework
         Celix::rsa_spi
+        Celix::log_helper
 )
 target_include_directories(RsaConfiguredDiscovery PRIVATE src)
 install_celix_bundle(RsaConfiguredDiscovery EXPORT celix COMPONENT rsa)

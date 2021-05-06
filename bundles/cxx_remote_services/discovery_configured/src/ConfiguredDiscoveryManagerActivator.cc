@@ -18,7 +18,7 @@
  */
 
 #include "celix/BundleActivator.h"
-#include <ConfiguredDiscoveryManager.h>
+#include "ConfiguredDiscoveryManager.h"
 
 class ConfiguredDiscoveryManagerActivator {
 public:
@@ -26,6 +26,7 @@ public:
         auto &cmp = ctx->getDependencyManager()->createComponent(
                 std::make_unique<celix::rsa::ConfiguredDiscoveryManager>(ctx));
         cmp.addInterface<celix::rsa::IEndpointAnnouncer>();
+        cmp.addInterface<celix::rsa::IConfiguredDiscoveryManager>();
         cmp.build();
     }
 };

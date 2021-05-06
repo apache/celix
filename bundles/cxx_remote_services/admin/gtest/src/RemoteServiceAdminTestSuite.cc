@@ -28,7 +28,10 @@
 class RemoteServiceAdminTestSuite : public ::testing::Test {
 public:
     RemoteServiceAdminTestSuite() {
-        fw = celix::createFramework();
+        celix::Properties config{
+                {"CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "trace"}
+        };
+        fw = celix::createFramework(config);
         ctx = fw->getFrameworkBundleContext();
     }
 

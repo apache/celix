@@ -20,7 +20,7 @@
 #include "celix/rsa/EndpointDescription.h"
 #include <celix_api.h>
 #include <mutex>
-#include "celix_log_service.h"
+#include "celix/LogHelper.h"
 
 #if defined(__has_include) && __has_include(<version>)
 #include <version>
@@ -37,6 +37,8 @@ namespace celix::rsa {
 
     class RemoteServiceAdmin {
     public:
+        explicit RemoteServiceAdmin(celix::LogHelper logHelper);
+
         // Imported endpoint add/remove functions
         void addEndpoint(const std::shared_ptr<celix::rsa::EndpointDescription>& endpoint);
         void removeEndpoint(const std::shared_ptr<celix::rsa::EndpointDescription>& endpoint);
@@ -52,14 +54,11 @@ namespace celix::rsa {
         // Add/remove services, used to track all services registered with celix and check if remote = true.
         void addService(const std::shared_ptr<void>& svc, const std::shared_ptr<const celix::Properties>& properties);
         void removeService(const std::shared_ptr<void>& svc, const std::shared_ptr<const celix::Properties>& properties);
-
-        // Set logging service
-        void setLogger(const std::shared_ptr<celix_log_service>& logService);
     private:
         void createExportServices();
         void createImportServices();
 
-        std::shared_ptr<celix_log_service> _logService{};
+        celix::LogHelper _logHelper;
         std::mutex _m{}; // protects below
 
 #if __cpp_lib_memory_resource

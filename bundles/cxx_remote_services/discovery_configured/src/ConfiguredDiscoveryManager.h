@@ -18,18 +18,19 @@
  */
 #pragma once
 
-#include "celix/rsa/IEndpointAnnouncer.h"
 
 #include <memory>
 #include <vector>
 #include <string>
 
-#include "celix/rsa/EndpointDescription.h"
-#include "celix/rsa/IConfiguredDiscoveryManager.h"
-#include "celix_api.h"
-
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
+
+#include "celix/rsa/IEndpointAnnouncer.h"
+#include "celix/BundleContext.h"
+#include "celix/LogHelper.h"
+#include "celix/rsa/EndpointDescription.h"
+#include "celix/rsa/IConfiguredDiscoveryManager.h"
 
 /** Path for configured endpoints file. */
 
@@ -48,6 +49,8 @@ public:
      */
     explicit ConfiguredDiscoveryManager(std::shared_ptr<celix::BundleContext> ctx);
 
+    ~ConfiguredDiscoveryManager() noexcept override = default;
+
     void announceEndpoint(std::unique_ptr<EndpointDescription> /*endpoint*/) override {/*nop*/}
 
     void revokeEndpoint(std::unique_ptr<EndpointDescription> /*endpoint*/) override {/*nop*/}
@@ -55,14 +58,17 @@ public:
     void addConfiguredDiscoveryFile(const std::string& path) override;
 
     void removeConfiguredDiscoveryFile(const std::string& path) override;
+
+    std::vector<std::string> getConfiguredDiscoveryFiles() const override;
 private:
     celix::Properties convertToEndpointProperties(const rapidjson::Value &endpointJSON);
     void readConfiguredDiscoveryFiles();
 
     const std::shared_ptr<celix::BundleContext> ctx;
     const std::string configuredDiscoveryFiles;
+    celix::LogHelper logHelper;
 
-    std::mutex mutex{}; //protects below
+    mutable std::mutex mutex{}; //protects below
     std::unordered_map<std::string, std::vector<std::shared_ptr<celix::ServiceRegistration>>> endpointRegistrations{}; //key = configured discovery file path
 };
 
