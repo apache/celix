@@ -13,17 +13,17 @@ jobs:
         #os: [ubuntu-18.04, ubuntu-16.04]
         #compiler: [gcc, clang]
         include:
-          - os: ubuntu-18.04
+          - os: ubuntu-20.04
             name: clang
             sanitizer: false #note sanitizer on clang with cpputest does not work
             compiler: clang
             cxx_compiler: clang++
-          - os: ubuntu-18.04
+          - os: ubuntu-20.04
             name: gcc
             sanitizer: true
             compiler: gcc
             cxx_compiler: g++
-          - os: ubuntu-18.04
+          - os: ubuntu-20.04
             name: only v3 api
             sanitizer: true
             compiler: gcc
