@@ -15,7 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 
-find_package(CppUTest REQUIRED)
 find_package(Jansson REQUIRED)
 
 add_celix_bundle(pubsub_endpoint_sut
@@ -152,8 +151,8 @@ if (BUILD_PUBSUB_PSA_UDP_MC)
                 pubsub_sut
                 pubsub_tst
     )
-    target_link_libraries(pubsub_udpmc_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi)
-    target_include_directories(pubsub_udpmc_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
+    target_link_libraries(pubsub_udpmc_tests PRIVATE Celix::pubsub_api Jansson Celix::dfi GTest::gtest GTest::gtest_main)
+    target_include_directories(pubsub_udpmc_tests SYSTEM PRIVATE test)
 
     add_celix_container(pstm_deadlock_udpmc_test
             USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
@@ -171,7 +170,7 @@ if (BUILD_PUBSUB_PSA_UDP_MC)
             Celix::shell_tui
             )
     target_compile_definitions(pstm_deadlock_udpmc_test PRIVATE -DDEADLOCK_SUT_BUNDLE_FILE=\"${DEADLOCK_SUT_BUNDLE_FILE}\")
-    target_link_libraries(pstm_deadlock_udpmc_test PRIVATE Celix::pubsub_api GTest::gtest GTest::gtest_main Jansson Celix::dfi)
+    target_link_libraries(pstm_deadlock_udpmc_test PRIVATE Celix::pubsub_api Jansson Celix::dfi GTest::gtest GTest::gtest_main)
     target_include_directories(pstm_deadlock_udpmc_test SYSTEM PRIVATE pstm_deadlock_udpmc_test)
 
     #Note we do not link to bundles, as result (to ensure a bundle zip file is created) an dependency on the bundle is needed.
@@ -207,8 +206,8 @@ if (BUILD_PUBSUB_PSA_TCP)
             pubsub_sut
             pubsub_tst
             )
-    target_link_libraries(pubsub_tcp_wire_v1_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi)
-    target_include_directories(pubsub_tcp_wire_v1_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
+    target_link_libraries(pubsub_tcp_wire_v1_tests PRIVATE Celix::pubsub_api Jansson Celix::dfi GTest::gtest GTest::gtest_main)
+    target_include_directories(pubsub_tcp_wire_v1_tests SYSTEM PRIVATE test)
     add_test(NAME pubsub_tcp_wire_v1_tests COMMAND pubsub_tcp_wire_v1_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_tcp_wire_v1_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_tcp_wire_v1_tests SCAN_DIR ..)
 
@@ -229,8 +228,8 @@ if (BUILD_PUBSUB_PSA_TCP)
             pubsub_sut
             pubsub_tst
             )
-    target_link_libraries(pubsub_tcp_wire_v2_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi)
-    target_include_directories(pubsub_tcp_wire_v2_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
+    target_link_libraries(pubsub_tcp_wire_v2_tests PRIVATE Celix::pubsub_api Jansson Celix::dfi GTest::gtest GTest::gtest_main)
+    target_include_directories(pubsub_tcp_wire_v2_tests SYSTEM PRIVATE test)
     add_test(NAME pubsub_tcp_wire_v2_tests COMMAND pubsub_tcp_wire_v2_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_tcp_wire_v2_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_tcp_wire_v2_tests SCAN_DIR ..)
 
@@ -252,8 +251,8 @@ if (BUILD_PUBSUB_PSA_TCP)
             pubsub_sut
             pubsub_tst
     )
-    target_link_libraries(pubsub_tcp_wire_v2_with_no_scope_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi)
-    target_include_directories(pubsub_tcp_wire_v2_with_no_scope_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
+    target_link_libraries(pubsub_tcp_wire_v2_with_no_scope_tests PRIVATE Celix::pubsub_api Jansson Celix::dfi GTest::gtest GTest::gtest_main)
+    target_include_directories(pubsub_tcp_wire_v2_with_no_scope_tests SYSTEM PRIVATE test)
     add_test(NAME pubsub_tcp_wire_v2_with_no_scope_tests COMMAND pubsub_tcp_wire_v2_with_no_scope_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_tcp_wire_v2_with_no_scope_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_tcp_wire_v2_with_no_scope_tests SCAN_DIR ..)
 
@@ -275,8 +274,8 @@ if (BUILD_PUBSUB_PSA_TCP)
             pubsub_endpoint_sut
             pubsub_loopback
             )
-    target_link_libraries(pubsub_tcp_endpoint_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi)
-    target_include_directories(pubsub_tcp_endpoint_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
+    target_link_libraries(pubsub_tcp_endpoint_tests PRIVATE Celix::pubsub_api Jansson Celix::dfi GTest::gtest GTest::gtest_main)
+    target_include_directories(pubsub_tcp_endpoint_tests SYSTEM PRIVATE test)
 
     add_celix_container(pstm_deadlock_tcp_test
             USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
@@ -333,8 +332,8 @@ if (BUILD_PUBSUB_PSA_TCP)
             pubsub_tst
             pubsub_serializer
             )
-    target_link_libraries(pubsub_tcp_v2_wire_v1_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Celix::dfi)
-    target_include_directories(pubsub_tcp_v2_wire_v1_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
+    target_link_libraries(pubsub_tcp_v2_wire_v1_tests PRIVATE Celix::pubsub_api Celix::dfi GTest::gtest GTest::gtest_main)
+    target_include_directories(pubsub_tcp_v2_wire_v1_tests SYSTEM PRIVATE test)
     add_test(NAME pubsub_tcp_v2_wire_v1_tests COMMAND pubsub_tcp_v2_wire_v1_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_tcp_v2_wire_v1_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_tcp_v2_wire_v1_tests SCAN_DIR ..)
 
@@ -356,8 +355,8 @@ if (BUILD_PUBSUB_PSA_TCP)
             pubsub_tst
             pubsub_serializer
             )
-    target_link_libraries(pubsub_tcp_v2_wire_v2_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Celix::dfi)
-    target_include_directories(pubsub_tcp_v2_wire_v2_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
+    target_link_libraries(pubsub_tcp_v2_wire_v2_tests PRIVATE Celix::pubsub_api Celix::dfi GTest::gtest GTest::gtest_main)
+    target_include_directories(pubsub_tcp_v2_wire_v2_tests SYSTEM PRIVATE test)
     add_test(NAME pubsub_tcp_v2_wire_v2_tests COMMAND pubsub_tcp_v2_wire_v2_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_tcp_v2_wire_v2_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_tcp_v2_wire_v2_tests SCAN_DIR ..)
 
@@ -380,8 +379,8 @@ if (BUILD_PUBSUB_PSA_TCP)
             pubsub_tst
             pubsub_serializer
             )
-    target_link_libraries(pubsub_tcp_v2_wire_v2_with_no_scope_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Celix::dfi)
-    target_include_directories(pubsub_tcp_v2_wire_v2_with_no_scope_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
+    target_link_libraries(pubsub_tcp_v2_wire_v2_with_no_scope_tests PRIVATE Celix::pubsub_api Celix::dfi GTest::gtest GTest::gtest_main)
+    target_include_directories(pubsub_tcp_v2_wire_v2_with_no_scope_tests SYSTEM PRIVATE test)
     add_test(NAME pubsub_tcp_v2_wire_v2_with_no_scope_tests COMMAND pubsub_tcp_v2_wire_v2_with_no_scope_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_tcp_v2_wire_v2_with_no_scope_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_tcp_v2_wire_v2_with_no_scope_tests SCAN_DIR ..)
 
@@ -404,8 +403,8 @@ if (BUILD_PUBSUB_PSA_TCP)
             pubsub_loopback
             pubsub_serializer
             )
-    target_link_libraries(pubsub_tcp_v2_endpoint_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Celix::dfi)
-    target_include_directories(pubsub_tcp_v2_endpoint_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
+    target_link_libraries(pubsub_tcp_v2_endpoint_tests PRIVATE Celix::pubsub_api Celix::dfi GTest::gtest GTest::gtest_main)
+    target_include_directories(pubsub_tcp_v2_endpoint_tests SYSTEM PRIVATE test)
 
     add_celix_container(pstm_deadlock_tcp_v2_test
             USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
@@ -462,8 +461,8 @@ if (BUILD_PUBSUB_PSA_WS)
             pubsub_sut
             pubsub_tst
             )
-    target_link_libraries(pubsub_websocket_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi civetweb_shared)
-    target_include_directories(pubsub_websocket_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
+    target_link_libraries(pubsub_websocket_tests PRIVATE Celix::pubsub_api Jansson Celix::dfi civetweb_shared GTest::gtest GTest::gtest_main)
+    target_include_directories(pubsub_websocket_tests SYSTEM PRIVATE test)
     add_test(NAME pubsub_websocket_tests COMMAND pubsub_websocket_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_websocket_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_websocket_tests SCAN_DIR ..)
 
@@ -514,8 +513,8 @@ if (BUILD_PUBSUB_PSA_WS)
             pubsub_tst
             pubsub_serializer
             )
-    target_link_libraries(pubsub_websocket_v2_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson civetweb_shared)
-    target_include_directories(pubsub_websocket_v2_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
+    target_link_libraries(pubsub_websocket_v2_tests PRIVATE Celix::pubsub_api Jansson civetweb_shared GTest::gtest GTest::gtest_main)
+    target_include_directories(pubsub_websocket_v2_tests SYSTEM PRIVATE test)
     add_test(NAME pubsub_websocket_v2_tests COMMAND pubsub_websocket_v2_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_websocket_v2_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_websocket_v2_tests SCAN_DIR ..)
 
@@ -587,13 +586,13 @@ if (BUILD_PUBSUB_PSA_ZMQ)
                 pubsub_serializer
             )
 
-    target_link_libraries(pubsub_zmq_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Celix::dfi ZMQ::lib CZMQ::lib)
-    target_include_directories(pubsub_zmq_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
+    target_link_libraries(pubsub_zmq_tests PRIVATE Celix::pubsub_api Celix::dfi ZMQ::lib CZMQ::lib GTest::gtest GTest::gtest_main)
+    target_include_directories(pubsub_zmq_tests SYSTEM PRIVATE test)
     add_test(NAME pubsub_zmq_tests COMMAND pubsub_zmq_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_zmq_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_zmq_tests SCAN_DIR ..)
 
-    target_link_libraries(pubsub_zmq_v2_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Celix::dfi ZMQ::lib CZMQ::lib)
-    target_include_directories(pubsub_zmq_v2_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
+    target_link_libraries(pubsub_zmq_v2_tests PRIVATE Celix::pubsub_api Celix::dfi ZMQ::lib CZMQ::lib GTest::gtest GTest::gtest_main)
+    target_include_directories(pubsub_zmq_v2_tests SYSTEM PRIVATE test)
     add_test(NAME pubsub_zmq_v2_tests COMMAND pubsub_zmq_v2_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_zmq_v2_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_zmq_v2_tests SCAN_DIR ..)
 
@@ -614,8 +613,8 @@ if (BUILD_PUBSUB_PSA_ZMQ)
         pubsub_serializer
         )
 
-    target_link_libraries(pubsub_zmq_wire_v2_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi ZMQ::lib CZMQ::lib)
-    target_include_directories(pubsub_zmq_wire_v2_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
+    target_link_libraries(pubsub_zmq_wire_v2_tests PRIVATE Celix::pubsub_api Jansson Celix::dfi ZMQ::lib CZMQ::lib GTest::gtest GTest::gtest_main)
+    target_include_directories(pubsub_zmq_wire_v2_tests SYSTEM PRIVATE test)
     add_test(NAME pubsub_zmq_wire_v2_tests COMMAND pubsub_zmq_wire_v2_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_zmq_wire_v2_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_zmq_wire_v2_tests SCAN_DIR ..)
 
@@ -659,14 +658,14 @@ if (BUILD_PUBSUB_PSA_ZMQ)
                 pubsub_tst
                 pubsub_serializer
             )
-    target_link_libraries(pubsub_zmq_zerocopy_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi ZMQ::lib CZMQ::lib)
-    target_include_directories(pubsub_zmq_zerocopy_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
+    target_link_libraries(pubsub_zmq_zerocopy_tests PRIVATE Celix::pubsub_api Jansson Celix::dfi ZMQ::lib CZMQ::lib GTest::gtest GTest::gtest_main)
+    target_include_directories(pubsub_zmq_zerocopy_tests SYSTEM PRIVATE test)
 
     add_test(NAME pubsub_zmq_zerocopy_tests COMMAND pubsub_zmq_zerocopy_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_zmq_zerocopy_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_zmq_zerocopy_tests SCAN_DIR ..)
 
-    target_link_libraries(pubsub_zmq_v2_zerocopy_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Celix::dfi ZMQ::lib CZMQ::lib)
-    target_include_directories(pubsub_zmq_v2_zerocopy_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
+    target_link_libraries(pubsub_zmq_v2_zerocopy_tests PRIVATE Celix::pubsub_api Celix::dfi ZMQ::lib CZMQ::lib GTest::gtest GTest::gtest_main)
+    target_include_directories(pubsub_zmq_v2_zerocopy_tests SYSTEM PRIVATE test)
 
     add_test(NAME pubsub_zmq_v2_zerocopy_tests COMMAND pubsub_zmq_v2_zerocopy_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_zmq_v2_zerocopy_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_zmq_v2_zerocopy_tests SCAN_DIR ..)
@@ -690,8 +689,8 @@ if (BUILD_PUBSUB_PSA_ZMQ)
         pubsub_tst
         pubsub_serializer
         )
-    target_link_libraries(pubsub_zmq_zerocopy_wire_v2_tests PRIVATE Celix::pubsub_api ${CppUTest_LIBRARIES} Jansson Celix::dfi ZMQ::lib CZMQ::lib)
-    target_include_directories(pubsub_zmq_zerocopy_wire_v2_tests SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} test)
+    target_link_libraries(pubsub_zmq_zerocopy_wire_v2_tests PRIVATE Celix::pubsub_api Jansson Celix::dfi ZMQ::lib CZMQ::lib GTest::gtest GTest::gtest_main)
+    target_include_directories(pubsub_zmq_zerocopy_wire_v2_tests SYSTEM PRIVATE test)
 
     add_test(NAME pubsub_zmq_zerocopy_wire_v2_tests COMMAND pubsub_zmq_zerocopy_wire_v2_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_zmq_zerocopy_wire_v2_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_zmq_zerocopy_wire_v2_tests SCAN_DIR ..)

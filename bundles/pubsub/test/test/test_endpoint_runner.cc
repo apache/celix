@@ -17,37 +17,35 @@
  * under the License.
  */
 
+#include <gtest/gtest.h>
+
 #include "celix_api.h"
 #include <unistd.h>
 #include "receive_count_service.h"
 
-#include <CppUTest/TestHarness.h>
-#include <CppUTest/CommandLineTestRunner.h>
-
-int main(int argc, char **argv) {
-    MemoryLeakWarningPlugin::turnOffNewDeleteOverloads();
-    int rc = RUN_ALL_TESTS(argc, argv);
-    return rc;
-}
-
-TEST_GROUP(PUBSUB_INT_GROUP) {
-    celix_framework_t *fw = nullptr;
-    celix_bundle_context_t *ctx = nullptr;
-    void setup() override {
+class PubSubIntegrationTestSuite : public ::testing::Test {
+public:
+    PubSubIntegrationTestSuite() {
         celixLauncher_launch("config.properties", &fw);
         ctx = celix_framework_getFrameworkContext(fw);
     }
 
-    void teardown() override {
+    ~PubSubIntegrationTestSuite() override {
         celixLauncher_stop(fw);
         celixLauncher_waitForShutdown(fw);
         celixLauncher_destroy(fw);
-        ctx = nullptr;
-        fw = nullptr;
     }
+
+    PubSubIntegrationTestSuite(const PubSubIntegrationTestSuite&) = delete;
+    PubSubIntegrationTestSuite(PubSubIntegrationTestSuite&&) = delete;
+    PubSubIntegrationTestSuite& operator=(const PubSubIntegrationTestSuite&) = delete;
+    PubSubIntegrationTestSuite& operator=(PubSubIntegrationTestSuite&&) = delete;
+
+    celix_framework_t* fw = nullptr;
+    celix_bundle_context_t* ctx = nullptr;
 };
 
-TEST(PUBSUB_INT_GROUP, recvTest) {
+TEST_F(PubSubIntegrationTestSuite, recvTest) {
     constexpr int TRIES = 50;
     constexpr int TIMEOUT = 250000;
     constexpr int MSG_COUNT = 100;
@@ -67,5 +65,5 @@ TEST(PUBSUB_INT_GROUP, recvTest) {
         }
         usleep(TIMEOUT);
     }
-    CHECK(count >= MSG_COUNT);
+    EXPECT_GE(count, MSG_COUNT);
 }
