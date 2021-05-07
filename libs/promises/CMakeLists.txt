@@ -46,10 +46,10 @@ if (PROMISES OR PROMISES_STANDALONE)
         $<INSTALL_INTERFACE:include/celix/promises>
     )
     target_link_libraries(Promises INTERFACE Threads::Threads)
-    target_compile_options(Promises INTERFACE -std=c++17)
     add_library(Celix::Promises ALIAS Promises)
 
     add_executable(PromiseExamples src/PromiseExamples.cc)
+    target_compile_options(PromiseExamples PRIVATE -std=c++17)
     target_link_libraries(PromiseExamples PRIVATE Celix::Promises)
 
     if (ENABLE_TESTING AND NOT PROMISE_STANDALONE)
