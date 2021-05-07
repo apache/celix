@@ -20,10 +20,43 @@ add_executable(test_utils
         src/LogUtilsTestSuite.cc
         src/VersionRangeTestSuite.cc
         src/TimeUtilsTestSuite.cc
+        src/FileUtilsTestSuite.cc
 )
 
 target_link_libraries(test_utils PRIVATE Celix::utils GTest::gtest GTest::gtest_main)
 target_include_directories(test_utils PRIVATE ../src) #for version_private (needs refactoring of test)
+
+####### generating zip file used for testing ##########################################################################
+file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/zip_content/top.properties" CONTENT "level=1\n")
+file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/zip_content/subdir/sub.properties" CONTENT "level=2\n")
+set(TEST_ZIP_FILE "${CMAKE_CURRENT_BINARY_DIR}/test.zip")
+if(ZIP_COMMAND)
+    add_custom_command(OUTPUT ${TEST_ZIP_FILE}
+        COMMAND ${ZIP_COMMAND} -rq ${TEST_ZIP_FILE} *
+        COMMENT "Creating ${TEST_ZIP_FILE} for testing"
+        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/zip_content/top.properties ${CMAKE_CURRENT_BINARY_DIR}/zip_content/subdir/sub.properties
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/zip_content
+    )
+else()
+    add_custom_command(OUTPUT ${TEST_ZIP_FILE}
+        COMMAND ${JAR_COMMAND} -cf ${TEST_ZIP_FILE} -C ${CMAKE_CURRENT_BINARY_DIR}/zip_content .
+        COMMENT "Creating ${TEST_ZIP_FILE} for testing"
+        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/zip_content/top.properties ${CMAKE_CURRENT_BINARY_DIR}/zip_content/subdir/sub.properties
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    )
+endif()
+add_custom_target(test_utils_resources DEPENDS ${TEST_ZIP_FILE})
+add_dependencies(test_utils test_utils_resources)
+target_compile_definitions(test_utils PRIVATE -DTEST_ZIP_LOCATION=\"${TEST_ZIP_FILE}\")
+target_compile_definitions(test_utils PRIVATE -DTEST_A_FILE_LOCATION=\"${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt\")
+target_compile_definitions(test_utils PRIVATE -DTEST_A_DIR_LOCATION=\"${CMAKE_CURRENT_SOURCE_DIR}\")
+
+####### linkig zip against test executable to text extract zip from data ###############################################
+if (UNIX AND NOT APPLE)
+    target_link_libraries(test_utils PRIVATE -Wl,--format=binary -Wl,"test.zip" -Wl,--format=default)
+else ()
+    target_link_libraries(test_utils PRIVATE -Wl,-sectcreate -Wl,resources -Wl,test_zip -Wl,${TEST_ZIP_FILE})
+endif ()
 
 add_test(NAME test_utils COMMAND test_utils)
 setup_target_for_coverage(test_utils SCAN_DIR ..)
