@@ -18,13 +18,13 @@
  */
 #pragma once
 
-#include <EndpointAnnouncer.h>
+#include "celix/rsa/IEndpointAnnouncer.h"
 
 #include <memory>
 #include <vector>
 #include <string>
 
-#include <Endpoint.h>
+#include "celix/rsa/Endpoint.h"
 #include <celix_api.h>
 
 #include <ConfiguredEndpoint.h>
@@ -42,7 +42,7 @@ namespace celix::rsa {
  * a local configuration JSON file.
  * This configured discovery manager announces local exported endpoints and imported endpoints from the JSON file.
  */
-class ConfiguredDiscoveryManager final : public EndpointAnnouncer {
+class ConfiguredDiscoveryManager final : public IEndpointAnnouncer {
 public:
 
     /**
@@ -70,6 +70,10 @@ public:
      * Deleted assignment-operator, since rapidjson members have no copy-constructor.
      */
     ConfiguredDiscoveryManager& operator=(const ConfiguredDiscoveryManager&) = delete;
+
+    void announceEndpoint(std::unique_ptr<Endpoint> /*endpoint*/) override {/*nop*/}
+
+    void revokeEndpoint(std::unique_ptr<Endpoint> /*endpoint*/) override {/*nop*/}
 
 private:
 

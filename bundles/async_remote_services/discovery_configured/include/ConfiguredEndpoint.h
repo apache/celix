@@ -18,7 +18,7 @@
  */
 #pragma once
 
-#include <Endpoint.h>
+#include "celix/rsa/Endpoint.h"
 #include <ConfiguredEndpointProperties.h>
 
 #include <optional>
