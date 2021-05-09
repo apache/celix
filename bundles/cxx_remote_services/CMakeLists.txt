@@ -22,6 +22,13 @@ if (REMOTE_SERVICE_ADMIN)
     add_subdirectory(rsa_spi)
     add_subdirectory(admin)
     add_subdirectory(discovery_configured)
+
+    if (ENABLE_TESTING)
+        add_subdirectory(integration)
+    endif()
+
+
+    #NOTE the toplogy manager is not yet used. The discovery and RSA need to be refactor for this
     #add_subdirectory(topology_manager)
     #add_subdirectory(examples)
 endif()

@@ -818,6 +818,7 @@ bool pubsub_zmqAdmin_executeCommand(void *handle, const char *commandLine, FILE 
     celixThreadMutex_unlock(&psa->protocols.mutex);
     celixThreadMutex_unlock(&psa->serializers.mutex);
     fprintf(out, "\n");
+    free(line);
 
     return status;
 }
