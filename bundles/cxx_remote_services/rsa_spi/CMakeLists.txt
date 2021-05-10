@@ -20,7 +20,8 @@ target_include_directories(rsa_spi INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
     $<INSTALL_INTERFACE:include/celix/rsa>
 )
-target_compile_options(rsa_spi INTERFACE -std=c++17)
+#TODO TBD is it smart to add a c++ std as INTERFACE option?
+#target_compile_options(rsa_spi INTERFACE -std=c++17)
 
 install(TARGETS rsa_spi EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT rsa)
 install(DIRECTORY include/ DESTINATION include/celix/rsa COMPONENT rsa)

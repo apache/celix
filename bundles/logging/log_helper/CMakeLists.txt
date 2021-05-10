@@ -36,7 +36,7 @@ if (CELIX_INSTALL_DEPRECATED_API)
 		$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include_v1>
 		$<INSTALL_INTERFACE:include/celix/log_helper>
 	)
-	install(DIRECTORY include_v2/ DESTINATION include/celix/log_helper)
+	install(DIRECTORY include_v1/ DESTINATION include/celix/log_helper)
 endif ()
 
 add_library(Celix::log_helper ALIAS log_helper)

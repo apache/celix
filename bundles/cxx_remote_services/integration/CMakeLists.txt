@@ -19,6 +19,7 @@ add_celix_bundle(TestExportImportRemoteServiceFactory
         SOURCES src/TestExportImportRemoteServiceFactory.cc
 )
 target_link_libraries(TestExportImportRemoteServiceFactory PRIVATE Celix::rsa_spi Celix::pubsub_api Celix::Promises Celix::log_helper)
+target_compile_options(TestExportImportRemoteServiceFactory PRIVATE -std=c++17) #TODO how can this be improved (bring back -std=c++17 on INTERFACE for promises?
 target_include_directories(TestExportImportRemoteServiceFactory PRIVATE include)
 #TODO improve with serializer svc, for now using descriptors
 celix_bundle_files(TestExportImportRemoteServiceFactory
