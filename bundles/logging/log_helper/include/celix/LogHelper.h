@@ -19,7 +19,9 @@
 
 #pragma once
 
+#include <memory>
 #include "celix_log_helper.h"
+#include "celix/BundleContext.h"
 
 namespace celix {
 

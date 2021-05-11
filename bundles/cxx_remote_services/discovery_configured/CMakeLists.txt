@@ -22,6 +22,7 @@ add_library(RsaConfiguredDiscovery_api INTERFACE)
 target_include_directories(RsaConfiguredDiscovery_api INTERFACE
         include
 )
+add_library(Celix::RsaConfiguredDiscovery_api ALIAS RsaConfiguredDiscovery_api)
 
 add_celix_bundle(RsaConfiguredDiscovery
     VERSION 0.9.0

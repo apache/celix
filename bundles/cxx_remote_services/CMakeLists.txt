@@ -18,7 +18,6 @@
 celix_subproject(REMOTE_SERVICE_ADMIN "Option to enable building the C++17 Remote Service Admin Service bundles" OFF)
 if (REMOTE_SERVICE_ADMIN)
     message(WARNING "The C++ Remote Service Admin is still experimental; The API, SPI and implementation is not stable and will change")
-    #add_subdirectory(common)
     add_subdirectory(rsa_spi)
     add_subdirectory(admin)
     add_subdirectory(discovery_configured)
@@ -28,7 +27,6 @@ if (REMOTE_SERVICE_ADMIN)
     endif()
 
 
-    #NOTE the toplogy manager is not yet used. The discovery and RSA need to be refactor for this
+    #NOTE the topology manager is not yet used. The discovery and RSA need to be refactor for this
     #add_subdirectory(topology_manager)
-    #add_subdirectory(examples)
 endif()

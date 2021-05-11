@@ -17,10 +17,13 @@
  * under the License.
  */
 
-#include "celix/rsa/EndpointDescription.h"
-#include <celix_api.h>
+
 #include <mutex>
+
 #include "celix/LogHelper.h"
+#include "celix/rsa/EndpointDescription.h"
+#include <celix/rsa/IImportServiceFactory.h>
+#include <celix/rsa/IExportServiceFactory.h>
 
 #if defined(__has_include) && __has_include(<version>)
 #include <version>
@@ -28,9 +31,6 @@
 
 #if __cpp_lib_memory_resource
 #include <memory_resource>
-#include <celix/rsa/IImportServiceFactory.h>
-#include <celix/rsa/IExportServiceFactory.h>
-
 #endif
 
 namespace celix::rsa {

@@ -174,4 +174,12 @@ namespace celix {
      *
      */
     constexpr const char * const LOAD_BUNDLES_WITH_NODELETE = CELIX_LOAD_BUNDLES_WITH_NODELETE;
+
+    /**
+     * @brief Celix framework environment property (named "org.osgi.framework.storage") specifying the cache
+     * directory used for the bundle caches.
+     *
+     * If not specified ".cache" is used.
+     */
+    constexpr const char * const FRAMEWORK_CACHE_DIR = OSGI_FRAMEWORK_FRAMEWORK_STORAGE;
 }

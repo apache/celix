@@ -39,10 +39,12 @@ target_compile_options(CalculatorProvider PRIVATE -std=c++17) #TODO how can this
 add_celix_bundle(CalculatorConsumer
         SOURCES src/CalculatorConsumer.cc
 )
-target_link_libraries(CalculatorConsumer PRIVATE Celix::Promises)
+celix_bundle_files(CalculatorConsumer ${CMAKE_CURRENT_SOURCE_DIR}/resources/endpoint_discovery.json DESTINATION "META-INF/discovery") # add configured discovery as resource in the bundle.
+target_link_libraries(CalculatorConsumer PRIVATE Celix::Promises Celix::shell_api Celix::RsaConfiguredDiscovery_api)
 target_include_directories(CalculatorConsumer PRIVATE include)
 target_compile_options(CalculatorConsumer PRIVATE -std=c++17) #TODO how can this be improved (bring back -std=c++17 on INTERFACE for promises?
 
+add_subdirectory(gtest)
 
 ################# Integration examples ##################################
 
@@ -55,7 +57,7 @@ add_celix_container(RemoteCalculatorProvider
             #PSA_ZMQ_STATIC_BIND_URL_FOR_test_return=ipc:///tmp/pubsub-test-return
             #PSA_ZMQ_STATIC_CONNECT_URL_FOR_test_invoke=ipc:///tmp/pubsub-test-invoke
         BUNDLES
-            Celix::shell
+            Celix::ShellCxx
             Celix::shell_tui
 
             #Needed for remote services (full pubsub stack + remote services stack)
@@ -79,9 +81,8 @@ add_celix_container(RemoteCalculatorConsumer
             #Configuration to let the pubsub zmq operate without dicscovery
             #PSA_ZMQ_STATIC_BIND_URL_FOR_test_invoke=ipc:///tmp/pubsub-test-invoke
             #PSA_ZMQ_STATIC_CONNECT_URL_FOR_test_return=ipc:///tmp/pubsub-test-return
-            CELIX_RSA_CONFIGURED_DISCOVERY_DISCOVERY_FILES=${CMAKE_CURRENT_SOURCE_DIR}/resources/endpoint_discovery.json
         BUNDLES
-            Celix::shell
+            Celix::ShellCxx
             Celix::shell_tui
 
             #Needed for remote services (full pubsub stack + remote services stack)

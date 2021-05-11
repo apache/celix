@@ -19,45 +19,36 @@
 
 #include <memory>
 
+#include "celix/IShellCommand.h"
 #include "celix/BundleActivator.h"
 #include "celix/PromiseFactory.h"
+#include "celix/rsa/IConfiguredDiscoveryManager.h"
 #include "ICalculator.h"
 
-class CalculatorConsumer final {
+class CalculatorConsumer final : public celix::IShellCommand {
 public:
-    void start() {
-        std::cout << "starting calc thread" << std::endl;
-        active = true;
-        calcThread = std::thread{[this]() {
-            double secondArg = 1;
-            while(active) {
-                std::cout << "Calling calc" << std::endl;
-                calculator->add(42, secondArg++)
-                    .onSuccess([](double val) {
-                        std::cout << "calc result is " << val << std::endl;
-                    })
-                    .onFailure([](const auto& exp) {
-                        std::cerr << "error calling calc: " << exp.what() << std::endl;
-                    });
-                std::this_thread::sleep_for(std::chrono::seconds{5});
-            }
-        }};
-    }
-
-    void stop() {
-        active = false;
-        if (calcThread.joinable()) {
-            calcThread.join();
-        }
-    }
+    ~CalculatorConsumer() override = default;
 
     void setCalculator(const std::shared_ptr<ICalculator>& cal) {
         calculator = cal;
     }
+
+    void executeCommand(const std::string &/*commandLine*/, const std::vector<std::string> &/*commandArgs*/, FILE *outStream,
+                        FILE *errorStream) override {
+        thread_local double secondArg = 1;
+        fprintf(outStream, "Calling calc\n");
+        calculator->add(42, secondArg++)
+                .onSuccess([outStream](double val) {
+                    fprintf(outStream, "calc result is %f\n", val);
+                })
+                .onFailure([errorStream](const auto& exp) {
+                    fprintf(errorStream, "error calling calc: %s", exp.what());
+                })
+                .wait(); //note waiting on promise to ensure outStream and errorStream are still valid.
+    }
+
 private:
-    std::atomic<bool> active{false};
     std::shared_ptr<ICalculator> calculator{};
-    std::thread calcThread{};
 };
 
 class CalculatorProviderActivator {
@@ -67,8 +58,17 @@ public:
         cmp.createServiceDependency<ICalculator>()
                 .setRequired(true)
                 .setCallbacks(&CalculatorConsumer::setCalculator);
-        cmp.setCallbacks(nullptr, &CalculatorConsumer::start, &CalculatorConsumer::stop, nullptr);
+        cmp.createProvidedService<celix::IShellCommand>()
+                .addProperty(celix::IShellCommand::COMMAND_NAME, "calc");
         cmp.build();
+
+        //bootstrap own configured import discovery to the configured discovery manager
+        auto path = ctx->getBundle().getEntry("META-INF/discovery/endpoint_discovery.json");
+        ctx->useService<celix::rsa::IConfiguredDiscoveryManager>()
+                .addUseCallback([&path](auto& disc) {
+                    disc.addConfiguredDiscoveryFile(path);
+                })
+                .build();
     }
 };
 

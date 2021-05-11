@@ -18,6 +18,8 @@
  */
 
 #include "RemoteServiceAdmin.h"
+#include "celix/BundleContext.h"
+#include "celix/BundleActivator.h"
 #include "celix/rsa/RemoteConstants.h"
 #include "celix/rsa/IImportServiceFactory.h"
 #include "celix/rsa/IExportServiceFactory.h"
