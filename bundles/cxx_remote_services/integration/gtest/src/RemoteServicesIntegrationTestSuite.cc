@@ -19,6 +19,8 @@
 
 #include <gtest/gtest.h>
 
+#include "ICalculator.h"
+#include "celix_shell_command.h"
 #include "celix/FrameworkFactory.h"
 
 class RemoteServicesIntegrationTestSuite : public ::testing::Test {
@@ -26,20 +28,26 @@ public:
     RemoteServicesIntegrationTestSuite() {
         celix::Properties clientConfig{
                 {"CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "trace"},
-                {celix::FRAMEWORK_CACHE_DIR, ".clientCache"}
+                {celix::FRAMEWORK_CACHE_DIR, ".clientCache"},
+                //Static configuration to let the pubsub zmq operate without discovery
+                {"PSA_ZMQ_STATIC_BIND_URL_FOR_test_invoke_default", "ipc:///tmp/pubsub-test-return"},
+                {"PSA_ZMQ_STATIC_CONNECT_URL_FOR_test_return_default", "ipc:///tmp/pubsub-test-invoke" }
         };
         clientFw = celix::createFramework(clientConfig);
         clientCtx = clientFw->getFrameworkBundleContext();
 
         celix::Properties serverConfig{
                 {"CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "trace"},
-                {celix::FRAMEWORK_CACHE_DIR, ".serverCache"}
+                {celix::FRAMEWORK_CACHE_DIR, ".serverCache"},
+                //Static configuration to let the pubsub zmq operate without discovery
+                {"PSA_ZMQ_STATIC_BIND_URL_FOR_test_return_default", "ipc:///tmp/pubsub-test-invoke"},
+                {"PSA_ZMQ_STATIC_CONNECT_URL_FOR_test_invoke_default", "ipc:///tmp/pubsub-test-return" }
         };
         serverFw = celix::createFramework(serverConfig);
         serverCtx = serverFw->getFrameworkBundleContext();
     }
 
-    void installSharedBundles(std::shared_ptr<celix::BundleContext>& ctx) {
+    static void installSharedBundles(std::shared_ptr<celix::BundleContext>& ctx) {
         auto sharedBundles = {
                 PS_SER_BUNDLE_LOC,
                 PS_PSTM_BUNDLE_LOC,
@@ -73,6 +81,51 @@ public:
 };
 
 TEST_F(RemoteServicesIntegrationTestSuite, StartStopFrameworks) {
-    installConsumerBundles();
     installProviderBundles();
+    installConsumerBundles();
+}
+
+TEST_F(RemoteServicesIntegrationTestSuite, InvokeRemoteCalcService) {
+    installProviderBundles();
+    installConsumerBundles();
+
+    //If a calculator provider bundle is installed I expect a exported calculator interface
+    auto count = serverCtx->useService<ICalculator>()
+            .setFilter("(service.exported.interfaces=*)")
+            .build();
+    EXPECT_EQ(count, 1);
+
+    //If a calculator consumer bundle is installed and also the needed remote services bundle,  I expect a import calculator interface
+    count = clientCtx->useService<ICalculator>()
+            .setTimeout(std::chrono::seconds{1})
+            .setFilter("(service.imported=*)")
+            .build();
+    EXPECT_EQ(count, 1);
+
+    /*DEBUG INFO*/
+    clientCtx->useService<celix_shell_command>(CELIX_SHELL_COMMAND_SERVICE_NAME)
+            .setFilter((std::string{"("}.append(CELIX_SHELL_COMMAND_NAME).append("=celix::psa_zmq)")))
+            .addUseCallback([](auto& cmd) {
+                cmd.executeCommand(cmd.handle, "psa_zmq", stdout, stdout);
+            })
+            .build();
+    serverCtx->useService<celix_shell_command>(CELIX_SHELL_COMMAND_SERVICE_NAME)
+            .setFilter((std::string{"("}.append(CELIX_SHELL_COMMAND_NAME).append("=celix::psa_zmq)")))
+            .addUseCallback([](auto& cmd) {
+                cmd.executeCommand(cmd.handle, "psa_zmq", stdout, stdout);
+            })
+            .build();
+
+    //When I call the calculator service from the client, I expect a answer
+    count = clientCtx->useService<ICalculator>()
+            .addUseCallback([](auto& calc) {
+                auto promise = calc.add(2, 4);
+                promise.wait();
+                EXPECT_TRUE(promise.isSuccessfullyResolved());
+                if (promise.isSuccessfullyResolved()) {
+                    EXPECT_EQ(6, promise.getValue());
+                }
+            })
+            .build();
+    EXPECT_EQ(count, 1);
 }

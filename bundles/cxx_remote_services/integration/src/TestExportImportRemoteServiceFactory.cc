@@ -32,17 +32,17 @@
 constexpr auto INVOKE_TIMEOUT = std::chrono::seconds{5}; //TODO make configurable
 
 struct Calculator$add$Invoke {
-    double arg1;
-    double arg2;
+    double arg1{};
+    double arg2{};
 };
 
 struct Calculator$add$Return {
     struct {
-        uint32_t cap;
-        uint32_t len;
-        double* buf;
-    } optionalReturnValue;
-    char* optionalError;
+        uint32_t cap{};
+        uint32_t len{};
+        double* buf{};
+    } optionalReturnValue{};
+    char* optionalError{};
 };
 
 /**
@@ -81,7 +81,7 @@ public:
             logHelper.error(msg);
             deferred.fail(celix::rsa::RemoteServicesException{msg});
         }
-        return deferred.getPromise().timeout(INVOKE_TIMEOUT);
+        return deferred.getPromise().timeout(INVOKE_TIMEOUT); //TODO fixme timeout can leak
     }
 
     void receive(const char *msgType, unsigned int msgTypeId, void *msg, const celix_properties_t* meta) {
@@ -259,24 +259,34 @@ public:
             std::lock_guard lock{mutex};
             auto promise = calculator->add(invoke->arg1, invoke->arg2);
             promise
-                .onFailure([svc = calculator, pub = publisher, msgId = returnMsgId, metaProps](const auto& exp) {
-                    //note this lambda makes copies of the std::shared_ptr<publisher> and svc, so a remove of publisher or service can only happen after the promise is done
-                    Calculator$add$Return ret;
-                    ret.optionalReturnValue.buf = nullptr;
-                    ret.optionalReturnValue.len = 0;
-                    ret.optionalReturnValue.cap = 0;
-                    ret.optionalError = celix_utils_strdup(exp.what());
-                    pub->send(pub->handle, msgId, &ret, metaProps);
+                .onFailure([weakPub = std::weak_ptr{publisher}, msgId = returnMsgId, metaProps](const auto& exp) {
+                    auto pub = weakPub.lock();
+                    if (pub) {
+                        Calculator$add$Return ret;
+                        ret.optionalReturnValue.buf = nullptr;
+                        ret.optionalReturnValue.len = 0;
+                        ret.optionalReturnValue.cap = 0;
+                        ret.optionalError = celix_utils_strdup(exp.what());
+                        pub->send(pub->handle, msgId, &ret, metaProps);
+                    } else {
+                        //TODO error handling
+                    }
                 })
-                .onSuccess([svc = calculator, pub = publisher, msgId = returnMsgId, metaProps](auto val) {
-                    //note this lambda makes copies of the std::shared_ptr<publisher> and svc, so a remove of publisher or service can only happen after the promise is done
-                    Calculator$add$Return ret;
-                    ret.optionalReturnValue.buf = (double*) malloc(sizeof(*ret.optionalReturnValue.buf));
-                    ret.optionalReturnValue.len = 1;
-                    ret.optionalReturnValue.cap = 1;
-                    ret.optionalReturnValue.buf[0] = val;
-                    ret.optionalError = nullptr;
-                    pub->send(pub->handle, msgId, &ret, metaProps);
+                .onSuccess([weakSvc = std::weak_ptr{calculator}, weakPub = std::weak_ptr{publisher}, msgId = returnMsgId, metaProps](auto val) {
+                    auto pub = weakPub.lock();
+                    auto svc = weakSvc.lock();
+                    if (pub && svc) {
+                        Calculator$add$Return ret;
+                        ret.optionalReturnValue.buf = (double *) malloc(sizeof(*ret.optionalReturnValue.buf));
+                        ret.optionalReturnValue.len = 1;
+                        ret.optionalReturnValue.cap = 1;
+                        ret.optionalReturnValue.buf[0] = val;
+                        ret.optionalError = nullptr;
+                        pub->send(pub->handle, msgId, &ret, metaProps);
+                        free(ret.optionalReturnValue.buf);
+                    } else {
+                        //TODO error handling
+                    }
                 });
         } else {
             logHelper.warning("Unexpected message type %s", msgType);

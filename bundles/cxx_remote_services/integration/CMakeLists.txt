@@ -52,21 +52,19 @@ add_celix_container(RemoteCalculatorProvider
         GROUP rsa
         PROPERTIES
             CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
-
-            #Configuration to let the pubsub zmq operate without dicscovery
-            #PSA_ZMQ_STATIC_BIND_URL_FOR_test_return=ipc:///tmp/pubsub-test-return
-            #PSA_ZMQ_STATIC_CONNECT_URL_FOR_test_invoke=ipc:///tmp/pubsub-test-invoke
         BUNDLES
             Celix::ShellCxx
             Celix::shell_tui
 
-            #Needed for remote services (full pubsub stack + remote services stack)
+            #Pubsub needed for remote services on pubsub
             Celix::pubsub_serializer_json
             Celix::pubsub_topology_manager
             #TODO replace with v1 when marker interfaces for a serializer type are introduced  Celix::pubsub_admin_zmq_v2
             Celix::pubsub_admin_zmq
             Celix::pubsub_protocol_wire_v2
             Celix::pubsub_discovery_etcd
+
+            #Remote Services
             Celix::RemoteServiceAdmin
             TestExportImportRemoteServiceFactory #needed to be able to create a ExportedService for ICalculator
 
@@ -77,20 +75,18 @@ add_celix_container(RemoteCalculatorConsumer
         GROUP rsa
         PROPERTIES
             CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
-
-            #Configuration to let the pubsub zmq operate without dicscovery
-            #PSA_ZMQ_STATIC_BIND_URL_FOR_test_invoke=ipc:///tmp/pubsub-test-invoke
-            #PSA_ZMQ_STATIC_CONNECT_URL_FOR_test_return=ipc:///tmp/pubsub-test-return
         BUNDLES
             Celix::ShellCxx
             Celix::shell_tui
 
-            #Needed for remote services (full pubsub stack + remote services stack)
+            #Pubsub needed for remote services on pubsub
             Celix::pubsub_serializer_json
             Celix::pubsub_topology_manager
             Celix::pubsub_discovery_etcd
             Celix::pubsub_admin_zmq
             Celix::pubsub_protocol_wire_v2
+
+            #Remote Services
             Celix::RsaConfiguredDiscovery
             Celix::RemoteServiceAdmin
             TestExportImportRemoteServiceFactory #needed to be able to create a ExportedService for ICalculator

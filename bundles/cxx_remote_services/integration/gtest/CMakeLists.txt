@@ -18,7 +18,7 @@
 add_executable(test_cxx_remote_services_integration
     src/RemoteServicesIntegrationTestSuite.cc
 )
-target_link_libraries(test_cxx_remote_services_integration PRIVATE Celix::framework GTest::gtest GTest::gtest_main)
+target_link_libraries(test_cxx_remote_services_integration PRIVATE Celix::framework Celix::Promises Celix::shell_api GTest::gtest GTest::gtest_main)
 target_compile_options(test_cxx_remote_services_integration PRIVATE -std=c++17)
 target_include_directories(test_cxx_remote_services_integration PRIVATE ../include) #Add ICalculator
 

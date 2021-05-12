@@ -6,4 +6,4 @@ version=1.0.0
 classname=Calculator$add$Invoke
 :types
 :message
-{DD arg1 arg1}
+{DD arg1 arg2}
