@@ -259,7 +259,7 @@ public:
             std::lock_guard lock{mutex};
             auto promise = calculator->add(invoke->arg1, invoke->arg2);
             promise
-                .onFailure([weakPub = std::weak_ptr{publisher}, msgId = returnMsgId, metaProps](const auto& exp) {
+                .onFailure([weakPub = std::weak_ptr<pubsub_publisher>{publisher}, msgId = returnMsgId, metaProps](const auto& exp) {
                     auto pub = weakPub.lock();
                     if (pub) {
                         Calculator$add$Return ret;
@@ -272,7 +272,7 @@ public:
                         //TODO error handling
                     }
                 })
-                .onSuccess([weakSvc = std::weak_ptr{calculator}, weakPub = std::weak_ptr{publisher}, msgId = returnMsgId, metaProps](auto val) {
+                .onSuccess([weakSvc = std::weak_ptr<ICalculator>{calculator}, weakPub = std::weak_ptr<pubsub_publisher>{publisher}, msgId = returnMsgId, metaProps](auto val) {
                     auto pub = weakPub.lock();
                     auto svc = weakSvc.lock();
                     if (pub && svc) {
