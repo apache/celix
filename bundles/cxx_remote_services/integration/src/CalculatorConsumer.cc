@@ -21,7 +21,6 @@
 
 #include "celix/IShellCommand.h"
 #include "celix/BundleActivator.h"
-#include "celix/PromiseFactory.h"
 #include "celix/rsa/IConfiguredDiscoveryManager.h"
 #include "ICalculator.h"
 
@@ -51,9 +50,9 @@ private:
     std::shared_ptr<ICalculator> calculator{};
 };
 
-class CalculatorProviderActivator {
+class CalculatorConsumerActivator {
 public:
-    explicit CalculatorProviderActivator(const std::shared_ptr<celix::BundleContext>& ctx) {
+    explicit CalculatorConsumerActivator(const std::shared_ptr<celix::BundleContext>& ctx) {
         auto& cmp = ctx->getDependencyManager()->createComponent(std::make_shared<CalculatorConsumer>());
         cmp.createServiceDependency<ICalculator>()
                 .setRequired(true)
@@ -72,4 +71,4 @@ public:
     }
 };
 
-CELIX_GEN_CXX_BUNDLE_ACTIVATOR(CalculatorProviderActivator)
+CELIX_GEN_CXX_BUNDLE_ACTIVATOR(CalculatorConsumerActivator)
