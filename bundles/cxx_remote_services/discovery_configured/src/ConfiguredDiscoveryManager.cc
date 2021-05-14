@@ -19,6 +19,7 @@
 
 #include <ConfiguredDiscoveryManager.h>
 
+#include <optional>
 #include <fstream>
 #include <filesystem>
 #include <rapidjson/writer.h>
