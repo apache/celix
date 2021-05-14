@@ -33,17 +33,18 @@ public:
     }
 
     void executeCommand(const std::string &/*commandLine*/, const std::vector<std::string> &/*commandArgs*/, FILE *outStream,
-                        FILE *errorStream) override {
-        thread_local double secondArg = 1;
-        fprintf(outStream, "Calling calc\n");
-        calculator->add(42, secondArg++)
-                .onSuccess([outStream](double val) {
-                    fprintf(outStream, "calc result is %f\n", val);
+                        FILE */*errorStream*/) override {
+        constexpr double arg1 = 42;
+        thread_local double counter = 1;
+        fprintf(outStream, "Calling calc add(%f,%f)\n", arg1, counter);
+        calculator->add(arg1, counter)
+                .onSuccess([c = counter, arg1](double val) {
+                    fprintf(stdout, "calc add(%f, %f) is %f\n", arg1, c, val);
                 })
-                .onFailure([errorStream](const auto& exp) {
-                    fprintf(errorStream, "error calling calc: %s", exp.what());
-                })
-                .wait(); //note waiting on promise to ensure outStream and errorStream are still valid.
+                .onFailure([c = counter, arg1](const auto& exp) {
+                    fprintf(stderr, "error calling calc add(%f,%f). Exception: %s\n", arg1, c, exp.what());
+                });
+        counter++;
     }
 
 private:

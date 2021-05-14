@@ -44,7 +44,9 @@ target_link_libraries(CalculatorConsumer PRIVATE Celix::Promises Celix::shell_ap
 target_include_directories(CalculatorConsumer PRIVATE include)
 target_compile_options(CalculatorConsumer PRIVATE -std=c++17) #TODO how can this be improved (bring back -std=c++17 on INTERFACE for promises?
 
-add_subdirectory(gtest)
+if (ENABLE_TESTING)
+    add_subdirectory(gtest)
+endif()
 
 ################# Integration examples ##################################
 

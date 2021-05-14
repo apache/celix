@@ -51,7 +51,16 @@ struct Calculator$add$Return {
 class ImportedCalculator final : public ICalculator {
 public:
     explicit ImportedCalculator(celix::LogHelper _logHelper) : logHelper{std::move(_logHelper)} {}
-    ~ImportedCalculator() noexcept override = default;
+
+    ~ImportedCalculator() noexcept override {
+        //failing al leftover deferreds
+        {
+            std::lock_guard lock{mutex};
+            for (auto& pair : deferreds) {
+                pair.second.fail(celix::rsa::RemoteServicesException{"Shutting down proxy"});
+            }
+        }
+    };
 
     celix::Promise<double> add(double a, double b) override {
         //setup msg id
@@ -81,7 +90,17 @@ public:
             logHelper.error(msg);
             deferred.fail(celix::rsa::RemoteServicesException{msg});
         }
-        return deferred.getPromise().timeout(INVOKE_TIMEOUT); //TODO fixme timeout can leak
+        return deferred.getPromise().timeout(INVOKE_TIMEOUT).onFailure([this, invokeId](const auto& /*exp*/) {
+            std::lock_guard l{mutex};
+
+            //TODO fixme -> timeout can leak
+            auto it = deferreds.find(invokeId);
+            if (it != deferreds.end()) {
+                it->second.fail(celix::rsa::RemoteServicesException{"workaround for unresovled promsise with timeout chain memleak"});
+            }
+
+            deferreds.erase(invokeId);
+        });
     }
 
     void receive(const char *msgType, unsigned int msgTypeId, void *msg, const celix_properties_t* meta) {
@@ -99,18 +118,20 @@ public:
                 return;
             }
             auto* result = static_cast<Calculator$add$Return*>(msg);
-            std::lock_guard lock{mutex};
+            std::unique_lock lock{mutex};
             auto it = deferreds.find(invokeId);
             if (it == end(deferreds)) {
                 logHelper.error("Cannot find deferred for invoke id %li", invokeId);
                 return;
             }
-            if (result->optionalReturnValue.len == 1) {
-                it->second.resolve(result->optionalReturnValue.buf[0]);
-            } else {
-                it->second.fail(celix::rsa::RemoteServicesException{"Failed resolving remote promise"});
-            }
+            auto deferred = it->second;
             deferreds.erase(it);
+            lock.unlock();
+            if (result->optionalReturnValue.len == 1) {
+                deferred.resolve(result->optionalReturnValue.buf[0]);
+            } else {
+                deferred.fail(celix::rsa::RemoteServicesException{"Failed resolving remote promise"});
+            }
         } else {
             logHelper.warning("Unexpected message type %s", msgType);
         }
