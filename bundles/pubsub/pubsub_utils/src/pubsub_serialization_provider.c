@@ -601,12 +601,7 @@ pubsub_serialization_provider_t *pubsub_serializationProvider_create(
     provider->freeSerializeMsg = freeSerializeMsg;
     provider->deserialize = deserialize;
     provider->freeDeserializeMsg = freeDeserializeMsg;
-
-
-    {
-        provider->logHelper = celix_logHelper_create(ctx, "celix_pubsub_serialization_provider");
-
-    }
+    provider->logHelper = celix_logHelper_create(ctx, "celix_pubsub_serialization_provider");
 
     dynFunction_logSetup(dfi_log, provider, 1);
     dynType_logSetup(dfi_log, provider, 1);

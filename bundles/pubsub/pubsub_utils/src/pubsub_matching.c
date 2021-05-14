@@ -141,25 +141,23 @@ double pubsub_utils_matchPublisher(
     const char *requested_serializer = celix_properties_get(ep, PUBSUB_ENDPOINT_SERIALIZER, NULL);
     long serializerSvcId = getPSSerializer(ctx, requested_serializer);
 
-    if (serializerSvcId < 0) {
-        score = PUBSUB_ADMIN_NO_MATCH_SCORE; //no serializer, no match
-    }
-
     if (outSerializerSvcId != NULL) {
         *outSerializerSvcId = serializerSvcId;
     }
 
+    long protocolSvcId = -1;
     if (matchProtocol) {
         const char *requested_protocol = celix_properties_get(ep, PUBSUB_ENDPOINT_PROTOCOL, NULL);
-        long protocolSvcId = getPSProtocol(ctx, requested_protocol);
-
-        if (protocolSvcId < 0) {
-            score = PUBSUB_ADMIN_NO_MATCH_SCORE;
-        }
-
+        protocolSvcId = getPSProtocol(ctx, requested_protocol);
         if (outProtocolSvcId != NULL) {
             *outProtocolSvcId = protocolSvcId;
         }
+    }
+
+    if (serializerSvcId < 0) {
+        score = PUBSUB_ADMIN_NO_MATCH_SCORE;
+    } else if (matchProtocol && protocolSvcId < 0) {
+        score = PUBSUB_ADMIN_NO_MATCH_SCORE;
     }
 
     if (outTopicProperties != NULL) {

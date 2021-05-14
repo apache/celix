@@ -18,3 +18,28 @@
 function(install_celix_targets)
     install_celix_bundle_targets(${ARGN})
 endfunction ()
+
+#[[
+Add bundles as dependencies to a cmake target, so that the bundle zip files are created before the cmake target is
+ created.
+
+add_celix_bundle_dependencies(<cmake_target>
+    bundles...
+)
+]]
+function(add_celix_bundle_dependencies)
+    list(GET ARGN 0 TARGET)
+    list(REMOVE_AT ARGN 0)
+    message("TEST")
+    foreach(BUNDLE_TARGET IN LISTS ARGN)
+        if (TARGET ${BUNDLE_TARGET})
+            get_target_property(IMPORT ${BUNDLE_TARGET} BUNDLE_IMPORTED)
+            get_target_property(CREATE_BUNDLE_TARGET ${BUNDLE_TARGET} BUNDLE_CREATE_BUNDLE_TARGET)
+            if (IMPORT)
+                #NOP, an imported bundle target -> handle target without DEPENDS
+            else ()
+                add_dependencies(${TARGET} ${CREATE_BUNDLE_TARGET})
+            endif ()
+        endif()
+    endforeach()
+endfunction()

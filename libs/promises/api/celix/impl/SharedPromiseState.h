@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <type_traits>
 #include <functional>
 #include <chrono>
 #include <mutex>
@@ -43,7 +44,7 @@ namespace celix::impl {
     public:
         static std::shared_ptr<SharedPromiseState<T>> create(std::shared_ptr<celix::IExecutor> _executor, std::shared_ptr<celix::IScheduledExecutor> _scheduledExecutor, int priority);
 
-        ~SharedPromiseState() = default;
+        ~SharedPromiseState() noexcept = default;
 
         void resolve(T&& value);
 
@@ -144,7 +145,8 @@ namespace celix::impl {
     class SharedPromiseState<void> {
     public:
         static std::shared_ptr<SharedPromiseState<void>> create(std::shared_ptr<celix::IExecutor> _executor, std::shared_ptr<celix::IScheduledExecutor> _scheduledExecutor, int priority);
-        ~SharedPromiseState() = default;
+
+        ~SharedPromiseState() noexcept = default;
 
         void resolve();
 
