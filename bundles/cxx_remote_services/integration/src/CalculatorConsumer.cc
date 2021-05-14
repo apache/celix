@@ -38,10 +38,10 @@ public:
         thread_local double counter = 1;
         fprintf(outStream, "Calling calc add(%f,%f)\n", arg1, counter);
         calculator->add(arg1, counter)
-                .onSuccess([c = counter, arg1](double val) {
+                .onSuccess([c = counter](double val) {
                     fprintf(stdout, "calc add(%f, %f) is %f\n", arg1, c, val);
                 })
-                .onFailure([c = counter, arg1](const auto& exp) {
+                .onFailure([c = counter](const auto& exp) {
                     fprintf(stderr, "error calling calc add(%f,%f). Exception: %s\n", arg1, c, exp.what());
                 });
         counter++;
