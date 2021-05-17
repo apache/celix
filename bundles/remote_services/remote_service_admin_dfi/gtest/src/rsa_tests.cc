@@ -107,43 +107,30 @@ extern "C" {
     }
 
     static void testImportServiceCallback(void *handle __attribute__((unused)), void *svc) {
-        auto *rsa = static_cast<remote_service_admin_service_t *>(svc);
+        thread_local bool init = true;
+        thread_local endpoint_description_t *endpoint = nullptr;
+        if (init) {
+            auto *rsa = static_cast<remote_service_admin_service_t *>(svc);
+            celix_properties_t *props = celix_properties_create();
+            celix_properties_set(props, OSGI_RSA_ENDPOINT_SERVICE_ID, "42");
+            celix_properties_set(props, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, "eec5404d-51d0-47ef-8d86-c825a8beda42");
+            celix_properties_set(props, OSGI_RSA_ENDPOINT_ID, "eec5404d-51d0-47ef-8d86-c825a8beda42-42");
+            celix_properties_set(props, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, TST_CONFIGURATION_TYPE);
+            celix_properties_set(props, OSGI_FRAMEWORK_OBJECTCLASS, "org.apache.celix.Example");
 
-        int rc = 0;
-        import_registration_t *reg = NULL;
-        endpoint_description_t *endpoint = NULL;
+            int rc = endpointDescription_create(props, &endpoint);
+            ASSERT_EQ(CELIX_SUCCESS, rc);
 
-        celix_properties_t *props = celix_properties_create();
-        celix_properties_set(props, OSGI_RSA_ENDPOINT_SERVICE_ID, "42");
-        celix_properties_set(props, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, "eec5404d-51d0-47ef-8d86-c825a8beda42");
-        celix_properties_set(props, OSGI_RSA_ENDPOINT_ID, "eec5404d-51d0-47ef-8d86-c825a8beda42-42");
-        celix_properties_set(props, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, TST_CONFIGURATION_TYPE);
-        celix_properties_set(props, OSGI_FRAMEWORK_OBJECTCLASS, "org.apache.celix.Example");
+            import_registration_t* reg = nullptr;
+            rc = rsa->importService(rsa->admin, endpoint, &reg);
+            ASSERT_EQ(CELIX_SUCCESS, rc);
+            ASSERT_TRUE(reg != nullptr);
 
-        rc = endpointDescription_create(props, &endpoint);
-        ASSERT_EQ(CELIX_SUCCESS, rc);
-
-        rc = rsa->importService(rsa->admin, endpoint, &reg);
-        ASSERT_EQ(CELIX_SUCCESS, rc);
-        ASSERT_TRUE(reg != NULL);
-
-        service_reference_pt ref = NULL;
-        rc = bundleContext_getServiceReference(context, (char *)"org.apache.celix.Example", &ref);
-        ASSERT_EQ(CELIX_SUCCESS, rc);
-        ASSERT_TRUE(ref != NULL);
-
-        rc = bundleContext_ungetServiceReference(context, ref);
-        ASSERT_EQ(CELIX_SUCCESS, rc);
-
-        rc = endpointDescription_destroy(endpoint);
-        ASSERT_EQ(CELIX_SUCCESS, rc);
-
-        /* Cannot test. uses requesting bundles descriptor
-        void *service = NULL;
-        rc = bundleContext_getService(context, ref, &service);
-        ASSERT_EQ(CELIX_SUCCESS, rc);
-        ASSERT_TRUE(service != NULL);
-         */
+            init = false;
+        } else {
+            int rc = endpointDescription_destroy(endpoint);
+            ASSERT_EQ(CELIX_SUCCESS, rc);
+        }
     }
 
     static void testImportService(void) {
@@ -152,7 +139,16 @@ extern "C" {
         opts.use = testImportServiceCallback;
         opts.filter.ignoreServiceLanguage = true;
         opts.waitTimeoutInSeconds = 0.25;
+
+        //first call -> init
         bool called = celix_bundleContext_useServiceWithOptions(context, &opts);
+        ASSERT_TRUE(called);
+
+        long svcId = celix_bundleContext_findService(context, "org.apache.celix.Example");
+        EXPECT_GE(svcId, 0);
+
+        //second call -> deinit
+        called = celix_bundleContext_useServiceWithOptions(context, &opts);
         ASSERT_TRUE(called);
     }
 

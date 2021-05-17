@@ -38,7 +38,4 @@ celix_status_t importRegistration_setSendFn(import_registration_t *reg,
 celix_status_t importRegistration_start(import_registration_t *import);
 celix_status_t importRegistration_stop(import_registration_t *import);
 
-celix_status_t importRegistration_getService(import_registration_t *import, celix_bundle_t *bundle, service_registration_t *registration, void **service);
-celix_status_t importRegistration_ungetService(import_registration_t *import, celix_bundle_t *bundle, service_registration_t *registration, void **service);
-
 #endif //CELIX_IMPORT_REGISTRATION_DFI_H
