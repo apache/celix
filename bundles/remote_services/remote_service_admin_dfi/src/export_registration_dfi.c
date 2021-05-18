@@ -40,6 +40,7 @@ struct export_registration {
     struct export_reference exportReference;
     char *servId;
     dyn_interface_type *intf; //owner
+    char filter[32];
 
 
     celix_thread_mutex_t mutex;
@@ -259,16 +260,15 @@ void exportRegistration_destroy(export_registration_t *reg) {
 celix_status_t exportRegistration_start(export_registration_t *reg) {
     celix_status_t status = CELIX_SUCCESS;
 
-    char filter[32];
-    snprintf(filter, 32, "(service.id=%s)", reg->servId);
+    snprintf(reg->filter, 32, "(service.id=%s)", reg->servId);
     celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
-    opts.filter.filter = filter;
+    opts.filter.filter = reg->filter;
     opts.filter.serviceName = "*";
     opts.filter.ignoreServiceLanguage = true;
     opts.callbackHandle = reg;
     opts.add = exportRegistration_addServ;
     opts.remove = exportRegistration_removeServ;
-    long newTrkId = celix_bundleContext_trackServicesWithOptions(reg->context, &opts);
+    long newTrkId = celix_bundleContext_trackServicesWithOptionsAsync(reg->context, &opts);
 
     celixThreadMutex_lock(&reg->mutex);
     long prevTrkId = reg->trackerId;

@@ -144,6 +144,7 @@ extern "C" {
         bool called = celix_bundleContext_useServiceWithOptions(context, &opts);
         ASSERT_TRUE(called);
 
+        celix_framework_waitForEmptyEventQueue(celix_bundleContext_getFramework(context));
         long svcId = celix_bundleContext_findService(context, "org.apache.celix.Example");
         EXPECT_GE(svcId, 0);
 
