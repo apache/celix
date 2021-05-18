@@ -29,13 +29,11 @@ typedef void (*send_func_type)(void *handle, endpoint_description_t *endpointDes
 
 celix_status_t importRegistration_create(celix_bundle_context_t *context, endpoint_description_t *description, const char *classObject, const char* serviceVersion, FILE *logFile,
                                          import_registration_t **import);
-celix_status_t importRegistration_close(import_registration_t *import);
 void importRegistration_destroy(import_registration_t *import);
 
 celix_status_t importRegistration_setSendFn(import_registration_t *reg,
                                             send_func_type,
                                             void *handle);
 celix_status_t importRegistration_start(import_registration_t *import);
-celix_status_t importRegistration_stop(import_registration_t *import);
 
 #endif //CELIX_IMPORT_REGISTRATION_DFI_H

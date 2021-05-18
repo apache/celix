@@ -320,7 +320,6 @@ void* remoteServiceAdmin_stopExportsThread(void *data) {
         }
         for (int i = 0; i < celix_arrayList_size(admin->stopExports); ++i) {
             export_registration_t *export = celix_arrayList_get(admin->stopExports, i);
-            exportRegistration_stop(export);
             exportRegistration_destroy(export);
         }
         celix_arrayList_clear(admin->stopExports);
@@ -365,7 +364,6 @@ static void remoteServiceAdmin_stopExport(remote_service_admin_t *admin, export_
             celixThreadMutex_unlock(&admin->stopExportsMutex);
         } else {
             exportRegistration_waitTillNotUsed(export);
-            exportRegistration_stop(export);
             exportRegistration_destroy(export);
         }
     }
@@ -397,7 +395,6 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_t *admin) {
     for (i = 0; i < size ; i += 1) {
         import_registration_t *import = arrayList_get(admin->importedServices, i);
         if (import != NULL) {
-            importRegistration_stop(import);
             importRegistration_destroy(import);
         }
     }
@@ -617,7 +614,6 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *admin, c
             export_registration_t *registration = NULL;
 
             remoteServiceAdmin_createEndpointDescription(admin, reference, properties, (char *) interface, &endpoint);
-            //TODO precheck if descriptor exists
             status = exportRegistration_create(admin->loghelper, reference, endpoint, admin->context, admin->logFile,
                                                &registration);
             if (status == CELIX_SUCCESS) {
@@ -876,7 +872,6 @@ celix_status_t remoteServiceAdmin_removeImportedService(remote_service_admin_t *
         current = arrayList_get(admin->importedServices, i);
         if (current == registration) {
             arrayList_remove(admin->importedServices, i);
-            importRegistration_close(current);
             importRegistration_destroy(current);
             break;
         }

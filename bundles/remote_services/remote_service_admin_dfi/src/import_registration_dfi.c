@@ -126,22 +126,32 @@ static void importRegistration_clearProxies(import_registration_t *import) {
     }
 }
 
+static void importRegistration_destroyCallback(void* data) {
+    import_registration_t* import = data;
+    importRegistration_clearProxies(import);
+    if (import->proxies != NULL) {
+        hashMap_destroy(import->proxies, false, false);
+        import->proxies = NULL;
+    }
+
+    remoteInterceptorsHandler_destroy(import->interceptorsHandler);
+
+    pthread_mutex_destroy(&import->mutex);
+    pthread_mutex_destroy(&import->proxiesMutex);
+
+    if (import->version != NULL) {
+        version_destroy(import->version);
+    }
+    free(import);
+}
+
 void importRegistration_destroy(import_registration_t *import) {
     if (import != NULL) {
-        if (import->proxies != NULL) {
-            hashMap_destroy(import->proxies, false, false);
-            import->proxies = NULL;
+        if (import->factorySvcId >= 0) {
+            celix_bundleContext_unregisterServiceAsync(import->context, import->factorySvcId, import, importRegistration_destroyCallback);
+        } else {
+            importRegistration_destroyCallback(import);
         }
-
-        remoteInterceptorsHandler_destroy(import->interceptorsHandler);
-
-        pthread_mutex_destroy(&import->mutex);
-        pthread_mutex_destroy(&import->proxiesMutex);
-
-        if(import->version!=NULL){
-        	version_destroy(import->version);
-        }
-        free(import);
     }
 }
 
@@ -149,15 +159,6 @@ celix_status_t importRegistration_start(import_registration_t *import) {
     celix_properties_t *props =  celix_properties_copy(import->endpoint->properties);
     import->factorySvcId = celix_bundleContext_registerServiceFactoryAsync(import->context, &import->factory, import->classObject, props);
     return import->factorySvcId >= 0 ? CELIX_SUCCESS : CELIX_ILLEGAL_STATE;
-}
-
-celix_status_t importRegistration_stop(import_registration_t *import) {
-    if (import != NULL) {
-        celix_bundleContext_unregisterService(import->context, import->factorySvcId);
-        import->factorySvcId = -1;
-        importRegistration_clearProxies(import);
-    }
-    return CELIX_SUCCESS;
 }
 
 static void* importRegistration_getService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties) {
@@ -383,13 +384,6 @@ static void importRegistration_destroyProxy(struct service_proxy *proxy) {
         }
         free(proxy);
     }
-}
-
-
-celix_status_t importRegistration_close(import_registration_t *registration) {
-    celix_status_t status = CELIX_SUCCESS;
-    importRegistration_stop(registration);
-    return status;
 }
 
 celix_status_t importRegistration_getException(import_registration_t *registration) {
