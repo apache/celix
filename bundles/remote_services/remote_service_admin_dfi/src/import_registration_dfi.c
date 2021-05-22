@@ -34,7 +34,6 @@ struct import_registration {
     const char *classObject; //NOTE owned by endpoint
     version_pt version;
 
-    celix_thread_mutex_t mutex; //protects send & sendhandle
     send_func_type send;
     void *sendHandle;
 
@@ -67,17 +66,26 @@ static const char* importRegistration_getServiceName(import_registration_t *reg)
 static void* importRegistration_getService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties);
 void importRegistration_ungetService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties);
 
-celix_status_t importRegistration_create(celix_bundle_context_t *context, endpoint_description_t *endpoint, const char *classObject, const char* serviceVersion, FILE *logFile, import_registration_t **out) {
+celix_status_t importRegistration_create(
+        celix_bundle_context_t *context,
+        endpoint_description_t *endpoint,
+        const char *classObject,
+        const char* serviceVersion,
+        send_func_type sendFn,
+        void* sendFnHandle,
+        FILE *logFile,
+        import_registration_t **out) {
     celix_status_t status = CELIX_SUCCESS;
     import_registration_t *reg = calloc(1, sizeof(*reg));
     reg->context = context;
     reg->endpoint = endpoint;
     reg->classObject = classObject;
+    reg->send = sendFn;
+    reg->sendHandle = sendFnHandle;
     reg->proxies = hashMap_create(NULL, NULL, NULL, NULL);
 
     remoteInterceptorsHandler_create(context, &reg->interceptorsHandler);
 
-    celixThreadMutex_create(&reg->mutex, NULL);
     celixThreadMutex_create(&reg->proxiesMutex, NULL);
     status = version_createVersionFromString((char*)serviceVersion,&(reg->version));
 
@@ -96,18 +104,6 @@ celix_status_t importRegistration_create(celix_bundle_context_t *context, endpoi
     }
 
     return status;
-}
-
-
-celix_status_t importRegistration_setSendFn(import_registration_t *reg,
-                                            send_func_type send,
-                                            void *handle) {
-    celixThreadMutex_lock(&reg->mutex);
-    reg->send = send;
-    reg->sendHandle = handle;
-    celixThreadMutex_unlock(&reg->mutex);
-
-    return CELIX_SUCCESS;
 }
 
 static void importRegistration_clearProxies(import_registration_t *import) {
@@ -136,7 +132,6 @@ static void importRegistration_destroyCallback(void* data) {
 
     remoteInterceptorsHandler_destroy(import->interceptorsHandler);
 
-    pthread_mutex_destroy(&import->mutex);
     pthread_mutex_destroy(&import->proxiesMutex);
 
     if (import->version != NULL) {
@@ -339,11 +334,7 @@ static void importRegistration_proxyFunc(void *userData, void *args[], void *ret
         celix_properties_t *metadata = NULL;
         bool cont = remoteInterceptorHandler_invokePreProxyCall(import->interceptorsHandler, import->endpoint->properties, entry->name, &metadata);
         if (cont) {
-            celixThreadMutex_lock(&import->mutex);
-            if (import->send != NULL) {
-                import->send(import->sendHandle, import->endpoint, invokeRequest, metadata, &reply, &rc);
-            }
-            celixThreadMutex_unlock(&import->mutex);
+            import->send(import->sendHandle, import->endpoint, invokeRequest, metadata, &reply, &rc);
             //printf("request sended. got reply '%s' with status %i\n", reply, rc);
 
             if (rc == 0 && dynFunction_hasReturn(entry->dynFunc)) {

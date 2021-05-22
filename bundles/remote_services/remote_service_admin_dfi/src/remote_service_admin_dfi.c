@@ -288,9 +288,10 @@ celix_status_t remoteServiceAdmin_create(celix_bundle_context_t *context, remote
 }
 
 
-celix_status_t remoteServiceAdmin_destroy(remote_service_admin_t **admin)
-{
+celix_status_t remoteServiceAdmin_destroy(remote_service_admin_t **admin) {
     celix_status_t status = CELIX_SUCCESS;
+
+    celix_bundleContext_waitForEvents((*admin)->context);
 
     if ( (*admin)->logFile != NULL && (*admin)->logFile != stdout) {
         fclose((*admin)->logFile);
@@ -837,10 +838,9 @@ celix_status_t remoteServiceAdmin_importService(remote_service_admin_t *admin, e
 
         if (objectClass != NULL) {
             status = importRegistration_create(admin->context, endpointDescription, objectClass, serviceVersion,
-                                               admin->logFile, &import);
-        }
-        if (status == CELIX_SUCCESS && import != NULL) {
-            importRegistration_setSendFn(import, (send_func_type) remoteServiceAdmin_send, admin);
+                                               (send_func_type )remoteServiceAdmin_send, admin,
+                                               admin->logFile,
+                                               &import);
         }
 
         if (status == CELIX_SUCCESS && import != NULL) {
