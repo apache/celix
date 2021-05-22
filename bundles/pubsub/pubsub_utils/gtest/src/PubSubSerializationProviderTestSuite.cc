@@ -21,7 +21,8 @@
 
 #include <memory>
 
-#include <celix_api.h>
+#include "celix_api.h"
+#include "pubsub_message_serialization_marker.h"
 #include "pubsub_serialization_provider.h"
 
 class PubSubSerializationProviderTestSuite : public ::testing::Test {
@@ -48,6 +49,8 @@ public:
 TEST_F(PubSubSerializationProviderTestSuite, CreateDestroy) {
     //checks if the bundles are started and stopped correctly (no mem leaks).
     auto* provider = pubsub_serializationProvider_create(ctx.get(), "test", 0, nullptr, nullptr, nullptr, nullptr);
+    auto count = celix_bundleContext_useService(ctx.get(), PUBSUB_MESSAGE_SERIALIZATION_MARKER_NAME, nullptr, nullptr);
+    EXPECT_EQ(1, count);
     pubsub_serializationProvider_destroy(provider);
 }
 

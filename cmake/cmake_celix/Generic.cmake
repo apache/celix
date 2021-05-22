@@ -30,7 +30,6 @@ add_celix_bundle_dependencies(<cmake_target>
 function(add_celix_bundle_dependencies)
     list(GET ARGN 0 TARGET)
     list(REMOVE_AT ARGN 0)
-    message("TEST")
     foreach(BUNDLE_TARGET IN LISTS ARGN)
         if (TARGET ${BUNDLE_TARGET})
             get_target_property(IMPORT ${BUNDLE_TARGET} BUNDLE_IMPORTED)

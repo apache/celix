@@ -22,7 +22,7 @@
 #include <memory>
 
 #include <celix_api.h>
-#include "pubsub_serializer_handler.h"
+#include "pubsub_message_serialization_service.h"
 #include "dyn_message.h"
 #include <cstdarg>
 #include <pubsub_protocol.h>

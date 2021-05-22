@@ -51,7 +51,7 @@ add_executable(test_pubsub_utils
 		src/PubSubSerializationProviderTestSuite.cc
 		src/PubSubMatchingTestSuite.cpp
 )
-target_link_libraries(test_pubsub_utils PRIVATE Celix::framework Celix::pubsub_utils GTest::gtest GTest::gtest_main)
+target_link_libraries(test_pubsub_utils PRIVATE Celix::framework Celix::pubsub_utils GTest::gtest GTest::gtest_main Celix::pubsub_spi)
 target_compile_options(test_pubsub_utils PRIVATE -std=c++14) #Note test code is allowed to be C++14
 add_test(NAME test_pubsub_utils COMMAND test_pubsub_utils)
 setup_target_for_coverage(test_pubsub_utils SCAN_DIR ..)

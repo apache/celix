@@ -28,7 +28,8 @@ target_include_directories(pubsub_utils PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
         $<INSTALL_INTERFACE:include/celix/pubsub_utils>
 )
-target_link_libraries(pubsub_utils PUBLIC Celix::framework Celix::pubsub_api Celix::pubsub_spi Celix::log_helper Celix::shell_api)
+target_link_libraries(pubsub_utils PUBLIC Celix::framework Celix::pubsub_api Celix::log_helper Celix::shell_api)
+target_link_libraries(pubsub_utils PRIVATE Celix::pubsub_spi)
 
 add_library(Celix::pubsub_utils ALIAS pubsub_utils)
 

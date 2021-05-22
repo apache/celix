@@ -54,6 +54,9 @@ struct pubsub_serializer_handler {
     hash_map_t *serializationServices; //key = msg id, value = sorted array list with pubsub_serialization_service_entry_t*
 };
 
+static void pubsub_serializerHandler_addSerializationService(pubsub_serializer_handler_t* handler, pubsub_message_serialization_service_t* svc, const celix_properties_t* svcProperties);
+static void pubsub_serializerHandler_removeSerializationService(pubsub_serializer_handler_t* handler, pubsub_message_serialization_service_t* svc, const celix_properties_t* svcProperties);
+
 static void addSerializationService(void *handle, void* svc, const celix_properties_t *props) {
     pubsub_serializer_handler_t* handler = handle;
     pubsub_message_serialization_service_t* serSvc = svc;
@@ -66,7 +69,7 @@ static void removeSerializationService(void *handle, void* svc, const celix_prop
     pubsub_serializerHandler_removeSerializationService(handler, serSvc, props);
 }
 
-int compareEntries(const void *a, const void *b) {
+static int compareEntries(const void *a, const void *b) {
     const pubsub_serialization_service_entry_t* aEntry = a;
     const pubsub_serialization_service_entry_t* bEntry = b;
 

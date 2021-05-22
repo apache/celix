@@ -25,15 +25,6 @@
 #include "celix_bundle.h"
 #include "sys/uio.h"
 
-/**
- * There should be a pubsub_serializer_t
- * per msg type (msg id) per bundle
- *
- * The pubsub_serializer_service can create
- * a serializer_map per bundle. Potentially using
- * the extender pattern.
- */
-
 #define PUBSUB_MESSAGE_SERIALIZATION_SERVICE_NAME      "pubsub_message_serialization_service"
 #define PUBSUB_MESSAGE_SERIALIZATION_SERVICE_VERSION   "1.0.0"
 #define PUBSUB_MESSAGE_SERIALIZATION_SERVICE_RANGE     "[1,2)"
@@ -44,7 +35,7 @@
 #define PUBSUB_MESSAGE_SERIALIZATION_SERVICE_MSG_ID_PROPERTY                 "msg.id"
 
 /**
- * A message serialization service for a serialization type (e.g. json) and
+ * @brief A message serialization service for a serialization type (e.g. json) and
  * for a specific msg type (based on the fully qualified name) and version.
  *
  * The properties serialization.type, msg,fqn, msg.version and msg.id are mandatory
@@ -53,7 +44,7 @@ typedef struct pubsub_message_serialization_service {
     void* handle;
 
     /**
-     * Serialize a message into iovec structs (set of structures with buffer pointer and length)
+     * @brief Serialize a message into iovec structs (set of structures with buffer pointer and length)
      *
      * The correct message serialization services will be selected based on the provided msgId.
      *
@@ -67,12 +58,12 @@ typedef struct pubsub_message_serialization_service {
     celix_status_t (*serialize)(void* handle, const void* input, struct iovec** output, size_t* outputIovLen);
 
     /**
-     * Free the memory of for the serialized msg.
+     * @brief Free the memory of for the serialized msg.
      */
     void (*freeSerializedMsg)(void* handle, struct iovec* input, size_t inputIovLen);
 
     /**
-     * Deserialize a message using the provided iovec buffers.
+     * @brief Deserialize a message using the provided iovec buffers.
      *
      * The deserialize function will also check if the target major/minor version of the message is valid with the version
      * of the serialized data.
@@ -95,7 +86,7 @@ typedef struct pubsub_message_serialization_service {
     celix_status_t (*deserialize)(void* handle, const struct iovec* input, size_t inputIovLen, void** out); //note inputLen can be 0 if predefined size is not needed
 
     /**
-     * Free the memory for the  deserialized message.
+     * @brief Free the memory for the  deserialized message.
      */
     void (*freeDeserializedMsg)(void* handle, void* msg);
 
