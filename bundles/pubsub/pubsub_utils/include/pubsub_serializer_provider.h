@@ -22,22 +22,26 @@
 
 typedef struct pubsub_serializer_provider pubsub_serializer_provider_t; //opaque type
 
-
-/**
- * Creates a handler which track bundles and registers pubsub_custom_msg_serialization_service
- * for every descriptor file found for json serialization.
- *
- * Added properties:
- * serialization.type=json
- * targeted.msg.fqn=<descriptor fqn>
- * targeted.msg.id=<msg fqn hash or msg id annotated in the descriptor>
- * targeted.msg.version=<msg version in descriptor if present> (optional)
- * service.ranking=0
- *
- * For descriptor found multiple times (same fqn and version) only the first one is registered
- *
- */
-pubsub_serializer_provider_t* pubsub_providerHandler_create(celix_bundle_context_t* ctx, const char *serializerType /* i.e. json */);
+ /**
+  *
+  * Creates a handler which track bundles and registers pubsub_custom_msg_serialization_service
+  * for every descriptor file found for json serialization.
+  *
+  * Added properties:
+  * serialization.type=json
+  * targeted.msg.fqn=<descriptor fqn>
+  * targeted.msg.id=<msg fqn hash or msg id annotated in the descriptor>
+  * targeted.msg.version=<msg version in descriptor if present> (optional)
+  * service.ranking=0
+  *
+  * For descriptor found multiple times (same fqn and version) only the first one is registered
+  *
+  * @param ctx
+  * @param serializerType
+  * @param backwardsCompatible
+  * @return
+  */
+pubsub_serializer_provider_t* pubsub_providerHandler_create(celix_bundle_context_t* ctx, const char *serializerType /* i.e. json */, bool backwardsCompatible);
 
 void pubsub_providerHandler_destroy(pubsub_serializer_provider_t* handler);
 

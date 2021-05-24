@@ -20,7 +20,7 @@
 #ifndef CELIX_PUBSUB_ZMQ_TOPIC_SENDER_H
 #define CELIX_PUBSUB_ZMQ_TOPIC_SENDER_H
 
-#include <pubsub_message_serialization_service.h>
+#include "pubsub_serializer_handler.h"
 #include "celix_bundle_context.h"
 #include "pubsub_admin_metrics.h"
 #include "celix_log_helper.h"
@@ -32,7 +32,7 @@ pubsub_zmq_topic_sender_t* pubsub_zmqTopicSender_create(
         celix_log_helper_t *logHelper,
         const char *scope,
         const char *topic,
-        const char* serializerType,
+        pubsub_serializer_handler_t* serializationHandler,
         void *admin,
         long protocolSvcId,
         pubsub_protocol_service_t *prot,
@@ -40,6 +40,7 @@ pubsub_zmq_topic_sender_t* pubsub_zmqTopicSender_create(
         const char *staticBindUrl,
         unsigned int basePort,
         unsigned int maxPort);
+
 void pubsub_zmqTopicSender_destroy(pubsub_zmq_topic_sender_t *sender);
 
 const char* pubsub_zmqTopicSender_scope(pubsub_zmq_topic_sender_t *sender);

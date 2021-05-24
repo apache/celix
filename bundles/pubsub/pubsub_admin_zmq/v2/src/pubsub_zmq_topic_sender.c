@@ -21,17 +21,18 @@
 #include <pubsub_protocol.h>
 #include <stdlib.h>
 #include <memory.h>
-#include <pubsub_constants.h>
-#include <pubsub/publisher.h>
-#include <utils.h>
-#include <zconf.h>
 #include <arpa/inet.h>
 #include <czmq.h>
-#include <celix_log_helper.h>
+#include <uuid/uuid.h>
+
+#include "celix_utils.h"
+#include "pubsub_constants.h"
+#include "pubsub/publisher.h"
+#include "celix_log_helper.h"
 #include "pubsub_zmq_topic_sender.h"
 #include "pubsub_psa_zmq_constants.h"
-#include <uuid/uuid.h>
-#include <celix_version.h>
+#include "celix_version.h"
+#include "pubsub_serializer_handler.h"
 #include "celix_constants.h"
 #include "pubsub_interceptors_handler.h"
 #include "pubsub_zmq_admin.h"
@@ -51,7 +52,7 @@
 struct pubsub_zmq_topic_sender {
     celix_bundle_context_t *ctx;
     celix_log_helper_t *logHelper;
-    const char *serializerType;
+    pubsub_serializer_handler_t* serializationHandler;
     void *admin;
     long protocolSvcId;
     pubsub_protocol_service_t *protocol;
@@ -85,8 +86,8 @@ struct pubsub_zmq_topic_sender {
 typedef struct psa_zmq_send_msg_entry {
     uint32_t type; //msg type id (hash of fqn)
     const char *fqn;
-    uint8_t major;
-    uint8_t minor;
+    uint16_t msgMajorVersion;
+    uint16_t msgMinorVersion;
     unsigned char originUUID[16];
     pubsub_protocol_service_t *protSer;
     unsigned int seqNr;
@@ -117,7 +118,8 @@ typedef struct psa_zmq_bounded_service_entry {
 } psa_zmq_bounded_service_entry_t;
 
 typedef struct psa_zmq_zerocopy_free_entry {
-    psa_zmq_serializer_entry_t *msgSer;
+    uint32_t msgId;
+    pubsub_serializer_handler_t *serHandler;
     struct iovec *serializedOutput;
     size_t serializedOutputLen;
 } psa_zmq_zerocopy_free_entry;
@@ -135,7 +137,7 @@ pubsub_zmq_topic_sender_t* pubsub_zmqTopicSender_create(
         celix_log_helper_t *logHelper,
         const char *scope,
         const char *topic,
-        const char* serializerType,
+        pubsub_serializer_handler_t* serializationHandler,
         void *admin,
         long protocolSvcId,
         pubsub_protocol_service_t *prot,
@@ -146,7 +148,7 @@ pubsub_zmq_topic_sender_t* pubsub_zmqTopicSender_create(
     pubsub_zmq_topic_sender_t *sender = calloc(1, sizeof(*sender));
     sender->ctx = ctx;
     sender->logHelper = logHelper;
-    sender->serializerType = celix_utils_strdup(serializerType);
+    sender->serializationHandler = serializationHandler;
     sender->admin = admin;
     sender->protocolSvcId = protocolSvcId;
     sender->protocol = prot;
@@ -352,13 +354,12 @@ void pubsub_zmqTopicSender_destroy(pubsub_zmq_topic_sender_t *sender) {
         }
         free(sender->topic);
         free(sender->url);
-        free((void*)sender->serializerType);
         free(sender);
     }
 }
 
 const char* pubsub_zmqTopicSender_serializerType(pubsub_zmq_topic_sender_t *sender) {
-    return sender->serializerType;
+    return pubsub_serializerHandler_getSerializationType(sender->serializationHandler);
 }
 
 long pubsub_zmqTopicSender_protocolSvcId(pubsub_zmq_topic_sender_t *sender) {
@@ -383,10 +384,7 @@ bool pubsub_zmqTopicSender_isStatic(pubsub_zmq_topic_sender_t *sender) {
 
 static int psa_zmq_localMsgTypeIdForMsgType(void* handle, const char* msgType, unsigned int* msgTypeId) {
     psa_zmq_bounded_service_entry_t *entry = (psa_zmq_bounded_service_entry_t *) handle;
-    int64_t rc = pubsub_zmqAdmin_getMessageIdForMessageFqn(entry->parent->admin, entry->parent->serializerType, msgType);
-    if(rc >= 0) {
-        *msgTypeId = (unsigned int)rc;
-    }
+    *msgTypeId = pubsub_serializerHandler_getMsgId(entry->parent->serializationHandler, msgType);
     return 0;
 }
 
@@ -485,7 +483,7 @@ pubsub_admin_sender_metrics_t* pubsub_zmqTopicSender_metrics(pubsub_zmq_topic_se
 
 static void psa_zmq_freeMsg(void *msg, void *hint) {
     psa_zmq_zerocopy_free_entry *entry = hint;
-    entry->msgSer->svc->freeSerializedMsg(entry->msgSer->svc->handle, entry->serializedOutput, entry->serializedOutputLen);
+    pubsub_serializerHandler_freeSerializedMsg(entry->serHandler, entry->msgId, entry->serializedOutput, entry->serializedOutputLen);
     free(entry);
 }
 
@@ -500,14 +498,6 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
     pubsub_zmq_topic_sender_t *sender = bound->parent;
     bool monitor = sender->metricsEnabled;
 
-    psa_zmq_serializer_entry_t *serializer = pubsub_zmqAdmin_acquireSerializerForMessageId(sender->admin, sender->serializerType, msgTypeId);
-
-    if(serializer == NULL) {
-        pubsub_zmqAdmin_releaseSerializer(sender->admin, serializer);
-        L_WARN("[PSA_ZMQ_TS] Error cannot serialize message with serType %s msg type id %i for scope/topic %s/%s", sender->serializerType, msgTypeId, sender->scope == NULL ? "(null)" : sender->scope, sender->topic);
-        return CELIX_SERVICE_EXCEPTION;
-    }
-
     psa_zmq_send_msg_entry_t *entry = hashMap_get(bound->msgEntries, (void*)(uintptr_t)(msgTypeId));
 
     //metrics updates
@@ -519,15 +509,13 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
     int serializationErrorUpdate = 0;
     int sendCountUpdate = 0;
 
-    if(entry == NULL) {
+    if (entry == NULL) {
         entry = calloc(1, sizeof(psa_zmq_send_msg_entry_t));
         entry->protSer = sender->protocol;
         entry->type = msgTypeId;
-        entry->fqn = serializer->fqn;
-        celix_version_t* version = celix_version_createVersionFromString(serializer->version);
-        entry->major = (uint8_t)celix_version_getMajor(version);
-        entry->minor = (uint8_t)celix_version_getMinor(version);
-        celix_version_destroy(version);
+        entry->fqn = pubsub_serializerHandler_getMsgFqn(sender->serializationHandler, msgTypeId);
+        entry->msgMajorVersion = pubsub_serializerHandler_getMsgMajorVersion(sender->serializationHandler, msgTypeId);
+        entry->msgMinorVersion = pubsub_serializerHandler_getMsgMinorVersion(sender->serializationHandler, msgTypeId);
         uuid_copy(entry->originUUID, sender->fwUUID);
         celixThreadMutex_create(&entry->metrics.mutex, NULL);
         hashMap_put(bound->msgEntries, (void*)(uintptr_t)msgTypeId, entry);
@@ -540,8 +528,7 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
     }
     size_t serializedOutputLen = 0;
     struct iovec *serializedOutput = NULL;
-    status = serializer->svc->serialize(serializer->svc->handle, inMsg, &serializedOutput, &serializedOutputLen);
-
+    status = pubsub_serializerHandler_serialize(sender->serializationHandler, msgTypeId, inMsg, &serializedOutput, &serializedOutputLen);
     if (monitor) {
         clock_gettime(CLOCK_REALTIME, &serializationEnd);
     }
@@ -554,7 +541,7 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
             usleep(500);
         }
 
-        bool cont = pubsubInterceptorHandler_invokePreSend(sender->interceptorsHandler, serializer->fqn, msgTypeId, inMsg, &metadata);
+        bool cont = pubsubInterceptorHandler_invokePreSend(sender->interceptorsHandler, entry->fqn, msgTypeId, inMsg, &metadata);
         if (cont) {
 
             pubsub_protocol_message_t message;
@@ -576,8 +563,8 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
 
             message.header.msgId = msgTypeId;
             message.header.seqNr = entry->seqNr;
-            message.header.msgMajorVersion = 0;
-            message.header.msgMinorVersion = 0;
+            message.header.msgMajorVersion = entry->msgMajorVersion;
+            message.header.msgMinorVersion = entry->msgMinorVersion;
             message.header.payloadSize = payloadLength;
             message.header.metadataSize = entry->metadataBufferSize;
             message.header.payloadPartSize = payloadLength;
@@ -601,7 +588,8 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
                 zmq_msg_t msg4; // Footer
                 void *socket = zsock_resolve(sender->zmq.socket);
                 psa_zmq_zerocopy_free_entry *freeMsgEntry = malloc(sizeof(psa_zmq_zerocopy_free_entry));
-                freeMsgEntry->msgSer = serializer;
+                freeMsgEntry->serHandler = sender->serializationHandler;
+                freeMsgEntry->msgId = msgTypeId;
                 freeMsgEntry->serializedOutput = serializedOutput;
                 freeMsgEntry->serializedOutputLen = serializedOutputLen;
 
@@ -671,13 +659,13 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
 
                 __atomic_store_n(&entry->dataLocked, false, __ATOMIC_RELEASE);
             }
-            pubsubInterceptorHandler_invokePostSend(sender->interceptorsHandler, serializer->fqn, msgTypeId, inMsg, metadata);
+            pubsubInterceptorHandler_invokePostSend(sender->interceptorsHandler, entry->fqn, msgTypeId, inMsg, metadata);
 
             if (message.metadata.metadata) {
                 celix_properties_destroy(message.metadata.metadata);
             }
             if (!bound->parent->zeroCopyEnabled && serializedOutput) {
-                serializer->svc->freeSerializedMsg(serializer->svc->handle, serializedOutput, serializedOutputLen);
+                pubsub_serializerHandler_freeSerializedMsg(sender->serializationHandler, msgTypeId, serializedOutput, serializedOutputLen);
             }
 
             if (sendOk) {
@@ -691,15 +679,13 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
         }
     } else {
         serializationErrorUpdate = 1;
-        L_WARN("[PSA_ZMQ_TS] Error serialize message of type %s for scope/topic %s/%s", serializer->fqn, sender->scope == NULL ? "(null)" : sender->scope, sender->topic);
+        L_WARN("[PSA_ZMQ_TS] Error serialize message of type %s for scope/topic %s/%s", entry->fqn, sender->scope == NULL ? "(null)" : sender->scope, sender->topic);
     }
 
-    pubsub_zmqAdmin_releaseSerializer(sender->admin, serializer);
-
-    if (monitor && entry != NULL) {
+    if (monitor) {
         celixThreadMutex_lock(&entry->metrics.mutex);
 
-        long n = entry->metrics.nrOfMessagesSend + entry->metrics.nrOfMessagesSendFailed;
+        double n = (double)(entry->metrics.nrOfMessagesSend + entry->metrics.nrOfMessagesSendFailed);
         double diff = celix_difftime(&serializationStart, &serializationEnd);
         double average = (entry->metrics.averageSerializationTimeInSeconds * n + diff) / (n+1);
         entry->metrics.averageSerializationTimeInSeconds = average;
