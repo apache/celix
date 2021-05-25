@@ -91,6 +91,8 @@ struct remote_service_admin {
     struct mg_context *ctx;
 
     FILE *logFile;
+
+    bool curlShareEnabled;
     void *curlShare;
     pthread_mutex_t curlMutexConnect;
     pthread_mutex_t curlMutexCookie;
@@ -200,6 +202,7 @@ celix_status_t remoteServiceAdmin_create(celix_bundle_context_t *context, remote
         long port = celix_bundleContext_getPropertyAsLong(context, RSA_PORT_KEY, RSA_PORT_DEFAULT);
         const char *ip = celix_bundleContext_getProperty(context, RSA_IP_KEY, RSA_IP_DEFAULT);
         const char *interface = celix_bundleContext_getProperty(context, RSA_INTERFACE_KEY, NULL);
+        (*admin)->curlShareEnabled = celix_bundleContext_getPropertyAsBool(context, RSA_DFI_USE_CURL_SHARE_HANDLE, RSA_DFI_USE_CURL_SHARE_HANDLE_DEFAULT);
 
         char *detectedIp = NULL;
         if ((interface != NULL) && (remoteServiceAdmin_getIpAddress((char*)interface, &detectedIp) != CELIX_SUCCESS)) {
@@ -946,8 +949,9 @@ static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, remoteServiceAdmin_write);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&get);
         curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, (curl_off_t)post.size);
-        curl_easy_setopt(curl, CURLOPT_SHARE, rsa->curlShare);
-        //celix_logHelper_log(rsa->loghelper, CELIX_LOG_LEVEL_DEBUG, "RSA: Performing curl post\n");
+        if (rsa->curlShareEnabled) {
+            curl_easy_setopt(curl, CURLOPT_SHARE, rsa->curlShare);
+        }
         res = curl_easy_perform(curl);
 
         fputc('\0', get.stream);
