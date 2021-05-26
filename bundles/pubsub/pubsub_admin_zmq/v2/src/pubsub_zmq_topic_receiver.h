@@ -32,7 +32,7 @@ pubsub_zmq_topic_receiver_t* pubsub_zmqTopicReceiver_create(celix_bundle_context
         const char *scope,
         const char *topic,
         const celix_properties_t *topicProperties,
-        pubsub_serializer_handler_t* serHandler,
+        pubsub_serializer_handler_t* serializerHandler,
         void *admin,
         long protocolSvcId,
         pubsub_protocol_service_t *protocol);

@@ -111,7 +111,6 @@ TEST_F(PubSubSerializationHandlerTestSuite, SerializationServiceFound) {
     EXPECT_EQ(42, pubsub_serializerHandler_getMsgId(handler, "example::Msg"));
     auto *fqn = pubsub_serializerHandler_getMsgFqn(handler, 42);
     EXPECT_STREQ("example::Msg",  fqn);
-    free(fqn);
     EXPECT_TRUE(pubsub_serializerHandler_isMessageSupported(handler, 42, 1, 0));
     EXPECT_FALSE(pubsub_serializerHandler_isMessageSupported(handler, 42, 2, 0));
 
@@ -292,4 +291,26 @@ TEST_F(PubSubSerializationHandlerTestSuite, CreateHandlerFromMarker) {
     pubsub_serializerHandler_destroy(marker);
 
     celix_logHelper_destroy(logHelper);
+}
+
+TEST_F(PubSubSerializationHandlerTestSuite, GetMsgInfo) {
+    auto *handler = pubsub_serializerHandler_create(ctx.get(), "json", true);
+    EXPECT_FALSE(pubsub_serializerHandler_isMessageSerializationServiceAvailable(handler, 42));
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, pubsub_serializerHandler_getMsgInfo(handler, 42, nullptr, nullptr, nullptr));
+
+
+    long svcId1 = registerSerSvc("json", 42, "example::Msg1", "1.0.0");
+    EXPECT_TRUE(pubsub_serializerHandler_isMessageSerializationServiceAvailable(handler, 42));
+    EXPECT_EQ(CELIX_SUCCESS, pubsub_serializerHandler_getMsgInfo(handler, 42, nullptr, nullptr, nullptr));
+
+    const char* msgFqn;
+    int major;
+    int minor;
+    EXPECT_EQ(CELIX_SUCCESS, pubsub_serializerHandler_getMsgInfo(handler, 42, &msgFqn, &major, &minor));
+    EXPECT_STREQ("example::Msg1", msgFqn);
+    EXPECT_EQ(1, major);
+    EXPECT_EQ(0, minor);
+
+    celix_bundleContext_unregisterService(ctx.get(), svcId1);
+    pubsub_serializerHandler_destroy(handler);
 }

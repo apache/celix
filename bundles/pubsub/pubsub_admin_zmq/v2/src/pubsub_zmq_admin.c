@@ -66,11 +66,6 @@ struct pubsub_zmq_admin {
     bool verbose;
 
     struct {
-        celix_thread_rwlock_t mutex;
-        hash_map_t *map; //key = svcId, value = psa_zmq_serializer_entry_t*
-    } serializers;
-
-    struct {
         celix_thread_mutex_t mutex;
         hash_map_t *map; //key = svcId, value = psa_zmq_protocol_entry_t*
     } protocols;
@@ -189,9 +184,6 @@ pubsub_zmq_admin_t* pubsub_zmqAdmin_create(celix_bundle_context_t *ctx, celix_lo
     psa->qosSampleScore = celix_bundleContext_getPropertyAsDouble(ctx, PSA_ZMQ_QOS_SAMPLE_SCORE_KEY, PSA_ZMQ_DEFAULT_QOS_SAMPLE_SCORE);
     psa->qosControlScore = celix_bundleContext_getPropertyAsDouble(ctx, PSA_ZMQ_QOS_CONTROL_SCORE_KEY, PSA_ZMQ_DEFAULT_QOS_CONTROL_SCORE);
 
-    celixThreadRwlock_create(&psa->serializers.mutex, NULL);
-    psa->serializers.map = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
-
     celixThreadMutex_create(&psa->protocols.mutex, NULL);
     psa->protocols.map = hashMap_create(NULL, NULL, NULL, NULL);
 
@@ -241,15 +233,6 @@ void pubsub_zmqAdmin_destroy(pubsub_zmq_admin_t *psa) {
     }
     celixThreadMutex_unlock(&psa->discoveredEndpoints.mutex);
 
-    celixThreadRwlock_writeLock(&psa->serializers.mutex);
-    iter = hashMapIterator_construct(psa->serializers.map);
-    while (hashMapIterator_hasNext(&iter)) {
-        hash_map_t *entry = hashMapIterator_nextValue(&iter);
-        hashMap_destroy(entry, false, true);
-    }
-    hashMap_clear(psa->serializers.map, false, false);
-    celixThreadRwlock_unlock(&psa->serializers.mutex);
-
     celixThreadMutex_lock(&psa->protocols.mutex);
     iter = hashMapIterator_construct(psa->protocols.map);
     while (hashMapIterator_hasNext(&iter)) {
@@ -274,9 +257,6 @@ void pubsub_zmqAdmin_destroy(pubsub_zmq_admin_t *psa) {
 
     celixThreadMutex_destroy(&psa->discoveredEndpoints.mutex);
     hashMap_destroy(psa->discoveredEndpoints.map, false, false);
-
-    celixThreadRwlock_destroy(&psa->serializers.mutex);
-    hashMap_destroy(psa->serializers.map, false, false);
 
     celixThreadMutex_destroy(&psa->protocols.mutex);
     hashMap_destroy(psa->protocols.map, false, false);

@@ -24,6 +24,7 @@
 #include "pubsub_admin_metrics.h"
 #include "pubsub_protocol.h"
 #include "pubsub_tcp_common.h"
+#include "pubsub_serializer_handler.h"
 
 typedef struct pubsub_tcp_topic_sender pubsub_tcp_topic_sender_t;
 
@@ -32,7 +33,7 @@ pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
     celix_log_helper_t *logHelper,
     const char *scope,
     const char *topic,
-    const char *serializerType,
+    pubsub_serializer_handler_t* serializerHandler,
     void *admin,
     const celix_properties_t *topicProperties,
     pubsub_tcp_endPointStore_t *handlerStore,
@@ -46,7 +47,6 @@ const char *pubsub_tcpTopicSender_url(pubsub_tcp_topic_sender_t *sender);
 const char* pubsub_tcpTopicSender_serializerType(pubsub_tcp_topic_sender_t *sender);
 bool pubsub_tcpTopicSender_isStatic(pubsub_tcp_topic_sender_t *sender);
 bool pubsub_tcpTopicSender_isPassive(pubsub_tcp_topic_sender_t *sender);
-long pubsub_tcpTopicSender_serializerSvcId(pubsub_tcp_topic_sender_t *sender);
 long pubsub_tcpTopicSender_protocolSvcId(pubsub_tcp_topic_sender_t *sender);
 
 /**

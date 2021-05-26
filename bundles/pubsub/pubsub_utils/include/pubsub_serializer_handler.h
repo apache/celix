@@ -138,10 +138,15 @@ celix_status_t pubsub_serializerHandler_freeDeserializedMsg(pubsub_serializer_ha
 bool pubsub_serializerHandler_isMessageSupported(pubsub_serializer_handler_t* handler, uint32_t msgId, int majorVersion, int minorVersion);
 
 /**
- * @brief Get msg fqn from a msg id.
- * @return msg fqn or NULL if msg id is not known.
+ * @brief Whether the serializer handler has found 1 or more pubsub_message_serialization_service for the provided msg id.
  */
-char* pubsub_serializerHandler_getMsgFqn(pubsub_serializer_handler_t* handler, uint32_t msgId);
+bool pubsub_serializerHandler_isMessageSerializationServiceAvailable(pubsub_serializer_handler_t* handler, uint32_t msgId);
+
+/**
+ * @brief Get msg fqn from a msg id.
+ * @return msg fqn or NULL if msg id is not known. msg fqn is valid as long as the handler exists.
+ */
+const char* pubsub_serializerHandler_getMsgFqn(pubsub_serializer_handler_t* handler, uint32_t msgId);
 
 /**
  * @brief Get a msg id from a msgFqn.
@@ -175,6 +180,24 @@ int pubsub_serializerHandler_getMsgMinorVersion(pubsub_serializer_handler_t* han
  * Returns -1 if message cannot be found.
  */
 int pubsub_serializerHandler_getMsgMajorVersion(pubsub_serializer_handler_t* handler, uint32_t msgId);
+
+
+/**
+ * @brief Returns msg info (fqn, major version, minor version) in 1 call.
+ *
+ * @param handler               The serializer handler
+ * @param msgId                 The msg id where to get the info for
+ * @param msgFqnOut             If not NULL will be set to the msgFqn (valid as long as the serializer handler is valid)
+ * @param msgMajorVersionOut    If not NULL will be set to the msg major version
+ * @param msgMinorVersionOut    If not NULL will be set to the msg minor version
+ * @return                      CELIX_SUCCESS on success, CELIX_ILLEGAL_ARGUMENT if the message for the provided msg id cannot be found.
+ */
+celix_status_t pubsub_serializerHandler_getMsgInfo(
+        pubsub_serializer_handler_t* handler,
+        uint32_t msgId,
+        const char** msgFqnOut,
+        int* msgMajorVersionOut,
+        int* msgMinorVersionOut);
 
 #ifdef __cplusplus
 }
