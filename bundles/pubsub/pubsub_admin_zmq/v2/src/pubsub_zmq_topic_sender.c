@@ -498,6 +498,7 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
     pubsub_zmq_topic_sender_t *sender = bound->parent;
     bool monitor = sender->metricsEnabled;
 
+    //TODO remove use of entry, so that one less lock is needed and drop metrics stuff
     psa_zmq_send_msg_entry_t *entry = hashMap_get(bound->msgEntries, (void*)(uintptr_t)(msgTypeId));
 
     //metrics updates

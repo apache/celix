@@ -452,6 +452,10 @@ static inline void processMsgForSubscriberEntry(pubsub_zmq_topic_receiver_t *rec
     int updateSerError = 0;
 
     const char* msgFqn = pubsub_serializerHandler_getMsgFqn(receiver->serializerHandler, message->header.msgId);
+    if (msgFqn == NULL) {
+        L_WARN("Cannot find msg fqn for msg id %u", message->header.msgId);
+        return;
+    }
 
     void *deserializedMsg = NULL;
     bool validVersion = pubsub_serializerHandler_isMessageSupported(receiver->serializerHandler, message->header.msgId, message->header.msgMajorVersion, message->header.msgMinorVersion);

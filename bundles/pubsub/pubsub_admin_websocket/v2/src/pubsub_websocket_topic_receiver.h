@@ -20,8 +20,9 @@
 #ifndef CELIX_PUBSUB_WEBSOCKET_TOPIC_RECEIVER_H
 #define CELIX_PUBSUB_WEBSOCKET_TOPIC_RECEIVER_H
 
-#include <pubsub_admin_metrics.h>
+#include "pubsub_admin_metrics.h"
 #include "celix_bundle_context.h"
+#include "pubsub_serializer_handler.h"
 
 typedef struct pubsub_websocket_topic_receiver pubsub_websocket_topic_receiver_t;
 
@@ -30,7 +31,7 @@ pubsub_websocket_topic_receiver_t* pubsub_websocketTopicReceiver_create(celix_bu
         const char *scope,
         const char *topic,
         const celix_properties_t *topicProperties,
-        const char *serType,
+        pubsub_serializer_handler_t* serializerHandler,
         void *admin);
 void pubsub_websocketTopicReceiver_destroy(pubsub_websocket_topic_receiver_t *receiver);
 

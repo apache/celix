@@ -42,7 +42,7 @@ typedef struct pubsub_serialization_service_entry {
     const celix_properties_t *properties;
     uint32_t msgId;
     celix_version_t* msgVersion;
-    char* msgFqn;
+    const char* msgFqn;
     pubsub_message_serialization_service_t* svc;
 } pubsub_serialization_service_entry_t;
 
@@ -185,7 +185,6 @@ static void pubsub_serializerHandler_destroyCallback(void* data) {
         celix_array_list_t *entries = hashMapIterator_nextValue(&iter);
         for (int i = 0; i < celix_arrayList_size(entries); ++i) {
             pubsub_serialization_service_entry_t* entry = celix_arrayList_get(entries, i);
-            free(entry->msgFqn);
             celix_version_destroy(entry->msgVersion);
             free(entry);
         }
@@ -239,6 +238,12 @@ void pubsub_serializerHandler_addSerializationService(pubsub_serializer_handler_
     }
 
     if (valid) {
+        char* fqn = hashMap_get(handler->msgFullyQualifiedNames, (void*)(uintptr_t)msgId);
+        if (fqn == NULL) {
+            fqn = celix_utils_strdup(msgFqn);
+            hashMap_put(handler->msgFullyQualifiedNames, (void*)(uintptr_t)msgId, fqn);
+        }
+
         celix_array_list_t *entries = hashMap_get(handler->serializationServices, (void *) (uintptr_t) msgId);
         if (entries == NULL) {
             entries = celix_arrayList_create();
@@ -246,7 +251,7 @@ void pubsub_serializerHandler_addSerializationService(pubsub_serializer_handler_
         pubsub_serialization_service_entry_t *entry = calloc(1, sizeof(*entry));
         entry->svcId = svcId;
         entry->properties = svcProperties;
-        entry->msgFqn = celix_utils_strdup(msgFqn);
+        entry->msgFqn = fqn;
         entry->msgId = msgId;
         entry->msgVersion = msgVersion;
         entry->svc = svc;
@@ -256,11 +261,6 @@ void pubsub_serializerHandler_addSerializationService(pubsub_serializer_handler_
         hashMap_put(handler->serializationServices, (void*)(uintptr_t)msgId, entries);
     } else {
         celix_version_destroy(msgVersion);
-    }
-
-    char* fqn = hashMap_get(handler->msgFullyQualifiedNames, (void*)(uintptr_t)msgId);
-    if (fqn == NULL) {
-        hashMap_put(handler->msgFullyQualifiedNames, (void*)(uintptr_t)msgId, celix_utils_strdup(msgFqn));
     }
 
     celixThreadRwlock_unlock(&handler->lock);
@@ -288,7 +288,6 @@ void pubsub_serializerHandler_removeSerializationService(pubsub_serializer_handl
             }
         }
         if (found != NULL) {
-            free(found->msgFqn);
             celix_version_destroy(found->msgVersion);
             free(found);
         }

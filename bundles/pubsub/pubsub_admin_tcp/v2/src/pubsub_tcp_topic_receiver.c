@@ -459,6 +459,10 @@ processMsgForSubscriberEntry(pubsub_tcp_topic_receiver_t *receiver, psa_tcp_subs
     //NOTE receiver->subscribers.mutex locked
 
     const char* msgFqn = pubsub_serializerHandler_getMsgFqn(receiver->serializerHandler, message->header.msgId);
+    if (msgFqn == NULL) {
+        L_WARN("Cannot find msg fqn for msg id %u", message->header.msgId);
+        return;
+    }
 
     void *deSerializedMsg = NULL;
     bool validVersion = pubsub_serializerHandler_isMessageSupported(receiver->serializerHandler, message->header.msgId, message->header.msgMajorVersion, message->header.msgMinorVersion);

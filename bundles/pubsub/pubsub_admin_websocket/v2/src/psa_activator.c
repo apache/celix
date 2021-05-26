@@ -53,17 +53,6 @@ int psa_websocket_start(psa_websocket_activator_t *act, celix_bundle_context_t *
     act->admin = pubsub_websocketAdmin_create(ctx, act->logHelper);
     celix_status_t status = act->admin != NULL ? CELIX_SUCCESS : CELIX_BUNDLE_EXCEPTION;
 
-    //track serializers (only json)
-    if (status == CELIX_SUCCESS) {
-        celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
-        opts.filter.serviceName = PUBSUB_MESSAGE_SERIALIZATION_SERVICE_NAME;
-        opts.filter.ignoreServiceLanguage = true;
-        opts.callbackHandle = act->admin;
-        opts.addWithProperties = pubsub_websocketAdmin_addSerializerSvc;
-        opts.removeWithProperties = pubsub_websocketAdmin_removeSerializerSvc;
-        act->serializersTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
-    }
-
     //register pubsub admin service
     if (status == CELIX_SUCCESS) {
         pubsub_admin_service_t *psaSvc = &act->adminService;
