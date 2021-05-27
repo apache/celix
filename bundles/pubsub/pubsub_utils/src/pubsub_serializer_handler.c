@@ -458,7 +458,7 @@ int pubsub_serializerHandler_getMsgInfo(
         if (msgFqnOut != NULL) {
             *msgFqnOut = entry->msgFqn;
         }
-        if (msgMinorVersionOut != NULL) {
+        if (msgMajorVersionOut != NULL) {
             *msgMajorVersionOut = celix_version_getMajor(entry->msgVersion);
         }
         if (msgMinorVersionOut != NULL) {
