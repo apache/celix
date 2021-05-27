@@ -361,8 +361,8 @@ psa_tcp_topicPublicationSend(void *handle, unsigned int msgTypeId, const void *i
     pubsub_tcp_topic_sender_t *sender = bound->parent;
     const char* msgFqn;
     int majorVersion;
-    int minorversion;
-    celix_status_t status = pubsub_serializerHandler_getMsgInfo(sender->serializerHandler, msgTypeId, &msgFqn, &majorVersion, &minorversion);
+    int minorVersion;
+    celix_status_t status = pubsub_serializerHandler_getMsgInfo(sender->serializerHandler, msgTypeId, &msgFqn, &majorVersion, &minorVersion);
 
     if (status != CELIX_SUCCESS) {
         L_WARN("Cannot find serializer for msg id %u for serializer %s", msgTypeId,
@@ -370,59 +370,61 @@ psa_tcp_topicPublicationSend(void *handle, unsigned int msgTypeId, const void *i
         return status;
     }
 
-    delay_first_send_for_late_joiners(sender);
+    bool cont = pubsubInterceptorHandler_invokePreSend(sender->interceptorsHandler, msgFqn, msgTypeId, inMsg, &metadata);
+    if (!cont) {
+        L_DEBUG("Cancel send based on pubsub interceptor cancel return");
+        return status;
+    }
 
     size_t serializedIoVecOutputLen = 0; //entry->serializedIoVecOutputLen;
     struct iovec *serializedIoVecOutput = NULL;
     status = pubsub_serializerHandler_serialize(sender->serializerHandler, msgTypeId, inMsg, &serializedIoVecOutput, &serializedIoVecOutputLen);
-
-    bool cont = false;
-    if (status == CELIX_SUCCESS) /*ser ok*/ {
-        cont = pubsubInterceptorHandler_invokePreSend(sender->interceptorsHandler, msgFqn, msgTypeId, inMsg, &metadata);
-    }
-    if (cont) {
-        pubsub_protocol_message_t message;
-        message.metadata.metadata = NULL;
-        message.payload.payload = NULL;
-        message.payload.length = 0;
-        if (serializedIoVecOutput) {
-            message.payload.payload = serializedIoVecOutput->iov_base;
-            message.payload.length = serializedIoVecOutput->iov_len;
-        }
-        message.header.msgId = msgTypeId;
-        message.header.seqNr = __atomic_fetch_add(&sender->seqNr, 1, __ATOMIC_RELAXED);
-        message.header.msgMajorVersion = (uint16_t)majorVersion;
-        message.header.msgMinorVersion = (uint16_t)minorversion;
-        message.header.payloadSize = 0;
-        message.header.payloadPartSize = 0;
-        message.header.payloadOffset = 0;
-        message.header.metadataSize = 0;
-        if (metadata != NULL) {
-            message.metadata.metadata = metadata;
-        }
-        bool sendOk = true;
-        {
-            int rc = pubsub_tcpHandler_write(sender->socketHandler, &message, serializedIoVecOutput, serializedIoVecOutputLen, 0);
-            if (rc < 0) {
-                status = -1;
-                sendOk = false;
-            }
-            pubsubInterceptorHandler_invokePostSend(sender->interceptorsHandler, msgFqn, msgTypeId, inMsg, metadata);
-            if (message.metadata.metadata) {
-                celix_properties_destroy(message.metadata.metadata);
-            }
-            if (serializedIoVecOutput) {
-                pubsub_serializerHandler_freeSerializedMsg(sender->serializerHandler, msgTypeId, serializedIoVecOutput, serializedIoVecOutputLen);
-                serializedIoVecOutput = NULL;
-            }
-        }
-
-        if (!sendOk) {
-            L_WARN("[PSA_TCP_V2_TS] Error sending msg. %s", strerror(errno));
-        }
-    } else {
+    if (status != CELIX_SUCCESS) {
         L_WARN("[PSA_TCP_V2_TS] Error serialize message of type %s for scope/topic %s/%s", msgFqn,
                sender->scope == NULL ? "(null)" : sender->scope, sender->topic);
+        return status;
+    }
+
+    delay_first_send_for_late_joiners(sender);
+
+    pubsub_protocol_message_t message;
+    message.metadata.metadata = NULL;
+    message.payload.payload = NULL;
+    message.payload.length = 0;
+    if (serializedIoVecOutput) {
+        message.payload.payload = serializedIoVecOutput->iov_base;
+        message.payload.length = serializedIoVecOutput->iov_len;
+    }
+    message.header.msgId = msgTypeId;
+    message.header.seqNr = __atomic_fetch_add(&sender->seqNr, 1, __ATOMIC_RELAXED);
+    message.header.msgMajorVersion = (uint16_t)majorVersion;
+    message.header.msgMinorVersion = (uint16_t)minorVersion;
+    message.header.payloadSize = 0;
+    message.header.payloadPartSize = 0;
+    message.header.payloadOffset = 0;
+    message.header.metadataSize = 0;
+    if (metadata != NULL) {
+        message.metadata.metadata = metadata;
+    }
+    bool sendOk = true;
+    {
+        int rc = pubsub_tcpHandler_write(sender->socketHandler, &message, serializedIoVecOutput, serializedIoVecOutputLen, 0);
+        if (rc < 0) {
+            status = -1;
+            sendOk = false;
+        }
+        pubsubInterceptorHandler_invokePostSend(sender->interceptorsHandler, msgFqn, msgTypeId, inMsg, metadata);
+        if (message.metadata.metadata) {
+            celix_properties_destroy(message.metadata.metadata);
+        }
+        if (serializedIoVecOutput) {
+            pubsub_serializerHandler_freeSerializedMsg(sender->serializerHandler, msgTypeId, serializedIoVecOutput, serializedIoVecOutputLen);
+            serializedIoVecOutput = NULL;
+        }
+    }
+
+    if (!sendOk) {
+        L_WARN("[PSA_TCP_V2_TS] Error sending msg. %s", strerror(errno));
     }
 
     return status;

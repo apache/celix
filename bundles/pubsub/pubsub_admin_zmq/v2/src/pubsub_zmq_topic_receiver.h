@@ -49,7 +49,5 @@ void pubsub_zmqTopicReceiver_connectTo(pubsub_zmq_topic_receiver_t *receiver, co
 void pubsub_zmqTopicReceiver_disconnectFrom(pubsub_zmq_topic_receiver_t *receiver, const char *url);
 
 
-pubsub_admin_receiver_metrics_t* pubsub_zmqTopicReceiver_metrics(pubsub_zmq_topic_receiver_t *receiver);
-
 
 #endif //CELIX_PUBSUB_ZMQ_TOPIC_RECEIVER_H

@@ -49,9 +49,4 @@ bool pubsub_tcpTopicSender_isStatic(pubsub_tcp_topic_sender_t *sender);
 bool pubsub_tcpTopicSender_isPassive(pubsub_tcp_topic_sender_t *sender);
 long pubsub_tcpTopicSender_protocolSvcId(pubsub_tcp_topic_sender_t *sender);
 
-/**
- * Returns a array of pubsub_admin_sender_msg_type_metrics_t entries for every msg_type/bundle send with the topic sender.
- */
-pubsub_admin_sender_metrics_t *pubsub_tcpTopicSender_metrics(pubsub_tcp_topic_sender_t *sender);
-
 #endif //CELIX_PUBSUB_TCP_TOPIC_SENDER_H

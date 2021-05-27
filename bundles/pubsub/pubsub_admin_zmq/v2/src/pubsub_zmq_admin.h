@@ -48,7 +48,5 @@ void pubsub_zmqAdmin_removeProtocolSvc(void *handle, void *svc, const celix_prop
 
 bool pubsub_zmqAdmin_executeCommand(void *handle, const char *commandLine, FILE *outStream, FILE *errStream);
 
-pubsub_admin_metrics_t* pubsub_zmqAdmin_metrics(void *handle);
-
 #endif //CELIX_PUBSUB_ZMQ_ADMIN_H
 

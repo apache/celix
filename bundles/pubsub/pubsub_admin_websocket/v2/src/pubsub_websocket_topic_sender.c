@@ -257,13 +257,12 @@ static int psa_websocket_topicPublicationSend(void* handle, unsigned int msgType
     int majorVersion;
     int minorVersion;
     celix_status_t status = pubsub_serializerHandler_getMsgInfo(sender->serializerHandler, msgTypeId, &msgFqn, &majorVersion, &minorVersion);
-
-
     if (status != CELIX_SUCCESS) {
         L_WARN("Cannot find serializer for msg id %u for serializer %s", msgTypeId,
                pubsub_serializerHandler_getSerializationType(sender->serializerHandler));
         return status;
     }
+
 
     if (sender->sockConnection != NULL) {
         delay_first_send_for_late_joiners(sender);
