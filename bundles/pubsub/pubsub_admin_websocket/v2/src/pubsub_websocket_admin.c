@@ -75,12 +75,6 @@ struct pubsub_websocket_admin {
 static celix_status_t pubsub_websocketAdmin_connectEndpointToReceiver(pubsub_websocket_admin_t* psa, pubsub_websocket_topic_receiver_t *receiver, const celix_properties_t *endpoint);
 static celix_status_t pubsub_websocketAdmin_disconnectEndpointFromReceiver(pubsub_websocket_admin_t* psa, pubsub_websocket_topic_receiver_t *receiver, const celix_properties_t *endpoint);
 
-
-static void pubsub_websocketAdmin_getSerType(void *handle, void *svc __attribute__((unused)), const celix_properties_t* props) {
-    const char** out = handle;
-    *out = celix_properties_get(props, PUBSUB_MESSAGE_SERIALIZATION_SERVICE_SERIALIZATION_TYPE_PROPERTY, NULL);
-}
-
 pubsub_websocket_admin_t* pubsub_websocketAdmin_create(celix_bundle_context_t *ctx, celix_log_helper_t *logHelper) {
     pubsub_websocket_admin_t *psa = calloc(1, sizeof(*psa));
     psa->ctx = ctx;
@@ -231,17 +225,6 @@ celix_status_t pubsub_websocketAdmin_setupTopicSender(void *handle, const char *
 
     char *key = pubsubEndpoint_createScopeTopicKey(scope, topic);
 
-    //get serializer type
-    const char *serType = NULL;
-    celix_service_use_options_t opts = CELIX_EMPTY_SERVICE_USE_OPTIONS;
-    opts.callbackHandle = &serType;
-    opts.useWithProperties = pubsub_websocketAdmin_getSerType;
-    opts.filter.serviceName = PUBSUB_MESSAGE_SERIALIZATION_SERVICE_NAME;
-    char filter[32];
-    snprintf(filter, 32, "(%s=%li)", OSGI_FRAMEWORK_SERVICE_ID, serializerSvcId);
-    opts.filter.filter = filter;
-    celix_bundleContext_useServiceWithOptions(psa->ctx, &opts);
-
     celixThreadMutex_lock(&psa->topicSenders.mutex);
     pubsub_websocket_topic_sender_t *sender = hashMap_get(psa->topicSenders.map, key);
     if (sender == NULL) {
@@ -249,7 +232,7 @@ celix_status_t pubsub_websocketAdmin_setupTopicSender(void *handle, const char *
         if (sender != NULL) {
             const char *psaType = PUBSUB_WEBSOCKET_ADMIN_TYPE;
             newEndpoint = pubsubEndpoint_create(psa->fwUUID, scope, topic, PUBSUB_PUBLISHER_ENDPOINT_TYPE, psaType,
-                                                serType, NULL, NULL);
+                                                pubsub_serializerHandler_getSerializationType(handler), NULL, NULL);
 
             //Set endpoint visibility to local because the http server handles discovery
             celix_properties_set(newEndpoint, PUBSUB_ENDPOINT_VISIBILITY, PUBSUB_ENDPOINT_LOCAL_VISIBILITY);
@@ -311,16 +294,6 @@ celix_status_t pubsub_websocketAdmin_setupTopicReceiver(void *handle, const char
         return CELIX_ILLEGAL_STATE;
     }
 
-    //get serializer type
-    const char *serType = NULL;
-    celix_service_use_options_t opts = CELIX_EMPTY_SERVICE_USE_OPTIONS;
-    opts.callbackHandle = &serType;
-    opts.useWithProperties = pubsub_websocketAdmin_getSerType;
-    opts.filter.serviceName = PUBSUB_MESSAGE_SERIALIZATION_SERVICE_NAME;
-    char filter[32];
-    snprintf(filter, 32, "(%s=%li)", OSGI_FRAMEWORK_SERVICE_ID, serializerSvcId);
-    opts.filter.filter = filter;
-    celix_bundleContext_useServiceWithOptions(psa->ctx, &opts);
 
     char *key = pubsubEndpoint_createScopeTopicKey(scope, topic);
     celixThreadMutex_lock(&psa->topicReceivers.mutex);
@@ -330,7 +303,8 @@ celix_status_t pubsub_websocketAdmin_setupTopicReceiver(void *handle, const char
         if (receiver != NULL) {
             const char *psaType = PUBSUB_WEBSOCKET_ADMIN_TYPE;
             newEndpoint = pubsubEndpoint_create(psa->fwUUID, scope, topic,
-                                                PUBSUB_SUBSCRIBER_ENDPOINT_TYPE, psaType, serType, NULL, NULL);
+                                                PUBSUB_SUBSCRIBER_ENDPOINT_TYPE, psaType,
+                                                pubsub_serializerHandler_getSerializationType(handler), NULL, NULL);
 
             //Set endpoint visibility to local because the http server handles discovery
             celix_properties_set(newEndpoint, PUBSUB_ENDPOINT_VISIBILITY, PUBSUB_ENDPOINT_LOCAL_VISIBILITY);
