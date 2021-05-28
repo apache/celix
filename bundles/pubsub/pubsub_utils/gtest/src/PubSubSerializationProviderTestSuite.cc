@@ -48,14 +48,14 @@ public:
 
 TEST_F(PubSubSerializationProviderTestSuite, CreateDestroy) {
     //checks if the bundles are started and stopped correctly (no mem leaks).
-    auto* provider = pubsub_serializationProvider_create(ctx.get(), "test", 0, nullptr, nullptr, nullptr, nullptr);
+    auto* provider = pubsub_serializationProvider_create(ctx.get(), "test", false, 0, nullptr, nullptr, nullptr, nullptr);
     auto count = celix_bundleContext_useService(ctx.get(), PUBSUB_MESSAGE_SERIALIZATION_MARKER_NAME, nullptr, nullptr);
     EXPECT_EQ(1, count);
     pubsub_serializationProvider_destroy(provider);
 }
 
 TEST_F(PubSubSerializationProviderTestSuite, FindSerializationServices) {
-    auto* provider = pubsub_serializationProvider_create(ctx.get(), "test", 0, nullptr, nullptr, nullptr, nullptr);
+    auto* provider = pubsub_serializationProvider_create(ctx.get(), "test", false, 0, nullptr, nullptr, nullptr, nullptr);
 
     size_t nrEntries = pubsub_serializationProvider_nrOfEntries(provider);
     EXPECT_EQ(5, nrEntries);
