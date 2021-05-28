@@ -49,10 +49,14 @@ typedef struct {
 
     bool valid;
     const char* invalidReason;
+
+    //custom user data, will initialized to NULL. If freeUserData is set during destruction of the entry, this will be called.
+    void* userData;
+    void (*freeUserData)(void* userData);
 } pubsub_serialization_entry_t;
 
 /**
- * Creates A (descriptor based) Serialization Provider.
+ * @brief Creates A (descriptor based) Serialization Provider.
  *
  * The provider monitors bundles and creates pubsub message serialization services for every unique descriptor found.
  *
@@ -73,6 +77,8 @@ typedef struct {
  *
  * @param ctx                           The bundle context
  * @param serializationType             The serialization type (e.g. 'json')
+ * @param backwardsCompatible           Whether the serializer can deserialize data if the minor version is higher. (note true for JSON)
+ *                                      Will be used to set the 'serialization.backwards.compatible' service property for the pusbub_message_serialization_marker
  * @param serializationServiceRanking   The service raking used for the serialization marker service.
  * @param serialize                     The serialize function to use
  * @param freeSerializeMsg              The freeSerializeMsg function to use
@@ -84,6 +90,7 @@ typedef struct {
 pubsub_serialization_provider_t *pubsub_serializationProvider_create(
         celix_bundle_context_t *ctx,
         const char* serializationType,
+        bool backwardsCompatible,
         long serializationServiceRanking,
         celix_status_t (*serialize)(pubsub_serialization_entry_t* entry, const void* msg, struct iovec** output, size_t* outputIovLen),
         void (*freeSerializeMsg)(pubsub_serialization_entry_t* entry, struct iovec* input, size_t inputIovLen),
@@ -97,17 +104,17 @@ void pubsub_serializationProvider_destroy(pubsub_serialization_provider_t *provi
 
 
 /**
- * Returns the number of valid entries.
+ * @brief Returns the number of valid entries.
  */
 size_t pubsub_serializationProvider_nrOfEntries(pubsub_serialization_provider_t *provider);
 
 /**
- * Returns the number of invalid entries.
+ * @brief Returns the number of invalid entries.
  */
 size_t pubsub_serializationProvider_nrOfInvalidEntries(pubsub_serialization_provider_t *provider);
 
 /**
- * Returns the log helper of the serialization provider.
+ * @brief Returns the log helper of the serialization provider.
  */
 celix_log_helper_t* pubsub_serializationProvider_getLogHelper(pubsub_serialization_provider_t *provider);
 
