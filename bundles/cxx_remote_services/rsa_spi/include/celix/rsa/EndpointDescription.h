@@ -58,7 +58,7 @@ namespace celix::rsa {
                 configurationTypes{celix::split(endpointProperties.get(celix::rsa::SERVICE_IMPORTED_CONFIGS))},
                 frameworkUUID{endpointProperties.get(celix::rsa::ENDPOINT_FRAMEWORK_UUID)},
                 intents{celix::split(endpointProperties.get(celix::rsa::SERVICE_INTENTS))},
-                interface{endpointProperties.get(celix::SERVICE_NAME)} {
+                serviceName{endpointProperties.get(celix::SERVICE_NAME)} {
             checkValidEndpoint();
         }
 
@@ -79,7 +79,7 @@ namespace celix::rsa {
                 configurationTypes{celix::split(endpointProperties.get(celix::rsa::SERVICE_IMPORTED_CONFIGS))},
                 frameworkUUID{endpointProperties.get(celix::rsa::ENDPOINT_FRAMEWORK_UUID)},
                 intents{celix::split(endpointProperties.get(celix::rsa::SERVICE_INTENTS))},
-                interface{endpointProperties.get(celix::SERVICE_NAME)} {
+                serviceName{endpointProperties.get(celix::SERVICE_NAME)} {
             checkValidEndpoint();
         }
 
@@ -135,7 +135,7 @@ namespace celix::rsa {
          * The value of the interface is derived from the objectClass property.
          */
         [[nodiscard]] const std::string& getInterface() const {
-            return interface;
+            return serviceName;
         }
 
         /**
@@ -181,13 +181,13 @@ namespace celix::rsa {
 
         void checkValidEndpoint() const {
             std::string baseMsg = "Invalid properties for EndpointDescription, missing mandatory property ";
-            if (endpointProperties.get(celix::rsa::ENDPOINT_ID).empty()) {
+            if (endpointId.empty()) {
                 throw celix::rsa::RemoteServicesException{baseMsg.append(celix::rsa::ENDPOINT_ID)};
             }
-            if (endpointProperties.get(celix::rsa::ENDPOINT_ID).empty()) {
+            if (configurationTypes.empty()) {
                 throw celix::rsa::RemoteServicesException{baseMsg.append(celix::rsa::SERVICE_IMPORTED_CONFIGS)};
             }
-            if (endpointProperties.get(celix::SERVICE_NAME).empty()) {
+            if (serviceName.empty()) {
                 throw celix::rsa::RemoteServicesException{baseMsg.append(celix::SERVICE_NAME)};
             }
         }
@@ -197,6 +197,6 @@ namespace celix::rsa {
         const std::vector<std::string> configurationTypes;
         const std::string frameworkUUID;
         const std::vector<std::string> intents;
-        const std::string interface;
+        const std::string serviceName;
     };
 } // end namespace celix::rsa.

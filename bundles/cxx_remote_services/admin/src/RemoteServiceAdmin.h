@@ -81,8 +81,8 @@ namespace celix::rsa {
 #else
         std::multimap<std::string, std::shared_ptr<celix::rsa::IExportServiceFactory>> exportServiceFactories{}; //key = service name
         std::multimap<std::string, std::shared_ptr<celix::rsa::IImportServiceFactory>> importServiceFactories{}; //key = service name
-        std::unordered_map<std::string, std::unique_ptr<celix::rsa::IImportServiceGuard>> importedServices{}; //key = endpoint id
-        std::unordered_map<long, std::unique_ptr<celix::rsa::IExportServiceGuard>> exportedServices{}; //key = service id
+        std::unordered_map<std::string, std::unique_ptr<celix::rsa::IImportRegistration>> importedServices{}; //key = endpoint id
+        std::unordered_map<long, std::unique_ptr<celix::rsa::IExportRegistration>> exportedServices{}; //key = service id
 #endif
         std::vector<std::shared_ptr<celix::rsa::EndpointDescription>> toBeImportedServices{};
         std::vector<std::shared_ptr<const celix::Properties>> toBeExportedServices{};
