@@ -17,7 +17,6 @@
  * under the License.
  */
 
-
 #include <mutex>
 
 #include "celix/LogHelper.h"
@@ -35,6 +34,15 @@
 
 namespace celix::rsa {
 
+    /**
+     * @brief Remote Service Admin based on endpoint/proxy factories.
+     *
+     * A Remote Service Admin which does not contain on itself any technology, but relies on remote
+     * service endpoint/proxy factories to create exported/imported remote services.
+     *
+     * The RSA can be configured to use different remote service endpoint/proxy factories based on the
+     * intent of the remote service endpoint/proxy factories.
+     */
     class RemoteServiceAdmin {
     public:
         explicit RemoteServiceAdmin(celix::LogHelper logHelper);
@@ -57,24 +65,26 @@ namespace celix::rsa {
     private:
         void createExportServices();
         void createImportServices();
+        bool isEndpointMatch(const celix::rsa::EndpointDescription& endpoint, const celix::rsa::IImportServiceFactory& factory) const;
+        bool isExportServiceMatch(const celix::Properties& svcProperties, const celix::rsa::IExportServiceFactory& factory) const;
 
-        celix::LogHelper _logHelper;
-        std::mutex _m{}; // protects below
+        celix::LogHelper logHelper;
+        std::mutex mutex{}; // protects below
 
 #if __cpp_lib_memory_resource
-        std::pmr::unsynchronized_pool_resource _memResource{};
+        std::pmr::unsynchronized_pool_resource memResource{};
 
-        std::pmr::unordered_map<std::string, std::shared_ptr<celix::rsa::IExportServiceFactory>> _exportServiceFactories{&_memResource}; //key = service name
-        std::pmr::unordered_map<std::string, std::shared_ptr<celix::rsa::IImportServiceFactory>> _importServiceFactories{&_memResource}; //key = service name
-        std::pmr::unordered_map<std::string, std::unique_ptr<celix::rsa::IImportServiceGuard>> _importedServices{&_memResource}; //key = endpoint id
-        std::pmr::unordered_map<long, std::unique_ptr<celix::rsa::IExportServiceGuard>> _exportedServices{&_memResource}; //key = service id
+        std::pmr::multimap<std::string, std::shared_ptr<celix::rsa::IExportServiceFactory>> exportServiceFactories{&memResource}; //key = service name
+        std::pmr::multimap<std::string, std::shared_ptr<celix::rsa::IImportServiceFactory>> importServiceFactories{&memResource}; //key = service name
+        std::pmr::unordered_map<std::string, std::unique_ptr<celix::rsa::IImportRegistration>> importedServices{&memResource}; //key = endpoint id
+        std::pmr::unordered_map<long, std::unique_ptr<celix::rsa::IExportRegistration>> exportedServices{&memResource}; //key = service id
 #else
-        std::unordered_map<std::string, std::shared_ptr<celix::rsa::IExportServiceFactory>> _exportServiceFactories{}; //key = service name
-        std::unordered_map<std::string, std::shared_ptr<celix::rsa::IImportServiceFactory>> _importServiceFactories{}; //key = service name
-        std::unordered_map<std::string, std::unique_ptr<celix::rsa::IImportServiceGuard>> _importedServices{}; //key = endpoint id
-        std::unordered_map<long, std::unique_ptr<celix::rsa::IExportServiceGuard>> _exportedServices{}; //key = service id
+        std::multimap<std::string, std::shared_ptr<celix::rsa::IExportServiceFactory>> exportServiceFactories{}; //key = service name
+        std::multimap<std::string, std::shared_ptr<celix::rsa::IImportServiceFactory>> importServiceFactories{}; //key = service name
+        std::unordered_map<std::string, std::unique_ptr<celix::rsa::IImportServiceGuard>> importedServices{}; //key = endpoint id
+        std::unordered_map<long, std::unique_ptr<celix::rsa::IExportServiceGuard>> exportedServices{}; //key = service id
 #endif
-        std::vector<std::shared_ptr<celix::rsa::EndpointDescription>> _toBeImportedServices{};
-        std::vector<std::shared_ptr<const celix::Properties>> _toBeExportedServices{};
+        std::vector<std::shared_ptr<celix::rsa::EndpointDescription>> toBeImportedServices{};
+        std::vector<std::shared_ptr<const celix::Properties>> toBeExportedServices{};
     };
 }

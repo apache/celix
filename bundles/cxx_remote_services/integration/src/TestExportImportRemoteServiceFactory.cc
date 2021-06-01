@@ -158,7 +158,7 @@ private:
 /**
  * A import service guard, which will remove the component if it goes out of scope.
  */
-class ComponentImportServiceGuard final : public celix::rsa::IImportServiceGuard {
+class ComponentImportServiceGuard final : public celix::rsa::IImportRegistration {
 public:
     ComponentImportServiceGuard(std::shared_ptr<celix::BundleContext> _ctx, std::string _componentId) : ctx{std::move(_ctx)}, componentId{std::move(_componentId)} {}
     ~ComponentImportServiceGuard() noexcept override {
@@ -177,14 +177,12 @@ private:
  */
 class CalculatorImportServiceFactory final : public celix::rsa::IImportServiceFactory {
 public:
+    static constexpr const char * const CONFIGS = "pubsub";
+
     explicit CalculatorImportServiceFactory(std::shared_ptr<celix::BundleContext> _ctx) : ctx{std::move(_ctx)}, logHelper{ctx, "celix::rsa::RemoteServiceFactory"} {}
+    ~CalculatorImportServiceFactory() noexcept override = default;
 
-    std::unique_ptr<celix::rsa::IImportServiceGuard> importService(const celix::rsa::EndpointDescription& endpoint) override {
-        if (endpoint.getConfigurationTypes() != "pubsub") {
-            ctx->logTrace("skipping endpoint, not pubsub configuration. Found config '%s'", endpoint.getConfigurationTypes().c_str());
-            return nullptr;
-        }
-
+    std::unique_ptr<celix::rsa::IImportRegistration> importService(const celix::rsa::EndpointDescription& endpoint) override {
         auto topic = endpoint.getProperties().get("endpoint.topic");
         auto scope = endpoint.getProperties().get("endpoint.topic");
         if (topic.empty() || scope.empty()) {
@@ -195,6 +193,15 @@ public:
         auto componentId = createImportedCalculatorComponent(endpoint);
         return std::make_unique<ComponentImportServiceGuard>(ctx, std::move(componentId));
     }
+
+    [[nodiscard]] const std::string& getRemoteServiceType() const override {
+        return serviceType;
+    }
+
+    const std::vector<std::string>& getSupportedConfigs() const override {
+        return configs;
+    }
+
 private:
     std::string createImportedCalculatorComponent(const celix::rsa::EndpointDescription& endpoint) {
         auto invokeTopic = endpoint.getProperties().get("endpoint.topic") + "_invoke";
@@ -243,6 +250,8 @@ private:
         return cmp.getUUID();
     }
 
+    const std::string serviceType = celix::typeName<ICalculator>();
+    const std::vector<std::string> configs = celix::split(CONFIGS);
     std::shared_ptr<celix::BundleContext> ctx;
     celix::LogHelper logHelper;
     std::mutex mutex{}; //protects below
@@ -341,7 +350,7 @@ private:
 /**
  * A import service guard, which will remove the component if it goes out of scope.
  */
-class ComponentExportServiceGuard final : public celix::rsa::IExportServiceGuard {
+class ComponentExportServiceGuard final : public celix::rsa::IExportRegistration {
 public:
     ComponentExportServiceGuard(std::shared_ptr<celix::BundleContext> _ctx, std::string _componentId) : ctx{std::move(_ctx)}, componentId{std::move(_componentId)} {}
     ~ComponentExportServiceGuard() noexcept override {
@@ -360,10 +369,14 @@ private:
  */
 class CalculatorExportServiceFactory final : public celix::rsa::IExportServiceFactory {
 public:
+    static constexpr const char * const CONFIGS = "pubsub";
+    static constexpr const char * const INTENTS = "osgi.async";
+
     explicit CalculatorExportServiceFactory(std::shared_ptr<celix::BundleContext> _ctx) : ctx{std::move(_ctx)},
                                                                                           logHelper{ctx, "celix::rsa::RemoteServiceFactory"} {}
+    ~CalculatorExportServiceFactory() noexcept override = default;
 
-    std::unique_ptr<celix::rsa::IExportServiceGuard> exportService(const celix::Properties& serviceProperties) override {
+    std::unique_ptr<celix::rsa::IExportRegistration> exportService(const celix::Properties& serviceProperties) override {
         auto topic = serviceProperties.get("endpoint.topic");
         auto scope = serviceProperties.get("endpoint.topic");
         if (topic.empty() || scope.empty()) {
@@ -374,6 +387,19 @@ public:
         auto componentId = createExportedCalculatorComponent(serviceProperties);
         return std::make_unique<ComponentExportServiceGuard>(ctx, std::move(componentId));
     }
+
+    [[nodiscard]] const std::string& getRemoteServiceType() const override {
+        return serviceType;
+    }
+
+    [[nodiscard]] const std::vector<std::string>& getSupportedIntents() const override {
+        return intents;
+    }
+
+    [[nodiscard]] const std::vector<std::string>& getSupportedConfigs() const override {
+        return configs;
+    }
+
 private:
     std::string createExportedCalculatorComponent(const celix::Properties& serviceProperties) {
         auto invokeTopic = serviceProperties.get("endpoint.topic") + "_invoke";
@@ -417,6 +443,9 @@ private:
         return cmp.getUUID();
     }
 
+    const std::string serviceType = celix::typeName<ICalculator>();
+    const std::vector<std::string> configs = celix::split(CONFIGS);
+    const std::vector<std::string> intents = celix::split(INTENTS);
     std::shared_ptr<celix::BundleContext> ctx;
     celix::LogHelper logHelper;
     std::mutex mutex{}; //protects below
@@ -428,12 +457,15 @@ public:
         ctx->logInfo("Starting TestExportImportRemoteServiceFactory");
         registrations.emplace_back(
                 ctx->registerService<celix::rsa::IImportServiceFactory>(std::make_shared<CalculatorImportServiceFactory>(ctx))
-                        .addProperty(celix::rsa::IImportServiceFactory::TARGET_SERVICE_NAME, celix::typeName<ICalculator>())
+                        .addProperty(celix::rsa::IImportServiceFactory::REMOTE_SERVICE_TYPE, celix::typeName<ICalculator>())
+                        .addProperty(celix::rsa::REMOTE_CONFIGS_SUPPORTED, CalculatorImportServiceFactory::CONFIGS)
                         .build()
         );
         registrations.emplace_back(
                 ctx->registerService<celix::rsa::IExportServiceFactory>(std::make_shared<CalculatorExportServiceFactory>(ctx))
-                        .addProperty(celix::rsa::IExportServiceFactory::TARGET_SERVICE_NAME, celix::typeName<ICalculator>())
+                        .addProperty(celix::rsa::IExportServiceFactory::REMOTE_SERVICE_TYPE, celix::typeName<ICalculator>())
+                        .addProperty(celix::rsa::REMOTE_CONFIGS_SUPPORTED, CalculatorExportServiceFactory::CONFIGS)
+                        .addProperty(celix::rsa::REMOTE_INTENTS_SUPPORTED, CalculatorExportServiceFactory::INTENTS)
                         .build()
         );
         registrations.emplace_back(

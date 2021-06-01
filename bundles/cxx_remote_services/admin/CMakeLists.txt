@@ -23,8 +23,8 @@ add_celix_bundle(RemoteServiceAdmin
         FILENAME "Celix_RemoteServiceAdmin"
         SOURCES
             src/RemoteServiceAdmin.cc
+            src/RemoteServiceAdminActivator.cc
 )
-target_include_directories(RemoteServiceAdmin PRIVATE include)
 target_link_libraries(RemoteServiceAdmin PRIVATE
         Celix::rsa_spi
         Celix::framework

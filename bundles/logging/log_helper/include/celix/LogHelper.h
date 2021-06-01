@@ -32,7 +32,7 @@ namespace celix {
         /**
          * @brief Logs to celix_logHelper_log using the CELIX_LOG_LEVEL_TRACE level, printf style
          */
-        void trace(const char *format, ...) {
+        void trace(const char *format, ...) const {
             va_list args;
             va_start(args, format);
             vlog(CELIX_LOG_LEVEL_TRACE, format, args);
@@ -42,7 +42,7 @@ namespace celix {
         /**
          * @brief Logs to celix_logHelper_log using the CELIX_LOG_LEVEL_DEBUG level, printf style
          */
-        void debug(const char *format, ...) {
+        void debug(const char *format, ...) const {
             va_list args;
             va_start(args, format);
             vlog(CELIX_LOG_LEVEL_DEBUG, format, args);
@@ -52,7 +52,7 @@ namespace celix {
         /**
          * @brief Logs to celix_logHelper_log using the CELIX_LOG_LEVEL_INFO level, printf style
          */
-        void info(const char *format, ...) {
+        void info(const char *format, ...) const {
             va_list args;
             va_start(args, format);
             vlog(CELIX_LOG_LEVEL_INFO, format, args);
@@ -62,7 +62,7 @@ namespace celix {
         /**
          * @brief Logs to celix_logHelper_log using the CELIX_LOG_LEVEL_WARNING level, printf style
          */
-        void warning(const char *format, ...) {
+        void warning(const char *format, ...) const {
             va_list args;
             va_start(args, format);
             vlog(CELIX_LOG_LEVEL_WARNING, format, args);
@@ -72,7 +72,7 @@ namespace celix {
         /**
          * @brief Logs to celix_logHelper_log using the CELIX_LOG_LEVEL_ERROR level, printf style
          */
-        void error(const char *format, ...) {
+        void error(const char *format, ...) const {
             va_list args;
             va_start(args, format);
             vlog(CELIX_LOG_LEVEL_ERROR, format, args);
@@ -82,7 +82,7 @@ namespace celix {
         /**
          * @brief Logs to celix_logHelper_log using the CELIX_LOG_LEVEL_FATAL level, printf style
          */
-        void fatal(const char *format, ...) {
+        void fatal(const char *format, ...) const {
             va_list args;
             va_start(args, format);
             vlog(CELIX_LOG_LEVEL_FATAL, format, args);
@@ -94,7 +94,7 @@ namespace celix {
          *
          * Silently ignores log level CELIX_LOG_LEVEL_DISABLED.
          */
-        void vlog(celix_log_level_e level, const char *format, va_list formatArgs) {
+        void vlog(celix_log_level_e level, const char *format, va_list formatArgs) const {
             celix_logHelper_vlog(logHelper.get(), level, format, formatArgs);
         }
 
