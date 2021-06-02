@@ -591,15 +591,17 @@ celix_status_t serviceRegistry_getService(service_registry_pt registry, bundle_p
     if (valid) {
         serviceRegistration_retain(registration);
         serviceReference_increaseUsage(reference, &count);
-    } else {
-        *out = NULL; //invalid service registration
+        if (count == 1) {
+            serviceRegistration_getService(registration, bundle, &service);
+            serviceReference_setService(reference, service);
+        }
     }
     celixThreadRwlock_unlock(&registry->lock);
-
-    if (count == 1) {
-        serviceRegistration_getService(registration, bundle, &service);
-        serviceReference_setService(reference, service);
+    if(!valid) {
+        *out = NULL;
+        return status;
     }
+
     serviceRegistration_release(registration);
 
     /* NOTE the out argument of sr_getService should be 'const void**'
