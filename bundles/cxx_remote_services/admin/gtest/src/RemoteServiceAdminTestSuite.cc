@@ -87,10 +87,10 @@ private:
     std::string cmpUUID{};
 };
 
-class StubExportServiceGuard : public celix::rsa::IExportRegistration {
+class StubExportRegistration : public celix::rsa::IExportRegistration {
 public:
-    explicit StubExportServiceGuard(std::weak_ptr<StubExportedServiceEntry> _entry) : entry{std::move(_entry)} {}
-    ~StubExportServiceGuard() noexcept override {
+    explicit StubExportRegistration(std::weak_ptr<StubExportedServiceEntry> _entry) : entry{std::move(_entry)} {}
+    ~StubExportRegistration() noexcept override {
         auto e = entry.lock();
         if (e) {
             e->close();
@@ -115,19 +115,19 @@ public:
         auto entry = std::make_shared<StubExportedServiceEntry>(ctx);
         std::lock_guard<std::mutex> lock{mutex};
         entries.emplace_back(entry);
-        return std::make_unique<StubExportServiceGuard>(entry);
+        return std::make_unique<StubExportRegistration>(entry);
     }
 
 
-    const std::string &getRemoteServiceType() const override {
+    [[nodiscard]] const std::string &getRemoteServiceType() const override {
         return serviceType;
     }
 
-    const std::vector<std::string> &getSupportedIntents() const override {
+    [[nodiscard]] const std::vector<std::string> &getSupportedIntents() const override {
         return intents;
     }
 
-    const std::vector<std::string> &getSupportedConfigs() const override {
+    [[nodiscard]] const std::vector<std::string> &getSupportedConfigs() const override {
         return configs;
     }
 
@@ -216,7 +216,38 @@ TEST_F(RemoteServiceAdminTestSuite, exportServiceDifferentOrder) {
     EXPECT_EQ(1, count);
 }
 
+TEST_F(RemoteServiceAdminTestSuite, exportServiceUsingConfig) {
+    auto bndId = ctx->installBundle(REMOTE_SERVICE_ADMIN_BUNDLE_LOCATION);
+    EXPECT_GE(bndId, 0);
 
+    auto factoryRegistration = ctx->registerService<celix::rsa::IExportServiceFactory>(std::make_shared<StubExportServiceFactory>(ctx))
+            .addProperty(celix::rsa::IExportServiceFactory::REMOTE_SERVICE_TYPE, celix::typeName<IDummyService>())
+            .build();
+
+    /**
+     * When I add a export service factory and register a service with exported interfaces and a mismatched
+     * service.export.configs this will no be exported.
+     */
+    auto reg = ctx->registerService<IDummyService>(std::make_shared<DummyServiceImpl>())
+            .addProperty(celix::rsa::SERVICE_EXPORTED_INTERFACES, "*")
+            .addProperty(celix::rsa::SERVICE_IMPORTED_CONFIGS, "non-existing-config")
+            .build();
+    auto count = ctx->useService<celix::rsa::IExportedService>()
+            .build();
+    EXPECT_EQ(0, count);
+
+    /**
+     * When I add a export service factory and register a service with exported interfaces and a correct
+     * service.export.configs the service will be exported
+     */
+    reg = ctx->registerService<IDummyService>(std::make_shared<DummyServiceImpl>())
+            .addProperty(celix::rsa::SERVICE_EXPORTED_INTERFACES, "*")
+            .addProperty(celix::rsa::SERVICE_IMPORTED_CONFIGS, "test")
+            .build();
+    count = ctx->useService<celix::rsa::IExportedService>()
+            .build();
+    EXPECT_EQ(1, count);
+}
 
 
 /**
@@ -254,10 +285,10 @@ private:
     std::string cmpUUID{};
 };
 
-class StubImportServiceGuard : public celix::rsa::IImportRegistration {
+class StubImportRegistration : public celix::rsa::IImportRegistration {
 public:
-    explicit StubImportServiceGuard(std::weak_ptr<StubImportedServiceEntry> _entry) : entry{std::move(_entry)} {}
-    ~StubImportServiceGuard() noexcept override {
+    explicit StubImportRegistration(std::weak_ptr<StubImportedServiceEntry> _entry) : entry{std::move(_entry)} {}
+    ~StubImportRegistration() noexcept override {
         auto e = entry.lock();
         if (e) {
             e->close();
@@ -278,7 +309,7 @@ public:
                std::lock_guard<std::mutex> lock{mutex};
                auto entry = std::make_shared<StubImportedServiceEntry>(ctx);
                entries.emplace_back(entry);
-               return std::make_unique<StubImportServiceGuard>(entry);
+               return std::make_unique<StubImportRegistration>(entry);
            } else {
                return {};
            }

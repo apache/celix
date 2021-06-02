@@ -158,10 +158,10 @@ private:
 /**
  * A import service guard, which will remove the component if it goes out of scope.
  */
-class ComponentImportServiceGuard final : public celix::rsa::IImportRegistration {
+class ComponentImportRegistration final : public celix::rsa::IImportRegistration {
 public:
-    ComponentImportServiceGuard(std::shared_ptr<celix::BundleContext> _ctx, std::string _componentId) : ctx{std::move(_ctx)}, componentId{std::move(_componentId)} {}
-    ~ComponentImportServiceGuard() noexcept override {
+    ComponentImportRegistration(std::shared_ptr<celix::BundleContext> _ctx, std::string _componentId) : ctx{std::move(_ctx)}, componentId{std::move(_componentId)} {}
+    ~ComponentImportRegistration() noexcept override {
         auto context = ctx.lock();
         if (context) {
             context->getDependencyManager()->removeComponentAsync(componentId);
@@ -191,7 +191,7 @@ public:
         }
 
         auto componentId = createImportedCalculatorComponent(endpoint);
-        return std::make_unique<ComponentImportServiceGuard>(ctx, std::move(componentId));
+        return std::make_unique<ComponentImportRegistration>(ctx, std::move(componentId));
     }
 
     [[nodiscard]] const std::string& getRemoteServiceType() const override {
@@ -350,10 +350,10 @@ private:
 /**
  * A import service guard, which will remove the component if it goes out of scope.
  */
-class ComponentExportServiceGuard final : public celix::rsa::IExportRegistration {
+class ComponentExportRegistration final : public celix::rsa::IExportRegistration {
 public:
-    ComponentExportServiceGuard(std::shared_ptr<celix::BundleContext> _ctx, std::string _componentId) : ctx{std::move(_ctx)}, componentId{std::move(_componentId)} {}
-    ~ComponentExportServiceGuard() noexcept override {
+    ComponentExportRegistration(std::shared_ptr<celix::BundleContext> _ctx, std::string _componentId) : ctx{std::move(_ctx)}, componentId{std::move(_componentId)} {}
+    ~ComponentExportRegistration() noexcept override {
         auto context = ctx.lock();
         if (context) {
             context->getDependencyManager()->removeComponentAsync(componentId);
@@ -385,7 +385,7 @@ public:
         }
 
         auto componentId = createExportedCalculatorComponent(serviceProperties);
-        return std::make_unique<ComponentExportServiceGuard>(ctx, std::move(componentId));
+        return std::make_unique<ComponentExportRegistration>(ctx, std::move(componentId));
     }
 
     [[nodiscard]] const std::string& getRemoteServiceType() const override {

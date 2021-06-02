@@ -198,23 +198,41 @@ bool celix::rsa::RemoteServiceAdmin::isEndpointMatch(const celix::rsa::EndpointD
             }
         }
     }
-    return matchCount == factory.getSupportedConfigs().size();
+    return matchCount == factory.getSupportedConfigs().size(); //note must match all requested configurations
 }
 
 bool celix::rsa::RemoteServiceAdmin::isExportServiceMatch(const celix::Properties& svcProperties, const celix::rsa::IExportServiceFactory& factory) const {
-    if (factory.getSupportedIntents().empty()) {
-        L_WARN("Matching service marked for export with a export service factory with no supported intents, this will always fail");
+    auto providedConfigs = celix::split(svcProperties.get(celix::rsa::SERVICE_IMPORTED_CONFIGS));
+    auto providedIntents = celix::split(svcProperties.get(celix::rsa::SERVICE_EXPORTED_INTENTS, "osgi.basic"));
+    if (providedConfigs.empty() && providedIntents.empty()) {
+        //note cannot match export service with no config or intent
         return false;
     }
-    auto providedIntents = celix::split(svcProperties.get(celix::rsa::SERVICE_EXPORTED_INTENTS, "osgi.basic"));
-    for (const auto& intent: providedIntents) {
-        for (const auto& factoryIntent: factory.getSupportedIntents()) {
-            if (intent == factoryIntent) {
-                return true;
+    if (factory.getSupportedIntents().empty() && factory.getSupportedConfigs().empty()) {
+        L_WARN("Matching service marked for export with a export service factory with no supported intents or configs, this will always fail");
+        return false;
+    }
+    if (!providedConfigs.empty()) {
+        size_t matchCount = 0;
+        for (const auto& config : providedConfigs) {
+            for (const auto& factoryConfig : factory.getSupportedConfigs()) {
+                if (config == factoryConfig) {
+                    ++matchCount;
+                    break;
+                }
             }
         }
+        return matchCount == factory.getSupportedConfigs().size(); //note must match all requested configurations
+    } else /*match on intent*/ {
+        for (const auto& intent: providedIntents) {
+            for (const auto& factoryIntent: factory.getSupportedIntents()) {
+                if (intent == factoryIntent) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
-    return false;
 }
 
 void celix::rsa::RemoteServiceAdmin::createImportServices() {
