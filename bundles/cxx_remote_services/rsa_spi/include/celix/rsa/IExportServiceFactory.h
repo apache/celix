@@ -59,8 +59,8 @@ namespace celix::rsa {
         [[nodiscard]] virtual const std::vector<std::string>& getSupportedConfigs() const = 0;
 
         /**
-         * @brief Exports the service identified with svcId
-         * @param svcId The service id of the exported service.
+         * @brief Exports the service associated with the provided serviceProperties.
+         * @param serviceProperties The service properties of the to be exported service.
          * @return A new export registration.
          * @throws celix::rsa::RemoteServicesException if the export failed.
          */

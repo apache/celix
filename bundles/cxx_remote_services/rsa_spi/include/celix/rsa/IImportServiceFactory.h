@@ -55,8 +55,8 @@ namespace celix::rsa {
         [[nodiscard]] virtual const std::vector<std::string>& getSupportedConfigs() const = 0;
 
         /**
-         * @brief Imports the service identified with svcId
-         * @param svcId The service id of the exported service.
+         * @brief Imports a service for the provided remote service endpoint description.
+         * @param endpoint The endpoint description describing the remote service.
          * @return A new import registration.
          * @throws celix::rsa::RemoteServicesException if the import failed.
          */

@@ -30,7 +30,7 @@
 #define L_WARN(...) \
         logHelper.warning(__VA_ARGS__);
 #define L_ERROR(...) \
-        _logHelper.error(__VA_ARGS__);
+        logHelper.error(__VA_ARGS__);
 
 celix::rsa::RemoteServiceAdmin::RemoteServiceAdmin(celix::LogHelper logHelper) : logHelper{std::move(logHelper)} {}
 
@@ -186,7 +186,7 @@ bool celix::rsa::RemoteServiceAdmin::isEndpointMatch(const celix::rsa::EndpointD
         return false;
     }
     if (endpoint.getConfigurationTypes().empty()) {
-        L_WARN("Matching endpoint with configuration types (%s), this will always fail", celix::rsa::SERVICE_IMPORTED_CONFIGS);
+        L_WARN("Matching endpoint with empty configuration types (%s), this will always fail", celix::rsa::SERVICE_IMPORTED_CONFIGS);
         return false;
     }
     size_t matchCount = 0;
