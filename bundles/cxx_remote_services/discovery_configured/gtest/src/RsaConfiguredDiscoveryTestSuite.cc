@@ -54,7 +54,7 @@ TEST_F(RsaConfiguredDiscoveryTestSuite, discoverConfiguredEndpoints) {
     auto count = ctx->useServices<celix::rsa::EndpointDescription>()
             .addUseCallback([](auto& endpoint) {
                 EXPECT_NE(endpoint.getId(), "");
-                EXPECT_NE(endpoint.getConfigurationTypes(), "");
+                EXPECT_NE(endpoint.getConfigurationTypes(), std::vector<std::string>{});
                 EXPECT_NE(endpoint.getInterface(), "");
                 EXPECT_NE(endpoint.getFrameworkUUID(), "");
                 EXPECT_NE(endpoint.getProperties().get("endpoint.scope"), ""); //note async specific

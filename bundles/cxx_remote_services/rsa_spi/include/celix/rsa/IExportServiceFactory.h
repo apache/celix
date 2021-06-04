@@ -19,24 +19,16 @@
 #pragma once
 
 #include <memory>
-#include "celix/rsa/EndpointDescription.h"
+
+#include "celix/rsa/IExportRegistration.h"
 
 namespace celix::rsa {
 
     /**
-     * @brief IExportServiceGuard class which represent a (opaque) exported service.
-     * If lifetime of this object expires it should remove the underlining exported service.
-     * */
-    class IExportServiceGuard {
-    public:
-        virtual ~IExportServiceGuard() noexcept = default;
-    };
-
-    /**
      * @brief A export service factory for a specific service type.
      *
-     * The service type which this export service factory targets is provided with
-     * the mandatory celix::rsa::IExportServiceFactory::TARGET_SERVICE_NAME service property.
+     * the mandatory service properties:
+     *  - celix::rsa::IExportServiceFactory::REMOTE_SERVICE_TYPE
      *
      */
     class IExportServiceFactory {
@@ -44,16 +36,34 @@ namespace celix::rsa {
         /**
          * @brief The service name for which this factory can created exported services.
          */
-        static constexpr const char * const TARGET_SERVICE_NAME = "target.service.name";
+        static constexpr const char * const REMOTE_SERVICE_TYPE = "remote.service.type";
 
         virtual ~IExportServiceFactory() noexcept = default;
 
         /**
-         * @brief Exports the service identified with svcId
-         * @param svcId The service id of the exported service.
-         * @return A ExportService.
+         * @brief The service name for which this factory can export services as remote services.
+         *
+         * The value should be based on the "remote.service.type" service property of
+         * this import service factory.
+         */
+        [[nodiscard]] virtual const std::string& getRemoteServiceType() const = 0;
+
+        /**
+         * @Brief The supported intents for this export service factory.
+         */
+        [[nodiscard]] virtual const std::vector<std::string>& getSupportedIntents() const = 0;
+
+        /**
+         * @Brief The supported configs for this export service factory.
+         */
+        [[nodiscard]] virtual const std::vector<std::string>& getSupportedConfigs() const = 0;
+
+        /**
+         * @brief Exports the service associated with the provided serviceProperties.
+         * @param serviceProperties The service properties of the to be exported service.
+         * @return A new export registration.
          * @throws celix::rsa::RemoteServicesException if the export failed.
          */
-        virtual std::unique_ptr<celix::rsa::IExportServiceGuard> exportService(const celix::Properties& serviceProperties) = 0;
+        [[nodiscard]] virtual std::unique_ptr<celix::rsa::IExportRegistration> exportService(const celix::Properties& serviceProperties) = 0;
     };
 }

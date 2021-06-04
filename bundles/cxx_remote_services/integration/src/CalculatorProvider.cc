@@ -50,7 +50,8 @@ public:
         cmp.createProvidedService<ICalculator>()
                 .addProperty("service.exported.interfaces", celix::typeName<ICalculator>())
                 .addProperty("endpoint.topic", "test")
-                .addProperty("endpoint.scope", "default");
+                .addProperty("endpoint.scope", "default")
+                .addProperty("service.exported.intents", "osgi.async");
         cmp.build();
     }
 };

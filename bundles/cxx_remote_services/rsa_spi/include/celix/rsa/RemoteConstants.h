@@ -91,7 +91,7 @@ namespace celix::rsa {
     /**
      * @brief Service property marking the service for export. It defines the interfaces under which this service can be exported.
      *
-     * Note for Celix only 1 interface can be register per service regiration, so only 1 interface can be exported using
+     * Note for Celix only 1 interface can be register per service registration, so only 1 interface can be exported using
      * the service.exported.interfaces property.
      * This value must be the exported service type or the value of an asterisk ('*' \u002A).
      * The value of this property must be of type string.

@@ -19,41 +19,47 @@
 #pragma once
 
 #include <memory>
+
 #include "celix/rsa/EndpointDescription.h"
+#include "celix/rsa/IImportRegistration.h"
 
 namespace celix::rsa {
 
     /**
-     * @brief IImportServiceGuard class which represent a (opaque) imported service.
-     * If lifetime of this object expires it should remove the underlining imported service.
-     */
-    class IImportServiceGuard {
-    public:
-        virtual ~IImportServiceGuard() noexcept = default;
-    };
-
-    /**
      * @brief A import service factory for a specific service type.
      *
-     * The service type which this import service factory targets is provided with
-     * the mandatory celix::rsa::IImportServiceFactory::TARGET_SERVICE_NAME service property.
+     * The service type which this export service factory targets is provided with `REMOTE_SERVICE_TYPE` and
+     * the supported configs with `REMOTE_CONFIGS_SUPPORTED`.
      *
      */
     class IImportServiceFactory {
     public:
         /**
-         * @brief The service name for which this factory can created exported services.
+         * @brief The service name for which this factory can import remote services.
          */
-        static constexpr const char * const TARGET_SERVICE_NAME = "target.service.name";
+        static constexpr const char * const REMOTE_SERVICE_TYPE = "remote.service.type";
 
         virtual ~IImportServiceFactory() noexcept = default;
 
         /**
-         * @brief Imports the service identified with svcId
-         * @param svcId The service id of the exported service.
-         * @return A ImportService.
+         * @brief The service name for which this factory can import remote services.
+         *
+         * The value should be based on the "remote.service.type" service property of
+         * this import service factory.
+         */
+        [[nodiscard]] virtual const std::string& getRemoteServiceType() const = 0;
+
+        /**
+         * @Brief The supported configs for this import service factory.
+         */
+        [[nodiscard]] virtual const std::vector<std::string>& getSupportedConfigs() const = 0;
+
+        /**
+         * @brief Imports a service for the provided remote service endpoint description.
+         * @param endpoint The endpoint description describing the remote service.
+         * @return A new import registration.
          * @throws celix::rsa::RemoteServicesException if the import failed.
          */
-        virtual std::unique_ptr<celix::rsa::IImportServiceGuard> importService(const celix::rsa::EndpointDescription& endpoint) = 0;
+        [[nodiscard]] virtual std::unique_ptr<celix::rsa::IImportRegistration> importService(const celix::rsa::EndpointDescription& endpoint) = 0;
     };
 }
