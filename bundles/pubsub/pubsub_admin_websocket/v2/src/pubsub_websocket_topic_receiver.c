@@ -68,9 +68,10 @@ struct pubsub_websocket_topic_receiver {
     void *admin;
     char *scope;
     char *topic;
-    char *serType;
     char scopeAndTopicFilter[5];
     char *uri;
+
+    pubsub_serializer_handler_t* serializerHandler;
 
     celix_websocket_service_t sockSvc;
     long svcId;
@@ -131,12 +132,12 @@ pubsub_websocket_topic_receiver_t* pubsub_websocketTopicReceiver_create(celix_bu
                                                               const char *scope,
                                                               const char *topic,
                                                               const celix_properties_t *topicProperties,
-                                                              const char *serType,
+                                                              pubsub_serializer_handler_t* serializerHandler,
                                                               void *admin) {
     pubsub_websocket_topic_receiver_t *receiver = calloc(1, sizeof(*receiver));
     receiver->ctx = ctx;
     receiver->logHelper = logHelper;
-    receiver->serType = celix_utils_strdup(serType);
+    receiver->serializerHandler = serializerHandler;
     receiver->scope = scope == NULL ? NULL : strndup(scope, 1024 * 1024);
     receiver->topic = strndup(topic, 1024 * 1024);
     receiver->admin = admin;
@@ -309,7 +310,6 @@ void pubsub_websocketTopicReceiver_destroy(pubsub_websocket_topic_receiver_t *re
         free(receiver->uri);
         free(receiver->scope);
         free(receiver->topic);
-        free(receiver->serType);
     }
     free(receiver);
 }
@@ -325,7 +325,7 @@ const char* pubsub_websocketTopicReceiver_url(pubsub_websocket_topic_receiver_t 
 }
 
 const char *pubsub_websocketTopicReceiver_serializerType(pubsub_websocket_topic_receiver_t *receiver) {
-    return receiver->serType;
+    return pubsub_serializerHandler_getSerializationType(receiver->serializerHandler);
 }
 
 void pubsub_websocketTopicReceiver_listConnections(pubsub_websocket_topic_receiver_t *receiver, celix_array_list_t *connectedUrls, celix_array_list_t *unconnectedUrls) {
@@ -451,58 +451,52 @@ static void pubsub_websocketTopicReceiver_removeSubscriber(void *handle, void *s
 static inline void processMsgForSubscriberEntry(pubsub_websocket_topic_receiver_t *receiver, psa_websocket_subscriber_entry_t* entry, pubsub_websocket_msg_header_t *hdr, const char* payload, size_t payloadSize) {
     //NOTE receiver->subscribers.mutex locked
 
-    int64_t msgTypeId = pubsub_websocketAdmin_getMessageIdForMessageFqn(receiver->admin, receiver->serType, hdr->id);
+    uint32_t msgId = pubsub_serializerHandler_getMsgId(receiver->serializerHandler, hdr->id);
 
-    if(msgTypeId < 0) {
-        L_WARN("[PSA_WEBSOCKET_V2_TR] Error cannot serialize message with serType %s msg type id %i for scope/topic %s/%s", receiver->serType, msgTypeId, receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic);
-        return;
-    }
-
-    psa_websocket_serializer_entry_t *serializer = pubsub_websocketAdmin_acquireSerializerForMessageId(receiver->admin, receiver->serType, msgTypeId);
-
-    if(serializer == NULL) {
-        pubsub_websocketAdmin_releaseSerializer(receiver->admin, serializer);
-        L_WARN("[PSA_WEBSOCKET_V2_TR] Error cannot serialize message with serType %s msg type id %i for scope/topic %s/%s", receiver->serType, msgTypeId, receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic);
+    if (msgId == 0) {
+        L_WARN("Cannot find msg id for msg fqn %s", hdr->id);
         return;
     }
 
     void *deSerializedMsg = NULL;
-
-    celix_version_t* version = celix_version_createVersionFromString(serializer->version);
-    bool validVersion = psa_websocket_checkVersion(version, hdr);
-    celix_version_destroy(version);
+    bool validVersion = pubsub_serializerHandler_isMessageSupported(receiver->serializerHandler, msgId, hdr->major, hdr->minor);
     if (validVersion) {
         struct iovec deSerializeBuffer;
         deSerializeBuffer.iov_base = (void *)payload;
         deSerializeBuffer.iov_len  = payloadSize;
-        celix_status_t status = serializer->svc->deserialize(serializer->svc->handle, &deSerializeBuffer, 0, &deSerializedMsg);
-
+        celix_status_t status = pubsub_serializerHandler_deserialize(receiver->serializerHandler, msgId, hdr->major, hdr->minor, &deSerializeBuffer, 0, &deSerializedMsg);
         if (status == CELIX_SUCCESS) {
             hash_map_iterator_t iter = hashMapIterator_construct(entry->subscriberServices);
             bool release = true;
             while (hashMapIterator_hasNext(&iter)) {
                 pubsub_subscriber_t *svc = hashMapIterator_nextValue(&iter);
-                svc->receive(svc->handle, serializer->fqn, msgTypeId, deSerializedMsg, NULL, &release);
+                svc->receive(svc->handle, hdr->id, msgId, deSerializedMsg, NULL, &release);
                 if (!release && hashMapIterator_hasNext(&iter)) {
                     //receive function has taken ownership and still more receive function to come ..
                     //deserialize again for new message
-                    status = serializer->svc->deserialize(serializer->svc->handle, &deSerializeBuffer, 0, &deSerializedMsg);
+                    status = pubsub_serializerHandler_deserialize(receiver->serializerHandler, msgId, hdr->major, hdr->minor, &deSerializeBuffer, 0, &deSerializedMsg);
                     if (status != CELIX_SUCCESS) {
-                        L_WARN("[PSA_WEBSOCKET_TR] Cannot deserialize msg type %s for scope/topic %s/%s", serializer->fqn, receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic);
+                        L_WARN("[PSA_WEBSOCKET_TR] Cannot deserialize msg type %s for scope/topic %s/%s", hdr->id, receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic);
                         break;
                     }
                     release = true;
                 }
             }
             if (release) {
-                serializer->svc->freeDeserializedMsg(serializer->svc->handle, deSerializedMsg);
+                pubsub_serializerHandler_freeDeserializedMsg(receiver->serializerHandler, msgId, deSerializedMsg);
             }
         } else {
-            L_WARN("[PSA_WEBSOCKET_TR] Cannot deserialize msg type %s for scope/topic %s/%s", serializer->fqn, receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic);
+            L_WARN("[PSA_WEBSOCKET_TR] Cannot deserialize msg type %s for scope/topic %s/%s", hdr->id, receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic);
         }
+    } else {
+        L_WARN("[PSA_WEBSOCKET_TR] Cannot deserialize message '%s' using %s, version mismatch. Version received: %i.%i.x, version send: %i.%i.x",
+               hdr->id,
+               pubsub_serializerHandler_getSerializationType(receiver->serializerHandler),
+               (int)hdr->major,
+               (int)hdr->minor,
+               pubsub_serializerHandler_getMsgMajorVersion(receiver->serializerHandler, msgId),
+               pubsub_serializerHandler_getMsgMinorVersion(receiver->serializerHandler, msgId));
     }
-
-    pubsub_websocketAdmin_releaseSerializer(receiver->admin, serializer);
 }
 
 static inline void processMsg(pubsub_websocket_topic_receiver_t *receiver, const char *msg, size_t msgSize) {

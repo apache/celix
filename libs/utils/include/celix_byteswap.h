@@ -24,7 +24,7 @@
 #if defined(__APPLE__)
 /* Swap bytes in 16 bit value.  */
 #define bswap_16(x) \
-     ((((x) & 0xff00) <<  8) | (((x) & 0x00ff) >> 8))
+     ((((x) & 0xff00) >>  8) | (((x) & 0x00ff) << 8))
 #define __bswap_16 bswap_16
 
 /* Swap bytes in 32 bit value.  */

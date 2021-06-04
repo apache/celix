@@ -52,9 +52,12 @@ struct pubsub_websocket_topic_sender {
     void *admin;
     char *scope;
     char *topic;
-    char *serType;
     char scopeAndTopicFilter[5];
     char *uri;
+
+    pubsub_serializer_handler_t* serializerHandler;
+
+    int seqNr; //atomic
 
     celix_websocket_service_t websockSvc;
     long websockSvcId;
@@ -71,16 +74,10 @@ struct pubsub_websocket_topic_sender {
     } boundedServices;
 };
 
-typedef struct psa_websocket_send_msg_entry {
-    pubsub_websocket_msg_header_t header; //partially filled header (only seqnr and time needs to be updated per send)
-    uint32_t type; //msg type id (hash of fqn)
-} psa_websocket_send_msg_entry_t;
-
 typedef struct psa_websocket_bounded_service_entry {
     pubsub_websocket_topic_sender_t *parent;
     pubsub_publisher_t service;
     long bndId;
-    hash_map_t *msgEntries; //key = msg type id, value = psa_websocket_send_msg_entry_t
     int getCount;
 } psa_websocket_bounded_service_entry_t;
 
@@ -99,18 +96,12 @@ pubsub_websocket_topic_sender_t* pubsub_websocketTopicSender_create(
         celix_log_helper_t *logHelper,
         const char *scope,
         const char *topic,
-        const char *serType,
+        pubsub_serializer_handler_t* serializerHandler,
         void *admin) {
     pubsub_websocket_topic_sender_t *sender = calloc(1, sizeof(*sender));
     sender->ctx = ctx;
     sender->logHelper = logHelper;
-    sender->serType = celix_utils_strdup(serType);
-
-    if(sender->serType == NULL) {
-        L_ERROR("[PSA_WEBSOCKET_V2_TS] Error getting serType");
-        free(sender);
-        return NULL;
-    }
+    sender->serializerHandler = serializerHandler;
 
     psa_websocket_setScopeAndTopicFilter(scope, topic, sender->scopeAndTopicFilter);
     sender->uri = psa_websocket_createURI(scope, topic);
@@ -174,17 +165,7 @@ void pubsub_websocketTopicSender_destroy(pubsub_websocket_topic_sender_t *sender
         hash_map_iterator_t iter = hashMapIterator_construct(sender->boundedServices.map);
         while (hashMapIterator_hasNext(&iter)) {
             psa_websocket_bounded_service_entry_t *entry = hashMapIterator_nextValue(&iter);
-            if (entry != NULL) {
-                hash_map_iterator_t iter2 = hashMapIterator_construct(entry->msgEntries);
-                while (hashMapIterator_hasNext(&iter2)) {
-                    psa_websocket_send_msg_entry_t *msgEntry = hashMapIterator_nextValue(&iter2);
-                    free(msgEntry);
-
-                }
-                hashMap_destroy(entry->msgEntries, false, false);
-
-                free(entry);
-            }
+            free(entry);
         }
         hashMap_destroy(sender->boundedServices.map, false, false);
         celixThreadMutex_unlock(&sender->boundedServices.mutex);
@@ -198,7 +179,6 @@ void pubsub_websocketTopicSender_destroy(pubsub_websocket_topic_sender_t *sender
         }
         free(sender->topic);
         free(sender->uri);
-        free(sender->serType);
         free(sender);
     }
 }
@@ -216,16 +196,17 @@ const char* pubsub_websocketTopicSender_url(pubsub_websocket_topic_sender_t *sen
 }
 
 const char* pubsub_websocketTopicSender_serializerType(pubsub_websocket_topic_sender_t *sender) {
-    return sender->serType;
+    return pubsub_serializerHandler_getSerializationType(sender->serializerHandler);
 }
 
 static int psa_websocket_localMsgTypeIdForMsgType(void* handle, const char* msgType, unsigned int* msgTypeId) {
     psa_websocket_bounded_service_entry_t *entry = (psa_websocket_bounded_service_entry_t *) handle;
-    int64_t rc = pubsub_websocketAdmin_getMessageIdForMessageFqn(entry->parent->admin, entry->parent->serType, msgType);
-    if(rc >= 0) {
-        *msgTypeId = (unsigned int)rc;
+    uint32_t msgId = pubsub_serializerHandler_getMsgId(entry->parent->serializerHandler, msgType);
+    if (msgId != 0) {
+        *msgTypeId = msgId;
+        return 0;
     }
-    return 0;
+    return -1;
 }
 
 static void* psa_websocket_getPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties __attribute__((unused))) {
@@ -241,7 +222,6 @@ static void* psa_websocket_getPublisherService(void *handle, const celix_bundle_
         entry->getCount = 1;
         entry->parent = sender;
         entry->bndId = bndId;
-        entry->msgEntries = hashMap_create(NULL, NULL, NULL, NULL);
         entry->service.handle = entry;
         entry->service.localMsgTypeIdForMsgType = psa_websocket_localMsgTypeIdForMsgType;
         entry->service.send = psa_websocket_topicPublicationSend;
@@ -264,60 +244,39 @@ static void psa_websocket_ungetPublisherService(void *handle, const celix_bundle
     if (entry != NULL && entry->getCount == 0) {
         //free entry
         hashMap_remove(sender->boundedServices.map, (void*)bndId);
-
-        hash_map_iterator_t iter = hashMapIterator_construct(entry->msgEntries);
-        while (hashMapIterator_hasNext(&iter)) {
-            psa_websocket_send_msg_entry_t *msgEntry = hashMapIterator_nextValue(&iter);
-            free(msgEntry);
-        }
-        hashMap_destroy(entry->msgEntries, false, false);
-
         free(entry);
     }
     celixThreadMutex_unlock(&sender->boundedServices.mutex);
 }
 
 static int psa_websocket_topicPublicationSend(void* handle, unsigned int msgTypeId, const void *inMsg, celix_properties_t *metadata) {
-    int status = CELIX_SERVICE_EXCEPTION;
     psa_websocket_bounded_service_entry_t *bound = handle;
     pubsub_websocket_topic_sender_t *sender = bound->parent;
 
-    psa_websocket_serializer_entry_t *serializer = pubsub_websocketAdmin_acquireSerializerForMessageId(sender->admin, sender->serType, msgTypeId);
-
-    if(serializer == NULL) {
-        pubsub_websocketAdmin_releaseSerializer(sender->admin, serializer);
-        L_WARN("[PSA_WEBSOCKET_V2_TS] Error cannot serialize message with serType %s msg type id %i for scope/topic %s/%s", sender->serType, msgTypeId, sender->scope == NULL ? "(null)" : sender->scope, sender->topic);
-        return CELIX_SERVICE_EXCEPTION;
+    const char* msgFqn;
+    int majorVersion;
+    int minorVersion;
+    celix_status_t status = pubsub_serializerHandler_getMsgInfo(sender->serializerHandler, msgTypeId, &msgFqn, &majorVersion, &minorVersion);
+    if (status != CELIX_SUCCESS) {
+        L_WARN("Cannot find serializer for msg id %u for serializer %s", msgTypeId,
+               pubsub_serializerHandler_getSerializationType(sender->serializerHandler));
+        return status;
     }
-    
-    psa_websocket_send_msg_entry_t *entry = hashMap_get(bound->msgEntries, (void *) (uintptr_t) (msgTypeId));
 
-    if(entry == NULL) {
-        entry = calloc(1, sizeof(psa_websocket_send_msg_entry_t));
-        entry->type = msgTypeId;
-        entry->header.id = serializer->fqn;
-        celix_version_t* version = celix_version_createVersionFromString(serializer->version);
-        entry->header.major = (uint8_t)celix_version_getMajor(version);
-        entry->header.minor = (uint8_t)celix_version_getMinor(version);
-        entry->header.seqNr = 0;
-        celix_version_destroy(version);
-        hashMap_put(bound->msgEntries, (void*)(uintptr_t)msgTypeId, entry);
-    }
 
     if (sender->sockConnection != NULL) {
         delay_first_send_for_late_joiners(sender);
         size_t serializedOutputLen = 0;
         struct iovec* serializedOutput = NULL;
-        status = serializer->svc->serialize(serializer->svc->handle, inMsg, &serializedOutput, &serializedOutputLen);
-
+        status = pubsub_serializerHandler_serialize(sender->serializerHandler, msgTypeId, inMsg, &serializedOutput, &serializedOutputLen);
         if (status == CELIX_SUCCESS /*ser ok*/) {
             json_error_t jsError;
 
             json_t *jsMsg = json_object();
-            json_object_set_new_nocheck(jsMsg, "id", json_string(entry->header.id));
-            json_object_set_new_nocheck(jsMsg, "major", json_integer(entry->header.major));
-            json_object_set_new_nocheck(jsMsg, "minor", json_integer(entry->header.minor));
-            uint32_t seqNr = __atomic_fetch_add(&entry->header.seqNr, 1, __ATOMIC_RELAXED);
+            json_object_set_new_nocheck(jsMsg, "id", json_string(msgFqn));
+            json_object_set_new_nocheck(jsMsg, "major", json_integer(majorVersion));
+            json_object_set_new_nocheck(jsMsg, "minor", json_integer(minorVersion));
+            uint32_t seqNr = __atomic_fetch_add(&sender->seqNr, 1, __ATOMIC_RELAXED);
             json_object_set_new_nocheck(jsMsg, "seqNr", json_integer(seqNr));
 
             json_t *jsData;
@@ -338,16 +297,14 @@ static int psa_websocket_topicPublicationSend(void* handle, unsigned int msgType
             }
 
             json_decref(jsMsg); //Decrease ref count means freeing the object
-            serializer->svc->freeSerializedMsg(serializer->svc->handle, serializedOutput, serializedOutputLen);
+            pubsub_serializerHandler_freeSerializedMsg(sender->serializerHandler, msgTypeId, serializedOutput, serializedOutputLen);
         } else {
-            L_WARN("[PSA_WEBSOCKET_TS] Error serialize message of type %s for scope/topic %s/%s",
-                   entry->header.id, sender->scope == NULL ? "(null)" : sender->scope, sender->topic);
+            L_WARN("[PSA_WEBSOCKET_TS] Error serialize message of type %u for scope/topic %s/%s",
+                   msgTypeId, sender->scope == NULL ? "(null)" : sender->scope, sender->topic);
         }
     } else { // when (sender->sockConnection == NULL) we dont have a client, but we do have a valid entry
     	status = CELIX_SUCCESS; // Not an error, just nothing to do
     }
-
-    pubsub_websocketAdmin_releaseSerializer(sender->admin, serializer);
 
     return status;
 }

@@ -20,11 +20,13 @@
 #include "gtest/gtest.h"
 
 #include <memory>
+#include <cstdarg>
 
-#include <celix_api.h>
+#include "celix_api.h"
+#include "pubsub_message_serialization_service.h"
 #include "pubsub_serializer_handler.h"
 #include "dyn_message.h"
-#include <cstdarg>
+#include "pubsub_message_serialization_marker.h"
 
 static void stdLog(void*, int level, const char *file, int line, const char *msg, ...) {
     va_list ap;
@@ -97,6 +99,7 @@ public:
 TEST_F(PubSubSerializationHandlerTestSuite, CreateDestroy) {
     auto *handler = pubsub_serializerHandler_create(ctx.get(), "json", true);
     ASSERT_TRUE(handler != nullptr);
+    ASSERT_STREQ("json", pubsub_serializerHandler_getSerializationType(handler));
     pubsub_serializerHandler_destroy(handler);
 }
 
@@ -108,7 +111,6 @@ TEST_F(PubSubSerializationHandlerTestSuite, SerializationServiceFound) {
     EXPECT_EQ(42, pubsub_serializerHandler_getMsgId(handler, "example::Msg"));
     auto *fqn = pubsub_serializerHandler_getMsgFqn(handler, 42);
     EXPECT_STREQ("example::Msg",  fqn);
-    free(fqn);
     EXPECT_TRUE(pubsub_serializerHandler_isMessageSupported(handler, 42, 1, 0));
     EXPECT_FALSE(pubsub_serializerHandler_isMessageSupported(handler, 42, 2, 0));
 
@@ -175,6 +177,8 @@ TEST_F(PubSubSerializationHandlerTestSuite, MultipleVersions) {
     EXPECT_TRUE(pubsub_serializerHandler_isMessageSupported(handler, 42, 1, 14));
     EXPECT_FALSE(pubsub_serializerHandler_isMessageSupported(handler, 42, 2, 1));
     EXPECT_FALSE(pubsub_serializerHandler_isMessageSupported(handler, 42, 2, 0));
+    EXPECT_EQ(pubsub_serializerHandler_getMsgMajorVersion(handler, 42), 1);
+    EXPECT_EQ(pubsub_serializerHandler_getMsgMinorVersion(handler, 42), 0);
 
     celix_bundleContext_unregisterService(ctx.get(), svcId1);
     celix_bundleContext_unregisterService(ctx.get(), svcId2);
@@ -193,6 +197,8 @@ TEST_F(PubSubSerializationHandlerTestSuite, NoBackwardsCompatbile) {
     EXPECT_FALSE(pubsub_serializerHandler_isMessageSupported(handler, 42, 1, 14));
     EXPECT_FALSE(pubsub_serializerHandler_isMessageSupported(handler, 42, 2, 1));
     EXPECT_FALSE(pubsub_serializerHandler_isMessageSupported(handler, 42, 2, 0));
+    EXPECT_EQ(pubsub_serializerHandler_getMsgMajorVersion(handler, 42), 1);
+    EXPECT_EQ(pubsub_serializerHandler_getMsgMinorVersion(handler, 42), 0);
 
     celix_bundleContext_unregisterService(ctx.get(), svcId1);
     pubsub_serializerHandler_destroy(handler);
@@ -257,6 +263,53 @@ TEST_F(PubSubSerializationHandlerTestSuite, BackwardsCompatibleCall) {
     pubsub_serializerHandler_deserialize(handler, 42, 1, 15, nullptr, 0, nullptr); //note compatible
     pubsub_serializerHandler_deserialize(handler, 42, 2, 9, nullptr, 0, nullptr); //note not compatible
     EXPECT_EQ(3, deserializeCallCount);
+
+    celix_bundleContext_unregisterService(ctx.get(), svcId1);
+    pubsub_serializerHandler_destroy(handler);
+}
+
+TEST_F(PubSubSerializationHandlerTestSuite, CreateHandlerFromMarker) {
+    auto* logHelper = celix_logHelper_create(ctx.get(), "test");
+    auto* marker = pubsub_serializerHandler_createForMarkerService(ctx.get(), 1032 /*invalid*/, logHelper);
+    EXPECT_FALSE(marker); //non existing svc
+
+    pubsub_message_serialization_marker_t markerSvc;
+    long svcId = celix_bundleContext_registerService(ctx.get(), &markerSvc, PUBSUB_MESSAGE_SERIALIZATION_MARKER_NAME, NULL);
+    EXPECT_GE(svcId, 0);
+    marker = pubsub_serializerHandler_createForMarkerService(ctx.get(), svcId, logHelper);
+    EXPECT_FALSE(marker); //missing ser type service property
+    celix_bundleContext_unregisterService(ctx.get(), svcId);
+
+    auto* props = celix_properties_create();
+    celix_properties_set(props, PUBSUB_MESSAGE_SERIALIZATION_MARKER_SERIALIZATION_TYPE_PROPERTY, "test");
+    svcId = celix_bundleContext_registerService(ctx.get(), &markerSvc, PUBSUB_MESSAGE_SERIALIZATION_MARKER_NAME, props);
+    EXPECT_GE(svcId, 0);
+    marker = pubsub_serializerHandler_createForMarkerService(ctx.get(), svcId, logHelper);
+    EXPECT_TRUE(marker);
+    EXPECT_STREQ("test", pubsub_serializerHandler_getSerializationType(marker));
+    celix_bundleContext_unregisterService(ctx.get(), svcId);
+    pubsub_serializerHandler_destroy(marker);
+
+    celix_logHelper_destroy(logHelper);
+}
+
+TEST_F(PubSubSerializationHandlerTestSuite, GetMsgInfo) {
+    auto *handler = pubsub_serializerHandler_create(ctx.get(), "json", true);
+    EXPECT_FALSE(pubsub_serializerHandler_isMessageSerializationServiceAvailable(handler, 42));
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, pubsub_serializerHandler_getMsgInfo(handler, 42, nullptr, nullptr, nullptr));
+
+
+    long svcId1 = registerSerSvc("json", 42, "example::Msg1", "1.0.0");
+    EXPECT_TRUE(pubsub_serializerHandler_isMessageSerializationServiceAvailable(handler, 42));
+    EXPECT_EQ(CELIX_SUCCESS, pubsub_serializerHandler_getMsgInfo(handler, 42, nullptr, nullptr, nullptr));
+
+    const char* msgFqn;
+    int major;
+    int minor;
+    EXPECT_EQ(CELIX_SUCCESS, pubsub_serializerHandler_getMsgInfo(handler, 42, &msgFqn, &major, &minor));
+    EXPECT_STREQ("example::Msg1", msgFqn);
+    EXPECT_EQ(1, major);
+    EXPECT_EQ(0, minor);
 
     celix_bundleContext_unregisterService(ctx.get(), svcId1);
     pubsub_serializerHandler_destroy(handler);

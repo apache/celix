@@ -22,9 +22,11 @@
 
 #include <string.h>
 
+#include "pubsub_message_serialization_marker.h"
 #include "celix_version.h"
 #include "pubsub_message_serialization_service.h"
 #include "celix_log_helper.h"
+#include "celix_constants.h"
 
 #define L_DEBUG(...) \
     celix_logHelper_debug(handler->logHelper, __VA_ARGS__)
@@ -40,19 +42,25 @@ typedef struct pubsub_serialization_service_entry {
     const celix_properties_t *properties;
     uint32_t msgId;
     celix_version_t* msgVersion;
-    char* msgFqn;
+    const char* msgFqn;
     pubsub_message_serialization_service_t* svc;
 } pubsub_serialization_service_entry_t;
 
 struct pubsub_serializer_handler {
     celix_bundle_context_t* ctx;
+    char* filter;
+    char* serType;
     bool backwardCompatible;
     long serializationSvcTrackerId;
     celix_log_helper_t *logHelper;
 
     celix_thread_rwlock_t lock;
     hash_map_t *serializationServices; //key = msg id, value = sorted array list with pubsub_serialization_service_entry_t*
+    hash_map_t *msgFullyQualifiedNames; //key = msg id, value = msg fqn. Non destructive map with msg fqn
 };
+
+static void pubsub_serializerHandler_addSerializationService(pubsub_serializer_handler_t* handler, pubsub_message_serialization_service_t* svc, const celix_properties_t* svcProperties);
+static void pubsub_serializerHandler_removeSerializationService(pubsub_serializer_handler_t* handler, pubsub_message_serialization_service_t* svc, const celix_properties_t* svcProperties);
 
 static void addSerializationService(void *handle, void* svc, const celix_properties_t *props) {
     pubsub_serializer_handler_t* handler = handle;
@@ -66,7 +74,7 @@ static void removeSerializationService(void *handle, void* svc, const celix_prop
     pubsub_serializerHandler_removeSerializationService(handler, serSvc, props);
 }
 
-int compareEntries(const void *a, const void *b) {
+static int compareEntries(const void *a, const void *b) {
     const pubsub_serialization_service_entry_t* aEntry = a;
     const pubsub_serialization_service_entry_t* bEntry = b;
 
@@ -98,61 +106,101 @@ static bool isCompatible(pubsub_serializer_handler_t* handler, pubsub_serializat
     return compatible;
 }
 
-static const char* getMsgFqn(pubsub_serializer_handler_t* handler, uint32_t msgId) {
-    //NOTE assumes mutex is locked
-    const char *result = NULL;
-    celix_array_list_t* entries = hashMap_get(handler->serializationServices, (void*)(uintptr_t)msgId);
-    if (entries != NULL) {
-        pubsub_serialization_service_entry_t *entry = celix_arrayList_get(entries, 0); //NOTE if an entries exists, there is at least 1 entry.
-        result = entry->msgFqn;
-    }
-    return result;
-}
-
 pubsub_serializer_handler_t* pubsub_serializerHandler_create(celix_bundle_context_t* ctx, const char* serializerType, bool backwardCompatible) {
     pubsub_serializer_handler_t* handler = calloc(1, sizeof(*handler));
     handler->ctx = ctx;
+    handler->serType = celix_utils_strdup(serializerType);
     handler->backwardCompatible = backwardCompatible;
 
     handler->logHelper = celix_logHelper_create(ctx, "celix_pubsub_serialization_handler");
 
     celixThreadRwlock_create(&handler->lock, NULL);
     handler->serializationServices = hashMap_create(NULL, NULL, NULL, NULL);
+    handler->msgFullyQualifiedNames = hashMap_create(NULL, NULL, NULL, NULL);
 
-    char *filter = NULL;
-    asprintf(&filter, "(%s=%s)", PUBSUB_MESSAGE_SERIALIZATION_SERVICE_SERIALIZATION_TYPE_PROPERTY, serializerType);
+    asprintf(&handler->filter, "(%s=%s)", PUBSUB_MESSAGE_SERIALIZATION_SERVICE_SERIALIZATION_TYPE_PROPERTY, serializerType);
     celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
     opts.filter.serviceName = PUBSUB_MESSAGE_SERIALIZATION_SERVICE_NAME;
     opts.filter.versionRange = PUBSUB_MESSAGE_SERIALIZATION_SERVICE_RANGE;
-    opts.filter.filter = filter;
+    opts.filter.filter = handler->filter;
     opts.callbackHandle = handler;
     opts.addWithProperties = addSerializationService;
     opts.removeWithProperties = removeSerializationService;
-    handler->serializationSvcTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
-    free(filter);
+    handler->serializationSvcTrackerId = celix_bundleContext_trackServicesWithOptionsAsync(ctx, &opts);
+
 
     return handler;
 }
 
+struct pubsub_serializerHandler_callback_data {
+    celix_bundle_context_t* ctx;
+    celix_log_helper_t* logHelper;
+    pubsub_serializer_handler_t* handler;
+};
+
+static void pubsub_serializerHandler_useMarkerSvcCallback(void *handle, void* svc __attribute__((unused)), const celix_properties_t* props) {
+    struct pubsub_serializerHandler_callback_data* data = handle;
+    const char* serType = celix_properties_get(props, PUBSUB_MESSAGE_SERIALIZATION_MARKER_SERIALIZATION_TYPE_PROPERTY, NULL);
+    bool backwardsCompatible = celix_properties_getAsBool(props, PUBSUB_MESSAGE_SERIALIZATION_MARKER_SERIALIZATION_BACKWARDS_COMPATIBLE, false);
+    if (serType != NULL) {
+        data->handler = pubsub_serializerHandler_create(data->ctx, serType, backwardsCompatible);
+    } else if (data->logHelper != NULL) {
+        celix_logHelper_error(
+                data->logHelper,
+                "Cannot create serializer handler because service %s does not have a %s service property",
+                PUBSUB_MESSAGE_SERIALIZATION_MARKER_NAME,
+                PUBSUB_MESSAGE_SERIALIZATION_MARKER_SERIALIZATION_TYPE_PROPERTY);
+    }
+}
+
+pubsub_serializer_handler_t* pubsub_serializerHandler_createForMarkerService(celix_bundle_context_t* ctx, long pubsubSerializerMarkerSvcId, celix_log_helper_t* logHelper) {
+    struct pubsub_serializerHandler_callback_data data;
+    memset(&data, 0, sizeof(data));
+    data.ctx = ctx;
+    data.logHelper = logHelper;
+
+    char filter[32];
+    snprintf(filter, 32, "(%s=%li)", OSGI_FRAMEWORK_SERVICE_ID, pubsubSerializerMarkerSvcId);
+    celix_service_use_options_t opts = CELIX_EMPTY_SERVICE_USE_OPTIONS;
+    opts.filter.serviceName = PUBSUB_MESSAGE_SERIALIZATION_MARKER_NAME;
+    opts.filter.filter = filter;
+    opts.callbackHandle = &data;
+    opts.useWithProperties = pubsub_serializerHandler_useMarkerSvcCallback;
+    bool called = celix_bundleContext_useServiceWithOptions(ctx, &opts);
+    if (!called && logHelper != NULL) {
+        celix_logHelper_error(
+                logHelper,
+                "Cannot find %s service for service id %li",
+                PUBSUB_MESSAGE_SERIALIZATION_MARKER_NAME,
+                pubsubSerializerMarkerSvcId);
+    }
+    return data.handler;
+}
+
+static void pubsub_serializerHandler_destroyCallback(void* data) {
+    pubsub_serializer_handler_t* handler = data;
+    celixThreadRwlock_destroy(&handler->lock);
+    hash_map_iterator_t iter = hashMapIterator_construct(handler->serializationServices);
+    while (hashMapIterator_hasNext(&iter)) {
+        celix_array_list_t *entries = hashMapIterator_nextValue(&iter);
+        for (int i = 0; i < celix_arrayList_size(entries); ++i) {
+            pubsub_serialization_service_entry_t* entry = celix_arrayList_get(entries, i);
+            celix_version_destroy(entry->msgVersion);
+            free(entry);
+        }
+        celix_arrayList_destroy(entries);
+    }
+    hashMap_destroy(handler->serializationServices, false, false);
+    hashMap_destroy(handler->msgFullyQualifiedNames, false, true);
+    celix_logHelper_destroy(handler->logHelper);
+    free(handler->serType);
+    free(handler->filter);
+    free(handler);
+}
 
 void pubsub_serializerHandler_destroy(pubsub_serializer_handler_t* handler) {
     if (handler != NULL) {
-        celix_bundleContext_stopTracker(handler->ctx, handler->serializationSvcTrackerId);
-        celixThreadRwlock_destroy(&handler->lock);
-        hash_map_iterator_t iter = hashMapIterator_construct(handler->serializationServices);
-        while (hashMapIterator_hasNext(&iter)) {
-            celix_array_list_t *entries = hashMapIterator_nextValue(&iter);
-            for (int i = 0; i < celix_arrayList_size(entries); ++i) {
-                pubsub_serialization_service_entry_t* entry = celix_arrayList_get(entries, i);
-                free(entry->msgFqn);
-                celix_version_destroy(entry->msgVersion);
-                free(entry);
-            }
-            celix_arrayList_destroy(entries);
-        }
-        hashMap_destroy(handler->serializationServices, false, false);
-        celix_logHelper_destroy(handler->logHelper);
-        free(handler);
+        celix_bundleContext_stopTrackerAsync(handler->ctx, handler->serializationSvcTrackerId, handler, pubsub_serializerHandler_destroyCallback);
     }
 }
 
@@ -190,6 +238,12 @@ void pubsub_serializerHandler_addSerializationService(pubsub_serializer_handler_
     }
 
     if (valid) {
+        char* fqn = hashMap_get(handler->msgFullyQualifiedNames, (void*)(uintptr_t)msgId);
+        if (fqn == NULL) {
+            fqn = celix_utils_strdup(msgFqn);
+            hashMap_put(handler->msgFullyQualifiedNames, (void*)(uintptr_t)msgId, fqn);
+        }
+
         celix_array_list_t *entries = hashMap_get(handler->serializationServices, (void *) (uintptr_t) msgId);
         if (entries == NULL) {
             entries = celix_arrayList_create();
@@ -197,17 +251,18 @@ void pubsub_serializerHandler_addSerializationService(pubsub_serializer_handler_
         pubsub_serialization_service_entry_t *entry = calloc(1, sizeof(*entry));
         entry->svcId = svcId;
         entry->properties = svcProperties;
-        entry->msgFqn = celix_utils_strdup(msgFqn);
+        entry->msgFqn = fqn;
         entry->msgId = msgId;
         entry->msgVersion = msgVersion;
         entry->svc = svc;
         celix_arrayList_add(entries, entry);
         celix_arrayList_sort(entries, compareEntries);
 
-        hashMap_put(handler->serializationServices, (void *) (uintptr_t) msgId, entries);
+        hashMap_put(handler->serializationServices, (void*)(uintptr_t)msgId, entries);
     } else {
         celix_version_destroy(msgVersion);
     }
+
     celixThreadRwlock_unlock(&handler->lock);
 }
 
@@ -233,7 +288,6 @@ void pubsub_serializerHandler_removeSerializationService(pubsub_serializer_handl
             }
         }
         if (found != NULL) {
-            free(found->msgFqn);
             celix_version_destroy(found->msgVersion);
             free(found);
         }
@@ -322,12 +376,18 @@ bool pubsub_serializerHandler_isMessageSupported(pubsub_serializer_handler_t* ha
     return compatible;
 }
 
-char* pubsub_serializerHandler_getMsgFqn(pubsub_serializer_handler_t* handler, uint32_t msgId) {
+bool pubsub_serializerHandler_isMessageSerializationServiceAvailable(pubsub_serializer_handler_t* handler, uint32_t msgId) {
     celixThreadRwlock_readLock(&handler->lock);
-    char *msgFqn = celix_utils_strdup(getMsgFqn(handler, msgId));
+    void* entries = hashMap_get(handler->serializationServices, (void*)(uintptr_t)msgId);
+    celixThreadRwlock_unlock(&handler->lock);
+    return entries != NULL;
+}
+
+const char* pubsub_serializerHandler_getMsgFqn(pubsub_serializer_handler_t* handler, uint32_t msgId) {
+    celixThreadRwlock_readLock(&handler->lock);
+    char *msgFqn = hashMap_get(handler->msgFullyQualifiedNames, (void*)(uintptr_t)msgId);
     celixThreadRwlock_unlock(&handler->lock);
     return msgFqn;
-
 }
 
 uint32_t pubsub_serializerHandler_getMsgId(pubsub_serializer_handler_t* handler, const char* msgFqn) {
@@ -344,6 +404,29 @@ uint32_t pubsub_serializerHandler_getMsgId(pubsub_serializer_handler_t* handler,
     celixThreadRwlock_unlock(&handler->lock);
     return result;
 }
+int pubsub_serializerHandler_getMsgMajorVersion(pubsub_serializer_handler_t* handler, uint32_t msgId) {
+    celixThreadRwlock_readLock(&handler->lock);
+    int major = -1;
+    celix_array_list_t* entries = hashMap_get(handler->serializationServices, (void*)(uintptr_t)msgId);
+    if (entries != NULL) {
+        pubsub_serialization_service_entry_t *entry = celix_arrayList_get(entries, 0); //NOTE if an entries exists, there is at least 1 entry.
+        major = celix_version_getMajor(entry->msgVersion);
+    }
+    celixThreadRwlock_unlock(&handler->lock);
+    return major;
+}
+
+int pubsub_serializerHandler_getMsgMinorVersion(pubsub_serializer_handler_t* handler, uint32_t msgId) {
+    celixThreadRwlock_readLock(&handler->lock);
+    int major = -1;
+    celix_array_list_t* entries = hashMap_get(handler->serializationServices, (void*)(uintptr_t)msgId);
+    if (entries != NULL) {
+        pubsub_serialization_service_entry_t *entry = celix_arrayList_get(entries, 0); //NOTE if an entries exists, there is at least 1 entry.
+        major = celix_version_getMinor(entry->msgVersion);
+    }
+    celixThreadRwlock_unlock(&handler->lock);
+    return major;
+}
 
 size_t pubsub_serializerHandler_messageSerializationServiceCount(pubsub_serializer_handler_t* handler) {
     size_t count = 0;
@@ -355,4 +438,35 @@ size_t pubsub_serializerHandler_messageSerializationServiceCount(pubsub_serializ
     }
     celixThreadRwlock_unlock(&handler->lock);
     return count;
+}
+
+const char* pubsub_serializerHandler_getSerializationType(pubsub_serializer_handler_t* handler) {
+    return handler->serType;
+}
+
+int pubsub_serializerHandler_getMsgInfo(
+        pubsub_serializer_handler_t* handler,
+        uint32_t msgId,
+        const char** msgFqnOut,
+        int* msgMajorVersionOut,
+        int* msgMinorVersionOut) {
+    int result = CELIX_SUCCESS;
+    celixThreadRwlock_readLock(&handler->lock);
+    celix_array_list_t* entries = hashMap_get(handler->serializationServices, (void*)(uintptr_t)msgId);
+    if (entries != NULL) {
+        pubsub_serialization_service_entry_t *entry = celix_arrayList_get(entries, 0); //NOTE if an entries exists, there is at least 1 entry.
+        if (msgFqnOut != NULL) {
+            *msgFqnOut = entry->msgFqn;
+        }
+        if (msgMajorVersionOut != NULL) {
+            *msgMajorVersionOut = celix_version_getMajor(entry->msgVersion);
+        }
+        if (msgMinorVersionOut != NULL) {
+            *msgMinorVersionOut = celix_version_getMinor(entry->msgVersion);
+        }
+    } else {
+        result = CELIX_ILLEGAL_ARGUMENT;
+    }
+    celixThreadRwlock_unlock(&handler->lock);
+    return result;
 }

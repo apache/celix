@@ -20,10 +20,11 @@
 #ifndef CELIX_PUBSUB_TCP_TOPIC_RECEIVER_H
 #define CELIX_PUBSUB_TCP_TOPIC_RECEIVER_H
 
-#include <pubsub_admin_metrics.h>
+#include "pubsub_admin_metrics.h"
 #include "celix_bundle_context.h"
-#include <pubsub_protocol.h>
+#include "pubsub_protocol.h"
 #include "pubsub_tcp_common.h"
+#include "pubsub_serializer_handler.h"
 
 typedef struct pubsub_tcp_topic_receiver pubsub_tcp_topic_receiver_t;
 
@@ -31,7 +32,7 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
                                                             celix_log_helper_t *logHelper,
                                                             const char *scope,
                                                             const char *topic,
-                                                            const char *serType,
+                                                            pubsub_serializer_handler_t* serializerHandler,
                                                             void *admin,
                                                             const celix_properties_t *topicProperties,
                                                             pubsub_tcp_endPointStore_t *handlerStore,
@@ -51,7 +52,5 @@ bool pubsub_tcpTopicReceiver_isPassive(pubsub_tcp_topic_receiver_t *sender);
 
 void pubsub_tcpTopicReceiver_connectTo(pubsub_tcp_topic_receiver_t *receiver, const char *url);
 void pubsub_tcpTopicReceiver_disconnectFrom(pubsub_tcp_topic_receiver_t *receiver, const char *url);
-
-pubsub_admin_receiver_metrics_t *pubsub_tcpTopicReceiver_metrics(pubsub_tcp_topic_receiver_t *receiver);
 
 #endif //CELIX_PUBSUB_TCP_TOPIC_RECEIVER_H

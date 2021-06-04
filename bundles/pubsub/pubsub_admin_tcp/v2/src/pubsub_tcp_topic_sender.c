@@ -57,16 +57,17 @@ struct pubsub_tcp_topic_sender {
     pubsub_tcpHandler_t *socketHandler;
     pubsub_tcpHandler_t *sharedSocketHandler;
     pubsub_interceptors_handler_t *interceptorsHandler;
+    pubsub_serializer_handler_t* serializerHandler;
 
     void *admin;
     char *scope;
     char *topic;
     char *url;
-    char *serializerType;
     bool isStatic;
     bool isPassive;
     bool verbose;
     unsigned long send_delay;
+    int seqNr; //atomic
 
     struct {
         long svcId;
@@ -79,24 +80,10 @@ struct pubsub_tcp_topic_sender {
     } boundedServices;
 };
 
-typedef struct psa_tcp_send_msg_entry {
-    uint32_t type; //msg type id (hash of fqn)
-    const char *fqn;
-    uint8_t major;
-    uint8_t minor;
-    unsigned char originUUID[16];
-//    pubsub_msg_serializer_t *msgSer;
-    pubsub_protocol_service_t *protSer;
-    struct iovec *serializedIoVecOutput;
-    size_t serializedIoVecOutputLen;
-    unsigned int seqNr;
-} psa_tcp_send_msg_entry_t;
-
 typedef struct psa_tcp_bounded_service_entry {
     pubsub_tcp_topic_sender_t *parent;
     pubsub_publisher_t service;
     long bndId;
-    hash_map_t *msgEntries; //key = msg type id, value = psa_tcp_send_msg_entry_t
     int getCount;
 } psa_tcp_bounded_service_entry_t;
 
@@ -118,7 +105,7 @@ pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
     celix_log_helper_t *logHelper,
     const char *scope,
     const char *topic,
-    const char *serializerType,
+    pubsub_serializer_handler_t* serializerHandler,
     void *admin,
     const celix_properties_t *topicProperties,
     pubsub_tcp_endPointStore_t *handlerStore,
@@ -127,7 +114,7 @@ pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
     pubsub_tcp_topic_sender_t *sender = calloc(1, sizeof(*sender));
     sender->ctx = ctx;
     sender->logHelper = logHelper;
-    sender->serializerType = celix_utils_strdup(serializerType);
+    sender->serializerHandler = serializerHandler;
     sender->admin = admin;
     sender->protocolSvcId = protocolSvcId;
     sender->protocol = protocol;
@@ -189,7 +176,7 @@ pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
         pubsub_tcpHandler_setSendRetryCnt(sender->socketHandler, (unsigned int) retryCnt);
         pubsub_tcpHandler_setSendTimeOut(sender->socketHandler, sendTimeout);
         pubsub_tcpHandler_setMaxMsgSize(sender->socketHandler, (unsigned int) maxMsgSize);
-        // Hhen passiveKey is specified, enable receive event for full-duplex connection using key.
+        // When passiveKey is specified, enable receive event for full-duplex connection using key.
         // Because the topic receiver is already started, enable the receive event.
         pubsub_tcpHandler_enableReceiveEvent(sender->socketHandler, (passiveKey) ? true : false);
         pubsub_tcpHandler_setTimeout(sender->socketHandler, (unsigned int) timeout);
@@ -273,18 +260,7 @@ void pubsub_tcpTopicSender_destroy(pubsub_tcp_topic_sender_t *sender) {
         hash_map_iterator_t iter = hashMapIterator_construct(sender->boundedServices.map);
         while (hashMapIterator_hasNext(&iter)) {
             psa_tcp_bounded_service_entry_t *entry = hashMapIterator_nextValue(&iter);
-            if (entry != NULL) {
-                hash_map_iterator_t iter2 = hashMapIterator_construct(entry->msgEntries);
-                while (hashMapIterator_hasNext(&iter2)) {
-                    psa_tcp_send_msg_entry_t *msgEntry = hashMapIterator_nextValue(&iter2);
-                    if (msgEntry->serializedIoVecOutput)
-                        free(msgEntry->serializedIoVecOutput);
-                    msgEntry->serializedIoVecOutput = NULL;
-                    free(msgEntry);
-                }
-                hashMap_destroy(entry->msgEntries, false, false);
-                free(entry);
-            }
+            free(entry);
         }
         hashMap_destroy(sender->boundedServices.map, false, false);
         celixThreadMutex_unlock(&sender->boundedServices.mutex);
@@ -301,7 +277,6 @@ void pubsub_tcpTopicSender_destroy(pubsub_tcp_topic_sender_t *sender) {
         }
         free(sender->topic);
         free(sender->url);
-        free(sender->serializerType);
         free(sender);
     }
 }
@@ -319,7 +294,7 @@ const char *pubsub_tcpTopicSender_topic(pubsub_tcp_topic_sender_t *sender) {
 }
 
 const char* pubsub_tcpTopicSender_serializerType(pubsub_tcp_topic_sender_t *sender) {
-    return sender->serializerType;
+    return pubsub_serializerHandler_getSerializationType(sender->serializerHandler);
 }
 
 const char *pubsub_tcpTopicSender_url(pubsub_tcp_topic_sender_t *sender) {
@@ -337,15 +312,6 @@ bool pubsub_tcpTopicSender_isPassive(pubsub_tcp_topic_sender_t *sender) {
     return sender->isPassive;
 }
 
-static int psa_tcp_localMsgTypeIdForMsgType(void *handle, const char *msgType, unsigned int *msgTypeId) {
-    psa_tcp_bounded_service_entry_t *entry = (psa_tcp_bounded_service_entry_t *) handle;
-    int64_t rc = pubsub_tcpAdmin_getMessageIdForMessageFqn(entry->parent->admin, entry->parent->serializerType, msgType);
-    if(rc >= 0) {
-        *msgTypeId = (unsigned int)rc;
-    }
-    return 0;
-}
-
 static void *psa_tcp_getPublisherService(void *handle, const celix_bundle_t *requestingBundle,
                                          const celix_properties_t *svcProperties __attribute__((unused))) {
     pubsub_tcp_topic_sender_t *sender = handle;
@@ -360,7 +326,6 @@ static void *psa_tcp_getPublisherService(void *handle, const celix_bundle_t *req
         entry->getCount = 1;
         entry->parent = sender;
         entry->bndId = bndId;
-        entry->msgEntries = hashMap_create(NULL, NULL, NULL, NULL);
         entry->service.handle = entry;
         entry->service.localMsgTypeIdForMsgType = psa_tcp_localMsgTypeIdForMsgType;
         entry->service.send = psa_tcp_topicPublicationSend;
@@ -384,16 +349,6 @@ static void psa_tcp_ungetPublisherService(void *handle, const celix_bundle_t *re
     if (entry != NULL && entry->getCount == 0) {
         //free entry
         hashMap_remove(sender->boundedServices.map, (void *) bndId);
-
-        hash_map_iterator_t iter = hashMapIterator_construct(entry->msgEntries);
-        while (hashMapIterator_hasNext(&iter)) {
-            psa_tcp_send_msg_entry_t *msgEntry = hashMapIterator_nextValue(&iter);
-            if (msgEntry->serializedIoVecOutput)
-                free(msgEntry->serializedIoVecOutput);
-            msgEntry->serializedIoVecOutput = NULL;
-            free(msgEntry);
-        }
-        hashMap_destroy(entry->msgEntries, false, false);
         free(entry);
     }
     celixThreadMutex_unlock(&sender->boundedServices.mutex);
@@ -402,91 +357,75 @@ static void psa_tcp_ungetPublisherService(void *handle, const celix_bundle_t *re
 
 static int
 psa_tcp_topicPublicationSend(void *handle, unsigned int msgTypeId, const void *inMsg, celix_properties_t *metadata) {
-    int status = CELIX_SUCCESS;
     psa_tcp_bounded_service_entry_t *bound = handle;
     pubsub_tcp_topic_sender_t *sender = bound->parent;
+    const char* msgFqn;
+    int majorVersion;
+    int minorVersion;
+    celix_status_t status = pubsub_serializerHandler_getMsgInfo(sender->serializerHandler, msgTypeId, &msgFqn, &majorVersion, &minorVersion);
 
-    psa_tcp_serializer_entry_t *serializer = pubsub_tcpAdmin_acquireSerializerForMessageId(sender->admin, sender->serializerType, msgTypeId);
-
-    if(serializer == NULL) {
-        pubsub_tcpAdmin_releaseSerializer(sender->admin, serializer);
-        L_WARN("[PSA_TCP_V2_TS] Error cannot serialize message with serType %s msg type id %i for scope/topic %s/%s", sender->serializerType, msgTypeId, sender->scope == NULL ? "(null)" : sender->scope, sender->topic);
-        return CELIX_SERVICE_EXCEPTION;
+    if (status != CELIX_SUCCESS) {
+        L_WARN("Cannot find serializer for msg id %u for serializer %s", msgTypeId,
+               pubsub_serializerHandler_getSerializationType(sender->serializerHandler));
+        return status;
     }
 
-    psa_tcp_send_msg_entry_t *entry = hashMap_get(bound->msgEntries, (void *) (uintptr_t) (msgTypeId));
+    bool cont = pubsubInterceptorHandler_invokePreSend(sender->interceptorsHandler, msgFqn, msgTypeId, inMsg, &metadata);
+    if (!cont) {
+        L_DEBUG("Cancel send based on pubsub interceptor cancel return");
+        return status;
+    }
 
-    if(entry == NULL) {
-        entry = calloc(1, sizeof(psa_tcp_send_msg_entry_t));
-        entry->protSer = sender->protocol;
-        entry->type = msgTypeId;
-        entry->fqn = serializer->fqn;
-        celix_version_t* version = celix_version_createVersionFromString(serializer->version);
-        entry->major = (uint8_t)celix_version_getMajor(version);
-        entry->minor = (uint8_t)celix_version_getMinor(version);
-        celix_version_destroy(version);
-        uuid_copy(entry->originUUID, sender->fwUUID);
-        hashMap_put(bound->msgEntries, (void*)(uintptr_t)msgTypeId, entry);
+    size_t serializedIoVecOutputLen = 0; //entry->serializedIoVecOutputLen;
+    struct iovec *serializedIoVecOutput = NULL;
+    status = pubsub_serializerHandler_serialize(sender->serializerHandler, msgTypeId, inMsg, &serializedIoVecOutput, &serializedIoVecOutputLen);
+    if (status != CELIX_SUCCESS) {
+        L_WARN("[PSA_TCP_V2_TS] Error serialize message of type %s for scope/topic %s/%s", msgFqn,
+               sender->scope == NULL ? "(null)" : sender->scope, sender->topic);
+        return status;
     }
 
     delay_first_send_for_late_joiners(sender);
 
-    size_t serializedIoVecOutputLen = 0; //entry->serializedIoVecOutputLen;
-    struct iovec *serializedIoVecOutput = NULL;
-    status = serializer->svc->serialize(serializer->svc->handle, inMsg, &serializedIoVecOutput, &serializedIoVecOutputLen);
-    entry->serializedIoVecOutputLen = MAX(serializedIoVecOutputLen, entry->serializedIoVecOutputLen);
-
-    bool cont = false;
-    if (status == CELIX_SUCCESS) /*ser ok*/ {
-        cont = pubsubInterceptorHandler_invokePreSend(sender->interceptorsHandler, serializer->fqn, msgTypeId, inMsg, &metadata);
+    pubsub_protocol_message_t message;
+    message.metadata.metadata = NULL;
+    message.payload.payload = NULL;
+    message.payload.length = 0;
+    if (serializedIoVecOutput) {
+        message.payload.payload = serializedIoVecOutput->iov_base;
+        message.payload.length = serializedIoVecOutput->iov_len;
     }
-    if (cont) {
-        pubsub_protocol_message_t message;
-        message.metadata.metadata = NULL;
-        message.payload.payload = NULL;
-        message.payload.length = 0;
+    message.header.msgId = msgTypeId;
+    message.header.seqNr = __atomic_fetch_add(&sender->seqNr, 1, __ATOMIC_RELAXED);
+    message.header.msgMajorVersion = (uint16_t)majorVersion;
+    message.header.msgMinorVersion = (uint16_t)minorVersion;
+    message.header.payloadSize = 0;
+    message.header.payloadPartSize = 0;
+    message.header.payloadOffset = 0;
+    message.header.metadataSize = 0;
+    if (metadata != NULL) {
+        message.metadata.metadata = metadata;
+    }
+    bool sendOk = true;
+    {
+        int rc = pubsub_tcpHandler_write(sender->socketHandler, &message, serializedIoVecOutput, serializedIoVecOutputLen, 0);
+        if (rc < 0) {
+            status = -1;
+            sendOk = false;
+        }
+        pubsubInterceptorHandler_invokePostSend(sender->interceptorsHandler, msgFqn, msgTypeId, inMsg, metadata);
+        if (message.metadata.metadata) {
+            celix_properties_destroy(message.metadata.metadata);
+        }
         if (serializedIoVecOutput) {
-            message.payload.payload = serializedIoVecOutput->iov_base;
-            message.payload.length = serializedIoVecOutput->iov_len;
+            pubsub_serializerHandler_freeSerializedMsg(sender->serializerHandler, msgTypeId, serializedIoVecOutput, serializedIoVecOutputLen);
+            serializedIoVecOutput = NULL;
         }
-        message.header.msgId = msgTypeId;
-        message.header.seqNr = entry->seqNr;
-        message.header.msgMajorVersion = entry->major;
-        message.header.msgMinorVersion = entry->minor;
-        message.header.payloadSize = 0;
-        message.header.payloadPartSize = 0;
-        message.header.payloadOffset = 0;
-        message.header.metadataSize = 0;
-        if (metadata != NULL) {
-            message.metadata.metadata = metadata;
-        }
-        entry->seqNr++;
-        bool sendOk = true;
-        {
-            int rc = pubsub_tcpHandler_write(sender->socketHandler, &message, serializedIoVecOutput, serializedIoVecOutputLen, 0);
-            if (rc < 0) {
-                status = -1;
-                sendOk = false;
-            }
-            pubsubInterceptorHandler_invokePostSend(sender->interceptorsHandler, serializer->fqn, msgTypeId, inMsg, metadata);
-            if (message.metadata.metadata) {
-                celix_properties_destroy(message.metadata.metadata);
-            }
-            if (serializedIoVecOutput) {
-                serializer->svc->freeSerializedMsg(serializer->svc->handle, serializedIoVecOutput, serializedIoVecOutputLen);
-                serializedIoVecOutput = NULL;
-            }
-        }
-
-        if (!sendOk) {
-            L_WARN("[PSA_TCP_V2_TS] Error sending msg. %s", strerror(errno));
-        }
-    } else {
-        L_WARN("[PSA_TCP_V2_TS] Error serialize message of type %s for scope/topic %s/%s", serializer->fqn,
-               sender->scope == NULL ? "(null)" : sender->scope, sender->topic);
     }
 
-    pubsub_tcpAdmin_releaseSerializer(sender->admin, serializer);
+    if (!sendOk) {
+        L_WARN("[PSA_TCP_V2_TS] Error sending msg. %s", strerror(errno));
+    }
 
     return status;
 }
@@ -502,4 +441,11 @@ static void delay_first_send_for_late_joiners(pubsub_tcp_topic_sender_t *sender)
         usleep(sender->send_delay * 1000);
         firstSend = false;
     }
+}
+
+static int psa_tcp_localMsgTypeIdForMsgType(void *handle, const char *msgType, unsigned int *msgTypeId) {
+    psa_tcp_bounded_service_entry_t* entry = handle;
+    uint32_t msgId = pubsub_serializerHandler_getMsgId(entry->parent->serializerHandler, msgType);
+    *msgTypeId = (unsigned int)msgId;
+    return 0;
 }

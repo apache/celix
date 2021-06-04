@@ -41,9 +41,6 @@ typedef struct psa_zmq_activator {
     pubsub_admin_service_t adminService;
     long adminSvcId;
 
-    pubsub_admin_metrics_service_t adminMetricsService;
-    long adminMetricsSvcId;
-
     celix_shell_command_t cmdSvc;
     long cmdSvcId;
 } psa_zmq_activator_t;
@@ -58,17 +55,6 @@ int psa_zmq_start(psa_zmq_activator_t *act, celix_bundle_context_t *ctx) {
 
     act->admin = pubsub_zmqAdmin_create(ctx, act->logHelper);
     celix_status_t status = act->admin != NULL ? CELIX_SUCCESS : CELIX_BUNDLE_EXCEPTION;
-
-    //track serializers
-    if (status == CELIX_SUCCESS) {
-        celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
-        opts.filter.serviceName = PUBSUB_MESSAGE_SERIALIZATION_SERVICE_NAME;
-        opts.filter.ignoreServiceLanguage = true;
-        opts.callbackHandle = act->admin;
-        opts.addWithProperties = pubsub_zmqAdmin_addSerializerSvc;
-        opts.removeWithProperties = pubsub_zmqAdmin_removeSerializerSvc;
-        act->serializersTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
-    }
 
     //track protocols
     if (status == CELIX_SUCCESS) {
@@ -101,16 +87,6 @@ int psa_zmq_start(psa_zmq_activator_t *act, celix_bundle_context_t *ctx) {
         act->adminSvcId = celix_bundleContext_registerService(ctx, psaSvc, PUBSUB_ADMIN_SERVICE_NAME, props);
     }
 
-    if (status == CELIX_SUCCESS) {
-        act->adminMetricsService.handle = act->admin;
-        act->adminMetricsService.metrics = pubsub_zmqAdmin_metrics;
-
-        celix_properties_t *props = celix_properties_create();
-        celix_properties_set(props, PUBSUB_ADMIN_SERVICE_TYPE, PUBSUB_ZMQ_ADMIN_TYPE);
-
-        act->adminMetricsSvcId = celix_bundleContext_registerService(ctx, &act->adminMetricsService, PUBSUB_ADMIN_METRICS_SERVICE_NAME, props);
-    }
-
     //register shell command service
     {
         act->cmdSvc.handle = act->admin;
@@ -128,7 +104,6 @@ int psa_zmq_start(psa_zmq_activator_t *act, celix_bundle_context_t *ctx) {
 int psa_zmq_stop(psa_zmq_activator_t *act, celix_bundle_context_t *ctx) {
     celix_bundleContext_unregisterService(ctx, act->adminSvcId);
     celix_bundleContext_unregisterService(ctx, act->cmdSvcId);
-    celix_bundleContext_unregisterService(ctx, act->adminMetricsSvcId);
     celix_bundleContext_stopTracker(ctx, act->serializersTrackerId);
     celix_bundleContext_stopTracker(ctx, act->protocolsTrackerId);
     pubsub_zmqAdmin_destroy(act->admin);

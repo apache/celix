@@ -22,6 +22,7 @@
 
 #include "celix_bundle_context.h"
 #include "pubsub_admin_metrics.h"
+#include "pubsub_serializer_handler.h"
 
 typedef struct pubsub_websocket_topic_sender pubsub_websocket_topic_sender_t;
 
@@ -30,7 +31,7 @@ pubsub_websocket_topic_sender_t* pubsub_websocketTopicSender_create(
         celix_log_helper_t *logHelper,
         const char *scope,
         const char *topic,
-        const char *serType,
+        pubsub_serializer_handler_t* serializerHandler,
         void *admin);
 void pubsub_websocketTopicSender_destroy(pubsub_websocket_topic_sender_t *sender);
 

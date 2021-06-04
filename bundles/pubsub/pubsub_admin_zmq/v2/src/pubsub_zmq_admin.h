@@ -27,12 +27,6 @@
 
 typedef struct pubsub_zmq_admin pubsub_zmq_admin_t;
 
-typedef struct psa_zmq_serializer_entry {
-    const char *fqn;
-    const char *version;
-    pubsub_message_serialization_service_t *svc;
-} psa_zmq_serializer_entry_t;
-
 pubsub_zmq_admin_t* pubsub_zmqAdmin_create(celix_bundle_context_t *ctx, celix_log_helper_t *logHelper);
 void pubsub_zmqAdmin_destroy(pubsub_zmq_admin_t *psa);
 
@@ -49,19 +43,10 @@ celix_status_t pubsub_zmqAdmin_teardownTopicReceiver(void *handle, const char *s
 celix_status_t pubsub_zmqAdmin_addDiscoveredEndpoint(void *handle, const celix_properties_t *endpoint);
 celix_status_t pubsub_zmqAdmin_removeDiscoveredEndpoint(void *handle, const celix_properties_t *endpoint);
 
-void pubsub_zmqAdmin_addSerializerSvc(void *handle, void *svc, const celix_properties_t *props);
-void pubsub_zmqAdmin_removeSerializerSvc(void *handle, void *svc, const celix_properties_t *props);
-
 void pubsub_zmqAdmin_addProtocolSvc(void *handle, void *svc, const celix_properties_t *props);
 void pubsub_zmqAdmin_removeProtocolSvc(void *handle, void *svc, const celix_properties_t *props);
 
 bool pubsub_zmqAdmin_executeCommand(void *handle, const char *commandLine, FILE *outStream, FILE *errStream);
-
-psa_zmq_serializer_entry_t* pubsub_zmqAdmin_acquireSerializerForMessageId(void *handle, const char *serializationType, uint32_t msgId);
-void pubsub_zmqAdmin_releaseSerializer(void *handle, psa_zmq_serializer_entry_t* serializer);
-int64_t pubsub_zmqAdmin_getMessageIdForMessageFqn(void *handle, const char *serializationType, const char *fqn);
-
-pubsub_admin_metrics_t* pubsub_zmqAdmin_metrics(void *handle);
 
 #endif //CELIX_PUBSUB_ZMQ_ADMIN_H
 

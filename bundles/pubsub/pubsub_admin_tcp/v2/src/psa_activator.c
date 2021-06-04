@@ -20,7 +20,6 @@
 #include <stdlib.h>
 
 #include "celix_api.h"
-#include "pubsub_serializer.h"
 #include "pubsub_protocol.h"
 #include "celix_log_helper.h"
 
@@ -34,7 +33,6 @@ typedef struct psa_tcp_activator {
 
     pubsub_tcp_admin_t *admin;
 
-    long serializersTrackerId;
     long protocolsTrackerId;
 
     pubsub_admin_service_t adminService;
@@ -50,24 +48,12 @@ typedef struct psa_tcp_activator {
 int psa_tcp_start(psa_tcp_activator_t *act, celix_bundle_context_t *ctx) {
     act->adminSvcId = -1L;
     act->cmdSvcId = -1L;
-    act->serializersTrackerId = -1L;
     act->protocolsTrackerId = -1L;
 
     act->logHelper = celix_logHelper_create(ctx, "celix_psa_admin_tcp_v2");
 
     act->admin = pubsub_tcpAdmin_create(ctx, act->logHelper);
     celix_status_t status = act->admin != NULL ? CELIX_SUCCESS : CELIX_BUNDLE_EXCEPTION;
-
-    //track serializers
-    if (status == CELIX_SUCCESS) {
-        celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
-        opts.filter.serviceName = PUBSUB_MESSAGE_SERIALIZATION_SERVICE_NAME;
-        opts.filter.ignoreServiceLanguage = true;
-        opts.callbackHandle = act->admin;
-        opts.addWithProperties = pubsub_tcpAdmin_addSerializerSvc;
-        opts.removeWithProperties = pubsub_tcpAdmin_removeSerializerSvc;
-        act->serializersTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
-    }
 
     //track protocols
     if (status == CELIX_SUCCESS) {
@@ -132,7 +118,6 @@ int psa_tcp_stop(psa_tcp_activator_t *act, celix_bundle_context_t *ctx) {
     celix_bundleContext_unregisterService(ctx, act->adminSvcId);
     celix_bundleContext_unregisterService(ctx, act->cmdSvcId);
     celix_bundleContext_unregisterService(ctx, act->adminMetricsSvcId);
-    celix_bundleContext_stopTracker(ctx, act->serializersTrackerId);
     celix_bundleContext_stopTracker(ctx, act->protocolsTrackerId);
     pubsub_tcpAdmin_destroy(act->admin);
 
