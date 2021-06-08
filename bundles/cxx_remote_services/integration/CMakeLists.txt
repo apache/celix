@@ -21,7 +21,6 @@ add_celix_bundle(TestExportImportRemoteServiceFactory
 target_link_libraries(TestExportImportRemoteServiceFactory PRIVATE Celix::rsa_spi Celix::pubsub_api Celix::Promises Celix::log_helper)
 target_compile_options(TestExportImportRemoteServiceFactory PRIVATE -std=c++17) #TODO how can this be improved (bring back -std=c++17 on INTERFACE for promises?
 target_include_directories(TestExportImportRemoteServiceFactory PRIVATE include)
-#TODO improve with serializer svc, for now using descriptors
 celix_bundle_files(TestExportImportRemoteServiceFactory
         resources/Calculator$add$Invoke.descriptor
         resources/Calculator$add$Return.descriptor
@@ -61,8 +60,7 @@ add_celix_container(RemoteCalculatorProvider
             #Pubsub needed for remote services on pubsub
             Celix::pubsub_serializer_json
             Celix::pubsub_topology_manager
-            #TODO replace with v1 when marker interfaces for a serializer type are introduced  Celix::pubsub_admin_zmq_v2
-            Celix::pubsub_admin_zmq
+            Celix::pubsub_admin_zmq_v2
             Celix::pubsub_protocol_wire_v2
             Celix::pubsub_discovery_etcd
 
@@ -72,6 +70,7 @@ add_celix_container(RemoteCalculatorProvider
 
             CalculatorProvider
 )
+target_link_libraries(RemoteCalculatorProvider PRIVATE ZMQ::lib CZMQ::lib)
 
 add_celix_container(RemoteCalculatorConsumer
         GROUP rsa
@@ -85,7 +84,7 @@ add_celix_container(RemoteCalculatorConsumer
             Celix::pubsub_serializer_json
             Celix::pubsub_topology_manager
             Celix::pubsub_discovery_etcd
-            Celix::pubsub_admin_zmq
+            Celix::pubsub_admin_zmq_v2
             Celix::pubsub_protocol_wire_v2
 
             #Remote Services
@@ -95,3 +94,4 @@ add_celix_container(RemoteCalculatorConsumer
 
             CalculatorConsumer
 )
+target_link_libraries(RemoteCalculatorConsumer PRIVATE ZMQ::lib CZMQ::lib)

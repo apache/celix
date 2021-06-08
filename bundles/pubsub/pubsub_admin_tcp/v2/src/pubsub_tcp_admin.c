@@ -700,6 +700,7 @@ bool pubsub_tcpAdmin_executeCommand(void *handle, const char *commandLine __attr
     celixThreadMutex_unlock(&psa->protocols.mutex);
     fprintf(out, "\n");
 
+    free(line);
     return status;
 }
 
