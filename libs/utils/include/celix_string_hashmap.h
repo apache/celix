@@ -29,6 +29,10 @@
 extern "C" {
 #endif
 
+/**
+ * @brief A hashmap with uses string (char*) as key.
+ * @note Not thread safe.
+ */
 typedef struct celix_string_hashmap celix_string_hashmap_t;
 //TODO typedef struct celix_long_hashmap celix_long_hashmap_t;
 
@@ -38,14 +42,48 @@ typedef struct celix_string_hashmap celix_string_hashmap_t;
 celix_string_hashmap_t* celix_stringHashmap_create();
 
 /**
- * @brief frees the hashmap, but will not free the key and values.
+ * @brief frees the hashmap.
+ * @param map The hashmap
+ * @param freeValues If true free will be called on the hashmap ptr values
  */
-void celix_stringHashmap_destroy(celix_string_hashmap_t* map);
+void celix_stringHashmap_destroy(celix_string_hashmap_t* map, bool freeValues);
 
 /**
  * @brief Returns the size of the hashmap
  */
 size_t celix_stringHashMap_size(celix_string_hashmap_t* map);
+
+/**
+ * @brief add pointer entry the string hash map.
+ *
+ * @param map The hashmap
+ * @param key  The key to use. The hashmap will create a copy if needed.
+ * @param value The pointer value to store with the key
+ * @return The previous key or NULL of no key was set. Note also returns NULL if the previous value for the key was NULL.
+ */
+void* celix_stringHashMap_put(celix_string_hashmap_t* map, const char* key, void* value);
+
+/**
+ * @brief Returns the value for the provided key.
+ *
+ * @param map The hashmap.
+ * @param key  The key to lookup.
+ * @return Return the pointer value for the key or NULL. Note will also return NULL if the pointer value for the provided key is NULL.
+ */
+void* celix_stringHashmap_get(celix_string_hashmap_t* map, const char* key);
+
+/**
+ * @brief Returns true if the map has the provided key.
+ */
+bool celix_stringHashmap_hasKey(celix_string_hashmap_t* map, const char* key);
+
+/**
+ * @brief Remove a entry from the hashmap.
+ * @param map The hashmap.
+ * @param key The key te remove.
+ * @return Return the pointer value for the removed key or NULL. Note will also return NULL if the pointer value for the removed key is NULL.
+ */
+void* celix_stringHashMap_remove(celix_string_hashmap_t* map, const char* key);
 
 #ifdef __cplusplus
 }
