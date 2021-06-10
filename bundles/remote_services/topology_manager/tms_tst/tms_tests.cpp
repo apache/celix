@@ -465,32 +465,6 @@ extern "C" {
         printf("End: %s\n", __func__);
     }
 
-    /// \TEST_CASE_ID{5}
-    /// \TEST_CASE_TITLE{Test scope initialisation}
-    /// \TEST_CASE_REQ{REQ-5}
-    /// \TEST_CASE_DESC Invalid input file, two partly matching filters with same key name
-    /*
-    static void testScope4(void) {
-        int nr_exported;
-        int nr_imported;
-        array_list_pt epList;
-        printf("\nBegin: %s\n", __func__);
-        scopeInit("scope4.json", &nr_exported, &nr_imported);
-        EXPECT_EQ(2, nr_exported);
-        discMock->getEPDescriptors(discMock->handle, &epList);
-        // We export two services: Calculator and Calculator2, but only 1 has DFI bundle info
-        EXPECT_EQ(1, arrayList_size(epList));
-        for (unsigned int i = 0; i < arrayList_size(epList); i++) {
-            endpoint_description_t *ep = (endpoint_description_t *) arrayList_get(epList, i);
-            celix_properties_t *props = ep->properties;
-            hash_map_entry_pt entry = hashMap_getEntry(props, (void*)"zone");
-            char* value = (char*) hashMapEntry_getValue(entry);
-            EXPECT_STREQ("inaetics", value);
-            EXPECT_TRUE_TRUE((entry == NULL));
-        }
-        printf("End: %s\n", __func__);
-    }*/
-
     /// \TEST_CASE_ID{6}
     /// \TEST_CASE_TITLE{Test import scope}
     /// \TEST_CASE_REQ{REQ-3}
@@ -521,11 +495,15 @@ extern "C" {
         rc = eplService->endpointAdded(eplService->handle, endpoint, NULL);
         EXPECT_EQ(CELIX_SUCCESS, rc);
 
+        celix_framework_waitForEmptyEventQueue(framework);
+
         bool imported = testImport->IsImported(testImport);
         EXPECT_EQ(true, imported);
 
         rc = eplService->endpointRemoved(eplService->handle, endpoint, NULL);
         EXPECT_EQ(CELIX_SUCCESS, rc);
+
+        celix_framework_waitForEmptyEventQueue(framework);
 
         rc = endpointDescription_destroy(endpoint);
         EXPECT_EQ(CELIX_SUCCESS, rc);
@@ -564,11 +542,15 @@ extern "C" {
         rc = eplService->endpointAdded(eplService->handle, endpoint, NULL);
         EXPECT_EQ(CELIX_SUCCESS, rc);
 
+        celix_framework_waitForEmptyEventQueue(framework);
+
         bool imported = testImport->IsImported(testImport);
         EXPECT_EQ(true, imported);
 
         rc = eplService->endpointRemoved(eplService->handle, endpoint, NULL);
         EXPECT_EQ(CELIX_SUCCESS, rc);
+
+        celix_framework_waitForEmptyEventQueue(framework);
 
         rc = endpointDescription_destroy(endpoint);
         EXPECT_EQ(CELIX_SUCCESS, rc);
@@ -606,11 +588,15 @@ extern "C" {
         rc = eplService->endpointAdded(eplService->handle, endpoint, NULL);
         EXPECT_EQ(CELIX_SUCCESS, rc);
 
+        celix_framework_waitForEmptyEventQueue(framework);
+
         bool imported = testImport->IsImported(testImport);
         EXPECT_EQ(false, imported);
 
         rc = eplService->endpointRemoved(eplService->handle, endpoint, NULL);
         EXPECT_EQ(CELIX_SUCCESS, rc);
+
+        celix_framework_waitForEmptyEventQueue(framework);
 
         rc = endpointDescription_destroy(endpoint);
         EXPECT_EQ(CELIX_SUCCESS, rc);
@@ -649,11 +635,15 @@ extern "C" {
         EXPECT_EQ(CELIX_SUCCESS, rc);
 
         celix_framework_waitForEmptyEventQueue(framework);
+
+        celix_framework_waitForEmptyEventQueue(framework);
         bool imported = testImport->IsImported(testImport);
         EXPECT_EQ(true, imported);
 
         rc = eplService->endpointRemoved(eplService->handle, endpoint, NULL);
         EXPECT_EQ(CELIX_SUCCESS, rc);
+
+        celix_framework_waitForEmptyEventQueue(framework);
 
         rc = endpointDescription_destroy(endpoint);
         EXPECT_EQ(CELIX_SUCCESS, rc);
