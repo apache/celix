@@ -15,9 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 
-find_package(CppUTest REQUIRED)
-include_directories(SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR})
-
 add_celix_bundle(rsa_dfi_tst_bundle
     VERSION 0.0.1
     SOURCES

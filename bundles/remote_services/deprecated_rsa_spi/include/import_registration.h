@@ -28,7 +28,6 @@ typedef struct import_registration import_registration_t;
 
 typedef struct import_reference import_reference_t;
 
-celix_status_t importRegistration_close(import_registration_t *registration);
 celix_status_t importRegistration_getException(import_registration_t *registration);
 celix_status_t importRegistration_getImportReference(import_registration_t *registration, import_reference_t **reference);
 

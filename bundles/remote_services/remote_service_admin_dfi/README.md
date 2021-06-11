@@ -31,7 +31,12 @@ Libffi is configured using descriptor files in the bundles.
     RSA_INTERFACE               If specified, the ip adress of interface (i.g. eth0) will be used.
     
     RSA_LOG_CALLS              If set to true, the RSA will Log calls info (including serialized data) to the file in RSA_LOG_CALLS_FILE. Default is false.
-    RSA_LOG_CALLS_FILE         If RSA_LOG_CALLS is enabled to file to log to (starting rsa will truncate file). Default is stdout.          
+    RSA_LOG_CALLS_FILE         If RSA_LOG_CALLS is enabled to file to log to (starting rsa will truncate file). Default is stdout.   
+
+    RSA_DFI_USE_CURL_SHARE_HANDLE   If set to true the RSA will use curl's share handle. 
+                                    The curl share handle has a significant performance boost by sharing DNS, COOKIE en CONNECTIONS over multiple calls, 
+                                    but can also introduce some issues (based on experience).
+                                    Default is false
 
 ###### CMake option
     RSA_REMOTE_SERVICE_ADMIN_DFI=ON

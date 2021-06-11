@@ -201,11 +201,11 @@ celix_status_t bundleActivator_start(void * userData, celix_bundle_context_t *co
     bundleContext_registerService(context, (char *) OSGI_FRAMEWORK_LISTENER_HOOK_SERVICE_NAME, hookService, NULL, &activator->hook);
 
     if (status == CELIX_SUCCESS) {
-        status = serviceTracker_open(activator->exportedServicesTracker);
+        serviceTracker_open(activator->remoteServiceAdminTracker);
     }
 
     if (status == CELIX_SUCCESS) {
-        serviceTracker_open(activator->remoteServiceAdminTracker);
+        status = serviceTracker_open(activator->exportedServicesTracker);
     }
 
     if (status == CELIX_SUCCESS) {

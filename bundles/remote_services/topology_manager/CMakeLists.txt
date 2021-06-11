@@ -30,11 +30,7 @@ target_include_directories(rsa_topology_manager PRIVATE include)
 target_link_libraries(rsa_topology_manager PRIVATE Celix::log_helper Celix::deprecated_rsa_spi)
 
 if (ENABLE_TESTING)
-    find_package(CppUTest REQUIRED)
     find_package(Jansson REQUIRED)
-
-    include_directories("SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR}")
-    include_directories("SYSTEM PRIVATE ${CPPUTEST_EXT_INCLUDE_DIR}")
     add_subdirectory(tms_tst)
 endif (ENABLE_TESTING)
 

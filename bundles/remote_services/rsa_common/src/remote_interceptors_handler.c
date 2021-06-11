@@ -65,20 +65,22 @@ celix_status_t remoteInterceptorsHandler_create(celix_bundle_context_t *ctx, rem
             opts.callbackHandle = *handler;
             opts.addWithProperties = remoteInterceptorsHandler_addInterceptor;
             opts.removeWithProperties = remoteInterceptorsHandler_removeInterceptor;
-            (*handler)->interceptorsTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
+            (*handler)->interceptorsTrackerId = celix_bundleContext_trackServicesWithOptionsAsync(ctx, &opts);
         }
     }
 
     return status;
 }
 
-celix_status_t remoteInterceptorsHandler_destroy(remote_interceptors_handler_t *handler) {
-    celix_bundleContext_stopTracker(handler->ctx, handler->interceptorsTrackerId);
-
+static void remoteInterceptorsHandler_destroyCallback(void* data) {
+    remote_interceptors_handler_t *handler = data;
     celix_arrayList_destroy(handler->interceptors);
     celixThreadMutex_destroy(&handler->lock);
     free(handler);
+}
 
+celix_status_t remoteInterceptorsHandler_destroy(remote_interceptors_handler_t *handler) {
+    celix_bundleContext_stopTrackerAsync(handler->ctx, handler->interceptorsTrackerId, handler, remoteInterceptorsHandler_destroyCallback);
     return CELIX_SUCCESS;
 }
 

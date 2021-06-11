@@ -899,6 +899,11 @@ static void celix_bundleContext_removeServiceTracker(void *data) {
     celixThreadMutex_lock(&tracker->ctx->mutex);
     hashMap_remove(tracker->ctx->stoppingTrackerEventIds, (void*)tracker->trackerId);
     celixThreadMutex_unlock(&tracker->ctx->mutex);
+    if (tracker->isFreeFilterNeeded) {
+        free((char*)tracker->opts.filter.serviceName);
+        free((char*)tracker->opts.filter.versionRange);
+        free((char*)tracker->opts.filter.filter);
+    }
     free(tracker);
 }
 
@@ -959,6 +964,11 @@ static void celix_bundleContext_stopTrackerInternal(bundle_context_t *ctx, long 
             free(bundleTracker);
         } else if (serviceTracker != NULL) {
             celix_serviceTracker_destroy(serviceTracker->tracker);
+            if (serviceTracker->isFreeFilterNeeded) {
+                free((char*)serviceTracker->opts.filter.serviceName);
+                free((char*)serviceTracker->opts.filter.versionRange);
+                free((char*)serviceTracker->opts.filter.filter);
+            }
             free(serviceTracker);
         } else if (svcTrackerTracker != NULL) {
             celix_framework_unregister(ctx->framework, ctx->bundle, svcTrackerTracker->serviceId);
@@ -1383,6 +1393,11 @@ static void celix_bundleContext_doneCreatingTrackerOnEventLoop(void *data) {
     celixThreadMutex_unlock(&entry->ctx->mutex);
     if (cancelled) {
         //tracker creation cancelled -> entry already removed from map, but memory needs to be freed.
+        if (entry->isFreeFilterNeeded) {
+            free((char*)entry->opts.filter.serviceName);
+            free((char*)entry->opts.filter.versionRange);
+            free((char*)entry->opts.filter.filter);
+        }
         free(entry);
     } else if (entry->trackerCreatedCallback != NULL) {
         entry->trackerCreatedCallback(entry->trackerCreatedCallbackData);
@@ -1412,6 +1427,7 @@ static long celix_bundleContext_trackServicesWithOptionsInternal(celix_bundle_co
             entry->ctx = ctx;
             entry->tracker = tracker;
             entry->opts = *opts;
+            entry->isFreeFilterNeeded = false;
             entry->createEventId = -1;
             celixThreadMutex_lock(&ctx->mutex);
             entry->trackerId = ctx->nextTrackerId++;
@@ -1426,9 +1442,16 @@ static long celix_bundleContext_trackServicesWithOptionsInternal(celix_bundle_co
         entry->createEventId = celix_framework_nextEventId(ctx->framework);
         entry->tracker = NULL; //will be set async
         entry->opts = *opts;
+
         if (async) { //note only setting the async callback if this is a async call
             entry->trackerCreatedCallbackData = opts->trackerCreatedCallbackData;
             entry->trackerCreatedCallback = opts->trackerCreatedCallback;
+
+            //for async copying the const char* inputs
+            entry->isFreeFilterNeeded = true;
+            entry->opts.filter.serviceName = celix_utils_strdup(opts->filter.serviceName);
+            entry->opts.filter.versionRange = celix_utils_strdup(opts->filter.versionRange);
+            entry->opts.filter.filter = celix_utils_strdup(opts->filter.filter);
         }
         celixThreadMutex_lock(&ctx->mutex);
         entry->trackerId = ctx->nextTrackerId++;
