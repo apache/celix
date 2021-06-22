@@ -23,7 +23,7 @@ if (HTTP_ADMIN)
     add_subdirectory(http_admin)
 
     if (ENABLE_TESTING)
-        add_subdirectory(test)
-    endif (ENABLE_TESTING)
+        add_subdirectory(gtest)
+    endif()
 
 endif (HTTP_ADMIN)

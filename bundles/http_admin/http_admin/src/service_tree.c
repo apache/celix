@@ -291,13 +291,13 @@ service_tree_node_t *findServiceNodeInTree(service_tree_t *svc_tree, const char 
     char *uri_cpy;
     bool tree_not_empty = false;
 
-    if(svc_tree != NULL && uri != NULL) {
+    if (svc_tree != NULL && uri != NULL) {
         tree_not_empty = ((bool) (svc_tree->tree_svc_count | svc_tree->tree_node_count)
                                & (svc_tree->root_node != NULL));
         current = svc_tree->root_node;
     }
 
-    if(tree_not_empty){
+    if (tree_not_empty) {
         if(strcmp(current->svc_data->sub_uri, "root") == 0)
         {
             asprintf(&uri_cpy, "%s%s", "root", uri);
@@ -307,8 +307,8 @@ service_tree_node_t *findServiceNodeInTree(service_tree_t *svc_tree, const char 
 
         char *uri_token = strtok_r(uri_cpy, "/", &save_ptr);
         //Check for horizontal matches for the first token
-        while(current != NULL) {
-            if(strcmp(current->svc_data->sub_uri, uri_token) == 0){
+        while (current != NULL) {
+            if (uri_token != NULL && strcmp(current->svc_data->sub_uri, uri_token) == 0){
                 //Save current node to comply with OSGI Http Whiteboard Specification
                 if(current->svc_data->service != NULL) {
                     found_node = current;
