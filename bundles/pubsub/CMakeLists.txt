@@ -56,7 +56,7 @@ if (PUBSUB)
     add_subdirectory(examples)
 
     if (ENABLE_TESTING)
-        add_subdirectory(test)
+        add_subdirectory(integration)
     endif()
 
 endif(PUBSUB)
