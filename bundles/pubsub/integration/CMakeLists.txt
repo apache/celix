@@ -20,10 +20,10 @@ find_package(Jansson REQUIRED)
 add_celix_bundle(pubsub_endpoint_sut
         #"Vanilla" bundle which is under test
         SOURCES
-        test/sut_endpoint_activator.c
+        src/sut_endpoint_activator.c
         VERSION 1.0.0
         )
-target_include_directories(pubsub_endpoint_sut PRIVATE test)
+target_include_directories(pubsub_endpoint_sut PRIVATE src)
 target_link_libraries(pubsub_endpoint_sut PRIVATE Celix::pubsub_api)
 celix_bundle_files(pubsub_endpoint_sut
         meta_data/msg.descriptor
@@ -37,7 +37,7 @@ celix_bundle_files(pubsub_endpoint_sut
 add_celix_bundle(pubsub_endpoint_tst
         #Test bundle containing cpputests and uses celix_test_runner launcher instead of the celix launcher
         SOURCES
-        test/tst_endpoint_activator.c
+        src/tst_endpoint_activator.c
         VERSION 1.0.0
         )
 target_link_libraries(pubsub_endpoint_tst PRIVATE Celix::framework Celix::pubsub_api)
@@ -54,10 +54,10 @@ celix_bundle_files(pubsub_endpoint_tst
 add_celix_bundle(pubsub_loopback
         #"Vanilla" bundle which is under test
         SOURCES
-        test/loopback_activator.c
+        src/loopback_activator.c
         VERSION 1.0.0
         )
-target_include_directories(pubsub_loopback PRIVATE test)
+target_include_directories(pubsub_loopback PRIVATE src)
 target_link_libraries(pubsub_loopback PRIVATE Celix::pubsub_api)
 celix_bundle_files(pubsub_loopback
         meta_data/msg.descriptor
@@ -75,10 +75,10 @@ celix_bundle_files(pubsub_loopback
 add_celix_bundle(pubsub_sut
     #"Vanilla" bundle which is under test
     SOURCES
-        test/sut_activator.c
+        src/sut_activator.c
     VERSION 1.0.0
 )
-target_include_directories(pubsub_sut PRIVATE test)
+target_include_directories(pubsub_sut PRIVATE src)
 target_link_libraries(pubsub_sut PRIVATE Celix::pubsub_api)
 celix_bundle_files(pubsub_sut
     meta_data/msg.descriptor
@@ -92,7 +92,7 @@ celix_bundle_files(pubsub_sut
 add_celix_bundle(pubsub_tst
     #Test bundle containing cpputests and uses celix_test_runner launcher instead of the celix launcher
     SOURCES
-        test/tst_activator.c
+        src/tst_activator.c
     VERSION 1.0.0
 )
 target_link_libraries(pubsub_tst PRIVATE Celix::framework Celix::pubsub_api)
@@ -108,7 +108,7 @@ celix_bundle_files(pubsub_tst
 add_celix_bundle(pubsub_deadlock_sut
     #"Vanilla" bundle which is used to trigger a publisher added call
     SOURCES
-    test/sut_activator.c
+    src/sut_activator.c
     VERSION 1.0.0
 )
 celix_bundle_files(pubsub_deadlock_sut
@@ -130,16 +130,16 @@ celix_get_bundle_file(pubsub_deadlock_sut DEADLOCK_SUT_BUNDLE_FILE)
 add_celix_bundle(pubsub_serializer
         #serializer bundle
         SOURCES
-        test/serializer_activator.cc
+        src/serializer_activator.cc
         VERSION 1.0.0
         )
-target_include_directories(pubsub_serializer PRIVATE test)
+target_include_directories(pubsub_serializer PRIVATE src)
 target_link_libraries(pubsub_serializer PRIVATE Celix::pubsub_api Celix::pubsub_spi)
 
 if (BUILD_PUBSUB_PSA_UDP_MC)
     add_celix_container(pubsub_udpmc_tests
             USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
-            LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_runner.cc
+            LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/gtest/PubSubIntegrationTestSuite.cc
             DIR ${CMAKE_CURRENT_BINARY_DIR}
             PROPERTIES
                 LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
@@ -152,7 +152,7 @@ if (BUILD_PUBSUB_PSA_UDP_MC)
                 pubsub_tst
     )
     target_link_libraries(pubsub_udpmc_tests PRIVATE Celix::pubsub_api Jansson Celix::dfi GTest::gtest GTest::gtest_main)
-    target_include_directories(pubsub_udpmc_tests SYSTEM PRIVATE test)
+    target_include_directories(pubsub_udpmc_tests SYSTEM PRIVATE src)
 
     add_celix_container(pstm_deadlock_udpmc_test
             USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
@@ -177,8 +177,8 @@ if (BUILD_PUBSUB_PSA_UDP_MC)
     add_dependencies(pstm_deadlock_udpmc_test pubsub_deadlock_sut_bundle)
 
     #Framework "bundle" has no cache dir. Default as "cache dir" the cwd is used.
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/meta_data/msg.descriptor ${CMAKE_CURRENT_BINARY_DIR}/pstm_deadlock_udpmc_test/META-INF/descriptors/msg.descriptor COPYONLY)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/meta_data/deadlock.scope.properties ${CMAKE_CURRENT_BINARY_DIR}/pstm_deadlock_udpmc_test/META-INF/topics/pub/deadlock.properties COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/meta_data/msg.descriptor ${CMAKE_CURRENT_BINARY_DIR}/pstm_deadlock_udpmc_src/META-INF/descriptors/msg.descriptor COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/meta_data/deadlock.scope.properties ${CMAKE_CURRENT_BINARY_DIR}/pstm_deadlock_udpmc_src/META-INF/topics/pub/deadlock.properties COPYONLY)
 
     add_test(NAME pstm_deadlock_udpmc_test COMMAND pstm_deadlock_udpmc_test WORKING_DIRECTORY $<TARGET_PROPERTY:pstm_deadlock_udpmc_test,CONTAINER_LOC>)
     setup_target_for_coverage(pstm_deadlock_udpmc_test SCAN_DIR ..)
@@ -191,7 +191,7 @@ endif()
 if (BUILD_PUBSUB_PSA_TCP)
     add_celix_container(pubsub_tcp_wire_v1_tests
             USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
-            LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_runner.cc
+            LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/gtest/PubSubIntegrationTestSuite.cc
             DIR ${CMAKE_CURRENT_BINARY_DIR}
             PROPERTIES
             LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
@@ -207,13 +207,13 @@ if (BUILD_PUBSUB_PSA_TCP)
             pubsub_tst
             )
     target_link_libraries(pubsub_tcp_wire_v1_tests PRIVATE Celix::pubsub_api Jansson Celix::dfi GTest::gtest GTest::gtest_main)
-    target_include_directories(pubsub_tcp_wire_v1_tests SYSTEM PRIVATE test)
+    target_include_directories(pubsub_tcp_wire_v1_tests SYSTEM PRIVATE src)
     add_test(NAME pubsub_tcp_wire_v1_tests COMMAND pubsub_tcp_wire_v1_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_tcp_wire_v1_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_tcp_wire_v1_tests SCAN_DIR ..)
 
     add_celix_container(pubsub_tcp_wire_v2_tests
             USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
-            LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_runner.cc
+            LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/gtest/PubSubIntegrationTestSuite.cc
             DIR ${CMAKE_CURRENT_BINARY_DIR}
             PROPERTIES
             LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
@@ -229,13 +229,13 @@ if (BUILD_PUBSUB_PSA_TCP)
             pubsub_tst
             )
     target_link_libraries(pubsub_tcp_wire_v2_tests PRIVATE Celix::pubsub_api Jansson Celix::dfi GTest::gtest GTest::gtest_main)
-    target_include_directories(pubsub_tcp_wire_v2_tests SYSTEM PRIVATE test)
+    target_include_directories(pubsub_tcp_wire_v2_tests SYSTEM PRIVATE src)
     add_test(NAME pubsub_tcp_wire_v2_tests COMMAND pubsub_tcp_wire_v2_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_tcp_wire_v2_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_tcp_wire_v2_tests SCAN_DIR ..)
 
     add_celix_container(pubsub_tcp_wire_v2_with_no_scope_tests
         USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
-        LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_runner.cc
+        LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/gtest/PubSubIntegrationTestSuite.cc
         DIR ${CMAKE_CURRENT_BINARY_DIR}
         PROPERTIES
             LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
@@ -252,13 +252,13 @@ if (BUILD_PUBSUB_PSA_TCP)
             pubsub_tst
     )
     target_link_libraries(pubsub_tcp_wire_v2_with_no_scope_tests PRIVATE Celix::pubsub_api Jansson Celix::dfi GTest::gtest GTest::gtest_main)
-    target_include_directories(pubsub_tcp_wire_v2_with_no_scope_tests SYSTEM PRIVATE test)
+    target_include_directories(pubsub_tcp_wire_v2_with_no_scope_tests SYSTEM PRIVATE src)
     add_test(NAME pubsub_tcp_wire_v2_with_no_scope_tests COMMAND pubsub_tcp_wire_v2_with_no_scope_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_tcp_wire_v2_with_no_scope_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_tcp_wire_v2_with_no_scope_tests SCAN_DIR ..)
 
     add_celix_container(pubsub_tcp_endpoint_tests
             USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
-            LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_endpoint_runner.cc
+            LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/gtest/PubSubEndpointIntegrationTestSuite.cc
             DIR ${CMAKE_CURRENT_BINARY_DIR}
             PROPERTIES
             LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
@@ -275,7 +275,7 @@ if (BUILD_PUBSUB_PSA_TCP)
             pubsub_loopback
             )
     target_link_libraries(pubsub_tcp_endpoint_tests PRIVATE Celix::pubsub_api Jansson Celix::dfi GTest::gtest GTest::gtest_main)
-    target_include_directories(pubsub_tcp_endpoint_tests SYSTEM PRIVATE test)
+    target_include_directories(pubsub_tcp_endpoint_tests SYSTEM PRIVATE src)
 
     add_celix_container(pstm_deadlock_tcp_test
             USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
@@ -300,8 +300,8 @@ if (BUILD_PUBSUB_PSA_TCP)
     add_dependencies(pstm_deadlock_tcp_test pubsub_deadlock_sut_bundle)
 
     #Framework "bundle" has no cache dir. Default as "cache dir" the cwd is used.
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/meta_data/msg.descriptor ${CMAKE_CURRENT_BINARY_DIR}/pstm_deadlock_tcp_test/META-INF/descriptors/msg.descriptor COPYONLY)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/meta_data/deadlock.scope.properties ${CMAKE_CURRENT_BINARY_DIR}/pstm_deadlock_tcp_test/META-INF/topics/pub/deadlock.properties COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/meta_data/msg.descriptor ${CMAKE_CURRENT_BINARY_DIR}/pstm_deadlock_tcp_src/META-INF/descriptors/msg.descriptor COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/meta_data/deadlock.scope.properties ${CMAKE_CURRENT_BINARY_DIR}/pstm_deadlock_tcp_src/META-INF/topics/pub/deadlock.properties COPYONLY)
 
     add_test(NAME pstm_deadlock_tcp_test COMMAND pstm_deadlock_tcp_test WORKING_DIRECTORY $<TARGET_PROPERTY:pstm_deadlock_tcp_test,CONTAINER_LOC>)
     setup_target_for_coverage(pstm_deadlock_tcp_test SCAN_DIR ..)
@@ -316,7 +316,7 @@ if (BUILD_PUBSUB_PSA_TCP)
 
     add_celix_container(pubsub_tcp_v2_wire_v1_tests
             USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
-            LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_runner.cc
+            LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/gtest/PubSubIntegrationTestSuite.cc
             DIR ${CMAKE_CURRENT_BINARY_DIR}
             PROPERTIES
             LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
@@ -333,13 +333,13 @@ if (BUILD_PUBSUB_PSA_TCP)
             pubsub_serializer
             )
     target_link_libraries(pubsub_tcp_v2_wire_v1_tests PRIVATE Celix::pubsub_api Celix::dfi GTest::gtest GTest::gtest_main)
-    target_include_directories(pubsub_tcp_v2_wire_v1_tests SYSTEM PRIVATE test)
+    target_include_directories(pubsub_tcp_v2_wire_v1_tests SYSTEM PRIVATE src)
     add_test(NAME pubsub_tcp_v2_wire_v1_tests COMMAND pubsub_tcp_v2_wire_v1_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_tcp_v2_wire_v1_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_tcp_v2_wire_v1_tests SCAN_DIR ..)
 
     add_celix_container(pubsub_tcp_v2_wire_v2_tests
             USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
-            LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_runner.cc
+            LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/gtest/PubSubIntegrationTestSuite.cc
             DIR ${CMAKE_CURRENT_BINARY_DIR}
             PROPERTIES
             LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
@@ -356,13 +356,13 @@ if (BUILD_PUBSUB_PSA_TCP)
             pubsub_serializer
             )
     target_link_libraries(pubsub_tcp_v2_wire_v2_tests PRIVATE Celix::pubsub_api Celix::dfi GTest::gtest GTest::gtest_main)
-    target_include_directories(pubsub_tcp_v2_wire_v2_tests SYSTEM PRIVATE test)
+    target_include_directories(pubsub_tcp_v2_wire_v2_tests SYSTEM PRIVATE src)
     add_test(NAME pubsub_tcp_v2_wire_v2_tests COMMAND pubsub_tcp_v2_wire_v2_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_tcp_v2_wire_v2_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_tcp_v2_wire_v2_tests SCAN_DIR ..)
 
     add_celix_container(pubsub_tcp_v2_wire_v2_with_no_scope_tests
             USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
-            LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_runner.cc
+            LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/gtest/PubSubIntegrationTestSuite.cc
             DIR ${CMAKE_CURRENT_BINARY_DIR}
             PROPERTIES
             LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
@@ -380,13 +380,13 @@ if (BUILD_PUBSUB_PSA_TCP)
             pubsub_serializer
             )
     target_link_libraries(pubsub_tcp_v2_wire_v2_with_no_scope_tests PRIVATE Celix::pubsub_api Celix::dfi GTest::gtest GTest::gtest_main)
-    target_include_directories(pubsub_tcp_v2_wire_v2_with_no_scope_tests SYSTEM PRIVATE test)
+    target_include_directories(pubsub_tcp_v2_wire_v2_with_no_scope_tests SYSTEM PRIVATE src)
     add_test(NAME pubsub_tcp_v2_wire_v2_with_no_scope_tests COMMAND pubsub_tcp_v2_wire_v2_with_no_scope_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_tcp_v2_wire_v2_with_no_scope_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_tcp_v2_wire_v2_with_no_scope_tests SCAN_DIR ..)
 
     add_celix_container(pubsub_tcp_v2_endpoint_tests
             USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
-            LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_endpoint_runner.cc
+            LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/gtest/PubSubEndpointIntegrationTestSuite.cc
             DIR ${CMAKE_CURRENT_BINARY_DIR}
             PROPERTIES
             LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
@@ -404,7 +404,7 @@ if (BUILD_PUBSUB_PSA_TCP)
             pubsub_serializer
             )
     target_link_libraries(pubsub_tcp_v2_endpoint_tests PRIVATE Celix::pubsub_api Celix::dfi GTest::gtest GTest::gtest_main)
-    target_include_directories(pubsub_tcp_v2_endpoint_tests SYSTEM PRIVATE test)
+    target_include_directories(pubsub_tcp_v2_endpoint_tests SYSTEM PRIVATE src)
 
     add_celix_container(pstm_deadlock_tcp_v2_test
             USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
@@ -430,8 +430,8 @@ if (BUILD_PUBSUB_PSA_TCP)
     add_dependencies(pstm_deadlock_tcp_v2_test pubsub_deadlock_sut_bundle)
 
     #Framework "bundle" has no cache dir. Default as "cache dir" the cwd is used.
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/meta_data/msg.descriptor ${CMAKE_CURRENT_BINARY_DIR}/pstm_deadlock_tcp_test/META-INF/descriptors/msg.descriptor COPYONLY)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/meta_data/deadlock.scope.properties ${CMAKE_CURRENT_BINARY_DIR}/pstm_deadlock_tcp_test/META-INF/topics/pub/deadlock.properties COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/meta_data/msg.descriptor ${CMAKE_CURRENT_BINARY_DIR}/pstm_deadlock_tcp_src/META-INF/descriptors/msg.descriptor COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/meta_data/deadlock.scope.properties ${CMAKE_CURRENT_BINARY_DIR}/pstm_deadlock_tcp_src/META-INF/topics/pub/deadlock.properties COPYONLY)
 
     add_test(NAME pstm_deadlock_tcp_v2_test COMMAND pstm_deadlock_tcp_v2_test WORKING_DIRECTORY $<TARGET_PROPERTY:pstm_deadlock_tcp_v2_test,CONTAINER_LOC>)
     setup_target_for_coverage(pstm_deadlock_tcp_v2_test SCAN_DIR ..)
@@ -446,7 +446,7 @@ endif()
 if (BUILD_PUBSUB_PSA_WS)
     add_celix_container(pubsub_websocket_tests
             USE_CONFIG
-            LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_runner.cc
+            LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/gtest/PubSubIntegrationTestSuite.cc
             DIR ${CMAKE_CURRENT_BINARY_DIR}
             PROPERTIES
             LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
@@ -462,7 +462,7 @@ if (BUILD_PUBSUB_PSA_WS)
             pubsub_tst
             )
     target_link_libraries(pubsub_websocket_tests PRIVATE Celix::pubsub_api Jansson Celix::dfi civetweb_shared GTest::gtest GTest::gtest_main)
-    target_include_directories(pubsub_websocket_tests SYSTEM PRIVATE test)
+    target_include_directories(pubsub_websocket_tests SYSTEM PRIVATE src)
     add_test(NAME pubsub_websocket_tests COMMAND pubsub_websocket_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_websocket_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_websocket_tests SCAN_DIR ..)
 
@@ -489,15 +489,15 @@ if (BUILD_PUBSUB_PSA_WS)
     add_dependencies(pstm_deadlock_websocket_test pubsub_deadlock_sut_bundle)
 
     #Framework "bundle" has no cache dir. Default as "cache dir" the cwd is used.
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/meta_data/msg.descriptor ${CMAKE_CURRENT_BINARY_DIR}/pstm_deadlock_websocket_test/META-INF/descriptors/msg.descriptor COPYONLY)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/meta_data/deadlock.scope.properties ${CMAKE_CURRENT_BINARY_DIR}/pstm_deadlock_websocket_test/META-INF/topics/pub/deadlock.properties COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/meta_data/msg.descriptor ${CMAKE_CURRENT_BINARY_DIR}/pstm_deadlock_websocket_src/META-INF/descriptors/msg.descriptor COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/meta_data/deadlock.scope.properties ${CMAKE_CURRENT_BINARY_DIR}/pstm_deadlock_websocket_src/META-INF/topics/pub/deadlock.properties COPYONLY)
 
     add_test(NAME pstm_deadlock_websocket_test COMMAND pstm_deadlock_websocket_test WORKING_DIRECTORY $<TARGET_PROPERTY:pstm_deadlock_websocket_test,CONTAINER_LOC>)
     setup_target_for_coverage(pstm_deadlock_websocket_test SCAN_DIR ..)
 
     add_celix_container(pubsub_websocket_v2_tests
             USE_CONFIG
-            LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_runner.cc
+            LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/gtest/PubSubIntegrationTestSuite.cc
             DIR ${CMAKE_CURRENT_BINARY_DIR}
             PROPERTIES
             LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
@@ -514,7 +514,7 @@ if (BUILD_PUBSUB_PSA_WS)
             pubsub_serializer
             )
     target_link_libraries(pubsub_websocket_v2_tests PRIVATE Celix::pubsub_api Jansson civetweb_shared GTest::gtest GTest::gtest_main)
-    target_include_directories(pubsub_websocket_v2_tests SYSTEM PRIVATE test)
+    target_include_directories(pubsub_websocket_v2_tests SYSTEM PRIVATE src)
     add_test(NAME pubsub_websocket_v2_tests COMMAND pubsub_websocket_v2_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_websocket_v2_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_websocket_v2_tests SCAN_DIR ..)
 
@@ -541,8 +541,8 @@ if (BUILD_PUBSUB_PSA_WS)
     add_dependencies(pstm_deadlock_websocket_v2_test pubsub_deadlock_sut_bundle)
 
     #Framework "bundle" has no cache dir. Default as "cache dir" the cwd is used.
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/meta_data/msg.descriptor ${CMAKE_CURRENT_BINARY_DIR}/pstm_deadlock_websocket_v2_test/META-INF/descriptors/msg.descriptor COPYONLY)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/meta_data/deadlock.scope.properties ${CMAKE_CURRENT_BINARY_DIR}/pstm_deadlock_websocket_v2_test/META-INF/topics/pub/deadlock.properties COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/meta_data/msg.descriptor ${CMAKE_CURRENT_BINARY_DIR}/pstm_deadlock_websocket_v2_src/META-INF/descriptors/msg.descriptor COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/meta_data/deadlock.scope.properties ${CMAKE_CURRENT_BINARY_DIR}/pstm_deadlock_websocket_v2_src/META-INF/topics/pub/deadlock.properties COPYONLY)
 
     add_test(NAME pstm_deadlock_websocket_v2_test COMMAND pstm_deadlock_websocket_v2_test WORKING_DIRECTORY $<TARGET_PROPERTY:pstm_deadlock_websocket_v2_test,CONTAINER_LOC>)
     setup_target_for_coverage(pstm_deadlock_websocket_v2_test SCAN_DIR ..)
@@ -554,7 +554,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 
     add_celix_container(pubsub_zmq_tests
             USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
-            LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_runner.cc
+            LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/gtest/PubSubIntegrationTestSuite.cc
             DIR ${CMAKE_CURRENT_BINARY_DIR}
             PROPERTIES
                 LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
@@ -571,7 +571,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 
     add_celix_container(pubsub_zmq_v2_tests
             USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
-            LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_runner.cc
+            LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/gtest/PubSubIntegrationTestSuite.cc
             DIR ${CMAKE_CURRENT_BINARY_DIR}
             PROPERTIES
                 LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
@@ -587,18 +587,18 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             )
 
     target_link_libraries(pubsub_zmq_tests PRIVATE Celix::pubsub_api Celix::dfi ZMQ::lib CZMQ::lib GTest::gtest GTest::gtest_main)
-    target_include_directories(pubsub_zmq_tests SYSTEM PRIVATE test)
+    target_include_directories(pubsub_zmq_tests SYSTEM PRIVATE src)
     add_test(NAME pubsub_zmq_tests COMMAND pubsub_zmq_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_zmq_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_zmq_tests SCAN_DIR ..)
 
     target_link_libraries(pubsub_zmq_v2_tests PRIVATE Celix::pubsub_api Celix::dfi ZMQ::lib CZMQ::lib GTest::gtest GTest::gtest_main)
-    target_include_directories(pubsub_zmq_v2_tests SYSTEM PRIVATE test)
+    target_include_directories(pubsub_zmq_v2_tests SYSTEM PRIVATE src)
     add_test(NAME pubsub_zmq_v2_tests COMMAND pubsub_zmq_v2_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_zmq_v2_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_zmq_v2_tests SCAN_DIR ..)
 
     add_celix_container(pubsub_zmq_wire_v2_tests
         USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
-        LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_runner.cc
+        LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/gtest/PubSubIntegrationTestSuite.cc
         DIR ${CMAKE_CURRENT_BINARY_DIR}
         PROPERTIES
         LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
@@ -614,14 +614,14 @@ if (BUILD_PUBSUB_PSA_ZMQ)
         )
 
     target_link_libraries(pubsub_zmq_wire_v2_tests PRIVATE Celix::pubsub_api Jansson Celix::dfi ZMQ::lib CZMQ::lib GTest::gtest GTest::gtest_main)
-    target_include_directories(pubsub_zmq_wire_v2_tests SYSTEM PRIVATE test)
+    target_include_directories(pubsub_zmq_wire_v2_tests SYSTEM PRIVATE src)
     add_test(NAME pubsub_zmq_wire_v2_tests COMMAND pubsub_zmq_wire_v2_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_zmq_wire_v2_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_zmq_wire_v2_tests SCAN_DIR ..)
 
 
     add_celix_container(pubsub_zmq_zerocopy_tests
             USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
-            LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_runner.cc
+            LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/gtest/PubSubIntegrationTestSuite.cc
             DIR ${CMAKE_CURRENT_BINARY_DIR}
             PROPERTIES
                 LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
@@ -641,7 +641,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 
     add_celix_container(pubsub_zmq_v2_zerocopy_tests
             USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
-            LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_runner.cc
+            LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/gtest/PubSubIntegrationTestSuite.cc
             DIR ${CMAKE_CURRENT_BINARY_DIR}
             PROPERTIES
                 LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
@@ -659,20 +659,20 @@ if (BUILD_PUBSUB_PSA_ZMQ)
                 pubsub_serializer
             )
     target_link_libraries(pubsub_zmq_zerocopy_tests PRIVATE Celix::pubsub_api Jansson Celix::dfi ZMQ::lib CZMQ::lib GTest::gtest GTest::gtest_main)
-    target_include_directories(pubsub_zmq_zerocopy_tests SYSTEM PRIVATE test)
+    target_include_directories(pubsub_zmq_zerocopy_tests SYSTEM PRIVATE src)
 
     add_test(NAME pubsub_zmq_zerocopy_tests COMMAND pubsub_zmq_zerocopy_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_zmq_zerocopy_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_zmq_zerocopy_tests SCAN_DIR ..)
 
     target_link_libraries(pubsub_zmq_v2_zerocopy_tests PRIVATE Celix::pubsub_api Celix::dfi ZMQ::lib CZMQ::lib GTest::gtest GTest::gtest_main)
-    target_include_directories(pubsub_zmq_v2_zerocopy_tests SYSTEM PRIVATE test)
+    target_include_directories(pubsub_zmq_v2_zerocopy_tests SYSTEM PRIVATE src)
 
     add_test(NAME pubsub_zmq_v2_zerocopy_tests COMMAND pubsub_zmq_v2_zerocopy_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_zmq_v2_zerocopy_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_zmq_v2_zerocopy_tests SCAN_DIR ..)
 
     add_celix_container(pubsub_zmq_zerocopy_wire_v2_tests
         USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
-        LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/test/test_runner.cc
+        LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/gtest/PubSubIntegrationTestSuite.cc
         DIR ${CMAKE_CURRENT_BINARY_DIR}
         PROPERTIES
         LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
@@ -690,7 +690,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
         pubsub_serializer
         )
     target_link_libraries(pubsub_zmq_zerocopy_wire_v2_tests PRIVATE Celix::pubsub_api Jansson Celix::dfi ZMQ::lib CZMQ::lib GTest::gtest GTest::gtest_main)
-    target_include_directories(pubsub_zmq_zerocopy_wire_v2_tests SYSTEM PRIVATE test)
+    target_include_directories(pubsub_zmq_zerocopy_wire_v2_tests SYSTEM PRIVATE src)
 
     add_test(NAME pubsub_zmq_zerocopy_wire_v2_tests COMMAND pubsub_zmq_zerocopy_wire_v2_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_zmq_zerocopy_wire_v2_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_zmq_zerocopy_wire_v2_tests SCAN_DIR ..)
@@ -733,8 +733,8 @@ if (BUILD_PUBSUB_PSA_ZMQ)
     add_dependencies(pstm_deadlock_zmq_test pubsub_deadlock_sut_bundle)
 
     #Framework "bundle" has no cache dir. Default as "cache dir" the cwd is used.
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/meta_data/msg.descriptor ${CMAKE_CURRENT_BINARY_DIR}/pstm_deadlock_zmq_test/META-INF/descriptors/msg.descriptor COPYONLY)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/meta_data/deadlock.scope.properties ${CMAKE_CURRENT_BINARY_DIR}/pstm_deadlock_zmq_test/META-INF/topics/pub/deadlock.properties COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/meta_data/msg.descriptor ${CMAKE_CURRENT_BINARY_DIR}/pstm_deadlock_zmq_src/META-INF/descriptors/msg.descriptor COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/meta_data/deadlock.scope.properties ${CMAKE_CURRENT_BINARY_DIR}/pstm_deadlock_zmq_src/META-INF/topics/pub/deadlock.properties COPYONLY)
 
     add_test(NAME pstm_deadlock_zmq_test COMMAND pstm_deadlock_zmq_test WORKING_DIRECTORY $<TARGET_PROPERTY:pstm_deadlock_zmq_test,CONTAINER_LOC>)
     setup_target_for_coverage(pstm_deadlock_zmq_test SCAN_DIR ..)
@@ -747,8 +747,8 @@ if (BUILD_PUBSUB_PSA_ZMQ)
     add_dependencies(pstm_deadlock_zmq_v2_test pubsub_deadlock_sut_bundle)
 
     #Framework "bundle" has no cache dir. Default as "cache dir" the cwd is used.
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/meta_data/msg.descriptor ${CMAKE_CURRENT_BINARY_DIR}/pstm_deadlock_zmq_v2_test/META-INF/descriptors/msg.descriptor COPYONLY)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/meta_data/deadlock.scope.properties ${CMAKE_CURRENT_BINARY_DIR}/pstm_deadlock_zmq_v2_test/META-INF/topics/pub/deadlock.properties COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/meta_data/msg.descriptor ${CMAKE_CURRENT_BINARY_DIR}/pstm_deadlock_zmq_v2_src/META-INF/descriptors/msg.descriptor COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/meta_data/deadlock.scope.properties ${CMAKE_CURRENT_BINARY_DIR}/pstm_deadlock_zmq_v2_src/META-INF/topics/pub/deadlock.properties COPYONLY)
 
     add_test(NAME pstm_deadlock_zmq_v2_test COMMAND pstm_deadlock_zmq_v2_test WORKING_DIRECTORY $<TARGET_PROPERTY:pstm_deadlock_zmq_v2_test,CONTAINER_LOC>)
     setup_target_for_coverage(pstm_deadlock_zmq_v2_test SCAN_DIR ..)
@@ -758,7 +758,7 @@ endif ()
 if (BUILD_PUBSUB_PSA_ZMQ)
     #Test suite to test if component with same topic and different scope combinations work
     add_executable(test_pubsub_topic_and_scope_integration
-            topic_different_scope_test/PubSubTopicAndScopeIntegrationTestSuite.cc
+            gtest/PubSubTopicAndScopeIntegrationTestSuite.cc
     )
     target_link_libraries(test_pubsub_topic_and_scope_integration PRIVATE Celix::framework Celix::pubsub_api GTest::gtest GTest::gtest_main)
     setup_target_for_coverage(test_pubsub_topic_and_scope_integration SCAN_DIR ..)
