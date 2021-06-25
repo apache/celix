@@ -51,7 +51,6 @@ if (PUBSUB)
     add_subdirectory(pubsub_serializer_avrobin)
     add_subdirectory(pubsub_protocol)
     add_subdirectory(keygen)
-    add_subdirectory(mock)
 
     add_subdirectory(examples)
 
