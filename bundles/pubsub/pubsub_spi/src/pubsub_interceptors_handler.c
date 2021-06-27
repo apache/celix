@@ -126,7 +126,7 @@ void pubsubInterceptorsHandler_removeInterceptor(void *handle, void *svc, __attr
     celixThreadMutex_unlock(&handler->lock);
 }
 
-bool pubsubInterceptorHandler_invokePreSend(pubsub_interceptors_handler_t *handler, const char *messageType, const uint32_t messageId, const void *message, celix_properties_t **metadata) {
+bool pubsubInterceptorHandler_invokePreSend(pubsub_interceptors_handler_t *handler, const char *messageType, uint32_t messageId, const void *message, celix_properties_t **metadata) {
     bool cont = true;
 
     celixThreadMutex_lock(&handler->lock);
@@ -137,8 +137,9 @@ bool pubsubInterceptorHandler_invokePreSend(pubsub_interceptors_handler_t *handl
 
     for (uint32_t i = arrayList_size(handler->interceptors); i > 0; i--) {
         entry_t *entry = arrayList_get(handler->interceptors, i - 1);
-
-        cont = entry->interceptor->preSend(entry->interceptor->handle, &handler->properties, messageType, messageId, message, *metadata);
+        if (entry->interceptor->preSend != NULL) {
+            cont = entry->interceptor->preSend(entry->interceptor->handle, &handler->properties, messageType, messageId, message, *metadata);
+        }
         if (!cont) {
             break;
         }
@@ -149,31 +150,29 @@ bool pubsubInterceptorHandler_invokePreSend(pubsub_interceptors_handler_t *handl
     return cont;
 }
 
-void pubsubInterceptorHandler_invokePostSend(pubsub_interceptors_handler_t *handler, const char *messageType, const uint32_t messageId, const void *message, celix_properties_t *metadata) {
+void pubsubInterceptorHandler_invokePostSend(pubsub_interceptors_handler_t *handler, const char *messageType, uint32_t messageId, const void *message, celix_properties_t *metadata) {
     celixThreadMutex_lock(&handler->lock);
 
     for (uint32_t i = arrayList_size(handler->interceptors); i > 0; i--) {
         entry_t *entry = arrayList_get(handler->interceptors, i - 1);
-
-        entry->interceptor->postSend(entry->interceptor->handle, &handler->properties, messageType, messageId, message, metadata);
+        if (entry->interceptor->postSend != NULL) {
+            entry->interceptor->postSend(entry->interceptor->handle, &handler->properties, messageType, messageId, message, metadata);
+        }
     }
 
     celixThreadMutex_unlock(&handler->lock);
 }
 
-bool pubsubInterceptorHandler_invokePreReceive(pubsub_interceptors_handler_t *handler, const char *messageType, const uint32_t messageId, const void *message, celix_properties_t **metadata) {
+bool pubsubInterceptorHandler_invokePreReceive(pubsub_interceptors_handler_t *handler, const char *messageType, uint32_t messageId, const void *message, celix_properties_t *metadata) {
     bool cont = true;
 
     celixThreadMutex_lock(&handler->lock);
 
-    if (*metadata == NULL && arrayList_size(handler->interceptors) > 0) {
-        *metadata = celix_properties_create();
-    }
-
     for (uint32_t i = 0; i < arrayList_size(handler->interceptors); i++) {
         entry_t *entry = arrayList_get(handler->interceptors, i);
-
-        cont = entry->interceptor->preReceive(entry->interceptor->handle, &handler->properties, messageType, messageId, message, *metadata);
+        if (entry->interceptor->preReceive != NULL) {
+            cont = entry->interceptor->preReceive(entry->interceptor->handle, &handler->properties, messageType, messageId, message, metadata);
+        }
         if (!cont) {
             break;
         }
@@ -184,13 +183,14 @@ bool pubsubInterceptorHandler_invokePreReceive(pubsub_interceptors_handler_t *ha
     return cont;
 }
 
-void pubsubInterceptorHandler_invokePostReceive(pubsub_interceptors_handler_t *handler, const char *messageType, const uint32_t messageId, const void *message, celix_properties_t *metadata) {
+void pubsubInterceptorHandler_invokePostReceive(pubsub_interceptors_handler_t *handler, const char *messageType, uint32_t messageId, const void *message, celix_properties_t *metadata) {
     celixThreadMutex_lock(&handler->lock);
 
     for (uint32_t i = 0; i < arrayList_size(handler->interceptors); i++) {
         entry_t *entry = arrayList_get(handler->interceptors, i);
-
-        entry->interceptor->postReceive(entry->interceptor->handle, &handler->properties, messageType, messageId, message, metadata);
+        if (entry->interceptor->postReceive != NULL) {
+            entry->interceptor->postReceive(entry->interceptor->handle, &handler->properties, messageType, messageId, message, metadata);
+        }
     }
 
     celixThreadMutex_unlock(&handler->lock);

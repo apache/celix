@@ -754,7 +754,6 @@ if (BUILD_PUBSUB_PSA_ZMQ)
     setup_target_for_coverage(pstm_deadlock_zmq_v2_test SCAN_DIR ..)
 endif ()
 
-
 if (BUILD_PUBSUB_PSA_ZMQ)
     #Test suite to test if component with same topic and different scope combinations work
     add_executable(test_pubsub_topic_and_scope_integration
@@ -779,5 +778,32 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             PUBSUB_TOPMAN_BUNDLE_FILE="${PUBSUB_TOPMAN_BUNDLE_FILE}"
             PUBSUB_ZMQ_BUNDLE_FILE="${PUBSUB_ZMQ_BUNDLE_FILE}"
             PUBSUB_WIRE_BUNDLE_FILE="${PUBSUB_WIRE_BUNDLE_FILE}"
+    )
+endif ()
+
+if (BUILD_PUBSUB_PSA_ZMQ)
+    #Test suite to test if pusbub interceptors
+    add_executable(test_pubsub_interceptors_integration
+            gtest/PubSubInterceptorTestSuite.cc
+        )
+    target_link_libraries(test_pubsub_interceptors_integration PRIVATE Celix::framework Celix::pubsub_api GTest::gtest GTest::gtest_main Celix::pubsub_spi)
+    target_include_directories(test_pubsub_interceptors_integration PRIVATE src)
+    setup_target_for_coverage(test_pubsub_interceptors_integration SCAN_DIR ..)
+
+    #configure topology manager and pubsub zmq, json serializer and wire protocol v2 bundles
+    celix_get_bundle_file(Celix::pubsub_serializer_json PUBSUB_JSON_BUNDLE_FILE)
+    celix_get_bundle_file(Celix::pubsub_topology_manager PUBSUB_TOPMAN_BUNDLE_FILE)
+    celix_get_bundle_file(Celix::pubsub_admin_zmq PUBSUB_ZMQ_BUNDLE_FILE)
+    celix_get_bundle_file(Celix::pubsub_protocol_wire_v1 PUBSUB_WIRE_BUNDLE_FILE)
+    celix_get_bundle_file(pubsub_sut PUBSUB_PUBLISHER_BUNDLE_FILE)
+    celix_get_bundle_file(pubsub_tst PUBSUB_SUBSCRIBER_BUNDLE_FILE)
+    add_celix_bundle_dependencies(test_pubsub_interceptors_integration Celix::pubsub_serializer_json Celix::pubsub_topology_manager Celix::pubsub_admin_zmq Celix::pubsub_protocol_wire_v1 pubsub_sut pubsub_tst)
+    target_compile_definitions(test_pubsub_interceptors_integration PRIVATE
+            PUBSUB_JSON_BUNDLE_FILE="${PUBSUB_JSON_BUNDLE_FILE}"
+            PUBSUB_TOPMAN_BUNDLE_FILE="${PUBSUB_TOPMAN_BUNDLE_FILE}"
+            PUBSUB_ZMQ_BUNDLE_FILE="${PUBSUB_ZMQ_BUNDLE_FILE}"
+            PUBSUB_WIRE_BUNDLE_FILE="${PUBSUB_WIRE_BUNDLE_FILE}"
+            PUBSUB_PUBLISHER_BUNDLE_FILE="${PUBSUB_PUBLISHER_BUNDLE_FILE}"
+            PUBSUB_SUBSCRIBER_BUNDLE_FILE="${PUBSUB_SUBSCRIBER_BUNDLE_FILE}"
     )
 endif ()
