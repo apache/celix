@@ -560,9 +560,8 @@ processMsgForSubscriberEntry(pubsub_tcp_topic_receiver_t *receiver, psa_tcp_subs
                         pubsub_subscriber_t *svc = hashMapIterator_nextValue(&iter);
                         svc->receive(svc->handle, msgSer->msgName, msgSer->msgId, deSerializedMsg, message->metadata.metadata, &release);
                         pubsubInterceptorHandler_invokePostReceive(receiver->interceptorsHandler, msgType, msgId, deSerializedMsg, metadata);
-                        if (!release && hashMapIterator_hasNext(&iter)) {
-                            //receive function has taken ownership and still more receive function to come ..
-                            //deserialize again for new message
+                        if (!release) {
+                            //receive function has taken ownership, deserialize again for new message
                             status = msgSer->deserialize(msgSer->handle, &deSerializeBuffer, 1, &deSerializedMsg);
                             if (status != CELIX_SUCCESS) {
                                 L_WARN("[PSA_TCP_TR] Cannot deserialize msg type %s for scope/topic %s/%s",
@@ -574,6 +573,7 @@ processMsgForSubscriberEntry(pubsub_tcp_topic_receiver_t *receiver, psa_tcp_subs
                             release = true;
                         }
                     }
+                    pubsubInterceptorHandler_invokePostReceive(receiver->interceptorsHandler, msgType, msgId, deSerializedMsg, metadata);
                     if (release) {
                         msgSer->freeDeserializeMsg(msgSer->handle, deSerializedMsg);
                     }

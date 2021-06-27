@@ -79,7 +79,7 @@ struct pubsub_tcp_topic_receiver {
     long subscriberTrackerId;
     struct {
         celix_thread_mutex_t mutex;
-        hash_map_t *map; //key = bnd id, value = psa_tcp_subscriber_entry_t
+        hash_map_t *map; //key = long svc id, value = psa_tcp_subscriber_entry_t
         bool allInitialized;
     } subscribers;
 };
@@ -92,12 +92,12 @@ typedef struct psa_tcp_requested_connection_entry {
 } psa_tcp_requested_connection_entry_t;
 
 typedef struct psa_tcp_subscriber_entry {
-    hash_map_t *subscriberServices; //key = servide id, value = pubsub_subscriber_t*
+    pubsub_subscriber_t* subscriberSvc;
     bool initialized; //true if the init function is called through the receive thread
 } psa_tcp_subscriber_entry_t;
 
-static void pubsub_tcpTopicReceiver_addSubscriber(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *bnd);
-static void pubsub_tcpTopicReceiver_removeSubscriber(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *bnd);
+static void pubsub_tcpTopicReceiver_addSubscriber(void *handle, void *svc, const celix_properties_t *props);
+static void pubsub_tcpTopicReceiver_removeSubscriber(void *handle, void *svc, const celix_properties_t *props);
 static void *psa_tcp_recvThread(void *data);
 static void psa_tcp_connectToAllRequestedConnections(pubsub_tcp_topic_receiver_t *receiver);
 static void psa_tcp_initializeAllSubscribers(pubsub_tcp_topic_receiver_t *receiver);
@@ -229,8 +229,8 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
         opts.filter.serviceName = PUBSUB_SUBSCRIBER_SERVICE_NAME;
         opts.filter.filter = buf;
         opts.callbackHandle = receiver;
-        opts.addWithOwner = pubsub_tcpTopicReceiver_addSubscriber;
-        opts.removeWithOwner = pubsub_tcpTopicReceiver_removeSubscriber;
+        opts.addWithProperties = pubsub_tcpTopicReceiver_addSubscriber;
+        opts.removeWithProperties = pubsub_tcpTopicReceiver_removeSubscriber;
         receiver->subscriberTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
     }
 
@@ -259,19 +259,11 @@ void pubsub_tcpTopicReceiver_destroy(pubsub_tcp_topic_receiver_t *receiver) {
         celix_bundleContext_stopTracker(receiver->ctx, receiver->subscriberTrackerId);
 
         celixThreadMutex_lock(&receiver->subscribers.mutex);
-        hash_map_iterator_t iter = hashMapIterator_construct(receiver->subscribers.map);
-        while (hashMapIterator_hasNext(&iter)) {
-            psa_tcp_subscriber_entry_t *entry = hashMapIterator_nextValue(&iter);
-            if (entry != NULL) {
-                hashMap_destroy(entry->subscriberServices, false, false);
-                free(entry);
-            }
-        }
-        hashMap_destroy(receiver->subscribers.map, false, false);
+        hashMap_destroy(receiver->subscribers.map, false, true);
         celixThreadMutex_unlock(&receiver->subscribers.mutex);
 
         celixThreadMutex_lock(&receiver->requestedConnections.mutex);
-        iter = hashMapIterator_construct(receiver->requestedConnections.map);
+        hash_map_iterator_t iter = hashMapIterator_construct(receiver->requestedConnections.map);
         while (hashMapIterator_hasNext(&iter)) {
             psa_tcp_requested_connection_entry_t *entry = hashMapIterator_nextValue(&iter);
             if (entry != NULL) {
@@ -394,11 +386,9 @@ void pubsub_tcpTopicReceiver_disconnectFrom(pubsub_tcp_topic_receiver_t *receive
     celixThreadMutex_unlock(&receiver->requestedConnections.mutex);
 }
 
-static void pubsub_tcpTopicReceiver_addSubscriber(void *handle, void *svc, const celix_properties_t *props,
-                                                  const celix_bundle_t *bnd) {
+static void pubsub_tcpTopicReceiver_addSubscriber(void *handle, void *svc, const celix_properties_t *props) {
     pubsub_tcp_topic_receiver_t *receiver = handle;
 
-    long bndId = celix_bundle_getId(bnd);
     long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1);
     const char *subScope = celix_properties_get(props, PUBSUB_SUBSCRIBER_SCOPE, NULL);
     if (receiver->scope == NULL) {
@@ -415,62 +405,78 @@ static void pubsub_tcpTopicReceiver_addSubscriber(void *handle, void *svc, const
         return;
     }
 
-    celixThreadMutex_lock(&receiver->subscribers.mutex);
-    psa_tcp_subscriber_entry_t *entry = hashMap_get(receiver->subscribers.map, (void *)bndId);
-    if (entry != NULL) {
-        hashMap_put(entry->subscriberServices, (void*)svcId, svc);
-    } else {
-        //new create entry
-        entry = calloc(1, sizeof(*entry));
-        entry->subscriberServices = hashMap_create(NULL, NULL, NULL, NULL);
-        entry->initialized = false;
-        receiver->subscribers.allInitialized = false;
+    psa_tcp_subscriber_entry_t *entry = calloc(1, sizeof(*entry));
+    entry->subscriberSvc = svc;
+    entry->initialized = false;
 
-        hashMap_put(entry->subscriberServices, (void*)svcId, svc);
-        hashMap_put(receiver->subscribers.map, (void *)bndId, entry);
-    }
+    celixThreadMutex_lock(&receiver->subscribers.mutex);
+    hashMap_put(receiver->subscribers.map, (void*)svcId, entry);
+    receiver->subscribers.allInitialized = false;
     celixThreadMutex_unlock(&receiver->subscribers.mutex);
 }
 
-static void pubsub_tcpTopicReceiver_removeSubscriber(void *handle, void *svc __attribute__((unused)), const celix_properties_t *props,
-                                                     const celix_bundle_t *bnd) {
+static void pubsub_tcpTopicReceiver_removeSubscriber(void *handle, void *svc __attribute__((unused)), const celix_properties_t *props) {
     pubsub_tcp_topic_receiver_t *receiver = handle;
 
-    long bndId = celix_bundle_getId(bnd);
     long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1);
 
     celixThreadMutex_lock(&receiver->subscribers.mutex);
-    psa_tcp_subscriber_entry_t *entry = hashMap_get(receiver->subscribers.map, (void *) bndId);
-    if (entry != NULL) {
-        hashMap_remove(entry->subscriberServices, (void*)svcId);
-    }
-    if (entry != NULL && hashMap_size(entry->subscriberServices) == 0) {
-        //remove entry
-        hashMap_remove(receiver->subscribers.map, (void *) bndId);
-        hashMap_destroy(entry->subscriberServices, false, false);
-        free(entry);
+    psa_tcp_subscriber_entry_t *entry = hashMap_remove(receiver->subscribers.map, (void *)svcId);
+    free(entry);
+    celixThreadMutex_unlock(&receiver->subscribers.mutex);
+}
+
+static void callReceivers(pubsub_tcp_topic_receiver_t *receiver, const char* msgFqn, const pubsub_protocol_message_t *message, void** msg, bool* release, const celix_properties_t* metadata) {
+    *release = true;
+    celixThreadMutex_lock(&receiver->subscribers.mutex);
+    hash_map_iterator_t iter = hashMapIterator_construct(receiver->subscribers.map);
+    while (hashMapIterator_hasNext(&iter)) {
+        psa_tcp_subscriber_entry_t* entry = hashMapIterator_nextValue(&iter);
+        if (entry != NULL && entry->subscriberSvc->receive != NULL) {
+            entry->subscriberSvc->receive(entry->subscriberSvc->handle, msgFqn, message->header.msgId, *msg, metadata, release);
+            if (!(*release)) {
+                //receive function has taken ownership, deserialize again for new message
+                struct iovec deSerializeBuffer;
+                deSerializeBuffer.iov_base = message->payload.payload;
+                deSerializeBuffer.iov_len = message->payload.length;
+                celix_status_t status = pubsub_serializerHandler_deserialize(receiver->serializerHandler,
+                                                                             message->header.msgId,
+                                                                             message->header.msgMajorVersion,
+                                                                             message->header.msgMinorVersion,
+                                                                             &deSerializeBuffer, 0, msg);
+                if (status != CELIX_SUCCESS) {
+                    L_WARN("[PSA_TCO_TR] Cannot deserialize msg type %s for scope/topic %s/%s", msgFqn,
+                           receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic);
+                    break;
+                }
+            }
+            *release = true;
+        }
     }
     celixThreadMutex_unlock(&receiver->subscribers.mutex);
 }
 
-static inline void
-processMsgForSubscriberEntry(pubsub_tcp_topic_receiver_t *receiver, psa_tcp_subscriber_entry_t *entry,
-                             const pubsub_protocol_message_t *message, bool *releaseMsg, struct timespec *receiveTime __attribute__((unused))) {
-    //NOTE receiver->subscribers.mutex locked
+static inline void processMsg(void* handle, const pubsub_protocol_message_t *message, bool* releaseMsg, struct timespec *receiveTime) {
+    pubsub_tcp_topic_receiver_t *receiver = handle;
 
-    const char* msgFqn = pubsub_serializerHandler_getMsgFqn(receiver->serializerHandler, message->header.msgId);
+    const char *msgFqn = pubsub_serializerHandler_getMsgFqn(receiver->serializerHandler, message->header.msgId);
     if (msgFqn == NULL) {
         L_WARN("Cannot find msg fqn for msg id %u", message->header.msgId);
         return;
     }
-
     void *deSerializedMsg = NULL;
-    bool validVersion = pubsub_serializerHandler_isMessageSupported(receiver->serializerHandler, message->header.msgId, message->header.msgMajorVersion, message->header.msgMinorVersion);
+    bool validVersion = pubsub_serializerHandler_isMessageSupported(receiver->serializerHandler, message->header.msgId,
+                                                                    message->header.msgMajorVersion,
+                                                                    message->header.msgMinorVersion);
     if (validVersion) {
         struct iovec deSerializeBuffer;
         deSerializeBuffer.iov_base = message->payload.payload;
         deSerializeBuffer.iov_len = message->payload.length;
-        celix_status_t status = pubsub_serializerHandler_deserialize(receiver->serializerHandler, message->header.msgId, message->header.msgMajorVersion, message->header.msgMinorVersion, &deSerializeBuffer, 1, &deSerializedMsg);
+        celix_status_t status = pubsub_serializerHandler_deserialize(receiver->serializerHandler, message->header.msgId,
+                                                                     message->header.msgMajorVersion,
+                                                                     message->header.msgMinorVersion,
+                                                                     &deSerializeBuffer, 0, &deSerializedMsg);
+
         // When received payload pointer is the same as deserializedMsg, set ownership of pointer to topic receiver
         if (message->payload.payload == deSerializedMsg) {
             *releaseMsg = true;
@@ -479,33 +485,15 @@ processMsgForSubscriberEntry(pubsub_tcp_topic_receiver_t *receiver, psa_tcp_subs
         if (status == CELIX_SUCCESS) {
             uint32_t msgId = message->header.msgId;
             celix_properties_t *metadata = message->metadata.metadata;
-            bool cont = pubsubInterceptorHandler_invokePreReceive(receiver->interceptorsHandler, msgFqn, msgId, deSerializedMsg, &metadata);
-            bool release = true;
+            bool cont = pubsubInterceptorHandler_invokePreReceive(receiver->interceptorsHandler, msgFqn, msgId,
+                                                                  deSerializedMsg, &metadata);
             if (cont) {
-                hash_map_iterator_t iter = hashMapIterator_construct(entry->subscriberServices);
-                while (hashMapIterator_hasNext(&iter)) {
-                    pubsub_subscriber_t *svc = hashMapIterator_nextValue(&iter);
-                    svc->receive(svc->handle, msgFqn, msgId, deSerializedMsg, message->metadata.metadata, &release);
-                    pubsubInterceptorHandler_invokePostReceive(receiver->interceptorsHandler, msgFqn, msgId, deSerializedMsg, metadata);
-                    if (!release && hashMapIterator_hasNext(&iter)) {
-                        //receive function has taken ownership and still more receive function to come ..
-                        //deserialize again for new message
-                        status = pubsub_serializerHandler_deserialize(receiver->serializerHandler, message->header.msgId, message->header.msgMajorVersion, message->header.msgMinorVersion, &deSerializeBuffer, 1, &deSerializedMsg);
-                        if (status != CELIX_SUCCESS) {
-                            L_WARN("[PSA_TCP_TR] Cannot deserialize msg type %s for scope/topic %s/%s",
-                                   msgFqn,
-                                   receiver->scope == NULL ? "(null)" : receiver->scope,
-                                   receiver->topic);
-                            break;
-                        }
-                        release = true;
-                    }
-                }
+                bool release;
+                callReceivers(receiver, msgFqn, message, &deSerializedMsg, &release, metadata);
+                pubsubInterceptorHandler_invokePostReceive(receiver->interceptorsHandler, msgFqn, msgId, deSerializedMsg, metadata);
                 if (release) {
-                    pubsub_serializerHandler_freeDeserializedMsg(receiver->serializerHandler, message->header.msgId, deSerializedMsg);
-                }
-                if (message->metadata.metadata) {
-                    celix_properties_destroy(message->metadata.metadata);
+                    pubsub_serializerHandler_freeDeserializedMsg(receiver->serializerHandler, message->header.msgId,
+                                                                 deSerializedMsg);
                 }
             }
         } else {
@@ -516,25 +504,11 @@ processMsgForSubscriberEntry(pubsub_tcp_topic_receiver_t *receiver, psa_tcp_subs
         L_WARN("[PSA_TCP_TR] Cannot deserialize message '%s' using %s, version mismatch. Version received: %i.%i.x, version local: %i.%i.x",
                msgFqn,
                pubsub_serializerHandler_getSerializationType(receiver->serializerHandler),
-               (int)message->header.msgMajorVersion,
-               (int)message->header.msgMinorVersion,
+               (int) message->header.msgMajorVersion,
+               (int) message->header.msgMinorVersion,
                pubsub_serializerHandler_getMsgMajorVersion(receiver->serializerHandler, message->header.msgId),
                pubsub_serializerHandler_getMsgMinorVersion(receiver->serializerHandler, message->header.msgId));
     }
-}
-
-static void
-processMsg(void *handle, const pubsub_protocol_message_t *message, bool *release, struct timespec *receiveTime) {
-    pubsub_tcp_topic_receiver_t *receiver = handle;
-    celixThreadMutex_lock(&receiver->subscribers.mutex);
-    hash_map_iterator_t iter = hashMapIterator_construct(receiver->subscribers.map);
-    while (hashMapIterator_hasNext(&iter)) {
-        psa_tcp_subscriber_entry_t *entry = hashMapIterator_nextValue(&iter);
-        if (entry != NULL) {
-            processMsgForSubscriberEntry(receiver, entry, message, release, receiveTime);
-        }
-    }
-    celixThreadMutex_unlock(&receiver->subscribers.mutex);
 }
 
 static void *psa_tcp_recvThread(void *data) {
@@ -642,20 +616,15 @@ static void psa_tcp_initializeAllSubscribers(pubsub_tcp_topic_receiver_t *receiv
         while (hashMapIterator_hasNext(&iter)) {
             psa_tcp_subscriber_entry_t *entry = hashMapIterator_nextValue(&iter);
             if (!entry->initialized) {
-                hash_map_iterator_t iter2 = hashMapIterator_construct(entry->subscriberServices);
-                while (hashMapIterator_hasNext(&iter2)) {
-                    pubsub_subscriber_t *svc = hashMapIterator_nextValue(&iter2);
-                    int rc = 0;
-                    if (svc != NULL && svc->init != NULL) {
-                        rc = svc->init(svc->handle);
-                    }
-                    if (rc == 0) {
-                        //note now only initialized on first subscriber entries added.
-                        entry->initialized = true;
-                    } else {
-                        L_WARN("Cannot initialize subscriber svc. Got rc %i", rc);
-                        allInitialized = false;
-                    }
+                int rc = 0;
+                if (entry->subscriberSvc->init != NULL) {
+                    rc = entry->subscriberSvc->init(entry->subscriberSvc->handle);
+                }
+                if (rc == 0) {
+                    entry->initialized = true;
+                } else {
+                    L_WARN("Cannot initialize subscriber svc. Got rc %i", rc);
+                    allInitialized = false;
                 }
             }
         }

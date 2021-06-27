@@ -21,14 +21,16 @@ if (PUBSUB)
     option(BUILD_PUBSUB_PSA_ZMQ "Build ZeroMQ PubSub Admin (LGPL License)" ON)
     if (BUILD_PUBSUB_PSA_ZMQ)
         option(BUILD_ZMQ_SECURITY "Build with security for ZeroMQ." OFF)
-        add_subdirectory(pubsub_admin_zmq/v1)
+        add_subdirectory(pubsub_admin_zmq/v1) #TODO option for v1 admins
         add_subdirectory(pubsub_admin_zmq/v2)
+        add_library(Celix::pubsub_admin_zmq ALIAS celix_pubsub_admin_zmq_v1) #TODO move to config and set to v2
     endif (BUILD_PUBSUB_PSA_ZMQ)
 
     option(BUILD_PUBSUB_PSA_TCP "Build TCP PubSub Admin" ON)
     if (BUILD_PUBSUB_PSA_TCP)
-        add_subdirectory(pubsub_admin_tcp/v1)
+        add_subdirectory(pubsub_admin_tcp/v1) #TODO option for v1 admins
         add_subdirectory(pubsub_admin_tcp/v2)
+        add_library(Celix::pubsub_admin_tcp ALIAS celix_pubsub_admin_tcp_v1) #TODO move to config and set to v2
     endif (BUILD_PUBSUB_PSA_TCP)
 
     option(BUILD_PUBSUB_PSA_UDP_MC "Build UDP MC PubSub Admin" ON)
@@ -38,8 +40,9 @@ if (PUBSUB)
 
     option(BUILD_PUBSUB_PSA_WS "Build WebSocket PubSub Admin" ON)
     if (BUILD_PUBSUB_PSA_WS)
-        add_subdirectory(pubsub_admin_websocket/v1)
+        add_subdirectory(pubsub_admin_websocket/v1) #TODO option for v1 admins
         add_subdirectory(pubsub_admin_websocket/v2)
+        add_library(Celix::pubsub_admin_websocket ALIAS celix_pubsub_admin_websocket_v1) #TODO move to config and set to v2
     endif (BUILD_PUBSUB_PSA_WS)
 
     add_subdirectory(pubsub_api)

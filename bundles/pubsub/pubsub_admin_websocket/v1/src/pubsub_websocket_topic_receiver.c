@@ -500,9 +500,8 @@ static inline void processMsgForSubscriberEntry(pubsub_websocket_topic_receiver_
                 while (hashMapIterator_hasNext(&iter)) {
                     pubsub_subscriber_t *svc = hashMapIterator_nextValue(&iter);
                     svc->receive(svc->handle, msgSer->msgName, msgSer->msgId, deSerializedMsg, NULL, &release);
-                    if (!release && hashMapIterator_hasNext(&iter)) {
-                        //receive function has taken ownership and still more receive function to come ..
-                        //deserialize again for new message
+                    if (!release) {
+                        //receive function has taken ownership, deserialize again for new message
                         status = msgSer->deserialize(msgSer->handle, &deSerializeBuffer, 0, &deSerializedMsg);
                         if (status != CELIX_SUCCESS) {
                             L_WARN("[PSA_WEBSOCKET_TR] Cannot deserialize msg type %s for scope/topic %s/%s", msgSer->msgName, receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic);
