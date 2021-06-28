@@ -62,23 +62,35 @@ std::shared_ptr<celix::ServiceRegistration> createInterceptor(std::shared_ptr<ce
         delete inter;
     }};
     interceptor->handle = pubsub_serializerHandler_create(ctx->getCBundleContext(), "json", true);
-    interceptor->postSend = [](void *handle, pubsub_interceptor_properties_t *, const char *msgType, uint32_t msgId, const void *rawMsg,
-                               const celix_properties_t *) {
-        auto* ser = (pubsub_serializer_handler_t*)handle;
-        serializeAndPrint(ser, msgId, rawMsg);
-        EXPECT_STREQ(msgType, "msg");
-        const auto *msg = static_cast<const msg_t*>(rawMsg);
-        EXPECT_GE(msg->seqNr, 0);
-        fprintf(stdout, "Got message in postSend interceptor %p with seq nr %i\n", handle, msg->seqNr);
+    interceptor->preSend  = [](void *, const pubsub_interceptor_properties_t *, const char *, const uint32_t,
+                               const void *, celix_properties_t* metadata) {
+        celix_properties_set(metadata, "test", "preSend");
+        return true;
     };
-    interceptor->postReceive = [](void *handle, pubsub_interceptor_properties_t *, const char *msgType, uint32_t msgId, const void *rawMsg,
-                                  const celix_properties_t *) {
+    interceptor->postSend = [](void *handle, const pubsub_interceptor_properties_t* intProps, const char *msgType, uint32_t msgId, const void *rawMsg,
+                               const celix_properties_t* metadata) {
         auto* ser = (pubsub_serializer_handler_t*)handle;
         serializeAndPrint(ser, msgId, rawMsg);
         EXPECT_STREQ(msgType, "msg");
         const auto *msg = static_cast<const msg_t*>(rawMsg);
         EXPECT_GE(msg->seqNr, 0);
-        fprintf(stdout, "Got message in postReceive interceptor %p with seq nr %i\n", handle, msg->seqNr);
+        EXPECT_STREQ(celix_properties_get(metadata, "test", nullptr), "preSend");
+        fprintf(stdout, "Got message in postSend interceptor %s/%s for type %s and ser %s with seq nr %i\n", intProps->scope, intProps->topic, intProps->psaType, intProps->serializationType, msg->seqNr);
+    };
+    interceptor->preReceive = [](void *, const pubsub_interceptor_properties_t *, const char *, const uint32_t,
+                                 const void *, celix_properties_t* metadata) {
+        celix_properties_set(metadata, "test", "preReceive");
+        return true;
+    };
+    interceptor->postReceive = [](void *handle, const pubsub_interceptor_properties_t* intProps, const char *msgType, uint32_t msgId, const void *rawMsg,
+                                  const celix_properties_t* metadata) {
+        auto* ser = (pubsub_serializer_handler_t*)handle;
+        serializeAndPrint(ser, msgId, rawMsg);
+        EXPECT_STREQ(msgType, "msg");
+        const auto *msg = static_cast<const msg_t*>(rawMsg);
+        EXPECT_GE(msg->seqNr, 0);
+        EXPECT_STREQ(celix_properties_get(metadata, "test", nullptr), "preReceive");
+        fprintf(stdout, "Got message in postReceive interceptor %s/%s for type %s and ser %s with seq nr %i\n", intProps->scope, intProps->topic, intProps->psaType, intProps-> serializationType, msg->seqNr);
     };
     //note registering identical services to validate multiple interceptors
     return ctx->registerService<pubsub_interceptor>(interceptor, PUBSUB_INTERCEPTOR_SERVICE_NAME).build();
@@ -96,5 +108,7 @@ TEST_F(PubSubInterceptorTestSuite, InterceptorWithSinglePublishersAndMultipleRec
     auto reg2 = createInterceptor(ctx);
     auto reg3 = createInterceptor(ctx);
 
+    //TODO stop after a certain amount of messages send
+    //TODO also test with tcp v2.
     sleep(5);
 }

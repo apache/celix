@@ -142,7 +142,8 @@ pubsub_zmq_topic_sender_t* pubsub_zmqTopicSender_create(
     }
     sender->zeroCopyEnabled = celix_bundleContext_getPropertyAsBool(ctx, PSA_ZMQ_ZEROCOPY_ENABLED, PSA_ZMQ_DEFAULT_ZEROCOPY_ENABLED);
 
-    pubsubInterceptorsHandler_create(ctx, scope, topic, &sender->interceptorsHandler);
+    sender->interceptorsHandler = pubsubInterceptorsHandler_create(ctx, scope, topic, PUBSUB_ZMQ_ADMIN_TYPE,
+                                                                   pubsub_serializerHandler_getSerializationType(serializerHandler));
 
     //setting up zmq socket for ZMQ TopicSender
     {

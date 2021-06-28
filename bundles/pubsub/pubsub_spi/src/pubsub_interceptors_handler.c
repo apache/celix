@@ -45,45 +45,39 @@ static int referenceCompare(const void *a, const void *b);
 static void pubsubInterceptorsHandler_addInterceptor(void *handle, void *svc, const celix_properties_t *props);
 static void pubsubInterceptorsHandler_removeInterceptor(void *handle, void *svc, const celix_properties_t *props);
 
-celix_status_t pubsubInterceptorsHandler_create(celix_bundle_context_t *ctx, const char *scope, const char *topic, pubsub_interceptors_handler_t **handler) {
-    celix_status_t status = CELIX_SUCCESS;
+pubsub_interceptors_handler_t* pubsubInterceptorsHandler_create(celix_bundle_context_t *ctx, const char *scope, const char *topic, const char* psaType, const char* serType) {
+    pubsub_interceptors_handler_t* handler = calloc(1, sizeof(*handler));
+    handler->ctx = ctx;
+    handler->properties.scope = celix_utils_strdup(scope);
+    handler->properties.topic = celix_utils_strdup(topic);
+    handler->properties.psaType = celix_utils_strdup(psaType);
+    handler->properties.serializationType = celix_utils_strdup(serType);
+    handler->interceptors = celix_arrayList_create();
+    celixThreadMutex_create(&handler->lock, NULL);
 
-    *handler = calloc(1, sizeof(**handler));
-    if (!*handler) {
-        status = CELIX_ENOMEM;
-    } else {
-        (*handler)->ctx = ctx;
+    // Create service tracker here, and not in the activator
+    celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
+    opts.filter.serviceName = PUBSUB_INTERCEPTOR_SERVICE_NAME;
+    opts.filter.ignoreServiceLanguage = true;
+    opts.callbackHandle = handler;
+    opts.addWithProperties = pubsubInterceptorsHandler_addInterceptor;
+    opts.removeWithProperties = pubsubInterceptorsHandler_removeInterceptor;
+    handler->interceptorsTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
 
-        (*handler)->properties.scope = scope;
-        (*handler)->properties.topic = topic;
-
-        (*handler)->interceptors = celix_arrayList_create();
-
-        status = celixThreadMutex_create(&(*handler)->lock, NULL);
-
-        if (status == CELIX_SUCCESS) {
-            // Create service tracker here, and not in the activator
-            celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
-            opts.filter.serviceName = PUBSUB_INTERCEPTOR_SERVICE_NAME;
-            opts.filter.ignoreServiceLanguage = true;
-            opts.callbackHandle = *handler;
-            opts.addWithProperties = pubsubInterceptorsHandler_addInterceptor;
-            opts.removeWithProperties = pubsubInterceptorsHandler_removeInterceptor;
-            (*handler)->interceptorsTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
-        }
-    }
-
-    return status;
+    return handler;
 }
 
-celix_status_t pubsubInterceptorsHandler_destroy(pubsub_interceptors_handler_t *handler) {
-    celix_bundleContext_stopTracker(handler->ctx, handler->interceptorsTrackerId);
-
-    celix_arrayList_destroy(handler->interceptors);
-    celixThreadMutex_destroy(&handler->lock);
-    free(handler);
-
-    return CELIX_SUCCESS;
+void pubsubInterceptorsHandler_destroy(pubsub_interceptors_handler_t *handler) {
+    if (handler != NULL) {
+        celix_bundleContext_stopTracker(handler->ctx, handler->interceptorsTrackerId);
+        celix_arrayList_destroy(handler->interceptors);
+        celixThreadMutex_destroy(&handler->lock);
+        free((char*)handler->properties.scope);
+        free((char*)handler->properties.topic);
+        free((char*)handler->properties.psaType);
+        free((char*)handler->properties.serializationType);
+        free(handler);
+    }
 }
 
 void pubsubInterceptorsHandler_addInterceptor(void *handle, void *svc, const celix_properties_t *props) {

@@ -138,7 +138,8 @@ pubsub_zmq_topic_receiver_t* pubsub_zmqTopicReceiver_create(celix_bundle_context
     receiver->scope = scope == NULL ? NULL : celix_utils_strdup(scope);
     receiver->topic = celix_utils_strdup(topic);
 
-    pubsubInterceptorsHandler_create(ctx, scope, topic, &receiver->interceptorsHandler);
+    receiver->interceptorsHandler = pubsubInterceptorsHandler_create(ctx, scope, topic, PUBSUB_ZMQ_ADMIN_TYPE,
+                                                                     pubsub_serializerHandler_getSerializationType(serHandler));
 
 #ifdef BUILD_WITH_ZMQ_SECURITY
     char* keys_bundle_dir = pubsub_getKeysBundleDir(bundle_context);
