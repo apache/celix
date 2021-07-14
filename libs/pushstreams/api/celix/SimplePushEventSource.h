@@ -19,13 +19,14 @@
 
 #pragma once
 
+#include <iostream>
+#include <set>
+
 #include "celix/IPushEventSource.h"
 #include "celix/PromiseFactory.h"
 #include "celix/Promise.h"
 #include "celix/DefaultExecutor.h"
 #include "celix/PushEvent.h"
-
-#include <iostream>
 
 namespace celix {
     template <typename T>
@@ -44,11 +45,12 @@ namespace celix {
         void close();
         
     private:
+        std::mutex mutex {};
         bool connected{true};        
         std::shared_ptr<IExecutor> executor{};
         PromiseFactory promiseFactory;
         Deferred<void> connectedD;
-        std::shared_ptr<IPushEventConsumer<T>> pec {nullptr};
+        std::set<std::shared_ptr<IPushEventConsumer<T>>> pecs {};
     };
 }
 
@@ -65,8 +67,10 @@ celix::SimplePushEventSource<T>::SimplePushEventSource(std::shared_ptr<IExecutor
 
 template <typename T>
 void celix::SimplePushEventSource<T>::open(std::shared_ptr<IPushEventConsumer<T>> _pec) {
-    pec = _pec;
+    std::lock_guard lck{mutex};
+    pecs.insert(_pec);
     connectedD.resolve();
+    connectedD = promiseFactory.deferred<void>();
 }
 
 template <typename T>
@@ -74,22 +78,28 @@ celix::SimplePushEventSource<T>::~SimplePushEventSource() noexcept = default;
 
 template <typename T>
 [[nodiscard]] celix::Promise<void> celix::SimplePushEventSource<T>::connectPromise() {
+    std::lock_guard lck{mutex};
     return connectedD.getPromise();
 }
 
 template <typename T>
 void celix::SimplePushEventSource<T>::publish(T event) {
-    executor->execute([&, event]() {
-        pec->accept(celix::PushEvent<T>(event));
-    });
+    std::lock_guard lck{mutex};
+    for(auto& pec : pecs) {
+        executor->execute([&, event]() {
+            pec->accept(celix::PushEvent<T>(event));
+        });
+    }
 }
 
 template <typename T>
 bool celix::SimplePushEventSource<T>::isConnected() {
-    return pec != nullptr;
+    std::lock_guard lck{mutex};
+    return pecs.size() > 0;
 }
 
 template <typename T>
 void celix::SimplePushEventSource<T>::close() {
-    pec.reset();
+    std::lock_guard lck{mutex};
+    pecs.clear();
 }

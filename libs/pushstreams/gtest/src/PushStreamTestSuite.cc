@@ -63,7 +63,58 @@ TEST_F(PushStreamTestSuite, BasicTest) {
     });
 
     std::this_thread::sleep_for(std::chrono::seconds{1});
-   
+
+    //todo proper closing
+    ses->close();
+    t->join();
+}
+
+
+TEST_F(PushStreamTestSuite, MultipleStreamsTest) {
+    auto psp = PushStreamProvider();
+    std::unique_ptr<std::thread> t{};
+    auto ses = psp.createSimpleEventSource<int>();
+
+    auto success = [&](celix::Promise<void> p) -> celix::Promise<void> {
+        t = std::make_unique<std::thread>([&]() {
+            long counter = 0;
+            // Keep going as long as someone is listening
+            while (ses->isConnected()) {
+                ses->publish(++counter);
+                std::this_thread::sleep_for(std::chrono::milliseconds{50});
+                std::cout << "Published: " << counter << std::endl;
+            }
+            // Restart delivery when a new listener connects
+            // ses.connectPromise().then(success);            
+        });         
+        return p;
+    };
+
+    ses->connectPromise().then<void>(success);
+
+    auto streamEnded = psp.createStream<int>(ses).
+    filter([&](int event) -> bool {
+        return (event > 10);
+    }).
+    filter([&](int event) -> bool {
+        return (event < 15);
+    }).
+    forEach([&](int event) {
+        std::cout << "Consumed event 1: " << event << std::endl;
+    });
+
+    auto streamEnded2 = psp.createStream<int>(ses).
+    filter([&](int event) -> bool {
+        return (event < 15);
+    }).
+    forEach([&](int event) {
+        std::cout << "Consumed event 2: " << event << std::endl;
+    });
+
+    std::this_thread::sleep_for(std::chrono::seconds{1});
+    
+    //todo proper closing
+    
     ses->close();
     t->join();
 }
