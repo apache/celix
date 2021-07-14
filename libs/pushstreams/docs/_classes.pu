@@ -7,7 +7,7 @@ note top
     R BufferResult e.g. queue<T>
 end note
 
-interface IPushEventConsumer
+interface IPushEventConsumer<T>
 interface IPushEventSource<T>
 interface IExecutor
 
@@ -18,8 +18,6 @@ class PushStream<T>
 class PushStreamBuilder<T, U>
 class PushStreamProvider <<final>>
 class SimplePushEventSource<T>
-
-class PromiseFactory
 
 SimplePushEventSource --|> IPushEventSource
 

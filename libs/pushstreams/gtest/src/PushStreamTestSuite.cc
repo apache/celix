@@ -51,12 +51,19 @@ TEST_F(PushStreamTestSuite, BasicTest) {
 
     ses->connectPromise().then<void>(success);
 
-    auto streamEnded = psp.createStream<int>(ses).forEach([&](int event) {
+    auto streamEnded = psp.createStream<int>(ses).
+    filter([&](int event) -> bool {
+        return (event > 10);
+    }).
+    filter([&](int event) -> bool {
+        return (event < 15);
+    }).
+    forEach([&](int event) {
         std::cout << "Consumed event: " << event << std::endl;
     });
 
-    sleep(1);
-    
+    std::this_thread::sleep_for(std::chrono::seconds{1});
+   
     ses->close();
     t->join();
 }

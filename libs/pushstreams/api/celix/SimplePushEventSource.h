@@ -77,7 +77,6 @@ template <typename T>
 
 template <typename T>
 void celix::SimplePushEventSource<T>::publish(T event) {
-    std::cout << "publish: " << event << std::endl;
     pec->accept(celix::PushEvent<T>(event));
 }
 
