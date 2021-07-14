@@ -31,7 +31,7 @@ namespace celix {
     template <typename T>
     class SimplePushEventSource: public IPushEventSource<T> {
     public:
-        SimplePushEventSource();
+        explicit SimplePushEventSource(std::shared_ptr<IExecutor> _executor);
 
         virtual ~SimplePushEventSource() noexcept;
         void open(std::shared_ptr<IPushEventConsumer<T>> pec) override; 
@@ -45,8 +45,9 @@ namespace celix {
         
     private:
         bool connected{true};        
-        celix::PromiseFactory promiseFactory;
-        celix::Deferred<void> connectedD;
+        std::shared_ptr<IExecutor> executor{};
+        PromiseFactory promiseFactory;
+        Deferred<void> connectedD;
         std::shared_ptr<IPushEventConsumer<T>> pec {nullptr};
     };
 }
@@ -56,7 +57,8 @@ namespace celix {
 *********************************************************************************/
 
 template <typename T>
-celix::SimplePushEventSource<T>::SimplePushEventSource(): promiseFactory{std::make_shared<celix::DefaultExecutor>()}, 
+celix::SimplePushEventSource<T>::SimplePushEventSource(std::shared_ptr<IExecutor> _executor): executor{_executor},
+                                                          promiseFactory{executor}, 
                                                           connectedD{promiseFactory.deferred<void>()}  {
 
 }
@@ -77,7 +79,9 @@ template <typename T>
 
 template <typename T>
 void celix::SimplePushEventSource<T>::publish(T event) {
-    pec->accept(celix::PushEvent<T>(event));
+    executor->execute([&, event]() {
+        pec->accept(celix::PushEvent<T>(event));
+    });
 }
 
 template <typename T>

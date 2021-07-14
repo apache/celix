@@ -55,7 +55,7 @@ inline celix::PushStreamProvider::~PushStreamProvider() noexcept {
 
 template <typename T>
 inline std::shared_ptr<celix::SimplePushEventSource<T>> celix::PushStreamProvider::createSimpleEventSource() {
-    return std::make_shared<celix::SimplePushEventSource<T>>();
+    return std::make_shared<celix::SimplePushEventSource<T>>(std::make_shared<celix::DefaultExecutor>());
 }
 
 template <typename T>

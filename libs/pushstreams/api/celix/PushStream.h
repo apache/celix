@@ -20,6 +20,7 @@
 #pragma once
 
 #include <optional>
+#include <iostream>
 #include <queue>
 #include "celix/IPushEventSource.h"
 #include "celix/IPushEventConsumer.h"
@@ -45,7 +46,7 @@ namespace celix {
     private:        
         std::shared_ptr<celix::IPushEventSource<T>> eventSource;
         std::optional<std::queue<T>> queue;
-        std::shared_ptr<IExecutor> executor;
+     //   std::shared_ptr<IExecutor> executor;
         PromiseFactory promiseFactory;
         Deferred<void> streamEnd;
         PredicateVector predicates;
@@ -55,8 +56,9 @@ namespace celix {
     //TODO move code from class declaration
     template <typename T>
     class BasicEventConsumer: public IPushEventConsumer<T> {
-        public:
+    public:
         using PredicateVector = std::vector<std::function<bool(T)>>; 
+
         BasicEventConsumer(std::function<void(T)> _func, PredicateVector _predicates) : predicates{_predicates}, func{_func} {
         }
 
@@ -88,7 +90,6 @@ celix::PushStream<T>::PushStream(std::shared_ptr<celix::IPushEventSource<T>> _ev
                                  std::optional<std::queue<T>> _queue,
                                  std::shared_ptr<IExecutor> _executor) : eventSource{_eventSource},
                                                                          queue{_queue},
-                                                                         executor{_executor},
                                                                          promiseFactory{_executor},
                                                                          streamEnd{promiseFactory.deferred<void>()},
                                                                          predicates{} {    
