@@ -1,0 +1,36 @@
+@startuml
+
+interface BufferBuilder<R, U, T>
+note top
+    T type of actual database
+    U Queue Type
+    R BufferResult e.g. queue<T>
+end note
+
+interface IPushEventConsumer
+interface IPushEventSource<T>
+interface IExecutor
+
+class PromiseFactory
+
+class PushEvent<T>
+class PushStream<T> 
+class PushStreamBuilder<T, U>
+class PushStreamProvider <<final>>
+class SimplePushEventSource<T>
+
+class PromiseFactory
+
+SimplePushEventSource --|> IPushEventSource
+
+PushStream --> PromiseFactory
+PushStream --> IPushEventSource
+PushStream --> IExecutor
+
+PushStreamProvider --> PushStream : creates
+PushStreamProvider --> SimplePushEventSource : creates
+PushStreamProvider --> PushStreamBuilder : use
+
+PushStreamBuilder --|> BufferBuilder
+
+@enduml

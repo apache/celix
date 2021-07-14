@@ -1,0 +1,13 @@
+= PushStreams
+
+WARNING: The PushStreams library is still a work in progress.
+
+[plantuml]
+.Class diagram of celix::PushStreams
+----
+include::_classes.pu
+----
+
+
+
+
