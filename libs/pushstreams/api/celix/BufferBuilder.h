@@ -20,13 +20,11 @@
 #pragma once
 
 namespace celix {
-
-    struct NotSupportedException  : public std::exception
-    {
-        [[nodiscard]] const char * what () const noexcept override
-        {
-            return "Not Implemented";
-        }
+    template <typename R, typename T, typename U>
+    class BufferBuilder {
+    public:
+        virtual ~BufferBuilder() = default;
+        virtual R build() = 0;
     };
-
 }
+

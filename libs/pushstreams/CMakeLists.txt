@@ -45,6 +45,7 @@ if (PUSHSTREAMS OR PUSHSTREAMS_STANDALONE)
         $<INSTALL_INTERFACE:include/celix/pushstreams>
     )
     target_link_libraries(PushStreams INTERFACE Threads::Threads)
+    target_link_libraries(PushStreams INTERFACE Celix::Promises)
     add_library(Celix::PushStreams ALIAS PushStreams)
 
     add_executable(PushStreamExamples src/PushStreamExamples.cc)
@@ -52,7 +53,7 @@ if (PUSHSTREAMS OR PUSHSTREAMS_STANDALONE)
     target_link_libraries(PushStreamExamples PRIVATE Celix::PushStreams)
 
     if (ENABLE_TESTING AND NOT PUSHSTREAMS_STANDALONE)
-#        add_subdirectory(gtest)
+        add_subdirectory(gtest)
     endif()
 
     install(TARGETS PushStreams EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR})
