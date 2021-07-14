@@ -21,6 +21,7 @@
 /.project
 .DS_Store
 .idea
+.vscode
 *.iml
 *.pyc
 *.enc
