@@ -121,5 +121,5 @@ celix::PushStream<T>& celix::PushStream<T>::filter(std::function<bool(T)> predic
 
 template<typename T>
 void celix::PushStream<T>::close() {
-    
+    //close downstream    
 }

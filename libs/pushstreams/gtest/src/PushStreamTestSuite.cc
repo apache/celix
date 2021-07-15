@@ -19,15 +19,14 @@
 
 #include <gtest/gtest.h>
 
-
 #include "celix/PushStreamProvider.h"
 
 using celix::PushStreamProvider;
+
 class PushStreamTestSuite : public ::testing::Test {
 public:
     ~PushStreamTestSuite() noexcept override = default;
 };
-
 
 TEST_F(PushStreamTestSuite, BasicTest) {
     auto psp = PushStreamProvider();
@@ -84,8 +83,8 @@ TEST_F(PushStreamTestSuite, MultipleStreamsTest) {
             long counter = 0;
             // Keep going as long as someone is listening
             while (ses->isConnected()) {
-                ses->publish(++counter);
-                std::this_thread::sleep_for(std::chrono::milliseconds{50});
+                ses->publish(++counter);                
+                std::this_thread::sleep_for(std::chrono::milliseconds{50});                
                 std::cout << "Published: " << counter << std::endl;
             }
             // Restart delivery when a new listener connects

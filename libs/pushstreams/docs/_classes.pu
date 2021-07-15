@@ -20,10 +20,11 @@ class PushStreamProvider <<final>>
 class SimplePushEventSource<T>
 
 SimplePushEventSource --|> IPushEventSource
+SimplePushEventSource --> IExecutor
 
+PushStream --> IExecutor
 PushStream --> PromiseFactory
 PushStream --> IPushEventSource
-PushStream --> IExecutor
 
 PushStreamProvider --> PushStream : creates
 PushStreamProvider --> SimplePushEventSource : creates
