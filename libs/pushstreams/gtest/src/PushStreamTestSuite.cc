@@ -62,10 +62,14 @@ TEST_F(PushStreamTestSuite, BasicTest) {
         std::cout << "Consumed event: " << event << std::endl;
     });
 
+    streamEnded.onSuccess([]() {
+        std::cout << "Stream ended" << std::endl;
+    });
+
     std::this_thread::sleep_for(std::chrono::seconds{1});
 
-    //todo proper closing
     ses->close();
+
     t->join();
 }
 
@@ -111,10 +115,12 @@ TEST_F(PushStreamTestSuite, MultipleStreamsTest) {
         std::cout << "Consumed event 2: " << event << std::endl;
     });
 
+    streamEnded.onSuccess([]() {
+        std::cout << "Stream ended" << std::endl;
+    });
+
     std::this_thread::sleep_for(std::chrono::seconds{1});
-    
-    //todo proper closing
-    
+   
     ses->close();
     t->join();
 }

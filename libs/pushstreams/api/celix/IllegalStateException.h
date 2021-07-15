@@ -19,15 +19,26 @@
 
 #pragma once
 
-#include "celix/IPushEventConsumer.h"
-#include "celix/IAutoCloseable.h"
+#include <exception>
+#include <utility>
+#include <string>
 
 namespace celix {
-    template <typename T>
-    class IPushEventSource {
-    public:
-        virtual ~IPushEventSource() noexcept = default;
 
-        virtual IAutoCloseable& open(std::shared_ptr<IPushEventConsumer<T>> pec) = 0; 
+    class IllegalStateException : public std::exception {
+    public:
+        explicit IllegalStateException(const char* what) : w{what} {}
+        explicit IllegalStateException(std::string what) : w{std::move(what)} {}
+
+        IllegalStateException(const IllegalStateException&) = delete;
+        IllegalStateException(IllegalStateException&&) noexcept = default;
+
+        IllegalStateException& operator=(const IllegalStateException&) = delete;
+        IllegalStateException& operator=(IllegalStateException&&) noexcept = default;
+
+        [[nodiscard]] const char* what() const noexcept override { return w.c_str(); }
+    private:
+        std::string w;
     };
 }
+
