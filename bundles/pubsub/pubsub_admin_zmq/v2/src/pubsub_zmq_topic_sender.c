@@ -52,13 +52,13 @@
 struct pubsub_zmq_topic_sender {
     celix_bundle_context_t *ctx;
     celix_log_helper_t *logHelper;
-    pubsub_serializer_handler_t* serializerHandler;
     void *admin;
     long protocolSvcId;
     pubsub_protocol_service_t *protocol;
     uuid_t fwUUID;
     bool zeroCopyEnabled;
 
+    pubsub_serializer_handler_t* serializerHandler;
     pubsub_interceptors_handler_t *interceptorsHandler;
 
     char *scope;

@@ -446,7 +446,7 @@ static void callReceivers(pubsub_tcp_topic_receiver_t *receiver, const char* msg
                                                                              message->header.msgMinorVersion,
                                                                              &deSerializeBuffer, 0, msg);
                 if (status != CELIX_SUCCESS) {
-                    L_WARN("[PSA_TCO_TR] Cannot deserialize msg type %s for scope/topic %s/%s", msgFqn,
+                    L_WARN("[PSA_TCP_TR] Cannot deserialize msg type %s for scope/topic %s/%s", msgFqn,
                            receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic);
                     break;
                 }
@@ -484,17 +484,14 @@ static inline void processMsg(void* handle, const pubsub_protocol_message_t *mes
         }
 
         if (status == CELIX_SUCCESS) {
-            uint32_t msgId = message->header.msgId;
             celix_properties_t *metadata = message->metadata.metadata;
-            bool cont = pubsubInterceptorHandler_invokePreReceive(receiver->interceptorsHandler, msgFqn, msgId,
-                                                                  deSerializedMsg, &metadata);
+            bool cont = pubsubInterceptorHandler_invokePreReceive(receiver->interceptorsHandler, msgFqn, message->header.msgId, deSerializedMsg, &metadata);
             if (cont) {
                 bool release;
                 callReceivers(receiver, msgFqn, message, &deSerializedMsg, &release, metadata);
-                pubsubInterceptorHandler_invokePostReceive(receiver->interceptorsHandler, msgFqn, msgId, deSerializedMsg, metadata);
+                pubsubInterceptorHandler_invokePostReceive(receiver->interceptorsHandler, msgFqn, message->header.msgId, deSerializedMsg, metadata);
                 if (release) {
-                    pubsub_serializerHandler_freeDeserializedMsg(receiver->serializerHandler, message->header.msgId,
-                                                                 deSerializedMsg);
+                    pubsub_serializerHandler_freeDeserializedMsg(receiver->serializerHandler, message->header.msgId, deSerializedMsg);
                 }
             }
         } else {
