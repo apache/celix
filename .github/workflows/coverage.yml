@@ -35,7 +35,7 @@ jobs:
           mkdir build
           cd build
           cmake -DCMAKE_BUILD_TYPE=Debug ${BUILD_OPTIONS} ..
-          make -j
+          make -j $(nproc)
       - name: Coverage
         run: |
           cd $GITHUB_WORKSPACE/build
