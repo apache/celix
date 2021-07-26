@@ -34,7 +34,6 @@
 #include <uuid/uuid.h>
 #include <pubsub_admin_metrics.h>
 #include <pubsub_utils.h>
-#include "pubsub_interceptors_handler.h"
 #include <celix_api.h>
 
 #ifndef UUID_STR_LEN
@@ -64,7 +63,6 @@ struct pubsub_tcp_topic_receiver {
     bool isPassive;
     pubsub_tcpHandler_t *socketHandler;
     pubsub_tcpHandler_t *sharedSocketHandler;
-    pubsub_interceptors_handler_t *interceptorsHandler;
 
     struct {
         celix_thread_t thread;
@@ -144,7 +142,6 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
     receiver->protocol = protocol;
     receiver->scope = scope == NULL ? NULL : strndup(scope, 1024 * 1024);
     receiver->topic = strndup(topic, 1024 * 1024);
-    receiver->interceptorsHandler = pubsubInterceptorsHandler_create(ctx, scope, topic, PUBSUB_TCP_ADMIN_TYPE, "*unknown*");
     const char *staticConnectUrls = pubsub_getEnvironmentVariableWithScopeTopic(ctx, PUBSUB_TCP_STATIC_CONNECT_URLS_FOR, topic, scope);
     const char *isPassive = pubsub_getEnvironmentVariableWithScopeTopic(ctx, PUBSUB_TCP_PASSIVE_ENABLED, topic, scope);
     const char *passiveKey = pubsub_getEnvironmentVariableWithScopeTopic(ctx, PUBSUB_TCP_PASSIVE_SELECTION_KEY, topic, scope);
@@ -322,7 +319,6 @@ void pubsub_tcpTopicReceiver_destroy(pubsub_tcp_topic_receiver_t *receiver) {
             pubsub_tcpHandler_destroy(receiver->socketHandler);
             receiver->socketHandler = NULL;
         }
-        pubsubInterceptorsHandler_destroy(receiver->interceptorsHandler);
         if (receiver->scope != NULL) {
             free(receiver->scope);
         }
@@ -549,39 +545,31 @@ processMsgForSubscriberEntry(pubsub_tcp_topic_receiver_t *receiver, psa_tcp_subs
             }
 
             if (status == CELIX_SUCCESS) {
-                const char *msgType = msgSer->msgName;
-                uint32_t msgId = message->header.msgId;
-                celix_properties_t *metadata = message->metadata.metadata;
-                bool cont = pubsubInterceptorHandler_invokePreReceive(receiver->interceptorsHandler, msgType, msgId, deSerializedMsg, &metadata);
                 bool release = true;
-                if (cont) {
-                    hash_map_iterator_t iter = hashMapIterator_construct(entry->subscriberServices);
-                    while (hashMapIterator_hasNext(&iter)) {
-                        pubsub_subscriber_t *svc = hashMapIterator_nextValue(&iter);
-                        svc->receive(svc->handle, msgSer->msgName, msgSer->msgId, deSerializedMsg, message->metadata.metadata, &release);
-                        pubsubInterceptorHandler_invokePostReceive(receiver->interceptorsHandler, msgType, msgId, deSerializedMsg, metadata);
-                        if (!release) {
-                            //receive function has taken ownership, deserialize again for new message
-                            status = msgSer->deserialize(msgSer->handle, &deSerializeBuffer, 1, &deSerializedMsg);
-                            if (status != CELIX_SUCCESS) {
-                                L_WARN("[PSA_TCP_TR] Cannot deserialize msg type %s for scope/topic %s/%s",
-                                       msgSer->msgName,
-                                       receiver->scope == NULL ? "(null)" : receiver->scope,
-                                       receiver->topic);
-                                break;
-                            }
-                            release = true;
+                hash_map_iterator_t iter = hashMapIterator_construct(entry->subscriberServices);
+                while (hashMapIterator_hasNext(&iter)) {
+                    pubsub_subscriber_t *svc = hashMapIterator_nextValue(&iter);
+                    svc->receive(svc->handle, msgSer->msgName, msgSer->msgId, deSerializedMsg, message->metadata.metadata, &release);
+                    if (!release) {
+                        //receive function has taken ownership, deserialize again for new message
+                        status = msgSer->deserialize(msgSer->handle, &deSerializeBuffer, 1, &deSerializedMsg);
+                        if (status != CELIX_SUCCESS) {
+                            L_WARN("[PSA_TCP_TR] Cannot deserialize msg type %s for scope/topic %s/%s",
+                                   msgSer->msgName,
+                                   receiver->scope == NULL ? "(null)" : receiver->scope,
+                                   receiver->topic);
+                            break;
                         }
+                        release = true;
                     }
-                    pubsubInterceptorHandler_invokePostReceive(receiver->interceptorsHandler, msgType, msgId, deSerializedMsg, metadata);
-                    if (release) {
-                        msgSer->freeDeserializeMsg(msgSer->handle, deSerializedMsg);
-                    }
-                    if (message->metadata.metadata) {
-                        celix_properties_destroy(message->metadata.metadata);
-                    }
-                    updateReceiveCount += 1;
                 }
+                if (release) {
+                    msgSer->freeDeserializeMsg(msgSer->handle, deSerializedMsg);
+                }
+                if (message->metadata.metadata) {
+                    celix_properties_destroy(message->metadata.metadata);
+                }
+                updateReceiveCount += 1;
             } else {
                 updateSerError += 1;
                 L_WARN("[PSA_TCP_TR] Cannot deserialize msg type %s for scope/topic %s/%s", msgSer->msgName,

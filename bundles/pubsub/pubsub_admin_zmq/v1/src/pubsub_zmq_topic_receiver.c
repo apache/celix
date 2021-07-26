@@ -39,8 +39,6 @@
 #include <pubsub_utils.h>
 #include <celix_api.h>
 
-#include "pubsub_interceptors_handler.h"
-
 #include "celix_utils_api.h"
 
 #define PSA_ZMQ_RECV_TIMEOUT 1000
@@ -69,8 +67,6 @@ struct pubsub_zmq_topic_receiver {
     char *scope;
     char *topic;
     bool metricsEnabled;
-
-    pubsub_interceptors_handler_t *interceptorsHandler;
 
     void *zmqCtx;
     void *zmqSock;
@@ -156,8 +152,6 @@ pubsub_zmq_topic_receiver_t* pubsub_zmqTopicReceiver_create(celix_bundle_context
     receiver->scope = scope == NULL ? NULL : strndup(scope, 1024 * 1024);
     receiver->topic = strndup(topic, 1024 * 1024);
     receiver->metricsEnabled = celix_bundleContext_getPropertyAsBool(ctx, PSA_ZMQ_METRICS_ENABLED, PSA_ZMQ_DEFAULT_METRICS_ENABLED);
-
-    receiver->interceptorsHandler = pubsubInterceptorsHandler_create(ctx, scope, topic, PUBSUB_ZMQ_ADMIN_TYPE, "*unknown*");
 
 #ifdef BUILD_WITH_ZMQ_SECURITY
     char* keys_bundle_dir = pubsub_getKeysBundleDir(bundle_context);
@@ -333,8 +327,6 @@ void pubsub_zmqTopicReceiver_destroy(pubsub_zmq_topic_receiver_t *receiver) {
 
         zmq_close(receiver->zmqSock);
         zmq_ctx_term(receiver->zmqCtx);
-
-        pubsubInterceptorsHandler_destroy(receiver->interceptorsHandler);
 
         free(receiver->scope);
         free(receiver->topic);
@@ -522,33 +514,26 @@ static inline void processMsgForSubscriberEntry(pubsub_zmq_topic_receiver_t *rec
                 clock_gettime(CLOCK_REALTIME, &endSer);
             }
             if (status == CELIX_SUCCESS) {
-
-                const char *msgType = msgSer->msgName;
-                uint32_t msgId = message->header.msgId;
                 celix_properties_t *metadata = message->metadata.metadata;
-                bool cont = pubsubInterceptorHandler_invokePreReceive(receiver->interceptorsHandler, msgType, msgId, deserializedMsg, &metadata);
                 bool release = true;
-                if (cont) {
-                    hash_map_iterator_t iter2 = hashMapIterator_construct(entry->subscriberServices);
-                    while (hashMapIterator_hasNext(&iter2)) {
-                        pubsub_subscriber_t *svc = hashMapIterator_nextValue(&iter2);
-                        svc->receive(svc->handle, msgSer->msgName, msgSer->msgId, deserializedMsg, metadata, &release);
-                        if (!release) {
-                            //receive function has taken ownership deserialize again for new message
-                            status = msgSer->deserialize(msgSer->handle, &deSerializeBuffer, 0, &deserializedMsg);
-                            if (status != CELIX_SUCCESS) {
-                                L_WARN("[PSA_ZMQ_TR] Cannot deserialize msg type %s for scope/topic %s/%s", msgSer->msgName, receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic);
-                                break;
-                            }
-                            release = true;
+                hash_map_iterator_t iter2 = hashMapIterator_construct(entry->subscriberServices);
+                while (hashMapIterator_hasNext(&iter2)) {
+                    pubsub_subscriber_t *svc = hashMapIterator_nextValue(&iter2);
+                    svc->receive(svc->handle, msgSer->msgName, msgSer->msgId, deserializedMsg, metadata, &release);
+                    if (!release) {
+                        //receive function has taken ownership deserialize again for new message
+                        status = msgSer->deserialize(msgSer->handle, &deSerializeBuffer, 0, &deserializedMsg);
+                        if (status != CELIX_SUCCESS) {
+                            L_WARN("[PSA_ZMQ_TR] Cannot deserialize msg type %s for scope/topic %s/%s", msgSer->msgName, receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic);
+                            break;
                         }
-                        pubsubInterceptorHandler_invokePostReceive(receiver->interceptorsHandler, msgType, msgId, deserializedMsg, metadata);
+                        release = true;
                     }
-                    if (release) {
-                        msgSer->freeDeserializeMsg(msgSer->handle, deserializedMsg);
-                    }
-                    updateReceiveCount += 1;
                 }
+                if (release) {
+                    msgSer->freeDeserializeMsg(msgSer->handle, deserializedMsg);
+                }
+                updateReceiveCount += 1;
             } else {
                 updateSerError += 1;
                 L_WARN("[PSA_ZMQ_TR] Cannot deserialize msg type %s for scope/topic %s/%s", msgSer->msgName, receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic);
