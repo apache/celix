@@ -410,6 +410,7 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
     bool cont = pubsubInterceptorHandler_invokePreSend(sender->interceptorsHandler, msgFqn, msgTypeId, inMsg, &metadata);
     if (!cont) {
         L_DEBUG("Cancel send based on pubsub interceptor cancel return");
+        celix_properties_destroy(metadata);
         return status;
     }
 
@@ -541,10 +542,8 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
     }
     __atomic_store_n(&sender->zmqBuffers.dataLock, false, __ATOMIC_RELEASE);
     pubsubInterceptorHandler_invokePostSend(sender->interceptorsHandler, msgFqn, msgTypeId, inMsg, metadata);
+    celix_properties_destroy(metadata);
 
-    if (message.metadata.metadata) {
-        celix_properties_destroy(message.metadata.metadata);
-    }
     if (!bound->parent->zeroCopyEnabled && serializedIoVecOutput) {
         pubsub_serializerHandler_freeSerializedMsg(sender->serializerHandler, msgTypeId, serializedIoVecOutput, serializedIoVecOutputLen);
     }

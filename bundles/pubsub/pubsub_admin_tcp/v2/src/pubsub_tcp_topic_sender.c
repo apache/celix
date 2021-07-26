@@ -374,6 +374,7 @@ psa_tcp_topicPublicationSend(void *handle, unsigned int msgTypeId, const void *i
     bool cont = pubsubInterceptorHandler_invokePreSend(sender->interceptorsHandler, msgFqn, msgTypeId, inMsg, &metadata);
     if (!cont) {
         L_DEBUG("Cancel send based on pubsub interceptor cancel return");
+        celix_properties_destroy(metadata);
         return status;
     }
 

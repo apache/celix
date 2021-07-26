@@ -40,6 +40,8 @@
 #define UUID_STR_LEN  37
 #endif
 
+#define L_TRACE(...) \
+    celix_logHelper_log(receiver->logHelper, CELIX_LOG_LEVEL_TRACE, __VA_ARGS__)
 #define L_DEBUG(...) \
     celix_logHelper_log(receiver->logHelper, CELIX_LOG_LEVEL_DEBUG, __VA_ARGS__)
 #define L_INFO(...) \
@@ -486,13 +488,15 @@ static inline void processMsg(void* handle, const pubsub_protocol_message_t *mes
         if (status == CELIX_SUCCESS) {
             celix_properties_t *metadata = message->metadata.metadata;
             bool cont = pubsubInterceptorHandler_invokePreReceive(receiver->interceptorsHandler, msgFqn, message->header.msgId, deSerializedMsg, &metadata);
+            bool release = true;
             if (cont) {
-                bool release;
                 callReceivers(receiver, msgFqn, message, &deSerializedMsg, &release, metadata);
                 pubsubInterceptorHandler_invokePostReceive(receiver->interceptorsHandler, msgFqn, message->header.msgId, deSerializedMsg, metadata);
-                if (release) {
-                    pubsub_serializerHandler_freeDeserializedMsg(receiver->serializerHandler, message->header.msgId, deSerializedMsg);
-                }
+            } else {
+                L_TRACE("Skipping receive for msg type %s, based on pre receive interceptor result", msgFqn);
+            }
+            if (release) {
+                pubsub_serializerHandler_freeDeserializedMsg(receiver->serializerHandler, message->header.msgId, deSerializedMsg);
             }
         } else {
             L_WARN("[PSA_TCP_TR] Cannot deserialize msg type %s for scope/topic %s/%s", msgFqn,

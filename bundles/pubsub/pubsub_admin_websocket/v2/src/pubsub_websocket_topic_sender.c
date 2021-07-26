@@ -270,6 +270,7 @@ static int psa_websocket_topicPublicationSend(void* handle, unsigned int msgType
     bool cont = pubsubInterceptorHandler_invokePreSend(sender->interceptorsHandler, msgFqn, msgTypeId, inMsg, &metadata);
     if (!cont) {
         L_DEBUG("Cancel send based on pubsub interceptor cancel return");
+        celix_properties_destroy(metadata);
         return status;
     }
 
@@ -316,6 +317,7 @@ static int psa_websocket_topicPublicationSend(void* handle, unsigned int msgType
     }
 
     pubsubInterceptorHandler_invokePostSend(sender->interceptorsHandler, msgFqn, msgTypeId, inMsg, metadata);
+    celix_properties_destroy(metadata);
 
     return status;
 }

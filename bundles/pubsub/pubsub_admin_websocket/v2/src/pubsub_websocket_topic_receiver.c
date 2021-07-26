@@ -491,14 +491,17 @@ static void processJsonMsg(pubsub_websocket_topic_receiver_t *receiver, const pu
             celix_properties_t *metadata = NULL; //NOTE metadata not supported for websocket
             bool cont = pubsubInterceptorHandler_invokePreReceive(receiver->interceptorsHandler, header->fqn, msgId,
                                                                   deserializedMsg, &metadata);
+            bool release = true;
             if (cont) {
-                bool release;
                 callReceivers(receiver, msgId, header, payload, payloadSize, &deserializedMsg, &release, metadata);
                 pubsubInterceptorHandler_invokePostReceive(receiver->interceptorsHandler, header->fqn, msgId, deserializedMsg, metadata);
-                if (release) {
-                    pubsub_serializerHandler_freeDeserializedMsg(receiver->serializerHandler, msgId, deserializedMsg);
-                }
+            } else {
+                L_TRACE("Skipping receive for msg type %s, based on pre receive interceptor result", header->fqn);
             }
+            if (release) {
+                pubsub_serializerHandler_freeDeserializedMsg(receiver->serializerHandler, msgId, deserializedMsg);
+            }
+            celix_properties_destroy(metadata);
         } else {
             L_WARN("[PSA_WEBSOCKET_TR] Cannot deserialize msg type %s for scope/topic %s/%s", header->fqn, receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic);
         }

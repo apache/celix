@@ -760,6 +760,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             gtest/PubSubTopicAndScopeIntegrationTestSuite.cc
     )
     target_link_libraries(test_pubsub_topic_and_scope_integration PRIVATE Celix::framework Celix::pubsub_api GTest::gtest GTest::gtest_main)
+    add_test(NAME test_pubsub_topic_and_scope_integration COMMAND test_pubsub_topic_and_scope_integration)
     setup_target_for_coverage(test_pubsub_topic_and_scope_integration SCAN_DIR ..)
 
     #configure topology manager and pubsub zmq, json serializer and wire protocol v2 bundles
@@ -781,29 +782,68 @@ if (BUILD_PUBSUB_PSA_ZMQ)
     )
 endif ()
 
-if (BUILD_PUBSUB_PSA_ZMQ)
-    #Test suite to test if pusbub interceptors
-    add_executable(test_pubsub_interceptors_integration
-            gtest/PubSubInterceptorTestSuite.cc
-        )
-    target_link_libraries(test_pubsub_interceptors_integration PRIVATE Celix::framework Celix::pubsub_api GTest::gtest GTest::gtest_main Celix::pubsub_spi)
-    target_include_directories(test_pubsub_interceptors_integration PRIVATE src)
-    setup_target_for_coverage(test_pubsub_interceptors_integration SCAN_DIR ..)
+#[[
+Add a integration test with use interceptors for a configurable PSA and wire protocol
 
-    #configure topology manager and pubsub zmq, json serializer and wire protocol v2 bundles
+ARGV0 is test target name
+ARGV1 is PSA target name
+ARGV2 is wire protocol target name
+
+]]
+function(add_celix_interceptors_test_for_psa_and_wire)
+    set(TEST_TARGET_NAME ${ARGV0})
+    set(PSA ${ARGV1})
+    set(WIRE ${ARGV2})
+
+    #Test suite to test if pusbub interceptors
+    add_executable(${TEST_TARGET_NAME}
+        gtest/PubSubInterceptorTestSuite.cc
+    )
+    target_link_libraries(${TEST_TARGET_NAME} PRIVATE Celix::framework Celix::pubsub_api GTest::gtest GTest::gtest_main Celix::pubsub_spi)
+    target_include_directories(${TEST_TARGET_NAME} PRIVATE src)
+    add_test(NAME ${TEST_TARGET_NAME} COMMAND ${TEST_TARGET_NAME})
+    setup_target_for_coverage(${TEST_TARGET_NAME} SCAN_DIR ..)
+
+    #configure topology manager and pubsub admin, json serializer and wire protocol bundles
     celix_get_bundle_file(Celix::celix_pubsub_serializer_json PUBSUB_JSON_BUNDLE_FILE)
     celix_get_bundle_file(Celix::celix_pubsub_topology_manager PUBSUB_TOPMAN_BUNDLE_FILE)
-    celix_get_bundle_file(Celix::celix_pubsub_admin_zmq_v2 PUBSUB_ZMQ_BUNDLE_FILE)
-    celix_get_bundle_file(Celix::celix_pubsub_protocol_wire_v1 PUBSUB_WIRE_BUNDLE_FILE)
+    celix_get_bundle_file(${PSA} PUBSUB_PSA_BUNDLE_FILE)
+    celix_get_bundle_file(${WIRE} PUBSUB_WIRE_BUNDLE_FILE)
+
     celix_get_bundle_file(pubsub_sut PUBSUB_PUBLISHER_BUNDLE_FILE)
     celix_get_bundle_file(pubsub_tst PUBSUB_SUBSCRIBER_BUNDLE_FILE)
-    add_celix_bundle_dependencies(test_pubsub_interceptors_integration Celix::celix_pubsub_serializer_json Celix::celix_pubsub_topology_manager Celix::celix_pubsub_admin_zmq_v2 Celix::celix_pubsub_protocol_wire_v1 pubsub_sut pubsub_tst)
-    target_compile_definitions(test_pubsub_interceptors_integration PRIVATE
+    add_celix_bundle_dependencies(${TEST_TARGET_NAME} Celix::celix_pubsub_serializer_json Celix::celix_pubsub_topology_manager ${PSA} ${WIRE} pubsub_sut pubsub_tst)
+    target_compile_definitions(${TEST_TARGET_NAME} PRIVATE
             PUBSUB_JSON_BUNDLE_FILE="${PUBSUB_JSON_BUNDLE_FILE}"
             PUBSUB_TOPMAN_BUNDLE_FILE="${PUBSUB_TOPMAN_BUNDLE_FILE}"
-            PUBSUB_ZMQ_BUNDLE_FILE="${PUBSUB_ZMQ_BUNDLE_FILE}"
+            PUBSUB_PSA_BUNDLE_FILE="${PUBSUB_PSA_BUNDLE_FILE}"
             PUBSUB_WIRE_BUNDLE_FILE="${PUBSUB_WIRE_BUNDLE_FILE}"
             PUBSUB_PUBLISHER_BUNDLE_FILE="${PUBSUB_PUBLISHER_BUNDLE_FILE}"
             PUBSUB_SUBSCRIBER_BUNDLE_FILE="${PUBSUB_SUBSCRIBER_BUNDLE_FILE}"
     )
+
+    #if PSA websocket is enabled add http_admin bundle
+    if (BUILD_PUBSUB_PSA_WS)
+        target_link_libraries(${TEST_TARGET_NAME} PRIVATE Celix::http_admin_api)
+        celix_get_bundle_file(Celix::http_admin HTTP_ADMIN_BUNDLE_FILE)
+        add_celix_bundle_dependencies(${TEST_TARGET_NAME} Celix::http_admin)
+        target_compile_definitions(${TEST_TARGET_NAME} PRIVATE HTTP_ADMIN_BUNDLE_FILE="${HTTP_ADMIN_BUNDLE_FILE}")
+    endif ()
+endfunction()
+
+
+if (BUILD_PUBSUB_PSA_WS)
+    add_celix_interceptors_test_for_psa_and_wire(test_pubsub_interceptors_ws_and_wire_v1_integration Celix::celix_pubsub_admin_websocket_v2 Celix::celix_pubsub_protocol_wire_v1)
+    add_celix_interceptors_test_for_psa_and_wire(test_pubsub_interceptors_ws_and_wire_v2_integration Celix::celix_pubsub_admin_websocket_v2 Celix::celix_pubsub_protocol_wire_v2)
+endif ()
+
+if (BUILD_PUBSUB_PSA_TCP)
+    message(STATUS "TODO enable tcp and interceptors. Currently has a memleak")
+    #add_celix_interceptors_test_for_psa_and_wire(test_pubsub_interceptors_tcp_and_wire_v1_integration Celix::celix_pubsub_admin_tcp_v2 Celix::celix_pubsub_protocol_wire_v1)
+    #add_celix_interceptors_test_for_psa_and_wire(test_pubsub_interceptors_tcp_and_wire_v2_integration Celix::celix_pubsub_admin_tcp_v2 Celix::celix_pubsub_protocol_wire_v2)
+endif ()
+
+if (BUILD_PUBSUB_PSA_ZMQ)
+    add_celix_interceptors_test_for_psa_and_wire(test_pubsub_interceptors_zmq_and_wire_v1_integration Celix::celix_pubsub_admin_zmq_v2 Celix::celix_pubsub_protocol_wire_v1)
+    add_celix_interceptors_test_for_psa_and_wire(test_pubsub_interceptors_zmq_and_wire_v2_integration Celix::celix_pubsub_admin_zmq_v2 Celix::celix_pubsub_protocol_wire_v2)
 endif ()
