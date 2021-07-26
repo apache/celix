@@ -68,6 +68,17 @@ if (TARGET Celix::dependency_manager_cxx)
   set(CELIX_DM_CXX_STATIC_LIB $<TARGET_PROPERTY:Celix::dependency_manager_cxx,INTERFACE_INCLUDE_DIRECTORIES>)
 endif ()
 
+#Setting up pubsub admin alias to the v1 version.
+if (TARGET Celix::pubsub_admin_zmq_v1)
+  add_library(Celix::celix_pubsub_admin_zmq ALIAS Celix::pubsub_admin_zmq_v1)
+endif ()
+if (TARGET Celix::pubsub_admin_tcp_v1)
+  add_library(Celix::celix_pubsub_admin_tcp ALIAS Celix::pubsub_admin_tcp_v1)
+endif ()
+if (TARGET Celix::pubsub_admin_websocket_v1)
+  add_library(Celix::celix_pubsub_admin_websocket ALIAS Celix::pubsub_admin_websocket_v1)
+endif ()
+
 set(CELIX_BUNDLES_DIR ${REL_INSTALL_DIR}/share/celix/bundles)
 set(CELIX_SHELL_BUNDLE ${CELIX_BUNDLES_DIR}/shell.zip)
 set(CELIX_SHELL_TUI_BUNDLE ${CELIX_BUNDLES_DIR}/shell_tui.zip)

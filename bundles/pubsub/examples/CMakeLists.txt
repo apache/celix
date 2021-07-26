@@ -32,10 +32,10 @@ if (BUILD_PUBSUB_PSA_UDP_MC)
             Celix::log_admin
             Celix::shell
             Celix::shell_tui
-            Celix::pubsub_serializer_json
-            Celix::pubsub_discovery_etcd
-            Celix::pubsub_topology_manager
-            Celix::pubsub_admin_udp_multicast
+            Celix::celix_pubsub_serializer_json
+            Celix::celix_pubsub_discovery_etcd
+            Celix::celix_pubsub_topology_manager
+            Celix::celix_pubsub_admin_udp_multicast
             celix_pubsub_poi_publisher
             celix_pubsub_poi_publisher2
         PROPERTIES
@@ -51,10 +51,10 @@ if (BUILD_PUBSUB_PSA_UDP_MC)
             Celix::log_admin
             Celix::shell
             Celix::shell_tui
-            Celix::pubsub_serializer_json
-            Celix::pubsub_discovery_etcd
-            Celix::pubsub_topology_manager
-            Celix::pubsub_admin_udp_multicast
+            Celix::celix_pubsub_serializer_json
+            Celix::celix_pubsub_discovery_etcd
+            Celix::celix_pubsub_topology_manager
+            Celix::celix_pubsub_admin_udp_multicast
             celix_pubsub_poi_subscriber
         PROPERTIES
             PSA_UDPMC_VERBOSE=true
@@ -69,10 +69,10 @@ if (BUILD_PUBSUB_PSA_UDP_MC)
             Celix::log_admin
             Celix::shell
             Celix::shell_tui
-            Celix::pubsub_serializer_json
-            Celix::pubsub_discovery_etcd
-            Celix::pubsub_topology_manager
-            Celix::pubsub_admin_udp_multicast
+            Celix::celix_pubsub_serializer_json
+            Celix::celix_pubsub_discovery_etcd
+            Celix::celix_pubsub_topology_manager
+            Celix::celix_pubsub_admin_udp_multicast
             celix_pubsub_poi_subscriber
         PROPERTIES
             PSA_UDPMC_VERBOSE=true
@@ -105,11 +105,11 @@ if (BUILD_PUBSUB_PSA_TCP)
                 Celix::log_admin
                 Celix::shell
                 Celix::shell_tui
-                Celix::pubsub_serializer_json
-                Celix::pubsub_discovery_etcd
-                Celix::pubsub_topology_manager
-                Celix::pubsub_admin_tcp
-                Celix::pubsub_protocol_wire_v2
+                Celix::celix_pubsub_serializer_json
+                Celix::celix_pubsub_discovery_etcd
+                Celix::celix_pubsub_topology_manager
+                Celix::celix_pubsub_admin_tcp
+                Celix::celix_pubsub_protocol_wire_v2
                 celix_pubsub_poi_publisher
                 celix_pubsub_poi_publisher2
             PROPERTIES
@@ -125,11 +125,11 @@ if (BUILD_PUBSUB_PSA_TCP)
                 Celix::log_admin
                 Celix::shell
                 Celix::shell_tui
-                Celix::pubsub_serializer_json
-                Celix::pubsub_discovery_etcd
-                Celix::pubsub_topology_manager
-                Celix::pubsub_admin_tcp
-                Celix::pubsub_protocol_wire_v2
+                Celix::celix_pubsub_serializer_json
+                Celix::celix_pubsub_discovery_etcd
+                Celix::celix_pubsub_topology_manager
+                Celix::celix_pubsub_admin_tcp
+                Celix::celix_pubsub_protocol_wire_v2
                 celix_pubsub_poi_subscriber
             PROPERTIES
                 PSA_TCP_VERBOSE=true
@@ -144,11 +144,11 @@ if (BUILD_PUBSUB_PSA_TCP)
                 Celix::log_admin
                 Celix::shell
                 Celix::shell_tui
-                Celix::pubsub_serializer_json
-                Celix::pubsub_discovery_etcd
-                Celix::pubsub_topology_manager
-                Celix::pubsub_admin_tcp
-                Celix::pubsub_protocol_wire_v2
+                Celix::celix_pubsub_serializer_json
+                Celix::celix_pubsub_discovery_etcd
+                Celix::celix_pubsub_topology_manager
+                Celix::celix_pubsub_admin_tcp
+                Celix::celix_pubsub_protocol_wire_v2
                 celix_pubsub_poi_subscriber
             PROPERTIES
                 PSA_TCP_VERBOSE=true
@@ -186,13 +186,13 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             BUNDLES
                 Celix::shell
                 Celix::shell_tui
-                Celix::pubsub_serializer_json
-                Celix::pubsub_discovery_etcd
-                Celix::pubsub_topology_manager
-                Celix::pubsub_admin_zmq
-                Celix::pubsub_admin_udp_multicast
-                Celix::pubsub_admin_tcp
-                Celix::pubsub_protocol_wire_v1
+                Celix::celix_pubsub_serializer_json
+                Celix::celix_pubsub_discovery_etcd
+                Celix::celix_pubsub_topology_manager
+                Celix::celix_pubsub_admin_zmq
+                Celix::celix_pubsub_admin_udp_multicast
+                Celix::celix_pubsub_admin_tcp
+                Celix::celix_pubsub_protocol_wire_v1
                 celix_pubsub_poi_publisher
                 celix_pubsub_poi_publisher2
         )
@@ -203,13 +203,13 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             BUNDLES
                 Celix::shell
                 Celix::shell_tui
-                Celix::pubsub_serializer_json
-                Celix::pubsub_discovery_etcd
-                Celix::pubsub_topology_manager
-                Celix::pubsub_admin_zmq
-                Celix::pubsub_admin_udp_multicast
-                Celix::pubsub_admin_tcp
-                Celix::pubsub_protocol_wire_v1
+                Celix::celix_pubsub_serializer_json
+                Celix::celix_pubsub_discovery_etcd
+                Celix::celix_pubsub_topology_manager
+                Celix::celix_pubsub_admin_zmq
+                Celix::celix_pubsub_admin_udp_multicast
+                Celix::celix_pubsub_admin_tcp
+                Celix::celix_pubsub_protocol_wire_v1
                 celix_pubsub_poi_subscriber
         )
         target_link_libraries(pubsub_subscriber PRIVATE ${PUBSUB_CONTAINER_LIBS})
@@ -221,10 +221,10 @@ if (BUILD_PUBSUB_PSA_ZMQ)
         BUNDLES
             Celix::shell
             Celix::shell_tui
-            Celix::pubsub_serializer_json
-            Celix::pubsub_discovery_etcd
-            Celix::pubsub_topology_manager
-            Celix::pubsub_admin_zmq
+            Celix::celix_pubsub_serializer_json
+            Celix::celix_pubsub_discovery_etcd
+            Celix::celix_pubsub_topology_manager
+            Celix::celix_pubsub_admin_zmq
             celix_pubsub_poi_publisher
             celix_pubsub_poi_subscriber
         PROPERTIES
@@ -237,11 +237,11 @@ if (BUILD_PUBSUB_PSA_ZMQ)
         BUNDLES
             Celix::shell
             Celix::shell_tui
-            Celix::pubsub_serializer_json
-            Celix::pubsub_protocol_wire_v1
-            Celix::pubsub_discovery_etcd
-            Celix::pubsub_topology_manager
-            Celix::pubsub_admin_zmq
+            Celix::celix_pubsub_serializer_json
+            Celix::celix_pubsub_protocol_wire_v1
+            Celix::celix_pubsub_discovery_etcd
+            Celix::celix_pubsub_topology_manager
+            Celix::celix_pubsub_admin_zmq
             celix_pubsub_poi_publisher
             celix_pubsub_poi_publisher2
             celix_pubsub_interceptors_example
@@ -258,11 +258,11 @@ if (BUILD_PUBSUB_PSA_ZMQ)
         BUNDLES
             Celix::shell
             Celix::shell_tui
-            Celix::pubsub_serializer_json
-            Celix::pubsub_protocol_wire_v1
-            Celix::pubsub_discovery_etcd
-            Celix::pubsub_topology_manager
-            Celix::pubsub_admin_zmq
+            Celix::celix_pubsub_serializer_json
+            Celix::celix_pubsub_protocol_wire_v1
+            Celix::celix_pubsub_discovery_etcd
+            Celix::celix_pubsub_topology_manager
+            Celix::celix_pubsub_admin_zmq
             celix_pubsub_poi_subscriber
             celix_pubsub_interceptors_example
         PROPERTIES
@@ -277,10 +277,10 @@ if (BUILD_PUBSUB_PSA_ZMQ)
         BUNDLES
             Celix::shell
             Celix::shell_tui
-            Celix::pubsub_serializer_json
-            Celix::pubsub_discovery_etcd
-            Celix::pubsub_topology_manager
-            Celix::pubsub_admin_zmq
+            Celix::celix_pubsub_serializer_json
+            Celix::celix_pubsub_discovery_etcd
+            Celix::celix_pubsub_topology_manager
+            Celix::celix_pubsub_admin_zmq
             celix_pubsub_poi_subscriber
         PROPERTIES
             PSA_ZMQ_VERBOSE=true
@@ -326,10 +326,10 @@ if (BUILD_PUBSUB_PSA_NANOMSG)
         BUNDLES
             Celix::shell
             Celix::shell_tui
-            Celix::pubsub_serializer_json
-            Celix::pubsub_discovery_etcd
-            Celix::pubsub_topology_manager
-            Celix::pubsub_admin_nanomsg
+            Celix::celix_pubsub_serializer_json
+            Celix::celix_pubsub_discovery_etcd
+            Celix::celix_pubsub_topology_manager
+            Celix::celix_pubsub_admin_nanomsg
             celix_pubsub_poi_publisher
         PROPERTIES
             PSA_NANOMSG_VERBOSE=true
@@ -343,10 +343,10 @@ if (BUILD_PUBSUB_PSA_NANOMSG)
         BUNDLES
             Celix::shell
             Celix::shell_tui
-            Celix::pubsub_serializer_json
-            Celix::pubsub_discovery_etcd
-            Celix::pubsub_topology_manager
-            Celix::pubsub_admin_nanomsg
+            Celix::celix_pubsub_serializer_json
+            Celix::celix_pubsub_discovery_etcd
+            Celix::celix_pubsub_topology_manager
+            Celix::celix_pubsub_admin_nanomsg
             celix_pubsub_poi_publisher
         PROPERTIES
             PSA_NANOMSG_VERBOSE=true
@@ -360,10 +360,10 @@ if (BUILD_PUBSUB_PSA_NANOMSG)
         BUNDLES
             Celix::shell
             Celix::shell_tui
-            Celix::pubsub_serializer_json
-            Celix::pubsub_discovery_etcd
-            Celix::pubsub_topology_manager
-            Celix::pubsub_admin_nanomsg
+            Celix::celix_pubsub_serializer_json
+            Celix::celix_pubsub_discovery_etcd
+            Celix::celix_pubsub_topology_manager
+            Celix::celix_pubsub_admin_nanomsg
             celix_pubsub_poi_subscriber
         PROPERTIES
             PSA_NANOMSG_VERBOSE=true
@@ -377,10 +377,10 @@ if (BUILD_PUBSUB_PSA_NANOMSG)
         BUNDLES
             Celix::shell
             Celix::shell_tui
-            Celix::pubsub_serializer_json
-            Celix::pubsub_discovery_etcd
-            Celix::pubsub_topology_manager
-            Celix::pubsub_admin_nanomsg
+            Celix::celix_pubsub_serializer_json
+            Celix::celix_pubsub_discovery_etcd
+            Celix::celix_pubsub_topology_manager
+            Celix::celix_pubsub_admin_nanomsg
             celix_pubsub_poi_subscriber
         PROPERTIES
             PSA_NANOMSG_VERBOSE=true
@@ -415,9 +415,9 @@ if (BUILD_PUBSUB_PSA_WS)
             Celix::shell
             Celix::shell_tui
             Celix::http_admin
-            Celix::pubsub_serializer_json
-            Celix::pubsub_topology_manager
-            Celix::pubsub_admin_websocket
+            Celix::celix_pubsub_serializer_json
+            Celix::celix_pubsub_topology_manager
+            Celix::celix_pubsub_admin_websocket
             celix_pubsub_websocket_example
         PROPERTIES
             PSA_TCP_VERBOSE=true

@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-message(WARNING "PubSub ZMQ Admin V1 is deprecated, use PubSub ZMQ Admin v2 instead")
+message(STATUS "PubSub ZMQ Admin V1 is deprecated, and will eventually be replaced with PubSub ZMQ Admin v2")
 
 find_package(ZMQ REQUIRED)
 find_package(CZMQ REQUIRED)

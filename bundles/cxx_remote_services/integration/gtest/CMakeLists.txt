@@ -23,10 +23,10 @@ target_compile_options(test_cxx_remote_services_integration PRIVATE -std=c++17)
 target_include_directories(test_cxx_remote_services_integration PRIVATE ../include) #Add ICalculator
 
 add_celix_bundle_dependencies(test_cxx_remote_services_integration
-    Celix::pubsub_serializer_json
-    Celix::pubsub_topology_manager
-    Celix::pubsub_admin_zmq_v2
-    Celix::pubsub_protocol_wire_v2
+    Celix::celix_pubsub_serializer_json
+    Celix::celix_pubsub_topology_manager
+    Celix::celix_pubsub_admin_zmq_v2
+    Celix::celix_pubsub_protocol_wire_v2
     Celix::RsaConfiguredDiscovery
     Celix::RemoteServiceAdmin
     TestExportImportRemoteServiceFactory
@@ -34,16 +34,16 @@ add_celix_bundle_dependencies(test_cxx_remote_services_integration
     CalculatorConsumer
 )
 
-celix_get_bundle_file(Celix::pubsub_serializer_json PS_SER_BUNDLE_LOC)
+celix_get_bundle_file(Celix::celix_pubsub_serializer_json PS_SER_BUNDLE_LOC)
 target_compile_definitions(test_cxx_remote_services_integration PRIVATE PS_SER_BUNDLE_LOC="${PS_SER_BUNDLE_LOC}")
 
-celix_get_bundle_file(Celix::pubsub_topology_manager PS_PSTM_BUNDLE_LOC)
+celix_get_bundle_file(Celix::celix_pubsub_topology_manager PS_PSTM_BUNDLE_LOC)
 target_compile_definitions(test_cxx_remote_services_integration PRIVATE PS_PSTM_BUNDLE_LOC="${PS_PSTM_BUNDLE_LOC}")
 
-celix_get_bundle_file(Celix::pubsub_admin_zmq_v2 PS_PSA_BUNDLE_LOC)
+celix_get_bundle_file(Celix::celix_pubsub_admin_zmq_v2 PS_PSA_BUNDLE_LOC)
 target_compile_definitions(test_cxx_remote_services_integration PRIVATE PS_PSA_BUNDLE_LOC="${PS_PSA_BUNDLE_LOC}")
 
-celix_get_bundle_file(Celix::pubsub_protocol_wire_v2 PS_WIRE_BUNDLE_LOC)
+celix_get_bundle_file(Celix::celix_pubsub_protocol_wire_v2 PS_WIRE_BUNDLE_LOC)
 target_compile_definitions(test_cxx_remote_services_integration PRIVATE PS_WIRE_BUNDLE_LOC="${PS_WIRE_BUNDLE_LOC}")
 
 celix_get_bundle_file(Celix::RsaConfiguredDiscovery RS_DISCOVERY_BUNDLE_LOC)

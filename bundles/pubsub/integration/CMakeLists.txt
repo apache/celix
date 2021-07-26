@@ -145,9 +145,9 @@ if (BUILD_PUBSUB_PSA_UDP_MC)
                 LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
                 CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
             BUNDLES
-                Celix::pubsub_serializer_json
-                Celix::pubsub_topology_manager
-                Celix::pubsub_admin_udp_multicast
+                Celix::celix_pubsub_serializer_json
+                Celix::celix_pubsub_topology_manager
+                Celix::celix_pubsub_admin_udp_multicast
                 pubsub_sut
                 pubsub_tst
     )
@@ -162,10 +162,10 @@ if (BUILD_PUBSUB_PSA_UDP_MC)
             LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
             CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
             BUNDLES
-            Celix::pubsub_serializer_json
-            Celix::pubsub_protocol_wire_v2
-            Celix::pubsub_topology_manager
-            Celix::pubsub_admin_udp_multicast
+            Celix::celix_pubsub_serializer_json
+            Celix::celix_pubsub_protocol_wire_v2
+            Celix::celix_pubsub_topology_manager
+            Celix::celix_pubsub_admin_udp_multicast
             Celix::shell
             Celix::shell_tui
             )
@@ -199,10 +199,10 @@ if (BUILD_PUBSUB_PSA_TCP)
             BUNDLES
             Celix::shell
             Celix::shell_tui
-            Celix::pubsub_serializer_json
-            Celix::pubsub_protocol_wire_v1
-            Celix::pubsub_topology_manager
-            Celix::pubsub_admin_tcp
+            Celix::celix_pubsub_serializer_json
+            Celix::celix_pubsub_protocol_wire_v1
+            Celix::celix_pubsub_topology_manager
+            Celix::celix_pubsub_admin_tcp
             pubsub_sut
             pubsub_tst
             )
@@ -221,10 +221,10 @@ if (BUILD_PUBSUB_PSA_TCP)
             BUNDLES
             Celix::shell
             Celix::shell_tui
-            Celix::pubsub_serializer_json
-            Celix::pubsub_protocol_wire_v2
-            Celix::pubsub_topology_manager
-            Celix::pubsub_admin_tcp
+            Celix::celix_pubsub_serializer_json
+            Celix::celix_pubsub_protocol_wire_v2
+            Celix::celix_pubsub_topology_manager
+            Celix::celix_pubsub_admin_tcp
             pubsub_sut
             pubsub_tst
             )
@@ -244,10 +244,10 @@ if (BUILD_PUBSUB_PSA_TCP)
         BUNDLES
             Celix::shell
             Celix::shell_tui
-            Celix::pubsub_serializer_json
-            Celix::pubsub_protocol_wire_v2
-            Celix::pubsub_topology_manager
-            Celix::pubsub_admin_tcp
+            Celix::celix_pubsub_serializer_json
+            Celix::celix_pubsub_protocol_wire_v2
+            Celix::celix_pubsub_topology_manager
+            Celix::celix_pubsub_admin_tcp
             pubsub_sut
             pubsub_tst
     )
@@ -266,10 +266,10 @@ if (BUILD_PUBSUB_PSA_TCP)
             BUNDLES
             Celix::shell
             Celix::shell_tui
-            Celix::pubsub_serializer_json
-            Celix::pubsub_protocol_wire_v2
-            Celix::pubsub_topology_manager
-            Celix::pubsub_admin_tcp
+            Celix::celix_pubsub_serializer_json
+            Celix::celix_pubsub_protocol_wire_v2
+            Celix::celix_pubsub_topology_manager
+            Celix::celix_pubsub_admin_tcp
             pubsub_endpoint_tst
             pubsub_endpoint_sut
             pubsub_loopback
@@ -285,10 +285,10 @@ if (BUILD_PUBSUB_PSA_TCP)
             LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
             CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
             BUNDLES
-            Celix::pubsub_serializer_json
-            Celix::pubsub_protocol_wire_v2
-            Celix::pubsub_topology_manager
-            Celix::pubsub_admin_tcp
+            Celix::celix_pubsub_serializer_json
+            Celix::celix_pubsub_protocol_wire_v2
+            Celix::celix_pubsub_topology_manager
+            Celix::celix_pubsub_admin_tcp
             Celix::shell
             Celix::shell_tui
             )
@@ -324,10 +324,10 @@ if (BUILD_PUBSUB_PSA_TCP)
             BUNDLES
             Celix::shell
             Celix::shell_tui
-            Celix::pubsub_serializer_json
-            Celix::pubsub_protocol_wire_v1
-            Celix::pubsub_topology_manager
-            Celix::pubsub_admin_tcp_v2
+            Celix::celix_pubsub_serializer_json
+            Celix::celix_pubsub_protocol_wire_v1
+            Celix::celix_pubsub_topology_manager
+            Celix::celix_pubsub_admin_tcp_v2
             pubsub_sut
             pubsub_tst
             pubsub_serializer
@@ -347,10 +347,10 @@ if (BUILD_PUBSUB_PSA_TCP)
             BUNDLES
             Celix::shell
             Celix::shell_tui
-            Celix::pubsub_serializer_json
-            Celix::pubsub_protocol_wire_v2
-            Celix::pubsub_topology_manager
-            Celix::pubsub_admin_tcp_v2
+            Celix::celix_pubsub_serializer_json
+            Celix::celix_pubsub_protocol_wire_v2
+            Celix::celix_pubsub_topology_manager
+            Celix::celix_pubsub_admin_tcp_v2
             pubsub_sut
             pubsub_tst
             pubsub_serializer
@@ -371,10 +371,10 @@ if (BUILD_PUBSUB_PSA_TCP)
             BUNDLES
             Celix::shell
             Celix::shell_tui
-            Celix::pubsub_serializer_json
-            Celix::pubsub_protocol_wire_v2
-            Celix::pubsub_topology_manager
-            Celix::pubsub_admin_tcp_v2
+            Celix::celix_pubsub_serializer_json
+            Celix::celix_pubsub_protocol_wire_v2
+            Celix::celix_pubsub_topology_manager
+            Celix::celix_pubsub_admin_tcp_v2
             pubsub_sut
             pubsub_tst
             pubsub_serializer
@@ -394,10 +394,10 @@ if (BUILD_PUBSUB_PSA_TCP)
             BUNDLES
             Celix::shell
             Celix::shell_tui
-            Celix::pubsub_serializer_json
-            Celix::pubsub_protocol_wire_v2
-            Celix::pubsub_topology_manager
-            Celix::pubsub_admin_tcp_v2
+            Celix::celix_pubsub_serializer_json
+            Celix::celix_pubsub_protocol_wire_v2
+            Celix::celix_pubsub_topology_manager
+            Celix::celix_pubsub_admin_tcp_v2
             pubsub_endpoint_tst
             pubsub_endpoint_sut
             pubsub_loopback
@@ -414,10 +414,10 @@ if (BUILD_PUBSUB_PSA_TCP)
             LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
             CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
             BUNDLES
-            Celix::pubsub_serializer_json
-            Celix::pubsub_protocol_wire_v2
-            Celix::pubsub_topology_manager
-            Celix::pubsub_admin_tcp_v2
+            Celix::celix_pubsub_serializer_json
+            Celix::celix_pubsub_protocol_wire_v2
+            Celix::celix_pubsub_topology_manager
+            Celix::celix_pubsub_admin_tcp_v2
             Celix::shell
             Celix::shell_tui
             pubsub_serializer
@@ -454,10 +454,10 @@ if (BUILD_PUBSUB_PSA_WS)
             USE_WEBSOCKETS=true
             LISTENING_PORTS=8080
             BUNDLES
-            Celix::pubsub_serializer_json
+            Celix::celix_pubsub_serializer_json
             Celix::http_admin
-            Celix::pubsub_topology_manager
-            Celix::pubsub_admin_websocket
+            Celix::celix_pubsub_topology_manager
+            Celix::celix_pubsub_admin_websocket
             pubsub_sut
             pubsub_tst
             )
@@ -474,10 +474,10 @@ if (BUILD_PUBSUB_PSA_WS)
             LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
             CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
             BUNDLES
-            Celix::pubsub_serializer_json
-            Celix::pubsub_protocol_wire_v2
-            Celix::pubsub_topology_manager
-            Celix::pubsub_admin_websocket
+            Celix::celix_pubsub_serializer_json
+            Celix::celix_pubsub_protocol_wire_v2
+            Celix::celix_pubsub_topology_manager
+            Celix::celix_pubsub_admin_websocket
             Celix::shell
             Celix::shell_tui
             )
@@ -505,10 +505,10 @@ if (BUILD_PUBSUB_PSA_WS)
             USE_WEBSOCKETS=true
             LISTENING_PORTS=8080
             BUNDLES
-            Celix::pubsub_serializer_json
+            Celix::celix_pubsub_serializer_json
             Celix::http_admin
-            Celix::pubsub_topology_manager
-            Celix::pubsub_admin_websocket_v2
+            Celix::celix_pubsub_topology_manager
+            Celix::celix_pubsub_admin_websocket_v2
             pubsub_sut
             pubsub_tst
             pubsub_serializer
@@ -526,9 +526,9 @@ if (BUILD_PUBSUB_PSA_WS)
             LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
             CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
             BUNDLES
-            Celix::pubsub_serializer_json
-            Celix::pubsub_topology_manager
-            Celix::pubsub_admin_websocket_v2
+            Celix::celix_pubsub_serializer_json
+            Celix::celix_pubsub_topology_manager
+            Celix::celix_pubsub_admin_websocket_v2
             Celix::shell
             Celix::shell_tui
             pubsub_serializer
@@ -560,10 +560,10 @@ if (BUILD_PUBSUB_PSA_ZMQ)
                 LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
                 CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
             BUNDLES
-                Celix::pubsub_serializer_json
-                Celix::pubsub_protocol_wire_v1
-                Celix::pubsub_topology_manager
-                Celix::pubsub_admin_zmq
+                Celix::celix_pubsub_serializer_json
+                Celix::celix_pubsub_protocol_wire_v1
+                Celix::celix_pubsub_topology_manager
+                Celix::celix_pubsub_admin_zmq
                 pubsub_sut
                 pubsub_tst
                 pubsub_serializer
@@ -577,10 +577,10 @@ if (BUILD_PUBSUB_PSA_ZMQ)
                 LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
                 CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
             BUNDLES
-                Celix::pubsub_serializer_json
-                Celix::pubsub_topology_manager
-                Celix::pubsub_admin_zmq_v2
-                Celix::pubsub_protocol_wire_v2
+                Celix::celix_pubsub_serializer_json
+                Celix::celix_pubsub_topology_manager
+                Celix::celix_pubsub_admin_zmq_v2
+                Celix::celix_pubsub_protocol_wire_v2
                 pubsub_sut
                 pubsub_tst
                 pubsub_serializer
@@ -604,10 +604,10 @@ if (BUILD_PUBSUB_PSA_ZMQ)
         LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
         CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
         BUNDLES
-        Celix::pubsub_serializer_json
-        Celix::pubsub_protocol_wire_v2
-        Celix::pubsub_topology_manager
-        Celix::pubsub_admin_zmq
+        Celix::celix_pubsub_serializer_json
+        Celix::celix_pubsub_protocol_wire_v2
+        Celix::celix_pubsub_topology_manager
+        Celix::celix_pubsub_admin_zmq
         pubsub_sut
         pubsub_tst
         pubsub_serializer
@@ -628,10 +628,10 @@ if (BUILD_PUBSUB_PSA_ZMQ)
                 PSA_ZMQ_ZEROCOPY_ENABLED=true
                 CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
             BUNDLES
-                Celix::pubsub_serializer_json
-                Celix::pubsub_protocol_wire_v1
-                Celix::pubsub_topology_manager
-                Celix::pubsub_admin_zmq
+                Celix::celix_pubsub_serializer_json
+                Celix::celix_pubsub_protocol_wire_v1
+                Celix::celix_pubsub_topology_manager
+                Celix::celix_pubsub_admin_zmq
                 Celix::shell
                 Celix::shell_tui
                 pubsub_sut
@@ -648,10 +648,10 @@ if (BUILD_PUBSUB_PSA_ZMQ)
                 PSA_ZMQ_ZEROCOPY_ENABLED=true
                 CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
             BUNDLES
-                Celix::pubsub_serializer_json
-                Celix::pubsub_topology_manager
-                Celix::pubsub_admin_zmq_v2
-                Celix::pubsub_protocol_wire_v2
+                Celix::celix_pubsub_serializer_json
+                Celix::celix_pubsub_topology_manager
+                Celix::celix_pubsub_admin_zmq_v2
+                Celix::celix_pubsub_protocol_wire_v2
                 Celix::shell
                 Celix::shell_tui
                 pubsub_sut
@@ -679,10 +679,10 @@ if (BUILD_PUBSUB_PSA_ZMQ)
         PSA_ZMQ_ZEROCOPY_ENABLED=true
         CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
         BUNDLES
-        Celix::pubsub_serializer_json
-        Celix::pubsub_protocol_wire_v2
-        Celix::pubsub_topology_manager
-        Celix::pubsub_admin_zmq
+        Celix::celix_pubsub_serializer_json
+        Celix::celix_pubsub_protocol_wire_v2
+        Celix::celix_pubsub_topology_manager
+        Celix::celix_pubsub_admin_zmq
         Celix::shell
         Celix::shell_tui
         pubsub_sut
@@ -703,10 +703,10 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
             CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
             BUNDLES
-            Celix::pubsub_serializer_json
-            Celix::pubsub_protocol_wire_v2
-            Celix::pubsub_topology_manager
-            Celix::pubsub_admin_zmq
+            Celix::celix_pubsub_serializer_json
+            Celix::celix_pubsub_protocol_wire_v2
+            Celix::celix_pubsub_topology_manager
+            Celix::celix_pubsub_admin_zmq
             Celix::shell
             Celix::shell_tui
             )
@@ -720,10 +720,10 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
             CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
             BUNDLES
-            Celix::pubsub_serializer_json
-            Celix::pubsub_topology_manager
-            Celix::pubsub_admin_zmq_v2
-            Celix::pubsub_protocol_wire_v2
+            Celix::celix_pubsub_serializer_json
+            Celix::celix_pubsub_topology_manager
+            Celix::celix_pubsub_admin_zmq_v2
+            Celix::celix_pubsub_protocol_wire_v2
             )
     target_compile_definitions(pstm_deadlock_zmq_test PRIVATE -DDEADLOCK_SUT_BUNDLE_FILE=\"${DEADLOCK_SUT_BUNDLE_FILE}\")
     target_link_libraries(pstm_deadlock_zmq_test PRIVATE Celix::pubsub_api GTest::gtest GTest::gtest_main Celix::dfi ZMQ::lib CZMQ::lib)
@@ -763,10 +763,10 @@ if (BUILD_PUBSUB_PSA_ZMQ)
     setup_target_for_coverage(test_pubsub_topic_and_scope_integration SCAN_DIR ..)
 
     #configure topology manager and pubsub zmq, json serializer and wire protocol v2 bundles
-    celix_get_bundle_file(Celix::pubsub_serializer_json PUBSUB_JSON_BUNDLE_FILE)
-    celix_get_bundle_file(Celix::pubsub_topology_manager PUBSUB_TOPMAN_BUNDLE_FILE)
-    celix_get_bundle_file(Celix::pubsub_admin_zmq_v2 PUBSUB_ZMQ_BUNDLE_FILE)
-    celix_get_bundle_file(Celix::pubsub_protocol_wire_v2 PUBSUB_WIRE_BUNDLE_FILE)
+    celix_get_bundle_file(Celix::celix_pubsub_serializer_json PUBSUB_JSON_BUNDLE_FILE)
+    celix_get_bundle_file(Celix::celix_pubsub_topology_manager PUBSUB_TOPMAN_BUNDLE_FILE)
+    celix_get_bundle_file(Celix::celix_pubsub_admin_zmq_v2 PUBSUB_ZMQ_BUNDLE_FILE)
+    celix_get_bundle_file(Celix::celix_pubsub_protocol_wire_v2 PUBSUB_WIRE_BUNDLE_FILE)
     add_dependencies(test_pubsub_topic_and_scope_integration
             celix_pubsub_serializer_json_bundle
             celix_pubsub_topology_manager_bundle
@@ -791,13 +791,13 @@ if (BUILD_PUBSUB_PSA_ZMQ)
     setup_target_for_coverage(test_pubsub_interceptors_integration SCAN_DIR ..)
 
     #configure topology manager and pubsub zmq, json serializer and wire protocol v2 bundles
-    celix_get_bundle_file(Celix::pubsub_serializer_json PUBSUB_JSON_BUNDLE_FILE)
-    celix_get_bundle_file(Celix::pubsub_topology_manager PUBSUB_TOPMAN_BUNDLE_FILE)
-    celix_get_bundle_file(Celix::pubsub_admin_zmq_v2 PUBSUB_ZMQ_BUNDLE_FILE)
-    celix_get_bundle_file(Celix::pubsub_protocol_wire_v1 PUBSUB_WIRE_BUNDLE_FILE)
+    celix_get_bundle_file(Celix::celix_pubsub_serializer_json PUBSUB_JSON_BUNDLE_FILE)
+    celix_get_bundle_file(Celix::celix_pubsub_topology_manager PUBSUB_TOPMAN_BUNDLE_FILE)
+    celix_get_bundle_file(Celix::celix_pubsub_admin_zmq_v2 PUBSUB_ZMQ_BUNDLE_FILE)
+    celix_get_bundle_file(Celix::celix_pubsub_protocol_wire_v1 PUBSUB_WIRE_BUNDLE_FILE)
     celix_get_bundle_file(pubsub_sut PUBSUB_PUBLISHER_BUNDLE_FILE)
     celix_get_bundle_file(pubsub_tst PUBSUB_SUBSCRIBER_BUNDLE_FILE)
-    add_celix_bundle_dependencies(test_pubsub_interceptors_integration Celix::pubsub_serializer_json Celix::pubsub_topology_manager Celix::pubsub_admin_zmq_v2 Celix::pubsub_protocol_wire_v1 pubsub_sut pubsub_tst)
+    add_celix_bundle_dependencies(test_pubsub_interceptors_integration Celix::celix_pubsub_serializer_json Celix::celix_pubsub_topology_manager Celix::celix_pubsub_admin_zmq_v2 Celix::celix_pubsub_protocol_wire_v1 pubsub_sut pubsub_tst)
     target_compile_definitions(test_pubsub_interceptors_integration PRIVATE
             PUBSUB_JSON_BUNDLE_FILE="${PUBSUB_JSON_BUNDLE_FILE}"
             PUBSUB_TOPMAN_BUNDLE_FILE="${PUBSUB_TOPMAN_BUNDLE_FILE}"

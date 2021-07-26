@@ -28,6 +28,7 @@ add_celix_bundle(RsaConfiguredDiscovery
     VERSION 0.9.0
     SYMBOLIC_NAME "apache::celix::RsaConfiguredDiscovery"
     NAME "Apache Celix Async Configured Discovery"
+    FILENAME celix_RsaConfiguredDiscovery
     GROUP "Celix/RSA"
     SOURCES
         src/ConfiguredDiscoveryManager.cc

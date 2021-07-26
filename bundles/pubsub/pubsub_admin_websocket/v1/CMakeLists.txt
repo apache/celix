@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-message(WARNING "PubSub Websocket Admin V1 is deprecated, use PubSub ZMQ Websocket v2 instead")
+message(STATUS "PubSub Websocket Admin V1 is deprecated, and will eventually be replaced with PubSub Websocket Admin v2")
 
 find_package(Jansson REQUIRED)
 find_package(UUID REQUIRED)
@@ -44,4 +44,4 @@ target_include_directories(celix_pubsub_admin_websocket_v1 PRIVATE
 
 install_celix_bundle(celix_pubsub_admin_websocket_v1 EXPORT celix COMPONENT pubsub)
 target_link_libraries(celix_pubsub_admin_websocket_v1 PRIVATE Celix::shell_api)
-add_library(Celix::pubsub_admin_websocket_v1 ALIAS celix_pubsub_admin_websocket_v1)
+add_library(Celix::celix_pubsub_admin_websocket_v1 ALIAS celix_pubsub_admin_websocket_v1)

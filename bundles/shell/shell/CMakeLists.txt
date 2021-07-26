@@ -51,6 +51,7 @@ if (SHELL)
         SYMBOLIC_NAME "apache_celix_c_shell"
         VERSION "2.1.0"
         NAME "Apache Celix C Shell"
+		FILENAME celix_shell
 		GROUP "Celix/Shell"
         SOURCES
 			src/c_shell_activator.c
@@ -73,6 +74,7 @@ if (SHELL)
 			SYMBOLIC_NAME "apache::celix::CxxShell"
 			VERSION "2.1.0"
 			NAME "Apache Celix CXX Shell"
+			FILENAME celix_ShellCxx
 			GROUP "Celix/Shell"
 			SOURCES
 				src/Shell.cc

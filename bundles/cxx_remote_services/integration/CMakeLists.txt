@@ -58,11 +58,11 @@ add_celix_container(RemoteCalculatorProvider
             Celix::shell_tui
 
             #Pubsub needed for remote services on pubsub
-            Celix::pubsub_serializer_json
-            Celix::pubsub_topology_manager
-            Celix::pubsub_admin_zmq_v2
-            Celix::pubsub_protocol_wire_v2
-            Celix::pubsub_discovery_etcd
+            Celix::celix_pubsub_serializer_json
+            Celix::celix_pubsub_topology_manager
+            Celix::celix_pubsub_admin_zmq_v2
+            Celix::celix_pubsub_protocol_wire_v2
+            Celix::celix_pubsub_discovery_etcd
 
             #Remote Services
             Celix::RemoteServiceAdmin
@@ -81,11 +81,11 @@ add_celix_container(RemoteCalculatorConsumer
             Celix::shell_tui
 
             #Pubsub needed for remote services on pubsub
-            Celix::pubsub_serializer_json
-            Celix::pubsub_topology_manager
-            Celix::pubsub_discovery_etcd
-            Celix::pubsub_admin_zmq_v2
-            Celix::pubsub_protocol_wire_v2
+            Celix::celix_pubsub_serializer_json
+            Celix::celix_pubsub_topology_manager
+            Celix::celix_pubsub_discovery_etcd
+            Celix::celix_pubsub_admin_zmq_v2
+            Celix::celix_pubsub_protocol_wire_v2
 
             #Remote Services
             Celix::RsaConfiguredDiscovery
