@@ -20,7 +20,6 @@ add_executable(test_celix_promises
         src/PromisesTestSuite.cc
         src/VoidPromisesTestSuite.cc
 )
-target_compile_options(test_celix_promises PRIVATE -std=c++17)
 target_link_libraries(test_celix_promises PRIVATE GTest::gtest GTest::gtest_main Celix::Promises)
 
 add_test(NAME test_celix_promises COMMAND test_celix_promises)

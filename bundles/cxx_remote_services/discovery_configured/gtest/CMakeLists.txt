@@ -20,8 +20,6 @@ add_executable(test_cxx_rsa_configured_discovery
 )
 
 target_link_libraries(test_cxx_rsa_configured_discovery PRIVATE Celix::framework GTest::gtest GTest::gtest_main Celix::rsa_spi RsaConfiguredDiscovery_api)
-target_compile_options(test_cxx_rsa_configured_discovery PRIVATE -std=c++17)
-
 
 add_dependencies(test_cxx_rsa_configured_discovery RsaConfiguredDiscovery_bundle)
 celix_get_bundle_file(RsaConfiguredDiscovery RSA_CONFIGURED_DISCOVERY_BUNDLE_LOCATION)

@@ -28,7 +28,6 @@ if (NOT COMMAND celix_subproject)
 
     include(GNUInstallDirs)
 
-    set(CMAKE_CXX_FLAGS "-std=c++17 ${CMAKE_CXX_FLAGS}")
     set(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG ${CMAKE_CXX_FLAGS_DEBUG}")
 
     set(PROMISES_STANDALONE ON)
@@ -49,7 +48,6 @@ if (PROMISES OR PROMISES_STANDALONE)
     add_library(Celix::Promises ALIAS Promises)
 
     add_executable(PromiseExamples src/PromiseExamples.cc)
-    target_compile_options(PromiseExamples PRIVATE -std=c++17)
     target_link_libraries(PromiseExamples PRIVATE Celix::Promises)
 
     if (ENABLE_TESTING AND NOT PROMISE_STANDALONE)

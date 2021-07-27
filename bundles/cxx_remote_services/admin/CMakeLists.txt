@@ -30,7 +30,6 @@ target_link_libraries(RemoteServiceAdmin PRIVATE
         Celix::framework
         Celix::log_helper
 )
-target_compile_options(RemoteServiceAdmin PRIVATE -std=c++17)
 
 install_celix_bundle(RemoteServiceAdmin EXPORT celix COMPONENT rsa)
 #Setup target aliases to match external usage

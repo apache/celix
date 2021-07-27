@@ -41,7 +41,6 @@ target_link_libraries(RsaConfiguredDiscovery PRIVATE
         Celix::log_helper
 )
 target_include_directories(RsaConfiguredDiscovery PRIVATE src)
-target_compile_options(RsaConfiguredDiscovery PRIVATE -std=c++17)
 install_celix_bundle(RsaConfiguredDiscovery EXPORT celix COMPONENT rsa)
 add_library(Celix::RsaConfiguredDiscovery ALIAS RsaConfiguredDiscovery)
 

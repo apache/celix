@@ -29,8 +29,7 @@ target_link_libraries(async_topology_manager PRIVATE
         Celix::async_rsa_discovery_configured
         Celix::framework
         Celix::log_helper
-        )
-target_compile_options(async_topology_manager INTERFACE -std=c++17)
+)
 
 #if (ENABLE_TESTING)
 #    add_subdirectory(gtest)

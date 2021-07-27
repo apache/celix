@@ -19,7 +19,6 @@ add_celix_bundle(TestExportImportRemoteServiceFactory
         SOURCES src/TestExportImportRemoteServiceFactory.cc
 )
 target_link_libraries(TestExportImportRemoteServiceFactory PRIVATE Celix::rsa_spi Celix::pubsub_api Celix::Promises Celix::log_helper)
-target_compile_options(TestExportImportRemoteServiceFactory PRIVATE -std=c++17) #TODO how can this be improved (bring back -std=c++17 on INTERFACE for promises?
 target_include_directories(TestExportImportRemoteServiceFactory PRIVATE include)
 celix_bundle_files(TestExportImportRemoteServiceFactory
         resources/Calculator$add$Invoke.descriptor
@@ -32,8 +31,6 @@ add_celix_bundle(CalculatorProvider
 )
 target_link_libraries(CalculatorProvider PRIVATE Celix::Promises)
 target_include_directories(CalculatorProvider PRIVATE include)
-target_compile_options(CalculatorProvider PRIVATE -std=c++17) #TODO how can this be improved (bring back -std=c++17 on INTERFACE for promises?
-
 
 add_celix_bundle(CalculatorConsumer
         SOURCES src/CalculatorConsumer.cc
@@ -41,7 +38,6 @@ add_celix_bundle(CalculatorConsumer
 celix_bundle_files(CalculatorConsumer ${CMAKE_CURRENT_SOURCE_DIR}/resources/endpoint_discovery.json DESTINATION "META-INF/discovery") # add configured discovery as resource in the bundle.
 target_link_libraries(CalculatorConsumer PRIVATE Celix::Promises Celix::shell_api Celix::RsaConfiguredDiscovery_api)
 target_include_directories(CalculatorConsumer PRIVATE include)
-target_compile_options(CalculatorConsumer PRIVATE -std=c++17) #TODO how can this be improved (bring back -std=c++17 on INTERFACE for promises?
 
 if (ENABLE_TESTING)
     add_subdirectory(gtest)
