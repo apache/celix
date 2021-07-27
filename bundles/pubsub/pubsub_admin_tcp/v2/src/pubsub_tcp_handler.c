@@ -855,8 +855,12 @@ void pubsub_tcpHandler_decodePayload(pubsub_tcpHandler_t *handle, psa_tcp_connec
     clock_gettime(CLOCK_REALTIME, &receiveTime);
     bool releaseEntryBuffer = false;
     handle->processMessageCallback(handle->processMessagePayload, &entry->header, &releaseEntryBuffer, &receiveTime);
-    if (releaseEntryBuffer) pubsub_tcpHandler_releaseEntryBuffer(handle, entry->fd, 0);
+    if (releaseEntryBuffer) {
+      pubsub_tcpHandler_releaseEntryBuffer(handle, entry->fd, 0);
+    }
   }
+  celix_properties_destroy(entry->header.metadata.metadata);
+  entry->header.metadata.metadata = NULL;
 }
 
 static inline
@@ -1194,6 +1198,9 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
                 // Note: serialized Payload is deleted by serializer
                 if (payloadData && (payloadData != message->payload.payload)) {
                     free(payloadData);
+                }
+                if (metadataData && metadataSize > 0) {
+                    free(metadataData);
                 }
             }
             celixThreadMutex_unlock(&entry->writeMutex);

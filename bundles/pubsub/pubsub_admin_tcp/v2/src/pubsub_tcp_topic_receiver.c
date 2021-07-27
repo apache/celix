@@ -487,6 +487,7 @@ static inline void processMsg(void* handle, const pubsub_protocol_message_t *mes
 
         if (status == CELIX_SUCCESS) {
             celix_properties_t *metadata = message->metadata.metadata;
+            bool metadataWasNull = metadata == NULL;
             bool cont = pubsubInterceptorHandler_invokePreReceive(receiver->interceptorsHandler, msgFqn, message->header.msgId, deSerializedMsg, &metadata);
             bool release = true;
             if (cont) {
@@ -497,6 +498,10 @@ static inline void processMsg(void* handle, const pubsub_protocol_message_t *mes
             }
             if (release) {
                 pubsub_serializerHandler_freeDeserializedMsg(receiver->serializerHandler, message->header.msgId, deSerializedMsg);
+            }
+            if (metadataWasNull) {
+                //note that if the metadata was created by the pubsubInterceptorHandler_invokePreReceive, this needs to be deallocated
+                celix_properties_destroy(metadata);
             }
         } else {
             L_WARN("[PSA_TCP_TR] Cannot deserialize msg type %s for scope/topic %s/%s", msgFqn,
