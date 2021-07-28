@@ -62,7 +62,7 @@ struct pubsub_interceptor {
      * @param metadata The metadata of the message
      * @return True if the send should continue.
      */
-    bool (*preSend)(void *handle, const pubsub_interceptor_properties_t *properties, const char *messageType, const uint32_t msgTypeId, const void *message, celix_properties_t *metadata);
+    bool (*preSend)(void *handle, const pubsub_interceptor_properties_t *properties, const char *messageType, uint32_t msgTypeId, const void *message, celix_properties_t *metadata);
 
     /**
      * @brief postSend will be called when a user called send on a pubsub/publisher, but after the message is "handed over" to the actual pubsub technology (i.e. TCP stack,  shared memory, etc)
@@ -76,7 +76,7 @@ struct pubsub_interceptor {
      * @param message The actual message pointer
      * @param metadata The metadata of the message
      */
-    void (*postSend)(void *handle, const pubsub_interceptor_properties_t *properties, const char *messageType, const uint32_t msgTypeId, const void *message, const celix_properties_t *metadata);
+    void (*postSend)(void *handle, const pubsub_interceptor_properties_t *properties, const char *messageType, uint32_t msgTypeId, const void *message, celix_properties_t *metadata);
 
     /**
      * @brief preReceive will be called when is message is received in a pubsub admin, but before the pubsub/subscriber callback is called.
@@ -91,7 +91,7 @@ struct pubsub_interceptor {
      * @param metadata The metadata of the message
      * @return True if the pubsub/subsciber callback should be called.
      */
-    bool (*preReceive)(void *handle, const pubsub_interceptor_properties_t *properties, const char *messageType, const uint32_t msgTypeId, const void *message, celix_properties_t *metadata);
+    bool (*preReceive)(void *handle, const pubsub_interceptor_properties_t *properties, const char *messageType, uint32_t msgTypeId, const void *message, celix_properties_t *metadata);
 
     /**
      * @brief postReceive will be called when is message is received in a pubsub admin and is called after the pubsub/subscriber callback is called.
@@ -105,7 +105,7 @@ struct pubsub_interceptor {
      * @param message The actual message pointer
      * @param metadata The metadata of the message
      */
-    void (*postReceive)(void *handle, const pubsub_interceptor_properties_t *properties, const char *messageType, const uint32_t msgTypeId, const void *message, const celix_properties_t *metadata);
+    void (*postReceive)(void *handle, const pubsub_interceptor_properties_t *properties, const char *messageType, uint32_t msgTypeId, const void *message, celix_properties_t *metadata);
 };
 
 typedef struct pubsub_interceptor pubsub_interceptor_t;

@@ -102,7 +102,7 @@ public:
             };
         }
         interceptor->postSend = [](void *handle, const pubsub_interceptor_properties_t* intProps, const char *msgType, uint32_t msgId, const void *rawMsg,
-                                   const celix_properties_t* metadata) {
+                                   celix_properties_t* metadata) {
             auto* td = (TestData*)handle;
             serializeAndPrint(td, msgId, rawMsg);
             EXPECT_STREQ(msgType, "msg");
@@ -119,7 +119,7 @@ public:
             td->postSendCount += 1;
             td->cond.notify_all();
         };
-        interceptor->preReceive = [](void* handle, const pubsub_interceptor_properties_t *, const char *, const uint32_t,
+        interceptor->preReceive = [](void* handle, const pubsub_interceptor_properties_t *, const char *, uint32_t,
                                      const void *, celix_properties_t* metadata) {
             auto* td = (TestData*)handle;
             celix_properties_set(metadata, "test", "preReceive");
@@ -130,7 +130,7 @@ public:
             return true;
         };
         if (cancelReceive) {
-            interceptor->preReceive = [](void* handle, const pubsub_interceptor_properties_t *, const char *, const uint32_t,
+            interceptor->preReceive = [](void* handle, const pubsub_interceptor_properties_t *, const char *, uint32_t,
                                          const void *, celix_properties_t*) {
                 auto* td = (TestData*)handle;
                 std::lock_guard<std::mutex> lck{td->mutex};
@@ -140,7 +140,7 @@ public:
             };
         }
         interceptor->postReceive = [](void *handle, const pubsub_interceptor_properties_t* intProps, const char *msgType, uint32_t msgId, const void *rawMsg,
-                                      const celix_properties_t* metadata) {
+                                      celix_properties_t* metadata) {
             auto* td = (TestData*)handle;
             serializeAndPrint(td, msgId, rawMsg);
             EXPECT_STREQ(msgType, "msg");

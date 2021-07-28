@@ -788,12 +788,14 @@ Add a integration test with use interceptors for a configurable PSA and wire pro
 ARGV0 is test target name
 ARGV1 is PSA target name
 ARGV2 is wire protocol target name
+ARGV3 is option boolean whether http admin bundle should be used
 
 ]]
 function(add_celix_interceptors_test_for_psa_and_wire)
     set(TEST_TARGET_NAME ${ARGV0})
     set(PSA ${ARGV1})
     set(WIRE ${ARGV2})
+    set(USE_HTTP_ADMIN ${ARGV3})
 
     #Test suite to test if pusbub interceptors
     add_executable(${TEST_TARGET_NAME}
@@ -823,7 +825,7 @@ function(add_celix_interceptors_test_for_psa_and_wire)
     )
 
     #if PSA websocket is enabled add http_admin bundle
-    if (BUILD_PUBSUB_PSA_WS)
+    if (USE_HTTP_ADMIN)
         target_link_libraries(${TEST_TARGET_NAME} PRIVATE Celix::http_admin_api)
         celix_get_bundle_file(Celix::http_admin HTTP_ADMIN_BUNDLE_FILE)
         add_celix_bundle_dependencies(${TEST_TARGET_NAME} Celix::http_admin)
@@ -833,8 +835,8 @@ endfunction()
 
 
 if (BUILD_PUBSUB_PSA_WS)
-    add_celix_interceptors_test_for_psa_and_wire(test_pubsub_interceptors_ws_and_wire_v1_integration Celix::celix_pubsub_admin_websocket_v2 Celix::celix_pubsub_protocol_wire_v1)
-    add_celix_interceptors_test_for_psa_and_wire(test_pubsub_interceptors_ws_and_wire_v2_integration Celix::celix_pubsub_admin_websocket_v2 Celix::celix_pubsub_protocol_wire_v2)
+    add_celix_interceptors_test_for_psa_and_wire(test_pubsub_interceptors_ws_and_wire_v1_integration Celix::celix_pubsub_admin_websocket_v2 Celix::celix_pubsub_protocol_wire_v1 true)
+    add_celix_interceptors_test_for_psa_and_wire(test_pubsub_interceptors_ws_and_wire_v2_integration Celix::celix_pubsub_admin_websocket_v2 Celix::celix_pubsub_protocol_wire_v2 true)
 endif ()
 
 if (BUILD_PUBSUB_PSA_TCP)
