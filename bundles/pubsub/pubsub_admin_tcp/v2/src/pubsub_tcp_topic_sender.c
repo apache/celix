@@ -384,6 +384,7 @@ psa_tcp_topicPublicationSend(void *handle, unsigned int msgTypeId, const void *i
     if (status != CELIX_SUCCESS) {
         L_WARN("[PSA_TCP_V2_TS] Error serialize message of type %s for scope/topic %s/%s", msgFqn,
                sender->scope == NULL ? "(null)" : sender->scope, sender->topic);
+        celix_properties_destroy(metadata);
         return status;
     }
 
@@ -416,9 +417,6 @@ psa_tcp_topicPublicationSend(void *handle, unsigned int msgTypeId, const void *i
             sendOk = false;
         }
         pubsubInterceptorHandler_invokePostSend(sender->interceptorsHandler, msgFqn, msgTypeId, inMsg, metadata);
-        if (message.metadata.metadata) {
-            celix_properties_destroy(message.metadata.metadata);
-        }
         if (serializedIoVecOutput) {
             pubsub_serializerHandler_freeSerializedMsg(sender->serializerHandler, msgTypeId, serializedIoVecOutput, serializedIoVecOutputLen);
             serializedIoVecOutput = NULL;
@@ -429,6 +427,7 @@ psa_tcp_topicPublicationSend(void *handle, unsigned int msgTypeId, const void *i
         L_WARN("[PSA_TCP_V2_TS] Error sending msg. %s", strerror(errno));
     }
 
+    celix_properties_destroy(metadata);
     return status;
 }
 

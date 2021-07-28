@@ -402,8 +402,8 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
     int minorversion;
     celix_status_t status = pubsub_serializerHandler_getMsgInfo(sender->serializerHandler, msgTypeId, &msgFqn, &majorVersion, &minorversion);
     if (status != CELIX_SUCCESS) {
-        L_WARN("Cannot find serializer for msg id %u for serializer %s", msgTypeId,
-               pubsub_serializerHandler_getSerializationType(sender->serializerHandler));
+        L_WARN("Cannot find serializer for msg id %u for serializer %s", msgTypeId, pubsub_serializerHandler_getSerializationType(sender->serializerHandler));
+        celix_properties_destroy(metadata);
         return status;
     }
 
@@ -420,6 +420,7 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
 
     if (status != CELIX_SUCCESS /*serialization not ok*/) {
         L_WARN("[PSA_ZMQ_TS] Error serialize message of type %s for scope/topic %s/%s", msgFqn, sender->scope == NULL ? "(null)" : sender->scope, sender->topic);
+        celix_properties_destroy(metadata);
         return status;
     }
 
@@ -542,7 +543,6 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
     }
     __atomic_store_n(&sender->zmqBuffers.dataLock, false, __ATOMIC_RELEASE);
     pubsubInterceptorHandler_invokePostSend(sender->interceptorsHandler, msgFqn, msgTypeId, inMsg, metadata);
-    celix_properties_destroy(metadata);
 
     if (!bound->parent->zeroCopyEnabled && serializedIoVecOutput) {
         pubsub_serializerHandler_freeSerializedMsg(sender->serializerHandler, msgTypeId, serializedIoVecOutput, serializedIoVecOutputLen);
@@ -552,6 +552,7 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
         L_WARN("[PSA_ZMQ_TS] Error sending zmg. %s", strerror(errno));
     }
 
+    celix_properties_destroy(metadata);
     return status;
 }
 

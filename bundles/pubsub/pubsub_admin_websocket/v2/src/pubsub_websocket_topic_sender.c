@@ -262,8 +262,8 @@ static int psa_websocket_topicPublicationSend(void* handle, unsigned int msgType
     int minorVersion;
     celix_status_t status = pubsub_serializerHandler_getMsgInfo(sender->serializerHandler, msgTypeId, &msgFqn, &majorVersion, &minorVersion);
     if (status != CELIX_SUCCESS) {
-        L_WARN("Cannot find serializer for msg id %u for serializer %s", msgTypeId,
-               pubsub_serializerHandler_getSerializationType(sender->serializerHandler));
+        L_WARN("Cannot find serializer for msg id %u for serializer %s", msgTypeId, pubsub_serializerHandler_getSerializationType(sender->serializerHandler));
+        celix_properties_destroy(metadata);
         return status;
     }
 
@@ -291,7 +291,7 @@ static int psa_websocket_topicPublicationSend(void* handle, unsigned int msgType
 
             json_t *jsData;
             jsData = json_loadb((const char *)serializedOutput->iov_base, serializedOutput->iov_len, 0, &jsError);
-            if(jsData != NULL) {
+            if (jsData != NULL) {
                 json_object_set_new_nocheck(jsMsg, "data", jsData);
                 const char *msg = json_dumps(jsMsg, 0);
                 size_t bytes_to_write = strlen(msg);
@@ -318,7 +318,6 @@ static int psa_websocket_topicPublicationSend(void* handle, unsigned int msgType
 
     pubsubInterceptorHandler_invokePostSend(sender->interceptorsHandler, msgFqn, msgTypeId, inMsg, metadata);
     celix_properties_destroy(metadata);
-
     return status;
 }
 
