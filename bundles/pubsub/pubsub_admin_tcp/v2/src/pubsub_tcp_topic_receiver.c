@@ -437,8 +437,7 @@ static void callReceivers(pubsub_tcp_topic_receiver_t *receiver, const char* msg
         psa_tcp_subscriber_entry_t* entry = hashMapIterator_nextValue(&iter);
         if (entry != NULL && entry->subscriberSvc->receive != NULL) {
             entry->subscriberSvc->receive(entry->subscriberSvc->handle, msgFqn, message->header.msgId, *msg, metadata, release);
-            if (!(*release)) {
-                //receive function has taken ownership, deserialize again for new message
+            if (!(*release) && hashMapIterator_hasNext(&iter)) { //receive function has taken ownership, deserialize again for new message
                 struct iovec deSerializeBuffer;
                 deSerializeBuffer.iov_base = message->payload.payload;
                 deSerializeBuffer.iov_len = message->payload.length;
@@ -452,6 +451,8 @@ static void callReceivers(pubsub_tcp_topic_receiver_t *receiver, const char* msg
                            receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic);
                     break;
                 }
+            } else if (!(*release)) { //receive function has taken ownership, but no receive left anymore. set msg to null
+                *msg = NULL;
             }
             *release = true;
         }
@@ -492,7 +493,23 @@ static inline void processMsg(void* handle, const pubsub_protocol_message_t *mes
             bool release = true;
             if (cont) {
                 callReceivers(receiver, msgFqn, message, &deSerializedMsg, &release, metadata);
-                pubsubInterceptorHandler_invokePostReceive(receiver->interceptorsHandler, msgFqn, message->header.msgId, deSerializedMsg, metadata);
+                if (pubsubInterceptorHandler_nrOfInterceptors(receiver->interceptorsHandler) > 0) {
+                    if (deSerializedMsg == NULL) { //message deleted, but still need to call interceptors -> deserialize new message
+                        release = true;
+                        status = pubsub_serializerHandler_deserialize(receiver->serializerHandler, message->header.msgId,
+                                                                                 message->header.msgMajorVersion,
+                                                                                 message->header.msgMinorVersion,
+                                                                                 &deSerializeBuffer, 0, &deSerializedMsg);
+                        if (status != CELIX_SUCCESS) {
+                            L_WARN("[PSA_TCP_TR] Cannot deserialize msg type %s for scope/topic %s/%s", msgFqn,
+                                   receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic);
+                        } else {
+                            pubsubInterceptorHandler_invokePostReceive(receiver->interceptorsHandler, msgFqn, message->header.msgId, deSerializedMsg, metadata);
+                        }
+                    } else {
+                        pubsubInterceptorHandler_invokePostReceive(receiver->interceptorsHandler, msgFqn, message->header.msgId, deSerializedMsg, metadata);
+                    }
+                }
             } else {
                 L_TRACE("Skipping receive for msg type %s, based on pre receive interceptor result", msgFqn);
             }

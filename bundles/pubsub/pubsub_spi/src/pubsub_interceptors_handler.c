@@ -205,3 +205,11 @@ int referenceCompare(const void *a, const void *b) {
 
     return celix_utils_compareServiceIdsAndRanking(servIdA, servRankingA, servIdB, servRankingB);
 }
+
+size_t pubsubInterceptorHandler_nrOfInterceptors(pubsub_interceptors_handler_t *handler) {
+    size_t nr = 0;
+    celixThreadMutex_lock(&handler->lock);
+    nr = (size_t)celix_arrayList_size(handler->interceptors);
+    celixThreadMutex_unlock(&handler->lock);
+    return nr;
+}
