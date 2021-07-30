@@ -20,6 +20,7 @@
 #include <gtest/gtest.h>
 
 #include <atomic>
+#include <search.h>
 
 #include "celix/BundleContext.h"
 
@@ -609,4 +610,48 @@ TEST_F(CxxBundleContextTestSuite, WaitForAllEvents) {
     ctx->waitIfAbleForAllEvents();
     svcId = ctx->findService<TestInterface>();
     EXPECT_EQ(svcId, -1L);
+}
+
+
+TEST_F(CxxBundleContextTestSuite, CheckStandardServiceProperties) {
+    /*
+     * OSGi 7 specifies the following service properties which must be set by the framework:
+     *  - objectClass (CELIX_FRAMEWORK_SERVICE_NAME)
+     *  - service.id (CELIX_FRAMEWORK_SERVICE_ID)
+     *  - service.bundleid (CELIX_FRAMEWORK_SERVICE_BUNDLE_ID)
+     *  - service.scope (CELIX_FRAMEWORK_SERVICE_SCOPE)
+     */
+
+    auto svcReg = ctx->registerService<TestInterface>(std::make_shared<TestImplementation>()).build();
+    bool called = ctx->useService<TestInterface>()
+        .addUseCallback([](TestInterface& /*svc*/, const celix::Properties& props) {
+            EXPECT_FALSE(props.get(celix::SERVICE_NAME).empty());
+            EXPECT_GE(props.getAsLong(celix::SERVICE_BUNDLE_ID, -1), 0);
+            EXPECT_EQ(props.get(celix::SERVICE_SCOPE), std::string{celix::SERVICE_SCOPE_SINGLETON});
+        })
+        .build();
+    EXPECT_TRUE(called);
+
+    //note using c api, because C++ api does not yet support registering svc factories
+    celix_service_factory_t factory{nullptr, nullptr, nullptr};
+    factory.getService = [](void */*handle*/, const celix_bundle_t */*requestingBundle*/, const celix_properties_t */*svcProperties*/) -> void* {
+        //dummy svc
+        return (void*)0x42;
+    };
+    factory.ungetService = [](void */*handle*/, const celix_bundle_t */*requestingBundle*/, const celix_properties_t */*svcProperties*/) {
+        //nop
+    };
+    auto svcId = celix_bundleContext_registerServiceFactory(ctx->getCBundleContext(), &factory, "TestInterfaceFactory", nullptr);
+    EXPECT_GE(svcId, 0);
+
+    called = ctx->useService<TestInterface>("TestInterfaceFactory")
+            .addUseCallback([](TestInterface& /*svc*/, const celix::Properties& props) {
+                EXPECT_FALSE(props.get(celix::SERVICE_NAME).empty());
+                EXPECT_GE(props.getAsLong(celix::SERVICE_BUNDLE_ID, -1), 0);
+                EXPECT_EQ(props.get(celix::SERVICE_SCOPE), std::string{celix::SERVICE_SCOPE_BUNDLE});
+            })
+            .build();
+    EXPECT_TRUE(called);
+
+    celix_bundleContext_unregisterService(ctx->getCBundleContext(), svcId);
 }

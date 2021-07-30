@@ -27,12 +27,17 @@ extern "C" {
 #endif
 
 /**
+ * Collection of celix constants. Note that the CELIX_ macros are preferred over the OSGI_ variants.
+ */
+
+/**
 * @brief Service property (named "objectClass") identifying the service name under which a service was registered
 * in the Celix framework.
 *
 * This property is set by the Celix framework when a service is registered.
 */
-#define OSGI_FRAMEWORK_OBJECTCLASS "objectClass"
+#define CELIX_FRAMEWORK_SERVICE_NAME "objectClass"
+#define OSGI_FRAMEWORK_OBJECTCLASS CELIX_FRAMEWORK_SERVICE_NAME
 
 /**
  * @brief Service property (named "service.id") identifying a service's registration number (of type long).
@@ -41,9 +46,40 @@ extern "C" {
  * The Celix framework assigns a unique value that is larger than all previously assigned values since the
  * Celix framework was started.
  */
-#define OSGI_FRAMEWORK_SERVICE_ID "service.id"
+#define CELIX_FRAMEWORK_SERVICE_ID "service.id"
+#define OSGI_FRAMEWORK_SERVICE_ID CELIX_FRAMEWORK_SERVICE_ID
 
-#define OSGI_FRAMEWORK_SERVICE_PID "service.pid"
+/**
+ *  @brief Service property (named service.bundleid) identifying the bundle id of the bundle registering the service.
+ *
+ *  This property is set by the Celix framework when a service is registered. The value of this property must be of type Long.
+ */
+#define CELIX_FRAMEWORK_SERVICE_BUNDLE_ID "service.bundleid"
+
+/**
+ * @brief Service property (named service.scope) identifying a service's scope.
+ *
+ * This property is set by the Framework when a service is registered.
+ * If the registered object implements service factory, then the value of this service property will be
+ * CELIX_FRAMEWORK_SERVICE_SCOPE_BUNDLE.
+ * Otherwise, the value of this service property will be CELIX_FRAMEWORK_SERVICE_SCOPE_SINGLETON.
+ *
+ * @warning Note that the scope "prototype" is not supported in Celix.
+ */
+#define CELIX_FRAMEWORK_SERVICE_SCOPE "service.scope"
+
+/**
+ * @brief Service scope is singleton. All bundles using the service receive the same service object.
+ */
+#define CELIX_FRAMEWORK_SERVICE_SCOPE_SINGLETON "singleton"
+
+/**
+ * @brief Service scope is bundle. Each bundle using the service receives a customized service object.
+ */
+#define CELIX_FRAMEWORK_SERVICE_SCOPE_BUNDLE "bundle"
+
+#define CELIX_FRAMEWORK_SERVICE_PID "service.pid"
+#define OSGI_FRAMEWORK_SERVICE_PID CELIX_FRAMEWORK_SERVICE_PID
 
 /**
  * @brief The bundle id (value 0) used to identify the Celix framework.
@@ -64,7 +100,8 @@ extern "C" {
  * The default ranking is 0. A service with a ranking of LONG_MAX is very likely to be returned as the default
  * service, whereas a service with a ranking of LONG_MIN is very unlikely to be returned.
  */
-#define OSGI_FRAMEWORK_SERVICE_RANKING "service.ranking"
+#define CELIX_FRAMEWORK_SERVICE_RANKING "service.ranking"
+#define OSGI_FRAMEWORK_SERVICE_RANKING CELIX_FRAMEWORK_SERVICE_RANKING
 
 /**
  * @brief Service property (named "service.version") specifying the optional version of a service.
@@ -89,23 +126,33 @@ extern "C" {
 #define CELIX_FRAMEWORK_SERVICE_CXX_LANGUAGE "C++"
 #define CELIX_FRAMEWORK_SERVICE_SHARED_LANGUAGE "shared" //e.g. marker services
 
-#define OSGI_FRAMEWORK_BUNDLE_ACTIVATOR "Bundle-Activator"
+#define CELIX_FRAMEWORK_BUNDLE_ACTIVATOR "Bundle-Activator"
+#define OSGI_FRAMEWORK_BUNDLE_ACTIVATOR CELIX_FRAMEWORK_BUNDLE_ACTIVATOR
 
-#define OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_CREATE "celix_bundleActivator_create"
-#define OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_START "celix_bundleActivator_start"
-#define OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_STOP "celix_bundleActivator_stop"
-#define OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_DESTROY "celix_bundleActivator_destroy"
+#define CELIX_FRAMEWORK_BUNDLE_ACTIVATOR_CREATE "celix_bundleActivator_create"
+#define CELIX_FRAMEWORK_BUNDLE_ACTIVATOR_START "celix_bundleActivator_start"
+#define CELIX_FRAMEWORK_BUNDLE_ACTIVATOR_STOP "celix_bundleActivator_stop"
+#define CELIX_FRAMEWORK_BUNDLE_ACTIVATOR_DESTROY "celix_bundleActivator_destroy"
+#define OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_CREATE CELIX_FRAMEWORK_BUNDLE_ACTIVATOR_CREATE
+#define OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_START CELIX_FRAMEWORK_BUNDLE_ACTIVATOR_START
+#define OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_STOP CELIX_FRAMEWORK_BUNDLE_ACTIVATOR_STOP
+#define OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_DESTROY CELIX_FRAMEWORK_BUNDLE_ACTIVATOR_DESTROY
 
 #define OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_CREATE "bundleActivator_create"
 #define OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_START "bundleActivator_start"
 #define OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_STOP "bundleActivator_stop"
 #define OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_DESTROY "bundleActivator_destroy"
 
-#define OSGI_FRAMEWORK_BUNDLE_SYMBOLICNAME "Bundle-SymbolicName"
-#define OSGI_FRAMEWORK_BUNDLE_VERSION "Bundle-Version"
-#define OSGI_FRAMEWORK_PRIVATE_LIBRARY "Private-Library"
-#define OSGI_FRAMEWORK_EXPORT_LIBRARY "Export-Library"
-#define OSGI_FRAMEWORK_IMPORT_LIBRARY "Import-Library"
+#define CELIX_FRAMEWORK_BUNDLE_SYMBOLICNAME "Bundle-SymbolicName"
+#define CELIX_FRAMEWORK_BUNDLE_VERSION "Bundle-Version"
+#define CELIX_FRAMEWORK_PRIVATE_LIBRARY "Private-Library"
+#define CELIX_FRAMEWORK_EXPORT_LIBRARY "Export-Library"
+#define CELIX_FRAMEWORK_IMPORT_LIBRARY "Import-Library"
+#define OSGI_FRAMEWORK_BUNDLE_SYMBOLICNAME CELIX_FRAMEWORK_BUNDLE_SYMBOLICNAME
+#define OSGI_FRAMEWORK_BUNDLE_VERSION CELIX_FRAMEWORK_BUNDLE_VERSION
+#define OSGI_FRAMEWORK_PRIVATE_LIBRARY CELIX_FRAMEWORK_PRIVATE_LIBRARY
+#define OSGI_FRAMEWORK_EXPORT_LIBRARY CELIX_FRAMEWORK_EXPORT_LIBRARY
+#define OSGI_FRAMEWORK_IMPORT_LIBRARY CELIX_FRAMEWORK_IMPORT_LIBRARY
 
 /**
  * @brief Celix framework environment property (named "org.osgi.framework.storage") specifying the cache
@@ -113,11 +160,15 @@ extern "C" {
  *
  * If not specified ".cache" is used.
  */
-#define OSGI_FRAMEWORK_FRAMEWORK_STORAGE "org.osgi.framework.storage"
+#define CELIX_FRAMEWORK_FRAMEWORK_STORAGE "org.osgi.framework.storage"
+#define OSGI_FRAMEWORK_FRAMEWORK_STORAGE CELIX_FRAMEWORK_FRAMEWORK_STORAGE
 
-#define OSGI_FRAMEWORK_STORAGE_USE_TMP_DIR "org.osgi.framework.storage.use.tmp.dir"
-#define OSGI_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_NAME "org.osgi.framework.storage.clean"
-#define OSGI_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_DEFAULT true
+#define CELIX_FRAMEWORK_STORAGE_USE_TMP_DIR "org.osgi.framework.storage.use.tmp.dir"
+#define CELIX_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_NAME "org.osgi.framework.storage.clean"
+#define CELIX_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_DEFAULT true
+#define OSGI_FRAMEWORK_STORAGE_USE_TMP_DIR CELIX_FRAMEWORK_STORAGE_USE_TMP_DIR
+#define OSGI_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_NAME CELIX_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_NAME
+#define OSGI_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_DEFAULT CELIX_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_DEFAULT
 
 /**
  * @brief Celix framework environment property (named "org.osgi.framework.uuid") specifying the UUID for the
@@ -128,7 +179,8 @@ extern "C" {
  *
  * @note The Celix framework expects framework UUIDs to be unique per process.
  */
-#define OSGI_FRAMEWORK_FRAMEWORK_UUID "org.osgi.framework.uuid"
+#define CELIX_FRAMEWORK_FRAMEWORK_UUID "org.osgi.framework.uuid"
+#define OSGI_FRAMEWORK_FRAMEWORK_UUID CELIX_FRAMEWORK_FRAMEWORK_UUID
 
 /**
  * @brief Celix framework environment property (named "CELIX_BUNDLES_PATH") which specified a `;` separated
