@@ -20,7 +20,6 @@
 #include <gtest/gtest.h>
 
 #include <atomic>
-#include <search.h>
 
 #include "celix/BundleContext.h"
 
