@@ -17,38 +17,36 @@
  * under the License.
  */
 
+#include <gtest/gtest.h>
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-
-#include "celix_api.h"
+#include "celix/FrameworkFactory.h"
 #include "http_admin/api.h"
 
-#include <CppUTest/TestHarness.h>
-#include <CppUTestExt/MockSupport.h>
-#include "celix_constants.h"
+#define HTTP_PORT 45112
 
-extern celix_framework_t *fw;
+class HttpInfoTestSuite : public ::testing::Test {
+public:
+    HttpInfoTestSuite() {
+        celix::Properties config{
+                {"CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "trace"},
+                {"CELIX_HTTP_ADMIN_LISTENING_PORTS", std::to_string(HTTP_PORT) }
+        };
+        fw = celix::createFramework(config);
+        ctx = fw->getFrameworkBundleContext();
 
-TEST_GROUP(HTTP_ADMIN_INFO_INT_GROUP)
-{
-    celix_bundle_context_t *ctx = nullptr;
-	void setup() {
-	    if (fw != nullptr) {
-	        ctx = celix_framework_getFrameworkContext(fw);
-	    }
-        //Setup
-	}
+        long httpAdminBndId = ctx->installBundle(HTTP_ADMIN_BUNDLE);
+        EXPECT_GE(httpAdminBndId, 0);
 
-	void teardown() {
-	    //Teardown
-	}
+        long httpEndpointProviderBndId = ctx->installBundle(HTTP_ADMIN_SUT_BUNDLE);
+        EXPECT_GE(httpEndpointProviderBndId, 0);
+    }
+
+    std::shared_ptr<celix::Framework> fw{};
+    std::shared_ptr<celix::BundleContext> ctx{};
 };
 
-
-TEST(HTTP_ADMIN_INFO_INT_GROUP, http_admin_info_test) {
-    CHECK(ctx != nullptr);
+TEST_F(HttpInfoTestSuite, http_admin_info_test) {
+    EXPECT_TRUE(ctx != nullptr);
 
     celix_service_use_options_t opts{};
     opts.filter.serviceName = HTTP_ADMIN_INFO_SERVICE_NAME;
@@ -57,10 +55,10 @@ TEST(HTTP_ADMIN_INFO_INT_GROUP, http_admin_info_test) {
     opts.useWithProperties = [](void */*handle*/, void */*svc*/, const celix_properties_t *props) {
         long port = celix_properties_getAsLong(props, HTTP_ADMIN_INFO_PORT, -1L);
         const char *resources = celix_properties_get(props, HTTP_ADMIN_INFO_RESOURCE_URLS, "");
-        CHECK_EQUAL(8000L, port);
-        STRCMP_EQUAL("/alias,/socket_alias", resources);
+        EXPECT_EQ(HTTP_PORT, port);
+        EXPECT_STREQ("/alias,/socket_alias", resources);
     };
 
-    bool called  = celix_bundleContext_useServiceWithOptions(ctx, &opts);
-    CHECK(called);
+    bool called  = celix_bundleContext_useServiceWithOptions(ctx->getCBundleContext(), &opts);
+    EXPECT_TRUE(called);
 }
