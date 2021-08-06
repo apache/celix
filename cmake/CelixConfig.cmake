@@ -70,13 +70,13 @@ endif ()
 
 #Setting up pubsub admin alias to the v1 version.
 if (TARGET Celix::pubsub_admin_zmq_v1)
-  add_library(Celix::celix_pubsub_admin_zmq ALIAS Celix::pubsub_admin_zmq_v1)
+  add_library(Celix::celix_pubsub_admin_zmq ALIAS Celix::celix_pubsub_admin_zmq_v1)
 endif ()
 if (TARGET Celix::pubsub_admin_tcp_v1)
-  add_library(Celix::celix_pubsub_admin_tcp ALIAS Celix::pubsub_admin_tcp_v1)
+  add_library(Celix::celix_pubsub_admin_tcp ALIAS Celix::celix_pubsub_admin_tcp_v1)
 endif ()
 if (TARGET Celix::pubsub_admin_websocket_v1)
-  add_library(Celix::celix_pubsub_admin_websocket ALIAS Celix::pubsub_admin_websocket_v1)
+  add_library(Celix::celix_pubsub_admin_websocket ALIAS Celix::celix_pubsub_admin_websocket_v1)
 endif ()
 
 set(CELIX_BUNDLES_DIR ${REL_INSTALL_DIR}/share/celix/bundles)
