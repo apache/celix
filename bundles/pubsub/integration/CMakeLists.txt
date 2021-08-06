@@ -831,6 +831,11 @@ function(add_celix_interceptors_test_for_psa_and_wire)
         add_celix_bundle_dependencies(${TEST_TARGET_NAME} Celix::http_admin)
         target_compile_definitions(${TEST_TARGET_NAME} PRIVATE HTTP_ADMIN_BUNDLE_FILE="${HTTP_ADMIN_BUNDLE_FILE}")
     endif ()
+
+    #Linking against zmq if present
+    if (TARGET ZMQ::lib AND TARGET CZMQ::lib)
+        target_link_libraries(${TEST_TARGET_NAME} PRIVATE ZMQ::lib CZMQ::lib)
+    endif ()
 endfunction()
 
 
