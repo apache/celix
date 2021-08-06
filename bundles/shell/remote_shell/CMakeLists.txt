@@ -21,6 +21,7 @@ if (REMOTE_SHELL)
      	SYMBOLIC_NAME "apache_celix_remote_shell"
      	VERSION "0.0.2"
      	NAME "Apache Celix Remote Shell"
+		FILENAME celix_remote_shell
 		GROUP "Celix/Shell"
 		SOURCES
 			src/activator

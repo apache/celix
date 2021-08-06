@@ -15,11 +15,13 @@
 # specific language governing permissions and limitations
 # under the License.
 
+message(STATUS "PubSub Websocket Admin V1 is deprecated, and will eventually be replaced with PubSub Websocket Admin v2")
+
 find_package(Jansson REQUIRED)
 find_package(UUID REQUIRED)
 
-add_celix_bundle(celix_pubsub_admin_websocket
-    BUNDLE_SYMBOLICNAME "apache_celix_pubsub_admin_websocket"
+add_celix_bundle(celix_pubsub_admin_websocket_v1
+    BUNDLE_SYMBOLICNAME "apache_celix_pubsub_admin_websocket_v1"
     VERSION "1.0.0"
     GROUP "Celix/PubSub"
     SOURCES
@@ -30,16 +32,16 @@ add_celix_bundle(celix_pubsub_admin_websocket
         src/pubsub_websocket_common.c
 )
 
-set_target_properties(celix_pubsub_admin_websocket PROPERTIES INSTALL_RPATH "$ORIGIN")
-target_link_libraries(celix_pubsub_admin_websocket PRIVATE
+set_target_properties(celix_pubsub_admin_websocket_v1 PROPERTIES INSTALL_RPATH "$ORIGIN")
+target_link_libraries(celix_pubsub_admin_websocket_v1 PRIVATE
         Celix::framework Celix::dfi Celix::log_helper Celix::utils
         Celix::http_admin_api
 )
-target_link_libraries(celix_pubsub_admin_websocket PRIVATE Celix::pubsub_spi Celix::pubsub_utils )
-target_include_directories(celix_pubsub_admin_websocket PRIVATE
+target_link_libraries(celix_pubsub_admin_websocket_v1 PRIVATE Celix::pubsub_spi Celix::pubsub_utils )
+target_include_directories(celix_pubsub_admin_websocket_v1 PRIVATE
     src
 )
 
-install_celix_bundle(celix_pubsub_admin_websocket EXPORT celix COMPONENT pubsub)
-target_link_libraries(celix_pubsub_admin_websocket PRIVATE Celix::shell_api)
-add_library(Celix::pubsub_admin_websocket ALIAS celix_pubsub_admin_websocket)
+install_celix_bundle(celix_pubsub_admin_websocket_v1 EXPORT celix COMPONENT pubsub)
+target_link_libraries(celix_pubsub_admin_websocket_v1 PRIVATE Celix::shell_api)
+add_library(Celix::celix_pubsub_admin_websocket_v1 ALIAS celix_pubsub_admin_websocket_v1)

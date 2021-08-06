@@ -18,6 +18,7 @@
 add_celix_bundle(syslog_writer
 		SYMBOLIC_NAME "apache_celix_syslog_writer"
 		NAME "Apache Celix Syslog Writer"
+		FILENAME celix_syslog_writer
 		GROUP "Celix/Logging"
 		VERSION "1.0.0"
 		SOURCES

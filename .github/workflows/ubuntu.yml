@@ -69,7 +69,7 @@ jobs:
           export BUILD_OPTIONS="${BUILD_OPTIONS} ${BUILD_OPTIONS_SANITIZER}"
         fi
         cmake -DCMAKE_BUILD_TYPE=Debug ${BUILD_OPTIONS} -DCMAKE_INSTALL_PREFIX=../install ..
-        make -j && make install
+        make -j $(nproc) && make install
     - name: Test
       run: |
         cd $GITHUB_WORKSPACE/build

@@ -36,4 +36,4 @@ target_link_libraries(celix_pubsub_discovery_etcd PRIVATE Celix::pubsub_spi Celi
 
 install_celix_bundle(celix_pubsub_discovery_etcd EXPORT celix COMPONENT pubsub)
 
-add_library(Celix::pubsub_discovery_etcd ALIAS celix_pubsub_discovery_etcd)
+add_library(Celix::celix_pubsub_discovery_etcd ALIAS celix_pubsub_discovery_etcd)

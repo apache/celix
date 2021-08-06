@@ -315,6 +315,9 @@ celix_status_t pubsub_serializerHandler_serialize(pubsub_serializer_handler_t* h
 
 celix_status_t pubsub_serializerHandler_freeSerializedMsg(pubsub_serializer_handler_t* handler, uint32_t msgId, struct iovec* input, size_t inputIovLen) {
     celix_status_t status = CELIX_SUCCESS;
+    if (input == NULL) {
+        return status; //silently ignore
+    }
     celixThreadRwlock_readLock(&handler->lock);
     pubsub_serialization_service_entry_t* entry = findEntry(handler, msgId);
     if (entry != NULL) {
@@ -353,6 +356,9 @@ celix_status_t pubsub_serializerHandler_deserialize(pubsub_serializer_handler_t*
 
 celix_status_t pubsub_serializerHandler_freeDeserializedMsg(pubsub_serializer_handler_t* handler, uint32_t msgId, void* msg) {
     celix_status_t status = CELIX_SUCCESS;
+    if (msg == NULL) {
+         return status; //silently ignore
+    }
     celixThreadRwlock_readLock(&handler->lock);
     pubsub_serialization_service_entry_t* entry = findEntry(handler, msgId);
     if (entry != NULL) {

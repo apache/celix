@@ -206,18 +206,21 @@ TEST_F(PubSubSerializationHandlerTestSuite, NoBackwardsCompatbile) {
 
 TEST_F(PubSubSerializationHandlerTestSuite, CallServiceMethods) {
     auto *handler = pubsub_serializerHandler_create(ctx.get(), "json", false);
-
     long svcId1 = registerSerSvc("json", 42, "example::Msg1", "1.0.0");
+
+    void* dummyMsg = (void*)0x42;
+    iovec* dummyBuffer = (iovec*)0x43;
+    size_t dummyBufferSize = 0;
 
     EXPECT_EQ(1, pubsub_serializerHandler_messageSerializationServiceCount(handler));
     EXPECT_EQ(0, serializeCallCount);
     EXPECT_EQ(0, freeSerializedMsgCallCount);
     EXPECT_EQ(0, deserializeCallCount);
     EXPECT_EQ(0, freeDeserializedMsgCallCount);
-    pubsub_serializerHandler_serialize(handler, 42, nullptr, nullptr, nullptr);
-    pubsub_serializerHandler_freeSerializedMsg(handler, 42, nullptr, 0);
-    pubsub_serializerHandler_deserialize(handler, 42, 1, 0, nullptr, 0, nullptr);
-    pubsub_serializerHandler_freeDeserializedMsg(handler, 42, nullptr);
+    pubsub_serializerHandler_serialize(handler, 42, dummyMsg, &dummyBuffer, &dummyBufferSize);
+    pubsub_serializerHandler_freeSerializedMsg(handler, 42, dummyBuffer, dummyBufferSize);
+    pubsub_serializerHandler_deserialize(handler, 42, 1, 0, dummyBuffer, dummyBufferSize, &dummyMsg);
+    pubsub_serializerHandler_freeDeserializedMsg(handler, 42, dummyMsg);
     EXPECT_EQ(1, serializeCallCount);
     EXPECT_EQ(1, freeSerializedMsgCallCount);
     EXPECT_EQ(1, deserializeCallCount);
@@ -232,16 +235,20 @@ TEST_F(PubSubSerializationHandlerTestSuite, MismatchedCallServiceMethods) {
 
     long svcId1 = registerSerSvc("json", 42, "example::Msg1", "1.0.0");
 
+    void* dummyMsg = (void*)0x42;
+    iovec* dummyBuffer = (iovec*)0x43;
+    size_t dummyBufferSize = 0;
+
     EXPECT_EQ(1, pubsub_serializerHandler_messageSerializationServiceCount(handler));
     EXPECT_EQ(0, serializeCallCount);
     EXPECT_EQ(0, freeSerializedMsgCallCount);
     EXPECT_EQ(0, deserializeCallCount);
     EXPECT_EQ(0, freeDeserializedMsgCallCount);
-    pubsub_serializerHandler_serialize(handler, 43, nullptr, nullptr, nullptr);
-    pubsub_serializerHandler_freeSerializedMsg(handler, 43, nullptr, 0);
-    pubsub_serializerHandler_deserialize(handler, 43, 1, 0, nullptr, 0, nullptr);
-    pubsub_serializerHandler_deserialize(handler, 42, 1, 1, nullptr, 0, nullptr); //note wrong version
-    pubsub_serializerHandler_freeDeserializedMsg(handler, 43, nullptr);
+    pubsub_serializerHandler_serialize(handler, 43, dummyMsg, &dummyBuffer, &dummyBufferSize);
+    pubsub_serializerHandler_freeSerializedMsg(handler, 43, dummyBuffer, dummyBufferSize);
+    pubsub_serializerHandler_deserialize(handler, 43, 1, 0, dummyBuffer, dummyBufferSize, &dummyMsg);
+    pubsub_serializerHandler_deserialize(handler, 42, 1, 1, dummyBuffer, dummyBufferSize, &dummyMsg); //note wrong version
+    pubsub_serializerHandler_freeDeserializedMsg(handler, 43, dummyMsg);
     EXPECT_EQ(0, serializeCallCount);
     EXPECT_EQ(0, freeSerializedMsgCallCount);
     EXPECT_EQ(0, deserializeCallCount);
@@ -253,15 +260,18 @@ TEST_F(PubSubSerializationHandlerTestSuite, MismatchedCallServiceMethods) {
 
 TEST_F(PubSubSerializationHandlerTestSuite, BackwardsCompatibleCall) {
     auto *handler = pubsub_serializerHandler_create(ctx.get(), "json", true);
-
     long svcId1 = registerSerSvc("json", 42, "example::Msg1", "1.0.0");
+
+    void* dummyMsg = (void*)0x42;
+    iovec* dummyBuffer = (iovec*)0x43;
+    size_t dummyBufferSize = 0;
 
     EXPECT_EQ(1, pubsub_serializerHandler_messageSerializationServiceCount(handler));
     EXPECT_EQ(0, deserializeCallCount);
-    pubsub_serializerHandler_deserialize(handler, 42, 1, 0, nullptr, 0, nullptr);
-    pubsub_serializerHandler_deserialize(handler, 42, 1, 1, nullptr, 0, nullptr); //note compatible
-    pubsub_serializerHandler_deserialize(handler, 42, 1, 15, nullptr, 0, nullptr); //note compatible
-    pubsub_serializerHandler_deserialize(handler, 42, 2, 9, nullptr, 0, nullptr); //note not compatible
+    pubsub_serializerHandler_deserialize(handler, 42, 1, 0, dummyBuffer, dummyBufferSize, &dummyMsg);
+    pubsub_serializerHandler_deserialize(handler, 42, 1, 1, dummyBuffer, dummyBufferSize, &dummyMsg); //note compatible
+    pubsub_serializerHandler_deserialize(handler, 42, 1, 15, dummyBuffer, dummyBufferSize, &dummyMsg); //note compatible
+    pubsub_serializerHandler_deserialize(handler, 42, 2, 9, dummyBuffer, dummyBufferSize, &dummyMsg); //note not compatible
     EXPECT_EQ(3, deserializeCallCount);
 
     celix_bundleContext_unregisterService(ctx.get(), svcId1);
@@ -310,6 +320,17 @@ TEST_F(PubSubSerializationHandlerTestSuite, GetMsgInfo) {
     EXPECT_STREQ("example::Msg1", msgFqn);
     EXPECT_EQ(1, major);
     EXPECT_EQ(0, minor);
+
+    celix_bundleContext_unregisterService(ctx.get(), svcId1);
+    pubsub_serializerHandler_destroy(handler);
+}
+
+TEST_F(PubSubSerializationHandlerTestSuite, CallingFreeWithNULLWillBeSilentlyIgnored) {
+    auto *handler = pubsub_serializerHandler_create(ctx.get(), "json", true);
+    long svcId1 = registerSerSvc("json", 42, "example::Msg1", "1.0.0");
+
+    EXPECT_EQ(pubsub_serializerHandler_freeDeserializedMsg(handler, 42, nullptr), CELIX_SUCCESS);
+    EXPECT_EQ(pubsub_serializerHandler_freeSerializedMsg(handler, 42, nullptr, 10), CELIX_SUCCESS);
 
     celix_bundleContext_unregisterService(ctx.get(), svcId1);
     pubsub_serializerHandler_destroy(handler);

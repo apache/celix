@@ -20,6 +20,10 @@
 #ifndef PUBSUB_ADMIN_METRICS_H_
 #define PUBSUB_ADMIN_METRICS_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <uuid/uuid.h>
 #include <sys/time.h>
 #include "celix_array_list.h"
@@ -101,6 +105,9 @@ void pubsub_freePubSubAdminMetrics(pubsub_admin_metrics_t *metrics);
 
 typedef struct pubsub_admin_metrics_service pubsub_admin_metrics_service_t;
 
+#ifdef __cplusplus
+}
+#endif
 #endif /* PUBSUB_ADMIN_METRICS_H_ */
 
 

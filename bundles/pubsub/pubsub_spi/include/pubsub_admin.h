@@ -16,16 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * pubsub_admin.h
- *
- *  \date       Sep 30, 2011
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
 
 #ifndef PUBSUB_ADMIN_H_
 #define PUBSUB_ADMIN_H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include "celix_properties.h"
 #include "celix_bundle.h"
@@ -62,6 +59,9 @@ struct pubsub_admin_service {
 
 typedef struct pubsub_admin_service pubsub_admin_service_t;
 
+#ifdef __cplusplus
+}
+#endif
 #endif /* PUBSUB_ADMIN_H_ */
 
 

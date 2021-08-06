@@ -18,6 +18,7 @@
 add_celix_bundle(log_service
 	SYMBOLIC_NAME "apache_celix_log_service"
 	NAME "Apache Celix Log Service"
+	FILENAME celix_log_service
 	GROUP "Celix/Logging"
 	VERSION "1.1.0"
 	SOURCES
@@ -36,6 +37,7 @@ install_celix_bundle(log_service EXPORT celix COMPONENT logging)
 add_celix_bundle(log_writer_stdout
 	SYMBOLIC_NAME "apache_celix_log_writer_stdout"
 	NAME "Apache Celix Log Writer Stdout"
+	FILENAME celix_log_writer_stdout
 	GROUP "Celix/Logging"
 	VERSION "1.1.0"
 	SOURCES

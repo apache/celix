@@ -41,4 +41,4 @@ endif()
 
 install_celix_bundle(celix_pubsub_admin_tcp_v2 EXPORT celix COMPONENT pubsub)
 target_link_libraries(celix_pubsub_admin_tcp_v2 PRIVATE Celix::shell_api)
-add_library(Celix::pubsub_admin_tcp_v2 ALIAS celix_pubsub_admin_tcp_v2)
+add_library(Celix::celix_pubsub_admin_tcp_v2 ALIAS celix_pubsub_admin_tcp_v2)

@@ -16,16 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * publisher.h
- *
- *  \date       Jan 7, 2016
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
 
 #ifndef __PUBSUB_PUBLISHER_H_
 #define __PUBSUB_PUBLISHER_H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include <stdlib.h>
 
@@ -75,4 +72,7 @@ struct pubsub_publisher {
 };
 typedef struct pubsub_publisher pubsub_publisher_t;
 
+#ifdef __cplusplus
+}
+#endif
 #endif // __PUBSUB_PUBLISHER_H_

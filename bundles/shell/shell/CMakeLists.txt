@@ -51,6 +51,7 @@ if (SHELL)
         SYMBOLIC_NAME "apache_celix_c_shell"
         VERSION "2.1.0"
         NAME "Apache Celix C Shell"
+		FILENAME celix_shell
 		GROUP "Celix/Shell"
         SOURCES
 			src/c_shell_activator.c
@@ -69,10 +70,12 @@ if (SHELL)
 	add_library(Celix::shell ALIAS shell)
 
 	if (CELIX_CXX)
+		set(CMAKE_CXX_STANDARD 11) #Note that the Celix::CxxShell uses C++11 only
 		add_celix_bundle(ShellCxx
 			SYMBOLIC_NAME "apache::celix::CxxShell"
 			VERSION "2.1.0"
 			NAME "Apache Celix CXX Shell"
+			FILENAME celix_ShellCxx
 			GROUP "Celix/Shell"
 			SOURCES
 				src/Shell.cc

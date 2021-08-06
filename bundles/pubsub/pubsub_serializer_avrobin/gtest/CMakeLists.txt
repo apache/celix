@@ -25,7 +25,6 @@ add_executable(test_pubsub_serializer_avrobin
         src/PubSubAvrobinSerializationProviderTestSuite.cc
 )
 target_link_libraries(test_pubsub_serializer_avrobin PRIVATE Celix::framework Celix::dfi Celix::pubsub_utils GTest::gtest GTest::gtest_main Celix::pubsub_spi)
-target_compile_options(test_pubsub_serializer_avrobin PRIVATE -std=c++14) #Note test code is allowed to be C++14
 
 add_dependencies(test_pubsub_serializer_avrobin celix_pubsub_serializer_avrobin_bundle pubsub_avrobin_serialization_descriptor_bundle)
 target_compile_definitions(test_pubsub_serializer_avrobin PRIVATE -DSERIALIZATION_BUNDLE=\"$<TARGET_PROPERTY:celix_pubsub_serializer_avrobin,BUNDLE_FILE>\")

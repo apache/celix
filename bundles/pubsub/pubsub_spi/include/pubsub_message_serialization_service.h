@@ -20,6 +20,10 @@
 #ifndef PUBSUB_MESSAGE_SERIALIZATION_SERVICE_H_
 #define PUBSUB_MESSAGE_SERIALIZATION_SERVICE_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "hash_map.h"
 #include "version.h"
 #include "celix_bundle.h"
@@ -92,4 +96,7 @@ typedef struct pubsub_message_serialization_service {
 
 } pubsub_message_serialization_service_t;
 
+#ifdef __cplusplus
+}
+#endif
 #endif /* PUBSUB_MESSAGE_SERIALIZATION_SERVICE_H_ */

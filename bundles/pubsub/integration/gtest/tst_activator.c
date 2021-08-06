@@ -86,7 +86,7 @@ celix_status_t bnd_stop(struct activator *act, celix_bundle_context_t *ctx) {
 CELIX_GEN_BUNDLE_ACTIVATOR(struct activator, bnd_start, bnd_stop) ;
 
 
-static int tst_receive(void *handle, const char * msgType __attribute__((unused)), unsigned int msgTypeId  __attribute__((unused)), void * voidMsg, const celix_properties_t *metadata  __attribute__((unused)), bool *release  __attribute__((unused))) {
+static int tst_receive(void *handle, const char * msgType __attribute__((unused)), unsigned int msgTypeId  __attribute__((unused)), void * voidMsg, const celix_properties_t *metadata  __attribute__((unused)), bool *release) {
     struct activator *act = handle;
 
     msg_t *msg = voidMsg;
@@ -100,6 +100,10 @@ static int tst_receive(void *handle, const char * msgType __attribute__((unused)
     pthread_mutex_lock(&act->mutex);
     act->count1 += 1;
     pthread_mutex_unlock(&act->mutex);
+
+    *release = false;
+    free(voidMsg);
+
     return CELIX_SUCCESS;
 }
 
