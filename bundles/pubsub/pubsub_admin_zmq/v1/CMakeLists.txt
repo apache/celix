@@ -33,8 +33,8 @@ if (BUILD_ZMQ_SECURITY)
     set (ZMQ_CRYPTO_C "src/zmq_crypto.c")
 endif()
 
-add_celix_bundle(celix_pubsub_admin_zmq_v1
-    BUNDLE_SYMBOLICNAME "apache_celix_pubsub_admin_zmq_v1"
+add_celix_bundle(celix_pubsub_admin_zmq
+    BUNDLE_SYMBOLICNAME "apache_celix_pubsub_admin_zmq"
     VERSION "1.1.0"
     GROUP "Celix/PubSub"
     SOURCES
@@ -45,17 +45,17 @@ add_celix_bundle(celix_pubsub_admin_zmq_v1
         ${ZMQ_CRYPTO_C}
 )
 
-set_target_properties(celix_pubsub_admin_zmq_v1 PROPERTIES INSTALL_RPATH "$ORIGIN")
-target_link_libraries(celix_pubsub_admin_zmq_v1 PRIVATE
+set_target_properties(celix_pubsub_admin_zmq PROPERTIES INSTALL_RPATH "$ORIGIN")
+target_link_libraries(celix_pubsub_admin_zmq PRIVATE
 
         Celix::framework Celix::dfi Celix::log_helper Celix::utils
         ZMQ::lib CZMQ::lib ${OPTIONAL_OPENSSL_LIB}
 )
-target_link_libraries(celix_pubsub_admin_zmq_v1 PRIVATE Celix::pubsub_spi Celix::pubsub_utils )
-target_include_directories(celix_pubsub_admin_zmq_v1 PRIVATE
+target_link_libraries(celix_pubsub_admin_zmq PRIVATE Celix::pubsub_spi Celix::pubsub_utils )
+target_include_directories(celix_pubsub_admin_zmq PRIVATE
     src
 )
 
-install_celix_bundle(celix_pubsub_admin_zmq_v1 EXPORT celix COMPONENT pubsub)
-target_link_libraries(celix_pubsub_admin_zmq_v1 PRIVATE Celix::shell_api)
-add_library(Celix::celix_pubsub_admin_zmq_v1 ALIAS celix_pubsub_admin_zmq_v1)
+install_celix_bundle(celix_pubsub_admin_zmq EXPORT celix COMPONENT pubsub)
+target_link_libraries(celix_pubsub_admin_zmq PRIVATE Celix::shell_api)
+add_library(Celix::celix_pubsub_admin_zmq ALIAS celix_pubsub_admin_zmq)
