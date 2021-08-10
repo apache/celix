@@ -33,7 +33,7 @@
 #include "celix/Deferred.h"
 
 namespace celix {
-    static int nr; //tmp
+//    static int nr; //tmp
 
     template<typename T>
     class PushStream: public IAutoCloseable {
@@ -44,15 +44,15 @@ namespace celix {
         PushStream<T>& filter(std::function<bool(T)> predicate);
 
         void close() override;
-        long handleEvent(PushEvent<T> event);
-        virtual bool begin() = 0;
+        long handleEvent(PushEvent<T> event);  //todo make protected
+        virtual bool begin() = 0; //todo make protected
     protected:
         PromiseFactory& promiseFactory;
         IPushEventConsumer<T> nextEvent{};
         std::shared_ptr<PushStream<T>> downstream {};
     private:
         Deferred<void> streamEnd{promiseFactory.deferred<void>()};
-        int _nr{0}; //tmp
+//        int _nr{0}; //tmp
     };    
 }
 
@@ -65,21 +65,20 @@ namespace celix {
 
 template<typename T>
 celix::PushStream<T>::PushStream(PromiseFactory& _promiseFactory) : promiseFactory{_promiseFactory} {
-    _nr = nr++;
+//    _nr = nr++;
 }
 
 template<typename T>
 long celix::PushStream<T>::handleEvent(PushEvent<T> event) {
-    std::cout << __PRETTY_FUNCTION__  << " nr: " << _nr << std::endl;
+    //std::cout << __PRETTY_FUNCTION__  << " nr: " << _nr << std::endl;
     return nextEvent(event);
 }
 
 template<typename T>
 celix::Promise<void> celix::PushStream<T>::forEach(std::function<void(T)> func) {
-    std::cout << __PRETTY_FUNCTION__  << " nr: " << _nr << std::endl;
+    //std::cout << __PRETTY_FUNCTION__  << " nr: " << _nr << std::endl;
 
     nextEvent = [func = std::move(func), this](PushEvent<T> event) -> long {
-        std::cout << event.data << std::endl;
         switch(event.type) {
             case celix::PushEvent<T>::EventType::DATA:
                 func(event.data);
@@ -103,7 +102,7 @@ celix::Promise<void> celix::PushStream<T>::forEach(std::function<void(T)> func) 
 
 template<typename T>
 celix::PushStream<T>& celix::PushStream<T>::filter(std::function<bool(T)> predicate) {
-    std::cout << __PRETTY_FUNCTION__  << " nr: " << _nr<< std::endl;
+    //std::cout << __PRETTY_FUNCTION__  << " nr: " << _nr<< std::endl;
 
     downstream = std::make_shared<celix::IntermediatePushStream<T>>(promiseFactory, *this);
     nextEvent = std::move([downstream = this->downstream, predicate = std::move(predicate)](PushEvent<T> event) -> long {
