@@ -41,7 +41,7 @@ namespace celix {
         PushStream(PromiseFactory& promiseFactory);
 
         Promise<void> forEach(std::function<void(T)> func);
-        std::shared_ptr<PushStream<T>> filter(std::function<bool(T)> predicate);
+        PushStream<T>& filter(std::function<bool(T)> predicate);
 
         void close() override;
         long handleEvent(PushEvent<T> event);
@@ -102,7 +102,7 @@ celix::Promise<void> celix::PushStream<T>::forEach(std::function<void(T)> func) 
 }
 
 template<typename T>
-std::shared_ptr<celix::PushStream<T>> celix::PushStream<T>::filter(std::function<bool(T)> predicate) {
+celix::PushStream<T>& celix::PushStream<T>::filter(std::function<bool(T)> predicate) {
     std::cout << __PRETTY_FUNCTION__  << " nr: " << _nr<< std::endl;
 
     downstream = std::make_shared<celix::IntermediatePushStream<T>>(promiseFactory, *this);
@@ -113,7 +113,7 @@ std::shared_ptr<celix::PushStream<T>> celix::PushStream<T>::filter(std::function
         return 0;
     });
 
-    return downstream;
+    return *downstream;
 }
 
 template<typename T>

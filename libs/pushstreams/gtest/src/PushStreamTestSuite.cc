@@ -50,13 +50,13 @@ TEST_F(PushStreamTestSuite, BasicTest) {
 
     ses->connectPromise().then<void>(successLamba);
 
-    auto streamEnded = psp.createStream<int>(ses)->
-    filter([](int event) -> bool {
+    auto streamEnded = psp.createStream<int>(ses).
+    filter([&](int event) -> bool {
         return (event > 10);
-    })->
+    }).
     filter([&](int event) -> bool {
         return (event < 15);
-    })->
+    }).
     forEach([](int event) {
         std::cout << "Consumed event: " << event << std::endl;
     });
@@ -70,7 +70,6 @@ TEST_F(PushStreamTestSuite, BasicTest) {
     ses->close();
 
     t->join();
-
 }
 
 
@@ -96,21 +95,21 @@ TEST_F(PushStreamTestSuite, MultipleStreamsTest) {
 
     ses->connectPromise().then<void>(success);
 
-    auto streamEnded = psp.createStream<int>(ses)->
+    auto streamEnded = psp.createStream<int>(ses).
     filter([&](int event) -> bool {
         return (event > 10);
-    })->
+    }).
     filter([&](int event) -> bool {
         return (event < 15);
-    })->
+    }).
     forEach([&](int event) {
         std::cout << "Consumed event 1: " << event << std::endl;
     });
 
-    auto streamEnded2 = psp.createStream<int>(ses)->
+    auto streamEnded2 = psp.createStream<int>(ses).
     filter([&](int event) -> bool {
         return (event < 15);
-    })->
+    }).
     forEach([&](int event) {
         std::cout << "Consumed event 2: " << event << std::endl;
     });
