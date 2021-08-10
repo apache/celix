@@ -33,90 +33,75 @@
 #include "celix/Deferred.h"
 
 namespace celix {
+    static int nr; //tmp
 
     template<typename T>
     class PushStream: public IAutoCloseable {
     public:
-        using PredicateVector = std::vector<std::function<bool(T)>>; 
-        
-        PushStream(std::shared_ptr<IPushEventSource<T>> _eventSource,
-                   std::optional<std::queue<T>> _queue,
-                   std::shared_ptr<IExecutor> _executor);
+        PushStream(PromiseFactory& promiseFactory);
 
         Promise<void> forEach(std::function<void(T)> func);
-        PushStream<T>& filter(std::function<bool(T)> predicate);
+        std::shared_ptr<PushStream<T>> filter(std::function<bool(T)> predicate);
 
-        void close() override;        
-    private:        
-        std::shared_ptr<celix::IPushEventSource<T>> eventSource;
-        std::optional<std::queue<T>> queue;
-        PromiseFactory promiseFactory;
+        void close() override;
+        long handleEvent(PushEvent<T> event);
+        virtual bool begin() = 0;
+    protected:
+        PromiseFactory& promiseFactory;
         Deferred<void> streamEnd;
-        PredicateVector predicates;
+        IPushEventConsumer<T> nextEvent{};
+        std::shared_ptr<PushStream<T>> downstream {};
+
+        int _nr{0}; //tmp
     };    
-
-    //TODO move code from class declaration
-    template <typename T>
-    class BasicEventConsumer: public IPushEventConsumer<T> {
-    public:
-        using PredicateVector = std::vector<std::function<bool(T)>>; 
-
-        BasicEventConsumer(std::function<void(T)> _func, 
-                           PredicateVector _predicates,
-                           Deferred<void>& _streamEnd) : predicates{_predicates}, func{_func}, streamEnd{_streamEnd} {
-        }
-
-        long accept(PushEvent<T> event) override {            
-            bool predicateGrant = true;
-            if (event.type == celix::PushEvent<T>::EventType::CLOSE) {
-                streamEnd.resolve();
-                return -1;
-            } else {
-                for(auto& predicate : predicates) {
-                    if (!predicate(event.data)) {    
-                        predicateGrant = false;
-                        break;
-                    }
-                }
-
-                if (predicateGrant) {
-                    func(event.data);
-                }
-                return 0;
-            }
-        }
-
-        PredicateVector predicates;
-        std::function<void(T)> func;
-        Deferred<void>& streamEnd;
-    }; 
 }
 
 /*********************************************************************************
  Implementation
 *********************************************************************************/
+
+#include "IntermediatePushStream.h"
+#include "UnbufferedPushStream.h"
+
 template<typename T>
-celix::PushStream<T>::PushStream(std::shared_ptr<celix::IPushEventSource<T>> _eventSource, 
-                                 std::optional<std::queue<T>> _queue,
-                                 std::shared_ptr<IExecutor> _executor) : eventSource{_eventSource},
-                                                                         queue{_queue},
-                                                                         promiseFactory{_executor},
-                                                                         streamEnd{promiseFactory.deferred<void>()},
-                                                                         predicates{} {    
+celix::PushStream<T>::PushStream(PromiseFactory& _promiseFactory) : promiseFactory{_promiseFactory},
+                                                                    streamEnd{promiseFactory.deferred<void>()} {
+    _nr = nr++;
 }
 
 template<typename T>
-celix::Promise<void> celix::PushStream<T>::forEach(std::function<void(T)> _func) {
-    auto bec = std::make_shared<BasicEventConsumer<T>>(_func, predicates, streamEnd);    
-    eventSource->open(bec);
+long celix::PushStream<T>::handleEvent(PushEvent<T> event) {
+    std::cout << __PRETTY_FUNCTION__  << " nr: " << _nr << std::endl;
+    return nextEvent(event);
+}
+
+template<typename T>
+celix::Promise<void> celix::PushStream<T>::forEach(std::function<void(T)> func) {
+    std::cout << __PRETTY_FUNCTION__  << " nr: " << _nr << std::endl;
+
+    nextEvent = [func = std::move(func)](PushEvent<T> event) -> long {
+        std::cout << event.data << std::endl;
+        func(event.data);
+        return 0;
+    };
+
+    begin();
     return streamEnd.getPromise();           
 }
 
 template<typename T>
-celix::PushStream<T>& celix::PushStream<T>::filter(std::function<bool(T)> predicate) {
-    //TODO define: new or existing object, currently the same.
-    predicates.push_back(std::move(predicate));
-    return *this;
+std::shared_ptr<celix::PushStream<T>> celix::PushStream<T>::filter(std::function<bool(T)> predicate) {
+    std::cout << __PRETTY_FUNCTION__  << " nr: " << _nr<< std::endl;
+
+    downstream = std::make_shared<celix::IntermediatePushStream<T>>(promiseFactory, *this);
+    nextEvent = std::move([downstream = this->downstream, predicate = std::move(predicate)](PushEvent<T> event) -> long {
+        if (predicate(event.data)) {
+            downstream->handleEvent(event);
+        }
+        return 0;
+    });
+
+    return downstream;
 }
 
 template<typename T>

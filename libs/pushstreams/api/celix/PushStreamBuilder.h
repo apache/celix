@@ -30,8 +30,7 @@ namespace celix {
     class PushStreamBuilder: public BufferBuilder<PushStream<T>,T, U> {
     public:
         explicit PushStreamBuilder(std::shared_ptr<celix::IPushEventSource<T>> _eventSource);
-        
-        PushStream<T> build() override;
+        std::shared_ptr<PushStream<T>> build() override;
 
     private:
         std::optional<U> buffer {};
@@ -39,6 +38,7 @@ namespace celix {
 
         //todo default constructor par and withExecutor methods
         std::shared_ptr<IExecutor> executor {std::make_shared<DefaultExecutor>()};
+        PromiseFactory promiseFactory{executor};
     };
 }
 
@@ -51,6 +51,6 @@ celix::PushStreamBuilder<T,U>::PushStreamBuilder(std::shared_ptr<celix::IPushEve
 }
 
 template <typename T, typename U>
-celix::PushStream<T> celix::PushStreamBuilder<T,U>::build() {
-    return PushStream<T>(eventSource, buffer, executor);
+std::shared_ptr<celix::PushStream<T>> celix::PushStreamBuilder<T,U>::build() {
+    return std::make_shared<UnbufferedPushStream<T>>(promiseFactory);
 }

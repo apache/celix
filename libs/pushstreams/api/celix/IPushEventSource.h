@@ -28,6 +28,6 @@ namespace celix {
     public:
         virtual ~IPushEventSource() noexcept = default;
 
-        virtual IAutoCloseable& open(std::shared_ptr<IPushEventConsumer<T>> pec) = 0; 
+        virtual IAutoCloseable& open(IPushEventConsumer<T> pec) = 0;
     };
 }

@@ -38,7 +38,7 @@ namespace celix {
         explicit SimplePushEventSource(std::shared_ptr<IExecutor> _executor);
 
         virtual ~SimplePushEventSource() noexcept;
-        IAutoCloseable& open(std::shared_ptr<IPushEventConsumer<T>> eventConsumer) override; 
+        IAutoCloseable& open(IPushEventConsumer<T> eventConsumer) override;
         void publish(T event);
 
         [[nodiscard]] celix::Promise<void> connectPromise();
@@ -53,7 +53,7 @@ namespace celix {
         std::shared_ptr<IExecutor> executor{};
         PromiseFactory promiseFactory;
         Deferred<void> connected;
-        std::set<std::shared_ptr<IPushEventConsumer<T>>> eventConsumers {};
+        std::vector<IPushEventConsumer<T>> eventConsumers {};
     };
 }
 
@@ -69,12 +69,12 @@ celix::SimplePushEventSource<T>::SimplePushEventSource(std::shared_ptr<IExecutor
 }
 
 template <typename T>
-celix::IAutoCloseable& celix::SimplePushEventSource<T>::open(std::shared_ptr<IPushEventConsumer<T>> _eventConsumer) {
+celix::IAutoCloseable& celix::SimplePushEventSource<T>::open(IPushEventConsumer<T> _eventConsumer) {
     std::lock_guard lck{mutex};
     if (closed) {
-        _eventConsumer->accept(celix::PushEvent<T>({}, celix::PushEvent<T>::EventType::CLOSE));
+        _eventConsumer(celix::PushEvent<T>({}, celix::PushEvent<T>::EventType::CLOSE));
     } else {
-        eventConsumers.insert(_eventConsumer);
+        eventConsumers.push_back(_eventConsumer);
         connected.resolve();
         connected = promiseFactory.deferred<void>();
     }
@@ -100,7 +100,7 @@ void celix::SimplePushEventSource<T>::publish(T event) {
     } else {
         for(auto& eventConsumer : eventConsumers) {
             executor->execute([&, event]() {
-                eventConsumer->accept(celix::PushEvent<T>(event));
+                eventConsumer(celix::PushEvent<T>(event));
             });
         }
     }
@@ -119,7 +119,7 @@ void celix::SimplePushEventSource<T>::close() {
 
     for(auto& eventConsumer : eventConsumers) {
         executor->execute([&]() {
-            eventConsumer->accept(celix::PushEvent<T>({}, celix::PushEvent<T>::EventType::CLOSE));
+            eventConsumer(celix::PushEvent<T>({}, celix::PushEvent<T>::EventType::CLOSE));
         });
     }
 

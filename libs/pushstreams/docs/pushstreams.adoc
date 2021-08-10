@@ -5,9 +5,73 @@ WARNING: The PushStreams library is still a work in progress.
 [plantuml]
 .Class diagram of celix::PushStreams
 ----
-include::_classes.pu
+@startuml
+
+interface BufferBuilder<R, U, T>
+note top
+    T type of actual database
+    U Queue Type
+    R BufferResult e.g. queue<T>
+end note
+
+interface IPushEventConsumer<T>
+interface IPushEventSource<T>
+interface IExecutor
+
+class PromiseFactory
+
+class PushEvent<T>
+class PushStream<T>
+class PushStreamBuilder<T, U>
+class PushStreamProvider <<final>>
+class SimplePushEventSource<T>
+
+SimplePushEventSource --|> IPushEventSource
+SimplePushEventSource --> IExecutor
+
+PushStream --> IExecutor
+PushStream --> PromiseFactory
+PushStream --> IPushEventSource
+
+PushStreamProvider --> PushStream : creates
+PushStreamProvider --> SimplePushEventSource : creates
+PushStreamProvider --> PushStreamBuilder : use
+
+PushStreamBuilder --|> BufferBuilder
+
+@enduml
 ----
 
+Sequence below
 
+
+[plantuml]
+.Sequence
+----
+@startuml
+
+actor Test
+participant PushStreamProvider as psp
+participant SimpleEventSource as ses
+participant UnbufferedPushStream as ubps
+participant IntermediatePushStream as ips
+
+Test --> psp: createSimpleEventSource
+psp -> ses ** : create
+Test --> psp: createStream(simleEventSource)
+psp -> ubps ** : create
+Test -> ubps: filter: ips
+ubps -> ips ** : create
+ubps -> ubps : setPredicateWithDownStream
+Test -> ips: forEach (f)
+ips-> ips: build
+activate ips
+ips -> ses : open
+note left
+    lambla provided by PushStreamProvider
+end note
+
+@enduml
+----
 
 

@@ -19,21 +19,32 @@
 
 #pragma once
 
-#include "celix/PushEvent.h"
-
 namespace celix {
-    template <typename T>
-    using IPushEventConsumer = std::function<long(PushEvent<T> event)>;
-//    template <typename T>
-//    class IPushEventConsumer: public std::function<long(PushEvent<T> event)> {
-//    public:
-//        static constexpr int const& ABORT = -1;
-//        static constexpr int const& CONTINUE = 0;
-//
-//        virtual ~IPushEventConsumer() noexcept = default;
-//
-//        virtual long accept(PushEvent<T> event) {
-//            return this->operator();
-//        };
-//    };
+    template<typename T>
+    class IntermediatePushStream: public PushStream<T> {
+    public:
+        IntermediatePushStream(PromiseFactory& _promiseFactory,
+                   celix::PushStream<T>& _upstream);
+
+    protected:
+        bool begin() override;
+    private:
+        celix::PushStream<T>& upstream;
+    };
 }
+//implementation
+
+template<typename T>
+celix::IntermediatePushStream<T>::IntermediatePushStream(PromiseFactory& _promiseFactory,
+                                                         celix::PushStream<T>& _upstream) : celix::PushStream<T>(_promiseFactory),
+                                                         upstream{_upstream} {
+}
+
+
+template<typename T>
+bool celix::IntermediatePushStream<T>::begin() {
+    upstream.begin();
+    return true;
+}
+
+

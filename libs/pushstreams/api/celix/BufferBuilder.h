@@ -24,7 +24,7 @@ namespace celix {
     class BufferBuilder {
     public:
         virtual ~BufferBuilder() = default;
-        virtual R build() = 0;
+        virtual std::shared_ptr<R> build() = 0;
     };
 }
 
