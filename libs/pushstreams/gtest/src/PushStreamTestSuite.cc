@@ -70,6 +70,7 @@ TEST_F(PushStreamTestSuite, BasicTest) {
     ses->close();
 
     t->join();
+
 }
 
 
@@ -116,6 +117,10 @@ TEST_F(PushStreamTestSuite, MultipleStreamsTest) {
 
     streamEnded.onSuccess([]() {
         std::cout << "Stream ended" << std::endl;
+    });
+
+    streamEnded2.onSuccess([]() {
+        std::cout << "Stream2 ended" << std::endl;
     });
 
     std::this_thread::sleep_for(std::chrono::seconds{1});

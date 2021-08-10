@@ -48,10 +48,10 @@ namespace celix {
         virtual bool begin() = 0;
     protected:
         PromiseFactory& promiseFactory;
-        Deferred<void> streamEnd;
         IPushEventConsumer<T> nextEvent{};
         std::shared_ptr<PushStream<T>> downstream {};
-
+    private:
+        Deferred<void> streamEnd{promiseFactory.deferred<void>()};
         int _nr{0}; //tmp
     };    
 }
@@ -64,8 +64,7 @@ namespace celix {
 #include "UnbufferedPushStream.h"
 
 template<typename T>
-celix::PushStream<T>::PushStream(PromiseFactory& _promiseFactory) : promiseFactory{_promiseFactory},
-                                                                    streamEnd{promiseFactory.deferred<void>()} {
+celix::PushStream<T>::PushStream(PromiseFactory& _promiseFactory) : promiseFactory{_promiseFactory} {
     _nr = nr++;
 }
 
@@ -79,10 +78,23 @@ template<typename T>
 celix::Promise<void> celix::PushStream<T>::forEach(std::function<void(T)> func) {
     std::cout << __PRETTY_FUNCTION__  << " nr: " << _nr << std::endl;
 
-    nextEvent = [func = std::move(func)](PushEvent<T> event) -> long {
+    nextEvent = [func = std::move(func), this](PushEvent<T> event) -> long {
         std::cout << event.data << std::endl;
-        func(event.data);
-        return 0;
+        switch(event.type) {
+            case celix::PushEvent<T>::EventType::DATA:
+                func(event.data);
+                //return CONTINUE;//
+                return 0;
+            case celix::PushEvent<T>::EventType::CLOSE:
+                streamEnd.resolve();
+                break;
+            case celix::PushEvent<T>::EventType::ERROR:
+                //streamEnd.fail(event.getFailure());
+                //TODO
+                break;
+        }
+
+        return -1;
     };
 
     begin();
@@ -95,7 +107,7 @@ std::shared_ptr<celix::PushStream<T>> celix::PushStream<T>::filter(std::function
 
     downstream = std::make_shared<celix::IntermediatePushStream<T>>(promiseFactory, *this);
     nextEvent = std::move([downstream = this->downstream, predicate = std::move(predicate)](PushEvent<T> event) -> long {
-        if (predicate(event.data)) {
+        if (event.type != celix::PushEvent<T>::EventType::DATA || predicate(event.data)) {
             downstream->handleEvent(event);
         }
         return 0;
