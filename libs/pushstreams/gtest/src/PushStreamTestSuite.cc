@@ -127,3 +127,54 @@ TEST_F(PushStreamTestSuite, MultipleStreamsTest) {
     ses->close();
     t->join();
 }
+
+
+TEST_F(PushStreamTestSuite, SplitStreamsTest) {
+    auto psp = PushStreamProvider();
+    std::unique_ptr<std::thread> t{};
+    auto ses = psp.createSimpleEventSource<int>();
+
+    auto success = [&](celix::Promise<void> p) -> celix::Promise<void> {
+        t = std::make_unique<std::thread>([&]() {
+            long counter = 0;
+            // Keep going as long as someone is listening
+            while (ses->isConnected()) {
+                ses->publish(++counter);
+                std::this_thread::sleep_for(std::chrono::milliseconds{50});
+                std::cout << "Published: " << counter << std::endl;
+            }
+            // Restart delivery when a new listener connects
+            // ses.connectPromise().then(success);
+        });
+        return p;
+    };
+
+    ses->connectPromise().then<void>(success);
+
+    auto splitStream = psp.createStream<int>(ses).
+        split({
+                            [&](int event) -> bool {
+                                return (event > 10);
+                            },
+                            [&](int event) -> bool {
+                                return (event < 12);
+                            }
+        });
+
+    std::vector<celix::Promise<void>> streamEndeds{};
+
+    for(long unsigned int i = 0; i < splitStream.size(); i++) {
+        streamEndeds.push_back(splitStream[i]->forEach([=](int event) {
+            std::cout << "consume split " << i << ", event data " << event << std::endl;
+        }));
+
+        streamEndeds[i].onSuccess([]() {
+            std::cout << "Stream ended" << std::endl;
+        });
+    }
+
+    std::this_thread::sleep_for(std::chrono::seconds{1});
+
+    ses->close();
+    t->join();
+}

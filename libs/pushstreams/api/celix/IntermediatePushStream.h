@@ -43,7 +43,9 @@ celix::IntermediatePushStream<T>::IntermediatePushStream(PromiseFactory& _promis
 
 template<typename T>
 bool celix::IntermediatePushStream<T>::begin() {
-    upstream.begin();
+    if (this->compareAndSetState(celix::PushStream<T>::State::BUILDING, celix::PushStream<T>::State::STARTED)) {
+        upstream.begin();
+    }
     return true;
 }
 

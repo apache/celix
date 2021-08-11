@@ -46,8 +46,9 @@ celix::UnbufferedPushStream<T>::UnbufferedPushStream(PromiseFactory& _promiseFac
 
 template<typename T>
 bool celix::UnbufferedPushStream<T>::begin() {
-    std::cout << __PRETTY_FUNCTION__  << std::endl;
-    connector();
+    if (this->compareAndSetState(celix::PushStream<T>::State::BUILDING, celix::PushStream<T>::State::STARTED)) {
+        connector();
+    }
     return true;
 }
 
