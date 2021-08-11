@@ -11,13 +11,13 @@ NOTE: this implementation is still experiment and the api and behaviour will pro
 
 ## OSGi Information
 
-[OSGi Compendium Release 7 Promises Specification (HTML)](https://osgi.org/specification/osgi.cmpn/7.0.0/util.promise.html)
+[OSGi Compendium Release 7 Promises Specification (HTML)](https://osgi.org/specification/osgi.cmpn/7.0.0/util.pushstream.html)
 
-[OSGi Compendium Release 7 Specification (PDF)](https://osgi.org/specification/osgi.cmpn/7.0.0/util.promise.html)
+[OSGi Compendium Release 7 Specification (PDF)](https://osgi.org/specification/osgi.cmpn/7.0.0/util.pushstream.html)
 
 ## Usage
 
-## Differences with OSGi Promises & Java
+## Differences with OSGi PushStreams & Java
 
 
 ## Open Issues & TODOs
