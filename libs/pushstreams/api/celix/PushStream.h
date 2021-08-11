@@ -54,6 +54,7 @@ namespace celix {
             CLOSED
         };
 
+        std::mutex mutex {};
         PromiseFactory& promiseFactory;
         IPushEventConsumer<T> nextEvent{};
         std::shared_ptr<PushStream<T>> downstream {};
@@ -78,6 +79,7 @@ celix::PushStream<T>::PushStream(PromiseFactory& _promiseFactory) : promiseFacto
 
 template<typename T>
 long celix::PushStream<T>::handleEvent(PushEvent<T> event) {
+//    std::lock_guard lck{mutex};
     return nextEvent(event);
 }
 
