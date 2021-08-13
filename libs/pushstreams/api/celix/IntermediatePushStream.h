@@ -20,29 +20,28 @@
 #pragma once
 
 namespace celix {
-    template<typename T>
-    class IntermediatePushStream: public PushStream<T> {
+    template<typename T, typename TUP = T>
+        class IntermediatePushStream: public PushStream<T> {
     public:
         IntermediatePushStream(PromiseFactory& _promiseFactory,
-                   celix::PushStream<T>& _upstream);
+                               celix::PushStream<TUP>& _upstream);
 
     protected:
         bool begin() override;
     private:
-        celix::PushStream<T>& upstream;
+        celix::PushStream<TUP>& upstream;
     };
 }
 //implementation
 
-template<typename T>
-celix::IntermediatePushStream<T>::IntermediatePushStream(PromiseFactory& _promiseFactory,
-                                                         celix::PushStream<T>& _upstream) : celix::PushStream<T>(_promiseFactory),
-                                                         upstream{_upstream} {
+template<typename T, typename TUP>
+celix::IntermediatePushStream<T, TUP>::IntermediatePushStream(PromiseFactory& _promiseFactory,
+                                                             celix::PushStream<TUP>& _upstream) : celix::PushStream<T>(_promiseFactory),
+                                                             upstream{_upstream} {
 }
 
-
-template<typename T>
-bool celix::IntermediatePushStream<T>::begin() {
+template<typename T, typename TUP>
+bool celix::IntermediatePushStream<T, TUP>::begin() {
     if (this->compareAndSetState(celix::PushStream<T>::State::BUILDING, celix::PushStream<T>::State::STARTED)) {
         upstream.begin();
     }

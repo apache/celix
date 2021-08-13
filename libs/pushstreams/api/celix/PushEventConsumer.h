@@ -26,7 +26,7 @@ namespace celix {
     template <typename T>
     class PushEventConsumer {
     public:
-        using FunctionType = std::function<long(PushEvent<T> event)>;
+        using FunctionType = std::function<long(const PushEvent<T>& event)>;
 
         static constexpr int const& ABORT = -1;
         static constexpr int const& CONTINUE = 0;
@@ -37,7 +37,7 @@ namespace celix {
         virtual ~PushEventConsumer() noexcept = default;
 
 
-        virtual long accept(PushEvent<T> event) {
+        virtual long accept(const PushEvent<T>& event) {
             return behavior(event);
         };
 
@@ -48,6 +48,6 @@ namespace celix {
 //implementation
 
 template<typename T>
-celix::PushEventConsumer<T>::PushEventConsumer(celix::PushEventConsumer<T>::FunctionType _behavior) : behavior{_behavior} {
-
+celix::PushEventConsumer<T>::PushEventConsumer(celix::PushEventConsumer<T>::FunctionType _behavior) :
+    behavior{std::move(_behavior)} {
 }

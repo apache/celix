@@ -31,7 +31,7 @@ namespace celix {
             CLOSE
         };
 
-        PushEvent(T _data, EventType _type = EventType::DATA );
+        PushEvent(const T& _data, EventType _type = EventType::DATA );
 
         T data;
         EventType type;
@@ -42,7 +42,7 @@ namespace celix {
  Implementation
 *********************************************************************************/
 template<typename T>
-celix::PushEvent<T>::PushEvent(T _data, 
+celix::PushEvent<T>::PushEvent(const T& _data,
                                celix::PushEvent<T>::EventType _type) : data{_data},
                                                                        type{_type} {    
 }

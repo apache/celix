@@ -120,7 +120,7 @@ TEST_F(PushStreamTestSuite, ForEachTestObjectType) {
     auto ses = createEventSource<EventObject>(EventObject{2}, 10);
 
     auto streamEnded = psp.createStream<EventObject>(ses).
-            forEach([&](EventObject event) {
+            forEach([&](const EventObject& event) {
                 consumeCount++;
                 consumeSum = consumeSum + event;
             });
@@ -138,7 +138,7 @@ TEST_F(PushStreamTestSuite, FilterTestObjectType_true) {
     auto ses = createEventSource<EventObject>(EventObject{2}, 10);
 
     auto streamEnded = psp.createStream<EventObject>(ses).
-            filter([](EventObject /*event*/) -> bool {
+            filter([](const EventObject& /*event*/) -> bool {
                return true;
             }).
             forEach([&](EventObject event) {
@@ -159,7 +159,7 @@ TEST_F(PushStreamTestSuite, FilterTestObjectType_false) {
     auto ses = createEventSource<EventObject>(EventObject{2}, 10);
 
     auto streamEnded = psp.createStream<EventObject>(ses).
-            filter([](EventObject /*event*/) -> bool {
+            filter([](const EventObject& /*event*/) -> bool {
                 return false;
             }).
             forEach([&](EventObject event) {
@@ -179,7 +179,7 @@ TEST_F(PushStreamTestSuite, FilterTestObjectType_simple) {
     auto ses = createEventSource<EventObject>(EventObject{0}, 10, true);
 
     auto streamEnded = psp.createStream<EventObject>(ses).
-            filter([](EventObject event) -> bool {
+            filter([](const EventObject& event) -> bool {
                 return event.val < 5;
             }).
             forEach([&](EventObject event) {
@@ -199,13 +199,13 @@ TEST_F(PushStreamTestSuite, FilterTestObjectType_and) {
     auto ses = createEventSource<EventObject>(EventObject{0}, 10, true);
 
     auto streamEnded = psp.createStream<EventObject>(ses).
-            filter([](EventObject event) -> bool {
-                return event.val > 5;
+            filter([](const EventObject& predicate) -> bool {
+                return predicate.val > 5;
             }).
-            filter([](EventObject event) -> bool {
-                return event.val < 8;
+            filter([](const EventObject& predicate) -> bool {
+                return predicate.val < 8;
             }).
-            forEach([&](EventObject event) {
+            forEach([&](const EventObject& event) {
                 consumeCount++;
                 consumeSum = consumeSum + event;
             });
@@ -214,6 +214,26 @@ TEST_F(PushStreamTestSuite, FilterTestObjectType_and) {
 
     GTEST_ASSERT_EQ(2, consumeCount);
     GTEST_ASSERT_EQ(6 + 7, consumeSum); // 0 + 1 + 2 + 3 + 4
+}
+
+TEST_F(PushStreamTestSuite, MapTestObjectType) {
+    int consumeCount{0};
+    int consumeSum{0};
+    auto ses = createEventSource<EventObject>(EventObject{0}, 10, true);
+
+    auto streamEnded = psp.createStream<EventObject>(ses).
+            map<int>([](const EventObject& event) -> int {
+                return event.val;
+            }).
+            forEach([&](const int& event) {
+                consumeCount++;
+                consumeSum = consumeSum + event;
+            });
+
+    streamEnded.wait(); //todo marked is not in OSGi Spec
+
+    GTEST_ASSERT_EQ(10, consumeCount);
+    GTEST_ASSERT_EQ(45, consumeSum); 
 }
 
 

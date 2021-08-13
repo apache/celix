@@ -39,7 +39,7 @@ namespace celix {
 
         virtual ~PushEventSource() noexcept;
         IAutoCloseable& open(PushEventConsumer<T> eventConsumer) override;
-        void publish(T event);
+        void publish(const T& event);
 
         [[nodiscard]] celix::Promise<void> connectPromise();
 
@@ -61,12 +61,10 @@ namespace celix {
 /*********************************************************************************
  Implementation
 *********************************************************************************/
-
 template <typename T>
 celix::PushEventSource<T>::PushEventSource(PromiseFactory& _promiseFactory):
     promiseFactory{_promiseFactory},
     connected{promiseFactory.deferred<void>()}  {
-
 }
 
 template <typename T>
@@ -93,7 +91,7 @@ template <typename T>
 }
 
 template <typename T>
-void celix::PushEventSource<T>::publish(T event) {
+void celix::PushEventSource<T>::publish(const T& event) {
     std::lock_guard lck{mutex};
 
     if (closed) {
