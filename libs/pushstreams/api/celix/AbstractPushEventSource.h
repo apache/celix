@@ -38,7 +38,7 @@ namespace celix {
         explicit PushEventSource(PromiseFactory& _promiseFactory);
 
         virtual ~PushEventSource() noexcept;
-        IAutoCloseable& open(IPushEventConsumer<T> eventConsumer) override;
+        IAutoCloseable& open(PushEventConsumer<T> eventConsumer) override;
         void publish(T event);
 
         [[nodiscard]] celix::Promise<void> connectPromise();
@@ -54,7 +54,7 @@ namespace celix {
         std::mutex mutex {};
         bool closed{false};
         Deferred<void> connected;
-        std::vector<IPushEventConsumer<T>> eventConsumers {};
+        std::vector<PushEventConsumer<T>> eventConsumers {};
     };
 }
 
@@ -70,10 +70,10 @@ celix::PushEventSource<T>::PushEventSource(PromiseFactory& _promiseFactory):
 }
 
 template <typename T>
-celix::IAutoCloseable& celix::PushEventSource<T>::open(IPushEventConsumer<T> _eventConsumer) {
+celix::IAutoCloseable& celix::PushEventSource<T>::open(PushEventConsumer<T> _eventConsumer) {
     std::lock_guard lck{mutex};
     if (closed) {
-        _eventConsumer(celix::PushEvent<T>({}, celix::PushEvent<T>::EventType::CLOSE));
+        _eventConsumer.accept(celix::PushEvent<T>({}, celix::PushEvent<T>::EventType::CLOSE));
     } else {
         eventConsumers.push_back(_eventConsumer);
         connected.resolve();
@@ -101,7 +101,7 @@ void celix::PushEventSource<T>::publish(T event) {
     } else {
         for(auto& eventConsumer : eventConsumers) {
             execute([&, event]() {
-                eventConsumer(celix::PushEvent<T>(event));
+                eventConsumer.accept(celix::PushEvent<T>(event));
             });
         }
     }
@@ -120,7 +120,7 @@ void celix::PushEventSource<T>::close() {
 
     for(auto& eventConsumer : eventConsumers) {
         execute([&]() {
-            eventConsumer(celix::PushEvent<T>({}, celix::PushEvent<T>::EventType::CLOSE));
+            eventConsumer.accept(celix::PushEvent<T>({}, celix::PushEvent<T>::EventType::CLOSE));
         });
     }
 

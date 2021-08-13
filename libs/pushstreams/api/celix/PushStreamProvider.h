@@ -77,7 +77,7 @@ celix::PushStream<T>& celix::PushStreamProvider::createStream(std::shared_ptr<ce
 
     //TODO think about memory management on this point
     unbufferedPushStream->setConnector([unbufferedPushStream, eventSource]() {
-        eventSource->open(std::bind(&PushStream<T>::handleEvent, unbufferedPushStream, std::placeholders::_1));
+        eventSource->open(PushEventConsumer<T>(std::bind(&PushStream<T>::handleEvent, unbufferedPushStream, std::placeholders::_1)));
     });
 
     return *unbufferedPushStream;

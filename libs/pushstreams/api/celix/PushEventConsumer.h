@@ -22,18 +22,32 @@
 #include "celix/PushEvent.h"
 
 namespace celix {
+
     template <typename T>
-    using IPushEventConsumer = std::function<long(PushEvent<T> event)>;
-//    template <typename T>
-//    class IPushEventConsumer: public std::function<long(PushEvent<T> event)> {
-//    public:
-//        static constexpr int const& ABORT = -1;
-//        static constexpr int const& CONTINUE = 0;
-//
-//        virtual ~IPushEventConsumer() noexcept = default;
-//
-//        virtual long accept(PushEvent<T> event) {
-//            return this->operator();
-//        };
-//    };
+    class PushEventConsumer {
+    public:
+        using FunctionType = std::function<long(PushEvent<T> event)>;
+
+        static constexpr int const& ABORT = -1;
+        static constexpr int const& CONTINUE = 0;
+
+        explicit PushEventConsumer(FunctionType behavior);
+        PushEventConsumer() = default;
+
+        virtual ~PushEventConsumer() noexcept = default;
+
+
+        virtual long accept(PushEvent<T> event) {
+            return behavior(event);
+        };
+
+        FunctionType behavior{};
+    };
+}
+
+//implementation
+
+template<typename T>
+celix::PushEventConsumer<T>::PushEventConsumer(celix::PushEventConsumer<T>::FunctionType _behavior) : behavior{_behavior} {
+
 }

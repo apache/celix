@@ -24,7 +24,7 @@
 #include <queue>
 
 #include "celix/IPushEventSource.h"
-#include "celix/IPushEventConsumer.h"
+#include "celix/PushEventConsumer.h"
 #include "celix/IExecutor.h"
 #include "celix/IAutoCloseable.h"
 
@@ -56,7 +56,7 @@ namespace celix {
 
         std::mutex mutex {};
         PromiseFactory& promiseFactory;
-        IPushEventConsumer<T> nextEvent{};
+        PushEventConsumer<T> nextEvent{};
         std::shared_ptr<PushStream<T>> downstream {};
         State closed {State::BUILDING};
 
@@ -79,18 +79,16 @@ celix::PushStream<T>::PushStream(PromiseFactory& _promiseFactory) : promiseFacto
 
 template<typename T>
 long celix::PushStream<T>::handleEvent(PushEvent<T> event) {
-//    std::lock_guard lck{mutex};
-    return nextEvent(event);
+    return nextEvent.accept(event);
 }
 
 template<typename T>
 celix::Promise<void> celix::PushStream<T>::forEach(std::function<void(T)> func) {
-    nextEvent = [func = std::move(func), this](PushEvent<T> event) -> long {
+    nextEvent = PushEventConsumer<T>([func = std::move(func), this](PushEvent<T> event) -> long {
         switch(event.type) {
             case celix::PushEvent<T>::EventType::DATA:
                 func(event.data);
-                //return CONTINUE;//
-                return 0;
+                return PushEventConsumer<T>::CONTINUE;
             case celix::PushEvent<T>::EventType::CLOSE:
                 streamEnd.resolve();
                 break;
@@ -100,8 +98,8 @@ celix::Promise<void> celix::PushStream<T>::forEach(std::function<void(T)> func) 
                 break;
         }
 
-        return -1;  //return ABORT;
-    };
+        return PushEventConsumer<T>::ABORT;
+    });
 
     begin();
     return streamEnd.getPromise();           
@@ -110,11 +108,12 @@ celix::Promise<void> celix::PushStream<T>::forEach(std::function<void(T)> func) 
 template<typename T>
 celix::PushStream<T>& celix::PushStream<T>::filter(std::function<bool(T)> predicate) {
     downstream = std::make_shared<celix::IntermediatePushStream<T>>(promiseFactory, *this);
-    nextEvent = std::move([downstream = this->downstream, predicate = std::move(predicate)](PushEvent<T> event) -> long {
+
+    nextEvent = PushEventConsumer<T>([downstream = this->downstream, predicate = std::move(predicate)](PushEvent<T> event) -> long {
         if (event.type != celix::PushEvent<T>::EventType::DATA || predicate(event.data)) {
             downstream->handleEvent(event);
         }
-        return 0;
+        return PushEventConsumer<T>::CONTINUE;
     });
 
     return *downstream;
@@ -128,13 +127,14 @@ std::vector<std::shared_ptr<celix::PushStream<T>>> celix::PushStream<T>::split(s
         result.push_back(std::make_shared<celix::IntermediatePushStream<T>>(promiseFactory, *this));
     }
 
-    nextEvent = std::move([result = result, predicates = std::move(predicates)](PushEvent<T> event) -> long {
+    nextEvent = PushEventConsumer<T>([result = result, predicates = std::move(predicates)](PushEvent<T> event) -> long {
         for(long unsigned int i = 0; i < predicates.size(); i++) {
             if (event.type != celix::PushEvent<T>::EventType::DATA || predicates[i](event.data)) {
                 result[i]->handleEvent(event);
             }
         }
-        return 0;
+
+        return PushEventConsumer<T>::CONTINUE;
     });
 
     return result;

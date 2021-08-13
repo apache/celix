@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "celix/IPushEventConsumer.h"
+#include "celix/PushEventConsumer.h"
 #include "celix/IAutoCloseable.h"
 
 namespace celix {
@@ -28,6 +28,6 @@ namespace celix {
     public:
         virtual ~IPushEventSource() noexcept = default;
 
-        virtual IAutoCloseable& open(IPushEventConsumer<T> pec) = 0;
+        virtual IAutoCloseable& open(PushEventConsumer<T> pec) = 0;
     };
 }
