@@ -41,7 +41,10 @@ namespace celix {
         virtual ~PushEventConsumer() noexcept = default;
 
         virtual long accept(const PushEvent<T>& event) {
-            return behavior(event);
+            if (behavior) {
+                return behavior(event);
+            }
+            return 0;
         };
 
         FunctionType behavior{};

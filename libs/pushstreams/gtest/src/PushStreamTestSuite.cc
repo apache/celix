@@ -65,7 +65,7 @@ public:
     std::shared_ptr<celix::SynchronousPushEventSource<T>> createEventSource(T event, int publishCount, bool autoinc = false) {
         auto ses = psp.template createSynchronousEventSource<T>();
 
-        auto successLamba = [this, ses, event, publishCount, autoinc](celix::Promise<void> p) -> celix::Promise<void> {
+        auto successLambda = [this, ses, event, publishCount, autoinc](celix::Promise<void> p) -> celix::Promise<void> {
             t = std::make_unique<std::thread>([&, event, publishCount, autoinc]() {
                 int counter = 0;
                 T data {event};
@@ -84,12 +84,99 @@ public:
             return p;
         };
 
-        auto x = ses->connectPromise().template then<void>(successLamba);
+        auto x = ses->connectPromise().template then<void>(successLambda);
 
         return ses;
     }
 };
 
+//TEST_F(PushStreamTestSuite, EventSourceCloseTest) {
+//    int onClosedReceived{0};
+//    auto ses = psp.template createSynchronousEventSource<int>();
+//
+//    auto successLambda = [](celix::Promise<void> p) -> celix::Promise<void> {
+//        return p;
+//    };
+//    auto x = ses->connectPromise().then<void>(successLambda);
+//
+//    auto& stream = psp.createStream<int>(ses).onClose([&](){
+//        onClosedReceived++;
+//    });
+//    auto streamEnded = stream.forEach([&](int /*event*/) { });
+//
+//    ses->close();
+//
+//    streamEnded.wait(); //todo marked is not in OSGi Spec
+//
+//    ASSERT_EQ(1, onClosedReceived);
+//}
+
+//TEST_F(PushStreamTestSuite, ChainedEventSourceCloseTest) {
+//    int onClosedReceived{0};
+//
+//    auto ses = psp.template createSynchronousEventSource<int>();
+//
+//    auto successLambda = [](celix::Promise<void> p) -> celix::Promise<void> {
+//        return p;
+//    };
+//    auto x = ses->connectPromise().then<void>(successLambda);
+//
+//    auto& stream = psp.createStream<int>(ses).
+//        filter([](const int& /*event*/) -> bool {
+//            return true;
+//        }).onClose([&](){
+//            onClosedReceived++;
+//        });
+//    auto streamEnded = stream.forEach([&](int /*event*/) { });
+//
+//    ses->close();
+//
+//    streamEnded.wait(); //todo marked is not in OSGi Spec
+//
+//    ASSERT_EQ(1, onClosedReceived);
+//}
+
+
+TEST_F(PushStreamTestSuite, StreamCloseTest) {
+    int onClosedReceived{0};
+
+    auto ses = psp.createSynchronousEventSource<int>();
+
+    auto successLambda = [](celix::Promise<void> p) -> celix::Promise<void> {
+        return p;
+    };
+    auto x = ses->connectPromise().then<void>(successLambda);
+
+    auto& stream = psp.createStream<int>(ses).onClose([&](){
+        onClosedReceived++;
+    });;
+    auto streamEnded = stream.forEach([&](int /*event*/) { });
+
+    stream.close();
+
+    streamEnded.wait(); //todo marked is not in OSGi Spec
+
+    ASSERT_EQ(1, onClosedReceived);
+}
+
+TEST_F(PushStreamTestSuite, ChainedStreamCloseTest) {
+    auto ses = psp.template createSynchronousEventSource<int>();
+
+    auto successLambda = [](celix::Promise<void> p) -> celix::Promise<void> {
+        return p;
+    };
+    auto x = ses->connectPromise().template then<void>(successLambda);
+
+    auto& stream = psp.createStream<int>(ses).
+            filter([](const int& /*event*/) -> bool {
+                return true;
+            });
+    auto streamEnded = stream.forEach([&](int /*event*/) { });
+
+    stream.close();
+
+    streamEnded.wait(); //todo marked is not in OSGi Spec
+}
 ///
 /// forEach test
 ///

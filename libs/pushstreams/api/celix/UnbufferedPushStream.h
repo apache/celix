@@ -32,7 +32,8 @@ namespace celix {
 
     protected:
         bool begin() override;
-        void close() override;
+        bool close(const PushEvent<T>& event, bool sendDownStreamEvent) override;
+        void upstreamClose(const PushEvent<T>& event) override;
 
     private:
         std::function<void(void)> connector {};
@@ -54,8 +55,19 @@ bool celix::UnbufferedPushStream<T>::begin() {
 }
 
 template<typename T>
-void celix::UnbufferedPushStream<T>::close() {
+bool celix::UnbufferedPushStream<T>::close(const PushEvent<T>& event, bool sendDownStreamEvent) {
     //release the connector, to free the memory.
+    connector = {};
+    if (celix::PushStream<T>::close(event, sendDownStreamEvent)) {
+        upstreamClose(event);
+        return true;
+    }
+
+    return false;
+}
+
+template<typename T>
+void celix::UnbufferedPushStream<T>::upstreamClose(const PushEvent<T>& /*event*/) {
     connector = {};
 }
 

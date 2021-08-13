@@ -28,11 +28,12 @@ namespace celix {
 
     protected:
         bool begin() override;
-        void close() override;
+        void upstreamClose(const PushEvent<T>& event) override;
     private:
         celix::PushStream<TUP>& upstream;
     };
 }
+
 //implementation
 
 template<typename T, typename TUP>
@@ -50,8 +51,11 @@ bool celix::IntermediatePushStream<T, TUP>::begin() {
 }
 
 template<typename T, typename TUP>
-void celix::IntermediatePushStream<T, TUP>::close() {
-    upstream.close();
+void celix::IntermediatePushStream<T, TUP>::upstreamClose(const PushEvent<T>& event) {
+    if (this->closed != celix::PushStream<T>::State::CLOSED) {
+        this->close(event, false);
+    }
+    upstream.close(celix::PushEvent<TUP>({}, celix::PushEvent<TUP>::EventType::CLOSE));
 }
 
 
