@@ -113,6 +113,7 @@ bool celix::PushEventSource<T>::isConnected() {
 
 template <typename T>
 void celix::PushEventSource<T>::close() {
+    std::cout << __PRETTY_FUNCTION__  << std::endl;
     std::lock_guard lck{mutex};
     closed = true;
 
@@ -124,5 +125,6 @@ void celix::PushEventSource<T>::close() {
 
     execute([&]() {
         eventConsumers.clear();
-    });    
+    });
+    std::cout << "Done --" << __PRETTY_FUNCTION__ <<  std::endl;
 }

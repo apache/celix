@@ -104,6 +104,7 @@ celix::Promise<void> celix::PushStream<T>::forEach(ForEachFunction func) {
                 break;
         }
 
+        close();
         return PushEventConsumer<T>::ABORT;
     });
 
@@ -113,6 +114,8 @@ celix::Promise<void> celix::PushStream<T>::forEach(ForEachFunction func) {
 
 template<typename T>
 celix::PushStream<T>& celix::PushStream<T>::filter(PredicateFunction predicate) {
+    std::cout << __PRETTY_FUNCTION__  << std::endl;
+
     auto downstream = std::make_shared<celix::IntermediatePushStream<T>>(promiseFactory, *this);
 
     nextEvent = PushEventConsumer<T>([downstream = downstream, predicate = std::move(predicate)](const PushEvent<T>& event) -> long {

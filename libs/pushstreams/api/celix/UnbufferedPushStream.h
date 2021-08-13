@@ -32,6 +32,7 @@ namespace celix {
 
     protected:
         bool begin() override;
+        void close() override;
 
     private:
         std::function<void(void)> connector {};
@@ -51,4 +52,11 @@ bool celix::UnbufferedPushStream<T>::begin() {
     }
     return true;
 }
+
+template<typename T>
+void celix::UnbufferedPushStream<T>::close() {
+    //release the connector, to free the memory.
+    connector = {};
+}
+
 

@@ -233,7 +233,7 @@ TEST_F(PushStreamTestSuite, MapTestObjectType) {
     streamEnded.wait(); //todo marked is not in OSGi Spec
 
     GTEST_ASSERT_EQ(10, consumeCount);
-    GTEST_ASSERT_EQ(45, consumeSum); 
+    GTEST_ASSERT_EQ(45, consumeSum);
 }
 
 

@@ -22,7 +22,6 @@
 #include "celix/PushEvent.h"
 
 namespace celix {
-
     template <typename T>
     class PushEventConsumer {
     public:
@@ -32,10 +31,14 @@ namespace celix {
         static constexpr int const& CONTINUE = 0;
 
         explicit PushEventConsumer(FunctionType behavior);
+
         PushEventConsumer() = default;
+        PushEventConsumer<T>& operator=(const PushEventConsumer<T>& other) = default;
+        PushEventConsumer<T>& operator=(PushEventConsumer<T>&& other) = default;
+        PushEventConsumer(const PushEventConsumer& other) = default;
+        PushEventConsumer(PushEventConsumer&& other)= default;
 
         virtual ~PushEventConsumer() noexcept = default;
-
 
         virtual long accept(const PushEvent<T>& event) {
             return behavior(event);

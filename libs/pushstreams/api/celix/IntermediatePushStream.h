@@ -28,6 +28,7 @@ namespace celix {
 
     protected:
         bool begin() override;
+        void close() override;
     private:
         celix::PushStream<TUP>& upstream;
     };
@@ -46,6 +47,11 @@ bool celix::IntermediatePushStream<T, TUP>::begin() {
         upstream.begin();
     }
     return true;
+}
+
+template<typename T, typename TUP>
+void celix::IntermediatePushStream<T, TUP>::close() {
+    upstream.close();
 }
 
 
