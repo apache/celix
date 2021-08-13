@@ -23,6 +23,7 @@
 
 #include "celix/PushStreamBuilder.h"
 #include "celix/SimplePushEventSource.h"
+#include "celix/SynchronousPushEventSource.h"
 #include "celix/IPushEventSource.h"
 #include "celix/PushStream.h"
 
@@ -35,6 +36,9 @@ namespace celix {
 
         template <typename T>
         [[nodiscard]] std::shared_ptr<celix::SimplePushEventSource<T>> createSimpleEventSource();
+
+        template <typename T>
+        [[nodiscard]] std::shared_ptr<celix::SynchronousPushEventSource<T>> createSynchronousEventSource();
 
         template <typename T>
         [[nodiscard]] PushStream<T>& createStream(std::shared_ptr<IPushEventSource<T>> eventSource);
@@ -61,11 +65,16 @@ inline std::shared_ptr<celix::SimplePushEventSource<T>> celix::PushStreamProvide
     return std::make_shared<celix::SimplePushEventSource<T>>(std::make_shared<celix::DefaultExecutor>());
 }
 
+template <typename T>
+inline std::shared_ptr<celix::SynchronousPushEventSource<T>> celix::PushStreamProvider::createSynchronousEventSource() {
+    return std::make_shared<celix::SynchronousPushEventSource<T>>(promiseFactory);
+}
 
 //TODO returns a unbuffered stream repair is needed
 template <typename T>
 celix::PushStream<T>& celix::PushStreamProvider::createStream(std::shared_ptr<celix::IPushEventSource<T>> eventSource) {
     auto unbufferedPushStream = std::make_shared<UnbufferedPushStream<T>>(promiseFactory);
+
     //TODO think about memory management on this point
     unbufferedPushStream->setConnector([unbufferedPushStream, eventSource]() {
         eventSource->open(std::bind(&PushStream<T>::handleEvent, unbufferedPushStream, std::placeholders::_1));

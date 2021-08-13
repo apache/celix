@@ -28,24 +28,18 @@
 #include "IllegalStateException.h"
 #include "celix/PromiseFactory.h"
 #include "celix/Promise.h"
-#include "celix/DefaultExecutor.h"
 #include "celix/PushEvent.h"
 
 namespace celix {
     template <typename T>
-    class SimplePushEventSource: public PushEventSource<T> {
+    class SynchronousPushEventSource: public PushEventSource<T> {
     public:
-        explicit SimplePushEventSource(PromiseFactory& promiseFactory);
+        explicit SynchronousPushEventSource(PromiseFactory& promiseFactory);
 
-        virtual ~SimplePushEventSource() noexcept;
+        virtual ~SynchronousPushEventSource() noexcept;
 
     protected:
         void execute(std::function<void()> task) override;
-
-    private:
-        std::shared_ptr<IExecutor> executor {};
-        std::queue<std::function<void()>> queue {};
-
     };
 }
 
@@ -54,19 +48,14 @@ namespace celix {
 *********************************************************************************/
 
 template <typename T>
-celix::SimplePushEventSource<T>::SimplePushEventSource(PromiseFactory& promiseFactory): PushEventSource<T>{promiseFactory},
-    executor{promiseFactory.getExecutor()} {
+celix::SynchronousPushEventSource<T>::SynchronousPushEventSource(PromiseFactory& _promiseFactory): PushEventSource<T>{_promiseFactory} {
 
-//    executor->execute([]() {
-//        for(;;) {
-//
-//        }
-//    });
 }
 
 template <typename T>
-void celix::SimplePushEventSource<T>::execute(std::function<void()> task) {
+celix::SynchronousPushEventSource<T>::~SynchronousPushEventSource() noexcept = default;
+
+template <typename T>
+void celix::SynchronousPushEventSource<T>::execute(std::function<void()> task) {
     task();
 }
-
-

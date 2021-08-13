@@ -54,39 +54,16 @@ public:
     int val;
 };
 
-//#include <stdio.h>
-//#include <execinfo.h>
-//#include <signal.h>
-//#include <stdlib.h>
-//#include <unistd.h>
-//
-//void handler(int sig) {
-//    void *array[10];
-//    size_t size;
-//
-//    // get void*'s for all entries on the stack
-//    size = backtrace(array, 10);
-//
-//    // print out all the frames to stderr
-//    fprintf(stderr, "Error: signal %d:\n", sig);
-//    backtrace_symbols_fd(array, size, STDERR_FILENO);
-//    exit(1);
-//}
-
-
 class PushStreamTestSuite : public ::testing::Test {
 public:
-    PushStreamTestSuite() {
-//        signal(SIGSEGV, handler);   // install our handler
-    }
     ~PushStreamTestSuite() noexcept override = default;
 
     PushStreamProvider psp {};
     std::unique_ptr<std::thread> t{};
 
     template <typename T>
-    std::shared_ptr<celix::SimplePushEventSource<T>> createEventSource(T event, int publishCount, bool autoinc = false) {
-        auto ses = psp.createSimpleEventSource<T>();
+    std::shared_ptr<celix::SynchronousPushEventSource<T>> createEventSource(T event, int publishCount, bool autoinc = false) {
+        auto ses = psp.template createSynchronousEventSource<T>();
 
         auto successLamba = [this, ses, event, publishCount, autoinc](celix::Promise<void> p) -> celix::Promise<void> {
             t = std::make_unique<std::thread>([&, event, publishCount, autoinc]() {
@@ -116,7 +93,6 @@ public:
 ///
 /// forEach test
 ///
-
 TEST_F(PushStreamTestSuite, ForEachTestBasicType) {
     int consumeCount{0};
     int consumeSum{0};
@@ -125,11 +101,7 @@ TEST_F(PushStreamTestSuite, ForEachTestBasicType) {
 
     auto streamEnded = psp.createStream<int>(ses).
             forEach([&](int event) {
-                if (lastConsumed + 1 !=  event)
-                {
-                    std::cout << "oops: " << lastConsumed << " != " << event <<  std::endl;
-                }
-                //GTEST_ASSERT_EQ(lastConsumed + 1, event);
+                GTEST_ASSERT_EQ(lastConsumed + 1, event);
 
                 lastConsumed = event;
                 consumeCount++;
@@ -139,7 +111,7 @@ TEST_F(PushStreamTestSuite, ForEachTestBasicType) {
     streamEnded.wait(); //todo marked is not in OSGi Spec
 
     GTEST_ASSERT_EQ(10'000, consumeCount);
-    //GTEST_ASSERT_EQ(45, consumeSum);
+    GTEST_ASSERT_EQ(49'995'000, consumeSum);
 }
 
 TEST_F(PushStreamTestSuite, ForEachTestObjectType) {
