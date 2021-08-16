@@ -71,7 +71,7 @@ template <typename T>
 celix::IAutoCloseable& celix::PushEventSource<T>::open(PushEventConsumer<T> _eventConsumer) {
     std::lock_guard lck{mutex};
     if (closed) {
-        _eventConsumer.accept(celix::PushEvent<T>::close());
+        _eventConsumer.accept(celix::ClosePushEvent<T>());
     } else {
         eventConsumers.push_back(_eventConsumer);
         connected.resolve();
@@ -115,7 +115,7 @@ void celix::PushEventSource<T>::close() {
 
     for(auto& eventConsumer : eventConsumers) {
         execute([&]() {
-            eventConsumer.accept(celix::PushEvent<T>::close());
+            eventConsumer.accept(celix::ClosePushEvent<T>());
         });
     }
 

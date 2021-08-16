@@ -63,10 +63,12 @@ namespace celix {
         };
 
         virtual bool begin() = 0;
-        long handleEvent(const PushEvent<T>& event);
         virtual void upstreamClose(const PushEvent<T>& event) = 0;
+
+        virtual long handleEvent(const PushEvent<T>& event);
         virtual void close(const PushEvent<T>& event, bool sendDownStreamEvent);
         virtual bool internal_close(const PushEvent<T>& event, bool sendDownStreamEvent);
+
         bool compareAndSetState(State expectedValue, State newValue);
         State getAndSetState(State newValue);
 
@@ -92,6 +94,7 @@ namespace celix {
 
 #include "IntermediatePushStream.h"
 #include "UnbufferedPushStream.h"
+#include "BufferedPushStream.h"
 
 template<typename T>
 celix::PushStream<T>::PushStream(PromiseFactory& _promiseFactory) : promiseFactory{_promiseFactory} {
@@ -123,7 +126,7 @@ celix::Promise<void> celix::PushStream<T>::forEach(ForEachFunction func) {
             close(event, false);
             return PushEventConsumer<T>::ABORT;
         } catch (const std::exception& e) {
-            auto errorEvent = PushEventError<T>(std::current_exception());
+            auto errorEvent = ErrorPushEvent<T>(std::current_exception());
             streamEnd.fail(errorEvent.getFailure());
             close(errorEvent, false);
             return PushEventConsumer<T>::ABORT;
@@ -177,7 +180,7 @@ celix::PushStream<R>& celix::PushStream<T>::map(std::function<R(const T&)> mappe
         if (event.getType() == celix::PushEvent<T>::EventType::DATA) {
             downstream->handleEvent(PushEventData<R>(mapper(event.getData())));
         } else {
-            downstream->handleEvent(celix::PushEvent<R>::close());
+            downstream->handleEvent(celix::ClosePushEvent<R>());
         }
         return PushEventConsumer<T>::CONTINUE;
     });
@@ -199,7 +202,7 @@ celix::PushStream<T>& celix::PushStream<T>::onError(celix::PushStream<T>::ErrorF
 
 template<typename T>
 void celix::PushStream<T>::close() {
-    close(celix::PushEvent<T>::close(), true);
+    close(celix::ClosePushEvent<T>(), true);
 }
 
 template<typename T>

@@ -19,16 +19,12 @@
 
 #pragma once
 
-#include <utility>
-
 #include "celix/IllegalStateException.h"
 
 namespace celix {
-
     template <typename T>
     class PushEvent {
     public:
-
         virtual  ~PushEvent() = default;
    
         enum class EventType {
@@ -51,10 +47,7 @@ namespace celix {
             return type;
         }
 
-        static PushEvent close() {
-            return PushEvent(EventType::CLOSE);
-        }
-
+        [[nodiscard]] virtual std::unique_ptr<PushEvent<T>> clone() const = 0;
     protected:
         EventType type;
     };
@@ -68,19 +61,37 @@ namespace celix {
             return this->data;
         }
 
+        std::unique_ptr<PushEvent<T>> clone() const override {
+            return std::make_unique<PushEventData<T>>(*this);
+        }
+
+    private:
         const T data;
     };
 
+    template <typename T>
+    class ClosePushEvent: public PushEvent<T> {
+    public:
+        ClosePushEvent();
+
+        std::unique_ptr<PushEvent<T>> clone() const override {
+            return std::make_unique<ClosePushEvent<T>>(*this);
+        }
+    };
 
     template <typename T>
-    class PushEventError: public PushEvent<T> {
+    class ErrorPushEvent: public PushEvent<T> {
     public:
-        explicit PushEventError(std::exception_ptr exceptionPtr);
+        explicit ErrorPushEvent(std::exception_ptr exceptionPtr);
 
         [[nodiscard]] std::exception_ptr getFailure() const override {
             return this->ptr;
         }
 
+        std::unique_ptr<PushEvent<T>> clone() const override {
+            return std::make_unique<ErrorPushEvent<T>>(*this);
+        }
+    private:
         std::exception_ptr ptr;
     };
 
@@ -100,6 +111,12 @@ celix::PushEventData<T>::PushEventData(const T& _data) :
 }
 
 template<typename T>
-celix::PushEventError<T>::PushEventError(std::exception_ptr exceptionPtr) :
+celix::ClosePushEvent<T>::ClosePushEvent() :
+    celix::PushEvent<T>::PushEvent{celix::PushEvent<T>::EventType::CLOSE} {
+}
+
+
+template<typename T>
+celix::ErrorPushEvent<T>::ErrorPushEvent(std::exception_ptr exceptionPtr) :
     celix::PushEvent<T>::PushEvent{celix::PushEvent<T>::EventType::ERROR}, ptr{std::move(exceptionPtr)} {
 }

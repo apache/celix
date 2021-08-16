@@ -329,6 +329,30 @@ TEST_F(PushStreamTestSuite, ForEachTestBasicType) {
     GTEST_ASSERT_EQ(49'995'000, consumeSum);
 }
 
+///
+/// forEach test
+///
+TEST_F(PushStreamTestSuite, DISABLED_ForEachTestBasicType_Buffered) {
+    int consumeCount{0};
+    int consumeSum{0};
+    int lastConsumed{-1};
+    auto ses = createEventSource<int>(0, 10'000, true);
+
+    auto streamEnded = psp.createBufferedStream<int>(ses).
+            forEach([&](int event) {
+                GTEST_ASSERT_EQ(lastConsumed + 1, event);
+
+                lastConsumed = event;
+                consumeCount++;
+                consumeSum = consumeSum + event;
+            });
+
+    streamEnded.wait(); //todo marked is not in OSGi Spec
+
+    GTEST_ASSERT_EQ(10'000, consumeCount);
+    GTEST_ASSERT_EQ(49'995'000, consumeSum);
+}
+
 TEST_F(PushStreamTestSuite, ForEachTestObjectType) {
     int consumeCount{0};
     int consumeSum{0};
