@@ -75,3 +75,9 @@ end note
 ----
 
 
+Closing strategy.
+
+Streams, and sources have close() method.
+Streams, will send downstream close event, the sink will initiate an upstream close.
+Sources will close streams by sending close event, this will lead to an upstream close and upstream in sink
+
