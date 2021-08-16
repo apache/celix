@@ -58,19 +58,20 @@ namespace celix {
 
         void close() override;
 
-        long handleEvent(PushEvent<T> event);  //todo make protected
-        virtual bool begin() = 0; //todo make protected
-        virtual void upstreamClose(const PushEvent<T>& event) = 0;
-
-        virtual void internal_close(bool sendDownStreamEvent);
-        virtual bool internal_close(const PushEvent<T>& event, bool sendDownStreamEvent);
     protected:
-
         enum class State {
             BUILDING,
             STARTED,
             CLOSED
         };
+
+        virtual bool begin() = 0;
+        long handleEvent(PushEvent<T> event);
+        virtual void upstreamClose(const PushEvent<T>& event) = 0;
+        virtual void internal_close(bool sendDownStreamEvent);
+        virtual bool internal_close(const PushEvent<T>& event, bool sendDownStreamEvent);
+        bool compareAndSetState(State expectedValue, State newValue);
+        State getAndSetState(State newValue);
 
         std::mutex mutex {};
         PromiseFactory& promiseFactory;
@@ -78,12 +79,13 @@ namespace celix {
         std::function<void(void)> onErrorCallback{};
         std::function<void(void)> onCloseCallback{};
         State closed {State::BUILDING};
-
-        bool compareAndSetState(State expectedValue, State newValue);
-        State getAndSetState(State newValue);
-
     private:
         Deferred<void> streamEnd{promiseFactory.deferred<void>()};
+
+        template<typename, typename> friend class IntermediatePushStream;
+        template<typename> friend class UnbufferedPushStream;
+        template<typename> friend class PushStream;
+        friend class PushStreamProvider;
     };
 }
 

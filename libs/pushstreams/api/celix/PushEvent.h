@@ -31,11 +31,21 @@ namespace celix {
             CLOSE
         };
 
-        PushEvent(const T& _data, EventType _type = EventType::DATA );
+        PushEvent(const T& _data, EventType _type = EventType::DATA);
 
         T data;
         EventType type;
-    }; 
+
+        static PushEvent error() {
+            return PushEvent(EventType::Error);
+        }
+    };
+
+    template <typename T>
+    class PushEventData: public PushEvent<T> {
+
+    };
+
 }
 
 /*********************************************************************************
