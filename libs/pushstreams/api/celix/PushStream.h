@@ -61,8 +61,9 @@ namespace celix {
         long handleEvent(PushEvent<T> event);  //todo make protected
         virtual bool begin() = 0; //todo make protected
         virtual void upstreamClose(const PushEvent<T>& event) = 0;
-        bool close(const PushEvent<T>& event);
 
+        virtual void internal_close(bool sendDownStreamEvent);
+        virtual bool internal_close(const PushEvent<T>& event, bool sendDownStreamEvent);
     protected:
 
         enum class State {
@@ -81,15 +82,8 @@ namespace celix {
         bool compareAndSetState(State expectedValue, State newValue);
         State getAndSetState(State newValue);
 
-
-        virtual bool close(const PushEvent<T>& event, bool sendDownStreamEvent);
-
-
-
     private:
         Deferred<void> streamEnd{promiseFactory.deferred<void>()};
-        bool hadDownStream {false};
-
     };
 }
 
@@ -128,7 +122,7 @@ celix::Promise<void> celix::PushStream<T>::forEach(ForEachFunction func) {
                 break;
         }
 
-        close();
+        internal_close(false);
         return PushEventConsumer<T>::ABORT;
     });
 
@@ -139,7 +133,6 @@ celix::Promise<void> celix::PushStream<T>::forEach(ForEachFunction func) {
 template<typename T>
 celix::PushStream<T>& celix::PushStream<T>::filter(PredicateFunction predicate) {
     auto downstream = std::make_shared<celix::IntermediatePushStream<T>>(promiseFactory, *this);
-    hadDownStream = true;
     nextEvent = PushEventConsumer<T>([downstream = downstream, predicate = std::move(predicate)](const PushEvent<T>& event) -> long {
         if (event.type != celix::PushEvent<T>::EventType::DATA || predicate(event.data)) {
             downstream->handleEvent(event);
@@ -157,8 +150,6 @@ std::vector<std::shared_ptr<celix::PushStream<T>>> celix::PushStream<T>::split(s
     for(long unsigned int i = 0; i < predicates.size(); i++) {
         result.push_back(std::make_shared<celix::IntermediatePushStream<T>>(promiseFactory, *this));
     }
-
-    hadDownStream = true;
 
     nextEvent = PushEventConsumer<T>([result = result, predicates = std::move(predicates)](const PushEvent<T>& event) -> long {
         for(long unsigned int i = 0; i < predicates.size(); i++) {
@@ -204,19 +195,19 @@ celix::PushStream<T>& celix::PushStream<T>::onError(celix::PushStream<T>::ErrorF
 
 template<typename T>
 void celix::PushStream<T>::close() {
-    PushEvent<T> closeEvent = PushEvent<T>({}, celix::PushEvent<T>::EventType::CLOSE);
-    if (close(closeEvent, true)) {
+    internal_close(true);
+}
+
+template<typename T>
+void celix::PushStream<T>::internal_close(bool sendDownStreamEvent) {
+    auto closeEvent = celix::PushEvent<T>({}, celix::PushEvent<T>::EventType::CLOSE);
+    if (internal_close(closeEvent, sendDownStreamEvent)) {
         upstreamClose(closeEvent);
     }
 }
 
 template<typename T>
-bool celix::PushStream<T>::close(const PushEvent<T>& event) {
-    return close(event, true);
-}
-
-template<typename T>
-bool celix::PushStream<T>::close(const PushEvent<T>& event, bool sendDownStreamEvent) {
+bool celix::PushStream<T>::internal_close(const PushEvent<T>& event, bool sendDownStreamEvent) {
     if (this->getAndSetState(celix::PushStream<T>::State::CLOSED) != celix::PushStream<T>::State::CLOSED) {
         if (sendDownStreamEvent) {
             auto next = nextEvent;
