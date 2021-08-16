@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <utility>
+
 #include "celix/IllegalStateException.h"
 
 namespace celix {
@@ -35,19 +37,18 @@ namespace celix {
             CLOSE
         };
 
-        PushEvent(EventType _type);
+        explicit PushEvent(EventType _type);
 
         virtual const T& getData() const {
-            throw new IllegalStateException("Not a DATA event");
-            return data;
+            throw IllegalStateException("Not a DATA event");
+        }
+
+        [[nodiscard]] virtual std::exception_ptr getFailure () const {
+            throw IllegalStateException("Not a ERROR event");
         }
 
         EventType getType() const {
             return type;
-        }
-
-        static PushEvent error() {
-            return PushEvent(EventType::ERROR);
         }
 
         static PushEvent close() {
@@ -55,19 +56,32 @@ namespace celix {
         }
 
     protected:
-        PushEvent(const T& _data, EventType _type);
         EventType type;
-        T data {};
     };
 
     template <typename T>
     class PushEventData: public PushEvent<T> {
     public:
-        PushEventData(const T& _data);
+        explicit PushEventData(const T& _data);
 
         const T& getData() const override {
             return this->data;
         }
+
+        const T data;
+    };
+
+
+    template <typename T>
+    class PushEventError: public PushEvent<T> {
+    public:
+        explicit PushEventError(std::exception_ptr exceptionPtr);
+
+        [[nodiscard]] std::exception_ptr getFailure() const override {
+            return this->ptr;
+        }
+
+        std::exception_ptr ptr;
     };
 
 }
@@ -81,11 +95,11 @@ celix::PushEvent<T>::PushEvent(celix::PushEvent<T>::EventType _type): type{_type
 }
 
 template<typename T>
-celix::PushEvent<T>::PushEvent(const T& _data, celix::PushEvent<T>::EventType _type): type{_type}, data{_data} {
-
+celix::PushEventData<T>::PushEventData(const T& _data) :
+    celix::PushEvent<T>::PushEvent{celix::PushEvent<T>::EventType::DATA}, data{_data} {
 }
 
 template<typename T>
-celix::PushEventData<T>::PushEventData(const T& _data) :
-    celix::PushEvent<T>::PushEvent{_data, celix::PushEvent<T>::EventType::DATA} {
+celix::PushEventError<T>::PushEventError(std::exception_ptr exceptionPtr) :
+    celix::PushEvent<T>::PushEvent{celix::PushEvent<T>::EventType::ERROR}, ptr{std::move(exceptionPtr)} {
 }

@@ -39,7 +39,7 @@ namespace celix {
         using ErrorFunction = std::function<void(void)>;
         using ForEachFunction = std::function<void(const T&)>;
 
-        PushStream(PromiseFactory& promiseFactory);
+        explicit PushStream(PromiseFactory& promiseFactory);
 
         Promise<void> forEach(ForEachFunction func);
 
@@ -55,7 +55,6 @@ namespace celix {
         PushStream<T>& onError(ErrorFunction errorFunction);
 
         void close() override;
-
     protected:
         enum class State {
             BUILDING,
@@ -66,7 +65,7 @@ namespace celix {
         virtual bool begin() = 0;
         long handleEvent(const PushEvent<T>& event);
         virtual void upstreamClose(const PushEvent<T>& event) = 0;
-        virtual void internal_close(bool sendDownStreamEvent);
+        virtual void close(const PushEvent<T>& event, bool sendDownStreamEvent);
         virtual bool internal_close(const PushEvent<T>& event, bool sendDownStreamEvent);
         bool compareAndSetState(State expectedValue, State newValue);
         State getAndSetState(State newValue);
@@ -109,21 +108,26 @@ long celix::PushStream<T>::handleEvent(const PushEvent<T>& event) {
 template<typename T>
 celix::Promise<void> celix::PushStream<T>::forEach(ForEachFunction func) {
     nextEvent = PushEventConsumer<T>([func = std::move(func), this](const PushEvent<T>& event) -> long {
-        switch(event.getType()) {
-            case celix::PushEvent<T>::EventType::DATA:
-                func(event.getData());
-                return PushEventConsumer<T>::CONTINUE;
-            case celix::PushEvent<T>::EventType::CLOSE:
-                streamEnd.resolve();
-                break;
-            case celix::PushEvent<T>::EventType::ERROR:
-                //streamEnd.fail(event.getFailure());
-                //TODO
-                break;
+        try {
+            switch(event.getType()) {
+                case celix::PushEvent<T>::EventType::DATA:
+                    func(event.getData());
+                    return PushEventConsumer<T>::CONTINUE;
+                case celix::PushEvent<T>::EventType::CLOSE:
+                    streamEnd.resolve();
+                    break;
+                case celix::PushEvent<T>::EventType::ERROR:
+                    streamEnd.fail(event.getFailure());
+                    break;
+            }
+            close(event, false);
+            return PushEventConsumer<T>::ABORT;
+        } catch (const std::exception& e) {
+            auto errorEvent = PushEventError<T>(std::current_exception());
+            streamEnd.fail(errorEvent.getFailure());
+            close(errorEvent, false);
+            return PushEventConsumer<T>::ABORT;
         }
-
-        internal_close(false);
-        return PushEventConsumer<T>::ABORT;
     });
 
     begin();
@@ -195,12 +199,11 @@ celix::PushStream<T>& celix::PushStream<T>::onError(celix::PushStream<T>::ErrorF
 
 template<typename T>
 void celix::PushStream<T>::close() {
-    internal_close(true);
+    close(celix::PushEvent<T>::close(), true);
 }
 
 template<typename T>
-void celix::PushStream<T>::internal_close(bool sendDownStreamEvent) {
-    auto closeEvent = celix::PushEvent<T>(celix::PushEvent<T>::close());
+void celix::PushStream<T>::close(const PushEvent<T>& closeEvent, bool sendDownStreamEvent) {
     if (internal_close(closeEvent, sendDownStreamEvent)) {
         upstreamClose(closeEvent);
     }
@@ -219,9 +222,10 @@ bool celix::PushStream<T>::internal_close(const PushEvent<T>& event, bool sendDo
             onCloseCallback();
         }
 
-        if (onErrorCallback) {
+        if (event.getType() == PushEvent<T>::EventType::ERROR && onErrorCallback) {
             onErrorCallback();
         }
+
         return true;
     }
 

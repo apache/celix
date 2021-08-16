@@ -13,9 +13,10 @@
  *software distributed under the License is distributed on an
  *"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  * KIND, either express or implied.  See the License for the
- *seventConsumerific language governing permissions and limitations
+ *specific language governing permissions and limitations
  *under the License.
  */
+
 
 #pragma once
 
@@ -36,8 +37,6 @@ namespace celix {
     class SimplePushEventSource: public PushEventSource<T> {
     public:
         explicit SimplePushEventSource(PromiseFactory& promiseFactory);
-
-        virtual ~SimplePushEventSource() noexcept;
 
     protected:
         void execute(std::function<void()> task) override;

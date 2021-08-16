@@ -13,9 +13,10 @@
  *software distributed under the License is distributed on an
  *"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
  * KIND, either express or implied.  See the License for the
- *seventConsumerific language governing permissions and limitations
+ *specific language governing permissions and limitations
  *under the License.
  */
+
 
 #pragma once
 
@@ -37,7 +38,6 @@ namespace celix {
     public:
         explicit PushEventSource(PromiseFactory& _promiseFactory);
 
-        virtual ~PushEventSource() noexcept;
         IAutoCloseable& open(PushEventConsumer<T> eventConsumer) override;
         void publish(const T& event);
 
@@ -82,9 +82,6 @@ celix::IAutoCloseable& celix::PushEventSource<T>::open(PushEventConsumer<T> _eve
 }
 
 template <typename T>
-celix::PushEventSource<T>::~PushEventSource() noexcept = default;
-
-template <typename T>
 [[nodiscard]] celix::Promise<void> celix::PushEventSource<T>::connectPromise() {
     std::lock_guard lck{mutex};
     return connected.getPromise();
@@ -95,7 +92,7 @@ void celix::PushEventSource<T>::publish(const T& event) {
     std::lock_guard lck{mutex};
 
     if (closed) {
-        throw new IllegalStateException("SimplePushEventSource closed");
+        throw IllegalStateException("SimplePushEventSource closed");
     } else {
         for(auto& eventConsumer : eventConsumers) {
             execute([&, event]() {
@@ -108,7 +105,7 @@ void celix::PushEventSource<T>::publish(const T& event) {
 template <typename T>
 bool celix::PushEventSource<T>::isConnected() {
     std::lock_guard lck{mutex};
-    return eventConsumers.size() > 0;
+    return !eventConsumers.empty();
 }
 
 template <typename T>

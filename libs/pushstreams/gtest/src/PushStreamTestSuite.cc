@@ -23,18 +23,31 @@
 
 using celix::PushStreamProvider;
 
+class TestException : public std::exception {
+public:
+    explicit TestException(const char* what) : w{what} {}
+    explicit TestException(std::string what) : w{std::move(what)} {}
+
+    TestException(const TestException&) = delete;
+    TestException(TestException&&) noexcept = default;
+
+    TestException& operator=(const TestException&) = delete;
+    TestException& operator=(TestException&&) noexcept = default;
+
+    [[nodiscard]] const char* what() const noexcept override { return w.c_str(); }
+private:
+    std::string w;
+};
+
 class EventObject {
 public:
-    //TODO discussion EventData needs to be default constructable due to close event data {}
     EventObject() : val{0} {
     }
 
     explicit EventObject(int _val) : val{_val} {
     }
 
-    EventObject(const EventObject& _val) : val{_val.val} {
-    }
-
+    EventObject(const EventObject& _val) = default;
     EventObject& operator=(const EventObject& other) = default;
 
     EventObject& operator=(int other) {
@@ -92,6 +105,8 @@ public:
 
 TEST_F(PushStreamTestSuite, EventSourceCloseTest) {
     int onClosedReceived{0};
+    int onErrorReceived{0};
+
     auto ses = psp.template createSynchronousEventSource<int>();
 
     auto successLambda = [](celix::Promise<void> p) -> celix::Promise<void> {
@@ -101,6 +116,8 @@ TEST_F(PushStreamTestSuite, EventSourceCloseTest) {
 
     auto& stream = psp.createStream<int>(ses).onClose([&](){
         onClosedReceived++;
+    }).onError([&](){
+        onErrorReceived++;
     });
     auto streamEnded = stream.forEach([&](int /*event*/) { });
 
@@ -109,10 +126,12 @@ TEST_F(PushStreamTestSuite, EventSourceCloseTest) {
     streamEnded.wait(); //todo marked is not in OSGi Spec
 
     ASSERT_EQ(1, onClosedReceived);
+    ASSERT_EQ(0, onErrorReceived);
 }
 
 TEST_F(PushStreamTestSuite, ChainedEventSourceCloseTest) {
     int onClosedReceived{0};
+    int onErrorReceived{0};
 
     auto ses = psp.template createSynchronousEventSource<int>();
 
@@ -126,6 +145,8 @@ TEST_F(PushStreamTestSuite, ChainedEventSourceCloseTest) {
             return true;
         }).onClose([&](){
             onClosedReceived++;
+        }).onError([&](){
+            onErrorReceived++;
         });
     auto streamEnded = stream.forEach([&](int /*event*/) { });
 
@@ -134,11 +155,13 @@ TEST_F(PushStreamTestSuite, ChainedEventSourceCloseTest) {
     streamEnded.wait(); //todo marked is not in OSGi Spec
 
     ASSERT_EQ(1, onClosedReceived);
+    ASSERT_EQ(0, onErrorReceived);
 }
 
 
 TEST_F(PushStreamTestSuite, StreamCloseTest) {
     int onClosedReceived{0};
+    int onErrorReceived{0};
 
     auto ses = psp.createSynchronousEventSource<int>();
 
@@ -149,7 +172,9 @@ TEST_F(PushStreamTestSuite, StreamCloseTest) {
 
     auto& stream = psp.createStream<int>(ses).onClose([&](){
         onClosedReceived++;
-    });;
+    }).onError([&](){
+        onErrorReceived++;
+    });
     auto streamEnded = stream.forEach([&](int /*event*/) { });
 
     stream.close();
@@ -157,10 +182,12 @@ TEST_F(PushStreamTestSuite, StreamCloseTest) {
     streamEnded.wait(); //todo marked is not in OSGi Spec
 
     ASSERT_EQ(1, onClosedReceived);
+    ASSERT_EQ(0, onErrorReceived);
 }
 
 TEST_F(PushStreamTestSuite, ChainedStreamCloseTest) {
     int onClosedReceived{0};
+    int onErrorReceived{0};
 
     auto ses = psp.template createSynchronousEventSource<int>();
 
@@ -174,6 +201,8 @@ TEST_F(PushStreamTestSuite, ChainedStreamCloseTest) {
                 return true;
             }).onClose([&](){
                 onClosedReceived++;
+            }).onError([&](){
+                onErrorReceived++;
             });
     auto streamEnded = stream.forEach([&](int /*event*/) { });
 
@@ -182,10 +211,12 @@ TEST_F(PushStreamTestSuite, ChainedStreamCloseTest) {
     streamEnded.wait(); //todo marked is not in OSGi Spec
 
     ASSERT_EQ(1, onClosedReceived);
+    ASSERT_EQ(0, onErrorReceived);
 }
 
 TEST_F(PushStreamTestSuite, ChainedStreamIntermedateCloseTest) {
     int onClosedReceived{0};
+    int onErrorReceived{0};
 
     auto ses = psp.template createSynchronousEventSource<int>();
 
@@ -201,6 +232,8 @@ TEST_F(PushStreamTestSuite, ChainedStreamIntermedateCloseTest) {
                 return true;
             }).onClose([&](){
                 onClosedReceived++;
+            }).onError([&](){
+                onErrorReceived++;
             });
     auto streamEnded = stream2.forEach([&](int /*event*/) { });
 
@@ -209,6 +242,67 @@ TEST_F(PushStreamTestSuite, ChainedStreamIntermedateCloseTest) {
     streamEnded.wait(); //todo marked is not in OSGi Spec
 
     ASSERT_EQ(2, onClosedReceived);
+    ASSERT_EQ(0, onErrorReceived);
+
+}
+
+TEST_F(PushStreamTestSuite, ExceptionInStreamTest) {
+    int onClosedReceived{0};
+    int onErrorReceived{0};
+
+    auto ses = psp.createSynchronousEventSource<int>();
+
+    auto successLambda = [](celix::Promise<void> p) -> celix::Promise<void> {
+        return p;
+    };
+    auto x = ses->connectPromise().then<void>(successLambda);
+
+    auto& stream = psp.createStream<int>(ses).onClose([&](){
+        onClosedReceived++;
+    }).onError([&](){
+        onErrorReceived++;
+    });
+
+    auto streamEnded = stream.forEach([&](int /*event*/) {
+        throw TestException("Oops");
+    });
+
+    ses->publish(1);
+
+    streamEnded.wait(); //todo marked is not in OSGi Spec
+
+    ASSERT_EQ(1, onClosedReceived);
+    ASSERT_EQ(1, onErrorReceived);
+}
+
+TEST_F(PushStreamTestSuite, ExceptionInChainedStreamTest) {
+    int onClosedReceived{0};
+    int onErrorReceived{0};
+    auto ses = psp.template createSynchronousEventSource<int>();
+
+    auto successLambda = [](celix::Promise<void> p) -> celix::Promise<void> {
+        return p;
+    };
+    auto x = ses->connectPromise().template then<void>(successLambda);
+
+    auto& stream = psp.createStream<int>(ses).
+            filter([](const int& /*event*/) -> bool {
+                return true;
+            }).onClose([&](){
+                onClosedReceived++;
+            }).onError([&](){
+                onErrorReceived++;
+            });
+    auto streamEnded = stream.forEach([&](int /*event*/) {
+        throw TestException("Oops");
+    });
+
+    ses->publish(1);
+
+    streamEnded.wait(); //todo marked is not in OSGi Spec
+
+    ASSERT_EQ(1, onClosedReceived);
+    ASSERT_EQ(1, onErrorReceived);
 }
 
 ///
