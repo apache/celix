@@ -183,6 +183,34 @@ TEST_F(PushStreamTestSuite, ChainedStreamCloseTest) {
 
     ASSERT_EQ(1, onClosedReceived);
 }
+
+TEST_F(PushStreamTestSuite, ChainedStreamIntermedateCloseTest) {
+    int onClosedReceived{0};
+
+    auto ses = psp.template createSynchronousEventSource<int>();
+
+    auto successLambda = [](celix::Promise<void> p) -> celix::Promise<void> {
+        return p;
+    };
+    auto x = ses->connectPromise().template then<void>(successLambda);
+
+    auto& stream1 = psp.createStream<int>(ses).onClose([&](){
+        onClosedReceived++;
+    });
+    auto& stream2 = stream1.filter([](const int& /*event*/) -> bool {
+                return true;
+            }).onClose([&](){
+                onClosedReceived++;
+            });
+    auto streamEnded = stream2.forEach([&](int /*event*/) { });
+
+    stream1.close();
+
+    streamEnded.wait(); //todo marked is not in OSGi Spec
+
+    ASSERT_EQ(2, onClosedReceived);
+}
+
 ///
 /// forEach test
 ///
