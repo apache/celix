@@ -25,7 +25,7 @@
 #include "celix/IPushEventSource.h"
 #include "celix/IAutoCloseable.h"
 
-#include "IllegalStateException.h"
+#include "celix/IllegalStateException.h"
 #include "celix/PromiseFactory.h"
 #include "celix/Promise.h"
 #include "celix/DefaultExecutor.h"
@@ -71,7 +71,7 @@ template <typename T>
 celix::IAutoCloseable& celix::PushEventSource<T>::open(PushEventConsumer<T> _eventConsumer) {
     std::lock_guard lck{mutex};
     if (closed) {
-        _eventConsumer.accept(celix::PushEvent<T>({}, celix::PushEvent<T>::EventType::CLOSE));
+        _eventConsumer.accept(celix::PushEvent<T>::close());
     } else {
         eventConsumers.push_back(_eventConsumer);
         connected.resolve();
@@ -99,7 +99,7 @@ void celix::PushEventSource<T>::publish(const T& event) {
     } else {
         for(auto& eventConsumer : eventConsumers) {
             execute([&, event]() {
-                eventConsumer.accept(celix::PushEvent<T>(event));
+                eventConsumer.accept(celix::PushEventData<T>(event));
             });
         }
     }
@@ -118,7 +118,7 @@ void celix::PushEventSource<T>::close() {
 
     for(auto& eventConsumer : eventConsumers) {
         execute([&]() {
-            eventConsumer.accept(celix::PushEvent<T>({}, celix::PushEvent<T>::EventType::CLOSE));
+            eventConsumer.accept(celix::PushEvent<T>::close());
         });
     }
 

@@ -19,11 +19,15 @@
 
 #pragma once
 
+#include "celix/IllegalStateException.h"
+
 namespace celix {
 
     template <typename T>
     class PushEvent {
     public:
+
+        virtual  ~PushEvent() = default;
    
         enum class EventType {
             DATA,
@@ -31,19 +35,39 @@ namespace celix {
             CLOSE
         };
 
-        PushEvent(const T& _data, EventType _type = EventType::DATA);
+        PushEvent(EventType _type);
 
-        T data;
-        EventType type;
+        virtual const T& getData() const {
+            throw new IllegalStateException("Not a DATA event");
+            return data;
+        }
+
+        EventType getType() const {
+            return type;
+        }
 
         static PushEvent error() {
-            return PushEvent(EventType::Error);
+            return PushEvent(EventType::ERROR);
         }
+
+        static PushEvent close() {
+            return PushEvent(EventType::CLOSE);
+        }
+
+    protected:
+        PushEvent(const T& _data, EventType _type);
+        EventType type;
+        T data {};
     };
 
     template <typename T>
     class PushEventData: public PushEvent<T> {
+    public:
+        PushEventData(const T& _data);
 
+        const T& getData() const override {
+            return this->data;
+        }
     };
 
 }
@@ -52,7 +76,16 @@ namespace celix {
  Implementation
 *********************************************************************************/
 template<typename T>
-celix::PushEvent<T>::PushEvent(const T& _data,
-                               celix::PushEvent<T>::EventType _type) : data{_data},
-                                                                       type{_type} {    
+celix::PushEvent<T>::PushEvent(celix::PushEvent<T>::EventType _type): type{_type} {
+
+}
+
+template<typename T>
+celix::PushEvent<T>::PushEvent(const T& _data, celix::PushEvent<T>::EventType _type): type{_type}, data{_data} {
+
+}
+
+template<typename T>
+celix::PushEventData<T>::PushEventData(const T& _data) :
+    celix::PushEvent<T>::PushEvent{_data, celix::PushEvent<T>::EventType::DATA} {
 }

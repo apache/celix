@@ -23,9 +23,7 @@
 #include <iostream>
 #include <queue>
 
-#include "celix/IPushEventSource.h"
 #include "celix/PushEventConsumer.h"
-#include "celix/IExecutor.h"
 #include "celix/IAutoCloseable.h"
 
 #include "celix/Promise.h"
@@ -66,7 +64,7 @@ namespace celix {
         };
 
         virtual bool begin() = 0;
-        long handleEvent(PushEvent<T> event);
+        long handleEvent(const PushEvent<T>& event);
         virtual void upstreamClose(const PushEvent<T>& event) = 0;
         virtual void internal_close(bool sendDownStreamEvent);
         virtual bool internal_close(const PushEvent<T>& event, bool sendDownStreamEvent);
@@ -101,7 +99,7 @@ celix::PushStream<T>::PushStream(PromiseFactory& _promiseFactory) : promiseFacto
 }
 
 template<typename T>
-long celix::PushStream<T>::handleEvent(PushEvent<T> event) {
+long celix::PushStream<T>::handleEvent(const PushEvent<T>& event) {
     if(closed != celix::PushStream<T>::State::CLOSED) {
         return nextEvent.accept(event);
     }
@@ -111,9 +109,9 @@ long celix::PushStream<T>::handleEvent(PushEvent<T> event) {
 template<typename T>
 celix::Promise<void> celix::PushStream<T>::forEach(ForEachFunction func) {
     nextEvent = PushEventConsumer<T>([func = std::move(func), this](const PushEvent<T>& event) -> long {
-        switch(event.type) {
+        switch(event.getType()) {
             case celix::PushEvent<T>::EventType::DATA:
-                func(event.data);
+                func(event.getData());
                 return PushEventConsumer<T>::CONTINUE;
             case celix::PushEvent<T>::EventType::CLOSE:
                 streamEnd.resolve();
@@ -136,7 +134,7 @@ template<typename T>
 celix::PushStream<T>& celix::PushStream<T>::filter(PredicateFunction predicate) {
     auto downstream = std::make_shared<celix::IntermediatePushStream<T>>(promiseFactory, *this);
     nextEvent = PushEventConsumer<T>([downstream = downstream, predicate = std::move(predicate)](const PushEvent<T>& event) -> long {
-        if (event.type != celix::PushEvent<T>::EventType::DATA || predicate(event.data)) {
+        if (event.getType() != celix::PushEvent<T>::EventType::DATA || predicate(event.getData())) {
             downstream->handleEvent(event);
         }
         return PushEventConsumer<T>::CONTINUE;
@@ -172,10 +170,10 @@ celix::PushStream<R>& celix::PushStream<T>::map(std::function<R(const T&)> mappe
     auto downstream = std::make_shared<celix::IntermediatePushStream<R, T>>(promiseFactory, *this);
 
     nextEvent = PushEventConsumer<T>([downstream = downstream, mapper = std::move(mapper)](const PushEvent<T>& event) -> long {
-        if (event.type == celix::PushEvent<T>::EventType::DATA) {
-            downstream->handleEvent(mapper(event.data));
+        if (event.getType() == celix::PushEvent<T>::EventType::DATA) {
+            downstream->handleEvent(PushEventData<R>(mapper(event.getData())));
         } else {
-            downstream->handleEvent(celix::PushEvent<R>({}, celix::PushEvent<R>::EventType::CLOSE));
+            downstream->handleEvent(celix::PushEvent<R>::close());
         }
         return PushEventConsumer<T>::CONTINUE;
     });
@@ -202,7 +200,7 @@ void celix::PushStream<T>::close() {
 
 template<typename T>
 void celix::PushStream<T>::internal_close(bool sendDownStreamEvent) {
-    auto closeEvent = celix::PushEvent<T>({}, celix::PushEvent<T>::EventType::CLOSE);
+    auto closeEvent = celix::PushEvent<T>(celix::PushEvent<T>::close());
     if (internal_close(closeEvent, sendDownStreamEvent)) {
         upstreamClose(closeEvent);
     }
