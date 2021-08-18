@@ -75,7 +75,6 @@ void celix::AbstractPushEventSource<T>::open(std::shared_ptr<celix::IPushEventCo
     std::lock_guard lck{mutex};
     if (closed) {
         _eventConsumer->accept(celix::ClosePushEvent<T>());
-
     } else {
         eventConsumers.push_back(_eventConsumer);
         connected.resolve();
@@ -94,7 +93,7 @@ void celix::AbstractPushEventSource<T>::publish(const T& event) {
     std::lock_guard lck{mutex};
 
     if (closed) {
-        throw IllegalStateException("SimplePushEventSource closed");
+        throw IllegalStateException("AbstractPushEventSource closed");
     } else {
         for(auto& eventConsumer : eventConsumers) {
             execute([&, event]() {

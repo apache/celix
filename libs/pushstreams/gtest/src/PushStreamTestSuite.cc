@@ -74,6 +74,11 @@ public:
     PushStreamProvider psp {};
     std::unique_ptr<std::thread> t{};
 
+    std::shared_ptr<celix::IExecutor> executor {std::make_shared<celix::DefaultExecutor>()};
+    celix::PromiseFactory promiseFactory {executor};
+    celix::Deferred<void> done{promiseFactory.deferred<void>()};
+    celix::Promise<void> donepromise = done.getPromise();
+
     template <typename T>
     std::shared_ptr<celix::SynchronousPushEventSource<T>> createEventSource(T event, int publishCount, bool autoinc = false) {
         auto ses = psp.template createSynchronousEventSource<T>();
@@ -94,6 +99,7 @@ public:
 
             t->join();
             ses->close();
+            done.resolve();
             return p;
         };
 
@@ -359,6 +365,7 @@ TEST_F(PushStreamTestSuite, ForEachTestBasicType) {
             });
 
     streamEnded.wait();
+    donepromise.wait();
 
     GTEST_ASSERT_EQ(10'000, consumeCount);
     GTEST_ASSERT_EQ(49'995'000, consumeSum);
@@ -384,6 +391,7 @@ TEST_F(PushStreamTestSuite, ForEachTestBasicType_Buffered) {
             });
 
     streamEnded.wait();
+    donepromise.wait();
 
     GTEST_ASSERT_EQ(10'000, consumeCount);
     GTEST_ASSERT_EQ(49'995'000, consumeSum);
@@ -402,6 +410,7 @@ TEST_F(PushStreamTestSuite, ForEachTestObjectType) {
             });
 
     streamEnded.wait();
+    donepromise.wait();
 
     GTEST_ASSERT_EQ(10, consumeCount);
     GTEST_ASSERT_EQ(20, consumeSum);
@@ -425,6 +434,7 @@ TEST_F(PushStreamTestSuite, FilterTestObjectType_true) {
             });
 
     streamEnded.wait();
+    donepromise.wait();
 
     GTEST_ASSERT_EQ(10, consumeCount);
     GTEST_ASSERT_EQ(20, consumeSum);
@@ -446,7 +456,8 @@ TEST_F(PushStreamTestSuite, FilterTestObjectType_false) {
                 consumeSum = consumeSum + event;
             });
 
-    streamEnded.wait(); //todo marked is not in OSGi Spec
+    streamEnded.wait();
+    donepromise.wait();
 
     GTEST_ASSERT_EQ(0, consumeCount);
     GTEST_ASSERT_EQ(0, consumeSum);
@@ -467,7 +478,8 @@ TEST_F(PushStreamTestSuite, FilterTestObjectType_simple) {
                 consumeSum = consumeSum + event;
             });
 
-    streamEnded.wait(); //todo marked is not in OSGi Spec
+    streamEnded.wait();
+    donepromise.wait();
 
     GTEST_ASSERT_EQ(5, consumeCount);
     GTEST_ASSERT_EQ( 0 + 1 + 2 + 3 + 4, consumeSum);
@@ -491,7 +503,8 @@ TEST_F(PushStreamTestSuite, FilterTestObjectType_and) {
                 consumeSum = consumeSum + event;
             });
 
-    streamEnded.wait(); //todo marked is not in OSGi Spec
+    streamEnded.wait();
+    donepromise.wait();
 
     GTEST_ASSERT_EQ(2, consumeCount);
     GTEST_ASSERT_EQ(6 + 7, consumeSum); // 0 + 1 + 2 + 3 + 4
@@ -511,12 +524,130 @@ TEST_F(PushStreamTestSuite, MapTestObjectType) {
                 consumeSum = consumeSum + event;
             });
 
-    streamEnded.wait(); //todo marked is not in OSGi Spec
+    streamEnded.wait();
+    donepromise.wait();
 
     GTEST_ASSERT_EQ(10, consumeCount);
     GTEST_ASSERT_EQ(45, consumeSum);
 }
 
+TEST_F(PushStreamTestSuite, MultipleStreamsTest_CloseSource) {
+    int onEventStream1{0};
+    int onEventStream2{0};
+    int onClosedReceived1{0};
+    int onClosedReceived2{0};
+    int onErrorReceived1{0};
+    int onErrorReceived2{0};
+
+    auto psp = PushStreamProvider();
+    std::unique_ptr<std::thread> t{};
+    auto ses = createEventSource<int>(0, 20, true);
+
+    auto stream1 = psp.createUnbufferedStream<int>(ses);
+    auto streamEnded1 = stream1->
+    filter([&](int event) -> bool {
+        return (event > 10);
+    }).
+    filter([&](int event) -> bool {
+        return (event < 15);
+    }).onClose([&](){
+        onClosedReceived1++;
+    }).onError([&](){
+        onErrorReceived1++;
+    }).
+    forEach([&](int /*event*/) {
+        onEventStream1++;
+    });
+
+    auto stream2 = psp.createUnbufferedStream<int>(ses);
+    auto streamEnded2 = stream2->
+    filter([&](int event) -> bool {
+        return (event < 15);
+    }).onClose([&](){
+        onClosedReceived2++;
+    }).onError([&](){
+        onErrorReceived2++;
+    }).forEach([&](int /*event*/) {
+        onEventStream2++;
+    });
+
+    streamEnded1.onSuccess([]() {
+        std::cout << "Stream ended" << std::endl;
+    });
+
+    streamEnded2.onSuccess([]() {
+        std::cout << "Stream2 ended" << std::endl;
+    });
+
+    streamEnded1.wait();
+    streamEnded2.wait();
+
+    donepromise.wait();
+
+    GTEST_ASSERT_EQ(4, onEventStream1);
+    //The first stream will start the source, thus the number of receives in second is not guaranteed
+    //GTEST_ASSERT_EQ(15, onEventStream2);
+
+
+    GTEST_ASSERT_EQ(1, onClosedReceived1);
+    GTEST_ASSERT_EQ(1, onClosedReceived2);
+    GTEST_ASSERT_EQ(0, onErrorReceived1);
+    GTEST_ASSERT_EQ(0, onErrorReceived2);
+}
+
+TEST_F(PushStreamTestSuite, MultipleStreamsTest_CloseStream) {
+    int onEventStream1{0};
+    int onEventStream2{0};
+    auto psp = PushStreamProvider();
+    std::unique_ptr<std::thread> t{};
+    auto ses = psp.template createSynchronousEventSource<int>();
+
+    auto successLambda = [](celix::Promise<void> p) -> celix::Promise<void> {
+        return p;
+    };
+    auto x = ses->connectPromise().template then<void>(successLambda);
+
+    auto stream1 = psp.createUnbufferedStream<int>(ses);
+
+    auto streamEnded1 = stream1->
+            filter([&](int event) -> bool {
+                return (event > 10);
+            }).
+            filter([&](int event) -> bool {
+                return (event < 15);
+            }).
+            forEach([&](int /*event*/) {
+                onEventStream1++;
+            });
+
+    auto stream2 = psp.createUnbufferedStream<int>(ses);
+    auto streamEnded2 = stream2->
+            filter([&](int event) -> bool {
+                return (event < 15);
+            }).
+            forEach([&](int /*event*/) {
+                onEventStream2++;
+            });
+
+    streamEnded1.onSuccess([]() {
+        std::cout << "Stream ended" << std::endl;
+    });
+
+    streamEnded2.onSuccess([]() {
+        std::cout << "Stream2 ended" << std::endl;
+    });
+
+    stream1->close();
+    streamEnded1.wait();
+
+    ses->publish(10);
+
+    stream2->close();
+    streamEnded2.wait();
+
+    GTEST_ASSERT_EQ(0, onEventStream1);
+    GTEST_ASSERT_EQ(1, onEventStream2);
+}
 
 
 //TEST_F(PushStreamTestSuite, BasicTest) {
@@ -564,60 +695,6 @@ TEST_F(PushStreamTestSuite, MapTestObjectType) {
 //}
 //
 //
-//TEST_F(PushStreamTestSuite, MultipleStreamsTest) {
-//    auto psp = PushStreamProvider();
-//    std::unique_ptr<std::thread> t{};
-//    auto ses = psp.createSimpleEventSource<int>();
-//
-//    auto success = [&](celix::Promise<void> p) -> celix::Promise<void> {
-//        t = std::make_unique<std::thread>([&]() {
-//            long counter = 0;
-//            // Keep going as long as someone is listening
-//            while (ses->isConnected()) {
-//                ses->publish(++counter);
-//                std::this_thread::sleep_for(std::chrono::milliseconds{50});
-//                std::cout << "Published: " << counter << std::endl;
-//            }
-//            // Restart delivery when a new listener connects
-//            // ses.connectPromise().then(success);
-//        });
-//        return p;
-//    };
-//
-//    ses->connectPromise().then<void>(success);
-//
-//    auto streamEnded = psp.createUnbufferedStream<int>(ses).
-//    filter([&](int event) -> bool {
-//        return (event > 10);
-//    }).
-//    filter([&](int event) -> bool {
-//        return (event < 15);
-//    }).
-//    forEach([&](int event) {
-//        std::cout << "Consumed event 1: " << event << std::endl;
-//    });
-//
-//    auto streamEnded2 = psp.createUnbufferedStream<int>(ses).
-//    filter([&](int event) -> bool {
-//        return (event < 15);
-//    }).
-//    forEach([&](int event) {
-//        std::cout << "Consumed event 2: " << event << std::endl;
-//    });
-//
-//    streamEnded.onSuccess([]() {
-//        std::cout << "Stream ended" << std::endl;
-//    });
-//
-//    streamEnded2.onSuccess([]() {
-//        std::cout << "Stream2 ended" << std::endl;
-//    });
-//
-//    std::this_thread::sleep_for(std::chrono::seconds{1});
-//
-//    ses->close();
-//    t->join();
-//}
 //
 //
 //TEST_F(PushStreamTestSuite, SplitStreamsTest) {
