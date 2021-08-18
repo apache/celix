@@ -65,12 +65,13 @@ namespace celix {
 
         virtual bool begin() = 0;
         virtual void upstreamClose(const PushEvent<T>& event) = 0;
+        virtual long handleEvent(const PushEvent<T>& event);
 
         void close(const PushEvent<T>& event, bool sendDownStreamEvent);
         bool internal_close(const PushEvent<T>& event, bool sendDownStreamEvent);
 
         bool compareAndSetState(State expectedValue, State newValue);
-        long handleEvent(const PushEvent<T>& event);
+
         State getAndSetState(State newValue);
 
         std::mutex mutex {};
@@ -91,10 +92,7 @@ namespace celix {
     template <typename T>
     class StreamPushEventConsumer: public PushEventConsumer<T>, public IAutoCloseable {
     public:
-        StreamPushEventConsumer(std::weak_ptr<PushStream<T>> _pushStream) : PushEventConsumer<T>{}, pushStream{_pushStream} {}
-        ~StreamPushEventConsumer() {
-            std::cout << __PRETTY_FUNCTION__  << std::endl;
-        }
+        explicit StreamPushEventConsumer(std::weak_ptr<PushStream<T>> _pushStream) : PushEventConsumer<T>{}, pushStream{_pushStream} {}
 
         long accept(const PushEvent<T>& event) override {
             if (!closed) {
@@ -252,7 +250,7 @@ bool celix::PushStream<T>::internal_close(const PushEvent<T>& event, bool sendDo
             onCloseCallback();
         }
 
-        if (event.getType() == PushEvent<T>::EventType::ERROR && onErrorCallback) {
+        if ((event.getType() == PushEvent<T>::EventType::ERROR) && onErrorCallback) {
             onErrorCallback();
         }
 

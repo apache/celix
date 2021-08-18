@@ -123,7 +123,7 @@ TEST_F(PushStreamTestSuite, EventSourceCloseTest) {
 
     ses->close();
 
-    streamEnded.wait(); //todo marked is not in OSGi Spec
+    streamEnded.wait();
 
     ASSERT_EQ(1, onClosedReceived);
     ASSERT_EQ(0, onErrorReceived);
@@ -153,7 +153,7 @@ TEST_F(PushStreamTestSuite, ChainedEventSourceCloseTest) {
 
     ses->close();
 
-    streamEnded.wait(); //todo marked is not in OSGi Spec
+    streamEnded.wait();
 
     ASSERT_EQ(1, onClosedReceived);
     ASSERT_EQ(0, onErrorReceived);
@@ -180,11 +180,43 @@ TEST_F(PushStreamTestSuite, StreamCloseTest) {
 
     stream->close();
 
-    streamEnded.wait(); //todo marked is not in OSGi Spec
+    streamEnded.wait();
 
     ASSERT_EQ(1, onClosedReceived);
     ASSERT_EQ(0, onErrorReceived);
 }
+
+TEST_F(PushStreamTestSuite, PublishAfterStreamCloseTest) {
+    int onClosedReceived{0};
+    int onErrorReceived{0};
+    int onEventReceived{0};
+
+    auto ses = psp.createSynchronousEventSource<int>();
+
+    auto successLambda = [](celix::Promise<void> p) -> celix::Promise<void> {
+        return p;
+    };
+    auto x = ses->connectPromise().then<void>(successLambda);
+
+    auto stream = psp.createStream<int>(ses);
+    auto streamEnded = stream->onClose([&](){
+        onClosedReceived++;
+    }).onError([&](){
+        onErrorReceived++;
+    }).forEach([&](int /*event*/) {
+        onEventReceived++;
+    });
+
+    stream->close();
+    ses->publish(1);
+
+    streamEnded.wait();
+
+    ASSERT_EQ(1, onClosedReceived);
+    ASSERT_EQ(0, onErrorReceived);
+    ASSERT_EQ(0, onEventReceived);
+}
+
 
 TEST_F(PushStreamTestSuite, ChainedStreamCloseTest) {
     int onClosedReceived{0};
@@ -209,7 +241,7 @@ TEST_F(PushStreamTestSuite, ChainedStreamCloseTest) {
 
     stream->close();
 
-    streamEnded.wait(); //todo marked is not in OSGi Spec
+    streamEnded.wait();
 
     ASSERT_EQ(1, onClosedReceived);
     ASSERT_EQ(0, onErrorReceived);
@@ -241,7 +273,7 @@ TEST_F(PushStreamTestSuite, ChainedStreamIntermedateCloseTest) {
 
     stream1->close();
 
-    streamEnded.wait(); //todo marked is not in OSGi Spec
+    streamEnded.wait();
 
     ASSERT_EQ(2, onClosedReceived);
     ASSERT_EQ(0, onErrorReceived);
@@ -270,7 +302,7 @@ TEST_F(PushStreamTestSuite, ExceptionInStreamTest) {
 
     ses->publish(1);
 
-    streamEnded.wait(); //todo marked is not in OSGi Spec
+    streamEnded.wait();
 
     ASSERT_EQ(1, onClosedReceived);
     ASSERT_EQ(1, onErrorReceived);
@@ -300,11 +332,12 @@ TEST_F(PushStreamTestSuite, ExceptionInChainedStreamTest) {
 
     ses->publish(1);
 
-    streamEnded.wait(); //todo marked is not in OSGi Spec
+    streamEnded.wait();
 
     ASSERT_EQ(1, onClosedReceived);
     ASSERT_EQ(1, onErrorReceived);
 }
+
 //
 ///
 /// forEach test
@@ -325,36 +358,37 @@ TEST_F(PushStreamTestSuite, ForEachTestBasicType) {
                 consumeSum = consumeSum + event;
             });
 
-    streamEnded.wait(); //todo marked is not in OSGi Spec
+    streamEnded.wait();
 
     GTEST_ASSERT_EQ(10'000, consumeCount);
     GTEST_ASSERT_EQ(49'995'000, consumeSum);
 }
-//
-/////
-///// forEach test
-/////
-//TEST_F(PushStreamTestSuite, DISABLED_ForEachTestBasicType_Buffered) {
-//    int consumeCount{0};
-//    int consumeSum{0};
-//    int lastConsumed{-1};
-//    auto ses = createEventSource<int>(0, 100, true);
-//
-//    auto streamEnded = psp.createBufferedStream<int>(ses).
-//            forEach([&](int event) {
-////                GTEST_ASSERT_EQ(lastConsumed + 1, event);
-//
-//                lastConsumed = event;
-//                consumeCount++;
-//                consumeSum = consumeSum + event;
-//            });
-//
-//    streamEnded.wait(); //todo marked is not in OSGi Spec
-//
-//    GTEST_ASSERT_EQ(100, consumeCount);
-////    GTEST_ASSERT_EQ(49'995'000, consumeSum);
-//}
-//
+
+///
+/// forEach test
+///
+TEST_F(PushStreamTestSuite, ForEachTestBasicType_Buffered) {
+    int consumeCount{0};
+    int consumeSum{0};
+    int lastConsumed{-1};
+    auto ses = createEventSource<int>(0, 100, true);
+
+    auto stream = psp.createBufferedStream<int>(ses);
+    auto streamEnded = stream->
+            forEach([&](int event) {
+                //GTEST_ASSERT_EQ(lastConsumed + 1, event);
+
+                lastConsumed = event;
+                consumeCount++;
+                consumeSum = consumeSum + event;
+            });
+
+    streamEnded.wait();
+
+    GTEST_ASSERT_EQ(100, consumeCount);
+//    GTEST_ASSERT_EQ(49'995'000, consumeSum);
+}
+
 TEST_F(PushStreamTestSuite, ForEachTestObjectType) {
     int consumeCount{0};
     int consumeSum{0};
@@ -367,116 +401,121 @@ TEST_F(PushStreamTestSuite, ForEachTestObjectType) {
                 consumeSum = consumeSum + event;
             });
 
-    streamEnded.wait(); //todo marked is not in OSGi Spec
+    streamEnded.wait();
 
     GTEST_ASSERT_EQ(10, consumeCount);
     GTEST_ASSERT_EQ(20, consumeSum);
 }
-//
-////Filter Test
-//TEST_F(PushStreamTestSuite, FilterTestObjectType_true) {
-//    int consumeCount{0};
-//    int consumeSum{0};
-//    auto ses = createEventSource<EventObject>(EventObject{2}, 10);
-//
-//    auto streamEnded = psp.createStream<EventObject>(ses).
-//            filter([](const EventObject& /*event*/) -> bool {
-//               return true;
-//            }).
-//            forEach([&](EventObject event) {
-//                consumeCount++;
-//                consumeSum = consumeSum + event;
-//            });
-//
-//    streamEnded.wait(); //todo marked is not in OSGi Spec
-//
-//    GTEST_ASSERT_EQ(10, consumeCount);
-//    GTEST_ASSERT_EQ(20, consumeSum);
-//}
-//
-////Filter Test
-//TEST_F(PushStreamTestSuite, FilterTestObjectType_false) {
-//    int consumeCount{0};
-//    int consumeSum{0};
-//    auto ses = createEventSource<EventObject>(EventObject{2}, 10);
-//
-//    auto streamEnded = psp.createStream<EventObject>(ses).
-//            filter([](const EventObject& /*event*/) -> bool {
-//                return false;
-//            }).
-//            forEach([&](EventObject event) {
-//                consumeCount++;
-//                consumeSum = consumeSum + event;
-//            });
-//
-//    streamEnded.wait(); //todo marked is not in OSGi Spec
-//
-//    GTEST_ASSERT_EQ(0, consumeCount);
-//    GTEST_ASSERT_EQ(0, consumeSum);
-//}
-//
-//TEST_F(PushStreamTestSuite, FilterTestObjectType_simple) {
-//    int consumeCount{0};
-//    int consumeSum{0};
-//    auto ses = createEventSource<EventObject>(EventObject{0}, 10, true);
-//
-//    auto streamEnded = psp.createStream<EventObject>(ses).
-//            filter([](const EventObject& event) -> bool {
-//                return event.val < 5;
-//            }).
-//            forEach([&](EventObject event) {
-//                consumeCount++;
-//                consumeSum = consumeSum + event;
-//            });
-//
-//    streamEnded.wait(); //todo marked is not in OSGi Spec
-//
-//    GTEST_ASSERT_EQ(5, consumeCount);
-//    GTEST_ASSERT_EQ( 0 + 1 + 2 + 3 + 4, consumeSum);
-//}
-//
-//TEST_F(PushStreamTestSuite, FilterTestObjectType_and) {
-//    int consumeCount{0};
-//    int consumeSum{0};
-//    auto ses = createEventSource<EventObject>(EventObject{0}, 10, true);
-//
-//    auto streamEnded = psp.createStream<EventObject>(ses).
-//            filter([](const EventObject& predicate) -> bool {
-//                return predicate.val > 5;
-//            }).
-//            filter([](const EventObject& predicate) -> bool {
-//                return predicate.val < 8;
-//            }).
-//            forEach([&](const EventObject& event) {
-//                consumeCount++;
-//                consumeSum = consumeSum + event;
-//            });
-//
-//    streamEnded.wait(); //todo marked is not in OSGi Spec
-//
-//    GTEST_ASSERT_EQ(2, consumeCount);
-//    GTEST_ASSERT_EQ(6 + 7, consumeSum); // 0 + 1 + 2 + 3 + 4
-//}
-//
-//TEST_F(PushStreamTestSuite, MapTestObjectType) {
-//    int consumeCount{0};
-//    int consumeSum{0};
-//    auto ses = createEventSource<EventObject>(EventObject{0}, 10, true);
-//
-//    auto streamEnded = psp.createStream<EventObject>(ses).
-//            map<int>([](const EventObject& event) -> int {
-//                return event.val;
-//            }).
-//            forEach([&](const int& event) {
-//                consumeCount++;
-//                consumeSum = consumeSum + event;
-//            });
-//
-//    streamEnded.wait(); //todo marked is not in OSGi Spec
-//
-//    GTEST_ASSERT_EQ(10, consumeCount);
-//    GTEST_ASSERT_EQ(45, consumeSum);
-//}
+
+
+//Filter Test
+TEST_F(PushStreamTestSuite, FilterTestObjectType_true) {
+    int consumeCount{0};
+    int consumeSum{0};
+    auto ses = createEventSource<EventObject>(EventObject{2}, 10);
+
+    auto stream = psp.createStream<EventObject>(ses);
+    auto streamEnded = stream->
+            filter([](const EventObject& /*event*/) -> bool {
+               return true;
+            }).
+            forEach([&](EventObject event) {
+                consumeCount++;
+                consumeSum = consumeSum + event;
+            });
+
+    streamEnded.wait();
+
+    GTEST_ASSERT_EQ(10, consumeCount);
+    GTEST_ASSERT_EQ(20, consumeSum);
+}
+
+//Filter Test
+TEST_F(PushStreamTestSuite, FilterTestObjectType_false) {
+    int consumeCount{0};
+    int consumeSum{0};
+    auto ses = createEventSource<EventObject>(EventObject{2}, 10);
+
+    auto stream = psp.createStream<EventObject>(ses);
+    auto streamEnded = stream->
+            filter([](const EventObject& /*event*/) -> bool {
+                return false;
+            }).
+            forEach([&](EventObject event) {
+                consumeCount++;
+                consumeSum = consumeSum + event;
+            });
+
+    streamEnded.wait(); //todo marked is not in OSGi Spec
+
+    GTEST_ASSERT_EQ(0, consumeCount);
+    GTEST_ASSERT_EQ(0, consumeSum);
+}
+
+TEST_F(PushStreamTestSuite, FilterTestObjectType_simple) {
+    int consumeCount{0};
+    int consumeSum{0};
+    auto ses = createEventSource<EventObject>(EventObject{0}, 10, true);
+
+    auto stream = psp.createStream<EventObject>(ses);
+    auto streamEnded = stream->
+            filter([](const EventObject& event) -> bool {
+                return event.val < 5;
+            }).
+            forEach([&](EventObject event) {
+                consumeCount++;
+                consumeSum = consumeSum + event;
+            });
+
+    streamEnded.wait(); //todo marked is not in OSGi Spec
+
+    GTEST_ASSERT_EQ(5, consumeCount);
+    GTEST_ASSERT_EQ( 0 + 1 + 2 + 3 + 4, consumeSum);
+}
+
+TEST_F(PushStreamTestSuite, FilterTestObjectType_and) {
+    int consumeCount{0};
+    int consumeSum{0};
+    auto ses = createEventSource<EventObject>(EventObject{0}, 10, true);
+
+    auto stream = psp.createStream<EventObject>(ses);
+    auto streamEnded = stream->
+            filter([](const EventObject& predicate) -> bool {
+                return predicate.val > 5;
+            }).
+            filter([](const EventObject& predicate) -> bool {
+                return predicate.val < 8;
+            }).
+            forEach([&](const EventObject& event) {
+                consumeCount++;
+                consumeSum = consumeSum + event;
+            });
+
+    streamEnded.wait(); //todo marked is not in OSGi Spec
+
+    GTEST_ASSERT_EQ(2, consumeCount);
+    GTEST_ASSERT_EQ(6 + 7, consumeSum); // 0 + 1 + 2 + 3 + 4
+}
+
+TEST_F(PushStreamTestSuite, MapTestObjectType) {
+    int consumeCount{0};
+    int consumeSum{0};
+    auto ses = createEventSource<EventObject>(EventObject{0}, 10, true);
+    auto stream = psp.createStream<EventObject>(ses);
+    auto streamEnded = stream->
+            map<int>([](const EventObject& event) -> int {
+                return event.val;
+            }).
+            forEach([&](const int& event) {
+                consumeCount++;
+                consumeSum = consumeSum + event;
+            });
+
+    streamEnded.wait(); //todo marked is not in OSGi Spec
+
+    GTEST_ASSERT_EQ(10, consumeCount);
+    GTEST_ASSERT_EQ(45, consumeSum);
+}
 
 
 

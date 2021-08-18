@@ -24,15 +24,12 @@
 namespace celix {
     template<typename T>
     class UnbufferedPushStream: public PushStream<T> {
-        using ConnectorFunction = std::function<std::shared_ptr<IAutoCloseable>(void)>;
     public:
+        using ConnectorFunction = std::function<std::shared_ptr<IAutoCloseable>(void)>;
+
         explicit UnbufferedPushStream(PromiseFactory& _promiseFactory);
         void setConnector(ConnectorFunction _connector) {
             connector =  _connector;
-        }
-
-        ~UnbufferedPushStream() override {
-            std::cout << "Destruct" << std::endl;
         }
 
     protected:
@@ -62,7 +59,6 @@ bool celix::UnbufferedPushStream<T>::begin() {
 template<typename T>
 void celix::UnbufferedPushStream<T>::upstreamClose(const PushEvent<T>& /*event*/) {
     toClose->close();
-    toClose.reset();
 }
 
 

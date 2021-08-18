@@ -25,7 +25,7 @@ namespace celix {
     template<typename T>
     class BufferedPushStream: public UnbufferedPushStream<T> {
     public:
-        BufferedPushStream(PromiseFactory& _promiseFactory, std::shared_ptr<celix::IPushEventSource<T>> eventSource);
+        BufferedPushStream(PromiseFactory& _promiseFactory);
 
     protected:
         long handleEvent(const PushEvent<T>& event) override;
@@ -41,7 +41,7 @@ namespace celix {
 //implementation
 
 template<typename T>
-celix::BufferedPushStream<T>::BufferedPushStream(PromiseFactory& _promiseFactory, std::shared_ptr<celix::IPushEventSource<T>> eventSource) : celix::UnbufferedPushStream<T>(_promiseFactory, eventSource) {
+celix::BufferedPushStream<T>::BufferedPushStream(PromiseFactory& _promiseFactory) : celix::UnbufferedPushStream<T>(_promiseFactory) {
 }
 
 template<typename T>
