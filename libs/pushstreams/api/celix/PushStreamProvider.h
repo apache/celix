@@ -19,12 +19,10 @@
 
 #pragma once
 
-#include <queue>
-
-#include "celix/PushStreamBuilder.h"
 #include "celix/SimplePushEventSource.h"
 #include "celix/SynchronousPushEventSource.h"
 #include "celix/IPushEventSource.h"
+#include "celix/impl/StreamPushEventConsumer.h"
 #include "celix/PushStream.h"
 
 namespace celix {
@@ -41,15 +39,17 @@ namespace celix {
         [[nodiscard]] std::shared_ptr<celix::SynchronousPushEventSource<T>> createSynchronousEventSource();
 
         template <typename T>
-        [[nodiscard]] std::shared_ptr<celix::PushStream<T>> createStream(std::shared_ptr<IPushEventSource<T>> eventSource);
+        [[nodiscard]] std::shared_ptr<celix::PushStream<T>> createUnbufferedStream(std::shared_ptr<IPushEventSource<T>> eventSource);
 
         template <typename T>
-        [[nodiscard]] std::shared_ptr<celix::PushStream<T>> createBufferedStream(std::shared_ptr<celix::IPushEventSource<T>> eventSource);
+        [[nodiscard]] std::shared_ptr<celix::PushStream<T>> createStream(std::shared_ptr<celix::IPushEventSource<T>> eventSource);
 
     private:
+        template <typename T>
+        void createStreamConsumer(std::shared_ptr<celix::UnbufferedPushStream<T>> stream, std::shared_ptr<celix::IPushEventSource<T>> eventSource);
+
         std::shared_ptr<IExecutor> executor {std::make_shared<DefaultExecutor>()};
         PromiseFactory promiseFactory {executor};
-
     };
 }
 
@@ -73,33 +73,26 @@ inline std::shared_ptr<celix::SynchronousPushEventSource<T>> celix::PushStreamPr
     return std::make_shared<celix::SynchronousPushEventSource<T>>(promiseFactory);
 }
 
-
-
-//TODO returns a unbuffered stream repair is needed
 template <typename T>
-std::shared_ptr<celix::PushStream<T>> celix::PushStreamProvider::createStream(std::shared_ptr<celix::IPushEventSource<T>> eventSource) {
-    auto unbufferedPushStream = std::make_shared<UnbufferedPushStream<T>>(promiseFactory);
-    auto pushStreamConsumer = std::make_shared<celix::StreamPushEventConsumer<T>>(unbufferedPushStream);
-    //eventSource->addConsumer();
-
-    unbufferedPushStream->setConnector([eventSource, pushStreamConsumer = std::move(pushStreamConsumer)]() -> std::shared_ptr<IAutoCloseable> {
-        eventSource->open(pushStreamConsumer);
-        return pushStreamConsumer;
-    });
-
-    return unbufferedPushStream;
+std::shared_ptr<celix::PushStream<T>> celix::PushStreamProvider::createUnbufferedStream(std::shared_ptr<celix::IPushEventSource<T>> eventSource) {
+    auto stream = std::make_shared<UnbufferedPushStream<T>>(promiseFactory);
+    createStreamConsumer<T>(stream, eventSource);
+    return stream;
 }
 
-//TODO returns a unbuffered stream repair is needed
 template <typename T>
-std::shared_ptr<celix::PushStream<T>>celix::PushStreamProvider::createBufferedStream(std::shared_ptr<celix::IPushEventSource<T>> eventSource) {
+std::shared_ptr<celix::PushStream<T>> celix::PushStreamProvider::createStream(std::shared_ptr<celix::IPushEventSource<T>> eventSource) {
     auto stream = std::make_shared<BufferedPushStream<T>>(promiseFactory);
+    createStreamConsumer<T>(stream, eventSource);
+    return stream;
+}
+
+template<typename T>
+void celix::PushStreamProvider::createStreamConsumer(std::shared_ptr<celix::UnbufferedPushStream<T>> stream, std::shared_ptr<celix::IPushEventSource<T>> eventSource) {
     auto pushStreamConsumer = std::make_shared<celix::StreamPushEventConsumer<T>>(stream);
 
     stream->setConnector([eventSource, pushStreamConsumer = std::move(pushStreamConsumer)]() -> std::shared_ptr<IAutoCloseable> {
         eventSource->open(pushStreamConsumer);
         return pushStreamConsumer;
     });
-
-    return stream;
 }

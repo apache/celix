@@ -23,7 +23,7 @@
 #include <iostream>
 #include <set>
 
-#include "celix/AbstractPushEventSource.h"
+#include "celix/impl/AbstractPushEventSource.h"
 #include "celix/IAutoCloseable.h"
 
 #include "IllegalStateException.h"
@@ -33,7 +33,7 @@
 
 namespace celix {
     template <typename T>
-    class SynchronousPushEventSource: public PushEventSource<T> {
+    class SynchronousPushEventSource: public AbstractPushEventSource<T> {
     public:
         explicit SynchronousPushEventSource(PromiseFactory& promiseFactory);
 
@@ -49,7 +49,7 @@ namespace celix {
 *********************************************************************************/
 
 template <typename T>
-celix::SynchronousPushEventSource<T>::SynchronousPushEventSource(PromiseFactory& _promiseFactory): PushEventSource<T>{_promiseFactory} {
+celix::SynchronousPushEventSource<T>::SynchronousPushEventSource(PromiseFactory& _promiseFactory): AbstractPushEventSource<T>{_promiseFactory} {
 
 }
 

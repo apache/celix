@@ -88,39 +88,15 @@ namespace celix {
         template<typename> friend class PushStream;
         template<typename> friend class StreamPushEventConsumer;
     };
-
-    template <typename T>
-    class StreamPushEventConsumer: public PushEventConsumer<T>, public IAutoCloseable {
-    public:
-        explicit StreamPushEventConsumer(std::weak_ptr<PushStream<T>> _pushStream) : PushEventConsumer<T>{}, pushStream{_pushStream} {}
-
-        long accept(const PushEvent<T>& event) override {
-            if (!closed) {
-                auto tmp = pushStream.lock();
-                if (tmp) {
-                    return tmp->handleEvent(event);
-                }
-            }
-            return PushEventConsumer<T>::ABORT;
-        }
-
-        void close() override {
-            closed = true;
-        };
-
-        std::weak_ptr<PushStream<T>> pushStream;
-        bool closed{false};
-    };
-
 }
 
 /*********************************************************************************
  Implementation
 *********************************************************************************/
 
-#include "IntermediatePushStream.h"
-#include "UnbufferedPushStream.h"
-#include "BufferedPushStream.h"
+#include "celix/impl/IntermediatePushStream.h"
+#include "celix/impl/UnbufferedPushStream.h"
+#include "celix/impl/BufferedPushStream.h"
 
 template<typename T>
 celix::PushStream<T>::PushStream(PromiseFactory& _promiseFactory) : promiseFactory{_promiseFactory} {

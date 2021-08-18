@@ -20,10 +20,9 @@
 
 #pragma once
 
-#include <iostream>
-#include <set>
+#include <queue>
 
-#include "celix/AbstractPushEventSource.h"
+#include "celix/impl/AbstractPushEventSource.h"
 #include "celix/IAutoCloseable.h"
 
 #include "IllegalStateException.h"
@@ -34,7 +33,7 @@
 
 namespace celix {
     template <typename T>
-    class SimplePushEventSource: public PushEventSource<T> {
+    class SimplePushEventSource: public AbstractPushEventSource<T> {
     public:
         explicit SimplePushEventSource(PromiseFactory& promiseFactory);
 
@@ -52,7 +51,7 @@ namespace celix {
 *********************************************************************************/
 
 template <typename T>
-celix::SimplePushEventSource<T>::SimplePushEventSource(PromiseFactory& promiseFactory): PushEventSource<T>{promiseFactory},
+celix::SimplePushEventSource<T>::SimplePushEventSource(PromiseFactory& promiseFactory): AbstractPushEventSource<T>{promiseFactory},
     executor{promiseFactory.getExecutor()} {
 
 //    executor->execute([]() {

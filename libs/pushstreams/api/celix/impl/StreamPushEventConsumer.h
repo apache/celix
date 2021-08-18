@@ -19,12 +19,32 @@
 
 #pragma once
 
+#include "celix/PushEventConsumer.h"
+#include "celix/IAutoCloseable.h"
+#include "celix/PushStream.h"
+
 namespace celix {
-    template <typename R, typename T, typename U>
-    class BufferBuilder {
+
+    template <typename T>
+    class StreamPushEventConsumer: public PushEventConsumer<T>, public IAutoCloseable {
     public:
-        virtual ~BufferBuilder() = default;
-        virtual std::shared_ptr<R> build() = 0;
+        explicit StreamPushEventConsumer(std::weak_ptr<PushStream<T>> _pushStream) : PushEventConsumer<T>{}, pushStream{_pushStream} {}
+
+        long accept(const PushEvent<T>& event) override {
+            if (!closed) {
+                auto tmp = pushStream.lock();
+                if (tmp) {
+                    return tmp->handleEvent(event);
+                }
+            }
+            return PushEventConsumer<T>::ABORT;
+        }
+
+        void close() override {
+            closed = true;
+        };
+
+        std::weak_ptr<PushStream<T>> pushStream;
+        bool closed{false};
     };
 }
-

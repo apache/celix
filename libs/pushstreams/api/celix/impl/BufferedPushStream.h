@@ -36,6 +36,7 @@ namespace celix {
         std::unique_ptr<PushEvent<T>> popQueue();
         std::queue<std::unique_ptr<PushEvent<T>>> queue{};
         std::mutex mutex{};
+        int nrWorkers{0};
     };
 }
 
@@ -48,9 +49,8 @@ celix::BufferedPushStream<T>::BufferedPushStream(PromiseFactory& _promiseFactory
 template<typename T>
 long celix::BufferedPushStream<T>::handleEvent(const PushEvent<T>& event) {
     std::unique_lock lk(mutex);
-
     queue.push(std::move(event.clone()));
-    startWorker();
+    if (nrWorkers == 0) startWorker();
     return PushEventConsumer<T>::ABORT;
 }
 
@@ -61,17 +61,22 @@ std::unique_ptr<celix::PushEvent<T>> celix::BufferedPushStream<T>::popQueue() {
     if (!queue.empty()) {
         returnValue = std::move(queue.front());
         queue.pop();
+    } else {
+        nrWorkers = 0;
     }
 
     return returnValue;
 }
 
-
 template<typename T>
 void celix::BufferedPushStream<T>::startWorker() {
+    nrWorkers++;
     this->promiseFactory.getExecutor()->execute([&]() {
         std::unique_ptr<celix::PushEvent<T>> event = std::move(popQueue());
-        this->nextEvent.accept(*event);
+        while (event != nullptr) {
+            this->nextEvent.accept(*event);
+            event = std::move(popQueue());
+        }
     });
 }
 

@@ -113,7 +113,7 @@ TEST_F(PushStreamTestSuite, EventSourceCloseTest) {
         return p;
     };
     auto x = ses->connectPromise().then<void>(successLambda);
-    auto stream = psp.createStream<int>(ses);
+    auto stream = psp.createUnbufferedStream<int>(ses);
 
     auto streamEnded = stream->onClose([&](){
         onClosedReceived++;
@@ -140,7 +140,7 @@ TEST_F(PushStreamTestSuite, ChainedEventSourceCloseTest) {
     };
     auto x = ses->connectPromise().then<void>(successLambda);
 
-    auto stream = psp.createStream<int>(ses);
+    auto stream = psp.createUnbufferedStream<int>(ses);
     auto& filteredStream = stream->filter([](const int& /*event*/) -> bool {
             return true;
         }).onClose([&](){
@@ -171,7 +171,7 @@ TEST_F(PushStreamTestSuite, StreamCloseTest) {
     };
     auto x = ses->connectPromise().then<void>(successLambda);
 
-    auto stream = psp.createStream<int>(ses);
+    auto stream = psp.createUnbufferedStream<int>(ses);
     auto streamEnded = stream->onClose([&](){
         onClosedReceived++;
     }).onError([&](){
@@ -198,7 +198,7 @@ TEST_F(PushStreamTestSuite, PublishAfterStreamCloseTest) {
     };
     auto x = ses->connectPromise().then<void>(successLambda);
 
-    auto stream = psp.createStream<int>(ses);
+    auto stream = psp.createUnbufferedStream<int>(ses);
     auto streamEnded = stream->onClose([&](){
         onClosedReceived++;
     }).onError([&](){
@@ -229,7 +229,7 @@ TEST_F(PushStreamTestSuite, ChainedStreamCloseTest) {
     };
     auto x = ses->connectPromise().template then<void>(successLambda);
 
-    auto stream = psp.createStream<int>(ses);
+    auto stream = psp.createUnbufferedStream<int>(ses);
     auto streamEnded = stream->
             filter([](const int& /*event*/) -> bool {
                 return true;
@@ -258,7 +258,7 @@ TEST_F(PushStreamTestSuite, ChainedStreamIntermedateCloseTest) {
     };
     auto x = ses->connectPromise().template then<void>(successLambda);
 
-    auto stream1 = psp.createStream<int>(ses);
+    auto stream1 = psp.createUnbufferedStream<int>(ses);
     stream1->onClose([&](){
         onClosedReceived++;
     });
@@ -291,7 +291,7 @@ TEST_F(PushStreamTestSuite, ExceptionInStreamTest) {
     };
     auto x = ses->connectPromise().then<void>(successLambda);
 
-    auto stream = psp.createStream<int>(ses);
+    auto stream = psp.createUnbufferedStream<int>(ses);
     auto streamEnded = stream->onClose([&](){
         onClosedReceived++;
     }).onError([&](){
@@ -318,7 +318,7 @@ TEST_F(PushStreamTestSuite, ExceptionInChainedStreamTest) {
     };
     auto x = ses->connectPromise().template then<void>(successLambda);
 
-    auto stream = psp.createStream<int>(ses);
+    auto stream = psp.createUnbufferedStream<int>(ses);
 
     auto streamEnded = stream->filter([](const int& /*event*/) -> bool {
                 return true;
@@ -348,7 +348,7 @@ TEST_F(PushStreamTestSuite, ForEachTestBasicType) {
     int lastConsumed{-1};
     auto ses = createEventSource<int>(0, 10'000, true);
 
-    auto stream = psp.createStream<int>(ses);
+    auto stream = psp.createUnbufferedStream<int>(ses);
     auto streamEnded = stream->
             forEach([&](int event) {
                 GTEST_ASSERT_EQ(lastConsumed + 1, event);
@@ -371,12 +371,12 @@ TEST_F(PushStreamTestSuite, ForEachTestBasicType_Buffered) {
     int consumeCount{0};
     int consumeSum{0};
     int lastConsumed{-1};
-    auto ses = createEventSource<int>(0, 100, true);
+    auto ses = createEventSource<int>(0, 10'000, true);
 
-    auto stream = psp.createBufferedStream<int>(ses);
+    auto stream = psp.createStream<int>(ses);
     auto streamEnded = stream->
             forEach([&](int event) {
-                //GTEST_ASSERT_EQ(lastConsumed + 1, event);
+                GTEST_ASSERT_EQ(lastConsumed + 1, event);
 
                 lastConsumed = event;
                 consumeCount++;
@@ -385,8 +385,8 @@ TEST_F(PushStreamTestSuite, ForEachTestBasicType_Buffered) {
 
     streamEnded.wait();
 
-    GTEST_ASSERT_EQ(100, consumeCount);
-//    GTEST_ASSERT_EQ(49'995'000, consumeSum);
+    GTEST_ASSERT_EQ(10'000, consumeCount);
+    GTEST_ASSERT_EQ(49'995'000, consumeSum);
 }
 
 TEST_F(PushStreamTestSuite, ForEachTestObjectType) {
@@ -394,7 +394,7 @@ TEST_F(PushStreamTestSuite, ForEachTestObjectType) {
     int consumeSum{0};
     auto ses = createEventSource<EventObject>(EventObject{2}, 10);
 
-    auto stream = psp.createStream<EventObject>(ses);
+    auto stream = psp.createUnbufferedStream<EventObject>(ses);
     auto streamEnded = stream->
             forEach([&](const EventObject& event) {
                 consumeCount++;
@@ -414,7 +414,7 @@ TEST_F(PushStreamTestSuite, FilterTestObjectType_true) {
     int consumeSum{0};
     auto ses = createEventSource<EventObject>(EventObject{2}, 10);
 
-    auto stream = psp.createStream<EventObject>(ses);
+    auto stream = psp.createUnbufferedStream<EventObject>(ses);
     auto streamEnded = stream->
             filter([](const EventObject& /*event*/) -> bool {
                return true;
@@ -436,7 +436,7 @@ TEST_F(PushStreamTestSuite, FilterTestObjectType_false) {
     int consumeSum{0};
     auto ses = createEventSource<EventObject>(EventObject{2}, 10);
 
-    auto stream = psp.createStream<EventObject>(ses);
+    auto stream = psp.createUnbufferedStream<EventObject>(ses);
     auto streamEnded = stream->
             filter([](const EventObject& /*event*/) -> bool {
                 return false;
@@ -457,7 +457,7 @@ TEST_F(PushStreamTestSuite, FilterTestObjectType_simple) {
     int consumeSum{0};
     auto ses = createEventSource<EventObject>(EventObject{0}, 10, true);
 
-    auto stream = psp.createStream<EventObject>(ses);
+    auto stream = psp.createUnbufferedStream<EventObject>(ses);
     auto streamEnded = stream->
             filter([](const EventObject& event) -> bool {
                 return event.val < 5;
@@ -478,7 +478,7 @@ TEST_F(PushStreamTestSuite, FilterTestObjectType_and) {
     int consumeSum{0};
     auto ses = createEventSource<EventObject>(EventObject{0}, 10, true);
 
-    auto stream = psp.createStream<EventObject>(ses);
+    auto stream = psp.createUnbufferedStream<EventObject>(ses);
     auto streamEnded = stream->
             filter([](const EventObject& predicate) -> bool {
                 return predicate.val > 5;
@@ -501,7 +501,7 @@ TEST_F(PushStreamTestSuite, MapTestObjectType) {
     int consumeCount{0};
     int consumeSum{0};
     auto ses = createEventSource<EventObject>(EventObject{0}, 10, true);
-    auto stream = psp.createStream<EventObject>(ses);
+    auto stream = psp.createUnbufferedStream<EventObject>(ses);
     auto streamEnded = stream->
             map<int>([](const EventObject& event) -> int {
                 return event.val;
@@ -541,7 +541,7 @@ TEST_F(PushStreamTestSuite, MapTestObjectType) {
 //
 //    auto x = ses->connectPromise().then<void>(successLamba);
 //
-//    auto streamEnded = psp.createStream<int>(ses).
+//    auto streamEnded = psp.createUnbufferedStream<int>(ses).
 //    filter([&](int event) -> bool {
 //        return (event > 10);
 //    }).
@@ -586,7 +586,7 @@ TEST_F(PushStreamTestSuite, MapTestObjectType) {
 //
 //    ses->connectPromise().then<void>(success);
 //
-//    auto streamEnded = psp.createStream<int>(ses).
+//    auto streamEnded = psp.createUnbufferedStream<int>(ses).
 //    filter([&](int event) -> bool {
 //        return (event > 10);
 //    }).
@@ -597,7 +597,7 @@ TEST_F(PushStreamTestSuite, MapTestObjectType) {
 //        std::cout << "Consumed event 1: " << event << std::endl;
 //    });
 //
-//    auto streamEnded2 = psp.createStream<int>(ses).
+//    auto streamEnded2 = psp.createUnbufferedStream<int>(ses).
 //    filter([&](int event) -> bool {
 //        return (event < 15);
 //    }).
@@ -642,7 +642,7 @@ TEST_F(PushStreamTestSuite, MapTestObjectType) {
 //
 //    ses->connectPromise().then<void>(success);
 //
-//    auto splitStream = psp.createStream<int>(ses).
+//    auto splitStream = psp.createUnbufferedStream<int>(ses).
 //        split({
 //                            [&](int event) -> bool {
 //                                return (event > 10);

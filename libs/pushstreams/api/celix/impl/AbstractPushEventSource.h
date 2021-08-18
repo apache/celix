@@ -34,18 +34,22 @@
 
 namespace celix {
     template <typename T>
-    class PushEventSource: public IPushEventSource<T> {
+    class AbstractPushEventSource: public IPushEventSource<T> {
     public:
-        explicit PushEventSource(PromiseFactory& _promiseFactory);
+        explicit AbstractPushEventSource(PromiseFactory& _promiseFactory);
+
         void publish(const T& event);
 
         [[nodiscard]] celix::Promise<void> connectPromise();
+
         void open(std::shared_ptr<PushEventConsumer<T>> _eventConsumer) override;
+
         bool isConnected();
 
         void close() override;
     protected:
         virtual void execute(std::function<void()> task) = 0;
+
         PromiseFactory& promiseFactory;
 
     private:
@@ -60,13 +64,13 @@ namespace celix {
  Implementation
 *********************************************************************************/
 template <typename T>
-celix::PushEventSource<T>::PushEventSource(PromiseFactory& _promiseFactory):
+celix::AbstractPushEventSource<T>::AbstractPushEventSource(PromiseFactory& _promiseFactory):
     promiseFactory{_promiseFactory},
     connected{promiseFactory.deferred<void>()}  {
 }
 
 template <typename T>
-void celix::PushEventSource<T>::open(std::shared_ptr<PushEventConsumer<T>> _eventConsumer) {
+void celix::AbstractPushEventSource<T>::open(std::shared_ptr<celix::PushEventConsumer<T>> _eventConsumer) {
     std::lock_guard lck{mutex};
     if (closed) {
         _eventConsumer->accept(celix::ClosePushEvent<T>());
@@ -79,13 +83,13 @@ void celix::PushEventSource<T>::open(std::shared_ptr<PushEventConsumer<T>> _even
 }
 
 template <typename T>
-[[nodiscard]] celix::Promise<void> celix::PushEventSource<T>::connectPromise() {
+[[nodiscard]] celix::Promise<void> celix::AbstractPushEventSource<T>::connectPromise() {
     std::lock_guard lck{mutex};
     return connected.getPromise();
 }
 
 template <typename T>
-void celix::PushEventSource<T>::publish(const T& event) {
+void celix::AbstractPushEventSource<T>::publish(const T& event) {
     std::lock_guard lck{mutex};
 
     if (closed) {
@@ -100,13 +104,13 @@ void celix::PushEventSource<T>::publish(const T& event) {
 }
 
 template <typename T>
-bool celix::PushEventSource<T>::isConnected() {
+bool celix::AbstractPushEventSource<T>::isConnected() {
     std::lock_guard lck{mutex};
     return !eventConsumers.empty();
 }
 
 template <typename T>
-void celix::PushEventSource<T>::close() {
+void celix::AbstractPushEventSource<T>::close() {
     {
         std::lock_guard lck{mutex};
         if (closed) {
