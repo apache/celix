@@ -55,6 +55,7 @@ namespace celix {
         PushStream<T>& onError(ErrorFunction errorFunction);
 
         void close() override;
+
     protected:
         enum class State {
             BUILDING,
@@ -65,11 +66,11 @@ namespace celix {
         virtual bool begin() = 0;
         virtual void upstreamClose(const PushEvent<T>& event) = 0;
 
-        virtual long handleEvent(const PushEvent<T>& event);
-        virtual void close(const PushEvent<T>& event, bool sendDownStreamEvent);
-        virtual bool internal_close(const PushEvent<T>& event, bool sendDownStreamEvent);
+        void close(const PushEvent<T>& event, bool sendDownStreamEvent);
+        bool internal_close(const PushEvent<T>& event, bool sendDownStreamEvent);
 
         bool compareAndSetState(State expectedValue, State newValue);
+        long handleEvent(const PushEvent<T>& event);
         State getAndSetState(State newValue);
 
         std::mutex mutex {};
@@ -84,8 +85,35 @@ namespace celix {
         template<typename, typename> friend class IntermediatePushStream;
         template<typename> friend class UnbufferedPushStream;
         template<typename> friend class PushStream;
-        friend class PushStreamProvider;
+        template<typename> friend class StreamPushEventConsumer;
     };
+
+    template <typename T>
+    class StreamPushEventConsumer: public PushEventConsumer<T>, public IAutoCloseable {
+    public:
+        StreamPushEventConsumer(std::weak_ptr<PushStream<T>> _pushStream) : PushEventConsumer<T>{}, pushStream{_pushStream} {}
+        ~StreamPushEventConsumer() {
+            std::cout << __PRETTY_FUNCTION__  << std::endl;
+        }
+
+        long accept(const PushEvent<T>& event) override {
+            if (!closed) {
+                auto tmp = pushStream.lock();
+                if (tmp) {
+                    return tmp->handleEvent(event);
+                }
+            }
+            return PushEventConsumer<T>::ABORT;
+        }
+
+        void close() override {
+            closed = true;
+        };
+
+        std::weak_ptr<PushStream<T>> pushStream;
+        bool closed{false};
+    };
+
 }
 
 /*********************************************************************************
@@ -217,7 +245,6 @@ bool celix::PushStream<T>::internal_close(const PushEvent<T>& event, bool sendDo
     if (this->getAndSetState(celix::PushStream<T>::State::CLOSED) != celix::PushStream<T>::State::CLOSED) {
         if (sendDownStreamEvent) {
             auto next = nextEvent;
-            nextEvent = {};
             next.accept(event);
         }
 

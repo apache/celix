@@ -52,7 +52,7 @@ bool celix::IntermediatePushStream<T, TUP>::begin() {
 
 template<typename T, typename TUP>
 void celix::IntermediatePushStream<T, TUP>::upstreamClose(const PushEvent<T>& /*event*/) {
-    upstream.upstreamClose(celix::ClosePushEvent<TUP>());
+    upstream.close(celix::ClosePushEvent<TUP>(), false);
 }
 
 

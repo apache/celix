@@ -24,19 +24,24 @@
 namespace celix {
     template<typename T>
     class UnbufferedPushStream: public PushStream<T> {
+        using ConnectorFunction = std::function<std::shared_ptr<IAutoCloseable>(void)>;
     public:
-        UnbufferedPushStream(PromiseFactory& _promiseFactory);
-        void setConnector(std::function<void(void)> _connector) {
+        explicit UnbufferedPushStream(PromiseFactory& _promiseFactory);
+        void setConnector(ConnectorFunction _connector) {
             connector =  _connector;
+        }
+
+        ~UnbufferedPushStream() override {
+            std::cout << "Destruct" << std::endl;
         }
 
     protected:
         bool begin() override;
-        bool internal_close(const PushEvent<T>& event, bool sendDownStreamEvent) override;
         void upstreamClose(const PushEvent<T>& event) override;
 
     private:
-        std::function<void(void)> connector {};
+        ConnectorFunction connector {};
+        std::shared_ptr<IAutoCloseable> toClose{};
     };
 }
 
@@ -49,26 +54,15 @@ celix::UnbufferedPushStream<T>::UnbufferedPushStream(PromiseFactory& _promiseFac
 template<typename T>
 bool celix::UnbufferedPushStream<T>::begin() {
     if (this->compareAndSetState(celix::PushStream<T>::State::BUILDING, celix::PushStream<T>::State::STARTED)) {
-        connector();
+        toClose = connector();
     }
     return true;
 }
 
 template<typename T>
-bool celix::UnbufferedPushStream<T>::internal_close(const PushEvent<T>& event, bool sendDownStreamEvent) {
-    //release the connector, to free the memory.
-    connector = {};
-    if (celix::PushStream<T>::internal_close(event, sendDownStreamEvent)) {
-        upstreamClose(event);
-        return true;
-    }
-
-    return false;
-}
-
-template<typename T>
 void celix::UnbufferedPushStream<T>::upstreamClose(const PushEvent<T>& /*event*/) {
-    connector = {};
+    toClose->close();
+    toClose.reset();
 }
 
 

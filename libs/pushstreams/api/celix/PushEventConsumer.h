@@ -49,6 +49,7 @@ namespace celix {
 
         FunctionType behavior{};
     };
+
 }
 
 //implementation

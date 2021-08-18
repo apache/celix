@@ -25,35 +25,52 @@ namespace celix {
     template<typename T>
     class BufferedPushStream: public UnbufferedPushStream<T> {
     public:
-        BufferedPushStream(PromiseFactory& _promiseFactory);
+        BufferedPushStream(PromiseFactory& _promiseFactory, std::shared_ptr<celix::IPushEventSource<T>> eventSource);
 
     protected:
         long handleEvent(const PushEvent<T>& event) override;
     private:
         void startWorker();
+
+        std::unique_ptr<PushEvent<T>> popQueue();
         std::queue<std::unique_ptr<PushEvent<T>>> queue{};
+        std::mutex mutex{};
     };
 }
 
 //implementation
 
 template<typename T>
-celix::BufferedPushStream<T>::BufferedPushStream(PromiseFactory& _promiseFactory) : celix::UnbufferedPushStream<T>(_promiseFactory) {
+celix::BufferedPushStream<T>::BufferedPushStream(PromiseFactory& _promiseFactory, std::shared_ptr<celix::IPushEventSource<T>> eventSource) : celix::UnbufferedPushStream<T>(_promiseFactory, eventSource) {
 }
 
 template<typename T>
 long celix::BufferedPushStream<T>::handleEvent(const PushEvent<T>& event) {
+    std::unique_lock lk(mutex);
+
     queue.push(std::move(event.clone()));
     startWorker();
     return PushEventConsumer<T>::ABORT;
 }
 
 template<typename T>
+std::unique_ptr<celix::PushEvent<T>> celix::BufferedPushStream<T>::popQueue() {
+    std::unique_lock lk(mutex);
+    std::unique_ptr<celix::PushEvent<T>> returnValue{nullptr};
+    if (!queue.empty()) {
+        returnValue = std::move(queue.front());
+        queue.pop();
+    }
+
+    return returnValue;
+}
+
+
+template<typename T>
 void celix::BufferedPushStream<T>::startWorker() {
     this->promiseFactory.getExecutor()->execute([&]() {
-        auto& event = queue.front();
-        this->nextEvent.accept(*event);
-        queue.pop();
+        std::unique_ptr<celix::PushEvent<T>> eventS = std::move(popQueue());
+        this->nextEvent.accept(*eventS);
     });
 }
 
