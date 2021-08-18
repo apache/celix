@@ -22,6 +22,7 @@
 #include "celix/IPushEventSource.h"
 
 namespace celix {
+
     template<typename T>
     class BufferedPushStream: public UnbufferedPushStream<T> {
     public:
@@ -69,8 +70,8 @@ std::unique_ptr<celix::PushEvent<T>> celix::BufferedPushStream<T>::popQueue() {
 template<typename T>
 void celix::BufferedPushStream<T>::startWorker() {
     this->promiseFactory.getExecutor()->execute([&]() {
-        std::unique_ptr<celix::PushEvent<T>> eventS = std::move(popQueue());
-        this->nextEvent.accept(*eventS);
+        std::unique_ptr<celix::PushEvent<T>> event = std::move(popQueue());
+        this->nextEvent.accept(*event);
     });
 }
 

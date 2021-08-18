@@ -28,9 +28,7 @@ namespace celix {
         using ConnectorFunction = std::function<std::shared_ptr<IAutoCloseable>(void)>;
 
         explicit UnbufferedPushStream(PromiseFactory& _promiseFactory);
-        void setConnector(ConnectorFunction _connector) {
-            connector =  _connector;
-        }
+        void setConnector(ConnectorFunction _connector);
 
     protected:
         bool begin() override;
@@ -46,6 +44,11 @@ namespace celix {
 
 template<typename T>
 celix::UnbufferedPushStream<T>::UnbufferedPushStream(PromiseFactory& _promiseFactory) : celix::PushStream<T>(_promiseFactory) {
+}
+
+template<typename T>
+void celix::UnbufferedPushStream<T>::setConnector(ConnectorFunction _connector) {
+    connector =  _connector;
 }
 
 template<typename T>

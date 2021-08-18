@@ -83,8 +83,7 @@ std::shared_ptr<celix::PushStream<T>> celix::PushStreamProvider::createStream(st
     //eventSource->addConsumer();
 
     unbufferedPushStream->setConnector([eventSource, pushStreamConsumer = std::move(pushStreamConsumer)]() -> std::shared_ptr<IAutoCloseable> {
-        eventSource->addConsumer(pushStreamConsumer);
-        eventSource->open();
+        eventSource->open(pushStreamConsumer);
         return pushStreamConsumer;
     });
 
@@ -98,8 +97,7 @@ std::shared_ptr<celix::PushStream<T>>celix::PushStreamProvider::createBufferedSt
     auto pushStreamConsumer = std::make_shared<celix::StreamPushEventConsumer<T>>(stream);
 
     stream->setConnector([eventSource, pushStreamConsumer = std::move(pushStreamConsumer)]() -> std::shared_ptr<IAutoCloseable> {
-        eventSource->addConsumer(pushStreamConsumer);
-        eventSource->open();
+        eventSource->open(pushStreamConsumer);
         return pushStreamConsumer;
     });
 

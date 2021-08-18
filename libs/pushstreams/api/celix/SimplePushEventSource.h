@@ -44,7 +44,6 @@ namespace celix {
     private:
         std::shared_ptr<IExecutor> executor {};
         std::queue<std::function<void()>> queue {};
-
     };
 }
 

@@ -37,14 +37,10 @@ namespace celix {
     class PushEventSource: public IPushEventSource<T> {
     public:
         explicit PushEventSource(PromiseFactory& _promiseFactory);
-
-        //deviation from spec no return of IAutoCloseable
-        void addConsumer(std::shared_ptr<PushEventConsumer<T>> eventConsumer) override;
-        void open() override;
         void publish(const T& event);
 
         [[nodiscard]] celix::Promise<void> connectPromise();
-
+        void open(std::shared_ptr<PushEventConsumer<T>> _eventConsumer) override;
         bool isConnected();
 
         void close() override;
@@ -70,32 +66,17 @@ celix::PushEventSource<T>::PushEventSource(PromiseFactory& _promiseFactory):
 }
 
 template <typename T>
-void celix::PushEventSource<T>::open() {
-    connected.resolve();
-    connected = promiseFactory.deferred<void>();
-}
-
-template <typename T>
-void celix::PushEventSource<T>::addConsumer(std::shared_ptr<PushEventConsumer<T>> _eventConsumer) {
+void celix::PushEventSource<T>::open(std::shared_ptr<PushEventConsumer<T>> _eventConsumer) {
     std::lock_guard lck{mutex};
     if (closed) {
         _eventConsumer->accept(celix::ClosePushEvent<T>());
+
     } else {
         eventConsumers.push_back(_eventConsumer);
+        connected.resolve();
+        connected = promiseFactory.deferred<void>();
     }
 }
-
-//template <typename T>
-//void celix::PushEventSource<T>::open(std::shared_ptr<PushEventConsumer<T>> _eventConsumer) {
-//    std::lock_guard lck{mutex};
-//    if (closed) {
-//        _eventConsumer->accept(celix::ClosePushEvent<T>());
-//    } else {
-//        eventConsumers.push_back(_eventConsumer);
-//        connected.resolve();
-//        connected = promiseFactory.deferred<void>();
-//    }
-//}
 
 template <typename T>
 [[nodiscard]] celix::Promise<void> celix::PushEventSource<T>::connectPromise() {

@@ -26,7 +26,6 @@ namespace celix {
     template <typename T>
     class IPushEventSource:  public IAutoCloseable {
     public:
-        virtual void open() = 0;
-        virtual void addConsumer(std::shared_ptr<PushEventConsumer<T>> pec) = 0;
+        virtual void open(std::shared_ptr<PushEventConsumer<T>> pec) = 0;
     };
 }
