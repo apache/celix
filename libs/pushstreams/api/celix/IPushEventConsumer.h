@@ -23,38 +23,13 @@
 
 namespace celix {
     template <typename T>
-    class PushEventConsumer {
+    class IPushEventConsumer {
     public:
-        using FunctionType = std::function<long(const PushEvent<T>& event)>;
-
         static constexpr int const& ABORT = -1;
         static constexpr int const& CONTINUE = 0;
 
-        explicit PushEventConsumer(FunctionType behavior);
+        virtual ~IPushEventConsumer() = default;
 
-        PushEventConsumer() = default;
-        PushEventConsumer<T>& operator=(const PushEventConsumer<T>& other) = default;
-        PushEventConsumer<T>& operator=(PushEventConsumer<T>&& other) = default;
-        PushEventConsumer(const PushEventConsumer& other) = default;
-        PushEventConsumer(PushEventConsumer&& other)= default;
-
-        virtual ~PushEventConsumer() noexcept = default;
-
-        virtual long accept(const PushEvent<T>& event) {
-            if (behavior) {
-                return behavior(event);
-            }
-            return 0;
-        };
-
-        FunctionType behavior{};
+        virtual long accept(const PushEvent<T>& event) = 0;
     };
-
-}
-
-//implementation
-
-template<typename T>
-celix::PushEventConsumer<T>::PushEventConsumer(celix::PushEventConsumer<T>::FunctionType _behavior) :
-    behavior{std::move(_behavior)} {
 }

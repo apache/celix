@@ -40,7 +40,9 @@ namespace celix {
     };
 }
 
-//implementation
+/*********************************************************************************
+ Implementation
+*********************************************************************************/
 
 template<typename T>
 celix::UnbufferedPushStream<T>::UnbufferedPushStream(PromiseFactory& _promiseFactory) : celix::PushStream<T>(_promiseFactory) {

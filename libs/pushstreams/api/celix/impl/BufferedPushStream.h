@@ -30,17 +30,20 @@ namespace celix {
 
     protected:
         long handleEvent(const PushEvent<T>& event) override;
+
     private:
         void startWorker();
-
         std::unique_ptr<PushEvent<T>> popQueue();
+
         std::queue<std::unique_ptr<PushEvent<T>>> queue{};
         std::mutex mutex{};
         int nrWorkers{0};
     };
 }
 
-//implementation
+/*********************************************************************************
+ Implementation
+*********************************************************************************/
 
 template<typename T>
 celix::BufferedPushStream<T>::BufferedPushStream(PromiseFactory& _promiseFactory) : celix::UnbufferedPushStream<T>(_promiseFactory) {
@@ -51,7 +54,7 @@ long celix::BufferedPushStream<T>::handleEvent(const PushEvent<T>& event) {
     std::unique_lock lk(mutex);
     queue.push(std::move(event.clone()));
     if (nrWorkers == 0) startWorker();
-    return PushEventConsumer<T>::ABORT;
+    return IPushEventConsumer<T>::ABORT;
 }
 
 template<typename T>

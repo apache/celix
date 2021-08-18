@@ -19,13 +19,13 @@
 
 #pragma once
 
-#include "celix/PushEventConsumer.h"
+#include "celix/impl/PushEventConsumer.h"
 #include "celix/IAutoCloseable.h"
 
 namespace celix {
     template <typename T>
     class IPushEventSource:  public IAutoCloseable {
     public:
-        virtual void open(std::shared_ptr<PushEventConsumer<T>> pec) = 0;
+        virtual void open(std::shared_ptr<IPushEventConsumer<T>> pec) = 0;
     };
 }

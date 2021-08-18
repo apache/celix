@@ -34,12 +34,14 @@ namespace celix {
     };
 }
 
-//implementation
+/*********************************************************************************
+ Implementation
+*********************************************************************************/
 
 template<typename T, typename TUP>
 celix::IntermediatePushStream<T, TUP>::IntermediatePushStream(PromiseFactory& _promiseFactory,
-                                                             celix::PushStream<TUP>& _upstream) : celix::PushStream<T>(_promiseFactory),
-                                                             upstream{_upstream} {
+     celix::PushStream<TUP>& _upstream) : celix::PushStream<T>(_promiseFactory),
+     upstream{_upstream} {
 }
 
 template<typename T, typename TUP>

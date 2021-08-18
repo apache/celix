@@ -23,7 +23,7 @@
 #include <iostream>
 #include <queue>
 
-#include "celix/PushEventConsumer.h"
+#include "celix/impl/PushEventConsumer.h"
 #include "celix/IAutoCloseable.h"
 
 #include "celix/Promise.h"
@@ -107,7 +107,7 @@ long celix::PushStream<T>::handleEvent(const PushEvent<T>& event) {
     if(closed != celix::PushStream<T>::State::CLOSED) {
         return nextEvent.accept(event);
     }
-    return PushEventConsumer<T>::ABORT;
+    return IPushEventConsumer<T>::ABORT;
 }
 
 template<typename T>
@@ -117,7 +117,7 @@ celix::Promise<void> celix::PushStream<T>::forEach(ForEachFunction func) {
             switch(event.getType()) {
                 case celix::PushEvent<T>::EventType::DATA:
                     func(event.getData());
-                    return PushEventConsumer<T>::CONTINUE;
+                    return IPushEventConsumer<T>::CONTINUE;
                 case celix::PushEvent<T>::EventType::CLOSE:
                     streamEnd.resolve();
                     break;
@@ -126,12 +126,12 @@ celix::Promise<void> celix::PushStream<T>::forEach(ForEachFunction func) {
                     break;
             }
             close(event, false);
-            return PushEventConsumer<T>::ABORT;
+            return IPushEventConsumer<T>::ABORT;
         } catch (const std::exception& e) {
             auto errorEvent = ErrorPushEvent<T>(std::current_exception());
             streamEnd.fail(errorEvent.getFailure());
             close(errorEvent, false);
-            return PushEventConsumer<T>::ABORT;
+            return IPushEventConsumer<T>::ABORT;
         }
     });
 
@@ -146,7 +146,7 @@ celix::PushStream<T>& celix::PushStream<T>::filter(PredicateFunction predicate) 
         if (event.getType() != celix::PushEvent<T>::EventType::DATA || predicate(event.getData())) {
             downstream->handleEvent(event);
         }
-        return PushEventConsumer<T>::CONTINUE;
+        return IPushEventConsumer<T>::CONTINUE;
     });
 
     return *downstream;
@@ -167,7 +167,7 @@ std::vector<std::shared_ptr<celix::PushStream<T>>> celix::PushStream<T>::split(s
             }
         }
 
-        return PushEventConsumer<T>::CONTINUE;
+        return IPushEventConsumer<T>::CONTINUE;
     });
 
     return result;
@@ -180,11 +180,11 @@ celix::PushStream<R>& celix::PushStream<T>::map(std::function<R(const T&)> mappe
 
     nextEvent = PushEventConsumer<T>([downstream = downstream, mapper = std::move(mapper)](const PushEvent<T>& event) -> long {
         if (event.getType() == celix::PushEvent<T>::EventType::DATA) {
-            downstream->handleEvent(PushEventData<R>(mapper(event.getData())));
+            downstream->handleEvent(DataPushEvent<R>(mapper(event.getData())));
         } else {
             downstream->handleEvent(celix::ClosePushEvent<R>());
         }
-        return PushEventConsumer<T>::CONTINUE;
+        return IPushEventConsumer<T>::CONTINUE;
     });
 
     return *downstream;

@@ -42,7 +42,7 @@ namespace celix {
 
         [[nodiscard]] celix::Promise<void> connectPromise();
 
-        void open(std::shared_ptr<PushEventConsumer<T>> _eventConsumer) override;
+        void open(std::shared_ptr<IPushEventConsumer<T>> _eventConsumer) override;
 
         bool isConnected();
 
@@ -56,13 +56,14 @@ namespace celix {
         std::mutex mutex {};
         bool closed{false};
         Deferred<void> connected;
-        std::vector<std::shared_ptr<PushEventConsumer<T>>> eventConsumers {};
+        std::vector<std::shared_ptr<IPushEventConsumer<T>>> eventConsumers {};
     };
 }
 
 /*********************************************************************************
  Implementation
 *********************************************************************************/
+
 template <typename T>
 celix::AbstractPushEventSource<T>::AbstractPushEventSource(PromiseFactory& _promiseFactory):
     promiseFactory{_promiseFactory},
@@ -70,7 +71,7 @@ celix::AbstractPushEventSource<T>::AbstractPushEventSource(PromiseFactory& _prom
 }
 
 template <typename T>
-void celix::AbstractPushEventSource<T>::open(std::shared_ptr<celix::PushEventConsumer<T>> _eventConsumer) {
+void celix::AbstractPushEventSource<T>::open(std::shared_ptr<celix::IPushEventConsumer<T>> _eventConsumer) {
     std::lock_guard lck{mutex};
     if (closed) {
         _eventConsumer->accept(celix::ClosePushEvent<T>());
@@ -97,7 +98,7 @@ void celix::AbstractPushEventSource<T>::publish(const T& event) {
     } else {
         for(auto& eventConsumer : eventConsumers) {
             execute([&, event]() {
-                eventConsumer->accept(celix::PushEventData<T>(event));
+                eventConsumer->accept(celix::DataPushEvent<T>(event));
             });
         }
     }

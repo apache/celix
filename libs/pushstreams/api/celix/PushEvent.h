@@ -34,36 +34,23 @@ namespace celix {
         };
 
         explicit PushEvent(EventType _type);
-
-        virtual const T& getData() const {
-            throw IllegalStateException("Not a DATA event");
-        }
-
-        [[nodiscard]] virtual std::exception_ptr getFailure () const {
-            throw IllegalStateException("Not a ERROR event");
-        }
-
-        EventType getType() const {
-            return type;
-        }
-
+        inline virtual const T& getData() const;
+        virtual std::exception_ptr getFailure() const;
+        inline EventType getType() const;
         [[nodiscard]] virtual std::unique_ptr<PushEvent<T>> clone() const = 0;
+
     protected:
         EventType type;
     };
 
     template <typename T>
-    class PushEventData: public PushEvent<T> {
+    class DataPushEvent: public PushEvent<T> {
     public:
-        explicit PushEventData(const T& _data);
+        explicit DataPushEvent(const T& _data);
 
-        const T& getData() const override {
-            return this->data;
-        }
+        inline const T& getData() const override;
 
-        std::unique_ptr<PushEvent<T>> clone() const override {
-            return std::make_unique<PushEventData<T>>(*this);
-        }
+        std::unique_ptr<PushEvent<T>> clone() const override ;
 
     private:
         const T data;
@@ -74,9 +61,7 @@ namespace celix {
     public:
         ClosePushEvent();
 
-        std::unique_ptr<PushEvent<T>> clone() const override {
-            return std::make_unique<ClosePushEvent<T>>(*this);
-        }
+        std::unique_ptr<PushEvent<T>> clone() const override;
     };
 
     template <typename T>
@@ -84,13 +69,9 @@ namespace celix {
     public:
         explicit ErrorPushEvent(std::exception_ptr exceptionPtr);
 
-        [[nodiscard]] std::exception_ptr getFailure() const override {
-            return this->ptr;
-        }
+        std::exception_ptr getFailure() const override;
 
-        std::unique_ptr<PushEvent<T>> clone() const override {
-            return std::make_unique<ErrorPushEvent<T>>(*this);
-        }
+        std::unique_ptr<PushEvent<T>> clone() const override;
     private:
         std::exception_ptr ptr;
     };
@@ -101,13 +82,38 @@ namespace celix {
  Implementation
 *********************************************************************************/
 template<typename T>
+inline const T& celix::PushEvent<T>::getData() const {
+    throw IllegalStateException("Not a DATA event");
+}
+
+template<typename T>
+std::exception_ptr celix::PushEvent<T>::getFailure () const {
+    throw IllegalStateException("Not a ERROR event");
+}
+
+template<typename T>
+inline typename celix::PushEvent<T>::EventType celix::PushEvent<T>::getType() const {
+    return type;
+}
+
+template<typename T>
 celix::PushEvent<T>::PushEvent(celix::PushEvent<T>::EventType _type): type{_type} {
 
 }
 
 template<typename T>
-celix::PushEventData<T>::PushEventData(const T& _data) :
+celix::DataPushEvent<T>::DataPushEvent(const T& _data) :
     celix::PushEvent<T>::PushEvent{celix::PushEvent<T>::EventType::DATA}, data{_data} {
+}
+
+template<typename T>
+inline const T& celix::DataPushEvent<T>::getData() const {
+    return this->data;
+}
+
+template<typename T>
+std::unique_ptr<celix::PushEvent<T>> celix::DataPushEvent<T>::clone() const {
+    return std::make_unique<DataPushEvent<T>>(*this);
 }
 
 template<typename T>
@@ -115,8 +121,22 @@ celix::ClosePushEvent<T>::ClosePushEvent() :
     celix::PushEvent<T>::PushEvent{celix::PushEvent<T>::EventType::CLOSE} {
 }
 
+template<typename T>
+std::unique_ptr<celix::PushEvent<T>> celix::ClosePushEvent<T>::clone() const {
+    return std::make_unique<ClosePushEvent<T>>(*this);
+}
 
 template<typename T>
 celix::ErrorPushEvent<T>::ErrorPushEvent(std::exception_ptr exceptionPtr) :
     celix::PushEvent<T>::PushEvent{celix::PushEvent<T>::EventType::ERROR}, ptr{std::move(exceptionPtr)} {
+}
+
+template<typename T>
+std::exception_ptr celix::ErrorPushEvent<T>::getFailure() const {
+    return this->ptr;
+}
+
+template<typename T>
+std::unique_ptr<celix::PushEvent<T>> celix::ErrorPushEvent<T>::clone() const {
+    return std::make_unique<ErrorPushEvent<T>>(*this);
 }

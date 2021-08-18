@@ -19,32 +19,48 @@
 
 #pragma once
 
-#include "celix/PushEventConsumer.h"
+#include "PushEventConsumer.h"
 #include "celix/IAutoCloseable.h"
 #include "celix/PushStream.h"
 
 namespace celix {
 
     template <typename T>
-    class StreamPushEventConsumer: public PushEventConsumer<T>, public IAutoCloseable {
+    class StreamPushEventConsumer: public IPushEventConsumer<T>, public IAutoCloseable {
     public:
-        explicit StreamPushEventConsumer(std::weak_ptr<PushStream<T>> _pushStream) : PushEventConsumer<T>{}, pushStream{_pushStream} {}
+        explicit StreamPushEventConsumer(std::weak_ptr<PushStream<T>> _pushStream);
 
-        long accept(const PushEvent<T>& event) override {
-            if (!closed) {
-                auto tmp = pushStream.lock();
-                if (tmp) {
-                    return tmp->handleEvent(event);
-                }
-            }
-            return PushEventConsumer<T>::ABORT;
-        }
+        inline long accept(const PushEvent<T>& event) override;
 
-        void close() override {
-            closed = true;
-        };
+        void close() override;
+    private:
 
         std::weak_ptr<PushStream<T>> pushStream;
         bool closed{false};
     };
 }
+
+/*********************************************************************************
+ Implementation
+*********************************************************************************/
+
+template <typename T>
+celix::StreamPushEventConsumer<T>::StreamPushEventConsumer(std::weak_ptr<PushStream<T>> _pushStream): pushStream{_pushStream} {
+}
+
+template <typename T>
+inline long celix::StreamPushEventConsumer<T>::accept(const celix::PushEvent<T>& event) {
+    if (!closed) {
+        auto tmp = pushStream.lock();
+        if (tmp) {
+            return tmp->handleEvent(event);
+        }
+    }
+
+    return IPushEventConsumer<T>::ABORT;
+}
+
+template <typename T>
+void celix::StreamPushEventConsumer<T>::close() {
+    closed = true;
+};
