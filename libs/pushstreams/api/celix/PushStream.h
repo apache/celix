@@ -162,7 +162,7 @@ std::vector<std::shared_ptr<celix::PushStream<T>>> celix::PushStream<T>::split(s
 
     nextEvent = PushEventConsumer<T>([result = result, predicates = std::move(predicates)](const PushEvent<T>& event) -> long {
         for(long unsigned int i = 0; i < predicates.size(); i++) {
-            if (event.type != celix::PushEvent<T>::EventType::DATA || predicates[i](event.data)) {
+            if (event.getType() != celix::PushEvent<T>::EventType::DATA || predicates[i](event.getData())) {
                 result[i]->handleEvent(event);
             }
         }
