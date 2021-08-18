@@ -572,7 +572,7 @@ TEST_F(PushStreamTestSuite, MultipleStreamsTest_CloseSource) {
     });
 
     streamEnded1.onSuccess([]() {
-        std::cout << "Stream ended" << std::endl;
+        std::cout << " ended" << std::endl;
     });
 
     streamEnded2.onSuccess([]() {

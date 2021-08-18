@@ -3,47 +3,104 @@
 WARNING: The PushStreams library is still a work in progress.
 
 [plantuml]
-.Class diagram of celix::PushStreams
+.Class diagram of celix::PushStreams::PushStream
 ----
 @startuml
 
-interface BufferBuilder<R, U, T>
-note top
-    T type of actual database
-    U Queue Type
-    R BufferResult e.g. queue<T>
-end note
+interface IPushEventConsumer<T> {
+    accept(const PushEvent<T>& event)
+}
 
-interface IPushEventConsumer<T>
-interface IPushEventSource<T>
-interface IExecutor
+class PushEventConsumer<T> {
+    accept(const PushEvent<T>& event)
+    std::function eventFunction
+}
+
+class StreamPushEventConsumer<T> {
+    accept(const PushEvent<T>& event)
+}
+
+
+PushEventConsumer --|> IPushEventConsumer
+StreamPushEventConsumer --|> IPushEventConsumer
 
 class PromiseFactory
+class PushStream<T> <<abstract>> {
+        Promise<void> forEach(ForEachFunction func);
+        PushStream<T>& filter(PredicateFunction predicate);
+        PushStream<R>& map(std::function<R(const T&)>);
+        std::vector<std::shared_ptr<PushStream<T>>> split(std::vector<PredicateFunction> predicates);
+        PushStream<T>& onClose(CloseFunction closeFunction);
+        PushStream<T>& onError(ErrorFunction errorFunction);
+        void close();
+}
 
-class PushEvent<T>
-class PushStream<T>
-class PushStreamBuilder<T, U>
-class PushStreamProvider <<final>>
-class SimplePushEventSource<T>
+class UnbufferedPushStream<T>
+class BufferedPushStream<T>
+class IntermediatePushStream<T, R>
 
-SimplePushEventSource --|> IPushEventSource
-SimplePushEventSource --> IExecutor
+UnbufferedPushStream --|> PushStream
+IntermediatePushStream --|> PushStream
+BufferedPushStream  --|> UnbufferedPushStream
+StreamPushEventConsumer --> PushStream : weak_ptr
 
-PushStream --> IExecutor
 PushStream --> PromiseFactory
-PushStream --> IPushEventSource
-
-PushStreamProvider --> PushStream : creates
-PushStreamProvider --> SimplePushEventSource : creates
-PushStreamProvider --> PushStreamBuilder : use
-
-PushStreamBuilder --|> BufferBuilder
+PushStream --> PushEventConsumer : nextEvent
 
 @enduml
 ----
 
-Sequence below
+[plantuml]
+.Class diagram of celix::PushStreams::EventSource
+----
+@startuml
 
+interface IPushEventSource<T> {
+    virtual void open(std::shared_ptr<IPushEventConsumer<T>> pec);
+}
+
+class AbstractEventSource<T> {
+    void publish(const T& event);
+    celix::Promise<void> connectPromise();
+    void open(std::shared_ptr<IPushEventConsumer<T>> _eventConsumer);
+    bool isConnected();
+    void close() override;
+    void execute(std::function<void()> task) = 0;
+}
+class SimplePushEventSource<T> {
+   void execute(std::function<void()> task)
+}
+class SynchronousPushEventSource<T> {
+   void execute(std::function<void()> task)
+}
+
+AbstractEventSource --|> IPushEventSource
+SimplePushEventSource --|> AbstractEventSource
+SynchronousPushEventSource --|> AbstractEventSource
+
+@enduml
+----
+
+[plantuml]
+.Class diagram of celix::PushStreams::PushStreamProvider
+----
+@startuml
+
+    class PushStreamProvider {
+        [[nodiscard]] std::shared_ptr<celix::SimplePushEventSource<T>> createSimpleEventSource();
+        [[nodiscard]] std::shared_ptr<celix::SynchronousPushEventSource<T>> createSynchronousEventSource();
+        [[nodiscard]] std::shared_ptr<celix::PushStream<T>> createUnbufferedStream(std::shared_ptr<IPushEventSource<T>> eventSource);
+        [[nodiscard]] std::shared_ptr<celix::PushStream<T>> createStream(std::shared_ptr<celix::IPushEventSource<T>> eventSource);
+    }
+    note left
+        Design assumes that user takes
+        shared ownership of shared_ptr
+    end note
+@enduml
+----
+
+
+Sequence below
 
 [plantuml]
 .Sequence

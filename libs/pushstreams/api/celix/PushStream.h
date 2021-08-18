@@ -77,8 +77,8 @@ namespace celix {
         std::mutex mutex {};
         PromiseFactory& promiseFactory;
         PushEventConsumer<T> nextEvent{};
-        std::function<void(void)> onErrorCallback{};
-        std::function<void(void)> onCloseCallback{};
+        ErrorFunction onErrorCallback{};
+        CloseFunction onCloseCallback{};
         State closed {State::BUILDING};
     private:
         Deferred<void> streamEnd{promiseFactory.deferred<void>()};
