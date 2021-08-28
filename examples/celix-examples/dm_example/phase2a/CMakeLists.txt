@@ -19,8 +19,8 @@ add_celix_bundle(dm_example_phase2a
         SYMBOLIC_NAME phase2a
         VERSION 0.0.1
         SOURCES
-            src/phase2a_activator
-            src/phase2a_cmp
+            src/phase2a_activator.c
+            src/phase2a_cmp.c
 )
 target_include_directories(dm_example_phase2a PRIVATE src)
 target_link_libraries(dm_example_phase2a PRIVATE dm_example_api)

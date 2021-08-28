@@ -17,7 +17,8 @@
 
 celix_subproject(DEPLOYMENT_ADMIN "Option to enable building the Deployment Admin Service bundles" ON DEPS framework launcher shell_tui log_writer)
 if (DEPLOYMENT_ADMIN)
-	
+    message(WARNING "Celix::deployment_admin is considered unstable, because develop of this bundle has been dormant for a while")
+
     find_package(CURL REQUIRED)
     find_package(UUID REQUIRED)
     find_package(ZLIB REQUIRED)
@@ -34,15 +35,15 @@ if (DEPLOYMENT_ADMIN)
         NAME "Apache Celix Deployment Admin"
         GROUP "Celix/DeploymentAdmin"
         SOURCES
-            src/deployment_package
-            src/deployment_admin
-            src/deployment_admin_activator
-            src/ioapi
-            src/miniunz
-            src/unzip
-            src/log
-            src/log_store
-            src/log_sync
+            src/deployment_package.c
+            src/deployment_admin.c
+            src/deployment_admin_activator.c
+            src/ioapi.c
+            src/miniunz.c
+            src/unzip.c
+            src/log.c
+            src/log_store.c
+            src/log_sync.c
     )
 
     target_compile_definitions(deployment_admin PRIVATE -DUSE_FILE32API)

@@ -24,10 +24,10 @@ if (REMOTE_SHELL)
 		FILENAME celix_remote_shell
 		GROUP "Celix/Shell"
 		SOURCES
-			src/activator
-			src/connection_listener
-			src/shell_mediator
-			src/remote_shell
+			src/activator.c
+			src/connection_listener.c
+			src/shell_mediator.c
+			src/remote_shell.c
 	)
 
 	target_include_directories(remote_shell PRIVATE src)

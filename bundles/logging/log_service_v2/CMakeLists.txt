@@ -23,12 +23,12 @@ add_celix_bundle(log_service
 	VERSION "1.1.0"
 	SOURCES
 		#v2 api
-		src/log
-		src/log_entry
-		src/log_factory
-		src/log_service_impl
-		src/log_service_activator
-		src/log_reader_service_impl
+		src/log.c
+		src/log_entry.c
+		src/log_factory.c
+		src/log_service_impl.c
+		src/log_service_activator.c
+		src/log_reader_service_impl.c
 )
 target_include_directories(log_service PRIVATE src)
 target_link_libraries(log_service PRIVATE Celix::log_service_api)

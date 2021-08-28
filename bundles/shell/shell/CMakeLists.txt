@@ -32,14 +32,14 @@ if (SHELL)
 	endif ()
 
 	add_library(shell_commands STATIC
-			src/lb_command
-			src/start_command
-			src/stop_command
-			src/install_command
-			src/update_command
-			src/uninstall_command
-			src/help_command
-			src/dm_shell_list_command
+			src/lb_command.c
+			src/start_command.c
+			src/stop_command.c
+			src/install_command.c
+			src/update_command.c
+			src/uninstall_command.c
+			src/help_command.c
+			src/dm_shell_list_command.c
 			src/query_command.c
 			src/quit_command.c
 			src/std_commands.c
