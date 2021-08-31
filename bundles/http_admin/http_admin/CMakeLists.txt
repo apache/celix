@@ -17,10 +17,10 @@
 
 add_celix_bundle(http_admin
     SOURCES
-        src/http_admin
-        src/websocket_admin
-        src/activator
-        src/service_tree
+        src/http_admin.c
+        src/websocket_admin.c
+        src/activator.c
+        src/service_tree.c
     VERSION 0.0.1
     SYMBOLIC_NAME "apache_celix_http_admin"
     GROUP "Celix/HTTP_admin"

@@ -21,8 +21,8 @@ add_celix_bundle(driver_locator
 	NAME "Apache Celix Device Access Driver Locator"
 	GROUP "Celix/DeviceAccess"
 	SOURCES
-		src/activator
-		src/driver_locator
+		src/activator.c
+		src/driver_locator.c
 )
 
 target_include_directories(driver_locator PRIVATE src)

@@ -17,10 +17,10 @@
 
 add_celix_bundle(calculator_shell
     SOURCES
-        src/add_command
-        src/sub_command
-        src/sqrt_command
-        src/calculator_shell_activator
+        src/add_command.c
+        src/sub_command.c
+        src/sqrt_command.c
+        src/calculator_shell_activator.c
     VERSION 0.0.1
     SYMBOLIC_NAME "apache_celix_remoting_calculator_shell"
 )

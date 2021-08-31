@@ -28,11 +28,11 @@ add_celix_bundle(device_manager
 	NAME "Apache Celix Device Access Device Manager"
 	GROUP "Celix/DeviceAccess"
 	SOURCES
-		src/activator
-		src/driver_attributes
-		src/device_manager
-		src/driver_loader
-		src/driver_matcher
+		src/activator.c
+		src/driver_attributes.c
+		src/device_manager.c
+		src/driver_loader.c
+		src/driver_matcher.c
 )
 target_link_libraries(device_manager PRIVATE Celix::log_helper)
 

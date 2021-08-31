@@ -24,9 +24,9 @@ if (SHELL_TUI)
 		FILENAME celix_shell_tui
 		GROUP "Celix/Shell"
     	SOURCES 
-    		private/src/activator 
-    		private/src/shell_tui
-    		private/src/history
+    		private/src/activator.c
+    		private/src/shell_tui.c
+    		private/src/history.c
 	)
 	
 	target_include_directories(shell_tui PRIVATE

@@ -16,5 +16,5 @@
 # under the License.
 
 
-add_executable(embedding src/main)
+add_executable(embedding src/main.c)
 target_link_libraries(embedding Celix::framework )
