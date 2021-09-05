@@ -41,11 +41,12 @@ The following packages (libraries + headers) should be installed on your system:
 	* make (3.14 or higher)
 * Apache Celix Dependencies
     * zlib
+    * libzip
     * uuid
-	* curl (only initialized in the Celix framework)
-	* jansson (for serialization in libdfi)
-	* libffi (for libdfi)
-	* libxml2 (for remote services and bonjour shell)
+    * curl (only initialized in the Celix framework)
+    * jansson (for serialization in libdfi)
+    * libffi (for libdfi)
+    * libxml2 (for remote services and bonjour shell)
 	
 
 For debian based systems (apt), the following command should work:
@@ -61,6 +62,7 @@ sudo apt-get install -yq --no-install-recommends \
     default-jdk \
     cmake \
     libffi-dev \
+    libzip-dev \
     libxml2-dev
 
 #required if the ZMQ PubSubAdmin option (BUILD_PUBSUB_PSA_ZMQ) is enabled
@@ -87,6 +89,7 @@ sudo dnf install \
     libcurl-devel \
     jansson-devel \
     libffi-devel \
+    libzip-devel \
     libxml2-devel \
     libuuid-devel
 ```
@@ -94,7 +97,7 @@ sudo dnf install \
 For OSX systems with brew installed, the following command should work:
 ```bash
     brew update && \
-    brew install lcov libffi cmake && \
+    brew install lcov libffi libzip cmake && \
     brew link --force libffi
 ```
 

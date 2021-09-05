@@ -24,6 +24,7 @@ jobs:
             libczmq-dev \
             libcpputest-dev \
             rapidjson-dev \
+            libzip-dev \
             lcov
       - name: Build
         env:
