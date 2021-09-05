@@ -48,7 +48,8 @@ jobs:
           libxml2-dev \
           libczmq-dev \
           libcpputest-dev \
-          rapidjson-dev
+          rapidjson-dev \
+          libzip-dev
     - name: Build
       env:
         CC: ${{ matrix.compiler }}
