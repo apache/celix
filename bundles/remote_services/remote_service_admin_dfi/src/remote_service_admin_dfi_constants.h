@@ -33,12 +33,23 @@
 #define RSA_LOG_CALLS_FILE_KEY          "RSA_LOG_CALLS_FILE"
 #define RSA_LOG_CALLS_FILE_DEFAULT      "stdout"
 
-
-
-
 #define RSA_DFI_CONFIGURATION_TYPE      "org.amdatu.remote.admin.http"
 #define RSA_DFI_ENDPOINT_URL            "org.amdatu.remote.admin.http.url"
 
+/**
+ * @brief Remote Service Admin DFI environment property (named "RSA_DFI_USE_CURL_SHARE_HANDLE") which specified
+ * whether the RSA DFI should use curl's share handle.
+ *
+ * The curl share handle has a significant performance boost by sharing DNS, COOKIE en CONNECTIONS over multiple calls,
+ * but can also introduce some issues (based on experience)
+ *
+ * The property is of the type boolean and the default is false
+ */
+#define RSA_DFI_USE_CURL_SHARE_HANDLE           "RSA_DFI_USE_CURL_SHARE_HANDLE"
 
+/**
+ * @brief Default value for the enviroment property RSA_DFI_USE_CURL_SHARE_HANDLE
+ */
+#define RSA_DFI_USE_CURL_SHARE_HANDLE_DEFAULT   false
 
 #endif //CELIX_REMOTE_SERVICE_ADMIN_DFI_CONSTANTS_H

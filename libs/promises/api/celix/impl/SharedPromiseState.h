@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <type_traits>
 #include <functional>
 #include <chrono>
 #include <mutex>
@@ -29,6 +30,7 @@
 #include <optional>
 
 #include "celix/IExecutor.h"
+#include "celix/IScheduledExecutor.h"
 
 #include "celix/PromiseInvocationException.h"
 #include "celix/PromiseTimeoutException.h"
@@ -40,9 +42,9 @@ namespace celix::impl {
         // Pointers make using promises properly unnecessarily complicated.
         static_assert(!std::is_pointer_v<T>, "Cannot use pointers with promises.");
     public:
-        static std::shared_ptr<SharedPromiseState<T>> create(std::shared_ptr<celix::IExecutor> _executor, int priority);
+        static std::shared_ptr<SharedPromiseState<T>> create(std::shared_ptr<celix::IExecutor> _executor, std::shared_ptr<celix::IScheduledExecutor> _scheduledExecutor, int priority);
 
-        ~SharedPromiseState() = default;
+        ~SharedPromiseState() noexcept = default;
 
         void resolve(T&& value);
 
@@ -104,11 +106,13 @@ namespace celix::impl {
 
         void addChain(std::function<void()> chainFunction);
 
-        std::shared_ptr<celix::IExecutor> getExecutor() const;
+        [[nodiscard]] std::shared_ptr<celix::IExecutor> getExecutor() const;
+
+        [[nodiscard]] std::shared_ptr<celix::IScheduledExecutor> getScheduledExecutor() const;
 
         int getPriority() const;
     private:
-        explicit SharedPromiseState(std::shared_ptr<celix::IExecutor> _executor, int _priority);
+        explicit SharedPromiseState(std::shared_ptr<celix::IExecutor> _executor, std::shared_ptr<celix::IScheduledExecutor> _scheduledExecutor, int _priority);
 
         void setSelf(std::weak_ptr<SharedPromiseState<T>> self);
 
@@ -124,6 +128,7 @@ namespace celix::impl {
         void waitForAndCheckData(std::unique_lock<std::mutex> &lck, bool expectValid) const;
 
         const std::shared_ptr<celix::IExecutor> executor;
+        const std::shared_ptr<celix::IScheduledExecutor> scheduledExecutor;
         const int priority;
         std::weak_ptr<SharedPromiseState<T>> self{};
 
@@ -139,8 +144,9 @@ namespace celix::impl {
     template<>
     class SharedPromiseState<void> {
     public:
-        static std::shared_ptr<SharedPromiseState<void>> create(std::shared_ptr<celix::IExecutor> _executor, int priority);
-        ~SharedPromiseState() = default;
+        static std::shared_ptr<SharedPromiseState<void>> create(std::shared_ptr<celix::IExecutor> _executor, std::shared_ptr<celix::IScheduledExecutor> _scheduledExecutor, int priority);
+
+        ~SharedPromiseState() noexcept = default;
 
         void resolve();
 
@@ -187,11 +193,13 @@ namespace celix::impl {
 
         void addChain(std::function<void()> chainFunction);
 
-        std::shared_ptr<celix::IExecutor> getExecutor() const;
+        [[nodiscard]] std::shared_ptr<celix::IExecutor> getExecutor() const;
+
+        [[nodiscard]] std::shared_ptr<celix::IScheduledExecutor> getScheduledExecutor() const;
 
         int getPriority() const;
     private:
-        explicit SharedPromiseState(std::shared_ptr<celix::IExecutor> _executor, int _priority);
+        explicit SharedPromiseState(std::shared_ptr<celix::IExecutor> _executor, std::shared_ptr<celix::IScheduledExecutor> _scheduledExecutor, int _priority);
 
         void setSelf(std::weak_ptr<SharedPromiseState<void>> self);
 
@@ -207,6 +215,7 @@ namespace celix::impl {
         void waitForAndCheckData(std::unique_lock<std::mutex> &lck, bool expectValid) const;
 
         const std::shared_ptr<celix::IExecutor> executor;
+        const std::shared_ptr<celix::IScheduledExecutor> scheduledExecutor;
         const int priority;
         std::weak_ptr<SharedPromiseState<void>> self{};
 
@@ -224,22 +233,22 @@ namespace celix::impl {
 *********************************************************************************/
 
 template<typename T>
-std::shared_ptr<celix::impl::SharedPromiseState<T>> celix::impl::SharedPromiseState<T>::create(std::shared_ptr<celix::IExecutor> _executor, int priority) {
-    auto state = std::shared_ptr<celix::impl::SharedPromiseState<T>>{new celix::impl::SharedPromiseState<T>{std::move(_executor), priority}};
+std::shared_ptr<celix::impl::SharedPromiseState<T>> celix::impl::SharedPromiseState<T>::create(std::shared_ptr<celix::IExecutor> _executor, std::shared_ptr<celix::IScheduledExecutor> _scheduledExecutor, int priority) {
+    auto state = std::shared_ptr<celix::impl::SharedPromiseState<T>>{new celix::impl::SharedPromiseState<T>{std::move(_executor), std::move(_scheduledExecutor), priority}};
     state->setSelf(state);
     return state;
 }
 
-inline std::shared_ptr<celix::impl::SharedPromiseState<void>> celix::impl::SharedPromiseState<void>::create(std::shared_ptr<celix::IExecutor> _executor, int priority) {
-    auto state = std::shared_ptr<celix::impl::SharedPromiseState<void>>{new celix::impl::SharedPromiseState<void>{std::move(_executor), priority}};
+inline std::shared_ptr<celix::impl::SharedPromiseState<void>> celix::impl::SharedPromiseState<void>::create(std::shared_ptr<celix::IExecutor> _executor, std::shared_ptr<celix::IScheduledExecutor> _scheduledExecutor, int priority) {
+    auto state = std::shared_ptr<celix::impl::SharedPromiseState<void>>{new celix::impl::SharedPromiseState<void>{std::move(_executor), std::move(_scheduledExecutor), priority}};
     state->setSelf(state);
     return state;
 }
 
 template<typename T>
-celix::impl::SharedPromiseState<T>::SharedPromiseState(std::shared_ptr<celix::IExecutor> _executor, int _priority) : executor{std::move(_executor)}, priority{_priority} {}
+celix::impl::SharedPromiseState<T>::SharedPromiseState(std::shared_ptr<celix::IExecutor> _executor, std::shared_ptr<celix::IScheduledExecutor> _scheduledExecutor, int _priority) : executor{std::move(_executor)}, scheduledExecutor{std::move(_scheduledExecutor)}, priority{_priority} {}
 
-inline celix::impl::SharedPromiseState<void>::SharedPromiseState(std::shared_ptr<celix::IExecutor> _executor, int _priority) : executor{std::move(_executor)}, priority{_priority} {}
+inline celix::impl::SharedPromiseState<void>::SharedPromiseState(std::shared_ptr<celix::IExecutor> _executor, std::shared_ptr<celix::IScheduledExecutor> _scheduledExecutor, int _priority) : executor{std::move(_executor)}, scheduledExecutor{std::move(_scheduledExecutor)}, priority{_priority} {}
 
 template<typename T>
 void celix::impl::SharedPromiseState<T>::setSelf(std::weak_ptr<SharedPromiseState<T>> _self) {
@@ -354,23 +363,23 @@ inline void celix::impl::SharedPromiseState<void>::tryFail(std::exception_ptr e)
 
 template<typename T>
 bool celix::impl::SharedPromiseState<T>::isDone() const {
-    std::lock_guard<std::mutex> lck{mutex};
+    std::lock_guard lck{mutex};
     return done;
 }
 
 inline bool celix::impl::SharedPromiseState<void>::isDone() const {
-    std::lock_guard<std::mutex> lck{mutex};
+    std::lock_guard lck{mutex};
     return done;
 }
 
 template<typename T>
 bool celix::impl::SharedPromiseState<T>::isSuccessfullyResolved() const {
-    std::lock_guard<std::mutex> lck{mutex};
+    std::lock_guard lck{mutex};
     return done && !exp;
 }
 
 inline bool celix::impl::SharedPromiseState<void>::isSuccessfullyResolved() const {
-    std::lock_guard<std::mutex> lck{mutex};
+    std::lock_guard lck{mutex};
     return done && !exp;
 }
 
@@ -474,6 +483,15 @@ inline std::shared_ptr<celix::IExecutor> celix::impl::SharedPromiseState<void>::
 }
 
 template<typename T>
+std::shared_ptr<celix::IScheduledExecutor> celix::impl::SharedPromiseState<T>::getScheduledExecutor() const {
+    return scheduledExecutor;
+}
+
+inline std::shared_ptr<celix::IScheduledExecutor> celix::impl::SharedPromiseState<void>::getScheduledExecutor() const {
+    return scheduledExecutor;
+}
+
+template<typename T>
 int celix::impl::SharedPromiseState<T>::getPriority() const {
     return priority;
 }
@@ -530,79 +548,71 @@ inline void celix::impl::SharedPromiseState<void>::resolveWith(std::shared_ptr<S
 template<typename T>
 template<typename Rep, typename Period>
 std::shared_ptr<celix::impl::SharedPromiseState<T>> celix::impl::SharedPromiseState<T>::timeout(std::shared_ptr<SharedPromiseState<T>> state, std::chrono::duration<Rep, Period> duration) {
-    auto p = celix::impl::SharedPromiseState<T>::create(state->executor, state->priority);
+    auto p = celix::impl::SharedPromiseState<T>::create(state->executor, state->scheduledExecutor, state->priority);
     p->resolveWith(state);
-    /*TODO use scheduler instead of sleep on thread (using unnecessary resources)
-    auto schedFuture = scheduler->schedule<Rep, Period>([]{
-            p->tryFail(std::make_exception_ptr(celix::PromiseTimeoutException{}));}, duration);
-    p->addOnResolve([schedFuture]() {
+    auto schedFuture = p->scheduledExecutor->schedule(p->priority, duration, [p]{
+        p->tryFail(std::make_exception_ptr(celix::PromiseTimeoutException{}));
+    });
+    p->addOnSuccessConsumeCallback([schedFuture](T /*val*/){
         schedFuture->cancel();
     });
-    */
-    state->executor->execute([duration, p]{
-        std::this_thread::sleep_for(duration);
-        p->tryFail(std::make_exception_ptr(celix::PromiseTimeoutException{}));
-    }, state->priority);
     return p;
 }
 
 template<typename Rep, typename Period>
 std::shared_ptr<celix::impl::SharedPromiseState<void>> celix::impl::SharedPromiseState<void>::timeout(std::shared_ptr<SharedPromiseState<void>> state, std::chrono::duration<Rep, Period> duration) {
-    auto p = celix::impl::SharedPromiseState<void>::create(state->executor, state->priority);
+    auto p = celix::impl::SharedPromiseState<void>::create(state->executor, state->scheduledExecutor, state->priority);
     p->resolveWith(state);
-    /*TODO use scheduler instead of sleep on thread (using unnecessary resources)
-    auto schedFuture = scheduler->schedule<Rep, Period>([]{
-            p->tryFail(std::make_exception_ptr(celix::PromiseTimeoutException{}));}, duration);
-    p->addOnResolve([schedFuture]() {
-        schedFuture->cancel();
+    auto schedFuture = p->scheduledExecutor->schedule(p->priority, duration, [p]{
+            p->tryFail(std::make_exception_ptr(celix::PromiseTimeoutException{}));
     });
-    */
-    state->executor->execute([duration, p]{
-        std::this_thread::sleep_for(duration);
-        p->tryFail(std::make_exception_ptr(celix::PromiseTimeoutException{}));
-    }, state->priority);
+    p->addOnSuccessConsumeCallback([schedFuture]{
+       schedFuture->cancel();
+    });
     return p;
 }
 
 template<typename T>
 template<typename Rep, typename Period>
 std::shared_ptr<celix::impl::SharedPromiseState<T>> celix::impl::SharedPromiseState<T>::delay(std::chrono::duration<Rep, Period> duration) {
-    auto p = celix::impl::SharedPromiseState<T>::create(executor, priority);
-    addOnResolve([p, duration](std::optional<T> v, std::exception_ptr e) {
-        std::this_thread::sleep_for(duration); //TODO use scheduler instead of sleep on thread (using unnecessary resources)
-        try {
-            if (v) {
-                p->resolve(std::move(*v));
-            } else {
-                p->fail(std::move(e));
+    auto state = celix::impl::SharedPromiseState<T>::create(executor, scheduledExecutor, priority);
+    addOnResolve([state, duration](std::optional<T> v, std::exception_ptr e) {
+        state->scheduledExecutor->schedule(state->priority, duration, [v = std::move(v), e, state] {
+            try {
+                if (v) {
+                    state->resolve(std::move(*v));
+                } else {
+                    state->fail(e);
+                }
+            } catch (celix::PromiseInvocationException &) {
+                //somebody already resolved promise?
+            } catch (...) {
+                state->fail(std::current_exception());
             }
-        } catch (celix::PromiseInvocationException&) {
-            //somebody already resolved p?
-        } catch (...) {
-            p->fail(std::current_exception());
-        }
+        });
     });
-    return p;
+    return state;
 }
 
 template<typename Rep, typename Period>
 std::shared_ptr<celix::impl::SharedPromiseState<void>> celix::impl::SharedPromiseState<void>::delay(std::chrono::duration<Rep, Period> duration) {
-    auto p = celix::impl::SharedPromiseState<void>::create(executor, priority);
-    addOnResolve([p, duration](std::optional<std::exception_ptr> e) {
-        std::this_thread::sleep_for(duration); //TODO use scheduler instead of sleep on thread (using unnecessary resources)
-        try {
-            if (!e) {
-                p->resolve();
-            } else {
-                p->fail(std::move(*e));
+    auto state = celix::impl::SharedPromiseState<void>::create(executor, scheduledExecutor, priority);
+    addOnResolve([state, duration](std::optional<std::exception_ptr> e) {
+        state->scheduledExecutor->schedule(state->priority, duration, [e, state] {
+            try {
+                if (!e) {
+                    state->resolve();
+                } else {
+                    state->fail(*e);
+                }
+            } catch (celix::PromiseInvocationException &) {
+                //somebody already resolved promise?
+            } catch (...) {
+                state->fail(std::current_exception());
             }
-        } catch (celix::PromiseInvocationException&) {
-            //somebody already resolved p?
-        } catch (...) {
-            p->fail(std::current_exception());
-        }
+        });
     });
-    return p;
+    return state;
 }
 
 template<typename T>
@@ -610,7 +620,7 @@ std::shared_ptr<celix::impl::SharedPromiseState<T>> celix::impl::SharedPromiseSt
     if (!recover) {
         throw celix::PromiseInvocationException{"provided recover callback is not valid"};
     }
-    auto p = celix::impl::SharedPromiseState<T>::create(executor, priority);
+    auto p = celix::impl::SharedPromiseState<T>::create(executor, scheduledExecutor, priority);
     addOnResolve([p, recover = std::move(recover)](std::optional<T> v, const std::exception_ptr& /*e*/) {
         if (v) {
             p->resolve(std::move(*v));
@@ -630,7 +640,7 @@ inline std::shared_ptr<celix::impl::SharedPromiseState<void>> celix::impl::Share
         throw celix::PromiseInvocationException{"provided recover callback is not valid"};
     }
 
-    auto p = celix::impl::SharedPromiseState<void>::create(executor, priority);
+    auto p = celix::impl::SharedPromiseState<void>::create(executor, scheduledExecutor, priority);
 
     addOnResolve([p, recover = std::move(recover)](std::optional<std::exception_ptr> e) {
         if (!e) {
@@ -652,7 +662,7 @@ std::shared_ptr<celix::impl::SharedPromiseState<T>> celix::impl::SharedPromiseSt
     if (!predicate) {
         throw celix::PromiseInvocationException{"provided predicate callback is not valid"};
     }
-    auto p = celix::impl::SharedPromiseState<T>::create(executor, priority);
+    auto p = celix::impl::SharedPromiseState<T>::create(executor, scheduledExecutor, priority);
     auto chainFunction = [s = self.lock(), p, predicate = std::move(predicate)] {
         if (s->isSuccessfullyResolved()) {
             try {
@@ -675,7 +685,7 @@ std::shared_ptr<celix::impl::SharedPromiseState<T>> celix::impl::SharedPromiseSt
 
 template<typename T>
 std::shared_ptr<celix::impl::SharedPromiseState<T>> celix::impl::SharedPromiseState<T>::fallbackTo(std::shared_ptr<celix::impl::SharedPromiseState<T>> fallbackTo) {
-    auto p = celix::impl::SharedPromiseState<T>::create(executor, priority);
+    auto p = celix::impl::SharedPromiseState<T>::create(executor, scheduledExecutor, priority);
     auto chainFunction = [s = self.lock(), p, fallbackTo = std::move(fallbackTo)] {
         if (s->isSuccessfullyResolved()) {
             p->resolve(s->moveOrGetValue());
@@ -692,7 +702,7 @@ std::shared_ptr<celix::impl::SharedPromiseState<T>> celix::impl::SharedPromiseSt
 }
 
 inline std::shared_ptr<celix::impl::SharedPromiseState<void>> celix::impl::SharedPromiseState<void>::fallbackTo(std::shared_ptr<celix::impl::SharedPromiseState<void>> fallbackTo) {
-    auto p = celix::impl::SharedPromiseState<void>::create(executor, priority);
+    auto p = celix::impl::SharedPromiseState<void>::create(executor, scheduledExecutor, priority);
     auto chainFunction = [s = self.lock(), p, fallbackTo = std::move(fallbackTo)] {
         if (s->isSuccessfullyResolved()) {
             s->getValue();
@@ -714,7 +724,7 @@ template<typename T>
 void celix::impl::SharedPromiseState<T>::addChain(std::function<void()> chainFunction) {
     std::function<void()> localChain{};
     {
-        std::lock_guard<std::mutex> lck{mutex};
+        std::lock_guard lck{mutex};
         if (!done) {
             chain.emplace_back([func = std::move(chainFunction)]() {
                 func();
@@ -724,14 +734,14 @@ void celix::impl::SharedPromiseState<T>::addChain(std::function<void()> chainFun
         }
     }
     if (localChain) {
-        executor->execute(std::move(localChain), priority);
+        executor->execute(priority, std::move(localChain));
     }
 }
 
 inline void celix::impl::SharedPromiseState<void>::addChain(std::function<void()> chainFunction) {
     std::function<void()> localChain{};
     {
-        std::lock_guard<std::mutex> lck{mutex};
+        std::lock_guard lck{mutex};
         if (!done) {
             chain.emplace_back([func = std::move(chainFunction)]() {
                 func();
@@ -741,7 +751,7 @@ inline void celix::impl::SharedPromiseState<void>::addChain(std::function<void()
         }
     }
     if (localChain) {
-        executor->execute(std::move(localChain), priority);
+        executor->execute(priority, std::move(localChain));
     }
 }
 
@@ -751,7 +761,7 @@ std::shared_ptr<celix::impl::SharedPromiseState<R>> celix::impl::SharedPromiseSt
     if (!mapper) {
         throw celix::PromiseInvocationException("provided mapper is not valid");
     }
-    auto p = celix::impl::SharedPromiseState<R>::create(executor, priority);
+    auto p = celix::impl::SharedPromiseState<R>::create(executor, scheduledExecutor, priority);
     auto chainFunction = [s = self.lock(), p, mapper = std::move(mapper)] {
         try {
             if (s->isSuccessfullyResolved()) {
@@ -772,7 +782,7 @@ std::shared_ptr<celix::impl::SharedPromiseState<R>> celix::impl::SharedPromiseSt
     if (!mapper) {
         throw celix::PromiseInvocationException("provided mapper is not valid");
     }
-    auto p = celix::impl::SharedPromiseState<R>::create(executor, priority);
+    auto p = celix::impl::SharedPromiseState<R>::create(executor, scheduledExecutor, priority);
     auto chainFunction = [s = self.lock(), p, mapper = std::move(mapper)] {
         try {
             if (s->isSuccessfullyResolved()) {
@@ -794,7 +804,7 @@ std::shared_ptr<celix::impl::SharedPromiseState<T>> celix::impl::SharedPromiseSt
     if (!consumer) {
         throw celix::PromiseInvocationException("provided consumer is not valid");
     }
-    auto p = celix::impl::SharedPromiseState<T>::create(executor, priority);
+    auto p = celix::impl::SharedPromiseState<T>::create(executor, scheduledExecutor, priority);
     auto chainFunction = [s = self.lock(), p, consumer = std::move(consumer)] {
         if (s->isSuccessfullyResolved()) {
             try {
@@ -815,7 +825,7 @@ inline std::shared_ptr<celix::impl::SharedPromiseState<void>> celix::impl::Share
     if (!consumer) {
         throw celix::PromiseInvocationException("provided consumer is not valid");
     }
-    auto p = celix::impl::SharedPromiseState<void>::create(executor, priority);
+    auto p = celix::impl::SharedPromiseState<void>::create(executor, scheduledExecutor, priority);
     auto chainFunction = [s = self.lock(), p, consumer = std::move(consumer)] {
         if (s->isSuccessfullyResolved()) {
             try {
@@ -927,14 +937,12 @@ void celix::impl::SharedPromiseState<T>::complete(std::unique_lock<std::mutex>& 
     }
     done = true;
     cond.notify_all();
-
-
     while (!chain.empty()) {
         std::vector<std::function<void()>> localChains{};
         localChains.swap(chain);
         lck.unlock();
         for (auto &chainTask : localChains) {
-            executor->execute(std::move(chainTask), priority);
+            executor->execute(priority, std::move(chainTask));
         }
         localChains.clear();
         lck.lock();
@@ -950,14 +958,12 @@ inline void celix::impl::SharedPromiseState<void>::complete(std::unique_lock<std
     }
     done = true;
     cond.notify_all();
-
-
     while (!chain.empty()) {
         std::vector<std::function<void()>> localChains{};
         localChains.swap(chain);
         lck.unlock();
         for (auto &chainTask : localChains) {
-            executor->execute(std::move(chainTask), priority);
+            executor->execute(priority, std::move(chainTask));
         }
         localChains.clear();
         lck.lock();

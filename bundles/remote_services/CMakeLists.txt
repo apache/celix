@@ -20,7 +20,7 @@ if (REMOTE_SERVICE_ADMIN)
 
     add_subdirectory(remote_services_api)
     add_subdirectory(examples)
-    add_subdirectory(rsa_spi)
+    add_subdirectory(deprecated_rsa_spi)
     add_subdirectory(rsa_common)
     add_subdirectory(civetweb)
     add_subdirectory(topology_manager)

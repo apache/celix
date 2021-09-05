@@ -54,7 +54,7 @@ int psa_zmq_start(psa_zmq_activator_t *act, celix_bundle_context_t *ctx) {
     act->serializersTrackerId = -1L;
     act->protocolsTrackerId = -1L;
 
-    act->logHelper = celix_logHelper_create(ctx, "celix_psa_discovery");
+    act->logHelper = celix_logHelper_create(ctx, "celix_psa_zmq");
 
     act->admin = pubsub_zmqAdmin_create(ctx, act->logHelper);
     celix_status_t status = act->admin != NULL ? CELIX_SUCCESS : CELIX_BUNDLE_EXCEPTION;

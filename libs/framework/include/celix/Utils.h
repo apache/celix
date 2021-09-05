@@ -23,6 +23,7 @@
 #include <string>
 #include <string.h>
 #include <iostream>
+#include <vector>
 
 //NOTE based on has_rtti.cpp
 #if defined(__clang__)
@@ -37,6 +38,14 @@
 #if defined(_CPPRTTI)
 #define CELIX_RTTI_ENABLED
 #endif
+#endif
+
+//FORCE DISABLE RTTI
+//TODO #323 add test CI job to test rtti based type name infer
+#undef CELIX_RTTI_ENABLED
+
+#ifdef CELIX_RTTI_ENABLED
+#include <cxxabi.h>
 #endif
 
 namespace celix {
@@ -89,6 +98,25 @@ namespace celix {
     std::string typeName(const std::string& providedTypeName) {
         return providedTypeName.empty() ? celix::typeName<I>() : providedTypeName;
     }
+
+    /**
+     * @brief Splits a string using the provided delim.
+     *
+     * Also trims the entries from whitespaces.
+     * @param str The string to split
+     * @param delimiter The delimiter to use (default ",")
+     */
+     inline std::vector<std::string> split(const std::string& str, const std::string& delimiter = ",") {
+        std::vector<std::string> result{};
+        std::string delimiters = delimiter + " \t";
+        size_t found;
+        size_t pos = 0;
+        while ((found = str.find_first_not_of(delimiters, pos)) != std::string::npos) {
+            pos = str.find_first_of(", ", found);
+            result.emplace_back(str.substr(found, pos - found));
+        }
+        return result;
+     }
 }
 
 #undef CELIX_RTTI_ENABLED

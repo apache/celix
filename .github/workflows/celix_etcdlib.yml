@@ -10,7 +10,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-18.04]
+        os: [ubuntu-20.04]
         compiler: [gcc]
     timeout-minutes: 15
     steps:
@@ -33,4 +33,4 @@ jobs:
           mkdir build install
           cd build
           cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=../install ../libs/etcdlib
-          make -j && make install
+          make -j $(nproc) && make install

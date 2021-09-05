@@ -20,7 +20,7 @@
 #ifndef CELIX_PUBSUB_ZMQ_TOPIC_SENDER_H
 #define CELIX_PUBSUB_ZMQ_TOPIC_SENDER_H
 
-#include <pubsub_message_serialization_service.h>
+#include "pubsub_serializer_handler.h"
 #include "celix_bundle_context.h"
 #include "pubsub_admin_metrics.h"
 #include "celix_log_helper.h"
@@ -32,7 +32,7 @@ pubsub_zmq_topic_sender_t* pubsub_zmqTopicSender_create(
         celix_log_helper_t *logHelper,
         const char *scope,
         const char *topic,
-        const char* serializerType,
+        pubsub_serializer_handler_t* serializerHandler,
         void *admin,
         long protocolSvcId,
         pubsub_protocol_service_t *prot,
@@ -40,6 +40,7 @@ pubsub_zmq_topic_sender_t* pubsub_zmqTopicSender_create(
         const char *staticBindUrl,
         unsigned int basePort,
         unsigned int maxPort);
+
 void pubsub_zmqTopicSender_destroy(pubsub_zmq_topic_sender_t *sender);
 
 const char* pubsub_zmqTopicSender_scope(pubsub_zmq_topic_sender_t *sender);
@@ -50,12 +51,5 @@ bool pubsub_zmqTopicSender_isStatic(pubsub_zmq_topic_sender_t *sender);
 const char* pubsub_zmqTopicSender_serializerType(pubsub_zmq_topic_sender_t *sender);
 long pubsub_zmqTopicSender_protocolSvcId(pubsub_zmq_topic_sender_t *sender);
 
-void pubsub_zmqTopicSender_connectTo(pubsub_zmq_topic_sender_t *sender, const celix_properties_t *endpoint);
-void pubsub_zmqTopicSender_disconnectFrom(pubsub_zmq_topic_sender_t *sender, const celix_properties_t *endpoint);
-
-/**
- * Returns a array of pubsub_admin_sender_msg_type_metrics_t entries for every msg_type/bundle send with the topic sender.
- */
-pubsub_admin_sender_metrics_t* pubsub_zmqTopicSender_metrics(pubsub_zmq_topic_sender_t *sender);
 
 #endif //CELIX_PUBSUB_ZMQ_TOPIC_SENDER_H

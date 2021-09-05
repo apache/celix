@@ -19,7 +19,6 @@ add_executable(test_pubsub_spi
 		src/PubSubEndpointUtilsTestSuite.cc
 )
 target_link_libraries(test_pubsub_spi PRIVATE Celix::pubsub_spi GTest::gtest GTest::gtest_main)
-target_compile_options(test_pubsub_spi PRIVATE -std=c++14) #Note test code is allowed to be C++14
 
 #Seems to be an issue with coverage setup, for now disabled
 #setup_target_for_coverage(test_pubsub_spi SCAN_DIR ..)

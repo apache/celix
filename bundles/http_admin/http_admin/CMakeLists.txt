@@ -25,6 +25,7 @@ add_celix_bundle(http_admin
     SYMBOLIC_NAME "apache_celix_http_admin"
     GROUP "Celix/HTTP_admin"
     NAME "Apache Celix HTTP Admin"
+    FILENAME celix_http_admin
 )
 target_include_directories(http_admin PRIVATE src)
 

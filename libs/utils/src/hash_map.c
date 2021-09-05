@@ -220,6 +220,18 @@ void * hashMap_remove(hash_map_pt map, const void* key) {
     return value;
 }
 
+void * hashMap_removeFreeKey(hash_map_pt map, const void* key) {
+    hash_map_entry_pt entry = hashMap_removeEntryForKey(map, key);
+    void * value = (entry == NULL ? NULL : entry->value);
+    if (entry != NULL) {
+        free(entry->key);
+        entry->key = NULL;
+        entry->value = NULL;
+        free(entry);
+    }
+    return value;
+}
+
 hash_map_entry_pt hashMap_removeEntryForKey(hash_map_pt map, const void* key) {
     unsigned int hash = (key == NULL) ? 0 : hashMap_hash(map->hashKey(key));
     int i = hashMap_indexFor(hash, map->tablelength);

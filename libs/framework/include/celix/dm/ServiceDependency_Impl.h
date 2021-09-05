@@ -20,6 +20,9 @@
 #include <vector>
 #include <iostream>
 #include <cstring>
+#include <thread>
+
+#include "celix/Constants.h"
 #include "celix_constants.h"
 #include "celix_properties.h"
 #include "celix_bundle_context.h"
@@ -28,6 +31,32 @@
 
 
 using namespace celix::dm;
+
+
+template<typename U>
+inline void BaseServiceDependency::waitForExpired(std::weak_ptr<U> observe, long svcId, const char* observeType) {
+    auto start = std::chrono::system_clock::now();
+    while (!observe.expired()) {
+        auto now = std::chrono::system_clock::now();
+        auto durationInMilli = std::chrono::duration_cast<std::chrono::milliseconds>(now - start);
+        if (durationInMilli > warningTimoutForNonExpiredSvcObject) {
+            if (cCmp) {
+                auto* ctx = celix_dmComponent_getBundleContext(cCmp);
+                if (ctx) {
+                    celix_bundleContext_log(
+                            ctx,
+                            CELIX_LOG_LEVEL_WARNING,
+                            "celix::dm::ServiceDependency: Cannot remove %s associated with service.id %li, because it is still in use. Current shared_ptr use count is %i",
+                            observeType,
+                            svcId,
+                            (int)observe.use_count());
+                }
+            }
+            start = now;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds{50});
+    }
+}
 
 inline void BaseServiceDependency::runBuild() {
     bool alreadyAdded = depAddedToCmp.exchange(true);
@@ -179,19 +208,19 @@ void CServiceDependency<T,I>::setupCallbacks() {
     int(*cadd)(void*, void *, const celix_properties_t*) {nullptr};
     int(*crem)(void*, void *, const celix_properties_t*) {nullptr};
 
-    if (setFp != nullptr) {
+    if (setFp) {
         cset = [](void* handle, void *service, const celix_properties_t *props) -> int {
             auto dep = (CServiceDependency<T,I>*) handle;
             return dep->invokeCallback(dep->setFp, props, service);
         };
     }
-    if (addFp != nullptr) {
+    if (addFp) {
         cadd = [](void* handle, void *service, const celix_properties_t *props) -> int {
             auto dep = (CServiceDependency<T,I>*) handle;
             return dep->invokeCallback(dep->addFp, props, service);
         };
     }
-    if (removeFp != nullptr) {
+    if (removeFp) {
         crem= [](void* handle, void *service, const celix_properties_t *props) -> int {
             auto dep = (CServiceDependency<T,I>*) handle;
             return dep->invokeCallback(dep->removeFp, props, service);
@@ -317,6 +346,40 @@ ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(std::function<void(
     return *this;
 }
 
+template<class T, class I>
+ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(void (T::*set)(const std::shared_ptr<I>& service, const std::shared_ptr<const celix::Properties>& properties)) {
+    this->setCallbacks([this, set](const std::shared_ptr<I>& service, const std::shared_ptr<const celix::Properties>& properties) {
+        T *cmp = this->componentInstance;
+        (cmp->*set)(std::move(service), properties);
+    });
+    return *this;
+}
+
+template<class T, class I>
+ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(std::function<void(const std::shared_ptr<I>& service, const std::shared_ptr<const celix::Properties>& properties)> set) {
+    this->setFpUsingSharedPtr = std::move(set);
+    this->setupCallbacks();
+    return *this;
+}
+
+template<class T, class I>
+ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(void (T::*set)(const std::shared_ptr<I>& service)) {
+    this->setCallbacks([this, set](const std::shared_ptr<I>& service) {
+        T *cmp = this->componentInstance;
+        (cmp->*set)(service);
+    });
+    return *this;
+}
+
+template<class T, class I>
+ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(std::function<void(const std::shared_ptr<I>& service)> set) {
+    this->setCallbacks([set](const std::shared_ptr<I>& service, const std::shared_ptr<const celix::Properties>& /*properties*/) {
+        set(service);
+    });
+    return *this;
+}
+
+
 //add remove callbacks
 template<class T, class I>
 ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(
@@ -353,6 +416,7 @@ ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(
     return *this;
 }
 
+
 template<class T, class I>
 ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(
         std::function<void(I* service, Properties&& properties)> add,
@@ -362,6 +426,70 @@ ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(
     this->setupCallbacks();
     return *this;
 }
+
+template<class T, class I>
+ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(
+        void (T::*add)(const std::shared_ptr<I>& service, const std::shared_ptr<const celix::Properties>& properties),
+        void (T::*remove)(const std::shared_ptr<I>& service, const std::shared_ptr<const celix::Properties>& properties)
+) {
+    this->setCallbacks(
+            [this, add](const std::shared_ptr<I>& service, const std::shared_ptr<const celix::Properties>& properties) {
+                T *cmp = this->componentInstance;
+                (cmp->*add)(service, properties);
+            },
+            [this, remove](const std::shared_ptr<I>& service, const std::shared_ptr<const celix::Properties>& properties) {
+                T *cmp = this->componentInstance;
+                (cmp->*remove)(service, properties);
+            }
+    );
+    return *this;
+}
+
+
+template<class T, class I>
+ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(
+        std::function<void(const std::shared_ptr<I>& service, const std::shared_ptr<const celix::Properties>& properties)> add,
+        std::function<void(const std::shared_ptr<I>& service, const std::shared_ptr<const celix::Properties>& properties)> remove) {
+    this->addFpUsingSharedPtr = std::move(add);
+    this->removeFpUsingSharedPtr = std::move(remove);
+    this->setupCallbacks();
+    return *this;
+}
+
+template<class T, class I>
+ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(
+        void (T::*add)(const std::shared_ptr<I>& service),
+        void (T::*remove)(const std::shared_ptr<I>& service)
+) {
+    this->setCallbacks(
+            [this, add](const std::shared_ptr<I>& service, const std::shared_ptr<const celix::Properties>& /*properties*/) {
+                T *cmp = this->componentInstance;
+                (cmp->*add)(service);
+            },
+            [this, remove](const std::shared_ptr<I>& service, const std::shared_ptr<const celix::Properties>& /*properties*/) {
+                T *cmp = this->componentInstance;
+                (cmp->*remove)(service);
+            }
+    );
+    return *this;
+}
+
+
+template<class T, class I>
+ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(
+        std::function<void(const std::shared_ptr<I>& service)> add,
+        std::function<void(const std::shared_ptr<I>& service)> remove) {
+    this->setCallbacks(
+            [add](const std::shared_ptr<I>& service, const std::shared_ptr<const celix::Properties>& /*properties*/) {
+                add(service);
+            },
+            [remove](const std::shared_ptr<I>& service, const std::shared_ptr<const celix::Properties>& /*properties*/) {
+                remove(service);
+            }
+    );
+    return *this;
+}
+
 
 template<class T, class I>
 ServiceDependency<T,I>& ServiceDependency<T,I>::setRequired(bool req) {
@@ -403,22 +531,64 @@ void ServiceDependency<T,I>::setupCallbacks() {
     int(*cadd)(void*, void *, const celix_properties_t*) {nullptr};
     int(*crem)(void*, void *, const celix_properties_t*) {nullptr};
 
-    if (setFp != nullptr) {
-        cset = [](void* handle, void *service, const celix_properties_t* props) -> int {
+    if (setFp || setFpUsingSharedPtr) {
+        cset = [](void* handle, void* rawSvc, const celix_properties_t* rawProps) -> int {
+            int rc = 0;
             auto dep = (ServiceDependency<T,I>*) handle;
-            return dep->invokeCallback(dep->setFp, props, service);
+            if (dep->setFp) {
+                rc = dep->invokeCallback(dep->setFp, rawProps, rawSvc);
+            }
+            if (dep->setFpUsingSharedPtr) {
+                auto svcId = dep->setService.second ? dep->setService.second->getAsLong(celix::SERVICE_ID, -1) : -1;
+                std::weak_ptr<I> replacedSvc = dep->setService.first;
+                std::weak_ptr<const celix::Properties> replacedProps = dep->setService.second;
+                auto svc = std::shared_ptr<I>{static_cast<I*>(rawSvc), [](I*){/*nop*/}};
+                auto props = rawProps ? celix::Properties::wrap(rawProps) : nullptr;
+                dep->setService = std::make_pair(std::move(svc), std::move(props));
+                dep->setFpUsingSharedPtr(dep->setService.first, dep->setService.second);
+                dep->waitForExpired(replacedSvc, svcId, "service pointer");
+                dep->waitForExpired(replacedProps, svcId, "service properties");
+            }
+            return rc;
         };
     }
-    if (addFp != nullptr) {
-        cadd = [](void* handle, void *service, const celix_properties_t* props) -> int {
+    if (addFp || addFpUsingSharedPtr) {
+        cadd = [](void* handle, void *rawSvc, const celix_properties_t* rawProps) -> int {
+            int rc = 0;
             auto dep = (ServiceDependency<T,I>*) handle;
-            return dep->invokeCallback(dep->addFp, props, service);
+            if (dep->addFp) {
+                rc = dep->invokeCallback(dep->addFp, rawProps, rawSvc);
+            }
+            if (dep->addFpUsingSharedPtr) {
+                auto props = celix::Properties::wrap(rawProps);
+                auto svc = std::shared_ptr<I>{static_cast<I*>(rawSvc), [](I*){/*nop*/}};
+                auto svcId = props->getAsLong(celix::SERVICE_ID, -1);
+                dep->addFpUsingSharedPtr(svc, props);
+                dep->addedServices.template emplace(svcId, std::make_pair(std::move(svc), std::move(props)));
+            }
+            return rc;
         };
     }
-    if (removeFp != nullptr) {
-        crem = [](void* handle, void *service, const celix_properties_t*props) -> int {
+    if (removeFp || removeFpUsingSharedPtr) {
+        crem = [](void* handle, void *rawSvc, const celix_properties_t* rawProps) -> int {
+            int rc = 0;
             auto dep = (ServiceDependency<T,I>*) handle;
-            return dep->invokeCallback(dep->removeFp, props, service);
+            if (dep->removeFp) {
+                rc = dep->invokeCallback(dep->removeFp, rawProps, rawSvc);
+            }
+            if (dep->removeFpUsingSharedPtr) {
+                auto svcId = celix_properties_getAsLong(rawProps, celix::SERVICE_ID, -1);
+                auto it = dep->addedServices.find(svcId);
+                if (it != dep->addedServices.end()) {
+                    std::weak_ptr<I> removedSvc = it->second.first;
+                    std::weak_ptr<const celix::Properties> removedProps = it->second.second;
+                    dep->removeFpUsingSharedPtr(it->second.first, it->second.second);
+                    dep->addedServices.erase(it);
+                    dep->template waitForExpired(removedSvc, svcId, "service pointer");
+                    dep->template waitForExpired(removedProps, svcId, "service properties");
+                }
+            }
+            return rc;
         };
     }
 

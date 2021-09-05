@@ -224,7 +224,7 @@ struct fw_frameworkListener {
 typedef struct fw_frameworkListener * fw_framework_listener_pt;
 
 
-celix_status_t framework_create(framework_pt *out, properties_pt config) {
+celix_status_t framework_create(framework_pt *out, celix_properties_t* config) {
     celix_framework_t* framework = calloc(1, sizeof(*framework));
 
     celixThreadCondition_init(&framework->shutdown.cond, NULL);
@@ -241,6 +241,8 @@ celix_status_t framework_create(framework_pt *out, properties_pt config) {
     framework->configurationMap = config;
     framework->bundleListeners = celix_arrayList_create();
     framework->frameworkListeners = celix_arrayList_create();
+    framework->dispatcher.eventQueueCap = (int)celix_properties_getAsLong(config, CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE, CELIX_FRAMEWORK_DEFAULT_STATIC_EVENT_QUEUE_SIZE);
+    framework->dispatcher.eventQueue = malloc(sizeof(celix_framework_event_t) * framework->dispatcher.eventQueueCap);
     framework->dispatcher.dynamicEventQueue = celix_arrayList_create();
 
     //create and store framework uuid
@@ -393,6 +395,7 @@ celix_status_t framework_destroy(framework_pt framework) {
 
     properties_destroy(framework->configurationMap);
 
+    free(framework->dispatcher.eventQueue);
     free(framework);
 
 	return status;
@@ -1466,15 +1469,15 @@ static void celix_framework_addToEventQueue(celix_framework_t *fw, const celix_f
         if (celix_arrayList_size(fw->dispatcher.dynamicEventQueue) % 100 == 0) {
             fw_log(fw->logger, CELIX_LOG_LEVEL_WARNING, "dynamic event queue size is %i. Is there a bundle blocking on the event loop thread?", celix_arrayList_size(fw->dispatcher.dynamicEventQueue));
         }
-    } else if (fw->dispatcher.eventQueueSize < CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE) {
+    } else if (fw->dispatcher.eventQueueSize < fw->dispatcher.eventQueueCap) {
         size_t index = (fw->dispatcher.eventQueueFirstEntry + fw->dispatcher.eventQueueSize) %
-                       CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE;
+                       fw->dispatcher.eventQueueCap;
         fw->dispatcher.eventQueue[index] = *event; //shallow copy
         fw->dispatcher.eventQueueSize += 1;
     } else {
         //static queue is full, dynamics queue is empty. Add first entry to dynamic queue
         fw_log(fw->logger, CELIX_LOG_LEVEL_WARNING,
-               "Static event queue for celix framework is full, falling back to dynamic allocated events. Increase static event queue size, current size is %i", CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE);
+               "Static event queue for celix framework is full, falling back to dynamic allocated events. Increase static event queue size, current size is %i", fw->dispatcher.eventQueueCap);
         celix_framework_event_t *e = malloc(sizeof(*e));
         *e = *event; //shallow copy
         celix_arrayList_add(fw->dispatcher.dynamicEventQueue, e);
@@ -1563,7 +1566,7 @@ static inline bool fw_removeTopEventFromQueue(celix_framework_t* fw) {
     bool dynamicallyAllocated = false;
     celixThreadMutex_lock(&fw->dispatcher.mutex);
     if (fw->dispatcher.eventQueueSize > 0) {
-        fw->dispatcher.eventQueueFirstEntry = (fw->dispatcher.eventQueueFirstEntry+1) % CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE;
+        fw->dispatcher.eventQueueFirstEntry = (fw->dispatcher.eventQueueFirstEntry+1) % fw->dispatcher.eventQueueCap;
         fw->dispatcher.eventQueueSize -= 1;
     } else if (celix_arrayList_size(fw->dispatcher.dynamicEventQueue) > 0) {
         celix_arrayList_removeAt(fw->dispatcher.dynamicEventQueue, 0);
@@ -1990,7 +1993,7 @@ static bool celix_framework_cancelServiceRegistrationIfPending(celix_framework_t
         }
     }
     for (size_t i = 0; i < fw->dispatcher.eventQueueSize; ++i) {
-        size_t index = (fw->dispatcher.eventQueueFirstEntry + i) % CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE;
+        size_t index = (fw->dispatcher.eventQueueFirstEntry + i) % fw->dispatcher.eventQueueCap;
         celix_framework_event_t *event = &fw->dispatcher.eventQueue[index];
         if (event->type == CELIX_REGISTER_SERVICE_EVENT && event->registerServiceId == serviceId) {
             event->cancelled = true;
@@ -2016,7 +2019,7 @@ void celix_framework_waitForAsyncRegistration(framework_t *fw, long svcId) {
     while (registrationsInProgress) {
         registrationsInProgress = false;
         for (int i = 0; i < fw->dispatcher.eventQueueSize; ++i) {
-            int index = (fw->dispatcher.eventQueueFirstEntry + i) % CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE;
+            int index = (fw->dispatcher.eventQueueFirstEntry + i) % fw->dispatcher.eventQueueCap;
             celix_framework_event_t* e = &fw->dispatcher.eventQueue[index];
             if (e->type == CELIX_REGISTER_SERVICE_EVENT && e->registerServiceId == svcId) {
                 registrationsInProgress = true;
@@ -2046,7 +2049,7 @@ void celix_framework_waitForAsyncUnregistration(framework_t *fw, long svcId) {
     while (registrationsInProgress) {
         registrationsInProgress = false;
         for (int i = 0; i < fw->dispatcher.eventQueueSize; ++i) {
-            int index = (fw->dispatcher.eventQueueFirstEntry + i) % CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE;
+            int index = (fw->dispatcher.eventQueueFirstEntry + i) % fw->dispatcher.eventQueueCap;
             celix_framework_event_t* e = &fw->dispatcher.eventQueue[index];
             if (e->type == CELIX_UNREGISTER_SERVICE_EVENT && e->unregisterServiceId == svcId) {
                 registrationsInProgress = true;
@@ -2076,7 +2079,7 @@ void celix_framework_waitForAsyncRegistrations(framework_t *fw, long bndId) {
     while (registrationsInProgress) {
         registrationsInProgress = false;
         for (int i = 0; i < fw->dispatcher.eventQueueSize; ++i) {
-            int index = (fw->dispatcher.eventQueueFirstEntry + i) % CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE;
+            int index = (fw->dispatcher.eventQueueFirstEntry + i) % fw->dispatcher.eventQueueCap;
             celix_framework_event_t* e = &fw->dispatcher.eventQueue[index];
             if ((e->type == CELIX_REGISTER_SERVICE_EVENT || e->type == CELIX_UNREGISTER_SERVICE_EVENT) && e->bndEntry->bndId == bndId) {
                 registrationsInProgress = true;
@@ -2578,7 +2581,7 @@ void celix_framework_waitUntilNoEventsForBnd(celix_framework_t* fw, long bndId) 
     while (eventInProgress) {
         eventInProgress = false;
         for (int i = 0; i < fw->dispatcher.eventQueueSize; ++i) {
-            int index = (fw->dispatcher.eventQueueFirstEntry + i) % CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE;
+            int index = (fw->dispatcher.eventQueueFirstEntry + i) % fw->dispatcher.eventQueueCap;
             celix_framework_event_t* e = &fw->dispatcher.eventQueue[index];
             if (e->bndEntry != NULL && e->bndEntry->bndId == bndId) {
                 eventInProgress = true;
@@ -2645,7 +2648,7 @@ void celix_framework_waitForGenericEvent(framework_t *fw, long eventId) {
     while (eventInProgress) {
         eventInProgress = false;
         for (int i = 0; i < fw->dispatcher.eventQueueSize; ++i) {
-            int index = (fw->dispatcher.eventQueueFirstEntry + i) % CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE;
+            int index = (fw->dispatcher.eventQueueFirstEntry + i) % fw->dispatcher.eventQueueCap;
             celix_framework_event_t* e = &fw->dispatcher.eventQueue[index];
             if (e->type == CELIX_GENERIC_EVENT && e->genericEventId == eventId) {
                 eventInProgress = true;

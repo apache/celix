@@ -616,7 +616,7 @@ inline void celix::Promise<void>::wait() const {
 template<typename T>
 template<typename U>
 inline celix::Promise<U> celix::Promise<T>::then(std::function<celix::Promise<U>(celix::Promise<T>)> success, std::function<void(celix::Promise<T>)> failure) {
-    auto p = celix::impl::SharedPromiseState<U>::create(state->getExecutor(), state->getPriority());
+    auto p = celix::impl::SharedPromiseState<U>::create(state->getExecutor(), state->getScheduledExecutor(), state->getPriority());
 
     auto chain = [s = state, p, success = std::move(success), failure = std::move(failure)]() {
         //chain is called when s is resolved
@@ -641,7 +641,7 @@ inline celix::Promise<U> celix::Promise<T>::then(std::function<celix::Promise<U>
 
 template<typename U>
 inline celix::Promise<U> celix::Promise<void>::then(std::function<celix::Promise<U>(celix::Promise<void>)> success, std::function<void(celix::Promise<void>)> failure) {
-    auto p = celix::impl::SharedPromiseState<U>::create(state->getExecutor(), state->getPriority());
+    auto p = celix::impl::SharedPromiseState<U>::create(state->getExecutor(), state->getScheduledExecutor(), state->getPriority());
 
     auto chain = [s = state, p, success = std::move(success), failure = std::move(failure)]() {
         //chain is called when s is resolved

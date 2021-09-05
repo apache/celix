@@ -11,17 +11,17 @@ jobs:
         #os: [ubuntu-18.04, ubuntu-16.04]
         #compiler: [gcc, clang]
         include:
-          - os: ubuntu-18.04
+          - os: ubuntu-20.04
             name: clang
             sanitizer: false #note sanitizer on clang with cpputest does not work
             compiler: clang
             cxx_compiler: clang++
-          - os: ubuntu-18.04
+          - os: ubuntu-20.04
             name: gcc
             sanitizer: true
             compiler: gcc
             cxx_compiler: g++
-          - os: ubuntu-18.04
+          - os: ubuntu-20.04
             name: only v3 api
             sanitizer: true
             compiler: gcc
@@ -46,7 +46,7 @@ jobs:
           libxml2-dev \
           libczmq-dev \
           libcpputest-dev \
-          libzip-dev
+          rapidjson-dev
     - name: Build
       env:
         CC: ${{ matrix.compiler }}
@@ -69,7 +69,7 @@ jobs:
           export BUILD_OPTIONS="${BUILD_OPTIONS} ${BUILD_OPTIONS_SANITIZER}"
         fi
         cmake -DCMAKE_BUILD_TYPE=Debug ${BUILD_OPTIONS} -DCMAKE_INSTALL_PREFIX=../install ..
-        make -j && make install
+        make -j $(nproc) && make install
     - name: Test
       run: |
         cd $GITHUB_WORKSPACE/build

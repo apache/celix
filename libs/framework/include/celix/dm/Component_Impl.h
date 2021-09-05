@@ -245,6 +245,30 @@ Component<T>& Component<T>::setInstance(T&& inst) {
 }
 
 template<class T>
+int Component<T>::invokeLifecycleMethod(const std::string& methodName, void (T::*lifecycleMethod)()) {
+    try {
+        if (lifecycleMethod != nullptr) {
+            T& inst = getInstance();
+            (inst.*lifecycleMethod)();
+        }
+    } catch (const std::exception& e) {
+        celix_bundleContext_log(context, CELIX_LOG_LEVEL_ERROR, "Error invoking %s for component %s (uuid=%s). Exception: %s",
+                                methodName.c_str(),
+                                cmpName.c_str(),
+                                cmpUUID.c_str(),
+                                e.what());
+        return -1;
+    } catch (...) {
+        celix_bundleContext_log(context, CELIX_LOG_LEVEL_ERROR, "Error invoking %s for component %s (uuid=%s).",
+                                methodName.c_str(),
+                                cmpName.c_str(),
+                                cmpUUID.c_str());
+        return -1;
+    }
+    return 0;
+}
+
+template<class T>
 Component<T>& Component<T>::setCallbacks(
         void (T::*init)(),
         void (T::*start)(),
@@ -256,41 +280,22 @@ Component<T>& Component<T>::setCallbacks(
     this->stopFp = stop;
     this->deinitFp = deinit;
 
+
     int (*cInit)(void *) = [](void *handle) {
         Component<T>* cmp = (Component<T>*)(handle);
-        T* inst = &cmp->getInstance();
-        void (T::*fp)() = cmp->initFp;
-        if (fp != nullptr) {
-            (inst->*fp)();
-        }
-        return 0;
+        return cmp->invokeLifecycleMethod("init", cmp->initFp);
     };
     int (*cStart)(void *) = [](void *handle) {
         Component<T>* cmp = (Component<T>*)(handle);
-        T* inst = &cmp->getInstance();
-        void (T::*fp)() = cmp->startFp;
-        if (fp != nullptr) {
-            (inst->*fp)();
-        }
-        return 0;
+        return cmp->invokeLifecycleMethod("start", cmp->startFp);
     };
     int (*cStop)(void *) = [](void *handle) {
         Component<T>* cmp = (Component<T>*)(handle);
-        T* inst = &cmp->getInstance();
-        void (T::*fp)() = cmp->stopFp;
-        if (fp != nullptr) {
-            (inst->*fp)();
-        }
-        return 0;
+        return cmp->invokeLifecycleMethod("stop", cmp->stopFp);
     };
     int (*cDeinit)(void *) = [](void *handle) {
         Component<T>* cmp = (Component<T>*)(handle);
-        T* inst = &cmp->getInstance();
-        void (T::*fp)() = cmp->deinitFp;
-        if (fp != nullptr) {
-            (inst->*fp)();
-        }
-        return 0;
+        return cmp->invokeLifecycleMethod("deinit", cmp->deinitFp);
     };
 
     celix_dmComponent_setCallbacks(this->cComponent(), cInit, cStart, cStop, cDeinit);
@@ -354,9 +359,14 @@ Component<T>& Component<T>::setCallbacks(
 
 template<class T>
 Component<T>& Component<T>::removeCallbacks() {
-
     celix_dmComponent_setCallbacks(this->cComponent(), nullptr, nullptr, nullptr, nullptr);
+    return *this;
+}
 
+template<class T>
+Component<T>& Component<T>::addContext(std::shared_ptr<void> context) {
+    std::lock_guard<std::mutex> lock{mutex};
+    componentContexts.template emplace_back(std::move(context));
     return *this;
 }
 

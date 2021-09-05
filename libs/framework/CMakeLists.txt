@@ -19,6 +19,8 @@ find_package(ZLIB REQUIRED)
 find_package(UUID REQUIRED)
 find_package(CURL REQUIRED)
 
+set(CMAKE_CXX_STANDARD 11) #Note that the Celix framework C++ (header only) library uses C++11 only
+
 set(SOURCES
         src/attribute.c src/bundle.c src/bundle_archive.c src/bundle_cache.c
         src/bundle_context.c src/bundle_revision.c src/capability.c src/celix_errorcodes.c
@@ -56,3 +58,5 @@ add_library(Celix::framework ALIAS framework)
 if (ENABLE_TESTING)
     add_subdirectory(gtest)
 endif()
+
+add_subdirectory(benchmark)

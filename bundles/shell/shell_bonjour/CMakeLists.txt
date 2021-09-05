@@ -28,6 +28,7 @@ if (SHELL_BONJOUR)
 
 	add_celix_bundle(bonjour_shell
 		VERSION "1.0.0"
+		FILENAME celix_bonjour_shell
 		GROUP "Celix/Shell"
 		SOURCES
 		 	private/src/activator.c

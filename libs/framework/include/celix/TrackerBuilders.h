@@ -68,9 +68,12 @@ namespace celix {
          * @brief Adds a add callback function, which will be called - on the Celix event thread -
          * when a new service match is found.
          *
-         * The add callback function has 1 argument: A shared ptr to the added service.
+         * @tparam F The callback function type. Signature should be compatible with std::function<void(const std::share_ptr<I>& service)>
+         * @param add The callback function which will be called when a new service is found.
+         * @return The ServiceTrackerBuilder reference for chaining (Fluent API).
          */
-        ServiceTrackerBuilder& addAddCallback(std::function<void(std::shared_ptr<I>)> add) {
+        template<typename F>
+        ServiceTrackerBuilder& addAddCallback(F&& add) {
             //TODO improve capture with move when for C++14 is available
             addCallbacks.emplace_back([add](const std::shared_ptr<I>& svc, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&) {
                 add(svc);
@@ -78,16 +81,18 @@ namespace celix {
             return *this;
         }
 
-        /**
-         * @brief Adds a add callback function, which will be called - on the Celix event thread -
-         * when a new service match is found.
-         *
-         * The add callback function has 2 arguments:
-         *  - A shared ptr to the added service.
-         *  - A shared ptr to the added service properties.
-         */
-        ServiceTrackerBuilder& addAddWithPropertiesCallback(std::function<void(std::shared_ptr<I>, const std::shared_ptr<const celix::Properties>&)> add) {
-            //TODO improve capture with move when for C++14 is available
+         /**
+          * @brief Adds a add callback function, which will be called - on the Celix event thread -
+          * when a new service match is found.
+          *
+          *
+          * @tparam F The callback function type. Signature should be compatible with std::function<void(const std::share_ptr<I>& service, const std::shared_ptr<const celix::Properties>& properties)>
+          * @param add The callback function which will be called when a new service is found.
+          * @return The ServiceTrackerBuilder reference for chaining (Fluent API).
+          */
+        template<typename F>
+        ServiceTrackerBuilder& addAddWithPropertiesCallback(F&& add) {
+            //TODO improve capture with forward when for C++14 is available
             addCallbacks.emplace_back([add](const std::shared_ptr<I>& svc, const std::shared_ptr<const celix::Properties>& props, const std::shared_ptr<const celix::Bundle>&) {
                 add(svc, props);
             });
@@ -98,12 +103,13 @@ namespace celix {
          * @brief Adds a add callback function, which will be called - on the Celix event thread -
          * when a new service match is found.
          *
-         * The add callback function has 3 arguments:
-         *  - A shared ptr to the added service.
-         *  - A shared ptr to the added service properties.
-         *  - A shared ptr to the bundle owning the added service.
+         * @tparam F The callback function type. Signature should be compatible with std::function<void(const std::share_ptr<I>& service, const std::shared_ptr<const celix::Properties>& properties, const std::shared_ptr<const celix::Bundle>&)>
+         * @param add The callback function which will be called when a new service is found.
+         * @return The ServiceTrackerBuilder reference for chaining (Fluent API).
          */
-        ServiceTrackerBuilder& addAddWithOwnerCallback(std::function<void(std::shared_ptr<I>, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&)> add) {
+        template<typename F>
+        ServiceTrackerBuilder& addAddWithOwnerCallback(F&& add) {
+            //TODO improve capture with forward when for C++14 is available
             addCallbacks.emplace_back(std::move(add));
             return *this;
         }
@@ -112,9 +118,12 @@ namespace celix {
          * @brief Adds a remove callback function, which will be called - on the Celix event thread -
          * when a service match is being removed.
          *
-         * The remove callback function has 1 arguments: A shared ptr to the removing service.
+         * @tparam F The callback function type. Signature should be compatible with std::function<void(const std::share_ptr<I>& service)>
+         * @param remove The callback function which will be called when a added service is being removed.
+         * @return The ServiceTrackerBuilder reference for chaining (Fluent API).
          */
-        ServiceTrackerBuilder& addRemCallback(std::function<void(std::shared_ptr<I>)> remove) {
+        template<typename F>
+        ServiceTrackerBuilder& addRemCallback(F&& remove) {
             //TODO improve capture with move when for C++14 is available
             remCallbacks.emplace_back([remove](const std::shared_ptr<I>& svc, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&) {
                 remove(svc);
@@ -126,11 +135,12 @@ namespace celix {
          * @brief Adds a remove callback function, which will be called - on the Celix event thread -
          * when a service match is being removed.
          *
-         * The remove callback function has 2 arguments:
-         *  - A shared ptr to the removing service.
-         *  - A shared ptr to the removing service properties.
+         * @tparam F The callback function type. Signature should be compatible with std::function<void(const std::share_ptr<I>& service, const std::shared_ptr<const celix::Properties>& properties)>
+         * @param remove The callback function which will be called when a added service is being removed.
+         * @return The ServiceTrackerBuilder reference for chaining (Fluent API).
          */
-        ServiceTrackerBuilder& addRemWithPropertiesCallback(std::function<void(std::shared_ptr<I>, const std::shared_ptr<const celix::Properties>&)> remove) {
+        template<typename F>
+        ServiceTrackerBuilder& addRemWithPropertiesCallback(F&& remove) {
             //TODO improve capture with move when for C++14 is available
             remCallbacks.emplace_back([remove](const std::shared_ptr<I>& svc, const std::shared_ptr<const celix::Properties>& props, const std::shared_ptr<const celix::Bundle>&) {
                 remove(svc, props);
@@ -142,12 +152,12 @@ namespace celix {
          * @brief Adds a remove callback function, which will be called - on the Celix event thread -
          * when a service match is being removed.
          *
-         * The remove callback function has 3 arguments:
-         *  - A shared ptr to the removing service.
-         *  - A shared ptr to the removing service properties.
-         *  - A shared ptr to the bundle owning the removing service.
+         * @tparam F The callback function type. Signature should be compatible with std::function<void(const std::share_ptr<I>& service, const std::shared_ptr<const celix::Properties>& properties, const std::shared_ptr<const celix::Bundle>&)>
+         * @param remove The callback function which will be called when a added service is being removed.
+         * @return The ServiceTrackerBuilder reference for chaining (Fluent API).
          */
-        ServiceTrackerBuilder& addRemWithOwnerCallback(std::function<void(const std::shared_ptr<I>&, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&)> remove) {
+        template<typename F>
+        ServiceTrackerBuilder& addRemWithOwnerCallback(F&& remove) {
             remCallbacks.emplace_back(std::move(remove));
             return *this;
         }
@@ -157,10 +167,12 @@ namespace celix {
          * when there is a new highest ranking service match.
          * This can can also be an empty match (nullptr).
          *
-         * The set callback function has a single argument: A shared ptr to the highest
-         * ranking service match or nullptr.
+         * @tparam F The callback function type. Signature should be compatible with std::function<void(const std::share_ptr<I>& service)>
+         * @param set The callback function which will be called when a new highest ranking service is found or when the last matching service is being removed (svc and properties will be a nullptr).
+         * @return The ServiceTrackerBuilder reference for chaining (Fluent API).
          */
-        ServiceTrackerBuilder& addSetCallback(std::function<void(std::shared_ptr<I>)> set) {
+        template<typename F>
+        ServiceTrackerBuilder& addSetCallback(F&& set) {
             //TODO improve capture with move when for C++14 is available
             setCallbacks.emplace_back([set](const std::shared_ptr<I>& svc, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&) {
                 set(svc);
@@ -173,11 +185,12 @@ namespace celix {
          * when there is a new highest ranking service match.
          * This can can also be an empty match (nullptr).
          *
-         * The set callback function has 2 arguments:
-         *  - A shared ptr to the highest ranking service match or nullptr.
-         *  - A const shared ptr to the set service properties or nullptr (if the service is nullptr).
+         * @tparam F The callback function type. Signature should be compatible with std::function<void(const std::share_ptr<I>& service, const std::shared_ptr<const celix::Properties>& properties)>
+         * @param set The callback function which will be called when a new highest ranking service is found or when the last matching service is being removed (svc and properties will be a nullptr).
+         * @return The ServiceTrackerBuilder reference for chaining (Fluent API).
          */
-        ServiceTrackerBuilder& addSetWithPropertiesCallback(std::function<void(std::shared_ptr<I>, const std::shared_ptr<const celix::Properties>&)> set) {
+        template<typename F>
+        ServiceTrackerBuilder& addSetWithPropertiesCallback(F&& set) {
             //TODO improve capture with move when for C++14 is available
             setCallbacks.emplace_back([set](const std::shared_ptr<I>& svc, const std::shared_ptr<const celix::Properties>& props, const std::shared_ptr<const celix::Bundle>&) {
                 set(svc, std::move(props));
@@ -188,15 +201,14 @@ namespace celix {
         /**
          * @brief Adds a set callback function, which will be called - on the Celix event thread -
          * when there is a new highest ranking service match.
-         *
          * This can can also be an empty match (nullptr).
          *
-         * The set callback function has 3 arguments:
-         *  - A shared ptr to the highest ranking service match or nullptr.
-         *  - A const shared ptr to the set service properties or nullptr (if the service is nullptr).
-         *  - A const shared ptr to the bundle owning the set service or nullptr (if the service is nullptr).
+         * @tparam F The callback function type. Signature should be compatible with std::function<void(const std::share_ptr<I>& service, const std::shared_ptr<const celix::Properties>& properties, const std::shared_ptr<const celix::Bundle>&)>>
+         * @param set The callback function which will be called when a new highest ranking service is found or when the last matching service is being removed (svc and properties will be a nullptr).
+         * @return The ServiceTrackerBuilder reference for chaining (Fluent API).
          */
-        ServiceTrackerBuilder& addSetWithOwner(std::function<void(std::shared_ptr<I>, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&)> set) {
+        template<typename F>
+        ServiceTrackerBuilder& addSetWithOwner(F&& set) {
             setCallbacks.emplace_back(std::move(set));
             return *this;
         }
@@ -208,9 +220,6 @@ namespace celix {
 //            //TODO update -> vector of ordered (svc rank) services
 //            return *this;
 //        }
-
-        //TODO add function to register done call backs -> addOnStarted / addOnStopped (inheritance?)
-
 
         /**
          * @brief "Builds" the service tracker and returns a ServiceTracker.

@@ -128,6 +128,7 @@ namespace celix { namespace dm {
         std::mutex mutex{}; //protects below
         std::vector<std::shared_ptr<BaseServiceDependency>> dependencies{};
         std::vector<std::shared_ptr<BaseProvidedService>> providedServices{};
+        std::vector<std::shared_ptr<void>> componentContexts{};
     };
 
 
@@ -327,12 +328,20 @@ namespace celix { namespace dm {
                 int (T::*stop)(),
                 int (T::*deinit)()
         );
+
         /**
          * Remove the previously registered callbacks for the component life cycle control
          *
          * @return the DM Component reference for chaining (fluent API)
          */
         Component<T>& removeCallbacks();
+
+
+        /**
+         * @brief Add context to the component. This can be used to ensure a object lifespan at least
+         * matches that of the component.
+         */
+        Component<T>& addContext(std::shared_ptr<void>);
 
         /**
          * Build the component.
@@ -354,6 +363,12 @@ namespace celix { namespace dm {
          * Can be called on the Celix event thread.
          */
         Component<T>& buildAsync();
+    private:
+        /**
+         * @brief try to invoke a lifecycle method (init, start, stop and deinit) and catch and log a possible exception.
+         * @returns 0 if no exception occurred else -1.
+         */
+        int invokeLifecycleMethod(const std::string& methodName, void (T::*lifecycleMethod)());
     };
 }}
 

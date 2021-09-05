@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   coverage:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
       - name: Checkout source code
         uses: actions/checkout@v2
@@ -23,7 +23,7 @@ jobs:
             libxml2-dev \
             libczmq-dev \
             libcpputest-dev \
-            libzip-dev \
+            rapidjson-dev \
             lcov
       - name: Build
         env:
@@ -35,7 +35,7 @@ jobs:
           mkdir build
           cd build
           cmake -DCMAKE_BUILD_TYPE=Debug ${BUILD_OPTIONS} ..
-          make -j
+          make -j $(nproc)
       - name: Coverage
         run: |
           cd $GITHUB_WORKSPACE/build

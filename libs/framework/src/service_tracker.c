@@ -42,13 +42,6 @@ static celix_status_t serviceTracker_invokeAddService(service_tracker_t *tracker
 static celix_status_t serviceTracker_invokeRemovingService(service_tracker_t *tracker, celix_tracked_entry_t *tracked);
 static void serviceTracker_checkAndInvokeSetService(void *handle, void *highestSvc, const properties_t *props, const bundle_t *bnd);
 
-
-#ifdef CELIX_SERVICE_TRACKER_USE_SHUTDOWN_THREAD
-static void serviceTracker_addInstanceFromShutdownList(celix_service_tracker_instance_t *instance);
-static void serviceTracker_remInstanceFromShutdownList(celix_service_tracker_instance_t *instance);
-static void* shutdownServiceTrackerInstanceHandler(void *data);
-#endif
-
 static void serviceTracker_serviceChanged(void *handle, celix_service_event_t *event);
 
 

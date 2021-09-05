@@ -21,7 +21,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
-#include <celix_api.h>
 #include <pubsub_utils.h>
 #include <assert.h>
 #include <pubsub_admin_metrics.h>
@@ -37,7 +36,6 @@
 #include "pubsub_listeners.h"
 #include "pubsub_topology_manager.h"
 #include "pubsub_admin.h"
-#include "../../pubsub_admin_udp_mc/src/pubsub_udpmc_topic_sender.h"
 
 #define PSTM_PSA_HANDLING_SLEEPTIME_IN_SECONDS       30L
 
@@ -220,6 +218,9 @@ void pubsub_topologyManager_psaAdded(void *handle, void *svc, const celix_proper
                       "A new PSA is added after at least one active publisher/provided. \
                 It is preferred that all PSA are started before publiser/subscriber are started!\n\
                 Current topic/sender count is %i", needsRematchCount);
+        celixThreadMutex_lock(&manager->psaHandling.mutex);
+        celixThreadCondition_broadcast(&manager->psaHandling.cond);
+        celixThreadMutex_unlock(&manager->psaHandling.mutex);
     }
 
 }
@@ -301,6 +302,10 @@ void pubsub_topologyManager_psaRemoved(void *handle, void *svc __attribute__((un
         celix_properties_destroy(endpoint);
     }
     celix_arrayList_destroy(revokedEndpoints);
+
+    celixThreadMutex_lock(&manager->psaHandling.mutex);
+    celixThreadCondition_broadcast(&manager->psaHandling.cond);
+    celixThreadMutex_unlock(&manager->psaHandling.mutex);
 }
 
 void pubsub_topologyManager_subscriberAdded(void *handle, void *svc __attribute__((unused)), const celix_properties_t *props, const celix_bundle_t *bnd) {
@@ -533,6 +538,8 @@ void pubsub_topologyManager_publisherTrackerRemoved(void *handle, const celix_se
     if (scopeFromFilter != NULL) {
         free(scopeFromFilter);
     }
+
+    //NOTE not waking up psaHandling thread, topic sender does not need to be removed immediately.
 }
 
 celix_status_t pubsub_topologyManager_addDiscoveredEndpoint(void *handle, const celix_properties_t *endpoint) {
@@ -925,15 +932,13 @@ static void pstm_setupTopicSenders(pubsub_topology_manager_t *manager) {
                 psa->matchPublisher(psa->handle, entry->bndId, entry->publisherFilter, &topicProps, &score, &serSvcId,
                                     &protSvcId);
                 if (score > highestScore) {
-                    if (topicPropertiesForHighestMatch != NULL) {
-                        celix_properties_destroy(topicPropertiesForHighestMatch);
-                    }
+                    celix_properties_destroy(topicPropertiesForHighestMatch);
                     highestScore = score;
                     serializerSvcId = serSvcId;
                     protocolSvcId = protSvcId;
                     selectedPsaSvcId = svcId;
                     topicPropertiesForHighestMatch = topicProps;
-                } else if (topicProps != NULL) {
+                } else {
                     celix_properties_destroy(topicProps);
                 }
             }
@@ -954,6 +959,14 @@ static void pstm_setupTopicSenders(pubsub_topology_manager_t *manager) {
                 setupEntry->selectedSerializerSvcId = serializerSvcId;
                 setupEntry->selectedProtocolSvcId = protocolSvcId;
                 celix_arrayList_add(setupEntries, setupEntry);
+                celix_logHelper_debug(manager->loghelper, "Found PSA match for publisher with scope/topic %s/%s. PSA svc id is %li", entry->scope, entry->topic, selectedPsaSvcId);
+            } else {
+                celix_logHelper_trace(manager->loghelper,
+                                      "No PSA match for publisher with scope/topic %s/%s. Provided filter %s",
+                                      entry->scope,
+                                      entry->topic,
+                                      celix_filter_getFilterString(entry->publisherFilter));
+                celix_properties_destroy(topicPropertiesForHighestMatch);
             }
         }
     }
@@ -983,6 +996,8 @@ static void pstm_setupTopicSenders(pubsub_topology_manager_t *manager) {
             celixThreadMutex_unlock(&manager->topicSenders.mutex);
         } else {
             celix_logHelper_warning(manager->loghelper, "Cannot setup TopicSender for %s/%s\n", setupEntry->scope == NULL ? "(null)" : setupEntry->scope, setupEntry->topic);
+            celix_properties_destroy(setupEntry->topicProperties);
+            celix_properties_destroy(setupEntry->endpointResult);
         }
         free(setupEntry->scope);
         free(setupEntry->topic);
@@ -1057,6 +1072,12 @@ static void pstm_setupTopicReceivers(pubsub_topology_manager_t *manager) {
                 setupEntry->selectedSerializerSvcId = serializerSvcId;
                 setupEntry->selectedProtocolSvcId = protocolSvcId;
                 celix_arrayList_add(setupEntries, setupEntry);
+                celix_logHelper_debug(manager->loghelper, "Found PSA match for subscriber with scope/topic %s/%s. PSA svc id is %li", entry->scope, entry->topic, selectedPsaSvcId);
+            } else {
+                celix_logHelper_trace(manager->loghelper,
+                                      "No PSA match for subscriber with scope/topic %s/%s.",
+                                      entry->scope,
+                                      entry->topic);
             }
         }
     }
@@ -1324,7 +1345,6 @@ static celix_status_t pubsub_topologyManager_metrics(pubsub_topology_manager_t *
                 fprintf(os, "      |- serialization failed = %li\n", sm->msgMetrics[j].nrOfSerializationErrors);
                 fprintf(os, "      |- average serialization time = %f s\n", sm->msgMetrics[j].averageSerializationTimeInSeconds);
                 fprintf(os, "      |- average time between messages = %f s\n", sm->msgMetrics[j].averageTimeBetweenMessagesInSeconds);
-                //TODO last msg send
             }
         }
         for (int k = 0; k < celix_arrayList_size(metrics->receivers); ++k) {

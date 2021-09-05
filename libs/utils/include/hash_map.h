@@ -75,6 +75,8 @@ UTILS_EXPORT void *hashMap_put(hash_map_pt map, void *key, void *value);
 
 UTILS_EXPORT void *hashMap_remove(hash_map_pt map, const void *key);
 
+UTILS_EXPORT void *hashMap_removeFreeKey(hash_map_pt map, const void *key);
+
 UTILS_EXPORT void hashMap_clear(hash_map_pt map, bool freeKey, bool freeValue);
 
 UTILS_EXPORT bool hashMap_containsValue(hash_map_pt map, const void *value);

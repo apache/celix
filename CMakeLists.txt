@@ -48,7 +48,8 @@ set(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -fPIC ${CMAKE_C_FLAGS}")
 set(CMAKE_C_FLAGS "-Wall -Werror ${CMAKE_C_FLAGS}")
 
 # Set C++ specific flags
-set(CMAKE_CXX_FLAGS "-std=c++11 -fno-rtti ${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_STANDARD 17) #test code and newer C++ bundles can be C++17. The Celix::framework and Celix::CxxShell is still C++11
+set(CMAKE_CXX_FLAGS "-fno-rtti ${CMAKE_CXX_FLAGS}")
 set(CMAKE_CXX_FLAGS "-Wall -Werror -Wextra -Weffc++ ${CMAKE_CXX_FLAGS}")
 
 if(APPLE)
@@ -142,6 +143,8 @@ if (CELIX_ADD_OPENSSL_DEP)
 endif ()
 
 option(CELIX_USE_ZIP_INSTEAD_OF_JAR "Default Celix cmake command will use jar to package bundle (if found). This option enforces Celix to use zip instead." OFF)
+
+option(CELIX_CXX "Build C++ libraries and bundles. Note for tests C++ is always used." ON)
 
 #Libraries and Launcher
 add_subdirectory(libs)

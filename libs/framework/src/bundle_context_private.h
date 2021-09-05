@@ -47,7 +47,7 @@ typedef struct celix_bundle_context_service_tracker_entry {
 	celix_service_tracker_t* tracker;
     void *trackerCreatedCallbackData;
     void (*trackerCreatedCallback)(void *trackerCreatedCallbackData);
-
+    bool isFreeFilterNeeded;
 
     //used for sync
     long createEventId;

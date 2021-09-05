@@ -40,11 +40,12 @@ public:
     celix_properties_t *properties = nullptr;
 
     CelixBundleContextServicesTests() {
-        properties = properties_create();
-        properties_set(properties, "LOGHELPER_ENABLE_STDOUT_FALLBACK", "true");
-        properties_set(properties, "org.osgi.framework.storage.clean", "onFirstInit");
-        properties_set(properties, "org.osgi.framework.storage", ".cacheBundleContextTestFramework");
-        properties_set(properties, "CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "trace");
+        properties = celix_properties_create();
+        celix_properties_set(properties, "LOGHELPER_ENABLE_STDOUT_FALLBACK", "true");
+        celix_properties_set(properties, "org.osgi.framework.storage.clean", "onFirstInit");
+        celix_properties_set(properties, "org.osgi.framework.storage", ".cacheBundleContextTestFramework");
+        celix_properties_set(properties, "CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "trace");
+        celix_properties_setLong(properties, CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE,  256); //ensure that the floodEventLoopTest overflows the static event queue size
 
         fw = celix_frameworkFactory_createFramework(properties);
         ctx = framework_getContext(fw);
@@ -1209,15 +1210,6 @@ TEST_F(CelixBundleContextServicesTests, unregisterSvcBeforeAsyncRegistration) {
             (void*)&cbData,
             [](void *data) {
                 auto cbd = static_cast<struct callback_data*>(data);
-
-                celix_service_registration_options_t opts{};
-                opts.serviceName = "test-service";
-                opts.svc = (void*)0x42;
-                opts.asyncData = data;
-                opts.asyncCallback = [](void *data, long /*svcId*/) {
-                    auto* cbd = static_cast<struct callback_data*>(data);
-                    cbd->count.fetch_add(1);
-                };
 
                 //note register async. So a event on the event queue, but because this is done on the event queue this cannot be completed
                 long svcId = celix_bundleContext_registerServiceAsync(cbd->ctx, (void*)0x42, "test-service", nullptr);

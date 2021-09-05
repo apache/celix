@@ -77,8 +77,25 @@ TEST_F(CxxBundleContextTestSuite, RegisterServiceTest) {
         EXPECT_GE(svcId, 0L);
     }
 
-    ctx->waitForEvents();
+    ctx->waitIfAbleForEvents();
     svcId = ctx->findService<TestInterface>();
+    EXPECT_EQ(svcId, -1L);
+}
+
+TEST_F(CxxBundleContextTestSuite, RegisterServiceWithNameTest) {
+    long svcId = ctx->findServiceWithName("foo");
+    EXPECT_EQ(svcId, -1L);
+
+    {
+        auto impl = std::make_shared<TestImplementation>();
+        auto svcReg = ctx->registerService<TestInterface>(impl, "foo").build();
+        svcReg->wait();
+        svcId = ctx->findServiceWithName("foo");
+        EXPECT_GE(svcId, 0L);
+    }
+
+    ctx->waitForEvents();
+    svcId = ctx->findServiceWithName("foo");
     EXPECT_EQ(svcId, -1L);
 }
 
@@ -87,7 +104,6 @@ TEST_F(CxxBundleContextTestSuite, RegisterCServiceTest) {
     auto svcReg = ctx->registerService<CInterface>(svc).build();
     svcReg->wait();
 
-    std::cout << "Name is " << celix::typeName<CInterface>() << std::endl;
     long svcId = ctx->findService<CInterface>();
     EXPECT_GE(svcId, 0L);
 
@@ -221,21 +237,51 @@ TEST_F(CxxBundleContextTestSuite, TrackServicesTest) {
 
     std::atomic<int> count{0};
     auto tracker4 = ctx->trackServices<CInterface>()
-            .addAddCallback([&count](const std::shared_ptr<CInterface>&) {
+            .addAddCallback([&count](const std::shared_ptr<CInterface>& svc) {
+                EXPECT_TRUE(svc);
                 count += 1;
             })
-            .addRemCallback([&count](const std::shared_ptr<CInterface>&) {
+            .addRemCallback([&count](const std::shared_ptr<CInterface>& svc) {
+                EXPECT_TRUE(svc);
                 count += 1;
             })
             .build();
-    tracker4->wait();
-    EXPECT_EQ(2, count); //2x add called
+    auto tracker5 = ctx->trackServices<CInterface>()
+            .addAddWithPropertiesCallback([&count](std::shared_ptr<CInterface> svc /*note not the default expect const std::sharer_ptr<I>&*/, const std::shared_ptr<const celix::Properties>& props) {
+                EXPECT_TRUE(svc);
+                EXPECT_TRUE(props);
+                count += 1;
+            })
+            .addRemWithPropertiesCallback([&count](const std::shared_ptr<CInterface>& svc, const std::shared_ptr<const celix::Properties>& props) {
+                EXPECT_TRUE(svc);
+                EXPECT_TRUE(props);
+                count += 1;
+            })
+            .build();
+    auto tracker6 = ctx->trackServices<CInterface>()
+            .addAddWithOwnerCallback([&count](const std::shared_ptr<CInterface>& svc, std::shared_ptr<const celix::Properties> props /*note not the default expected const ref*/, std::shared_ptr<const celix::Bundle> bundle /*note not the default expected const ref*/) {
+                EXPECT_TRUE(svc);
+                EXPECT_TRUE(props);
+                EXPECT_TRUE(bundle);
+                count += 1;
+            })
+            .addRemWithOwnerCallback([&count](const std::shared_ptr<CInterface>& svc, const std::shared_ptr<const celix::Properties>& props, const std::shared_ptr<const celix::Bundle>& bundle) {
+                EXPECT_TRUE(svc);
+                EXPECT_TRUE(props);
+                EXPECT_TRUE(bundle);
+                count += 1;
+            })
+            .build();
+    ctx->waitForEvents();
+    EXPECT_EQ(6, count); //2x3 add called
     svcReg1->unregister();
     svcReg1->wait();
-    EXPECT_EQ(3, count); //2x add called, 1x rem called
+    EXPECT_EQ(9, count); //2x3 add called, 1x3 rem called
     tracker4->close();
-    tracker4->wait();
-    EXPECT_EQ(4, count); //2x add called, 2x rem called (1 rem call for closing the tracker)
+    tracker5->close();
+    tracker6->close();
+    ctx->waitForEvents();
+    EXPECT_EQ(12, count); //2x3 add called, 2x3 rem called (1 rem call for closing the tracker)
 
     EXPECT_EQ(1, tracker->getServiceCount()); //only 1 left
 
@@ -342,10 +388,13 @@ TEST_F(CxxBundleContextTestSuite, OnRegisterAndUnregisterCallbacks) {
 }
 
 TEST_F(CxxBundleContextTestSuite, InstallCxxBundle) {
+    EXPECT_EQ(0, ctx->listBundleIds().size());
+
     std::string loc{SIMPLE_CXX_BUNDLE_LOC};
     ASSERT_FALSE(loc.empty());
     long bndId = ctx->installBundle(loc);
     EXPECT_GE(bndId, 0);
+    EXPECT_EQ(1, ctx->listBundleIds().size());
 }
 
 TEST_F(CxxBundleContextTestSuite, LoggingUsingContext) {
@@ -543,4 +592,65 @@ TEST_F(CxxBundleContextTestSuite, setServicesWithTrackerWhenMultipleRegistration
     //TODO improve this. For now closing a tracker will inject other service before getting to nullptr.
     //Also look into why this is not happening in the C service tracker test.
     EXPECT_EQ(3, count.load());
+}
+
+TEST_F(CxxBundleContextTestSuite, WaitForAllEvents) {
+    long svcId = ctx->findService<TestInterface>();
+    EXPECT_EQ(svcId, -1L);
+
+    {
+        auto impl = std::make_shared<TestImplementation>();
+        auto svcReg = ctx->registerService<TestInterface>(impl).build();
+        svcReg->wait();
+        svcId = ctx->findService<TestInterface>();
+        EXPECT_GE(svcId, 0L);
+    }
+
+    ctx->waitIfAbleForAllEvents();
+    svcId = ctx->findService<TestInterface>();
+    EXPECT_EQ(svcId, -1L);
+}
+
+
+TEST_F(CxxBundleContextTestSuite, CheckStandardServiceProperties) {
+    /*
+     * OSGi 7 specifies the following service properties which must be set by the framework:
+     *  - objectClass (CELIX_FRAMEWORK_SERVICE_NAME)
+     *  - service.id (CELIX_FRAMEWORK_SERVICE_ID)
+     *  - service.bundleid (CELIX_FRAMEWORK_SERVICE_BUNDLE_ID)
+     *  - service.scope (CELIX_FRAMEWORK_SERVICE_SCOPE)
+     */
+
+    auto svcReg = ctx->registerService<TestInterface>(std::make_shared<TestImplementation>()).build();
+    bool called = ctx->useService<TestInterface>()
+        .addUseCallback([](TestInterface& /*svc*/, const celix::Properties& props) {
+            EXPECT_FALSE(props.get(celix::SERVICE_NAME).empty());
+            EXPECT_GE(props.getAsLong(celix::SERVICE_BUNDLE_ID, -1), 0);
+            EXPECT_EQ(props.get(celix::SERVICE_SCOPE), std::string{celix::SERVICE_SCOPE_SINGLETON});
+        })
+        .build();
+    EXPECT_TRUE(called);
+
+    //note using c api, because C++ api does not yet support registering svc factories
+    celix_service_factory_t factory{nullptr, nullptr, nullptr};
+    factory.getService = [](void */*handle*/, const celix_bundle_t */*requestingBundle*/, const celix_properties_t */*svcProperties*/) -> void* {
+        //dummy svc
+        return (void*)0x42;
+    };
+    factory.ungetService = [](void */*handle*/, const celix_bundle_t */*requestingBundle*/, const celix_properties_t */*svcProperties*/) {
+        //nop
+    };
+    auto svcId = celix_bundleContext_registerServiceFactory(ctx->getCBundleContext(), &factory, "TestInterfaceFactory", nullptr);
+    EXPECT_GE(svcId, 0);
+
+    called = ctx->useService<TestInterface>("TestInterfaceFactory")
+            .addUseCallback([](TestInterface& /*svc*/, const celix::Properties& props) {
+                EXPECT_FALSE(props.get(celix::SERVICE_NAME).empty());
+                EXPECT_GE(props.getAsLong(celix::SERVICE_BUNDLE_ID, -1), 0);
+                EXPECT_EQ(props.get(celix::SERVICE_SCOPE), std::string{celix::SERVICE_SCOPE_BUNDLE});
+            })
+            .build();
+    EXPECT_TRUE(called);
+
+    celix_bundleContext_unregisterService(ctx->getCBundleContext(), svcId);
 }

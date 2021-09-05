@@ -51,6 +51,7 @@ if (SHELL)
         SYMBOLIC_NAME "apache_celix_c_shell"
         VERSION "2.1.0"
         NAME "Apache Celix C Shell"
+		FILENAME celix_shell
 		GROUP "Celix/Shell"
         SOURCES
 			src/c_shell_activator.c
@@ -64,25 +65,26 @@ if (SHELL)
 	endif ()
 	install_celix_bundle(shell EXPORT celix COMPONENT shell)
 
-
-	add_celix_bundle(ShellCxx
-		SYMBOLIC_NAME "apache::celix::CxxShell"
-		VERSION "2.1.0"
-		NAME "Apache Celix CXX Shell"
-		GROUP "Celix/Shell"
-		SOURCES
-			src/Shell.cc
-	)
-	target_include_directories(ShellCxx PRIVATE src)
-	target_link_libraries(ShellCxx PRIVATE shell_commands Celix::shell_api Celix::log_service_api Celix::log_helper)
-	install_celix_bundle(ShellCxx EXPORT celix COMPONENT shell)
-
-
 	#Setup target aliases to match external usage
 	add_library(Celix::shell_api ALIAS shell_api)
 	add_library(Celix::shell ALIAS shell)
-	add_library(Celix::ShellCxx ALIAS ShellCxx)
 
+	if (CELIX_CXX)
+		set(CMAKE_CXX_STANDARD 11) #Note that the Celix::CxxShell uses C++11 only
+		add_celix_bundle(ShellCxx
+			SYMBOLIC_NAME "apache::celix::CxxShell"
+			VERSION "2.1.0"
+			NAME "Apache Celix CXX Shell"
+			FILENAME celix_ShellCxx
+			GROUP "Celix/Shell"
+			SOURCES
+				src/Shell.cc
+		)
+		target_include_directories(ShellCxx PRIVATE src)
+		target_link_libraries(ShellCxx PRIVATE shell_commands Celix::shell_api Celix::log_service_api Celix::log_helper)
+		install_celix_bundle(ShellCxx EXPORT celix COMPONENT shell)
+		add_library(Celix::ShellCxx ALIAS ShellCxx)
+	endif ()
 
 	if (ENABLE_TESTING)
 		add_subdirectory(test)

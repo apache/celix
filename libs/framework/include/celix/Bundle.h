@@ -35,7 +35,7 @@ namespace celix {
      */
     class Bundle {
     public:
-        explicit Bundle(celix_bundle_t *_cBnd) : cBnd{_cBnd, [](celix_bundle_t*){/*nop*/}}{}
+        explicit Bundle(celix_bundle_t* _cBnd) : cBnd{_cBnd, [](celix_bundle_t*){/*nop*/}}{}
 
         /**
          * @brief get the bundle id.
@@ -50,9 +50,10 @@ namespace celix {
          */
         std::string getEntry(const std::string& path) const {
             std::string result{};
-            const char* entry = celix_bundle_getEntry(cBnd.get(), path.c_str());
+            char* entry = celix_bundle_getEntry(cBnd.get(), path.c_str());
             if (entry != nullptr) {
                 result = std::string{entry};
+                free(entry);
             }
             return result;
         }

@@ -34,7 +34,7 @@ namespace celix {
      *
      * This property is set by the Celix framework when a service is registered.
      */
-    constexpr const char * const SERVICE_NAME = OSGI_FRAMEWORK_OBJECTCLASS;
+    constexpr const char * const SERVICE_NAME = CELIX_FRAMEWORK_SERVICE_NAME;
 
     /**
      * @brief Service property (named "service.id") identifying a service's registration number (of type long).
@@ -43,7 +43,36 @@ namespace celix {
      * The Celix framework assigns a unique value that is larger than all previously assigned values since the
      * Celix framework was started.
      */
-    constexpr const char * const SERVICE_ID = OSGI_FRAMEWORK_SERVICE_ID;
+    constexpr const char * const SERVICE_ID = CELIX_FRAMEWORK_SERVICE_ID;
+
+    /**
+     *  @brief Service property (named service.bundleid) identifying the bundle id of the bundle registering the service.
+     *
+     *  This property is set by the Celix framework when a service is registered. The value of this property must be of type Long.
+     */
+    constexpr const char * const SERVICE_BUNDLE_ID = CELIX_FRAMEWORK_SERVICE_BUNDLE_ID;
+
+    /**
+     * @brief Service property (named service.scope) identifying a service's scope.
+     *
+     * This property is set by the Framework when a service is registered.
+     * If the registered object implements service factory, then the value of this service property will be
+     * CELIX_FRAMEWORK_SERVICE_SCOPE_BUNDLE.
+     * Otherwise, the value of this service property will be CELIX_FRAMEWORK_SERVICE_SCOPE_SINGLETON.
+     *
+     * @warning Note that the scope "prototype" is not supported in Celix.
+     */
+    constexpr const char * const SERVICE_SCOPE = CELIX_FRAMEWORK_SERVICE_SCOPE;
+
+    /**
+     * @brief Service scope is singleton. All bundles using the service receive the same service object.
+     */
+    constexpr const char * const SERVICE_SCOPE_SINGLETON = CELIX_FRAMEWORK_SERVICE_SCOPE_SINGLETON;
+
+    /**
+     * @brief Service scope is bundle. Each bundle using the service receives a customized service object.
+     */
+    constexpr const char * const SERVICE_SCOPE_BUNDLE = CELIX_FRAMEWORK_SERVICE_SCOPE_BUNDLE;
 
     /**
      * @brief Service property (named "service.ranking") identifying a service's ranking number (of type long).
@@ -59,7 +88,7 @@ namespace celix {
      * The default ranking is 0. A service with a ranking of LONG_MAX is very likely to be returned as the default
      * service, whereas a service with a ranking of LONG_MIN is very unlikely to be returned.
      */
-    constexpr const char * const SERVICE_RANKING = OSGI_FRAMEWORK_SERVICE_RANKING;
+    constexpr const char * const SERVICE_RANKING = CELIX_FRAMEWORK_SERVICE_RANKING;
 
     /**
      * @brief Service property (named "service.version") specifying the optional version of a service.
@@ -82,7 +111,7 @@ namespace celix {
      *
      * If not specified ".cache" is used.
      */
-    constexpr const char * const FRAMEWORK_STORAGE = OSGI_FRAMEWORK_FRAMEWORK_STORAGE;
+    constexpr const char * const FRAMEWORK_STORAGE = CELIX_FRAMEWORK_FRAMEWORK_STORAGE;
 
     /**
      * @brief Celix framework environment property (named "org.osgi.framework.uuid") specifying the UUID for the
@@ -93,8 +122,21 @@ namespace celix {
      *
      * @note The Celix framework expects framework UUIDs to be unique per process.
      */
-    constexpr const char * const FRAMEWORK_UUID = OSGI_FRAMEWORK_FRAMEWORK_UUID;
+    constexpr const char * const FRAMEWORK_UUID = CELIX_FRAMEWORK_FRAMEWORK_UUID;
 
+    /**
+     * @brief Celix framework environment property (named "CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE") which configures
+     * the static event size queue used by the Celix framework.
+     *
+     * The Celix framework handle service events in a event thread. This thread uses a static allocated event queue with
+     * a fixed size and dynamic event queue if the static event queue is full.
+     * The decrease the memory footprint a smaller static event queue size can be used and to improve performance during
+     * heavy load a bigger static event queue size can be used.
+     *
+     * Default is CELIX_FRAMEWORK_DEFAULT_STATIC_EVENT_QUEUE_SIZE which is 1024, but can be override with a compiler
+     * define (same name).
+     */
+    constexpr const char * const FRAMEWORK_STATIC_EVENT_QUEUE_SIZE = CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE;
 
     /**
      * @brief Celix framework environment property (named "CELIX_AUTO_START_0") which specified a (ordered) space
@@ -161,4 +203,12 @@ namespace celix {
      *
      */
     constexpr const char * const LOAD_BUNDLES_WITH_NODELETE = CELIX_LOAD_BUNDLES_WITH_NODELETE;
+
+    /**
+     * @brief Celix framework environment property (named "org.osgi.framework.storage") specifying the cache
+     * directory used for the bundle caches.
+     *
+     * If not specified ".cache" is used.
+     */
+    constexpr const char * const FRAMEWORK_CACHE_DIR = CELIX_FRAMEWORK_FRAMEWORK_STORAGE;
 }

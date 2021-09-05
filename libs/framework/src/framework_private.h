@@ -41,7 +41,9 @@
 #include "celix_threads.h"
 #include "service_registry.h"
 
-#define CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE 256
+#ifndef CELIX_FRAMEWORK_DEFAULT_STATIC_EVENT_QUEUE_SIZE
+#define CELIX_FRAMEWORK_DEFAULT_STATIC_EVENT_QUEUE_SIZE 1024
+#endif
 
 typedef struct celix_framework_bundle_entry {
     celix_bundle_t *bnd;
@@ -155,7 +157,8 @@ struct celix_framework {
         celix_thread_t thread;
         celix_thread_mutex_t mutex; //protects below
         bool active;
-        celix_framework_event_t eventQueue[CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE]; //ring buffer
+        celix_framework_event_t* eventQueue; //ring buffer
+        int eventQueueCap;
         int eventQueueSize;
         int eventQueueFirstEntry;
         celix_array_list_t *dynamicEventQueue; //entry = celix_framework_event_t*. Used when the eventQueue is full

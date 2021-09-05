@@ -32,7 +32,6 @@ namespace celix {
         struct BundleActivatorData {
             long bndId;
             std::shared_ptr<celix::BundleContext> ctx;
-            std::shared_ptr<celix::dm::DependencyManager> dm;
             std::unique_ptr<I> bundleActivator;
         };
 
@@ -41,9 +40,8 @@ namespace celix {
         typename std::enable_if<std::is_constructible<I, std::shared_ptr<celix::BundleContext>>::value, celix_status_t>::type
         createActivator(celix_bundle_context_t *cCtx, void **out) {
             auto ctx = std::make_shared<celix::BundleContext>(cCtx);
-            auto dm = std::make_shared<celix::dm::DependencyManager>(cCtx);
             auto act = std::unique_ptr<I>(new I{ctx});
-            auto *data = new BundleActivatorData<I>{ctx->getBundleId(), std::move(ctx), std::move(dm), std::move(act)};
+            auto *data = new BundleActivatorData<I>{ctx->getBundleId(), std::move(ctx), std::move(act)};
             *out = (void *) data;
             return CELIX_SUCCESS;
         }
@@ -52,10 +50,10 @@ namespace celix {
         typename std::enable_if<std::is_constructible<I, std::shared_ptr<celix::dm::DependencyManager>>::value, celix_status_t>::type
         createActivator(celix_bundle_context_t *cCtx, void **out) {
             auto ctx = std::make_shared<celix::BundleContext>(cCtx);
-            auto dm = std::make_shared<celix::dm::DependencyManager>(cCtx);
+            auto dm = ctx->getDependencyManager();
             auto act = std::unique_ptr<I>(new I{dm});
             dm->start();
-            auto *data = new BundleActivatorData<I>{ctx->getBundleId(), std::move(ctx), std::move(dm), std::move(act)};
+            auto *data = new BundleActivatorData<I>{ctx->getBundleId(), std::move(ctx), std::move(act)};
             *out = (void *) data;
             return CELIX_SUCCESS;
         }
@@ -83,14 +81,15 @@ namespace celix {
         template<typename I>
         celix_status_t destroyActivator(void *userData) {
             auto *data = static_cast<BundleActivatorData<I> *>(userData);
+            data->bundleActivator.reset();
+            data->ctx->getDependencyManager()->clear();
+
+            auto bndId = data->bndId;
             std::weak_ptr<celix::BundleContext> ctx = data->ctx;
-            std::weak_ptr<celix::dm::DependencyManager> dm = data->dm;
-            data->bundleActivator = nullptr;
-            data->dm = nullptr;
-            data->ctx = nullptr;
-            waitForExpired(data->bndId, ctx, "celix::BundleContext", ctx);
-            waitForExpired(data->bndId, ctx, "celix::dm::DependencyManager", dm);
+            std::weak_ptr<celix::dm::DependencyManager> dm = data->ctx->getDependencyManager();
             delete data;
+            waitForExpired(bndId, ctx, "celix::BundleContext", ctx);
+            waitForExpired(bndId, ctx, "celix::dm::DependencyManager", dm);
             return CELIX_SUCCESS;
         }
     }

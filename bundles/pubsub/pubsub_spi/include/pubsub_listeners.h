@@ -20,8 +20,11 @@
 #ifndef PUBSUB_LISTENERS_H_
 #define PUBSUB_LISTENERS_H_
 
-#include "celix_properties.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
+#include "celix_properties.h"
 
 #define PUBSUB_DISCOVERED_ENDPOINT_LISTENER_SERVICE "pubsub_discovered_endpoint_listener"
 
@@ -48,5 +51,7 @@ struct pubsub_announce_endpoint_listener {
 
 typedef struct pubsub_announce_endpoint_listener pubsub_announce_endpoint_listener_t;
 
-
+#ifdef __cplusplus
+}
+#endif
 #endif /* PUBSUB_LISTENERS_H_ */

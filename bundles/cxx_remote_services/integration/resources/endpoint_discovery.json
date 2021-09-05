@@ -1,0 +1,15 @@
+{
+  "endpoints": [
+    {
+      "endpoint.id": "id-01",
+      "service.imported": true,
+      "service.imported.configs": [
+        "pubsub"
+      ],
+      "service.exported.interfaces": "ICalculator",
+      "endpoint.objectClass": "ICalculator",
+      "endpoint.topic": "test",
+      "endpoint.scope": "default"
+    }
+  ]
+}
