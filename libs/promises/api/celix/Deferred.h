@@ -24,11 +24,12 @@
 
 #include "celix/impl/SharedPromiseState.h"
 #include "celix/Promise.h"
+#include "celix/PromiseIllegalStateException.h"
 
 namespace celix {
 
     /**
-     * A Deferred Promise resolution.
+     * @brief A Deferred Promise resolution.
      *
      * <p>
      * Instances of this class can be used to create a {@link celix::Promise} that can be
@@ -104,7 +105,6 @@ namespace celix {
         void resolve(T&& value);
         void resolve(const T& value);
 
-        //TODO update to resolveWith with a return celix::Promise<void> ??
         /**
          * Resolve the Promise associated with this Deferred with the specified Promise.
          * <p/>
@@ -126,7 +126,7 @@ namespace celix {
          * associated Promise was already resolved when the specified Promise was resolved.
          */
         template<typename U>
-        void resolveWith(celix::Promise<U> with);
+        celix::Promise<void> resolveWith(celix::Promise<U> with);
 
     private:
         std::shared_ptr<celix::impl::SharedPromiseState<T>> state;
@@ -193,13 +193,8 @@ namespace celix {
          */
         void resolve();
 
-        //TODO return Promise<void>
         template<typename U>
-        void resolveWith(celix::Promise<U> with);
-
-        //TODO return Promise<void>
-        void resolveWith(celix::Promise<void> with);
-
+        celix::Promise<void> resolveWith(celix::Promise<U> with);
     private:
         std::shared_ptr<celix::impl::SharedPromiseState<void>> state;
     };
@@ -245,41 +240,44 @@ inline celix::Promise<void> celix::Deferred<void>::getPromise() {
 
 template<typename T>
 template<typename U>
-void celix::Deferred<T>::resolveWith(celix::Promise<U> with) {
-    with.onResolve([s = state, with] () mutable {
+celix::Promise<void> celix::Deferred<T>::resolveWith(celix::Promise<U> with) {
+    auto p = celix::impl::SharedPromiseState<void>::create(state->getExecutor(), state->getScheduledExecutor(), state->getPriority());
+    with.onResolve([s = state, with, p] () mutable {
+        bool resolved;
         if (with.isSuccessfullyResolved()) {
-            s->resolve(with.moveOrGetValue());
+            resolved = s->tryResolve(with.moveOrGetValue());
         } else {
-            s->fail(with.getFailure());
+            resolved = s->tryFail(with.getFailure());
+        }
+        if (resolved) {
+            p->tryResolve();
+        } else {
+            //s was already resolved
+            p->tryFail(std::make_exception_ptr(celix::PromiseIllegalStateException{}));
         }
     });
+    return celix::Promise<void>{p};
 }
 
 template<typename U>
-inline void celix::Deferred<void>::resolveWith(celix::Promise<U> with) {
-    with.onResolve([s = state, with] {
+inline celix::Promise<void> celix::Deferred<void>::resolveWith(celix::Promise<U> with) {
+    auto p = celix::impl::SharedPromiseState<void>::create(state->getExecutor(), state->getScheduledExecutor(), state->getPriority());
+    with.onResolve([s = state, with, p] {
+        bool resolved;
         if (with.isSuccessfullyResolved()) {
             with.getValue();
-            s->resolve();
+            resolved = s->tryResolve();
         } else {
-            s->fail(with.getFailure());
+            resolved = s->tryFail(with.getFailure());
+        }
+        if (resolved) {
+            p->tryResolve();
+        } else {
+            //s was already resolved
+            p->tryFail(std::make_exception_ptr(celix::PromiseIllegalStateException{}));
         }
     });
-}
-
-inline void celix::Deferred<void>::resolveWith(celix::Promise<void> with) {
-    with.onSuccess([s = state->getSelf()]() {
-        auto l = s.lock();
-        if (l) {
-            l->resolve();
-        }
-    });
-    with.onFailure([s = state->getSelf()](const std::exception& e) {
-        auto l = s.lock();
-        if (l) {
-            l->fail(e);
-        }
-    });
+    return celix::Promise<void>{p};
 }
 
 template<typename T>

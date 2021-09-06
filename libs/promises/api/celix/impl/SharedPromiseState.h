@@ -57,9 +57,9 @@ namespace celix::impl {
 
         void fail(const std::exception &e);
 
-        void tryResolve(T &&value);
+        bool tryResolve(T &&value);
 
-        void tryFail(std::exception_ptr e);
+        bool tryFail(std::exception_ptr e);
 
         // copy/move depending on situation
         T& getValue() &;
@@ -148,7 +148,7 @@ namespace celix::impl {
     public:
         static std::shared_ptr<SharedPromiseState<void>> create(std::shared_ptr<celix::IExecutor> _executor, std::shared_ptr<celix::IScheduledExecutor> _scheduledExecutor, int priority);
 
-        virtual ~SharedPromiseState() noexcept = default;
+        ~SharedPromiseState() noexcept = default;
 
         void resolve();
 
@@ -156,9 +156,9 @@ namespace celix::impl {
 
         void fail(const std::exception &e);
 
-        void tryResolve();
+        bool tryResolve();
 
-        void tryFail(std::exception_ptr e);
+        bool tryFail(std::exception_ptr e);
 
         bool getValue() const;
         std::exception_ptr getFailure() const;
@@ -342,39 +342,47 @@ inline void celix::impl::SharedPromiseState<void>::fail(const std::exception& e)
 }
 
 template<typename T>
-void celix::impl::SharedPromiseState<T>::tryResolve(T&& value) {
+bool celix::impl::SharedPromiseState<T>::tryResolve(T&& value) {
     std::unique_lock<std::mutex> lck{mutex};
     if (!done) {
         dataMoved = false;
         data = std::forward<T>(value);
         exp = nullptr;
         complete(lck);
+        return true;
     }
+    return false;
 }
 
-inline void celix::impl::SharedPromiseState<void>::tryResolve() {
+inline bool celix::impl::SharedPromiseState<void>::tryResolve() {
     std::unique_lock<std::mutex> lck{mutex};
     if (!done) {
         exp = nullptr;
         complete(lck);
+        return true;
     }
+    return false;
 }
 
 template<typename T>
-void celix::impl::SharedPromiseState<T>::tryFail(std::exception_ptr e) {
+bool celix::impl::SharedPromiseState<T>::tryFail(std::exception_ptr e) {
     std::unique_lock<std::mutex> lck{mutex};
     if (!done) {
         exp = std::move(e);
         complete(lck);
+        return true;
     }
+    return false;
 }
 
-inline void celix::impl::SharedPromiseState<void>::tryFail(std::exception_ptr e) {
+inline bool celix::impl::SharedPromiseState<void>::tryFail(std::exception_ptr e) {
     std::unique_lock<std::mutex> lck{mutex};
     if (!done) {
         exp = std::move(e);
         complete(lck);
+        return true;
     }
+    return false;
 }
 
 template<typename T>

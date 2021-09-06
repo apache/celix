@@ -203,7 +203,6 @@ TEST_F(PromiseTestSuite, onFailureHandling) {
 
 TEST_F(PromiseTestSuite, resolveSuccessWith) {
     auto deferred1 = factory->deferred<long>();
-    auto deferred2 = factory->deferred<long>();
     std::atomic<bool> called = false;
     deferred1.getPromise()
             .onSuccess([&](long value) {
@@ -211,11 +210,9 @@ TEST_F(PromiseTestSuite, resolveSuccessWith) {
                 called = true;
             });
 
-    //currently deferred1 will be resolved in thread, and onSuccess is trigger on the promise of deferred2
-    //now resolving deferred2 with the promise of deferred1
-    deferred2.resolveWith(deferred1.getPromise());
-    auto p = deferred2.getPromise();
-    deferred1.resolve(42);
+    auto deferred2 = factory->deferred<long>();
+    deferred1.resolveWith(deferred2.getPromise());
+    deferred2.resolve(42);
 
     factory->wait();
     EXPECT_EQ(true, called);
@@ -247,6 +244,31 @@ TEST_F(PromiseTestSuite, resolveFailureWith) {
     factory->wait();
     EXPECT_EQ(true, failureCalled);
 }
+
+TEST_F(PromiseTestSuite, returnPromiseOnSuccessfulResolveWith) {
+    auto deferred1 = factory->deferred<long>();
+    auto deferred2 = factory->deferred<long>();
+    celix::Promise<void> promise = deferred1.resolveWith(deferred2.getPromise());
+    EXPECT_FALSE(promise.isDone());
+    deferred2.resolve(42);
+    factory->wait();
+    EXPECT_TRUE(promise.isDone());
+    EXPECT_TRUE(promise.isSuccessfullyResolved());
+}
+
+TEST_F(PromiseTestSuite, returnPromiseOnInvalidResolveWith) {
+    auto deferred1 = factory->deferred<long>();
+    auto deferred2 = factory->deferred<long>();
+    celix::Promise<void> promise = deferred1.resolveWith(deferred2.getPromise());
+    EXPECT_FALSE(promise.isDone());
+    deferred1.resolve(42); //Rule is deferred1 is resolved, before the resolveWith the returned promise should fail
+    deferred2.resolve(42);
+    factory->wait();
+    EXPECT_TRUE(promise.isDone());
+    EXPECT_FALSE(promise.isSuccessfullyResolved());
+    EXPECT_THROW(std::rethrow_exception(promise.getFailure()), celix::PromiseIllegalStateException);
+}
+
 
 //gh-333 fix timeout test on macos
 #ifndef __APPLE__
