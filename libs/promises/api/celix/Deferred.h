@@ -104,7 +104,7 @@ namespace celix {
         void resolve(T&& value);
         void resolve(const T& value);
 
-        //NOTE not part of the spec.. update to resolveWith with a return celix::Promise<void> ??
+        //TODO update to resolveWith with a return celix::Promise<void> ??
         /**
          * Resolve the Promise associated with this Deferred with the specified Promise.
          * <p/>
@@ -193,6 +193,11 @@ namespace celix {
          */
         void resolve();
 
+        //TODO return Promise<void>
+        template<typename U>
+        void resolveWith(celix::Promise<U> with);
+
+        //TODO return Promise<void>
         void resolveWith(celix::Promise<void> with);
 
     private:
@@ -250,13 +255,29 @@ void celix::Deferred<T>::resolveWith(celix::Promise<U> with) {
     });
 }
 
-inline void celix::Deferred<void>::resolveWith(celix::Promise<void> with) {
+template<typename U>
+inline void celix::Deferred<void>::resolveWith(celix::Promise<U> with) {
     with.onResolve([s = state, with] {
         if (with.isSuccessfullyResolved()) {
             with.getValue();
             s->resolve();
         } else {
             s->fail(with.getFailure());
+        }
+    });
+}
+
+inline void celix::Deferred<void>::resolveWith(celix::Promise<void> with) {
+    with.onSuccess([s = state->getSelf()]() {
+        auto l = s.lock();
+        if (l) {
+            l->resolve();
+        }
+    });
+    with.onFailure([s = state->getSelf()](const std::exception& e) {
+        auto l = s.lock();
+        if (l) {
+            l->fail(e);
         }
     });
 }

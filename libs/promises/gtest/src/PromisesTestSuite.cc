@@ -268,7 +268,7 @@ TEST_F(PromiseTestSuite, resolveWithTimeout) {
                 EXPECT_EQ(42, value);
                 firstSuccessCalled = true;
             })
-            .timeout(std::chrono::milliseconds{10})
+            .timeout(std::chrono::milliseconds{5})
             .onSuccess([&](long value) {
                 EXPECT_EQ(42, value);
                 secondSuccessCalled = true;
@@ -311,6 +311,13 @@ TEST_F(PromiseTestSuite, resolveWithTimeout) {
 }
 #endif
 
+TEST_F(PromiseTestSuite, resolveWithSetTimeout) {
+    auto promise = factory->deferred<int>().getPromise().setTimeout(std::chrono::milliseconds{5});
+    factory->wait();
+    EXPECT_TRUE(promise.isDone());
+    EXPECT_FALSE(promise.isSuccessfullyResolved());
+}
+
 TEST_F(PromiseTestSuite, resolveWithDelay) {
     auto deferred1 = factory->deferred<long>();
     std::atomic<bool> successCalled = false;
@@ -331,7 +338,6 @@ TEST_F(PromiseTestSuite, resolveWithDelay) {
     auto durationInMs = std::chrono::duration_cast<std::chrono::milliseconds>(t2.load() - t1);
     EXPECT_GE(durationInMs, std::chrono::milliseconds{50});
 }
-
 
 TEST_F(PromiseTestSuite, resolveWithRecover) {
     auto deferred1 = factory->deferred<long>();

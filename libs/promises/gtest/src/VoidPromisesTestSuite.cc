@@ -128,7 +128,7 @@ TEST_F(VoidPromiseTestSuite, onFailureHandling) {
 
 TEST_F(VoidPromiseTestSuite, resolveSuccessWith) {
     auto deferred1 = factory->deferred<void>();
-    auto deferred2 = factory->deferred<void>();
+    auto deferred2 = factory->deferred<long>();
 
     bool called = false;
     deferred1.getPromise()
@@ -138,9 +138,8 @@ TEST_F(VoidPromiseTestSuite, resolveSuccessWith) {
 
     //currently deferred1 will be resolved in thread, and onSuccess is trigger on the promise of deferred2
     //now resolving deferred2 with the promise of deferred1
-    deferred2.resolveWith(deferred1.getPromise());
-    auto p = deferred2.getPromise();
-    deferred1.resolve();
+    deferred1.resolveWith(deferred2.getPromise());
+    deferred2.resolve(1);
     factory->wait();
     EXPECT_EQ(true, called);
 }
@@ -233,6 +232,13 @@ TEST_F(VoidPromiseTestSuite, resolveWithTimeout) {
 }
 #endif
 
+TEST_F(VoidPromiseTestSuite, resolveWithSetTimeout) {
+    auto promise = factory->deferred<void>().getPromise().setTimeout(std::chrono::milliseconds{5});
+    factory->wait();
+    EXPECT_TRUE(promise.isDone());
+    EXPECT_FALSE(promise.isSuccessfullyResolved());
+}
+
 TEST_F(VoidPromiseTestSuite, resolveWithDelay) {
     auto deferred1 = factory->deferred<void>();
 
@@ -257,7 +263,6 @@ TEST_F(VoidPromiseTestSuite, resolveWithDelay) {
     auto durationInMs = std::chrono::duration_cast<std::chrono::milliseconds>(t2.load() - t1);
     EXPECT_GE(durationInMs, std::chrono::milliseconds{10});
 }
-
 
 TEST_F(VoidPromiseTestSuite, resolveWithRecover) {
     auto deferred1 = factory->deferred<void>();

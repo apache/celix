@@ -90,15 +90,12 @@ public:
             logHelper.error(msg);
             deferred.fail(celix::rsa::RemoteServicesException{msg});
         }
-        return deferred.getPromise().timeout(INVOKE_TIMEOUT).onFailure([this, invokeId](const auto& /*exp*/) {
+        return deferred.getPromise().setTimeout(INVOKE_TIMEOUT).onFailure([this, invokeId](const auto& /*exp*/) {
             std::lock_guard l{mutex};
-
-            //TODO fixme -> timeout can leak
             auto it = deferreds.find(invokeId);
             if (it != deferreds.end()) {
                 it->second.fail(celix::rsa::RemoteServicesException{"workaround for unresovled promsise with timeout chain memleak"});
             }
-
             deferreds.erase(invokeId);
         });
     }
