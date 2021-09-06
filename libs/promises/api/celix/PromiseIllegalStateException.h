@@ -23,7 +23,7 @@
 
 namespace celix {
 
-    class Ad : public std::exception {
+    class PromiseIllegalStateException : public std::exception {
     public:
         [[nodiscard]] const char* what() const noexcept override {
             return "Illegal state";
