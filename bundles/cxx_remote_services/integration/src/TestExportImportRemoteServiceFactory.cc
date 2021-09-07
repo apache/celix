@@ -29,7 +29,7 @@
 #include "pubsub/publisher.h"
 #include "pubsub/subscriber.h"
 
-constexpr auto INVOKE_TIMEOUT = std::chrono::seconds{5}; //TODO make configurable
+constexpr auto INVOKE_TIMEOUT = std::chrono::seconds{10};
 
 struct Calculator$add$Invoke {
     double arg1{};
@@ -90,14 +90,7 @@ public:
             logHelper.error(msg);
             deferred.fail(celix::rsa::RemoteServicesException{msg});
         }
-        return deferred.getPromise().setTimeout(INVOKE_TIMEOUT).onFailure([this, invokeId](const auto& /*exp*/) {
-            std::lock_guard l{mutex};
-            auto it = deferreds.find(invokeId);
-            if (it != deferreds.end()) {
-                it->second.fail(celix::rsa::RemoteServicesException{"workaround for unresovled promsise with timeout chain memleak"});
-            }
-            deferreds.erase(invokeId);
-        });
+        return deferred.getPromise().setTimeout(INVOKE_TIMEOUT);
     }
 
     void receive(const char *msgType, unsigned int msgTypeId, void *msg, const celix_properties_t* meta) {
