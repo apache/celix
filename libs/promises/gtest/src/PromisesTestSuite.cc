@@ -183,7 +183,7 @@ TEST_F(PromiseTestSuite, onFailureHandling) {
             })
             .onFailure([&](const std::exception &e) {
                 failureCalled = true;
-                std::cout << "got error: " << e.what() << std::endl;
+                ASSERT_TRUE(0 == strcmp("basic_string::at: __n (which is 1) >= this->size() (which is 0)",  e.what())) << std::string(e.what());
             })
             .onResolve([&]() {
                 resolveCalled = true;
@@ -194,6 +194,31 @@ TEST_F(PromiseTestSuite, onFailureHandling) {
     } catch (...) {
         deferred.fail(std::current_exception());
     }
+
+    factory->wait();
+    EXPECT_EQ(false, successCalled);
+    EXPECT_EQ(true, failureCalled);
+    EXPECT_EQ(true, resolveCalled);
+}
+
+TEST_F(PromiseTestSuite, onFailureHandlingLogicError) {
+    auto deferred =  factory->deferred<long>();
+    std::atomic<bool> successCalled = false;
+    std::atomic<bool> failureCalled = false;
+    std::atomic<bool> resolveCalled = false;
+    auto p = deferred.getPromise()
+            .onSuccess([&](long /*value*/) {
+                successCalled = true;
+            })
+            .onFailure([&](const std::exception &e) {
+                failureCalled = true;
+                ASSERT_TRUE(0 == strcmp("Some Exception",  e.what())) << std::string(e.what());
+            })
+            .onResolve([&]() {
+                resolveCalled = true;
+            });
+
+    deferred.fail(std::logic_error("Some Exception"));
 
     factory->wait();
     EXPECT_EQ(false, successCalled);

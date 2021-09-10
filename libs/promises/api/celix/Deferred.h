@@ -77,7 +77,8 @@ namespace celix {
          * @param failure The failure in the form of an const std::exception reference.
          * @throws PromiseInvocationException If the associated Promise was already resolved.
          */
-        void fail(const std::exception& failure);
+        template<typename E, typename std::enable_if_t< std::is_base_of<std::exception, E>::value, bool> = true >
+        void fail(const E& failure);
 
         /**
          * Returns the Promise associated with this Deferred.
@@ -221,8 +222,9 @@ inline void celix::Deferred<void>::fail(std::exception_ptr failure) {
 }
 
 template<typename T>
-void celix::Deferred<T>::fail(const std::exception& failure) {
-    state->fail(failure);
+template<typename E, typename std::enable_if_t< std::is_base_of<std::exception, E>::value, bool>>
+void celix::Deferred<T>::fail(const E& failure) {
+    state->template fail<E>(failure);
 }
 
 inline void celix::Deferred<void>::fail(const std::exception& failure) {

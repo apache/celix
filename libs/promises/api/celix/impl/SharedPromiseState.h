@@ -55,7 +55,8 @@ namespace celix::impl {
 
         void fail(std::exception_ptr e);
 
-        void fail(const std::exception &e);
+        template<typename E>
+        void fail(const E &e);
 
         void tryResolve(T &&value);
 
@@ -152,7 +153,8 @@ namespace celix::impl {
 
         void fail(std::exception_ptr e);
 
-        void fail(const std::exception &e);
+        template<typename E>
+        void fail(const E &e);
 
         void tryResolve();
 
@@ -317,12 +319,14 @@ inline void celix::impl::SharedPromiseState<void>::fail(std::exception_ptr e) {
 }
 
 template<typename T>
-void celix::impl::SharedPromiseState<T>::fail(const std::exception& e) {
+template<typename E>
+void celix::impl::SharedPromiseState<T>::fail(const E& e) {
     fail(std::make_exception_ptr(e));
 }
 
-inline void celix::impl::SharedPromiseState<void>::fail(const std::exception& e) {
-    fail(std::make_exception_ptr(e));
+template<typename E>
+inline void celix::impl::SharedPromiseState<void>::fail(const E& e) {
+    fail(std::make_exception_ptr<E>(e));
 }
 
 template<typename T>
