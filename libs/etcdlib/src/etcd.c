@@ -143,6 +143,7 @@ int etcd_get(const char* key, char** value, int* modifiedIndex) {
 int etcdlib_get(etcdlib_t *etcdlib, const char* key, char** value, int* modifiedIndex) {
 	json_t *js_root = NULL;
 	json_t *js_node = NULL;
+    json_t *js_index = NULL;
 	json_t *js_value = NULL;
 	json_t *js_modifiedIndex = NULL;
 	json_error_t error;
@@ -165,11 +166,11 @@ int etcdlib_get(etcdlib_t *etcdlib, const char* key, char** value, int* modified
 
 		if (js_root != NULL) {
 			js_node = json_object_get(js_root, ETCD_JSON_NODE);
+            js_index = json_object_get(js_root, ETCD_JSON_INDEX);
 		}
 		if (js_node != NULL) {
 			js_value = json_object_get(js_node, ETCD_JSON_VALUE);
-			js_modifiedIndex = json_object_get(js_node,
-											   ETCD_JSON_MODIFIEDINDEX);
+			js_modifiedIndex = json_object_get(js_node, ETCD_JSON_MODIFIEDINDEX);
 
 			if (js_modifiedIndex != NULL && js_value != NULL) {
 				if (modifiedIndex) {
@@ -178,6 +179,10 @@ int etcdlib_get(etcdlib_t *etcdlib, const char* key, char** value, int* modified
 				*value = strdup(json_string_value(js_value));
 				retVal = ETCDLIB_RC_OK;
 			}
+        } else if ((modifiedIndex != NULL)&&(js_index != NULL)) {
+            // Error occurred, retrieve the index of ETCD from the error code
+            *modifiedIndex = json_integer_value(js_index);
+            retVal = ETCDLIB_RC_OK;
 		}
 		if (js_root != NULL) {
 			json_decref(js_root);
@@ -265,6 +270,7 @@ int etcdlib_get_directory(etcdlib_t *etcdlib, const char* directory, etcdlib_key
 
 	json_t* js_root = NULL;
 	json_t* js_rootnode = NULL;
+    json_t* js_index = NULL;
 
 	json_error_t error;
 	int res;
@@ -286,6 +292,7 @@ int etcdlib_get_directory(etcdlib_t *etcdlib, const char* directory, etcdlib_key
 		js_root = json_loads(reply.memory, 0, &error);
 		if (js_root != NULL) {
 			js_rootnode = json_object_get(js_root, ETCD_JSON_NODE);
+            js_index = json_object_get(js_root, ETCD_JSON_INDEX);
 		} else {
 			retVal = ETCDLIB_RC_ERROR;
 			fprintf(stderr, "[ETCDLIB] Error: %s in js_root not found", ETCD_JSON_NODE);
@@ -304,17 +311,9 @@ int etcdlib_get_directory(etcdlib_t *etcdlib, const char* directory, etcdlib_key
             if (indexFromHeader > *ptrModIndex) {
               *ptrModIndex = indexFromHeader;
             }
-		} else if (modifiedIndex != NULL) {
+		} else if ((modifiedIndex != NULL)&&(js_index != NULL)) {
 			// Error occurred, retrieve the index of ETCD from the error code
-			js_rootnode = json_object_get(js_root, ETCD_JSON_INDEX);
-			if(js_rootnode) {
-				json_int_t index = json_integer_value(js_rootnode);
-				*modifiedIndex = index;
-
-			} else {
-				fprintf(stderr, "[ETCDLIB] Error: index not found in error %s\n", reply.memory);
-			}
-
+			*modifiedIndex = json_integer_value(js_index);;
 		}
 		if (js_root != NULL) {
 			json_decref(js_root);
@@ -501,6 +500,7 @@ int etcdlib_watch(etcdlib_t *etcdlib, const char* key, long long index, char** a
 	json_t* js_rkey = NULL;
 	json_t* js_prevValue = NULL;
 	json_t* js_modIndex = NULL;
+    json_t* js_index = NULL;
 	int retVal = ETCDLIB_RC_ERROR;
 	char *url = NULL;
 	int res;
@@ -532,6 +532,7 @@ int etcdlib_watch(etcdlib_t *etcdlib, const char* key, long long index, char** a
 			js_action = json_object_get(js_root, ETCD_JSON_ACTION);
 			js_node = json_object_get(js_root, ETCD_JSON_NODE);
 			js_prevNode = json_object_get(js_root, ETCD_JSON_PREVNODE);
+            js_index = json_object_get(js_root, ETCD_JSON_INDEX);
 			retVal = ETCDLIB_RC_OK;
 		}
 		if (js_prevNode != NULL) {
@@ -552,6 +553,8 @@ int etcdlib_watch(etcdlib_t *etcdlib, const char* key, long long index, char** a
 		if(modifiedIndex != NULL) {
 			if ((js_modIndex != NULL) && (json_is_integer(js_modIndex))) {
 				*modifiedIndex = json_integer_value(js_modIndex);
+			} else if ((js_index != NULL) && (json_is_integer(js_index))) {
+                *modifiedIndex = json_integer_value(js_index);
 			} else {
 				*modifiedIndex = index;
 			}
