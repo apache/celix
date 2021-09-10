@@ -32,5 +32,5 @@ target_link_libraries(celix_pubsub_topology_manager PRIVATE UUID::lib)
 
 install_celix_bundle(celix_pubsub_topology_manager EXPORT celix COMPONENT pubsub)
 
-add_library(Celix::pubsub_topology_manager ALIAS celix_pubsub_topology_manager)
+add_library(Celix::celix_pubsub_topology_manager ALIAS celix_pubsub_topology_manager)
 

@@ -15,6 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 
+message(STATUS "PubSub ZMQ Admin V1 is deprecated, and will eventually be replaced with PubSub ZMQ Admin v2")
+
 find_package(ZMQ REQUIRED)
 find_package(CZMQ REQUIRED)
 find_package(Jansson REQUIRED)
@@ -56,4 +58,4 @@ target_include_directories(celix_pubsub_admin_zmq PRIVATE
 
 install_celix_bundle(celix_pubsub_admin_zmq EXPORT celix COMPONENT pubsub)
 target_link_libraries(celix_pubsub_admin_zmq PRIVATE Celix::shell_api)
-add_library(Celix::pubsub_admin_zmq ALIAS celix_pubsub_admin_zmq)
+add_library(Celix::celix_pubsub_admin_zmq ALIAS celix_pubsub_admin_zmq)

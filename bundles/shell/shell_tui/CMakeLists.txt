@@ -21,11 +21,12 @@ if (SHELL_TUI)
     	SYMBOLIC_NAME "apache_celix_shell_tui"
     	VERSION "1.1.0"
     	NAME "Apache Celix Shell TUI"
+		FILENAME celix_shell_tui
 		GROUP "Celix/Shell"
     	SOURCES 
-    		private/src/activator 
-    		private/src/shell_tui
-    		private/src/history
+    		private/src/activator.c
+    		private/src/shell_tui.c
+    		private/src/history.c
 	)
 	
 	target_include_directories(shell_tui PRIVATE

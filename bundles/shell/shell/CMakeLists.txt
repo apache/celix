@@ -32,14 +32,14 @@ if (SHELL)
 	endif ()
 
 	add_library(shell_commands STATIC
-			src/lb_command
-			src/start_command
-			src/stop_command
-			src/install_command
-			src/update_command
-			src/uninstall_command
-			src/help_command
-			src/dm_shell_list_command
+			src/lb_command.c
+			src/start_command.c
+			src/stop_command.c
+			src/install_command.c
+			src/update_command.c
+			src/uninstall_command.c
+			src/help_command.c
+			src/dm_shell_list_command.c
 			src/query_command.c
 			src/quit_command.c
 			src/std_commands.c
@@ -51,6 +51,7 @@ if (SHELL)
         SYMBOLIC_NAME "apache_celix_c_shell"
         VERSION "2.1.0"
         NAME "Apache Celix C Shell"
+		FILENAME celix_shell
 		GROUP "Celix/Shell"
         SOURCES
 			src/c_shell_activator.c
@@ -69,10 +70,12 @@ if (SHELL)
 	add_library(Celix::shell ALIAS shell)
 
 	if (CELIX_CXX)
+		set(CMAKE_CXX_STANDARD 11) #Note that the Celix::CxxShell uses C++11 only
 		add_celix_bundle(ShellCxx
 			SYMBOLIC_NAME "apache::celix::CxxShell"
 			VERSION "2.1.0"
 			NAME "Apache Celix CXX Shell"
+			FILENAME celix_ShellCxx
 			GROUP "Celix/Shell"
 			SOURCES
 				src/Shell.cc

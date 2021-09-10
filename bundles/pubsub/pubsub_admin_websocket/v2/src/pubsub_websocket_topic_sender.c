@@ -33,6 +33,7 @@
 #include "http_admin/api.h"
 #include "civetweb.h"
 #include "pubsub_websocket_admin.h"
+#include "pubsub_interceptors_handler.h"
 
 #define FIRST_SEND_DELAY_IN_SECONDS             2
 
@@ -56,6 +57,7 @@ struct pubsub_websocket_topic_sender {
     char *uri;
 
     pubsub_serializer_handler_t* serializerHandler;
+    pubsub_interceptors_handler_t *interceptorsHandler;
 
     int seqNr; //atomic
 
@@ -102,6 +104,7 @@ pubsub_websocket_topic_sender_t* pubsub_websocketTopicSender_create(
     sender->ctx = ctx;
     sender->logHelper = logHelper;
     sender->serializerHandler = serializerHandler;
+    sender->interceptorsHandler = pubsubInterceptorsHandler_create(ctx, scope, topic, PUBSUB_WEBSOCKET_ADMIN_TYPE, pubsub_serializerHandler_getSerializationType(serializerHandler));
 
     psa_websocket_setScopeAndTopicFilter(scope, topic, sender->scopeAndTopicFilter);
     sender->uri = psa_websocket_createURI(scope, topic);
@@ -177,6 +180,7 @@ void pubsub_websocketTopicSender_destroy(pubsub_websocket_topic_sender_t *sender
         if (sender->scope != NULL) {
             free(sender->scope);
         }
+        pubsubInterceptorsHandler_destroy(sender->interceptorsHandler);
         free(sender->topic);
         free(sender->uri);
         free(sender);
@@ -258,11 +262,17 @@ static int psa_websocket_topicPublicationSend(void* handle, unsigned int msgType
     int minorVersion;
     celix_status_t status = pubsub_serializerHandler_getMsgInfo(sender->serializerHandler, msgTypeId, &msgFqn, &majorVersion, &minorVersion);
     if (status != CELIX_SUCCESS) {
-        L_WARN("Cannot find serializer for msg id %u for serializer %s", msgTypeId,
-               pubsub_serializerHandler_getSerializationType(sender->serializerHandler));
+        L_WARN("Cannot find serializer for msg id %u for serializer %s", msgTypeId, pubsub_serializerHandler_getSerializationType(sender->serializerHandler));
+        celix_properties_destroy(metadata);
         return status;
     }
 
+    bool cont = pubsubInterceptorHandler_invokePreSend(sender->interceptorsHandler, msgFqn, msgTypeId, inMsg, &metadata);
+    if (!cont) {
+        L_DEBUG("Cancel send based on pubsub interceptor cancel return");
+        celix_properties_destroy(metadata);
+        return status;
+    }
 
     if (sender->sockConnection != NULL) {
         delay_first_send_for_late_joiners(sender);
@@ -281,7 +291,7 @@ static int psa_websocket_topicPublicationSend(void* handle, unsigned int msgType
 
             json_t *jsData;
             jsData = json_loadb((const char *)serializedOutput->iov_base, serializedOutput->iov_len, 0, &jsError);
-            if(jsData != NULL) {
+            if (jsData != NULL) {
                 json_object_set_new_nocheck(jsMsg, "data", jsData);
                 const char *msg = json_dumps(jsMsg, 0);
                 size_t bytes_to_write = strlen(msg);
@@ -306,6 +316,8 @@ static int psa_websocket_topicPublicationSend(void* handle, unsigned int msgType
     	status = CELIX_SUCCESS; // Not an error, just nothing to do
     }
 
+    pubsubInterceptorHandler_invokePostSend(sender->interceptorsHandler, msgFqn, msgTypeId, inMsg, metadata);
+    celix_properties_destroy(metadata);
     return status;
 }
 

@@ -39,8 +39,6 @@
 #include <pubsub_utils.h>
 #include <celix_api.h>
 
-#include "pubsub_interceptors_handler.h"
-
 #include "celix_utils_api.h"
 
 #define PSA_ZMQ_RECV_TIMEOUT 1000
@@ -69,8 +67,6 @@ struct pubsub_zmq_topic_receiver {
     char *scope;
     char *topic;
     bool metricsEnabled;
-
-    pubsub_interceptors_handler_t *interceptorsHandler;
 
     void *zmqCtx;
     void *zmqSock;
@@ -156,8 +152,6 @@ pubsub_zmq_topic_receiver_t* pubsub_zmqTopicReceiver_create(celix_bundle_context
     receiver->scope = scope == NULL ? NULL : strndup(scope, 1024 * 1024);
     receiver->topic = strndup(topic, 1024 * 1024);
     receiver->metricsEnabled = celix_bundleContext_getPropertyAsBool(ctx, PSA_ZMQ_METRICS_ENABLED, PSA_ZMQ_DEFAULT_METRICS_ENABLED);
-
-    pubsubInterceptorsHandler_create(ctx, scope, topic, &receiver->interceptorsHandler);
 
 #ifdef BUILD_WITH_ZMQ_SECURITY
     char* keys_bundle_dir = pubsub_getKeysBundleDir(bundle_context);
@@ -333,8 +327,6 @@ void pubsub_zmqTopicReceiver_destroy(pubsub_zmq_topic_receiver_t *receiver) {
 
         zmq_close(receiver->zmqSock);
         zmq_ctx_term(receiver->zmqCtx);
-
-        pubsubInterceptorsHandler_destroy(receiver->interceptorsHandler);
 
         free(receiver->scope);
         free(receiver->topic);
@@ -522,34 +514,26 @@ static inline void processMsgForSubscriberEntry(pubsub_zmq_topic_receiver_t *rec
                 clock_gettime(CLOCK_REALTIME, &endSer);
             }
             if (status == CELIX_SUCCESS) {
-
-                const char *msgType = msgSer->msgName;
-                uint32_t msgId = message->header.msgId;
                 celix_properties_t *metadata = message->metadata.metadata;
-                bool cont = pubsubInterceptorHandler_invokePreReceive(receiver->interceptorsHandler, msgType, msgId, deserializedMsg, &metadata);
                 bool release = true;
-                if (cont) {
-                    hash_map_iterator_t iter2 = hashMapIterator_construct(entry->subscriberServices);
-                    while (hashMapIterator_hasNext(&iter2)) {
-                        pubsub_subscriber_t *svc = hashMapIterator_nextValue(&iter2);
-                        svc->receive(svc->handle, msgSer->msgName, msgSer->msgId, deserializedMsg, metadata, &release);
-                        pubsubInterceptorHandler_invokePostReceive(receiver->interceptorsHandler, msgType, msgId, deserializedMsg, metadata);
-                        if (!release && hashMapIterator_hasNext(&iter2)) {
-                            //receive function has taken ownership and still more receive function to come ..
-                            //deserialize again for new message
-                            status = msgSer->deserialize(msgSer->handle, &deSerializeBuffer, 0, &deserializedMsg);
-                            if (status != CELIX_SUCCESS) {
-                                L_WARN("[PSA_ZMQ_TR] Cannot deserialize msg type %s for scope/topic %s/%s", msgSer->msgName, receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic);
-                                break;
-                            }
-                            release = true;
+                hash_map_iterator_t iter2 = hashMapIterator_construct(entry->subscriberServices);
+                while (hashMapIterator_hasNext(&iter2)) {
+                    pubsub_subscriber_t *svc = hashMapIterator_nextValue(&iter2);
+                    svc->receive(svc->handle, msgSer->msgName, msgSer->msgId, deserializedMsg, metadata, &release);
+                    if (!release) {
+                        //receive function has taken ownership deserialize again for new message
+                        status = msgSer->deserialize(msgSer->handle, &deSerializeBuffer, 0, &deserializedMsg);
+                        if (status != CELIX_SUCCESS) {
+                            L_WARN("[PSA_ZMQ_TR] Cannot deserialize msg type %s for scope/topic %s/%s", msgSer->msgName, receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic);
+                            break;
                         }
+                        release = true;
                     }
-                    if (release) {
-                        msgSer->freeDeserializeMsg(msgSer->handle, deserializedMsg);
-                    }
-                    updateReceiveCount += 1;
                 }
+                if (release) {
+                    msgSer->freeDeserializeMsg(msgSer->handle, deserializedMsg);
+                }
+                updateReceiveCount += 1;
             } else {
                 updateSerError += 1;
                 L_WARN("[PSA_ZMQ_TR] Cannot deserialize msg type %s for scope/topic %s/%s", msgSer->msgName, receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic);
@@ -557,58 +541,6 @@ static inline void processMsgForSubscriberEntry(pubsub_zmq_topic_receiver_t *rec
         }
     } else {
         L_WARN("[PSA_ZMQ_TR] Cannot find serializer for type id 0x%X", message->header.msgId);
-    }
-
-    if (msgSer != NULL && monitor) {
-        // TODO disabled for now, should move to an interceptor?
-//        hash_map_t *origins = hashMap_get(entry->metrics, (void*)(uintptr_t )message->header.msgId);
-//        char uuidStr[UUID_STR_LEN+1];
-//        uuid_unparse(hdr->originUUID, uuidStr);
-//        psa_zmq_subscriber_metrics_entry_t *metrics = hashMap_get(origins, uuidStr);
-//
-//        if (metrics == NULL) {
-//            metrics = calloc(1, sizeof(*metrics));
-//            hashMap_put(origins, strndup(uuidStr, UUID_STR_LEN+1), metrics);
-//            uuid_copy(metrics->origin, hdr->originUUID);
-//            metrics->msgTypeId = hdr->type;
-//            metrics->maxDelayInSeconds = -INFINITY;
-//            metrics->minDelayInSeconds = INFINITY;
-//            metrics->lastSeqNr = 0;
-//        }
-//
-//        double diff = celix_difftime(&beginSer, &endSer);
-//        long n = metrics->nrOfMessagesReceived;
-//        metrics->averageSerializationTimeInSeconds = (metrics->averageSerializationTimeInSeconds * n + diff) / (n+1);
-//
-//        diff = celix_difftime(&metrics->lastMessageReceived, receiveTime);
-//        n = metrics->nrOfMessagesReceived;
-//        if (metrics->nrOfMessagesReceived >= 1) {
-//            metrics->averageTimeBetweenMessagesInSeconds = (metrics->averageTimeBetweenMessagesInSeconds * n + diff) / (n + 1);
-//        }
-//        metrics->lastMessageReceived = *receiveTime;
-//
-//
-//        int incr = hdr->seqNr - metrics->lastSeqNr;
-//        if (metrics->lastSeqNr >0 && incr > 1) {
-//            metrics->nrOfMissingSeqNumbers += (incr - 1);
-//            L_WARN("Missing message seq nr went from %i to %i", metrics->lastSeqNr, hdr->seqNr);
-//        }
-//        metrics->lastSeqNr = hdr->seqNr;
-//
-//        struct timespec sendTime;
-//        sendTime.tv_sec = (time_t)hdr->sendtimeSeconds;
-//        sendTime.tv_nsec = (long)hdr->sendTimeNanoseconds; //TODO FIXME the tv_nsec is not correct
-//        diff = celix_difftime(&sendTime, receiveTime);
-//        metrics->averageDelayInSeconds = (metrics->averageDelayInSeconds * n + diff) / (n+1);
-//        if (diff < metrics->minDelayInSeconds) {
-//            metrics->minDelayInSeconds = diff;
-//        }
-//        if (diff > metrics->maxDelayInSeconds) {
-//            metrics->maxDelayInSeconds = diff;
-//        }
-//
-//        metrics->nrOfMessagesReceived += updateReceiveCount;
-//        metrics->nrOfSerializationErrors += updateSerError;
     }
 }
 

@@ -37,6 +37,6 @@ target_link_libraries(celix_pubsub_admin_udp_multicast PRIVATE Celix::framework 
 target_link_libraries(celix_pubsub_admin_udp_multicast PRIVATE Celix::pubsub_spi Celix::pubsub_utils )
 install_celix_bundle(celix_pubsub_admin_udp_multicast EXPORT celix COMPONENT pubsub)
 
-add_library(Celix::pubsub_admin_udp_multicast ALIAS celix_pubsub_admin_udp_multicast)
+add_library(Celix::celix_pubsub_admin_udp_multicast ALIAS celix_pubsub_admin_udp_multicast)
 
 

@@ -122,7 +122,8 @@ pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
     if (uuid != NULL) {
         uuid_parse(uuid, sender->fwUUID);
     }
-    pubsubInterceptorsHandler_create(ctx, scope, topic, &sender->interceptorsHandler);
+    sender->interceptorsHandler = pubsubInterceptorsHandler_create(ctx, scope, topic, PUBSUB_TCP_ADMIN_TYPE,
+                                                                   pubsub_serializerHandler_getSerializationType(serializerHandler));
     sender->isPassive = false;
     char *urls = NULL;
     const char *ip = celix_bundleContext_getProperty(ctx, PUBSUB_TCP_PSA_IP_KEY, NULL);
@@ -373,6 +374,7 @@ psa_tcp_topicPublicationSend(void *handle, unsigned int msgTypeId, const void *i
     bool cont = pubsubInterceptorHandler_invokePreSend(sender->interceptorsHandler, msgFqn, msgTypeId, inMsg, &metadata);
     if (!cont) {
         L_DEBUG("Cancel send based on pubsub interceptor cancel return");
+        celix_properties_destroy(metadata);
         return status;
     }
 
@@ -382,6 +384,7 @@ psa_tcp_topicPublicationSend(void *handle, unsigned int msgTypeId, const void *i
     if (status != CELIX_SUCCESS) {
         L_WARN("[PSA_TCP_V2_TS] Error serialize message of type %s for scope/topic %s/%s", msgFqn,
                sender->scope == NULL ? "(null)" : sender->scope, sender->topic);
+        celix_properties_destroy(metadata);
         return status;
     }
 
@@ -414,9 +417,6 @@ psa_tcp_topicPublicationSend(void *handle, unsigned int msgTypeId, const void *i
             sendOk = false;
         }
         pubsubInterceptorHandler_invokePostSend(sender->interceptorsHandler, msgFqn, msgTypeId, inMsg, metadata);
-        if (message.metadata.metadata) {
-            celix_properties_destroy(message.metadata.metadata);
-        }
         if (serializedIoVecOutput) {
             pubsub_serializerHandler_freeSerializedMsg(sender->serializerHandler, msgTypeId, serializedIoVecOutput, serializedIoVecOutputLen);
             serializedIoVecOutput = NULL;
@@ -427,6 +427,7 @@ psa_tcp_topicPublicationSend(void *handle, unsigned int msgTypeId, const void *i
         L_WARN("[PSA_TCP_V2_TS] Error sending msg. %s", strerror(errno));
     }
 
+    celix_properties_destroy(metadata);
     return status;
 }
 

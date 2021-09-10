@@ -19,7 +19,6 @@ add_executable(test_cxx_remote_service_admin
     src/RemoteServiceAdminTestSuite.cc
 )
 target_link_libraries(test_cxx_remote_service_admin PRIVATE Celix::framework GTest::gtest GTest::gtest_main Celix::rsa_spi)
-target_compile_options(test_cxx_remote_service_admin PRIVATE -std=c++17)
 
 add_dependencies(test_cxx_remote_service_admin RemoteServiceAdmin_bundle)
 

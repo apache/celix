@@ -15,6 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 
+message(STATUS "PubSub Websocket Admin V1 is deprecated, and will eventually be replaced with PubSub Websocket Admin v2")
+
 find_package(Jansson REQUIRED)
 find_package(UUID REQUIRED)
 
@@ -42,4 +44,4 @@ target_include_directories(celix_pubsub_admin_websocket PRIVATE
 
 install_celix_bundle(celix_pubsub_admin_websocket EXPORT celix COMPONENT pubsub)
 target_link_libraries(celix_pubsub_admin_websocket PRIVATE Celix::shell_api)
-add_library(Celix::pubsub_admin_websocket ALIAS celix_pubsub_admin_websocket)
+add_library(Celix::celix_pubsub_admin_websocket ALIAS celix_pubsub_admin_websocket)

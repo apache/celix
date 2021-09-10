@@ -163,6 +163,34 @@ Set bundle group.
 celix_bundle_group(<bundle_target> bundle group)
 ```
 
+## celix_get_bundle_filename
+Get bundle filename from an (imported) bundle target taking into account the
+used CMAKE_BUILD_TYPE and available bundle configurations. 
+
+```CMake
+celix_get_bundle_filename(<bundle_target> VARIABLE_NAME)
+```
+
+Example: `celix_get_bundle_filename(Celix::shell SHELL_BUNDLE_FILENAME)` will result in `celix_shell.zip` for a `RelWithDebInfo` cmake build type and in `celix_shell-Debug.zip` for a `Debug` cmake build type (if the a debug bundle version exists). 
+
+## celix_get_bundle_file
+Get bundle file (absolute path to a bundle) from an (imported) bundle target taking into account the used CMAKE_BUILD_TYPE and available bundle configurations.
+
+```CMake
+celix_get_bundle_file(<bundle_target> VARIABLE_NAME)
+```
+
+Example: `celix_get_bundle_file(Celix::shell SHELL_BUNDLE_FILE)`
+
+## add_celix_bundle_dependencies
+Add bundles as dependencies to a cmake target, so that the bundle zip files will be created before the cmake target.
+
+```CMake
+add_celix_bundle_dependencies(<cmake_target>
+    bundles...
+)
+```
+
 ## install_celix_bundle
 Install bundle when 'make install' is executed. 
 Bundles are installed at `<install-prefix>/share/<project_name>/bundles`.

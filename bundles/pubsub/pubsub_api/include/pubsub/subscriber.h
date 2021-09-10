@@ -16,16 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * subscriber.h
- *
- *  \date       Jan 7, 2016
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
 
 #ifndef __PUBSUB_SUBSCRIBER_H_
 #define __PUBSUB_SUBSCRIBER_H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include <stdbool.h>
 
@@ -45,6 +42,8 @@ struct pubsub_subscriber_struct {
     /**
      * Called to initialize the subscriber with the receiver thread.
      * Can be used to tweak the receiver thread attributes
+     *
+     * this method can be  NULL.
      */
     int (*init)(void *handle);
      
@@ -66,7 +65,7 @@ struct pubsub_subscriber_struct {
       * @param msgType      The fully qualified type name
       * @param msgTypeId    The local type id of the type, how this is calculated/created is up to the pubsub admin. (can be cached for improved performance)
       * @param msg          The pointer to the message
-      * @param metadata     The meta data provided with the data. Can be NULL.
+      * @param metadata     The meta data provided with the data. Can be NULL and is only valid during the callback.
       * @param release      Pointer to the release boolean, default is release is true.
       * @return Return 0 implies a successful handling. If return is not 0, the msg will always be released by the pubsubadmin.
       */
@@ -75,5 +74,7 @@ struct pubsub_subscriber_struct {
 };
 typedef struct pubsub_subscriber_struct pubsub_subscriber_t;
 
-
+#ifdef __cplusplus
+}
+#endif
 #endif //  __PUBSUB_SUBSCRIBER_H_

@@ -15,6 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 
+find_package(LIBZIP REQUIRED)
+
 set(MEMSTREAM_SOURCES )
 set(MEMSTREAM_INCLUDES )
 include(CheckFunctionExists)
@@ -39,9 +41,11 @@ add_library(utils SHARED
     src/ip_utils.c
     src/filter.c
     src/celix_log_utils.c
+    src/celix_file_utils.c
     ${MEMSTREAM_SOURCES}
 )
 set_target_properties(utils PROPERTIES OUTPUT_NAME "celix_utils")
+target_link_libraries(utils PRIVATE libzip::libzip)
 
 if (NOT OPEN_MEMSTREAM_EXISTS)
     target_compile_definitions(utils PUBLIC -DNO_MEMSTREAM_AVAILABLE)

@@ -27,7 +27,7 @@
 
 
 struct pubsub_websocket_msg_header {
-    const char *id; //FQN
+    const char *fqn;
     uint8_t major;
     uint8_t minor;
     uint32_t seqNr;

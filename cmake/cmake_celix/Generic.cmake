@@ -15,13 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 
-function(install_celix_targets)
-    install_celix_bundle_targets(${ARGN})
-endfunction ()
-
 #[[
-Add bundles as dependencies to a cmake target, so that the bundle zip files are created before the cmake target is
- created.
+Add bundles as dependencies to a cmake target, so that the bundle zip files will be created before the cmake target.
 
 add_celix_bundle_dependencies(<cmake_target>
     bundles...
@@ -42,3 +37,7 @@ function(add_celix_bundle_dependencies)
         endif()
     endforeach()
 endfunction()
+
+function(install_celix_targets)
+    install_celix_bundle_targets(${ARGN})
+endfunction ()

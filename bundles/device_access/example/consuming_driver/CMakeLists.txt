@@ -20,8 +20,8 @@ add_celix_bundle(word_consumingdriver
  	VERSION "0.0.1"
  	NAME "Apache Celix Device Access Word Consuming Driver Example"
 	SOURCES
-		src/activator
-		src/consuming_driver
+		src/activator.c
+		src/consuming_driver.c
 )
 
 target_include_directories(word_consumingdriver PRIVATE src)

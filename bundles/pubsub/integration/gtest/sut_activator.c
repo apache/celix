@@ -30,6 +30,8 @@ static void sut_pubSet(void *handle, void *service);
 static void* sut_sendThread(void *data);
 
 struct activator {
+    bool addMetadata;
+
     long pubTrkId;
 
     pthread_t sendThread;
@@ -40,6 +42,8 @@ struct activator {
 };
 
 celix_status_t bnd_start(struct activator *act, celix_bundle_context_t *ctx) {
+
+    act->addMetadata = celix_bundleContext_getPropertyAsBool(ctx, "CELIX_PUBSUB_TEST_ADD_METADATA", false);
 
     char filter[512];
     bool useNegativeScopeFilter = celix_bundleContext_getPropertyAsBool(ctx, "CELIX_PUBSUB_TEST_USE_NEGATIVE_SCOPE_FILTER", true);
@@ -91,7 +95,12 @@ static void* sut_sendThread(void *data) {
             if (msgId == 0) {
                 act->pubSvc->localMsgTypeIdForMsgType(act->pubSvc->handle, MSG_NAME, &msgId);
             }
-            act->pubSvc->send(act->pubSvc->handle, msgId, &msg, NULL);
+            celix_properties_t* metadata = NULL;
+            if (act->addMetadata) {
+                metadata = celix_properties_create();
+                celix_properties_setLong(metadata, "seqNr", (long)msgId);
+            }
+            act->pubSvc->send(act->pubSvc->handle, msgId, &msg, metadata);
             if (msg.seqNr % 1000 == 0) {
                 printf("Send %i messages\n", msg.seqNr);
             }

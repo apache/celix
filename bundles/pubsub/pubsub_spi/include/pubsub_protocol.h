@@ -20,6 +20,10 @@
 #ifndef PUBSUB_PROTOCOL_SERVICE_H_
 #define PUBSUB_PROTOCOL_SERVICE_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include "celix_properties.h"
 
@@ -234,4 +238,7 @@ typedef struct pubsub_protocol_service {
     celix_status_t (*decodeFooter)(void* handle, void *data, size_t length, pubsub_protocol_message_t *message);
 } pubsub_protocol_service_t;
 
+#ifdef __cplusplus
+}
+#endif
 #endif /* PUBSUB_PROTOCOL_SERVICE_H_ */

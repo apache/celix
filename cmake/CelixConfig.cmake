@@ -50,7 +50,6 @@ set(CELIX_INCLUDE_DIRS
 set(CELIX_FRAMEWORK_LIBRARY Celix::framework)
 set(CELIX_UTILS_LIBRARY Celix::utils)
 set(CELIX_DFI_LIBRARY Celix::dfi)
-
 set(CELIX_LAUNCHER Celix::launcher)
 
 if (TARGET Celix::etcdlib)
@@ -73,9 +72,25 @@ set(CELIX_SHELL_BUNDLE ${CELIX_BUNDLES_DIR}/shell.zip)
 set(CELIX_SHELL_TUI_BUNDLE ${CELIX_BUNDLES_DIR}/shell_tui.zip)
 
 include(CMakeFindDependencyMacro)
-find_dependency(ZLIB)
-find_dependency(UUID)
-find_dependency(OpenSSL)
-find_dependency(CURL)
-find_dependency(FFI)
-find_dependency(Jansson)
+
+find_dependency(ZLIB REQUIRED) #Needed by framework
+find_dependency(UUID REQUIRED) #Needed by framework
+find_dependency(CURL REQUIRED) #Needed by framework (used for curl initialization)
+find_dependency(Jansson REQUIRED) #Needed by dfi, etcdlib, remote services, pubsub
+
+if (TARGET Celix::dfi)
+  find_dependency(FFI REQUIRED)
+endif()
+if (TARGET Celix::RsaConfiguredDiscovery)
+  find_dependency(RapidJSON REQUIRED)
+endif ()
+if (TARGET Celix::rsa_discovery_common)
+  find_dependency(LibXml2 REQUIRED)
+endif ()
+if (TARGET Celix::celix_pubsub_admin_zmq OR TARGET Celix::celix_pubsub_admin_zmq_v2)
+  find_dependency(ZMQ REQUIRED)
+  find_dependency(CZMQ REQUIRED)
+endif ()
+if (TARGET Celix::pubsub_admin_nanomsg)
+  find_dependency(NanoMsg REQUIRED)
+endif ()

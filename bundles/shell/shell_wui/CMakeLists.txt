@@ -22,6 +22,7 @@ if (SHELL_WUI)
         SYMBOLIC_NAME "apache_celix_shell_wui"
         VERSION "1.0.0"
         NAME "Apache Celix Shell WUI"
+        FILENAME celix_shell_wui
         GROUP "Celix/Shell"
         SOURCES
             src/shell_wui_bundle_activator.c

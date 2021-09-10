@@ -932,15 +932,13 @@ static void pstm_setupTopicSenders(pubsub_topology_manager_t *manager) {
                 psa->matchPublisher(psa->handle, entry->bndId, entry->publisherFilter, &topicProps, &score, &serSvcId,
                                     &protSvcId);
                 if (score > highestScore) {
-                    if (topicPropertiesForHighestMatch != NULL) {
-                        celix_properties_destroy(topicPropertiesForHighestMatch);
-                    }
+                    celix_properties_destroy(topicPropertiesForHighestMatch);
                     highestScore = score;
                     serializerSvcId = serSvcId;
                     protocolSvcId = protSvcId;
                     selectedPsaSvcId = svcId;
                     topicPropertiesForHighestMatch = topicProps;
-                } else if (topicProps != NULL) {
+                } else {
                     celix_properties_destroy(topicProps);
                 }
             }
@@ -968,6 +966,7 @@ static void pstm_setupTopicSenders(pubsub_topology_manager_t *manager) {
                                       entry->scope,
                                       entry->topic,
                                       celix_filter_getFilterString(entry->publisherFilter));
+                celix_properties_destroy(topicPropertiesForHighestMatch);
             }
         }
     }
@@ -997,6 +996,8 @@ static void pstm_setupTopicSenders(pubsub_topology_manager_t *manager) {
             celixThreadMutex_unlock(&manager->topicSenders.mutex);
         } else {
             celix_logHelper_warning(manager->loghelper, "Cannot setup TopicSender for %s/%s\n", setupEntry->scope == NULL ? "(null)" : setupEntry->scope, setupEntry->topic);
+            celix_properties_destroy(setupEntry->topicProperties);
+            celix_properties_destroy(setupEntry->endpointResult);
         }
         free(setupEntry->scope);
         free(setupEntry->topic);
