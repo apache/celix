@@ -42,7 +42,7 @@ int main() {
     celix::PromiseFactory factory{};
 
     fib(factory, 1000000000)
-        .timeout(std::chrono::milliseconds {100})
+        .setTimeout(std::chrono::milliseconds {100})
         .onSuccess([](long val) {
             std::cout << "Success promise 1 : " << std::to_string(val) << std::endl;
         })
@@ -51,7 +51,7 @@ int main() {
         });
 
     fib(factory, 39)
-        .timeout(std::chrono::milliseconds{100})
+        .setTimeout(std::chrono::milliseconds{100})
         .onSuccess([](long val) {
             std::cout << "Success promise 2 : " << std::to_string(val) << std::endl;
         })

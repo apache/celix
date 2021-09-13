@@ -37,6 +37,7 @@ else ()
 endif ()
 
 if (PROMISES OR PROMISES_STANDALONE)
+    message("The Celix::Promises implementation is still experiment and the api and behaviour will probably still change.")
     find_package(Threads)
 
     add_library(Promises INTERFACE)
