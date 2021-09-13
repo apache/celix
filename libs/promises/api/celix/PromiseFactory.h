@@ -42,26 +42,26 @@ namespace celix {
         PromiseFactory& operator=(const PromiseFactory&) = default;
 
         template<typename T>
-        [[nodiscard]] celix::Deferred<T> deferred(int priority = 0);
+        [[nodiscard]] celix::Deferred<T> deferred(int priority = 0) const;
 
         template<typename T>
-        [[nodiscard]] celix::Promise<T> deferredTask(std::function<void(celix::Deferred<T>)> task, int priority = 0);
+        [[nodiscard]] celix::Promise<T> deferredTask(std::function<void(celix::Deferred<T>)> task, int priority = 0) const;
 
         template<typename T>
-        [[nodiscard]] celix::Promise<T> failed(const std::exception& e, int priority = 0);
+        [[nodiscard]] celix::Promise<T> failed(const std::exception& e, int priority = 0) const;
 
         template<typename T>
-        [[nodiscard]] celix::Promise<T> failed(std::exception_ptr ptr, int priority = 0);
+        [[nodiscard]] celix::Promise<T> failed(std::exception_ptr ptr, int priority = 0) const;
 
         template<typename T>
-        [[nodiscard]] celix::Promise<T> resolved(T&& value);
+        [[nodiscard]] celix::Promise<T> resolved(T&& value) const;
 
         template<typename T>
-        [[nodiscard]] celix::Promise<T> resolvedWithPrio(T&& value, int priority);
+        [[nodiscard]] celix::Promise<T> resolvedWithPrio(T&& value, int priority) const;
 
-        [[nodiscard]] celix::Promise<void> resolved();
+        [[nodiscard]] celix::Promise<void> resolved() const;
 
-        [[nodiscard]] celix::Promise<void> resolvedWithPrio(int priority);
+        [[nodiscard]] celix::Promise<void> resolvedWithPrio(int priority) const;
 
         [[nodiscard]] std::shared_ptr<celix::IExecutor> getExecutor() const;
 
@@ -94,13 +94,13 @@ inline celix::PromiseFactory::~PromiseFactory() noexcept {
 }
 
 template<typename T>
-celix::Deferred<T> celix::PromiseFactory::deferred(int priority) {
+celix::Deferred<T> celix::PromiseFactory::deferred(int priority) const {
     auto state = celix::impl::SharedPromiseState<T>::create(executor, scheduledExecutor, priority);
     return celix::Deferred<T>{state};
 }
 
 template<typename T>
-[[nodiscard]] celix::Promise<T> celix::PromiseFactory::deferredTask(std::function<void(celix::Deferred<T>)> task, int priority) {
+[[nodiscard]] celix::Promise<T> celix::PromiseFactory::deferredTask(std::function<void(celix::Deferred<T>)> task, int priority) const {
     auto def = deferred<T>(priority);
     executor->execute(priority, [def, task=std::move(task)]{
        task(def);
@@ -109,36 +109,36 @@ template<typename T>
 }
 
 template<typename T>
-celix::Promise<T> celix::PromiseFactory::failed(const std::exception &e, int priority) {
+celix::Promise<T> celix::PromiseFactory::failed(const std::exception &e, int priority) const {
     auto def = deferred<T>(priority);
     def.fail(e);
     return def.getPromise();
 }
 
 template<typename T>
-celix::Promise<T> celix::PromiseFactory::failed(std::exception_ptr ptr, int priority) {
+celix::Promise<T> celix::PromiseFactory::failed(std::exception_ptr ptr, int priority) const {
     auto def = deferred<T>(priority);
     def.fail(ptr);
     return def.getPromise();
 }
 
 template<typename T>
-celix::Promise<T> celix::PromiseFactory::resolved(T &&value) {
+celix::Promise<T> celix::PromiseFactory::resolved(T &&value) const {
     return resolvedWithPrio<T>(std::forward<T>(value), 0);
 }
 
 template<typename T>
-celix::Promise<T> celix::PromiseFactory::resolvedWithPrio(T &&value, int priority) {
+celix::Promise<T> celix::PromiseFactory::resolvedWithPrio(T &&value, int priority) const {
     auto def = deferred<T>(priority);
     def.resolve(std::forward<T>(value));
     return def.getPromise();
 }
 
-inline celix::Promise<void> celix::PromiseFactory::resolved() {
+inline celix::Promise<void> celix::PromiseFactory::resolved() const {
     return resolvedWithPrio(0);
 }
 
-inline celix::Promise<void> celix::PromiseFactory::resolvedWithPrio(int priority) {
+inline celix::Promise<void> celix::PromiseFactory::resolvedWithPrio(int priority) const {
     auto def = deferred<void>(priority);
     def.resolve();
     return def.getPromise();
