@@ -944,7 +944,7 @@ void celix::impl::SharedPromiseState<T>::addOnFailureConsumeCallback(std::functi
             } catch (const std::exception &e) {
                 callback(e);
             } catch (...) {
-                //NOTE not a exception based on std::exception, "repacking" it to logical error
+                //NOTE not an exception based on std::exception, "repacking" it to logical error
                 std::logic_error logicError{"Unknown exception throw for the failure of A celix::Promise"};
                 callback(logicError);
             }
@@ -961,7 +961,7 @@ inline void celix::impl::SharedPromiseState<void>::addOnFailureConsumeCallback(s
             } catch (const std::exception &e) {
                 callback(e);
             } catch (...) {
-                //NOTE not a exception based on std::exception, "repacking" it to logical error
+                //NOTE not an exception based on std::exception, "repacking" it to logical error
                 std::logic_error logicError{"Unknown exception throw for the failure of A celix::Promise"};
                 callback(logicError);
             }

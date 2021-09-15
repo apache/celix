@@ -172,6 +172,10 @@ TEST_F(PromiseTestSuite, onSuccessHandling) {
     EXPECT_EQ(true, resolveCalled);
 }
 
+static void test_throwing_function() {
+    throw celix::PromiseInvocationException{"PromiseInvocationException test"};
+}
+
 TEST_F(PromiseTestSuite, onFailureHandling) {
     auto deferred =  factory->deferred<long>();
     std::atomic<bool> successCalled = false;
@@ -183,14 +187,14 @@ TEST_F(PromiseTestSuite, onFailureHandling) {
             })
             .onFailure([&](const std::exception &e) {
                 failureCalled = true;
-                ASSERT_TRUE(0 == strcmp("basic_string::at: __n (which is 1) >= this->size() (which is 0)",  e.what())) << std::string(e.what());
+                auto what = e.what();
+                ASSERT_STREQ(what, "PromiseInvocationException test");
             })
             .onResolve([&]() {
                 resolveCalled = true;
             });
     try {
-        std::string{}.at(1); // this generates an std::out_of_range
-        //or use std::make_exception_ptr
+        test_throwing_function(); // this generates a celix::PromiseInvocationException
     } catch (...) {
         deferred.fail(std::current_exception());
     }
