@@ -24,11 +24,12 @@
 
 #include "celix/impl/SharedPromiseState.h"
 #include "celix/Promise.h"
+#include "celix/PromiseIllegalStateException.h"
 
 namespace celix {
 
     /**
-     * A Deferred Promise resolution.
+     * @brief A Deferred Promise resolution.
      *
      * <p>
      * Instances of this class can be used to create a {@link celix::Promise} that can be
@@ -77,7 +78,8 @@ namespace celix {
          * @param failure The failure in the form of an const std::exception reference.
          * @throws PromiseInvocationException If the associated Promise was already resolved.
          */
-        void fail(const std::exception& failure);
+        template<typename E, typename std::enable_if_t< std::is_base_of<std::exception, E>::value, bool> = true >
+        void fail(const E& failure);
 
         /**
          * Returns the Promise associated with this Deferred.
@@ -104,7 +106,6 @@ namespace celix {
         void resolve(T&& value);
         void resolve(const T& value);
 
-        //NOTE not part of the spec.. update to resolveWith with a return celix::Promise<void> ??
         /**
          * Resolve the Promise associated with this Deferred with the specified Promise.
          * <p/>
@@ -126,7 +127,7 @@ namespace celix {
          * associated Promise was already resolved when the specified Promise was resolved.
          */
         template<typename U>
-        void resolveWith(celix::Promise<U> with);
+        celix::Promise<void> resolveWith(celix::Promise<U> with);
 
     private:
         std::shared_ptr<celix::impl::SharedPromiseState<T>> state;
@@ -193,8 +194,8 @@ namespace celix {
          */
         void resolve();
 
-        void resolveWith(celix::Promise<void> with);
-
+        template<typename U>
+        celix::Promise<void> resolveWith(celix::Promise<U> with);
     private:
         std::shared_ptr<celix::impl::SharedPromiseState<void>> state;
     };
@@ -221,8 +222,9 @@ inline void celix::Deferred<void>::fail(std::exception_ptr failure) {
 }
 
 template<typename T>
-void celix::Deferred<T>::fail(const std::exception& failure) {
-    state->fail(failure);
+template<typename E, typename std::enable_if_t< std::is_base_of<std::exception, E>::value, bool>>
+void celix::Deferred<T>::fail(const E& failure) {
+    state->template fail<E>(failure);
 }
 
 inline void celix::Deferred<void>::fail(const std::exception& failure) {
@@ -240,25 +242,44 @@ inline celix::Promise<void> celix::Deferred<void>::getPromise() {
 
 template<typename T>
 template<typename U>
-void celix::Deferred<T>::resolveWith(celix::Promise<U> with) {
-    with.onResolve([s = state, with] () mutable {
+celix::Promise<void> celix::Deferred<T>::resolveWith(celix::Promise<U> with) {
+    auto p = celix::impl::SharedPromiseState<void>::create(state->getExecutor(), state->getScheduledExecutor(), state->getPriority());
+    with.onResolve([s = state, with, p] () mutable {
+        bool resolved;
         if (with.isSuccessfullyResolved()) {
-            s->resolve(with.moveOrGetValue());
+            resolved = s->tryResolve(with.moveOrGetValue());
         } else {
-            s->fail(with.getFailure());
+            resolved = s->tryFail(with.getFailure());
+        }
+        if (resolved) {
+            p->tryResolve();
+        } else {
+            //s was already resolved
+            p->tryFail(std::make_exception_ptr(celix::PromiseIllegalStateException{}));
         }
     });
+    return celix::Promise<void>{p};
 }
 
-inline void celix::Deferred<void>::resolveWith(celix::Promise<void> with) {
-    with.onResolve([s = state, with] {
+template<typename U>
+inline celix::Promise<void> celix::Deferred<void>::resolveWith(celix::Promise<U> with) {
+    auto p = celix::impl::SharedPromiseState<void>::create(state->getExecutor(), state->getScheduledExecutor(), state->getPriority());
+    with.onResolve([s = state, with, p] {
+        bool resolved;
         if (with.isSuccessfullyResolved()) {
             with.getValue();
-            s->resolve();
+            resolved = s->tryResolve();
         } else {
-            s->fail(with.getFailure());
+            resolved = s->tryFail(with.getFailure());
+        }
+        if (resolved) {
+            p->tryResolve();
+        } else {
+            //s was already resolved
+            p->tryFail(std::make_exception_ptr(celix::PromiseIllegalStateException{}));
         }
     });
+    return celix::Promise<void>{p};
 }
 
 template<typename T>

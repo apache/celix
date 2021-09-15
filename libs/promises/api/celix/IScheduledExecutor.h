@@ -33,9 +33,9 @@ namespace celix {
     public:
         virtual ~IScheduledFuture() noexcept = default;
 
-        virtual bool isCancelled() const = 0;
+        [[nodiscard]] virtual bool isCancelled() const = 0;
 
-        virtual bool isDone() const = 0;
+        [[nodiscard]] virtual bool isDone() const = 0;
 
         virtual void cancel() = 0;
     };
