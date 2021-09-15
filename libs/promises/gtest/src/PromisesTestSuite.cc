@@ -226,6 +226,106 @@ TEST_F(PromiseTestSuite, onFailureHandlingLogicError) {
     EXPECT_EQ(true, resolveCalled);
 }
 
+TEST_F(PromiseTestSuite, onFailureHandlingPromiseIllegalStateException) {
+    auto deferred =  factory->deferred<long>();
+    std::atomic<bool> successCalled = false;
+    std::atomic<bool> failureCalled = false;
+    std::atomic<bool> resolveCalled = false;
+    auto p = deferred.getPromise()
+            .onSuccess([&](long /*value*/) {
+                successCalled = true;
+            })
+            .onFailure([&](const std::exception &e) {
+                failureCalled = true;
+                ASSERT_TRUE(0 == strcmp("Illegal state",  e.what())) << std::string(e.what());
+            })
+            .onResolve([&]() {
+                resolveCalled = true;
+            });
+
+    deferred.fail(celix::PromiseIllegalStateException());
+
+    factory->wait();
+    EXPECT_EQ(false, successCalled);
+    EXPECT_EQ(true, failureCalled);
+    EXPECT_EQ(true, resolveCalled);
+}
+
+TEST_F(PromiseTestSuite, onFailureHandlingPromiseInvocationException) {
+    auto deferred =  factory->deferred<long>();
+    std::atomic<bool> successCalled = false;
+    std::atomic<bool> failureCalled = false;
+    std::atomic<bool> resolveCalled = false;
+    auto p = deferred.getPromise()
+            .onSuccess([&](long /*value*/) {
+                successCalled = true;
+            })
+            .onFailure([&](const std::exception &e) {
+                failureCalled = true;
+                ASSERT_TRUE(0 == strcmp("MyExceptionText",  e.what())) << std::string(e.what());
+            })
+            .onResolve([&]() {
+                resolveCalled = true;
+            });
+
+    deferred.fail(celix::PromiseInvocationException("MyExceptionText"));
+
+    factory->wait();
+    EXPECT_EQ(false, successCalled);
+    EXPECT_EQ(true, failureCalled);
+    EXPECT_EQ(true, resolveCalled);
+}
+
+TEST_F(PromiseTestSuite, onFailureHandlingPromiseTimeoutException) {
+    auto deferred =  factory->deferred<long>();
+    std::atomic<bool> successCalled = false;
+    std::atomic<bool> failureCalled = false;
+    std::atomic<bool> resolveCalled = false;
+    auto p = deferred.getPromise()
+            .onSuccess([&](long /*value*/) {
+                successCalled = true;
+            })
+            .onFailure([&](const std::exception &e) {
+                failureCalled = true;
+                ASSERT_TRUE(0 == strcmp("Timeout",  e.what())) << std::string(e.what());
+            })
+            .onResolve([&]() {
+                resolveCalled = true;
+            });
+
+    deferred.fail(celix::PromiseTimeoutException());
+
+    factory->wait();
+    EXPECT_EQ(false, successCalled);
+    EXPECT_EQ(true, failureCalled);
+    EXPECT_EQ(true, resolveCalled);
+}
+
+TEST_F(PromiseTestSuite, onFailureHandlingRejectedExecutionException) {
+    auto deferred =  factory->deferred<long>();
+    std::atomic<bool> successCalled = false;
+    std::atomic<bool> failureCalled = false;
+    std::atomic<bool> resolveCalled = false;
+    auto p = deferred.getPromise()
+            .onSuccess([&](long /*value*/) {
+                successCalled = true;
+            })
+            .onFailure([&](const std::exception &e) {
+                failureCalled = true;
+                ASSERT_TRUE(0 == strcmp("Cannot accept task for execution",  e.what())) << std::string(e.what());
+            })
+            .onResolve([&]() {
+                resolveCalled = true;
+            });
+
+    deferred.fail(celix::RejectedExecutionException());
+
+    factory->wait();
+    EXPECT_EQ(false, successCalled);
+    EXPECT_EQ(true, failureCalled);
+    EXPECT_EQ(true, resolveCalled);
+}
+
 TEST_F(PromiseTestSuite, resolveSuccessWith) {
     auto deferred1 = factory->deferred<long>();
     std::atomic<bool> called = false;
