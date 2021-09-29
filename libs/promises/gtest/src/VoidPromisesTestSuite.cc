@@ -126,6 +126,81 @@ TEST_F(VoidPromiseTestSuite, onFailureHandling) {
     EXPECT_EQ(true, resolveCalled);
 }
 
+TEST_F(VoidPromiseTestSuite, onFailureHandlingLogicError) {
+    auto deferred =  factory->deferred<void>();
+    std::atomic<bool> successCalled = false;
+    std::atomic<bool> failureCalled = false;
+    std::atomic<bool> resolveCalled = false;
+    auto p = deferred.getPromise()
+            .onSuccess([&]() {
+                successCalled = true;
+            })
+            .onFailure([&](const std::exception &e) {
+                failureCalled = true;
+                ASSERT_TRUE(0 == strcmp("Some Exception",  e.what())) << std::string(e.what());
+            })
+            .onResolve([&]() {
+                resolveCalled = true;
+            });
+
+    deferred.fail(std::logic_error("Some Exception"));
+
+    factory->wait();
+    EXPECT_EQ(false, successCalled);
+    EXPECT_EQ(true, failureCalled);
+    EXPECT_EQ(true, resolveCalled);
+}
+
+TEST_F(VoidPromiseTestSuite, onFailureHandlingPromiseIllegalStateException) {
+    auto deferred =  factory->deferred<void>();
+    std::atomic<bool> successCalled = false;
+    std::atomic<bool> failureCalled = false;
+    std::atomic<bool> resolveCalled = false;
+    auto p = deferred.getPromise()
+            .onSuccess([&]() {
+                successCalled = true;
+            })
+            .onFailure([&](const std::exception &e) {
+                failureCalled = true;
+                ASSERT_TRUE(0 == strcmp("Illegal state",  e.what())) << std::string(e.what());
+            })
+            .onResolve([&]() {
+                resolveCalled = true;
+            });
+
+    deferred.fail(celix::PromiseIllegalStateException());
+
+    factory->wait();
+    EXPECT_EQ(false, successCalled);
+    EXPECT_EQ(true, failureCalled);
+    EXPECT_EQ(true, resolveCalled);
+}
+
+TEST_F(VoidPromiseTestSuite, onFailureHandlingPromiseInvocationException) {
+    auto deferred =  factory->deferred<void>();
+    std::atomic<bool> successCalled = false;
+    std::atomic<bool> failureCalled = false;
+    std::atomic<bool> resolveCalled = false;
+    auto p = deferred.getPromise()
+            .onSuccess([&]() {
+                successCalled = true;
+            })
+            .onFailure([&](const std::exception &e) {
+                failureCalled = true;
+                ASSERT_TRUE(0 == strcmp("MyExceptionText",  e.what())) << std::string(e.what());
+            })
+            .onResolve([&]() {
+                resolveCalled = true;
+            });
+
+    deferred.fail(celix::PromiseInvocationException("MyExceptionText"));
+
+    factory->wait();
+    EXPECT_EQ(false, successCalled);
+    EXPECT_EQ(true, failureCalled);
+    EXPECT_EQ(true, resolveCalled);
+}
+
 TEST_F(VoidPromiseTestSuite, resolveSuccessWith) {
     auto deferred1 = factory->deferred<void>();
     bool called = false;
