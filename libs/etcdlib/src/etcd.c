@@ -257,6 +257,40 @@ static long long etcd_get_current_index(const char* headerData) {
 }
 
 
+int etcdlib_get_db_index(etcdlib_t *etcdlib, int* modifiedIndex) {
+
+	int res = -1;
+	struct MemoryStruct reply;
+
+	reply.memory = malloc(1); /* will be grown as needed by the realloc above */
+	reply.memorySize = 0; /* no data at this point */
+	reply.header = malloc(1); /* will be grown as needed by the realloc above */
+	reply.headerSize = 0; /* no data at this point */
+
+	int retVal = ETCDLIB_RC_OK;
+	char *url;
+	asprintf(&url, "http://%s:%d/v2/keys", etcdlib->host, etcdlib->port);
+	res = performRequest(&etcdlib->curl, &etcdlib->mutex, url, GET, NULL, (void *) &reply);
+	free(url);
+
+	if (res == CURLE_OK) {
+        long long indexFromHeader = etcd_get_current_index(reply.header);
+        *modifiedIndex = (int)indexFromHeader;
+	} else if (res == CURLE_OPERATION_TIMEDOUT) {
+		retVal = ETCDLIB_RC_TIMEOUT;
+	} else {
+		retVal = ETCDLIB_RC_ERROR;
+		fprintf(stderr, "Error getting etcd value, curl error: '%s'\n", curl_easy_strerror(res));
+	}
+
+	if (reply.memory) {
+		free(reply.memory);
+	}
+	free(reply.header);
+	return retVal;
+}
+
+
 int etcd_get_directory(const char* directory, etcdlib_key_value_callback callback, void* arg, long long* modifiedIndex) {
 	return etcdlib_get_directory(&g_etcdlib, directory, callback, arg, modifiedIndex);
 }

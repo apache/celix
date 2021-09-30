@@ -149,6 +149,13 @@ int etcdlib_del(etcdlib_t *etcdlib, const char* key);
  */
 int etcdlib_watch(etcdlib_t *etcdlib, const char* key, long long index, char** action, char** prevValue, char** value, char** rkey, long long* modifiedIndex);
 
+/**
+ * @desc Retrieve the current database index
+ * @param const etcdlib_t* etcdlib. The ETCD-LIB instance
+ * @param int* modifiedIndex. The X-Etcd-Index value as retrieved from the etcd server.
+ */
+int etcdlib_get_db_index(etcdlib_t *etcdlib, int* modifiedIndex);
+
 #ifdef __cplusplus
 }
 #endif
