@@ -36,12 +36,15 @@ static void* celix_framework_stopStartBundleThread(void *data) {
             celix_framework_stopBundleEntry(handler->framework, handler->bndEntry);
             break;
         default:
+            celix_framework_bundleEntry_decreaseUseCount(handler->bndEntry);
             celix_framework_uninstallBundleEntry(handler->framework, handler->bndEntry);
             break;
     }
     int doneVal = 1;
     __atomic_store(&handler->done, &doneVal, __ATOMIC_SEQ_CST);
-    celix_framework_bundleEntry_decreaseUseCount(handler->bndEntry);
+    if (handler->command != CELIX_BUNDLE_LIFECYCLE_UNINSTALL) {
+        celix_framework_bundleEntry_decreaseUseCount(handler->bndEntry);
+    }
     return NULL;
 }
 
@@ -96,8 +99,12 @@ static void celix_framework_createAndStartBundleLifecycleHandler(celix_framework
     celixThreadMutex_unlock(&fw->bundleLifecycleHandling.mutex);
 }
 
-celix_status_t celix_framework_startBundleOnANonCelixEventThread(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry) {
-    if (celix_framework_isCurrentThreadTheEventLoop(fw)) {
+celix_status_t celix_framework_startBundleOnANonCelixEventThread(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry, bool forceSpawnThread) {
+    if (forceSpawnThread) {
+        fw_log(fw->logger, CELIX_LOG_LEVEL_TRACE, "start bundle from a separate thread");
+        celix_framework_createAndStartBundleLifecycleHandler(fw, bndEntry, CELIX_BUNDLE_LIFECYCLE_START);
+        return CELIX_SUCCESS;
+    } else if (celix_framework_isCurrentThreadTheEventLoop(fw)) {
         fw_log(fw->logger, CELIX_LOG_LEVEL_DEBUG,
                "Cannot start bundle from Celix event thread. Using a separate thread to start bundle. See celix_bundleContext_startBundle for more info.");
         celix_framework_createAndStartBundleLifecycleHandler(fw, bndEntry, CELIX_BUNDLE_LIFECYCLE_START);
@@ -107,8 +114,12 @@ celix_status_t celix_framework_startBundleOnANonCelixEventThread(celix_framework
     }
 }
 
-celix_status_t celix_framework_stopBundleOnANonCelixEventThread(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry) {
-    if (celix_framework_isCurrentThreadTheEventLoop(fw)) {
+celix_status_t celix_framework_stopBundleOnANonCelixEventThread(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry, bool forceSpawnThread) {
+    if (forceSpawnThread) {
+        fw_log(fw->logger, CELIX_LOG_LEVEL_TRACE, "stop bundle from a separate thread");
+        celix_framework_createAndStartBundleLifecycleHandler(fw, bndEntry, CELIX_BUNDLE_LIFECYCLE_STOP);
+        return CELIX_SUCCESS;
+    } else if (celix_framework_isCurrentThreadTheEventLoop(fw)) {
         fw_log(fw->logger, CELIX_LOG_LEVEL_DEBUG,
                "Cannot stop bundle from Celix event thread. Using a separate thread to stop bundle. See celix_bundleContext_startBundle for more info.");
         celix_framework_createAndStartBundleLifecycleHandler(fw, bndEntry, CELIX_BUNDLE_LIFECYCLE_STOP);
@@ -118,8 +129,12 @@ celix_status_t celix_framework_stopBundleOnANonCelixEventThread(celix_framework_
     }
 }
 
-celix_status_t celix_framework_uninstallBundleOnANonCelixEventThread(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry) {
-    if (celix_framework_isCurrentThreadTheEventLoop(fw)) {
+celix_status_t celix_framework_uninstallBundleOnANonCelixEventThread(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry, bool forceSpawnThread) {
+    if (forceSpawnThread) {
+        fw_log(fw->logger, CELIX_LOG_LEVEL_TRACE, "uninstall bundle from a separate thread");
+        celix_framework_createAndStartBundleLifecycleHandler(fw, bndEntry, CELIX_BUNDLE_LIFECYCLE_UNINSTALL);
+        return CELIX_SUCCESS;
+    } else if (celix_framework_isCurrentThreadTheEventLoop(fw)) {
         fw_log(fw->logger, CELIX_LOG_LEVEL_DEBUG,
                "Cannot uninstall bundle from Celix event thread. Using a separate thread to uninstall bundle. See celix_bundleContext_uninstall Bundle for more info.");
         celix_framework_createAndStartBundleLifecycleHandler(fw, bndEntry, CELIX_BUNDLE_LIFECYCLE_UNINSTALL);

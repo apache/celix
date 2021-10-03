@@ -19,6 +19,8 @@
 
 #include <gtest/gtest.h>
 #include <atomic>
+#include <chrono>
+#include <thread>
 
 #include "celix_launcher.h"
 #include "celix_framework_factory.h"
@@ -72,6 +74,25 @@ TEST_F(CelixFramework, testEventQueue) {
 
     celix_framework_waitForGenericEvent(framework.get(), eid);
     EXPECT_EQ(4, count);
+}
+
+TEST_F(CelixFramework, testAsyncInstallStartStopAndUninstallBundle) {
+    long bndId = celix_framework_installBundleAsync(framework.get(), SIMPLE_TEST_BUNDLE1_LOCATION, false);
+    EXPECT_GE(bndId, 0);
+    EXPECT_TRUE(celix_framework_isBundleInstalled(framework.get(), bndId));
+    EXPECT_FALSE(celix_framework_isBundleActive(framework.get(), bndId));
+
+    celix_framework_startBundle(framework.get(), bndId);
+    std::this_thread::sleep_for(std::chrono::milliseconds{100});
+    EXPECT_TRUE(celix_framework_isBundleActive(framework.get(), bndId));
+
+    celix_framework_stopBundle(framework.get(), bndId);
+    std::this_thread::sleep_for(std::chrono::milliseconds{100});
+    EXPECT_FALSE(celix_framework_isBundleActive(framework.get(), bndId));
+
+    celix_framework_uninstallBundleAsync(framework.get(), bndId);
+    std::this_thread::sleep_for(std::chrono::milliseconds{100});
+    EXPECT_FALSE(celix_framework_isBundleInstalled(framework.get(), bndId));
 }
 
 class FrameworkFactory : public ::testing::Test {

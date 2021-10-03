@@ -28,7 +28,7 @@ The Celix Shell TUI implements a textual user interface for the Celix Shell.
 
 ## Config options
 
-- SHELL_USE_ANSI_CONTROL_SEQUENCES - Whether to use ANSI control
+- SHELL_TUI_USE_ANSI_CONTROL_SEQUENCES - Whether to use ANSI control
 sequences to support backspace, left, up, etc key commands in the
 shell tui. Default is true if a TERM environment is set else false.
 

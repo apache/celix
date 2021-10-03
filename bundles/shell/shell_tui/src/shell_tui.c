@@ -16,23 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * shell_tui.c
- *
- *  \date       Aug 13, 2010
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
 
-#include <sys/time.h>
-#include <sys/select.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <termios.h>
 #include <unistd.h>
+#include <poll.h>
 
-#include "bundle_context.h"
+#include "celix_array_list.h"
 #include "celix_shell.h"
 #include "shell_tui.h"
 #include "utils.h"
@@ -55,13 +47,19 @@
 #define KEY_DEL1		'3'
 #define KEY_DEL2		'~'
 
+const char * const SHELL_NOT_AVAILABLE_MSG = "[Shell TUI] Shell service not available.";
+
 struct shell_tui {
     celix_thread_mutex_t mutex; //protects shell
     celix_shell_t* shell;
     celix_thread_t thread;
 
-    int readPipeFd;
-    int writePipeFd;
+    int readStopPipeFd;
+    int writeStopPipeFd;
+
+    int inputFd;
+    FILE* output;
+    FILE* error;
 
     bool useAnsiControlSequences;
 };
@@ -85,25 +83,35 @@ struct OriginalSettings {
 
 // static function declarations
 static void remove_newlines(char* line);
-static void clearLine();
-static void cursorLeft(int n);
-static void writeLine(const char*line, int pos);
-static int autoComplete(celix_shell_t* shellSvc, char *in, int cursorPos, size_t maxLen);
+static void clearLine(shell_tui_t*);
+static void cursorLeft(shell_tui_t*, int n);
+static void writeLine(shell_tui_t*, const char*line, int pos);
+static int autoComplete(shell_tui_t*, celix_shell_t* shellSvc, char *in, int cursorPos, size_t maxLen);
 static void shellSigHandler(int sig, siginfo_t *info, void* ptr);
 static void* shellTui_runnable(void *data);
-static void shellTui_parseInputForControl(shell_tui_t* shellTui, shell_context_t* ctx);
-static void shellTui_parseInput(shell_tui_t* shellTui, shell_context_t* ctx);
-static void writePrompt(void);
+static int shellTui_parseInput(shell_tui_t* shellTui, shell_context_t* ctx);
+static int shellTui_parseInputForControl(shell_tui_t* shellTui, shell_context_t* ctx);
+static int shellTui_parseInputPlain(shell_tui_t* shellTui, shell_context_t* ctx);
+static void writePrompt(shell_tui_t*);
 
 // Unfortunately has to be static, it is not possible to pass user defined data to the handler
 static struct OriginalSettings originalSettings;
 
-shell_tui_t* shellTui_create(bool useAnsiControlSequences) {
+shell_tui_t* shellTui_create(bool useAnsiControlSequences, int inputFd, int outputFd, int errorFd) {
     shell_tui_t* result = calloc(1, sizeof(*result));
-    if (result != NULL) {
-        result->useAnsiControlSequences = useAnsiControlSequences;
-        celixThreadMutex_create(&result->mutex, NULL);
+    result->inputFd = inputFd;
+    result->output = outputFd == STDOUT_FILENO ? stdout : fdopen(outputFd, "a");
+    if (result->output == NULL) {
+        fprintf(stderr, "Cannot open output fd %i for appending. Falling back to stdout\n", outputFd);
+        result->output = stdout;
     }
+    result->error = errorFd == STDERR_FILENO ? stderr : fdopen(errorFd, "a");
+    if (result->error == NULL) {
+        fprintf(stderr, "Cannot open error fd %i for appending. Falling back to stderr\n", errorFd);
+        result->error = stderr;
+    }
+    result->useAnsiControlSequences = useAnsiControlSequences;
+    celixThreadMutex_create(&result->mutex, NULL);
     return result;
 }
 
@@ -113,17 +121,16 @@ celix_status_t shellTui_start(shell_tui_t* shellTui) {
     int fds[2];
     int rc  = pipe(fds);
     if (rc == 0) {
-        shellTui->readPipeFd = fds[0];
-        shellTui->writePipeFd = fds[1];
-        if(fcntl(shellTui->writePipeFd, F_SETFL, O_NONBLOCK) == 0){
+        shellTui->readStopPipeFd = fds[0];
+        shellTui->writeStopPipeFd = fds[1];
+        if (fcntl(shellTui->writeStopPipeFd, F_SETFL, O_NONBLOCK) == 0){
         	celixThread_create(&shellTui->thread, NULL, shellTui_runnable, shellTui);
-        }
-        else{
-        	fprintf(stderr,"fcntl on pipe failed");
+        } else {
+        	fprintf(shellTui->error,"[Shell TUI] fcntl on pipe failed");
         	status = CELIX_FILE_IO_EXCEPTION;
         }
     } else {
-        fprintf(stderr, "Cannot create pipe");
+        fprintf(shellTui->error, "[Shell TUI] Cannot create pipe");
         status = CELIX_BUNDLE_EXCEPTION;
     }
 
@@ -131,17 +138,20 @@ celix_status_t shellTui_start(shell_tui_t* shellTui) {
 }
 
 celix_status_t shellTui_stop(shell_tui_t* shellTui) {
-    celix_status_t status = CELIX_SUCCESS;
-    write(shellTui->writePipeFd, "\0", 1); //trigger select to stop
+    write(shellTui->writeStopPipeFd, "", 1); //trigger select to stop
     celixThread_join(shellTui->thread, NULL);
-    close(shellTui->writePipeFd);
-    close(shellTui->readPipeFd);
-    return status;
+    close(shellTui->writeStopPipeFd);
+    close(shellTui->readStopPipeFd);
+    if (shellTui->output != stdout) {
+        fclose(shellTui->output);
+    }
+    if (shellTui->error != stderr) {
+        fclose(shellTui->error);
+    }
+    return CELIX_SUCCESS;
 }
 
 void shellTui_destroy(shell_tui_t* shellTui) {
-    if (shellTui == NULL) return;
-
     celixThreadMutex_destroy(&shellTui->mutex);
     free(shellTui);
 }
@@ -175,7 +185,7 @@ static void* shellTui_runnable(void *data) {
     ctx.hist = historyCreate();
 
     struct termios term_new;
-    if (shellTui->useAnsiControlSequences) {
+    if (shellTui->useAnsiControlSequences && shellTui->inputFd == STDIN_FILENO) {
         sigaction(SIGINT, NULL, &originalSettings.oldSigIntAction);
         sigaction(SIGSEGV, NULL, &originalSettings.oldSigSegvAction);
         sigaction(SIGABRT, NULL, &originalSettings.oldSigAbrtAction);
@@ -196,40 +206,47 @@ static void* shellTui_runnable(void *data) {
         tcsetattr(STDIN_FILENO, TCSANOW, &term_new);
     }
 
-    //setup file descriptors
-    fd_set rfds;
-    int nfds = shellTui->writePipeFd > STDIN_FILENO ? (shellTui->writePipeFd +1) : (STDIN_FILENO + 1);
+    //setup poll
+    nfds_t nfds = 2;
+    struct pollfd pollfds[2];
+    pollfds[0].fd = shellTui->readStopPipeFd;
+    pollfds[0].events = POLLIN;
+    pollfds[1].fd = shellTui->inputFd;
+    pollfds[1].events = POLLIN;
 
+    bool printPrompt = true;
     for (;;) {
-        if (shellTui->useAnsiControlSequences) {
-            writeLine(ctx.in, ctx.pos);
-        } else {
-            writePrompt();
+        if (printPrompt && shellTui->useAnsiControlSequences) {
+            writeLine(shellTui, ctx.in, ctx.pos);
+        } else if (printPrompt) {
+            writePrompt(shellTui);
         }
-        FD_ZERO(&rfds);
-        FD_SET(STDIN_FILENO, &rfds);
-        FD_SET(shellTui->readPipeFd, &rfds);
 
-        if (select(nfds, &rfds, NULL, NULL, NULL) > 0) {
-            if (FD_ISSET(shellTui->readPipeFd, &rfds)) {
-                break; //something is written to the pipe -> exit thread
-            } else if (FD_ISSET(STDIN_FILENO, &rfds)) {
-                if (shellTui->useAnsiControlSequences) {
-                    shellTui_parseInputForControl(shellTui, &ctx);
-                } else {
-                    shellTui_parseInput(shellTui, &ctx);
-                }
-
-                if (!isatty(STDIN_FILENO)) {
-                    //not connected to a tty anymore. sleep for 1 sec
-                    usleep(10000000);
-                }
+        int rc = poll(pollfds, nfds, -1);
+        if (rc > 0) {
+            int nrOfCharsRead = 0;
+            if (pollfds[0].revents & POLLIN) {
+                break; //something is written to the stop pipe -> exit thread
             }
+            if (pollfds[1].revents & POLLIN) {
+                //something is written on the STDIN_FILENO fd
+                nrOfCharsRead = shellTui_parseInput(shellTui, &ctx);
+            }
+            printPrompt = nrOfCharsRead > 0;
+            if (shellTui->inputFd == STDIN_FILENO && !isatty(STDIN_FILENO)) {
+                //not connected to a tty (anymore)
+                //sleep for 1 sec to prevent 100% busy loop when a tty is removed.
+                usleep(10000000);
+            }
+        } else {
+            //error or (not configured timeout)
+            fprintf(shellTui->error, "[Shell TUI] Error reading stdin: %s\n", strerror(errno));
+            break;
         }
     }
 
     historyDestroy(ctx.hist);
-    if (shellTui->useAnsiControlSequences) {
+    if (shellTui->useAnsiControlSequences && shellTui->inputFd == STDIN_FILENO) {
         tcsetattr(STDIN_FILENO, TCSANOW, &originalSettings.term_org);
         sigaction(SIGINT, &originalSettings.oldSigIntAction, NULL);
         sigaction(SIGSEGV, &originalSettings.oldSigSegvAction, NULL);
@@ -241,7 +258,15 @@ static void* shellTui_runnable(void *data) {
     return NULL;
 }
 
-static void shellTui_parseInput(shell_tui_t* shellTui, shell_context_t* ctx) {
+static int shellTui_parseInput(shell_tui_t* shellTui, shell_context_t* ctx) {
+    if (shellTui->useAnsiControlSequences) {
+        return shellTui_parseInputForControl(shellTui, ctx);
+    } else {
+        return shellTui_parseInputPlain(shellTui, ctx);
+    }
+}
+
+static int shellTui_parseInputPlain(shell_tui_t* shellTui, shell_context_t* ctx) {
     char* buffer = ctx->buffer;
     char* in = ctx->in;
     int pos = ctx->pos;
@@ -249,16 +274,15 @@ static void shellTui_parseInput(shell_tui_t* shellTui, shell_context_t* ctx) {
     char* line = NULL;
 
 
-    int nr_chars = read(STDIN_FILENO, buffer, LINE_SIZE-pos-1);
+    int nr_chars = read(shellTui->inputFd, buffer, LINE_SIZE-pos-1);
     for(int bufpos = 0; bufpos < nr_chars; bufpos++) {
         if (buffer[bufpos] == KEY_ENTER) { //end of line -> forward command
             line = utils_stringTrim(in);
             celixThreadMutex_lock(&shellTui->mutex);
             if (shellTui->shell != NULL) {
-                printf("Providing command '%s' from in '%s'\n", line, in);
-                shellTui->shell->executeCommand(shellTui->shell->handle, line, stdout, stderr);
+                shellTui->shell->executeCommand(shellTui->shell->handle, line, shellTui->output, shellTui->error);
             } else {
-                fprintf(stderr, "Shell service not available\n");
+                fprintf(shellTui->output, "%s\n", SHELL_NOT_AVAILABLE_MSG);
             }
             celixThreadMutex_unlock(&shellTui->mutex);
             pos = 0;
@@ -271,22 +295,18 @@ static void shellTui_parseInput(shell_tui_t* shellTui, shell_context_t* ctx) {
         }
     } // for
     ctx->pos = pos;
+    return nr_chars;
 }
 
-static void shellTui_parseInputForControl(shell_tui_t* shellTui, shell_context_t* ctx) {
+static int shellTui_parseInputForControl(shell_tui_t* shellTui, shell_context_t* ctx) {
     char* buffer = ctx->buffer;
     char* in = ctx->in;
     char* dline = ctx->dline;
     history_t* hist = ctx->hist;
     int pos = ctx->pos;
-
     char* line = NULL;
 
-    if (shellTui == NULL) {
-    	return;
-    }
-
-    int nr_chars = read(STDIN_FILENO, buffer, LINE_SIZE-pos-1);
+    int nr_chars = read(shellTui->inputFd, buffer, LINE_SIZE-pos-1);
     for(int bufpos = 0; bufpos < nr_chars; bufpos++) {
         if (buffer[bufpos] == KEY_ESC1 && buffer[bufpos+1] == KEY_ESC2) {
             switch (buffer[bufpos+2]) {
@@ -294,27 +314,27 @@ static void shellTui_parseInputForControl(shell_tui_t* shellTui, shell_context_t
                     if(historySize(hist) > 0) {
                         strncpy(in, historyGetPrevLine(hist), LINE_SIZE);
                         pos = strlen(in);
-                        writeLine(in, pos);
+                        writeLine(shellTui, in, pos);
                     }
                     break;
                 case KEY_DOWN:
                     if(historySize(hist) > 0) {
                         strncpy(in, historyGetNextLine(hist), LINE_SIZE);
                         pos = strlen(in);
-                        writeLine(in, pos);
+                        writeLine(shellTui, in, pos);
                     }
                     break;
                 case KEY_RIGHT:
                     if (pos < strlen(in)) {
                         pos++;
                     }
-                    writeLine(in, pos);
+                    writeLine(shellTui, in, pos);
                     break;
                 case KEY_LEFT:
                     if (pos > 0) {
                         pos--;
                     }
-                    writeLine(in, pos);
+                    writeLine(shellTui, in, pos);
                     break;
                 case KEY_DEL1:
                     if(buffer[bufpos+3] == KEY_DEL2) {
@@ -325,7 +345,7 @@ static void shellTui_parseInputForControl(shell_tui_t* shellTui, shell_context_t
                                 in[i] = in[i + 1];
                             }
                         }
-                        writeLine(in, pos);
+                        writeLine(shellTui, in, pos);
                     }
                     break;
                 default:
@@ -342,11 +362,11 @@ static void shellTui_parseInputForControl(shell_tui_t* shellTui, shell_context_t
                 }
                 pos--;
             }
-            writeLine(in, pos);
+            writeLine(shellTui, in, pos);
             continue;
         } else if(buffer[bufpos] == KEY_TAB) {
             celixThreadMutex_lock(&shellTui->mutex);
-            pos = autoComplete(shellTui->shell, in, pos, LINE_SIZE);
+            pos = autoComplete(shellTui, shellTui->shell, in, pos, LINE_SIZE);
             celixThreadMutex_unlock(&shellTui->mutex);
             continue;
         } else if (buffer[bufpos] != KEY_ENTER) { //not end of line -> text
@@ -355,14 +375,14 @@ static void shellTui_parseInputForControl(shell_tui_t* shellTui, shell_context_t
             }
             in[pos] = buffer[bufpos];
             pos++;
-            writeLine(in, pos);
-            fflush(stdout);
+            writeLine(shellTui, in, pos);
+            fflush(shellTui->output);
             continue;
         }
 
         //parse enter
-        writeLine(in, pos);
-        write(STDOUT_FILENO, "\n", 1);
+        writeLine(shellTui, in, pos);
+        fprintf(shellTui->output, "\n");
         remove_newlines(in);
         history_addLine(hist, in);
 
@@ -379,15 +399,15 @@ static void shellTui_parseInputForControl(shell_tui_t* shellTui, shell_context_t
         historyLineReset(hist);
         celixThreadMutex_lock(&shellTui->mutex);
         if (shellTui->shell != NULL) {
-            shellTui->shell->executeCommand(shellTui->shell->handle, line, stdout, stderr);
-            pos = 0;
-            nr_chars = 0;
+            shellTui->shell->executeCommand(shellTui->shell->handle, line, shellTui->output, shellTui->error);
         } else {
-            fprintf(stderr, "Shell service not available\n");
+            fprintf(shellTui->output, "%s\n", SHELL_NOT_AVAILABLE_MSG);
         }
         celixThreadMutex_unlock(&shellTui->mutex);
+        break;
     } // for
     ctx->pos = pos;
+    return nr_chars;
 }
 
 static void remove_newlines(char* line) {
@@ -400,71 +420,102 @@ static void remove_newlines(char* line) {
     }
 }
 
-static void clearLine() {
-	printf("\033[2K\r");
-	fflush(stdout);
+static void clearLine(shell_tui_t* shellTui) {
+	fprintf(shellTui->output, "\033[2K\r");
+	fflush(shellTui->output);
 }
 
-static void cursorLeft(int n) {
-	if(n>0) {
-		printf("\033[%dD", n);
-		fflush(stdout);
+static void cursorLeft(shell_tui_t* shellTui, int n) {
+	if (n>0) {
+		fprintf(shellTui->output, "\033[%dD", n);
 	}
+    fflush(shellTui->output);
 }
 
-static void writePrompt(void) {
-    write(STDIN_FILENO, PROMPT, strlen(PROMPT));
+static void writePrompt(shell_tui_t* shellTui) {
+    fwrite(PROMPT, 1, strlen(PROMPT), shellTui->output);
+    fflush(shellTui->output);
 }
 
-static void writeLine(const char* line, int pos) {
-    clearLine();
-    write(STDOUT_FILENO, PROMPT, strlen(PROMPT));
-    write(STDOUT_FILENO, line, strlen(line));
-	cursorLeft(strlen(line)-pos);
+static void writeLine(shell_tui_t* shellTui, const char* line, int pos) {
+    clearLine(shellTui);
+    fwrite( PROMPT, 1, strlen(PROMPT), shellTui->output);
+    fwrite(line, 1, strlen(line), shellTui->output);
+    cursorLeft(shellTui, strlen(line)-pos);
 }
 
-static int autoComplete(celix_shell_t* shellSvc, char *in, int cursorPos, size_t maxLen) {
-	array_list_pt commandList = NULL;
-	array_list_pt possibleCmdList = NULL;
+/**
+ * @brief Will check if there is a match with the input and the fully qualified cmd name or local name.
+ *
+ * @return Return cmd or local cmd if there is a match with the input.
+ */
+static char* isFullQualifiedOrLocalMatch(char *cmd, char *in, int cursorPos) {
+    char* matchCmd = NULL;
+    if (strncmp(in, cmd, cursorPos) == 0) {
+        matchCmd = cmd;
+    } else {
+        char* namespaceFound = strstr(cmd, "::");
+        if (namespaceFound != NULL) {
+            //got a command with a namespace, strip namespace for a possible match. E.g celix::lb -> lb
+            char *localCmd = namespaceFound + 2; //note :: is 2 char, so forward 2 chars
+            if (strncmp(in, localCmd, cursorPos) == 0) {
+                matchCmd = localCmd;
+            }
+        }
+    }
+    return matchCmd;
+}
+
+static int autoComplete(shell_tui_t* shellTui, celix_shell_t* shellSvc, char *in, int cursorPos, size_t maxLen) {
+	celix_array_list_t* commandList = NULL;
+    celix_array_list_t* possibleCmdList = NULL;
 	shellSvc->getCommands(shellSvc->handle, &commandList);
-	int nrCmds = arrayList_size(commandList);
-	arrayList_create(&possibleCmdList);
+	int nrCmds = celix_arrayList_size(commandList);
+    possibleCmdList = celix_arrayList_create();
 
 	for (int i = 0; i < nrCmds; i++) {
-		char *cmd = arrayList_get(commandList, i);
-		if (strncmp(in, cmd, cursorPos) == 0) {
-			arrayList_add(possibleCmdList, cmd);
-		}
+		char *cmd = celix_arrayList_get(commandList, i);
+        char *match = isFullQualifiedOrLocalMatch(cmd, in, cursorPos);
+        if (match != NULL) {
+            celix_arrayList_add(possibleCmdList, match);
+        }
 	}
 
-	int nrPossibleCmds = arrayList_size(possibleCmdList);
+	int nrPossibleCmds = celix_arrayList_size(possibleCmdList);
 	if (nrPossibleCmds == 0) {
 		// Check if complete command with space is entered: show usage if this is the case
 		if(in[strlen(in) - 1] == ' ') {
 			for (int i = 0; i < nrCmds; i++) {
-				char *cmd = arrayList_get(commandList, i);
-				if (strncmp(in, cmd, strlen(cmd)) == 0) {
-					clearLine();
-					char* usage = NULL;
-					shellSvc->getCommandUsage(shellSvc->handle, cmd, &usage);
-					printf("Usage:\n %s\n", usage);
-				}
+				char *cmd = celix_arrayList_get(commandList, i);
+                char *match = isFullQualifiedOrLocalMatch(cmd, in, strlen(in) - 1);
+                if (match != NULL) {
+                    clearLine(shellTui);
+                    char* usage = NULL;
+                    shellSvc->getCommandUsage(shellSvc->handle, cmd, &usage);
+                    fprintf(shellTui->output, "Usage:\n %s\n", usage);
+                    free(usage);
+                }
 			}
 		}
 	} else if (nrPossibleCmds == 1) {
 		//Replace input string with the only possibility
-		snprintf(in, maxLen, "%s ", (char*)arrayList_get(possibleCmdList, 0));
+		snprintf(in, maxLen, "%s ", (char*)celix_arrayList_get(possibleCmdList, 0));
 		cursorPos = strlen(in);
 	} else {
 		// Show possibilities
-		clearLine();
+		clearLine(shellTui);
 		for(int i = 0; i < nrPossibleCmds; i++) {
-			printf("%s ", (char*)arrayList_get(possibleCmdList, i));
+			fprintf(shellTui->output,"%s ", (char*)celix_arrayList_get(possibleCmdList, i));
 		}
-		printf("\n");
+        fprintf(shellTui->output,"\n");
 	}
-	arrayList_destroy(commandList);
-	arrayList_destroy(possibleCmdList);
+
+    for (int i = 0; i < celix_arrayList_size(commandList); ++i) {
+        char* cmd = celix_arrayList_get(commandList, i);
+        free(cmd);
+    }
+    celix_arrayList_destroy(commandList);
+    celix_arrayList_destroy(possibleCmdList);
 	return cursorPos;
 }
 
