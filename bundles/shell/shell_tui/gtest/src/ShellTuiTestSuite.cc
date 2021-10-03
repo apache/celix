@@ -42,7 +42,7 @@ public:
             outputReadFd = fds[0];
             outputWriteFd = fds[1];
 
-            //set readFd non blocking
+            //set outputReadFd non blocking
             int flags = fcntl(outputReadFd, F_GETFL, 0);
             fcntl(outputReadFd, F_SETFL, flags | O_NONBLOCK);
         }
@@ -145,7 +145,7 @@ public:
 };
 
 TEST_F(ShellTuiTestSuite, testStartStop) {
-    //not empty, but should not leak
+    //simple start/stop bundles, but should not leak
     createFrameworkWithShellBundles();
 }
 

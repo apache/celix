@@ -445,7 +445,7 @@ static void writeLine(shell_tui_t* shellTui, const char* line, int pos) {
 }
 
 /**
- * @brief Will check if there is a match with the input and the fully qualified cmd name or local name.
+ * @brief Will check if there is a match with the input and the fully qualified cmd name or local cmd name.
  *
  * @return Return cmd or local cmd if there is a match with the input.
  */

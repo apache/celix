@@ -60,11 +60,12 @@ static celix_status_t celix_shellTuiActivator_start(celix_shell_tui_activator_t*
     int outputFd = (int)celix_bundleContext_getPropertyAsLong(ctx, SHELL_TUI_OUTPUT_FILE_DESCRIPTOR, STDOUT_FILENO);
     int errorFd = (int)celix_bundleContext_getPropertyAsLong(ctx, SHELL_TUI_ERROR_FILE_DESCRIPTOR, STDERR_FILENO);
 
-    //Check if tty exists, no tty -> no shell tui expect if activateWithoutTTY==true
+    //Check if tty exists, no tty -> no shell (Expect - for testing - if the input fd is not STDIN_FILENO).
     if (inputFd == STDIN_FILENO && !isatty(STDIN_FILENO)) {
         celix_bundleContext_log(ctx, CELIX_LOG_LEVEL_INFO, "[Shell TUI] no tty connected. Shell TUI will not activate.");
         return status;
     }
+
     bool useCommands = false;
     char *term = getenv("TERM");
     useCommands = term != NULL; //if TERM exist, default is to use commands
