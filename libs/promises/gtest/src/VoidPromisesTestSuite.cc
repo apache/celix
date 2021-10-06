@@ -501,6 +501,108 @@ TEST_F(VoidPromiseTestSuite, deferredTaskCall) {
     EXPECT_GT(durationInMs, std::chrono::milliseconds{10});
 }
 
+TEST_F(VoidPromiseTestSuite, testRobustFailAndResolve) {
+    std::atomic<int> failCount{};
+    std::atomic<int> successCount{};
+    auto failCb = [&failCount](const std::exception& /*e*/) {
+        failCount++;
+    };
+    auto successCb = [&successCount]() {
+        successCount++;
+    };
+
+    auto def = factory->deferred<void>();
+    def.getPromise().onFailure(failCb);
+
+    //Rule a second fail should not lead to an exception, to ensure a more robust usage.
+    //But also should only lead to a single resolve chain.
+    def.fail(std::logic_error{"error1"});
+    def.fail(std::logic_error{"error2"});
+    factory->wait();
+    EXPECT_EQ(failCount.load(), 1);
+
+    def = factory->deferred<void>();
+    def.getPromise().onSuccess(successCb);
+    //Rule a second resolve should not lead to an exception, to ensure a more robust usage.
+    //But also should only lead to a single resolve chain.
+    def.resolve();
+    def.resolve();
+    factory->wait();
+    EXPECT_EQ(successCount.load(), 1);
+
+
+    failCount = 0;
+    successCount = 0;
+    def = factory->deferred<void>();
+    def.getPromise().onSuccess(successCb).onFailure(failCb);
+    //Rule a resolve after fail should not lead to an exception, to ensure a more robust usage.
+    //But also should only lead to a single resolve chain.
+    def.fail(std::logic_error("error3"));
+    def.resolve();
+    factory->wait();
+    EXPECT_EQ(failCount.load(), 1);
+    EXPECT_EQ(successCount.load(), 0);
+
+    failCount = 0;
+    successCount = 0;
+    def = factory->deferred<void>();
+    def.getPromise().onSuccess(successCb).onFailure(failCb);
+    //Rule a fail after resolve should not lead to an exception, to ensure a more robust usage.
+    //But also should only lead to a single resolve chain.
+    def.resolve();
+    def.fail(std::logic_error("error3"));
+    factory->wait();
+    EXPECT_EQ(failCount.load(), 0);
+    EXPECT_EQ(successCount.load(), 1);
+}
+
+TEST_F(VoidPromiseTestSuite, testTryFailAndResolve) {
+    std::atomic<int> failCount{};
+    std::atomic<int> successCount{};
+    auto failCb = [&failCount](const std::exception& /*e*/) {
+        failCount++;
+    };
+    auto successCb = [&successCount]() {
+        successCount++;
+    };
+
+    //first resolve, then try rest
+    auto def = factory->deferred<void>();
+    def.getPromise().onSuccess(successCb).onFailure(failCb);
+    EXPECT_TRUE(def.tryResolve());
+    EXPECT_FALSE(def.tryFail(std::logic_error{"error"}));
+    EXPECT_FALSE(def.tryFail(std::make_exception_ptr(std::logic_error{"error"})));
+    factory->wait();
+    EXPECT_EQ(failCount.load(), 0);
+    EXPECT_EQ(successCount.load(), 1);
+
+    //first fail with exp ref, then try rest
+    failCount = 0;
+    successCount = 0;
+    def = factory->deferred<void>();
+    def.getPromise().onSuccess(successCb).onFailure(failCb);
+    EXPECT_TRUE(def.tryFail(std::logic_error{"error"}));
+    EXPECT_FALSE(def.tryResolve());
+    EXPECT_FALSE(def.tryFail(std::logic_error{"error"}));
+    EXPECT_FALSE(def.tryFail(std::make_exception_ptr(std::logic_error{"error"})));
+    factory->wait();
+    EXPECT_EQ(failCount.load(), 1);
+    EXPECT_EQ(successCount.load(), 0);
+
+    //first fail with exp ptr, then try rest
+    failCount = 0;
+    successCount = 0;
+    def = factory->deferred<void>();
+    def.getPromise().onSuccess(successCb).onFailure(failCb);
+    EXPECT_TRUE(def.tryFail(std::make_exception_ptr(std::logic_error{"error"})));
+    EXPECT_FALSE(def.tryResolve());
+    EXPECT_FALSE(def.tryFail(std::logic_error{"error"}));
+    EXPECT_FALSE(def.tryFail(std::make_exception_ptr(std::logic_error{"error"})));
+    factory->wait();
+    EXPECT_EQ(failCount.load(), 1);
+    EXPECT_EQ(successCount.load(), 0);
+}
+
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif

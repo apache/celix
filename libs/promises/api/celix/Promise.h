@@ -745,14 +745,13 @@ inline celix::Promise<U> celix::Promise<T>::then(std::function<celix::Promise<U>
                 auto tmpPromise = success(celix::Promise<T>{s});
                 p->resolveWith(*tmpPromise.state);
             } catch (...) {
-                //failure(); TODO not sure if this needs to be called
-                p->fail(std::current_exception());
+                p->tryFail(std::current_exception());
             }
         } else {
             if (failure) {
                 failure(celix::Promise<T>{s});
             }
-            p->fail(s->getFailure());
+            p->tryFail(s->getFailure());
         }
     };
     state->addChain(std::move(chain));
@@ -770,14 +769,13 @@ inline celix::Promise<U> celix::Promise<void>::then(std::function<celix::Promise
                 auto tmpPromise = success(celix::Promise<void>{s});
                 p->resolveWith(*tmpPromise.state);
             } catch (...) {
-                //failure(); TODO not sure if this needs to be called
-                p->fail(std::current_exception());
+                p->tryFail(std::current_exception());
             }
         } else {
             if (failure) {
                 failure(celix::Promise<void>{s});
             }
-            p->fail(s->getFailure());
+            p->tryFail(s->getFailure());
         }
     };
     state->addChain(std::move(chain));
