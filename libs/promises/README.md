@@ -79,12 +79,9 @@ target_link_libraries(PromiseExamples PRIVATE Celix::Promises)
 4. The PromiseFactory also has a deferredTask method. This is a convenient method create a Deferred, execute a task async to resolve the Deferred and return a Promise of the created Deferred in one call.
 5. The celix::IExecutor abstraction has a priority argument (and as result also the calls in PromiseFactory, etc).
 6. The IExecutor has a added wait() method. This can be used to ensure an executor is done executing the tasks backlog.
-7. The `celix::Deferred<T>::fail` and `celix::Deferred<T>::resolve` are make robust for resolving a 
-   deferred if the associated promise is already resolved. This is different from the OSGi spec, 
-   because it always a race condition to check if a promise is already resolved (`isDone()`) 
-   and then resolve the deferred. The methods `celix::Deferred<T>::tryFail` and
-  `celix::Deferred<T>::tryResolve` exist to resolve a deferred and check if it was 
-   already resolved atomically.  
+7. The methods celix::Deferred<T>::fail and celix::Deferred<T>::resolve are robust for resolving a promise if it is already resolved. 
+  This is different from the OSGi spec and this is done because it always a race condition to check if a promise is already resolved (isDone()) and then resolve the promise. 
+  The methods `celix::Deferred<T>::tryFail` and `celix::Deferred<T>::tryResolve` can be used to resolve a promise and check if it was already resolved atomically.
 
 ## Open Issues & TODOs
 
