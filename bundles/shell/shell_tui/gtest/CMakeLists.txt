@@ -5,39 +5,24 @@
 # to you under the Apache License, Version 2.0 (the
 # "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
-# 
+#
 #   http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing,
 # software distributed under the License is distributed on an
 # "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-celix_subproject(SHELL_TUI "Option to enable building the Shell Textual User Interface bundles" ON DEPS LAUNCHER SHELL)
-if (SHELL_TUI)
 
-    add_celix_bundle(shell_tui
-    	SYMBOLIC_NAME "apache_celix_shell_tui"
-    	VERSION "1.1.0"
-    	NAME "Apache Celix Shell TUI"
-		FILENAME celix_shell_tui
-		GROUP "Celix/Shell"
-    	SOURCES 
-    		src/activator.c
-    		src/shell_tui.c
-    		src/history.c
-	)
-	
-	target_include_directories(shell_tui PRIVATE src)
-    target_link_libraries(shell_tui PRIVATE Celix::shell_api Celix::utils)
+add_executable(test_shell_tui
+        src/ShellTuiTestSuite.cc
+)
 
-	install_celix_bundle(shell_tui EXPORT celix)
+target_link_libraries(test_shell_tui PRIVATE Celix::framework GTest::gtest GTest::gtest_main)
+add_celix_bundle_dependencies(test_shell_tui Celix::shell Celix::shell_tui)
+target_compile_definitions(test_shell_tui PRIVATE -DSHELL_BUNDLE_LOCATION=\"$<TARGET_PROPERTY:shell,BUNDLE_FILE>\")
+target_compile_definitions(test_shell_tui PRIVATE -DSHELL_TUI_BUNDLE_LOCATION=\"$<TARGET_PROPERTY:shell_tui,BUNDLE_FILE>\")
 
-	#Alias setup to match external usage
-	add_library(Celix::shell_tui ALIAS shell_tui)
-
-	if (ENABLE_TESTING AND TARGET Celix::shell)
-		add_subdirectory(gtest)
-	endif()
-endif (SHELL_TUI)
+add_test(NAME test_shell_tui COMMAND test_shell_tui)
+setup_target_for_coverage(test_shell_tui SCAN_DIR ..)
