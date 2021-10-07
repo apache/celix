@@ -25,8 +25,8 @@ namespace celix {
     template <typename T>
     class IPushEventConsumer {
     public:
-        static constexpr int const& ABORT = -1;
-        static constexpr int const& CONTINUE = 0;
+        static constexpr long const& ABORT = -1;
+        static constexpr long const& CONTINUE = 0;
 
         virtual ~IPushEventConsumer() = default;
 

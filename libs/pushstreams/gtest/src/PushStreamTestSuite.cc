@@ -114,11 +114,6 @@ TEST_F(PushStreamTestSuite, EventSourceCloseTest) {
     int onErrorReceived{0};
 
     auto ses = psp.template createSynchronousEventSource<int>();
-
-    auto successLambda = [](celix::Promise<void> p) -> celix::Promise<void> {
-        return p;
-    };
-    auto x = ses->connectPromise().then<void>(successLambda);
     auto stream = psp.createUnbufferedStream<int>(ses);
 
     auto streamEnded = stream->onClose([&](){
@@ -140,11 +135,6 @@ TEST_F(PushStreamTestSuite, ChainedEventSourceCloseTest) {
     int onErrorReceived{0};
 
     auto ses = psp.template createSynchronousEventSource<int>();
-
-    auto successLambda = [](celix::Promise<void> p) -> celix::Promise<void> {
-        return p;
-    };
-    auto x = ses->connectPromise().then<void>(successLambda);
 
     auto stream = psp.createUnbufferedStream<int>(ses);
     auto& filteredStream = stream->filter([](const int& /*event*/) -> bool {
@@ -171,12 +161,6 @@ TEST_F(PushStreamTestSuite, StreamCloseTest) {
     int onErrorReceived{0};
 
     auto ses = psp.createSynchronousEventSource<int>();
-
-    auto successLambda = [](celix::Promise<void> p) -> celix::Promise<void> {
-        return p;
-    };
-    auto x = ses->connectPromise().then<void>(successLambda);
-
     auto stream = psp.createUnbufferedStream<int>(ses);
     auto streamEnded = stream->onClose([&](){
         onClosedReceived++;
@@ -198,12 +182,6 @@ TEST_F(PushStreamTestSuite, PublishAfterStreamCloseTest) {
     int onEventReceived{0};
 
     auto ses = psp.createSynchronousEventSource<int>();
-
-    auto successLambda = [](celix::Promise<void> p) -> celix::Promise<void> {
-        return p;
-    };
-    auto x = ses->connectPromise().then<void>(successLambda);
-
     auto stream = psp.createUnbufferedStream<int>(ses);
     auto streamEnded = stream->onClose([&](){
         onClosedReceived++;
@@ -229,12 +207,6 @@ TEST_F(PushStreamTestSuite, ChainedStreamCloseTest) {
     int onErrorReceived{0};
 
     auto ses = psp.template createSynchronousEventSource<int>();
-
-    auto successLambda = [](celix::Promise<void> p) -> celix::Promise<void> {
-        return p;
-    };
-    auto x = ses->connectPromise().template then<void>(successLambda);
-
     auto stream = psp.createUnbufferedStream<int>(ses);
     auto streamEnded = stream->
             filter([](const int& /*event*/) -> bool {
@@ -258,12 +230,6 @@ TEST_F(PushStreamTestSuite, ChainedStreamIntermedateCloseTest) {
     int onErrorReceived{0};
 
     auto ses = psp.template createSynchronousEventSource<int>();
-
-    auto successLambda = [](celix::Promise<void> p) -> celix::Promise<void> {
-        return p;
-    };
-    auto x = ses->connectPromise().template then<void>(successLambda);
-
     auto stream1 = psp.createUnbufferedStream<int>(ses);
     stream1->onClose([&](){
         onClosedReceived++;
@@ -283,7 +249,6 @@ TEST_F(PushStreamTestSuite, ChainedStreamIntermedateCloseTest) {
 
     ASSERT_EQ(2, onClosedReceived);
     ASSERT_EQ(0, onErrorReceived);
-
 }
 
 TEST_F(PushStreamTestSuite, ExceptionInStreamTest) {
@@ -291,12 +256,6 @@ TEST_F(PushStreamTestSuite, ExceptionInStreamTest) {
     int onErrorReceived{0};
 
     auto ses = psp.createSynchronousEventSource<int>();
-
-    auto successLambda = [](celix::Promise<void> p) -> celix::Promise<void> {
-        return p;
-    };
-    auto x = ses->connectPromise().then<void>(successLambda);
-
     auto stream = psp.createUnbufferedStream<int>(ses);
     auto streamEnded = stream->onClose([&](){
         onClosedReceived++;
@@ -318,14 +277,7 @@ TEST_F(PushStreamTestSuite, ExceptionInChainedStreamTest) {
     int onClosedReceived{0};
     int onErrorReceived{0};
     auto ses = psp.template createSynchronousEventSource<int>();
-
-    auto successLambda = [](celix::Promise<void> p) -> celix::Promise<void> {
-        return p;
-    };
-    auto x = ses->connectPromise().template then<void>(successLambda);
-
     auto stream = psp.createUnbufferedStream<int>(ses);
-
     auto streamEnded = stream->filter([](const int& /*event*/) -> bool {
                 return true;
             }).onClose([&](){
@@ -349,52 +301,58 @@ TEST_F(PushStreamTestSuite, ExceptionInChainedStreamTest) {
 /// forEach test
 ///
 TEST_F(PushStreamTestSuite, ForEachTestBasicType) {
-    int consumeCount{0};
-    int consumeSum{0};
-    int lastConsumed{-1};
-    auto ses = createEventSource<int>(0, 10'000, true);
+    for(int i = 0; i < 100; i++ ) {
+        int consumeCount{0};
+        int consumeSum{0};
+        int lastConsumed{-1};
+        auto ses = createEventSource<int>(0, 10'000, true);
 
-    auto stream = psp.createUnbufferedStream<int>(ses);
-    auto streamEnded = stream->
-            forEach([&](int event) {
-                GTEST_ASSERT_EQ(lastConsumed + 1, event);
+        auto stream = psp.createUnbufferedStream<int>(ses);
+        auto streamEnded = stream->
+                forEach([&](int event) {
+                    GTEST_ASSERT_EQ(lastConsumed + 1, event);
 
-                lastConsumed = event;
-                consumeCount++;
-                consumeSum = consumeSum + event;
-            });
+                    lastConsumed = event;
+                    consumeCount++;
+                    consumeSum = consumeSum + event;
+                });
 
-    streamEnded.wait();
-    donepromise.wait();
+        streamEnded.wait();
+        donepromise.wait();
 
-    GTEST_ASSERT_EQ(10'000, consumeCount);
-    GTEST_ASSERT_EQ(49'995'000, consumeSum);
+        GTEST_ASSERT_EQ(10'000, consumeCount);
+        GTEST_ASSERT_EQ(49'995'000, consumeSum);
+    }
 }
 
 ///
 /// forEach test
 ///
 TEST_F(PushStreamTestSuite, ForEachTestBasicType_Buffered) {
-    int consumeCount{0};
-    int consumeSum{0};
-    int lastConsumed{-1};
-    auto ses = createEventSource<int>(0, 10'000, true);
 
-    auto stream = psp.createStream<int>(ses);
-    auto streamEnded = stream->
-            forEach([&](int event) {
-                GTEST_ASSERT_EQ(lastConsumed + 1, event);
+    for(int i = 0; i < 100; i++ ) {
+        int consumeCount{0};
+        int consumeSum{0};
+        int lastConsumed{-1};
+        auto ses = createEventSource<int>(0, 10'000, true);
 
-                lastConsumed = event;
-                consumeCount++;
-                consumeSum = consumeSum + event;
-            });
+        auto stream = psp.createStream<int>(ses);
+        auto streamEnded = stream->
+                forEach([&](int event) {
+                    GTEST_ASSERT_EQ(lastConsumed + 1, event);
 
-    streamEnded.wait();
-    donepromise.wait();
+                    lastConsumed = event;
+                    consumeCount++;
+                    consumeSum = consumeSum + event;
+                });
 
-    GTEST_ASSERT_EQ(10'000, consumeCount);
-    GTEST_ASSERT_EQ(49'995'000, consumeSum);
+        streamEnded.wait();
+        donepromise.wait();
+
+        GTEST_ASSERT_EQ(10'000, consumeCount);
+        GTEST_ASSERT_EQ(49'995'000, consumeSum);
+    }
+
 }
 
 TEST_F(PushStreamTestSuite, ForEachTestObjectType) {

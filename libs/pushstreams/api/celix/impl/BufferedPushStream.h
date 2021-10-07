@@ -28,6 +28,16 @@ namespace celix {
     public:
         BufferedPushStream(PromiseFactory& _promiseFactory);
 
+        ~BufferedPushStream() override {
+            close();
+        }
+
+        void close() override {
+            UnbufferedPushStream<T>::close();
+            std::unique_lock lk(mutex);
+            cv.wait(lk, [this]{return nrWorkers == 0;});
+        }
+
     protected:
         long handleEvent(const PushEvent<T>& event) override;
 
@@ -35,7 +45,8 @@ namespace celix {
         void startWorker();
         std::unique_ptr<PushEvent<T>> popQueue();
 
-        std::queue<std::unique_ptr<PushEvent<T>>> queue{};
+        std::shared_ptr<std::queue<std::unique_ptr<PushEvent<T>>>> queue{std::make_shared<std::queue<std::unique_ptr<PushEvent<T>>>>()};
+        std::condition_variable cv{};
         std::mutex mutex{};
         int nrWorkers{0};
     };
@@ -52,8 +63,13 @@ celix::BufferedPushStream<T>::BufferedPushStream(PromiseFactory& _promiseFactory
 template<typename T>
 long celix::BufferedPushStream<T>::handleEvent(const PushEvent<T>& event) {
     std::unique_lock lk(mutex);
-    queue.push(std::move(event.clone()));
-    if (nrWorkers == 0) startWorker();
+    if(this->closed != celix::PushStream<T>::State::CLOSED) {
+        queue->push(std::move(event.clone()));
+        if (nrWorkers == 0)  {
+            startWorker();
+        }
+        return IPushEventConsumer<T>::CONTINUE;
+    }
     return IPushEventConsumer<T>::ABORT;
 }
 
@@ -61,9 +77,9 @@ template<typename T>
 std::unique_ptr<celix::PushEvent<T>> celix::BufferedPushStream<T>::popQueue() {
     std::unique_lock lk(mutex);
     std::unique_ptr<celix::PushEvent<T>> returnValue{nullptr};
-    if (!queue.empty()) {
-        returnValue = std::move(queue.front());
-        queue.pop();
+    if (!queue->empty()) {
+        returnValue = std::move(queue->front());
+        queue->pop();
     } else {
         nrWorkers = 0;
     }
@@ -75,10 +91,15 @@ template<typename T>
 void celix::BufferedPushStream<T>::startWorker() {
     nrWorkers++;
     this->promiseFactory.getExecutor()->execute([&]() {
-        std::unique_ptr<celix::PushEvent<T>> event = std::move(popQueue());
-        while (event != nullptr) {
-            this->nextEvent.accept(*event);
-            event = std::move(popQueue());
+        std::weak_ptr<std::queue<std::unique_ptr<PushEvent<T>>>> weak{queue};
+        auto lk = weak.lock();
+        if (lk) {
+            std::unique_ptr<celix::PushEvent<T>> event = std::move(popQueue());
+            while (event != nullptr) {
+                this->nextEvent.accept(*event);
+                event = std::move(popQueue());
+            }
+            cv.notify_all();
         }
     });
 }

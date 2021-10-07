@@ -33,13 +33,13 @@ namespace celix {
             CLOSE
         };
 
-        explicit PushEvent(EventType _type);
         inline virtual const T& getData() const;
         virtual std::exception_ptr getFailure() const;
         inline EventType getType() const;
         [[nodiscard]] virtual std::unique_ptr<PushEvent<T>> clone() const = 0;
-
     protected:
+        explicit PushEvent(EventType _type);
+
         EventType type;
     };
 

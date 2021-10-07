@@ -73,8 +73,6 @@ namespace celix {
         bool compareAndSetState(State expectedValue, State newValue);
 
         State getAndSetState(State newValue);
-
-        std::mutex mutex {};
         PromiseFactory& promiseFactory;
         PushEventConsumer<T> nextEvent{};
         ErrorFunction onErrorCallback{};

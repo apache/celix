@@ -14,31 +14,12 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-if (NOT COMMAND celix_subproject)
-    #If COMMAND celix_subproject is not defined, this CMakeLists will
-    #act as a top level project. Making the Celix::CelixPushStreams useable
-    #stand-alone
 
-    cmake_minimum_required (VERSION 3.11)
-    project(celix_PushStreams
-            VERSION 1.0.0
-            LANGUAGES CXX
-    )
+set(PUSHSTREAMS_DEFAULT_ON ${CELIX_CXX})
+celix_subproject(PUSHSTREAMS "Option to build the PushStreams library" ${PUSHSTREAMS_DEFAULT_ON})
 
-    include(GNUInstallDirs)
-
-    set(CMAKE_CXX_FLAGS "-std=c++17 ${CMAKE_CXX_FLAGS}")
-    set(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG ${CMAKE_CXX_FLAGS_DEBUG}")
-
-    set(PUSHSTREAMS_STANDALONE ON)
-else ()
-    set(PUSHSTREAMS_DEFAULT_ON ${CELIX_CXX})
-    celix_subproject(PUSHSTREAMS "Option to build the PushStreams library" ${PUSHSTREAMS_DEFAULT_ON})
-endif ()
-
-if (PUSHSTREAMS OR PUSHSTREAMS_STANDALONE)
+if (PUSHSTREAMS)
     find_package(Threads)
-
     add_library(PushStreams INTERFACE)
     target_include_directories(PushStreams INTERFACE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/api>
@@ -52,19 +33,10 @@ if (PUSHSTREAMS OR PUSHSTREAMS_STANDALONE)
     target_compile_options(PushStreamExamples PRIVATE -std=c++17)
     target_link_libraries(PushStreamExamples PRIVATE Celix::PushStreams)
 
-    if (ENABLE_TESTING AND NOT PUSHSTREAMS_STANDALONE)
+    if (ENABLE_TESTING)
         add_subdirectory(gtest)
     endif()
 
     install(TARGETS PushStreams EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR})
     install(DIRECTORY api/ DESTINATION include/celix/pushstreams)
-
-    if (PUSHSTREAMS_STANDALONE)
-        install(EXPORT celix NAMESPACE Celix:: DESTINATION share/CelixPushStreams/cmake FILE Targets.cmake COMPONENT cmake)
-        install(FILES
-                "cmake/CelixPushStreamsConfig.cmake"
-                "cmake/CelixPushStreamsConfigVersion.cmake"
-                DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/CelixPushStreams" COMPONENT cmake)
-    endif ()
-
 endif ()
