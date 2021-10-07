@@ -46,20 +46,17 @@ namespace celix::impl {
 
         ~SharedPromiseState() noexcept = default;
 
-        void resolve(T&& value);
-
-        void resolve(const T& value);
-        
         template<typename U>
-        void resolveWith(std::shared_ptr<SharedPromiseState<U>> with);
+        void resolveWith(SharedPromiseState<U>& with);
 
-        void fail(std::exception_ptr e);
+        bool tryResolve(T&& value);
 
-        void fail(const std::exception &e);
+        bool tryResolve(const T& value);
 
-        void tryResolve(T &&value);
+        bool tryFail(std::exception_ptr e);
 
-        void tryFail(std::exception_ptr e);
+        template<typename E>
+        bool tryFail(const E& e);
 
         // copy/move depending on situation
         T& getValue() &;
@@ -93,16 +90,16 @@ namespace celix::impl {
 
         [[nodiscard]] std::shared_ptr<SharedPromiseState<T>> fallbackTo(std::shared_ptr<SharedPromiseState<T>> fallbackTo);
 
-        void resolveWith(std::shared_ptr<SharedPromiseState<T>> with);
-
         template<typename R>
         [[nodiscard]] std::shared_ptr<SharedPromiseState<R>> map(std::function<R(T)> mapper);
 
         [[nodiscard]] std::shared_ptr<SharedPromiseState<T>> thenAccept(std::function<void(T)> consumer);
 
         template<typename Rep, typename Period>
-        [[nodiscard]] static std::shared_ptr<SharedPromiseState<T>>
-        timeout(std::shared_ptr<SharedPromiseState<T>> state, std::chrono::duration<Rep, Period> duration);
+        [[nodiscard]] std::shared_ptr<SharedPromiseState<T>> timeout(std::chrono::duration<Rep, Period> duration);
+
+        template<typename Rep, typename Period>
+        std::shared_ptr<SharedPromiseState<T>> setTimeout(std::chrono::duration<Rep, Period> duration);
 
         void addChain(std::function<void()> chainFunction);
 
@@ -111,6 +108,8 @@ namespace celix::impl {
         [[nodiscard]] std::shared_ptr<celix::IScheduledExecutor> getScheduledExecutor() const;
 
         int getPriority() const;
+
+        [[nodiscard]] std::weak_ptr<SharedPromiseState<T>> getSelf() const;
     private:
         explicit SharedPromiseState(std::shared_ptr<celix::IExecutor> _executor, std::shared_ptr<celix::IScheduledExecutor> _scheduledExecutor, int _priority);
 
@@ -148,22 +147,19 @@ namespace celix::impl {
 
         ~SharedPromiseState() noexcept = default;
 
-        void resolve();
+        bool tryResolve();
 
-        void fail(std::exception_ptr e);
+        bool tryFail(std::exception_ptr e);
 
-        void fail(const std::exception &e);
-
-        void tryResolve();
-
-        void tryFail(std::exception_ptr e);
+        template<typename E>
+        bool tryFail(const E& e);
 
         bool getValue() const;
         std::exception_ptr getFailure() const;
 
         void wait() const;
 
-        bool isDone() const;
+        [[nodiscard]] bool isDone() const;
 
         bool isSuccessfullyResolved() const;
 
@@ -180,7 +176,8 @@ namespace celix::impl {
 
         std::shared_ptr<SharedPromiseState<void>> fallbackTo(std::shared_ptr<SharedPromiseState<void>> fallbackTo);
 
-        void resolveWith(std::shared_ptr<SharedPromiseState<void>> with);
+        template<typename U>
+        void resolveWith(SharedPromiseState<U>& with);
 
         template<typename R>
         std::shared_ptr<SharedPromiseState<R>> map(std::function<R(void)> mapper);
@@ -188,8 +185,10 @@ namespace celix::impl {
         std::shared_ptr<SharedPromiseState<void>> thenAccept(std::function<void()> consumer);
 
         template<typename Rep, typename Period>
-        static std::shared_ptr<SharedPromiseState<void>>
-        timeout(std::shared_ptr<SharedPromiseState<void>> state, std::chrono::duration<Rep, Period> duration);
+        [[nodiscard]] std::shared_ptr<SharedPromiseState<void>> timeout(std::chrono::duration<Rep, Period> duration);
+
+        template<typename Rep, typename Period>
+        std::shared_ptr<SharedPromiseState<void>> setTimeout(std::chrono::duration<Rep, Period> duration);
 
         void addChain(std::function<void()> chainFunction);
 
@@ -198,6 +197,8 @@ namespace celix::impl {
         [[nodiscard]] std::shared_ptr<celix::IScheduledExecutor> getScheduledExecutor() const;
 
         int getPriority() const;
+
+        [[nodiscard]] std::weak_ptr<SharedPromiseState<void>> getSelf() const;
     private:
         explicit SharedPromiseState(std::shared_ptr<celix::IExecutor> _executor, std::shared_ptr<celix::IScheduledExecutor> _scheduledExecutor, int _priority);
 
@@ -260,105 +261,84 @@ inline void celix::impl::SharedPromiseState<void>::setSelf(std::weak_ptr<SharedP
 }
 
 template<typename T>
-void celix::impl::SharedPromiseState<T>::resolve(T&& value) {
-    std::unique_lock<std::mutex> lck{mutex};
-    if (done) {
-        throw celix::PromiseInvocationException("Cannot resolve Promise. Promise is already done");
-    }
-    dataMoved = false;
-    if constexpr (std::is_move_constructible_v<T>) {
-        data = std::forward<T>(value);
-    } else {
-        data = value;
-    }
-    exp = nullptr;
-    complete(lck);
+std::weak_ptr<celix::impl::SharedPromiseState<T>> celix::impl::SharedPromiseState<T>::getSelf() const {
+    return self;
 }
 
-
-template<typename T>
-void celix::impl::SharedPromiseState<T>::resolve(const T& value) {
-    std::unique_lock<std::mutex> lck{mutex};
-    if (done) {
-        throw celix::PromiseInvocationException("Cannot resolve Promise. Promise is already done");
-    }
-    dataMoved = false;
-    data = value;
-    exp = nullptr;
-    complete(lck);
-}
-
-inline void celix::impl::SharedPromiseState<void>::resolve() {
-    std::unique_lock<std::mutex> lck{mutex};
-    if (done) {
-        throw celix::PromiseInvocationException("Cannot resolve Promise. Promise is already done");
-    }
-    exp = nullptr;
-    complete(lck);
+inline std::weak_ptr<celix::impl::SharedPromiseState<void>> celix::impl::SharedPromiseState<void>::getSelf() const {
+    return self;
 }
 
 template<typename T>
-void celix::impl::SharedPromiseState<T>::fail(std::exception_ptr e) {
-    std::unique_lock<std::mutex> lck{mutex};
-    if (done) {
-        throw celix::PromiseInvocationException("Cannot fail Promise. Promise is already done");
-    }
-    exp = std::move(e);
-    complete(lck);
-}
-
-inline void celix::impl::SharedPromiseState<void>::fail(std::exception_ptr e) {
-    std::unique_lock<std::mutex> lck{mutex};
-    if (done) {
-        throw celix::PromiseInvocationException("Cannot fail Promise. Promise is already done");
-    }
-    exp = std::move(e);
-    complete(lck);
-}
-
-template<typename T>
-void celix::impl::SharedPromiseState<T>::fail(const std::exception& e) {
-    fail(std::make_exception_ptr(e));
-}
-
-inline void celix::impl::SharedPromiseState<void>::fail(const std::exception& e) {
-    fail(std::make_exception_ptr(e));
-}
-
-template<typename T>
-void celix::impl::SharedPromiseState<T>::tryResolve(T&& value) {
+bool celix::impl::SharedPromiseState<T>::tryResolve(T&& value) {
     std::unique_lock<std::mutex> lck{mutex};
     if (!done) {
         dataMoved = false;
-        data = std::forward<T>(value);
+        if constexpr (std::is_move_constructible_v<T>) {
+            data = std::forward<T>(value);
+        } else {
+            data = value;
+        }
         exp = nullptr;
         complete(lck);
+        return true;
     }
-}
-
-inline void celix::impl::SharedPromiseState<void>::tryResolve() {
-    std::unique_lock<std::mutex> lck{mutex};
-    if (!done) {
-        exp = nullptr;
-        complete(lck);
-    }
+    return false;
 }
 
 template<typename T>
-void celix::impl::SharedPromiseState<T>::tryFail(std::exception_ptr e) {
+bool celix::impl::SharedPromiseState<T>::tryResolve(const T& value) {
     std::unique_lock<std::mutex> lck{mutex};
     if (!done) {
-        exp = std::move(e);
+        dataMoved = false;
+        data = value;
+        exp = nullptr;
         complete(lck);
+        return true;
     }
+    return false;
 }
 
-inline void celix::impl::SharedPromiseState<void>::tryFail(std::exception_ptr e) {
+inline bool celix::impl::SharedPromiseState<void>::tryResolve() {
+    std::unique_lock<std::mutex> lck{mutex};
+    if (!done) {
+        exp = nullptr;
+        complete(lck);
+        return true;
+    }
+    return false;
+}
+
+template<typename T>
+bool celix::impl::SharedPromiseState<T>::tryFail(std::exception_ptr e) {
     std::unique_lock<std::mutex> lck{mutex};
     if (!done) {
         exp = std::move(e);
         complete(lck);
+        return true;
     }
+    return false;
+}
+
+inline bool celix::impl::SharedPromiseState<void>::tryFail(std::exception_ptr e) {
+    std::unique_lock<std::mutex> lck{mutex};
+    if (!done) {
+        exp = std::move(e);
+        complete(lck);
+        return true;
+    }
+    return false;
+}
+
+template<typename T>
+template<typename E>
+bool celix::impl::SharedPromiseState<T>::tryFail(const E& e) {
+    return tryFail(std::make_exception_ptr<E>(e));
+}
+
+template<typename E>
+bool celix::impl::SharedPromiseState<void>::tryFail(const E& e) {
+    return tryFail(std::make_exception_ptr<E>(e));
 }
 
 template<typename T>
@@ -525,8 +505,9 @@ inline std::exception_ptr celix::impl::SharedPromiseState<void>::getFailure() co
 }
 
 template<typename T>
-void celix::impl::SharedPromiseState<T>::resolveWith(std::shared_ptr<SharedPromiseState<T>> with) {
-    with->addOnResolve([s = self.lock()](std::optional<T> v, std::exception_ptr e) {
+template<typename U>
+void celix::impl::SharedPromiseState<T>::resolveWith(SharedPromiseState<U>& with) {
+    with.addOnResolve([s = self.lock()](std::optional<U> v, std::exception_ptr e) {
         if (v) {
             s->tryResolve(std::move(*v));
         } else {
@@ -535,11 +516,12 @@ void celix::impl::SharedPromiseState<T>::resolveWith(std::shared_ptr<SharedPromi
     });
 }
 
-inline void celix::impl::SharedPromiseState<void>::resolveWith(std::shared_ptr<SharedPromiseState<void>> with) {
-    with->addOnResolve([s = self.lock()](std::optional<std::exception_ptr> e) {
+template<typename U>
+inline void celix::impl::SharedPromiseState<void>::resolveWith(SharedPromiseState<U>& with) {
+    with.addOnResolve([s = self.lock()](std::optional<std::exception_ptr> e) {
         if (!e) {
             s->tryResolve();
-        } else {
+        } else if (s) {
             s->tryFail(std::move(*e));
         }
     });
@@ -547,29 +529,42 @@ inline void celix::impl::SharedPromiseState<void>::resolveWith(std::shared_ptr<S
 
 template<typename T>
 template<typename Rep, typename Period>
-std::shared_ptr<celix::impl::SharedPromiseState<T>> celix::impl::SharedPromiseState<T>::timeout(std::shared_ptr<SharedPromiseState<T>> state, std::chrono::duration<Rep, Period> duration) {
-    auto p = celix::impl::SharedPromiseState<T>::create(state->executor, state->scheduledExecutor, state->priority);
-    p->resolveWith(state);
-    auto schedFuture = p->scheduledExecutor->schedule(p->priority, duration, [p]{
-        p->tryFail(std::make_exception_ptr(celix::PromiseTimeoutException{}));
-    });
-    p->addOnSuccessConsumeCallback([schedFuture](T /*val*/){
-        schedFuture->cancel();
-    });
-    return p;
+std::shared_ptr<celix::impl::SharedPromiseState<T>> celix::impl::SharedPromiseState<T>::timeout(std::chrono::duration<Rep, Period> duration) {
+    auto promise = celix::impl::SharedPromiseState<T>::create(executor, scheduledExecutor, priority);
+    promise->resolveWith(*this);
+    promise->setTimeout(duration);
+    return promise;
 }
 
 template<typename Rep, typename Period>
-std::shared_ptr<celix::impl::SharedPromiseState<void>> celix::impl::SharedPromiseState<void>::timeout(std::shared_ptr<SharedPromiseState<void>> state, std::chrono::duration<Rep, Period> duration) {
-    auto p = celix::impl::SharedPromiseState<void>::create(state->executor, state->scheduledExecutor, state->priority);
-    p->resolveWith(state);
-    auto schedFuture = p->scheduledExecutor->schedule(p->priority, duration, [p]{
-            p->tryFail(std::make_exception_ptr(celix::PromiseTimeoutException{}));
+std::shared_ptr<celix::impl::SharedPromiseState<void>> celix::impl::SharedPromiseState<void>::timeout(std::chrono::duration<Rep, Period> duration) {
+    auto promise = celix::impl::SharedPromiseState<void>::create(executor, scheduledExecutor, priority);
+    promise->resolveWith(*this);
+    promise->setTimeout(duration);
+    return promise;
+}
+
+template<typename T>
+template<typename Rep, typename Period>
+std::shared_ptr<celix::impl::SharedPromiseState<T>> celix::impl::SharedPromiseState<T>::setTimeout(std::chrono::duration<Rep, Period> duration) {
+    auto schedFuture = scheduledExecutor->schedule(priority, duration, [s = self.lock()]{
+        s->tryFail(std::make_exception_ptr(celix::PromiseTimeoutException{}));
     });
-    p->addOnSuccessConsumeCallback([schedFuture]{
-       schedFuture->cancel();
+    addChain([sf = std::move(schedFuture)] {
+        sf->cancel();
     });
-    return p;
+    return self.lock();
+}
+
+template<typename Rep, typename Period>
+std::shared_ptr<celix::impl::SharedPromiseState<void>> celix::impl::SharedPromiseState<void>::setTimeout(std::chrono::duration<Rep, Period> duration) {
+    auto schedFuture = scheduledExecutor->schedule(priority, duration, [s = self.lock()]{
+        s->tryFail(std::make_exception_ptr(celix::PromiseTimeoutException{}));
+    });
+    addChain([sf = std::move(schedFuture)] {
+        sf->cancel();
+    });
+    return self.lock();
 }
 
 template<typename T>
@@ -580,14 +575,12 @@ std::shared_ptr<celix::impl::SharedPromiseState<T>> celix::impl::SharedPromiseSt
         state->scheduledExecutor->schedule(state->priority, duration, [v = std::move(v), e, state] {
             try {
                 if (v) {
-                    state->resolve(std::move(*v));
+                    state->tryResolve(std::move(*v));
                 } else {
-                    state->fail(e);
+                    state->tryFail(e);
                 }
-            } catch (celix::PromiseInvocationException &) {
-                //somebody already resolved promise?
             } catch (...) {
-                state->fail(std::current_exception());
+                state->tryFail(std::current_exception());
             }
         });
     });
@@ -601,14 +594,12 @@ std::shared_ptr<celix::impl::SharedPromiseState<void>> celix::impl::SharedPromis
         state->scheduledExecutor->schedule(state->priority, duration, [e, state] {
             try {
                 if (!e) {
-                    state->resolve();
+                    state->tryResolve();
                 } else {
-                    state->fail(*e);
+                    state->tryFail(*e);
                 }
-            } catch (celix::PromiseInvocationException &) {
-                //somebody already resolved promise?
             } catch (...) {
-                state->fail(std::current_exception());
+                state->tryFail(std::current_exception());
             }
         });
     });
@@ -623,12 +614,12 @@ std::shared_ptr<celix::impl::SharedPromiseState<T>> celix::impl::SharedPromiseSt
     auto p = celix::impl::SharedPromiseState<T>::create(executor, scheduledExecutor, priority);
     addOnResolve([p, recover = std::move(recover)](std::optional<T> v, const std::exception_ptr& /*e*/) {
         if (v) {
-            p->resolve(std::move(*v));
+            p->tryResolve(std::move(*v));
         }  else {
             try {
-                p->resolve(recover());
+                p->tryResolve(recover());
             } catch (...) {
-                p->fail(std::current_exception()); //or state->failure();
+                p->tryFail(std::current_exception()); //or state->failure();
             }
         }
     });
@@ -644,13 +635,13 @@ inline std::shared_ptr<celix::impl::SharedPromiseState<void>> celix::impl::Share
 
     addOnResolve([p, recover = std::move(recover)](std::optional<std::exception_ptr> e) {
         if (!e) {
-            p->resolve();
+            p->tryResolve();
         }  else {
             try {
                 recover();
-                p->resolve();
+                p->tryResolve();
             } catch (...) {
-                p->fail(std::current_exception()); //or state->failure();
+                p->tryFail(std::current_exception()); //or state->failure();
             }
         }
     });
@@ -667,15 +658,15 @@ std::shared_ptr<celix::impl::SharedPromiseState<T>> celix::impl::SharedPromiseSt
         if (s->isSuccessfullyResolved()) {
             try {
                 if (predicate(s->getValue())) {
-                    p->resolve(s->moveOrGetValue());
+                    p->tryResolve(s->moveOrGetValue());
                 } else {
                     throw celix::PromiseInvocationException{"predicate does not accept value"};
                 }
             } catch (...) {
-                p->fail(std::current_exception());
+                p->tryFail(std::current_exception());
             }
         } else {
-            p->fail(s->getFailure());
+            p->tryFail(s->getFailure());
         }
     };
     addChain(std::move(chainFunction));
@@ -688,12 +679,12 @@ std::shared_ptr<celix::impl::SharedPromiseState<T>> celix::impl::SharedPromiseSt
     auto p = celix::impl::SharedPromiseState<T>::create(executor, scheduledExecutor, priority);
     auto chainFunction = [s = self.lock(), p, fallbackTo = std::move(fallbackTo)] {
         if (s->isSuccessfullyResolved()) {
-            p->resolve(s->moveOrGetValue());
+            p->tryResolve(s->moveOrGetValue());
         } else {
             if (fallbackTo->isSuccessfullyResolved()) {
-                p->resolve(fallbackTo->moveOrGetValue());
+                p->tryResolve(fallbackTo->moveOrGetValue());
             } else {
-                p->fail(s->getFailure());
+                p->tryFail(s->getFailure());
             }
         }
     };
@@ -706,13 +697,13 @@ inline std::shared_ptr<celix::impl::SharedPromiseState<void>> celix::impl::Share
     auto chainFunction = [s = self.lock(), p, fallbackTo = std::move(fallbackTo)] {
         if (s->isSuccessfullyResolved()) {
             s->getValue();
-            p->resolve();
+            p->tryResolve();
         } else {
             if (fallbackTo->isSuccessfullyResolved()) {
                 fallbackTo->getValue();
-                p->resolve();
+                p->tryResolve();
             } else {
-                p->fail(s->getFailure());
+                p->tryFail(s->getFailure());
             }
         }
     };
@@ -765,12 +756,12 @@ std::shared_ptr<celix::impl::SharedPromiseState<R>> celix::impl::SharedPromiseSt
     auto chainFunction = [s = self.lock(), p, mapper = std::move(mapper)] {
         try {
             if (s->isSuccessfullyResolved()) {
-                p->resolve(mapper(s->moveOrGetValue()));
+                p->tryResolve(mapper(s->moveOrGetValue()));
             } else {
-                p->fail(s->getFailure());
+                p->tryFail(s->getFailure());
             }
         } catch (...) {
-            p->fail(std::current_exception());
+            p->tryFail(std::current_exception());
         }
     };
     addChain(std::move(chainFunction));
@@ -787,12 +778,12 @@ std::shared_ptr<celix::impl::SharedPromiseState<R>> celix::impl::SharedPromiseSt
         try {
             if (s->isSuccessfullyResolved()) {
                 s->getValue();
-                p->resolve(mapper());
+                p->tryResolve(mapper());
             } else {
-                p->fail(s->getFailure());
+                p->tryFail(s->getFailure());
             }
         } catch (...) {
-            p->fail(std::current_exception());
+            p->tryFail(std::current_exception());
         }
     };
     addChain(std::move(chainFunction));
@@ -809,12 +800,12 @@ std::shared_ptr<celix::impl::SharedPromiseState<T>> celix::impl::SharedPromiseSt
         if (s->isSuccessfullyResolved()) {
             try {
                 consumer(s->getValue());
-                p->resolve(s->moveOrGetValue());
+                p->tryResolve(s->moveOrGetValue());
             } catch (...) {
-                p->fail(std::current_exception());
+                p->tryFail(std::current_exception());
             }
         } else {
-            p->fail(s->getFailure());
+            p->tryFail(s->getFailure());
         }
     };
     addChain(std::move(chainFunction));
@@ -831,12 +822,12 @@ inline std::shared_ptr<celix::impl::SharedPromiseState<void>> celix::impl::Share
             try {
                 s->getValue();
                 consumer();
-                p->resolve();
+                p->tryResolve();
             } catch (...) {
-                p->fail(std::current_exception());
+                p->tryFail(std::current_exception());
             }
         } else {
-            p->fail(s->getFailure());
+            p->tryFail(s->getFailure());
         }
     };
     addChain(std::move(chainFunction));
@@ -901,7 +892,7 @@ void celix::impl::SharedPromiseState<T>::addOnFailureConsumeCallback(std::functi
             } catch (const std::exception &e) {
                 callback(e);
             } catch (...) {
-                //NOTE not a exception based on std::exception, "repacking" it to logical error
+                //NOTE not an exception based on std::exception, "repacking" it to logical error
                 std::logic_error logicError{"Unknown exception throw for the failure of A celix::Promise"};
                 callback(logicError);
             }
@@ -918,7 +909,7 @@ inline void celix::impl::SharedPromiseState<void>::addOnFailureConsumeCallback(s
             } catch (const std::exception &e) {
                 callback(e);
             } catch (...) {
-                //NOTE not a exception based on std::exception, "repacking" it to logical error
+                //NOTE not an exception based on std::exception, "repacking" it to logical error
                 std::logic_error logicError{"Unknown exception throw for the failure of A celix::Promise"};
                 callback(logicError);
             }

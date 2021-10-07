@@ -28,7 +28,10 @@ class ShellTestSuite : public ::testing::Test {
 public:
     static constexpr const char * const SHELL_BUNDLE_LOC = "" SHELL_BUNDLE_LOCATION "";
 
-    ShellTestSuite() : ctx{createFrameworkContext()} {}
+    ShellTestSuite() : ctx{createFrameworkContext()} {
+        shellBundleId = celix_bundleContext_installBundle(ctx.get(), SHELL_BUNDLE_LOCATION, true);
+        EXPECT_GE(shellBundleId, 0);
+    }
 
     static std::shared_ptr<celix_bundle_context_t> createFrameworkContext() {
         auto properties = properties_create();
@@ -39,15 +42,13 @@ public:
         auto* cFw = celix_frameworkFactory_createFramework(properties);
         auto cCtx = framework_getContext(cFw);
 
-        long shellBundleId = celix_bundleContext_installBundle(cCtx, SHELL_BUNDLE_LOCATION, true);
-        EXPECT_GE(shellBundleId, 0);
-
         return std::shared_ptr<celix_bundle_context_t>{cCtx, [](celix_bundle_context_t* context) {
             auto *fw = celix_bundleContext_getFramework(context);
             celix_frameworkFactory_destroyFramework(fw);
         }};
     }
-    
+
+    long shellBundleId = -1;
     std::shared_ptr<celix_bundle_context_t> ctx;
 };
 
@@ -88,13 +89,13 @@ static void callCommand(std::shared_ptr<celix_bundle_context_t>& ctx, const char
 
 TEST_F(ShellTestSuite, testAllCommandsAreCallable) {
     callCommand(ctx, "non-existing", false);
-    callCommand(ctx, "install a-bundle-loc.zip", false);
+    callCommand(ctx, "install a-bundle-loc.zip", true);
     callCommand(ctx, "help", true);
     callCommand(ctx, "help lb", false); //note need namespace
     callCommand(ctx, "help celix::lb", true);
     callCommand(ctx, "help non-existing-command", false);
-    callCommand(ctx, "lb -a", true);
     callCommand(ctx, "lb", true);
+    callCommand(ctx, "lb -l", true);
     callCommand(ctx, "query", true);
     callCommand(ctx, "q -v", true);
     callCommand(ctx, "stop 15", false);
@@ -115,6 +116,23 @@ TEST_F(ShellTestSuite, stopFrameworkTest) {
 
     //ensure that the command can be executed, before framework stop
     std::this_thread::sleep_for(std::chrono::milliseconds{100});
+}
+
+TEST_F(ShellTestSuite, stopSelfTest) {
+    auto* list = celix_bundleContext_listBundles(ctx.get());
+    EXPECT_EQ(1, celix_arrayList_size(list));
+    celix_arrayList_destroy(list);
+
+    //rule it should be possible to stop the Shell bundle from the stop command (which is part of the Shell bundle)
+    std::string cmd = std::string{"stop "} + std::to_string(shellBundleId);
+    callCommand(ctx, cmd.c_str(), true);
+
+    //ensure that the command can be executed
+    std::this_thread::sleep_for(std::chrono::milliseconds{100});
+
+    list = celix_bundleContext_listBundles(ctx.get());
+    EXPECT_EQ(0, celix_arrayList_size(list));
+    celix_arrayList_destroy(list);
 }
 
 TEST_F(ShellTestSuite, queryTest) {

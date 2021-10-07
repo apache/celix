@@ -66,8 +66,8 @@ static void checkHttpRequest(const char* req_str, int expectedReturnCode) {
     auto* connection = mg_connect_client("localhost", HTTP_PORT /*port*/, 0 /*no ssl*/, err_buf, sizeof(err_buf));
 
     //Send request and check if complete request is send
-    auto send_bytes = mg_write(connection, req_str, strlen(req_str));
-    EXPECT_TRUE(send_bytes == (int) strlen(req_str));
+    auto send_bytes = mg_write(connection, req_str, strlen(req_str) + 1);
+    EXPECT_TRUE(send_bytes == (int) strlen(req_str) + 1);
 
     //Wait 1000ms for a response and check if response is successful
     auto response = mg_get_response(connection, err_buf, sizeof(err_buf), 1000);
@@ -147,15 +147,15 @@ TEST_F(HttpAndWebsocketTestSuite, websocket_echo_test) {
     struct mg_connection *connection;
 
     //Prepare buffer for receiving echo data
-    echo_data.length = strlen(data_str);
-    echo_data.data = (char *) malloc(strlen(data_str));
+    echo_data.length = strlen(data_str) + 1;
+    echo_data.data = (char *) malloc(strlen(data_str) + 1);
 
     connection = mg_connect_websocket_client("127.0.0.1", HTTP_PORT, 0, err_buf, sizeof(err_buf),
             "/", "websocket_test", websocket_client_data_handler, nullptr, &echo_data);
     EXPECT_TRUE(connection != nullptr);
 
 
-    bytes_written = mg_websocket_client_write(connection, MG_WEBSOCKET_OPCODE_TEXT, data_str, strlen(data_str));
+    bytes_written = mg_websocket_client_write(connection, MG_WEBSOCKET_OPCODE_TEXT, data_str, strlen(data_str) + 1);
     EXPECT_TRUE(bytes_written > 0);
 
     usleep(1000000); //Sleep for one second to let Civetweb handle the request

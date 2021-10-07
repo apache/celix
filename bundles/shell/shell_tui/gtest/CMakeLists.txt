@@ -15,14 +15,14 @@
 # specific language governing permissions and limitations
 # under the License.
 
-set(PACKAGE_VERSION "0.1.0")
+add_executable(test_shell_tui
+        src/ShellTuiTestSuite.cc
+)
 
-# Check whether the requested PACKAGE_FIND_VERSION is compatible
-if("${PACKAGE_VERSION}" VERSION_LESS "${PACKAGE_FIND_VERSION}")
-    set(PACKAGE_VERSION_COMPATIBLE FALSE)
-else()
-    set(PACKAGE_VERSION_COMPATIBLE TRUE)
-    if ("${PACKAGE_VERSION}" VERSION_EQUAL "${PACKAGE_FIND_VERSION}")
-        set(PACKAGE_VERSION_EXACT TRUE)
-    endif()
-endif()
+target_link_libraries(test_shell_tui PRIVATE Celix::framework GTest::gtest GTest::gtest_main)
+add_celix_bundle_dependencies(test_shell_tui Celix::shell Celix::shell_tui)
+target_compile_definitions(test_shell_tui PRIVATE -DSHELL_BUNDLE_LOCATION=\"$<TARGET_PROPERTY:shell,BUNDLE_FILE>\")
+target_compile_definitions(test_shell_tui PRIVATE -DSHELL_TUI_BUNDLE_LOCATION=\"$<TARGET_PROPERTY:shell_tui,BUNDLE_FILE>\")
+
+add_test(NAME test_shell_tui COMMAND test_shell_tui)
+setup_target_for_coverage(test_shell_tui SCAN_DIR ..)

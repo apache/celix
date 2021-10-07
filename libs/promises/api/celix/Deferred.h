@@ -24,11 +24,12 @@
 
 #include "celix/impl/SharedPromiseState.h"
 #include "celix/Promise.h"
+#include "celix/PromiseIllegalStateException.h"
 
 namespace celix {
 
     /**
-     * A Deferred Promise resolution.
+     * @brief A Deferred Promise resolution.
      *
      * <p>
      * Instances of this class can be used to create a {@link celix::Promise} that can be
@@ -52,7 +53,8 @@ namespace celix {
         explicit Deferred(std::shared_ptr<celix::impl::SharedPromiseState<T>> state);
 
         /**
-         * Fail the Promise associated with this Deferred.
+         * @brief Fail the Promise associated with this Deferred.
+         *
          * <p/>
          * After the associated Promise is resolved with the specified failure, all registered callbacks are called and any
          * chained Promises are resolved.
@@ -60,13 +62,23 @@ namespace celix {
          * Resolving the associated Promise happens-before any registered callback is called. That is, in a registered
          * callback, Promise.isDone() must return true and Promise.getValue() and Promise.getFailure() must not block.
          *
+         * If the associated promise is already resolved, the call will be ignored.
+         *
          * @param failure The failure in the form of an exception pointer.
-         * @throws PromiseInvocationException If the associated Promise was already resolved.
          */
         void fail(std::exception_ptr failure);
 
         /**
-         * Fail the Promise associated with this Deferred.
+         * @brief Try to fail the Promise associated with this Deferred.
+         *
+         * Same as `fail`, but will return `true` if the associated promise was successfully failed and `false` if
+         * the associated promise was already resolved.
+         */
+        bool tryFail(std::exception_ptr failure);
+
+        /**
+         * @brief Fail the Promise associated with this Deferred.
+         *
          * <p/>
          * After the associated Promise is resolved with the specified failure, all registered callbacks are called and any
          * chained Promises are resolved.
@@ -74,23 +86,38 @@ namespace celix {
          * Resolving the associated Promise happens-before any registered callback is called. That is, in a registered
          * callback, Promise.isDone() must return true and Promise.getValue() and Promise.getFailure() must not block.
          *
+         * If the associated promise is already resolved, the call will be ignored.
+         *
          * @param failure The failure in the form of an const std::exception reference.
-         * @throws PromiseInvocationException If the associated Promise was already resolved.
          */
-        void fail(const std::exception& failure);
+        template<typename E, typename std::enable_if_t< std::is_base_of_v<std::exception, E>, bool> = true >
+        void fail(const E& failure);
+
 
         /**
-         * Returns the Promise associated with this Deferred.
+         * @brief Try to fail the Promise associated with this Deferred.
+         *
+         * Same as `fail`, but will return `true` if the associated promise was successfully failed and `false` if
+         * the associated promise was already resolved.
+         */
+        template<typename E, typename std::enable_if_t< std::is_base_of_v<std::exception, E>, bool> = true >
+        bool tryFail(const E& failure);
+
+        /**
+         * @brief Returns the Promise associated with this Deferred.
+         *
          * <p>
          * All Promise objects created by the associated Promise will use the
          * executors of the associated Promise.
+         * </p>
          *
          * @return The Promise associated with this Deferred.
          */
         [[nodiscard]] Promise<T> getPromise();
 
         /**
-         * Successfully resolve the Promise associated with this Deferred.
+         * @brief Resolve the Promise associated with this Deferred.
+         *
          * <p/>
          * After the associated Promise is resolved with the specified value, all registered callbacks are called and any
          * chained Promises are resolved.
@@ -98,15 +125,47 @@ namespace celix {
          * Resolving the associated Promise happens-before any registered callback is called. That is, in a registered
          * callback, Promise.isDone() must return true and Promise.getValue() and Promise.getFailure() must not block.
          *
+         * If the associated promise is already resolved, the call will be ignored.
+         *
          * @param value The value of the resolved Promise.
-         * @throws PromiseInvocationException If the associated Promise was already resolved.
          */
         void resolve(T&& value);
+
+        /**
+         * @brief Resolve the Promise associated with this Deferred.
+         *
+         * <p/>
+         * After the associated Promise is resolved with the specified value, all registered callbacks are called and any
+         * chained Promises are resolved.
+         * <p/>
+         * Resolving the associated Promise happens-before any registered callback is called. That is, in a registered
+         * callback, Promise.isDone() must return true and Promise.getValue() and Promise.getFailure() must not block.
+         *
+         * If the associated promise is already resolved, the call will be ignored.
+         *
+         * @param value The value of the resolved Promise.
+         */
         void resolve(const T& value);
 
-        //NOTE not part of the spec.. update to resolveWith with a return celix::Promise<void> ??
         /**
-         * Resolve the Promise associated with this Deferred with the specified Promise.
+         * @brief Try to resolve the Promise associated with this Deferred.
+         *
+         * Same as `resolve`, but will return `true` if the associated promise was successfully resolved and `false` if
+         * the associated promise was already resolved.
+         */
+        bool tryResolve(T&& value);
+
+        /**
+         * @brief Try to resolve the Promise associated with this Deferred.
+         *
+         * Same as `resolve`, but will return `true` if the associated promise was successfully resolved and `false` if
+         * the associated promise was already resolved.
+         */
+        bool tryResolve(const T& value);
+
+        /**
+         * @brief Resolve the Promise associated with this Deferred with the specified Promise.
+         *
          * <p/>
          * If the specified Promise is successfully resolved, the associated Promise is resolved with the value of the
          * specified Promise. If the specified Promise is resolved with a failure, the associated Promise is resolved with
@@ -126,7 +185,7 @@ namespace celix {
          * associated Promise was already resolved when the specified Promise was resolved.
          */
         template<typename U>
-        void resolveWith(celix::Promise<U> with);
+        celix::Promise<void> resolveWith(celix::Promise<U> with);
 
     private:
         std::shared_ptr<celix::impl::SharedPromiseState<T>> state;
@@ -139,10 +198,9 @@ namespace celix {
 
         explicit Deferred(std::shared_ptr<celix::impl::SharedPromiseState<void>> state);
 
-        //TODO deferred ctor with factory
-
         /**
-         * Fail the Promise associated with this Deferred.
+         * @brief Fail the Promise associated with this Deferred.
+         *
          * <p/>
          * After the associated Promise is resolved with the specified failure, all registered callbacks are called and any
          * chained Promises are resolved.
@@ -150,13 +208,23 @@ namespace celix {
          * Resolving the associated Promise happens-before any registered callback is called. That is, in a registered
          * callback, Promise.isDone() must return true and Promise.getValue() and Promise.getFailure() must not block.
          *
+         * If the associated promise is already resolved, the call will be ignored.
+         *
          * @param failure The failure in the form of an exception pointer.
-         * @throws PromiseInvocationException If the associated Promise was already resolved.
          */
         void fail(std::exception_ptr failure);
 
         /**
-         * Fail the Promise associated with this Deferred.
+         * @brief Try to fail the Promise associated with this Deferred.
+         *
+         * Same as `fail`, but will return `true` if the associated promise was successfully failed and `false` if
+         * the associated promise was already resolved.
+         */
+        bool tryFail(std::exception_ptr failure);
+
+        /**
+         * @brief Fail the Promise associated with this Deferred.
+         *
          * <p/>
          * After the associated Promise is resolved with the specified failure, all registered callbacks are called and any
          * chained Promises are resolved.
@@ -164,23 +232,37 @@ namespace celix {
          * Resolving the associated Promise happens-before any registered callback is called. That is, in a registered
          * callback, Promise.isDone() must return true and Promise.getValue() and Promise.getFailure() must not block.
          *
+         * If the associated promise is already resolved, the call will be ignored.
+         *
          * @param failure The failure in the form of an const std::exception reference.
-         * @throws PromiseInvocationException If the associated Promise was already resolved.
          */
-        void fail(const std::exception& failure);
+        template<typename E, typename std::enable_if_t< std::is_base_of_v<std::exception, E>, bool> = true >
+        void fail(const E& failure);
 
         /**
-         * Returns the Promise associated with this Deferred.
+         * @brief Try to fail the Promise associated with this Deferred.
+         *
+         * Same as `fail`, but will return `true` if the associated promise was successfully failed and `false` if
+         * the associated promise was already resolved.
+         */
+        template<typename E, typename std::enable_if_t< std::is_base_of_v<std::exception, E>, bool> = true >
+        bool tryFail(const E& failure);
+
+        /**
+         * @brief Returns the Promise associated with this Deferred.
+         *
          * <p>
          * All Promise objects created by the associated Promise will use the
          * executors of the associated Promise.
+         * </p>
          *
          * @return The Promise associated with this Deferred.
          */
         [[nodiscard]] Promise<void> getPromise();
 
         /**
-         * Successfully resolve the Promise associated with this Deferred.
+         * @brief Resolve the Promise associated with this Deferred.
+         *
          * <p/>
          * After the associated Promise is resolved with the specified value, all registered callbacks are called and any
          * chained Promises are resolved.
@@ -188,13 +270,22 @@ namespace celix {
          * Resolving the associated Promise happens-before any registered callback is called. That is, in a registered
          * callback, Promise.isDone() must return true and Promise.getValue() and Promise.getFailure() must not block.
          *
+         * If the associated promise is already resolved, the call will be ignored.
+         *
          * @param value The value of the resolved Promise.
-         * @throws PromiseInvocationException If the associated Promise was already resolved.
          */
         void resolve();
 
-        void resolveWith(celix::Promise<void> with);
+        /**
+         * @brief Try to resolve the Promise associated with this Deferred.
+         *
+         * Same as `resolve`, but will return `true` if the associated promise was successfully resolved and `false` if
+         * the associated promise was already resolved.
+         */
+        bool tryResolve();
 
+        template<typename U>
+        celix::Promise<void> resolveWith(celix::Promise<U> with);
     private:
         std::shared_ptr<celix::impl::SharedPromiseState<void>> state;
     };
@@ -213,20 +304,42 @@ inline celix::Deferred<void>::Deferred(std::shared_ptr<celix::impl::SharedPromis
 
 template<typename T>
 void celix::Deferred<T>::fail(std::exception_ptr failure) {
-    state->fail(std::move(failure));
-}
-
-inline void celix::Deferred<void>::fail(std::exception_ptr failure) {
-    state->fail(std::move(failure));
+    state->tryFail(std::move(failure));
 }
 
 template<typename T>
-void celix::Deferred<T>::fail(const std::exception& failure) {
-    state->fail(failure);
+bool celix::Deferred<T>::tryFail(std::exception_ptr failure) {
+    return state->tryFail(std::move(failure));
 }
 
-inline void celix::Deferred<void>::fail(const std::exception& failure) {
-    state->fail(failure);
+inline void celix::Deferred<void>::fail(std::exception_ptr failure) {
+    state->tryFail(std::move(failure));
+}
+
+inline bool celix::Deferred<void>::tryFail(std::exception_ptr failure) {
+    return state->tryFail(std::move(failure));
+}
+
+template<typename T>
+template<typename E, typename std::enable_if_t< std::is_base_of_v<std::exception, E>, bool>>
+void celix::Deferred<T>::fail(const E& failure) {
+    state->template tryFail<E>(failure);
+}
+
+template<typename T>
+template<typename E, typename std::enable_if_t< std::is_base_of_v<std::exception, E>, bool>>
+bool celix::Deferred<T>::tryFail(const E& failure) {
+    return state->template tryFail<E>(failure);
+}
+
+template<typename E, typename std::enable_if_t< std::is_base_of_v<std::exception, E>, bool>>
+void celix::Deferred<void>::fail(const E& failure) {
+    state->tryFail<E>(failure);
+}
+
+template<typename E, typename std::enable_if_t< std::is_base_of_v<std::exception, E>, bool>>
+bool celix::Deferred<void>::tryFail(const E& failure) {
+    return state->tryFail<E>(failure);
 }
 
 template<typename T>
@@ -240,37 +353,70 @@ inline celix::Promise<void> celix::Deferred<void>::getPromise() {
 
 template<typename T>
 template<typename U>
-void celix::Deferred<T>::resolveWith(celix::Promise<U> with) {
-    with.onResolve([s = state, with] () mutable {
+celix::Promise<void> celix::Deferred<T>::resolveWith(celix::Promise<U> with) {
+    auto p = celix::impl::SharedPromiseState<void>::create(state->getExecutor(), state->getScheduledExecutor(), state->getPriority());
+    with.onResolve([s = state, with, p] () mutable {
+        bool resolved;
         if (with.isSuccessfullyResolved()) {
-            s->resolve(with.moveOrGetValue());
+            resolved = s->tryResolve(with.moveOrGetValue());
         } else {
-            s->fail(with.getFailure());
+            resolved = s->tryFail(with.getFailure());
+        }
+        if (resolved) {
+            p->tryResolve();
+        } else {
+            //s was already resolved
+            p->tryFail(std::make_exception_ptr(celix::PromiseIllegalStateException{}));
         }
     });
+    return celix::Promise<void>{p};
 }
 
-inline void celix::Deferred<void>::resolveWith(celix::Promise<void> with) {
-    with.onResolve([s = state, with] {
+template<typename U>
+inline celix::Promise<void> celix::Deferred<void>::resolveWith(celix::Promise<U> with) {
+    auto p = celix::impl::SharedPromiseState<void>::create(state->getExecutor(), state->getScheduledExecutor(), state->getPriority());
+    with.onResolve([s = state, with, p] {
+        bool resolved;
         if (with.isSuccessfullyResolved()) {
             with.getValue();
-            s->resolve();
+            resolved = s->tryResolve();
         } else {
-            s->fail(with.getFailure());
+            resolved = s->tryFail(with.getFailure());
+        }
+        if (resolved) {
+            p->tryResolve();
+        } else {
+            //s was already resolved
+            p->tryFail(std::make_exception_ptr(celix::PromiseIllegalStateException{}));
         }
     });
+    return celix::Promise<void>{p};
 }
 
 template<typename T>
 void celix::Deferred<T>::resolve(T&& value) {
-    state->resolve(std::forward<T>(value));
+    state->tryResolve(std::forward<T>(value));
 }
 
 template<typename T>
 void celix::Deferred<T>::resolve(const T& value) {
-    state->resolve(value);
+    state->tryResolve(value);
 }
 
 inline void celix::Deferred<void>::resolve() {
-    state->resolve();
+    state->tryResolve();
+}
+
+template<typename T>
+bool celix::Deferred<T>::tryResolve(T&& value) {
+    return state->tryResolve(std::forward<T>(value));
+}
+
+template<typename T>
+bool celix::Deferred<T>::tryResolve(const T& value) {
+    return state->tryResolve(value);
+}
+
+inline bool celix::Deferred<void>::tryResolve() {
+    return state->tryResolve();
 }

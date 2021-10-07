@@ -16,7 +16,7 @@
 # under the License.
 
 add_executable(test_shell
-        src/ShellTestSuite.cpp
+        src/ShellTestSuite.cc
 )
 
 target_link_libraries(test_shell PRIVATE Celix::framework Celix::shell_api GTest::gtest GTest::gtest_main)
@@ -32,7 +32,7 @@ setup_target_for_coverage(test_shell SCAN_DIR ..)
 
 
 add_executable(test_cxx_shell
-        src/ShellTestSuite.cpp
+        src/ShellTestSuite.cc
 )
 
 target_link_libraries(test_cxx_shell PRIVATE Celix::framework Celix::shell_api GTest::gtest GTest::gtest_main)

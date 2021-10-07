@@ -16,13 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * shell_tui.h
- *
- *  \date       Jan 16, 2016
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
 
 #ifndef SHELL_TUI_H_
 #define SHELL_TUI_H_
@@ -34,11 +27,34 @@
 
 typedef struct shell_tui shell_tui_t ;
 
-shell_tui_t* shellTui_create(bool useAnsiControlSequences);
+
+/**
+ * @brief Create a new shell tui.
+ * @param useAnsiControlSequences Whether to parse ansi control sequences.
+ * @param inputFd The input file descriptor to use.
+ * @param outputFd The output file descriptor to use.
+ * @param errorFd The error output file descriptor to use.
+ */
+shell_tui_t* shellTui_create(bool useAnsiControlSequences, int inputFd, int outputFd, int errorFd);
+
+/**
+ * @brief Start the shell tui and the thread reading the tty and optional extra read file descriptor.
+ */
 celix_status_t shellTui_start(shell_tui_t* shellTui);
+
+/**
+ * @brief Stop the shell tui.
+ */
 celix_status_t shellTui_stop(shell_tui_t* shellTui);
+
+/**
+ * @brief Free the resources for the shell tui
+ */
 void shellTui_destroy(shell_tui_t* shellTui);
 
+/**
+ * @brief set the shell service.
+ */
 celix_status_t shellTui_setShell(shell_tui_t* shellTui, celix_shell_t* svc);
 
 #endif /* SHELL_TUI_H_ */

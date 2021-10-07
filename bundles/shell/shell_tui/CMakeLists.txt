@@ -24,19 +24,20 @@ if (SHELL_TUI)
 		FILENAME celix_shell_tui
 		GROUP "Celix/Shell"
     	SOURCES 
-    		private/src/activator.c
-    		private/src/shell_tui.c
-    		private/src/history.c
+    		src/activator.c
+    		src/shell_tui.c
+    		src/history.c
 	)
 	
-	target_include_directories(shell_tui PRIVATE
-			"${PROJECT_SOURCE_DIR}/utils/public/include"
-			private/include
-	)
-    target_link_libraries(shell_tui PRIVATE Celix::shell_api)
+	target_include_directories(shell_tui PRIVATE src)
+    target_link_libraries(shell_tui PRIVATE Celix::shell_api Celix::utils)
 
 	install_celix_bundle(shell_tui EXPORT celix)
 
 	#Alias setup to match external usage
 	add_library(Celix::shell_tui ALIAS shell_tui)
+
+	if (ENABLE_TESTING AND TARGET Celix::shell)
+		add_subdirectory(gtest)
+	endif()
 endif (SHELL_TUI)
