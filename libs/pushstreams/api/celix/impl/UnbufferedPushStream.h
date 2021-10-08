@@ -63,7 +63,9 @@ bool celix::UnbufferedPushStream<T>::begin() {
 
 template<typename T>
 void celix::UnbufferedPushStream<T>::upstreamClose(const PushEvent<T>& /*event*/) {
-    toClose->close();
+    if (toClose) {
+        toClose->close();
+    }
 }
 
 

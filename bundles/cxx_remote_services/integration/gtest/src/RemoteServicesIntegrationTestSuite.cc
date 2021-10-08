@@ -115,16 +115,27 @@ TEST_F(RemoteServicesIntegrationTestSuite, InvokeRemoteCalcService) {
                 cmd.executeCommand(cmd.handle, "psa_zmq", stdout, stdout);
             })
             .build();
-
+    std::shared_ptr<celix::PushStream<double>> stream;
     //When I call the calculator service from the client, I expect a answer
+    int streamCount = 0;
+    double lastValue = 0.0;
     count = clientCtx->useService<ICalculator>()
-            .addUseCallback([](auto& calc) {
+            .addUseCallback([&](auto& calc) {
+                stream = calc.result();
+                stream->forEach([&](double event){
+                    lastValue = event;
+                    streamCount++;
+                });
+
                 auto promise = calc.add(2, 4);
                 promise.wait();
                 EXPECT_TRUE(promise.isSuccessfullyResolved());
                 if (promise.isSuccessfullyResolved()) {
                     EXPECT_EQ(6, promise.getValue());
                 }
+                sleep(1);
+                EXPECT_GE(streamCount,0 );
+                EXPECT_GE(lastValue, 0.0);
             })
             .build();
     EXPECT_EQ(count, 1);
