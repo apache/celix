@@ -29,7 +29,8 @@ extern "C" {
 #endif
 
 /**
- * Called when this bundle is started so the bundle can create an instance for its activator.
+ * @brief Called when this bundle is started so the bundle can create an instance for its activator.
+ *
  * The framework does not assume any type for the activator instance, this is implementation specific.
  * The activator instance is handle as a void pointer by the framework, the implementation must cast it to the
  * implementation specific type.
@@ -45,9 +46,10 @@ extern "C" {
 celix_status_t celix_bundleActivator_create(celix_bundle_context_t *ctx, void **userData);
 
 /**
- * Called when this bundle is started so the Framework can perform the bundle-specific activities necessary
- * to start this bundle. This method can be used to register services or to allocate any resources that this
- * bundle needs.
+ * @brief Called when this bundle is started so the Framework can perform the bundle-specific activities necessary
+ * to start this bundle.
+ *
+ * This method can be used to register services or to allocate any resources that this bundle needs.
  *
  * <p>
  * This method must complete and return to its caller in a timely manner.
@@ -63,8 +65,10 @@ celix_status_t celix_bundleActivator_create(celix_bundle_context_t *ctx, void **
 celix_status_t celix_bundleActivator_start(void *userData, celix_bundle_context_t *ctx);
 
 /**
- * Called when this bundle is stopped so the Framework can perform the bundle-specific activities necessary
- * to stop the bundle. In general, this method should undo the work that the <code>bundleActivator_start()</code>
+ * @brief Called when this bundle is stopped so the Framework can perform the bundle-specific activities necessary
+ * to stop the bundle.
+ *
+ * In general, this method should undo the work that the <code>bundleActivator_start()</code>
  * function started. There should be no active threads that were started by this bundle when this bundle returns.
  * A stopped bundle must not call any Framework objects.
  *
@@ -82,8 +86,9 @@ celix_status_t celix_bundleActivator_start(void *userData, celix_bundle_context_
 celix_status_t celix_bundleActivator_stop(void *userData, celix_bundle_context_t *ctx);
 
 /**
- * Called when this bundle is stopped so the bundle can destroy the instance of its activator. In general, this
- * method should undo the work that the <code>bundleActivator_create()</code> function initialized.
+ * @brief Called when this bundle is stopped so the bundle can destroy the instance of its activator.
+ *
+ * In general, this method should undo the work that the <code>bundleActivator_create()</code> function initialized.
  *
  * <p>
  * This method must complete and return to its caller in a timely manner.
@@ -98,9 +103,14 @@ celix_status_t celix_bundleActivator_stop(void *userData, celix_bundle_context_t
  */
 celix_status_t celix_bundleActivator_destroy(void *userData, celix_bundle_context_t* ctx);
 
+/**
+ * @brief Returns the C bundle context.
+ */
+celix_bundle_context_t* celix_bundleActivator_getBundleContext();
 
 /**
- * This macro generates the required bundle activator functions for C.
+ * @brief This macro generates the required bundle activator functions for C.
+ *
  * This can be used to more type safe bundle activator entries.
  *
  * The macro will create the following bundle activator functions:
@@ -113,7 +123,19 @@ celix_status_t celix_bundleActivator_destroy(void *userData, celix_bundle_contex
  * @param stop the activator actStop function with the following signature: celix_status_t (*)(<actType>*, celix_bundle_context_t*).
  */
 #define CELIX_GEN_BUNDLE_ACTIVATOR(actType, actStart, actStop)                                                         \
-celix_status_t celix_bundleActivator_create(celix_bundle_context_t *ctx __attribute__((unused)), void **userData) {    \
+                                                                                                                       \
+static celix_bundle_context_t* celix_currentBundleContext = NULL;                                                      \
+                                                                                                                       \
+celix_bundle_context_t* celix_bundleActivator_getBundleContext() {                                                     \
+    /*celix_bundle_context_t* ctx;                                                                                     \
+    __atomic_load(&g_celix_currentBundleContext, &ctx, __ATOMIC_ACQUIRE);                                              \
+    return ctx;*/                                                                                                      \
+    return celix_currentBundleContext;                                                                                 \
+}                                                                                                                      \
+                                                                                                                       \
+celix_status_t celix_bundleActivator_create(celix_bundle_context_t *ctx, void **userData) {                            \
+    /*__atomic_store(&celix_currentBundleContext, &ctx, __ATOMIC_RELAXED);*/                                           \
+    celix_currentBundleContext = ctx;                                                                                  \
     celix_status_t status = CELIX_SUCCESS;                                                                             \
     actType *data = (actType*)calloc(1, sizeof(*data));                                                                \
     if (data != NULL) {                                                                                                \

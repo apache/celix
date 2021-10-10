@@ -19,8 +19,10 @@
 
 #include <stdio.h>
 
-void foo(void);
+void foo();
+char* get_bundle_name();
 
-void foo(void) {
+void foo() {
     printf("nop\n");
 }
+

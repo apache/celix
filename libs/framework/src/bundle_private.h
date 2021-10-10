@@ -27,7 +27,10 @@
 
 struct celix_bundle {
 	bundle_context_pt context;
-    char *symbolicName; //for debug
+    char *symbolicName;
+	char *name;
+	char *group;
+	char *description;
 	struct celix_bundle_activator *activator;
 	bundle_state_e state;
 	void * handle;

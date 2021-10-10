@@ -70,7 +70,6 @@ if (SHELL)
 	add_library(Celix::shell ALIAS shell)
 
 	if (CELIX_CXX)
-		set(CMAKE_CXX_STANDARD 11) #Note that the Celix::CxxShell uses C++11 only
 		add_celix_bundle(ShellCxx
 			SYMBOLIC_NAME "apache::celix::CxxShell"
 			VERSION "2.1.0"

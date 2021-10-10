@@ -30,21 +30,21 @@ extern "C" {
 #endif
 
 /**
- * Returns the bundle id.
+ * @brief Returns the bundle id.
  * @param bnd The bundle
  * @return The bundle id or < 0 if something went wrong.
  */
 long celix_bundle_getId(const celix_bundle_t *bnd);
 
 /**
- * Returns the bundle state.
+ * @brief Returns the bundle state.
  * @param bnd The bundle
  * @return The bundle state or OSGI_FRAMEWORK_BUNDLE_UNKNOWN if something went wrong.
  */
 celix_bundle_state_e celix_bundle_getState(const celix_bundle_t *bnd);
 
 /**
- * Returns a the use-able entry path for the provided relative path to a bundle resource.
+ * @brief Returns a the use-able entry path for the provided relative path to a bundle resource.
  *
  * For example if there is a resource entry in the bundle at path 'META-INF/descriptors/foo.descriptor` this call
  * will return a absolute or relative path to the extracted location of the bundle resource, e.g.:
@@ -57,19 +57,31 @@ celix_bundle_state_e celix_bundle_getState(const celix_bundle_t *bnd);
 char* celix_bundle_getEntry(const celix_bundle_t* bnd, const char *path);
 
 /**
- * Returns the group of the bundle. Groups are used to order bundles.
+ * @brief Returns the group of the bundle. Groups are used to order bundles.
  * Note the return value is valid as long as the bundle is installed.
  */
 const char* celix_bundle_getGroup(const celix_bundle_t *bnd);
 
 /**
- * Returns the symbolic name of the bundle.
+ * @brief Returns the symbolic name of the bundle.
  * Note the return value is valid as long as the bundle is installed.
  */
 const char* celix_bundle_getSymbolicName(const celix_bundle_t *bnd);
 
 /**
- * Returns whether the bundle is the system bundle.
+ * @brief Returns the name of the bundle.
+ * Note the return value is valid as long as the bundle is installed.
+ */
+const char* celix_bundle_getName(const celix_bundle_t* bnd);
+
+/**
+ * @brief Returns the description of the bundle.
+ * Note the return value is valid as long as the bundle is installed.
+ */
+const char* celix_bundle_getDescription(const celix_bundle_t* bnd);
+
+/**
+ * @brief Returns whether the bundle is the system bundle.
  */
 bool celix_bundle_isSystemBundle(const celix_bundle_t *bnd);
 

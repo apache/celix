@@ -38,6 +38,8 @@ celix_status_t manifestParser_create(module_pt owner, manifest_pt manifest, mani
 celix_status_t manifestParser_destroy(manifest_parser_pt mp);
 
 celix_status_t manifestParser_getAndDuplicateSymbolicName(manifest_parser_pt parser, char **symbolicName);
+celix_status_t manifestParser_getAndDuplicateName(manifest_parser_pt parser, char **name);
+celix_status_t manifestParser_getAndDuplicateDescription(manifest_parser_pt parser, char **description);
 celix_status_t manifestParser_getBundleVersion(manifest_parser_pt parser, version_pt *version);
 celix_status_t manifestParser_getAndDuplicateGroup(manifest_parser_pt parser, char **group);
 celix_status_t manifestParser_getCapabilities(manifest_parser_pt parser, linked_list_pt *capabilities);

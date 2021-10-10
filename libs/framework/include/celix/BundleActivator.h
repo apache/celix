@@ -25,73 +25,71 @@
 #include "celix_bundle_activator.h"
 #include "celix/BundleContext.h"
 
-namespace celix {
-    namespace impl {
+namespace celix::impl {
 
-        template<typename I>
-        struct BundleActivatorData {
-            long bndId;
-            std::shared_ptr<celix::BundleContext> ctx;
-            std::unique_ptr<I> bundleActivator;
-        };
+    template<typename I>
+    struct BundleActivatorData {
+        long bndId{};
+        std::shared_ptr<celix::BundleContext> ctx;
+        std::unique_ptr<I> bundleActivator;
+    };
 
 
-        template<typename I>
-        typename std::enable_if<std::is_constructible<I, std::shared_ptr<celix::BundleContext>>::value, celix_status_t>::type
-        createActivator(celix_bundle_context_t *cCtx, void **out) {
-            auto ctx = std::make_shared<celix::BundleContext>(cCtx);
-            auto act = std::unique_ptr<I>(new I{ctx});
-            auto *data = new BundleActivatorData<I>{ctx->getBundleId(), std::move(ctx), std::move(act)};
-            *out = (void *) data;
-            return CELIX_SUCCESS;
-        }
+    template<typename I>
+    typename std::enable_if<std::is_constructible<I, std::shared_ptr<celix::BundleContext>>::value, celix_status_t>::type
+    createActivator(celix_bundle_context_t *cCtx, void **out) {
+        auto ctx = std::make_shared<celix::BundleContext>(cCtx);
+        auto act = std::unique_ptr<I>(new I{ctx});
+        auto *data = new BundleActivatorData<I>{ctx->getBundleId(), std::move(ctx), std::move(act)};
+        *out = (void *) data;
+        return CELIX_SUCCESS;
+    }
 
-        template<typename I>
-        typename std::enable_if<std::is_constructible<I, std::shared_ptr<celix::dm::DependencyManager>>::value, celix_status_t>::type
-        createActivator(celix_bundle_context_t *cCtx, void **out) {
-            auto ctx = std::make_shared<celix::BundleContext>(cCtx);
-            auto dm = ctx->getDependencyManager();
-            auto act = std::unique_ptr<I>(new I{dm});
-            dm->start();
-            auto *data = new BundleActivatorData<I>{ctx->getBundleId(), std::move(ctx), std::move(act)};
-            *out = (void *) data;
-            return CELIX_SUCCESS;
-        }
+    template<typename I>
+    typename std::enable_if<std::is_constructible<I, std::shared_ptr<celix::dm::DependencyManager>>::value, celix_status_t>::type
+    createActivator(celix_bundle_context_t *cCtx, void **out) {
+        auto ctx = std::make_shared<celix::BundleContext>(cCtx);
+        auto dm = ctx->getDependencyManager();
+        auto act = std::unique_ptr<I>(new I{dm});
+        dm->start();
+        auto *data = new BundleActivatorData<I>{ctx->getBundleId(), std::move(ctx), std::move(act)};
+        *out = (void *) data;
+        return CELIX_SUCCESS;
+    }
 
-        template<typename T>
-        void waitForExpired(long bndId, std::weak_ptr<celix::BundleContext>& weakCtx, const char* name, std::weak_ptr<T>& observe) {
-            auto start = std::chrono::system_clock::now();
-            while (!observe.expired()) {
-                auto now = std::chrono::system_clock::now();
-                auto durationInSec = std::chrono::duration_cast<std::chrono::seconds>(now - start);
-                if (durationInSec > std::chrono::seconds{5}) {
-                    auto msg =  std::string{"Cannot destroy bundle "} + std::to_string(bndId) + ". " + name + " is still in use. std::shared_ptr use count is " + std::to_string(observe.use_count()) + "\n";
-                    auto ctx = weakCtx.lock();
-                    if (ctx) {
-                        ctx->logWarn(msg.c_str());
-                    } else {
-                        std::cout << msg;
-                    }
-                    start = now;
+    template<typename T>
+    void waitForExpired(long bndId, std::weak_ptr<celix::BundleContext>& weakCtx, const char* name, std::weak_ptr<T>& observe) {
+        auto start = std::chrono::system_clock::now();
+        while (!observe.expired()) {
+            auto now = std::chrono::system_clock::now();
+            auto durationInSec = std::chrono::duration_cast<std::chrono::seconds>(now - start);
+            if (durationInSec > std::chrono::seconds{5}) {
+                auto msg =  std::string{"Cannot destroy bundle "} + std::to_string(bndId) + ". " + name + " is still in use. std::shared_ptr use count is " + std::to_string(observe.use_count()) + "\n";
+                auto ctx = weakCtx.lock();
+                if (ctx) {
+                    ctx->logWarn(msg.c_str());
+                } else {
+                    std::cout << msg;
                 }
-                std::this_thread::sleep_for(std::chrono::milliseconds{50});
+                start = now;
             }
+            std::this_thread::sleep_for(std::chrono::milliseconds{50});
         }
+    }
 
-        template<typename I>
-        celix_status_t destroyActivator(void *userData) {
-            auto *data = static_cast<BundleActivatorData<I> *>(userData);
-            data->bundleActivator.reset();
-            data->ctx->getDependencyManager()->clear();
+    template<typename I>
+    celix_status_t destroyActivator(void *userData) {
+        auto *data = static_cast<BundleActivatorData<I> *>(userData);
+        data->bundleActivator.reset();
+        data->ctx->getDependencyManager()->clear();
 
-            auto bndId = data->bndId;
-            std::weak_ptr<celix::BundleContext> ctx = data->ctx;
-            std::weak_ptr<celix::dm::DependencyManager> dm = data->ctx->getDependencyManager();
-            delete data;
-            waitForExpired(bndId, ctx, "celix::BundleContext", ctx);
-            waitForExpired(bndId, ctx, "celix::dm::DependencyManager", dm);
-            return CELIX_SUCCESS;
-        }
+        auto bndId = data->bndId;
+        std::weak_ptr<celix::BundleContext> ctx = data->ctx;
+        std::weak_ptr<celix::dm::DependencyManager> dm = data->ctx->getDependencyManager();
+        delete data;
+        waitForExpired(bndId, ctx, "celix::BundleContext", ctx);
+        waitForExpired(bndId, ctx, "celix::dm::DependencyManager", dm);
+        return CELIX_SUCCESS;
     }
 }
 

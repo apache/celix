@@ -17,31 +17,36 @@
  * under the License.
  */
 
-#include "celix_constants.h"
-#include "celix_library_loader.h"
 #include <dlfcn.h>
 
+#include "celix_constants.h"
+#include "celix_libloader.h"
+#include "utils.h"
+
 celix_library_handle_t* celix_libloader_open(celix_bundle_context_t *ctx, const char *libPath) {
-#if defined(DEBUG) && !defined(ANDROID)
-    bool def = true;
-#else
-    bool def = false;
+    bool defaultNoDelete = true;
+#if defined(NDEBUG)
+    bool defaultNoDelete = false;
 #endif
-    bool noDelete = celix_bundleContext_getPropertyAsBool(ctx, CELIX_LOAD_BUNDLES_WITH_NODELETE, def);
+    celix_library_handle_t* handle = NULL;
+    bool noDelete = celix_bundleContext_getPropertyAsBool(ctx, CELIX_LOAD_BUNDLES_WITH_NODELETE, defaultNoDelete);
+    int flags = RTLD_LAZY|RTLD_LOCAL;
     if (noDelete) {
-        return dlopen(libPath, RTLD_LAZY|RTLD_LOCAL|RTLD_NODELETE);
-    } else {
-        return dlopen(libPath, RTLD_LAZY|RTLD_LOCAL);
+        flags = RTLD_LAZY|RTLD_LOCAL|RTLD_NODELETE;
     }
+    handle = dlopen(libPath, flags);
+    return handle;
 }
 
 
 void celix_libloader_close(celix_library_handle_t *handle) {
     dlclose(handle);
 }
+
 void* celix_libloader_getSymbol(celix_library_handle_t *handle, const char *name) {
     return dlsym(handle, name);
 }
+
 const char* celix_libloader_getLastError() {
     return dlerror();
 }

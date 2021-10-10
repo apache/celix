@@ -197,7 +197,7 @@ TEST_F(DependencyManagerTestSuite, CxxDmGetInfo) {
 
     auto info = mng.getInfo();
     EXPECT_EQ(info.bndId, 0);
-    EXPECT_EQ(info.bndSymbolicName, "Framework");
+    EXPECT_EQ(info.bndSymbolicName, "celix_framework");
     EXPECT_EQ(info.components.size(), 0); //not build yet
 
     mng.build();
@@ -774,3 +774,45 @@ TEST_F(DependencyManagerTestSuite, ComponentContextShouldNotLeak) {
             .build();
     //note should not leak mem
 }
+
+#if __cplusplus >= 201703L //C++17 or higher
+
+class TestInterfaceWithStaticInfo {
+public:
+    static constexpr const char * const NAME = "TestName";
+    static constexpr const char * const VERSION = "1.2.3";
+};
+
+TEST_F(DependencyManagerTestSuite, ProvideInterfaceWithStaticInfo) {
+    class TestComponent : public TestInterfaceWithStaticInfo {};
+    celix::dm::DependencyManager dm{ctx};
+    auto& cmp = dm.createComponent<TestComponent>();
+    cmp.createProvidedService<TestInterfaceWithStaticInfo>();
+    cmp.build();
+    EXPECT_EQ(cmp.getState(), celix::dm::ComponentState::TRACKING_OPTIONAL);
+
+    auto info = dm.getInfo();
+    EXPECT_EQ(info.components[0].interfacesInfo[0].serviceName, "TestName");
+    auto& props = info.components[0].interfacesInfo[0].properties;
+    const auto it = props.find(celix::SERVICE_VERSION);
+    ASSERT_TRUE(it != props.end());
+    EXPECT_EQ(it->second, "1.2.3");
+}
+
+TEST_F(DependencyManagerTestSuite, CreateInterfaceWithStaticInfo) {
+    class TestComponent : public TestInterfaceWithStaticInfo {};
+    celix::dm::DependencyManager dm{ctx};
+    auto& cmp = dm.createComponent<TestComponent>();
+    cmp.addInterface<TestInterfaceWithStaticInfo>();
+    cmp.build();
+    EXPECT_EQ(cmp.getState(), celix::dm::ComponentState::TRACKING_OPTIONAL);
+
+    auto info = dm.getInfo();
+    EXPECT_EQ(info.components[0].interfacesInfo[0].serviceName, "TestName");
+    auto& props = info.components[0].interfacesInfo[0].properties;
+    const auto it = props.find(celix::SERVICE_VERSION);
+    ASSERT_TRUE(it != props.end());
+    EXPECT_EQ(it->second, "1.2.3");
+}
+
+#endif

@@ -19,8 +19,6 @@ find_package(ZLIB REQUIRED)
 find_package(UUID REQUIRED)
 find_package(CURL REQUIRED)
 
-set(CMAKE_CXX_STANDARD 11) #Note that the Celix framework C++ (header only) library uses C++11 only
-
 set(SOURCES
         src/attribute.c src/bundle.c src/bundle_archive.c src/bundle_cache.c
         src/bundle_context.c src/bundle_revision.c src/capability.c src/celix_errorcodes.c
@@ -32,10 +30,10 @@ set(SOURCES
         src/celix_log.c src/celix_launcher.c
         src/celix_framework_factory.c
         src/dm_dependency_manager_impl.c src/dm_component_impl.c
-        src/dm_service_dependency.c src/celix_library_loader.c
+        src/dm_service_dependency.c src/celix_libloader.c
         src/framework_bundle_lifecycle_handler.c
         src/celix_bundle_state.c
-)
+        )
 add_library(framework SHARED ${SOURCES})
 set_target_properties(framework PROPERTIES OUTPUT_NAME "celix_framework")
 target_include_directories(framework PUBLIC

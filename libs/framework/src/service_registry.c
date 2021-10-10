@@ -191,10 +191,9 @@ static celix_status_t serviceRegistry_registerServiceInternal(service_registry_p
 	array_list_pt regs;
 	long svcId = reservedId > 0 ? reservedId : celix_serviceRegistry_nextSvcId(registry);
 
-	celix_properties_setLong(dictionary, CELIX_FRAMEWORK_SERVICE_BUNDLE_ID, celix_bundle_getId(bundle));
+    celix_properties_setLong(dictionary, CELIX_FRAMEWORK_SERVICE_BUNDLE_ID, celix_bundle_getId(bundle));
 
-
-	if (svcType == CELIX_DEPRECATED_FACTORY_SERVICE) {
+    if (svcType == CELIX_DEPRECATED_FACTORY_SERVICE) {
 	    celix_properties_set(dictionary, CELIX_FRAMEWORK_SERVICE_SCOPE, CELIX_FRAMEWORK_SERVICE_SCOPE_BUNDLE);
         *registration = serviceRegistration_createServiceFactory(registry->callback, bundle, serviceName,
                                                                  svcId, serviceObject,

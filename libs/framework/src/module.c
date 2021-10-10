@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <celix_utils.h>
 
 #include "module.h"
 #include "manifest_parser.h"
@@ -33,8 +34,10 @@ struct module {
 	array_list_pt dependentImporters;
 
 	version_pt version;
-	char * symbolicName;
-	char * group;
+	char* symbolicName;
+	char* group;
+    char* name;
+    char* description;
 	bool resolved;
 
 	manifest_pt headerMap;
@@ -64,6 +67,12 @@ module_pt module_create(manifest_pt headerMap, const char * moduleId, bundle_pt 
             module->group = NULL;
             manifestParser_getAndDuplicateGroup(mp, &module->group);
 
+            module->name = NULL;
+            manifestParser_getAndDuplicateName(mp, &module->name);
+
+            module->description = NULL;
+            manifestParser_getAndDuplicateDescription(mp, &module->description);
+
             module->version = NULL;
             manifestParser_getBundleVersion(mp, &module->version);
 
@@ -88,8 +97,10 @@ module_pt module_createFrameworkModule(bundle_pt bundle) {
 	module = (module_pt) calloc(1, sizeof(*module));
 	if (module) {
         module->id = strdup("0");
-        module->symbolicName = strdup("Framework");
-        module->group = strdup("Celix/Framework");
+        module->symbolicName = celix_utils_strdup("celix_framework");
+        module->group = celix_utils_strdup("Celix/Framework");
+        module->name = celix_utils_strdup("Celix Framework");
+        module->description = celix_utils_strdup("The Celix Framework System Bundle");
         module->version = NULL;
         version_createVersion(1, 0, 0, "", &module->version);
 
@@ -147,7 +158,9 @@ void module_destroy(module_pt module) {
 
 	free(module->id);
 	free(module->symbolicName);
-	free(module->group);
+    free(module->name);
+    free(module->group);
+    free(module->description);
 	free(module);
 }
 
@@ -176,14 +189,42 @@ version_pt module_getVersion(module_pt module) {
 
 celix_status_t module_getSymbolicName(module_pt module, const char **symbolicName) {
 	celix_status_t status = CELIX_SUCCESS;
-
 	if (module == NULL) {
 		status = CELIX_ILLEGAL_ARGUMENT;
 	} else {
 		*symbolicName = module->symbolicName;
 	}
-
 	return status;
+}
+
+celix_status_t module_getName(module_pt module, const char **symbolicName) {
+    celix_status_t status = CELIX_SUCCESS;
+    if (module == NULL) {
+        status = CELIX_ILLEGAL_ARGUMENT;
+    } else {
+        *symbolicName = module->name;
+    }
+    return status;
+}
+
+celix_status_t module_getGroup(module_pt module, const char **symbolicName) {
+    celix_status_t status = CELIX_SUCCESS;
+    if (module == NULL) {
+        status = CELIX_ILLEGAL_ARGUMENT;
+    } else {
+        *symbolicName = module->group;
+    }
+    return status;
+}
+
+celix_status_t module_getDescription(module_pt module, const char **symbolicName) {
+    celix_status_t status = CELIX_SUCCESS;
+    if (module == NULL) {
+        status = CELIX_ILLEGAL_ARGUMENT;
+    } else {
+        *symbolicName = module->description;
+    }
+    return status;
 }
 
 char * module_getId(module_pt module) {
@@ -278,11 +319,4 @@ array_list_pt module_getDependents(module_pt module) {
     arrayList_addAll(dependents, module->dependentImporters);
 
     return dependents;
-}
-
-celix_status_t module_getGroup(module_pt module, const char **group) {
-    if (group != NULL) {
-        *group = module->group;
-    }
-    return CELIX_SUCCESS;
 }

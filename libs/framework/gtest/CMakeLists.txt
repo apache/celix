@@ -16,6 +16,10 @@
 # under the License.
 
 add_celix_bundle(simple_test_bundle1 NO_ACTIVATOR VERSION 1.0.0)
+celix_bundle_name(simple_test_bundle1 "Simple Test Bundle")
+celix_bundle_group(simple_test_bundle1 "test/group")
+celix_bundle_description(simple_test_bundle1 "Test Description")
+
 add_celix_bundle(simple_test_bundle2 NO_ACTIVATOR VERSION 1.0.0)
 add_celix_bundle(simple_test_bundle3 NO_ACTIVATOR VERSION 1.0.0)
 add_celix_bundle(bundle_with_exception SOURCES src/nop_activator.c VERSION 1.0.0)
@@ -34,22 +38,20 @@ endif()
 add_dependencies(unresolveable_bundle sublib)
 
 add_executable(test_framework
-    src/single_framework_test.cpp
-    src/multiple_frameworks_test.cpp
-    src/bundle_context_bundles_tests.cpp
-    src/bundle_context_services_test.cpp
-    src/DependencyManagerTestSuite.cc
+        src/single_framework_test.cpp
+        src/multiple_frameworks_test.cpp
+        src/bundle_context_bundles_tests.cpp
+        src/bundle_context_services_test.cpp
+        src/DependencyManagerTestSuite.cc
         src/CxxBundleContextTestSuite.cc
-        src/CxxPropertiesTestSuite.cc
         src/HelloWorldCxxActivator.cc
-        src/CxxFilterTestSuite.cc
         src/CxxFrameworkFactoryTestSuite.cc
-        src/CxxBundleActivatorTestSuite.cc
-        src/CxxUtilsTestSuite.cc
-)
-
-target_link_libraries(test_framework Celix::framework CURL::libcurl GTest::gtest GTest::gtest_main)
-add_dependencies(test_framework simple_test_bundle1_bundle simple_test_bundle2_bundle simple_test_bundle3_bundle simple_test_bundle4_bundle simple_test_bundle5_bundle bundle_with_exception_bundle unresolveable_bundle_bundle simple_cxx_bundle)
+        src/CxxBundleActivatorTestSuite.cc)
+target_link_libraries(test_framework PRIVATE Celix::framework CURL::libcurl GTest::gtest GTest::gtest_main)
+add_celix_bundle_dependencies(test_framework
+        simple_test_bundle1
+        simple_test_bundle2 simple_test_bundle3 simple_test_bundle4
+        simple_test_bundle5 bundle_with_exception unresolveable_bundle simple_cxx)
 target_include_directories(test_framework PRIVATE ../src)
 
 celix_get_bundle_file(simple_cxx_bundle SIMPLE_CXX_BUNDLE_LOC)
@@ -72,4 +74,14 @@ configure_file(framework2.properties.in framework2.properties @ONLY)
 
 add_test(NAME test_framework COMMAND test_framework)
 setup_target_for_coverage(test_framework SCAN_DIR ..)
+
+#Setting standard to C++11 and testing C++ dependency manager to ensure that this still support C++11.
+#This ensure that the C++11 dependency manager is backwards compatible with Celix 2.2.1
+set(CMAKE_CXX_STANDARD 11)
+add_executable(test_dep_man_with_cxx11
+        src/DependencyManagerTestSuite.cc
+)
+target_link_libraries(test_dep_man_with_cxx11 PRIVATE Celix::framework CURL::libcurl GTest::gtest GTest::gtest_main)
+setup_target_for_coverage(test_dep_man_with_cxx11 SCAN_DIR ..)
+
 
