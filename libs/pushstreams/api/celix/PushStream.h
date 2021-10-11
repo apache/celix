@@ -23,14 +23,29 @@
 #include <iostream>
 #include <queue>
 
-#include "celix/impl/PushEventConsumer.h"
 #include "celix/IAutoCloseable.h"
 
 #include "celix/Promise.h"
 #include "celix/PromiseFactory.h"
 #include "celix/Deferred.h"
 
+#include "celix/impl/PushEventConsumer.h"
+
 namespace celix {
+
+    /**
+     * @brief A Push Stream  this is push based stream. A Push Stream makes it possible to build a pipeline
+     * of transformations using a builder kind of model. Just like streams, it provides a number of terminating
+     * methods that will actually open the channel and perform the processing until the channel is closed
+     * (The source sends a Close event). The results of the processing will be send to a Promise,
+     * just like any error events. A stream can be used multiple times. The Push Stream represents a pipeline.
+     * Upstream is in the direction of the source, downstream is in the direction of the terminating method.
+     * Events are sent downstream asynchronously or synchronously.
+     *
+     * The class is abstract, the PushStreamProvider van create Buffered or Unbuffered alternatives of a PushStream
+     *
+     * @tparam T The Payload type
+     */
     template<typename T>
     class PushStream: public IAutoCloseable {
     public:
@@ -39,24 +54,66 @@ namespace celix {
         using ErrorFunction = std::function<void(void)>;
         using ForEachFunction = std::function<void(const T&)>;
 
-        explicit PushStream(PromiseFactory& promiseFactory);
+        PushStream(const PushStream&) = delete;
+        PushStream(PushStream&&) = delete;
+        PushStream& operator=(const PushStream&) = delete;
+        PushStream& operator=(PushStream&&) = delete;
 
-        Promise<void> forEach(ForEachFunction func);
+        /**
+         * @brief Execute the action for each event received until the channel is closed.
+         * This is a terminating method, the returned promise is resolved when the channel closes.
+         * @param func The action to perform
+         * @return promise that is resolved when the channel closes
+         */
+        [[nodiscard]] Promise<void> forEach(ForEachFunction func);
 
-        PushStream<T>& filter(PredicateFunction predicate);
+        /**
+         * @brief only pass events downstream when the predicate tests true.
+         * @param predicate function that is used to test events
+         * @return a new IntermediateStream
+         */
+        [[nodiscard]] PushStream<T>& filter(PredicateFunction predicate);
 
+        /**
+         * Transforms each event type T to R
+         * @param mapper Map function that translated a payload value type T into R
+         * @tparam R The resulting Type
+         * @return Builder style new event stream
+         */
         template<typename R>
-        PushStream<R>& map(std::function<R(const T&)>);
+        [[nodiscard]] PushStream<R>& map(std::function<R(const T&)> mapper);
 
-        std::vector<std::shared_ptr<PushStream<T>>> split(std::vector<PredicateFunction> predicates);
+        /**
+         * @brief Split the events to different streams based on a predicate.
+         * If the predicate is true, the event is dispatched to that channel on the same position.
+         * All predicates are tested for every event.
+         * @param predicates the predicates to test
+         * @return streams that map to the predicates
+         */
+        [[nodiscard]] std::vector<std::shared_ptr<PushStream<T>>> split(std::vector<PredicateFunction> predicates);
 
-        PushStream<T>& onClose(CloseFunction closeFunction);
+        /**
+         * Given method will be called on close
+         * @param closeFunction
+         * @return builder style same object
+         */
+        [[nodiscard]] PushStream<T>& onClose(CloseFunction closeFunction);
 
-        PushStream<T>& onError(ErrorFunction errorFunction);
+        /**
+         * Given method will be called on error
+         * @param errorFunction
+         * @return builder style same object
+         */
+        [[nodiscard]] PushStream<T>& onError(ErrorFunction errorFunction);
 
+        /**
+         *  Close this PushStream by sending an event of type PushEvent.EventType.CLOSE downstream
+         */
         void close() override;
 
     protected:
+        explicit PushStream(std::shared_ptr<PromiseFactory>& promiseFactory);
+
         enum class State {
             BUILDING,
             STARTED,
@@ -73,13 +130,13 @@ namespace celix {
         bool compareAndSetState(State expectedValue, State newValue);
 
         State getAndSetState(State newValue);
-        PromiseFactory& promiseFactory;
+        std::shared_ptr<PromiseFactory> promiseFactory;
         PushEventConsumer<T> nextEvent{};
         ErrorFunction onErrorCallback{};
         CloseFunction onCloseCallback{};
         State closed {State::BUILDING};
     private:
-        Deferred<void> streamEnd{promiseFactory.deferred<void>()};
+        Deferred<void> streamEnd{promiseFactory->deferred<void>()};
 
         template<typename, typename> friend class IntermediatePushStream;
         template<typename> friend class UnbufferedPushStream;
@@ -97,7 +154,7 @@ namespace celix {
 #include "celix/impl/BufferedPushStream.h"
 
 template<typename T>
-celix::PushStream<T>::PushStream(PromiseFactory& _promiseFactory) : promiseFactory{_promiseFactory} {
+celix::PushStream<T>::PushStream(std::shared_ptr<PromiseFactory>& _promiseFactory) : promiseFactory{_promiseFactory} {
 }
 
 template<typename T>
@@ -110,7 +167,7 @@ long celix::PushStream<T>::handleEvent(const PushEvent<T>& event) {
 
 template<typename T>
 celix::Promise<void> celix::PushStream<T>::forEach(ForEachFunction func) {
-    nextEvent = PushEventConsumer<T>([func = std::move(func), this](const PushEvent<T>& event) -> long {
+    nextEvent = PushEventConsumer<T>([&, func = std::move(func)](const PushEvent<T>& event) -> long {
         try {
             switch(event.getType()) {
                 case celix::PushEvent<T>::EventType::DATA:

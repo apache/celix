@@ -44,7 +44,7 @@ public:
     }
 
     std::shared_ptr<celix::PushStream<double>> result() override {
-        return psp->createUnbufferedStream<double>(ses);
+        return psp->createUnbufferedStream<double>(ses, factory);
     }
 
     int init() {
@@ -52,7 +52,7 @@ public:
     }
 
     int start() {
-        ses = psp->template createSynchronousEventSource<double>();
+        ses = psp->template createSynchronousEventSource<double>(factory);
 
         t = std::make_unique<std::thread>([&]() {
             int counter = 0;
@@ -69,6 +69,8 @@ public:
     int stop() {
         stopThread = true;
         t->join();
+        ses->close();
+        ses.reset();
         return CELIX_SUCCESS;
     }
 

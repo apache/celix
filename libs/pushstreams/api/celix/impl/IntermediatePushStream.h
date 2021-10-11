@@ -21,11 +21,15 @@
 
 namespace celix {
     template<typename T, typename TUP = T>
-        class IntermediatePushStream: public PushStream<T> {
+    class IntermediatePushStream: public PushStream<T> {
     public:
-        IntermediatePushStream(PromiseFactory& _promiseFactory,
+        IntermediatePushStream(std::shared_ptr<PromiseFactory>& _promiseFactory,
                                celix::PushStream<TUP>& _upstream);
+        IntermediatePushStream(const IntermediatePushStream&) = delete;
 
+        IntermediatePushStream(IntermediatePushStream&&) = delete;
+        IntermediatePushStream& operator=(const IntermediatePushStream&) = delete;
+        IntermediatePushStream& operator=(IntermediatePushStream&&) = delete;
     protected:
         bool begin() override;
         void upstreamClose(const PushEvent<T>& event) override;
@@ -39,7 +43,7 @@ namespace celix {
 *********************************************************************************/
 
 template<typename T, typename TUP>
-celix::IntermediatePushStream<T, TUP>::IntermediatePushStream(PromiseFactory& _promiseFactory,
+celix::IntermediatePushStream<T, TUP>::IntermediatePushStream(std::shared_ptr<PromiseFactory>& _promiseFactory,
      celix::PushStream<TUP>& _upstream) : celix::PushStream<T>(_promiseFactory),
      upstream{_upstream} {
 }

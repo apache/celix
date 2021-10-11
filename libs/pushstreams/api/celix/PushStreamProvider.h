@@ -27,61 +27,72 @@
 
 namespace celix {
 
+    /**
+     * @brief A factory for PushStream instances, and utility methods for handling PushEventSources and PushEventConsumers
+     */
     class PushStreamProvider final {
     public:
-        PushStreamProvider();
-        virtual ~PushStreamProvider() noexcept;
+        PushStreamProvider() = default;
+        PushStreamProvider(const PushStreamProvider&) = default;
+        PushStreamProvider(PushStreamProvider&&) = default;
+        PushStreamProvider& operator=(const PushStreamProvider&) = default;
+        PushStreamProvider& operator=(PushStreamProvider&&) = default;
 
+        /**
+         * @brief creates an event source for type T. The eventsource is synchronous, events are sent downstream in
+         * the publish calling thread.
+         * @param promiseFactory the used promiseFactory
+         * @tparam T The type of the events
+         * @return the event source, the caller needs to hold the shared_ptr.
+         */
         template <typename T>
-        [[nodiscard]] std::shared_ptr<celix::SimplePushEventSource<T>> createSimpleEventSource();
+        [[nodiscard]] std::shared_ptr<celix::SynchronousPushEventSource<T>> createSynchronousEventSource(std::shared_ptr<PromiseFactory>&  promiseFactory);
 
+        /**
+         * @brief creates a stream of for event type T. Stream is unbuffered thus on reception of event, the event
+         * will be sent downstream on the eventsource's thread.
+         * @param eventSource the coupled event source of which the event are injected.
+         * @param promiseFactory the used promiseFactory
+         * @tparam T The type of the events
+         * @return the stream, the caller needs to hold the shared_ptr.
+         */
         template <typename T>
-        [[nodiscard]] std::shared_ptr<celix::SynchronousPushEventSource<T>> createSynchronousEventSource();
+        [[nodiscard]] std::shared_ptr<celix::PushStream<T>> createUnbufferedStream(std::shared_ptr<IPushEventSource<T>> eventSource, std::shared_ptr<PromiseFactory>&  promiseFactory);
 
+        /**
+         * @brief creates a stream of for event type T. Stream is buffered thus on reception of event, the event processing
+         * will be deferred using the PromiseFactory executor.
+         * @param eventSource the coupled event source of which the event are injected.
+         * @param promiseFactory the used promiseFactory
+         * @tparam T The type of the events
+         * @return the stream, the caller needs to hold the shared_ptr.
+         */
         template <typename T>
-        [[nodiscard]] std::shared_ptr<celix::PushStream<T>> createUnbufferedStream(std::shared_ptr<IPushEventSource<T>> eventSource);
-
-        template <typename T>
-        [[nodiscard]] std::shared_ptr<celix::PushStream<T>> createStream(std::shared_ptr<celix::IPushEventSource<T>> eventSource);
+        [[nodiscard]] std::shared_ptr<celix::PushStream<T>> createStream(std::shared_ptr<celix::IPushEventSource<T>> eventSource, std::shared_ptr<PromiseFactory>&  promiseFactory);
 
     private:
         template <typename T>
         void createStreamConsumer(std::shared_ptr<celix::UnbufferedPushStream<T>> stream, std::shared_ptr<celix::IPushEventSource<T>> eventSource);
-
-        std::shared_ptr<IExecutor> executor {std::make_shared<DefaultExecutor>()};
-        PromiseFactory promiseFactory {executor};
     };
 }
 
 /*********************************************************************************
  Implementation
 *********************************************************************************/
-
-inline celix::PushStreamProvider::PushStreamProvider() {
-}
-
-inline celix::PushStreamProvider::~PushStreamProvider() noexcept {
-}
-
 template <typename T>
-inline std::shared_ptr<celix::SimplePushEventSource<T>> celix::PushStreamProvider::createSimpleEventSource() {
-    return std::make_shared<celix::SimplePushEventSource<T>>(std::make_shared<celix::DefaultExecutor>());
-}
-
-template <typename T>
-inline std::shared_ptr<celix::SynchronousPushEventSource<T>> celix::PushStreamProvider::createSynchronousEventSource() {
+inline std::shared_ptr<celix::SynchronousPushEventSource<T>> celix::PushStreamProvider::createSynchronousEventSource(std::shared_ptr<PromiseFactory>& promiseFactory) {
     return std::make_shared<celix::SynchronousPushEventSource<T>>(promiseFactory);
 }
 
 template <typename T>
-std::shared_ptr<celix::PushStream<T>> celix::PushStreamProvider::createUnbufferedStream(std::shared_ptr<celix::IPushEventSource<T>> eventSource) {
+std::shared_ptr<celix::PushStream<T>> celix::PushStreamProvider::createUnbufferedStream(std::shared_ptr<celix::IPushEventSource<T>> eventSource, std::shared_ptr<PromiseFactory>& promiseFactory) {
     auto stream = std::make_shared<UnbufferedPushStream<T>>(promiseFactory);
     createStreamConsumer<T>(stream, eventSource);
     return stream;
 }
 
 template <typename T>
-std::shared_ptr<celix::PushStream<T>> celix::PushStreamProvider::createStream(std::shared_ptr<celix::IPushEventSource<T>> eventSource) {
+std::shared_ptr<celix::PushStream<T>> celix::PushStreamProvider::createStream(std::shared_ptr<celix::IPushEventSource<T>> eventSource, std::shared_ptr<PromiseFactory>& promiseFactory) {
     auto stream = std::make_shared<BufferedPushStream<T>>(promiseFactory);
     createStreamConsumer<T>(stream, eventSource);
     return stream;

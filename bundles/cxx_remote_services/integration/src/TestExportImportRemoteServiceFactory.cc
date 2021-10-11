@@ -164,12 +164,15 @@ public:
     }
 
     int start() {
-        ses = psp->createSynchronousEventSource<double>();
-        stream = psp->createStream<double>(ses);
+        ses = psp->createSynchronousEventSource<double>(factory);
+        stream = psp->createStream<double>(ses, factory);
         return CELIX_SUCCESS;
     }
 
     int stop() {
+        ses->close();
+        ses.reset();
+        stream.reset();
         return CELIX_SUCCESS;
     }
 
@@ -423,6 +426,7 @@ public:
 
     int stop() {
         resultStream->close();
+        resultStream.reset();
         return CELIX_SUCCESS;
     }
 

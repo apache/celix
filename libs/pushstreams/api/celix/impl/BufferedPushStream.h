@@ -26,7 +26,11 @@ namespace celix {
     template<typename T>
     class BufferedPushStream: public UnbufferedPushStream<T> {
     public:
-        BufferedPushStream(PromiseFactory& _promiseFactory);
+        explicit BufferedPushStream(std::shared_ptr<PromiseFactory>& _promiseFactory);
+        BufferedPushStream(const BufferedPushStream&) = delete;
+        BufferedPushStream(BufferedPushStream&&) = delete;
+        BufferedPushStream& operator=(const BufferedPushStream&) = delete;
+        BufferedPushStream& operator=(BufferedPushStream&&) = delete;
 
         ~BufferedPushStream() override {
             close();
@@ -57,7 +61,7 @@ namespace celix {
 *********************************************************************************/
 
 template<typename T>
-celix::BufferedPushStream<T>::BufferedPushStream(PromiseFactory& _promiseFactory) : celix::UnbufferedPushStream<T>(_promiseFactory) {
+celix::BufferedPushStream<T>::BufferedPushStream(std::shared_ptr<PromiseFactory>& _promiseFactory) : celix::UnbufferedPushStream<T>(_promiseFactory) {
 }
 
 template<typename T>
@@ -90,7 +94,7 @@ std::unique_ptr<celix::PushEvent<T>> celix::BufferedPushStream<T>::popQueue() {
 template<typename T>
 void celix::BufferedPushStream<T>::startWorker() {
     nrWorkers++;
-    this->promiseFactory.getExecutor()->execute([&]() {
+    this->promiseFactory->getExecutor()->execute([&]() {
         std::weak_ptr<std::queue<std::unique_ptr<PushEvent<T>>>> weak{queue};
         auto lk = weak.lock();
         if (lk) {
