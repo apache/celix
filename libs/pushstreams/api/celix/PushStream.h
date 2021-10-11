@@ -97,14 +97,14 @@ namespace celix {
          * @param closeFunction
          * @return builder style same object
          */
-        [[nodiscard]] PushStream<T>& onClose(CloseFunction closeFunction);
+        PushStream<T>& onClose(CloseFunction closeFunction);
 
         /**
          * Given method will be called on error
          * @param errorFunction
          * @return builder style same object
          */
-        [[nodiscard]] PushStream<T>& onError(ErrorFunction errorFunction);
+        PushStream<T>& onError(ErrorFunction errorFunction);
 
         /**
          *  Close this PushStream by sending an event of type PushEvent.EventType.CLOSE downstream
