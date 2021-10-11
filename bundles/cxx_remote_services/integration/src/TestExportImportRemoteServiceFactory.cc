@@ -398,7 +398,7 @@ public:
 
     int start() {
         resultStream = calculator->result();
-        resultStream->forEach([logHelper = logHelper, weakSvc = std::weak_ptr<ICalculator>{calculator}, weakPub = std::weak_ptr<pubsub_publisher>{publisher}](const double& event){
+        auto streamEnded = resultStream->forEach([logHelper = logHelper, weakSvc = std::weak_ptr<ICalculator>{calculator}, weakPub = std::weak_ptr<pubsub_publisher>{publisher}](const double& event){
             auto pub = weakPub.lock();
             auto svc = weakSvc.lock();
             if (pub && svc) {

@@ -122,7 +122,7 @@ TEST_F(RemoteServicesIntegrationTestSuite, InvokeRemoteCalcService) {
     count = clientCtx->useService<ICalculator>()
             .addUseCallback([&](auto& calc) {
                 stream = calc.result();
-                stream->forEach([&](double event){
+                auto streamEnded = stream->forEach([&](double event){
                     lastValue = event;
                     streamCount++;
                 });
