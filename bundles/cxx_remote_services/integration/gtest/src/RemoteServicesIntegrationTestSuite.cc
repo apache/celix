@@ -117,8 +117,8 @@ TEST_F(RemoteServicesIntegrationTestSuite, InvokeRemoteCalcService) {
             .build();
     std::shared_ptr<celix::PushStream<double>> stream;
     //When I call the calculator service from the client, I expect a answer
-    int streamCount = 0;
-    double lastValue = 0.0;
+    std::atomic<int> streamCount = 0;
+    std::atomic<double> lastValue = 0.0;
     count = clientCtx->useService<ICalculator>()
             .addUseCallback([&](auto& calc) {
                 stream = calc.result();

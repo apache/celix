@@ -83,7 +83,7 @@ private:
     std::shared_ptr<celix::PromiseFactory> factory{};
     std::shared_ptr<celix::PushStreamProvider> psp {};
     std::shared_ptr<celix::SynchronousPushEventSource<double>> ses {};
-    volatile bool stopThread{false};
+    std::atomic<bool> stopThread{false};
 };
 
 class CalculatorProviderActivator {

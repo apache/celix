@@ -31,7 +31,7 @@
 #include "pubsub/publisher.h"
 #include "pubsub/subscriber.h"
 
-constexpr auto INVOKE_TIMEOUT = std::chrono::seconds{5}; //TODO make configurable
+constexpr auto INVOKE_TIMEOUT = std::chrono::seconds{5};
 
 struct Calculator$add$Invoke {
     double arg1{};
@@ -348,7 +348,7 @@ public:
             std::lock_guard lock{mutex};
             auto promise = calculator->add(invoke->arg1, invoke->arg2);
             promise
-                .onFailure([weakPub = std::weak_ptr<pubsub_publisher>{publisher}, msgId = returnMsgId, metaProps](const auto& exp) {
+            .onFailure([logHelper = logHelper, weakPub = std::weak_ptr<pubsub_publisher>{publisher}, msgId = returnMsgId, metaProps](const auto& exp) {
                     auto pub = weakPub.lock();
                     if (pub) {
                         Calculator$add$Return ret;
@@ -358,10 +358,10 @@ public:
                         ret.optionalError = celix_utils_strdup(exp.what());
                         pub->send(pub->handle, msgId, &ret, metaProps);
                     } else {
-                        //TODO error handling
+                        logHelper.error("publisher is gone");
                     }
                 })
-                .onSuccess([weakSvc = std::weak_ptr<ICalculator>{calculator}, weakPub = std::weak_ptr<pubsub_publisher>{publisher}, msgId = returnMsgId, metaProps](auto val) {
+                .onSuccess([logHelper = logHelper, weakSvc = std::weak_ptr<ICalculator>{calculator}, weakPub = std::weak_ptr<pubsub_publisher>{publisher}, msgId = returnMsgId, metaProps](auto val) {
                     auto pub = weakPub.lock();
                     auto svc = weakSvc.lock();
                     if (pub && svc) {
@@ -374,7 +374,7 @@ public:
                         pub->send(pub->handle, msgId, &ret, metaProps);
                         free(ret.optionalReturnValue.buf);
                     } else {
-                        //TODO error handling
+                        logHelper.error("publisher is gone");
                     }
                 });
         } else {
@@ -398,7 +398,7 @@ public:
 
     int start() {
         resultStream = calculator->result();
-        resultStream->forEach([weakSvc = std::weak_ptr<ICalculator>{calculator}, weakPub = std::weak_ptr<pubsub_publisher>{publisher}](const double& event){
+        resultStream->forEach([logHelper = logHelper, weakSvc = std::weak_ptr<ICalculator>{calculator}, weakPub = std::weak_ptr<pubsub_publisher>{publisher}](const double& event){
             auto pub = weakPub.lock();
             auto svc = weakSvc.lock();
             if (pub && svc) {
@@ -418,7 +418,7 @@ public:
                 pub->send(pub->handle, eventMsgId, &wireEvent, metaProps);
                 free(wireEvent.optionalReturnValue.buf);
             } else {
-                //TODO error handling
+                logHelper.error("publisher is gone");
             }
         });
         return CELIX_SUCCESS;
