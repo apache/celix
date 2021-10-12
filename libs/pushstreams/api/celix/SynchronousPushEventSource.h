@@ -35,7 +35,7 @@ namespace celix {
     template <typename T>
     class SynchronousPushEventSource: public AbstractPushEventSource<T> {
     public:
-        explicit SynchronousPushEventSource(PromiseFactory& promiseFactory);
+        explicit SynchronousPushEventSource(std::shared_ptr<PromiseFactory>& promiseFactory);
 
         virtual ~SynchronousPushEventSource() noexcept;
 
@@ -49,7 +49,7 @@ namespace celix {
 *********************************************************************************/
 
 template <typename T>
-celix::SynchronousPushEventSource<T>::SynchronousPushEventSource(PromiseFactory& _promiseFactory): AbstractPushEventSource<T>{_promiseFactory} {
+celix::SynchronousPushEventSource<T>::SynchronousPushEventSource(std::shared_ptr<PromiseFactory>& _promiseFactory): AbstractPushEventSource<T>{_promiseFactory} {
 
 }
 
