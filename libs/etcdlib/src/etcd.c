@@ -83,7 +83,7 @@ int etcd_init(const char *server, int port, int flags) {
     int status = 0;
     int needed = snprintf(g_etcdlib_host, MAX_GLOBAL_HOSTNAME, "%s", server);
     if (needed > MAX_GLOBAL_HOSTNAME) {
-        fprintf(stderr, "Cannot init global etcdlib with '%s'. hostname len exceeds max (%i)", server,
+        fprintf(stderr, "Cannot init global etcdlib with '%s'. hostname len exceeds max (%i)\n", server,
                 MAX_GLOBAL_HOSTNAME);
         g_etcdlib.host = NULL;
         g_etcdlib.port = 0;
@@ -297,7 +297,7 @@ int etcdlib_get_directory(etcdlib_t *etcdlib, const char *directory, etcdlib_key
             js_index = json_object_get(js_root, ETCD_JSON_INDEX);
         } else {
             retVal = ETCDLIB_RC_ERROR;
-            fprintf(stderr, "[ETCDLIB] Error: %s in js_root not found", ETCD_JSON_NODE);
+            fprintf(stderr, "[ETCDLIB] Error: %s in js_root not found\n", ETCD_JSON_NODE);
         }
         if (js_rootnode != NULL) {
             long long modIndex = 0;
@@ -448,7 +448,7 @@ int etcdlib_refresh(etcdlib_t *etcdlib, const char *key, int ttl) {
             json_decref(root);
         } else {
             retVal = ETCDLIB_RC_ERROR;
-            fprintf(stderr, "[ETCDLIB] Error: %s is not json", reply.memory);
+            fprintf(stderr, "[ETCDLIB] Error: %s is not json\n", reply.memory);
         }
     }
 
