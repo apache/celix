@@ -44,8 +44,11 @@ namespace celix {
         long getId() const { return celix_bundle_getId(cBnd.get()); }
 
         /**
-         * @brief Get the absolute path for a entry path relative in the bundle cache.
-         * @return The absolute entry path or an empty string if the bundle does not have the entry for the given
+         * @brief Get the relative path for an entry path in the bundle.
+         * 
+         * The returned path is path, relative to the current working directory, to the entry in the bundle cache.
+         * 
+         * @return The entry path or an empty string if the bundle does not have the entry for the given
          * relative path.
          */
         std::string getEntry(const std::string& path) const {
