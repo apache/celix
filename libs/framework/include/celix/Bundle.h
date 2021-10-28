@@ -44,12 +44,14 @@ namespace celix {
         long getId() const { return celix_bundle_getId(cBnd.get()); }
 
         /**
-         * @brief Get the relative path for an entry path in the bundle.
+         * @brief Get a use-able entry path for the provided relative path to a bundle resource.
          * 
-         * The returned path is path, relative to the current working directory, to the entry in the bundle cache.
+         * For example if there is a resource entry in the bundle at path 'META-INF/descriptors/foo.descriptor`
+         * this call will return a relative path to the extracted location of the bundle resource, e.g.:
+         * .cache/bundle5/version0.0/META-INF/descriptors/foo.descriptor
          * 
-         * @return The entry path or an empty string if the bundle does not have the entry for the given
-         * relative path.
+         * @param path The relative path to a bundle resource
+         * @return The use-able entry path or an empty string if the entry is not found.
          */
         std::string getEntry(const std::string& path) const {
             std::string result{};
