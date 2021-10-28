@@ -44,7 +44,7 @@ long celix_bundle_getId(const celix_bundle_t *bnd);
 celix_bundle_state_e celix_bundle_getState(const celix_bundle_t *bnd);
 
 /**
- * Returns the use-able entry path for the provided relative path to a bundle resource.
+ * Returns a use-able entry path for the provided relative path to a bundle resource.
  *
  * For example if there is a resource entry in the bundle at path 'META-INF/descriptors/foo.descriptor` this call
  * will return a relative path to the extracted location of the bundle resource, e.g.:
