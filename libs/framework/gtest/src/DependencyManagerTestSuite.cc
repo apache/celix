@@ -775,6 +775,19 @@ TEST_F(DependencyManagerTestSuite, ComponentContextShouldNotLeak) {
     //note should not leak mem
 }
 
+TEST_F(DependencyManagerTestSuite, installBundleWithDepManActivator) {
+    auto* list = celix_bundleContext_listBundles(ctx);
+    EXPECT_EQ(celix_arrayList_size(list), 0);
+    celix_arrayList_destroy(list);
+
+    auto bndId = celix_bundleContext_installBundle(ctx, SIMPLE_CXX_DEP_MAN_BUNDLE_LOC, true);
+    EXPECT_GT(bndId, CELIX_FRAMEWORK_BUNDLE_ID);
+
+    list = celix_bundleContext_listBundles(ctx);
+    EXPECT_EQ(celix_arrayList_size(list), 1);
+    celix_arrayList_destroy(list);
+}
+
 #if __cplusplus >= 201703L //C++17 or higher
 
 class TestInterfaceWithStaticInfo {

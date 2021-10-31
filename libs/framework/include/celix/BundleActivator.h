@@ -20,13 +20,14 @@
 #pragma once
 
 #include <memory>
-#include <celix/dm/DependencyManager.h>
 
+#include "celix/dm/DependencyManager.h"
 #include "celix_bundle_activator.h"
+
+#if __cplusplus >= 201703L //C++17 or higher
 #include "celix/BundleContext.h"
 
 namespace celix::impl {
-
     template<typename I>
     struct BundleActivatorData {
         long bndId{};
@@ -34,12 +35,11 @@ namespace celix::impl {
         std::unique_ptr<I> bundleActivator;
     };
 
-
     template<typename I>
     typename std::enable_if<std::is_constructible<I, std::shared_ptr<celix::BundleContext>>::value, celix_status_t>::type
-    createActivator(celix_bundle_context_t *cCtx, void **out) {
+    createActivator(celix_bundle_context_t * cCtx, void * *out) {
         auto ctx = std::make_shared<celix::BundleContext>(cCtx);
-        auto act = std::unique_ptr<I>(new I{ctx});
+        auto act = std::make_unique<I>(ctx);
         auto *data = new BundleActivatorData<I>{ctx->getBundleId(), std::move(ctx), std::move(act)};
         *out = (void *) data;
         return CELIX_SUCCESS;
@@ -47,10 +47,10 @@ namespace celix::impl {
 
     template<typename I>
     typename std::enable_if<std::is_constructible<I, std::shared_ptr<celix::dm::DependencyManager>>::value, celix_status_t>::type
-    createActivator(celix_bundle_context_t *cCtx, void **out) {
+    createActivator(celix_bundle_context_t * cCtx, void * *out) {
         auto ctx = std::make_shared<celix::BundleContext>(cCtx);
         auto dm = ctx->getDependencyManager();
-        auto act = std::unique_ptr<I>(new I{dm});
+        auto act = std::make_unique<I>(dm);
         dm->start();
         auto *data = new BundleActivatorData<I>{ctx->getBundleId(), std::move(ctx), std::move(act)};
         *out = (void *) data;
@@ -58,13 +58,16 @@ namespace celix::impl {
     }
 
     template<typename T>
-    void waitForExpired(long bndId, std::weak_ptr<celix::BundleContext>& weakCtx, const char* name, std::weak_ptr<T>& observe) {
+    void waitForExpired(long bndId, std::weak_ptr<celix::BundleContext> &weakCtx, const char *name,
+                        std::weak_ptr<T> &observe) {
         auto start = std::chrono::system_clock::now();
         while (!observe.expired()) {
             auto now = std::chrono::system_clock::now();
             auto durationInSec = std::chrono::duration_cast<std::chrono::seconds>(now - start);
             if (durationInSec > std::chrono::seconds{5}) {
-                auto msg =  std::string{"Cannot destroy bundle "} + std::to_string(bndId) + ". " + name + " is still in use. std::shared_ptr use count is " + std::to_string(observe.use_count()) + "\n";
+                auto msg = std::string{"Cannot destroy bundle "} + std::to_string(bndId) + ". " + name +
+                           " is still in use. std::shared_ptr use count is " + std::to_string(observe.use_count()) +
+                           "\n";
                 auto ctx = weakCtx.lock();
                 if (ctx) {
                     ctx->logWarn(msg.c_str());
@@ -92,6 +95,37 @@ namespace celix::impl {
         return CELIX_SUCCESS;
     }
 }
+#else //C++11
+namespace celix {
+namespace impl {
+    template<typename I>
+    struct BundleActivatorData {
+        std::shared_ptr<celix::dm::DependencyManager> dm;
+        std::unique_ptr<I> bundleActivator;
+    };
+
+    template<typename I>
+    typename std::enable_if<std::is_constructible<I, std::shared_ptr<celix::dm::DependencyManager>>::value, celix_status_t>::type
+    createActivator(celix_bundle_context_t *cCtx, void **out) {
+        auto dm =  std::make_shared<celix::dm::DependencyManager>(cCtx);
+        auto act = std::unique_ptr<I>(new I{dm});
+        dm->start();
+        auto *data = new BundleActivatorData<I>{std::move(dm), std::move(act)};
+        *out = (void *) data;
+        return CELIX_SUCCESS;
+    }
+
+    template<typename I>
+    celix_status_t destroyActivator(void *userData) {
+        auto *data = static_cast<BundleActivatorData<I> *>(userData);
+        data->bundleActivator.reset();
+        data->dm->clear();
+        delete data;
+        return CELIX_SUCCESS;
+    }
+} //end namespace impl
+} //end namespace celix
+#endif
 
 /**
  * @brief Macro to generate the required bundle activator functions for C++.

@@ -211,12 +211,4 @@ namespace celix {
      * If not specified ".cache" is used.
      */
     constexpr const char * const FRAMEWORK_CACHE_DIR = CELIX_FRAMEWORK_FRAMEWORK_STORAGE;
-
-    /**
-     * @brief Celix framework environment property (named "CELIX_FRAMEWORK_WARN_FOR_MISSING_SERVICE_VERSION")
-     * which configures the Celix framework to print warning when service are registered without a version property.
-     *
-     * Default is true.
-     */
-    constexpr const char * const WARN_FOR_MISSING_SERVICE_VERSION = CELIX_FRAMEWORK_WARN_FOR_MISSING_SERVICE_VERSION;
 }
