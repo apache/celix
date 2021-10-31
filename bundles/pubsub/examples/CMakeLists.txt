@@ -108,7 +108,7 @@ if (BUILD_PUBSUB_PSA_TCP)
                 Celix::celix_pubsub_serializer_json
                 Celix::celix_pubsub_discovery_etcd
                 Celix::celix_pubsub_topology_manager
-                Celix::celix_pubsub_admin_tcp_v2
+                Celix::celix_pubsub_admin_tcp
                 Celix::celix_pubsub_protocol_wire_v2
                 celix_pubsub_poi_publisher
                 celix_pubsub_poi_publisher2
@@ -128,7 +128,7 @@ if (BUILD_PUBSUB_PSA_TCP)
                 Celix::celix_pubsub_serializer_json
                 Celix::celix_pubsub_discovery_etcd
                 Celix::celix_pubsub_topology_manager
-                Celix::celix_pubsub_admin_tcp_v2
+                Celix::celix_pubsub_admin_tcp
                 Celix::celix_pubsub_protocol_wire_v2
                 celix_pubsub_poi_subscriber
             PROPERTIES
@@ -147,7 +147,7 @@ if (BUILD_PUBSUB_PSA_TCP)
                 Celix::celix_pubsub_serializer_json
                 Celix::celix_pubsub_discovery_etcd
                 Celix::celix_pubsub_topology_manager
-                Celix::celix_pubsub_admin_tcp_v2
+                Celix::celix_pubsub_admin_tcp
                 Celix::celix_pubsub_protocol_wire_v2
                 celix_pubsub_poi_subscriber
             PROPERTIES
@@ -189,9 +189,9 @@ if (BUILD_PUBSUB_PSA_ZMQ)
                 Celix::celix_pubsub_serializer_json
                 Celix::celix_pubsub_discovery_etcd
                 Celix::celix_pubsub_topology_manager
-                Celix::celix_pubsub_admin_zmq_v2
+                Celix::celix_pubsub_admin_zmq
                 Celix::celix_pubsub_admin_udp_multicast
-                Celix::celix_pubsub_admin_tcp_v2
+                Celix::celix_pubsub_admin_tcp
                 Celix::celix_pubsub_protocol_wire_v1
                 celix_pubsub_poi_publisher
                 celix_pubsub_poi_publisher2
@@ -206,9 +206,9 @@ if (BUILD_PUBSUB_PSA_ZMQ)
                 Celix::celix_pubsub_serializer_json
                 Celix::celix_pubsub_discovery_etcd
                 Celix::celix_pubsub_topology_manager
-                Celix::celix_pubsub_admin_zmq_v2
+                Celix::celix_pubsub_admin_zmq
                 Celix::celix_pubsub_admin_udp_multicast
-                Celix::celix_pubsub_admin_tcp_v2
+                Celix::celix_pubsub_admin_tcp
                 Celix::celix_pubsub_protocol_wire_v1
                 celix_pubsub_poi_subscriber
         )
@@ -224,7 +224,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             Celix::celix_pubsub_serializer_json
             Celix::celix_pubsub_discovery_etcd
             Celix::celix_pubsub_topology_manager
-            Celix::celix_pubsub_admin_zmq_v2
+            Celix::celix_pubsub_admin_zmq
             celix_pubsub_poi_publisher
             celix_pubsub_poi_subscriber
         PROPERTIES
@@ -241,7 +241,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             Celix::celix_pubsub_protocol_wire_v1
             Celix::celix_pubsub_discovery_etcd
             Celix::celix_pubsub_topology_manager
-            Celix::celix_pubsub_admin_zmq_v2
+            Celix::celix_pubsub_admin_zmq
             celix_pubsub_poi_publisher
             celix_pubsub_poi_publisher2
             celix_pubsub_interceptors_example
@@ -262,7 +262,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             Celix::celix_pubsub_protocol_wire_v1
             Celix::celix_pubsub_discovery_etcd
             Celix::celix_pubsub_topology_manager
-            Celix::celix_pubsub_admin_zmq_v2
+            Celix::celix_pubsub_admin_zmq
             celix_pubsub_poi_subscriber
             celix_pubsub_interceptors_example
         PROPERTIES
@@ -280,7 +280,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             Celix::celix_pubsub_serializer_json
             Celix::celix_pubsub_discovery_etcd
             Celix::celix_pubsub_topology_manager
-            Celix::celix_pubsub_admin_zmq_v2
+            Celix::celix_pubsub_admin_zmq
             celix_pubsub_poi_subscriber
         PROPERTIES
             PSA_ZMQ_VERBOSE=true
@@ -417,7 +417,7 @@ if (BUILD_PUBSUB_PSA_WS)
             Celix::http_admin
             Celix::celix_pubsub_serializer_json
             Celix::celix_pubsub_topology_manager
-            Celix::celix_pubsub_admin_websocket_v2
+            Celix::celix_pubsub_admin_websocket
             celix_pubsub_websocket_example
         PROPERTIES
             PSA_TCP_VERBOSE=true

@@ -56,7 +56,7 @@ add_celix_container(RemoteCalculatorProvider
             #Pubsub needed for remote services on pubsub
             Celix::celix_pubsub_serializer_json
             Celix::celix_pubsub_topology_manager
-            Celix::celix_pubsub_admin_zmq_v2
+            Celix::celix_pubsub_admin_zmq
             Celix::celix_pubsub_protocol_wire_v2
             Celix::celix_pubsub_discovery_etcd
 
@@ -80,7 +80,7 @@ add_celix_container(RemoteCalculatorConsumer
             Celix::celix_pubsub_serializer_json
             Celix::celix_pubsub_topology_manager
             Celix::celix_pubsub_discovery_etcd
-            Celix::celix_pubsub_admin_zmq_v2
+            Celix::celix_pubsub_admin_zmq
             Celix::celix_pubsub_protocol_wire_v2
 
             #Remote Services

@@ -204,7 +204,7 @@ if (BUILD_PUBSUB_PSA_TCP)
             Celix::celix_pubsub_serializer_json
             Celix::celix_pubsub_protocol_wire_v1
             Celix::celix_pubsub_topology_manager
-            Celix::celix_pubsub_admin_tcp_v2
+            Celix::celix_pubsub_admin_tcp
             pubsub_sut
             pubsub_tst
             pubsub_serializer
@@ -227,7 +227,7 @@ if (BUILD_PUBSUB_PSA_TCP)
             Celix::celix_pubsub_serializer_json
             Celix::celix_pubsub_protocol_wire_v2
             Celix::celix_pubsub_topology_manager
-            Celix::celix_pubsub_admin_tcp_v2
+            Celix::celix_pubsub_admin_tcp
             pubsub_sut
             pubsub_tst
             pubsub_serializer
@@ -251,7 +251,7 @@ if (BUILD_PUBSUB_PSA_TCP)
             Celix::celix_pubsub_serializer_json
             Celix::celix_pubsub_protocol_wire_v2
             Celix::celix_pubsub_topology_manager
-            Celix::celix_pubsub_admin_tcp_v2
+            Celix::celix_pubsub_admin_tcp
             pubsub_sut
             pubsub_tst
             pubsub_serializer
@@ -274,7 +274,7 @@ if (BUILD_PUBSUB_PSA_TCP)
             Celix::celix_pubsub_serializer_json
             Celix::celix_pubsub_protocol_wire_v2
             Celix::celix_pubsub_topology_manager
-            Celix::celix_pubsub_admin_tcp_v2
+            Celix::celix_pubsub_admin_tcp
             pubsub_endpoint_tst
             pubsub_endpoint_sut
             pubsub_loopback
@@ -294,7 +294,7 @@ if (BUILD_PUBSUB_PSA_TCP)
             Celix::celix_pubsub_serializer_json
             Celix::celix_pubsub_protocol_wire_v2
             Celix::celix_pubsub_topology_manager
-            Celix::celix_pubsub_admin_tcp_v2
+            Celix::celix_pubsub_admin_tcp
             Celix::shell
             Celix::shell_tui
             pubsub_serializer
@@ -322,43 +322,43 @@ endif()
 
 if (BUILD_PUBSUB_PSA_WS)
     add_celix_container(pubsub_websocket_v2_tests
-            USE_CONFIG
-            LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/gtest/PubSubIntegrationTestSuite.cc
-            DIR ${CMAKE_CURRENT_BINARY_DIR}
-            PROPERTIES
+        USE_CONFIG
+        LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/gtest/PubSubIntegrationTestSuite.cc
+        DIR ${CMAKE_CURRENT_BINARY_DIR}
+        PROPERTIES
             LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
             CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
-            USE_WEBSOCKETS=true
-            LISTENING_PORTS=8080
-            BUNDLES
+            CELIX_HTTP_ADMIN_LISTENING_PORTS=58080
+        BUNDLES
             Celix::celix_pubsub_serializer_json
             Celix::http_admin
             Celix::celix_pubsub_topology_manager
-            Celix::celix_pubsub_admin_websocket_v2
+            Celix::celix_pubsub_admin_websocket
             pubsub_sut
             pubsub_tst
             pubsub_serializer
-            )
+    )
     target_link_libraries(pubsub_websocket_v2_tests PRIVATE Celix::pubsub_api Jansson civetweb_shared GTest::gtest GTest::gtest_main)
     target_include_directories(pubsub_websocket_v2_tests SYSTEM PRIVATE gtest)
     add_test(NAME pubsub_websocket_v2_tests COMMAND pubsub_websocket_v2_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_websocket_v2_tests,CONTAINER_LOC>)
     setup_target_for_coverage(pubsub_websocket_v2_tests SCAN_DIR ..)
 
     add_celix_container(pstm_deadlock_websocket_v2_test
-            USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
-            LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/pstm_deadlock_test/test_runner.cc
-            DIR ${CMAKE_CURRENT_BINARY_DIR}
-            PROPERTIES
+        USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
+        LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/pstm_deadlock_test/test_runner.cc
+        DIR ${CMAKE_CURRENT_BINARY_DIR}
+        PROPERTIES
             LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
             CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
-            BUNDLES
+            CELIX_HTTP_ADMIN_LISTENING_PORTS=58080
+        BUNDLES
             Celix::celix_pubsub_serializer_json
             Celix::celix_pubsub_topology_manager
-            Celix::celix_pubsub_admin_websocket_v2
+            Celix::celix_pubsub_admin_websocket
             Celix::shell
             Celix::shell_tui
             pubsub_serializer
-            )
+    )
     target_compile_definitions(pstm_deadlock_websocket_v2_test PRIVATE -DDEADLOCK_SUT_BUNDLE_FILE=\"${DEADLOCK_SUT_BUNDLE_FILE}\")
     target_link_libraries(pstm_deadlock_websocket_v2_test PRIVATE Celix::pubsub_api GTest::gtest GTest::gtest_main Jansson Celix::dfi civetweb_shared)
     target_include_directories(pstm_deadlock_websocket_v2_test SYSTEM PRIVATE pstm_deadlock_websocket_v2_test)
@@ -388,7 +388,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             BUNDLES
                 Celix::celix_pubsub_serializer_json
                 Celix::celix_pubsub_topology_manager
-                Celix::celix_pubsub_admin_zmq_v2
+                Celix::celix_pubsub_admin_zmq
                 Celix::celix_pubsub_protocol_wire_v2
                 pubsub_sut
                 pubsub_tst
@@ -411,7 +411,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             BUNDLES
                 Celix::celix_pubsub_serializer_json
                 Celix::celix_pubsub_topology_manager
-                Celix::celix_pubsub_admin_zmq_v2
+                Celix::celix_pubsub_admin_zmq
                 Celix::celix_pubsub_protocol_wire_v2
                 Celix::shell
                 Celix::shell_tui
@@ -436,7 +436,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             BUNDLES
             Celix::celix_pubsub_serializer_json
             Celix::celix_pubsub_topology_manager
-            Celix::celix_pubsub_admin_zmq_v2
+            Celix::celix_pubsub_admin_zmq
             Celix::celix_pubsub_protocol_wire_v2
             )
 
@@ -467,12 +467,12 @@ if (BUILD_PUBSUB_PSA_ZMQ)
     #configure topology manager and pubsub zmq, json serializer and wire protocol v2 bundles
     celix_get_bundle_file(Celix::celix_pubsub_serializer_json PUBSUB_JSON_BUNDLE_FILE)
     celix_get_bundle_file(Celix::celix_pubsub_topology_manager PUBSUB_TOPMAN_BUNDLE_FILE)
-    celix_get_bundle_file(Celix::celix_pubsub_admin_zmq_v2 PUBSUB_ZMQ_BUNDLE_FILE)
+    celix_get_bundle_file(Celix::celix_pubsub_admin_zmq PUBSUB_ZMQ_BUNDLE_FILE)
     celix_get_bundle_file(Celix::celix_pubsub_protocol_wire_v2 PUBSUB_WIRE_BUNDLE_FILE)
     add_dependencies(test_pubsub_topic_and_scope_integration
             celix_pubsub_serializer_json_bundle
             celix_pubsub_topology_manager_bundle
-            celix_pubsub_admin_zmq_v2_bundle
+            celix_pubsub_admin_zmq_bundle
             celix_pubsub_protocol_wire_v2_bundle
     )
     target_compile_definitions(test_pubsub_topic_and_scope_integration PRIVATE
@@ -541,16 +541,16 @@ endfunction()
 
 
 if (BUILD_PUBSUB_PSA_WS)
-    add_celix_interceptors_test_for_psa_and_wire(test_pubsub_interceptors_ws_and_wire_v1_integration Celix::celix_pubsub_admin_websocket_v2 Celix::celix_pubsub_protocol_wire_v1 true)
-    add_celix_interceptors_test_for_psa_and_wire(test_pubsub_interceptors_ws_and_wire_v2_integration Celix::celix_pubsub_admin_websocket_v2 Celix::celix_pubsub_protocol_wire_v2 true)
+    add_celix_interceptors_test_for_psa_and_wire(test_pubsub_interceptors_ws_and_wire_v1_integration Celix::celix_pubsub_admin_websocket Celix::celix_pubsub_protocol_wire_v1 true)
+    add_celix_interceptors_test_for_psa_and_wire(test_pubsub_interceptors_ws_and_wire_v2_integration Celix::celix_pubsub_admin_websocket Celix::celix_pubsub_protocol_wire_v2 true)
 endif ()
 
 if (BUILD_PUBSUB_PSA_TCP)
-    add_celix_interceptors_test_for_psa_and_wire(test_pubsub_interceptors_tcp_and_wire_v1_integration Celix::celix_pubsub_admin_tcp_v2 Celix::celix_pubsub_protocol_wire_v1)
-    add_celix_interceptors_test_for_psa_and_wire(test_pubsub_interceptors_tcp_and_wire_v2_integration Celix::celix_pubsub_admin_tcp_v2 Celix::celix_pubsub_protocol_wire_v2)
+    add_celix_interceptors_test_for_psa_and_wire(test_pubsub_interceptors_tcp_and_wire_v1_integration Celix::celix_pubsub_admin_tcp Celix::celix_pubsub_protocol_wire_v1)
+    add_celix_interceptors_test_for_psa_and_wire(test_pubsub_interceptors_tcp_and_wire_v2_integration Celix::celix_pubsub_admin_tcp Celix::celix_pubsub_protocol_wire_v2)
 endif ()
 
 if (BUILD_PUBSUB_PSA_ZMQ)
-    add_celix_interceptors_test_for_psa_and_wire(test_pubsub_interceptors_zmq_and_wire_v1_integration Celix::celix_pubsub_admin_zmq_v2 Celix::celix_pubsub_protocol_wire_v1)
-    add_celix_interceptors_test_for_psa_and_wire(test_pubsub_interceptors_zmq_and_wire_v2_integration Celix::celix_pubsub_admin_zmq_v2 Celix::celix_pubsub_protocol_wire_v2)
+    add_celix_interceptors_test_for_psa_and_wire(test_pubsub_interceptors_zmq_and_wire_v1_integration Celix::celix_pubsub_admin_zmq Celix::celix_pubsub_protocol_wire_v1)
+    add_celix_interceptors_test_for_psa_and_wire(test_pubsub_interceptors_zmq_and_wire_v2_integration Celix::celix_pubsub_admin_zmq Celix::celix_pubsub_protocol_wire_v2)
 endif ()
