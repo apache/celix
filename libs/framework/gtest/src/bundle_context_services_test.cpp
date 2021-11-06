@@ -793,12 +793,14 @@ TEST_F(CelixBundleContextServicesTests, useServiceDoesNotBlockInEventLoop) {
     opts.callbackHandle = (void*)ctx;
     opts.filter.serviceName = "NA";
     opts.set = set;
-    long trackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
+    long trackerId = celix_bundleContext_trackServicesWithOptionsAsync(ctx, &opts);
     ASSERT_TRUE(trackerId >= 0);
 
     void *svc2 = (void*)0x200; //no ranking
-    long svcId2 = celix_bundleContext_registerService(ctx, svc2, "NA", nullptr);
+    long svcId2 = celix_bundleContext_registerServiceAsync(ctx, svc2, "NotAvailable", nullptr);
     ASSERT_GE(svcId2, 0);
+    celix_bundleContext_waitForAsyncTracker(ctx, trackerId);
+    celix_bundleContext_waitForAsyncRegistration(ctx, svcId2);
 
     celix_bundleContext_unregisterService(ctx, svcId2);
     celix_bundleContext_stopTracker(ctx, trackerId);
