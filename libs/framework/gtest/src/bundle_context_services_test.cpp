@@ -769,6 +769,42 @@ TEST_F(CelixBundleContextServicesTests, serviceTrackerWithRaceConditionTest) {
     celix_bundleContext_stopTracker(ctx, trackerId);
 };
 
+TEST_F(CelixBundleContextServicesTests, useServiceDoesNotBlockInEventLoop) {
+    void *svc1 = (void*)0x100;
+
+    auto set = [](void *handle, void */*svc*/) {
+        celix_bundle_context_t *ctx = static_cast<celix_bundle_context_t *>(handle);
+        celix_service_use_options_t use_opts{};
+        use_opts.filter.serviceName = "NotAvailable";
+        use_opts.waitTimeoutInSeconds = 3600; // unacceptable long blocking
+        use_opts.callbackHandle = nullptr;
+        use_opts.use =  [](void *handle, void *svc) {
+            FAIL() << "We shouldn't get here: (" << handle << "," << svc << ")";
+        };
+
+        bool called = celix_bundleContext_useServiceWithOptions(ctx, &use_opts);
+        ASSERT_FALSE(called);
+    };
+
+    long svcId1 = celix_bundleContext_registerService(ctx, svc1, "NA", nullptr);
+    ASSERT_GE(svcId1, 0);
+
+    celix_service_tracking_options_t opts{};
+    opts.callbackHandle = (void*)ctx;
+    opts.filter.serviceName = "NA";
+    opts.set = set;
+    long trackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
+    ASSERT_TRUE(trackerId >= 0);
+
+    void *svc2 = (void*)0x200; //no ranking
+    long svcId2 = celix_bundleContext_registerService(ctx, svc2, "NA", nullptr);
+    ASSERT_GE(svcId2, 0);
+
+    celix_bundleContext_unregisterService(ctx, svcId2);
+    celix_bundleContext_stopTracker(ctx, trackerId);
+    celix_bundleContext_unregisterService(ctx, svcId1);
+}
+
 TEST_F(CelixBundleContextServicesTests, servicesTrackerSetTest) {
     int count = 0;
 
