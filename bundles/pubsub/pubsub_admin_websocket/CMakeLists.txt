@@ -40,25 +40,3 @@ target_include_directories(celix_pubsub_admin_websocket PRIVATE src)
 
 install_celix_bundle(celix_pubsub_admin_websocket EXPORT celix COMPONENT pubsub)
 add_library(Celix::celix_pubsub_admin_websocket ALIAS celix_pubsub_admin_websocket)
-
-
-#Tmp psa websocket _v2 target
-add_celix_bundle(celix_pubsub_admin_websocket_v2
-    BUNDLE_SYMBOLICNAME "apache_celix_pubsub_admin_websocket_v2"
-    VERSION "2.0.0"
-    GROUP "Celix/PubSub"
-    SOURCES
-        src/psa_activator.c
-        src/pubsub_websocket_admin.c
-        src/pubsub_websocket_topic_sender.c
-        src/pubsub_websocket_topic_receiver.c
-        src/pubsub_websocket_common.c
-)
-set_target_properties(celix_pubsub_admin_websocket_v2 PROPERTIES INSTALL_RPATH "$ORIGIN")
-target_link_libraries(celix_pubsub_admin_websocket_v2 PRIVATE
-        Celix::framework Celix::log_helper Celix::utils
-        Celix::http_admin_api)
-target_link_libraries(celix_pubsub_admin_websocket_v2 PRIVATE Celix::pubsub_spi Celix::pubsub_utils )
-target_link_libraries(celix_pubsub_admin_websocket_v2 PRIVATE Celix::shell_api)
-target_include_directories(celix_pubsub_admin_websocket_v2 PRIVATE src)
-install_celix_bundle(celix_pubsub_admin_websocket_v2 EXPORT celix COMPONENT pubsub)

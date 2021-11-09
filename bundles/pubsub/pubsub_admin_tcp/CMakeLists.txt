@@ -41,26 +41,3 @@ endif()
 
 install_celix_bundle(celix_pubsub_admin_tcp EXPORT celix COMPONENT pubsub)
 add_library(Celix::celix_pubsub_admin_tcp ALIAS celix_pubsub_admin_tcp)
-
-
-#Tmp psa tcp _v2 target
-add_celix_bundle(celix_pubsub_admin_tcp_v2
-    BUNDLE_SYMBOLICNAME "apache_celix_pubsub_admin_tcp_v2"
-    VERSION "2.0.0"
-    GROUP "Celix/PubSub"
-    SOURCES
-        src/psa_activator.c
-        src/pubsub_tcp_admin.c
-        src/pubsub_tcp_topic_sender.c
-        src/pubsub_tcp_topic_receiver.c
-        src/pubsub_tcp_handler.c
-        src/pubsub_tcp_common.c
-)
-target_link_libraries(celix_pubsub_admin_tcp_v2 PRIVATE Celix::pubsub_spi Celix::pubsub_utils)
-target_link_libraries(celix_pubsub_admin_tcp_v2 PRIVATE Celix::framework Celix::log_helper)
-target_link_libraries(celix_pubsub_admin_tcp_v2 PRIVATE Celix::shell_api)
-target_include_directories(celix_pubsub_admin_tcp_v2 PRIVATE src)
-if (NOT APPLE)
-    target_link_libraries(celix_pubsub_admin_tcp_v2 PRIVATE UUID::lib)
-endif()
-install_celix_bundle(celix_pubsub_admin_tcp_v2 EXPORT celix COMPONENT pubsub)

@@ -50,24 +50,3 @@ target_link_libraries(celix_pubsub_admin_zmq PRIVATE Celix::pubsub_spi Celix::pu
 target_include_directories(celix_pubsub_admin_zmq PRIVATE src)
 install_celix_bundle(celix_pubsub_admin_zmq EXPORT celix COMPONENT pubsub)
 add_library(Celix::celix_pubsub_admin_zmq ALIAS celix_pubsub_admin_zmq)
-
-
-#Tmp psa zmq _v2 target
-add_celix_bundle(celix_pubsub_admin_zmq_v2
-    BUNDLE_SYMBOLICNAME "apache_celix_pubsub_admin_zmq_v2"
-    VERSION "2.0.0"
-    GROUP "Celix/PubSub"
-    SOURCES
-        src/psa_activator.c
-        src/pubsub_zmq_admin.c
-        src/pubsub_zmq_topic_sender.c
-        src/pubsub_zmq_topic_receiver.c
-        ${ZMQ_CRYPTO_C}
-)
-target_link_libraries(celix_pubsub_admin_zmq_v2 PRIVATE
-        Celix::framework Celix::dfi Celix::log_helper Celix::utils
-        ZMQ::lib CZMQ::lib ${OPTIONAL_OPENSSL_LIB})
-target_link_libraries(celix_pubsub_admin_zmq_v2 PRIVATE Celix::shell_api)
-target_link_libraries(celix_pubsub_admin_zmq_v2 PRIVATE Celix::pubsub_spi Celix::pubsub_utils )
-target_include_directories(celix_pubsub_admin_zmq_v2 PRIVATE src)
-install_celix_bundle(celix_pubsub_admin_zmq_v2 EXPORT celix COMPONENT pubsub)
