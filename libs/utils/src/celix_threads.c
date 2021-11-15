@@ -151,13 +151,13 @@ celix_status_t celixThreadCondition_init(celix_thread_cond_t *condition, celix_t
     celix_status_t status = CELIX_SUCCESS;
     if(attr) {
         status = pthread_condattr_setclock(attr, CLOCK_MONOTONIC);
-        CELIX_DO_IF(status, pthread_cond_init(condition, attr));
+        status = CELIX_DO_IF(status, pthread_cond_init(condition, attr));
     }
     else {
         celix_thread_condattr_t condattr;
         (void)pthread_condattr_init(&condattr); // always return 0
         status = pthread_condattr_setclock(&condattr, CLOCK_MONOTONIC);
-        CELIX_DO_IF(status, pthread_cond_init(condition, &condattr));
+        status = CELIX_DO_IF(status, pthread_cond_init(condition, &condattr));
         (void)pthread_condattr_destroy(&condattr); // always return 0
     }
     return status;
