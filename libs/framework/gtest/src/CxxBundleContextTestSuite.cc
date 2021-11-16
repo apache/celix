@@ -550,6 +550,20 @@ TEST_F(CxxBundleContextTestSuite, UnregisterServiceWhileRegistering) {
     ctx->waitForEvents();
 }
 
+TEST_F(CxxBundleContextTestSuite, GetServiceInEventLoop) {
+    auto context = ctx;
+    ctx->getFramework()->fireGenericEvent(
+            ctx->getBundleId(),
+            "register/unregister in Celix event thread",
+            [context]() {
+                auto tracker = context->trackServices<TestInterface>().build();
+                auto svc = tracker->getHighestRankingService();
+                EXPECT_TRUE(svc.get() == nullptr);
+            }
+    );
+    ctx->waitForEvents();
+}
+
 TEST_F(CxxBundleContextTestSuite, KeepSharedPtrActiveWhileDeregistering) {
     auto svcReg = ctx->registerService<TestInterface>(std::make_shared<TestImplementation>())
             .build();

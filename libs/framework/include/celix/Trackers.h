@@ -159,7 +159,7 @@ namespace celix {
          */
         void waitIfAble() const {
             auto* fw = celix_bundleContext_getFramework(cCtx.get());
-            if (celix_framework_isCurrentThreadTheEventLoop(fw)) {
+            if (!celix_framework_isCurrentThreadTheEventLoop(fw)) {
                 wait();
             }
         }
