@@ -20,8 +20,8 @@ add_celix_bundle(char_refiningdriver
  	NAME "Apache Celix Device Access Char Refining Driver Example"
  	VERSION "0.0.1"
 	SOURCES
-		src/activator
-		src/refining_driver
+		src/activator.c
+		src/refining_driver.c
 )
 
 target_include_directories(char_refiningdriver PRIVATE src)

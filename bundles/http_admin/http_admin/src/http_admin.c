@@ -186,12 +186,12 @@ void http_admin_removeHttpService(void *handle, void *svc __attribute__((unused)
 int http_request_handle(struct mg_connection *connection) {
     int ret_status = 400; //Default bad request
 
-    if(connection != NULL) {
+    if (connection != NULL) {
         const struct mg_request_info *ri = mg_get_request_info(connection);
         http_admin_manager_t *admin = (http_admin_manager_t *) ri->user_data;
         service_tree_node_t *node = NULL;
 
-        if(mg_get_header(connection, "Upgrade") != NULL) {
+        if (mg_get_header(connection, "Upgrade") != NULL) {
             //Assume this is a websocket request...
             ret_status = 0; //... so return zero to let the civetweb server handle the request.
         }
@@ -199,7 +199,7 @@ int http_request_handle(struct mg_connection *connection) {
             const char *req_uri = ri->request_uri;
             node = findServiceNodeInTree(&admin->http_svc_tree, req_uri);
 
-            if(node != NULL) {
+            if (node != NULL) {
                 //Requested URI with node exists, now obtain the http service and call the requested function.
                 celix_http_service_t *httpSvc = (celix_http_service_t *) node->svc_data->service;
 

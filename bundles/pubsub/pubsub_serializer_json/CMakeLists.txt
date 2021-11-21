@@ -36,7 +36,7 @@ target_link_libraries(celix_pubsub_serializer_json PRIVATE Celix::pubsub_spi Cel
 
 install_celix_bundle(celix_pubsub_serializer_json EXPORT celix COMPONENT pubsub)
 
-add_library(Celix::pubsub_serializer_json ALIAS celix_pubsub_serializer_json)
+add_library(Celix::celix_pubsub_serializer_json ALIAS celix_pubsub_serializer_json)
 
 
 if (ENABLE_TESTING)

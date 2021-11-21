@@ -21,10 +21,10 @@
 #define CELIX_PUBSUB_SERIALIZER_HANDLER_H
 
 #include <stdint.h>
+#include <sys/uio.h>
 
+#include "celix_log_helper.h"
 #include "celix_api.h"
-#include "pubsub_message_serialization_service.h"
-
 
 #ifdef __cplusplus
 extern "C" {
@@ -34,8 +34,10 @@ typedef struct pubsub_serializer_handler pubsub_serializer_handler_t; //opaque t
 
 
 /**
- * Creates a handler which track pubsub_custom_msg_serialization_service services with a (serialization.type=<serializerType)) filter.
- * If multiple pubsub_message_serialization_service for the same msg fqn (targeted.msg.fqn property) the highest ranking service will be used.
+ * @brief Creates a pubsub serializer handler which tracks pubsub_custom_msg_serialization_service services using the provided serialization type.
+ *
+ * If there are multiple pubsub_message_serialization_service services for the same msg fqn
+ * (targeted.msg.fqn property) the highest ranking service will be used.
  *
  * The message handler assumes (and checks) that all provided serialization services do not clash in message ids (so every msgId should have its own msgFqn)
  * and that only one version for a message serialization is registered.
@@ -53,14 +55,36 @@ typedef struct pubsub_serializer_handler pubsub_serializer_handler_t; //opaque t
  */
 pubsub_serializer_handler_t* pubsub_serializerHandler_create(celix_bundle_context_t* ctx, const char* serializerType, bool backwardCompatible);
 
-
-void pubsub_serializerHandler_destroy(pubsub_serializer_handler_t* handler);
-
-void pubsub_serializerHandler_addSerializationService(pubsub_serializer_handler_t* handler, pubsub_message_serialization_service_t* svc, const celix_properties_t* svcProperties);
-void pubsub_serializerHandler_removeSerializationService(pubsub_serializer_handler_t* handler, pubsub_message_serialization_service_t* svc, const celix_properties_t* svcProperties);
+/**
+ * @brief Creates a pubsub serializer handler which tracks pubsub_custom_msg_serialization_service services using the serialization type of the provided
+ * marker service.id
+ *
+ * If there are multiple pubsub_message_serialization_service services for the same msg fqn
+ * (targeted.msg.fqn property) the highest ranking service will be used.
+ *
+ * The message handler assumes (and checks) that all provided serialization services do not clash in message ids (so every msgId should have its own msgFqn)
+ * and that only one version for a message serialization is registered.
+ * This means that all bundles in a single celix container (a single process) should all use the same version of messages.
+ *
+ * If backwards compatibility is supported, when serialized message with a higher minor version when available in the serializer handler are used to
+ * deserialize. This could be supported for serialization like json.
+ * So when a json message of version 1.1.x with content {"field1":"value1", "field2":"value2"} is deserialized to a version 1.0 (which only has field1),
+ * the message can and will be deserialized
+ *
+ * @param ctx                               The bundle contest.
+ * @param pubsubSerializerMarkerSvcId       The service.id of the pubsub_serialization_marker to use for deferring serializationType and backwardsCompatible.
+ * @param logHelper                         Optional log helper. If provided will be used to log issues whit creating a serializer handler for the provided marker svc id.
+ * @return A newly created pubsub serializer handler.
+ */
+pubsub_serializer_handler_t* pubsub_serializerHandler_createForMarkerService(celix_bundle_context_t* ctx, long pubsubSerializerMarkerSvcId, celix_log_helper_t* logHelper);
 
 /**
- * Serialize a message into iovec structs (set of structures with buffer pointer and length)
+ * @brief destroy the pubsub_serializer_handler and free the used memory.
+ */
+void pubsub_serializerHandler_destroy(pubsub_serializer_handler_t* handler);
+
+/**
+ * @brief Serialize a message into iovec structs (set of structures with buffer pointer and length)
  *
  * The correct message serialization services will be selected based on the provided msgId.
  *
@@ -74,12 +98,12 @@ void pubsub_serializerHandler_removeSerializationService(pubsub_serializer_handl
 celix_status_t pubsub_serializerHandler_serialize(pubsub_serializer_handler_t* handler, uint32_t msgId, const void* input, struct iovec** output, size_t* outputIovLen);
 
 /**
- * Free the memory of for the serialized msg.
+ * @brief Free the memory of for the serialized msg.
  */
 celix_status_t pubsub_serializerHandler_freeSerializedMsg(pubsub_serializer_handler_t* handler, uint32_t msgId, struct iovec* input, size_t inputIovLen);
 
 /**
- * Deserialize a message using the provided iovec buffers.
+ * @brief Deserialize a message using the provided iovec buffers.
  *
  * The deserialize function will also check if the target major/minor version of the message is valid with the version
  * of the serialized data.
@@ -102,33 +126,78 @@ celix_status_t pubsub_serializerHandler_freeSerializedMsg(pubsub_serializer_hand
 celix_status_t pubsub_serializerHandler_deserialize(pubsub_serializer_handler_t* handler, uint32_t msgId, int serializedMajorVersion, int serializedMinorVersion, const struct iovec* input, size_t inputIovLen, void** out);
 
 /**
- * Free the memory for the  deserialized message.
+ * @brief Free the memory for the  deserialized message.
  */
 celix_status_t pubsub_serializerHandler_freeDeserializedMsg(pubsub_serializer_handler_t* handler, uint32_t msgId, void* msg);
 
 /**
- * Whether the msg is support. More specifically:
+ * @brief Whether the msg is support. More specifically:
  *  - msg id is known and
  *  - a serialized msg with the provided major and minor version can be deserialized.
  */
 bool pubsub_serializerHandler_isMessageSupported(pubsub_serializer_handler_t* handler, uint32_t msgId, int majorVersion, int minorVersion);
 
 /**
- * Get msg fqn from a msg id.
- * @return msg fqn or NULL if msg id is not known.
+ * @brief Whether the serializer handler has found 1 or more pubsub_message_serialization_service for the provided msg id.
  */
-char* pubsub_serializerHandler_getMsgFqn(pubsub_serializer_handler_t* handler, uint32_t msgId);
+bool pubsub_serializerHandler_isMessageSerializationServiceAvailable(pubsub_serializer_handler_t* handler, uint32_t msgId);
 
 /**
- * Get a msg id from a msgFqn.
+ * @brief Get msg fqn from a msg id.
+ * @return msg fqn or NULL if msg id is not known. msg fqn is valid as long as the handler exists.
+ */
+const char* pubsub_serializerHandler_getMsgFqn(pubsub_serializer_handler_t* handler, uint32_t msgId);
+
+/**
+ * @brief Get a msg id from a msgFqn.
  * @return msg id or 0 if msg fqn is not known.
  */
 uint32_t pubsub_serializerHandler_getMsgId(pubsub_serializer_handler_t* handler, const char* msgFqn);
 
 /**
- * nr of serialization services found.
+ * @brief nr of serialization services found.
  */
 size_t pubsub_serializerHandler_messageSerializationServiceCount(pubsub_serializer_handler_t* handler);
+
+
+/**
+ * @brief Get the serializer type for this hanlder.
+ *
+ * Valid as long as the handler exists.
+ */
+const char* pubsub_serializerHandler_getSerializationType(pubsub_serializer_handler_t* handler);
+
+/**
+ * @brief Returns the major version part of a message version.
+ *
+ * Returns -1 if message cannot be found.
+ */
+int pubsub_serializerHandler_getMsgMinorVersion(pubsub_serializer_handler_t* handler, uint32_t msgId);
+
+/**
+ * @brief Returns the minor version part of a message version.
+ *
+ * Returns -1 if message cannot be found.
+ */
+int pubsub_serializerHandler_getMsgMajorVersion(pubsub_serializer_handler_t* handler, uint32_t msgId);
+
+
+/**
+ * @brief Returns msg info (fqn, major version, minor version) in 1 call.
+ *
+ * @param handler               The serializer handler
+ * @param msgId                 The msg id where to get the info for
+ * @param msgFqnOut             If not NULL will be set to the msgFqn (valid as long as the serializer handler is valid)
+ * @param msgMajorVersionOut    If not NULL will be set to the msg major version
+ * @param msgMinorVersionOut    If not NULL will be set to the msg minor version
+ * @return                      CELIX_SUCCESS on success, CELIX_ILLEGAL_ARGUMENT if the message for the provided msg id cannot be found.
+ */
+celix_status_t pubsub_serializerHandler_getMsgInfo(
+        pubsub_serializer_handler_t* handler,
+        uint32_t msgId,
+        const char** msgFqnOut,
+        int* msgMajorVersionOut,
+        int* msgMinorVersionOut);
 
 #ifdef __cplusplus
 }

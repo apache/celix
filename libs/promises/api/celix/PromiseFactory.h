@@ -65,8 +65,7 @@ namespace celix {
 
         [[nodiscard]] std::shared_ptr<celix::IExecutor> getExecutor() const;
 
-        //TODO
-        //[[nodiscard]] std::shared_ptr<celix::IScheduledExecutor> getScheduledExecutor() const;
+        [[nodiscard]] std::shared_ptr<celix::IScheduledExecutor> getScheduledExecutor() const;
 
         /**
          * @brief Wait (block) until all tasks for the executor and scheduled executor are completed
@@ -91,12 +90,13 @@ inline celix::PromiseFactory::PromiseFactory(
 
 inline celix::PromiseFactory::~PromiseFactory() noexcept {
     //ensure that the executors tasks are empty before allowing the to be deallocated.
-    wait();
+    wait(); //TODO wait or directly fail promises?
 }
 
 template<typename T>
 celix::Deferred<T> celix::PromiseFactory::deferred(int priority) const {
-    return celix::Deferred<T>{celix::impl::SharedPromiseState<T>::create(executor, scheduledExecutor, priority)};
+    auto state = celix::impl::SharedPromiseState<T>::create(executor, scheduledExecutor, priority);
+    return celix::Deferred<T>{state};
 }
 
 template<typename T>
@@ -110,16 +110,16 @@ template<typename T>
 
 template<typename T>
 celix::Promise<T> celix::PromiseFactory::failed(const std::exception &e, int priority) const {
-    auto p = celix::impl::SharedPromiseState<T>::create(executor, scheduledExecutor, priority);
-    p->fail(e);
-    return celix::Promise<T>{p};
+    auto def = deferred<T>(priority);
+    def.fail(e);
+    return def.getPromise();
 }
 
 template<typename T>
 celix::Promise<T> celix::PromiseFactory::failed(std::exception_ptr ptr, int priority) const {
-    auto p = celix::impl::SharedPromiseState<T>::create(executor, priority);
-    p->fail(ptr);
-    return celix::Promise<T>{p};
+    auto def = deferred<T>(priority);
+    def.fail(ptr);
+    return def.getPromise();
 }
 
 template<typename T>
@@ -129,9 +129,9 @@ celix::Promise<T> celix::PromiseFactory::resolved(T &&value) const {
 
 template<typename T>
 celix::Promise<T> celix::PromiseFactory::resolvedWithPrio(T &&value, int priority) const {
-    auto p = celix::impl::SharedPromiseState<T>::create(executor, scheduledExecutor, priority);
-    p->resolve(std::forward<T>(value));
-    return celix::Promise<T>{p};
+    auto def = deferred<T>(priority);
+    def.resolve(std::forward<T>(value));
+    return def.getPromise();
 }
 
 inline celix::Promise<void> celix::PromiseFactory::resolved() const {
@@ -139,13 +139,17 @@ inline celix::Promise<void> celix::PromiseFactory::resolved() const {
 }
 
 inline celix::Promise<void> celix::PromiseFactory::resolvedWithPrio(int priority) const {
-    auto p = celix::impl::SharedPromiseState<void>::create(executor, scheduledExecutor, priority);
-    p->resolve();
-    return celix::Promise<void>{p};
+    auto def = deferred<void>(priority);
+    def.resolve();
+    return def.getPromise();
 }
 
 inline std::shared_ptr<celix::IExecutor> celix::PromiseFactory::getExecutor() const {
     return executor;
+}
+
+inline std::shared_ptr<celix::IScheduledExecutor> celix::PromiseFactory::getScheduledExecutor() const {
+    return scheduledExecutor;
 }
 
 inline void celix::PromiseFactory::wait() {

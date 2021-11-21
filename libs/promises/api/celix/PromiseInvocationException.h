@@ -30,10 +30,10 @@ namespace celix {
         explicit PromiseInvocationException(const char* what) : w{what} {}
         explicit PromiseInvocationException(std::string what) : w{std::move(what)} {}
 
-        PromiseInvocationException(const PromiseInvocationException&) = delete;
+        PromiseInvocationException(const PromiseInvocationException&) = default;
         PromiseInvocationException(PromiseInvocationException&&) noexcept = default;
 
-        PromiseInvocationException& operator=(const PromiseInvocationException&) = delete;
+        PromiseInvocationException& operator=(const PromiseInvocationException&) = default;
         PromiseInvocationException& operator=(PromiseInvocationException&&) noexcept = default;
 
         [[nodiscard]] const char* what() const noexcept override { return w.c_str(); }

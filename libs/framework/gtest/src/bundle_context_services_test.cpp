@@ -1211,15 +1211,6 @@ TEST_F(CelixBundleContextServicesTests, unregisterSvcBeforeAsyncRegistration) {
             [](void *data) {
                 auto cbd = static_cast<struct callback_data*>(data);
 
-                celix_service_registration_options_t opts{};
-                opts.serviceName = "test-service";
-                opts.svc = (void*)0x42;
-                opts.asyncData = data;
-                opts.asyncCallback = [](void *data, long /*svcId*/) {
-                    auto* cbd = static_cast<struct callback_data*>(data);
-                    cbd->count.fetch_add(1);
-                };
-
                 //note register async. So a event on the event queue, but because this is done on the event queue this cannot be completed
                 long svcId = celix_bundleContext_registerServiceAsync(cbd->ctx, (void*)0x42, "test-service", nullptr);
 

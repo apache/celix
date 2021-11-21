@@ -25,6 +25,8 @@
 #include <cassert>
 #include <set>
 #include <unordered_map>
+#include <functional>
+#include <thread>
 
 #include "celix_utils.h"
 #include "celix/Properties.h"
@@ -33,6 +35,8 @@
 #include "celix/Constants.h"
 #include "celix/Filter.h"
 #include "celix_bundle_context.h"
+#include "celix_framework.h"
+
 
 namespace celix {
 
@@ -155,7 +159,7 @@ namespace celix {
          */
         void waitIfAble() const {
             auto* fw = celix_bundleContext_getFramework(cCtx.get());
-            if (celix_framework_isCurrentThreadTheEventLoop(fw)) {
+            if (!celix_framework_isCurrentThreadTheEventLoop(fw)) {
                 wait();
             }
         }

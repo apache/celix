@@ -165,6 +165,24 @@ TEST(properties, getSet) {
     celix_properties_destroy(properties);
 }
 
+TEST(properties, setUnset) {
+    properties = celix_properties_create();
+    char keyA[] = "x";
+    char *keyD = strndup("a", 1);
+    char valueA[] = "1";
+    char *valueD = strndup("4", 1);
+    celix_properties_set(properties, keyA, valueA);
+    celix_properties_setWithoutCopy(properties, keyD, valueD);
+    STRCMP_EQUAL(valueA, celix_properties_get(properties, keyA, NULL));
+    STRCMP_EQUAL(valueD, celix_properties_get(properties, keyD, NULL));
+
+    celix_properties_unset(properties, keyA);
+    celix_properties_unset(properties, keyD);
+    POINTERS_EQUAL(NULL, celix_properties_get(properties, keyA, NULL));
+    POINTERS_EQUAL(NULL, celix_properties_get(properties, "a", NULL));
+    celix_properties_destroy(properties);
+}
+
 TEST(properties, longTest) {
     properties = celix_properties_create();
 

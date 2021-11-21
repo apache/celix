@@ -20,8 +20,8 @@ add_celix_bundle(base_driver
  	VERSION "0.0.1"
  	NAME "Apache Celix Device Access Base Driver Example"
 	SOURCES
-		src/activator
-		src/base_driver
+		src/activator.c
+		src/base_driver.c
 )
 target_include_directories(base_driver PRIVATE src)
 target_include_directories(base_driver PUBLIC include)

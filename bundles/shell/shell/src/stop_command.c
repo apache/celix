@@ -46,7 +46,9 @@ bool stopCommand_execute(void *handle, const char *const_command, FILE *outStrea
             } else {
                 bool exists = celix_bundleContext_isBundleInstalled(ctx, bndId);
                 if (exists) {
-                    stoppedCalledAndSucceeded = celix_bundleContext_stopBundle(ctx, bndId);
+                    celix_framework_t* fw = celix_bundleContext_getFramework(ctx);
+                    celix_framework_stopBundleAsync(fw, bndId);
+                    stoppedCalledAndSucceeded = true;
                 } else {
                     fprintf(outStream, "No bundle with id %li.\n", bndId);
                 }

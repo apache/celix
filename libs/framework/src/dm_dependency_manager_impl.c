@@ -302,7 +302,7 @@ void celix_dependencyManager_destroyInfos(celix_dependency_manager_t *manager, c
 
 celix_status_t dependencyManager_create(bundle_context_pt context, celix_dependency_manager_t **out) {
 	celix_status_t status = CELIX_SUCCESS;
-	celix_dependency_manager_t *manager = celix_private_dependencyManager_create(context);
+	celix_dependency_manager_t *manager = celix_bundleContext_getDependencyManager(context);
 	if (manager != NULL) {
         *out = manager;
 	} else {
@@ -312,7 +312,6 @@ celix_status_t dependencyManager_create(bundle_context_pt context, celix_depende
 }
 
 void dependencyManager_destroy(celix_dependency_manager_t *manager) {
-	celix_private_dependencyManager_destroy(manager);
 }
 
 celix_status_t dependencyManager_add(celix_dependency_manager_t *manager, celix_dm_component_t *component) {

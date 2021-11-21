@@ -41,7 +41,7 @@ extern "C" {
     static celix_framework_t *clientFramework = NULL;
     static celix_bundle_context_t *clientContext = NULL;
 
-    static void setupFm(void) {
+    static void setupFm(bool useCurlShare) {
         //server
         celix_properties_t *serverProps = celix_properties_load("server.properties");
         ASSERT_TRUE(serverProps != NULL);
@@ -52,6 +52,7 @@ extern "C" {
 
         //client
         celix_properties_t *clientProperties = celix_properties_load("client.properties");
+        celix_properties_setBool(clientProperties, "RSA_DFI_USE_CURL_SHARE_HANDLE", useCurlShare);
         ASSERT_TRUE(clientProperties != NULL);
         clientFramework = celix_frameworkFactory_createFramework(clientProperties);
         ASSERT_TRUE(clientFramework != NULL);
@@ -164,9 +165,20 @@ static void test(F&& f) {
 class RsaDfiClientServerTests : public ::testing::Test {
 public:
     RsaDfiClientServerTests() {
-        setupFm();
+        setupFm(false);
     }
     ~RsaDfiClientServerTests() override {
+        teardownFm();
+    }
+
+};
+
+class RsaDfiClientServerWithCurlShareTests : public ::testing::Test {
+public:
+    RsaDfiClientServerWithCurlShareTests() {
+        setupFm(true);
+    }
+    ~RsaDfiClientServerWithCurlShareTests() override {
         teardownFm();
     }
 
@@ -177,7 +189,15 @@ TEST_F(RsaDfiClientServerTests, TestRemoteCalculator) {
     test(testCalculator);
 }
 
+TEST_F(RsaDfiClientServerWithCurlShareTests, TestRemoteCalculator) {
+    test(testCalculator);
+}
+
 TEST_F(RsaDfiClientServerTests, TestRemoteComplex) {
+    test(testComplex);
+}
+
+TEST_F(RsaDfiClientServerWithCurlShareTests, TestRemoteComplex) {
     test(testComplex);
 }
 

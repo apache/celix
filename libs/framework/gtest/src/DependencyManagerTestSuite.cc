@@ -299,6 +299,7 @@ TEST_F(DependencyManagerTestSuite, AddSvcProvideAfterBuild) {
 
     dm.clear();
     dm.wait();
+    dm.waitIfAble();
     EXPECT_EQ(0, dm.getNrOfComponents()); //dm cleared so no components
     svcId = celix_bundleContext_findService(ctx, "TestService");
     EXPECT_EQ(svcId, -1); //cleared -> not found
@@ -418,7 +419,7 @@ TEST_F(DependencyManagerTestSuite, RemoveAndClear) {
     dm.destroyComponent(cmp1);
     bool removed = dm.removeComponent(cmp2.getUUID());
     EXPECT_TRUE(removed);
-    removed = dm.removeComponent(cmp4.getUUID());
+    removed = dm.removeComponentAsync(cmp4.getUUID());
     EXPECT_TRUE(removed);
     dm.clear();
 }
@@ -461,6 +462,132 @@ TEST_F(DependencyManagerTestSuite, RequiredDepsAreInjectedDuringStartStop) {
         std::mutex mutex{};
         TestService* setSvc{};
         std::vector<TestService*> services{};
+    };
+
+    celix::dm::DependencyManager dm{ctx};
+    auto& cmp = dm.createComponent<LifecycleComponent>()
+            .setCallbacks(nullptr, &LifecycleComponent::start, &LifecycleComponent::stop, nullptr);
+    cmp.createServiceDependency<TestService>()
+            .setRequired(true)
+            .setCallbacks(&LifecycleComponent::setService)
+            .setCallbacks(&LifecycleComponent::addService, &LifecycleComponent::remService);
+    cmp.build();
+
+    TestService svc;
+    std::string svcName = celix::typeName<TestService>();
+    celix_service_registration_options opts{};
+    opts.svc = &svc;
+    opts.serviceName = svcName.c_str();
+    opts.serviceLanguage = CELIX_FRAMEWORK_SERVICE_CXX_LANGUAGE;
+    long svcId = celix_bundleContext_registerServiceWithOptions(dm.bundleContext(), &opts);
+    EXPECT_GE(svcId, 0);
+
+    EXPECT_EQ(cmp.getState(), ComponentState::TRACKING_OPTIONAL);
+    celix_bundleContext_unregisterService(dm.bundleContext(), svcId);
+}
+
+TEST_F(DependencyManagerTestSuite, DepsAreInjectedAsSharedPointers) {
+    class LifecycleComponent {
+    public:
+        void start() {
+            std::lock_guard<std::mutex> lck{mutex};
+            EXPECT_TRUE(setSvc != nullptr);
+            EXPECT_EQ(services.size(), 1);
+        }
+
+        void stop() {
+            std::lock_guard<std::mutex> lck{mutex};
+            EXPECT_TRUE(setSvc != nullptr);
+            EXPECT_EQ(services.size(), 1);
+        }
+
+        void setService(const std::shared_ptr<TestService>& svc, const std::shared_ptr<const celix::Properties>& /*props*/) {
+            std::lock_guard<std::mutex> lck{mutex};
+            setSvc = svc;
+        }
+
+        void addService(const std::shared_ptr<TestService>& svc, const std::shared_ptr<const celix::Properties>& props) {
+            EXPECT_TRUE(props);
+            std::lock_guard<std::mutex> lck{mutex};
+            services.emplace_back(svc);
+        }
+
+        void remService(const std::shared_ptr<TestService>& svc, const std::shared_ptr<const celix::Properties>& props) {
+            EXPECT_TRUE(props);
+            std::lock_guard<std::mutex> lck{mutex};
+            for (auto it = services.begin(); it != services.end(); ++it) {
+                if (*it == svc) {
+                    services.erase(it);
+                    break;
+                }
+            }
+        }
+    private:
+        std::mutex mutex{};
+        std::shared_ptr<TestService> setSvc{};
+        std::vector<std::shared_ptr<TestService>> services{};
+    };
+
+    celix::dm::DependencyManager dm{ctx};
+    auto& cmp = dm.createComponent<LifecycleComponent>()
+            .setCallbacks(nullptr, &LifecycleComponent::start, &LifecycleComponent::stop, nullptr);
+    cmp.createServiceDependency<TestService>()
+            .setRequired(true)
+            .setCallbacks(&LifecycleComponent::setService)
+            .setCallbacks(&LifecycleComponent::addService, &LifecycleComponent::remService);
+    cmp.build();
+
+    TestService svc;
+    std::string svcName = celix::typeName<TestService>();
+    celix_service_registration_options opts{};
+    opts.svc = &svc;
+    opts.serviceName = svcName.c_str();
+    opts.serviceLanguage = CELIX_FRAMEWORK_SERVICE_CXX_LANGUAGE;
+    long svcId = celix_bundleContext_registerServiceWithOptions(dm.bundleContext(), &opts);
+    EXPECT_GE(svcId, 0);
+
+    EXPECT_EQ(cmp.getState(), ComponentState::TRACKING_OPTIONAL);
+    celix_bundleContext_unregisterService(dm.bundleContext(), svcId);
+}
+
+TEST_F(DependencyManagerTestSuite, DepsNoPropsAreInjectedAsSharedPointers) {
+    class LifecycleComponent {
+    public:
+        void start() {
+            std::lock_guard<std::mutex> lck{mutex};
+            EXPECT_TRUE(setSvc != nullptr);
+            EXPECT_EQ(services.size(), 1);
+        }
+
+        void stop() {
+            std::lock_guard<std::mutex> lck{mutex};
+            EXPECT_TRUE(setSvc != nullptr);
+            EXPECT_EQ(services.size(), 1);
+        }
+
+        void setService(const std::shared_ptr<TestService>& svc) {
+            std::lock_guard<std::mutex> lck{mutex};
+            setSvc = svc;
+        }
+
+        void addService(const std::shared_ptr<TestService>& svc) {
+            std::lock_guard<std::mutex> lck{mutex};
+            services.emplace_back(svc);
+        }
+
+        void remService(const std::shared_ptr<TestService>& svc) {
+            std::lock_guard<std::mutex> lck{mutex};
+            for (auto it = services.begin(); it != services.end(); ++it) {
+                if (*it == svc) {
+                    services.erase(it);
+                    break;
+                }
+            }
+        }
+    private:
+        std::mutex mutex{};
+        std::shared_ptr<TestService> setSvc{};
+        std::vector<std::shared_ptr<TestService>> services{};
     };
 
     celix::dm::DependencyManager dm{ctx};
@@ -638,4 +765,12 @@ TEST_F(DependencyManagerTestSuite, ExceptionsInLifecycle) {
         //required service -> should stop, but fails at stop and should become inactive (component will disable itself)
         dm.clear(); //dm clear will deinit component and this should fail, but not deadlock
     }
+}
+
+TEST_F(DependencyManagerTestSuite, ComponentContextShouldNotLeak) {
+    celix::dm::DependencyManager dm{ctx};
+    dm.createComponent<TestComponent>()
+            .addContext(std::make_shared<std::vector<std::string>>())
+            .build();
+    //note should not leak mem
 }

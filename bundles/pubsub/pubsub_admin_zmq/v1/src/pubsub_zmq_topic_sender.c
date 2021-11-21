@@ -32,7 +32,6 @@
 #include "pubsub_psa_zmq_constants.h"
 #include <uuid/uuid.h>
 #include "celix_constants.h"
-#include "pubsub_interceptors_handler.h"
 
 #define FIRST_SEND_DELAY_IN_SECONDS             2
 #define ZMQ_BIND_MAX_RETRY                      10
@@ -56,8 +55,6 @@ struct pubsub_zmq_topic_sender {
     uuid_t fwUUID;
     bool metricsEnabled;
     bool zeroCopyEnabled;
-
-    pubsub_interceptors_handler_t *interceptorsHandler;
 
     char *scope;
     char *topic;
@@ -156,8 +153,6 @@ pubsub_zmq_topic_sender_t* pubsub_zmqTopicSender_create(
     }
     sender->metricsEnabled = celix_bundleContext_getPropertyAsBool(ctx, PSA_ZMQ_METRICS_ENABLED, PSA_ZMQ_DEFAULT_METRICS_ENABLED);
     sender->zeroCopyEnabled = celix_bundleContext_getPropertyAsBool(ctx, PSA_ZMQ_ZEROCOPY_ENABLED, PSA_ZMQ_DEFAULT_ZEROCOPY_ENABLED);
-
-    pubsubInterceptorsHandler_create(ctx, scope, topic, &sender->interceptorsHandler);
 
     //setting up zmq socket for ZMQ TopicSender
     {
@@ -346,8 +341,6 @@ void pubsub_zmqTopicSender_destroy(pubsub_zmq_topic_sender_t *sender) {
         celixThreadMutex_unlock(&sender->boundedServices.mutex);
 
         celixThreadMutex_destroy(&sender->boundedServices.mutex);
-
-        pubsubInterceptorsHandler_destroy(sender->interceptorsHandler);
 
         if (sender->scope != NULL) {
             free(sender->scope);
@@ -573,138 +566,133 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
                 usleep(500);
             }
 
-            bool cont = pubsubInterceptorHandler_invokePreSend(sender->interceptorsHandler, entry->msgSer->msgName, msgTypeId, inMsg, &metadata);
-            if (cont) {
+            pubsub_protocol_message_t message;
+            message.payload.payload = serializedOutput->iov_base;
+            message.payload.length = serializedOutput->iov_len;
 
-                pubsub_protocol_message_t message;
-                message.payload.payload = serializedOutput->iov_base;
-                message.payload.length = serializedOutput->iov_len;
+            void *payloadData = NULL;
+            size_t payloadLength = 0;
+            entry->protSer->encodePayload(entry->protSer->handle, &message, &payloadData, &payloadLength);
 
-                void *payloadData = NULL;
-                size_t payloadLength = 0;
-                entry->protSer->encodePayload(entry->protSer->handle, &message, &payloadData, &payloadLength);
+            if (metadata != NULL) {
+                message.metadata.metadata = metadata;
+                entry->protSer->encodeMetadata(entry->protSer->handle, &message, &entry->metadataBuffer, &entry->metadataBufferSize);
+            } else {
+                message.metadata.metadata = NULL;
+            }
 
-                if (metadata != NULL) {
-                    message.metadata.metadata = metadata;
-                    entry->protSer->encodeMetadata(entry->protSer->handle, &message, &entry->metadataBuffer, &entry->metadataBufferSize);
-                } else {
-                    message.metadata.metadata = NULL;
+            entry->protSer->encodeFooter(entry->protSer->handle, &message, &entry->footerBuffer, &entry->footerBufferSize);
+
+            message.header.msgId = msgTypeId;
+            message.header.seqNr = entry->seqNr;
+            message.header.msgMajorVersion = 0;
+            message.header.msgMinorVersion = 0;
+            message.header.payloadSize = payloadLength;
+            message.header.metadataSize = entry->metadataBufferSize;
+            message.header.payloadPartSize = payloadLength;
+            message.header.payloadOffset = 0;
+            message.header.isLastSegment = 1;
+            message.header.convertEndianess = 0;
+
+            // increase seqNr
+            entry->seqNr++;
+
+            entry->protSer->encodeHeader(entry->protSer->handle, &message, &entry->headerBuffer, &entry->headerBufferSize);
+
+            errno = 0;
+            bool sendOk;
+
+            if (bound->parent->zeroCopyEnabled) {
+
+                zmq_msg_t msg1; // Header
+                zmq_msg_t msg2; // Payload
+                zmq_msg_t msg3; // Metadata
+                zmq_msg_t msg4; // Footer
+                void *socket = zsock_resolve(sender->zmq.socket);
+                psa_zmq_zerocopy_free_entry *freeMsgEntry = malloc(sizeof(psa_zmq_zerocopy_free_entry));
+                freeMsgEntry->msgSer = entry->msgSer;
+                freeMsgEntry->serializedOutput = serializedOutput;
+                freeMsgEntry->serializedOutputLen = serializedOutputLen;
+
+                zmq_msg_init_data(&msg1, entry->headerBuffer, entry->headerBufferSize, psa_zmq_unlockData, entry);
+                //send header
+                int rc = zmq_msg_send(&msg1, socket, ZMQ_SNDMORE);
+                if (rc == -1) {
+                    L_WARN("Error sending header msg. %s", strerror(errno));
+                    zmq_msg_close(&msg1);
                 }
 
-                entry->protSer->encodeFooter(entry->protSer->handle, &message, &entry->footerBuffer, &entry->footerBufferSize);
-
-                message.header.msgId = msgTypeId;
-                message.header.seqNr = entry->seqNr;
-                message.header.msgMajorVersion = 0;
-                message.header.msgMinorVersion = 0;
-                message.header.payloadSize = payloadLength;
-                message.header.metadataSize = entry->metadataBufferSize;
-                message.header.payloadPartSize = payloadLength;
-                message.header.payloadOffset = 0;
-                message.header.isLastSegment = 1;
-                message.header.convertEndianess = 0;
-
-                // increase seqNr
-                entry->seqNr++;
-
-                entry->protSer->encodeHeader(entry->protSer->handle, &message, &entry->headerBuffer, &entry->headerBufferSize);
-
-                errno = 0;
-                bool sendOk;
-
-                if (bound->parent->zeroCopyEnabled) {
-
-                    zmq_msg_t msg1; // Header
-                    zmq_msg_t msg2; // Payload
-                    zmq_msg_t msg3; // Metadata
-                    zmq_msg_t msg4; // Footer
-                    void *socket = zsock_resolve(sender->zmq.socket);
-                    psa_zmq_zerocopy_free_entry *freeMsgEntry = malloc(sizeof(psa_zmq_zerocopy_free_entry));
-                    freeMsgEntry->msgSer = entry->msgSer;
-                    freeMsgEntry->serializedOutput = serializedOutput;
-                    freeMsgEntry->serializedOutputLen = serializedOutputLen;
-
-                    zmq_msg_init_data(&msg1, entry->headerBuffer, entry->headerBufferSize, psa_zmq_unlockData, entry);
-                    //send header
-                    int rc = zmq_msg_send(&msg1, socket, ZMQ_SNDMORE);
+                //send Payload
+                if (rc > 0) {
+                    int flag = ((entry->metadataBufferSize > 0)  || (entry->footerBufferSize > 0)) ? ZMQ_SNDMORE : 0;
+                    zmq_msg_init_data(&msg2, payloadData, payloadLength, psa_zmq_freeMsg, freeMsgEntry);
+                    rc = zmq_msg_send(&msg2, socket, flag);
                     if (rc == -1) {
-                        L_WARN("Error sending header msg. %s", strerror(errno));
-                        zmq_msg_close(&msg1);
+                        L_WARN("Error sending payload msg. %s", strerror(errno));
+                        zmq_msg_close(&msg2);
                     }
-
-                    //send Payload
-                    if (rc > 0) {
-                        int flag = ((entry->metadataBufferSize > 0)  || (entry->footerBufferSize > 0)) ? ZMQ_SNDMORE : 0;
-                        zmq_msg_init_data(&msg2, payloadData, payloadLength, psa_zmq_freeMsg, freeMsgEntry);
-                        rc = zmq_msg_send(&msg2, socket, flag);
-                        if (rc == -1) {
-                            L_WARN("Error sending payload msg. %s", strerror(errno));
-                            zmq_msg_close(&msg2);
-                        }
-                    }
-
-                    //send MetaData
-                    if (rc > 0 && entry->metadataBufferSize > 0) {
-                        int flag = (entry->footerBufferSize > 0 ) ? ZMQ_SNDMORE : 0;
-                        zmq_msg_init_data(&msg3, entry->metadataBuffer, entry->metadataBufferSize, NULL, NULL);
-                        rc = zmq_msg_send(&msg3, socket, flag);
-                        if (rc == -1) {
-                            L_WARN("Error sending metadata msg. %s", strerror(errno));
-                            zmq_msg_close(&msg3);
-                        }
-                    }
-
-                    //send Footer
-                    if (rc > 0 && entry->footerBufferSize > 0) {
-                        zmq_msg_init_data(&msg4, entry->footerBuffer, entry->footerBufferSize, NULL, NULL);
-                        rc = zmq_msg_send(&msg4, socket, 0);
-                        if (rc == -1) {
-                            L_WARN("Error sending footer msg. %s", strerror(errno));
-                            zmq_msg_close(&msg4);
-                        }
-                    }
-
-                    sendOk = rc > 0;
-                } else {
-                    //no zero copy
-                    zmsg_t *msg = zmsg_new();
-                    zmsg_addmem(msg, entry->headerBuffer, entry->headerBufferSize);
-                    zmsg_addmem(msg, payloadData, payloadLength);
-                    if (entry->metadataBufferSize > 0) {
-                        zmsg_addmem(msg, entry->metadataBuffer, entry->metadataBufferSize);
-                    }
-                    if (entry->footerBufferSize > 0) {
-                        zmsg_addmem(msg, entry->footerBuffer, entry->footerBufferSize);
-                    }
-                    int rc = zmsg_send(&msg, sender->zmq.socket);
-                    sendOk = rc == 0;
-
-                    if (!sendOk) {
-                        zmsg_destroy(&msg); //if send was not ok, no owner change -> destroy msg
-                    }
-
-                    // Note: serialized Payload is deleted by serializer
-                    if (payloadData && (payloadData != message.payload.payload)) {
-                        free(payloadData);
-                    }
-
-                    __atomic_store_n(&entry->dataLocked, false, __ATOMIC_RELEASE);
-                }
-                pubsubInterceptorHandler_invokePostSend(sender->interceptorsHandler, entry->msgSer->msgName, msgTypeId, inMsg, metadata);
-
-                if (message.metadata.metadata) {
-                    celix_properties_destroy(message.metadata.metadata);
-                }
-                if (!bound->parent->zeroCopyEnabled && serializedOutput) {
-                    entry->msgSer->freeSerializeMsg(entry->msgSer->handle, serializedOutput, serializedOutputLen);
                 }
 
-                if (sendOk) {
-                    sendCountUpdate = 1;
-                } else {
-                    sendErrorUpdate = 1;
-                    L_WARN("[PSA_ZMQ_TS] Error sending zmg. %s", strerror(errno));
+                //send MetaData
+                if (rc > 0 && entry->metadataBufferSize > 0) {
+                    int flag = (entry->footerBufferSize > 0 ) ? ZMQ_SNDMORE : 0;
+                    zmq_msg_init_data(&msg3, entry->metadataBuffer, entry->metadataBufferSize, NULL, NULL);
+                    rc = zmq_msg_send(&msg3, socket, flag);
+                    if (rc == -1) {
+                        L_WARN("Error sending metadata msg. %s", strerror(errno));
+                        zmq_msg_close(&msg3);
+                    }
                 }
+
+                //send Footer
+                if (rc > 0 && entry->footerBufferSize > 0) {
+                    zmq_msg_init_data(&msg4, entry->footerBuffer, entry->footerBufferSize, NULL, NULL);
+                    rc = zmq_msg_send(&msg4, socket, 0);
+                    if (rc == -1) {
+                        L_WARN("Error sending footer msg. %s", strerror(errno));
+                        zmq_msg_close(&msg4);
+                    }
+                }
+
+                sendOk = rc > 0;
+            } else {
+                //no zero copy
+                zmsg_t *msg = zmsg_new();
+                zmsg_addmem(msg, entry->headerBuffer, entry->headerBufferSize);
+                zmsg_addmem(msg, payloadData, payloadLength);
+                if (entry->metadataBufferSize > 0) {
+                    zmsg_addmem(msg, entry->metadataBuffer, entry->metadataBufferSize);
+                }
+                if (entry->footerBufferSize > 0) {
+                    zmsg_addmem(msg, entry->footerBuffer, entry->footerBufferSize);
+                }
+                int rc = zmsg_send(&msg, sender->zmq.socket);
+                sendOk = rc == 0;
+
+                if (!sendOk) {
+                    zmsg_destroy(&msg); //if send was not ok, no owner change -> destroy msg
+                }
+
+                // Note: serialized Payload is deleted by serializer
+                if (payloadData && (payloadData != message.payload.payload)) {
+                    free(payloadData);
+                }
+
+                __atomic_store_n(&entry->dataLocked, false, __ATOMIC_RELEASE);
+            }
+
+            if (message.metadata.metadata) {
+                celix_properties_destroy(message.metadata.metadata);
+            }
+            if (!bound->parent->zeroCopyEnabled && serializedOutput) {
+                entry->msgSer->freeSerializeMsg(entry->msgSer->handle, serializedOutput, serializedOutputLen);
+            }
+
+            if (sendOk) {
+                sendCountUpdate = 1;
+            } else {
+                sendErrorUpdate = 1;
+                L_WARN("[PSA_ZMQ_TS] Error sending zmg. %s", strerror(errno));
             }
         } else {
             serializationErrorUpdate = 1;

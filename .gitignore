@@ -21,10 +21,12 @@
 /.project
 .DS_Store
 .idea
+.vscode
 *.iml
 *.pyc
 *.enc
 *.pub
+*.png
 
 build
 cmake-build*

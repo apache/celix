@@ -15,9 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 
-find_package(CppUTest REQUIRED)
-include_directories(SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR})
-
 add_celix_bundle(rsa_dfi_tst_bundle
     VERSION 0.0.1
     SOURCES
@@ -52,7 +49,7 @@ target_link_libraries(test_rsa_dfi PRIVATE
 get_property(rsa_bundle_file TARGET rsa_dfi PROPERTY BUNDLE_FILE)
 get_property(calc_bundle_file TARGET calculator PROPERTY BUNDLE_FILE)
 get_property(calculator_shell_bundle_file TARGET calculator_shell PROPERTY BUNDLE_FILE)
-get_property(discovery_configured_bundle_file TARGET rsa_discovery_configured PROPERTY BUNDLE_FILE)
+get_property(discovery_bundle_file TARGET rsa_discovery PROPERTY BUNDLE_FILE)
 get_property(topology_manager_bundle_file TARGET Celix::rsa_topology_manager PROPERTY BUNDLE_FILE)
 get_property(tst_bundle_file TARGET rsa_dfi_tst_bundle PROPERTY BUNDLE_FILE)
 get_property(remote_example_bundle_file TARGET remote_example_service PROPERTY BUNDLE_FILE)

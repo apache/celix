@@ -1,0 +1,144 @@
+////
+ Licensed to the Apache Software Foundation (ASF) under one
+ or more contributor license agreements.  See the NOTICE file
+ distributed with this work for additional information
+ regarding copyright ownership.  The ASF licenses this file
+ to you under the Apache License, Version 2.0 (the
+ "License"); you may not use this file except in compliance
+ with the License.  You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing,
+ software distributed under the License is distributed on an
+ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  KIND, either express or implied.  See the License for the
+ specific language governing permissions and limitations
+ under the License.
+////
+
+= Async Remote Admin
+
+WARNING: The Async Remote Admin is still a work in progress.
+
+[plantuml]
+----
+@startuml
+class admin
+class discovery
+interface IHardcodedInterface {
+    + celix::Promise<int> add(int a, int b)
+    + celix::Promise<int> subtract(int a, int b)
+    + celix::Promise<std::string> toString(int a)
+}
+class HardcodedService
+class ImportedHardcodedService
+class ExportedHardcodedService
+class subscriber {
+    + int init()
+    + int receive()
+}
+class publisher {
+    + int localMsgTypeIdForMsgType()
+    + int send()
+}
+interface IImportedServiceFactory
+class HardcodedServiceFactory<InterfaceT, ImplementationT> {
+    + celix::dm::BaseComponent& create() // creates an instance of type ImplementationT
+}
+
+admin --> "1" discovery
+admin --> "0..*" IImportedServiceFactory
+HardcodedServiceFactory <|-- IImportedServiceFactory
+HardcodedServiceFactory --> "0..*" subscriber
+ImportedHardcodedService <|-- IHardcodedInterface
+ImportedHardcodedService --> "1" subscriber
+ImportedHardcodedService --> "1" publisher
+HardcodedService <|-- IHardcodedInterface
+ExportedHardcodedService --> "1" HardcodedService
+ExportedHardcodedService --> "1" subscriber
+ExportedHardcodedService --> "1" publisher
+@enduml
+----
+
+[plantuml]
+.RSA Design - Jan 2021
+----
+@startuml
+
+class client as "ClientBundle"
+
+class top as "AsyncTopologyManager" {
+    + void importEndpoint();
+    + void exportEndpoint();
+    - AsyncRemoteServiceAdmin& setupAsyncRSA();
+    - AsyncRemoteServiceAdmin _rsa;
+}
+
+class dis as "ConfiguredDiscoveryManager" {
+    + Endpoint& announceEndpoint();
+    + void discoverEndpoints(); // from JSON
+}
+
+class rsa as "AsyncRemoteServiceAdmin" {
+    + void importService(Endpoint& ep);
+    + void exportService(void* svc, properties* prop, long bundleId);
+    - vector<IServiceFactory> _factories;
+}
+
+interface isf as "IServiceFactory" {
+}
+
+class hsf as "HardcodedServiceFactory" <INTERFACE, IMPLEMENTATION> {
+    + BaseComponent& create();
+}
+
+class hs as "HardcodedService" {
+}
+
+class ehs as "ExportedHardcodedService" {
+}
+
+class ihs as "ImportedHardcodedService" {
+}
+
+interface ihi as "IHardcodedInterface" {
+    + celix::Promise<int> add(int lhs, int rhs);
+}
+
+package "celix pubsub" {
+    class sub as "subscriber" {
+        + int receive()
+    }
+
+    class pub as "publisher" {
+        + int send()
+    }
+}
+
+
+hs --|> ihi
+ihs -l|> ihi
+
+hsf -|> isf
+hsf --> ihi : //INTERFACE//
+hsf --> hs : //IMPLEMENTATION//
+
+ehs --> sub
+ehs --> pub
+ehs --> hs
+
+ihs -u-> sub
+ihs --> pub
+
+rsa --> isf
+
+top *-> rsa : creates & manages
+
+dis --> top : announces endpoints to
+
+top -u-> client : service import
+client --> top : service export
+
+@enduml
+----

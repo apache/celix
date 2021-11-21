@@ -17,6 +17,7 @@
 
 celix_subproject(SHELL_BONJOUR "Option to enable building the Bonjour Shell (shell access by chat clients)" OFF DEPS LAUNCHER shell)
 if (SHELL_BONJOUR)
+	message(WARNING "Celix::bonjour_shell is considered unstable, because develop of this bundle has been dormant for a while")
 	find_package(LibXml2 REQUIRED)
 	
 	#TODO create/add FindDNS_SD.cmake and use it (with required)
@@ -28,6 +29,7 @@ if (SHELL_BONJOUR)
 
 	add_celix_bundle(bonjour_shell
 		VERSION "1.0.0"
+		FILENAME celix_bonjour_shell
 		GROUP "Celix/Shell"
 		SOURCES
 		 	private/src/activator.c

@@ -300,23 +300,37 @@ void celix_framework_bundleEntry_decreaseUseCount(celix_framework_bundle_entry_t
  */
 celix_framework_bundle_entry_t* celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(celix_framework_t *fw, long bndId);
 
-/**
- * Start a bundle and ensure that this is not done on the Celix event thread.
- * Will spawn a thread if needed.
- */
-celix_status_t celix_framework_startBundleOnANonCelixEventThread(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry);
+
+
+ /**
+  * Start a bundle and ensure that this is not done on the Celix event thread.
+  * Will spawn a thread if needed.
+  * @param fw The Celix framework
+  * @param bndEntry A bnd entry
+  * @param forceSpawnThread If the true, the start bundle will always be done on a spawn thread
+  * @return CELIX_SUCCESS of the call went alright.
+  */
+celix_status_t celix_framework_startBundleOnANonCelixEventThread(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry, bool forceSpawnThread);
 
 /**
  * Stop a bundle and ensure that this is not done on the Celix event thread.
  * Will spawn a thread if needed.
+ * @param fw The Celix framework
+ * @param bndEntry A bnd entry
+ * @param forceSpawnThread If the true, the start bundle will always be done on a spawn thread
+ * @return CELIX_SUCCESS of the call went alright.
  */
-celix_status_t celix_framework_stopBundleOnANonCelixEventThread(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry);
+celix_status_t celix_framework_stopBundleOnANonCelixEventThread(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry, bool forceSpawnThread);
 
 /**
  * Uninstall (and if needed stop) a bundle and ensure that this is not done on the Celix event thread.
  * Will spawn a thread if needed.
+ * @param fw The Celix framework
+ * @param bndEntry A bnd entry
+ * @param forceSpawnThread If the true, the start bundle will always be done on a spawn thread
+ * @return CELIX_SUCCESS of the call went alright.
  */
-celix_status_t celix_framework_uninstallBundleOnANonCelixEventThread(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry);
+celix_status_t celix_framework_uninstallBundleOnANonCelixEventThread(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry, bool forceSpawnThread);
 
 
 /**
@@ -337,7 +351,7 @@ celix_status_t celix_framework_startBundleEntry(celix_framework_t* fw, celix_fra
 celix_status_t celix_framework_stopBundleEntry(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry);
 
 /**
- * Uinstall a bundle. Cannot be called on the Celix event thread.
+ * Uninstall a bundle. Cannot be called on the Celix event thread.
  */
 celix_status_t celix_framework_uninstallBundleEntry(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry);
 

@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-set(PACKAGE_VERSION "0.0.1")
+set(PACKAGE_VERSION "0.1.0")
 
 # Check whether the requested PACKAGE_FIND_VERSION is compatible
 if("${PACKAGE_VERSION}" VERSION_LESS "${PACKAGE_FIND_VERSION}")

@@ -7,10 +7,10 @@
 
 #include "celix_bundle.h"
 
-#include <pubsub_endpoint.h>
-#include <pubsub_admin.h>
-#include <pubsub_protocol.h>
-#include <pubsub_message_serialization_service.h>
+#include "pubsub_endpoint.h"
+#include "pubsub_protocol.h"
+#include "pubsub_admin.h"
+#include "pubsub_message_serialization_marker.h"
 
 
 struct ps_utils_serializer_selection_data {
@@ -36,22 +36,19 @@ typedef struct ps_utils_retrieve_topic_properties_data {
 static long getPSSerializer(celix_bundle_context_t *ctx, const char *requested_serializer) {
     long svcId = -1L;
 
+    celix_service_filter_options_t opts = CELIX_EMPTY_SERVICE_FILTER_OPTIONS;
+    opts.serviceName = PUBSUB_MESSAGE_SERIALIZATION_MARKER_NAME;
+
     if (requested_serializer != NULL) {
         char filter[512];
-        int written = snprintf(filter, 512, "(%s=%s)", PUBSUB_MESSAGE_SERIALIZATION_SERVICE_SERIALIZATION_TYPE_PROPERTY, requested_serializer);
+        int written = snprintf(filter, 512, "(%s=%s)", PUBSUB_MESSAGE_SERIALIZATION_MARKER_SERIALIZATION_TYPE_PROPERTY, requested_serializer);
         if (written > 512) {
             fprintf(stderr, "Cannot create serializer filter. need more than 512 char array\n");
         } else {
-            celix_service_filter_options_t opts = CELIX_EMPTY_SERVICE_FILTER_OPTIONS;
-            opts.serviceName = PUBSUB_MESSAGE_SERIALIZATION_SERVICE_NAME;
             opts.filter = filter;
             svcId = celix_bundleContext_findServiceWithOptions(ctx, &opts);
         }
     } else {
-        celix_service_filter_options_t opts = CELIX_EMPTY_SERVICE_FILTER_OPTIONS;
-        opts.serviceName = PUBSUB_MESSAGE_SERIALIZATION_SERVICE_NAME;
-        opts.ignoreServiceLanguage = true;
-
         //note findService will automatically return the highest ranking service id
         svcId = celix_bundleContext_findServiceWithOptions(ctx, &opts);
     }
@@ -141,25 +138,23 @@ double pubsub_utils_matchPublisher(
     const char *requested_serializer = celix_properties_get(ep, PUBSUB_ENDPOINT_SERIALIZER, NULL);
     long serializerSvcId = getPSSerializer(ctx, requested_serializer);
 
-    if (serializerSvcId < 0) {
-        score = PUBSUB_ADMIN_NO_MATCH_SCORE; //no serializer, no match
-    }
-
     if (outSerializerSvcId != NULL) {
         *outSerializerSvcId = serializerSvcId;
     }
 
+    long protocolSvcId = -1;
     if (matchProtocol) {
         const char *requested_protocol = celix_properties_get(ep, PUBSUB_ENDPOINT_PROTOCOL, NULL);
-        long protocolSvcId = getPSProtocol(ctx, requested_protocol);
-
-        if (protocolSvcId < 0) {
-            score = PUBSUB_ADMIN_NO_MATCH_SCORE;
-        }
-
+        protocolSvcId = getPSProtocol(ctx, requested_protocol);
         if (outProtocolSvcId != NULL) {
             *outProtocolSvcId = protocolSvcId;
         }
+    }
+
+    if (serializerSvcId < 0) {
+        score = PUBSUB_ADMIN_NO_MATCH_SCORE;
+    } else if (matchProtocol && protocolSvcId < 0) {
+        score = PUBSUB_ADMIN_NO_MATCH_SCORE;
     }
 
     if (outTopicProperties != NULL) {
@@ -257,7 +252,7 @@ bool pubsub_utils_matchEndpoint(
         serMatch = serializerSvcId >= 0;
 
         if(!serMatch) {
-            celix_logHelper_log(logHelper, CELIX_LOG_LEVEL_ERROR, "Matching endpoint for technology %s but couldn't get serializer %i", configured_admin, configured_serializer);
+            celix_logHelper_log(logHelper, CELIX_LOG_LEVEL_ERROR, "Matching endpoint for technology %s but couldn't get serializer %s", configured_admin, configured_serializer);
         }
     }
 
@@ -272,7 +267,7 @@ bool pubsub_utils_matchEndpoint(
             protMatch = protocolSvcId >= 0;
 
             if(!protMatch) {
-                celix_logHelper_log(logHelper, CELIX_LOG_LEVEL_ERROR, "Matching endpoint for technology %s but couldn't get protocol %i", configured_admin, configured_protocol);
+                celix_logHelper_log(logHelper, CELIX_LOG_LEVEL_ERROR, "Matching endpoint for technology %s but couldn't get protocol %s", configured_admin, configured_protocol);
             }
         }
         match = match && protMatch;

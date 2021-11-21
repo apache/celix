@@ -52,7 +52,10 @@ namespace celix {
 
         void cancel() override {
             std::lock_guard lock{mutex};
-            cancelled = true;
+            if (!done) {
+                cancelled = true;
+                done = true;
+            }
             cond.notify_all();
         }
 
@@ -108,9 +111,12 @@ namespace celix {
         void wait() override {
             bool done = false;
             while (!done) {
-                std::lock_guard<std::mutex> lck{mutex};
+                std::unique_lock lck{mutex};
                 removeCompletedFutures();
                 done = futures.empty();
+                if (!done) {
+                    cond.wait_for(lck, std::chrono::milliseconds{1});
+                }
             }
         }
     private:
@@ -121,6 +127,7 @@ namespace celix {
                 if (it->first->isDone()) {
                     //remove scheduled future
                     it = futures.erase(it);
+                    cond.notify_all();
                 } else {
                     ++it;
                 }
@@ -128,6 +135,7 @@ namespace celix {
         }
 
         std::mutex mutex{}; //protect futures.
+        std::condition_variable cond{};
         std::unordered_map<std::shared_ptr<DefaultDelayedScheduledFuture>, std::future<void>> futures{};
     };
 }

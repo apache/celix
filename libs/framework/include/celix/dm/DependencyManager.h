@@ -127,7 +127,8 @@ namespace celix { namespace dm {
         void start();
 
         /**
-         * Wait for an empty Celix event queue.
+         * @brief Wait for an empty Celix event queue.
+         *
          * Should not be called on the Celix event queue thread.
          *
          * Can be used to ensure that all created/updated components are completely processed (services registered
@@ -136,15 +137,35 @@ namespace celix { namespace dm {
         void wait() const;
 
         /**
-         * Removes a component from the  Dependency Manager and destroys it
+         * @brief Wait (if not called on the Celix event thread) for an empty Celix event queue
+         *
+         * Can be used to ensure that all created/updated components are completely processed (services registered
+         * and/or service trackers are created).
          */
-        template<typename T>
-        void destroyComponent(Component<T> &component);
+        void waitIfAble() const;
+
+        /**
+         * @brief Removes a component from the Dependency Manager and wait until the component is destroyed.
+         *
+         * The use of removeComponent is preferred.
+         */
+        void destroyComponent(BaseComponent &component);
+
+
+        /**
+         * @brief Clears the dependency manager, which removes all configured components and waits until all components
+         * are removed from the dependency manager.
+         *
+         * Should not be called from the Celix event thread.
+         */
+        void clear();
 
         /**
          * Clears the dependency manager, which removes all configured components.
+         *
+         * This is done async and this can be called from the Celix event thread.
          */
-        void clear();
+        void clearAsync();
 
         /**
          * Stops the Dependency Manager
@@ -166,10 +187,22 @@ namespace celix { namespace dm {
         std::shared_ptr<Component<T>> findComponent(const std::string& uuid) const;
 
         /**
-         * Removes component with provided UUID from the dependency manager.
+         * @brief Removes component with provided UUID from the dependency manager and wail until the component is destroyed
+         *
+         * Should not be called from the Celix event thread.
+         *
          * @return whether the component is found and removed.
          */
         bool removeComponent(const std::string& uuid);
+
+        /**
+         * @brief Removes a component from the Dependency Manager and destroys it async.
+         *
+         * Can be called from the Celix event thread.
+         *
+         * @return whether the component is found and removed.
+         */
+        bool removeComponentAsync(const std::string& uuid);
 
         /**
          * Get Dependency Management info for this component manager.

@@ -208,6 +208,7 @@ namespace celix {
                         {
                             std::lock_guard<std::mutex> lck{reg->mutex};
                             reg->state = ServiceRegistrationState::UNREGISTERED;
+                            reg->svc.reset();
                         }
                         for (const auto &cb : reg->onUnregisteredCallbacks) {
                             cb(*reg);
@@ -229,6 +230,7 @@ namespace celix {
                     {
                         std::lock_guard<std::mutex> lck{mutex};
                         state = ServiceRegistrationState::UNREGISTERED;
+                        svc.reset();
                     }
                     for (const auto& cb: onUnregisteredCallbacks) {
                         cb(*this);
@@ -262,14 +264,14 @@ namespace celix {
                 std::vector<std::function<void(ServiceRegistration&)>> _onRegisteredCallbacks,
                 std::vector<std::function<void(ServiceRegistration&)>> _onUnregisteredCallbacks) :
                 cCtx{std::move(_cCtx)},
-                svc{std::move(_svc)},
                 name{std::move(_name)},
                 version{std::move(_version)},
                 properties{std::move(_properties)},
                 registerAsync{_registerAsync},
                 unregisterAsync{_unregisterAsync},
                 onRegisteredCallbacks{std::move(_onRegisteredCallbacks)},
-                onUnregisteredCallbacks{std::move(_onUnregisteredCallbacks)} {}
+                onUnregisteredCallbacks{std::move(_onUnregisteredCallbacks)},
+                svc{std::move(_svc)} {}
 
 
         /**
@@ -333,7 +335,6 @@ namespace celix {
         }
 
         const std::shared_ptr<celix_bundle_context_t> cCtx;
-        const std::shared_ptr<void> svc;
         const std::string name;
         const std::string version;
         const celix::Properties properties;
@@ -344,6 +345,7 @@ namespace celix {
 
         mutable std::mutex mutex{}; //protects below
         long svcId{-1};
+        std::shared_ptr<void> svc;
         ServiceRegistrationState state{ServiceRegistrationState::REGISTERING};
         std::weak_ptr<ServiceRegistration> self{}; //weak ptr to self, so that callbacks can receive a shared ptr
     };

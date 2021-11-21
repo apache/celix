@@ -21,6 +21,7 @@ add_subdirectory(utils)
 add_subdirectory(dfi)
 add_subdirectory(etcdlib)
 add_subdirectory(promises)
+add_subdirectory(pushstreams)
 
 add_subdirectory(framework)
 

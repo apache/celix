@@ -51,10 +51,10 @@ celix_std_commands_t* celix_stdCommands_create(celix_bundle_context_t* ctx) {
             (struct celix_shell_command_register_entry) {
                     .exec = lbCommand_execute,
                     .name = "celix::lb",
-                    .description = "list bundles. Default only the groupless bundles are listed. Use -a to list all bundles." \
-                            "\nIf a group string is provided only bundles matching the group string will be listed." \
+                    .description = "list bundles. Default all bundles are listed." \
+                            "\nIf a group string is provided only bundles where the bundle group matching group string will be listed." \
                             "\nUse -l to print the bundle locations.\nUse -s to print the bundle symbolic names\nUse -u to print the bundle update location.",
-                    .usage = "lb [-l | -s | -u | -a] [group]"
+                    .usage = "lb [-l | -s | -u] [group]"
             };
     commands->std_commands[1] =
             (struct celix_shell_command_register_entry) {
@@ -95,8 +95,8 @@ celix_std_commands_t* celix_stdCommands_create(celix_bundle_context_t* ctx) {
             (struct celix_shell_command_register_entry) {
                     .exec = helpCommand_execute,
                     .name = "celix::help",
-                    .description = "display available commands and description.",
-                    .usage = "help <command>]"
+                    .description = "display available commands or detail info if a command argument is provided",
+                    .usage = "help [<command>]"
             };
     commands->std_commands[7] =
             (struct celix_shell_command_register_entry) {

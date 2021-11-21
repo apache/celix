@@ -1,0 +1,159 @@
+////
+ Licensed to the Apache Software Foundation (ASF) under one
+ or more contributor license agreements.  See the NOTICE file
+ distributed with this work for additional information
+ regarding copyright ownership.  The ASF licenses this file
+ to you under the Apache License, Version 2.0 (the
+ "License"); you may not use this file except in compliance
+ with the License.  You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing,
+ software distributed under the License is distributed on an
+ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  KIND, either express or implied.  See the License for the
+ specific language governing permissions and limitations
+ under the License.
+////
+
+= PushStreams
+
+WARNING: The PushStreams library is still a work in progress.
+
+[plantuml]
+.Class diagram of celix::PushStreams::PushStream
+----
+@startuml
+
+interface IPushEventConsumer<T> {
+    accept(const PushEvent<T>& event)
+}
+
+class PushEventConsumer<T> {
+    accept(const PushEvent<T>& event)
+    std::function eventFunction
+}
+
+class StreamPushEventConsumer<T> {
+    accept(const PushEvent<T>& event)
+}
+
+
+PushEventConsumer --|> IPushEventConsumer
+StreamPushEventConsumer --|> IPushEventConsumer
+
+class PromiseFactory
+class PushStream<T> <<abstract>> {
+        Promise<void> forEach(ForEachFunction func);
+        PushStream<T>& filter(PredicateFunction predicate);
+        PushStream<R>& map(std::function<R(const T&)>);
+        std::vector<std::shared_ptr<PushStream<T>>> split(std::vector<PredicateFunction> predicates);
+        PushStream<T>& onClose(CloseFunction closeFunction);
+        PushStream<T>& onError(ErrorFunction errorFunction);
+        void close();
+}
+
+class UnbufferedPushStream<T>
+class BufferedPushStream<T>
+class IntermediatePushStream<T, R>
+
+UnbufferedPushStream --|> PushStream
+IntermediatePushStream --|> PushStream
+BufferedPushStream  --|> UnbufferedPushStream
+StreamPushEventConsumer --> PushStream : weak_ptr
+
+PushStream --> PromiseFactory
+PushStream --> PushEventConsumer : nextEvent
+
+@enduml
+----
+
+[plantuml]
+.Class diagram of celix::PushStreams::EventSource
+----
+@startuml
+
+interface IPushEventSource<T> {
+    virtual void open(std::shared_ptr<IPushEventConsumer<T>> pec);
+}
+
+class AbstractEventSource<T> {
+    void publish(const T& event);
+    celix::Promise<void> connectPromise();
+    void open(std::shared_ptr<IPushEventConsumer<T>> _eventConsumer);
+    bool isConnected();
+    void close() override;
+    void execute(std::function<void()> task) = 0;
+}
+class SimplePushEventSource<T> {
+   void execute(std::function<void()> task)
+}
+class SynchronousPushEventSource<T> {
+   void execute(std::function<void()> task)
+}
+
+AbstractEventSource --|> IPushEventSource
+SimplePushEventSource --|> AbstractEventSource
+SynchronousPushEventSource --|> AbstractEventSource
+
+@enduml
+----
+
+[plantuml]
+.Class diagram of celix::PushStreams::PushStreamProvider
+----
+@startuml
+
+    class PushStreamProvider {
+        [[nodiscard]] std::shared_ptr<celix::SimplePushEventSource<T>> createSimpleEventSource();
+        [[nodiscard]] std::shared_ptr<celix::SynchronousPushEventSource<T>> createSynchronousEventSource();
+        [[nodiscard]] std::shared_ptr<celix::PushStream<T>> createUnbufferedStream(std::shared_ptr<IPushEventSource<T>> eventSource);
+        [[nodiscard]] std::shared_ptr<celix::PushStream<T>> createStream(std::shared_ptr<celix::IPushEventSource<T>> eventSource);
+    }
+    note left
+        Design assumes that user takes
+        shared ownership of shared_ptr
+    end note
+@enduml
+----
+
+
+Sequence below
+
+[plantuml]
+.Sequence
+----
+@startuml
+
+actor Test
+participant PushStreamProvider as psp
+participant SimpleEventSource as ses
+participant UnbufferedPushStream as ubps
+participant IntermediatePushStream as ips
+
+Test --> psp: createSimpleEventSource
+psp -> ses ** : create
+Test --> psp: createStream(simleEventSource)
+psp -> ubps ** : create
+Test -> ubps: filter: ips
+ubps -> ips ** : create
+ubps -> ubps : setPredicateWithDownStream
+Test -> ips: forEach (f)
+ips-> ips: build
+activate ips
+ips -> ses : open
+note left
+    lambla provided by PushStreamProvider
+end note
+
+@enduml
+----
+
+
+Closing strategy.
+
+Streams, and sources have close() method.
+Streams, will send downstream close event, the sink will initiate an upstream close.
+Sources will close streams by sending close event, this will lead to an upstream close and upstream in sink
+

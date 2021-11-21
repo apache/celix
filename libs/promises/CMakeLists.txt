@@ -28,7 +28,6 @@ if (NOT COMMAND celix_subproject)
 
     include(GNUInstallDirs)
 
-    set(CMAKE_CXX_FLAGS "-std=c++17 ${CMAKE_CXX_FLAGS}")
     set(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG ${CMAKE_CXX_FLAGS_DEBUG}")
 
     set(PROMISES_STANDALONE ON)
@@ -38,6 +37,7 @@ else ()
 endif ()
 
 if (PROMISES OR PROMISES_STANDALONE)
+    message("The Celix::Promises implementation is still experiment and the api and behaviour will probably still change.")
     find_package(Threads)
 
     add_library(Promises INTERFACE)
@@ -46,7 +46,6 @@ if (PROMISES OR PROMISES_STANDALONE)
         $<INSTALL_INTERFACE:include/celix/promises>
     )
     target_link_libraries(Promises INTERFACE Threads::Threads)
-    target_compile_options(Promises INTERFACE -std=c++17) #Note -frtti needed for TBB
     add_library(Celix::Promises ALIAS Promises)
 
     add_executable(PromiseExamples src/PromiseExamples.cc)

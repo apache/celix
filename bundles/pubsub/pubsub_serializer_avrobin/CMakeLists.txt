@@ -36,7 +36,7 @@ target_link_libraries(celix_pubsub_serializer_avrobin PRIVATE Celix::pubsub_spi 
 
 install_celix_bundle(celix_pubsub_serializer_avrobin EXPORT celix COMPONENT pubsub)
 
-add_library(Celix::pubsub_serializer_avrobin ALIAS celix_pubsub_serializer_avrobin)
+add_library(Celix::celix_pubsub_serializer_avrobin ALIAS celix_pubsub_serializer_avrobin)
 
 if (ENABLE_TESTING)
     add_subdirectory(gtest)

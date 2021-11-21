@@ -734,6 +734,58 @@ function(celix_bundle_description BUNDLE DESC)
     set_target_properties(${BUNDLE} PROPERTIES "BUNDLE_DESCRIPTION" ${DESC})
 endfunction()
 
+#[[
+Get bundle filename from an (imported) bundle target taking into account the
+used CMAKE_BUILD_TYPE and available bundle configurations.
+
+celix_get_bundle_filename(<bundle_target> VARIABLE_NAME)
+
+Example: celix_get_bundle_filename(Celix::shell SHELL_BUNDLE_FILENAME)
+
+]]
+function(celix_get_bundle_filename)
+    if (TARGET ${ARGV0})
+        get_target_property(_IMP ${ARGV0} BUNDLE_IMPORTED)
+        if (_IMP)
+            _celix_extract_imported_bundle_info(${ARGV0})
+            set(${ARGV1} ${BUNDLE_FILENAME} PARENT_SCOPE)
+        else ()
+            get_target_property(BF ${ARGV0} BUNDLE_FILENAME)
+            set(${ARGV1} ${BF} PARENT_SCOPE)
+        endif ()
+    else ()
+        message(FATAL_ERROR "Provided argument is not a CMake target: ${ARGV0}")
+    endif ()
+endfunction ()
+
+#[[
+Get bundle file (absolute path to a bundle) from an (imported) bundle
+target taking into account the used CMAKE_BUILD_TYPE and available
+bundle configurations.
+
+celix_get_bundle_file(<bundle_target> VARIABLE_NAME)
+
+Example: celix_get_bundle_file(Celix::shell SHELL_BUNDLE_FILE)
+
+]]
+function(celix_get_bundle_file)
+    if (TARGET ${ARGV0})
+        get_target_property(_IMP ${ARGV0} BUNDLE_IMPORTED)
+        if (_IMP)
+            _celix_extract_imported_bundle_info(${ARGV0})
+            set(${ARGV1} ${BUNDLE_FILE} PARENT_SCOPE)
+            unset(BUNDLE_FILE)
+            unset(BUNDLE_FILENAME)
+        else ()
+            get_target_property(BF ${ARGV0} BUNDLE_FILE)
+            set(${ARGV1} ${BF} PARENT_SCOPE)
+        endif ()
+    else ()
+        message(FATAL_ERROR "Provided argument is not a CMake target: ${ARGV0}")
+    endif ()
+endfunction ()
+
+
 function(install_bundle)
     message(DEPRECATION "install_bundle is deprecated, use install_celix_bundle instead.")
     install_celix_bundle(${ARGN})
@@ -929,63 +981,6 @@ endforeach()
         install(FILES "${GENERIC_CONF_FILE}" DESTINATION ${EXPORT_DESTINATION} RENAME ${BASE_EXPORT_FILE}.cmake)
     endif ()
 endfunction()
-
-#[[
-Get bundle file (absolute path to bundle) from an (imported) bundle
-target taking into account the used CMAKE_BUILD_TYPE and available
-bundle configurations.
-
-celix_get_bundle_file(<bundle_target> VARIABLE_NAME)
-
-Example: celix_get_bundle_file(Celix::shell SHELL_BUNDLE_FILE)
-
-]]
-function(celix_get_bundle_file)
-
-if (TARGET ${ARGV0})
-    get_target_property(_IMP ${ARGV0} BUNDLE_IMPORTED)
-    if (_IMP)
-        _celix_extract_imported_bundle_info(${ARGV0})
-        set(${ARGV1} ${BUNDLE_FILE} PARENT_SCOPE)
-        unset(BUNDLE_FILE)
-        unset(BUNDLE_FILENAME)
-    else ()
-        get_target_property(BF ${ARGV0} BUNDLE_FILE)
-        set(${ARGV1} ${BF} PARENT_SCOPE)
-    endif ()
-else ()
-    message(FATAL_ERROR "Provided argument is not a CMake target: ${ARGV0}")
-endif ()
-
-endfunction ()
-
-#[[
-Get bundle filename from an (imported) bundle target taking into account the
-used CMAKE_BUILD_TYPE and available bundle configurations.
-
-celix_get_bundle_filename(<bundle_target> VARIABLE_NAME)
-
-Example: celix_get_bundle_filename(Celix::shell SHELL_BUNDLE_FILENAME)
-
-]]
-function(celix_get_bundle_filename)
-
-if (TARGET ${ARGV0})
-    get_target_property(_IMP ${ARGV0} BUNDLE_IMPORTED)
-    if (_IMP)
-        _celix_extract_imported_bundle_info(${ARGV0})
-        set(${ARGV1} ${BUNDLE_FILENAME} PARENT_SCOPE)
-    else ()
-        get_target_property(BF ${ARGV0} BUNDLE_FILENAME)
-        set(${ARGV1} ${BF} PARENT_SCOPE)
-    endif ()
-else ()
-    message(FATAL_ERROR "Provided argument is not a CMake target: ${ARGV0}")
-endif ()
-
-endfunction ()
-
-
 
 
 ######################################### "Private" function ###########################################################

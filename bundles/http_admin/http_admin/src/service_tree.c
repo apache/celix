@@ -16,13 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * service_tree.c
- *
- *  \date       Jun 19, 2019
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
 
 #include <stdlib.h>
 #include <stdbool.h> //for `bool`
@@ -291,13 +284,13 @@ service_tree_node_t *findServiceNodeInTree(service_tree_t *svc_tree, const char 
     char *uri_cpy;
     bool tree_not_empty = false;
 
-    if(svc_tree != NULL && uri != NULL) {
+    if (svc_tree != NULL && uri != NULL) {
         tree_not_empty = ((bool) (svc_tree->tree_svc_count | svc_tree->tree_node_count)
                                & (svc_tree->root_node != NULL));
         current = svc_tree->root_node;
     }
 
-    if(tree_not_empty){
+    if (tree_not_empty) {
         if(strcmp(current->svc_data->sub_uri, "root") == 0)
         {
             asprintf(&uri_cpy, "%s%s", "root", uri);
@@ -307,10 +300,12 @@ service_tree_node_t *findServiceNodeInTree(service_tree_t *svc_tree, const char 
 
         char *uri_token = strtok_r(uri_cpy, "/", &save_ptr);
         //Check for horizontal matches for the first token
-        while(current != NULL) {
-            if(strcmp(current->svc_data->sub_uri, uri_token) == 0){
+        while (current != NULL) {
+            if (uri_token == NULL) {
+                current = NULL;
+            } else if (strcmp(current->svc_data->sub_uri, uri_token) == 0){
                 //Save current node to comply with OSGI Http Whiteboard Specification
-                if(current->svc_data->service != NULL) {
+                if (current->svc_data->service != NULL) {
                     found_node = current;
                 }
                 break; //Break out of while loop, keep 'current' pointer
@@ -320,20 +315,20 @@ service_tree_node_t *findServiceNodeInTree(service_tree_t *svc_tree, const char 
         }
 
         //Check also in vertical direction for the remaining tokens
-        if(current != NULL) {
+        if (current != NULL) {
             uri_token = strtok_r(NULL, "/", &save_ptr);
-            if(uri_token != NULL && current->children != NULL){
+            if (uri_token != NULL && current->children != NULL){
                 current = current->children;
-                while(current != NULL) {
+                while (current != NULL) {
                     //Match for current sub URI with URI token
                     if (current->svc_data->sub_uri != NULL && strcmp(current->svc_data->sub_uri, uri_token) == 0) {
                         //Save current node to comply with OSGI Http Whiteboard Specification
-                        if(current->svc_data->service != NULL) {
+                        if (current->svc_data->service != NULL) {
                             found_node = current;
                         }
 
                         uri_token = strtok_r(NULL, "/", &save_ptr);
-                        if(uri_token != NULL && current->children != NULL) {
+                        if (uri_token != NULL && current->children != NULL) {
                             current = current->children;
                         }
                         else {

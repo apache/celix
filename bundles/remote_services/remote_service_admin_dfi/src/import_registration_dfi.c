@@ -34,12 +34,11 @@ struct import_registration {
     const char *classObject; //NOTE owned by endpoint
     version_pt version;
 
-    celix_thread_mutex_t mutex; //protects send & sendhandle
     send_func_type send;
     void *sendHandle;
 
-    service_factory_pt factory;
-    service_registration_t *factoryReg;
+    celix_service_factory_t factory;
+    long factorySvcId;
 
     hash_map_pt proxies; //key -> bundle, value -> service_proxy
     celix_thread_mutex_t proxiesMutex; //protects proxies
@@ -64,34 +63,37 @@ static void importRegistration_destroyProxy(struct service_proxy *proxy);
 static void importRegistration_clearProxies(import_registration_t *import);
 static const char* importRegistration_getUrl(import_registration_t *reg);
 static const char* importRegistration_getServiceName(import_registration_t *reg);
+static void* importRegistration_getService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties);
+void importRegistration_ungetService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties);
 
-celix_status_t importRegistration_create(celix_bundle_context_t *context, endpoint_description_t *endpoint, const char *classObject, const char* serviceVersion, FILE *logFile, import_registration_t **out) {
+celix_status_t importRegistration_create(
+        celix_bundle_context_t *context,
+        endpoint_description_t *endpoint,
+        const char *classObject,
+        const char* serviceVersion,
+        send_func_type sendFn,
+        void* sendFnHandle,
+        FILE *logFile,
+        import_registration_t **out) {
     celix_status_t status = CELIX_SUCCESS;
     import_registration_t *reg = calloc(1, sizeof(*reg));
+    reg->context = context;
+    reg->endpoint = endpoint;
+    reg->classObject = classObject;
+    reg->send = sendFn;
+    reg->sendHandle = sendFnHandle;
+    reg->proxies = hashMap_create(NULL, NULL, NULL, NULL);
 
-    if (reg != NULL) {
-        reg->factory = calloc(1, sizeof(*reg->factory));
-    }
+    remoteInterceptorsHandler_create(context, &reg->interceptorsHandler);
 
-    if (reg != NULL && reg->factory != NULL) {
-        reg->context = context;
-        reg->endpoint = endpoint;
-        reg->classObject = classObject;
-        reg->proxies = hashMap_create(NULL, NULL, NULL, NULL);
+    celixThreadMutex_create(&reg->proxiesMutex, NULL);
+    status = version_createVersionFromString((char*)serviceVersion,&(reg->version));
 
-        remoteInterceptorsHandler_create(context, &reg->interceptorsHandler);
-
-        celixThreadMutex_create(&reg->mutex, NULL);
-        celixThreadMutex_create(&reg->proxiesMutex, NULL);
-        status = version_createVersionFromString((char*)serviceVersion,&(reg->version));
-
-        reg->factory->handle = reg;
-        reg->factory->getService = (void *)importRegistration_getService;
-        reg->factory->ungetService = (void *)importRegistration_ungetService;
-        reg->logFile = logFile;
-    } else {
-        status = CELIX_ENOMEM;
-    }
+    reg->factorySvcId = -1;
+    reg->factory.handle = reg;
+    reg->factory.getService = importRegistration_getService;
+    reg->factory.ungetService = importRegistration_ungetService;
+    reg->logFile = logFile;
 
 
     if (status == CELIX_SUCCESS) {
@@ -102,18 +104,6 @@ celix_status_t importRegistration_create(celix_bundle_context_t *context, endpoi
     }
 
     return status;
-}
-
-
-celix_status_t importRegistration_setSendFn(import_registration_t *reg,
-                                            send_func_type send,
-                                            void *handle) {
-    celixThreadMutex_lock(&reg->mutex);
-    reg->send = send;
-    reg->sendHandle = handle;
-    celixThreadMutex_unlock(&reg->mutex);
-
-    return CELIX_SUCCESS;
 }
 
 static void importRegistration_clearProxies(import_registration_t *import) {
@@ -132,56 +122,44 @@ static void importRegistration_clearProxies(import_registration_t *import) {
     }
 }
 
+static void importRegistration_destroyCallback(void* data) {
+    import_registration_t* import = data;
+    importRegistration_clearProxies(import);
+    if (import->proxies != NULL) {
+        hashMap_destroy(import->proxies, false, false);
+        import->proxies = NULL;
+    }
+
+    remoteInterceptorsHandler_destroy(import->interceptorsHandler);
+
+    pthread_mutex_destroy(&import->proxiesMutex);
+
+    if (import->version != NULL) {
+        version_destroy(import->version);
+    }
+    free(import);
+}
+
 void importRegistration_destroy(import_registration_t *import) {
     if (import != NULL) {
-        if (import->proxies != NULL) {
-            hashMap_destroy(import->proxies, false, false);
-            import->proxies = NULL;
+        if (import->factorySvcId >= 0) {
+            celix_bundleContext_unregisterServiceAsync(import->context, import->factorySvcId, import, importRegistration_destroyCallback);
+        } else {
+            importRegistration_destroyCallback(import);
         }
-
-        remoteInterceptorsHandler_destroy(import->interceptorsHandler);
-
-        pthread_mutex_destroy(&import->mutex);
-        pthread_mutex_destroy(&import->proxiesMutex);
-
-        if (import->factory != NULL) {
-            free(import->factory);
-        }
-
-        if(import->version!=NULL){
-        	version_destroy(import->version);
-        }
-        free(import);
     }
 }
 
 celix_status_t importRegistration_start(import_registration_t *import) {
-    celix_status_t  status = CELIX_SUCCESS;
-    if (import->factoryReg == NULL && import->factory != NULL) {
-        celix_properties_t *props =  celix_properties_copy(import->endpoint->properties);
-        status = bundleContext_registerServiceFactory(import->context, (char *)import->classObject, import->factory, props, &import->factoryReg);
-    } else {
-        status = CELIX_ILLEGAL_STATE;
-    }
-    return status;
+    celix_properties_t *props =  celix_properties_copy(import->endpoint->properties);
+    import->factorySvcId = celix_bundleContext_registerServiceFactoryAsync(import->context, &import->factory, import->classObject, props);
+    return import->factorySvcId >= 0 ? CELIX_SUCCESS : CELIX_ILLEGAL_STATE;
 }
 
-celix_status_t importRegistration_stop(import_registration_t *import) {
-    celix_status_t status = CELIX_SUCCESS;
-
-    if (import->factoryReg != NULL) {
-        serviceRegistration_unregister(import->factoryReg);
-        import->factoryReg = NULL;
-    }
-
-    importRegistration_clearProxies(import);
-
-    return status;
-}
-
-
-celix_status_t importRegistration_getService(import_registration_t *import, celix_bundle_t *bundle, service_registration_t *registration, void **out) {
+static void* importRegistration_getService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties) {
     celix_status_t  status = CELIX_SUCCESS;
+    void* svc = NULL;
+    import_registration_t* import = handle;
 
     /*
     module_pt module = NULL;
@@ -193,21 +171,36 @@ celix_status_t importRegistration_getService(import_registration_t *import, celi
 
 
     pthread_mutex_lock(&import->proxiesMutex);
-    struct service_proxy *proxy = hashMap_get(import->proxies, bundle);
+    struct service_proxy *proxy = hashMap_get(import->proxies, requestingBundle);
     if (proxy == NULL) {
-        status = importRegistration_createProxy(import, bundle, &proxy);
+        status = importRegistration_createProxy(import, (celix_bundle_t*)requestingBundle, &proxy);
         if (status == CELIX_SUCCESS) {
-            hashMap_put(import->proxies, bundle, proxy);
+            hashMap_put(import->proxies, (void*)requestingBundle, proxy);
         }
     }
-
     if (status == CELIX_SUCCESS) {
         proxy->count += 1;
-        *out = proxy->service;
+        svc = proxy->service;
     }
     pthread_mutex_unlock(&import->proxiesMutex);
 
-    return status;
+    return svc;
+}
+
+void importRegistration_ungetService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties) {
+    import_registration_t* import = handle;
+    assert(import != NULL);
+    assert(import->proxies != NULL);
+    pthread_mutex_lock(&import->proxiesMutex);
+    struct service_proxy *proxy = hashMap_get(import->proxies, requestingBundle);
+    if (proxy != NULL) {
+        proxy->count -= 1;
+        if (proxy->count == 0) {
+            hashMap_remove(import->proxies, requestingBundle);
+            importRegistration_destroyProxy(proxy);
+        }
+    }
+    pthread_mutex_unlock(&import->proxiesMutex);
 }
 
 static celix_status_t importRegistration_findAndParseInterfaceDescriptor(celix_bundle_context_t * const context, celix_bundle_t * const bundle, char const * const name, dyn_interface_type **out) {
@@ -341,11 +334,7 @@ static void importRegistration_proxyFunc(void *userData, void *args[], void *ret
         celix_properties_t *metadata = NULL;
         bool cont = remoteInterceptorHandler_invokePreProxyCall(import->interceptorsHandler, import->endpoint->properties, entry->name, &metadata);
         if (cont) {
-            celixThreadMutex_lock(&import->mutex);
-            if (import->send != NULL) {
-                import->send(import->sendHandle, import->endpoint, invokeRequest, metadata, &reply, &rc);
-            }
-            celixThreadMutex_unlock(&import->mutex);
+            import->send(import->sendHandle, import->endpoint, invokeRequest, metadata, &reply, &rc);
             //printf("request sended. got reply '%s' with status %i\n", reply, rc);
 
             if (rc == 0 && dynFunction_hasReturn(entry->dynFunc)) {
@@ -376,33 +365,6 @@ static void importRegistration_proxyFunc(void *userData, void *args[], void *ret
     }
 }
 
-celix_status_t importRegistration_ungetService(import_registration_t *import, celix_bundle_t *bundle, service_registration_t *registration, void **out) {
-    celix_status_t  status = CELIX_SUCCESS;
-
-    assert(import != NULL);
-    assert(import->proxies != NULL);
-
-    pthread_mutex_lock(&import->proxiesMutex);
-
-    struct service_proxy *proxy = hashMap_get(import->proxies, bundle);
-    if (proxy != NULL) {
-        if (*out == proxy->service) {
-            proxy->count -= 1;
-        } else {
-            status = CELIX_ILLEGAL_ARGUMENT;
-        }
-
-        if (proxy->count == 0) {
-            hashMap_remove(import->proxies, bundle);
-            importRegistration_destroyProxy(proxy);
-        }
-    }
-
-    pthread_mutex_unlock(&import->proxiesMutex);
-
-    return status;
-}
-
 static void importRegistration_destroyProxy(struct service_proxy *proxy) {
     if (proxy != NULL) {
         if (proxy->intf != NULL) {
@@ -413,13 +375,6 @@ static void importRegistration_destroyProxy(struct service_proxy *proxy) {
         }
         free(proxy);
     }
-}
-
-
-celix_status_t importRegistration_close(import_registration_t *registration) {
-    celix_status_t status = CELIX_SUCCESS;
-    importRegistration_stop(registration);
-    return status;
 }
 
 celix_status_t importRegistration_getException(import_registration_t *registration) {
