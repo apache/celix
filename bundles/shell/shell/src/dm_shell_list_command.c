@@ -127,6 +127,9 @@ static void printPlantUmlInfo(FILE *out, celix_dependency_manager_t *mng) {
     printUmlDependencies(out, infos);
 
     fprintf(out, "@enduml\n");
+
+    celix_dependencyManager_destroyInfos(mng, infos);
+
 }
 
 static void printUmlComponents(FILE *out, const celix_array_list_t *infos) {
