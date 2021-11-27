@@ -18,9 +18,9 @@
 find_package(Jansson REQUIRED)
 find_package(UUID REQUIRED)
 
-add_celix_bundle(celix_pubsub_admin_websocket_v2
-    BUNDLE_SYMBOLICNAME "apache_celix_pubsub_admin_websocket_v2"
-    VERSION "1.0.0"
+add_celix_bundle(celix_pubsub_admin_websocket
+    BUNDLE_SYMBOLICNAME "apache_celix_pubsub_admin_websocket"
+    VERSION "2.0.0"
     GROUP "Celix/PubSub"
     SOURCES
         src/psa_activator.c
@@ -30,16 +30,13 @@ add_celix_bundle(celix_pubsub_admin_websocket_v2
         src/pubsub_websocket_common.c
 )
 
-set_target_properties(celix_pubsub_admin_websocket_v2 PROPERTIES INSTALL_RPATH "$ORIGIN")
-target_link_libraries(celix_pubsub_admin_websocket_v2 PRIVATE
+target_link_libraries(celix_pubsub_admin_websocket PRIVATE
         Celix::framework Celix::log_helper Celix::utils
         Celix::http_admin_api
 )
-target_link_libraries(celix_pubsub_admin_websocket_v2 PRIVATE Celix::pubsub_spi Celix::pubsub_utils )
-target_include_directories(celix_pubsub_admin_websocket_v2 PRIVATE
-    src
-)
+target_link_libraries(celix_pubsub_admin_websocket PRIVATE Celix::pubsub_spi Celix::pubsub_utils)
+target_link_libraries(celix_pubsub_admin_websocket PRIVATE Celix::shell_api)
+target_include_directories(celix_pubsub_admin_websocket PRIVATE src)
 
-install_celix_bundle(celix_pubsub_admin_websocket_v2 EXPORT celix COMPONENT pubsub)
-target_link_libraries(celix_pubsub_admin_websocket_v2 PRIVATE Celix::shell_api)
-add_library(Celix::celix_pubsub_admin_websocket_v2 ALIAS celix_pubsub_admin_websocket_v2)
+install_celix_bundle(celix_pubsub_admin_websocket EXPORT celix COMPONENT pubsub)
+add_library(Celix::celix_pubsub_admin_websocket ALIAS celix_pubsub_admin_websocket)

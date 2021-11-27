@@ -64,6 +64,7 @@ public:
     PubSubInterceptorTestSuite() {
         fw = celix::createFramework({
             {"CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "info"},
+            {"CELIX_HTTP_ADMIN_LISTENING_PORTS", "58080"},
             {"CELIX_PUBSUB_TEST_ADD_METADATA", "true"}
         });
         ctx = fw->getFrameworkBundleContext();
