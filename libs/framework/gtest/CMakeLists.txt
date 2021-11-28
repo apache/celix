@@ -89,6 +89,7 @@ target_link_libraries(test_dep_man_with_cxx11 PRIVATE Celix::framework CURL::lib
 target_compile_definitions(test_dep_man_with_cxx11 PRIVATE
         SIMPLE_CXX_DEP_MAN_BUNDLE_LOC="${SIMPLE_CXX_DEP_MAN_BUNDLE_LOC}"
 )
+add_test(NAME test_dep_man_with_cxx11 COMMAND test_dep_man_with_cxx11)
 setup_target_for_coverage(test_dep_man_with_cxx11 SCAN_DIR ..)
 
 #Also to ensure that CELIX_GEN_CXX_BUNDLE_ACTIVATOR still works for C++11 bundle activators with a

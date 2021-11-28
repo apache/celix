@@ -66,7 +66,7 @@ namespace celix {
          *
          * @param failure The failure in the form of an exception pointer.
          */
-        void fail(std::exception_ptr failure);
+        void fail(const std::exception_ptr& failure);
 
         /**
          * @brief Try to fail the Promise associated with this Deferred.
@@ -74,7 +74,7 @@ namespace celix {
          * Same as `fail`, but will return `true` if the associated promise was successfully failed and `false` if
          * the associated promise was already resolved.
          */
-        bool tryFail(std::exception_ptr failure);
+        bool tryFail(const std::exception_ptr& failure);
 
         /**
          * @brief Fail the Promise associated with this Deferred.
@@ -212,7 +212,7 @@ namespace celix {
          *
          * @param failure The failure in the form of an exception pointer.
          */
-        void fail(std::exception_ptr failure);
+        void fail(const std::exception_ptr& failure);
 
         /**
          * @brief Try to fail the Promise associated with this Deferred.
@@ -220,7 +220,7 @@ namespace celix {
          * Same as `fail`, but will return `true` if the associated promise was successfully failed and `false` if
          * the associated promise was already resolved.
          */
-        bool tryFail(std::exception_ptr failure);
+        bool tryFail(const std::exception_ptr& failure);
 
         /**
          * @brief Fail the Promise associated with this Deferred.
@@ -303,21 +303,21 @@ celix::Deferred<T>::Deferred(std::shared_ptr<celix::impl::SharedPromiseState<T>>
 inline celix::Deferred<void>::Deferred(std::shared_ptr<celix::impl::SharedPromiseState<void>> _state) : state{std::move(_state)} {}
 
 template<typename T>
-void celix::Deferred<T>::fail(std::exception_ptr failure) {
-    state->tryFail(std::move(failure));
+void celix::Deferred<T>::fail(const std::exception_ptr& failure) {
+    state->tryFail(failure);
 }
 
 template<typename T>
-bool celix::Deferred<T>::tryFail(std::exception_ptr failure) {
-    return state->tryFail(std::move(failure));
+bool celix::Deferred<T>::tryFail(const std::exception_ptr& failure) {
+    return state->tryFail(failure);
 }
 
-inline void celix::Deferred<void>::fail(std::exception_ptr failure) {
-    state->tryFail(std::move(failure));
+inline void celix::Deferred<void>::fail(const std::exception_ptr& failure) {
+    state->tryFail(failure);
 }
 
-inline bool celix::Deferred<void>::tryFail(std::exception_ptr failure) {
-    return state->tryFail(std::move(failure));
+inline bool celix::Deferred<void>::tryFail(const std::exception_ptr& failure) {
+    return state->tryFail(failure);
 }
 
 template<typename T>
