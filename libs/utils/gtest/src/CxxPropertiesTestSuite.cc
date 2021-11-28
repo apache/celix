@@ -88,3 +88,60 @@ TEST_F(CxxPropertiesTestSuite, testWrap) {
 
     celix_properties_destroy(props);
 }
+
+#if __cplusplus >= 201703L //C++17 or higher
+TEST_F(CxxPropertiesTestSuite, testStringView) {
+    constexpr std::string_view stringViewKey = "KEY1";
+    constexpr std::string_view stringViewValue = "VALUE1";
+    std::string stringKey{"KEY2"};
+    std::string stringValue{"VALUE2"};
+    const char* charKey = "KEY3";
+    const char* charValue = "VALUE3";
+
+    {
+        //rule: I can create properties with initializer_list using std::string, const char* and string_view
+        celix::Properties props {
+                {charKey, charValue},
+                {stringKey, stringValue},
+                {stringViewKey, stringViewValue}
+        };
+        EXPECT_EQ(props.size(), 3);
+
+        //rule: I can use the subscript operator using string_view objects
+        constexpr std::string_view k = "KEY2";
+        constexpr std::string_view v = "VALUE_NEW";
+        std::string check = props[k];
+        EXPECT_EQ(check, "VALUE2");
+        props[k] = v;
+        check = props[k];
+        EXPECT_EQ(check, v);
+    }
+
+    {
+        //rule: I can use set/get with string_view
+        constexpr std::string_view key = "TEST_KEY";
+        constexpr std::string_view value = "TEST_VALUE";
+
+        celix::Properties props{};
+
+        props.set(key, value);
+        EXPECT_EQ(value, props.get(key));
+        props[key] = value;
+        EXPECT_EQ(value, props.get(key));
+        EXPECT_EQ(1, props.size());
+
+        props.set(key,  std::string{"string value"});
+        EXPECT_EQ("string value", props.get(key));
+        props.set(key,  "string value");
+        EXPECT_EQ("string value", props.get(key));
+        EXPECT_EQ(1, props.size());
+
+        props.set(key, 1L); //long
+        EXPECT_EQ(1L, props.getAsLong(key, -1));
+        props.set(key, 1.0); //double
+        EXPECT_EQ(1.0, props.getAsDouble(key, -1));
+        props.set(key, true); //bool
+        EXPECT_EQ(true, props.getAsBool(key, false));
+    }
+}
+#endif
