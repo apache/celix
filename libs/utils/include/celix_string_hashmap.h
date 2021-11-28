@@ -23,7 +23,6 @@
 #include <stddef.h>
 
 #include "celixbool.h"
-#include "exports.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -51,7 +50,7 @@ void celix_stringHashmap_destroy(celix_string_hashmap_t* map, bool freeValues);
 /**
  * @brief Returns the size of the hashmap
  */
-size_t celix_stringHashMap_size(celix_string_hashmap_t* map);
+size_t celix_stringHashmap_size(celix_string_hashmap_t* map);
 
 /**
  * @brief add pointer entry the string hash map.
@@ -61,7 +60,7 @@ size_t celix_stringHashMap_size(celix_string_hashmap_t* map);
  * @param value The pointer value to store with the key
  * @return The previous key or NULL of no key was set. Note also returns NULL if the previous value for the key was NULL.
  */
-void* celix_stringHashMap_put(celix_string_hashmap_t* map, const char* key, void* value);
+void* celix_stringHashmap_put(celix_string_hashmap_t* map, const char* key, void* value);
 
 /**
  * @brief Returns the value for the provided key.
@@ -83,7 +82,7 @@ bool celix_stringHashmap_hasKey(celix_string_hashmap_t* map, const char* key);
  * @param key The key te remove.
  * @return Return the pointer value for the removed key or NULL. Note will also return NULL if the pointer value for the removed key is NULL.
  */
-void* celix_stringHashMap_remove(celix_string_hashmap_t* map, const char* key);
+void* celix_stringHashmap_remove(celix_string_hashmap_t* map, const char* key);
 
 #ifdef __cplusplus
 }
