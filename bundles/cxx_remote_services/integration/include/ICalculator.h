@@ -20,10 +20,13 @@
 #pragma once
 
 #include "celix/Promise.h"
+#include "celix/PushStream.h"
 
 class ICalculator {
 public:
     virtual ~ICalculator() noexcept = default;
 
     virtual celix::Promise<double> add(double a, double b) = 0;
+
+    virtual std::shared_ptr<celix::PushStream<double>> result() = 0;
 };

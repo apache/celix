@@ -36,26 +36,43 @@ namespace celix {
     template <typename T>
     class AbstractPushEventSource: public IPushEventSource<T> {
     public:
-        explicit AbstractPushEventSource(PromiseFactory& _promiseFactory);
+        explicit AbstractPushEventSource(std::shared_ptr<PromiseFactory>& _promiseFactory);
 
+        /**
+         * Publishes event event in the stream
+         * @param event
+         */
         void publish(const T& event);
 
+        /**
+         * @return a promise that is resolved when a consumer connects
+         */
         [[nodiscard]] celix::Promise<void> connectPromise();
 
+        /**
+         * Connects a consumer to the source
+         * @param _eventConsumer the consumer that connects
+         */
         void open(std::shared_ptr<IPushEventConsumer<T>> _eventConsumer) override;
 
+        /**
+         * @return true then the source as connected consumers
+         */
         bool isConnected();
 
+        /**
+         * Closes the event source, close event is sent down stream
+         */
         void close() override;
     protected:
         virtual void execute(std::function<void()> task) = 0;
 
-        PromiseFactory& promiseFactory;
+        std::shared_ptr<PromiseFactory> promiseFactory;
 
     private:
         std::mutex mutex {};
         bool closed{false};
-        Deferred<void> connected;
+        std::vector<Deferred<void>> connected {};
         std::vector<std::shared_ptr<IPushEventConsumer<T>>> eventConsumers {};
     };
 }
@@ -65,9 +82,8 @@ namespace celix {
 *********************************************************************************/
 
 template <typename T>
-celix::AbstractPushEventSource<T>::AbstractPushEventSource(PromiseFactory& _promiseFactory):
-    promiseFactory{_promiseFactory},
-    connected{promiseFactory.deferred<void>()}  {
+celix::AbstractPushEventSource<T>::AbstractPushEventSource(std::shared_ptr<PromiseFactory>& _promiseFactory):
+    promiseFactory{_promiseFactory} {
 }
 
 template <typename T>
@@ -77,15 +93,19 @@ void celix::AbstractPushEventSource<T>::open(std::shared_ptr<celix::IPushEventCo
         _eventConsumer->accept(celix::ClosePushEvent<T>());
     } else {
         eventConsumers.push_back(_eventConsumer);
-        connected.resolve();
-        connected = promiseFactory.deferred<void>();
+        for(auto connect: connected) {
+            connect.resolve();
+        }
+        connected.clear();
     }
 }
 
 template <typename T>
 [[nodiscard]] celix::Promise<void> celix::AbstractPushEventSource<T>::connectPromise() {
     std::lock_guard lck{mutex};
-    return connected.getPromise();
+    auto connect = promiseFactory->deferred<void>();
+    connected.push_back(connect);
+    return connect.getPromise();
 }
 
 template <typename T>
@@ -121,7 +141,7 @@ void celix::AbstractPushEventSource<T>::close() {
     }
 
     for(auto& eventConsumer : eventConsumers) {
-        execute([&]() {
+        execute([eventConsumer]() {
             eventConsumer->accept(celix::ClosePushEvent<T>());
         });
     }

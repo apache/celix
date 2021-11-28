@@ -145,7 +145,23 @@ celix_status_t celixThreadMutexAttr_settype(celix_thread_mutexattr_t *attr, int 
 }
 
 celix_status_t celixThreadCondition_init(celix_thread_cond_t *condition, celix_thread_condattr_t *attr) {
+#ifdef __APPLE__
     return pthread_cond_init(condition, attr);
+#else
+    celix_status_t status = CELIX_SUCCESS;
+    if(attr) {
+        status = pthread_condattr_setclock(attr, CLOCK_MONOTONIC);
+        status = CELIX_DO_IF(status, pthread_cond_init(condition, attr));
+    }
+    else {
+        celix_thread_condattr_t condattr;
+        (void)pthread_condattr_init(&condattr); // always return 0
+        status = pthread_condattr_setclock(&condattr, CLOCK_MONOTONIC);
+        status = CELIX_DO_IF(status, pthread_cond_init(condition, &condattr));
+        (void)pthread_condattr_destroy(&condattr); // always return 0
+    }
+    return status;
+#endif
 }
 
 celix_status_t celixThreadCondition_destroy(celix_thread_cond_t *condition) {
@@ -158,18 +174,15 @@ celix_status_t celixThreadCondition_wait(celix_thread_cond_t *cond, celix_thread
 
 #ifdef __APPLE__
 celix_status_t celixThreadCondition_timedwaitRelative(celix_thread_cond_t *cond, celix_thread_mutex_t *mutex, long seconds, long nanoseconds) {
-    struct timeval tv;
     struct timespec time;
-    gettimeofday(&tv, NULL);
-    TIMEVAL_TO_TIMESPEC(&tv, &time)
-    time.tv_sec += seconds;
-    time.tv_nsec += nanoseconds;
-    return pthread_cond_timedwait(cond, mutex, &time);
+    time.tv_sec = seconds;
+    time.tv_nsec = nanoseconds;
+    return pthread_cond_timedwait_relative_np(cond, mutex, &time);
 }
 #else
 celix_status_t celixThreadCondition_timedwaitRelative(celix_thread_cond_t *cond, celix_thread_mutex_t *mutex, long seconds, long nanoseconds) {
     struct timespec time;
-    clock_gettime(CLOCK_REALTIME, &time);
+    clock_gettime(CLOCK_MONOTONIC, &time);
     time.tv_sec += seconds;
     time.tv_nsec += nanoseconds;
     return pthread_cond_timedwait(cond, mutex, &time);

@@ -18,10 +18,11 @@
 add_celix_bundle(TestExportImportRemoteServiceFactory
         SOURCES src/TestExportImportRemoteServiceFactory.cc
 )
-target_link_libraries(TestExportImportRemoteServiceFactory PRIVATE Celix::rsa_spi Celix::pubsub_api Celix::Promises Celix::log_helper)
+target_link_libraries(TestExportImportRemoteServiceFactory PRIVATE Celix::rsa_spi Celix::pubsub_api Celix::Promises Celix::PushStreams Celix::log_helper)
 target_include_directories(TestExportImportRemoteServiceFactory PRIVATE include)
 celix_bundle_files(TestExportImportRemoteServiceFactory
         resources/Calculator$add$Invoke.descriptor
+        resources/Calculator$result$Event.descriptor
         resources/Calculator$add$Return.descriptor
         DESTINATION "META-INF/descriptors"
 )
@@ -29,14 +30,14 @@ celix_bundle_files(TestExportImportRemoteServiceFactory
 add_celix_bundle(CalculatorProvider
         SOURCES src/CalculatorProvider.cc
 )
-target_link_libraries(CalculatorProvider PRIVATE Celix::Promises)
+target_link_libraries(CalculatorProvider PRIVATE Celix::Promises Celix::PushStreams)
 target_include_directories(CalculatorProvider PRIVATE include)
 
 add_celix_bundle(CalculatorConsumer
         SOURCES src/CalculatorConsumer.cc
 )
 celix_bundle_files(CalculatorConsumer ${CMAKE_CURRENT_SOURCE_DIR}/resources/endpoint_discovery.json DESTINATION "META-INF/discovery") # add configured discovery as resource in the bundle.
-target_link_libraries(CalculatorConsumer PRIVATE Celix::Promises Celix::shell_api Celix::RsaConfiguredDiscovery_api)
+target_link_libraries(CalculatorConsumer PRIVATE Celix::Promises Celix::PushStreams Celix::shell_api Celix::RsaConfiguredDiscovery_api)
 target_include_directories(CalculatorConsumer PRIVATE include)
 
 if (ENABLE_TESTING)

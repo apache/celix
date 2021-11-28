@@ -20,6 +20,8 @@
 #include <unordered_map>
 
 #include "celix/PromiseFactory.h"
+#include "celix/PushStream.h"
+#include "celix/PushStreamProvider.h"
 #include "celix/BundleActivator.h"
 #include "celix/rsa/IImportServiceFactory.h"
 #include "celix/rsa/IExportServiceFactory.h"
@@ -29,7 +31,7 @@
 #include "pubsub/publisher.h"
 #include "pubsub/subscriber.h"
 
-constexpr auto INVOKE_TIMEOUT = std::chrono::seconds{10};
+constexpr auto INVOKE_TIMEOUT = std::chrono::seconds{5};
 
 struct Calculator$add$Invoke {
     double arg1{};
@@ -37,6 +39,15 @@ struct Calculator$add$Invoke {
 };
 
 struct Calculator$add$Return {
+    struct {
+        uint32_t cap{};
+        uint32_t len{};
+        double* buf{};
+    } optionalReturnValue{};
+    char* optionalError{};
+};
+
+struct Calculator$result$Event {
     struct {
         uint32_t cap{};
         uint32_t len{};
@@ -61,6 +72,11 @@ public:
             }
         }
     };
+public:
+
+    std::shared_ptr<celix::PushStream<double>> result() override {
+        return stream;
+    }
 
     celix::Promise<double> add(double a, double b) override {
         //setup msg id
@@ -96,12 +112,29 @@ public:
     void receive(const char *msgType, unsigned int msgTypeId, void *msg, const celix_properties_t* meta) {
         //setup message ids
         thread_local unsigned int returnAddMsgId = 0;
+        thread_local unsigned int streamResultMsgId = 0;
+
         if (returnAddMsgId == 0 && celix_utils_stringEquals(msgType, "Calculator$add$Return")) {
             returnAddMsgId = msgTypeId;
         }
+        if (streamResultMsgId == 0 && celix_utils_stringEquals(msgType, "Calculator$result$Event")) {
+            streamResultMsgId = msgTypeId;
+        }
 
         //handle incoming messages
-        if (returnAddMsgId != 0 && returnAddMsgId == msgTypeId) {
+        if (streamResultMsgId != 0 && streamResultMsgId == msgTypeId) {
+            long invokeId = celix_properties_getAsLong(meta, "invoke.id", -1);
+            if (invokeId == -1) {
+                logHelper.error("Cannot find invoke id on metadata");
+                return;
+            }
+            auto* result = static_cast<Calculator$result$Event*>(msg);
+            if (result->optionalReturnValue.len == 1) {
+                ses->publish(result->optionalReturnValue.buf[0]);
+            } else {
+                ses->close();
+            }
+        } else if (returnAddMsgId != 0 && returnAddMsgId == msgTypeId) {
             long invokeId = celix_properties_getAsLong(meta, "invoke.id", -1);
             if (invokeId == -1) {
                 logHelper.error("Cannot find invoke id on metadata");
@@ -126,6 +159,26 @@ public:
             logHelper.warning("Unexpected message type %s", msgType);
         }
     }
+    int init() {
+        return CELIX_SUCCESS;
+    }
+
+    int start() {
+        ses = psp->createSynchronousEventSource<double>(factory);
+        stream = psp->createStream<double>(ses, factory);
+        return CELIX_SUCCESS;
+    }
+
+    int stop() {
+        ses->close();
+        ses.reset();
+        stream.reset();
+        return CELIX_SUCCESS;
+    }
+
+    int deinit() {
+        return CELIX_SUCCESS;
+    }
 
     void setPublisher(const std::shared_ptr<pubsub_publisher>& pub) {
         std::lock_guard lock{mutex};
@@ -136,6 +189,12 @@ public:
         std::lock_guard lock{mutex};
         factory = fac;
     }
+
+    void setPushStreamProvider(const std::shared_ptr<celix::PushStreamProvider>& provider) {
+        std::lock_guard lock{mutex};
+        psp = provider;
+    }
+
 private:
     celix::LogHelper logHelper;
     std::atomic<long> nextInvokeId{0};
@@ -143,6 +202,9 @@ private:
     std::shared_ptr<celix::PromiseFactory> factory{};
     std::shared_ptr<pubsub_publisher> publisher{};
     std::unordered_map<long, celix::Deferred<double>> deferreds{};
+    std::shared_ptr<celix::PushStreamProvider> psp {};
+    std::shared_ptr<celix::SynchronousPushEventSource<double>> ses{};
+    std::shared_ptr<celix::PushStream<double>> stream{};
 };
 
 /**
@@ -206,6 +268,11 @@ private:
         cmp.createServiceDependency<celix::PromiseFactory>()
                 .setRequired(true)
                 .setCallbacks(&ImportedCalculator::setPromiseFactory);
+        cmp.createServiceDependency<celix::PushStreamProvider>()
+                .setRequired(true)
+                .setCallbacks(&ImportedCalculator::setPushStreamProvider);
+
+        cmp.setCallbacks(&ImportedCalculator::init, &ImportedCalculator::start, &ImportedCalculator::stop, &ImportedCalculator::deinit);
 
         auto subscriber = std::make_shared<pubsub_subscriber_t>();
         subscriber->handle = &cmp.getInstance();
@@ -252,7 +319,9 @@ private:
  */
 class ExportedCalculator final {
 public:
-    explicit ExportedCalculator(celix::LogHelper _logHelper) : logHelper{std::move(_logHelper)} {}
+    explicit ExportedCalculator(celix::LogHelper _logHelper) : logHelper{std::move(_logHelper)} {
+
+    }
 
     void receive(const char *msgType, unsigned int msgTypeId, void *msg, const celix_properties_t* meta) {
         //setup message ids
@@ -279,7 +348,7 @@ public:
             std::lock_guard lock{mutex};
             auto promise = calculator->add(invoke->arg1, invoke->arg2);
             promise
-                .onFailure([weakPub = std::weak_ptr<pubsub_publisher>{publisher}, msgId = returnMsgId, metaProps](const auto& exp) {
+            .onFailure([logHelper = logHelper, weakPub = std::weak_ptr<pubsub_publisher>{publisher}, msgId = returnMsgId, metaProps](const auto& exp) {
                     auto pub = weakPub.lock();
                     if (pub) {
                         Calculator$add$Return ret;
@@ -289,10 +358,10 @@ public:
                         ret.optionalError = celix_utils_strdup(exp.what());
                         pub->send(pub->handle, msgId, &ret, metaProps);
                     } else {
-                        //TODO error handling
+                        logHelper.error("publisher is gone");
                     }
                 })
-                .onSuccess([weakSvc = std::weak_ptr<ICalculator>{calculator}, weakPub = std::weak_ptr<pubsub_publisher>{publisher}, msgId = returnMsgId, metaProps](auto val) {
+                .onSuccess([logHelper = logHelper, weakSvc = std::weak_ptr<ICalculator>{calculator}, weakPub = std::weak_ptr<pubsub_publisher>{publisher}, msgId = returnMsgId, metaProps](auto val) {
                     auto pub = weakPub.lock();
                     auto svc = weakSvc.lock();
                     if (pub && svc) {
@@ -305,7 +374,7 @@ public:
                         pub->send(pub->handle, msgId, &ret, metaProps);
                         free(ret.optionalReturnValue.buf);
                     } else {
-                        //TODO error handling
+                        logHelper.error("publisher is gone");
                     }
                 });
         } else {
@@ -323,6 +392,48 @@ public:
         factory = fac;
     }
 
+    int init() {
+        return CELIX_SUCCESS;
+    }
+
+    int start() {
+        resultStream = calculator->result();
+        auto streamEnded = resultStream->forEach([logHelper = logHelper, weakSvc = std::weak_ptr<ICalculator>{calculator}, weakPub = std::weak_ptr<pubsub_publisher>{publisher}](const double& event){
+            auto pub = weakPub.lock();
+            auto svc = weakSvc.lock();
+            if (pub && svc) {
+                thread_local unsigned int eventMsgId = 0;
+                if (eventMsgId == 0) {
+                    pub->localMsgTypeIdForMsgType(pub->handle, "Calculator$result$Event", &eventMsgId);
+                }
+
+                auto* metaProps = celix_properties_create();
+                celix_properties_set(metaProps, "invoke.id", std::to_string(0).c_str());
+                Calculator$result$Event wireEvent;
+                wireEvent.optionalReturnValue.buf = (double *) malloc(sizeof(*wireEvent.optionalReturnValue.buf));
+                wireEvent.optionalReturnValue.len = 1;
+                wireEvent.optionalReturnValue.cap = 1;
+                wireEvent.optionalReturnValue.buf[0] = event;
+                wireEvent.optionalError = nullptr;
+                pub->send(pub->handle, eventMsgId, &wireEvent, metaProps);
+                free(wireEvent.optionalReturnValue.buf);
+            } else {
+                logHelper.error("publisher is gone");
+            }
+        });
+        return CELIX_SUCCESS;
+    }
+
+    int stop() {
+        resultStream->close();
+        resultStream.reset();
+        return CELIX_SUCCESS;
+    }
+
+    int deinit() {
+        return CELIX_SUCCESS;
+    }
+
     void setICalculator(const std::shared_ptr<ICalculator>& calc) {
         std::lock_guard lock{mutex};
         calculator = calc;
@@ -335,6 +446,7 @@ private:
     std::shared_ptr<celix::PromiseFactory> factory{};
     std::shared_ptr<pubsub_publisher> publisher{};
     std::unordered_map<long, celix::Deferred<double>> deferreds{};
+    std::shared_ptr<celix::PushStream<double>> resultStream{};
 };
 
 /**
@@ -412,6 +524,9 @@ private:
                 .setFilter(std::string{"("}.append(celix::SERVICE_ID).append("=").append(svcId).append(")"))
                 .setCallbacks(&ExportedCalculator::setICalculator);
 
+        cmp.setCallbacks(&ExportedCalculator::init, &ExportedCalculator::start, &ExportedCalculator::stop, &ExportedCalculator::deinit);
+
+
         auto subscriber = std::make_shared<pubsub_subscriber_t>();
         subscriber->handle = &cmp.getInstance();
         subscriber->receive = [](void *handle, const char *msgType, unsigned int msgTypeId, void *msg, const celix_properties_t *metadata, bool */*release*/) ->  int {
@@ -464,6 +579,13 @@ public:
                         .addProperty(celix::SERVICE_RANKING, -100)
                         .build()
         );
+
+        registrations.emplace_back(
+                //adding default promise factory with a low service ranking
+                ctx->registerService<celix::PushStreamProvider>(std::make_shared<celix::PushStreamProvider>())
+                .addProperty(celix::SERVICE_RANKING, -100)
+                .build()
+                );
     }
 private:
     std::vector<std::shared_ptr<celix::ServiceRegistration>> registrations{};

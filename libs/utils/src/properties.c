@@ -398,7 +398,7 @@ void celix_properties_setWithoutCopy(celix_properties_t *properties, char *key, 
 }
 
 void celix_properties_unset(celix_properties_t *properties, const char *key) {
-    char* oldValue = hashMap_remove(properties, key);
+    char* oldValue = hashMap_removeFreeKey(properties, key);
     free(oldValue);
 }
 

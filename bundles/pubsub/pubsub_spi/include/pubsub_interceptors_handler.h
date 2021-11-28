@@ -20,7 +20,7 @@
 #define PUBSUB_INTERCEPTORS_HANDLER_H
 
 #ifdef __cplusplus
-}
+extern "C" {
 #endif
 
 #include <stdint.h>
