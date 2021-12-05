@@ -15,13 +15,11 @@
 # specific language governing permissions and limitations
 # under the License.
 
-message(STATUS "PubSub TCP Admin V1 is deprecated, and will eventually be replaced with PubSub TCP Admin v2")
-
 find_package(UUID REQUIRED)
 
 add_celix_bundle(celix_pubsub_admin_tcp
     BUNDLE_SYMBOLICNAME "apache_celix_pubsub_admin_tcp"
-    VERSION "1.0.0"
+    VERSION "2.0.0"
     GROUP "Celix/PubSub"
     SOURCES
         src/psa_activator.c
@@ -32,9 +30,9 @@ add_celix_bundle(celix_pubsub_admin_tcp
         src/pubsub_tcp_common.c
 )
 
-set_target_properties(celix_pubsub_admin_tcp PROPERTIES INSTALL_RPATH "$ORIGIN")
 target_link_libraries(celix_pubsub_admin_tcp PRIVATE Celix::pubsub_spi Celix::pubsub_utils)
-target_link_libraries(celix_pubsub_admin_tcp PRIVATE Celix::framework Celix::dfi Celix::log_helper)
+target_link_libraries(celix_pubsub_admin_tcp PRIVATE Celix::framework Celix::log_helper)
+target_link_libraries(celix_pubsub_admin_tcp PRIVATE Celix::shell_api)
 target_include_directories(celix_pubsub_admin_tcp PRIVATE src)
 # cmake find package UUID set the wrong include dir for OSX
 if (NOT APPLE)
@@ -42,5 +40,4 @@ if (NOT APPLE)
 endif()
 
 install_celix_bundle(celix_pubsub_admin_tcp EXPORT celix COMPONENT pubsub)
-target_link_libraries(celix_pubsub_admin_tcp PRIVATE Celix::shell_api)
 add_library(Celix::celix_pubsub_admin_tcp ALIAS celix_pubsub_admin_tcp)

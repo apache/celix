@@ -15,11 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 
-message(STATUS "PubSub ZMQ Admin V1 is deprecated, and will eventually be replaced with PubSub ZMQ Admin v2")
-
 find_package(ZMQ REQUIRED)
 find_package(CZMQ REQUIRED)
-find_package(Jansson REQUIRED)
 find_package(UUID REQUIRED)
 
 set(OPTIONAL_OPENSSL_LIB )
@@ -35,7 +32,7 @@ endif()
 
 add_celix_bundle(celix_pubsub_admin_zmq
     BUNDLE_SYMBOLICNAME "apache_celix_pubsub_admin_zmq"
-    VERSION "1.1.0"
+    VERSION "2.0.0"
     GROUP "Celix/PubSub"
     SOURCES
         src/psa_activator.c
@@ -45,17 +42,11 @@ add_celix_bundle(celix_pubsub_admin_zmq
         ${ZMQ_CRYPTO_C}
 )
 
-set_target_properties(celix_pubsub_admin_zmq PROPERTIES INSTALL_RPATH "$ORIGIN")
 target_link_libraries(celix_pubsub_admin_zmq PRIVATE
-
         Celix::framework Celix::dfi Celix::log_helper Celix::utils
-        ZMQ::lib CZMQ::lib ${OPTIONAL_OPENSSL_LIB}
-)
-target_link_libraries(celix_pubsub_admin_zmq PRIVATE Celix::pubsub_spi Celix::pubsub_utils )
-target_include_directories(celix_pubsub_admin_zmq PRIVATE
-    src
-)
-
-install_celix_bundle(celix_pubsub_admin_zmq EXPORT celix COMPONENT pubsub)
+        ZMQ::lib CZMQ::lib ${OPTIONAL_OPENSSL_LIB})
 target_link_libraries(celix_pubsub_admin_zmq PRIVATE Celix::shell_api)
+target_link_libraries(celix_pubsub_admin_zmq PRIVATE Celix::pubsub_spi Celix::pubsub_utils )
+target_include_directories(celix_pubsub_admin_zmq PRIVATE src)
+install_celix_bundle(celix_pubsub_admin_zmq EXPORT celix COMPONENT pubsub)
 add_library(Celix::celix_pubsub_admin_zmq ALIAS celix_pubsub_admin_zmq)

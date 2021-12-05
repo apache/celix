@@ -712,7 +712,7 @@ static void psa_websocket_connectToAllRequestedConnections(pubsub_websocket_topi
                 } else {
                     entry->connectRetryCount += 1;
                     allConnected = false;
-                    if((entry->connectRetryCount % 10) == 0) {
+                    if ((entry->connectRetryCount % 10) == 0) {
                         L_WARN("[PSA_WEBSOCKET] Error connecting to websocket %s:%li/%s. Error: %s",
                                entry->socketAddress,
                                entry->socketPort,
