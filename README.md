@@ -22,7 +22,7 @@ limitations under the License.
 [![codecov](https://codecov.io/gh/apache/celix/branch/master/graph/badge.svg)](https://codecov.io/gh/apache/celix)
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/6685/badge.svg)](https://scan.coverity.com/projects/6685)
 
-Apache Celix is an implementation of the OSGi specification adapted to C and C++ (C++11). It is a framework to develop (dynamic) modular software applications using component and/or service-oriented programming.
+Apache Celix is an implementation of the OSGi specification adapted to C and C++ (C++17). It is a framework to develop (dynamic) modular software applications using component and/or service-oriented programming.
 
 ## Documentation
 - [Building Apache Celix](documents/building/README.md)

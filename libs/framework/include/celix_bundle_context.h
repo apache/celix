@@ -40,9 +40,8 @@ extern "C" {
 #define OPTS_INIT
 #endif
 
-
 /**
- * Register a service to the Celix framework.
+ * @brief Register a service to the Celix framework.
  *
  * The service will be registered async on the Celix event loop thread. This means that service registration is (probably)
  * not yet concluded when this function returns, but is added to the event loop.
@@ -58,7 +57,8 @@ extern "C" {
 long celix_bundleContext_registerServiceAsync(celix_bundle_context_t *ctx, void *svc, const char *serviceName, celix_properties_t *properties);
 
 /**
- * Register a service to the Celix framework.
+ * @brief Register a service to the Celix framework.
+ *
  * Note: Please use the celix_bundleContext_registerServiceAsync instead.
  *
  * @param ctx The bundle context
@@ -70,7 +70,8 @@ long celix_bundleContext_registerServiceAsync(celix_bundle_context_t *ctx, void 
 long celix_bundleContext_registerService(celix_bundle_context_t *ctx, void *svc, const char *serviceName, celix_properties_t *properties); //__attribute__((deprecated("Use celix_bundleContext_registerServiceAsync instead!")));
 
 /**
- * Register a service factory in the framework (for the C language).
+ * @brief Register a service factory in the framework.
+ *
  * The service factory will be called for every bundle requesting/de-requesting a service. This gives the provider the
  * option to create bundle specific service instances.
  *
@@ -93,7 +94,8 @@ long celix_bundleContext_registerService(celix_bundle_context_t *ctx, void *svc,
 long celix_bundleContext_registerServiceFactoryAsync(celix_bundle_context_t *ctx, celix_service_factory_t *factory, const char *serviceName, celix_properties_t *props);
 
 /**
- * Register a service factory in the framework (for the C language).
+ * @brief Register a service factory in the framework.
+ *
  * The service factory will be called for every bundle requesting/de-requesting a service. This gives the provider the
  * option to create bundle specific service instances.
  * Note: Please use the celix_bundleContext_registerServiceFactoryAsync instead.
@@ -112,11 +114,13 @@ long celix_bundleContext_registerServiceFactoryAsync(celix_bundle_context_t *ctx
 long celix_bundleContext_registerServiceFactory(celix_bundle_context_t *ctx, celix_service_factory_t *factory, const char *serviceName, celix_properties_t *props); //__attribute__((deprecated("Use celix_bundleContext_registerServiceFactoryAsync instead!")));
 
 /**
- * Service Registration Options when registering services to the Celix framework.
+ * @brief Service Registration Options when registering services to the Celix framework.
  */
 typedef struct celix_service_registration_options {
     /**
-     * The service pointer. The actual pointer to the service. For C this is normally a pointer to a struct
+     * @brief The service pointer.
+     *
+     * The actual pointer to the service. For C this is normally a pointer to a struct
      * with function pointers, but theoretically this can be a pointer to anything (e.g. a pointer to a single function,
      * or a pointer to a C++ interface implementation, or just a pointer to a data structure).
      *
@@ -125,7 +129,8 @@ typedef struct celix_service_registration_options {
     void *svc OPTS_INIT;
 
     /**
-     * The service factory pointer.
+     * @brief The service factory pointer.
+     *
      * Note if the factory service is set, the svc field will not be used.
      *
      * The service factory will be called for every bundle requesting/de-requesting a service. This gives the provider the
@@ -141,13 +146,17 @@ typedef struct celix_service_registration_options {
     celix_service_factory_t *factory OPTS_INIT;
 
     /**
-     * The required service name. This is used to identify the service. A fully qualified name with a namespace is
+     * @brief The required service name.
+     *
+     * This is used to identify the service. A fully qualified name with a namespace is
      * advisable to prevent name collision. (e.g. EXAMPLE_PRESSURE_SENSOR).
      */
     const char *serviceName OPTS_INIT;
 
     /**
-     * The optional service properties. These contain meta information about the service in the
+     * @brief The optional service properties.
+     *
+     * These contain meta information about the service in the
      * form of string key/values. (e.g. the location of a pressure sensor: location=left-tire).
      *
      * When a service is registered the Celix framework will take ownership of the provided properties.
@@ -156,12 +165,15 @@ typedef struct celix_service_registration_options {
     celix_properties_t *properties OPTS_INIT;
 
     /**
-     * The optional service language. If this is NULL, CELIX_FRAMEWORK_SERVICE_LANGUAGE_C is used.
+     * @brief The optional service language.
+     *
+     * If this is NULL, CELIX_FRAMEWORK_SERVICE_LANGUAGE_C is used.
      */
     const char *serviceLanguage OPTS_INIT;
 
     /**
-     * The optional service version (in the form of <MAJOR>.<MINOR>.<MICRO>.<QUALIFIER>).
+     * @brief The optional service version (in the form of <MAJOR>.<MINOR>.<MICRO>.<QUALIFIER>).
+     *
      * If present consumer of the service can specific which service version range of
      * a specific service they are interested in. Note that it is the responsibility of the users to ensure that
      * service in those version range are compatible (binary of source). It is advisable to use semantic versioning
@@ -170,23 +182,25 @@ typedef struct celix_service_registration_options {
     const char *serviceVersion OPTS_INIT;
 
     /**
-     * Async data pointer for the async register callback.
+     * @brief Async data pointer for the async register callback.
      */
      void *asyncData OPTS_INIT;
 
     /**
-    * Async callback. Will be called after the a service is registered in the service registry using a async call.
-    * Will be called on the Celix event loop.
+     * @brief Async callback.
+     *
+     * Will be called after the a service is registered in the service registry using a async call.
+     * Will be called on the Celix event loop.
      *
      * If a asyns service registration is combined with a _sync_ service unregistration, it can happen that
      * unregistration happens before the registration event is processed. In this case the asyncCallback
      * will not be called.
-    */
+     */
     void (*asyncCallback)(void *data, long serviceId) OPTS_INIT;
 } celix_service_registration_options_t;
 
 /**
- * C Macro to create a empty celix_service_registration_options_t type.
+ * @brief C Macro to create a empty celix_service_registration_options_t type.
  */
 #ifndef __cplusplus
 #define CELIX_EMPTY_SERVICE_REGISTRATION_OPTIONS { .svc = NULL, \
@@ -200,7 +214,7 @@ typedef struct celix_service_registration_options {
 #endif
 
 /**
- * Register a service to the Celix framework using the provided service registration options.
+ * @brief Register a service to the Celix framework using the provided service registration options.
  *
  * The service will be registered async on the Celix event loop thread. This means that service registration is (probably)
  * not yet concluded when this function returns, but is added to the event loop..
@@ -214,7 +228,8 @@ typedef struct celix_service_registration_options {
 long celix_bundleContext_registerServiceWithOptionsAsync(celix_bundle_context_t *ctx, const celix_service_registration_options_t *opts);
 
 /**
- * Register a service to the Celix framework using the provided service registration options.
+ * @brief Register a service to the Celix framework using the provided service registration options.
+ *
  * Note: Please use the celix_bundleContext_registerServiceAsyncWithOptions instead.
  *
  * @param ctx The bundle context
@@ -224,14 +239,16 @@ long celix_bundleContext_registerServiceWithOptionsAsync(celix_bundle_context_t 
 long celix_bundleContext_registerServiceWithOptions(celix_bundle_context_t *ctx, const celix_service_registration_options_t *opts); //__attribute__((deprecated("Use celix_bundleContext_registerServiceAsyncWithOptions instead!")));
 
 /**
- * Waits til the async service registration for the provided serviceId is done.
+ * @brief Waits til the async service registration for the provided serviceId is done.
+ *
  * Silently ignore service ids < 0.
  * Will directly return if there is no pending service registration for the provided service id.
  */
 void celix_bundleContext_waitForAsyncRegistration(celix_bundle_context_t* ctx, long serviceId);
 
 /**
- * Checks whether a service for the provided service id is registered in the service registry.
+ * @brief Checks whether a service for the provided service id is registered in the service registry.
+ *
  * Note return false if the service for the provided service id is still pending in the event loop.
  * Silently ignore service ids < 0 (returns false).
  *
@@ -241,7 +258,8 @@ bool celix_bundleContext_isServiceRegistered(celix_bundle_context_t* ctx, long s
 
 
 /**
- * Unregister the service or service factory with service id.
+ * @brief Unregister the service or service factory with service id.
+ *
  * The service will only be unregistered if the bundle of the bundle context is the owner of the service.
  *
  * Will log an error if service id is unknown. Will silently ignore services ids < 0.
@@ -253,7 +271,8 @@ void celix_bundleContext_unregisterService(celix_bundle_context_t *ctx, long ser
 
 
 /**
- * Unregister the service or service factory with service id.
+ * @brief Unregister the service or service factory with service id.
+ *
  * The service will only be unregistered if the bundle of the bundle context is the owner of the service.
  *
  * The service will be umregistered async on the Celix event loop thread. This means that service unregistration is (probably)
@@ -269,7 +288,8 @@ void celix_bundleContext_unregisterServiceAsync(celix_bundle_context_t *ctx, lon
 
 
 /**
- * Waits til the async service unregistration for the provided serviceId is done.
+ * @brief Waits til the async service unregistration for the provided serviceId is done.
+ *
  * Silently ignore service < 0.
  */
 void celix_bundleContext_waitForAsyncUnregistration(celix_bundle_context_t* ctx, long serviceId);
@@ -278,7 +298,7 @@ void celix_bundleContext_waitForAsyncUnregistration(celix_bundle_context_t* ctx,
 
 
 /**
- * Finds the highest ranking service and returns the service id.
+ * @brief Finds the highest ranking service and returns the service id.
  *
  * @param ctx The bundle context
  * @param serviceName The required service name
@@ -287,7 +307,7 @@ void celix_bundleContext_waitForAsyncUnregistration(celix_bundle_context_t* ctx,
 long celix_bundleContext_findService(celix_bundle_context_t *ctx, const char *serviceName);
 
 /**
- * Finds the services with the provided service name and returns a list of the found service ids.
+ * @brief Finds the services with the provided service name and returns a list of the found service ids.
  *
  * @param ctx The bundle context
  * @param serviceName The required service name
@@ -296,24 +316,28 @@ long celix_bundleContext_findService(celix_bundle_context_t *ctx, const char *se
 celix_array_list_t* celix_bundleContext_findServices(celix_bundle_context_t *ctx, const char *serviceName);
 
 /**
- * Service filter options which can be used to query for certain services.
+ * @brief Service filter options which can be used to query for certain services.
  */
 typedef struct celix_service_filter_options {
     /**
-     * The service name.
+     * @brief The service name.
+     *
      * If NULL is used any services which matches the filter string will be tracked.
      */
     const char* serviceName OPTS_INIT;
 
     /**
-     * The optional version range. If service are registered with a service version this attribute can be used to
+     * @brief The optional version range.
+     *
+     * If service are registered with a service version this attribute can be used to
      * only select service with a version in the version range.
      * It uses the maven version range format, e.g. [1.0.0,2.0.0) or [1.1.1], etc.
      */
     const char* versionRange OPTS_INIT;
 
     /**
-     * LDAP filter to use for fine tuning the filtering, e.g. (|(location=middle)(location=front))
+     * @brief LDAP filter to use for fine tuning the filtering, e.g. (|(location=middle)(location=front))
+     *
      * The filter will be applied to all the user provided and framework provided service properties.
      */
     const char* filter OPTS_INIT;
@@ -333,7 +357,7 @@ typedef struct celix_service_filter_options {
 } celix_service_filter_options_t;
 
 /**
- * C Macro to create a empty celix_service_filter_options_t type.
+ * @brief C Macro to create a empty celix_service_filter_options_t type.
  */
 #ifndef __cplusplus
 #define CELIX_EMPTY_SERVICE_FILTER_OPTIONS {.serviceName = NULL, .versionRange = NULL, .filter = NULL, .serviceLanguage = NULL, .ignoreServiceLanguage = false}
@@ -341,7 +365,7 @@ typedef struct celix_service_filter_options {
 
 
 /**
- * Finds the highest ranking service and returns the service id.
+ * @brief Finds the highest ranking service and returns the service id.
  *
  * @param ctx The bundle context
  * @param opts The pointer to the filter options.
@@ -350,7 +374,7 @@ typedef struct celix_service_filter_options {
 long celix_bundleContext_findServiceWithOptions(celix_bundle_context_t *ctx, const celix_service_filter_options_t *opts);
 
 /**
- * Finds the services conform the provider filter options and returns a list of the found service ids.
+ * @brief Finds the services conform the provider filter options and returns a list of the found service ids.
  *
  * @param ctx The bundle context
  * @param opts The pointer to the filter options.
@@ -359,7 +383,8 @@ long celix_bundleContext_findServiceWithOptions(celix_bundle_context_t *ctx, con
 celix_array_list_t* celix_bundleContext_findServicesWithOptions(celix_bundle_context_t *ctx, const celix_service_filter_options_t *opts);
 
 /**
- * track the highest ranking service with the provided serviceName.
+ * @brief Track the highest ranking service with the provided serviceName.
+ *
  * The highest ranking services will used for the callback.
  * If a new and higher ranking services the callback with be called again with the new service.
  * If a service is removed a the callback with be called with next highest ranking service or NULL as service.
@@ -382,7 +407,8 @@ long celix_bundleContext_trackServiceAsync(
 );
 
 /**
- * track the highest ranking service with the provided serviceName.
+ * @brief Track the highest ranking service with the provided serviceName.
+ *
  * The highest ranking services will used for the callback.
  * If a new and higher ranking services the callback with be called again with the new service.
  * If a service is removed a the callback with be called with next highest ranking service or NULL as service.
@@ -403,7 +429,7 @@ long celix_bundleContext_trackService(
 ); //__attribute__((deprecated("Use celix_bundleContext_trackServiceSync instead!")));
 
 /**
- * track services with the provided serviceName.
+ * @brief Track services with the provided serviceName.
  *
  * The service tracker will be created async on the Celix event loop thread. This means that the function can return
  * before the tracker is created.
@@ -425,7 +451,8 @@ long celix_bundleContext_trackServicesAsync(
 );
 
 /**
- * track services with the provided serviceName.
+ * @brief Track services with the provided serviceName.
+ *
  * Note: Please use the celix_bundleContext_trackServicesAsync instead.
  *
  * @param ctx The bundle context.
@@ -445,21 +472,21 @@ long celix_bundleContext_trackServices(
 ); //__attribute__((deprecated("Use celix_bundleContext_trackServicesAsync instead!")));;
 
 /**
- * Service Tracker Options used to fine tune which services to track and the callback to be used for the tracked services.
+ * @brief Service Tracker Options used to fine tune which services to track and the callback to be used for the tracked services.
  */
 typedef struct celix_service_tracking_options {
     /**
-     * The service filter options, used to setup the filter for the service to track.
+     * @brief The service filter options, used to setup the filter for the service to track.
      */
     celix_service_filter_options_t filter OPTS_INIT;
 
     /**
-     * The optional callback pointer used in all the provided callback function (set, add, remove, setWithProperties, etc).
+     * @brief The optional callback pointer used in all the provided callback function (set, add, remove, setWithProperties, etc).
      */
     void* callbackHandle OPTS_INIT;
 
     /**
-     * The optional set callback will be called when a new highest ranking service is available conform the provided
+     * @brief The optional set callback will be called when a new highest ranking service is available conform the provided
      * service filter options.
      * @param handle The callbackHandle pointer as provided in the service tracker options.
      * @param svc The service pointer of the highest ranking service.
@@ -467,19 +494,19 @@ typedef struct celix_service_tracking_options {
     void (*set)(void *handle, void *svc) OPTS_INIT;
 
     /**
-     * The optional setWithProperties callback is handled as the set callback, but with the addition that the service properties
+     * @brief The optional setWithProperties callback is handled as the set callback, but with the addition that the service properties
      * will also be provided to the callback.
      */
     void (*setWithProperties)(void *handle, void *svc, const celix_properties_t *props) OPTS_INIT; //highest ranking
 
     /**
-     * The optional setWithOwner callback is handled as the set callback, but with the addition that the service properties
+     * @brief The optional setWithOwner callback is handled as the set callback, but with the addition that the service properties
      * and the bundle owning the service will also be provided to the callback.
      */
     void (*setWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *svcOwner) OPTS_INIT; //highest ranking
 
     /**
-     * The optional add callback will be called for every current and future service found conform the provided service filter
+     * @brief The optional add callback will be called for every current and future service found conform the provided service filter
      * options as long as the tracker is active.
      * @param handle The callbackHandle pointer as provided in the service tracker options.
      * @param svc The service pointer of a service matching the provided service filter options.
@@ -487,19 +514,19 @@ typedef struct celix_service_tracking_options {
     void (*add)(void *handle, void *svc) OPTS_INIT;
 
     /**
-     * The optional addWithProperties callback is handled as the add callback, but with the addition that the service properties
+     * @brief The optional addWithProperties callback is handled as the add callback, but with the addition that the service properties
      * will also be provided to the callback.
      */
     void (*addWithProperties)(void *handle, void *svc, const celix_properties_t *props) OPTS_INIT;
 
     /**
-     * The optional addWithOwner callback is handled as the add callback, but with the addition that the service properties
+     * @brief The optional addWithOwner callback is handled as the add callback, but with the addition that the service properties
      * and the bundle owning the service will also be provided to the callback.
      */
     void (*addWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *svcOwner) OPTS_INIT;
 
     /**
-     * The optional remove callback will be called for every service conform the provided service filter options that is
+     * @brief The optional remove callback will be called for every service conform the provided service filter options that is
      * unregistered. When the remove call is finished the removed services should be considered invalid. This means
      * that the callback provider should ensure that the removed service is not in use or going to be used after the
      * remove callback is finished.
@@ -510,25 +537,25 @@ typedef struct celix_service_tracking_options {
     void (*remove)(void *handle, void *svc) OPTS_INIT;
 
     /**
-     * The optional removeWithProperties callback is handled as the remove callback, but with the addition that the service properties
+     * @brief The optional removeWithProperties callback is handled as the remove callback, but with the addition that the service properties
      * will also be provided to the callback.
      */
     void (*removeWithProperties)(void *handle, void *svc, const celix_properties_t *props) OPTS_INIT;
 
     /**
-    * The optional removeWithOwner callback is handled as the remove callback, but with the addition that the service properties
+    * @brief The optional removeWithOwner callback is handled as the remove callback, but with the addition that the service properties
     * and the bundle owning the service will also be provided to the callback.
     */
     void (*removeWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *svcOwner) OPTS_INIT;
 
 
     /**
-     * Data for the trackerCreatedCallback.
+     * @brief Data for the trackerCreatedCallback.
      */
     void *trackerCreatedCallbackData OPTS_INIT;
 
     /**
-     * The callback called when the tracker has ben created (and is active) when using a async call.
+     * @brief The callback called when the tracker has ben created (and is active) when using a async call.
      *
      * If a asyns track service is combined with a _sync_ stop tracker, it can happen that
      * "stop tracker" happens before the "create tracker" event is processed. In this case the asyncCallback
@@ -538,7 +565,7 @@ typedef struct celix_service_tracking_options {
 } celix_service_tracking_options_t;
 
 /**
- * C Macro to create a empty celix_service_tracking_options_t type.
+ * @brief C Macro to create a empty celix_service_tracking_options_t type.
  */
 #ifndef __cplusplus
 #define CELIX_EMPTY_SERVICE_TRACKING_OPTIONS { .filter.serviceName = NULL, \
@@ -561,7 +588,8 @@ typedef struct celix_service_tracking_options {
 #endif
 
 /**
- * Tracks services using the provided tracker options.
+ * @brief Tracks services using the provided tracker options.
+ *
  * The tracker options are only using during this call and can safely be freed/reused after this call returns.
  *
  * The service tracker will be created async on the Celix event loop thread. This means that the function can return
@@ -574,7 +602,8 @@ typedef struct celix_service_tracking_options {
 long celix_bundleContext_trackServicesWithOptionsAsync(celix_bundle_context_t *ctx, const celix_service_tracking_options_t *opts);
 
 /**
- * Tracks services using the provided tracker options.
+ * @brief Tracks services using the provided tracker options.
+ *
  * The tracker options are only using during this call and can safely be freed/reused after this call returns.
  * Note: Please use the celix_bundleContext_registerServiceFactoryAsync instead.
  *
@@ -586,7 +615,8 @@ long celix_bundleContext_trackServicesWithOptionsAsync(celix_bundle_context_t *c
 long celix_bundleContext_trackServicesWithOptions(celix_bundle_context_t *ctx, const celix_service_tracking_options_t *opts); //__attribute__((deprecated("Use celix_bundleContext_trackServicesWithOptionsAsync instead!")));
 
 /**
- * Stop the tracker with the provided track id.
+ * @brief Stop the tracker with the provided track id.
+ *
  * Could be a service tracker, bundle tracker or service tracker tracker.
  * Only works for the trackers owned by the bundle of the bundle context.
  *
@@ -605,17 +635,18 @@ void celix_bundleContext_stopTrackerAsync(
         void (*doneCallback)(void* doneCallbackData));
 
 /**
- * Wait for (async) creation of tracker
+ * @brief Wait for (async) creation of tracker
  */
 void celix_bundleContext_waitForAsyncTracker(celix_bundle_context_t* ctx, long trackerId);
 
 /**
- * Wait for (async) stopping of tracking.
+ * @brief Wait for (async) stopping of tracking.
  */
 void celix_bundleContext_waitForAsyncStopTracker(celix_bundle_context_t* ctx, long trackerId);
 
 /**
- * Stop the tracker with the provided track id.
+ * @brief Stop the tracker with the provided track id.
+ *
  * Could be a service tracker, bundle tracker or service tracker tracker.
  * Only works for the trackers owned by the bundle of the bundle context.
  * Note: Please use the celix_bundleContext_registerServiceFactoryAsync instead.
@@ -627,7 +658,7 @@ void celix_bundleContext_stopTracker(celix_bundle_context_t *ctx, long trackerId
 
 
 /**
- * Use the service with the provided service id using the provided callback. The Celix framework will ensure that
+ * @brief Use the service with the provided service id using the provided callback. The Celix framework will ensure that
  * the targeted service cannot be removed during the callback.
  *
  * The svc is should only be considered valid during the callback.
@@ -652,8 +683,9 @@ bool celix_bundleContext_useServiceWithId(
 );
 
 /**
- * Use the highest ranking service with the provided service name using the provided callback. The Celix framework will
- * ensure that the targeted service cannot be removed during the callback.
+ * @brief Use the highest ranking service with the provided service name using the provided callback.
+ *
+ * The Celix framework will ensure that the targeted service cannot be removed during the callback.
  *
  * The svc is should only be considered valid during the callback.
  * If no service is found the callback will not be invoked.
@@ -675,8 +707,9 @@ bool celix_bundleContext_useService(
 );
 
 /**
- * Use the services with the provided service name using the provided callback. The Celix framework will
- * ensure that the targeted service cannot be removed during the callback.
+ * @brief Use the services with the provided service name using the provided callback.
+ *
+ * The Celix framework will ensure that the targeted service cannot be removed during the callback.
  *
  * The svc is should only be considered valid during the callback.
  * If no service is found the callback will not be invoked.
@@ -698,28 +731,28 @@ size_t celix_bundleContext_useServices(
 );
 
 /**
- * Service Use Options used to fine tune which services to use and which callbacks to use.
+ * @brief Service Use Options used to fine tune which services to use and which callbacks to use.
  */
 typedef struct celix_service_use_options {
     /**
-     * The service filter options, used to setup the filter for the service to track.
+     * @brief The service filter options, used to setup the filter for the service to track.
      */
     celix_service_filter_options_t filter OPTS_INIT;
 
     /**
-     * An optional timeout (in seconds), if > 0 the use service call will block until the timeout is expired or
+     * @brief An optional timeout (in seconds), if > 0 the use service call will block until the timeout is expired or
      * when at least one service is found. Note that it will be ignored when use service on the event loop.
      * Default (0)
      */
      double waitTimeoutInSeconds OPTS_INIT;
 
     /**
-     * The optional callback pointer used in all the provided callback function (set, add, remove, setWithProperties, etc).
+     * @brief The optional callback pointer used in all the provided callback function (set, add, remove, setWithProperties, etc).
      */
     void *callbackHandle OPTS_INIT;
 
     /**
-     * The optional use callback will be called when for every services found conform the service filter options
+     * @brief The optional use callback will be called when for every services found conform the service filter options
      * - in case of findServices - or only for the highest ranking service found - in case of findService -.
      *
      * @param handle The callbackHandle pointer as provided in the service tracker options.
@@ -728,20 +761,20 @@ typedef struct celix_service_use_options {
     void (*use)(void *handle, void *svc) OPTS_INIT;
 
     /**
-     * The optional useWithProperties callback is handled as the use callback, but with the addition that the service properties
+     * @brief The optional useWithProperties callback is handled as the use callback, but with the addition that the service properties
      * will also be provided to the callback.
      */
     void (*useWithProperties)(void *handle, void *svc, const celix_properties_t *props) OPTS_INIT;
 
     /**
-     * The optional useWithOwner callback is handled as the yse callback, but with the addition that the service properties
+     * @brief The optional useWithOwner callback is handled as the yse callback, but with the addition that the service properties
      * and the bundle owning the service will also be provided to the callback.
      */
     void (*useWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *svcOwner) OPTS_INIT;
 } celix_service_use_options_t;
 
 /**
- * C Macro to create a empty celix_service_use_options_t type.
+ * @brief C Macro to create a empty celix_service_use_options_t type.
  */
 #ifndef __cplusplus
 #define CELIX_EMPTY_SERVICE_USE_OPTIONS {.filter.serviceName = NULL, \
@@ -756,8 +789,9 @@ typedef struct celix_service_use_options {
 #endif
 
 /**
- * Use the services with the provided service filter options using the provided callback. The Celix framework will
- * ensure that the targeted service cannot be removed during the callback.
+ * @brief Use the services with the provided service filter options using the provided callback.
+ *
+ * The Celix framework will ensure that the targeted service cannot be removed during the callback.
  *
  * The svc is should only be considered valid during the callback.
  * If no service is found the callback will not be invoked.
@@ -775,8 +809,9 @@ bool celix_bundleContext_useServiceWithOptions(
 
 
 /**
- * Use the services with the provided service filter options using the provided callback. The Celix framework will
- * ensure that the targeted service cannot be removed during the callback.
+ * @brief Use the services with the provided service filter options using the provided callback.
+ *
+ * The Celix framework will ensure that the targeted service cannot be removed during the callback.
  *
  * The svc is should only be considered valid during the callback.
  * If no service is found the callback will not be invoked.
@@ -796,7 +831,7 @@ size_t celix_bundleContext_useServicesWithOptions(
 
 
 /**
- * List the installed and started bundle ids.
+ * @brief List the installed and started bundle ids.
  * The bundle ids does not include the framework bundle (bundle id CELIX_FRAMEWORK_BUNDLE_ID).
  *
  * @param ctx The bundle context
@@ -805,7 +840,7 @@ size_t celix_bundleContext_useServicesWithOptions(
 celix_array_list_t* celix_bundleContext_listBundles(celix_bundle_context_t *ctx);
 
 /**
- * Check whether a bundle is installed.
+ * @brief Check whether a bundle is installed.
  * @param ctx       The bundle context.
  * @param bndId     The bundle id to check
  * @return          true if the bundle is installed.
@@ -813,7 +848,7 @@ celix_array_list_t* celix_bundleContext_listBundles(celix_bundle_context_t *ctx)
 bool celix_bundleContext_isBundleInstalled(celix_bundle_context_t *ctx, long bndId);
 
 /**
- * Check whether the bundle is active.
+ * @brief Check whether the bundle is active.
  * @param ctx       The bundle context.
  * @param bndId     The bundle id to check
  * @return          true if the bundle is installed and active.
@@ -822,7 +857,7 @@ bool celix_bundleContext_isBundleActive(celix_bundle_context_t *ctx, long bndId)
 
 
 /**
- * Install and optional start a bundle.
+ * @brief Install and optional start a bundle.
  * Will silently ignore bundle ids < 0.
  *
  * If this function is called on the Celix event thread and autoStart is true,
@@ -838,7 +873,7 @@ bool celix_bundleContext_isBundleActive(celix_bundle_context_t *ctx, long bndId)
 long celix_bundleContext_installBundle(celix_bundle_context_t *ctx, const char *bundleLoc, bool autoStart);
 
 /**
- * Uninstall the bundle with the provided bundle id. If needed the bundle will be stopped first.
+ * @brief Uninstall the bundle with the provided bundle id. If needed the bundle will be stopped first.
  * Will silently ignore bundle ids < 0.
  *
  * If this function is called on the Celix event thread, the actual stopping of the bundle will be done async and
@@ -853,7 +888,7 @@ long celix_bundleContext_installBundle(celix_bundle_context_t *ctx, const char *
 bool celix_bundleContext_uninstallBundle(celix_bundle_context_t *ctx, long bndId);
 
 /**
- * Stop the bundle with the provided bundle id.
+ * @brief Stop the bundle with the provided bundle id.
  * Will silently ignore bundle ids < 0.
  *
  * If this function is called on the Celix event thread, the actual stopping of the bundle will be done async and
@@ -868,7 +903,7 @@ bool celix_bundleContext_uninstallBundle(celix_bundle_context_t *ctx, long bndId
 bool celix_bundleContext_stopBundle(celix_bundle_context_t *ctx, long bndId);
 
 /**
- * Start the bundle with the provided bundle id.
+ * @brief Start the bundle with the provided bundle id.
  * Will silently ignore bundle ids < 0.
  *
  * If this function is called on the Celix event thread, the actual starting of the bundle will be done async and
@@ -883,7 +918,7 @@ bool celix_bundleContext_stopBundle(celix_bundle_context_t *ctx, long bndId);
 bool celix_bundleContext_startBundle(celix_bundle_context_t *ctx, long bndId);
 
 /**
- * Returns the bundle symbolic name for the provided bundle id.
+ * @brief Returns the bundle symbolic name for the provided bundle id.
  * The caller is owner of the return string.
  *
  * @param ctx The bundle context
@@ -894,7 +929,8 @@ char* celix_bundleContext_getBundleSymbolicName(celix_bundle_context_t *ctx, lon
 
 
 /**
- * track bundles
+ * @brief Track bundles.
+ *
  * The add bundle callback will also be called for already installed bundles.
  *
  * The bundle tracker will be created async on the Celix event loop thread. This means that the function can return
@@ -914,7 +950,8 @@ long celix_bundleContext_trackBundlesAsync(
 );
 
 /**
- * track bundles
+ * @brief Track bundles.
+ *
  * The add bundle callback will also be called for already installed bundles.
  *
  * Note: please use celix_bundleContext_trackBundlesAsync instead.
@@ -934,16 +971,16 @@ long celix_bundleContext_trackBundles(
 
 
 /**
- * The Service Bundle Tracking options can be used to fine tune the requested bundle tracker options.
+ * @brief The Service Bundle Tracking options can be used to fine tune the requested bundle tracker options.
  */
 typedef struct celix_bundle_tracker_options {
     /**
-     * The optional callback pointer used in all the provided callback function (set, add, remove, setWithProperties, etc).
+     * @brief The optional callback pointer used in all the provided callback function (set, add, remove, setWithProperties, etc).
      */
     void* callbackHandle OPTS_INIT;
 
     /**
-     * Tracker callback when a bundle is installed.
+     * @brief Tracker callback when a bundle is installed.
      * @param handle    The handle, contains the value of the callbackHandle.
      * @param bundle    The bundle which has been installed.
      *                  The bundle pointer is only guaranteed to be valid during the callback.
@@ -951,7 +988,7 @@ typedef struct celix_bundle_tracker_options {
     void (*onInstalled)(void *handle, const celix_bundle_t *bundle) OPTS_INIT;
 
     /**
-     * Tracker callback when a bundle is started.
+     * @brief Tracker callback when a bundle is started.
      * @param handle    The handle, contains the value of the callbackHandle.
      * @param bundle    The bundle which has been started.
      *                  The bundle pointer is only guaranteed to be valid during the callback.
@@ -959,7 +996,7 @@ typedef struct celix_bundle_tracker_options {
     void (*onStarted)(void *handle, const celix_bundle_t *bundle) OPTS_INIT;
 
     /**
-     * Tracker callback when a bundle is stopped.
+     * @brief Tracker callback when a bundle is stopped.
      * @param handle    The handle, contains the value of the callbackHandle.
      * @param bundle    The bundle which has been stopped.
      *                  The bundle pointer is only guaranteed to be valid during the callback.
@@ -974,18 +1011,18 @@ typedef struct celix_bundle_tracker_options {
     void (*onBundleEvent)(void *handle, const celix_bundle_event_t *event) OPTS_INIT;
 
     /**
-     * Default the framework bundle (bundle id 0) will not trigger the callbacks.
+     * @brief Default the framework bundle (bundle id 0) will not trigger the callbacks.
      * This is done, because the framework bundle is a special bundle which is generally not needed in the callbacks.
      */
     bool includeFrameworkBundle OPTS_INIT;
 
     /**
-     * Data for the trackerCreatedCallback.
+     * @brief Data for the trackerCreatedCallback.
      */
     void *trackerCreatedCallbackData OPTS_INIT;
 
     /**
-     * The callback called when the tracker has ben created (and is active) when using the
+     * @brief The callback called when the tracker has ben created (and is active) when using the
      * track bundles ascync calls.
      *
      * If a asyns track service is combined with a _sync_ stop tracker, it can happen that
@@ -996,14 +1033,15 @@ typedef struct celix_bundle_tracker_options {
 } celix_bundle_tracking_options_t;
 
 /**
- * C Macro to create a empty celix_service_filter_options_t type.
+ * @brief C Macro to create a empty celix_service_filter_options_t type.
  */
 #ifndef __cplusplus
 #define CELIX_EMPTY_BUNDLE_TRACKING_OPTIONS {.callbackHandle = NULL, .onInstalled = NULL, .onStarted = NULL, .onStopped = NULL, .onBundleEvent = NULL, .includeFrameworkBundle = false, .trackerCreatedCallbackData = NULL, .trackerCreatedCallback = NULL}
 #endif
 
 /**
- * Tracks bundles using the provided bundle tracker options.
+ * @brief Tracks bundles using the provided bundle tracker options.
+ *
  * The tracker options are only using during this call and can safely be freed/reused after this call returns.
  * (i.e. can be on the stack)
  *
@@ -1020,7 +1058,8 @@ long celix_bundleContext_trackBundlesWithOptionsAsync(
 );
 
 /**
- * Tracks bundles using the provided bundle tracker options.
+ * @brief Tracks bundles using the provided bundle tracker options.
+ *
  * The tracker options are only using during this call and can safely be freed/reused after this call returns.
  * (i.e. can be on the stack)
  *
@@ -1036,7 +1075,8 @@ long celix_bundleContext_trackBundlesWithOptions(
 ); //__attribute__((deprecated("Use celix_bundleContext_trackBundlesWithOptionsAsync instead!")));
 
 /**
- * Use the bundle with the provided bundle id if it is in the active (started) state
+ * @brief Use the bundle with the provided bundle id if it is in the active (started) state.
+ *
  * The provided callback will be called if the bundle is found and in the active (started) state.
  *
  * @param ctx               The bundle context.
@@ -1054,7 +1094,8 @@ bool celix_bundleContext_useBundle(
 );
 
 /**
- * Use the currently active (started) bundles.
+ * @brief Use the currently active (started) bundles.
+ *
  * The provided callback will be called for all the currently started bundles (excluding the framework bundle).
  *
  * @param ctx               The bundle context.
@@ -1068,22 +1109,17 @@ void celix_bundleContext_useBundles(
         void (*use)(void *handle, const celix_bundle_t *bundle)
 );
 
-
-
-//TODO add useBundleWithOptions (e.g. which state)
-//TODO findBundles
-
 /**
- * Service Tracker Info provided to the service tracker tracker callbacks.
+ * @brief Service Tracker Info provided to the service tracker tracker callbacks.
  */
 typedef struct celix_service_tracker_info {
     /**
-     * The parsed service filter, e.g. parsed "(&(objectClass=example_calc)(service.language=C)(meta.info=foo))"
+     * @brief The parsed service filter, e.g. parsed "(&(objectClass=example_calc)(service.language=C)(meta.info=foo))"
      */
     celix_filter_t *filter;
 
     /**
-     *The service name filter attribute parsed from the service filter (i.e. the value of the objectClass attribute key)
+     * @brief The service name filter attribute parsed from the service filter (i.e. the value of the objectClass attribute key)
      */
     const char *serviceName;
 
@@ -1094,14 +1130,15 @@ typedef struct celix_service_tracker_info {
     const char *serviceLanguage;
 
     /**
-     * Bundle id of the owner of the service tracker.
+     * @brief Bundle id of the owner of the service tracker.
      */
     long bundleId;
 } celix_service_tracker_info_t;
 
 /**
- * Track the service tracker targeting the provided service name. This can be used to track if there is an interest
- * in a certain service and ad-hoc act on that interest.
+ * @brief Track the service tracker targeting the provided service name.
+ *
+ * This can be used to track if there is an interest in a certain service and ad-hoc act on that interest.
  *
  * Note that the celix_service_tracker_info_t pointer in the trackerAdd/trackerRemove callbacks are only valid during
  * the callback.
@@ -1135,8 +1172,9 @@ long celix_bundleContext_trackServiceTrackersAsync(
         void (*doneCallback)(void* doneCallbackData));
 
 /**
- * Track the service tracker targeting the provided service name. This can be used to track if there is an interest
- * in a certain service and ad-hoc act on that interest.
+ * @brief Track the service tracker targeting the provided service name.
+ *
+ * This can be used to track if there is an interest in a certain service and ad-hoc act on that interest.
  *
  * Note that the celix_service_tracker_info_t pointer in the trackerAdd/trackerRemove callbacks are only valid during
  * the callback.
@@ -1162,7 +1200,7 @@ long celix_bundleContext_trackServiceTrackers(
         void (*trackerRemove)(void *handle, const celix_service_tracker_info_t *info)); //__attribute__((deprecated("Use celix_bundleContext_trackServiceTrackersAsync instead!")));
 
 /**
- * Gets the dependency manager for this bundle context.
+ * @brief Gets the dependency manager for this bundle context.
  *
  * @return the dependency manager or NULL if unsuccessful.
  */
@@ -1170,26 +1208,26 @@ celix_dependency_manager_t* celix_bundleContext_getDependencyManager(celix_bundl
 
 
 /**
- * Wait until all Celix event for this bundle are completed.
+ * @brief Wait until all Celix event for this bundle are completed.
  */
 void celix_bundleContext_waitForEvents(celix_bundle_context_t* ctx);
 
 
 /**
- * Returns the bundle for this bundle context.
+ * @brief Returns the bundle for this bundle context.
  */
 celix_bundle_t* celix_bundleContext_getBundle(const celix_bundle_context_t *ctx);
 
 
 /**
- * Returns the bundle if for the bundle of this bundle context.
+ * @brief Returns the bundle if for the bundle of this bundle context.
  */
 long celix_bundleContext_getBundleId(const celix_bundle_context_t *ctx);
 
 celix_framework_t* celix_bundleContext_getFramework(const celix_bundle_context_t* ctx);
 
 /**
- * Logs a message to Celix framework logger with the provided log level.
+ * @brief Logs a message to Celix framework logger with the provided log level.
  * @param ctx       The bundle context
  * @param level     The log level to use
  * @param format    printf style format string
@@ -1198,13 +1236,13 @@ celix_framework_t* celix_bundleContext_getFramework(const celix_bundle_context_t
 void celix_bundleContext_log(const celix_bundle_context_t* ctx, celix_log_level_e level, const char* format, ...);
 
 /**
- * Logs a message to Celix framework logger with the provided log level.
+ * @brief Logs a message to Celix framework logger with the provided log level.
  */
 void celix_bundleContext_vlog(const celix_bundle_context_t* ctx, celix_log_level_e level, const char* format, va_list formatArgs);
 
 
 /**
- * Gets the config property - or environment variable if the config property does not exist - for the provided name.
+ * @brief Gets the config property - or environment variable if the config property does not exist - for the provided name.
  * @param key The key of the property to receive.
  * @param defaultVal The default value to use if the property is not found (can be NULL).
  * @return The property value for the provided key or the provided defaultValue is the key is not found.
@@ -1212,7 +1250,7 @@ void celix_bundleContext_vlog(const celix_bundle_context_t* ctx, celix_log_level
 const char* celix_bundleContext_getProperty(celix_bundle_context_t *ctx, const char *key, const char *defaultVal);
 
 /**
- * Gets the config property as converts it to long. If the property is not a valid long, the defaultValue will be returned.
+ * @brief Gets the config property as converts it to long. If the property is not a valid long, the defaultValue will be returned.
  * The rest of the behaviour is the same as celix_bundleContext_getProperty.
 
  * @param key The key of the property to receive.
@@ -1222,7 +1260,7 @@ const char* celix_bundleContext_getProperty(celix_bundle_context_t *ctx, const c
 long celix_bundleContext_getPropertyAsLong(celix_bundle_context_t *ctx, const char *key, long defaultValue);
 
 /**
- * Gets the config property as converts it to double. If the property is not a valid double, the defaultValue will be returned.
+ * @brief Gets the config property as converts it to double. If the property is not a valid double, the defaultValue will be returned.
  * The rest of the behaviour is the same as celix_bundleContext_getProperty.
 
  * @param key The key of the property to receive.
@@ -1232,7 +1270,7 @@ long celix_bundleContext_getPropertyAsLong(celix_bundle_context_t *ctx, const ch
 double celix_bundleContext_getPropertyAsDouble(celix_bundle_context_t *ctx, const char *key, double defaultValue);
 
 /**
- * Gets the config property as converts it to bool. If the property is not a valid bool, the defaultValue will be returned.
+ * @brief Gets the config property as converts it to bool. If the property is not a valid bool, the defaultValue will be returned.
  * The rest of the behaviour is the same as celix_bundleContext_getProperty.
 
  * @param key The key of the property to receive.

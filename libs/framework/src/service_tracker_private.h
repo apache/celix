@@ -74,6 +74,8 @@ struct celix_serviceTracker {
 typedef struct celix_tracked_entry {
 	service_reference_pt reference;
 	void *service;
+    long serviceId; //cached service.id of the service
+    long serviceRanking; //cached service.ranking of the service
 	const char *serviceName;
 	properties_t *properties;
 	bundle_t *serviceOwner;

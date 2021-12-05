@@ -27,12 +27,12 @@ class CxxPropertiesTestSuite : public ::testing::Test {
 public:
 };
 
-TEST_F(CxxPropertiesTestSuite, CreateDestroy) {
+TEST_F(CxxPropertiesTestSuite, testCreateDestroy) {
     celix::Properties props{};
     EXPECT_EQ(0, props.size());
 }
 
-TEST_F(CxxPropertiesTestSuite, FillAndLoop) {
+TEST_F(CxxPropertiesTestSuite, testFillAndLoop) {
     celix::Properties props{};
     EXPECT_EQ(0, props.size());
 
@@ -45,7 +45,6 @@ TEST_F(CxxPropertiesTestSuite, FillAndLoop) {
 
     EXPECT_EQ(props.get("key1"), "value1");
     EXPECT_EQ(props.get("key2"), "value2");
-    //TODO ASSERT_THAT(props.get("key3"), MatchesRegex("3.3.*"));
     EXPECT_EQ(props.getAsDouble("key3", 0), 3.3);
     EXPECT_EQ(props.get("key4"), "4");
     EXPECT_EQ(props.getAsLong("key4", -1), 4);
@@ -60,7 +59,7 @@ TEST_F(CxxPropertiesTestSuite, FillAndLoop) {
     EXPECT_EQ(5, count);
 }
 
-TEST_F(CxxPropertiesTestSuite, CopyTest) {
+TEST_F(CxxPropertiesTestSuite, testCopy) {
     celix::Properties props{};
 
     props["key1"] = "value1";
@@ -75,7 +74,7 @@ TEST_F(CxxPropertiesTestSuite, CopyTest) {
     EXPECT_EQ(v2, "value1_new");
 }
 
-TEST_F(CxxPropertiesTestSuite, WrapTest) {
+TEST_F(CxxPropertiesTestSuite, testWrap) {
     auto *props = celix_properties_create();
     celix_properties_set(props, "test", "test");
 

@@ -53,7 +53,7 @@ namespace celix::impl {
 
         bool tryResolve(const T& value);
 
-        bool tryFail(std::exception_ptr e);
+        bool tryFail(const std::exception_ptr& e);
 
         template<typename E>
         bool tryFail(const E& e);
@@ -149,7 +149,7 @@ namespace celix::impl {
 
         bool tryResolve();
 
-        bool tryFail(std::exception_ptr e);
+        bool tryFail(const std::exception_ptr& e);
 
         template<typename E>
         bool tryFail(const E& e);
@@ -310,20 +310,20 @@ inline bool celix::impl::SharedPromiseState<void>::tryResolve() {
 }
 
 template<typename T>
-bool celix::impl::SharedPromiseState<T>::tryFail(std::exception_ptr e) {
+bool celix::impl::SharedPromiseState<T>::tryFail(const std::exception_ptr& e) {
     std::unique_lock<std::mutex> lck{mutex};
     if (!done) {
-        exp = std::move(e);
+        exp = e;
         complete(lck);
         return true;
     }
     return false;
 }
 
-inline bool celix::impl::SharedPromiseState<void>::tryFail(std::exception_ptr e) {
+inline bool celix::impl::SharedPromiseState<void>::tryFail(const std::exception_ptr& e) {
     std::unique_lock<std::mutex> lck{mutex};
     if (!done) {
-        exp = std::move(e);
+        exp = e;
         complete(lck);
         return true;
     }
@@ -518,11 +518,11 @@ void celix::impl::SharedPromiseState<T>::resolveWith(SharedPromiseState<U>& with
 
 template<typename U>
 inline void celix::impl::SharedPromiseState<void>::resolveWith(SharedPromiseState<U>& with) {
-    with.addOnResolve([s = self.lock()](std::optional<std::exception_ptr> e) {
+    with.addOnResolve([s = self.lock()](const std::optional<std::exception_ptr>& e) {
         if (!e) {
             s->tryResolve();
         } else if (s) {
-            s->tryFail(std::move(*e));
+            s->tryFail(*e);
         }
     });
 }
@@ -590,7 +590,7 @@ std::shared_ptr<celix::impl::SharedPromiseState<T>> celix::impl::SharedPromiseSt
 template<typename Rep, typename Period>
 std::shared_ptr<celix::impl::SharedPromiseState<void>> celix::impl::SharedPromiseState<void>::delay(std::chrono::duration<Rep, Period> duration) {
     auto state = celix::impl::SharedPromiseState<void>::create(executor, scheduledExecutor, priority);
-    addOnResolve([state, duration](std::optional<std::exception_ptr> e) {
+    addOnResolve([state, duration](const std::optional<std::exception_ptr>& e) {
         state->scheduledExecutor->schedule(state->priority, duration, [e, state] {
             try {
                 if (!e) {
@@ -633,7 +633,7 @@ inline std::shared_ptr<celix::impl::SharedPromiseState<void>> celix::impl::Share
 
     auto p = celix::impl::SharedPromiseState<void>::create(executor, scheduledExecutor, priority);
 
-    addOnResolve([p, recover = std::move(recover)](std::optional<std::exception_ptr> e) {
+    addOnResolve([p, recover = std::move(recover)](const std::optional<std::exception_ptr>& e) {
         if (!e) {
             p->tryResolve();
         }  else {
@@ -835,7 +835,7 @@ inline std::shared_ptr<celix::impl::SharedPromiseState<void>> celix::impl::Share
 }
 
 template<typename T>
-void celix::impl::SharedPromiseState<T>::addOnResolve(std::function<void(std::optional<T> val, std::exception_ptr exp)> callback) {
+void celix::impl::SharedPromiseState<T>::addOnResolve(std::function<void(std::optional<T>, std::exception_ptr)> callback) {
     std::function<void()> task = [s = self.lock(), callback = std::move(callback)] {
         std::exception_ptr e;
         {
@@ -851,7 +851,7 @@ void celix::impl::SharedPromiseState<T>::addOnResolve(std::function<void(std::op
     addChain(task);
 }
 
-inline void celix::impl::SharedPromiseState<void>::addOnResolve(std::function<void(std::optional<std::exception_ptr> exp)> callback) {
+inline void celix::impl::SharedPromiseState<void>::addOnResolve(std::function<void(std::optional<std::exception_ptr>)> callback) {
     std::function<void()> task = [s = self.lock(), callback = std::move(callback)] {
         std::exception_ptr e;
         {

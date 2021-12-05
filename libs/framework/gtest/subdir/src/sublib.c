@@ -17,28 +17,12 @@
  * under the License.
  */
 
-#ifndef BUNDLE_PRIVATE_H_
-#define BUNDLE_PRIVATE_H_
+#include <stdio.h>
 
-#include "bundle.h"
-#include "celix_bundle.h"
+void foo();
+char* get_bundle_name();
 
+void foo() {
+    printf("nop\n");
+}
 
-
-struct celix_bundle {
-	bundle_context_pt context;
-    char *symbolicName;
-	char *name;
-	char *group;
-	char *description;
-	struct celix_bundle_activator *activator;
-	bundle_state_e state;
-	void * handle;
-	bundle_archive_pt archive;
-	array_list_pt modules;
-	manifest_pt manifest;
-
-	celix_framework_t *framework;
-};
-
-#endif /* BUNDLE_PRIVATE_H_ */

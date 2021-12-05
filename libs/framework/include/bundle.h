@@ -40,6 +40,9 @@ extern "C" {
 struct celix_bundle_activator;
 typedef struct celix_bundle_activator celix_bundle_activator_t;
 
+/**
+ * @brief Create system bundle
+ */
 FRAMEWORK_EXPORT celix_status_t bundle_create(celix_bundle_t **bundle);
 
 FRAMEWORK_EXPORT celix_status_t

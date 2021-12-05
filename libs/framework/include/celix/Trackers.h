@@ -368,9 +368,9 @@ namespace celix {
         }
     protected:
         struct SvcEntry {
-            SvcEntry(long _svcId, long _svcRanking, const std::shared_ptr<I> _svc,
-                     const std::shared_ptr<const celix::Properties> _properties,
-                     const std::shared_ptr<const celix::Bundle> _owner) : svcId(_svcId), svcRanking(_svcRanking),
+            SvcEntry(long _svcId, long _svcRanking, std::shared_ptr<I> _svc,
+                     std::shared_ptr<const celix::Properties> _properties,
+                     std::shared_ptr<const celix::Bundle> _owner) : svcId(_svcId), svcRanking(_svcRanking),
                                                                           svc(std::move(_svc)),
                                                                           properties(std::move(_properties)),
                                                                           owner(std::move(_owner)) {}
@@ -527,15 +527,16 @@ namespace celix {
             }
         }
 
-        const std::chrono::milliseconds warningTimoutForNonExpiredSvcObject{1000}; //TODO make configureable with buidler
+        const std::chrono::milliseconds warningTimoutForNonExpiredSvcObject{1000};
 
         const std::vector<std::function<void(const std::shared_ptr<I>&, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&)>> setCallbacks;
         const std::vector<std::function<void(const std::shared_ptr<I>&, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&)>> addCallbacks;
         const std::vector<std::function<void(const std::shared_ptr<I>&, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&)>> remCallbacks;
 
-        const std::vector<std::function<void(const std::vector<std::shared_ptr<I>>)>> updateCallbacks{}; //TODO add to ctor, builder and test
-        const std::vector<std::function<void(const std::vector<std::pair<std::shared_ptr<I>, std::shared_ptr<const celix::Properties>>>)>> updateWithPropertiesCallbacks{}; //TODO add to ctor, builder and test
-        const std::vector<std::function<void(const std::vector<std::tuple<std::shared_ptr<I>, std::shared_ptr<const celix::Properties>, std::shared_ptr<const celix::Bundle>>>)>> updateWithOwnerCallbacks{}; //TODO add to ctor, builder and test
+        //NOTE update callbacks cannot yet be configured
+        const std::vector<std::function<void(const std::vector<std::shared_ptr<I>>)>> updateCallbacks{};
+        const std::vector<std::function<void(const std::vector<std::pair<std::shared_ptr<I>, std::shared_ptr<const celix::Properties>>>)>> updateWithPropertiesCallbacks{};
+        const std::vector<std::function<void(const std::vector<std::tuple<std::shared_ptr<I>, std::shared_ptr<const celix::Properties>, std::shared_ptr<const celix::Bundle>>>)>> updateWithOwnerCallbacks{};
 
         struct SvcEntryCompare {
             bool operator() (const std::shared_ptr<SvcEntry>& a, const std::shared_ptr<SvcEntry>& b) const {
@@ -618,21 +619,21 @@ namespace celix {
             opts.callbackHandle = this;
             opts.onInstalled = [](void *handle, const celix_bundle_t *cBnd) {
                 auto tracker = static_cast<BundleTracker *>(handle);
-                auto bnd = celix::Bundle{const_cast<celix_bundle_t *>(cBnd)};
+                celix::Bundle bnd{const_cast<celix_bundle_t *>(cBnd)};
                 for (const auto& cb : tracker->onInstallCallbacks) {
                     cb(bnd);
                 }
             };
             opts.onStarted = [](void *handle, const celix_bundle_t *cBnd) {
                 auto tracker = static_cast<BundleTracker *>(handle);
-                auto bnd = celix::Bundle{const_cast<celix_bundle_t *>(cBnd)};
+                celix::Bundle bnd{const_cast<celix_bundle_t *>(cBnd)};
                 for (const auto& cb : tracker->onStartCallbacks) {
                     cb(bnd);
                 }
             };
             opts.onStopped = [](void *handle, const celix_bundle_t *cBnd) {
                 auto tracker = static_cast<BundleTracker *>(handle);
-                auto bnd = celix::Bundle{const_cast<celix_bundle_t *>(cBnd)};
+                celix::Bundle bnd{const_cast<celix_bundle_t *>(cBnd)};
                 for (const auto& cb : tracker->onStopCallbacks) {
                     cb(bnd);
                 }

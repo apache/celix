@@ -37,8 +37,7 @@
 #include "bundle_private.h"
 #include "celix_bundle_context.h"
 #include "bundle_context_private.h"
-#include "service_tracker.h"
-#include "celix_library_loader.h"
+#include "celix_libloader.h"
 #include "celix_log_constants.h"
 
 typedef celix_status_t (*create_function_fp)(bundle_context_t *context, void **userData);
@@ -259,7 +258,7 @@ celix_status_t framework_create(framework_pt *out, celix_properties_t* config) {
     }
     framework->logger = celix_frameworkLogger_create(celix_logUtils_logLevelFromString(logStr, CELIX_LOG_LEVEL_INFO));
 
-    celix_status_t status =bundle_create(&framework->bundle);
+    celix_status_t status = bundle_create(&framework->bundle);
     status = CELIX_DO_IF(status, bundle_getBundleId(framework->bundle, &framework->bundleId));
     status = CELIX_DO_IF(status, bundle_setFramework(framework->bundle, framework));
     status = CELIX_DO_IF(status, bundleCache_create(uuid, framework->configurationMap, &framework->cache));

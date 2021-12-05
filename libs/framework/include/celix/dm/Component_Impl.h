@@ -59,7 +59,7 @@ Component<T>::Component(
         std::string uuid) : BaseComponent(
                 context,
                 cDepMan,
-                name.empty() ? celix::typeName<T>() : std::move(name),
+                celix::typeName<T>(name),
                 std::move(uuid)) {}
 
 template<class T>
@@ -92,6 +92,10 @@ Component<T>& Component<T>::addInterface(const std::string &version, const Prope
     std::string serviceName = typeName<I>();
     if (serviceName.empty()) {
         std::cerr << "Cannot add interface, because type name could not be inferred. function: '"  << __PRETTY_FUNCTION__ << "'\n";
+    }
+    auto svcVersion = celix::typeVersion<I>(version);
+    if (!svcVersion.empty()) {
+        properties[celix::SERVICE_VERSION] = std::move(svcVersion);
     }
 
     return this->addInterfaceWithName<I>(serviceName, version, properties);
@@ -163,7 +167,7 @@ Component<T>& Component<T>::remove(CServiceDependency<T,I>& dep) {
 
 template<class T>
 std::shared_ptr<Component<T>> Component<T>::create(celix_bundle_context_t *context, celix_dependency_manager_t* cDepMan, std::string name, std::string uuid) {
-    std::string cmpName = name.empty() ? celix::typeName<T>() : std::move(name);
+    std::string cmpName = celix::typeName<T>(name);
     return std::shared_ptr<Component<T>>{new Component<T>(context, cDepMan, std::move(cmpName), std::move(uuid)), [](Component<T>* cmp){
         //Using a callback of async destroy to ensure that the cmp instance is still exist while the
         //dm component is async disabled and destroyed.
@@ -405,6 +409,10 @@ ProvidedService<T, I> &Component<T>::createProvidedService(std::string serviceNa
 
     I* svcPtr = &this->getInstance();
     auto provide = std::make_shared<ProvidedService<T,I>>(cComponent(), serviceName, svcPtr, true);
+    auto svcVersion = celix::typeVersion<I>();
+    if (!svcVersion.empty()) {
+        provide->addProperty(celix::SERVICE_VERSION, std::move(svcVersion));
+    }
     std::lock_guard<std::mutex> lck{mutex};
     providedServices.push_back(provide);
     return *provide;

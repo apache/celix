@@ -377,7 +377,7 @@ namespace celix {
          * @brief List the installed and started bundle ids.
          * The bundle ids does not include the framework bundle (bundle id celix::FRAMEWORK_BUNDLE_ID).
          */
-        std::vector<long> listBundleIds() const {
+        [[nodiscard]] std::vector<long> listBundleIds() const {
             std::vector<long> result{};
             auto* ids = celix_bundleContext_listBundles(cCtx.get());
             result.reserve(celix_arrayList_size(ids));
@@ -399,7 +399,7 @@ namespace celix {
          * @param defaultVal The default value to use if the property is not found.
          * @return The config property value for the provided key or the provided defaultValue is the name is not found.
          */
-        std::string getConfigProperty(const std::string& name, const std::string& defaultValue) const {
+        [[nodiscard]] std::string getConfigProperty(const std::string& name, const std::string& defaultValue) const {
             return std::string{celix_bundleContext_getProperty(cCtx.get(), name.c_str(), defaultValue.c_str())};
         }
 
@@ -415,7 +415,7 @@ namespace celix {
          * @return The config property value (as long) for the provided key or the provided defaultValue is the name
          * is not found or not a valid long.
          */
-        long getConfigPropertyAsLong(const std::string& name, long defaultValue) const {
+        [[nodiscard]] long getConfigPropertyAsLong(const std::string& name, long defaultValue) const {
             return celix_bundleContext_getPropertyAsLong(cCtx.get(), name.c_str(), defaultValue);
         }
 
@@ -431,7 +431,7 @@ namespace celix {
          * @return The config property value (as double) for the provided key or the provided defaultValue is the name
          * is not found or not a valid double.
          */
-        double getConfigPropertyAsDouble(const std::string& name, double defaultValue) const {
+        [[nodiscard]] double getConfigPropertyAsDouble(const std::string& name, double defaultValue) const {
             return celix_bundleContext_getPropertyAsDouble(cCtx.get(), name.c_str(), defaultValue);
         }
 
@@ -449,28 +449,28 @@ namespace celix {
          * @return The config property value (as boolean) for the provided key or the provided defaultValue is the name
          * is not found or not a valid boolean.
          */
-        long getConfigPropertyAsBool(const std::string& name, bool defaultValue) const {
+        [[nodiscard]] long getConfigPropertyAsBool(const std::string& name, bool defaultValue) const {
             return celix_bundleContext_getPropertyAsBool(cCtx.get(), name.c_str(), defaultValue);
         }
 
         /**
          * @brief Get the bundle of this bundle context.
          */
-        const Bundle& getBundle() const {
+        [[nodiscard]] const Bundle& getBundle() const {
             return bnd;
         }
 
         /**
          * @brief Get the bundle id for the bundle of this bundle context
          */
-         long getBundleId() const {
+        [[nodiscard]] long getBundleId() const {
              return bnd.getId();
          }
 
         /**
          * @brief Get the Celix framework for this bundle context.
          */
-        std::shared_ptr<Framework> getFramework() const {
+        [[nodiscard]] std::shared_ptr<Framework> getFramework() const {
             auto* cFw = celix_bundleContext_getFramework(cCtx.get());
             auto fwCtx = std::make_shared<celix::BundleContext>(celix_framework_getFrameworkContext(cFw));
             return std::make_shared<Framework>(fwCtx, cFw);
@@ -479,7 +479,7 @@ namespace celix {
         /**
          * @brief Get the Celix dependency manager for this bundle context
          */
-        std::shared_ptr<dm::DependencyManager> getDependencyManager() const {
+        [[nodiscard]] std::shared_ptr<dm::DependencyManager> getDependencyManager() const {
             return dm;
         }
 
@@ -489,7 +489,7 @@ namespace celix {
          * @warning Try not the depend on the C API from a C++ bundle. If features are missing these should be added to
          * the C++ API.
          */
-        celix_bundle_context_t* getCBundleContext() const {
+        [[nodiscard]] celix_bundle_context_t* getCBundleContext() const {
             return cCtx.get();
         }
 

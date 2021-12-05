@@ -39,6 +39,7 @@
 #include "module.h"
 #include "service_tracker_private.h"
 #include "celix_array_list.h"
+#include "celix_libloader.h"
 
 static celix_status_t bundleContext_bundleChanged(void *handle, bundle_event_t *event);
 static void bundleContext_cleanupBundleTrackers(bundle_context_t *ct);

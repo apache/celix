@@ -21,6 +21,9 @@ add_executable(test_utils
         src/VersionRangeTestSuite.cc
         src/TimeUtilsTestSuite.cc
         src/FileUtilsTestSuite.cc
+        src/CxxUtilsTestSuite.cc
+        src/CxxPropertiesTestSuite.cc
+        src/CxxFilterTestSuite.cc
 )
 
 target_link_libraries(test_utils PRIVATE Celix::utils GTest::gtest GTest::gtest_main)

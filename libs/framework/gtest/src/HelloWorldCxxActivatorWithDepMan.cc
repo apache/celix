@@ -17,10 +17,16 @@
  * under the License.
  */
 
-#include <stdio.h>
+#include "celix/BundleActivator.h"
 
-void foo(void);
-
-void foo(void) {
-    printf("nop\n");
+namespace {
+    class BundleActivator {
+    public:
+        explicit BundleActivator(const std::shared_ptr<celix::dm::DependencyManager>& dm) {
+            auto *cCtx = dm->bundleContext();
+            celix_bundleContext_log(cCtx, CELIX_LOG_LEVEL_INFO, "Hello World\n");
+        }
+    };
 }
+
+CELIX_GEN_CXX_BUNDLE_ACTIVATOR(BundleActivator)

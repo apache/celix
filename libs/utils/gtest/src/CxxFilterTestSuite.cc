@@ -29,7 +29,7 @@ public:
 TEST_F(CxxFilterTestSuite, CreateDestroy) {
     celix::Filter filter{};
     EXPECT_TRUE(filter.empty());
-    EXPECT_TRUE(filter.getCFilter() == nullptr); //TODO tbd add support for empty filter to C?
+    EXPECT_TRUE(filter.getCFilter() == nullptr);
     EXPECT_TRUE(filter.getFilterString().empty());
 }
 
@@ -43,7 +43,7 @@ TEST_F(CxxFilterTestSuite, FilterString) {
 }
 
 TEST_F(CxxFilterTestSuite, InvalidFilter) {
-    EXPECT_THROW(celix::Filter{"bla"}, celix::Exception);
+    EXPECT_THROW(celix::Filter{"bla"}, celix::FilterException);
 }
 
 TEST_F(CxxFilterTestSuite, EmptyFilterTest) {

@@ -15,6 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
+# Celix C bundles
 add_subdirectory(http_admin)
 add_subdirectory(logging)
 add_subdirectory(shell)
@@ -22,4 +23,8 @@ add_subdirectory(device_access)
 add_subdirectory(deployment_admin)
 add_subdirectory(remote_services)
 add_subdirectory(pubsub)
-add_subdirectory(cxx_remote_services)
+
+# Celix C++17 bundles
+if (CELIX_CXX)
+    add_subdirectory(cxx_remote_services)
+endif ()

@@ -144,6 +144,9 @@ extern "C" {
 #define OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_DESTROY "bundleActivator_destroy"
 
 #define CELIX_FRAMEWORK_BUNDLE_SYMBOLICNAME "Bundle-SymbolicName"
+#define CELIX_FRAMEWORK_BUNDLE_NAME "Bundle-Name"
+#define CELIX_FRAMEWORK_BUNDLE_GROUP "Bundle-Group"
+#define CELIX_FRAMEWORK_BUNDLE_DESCRIPTION "Bundle-Description"
 #define CELIX_FRAMEWORK_BUNDLE_VERSION "Bundle-Version"
 #define CELIX_FRAMEWORK_PRIVATE_LIBRARY "Private-Library"
 #define CELIX_FRAMEWORK_EXPORT_LIBRARY "Export-Library"
@@ -269,7 +272,6 @@ extern "C" {
  * @see CELIX_AUTO_START_0
  */
 #define CELIX_AUTO_START_6 "CELIX_AUTO_START_6"
-
 
 #ifdef __cplusplus
 }

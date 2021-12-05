@@ -11,11 +11,16 @@ namespace celix {
     public:
         explicit Exception(std::string msg) : w{std::move(msg)} {}
 
-        const char* what() const noexcept override {
+        Exception(const Exception&) = default;
+        Exception(Exception&&) = default;
+        Exception& operator=(const Exception&) = default;
+        Exception& operator=(Exception&&) = default;
+
+        [[nodiscard]] const char* what() const noexcept override {
             return w.c_str();
         }
     private:
-        const std::string w;
+        std::string w;
     };
 
 }

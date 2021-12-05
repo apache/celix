@@ -49,6 +49,8 @@ static inline celix_tracked_entry_t* tracked_create(service_reference_pt ref, vo
     celix_tracked_entry_t *tracked = calloc(1, sizeof(*tracked));
     tracked->reference = ref;
     tracked->service = svc;
+    tracked->serviceId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_ID, -1);
+    tracked->serviceRanking = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_RANKING, 0);
     tracked->properties = props;
     tracked->serviceOwner = bnd;
     tracked->serviceName = celix_properties_get(props, OSGI_FRAMEWORK_OBJECTCLASS, "Error");
@@ -437,7 +439,10 @@ static celix_status_t serviceTracker_track(service_tracker_t* tracker, service_r
             arrayList_add(tracker->trackedServices, tracked);
             celixThreadMutex_unlock(&tracker->mutex);
 
-            celix_serviceTracker_useHighestRankingService(tracker, tracked->serviceName, tracker, NULL, NULL, serviceTracker_checkAndInvokeSetService);
+            if (tracker->set != NULL || tracker->setWithProperties != NULL || tracker->setWithOwner != NULL) {
+                celix_serviceTracker_useHighestRankingService(tracker, tracked->serviceName, tracker, NULL, NULL,
+                                                              serviceTracker_checkAndInvokeSetService);
+            }
             serviceTracker_invokeAddService(tracker, tracked);
         }
     } else {
@@ -718,7 +723,6 @@ bool celix_serviceTracker_useHighestRankingService(service_tracker_t *tracker,
     bool called = false;
     celix_tracked_entry_t *tracked = NULL;
     celix_tracked_entry_t *highest = NULL;
-    long highestRank = 0;
     unsigned int i;
 
     //first lock tracker and get highest tracked entry
@@ -727,11 +731,17 @@ bool celix_serviceTracker_useHighestRankingService(service_tracker_t *tracker,
 
     for (i = 0; i < size; i++) {
         tracked = (celix_tracked_entry_t *) arrayList_get(tracker->trackedServices, i);
-        if (serviceName != NULL && tracked->serviceName != NULL && strncmp(tracked->serviceName, serviceName, 10*1024) == 0) {
-            const char *val = properties_getWithDefault(tracked->properties, OSGI_FRAMEWORK_SERVICE_RANKING, "0");
-            long rank = strtol(val, NULL, 10);
-            if (highest == NULL || rank > highestRank) {
+        if (serviceName != NULL && tracked->serviceName != NULL && celix_utils_stringEquals(tracked->serviceName, serviceName)) {
+            if (highest == NULL) {
                 highest = tracked;
+            } else {
+                int compare = celix_utils_compareServiceIdsAndRanking(
+                        tracked->serviceId, tracked->serviceRanking,
+                        highest->serviceId, highest->serviceRanking
+                );
+                if (compare < 0) {
+                    highest = tracked;
+                }
             }
         }
     }

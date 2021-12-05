@@ -23,9 +23,27 @@
 
 #include "celix_filter.h"
 #include "celix/Properties.h"
-#include "celix/Exception.h"
 
 namespace celix {
+
+    /**
+     * @brief FilterException
+     */
+    class FilterException : public std::exception {
+    public:
+        explicit FilterException(std::string msg) : w{std::move(msg)} {}
+
+        FilterException(const FilterException&) = default;
+        FilterException(FilterException&&) = default;
+        FilterException& operator=(const FilterException&) = default;
+        FilterException& operator=(FilterException&&) = default;
+
+        [[nodiscard]] const char* what() const noexcept override {
+            return w.c_str();
+        }
+    private:
+        std::string w;
+    };
 
     /**
      * @brief An RFC 1960-based (LDAP) Filter.
@@ -65,7 +83,7 @@ namespace celix {
         /**
          * @brief Gets the filter string
          */
-        std::string getFilterString() const {
+        [[nodiscard]] std::string getFilterString() const {
             auto cStr = getFilterCString();
             return cStr == nullptr ? std::string{} : std::string{cStr};
         }
@@ -73,14 +91,14 @@ namespace celix {
         /**
          * @brief Get the C string. valid as long as the filter object is valid.
          */
-        const char* getFilterCString() const {
+        [[nodiscard]] const char* getFilterCString() const {
             return celix_filter_getFilterString(cFilter.get());
         }
 
         /**
          * @brief match the filter against the provided properties
          */
-        bool match(const celix::Properties& properties)  const {
+        [[nodiscard]] bool match(const celix::Properties& properties)  const {
             return celix_filter_match(cFilter.get(), properties.getCProperties());
         }
 
@@ -88,7 +106,7 @@ namespace celix {
          * @brief Find the attribute based on the provided key.
          * @return The found attribute value or an empty string if the attribute was not found.
          */
-        std::string findAttribute(const std::string& attributeKey) const {
+        [[nodiscard]] std::string findAttribute(const std::string& attributeKey) const {
             auto* cValue = celix_filter_findAttribute(cFilter.get(), attributeKey.c_str());
             return cValue == nullptr ? std::string{} : std::string{cValue};
         }
@@ -96,7 +114,7 @@ namespace celix {
         /**
          * @brief Check whether the filter has a attribute with the provided attribute key.
          */
-        bool hasAttribute(const std::string& attributeKey) const {
+        [[nodiscard]] bool hasAttribute(const std::string& attributeKey) const {
             return celix_filter_findAttribute(cFilter.get(), attributeKey.c_str()) != nullptr;
         }
 
@@ -106,14 +124,14 @@ namespace celix {
          * @warning Try not the depend on the C API from a C++ bundle. If features are missing these should be added to
          * the C++ API.
          */
-        celix_filter_t* getCFilter() const {
+        [[nodiscard]] celix_filter_t* getCFilter() const {
             return cFilter.get();
         }
 
         /**
          * @brief Return whether the filter is empty.
          */
-        bool empty() const {
+        [[nodiscard]] bool empty() const {
             return cFilter == nullptr;
         }
     private:
@@ -123,7 +141,7 @@ namespace celix {
             }
             auto* cf = celix_filter_create(filterStr.c_str());
             if (cf == nullptr) {
-                throw celix::Exception{"Invalid LDAP filter '" + filterStr + "'"};
+                throw celix::FilterException{"Invalid LDAP filter '" + filterStr + "'"};
             }
             return std::shared_ptr<celix_filter_t>{cf, [](celix_filter_t *f) {
                 celix_filter_destroy(f);

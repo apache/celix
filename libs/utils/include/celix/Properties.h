@@ -38,6 +38,7 @@ namespace celix {
             iter = hashMapIterator_construct((hash_map_t*)props);
             next();
         }
+
         explicit PropertiesIterator(const celix_properties_t* props) {
             iter = hashMapIterator_construct((hash_map_t*)props);
             next();
@@ -108,7 +109,7 @@ namespace celix {
                 return *this;
             }
 
-            const char* getValue() const {
+            [[nodiscard]] const char* getValue() const {
                 return celix_properties_get(props.get(), key.c_str(), nullptr);
             }
 
@@ -157,7 +158,7 @@ namespace celix {
          * @warning Try not the depend on the C API from a C++ bundle. If features are missing these should be added to
          * the C++ API.
          */
-        celix_properties_t* getCProperties() const {
+        [[nodiscard]] celix_properties_t* getCProperties() const {
             return cProps.get();
         }
 
@@ -169,16 +170,23 @@ namespace celix {
         }
 
         /**
+         * @brief Get the value for a property key
+         */
+        ValueRef operator[](std::string key) const {
+            return ValueRef{cProps, std::move(key)};
+        }
+
+        /**
          * @brief begin iterator
          */
-        const_iterator begin() const noexcept {
+        [[nodiscard]] const_iterator begin() const noexcept {
             return PropertiesIterator{cProps.get()};
         }
 
         /**
          * @brief end iterator
          */
-        const_iterator end() const noexcept {
+        [[nodiscard]] const_iterator end() const noexcept {
             auto iter = PropertiesIterator{cProps.get()};
             iter.moveToEnd();
             return iter;
@@ -187,14 +195,14 @@ namespace celix {
         /**
          * @brief constant begin iterator
          */
-        const_iterator cbegin() const noexcept {
+        [[nodiscard]] const_iterator cbegin() const noexcept {
             return PropertiesIterator{cProps.get()};
         }
 
         /**
          * @brief constant end iterator
          */
-        const_iterator cend() const noexcept {
+        [[nodiscard]] const_iterator cend() const noexcept {
             auto iter = PropertiesIterator{cProps.get()};
             iter.moveToEnd();
             return iter;
@@ -203,7 +211,7 @@ namespace celix {
         /**
          * @brief Get the value for a property key or return the defaultValue if the key does not exists.
          */
-        std::string get(const std::string& key, const std::string& defaultValue = {}) const {
+        [[nodiscard]] std::string get(const std::string& key, const std::string& defaultValue = {}) const {
             const char* found = celix_properties_get(cProps.get(), key.c_str(), nullptr);
             return found == nullptr ? std::string{defaultValue} : std::string{found};
         }
@@ -211,21 +219,21 @@ namespace celix {
         /**
          * @brief Get the value as long for a property key or return the defaultValue if the key does not exists.
          */
-        long getAsLong(const std::string& key, long defaultValue) const {
+        [[nodiscard]] long getAsLong(const std::string& key, long defaultValue) const {
             return celix_properties_getAsLong(cProps.get(), key.c_str(), defaultValue);
         }
 
         /**
          * @brief Get the value as double for a property key or return the defaultValue if the key does not exists.
          */
-        double getAsDouble(const std::string &key, double defaultValue) const {
+        [[nodiscard]] double getAsDouble(const std::string &key, double defaultValue) const {
             return celix_properties_getAsDouble(cProps.get(), key.c_str(), defaultValue);
         }
 
         /**
          * @brief Get the value as bool for a property key or return the defaultValue if the key does not exists.
          */
-        bool getAsBool(const std::string &key, bool defaultValue) const {
+        [[nodiscard]] bool getAsBool(const std::string &key, bool defaultValue) const {
             return celix_properties_getAsBool(cProps.get(), key.c_str(), defaultValue);
         }
 
@@ -262,14 +270,14 @@ namespace celix {
         /**
          * @brief Returns the nr of properties.
          */
-        std::size_t size() const {
+        [[nodiscard]] std::size_t size() const {
             return celix_properties_size(cProps.get());
         }
 
         /**
          * @brief Converts the properties a (new) std::string, std::string map.
          */
-        std::map<std::string, std::string> convertToMap() const {
+        [[nodiscard]] std::map<std::string, std::string> convertToMap() const {
             std::map<std::string, std::string> result{};
             for (const auto& pair : *this) {
                 result[pair.first] = pair.second;
@@ -280,7 +288,7 @@ namespace celix {
         /**
          * @brief Converts the properties a (new) std::string, std::string unordered map.
          */
-        std::unordered_map<std::string, std::string> convertToUnorderedMap() const {
+        [[nodiscard]] std::unordered_map<std::string, std::string> convertToUnorderedMap() const {
             std::unordered_map<std::string, std::string> result{};
             for (const auto& pair : *this) {
                 result[pair.first] = pair.second;
