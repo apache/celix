@@ -69,8 +69,8 @@ namespace celix {
          */
         static std::shared_ptr<ServiceRegistration> create(std::shared_ptr<celix_bundle_context_t> cCtx,
                                                            std::shared_ptr<void> svc,
-                                                           std::string name,
-                                                           std::string version,
+                                                           std::string_view name,
+                                                           std::string_view version,
                                                            celix::Properties properties,
                                                            bool registerAsync,
                                                            bool unregisterAsync,
@@ -111,8 +111,8 @@ namespace celix {
                 new ServiceRegistration{
                     std::move(cCtx),
                     std::move(svc),
-                    std::move(name),
-                    std::move(version),
+                    name,
+                    version,
                     std::move(properties),
                     registerAsync,
                     unregisterAsync,
@@ -128,14 +128,14 @@ namespace celix {
         /**
          * @brief The service name for this service registration.
          */
-        const std::string& getServiceName() const { return name; }
+        std::string_view getServiceName() const { return name; }
 
         /**
          * @brief The service version for this service registration.
          *
          * Empty string if there is no service version.
          */
-        const std::string& getServiceVersion() const { return version; }
+        std::string_view getServiceVersion() const { return version; }
 
         /**
          * @brief The service properties for this service registration.
@@ -256,16 +256,16 @@ namespace celix {
         ServiceRegistration(
                 std::shared_ptr<celix_bundle_context_t> _cCtx,
                 std::shared_ptr<void> _svc,
-                std::string _name,
-                std::string _version,
+                std::string_view _name,
+                std::string_view _version,
                 celix::Properties _properties,
                 bool _registerAsync,
                 bool _unregisterAsync,
                 std::vector<std::function<void(ServiceRegistration&)>> _onRegisteredCallbacks,
                 std::vector<std::function<void(ServiceRegistration&)>> _onUnregisteredCallbacks) :
                 cCtx{std::move(_cCtx)},
-                name{std::move(_name)},
-                version{std::move(_version)},
+                name{_name},
+                version{_version},
                 properties{std::move(_properties)},
                 registerAsync{_registerAsync},
                 unregisterAsync{_unregisterAsync},

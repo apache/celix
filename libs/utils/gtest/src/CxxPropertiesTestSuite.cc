@@ -144,4 +144,22 @@ TEST_F(CxxPropertiesTestSuite, testStringView) {
         EXPECT_EQ(true, props.getAsBool(key, false));
     }
 }
+
+TEST_F(CxxPropertiesTestSuite, testUseOfConstexprInSetMethod) {
+    celix::Properties props{};
+
+    //Test if different bool "types" are correctly handled
+    props.set("key1", true);
+    props.set<const bool>("key2", false);
+    props.set<const bool&>("key3", 1);
+    props.set<bool&&>("key4", 0);
+    props.set<volatile bool&&>("key5", true);
+    EXPECT_EQ(5, props.size());
+
+    EXPECT_EQ(props.getAsBool("key1", false), true);
+    EXPECT_EQ(props.get("key2"), "false");
+    EXPECT_EQ(props.get("key3"), "true");
+    EXPECT_EQ(props.get("key4"), "false");
+    EXPECT_EQ(props.get("key5"), "true");
+}
 #endif

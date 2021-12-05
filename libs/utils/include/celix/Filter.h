@@ -53,12 +53,13 @@ namespace celix {
      *        "(!(cn=Tim Howes))"
      *        "(&(" + celix::Constants::SERVICE_NAME + "=Person)(|(sn=Jensen)(cn=Babs J*)))"
      *
+     * @note Provided `const char*` and `std::string_view` values must be null terminated strings.
      * @note Not thread safe.
      */
     class Filter {
     public:
         Filter() : cFilter{createFilter("")} {}
-        explicit Filter(const std::string& filterStr) : cFilter{createFilter(filterStr)} {}
+        explicit Filter(std::string_view filterStr) : cFilter{createFilter(filterStr)} {}
 
         Filter(Filter&&) = default;
         Filter& operator=(Filter&&) = default;
@@ -83,9 +84,9 @@ namespace celix {
         /**
          * @brief Gets the filter string
          */
-        [[nodiscard]] std::string getFilterString() const {
+        [[nodiscard]] std::string_view getFilterString() const {
             auto cStr = getFilterCString();
-            return cStr == nullptr ? std::string{} : std::string{cStr};
+            return cStr == nullptr ? std::string_view{} : std::string_view{cStr};
         }
 
         /**
@@ -106,9 +107,9 @@ namespace celix {
          * @brief Find the attribute based on the provided key.
          * @return The found attribute value or an empty string if the attribute was not found.
          */
-        [[nodiscard]] std::string findAttribute(const std::string& attributeKey) const {
-            auto* cValue = celix_filter_findAttribute(cFilter.get(), attributeKey.c_str());
-            return cValue == nullptr ? std::string{} : std::string{cValue};
+        [[nodiscard]] std::string_view findAttribute(std::string_view attributeKey) const {
+            auto* cValue = celix_filter_findAttribute(cFilter.get(), attributeKey.data());
+            return cValue == nullptr ? std::string_view{} : std::string_view{cValue};
         }
 
         /**
@@ -135,13 +136,13 @@ namespace celix {
             return cFilter == nullptr;
         }
     private:
-        static std::shared_ptr<celix_filter_t> createFilter(const std::string& filterStr) {
+        static std::shared_ptr<celix_filter_t> createFilter(std::string_view filterStr) {
             if (filterStr.empty()) {
                 return nullptr;
             }
-            auto* cf = celix_filter_create(filterStr.c_str());
+            auto* cf = celix_filter_create(filterStr.data());
             if (cf == nullptr) {
-                throw celix::FilterException{"Invalid LDAP filter '" + filterStr + "'"};
+                throw celix::FilterException{"Invalid LDAP filter '" + std::string{filterStr} + "'"};
             }
             return std::shared_ptr<celix_filter_t>{cf, [](celix_filter_t *f) {
                 celix_filter_destroy(f);

@@ -41,6 +41,7 @@ namespace celix {
      * Each bundle installed in the Celix framework must have an associated Bundle object.
      * A bundle must have a unique identity, a long, chosen by the Celix framework.
      *
+     * @note Provided `std::string_view` values must be null terminated strings.
      * @note Thread safe.
      */
     class Bundle {
@@ -63,9 +64,9 @@ namespace celix {
          * @param path The relative path to a bundle resource
          * @return The use-able entry path or an empty string if the entry is not found.
          */
-        [[nodiscard]] std::string getEntry(const std::string& path) const {
+        [[nodiscard]] std::string getEntry(std::string_view path) const {
             std::string result{};
-            char* entry = celix_bundle_getEntry(cBnd.get(), path.c_str());
+            char* entry = celix_bundle_getEntry(cBnd.get(), path.data());
             if (entry != nullptr) {
                 result = std::string{entry};
                 free(entry);
@@ -76,29 +77,29 @@ namespace celix {
         /**
          * @brief the symbolic name of the bundle.
          */
-        [[nodiscard]] std::string getSymbolicName() const {
-            return std::string{celix_bundle_getSymbolicName(cBnd.get())};
+        [[nodiscard]] std::string_view getSymbolicName() const {
+            return std::string_view{celix_bundle_getSymbolicName(cBnd.get())};
         }
 
         /**
          * @brief The name of the bundle.
          */
-        [[nodiscard]] std::string getName() const {
-            return std::string{celix_bundle_getName(cBnd.get())};
+        [[nodiscard]] std::string_view getName() const {
+            return std::string_view{celix_bundle_getName(cBnd.get())};
         }
 
         /**
          * @brief The group of the bundle.
          */
-        [[nodiscard]] std::string getGroup() const {
-            return std::string{celix_bundle_getGroup(cBnd.get())};
+        [[nodiscard]] std::string_view getGroup() const {
+            return std::string_view{celix_bundle_getGroup(cBnd.get())};
         }
 
         /**
-         * @brief The descriptoin of the bundle.
+         * @brief The description of the bundle.
          */
-        [[nodiscard]] std::string getDescription() const {
-            return std::string{celix_bundle_getDescription(cBnd.get())};
+        [[nodiscard]] std::string_view getDescription() const {
+            return std::string_view{celix_bundle_getDescription(cBnd.get())};
         }
 
         /**

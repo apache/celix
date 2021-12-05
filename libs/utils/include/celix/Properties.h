@@ -95,6 +95,8 @@ namespace celix {
 
     /**
      * @brief A collection of strings key values mainly used as meta data for registered services.
+     *
+     * @note Provided `const char*` and `std::string_view` values must be null terminated strings.
      * @note Not thread safe.
      */
     class Properties {
@@ -103,9 +105,17 @@ namespace celix {
 
         class ValueRef {
         public:
+#if __cplusplus >= 201703L //C++17 or higher
+            ValueRef(std::shared_ptr<celix_properties_t> _props, std::string_view _key) : props{std::move(_props)}, stringKey{}, charKey{_key.data()} {}
+#else
             ValueRef(std::shared_ptr<celix_properties_t> _props, std::string _key) : props{std::move(_props)}, stringKey{std::move(_key)}, charKey{nullptr} {}
-
+#endif
             ValueRef(std::shared_ptr<celix_properties_t> _props, const char* _key) : props{std::move(_props)}, stringKey{}, charKey{_key} {}
+
+            ValueRef(const ValueRef&) = default;
+            ValueRef(ValueRef&&) = default;
+            ValueRef& operator=(const ValueRef&) = default;
+            ValueRef& operator=(ValueRef&&) = default;
 
 #if __cplusplus >= 201703L //C++17 or higher
             ValueRef& operator=(std::string_view value) {
@@ -164,13 +174,13 @@ namespace celix {
 #if __cplusplus >= 201703L //C++17 or higher
         Properties(std::initializer_list<std::pair<std::string_view, std::string_view>> list) : cProps{celix_properties_create(), [](celix_properties_t* p) { celix_properties_destroy(p); }} {
             for(auto &entry : list) {
-                celix_properties_set(cProps.get(), entry.first.data(), entry.second.data());
+                set(entry.first, entry.second);
             }
         }
 #else
         Properties(std::initializer_list<std::pair<std::string, std::string>> list) : cProps{celix_properties_create(), [](celix_properties_t* p) { celix_properties_destroy(p); }} {
             for(auto &entry : list) {
-                celix_properties_set(cProps.get(), entry.first.c_str(), entry.second.c_str());
+                set(entry.first, entry.second);
             }
         }
 #endif
@@ -198,14 +208,14 @@ namespace celix {
          * @brief Get the value for a property key
          */
         ValueRef operator[](std::string_view key) {
-            return ValueRef{cProps, key.data()};
+            return ValueRef{cProps, key};
         }
 
         /**
          * @brief Get the value for a property key
          */
         ValueRef operator[](std::string_view key) const {
-            return ValueRef{cProps, key.data()};
+            return ValueRef{cProps, key};
         }
 #else
         /**
@@ -285,41 +295,19 @@ namespace celix {
             return celix_properties_getAsBool(cProps.get(), key.data(), defaultValue);
         }
 
-        /**
-         * @brief Sets a property
-         */
-        void set(std::string_view key, std::string_view value) {
-            celix_properties_set(cProps.get(), key.data(), value.data());
-        }
-
-        /**
-         * @brief Sets a property
-         */
-        void set(std::string_view key, std::string value) {
-            celix_properties_set(cProps.get(), key.data(), value.data());
-        }
-
-        /**
-         * @brief Sets a property
-         */
-        void set(std::string_view key, const char* value) {
-            celix_properties_set(cProps.get(), key.data(), value);
-        }
-
-        /**
-         * @brief Sets a bool property
-         */
-        void set(std::string_view key, bool value) {
-            celix_properties_setBool(cProps.get(), key.data(), value);
-        }
-
-        /**
-         * @brief Sets a T property. Will use std::to_string to convert the value to string.
-         */
         template<typename T>
-        void set(std::string_view key, T value) {
-            using namespace std;
-            celix_properties_set(cProps.get(), key.data(), to_string(value).c_str());
+        void set(std::string_view key, T&& value) {
+            if constexpr (std::is_same_v<std::decay_t<T>, bool>) {
+                celix_properties_setBool(cProps.get(), key.data(), value);
+            } else if constexpr (std::is_same_v<std::decay_t<T>, std::string_view>) {
+                celix_properties_set(cProps.get(), key.data(), value.data());
+            } else if constexpr (std::is_convertible_v<T, std::string_view>) {
+                std::string_view view{value};
+                celix_properties_set(cProps.get(), key.data(), view.data());
+            } else {
+                using namespace std;
+                celix_properties_set(cProps.get(), key.data(), to_string(value).c_str());
+            }
         }
 #else
         /**
