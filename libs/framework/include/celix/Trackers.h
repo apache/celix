@@ -250,12 +250,12 @@ namespace celix {
         /**
          * @brief The service name tracked by this service tracker.
          */
-        std::string_view getServiceName() const { return svcName; }
+        const std::string& getServiceName() const { return svcName; }
 
         /**
          * @brief The service version range tracked by this service tracker.
          */
-        std::string_view getServiceRange() const { return svcVersionRange; }
+        const std::string& getServiceRange() const { return svcVersionRange; }
 
         /**
          * @brief The additional filter for services tracked by this service tracker.

@@ -84,9 +84,9 @@ namespace celix {
         /**
          * @brief Gets the filter string
          */
-        [[nodiscard]] std::string_view getFilterString() const {
+        [[nodiscard]] std::string getFilterString() const {
             auto cStr = getFilterCString();
-            return cStr == nullptr ? std::string_view{} : std::string_view{cStr};
+            return cStr == nullptr ? std::string{} : std::string{cStr};
         }
 
         /**
@@ -107,9 +107,9 @@ namespace celix {
          * @brief Find the attribute based on the provided key.
          * @return The found attribute value or an empty string if the attribute was not found.
          */
-        [[nodiscard]] std::string_view findAttribute(std::string_view attributeKey) const {
+        [[nodiscard]] std::string findAttribute(std::string_view attributeKey) const {
             auto* cValue = celix_filter_findAttribute(cFilter.get(), attributeKey.data());
-            return cValue == nullptr ? std::string_view{} : std::string_view{cValue};
+            return cValue == nullptr ? std::string{} : std::string{cValue};
         }
 
         /**

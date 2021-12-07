@@ -77,29 +77,29 @@ namespace celix {
         /**
          * @brief the symbolic name of the bundle.
          */
-        [[nodiscard]] std::string_view getSymbolicName() const {
-            return std::string_view{celix_bundle_getSymbolicName(cBnd.get())};
+        [[nodiscard]] std::string getSymbolicName() const {
+            return std::string{celix_bundle_getSymbolicName(cBnd.get())};
         }
 
         /**
          * @brief The name of the bundle.
          */
-        [[nodiscard]] std::string_view getName() const {
-            return std::string_view{celix_bundle_getName(cBnd.get())};
+        [[nodiscard]] std::string getName() const {
+            return std::string{celix_bundle_getName(cBnd.get())};
         }
 
         /**
          * @brief The group of the bundle.
          */
-        [[nodiscard]] std::string_view getGroup() const {
-            return std::string_view{celix_bundle_getGroup(cBnd.get())};
+        [[nodiscard]] std::string getGroup() const {
+            return std::string{celix_bundle_getGroup(cBnd.get())};
         }
 
         /**
          * @brief The description of the bundle.
          */
-        [[nodiscard]] std::string_view getDescription() const {
-            return std::string_view{celix_bundle_getDescription(cBnd.get())};
+        [[nodiscard]] std::string getDescription() const {
+            return std::string{celix_bundle_getDescription(cBnd.get())};
         }
 
         /**

@@ -128,14 +128,14 @@ namespace celix {
         /**
          * @brief The service name for this service registration.
          */
-        std::string_view getServiceName() const { return name; }
+        const std::string& getServiceName() const { return name; }
 
         /**
          * @brief The service version for this service registration.
          *
          * Empty string if there is no service version.
          */
-        std::string_view getServiceVersion() const { return version; }
+        const std::string& getServiceVersion() const { return version; }
 
         /**
          * @brief The service properties for this service registration.
