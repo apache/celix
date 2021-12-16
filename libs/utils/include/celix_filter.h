@@ -73,6 +73,26 @@ const char* celix_filter_getFilterString(const celix_filter_t *filter);
  */
 const char* celix_filter_findAttribute(const celix_filter_t *filter, const char *attribute);
 
+/**
+ * Check whether the filter has an "equals value" attribute with the provided attribute key.
+ *
+ * Example:
+ *   using this function for attribute key "key1" on filter "(key1=value1)" yields true.
+ *   using this function for attribute key "key1" on filter "(!(key1=value1))" yields false.
+ *   using this function for attribute key "key1" on filter "(key1>=value1)" yields false.
+ *   using this function for attribute key "key1" on filter "(|(key1=value1)(key2=value2))" yields true.
+*/
+bool celix_filter_hasEqualsValueAttribute(const celix_filter_t *filter, const char *attribute);
+
+/**
+ * Chek whether the filter has a "negated presence" attribute with the provided attribute key.
+ *
+ * example:
+ *   using this function for attribute key "key1" on the filter "(!(key1=*))" yields true.
+ *   using this function for attribute key "key1" on the filter "(key1=*) yields false.
+ *   using this function for attribute key "key1" on the filter "(key1=value)" yields false.
+ */
+bool celix_filter_hasNegatedPresenceAttribute(const celix_filter_t *filter, const char *attribute);
 
 #ifdef __cplusplus
 }

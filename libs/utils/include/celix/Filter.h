@@ -119,6 +119,31 @@ namespace celix {
         }
 
         /**
+         * @brief Check whether the filter has an "equals value" attribute with the provided attribute key.
+         *
+         * Example:
+         *   using this function for attribute key "key1" on filter "(key1=value1)" yields true.
+         *   using this function for attribute key "key1" on filter "(!(key1=value1))" yields false.
+         *   using this function for attribute key "key1" on filter "(key1>=value1)" yields false.
+         *   using this function for attribute key "key1" on filter "(|(key1=value1)(key2=value2))" yields true.
+         */
+        [[nodiscard]] bool hasEqualsValueAttribute(const std::string& attributeKey) const {
+             return celix_filter_hasEqualsValueAttribute(cFilter.get(), attributeKey.c_str());
+        }
+
+        /**
+         * @brief Chek whether the filter has a "negated presence" attribute with the provided attribute key.
+         *
+         * example:
+         *   using this function for attribute key "key1" on the filter "(!(key1=*))" yields true.
+         *   using this function for attribute key "key1" on the filter "(key1=*) yields false.
+         *   using this function for attribute key "key1" on the filter "(key1=value)" yields false.
+         */
+        [[nodiscard]] bool hasNegatedPresenceAttribute(const std::string& attributeKey) const {
+            return celix_filter_hasNegatedPresenceAttribute(cFilter.get(), attributeKey.c_str());
+        }
+
+        /**
          * @brief Get the underlining C filter object.
          *
          * @warning Try not the depend on the C API from a C++ bundle. If features are missing these should be added to
@@ -134,6 +159,7 @@ namespace celix {
         [[nodiscard]] bool empty() const {
             return cFilter == nullptr;
         }
+
     private:
         static std::shared_ptr<celix_filter_t> createFilter(const std::string& filterStr) {
             if (filterStr.empty()) {

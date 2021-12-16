@@ -80,3 +80,38 @@ TEST_F(CxxFilterTestSuite, FindAttributes) {
     EXPECT_EQ(filter1.findAttribute("key4"), std::string{"*"});
     EXPECT_TRUE(filter1.findAttribute("key").empty());
 }
+
+TEST_F(CxxFilterTestSuite, HasEqualsValueAttribute) {
+    EXPECT_TRUE(celix::Filter{"(key1=value1)"}.hasEqualsValueAttribute("key1"));
+    EXPECT_FALSE(celix::Filter{"(!(key1=value1))"}.hasEqualsValueAttribute("key1"));
+    EXPECT_FALSE(celix::Filter{"(key1>=value1)"}.hasEqualsValueAttribute("key1"));
+    EXPECT_TRUE(celix::Filter{"(|(key1=value1)(key2=value2))"}.hasEqualsValueAttribute("key1"));
+    EXPECT_FALSE(celix::Filter{"(key1=*)"}.hasEqualsValueAttribute("key1"));
+
+    celix::Filter filter1{"(&(key1=value1)(key2=value2)(|(key3=value3)(key4=*)))"};
+    EXPECT_TRUE(filter1.hasEqualsValueAttribute("key1"));
+    EXPECT_TRUE(filter1.hasEqualsValueAttribute("key2"));
+    EXPECT_TRUE(filter1.hasEqualsValueAttribute("key3"));
+    EXPECT_FALSE(filter1.hasEqualsValueAttribute("key4"));
+
+    celix::Filter filter2{"(&(key1=value)(!(&(key=value)(!(key3=value)))))"};
+    EXPECT_TRUE(filter2.hasEqualsValueAttribute("key1"));
+    EXPECT_FALSE(filter2.hasEqualsValueAttribute("key2"));
+    EXPECT_TRUE(filter2.hasEqualsValueAttribute("key3"));
+}
+
+TEST_F(CxxFilterTestSuite, HasNegatedPresenceAttribute) {
+    EXPECT_TRUE(celix::Filter{"(!(key1=*))"}.hasNegatedPresenceAttribute("key1"));
+    EXPECT_FALSE(celix::Filter{"(key1=*)"}.hasNegatedPresenceAttribute("key1"));
+    EXPECT_FALSE(celix::Filter{"(key1=value1)"}.hasNegatedPresenceAttribute("key1"));
+
+    celix::Filter filter1{"(&(!(key1=*))(key2=value2)(key3=value3))"};
+    EXPECT_TRUE(filter1.hasNegatedPresenceAttribute("key1"));
+    EXPECT_FALSE(filter1.hasNegatedPresenceAttribute("key2"));
+    EXPECT_FALSE(filter1.hasNegatedPresenceAttribute("key3"));
+
+    celix::Filter filter2{"(&(key1=*)(!(&(key2=*)(!(key3=*)))))"};
+    EXPECT_FALSE(filter2.hasNegatedPresenceAttribute("key1"));
+    EXPECT_TRUE(filter2.hasNegatedPresenceAttribute("key2"));
+    EXPECT_FALSE(filter2.hasNegatedPresenceAttribute("key3"));
+}

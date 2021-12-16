@@ -726,3 +726,66 @@ const char* celix_filter_findAttribute(const celix_filter_t *filter, const char 
     }
     return result;
 }
+
+static bool celix_filter_has_equals_value_attribute(const celix_filter_t *filter, const char *attribute, bool negated) {
+    bool equalsValueAttribute = false;
+
+    if (filter != NULL && attribute != NULL) {
+        if (filter->operand == CELIX_FILTER_OPERAND_AND || filter->operand == CELIX_FILTER_OPERAND_OR || filter->operand == CELIX_FILTER_OPERAND_NOT) {
+            size_t size = celix_arrayList_size(filter->children);
+            for (unsigned int i = 0; i < size; ++i) {
+
+                if (filter->operand == CELIX_FILTER_OPERAND_NOT) {
+                    negated = !negated;
+                }
+
+                celix_filter_t *child = celix_arrayList_get(filter->children, i);
+
+                equalsValueAttribute = celix_filter_has_equals_value_attribute(child, attribute, negated);
+
+                if (equalsValueAttribute) {
+                    break;
+                }
+            }
+        } else if (filter->operand == CELIX_FILTER_OPERAND_EQUAL) {
+            equalsValueAttribute = (strncmp(filter->attribute, attribute, 1024 * 1024) == 0) && (!negated);
+        }
+    }
+
+    return equalsValueAttribute;
+}
+
+bool celix_filter_hasEqualsValueAttribute(const celix_filter_t *filter, const char *attribute) {
+    return celix_filter_has_equals_value_attribute(filter, attribute, false);
+}
+
+static bool celix_filter_has_negated_presence_attribute(const celix_filter_t *filter, const char *attribute, bool negated) {
+    bool negatedPresenceAttribute = false;
+
+    if (filter != NULL && attribute != NULL) {
+        if (filter->operand == CELIX_FILTER_OPERAND_AND || filter->operand == CELIX_FILTER_OPERAND_OR || filter->operand == CELIX_FILTER_OPERAND_NOT) {
+            size_t size = celix_arrayList_size(filter->children);
+            for (unsigned int i = 0; i < size; ++i) {
+
+                if (filter->operand == CELIX_FILTER_OPERAND_NOT) {
+                    negated = !negated;
+                }
+
+                celix_filter_t *child = celix_arrayList_get(filter->children, i);
+
+                negatedPresenceAttribute = celix_filter_has_negated_presence_attribute(child, attribute, negated);
+
+                if (negatedPresenceAttribute) {
+                    break;
+                }
+            }
+        } else if (filter->operand == CELIX_FILTER_OPERAND_PRESENT) {
+            negatedPresenceAttribute = (strncmp(filter->attribute, attribute, 1024 * 1024) == 0) && negated;
+        }
+    }
+
+    return negatedPresenceAttribute;
+}
+bool celix_filter_hasNegatedPresenceAttribute(const celix_filter_t *filter, const char *attribute) {
+    return celix_filter_has_negated_presence_attribute(filter, attribute, false);
+}
