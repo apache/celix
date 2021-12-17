@@ -85,7 +85,7 @@ const char* celix_filter_findAttribute(const celix_filter_t *filter, const char 
 bool celix_filter_hasMandatoryEqualsValueAttribute(const celix_filter_t *filter, const char *attribute);
 
 /**
- * Chek whether the filter indicates the absence of an attribute, regardless of its value, for the provided attribute key.
+ * Chek whether the filter indicates the mandatory absence of an attribute, regardless of its value, for the provided attribute key.
  *
  * example:
  *   using this function for attribute key "key1" on the filter "(!(key1=*))" yields true.

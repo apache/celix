@@ -132,7 +132,7 @@ namespace celix {
         }
 
         /**
-         * @brief Chek whether the filter indicates the absence of an attribute, regardless of its value, for the provided attribute key.
+         * @brief Chek whether the filter indicates the mandatory absence of an attribute, regardless of its value, for the provided attribute key.
          *
          * example:
          *   using this function for attribute key "key1" on the filter "(!(key1=*))" yields true.
