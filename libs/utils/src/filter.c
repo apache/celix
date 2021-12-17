@@ -707,7 +707,6 @@ const char* celix_filter_getFilterString(const celix_filter_t *filter) {
     return NULL;
 }
 
-
 const char* celix_filter_findAttribute(const celix_filter_t *filter, const char *attribute) {
     const char *result = NULL;
     if (filter != NULL && attribute != NULL) {
@@ -727,7 +726,7 @@ const char* celix_filter_findAttribute(const celix_filter_t *filter, const char 
     return result;
 }
 
-static bool celix_filter_has_equals_value_attribute(const celix_filter_t *filter, const char *attribute, bool negated) {
+static bool hasMandatoryEqualsValueAttribute(const celix_filter_t *filter, const char *attribute, bool negated, bool optional) {
     bool equalsValueAttribute = false;
 
     if (filter != NULL && attribute != NULL) {
@@ -737,29 +736,31 @@ static bool celix_filter_has_equals_value_attribute(const celix_filter_t *filter
 
                 if (filter->operand == CELIX_FILTER_OPERAND_NOT) {
                     negated = !negated;
+                } else if (filter->operand == CELIX_FILTER_OPERAND_OR) {
+                    optional = true;
                 }
 
                 celix_filter_t *child = celix_arrayList_get(filter->children, i);
 
-                equalsValueAttribute = celix_filter_has_equals_value_attribute(child, attribute, negated);
+                equalsValueAttribute = hasMandatoryEqualsValueAttribute(child, attribute, negated, optional);
 
                 if (equalsValueAttribute) {
                     break;
                 }
             }
         } else if (filter->operand == CELIX_FILTER_OPERAND_EQUAL) {
-            equalsValueAttribute = (strncmp(filter->attribute, attribute, 1024 * 1024) == 0) && (!negated);
+            equalsValueAttribute = (strncmp(filter->attribute, attribute, 1024 * 1024) == 0) && (!negated) && (!optional);
         }
     }
 
     return equalsValueAttribute;
 }
 
-bool celix_filter_hasEqualsValueAttribute(const celix_filter_t *filter, const char *attribute) {
-    return celix_filter_has_equals_value_attribute(filter, attribute, false);
+bool celix_filter_hasMandatoryEqualsValueAttribute(const celix_filter_t *filter, const char *attribute) {
+    return hasMandatoryEqualsValueAttribute(filter, attribute, false, false);
 }
 
-static bool celix_filter_has_negated_presence_attribute(const celix_filter_t *filter, const char *attribute, bool negated) {
+static bool hasMandatoryNegatedPresenceAttribute(const celix_filter_t *filter, const char *attribute, bool negated, bool optional) {
     bool negatedPresenceAttribute = false;
 
     if (filter != NULL && attribute != NULL) {
@@ -769,23 +770,25 @@ static bool celix_filter_has_negated_presence_attribute(const celix_filter_t *fi
 
                 if (filter->operand == CELIX_FILTER_OPERAND_NOT) {
                     negated = !negated;
+                } else if (filter->operand == CELIX_FILTER_OPERAND_OR) {
+                    optional = true;
                 }
 
                 celix_filter_t *child = celix_arrayList_get(filter->children, i);
 
-                negatedPresenceAttribute = celix_filter_has_negated_presence_attribute(child, attribute, negated);
+                negatedPresenceAttribute = hasMandatoryNegatedPresenceAttribute(child, attribute, negated, optional);
 
                 if (negatedPresenceAttribute) {
                     break;
                 }
             }
         } else if (filter->operand == CELIX_FILTER_OPERAND_PRESENT) {
-            negatedPresenceAttribute = (strncmp(filter->attribute, attribute, 1024 * 1024) == 0) && negated;
+            negatedPresenceAttribute = (strncmp(filter->attribute, attribute, 1024 * 1024) == 0) && negated && (!optional);
         }
     }
 
     return negatedPresenceAttribute;
 }
-bool celix_filter_hasNegatedPresenceAttribute(const celix_filter_t *filter, const char *attribute) {
-    return celix_filter_has_negated_presence_attribute(filter, attribute, false);
+bool celix_filter_hasMandatoryNegatedPresenceAttribute(const celix_filter_t *filter, const char *attribute) {
+    return hasMandatoryNegatedPresenceAttribute(filter, attribute, false, false);
 }

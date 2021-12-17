@@ -119,28 +119,29 @@ namespace celix {
         }
 
         /**
-         * @brief Check whether the filter has an "equals value" attribute with the provided attribute key.
+         * @brief Check whether the filter indicates the mandatory presence of an attribute with a specific value for the provided attribute key.
          *
          * Example:
-         *   using this function for attribute key "key1" on filter "(key1=value1)" yields true.
-         *   using this function for attribute key "key1" on filter "(!(key1=value1))" yields false.
-         *   using this function for attribute key "key1" on filter "(key1>=value1)" yields false.
-         *   using this function for attribute key "key1" on filter "(|(key1=value1)(key2=value2))" yields true.
+         *   using this method for attribute key "key1" on filter "(key1=value1)" yields true.
+         *   using this method for attribute key "key1" on filter "(!(key1=value1))" yields false.
+         *   using this method for attribute key "key1" on filter "(key1>=value1)" yields false.
+         *   using this method for attribute key "key1" on filter "(|(key1=value1)(key2=value2))" yields false.
          */
-        [[nodiscard]] bool hasEqualsValueAttribute(const std::string& attributeKey) const {
-             return celix_filter_hasEqualsValueAttribute(cFilter.get(), attributeKey.c_str());
+        [[nodiscard]] bool hasMandatoryEqualsValueAttribute(const std::string& attributeKey) const {
+             return celix_filter_hasMandatoryEqualsValueAttribute(cFilter.get(), attributeKey.c_str());
         }
 
         /**
-         * @brief Chek whether the filter has a "negated presence" attribute with the provided attribute key.
+         * @brief Chek whether the filter indicates the absence of an attribute, regardless of its value, for the provided attribute key.
          *
          * example:
          *   using this function for attribute key "key1" on the filter "(!(key1=*))" yields true.
          *   using this function for attribute key "key1" on the filter "(key1=*) yields false.
          *   using this function for attribute key "key1" on the filter "(key1=value)" yields false.
+         *   using this function for attribute key "key1" on the filter "(|(!(key1=*))(key2=value2))" yields false.
          */
-        [[nodiscard]] bool hasNegatedPresenceAttribute(const std::string& attributeKey) const {
-            return celix_filter_hasNegatedPresenceAttribute(cFilter.get(), attributeKey.c_str());
+        [[nodiscard]] bool hasMandatoryNegatedPresenceAttribute(const std::string& attributeKey) const {
+            return celix_filter_hasMandatoryNegatedPresenceAttribute(cFilter.get(), attributeKey.c_str());
         }
 
         /**
