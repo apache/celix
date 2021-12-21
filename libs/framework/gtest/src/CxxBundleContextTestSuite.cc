@@ -392,12 +392,18 @@ TEST_F(CxxBundleContextTestSuite, OnRegisterAndUnregisterCallbacks) {
 
 TEST_F(CxxBundleContextTestSuite, InstallCxxBundle) {
     EXPECT_EQ(0, ctx->listBundleIds().size());
+    EXPECT_EQ(0, ctx->listInstalledBundleIds().size());
 
     std::string loc{SIMPLE_CXX_BUNDLE_LOC};
     ASSERT_FALSE(loc.empty());
-    long bndId = ctx->installBundle(loc);
+    long bndId = ctx->installBundle(loc, false);
     EXPECT_GE(bndId, 0);
+    EXPECT_EQ(0, ctx->listBundleIds().size());
+    EXPECT_EQ(1, ctx->listInstalledBundleIds().size());
+
+    ctx->startBundle(bndId);
     EXPECT_EQ(1, ctx->listBundleIds().size());
+    EXPECT_EQ(1, ctx->listInstalledBundleIds().size());
 }
 
 TEST_F(CxxBundleContextTestSuite, LoggingUsingContext) {

@@ -375,17 +375,22 @@ namespace celix {
 
         /**
          * @brief List the installed and started bundle ids.
-         * The bundle ids does not include the framework bundle (bundle id celix::FRAMEWORK_BUNDLE_ID).
+         * The bundle ids does not include the framework bundle (bundle id CELIX_FRAMEWORK_BUNDLE_ID).
+         *
+         * @return A vector with bundle ids.
          */
         [[nodiscard]] std::vector<long> listBundleIds() const {
-            std::vector<long> result{};
-            auto* ids = celix_bundleContext_listBundles(cCtx.get());
-            result.reserve(celix_arrayList_size(ids));
-            for (int i = 0 ; i < celix_arrayList_size(ids); ++i) {
-                result.push_back(celix_arrayList_getLong(ids, i));
-            }
-            celix_arrayList_destroy(ids);
-            return result;
+            return listBundlesInternal(true);
+        }
+
+        /**
+         * @brief List the installed bundle ids.
+         * The bundle ids does not include the framework bundle (bundle id CELIX_FRAMEWORK_BUNDLE_ID).
+         *
+         * @return A vector with bundle ids.
+         */
+        [[nodiscard]] std::vector<long> listInstalledBundleIds() {
+            return listBundlesInternal(false);
         }
 
         /**
@@ -600,6 +605,18 @@ namespace celix {
             }
          }
     private:
+        [[nodiscard]] std::vector<long> listBundlesInternal(bool activeOnly) const {
+            std::vector<long> result{};
+            auto* ids = activeOnly ?
+                        celix_bundleContext_listBundles(getCBundleContext()) :
+                        celix_bundleContext_listInstalledBundles(getCBundleContext());
+            result.reserve(celix_arrayList_size(ids));
+            for (int i = 0; i < celix_arrayList_size(ids); ++i) {
+                result.push_back(celix_arrayList_getLong(ids, i));
+            }
+            celix_arrayList_destroy(ids);
+            return result;
+        }
 
         const std::shared_ptr<celix_bundle_context_t> cCtx;
         const std::shared_ptr<celix::dm::DependencyManager> dm;

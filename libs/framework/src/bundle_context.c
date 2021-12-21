@@ -1082,18 +1082,12 @@ long celix_bundleContext_installBundle(bundle_context_t *ctx, const char *bundle
     return celix_framework_installBundle(ctx->framework, bundleLoc, autoStart);
 }
 
-static void bundleContext_listBundlesCallback(void *handle, const bundle_t *c_bnd) {
-    celix_array_list_t* ids = handle;
-    long id = celix_bundle_getId(c_bnd);
-    if (id > 0) { //note skipping framework bundle id (0)
-        celix_arrayList_addLong(ids, id);
-    }
+celix_array_list_t* celix_bundleContext_listBundles(celix_bundle_context_t *ctx) {
+    return celix_framework_listBundles(ctx->framework);
 }
 
-celix_array_list_t* celix_bundleContext_listBundles(celix_bundle_context_t *ctx) {
-    celix_array_list_t *result = celix_arrayList_create();
-    celix_bundleContext_useBundles(ctx, result, bundleContext_listBundlesCallback);
-    return result;
+celix_array_list_t* celix_bundleContext_listInstalledBundles(celix_bundle_context_t *ctx) {
+    return celix_framework_listInstalledBundles(ctx->framework);
 }
 
 bool celix_bundleContext_isBundleInstalled(celix_bundle_context_t *ctx, long bndId) {
