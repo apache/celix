@@ -35,7 +35,7 @@
 #include "framework_listener.h"
 #include "service_registration.h"
 #include "bundle_context.h"
-#include "bundle_cache.h"
+#include "celix_bundle_cache.h"
 #include "celix_log.h"
 
 #include "celix_threads.h"
@@ -131,7 +131,7 @@ struct celix_framework {
 
     long nextBundleId;
     celix_service_registry_t *registry;
-    bundle_cache_pt cache;
+    celix_bundle_cache_t* cache;
 
     struct {
         celix_thread_mutex_t mutex;

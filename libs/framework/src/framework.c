@@ -261,7 +261,7 @@ celix_status_t framework_create(framework_pt *out, celix_properties_t* config) {
     celix_status_t status = bundle_create(&framework->bundle);
     status = CELIX_DO_IF(status, bundle_getBundleId(framework->bundle, &framework->bundleId));
     status = CELIX_DO_IF(status, bundle_setFramework(framework->bundle, framework));
-    status = CELIX_DO_IF(status, bundleCache_create(uuid, framework->configurationMap, &framework->cache));
+    status = CELIX_DO_IF(status, celix_bundleCache_create(uuid, framework->configurationMap, &framework->cache));
     status = CELIX_DO_IF(status, serviceRegistry_create(framework, &framework->registry));
     bundle_context_t *context = NULL;
     status = CELIX_DO_IF(status, bundleContext_create(framework, framework->logger, framework->bundle, &context));
@@ -381,7 +381,7 @@ celix_status_t framework_destroy(framework_pt framework) {
     assert(celix_arrayList_size(framework->dispatcher.dynamicEventQueue) == 0);
     celix_arrayList_destroy(framework->dispatcher.dynamicEventQueue);
 
-	bundleCache_destroy(&framework->cache);
+    celix_bundleCache_destroy(framework->cache);
 
 	celixThreadCondition_destroy(&framework->dispatcher.cond);
     celixThreadMutex_destroy(&framework->frameworkListenersLock);
@@ -417,11 +417,11 @@ celix_status_t fw_init(framework_pt framework) {
 
     bool cleanCache = celix_properties_getAsBool(framework->configurationMap, OSGI_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_NAME, OSGI_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_DEFAULT);
     if (cleanCache) {
-        bundleCache_delete(framework->cache);
+        celix_bundleCache_delete(framework->cache);
     }
 
     celix_array_list_t* archives = NULL;
-    celix_status_t status = bundleCache_getArchives(framework->cache, &archives);
+    celix_status_t status = celix_bundleCache_getArchives(framework->cache, &archives);
     if (status == CELIX_SUCCESS) {
         unsigned int arcIdx;
         for (arcIdx = 0; arcIdx < arrayList_size(archives); arcIdx++) {
@@ -680,7 +680,8 @@ celix_status_t fw_installBundle2(framework_pt framework, bundle_pt * bundle, lon
         if (archive == NULL) {
             id = framework_getNextBundleId(framework);
 
-            status = CELIX_DO_IF(status, bundleCache_createArchive(framework->cache, id, location, inputFile, &archive));
+            status = CELIX_DO_IF(status,
+                                 celix_bundleCache_createArchive(framework->cache, id, location, inputFile, &archive));
 
             if (status != CELIX_SUCCESS) {
             	bundleArchive_destroy(archive);

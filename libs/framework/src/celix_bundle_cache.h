@@ -16,53 +16,39 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * bundle_cache.h
- *
- *  \date       Aug 8, 2010
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
 
-#ifndef BUNDLE_CACHE_H_
-#define BUNDLE_CACHE_H_
+#ifndef CELIX_BUNDLE_CACHE_H_
+#define CELIX_BUNDLE_CACHE_H_
 
-/**
- * @defgroup BundleCache BundleCache
- * @ingroup framework
- * @{
- */
 
-#include "properties.h"
-#include "array_list.h"
 #include "bundle_archive.h"
+#include "celix_properties.h"
+#include "celix_array_list.h"
 #include "celix_log.h"
 
 /**
- * Type definition for the bundle_cache_pt abstract data type.
+ * Type definition for the celix_bundle_cache_t* abstract data type.
  */
-typedef struct bundleCache *bundle_cache_pt;
+typedef struct celix_bundle_cache celix_bundle_cache_t;
 
 /**
  * Creates the bundle cache using the supplied configuration map.
  *
  * @param configurationMap Set with properties to use for this cache
  * @param bundle_cache Output parameter for the created cache
- * @return Status code indication failure or success:
- * 		- CELIX_SUCCESS when no errors are encountered.
- * 		- CELIX_ILLEGAL_ARGUMENT If <code>bundle_cache</code> not is null.
- * 		- CELIX_ENOMEM If allocating memory for <code>bundle_cache</code> failed.
+ * @param out The bundle cache output param. Cannot be NULL.
+ * @return CELIX_SUCCESS if bundle cache is successfully created.
  */
-celix_status_t bundleCache_create(const char *fwUUID, properties_pt configurationMap, bundle_cache_pt *bundle_cache);
+celix_status_t celix_bundleCache_create(const char *fwUUID, const celix_properties_t* configurationMap, celix_bundle_cache_t **out);
 
 /**
- * Frees the bundle_cache memory allocated in bundleCache_create
+ * Frees the bundle_cache memory allocated in celix_bundleCache_create
  *
- * @param bundle_cache Output parameter for the created cache
+ * @param bundle_cache parameter for the created cache
  * @return Status code indication failure or success:
  *      - CELIX_SUCCESS when no errors are encountered.
  */
-celix_status_t bundleCache_destroy(bundle_cache_pt *cache);
+celix_status_t celix_bundleCache_destroy(celix_bundle_cache_t* cache);
 
 /**
  * Recreates and retrieves the list of archives for the given bundle cache.
@@ -77,7 +63,7 @@ celix_status_t bundleCache_destroy(bundle_cache_pt *cache);
  * 		- CELIX_ENOMEM If allocating memory for <code>archives</code> failed.
  * 		- CELIX_FILE_IO_EXCEPTION If the cache cannot be opened or read.
  */
-celix_status_t bundleCache_getArchives(bundle_cache_pt cache, array_list_pt *archives);
+celix_status_t celix_bundleCache_getArchives(celix_bundle_cache_t* cache, celix_array_list_t **archives);
 
 /**
  * Creates a new archive for the given bundle (using the id and location). The archive is created on the supplied bundlePool.
@@ -94,7 +80,7 @@ celix_status_t bundleCache_getArchives(bundle_cache_pt cache, array_list_pt *arc
  * 		- CELIX_ILLEGAL_ARGUMENT If <code>bundle_archive</code> not is null.
  * 		- CELIX_ENOMEM If allocating memory for <code>bundle_archive</code> failed.
  */
-celix_status_t bundleCache_createArchive(bundle_cache_pt cache, long id, const char* location, const char* inputFile, bundle_archive_pt *archive);
+celix_status_t celix_bundleCache_createArchive(celix_bundle_cache_t* cache, long id, const char* location, const char* inputFile, bundle_archive_pt *archive);
 
 /**
  * Deletes the entire bundle cache.
@@ -105,10 +91,7 @@ celix_status_t bundleCache_createArchive(bundle_cache_pt cache, long id, const c
  * 		- CELIX_ILLEGAL_ARGUMENT If the cache is invalid
  * 		- CELIX_FILE_IO_EXCEPTION If the cache cannot be opened or read.
  */
-celix_status_t bundleCache_delete(bundle_cache_pt cache);
+celix_status_t celix_bundleCache_delete(celix_bundle_cache_t* cache);
 
-/**
- * @}
- */
 
-#endif /* BUNDLE_CACHE_H_ */
+#endif /* CELIX_BUNDLE_CACHE_H_ */
