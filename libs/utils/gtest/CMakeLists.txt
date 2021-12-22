@@ -54,7 +54,7 @@ target_compile_definitions(test_utils PRIVATE -DTEST_ZIP_LOCATION=\"${TEST_ZIP_F
 target_compile_definitions(test_utils PRIVATE -DTEST_A_FILE_LOCATION=\"${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt\")
 target_compile_definitions(test_utils PRIVATE -DTEST_A_DIR_LOCATION=\"${CMAKE_CURRENT_SOURCE_DIR}\")
 
-####### linkig zip against test executable to text extract zip from data ###############################################
+####### linking zip against test executable to text extract zip from data ###############################################
 if (UNIX AND NOT APPLE)
     target_link_libraries(test_utils PRIVATE -Wl,--format=binary -Wl,"test.zip" -Wl,--format=default)
 else ()

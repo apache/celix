@@ -95,11 +95,9 @@ TEST_F(CelixBundleCache, testExtractEmbeddedBundle) {
     auto result = celix_bundleCache_extractBundle(cache, 100, "embedded://nonexisting");
     EXPECT_EQ(result, nullptr);
 
-    /* TODO
     //valid bundle path -> extraction
     result = celix_bundleCache_extractBundle(cache, 100, "embedded://embedded_bundle1");
     EXPECT_NE(result, nullptr);
     //TODO check dir and delete dir
     free(result);
-     */
 }
