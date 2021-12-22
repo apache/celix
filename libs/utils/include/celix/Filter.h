@@ -106,16 +106,16 @@ namespace celix {
          * @brief Find the attribute based on the provided key.
          * @return The found attribute value or an empty string if the attribute was not found.
          */
-        [[nodiscard]] std::string findAttribute(const std::string& attributeKey) const {
-            auto* cValue = celix_filter_findAttribute(cFilter.get(), attributeKey.c_str());
+        [[nodiscard]] std::string findAttribute(std::string_view attributeKey) const {
+            auto* cValue = celix_filter_findAttribute(cFilter.get(), attributeKey.data());
             return cValue == nullptr ? std::string{} : std::string{cValue};
         }
 
         /**
          * @brief Check whether the filter has a attribute with the provided attribute key.
          */
-        [[nodiscard]] bool hasAttribute(const std::string& attributeKey) const {
-            return celix_filter_findAttribute(cFilter.get(), attributeKey.c_str()) != nullptr;
+        [[nodiscard]] bool hasAttribute(std::string_view attributeKey) const {
+            return celix_filter_findAttribute(cFilter.get(), attributeKey.data()) != nullptr;
         }
 
         /**
@@ -127,8 +127,8 @@ namespace celix {
          *   using this method for attribute key "key1" on filter "(key1>=value1)" yields false.
          *   using this method for attribute key "key1" on filter "(|(key1=value1)(key2=value2))" yields false.
          */
-        [[nodiscard]] bool hasMandatoryEqualsValueAttribute(const std::string& attributeKey) const {
-             return celix_filter_hasMandatoryEqualsValueAttribute(cFilter.get(), attributeKey.c_str());
+        [[nodiscard]] bool hasMandatoryEqualsValueAttribute(std::string_view attributeKey) const {
+             return celix_filter_hasMandatoryEqualsValueAttribute(cFilter.get(), attributeKey.data());
         }
 
         /**
@@ -140,8 +140,8 @@ namespace celix {
          *   using this function for attribute key "key1" on the filter "(key1=value)" yields false.
          *   using this function for attribute key "key1" on the filter "(|(!(key1=*))(key2=value2))" yields false.
          */
-        [[nodiscard]] bool hasMandatoryNegatedPresenceAttribute(const std::string& attributeKey) const {
-            return celix_filter_hasMandatoryNegatedPresenceAttribute(cFilter.get(), attributeKey.c_str());
+        [[nodiscard]] bool hasMandatoryNegatedPresenceAttribute(std::string_view attributeKey) const {
+            return celix_filter_hasMandatoryNegatedPresenceAttribute(cFilter.get(), attributeKey.data());
         }
 
         /**
