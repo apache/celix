@@ -33,7 +33,15 @@
 #include "celix_log.h"
 #include "celix_properties.h"
 #include "celix_file_utils.h"
+#include "celix_utils.h"
 
+#ifdef __APPLE__
+#include <mach-o/getsect.h>
+#include <dlfcn.h>
+#endif
+
+#define FW_LOG(level, ...) \
+    celix_framework_log(celix_frameworkLogger_globalLogger(), (level), __FUNCTION__ , __FILE__, __LINE__, __VA_ARGS__)
 
 struct celix_bundle_cache {
     char* cacheDir;
@@ -52,7 +60,7 @@ static const char* bundleCache_progamName() {
 
 celix_status_t celix_bundleCache_create(const char *fwUUID, const celix_properties_t* configurationMap, celix_bundle_cache_t **out) {
     if (configurationMap == NULL) {
-        celix_framework_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_ERROR, __FUNCTION__ , __FILE__, __LINE__, "Cannot create cache with a NULL configurationMap");
+        FW_LOG(CELIX_LOG_LEVEL_ERROR, "Cannot create cache with a NULL configurationMap");
         return CELIX_ILLEGAL_ARGUMENT;
     }
 
@@ -96,7 +104,7 @@ celix_status_t celix_bundleCache_delete(celix_bundle_cache_t* cache) {
     const char* err = NULL;
     celix_status_t status = celix_utils_deleteDirectory(cache->cacheDir, &err);
     if (err != NULL) {
-        celix_framework_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_ERROR, __FUNCTION__ , __FILE__, __LINE__, "Cannot delete cache dir at %s: %s", cache->cacheDir, err);
+        FW_LOG(CELIX_LOG_LEVEL_ERROR, "Cannot delete cache dir at %s: %s", cache->cacheDir, err);
     }
     return status;
 }
@@ -192,4 +200,109 @@ celix_status_t celix_bundleCache_createArchive(celix_bundle_cache_t* cache, long
 	framework_logIfError(celix_frameworkLogger_globalLogger(), status, NULL, "Failed to create archive");
 
 	return status;
+}
+
+static bool extractBundlePath(const char* bundlePath, const char* bundleCache) {
+    const char* err = NULL;
+    FW_LOG(CELIX_LOG_LEVEL_DEBUG, "Extracting bundle url `%s` to bundle cache `%s`", bundlePath, bundleCache);
+    celix_status_t status = celix_utils_extractZipFile(bundlePath, bundleCache, &err);
+    if (status == CELIX_SUCCESS) {
+        FW_LOG(CELIX_LOG_LEVEL_TRACE, "Bundle zip `%s` extracted to `%s`", bundlePath, bundleCache);
+    } else {
+        FW_LOG(CELIX_LOG_LEVEL_ERROR, "Could not extract bundle zip `%s` to `%s`: %s", bundlePath, bundleCache, err);
+    }
+    return status == CELIX_SUCCESS;
+}
+
+static bool extractBundleEmbedded(const char* embeddedSymbol, const char* bundleCache) {
+    FW_LOG(CELIX_LOG_LEVEL_DEBUG, "Extracting embedded bundle `%s` to bundle cache `%s`", embeddedSymbol, bundleCache);
+#ifdef __APPLE__
+    unsigned long len;
+    char *data = getsectdata("bundles", embeddedSymbol, &len);
+    if (data == NULL) {
+        FW_LOG(CELIX_LOG_LEVEL_ERROR, "Cannot extract embedded bundle, could not find sectdata in executable `%s` for segname `%s` and sectname `%s`", getprogname(), "bundles", embeddedSymbol);
+        return false;
+    }
+    const char* err = NULL;
+    celix_status_t status = celix_utils_extractZipData((const void*)data, (size_t)len, bundleCache, &err);
+    if (status == CELIX_SUCCESS) {
+        FW_LOG(CELIX_LOG_LEVEL_TRACE, "Embedded bundle zip `%s` extracted to `%s`", embeddedSymbol, bundleCache);
+    } else {
+        FW_LOG(CELIX_LOG_LEVEL_ERROR, "Could not extract embedded bundle zip `%s` to `%s`: %s", embeddedSymbol, bundleCache, err);
+    }
+    return status == CELIX_SUCCESS;
+
+    /*
+    uint8_t *zipData = NULL;
+
+    //get library info using an addr in the lib (the bundle register function)
+    Dl_info info;
+    const void *addr = (void*)(&extractBundleEmbedded);
+    dladdr(addr, &info);
+
+    //get mach header from Dl_info
+    struct mach_header_64* header = info.dli_fbase;
+
+    //get section from mach header based on the seg and sect name
+    const struct section_64 *sect = getsectbynamefromheader_64(header, "bundles", embeddedSymbol);
+
+    //NOTE reading directly form the sect->addr is not possible (BAD_ACCESS), so copy sect part from dylib file.
+
+    //alloc buffer to store resources zip
+    size_t resourcesLen = sect->size;
+    zipData = malloc(resourcesLen);
+
+    //read from dylib. note that the dylib location is in the Dl_info struct.
+    errno = 0;
+    FILE *dylib = fopen(info.dli_fname, "r");
+    size_t read = 0;
+    if (dylib != NULL) {
+        fseek(dylib, sect->offset, SEEK_SET);
+        read = fread(zipData, 1, sect->size, dylib);
+    }
+    if (dylib == NULL || read != sect->size) {
+        FW_LOG(CELIX_LOG_LEVEL_ERROR, "Error reading resources from dylib %s: %s", info.dli_fname, strerror(errno));
+        free(zipData);
+        zipData = NULL;
+        resourcesLen = 0;
+    }
+    if (dylib != NULL) {
+        fclose(dylib);
+    }
+     */
+#else
+    //TODO
+    abort();
+#endif
+}
+
+char* celix_bundleCache_extractBundle(celix_bundle_cache_t* cache, long bundleId, const char* bundleURL) {
+    char* result = NULL;
+
+    if (celix_utils_isStringNullOrEmpty(bundleURL)) {
+        FW_LOG(CELIX_LOG_LEVEL_ERROR, "Invalid NULL or empty bundleURL argument");
+        return result;
+    }
+
+    char* trimmedUrl = celix_utils_trim(bundleURL);
+    asprintf(&result, "%s/bundle%ld", cache->cacheDir, bundleId);
+
+    bool extracted;
+    if (strncasecmp("file://", bundleURL, 7) == 0) {
+        extracted = extractBundlePath(trimmedUrl+7, result); //note +7 to remove the file:// part.
+    } else if (strncasecmp("embedded://", bundleURL, 11) == 0) {
+        extracted = extractBundleEmbedded(trimmedUrl+11, result); //note +11 to remove the embedded:// part.
+    } else if (strcasestr(bundleURL, "://")) {
+        FW_LOG(CELIX_LOG_LEVEL_ERROR, "Cannot extract bundle url '%s', because url type is not supported. Supported types are file:// or embedded://.", bundleURL);
+        extracted = false;
+    } else {
+        extracted = extractBundlePath(trimmedUrl, result);
+    }
+
+    free(trimmedUrl);
+    if (!extracted) {
+        free(result);
+        return NULL;
+    }
+    return result;
 }

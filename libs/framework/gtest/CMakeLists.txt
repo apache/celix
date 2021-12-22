@@ -40,6 +40,7 @@ add_dependencies(unresolveable_bundle sublib)
 
 add_executable(test_framework
         src/single_framework_test.cpp
+        src/bundle_cache_test.cc
         src/multiple_frameworks_test.cpp
         src/bundle_context_bundles_tests.cpp
         src/bundle_context_services_test.cpp
@@ -49,6 +50,14 @@ add_executable(test_framework
         src/CxxFrameworkFactoryTestSuite.cc
         src/CxxBundleActivatorTestSuite.cc)
 target_link_libraries(test_framework PRIVATE Celix::framework CURL::libcurl GTest::gtest GTest::gtest_main)
+
+#embed 2 bundles in the test_framework executable
+if (UNIX AND NOT APPLE)
+    target_link_libraries(test_framework PRIVATE -Wl,--format=binary -Wl,$<TARGET_PROPERTY:embedded_bundle1,BUNDLE_FILE> -Wl,--format=default)
+else ()
+    target_link_libraries(test_framework PRIVATE -Wl,-sectcreate -Wl,bundles -Wl,embedded_bundle1 -Wl,$<TARGET_PROPERTY:simple_test_bundle1,BUNDLE_FILE>)
+endif ()
+
 add_celix_bundle_dependencies(test_framework
         simple_test_bundle1
         simple_test_bundle2 simple_test_bundle3 simple_test_bundle4

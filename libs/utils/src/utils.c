@@ -79,33 +79,45 @@ char * string_ndup(const char *s, size_t n) {
     return ret;
 }
 
-char * utils_stringTrim(char * string) {
-    char* copy = string;
+static char* celix_utilsTrimInternal(char *string) {
+    if (string == NULL) {
+        return NULL;
+    }
+
+    char* begin = string; //save begin to correctly free in the end.
 
     char *end;
     // Trim leading space
-    while (isspace(*copy)) {
-        copy++;
+    while (isspace(*string)) {
+        string++;
     }
 
     // Trim trailing space
-    end = copy + strlen(copy) - 1;
-    while(end > copy && isspace(*end)) {
+    end = string + strlen(string) - 1;
+    while(end > string && isspace(*end)) {
         *(end) = '\0';
         end--;
     }
 
-    if (copy != string) { 
+    if (string != begin) {
         //beginning whitespaces -> move char in copy to to begin string
         //This to ensure free still works on the same pointer.
-        char* nstring = string;
-        while(*copy != '\0') {
-            *(nstring++) = *(copy++);
+        char* nstring = begin;
+        while(*string != '\0') {
+            *(nstring++) = *(string++);
         }
         (*nstring) = '\0';
     }
 
-    return string;
+    return begin;
+}
+
+char* celix_utils_trim(const char* string) {
+    return celix_utilsTrimInternal(celix_utils_strdup(string));
+}
+
+char* utils_stringTrim(char* string) {
+    return celix_utilsTrimInternal(string);
 }
 
 bool utils_isStringEmptyOrNull(const char * const str) {
