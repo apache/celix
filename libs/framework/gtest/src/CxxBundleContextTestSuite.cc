@@ -719,9 +719,45 @@ public:
 };
 
 TEST_F(CxxBundleContextTestSuite, RegisterServiceWithNameAndVersionInfo) {
-
     auto reg = ctx->registerService<TestInterfaceWithStaticInfo>(std::make_shared<TestInterfaceWithStaticInfo>())
             .build();
     EXPECT_EQ(reg->getServiceName(), "TestName");
     EXPECT_EQ(reg->getServiceVersion(), "1.2.3");
+}
+
+
+TEST_F(CxxBundleContextTestSuite, listBundles) {
+    auto list = ctx->listBundleIds();
+    EXPECT_EQ(0, list.size());
+    list = ctx->listInstalledBundleIds();
+    EXPECT_EQ(0, list.size());
+
+    long bndId = ctx->installBundle(SIMPLE_TEST_BUNDLE1_LOCATION, false);
+    EXPECT_GT(bndId, 0);
+
+    list = ctx->listBundleIds();
+    EXPECT_EQ(0, list.size()); //installed, but not started
+    list = ctx->listInstalledBundleIds();
+    EXPECT_EQ(1, list.size());
+
+    ctx->startBundle(bndId);
+
+    list = ctx->listBundleIds();
+    EXPECT_EQ(1, list.size());
+    list = ctx->listInstalledBundleIds();
+    EXPECT_EQ(1, list.size());
+
+    ctx->stopBundle(bndId);
+
+    list = ctx->listBundleIds();
+    EXPECT_EQ(0, list.size());
+    list = ctx->listInstalledBundleIds();
+    EXPECT_EQ(1, list.size()); //stopped, but still installed
+
+    ctx->uninstallBundle(bndId);
+
+    list = ctx->listBundleIds();
+    EXPECT_EQ(0, list.size());
+    list = ctx->listInstalledBundleIds();
+    EXPECT_EQ(0, list.size());
 }
