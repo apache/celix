@@ -42,9 +42,9 @@ namespace celix {
         //NOTE private to prevent move so that a build() call cannot be forgotten
         ServiceTrackerBuilder(ServiceTrackerBuilder&&) noexcept = default;
     public:
-        explicit ServiceTrackerBuilder(std::shared_ptr<celix_bundle_context_t> _cCtx, std::string _name) :
+        explicit ServiceTrackerBuilder(std::shared_ptr<celix_bundle_context_t> _cCtx, std::string_view _name) :
                 cCtx{std::move(_cCtx)},
-                name{std::move(_name)} {}
+                name{_name} {}
 
         ServiceTrackerBuilder& operator=(ServiceTrackerBuilder&&) = delete;
         ServiceTrackerBuilder(const ServiceTrackerBuilder&) = delete;
@@ -57,7 +57,7 @@ namespace celix {
          * Example:
          *      "(property_key=value)"
          */
-        ServiceTrackerBuilder& setFilter(const std::string& f) { filter = celix::Filter{f}; return *this; }
+        ServiceTrackerBuilder& setFilter(std::string_view f) { filter = celix::Filter{f}; return *this; }
 
         /**
          * @brief Set filter to be used to matching services.
@@ -310,9 +310,9 @@ namespace celix {
         //NOTE private to prevent move so that a build() call cannot be forgotten
         MetaTrackerBuilder(MetaTrackerBuilder &&) = default;
     public:
-        explicit MetaTrackerBuilder(std::shared_ptr<celix_bundle_context_t> _cCtx, std::string _serviceName) :
+        explicit MetaTrackerBuilder(std::shared_ptr<celix_bundle_context_t> _cCtx, std::string_view _serviceName) :
                 cCtx{std::move(_cCtx)},
-                serviceName{std::move(_serviceName)}
+                serviceName{_serviceName}
         {}
 
         MetaTrackerBuilder &operator=(MetaTrackerBuilder &&) = delete;

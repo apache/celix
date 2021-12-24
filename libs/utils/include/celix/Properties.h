@@ -95,6 +95,8 @@ namespace celix {
 
     /**
      * @brief A collection of strings key values mainly used as meta data for registered services.
+     *
+     * @note Provided `const char*` and `std::string_view` values must be null terminated strings.
      * @note Not thread safe.
      */
     class Properties {
@@ -103,14 +105,44 @@ namespace celix {
 
         class ValueRef {
         public:
-            ValueRef(std::shared_ptr<celix_properties_t> _props, std::string _key) : props{std::move(_props)}, key{std::move(_key)} {}
-            ValueRef& operator=(const std::string& value) {
-                celix_properties_set(props.get(), key.c_str(), value.c_str());
+#if __cplusplus >= 201703L //C++17 or higher
+            ValueRef(std::shared_ptr<celix_properties_t> _props, std::string_view _key) : props{std::move(_props)}, stringKey{}, charKey{_key.data()} {}
+#else
+            ValueRef(std::shared_ptr<celix_properties_t> _props, std::string _key) : props{std::move(_props)}, stringKey{std::move(_key)}, charKey{nullptr} {}
+#endif
+            ValueRef(std::shared_ptr<celix_properties_t> _props, const char* _key) : props{std::move(_props)}, stringKey{}, charKey{_key} {}
+
+            ValueRef(const ValueRef&) = default;
+            ValueRef(ValueRef&&) = default;
+            ValueRef& operator=(const ValueRef&) = default;
+            ValueRef& operator=(ValueRef&&) = default;
+
+#if __cplusplus >= 201703L //C++17 or higher
+            ValueRef& operator=(std::string_view value) {
+                if (charKey == nullptr) {
+                    celix_properties_set(props.get(), stringKey.c_str(), value.data());
+                } else {
+                    celix_properties_set(props.get(), charKey, value.data());
+                }
                 return *this;
             }
+#else
+            ValueRef& operator=(const std::string& value) {
+                if (charKey == nullptr) {
+                    celix_properties_set(props.get(), stringKey.c_str(), value.c_str());
+                } else {
+                    celix_properties_set(props.get(), charKey, value.c_str());
+                }
+                return *this;
+            }
+#endif
 
             [[nodiscard]] const char* getValue() const {
-                return celix_properties_get(props.get(), key.c_str(), nullptr);
+                if (charKey == nullptr) {
+                    return celix_properties_get(props.get(), stringKey.c_str(), nullptr);
+                } else {
+                    return celix_properties_get(props.get(), charKey, nullptr);
+                }
             }
 
             operator std::string() const {
@@ -119,7 +151,8 @@ namespace celix {
             }
         private:
             std::shared_ptr<celix_properties_t> props;
-            std::string key;
+            std::string stringKey;
+            const char* charKey;
         };
 
 
@@ -138,11 +171,19 @@ namespace celix {
         Properties(const Properties& rhs) :
             cProps{celix_properties_copy(rhs.cProps.get()), [](celix_properties_t* p) { celix_properties_destroy(p); }} {}
 
-        Properties(std::initializer_list<std::pair<std::string, std::string>> list) : cProps{celix_properties_create(), [](celix_properties_t* p) { celix_properties_destroy(p); }} {
+#if __cplusplus >= 201703L //C++17 or higher
+        Properties(std::initializer_list<std::pair<std::string_view, std::string_view>> list) : cProps{celix_properties_create(), [](celix_properties_t* p) { celix_properties_destroy(p); }} {
             for(auto &entry : list) {
-                celix_properties_set(cProps.get(), entry.first.c_str(), entry.second.c_str());
+                set(entry.first, entry.second);
             }
         }
+#else
+        Properties(std::initializer_list<std::pair<std::string, std::string>> list) : cProps{celix_properties_create(), [](celix_properties_t* p) { celix_properties_destroy(p); }} {
+            for(auto &entry : list) {
+                set(entry.first, entry.second);
+            }
+        }
+#endif
 
         /**
          * @brief Wraps C properties, but does not take ownership -> dtor will not destroy properties
@@ -162,6 +203,21 @@ namespace celix {
             return cProps.get();
         }
 
+#if __cplusplus >= 201703L //C++17 or higher
+        /**
+         * @brief Get the value for a property key
+         */
+        ValueRef operator[](std::string_view key) {
+            return ValueRef{cProps, key};
+        }
+
+        /**
+         * @brief Get the value for a property key
+         */
+        ValueRef operator[](std::string_view key) const {
+            return ValueRef{cProps, key};
+        }
+#else
         /**
          * @brief Get the value for a property key
          */
@@ -175,6 +231,7 @@ namespace celix {
         ValueRef operator[](std::string key) const {
             return ValueRef{cProps, std::move(key)};
         }
+#endif
 
         /**
          * @brief begin iterator
@@ -208,6 +265,51 @@ namespace celix {
             return iter;
         }
 
+#if __cplusplus >= 201703L //C++17 or higher
+        /**
+         * @brief Get the value for a property key or return the defaultValue if the key does not exists.
+         */
+        [[nodiscard]] std::string get(std::string_view key, std::string_view defaultValue = {}) const {
+            const char* found = celix_properties_get(cProps.get(), key.data(), nullptr);
+            return found == nullptr ? std::string{defaultValue} : std::string{found};
+        }
+
+        /**
+         * @brief Get the value as long for a property key or return the defaultValue if the key does not exists.
+         */
+        [[nodiscard]] long getAsLong(std::string_view key, long defaultValue) const {
+            return celix_properties_getAsLong(cProps.get(), key.data(), defaultValue);
+        }
+
+        /**
+         * @brief Get the value as double for a property key or return the defaultValue if the key does not exists.
+         */
+        [[nodiscard]] double getAsDouble(std::string_view key, double defaultValue) const {
+            return celix_properties_getAsDouble(cProps.get(), key.data(), defaultValue);
+        }
+
+        /**
+         * @brief Get the value as bool for a property key or return the defaultValue if the key does not exists.
+         */
+        [[nodiscard]] bool getAsBool(std::string_view key, bool defaultValue) const {
+            return celix_properties_getAsBool(cProps.get(), key.data(), defaultValue);
+        }
+
+        template<typename T>
+        void set(std::string_view key, T&& value) {
+            if constexpr (std::is_same_v<std::decay_t<T>, bool>) {
+                celix_properties_setBool(cProps.get(), key.data(), value);
+            } else if constexpr (std::is_same_v<std::decay_t<T>, std::string_view>) {
+                celix_properties_set(cProps.get(), key.data(), value.data());
+            } else if constexpr (std::is_convertible_v<T, std::string_view>) {
+                std::string_view view{value};
+                celix_properties_set(cProps.get(), key.data(), view.data());
+            } else {
+                using namespace std;
+                celix_properties_set(cProps.get(), key.data(), to_string(value).c_str());
+            }
+        }
+#else
         /**
          * @brief Get the value for a property key or return the defaultValue if the key does not exists.
          */
@@ -266,6 +368,7 @@ namespace celix {
             using namespace std;
             celix_properties_set(cProps.get(), key.c_str(), to_string(value).c_str());
         }
+#endif
 
         /**
          * @brief Returns the nr of properties.

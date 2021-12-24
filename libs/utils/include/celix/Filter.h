@@ -53,12 +53,13 @@ namespace celix {
      *        "(!(cn=Tim Howes))"
      *        "(&(" + celix::Constants::SERVICE_NAME + "=Person)(|(sn=Jensen)(cn=Babs J*)))"
      *
+     * @note Provided `const char*` and `std::string_view` values must be null terminated strings.
      * @note Not thread safe.
      */
     class Filter {
     public:
         Filter() : cFilter{createFilter("")} {}
-        explicit Filter(const std::string& filterStr) : cFilter{createFilter(filterStr)} {}
+        explicit Filter(std::string_view filterStr) : cFilter{createFilter(filterStr)} {}
 
         Filter(Filter&&) = default;
         Filter& operator=(Filter&&) = default;
@@ -162,13 +163,13 @@ namespace celix {
         }
 
     private:
-        static std::shared_ptr<celix_filter_t> createFilter(const std::string& filterStr) {
+        static std::shared_ptr<celix_filter_t> createFilter(std::string_view filterStr) {
             if (filterStr.empty()) {
                 return nullptr;
             }
-            auto* cf = celix_filter_create(filterStr.c_str());
+            auto* cf = celix_filter_create(filterStr.data());
             if (cf == nullptr) {
-                throw celix::FilterException{"Invalid LDAP filter '" + filterStr + "'"};
+                throw celix::FilterException{"Invalid LDAP filter '" + std::string{filterStr} + "'"};
             }
             return std::shared_ptr<celix_filter_t>{cf, [](celix_filter_t *f) {
                 celix_filter_destroy(f);

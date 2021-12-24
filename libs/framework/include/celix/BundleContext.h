@@ -46,6 +46,7 @@ namespace celix {
      *  - Access bundles
      *  - Get config properties
      *
+     * @note Provided `std::string_view` values must be null terminated strings.
      * @note Thread safe.
      */
     class BundleContext {
@@ -78,7 +79,7 @@ namespace celix {
          * @return A ServiceRegistrationBuilder object.
          */
         template<typename I, typename Implementer>
-        ServiceRegistrationBuilder<I> registerService(std::shared_ptr<Implementer> implementer, const std::string& name = {}) {
+        ServiceRegistrationBuilder<I> registerService(std::shared_ptr<Implementer> implementer, std::string_view name = {}) {
             std::shared_ptr<I> svc = implementer; //note Implement should be derived from I
             return ServiceRegistrationBuilder<I>{cCtx, std::move(svc), celix::typeName<I>(name)};
         }
@@ -94,7 +95,7 @@ namespace celix {
          * service sync (because the svc pointer is unmanaged).
          */
         template<typename I, typename Implementer>
-        ServiceRegistrationBuilder<I> registerUnmanagedService(Implementer* svc, const std::string& name = {}) {
+        ServiceRegistrationBuilder<I> registerUnmanagedService(Implementer* svc, std::string_view name = {}) {
             auto unmanagedSvc = std::shared_ptr<I>{svc, [](I*){/*nop*/}};
             return ServiceRegistrationBuilder<I>{cCtx, std::move(unmanagedSvc), celix::typeName<I>(name), true, false};
         }
@@ -128,7 +129,7 @@ namespace celix {
          * @return A UseServiceBuilder object.
          */
         template<typename I>
-        UseServiceBuilder<I> useService(const std::string& name = {}) {
+        UseServiceBuilder<I> useService(std::string_view name = {}) {
             return UseServiceBuilder<I>{cCtx, celix::typeName<I>(name), true};
         }
 
@@ -156,7 +157,7 @@ namespace celix {
          * @return A UseServiceBuilder object.
          */
         template<typename I>
-        UseServiceBuilder<I> useServices(const std::string& name = {}) {
+        UseServiceBuilder<I> useServices(std::string_view name = {}) {
             return UseServiceBuilder<I>{cCtx, celix::typeName<I>(name), false};
         }
 
@@ -172,7 +173,7 @@ namespace celix {
          * @return The service id of the found service or -1 if the service was not found.
          */
         template<typename I>
-        long findService(const std::string& filter = {}, const std::string& versionRange = {}) {
+        long findService(std::string_view filter = {}, std::string_view versionRange = {}) {
             return findServiceWithName(celix::typeName<I>(), filter, versionRange);
         }
 
@@ -185,12 +186,12 @@ namespace celix {
          * @param versionRange An optional version range.
          * @return The service id of the found service or -1 if the service was not found.
          */
-        long findServiceWithName(const std::string& name, const std::string& filter = {}, const std::string& versionRange = {}) {
+        long findServiceWithName(std::string_view name, std::string_view filter = {}, std::string_view versionRange = {}) {
             waitIfAbleForEvents();
             celix_service_filter_options_t opts{};
-            opts.serviceName = name.empty() ? nullptr : name.c_str();
-            opts.filter = filter.empty() ? nullptr : filter.c_str();
-            opts.versionRange = versionRange.empty() ? nullptr : versionRange.c_str();
+            opts.serviceName = name.empty() ? nullptr : name.data();
+            opts.filter = filter.empty() ? nullptr : filter.data();
+            opts.versionRange = versionRange.empty() ? nullptr : versionRange.data();
             return celix_bundleContext_findServiceWithOptions(cCtx.get(), &opts);
         }
 
@@ -206,7 +207,7 @@ namespace celix {
          * @return A vector of service ids.
          */
         template<typename I>
-        std::vector<long> findServices(const std::string& filter = {}, const std::string& versionRange = {}) {
+        std::vector<long> findServices(std::string_view filter = {}, std::string_view versionRange = {}) {
             return findServicesWithName(celix::typeName<I>(), filter, versionRange);
         }
 
@@ -219,12 +220,12 @@ namespace celix {
          * @param versionRange An optional version range.
          * @return A vector of service ids.
          */
-        std::vector<long> findServicesWithName(const std::string& name, const std::string& filter = {}, const std::string& versionRange = {}) {
+        std::vector<long> findServicesWithName(std::string_view name, std::string_view filter = {}, std::string_view versionRange = {}) {
             waitIfAbleForEvents();
             celix_service_filter_options_t opts{};
-            opts.serviceName = name.empty() ? nullptr : name.c_str();
-            opts.filter = filter.empty() ? nullptr : filter.c_str();
-            opts.versionRange = versionRange.empty() ? nullptr : versionRange.c_str();
+            opts.serviceName = name.empty() ? nullptr : name.data();
+            opts.filter = filter.empty() ? nullptr : filter.data();
+            opts.versionRange = versionRange.empty() ? nullptr : versionRange.data();
 
             std::vector<long> result{};
             auto cList = celix_bundleContext_findServicesWithOptions(cCtx.get(), &opts);
@@ -257,7 +258,7 @@ namespace celix {
          * @return A ServiceTrackerBuilder object.
          */
         template<typename I>
-        ServiceTrackerBuilder<I> trackServices(const std::string& name = {}) {
+        ServiceTrackerBuilder<I> trackServices(std::string_view name = {}) {
             return ServiceTrackerBuilder<I>{cCtx, celix::typeName<I>(name)};
         }
 
@@ -310,7 +311,7 @@ namespace celix {
          * @return A MetaTrackerBuilder object.
          */
         template<typename I>
-        MetaTrackerBuilder trackServiceTrackers(const std::string& name = {}) {
+        MetaTrackerBuilder trackServiceTrackers(std::string_view name = {}) {
             return MetaTrackerBuilder(cCtx, celix::typeName<I>(name));
         }
 
@@ -332,8 +333,8 @@ namespace celix {
          * @param autoStart If the bundle should also be started.
          * @return the bundleId (>= 0) or < 0 if the bundle could not be installed and possibly started.
          */
-        long installBundle(const std::string& bndLocation, bool autoStart = true) {
-            return celix_bundleContext_installBundle(cCtx.get(), bndLocation.c_str(), autoStart);
+        long installBundle(std::string_view bndLocation, bool autoStart = true) {
+            return celix_bundleContext_installBundle(cCtx.get(), bndLocation.data(), autoStart);
         }
 
         /**
@@ -399,8 +400,8 @@ namespace celix {
          * @param defaultVal The default value to use if the property is not found.
          * @return The config property value for the provided key or the provided defaultValue is the name is not found.
          */
-        [[nodiscard]] std::string getConfigProperty(const std::string& name, const std::string& defaultValue) const {
-            return std::string{celix_bundleContext_getProperty(cCtx.get(), name.c_str(), defaultValue.c_str())};
+        [[nodiscard]] std::string getConfigProperty(std::string_view name, std::string_view defaultValue) const {
+            return std::string{celix_bundleContext_getProperty(cCtx.get(), name.data(), defaultValue.data())};
         }
 
         /**
@@ -415,8 +416,8 @@ namespace celix {
          * @return The config property value (as long) for the provided key or the provided defaultValue is the name
          * is not found or not a valid long.
          */
-        [[nodiscard]] long getConfigPropertyAsLong(const std::string& name, long defaultValue) const {
-            return celix_bundleContext_getPropertyAsLong(cCtx.get(), name.c_str(), defaultValue);
+        [[nodiscard]] long getConfigPropertyAsLong(std::string_view name, long defaultValue) const {
+            return celix_bundleContext_getPropertyAsLong(cCtx.get(), name.data(), defaultValue);
         }
 
         /**
@@ -431,8 +432,8 @@ namespace celix {
          * @return The config property value (as double) for the provided key or the provided defaultValue is the name
          * is not found or not a valid double.
          */
-        [[nodiscard]] double getConfigPropertyAsDouble(const std::string& name, double defaultValue) const {
-            return celix_bundleContext_getPropertyAsDouble(cCtx.get(), name.c_str(), defaultValue);
+        [[nodiscard]] double getConfigPropertyAsDouble(std::string_view name, double defaultValue) const {
+            return celix_bundleContext_getPropertyAsDouble(cCtx.get(), name.data(), defaultValue);
         }
 
         /**
@@ -449,8 +450,8 @@ namespace celix {
          * @return The config property value (as boolean) for the provided key or the provided defaultValue is the name
          * is not found or not a valid boolean.
          */
-        [[nodiscard]] long getConfigPropertyAsBool(const std::string& name, bool defaultValue) const {
-            return celix_bundleContext_getPropertyAsBool(cCtx.get(), name.c_str(), defaultValue);
+        [[nodiscard]] long getConfigPropertyAsBool(std::string_view name, bool defaultValue) const {
+            return celix_bundleContext_getPropertyAsBool(cCtx.get(), name.data(), defaultValue);
         }
 
         /**
