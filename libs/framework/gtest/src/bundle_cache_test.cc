@@ -92,6 +92,8 @@ TEST_F(CelixBundleCache, testExtractBundlePath) {
     checkBundleCacheDir(result, ".bundle8/revision.0.0");
     celix_utils_deleteDirectory(result, NULL);
     free(result);
+
+    celix_properties_destroy(dummyProps);
 }
 
 TEST_F(CelixBundleCache, testExtractEmbeddedBundle) {
@@ -112,4 +114,6 @@ TEST_F(CelixBundleCache, testExtractEmbeddedBundle) {
     checkBundleCacheDir(result, ".bundle11/revision.0.0");
     celix_utils_deleteDirectory(result, NULL);
     free(result);
+
+    celix_properties_destroy(dummyProps);
 }

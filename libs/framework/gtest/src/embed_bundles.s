@@ -20,10 +20,7 @@
 .section .rodata
 
 .global celix_embedded_bundle_simple_test_bundle1_start
-.type celix_embedded_bundle_simple_test_bundle1_start, @object
-
 .global celix_embedded_bundle_simple_test_bundle1_end
-.type celix_embedded_bundle_simple_test_bundle1_end, @object
 
 .section .rodata
 .balign 64
