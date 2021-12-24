@@ -106,7 +106,7 @@ celix_status_t celix_bundleCache_delete(celix_bundle_cache_t *cache);
 /**
  * @brief extracts a bundle for the given cache.
  * @param cache The celix bundle cache.
- * @param bundleId The bundle id used to decide the bundle cache dir
+ * @param bundleDir the relative bundle in the cache dir.
  * @param bundleURL The bundle url. Which must be the following:
  *  - prefixed with file:// -> url is a file path.
  *  - prefixed with embedded:// -> url is a symbol for the bundle embedded in the current executable.
@@ -114,7 +114,7 @@ celix_status_t celix_bundleCache_delete(celix_bundle_cache_t *cache);
  *  - no :// -> assuming that the url is a file path (same as with a file:// prefix)
  * @return The extracted bundle cache dir or NULL if the extraction failed. The caller is owner of the string.
  */
-char *celix_bundleCache_extractBundle(celix_bundle_cache_t *cache, long bundleId, const char *bundleURL);
+char *celix_bundleCache_extractBundle(celix_bundle_cache_t *cache, const char* bundleDir, const char *bundleURL);
 
 #ifdef __cplusplus
 }

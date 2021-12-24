@@ -19,8 +19,11 @@
 
 #include <gtest/gtest.h>
 
+#include <filesystem>
+
 #include "celix_framework_factory.h"
 #include "celix_bundle_cache.h"
+#include "celix_file_utils.h"
 
 
 class CelixBundleCache : public ::testing::Test {
@@ -38,6 +41,12 @@ public:
     std::shared_ptr<celix_framework_t> framework{};
 };
 
+static void checkBundleCacheDir(const char* bundleDir, const char* providedBundlePart) {
+    const char* result = strstr(bundleDir, providedBundlePart);
+    EXPECT_TRUE(result != nullptr);
+    EXPECT_TRUE(std::filesystem::is_directory(bundleDir));
+}
+
 TEST_F(CelixBundleCache, testExtractBundlePath) {
     auto* dummyProps = celix_properties_create();
     auto* dummyFwUUID = "dummy";
@@ -47,39 +56,41 @@ TEST_F(CelixBundleCache, testExtractBundlePath) {
     ASSERT_EQ(status, CELIX_SUCCESS);
 
     //invalid bundle url -> no extraction
-    char* result = celix_bundleCache_extractBundle(cache, 2, nullptr);
+    char* result = celix_bundleCache_extractBundle(cache, ".bundle2/revision.0.0", nullptr);
     EXPECT_EQ(result, nullptr);
 
     //invalid bundle path -> no extraction
-    result = celix_bundleCache_extractBundle(cache, 100, "non-existing.zip");
+    result = celix_bundleCache_extractBundle(cache, ".bundle3/revision.0.0", "non-existing.zip");
     EXPECT_EQ(result, nullptr);
 
     //invalid url prefix -> no extraction
     std::string path = std::string{"bla://"} + SIMPLE_TEST_BUNDLE1_LOCATION;
-    result = celix_bundleCache_extractBundle(cache, 100, path.c_str());
+    result = celix_bundleCache_extractBundle(cache, ".bundle4/revision.0.0", path.c_str());
     EXPECT_EQ(result, nullptr);
 
     //invalid url prefix -> no extraction
     path = std::string{"bla://"};
-    result = celix_bundleCache_extractBundle(cache, 100, path.c_str());
+    result = celix_bundleCache_extractBundle(cache, ".bundle5/revision.0.0", path.c_str());
     EXPECT_EQ(result, nullptr);
 
     //invalid url prefix -> no extraction
     path = std::string{"file://"};
-    result = celix_bundleCache_extractBundle(cache, 100, path.c_str());
+    result = celix_bundleCache_extractBundle(cache, ".bundle6/revision.0.0", path.c_str());
     EXPECT_EQ(result, nullptr);
 
     //valid bundle path -> extraction
-    result = celix_bundleCache_extractBundle(cache, 100, SIMPLE_TEST_BUNDLE1_LOCATION);
+    result = celix_bundleCache_extractBundle(cache, ".bundle7/revision.0.0", SIMPLE_TEST_BUNDLE1_LOCATION);
     EXPECT_NE(result, nullptr);
-    //TODO check dir and delete dir
+    checkBundleCacheDir(result, ".bundle7/revision.0.0");
+    celix_utils_deleteDirectory(result, NULL);
     free(result);
 
     //valid bundle path with file:// prefix -> extraction
     path = std::string{"file://"} + SIMPLE_TEST_BUNDLE1_LOCATION;
-    result = celix_bundleCache_extractBundle(cache, 100, path.c_str());
+    result = celix_bundleCache_extractBundle(cache, ".bundle8/revision.0.0", path.c_str());
     EXPECT_NE(result, nullptr);
-    //TODO check dir and delete dir
+    checkBundleCacheDir(result, ".bundle8/revision.0.0");
+    celix_utils_deleteDirectory(result, NULL);
     free(result);
 }
 
@@ -92,12 +103,13 @@ TEST_F(CelixBundleCache, testExtractEmbeddedBundle) {
     ASSERT_EQ(status, CELIX_SUCCESS);
 
     //invalid bundle symbol -> no extraction
-    auto result = celix_bundleCache_extractBundle(cache, 100, "embedded://nonexisting");
+    auto result = celix_bundleCache_extractBundle(cache, ".bundle10/revision.0.0", "embedded://nonexisting");
     EXPECT_EQ(result, nullptr);
 
     //valid bundle path -> extraction
-    result = celix_bundleCache_extractBundle(cache, 100, "embedded://embedded_bundle1");
+    result = celix_bundleCache_extractBundle(cache, ".bundle11/revision.0.0", "embedded://simple_test_bundle1");
     EXPECT_NE(result, nullptr);
-    //TODO check dir and delete dir
+    checkBundleCacheDir(result, ".bundle11/revision.0.0");
+    celix_utils_deleteDirectory(result, NULL);
     free(result);
 }

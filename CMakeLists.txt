@@ -22,7 +22,7 @@ if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.9.0")
    cmake_policy(SET CMP0068 NEW)
 endif()
 
-project (Celix C CXX)
+project (Celix C CXX ASM)
 
 include(cmake/celix_project/CelixProject.cmake)
 include(cmake/cmake_celix/UseCelix.cmake)

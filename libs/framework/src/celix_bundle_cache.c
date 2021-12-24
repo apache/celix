@@ -27,6 +27,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/errno.h>
+#include <dlfcn.h>
 
 #include "bundle_archive.h"
 #include "celix_constants.h"
@@ -35,12 +36,9 @@
 #include "celix_file_utils.h"
 #include "celix_utils.h"
 
-#ifdef __APPLE__
-#include <mach-o/dyld.h>
-#include <mach-o/getsect.h>
-#else
-#include <dlfcn.h>
-#endif
+static const char * const EMBEDDED_BUNDLE_PREFIX = "celix_embedded_bundle_";
+static const char * const EMBEDDED_BUNDLE_START_POSTFIX = "_start";
+static const char * const EMBEDDED_BUNDLE_END_POSTFIX = "_end";
 
 #define FW_LOG(level, ...) \
     celix_framework_log(celix_frameworkLogger_globalLogger(), (level), __FUNCTION__ , __FILE__, __LINE__, __VA_ARGS__)
@@ -216,10 +214,10 @@ static bool extractBundlePath(const char* bundlePath, const char* bundleCache) {
     return status == CELIX_SUCCESS;
 }
 
+static bool extractBundleEmbedded(const char* embeddedBundle, const char* bundleCache) {
+    FW_LOG(CELIX_LOG_LEVEL_DEBUG, "Extracting embedded bundle `%s` to bundle cache `%s`", embeddedBundle, bundleCache);
 
-static bool extractBundleEmbedded(const char* embeddedSymbol, const char* bundleCache) {
-    FW_LOG(CELIX_LOG_LEVEL_DEBUG, "Extracting embedded bundle `%s` to bundle cache `%s`", embeddedSymbol, bundleCache);
-#ifdef __APPLE__
+    /* TBD, maybe still needed for osx
     unsigned long dataSize;
     void* data;
     data = getsectdata("bundles", embeddedSymbol, &dataSize);
@@ -238,16 +236,19 @@ static bool extractBundleEmbedded(const char* embeddedSymbol, const char* bundle
         FW_LOG(CELIX_LOG_LEVEL_ERROR, "Could not extract embedded bundle zip `%s` to `%s`: %s", embeddedSymbol, bundleCache, err);
     }
     return status == CELIX_SUCCESS;
-#else
+    */
+
     char* startSymbol = NULL;
     char* endSymbol = NULL;
-    asprintf(&startSymbol, "binary_%s_start", embeddedSymbol);
-    asprintf(&endSymbol, "binary_%s_end", embeddedSymbol);
-    void* start = dlsym(RTLD_MAIN_ONLY, startSymbol);
-    void* end = dlsym(RTLD_MAIN_ONLY, endSymbol);
+    asprintf(&startSymbol, "%s%s%s", EMBEDDED_BUNDLE_PREFIX, embeddedBundle, EMBEDDED_BUNDLE_START_POSTFIX);
+    asprintf(&endSymbol, "%s%s%s", EMBEDDED_BUNDLE_PREFIX, embeddedBundle, EMBEDDED_BUNDLE_END_POSTFIX);
+
+    void* main = dlopen(NULL, RTLD_NOW);
+    void* start = dlsym(main, startSymbol);
+    void* end = dlsym(main, endSymbol);
 
     if (start == NULL || end == NULL) {
-        FW_LOG(CELIX_LOG_LEVEL_ERROR, "Cannot extract embedded bundle, could not find symbols `%s` and/or `%s` for embedded bundle `%s`", startSymbol, endSymbol, embeddedSymbol);
+        FW_LOG(CELIX_LOG_LEVEL_ERROR, "Cannot extract embedded bundle, could not find symbols `%s` and/or `%s` for embedded bundle `%s`", startSymbol, endSymbol, embeddedBundle);
         free(startSymbol);
         free(endSymbol);
         return false;
@@ -256,17 +257,16 @@ static bool extractBundleEmbedded(const char* embeddedSymbol, const char* bundle
     free(endSymbol);
 
     const char* err = NULL;
-    celix_status_t status = celix_utils_extractZipData(start, end - start, bundleCache, &err);
+    celix_status_t status = celix_utils_extractZipData(start, end-start, bundleCache, &err);
     if (status == CELIX_SUCCESS) {
-        FW_LOG(CELIX_LOG_LEVEL_TRACE, "Embedded bundle zip `%s` extracted to `%s`", embeddedSymbol, bundleCache);
+        FW_LOG(CELIX_LOG_LEVEL_TRACE, "Embedded bundle zip `%s` extracted to `%s`", embeddedBundle, bundleCache);
     } else {
-        FW_LOG(CELIX_LOG_LEVEL_ERROR, "Could not extract embedded bundle zip `%s` to `%s`: %s", embeddedSymbol, bundleCache, err);
+        FW_LOG(CELIX_LOG_LEVEL_ERROR, "Could not extract embedded bundle zip `%s` to `%s`: %s", embeddedBundle, bundleCache, err);
     }
     return status == CELIX_SUCCESS;
-#endif
 }
 
-char* celix_bundleCache_extractBundle(celix_bundle_cache_t* cache, long bundleId, const char* bundleURL) {
+char* celix_bundleCache_extractBundle(celix_bundle_cache_t* cache, const char* bundleCacheDir, const char* bundleURL) {
     char* result = NULL;
 
     if (celix_utils_isStringNullOrEmpty(bundleURL)) {
@@ -275,7 +275,7 @@ char* celix_bundleCache_extractBundle(celix_bundle_cache_t* cache, long bundleId
     }
 
     char* trimmedUrl = celix_utils_trim(bundleURL);
-    asprintf(&result, "%s/bundle%ld", cache->cacheDir, bundleId);
+    asprintf(&result, "%s/%s", cache->cacheDir, bundleCacheDir);
 
     bool extracted;
     if (strncasecmp("file://", bundleURL, 7) == 0) {

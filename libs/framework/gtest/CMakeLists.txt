@@ -51,12 +51,14 @@ add_executable(test_framework
         src/CxxBundleActivatorTestSuite.cc)
 target_link_libraries(test_framework PRIVATE Celix::framework CURL::libcurl GTest::gtest GTest::gtest_main)
 
-#embed 2 bundles in the test_framework executable
-if (UNIX AND NOT APPLE)
-    target_link_libraries(test_framework PRIVATE -Wl,--format=binary -Wl,$<TARGET_PROPERTY:embedded_bundle1,BUNDLE_FILE> -Wl,--format=default)
-else ()
-    target_link_libraries(test_framework PRIVATE -Wl,-sectcreate -Wl,bundles -Wl,embedded_bundle1 -Wl,$<TARGET_PROPERTY:simple_test_bundle1,BUNDLE_FILE>)
-endif ()
+
+#embed bundle in the test_framework executable
+target_sources(test_framework PRIVATE src/embed_bundles.s)
+target_link_libraries(test_framework PRIVATE -Wl,-export-dynamic)
+#add_library(test_framework_embedded_bundles STATIC
+#        src/embed_bundles.s
+#)
+#target_link_libraries(test_framework PRIVATE -Wl,-export-dynamic -Wl,--whole-archive test_framework_embedded_bundles -Wl,--no-whole-archive)
 
 add_celix_bundle_dependencies(test_framework
         simple_test_bundle1
