@@ -53,8 +53,13 @@ target_link_libraries(test_framework PRIVATE Celix::framework CURL::libcurl GTes
 
 
 #embed bundle in the test_framework executable
-target_sources(test_framework PRIVATE src/embed_bundles.s)
-target_link_libraries(test_framework PRIVATE -Wl,-export-dynamic)
+if (APPLE)
+    target_sources(test_framework PRIVATE src/osx_embed_bundles.s)
+    #target_link_libraries(test_framework PRIVATE -Wl,-export-dynamic)
+else()
+    target_sources(test_framework PRIVATE src/linux_embed_bundles.s)
+    target_link_libraries(test_framework PRIVATE -Wl,-export-dynamic)
+endif()
 #add_library(test_framework_embedded_bundles STATIC
 #        src/embed_bundles.s
 #)
