@@ -114,7 +114,7 @@ static bool extractBundleEmbedded(celix_framework_t *fw, const char* embeddedBun
     return status == CELIX_SUCCESS;
 }
 
-bool celix_framework_utils_extractBundle(celix_framework_t *fw, const char *bundleURL,  const char* extractPath) {
+celix_status_t celix_framework_utils_extractBundle(celix_framework_t *fw, const char *bundleURL,  const char* extractPath) {
     if (celix_utils_isStringNullOrEmpty(bundleURL)) {
         FW_LOG(CELIX_LOG_LEVEL_ERROR, "Invalid NULL or empty bundleURL argument");
         return CELIX_ILLEGAL_ARGUMENT;
