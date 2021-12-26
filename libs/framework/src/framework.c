@@ -261,11 +261,11 @@ celix_status_t framework_create(framework_pt *out, celix_properties_t* config) {
     celix_status_t status = bundle_create(&framework->bundle);
     status = CELIX_DO_IF(status, bundle_getBundleId(framework->bundle, &framework->bundleId));
     status = CELIX_DO_IF(status, bundle_setFramework(framework->bundle, framework));
-    status = CELIX_DO_IF(status, celix_bundleCache_create(uuid, framework->configurationMap, &framework->cache));
     status = CELIX_DO_IF(status, serviceRegistry_create(framework, &framework->registry));
     bundle_context_t *context = NULL;
     status = CELIX_DO_IF(status, bundleContext_create(framework, framework->logger, framework->bundle, &context));
     status = CELIX_DO_IF(status, bundle_setContext(framework->bundle, context));
+    status = CELIX_DO_IF(status, celix_bundleCache_create(framework, &framework->cache));
 
     //create framework bundle entry
     long bndId = -1L;

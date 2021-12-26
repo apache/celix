@@ -22,17 +22,18 @@ find_package(CURL REQUIRED)
 set(SOURCES
         src/attribute.c src/bundle.c src/bundle_archive.c src/celix_bundle_cache.c
         src/bundle_context.c src/bundle_revision.c src/capability.c src/celix_errorcodes.c
-        src/framework.c src/manifest.c src/ioapi.c
-        src/manifest_parser.c src/miniunz.c src/module.c
+        src/framework.c src/manifest.c
+        src/manifest_parser.c src/module.c
         src/requirement.c src/resolver.c src/service_reference.c src/service_registration.c
         src/service_registry.c src/service_tracker.c src/service_tracker_customizer.c
-        src/unzip.c src/wire.c
+        src/wire.c
         src/celix_log.c src/celix_launcher.c
         src/celix_framework_factory.c
         src/dm_dependency_manager_impl.c src/dm_component_impl.c
         src/dm_service_dependency.c src/celix_libloader.c
         src/framework_bundle_lifecycle_handler.c
         src/celix_bundle_state.c
+        src/celix_framework_utils.c
         )
 add_library(framework SHARED ${SOURCES})
 set_target_properties(framework PROPERTIES OUTPUT_NAME "celix_framework")

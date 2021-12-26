@@ -40,7 +40,7 @@ add_dependencies(unresolveable_bundle sublib)
 
 add_executable(test_framework
         src/single_framework_test.cpp
-        src/bundle_cache_test.cc
+        src/celix_framework_utils_test.cc
         src/multiple_frameworks_test.cpp
         src/bundle_context_bundles_tests.cpp
         src/bundle_context_services_test.cpp
@@ -60,10 +60,6 @@ else()
     target_sources(test_framework PRIVATE src/linux_embed_bundles.s)
     target_link_libraries(test_framework PRIVATE -Wl,-export-dynamic)
 endif()
-#add_library(test_framework_embedded_bundles STATIC
-#        src/embed_bundles.s
-#)
-#target_link_libraries(test_framework PRIVATE -Wl,-export-dynamic -Wl,--whole-archive test_framework_embedded_bundles -Wl,--no-whole-archive)
 
 add_celix_bundle_dependencies(test_framework
         simple_test_bundle1

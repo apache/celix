@@ -22,9 +22,8 @@
 
 
 #include "bundle_archive.h"
-#include "celix_properties.h"
+#include "celix_framework.h"
 #include "celix_array_list.h"
-#include "celix_log.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -46,7 +45,7 @@ typedef struct celix_bundle_cache celix_bundle_cache_t;
  * @return CELIX_SUCCESS if bundle cache is successfully created.
  */
 celix_status_t
-celix_bundleCache_create(const char *fwUUID, const celix_properties_t *config, celix_bundle_cache_t **out);
+celix_bundleCache_create(celix_framework_t* fw, celix_bundle_cache_t **out);
 
 /**
  * @brief Frees the bundle_cache memory allocated in celix_bundleCache_create
@@ -102,19 +101,6 @@ celix_bundleCache_createArchive(celix_bundle_cache_t *cache, long id, const char
  * 		- CELIX_FILE_IO_EXCEPTION If the cache cannot be opened or read.
  */
 celix_status_t celix_bundleCache_delete(celix_bundle_cache_t *cache);
-
-/**
- * @brief extracts a bundle for the given cache.
- * @param cache The celix bundle cache.
- * @param bundleDir the relative bundle in the cache dir.
- * @param bundleURL The bundle url. Which must be the following:
- *  - prefixed with file:// -> url is a file path.
- *  - prefixed with embedded:// -> url is a symbol for the bundle embedded in the current executable.
- *  - *:// -> not supported
- *  - no :// -> assuming that the url is a file path (same as with a file:// prefix)
- * @return The extracted bundle cache dir or NULL if the extraction failed. The caller is owner of the string.
- */
-char *celix_bundleCache_extractBundle(celix_bundle_cache_t *cache, const char* bundleDir, const char *bundleURL);
 
 #ifdef __cplusplus
 }
