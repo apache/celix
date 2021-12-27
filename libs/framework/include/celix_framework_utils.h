@@ -22,13 +22,22 @@
 
 
 #include "celix_framework.h"
+#include "celix_array_list.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+//TODO make sep for embedded list a space and check if bundle file path with spaces are supported (escape char stuf).
 //TODO doc
 celix_array_list_t* celix_framework_utils_listEmbeddedBundles();
+
+//TODO doc
+size_t celix_framework_utils_installEmbeddedBundles(celix_framework_t* fw, bool autoStart);
+
+//TODO make cmake command to add bundles as dep and create a compile definition with a bundle set
+//TODO
+//size_t celix_framework_utils_installBundlesSet(celix_framework_t* fw, const char* bundleSet, bool autoStart);
 
 #ifdef __cplusplus
 }

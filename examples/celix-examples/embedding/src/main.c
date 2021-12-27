@@ -48,6 +48,7 @@ int main(void) {
     int rc = celixLauncher_launchWithProperties(config, &framework);
 
     if (rc == 0) {
+        celix_framework_utils_installEmbeddedBundles(framework, true);
         celix_bundle_context_t *ctx = celix_framework_getFrameworkContext(framework);
 
         foo_t *foo = calloc(1, sizeof(*foo));
@@ -64,6 +65,7 @@ int main(void) {
         free(svc);
         free(foo);
 
+        celixLauncher_waitForShutdown(framework);
         celixLauncher_destroy(framework);
     }
 

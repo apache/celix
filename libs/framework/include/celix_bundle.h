@@ -18,7 +18,7 @@
  */
 
 #include "celix_types.h"
-#include "bundle_state.h"
+#include "celix_bundle_state.h"
 #include "celix_properties.h"
 #include "celix_array_list.h"
 

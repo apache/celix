@@ -23,7 +23,7 @@
 #include "celix_types.h"
 
 #include "celix_errno.h"
-#include "bundle_state.h"
+#include "celix_bundle_state.h"
 #include "bundle_archive.h"
 #include "framework.h"
 #include "wire.h"
@@ -39,16 +39,6 @@ extern "C" {
 
 struct celix_bundle_activator;
 typedef struct celix_bundle_activator celix_bundle_activator_t;
-
-/**
- * @brief Create system bundle
- */
-FRAMEWORK_EXPORT celix_status_t bundle_create(celix_bundle_t **bundle);
-
-FRAMEWORK_EXPORT celix_status_t
-bundle_createFromArchive(celix_bundle_t **bundle, celix_framework_t *framework, bundle_archive_pt archive);
-
-FRAMEWORK_EXPORT celix_status_t bundle_destroy(celix_bundle_t *bundle);
 
 FRAMEWORK_EXPORT celix_status_t bundle_isSystemBundle(const celix_bundle_t *bundle, bool *systemBundle);
 
@@ -112,8 +102,6 @@ FRAMEWORK_EXPORT celix_status_t bundle_getBundleId(const celix_bundle_t *bundle,
 FRAMEWORK_EXPORT celix_status_t bundle_getRegisteredServices(celix_bundle_t *bundle, celix_array_list_t **list);
 
 FRAMEWORK_EXPORT celix_status_t bundle_getServicesInUse(celix_bundle_t *bundle, celix_array_list_t **list);
-
-FRAMEWORK_EXPORT celix_status_t bundle_setFramework(celix_bundle_t *bundle, celix_framework_t *framework);
 
 FRAMEWORK_EXPORT celix_status_t bundle_getFramework(const celix_bundle_t *bundle, celix_framework_t **framework);
 

@@ -99,11 +99,6 @@ namespace celix {
             celix_framework_waitForGenericEvent(cFw.get(), eventId);
         }
 
-        //TODO doc
-        std::size_t installEmbeddedBundle(bool autoStart = true) {
-            return celix_framework_installEmbeddedBundles(cFw.get(), autoStart);
-        }
-
         /**
          * @brief Get the C framework.
          *

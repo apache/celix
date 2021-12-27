@@ -17,8 +17,10 @@
  * under the License.
  */
 
+.balign 64
 .global _celix_embedded_bundle_@EMBED_BUNDLE_NAME@_start
 .global _celix_embedded_bundle_@EMBED_BUNDLE_NAME@_end
 _celix_embedded_bundle_@EMBED_BUNDLE_NAME@_start:
-    .incbin "@EMBED_BUNDLE_FILE@"
+.incbin "@EMBED_BUNDLE_FILE@"
+.balign 1
 _celix_embedded_bundle_@EMBED_BUNDLE_NAME@_end:

@@ -26,16 +26,26 @@
 
 namespace celix {
 
-    //TODO doc, TODO move to Utils.h
+    //TODO doc
     inline std::vector<std::string> listEmbeddedBundles() {
         std::vector<std::string> list{};
         auto* cList = celix_framework_utils_listEmbeddedBundles();
         list.reserve(celix_arrayList_size(cList));
         for (int i = 0; i< celix_arrayList_size(cList); ++i) {
-            auto* cStr = static_cast<const char*>(celix_arrayList_get(cList, i));
+            auto* cStr = static_cast<char*>(celix_arrayList_get(cList, i));
             list.emplace_back(std::string{cStr});
+            free(cStr);
         }
+        celix_arrayList_destroy(cList);
         return list;
     }
+
+    //TODO doc
+    inline std::size_t installEmbeddedBundles(const std::shared_ptr<celix::Framework>& framework, bool autoStart = true) {
+        return celix_framework_utils_installEmbeddedBundles(framework->getCFramework(), autoStart);
+    }
+
+    //TODO
+    //size_t installBundlesSet(const std::shared_ptr<celix::Framework>& framework, std::string_view bundlesSet, bool autoStart = true);
 
 }

@@ -24,12 +24,9 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <dirent.h>
-#include <unistd.h>
 #include <fcntl.h>
 #include <sys/errno.h>
-#include <dlfcn.h>
 
-#include "bundle_archive.h"
 #include "celix_constants.h"
 #include "celix_log.h"
 #include "celix_properties.h"
@@ -37,6 +34,7 @@
 #include "celix_utils.h"
 #include "celix_bundle_context.h"
 #include "framework_private.h"
+#include "bundle_archive_private.h"
 
 #define FW_LOG(level, ...) \
     celix_framework_log(cache->fw->logger, (level), __FUNCTION__ , __FILE__, __LINE__, __VA_ARGS__)
@@ -137,7 +135,7 @@ celix_status_t celix_bundleCache_getArchives(celix_bundle_cache_t* cache, array_
 						&& (strcmp(dent->d_name, "bundle0") != 0)) {
 
 					bundle_archive_pt archive = NULL;
-					status = bundleArchive_recreate(archiveRoot, &archive);
+					status = bundleArchive_recreate(cache->fw, archiveRoot, &archive);
 					if (status == CELIX_SUCCESS) {
 						arrayList_add(list, archive);
 					}
@@ -181,16 +179,16 @@ celix_status_t celix_bundleCache_getArchives(celix_bundle_cache_t* cache, array_
 	return status;
 }
 
-celix_status_t celix_bundleCache_createArchive(celix_bundle_cache_t* cache, long id, const char * location, const char *inputFile, bundle_archive_pt *archive) {
+celix_status_t celix_bundleCache_createArchive(celix_framework_t* fw, long id, const char * location, const char *inputFile, bundle_archive_pt *archive) {
 	celix_status_t status = CELIX_SUCCESS;
 	char archiveRoot[512];
 
-	if (cache && location) {
-		snprintf(archiveRoot, sizeof(archiveRoot), "%s/bundle%ld",  cache->cacheDir, id);
-		status = bundleArchive_create(archiveRoot, id, location, inputFile, archive);
+	if (fw && location) {
+		snprintf(archiveRoot, sizeof(archiveRoot), "%s/bundle%ld",  fw->cache->cacheDir, id);
+		status = bundleArchive_create(fw, archiveRoot, id, location, inputFile, archive);
 	}
 
-	framework_logIfError(celix_frameworkLogger_globalLogger(), status, NULL, "Failed to create archive");
+	framework_logIfError(fw->logger, status, NULL, "Failed to create archive");
 
 	return status;
 }

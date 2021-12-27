@@ -244,9 +244,6 @@ void celix_framework_waitForGenericEvent(celix_framework_t *fw, long eventId);
  */
 void celix_framework_waitForStop(celix_framework_t *framework);
 
-//TODO doc
-size_t celix_framework_installEmbeddedBundles(celix_framework_t* fw, bool autoStart);
-
 #ifdef __cplusplus
 }
 #endif

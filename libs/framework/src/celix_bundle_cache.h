@@ -75,7 +75,7 @@ celix_status_t celix_bundleCache_getArchives(celix_bundle_cache_t *cache, celix_
 /**
  * @brief Creates a new archive for the given bundle (using the id and location). The archive is created on the supplied bundlePool.
  *
- * @param cache The cache to create an archive in
+ * @param cache The Celix framework to create an archive in
  * @param bundlePool The pool to use for the archive creation
  * @param id The id of the bundle
  * @param location The location identifier of the bundle
@@ -88,7 +88,7 @@ celix_status_t celix_bundleCache_getArchives(celix_bundle_cache_t *cache, celix_
  * 		- CELIX_ENOMEM If allocating memory for <code>bundle_archive</code> failed.
  */
 celix_status_t
-celix_bundleCache_createArchive(celix_bundle_cache_t *cache, long id, const char *location, const char *inputFile,
+celix_bundleCache_createArchive(celix_framework_t *fw, long id, const char *location, const char *inputFile,
                                 bundle_archive_pt *archive);
 
 /**

@@ -17,21 +17,21 @@
  * under the License.
  */
 
-#include "bundle_state.h"
+#include "celix_bundle_state.h"
 
 const char* celix_bundleState_getName(celix_bundle_state_e state) {
     switch (state) {
-        case OSGI_FRAMEWORK_BUNDLE_UNKNOWN:
+        case CELIX_BUNDLE_STATE_UNKNOWN:
             return "UNKNOWN";
-        case OSGI_FRAMEWORK_BUNDLE_UNINSTALLED:
+        case CELIX_BUNDLE_STATE_UNINSTALLED:
             return "UNINSTALLED";
-        case OSGI_FRAMEWORK_BUNDLE_INSTALLED:
+        case CELIX_BUNDLE_STATE_INSTALLED:
             return "INSTALLED";
-        case OSGI_FRAMEWORK_BUNDLE_RESOLVED:
+        case CELIX_BUNDLE_STATE_RESOLVED:
             return "RESOLVED";
-        case OSGI_FRAMEWORK_BUNDLE_STARTING:
+        case CELIX_BUNDLE_STATE_STARTING:
             return "STARTING";
-        case OSGI_FRAMEWORK_BUNDLE_STOPPING:
+        case CELIX_BUNDLE_STATE_STOPPING:
             return "STOPPING";
         default:
             return "ACTIVE";

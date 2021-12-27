@@ -58,6 +58,8 @@ function(celix_target_embed_bundle)
         list(GET ARGN 2 EMBED_BUNDLE_NAME)
     endif ()
 
+    add_celix_bundle_dependencies(${TARGET_NAME} ${BUNDLE_TARGET_NAME})
+
     if (NOT EMBED_BUNDLE_NAME)
         celix_get_bundle_symbolic_name(${BUNDLE_TARGET_NAME} EMBED_BUNDLE_NAME)
         if (NOT EMBED_BUNDLE_NAME)
@@ -79,27 +81,34 @@ function(celix_target_embed_bundle)
     set(ASSEMBLY_FILE "${CMAKE_BINARY_DIR}/celix/gen/target/${TARGET_NAME}/embed_bundle_${EMBED_BUNDLE_NAME}.s")
     configure_file(${ASSEMBLY_FILE_IN} ${ASSEMBLY_FILE} @ONLY)
 
-    #NOTE assuming use of PRIVATE/PUBLIC, etc -> TODO can this be checked?
     if (APPLE)
         target_sources(${TARGET_NAME} PRIVATE ${ASSEMBLY_FILE})
     else()
         target_sources(${TARGET_NAME} PRIVATE ${ASSEMBLY_FILE})
-        target_link_libraries(${TARGET_NAME} PRIVATE ${ASSEMBLY_FILE})
     endif()
 
     get_target_property(CELIX_EMBEDDED_BUNDLES ${TARGET_NAME} "CELIX_EMBEDDED_BUNDLES")
     if (NOT CELIX_EMBEDDED_BUNDLES)
         set(CELIX_EMBEDDED_BUNDLES "embedded://${EMBED_BUNDLE_NAME}")
-        set(C_FILE_IN "${CELIX_CMAKE_DIRECTORY}/templates/celix_embedded_bundles.c.in")
-        set(C_FILE "${CMAKE_BINARY_DIR}/celix/gen/target/${TARGET_NAME}/celix_embedded_bundles.c")
-        file(GENERATE OUTPUT ${C_FILE}.stage1 CONTENT "const char * const CELIX_EMBEDDED_BUNDLES = \"$<JOIN:$<TARGET_PROPERTY:${TARGET_NAME},CELIX_EMBEDDED_BUNDLES>,;>\";")
-        file(GENERATE OUTPUT ${C_FILE} INPUT ${C_FILE}.stage1)
-        target_sources(${TARGET_NAME} PRIVATE ${C_FILE})
-    else ()
-        list(APPEND CELIX_EMBEDDED_BUNDLES "${EMBED_BUNDLE_NAME}")
+
+        #If executable also add symbol with a ; seperated list of embedded bundles urls
+        get_target_property(TYPE ${TARGET_NAME} TYPE)
+        if (TYPE STREQUAL "EXECUTABLE")
+            set(C_FILE_IN "${CELIX_CMAKE_DIRECTORY}/templates/celix_embedded_bundles.c.in")
+            set(C_FILE "${CMAKE_BINARY_DIR}/celix/gen/target/${TARGET_NAME}/celix_embedded_bundles.c")
+            file(GENERATE OUTPUT ${C_FILE}.stage1 CONTENT "const char * const celix_embedded_bundles = \"$<JOIN:$<TARGET_PROPERTY:${TARGET_NAME},CELIX_EMBEDDED_BUNDLES>,;>\";")
+            file(GENERATE OUTPUT ${C_FILE} INPUT ${C_FILE}.stage1)
+            target_sources(${TARGET_NAME} PRIVATE ${C_FILE})
+        endif ()
+
+        if (NOT APPLE)
+            #For linux ensure the -rdynamic linking flag is added to that symbols in the main program can be found with dlsym.
+            target_link_libraries(${TARGET_NAME} PRIVATE -rdynamic)
+        endif ()
+    else()
+        list(APPEND CELIX_EMBEDDED_BUNDLES "embedded://${EMBED_BUNDLE_NAME}")
     endif()
     set_target_properties(${TARGET_NAME} PROPERTIES "CELIX_EMBEDDED_BUNDLES" "${CELIX_EMBEDDED_BUNDLES}")
-
 endfunction()
 
 function(celix_target_embed_bundles)
