@@ -53,9 +53,6 @@ Creating a Celix containers using 'add_celix_container' will lead to a CMake exe
 These targets can be used to run/debug Celix containers from a IDE (if the IDE supports CMake).
 
 Optional Arguments:
-- COPY: With this option the used bundles are copied to the container build dir in the 'bundles' dir.
-  A additional result of this is that the configured references to the bundles are then relative instead of absolute.
-  Default is COPY
 - NO_COPY: With this option the used bundles configured for the container with absolute paths.
   Default is COPY
 - CXX: With this option the generated Celix launcher (if used) will be a C++ source. (Default is CXX)
@@ -77,7 +74,6 @@ Optional Arguments:
 
 ```CMake
 add_celix_container(<celix_container_name>
-    [COPY]
     [NO_COPY]
     [CXX]
     [C]
@@ -95,7 +91,6 @@ add_celix_container(<celix_container_name>
 ```CMake
 add_celix_container(<celix_container_name>
     LAUNCHER launcher
-    [COPY]
     [NO_COPY]
     [CXX]
     [C]
@@ -113,7 +108,6 @@ add_celix_container(<celix_container_name>
 ```CMake
 add_celix_container(<celix_container_name>
     LAUNCHER_SRC launcher_src
-    [COPY]
     [NO_COPY]
     [CXX]
     [C]
@@ -132,7 +126,7 @@ function(add_celix_container)
     list(GET ARGN 0 CONTAINER_TARGET)
     list(REMOVE_AT ARGN 0)
 
-    set(OPTIONS COPY C CXX USE_CONFIG)
+    set(OPTIONS NO_COPY C CXX USE_CONFIG)
     set(ONE_VAL_ARGS GROUP NAME LAUNCHER LAUNCHER_SRC DIR)
     set(MULTI_VAL_ARGS BUNDLES PROPERTIES EMBEDDED_PROPERTIES RUNTIME_PROPERTIES)
     cmake_parse_arguments(CONTAINER "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
@@ -295,9 +289,7 @@ $<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_RUNTIME_PROPERTIES>,
     )
     add_dependencies(${CONTAINER_TARGET} ${CONTAINER_TARGET}-deps)
 
-    if (CONTAINER_COPY)
-        #nop
-    elseif (CONTAINER_NO_COPY)
+    if (CONTAINER_NO_COPY)
         set(CONTAINER_COPY FALSE)
     else ()
         set(CONTAINER_COPY TRUE)

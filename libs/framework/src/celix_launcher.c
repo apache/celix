@@ -33,12 +33,14 @@
 #include <string.h>
 #include <curl/curl.h>
 #include <signal.h>
+
 #include "celix_framework_factory.h"
-#include "framework.h"
 #include "celix_constants.h"
+#include "celix_framework_utils.h"
 
 static void show_usage(char* prog_name);
 static void show_properties(celix_properties_t *embeddedProps, const char *configFile);
+static void printEmbeddedBundles();
 static void shutdown_framework(int signal);
 static void ignore(int signal);
 
@@ -62,6 +64,7 @@ int celixLauncher_launchAndWaitForShutdown(int argc, char *argv[], celix_propert
 
 	char *config_file = NULL;
 	bool showProps = false;
+    bool showEmbeddedBundles = false;
 	for (int i = 1; i < argc; ++i) {
 		opt = argv[i];
 		// Check whether the user wants some help...
@@ -70,7 +73,9 @@ int celixLauncher_launchAndWaitForShutdown(int argc, char *argv[], celix_propert
 			celix_properties_destroy(packedConfig);
 			return 0;
 		} else if (strncmp("-p", opt, strlen("-p")) == 0 || strncmp("--props", opt, strlen("--props")) == 0) {
-			showProps = true;
+            showProps = true;
+        } else if (strncmp("--embedded_bundles", opt, strlen("--embedded_bundles")) == 0) {
+            showEmbeddedBundles = true;
 		} else {
 			config_file = opt;
 		}
@@ -89,6 +94,11 @@ int celixLauncher_launchAndWaitForShutdown(int argc, char *argv[], celix_propert
 		celix_properties_destroy(packedConfig);
 		return 0;
 	}
+
+    if (showEmbeddedBundles) {
+        printEmbeddedBundles();
+        return 0;
+    }
 
 	struct sigaction sigact;
 	memset(&sigact, 0, sizeof(sigact));
@@ -115,7 +125,8 @@ static void show_usage(char* prog_name) {
 	printf("Usage:\n  %s [-h|-p] [path/to/runtime/config.properties]\n", basename(prog_name));
 	printf("Options:\n");
 	printf("\t-h | --help: Show this message\n");
-	printf("\t-p | --props: Show the embedded and runtime properties for this celix container\n");
+	printf("\t-p | --props: Show the embedded and runtime properties for this Celix container\n");
+    printf("\t--embedded_bundles: Show the embedded bundles for this Celix container\n");
 	printf("\n");
 }
 
@@ -160,7 +171,7 @@ int celixLauncher_launchWithProperties(celix_properties_t* config, celix_framewo
 }
 
 void celixLauncher_waitForShutdown(celix_framework_t* framework) {
-	framework_waitForStop(framework);
+    celix_framework_waitForStop(framework);
 }
 
 void celixLauncher_destroy(celix_framework_t* framework) {
@@ -228,6 +239,20 @@ static void show_properties(celix_properties_t *embeddedProps, const char *confi
 		celix_properties_destroy(runtimeProps);
 	}
 	celix_properties_destroy(keys);
+}
+
+static void printEmbeddedBundles() {
+    celix_array_list_t* embeddedBundles = celix_framework_utils_listEmbeddedBundles();
+    printf("Embedded bundles:\n");
+    for (int i = 0; i < celix_arrayList_size(embeddedBundles); ++i) {
+        char* bundle = celix_arrayList_get(embeddedBundles, i);
+        printf("|- %02i: %s\n", (i+1), bundle);
+        free(bundle);
+    }
+    if (celix_arrayList_size(embeddedBundles) == 0) {
+        printf("|- no embedded bundles\n");
+    }
+    celix_arrayList_destroy(embeddedBundles);
 }
 
 static void combine_properties(celix_properties_t *original, const celix_properties_t *append) {

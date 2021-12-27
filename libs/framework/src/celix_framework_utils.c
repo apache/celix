@@ -245,13 +245,11 @@ celix_array_list_t* celix_framework_utils_listEmbeddedBundles() {
     void* main = dlopen(NULL, RTLD_NOW);
     const char** embeddedBundles = dlsym(main, EMBEDDED_BUNDLES_SYMBOL);
     if (embeddedBundles != NULL) {
-        char delims[] = ";";
+        char delims[] = ",";
         char *savePtr = NULL;
         char *bundles = celix_utils_strdup(*embeddedBundles);
-        char *url = strtok_r(bundles, delims, &savePtr);
-        while (url != NULL) {
+        for (char *url = strtok_r(bundles, delims, &savePtr); url != NULL; url = strtok_r(NULL, delims, &savePtr)) {
             celix_arrayList_add(list, celix_utils_strdup(url));
-            url = strtok_r(NULL, delims, &savePtr);
         }
         free(bundles);
     }
@@ -270,4 +268,17 @@ size_t celix_framework_utils_installEmbeddedBundles(celix_framework_t* fw, bool 
     }
     celix_arrayList_destroy(list);
     return nrOfBundlesInstalled;
+}
+
+size_t celix_framework_utils_installBundleSet(celix_framework_t* fw, const char* bundleSet, bool autoStart) {
+    size_t installed = 0;
+    char delims[] = ",";
+    char *savePtr = NULL;
+    char *bundles = celix_utils_strdup(bundleSet);
+    for (char *url = strtok_r(bundles, delims, &savePtr); url != NULL; url = strtok_r(NULL, delims, &savePtr)) {
+        long bndId = celix_framework_installBundle(fw, url, autoStart);
+        installed += bndId >= 0 ? 1 : 0;
+    }
+    free(bundles);
+    return installed;
 }

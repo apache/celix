@@ -300,7 +300,10 @@ void celix_framework_bundleEntry_decreaseUseCount(celix_framework_bundle_entry_t
  */
 celix_framework_bundle_entry_t* celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(celix_framework_t *fw, long bndId);
 
-
+/**
+ * @brief Check if a bundle with the provided bundle symbolic name is already installed.
+ */
+bool celix_framework_isBundleAlreadyInstalled(celix_framework_t* fw, const char* bundleSymbolicName);
 
  /**
   * Start a bundle and ensure that this is not done on the Celix event thread.
@@ -331,7 +334,6 @@ celix_status_t celix_framework_stopBundleOnANonCelixEventThread(celix_framework_
  * @return CELIX_SUCCESS of the call went alright.
  */
 celix_status_t celix_framework_uninstallBundleOnANonCelixEventThread(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry, bool forceSpawnThread);
-
 
 /**
  * cleanup finished bundle lifecyles threads.

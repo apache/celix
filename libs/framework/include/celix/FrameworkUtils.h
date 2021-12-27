@@ -45,7 +45,9 @@ namespace celix {
         return celix_framework_utils_installEmbeddedBundles(framework->getCFramework(), autoStart);
     }
 
-    //TODO
-    //size_t installBundlesSet(const std::shared_ptr<celix::Framework>& framework, std::string_view bundlesSet, bool autoStart = true);
+    //TODO doc
+    inline std::size_t installBundlesSet(const std::shared_ptr<celix::Framework>& framework, std::string_view bundlesSet, bool autoStart = true) {
+        return celix_framework_utils_installBundleSet(framework->getCFramework(), bundlesSet.data(), autoStart);
+    }
 
 }

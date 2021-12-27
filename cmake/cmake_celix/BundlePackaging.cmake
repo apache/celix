@@ -99,6 +99,10 @@ function(add_bundle)
 endfunction()
 
 #[[
+#TODO add FAT option (fail if not all bundles are embedded)
+#TODO add EMBEDDED_BUNDLES multi option, which embeds the bundles and ads them to auto start
+#TODO add diff levels of EMBEDDED_BUNDLES
+
 Add a Celix bundle to the project.  There are three variants:
 - With SOURCES the bundle will be created using a list of sources files as input for the bundle activator library.
 - With ACTIVATOR the bundle will be created using the library target or absolute path to existing library as activator library.
@@ -703,14 +707,14 @@ celix_bundle_symbolic_name(<bundle_target> symbolic_name)
 function(celix_bundle_symbolic_name BUNDLE SYMBOLIC_NAME)
     string(MAKE_C_IDENTIFIER ${SYMBOLIC_NAME} SYMBOLIC_NAME_CHECK)
     if (NOT SYMBOLIC_NAME STREQUAL SYMBOLIC_NAME_CHECK)
-        message(WARNING "Provided bundle symbolic name `${SYMBOLIC_NAME}` for target ${BUNDLE} is not a valid c identifier. Bundle symbolic name should be valid c identifiers.")
+        message(STATUS "Provided bundle symbolic name `${SYMBOLIC_NAME}` for target ${BUNDLE} is not a valid c identifier. Ideally bundle symbolic names should be valid c identifiers.")
     endif ()
     set_target_properties(${BUNDLE} PROPERTIES "BUNDLE_SYMBOLIC_NAME" ${SYMBOLIC_NAME})
 endfunction()
 
 #[[
+#TODO document
 Get bundle symbolic name from an (imported) bundle target.
-TODO does this work on imported bundle targets? -> update this
 
 ```CMake
 celix_get_bundle_symbolic_name(<bundle_target> VARIABLE_NAME)
@@ -718,14 +722,18 @@ celix_get_bundle_symbolic_name(<bundle_target> VARIABLE_NAME)
 
 Example: `celix_get_bundle_symbolic_name(Celix::shell SHELL_BUNDLE_SYMBOLIC_NAME)`
 ]]
-#TODO make this a generic get target property functions
 function(celix_get_bundle_symbolic_name)
     if (TARGET ${ARGV0})
-        get_target_property(SYM ${ARGV0} BUNDLE_SYMBOLIC_NAME)
-        if (SYM)
-            set(${ARGV1} ${SYM} PARENT_SCOPE)
+        get_target_property(_IMP ${ARGV0} BUNDLE_IMPORTED)
+        if (_IMP)
+            _celix_extract_imported_bundle_info(${ARGV0})
+            set(${ARGV1} ${BUNDLE_SYMBOLIC_NAME} PARENT_SCOPE)
+            unset(BUNDLE_FILE)
+            unset(BUNDLE_FILENAME)
+            unset(BUNDLE_SYMBOLIC_NAME)
         else ()
-            message(FATAL_ERROR "Cannot find BUNDLE_SYMBOLIC_NAME from CMake target: ${ARGV0}")
+            get_target_property(SYM ${ARGV0} BUNDLE_SYMBOLIC_NAME)
+            set(${ARGV1} ${SYM} PARENT_SCOPE)
         endif ()
     else ()
         message(FATAL_ERROR "Provided argument is not a CMake target: ${ARGV0}")
@@ -999,6 +1007,7 @@ set_target_properties(${TN} PROPERTIES
     BUNDLE_IMPORTED TRUE
     BUNDLE_FILE_${BUILD_TYPE} \"\${_IMPORT_PREFIX}/share/${EXPORT_PROJECT_NAME}/bundles/$<TARGET_PROPERTY:${BUNDLE_TARGET},BUNDLE_FILENAME>\"
     BUNDLE_FILENAME_${BUILD_TYPE} \"$<TARGET_PROPERTY:${BUNDLE_TARGET},BUNDLE_FILENAME>\"
+    BUNDLE_SYMBOLIC_NAME_${BUILD_TYPE} \"$<TARGET_PROPERTY:${BUNDLE_TARGET},BUNDLE_SYMBOLIC_NAME>\"
 )
 ")
     endforeach()
@@ -1040,7 +1049,6 @@ Note this is considered a private function
 ]]
 function (_celix_extract_imported_bundle_info)
     set(BUNDLE ${ARGV0})
-    #get_target_property(_CONFIGS ${ARGV0} "IMPORTED_CONFIGURATIONS") #Not needed?
 
     if (CMAKE_BUILD_TYPE)
         string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE)
@@ -1050,6 +1058,7 @@ function (_celix_extract_imported_bundle_info)
 
     get_target_property(BF ${BUNDLE} BUNDLE_FILE_${BUILD_TYPE})
     get_target_property(BFN ${BUNDLE} BUNDLE_FILENAME_${BUILD_TYPE})
+    get_target_property(BSN ${BUNDLE} BUNDLE_SYMBOLIC_NAME_${BUILD_TYPE})
 
     if (NOT BF)
         #BUNDLE_FILE(NAME) not found for the current BUILD_TYPE looking for MAP value (if there is a cmake build type)
@@ -1060,37 +1069,46 @@ function (_celix_extract_imported_bundle_info)
         if (MAP_TO_CONFIG)
             get_target_property(BF ${BUNDLE} BUNDLE_FILE_${MAP_TO_CONFIG})
             get_target_property(BFN ${BUNDLE} BUNDLE_FILENAME_${MAP_TO_CONFIG})
+            get_target_property(BSN ${BUNDLE} BUNDLE_SYMBOLIC_NAME_${MAP_TO_CONFIG})
         endif ()
     endif ()
 
     if (NOT BF)
         get_target_property(BF ${BUNDLE} BUNDLE_FILE)
         get_target_property(BFN ${BUNDLE} BUNDLE_FILENAME)
+        get_target_property(BSN ${BUNDLE} BUNDLE_SYMBOLIC_NAME)
     endif ()
 
     #fallback steps
     if (NOT BF)
         get_target_property(BF ${BUNDLE} BUNDLE_FILE_RELWITHDEBINFO)
         get_target_property(BFN ${BUNDLE} BUNDLE_FILENAME_RELWITHDEBINFO)
+        get_target_property(BSN ${BUNDLE} BUNDLE_SYMBOLIC_NAME_RELWITHDEBINFO)
     endif ()
     if (NOT BF)
         get_target_property(BF ${BUNDLE} BUNDLE_FILE_RELEASE)
         get_target_property(BFN ${BUNDLE} BUNDLE_FILENAME_RELEASE)
+        get_target_property(BSN ${BUNDLE} BUNDLE_SYMBOLIC_NAME_RELEASE)
     endif ()
     if (NOT BF)
         get_target_property(BF ${BUNDLE} BUNDLE_FILE_MINSIZEREL)
         get_target_property(BFN ${BUNDLE} BUNDLE_FILENAME_MINSIZEREL)
+        get_target_property(BSN ${BUNDLE} BUNDLE_SYMBOLIC_NAME_MINSIZEREL)
     endif ()
     if (NOT BF)
         get_target_property(BF ${BUNDLE} BUNDLE_FILE_NOCONFIG)
         get_target_property(BFN ${BUNDLE} BUNDLE_FILENAME_NOCONFIG)
+        get_target_property(BSN ${BUNDLE} BUNDLE_SYMBOLIC_NAME_NOCONFIG)
     endif ()
     if (NOT BF)
         get_target_property(BF ${BUNDLE} BUNDLE_FILE_DEBUG)
         get_target_property(BFN ${BUNDLE} BUNDLE_FILENAME_DEBUG)
+        get_target_property(BSN ${BUNDLE} BUNDLE_SYMBOLIC_NAME_DEBUG)
     endif ()
 
 
     set(BUNDLE_FILE ${BF} PARENT_SCOPE)
     set(BUNDLE_FILENAME ${BFN} PARENT_SCOPE)
+    set(BUNDLE_FILENAME ${BSN} PARENT_SCOPE)
 endfunction ()
+

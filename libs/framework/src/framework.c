@@ -812,6 +812,20 @@ celix_status_t fw_refreshBundle(framework_pt framework, long bndId) {
     return status;
 }
 
+bool celix_framework_isBundleAlreadyInstalled(celix_framework_t* fw, const char* bundleSymbolicName) {
+    bool alreadyExists = false;
+    celixThreadMutex_lock(&fw->installedBundles.mutex);
+    for (int i = 0; i < celix_arrayList_size(fw->installedBundles.entries); ++i) {
+        celix_framework_bundle_entry_t *entry = celix_arrayList_get(fw->installedBundles.entries, i);
+        if (celix_utils_stringEquals(entry->bnd->symbolicName, bundleSymbolicName)) {
+            alreadyExists = true;
+            break;
+        }
+    }
+    celixThreadMutex_unlock(&fw->installedBundles.mutex);
+    return alreadyExists;
+}
+
 celix_status_t fw_getDependentBundles(framework_pt framework, bundle_pt exporter, array_list_pt *list) {
     celix_status_t status = CELIX_SUCCESS;
 

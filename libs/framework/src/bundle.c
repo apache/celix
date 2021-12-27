@@ -212,46 +212,25 @@ celix_status_t bundle_createModule(bundle_pt bundle, module_pt *module) {
 			*module = module_create(headerMap, moduleId, bundle);
 
 			if (*module != NULL) {
-				version_pt bundleVersion = module_getVersion(*module);
 				const char * symName = NULL;
 				status = module_getSymbolicName(*module, &symName);
 				if (status == CELIX_SUCCESS) {
-					array_list_pt bundles = framework_getBundles(bundle->framework);
-					unsigned int i;
-					for (i = 0; i < arrayList_size(bundles); i++) {
-						bundle_pt check = (bundle_pt) arrayList_get(bundles, i);
-
-						long id;
-						if (bundleArchive_getId(check->archive, &id) == CELIX_SUCCESS) {
-							if (id != bundleId) {
-								module_pt mod = NULL;
-								const char * sym = NULL;
-								version_pt version;
-								int cmp;
-								status = bundle_getCurrentModule(check, &mod);
-								status = module_getSymbolicName(mod, &sym);
-
-								version = module_getVersion(mod);
-								version_compareTo(bundleVersion, version, &cmp);
-								if ((symName != NULL) && (sym != NULL) && !strcmp(symName, sym) &&
-										!cmp) {
-									char *versionString = NULL;
-									version_toString(version, &versionString);
-									printf("Bundle symbolic name and version are not unique: %s:%s\n", sym, versionString);
-									free(versionString);
-									status = CELIX_BUNDLE_EXCEPTION;
-									break;
-								}
-							}
-						}
-					}
-					arrayList_destroy(bundles);
+                    /*
+                     * NOTE only allowing a single bundle with a symbolic name.
+                     * OSGi spec allows same symbolic name and different versions, but this is risky with
+                     * the behaviour of dlopen when opening shared libraries with the same SONAME.
+                     */
+                    bool alreadyInstalled = celix_framework_isBundleAlreadyInstalled(bundle->framework, symName);
+                    if (alreadyInstalled) {
+                        fw_log(bundle->framework->logger, CELIX_LOG_LEVEL_ERROR, "Cannot create bundle module. Bundle with symbolic name '%s' already exists", symName);
+                        status = CELIX_BUNDLE_EXCEPTION;
+                    }
 				}
 			}
         }
 	}
 
-	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to create module");
+	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to create bundle module");
 
 	return status;
 }

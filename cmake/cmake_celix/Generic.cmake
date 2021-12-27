@@ -42,34 +42,35 @@ function(install_celix_targets)
     install_celix_bundle_targets(${ARGN})
 endfunction ()
 
-
 #[[
-${CMAKE_BINARY_DIR}/celix/gen/bundles/${BUNDLE_TARGET_NAME}O
-#0 target
-#1 bundle target
-#3 optional embed id
+celix_target_embed_bundle(<cmake_target>
+    BUNDLE <bundle_target>
+    [NAME <name>]
 ]]
 #TODO update to use command (BUNDLE_TARGET EMBED_NAME)
 function(celix_target_embed_bundle)
-    #0 is the target name
     list(GET ARGN 0 TARGET_NAME)
-    list(GET ARGN 1 BUNDLE_TARGET_NAME)
-    if (ARGC GREATER_EQUAL 3)
-        list(GET ARGN 2 EMBED_BUNDLE_NAME)
-    endif ()
+    list(REMOVE_AT ARGN 0)
+
+    set(OPTIONS)
+    set(ONE_VAL_ARGS BUNDLE NAME)
+    set(MULTI_VAL_ARGS)
+    cmake_parse_arguments(EMBED_BUNDLE "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
 
     add_celix_bundle_dependencies(${TARGET_NAME} ${BUNDLE_TARGET_NAME})
 
+    if (NOT EMBED_BUNDLE_BUNDLE)
+        message(FATAL_ERROR "Missing required BUNDLE argument")
+    endif ()
+    set(BUNDLE_TARGET_NAME ${EMBED_BUNDLE_BUNDLE})
+
     if (NOT EMBED_BUNDLE_NAME)
         celix_get_bundle_symbolic_name(${BUNDLE_TARGET_NAME} EMBED_BUNDLE_NAME)
-        if (NOT EMBED_BUNDLE_NAME)
-            message(FATAL_ERROR "Cannot find bundle symbolic name from bundle target ${BUNDLE_TARGET_NAME}.")
-        endif ()
     endif()
 
     string(MAKE_C_IDENTIFIER ${EMBED_BUNDLE_NAME} EMBED_BUNDLE_NAME_CHECK)
     if (NOT EMBED_BUNDLE_NAME STREQUAL EMBED_BUNDLE_NAME_CHECK)
-        message(FATAL_ERROR "Embedding bundle name ${BUNDLE_TARGET_NAME}, but `${EMBED_BUNDLE_NAME}` is not a valid c identifier. Please specify an valid c identifier as embedded bundle name")
+        message(FATAL_ERROR "Cannot embed bundle ${BUNDLE_TARGET_NAME}, because the bundle symbolic name (${EMBED_BUNDLE_NAME}) is not a valid c identifier. Please specify an valid c identifier as embedded bundle name instead.")
     endif ()
 
     if (APPLE)
@@ -94,9 +95,8 @@ function(celix_target_embed_bundle)
         #If executable also add symbol with a ; seperated list of embedded bundles urls
         get_target_property(TYPE ${TARGET_NAME} TYPE)
         if (TYPE STREQUAL "EXECUTABLE")
-            set(C_FILE_IN "${CELIX_CMAKE_DIRECTORY}/templates/celix_embedded_bundles.c.in")
             set(C_FILE "${CMAKE_BINARY_DIR}/celix/gen/target/${TARGET_NAME}/celix_embedded_bundles.c")
-            file(GENERATE OUTPUT ${C_FILE}.stage1 CONTENT "const char * const celix_embedded_bundles = \"$<JOIN:$<TARGET_PROPERTY:${TARGET_NAME},CELIX_EMBEDDED_BUNDLES>,;>\";")
+            file(GENERATE OUTPUT ${C_FILE}.stage1 CONTENT "const char * const celix_embedded_bundles = \"$<JOIN:$<TARGET_PROPERTY:${TARGET_NAME},CELIX_EMBEDDED_BUNDLES>,$<COMMA>>\";")
             file(GENERATE OUTPUT ${C_FILE} INPUT ${C_FILE}.stage1)
             target_sources(${TARGET_NAME} PRIVATE ${C_FILE})
         endif ()
@@ -116,6 +116,54 @@ function(celix_target_embed_bundles)
     list(REMOVE_AT ARGN 0)
 
     foreach (BUNDLE_TARGET_NAME IN LISTS ARGN)
-        celix_target_embed_bundle(${TARGET_NAME} ${BUNDLE_TARGET_NAME})
+        celix_target_embed_bundle(${TARGET_NAME} BUNDLE ${BUNDLE_TARGET_NAME})
     endforeach ()
+endfunction()
+
+#[[
+TODO
+celix_target_bundle_set_definition(<cmake_target>
+    NAME <set_name>
+    [BUNDLES <bundle_target1> <bundle_target2>..]
+    [EMBEDDED_BUNDLES <bundle_target1> bundle_target2> ..]
+)
+]]
+function(celix_target_bundle_set_definition)
+    list(GET ARGN 0 TARGET_NAME)
+    list(REMOVE_AT ARGN 0)
+
+    set(OPTIONS)
+    set(ONE_VAL_ARGS NAME)
+    set(MULTI_VAL_ARGS BUNDLES EMBEDDED_BUNDLES)
+    cmake_parse_arguments(BUNDLE_SET "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
+
+    if (NOT BUNDLE_SET_NAME)
+        message(FATAL_ERROR "Missing required NAME argument")
+    endif ()
+
+    set(BUNDLES "")
+
+    foreach(BUNDLE_TARGET_NAME IN LISTS BUNDLE_SET_BUNDLES)
+        celix_get_bundle_file(${BUNDLE_TARGET_NAME} BUNDLE_FILE)
+        if (BUNDLES)
+            set(BUNDLES "${BUNDLES},${BUNDLE_FILE}")
+        else ()
+            set(BUNDLES "${BUNDLE_FILE}")
+        endif ()
+        add_celix_bundle_dependencies(${TARGET_NAME} ${BUNDLE_TARGET_NAME})
+    endforeach()
+
+    foreach(BUNDLE_TARGET_NAME IN LISTS BUNDLE_SET_EMBEDDED_BUNDLES)
+        celix_target_embed_bundle(${TARGET_NAME} BUNDLE ${BUNDLE_TARGET_NAME})
+        celix_get_bundle_symbolic_name(${BUNDLE_TARGET_NAME} BUNDLE_SYMBOLIC_NAME)
+        if (BUNDLES)
+            set(BUNDLES "${BUNDLES},embedded://${BUNDLE_SYMBOLIC_NAME}")
+        else ()
+            set(BUNDLES "embedded://${BUNDLE_SYMBOLIC_NAME}")
+        endif ()
+        add_celix_bundle_dependencies(${TARGET_NAME} ${BUNDLE_TARGET_NAME})
+    endforeach()
+
+    message("Setting ${BUNDLE_SET_NAME}=${BUNDLES}")
+    target_compile_definitions(${TARGET_NAME} PRIVATE ${BUNDLE_SET_NAME}=\"${BUNDLES}\")
 endfunction()

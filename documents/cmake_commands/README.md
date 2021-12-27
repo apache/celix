@@ -412,10 +412,19 @@ celix_container_runtime_properties(<celix_container_target_name>
 
 # Misc Celix CMake Commands
 
+#TODO explain that celix_target command use PRIVATE attribute on targets
+
 ## celix_target_embed_bundles
 
 TODO
 
+## celix_target_embed_bundle
+
+TODO
+
+## celix_target_bundle_set_definition
+
+TODO
 
 # Celix Docker Images
 The `add_celix_docker` Apache Celix CMake command can be used to create Apache Celix docker directories.
