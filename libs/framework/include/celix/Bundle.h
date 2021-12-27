@@ -41,6 +41,7 @@ namespace celix {
      * Each bundle installed in the Celix framework must have an associated Bundle object.
      * A bundle must have a unique identity, a long, chosen by the Celix framework.
      *
+     * @note Provided `std::string_view` values must be null terminated strings.
      * @note Thread safe.
      */
     class Bundle {
@@ -63,9 +64,9 @@ namespace celix {
          * @param path The relative path to a bundle resource
          * @return The use-able entry path or an empty string if the entry is not found.
          */
-        [[nodiscard]] std::string getEntry(const std::string& path) const {
+        [[nodiscard]] std::string getEntry(std::string_view path) const {
             std::string result{};
-            char* entry = celix_bundle_getEntry(cBnd.get(), path.c_str());
+            char* entry = celix_bundle_getEntry(cBnd.get(), path.data());
             if (entry != nullptr) {
                 result = std::string{entry};
                 free(entry);
@@ -95,7 +96,7 @@ namespace celix {
         }
 
         /**
-         * @brief The descriptoin of the bundle.
+         * @brief The description of the bundle.
          */
         [[nodiscard]] std::string getDescription() const {
             return std::string{celix_bundle_getDescription(cBnd.get())};

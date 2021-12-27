@@ -64,3 +64,14 @@ endif ()
 add_test(NAME test_utils COMMAND test_utils)
 setup_target_for_coverage(test_utils SCAN_DIR ..)
 
+
+#Setting standard to C++11 and testing C++ Properties to ensure that this still support C++11.
+#Note that celix Properties are used in the C++11 dependency manager and this be backwards compatible with Celix 2.2.1
+set(CMAKE_CXX_STANDARD 11)
+add_executable(test_properties_with_cxx11
+        src/CxxPropertiesTestSuite.cc
+)
+target_link_libraries(test_properties_with_cxx11 PRIVATE Celix::utils GTest::gtest GTest::gtest_main)
+add_test(NAME test_properties_with_cxx11 COMMAND test_properties_with_cxx11)
+setup_target_for_coverage(test_properties_with_cxx11 SCAN_DIR ..)
+

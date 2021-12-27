@@ -103,11 +103,19 @@ TEST_F(CxxUtilsTestSuite, testSplit) {
     EXPECT_EQ(tokens[1], "item2");
     EXPECT_EQ(tokens[2], "item3");
 
-    tokens = celix::split("  item1 , item2  ,  item3  ");
-    ASSERT_EQ(tokens.size(), 3);
+    tokens = celix::split("  item1 , item2  ,  item3,item4  ");
+    ASSERT_EQ(tokens.size(), 4);
     EXPECT_EQ(tokens[0], "item1");
     EXPECT_EQ(tokens[1], "item2");
     EXPECT_EQ(tokens[2], "item3");
+    EXPECT_EQ(tokens[3], "item4");
+
+    tokens = celix::split("  item1 ; item2  ;  item3;item4  ", ";");
+    ASSERT_EQ(tokens.size(), 4);
+    EXPECT_EQ(tokens[0], "item1");
+    EXPECT_EQ(tokens[1], "item2");
+    EXPECT_EQ(tokens[2], "item3");
+    EXPECT_EQ(tokens[3], "item4");
 
     tokens = celix::split("  item1 , ");
     ASSERT_EQ(tokens.size(), 1);

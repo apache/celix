@@ -150,9 +150,9 @@ namespace celix {
      * celix::impl::typeName uses the macro __PRETTY_FUNCTION__ to extract a type name.
      */
     template<typename I>
-    std::string typeName(const std::string& providedTypeName = "") {
+    std::string typeName(std::string_view providedTypeName = "") {
         if (!providedTypeName.empty()) {
-            return providedTypeName;
+            return std::string{providedTypeName};
         } else if constexpr (celix::impl::hasStaticMemberName<I>) {
             return std::string{I::NAME};
         } else {
@@ -169,9 +169,9 @@ namespace celix {
      * Otherwise a empty string will be returned.
      */
     template<typename I>
-    std::string typeVersion(const std::string& providedVersion = "") {
+    std::string typeVersion(std::string_view providedVersion = "") {
         if (!providedVersion.empty()) {
-            return providedVersion;
+            return std::string{providedVersion};
         } else if constexpr (celix::impl::hasStaticMemberVersion<I>) {
             return std::string{I::VERSION};
         } else {
@@ -186,13 +186,13 @@ namespace celix {
      * @param str The string to split
      * @param delimiter The delimiter to use (default ",")
      */
-     inline std::vector<std::string> split(const std::string& str, const std::string& delimiter = ",") {
+     inline std::vector<std::string> split(std::string_view str, std::string_view delimiter = ",") {
         std::vector<std::string> result{};
-        std::string delimiters = delimiter + " \t";
+        std::string delimiters = std::string{delimiter} + " \t";
         size_t found;
         size_t pos = 0;
         while ((found = str.find_first_not_of(delimiters, pos)) != std::string::npos) {
-            pos = str.find_first_of(", ", found);
+            pos = str.find_first_of(delimiters, found);
             result.emplace_back(str.substr(found, pos - found));
         }
         return result;
