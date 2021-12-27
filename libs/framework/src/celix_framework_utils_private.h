@@ -17,11 +17,11 @@
  * under the License.
  */
 
-#ifndef CELIX_FRAMEWORK_UTILS_H_
-#define CELIX_FRAMEWORK_UTILS_H_
+#ifndef CELIX_FRAMEWORK_UTILS_PRIVATE_H_
+#define CELIX_FRAMEWORK_UTILS_PRIVATE_H_
 
 
-#include "celix_framework.h"
+#include "celix_framework_utils.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -41,8 +41,10 @@ extern "C" {
  */
 celix_status_t celix_framework_utils_extractBundle(celix_framework_t *fw, const char *bundleURL,  const char* extractPath);
 
+size_t celix_framework_utils_installEmbeddedBundles(celix_framework_t* fw, bool autoStart);
+
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* CELIX_FRAMEWORK_UTILS_H_ */
+#endif /* CELIX_FRAMEWORK_UTILS_PRIVATE_H_ */

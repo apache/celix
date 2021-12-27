@@ -17,11 +17,16 @@
  * under the License.
  */
 
-//.section .const_data, bundles
+.section .rodata
 
-.global _celix_embedded_bundle_simple_test_bundle1_start
-.global _celix_embedded_bundle_simple_test_bundle1_end
+.global celix_embedded_bundle_@EMBED_BUNDLE_NAME@_start
+.global celix_embedded_bundle_@EMBED_BUNDLE_NAME@_end
 
-_celix_embedded_bundle_simple_test_bundle1_start:
-    .incbin "simple_test_bundle1-Debug.zip"
-_celix_embedded_bundle_simple_test_bundle1_end:
+.section .rodata
+.balign 64
+
+celix_embedded_bundle_@EMBED_BUNDLE_NAME@_start:
+    .incbin "@EMBED_BUNDLE_FILE@"
+    .balign 1
+celix_embedded_bundle_@EMBED_BUNDLE_NAME@_end:
+    .byte 0

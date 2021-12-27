@@ -21,24 +21,20 @@
 
 #include <filesystem>
 
-#include "celix_framework_factory.h"
-#include "celix_framework_utils.h"
+#include "celix/FrameworkFactory.h"
+#include "celix/FrameworkUtils.h"
+
+#include "celix_framework_utils_private.h"
 #include "celix_file_utils.h"
 
 
-class CelixCFrameworkUtilsTestSuite : public ::testing::Test {
+class CelixFrameworkUtilsTestSuite : public ::testing::Test {
 public:
-    CelixCFrameworkUtilsTestSuite() {
-        auto* config = celix_properties_create();
-        celix_properties_set(config, "CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "trace");
-
-        auto* fw = celix_frameworkFactory_createFramework(config);
-        framework = std::shared_ptr<celix_framework_t>{fw, [](celix_framework_t* cFw) {
-            celix_frameworkFactory_destroyFramework(cFw);
-        }};
+    CelixFrameworkUtilsTestSuite() {
+        framework = celix::createFramework({{"CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "trace"}});
     }
 
-    std::shared_ptr<celix_framework_t> framework{};
+    std::shared_ptr<celix::Framework> framework{};
 };
 
 static void checkBundleCacheDir(const char* extractDir) {
@@ -48,12 +44,12 @@ static void checkBundleCacheDir(const char* extractDir) {
     }
 }
 
-TEST_F(CelixCFrameworkUtilsTestSuite, testExtractBundlePath) {
+TEST_F(CelixFrameworkUtilsTestSuite, testExtractBundlePath) {
     const char* testExtractDir = "extractBundleTestDir";
     celix_utils_deleteDirectory(testExtractDir, nullptr);
 
     //invalid bundle url -> no extraction
-    auto status = celix_framework_utils_extractBundle(framework.get(), nullptr, testExtractDir);
+    auto status = celix_framework_utils_extractBundle(framework->getCFramework(), nullptr, testExtractDir);
     EXPECT_NE(status, CELIX_SUCCESS);
 
     //invalid bundle path -> no extraction
@@ -62,44 +58,54 @@ TEST_F(CelixCFrameworkUtilsTestSuite, testExtractBundlePath) {
 
     //invalid url prefix -> no extraction
     std::string path = std::string{"bla://"} + SIMPLE_TEST_BUNDLE1_LOCATION;
-    status = celix_framework_utils_extractBundle(framework.get(), path.c_str(), testExtractDir);
+    status = celix_framework_utils_extractBundle(framework->getCFramework(), path.c_str(), testExtractDir);
     EXPECT_NE(status, CELIX_SUCCESS);
 
     //invalid url prefix -> no extraction
     path = std::string{"bla://"};
-    status = celix_framework_utils_extractBundle(framework.get(), path.c_str(), testExtractDir);
+    status = celix_framework_utils_extractBundle(framework->getCFramework(), path.c_str(), testExtractDir);
     EXPECT_NE(status, CELIX_SUCCESS);
 
     //invalid url prefix -> no extraction
     path = std::string{"file://"};
-    status = celix_framework_utils_extractBundle(framework.get(), path.c_str(), testExtractDir);
+    status = celix_framework_utils_extractBundle(framework->getCFramework(), path.c_str(), testExtractDir);
     EXPECT_NE(status, CELIX_SUCCESS);
 
     //valid bundle path -> extraction
-    status = celix_framework_utils_extractBundle(framework.get(), SIMPLE_TEST_BUNDLE1_LOCATION, testExtractDir);
+    status = celix_framework_utils_extractBundle(framework->getCFramework(), SIMPLE_TEST_BUNDLE1_LOCATION, testExtractDir);
     EXPECT_EQ(status, CELIX_SUCCESS);
     checkBundleCacheDir(testExtractDir);
     celix_utils_deleteDirectory(testExtractDir, nullptr);
 
     //valid bundle path with file:// prefix -> extraction
     path = std::string{"file://"} + SIMPLE_TEST_BUNDLE1_LOCATION;
-    status = celix_framework_utils_extractBundle(framework.get(), path.c_str(), testExtractDir);
+    status = celix_framework_utils_extractBundle(framework->getCFramework(), path.c_str(), testExtractDir);
     EXPECT_EQ(status, CELIX_SUCCESS);
     checkBundleCacheDir(testExtractDir);
     celix_utils_deleteDirectory(testExtractDir, nullptr);
 }
 
-TEST_F(CelixCFrameworkUtilsTestSuite, testExtractEmbeddedBundle) {
+TEST_F(CelixFrameworkUtilsTestSuite, testExtractEmbeddedBundle) {
     const char* testExtractDir = "extractEmbeddedBundleTestDir";
     celix_utils_deleteDirectory(testExtractDir, nullptr);
 
     //invalid bundle symbol -> no extraction
-    auto status = celix_framework_utils_extractBundle(framework.get(), "embedded://nonexisting", testExtractDir);
+    auto status = celix_framework_utils_extractBundle(framework->getCFramework(), "embedded://nonexisting", testExtractDir);
     EXPECT_NE(status, CELIX_SUCCESS);
 
     //valid bundle path -> extraction
-    status = celix_framework_utils_extractBundle(framework.get(), "embedded://simple_test_bundle1", testExtractDir);
+    status = celix_framework_utils_extractBundle(framework->getCFramework(), "embedded://simple_test_bundle1", testExtractDir);
     EXPECT_EQ(status, CELIX_SUCCESS);
     checkBundleCacheDir(testExtractDir);
     celix_utils_deleteDirectory(testExtractDir, nullptr);
+}
+
+TEST_F(CelixFrameworkUtilsTestSuite, testListEmbeddedBundles) {
+    auto list = celix::listEmbeddedBundles();
+    EXPECT_EQ(2, list.size());
+    //TODO check content
+}
+
+TEST_F(CelixFrameworkUtilsTestSuite, installEmbeddedBundles) {
+    //TODO check installEmbeddedBundles
 }

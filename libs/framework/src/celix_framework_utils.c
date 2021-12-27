@@ -38,6 +38,8 @@
 #include "celix_bundle_context.h"
 #include "framework_private.h"
 
+static const char * const EMBEDDED_BUNDLES_SYMBOL = "celix_embedded_bundles";
+
 static const char * const EMBEDDED_BUNDLE_PREFIX = "celix_embedded_bundle_";
 static const char * const EMBEDDED_BUNDLE_START_POSTFIX = "_start";
 static const char * const EMBEDDED_BUNDLE_END_POSTFIX = "_end";
@@ -115,12 +117,13 @@ static bool extractBundleEmbedded(celix_framework_t *fw, const char* embeddedBun
 }
 
 celix_status_t celix_framework_utils_extractBundle(celix_framework_t *fw, const char *bundleURL,  const char* extractPath) {
-    if (celix_utils_isStringNullOrEmpty(bundleURL)) {
-        FW_LOG(CELIX_LOG_LEVEL_ERROR, "Invalid NULL or empty bundleURL argument");
+    char* trimmedUrl = celix_utils_trim(bundleURL);
+
+    if (celix_utils_isStringNullOrEmpty(trimmedUrl)) {
+        FW_LOG(CELIX_LOG_LEVEL_ERROR, "Invalid NULL or empty bundleURL argument. Provided argument is '%s'", bundleURL);
+        free(trimmedUrl);
         return CELIX_ILLEGAL_ARGUMENT;
     }
-
-    char* trimmedUrl = celix_utils_trim(bundleURL);
 
     bool extracted;
     if (strncasecmp("file://", bundleURL, 7) == 0) {
@@ -136,4 +139,28 @@ celix_status_t celix_framework_utils_extractBundle(celix_framework_t *fw, const 
 
     free(trimmedUrl);
     return extracted ? CELIX_SUCCESS : CELIX_FILE_IO_EXCEPTION;
+}
+
+celix_array_list_t* celix_framework_utils_listEmbeddedBundles() {
+    celix_array_list_t* list = celix_arrayList_create();
+    void* main = dlopen(NULL, RTLD_NOW);
+    const char* embeddedBundles = dlsym(main, EMBEDDED_BUNDLES_SYMBOL);
+    if (embeddedBundles != NULL) {
+        //TODO split
+    }
+    return list;
+}
+
+size_t celix_framework_utils_installEmbeddedBundles(celix_framework_t* fw, bool autoStart) {
+    size_t nrOfBundlesInstalled = 0;
+    celix_array_list_t* list = celix_framework_utils_listEmbeddedBundles();
+    for (int i = 0; i < celix_arrayList_size(list); ++i) {
+        const char* url = celix_arrayList_get(list, i);
+        long bndId = celix_framework_installBundle(fw, url, autoStart);
+        if (bndId > 0) {
+            nrOfBundlesInstalled += 1;
+        }
+    }
+    celix_arrayList_destroy(list);
+    return nrOfBundlesInstalled;
 }

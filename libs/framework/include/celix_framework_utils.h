@@ -17,16 +17,21 @@
  * under the License.
  */
 
-.section .rodata
+#ifndef CELIX_FRAMEWORK_UTILS_H_
+#define CELIX_FRAMEWORK_UTILS_H_
 
-.global celix_embedded_bundle_simple_test_bundle1_start
-.global celix_embedded_bundle_simple_test_bundle1_end
 
-.section .rodata
-.balign 64
+#include "celix_framework.h"
 
-celix_embedded_bundle_simple_test_bundle1_start:
-    .incbin "simple_test_bundle1-Debug.zip"
-    .balign 1
-celix_embedded_bundle_simple_test_bundle1_end:
-    .byte 0
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+//TODO doc
+celix_array_list_t* celix_framework_utils_listEmbeddedBundles();
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* CELIX_FRAMEWORK_UTILS_H_ */

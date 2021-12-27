@@ -201,6 +201,16 @@ celix_get_bundle_file(<bundle_target> VARIABLE_NAME)
 
 Example: `celix_get_bundle_file(Celix::shell SHELL_BUNDLE_FILE)`
 
+## celix_get_bundle_symbolic_name
+Get bundle symbolic name from an (imported) bundle target.
+TODO does this work on imported bundle targets? -> update this
+
+```CMake
+celix_get_bundle_symbolic_name(<bundle_target> VARIABLE_NAME)
+```
+
+Example: `celix_get_bundle_symbolic_name(Celix::shell SHELL_BUNDLE_SYMBOLIC_NAME)`
+
 ## add_celix_bundle_dependencies
 Add bundles as dependencies to a cmake target, so that the bundle zip files will be created before the cmake target.
 
@@ -257,10 +267,6 @@ Example:
 ```CMake
 install_celix_targets(celix NAMESPACE Celix:: DESTINATION share/celix/cmake FILE CelixTargets)
 ```
-
-
-
-
 
 # Celix Containers
 The 'add_celix_container' Celix CMake command can be used to create Celix containers.
@@ -404,12 +410,11 @@ celix_container_runtime_properties(<celix_container_target_name>
 )
 ```
 
+# Misc Celix CMake Commands
 
+## celix_target_embed_bundles
 
-
-
-
-
+TODO
 
 
 # Celix Docker Images

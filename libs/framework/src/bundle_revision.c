@@ -22,14 +22,11 @@
 #include <sys/stat.h>
 #include <archive.h>
 #include <string.h>
-#include <sys/stat.h>
 #include <assert.h>
 
-
 #include "celix_framework.h"
-#include "celix_bundle_cache.h"
 #include "bundle_revision_private.h"
-#include "celix_framework_utils.h"
+#include "celix_framework_utils_private.h"
 
 celix_status_t bundleRevision_create(const char *root, const char *location, long revisionNr, const char *inputFile, bundle_revision_pt *bundle_revision) {
     assert(inputFile == NULL); //the inputFile arg is deprecated and should always be NULL"

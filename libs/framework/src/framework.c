@@ -39,6 +39,7 @@
 #include "bundle_context_private.h"
 #include "celix_libloader.h"
 #include "celix_log_constants.h"
+#include "celix_framework_utils_private.h"
 
 typedef celix_status_t (*create_function_fp)(bundle_context_t *context, void **userData);
 typedef celix_status_t (*start_function_fp)(void *userData, bundle_context_t *context);
@@ -2713,4 +2714,8 @@ void celix_framework_waitForStop(celix_framework_t *framework) {
     }
 
     celixThreadMutex_unlock(&framework->shutdown.mutex);
+}
+
+size_t celix_framework_installEmbeddedBundles(celix_framework_t* fw, bool autoStart) {
+    return celix_framework_utils_installEmbeddedBundles(fw, autoStart);
 }

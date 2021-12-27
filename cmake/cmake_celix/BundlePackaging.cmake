@@ -253,7 +253,7 @@ function(add_celix_bundle)
 
     ##### MANIFEST configuration and generation ##################
     #Step1 configure the file so that the target name is present in in the template
-    configure_file(${CELIX_CMAKE_DIRECTORY}/Manifest.template.in ${BUNDLE_GEN_DIR}/MANIFEST.step1)
+    configure_file(${CELIX_CMAKE_DIRECTORY}/templates/Manifest.in ${BUNDLE_GEN_DIR}/MANIFEST.step1)
 
     #Step2 replace headers with target property values. Note this is done build time
     file(GENERATE 
@@ -317,11 +317,11 @@ function(add_celix_bundle)
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_FILE" ${BUNDLE_FILE}) #target bundle abs file path (.zip)
 
     #name and version
-    set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_NAME" ${BUNDLE_NAME}) #The bundle name default target name
-    set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_SYMBOLIC_NAME" ${BUNDLE_SYMBOLIC_NAME}) #The bundle symbolic name. Default target name
-    set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_GROUP" "${BUNDLE_GROUP}") #The bundle group, default ""
-    set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_VERSION" ${BUNDLE_VERSION}) #The bundle version. Default 0.0.0
-    set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_DESCRIPTION" "${BUNDLE_DESCRIPTION}") #The bundle description.
+    celix_bundle_name(${BUNDLE_TARGET_NAME} ${BUNDLE_NAME}) #The bundle name default target name
+    celix_bundle_symbolic_name(${BUNDLE_TARGET_NAME} ${BUNDLE_SYMBOLIC_NAME}) #The bundle symbolic name. Default target name
+    celix_bundle_group(${BUNDLE_TARGET_NAME} "${BUNDLE_GROUP}") #The bundle group, default ""
+    celix_bundle_version(${BUNDLE_TARGET_NAME} ${BUNDLE_VERSION}) #The bundle version. Default 0.0.0
+    celix_bundle_description(${BUNDLE_TARGET_NAME} "${BUNDLE_DESCRIPTION}") #The bundle description.
 
     #headers
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_ACTIVATOR" 1) #Library containing the activator (if any)
@@ -701,7 +701,35 @@ Set bundle symbolic name
 celix_bundle_symbolic_name(<bundle_target> symbolic_name)
 ]]
 function(celix_bundle_symbolic_name BUNDLE SYMBOLIC_NAME)
+    string(MAKE_C_IDENTIFIER ${SYMBOLIC_NAME} SYMBOLIC_NAME_CHECK)
+    if (NOT SYMBOLIC_NAME STREQUAL SYMBOLIC_NAME_CHECK)
+        message(WARNING "Provided bundle symbolic name `${SYMBOLIC_NAME}` for target ${BUNDLE} is not a valid c identifier. Bundle symbolic name should be valid c identifiers.")
+    endif ()
     set_target_properties(${BUNDLE} PROPERTIES "BUNDLE_SYMBOLIC_NAME" ${SYMBOLIC_NAME})
+endfunction()
+
+#[[
+Get bundle symbolic name from an (imported) bundle target.
+TODO does this work on imported bundle targets? -> update this
+
+```CMake
+celix_get_bundle_symbolic_name(<bundle_target> VARIABLE_NAME)
+```
+
+Example: `celix_get_bundle_symbolic_name(Celix::shell SHELL_BUNDLE_SYMBOLIC_NAME)`
+]]
+#TODO make this a generic get target property functions
+function(celix_get_bundle_symbolic_name)
+    if (TARGET ${ARGV0})
+        get_target_property(SYM ${ARGV0} BUNDLE_SYMBOLIC_NAME)
+        if (SYM)
+            set(${ARGV1} ${SYM} PARENT_SCOPE)
+        else ()
+            message(FATAL_ERROR "Cannot find BUNDLE_SYMBOLIC_NAME from CMake target: ${ARGV0}")
+        endif ()
+    else ()
+        message(FATAL_ERROR "Provided argument is not a CMake target: ${ARGV0}")
+    endif ()
 endfunction()
 
 #[[
@@ -709,7 +737,7 @@ Set bundle group.
 celix_bundle_group(<bundle_target> bundle group)
 ]]
 function(celix_bundle_group BUNDLE GROUP)
-    set_target_properties(${BUNDLE} PROPERTIES "BUNDLE_GROUP" ${GROUP})
+    set_target_properties(${BUNDLE} PROPERTIES "BUNDLE_GROUP" "${GROUP}")
 endfunction()
 
 function(bundle_name)
@@ -748,7 +776,7 @@ Set bundle description
 celix_bundle_description(<bundle_target> description)
 ]]
 function(celix_bundle_description BUNDLE DESC)
-    set_target_properties(${BUNDLE} PROPERTIES "BUNDLE_DESCRIPTION" ${DESC})
+    set_target_properties(${BUNDLE} PROPERTIES "BUNDLE_DESCRIPTION" "${DESC}")
 endfunction()
 
 #[[
@@ -801,7 +829,6 @@ function(celix_get_bundle_file)
         message(FATAL_ERROR "Provided argument is not a CMake target: ${ARGV0}")
     endif ()
 endfunction ()
-
 
 function(install_bundle)
     message(DEPRECATION "install_bundle is deprecated, use install_celix_bundle instead.")
