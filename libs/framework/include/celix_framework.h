@@ -24,6 +24,7 @@
 #include "celix_types.h"
 #include "celix_properties.h"
 #include "celix_log_level.h"
+#include "celix_array_list.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -180,6 +181,24 @@ void celix_framework_stopBundleAsync(celix_framework_t *fw, long bndId);
  * @param bndId The bundle id to start.
  */
 void celix_framework_startBundleAsync(celix_framework_t *fw, long bndId);
+
+/**
+ * @brief List the installed and started bundle ids.
+ * The bundle ids does not include the framework bundle (bundle id CELIX_FRAMEWORK_BUNDLE_ID).
+ *
+ * @param framework The Celix framework.
+ * @return A array with bundle ids (long). The caller is responsible for destroying the array.
+ */
+celix_array_list_t* celix_framework_listBundles(celix_framework_t* framework);
+
+/**
+ * @brief List the installed bundle ids.
+ * The bundle ids does not include the framework bundle (bundle id CELIX_FRAMEWORK_BUNDLE_ID).
+ *
+ * @param framework The Celix framework.
+ * @return A array with bundle ids (long). The caller is responsible for destroying the array.
+ */
+celix_array_list_t* celix_framework_listInstalledBundles(celix_framework_t* framework);
 
 /**
  * @brief Wait until the framework event queue is empty.

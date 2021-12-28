@@ -834,10 +834,20 @@ size_t celix_bundleContext_useServicesWithOptions(
  * @brief List the installed and started bundle ids.
  * The bundle ids does not include the framework bundle (bundle id CELIX_FRAMEWORK_BUNDLE_ID).
  *
- * @param ctx The bundle context
+ * @param ctx The bundle context.
  * @return A array with bundle ids (long). The caller is responsible for destroying the array.
  */
 celix_array_list_t* celix_bundleContext_listBundles(celix_bundle_context_t *ctx);
+
+/**
+ * @brief List the installed bundle ids.
+ * The bundle ids does not include the framework bundle (bundle id CELIX_FRAMEWORK_BUNDLE_ID).
+ *
+ * @param ctx The bundle context.
+ * @return A array with bundle ids (long). The caller is responsible for destroying the array.
+ */
+celix_array_list_t* celix_bundleContext_listInstalledBundles(celix_bundle_context_t *ctx);
+
 
 /**
  * @brief Check whether a bundle is installed.

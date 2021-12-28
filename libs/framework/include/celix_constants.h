@@ -275,6 +275,19 @@ extern "C" {
  */
 #define CELIX_AUTO_START_6 "CELIX_AUTO_START_6"
 
+/**
+ * @brief Celix framework environment property (named "CELIX_AUTO_INSTALL") which specified a (ordered) space
+ * separated set of bundles to install when the Celix framework is started.
+ *
+ * The Celix framework will first install and start bundles defined in the properties CELIX_AUTO_START_0 till
+ * CELIX_AUTO_START_6 and then install (ano not start!) the bundles listed in CELIX_AUTO_INSTALL.
+ *
+ * When the Celix framework stops the bundles are stopped in the reverse order. Started bundles in CELIX_AUTO_INSTALL
+ * are stopped first and of those bundles, the bundle mentioned last in a CELIX_AUTO_INSTALL set is stopped first.
+ * Then bundles defined in CELIX_AUTO_START_6 are stopped, followed by bundles defined in CELIX_AUTO_START_5, etc.
+ */
+#define CELIX_AUTO_INSTALL "CELIX_AUTO_INSTALL"
+
 #ifdef __cplusplus
 }
 #endif
