@@ -79,7 +79,7 @@ TEST_F(CelixFrameworkUtilsTestSuite, testExtractBundlePath) {
     EXPECT_NE(status, CELIX_SUCCESS);
 
     //invalid bundle path -> no extraction
-    status = celix_framework_utils_extractBundle(nullptr, "non-existing.zip", testExtractDir); //note nullptr framwork is allowed, fallback to global logger.
+    status = celix_framework_utils_extractBundle(framework->getCFramework(), "non-existing.zip", testExtractDir); //note nullptr framwork is allowed, fallback to global logger.
     EXPECT_NE(status, CELIX_SUCCESS);
 
     //invalid url prefix -> no extraction

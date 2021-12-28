@@ -69,7 +69,7 @@ static char* resolveFileBundleUrl(celix_framework_t* fw, const char* bundleLocat
         } else {
             //relative path to a non-existing file, check the bundle paths.
             char *paths = celix_utils_strdup(bundlePath);
-            const char *sep = ";";
+            const char *sep = ":";
             char *savePtr = NULL;
 
             for (char *path = strtok_r(paths, sep, &savePtr); path != NULL; path = strtok_r(NULL, sep, &savePtr)){

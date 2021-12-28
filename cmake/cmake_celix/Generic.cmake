@@ -110,8 +110,8 @@ function(celix_target_embed_bundle)
         endif ()
 
         if (NOT APPLE)
-            #For linux ensure the -rdynamic linking flag is added to that symbols in the main program can be found with dlsym.
-            target_link_libraries(${TARGET_NAME} PRIVATE -Wl,-rdynamic)
+            #For linux ensure the --export-dynamic linking flag is added to that symbols in the main program can be found with dlsym.
+            target_link_libraries(${TARGET_NAME} PRIVATE -Wl,--export-dynamic)
         endif ()
     else()
         list(APPEND CELIX_EMBEDDED_BUNDLES "embedded://${EMBED_BUNDLE_NAME}")

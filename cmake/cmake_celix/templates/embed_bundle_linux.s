@@ -18,15 +18,12 @@
  */
 
 .section .rodata
-
 .global celix_embedded_bundle_@EMBED_BUNDLE_NAME@_start
 .global celix_embedded_bundle_@EMBED_BUNDLE_NAME@_end
-
 .section .rodata
 .balign 64
-
 celix_embedded_bundle_@EMBED_BUNDLE_NAME@_start:
-    .incbin "@EMBED_BUNDLE_FILE@"
-    .balign 1
+.incbin "@EMBED_BUNDLE_FILE@"
+.balign 1
 celix_embedded_bundle_@EMBED_BUNDLE_NAME@_end:
-    .byte 0
+.byte 0

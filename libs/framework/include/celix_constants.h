@@ -186,7 +186,7 @@ extern "C" {
 #define OSGI_FRAMEWORK_FRAMEWORK_UUID CELIX_FRAMEWORK_FRAMEWORK_UUID
 
 /**
- * @brief Celix framework environment property (named "CELIX_BUNDLES_PATH") which specified a `;` separated
+ * @brief Celix framework environment property (named "CELIX_BUNDLES_PATH") which specified a `:` separated
  * list of bundles path used when installing bundles with relative paths.
  *
  * Default value is "bundles".
