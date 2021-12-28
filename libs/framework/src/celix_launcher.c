@@ -97,6 +97,7 @@ int celixLauncher_launchAndWaitForShutdown(int argc, char *argv[], celix_propert
 
     if (showEmbeddedBundles) {
         printEmbeddedBundles();
+        celix_properties_destroy(packedConfig);
         return 0;
     }
 
