@@ -17,5 +17,5 @@
 
 
 add_executable(embedding src/main.c)
-target_link_libraries(embedding Celix::framework )
+target_link_libraries(embedding PRIVATE Celix::framework )
 celix_target_embed_bundles(embedding Celix::shell Celix::shell_tui)
