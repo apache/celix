@@ -89,12 +89,7 @@ function(celix_target_embed_bundle)
     endif ()
     set(ASSEMBLY_FILE "${CMAKE_BINARY_DIR}/celix/gen/target/${TARGET_NAME}/embed_bundle_${EMBED_BUNDLE_NAME}.s")
     configure_file(${ASSEMBLY_FILE_IN} ${ASSEMBLY_FILE} @ONLY)
-
-    if (APPLE)
-        target_sources(${TARGET_NAME} PRIVATE ${ASSEMBLY_FILE})
-    else()
-        target_sources(${TARGET_NAME} PRIVATE ${ASSEMBLY_FILE})
-    endif()
+    target_sources(${TARGET_NAME} PRIVATE ${ASSEMBLY_FILE})
 
     get_target_property(CELIX_EMBEDDED_BUNDLES ${TARGET_NAME} "CELIX_EMBEDDED_BUNDLES")
     if (NOT CELIX_EMBEDDED_BUNDLES)
