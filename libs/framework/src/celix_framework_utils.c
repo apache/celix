@@ -130,7 +130,7 @@ static bool extractBundlePath(celix_framework_t *fw, const char* bundlePath, con
 
     celix_status_t status = celix_utils_extractZipFile(resolvedPath, extractPath, &err);
     if (status == CELIX_SUCCESS) {
-        FW_LOG(CELIX_LOG_LEVEL_TRACE, "Bundle zip `%s` extracted to `%s`", resolvedPath, extractPath);
+        FW_LOG(CELIX_LOG_LEVEL_TRACE, "Bundle zip `%s` extracted.", resolvedPath);
     } else {
         FW_LOG(CELIX_LOG_LEVEL_ERROR, "Could not extract bundle zip file `%s` to `%s`: %s", resolvedPath, extractPath, err);
     }
@@ -140,28 +140,6 @@ static bool extractBundlePath(celix_framework_t *fw, const char* bundlePath, con
 
 static bool extractBundleEmbedded(celix_framework_t *fw, const char* embeddedBundle, const char* extractPath) {
     FW_LOG(CELIX_LOG_LEVEL_TRACE, "Extracting embedded bundle `%s` to dir `%s`", embeddedBundle, extractPath);
-
-    /* TBD, maybe still needed for osx
-    unsigned long dataSize;
-    void* data;
-    data = getsectdata("bundles", embeddedSymbol, &dataSize);
-
-    if (data == NULL) {
-        FW_LOG(CELIX_LOG_LEVEL_ERROR, "Cannot extract embedded bundle, could not find sectdata in executable `%s` for segname `%s` and sectname `%s`", getprogname(), "bundles", embeddedSymbol);
-        return false;
-    }
-    intptr_t slide = _dyld_get_image_vmaddr_slide(0);
-    data = (void*)(slide + (intptr_t)data);
-    const char* err = NULL;
-    celix_status_t status = celix_utils_extractZipData(data, (size_t)dataSize, bundleCache, &err);
-    if (status == CELIX_SUCCESS) {
-        FW_LOG(CELIX_LOG_LEVEL_TRACE, "Embedded bundle zip `%s` extracted to `%s`", embeddedSymbol, bundleCache);
-    } else {
-        FW_LOG(CELIX_LOG_LEVEL_ERROR, "Could not extract embedded bundle zip `%s` to `%s`: %s", embeddedSymbol, bundleCache, err);
-    }
-    return status == CELIX_SUCCESS;
-    */
-
     char* startSymbol = NULL;
     char* endSymbol = NULL;
     asprintf(&startSymbol, "%s%s%s", EMBEDDED_BUNDLE_PREFIX, embeddedBundle, EMBEDDED_BUNDLE_START_POSTFIX);
@@ -259,26 +237,47 @@ celix_array_list_t* celix_framework_utils_listEmbeddedBundles() {
 size_t celix_framework_utils_installEmbeddedBundles(celix_framework_t* fw, bool autoStart) {
     size_t nrOfBundlesInstalled = 0;
     celix_array_list_t* list = celix_framework_utils_listEmbeddedBundles();
+    celix_array_list_t* bundleIds = celix_arrayList_create();
     for (int i = 0; i < celix_arrayList_size(list); ++i) {
-        const char* url = celix_arrayList_get(list, i);
-        long bndId = celix_framework_installBundle(fw, url, autoStart);
+        char* url = celix_arrayList_get(list, i);
+        long bndId = celix_framework_installBundle(fw, url, false);
         if (bndId > 0) {
             nrOfBundlesInstalled += 1;
+            celix_arrayList_addLong(bundleIds, bndId);
         }
+        free(url);
     }
     celix_arrayList_destroy(list);
+
+    for (int i = 0; i < celix_arrayList_size(bundleIds) && autoStart; ++i) {
+        long bndId = celix_arrayList_getLong(bundleIds, i);
+        celix_framework_startBundle(fw, bndId);
+    }
+    celix_arrayList_destroy(bundleIds);
+
     return nrOfBundlesInstalled;
 }
 
 size_t celix_framework_utils_installBundleSet(celix_framework_t* fw, const char* bundleSet, bool autoStart) {
     size_t installed = 0;
+    celix_array_list_t* bundleIds = celix_arrayList_create();
     char delims[] = ",";
     char *savePtr = NULL;
     char *bundles = celix_utils_strdup(bundleSet);
     for (char *url = strtok_r(bundles, delims, &savePtr); url != NULL; url = strtok_r(NULL, delims, &savePtr)) {
-        long bndId = celix_framework_installBundle(fw, url, autoStart);
-        installed += bndId >= 0 ? 1 : 0;
+        long bndId = celix_framework_installBundle(fw, url, false);
+        if (bndId > 0) {
+            installed += 1;
+            celix_arrayList_addLong(bundleIds, bndId);
+        }
     }
     free(bundles);
+
+    for (int i = 0; i < celix_arrayList_size(bundleIds) && autoStart; ++i) {
+        long bndId = celix_arrayList_getLong(bundleIds, i);
+        celix_framework_startBundle(fw, bndId);
+    }
+    celix_arrayList_destroy(bundleIds);
+
     return installed;
 }

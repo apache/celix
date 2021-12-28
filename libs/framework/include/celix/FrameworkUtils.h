@@ -26,7 +26,20 @@
 
 namespace celix {
 
-    //TODO doc
+    /**
+     * @brief List the embedded bundles in the executable.
+     *
+     * This function will check if there are embedded bundles in the executable / program by trying to lookup
+     * the symbol `celix_embedded_bundles`.
+     *
+     * If present the `celix_embedded_bundles` should be a point to a const char* containing a `,` seperated list of
+     * embedded bundle urls. For example:
+     * \code
+     * const char * const celix_embedded_bundles = "embedded://bundle1,embedded://bundle2";
+     * \endcode
+     *
+     * @return A vector of embedded bundle urls.
+     */
     inline std::vector<std::string> listEmbeddedBundles() {
         std::vector<std::string> list{};
         auto* cList = celix_framework_utils_listEmbeddedBundles();
@@ -40,12 +53,41 @@ namespace celix {
         return list;
     }
 
-    //TODO doc
+    /**
+     * @brief Install the embedded bundles in the executable.
+     *
+     * Bundles will be installed in the order they appear in the return of
+     * `celix_framework_utils_listEmbeddedBundles`.
+     *
+     * If autStart is true, all embedded bundles will be installed first and then started in the same order.
+     *
+     * @param fw The Celix framework used to install the bundles.
+     * @param autoStart Whether to also start the installed bundles.
+     * @return The number of installed bundles.
+     */
     inline std::size_t installEmbeddedBundles(const std::shared_ptr<celix::Framework>& framework, bool autoStart = true) {
         return celix_framework_utils_installEmbeddedBundles(framework->getCFramework(), autoStart);
     }
 
-    //TODO doc
+    /**
+     * @brief Install bundles to the provided framework using the provided bundle set.
+     *
+     * Bundles will be installed in the order they appear in the provided bundleSet.
+     * If autStart is true, all bundles will be installed first and then started in the same order.
+     *
+     * The bundle set should be `,` separated set of bundle urls. Example:
+     * \code
+     * constexpr std::string_view bundleSet = "file:///usr/local/share/celix/bundles/celix_shell.zip,embedded://example_bundle";
+     * \endcode
+     *
+     * This function is designed to be used in combination with the Celix CMake command
+     * `celix_target_bundle_set_definition`.
+     *
+     * @param fw The Celix framework used to install the bundles.
+     * @param bundleSet A set of `,` seperated bundles urls.
+     * @param autoStart Whether to also start the installed bundles.
+     * @return The number of installed bundles.
+     */
     inline std::size_t installBundlesSet(const std::shared_ptr<celix::Framework>& framework, std::string_view bundlesSet, bool autoStart = true) {
         return celix_framework_utils_installBundleSet(framework->getCFramework(), bundlesSet.data(), autoStart);
     }

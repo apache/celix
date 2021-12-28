@@ -60,12 +60,14 @@ Optional Arguments:
   Default is CXX
 - C: With this option the generated Celix launcher (if used) will be a C source.
   Default is CXX
+- FAT: TODO
 - USE_CONFIG: With this option config properties are generated in a 'config.properties' instead of embedded in the Celix launcher.
 - GROUP: If configured the build location will be prefixed the GROUP. Default is empty.
 - NAME: The name of the executable. Default is <celix_container_name>. Only useful for generated/LAUNCHER_SRC Celix launchers.
 - DIR: The base build directory of the Celix container. Default is `<cmake_build_dir>/deploy`.
 - BUNDLES: A list of bundles to configured for the Celix container to install and start.
   These bundle will be configured for run level 3. See 'celix_container_bundles' for more info.
+- EMBEDDED_BUNDLES: TODO
 - PROPERTIES: A list of configuration properties, these can be used to configure the Celix framework and/or bundles.
   Normally this will be EMBEDED_PROPERTIES, but if the USE_CONFIG option is used this will be RUNTIME_PROPERTIES.
   See the framework library or bundles documentation about the available configuration options.
@@ -77,11 +79,13 @@ add_celix_container(<celix_container_name>
     [NO_COPY]
     [CXX]
     [C]
+    [FAT]
     [USE_CONFIG]
     [GROUP group_name]
     [NAME celix_container_name]
     [DIR dir]
     [BUNDLES <bundle1> <bundle2> ...]
+    [EMBEDDED_BUNDLES <bundle1> <bundle2> ...]
     [PROPERTIES "prop1=val1" "prop2=val2" ...]
     [EMBEDDED_PROPERTIES "prop1=val1" "prop2=val2" ...]
     [RUNTIME_PROPERTIES "prop1=val1" "prop2=val2" ...]
@@ -94,11 +98,13 @@ add_celix_container(<celix_container_name>
     [NO_COPY]
     [CXX]
     [C]
+    [FAT]
     [USE_CONFIG]
     [GROUP group_name]
     [NAME celix_container_name]
     [DIR dir]
     [BUNDLES <bundle1> <bundle2> ...]
+    [EMBEDDED_BUNDLES <bundle1> <bundle2> ...]
     [PROPERTIES "prop1=val1" "prop2=val2" ...]
     [EMBEDDED_PROPERTIES "prop1=val1" "prop2=val2" ...]
     [RUNTIME_PROPERTIES "prop1=val1" "prop2=val2" ...]
@@ -111,11 +117,13 @@ add_celix_container(<celix_container_name>
     [NO_COPY]
     [CXX]
     [C]
+    [FAT]
     [USE_CONFIG]
     [GROUP group_name]
     [NAME celix_container_name]
     [DIR dir]
     [BUNDLES <bundle1> <bundle2> ...]
+    [EMBEDDED_BUNDLES <bundle1> <bundle2> ...]
     [PROPERTIES "prop1=val1" "prop2=val2" ...]
     [EMBEDDED_PROPERTIES "prop1=val1" "prop2=val2" ...]
     [RUNTIME_PROPERTIES "prop1=val1" "prop2=val2" ...]
@@ -126,9 +134,9 @@ function(add_celix_container)
     list(GET ARGN 0 CONTAINER_TARGET)
     list(REMOVE_AT ARGN 0)
 
-    set(OPTIONS NO_COPY C CXX USE_CONFIG)
+    set(OPTIONS NO_COPY C CXX FAT USE_CONFIG)
     set(ONE_VAL_ARGS GROUP NAME LAUNCHER LAUNCHER_SRC DIR)
-    set(MULTI_VAL_ARGS BUNDLES PROPERTIES EMBEDDED_PROPERTIES RUNTIME_PROPERTIES)
+    set(MULTI_VAL_ARGS BUNDLES EMBEDDED_BUNDLES PROPERTIES EMBEDDED_PROPERTIES RUNTIME_PROPERTIES)
     cmake_parse_arguments(CONTAINER "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
 
     ##### Check arguments #####
@@ -306,6 +314,7 @@ $<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_RUNTIME_PROPERTIES>,
     set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_BUNDLES_LEVEL_5" "") #bundles to deploy for the container for startup level 5
     set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_BUNDLES_LEVEL_6" "") #bundles to deploy for the container for startup level 6
     set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_COPY_BUNDLES" ${CONTAINER_COPY}) #copy bundles in bundle dir or link using abs paths. NOTE this cannot be changed after a add_deploy command
+    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_IS_FAT" ${CONTAINER_FAT}) #Whether this is a fat container, so a container with only embedded bundles.
 
     #deploy specific
     set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_NAME" "${CONTAINER_NAME}")
@@ -317,6 +326,7 @@ $<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_RUNTIME_PROPERTIES>,
     #####
 
     celix_container_bundles(${CONTAINER_TARGET} LEVEL 3 ${CONTAINER_BUNDLES})
+    celix_container_embed_bundles(${CONTAINER_TARGET} LEVEL 3 ${CONTAINER_EMBEDDED_BUNDLES})
     if (CONTAINER_USE_CONFIG)
         celix_container_runtime_properties(${CONTAINER_TARGET} ${CONTAINER_PROPERTIES})
     else ()
@@ -450,7 +460,6 @@ celix_container_bundles(<celix_container_target_name>
 ]]
 function(celix_container_bundles)
     #0 is container TARGET
-    #1..n is bundles
     list(GET ARGN 0 CONTAINER_TARGET)
     list(REMOVE_AT ARGN 0)
 
@@ -466,59 +475,82 @@ function(celix_container_bundles)
 
     get_target_property(BUNDLES ${CONTAINER_TARGET} "CONTAINER_BUNDLES_LEVEL_${BUNDLES_LEVEL}")
     get_target_property(COPY ${CONTAINER_TARGET} "CONTAINER_COPY_BUNDLES")
-    get_target_property(DEPS ${CONTAINER_TARGET} "CONTAINER_TARGET_DEPS")
+    get_target_property(IS_FAT ${CONTAINER_TARGET} "CONTAINER_IS_FAT")
 
     foreach(BUNDLE IN ITEMS ${BUNDLES_LIST})
-        set(HANDLED FALSE)
-        if (IS_ABSOLUTE ${BUNDLE} AND EXISTS ${BUNDLE})
-               get_filename_component(BUNDLE_FILENAME ${BUNDLE} NAME)
-               set(COPY_LOC "${BUNDLE_FILENAME}")
-               set(ABS_LOC "${BUNDLE}")
-               set(HANDLED TRUE)
-           elseif (TARGET ${BUNDLE})
-               get_target_property(TARGET_TYPE ${BUNDLE} TYPE)
-               if (TARGET_TYPE STREQUAL "INTERFACE_LIBRARY")
-                   #ignore. this can be used to keep targets name, but ignore it use in containers (e.g. Celix::dm_shell)
-                   set(HANDLED TRUE)
-               else()
-                   get_target_property(IMP ${BUNDLE} BUNDLE_IMPORTED)
-                   if (IMP) #An imported bundle target -> handle target without DEPENDS
-                       _celix_extract_imported_bundle_info(${BUNDLE}) #extracts BUNDLE_FILE and BUNDLE_FILENAME
+        if (IS_FAT)
+            message(FATAL_ERROR "Cannot add bundle ${BUNDLE} to Celix container ${CONTAINER_TARGET}. ${CONTAINER_TARGET} is configured as a fat container, so only embedded bundles are allowed. Use EMBEDDED_BUNDLES instead of BUNDLES in the add_celix_container CMake command.")
+        endif ()
 
-                       set(COPY_LOC "${BUNDLE_FILENAME}")
-                       set(ABS_LOC "${BUNDLE_FILE}")
-                       set(HANDLED TRUE)
-                   endif ()
-               endif ()
+        if (TARGET ${BUNDLE})
+           get_target_property(TARGET_TYPE ${BUNDLE} TYPE)
+           if (TARGET_TYPE STREQUAL "INTERFACE_LIBRARY")
+               #ignore. this can be used to keep targets name, but ignore it use in containers (e.g. Celix::dm_shell)
+               message(DEBUG "Ignoring bundle target ${BUNDLE} add to container ${CONTAINER_TARGET}. Target type is not SHARED_LIBRARY")
+           elseif (TARGET_TYPE STREQUAL "SHARED_LIBRARY")
+               celix_get_bundle_file(${BUNDLE} ABS_LOC)
+               celix_get_bundle_filename(${BUNDLE} COPY_LOC)
+               add_celix_bundle_dependencies(${CONTAINER_TARGET} ${BUNDLE})
+           else ()
+               message(FATAL_ERROR "Cannot add bundle target with target type ${TARGET_TYPE} to container ${CONTAINER_TARGET}. Only INTERFACE_LIBRARY or SHARED_LIBRARY is supported.")
            endif ()
+        elseif (IS_ABSOLUTE ${BUNDLE} AND EXISTS ${BUNDLE})
+            get_filename_component(BUNDLE_FILENAME ${BUNDLE} NAME)
+            set(COPY_LOC "${BUNDLE_FILENAME}")
+            set(ABS_LOC "${BUNDLE}")
+        else ()
+            message(FATAL_ERROR "Cannot add bundle `${BUNDLE}` to container target ${CONTAINER_TARGET}. Argument is not a path or cmake target")
+        endif ()
 
-           if (NOT HANDLED) #not a imported bundle target, so assuming a (future) bundle target
-               set(COPY_LOC "$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILENAME>")
-               set(ABS_LOC "$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILE>")
-
-               if (NOT COPY) #in case of COPY dep will be added in celix_container_bundles_dir
-                   string(MAKE_C_IDENTIFIER ${BUNDLE} BUNDLE_ID) #Create id with no special chars (e.g. for target like Celix::shell)
-                   set(OUT "${CMAKE_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/check-bundle-for-target-${BUNDLE_ID}.timestamp")
-                   add_custom_command(OUTPUT ${OUT}
-                       COMMAND ${CMAKE_COMMAND} -E touch ${OUT}
-                       DEPENDS ${BUNDLE} $<TARGET_PROPERTY:${BUNDLE},BUNDLE_CREATE_BUNDLE_TARGET>
-                   )
-                   list(APPEND DEPS ${OUT})
-               endif ()
-           endif ()
-           if(COPY)
-                list(APPEND BUNDLES ${COPY_LOC})
-           else()
-                list(APPEND BUNDLES ${ABS_LOC})
-           endif()
+       if(COPY)
+            list(APPEND BUNDLES ${COPY_LOC})
+       else()
+            list(APPEND BUNDLES ${ABS_LOC})
+       endif()
    endforeach()
 
     set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_BUNDLES_LEVEL_${BUNDLES_LEVEL}" "${BUNDLES}")
-    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_TARGET_DEPS" "${DEPS}")
 
    if(COPY) 
        celix_container_bundles_dir(${CONTAINER_TARGET} DIR_NAME bundles BUNDLES ${BUNDLES_LIST})
    endif()
+endfunction()
+
+#[[
+TODO doc
+]]
+function(celix_container_embed_bundles)
+    #0 is container TARGET
+    list(GET ARGN 0 CONTAINER_TARGET)
+    list(REMOVE_AT ARGN 0)
+
+    set(OPTIONS )
+    set(ONE_VAL_ARGS LEVEL)
+    set(MULTI_VAL_ARGS )
+    cmake_parse_arguments(BUNDLES "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
+    set(BUNDLES_LIST ${BUNDLES_UNPARSED_ARGUMENTS})
+
+    if (NOT DEFINED BUNDLES_LEVEL)
+        set(BUNDLES_LEVEL 3)
+    endif ()
+
+    get_target_property(BUNDLES ${CONTAINER_TARGET} "CONTAINER_BUNDLES_LEVEL_${BUNDLES_LEVEL}")
+
+    foreach(BUNDLE IN ITEMS ${BUNDLES_LIST})
+        if (TARGET ${BUNDLE})
+            celix_get_bundle_symbolic_name(${BUNDLE} NAME)
+            add_celix_bundle_dependencies(${CONTAINER_TARGET} ${BUNDLE})
+        elseif (IS_ABSOLUTE ${BUNDLE} AND EXISTS ${BUNDLE})
+            get_filename_component(RAW_NAME ${BUNDLE} NAME_WE)
+            string(MAKE_C_IDENTIFIER ${RAW_NAME} NAME)
+        else()
+            message(FATAL_ERROR "Cannot add bundle `${BUNDLE}` to container target ${CONTAINER_TARGET}. Argument is not a path or cmake target")
+        endif ()
+        celix_target_embed_bundle(${CONTAINER_TARGET} BUNDLE ${BUNDLE} NAME ${NAME})
+        list(APPEND BUNDLES "embedded://${NAME}")
+    endforeach()
+
+    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_BUNDLES_LEVEL_${BUNDLES_LEVEL}" "${BUNDLES}")
 endfunction()
 
 function(deploy_properties)
@@ -605,3 +637,4 @@ function(celix_container_properties)
         celix_container_embedded_properties(${ARGN})
     endif ()
 endfunction()
+

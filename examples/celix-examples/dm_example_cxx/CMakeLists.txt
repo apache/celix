@@ -23,8 +23,9 @@ add_subdirectory(phase3)
 add_subdirectory(phase3_locking)
 
 add_celix_container("dm_example_cxx"
+    FAT
     GROUP cxx_examples
-    BUNDLES
+    EMBEDDED_BUNDLES
         Celix::ShellCxx
         Celix::shell_tui
 

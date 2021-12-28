@@ -58,9 +58,8 @@ celix_target_embed_bundles(test_framework simple_test_bundle1 simple_test_bundle
 #Create bundle set definitions
 celix_target_bundle_set_definition(test_framework NAME BUNDLE_EMPTY_TEST_SET)
 celix_target_bundle_set_definition(test_framework NAME BUNDLE_TEST_SET
-        #Note this test set has two version fo bundle1 (file and embedded). This is done for testing purpose.
-        BUNDLES simple_test_bundle1 simple_test_bundle3
-        EMBEDDED_BUNDLES simple_test_bundle1 simple_test_bundle2
+        #Note this test set has two version fo bundle1, this is done for testing purpose.
+        simple_test_bundle1 simple_test_bundle3 simple_test_bundle1 simple_test_bundle2
 )
 
 
