@@ -69,6 +69,7 @@ Optional Arguments:
   These bundle will be configured for run level 3. See 'celix_container_bundles' for more info.
 - INSTALL_BUNDLES: A list of bundles for the Celix container to install (but not start).
 - EMBEDDED_BUNDLES: TODO
+- INSTALL_EMBEDDED_BUNDLES: TODO
 - PROPERTIES: A list of configuration properties, these can be used to configure the Celix framework and/or bundles.
   Normally this will be EMBEDED_PROPERTIES, but if the USE_CONFIG option is used this will be RUNTIME_PROPERTIES.
   See the framework library or bundles documentation about the available configuration options.
@@ -88,6 +89,7 @@ add_celix_container(<celix_container_name>
     [BUNDLES <bundle1> <bundle2> ...]
     [INSTALL_BUNDLES <bundle1> <bundle2> ...]
     [EMBEDDED_BUNDLES <bundle1> <bundle2> ...]
+    [INSTALL_EMBEDDED_BUNDLES <bundle1> <bundle2> ...]
     [PROPERTIES "prop1=val1" "prop2=val2" ...]
     [EMBEDDED_PROPERTIES "prop1=val1" "prop2=val2" ...]
     [RUNTIME_PROPERTIES "prop1=val1" "prop2=val2" ...]
@@ -108,6 +110,7 @@ add_celix_container(<celix_container_name>
     [BUNDLES <bundle1> <bundle2> ...]
     [INSTALL_BUNDLES <bundle1> <bundle2> ...]
     [EMBEDDED_BUNDLES <bundle1> <bundle2> ...]
+    [INSTALL_EMBEDDED_BUNDLES <bundle1> <bundle2> ...]
     [PROPERTIES "prop1=val1" "prop2=val2" ...]
     [EMBEDDED_PROPERTIES "prop1=val1" "prop2=val2" ...]
     [RUNTIME_PROPERTIES "prop1=val1" "prop2=val2" ...]
@@ -128,6 +131,7 @@ add_celix_container(<celix_container_name>
     [BUNDLES <bundle1> <bundle2> ...]
     [INSTALL_BUNDLES <bundle1> <bundle2> ...]
     [EMBEDDED_BUNDLES <bundle1> <bundle2> ...]
+    [INSTALL_EMBEDDED_BUNDLES <bundle1> <bundle2> ...]
     [PROPERTIES "prop1=val1" "prop2=val2" ...]
     [EMBEDDED_PROPERTIES "prop1=val1" "prop2=val2" ...]
     [RUNTIME_PROPERTIES "prop1=val1" "prop2=val2" ...]
@@ -140,7 +144,7 @@ function(add_celix_container)
 
     set(OPTIONS NO_COPY C CXX FAT USE_CONFIG)
     set(ONE_VAL_ARGS GROUP NAME LAUNCHER LAUNCHER_SRC DIR)
-    set(MULTI_VAL_ARGS BUNDLES INSTALL_BUNDLES EMBEDDED_BUNDLES PROPERTIES EMBEDDED_PROPERTIES RUNTIME_PROPERTIES)
+    set(MULTI_VAL_ARGS BUNDLES INSTALL_BUNDLES EMBEDDED_BUNDLES INSTALL_EMBEDDED_BUNDLES PROPERTIES EMBEDDED_PROPERTIES RUNTIME_PROPERTIES)
     cmake_parse_arguments(CONTAINER "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
 
     ##### Check arguments #####
@@ -335,6 +339,7 @@ $<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_RUNTIME_PROPERTIES>,
     celix_container_bundles(${CONTAINER_TARGET} LEVEL 3 ${CONTAINER_BUNDLES})
     celix_container_embed_bundles(${CONTAINER_TARGET} LEVEL 3 ${CONTAINER_EMBEDDED_BUNDLES})
     celix_container_bundles(${CONTAINER_TARGET} INSTALL ${CONTAINER_INSTALL_BUNDLES})
+    celix_container_embed_bundles(${CONTAINER_TARGET} INSTALL ${CONTAINER_INSTALL_EMBEDDED_BUNDLES})
     if (CONTAINER_USE_CONFIG)
         celix_container_runtime_properties(${CONTAINER_TARGET} ${CONTAINER_PROPERTIES})
     else ()
@@ -543,7 +548,7 @@ function(celix_container_embed_bundles)
     list(GET ARGN 0 CONTAINER_TARGET)
     list(REMOVE_AT ARGN 0)
 
-    set(OPTIONS )
+    set(OPTIONS INSTALL)
     set(ONE_VAL_ARGS LEVEL)
     set(MULTI_VAL_ARGS )
     cmake_parse_arguments(BUNDLES "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
@@ -553,7 +558,11 @@ function(celix_container_embed_bundles)
         set(BUNDLES_LEVEL 3)
     endif ()
 
-    get_target_property(BUNDLES ${CONTAINER_TARGET} "CONTAINER_BUNDLES_LEVEL_${BUNDLES_LEVEL}")
+    if (BUNDLES_INSTALL)
+        get_target_property(BUNDLES ${CONTAINER_TARGET} "CONTAINER_BUNDLES_INSTALL")
+    else () #bundle level 0,1,2,3,4,5 or 6
+        get_target_property(BUNDLES ${CONTAINER_TARGET} "CONTAINER_BUNDLES_LEVEL_${BUNDLES_LEVEL}")
+    endif ()
 
     foreach(BUNDLE IN ITEMS ${BUNDLES_LIST})
         if (TARGET ${BUNDLE})
@@ -569,7 +578,11 @@ function(celix_container_embed_bundles)
         list(APPEND BUNDLES "embedded://${NAME}")
     endforeach()
 
-    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_BUNDLES_LEVEL_${BUNDLES_LEVEL}" "${BUNDLES}")
+    if (BUNDLES_INSTALL)
+        set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_BUNDLES_INSTALL" "${BUNDLES}")
+    else () #bundle level 0,1,2,3,4,5 or 6
+        set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_BUNDLES_LEVEL_${BUNDLES_LEVEL}" "${BUNDLES}")
+    endif ()
 endfunction()
 
 function(deploy_properties)
