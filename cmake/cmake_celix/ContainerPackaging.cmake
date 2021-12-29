@@ -391,7 +391,6 @@ function(celix_container_bundles_dir)
     get_target_property(DEPS ${CONTAINER_TARGET} "CONTAINER_TARGET_DEPS")
 
     foreach(BUNDLE IN ITEMS ${BD_BUNDLES})
-        set(HANDLED FALSE)
         if (IS_ABSOLUTE ${BUNDLE} AND EXISTS ${BUNDLE})
             get_filename_component(BUNDLE_FILENAME ${BUNDLE} NAME) 
             set(OUT "${CONTAINER_LOC}/${BD_DIR_NAME}/${BUNDLE_FILENAME}")
@@ -399,12 +398,10 @@ function(celix_container_bundles_dir)
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different ${BUNDLE} ${OUT}
 		        COMMENT "Copying (file) bundle '${BUNDLE}' to '${CONTAINER_LOC}/${BD_DIR_NAME}'"
             )
-            set(HANDLED TRUE)
         elseif (TARGET ${BUNDLE})
             get_target_property(TARGET_TYPE ${BUNDLE} TYPE)
             if (TARGET_TYPE STREQUAL "INTERFACE_LIBRARY")
                 #ignore
-                set(HANDLED TRUE)
             else ()
                 get_target_property(IMP ${BUNDLE} BUNDLE_IMPORTED)
                 if (IMP) #An imported bundle target -> handle target without DEPENDS
@@ -418,27 +415,26 @@ function(celix_container_bundles_dir)
                         COMMAND ${CMAKE_COMMAND} -E copy_if_different "${BUNDLE_FILE}" ${DEST}
                         COMMENT "Copying (imported) bundle '${BUNDLE}' to '${CONTAINER_LOC}/${BD_DIR_NAME}'"
                     )
-                    set(HANDLED TRUE)
-	         else() #Assuming a bundle target (library or add_custom_target)
-			string(MAKE_C_IDENTIFIER ${BUNDLE} BUNDLE_ID) #Create id with no special chars (e.g. for target like Celix::shell)
-			set(OUT "${CMAKE_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/copy-bundle-for-target-${BUNDLE_ID}.timestamp")
-			set(DEST "${CONTAINER_LOC}/${BD_DIR_NAME}/$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILENAME>")
-			add_custom_command(OUTPUT ${OUT}
-				COMMAND ${CMAKE_COMMAND} -E touch ${OUT}
-				COMMAND ${CMAKE_COMMAND} -E make_directory ${CONTAINER_LOC}/${BD_DIR_NAME}
-				COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILE>" ${DEST}
-				COMMENT "Copying (target) bundle '${BUNDLE}' to '${CONTAINER_LOC}/${BD_DIR_NAME}'"
-				DEPENDS ${BUNDLE} $<TARGET_PROPERTY:${BUNDLE},BUNDLE_CREATE_BUNDLE_TARGET>
-				)
-                    set(HANDLED TRUE)
+                else() #Assuming a bundle target (library or add_custom_target)
+                    string(MAKE_C_IDENTIFIER ${BUNDLE} BUNDLE_ID) #Create id with no special chars (e.g. for target like Celix::shell)
+                    set(OUT "${CMAKE_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/copy-bundle-for-target-${BUNDLE_ID}.timestamp")
+                    set(DEST "${CONTAINER_LOC}/${BD_DIR_NAME}/$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILENAME>")
+                    add_custom_command(OUTPUT ${OUT}
+                        COMMAND ${CMAKE_COMMAND} -E touch ${OUT}
+                        COMMAND ${CMAKE_COMMAND} -E make_directory ${CONTAINER_LOC}/${BD_DIR_NAME}
+                        COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILE>" ${DEST}
+                        COMMENT "Copying (target) bundle '${BUNDLE}' to '${CONTAINER_LOC}/${BD_DIR_NAME}'"
+                        DEPENDS $<TARGET_PROPERTY:${BUNDLE},BUNDLE_CREATE_BUNDLE_TARGET>
+                    )
                 endif ()
             endif ()
+        else ()
+            message(FATAL_ERROR "Cannot add bundle in container ${CONTAINER_TARGET}. Provided bundle is not a abs path to an existing file nor a cmake target (${BUNDLE}).")
         endif ()
 
-        if (NOT HANDLED) #not a imported bundle target so (assuming) a future bundle target
-    		message(FATAL_ERROR "Cannot add bundle in container ${CONTAINER_TARGET}. Provided bundle is not a abs path to an existing file nor a cmake target (${BUNDLE}).")
-        endif()
-        list(APPEND DEPS "${OUT}")
+        if (OUT)
+            list(APPEND DEPS "${OUT}")
+        endif ()
     endforeach()
 
     set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_TARGET_DEPS" "${DEPS}")

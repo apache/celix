@@ -312,7 +312,7 @@ function(add_celix_bundle)
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_IS_BUNDLE_TARGET" TRUE) #indicate that this is a bundle target
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_DEPEND_TARGETS" "") #bundle target dependencies. Note can be extended after the add_bundle call
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_GEN_DIR" ${BUNDLE_GEN_DIR}) #location for generated output.
-    set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_CREATE_BUNDLE_TARGET" ${BUNDLE_TARGET_NAME}_bundle) #target which creat the bundle zip
+    set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_CREATE_BUNDLE_TARGET" ${BUNDLE_TARGET_NAME}_bundle) #target which creates the bundle zip
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_IMPORTED" FALSE) #whether target is a imported (bundle) target
 
     #bundle specific
@@ -1109,6 +1109,6 @@ function (_celix_extract_imported_bundle_info)
 
     set(BUNDLE_FILE ${BF} PARENT_SCOPE)
     set(BUNDLE_FILENAME ${BFN} PARENT_SCOPE)
-    set(BUNDLE_FILENAME ${BSN} PARENT_SCOPE)
+    set(BUNDLE_SYMBOLIC_NAME ${BSN} PARENT_SCOPE)
 endfunction ()
 
