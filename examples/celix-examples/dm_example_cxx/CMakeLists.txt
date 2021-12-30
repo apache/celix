@@ -22,7 +22,7 @@ add_subdirectory(phase2)
 add_subdirectory(phase3)
 add_subdirectory(phase3_locking)
 
-add_celix_container("dm_example_cxx"
+add_celix_container(dm_example_cxx
     FAT
     GROUP cxx_examples
     EMBEDDED_BUNDLES
@@ -35,7 +35,6 @@ add_celix_container("dm_example_cxx"
         dm_example_cxx_phase3
         dm_example_cxx_phase3_locking
 )
-
 
 add_celix_docker(dm_exmpl_cxx_docker
        CXX

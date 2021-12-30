@@ -27,7 +27,7 @@ Apache Celix is organized into several subprojects. The following subproject are
 * [Etcd library](../../libs/etcdlib) - A C library that interfaces with ETCD.
 * [Examples](../../examples) - A Selection of examples showing how the framework can be used.
 * [Log Service](../../bundles/logging) - An implementation of the OSGi Log Service adapted to C.
-* [Log Writer](../../bundles/loggin/log_writersr) - A simple log writer for use in combination with the Log Service.
+* [Log Writer](../../bundles/loggin/log_writer) - A simple log writer for use in combination with the Log Service.
 * [Shell](../../bundles/shell/shell/README.md) - A OSGi C and C++11 shell implementation.
 * [Shell TUI](../../bundles/shell/shell_tui) - A textual UI for the Celix Shell.
 * [Remote Shell](../../bundles/shell/remote_shell) - A remote (telnet) frontend for the Celix shell.

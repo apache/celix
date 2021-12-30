@@ -24,6 +24,6 @@
 .balign 64
 celix_embedded_bundle_@EMBED_BUNDLE_NAME@_start:
 .incbin "@EMBED_BUNDLE_FILE@"
-.balign 1
+.balign 64
 celix_embedded_bundle_@EMBED_BUNDLE_NAME@_end:
 .byte 0

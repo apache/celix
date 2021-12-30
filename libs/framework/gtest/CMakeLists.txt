@@ -53,7 +53,7 @@ target_link_libraries(test_framework PRIVATE Celix::framework CURL::libcurl GTes
 
 
 #embed bundle in the test_framework executable
-celix_target_embed_bundles(test_framework simple_test_bundle1 simple_test_bundle2)
+celix_target_embedded_bundles(test_framework simple_test_bundle1 simple_test_bundle2)
 
 #Create bundle set definitions
 celix_target_bundle_set_definition(test_framework NAME BUNDLE_EMPTY_TEST_SET)

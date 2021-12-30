@@ -43,12 +43,52 @@ function(install_celix_targets)
 endfunction ()
 
 #[[
-#TODO doc
-celix_target_embed_bundle(<cmake_target>
-    BUNDLE <bundle_target>
+Embeds a Celix bundle into a CMake target.
+
+```CMake
+celix_target_embedded_bundle(<cmake_target>
+    BUNDLE <bundle>
     [NAME <name>]
+)
+```
+
+Example:
+```CMake
+celix_target_embedded_bundle(my_executable
+    BUNDLE Celix::shell
+    NAME celix_shell
+)
+# result in the symbols:
+# - celix_embedded_bundle_celix_shell_start
+# - celix_embedded_bundle_celix_shell_end
+# - celix_embedded_bundles = "embedded://celix_shell"
+# to be added to `my_executable`
+```
+
+The Celix bundle will be embedded into the CMake target between the symbols: `celix_embedded_bundle_${NAME}_start` and
+`celix_embedded_bundle_${NAME}_end`.
+
+Also a `const char * const` symbol with the name `celix_embedded_bundles` will be added or updated containing a `,`
+seperated list of embedded Celix bundle urls. The url will be: `embedded://${NAME}`.
+
+For Linux the linking flag `--export-dynamic` is added to ensure that the previous mentioned symbols can be retrieved
+using `dlsym`.
+
+Mandatory Arguments:
+- BUNDLE: The bundle target or bundle file (absolute path) to embed in the CMake target.
+
+Optional Arguments:
+- NAME: The name to use when embedding the Celix bundle. This name is used in the _start and _end symbol, but also
+  for the embedded bundle url.
+  For a bundle CMake target the default is the bundle symbolic name and for a bundle file the default is the
+  bundle filename without extension. The NAME must be a valid C identifier.
+
+Bundles embedded in an executable can be installed/started using the bundle url: "embedded://${NAME}" in
+combination with `celix_bundleContext_installBundle` (C) or `celix::BundleContext::installBundle` (C++).
+All embedded bundle can be installed using the framework utils function
+`celix_framework_utils_installEmbeddedBundles` (C) or `celix::installEmbeddedBundles` (C++).
 ]]
-function(celix_target_embed_bundle)
+function(celix_target_embedded_bundle)
     list(GET ARGN 0 TARGET_NAME)
     list(REMOVE_AT ARGN 0)
 
@@ -116,24 +156,49 @@ function(celix_target_embed_bundle)
 endfunction()
 
 #[[
-#TODO doc
+Embed multiple Celix bundles into a CMake target.
+
+```CMake
+celix_target_embedded_bundles(<cmake_target> [<bundle1> <bundle2> ...])
+```
+
+Example:
+```CMake
+celix_target_embedded_bundles(my_executable Celix::shell Celix::shell_tui)
+```
+
+The bundles will be embedded using their symbolic name if the bundle is a CMake target or their filename (without
+extension) if the bundle is a file (absolute path).
 ]]
-function(celix_target_embed_bundles)
+function(celix_target_embedded_bundles)
     list(GET ARGN 0 TARGET_NAME)
     list(REMOVE_AT ARGN 0)
 
     foreach (BUNDLE_TARGET_NAME IN LISTS ARGN)
-        celix_target_embed_bundle(${TARGET_NAME} BUNDLE ${BUNDLE_TARGET_NAME})
+        celix_target_embedded_bundle(${TARGET_NAME} BUNDLE ${BUNDLE_TARGET_NAME})
     endforeach ()
 endfunction()
 
 #[[
-TODO doc
-Note only supports cmake bundle targets, not cmake bundle files.
+Add a compile definition with a set of bundles to a target.
+
+```CMake
 celix_target_bundle_set_definition(<cmake_target>
     NAME <set_name>
-    [<bundle_target1> <bundle_target2>..]
+    [<bundle1> <bundle2>..]
 )
+```
+
+Example:
+```CMake
+celix_target_bundle_set_definition(test_example NAME TEST_BUNDLES Celix::shell Celix::shell_tui)
+```
+
+The compile definition will have the name `${NAME}` and will contain a `,` separated list of bundle paths.
+The bundle can be installed using the Celix framework util function `celix_framework_utils_installBundleSet` (C)
+or `celix::installBundlesSet` (C++).
+
+Adding a compile definition with a set of bundles can be useful for testing purpose.
 ]]
 function(celix_target_bundle_set_definition)
     list(GET ARGN 0 TARGET_NAME)
@@ -151,8 +216,15 @@ function(celix_target_bundle_set_definition)
 
     set(BUNDLES "")
 
-    foreach(BUNDLE_TARGET_NAME IN LISTS BUNDLES_LIST)
-        celix_get_bundle_file(${BUNDLE_TARGET_NAME} BUNDLE_FILE)
+    foreach(BUNDLE IN LISTS BUNDLES_LIST)
+        if (TARGET ${BUNDLE})
+            celix_get_bundle_file(${BUNDLE} BUNDLE_FILE)
+        elseif (IS_ABSOLUTE ${BUNDLE} AND EXISTS ${BUNDLE})
+            set(BUNDLE_FILE ${BUNDLE})
+        else()
+            message(FATAL_ERROR "Cannot add bundle `${BUNDLE}` to bundle set definition. Argument is not a path or cmake target")
+        endif ()
+
         if (BUNDLES)
             set(BUNDLES "${BUNDLES},${BUNDLE_FILE}")
         else ()

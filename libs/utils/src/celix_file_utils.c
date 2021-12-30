@@ -243,7 +243,7 @@ celix_status_t celix_utils_extractZipFile(const char* zipPath, const char* extra
     return status;
 }
 
-celix_status_t celix_utils_extractZipData(const void *zipData, size_t zipDataLen, const char* extractToDir, const char** errorOut) {
+celix_status_t celix_utils_extractZipData(const void *zipData, size_t zipDataSize, const char* extractToDir, const char** errorOut) {
     const char *dummyErrorOut = NULL;
     if (errorOut) {
         //reset errorOut
@@ -254,7 +254,7 @@ celix_status_t celix_utils_extractZipData(const void *zipData, size_t zipDataLen
 
     celix_status_t status = CELIX_SUCCESS;
     zip_error_t zipError;
-    zip_source_t* source = zip_source_buffer_create(zipData, zipDataLen, 0, &zipError);
+    zip_source_t* source = zip_source_buffer_create(zipData, zipDataSize, 0, &zipError);
     zip_t* zip = NULL;
     if (source) {
         zip = zip_open_from_source(source, 0, &zipError);

@@ -39,7 +39,7 @@ add_celix_container(dm_example
         PROP2=val2
         PROP3=val3
 )
-celix_target_embed_bundles(dm_example Celix::shell)
+celix_target_embedded_bundles(dm_example Celix::shell)
 
 
 add_celix_docker(dm_exmpl_base

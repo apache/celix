@@ -24,10 +24,11 @@ if (NOT TARGET celix-runtimes)
 endif ()
 
 function(add_runtime)
-    message(DEPRECATION "add_runtime is depecrated, use add_celix_runtime instead.")
+    message(DEPRECATION "add_celix_runtime is deprecated, and will be removed in future Celix releases.")
     add_celix_runtime(${ARGN})
 endfunction()
 function(add_celix_runtime)
+    message(DEPRECATION "add_celix_runtime is deprecated, and will be removed in future Celix releases.")
     list(GET ARGN 0 RUNTIME_TARGET_NAME)
     list(REMOVE_AT ARGN 0)
 
@@ -82,7 +83,6 @@ function(add_celix_runtime)
 
 
     #replaces @RUNTIME_TARGET_NAME@
-    #TODO move to another location
     configure_file("${CELIX_CMAKE_DIRECTORY}/runtime_start.sh.in" "${CMAKE_BINARY_DIR}/celix/gen/runtimes/${RUNTIME_TARGET_NAME}/start.sh.in.1" @ONLY)
     configure_file("${CELIX_CMAKE_DIRECTORY}/runtime_stop.sh.in" "${CMAKE_BINARY_DIR}/celix/gen/runtimes/${RUNTIME_TARGET_NAME}/stop.sh.in.1" @ONLY)
     configure_file("${CELIX_CMAKE_DIRECTORY}/runtime_common.sh.in" "${CMAKE_BINARY_DIR}/celix/gen/runtimes/${RUNTIME_TARGET_NAME}/common.sh.in.1" @ONLY)

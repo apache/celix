@@ -140,7 +140,8 @@ TEST_F(FileUtilsTestSuite, ExtractZipDataTest) {
 
     //Given test zip data, I can extract this to a provided location and the correct files are extracted
     EXPECT_FALSE(celix_utils_fileExists(extractLocation));
-    auto status = celix_utils_extractZipData(data, dataSize, extractLocation, nullptr);
+    //adding 200 extra size to verify this does not result into issues.
+    auto status = celix_utils_extractZipData(data, dataSize + 200, extractLocation, nullptr);
     EXPECT_EQ(status, CELIX_SUCCESS);
 
     EXPECT_TRUE(celix_utils_fileExists(file1));
