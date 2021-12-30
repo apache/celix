@@ -21,8 +21,6 @@
 
 const char* celix_bundleState_getName(celix_bundle_state_e state) {
     switch (state) {
-        case CELIX_BUNDLE_STATE_UNKNOWN:
-            return "UNKNOWN";
         case CELIX_BUNDLE_STATE_UNINSTALLED:
             return "UNINSTALLED";
         case CELIX_BUNDLE_STATE_INSTALLED:
@@ -31,9 +29,11 @@ const char* celix_bundleState_getName(celix_bundle_state_e state) {
             return "RESOLVED";
         case CELIX_BUNDLE_STATE_STARTING:
             return "STARTING";
+        case CELIX_BUNDLE_STATE_ACTIVE:
+            return "ACTIVE";
         case CELIX_BUNDLE_STATE_STOPPING:
             return "STOPPING";
         default:
-            return "ACTIVE";
+            return "UNKNOWN";
     }
 }

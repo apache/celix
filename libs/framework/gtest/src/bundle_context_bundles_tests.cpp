@@ -595,3 +595,50 @@ TEST_F(CelixBundleContextBundlesTests, startStopBundleTrackerAsync) {
     celix_bundleContext_waitForAsyncStopTracker(ctx, trkId);
     EXPECT_EQ(2, count.load()); //1x tracker started, 1x tracker stopped
 }
+
+TEST_F(CelixBundleContextBundlesTests, testBundleStateToString) {
+    const char* result = celix_bundleState_getName(CELIX_BUNDLE_STATE_UNKNOWN);
+    EXPECT_STREQ(result, "UNKNOWN");
+
+    result = celix_bundleState_getName(CELIX_BUNDLE_STATE_UNINSTALLED);
+    EXPECT_STREQ(result, "UNINSTALLED");
+
+    result = celix_bundleState_getName(CELIX_BUNDLE_STATE_INSTALLED);
+    EXPECT_STREQ(result, "INSTALLED");
+
+    result = celix_bundleState_getName(CELIX_BUNDLE_STATE_RESOLVED);
+    EXPECT_STREQ(result, "RESOLVED");
+
+    result = celix_bundleState_getName(CELIX_BUNDLE_STATE_STARTING);
+    EXPECT_STREQ(result, "STARTING");
+
+    result = celix_bundleState_getName(CELIX_BUNDLE_STATE_STOPPING);
+    EXPECT_STREQ(result, "STOPPING");
+
+    result = celix_bundleState_getName(CELIX_BUNDLE_STATE_ACTIVE);
+    EXPECT_STREQ(result, "ACTIVE");
+
+    result = celix_bundleState_getName(OSGI_FRAMEWORK_BUNDLE_UNKNOWN);
+    EXPECT_STREQ(result, "UNKNOWN");
+
+    result = celix_bundleState_getName(OSGI_FRAMEWORK_BUNDLE_UNINSTALLED);
+    EXPECT_STREQ(result, "UNINSTALLED");
+
+    result = celix_bundleState_getName(OSGI_FRAMEWORK_BUNDLE_INSTALLED);
+    EXPECT_STREQ(result, "INSTALLED");
+
+    result = celix_bundleState_getName(OSGI_FRAMEWORK_BUNDLE_RESOLVED);
+    EXPECT_STREQ(result, "RESOLVED");
+
+    result = celix_bundleState_getName(OSGI_FRAMEWORK_BUNDLE_STARTING);
+    EXPECT_STREQ(result, "STARTING");
+
+    result = celix_bundleState_getName(OSGI_FRAMEWORK_BUNDLE_STOPPING);
+    EXPECT_STREQ(result, "STOPPING");
+
+    result = celix_bundleState_getName(OSGI_FRAMEWORK_BUNDLE_ACTIVE);
+    EXPECT_STREQ(result, "ACTIVE");
+
+    result = celix_bundleState_getName((celix_bundle_state_e)444 /*invalid*/);
+    EXPECT_STREQ(result, "UNKNOWN");
+}
