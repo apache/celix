@@ -18,9 +18,15 @@
 #[[
 Add bundles as dependencies to a cmake target, so that the bundle zip files will be created before the cmake target.
 
+```CMake
 add_celix_bundle_dependencies(<cmake_target>
     bundles...
 )
+```
+
+```CMake
+add_celix_bundle_dependencies(my_exec my_bundle1 my_bundle2)
+```
 ]]
 function(add_celix_bundle_dependencies)
     list(GET ARGN 0 TARGET)
@@ -174,8 +180,8 @@ function(celix_target_embedded_bundles)
     list(GET ARGN 0 TARGET_NAME)
     list(REMOVE_AT ARGN 0)
 
-    foreach (BUNDLE_TARGET_NAME IN LISTS ARGN)
-        celix_target_embedded_bundle(${TARGET_NAME} BUNDLE ${BUNDLE_TARGET_NAME})
+    foreach (BUNDLE IN LISTS ARGN)
+        celix_target_embedded_bundle(${TARGET_NAME} BUNDLE ${BUNDLE})
     endforeach ()
 endfunction()
 

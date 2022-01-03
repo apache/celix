@@ -413,6 +413,7 @@ celix_container_bundles_dir(<celix_container_target_name>
         bundle2
         ...
 )
+```
 ]]
 function(celix_container_bundles_dir)
     list(GET ARGN 0 CONTAINER_TARGET)
@@ -486,7 +487,24 @@ function(deploy_bundles)
 endfunction()
 
 #[[
-Add the selected bundles to the Celix container. These bundles are (if configured) copied to the container build dir and
+Add a selection of bundles to the Celix container.
+
+```CMake
+celix_container_bundles(<celix_container_target_name>
+    [LEVEL (0..6)]
+    [INSTALL]
+    bundle1
+    bundle2
+    ...
+)
+```
+
+Example:
+```CMake
+celix_container_bundles(my_container Celix::shell Celix::shell_tui)
+```
+
+The selection of  bundles are (if configured) copied to the container build dir and
 are added to the configuration properties so that they are installed and started when the Celix container is executed.
 
 The Celix framework supports 7 (0 - 6) run levels. Run levels can be used to control the start and stop order of bundles.
@@ -498,16 +516,6 @@ Optional Arguments:
 - LEVEL: The run level for the added bundles. Default is 3.
 - INSTALL: If this option is present, the bundles will only be installed instead of the default install and start.
            The bundles will be installed after all bundle in LEVEL 0..6 are installed and started.
-
-```CMake
-celix_container_bundles(<celix_container_target_name>
-    [LEVEL (0..6)]
-    [INSTALL]
-    bundle1
-    bundle2
-    ...
-)
-```
 ]]
 function(celix_container_bundles)
     #0 is container TARGET
@@ -576,21 +584,7 @@ function(celix_container_bundles)
 endfunction()
 
 #[[
-Embed the selected bundles to the Celix container. There bundles are embedded in the container executable using the
-`celix_target_embedded_bundle` Celix CMake command and are added to the configuration properties so that they are
-installed and started when the Celix container is executed.
-
-See `celix_target_embedded_bundle` for how bundle are embedded in a executable.
-
-The Celix framework supports 7 (0 - 6) run levels. Run levels can be used to control the start and stop order of bundles.
-Bundles in run level 0 are started first and bundles in run level 6 are started last.
-When stopping bundles in run level 6 are stopped first and bundles in run level 0 are stopped last.
-Within a run level the order of configured decides the start order; bundles added earlier are started first.
-
-Optional Arguments:
-- LEVEL: The run level for the added bundles. Default is 3.
-- INSTALL: If this option is present, the bundles will only be installed instead of the default install and start.
-           The bundles will be installed after all bundle in LEVEL 0..6 are installed and started.
+Embed a selection of bundles to the Celix container.
 
 ```CMake
 celix_container_embedded_bundles(<celix_container_target_name>
@@ -601,6 +595,27 @@ celix_container_embedded_bundles(<celix_container_target_name>
     ...
 )
 ```
+
+Example:
+```CMake
+celix_container_embedded_bundles(my_container Celix::shell Celix::shell_tui)
+```
+
+The selection of bundles are embedded in the container executable using the
+`celix_target_embedded_bundle` Celix CMake command and are added to the configuration properties so that they are
+installed and started when the Celix container is executed.
+
+See `celix_target_embedded_bundle` for how bundle is embedded in a executable.
+
+The Celix framework supports 7 (0 - 6) run levels. Run levels can be used to control the start and stop order of bundles.
+Bundles in run level 0 are started first and bundles in run level 6 are started last.
+When stopping bundles in run level 6 are stopped first and bundles in run level 0 are stopped last.
+Within a run level the order of configured decides the start order; bundles added earlier are started first.
+
+Optional Arguments:
+- LEVEL: The run level for the added bundles. Default is 3.
+- INSTALL: If this option is present, the bundles will only be installed instead of the default install and start.
+           The bundles will be installed after all bundle in LEVEL 0..6 are installed and started.
 ]]
 function(celix_container_embedded_bundles)
     #0 is container TARGET
