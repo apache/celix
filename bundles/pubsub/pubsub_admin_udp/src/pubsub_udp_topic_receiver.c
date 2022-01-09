@@ -336,6 +336,7 @@ void pubsub_udpTopicReceiver_destroy(pubsub_udp_topic_receiver_t *receiver) {
         if (receiver->scope != NULL) {
             free(receiver->scope);
         }
+        free(receiver->url);
         free(receiver->topic);
     }
     free(receiver);

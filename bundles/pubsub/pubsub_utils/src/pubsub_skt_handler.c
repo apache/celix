@@ -620,6 +620,7 @@ int pubsub_sktHandler_udp_connect(pubsub_sktHandler_t *handle, char *url) {
             }
         }
         free(sin);
+        free(pUrl);
         pubsub_utils_url_free(url_info);
     }
     return rc;
@@ -955,6 +956,7 @@ int pubsub_sktHandler_udp_bind(pubsub_sktHandler_t *handle, char *url) {
             L_ERROR("[UDP SKT Socket] Error publish socket cannot bind to %s: %s\n", url ? url : "", strerror(errno));
         }
         free(sin);
+        free(pUrl);
         pubsub_utils_url_free(url_info);
     }
     return rc;
