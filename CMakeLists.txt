@@ -33,7 +33,7 @@ IF (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} EQUAL 3.3 AND ${CMAKE_GENERATO
 ENDIF()
 
 # Options
-option(ENABLE_TESTING "Enables unit/bundle testing" TRUE)
+option(ENABLE_TESTING "Enables unit/bundle testing" FALSE)
 if (ENABLE_TESTING)
     find_package(GTest CONFIG QUIET)
     if (NOT GTest_FOUND)
