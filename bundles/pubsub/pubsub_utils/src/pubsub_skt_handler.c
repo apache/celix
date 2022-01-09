@@ -1580,6 +1580,9 @@ int pubsub_sktHandler_write(pubsub_sktHandler_t *handle, pubsub_protocol_message
                 if (payloadData && (payloadData != message->payload.payload)) {
                     free(payloadData);
                 }
+                if (metadataData && (metadataData != entry->writeMetaBuffer)) {
+                    free(metadataData);
+                }
             }
             celixThreadMutex_unlock(&entry->writeMutex);
         }
