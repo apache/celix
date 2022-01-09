@@ -297,7 +297,7 @@ int pubsub_sktHandler_bind(pubsub_sktHandler_t *handle, int fd, char *url, unsig
     celixThreadRwlock_readLock(&handle->dbLock);
     struct sockaddr_in *addr = NULL;
     int socket_domain = AF_INET;
-#if defined(__APPLE__)
+#if !defined(__APPLE__)
     socklen_t length = sizeof(int);
     rc = getsockopt(fd, SOL_SOCKET, SO_DOMAIN, &socket_domain, &length);
 #endif
@@ -373,7 +373,7 @@ pubsub_sktHandler_createEntry(pubsub_sktHandler_t *handle, int fd, char *url, ch
         size_t footerSize = 0;
         socklen_t length = sizeof(int);
         entry->socket_domain = AF_INET;
-#if defined(__APPLE__)
+#if !defined(__APPLE__)
         getsockopt(fd, SOL_SOCKET, SO_DOMAIN, &entry->socket_domain, &length);
 #endif
         getsockopt(fd, SOL_SOCKET, SO_TYPE, &entry->socket_type, &length);
