@@ -297,9 +297,10 @@ int pubsub_sktHandler_bind(pubsub_sktHandler_t *handle, int fd, char *url, unsig
     celixThreadRwlock_readLock(&handle->dbLock);
     struct sockaddr_in *addr = NULL;
     socklen_t length = sizeof(int);
-    int socket_domain;
+    int socket_domain = AF_INET;
+#if defined(__APPLE__)
     rc = getsockopt(fd, SOL_SOCKET, SO_DOMAIN, &socket_domain, &length);
-
+#endif
     if (url) {
         pubsub_utils_url_t *url_info = pubsub_utils_url_parse(url);
         if (url_info->interface) {
@@ -371,7 +372,10 @@ pubsub_sktHandler_createEntry(pubsub_sktHandler_t *handle, int fd, char *url, ch
         size_t headerSize = 0;
         size_t footerSize = 0;
         socklen_t length = sizeof(int);
+        entry->socket_domain = AF_INET;
+#if defined(__APPLE__)
         getsockopt(fd, SOL_SOCKET, SO_DOMAIN, &entry->socket_domain, &length);
+#endif
         getsockopt(fd, SOL_SOCKET, SO_TYPE, &entry->socket_type, &length);
         if (addr) {
             entry->addr = *addr;
@@ -445,7 +449,7 @@ int pubsub_sktHandler_add_fd_event(pubsub_sktHandler_t *handle, psa_skt_connecti
     if ((handle->efd >= 0) && entry) {
 #if defined(__APPLE__)
         struct kevent ev;
-        EV_SET (&ev, fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, 0); // EVFILT_READ | EVFILT_WRITE
+        EV_SET (&ev, entry->fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, 0); // EVFILT_READ | EVFILT_WRITE
         rc = kevent(handle->efd, &ev, 1, NULL, 0, NULL);
 #else
         struct epoll_event event;
