@@ -19,6 +19,7 @@ add_library(pubsub_utils STATIC
         src/pubsub_utils.c
         src/pubsub_utils_url.c
         src/pubsub_serializer_handler.c
+        src/pubsub_skt_handler.c
         src/pubsub_serialization_provider.c
         src/pubsub_matching.c
 )

@@ -17,25 +17,25 @@
 
 find_package(UUID REQUIRED)
 
-add_celix_bundle(celix_pubsub_admin_tcp
-    BUNDLE_SYMBOLICNAME "apache_celix_pubsub_admin_tcp"
+add_celix_bundle(celix_pubsub_admin_udp
+    BUNDLE_SYMBOLICNAME "apache_celix_pubsub_admin_udp"
     VERSION "2.0.0"
     GROUP "Celix/PubSub"
     SOURCES
         src/psa_activator.c
-        src/pubsub_tcp_admin.c
-        src/pubsub_tcp_topic_sender.c
-        src/pubsub_tcp_topic_receiver.c
+        src/pubsub_udp_admin.c
+        src/pubsub_udp_topic_sender.c
+        src/pubsub_udp_topic_receiver.c
 )
 
-target_link_libraries(celix_pubsub_admin_tcp PRIVATE Celix::pubsub_spi Celix::pubsub_utils)
-target_link_libraries(celix_pubsub_admin_tcp PRIVATE Celix::framework Celix::log_helper)
-target_link_libraries(celix_pubsub_admin_tcp PRIVATE Celix::shell_api)
-target_include_directories(celix_pubsub_admin_tcp PRIVATE src)
+target_link_libraries(celix_pubsub_admin_udp PRIVATE Celix::pubsub_spi Celix::pubsub_utils)
+target_link_libraries(celix_pubsub_admin_udp PRIVATE Celix::framework Celix::log_helper)
+target_link_libraries(celix_pubsub_admin_udp PRIVATE Celix::shell_api)
+target_include_directories(celix_pubsub_admin_udp PRIVATE src)
 # cmake find package UUID set the wrong include dir for OSX
 if (NOT APPLE)
-    target_link_libraries(celix_pubsub_admin_tcp PRIVATE UUID::lib)
+    target_link_libraries(celix_pubsub_admin_udp PRIVATE UUID::lib)
 endif()
 
-install_celix_bundle(celix_pubsub_admin_tcp EXPORT celix COMPONENT pubsub)
-add_library(Celix::celix_pubsub_admin_tcp ALIAS celix_pubsub_admin_tcp)
+install_celix_bundle(celix_pubsub_admin_udp EXPORT celix COMPONENT pubsub)
+add_library(Celix::celix_pubsub_admin_udp ALIAS celix_pubsub_admin_udp)

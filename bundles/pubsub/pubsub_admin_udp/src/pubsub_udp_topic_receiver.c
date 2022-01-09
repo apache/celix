@@ -26,8 +26,8 @@
 #include <arpa/inet.h>
 #include <celix_log_helper.h>
 #include "pubsub_skt_handler.h"
-#include "pubsub_tcp_topic_receiver.h"
-#include "pubsub_psa_tcp_constants.h"
+#include "pubsub_udp_topic_receiver.h"
+#include "pubsub_psa_udp_constants.h"
 
 #include <uuid/uuid.h>
 #include <pubsub_utils.h>
@@ -49,17 +49,19 @@
 #define L_ERROR(...) \
     celix_logHelper_log(receiver->logHelper, CELIX_LOG_LEVEL_ERROR, __VA_ARGS__)
 
-struct pubsub_tcp_topic_receiver {
+struct pubsub_udp_topic_receiver {
     celix_bundle_context_t *ctx;
     celix_log_helper_t *logHelper;
     long protocolSvcId;
     pubsub_protocol_service_t *protocol;
     char *scope;
     char *topic;
+    char *url;
     pubsub_serializer_handler_t* serializerHandler;
     void *admin;
     size_t timeout;
     bool isPassive;
+    bool isStatic;
     pubsub_sktHandler_t *socketHandler;
     pubsub_sktHandler_t *sharedSocketHandler;
     pubsub_interceptors_handler_t *interceptorsHandler;
@@ -72,40 +74,40 @@ struct pubsub_tcp_topic_receiver {
 
     struct {
         celix_thread_mutex_t mutex;
-        hash_map_t *map; //key = tcp url, value = psa_tcp_requested_connection_entry_t*
+        hash_map_t *map; //key = udp url, value = psa_udp_requested_connection_entry_t*
         bool allConnected; //true if all requestedConnection are connected
     } requestedConnections;
 
     long subscriberTrackerId;
     struct {
         celix_thread_mutex_t mutex;
-        hash_map_t *map; //key = long svc id, value = psa_tcp_subscriber_entry_t
+        hash_map_t *map; //key = long svc id, value = psa_udp_subscriber_entry_t
         bool allInitialized;
     } subscribers;
 };
 
-typedef struct psa_tcp_requested_connection_entry {
-    pubsub_tcp_topic_receiver_t *parent;
+typedef struct psa_udp_requested_connection_entry {
+    pubsub_udp_topic_receiver_t *parent;
     char *url;
     bool connected;
     bool statically; //true if the connection is statically configured through the topic properties.
-} psa_tcp_requested_connection_entry_t;
+} psa_udp_requested_connection_entry_t;
 
-typedef struct psa_tcp_subscriber_entry {
+typedef struct psa_udp_subscriber_entry {
     pubsub_subscriber_t* subscriberSvc;
     bool initialized; //true if the init function is called through the receive thread
-} psa_tcp_subscriber_entry_t;
+} psa_udp_subscriber_entry_t;
 
-static void pubsub_tcpTopicReceiver_addSubscriber(void *handle, void *svc, const celix_properties_t *props);
-static void pubsub_tcpTopicReceiver_removeSubscriber(void *handle, void *svc, const celix_properties_t *props);
-static void *psa_tcp_recvThread(void *data);
-static void psa_tcp_connectToAllRequestedConnections(pubsub_tcp_topic_receiver_t *receiver);
-static void psa_tcp_initializeAllSubscribers(pubsub_tcp_topic_receiver_t *receiver);
+static void pubsub_udpTopicReceiver_addSubscriber(void *handle, void *svc, const celix_properties_t *props);
+static void pubsub_udpTopicReceiver_removeSubscriber(void *handle, void *svc, const celix_properties_t *props);
+static void *psa_udp_recvThread(void *data);
+static void psa_udp_connectToAllRequestedConnections(pubsub_udp_topic_receiver_t *receiver);
+static void psa_udp_initializeAllSubscribers(pubsub_udp_topic_receiver_t *receiver);
 static void processMsg(void *handle, const pubsub_protocol_message_t *message, bool *release, struct timespec *receiveTime);
-static void psa_tcp_connectHandler(void *handle, const char *url, bool lock);
-static void psa_tcp_disConnectHandler(void *handle, const char *url, bool lock);
+static void psa_udp_connectHandler(void *handle, const char *url, bool lock);
+static void psa_udp_disConnectHandler(void *handle, const char *url, bool lock);
 
-pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context_t *ctx,
+pubsub_udp_topic_receiver_t *pubsub_udpTopicReceiver_create(celix_bundle_context_t *ctx,
                                                             celix_log_helper_t *logHelper,
                                                             const char *scope,
                                                             const char *topic,
@@ -115,7 +117,7 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
                                                             pubsub_sktHandler_endPointStore_t *handlerStore,
                                                             long protocolSvcId,
                                                             pubsub_protocol_service_t *protocol) {
-    pubsub_tcp_topic_receiver_t *receiver = calloc(1, sizeof(*receiver));
+    pubsub_udp_topic_receiver_t *receiver = calloc(1, sizeof(*receiver));
     receiver->ctx = ctx;
     receiver->logHelper = logHelper;
     receiver->serializerHandler = serializerHandler;
@@ -124,31 +126,36 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
     receiver->protocol = protocol;
     receiver->scope = celix_utils_strdup(scope);
     receiver->topic = celix_utils_strdup(topic);
-    receiver->interceptorsHandler = pubsubInterceptorsHandler_create(ctx, scope, topic, PUBSUB_TCP_ADMIN_TYPE,
+    receiver->interceptorsHandler = pubsubInterceptorsHandler_create(ctx, scope, topic, PUBSUB_UDP_ADMIN_TYPE,
                                                                      pubsub_serializerHandler_getSerializationType(serializerHandler));
-    const char *staticConnectUrls = pubsub_getEnvironmentVariableWithScopeTopic(ctx, PUBSUB_TCP_STATIC_CONNECT_URLS_FOR, topic, scope);
-    const char *isPassive = pubsub_getEnvironmentVariableWithScopeTopic(ctx, PUBSUB_TCP_PASSIVE_ENABLED, topic, scope);
-    const char *passiveKey = pubsub_getEnvironmentVariableWithScopeTopic(ctx, PUBSUB_TCP_PASSIVE_SELECTION_KEY, topic, scope);
+    const char *ip = celix_bundleContext_getProperty(ctx, PUBSUB_UDP_PSA_IP_KEY, NULL);
+    const char *discUrl = pubsub_getEnvironmentVariableWithScopeTopic(ctx, PUBSUB_UDP_STATIC_BIND_URL_FOR, topic, scope);
+    const char *staticConnectUrls = pubsub_getEnvironmentVariableWithScopeTopic(ctx, PUBSUB_UDP_STATIC_CONNECT_URLS_FOR, topic, scope);
+    const char *isPassive = pubsub_getEnvironmentVariableWithScopeTopic(ctx, PUBSUB_UDP_PASSIVE_ENABLED, topic, scope);
+    const char *passiveKey = pubsub_getEnvironmentVariableWithScopeTopic(ctx, PUBSUB_UDP_PASSIVE_SELECTION_KEY, topic, scope);
 
     if (isPassive) {
         receiver->isPassive = pubsub_sktHandler_isPassive(isPassive);
     }
     if (topicProperties != NULL) {
+        if (discUrl == NULL) {
+            discUrl = celix_properties_get(topicProperties, PUBSUB_UDP_STATIC_DISCOVER_URL, NULL);
+        }
         if(staticConnectUrls == NULL) {
-            staticConnectUrls = celix_properties_get(topicProperties, PUBSUB_TCP_STATIC_CONNECT_URLS, NULL);
+            staticConnectUrls = celix_properties_get(topicProperties, PUBSUB_UDP_STATIC_CONNECT_URLS, NULL);
         }
         if (isPassive == NULL) {
-            receiver->isPassive = celix_properties_getAsBool(topicProperties, PUBSUB_TCP_PASSIVE_CONFIGURED, false);
+            receiver->isPassive = celix_properties_getAsBool(topicProperties, PUBSUB_UDP_PASSIVE_CONFIGURED, false);
         }
         if (passiveKey == NULL) {
-            passiveKey = celix_properties_get(topicProperties, PUBSUB_TCP_PASSIVE_KEY, NULL);
+            passiveKey = celix_properties_get(topicProperties, PUBSUB_UDP_PASSIVE_KEY, NULL);
         }
     }
 
     // Set receiver connection thread timeout.
     // property is in ms, timeout value in us. (convert ms to us).
-    receiver->timeout = celix_bundleContext_getPropertyAsLong(ctx, PSA_TCP_SUBSCRIBER_CONNECTION_TIMEOUT,
-                                                              PSA_TCP_SUBSCRIBER_CONNECTION_DEFAULT_TIMEOUT) * 1000;
+    receiver->timeout = celix_bundleContext_getPropertyAsLong(ctx, PSA_UDP_SUBSCRIBER_CONNECTION_TIMEOUT,
+                                                              PSA_UDP_SUBSCRIBER_CONNECTION_DEFAULT_TIMEOUT) * 1000;
     /* When it's an endpoint share the socket with the sender */
     if (passiveKey != NULL) {
         celixThreadMutex_lock(&handlerStore->mutex);
@@ -169,21 +176,21 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
     }
 
     if (receiver->socketHandler != NULL) {
-        long prio = celix_properties_getAsLong(topicProperties, PUBSUB_TCP_THREAD_REALTIME_PRIO, -1L);
-        const char *sched = celix_properties_get(topicProperties, PUBSUB_TCP_THREAD_REALTIME_SCHED, NULL);
-        long retryCnt = celix_properties_getAsLong(topicProperties, PUBSUB_TCP_SUBSCRIBER_RETRY_CNT_KEY,
-                                                   PUBSUB_TCP_SUBSCRIBER_RETRY_CNT_DEFAULT);
-        double rcvTimeout = celix_properties_getAsDouble(topicProperties, PUBSUB_TCP_SUBSCRIBER_RCVTIMEO_KEY, PUBSUB_TCP_SUBSCRIBER_RCVTIMEO_DEFAULT);
-        long bufferSize = celix_bundleContext_getPropertyAsLong(ctx, PSA_TCP_RECV_BUFFER_SIZE,
-                                                                 PSA_TCP_DEFAULT_RECV_BUFFER_SIZE);
-        long timeout = celix_bundleContext_getPropertyAsLong(ctx, PSA_TCP_TIMEOUT, PSA_TCP_DEFAULT_TIMEOUT);
+        long prio = celix_properties_getAsLong(topicProperties, PUBSUB_UDP_THREAD_REALTIME_PRIO, -1L);
+        const char *sched = celix_properties_get(topicProperties, PUBSUB_UDP_THREAD_REALTIME_SCHED, NULL);
+        long retryCnt = celix_properties_getAsLong(topicProperties, PUBSUB_UDP_SUBSCRIBER_RETRY_CNT_KEY,
+                                                   PUBSUB_UDP_SUBSCRIBER_RETRY_CNT_DEFAULT);
+        double rcvTimeout = celix_properties_getAsDouble(topicProperties, PUBSUB_UDP_SUBSCRIBER_RCVTIMEO_KEY, PUBSUB_UDP_SUBSCRIBER_RCVTIMEO_DEFAULT);
+        long bufferSize = celix_bundleContext_getPropertyAsLong(ctx, PSA_UDP_RECV_BUFFER_SIZE,
+                                                                 PSA_UDP_DEFAULT_RECV_BUFFER_SIZE);
+        long timeout = celix_bundleContext_getPropertyAsLong(ctx, PSA_UDP_TIMEOUT, PSA_UDP_DEFAULT_TIMEOUT);
 
         pubsub_sktHandler_setThreadName(receiver->socketHandler, topic, scope);
         pubsub_sktHandler_setReceiveBufferSize(receiver->socketHandler, (unsigned int) bufferSize);
         pubsub_sktHandler_setTimeout(receiver->socketHandler, (unsigned int) timeout);
         pubsub_sktHandler_addMessageHandler(receiver->socketHandler, receiver, processMsg);
-        pubsub_sktHandler_addReceiverConnectionCallback(receiver->socketHandler, receiver, psa_tcp_connectHandler,
-                                                        psa_tcp_disConnectHandler);
+        pubsub_sktHandler_addReceiverConnectionCallback(receiver->socketHandler, receiver, psa_udp_connectHandler,
+                                                        psa_udp_disConnectHandler);
         pubsub_sktHandler_setThreadPriority(receiver->socketHandler, prio, sched);
         pubsub_sktHandler_setReceiveRetryCnt(receiver->socketHandler, (unsigned int) retryCnt);
         pubsub_sktHandler_setReceiveTimeOut(receiver->socketHandler, rcvTimeout);
@@ -200,23 +207,63 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
         char *url;
         char *save = urlsCopy;
         while ((url = strtok_r(save, " ", &save))) {
-            psa_tcp_requested_connection_entry_t *entry = calloc(1, sizeof(*entry));
-            entry->statically = true;
-            entry->connected = false;
-            entry->url = celix_utils_strdup(url);
-            entry->parent = receiver;
-            hashMap_put(receiver->requestedConnections.map, entry->url, entry);
-            receiver->requestedConnections.allConnected = false;
+            pubsub_utils_url_t *url_info = pubsub_utils_url_parse(url);
+            bool is_multicast = pubsub_utils_url_is_multicast(url_info->hostname);
+            bool is_broadcast = pubsub_utils_url_is_broadcast(url_info->hostname);
+            if (is_multicast || is_broadcast) {
+                psa_udp_requested_connection_entry_t *entry = calloc(1, sizeof(*entry));
+                entry->statically = true;
+                entry->connected = false;
+                entry->url = celix_utils_strdup(url);
+                entry->parent = receiver;
+                hashMap_put(receiver->requestedConnections.map, entry->url, entry);
+                receiver->requestedConnections.allConnected = false;
+            }
+            pubsub_utils_url_free(url_info);
         }
         free(urlsCopy);
     }
 
+    if (!receiver->isPassive) {
+        //setting up tcp socket for UDP TopicReceiver
+        char *urls = NULL;
+        if (discUrl != NULL) {
+            urls = celix_utils_strdup(discUrl);
+        } else if (ip != NULL) {
+            urls = celix_utils_strdup(ip);
+        } else {
+            struct sockaddr_in *sin = pubsub_utils_url_getInAddr(NULL, 0);
+            urls = pubsub_utils_url_get_url(sin, NULL);
+            free(sin);
+        }
+        if (urls) {
+            char *urlsCopy = celix_utils_strdup(urls);
+            char *url;
+            char *save = urlsCopy;
+            while ((url = strtok_r(save, " ", &save))) {
+                pubsub_utils_url_t *url_info = pubsub_utils_url_parse(url);
+                bool is_multicast = pubsub_utils_url_is_multicast(url_info->hostname);
+                bool is_broadcast = pubsub_utils_url_is_broadcast(url_info->hostname);
+                if (!is_multicast && !is_broadcast) {
+                    int rc = pubsub_sktHandler_udp_bind(receiver->socketHandler, url);
+                    if (rc < 0) {
+                        L_WARN("Error for udp listen using dynamic bind url '%s'. %s", url, strerror(errno));
+                    } else {
+                        url = NULL;}
+                }
+                pubsub_utils_url_free(url_info);
+            }
+            receiver->url = pubsub_sktHandler_get_interface_url(receiver->socketHandler);
+            free(urlsCopy);
+        }
+        free(urls);
+    }
     if (receiver->socketHandler != NULL && (!receiver->isPassive)) {
         // Configure Receiver thread
         receiver->thread.running = true;
-        celixThread_create(&receiver->thread.thread, NULL, psa_tcp_recvThread, receiver);
+        celixThread_create(&receiver->thread.thread, NULL, psa_udp_recvThread, receiver);
         char name[64];
-        snprintf(name, 64, "TCP TR %s/%s", scope == NULL ? "(null)" : scope, topic);
+        snprintf(name, 64, "UDP TR %s/%s", scope == NULL ? "(null)" : scope, topic);
         celixThread_setName(&receiver->thread.thread, name);
     }
 
@@ -230,8 +277,8 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
         opts.filter.serviceName = PUBSUB_SUBSCRIBER_SERVICE_NAME;
         opts.filter.filter = buf;
         opts.callbackHandle = receiver;
-        opts.addWithProperties = pubsub_tcpTopicReceiver_addSubscriber;
-        opts.removeWithProperties = pubsub_tcpTopicReceiver_removeSubscriber;
+        opts.addWithProperties = pubsub_udpTopicReceiver_addSubscriber;
+        opts.removeWithProperties = pubsub_udpTopicReceiver_removeSubscriber;
         receiver->subscriberTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
     }
 
@@ -242,12 +289,12 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
         free(receiver->topic);
         free(receiver);
         receiver = NULL;
-        L_ERROR("[PSA_TCP] Cannot create TopicReceiver for %s/%s", scope == NULL ? "(null)" : scope, topic);
+        L_ERROR("[PSA_udp] Cannot create TopicReceiver for %s/%s", scope == NULL ? "(null)" : scope, topic);
     }
     return receiver;
 }
 
-void pubsub_tcpTopicReceiver_destroy(pubsub_tcp_topic_receiver_t *receiver) {
+void pubsub_udpTopicReceiver_destroy(pubsub_udp_topic_receiver_t *receiver) {
     if (receiver != NULL) {
 
         celixThreadMutex_lock(&receiver->thread.mutex);
@@ -266,7 +313,7 @@ void pubsub_tcpTopicReceiver_destroy(pubsub_tcp_topic_receiver_t *receiver) {
         celixThreadMutex_lock(&receiver->requestedConnections.mutex);
         hash_map_iterator_t iter = hashMapIterator_construct(receiver->requestedConnections.map);
         while (hashMapIterator_hasNext(&iter)) {
-            psa_tcp_requested_connection_entry_t *entry = hashMapIterator_nextValue(&iter);
+            psa_udp_requested_connection_entry_t *entry = hashMapIterator_nextValue(&iter);
             if (entry != NULL) {
                 free(entry->url);
                 free(entry);
@@ -294,23 +341,40 @@ void pubsub_tcpTopicReceiver_destroy(pubsub_tcp_topic_receiver_t *receiver) {
     free(receiver);
 }
 
-const char *pubsub_tcpTopicReceiver_scope(pubsub_tcp_topic_receiver_t *receiver) {
+const char *pubsub_udpTopicReceiver_scope(pubsub_udp_topic_receiver_t *receiver) {
     return receiver->scope;
 }
 
-const char *pubsub_tcpTopicReceiver_topic(pubsub_tcp_topic_receiver_t *receiver) {
+const char *pubsub_udpTopicReceiver_topic(pubsub_udp_topic_receiver_t *receiver) {
     return receiver->topic;
 }
 
-const char *pubsub_tcpTopicReceiver_serializerType(pubsub_tcp_topic_receiver_t *receiver) {
+const char *pubsub_udpTopicReceiver_serializerType(pubsub_udp_topic_receiver_t *receiver) {
     return pubsub_serializerHandler_getSerializationType(receiver->serializerHandler);
 }
 
-long pubsub_tcpTopicReceiver_protocolSvcId(pubsub_tcp_topic_receiver_t *receiver) {
+long pubsub_udpTopicReceiver_protocolSvcId(pubsub_udp_topic_receiver_t *receiver) {
     return receiver->protocolSvcId;
 }
 
-void pubsub_tcpTopicReceiver_listConnections(pubsub_tcp_topic_receiver_t *receiver, celix_array_list_t *connectedUrls,
+bool pubsub_udpTopicReceiver_isStatic(pubsub_udp_topic_receiver_t *receiver) {
+    return receiver->isStatic;
+}
+
+bool pubsub_udpTopicReceiver_isPassive(pubsub_udp_topic_receiver_t *receiver) {
+    return receiver->isPassive;
+}
+
+const char *pubsub_udpTopicReceiver_url(pubsub_udp_topic_receiver_t *receiver) {
+    if (receiver->isPassive) {
+        return pubsub_sktHandler_get_connection_url(receiver->socketHandler);
+    } else {
+        return receiver->url;
+    }
+}
+
+
+void pubsub_udpTopicReceiver_listConnections(pubsub_udp_topic_receiver_t *receiver, celix_array_list_t *connectedUrls,
                                              celix_array_list_t *unconnectedUrls) {
     celixThreadMutex_lock(&receiver->requestedConnections.mutex);
     if (receiver->isPassive) {
@@ -326,7 +390,7 @@ void pubsub_tcpTopicReceiver_listConnections(pubsub_tcp_topic_receiver_t *receiv
     } else {
         hash_map_iterator_t iter = hashMapIterator_construct(receiver->requestedConnections.map);
         while (hashMapIterator_hasNext(&iter)) {
-            psa_tcp_requested_connection_entry_t *entry = hashMapIterator_nextValue(&iter);
+            psa_udp_requested_connection_entry_t *entry = hashMapIterator_nextValue(&iter);
             char *url = NULL;
             asprintf(&url, "%s%s", entry->url, entry->statically ? " (static)" : "");
             if (entry->connected) {
@@ -339,46 +403,49 @@ void pubsub_tcpTopicReceiver_listConnections(pubsub_tcp_topic_receiver_t *receiv
     celixThreadMutex_unlock(&receiver->requestedConnections.mutex);
 }
 
-bool pubsub_tcpTopicReceiver_isPassive(pubsub_tcp_topic_receiver_t *receiver) {
-    return receiver->isPassive;
-}
+void pubsub_udpTopicReceiver_connectTo(pubsub_udp_topic_receiver_t *receiver, const char *url) {
+    if (!url) return;
+    char *connectUrl =  celix_utils_strdup(url);
+    pubsub_utils_url_t *urlInfo = pubsub_utils_url_parse(connectUrl);
+    bool is_multicast = pubsub_utils_url_is_multicast(urlInfo->hostname);
+    bool is_broadcast = pubsub_utils_url_is_broadcast(urlInfo->hostname);
+    pubsub_utils_url_free(urlInfo);
 
-void pubsub_tcpTopicReceiver_connectTo(
-    pubsub_tcp_topic_receiver_t *receiver,
-    const char *url) {
-    L_DEBUG("[PSA_TCP] TopicReceiver %s/%s connecting to tcp url %s",
-            receiver->scope == NULL ? "(null)" : receiver->scope,
-            receiver->topic,
-            url);
+    if (is_multicast || is_broadcast) {
+        L_DEBUG("[PSA_udp] TopicReceiver %s/%s connecting to udp url %s",
+                receiver->scope == NULL ? "(null)" : receiver->scope,
+                receiver->topic,
+                url);
 
-    celixThreadMutex_lock(&receiver->requestedConnections.mutex);
-    psa_tcp_requested_connection_entry_t *entry = hashMap_get(receiver->requestedConnections.map, url);
-    if (entry == NULL) {
-        entry = calloc(1, sizeof(*entry));
-        entry->url = celix_utils_strdup(url);
-        entry->connected = false;
-        entry->statically = false;
-        entry->parent = receiver;
-        hashMap_put(receiver->requestedConnections.map, (void *) entry->url, entry);
-        receiver->requestedConnections.allConnected = false;
+        celixThreadMutex_lock(&receiver->requestedConnections.mutex);
+        psa_udp_requested_connection_entry_t *entry = hashMap_get(receiver->requestedConnections.map, url);
+        if (entry == NULL) {
+            entry = calloc(1, sizeof(*entry));
+            entry->url = celix_utils_strdup(url);
+            entry->connected = false;
+            entry->statically = false;
+            entry->parent = receiver;
+            hashMap_put(receiver->requestedConnections.map, (void *) entry->url, entry);
+            receiver->requestedConnections.allConnected = false;
+        }
+        celixThreadMutex_unlock(&receiver->requestedConnections.mutex);
+        psa_udp_connectToAllRequestedConnections(receiver);
     }
-    celixThreadMutex_unlock(&receiver->requestedConnections.mutex);
-
-    psa_tcp_connectToAllRequestedConnections(receiver);
 }
 
-void pubsub_tcpTopicReceiver_disconnectFrom(pubsub_tcp_topic_receiver_t *receiver, const char *url) {
-    L_DEBUG("[PSA TCP] TopicReceiver %s/%s disconnect from tcp url %s",
+void pubsub_udpTopicReceiver_disconnectFrom(pubsub_udp_topic_receiver_t *receiver, const char *url) {
+    if (!url) return;
+    L_DEBUG("[PSA udp] TopicReceiver %s/%s disconnect from udp url %s",
             receiver->scope == NULL ? "(null)" : receiver->scope,
             receiver->topic,
             url);
 
     celixThreadMutex_lock(&receiver->requestedConnections.mutex);
-    psa_tcp_requested_connection_entry_t *entry = hashMap_remove(receiver->requestedConnections.map, url);
+    psa_udp_requested_connection_entry_t *entry = hashMap_remove(receiver->requestedConnections.map, url);
     if (entry != NULL) {
         int rc = pubsub_sktHandler_disconnect(receiver->socketHandler, entry->url);
         if (rc < 0)
-            L_WARN("[PSA_TCP] Error disconnecting from tcp url %s. (%s)", url, strerror(errno));
+            L_WARN("[PSA_udp] Error disconnecting from udp url %s. (%s)", url, strerror(errno));
     }
     if (entry != NULL) {
         free(entry->url);
@@ -387,8 +454,8 @@ void pubsub_tcpTopicReceiver_disconnectFrom(pubsub_tcp_topic_receiver_t *receive
     celixThreadMutex_unlock(&receiver->requestedConnections.mutex);
 }
 
-static void pubsub_tcpTopicReceiver_addSubscriber(void *handle, void *svc, const celix_properties_t *props) {
-    pubsub_tcp_topic_receiver_t *receiver = handle;
+static void pubsub_udpTopicReceiver_addSubscriber(void *handle, void *svc, const celix_properties_t *props) {
+    pubsub_udp_topic_receiver_t *receiver = handle;
 
     long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1);
     const char *subScope = celix_properties_get(props, PUBSUB_SUBSCRIBER_SCOPE, NULL);
@@ -406,7 +473,7 @@ static void pubsub_tcpTopicReceiver_addSubscriber(void *handle, void *svc, const
         return;
     }
 
-    psa_tcp_subscriber_entry_t *entry = calloc(1, sizeof(*entry));
+    psa_udp_subscriber_entry_t *entry = calloc(1, sizeof(*entry));
     entry->subscriberSvc = svc;
     entry->initialized = false;
 
@@ -416,23 +483,23 @@ static void pubsub_tcpTopicReceiver_addSubscriber(void *handle, void *svc, const
     celixThreadMutex_unlock(&receiver->subscribers.mutex);
 }
 
-static void pubsub_tcpTopicReceiver_removeSubscriber(void *handle, void *svc __attribute__((unused)), const celix_properties_t *props) {
-    pubsub_tcp_topic_receiver_t *receiver = handle;
+static void pubsub_udpTopicReceiver_removeSubscriber(void *handle, void *svc __attribute__((unused)), const celix_properties_t *props) {
+    pubsub_udp_topic_receiver_t *receiver = handle;
 
     long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1);
 
     celixThreadMutex_lock(&receiver->subscribers.mutex);
-    psa_tcp_subscriber_entry_t *entry = hashMap_remove(receiver->subscribers.map, (void *)svcId);
+    psa_udp_subscriber_entry_t *entry = hashMap_remove(receiver->subscribers.map, (void *)svcId);
     free(entry);
     celixThreadMutex_unlock(&receiver->subscribers.mutex);
 }
 
-static void callReceivers(pubsub_tcp_topic_receiver_t *receiver, const char* msgFqn, const pubsub_protocol_message_t *message, void** msg, bool* release, const celix_properties_t* metadata) {
+static void callReceivers(pubsub_udp_topic_receiver_t *receiver, const char* msgFqn, const pubsub_protocol_message_t *message, void** msg, bool* release, const celix_properties_t* metadata) {
     *release = true;
     celixThreadMutex_lock(&receiver->subscribers.mutex);
     hash_map_iterator_t iter = hashMapIterator_construct(receiver->subscribers.map);
     while (hashMapIterator_hasNext(&iter)) {
-        psa_tcp_subscriber_entry_t* entry = hashMapIterator_nextValue(&iter);
+        psa_udp_subscriber_entry_t* entry = hashMapIterator_nextValue(&iter);
         if (entry != NULL && entry->subscriberSvc->receive != NULL) {
             entry->subscriberSvc->receive(entry->subscriberSvc->handle, msgFqn, message->header.msgId, *msg, metadata, release);
             if (!(*release) && hashMapIterator_hasNext(&iter)) { //receive function has taken ownership, deserialize again for new message
@@ -445,7 +512,7 @@ static void callReceivers(pubsub_tcp_topic_receiver_t *receiver, const char* msg
                                                                              message->header.msgMinorVersion,
                                                                              &deSerializeBuffer, 0, msg);
                 if (status != CELIX_SUCCESS) {
-                    L_WARN("[PSA_TCP_TR] Cannot deserialize msg type %s for scope/topic %s/%s", msgFqn,
+                    L_WARN("[PSA_UDP_TR] Cannot deserialize msg type %s for scope/topic %s/%s", msgFqn,
                            receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic);
                     break;
                 }
@@ -459,7 +526,7 @@ static void callReceivers(pubsub_tcp_topic_receiver_t *receiver, const char* msg
 }
 
 static inline void processMsg(void* handle, const pubsub_protocol_message_t *message, bool* releaseMsg, struct timespec *receiveTime) {
-    pubsub_tcp_topic_receiver_t *receiver = handle;
+    pubsub_udp_topic_receiver_t *receiver = handle;
 
     const char *msgFqn = pubsub_serializerHandler_getMsgFqn(receiver->serializerHandler, message->header.msgId);
     if (msgFqn == NULL) {
@@ -499,7 +566,7 @@ static inline void processMsg(void* handle, const pubsub_protocol_message_t *mes
                                                                                  message->header.msgMinorVersion,
                                                                                  &deSerializeBuffer, 0, &deSerializedMsg);
                         if (status != CELIX_SUCCESS) {
-                            L_WARN("[PSA_TCP_TR] Cannot deserialize msg type %s for scope/topic %s/%s", msgFqn,
+                            L_WARN("[PSA_UDP_TR] Cannot deserialize msg type %s for scope/topic %s/%s", msgFqn,
                                    receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic);
                         } else {
                             pubsubInterceptorHandler_invokePostReceive(receiver->interceptorsHandler, msgFqn, message->header.msgId, deSerializedMsg, metadata);
@@ -519,11 +586,11 @@ static inline void processMsg(void* handle, const pubsub_protocol_message_t *mes
                 celix_properties_destroy(metadata);
             }
         } else {
-            L_WARN("[PSA_TCP_TR] Cannot deserialize msg type %s for scope/topic %s/%s", msgFqn,
+            L_WARN("[PSA_UDP_TR] Cannot deserialize msg type %s for scope/topic %s/%s", msgFqn,
                    receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic);
         }
     } else {
-        L_WARN("[PSA_TCP_TR] Cannot deserialize message '%s' using %s, version mismatch. Version received: %i.%i.x, version local: %i.%i.x",
+        L_WARN("[PSA_UDP_TR] Cannot deserialize message '%s' using %s, version mismatch. Version received: %i.%i.x, version local: %i.%i.x",
                msgFqn,
                pubsub_serializerHandler_getSerializationType(receiver->serializerHandler),
                (int) message->header.msgMajorVersion,
@@ -533,8 +600,8 @@ static inline void processMsg(void* handle, const pubsub_protocol_message_t *mes
     }
 }
 
-static void *psa_tcp_recvThread(void *data) {
-    pubsub_tcp_topic_receiver_t *receiver = data;
+static void *psa_udp_recvThread(void *data) {
+    pubsub_udp_topic_receiver_t *receiver = data;
 
     celixThreadMutex_lock(&receiver->thread.mutex);
     bool running = receiver->thread.running;
@@ -550,10 +617,10 @@ static void *psa_tcp_recvThread(void *data) {
 
     while (running) {
         if (!allConnected) {
-            psa_tcp_connectToAllRequestedConnections(receiver);
+            psa_udp_connectToAllRequestedConnections(receiver);
         }
         if (!allInitialized) {
-            psa_tcp_initializeAllSubscribers(receiver);
+            psa_udp_initializeAllSubscribers(receiver);
         }
         usleep(receiver->timeout);
 
@@ -572,15 +639,15 @@ static void *psa_tcp_recvThread(void *data) {
     return NULL;
 }
 
-static void psa_tcp_connectToAllRequestedConnections(pubsub_tcp_topic_receiver_t *receiver) {
+static void psa_udp_connectToAllRequestedConnections(pubsub_udp_topic_receiver_t *receiver) {
     celixThreadMutex_lock(&receiver->requestedConnections.mutex);
     if (!receiver->requestedConnections.allConnected) {
         bool allConnected = true;
         hash_map_iterator_t iter = hashMapIterator_construct(receiver->requestedConnections.map);
         while (hashMapIterator_hasNext(&iter)) {
-            psa_tcp_requested_connection_entry_t *entry = hashMapIterator_nextValue(&iter);
+            psa_udp_requested_connection_entry_t *entry = hashMapIterator_nextValue(&iter);
             if ((entry) && (!entry->connected) && (!receiver->isPassive)) {
-                int rc = pubsub_sktHandler_tcp_connect(entry->parent->socketHandler, entry->url);
+                int rc = pubsub_sktHandler_udp_connect(entry->parent->socketHandler, entry->url);
                 if (rc < 0) {
                     allConnected = false;
                 }
@@ -591,15 +658,15 @@ static void psa_tcp_connectToAllRequestedConnections(pubsub_tcp_topic_receiver_t
     celixThreadMutex_unlock(&receiver->requestedConnections.mutex);
 }
 
-static void psa_tcp_connectHandler(void *handle, const char *url, bool lock) {
-    pubsub_tcp_topic_receiver_t *receiver = handle;
-    L_DEBUG("[PSA_TCP] TopicReceiver %s/%s connecting to tcp url %s",
+static void psa_udp_connectHandler(void *handle, const char *url, bool lock) {
+    pubsub_udp_topic_receiver_t *receiver = handle;
+    L_DEBUG("[PSA_udp] TopicReceiver %s/%s connecting to udp url %s",
             receiver->scope == NULL ? "(null)" : receiver->scope,
             receiver->topic,
             url);
     if (lock)
         celixThreadMutex_lock(&receiver->requestedConnections.mutex);
-    psa_tcp_requested_connection_entry_t *entry = hashMap_get(receiver->requestedConnections.map, url);
+    psa_udp_requested_connection_entry_t *entry = hashMap_get(receiver->requestedConnections.map, url);
     if (entry == NULL) {
         entry = calloc(1, sizeof(*entry));
         entry->parent = receiver;
@@ -613,15 +680,15 @@ static void psa_tcp_connectHandler(void *handle, const char *url, bool lock) {
         celixThreadMutex_unlock(&receiver->requestedConnections.mutex);
 }
 
-static void psa_tcp_disConnectHandler(void *handle, const char *url, bool lock) {
-    pubsub_tcp_topic_receiver_t *receiver = handle;
-    L_DEBUG("[PSA TCP] TopicReceiver %s/%s disconnect from tcp url %s",
+static void psa_udp_disConnectHandler(void *handle, const char *url, bool lock) {
+    pubsub_udp_topic_receiver_t *receiver = handle;
+    L_DEBUG("[PSA udp] TopicReceiver %s/%s disconnect from udp url %s",
             receiver->scope == NULL ? "(null)" : receiver->scope,
             receiver->topic,
             url);
     if (lock)
         celixThreadMutex_lock(&receiver->requestedConnections.mutex);
-    psa_tcp_requested_connection_entry_t *entry = hashMap_get(receiver->requestedConnections.map, url);
+    psa_udp_requested_connection_entry_t *entry = hashMap_get(receiver->requestedConnections.map, url);
     if (entry != NULL) {
         entry->connected = false;
         receiver->requestedConnections.allConnected = false;
@@ -630,13 +697,13 @@ static void psa_tcp_disConnectHandler(void *handle, const char *url, bool lock) 
         celixThreadMutex_unlock(&receiver->requestedConnections.mutex);
 }
 
-static void psa_tcp_initializeAllSubscribers(pubsub_tcp_topic_receiver_t *receiver) {
+static void psa_udp_initializeAllSubscribers(pubsub_udp_topic_receiver_t *receiver) {
     celixThreadMutex_lock(&receiver->subscribers.mutex);
     if (!receiver->subscribers.allInitialized) {
         bool allInitialized = true;
         hash_map_iterator_t iter = hashMapIterator_construct(receiver->subscribers.map);
         while (hashMapIterator_hasNext(&iter)) {
-            psa_tcp_subscriber_entry_t *entry = hashMapIterator_nextValue(&iter);
+            psa_udp_subscriber_entry_t *entry = hashMapIterator_nextValue(&iter);
             if (!entry->initialized) {
                 int rc = 0;
                 if (entry->subscriberSvc->init != NULL) {

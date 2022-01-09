@@ -115,14 +115,19 @@ bool pubsub_utils_url_is_multicast(char *hostname) {
     return (ntohl(inet_addr(hostname)) >= ntohl(inet_addr("224.0.0.0"))) ? true : false;
 }
 
+bool pubsub_utils_url_is_broadcast(char *hostname) {
+    return (((inet_addr("0.0.0.255") & inet_addr(hostname)) == inet_addr("0.0.0.255"))) ? true : false;
+}
+
 /** Finds an IP of the available network interfaces of the machine by specifying an CIDR subnet.
  *
- * @param ipWithPrefix  IP with prefix, e.g. 192.168.1.0/24
+ * @param hostname      IP with prefix, e.g. 200.100.0.0/24
+ * @param intf_addr     interface addr
  * @return ip           In case a matching interface could be found, an allocated string containing the IP of the
- *                      interface will be returned, e.g. 192.168.1.16. Memory for the new string can be freed with free().
+ *                      interface will be returned, e.g. 200.100.0.16. Memory for the new string can be freed with free().
  *                      When no matching interface is found NULL will be returned.
  */
-char *pubsub_utils_url_get_multicast_ip(char *hostname) {
+char* pubsub_utils_url_get_multicast_ip(char *hostname, in_addr_t* intf_addr) {
     char *ip = NULL;
     if (hostname) {
         char *subNet = strchr(hostname, '/');
@@ -144,8 +149,14 @@ char *pubsub_utils_url_get_multicast_ip(char *hostname) {
             unsigned int ipAsUint = ntohl(address.sin_addr.s_addr);
             unsigned int bitmask = ipUtils_prefixToBitmask(inputPrefix);
             unsigned int ipRangeStart = ipAsUint & bitmask;
-            unsigned int ipRangeStop = ipAsUint | ~bitmask;
-            unsigned int addr = pubsub_utils_url_rand_range(ipRangeStart, ipRangeStop);
+            unsigned int addr = 0;
+            if (intf_addr && *intf_addr) {
+                unsigned int intfIpAsUint = ntohl(*intf_addr);
+                addr = ipRangeStart + (intfIpAsUint & ~bitmask);
+            } else {
+                unsigned int ipRangeStop = ipAsUint | ~bitmask;
+                addr = pubsub_utils_url_rand_range(ipRangeStart, ipRangeStop);
+            }
             address.sin_addr.s_addr = htonl(addr);
             ip = pubsub_utils_url_get_url(&address, NULL);
         }
@@ -153,7 +164,7 @@ char *pubsub_utils_url_get_multicast_ip(char *hostname) {
     return ip;
 }
 
-char *pubsub_utils_url_get_ip(char *_hostname) {
+char *pubsub_utils_url_get_ip(char *_hostname, in_addr_t* intf_addr) {
     char *ip = NULL;
     if (_hostname) {
         char *subNet = strstr(_hostname, "/");
@@ -163,7 +174,7 @@ char *pubsub_utils_url_get_ip(char *_hostname) {
             if ((length > 1) && isdigit(subNet[1])) {
                 bool is_multicast = pubsub_utils_url_is_multicast(hostname);
                 if (is_multicast)
-                    ip = pubsub_utils_url_get_multicast_ip(_hostname);
+                    ip = pubsub_utils_url_get_multicast_ip(_hostname, intf_addr);
                 else
                     ip = ipUtils_findIpBySubnet(_hostname);
                 if (ip == NULL)
@@ -284,7 +295,7 @@ pubsub_utils_url_t *pubsub_utils_url_parse(char *url) {
     if (url_info->interface) {
         pubsub_utils_url_t interface_url_info;
         bzero(&interface_url_info, sizeof(pubsub_utils_url_t));
-        char *ip = pubsub_utils_url_get_ip(url_info->interface);
+        char *ip = pubsub_utils_url_get_ip(url_info->interface, NULL);
         if (ip != NULL) {
             free(url_info->interface);
             url_info->interface = ip;
@@ -299,9 +310,10 @@ pubsub_utils_url_t *pubsub_utils_url_parse(char *url) {
     }
 
     if (url_info->hostname) {
-        if (url_info->url)
-            free(url_info->url);
-        char *ip = pubsub_utils_url_get_ip(url_info->hostname);
+        if (url_info->url) free(url_info->url);
+        struct sockaddr_in *m_sin = pubsub_utils_url_getInAddr(url_info->interface, url_info->interface_port_nr);
+        char *ip = pubsub_utils_url_get_ip(url_info->hostname, &m_sin->sin_addr.s_addr);
+        free(m_sin);
         if (ip != NULL) {
             free(url_info->hostname);
             url_info->hostname = ip;

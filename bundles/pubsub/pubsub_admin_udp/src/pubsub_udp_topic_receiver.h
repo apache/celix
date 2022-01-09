@@ -17,18 +17,17 @@
  * under the License.
  */
 
-#ifndef CELIX_PUBSUB_TCP_TOPIC_RECEIVER_H
-#define CELIX_PUBSUB_TCP_TOPIC_RECEIVER_H
+#ifndef CELIX_PUBSUB_UDP_TOPIC_RECEIVER_H
+#define CELIX_PUBSUB_UDP_TOPIC_RECEIVER_H
 
 #include "pubsub_admin_metrics.h"
 #include "celix_bundle_context.h"
 #include "pubsub_protocol.h"
-#include "pubsub_skt_handler.h"
 #include "pubsub_serializer_handler.h"
 
-typedef struct pubsub_tcp_topic_receiver pubsub_tcp_topic_receiver_t;
+typedef struct pubsub_udp_topic_receiver pubsub_udp_topic_receiver_t;
 
-pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context_t *ctx,
+pubsub_udp_topic_receiver_t *pubsub_udpTopicReceiver_create(celix_bundle_context_t *ctx,
                                                             celix_log_helper_t *logHelper,
                                                             const char *scope,
                                                             const char *topic,
@@ -38,19 +37,20 @@ pubsub_tcp_topic_receiver_t *pubsub_tcpTopicReceiver_create(celix_bundle_context
                                                             pubsub_sktHandler_endPointStore_t *handlerStore,
                                                             long protocolSvcId,
                                                             pubsub_protocol_service_t *protocol);
-void pubsub_tcpTopicReceiver_destroy(pubsub_tcp_topic_receiver_t *receiver);
+void pubsub_udpTopicReceiver_destroy(pubsub_udp_topic_receiver_t *receiver);
 
-const char *pubsub_tcpTopicReceiver_scope(pubsub_tcp_topic_receiver_t *receiver);
-const char *pubsub_tcpTopicReceiver_topic(pubsub_tcp_topic_receiver_t *receiver);
-const char *pubsub_tcpTopicReceiver_serializerType(pubsub_tcp_topic_receiver_t *sender);
+const char *pubsub_udpTopicReceiver_scope(pubsub_udp_topic_receiver_t *receiver);
+const char *pubsub_udpTopicReceiver_topic(pubsub_udp_topic_receiver_t *receiver);
+const char *pubsub_udpTopicReceiver_serializerType(pubsub_udp_topic_receiver_t *sender);
 
-long pubsub_tcpTopicReceiver_protocolSvcId(pubsub_tcp_topic_receiver_t *receiver);
-void pubsub_tcpTopicReceiver_listConnections(pubsub_tcp_topic_receiver_t *receiver,
+long pubsub_udpTopicReceiver_protocolSvcId(pubsub_udp_topic_receiver_t *receiver);
+void pubsub_udpTopicReceiver_listConnections(pubsub_udp_topic_receiver_t *receiver,
                                              celix_array_list_t *connectedUrls,
                                              celix_array_list_t *unconnectedUrls);
-bool pubsub_tcpTopicReceiver_isPassive(pubsub_tcp_topic_receiver_t *sender);
+bool pubsub_udpTopicReceiver_isPassive(pubsub_udp_topic_receiver_t *receiver);
+const char *pubsub_udpTopicReceiver_url(pubsub_udp_topic_receiver_t *receiver);
+bool pubsub_udpTopicReceiver_isStatic(pubsub_udp_topic_receiver_t *receiver);
+void pubsub_udpTopicReceiver_connectTo(pubsub_udp_topic_receiver_t *receiver, const char *url);
+void pubsub_udpTopicReceiver_disconnectFrom(pubsub_udp_topic_receiver_t *receiver, const char *url);
 
-void pubsub_tcpTopicReceiver_connectTo(pubsub_tcp_topic_receiver_t *receiver, const char *url);
-void pubsub_tcpTopicReceiver_disconnectFrom(pubsub_tcp_topic_receiver_t *receiver, const char *url);
-
-#endif //CELIX_PUBSUB_TCP_TOPIC_RECEIVER_H
+#endif //CELIX_PUBSUB_UDP_TOPIC_RECEIVER_H

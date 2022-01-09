@@ -17,8 +17,8 @@
  * under the License.
  */
 
-#ifndef CELIX_PUBSUB_TCP_TOPIC_SENDER_H
-#define CELIX_PUBSUB_TCP_TOPIC_SENDER_H
+#ifndef CELIX_PUBSUB_UDP_TOPIC_SENDER_H
+#define CELIX_PUBSUB_UDP_TOPIC_SENDER_H
 
 #include "celix_bundle_context.h"
 #include "pubsub_admin_metrics.h"
@@ -26,9 +26,9 @@
 #include "pubsub_skt_handler.h"
 #include "pubsub_serializer_handler.h"
 
-typedef struct pubsub_tcp_topic_sender pubsub_tcp_topic_sender_t;
+typedef struct pubsub_udp_topic_sender pubsub_udp_topic_sender_t;
 
-pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
+pubsub_udp_topic_sender_t *pubsub_udpTopicSender_create(
     celix_bundle_context_t *ctx,
     celix_log_helper_t *logHelper,
     const char *scope,
@@ -40,13 +40,16 @@ pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
     long protocolSvcId,
     pubsub_protocol_service_t *prot);
 
-void pubsub_tcpTopicSender_destroy(pubsub_tcp_topic_sender_t *sender);
-const char *pubsub_tcpTopicSender_scope(pubsub_tcp_topic_sender_t *sender);
-const char *pubsub_tcpTopicSender_topic(pubsub_tcp_topic_sender_t *sender);
-const char *pubsub_tcpTopicSender_url(pubsub_tcp_topic_sender_t *sender);
-const char* pubsub_tcpTopicSender_serializerType(pubsub_tcp_topic_sender_t *sender);
-bool pubsub_tcpTopicSender_isStatic(pubsub_tcp_topic_sender_t *sender);
-bool pubsub_tcpTopicSender_isPassive(pubsub_tcp_topic_sender_t *sender);
-long pubsub_tcpTopicSender_protocolSvcId(pubsub_tcp_topic_sender_t *sender);
+void pubsub_udpTopicSender_destroy(pubsub_udp_topic_sender_t *sender);
+const char *pubsub_udpTopicSender_scope(pubsub_udp_topic_sender_t *sender);
+const char *pubsub_udpTopicSender_topic(pubsub_udp_topic_sender_t *sender);
+const char *pubsub_udpTopicSender_url(pubsub_udp_topic_sender_t *sender);
+const char* pubsub_udpTopicSender_serializerType(pubsub_udp_topic_sender_t *sender);
+bool pubsub_udpTopicSender_isStatic(pubsub_udp_topic_sender_t *sender);
+bool pubsub_udpTopicSender_isPassive(pubsub_udp_topic_sender_t *sender);
+long pubsub_udpTopicSender_protocolSvcId(pubsub_udp_topic_sender_t *sender);
+void pubsub_udpTopicSender_connectTo(pubsub_udp_topic_sender_t *receiver, const char *url);
+void pubsub_udpTopicSender_disconnectFrom(pubsub_udp_topic_sender_t *receiver, const char *url);
+void pubsub_udpTopicSender_listConnections(pubsub_udp_topic_sender_t *sender, celix_array_list_t *urls);
 
-#endif //CELIX_PUBSUB_TCP_TOPIC_SENDER_H
+#endif //CELIX_PUBSUB_udp_TOPIC_SENDER_H

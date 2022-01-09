@@ -97,6 +97,86 @@ if (BUILD_PUBSUB_PSA_UDP_MC)
     endif ()
 endif()
 
+if (BUILD_PUBSUB_PSA_UDP)
+    # TCP
+    add_celix_container(pubsub_publisher_udp
+        GROUP pubsub
+        BUNDLES
+        Celix::log_admin
+        Celix::shell
+        Celix::shell_tui
+        Celix::celix_pubsub_serializer_json
+        Celix::celix_pubsub_discovery_etcd
+        Celix::celix_pubsub_topology_manager
+        Celix::celix_pubsub_admin_udp
+        Celix::celix_pubsub_protocol_wire_v2
+        celix_pubsub_poi_publisher
+        celix_pubsub_poi_publisher2
+        PROPERTIES
+        PSA_UDP_VERBOSE=true
+        PSA_IP=224.100.0.0/24@192.168.1.0/24
+        PUBSUB_ETCD_DISCOVERY_VERBOSE=true
+        PUBSUB_TOPOLOGY_MANAGER_VERBOSE=true
+        )
+    target_link_libraries(pubsub_publisher_udp PRIVATE ${PUBSUB_CONTAINER_LIBS})
+
+    add_celix_container(pubsub_subscriber_udp
+        GROUP pubsub
+        BUNDLES
+        Celix::log_admin
+        Celix::shell
+        Celix::shell_tui
+        Celix::celix_pubsub_serializer_json
+        Celix::celix_pubsub_discovery_etcd
+        Celix::celix_pubsub_topology_manager
+        Celix::celix_pubsub_admin_udp
+        Celix::celix_pubsub_protocol_wire_v2
+        celix_pubsub_poi_subscriber
+        PROPERTIES
+        PSA_UDP_VERBOSE=true
+        PSA_IP=224.100.0.0/24@192.168.1.0/24
+        PUBSUB_ETCD_DISCOVERY_VERBOSE=true
+        PUBSUB_TOPOLOGY_MANAGER_VERBOSE=true
+        )
+    target_link_libraries(pubsub_subscriber_udp PRIVATE ${PUBSUB_CONTAINER_LIBS})
+
+    add_celix_container(pubsub_subscriber2_udp
+        GROUP pubsub
+        BUNDLES
+        Celix::log_admin
+        Celix::shell
+        Celix::shell_tui
+        Celix::celix_pubsub_serializer_json
+        Celix::celix_pubsub_discovery_etcd
+        Celix::celix_pubsub_topology_manager
+        Celix::celix_pubsub_admin_udp
+        Celix::celix_pubsub_protocol_wire_v2
+        celix_pubsub_poi_subscriber
+        PROPERTIES
+        PSA_UDP_VERBOSE=true
+        PSA_IP=224.100.0.0/24@192.168.1.0/24
+        PUBSUB_ETCD_DISCOVERY_VERBOSE=true
+        PUBSUB_TOPOLOGY_MANAGER_VERBOSE=true
+        )
+    target_link_libraries(pubsub_subscriber2_udp PRIVATE ${PUBSUB_CONTAINER_LIBS})
+
+    if (ETCD_CMD AND XTERM_CMD)
+        # Runtime starting a publish and subscriber for tcp
+        add_celix_runtime(pubsub_rt_udp
+            NAME udp
+            GROUP pubsub
+            CONTAINERS
+            pubsub_publisher_udp
+            pubsub_subscriber_udp
+            pubsub_subscriber2_udp
+            COMMANDS
+            etcd
+            USE_TERM
+            )
+    endif ()
+endif()
+
+
 if (BUILD_PUBSUB_PSA_TCP)
     # TCP
     add_celix_container(pubsub_publisher_tcp

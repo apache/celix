@@ -188,6 +188,90 @@ if (BUILD_PUBSUB_PSA_UDP_MC)
     #setup_target_for_coverage(pubsub_udpmc_tests SCAN_DIR ..)
 endif()
 
+if (BUILD_PUBSUB_PSA_UDP)
+    add_celix_container(pubsub_udp_tests
+        USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
+        LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/gtest/PubSubIntegrationTestSuite.cc
+        DIR ${CMAKE_CURRENT_BINARY_DIR}
+        PROPERTIES
+        LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
+        CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
+        BUNDLES
+        Celix::celix_pubsub_serializer_json
+        Celix::celix_pubsub_protocol_wire_v2
+        Celix::celix_pubsub_topology_manager
+        Celix::celix_pubsub_admin_udp
+        Celix::shell
+        Celix::shell_tui
+        pubsub_sut
+        pubsub_tst
+        )
+    target_link_libraries(pubsub_udp_tests PRIVATE Celix::pubsub_api Jansson Celix::dfi GTest::gtest GTest::gtest_main)
+    target_include_directories(pubsub_udp_tests SYSTEM PRIVATE gtest)
+
+    add_celix_container(pstm_deadlock_udp_test
+        USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
+        LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/pstm_deadlock_test/test_runner.cc
+        DIR ${CMAKE_CURRENT_BINARY_DIR}
+        PROPERTIES
+        LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
+        CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
+        BUNDLES
+        Celix::celix_pubsub_serializer_json
+        Celix::celix_pubsub_protocol_wire_v2
+        Celix::celix_pubsub_topology_manager
+        Celix::celix_pubsub_admin_udp
+        Celix::shell
+        Celix::shell_tui
+        )
+    target_compile_definitions(pstm_deadlock_udp_test PRIVATE -DDEADLOCK_SUT_BUNDLE_FILE=\"${DEADLOCK_SUT_BUNDLE_FILE}\")
+    target_link_libraries(pstm_deadlock_udp_test PRIVATE Celix::pubsub_api Jansson Celix::dfi GTest::gtest GTest::gtest_main)
+    target_include_directories(pstm_deadlock_udp_test SYSTEM PRIVATE pstm_deadlock_udp_test)
+
+    #Note we do not link to bundles, as result (to ensure a bundle zip file is created) an dependency on the bundle is needed.
+    add_dependencies(pstm_deadlock_udp_test pubsub_deadlock_sut_bundle)
+
+    #Framework "bundle" has no cache dir. Default as "cache dir" the cwd is used.
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/meta_data/msg.descriptor ${CMAKE_CURRENT_BINARY_DIR}/pstm_deadlock_udp_gtest/META-INF/descriptors/msg.descriptor COPYONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/meta_data/deadlock.scope.properties ${CMAKE_CURRENT_BINARY_DIR}/pstm_deadlock_udp_gtest/META-INF/topics/pub/deadlock.properties COPYONLY)
+
+    add_test(NAME pstm_deadlock_udp_test COMMAND pstm_deadlock_udp_test WORKING_DIRECTORY $<TARGET_PROPERTY:pstm_deadlock_udp_test,CONTAINER_LOC>)
+    setup_target_for_coverage(pstm_deadlock_udp_test SCAN_DIR ..)
+
+    add_test(NAME pubsub_udp_tests COMMAND pubsub_udp_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_udp_tests,CONTAINER_LOC>)
+    setup_target_for_coverage(pubsub_udp_tests SCAN_DIR ..)
+
+    add_celix_container(pubsub_udp_v2_endpoint_tests
+        USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
+        LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/gtest/PubSubEndpointIntegrationTestSuite.cc
+        DIR ${CMAKE_CURRENT_BINARY_DIR}
+        PROPERTIES
+        LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
+        CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
+        BUNDLES
+        Celix::shell
+        Celix::shell_tui
+        Celix::celix_pubsub_serializer_json
+        Celix::celix_pubsub_protocol_wire_v2
+        Celix::celix_pubsub_topology_manager
+        Celix::celix_pubsub_admin_udp
+        pubsub_endpoint_tst
+        pubsub_endpoint_sut
+        pubsub_loopback
+        pubsub_serializer
+        )
+    target_link_libraries(pubsub_udp_v2_endpoint_tests PRIVATE Celix::pubsub_api Celix::dfi GTest::gtest GTest::gtest_main)
+    target_include_directories(pubsub_udp_v2_endpoint_tests SYSTEM PRIVATE gtest)
+
+    #TCP Endpoint test is disabled because the test is not stable when running on Travis
+    if (ENABLE_PUBSUB_PSA_UDP_ENDPOINT_TEST)
+        add_test(NAME pubsub_udp_v2_endpoint_tests COMMAND pubsub_udp_v2_endpoint_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_udp_v2_endpoint_tests,CONTAINER_LOC>)
+        setup_target_for_coverage(pubsub_udp_v2_endpoint_tests SCAN_DIR ..)
+    endif()
+
+
+endif()
+
 if (BUILD_PUBSUB_PSA_TCP)
     # TCP v2 tests
 

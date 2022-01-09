@@ -40,8 +40,9 @@ struct sockaddr_in *pubsub_utils_url_getInAddr(const char *hostname, unsigned in
 char *pubsub_utils_url_generate_url(char *hostname, unsigned int port_nr, char *protocol);
 char *pubsub_utils_url_get_url(struct sockaddr_in *inp, char *protocol);
 bool pubsub_utils_url_is_multicast(char *hostname);
-char *pubsub_utils_url_get_multicast_ip(char *hostname);
-char *pubsub_utils_url_get_ip(char *hostname);
+bool pubsub_utils_url_is_broadcast(char *hostname);
+char *pubsub_utils_url_get_multicast_ip(char *hostname, in_addr_t* intf_addr);
+char *pubsub_utils_url_get_ip(char *hostname, in_addr_t* intf_addr);
 void pubsub_utils_url_parse_url(char *_url, pubsub_utils_url_t *url_info);
 pubsub_utils_url_t *pubsub_utils_url_parse(char *url);
 void pubsub_utils_url_free(pubsub_utils_url_t *url_info);

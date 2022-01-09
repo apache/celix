@@ -39,7 +39,8 @@ The publisher/subscriber implementation supports sending of a single message and
 ## Getting started
 
 The publisher/subscriber implementation contains 3 different PubSubAdmins for managing connections:
-  * PubsubAdminUDP: This pubsub admin is using udp (multicast) linux sockets to setup a connection.
+  * PubsubAdminUDPMC: This pubsub admin is using udp (multicast) linux sockets to setup a connection.
+  * PubsubAdminUDP: This pubsub admin is using udp (unicast/multicast/broadcast) linux sockets to setup a connection.
   * PubsubAdminTCP: This pubsub admin is using tcp linux sockets to setup a connection.
   * PubsubAdminZMQ (LGPL License): This pubsub admin is using ZeroMQ and is disabled as default. This is a because the pubsub admin is using ZeroMQ which is licensed as LGPL ([View ZeroMQ License](https://github.com/zeromq/libzmq#license)).
   
@@ -60,6 +61,26 @@ The publisher/subscriber implementation contains 3 different PubSubAdmins for ma
 
 Design information can be found at pubsub\_admin\_udp\_mc/README.md
 
+### Running PSA UDP
+
+1. Open a terminal
+1. Run `cd runtimes/pubsub/udp`
+1. Run `sh start.sh`
+
+### Properties PSA UDP
+
+Some properties can be set to configure the PSA-UDP. If not configured defaults will be used. These
+properties can be set in the config.properties file (<PROPERTY>=<VALUE> format)
+
+
+    PSA_IP                              The url address to be used by the UDP admin to publish its data. Default the first IP not on localhost
+                                        This can be hostname / IP address / IP address with postfix, e.g. 192.168.1.0/24
+                                        For Multicast use 224.100.0.0/24@192.168.1.0/24, the last digit of the multicast address will be 
+                                        the same as the last digit of the interface. 
+                                        Note when interface is not set, the last digit of the multicast address is generated. 
+
+
+Detailed information can be found at pubsub_admin_udp/README.md
 
 ### Running PSA TCP
 
@@ -76,6 +97,8 @@ properties can be set in the config.properties file (<PROPERTY>=<VALUE> format)
     PSA_IP                              The url address to be used by the TCP admin to publish its data. Default the first IP not on localhost
                                         This can be hostname / IP address / IP address with postfix, e.g. 192.168.1.0/24
 
+
+Detailed information can be found at pubsub_admin_tcp/README.md
 
 ### Running PSA ZMQ
 

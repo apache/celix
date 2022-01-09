@@ -27,15 +27,17 @@
 #include <zconf.h>
 #include <arpa/inet.h>
 #include <celix_log_helper.h>
-#include "pubsub_psa_tcp_constants.h"
-#include "pubsub_tcp_topic_sender.h"
+#include "pubsub_psa_udp_constants.h"
+#include "pubsub_udp_topic_sender.h"
 #include "pubsub_skt_handler.h"
 #include <uuid/uuid.h>
 #include "celix_constants.h"
 #include <pubsub_utils.h>
 #include "pubsub_interceptors_handler.h"
 
-#define TCP_BIND_MAX_RETRY                      10
+#define UDP_BIND_MAX_RETRY                      10
+// Max message size is 64k - 8byte UDP header - 20byte IP header
+#define UDP_MAX_MSG_SIZE (((64 * 1024) - 1) - 28)
 
 #define L_DEBUG(...) \
     celix_logHelper_log(sender->logHelper, CELIX_LOG_LEVEL_DEBUG, __VA_ARGS__)
@@ -46,7 +48,7 @@
 #define L_ERROR(...) \
     celix_logHelper_log(sender->logHelper, CELIX_LOG_LEVEL_ERROR, __VA_ARGS__)
 
-struct pubsub_tcp_topic_sender {
+struct pubsub_udp_topic_sender {
     celix_bundle_context_t *ctx;
     celix_log_helper_t *logHelper;
     long protocolSvcId;
@@ -74,31 +76,31 @@ struct pubsub_tcp_topic_sender {
 
     struct {
         celix_thread_mutex_t mutex;
-        hash_map_t *map;  //key = bndId, value = psa_tcp_bounded_service_entry_t
+        hash_map_t *map;  //key = bndId, value = psa_udp_bounded_service_entry_t
     } boundedServices;
 };
 
-typedef struct psa_tcp_bounded_service_entry {
-    pubsub_tcp_topic_sender_t *parent;
+typedef struct psa_udp_bounded_service_entry {
+    pubsub_udp_topic_sender_t *parent;
     pubsub_publisher_t service;
     long bndId;
     int getCount;
-} psa_tcp_bounded_service_entry_t;
+} psa_udp_bounded_service_entry_t;
 
-static int psa_tcp_localMsgTypeIdForMsgType(void *handle, const char *msgType, unsigned int *msgTypeId);
+static int psa_udp_localMsgTypeIdForMsgType(void *handle, const char *msgType, unsigned int *msgTypeId);
 
-static void *psa_tcp_getPublisherService(void *handle, const celix_bundle_t *requestingBundle,
+static void *psa_udp_getPublisherService(void *handle, const celix_bundle_t *requestingBundle,
                                          const celix_properties_t *svcProperties);
 
-static void psa_tcp_ungetPublisherService(void *handle, const celix_bundle_t *requestingBundle,
+static void psa_udp_ungetPublisherService(void *handle, const celix_bundle_t *requestingBundle,
                                           const celix_properties_t *svcProperties);
 
-static void delay_first_send_for_late_joiners(pubsub_tcp_topic_sender_t *sender);
+static void delay_first_send_for_late_joiners(pubsub_udp_topic_sender_t *sender);
 
 static int
-psa_tcp_topicPublicationSend(void *handle, unsigned int msgTypeId, const void *msg, celix_properties_t *metadata);
+psa_udp_topicPublicationSend(void *handle, unsigned int msgTypeId, const void *msg, celix_properties_t *metadata);
 
-pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
+pubsub_udp_topic_sender_t *pubsub_udpTopicSender_create(
     celix_bundle_context_t *ctx,
     celix_log_helper_t *logHelper,
     const char *scope,
@@ -109,7 +111,7 @@ pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
     pubsub_sktHandler_endPointStore_t *handlerStore,
     long protocolSvcId,
     pubsub_protocol_service_t *protocol) {
-    pubsub_tcp_topic_sender_t *sender = calloc(1, sizeof(*sender));
+    pubsub_udp_topic_sender_t *sender = calloc(1, sizeof(*sender));
     sender->ctx = ctx;
     sender->logHelper = logHelper;
     sender->serializerHandler = serializerHandler;
@@ -120,27 +122,31 @@ pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
     if (uuid != NULL) {
         uuid_parse(uuid, sender->fwUUID);
     }
-    sender->interceptorsHandler = pubsubInterceptorsHandler_create(ctx, scope, topic, PUBSUB_TCP_ADMIN_TYPE,
+    sender->interceptorsHandler = pubsubInterceptorsHandler_create(ctx, scope, topic, PUBSUB_UDP_ADMIN_TYPE,
                                                                    pubsub_serializerHandler_getSerializationType(serializerHandler));
     sender->isPassive = false;
     char *urls = NULL;
-    const char *ip = celix_bundleContext_getProperty(ctx, PUBSUB_TCP_PSA_IP_KEY, NULL);
-    const char *discUrl = pubsub_getEnvironmentVariableWithScopeTopic(ctx, PUBSUB_TCP_STATIC_BIND_URL_FOR, topic, scope);
-    const char *isPassive = pubsub_getEnvironmentVariableWithScopeTopic(ctx, PUBSUB_TCP_PASSIVE_ENABLED, topic, scope);
-    const char *passiveKey = pubsub_getEnvironmentVariableWithScopeTopic(ctx, PUBSUB_TCP_PASSIVE_SELECTION_KEY, topic, scope);
+    const char *ip = celix_bundleContext_getProperty(ctx, PUBSUB_UDP_PSA_IP_KEY, NULL);
+    const char *discUrl = pubsub_getEnvironmentVariableWithScopeTopic(ctx, PUBSUB_UDP_STATIC_BIND_URL_FOR, topic, scope);
+    const char *isPassive = pubsub_getEnvironmentVariableWithScopeTopic(ctx, PUBSUB_UDP_PASSIVE_ENABLED, topic, scope);
+    const char *passiveKey = pubsub_getEnvironmentVariableWithScopeTopic(ctx, PUBSUB_UDP_PASSIVE_SELECTION_KEY, topic, scope);
+    const char *staticConnectUrls = pubsub_getEnvironmentVariableWithScopeTopic(ctx, PUBSUB_UDP_STATIC_CONNECT_URLS_FOR, topic, scope);
 
     if (isPassive) {
         sender->isPassive = pubsub_sktHandler_isPassive(isPassive);
     }
     if (topicProperties != NULL) {
         if (discUrl == NULL) {
-            discUrl = celix_properties_get(topicProperties, PUBSUB_TCP_STATIC_DISCOVER_URL, NULL);
+            discUrl = celix_properties_get(topicProperties, PUBSUB_UDP_STATIC_DISCOVER_URL, NULL);
         }
         if (isPassive == NULL) {
-            sender->isPassive = celix_properties_getAsBool(topicProperties, PUBSUB_TCP_PASSIVE_CONFIGURED, false);
+            sender->isPassive = celix_properties_getAsBool(topicProperties, PUBSUB_UDP_PASSIVE_CONFIGURED, false);
         }
         if (passiveKey == NULL) {
-            passiveKey = celix_properties_get(topicProperties, PUBSUB_TCP_PASSIVE_KEY, NULL);
+            passiveKey = celix_properties_get(topicProperties, PUBSUB_UDP_PASSIVE_KEY, NULL);
+        }
+        if(staticConnectUrls == NULL) {
+            staticConnectUrls = celix_properties_get(topicProperties, PUBSUB_UDP_STATIC_CONNECT_URLS, NULL);
         }
     }
     /* When it's an endpoint share the socket with the receiver */
@@ -163,13 +169,14 @@ pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
     }
 
     if ((sender->socketHandler != NULL) && (topicProperties != NULL)) {
-        long prio = celix_properties_getAsLong(topicProperties, PUBSUB_TCP_THREAD_REALTIME_PRIO, -1L);
-        const char *sched = celix_properties_get(topicProperties, PUBSUB_TCP_THREAD_REALTIME_SCHED, NULL);
-        long retryCnt = celix_properties_getAsLong(topicProperties, PUBSUB_TCP_PUBLISHER_RETRY_CNT_KEY, PUBSUB_TCP_PUBLISHER_RETRY_CNT_DEFAULT);
-        double sendTimeout = celix_properties_getAsDouble(topicProperties, PUBSUB_TCP_PUBLISHER_SNDTIMEO_KEY, PUBSUB_TCP_PUBLISHER_SNDTIMEO_DEFAULT);
-        long maxMsgSize = celix_properties_getAsLong(topicProperties, PSA_TCP_MAX_MESSAGE_SIZE, PSA_TCP_DEFAULT_MAX_MESSAGE_SIZE);
-        long timeout = celix_bundleContext_getPropertyAsLong(ctx, PSA_TCP_TIMEOUT, PSA_TCP_DEFAULT_TIMEOUT);
+        long prio = celix_properties_getAsLong(topicProperties, PUBSUB_UDP_THREAD_REALTIME_PRIO, -1L);
+        const char *sched = celix_properties_get(topicProperties, PUBSUB_UDP_THREAD_REALTIME_SCHED, NULL);
+        long retryCnt = celix_properties_getAsLong(topicProperties, PUBSUB_UDP_PUBLISHER_RETRY_CNT_KEY, PUBSUB_UDP_PUBLISHER_RETRY_CNT_DEFAULT);
+        double sendTimeout = celix_properties_getAsDouble(topicProperties, PUBSUB_UDP_PUBLISHER_SNDTIMEO_KEY, PUBSUB_UDP_PUBLISHER_SNDTIMEO_DEFAULT);
+        long maxMsgSize = celix_properties_getAsLong(topicProperties, PSA_UDP_MAX_MESSAGE_SIZE, PSA_UDP_DEFAULT_MAX_MESSAGE_SIZE);
+        long timeout = celix_bundleContext_getPropertyAsLong(ctx, PSA_UDP_TIMEOUT, PSA_UDP_DEFAULT_TIMEOUT);
         sender->send_delay = celix_bundleContext_getPropertyAsLong(ctx,  PUBSUB_UTILS_PSA_SEND_DELAY, PUBSUB_UTILS_PSA_DEFAULT_SEND_DELAY);
+        maxMsgSize = MIN(UDP_MAX_MSG_SIZE, maxMsgSize);
         pubsub_sktHandler_setThreadName(sender->socketHandler, topic, scope);
         pubsub_sktHandler_setThreadPriority(sender->socketHandler, prio, sched);
         pubsub_sktHandler_setSendRetryCnt(sender->socketHandler, (unsigned int) retryCnt);
@@ -182,32 +189,34 @@ pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
     }
 
     if (!sender->isPassive) {
-        //setting up tcp socket for TCP TopicSender
+        //setting up tcp socket for UDP TopicSender
         if (discUrl != NULL) {
-            urls = strndup(discUrl, 1024 * 1024);
+            urls = celix_utils_strdup(discUrl);
             sender->isStatic = true;
         } else if (ip != NULL) {
-            urls = strndup(ip, 1024 * 1024);
+            urls = celix_utils_strdup(ip);
         } else {
             struct sockaddr_in *sin = pubsub_utils_url_getInAddr(NULL, 0);
             urls = pubsub_utils_url_get_url(sin, NULL);
             free(sin);
         }
-        if (!sender->url) {
-            char *urlsCopy = strndup(urls, 1024 * 1024);
+        if (!sender->url && urls) {
+            char *urlsCopy = celix_utils_strdup(urls);
             char *url;
             char *save = urlsCopy;
             while ((url = strtok_r(save, " ", &save))) {
                 int retry = 0;
-                while (url && retry < TCP_BIND_MAX_RETRY) {
-                    pubsub_utils_url_t *urlInfo = pubsub_utils_url_parse(url);
-                    int rc = pubsub_sktHandler_tcp_listen(sender->socketHandler, urlInfo->url);
+                pubsub_utils_url_t *urlInfo = pubsub_utils_url_parse(url);
+                bool is_multicast = pubsub_utils_url_is_multicast(urlInfo->hostname);
+                bool is_broadcast = pubsub_utils_url_is_broadcast(urlInfo->hostname);
+                pubsub_utils_url_free(urlInfo);
+                while ((is_multicast || is_broadcast) && url && retry < UDP_BIND_MAX_RETRY) {
+                    int rc = pubsub_sktHandler_udp_bind(sender->socketHandler, url);
                     if (rc < 0) {
-                        L_WARN("Error for tcp_bind using dynamic bind url '%s'. %s", urlInfo->url, strerror(errno));
+                        L_WARN("Error for udp bind using dynamic bind url '%s'. %s", url, strerror(errno));
                     } else {
                         url = NULL;
                     }
-                    pubsub_utils_url_free(urlInfo);
                     retry++;
                 }
             }
@@ -215,10 +224,32 @@ pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
             sender->url = pubsub_sktHandler_get_interface_url(sender->socketHandler);
         }
         free(urls);
+        if (staticConnectUrls){
+            char *urlsCopy = celix_utils_strdup(staticConnectUrls);
+            char *url;
+            char *save = urlsCopy;
+            while ((url = strtok_r(save, " ", &save))) {
+                if (url) {
+                    int rc = 0;
+                    pubsub_utils_url_t *urlInfo = pubsub_utils_url_parse(url);
+                    bool is_multicast = pubsub_utils_url_is_multicast(urlInfo->hostname);
+                    bool is_broadcast = pubsub_utils_url_is_broadcast(urlInfo->hostname);
+                    if (!is_multicast && !is_broadcast) {
+                        L_INFO("Udp static connect '%s'", url);
+                        rc = pubsub_sktHandler_udp_connect(sender->socketHandler, url);
+                    }
+                    if (rc < 0) {
+                        L_WARN("Error for udp static connect '%s'. %s", url, strerror(errno));
+                    }
+                    pubsub_utils_url_free(urlInfo);
+                }
+            }
+            free(urlsCopy);
+        }
     }
 
     //register publisher services using a service factory
-    if ((sender->url != NULL) ||  (sender->isPassive)) {
+    {
         sender->scope = scope == NULL ? NULL : strndup(scope, 1024 * 1024);
         sender->topic = strndup(topic, 1024 * 1024);
 
@@ -226,8 +257,8 @@ pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
         sender->boundedServices.map = hashMap_create(NULL, NULL, NULL, NULL);
 
         sender->publisher.factory.handle = sender;
-        sender->publisher.factory.getService = psa_tcp_getPublisherService;
-        sender->publisher.factory.ungetService = psa_tcp_ungetPublisherService;
+        sender->publisher.factory.getService = psa_udp_getPublisherService;
+        sender->publisher.factory.ungetService = psa_udp_ungetPublisherService;
 
         celix_properties_t *props = celix_properties_create();
         celix_properties_set(props, PUBSUB_PUBLISHER_TOPIC, sender->topic);
@@ -242,15 +273,11 @@ pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
         opts.properties = props;
 
         sender->publisher.svcId = celix_bundleContext_registerServiceWithOptions(ctx, &opts);
-    } else {
-        free(sender);
-        sender = NULL;
     }
-
     return sender;
 }
 
-void pubsub_tcpTopicSender_destroy(pubsub_tcp_topic_sender_t *sender) {
+void pubsub_udpTopicSender_destroy(pubsub_udp_topic_sender_t *sender) {
     if (sender != NULL) {
 
         celix_bundleContext_unregisterService(sender->ctx, sender->publisher.svcId);
@@ -258,7 +285,7 @@ void pubsub_tcpTopicSender_destroy(pubsub_tcp_topic_sender_t *sender) {
         celixThreadMutex_lock(&sender->boundedServices.mutex);
         hash_map_iterator_t iter = hashMapIterator_construct(sender->boundedServices.map);
         while (hashMapIterator_hasNext(&iter)) {
-            psa_tcp_bounded_service_entry_t *entry = hashMapIterator_nextValue(&iter);
+            psa_udp_bounded_service_entry_t *entry = hashMapIterator_nextValue(&iter);
             free(entry);
         }
         hashMap_destroy(sender->boundedServices.map, false, false);
@@ -280,44 +307,83 @@ void pubsub_tcpTopicSender_destroy(pubsub_tcp_topic_sender_t *sender) {
     }
 }
 
-long pubsub_tcpTopicSender_protocolSvcId(pubsub_tcp_topic_sender_t *sender) {
+long pubsub_udpTopicSender_protocolSvcId(pubsub_udp_topic_sender_t *sender) {
     return sender->protocolSvcId;
 }
 
-const char *pubsub_tcpTopicSender_scope(pubsub_tcp_topic_sender_t *sender) {
+const char *pubsub_udpTopicSender_scope(pubsub_udp_topic_sender_t *sender) {
     return sender->scope;
 }
 
-const char *pubsub_tcpTopicSender_topic(pubsub_tcp_topic_sender_t *sender) {
+const char *pubsub_udpTopicSender_topic(pubsub_udp_topic_sender_t *sender) {
     return sender->topic;
 }
 
-const char* pubsub_tcpTopicSender_serializerType(pubsub_tcp_topic_sender_t *sender) {
+const char* pubsub_udpTopicSender_serializerType(pubsub_udp_topic_sender_t *sender) {
     return pubsub_serializerHandler_getSerializationType(sender->serializerHandler);
 }
 
-const char *pubsub_tcpTopicSender_url(pubsub_tcp_topic_sender_t *sender) {
+const char *pubsub_udpTopicSender_url(pubsub_udp_topic_sender_t *sender) {
     if (sender->isPassive) {
         return pubsub_sktHandler_get_connection_url(sender->socketHandler);
     } else {
         return sender->url;
     }
 }
-bool pubsub_tcpTopicSender_isStatic(pubsub_tcp_topic_sender_t *sender) {
+
+void pubsub_udpTopicSender_listConnections(pubsub_udp_topic_sender_t *sender, celix_array_list_t *urls) {
+    pubsub_sktHandler_get_connection_urls(sender->socketHandler, urls);
+}
+
+bool pubsub_udpTopicSender_isStatic(pubsub_udp_topic_sender_t *sender) {
     return sender->isStatic;
 }
 
-bool pubsub_tcpTopicSender_isPassive(pubsub_tcp_topic_sender_t *sender) {
+bool pubsub_udpTopicSender_isPassive(pubsub_udp_topic_sender_t *sender) {
     return sender->isPassive;
 }
 
-static void *psa_tcp_getPublisherService(void *handle, const celix_bundle_t *requestingBundle,
+void pubsub_udpTopicSender_connectTo(pubsub_udp_topic_sender_t *sender, const char *url) {
+    if (!url) return;
+    char *connectUrl =  celix_utils_strdup(url);
+    pubsub_utils_url_t *urlInfo = pubsub_utils_url_parse(connectUrl);
+    bool is_multicast = pubsub_utils_url_is_multicast(urlInfo->hostname);
+    bool is_broadcast = pubsub_utils_url_is_broadcast(urlInfo->hostname);
+    pubsub_utils_url_free(urlInfo);
+
+    if (!is_multicast && !is_broadcast) {
+        L_DEBUG("[PSA_udp] TopicSender %s/%s connecting to udp url %s",
+                sender->scope == NULL ? "(null)" : sender->scope,
+                sender->topic,
+                url);
+        pubsub_sktHandler_udp_connect(sender->socketHandler, connectUrl);
+    }
+    free(connectUrl);
+}
+
+void pubsub_udpTopicSender_disconnectFrom(pubsub_udp_topic_sender_t *sender, const char *url) {
+    if (!url) return;
+    char *connectUrl =  celix_utils_strdup(url);
+    pubsub_utils_url_t *urlInfo = pubsub_utils_url_parse(connectUrl);
+    bool is_multicast = pubsub_utils_url_is_multicast(urlInfo->hostname);
+    bool is_broadcast = pubsub_utils_url_is_broadcast(urlInfo->hostname);
+    pubsub_utils_url_free(urlInfo);
+    if (!is_multicast && !is_broadcast) {
+        L_DEBUG("[PSA udp] TopicSender %s/%s disconnect from udp url %s",
+                sender->scope == NULL ? "(null)" : sender->scope,
+                sender->topic,
+                url);
+        pubsub_sktHandler_disconnect(sender->socketHandler, connectUrl);
+    }
+}
+
+static void *psa_udp_getPublisherService(void *handle, const celix_bundle_t *requestingBundle,
                                          const celix_properties_t *svcProperties __attribute__((unused))) {
-    pubsub_tcp_topic_sender_t *sender = handle;
+    pubsub_udp_topic_sender_t *sender = handle;
     long bndId = celix_bundle_getId(requestingBundle);
 
     celixThreadMutex_lock(&sender->boundedServices.mutex);
-    psa_tcp_bounded_service_entry_t *entry = hashMap_get(sender->boundedServices.map, (void *) bndId);
+    psa_udp_bounded_service_entry_t *entry = hashMap_get(sender->boundedServices.map, (void *) bndId);
     if (entry != NULL) {
         entry->getCount += 1;
     } else {
@@ -326,8 +392,8 @@ static void *psa_tcp_getPublisherService(void *handle, const celix_bundle_t *req
         entry->parent = sender;
         entry->bndId = bndId;
         entry->service.handle = entry;
-        entry->service.localMsgTypeIdForMsgType = psa_tcp_localMsgTypeIdForMsgType;
-        entry->service.send = psa_tcp_topicPublicationSend;
+        entry->service.localMsgTypeIdForMsgType = psa_udp_localMsgTypeIdForMsgType;
+        entry->service.send = psa_udp_topicPublicationSend;
         hashMap_put(sender->boundedServices.map, (void *) bndId, entry);
     }
     celixThreadMutex_unlock(&sender->boundedServices.mutex);
@@ -335,13 +401,13 @@ static void *psa_tcp_getPublisherService(void *handle, const celix_bundle_t *req
     return &entry->service;
 }
 
-static void psa_tcp_ungetPublisherService(void *handle, const celix_bundle_t *requestingBundle,
+static void psa_udp_ungetPublisherService(void *handle, const celix_bundle_t *requestingBundle,
                                           const celix_properties_t *svcProperties __attribute__((unused))) {
-    pubsub_tcp_topic_sender_t *sender = handle;
+    pubsub_udp_topic_sender_t *sender = handle;
     long bndId = celix_bundle_getId(requestingBundle);
 
     celixThreadMutex_lock(&sender->boundedServices.mutex);
-    psa_tcp_bounded_service_entry_t *entry = hashMap_get(sender->boundedServices.map, (void *) bndId);
+    psa_udp_bounded_service_entry_t *entry = hashMap_get(sender->boundedServices.map, (void *) bndId);
     if (entry != NULL) {
         entry->getCount -= 1;
     }
@@ -355,9 +421,9 @@ static void psa_tcp_ungetPublisherService(void *handle, const celix_bundle_t *re
 }
 
 static int
-psa_tcp_topicPublicationSend(void *handle, unsigned int msgTypeId, const void *inMsg, celix_properties_t *metadata) {
-    psa_tcp_bounded_service_entry_t *bound = handle;
-    pubsub_tcp_topic_sender_t *sender = bound->parent;
+psa_udp_topicPublicationSend(void *handle, unsigned int msgTypeId, const void *inMsg, celix_properties_t *metadata) {
+    psa_udp_bounded_service_entry_t *bound = handle;
+    pubsub_udp_topic_sender_t *sender = bound->parent;
     const char* msgFqn;
     int majorVersion;
     int minorVersion;
@@ -380,7 +446,7 @@ psa_tcp_topicPublicationSend(void *handle, unsigned int msgTypeId, const void *i
     struct iovec *serializedIoVecOutput = NULL;
     status = pubsub_serializerHandler_serialize(sender->serializerHandler, msgTypeId, inMsg, &serializedIoVecOutput, &serializedIoVecOutputLen);
     if (status != CELIX_SUCCESS) {
-        L_WARN("[PSA_TCP_V2_TS] Error serialize message of type %s for scope/topic %s/%s", msgFqn,
+        L_WARN("[PSA_UDP_V2_TS] Error serialize message of type %s for scope/topic %s/%s", msgFqn,
                sender->scope == NULL ? "(null)" : sender->scope, sender->topic);
         celix_properties_destroy(metadata);
         return status;
@@ -422,28 +488,28 @@ psa_tcp_topicPublicationSend(void *handle, unsigned int msgTypeId, const void *i
     }
 
     if (!sendOk) {
-        L_WARN("[PSA_TCP_V2_TS] Error sending msg. %s", strerror(errno));
+        L_WARN("[PSA_UDP_V2_TS] Error sending msg. %s", strerror(errno));
     }
 
     celix_properties_destroy(metadata);
     return status;
 }
 
-static void delay_first_send_for_late_joiners(pubsub_tcp_topic_sender_t *sender) {
+static void delay_first_send_for_late_joiners(pubsub_udp_topic_sender_t *sender) {
 
     static bool firstSend = true;
 
     if (firstSend) {
         if (sender->send_delay ) {
-            L_INFO("PSA_TCP_TP: Delaying first send for late joiners...\n");
+            L_INFO("PSA_UDP_TP: Delaying first send for late joiners...\n");
         }
         usleep(sender->send_delay * 1000);
         firstSend = false;
     }
 }
 
-static int psa_tcp_localMsgTypeIdForMsgType(void *handle, const char *msgType, unsigned int *msgTypeId) {
-    psa_tcp_bounded_service_entry_t* entry = handle;
+static int psa_udp_localMsgTypeIdForMsgType(void *handle, const char *msgType, unsigned int *msgTypeId) {
+    psa_udp_bounded_service_entry_t* entry = handle;
     uint32_t msgId = pubsub_serializerHandler_getMsgId(entry->parent->serializerHandler, msgType);
     *msgTypeId = (unsigned int)msgId;
     return 0;

@@ -29,6 +29,11 @@ if (PUBSUB)
         add_subdirectory(pubsub_admin_tcp)
     endif (BUILD_PUBSUB_PSA_TCP)
 
+    option(BUILD_PUBSUB_PSA_UDP "Build UDP PubSub Admin" ON)
+    if (BUILD_PUBSUB_PSA_UDP)
+        add_subdirectory(pubsub_admin_udp)
+    endif (BUILD_PUBSUB_PSA_UDP)
+
     option(BUILD_PUBSUB_PSA_UDP_MC "Build UDP MC PubSub Admin" ON)
     if (BUILD_PUBSUB_PSA_UDP_MC)
         add_subdirectory(pubsub_admin_udp_mc)
