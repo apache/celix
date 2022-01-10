@@ -1749,49 +1749,45 @@ void pubsub_sktHandler_connectionHandler(pubsub_sktHandler_t *handle, int fd) {
 //
 static inline
 void pubsub_sktHandler_handler(pubsub_sktHandler_t *handle) {
-  int rc = 0;
-  if (handle->efd >= 0) {
-    int nof_events = 0;
-    //  Wait for events.
-    struct kevent events[MAX_EVENTS];
-    struct timespec ts = {handle->timeout / 1000, (handle->timeout  % 1000) * 1000000};
-    nof_events = kevent (handle->efd, NULL, 0, &events[0], MAX_EVENTS, handle->timeout ? &ts : NULL);
-    if (nof_events < 0) {
-      if ((errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)) {
-      } else
-        L_ERROR("[SKT Handler] Cannot create poll wait (%d) %s\n", nof_events, strerror(errno));
-    }
-    for (int i = 0; i < nof_events; i++) {
-      hash_map_iterator_t iter = hashMapIterator_construct(handle->interface_fd_map);
-      psa_skt_connection_entry_t *pendingConnectionEntry = NULL;
-      while (hashMapIterator_hasNext(&iter)) {
-        psa_skt_connection_entry_t *entry = hashMapIterator_nextValue(&iter);
-        if (events[i].ident == entry->fd)
-          pendingConnectionEntry = entry;
-      }
-      if (pendingConnectionEntry) {
-        int fd = pubsub_sktHandler_acceptHandler(handle, pendingConnectionEntry);
-        pubsub_sktHandler_connectionHandler(handle, fd);
-      } else if (events[i].filter & EVFILT_READ) {
-        int rc = pubsub_sktHandler_read(handle, events[i].ident);
-        if (rc == 0) pubsub_sktHandler_close(handle, events[i].ident);
-      } else if (events[i].flags & EV_EOF) {
-        int err = 0;
-        socklen_t len = sizeof(int);
-        rc = getsockopt(events[i].ident, SOL_SOCKET, SO_ERROR, &err, &len);
-        if (rc != 0) {
-          L_ERROR("[SKT Handler]:EPOLLRDHUP ERROR read from socket %s\n", strerror(errno));
-          continue;
+    int rc = 0;
+    if (handle->efd >= 0) {
+        int nof_events = 0;
+        //  Wait for events.
+        struct kevent events[MAX_EVENTS];
+        struct timespec ts = {handle->timeout / 1000, (handle->timeout % 1000) * 1000000};
+        nof_events = kevent(handle->efd, NULL, 0, &events[0], MAX_EVENTS, handle->timeout ? &ts : NULL);
+        if (nof_events < 0) {
+            if ((errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)) {
+            } else
+                L_ERROR("[SKT Handler] Cannot create poll wait (%d) %s\n", nof_events, strerror(errno));
         }
-        pubsub_sktHandler_close(handle, events[i].ident);
-      } else if (events[i].flags & EV_ERROR) {
-        L_ERROR("[SKT Handler]:EPOLLERR  ERROR read from socket %s\n", strerror(errno));
-        pubsub_sktHandler_close(handle, events[i].ident);
-        continue;
-      }
+        for (int i = 0; i < nof_events; i++) {
+            psa_skt_connection_entry_t
+                *entry = hashMap_get(handle->interface_fd_map, (void *) (intptr_t) events[i].ident);
+            if (entry && (entry->socket_type == SOCK_STREAM)) {
+                int fd = pubsub_sktHandler_acceptHandler(handle, entry);
+                pubsub_sktHandler_connectionHandler(handle, fd);
+            } else if (events[i].filter & EVFILT_READ) {
+                rc = pubsub_sktHandler_read(handle, events[i].ident);
+                if (rc == 0)
+                    pubsub_sktHandler_close(handle, events[i].ident);
+            } else if (events[i].flags & EV_EOF) {
+                int err = 0;
+                socklen_t len = sizeof(int);
+                rc = getsockopt(events[i].ident, SOL_SOCKET, SO_ERROR, &err, &len);
+                if (rc != 0) {
+                    L_ERROR("[SKT Handler]:EV_EOF ERROR read from socket %s\n", strerror(errno));
+                    continue;
+                }
+                pubsub_sktHandler_close(handle, events[i].ident);
+            } else if (events[i].flags & EV_ERROR) {
+                L_ERROR("[SKT Handler]:EV_ERROR  ERROR read from socket %s\n", strerror(errno));
+                pubsub_sktHandler_close(handle, events[i].ident);
+                continue;
+            }
+        }
     }
-  }
-  return;
+    return;
 }
 
 #else
