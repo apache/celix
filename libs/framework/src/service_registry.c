@@ -206,8 +206,9 @@ static celix_status_t serviceRegistry_registerServiceInternal(service_registry_p
 	    *registration = serviceRegistration_create(registry->callback, bundle, serviceName, svcId, serviceObject, dictionary);
 	}
 	//printf("Registering service %li with name %s\n", svcId, serviceName);
-
-    serviceRegistry_addHooks(registry, serviceName, serviceObject, *registration);
+    if (strcmp(OSGI_FRAMEWORK_LISTENER_HOOK_SERVICE_NAME, serviceName) == 0) {
+        serviceRegistry_addHooks(registry, serviceName, serviceObject, *registration);
+    }
 
 	celixThreadRwlock_writeLock(&registry->lock);
 	regs = (array_list_pt) hashMap_get(registry->serviceRegistrations, bundle);
@@ -246,7 +247,9 @@ celix_status_t serviceRegistry_unregisterService(service_registry_pt registry, b
     serviceRegistration_getServiceName(registration, &svcName);
     //printf("Unregistering service %li with name %s\n", svcId, svcName);
 
-	serviceRegistry_removeHook(registry, registration);
+    if (strcmp(OSGI_FRAMEWORK_LISTENER_HOOK_SERVICE_NAME, svcName) == 0) {
+        serviceRegistry_removeHook(registry, registration);
+    }
 
 	celixThreadRwlock_writeLock(&registry->lock);
 	regs = (celix_array_list_t*) hashMap_get(registry->serviceRegistrations, bundle);
@@ -640,101 +643,82 @@ celix_status_t serviceRegistry_ungetService(service_registry_pt registry, bundle
 	return status;
 }
 
-static celix_status_t serviceRegistry_addHooks(service_registry_pt registry, const char* serviceName, const void* serviceObject __attribute__((unused)), service_registration_pt registration) {
-	celix_status_t status = CELIX_SUCCESS;
+static celix_status_t serviceRegistry_addHooks(service_registry_pt registry, const char* serviceName, const void* serviceObject, service_registration_pt registration) {
+    celix_status_t status = CELIX_SUCCESS;
 
-	celix_bundle_t* bnd = NULL;
-	celix_bundle_context_t* ctx = NULL;
-	serviceRegistration_getBundle(registration, &bnd);
-	bundle_getContext(bnd, &ctx);
-
-    struct listener_hook_info info;
-    info.context = ctx;
-    info.removed = false;
+    struct listener_hook_info info = { .context = NULL, .filter = NULL, .removed = false };
     celix_array_list_t* infos = NULL;
     celix_array_list_t* listeners = NULL;
     celix_service_registry_listener_hook_entry_t* entry = NULL;
 
 
-	if (strcmp(OSGI_FRAMEWORK_LISTENER_HOOK_SERVICE_NAME, serviceName) == 0) {
-	    infos = celix_arrayList_create();
-	    celix_arrayList_add(infos, &info);
-        listeners = celix_arrayList_create();
+    infos = celix_arrayList_create();
+    celix_arrayList_add(infos, &info);
+    listeners = celix_arrayList_create();
 
-        celixThreadRwlock_writeLock(&registry->lock);
-        long svcId = serviceRegistration_getServiceId(registration);
-        entry = celix_createHookEntry(svcId, (celix_listener_hook_service_t*)serviceObject);
-        celix_increaseCountHook(entry);
-		arrayList_add(registry->listenerHooks, entry);
+    celixThreadRwlock_writeLock(&registry->lock);
+    long svcId = serviceRegistration_getServiceId(registration);
+    entry = celix_createHookEntry(svcId, (celix_listener_hook_service_t*)serviceObject);
+    celix_increaseCountHook(entry);
+    arrayList_add(registry->listenerHooks, entry);
 
-		for (int i = 0; i < celix_arrayList_size(registry->serviceListeners); ++i) {
-            celix_service_registry_service_listener_entry_t *listenerEntry = celix_arrayList_get(registry->serviceListeners, i);
-            celix_increaseCountServiceListener(listenerEntry);
-            celix_arrayList_add(listeners, listenerEntry);
-		}
-		celixThreadRwlock_unlock(&registry->lock);
-	}
+    for (int i = 0; i < celix_arrayList_size(registry->serviceListeners); ++i) {
+        celix_service_registry_service_listener_entry_t *listenerEntry = celix_arrayList_get(registry->serviceListeners, i);
+        celix_increaseCountServiceListener(listenerEntry);
+        celix_arrayList_add(listeners, listenerEntry);
+    }
+    celixThreadRwlock_unlock(&registry->lock);
 
-	if (infos != NULL && listeners != NULL) {
-        for (int i = 0; i < arrayList_size(listeners); ++i) {
-            celix_service_registry_service_listener_entry_t *listenerEntry = celix_arrayList_get(listeners, i);
-            info.filter = celix_filter_getFilterString(listenerEntry->filter);
-            entry->hook->added(entry->hook->handle, infos);
-            celix_decreaseCountServiceListener(listenerEntry);
-        }
-        celix_decreaseCountHook(entry);
-        celix_arrayList_destroy(listeners);
-        celix_arrayList_destroy(infos);
-	}
+    for (int i = 0; i < arrayList_size(listeners); ++i) {
+        celix_service_registry_service_listener_entry_t *listenerEntry = celix_arrayList_get(listeners, i);
+        bundle_getContext(listenerEntry->bundle, &info.context);
+        info.filter = celix_filter_getFilterString(listenerEntry->filter);
+        entry->hook->added(entry->hook->handle, infos);
+        celix_decreaseCountServiceListener(listenerEntry);
+    }
+    celix_decreaseCountHook(entry);
+    celix_arrayList_destroy(listeners);
+    celix_arrayList_destroy(infos);
 
-	return status;
+    return status;
 }
 
 static celix_status_t serviceRegistry_removeHook(service_registry_pt registry, service_registration_pt registration) {
-	celix_status_t status = CELIX_SUCCESS;
-	const char* serviceName = NULL;
+    celix_status_t status = CELIX_SUCCESS;
 
-    celix_bundle_t* bnd = NULL;
-    celix_bundle_context_t* ctx = NULL;
-    serviceRegistration_getBundle(registration, &bnd);
-    bundle_getContext(bnd, &ctx);
-    serviceRegistration_getServiceName(registration, &serviceName);
     long svcId = serviceRegistration_getServiceId(registration);
 
-    struct listener_hook_info info;
-    info.context = ctx;
-    info.removed = true;
+    struct listener_hook_info info = { .context = NULL, .filter = NULL, .removed = true };
     celix_array_list_t* infos = NULL;
     celix_array_list_t* listeners = NULL;
     celix_service_registry_listener_hook_entry_t *removedEntry = NULL;
 
-	if (strcmp(OSGI_FRAMEWORK_LISTENER_HOOK_SERVICE_NAME, serviceName) == 0) {
-        celixThreadRwlock_writeLock(&registry->lock);
-        for (int i = 0; i < celix_arrayList_size(registry->listenerHooks); ++i) {
-            celix_service_registry_listener_hook_entry_t *visit = celix_arrayList_get(registry->listenerHooks, i);
-            if (visit->svcId == svcId) {
-                removedEntry = visit;
-                celix_arrayList_removeAt(registry->listenerHooks, i);
-                celix_increaseCountHook(removedEntry);
-                break;
-            }
+    celixThreadRwlock_writeLock(&registry->lock);
+    for (int i = 0; i < celix_arrayList_size(registry->listenerHooks); ++i) {
+        celix_service_registry_listener_hook_entry_t *visit = celix_arrayList_get(registry->listenerHooks, i);
+        if (visit->svcId == svcId) {
+            removedEntry = visit;
+            celix_arrayList_removeAt(registry->listenerHooks, i);
+            celix_increaseCountHook(removedEntry);
+            break;
         }
-        if (removedEntry != NULL) {
-            infos = celix_arrayList_create();
-            celix_arrayList_add(infos, &info);
-            listeners = celix_arrayList_create();
-            for (int i = 0; i < celix_arrayList_size(registry->serviceListeners); ++i) {
-                celix_service_registry_service_listener_entry_t *listenerEntry = celix_arrayList_get(registry->serviceListeners, i);
-                celix_increaseCountServiceListener(listenerEntry);
-                celix_arrayList_add(listeners, listenerEntry);
-            }
+    }
+    if (removedEntry != NULL) {
+        infos = celix_arrayList_create();
+        celix_arrayList_add(infos, &info);
+        listeners = celix_arrayList_create();
+        for (int i = 0; i < celix_arrayList_size(registry->serviceListeners); ++i) {
+            celix_service_registry_service_listener_entry_t *listenerEntry = celix_arrayList_get(registry->serviceListeners, i);
+            celix_increaseCountServiceListener(listenerEntry);
+            celix_arrayList_add(listeners, listenerEntry);
         }
-        celixThreadRwlock_unlock(&registry->lock);
-	}
+    }
+    celixThreadRwlock_unlock(&registry->lock);
 
-	if (removedEntry != NULL) {
+    if (removedEntry != NULL) {
         for (int i = 0; i < arrayList_size(listeners); ++i) {
             celix_service_registry_service_listener_entry_t *listenerEntry = celix_arrayList_get(listeners, i);
+            bundle_getContext(listenerEntry->bundle, &info.context);
             info.filter = celix_filter_getFilterString(listenerEntry->filter);
             removedEntry->hook->removed(removedEntry->hook->handle, infos);
             celix_decreaseCountServiceListener(listenerEntry);
@@ -744,9 +728,9 @@ static celix_status_t serviceRegistry_removeHook(service_registry_pt registry, s
         celix_arrayList_destroy(infos);
 
         celix_waitAndDestroyHookEntry(removedEntry);
-	}
+    }
 
-	return status;
+    return status;
 }
 
 static void serviceRegistry_callHooksForListenerFilter(service_registry_pt registry, celix_bundle_t *owner, const celix_filter_t *filter, bool removed) {

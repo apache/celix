@@ -39,6 +39,8 @@ public:
     celix_bundle_context_t *ctx = nullptr;
     celix_properties_t *properties = nullptr;
 
+    const char * const CMP_TEST_BND_LOC = "" CMP_TEST_BUNDLE_LOC "";
+
     CelixBundleContextServicesTests() {
         properties = celix_properties_create();
         celix_properties_set(properties, "LOGHELPER_ENABLE_STDOUT_FALLBACK", "true");
@@ -920,6 +922,36 @@ TEST_F(CelixBundleContextServicesTests, metaTrackAllServiceTrackers) {
     celix_bundleContext_stopTracker(ctx, trkId1);
     celix_bundleContext_stopTracker(ctx, trkId2);
     celix_bundleContext_stopTracker(ctx, trkId3);
+}
+
+TEST_F(CelixBundleContextServicesTests, metaTrackServiceTrackersFromOtherBundle) {
+    long bndId = celix_bundleContext_installBundle(ctx, CMP_TEST_BND_LOC, true);
+    ASSERT_TRUE(bndId >= 0);
+    long bndIdInAdd = -1;
+    long bndIdInRemove = -1;
+    auto add = [](void *handle, const celix_service_tracker_info_t* info) {
+        long * bid= static_cast<long *>(handle);
+        *bid = info->bundleId;
+    };
+    auto remove = [](void *handle, const celix_service_tracker_info_t *info) {
+        long * bid= static_cast<long *>(handle);
+        *bid = info->bundleId;
+    };
+    long trkId1 = celix_bundleContext_trackServiceTrackers(ctx, NULL, &bndIdInAdd, add, NULL);
+    EXPECT_TRUE(trkId1 >= 0);
+    long trkId2 = celix_bundleContext_trackServiceTrackers(ctx, NULL, &bndIdInRemove, NULL, remove);
+    EXPECT_TRUE(trkId2 >= 0);
+    EXPECT_EQ(bndIdInAdd, bndId);
+    EXPECT_EQ(bndIdInRemove, -1);
+    EXPECT_TRUE(celix_bundleContext_stopBundle(ctx, bndId));
+    EXPECT_EQ(bndIdInRemove, bndId);
+    bndIdInAdd = -1;
+    EXPECT_TRUE(celix_bundleContext_startBundle(ctx, bndId));
+    EXPECT_EQ(bndIdInAdd, bndId);
+    bndIdInRemove = -1;
+    celix_bundleContext_stopTracker(ctx, trkId1);
+    celix_bundleContext_stopTracker(ctx, trkId2);
+    EXPECT_EQ(bndIdInRemove, bndId);
 }
 
 TEST_F(CelixBundleContextServicesTests, serviceFactoryTest) {
