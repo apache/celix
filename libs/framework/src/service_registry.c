@@ -492,7 +492,7 @@ celix_status_t serviceRegistry_ungetServiceReference(service_registry_pt registr
     return status;
 }
 
-static void serviceRegistry_logWarningServiceReferenceUsageCount(service_registry_pt registry __attribute__((unused)), bundle_pt bundle, service_reference_pt ref, size_t usageCount, size_t refCount) {
+static void serviceRegistry_logWarningServiceReferenceUsageCount(service_registry_pt registry, bundle_pt bundle, service_reference_pt ref, size_t usageCount, size_t refCount) {
     if (usageCount > 0) {
         fw_log(registry->framework->logger, CELIX_LOG_LEVEL_WARNING, "Service Reference destroyed with usage count is %zu, expected 0. Look for missing bundleContext_ungetService calls.", usageCount);
     }
@@ -612,10 +612,7 @@ celix_status_t serviceRegistry_getService(service_registry_pt registry, bundle_p
 
     serviceRegistration_release(registration);
 
-    /* NOTE the out argument of sr_getService should be 'const void**'
-       To ensure backwards compatibility a cast is made instead.
-    */
-    serviceReference_getService(reference, (void **)out);
+    serviceReference_getService(reference, out);
 
 	return status;
 }
@@ -630,10 +627,7 @@ celix_status_t serviceRegistry_ungetService(service_registry_pt registry, bundle
 
     celix_status_t status = serviceReference_decreaseUsage(reference, &count);
     if (count == 0) {
-        /*NOTE the argument service of sr_getService should be 'const void**'
-          To ensure backwards compatibility a cast is made instead.
-          */
-        serviceReference_getService(reference, (void**)&service);
+        serviceReference_getService(reference, &service);
         serviceReference_getServiceRegistration(reference, &reg);
         if (reg != NULL) {
             serviceRegistration_ungetService(reg, bundle, &service);

@@ -35,7 +35,9 @@
 
 #include "service_reference_private.h"
 #include "service_registration_private.h"
+#include "celix_build_assert.h"
 
+static void serviceReference_doRelease(struct celix_ref *);
 static void serviceReference_destroy(service_reference_pt);
 static void serviceReference_logWarningUsageCountBelowZero(service_reference_pt ref);
 
@@ -46,15 +48,14 @@ celix_status_t serviceReference_create(registry_callback_t callback, bundle_pt r
 	if (!ref) {
 		status = CELIX_ENOMEM;
 	} else {
+        celix_ref_init(&ref->refCount);
         ref->callback = callback;
 		ref->referenceOwner = referenceOwner;
 		ref->registration = registration;
         ref->service = NULL;
         serviceRegistration_getBundle(registration, &ref->registrationBundle);
 		celixThreadRwlock_create(&ref->lock, NULL);
-		ref->refCount = 1;
         ref->usageCount = 0;
-
         serviceRegistration_retain(ref->registration);
 	}
 
@@ -68,32 +69,26 @@ celix_status_t serviceReference_create(registry_callback_t callback, bundle_pt r
 }
 
 celix_status_t serviceReference_retain(service_reference_pt ref) {
-    celixThreadRwlock_writeLock(&ref->lock);
-    ref->refCount += 1;
-    celixThreadRwlock_unlock(&ref->lock);
+    celix_ref_get(&ref->refCount);
     return CELIX_SUCCESS;
 }
 
 celix_status_t serviceReference_release(service_reference_pt ref, bool *out) {
     bool destroyed = false;
-    celixThreadRwlock_writeLock(&ref->lock);
-    assert(ref->refCount > 0);
-    ref->refCount -= 1;
-    if (ref->refCount == 0) {
-        if (ref->registration != NULL) {
-            serviceRegistration_release(ref->registration);
-        }
-        celixThreadRwlock_unlock(&ref->lock);
-        serviceReference_destroy(ref);
-        destroyed = true;
-    } else {
-        celixThreadRwlock_unlock(&ref->lock);
-    }
-
+    destroyed = celix_ref_put(&ref->refCount, serviceReference_doRelease);
     if (out) {
         *out = destroyed;
     }
     return CELIX_SUCCESS;
+}
+
+static void serviceReference_doRelease(struct celix_ref *refCount) {
+    service_reference_pt ref = (service_reference_pt)refCount;
+    BUILD_ASSERT(offsetof(struct serviceReference, refCount) == 0);
+    if(ref->registration != NULL) {
+        serviceRegistration_release(ref->registration);
+    }
+    serviceReference_destroy(ref);
 }
 
 celix_status_t serviceReference_increaseUsage(service_reference_pt ref, size_t *out) {
@@ -144,18 +139,15 @@ celix_status_t serviceReference_getUsageCount(service_reference_pt ref, size_t *
 celix_status_t serviceReference_getReferenceCount(service_reference_pt ref, size_t *count) {
     celix_status_t status = CELIX_SUCCESS;
     celixThreadRwlock_readLock(&ref->lock);
-    *count = ref->refCount;
+    *count = ref->refCount.count;
     celixThreadRwlock_unlock(&ref->lock);
     return status;
 }
 
-celix_status_t serviceReference_getService(service_reference_pt ref, void **service) {
+celix_status_t serviceReference_getService(service_reference_pt ref, const void **service) {
     celix_status_t status = CELIX_SUCCESS;
     celixThreadRwlock_readLock(&ref->lock);
-    /*NOTE the service argument should be 'const void**'
-      To ensure backwards compatibility a cast is made instead.
-    */
-    *service = (const void**) ref->service;
+    *service = ref->service;
     celixThreadRwlock_unlock(&ref->lock);
     return status;
 }
@@ -169,7 +161,7 @@ celix_status_t serviceReference_setService(service_reference_pt ref, const void 
 }
 
 static void serviceReference_destroy(service_reference_pt ref) {
-	assert(ref->refCount == 0);
+	assert(ref->refCount.count == 0);
     celixThreadRwlock_destroy(&ref->lock);
 	ref->registration = NULL;
 	free(ref);
