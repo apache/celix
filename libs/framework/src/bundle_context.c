@@ -76,7 +76,7 @@ celix_status_t bundleContext_create(framework_pt framework, celix_framework_logg
 
         }
 	}
-
+    //FIXME: context == NULL?
 	framework_logIfError(context->framework->logger, status, NULL, "Failed to create context");
 
 	return status;
@@ -108,7 +108,7 @@ celix_status_t bundleContext_destroy(bundle_context_pt context) {
 	} else {
 		status = CELIX_ILLEGAL_ARGUMENT;
 	}
-
+    //FIXME: context == NULL?
 	framework_logIfError(context->framework->logger, status, NULL, "Failed to destroy context");
 
 	return status;
@@ -233,6 +233,7 @@ celix_status_t bundleContext_getServiceReference(bundle_context_pt context, cons
     if (serviceName != NULL) {
         if (bundleContext_getServiceReferences(context, serviceName, NULL, &services) == CELIX_SUCCESS) {
             reference = (arrayList_size(services) > 0) ? arrayList_get(services, 0) : NULL;
+            //FIXME: unget service reference
             arrayList_destroy(services);
             *service_reference = reference;
         } else {
