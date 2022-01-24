@@ -17,10 +17,10 @@
  * under the License.
  */
 
-#ifndef CELIX_CELIX_BUILD_ASSERT_H
-#define CELIX_CELIX_BUILD_ASSERT_H
+#ifndef CELIX_BUILD_ASSERT_H
+#define CELIX_BUILD_ASSERT_H
 
-#define BUILD_ASSERT(cond) \
+#define CELIX_BUILD_ASSERT(cond) \
     do { (void) sizeof(char [1 - 2*!(cond)]); } while(0)
 
-#endif //CELIX_CELIX_BUILD_ASSERT_H
+#endif //CELIX_BUILD_ASSERT_H

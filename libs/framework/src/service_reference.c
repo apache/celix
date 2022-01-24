@@ -84,7 +84,7 @@ celix_status_t serviceReference_release(service_reference_pt ref, bool *out) {
 
 static void serviceReference_doRelease(struct celix_ref *refCount) {
     service_reference_pt ref = (service_reference_pt)refCount;
-    BUILD_ASSERT(offsetof(struct serviceReference, refCount) == 0);
+    CELIX_BUILD_ASSERT(offsetof(struct serviceReference, refCount) == 0);
     if(ref->registration != NULL) {
         serviceRegistration_release(ref->registration);
     }
@@ -137,11 +137,8 @@ celix_status_t serviceReference_getUsageCount(service_reference_pt ref, size_t *
 }
 
 celix_status_t serviceReference_getReferenceCount(service_reference_pt ref, size_t *count) {
-    celix_status_t status = CELIX_SUCCESS;
-    celixThreadRwlock_readLock(&ref->lock);
-    *count = ref->refCount.count;
-    celixThreadRwlock_unlock(&ref->lock);
-    return status;
+    *count = celix_ref_read(&ref->refCount);
+    return CELIX_SUCCESS;
 }
 
 celix_status_t serviceReference_getService(service_reference_pt ref, const void **service) {

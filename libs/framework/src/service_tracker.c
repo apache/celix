@@ -94,9 +94,10 @@ celix_status_t serviceTracker_create(bundle_context_pt context, const char * ser
 	if (service == NULL || *tracker != NULL) {
 		status = CELIX_ILLEGAL_ARGUMENT;
 	} else {
-        char filter[512];
-        snprintf(filter, sizeof(filter), "(%s=%s)", OSGI_FRAMEWORK_OBJECTCLASS, service);
+        char *filter = NULL;
+        asprintf(&filter, "(%s=%s)", OSGI_FRAMEWORK_OBJECTCLASS, service);
         serviceTracker_createWithFilter(context, filter, customizer, tracker);
+        free(filter);
 	}
 
 	framework_logIfError(context->framework->logger, status, NULL, "Cannot create service tracker");
@@ -340,8 +341,9 @@ static void serviceTracker_serviceChanged(void *handle, celix_service_event_t *e
     switch (event->type) {
         case OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED:
         case OSGI_FRAMEWORK_SERVICE_EVENT_MODIFIED:
-            if(!closing)
+            if(!closing) {
                 serviceTracker_track(tracker, event->reference, event);
+            }
             break;
         case OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING:
             //after this call the registration can be gone, to prevent that happens before the tracker finishing its cleanup job with the corresponding service,

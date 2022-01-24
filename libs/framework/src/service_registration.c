@@ -84,7 +84,7 @@ void serviceRegistration_release(service_registration_pt registration) {
 
 static void serviceRegistration_destroy(struct celix_ref *refCount) {
     service_registration_pt registration = (service_registration_pt )refCount;
-    BUILD_ASSERT(offsetof(service_registration_t, refCount) == 0);
+    CELIX_BUILD_ASSERT(offsetof(service_registration_t, refCount) == 0);
 
     //fw_log(logger, CELIX_LOG_LEVEL_DEBUG, "Destroying service registration %p\n", registration);
     free(registration->className);

@@ -76,8 +76,7 @@ celix_status_t bundleContext_create(framework_pt framework, celix_framework_logg
 
         }
 	}
-    //FIXME: context == NULL?
-	framework_logIfError(context->framework->logger, status, NULL, "Failed to create context");
+	framework_logIfError(logger, status, NULL, "Failed to create context");
 
 	return status;
 }
@@ -85,32 +84,28 @@ celix_status_t bundleContext_create(framework_pt framework, celix_framework_logg
 celix_status_t bundleContext_destroy(bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	if (context != NULL) {
-	    assert(hashMap_size(context->bundleTrackers) == 0);
-        hashMap_destroy(context->bundleTrackers, false, false);
-        assert(hashMap_size(context->serviceTrackers) == 0);
-        hashMap_destroy(context->serviceTrackers, false, false);
-        assert(hashMap_size(context->metaTrackers) == 0);
-        hashMap_destroy(context->metaTrackers, false, false);
-        assert(celix_arrayList_size(context->svcRegistrations) == 0);
-        celix_arrayList_destroy(context->svcRegistrations);
-        hashMap_destroy(context->stoppingTrackerEventIds, false, false);
+    if(context == NULL) {
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
+    assert(hashMap_size(context->bundleTrackers) == 0);
+    hashMap_destroy(context->bundleTrackers, false, false);
+    assert(hashMap_size(context->serviceTrackers) == 0);
+    hashMap_destroy(context->serviceTrackers, false, false);
+    assert(hashMap_size(context->metaTrackers) == 0);
+    hashMap_destroy(context->metaTrackers, false, false);
+    assert(celix_arrayList_size(context->svcRegistrations) == 0);
+    celix_arrayList_destroy(context->svcRegistrations);
+    hashMap_destroy(context->stoppingTrackerEventIds, false, false);
 
-	    celixThreadMutex_destroy(&context->mutex);
+    celixThreadMutex_destroy(&context->mutex);
 
-	    if (context->mng != NULL) {
-	        celix_dependencyManager_removeAllComponents(context->mng);
-            celix_private_dependencyManager_destroy(context->mng);
-            context->mng = NULL;
-	    }
+    if (context->mng != NULL) {
+        celix_dependencyManager_removeAllComponents(context->mng);
+        celix_private_dependencyManager_destroy(context->mng);
+        context->mng = NULL;
+    }
 
-	    free(context);
-	} else {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	}
-    //FIXME: context == NULL?
-	framework_logIfError(context->framework->logger, status, NULL, "Failed to destroy context");
-
+    free(context);
 	return status;
 }
 
@@ -232,8 +227,14 @@ celix_status_t bundleContext_getServiceReference(bundle_context_pt context, cons
 
     if (serviceName != NULL) {
         if (bundleContext_getServiceReferences(context, serviceName, NULL, &services) == CELIX_SUCCESS) {
-            reference = (arrayList_size(services) > 0) ? arrayList_get(services, 0) : NULL;
-            //FIXME: unget service reference
+            unsigned int size = arrayList_size(services);
+            for(unsigned int i = 0; i < size; i++) {
+                if(i == 0) {
+                    reference = arrayList_get(services, 0);
+                } else {
+                    bundleContext_ungetServiceReference(context, arrayList_get(services, i));
+                }
+            }
             arrayList_destroy(services);
             *service_reference = reference;
         } else {
