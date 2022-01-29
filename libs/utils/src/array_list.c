@@ -31,6 +31,7 @@
 #include "array_list.h"
 #include "celix_array_list.h"
 #include "array_list_private.h"
+#include "celix_build_assert.h"
 
 static celix_status_t arrayList_elementEquals(const void *a, const void *b, bool *equals);
 static bool celix_arrayList_defaultEquals(const celix_array_list_entry_t a, const celix_array_list_entry_t b);
@@ -60,7 +61,8 @@ static celix_status_t arrayList_elementEquals(const void *a, const void *b, bool
 }
 
 static bool celix_arrayList_defaultEquals(celix_array_list_entry_t a, celix_array_list_entry_t b) {
-    return a.longVal == b.longVal; //just compare as long int
+    CELIX_BUILD_ASSERT(sizeof(a.voidPtrVal) == sizeof(a));
+    return a.voidPtrVal== b.voidPtrVal;
 }
 
 static bool celix_arrayList_equalsForElement(celix_array_list_t *list, celix_array_list_entry_t a, celix_array_list_entry_t b) {
@@ -495,7 +497,7 @@ void celix_arrayList_removeEntry(celix_array_list_t *list, celix_array_list_entr
 
 void celix_arrayList_remove(celix_array_list_t *list, void *ptr) {
     celix_array_list_entry_t entry;
-        memset(&entry, 0, sizeof(entry));
+    memset(&entry, 0, sizeof(entry));
     entry.voidPtrVal = ptr;
     celix_arrayList_removeEntry(list, entry);
 }

@@ -29,16 +29,16 @@
 
 #include "registry_callback_private.h"
 #include "service_reference.h"
+#include "celix_ref.h"
 
 
 struct serviceReference {
+    struct celix_ref refCount;
     registry_callback_t callback;
 	bundle_pt referenceOwner;
 	struct serviceRegistration * registration;
     bundle_pt registrationBundle;
     const void* service;
-
-	size_t refCount;
     size_t usageCount;
 
     celix_thread_rwlock_t lock;
@@ -59,7 +59,7 @@ celix_status_t serviceReference_getUsageCount(service_reference_pt reference, si
 celix_status_t serviceReference_getReferenceCount(service_reference_pt reference, size_t *count);
 
 celix_status_t serviceReference_setService(service_reference_pt ref, const void *service);
-celix_status_t serviceReference_getService(service_reference_pt reference, void **service);
+celix_status_t serviceReference_getService(service_reference_pt reference, const void **service);
 
 celix_status_t serviceReference_getOwner(service_reference_pt reference, bundle_pt *owner);
 

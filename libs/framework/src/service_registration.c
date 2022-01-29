@@ -24,11 +24,12 @@
 
 #include "service_registration_private.h"
 #include "celix_constants.h"
+#include "celix_build_assert.h"
 
+static void serviceRegistration_destroy(struct celix_ref *);
 static celix_status_t serviceRegistration_initializeProperties(service_registration_pt registration, properties_pt properties);
 static celix_status_t serviceRegistration_createInternal(registry_callback_t callback, bundle_pt bundle, const char* serviceName, unsigned long serviceId,
         const void * serviceObject, properties_pt dictionary, enum celix_service_type svcType, service_registration_pt *registration);
-static celix_status_t serviceRegistration_destroy(service_registration_pt registration);
 
 service_registration_pt serviceRegistration_create(registry_callback_t callback, bundle_pt bundle, const char* serviceName, unsigned long serviceId, const void * serviceObject, properties_pt dictionary) {
     service_registration_pt registration = NULL;
@@ -48,22 +49,13 @@ static celix_status_t serviceRegistration_createInternal(registry_callback_t cal
     celix_status_t status = CELIX_SUCCESS;
 	service_registration_pt  reg = calloc(1, sizeof(*reg));
     if (reg) {
+        celix_ref_init(&reg->refCount);
         reg->callback = callback;
-        reg->services = NULL;
-        reg->nrOfServices = 0;
 		reg->svcType = svcType;
 		reg->className = strndup(serviceName, 1024*10);
 		reg->bundle = bundle;
-		reg->refCount = 1;
 		reg->serviceId = serviceId;
 	    reg->svcObj = serviceObject;
-
-		if (svcType == CELIX_DEPRECATED_FACTORY_SERVICE) {
-			reg->deprecatedFactory = (service_factory_pt) reg->svcObj;
-		} else if (svcType == CELIX_FACTORY_SERVICE) {
-			reg->factory = (celix_service_factory_t*) reg->svcObj;
-		}
-
 		reg->isUnregistering = false;
 		celixThreadRwlock_create(&reg->lock, NULL);
 
@@ -83,35 +75,24 @@ static celix_status_t serviceRegistration_createInternal(registry_callback_t cal
 }
 
 void serviceRegistration_retain(service_registration_pt registration) {
-	celixThreadRwlock_writeLock(&registration->lock);
-	registration->refCount += 1;
-    celixThreadRwlock_unlock(&registration->lock);
+    celix_ref_get(&registration->refCount);
 }
 
 void serviceRegistration_release(service_registration_pt registration) {
-    celixThreadRwlock_writeLock(&registration->lock);
-    assert(registration->refCount > 0);
-	registration->refCount -= 1;
-	if (registration->refCount == 0) {
-		serviceRegistration_destroy(registration);
-	} else {
-        celixThreadRwlock_unlock(&registration->lock);
-	}
+    celix_ref_put(&registration->refCount, serviceRegistration_destroy);
 }
 
-static celix_status_t serviceRegistration_destroy(service_registration_pt registration) {
-	//fw_log(logger, CELIX_LOG_LEVEL_DEBUG, "Destroying service registration %p\n", registration);
+static void serviceRegistration_destroy(struct celix_ref *refCount) {
+    service_registration_pt registration = (service_registration_pt )refCount;
+    CELIX_BUILD_ASSERT(offsetof(service_registration_t, refCount) == 0);
+
+    //fw_log(logger, CELIX_LOG_LEVEL_DEBUG, "Destroying service registration %p\n", registration);
     free(registration->className);
-	registration->className = NULL;
-
+    registration->className = NULL;
     registration->callback.unregister = NULL;
-
-	properties_destroy(registration->properties);
-	celixThreadRwlock_unlock(&registration->lock);
+    properties_destroy(registration->properties);
     celixThreadRwlock_destroy(&registration->lock);
-	free(registration);
-
-	return CELIX_SUCCESS;
+    free(registration);
 }
 
 static celix_status_t serviceRegistration_initializeProperties(service_registration_pt registration, properties_pt dictionary) {
