@@ -150,7 +150,7 @@ static celix_status_t bundleActivator_createExportedServicesTracker(struct activ
     service_tracker_customizer_t *customizer = NULL;
     status = serviceTrackerCustomizer_create(activator->manager, NULL, topologyManager_addExportedService, NULL, topologyManager_removeExportedService, &customizer);
     if (status == CELIX_SUCCESS) {
-        status = serviceTracker_createWithFilter(activator->context, "(service.exported.interfaces=*)", customizer, tracker);
+        status = serviceTracker_createWithFilter(activator->context, "(&(objectClass=*)(service.exported.interfaces=*))", customizer, tracker);
     }
     return status;
 }
