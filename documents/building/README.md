@@ -24,7 +24,7 @@ Apache Celix aims to be support a broad range of UNIX platforms.
  
 Currently the [continuous integration build server](https://travis-ci.org/apache/celix) builds and tests Apache Celix for:
 
-* Ubuntu Bionic Beaver (18.04)
+* Ubuntu Bionic Beaver (20.04)
     * GCC 
     * CLang 
 * OSX
@@ -36,17 +36,17 @@ The following packages (libraries + headers) should be installed on your system:
 
 * Development Environment
     * build-essentials (gcc/g++ or clang/clang++) 
-	* git
-    * java (for packaging bundles)
+    * java or zip (for packaging bundles)
 	* make (3.14 or higher)
 * Apache Celix Dependencies
-    * zlib
     * libzip
     * uuid
     * curl (only initialized in the Celix framework)
     * jansson (for serialization in libdfi)
     * libffi (for libdfi)
     * libxml2 (for remote services and bonjour shell)
+    * rapidjson (for C++ remote service discovery)
+    * libczmq (for PubSubAdmin ZMQ)
 	
 
 For debian based systems (apt), the following command should work:
@@ -56,7 +56,6 @@ sudo apt-get install -yq --no-install-recommends \
     build-essential \
     curl \
     uuid-dev \
-    git \
     libjansson-dev \
     libcurl4-openssl-dev \
     default-jdk \
@@ -65,13 +64,17 @@ sudo apt-get install -yq --no-install-recommends \
     libzip-dev \
     libxml2-dev
 
-#required if the ZMQ PubSubAdmin option (BUILD_PUBSUB_PSA_ZMQ) is enabled
+#required if the ZMQ PubSubAdmin option (BUILD_PUBSUB_PSA_ZMQ) is enabled.
 sudo apt-get install -yq --no-install-recommends \
     libczmq-dev 
      
-#required if the ENABLE_TESTING option is enabled
+#required if the ENABLE_TESTING option is enabled.
 sudo apt-get install -yq --no-install-recommends \
     libcpputest-dev
+    
+#required if the C++ Remote Service Admin option (BUILD_REMOTE_SERVICE_ADMIN) is enabled.
+sudo apt-get install -yq --no-install-recommends \
+    rapidjson-dev
 
 #The installed cmake version for Ubuntu 18 is older than 3.14,
 #use snap to install the latest cmake version

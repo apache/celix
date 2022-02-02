@@ -4,7 +4,7 @@ title: Promises
 
 # Celix Promises
 
-Celix Promises are based on the OSGI Promises (OSGi Compendium Release 7 Specification, Chapter 705).
+Celix Promises are based on the OSGi Promises Specification (OSGi Compendium Release 7 Specification, Chapter 705).
 It follows the specification as close as possible, but some adjustments are mode for C++17.
 
 NOTE: this implementation is still experiment and the api and behaviour will probably still change.  

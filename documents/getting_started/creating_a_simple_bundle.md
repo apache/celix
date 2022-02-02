@@ -33,7 +33,7 @@ Some experience with a command line interface (xterm) is expected to be able to 
 For Apache Celix see [Building And Installing](../building/README.md)
 
 ## Installing Eclipse CDT
-Download the latest eclipse CDT at [http://www.eclipse.org](http://www.eclipse.org) and install it on your system. For more information on how the install eclipse on your system consult the eclipse documentation. For this getting started guide the luna version of eclipse was used ([linux](http://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/luna/R/eclipse-cpp-luna-R-linux-gtk-x86_64.tar.gz) [mac](http://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/luna/R/eclipse-cpp-luna-R-macosx-cocoa-x86_64.tar.gz)).
+Download the latest eclipse CDT at [http://www.eclipse.org](http://www.eclipse.org) and install it on your system. For more information on how to install eclipse on your system consult the eclipse documentation. For this getting started guide the luna version of eclipse was used ([linux](http://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/luna/R/eclipse-cpp-luna-R-linux-gtk-x86_64.tar.gz) [mac](http://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/luna/R/eclipse-cpp-luna-R-macosx-cocoa-x86_64.tar.gz)).
 
 ## Apache Celix Bundle project
 Now that Apache Celix and Eclipse is installed, we are ready to create a new Apache Celix Bundle project.
@@ -56,7 +56,7 @@ Then create a CMakeLists.txt file - the makefile variant of CMake -in project ro
 #${WS}/myproject/CMakeLists.txt
 	
 #Part 1. setup project
-cmake_minimum_required(VERSION 3.4)
+cmake_minimum_required(VERSION 3.14)
 project(myproject C CXX)
 
 #Part 2. setup compilers
@@ -65,9 +65,9 @@ SET(CMAKE_C_FLAGS_DEBUG "-g -DDEBUG")
 SET(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
 SET(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG")
 
-#Part 3. Setup Celix cmake files, include paths, libraries and library paths
-#Note. If celix is not installed in /usr/local dir, change the location accordingly.
-set(CMAKE_MODULE_PATH  ${CMAKE_MODULE_PATH} "/usr/local/share/celix/cmake/modules")
+#Part 3. find Celix package.
+#Note. If Celix is not installed in a default location, update the CMAKE_PREFIX_PATH accordingly. 
+#e.g.: set(CMAKE_PREFIX_PATH  "{CMAKE_PREFIX_PATH}:/opt/local")
 find_package(Celix REQUIRED)
 
 #Part 4. Choose C, C++ or both
@@ -187,8 +187,8 @@ CELIX_GEN_CXX_BUNDLE_ACTIVATOR(BundleActivator)
 ```
 	
 ### Building
-One of the highly recommended features of CMake is the ability to do out of source builds, the benefit is that all of the build results will go in a separate directory without cluttering the (source) project.
-CMake also needs to able to find the cmake files Celix provides. This can be achieved by providing a CMAKE_MODULE_PATH variable (or setting the CMAKE_MODULE_PATH in the top level CMakeLists.txt). 
+One of the highly recommended features of CMake is the ability to do out of source builds, the benefit is that all the build results will go in a separate directory without cluttering the (source) project.
+CMake also needs to be able to find the cmake files Celix provides. This can be achieved by providing a CMAKE_MODULE_PATH variable (or setting the CMAKE_MODULE_PATH in the top level CMakeLists.txt). 
 For this example it is assumed that Celix in installed in `/usr/local`.
 To create the build directory and build the project execute the following commands:
 

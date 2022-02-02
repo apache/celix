@@ -24,14 +24,21 @@ limitations under the License.
 Apache Celix is organized into several subprojects. The following subproject are currently available:
 
 * [Framework](../../libs/framework) - The Apache Celix framework, an implementation of OSGi adapted to C and C++11.
-* [Etcd library](../../libs/etcdlib) - A C library that interfaces with ETCD.
+* [Utils](../../libs/utils) - The Celix utils library, containing a wide range of utils functions (string, file, C hashmap, C arraylist, etc)
 * [Examples](../../examples) - A Selection of examples showing how the framework can be used.
-* [Log Service](../../bundles/logging) - An implementation of the OSGi Log Service adapted to C.
-* [Log Writer](../../bundles/loggin/log_writersr) - A simple log writer for use in combination with the Log Service.
+* [Log Service](../../bundles/logging) - A Log Service logging abstraction for Apache Celix.
+* [Syslog Writer](../../bundles/logging/log_writers/syslog_writer) - A syslog writer for use in combination with the Log Service.
 * [Shell](../../bundles/shell/shell/README.md) - A OSGi C and C++11 shell implementation.
 * [Shell TUI](../../bundles/shell/shell_tui) - A textual UI for the Celix Shell.
+* [Shell WUI](../../bundles/shell/shell_wui) - A web UI for the Celix Shell (uses the Celix HTTP Admin)
 * [Remote Shell](../../bundles/shell/remote_shell) - A remote (telnet) frontend for the Celix shell.
 * [Bonjour Shell](../../bundles/shell/shell_bonjour) - A remote (Bonjour / mDNS) frontend for the Celix shell.
-* [Web Shell](../../bundles/shell/shell_wui) - A web (websocket) frontend for the Celix shell.
-* [Pubsub](../../bundles/pubsub) - An implementation for a publish-subscribe remote services system, that use dfi library for message serialization.
+* [Pubsub](../../bundles/pubsub) - An implementation for a publish-subscribe remote message communication system. 
 * [HTTP Admin](../../bundles/http_admin) - An implementation for the OSGi HTTP whiteboard adapted to C and based on civetweb.
+* [Remote Services](../../bundles/cxx_remote_services) - A C++17 adaption and implementation of the OSGi Remote Service Admin specification.
+
+Standalone libraries:
+
+* [Etcd library](../../libs/etcdlib) - A C library that interfaces with ETCD.
+* [Promise library](../../libs/promises) - A C++17 header only adaption and implementation of the OSGi Promise specification.
+* [Push Streams](../../libs/) - A C++17 header adaption and only implementation of the OSGi Push Stream specification. 

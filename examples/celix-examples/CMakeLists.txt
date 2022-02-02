@@ -27,6 +27,7 @@ if (EXAMPLES)
     add_subdirectory(hello_world_c)
     add_subdirectory(dm_example)
     add_subdirectory(services_example_c)
+    add_subdirectory(readme_c_examples)
 
     if (CELIX_CXX)
         add_subdirectory(hello_world_cxx)

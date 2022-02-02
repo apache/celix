@@ -124,20 +124,9 @@ celix_bundle_context_t* celix_bundleActivator_getBundleContext();
  */
 #define CELIX_GEN_BUNDLE_ACTIVATOR(actType, actStart, actStop)                                                         \
                                                                                                                        \
-static celix_bundle_context_t* celix_currentBundleContext = NULL;                                                      \
-                                                                                                                       \
-celix_bundle_context_t* celix_bundleActivator_getBundleContext() {                                                     \
-    /*celix_bundle_context_t* ctx;                                                                                     \
-    __atomic_load(&g_celix_currentBundleContext, &ctx, __ATOMIC_ACQUIRE);                                              \
-    return ctx;*/                                                                                                      \
-    return celix_currentBundleContext;                                                                                 \
-}                                                                                                                      \
-                                                                                                                       \
 celix_status_t celix_bundleActivator_create(celix_bundle_context_t *ctx, void **userData) {                            \
-    /*__atomic_store(&celix_currentBundleContext, &ctx, __ATOMIC_RELAXED);*/                                           \
-    celix_currentBundleContext = ctx;                                                                                  \
     celix_status_t status = CELIX_SUCCESS;                                                                             \
-    actType *data = (actType*)calloc(1, sizeof(*data));                                                                \
+    void* data = calloc(1, sizeof(actType));                                                                           \
     if (data != NULL) {                                                                                                \
         *userData = data;                                                                                              \
     } else {                                                                                                           \

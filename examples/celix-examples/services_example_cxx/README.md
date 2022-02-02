@@ -21,7 +21,7 @@ limitations under the License.
 
 # Intro
 
-These examples shows howto create and interact with services by example.
+These examples show howto create and interact with services by example.
 
 In both examples there is a provider and consumer bundle.
 The provider bundle creates services and registers them to the Celix framework so that these services are available for use.

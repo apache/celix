@@ -16,7 +16,7 @@
 # under the License.
 
 #MyBundle example
-#find_package(Celix REQUIRED) NOTE not useable inside Celix project
+#find_package(Celix REQUIRED) NOTE not usable inside Celix project
 
 add_celix_bundle(MyBundle
     SOURCES src/MyBundleActivator.cc
@@ -90,3 +90,37 @@ add_celix_container(FilterExampleContainer
         Celix::shell_tui
         FilterExampleBundle
 )
+
+add_celix_bundle(MyShellCommandProviderBundle
+    VERSION 1.0.0
+    SOURCES src/MyShellCommandProviderBundleActivator.cc
+)
+target_link_libraries(MyShellCommandProviderBundle PRIVATE Celix::shell_api)
+
+add_celix_bundle(MyCShellCommandProviderBundle
+    VERSION 1.0.0
+    SOURCES src/MyCShellCommandProviderBundleActivator.cc
+)
+target_link_libraries(MyCShellCommandProviderBundle PRIVATE Celix::shell_api)
+
+add_celix_bundle(UsingCommandServicesExampleBundle
+    VERSION 1.0.0
+    SOURCES
+        src/using_command_service_example.c
+        src/UsingCommandServicesExample.cc
+)
+target_link_libraries(UsingCommandServicesExampleBundle PRIVATE Celix::shell_api)
+
+add_celix_container(ReadmeExamplesContainer
+    BUNDLES
+        Celix::ShellCxx
+        Celix::shell_tui
+        MyShellCommandProviderBundle
+        MyCShellCommandProviderBundle
+        UsingCommandServicesExampleBundle
+)
+
+if (TARGET my_shell_command_provider_bundle)
+    #Add C shell command provider and using LEVEL 2 so that is start before UsingCommandServicesExampleBundle
+    celix_container_bundles(ReadmeExamplesContainer LEVEL 2 my_shell_command_provider_bundle)
+endif ()
