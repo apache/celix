@@ -111,7 +111,7 @@ long celix_bundleContext_registerServiceFactoryAsync(celix_bundle_context_t *ctx
  * @param properties The optional service factory properties. For a service consumer this will be seen as the service properties.
  * @return The serviceId (>= 0) or < 0 if the registration was unsuccessful.
  */
-long celix_bundleContext_registerServiceFactory(celix_bundle_context_t *ctx, celix_service_factory_t *factory, const char *serviceName, celix_properties_t *props); //__attribute__((deprecated("Use celix_bundleContext_registerServiceFactoryAsync instead!")));
+long celix_bundleContext_registerServiceFactoryAsync(celix_bundle_context_t *ctx, celix_service_factory_t *factory, const char *serviceName, celix_properties_t *props); //__attribute__((deprecated("Use celix_bundleContext_registerServiceFactoryAsync instead!")));
 
 /**
  * @brief Service Registration Options when registering services to the Celix framework.

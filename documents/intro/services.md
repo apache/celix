@@ -145,8 +145,50 @@ as calling a function member of any C++ object.
 
 ## Registering and un-registering services
 
-TODO which function can be used to register and un-register service. explain async/sync
-TODO maybe use the sequence diagrams
+Service registration and un-registration in Celix can be done synchronized or asynchronized and although 
+(un-)registering services synchronized is more inline with the OSGi spec, (un-)registering is preferred for Celix. 
+
+When registering a service synchronized, the service registration event and all events resulting from the service
+registration are handled; in practice this means that when a synchronized service registration returns all bundles
+are aware of the new service and if needed have updated their administration accordingly.
+
+Synchronized service (un-)registration can lead to problems if for example another service registration event is 
+triggered on the handling of the current service registration events. 
+In that case normal mutexes are not always enough and a reference counting or recursive mutexes are needed. 
+reference counting can be complex to handle (especially in C) and recursive mutexes are arguable a bad idea.
+Interestingly for Java OSGi this is not as big of a problem, because `synchronized` is recursive. 
+
+TODO blabla maybe recursive locks are also not good for Java
+
+When registering a service asynchronized, the service properties and specifically the `service.id` property will be 
+finalized when the service registration call returns. But actual the service registration event will be done by the 
+Celix event thread and this can be done before or after the service registration call returns.
+
+To register a service asynchronized the following C functions / C++ methods can be used:
+ - `celix_bundleContext_registerServiceAsync`
+ - `celix_bundleContext_registerServiceWithOptionsAsync`
+ - `celix::BundleContext::registerService` 
+ - `celix::BundleContext::registerUnmanagedService`
+
+To register a service synchronized the following C functions / C++ methods can be used:
+ - `celix_bundleContext_registerService`
+ - `celix_bundleContext_registerServiceWithOptions`
+ - `celix::BundleContext::registerService`, use `celix::ServiceRegistrationBuilder::setRegisterAsync` to configure 
+    registration synchronized
+ - `celix::BundleContext::registerUnmanagedService`, use `celix::ServiceRegistrationBuilder::setRegisterAsync` to configure
+   registration synchronized
+ 
+
+To unregister a service asynchronized the following C function can be used:
+- `celix_bundleContext_unregisterServiceAsync`
+
+And to unregister a service synchronized the following C function can be used:
+- `celix_bundleContext_unregisterService`
+
+For C++ a service un-registration happens when its corresponding `celix::ServiceRegistration` object goes out of 
+scope. A C++ service can be configured for synchronized un-registration using ServiceRegistrationBuilder, 
+specifically:
+- `celix::ServiceRegistrationBuilder::setUnregisterAsync`
 
 ### Example: Register a service in C
 
@@ -253,6 +295,21 @@ private:
 CELIX_GEN_CXX_BUNDLE_ACTIVATOR(MyShellCommandProvider)
 ```
 
+### Sequence diagrams for service registration
+
+![Register Service Async](diagrams/services_register_service_async_seq.png)
+A asynchronized service registration
+---
+
+![Unregister Service Async](diagrams/services_unregister_service_async_seq.png)
+A asynchronized service un-registration
+---
+
+![Unregister Service Async](diagrams/services_unregister_service_seq.png)
+A synchronized service un-registration
+---
+
+
 ## Impact of dynamic services
 Services in Apache Celix are dynamic, meaning that they can come and go at any moment.
 This makes it possible to create emerging functionality based on the coming and going of Celix services.
@@ -286,5 +343,20 @@ TODO
 ## Tracking services
 TODO
 
-## Sequence diagrams for dynamic service handling
-TODO
+### Sequence diagrams for service tracker and service registration
+
+![Register Service Async](diagrams/services_tracker_services_add_async_seq.png)
+Service tracker callback with an asynchronized service registration
+---
+
+![Register Service Async](diagrams/services_tracker_services_rem_async_seq.png)
+Service tracker callback with an asynchronized service un-registration
+---
+
+![Register Service Async](diagrams/services_tracker_services_add_seq.png)
+Service tracker callback with a synchronized service registration
+---
+
+![Register Service Async](diagrams/services_tracker_services_rem_seq.png)
+Service tracker callback with a synchronized service un-registration
+---
