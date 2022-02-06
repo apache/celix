@@ -46,7 +46,7 @@ static celix_status_t my_shell_command_provider_bundle_start(my_shell_command_pr
 }
 
 static celix_status_t my_shell_command_provider_bundle_stop(my_shell_command_provider_activator_data_t *data, celix_bundle_context_t *ctx) {
-    celix_bundleContext_unregisterService(ctx, data->shellCmdSvcId);
+    celix_bundleContext_unregisterServiceAsync(ctx, data->shellCmdSvcId);
     return CELIX_SUCCESS;
 }
 

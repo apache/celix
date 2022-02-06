@@ -145,10 +145,8 @@ as calling a function member of any C++ object.
 
 ## Registering and un-registering services
 
-TODO blabla
-Also add note that C struct can be registered in the C++ api.
-
-TODO explain that all examples use a different name so that they can be used in 1 Celix container. 
+TODO which function can be used to register and un-register service. explain async/sync
+TODO maybe use the sequence diagrams
 
 ### Example: Register a service in C
 
@@ -180,7 +178,7 @@ static celix_status_t my_shell_command_provider_bundle_start(my_shell_command_pr
 }
 
 static celix_status_t my_shell_command_provider_bundle_stop(my_shell_command_provider_activator_data_t *data, celix_bundle_context_t *ctx) {
-    celix_bundleContext_unregisterService(ctx, data->shellCmdSvcId);
+    celix_bundleContext_unregisterServiceAsync(ctx, data->shellCmdSvcId);
     return CELIX_SUCCESS;
 }
 

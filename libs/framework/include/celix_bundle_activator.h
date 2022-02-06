@@ -143,7 +143,8 @@ celix_status_t celix_bundleActivator_stop(void *userData, celix_bundle_context_t
     return actStop((actType*)userData, ctx);                                                                           \
 }                                                                                                                      \
                                                                                                                        \
-celix_status_t celix_bundleActivator_destroy(void *userData, celix_bundle_context_t *ctx __attribute__((unused))) {    \
+celix_status_t celix_bundleActivator_destroy(void *userData, celix_bundle_context_t *ctx) {                            \
+    celix_bundleContext_waitForEvents(ctx);                                                                            \
     free(userData);                                                                                                    \
     return CELIX_SUCCESS;                                                                                              \
 }
