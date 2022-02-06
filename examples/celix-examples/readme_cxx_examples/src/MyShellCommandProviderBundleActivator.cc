@@ -48,6 +48,7 @@ public:
 
     ~MyShellCommandProvider() noexcept = default;
 private:
+    //NOTE when celix::ServiceRegistration goes out of scope the underlining service will be un-registered
     std::shared_ptr<celix::ServiceRegistration> cmdShellRegistration{};
 };
 

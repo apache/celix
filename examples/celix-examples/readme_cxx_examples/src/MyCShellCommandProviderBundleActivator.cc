@@ -38,6 +38,8 @@ public:
 private:
     const std::shared_ptr<celix::BundleContext> ctx;
     celix_shell_command shellCmd{};
+
+    //NOTE when celix::ServiceRegistration goes out of scope the underlining service will be un-registered
     std::shared_ptr<celix::ServiceRegistration> cmdShellRegistration{};
 };
 

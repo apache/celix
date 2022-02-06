@@ -26,8 +26,16 @@ Services can be dynamically registered into and looked up from the Celix framewo
 By convention a C service in Apache Celix is a pointer to struct of function pointers and a C++ service is a pointer
 (which can be provided as a `std::shared_ptr`) to an object implementing a (pure) abstract class.
 
-TODO explain that for C the service name is also imported and that for C++ this will be inferred from the template
-using celix::typeName<T>.
+A service is always register under a service name and this service name is also used to lookup services. 
+For C the service name must be provided by the user and for C++ the service name can be provided by the user. 
+If for C++ no service name is provided the service name will be inferred based on the service template argument using
+`celix::typeName<I>`. 
+
+Note that the service name is represented in the service properties under the property name `objectClass`, 
+this is inherited for the Java OSGi specification. 
+Also note that for Celix - in contrast with Java OSGi - it is only possible to register a single interface 
+per service registration in the Celix Framework. This restriction was added because C does not (natively) supports
+multiple interfaces (struct with function pointers) on a single object/pointer.  
 
 ## A C service example
 As mentioned an Apache Celix C service is a registered pointer to a struct with function pointers. 
@@ -135,33 +143,6 @@ A with the C shell command struct, the C++ service class is documented and expla
 be provided. The `handle` construct is not needed for C++ services and using a C++ service function is just the same 
 as calling a function member of any C++ object.
 
-## Impact of dynamic services
-Services in Apache Celix are dynamic, meaning that they can come and go at any moment.
-This makes it possible to create emerging functionality based on the coming and going of Celix services.
-How to cope with this dynamic behaviour is critical for creating a stable solution.
-
-For Java OSGi this is already a challenge to program correctly, but less critical because generally speaking the
-garbage collector will arrange that objects still exists even if the providing bundle is un-installed.
-Taking into account that C and C++ has no garbage collection, handling the dynamic behaviour correctly is
-more critical; If a bundle providing a certain service is removed, the code segment / memory allocated for
-the service will also be removed / deallocated.
-
-Apache Celix has several mechanisms for dealing with this dynamic behaviour:
-
-* A built-in abstraction to use services with callbacks function where the Celix framework ensures the services
-  are not removed during callback execution.
-  See `celix_bundleContext_useService(s)` and `celix::BundleContext::useService(s)` for more info.
-* Service trackers which ensure that service can only complete their un-registration when all service
-  remove callbacks have been processed.
-  See `celix_bundleContext_trackServices` and `celix::BundleContext::trackServices` for more info.
-* Components with declarative service dependency so that a component life cycle is coupled with the availability of
-  service dependencies. See Components section below for more information about components.
-* The Celix framework will handle all service registration/un-registration events and the starting/stopping of trackers
-  on the Celix event thread to ensure that only 1 event can be processed per time.
-* For service registration, service un-registration, starting trackers and closing trackers there are async variants
-  which can be used in the Celix event thread. For C most of the async function variants end with a `Async` postfix
-  and for C++ this is handled as an option in the Builder objects. Also, for C++ the default enabled options are async.
-
 ## Registering and un-registering services
 
 TODO blabla
@@ -238,6 +219,7 @@ public:
 
     ~MyShellCommandProvider() noexcept = default;
 private:
+    //NOTE when celix::ServiceRegistration goes out of scope the underlining service will be un-registered
     std::shared_ptr<celix::ServiceRegistration> cmdShellRegistration{};
 };
 
@@ -265,12 +247,46 @@ public:
 private:
     const std::shared_ptr<celix::BundleContext> ctx;
     celix_shell_command shellCmd{};
+    
+    //NOTE when celix::ServiceRegistration goes out of scope the underlining service will be un-registered
     std::shared_ptr<celix::ServiceRegistration> cmdShellRegistration{};
 };
 
 CELIX_GEN_CXX_BUNDLE_ACTIVATOR(MyShellCommandProvider)
 ```
 
+## Impact of dynamic services
+Services in Apache Celix are dynamic, meaning that they can come and go at any moment.
+This makes it possible to create emerging functionality based on the coming and going of Celix services.
+How to cope with this dynamic behaviour is critical for creating a stable solution.
+
+For Java OSGi this is already a challenge to program correctly, but less critical because generally speaking the
+garbage collector will arrange that objects still exists even if the providing bundle is un-installed.
+Taking into account that C and C++ has no garbage collection, handling the dynamic behaviour correctly is
+more critical; If a bundle providing a certain service is removed, the code segment / memory allocated for
+the service will also be removed / deallocated.
+
+Apache Celix has several mechanisms for dealing with this dynamic behaviour:
+
+* A built-in abstraction to use services with callbacks function where the Celix framework ensures the services
+  are not removed during callback execution.
+  See `celix_bundleContext_useService(s)` and `celix::BundleContext::useService(s)` for more info.
+* Service trackers which ensure that service can only complete their un-registration when all service
+  remove callbacks have been processed.
+  See `celix_bundleContext_trackServices` and `celix::BundleContext::trackServices` for more info.
+* Components with declarative service dependency so that a component life cycle is coupled with the availability of
+  service dependencies. See the components' documentation section for more information about components.
+* The Celix framework will handle all service registration/un-registration events and the starting/stopping of trackers
+  on the Celix event thread to ensure that only 1 event can be processed per time.
+* For service registration, service un-registration, starting trackers and closing trackers there are async variants
+  which can be used in the Celix event thread. For C most of the async function variants end with a `Async` postfix
+  and for C++ this is handled as an option in the Builder objects. Also, for C++ the default enabled options are async.
+
 ## Using services
+TODO
 
 ## Tracking services
+TODO
+
+## Sequence diagrams for dynamic service handling
+TODO

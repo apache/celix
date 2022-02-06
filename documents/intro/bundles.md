@@ -30,8 +30,9 @@ Technically a Celix bundle is a zip file with the following content:
 - Bundle shared libraries (so/dylib files): Optionally a bundle has 1 or more shared libraries.
   The bundle manifest configures which libraries will be loaded (private libs) and which - if any - library is used
   when activating the bundle.
-- Bundle resource files: A bundle can also contain resource files. This could be configuration files, html files,
-  etc. It is also possible to have bundles which no shared library, but only resource files.
+- Bundle resource files: A bundle can also contain additional resource files. 
+  This could be configuration files, html files, etc.  
+  It is also possible to have bundles which no shared library, but only resource files.
   Bundles can access other bundle resources files, this can be used to create emerging functionality based on
   dynamically added resources files (extender pattern).
 
@@ -40,9 +41,10 @@ zip files so that the MANIFEST.MF is always the first entry in the zip file.
 
 
 ```bash
-#unpacking celix_shell_wui.zip bundle file in cmake build dir cmake-build-debug
-#Note that the celix_shell_wui.zip file is the the Celix Shell Web UI frontend bundle
-#which uses a private lib (civetweb_shared) and also has some embedded web resources. 
+#unpacking celix_shell_wui.zip bundle file from a cmake build `cmake-build-debug`.
+#The celix_shell_wui.zip file is the Celix Shell Web UI bundle. Which provides a web ui interface to the Celix 
+#interactive shell; It contains a manifest file, shared libraries, and additional web resources 
+#which can be picked up by the `Celix::http_admin` bundle. 
 % unzip cmake-build-debug/bundles/shell/shell_wui/celix_shell_wui.zip -d unpacked_bundle_dir 
 % find unpacked_bundle_dir 
 unpacked_bundle_dir
@@ -59,7 +61,7 @@ unpacked_bundle_dir/libshell_wui.1.so #or dylib for OSX
 ## Bundle lifecycle
 A Celix bundle has its own lifecycle with the following states:
 
-- Installed - The bundle has been installed into the Celix framework, but is is not yet resolved. For Celix this 
+- Installed - The bundle has been installed into the Celix framework, but it is not yet resolved. For Celix this 
   currently means that not all bundle libraries can or have been loaded. 
 - Resolved - The bundle is installed and its requirements have been met. For Celix this currently means that the
   bundle libraries have been loaded. 
@@ -67,6 +69,10 @@ A Celix bundle has its own lifecycle with the following states:
 - Active - The bundle is active. 
 - Stopping - Stopping is a temporary state while the bundle activator stop and destroy callbacks are being executed. 
 - Uninstalled - The bundle has been removed from the Celix framework. 
+
+TBD use plantuml of ascii state diagram
+
+![State diagram of the bundle lifecycle](diagrams/bundles_lifecycle.png)
 
 ```ascii
       <initial>
@@ -91,14 +97,14 @@ A Celix bundle has its own lifecycle with the following states:
 
 ## Bundle activation
 Bundle can be installed and started dynamically. When a bundle is started it will be activated by looking up the bundle
-activator entry points (using `dlsym`). The entry points are:
+activator entry points (using `dlsym`). The entry points signatures are:
 - `celix_status_t celix_bundleActivator_create(celix_bundle_context_t *ctx, void **userData)`: Called to create the bundle activator.
 - `celix_status_t celix_bundleActivator_start(void *userData, celix_bundle_context_t *ctx)`: Called to start the bundle.
 - `celix_status_t celix_bundleActivator_stop(void *userData, celix_bundle_context_t *ctx)`: Called to stop the bundle.
 - `celix_status_t celix_bundleActivator_destroy(void *userData, celix_bundle_context_t* ctx)`: Called to destroy (free mem) the bundle activator.
 
 The most convenient way to create a bundle activator in C is to use the macro `CELIX_GEN_BUNDLE_ACTIVATOR` defined in
-`celix_bundle_activator.h`. This macro only requires two functions (start,stop), these function can be `static` and
+`celix_bundle_activator.h`. This macro requires two functions (start,stop), these function can be `static` and
 use a typed bundle activator struct instead of `void*`.
 
 For C++, the macro `CELIX_GEN_CXX_BUNDLE_ACTIVATOR` defined in `celix/BundleActivator.h` must be used to create a
@@ -115,6 +121,25 @@ Knowledge about C, C++ and CMake is expected to understand the examples.
 The C and C++ example have a source file example for the bundle activator and a CMakeLists.txt example which contains
 commands to create a Celix bundle and a Celix container (executable which start the Celix framework and the configured
 bundles).
+
+Both containers example contains 3 bundles: the Celix Shell bundle, the Celix Shell Textual UI bundle 
+and the Hello world bundle. The Celix Shell bundle provides a set of interactive shell commands and the
+Celix Shell Textual UI bundle can be used to run these command from a console. 
+
+When the C or C++ Hello World bundle example container is started, the following command can be used to dynamically
+stop and start the Hello World bundle.
+```bash
+stop 3 #Stopping the Hello World bundle. Note that the Hello World is the third bundle, so it will get a bundle id 3.
+start 3 #Starting the Hello World bundle again.
+uninstall 3 #Stoping and uninstalling the Hello World bundle.
+```
+
+The see what other Celix shell commands are available run the `celix::help` command:
+```bash
+help #note can also be triggered with celix::help (the fully qualified command name). 
+help celix::start 
+help celix::lb
+```
 
 ### C Example
 ```C
@@ -142,11 +167,15 @@ CELIX_GEN_BUNDLE_ACTIVATOR(my_bundle_activator_data_t, my_bundle_start, my_bundl
 #CMakeLists.txt
 find_package(Celix REQUIRED)
 
+#With `make all`, `make celix-bundles` this bundle will be created at:
+#  ${CMAKE_CURRENT_BINARY_DIR}/my_bundle.zip.
 add_celix_bundle(my_bundle
     VERSION 1.0.0 
     SOURCES src/my_bundle_activator.c
 )
 
+#With `make all`, `make celix-containers` or `make my_container` this Celix container executable will be created at:
+# ${CMAKE_BINARY_DIR}/deploy/my_container/my_container
 add_celix_container(my_container
     C
     BUNDLES
@@ -180,10 +209,14 @@ CELIX_GEN_CXX_BUNDLE_ACTIVATOR(MyBundleActivator)
 #CMakeLists.txt
 find_package(Celix REQUIRED)
 
+#With `make all`, `make celix-bundles` this bundle will be created at:
+#  ${CMAKE_CURRENT_BINARY_DIR}/MyBundle.zip.
 add_celix_bundle(MyBundle
     SOURCES src/MyBundleActivator.cc
 )
 
+#With `make all`, `make celix-containers` or `make MyContainer` this Celix container executable will be created at:
+# ${CMAKE_BINARY_DIR}/deploy/my_container/MyContainer
 add_celix_container(MyContainer
     CXX
     BUNDLES

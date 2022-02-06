@@ -18,10 +18,14 @@
 #MyBundle example
 #find_package(Celix REQUIRED) NOTE not usable inside Celix project
 
+#With `make all`, `make celix-bundles` this bundle will be created at:
+#  ${CMAKE_CURRENT_BINARY_DIR}/MyBundle.zip.
 add_celix_bundle(MyBundle
     SOURCES src/MyBundleActivator.cc
 )
 
+#With `make all`, `make celix-containers` or `make MyContainer` this Celix container executable will be created at:
+# ${CMAKE_BINARY_DIR}/deploy/my_container/MyContainer
 add_celix_container(MyContainer
     BUNDLES
         Celix::ShellCxx
