@@ -43,7 +43,7 @@ This struct ideally contains a handle pointer, a set of function pointers and sh
 form a well-defined service contract.
 
 A simple example of an Apache Celix C service is a shell command service. 
-For C the shell command header looks like:
+For C, the shell command header looks like:
 ```C
 //celix_shell_command.h
 ...
@@ -81,7 +81,7 @@ struct celix_shell_command {
 The service struct is documented, explains which service properties needs to be provided, contains a handle pointer and
 a `executeCommand` function pointer. 
 
-The `handle` field and function argument should function as an opaque instance / `this` / `self` handle 
+The `handle` field and the `handle` function argument should function as an opaque instance (`this` / `self`) handle 
 and generally is unique for every service instance. Users of the service should forward the handle field when calling
 a service function, e.g.:
 ```C
@@ -90,11 +90,11 @@ command->executeCommand(command->handle, "test 123", stdout, stderr);
 ```
 
 ## A C++ service example
-As mentioned an Apache Celix C++ service is a registered pointer to an object implementing a abstract class.
+As mentioned an Apache Celix C++ service is a registered pointer to an object implementing an abstract class.
 The service class ideally should be well documented to form a well-defined service contract.
 
 A simple example of an Apache Celix C++ service is a C++ shell command. 
-For C++ the shell command header looks like:
+For C++, the shell command header looks like:
 ```C++
 //celix/IShellCommand.h
 ...
@@ -154,41 +154,40 @@ are aware of the new service and if needed have updated their administration acc
 
 Synchronized service (un-)registration can lead to problems if for example another service registration event is 
 triggered on the handling of the current service registration events. 
-In that case normal mutexes are not always enough and a reference counting or recursive mutexes are needed. 
+In that case normal mutexes are not always enough and reference counting or recursive mutexes are needed. 
 reference counting can be complex to handle (especially in C) and recursive mutexes are arguable a bad idea.
-Interestingly for Java OSGi this is not as big of a problem, because `synchronized` is recursive. 
 
-TODO blabla maybe recursive locks are also not good for Java
+Interestingly for Java the use of `synchronized` is recursive and as result this seems te be smaller issue with Java.
 
 When registering a service asynchronized, the service properties and specifically the `service.id` property will be 
-finalized when the service registration call returns. But actual the service registration event will be done by the 
-Celix event thread and this can be done before or after the service registration call returns.
+finalized when the service registration call returns. The actual service registration event will be done asynchronized
+by the Celix event thread and this can be done before or after the service registration call returns.
 
 To register a service asynchronized the following C functions / C++ methods can be used:
- - `celix_bundleContext_registerServiceAsync`
- - `celix_bundleContext_registerServiceWithOptionsAsync`
- - `celix::BundleContext::registerService` 
- - `celix::BundleContext::registerUnmanagedService`
+ - `celix_bundleContext_registerServiceAsync`.
+ - `celix_bundleContext_registerServiceWithOptionsAsync`.
+ - `celix::BundleContext::registerService`.
+ - `celix::BundleContext::registerUnmanagedService`.
 
 To register a service synchronized the following C functions / C++ methods can be used:
- - `celix_bundleContext_registerService`
- - `celix_bundleContext_registerServiceWithOptions`
+ - `celix_bundleContext_registerService`.
+ - `celix_bundleContext_registerServiceWithOptions`.
  - `celix::BundleContext::registerService`, use `celix::ServiceRegistrationBuilder::setRegisterAsync` to configure 
-    registration synchronized
- - `celix::BundleContext::registerUnmanagedService`, use `celix::ServiceRegistrationBuilder::setRegisterAsync` to configure
-   registration synchronized
+    registration synchronized because the default is asynchronized.
+ - `celix::BundleContext::registerUnmanagedService`, use `celix::ServiceRegistrationBuilder::setRegisterAsync` 
+   to configure registration synchronized because the default is asynchronized.
  
 
 To unregister a service asynchronized the following C function can be used:
-- `celix_bundleContext_unregisterServiceAsync`
+- `celix_bundleContext_unregisterServiceAsync`.
 
 And to unregister a service synchronized the following C function can be used:
-- `celix_bundleContext_unregisterService`
+- `celix_bundleContext_unregisterService`.
 
 For C++ a service un-registration happens when its corresponding `celix::ServiceRegistration` object goes out of 
 scope. A C++ service can be configured for synchronized un-registration using ServiceRegistrationBuilder, 
 specifically:
-- `celix::ServiceRegistrationBuilder::setUnregisterAsync`
+- `celix::ServiceRegistrationBuilder::setUnregisterAsync`. The default is asynchronized. 
 
 ### Example: Register a service in C
 
@@ -220,7 +219,7 @@ static celix_status_t my_shell_command_provider_bundle_start(my_shell_command_pr
 }
 
 static celix_status_t my_shell_command_provider_bundle_stop(my_shell_command_provider_activator_data_t *data, celix_bundle_context_t *ctx) {
-    celix_bundleContext_unregisterServiceAsync(ctx, data->shellCmdSvcId);
+    celix_bundleContext_unregisterServiceAsync(ctx, data->shellCmdSvcId, NULL, NULL);
     return CELIX_SUCCESS;
 }
 
@@ -301,6 +300,10 @@ CELIX_GEN_CXX_BUNDLE_ACTIVATOR(MyShellCommandProvider)
 A asynchronized service registration
 ---
 
+![Register Service Async](diagrams/services_register_service_seq.png)
+A synchronized service registration
+---
+
 ![Unregister Service Async](diagrams/services_unregister_service_async_seq.png)
 A asynchronized service un-registration
 ---
@@ -309,6 +312,29 @@ A asynchronized service un-registration
 A synchronized service un-registration
 ---
 
+## Using services
+TODO
+
+## Tracking services
+TODO
+
+### Sequence diagrams for service tracker and service registration
+
+![Register Service Async](diagrams/services_tracker_services_add_async_seq.png)
+Service tracker callback with an asynchronized service registration
+---
+
+![Register Service Async](diagrams/services_tracker_services_rem_async_seq.png)
+Service tracker callback with an asynchronized service un-registration
+---
+
+![Register Service Async](diagrams/services_tracker_services_add_seq.png)
+Service tracker callback with a synchronized service registration
+---
+
+![Register Service Async](diagrams/services_tracker_services_rem_seq.png)
+Service tracker callback with a synchronized service un-registration
+---
 
 ## Impact of dynamic services
 Services in Apache Celix are dynamic, meaning that they can come and go at any moment.
@@ -336,27 +362,3 @@ Apache Celix has several mechanisms for dealing with this dynamic behaviour:
 * For service registration, service un-registration, starting trackers and closing trackers there are async variants
   which can be used in the Celix event thread. For C most of the async function variants end with a `Async` postfix
   and for C++ this is handled as an option in the Builder objects. Also, for C++ the default enabled options are async.
-
-## Using services
-TODO
-
-## Tracking services
-TODO
-
-### Sequence diagrams for service tracker and service registration
-
-![Register Service Async](diagrams/services_tracker_services_add_async_seq.png)
-Service tracker callback with an asynchronized service registration
----
-
-![Register Service Async](diagrams/services_tracker_services_rem_async_seq.png)
-Service tracker callback with an asynchronized service un-registration
----
-
-![Register Service Async](diagrams/services_tracker_services_add_seq.png)
-Service tracker callback with a synchronized service registration
----
-
-![Register Service Async](diagrams/services_tracker_services_rem_seq.png)
-Service tracker callback with a synchronized service un-registration
----
