@@ -35,10 +35,10 @@ if (TARGET Celix::http_admin AND TARGET Celix::shell AND TARGET Celix::shell_wui
             BUNDLES
                 Celix::http_admin
                 Celix::shell
-                Celix::shell_wui
+                Celix::shell_wui #web ui (webpage to access Celix shell using static html + websocket)
+                Celix::shell_tui #text ui (uses console at access Celix shell)
+            #INSTALL_BUNDLES #Enabled if you want to manually start the http_example bundle using the shell: `start 5`
                 http_example
-            PROPERTIES
-            #SHELL_USE_ANSI_COLORS=false
     )
 
 endif ()

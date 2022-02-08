@@ -28,15 +28,15 @@ add_celix_bundle(simple_cxx_dep_man_bundle SOURCES src/HelloWorldCxxActivatorWit
 add_celix_bundle(cmp_test_bundle SOURCES src/CmpTestBundleActivator.cc)
 add_subdirectory(subdir) #simple_test_bundle4, simple_test_bundle5 and sublib
 
-add_celix_bundle(unresolveable_bundle SOURCES src/nop_activator.c VERSION 1.0.0)
+add_celix_bundle(unresolvable_bundle SOURCES src/nop_activator.c VERSION 1.0.0)
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(POSTFIX ${CMAKE_DEBUG_POSTFIX})
 endif()
-target_link_libraries(unresolveable_bundle PRIVATE "-L${CMAKE_CURRENT_BINARY_DIR}/subdir -lsublib${POSTFIX}")
+target_link_libraries(unresolvable_bundle PRIVATE "-L${CMAKE_CURRENT_BINARY_DIR}/subdir -lsublib${POSTFIX}")
 if(NOT APPLE)
-    set_target_properties(unresolveable_bundle PROPERTIES LINK_FLAGS -Wl,--no-as-needed)
+    set_target_properties(unresolvable_bundle PROPERTIES LINK_FLAGS -Wl,--no-as-needed)
 endif()
-add_dependencies(unresolveable_bundle sublib)
+add_dependencies(unresolvable_bundle sublib)
 
 add_executable(test_framework
         src/single_framework_test.cpp
@@ -55,26 +55,40 @@ add_celix_bundle_dependencies(test_framework
         simple_test_bundle5 bundle_with_exception unresolveable_bundle simple_cxx_bundle simple_cxx_dep_man_bundle cmp_test_bundle)
 target_include_directories(test_framework PRIVATE ../src)
 
+celix_get_bundle_file(simple_test_bundle1 SIMPLE_TEST_BUNDLE1)
+celix_get_bundle_file(simple_test_bundle2 SIMPLE_TEST_BUNDLE2)
+celix_get_bundle_file(simple_test_bundle3 SIMPLE_TEST_BUNDLE3)
+celix_get_bundle_file(simple_test_bundle4 SIMPLE_TEST_BUNDLE4)
+celix_get_bundle_file(simple_test_bundle5 SIMPLE_TEST_BUNDLE5)
+celix_get_bundle_filename(simple_test_bundle4 SIMPLE_TEST_BUNDLE4_FILENAME)
+celix_get_bundle_filename(simple_test_bundle5 SIMPLE_TEST_BUNDLE5_FILENAME)
+
+celix_get_bundle_filename(bundle_with_exception BUNDLE_WITH_EXCEPTION)
+celix_get_bundle_filename(unresolvable_bundle UNRESOLVABLE_BUNDLE)
+
 celix_get_bundle_file(simple_cxx_bundle SIMPLE_CXX_BUNDLE_LOC)
 celix_get_bundle_file(simple_cxx_dep_man_bundle SIMPLE_CXX_DEP_MAN_BUNDLE_LOC)
 celix_get_bundle_file(cmp_test_bundle CMP_TEST_BUNDLE_LOC)
-target_compile_definitions(test_framework PRIVATE
-        SIMPLE_TEST_BUNDLE1_LOCATION="$<TARGET_PROPERTY:simple_test_bundle1,BUNDLE_FILE>"
-        SIMPLE_TEST_BUNDLE2_LOCATION="$<TARGET_PROPERTY:simple_test_bundle2,BUNDLE_FILE>"
-        SIMPLE_TEST_BUNDLE3_LOCATION="$<TARGET_PROPERTY:simple_test_bundle3,BUNDLE_FILE>"
-        SIMPLE_TEST_BUNDLE4_LOCATION="$<TARGET_PROPERTY:simple_test_bundle4,BUNDLE_FILENAME>"
-        SIMPLE_TEST_BUNDLE5_LOCATION="$<TARGET_PROPERTY:simple_test_bundle5,BUNDLE_FILENAME>"
-        TEST_BUNDLE_WITH_EXCEPTION_LOCATION="$<TARGET_PROPERTY:bundle_with_exception,BUNDLE_FILE>"
-        TEST_BUNDLE_UNRESOLVEABLE_LOCATION="$<TARGET_PROPERTY:unresolveable_bundle,BUNDLE_FILE>"
-        SIMPLE_CXX_BUNDLE_LOC="${SIMPLE_CXX_BUNDLE_LOC}"
-        CMP_TEST_BUNDLE_LOC="${CMP_TEST_BUNDLE_LOC}"
-        SIMPLE_CXX_DEP_MAN_BUNDLE_LOC="${SIMPLE_CXX_DEP_MAN_BUNDLE_LOC}"
-        CMP_TEST_BUNDLE_LOC="${CMP_TEST_BUNDLE_LOC}"
-)
 
 configure_file(config.properties.in config.properties @ONLY)
 configure_file(framework1.properties.in framework1.properties @ONLY)
 configure_file(framework2.properties.in framework2.properties @ONLY)
+configure_file(install_and_start_bundles.properties.in install_and_start_bundles.properties @ONLY)
+
+target_compile_definitions(test_framework PRIVATE
+        SIMPLE_TEST_BUNDLE1_LOCATION="${SIMPLE_TEST_BUNDLE1}"
+        SIMPLE_TEST_BUNDLE2_LOCATION="${SIMPLE_TEST_BUNDLE2}"
+        SIMPLE_TEST_BUNDLE3_LOCATION="${SIMPLE_TEST_BUNDLE3}"
+        SIMPLE_TEST_BUNDLE4_LOCATION="${SIMPLE_TEST_BUNDLE4_FILENAME}"
+        SIMPLE_TEST_BUNDLE5_LOCATION="${SIMPLE_TEST_BUNDLE5_FILENAME}"
+        TEST_BUNDLE_WITH_EXCEPTION_LOCATION="${BUNDLE_WITH_EXCEPTION}"
+        TEST_BUNDLE_UNRESOLVABLE_LOCATION="${UNRESOLVABLE_BUNDLE}"
+        SIMPLE_CXX_BUNDLE_LOC="${SIMPLE_CXX_BUNDLE_LOC}"
+        CMP_TEST_BUNDLE_LOC="${CMP_TEST_BUNDLE_LOC}"
+        SIMPLE_CXX_DEP_MAN_BUNDLE_LOC="${SIMPLE_CXX_DEP_MAN_BUNDLE_LOC}"
+        CMP_TEST_BUNDLE_LOC="${CMP_TEST_BUNDLE_LOC}"
+        INSTALL_AND_START_BUNDLES_CONFIG_PROPERTIES_FILE="${CMAKE_CURRENT_BINARY_DIR}/install_and_start_bundles.properties"
+)
 
 add_test(NAME test_framework COMMAND test_framework)
 setup_target_for_coverage(test_framework SCAN_DIR ..)

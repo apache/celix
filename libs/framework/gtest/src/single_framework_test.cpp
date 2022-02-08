@@ -95,6 +95,52 @@ TEST_F(CelixFramework, testAsyncInstallStartStopAndUninstallBundle) {
     EXPECT_FALSE(celix_framework_isBundleInstalled(framework.get(), bndId));
 }
 
+TEST_F(CelixFramework, listBundles) {
+    auto list = celix_framework_listBundles(framework.get());
+    EXPECT_EQ(0, celix_arrayList_size(list));
+    celix_arrayList_destroy(list);
+    list = celix_framework_listInstalledBundles(framework.get());
+    EXPECT_EQ(0, celix_arrayList_size(list));
+    celix_arrayList_destroy(list);
+
+    long bndId = celix_framework_installBundle(framework.get(), SIMPLE_TEST_BUNDLE1_LOCATION, false);
+    EXPECT_GT(bndId, 0);
+
+    list = celix_framework_listBundles(framework.get());
+    EXPECT_EQ(0, celix_arrayList_size(list)); //installed, but not started
+    celix_arrayList_destroy(list);
+    list = celix_framework_listInstalledBundles(framework.get());
+    EXPECT_EQ(1, celix_arrayList_size(list));
+    celix_arrayList_destroy(list);
+
+    celix_framework_startBundle(framework.get(), bndId);
+
+    list = celix_framework_listBundles(framework.get());
+    EXPECT_EQ(1, celix_arrayList_size(list));
+    celix_arrayList_destroy(list);
+    list = celix_framework_listInstalledBundles(framework.get());
+    EXPECT_EQ(1, celix_arrayList_size(list));
+    celix_arrayList_destroy(list);
+
+    celix_framework_stopBundle(framework.get(), bndId);
+
+    list = celix_framework_listBundles(framework.get());
+    EXPECT_EQ(0, celix_arrayList_size(list));
+    celix_arrayList_destroy(list);
+    list = celix_framework_listInstalledBundles(framework.get());
+    EXPECT_EQ(1, celix_arrayList_size(list)); //stopped, but still installed
+    celix_arrayList_destroy(list);
+
+    celix_framework_uninstallBundle(framework.get(), bndId);
+
+    list = celix_framework_listBundles(framework.get());
+    EXPECT_EQ(0, celix_arrayList_size(list));
+    celix_arrayList_destroy(list);
+    list = celix_framework_listInstalledBundles(framework.get());
+    EXPECT_EQ(0, celix_arrayList_size(list));
+    celix_arrayList_destroy(list);
+}
+
 class FrameworkFactory : public ::testing::Test {
 public:
     FrameworkFactory() = default;
@@ -189,6 +235,40 @@ TEST_F(FrameworkFactory, restartFramework) {
     framework_stop(fw);
     framework_waitForStop(fw);
 
+    framework_destroy(fw);
+}
+
+
+TEST_F(CelixFramework, testLaunchFrameworkWithConfig) {
+    /* Rule: When a Celix framework is started with a config for auto starting bundles and installing bundles,
+     * the specified bundle are installed and if needed started.
+     */
+
+    auto* config = celix_properties_load(INSTALL_AND_START_BUNDLES_CONFIG_PROPERTIES_FILE);
+    ASSERT_TRUE(config != nullptr);
+
+    framework_t* fw = celix_frameworkFactory_createFramework(config);
+    ASSERT_TRUE(fw != nullptr);
+
+    auto* startedBundleIds = celix_framework_listBundles(fw);
+    auto* installedBundleIds = celix_framework_listInstalledBundles(fw);
+
+    /*
+     * 3 started: simple_test_bundle1, simple_test_bundle2 and simple_test_bundle3
+     */
+    EXPECT_EQ(celix_arrayList_size(startedBundleIds), 3);
+
+    /*
+     * 3 started: simple_test_bundle1, simple_test_bundle2 and simple_test_bundle3
+     * 2 installed: simple_test_bundle4 and simple_test_bundle5
+     */
+    EXPECT_EQ(celix_arrayList_size(installedBundleIds), 5);
+
+    celix_arrayList_destroy(startedBundleIds);
+    celix_arrayList_destroy(installedBundleIds);
+
+    framework_stop(fw);
+    framework_waitForStop(fw);
     framework_destroy(fw);
 }
 
