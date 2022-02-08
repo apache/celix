@@ -726,14 +726,16 @@ namespace celix {
                         static_cast<void*>(this),
                         [](void *handle, const celix_service_tracker_info_t *cInfo) {
                             auto *trk = static_cast<MetaTracker *>(handle);
-                            ServiceTrackerInfo info{cInfo->serviceName, celix::Filter::wrap(cInfo->filter), cInfo->bundleId};
+                            std::string svcName = cInfo->serviceName == nullptr ? "" : cInfo->serviceName;
+                            ServiceTrackerInfo info{svcName, celix::Filter::wrap(cInfo->filter), cInfo->bundleId};
                             for (const auto& cb : trk->onTrackerCreated) {
                                 cb(info);
                             }
                         },
                         [](void *handle, const celix_service_tracker_info_t *cInfo) {
                             auto *trk = static_cast<MetaTracker *>(handle);
-                            ServiceTrackerInfo info{cInfo->serviceName, celix::Filter::wrap(cInfo->filter), cInfo->bundleId};
+                            std::string svcName = cInfo->serviceName == nullptr ? "" : cInfo->serviceName;
+                            ServiceTrackerInfo info{svcName, celix::Filter::wrap(cInfo->filter), cInfo->bundleId};
                             for (const auto& cb : trk->onTrackerDestroyed) {
                                 cb(info);
                             }
