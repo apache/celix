@@ -23,6 +23,7 @@
 
 #include "registry_callback_private.h"
 #include "service_registration.h"
+#include "celix_ref.h"
 
 enum celix_service_type {
 	CELIX_PLAIN_SERVICE,
@@ -31,6 +32,7 @@ enum celix_service_type {
 };
 
 struct serviceRegistration {
+    struct celix_ref refCount;
     registry_callback_t callback;
 
 	char * className;
@@ -41,14 +43,12 @@ struct serviceRegistration {
 	bool isUnregistering;
 
 	enum celix_service_type svcType;
-	const void * svcObj;
-	service_factory_pt deprecatedFactory;
-	celix_service_factory_t *factory;
+    union {
+        const void * svcObj;
+        service_factory_pt deprecatedFactory;
+        celix_service_factory_t *factory;
+    };
 
-	struct service *services;
-	int nrOfServices;
-
-	size_t refCount; //protected by mutex
 
 	celix_thread_rwlock_t lock;
 };

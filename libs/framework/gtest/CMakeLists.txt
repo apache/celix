@@ -52,7 +52,7 @@ target_link_libraries(test_framework PRIVATE Celix::framework CURL::libcurl GTes
 add_celix_bundle_dependencies(test_framework
         simple_test_bundle1
         simple_test_bundle2 simple_test_bundle3 simple_test_bundle4
-        simple_test_bundle5 bundle_with_exception unresolveable_bundle simple_cxx)
+        simple_test_bundle5 bundle_with_exception unresolveable_bundle simple_cxx_bundle simple_cxx_dep_man_bundle cmp_test_bundle)
 target_include_directories(test_framework PRIVATE ../src)
 
 celix_get_bundle_file(simple_test_bundle1 SIMPLE_TEST_BUNDLE1)

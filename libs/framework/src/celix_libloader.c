@@ -26,7 +26,7 @@
 celix_library_handle_t* celix_libloader_open(celix_bundle_context_t *ctx, const char *libPath) {
     bool defaultNoDelete = true;
 #if defined(NDEBUG)
-    bool defaultNoDelete = false;
+    defaultNoDelete = false;
 #endif
     celix_library_handle_t* handle = NULL;
     bool noDelete = celix_bundleContext_getPropertyAsBool(ctx, CELIX_LOAD_BUNDLES_WITH_NODELETE, defaultNoDelete);

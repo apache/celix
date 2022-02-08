@@ -21,10 +21,11 @@
 
 #include <atomic>
 
+#include "service_tracker.h"
 #include "celix/BundleContext.h"
-
 #include "celix_framework_factory.h"
 #include "celix_framework.h"
+#include "service_tracker_customizer.h"
 
 class CxxBundleContextTestSuite : public ::testing::Test {
 public:
@@ -760,4 +761,24 @@ TEST_F(CxxBundleContextTestSuite, listBundles) {
     EXPECT_EQ(0, list.size());
     list = ctx->listInstalledBundleIds();
     EXPECT_EQ(0, list.size());
+}
+
+TEST_F(CxxBundleContextTestSuite, TestOldCStyleTrackerWithCxxMetaTracker) {
+    //rule: A old C style service tracker without an (objectClass=*) filter part, should not crash when combined with a C++ MetaTracker.
+
+    service_tracker_customizer_t *customizer = nullptr;
+    auto status = serviceTrackerCustomizer_create(this, nullptr, nullptr, nullptr, nullptr, &customizer);
+    ASSERT_EQ(status, CELIX_SUCCESS);
+    celix_service_tracker_t* tracker = nullptr;
+    status = serviceTracker_createWithFilter(ctx->getCBundleContext(), "(service.exported.interfaces=*)", customizer, &tracker);
+    ASSERT_EQ(status, CELIX_SUCCESS);
+    status = serviceTracker_open(tracker);
+    ASSERT_EQ(status, CELIX_SUCCESS);
+
+    auto metaTracker = ctx->trackAnyServiceTrackers().build();
+    ctx->waitForEvents();
+    EXPECT_EQ(metaTracker->getState(), celix::TrackerState::OPEN);
+
+    serviceTracker_close(tracker);
+    serviceTracker_destroy(tracker);
 }
