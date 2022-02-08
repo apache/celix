@@ -37,19 +37,19 @@ private:
     const std::string name;
 };
 
-class MyShellCommandProvider {
+class MyShellCommandProviderBundleActivator {
 public:
-    explicit MyShellCommandProvider(const std::shared_ptr<celix::BundleContext>& ctx) {
+    explicit MyShellCommandProviderBundleActivator(const std::shared_ptr<celix::BundleContext>& ctx) {
         auto svcObject = std::make_shared<MyCommand>(ctx->getBundle().getName());
         cmdShellRegistration = ctx->registerService<celix::IShellCommand>(std::move(svcObject))
                 .addProperty(celix::IShellCommand::COMMAND_NAME, "MyCommand")
                 .build();
     }
 
-    ~MyShellCommandProvider() noexcept = default;
+    ~MyShellCommandProviderBundleActivator() noexcept = default;
 private:
     //NOTE when celix::ServiceRegistration goes out of scope the underlining service will be un-registered
     std::shared_ptr<celix::ServiceRegistration> cmdShellRegistration{};
 };
 
-CELIX_GEN_CXX_BUNDLE_ACTIVATOR(MyShellCommandProvider)
+CELIX_GEN_CXX_BUNDLE_ACTIVATOR(MyShellCommandProviderBundleActivator)

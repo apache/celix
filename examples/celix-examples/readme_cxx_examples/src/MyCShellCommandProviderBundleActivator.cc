@@ -20,27 +20,31 @@
 #include "celix/BundleActivator.h"
 #include "celix_shell_command.h"
 
-class MyShellCommandProvider {
-public:
-    explicit MyShellCommandProvider(std::shared_ptr<celix::BundleContext>  _ctx) : ctx{std::move(_ctx)} {
-        shellCmd.handle = static_cast<void*>(this);
-        shellCmd.executeCommand = [] (void *handle, const char* commandLine, FILE* outStream, FILE* /*errorStream*/) -> bool {
-            auto* cmdProvider = static_cast<MyShellCommandProvider*>(handle);
+struct MyCShellCommand : public celix_shell_command {
+    explicit MyCShellCommand(std::shared_ptr<celix::BundleContext> _ctx) : celix_shell_command(), ctx{std::move(_ctx)} {
+        handle = this;
+        executeCommand = [] (void *handle, const char* commandLine, FILE* outStream, FILE* /*errorStream*/) -> bool {
+            auto* cmdProvider = static_cast<MyCShellCommand*>(handle);
             fprintf(outStream, "Hello from bundle %s with command line '%s'\n", cmdProvider->ctx->getBundle().getName().c_str(), commandLine);
             return true;
         };
-        cmdShellRegistration = ctx->registerUnmanagedService<celix_shell_command>(&shellCmd, CELIX_SHELL_COMMAND_SERVICE_NAME)
-                .addProperty(CELIX_SHELL_COMMAND_NAME, "MyCCommand")
-                .build();
     }
 
-    ~MyShellCommandProvider() noexcept = default;
-private:
     const std::shared_ptr<celix::BundleContext> ctx;
-    celix_shell_command shellCmd{};
+};
 
+class MyCShellCommandProviderBundleActivator {
+public:
+    explicit MyCShellCommandProviderBundleActivator(const std::shared_ptr<celix::BundleContext>&  ctx) {
+        auto shellCmd = std::make_shared<MyCShellCommand>(ctx);
+        cmdShellRegistration = ctx->registerService<celix_shell_command>(std::move(shellCmd), CELIX_SHELL_COMMAND_SERVICE_NAME)
+                .addProperty(CELIX_SHELL_COMMAND_NAME, "MyCCommand")
+                .setUnregisterAsync(false)
+                .build();
+    }
+private:
     //NOTE when celix::ServiceRegistration goes out of scope the underlining service will be un-registered
     std::shared_ptr<celix::ServiceRegistration> cmdShellRegistration{};
 };
 
-CELIX_GEN_CXX_BUNDLE_ACTIVATOR(MyShellCommandProvider)
+CELIX_GEN_CXX_BUNDLE_ACTIVATOR(MyCShellCommandProviderBundleActivator)
