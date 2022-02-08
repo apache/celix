@@ -961,6 +961,7 @@ celix_status_t fw_getServiceReferences(framework_pt framework, array_list_pt *re
             if (status == CELIX_SUCCESS) {
                 serviceNameObjectClass = properties_get(props, OSGI_FRAMEWORK_OBJECTCLASS);
                 if (!serviceReference_isAssignableTo(ref, bundle, serviceNameObjectClass)) {
+                    //FIXME: unget service reference
                     arrayList_remove(*references, refIdx);
                     refIdx--;
                 }

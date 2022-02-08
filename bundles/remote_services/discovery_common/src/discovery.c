@@ -176,6 +176,7 @@ celix_status_t discovery_informEndpointListeners(discovery_t *discovery, endpoin
 
                         listener->endpointRemoved(listener->handle, endpoint, (char*)scope);
                     }
+                    bundleContext_ungetService(discovery->context, reference, NULL);
                 }
 
                 celix_filter_destroy(filter);

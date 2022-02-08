@@ -154,6 +154,7 @@ celix_status_t exportRegistration_endpointAdded(void * handle, service_reference
 		status = bundleContext_getService(registration->context, registration->reference, &service);
 		if (status == CELIX_SUCCESS) {
 			endpoint->setService(endpoint->endpoint, service);
+            bundleContext_ungetService(registration->context, registration->reference, NULL);
 		}
 	}
 
