@@ -319,7 +319,39 @@ A synchronized service un-registration
 ---
 
 ## Using services
-TODO
+
+Services can be used directly form the bundle context using the following C function / C++ methods:
+- `celix_bundleContext_useServiceWithId`
+- `celix_bundleContext_useService`
+- `celix_bundleContext_useServices`
+- `celix_bundleContext_useServiceWithOptions`
+- `celix_bundleContext_useServicesWithOptions`
+- `celix::BundleContext::useService`
+- `celix::BundleContext::useServices`
+
+These functions / methods work by providing a callback function which will be invoked on the Celix event thread with
+the matching service or services.
+when a "use service" function/method returns the callback function have been called - if 1 or more matches was found -
+and can be safely deallocated. 
+A "use service" function/method return value will indicate if a matching service is found or how many matching services 
+are found.
+
+C usage example:
+```C
+celix_bundle_context_t* ctx = ...
+void* callbackHandle = ...
+void (*useCallback)(void* handle, void *svc) = ...
+bool called = celix_bundleContext_useService(ctx, CELIX_SHELL_COMMAND_SERVICE_NAME, callbackHandle, useCallback);
+```
+
+C++ usage example:
+```C++
+std::shared_ptr<celix::BundleContext> ctx = ...
+std::function<void(celix::IShellCommand&)> callback = ...
+bool called = ctx->useService<celix::IShellCommand>
+        .addUseCallback(callback)
+        .build();
+```
 
 ## Tracking services
 TODO
@@ -351,7 +383,7 @@ For Java OSGi this is already a challenge to program correctly, but less critica
 garbage collector will arrange that objects still exists even if the providing bundle is un-installed.
 Taking into account that C and C++ has no garbage collection, handling the dynamic behaviour correctly is
 more critical; If a bundle providing a certain service is removed, the code segment / memory allocated for
-the service will also be removed / deallocated.
+that service will also be removed / deallocated.
 
 Apache Celix has several mechanisms for dealing with this dynamic behaviour:
 
@@ -364,7 +396,8 @@ Apache Celix has several mechanisms for dealing with this dynamic behaviour:
 * Components with declarative service dependency so that a component life cycle is coupled with the availability of
   service dependencies. See the components' documentation section for more information about components.
 * The Celix framework will handle all service registration/un-registration events and the starting/stopping of trackers
-  on the Celix event thread to ensure that only 1 event can be processed per time.
+  on the Celix event thread to ensure that only 1 event can be processed per time and that callbacks for service
+  registration and service tracker are always called from the same thread. 
 * For service registration, service un-registration, starting trackers and closing trackers there are async variants
-  which can be used in the Celix event thread. For C most of the async function variants end with a `Async` postfix
+  which can be used in the Celix event thread. For C, most of the async function variants end with a `Async` postfix
   and for C++ this is handled as an option in the Builder objects. Also, for C++ the default enabled options are async.

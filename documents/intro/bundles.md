@@ -70,30 +70,7 @@ A Celix bundle has its own lifecycle with the following states:
 - Stopping - Stopping is a temporary state while the bundle activator stop and destroy callbacks are being executed. 
 - Uninstalled - The bundle has been removed from the Celix framework. 
 
-TBD use plantuml of ascii state diagram
-
 ![State diagram of the bundle lifecycle](diagrams/bundles_lifecycle.png)
-
-```ascii
-      <initial>
-          │
-          │
-          ▼
-    ┌─────────────┐          ┌────────────┐
-┌───┤ Installed   │ ┌───────►│ Starting   │
-│   └─────┬───────┘ │        └─────┬──────┘
-│         │  ▲      │              │
-│         ▼  │      │              ▼
-│   ┌────────┴────┐ │        ┌────────────┐
-│   │ Resolved    ├─┘        │ Active     │
-│   │             │ ◄───┐    └─────┬──────┘
-│   └─────┬───────┘     │          │
-│         │             │          ▼
-│         ▼             │    ┌────────────┐
-│   ┌─────────────┐     └────┤ Stopping   │
-└──►│ Uninstalled │          └────────────┘
-    └─────────────┘
-```
 
 ## Bundle activation
 Bundle can be installed and started dynamically. When a bundle is started it will be activated by looking up the bundle
@@ -112,6 +89,22 @@ bundle activator. For C++ a RAII approach is used for bundle activation.
 This which means that a C++ bundle is started by creating a bundle activator object and stopped by
 letting the bundle activator object go out of scope.
 
+## Bundle and Bundle Context
+
+A bundle can interact with the Celix framework using a bundle execution context or bundle context in short.
+The bundle context provides functions/methods to:
+ - Register and un-register services. 
+ - Install, start, stop or uninstall bundles.
+ - Track for service being added or removed.
+ - Track for bundles being installed, started, stopped or uninstalled.
+ - Track for service tracker being started or stopped
+ - Find service ids for a given filter.
+ - use services directly (without a service tracker).
+ - use bundles directly (without a bundle tracker)
+ - wait for events in the Celix event thread.
+ - Retrieve framework property values. 
+ - Retrieve the bundle object associated with the bundle context. 
+ 
 ## Hello World Bundle Example
 The hello world bundle example is a simple example which print a "Hello world" and "Goodbye world" line when
 starting / stopping the bundle.

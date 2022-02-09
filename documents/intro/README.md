@@ -52,11 +52,10 @@ as required or optional.
 
 Celix components can be created using the built-in C and C++ dependency manager.
 
-Note that the dependency manager is not part of the OSGi standard and is inspired by the 
+Note that the dependency manager is not part of the OSGi standard, and it is inspired by the 
 Apache Felix Dependency Manager. 
 Even though the dependency manager is not part of the OSGi specification, 
-this is the preferred way of handling dynamics services in Celix, because it uses a higher abstraction and removes a 
-lot of boilerplate code.
+this is the preferred way of handling dynamics services in Celix, because it uses a higher abstraction.
 
 ## Containers
 Apache Celix containers are executable which start a Celix framework and a preconfigured set of bundles. 
