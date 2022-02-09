@@ -24,18 +24,19 @@ limitations under the License.
 ## What is Apache Celix
 Apache Celix is an implementation of the [OSGi specification](https://www.osgi.org/developer/specifications) 
 adapted to C and C++17. 
-It is a provides a framework to develop (dynamic) modular software applications using components and dynamic services.
+It is a provides a framework to develop dynamic modular software applications using components and in-process services.
 
-Apache Celix core is written in C and has a C++17 header only API on top of the C API. 
+Apache Celix core is written in C and has a C++17 header-only API on top of the C API. 
 
-Building application with Apache Celix can be done by creating `bundles` which provide and use `services`; 
+Building applications with Apache Celix can be done by creating `bundles` which provide and use `services`; 
 These `services` can be directly used or in a declarative way using `components`. 
-Celix `container` executables can be created which starts a Celix framework and install and start a 
-selection of bundles.  
+To run a selection of bundles, a Celix `container` executable can be created. A Celix `containter` will  
+start a Celix framework and install and start the provided bundles.  
 
 ## Bundles
-An Apache Celix Bundle is dynamically loadable collection of shared libraries, configuration files and optional 
-an activation entry combined in a zip file. Bundles can be dynamically installed and started in a Celix framework.
+An Apache Celix Bundle is a zip file which contains a dynamically loadable collection of shared libraries, 
+configuration files and optional an activation entry. 
+Bundles can be dynamically installed and started in a Celix framework.
 
 ## Services
 An Apache Celix Service is a pointer registered to the Celix framework under a set of properties (metadata).
@@ -59,8 +60,8 @@ this is the preferred way of handling dynamics services in Celix, because it use
 
 ## Containers
 Apache Celix containers are executable which start a Celix framework and a preconfigured set of bundles. 
-Although is perfectly possible to create a Celix framework in code, the benefit of a Celix container is that this
-can be easily created using the `add_celix_container` Celix CMake command. 
+Although it is also possible to create and start a Celix framework in code, the benefit of a Celix container 
+is that this can be done with a single `add_celix_container` Celix CMake command. 
 
 ## C++ Support
 
@@ -72,7 +73,7 @@ This means that all the binary artifact for the Apache Celix framework and util 
 libstdc++. 
 
 Apache Celix also offers some C++ only libraries and bundles. The C++ libraries are also header only, but the C++
-bundles contains binaries depending on a C++ compiler / stdlibc++ library.
+bundles contains binaries depending on the stdlibc++ library.
 
 ## Documentation
 
@@ -82,7 +83,6 @@ For more information see:
 * [Apache Celix - Bundles](bundles.md)
 * [Apache Celix - Services](services.md)
 * [Apache Celix - Components](components.md)
-* MAYBE add Creating Containers readme
-* MAYBE remove getting started guide
-* [Apache Celix - Getting Started Guide](../getting_started/README.md) TODO REMOVE
+* TODO MAYBE add Creating Containers readme
+* [Apache Celix - Getting Started Guide](../getting_started/README.md) TODO MAYBE REMOVE, replaced with bundles.md, services.md
 * [Apache Celix - CMake Commands](../cmake_commands/README.md)

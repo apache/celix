@@ -126,7 +126,7 @@ cd ${WS}/celix
 mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo .. 
-make 
+make -j
 ```
 
 ## Editing Build options
@@ -146,7 +146,7 @@ For this guide we assume the CMAKE_INSTALL_PREFIX is `/usr/local`.
 
 ```bash
 cd ${WS}/celix/build
-make
+make -j
 sudo make install
 ```
 
@@ -159,4 +159,4 @@ celix
 should give the following output:
 "Error: invalid or non-existing configuration file: 'config.properties'.No such file or directory".
 
-For more info how to build your own projects and/or running the Apache Celix examples see [Getting Started](../getting_started/README.md).
+For more info how to build your own projects and/or running the Apache Celix examples see [Celix Intro](../intro/README.md).
