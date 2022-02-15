@@ -177,51 +177,49 @@ int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, c
 	}
 
 	//serialize and free output
-	if (funcCallStatus == 0 && status == OK) {
-		for (i = 0; i < nrOfArgs; i += 1) {
-			dyn_type *argType = dynFunction_argumentTypeForIndex(func, i);
-			enum dyn_function_argument_meta  meta = dynFunction_argumentMetaForIndex(func, i);
-			if (meta == DYN_FUNCTION_ARGUMENT_META__PRE_ALLOCATED_OUTPUT) {
+	for (i = 0; i < nrOfArgs; i += 1) {
+		dyn_type *argType = dynFunction_argumentTypeForIndex(func, i);
+		enum dyn_function_argument_meta  meta = dynFunction_argumentMetaForIndex(func, i);
+		if (meta == DYN_FUNCTION_ARGUMENT_META__PRE_ALLOCATED_OUTPUT) {
+			if (funcCallStatus == 0 && status == OK) {
+				status = jsonSerializer_serializeJson(argType, args[i], &jsonResult);
+			}
+			dyn_type *subType = NULL;
+			dynType_typedPointer_getTypedType(argType, &subType);
+			void **ptrToInst = (void**)args[i];
+			dynType_free(subType, *ptrToInst);
+			free(ptrToInst);
+		} else if (meta == DYN_FUNCTION_ARGUMENT_META__OUTPUT) {
+			if (funcCallStatus == 0 && ptr != NULL) {
+				dyn_type *typedType = NULL;
 				if (status == OK) {
-					status = jsonSerializer_serializeJson(argType, args[i], &jsonResult);
+					status = dynType_typedPointer_getTypedType(argType, &typedType);
 				}
-				dyn_type *subType = NULL;
-				dynType_typedPointer_getTypedType(argType, &subType);
-				void **ptrToInst = (void**)args[i];
-				dynType_free(subType, *ptrToInst);
-				free(ptrToInst);
-			} else if (meta == DYN_FUNCTION_ARGUMENT_META__OUTPUT) {
-				if (ptr != NULL) {
-					dyn_type *typedType = NULL;
-					if (status == OK) {
-						status = dynType_typedPointer_getTypedType(argType, &typedType);
-					}
-					if (dynType_descriptorType(typedType) == 't') {
-						status = jsonSerializer_serializeJson(typedType, (void*) &ptr, &jsonResult);
-						free(ptr);
-					} else {
-						dyn_type *typedTypedType = NULL;
-						if (status == OK) {
-							status = dynType_typedPointer_getTypedType(typedType, &typedTypedType);
-						}
-
-						if(status == OK){
-							status = jsonSerializer_serializeJson(typedTypedType, ptr, &jsonResult);
-						}
-
-						if (status == OK) {
-                            dynType_free(typedTypedType, ptr);
-						}
-					}
-
+				if (status == OK && dynType_descriptorType(typedType) == 't') {
+					status = jsonSerializer_serializeJson(typedType, (void*) &ptr, &jsonResult);
+					free(ptr);
 				} else {
-					LOG_DEBUG("Output ptr is null");
-				}
-			}
+					dyn_type *typedTypedType = NULL;
+					if (status == OK) {
+						status = dynType_typedPointer_getTypedType(typedType, &typedTypedType);
+					}
 
-			if (status != OK) {
-				break;
+					if(status == OK){
+						status = jsonSerializer_serializeJson(typedTypedType, ptr, &jsonResult);
+					}
+
+					if (status == OK) {
+						dynType_free(typedTypedType, ptr);
+					}
+				}
+
+			} else {
+				LOG_DEBUG("Output ptr is null");
 			}
+		}
+
+		if (status != OK) {
+			break;
 		}
 	}
 
