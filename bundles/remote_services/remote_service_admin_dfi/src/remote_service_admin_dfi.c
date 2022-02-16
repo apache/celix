@@ -957,7 +957,7 @@ static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description
         fputc('\0', get.stream);
         fclose(get.stream);
         *reply = get.buf;
-        *replyStatus = res;
+        *replyStatus = (res == CURLE_OK) ? CELIX_SUCCESS:CELIX_ERROR_MAKE(CELIX_FACILITY_HTTP,res);
 
         curl_easy_cleanup(curl);
         curl_slist_free_all(metadataHeader);

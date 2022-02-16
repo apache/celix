@@ -304,7 +304,7 @@ int jsonRpc_prepareInvokeRequest(dyn_function_type *func, const char *id, void *
 	return status;
 }
 
-int jsonRpc_handleReply(dyn_function_type *func, const char *reply, void *args[]) {
+int jsonRpc_handleReply(dyn_function_type *func, const char *reply, void *args[], int *rsErrno) {
 	int status = OK;
 
 	json_error_t error;
@@ -315,11 +315,19 @@ int jsonRpc_handleReply(dyn_function_type *func, const char *reply, void *args[]
 	}
 
 	json_t *result = NULL;
+	json_t *rsError = NULL;
 	bool replyHasResult = false;
 	if (status == OK) {
+		*rsErrno = 0;
 		result = json_object_get(replyJson, "r");
 		if (result != NULL) {
 		    replyHasResult = true;
+		} else {
+			rsError = json_object_get(replyJson, "e");
+			if(rsError != NULL) {
+				//get the invocation error of remote service function
+				*rsErrno = json_integer_value(rsError);
+			}
 		}
 	}
 

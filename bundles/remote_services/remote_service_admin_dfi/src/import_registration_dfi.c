@@ -315,6 +315,8 @@ static void importRegistration_proxyFunc(void *userData, void *args[], void *ret
     struct method_entry *entry = userData;
     import_registration_t *import = *((void **)args[0]);
 
+    *(int *) returnVal = CELIX_SUCCESS;
+
     if (import == NULL || import->send == NULL) {
         status = CELIX_ILLEGAL_ARGUMENT;
     }
@@ -334,15 +336,21 @@ static void importRegistration_proxyFunc(void *userData, void *args[], void *ret
         celix_properties_t *metadata = NULL;
         bool cont = remoteInterceptorHandler_invokePreProxyCall(import->interceptorsHandler, import->endpoint->properties, entry->name, &metadata);
         if (cont) {
-            import->send(import->sendHandle, import->endpoint, invokeRequest, metadata, &reply, &rc);
+            status = import->send(import->sendHandle, import->endpoint, invokeRequest, metadata, &reply, &rc);
             //printf("request sended. got reply '%s' with status %i\n", reply, rc);
 
-            if (rc == 0 && dynFunction_hasReturn(entry->dynFunc)) {
+            if (status == CELIX_SUCCESS && rc == CELIX_SUCCESS && dynFunction_hasReturn(entry->dynFunc)) {
                 //fjprintf("Handling reply '%s'\n", reply);
-                status = jsonRpc_handleReply(entry->dynFunc, reply, args);
+                int rsErrno = CELIX_SUCCESS;
+                status = jsonRpc_handleReply(entry->dynFunc, reply, args, &rsErrno);
+                if (rsErrno != CELIX_SUCCESS) {
+                    //return the invocation error of remote service function
+                    *(int *) returnVal = rsErrno;
+                }
             }
-
-            *(int *) returnVal = rc;
+            else if (rc != CELIX_SUCCESS) {
+                *(int *) returnVal = rc;
+            }
 
             remoteInterceptorHandler_invokePostProxyCall(import->interceptorsHandler, import->endpoint->properties, entry->name, metadata);
         }
@@ -362,6 +370,7 @@ static void importRegistration_proxyFunc(void *userData, void *args[], void *ret
 
     if (status != CELIX_SUCCESS) {
         //TODO log error
+        *(int *) returnVal = status;
     }
 }
 

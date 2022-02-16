@@ -21,6 +21,15 @@
  * \file
  * \brief Error codes
  * \defgroup framework Celix Framework
+ * \note Error code has 32bits, its internal structure as following
+ *
+ *|31-30bit|29bit|28-27bit|26-16bit|15-0bit|
+ *|--------|-----|--------|--------|-------|
+ *|R       |C    |R       |Facility|Code   |
+ *
+ * C (1bit): Customer. If set, indicates that the error code is customer-defined. If clear, indicates that the error code is celix-defines
+ * R : Reserved. It should be set to 0
+ * Facility (11 bits): An indicator of the source of the error
  */
 #ifndef CELIX_ERRNO_H_
 #define CELIX_ERRNO_H_
@@ -62,6 +71,38 @@ typedef int celix_status_t;
 const char* celix_strerror(celix_status_t status);
 
 /*!
+ * \brief Customer error code mask
+ *
+ */
+#define CELIX_CUSTOMER_ERR_MASK 0x02000000
+
+/*!
+ * \brief The facility of system error code,
+ * \note Error code 0 indicates success,it is not system error code.
+ */
+#define CELIX_FACILITY_SYSTEM 0
+
+/*!
+ * \brief The facility of celix default error code
+ *
+ */
+#define CELIX_FACILITY_NULL 1
+
+/*!
+ * \brief The facility of the  http suppoter error code
+ *
+ */
+#define CELIX_FACILITY_HTTP 2
+
+/*!
+ * \brief Make the error code accroding to the specification
+ * \param fac Facility
+ * \param code Code
+ */
+#define CELIX_ERROR_MAKE(fac,code) (((unsigned int)(fac)<<16) | ((code)&0xFFFF))
+
+
+/*!
  * Error code indicating successful execution of the function.
  */
 #define CELIX_SUCCESS 0
@@ -101,49 +142,6 @@ const char* celix_strerror(celix_status_t status);
 #define CELIX_SERVICE_EXCEPTION (CELIX_START_ERROR + 9)
 
 #define CELIX_ENOMEM ENOMEM
-
-/*!
- * @brief Error code has 32bits, its internal structure as following
- *
- *|31-30bit|29bit|28-27bit|26-16bit|15-0bit|
- *|--------|-----|--------|--------|-------|
- *|R       |C    |R       |Facility|Code   |
- *
- * C (1bit): Customer. If set, indicates that the error code is customer-defined. If clear, indicates that the error code is celix-defines
- * R : Reserved. It should be set to 0
- * Facility (11 bits): An indicator of the source of the error
- *
- */
-
-/*!
- * @brief Customer error code mask
- *
- */
-#define CELIX_CUSTOMER_ERR_MASK 0x02000000
-
-/*!
- * @brief The facility of system error code,
- * @note Error code 0 indicates success,it is not system error code.
- */
-#define CELIX_FACILITY_SYSTEM 0
-
-/*!
- * @brief The facility of celix default error code
- *
- */
-#define CELIX_FACILITY_NULL 1
-
-/*!
- * @brief The facility of the  rpc subsystem error code
- *
- */
-#define CELIX_FACILITY_RPC 2
-
-/*!
- * @brief The facility of the  http suppoter error code
- *
- */
-#define CELIX_FACILITY_HTTP 3
 
 
 /**

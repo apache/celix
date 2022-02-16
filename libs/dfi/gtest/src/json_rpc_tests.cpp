@@ -86,8 +86,10 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
         double *out = &result;
         void *args[4];
         args[3] = &out;
-        rc = jsonRpc_handleReply(dynFunc, reply, args);
+        int rsErrno = 0;
+        rc = jsonRpc_handleReply(dynFunc, reply, args, &rsErrno);
         ASSERT_EQ(0, rc);
+        ASSERT_EQ(0, rsErrno);
         //ASSERT_EQ(2.2, result);
 
         dynFunction_destroy(dynFunc);
@@ -271,12 +273,55 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
         void *out = &result;
         args[2] = &out;
 
-        rc = jsonRpc_handleReply(func, reply, args);
+        int rsErrno = 0;
+        rc = jsonRpc_handleReply(func, reply, args, &rsErrno);
         ASSERT_EQ(0, rc);
+        ASSERT_EQ(0, rsErrno);
         ASSERT_EQ(1.5, result->average);
 
         free(result->input.buf);
         free(result);
+        dynInterface_destroy(intf);
+    }
+
+    void handleTestReplyError(void) {
+        dyn_interface_type *intf = nullptr;
+        FILE *desc = fopen("descriptors/example1.descriptor", "r");
+        ASSERT_TRUE(desc != nullptr);
+        int rc = dynInterface_parse(desc, &intf);
+        ASSERT_EQ(0, rc);
+        fclose(desc);
+
+        struct methods_head *head;
+        dynInterface_methods(intf, &head);
+        dyn_function_type *func = nullptr;
+        struct method_entry *entry = nullptr;
+        TAILQ_FOREACH(entry, head, entries) {
+            if (strcmp(entry->name, "add") == 0) {
+                func = entry->dynFunc;
+                break;
+            }
+        }
+        ASSERT_TRUE(func != nullptr);
+
+        const char *reply = R"({"e":33554433})";
+
+        void *args[4];
+        args[0] = nullptr;
+        args[1] = nullptr;
+        args[2] = nullptr;
+        args[3] = nullptr;
+
+        double result = 0;
+        void *out = &result;
+        args[3] = &out;
+
+        int rsErrno = 0;
+        rc = jsonRpc_handleReply(func, reply, args, &rsErrno);
+        ASSERT_EQ(0, rc);
+        ASSERT_EQ(33554433, rsErrno);
+        ASSERT_EQ(0, result);
+
         dynInterface_destroy(intf);
     }
 
@@ -313,8 +358,10 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
         void *out = &result;
         args[1] = &out;
 
-        rc = jsonRpc_handleReply(func, reply, args);
+        int rsErrno = 0;
+        rc = jsonRpc_handleReply(func, reply, args, &rsErrno);
         ASSERT_EQ(0, rc);
+        ASSERT_EQ(0, rsErrno);
         ASSERT_EQ(2, result->len);
         ASSERT_EQ(1.0, result->buf[0]->a);
         ASSERT_EQ(1.5, result->buf[0]->b);
@@ -385,7 +432,9 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
         args[1] = &out;
 
         if (func != nullptr) { // Check needed just to satisfy Coverity
-		     jsonRpc_handleReply(func, reply, args);
+            int rsErrno = 0;
+		     jsonRpc_handleReply(func, reply, args, &rsErrno);
+		     ASSERT_EQ(0, rsErrno);
         }
 
         ASSERT_STREQ("this is a test string", result);
@@ -447,3 +496,6 @@ TEST_F(JsonRpcTests, handleOutChar) {
     handleTestOutChar();
 }
 
+TEST_F(JsonRpcTests, handleReplyError) {
+    handleTestReplyError();
+}
