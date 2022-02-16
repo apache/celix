@@ -98,6 +98,10 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
         return 0;
     }
 
+    int addFailed(void*, double , double , double *) {
+        return 0x02000001;// return customer error
+    }
+
     int getName_example4(void*, char** result) {
         *result = strdup("allocatedInFunction");
         return 0;
@@ -193,6 +197,25 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
         rc = jsonRpc_call(intf, &serv, R"({"m":"add(DD)D", "a": [1.0,2.0]})", &result);
         ASSERT_EQ(0, rc);
         ASSERT_TRUE(strstr(result, "3.0") != nullptr);
+
+        free(result);
+        dynInterface_destroy(intf);
+    }
+
+    void callFailedTestPreAllocated(void) {
+        dyn_interface_type *intf = nullptr;
+        FILE *desc = fopen("descriptors/example1.descriptor", "r");
+        ASSERT_TRUE(desc != nullptr);
+        int rc = dynInterface_parse(desc, &intf);
+        ASSERT_EQ(0, rc);
+        fclose(desc);
+
+        char *result = nullptr;
+        tst_serv serv {nullptr, addFailed, nullptr, nullptr, nullptr};
+
+        rc = jsonRpc_call(intf, &serv, R"({"m":"add(DD)D", "a": [1.0,2.0]})", &result);
+        ASSERT_EQ(0, rc);
+        ASSERT_TRUE(strstr(result, "e") != nullptr);
 
         free(result);
         dynInterface_destroy(intf);
@@ -402,6 +425,10 @@ TEST_F(JsonRpcTests, handleTestOut) {
 
 TEST_F(JsonRpcTests, callPre) {
     callTestPreAllocated();
+}
+
+TEST_F(JsonRpcTests, callFailedPre) {
+    callFailedTestPreAllocated();
 }
 
 TEST_F(JsonRpcTests, callOut) {
