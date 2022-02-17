@@ -347,12 +347,13 @@ static void importRegistration_proxyFunc(void *userData, void *args[], void *ret
                     //return the invocation error of remote service function
                     *(int *) returnVal = rsErrno;
                 }
-            }
-            else if (rc != CELIX_SUCCESS) {
+            } else if (rc != CELIX_SUCCESS) {
                 *(int *) returnVal = rc;
             }
 
             remoteInterceptorHandler_invokePostProxyCall(import->interceptorsHandler, import->endpoint->properties, entry->name, metadata);
+        } else {
+            *(int *) returnVal = CELIX_INTERCEPTOR_EXCEPTION;
         }
 
         if (import->logFile != NULL) {
