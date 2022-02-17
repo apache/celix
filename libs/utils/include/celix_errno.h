@@ -122,6 +122,7 @@ const char* celix_strerror(celix_status_t status);
 
 /*!
  * The start error number user application can use.
+ * \deprecated It is recommended to use CELIX_CUSTOMER_ERR_MASK to define user error number
  */
 #define CELIX_START_USERERR (CELIX_START_ERROR + CELIX_ERRSPACE_SIZE)
 
