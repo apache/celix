@@ -82,7 +82,7 @@ celix_status_t serviceRegistry_create(framework_pt framework, service_registry_p
 	if (status == CELIX_SUCCESS) {
 		*out = reg;
 	} else {
-		framework_logIfError(reg->framework->logger, status, NULL, "Cannot create service registry");
+		framework_logIfError(framework->logger, status, NULL, "Cannot create service registry");
 	}
 
 	return status;
@@ -277,13 +277,12 @@ celix_status_t serviceRegistry_unregisterService(service_registry_pt registry, b
         service_reference_pt ref = refsMap != NULL ?
                                    hashMap_get(refsMap, (void*)registration->serviceId) : NULL;
         if (ref != NULL) {
-            serviceReference_invalidate(ref);
+            serviceReference_invalidateCache(ref);
         }
     }
     hashMapIterator_destroy(iter);
+    serviceRegistration_invalidate(registration);
 	celixThreadRwlock_unlock(&registry->lock);
-
-	serviceRegistration_invalidate(registration);
     serviceRegistration_release(registration);
 
 	return CELIX_SUCCESS;
@@ -305,7 +304,6 @@ static celix_status_t serviceRegistry_getServiceReference_internal(service_regis
                                                    service_registration_pt registration, service_reference_pt *out) {
 	//only call after locked registry RWlock
 	celix_status_t status = CELIX_SUCCESS;
-	bundle_pt bundle = NULL;
     service_reference_pt ref = NULL;
     hash_map_pt references = NULL;
 
@@ -318,10 +316,7 @@ static celix_status_t serviceRegistry_getServiceReference_internal(service_regis
     ref = hashMap_get(references, (void*)registration->serviceId);
 
     if (ref == NULL) {
-        status = serviceRegistration_getBundle(registration, &bundle);
-        if (status == CELIX_SUCCESS) {
-            status = serviceReference_create(registry->callback, owner, registration, &ref);
-        }
+        status = serviceReference_create(registry->callback, owner, registration, &ref);
         if (status == CELIX_SUCCESS) {
             hashMap_put(references, (void*)registration->serviceId, ref);
         }
@@ -422,33 +417,15 @@ celix_status_t serviceRegistry_getServiceReferences(service_registry_pt registry
 	return status;
 }
 
-celix_status_t serviceRegistry_retainServiceReference(service_registry_pt registry, bundle_pt bundle, service_reference_pt reference) {
-    celix_status_t status = CELIX_SUCCESS;
-    bundle_pt refBundle = NULL;
-    
-    celixThreadRwlock_writeLock(&registry->lock);
-    serviceReference_getOwner(reference, &refBundle);
-    if (refBundle == bundle) {
-        serviceReference_retain(reference);
-    } else {
-        status = CELIX_ILLEGAL_ARGUMENT;
-        fw_log(registry->framework->logger, CELIX_LOG_LEVEL_ERROR, "cannot retain a service reference from an other bundle (in ref %p) (provided %p).", refBundle, bundle);
-    }
-    celixThreadRwlock_unlock(&registry->lock);
-
-    return status;
-}
-
-
 celix_status_t serviceRegistry_ungetServiceReference(service_registry_pt registry, bundle_pt bundle, service_reference_pt reference) {
     celix_status_t status = CELIX_SUCCESS;
     bool destroyed = false;
     size_t count = 0;
 
-    celixThreadRwlock_writeLock(&registry->lock);
     serviceReference_getUsageCount(reference, &count);
     serviceReference_release(reference, &destroyed);
     if (destroyed) {
+        celixThreadRwlock_writeLock(&registry->lock);
 
         if (count > 0) {
             serviceRegistry_logWarningServiceReferenceUsageCount(registry, bundle, reference, count, 0);
@@ -486,8 +463,8 @@ celix_status_t serviceRegistry_ungetServiceReference(service_registry_pt registr
             fw_log(registry->framework->logger, CELIX_LOG_LEVEL_FATAL, "Cannot find reference %p in serviceReferences map",
                    reference);
         }
+        celixThreadRwlock_unlock(&registry->lock);
     }
-    celixThreadRwlock_unlock(&registry->lock);
 
     return status;
 }
@@ -539,10 +516,6 @@ celix_status_t serviceRegistry_clearReferencesFor(service_registry_pt registry, 
             serviceReference_getReferenceCount(ref, &refCount);
             serviceRegistry_logWarningServiceReferenceUsageCount(registry, bundle, ref, usageCount, refCount);
 
-            while (usageCount > 0) {
-                serviceReference_decreaseUsage(ref, &usageCount);
-            }
-
             bool destroyed = false;
             while (!destroyed) {
                 serviceReference_release(ref, &destroyed);
@@ -583,58 +556,6 @@ celix_status_t serviceRegistry_getServicesInUse(service_registry_pt registry, bu
     *out = result;
 
 	return CELIX_SUCCESS;
-}
-
-celix_status_t serviceRegistry_getService(service_registry_pt registry, bundle_pt bundle, service_reference_pt reference, const void **out) {
-	celix_status_t status = CELIX_SUCCESS;
-	service_registration_pt registration = NULL;
-    size_t count = 0;
-    const void *service = NULL;
-    bool valid = false;
-
-
-    celixThreadRwlock_readLock(&registry->lock);
-    serviceReference_getServiceRegistration(reference, &registration);
-    valid = serviceRegistration_isValid(registration);
-    if (valid) {
-        serviceRegistration_retain(registration);
-        serviceReference_increaseUsage(reference, &count);
-        if (count == 1) {
-            serviceRegistration_getService(registration, bundle, &service);
-            serviceReference_setService(reference, service);
-        }
-    }
-    celixThreadRwlock_unlock(&registry->lock);
-    if(!valid) {
-        *out = NULL;
-        return status;
-    }
-
-    serviceRegistration_release(registration);
-
-    serviceReference_getService(reference, out);
-
-	return status;
-}
-
-celix_status_t serviceRegistry_ungetService(service_registry_pt registry, bundle_pt bundle, service_reference_pt reference, bool *result) {
-    service_registration_pt reg = NULL;
-    const void *service = NULL;
-    size_t count = 0;
-
-    celixThreadRwlock_readLock(&registry->lock);
-    celixThreadRwlock_unlock(&registry->lock);
-
-    celix_status_t status = serviceReference_decreaseUsage(reference, &count);
-    if (count == 0) {
-        serviceReference_getService(reference, &service);
-        serviceReference_getServiceRegistration(reference, &reg);
-        if (reg != NULL) {
-            serviceRegistration_ungetService(reg, bundle, &service);
-        }
-    }
-
-	return status;
 }
 
 static celix_status_t serviceRegistry_addHooks(service_registry_pt registry, const char* serviceName, const void* serviceObject, service_registration_pt registration) {
@@ -1100,7 +1021,6 @@ celix_status_t celix_serviceRegistry_addServiceListener(celix_service_registry_t
             properties_pt props = NULL;
             serviceRegistration_getProperties(registration, &props);
             if (celix_filter_match(filter, props)) {
-                serviceRegistration_retain(registration);
                 long svcId = serviceRegistration_getServiceId(registration);
                 service_reference_pt ref = NULL;
                 serviceRegistry_getServiceReference_internal(registry, bundle, registration, &ref);
@@ -1124,12 +1044,7 @@ celix_status_t celix_serviceRegistry_addServiceListener(celix_service_registry_t
         event.reference = ref;
         event.type = OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED;
         listener->serviceChanged(listener->handle, &event);
-        serviceReference_release(ref, NULL);
-
-        service_registration_t* reg = NULL;
-        serviceReference_getServiceRegistration(ref, &reg);
-        serviceRegistration_release(reg);
-
+        serviceRegistry_ungetServiceReference(registry, bundle, ref);
         //update pending register event count
         celix_decreasePendingRegisteredEvent(registry, svcId);
     }

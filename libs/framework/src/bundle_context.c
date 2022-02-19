@@ -24,6 +24,7 @@
 #include <assert.h>
 #include <unistd.h>
 #include <stdarg.h>
+#include <stdbool.h>
 
 #include "celix_utils.h"
 #include "celix_constants.h"
@@ -38,6 +39,7 @@
 #include "celix_array_list.h"
 #include "module.h"
 #include "service_tracker_private.h"
+#include "service_reference_private.h"
 #include "celix_array_list.h"
 #include "celix_libloader.h"
 
@@ -249,16 +251,22 @@ celix_status_t bundleContext_getServiceReference(bundle_context_pt context, cons
 	return status;
 }
 
+static bool bundleContext_IsServiceReferenceValid(bundle_context_pt context, service_reference_pt ref) {
+    bundle_pt refBundle = NULL;
+    serviceReference_getOwner(ref, &refBundle);
+    return context->bundle == refBundle;
+}
+
 FRAMEWORK_EXPORT celix_status_t bundleContext_retainServiceReference(bundle_context_pt context, service_reference_pt ref) {
     celix_status_t status = CELIX_SUCCESS;
 
-    if (context != NULL && ref != NULL) {
-        serviceRegistry_retainServiceReference(context->framework->registry, context->bundle, ref);
+    if (context != NULL && ref != NULL && bundleContext_IsServiceReferenceValid(context, ref)) {
+        serviceReference_retain(ref);
     } else {
         status = CELIX_ILLEGAL_ARGUMENT;
     }
 
-    framework_logIfError(context->framework->logger, status, NULL, "Failed to get service references");
+    framework_logIfError(context->framework->logger, status, NULL, "Failed to retain service references");
 
     return status;
 }
@@ -266,7 +274,7 @@ FRAMEWORK_EXPORT celix_status_t bundleContext_retainServiceReference(bundle_cont
 celix_status_t bundleContext_ungetServiceReference(bundle_context_pt context, service_reference_pt reference) {
     celix_status_t status = CELIX_SUCCESS;
 
-    if (context != NULL && reference != NULL) {
+    if (context != NULL && reference != NULL && bundleContext_IsServiceReferenceValid(context, reference)) {
         status = framework_ungetServiceReference(context->framework, context->bundle, reference);
     } else {
         status = CELIX_ILLEGAL_ARGUMENT;
@@ -279,32 +287,25 @@ celix_status_t bundleContext_ungetServiceReference(bundle_context_pt context, se
 
 celix_status_t bundleContext_getService(bundle_context_pt context, service_reference_pt reference, void** service_instance) {
     celix_status_t status = CELIX_SUCCESS;
-
-    if (context != NULL && reference != NULL && service_instance != NULL) {
+    if (context != NULL && reference != NULL && service_instance != NULL && bundleContext_IsServiceReferenceValid(context, reference)) {
         /*NOTE argument service_instance should be considered a 'const void**'.
         To ensure backwards compatibility a cast is made instead.
         */
-	    status = fw_getService(context->framework, context->bundle, reference, (const void**) service_instance);
+        status = serviceReference_getService(reference, (const void**) service_instance);
     } else {
         status = CELIX_ILLEGAL_ARGUMENT;
     }
-
-    if (status != CELIX_SUCCESS) {
-        fw_log(context->framework->logger, CELIX_LOG_LEVEL_ERROR, "Failed to get service");
-    }
-
+    framework_logIfError(context->framework->logger, status, NULL, "Failed to get service");
     return status;
 }
 
 celix_status_t bundleContext_ungetService(bundle_context_pt context, service_reference_pt reference, bool *result) {
     celix_status_t status = CELIX_SUCCESS;
-
-    if (context != NULL && reference != NULL) {
-        status = framework_ungetService(context->framework, context->bundle, reference, result);
+    if (context != NULL && reference != NULL && bundleContext_IsServiceReferenceValid(context, reference)) {
+        status = serviceReference_ungetService(reference, result);
     } else {
         status = CELIX_ILLEGAL_ARGUMENT;
     }
-
     framework_logIfError(context->framework->logger, status, NULL, "Failed to unget service");
 
     return status;

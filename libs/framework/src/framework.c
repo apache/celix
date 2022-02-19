@@ -1001,10 +1001,6 @@ celix_status_t framework_ungetServiceReference(framework_pt framework, bundle_pt
     return serviceRegistry_ungetServiceReference(framework->registry, bundle, reference);
 }
 
-celix_status_t fw_getService(framework_pt framework, bundle_pt bundle, service_reference_pt reference, const void **service) {
-	return serviceRegistry_getService(framework->registry, bundle, reference, service);
-}
-
 celix_status_t fw_getBundleRegisteredServices(framework_pt framework, bundle_pt bundle, array_list_pt *services) {
 	return serviceRegistry_getRegisteredServices(framework->registry, bundle, services);
 }
@@ -1013,10 +1009,6 @@ celix_status_t fw_getBundleServicesInUse(framework_pt framework, bundle_pt bundl
 	celix_status_t status = CELIX_SUCCESS;
 	status = serviceRegistry_getServicesInUse(framework->registry, bundle, services);
 	return status;
-}
-
-celix_status_t framework_ungetService(framework_pt framework, bundle_pt bundle, service_reference_pt reference, bool *result) {
-	return serviceRegistry_ungetService(framework->registry, bundle, reference, result);
 }
 
 void fw_addServiceListener(framework_pt framework, bundle_pt bundle, celix_service_listener_t *listener, const char* sfilter) {

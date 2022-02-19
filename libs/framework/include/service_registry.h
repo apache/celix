@@ -69,18 +69,7 @@ serviceRegistry_getServiceReferences(service_registry_pt registry, celix_bundle_
                                      filter_pt filter, celix_array_list_t **references);
 
 celix_status_t
-serviceRegistry_retainServiceReference(service_registry_pt registry, celix_bundle_t *bundle, service_reference_pt reference);
-
-celix_status_t
 serviceRegistry_ungetServiceReference(service_registry_pt registry, celix_bundle_t *bundle, service_reference_pt reference);
-
-celix_status_t
-serviceRegistry_getService(service_registry_pt registry, celix_bundle_t *bundle, service_reference_pt reference,
-                           const void **service);
-
-celix_status_t
-serviceRegistry_ungetService(service_registry_pt registry, celix_bundle_t *bundle, service_reference_pt reference,
-                             bool *result);
 
 celix_status_t serviceRegistry_clearReferencesFor(service_registry_pt registry, celix_bundle_t *bundle);
 

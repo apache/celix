@@ -20,7 +20,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <assert.h>
 
 #include "service_registration_private.h"
 #include "celix_constants.h"
@@ -53,16 +52,12 @@ static celix_status_t serviceRegistration_createInternal(registry_callback_t cal
         reg->callback = callback;
 		reg->svcType = svcType;
 		reg->className = strndup(serviceName, 1024*10);
-		reg->bundle = bundle;
+        reg->bundle = bundle;
 		reg->serviceId = serviceId;
 	    reg->svcObj = serviceObject;
 		reg->isUnregistering = false;
 		celixThreadRwlock_create(&reg->lock, NULL);
-
-		celixThreadRwlock_writeLock(&reg->lock);
 		serviceRegistration_initializeProperties(reg, dictionary);
-		celixThreadRwlock_unlock(&reg->lock);
-
 	} else {
 		status = CELIX_ENOMEM;
 	}
@@ -148,6 +143,7 @@ celix_status_t serviceRegistration_unregister(service_registration_pt registrati
 	if (notValidOrUnregistering) {
 		status = CELIX_ILLEGAL_STATE;
 	} else {
+        //FIXME: first-check-then-do race condition?
         celixThreadRwlock_writeLock(&registration->lock);
         registration->isUnregistering = true;
         bundle = registration->bundle;
@@ -165,10 +161,14 @@ celix_status_t serviceRegistration_unregister(service_registration_pt registrati
 }
 
 celix_status_t serviceRegistration_getService(service_registration_pt registration, bundle_pt bundle, const void** service) {
+    celix_status_t status = CELIX_SUCCESS;
     celixThreadRwlock_readLock(&registration->lock);
-    if (registration->svcType == CELIX_DEPRECATED_FACTORY_SERVICE) {
+    if(registration->svcObj == NULL) {
+        *service = NULL;
+        status = CELIX_ILLEGAL_STATE;
+    } else if (registration->svcType == CELIX_DEPRECATED_FACTORY_SERVICE) {
         service_factory_pt factory = registration->deprecatedFactory;
-        factory->getService(factory->handle, bundle, registration, (void **) service);
+        status = factory->getService(factory->handle, bundle, registration, (void **) service);
     } else if (registration->svcType == CELIX_FACTORY_SERVICE) {
         celix_service_factory_t *fac = registration->factory;
         *service = fac->getService(fac->handle, bundle, registration->properties);
@@ -176,21 +176,27 @@ celix_status_t serviceRegistration_getService(service_registration_pt registrati
         (*service) = registration->svcObj;
     }
     celixThreadRwlock_unlock(&registration->lock);
-
-    return CELIX_SUCCESS;
+    if(status == CELIX_SUCCESS && *service == NULL) {
+        status = CELIX_SERVICE_EXCEPTION;
+    }
+    return status;
 }
 
 celix_status_t serviceRegistration_ungetService(service_registration_pt registration, bundle_pt bundle, const void** service) {
+    celix_status_t status = CELIX_SUCCESS;
     celixThreadRwlock_readLock(&registration->lock);
-    if (registration->svcType == CELIX_DEPRECATED_FACTORY_SERVICE) {
+    if(registration->svcObj == NULL) {
+        status = CELIX_ILLEGAL_STATE;
+    } else if (registration->svcType == CELIX_DEPRECATED_FACTORY_SERVICE) {
         service_factory_pt factory = registration->deprecatedFactory;
-        factory->ungetService(factory->handle, bundle, registration, (void**) service);
+        status  = factory->ungetService(factory->handle, bundle, registration, (void**) service);
     } else if (registration->svcType == CELIX_FACTORY_SERVICE) {
         celix_service_factory_t *fac = registration->factory;
         fac->ungetService(fac->handle, bundle, registration->properties);
     }
     celixThreadRwlock_unlock(&registration->lock);
-    return CELIX_SUCCESS;
+    *service = NULL;
+    return status;
 }
 
 celix_status_t serviceRegistration_getProperties(service_registration_pt registration, properties_pt *properties) {
@@ -213,6 +219,7 @@ celix_status_t serviceRegistration_setProperties(service_registration_pt registr
     celix_status_t status;
 
     celixThreadRwlock_writeLock(&registration->lock);
+    //FIXME: registration->properties leaked
     status = serviceRegistration_initializeProperties(registration, properties);
     celixThreadRwlock_unlock(&registration->lock);
 

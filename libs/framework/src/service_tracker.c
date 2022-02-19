@@ -418,7 +418,9 @@ static celix_status_t serviceTracker_track(service_tracker_t* tracker, service_r
                                                               serviceTracker_checkAndInvokeSetService);
             }
             serviceTracker_invokeAddService(tracker, tracked);
-        } //FIXME: bundleContext_ungetServiceReference for error condition(if any)
+        } else {
+            bundleContext_ungetServiceReference(tracker->context, reference);
+        }
     } else {
         bundleContext_ungetServiceReference(tracker->context, reference);
     }
