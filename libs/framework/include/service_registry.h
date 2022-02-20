@@ -57,9 +57,6 @@ serviceRegistry_registerServiceFactory(service_registry_pt registry, celix_bundl
                                        service_factory_pt factory, celix_properties_t *dictionary,
                                        service_registration_pt *registration);
 
-celix_status_t
-serviceRegistry_unregisterService(service_registry_pt registry, celix_bundle_t *bundle, service_registration_pt registration);
-
 celix_status_t serviceRegistry_getServiceReference(service_registry_pt registry, celix_bundle_t *bundle,
                                                    service_registration_pt registration,
                                                    service_reference_pt *reference);

@@ -34,14 +34,13 @@
 
 struct serviceReference {
     struct celix_ref refCount;
-    registry_callback_t callback;
-	bundle_pt referenceOwner;
-	struct serviceRegistration * registration; // this registration is always accessible within the reference, though the service embedded might be unregistered by its provider
-    bundle_pt registrationBundle;
-    const void* serviceCache; // service instance cached by this reference
+    registry_callback_t callback; // read-only
+	bundle_pt referenceOwner; // read-only
+	struct serviceRegistration * registration; // read-only, this registration is always accessible within the reference, though the service embedded might be unregistered by its provider
+    bundle_pt registrationBundle; // read-only
+    celix_thread_rwlock_t lock; // protect below
+    const void* serviceCache;
     size_t usageCount;
-
-    celix_thread_rwlock_t lock;
 };
 
 celix_status_t serviceReference_create(registry_callback_t callback, bundle_pt referenceOwner, service_registration_pt registration, service_reference_pt *reference);

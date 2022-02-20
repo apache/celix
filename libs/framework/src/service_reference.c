@@ -147,27 +147,19 @@ static void serviceReference_destroy(service_reference_pt ref) {
 
 celix_status_t serviceReference_getBundle(service_reference_pt ref, bundle_pt *bundle) {
     celix_status_t status = CELIX_SUCCESS;
-    celixThreadRwlock_readLock(&ref->lock);
-    if (ref->registration != NULL) {
-        *bundle = ref->registrationBundle;
-    }
-    celixThreadRwlock_unlock(&ref->lock);
+    *bundle = ref->registrationBundle;
     return status;
 }
 
 celix_status_t serviceReference_getOwner(service_reference_pt ref, bundle_pt *owner) { 
     celix_status_t status = CELIX_SUCCESS;
-    celixThreadRwlock_readLock(&ref->lock);
     *owner = ref->referenceOwner;
-    celixThreadRwlock_unlock(&ref->lock);
     return status;
 }
 
 celix_status_t serviceReference_getServiceRegistration(service_reference_pt ref, service_registration_pt *out) {
     if (ref != NULL) {
-        celixThreadRwlock_readLock(&ref->lock);
         *out = ref->registration;
-        celixThreadRwlock_unlock(&ref->lock);
         return CELIX_SUCCESS;
     } else {
         return CELIX_ILLEGAL_ARGUMENT;
@@ -175,13 +167,7 @@ celix_status_t serviceReference_getServiceRegistration(service_reference_pt ref,
 }
 
 long serviceReference_getServiceId(service_reference_pt ref) {
-    long svcId = -1L;
-    if (ref != NULL) {
-        celixThreadRwlock_readLock(&ref->lock);
-        svcId = ref->registration->serviceId;
-        celixThreadRwlock_unlock(&ref->lock);
-    }
-    return svcId;
+    return serviceRegistration_getServiceId(ref->registration);
 }
 
 
@@ -190,12 +176,10 @@ FRAMEWORK_EXPORT celix_status_t
 serviceReference_getPropertyWithDefault(service_reference_pt ref, const char *key, const char* def, const char **value) {
     celix_status_t status = CELIX_SUCCESS;
     properties_pt props = NULL;
-    celixThreadRwlock_readLock(&ref->lock);
     status = serviceRegistration_getProperties(ref->registration, &props);
     if (status == CELIX_SUCCESS) {
         *value = (char*) properties_getWithDefault(props, key, def);
     }
-    celixThreadRwlock_unlock(&ref->lock);
     return status;
 }
 
@@ -207,7 +191,6 @@ FRAMEWORK_EXPORT celix_status_t serviceReference_getPropertyKeys(service_referen
     celix_status_t status = CELIX_SUCCESS;
     properties_pt props = NULL;
 
-    celixThreadRwlock_readLock(&ref->lock);
     serviceRegistration_getProperties(ref->registration, &props);
     hash_map_iterator_pt it;
     int i = 0;
@@ -220,7 +203,6 @@ FRAMEWORK_EXPORT celix_status_t serviceReference_getPropertyKeys(service_referen
         i++;
     }
     hashMapIterator_destroy(it);
-    celixThreadRwlock_unlock(&ref->lock);
     return status;
 }
 
@@ -298,12 +280,9 @@ unsigned int serviceReference_hashCode(const void *referenceP) {
     service_registration_pt reg = NULL;
 
     if (ref != NULL) {
-        celixThreadRwlock_readLock(&ref->lock);
         bundle = ref->registrationBundle;
         reg = ref->registration;
-        celixThreadRwlock_unlock(&ref->lock);
     }
-
 
 	int prime = 31;
 	int result = 1;
@@ -321,20 +300,15 @@ unsigned int serviceReference_hashCode(const void *referenceP) {
 
 celix_status_t serviceReference_getUsingBundles(service_reference_pt ref, array_list_pt *out) {
     celix_status_t status = CELIX_SUCCESS;
-    service_registration_pt reg = NULL;
     registry_callback_t callback;
 
     callback.getUsingBundles = NULL;
 
-
-    celixThreadRwlock_readLock(&ref->lock);
-    reg = ref->registration;
     callback.handle = ref->callback.handle;
     callback.getUsingBundles = ref->callback.getUsingBundles;
-    celixThreadRwlock_unlock(&ref->lock);
 
     if (callback.getUsingBundles != NULL) {
-        status = callback.getUsingBundles(callback.handle, reg, out);
+        status = callback.getUsingBundles(callback.handle, ref->registration, out);
     } else {
         fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_ERROR, "getUsingBundles callback not set");
         status = CELIX_BUNDLE_EXCEPTION;

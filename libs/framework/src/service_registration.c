@@ -130,33 +130,24 @@ bool serviceRegistration_isValid(service_registration_pt registration) {
 
 celix_status_t serviceRegistration_unregister(service_registration_pt registration) {
 	celix_status_t status = CELIX_SUCCESS;
-
-    bool notValidOrUnregistering;
-    celixThreadRwlock_readLock(&registration->lock);
-    notValidOrUnregistering = !serviceRegistration_isValid(registration) || registration->isUnregistering;
-    celixThreadRwlock_unlock(&registration->lock);
-
+    bool unregistering = false;
     registry_callback_t callback;
     callback.unregister = NULL;
-    bundle_pt bundle = NULL;
 
-	if (notValidOrUnregistering) {
-		status = CELIX_ILLEGAL_STATE;
-	} else {
-        //FIXME: first-check-then-do race condition?
-        celixThreadRwlock_writeLock(&registration->lock);
-        registration->isUnregistering = true;
-        bundle = registration->bundle;
-        callback = registration->callback;
-        celixThreadRwlock_unlock(&registration->lock);
+    // Without any further need of synchronization between callers, __ATOMIC_RELAXED should be sufficient to guarantee that only one caller has a chance to run.
+    // Strong form of compare-and-swap is used to avoid spurious failure.
+    if(!__atomic_compare_exchange_n(&registration->isUnregistering, &unregistering /* expected*/ , true /* desired */,
+                                    false /* weak */, __ATOMIC_RELAXED/*success memorder*/, __ATOMIC_RELAXED/*failure memorder*/)) {
+        status = CELIX_ILLEGAL_STATE;
+        goto immediate_return;
     }
-
-	if (status == CELIX_SUCCESS && callback.unregister != NULL) {
-        callback.unregister(callback.handle, bundle, registration);
+    callback = registration->callback;
+	if (callback.unregister != NULL) {
+        status = callback.unregister(callback.handle, registration->bundle, registration);
 	}
 
-	framework_logIfError(celix_frameworkLogger_globalLogger(), status, NULL, "Cannot unregister service registration");
-
+immediate_return:
+    framework_logIfError(celix_frameworkLogger_globalLogger(), status, NULL, "Cannot unregister service registration");
 	return status;
 }
 
@@ -203,9 +194,7 @@ celix_status_t serviceRegistration_getProperties(service_registration_pt registr
 	celix_status_t status = CELIX_SUCCESS;
 
     if (registration != NULL) {
-        celixThreadRwlock_readLock(&registration->lock);
         *properties = registration->properties;
-        celixThreadRwlock_unlock(&registration->lock);
      } else {
           status = CELIX_ILLEGAL_ARGUMENT;
      }
@@ -215,18 +204,6 @@ celix_status_t serviceRegistration_getProperties(service_registration_pt registr
     return status;
 }
 
-celix_status_t serviceRegistration_setProperties(service_registration_pt registration, properties_pt properties) {
-    celix_status_t status;
-
-    celixThreadRwlock_writeLock(&registration->lock);
-    //FIXME: registration->properties leaked
-    status = serviceRegistration_initializeProperties(registration, properties);
-    celixThreadRwlock_unlock(&registration->lock);
-
-	return status;
-}
-
-
 celix_status_t serviceRegistration_getBundle(service_registration_pt registration, bundle_pt *bundle) {
     celix_status_t status = CELIX_SUCCESS;
     if (registration == NULL) {
@@ -234,9 +211,7 @@ celix_status_t serviceRegistration_getBundle(service_registration_pt registratio
     }
 
     if (registration != NULL && *bundle == NULL) {
-        celixThreadRwlock_readLock(&registration->lock);
         *bundle = registration->bundle;
-        celixThreadRwlock_unlock(&registration->lock);
 	} else {
 		status = CELIX_ILLEGAL_ARGUMENT;
 	}
@@ -250,9 +225,7 @@ celix_status_t serviceRegistration_getServiceName(service_registration_pt regist
 	celix_status_t status = CELIX_SUCCESS;
 
     if (registration != NULL && serviceName != NULL) {
-        celixThreadRwlock_readLock(&registration->lock);
         *serviceName = registration->className;
-        celixThreadRwlock_unlock(&registration->lock);
 	} else {
         status = CELIX_ILLEGAL_ARGUMENT;
     }
@@ -266,9 +239,7 @@ celix_status_t serviceRegistration_getServiceName(service_registration_pt regist
 long serviceRegistration_getServiceId(service_registration_t *registration) {
     long svcId = -1;
     if (registration != NULL) {
-        celixThreadRwlock_readLock(&registration->lock);
         svcId = registration->serviceId;
-        celixThreadRwlock_unlock(&registration->lock);
     }
     return svcId;
 }
@@ -289,9 +260,7 @@ service_registration_t* celix_serviceRegistration_createServiceFactory(
 bool serviceRegistration_isFactoryService(service_registration_t *registration) {
     bool isFactory = false;
     if (registration != NULL) {
-        celixThreadRwlock_readLock(&registration->lock);
         isFactory = registration->svcType == CELIX_FACTORY_SERVICE || registration->svcType == CELIX_DEPRECATED_FACTORY_SERVICE;
-        celixThreadRwlock_unlock(&registration->lock);
     }
     return isFactory;
 }

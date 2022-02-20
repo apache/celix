@@ -40,9 +40,6 @@ FRAMEWORK_EXPORT celix_status_t
 serviceRegistration_getProperties(service_registration_t *registration, celix_properties_t **properties);
 
 FRAMEWORK_EXPORT celix_status_t
-serviceRegistration_setProperties(service_registration_t *registration, celix_properties_t *properties);
-
-FRAMEWORK_EXPORT celix_status_t
 serviceRegistration_getServiceName(service_registration_t *registration, const char **serviceName);
 
 FRAMEWORK_EXPORT long
