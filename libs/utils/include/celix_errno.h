@@ -150,14 +150,12 @@ const char* celix_strerror(celix_status_t status);
 #define CELIX_FRAMEWORK_EXCEPTION (CELIX_START_ERROR + 7)
 #define CELIX_FILE_IO_EXCEPTION (CELIX_START_ERROR + 8)
 #define CELIX_SERVICE_EXCEPTION (CELIX_START_ERROR + 9)
-
 /*!
  * Exception indicating a problem with a interceptor
  */
 #define CELIX_INTERCEPTOR_EXCEPTION (CELIX_START_ERROR + 10)
 
 #define CELIX_ENOMEM ENOMEM
-
 
 /**
  * \}
