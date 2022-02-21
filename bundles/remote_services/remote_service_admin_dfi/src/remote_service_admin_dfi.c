@@ -501,7 +501,7 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
 
             char *response = NULL;
             int responceLength = 0;
-            int rc = exportRegistration_call(export, data, -1, metadata, &response, &responceLength);
+            int rc = exportRegistration_call(export, data, -1, &metadata, &response, &responceLength);
             if (rc != CELIX_SUCCESS) {
                 RSA_LOG_ERROR(rsa, "Error trying to invoke remove service, got error %i\n", rc);
             }
@@ -534,9 +534,12 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
 
             free(data);
             exportRegistration_decreaseUsage(export);
-
-            //TODO free metadata?
         }
+    }
+
+    //free metadata
+    if(metadata != NULL) {
+        celix_properties_destroy(metadata);
     }
 
     return result;

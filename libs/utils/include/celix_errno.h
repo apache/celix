@@ -77,7 +77,7 @@ const char* celix_strerror(celix_status_t status);
  * Customer error code mask
  *
  */
-#define CELIX_CUSTOMER_ERR_MASK 0x02000000
+#define CELIX_CUSTOMER_ERR_MASK 0x20000000
 
 /*!
  * The facility of system error code,
@@ -104,6 +104,12 @@ const char* celix_strerror(celix_status_t status);
  */
 #define CELIX_ERROR_MAKE(fac,code) (((unsigned int)(fac)<<16) | ((code)&0xFFFF))
 
+/*!
+ * Make the customer error code
+ * \param usrFac Facility value of customer error code.It is defined by customer
+ * \param usrCode Code value of customer error codes.It is defined by customer
+ */
+#define CELIX_CUSTOMER_ERROR_MAKE(usrFac,usrCode) (CELIX_CUSTOMER_ERR_MASK | (((usrFac)&0x7FF)<<16) | ((usrCode)&0xFFFF))
 
 /*!
  * Error code indicating successful execution of the function.

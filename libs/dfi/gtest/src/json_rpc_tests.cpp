@@ -35,6 +35,7 @@ extern "C" {
 #include "dyn_type.h"
 #include "json_serializer.h"
 #include "json_rpc.h"
+#include "celix_errno.h"
 
 static void stdLog(void*, int level, const char *file, int line, const char *msg, ...) {
     va_list ap;
@@ -101,7 +102,7 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
     }
 
     int addFailed(void*, double , double , double *) {
-        return 0x02000001;// return customer error
+        return CELIX_CUSTOMER_ERROR_MAKE(0,1);// return customer error
     }
 
     int getName_example4(void*, char** result) {

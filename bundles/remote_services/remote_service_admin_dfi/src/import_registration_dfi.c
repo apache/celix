@@ -356,6 +356,11 @@ static void importRegistration_proxyFunc(void *userData, void *args[], void *ret
             *(int *) returnVal = CELIX_INTERCEPTOR_EXCEPTION;
         }
 
+        //free metadata
+        if(metadata != NULL) {
+            celix_properties_destroy(metadata);
+        }
+
         if (import->logFile != NULL) {
             static int callCount = 0;
             const char *url = importRegistration_getUrl(import);

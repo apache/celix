@@ -117,6 +117,7 @@ void remoteInterceptorsHandler_removeInterceptor(void *handle, void *svc, __attr
         entry_t *entry = arrayList_get(handler->interceptors, i);
         if (entry->interceptor == svc) {
             arrayList_remove(handler->interceptors, i);
+            free(entry);
             break;
         }
     }
