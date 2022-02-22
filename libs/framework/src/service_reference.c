@@ -37,7 +37,7 @@
 #include "service_registration_private.h"
 #include "celix_build_assert.h"
 
-static void serviceReference_doRelease(struct celix_ref *);
+static bool serviceReference_doRelease(struct celix_ref *);
 static void serviceReference_destroy(service_reference_pt);
 
 celix_status_t serviceReference_create(registry_callback_t callback, bundle_pt referenceOwner, service_registration_pt registration,  service_reference_pt *out) {
@@ -81,12 +81,20 @@ celix_status_t serviceReference_release(service_reference_pt ref, bool *out) {
     return CELIX_SUCCESS;
 }
 
-static void serviceReference_doRelease(struct celix_ref *refCount) {
+static bool serviceReference_doRelease(struct celix_ref *refCount) {
     service_reference_pt ref = (service_reference_pt)refCount;
+    bool removed = true;
     CELIX_BUILD_ASSERT(offsetof(struct serviceReference, refCount) == 0);
-    serviceReference_invalidateCache(ref);
-    serviceRegistration_release(ref->registration);
-    serviceReference_destroy(ref);
+    // now the reference is dying in the registry, to stop anyone from reviving it, we must remove it from the registry.
+    // suppose another thread revives the reference and release it immediately, we may end up with two (or more) callers of tryRemoveServiceReference.
+    // it's the registry's responsibility to guarantee that only one caller get the chance to actually perform cleanup
+    removed = ref->callback.tryRemoveServiceReference(ref->callback.handle, ref);
+    if(removed) {
+        serviceReference_invalidateCache(ref);
+        serviceRegistration_release(ref->registration);
+        serviceReference_destroy(ref);
+    }
+    return removed;
 }
 
 celix_status_t serviceReference_getUsageCount(service_reference_pt ref, size_t *count) {

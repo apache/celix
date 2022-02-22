@@ -36,7 +36,7 @@
 
 static celix_status_t serviceTracker_track(service_tracker_t *tracker, service_reference_pt reference, celix_service_event_t *event);
 static celix_status_t serviceTracker_untrack(service_tracker_t *tracker, service_reference_pt reference);
-static void serviceTracker_untrackTracked(service_tracker_t *tracker, celix_tracked_entry_t *tracked, int trackedSize);
+static void serviceTracker_untrackTracked(service_tracker_t *tracker, celix_tracked_entry_t *tracked, int trackedSize, bool set);
 static celix_status_t serviceTracker_invokeAddingService(service_tracker_t *tracker, service_reference_pt ref, void **svcOut);
 static celix_status_t serviceTracker_invokeAddService(service_tracker_t *tracker, celix_tracked_entry_t *tracked);
 static celix_status_t serviceTracker_invokeRemovingService(service_tracker_t *tracker, celix_tracked_entry_t *tracked);
@@ -226,7 +226,7 @@ celix_status_t serviceTracker_close(service_tracker_t* tracker) {
 
             if (tracked != NULL) {
                 int currentSize = nrOfTrackedEntries - 1;
-                serviceTracker_untrackTracked(tracker, tracked, currentSize);
+                serviceTracker_untrackTracked(tracker, tracked, currentSize, currentSize == 0);
                 celixThreadMutex_lock(&tracker->mutex);
                 celix_arrayList_remove(tracker->untrackingServices, tracked);
                 celixThreadCondition_broadcast(&tracker->cond);
@@ -414,7 +414,7 @@ static celix_status_t serviceTracker_track(service_tracker_t* tracker, service_r
             celixThreadMutex_unlock(&tracker->mutex);
 
             if (tracker->set != NULL || tracker->setWithProperties != NULL || tracker->setWithOwner != NULL) {
-                celix_serviceTracker_useHighestRankingService(tracker, tracked->serviceName, tracker, NULL, NULL,
+                celix_serviceTracker_useHighestRankingService(tracker, NULL, tracker, NULL, NULL,
                                                               serviceTracker_checkAndInvokeSetService);
             }
             serviceTracker_invokeAddService(tracker, tracked);
@@ -533,7 +533,7 @@ static celix_status_t serviceTracker_untrack(service_tracker_t* tracker, service
 
     //note also syncing on untracking entries, to ensure no untrack is parallel in progress
     if (remove != NULL) {
-        serviceTracker_untrackTracked(tracker, remove, size);
+        serviceTracker_untrackTracked(tracker, remove, size, true);
         celixThreadMutex_lock(&tracker->mutex);
         celix_arrayList_remove(tracker->untrackingServices, remove);
         celixThreadMutex_unlock(&tracker->mutex);
@@ -551,15 +551,17 @@ static celix_status_t serviceTracker_untrack(service_tracker_t* tracker, service
     return status;
 }
 
-static void serviceTracker_untrackTracked(service_tracker_t *tracker, celix_tracked_entry_t *tracked, int trackedSize) {
+static void serviceTracker_untrackTracked(service_tracker_t *tracker, celix_tracked_entry_t *tracked, int trackedSize, bool set) {
     assert(tracker != NULL);
     serviceTracker_invokeRemovingService(tracker, tracked);
 
-
-    if (trackedSize == 0) {
-        serviceTracker_checkAndInvokeSetService(tracker, NULL, NULL, NULL);
-    } else {
-        celix_serviceTracker_useHighestRankingService(tracker, tracker->serviceName, tracker, NULL, NULL, serviceTracker_checkAndInvokeSetService);
+    if(set) {
+        if (trackedSize == 0) {
+            serviceTracker_checkAndInvokeSetService(tracker, NULL, NULL, NULL);
+        } else {
+            celix_serviceTracker_useHighestRankingService(tracker, NULL, tracker, NULL, NULL,
+                                                          serviceTracker_checkAndInvokeSetService);
+        }
     }
 
     bundleContext_ungetServiceReference(tracker->context, tracked->reference);
@@ -707,7 +709,7 @@ bool celix_serviceTracker_useHighestRankingService(service_tracker_t *tracker,
 
     for (i = 0; i < size; i++) {
         tracked = (celix_tracked_entry_t *) arrayList_get(tracker->trackedServices, i);
-        if (serviceName != NULL && tracked->serviceName != NULL && celix_utils_stringEquals(tracked->serviceName, serviceName)) {
+        if (serviceName == NULL || (serviceName != NULL && tracked->serviceName != NULL && celix_utils_stringEquals(tracked->serviceName, serviceName))) {
             if (highest == NULL) {
                 highest = tracked;
             } else {

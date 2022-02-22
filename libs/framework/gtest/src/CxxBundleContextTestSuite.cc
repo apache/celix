@@ -623,9 +623,7 @@ TEST_F(CxxBundleContextTestSuite, setServicesWithTrackerWhenMultipleRegistration
     tracker->close();
     tracker->wait();
 
-    //TODO improve this. For now closing a tracker will inject other service before getting to nullptr.
-    //Also look into why this is not happening in the C service tracker test.
-    EXPECT_EQ(6, count.load());
+    EXPECT_EQ(2, count.load());
 }
 
 TEST_F(CxxBundleContextTestSuite, WaitForAllEvents) {

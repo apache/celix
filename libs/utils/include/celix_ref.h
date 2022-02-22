@@ -22,6 +22,7 @@
 
 #include <limits.h>
 #include <assert.h>
+#include <stdbool.h>
 
 struct celix_ref {
     int count;
@@ -52,7 +53,7 @@ static inline int celix_ref_read(const struct celix_ref *ref)
 static inline void celix_ref_get(struct celix_ref *ref) {
     int val;
     val = __atomic_fetch_add(&(ref->count), 1, __ATOMIC_RELAXED);
-    assert(val < INT_MAX && val > 0);
+    assert(val < INT_MAX && val >= 0); // to allow the dying object (val == 0) stay in cache to be revived later
     (void)val;
 }
 
@@ -64,18 +65,17 @@ static inline void celix_ref_get(struct celix_ref *ref) {
   * @param ref object.
   * @param release pointer to the function that will clean up the object when the
   * last reference to the object is released.
-  * @return 1 if the object was removed, otherwise return 0.
+  * @return true if the object was removed, otherwise return false.
   */
-static inline int celix_ref_put(struct celix_ref *ref, void (*release)(struct celix_ref *ref)) {
+static inline bool celix_ref_put(struct celix_ref *ref, bool (*release)(struct celix_ref *ref)) {
     int val;
     val = __atomic_fetch_sub(&(ref->count), 1, __ATOMIC_RELEASE);
     if(val == 1) {
         __atomic_thread_fence(__ATOMIC_ACQUIRE);
-        release(ref);
-        return 1;
+        return release(ref);
     }
     assert(val > 0);
-    return 0;
+    return false;
 }
 
 #endif //CELIX_CELIX_REF_H

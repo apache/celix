@@ -114,6 +114,59 @@ TEST_F(CelixBundleContextServicesTests, incorrectAsyncUnregisterCalls) {
     celix_bundleContext_unregisterServiceAsync(ctx, -2, nullptr, nullptr);
 };
 
+TEST_F(CelixBundleContextServicesTests, UseServicesWithoutName) {
+    struct calc {
+        int (*calc)(int);
+    };
+
+    const char *calcName = "calc";
+    struct calc svc;
+    svc.calc = [](int n) -> int {
+        return n * 42;
+    };
+
+    long svcId1 = celix_bundleContext_registerService(ctx, &svc, calcName, nullptr);
+    EXPECT_TRUE(svcId1 >= 0);
+
+    auto use = [](void *handle, void *svc) {
+        EXPECT_TRUE(svc != nullptr);
+        int *total =  static_cast<int*>(handle);
+        struct calc *calc = static_cast<struct calc*>(svc);
+        int tmp = calc->calc(1);
+        *total += tmp;
+    };
+
+    int total = 0;
+    auto count = celix_bundleContext_useServices(ctx, nullptr, &total, use);
+    EXPECT_EQ(0, count);
+    count = celix_bundleContext_useServices(ctx, calcName, &total, use);
+    EXPECT_EQ(1, count);
+    bool called = celix_bundleContext_useService(ctx, nullptr, &total, use);
+    EXPECT_FALSE(called);
+    called = celix_bundleContext_useService(ctx, calcName, &total, use);
+    EXPECT_TRUE(called);
+    called = celix_bundleContext_useServiceWithId(ctx, svcId1, nullptr, &total, use);
+    EXPECT_FALSE(called);
+
+    celix_service_use_options_t use_opts{};
+    use_opts.filter.serviceName = nullptr;
+    use_opts.filter.versionRange = nullptr;
+    use_opts.callbackHandle = &total;
+    use_opts.use = use;
+    called = celix_bundleContext_useServiceWithOptions(ctx, &use_opts);
+    ASSERT_FALSE(called);
+    count = celix_bundleContext_useServicesWithOptions(ctx, &use_opts);
+    EXPECT_EQ(0, count);
+
+    use_opts.filter.serviceName = calcName;
+    called = celix_bundleContext_useServiceWithOptions(ctx, &use_opts);
+    ASSERT_TRUE(called);
+    count = celix_bundleContext_useServicesWithOptions(ctx, &use_opts);
+    EXPECT_EQ(1, count);
+
+    celix_bundleContext_unregisterService(ctx, svcId1);
+}
+
 TEST_F(CelixBundleContextServicesTests, registerMultipleAndUseServices) {
     struct calc {
         int (*calc)(int);
@@ -842,6 +895,64 @@ TEST_F(CelixBundleContextServicesTests, servicesTrackerSetTest) {
     celix_service_tracking_options_t opts{};
     opts.callbackHandle = (void*)&count;
     opts.filter.serviceName = "NA";
+    opts.set = set;
+    long trackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts); //call 1
+    ASSERT_TRUE(trackerId >= 0);
+
+    //register svc3 should lead to second set call
+    properties_t *props3 = celix_properties_create();
+    celix_properties_set(props3, OSGI_FRAMEWORK_SERVICE_RANKING, "10");
+    long svcId3 = celix_bundleContext_registerService(ctx, svc3, "NA", props3); //call 2
+
+    //register svc4 should lead to no set (lower ranking)
+    properties_t *props4 = celix_properties_create();
+    celix_properties_set(props4, OSGI_FRAMEWORK_SERVICE_RANKING, "10");
+    long svcId4 = celix_bundleContext_registerService(ctx, svc4, "NA", props4); //no update
+
+    //unregister svc3 should lead to set (new highest ranking)
+    celix_bundleContext_unregisterService(ctx, svcId3); //call 3
+
+    celix_bundleContext_stopTracker(ctx, trackerId); //call 4 (nullptr)
+    celix_bundleContext_unregisterService(ctx, svcId1);
+    celix_bundleContext_unregisterService(ctx, svcId2);
+    celix_bundleContext_unregisterService(ctx, svcId4);
+
+    ASSERT_EQ(4, count); //check if the set is called the expected times
+}
+
+TEST_F(CelixBundleContextServicesTests, TrackerOfAllServicesSetTest) {
+    int count = 0;
+
+    void *svc1 = (void*)0x100; //no ranking
+    void *svc2 = (void*)0x200; //no ranking
+    void *svc3 = (void*)0x300; //10 ranking
+    void *svc4 = (void*)0x400; //5 ranking
+
+    auto set = [](void *handle, void *svc) {
+        static int callCount = 0;
+        callCount += 1;
+        if (callCount == 1) {
+            //first time svc1 should be set (oldest service with equal ranking
+            ASSERT_EQ(0x100, (long)svc);
+        } else if (callCount == 2) {
+            ASSERT_EQ(0x300, (long)svc);
+            //second time svc3 should be set (highest ranking)
+        } else if (callCount == 3) {
+            //third time svc4 should be set (highest ranking
+            ASSERT_EQ(0x400, (long)svc);
+        }
+
+        int *c = static_cast<int*>(handle);
+        *c = callCount;
+    };
+
+    long svcId1 = celix_bundleContext_registerService(ctx, svc1, "NA", nullptr);
+    long svcId2 = celix_bundleContext_registerService(ctx, svc2, "NA", nullptr);
+
+    //starting tracker should lead to first set call
+    celix_service_tracking_options_t opts{};
+    opts.callbackHandle = (void*)&count;
+    opts.filter.serviceName = nullptr;
     opts.set = set;
     long trackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts); //call 1
     ASSERT_TRUE(trackerId >= 0);
