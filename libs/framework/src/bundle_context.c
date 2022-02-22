@@ -275,7 +275,7 @@ celix_status_t bundleContext_ungetServiceReference(bundle_context_pt context, se
     celix_status_t status = CELIX_SUCCESS;
 
     if (context != NULL && reference != NULL && bundleContext_IsServiceReferenceValid(context, reference)) {
-        status = framework_ungetServiceReference(context->framework, context->bundle, reference);
+        serviceReference_release(reference, NULL);
     } else {
         status = CELIX_ILLEGAL_ARGUMENT;
     }
@@ -1198,7 +1198,7 @@ static void celix_bundleContext_useServiceWithOptions_3_CloseServiceTracker(void
 bool celix_bundleContext_useServiceWithOptions(
         celix_bundle_context_t *ctx,
         const celix_service_use_options_t *opts) {
-    if (opts == NULL) {
+    if (opts == NULL || opts->filter.serviceName == NULL) {
         return false;
     }
 
@@ -1253,7 +1253,7 @@ static void celix_bundleContext_useServicesWithOptions_2_UseServiceTracker(void 
 size_t celix_bundleContext_useServicesWithOptions(
         celix_bundle_context_t *ctx,
         const celix_service_use_options_t *opts) {
-    if (opts == NULL) {
+    if (opts == NULL || opts->filter.serviceName == NULL) {
         return 0;
     }
 

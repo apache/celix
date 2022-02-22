@@ -25,7 +25,7 @@
 #include "celix_constants.h"
 #include "celix_build_assert.h"
 
-static void serviceRegistration_destroy(struct celix_ref *);
+static bool serviceRegistration_destroy(struct celix_ref *);
 static celix_status_t serviceRegistration_initializeProperties(service_registration_pt registration, properties_pt properties);
 static celix_status_t serviceRegistration_createInternal(registry_callback_t callback, bundle_pt bundle, const char* serviceName, unsigned long serviceId,
         const void * serviceObject, properties_pt dictionary, enum celix_service_type svcType, service_registration_pt *registration);
@@ -77,7 +77,7 @@ void serviceRegistration_release(service_registration_pt registration) {
     celix_ref_put(&registration->refCount, serviceRegistration_destroy);
 }
 
-static void serviceRegistration_destroy(struct celix_ref *refCount) {
+static bool serviceRegistration_destroy(struct celix_ref *refCount) {
     service_registration_pt registration = (service_registration_pt )refCount;
     CELIX_BUILD_ASSERT(offsetof(service_registration_t, refCount) == 0);
 
@@ -88,6 +88,7 @@ static void serviceRegistration_destroy(struct celix_ref *refCount) {
     properties_destroy(registration->properties);
     celixThreadRwlock_destroy(&registration->lock);
     free(registration);
+    return true;
 }
 
 static celix_status_t serviceRegistration_initializeProperties(service_registration_pt registration, properties_pt dictionary) {

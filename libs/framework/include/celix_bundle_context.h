@@ -662,7 +662,7 @@ void celix_bundleContext_stopTracker(celix_bundle_context_t *ctx, long trackerId
  * the targeted service cannot be removed during the callback.
  *
  * The svc is should only be considered valid during the callback.
- * If no service is found the callback will not be invoked.
+ * If no service is found, the callback will not be invoked and this function will return false immediately.
  *
  * This function will block until the callback is finished. As result it is possible to provide callback data from the
  * stack.
@@ -688,7 +688,7 @@ bool celix_bundleContext_useServiceWithId(
  * The Celix framework will ensure that the targeted service cannot be removed during the callback.
  *
  * The svc is should only be considered valid during the callback.
- * If no service is found the callback will not be invoked.
+ * If no service is found, the callback will not be invoked and this function will return false immediately.
  *
  * This function will block until the callback is finished. As result it is possible to provide callback data from the
  * stack.
@@ -712,7 +712,7 @@ bool celix_bundleContext_useService(
  * The Celix framework will ensure that the targeted service cannot be removed during the callback.
  *
  * The svc is should only be considered valid during the callback.
- * If no service is found the callback will not be invoked.
+ * If no service is found, the callback will not be invoked and this function will return 0 immediately.
  *
  * This function will block until the callback is finished. As result it is possible to provide callback data from the
  * stack.
@@ -794,7 +794,8 @@ typedef struct celix_service_use_options {
  * The Celix framework will ensure that the targeted service cannot be removed during the callback.
  *
  * The svc is should only be considered valid during the callback.
- * If no service is found the callback will not be invoked.
+ * If no service is found the callback will not be invoked. In such cases, if a non-zero waitTimeoutInSeconds is specified in opts,
+ * this function will block until the timeout is expired or when at least one service is found, otherwise it will return false immediately.
  *
  * This function will block until the callback is finished. As result it is possible to provide callback data from the
  * stack.
@@ -814,7 +815,8 @@ bool celix_bundleContext_useServiceWithOptions(
  * The Celix framework will ensure that the targeted service cannot be removed during the callback.
  *
  * The svc is should only be considered valid during the callback.
- * If no service is found the callback will not be invoked.
+ * If no service is found, the callback will not be invoked and this function will return 0 immediately.
+ * Note that waitTimeoutInSeconds in opts has no effect.
  *
  * This function will block until the callback is finished. As result it is possible to provide callback data from the
  * stack.

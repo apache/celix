@@ -65,9 +65,6 @@ celix_status_t
 serviceRegistry_getServiceReferences(service_registry_pt registry, celix_bundle_t *bundle, const char *serviceName,
                                      filter_pt filter, celix_array_list_t **references);
 
-celix_status_t
-serviceRegistry_ungetServiceReference(service_registry_pt registry, celix_bundle_t *bundle, service_reference_pt reference);
-
 celix_status_t serviceRegistry_clearReferencesFor(service_registry_pt registry, celix_bundle_t *bundle);
 
 size_t serviceRegistry_nrOfHooks(service_registry_pt registry);

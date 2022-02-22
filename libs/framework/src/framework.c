@@ -984,7 +984,7 @@ celix_status_t fw_getServiceReferences(framework_pt framework, array_list_pt *re
             if (status == CELIX_SUCCESS) {
                 serviceNameObjectClass = properties_get(props, OSGI_FRAMEWORK_OBJECTCLASS);
                 if (!serviceReference_isAssignableTo(ref, bundle, serviceNameObjectClass)) {
-                    //FIXME: unget service reference
+                    serviceReference_release(ref, NULL);
                     arrayList_remove(*references, refIdx);
                     refIdx--;
                 }
@@ -995,10 +995,6 @@ celix_status_t fw_getServiceReferences(framework_pt framework, array_list_pt *re
 	framework_logIfError(framework->logger, status, NULL, "Failed to get service references");
 
 	return status;
-}
-
-celix_status_t framework_ungetServiceReference(framework_pt framework, bundle_pt bundle, service_reference_pt reference) {
-    return serviceRegistry_ungetServiceReference(framework->registry, bundle, reference);
 }
 
 celix_status_t fw_getBundleRegisteredServices(framework_pt framework, bundle_pt bundle, array_list_pt *services) {
