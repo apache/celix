@@ -742,7 +742,7 @@ typedef struct celix_service_use_options {
     /**
      * @brief An optional timeout (in seconds), if > 0 the use service call will block until the timeout is expired or
      * when at least one service is found. Note that it will be ignored when use service on the event loop.
-     * Default (0)
+     * Default (0) Valid Range [0, INT_MAX]
      */
      double waitTimeoutInSeconds OPTS_INIT;
 
