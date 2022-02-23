@@ -80,10 +80,10 @@ const char* celix_strerror(celix_status_t status);
 #define CELIX_CUSTOMER_ERR_MASK 0x20000000
 
 /*!
- * The facility of system error code,
- * \note Error code 0 indicates success,it is not system error code.
+ * The facility of C errno,
+ * \note Error code 0 indicates success,it is not C errno.
  */
-#define CELIX_FACILITY_SYSTEM 0
+#define CELIX_FACILITY_CERRNO 0
 
 /*!
  * The facility of celix default error code
@@ -123,6 +123,7 @@ const char* celix_strerror(celix_status_t status);
 
 /*!
  * The range for Celix errors.
+ * \deprecated It is recommended to use facility indicate the range of error codes
  */
 #define CELIX_ERRSPACE_SIZE 1000
 
@@ -133,29 +134,48 @@ const char* celix_strerror(celix_status_t status);
 #define CELIX_START_USERERR (CELIX_START_ERROR + CELIX_ERRSPACE_SIZE)
 
 /*!
+ * @name celix default error codes
+ * @{
+ */
+
+/*!
  * Exception indicating a problem with a bundle
  */
-#define CELIX_BUNDLE_EXCEPTION (CELIX_START_ERROR + 1)
+#define CELIX_BUNDLE_EXCEPTION          CELIX_ERROR_MAKE(CELIX_FACILITY_NULL, 4465)
+
 /*!
  * Invalid bundle context is used
  */
-#define CELIX_INVALID_BUNDLE_CONTEXT (CELIX_START_ERROR + 2)
+#define CELIX_INVALID_BUNDLE_CONTEXT    CELIX_ERROR_MAKE(CELIX_FACILITY_NULL, 4466)
 /*!
  * Argument is not correct
  */
-#define CELIX_ILLEGAL_ARGUMENT (CELIX_START_ERROR + 3)
-#define CELIX_INVALID_SYNTAX (CELIX_START_ERROR + 4)
-#define CELIX_FRAMEWORK_SHUTDOWN (CELIX_START_ERROR + 5)
-#define CELIX_ILLEGAL_STATE (CELIX_START_ERROR + 6)
-#define CELIX_FRAMEWORK_EXCEPTION (CELIX_START_ERROR + 7)
-#define CELIX_FILE_IO_EXCEPTION (CELIX_START_ERROR + 8)
-#define CELIX_SERVICE_EXCEPTION (CELIX_START_ERROR + 9)
+#define CELIX_ILLEGAL_ARGUMENT          CELIX_ERROR_MAKE(CELIX_FACILITY_NULL, 4467)
+#define CELIX_INVALID_SYNTAX            CELIX_ERROR_MAKE(CELIX_FACILITY_NULL, 4468)
+#define CELIX_FRAMEWORK_SHUTDOWN        CELIX_ERROR_MAKE(CELIX_FACILITY_NULL, 4469)
+#define CELIX_ILLEGAL_STATE             CELIX_ERROR_MAKE(CELIX_FACILITY_NULL, 4470)
+#define CELIX_FRAMEWORK_EXCEPTION       CELIX_ERROR_MAKE(CELIX_FACILITY_NULL, 4471)
+#define CELIX_FILE_IO_EXCEPTION         CELIX_ERROR_MAKE(CELIX_FACILITY_NULL, 4472)
+#define CELIX_SERVICE_EXCEPTION         CELIX_ERROR_MAKE(CELIX_FACILITY_NULL, 4473)
 /*!
  * Exception indicating a problem with a interceptor
  */
-#define CELIX_INTERCEPTOR_EXCEPTION (CELIX_START_ERROR + 10)
+#define CELIX_INTERCEPTOR_EXCEPTION     CELIX_ERROR_MAKE(CELIX_FACILITY_NULL, 4474)
 
-#define CELIX_ENOMEM ENOMEM
+
+/*! @} *///celix default error codes
+
+
+/*!
+ * @name C error map to celix
+ * @{
+ */
+
+#define CELIX_ENOMEM                    CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,ENOMEM)
+
+
+/*! @}*///C error map to celix
+
 
 /**
  * \}
