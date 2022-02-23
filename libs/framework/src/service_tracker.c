@@ -25,7 +25,6 @@
 #include <assert.h>
 #include <unistd.h>
 #include <celix_api.h>
-#include <limits.h>
 
 #include "service_tracker_private.h"
 #include "bundle_context.h"
@@ -119,8 +118,7 @@ celix_status_t serviceTracker_createWithFilter(bundle_context_pt context, const 
     celixThreadCondition_init(&tracker->closeSync.cond, NULL);
 
     celixThreadMutex_create(&tracker->mutex, NULL);
-    celixThreadCondition_init(&tracker->condTracked, NULL);
-    celixThreadCondition_init(&tracker->condUntracking, NULL);
+    celixThreadCondition_init(&tracker->cond, NULL);
     tracker->trackedServices = celix_arrayList_create();
     tracker->untrackingServices = celix_arrayList_create();
 
@@ -138,8 +136,7 @@ celix_status_t serviceTracker_destroy(service_tracker_pt tracker) {
     celixThreadMutex_destroy(&tracker->closeSync.mutex);
     celixThreadCondition_destroy(&tracker->closeSync.cond);
     celixThreadMutex_destroy(&tracker->mutex);
-    celixThreadCondition_destroy(&tracker->condTracked);
-    celixThreadCondition_destroy(&tracker->condUntracking);
+    celixThreadCondition_destroy(&tracker->cond);
     celix_arrayList_destroy(tracker->trackedServices);
     celix_arrayList_destroy(tracker->untrackingServices);
     free(tracker);
@@ -232,7 +229,7 @@ celix_status_t serviceTracker_close(service_tracker_t* tracker) {
                 serviceTracker_untrackTracked(tracker, tracked, currentSize, currentSize == 0);
                 celixThreadMutex_lock(&tracker->mutex);
                 celix_arrayList_remove(tracker->untrackingServices, tracked);
-                celixThreadCondition_broadcast(&tracker->condUntracking);
+                celixThreadCondition_broadcast(&tracker->cond);
                 celixThreadMutex_unlock(&tracker->mutex);
             }
 
@@ -414,11 +411,10 @@ static celix_status_t serviceTracker_track(service_tracker_t* tracker, service_r
 
             celixThreadMutex_lock(&tracker->mutex);
             arrayList_add(tracker->trackedServices, tracked);
-            celixThreadCondition_broadcast(&tracker->condTracked);
             celixThreadMutex_unlock(&tracker->mutex);
 
             if (tracker->set != NULL || tracker->setWithProperties != NULL || tracker->setWithOwner != NULL) {
-                celix_serviceTracker_useHighestRankingService(tracker, NULL, 0, tracker, NULL, NULL,
+                celix_serviceTracker_useHighestRankingService(tracker, NULL, tracker, NULL, NULL,
                                                               serviceTracker_checkAndInvokeSetService);
             }
             serviceTracker_invokeAddService(tracker, tracked);
@@ -545,7 +541,7 @@ static celix_status_t serviceTracker_untrack(service_tracker_t* tracker, service
         //ensure no untrack is still happening (to ensure it safe to unregister service)
         celixThreadMutex_lock(&tracker->mutex);
         while (celix_arrayList_size(tracker->untrackingServices) > 0) {
-            celixThreadCondition_wait(&tracker->condUntracking, &tracker->mutex);
+            celixThreadCondition_wait(&tracker->cond, &tracker->mutex);
         }
         celixThreadMutex_unlock(&tracker->mutex);
     }
@@ -563,7 +559,7 @@ static void serviceTracker_untrackTracked(service_tracker_t *tracker, celix_trac
         if (trackedSize == 0) {
             serviceTracker_checkAndInvokeSetService(tracker, NULL, NULL, NULL);
         } else {
-            celix_serviceTracker_useHighestRankingService(tracker, NULL, 0, tracker, NULL, NULL,
+            celix_serviceTracker_useHighestRankingService(tracker, NULL, tracker, NULL, NULL,
                                                           serviceTracker_checkAndInvokeSetService);
         }
     }
@@ -677,8 +673,7 @@ celix_service_tracker_t* celix_serviceTracker_createWithOptions(
     celixThreadCondition_init(&tracker->closeSync.cond, NULL);
 
     celixThreadMutex_create(&tracker->mutex, NULL);
-    celixThreadCondition_init(&tracker->condTracked, NULL);
-    celixThreadCondition_init(&tracker->condUntracking, NULL);
+    celixThreadCondition_init(&tracker->cond, NULL);
     tracker->trackedServices = celix_arrayList_create();
     tracker->untrackingServices = celix_arrayList_create();
     tracker->currentHighestServiceId = -1;
@@ -698,53 +693,34 @@ void celix_serviceTracker_destroy(celix_service_tracker_t *tracker) {
 }
 
 bool celix_serviceTracker_useHighestRankingService(service_tracker_t *tracker,
-                                                   const char *serviceName /*sanity*/,
-                                                   double waitTimeoutInSeconds /*0 -> do not wait */,
-                                                   void *callbackHandle,
-                                                   void (*use)(void *handle, void *svc),
-                                                   void (*useWithProperties)(void *handle, void *svc, const celix_properties_t *props),
-                                                   void (*useWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner)) {
+                                                            const char *serviceName /*sanity*/,
+                                                            void *callbackHandle,
+                                                            void (*use)(void *handle, void *svc),
+                                                            void (*useWithProperties)(void *handle, void *svc, const celix_properties_t *props),
+                                                            void (*useWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner)) {
     bool called = false;
     celix_tracked_entry_t *tracked = NULL;
     celix_tracked_entry_t *highest = NULL;
     unsigned int i;
-    struct timespec begin = celix_gettime(CLOCK_MONOTONIC);
-    double remaining = waitTimeoutInSeconds > INT_MAX ? INT_MAX : waitTimeoutInSeconds;
-    double elapsed = 0;
-    long seconds = remaining;
-    long nanoseconds = (remaining - seconds) * CELIX_NS_IN_SEC;
 
     //first lock tracker and get highest tracked entry
     celixThreadMutex_lock(&tracker->mutex);
-    while (highest == NULL) {
-        unsigned int size = arrayList_size(tracker->trackedServices);
+    unsigned int size = arrayList_size(tracker->trackedServices);
 
-        for (i = 0; i < size; i++) {
-            tracked = (celix_tracked_entry_t *) arrayList_get(tracker->trackedServices, i);
-            if (serviceName == NULL || (serviceName != NULL && tracked->serviceName != NULL &&
-                                        celix_utils_stringEquals(tracked->serviceName, serviceName))) {
-                if (highest == NULL) {
+    for (i = 0; i < size; i++) {
+        tracked = (celix_tracked_entry_t *) arrayList_get(tracker->trackedServices, i);
+        if (serviceName == NULL || (serviceName != NULL && tracked->serviceName != NULL && celix_utils_stringEquals(tracked->serviceName, serviceName))) {
+            if (highest == NULL) {
+                highest = tracked;
+            } else {
+                int compare = celix_utils_compareServiceIdsAndRanking(
+                        tracked->serviceId, tracked->serviceRanking,
+                        highest->serviceId, highest->serviceRanking
+                );
+                if (compare < 0) {
                     highest = tracked;
-                } else {
-                    int compare = celix_utils_compareServiceIdsAndRanking(
-                            tracked->serviceId, tracked->serviceRanking,
-                            highest->serviceId, highest->serviceRanking
-                    );
-                    if (compare < 0) {
-                        highest = tracked;
-                    }
                 }
             }
-        }
-        if(highest == NULL && (seconds > 0 || nanoseconds > 0)) {
-            celixThreadCondition_timedwaitRelative(&tracker->condTracked, &tracker->mutex, seconds, nanoseconds);
-            elapsed  = celix_elapsedtime(CLOCK_MONOTONIC, begin);
-            remaining = remaining > elapsed ? (remaining - elapsed) : 0;
-            seconds = remaining;
-            nanoseconds = (remaining - seconds) * CELIX_NS_IN_SEC;
-        } else {
-            // highest found or timeout
-            break;
         }
     }
     if (highest != NULL) {

@@ -113,12 +113,12 @@ void celix_serviceTracker_destroy(celix_service_tracker_t *tracker);
 bool celix_serviceTracker_useHighestRankingService(
         celix_service_tracker_t *tracker,
         const char *serviceName /*sanity*/,
-        double waitTimeoutInSeconds /*0 -> do not wait */,
         void *callbackHandle,
         void (*use)(void *handle, void *svc),
         void (*useWithProperties)(void *handle, void *svc, const celix_properties_t *props),
         void (*useWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner)
 );
+
 
 /**
  * Calls the use callback for every services found by this tracker.

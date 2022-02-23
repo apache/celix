@@ -64,8 +64,7 @@ struct celix_serviceTracker {
     } closeSync;
 
     celix_thread_mutex_t mutex; //projects below
-    celix_thread_cond_t  condTracked;
-    celix_thread_cond_t  condUntracking;
+    celix_thread_cond_t  cond;
     celix_array_list_t *trackedServices;
     celix_array_list_t *untrackingServices;
     enum celix_service_tracker_state state;
