@@ -1182,7 +1182,7 @@ static void celix_bundleContext_useServiceWithOptions_2_UseServiceTracker(void *
     celix_bundle_context_use_service_data_t* d = data;
     assert(celix_framework_isCurrentThreadTheEventLoop(d->ctx->framework));
 
-    d->called = celix_serviceTracker_useHighestRankingService(d->svcTracker, d->opts->filter.serviceName, d->opts->callbackHandle, d->opts->use, d->opts->useWithProperties, d->opts->useWithOwner);
+    d->called = celix_serviceTracker_useHighestRankingService(d->svcTracker, d->opts->filter.serviceName, 0, d->opts->callbackHandle, d->opts->use, d->opts->useWithProperties, d->opts->useWithOwner);
 }
 
 static void celix_bundleContext_useServiceWithOptions_3_CloseServiceTracker(void *data) {
