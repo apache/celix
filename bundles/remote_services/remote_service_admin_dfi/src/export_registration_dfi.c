@@ -168,7 +168,8 @@ celix_status_t exportRegistration_call(export_registration_t *export, char *data
             if (cont) {
                 celixThreadMutex_lock(&export->mutex);
                 if (export->active && export->service != NULL) {
-                    status = jsonRpc_call(export->intf, export->service, data, &response);
+                    int rc = jsonRpc_call(export->intf, export->service, data, &response);
+                    status = (rc != 0) ? CELIX_BUNDLE_EXCEPTION : CELIX_SUCCESS;
                 } else if (!export->active) {
                     status = CELIX_ILLEGAL_STATE;
                     celix_logHelper_warning(export->helper, "Cannot call an inactive service export");

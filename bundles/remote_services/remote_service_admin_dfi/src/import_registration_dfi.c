@@ -324,7 +324,8 @@ static void importRegistration_proxyFunc(void *userData, void *args[], void *ret
 
     char *invokeRequest = NULL;
     if (status == CELIX_SUCCESS) {
-        status = jsonRpc_prepareInvokeRequest(entry->dynFunc, entry->id, args, &invokeRequest);
+        int rc = jsonRpc_prepareInvokeRequest(entry->dynFunc, entry->id, args, &invokeRequest);
+        status = (rc != 0) ? CELIX_BUNDLE_EXCEPTION : CELIX_SUCCESS;
         //printf("Need to send following json '%s'\n", invokeRequest);
     }
 
@@ -342,8 +343,10 @@ static void importRegistration_proxyFunc(void *userData, void *args[], void *ret
             if (status == CELIX_SUCCESS && rc == CELIX_SUCCESS && dynFunction_hasReturn(entry->dynFunc)) {
                 //fjprintf("Handling reply '%s'\n", reply);
                 int rsErrno = CELIX_SUCCESS;
-                status = jsonRpc_handleReply(entry->dynFunc, reply, args, &rsErrno);
-                if (rsErrno != CELIX_SUCCESS) {
+                int retVal = jsonRpc_handleReply(entry->dynFunc, reply, args, &rsErrno);
+                if(retVal != 0) {
+                    status = CELIX_BUNDLE_EXCEPTION;
+                } else if (rsErrno != CELIX_SUCCESS) {
                     //return the invocation error of remote service function
                     *(int *) returnVal = rsErrno;
                 }
