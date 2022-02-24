@@ -1411,6 +1411,77 @@ TEST_F(CelixBundleContextServicesTests, serviceOnDemandWithAsyncRegisterTest) {
     celix_bundleContext_stopTracker(ctx, trkId);
 }
 
+TEST_F(CelixBundleContextServicesTests, UseServiceOnDemandDirectlyWithAsyncRegisterTest) {
+    //NOTE that even though service are registered async, they should be found by a useService call.
+
+    bool called = celix_bundleContext_useService(ctx, "test", nullptr, [](void*, void*){/*nop*/});
+    EXPECT_FALSE(called); //service not available
+
+    struct test_service {
+        void* handle;
+    };
+
+    struct callback_data {
+        celix_bundle_context_t* ctx;
+        long svcId;
+        test_service ts;
+    };
+    callback_data cbData{ctx, -1L, {nullptr}};
+
+    long trkId = celix_bundleContext_trackServiceTrackers(ctx, "test", &cbData, [](void *voidData, const celix_service_tracker_info_t*) {
+        auto* data = static_cast<callback_data*>(voidData);
+        data->svcId = celix_bundleContext_registerServiceAsync(data->ctx, &data->ts, "test", nullptr);
+    }, nullptr);
+    celix_service_use_options_t opts{};
+    opts.filter.serviceName = "test";
+    opts.direct = true;
+    called = celix_bundleContext_useServiceWithOptions(ctx, &opts);
+    EXPECT_TRUE(called); //service created on demand.
+
+    celix_bundleContext_unregisterService(ctx, cbData.svcId);
+    celix_bundleContext_stopTracker(ctx, trkId);
+}
+
+TEST_F(CelixBundleContextServicesTests, UseServicesOnDemandDirectlyWithAsyncRegisterTest) {
+    //NOTE that even though service are registered async, they should be found by a useService call.
+
+    bool called = celix_bundleContext_useService(ctx, "test", nullptr, [](void*, void*){/*nop*/});
+    EXPECT_FALSE(called); //service not available
+
+    struct test_service {
+        void* handle;
+    };
+
+    struct callback_data {
+        celix_bundle_context_t* ctx;
+        long svcId;
+        test_service ts;
+    };
+    callback_data cbData{ctx, -1L, {nullptr}};
+
+    long trkId = celix_bundleContext_trackServiceTrackers(ctx, "test", &cbData, [](void *voidData, const celix_service_tracker_info_t*) {
+        auto* data = static_cast<callback_data*>(voidData);
+        data->svcId = celix_bundleContext_registerServiceAsync(data->ctx, &data->ts, "test", nullptr);
+    }, nullptr);
+
+    callback_data cbData1{ctx, -1L, {nullptr}};
+    long trkId1 = celix_bundleContext_trackServiceTrackers(ctx, "test", &cbData1, [](void *voidData, const celix_service_tracker_info_t*) {
+        auto* data = static_cast<callback_data*>(voidData);
+        data->svcId = celix_bundleContext_registerServiceAsync(data->ctx, &data->ts, "test", nullptr);
+    }, nullptr);
+
+    celix_service_use_options_t opts{};
+    opts.filter.serviceName = "test";
+    opts.direct = true;
+    size_t count = celix_bundleContext_useServicesWithOptions(ctx, &opts);
+    EXPECT_EQ(2, count);
+
+    celix_bundleContext_unregisterService(ctx, cbData.svcId);
+    celix_bundleContext_unregisterService(ctx, cbData1.svcId);
+    celix_bundleContext_stopTracker(ctx, trkId);
+    celix_bundleContext_stopTracker(ctx, trkId1);
+}
+
 TEST_F(CelixBundleContextServicesTests, startStopServiceTrackerAsync) {
     std::atomic<int> count{0};
 

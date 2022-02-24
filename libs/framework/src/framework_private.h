@@ -162,6 +162,13 @@ struct celix_framework {
         int eventQueueSize;
         int eventQueueFirstEntry;
         celix_array_list_t *dynamicEventQueue; //entry = celix_framework_event_t*. Used when the eventQueue is full
+        struct {
+            int nbFramework; // number of pending framework events
+            int nbBundle; // number of pending bundle events
+            int nbRegister; // number of pending registration
+            int nbUnregister; // number of pending async de-registration
+            int nbEvent; // number of pending generic events
+        } stats;
     } dispatcher;
 
     celix_framework_logger_t* logger;
