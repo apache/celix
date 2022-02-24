@@ -771,6 +771,12 @@ typedef struct celix_service_use_options {
      * and the bundle owning the service will also be provided to the callback.
      */
     void (*useWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *svcOwner) OPTS_INIT;
+    /**
+     * @brief Whether to call the provided callbacks from the caller thread directly, if false the callbacks will be called from the Celix event loop (most likely indirectly).
+     * Note that using blocking service in the Celix event loop is generally a bad idea, which should be avoided if possible.
+     * Default (false)
+     */
+    bool direct;
 } celix_service_use_options_t;
 
 /**
@@ -785,11 +791,12 @@ typedef struct celix_service_use_options {
     .callbackHandle = NULL, \
     .use = NULL, \
     .useWithProperties = NULL, \
-    .useWithOwner = NULL}
+    .useWithOwner = NULL, \
+    .direct=false}
 #endif
 
 /**
- * @brief Use the services with the provided service filter options using the provided callback.
+ * @brief Use the highest ranking service satisfying the provided service filter options using the provided callback.
  *
  * The Celix framework will ensure that the targeted service cannot be removed during the callback.
  *
@@ -828,8 +835,6 @@ bool celix_bundleContext_useServiceWithOptions(
 size_t celix_bundleContext_useServicesWithOptions(
         celix_bundle_context_t *ctx,
         const celix_service_use_options_t *opts);
-
-
 
 
 /**

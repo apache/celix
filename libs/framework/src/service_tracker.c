@@ -710,6 +710,7 @@ bool celix_serviceTracker_useHighestRankingService(service_tracker_t *tracker,
     unsigned int i;
     struct timespec begin = celix_gettime(CLOCK_MONOTONIC);
     double remaining = waitTimeoutInSeconds > INT_MAX ? INT_MAX : waitTimeoutInSeconds;
+    remaining = remaining < 0 ? 0 : remaining;
     double elapsed = 0;
     long seconds = remaining;
     long nanoseconds = (remaining - seconds) * CELIX_NS_IN_SEC;
