@@ -1209,7 +1209,7 @@ bool celix_bundleContext_useServiceWithOptions(
     celix_framework_waitForGenericEvent(ctx->framework, eventId);
 
 
-    if(opts->direct) {
+    if(opts->flags & CELIX_SERVICE_USE_DIRECT) {
         celix_framework_waitUntilNoPendingRegistration(ctx->framework); // TL;DR make "service on demand" pattern work. Try comment it out and run CelixBundleContextServicesTests.UseServiceOnDemandDirectlyWithAsyncRegisterTest
         called = celix_serviceTracker_useHighestRankingService(data.svcTracker, NULL, opts->waitTimeoutInSeconds, opts->callbackHandle, opts->use, opts->useWithProperties, opts->useWithOwner);
     } else {
@@ -1263,7 +1263,7 @@ size_t celix_bundleContext_useServicesWithOptions(
     long eventId = celix_framework_fireGenericEvent(ctx->framework, -1, celix_bundle_getId(ctx->bundle), "create service tracker for celix_bundleContext_useServicesWithOptions", &data, celix_bundleContext_useServiceWithOptions_1_CreateServiceTracker, NULL, NULL);
     celix_framework_waitForGenericEvent(ctx->framework, eventId);
 
-    if (opts->direct) {
+    if (opts->flags & CELIX_SERVICE_USE_DIRECT) {
         celix_framework_waitUntilNoPendingRegistration(ctx->framework); // TL;DR make "service on demand" pattern work. Try comment it out and run CelixBundleContextServicesTests.UseServicesOnDemandDirectlyWithAsyncRegisterTest
         celix_bundleContext_useServicesWithOptions_2_UseServiceTracker(&data);
     } else {

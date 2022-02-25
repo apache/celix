@@ -76,7 +76,9 @@ public:
         celix_service_use_options_t use_opts{};
         use_opts.filter.serviceName = "calc";
         use_opts.filter.versionRange = "[1,2)";
-        use_opts.direct = direct;
+        if(direct) {
+            use_opts.flags = CELIX_SERVICE_USE_DIRECT;
+        }
 
         celix_service_registration_options_t reg_opts{};
         reg_opts.serviceName = calcName;
@@ -114,7 +116,9 @@ public:
         celix_service_use_options_t use_opts{};
         use_opts.filter.serviceName = "calc";
         use_opts.filter.versionRange = "[2,3)";
-        use_opts.direct = direct;
+        if(direct) {
+            use_opts.flags = CELIX_SERVICE_USE_DIRECT;
+        }
 
         celix_service_registration_options_t reg_opts{};
         reg_opts.serviceName = calcName;
@@ -153,7 +157,9 @@ public:
 
             celix_service_use_options_t opts{};
             opts.filter.serviceName = "calc";
-            opts.direct = direct;
+            if(direct) {
+                opts.flags = CELIX_SERVICE_USE_DIRECT;
+            }
 
             bool called = celix_bundleContext_useServiceWithOptions(ctx, &opts);
             EXPECT_FALSE(called); //service not avail.
@@ -202,7 +208,9 @@ public:
 
             celix_service_use_options_t opts{};
             opts.filter.serviceName = "calc";
-            opts.direct = direct;
+            if(direct) {
+                opts.flags = CELIX_SERVICE_USE_DIRECT;
+            }
 
             bool called = celix_bundleContext_useServiceWithOptions(ctx, &opts);
             EXPECT_FALSE(called); //service not avail.
@@ -380,13 +388,13 @@ TEST_F(CelixBundleContextServicesTests, registerMultipleAndUseServices) {
     use_opts.filter.versionRange = nullptr;
     use_opts.callbackHandle = &total;
     use_opts.use = use;
-    use_opts.direct = false;
+    use_opts.flags = 0;
     total = 0;
     count = celix_bundleContext_useServicesWithOptions(ctx, &use_opts);
     EXPECT_EQ(3, count);
     EXPECT_EQ(42 * 3, total);
 
-    use_opts.direct = true;
+    use_opts.flags = CELIX_SERVICE_USE_DIRECT;
     total = 0;
     count = celix_bundleContext_useServicesWithOptions(ctx, &use_opts);
     EXPECT_EQ(3, count);
@@ -398,13 +406,13 @@ TEST_F(CelixBundleContextServicesTests, registerMultipleAndUseServices) {
     EXPECT_EQ(2, count);
     EXPECT_EQ(42 * 2, total);
 
-    use_opts.direct = false;
+    use_opts.flags = 0;
     total = 0;
     count = celix_bundleContext_useServicesWithOptions(ctx, &use_opts);
     EXPECT_EQ(2, count);
     EXPECT_EQ(42 * 2, total);
 
-    use_opts.direct = true;
+    use_opts.flags = CELIX_SERVICE_USE_DIRECT;
     total = 0;
     count = celix_bundleContext_useServicesWithOptions(ctx, &use_opts);
     EXPECT_EQ(2, count);
@@ -457,7 +465,7 @@ TEST_F(CelixBundleContextServicesTests, useServiceInUseCallback) {
     opts.filter.serviceName = calcName;
     opts.callbackHandle = ctx;
     opts.use = use;
-    opts.direct = false;
+    opts.flags = 0;
     bool called = celix_bundleContext_useServiceWithOptions(ctx, &opts);
     EXPECT_TRUE(called);
 
@@ -1434,7 +1442,7 @@ TEST_F(CelixBundleContextServicesTests, UseServiceOnDemandDirectlyWithAsyncRegis
     }, nullptr);
     celix_service_use_options_t opts{};
     opts.filter.serviceName = "test";
-    opts.direct = true;
+    opts.flags = CELIX_SERVICE_USE_DIRECT;
     called = celix_bundleContext_useServiceWithOptions(ctx, &opts);
     EXPECT_TRUE(called); //service created on demand.
 
@@ -1472,7 +1480,7 @@ TEST_F(CelixBundleContextServicesTests, UseServicesOnDemandDirectlyWithAsyncRegi
 
     celix_service_use_options_t opts{};
     opts.filter.serviceName = "test";
-    opts.direct = true;
+    opts.flags = CELIX_SERVICE_USE_DIRECT;
     size_t count = celix_bundleContext_useServicesWithOptions(ctx, &opts);
     EXPECT_EQ(2, count);
 

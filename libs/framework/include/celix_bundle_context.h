@@ -772,11 +772,11 @@ typedef struct celix_service_use_options {
      */
     void (*useWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *svcOwner) OPTS_INIT;
     /**
-     * @brief Whether to call the provided callbacks from the caller thread directly, if false the callbacks will be called from the Celix event loop (most likely indirectly).
+     * @brief Call the provided callbacks from the caller thread directly if set, otherwise the callbacks will be called from the Celix event loop (most likely indirectly).
      * Note that using blocking service in the Celix event loop is generally a bad idea, which should be avoided if possible.
-     * Default (false)
      */
-    bool direct;
+#define CELIX_SERVICE_USE_DIRECT          (1)
+    int flags;
 } celix_service_use_options_t;
 
 /**
@@ -792,7 +792,7 @@ typedef struct celix_service_use_options {
     .use = NULL, \
     .useWithProperties = NULL, \
     .useWithOwner = NULL, \
-    .direct=false}
+    .flags=0}
 #endif
 
 /**
