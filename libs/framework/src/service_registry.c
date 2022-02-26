@@ -1202,6 +1202,7 @@ void celix_serviceRegistry_unregisterService(celix_service_registry_t* registry,
             service_registration_t *entry = celix_arrayList_get(registrations, i);
             if (serviceRegistration_getServiceId(entry) == serviceId) {
                 reg = entry;
+                serviceRegistration_retain(reg); // protect against concurrently unregistering the same serviceId multiple times
                 break;
             }
         }
@@ -1210,6 +1211,7 @@ void celix_serviceRegistry_unregisterService(celix_service_registry_t* registry,
 
     if (reg != NULL) {
         serviceRegistration_unregister(reg);
+        serviceRegistration_release(reg);
     } else {
         fw_log(registry->framework->logger, CELIX_LOG_LEVEL_ERROR, "Cannot unregister service for service id %li. This id is not present or owned by the provided bundle (bnd id %li)", serviceId, celix_bundle_getId(bnd));
     }
