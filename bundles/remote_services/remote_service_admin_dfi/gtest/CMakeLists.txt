@@ -57,6 +57,8 @@ get_property(remote_example_bundle_file TARGET remote_example_service PROPERTY B
 configure_file(config.properties.in config.properties)
 configure_file(client.properties.in client.properties)
 configure_file(server.properties.in server.properties)
+#add exception service interface descriptor
+configure_file(exception_test_service.descriptor exception_test_service.descriptor)
 
 add_dependencies(test_rsa_dfi
         rsa_dfi_bundle #note depend on the target creating the bundle zip not the lib target

@@ -501,7 +501,7 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
 
             char *response = NULL;
             int responceLength = 0;
-            int rc = exportRegistration_call(export, data, -1, metadata, &response, &responceLength);
+            int rc = exportRegistration_call(export, data, -1, &metadata, &response, &responceLength);
             if (rc != CELIX_SUCCESS) {
                 RSA_LOG_ERROR(rsa, "Error trying to invoke remove service, got error %i\n", rc);
             }
@@ -534,9 +534,12 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
 
             free(data);
             exportRegistration_decreaseUsage(export);
-
-            //TODO free metadata?
         }
+    }
+
+    //free metadata
+    if(metadata != NULL) {
+        celix_properties_destroy(metadata);
     }
 
     return result;
@@ -957,7 +960,7 @@ static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description
         fputc('\0', get.stream);
         fclose(get.stream);
         *reply = get.buf;
-        *replyStatus = res;
+        *replyStatus = (res == CURLE_OK) ? CELIX_SUCCESS:CELIX_ERROR_MAKE(CELIX_FACILITY_HTTP,res);
 
         curl_easy_cleanup(curl);
         curl_slist_free_all(metadataHeader);

@@ -21,6 +21,18 @@
  * \file
  * \brief Error codes
  * \defgroup framework Celix Framework
+ * \details Error code has 32bits. If the value of error code is 0,it indicates success;if no-zero,it indicates error.
+ * its internal structure as following,
+ *
+ * |31-30bit|29bit|28-27bit|26-16bit|15-0bit|
+ * |-------:|:---:|:------:|:------:|:------|
+ * |R       |C    |R       |Facility|Code   |
+ *
+ * - C (1bit): Customer. If set, indicates that the error code is customer-defined.
+ *   If clear, indicates that the error code is celix-defines.
+ * - R : Reserved. It should be set to 0.
+ * - Facility (11 bits): An indicator of the source of the error.
+ * - Code (16bits): The remainder of error code.
  */
 #ifndef CELIX_ERRNO_H_
 #define CELIX_ERRNO_H_
@@ -62,6 +74,44 @@ typedef int celix_status_t;
 const char* celix_strerror(celix_status_t status);
 
 /*!
+ * Customer error code mask
+ *
+ */
+#define CELIX_CUSTOMER_ERR_MASK 0x20000000
+
+/*!
+ * The facility of C errno,
+ * \note Error code 0 indicates success,it is not C errno.
+ */
+#define CELIX_FACILITY_CERRNO 0
+
+/*!
+ * The facility of celix default error code
+ *
+ */
+#define CELIX_FACILITY_FRAMEWORK 1
+
+/*!
+ * The facility of the  http suppoter error code
+ *
+ */
+#define CELIX_FACILITY_HTTP 2
+
+/*!
+ * Make the error code accroding to the specification
+ * \param fac Facility
+ * \param code Code
+ */
+#define CELIX_ERROR_MAKE(fac,code) (((unsigned int)(fac)<<16) | ((code)&0xFFFF))
+
+/*!
+ * Make the customer error code
+ * \param usrFac Facility value of customer error code.It is defined by customer
+ * \param usrCode Code value of customer error codes.It is defined by customer
+ */
+#define CELIX_CUSTOMER_ERROR_MAKE(usrFac,usrCode) (CELIX_CUSTOMER_ERR_MASK | (((usrFac)&0x7FF)<<16) | ((usrCode)&0xFFFF))
+
+/*!
  * Error code indicating successful execution of the function.
  */
 #define CELIX_SUCCESS 0
@@ -73,34 +123,59 @@ const char* celix_strerror(celix_status_t status);
 
 /*!
  * The range for Celix errors.
+ * \deprecated It is recommended to use facility indicate the range of error codes
  */
 #define CELIX_ERRSPACE_SIZE 1000
 
 /*!
  * The start error number user application can use.
+ * \deprecated It is recommended to use CELIX_CUSTOMER_ERR_MASK to define user error number
  */
 #define CELIX_START_USERERR (CELIX_START_ERROR + CELIX_ERRSPACE_SIZE)
 
 /*!
+ * @name celix default error codes
+ * @{
+ */
+
+/*!
  * Exception indicating a problem with a bundle
  */
-#define CELIX_BUNDLE_EXCEPTION (CELIX_START_ERROR + 1)
+#define CELIX_BUNDLE_EXCEPTION          CELIX_ERROR_MAKE(CELIX_FACILITY_FRAMEWORK, 4465)
+
 /*!
  * Invalid bundle context is used
  */
-#define CELIX_INVALID_BUNDLE_CONTEXT (CELIX_START_ERROR + 2)
+#define CELIX_INVALID_BUNDLE_CONTEXT    CELIX_ERROR_MAKE(CELIX_FACILITY_FRAMEWORK, 4466)
 /*!
  * Argument is not correct
  */
-#define CELIX_ILLEGAL_ARGUMENT (CELIX_START_ERROR + 3)
-#define CELIX_INVALID_SYNTAX (CELIX_START_ERROR + 4)
-#define CELIX_FRAMEWORK_SHUTDOWN (CELIX_START_ERROR + 5)
-#define CELIX_ILLEGAL_STATE (CELIX_START_ERROR + 6)
-#define CELIX_FRAMEWORK_EXCEPTION (CELIX_START_ERROR + 7)
-#define CELIX_FILE_IO_EXCEPTION (CELIX_START_ERROR + 8)
-#define CELIX_SERVICE_EXCEPTION (CELIX_START_ERROR + 9)
+#define CELIX_ILLEGAL_ARGUMENT          CELIX_ERROR_MAKE(CELIX_FACILITY_FRAMEWORK, 4467)
+#define CELIX_INVALID_SYNTAX            CELIX_ERROR_MAKE(CELIX_FACILITY_FRAMEWORK, 4468)
+#define CELIX_FRAMEWORK_SHUTDOWN        CELIX_ERROR_MAKE(CELIX_FACILITY_FRAMEWORK, 4469)
+#define CELIX_ILLEGAL_STATE             CELIX_ERROR_MAKE(CELIX_FACILITY_FRAMEWORK, 4470)
+#define CELIX_FRAMEWORK_EXCEPTION       CELIX_ERROR_MAKE(CELIX_FACILITY_FRAMEWORK, 4471)
+#define CELIX_FILE_IO_EXCEPTION         CELIX_ERROR_MAKE(CELIX_FACILITY_FRAMEWORK, 4472)
+#define CELIX_SERVICE_EXCEPTION         CELIX_ERROR_MAKE(CELIX_FACILITY_FRAMEWORK, 4473)
+/*!
+ * Exception indicating a problem with a interceptor
+ */
+#define CELIX_INTERCEPTOR_EXCEPTION     CELIX_ERROR_MAKE(CELIX_FACILITY_FRAMEWORK, 4474)
 
-#define CELIX_ENOMEM ENOMEM
+
+/*! @} *///celix default error codes
+
+
+/*!
+ * @name C error map to celix
+ * @{
+ */
+
+#define CELIX_ENOMEM                    CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,ENOMEM)
+
+
+/*! @}*///C error map to celix
+
 
 /**
  * \}
