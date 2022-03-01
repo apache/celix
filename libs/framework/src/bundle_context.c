@@ -1211,7 +1211,7 @@ bool celix_bundleContext_useServiceWithOptions(
 
     if(opts->flags & CELIX_SERVICE_USE_DIRECT) {
         if(opts->flags & CELIX_SERVICE_USE_SOD) {
-            // TL;DR make "service on demand" pattern work. Try comment it out and run CelixBundleContextServicesTests.UseServiceOnDemandDirectlyWithAsyncRegisterTest
+            // check CelixBundleContextServicesTests.UseServiceOnDemandDirectlyWithAsyncRegisterTest to see what is "service on demand".
             celix_framework_waitUntilNoPendingRegistration(ctx->framework);
         }
         called = celix_serviceTracker_useHighestRankingService(data.svcTracker, NULL, opts->waitTimeoutInSeconds, opts->callbackHandle, opts->use, opts->useWithProperties, opts->useWithOwner);
@@ -1268,7 +1268,7 @@ size_t celix_bundleContext_useServicesWithOptions(
 
     if (opts->flags & CELIX_SERVICE_USE_DIRECT) {
         if(opts->flags & CELIX_SERVICE_USE_SOD) {
-            // TL;DR make "service on demand" pattern work. Try comment it out and run CelixBundleContextServicesTests.UseServicesOnDemandDirectlyWithAsyncRegisterTest
+            // check CelixBundleContextServicesTests.UseServicesOnDemandDirectlyWithAsyncRegisterTest to see what is "service on demand".
             celix_framework_waitUntilNoPendingRegistration(ctx->framework);
         }
         celix_bundleContext_useServicesWithOptions_2_UseServiceTracker(&data);
