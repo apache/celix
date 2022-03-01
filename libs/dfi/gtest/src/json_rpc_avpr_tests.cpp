@@ -201,8 +201,10 @@ TEST_F(JsonAvprRpcTests, prep) {
     //double **out_ptr = &out;
     args[3] = &out;
 
-    rc = jsonRpc_handleReply(func, reply, args);
+    int rsErrno = 0;
+    rc = jsonRpc_handleReply(func, reply, args, &rsErrno);
     ASSERT_EQ(0, rc);
+    ASSERT_EQ(0, rsErrno);
     ASSERT_NEAR(2.2, calc_result, 0.001);
 
     free(result);
@@ -255,8 +257,10 @@ TEST_F(JsonAvprRpcTests, handle_out) {
     void *out = &result;
     args[2] = &out;
 
-    int rc = jsonRpc_handleReply(func, reply, args);
+    int rsErrno = 0;
+    int rc = jsonRpc_handleReply(func, reply, args, &rsErrno);
     ASSERT_EQ(0, rc);
+    ASSERT_EQ(0, rsErrno);
     ASSERT_TRUE(result != nullptr);
     ASSERT_EQ(1.5, result->average);
 

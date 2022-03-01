@@ -37,7 +37,7 @@ int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, c
 
 
 int jsonRpc_prepareInvokeRequest(dyn_function_type *func, const char *id, void *args[], char **out);
-int jsonRpc_handleReply(dyn_function_type *func, const char *reply, void *args[]);
+int jsonRpc_handleReply(dyn_function_type *func, const char *reply, void *args[], int *rsErrno);
 
 #ifdef __cplusplus
 }
