@@ -28,6 +28,9 @@ extern "C" {
 #include <stdbool.h>
 
 #define CELIX_UTILS_MAX_STRLEN      1024*1024*1024
+#define CELIX_US_IN_SEC (1000000)
+#define CELIX_NS_IN_SEC ((CELIX_US_IN_SEC)*1000)
+
 
 /**
  * Creates a copy of a provided string.
