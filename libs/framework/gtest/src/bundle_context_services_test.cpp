@@ -102,6 +102,7 @@ public:
 
         celix_bundleContext_unregisterService(ctx, svcId);
     }
+
     void registerAndUseServiceWithIncorrectVersion(bool direct) {
         struct calc {
             int (*calc)(int);
@@ -141,6 +142,7 @@ public:
 
         celix_bundleContext_unregisterService(ctx, svcId);
     }
+
     void registerAndUseServiceWithTimeout(bool direct) {
         const int NR_ITERATIONS = 5; //NOTE this test is sensitive for triggering race condition in the celix framework, therefore is used a few times.
         for (int i = 0; i < NR_ITERATIONS; ++i) {
@@ -192,6 +194,7 @@ public:
             EXPECT_FALSE(result2.get()); //note service is away, so even with a wait the service is not found.
         }
     }
+
     void registerAsyncAndUseServiceWithTimeout(bool direct) {
         const int NR_ITERATIONS = 5; //NOTE this test is sensitive for triggering race condition in the celix framework, therefore is used a few times.
         for (int i = 0; i < NR_ITERATIONS; ++i) {
@@ -1442,7 +1445,7 @@ TEST_F(CelixBundleContextServicesTests, UseServiceOnDemandDirectlyWithAsyncRegis
     }, nullptr);
     celix_service_use_options_t opts{};
     opts.filter.serviceName = "test";
-    opts.flags = CELIX_SERVICE_USE_DIRECT;
+    opts.flags = CELIX_SERVICE_USE_DIRECT | CELIX_SERVICE_USE_SOD;
     called = celix_bundleContext_useServiceWithOptions(ctx, &opts);
     EXPECT_TRUE(called); //service created on demand.
 
@@ -1480,7 +1483,7 @@ TEST_F(CelixBundleContextServicesTests, UseServicesOnDemandDirectlyWithAsyncRegi
 
     celix_service_use_options_t opts{};
     opts.filter.serviceName = "test";
-    opts.flags = CELIX_SERVICE_USE_DIRECT;
+    opts.flags = CELIX_SERVICE_USE_DIRECT | CELIX_SERVICE_USE_SOD;
     size_t count = celix_bundleContext_useServicesWithOptions(ctx, &opts);
     EXPECT_EQ(2, count);
 

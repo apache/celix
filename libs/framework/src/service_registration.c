@@ -140,14 +140,13 @@ celix_status_t serviceRegistration_unregister(service_registration_pt registrati
     if(!__atomic_compare_exchange_n(&registration->isUnregistering, &unregistering /* expected*/ , true /* desired */,
                                     false /* weak */, __ATOMIC_RELAXED/*success memorder*/, __ATOMIC_RELAXED/*failure memorder*/)) {
         status = CELIX_ILLEGAL_STATE;
-        goto immediate_return;
+    } else {
+        callback = registration->callback;
+        if (callback.unregister != NULL) {
+            status = callback.unregister(callback.handle, registration->bundle, registration);
+        }
     }
-    callback = registration->callback;
-	if (callback.unregister != NULL) {
-        status = callback.unregister(callback.handle, registration->bundle, registration);
-	}
 
-immediate_return:
     framework_logIfError(celix_frameworkLogger_globalLogger(), status, NULL, "Cannot unregister service registration");
 	return status;
 }

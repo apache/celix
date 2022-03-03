@@ -775,8 +775,13 @@ typedef struct celix_service_use_options {
      * @brief Call the provided callbacks from the caller thread directly if set, otherwise the callbacks will be called from the Celix event loop (most likely indirectly).
      * Note that using blocking service in the Celix event loop is generally a bad idea, which should be avoided if possible.
      */
-#define CELIX_SERVICE_USE_DIRECT          (1)
-    int flags;
+#define CELIX_SERVICE_USE_DIRECT              (1)
+    /**
+     * @brief Whether "service on demand" pattern is supported when CELIX_SERVICE_USE_DIRECT is set.
+     * Note that it has no effect in indirect mode, in which case "service on demand" is supported.
+     */
+#define CELIX_SERVICE_USE_SOD                 (2)
+    int flags OPTS_INIT;
 } celix_service_use_options_t;
 
 /**
