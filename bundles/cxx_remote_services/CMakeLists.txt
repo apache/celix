@@ -16,7 +16,7 @@
 # under the License.
 
 celix_subproject(REMOTE_SERVICE_ADMIN "Option to enable building the C++17 Remote Service Admin Service bundles" OFF)
-if (REMOTE_SERVICE_ADMIN)
+if (REMOTE_SERVICE_ADMIN AND CELIX_CXX)
     message(STATUS  "The C++ Remote Service Admin is still experimental; The API, SPI and implementation is not stable and will change")
 
     add_subdirectory(rsa_spi)

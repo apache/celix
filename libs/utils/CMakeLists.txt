@@ -45,7 +45,7 @@ add_library(utils SHARED
     ${MEMSTREAM_SOURCES}
 )
 set_target_properties(utils PROPERTIES OUTPUT_NAME "celix_utils")
-target_link_libraries(utils PRIVATE libzip::libzip)
+target_link_libraries(utils PUBLIC libzip::libzip)
 
 if (NOT OPEN_MEMSTREAM_EXISTS)
     target_compile_definitions(utils PUBLIC -DNO_MEMSTREAM_AVAILABLE)
