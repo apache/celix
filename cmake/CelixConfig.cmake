@@ -76,6 +76,7 @@ include(CMakeFindDependencyMacro)
 find_dependency(ZLIB REQUIRED) #Needed by framework
 find_dependency(UUID REQUIRED) #Needed by framework
 find_dependency(CURL REQUIRED) #Needed by framework (used for curl initialization)
+find_dependency(LIBZIP) #Needed by utils
 find_dependency(Jansson REQUIRED) #Needed by dfi, etcdlib, remote services, pubsub
 
 if (TARGET Celix::dfi)

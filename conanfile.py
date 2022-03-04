@@ -172,11 +172,7 @@ class CelixConan(ConanFile):
         self.copy("LICENSE", dst="licenses", src=self.source_folder)
         cmake = self._configure_cmake()
         cmake.install()
-        # tools.rmdir(os.path.join(self.package_folder, "lib", "cmake"))
 
     def package_info(self):
-        self.cpp_info.builddirs = [os.path.join("share", self.name, "cmake")];
         self.cpp_info.bindirs = ["bin", os.path.join("share", self.name, "bundles")]
-        self.cpp_info.build_modules["cmake"].append(os.path.join("share", self.name, "cmake", "cmake_celix", "UseCelix.cmake"))
-        self.cpp_info.build_modules["cmake"].append(os.path.join("share", self.name, "cmake", "Targets.cmake"))
-        self.cpp_info.build_modules["cmake"].append(os.path.join("share", self.name, "cmake", "CelixTargets.cmake"))
+        self.cpp_info.build_modules["cmake"].append(os.path.join("lib", "cmake", "Celix", "CelixConfig.cmake"))
