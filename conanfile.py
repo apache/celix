@@ -35,6 +35,9 @@ class CelixConan(ConanFile):
         "build_pubsub": [True, False],
         "build_pubsub_psa_zmq": [True, False],
         "build_zmq_security": [True, False],
+        "build_pubsub_psa_tcp": [True, False],
+        "build_pubsub_psa_udp_mc": [True, False],
+        "build_pubsub_psa_ws": [True, False],
         "build_pubsub_tests": [True, False],
         "build_remote_service_admin": [True, False],
         "build_rsa_remote_service_admin_dfi": [True, False],
@@ -53,6 +56,8 @@ class CelixConan(ConanFile):
         "build_event_admin": [True, False],
         "build_experimental": [True, False],
         "celix_cxx": [True, False],
+        "celix_install_deprecated_api": [True, False],
+        "celix_add_deprecated_attributes": [True, False],
     }
     default_options = { 
         "enable_testing": False,
@@ -70,6 +75,9 @@ class CelixConan(ConanFile):
         "build_pubsub": True,
         "build_pubsub_psa_zmq": False,
         "build_zmq_security": False,
+        "build_pubsub_psa_tcp": True,
+        "build_pubsub_psa_udp_mc": True,
+        "build_pubsub_psa_ws": True,
         "build_pubsub_tests": False,
         "build_remote_service_admin": True,
         "build_rsa_remote_service_admin_dfi": True,
@@ -88,6 +96,8 @@ class CelixConan(ConanFile):
         "build_event_admin": False,
         "build_experimental": False,
         "celix_cxx": False,
+        "celix_install_deprecated_api": False,
+        "celix_add_deprecated_attributes": True,
     }
     _cmake = None
 
@@ -130,7 +140,7 @@ class CelixConan(ConanFile):
         self.requires("libcurl/[~7.64.1]")
         self.requires("zlib/[~1.2.8]")
         self.requires("libuuid/1.0.3")
-        self.requires("libzip/1.8.0")
+        self.requires("libzip/[~1.7.3]")
         self.options['libffi'].shared = True
         self.options['jansson'].shared = True
         self.options['libcurl'].shared = True
