@@ -15,6 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
+find_package(CURL REQUIRED)
 
 #Create shared library
 add_library(civetweb_shared SHARED
