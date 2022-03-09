@@ -92,6 +92,7 @@ if (ENABLE_TESTING)
 
     add_executable(hash_map_test private/test/hash_map_test.cpp)
     target_link_libraries(hash_map_test Celix::utils ${CppUTest_LIBRARY} pthread)
+    target_compile_options(hash_map_test PRIVATE -Wno-old-style-cast)
 
     add_executable(array_list_test private/test/array_list_test.cpp)
     target_link_libraries(array_list_test  Celix::utils ${CppUTest_LIBRARY} pthread)
