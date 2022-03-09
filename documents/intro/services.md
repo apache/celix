@@ -143,8 +143,31 @@ A with the C shell command struct, the C++ service class is documented and expla
 be provided. The `handle` construct is not needed for C++ services and using a C++ service function is just the same 
 as calling a function member of any C++ object.
 
-## Registering and un-registering services
+## Impact of dynamic services
+Services in Apache Celix are dynamic, meaning that they can come and go at any moment.
+This makes it possible to create emerging functionality based on the coming and going of Celix services.
+How to cope with this dynamic behaviour is critical for creating a stable solution.
 
+For Java OSGi this is already a challenge to program correctly, but less critical because generally speaking the
+garbage collector will arrange that objects still exists even if the providing bundle is un-installed.
+Taking into account that C and C++ has no garbage collection, handling the dynamic behaviour correctly is
+more critical; If a bundle providing a certain service is removed, the code segment / memory allocated for
+that service will also be removed / deallocated.
+
+Apache Celix has several mechanisms for dealing with this dynamic behaviour:
+
+* A built-in abstraction to use services with callbacks function where the Celix framework ensures the services
+  are not removed during callback execution.
+* Service trackers which ensure that service can only complete their un-registration when all service
+  remove callbacks have been processed.
+* Components with declarative service dependency so that a component life cycle is coupled with the availability of
+  service dependencies. See the components' documentation section for more information about components.
+* The Celix framework will handle all service registration/un-registration events and the starting/stopping of trackers
+  on the Celix event thread to ensure that only 1 event can be processed per time and that callbacks for service
+  registration and service tracker are always called from the same thread.
+* Service registration, service un-registration, starting trackers and closing trackers can be done async.
+ 
+## Registering and un-registering services
 Service registration and un-registration in Celix can be done synchronized or asynchronized and although 
 (un-)registering services synchronized is more inline with the OSGi spec, (un-)registering is preferred for Celix. 
 
@@ -190,9 +213,11 @@ specifically:
 - `celix::ServiceRegistrationBuilder::setUnregisterAsync`. The default is asynchronized. 
 
 ### Example: Register a service in C
-
 ```C
 //src/my_shell_command_provider_bundle_activator.c
+#include <celix_api.h>
+#include <celix_shell_command.h>
+
 typedef struct my_shell_command_provider_activator_data {
     celix_bundle_context_t* ctx;
     celix_shell_command_t shellCmdSvc;
@@ -229,7 +254,9 @@ CELIX_GEN_BUNDLE_ACTIVATOR(my_shell_command_provider_activator_data_t, my_shell_
 ### Example: Register a C++ service in C++
 ```C++
 //src/MyShellCommandBundleActivator.cc
-...
+#include <celix/BundleActivator.h>
+#include <celix/IShellCommand.h>
+
 class MyCommand : public celix::IShellCommand {
 public:
     explicit MyCommand(std::string_view _name) : name{_name} {}
@@ -266,10 +293,11 @@ CELIX_GEN_CXX_BUNDLE_ACTIVATOR(MyShellCommandProviderBundleActivator)
 ```
 
 ### Example: Register a C service in C++
-
 ```C++
 //src/MyCShellCommandProviderBundleActivator.cc
-...
+#include <celix/BundleActivator.h>
+#include <celix_shell_command.h>
+
 struct MyCShellCommand : public celix_shell_command {
     explicit MyCShellCommand(std::shared_ptr<celix::BundleContext> _ctx) : celix_shell_command(), ctx{std::move(_ctx)} {
         handle = this;
@@ -301,7 +329,6 @@ CELIX_GEN_CXX_BUNDLE_ACTIVATOR(MyCShellCommandProviderBundleActivator)
 ```
 
 ### Sequence diagrams for service registration
-
 ![Register Service Async](diagrams/services_register_service_async_seq.png)
 A asynchronized service registration
 ---
@@ -319,8 +346,7 @@ A synchronized service un-registration
 ---
 
 ## Using services
-
-Services can be used directly form the bundle context using the following C function / C++ methods:
+Services can be used directly using the bundle context C functions or C++ methods:
 - `celix_bundleContext_useServiceWithId`
 - `celix_bundleContext_useService`
 - `celix_bundleContext_useServices`
@@ -329,32 +355,258 @@ Services can be used directly form the bundle context using the following C func
 - `celix::BundleContext::useService`
 - `celix::BundleContext::useServices`
 
-These functions / methods work by providing a callback function which will be invoked on the Celix event thread with
-the matching service or services.
-when a "use service" function/method returns the callback function have been called - if 1 or more matches was found -
-and can be safely deallocated. 
+These functions and methods work by providing a callback function which will be called by the Celix framework with the 
+matching service or services.
+when a "use service" function/method returns the callback function can can be safely deallocated. 
 A "use service" function/method return value will indicate if a matching service is found or how many matching services 
 are found.
 
-C usage example:
+The Celix framework provides service usage through callbacks - instead of directly return a service pointer - 
+to ensure that services are prevented from removal while the services are still in use without forwarding 
+this responsibility to the user; i.e. by adding an api to "lock" and "unlock" services for usage.
+
+###Example: Using a service in C
 ```C
-celix_bundle_context_t* ctx = ...
-void* callbackHandle = ...
-void (*useCallback)(void* handle, void *svc) = ...
-bool called = celix_bundleContext_useService(ctx, CELIX_SHELL_COMMAND_SERVICE_NAME, callbackHandle, useCallback);
+#include <stdio.h>
+#include <celix_api.h>
+#include <celix_shell_command.h>
+
+typedef struct use_command_service_example_data {
+    //nop
+} use_command_service_example_data_t;
+
+static void useShellCommandCallback(void *handle __attribute__((unused)), void *svc) {
+    celix_shell_command_t* cmdSvc = (celix_shell_command_t*)svc;
+    cmdSvc->executeCommand(cmdSvc->handle, "my_command test call from C", stdout, stderr);
+}
+
+static celix_status_t use_command_service_example_start(use_command_service_example_data_t *data __attribute__((unused)), celix_bundle_context_t *ctx) {
+    celix_service_use_options_t opts = CELIX_EMPTY_SERVICE_USE_OPTIONS;
+    opts.callbackHandle = NULL;
+    opts.use = useShellCommandCallback;
+    opts.filter.serviceName = CELIX_SHELL_COMMAND_SERVICE_NAME;
+    opts.filter.filter = "(command.name=my_command)";
+    bool called = celix_bundleContext_useServicesWithOptions(ctx, &opts);
+    if (!called) {
+        fprintf(stderr, "%s: Command service not called!\n", __PRETTY_FUNCTION__);
+    }
+    return CELIX_SUCCESS;
+}
+
+static celix_status_t use_command_service_example_stop(use_command_service_example_data_t *data __attribute__((unused)), celix_bundle_context_t *ctx __attribute__((unused))) {
+    return CELIX_SUCCESS;
+}
+
+CELIX_GEN_BUNDLE_ACTIVATOR(use_command_service_example_data_t, use_command_service_example_start, use_command_service_example_stop)
 ```
 
-C++ usage example:
+###Example: Using a service in C++
 ```C++
-std::shared_ptr<celix::BundleContext> ctx = ...
-std::function<void(celix::IShellCommand&)> callback = ...
-bool called = ctx->useService<celix::IShellCommand>
-        .addUseCallback(callback)
-        .build();
+//src/UsingCommandServicesExample.cc
+#include <celix/IShellCommand.h>
+#include <celix/BundleActivator.h>
+#include <celix_shell_command.h>
+
+static void useCxxShellCommand(const std::shared_ptr<celix::BundleContext>& ctx) {
+    auto called = ctx->useService<celix::IShellCommand>()
+            .setFilter("(name=MyCommand)")
+            .addUseCallback([](celix::IShellCommand& cmdSvc) {
+                cmdSvc.executeCommand("MyCommand test call from C++", {}, stdout, stderr);
+            })
+            .build();
+    if (!called) {
+        std::cerr << __PRETTY_FUNCTION__  << ": Command service not called!" << std::endl;
+    }
+}
+
+static void useCShellCommand(const std::shared_ptr<celix::BundleContext>& ctx) {
+    auto calledCount = ctx->useServices<celix_shell_command>(CELIX_SHELL_COMMAND_SERVICE_NAME)
+            //Note the filter should match 2 shell commands
+            .setFilter("(|(command.name=MyCCommand)(command.name=my_command))") 
+            .addUseCallback([](celix_shell_command& cmdSvc) {
+                cmdSvc.executeCommand(cmdSvc.handle, "MyCCommand test call from C++", stdout, stderr);
+            })
+            .build();
+    if (calledCount == 0) {
+        std::cerr << __PRETTY_FUNCTION__  << ": Command service not called!" << std::endl;
+    }
+}
+
+class UsingCommandServicesExample {
+public:
+    explicit UsingCommandServicesExample(const std::shared_ptr<celix::BundleContext>& ctx) {
+        useCxxShellCommand(ctx);
+        useCShellCommand(ctx);
+    }
+
+    ~UsingCommandServicesExample() noexcept = default;
+};
+
+CELIX_GEN_CXX_BUNDLE_ACTIVATOR(UsingCommandServicesExample)
 ```
 
 ## Tracking services
-TODO
+To monitor the coming and going of services, a service tracker can be used. Service trackers use - user provided - 
+callbacks to handle matching services being added or removed. A service name and an optional LDAP filter is used
+to select which services to monitor. A service name `*` can be used to match services with any service name. 
+When a service unregisters, the un-registration can only finish after all matching service trackers 
+remove callbacks are processed.
+
+For C a service tracker can be created using the following bundle context functions:
+- `celix_bundleContext_trackServicesAsync`
+- `celix_bundleContext_trackServices`
+- `celix_bundleContext_trackServicesWithOptionsAsync`
+- `celix_bundleContext_trackServicesWithOptions`
+
+The "track services" C functions always return a service id (long) which can be used to close and destroy the 
+service tracker:
+- `celix_bundleContext_stopTrackerAsync`
+- `celix_bundleContext_stopTracker`
+
+For C++ a service tracker can be created using the following bundle context methods:
+- `celix::BundleContext::trackServices`
+- `celix::BundleContext::trackAnyServices`
+
+The C++ methods work with a builder API and will eventually return a `std::shared_ptr<celix::ServiceTracker<I>>` object.
+if the underlining ServiceTracker object goes out of scope, the service tracker will be closed and destroyed.
+
+C++ service trackers are created and opened asynchronized, but closed synchronized. 
+The closing is done synchronized so that users can be sure that after a `celix::ServiceTracker::close()` call the 
+added callbacks will not be invoked anymore.  
+
+###Example: Tracking services in C
+```C
+//src/track_command_services_example.c
+#include <stdio.h>
+#include <celix_api.h>
+#include <celix_shell_command.h>
+
+typedef struct track_command_services_example_data {
+    long trackerId;
+    celix_thread_mutex_t mutex; //protects below
+    celix_array_list_t* commandServices;
+} track_command_services_example_data_t;
+
+
+static void addShellCommandService(void* data,void* svc, const celix_properties_t * properties) {
+    track_command_services_example_data_t* activatorData = data;
+    celix_shell_command_t* cmdSvc = svc;
+
+    printf("Adding command service with svc id %li\n", celix_properties_getAsLong(properties, CELIX_FRAMEWORK_SERVICE_ID, -1));
+    celixThreadMutex_lock(&activatorData->mutex);
+    celix_arrayList_add(activatorData->commandServices, cmdSvc);
+    printf("Nr of command service found: %i\n", celix_arrayList_size(activatorData->commandServices));
+    celixThreadMutex_unlock(&activatorData->mutex);
+}
+
+static void removeShellCommandService(void* data,void* svc, const celix_properties_t * properties) {
+    track_command_services_example_data_t* activatorData = data;
+    celix_shell_command_t* cmdSvc = svc;
+
+    printf("Removing command service with svc id %li\n", celix_properties_getAsLong(properties, CELIX_FRAMEWORK_SERVICE_ID, -1));
+    celixThreadMutex_lock(&activatorData->mutex);
+    celix_arrayList_remove(activatorData->commandServices, cmdSvc);
+    printf("Nr of command service found: %i\n", celix_arrayList_size(activatorData->commandServices));
+    celixThreadMutex_unlock(&activatorData->mutex);
+}
+
+static celix_status_t track_command_services_example_start(track_command_services_example_data_t *data, celix_bundle_context_t *ctx) {
+    celixThreadMutex_create(&data->mutex, NULL);
+    data->commandServices = celix_arrayList_create();
+
+    celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
+    opts.filter.serviceName = CELIX_SHELL_COMMAND_SERVICE_NAME;
+    opts.filter.filter = "(command.name=my_command)";
+    opts.callbackHandle = data;
+    opts.addWithProperties = addShellCommandService;
+    opts.removeWithProperties = removeShellCommandService;
+    data->trackerId = celix_bundleContext_trackServicesWithOptionsAsync(ctx, &opts);
+    return CELIX_SUCCESS;
+}
+
+static celix_status_t track_command_services_example_stop(track_command_services_example_data_t *data, celix_bundle_context_t *ctx) {
+    celix_bundleContext_stopTracker(ctx, data->trackerId);
+    celixThreadMutex_lock(&data->mutex);
+    celix_arrayList_destroy(data->commandServices);
+    celixThreadMutex_unlock(&data->mutex);
+    return CELIX_SUCCESS;
+}
+
+CELIX_GEN_BUNDLE_ACTIVATOR(track_command_services_example_data_t, track_command_services_example_start, track_command_services_example_stop)
+```
+
+###Example: Tracking services in C++
+```C++
+//src/TrackingCommandServicesExample.cc
+#include <unordered_map>
+#include <celix/IShellCommand.h>
+#include <celix/BundleActivator.h>
+#include <celix_shell_command.h>
+
+class TrackingCommandServicesExample {
+public:
+    explicit TrackingCommandServicesExample(const std::shared_ptr<celix::BundleContext>& ctx) {
+        //Tracking C++ IShellCommand services and filtering for services that have a "name=MyCommand" property.
+        cxxCommandServiceTracker = ctx->trackServices<celix::IShellCommand>()
+                .setFilter("(name=MyCommand)")
+                .addAddWithPropertiesCallback([this](const auto& svc, const auto& properties) {
+                    long svcId = properties->getAsLong(celix::SERVICE_ID, -1);
+                    std::cout << "Adding C++ command services with svc id" << svcId << std::endl;
+                    std::lock_guard lock{mutex};
+                    cxxCommandServices[svcId] = svc;
+                    std::cout << "Nr of C++ command services found: " << cxxCommandServices.size() << std::endl;
+                })
+                .addRemWithPropertiesCallback([this](const auto& /*svc*/, const auto& properties) {
+                    long svcId = properties->getAsLong(celix::SERVICE_ID, -1);
+                    std::cout << "Removing C++ command services with svc id " << svcId << std::endl;
+                    std::lock_guard lock{mutex};
+                    auto it = cxxCommandServices.find(svcId);
+                    if (it != cxxCommandServices.end()) {
+                        cxxCommandServices.erase(it);
+                    }
+                    std::cout << "Nr of C++ command services found: " << cxxCommandServices.size() << std::endl;
+                })
+                .build();
+
+        //Tracking C celix_shell_command services and filtering for services that have a "command.name=MyCCommand" or
+        // "command.name=my_command" property.
+        cCommandServiceTracker = ctx->trackServices<celix_shell_command>()
+                .setFilter("(|(command.name=MyCCommand)(command.name=my_command))")
+                .addAddWithPropertiesCallback([this](const auto& svc, const auto& properties) {
+                    long svcId = properties->getAsLong(celix::SERVICE_ID, -1);
+                    std::cout << "Adding C command services with svc id " << svcId << std::endl;
+                    std::lock_guard lock{mutex};
+                    cCommandServices[svcId] = svc;
+                    std::cout << "Nr of C command services found: " << cxxCommandServices.size() << std::endl;
+                })
+                .addRemWithPropertiesCallback([this](const auto& /*svc*/, const auto& properties) {
+                    long svcId = properties->getAsLong(celix::SERVICE_ID, -1);
+                    std::cout << "Removing C command services with svc id " << svcId << std::endl;
+                    std::lock_guard lock{mutex};
+                    auto it = cCommandServices.find(svcId);
+                    if (it != cCommandServices.end()) {
+                        cCommandServices.erase(it);
+                    }
+                    std::cout << "Nr of C command services found: " << cxxCommandServices.size() << std::endl;
+                })
+                .build();
+    }
+
+    ~TrackingCommandServicesExample() noexcept {
+        cxxCommandServiceTracker->close();
+        cCommandServiceTracker->close();
+    };
+private:
+    std::mutex mutex; //protects cxxCommandServices and cCommandServices
+    std::unordered_map<long, std::shared_ptr<celix::IShellCommand>> cxxCommandServices{};
+    std::unordered_map<long, std::shared_ptr<celix_shell_command>> cCommandServices{};
+
+    std::shared_ptr<celix::ServiceTracker<celix::IShellCommand>> cxxCommandServiceTracker{};
+    std::shared_ptr<celix::ServiceTracker<celix_shell_command>> cCommandServiceTracker{};
+};
+
+CELIX_GEN_CXX_BUNDLE_ACTIVATOR(TrackingCommandServicesExample)
+```
 
 ### Sequence diagrams for service tracker and service registration
 
@@ -373,31 +625,3 @@ Service tracker callback with a synchronized service registration
 ![Register Service Async](diagrams/services_tracker_services_rem_seq.png)
 Service tracker callback with a synchronized service un-registration
 ---
-
-## Impact of dynamic services
-Services in Apache Celix are dynamic, meaning that they can come and go at any moment.
-This makes it possible to create emerging functionality based on the coming and going of Celix services.
-How to cope with this dynamic behaviour is critical for creating a stable solution.
-
-For Java OSGi this is already a challenge to program correctly, but less critical because generally speaking the
-garbage collector will arrange that objects still exists even if the providing bundle is un-installed.
-Taking into account that C and C++ has no garbage collection, handling the dynamic behaviour correctly is
-more critical; If a bundle providing a certain service is removed, the code segment / memory allocated for
-that service will also be removed / deallocated.
-
-Apache Celix has several mechanisms for dealing with this dynamic behaviour:
-
-* A built-in abstraction to use services with callbacks function where the Celix framework ensures the services
-  are not removed during callback execution.
-  See `celix_bundleContext_useService(s)` and `celix::BundleContext::useService(s)` for more info.
-* Service trackers which ensure that service can only complete their un-registration when all service
-  remove callbacks have been processed.
-  See `celix_bundleContext_trackServices` and `celix::BundleContext::trackServices` for more info.
-* Components with declarative service dependency so that a component life cycle is coupled with the availability of
-  service dependencies. See the components' documentation section for more information about components.
-* The Celix framework will handle all service registration/un-registration events and the starting/stopping of trackers
-  on the Celix event thread to ensure that only 1 event can be processed per time and that callbacks for service
-  registration and service tracker are always called from the same thread. 
-* For service registration, service un-registration, starting trackers and closing trackers there are async variants
-  which can be used in the Celix event thread. For C, most of the async function variants end with a `Async` postfix
-  and for C++ this is handled as an option in the Builder objects. Also, for C++ the default enabled options are async.

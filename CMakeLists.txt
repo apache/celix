@@ -18,19 +18,12 @@
 cmake_minimum_required (VERSION 3.14)
 cmake_policy(SET CMP0012 NEW)
 cmake_policy(SET CMP0042 NEW)
-if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.9.0")
-   cmake_policy(SET CMP0068 NEW)
-endif()
+cmake_policy(SET CMP0068 NEW)
 
-project (Celix C CXX)
+project(Celix C CXX)
 
 include(cmake/celix_project/CelixProject.cmake)
 include(cmake/cmake_celix/UseCelix.cmake)
-
-# see https://public.kitware.com/Bug/view.php?id=15696
-IF (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} EQUAL 3.3 AND ${CMAKE_GENERATOR} STREQUAL "Unix Makefiles")
-    message( FATAL_ERROR "Building Celix using CMake 3.3 and makefiles is not supported due to a bug in the Makefile Generator (see Bug 15696). Please change the used CMake version - both, CMake 3.2 and CMake 3.4 are working fine. Or use a different generator (e.g. Ninja)." )
-ENDIF()
 
 # Options
 option(ENABLE_TESTING "Enables unit/bundle testing" FALSE)
@@ -40,8 +33,6 @@ if (ENABLE_TESTING)
         include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/AddGTest.cmake)
     endif()
 endif ()
-
-set(ENABLE_MORE_WARNINGS OFF)
 
 # Set C specific flags
 set(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -fPIC ${CMAKE_C_FLAGS}")
@@ -80,6 +71,7 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     endif()
 endif()
 
+option(ENABLE_MORE_WARNINGS "whether to enable more compiler warnings." ON)
 if (ENABLE_MORE_WARNINGS)
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
         if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4)
@@ -117,11 +109,8 @@ endif()
 
 # Set version for the framework package/release
 set(CELIX_MAJOR "2")
-set(CELIX_MINOR "2")
-set(CELIX_MICRO "1")
-
-# Default bundle version
-set(DEFAULT_VERSION 1.0.0)
+set(CELIX_MINOR "3")
+set(CELIX_MICRO "0")
 
 if (ENABLE_TESTING)
     enable_testing()

@@ -84,5 +84,6 @@ For more information see:
 * [Apache Celix - Services](services.md)
 * [Apache Celix - Components](components.md)
 * TODO MAYBE add Creating Containers readme
+* TODO MAYBE Services on demand -> meta tracker in C and C++
 * [Apache Celix - Getting Started Guide](../getting_started/README.md) TODO MAYBE REMOVE, replaced with bundles.md, services.md
 * [Apache Celix - CMake Commands](../cmake_commands/README.md)

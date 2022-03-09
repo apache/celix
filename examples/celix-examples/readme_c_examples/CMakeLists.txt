@@ -40,3 +40,25 @@ add_celix_bundle(my_shell_command_provider_bundle
         SOURCES src/my_shell_command_provider_bundle_activator.c
 )
 target_link_libraries(my_shell_command_provider_bundle PRIVATE Celix::shell_api)
+
+add_celix_bundle(using_command_service_bundle
+        VERSION 1.0.0
+        SOURCES src/using_command_service_example.c
+)
+target_link_libraries(using_command_service_bundle PRIVATE Celix::shell_api)
+
+add_celix_bundle(tracker_command_services_bundle
+        VERSION 1.0.0
+        SOURCES src/track_command_services_example.c
+)
+target_link_libraries(tracker_command_services_bundle PRIVATE Celix::shell_api)
+
+add_celix_container(readme_c_examples_container
+    C
+    BUNDLES
+        Celix::shell
+        Celix::shell_tui
+        my_shell_command_provider_bundle
+        using_command_service_bundle
+        tracker_command_services_bundle
+)

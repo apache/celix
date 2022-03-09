@@ -40,5 +40,5 @@ Apache Celix is organized into several subprojects. The following subproject are
 Standalone libraries:
 
 * [Etcd library](../../libs/etcdlib) - A C library that interfaces with ETCD.
-* [Promise library](../../libs/promises) - A C++17 header only adaption and implementation of the OSGi Promise specification.
-* [Push Streams](../../libs/) - A C++17 header adaption and only implementation of the OSGi Push Stream specification. 
+* [Promises library](../../libs/promises) - A C++17 header only adaption and implementation of the OSGi Promise specification.
+* [Push Streams Library](../../libs/pushstreams) - A C++17 header adaption and only implementation of the OSGi Push Stream specification. 

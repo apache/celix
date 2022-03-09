@@ -110,21 +110,28 @@ target_link_libraries(MyCShellCommandProviderBundle PRIVATE Celix::shell_api)
 add_celix_bundle(UsingCommandServicesExampleBundle
     VERSION 1.0.0
     SOURCES
-        src/using_command_service_example.c
         src/UsingCommandServicesExample.cc
 )
 target_link_libraries(UsingCommandServicesExampleBundle PRIVATE Celix::shell_api)
 
-add_celix_container(ReadmeExamplesContainer
+add_celix_bundle(TrackingCommandServicesExampleBundle
+        VERSION 1.0.0
+    SOURCES
+        src/TrackingCommandServicesExample.cc
+)
+target_link_libraries(TrackingCommandServicesExampleBundle PRIVATE Celix::shell_api)
+
+add_celix_container(ReadmeCxxExamplesContainer
     BUNDLES
         Celix::ShellCxx
         Celix::shell_tui
         MyShellCommandProviderBundle
         MyCShellCommandProviderBundle
         UsingCommandServicesExampleBundle
+        TrackingCommandServicesExampleBundle
 )
 
 if (TARGET my_shell_command_provider_bundle)
     #Add C shell command provider and using LEVEL 2 so that is start before UsingCommandServicesExampleBundle
-    celix_container_bundles(ReadmeExamplesContainer LEVEL 2 my_shell_command_provider_bundle)
+    celix_container_bundles(ReadmeCxxExamplesContainer LEVEL 2 my_shell_command_provider_bundle)
 endif ()

@@ -62,7 +62,7 @@ project(myproject C CXX)
 #Part 2. setup compilers
 SET(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -Wall -Werror -fPIC ${CMAKE_C_FLAGS}")
 SET(CMAKE_C_FLAGS_DEBUG "-g -DDEBUG")
-SET(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
+SET(CMAKE_CXX_FLAGS "-std=c++17 ${CMAKE_CXX_FLAGS}")
 SET(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG")
 
 #Part 3. find Celix package.

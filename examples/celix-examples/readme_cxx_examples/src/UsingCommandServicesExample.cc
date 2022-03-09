@@ -18,11 +18,8 @@
  */
 
 #include <celix/IShellCommand.h>
-#include "celix/BundleActivator.h"
-#include "celix_shell_command.h"
-
-
-extern "C" void useShellCommandInC(celix_bundle_context_t* ctx);
+#include <celix/BundleActivator.h>
+#include <celix_shell_command.h>
 
 static void useCxxShellCommand(const std::shared_ptr<celix::BundleContext>& ctx) {
     auto called = ctx->useService<celix::IShellCommand>()
@@ -38,7 +35,8 @@ static void useCxxShellCommand(const std::shared_ptr<celix::BundleContext>& ctx)
 
 static void useCShellCommand(const std::shared_ptr<celix::BundleContext>& ctx) {
     auto calledCount = ctx->useServices<celix_shell_command>(CELIX_SHELL_COMMAND_SERVICE_NAME)
-            .setFilter("(|(command.name=MyCCommand)(command.name=my_command))") //Note the filter should match 2 shell commands
+            //Note the filter should match 2 shell commands
+            .setFilter("(|(command.name=MyCCommand)(command.name=my_command))")
             .addUseCallback([](celix_shell_command& cmdSvc) {
                 cmdSvc.executeCommand(cmdSvc.handle, "MyCCommand test call from C++", stdout, stderr);
             })
@@ -51,7 +49,6 @@ static void useCShellCommand(const std::shared_ptr<celix::BundleContext>& ctx) {
 class UsingCommandServicesExample {
 public:
     explicit UsingCommandServicesExample(const std::shared_ptr<celix::BundleContext>& ctx) {
-        useShellCommandInC(ctx->getCBundleContext());
         useCxxShellCommand(ctx);
         useCShellCommand(ctx);
     }
