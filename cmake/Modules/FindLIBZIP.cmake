@@ -37,7 +37,7 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(LIBZIP  DEFAULT_MSG
         LIBZIP_LIBRARY LIBZIP_INCLUDE_DIR)
 
-if(LIBZIP_FOUND)
+if(LIBZIP_FOUND AND NOT TARGET libzip::libzip)
     add_library(libzip::libzip IMPORTED STATIC GLOBAL)
     set_target_properties(libzip::libzip PROPERTIES
             IMPORTED_LOCATION "${LIBZIP_LIBRARY}"
