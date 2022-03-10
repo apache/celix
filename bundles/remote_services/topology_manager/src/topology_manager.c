@@ -778,6 +778,7 @@ celix_status_t topologyManager_notifyListenersEndpointAdded(topology_manager_pt 
 					}
 				}
 				filter_destroy(filter);
+                bundleContext_ungetService(manager->context, reference, NULL);
 			}
 		}
 		hashMapIterator_destroy(iter);
@@ -788,40 +789,35 @@ celix_status_t topologyManager_notifyListenersEndpointAdded(topology_manager_pt 
 }
 
 celix_status_t topologyManager_notifyListenersEndpointRemoved(topology_manager_pt manager, remote_service_admin_service_t *rsa, export_registration_t *export) {
-	celix_status_t status = CELIX_SUCCESS;
+    celix_status_t status = CELIX_SUCCESS;
 
-	if (celixThreadMutex_lock(&manager->listenerListLock) == CELIX_SUCCESS) {
-		hash_map_iterator_pt iter = hashMapIterator_create(manager->listenerList);
-		while (hashMapIterator_hasNext(iter)) {
-			endpoint_description_t *endpoint = NULL;
-			endpoint_listener_t *epl = NULL;
-			celix_status_t substatus;
-			const char* scope = NULL;
+    if (celixThreadMutex_lock(&manager->listenerListLock) == CELIX_SUCCESS) {
+        hash_map_iterator_pt iter = hashMapIterator_create(manager->listenerList);
+        while (hashMapIterator_hasNext(iter)) {
+            endpoint_description_t *endpoint = NULL;
+            endpoint_listener_t *epl = NULL;
+            celix_status_t substatus;
+            const char* scope = NULL;
 
-			service_reference_pt reference = hashMapIterator_nextKey(iter);
-			serviceReference_getProperty(reference, OSGI_ENDPOINT_LISTENER_SCOPE, &scope);
+            service_reference_pt reference = hashMapIterator_nextKey(iter);
+            serviceReference_getProperty(reference, OSGI_ENDPOINT_LISTENER_SCOPE, &scope);
 
-			substatus = bundleContext_getService(manager->context, reference, (void **) &epl);
+            substatus = bundleContext_getService(manager->context, reference, (void **) &epl);
 
-			if (substatus == CELIX_SUCCESS) {
-				substatus = topologyManager_getEndpointDescriptionForExportRegistration(rsa, export, &endpoint);
-			}
+            if (substatus == CELIX_SUCCESS) {
+                substatus = topologyManager_getEndpointDescriptionForExportRegistration(rsa, export, &endpoint);
+            }
 
-			if (substatus == CELIX_SUCCESS) {
-				substatus = epl->endpointRemoved(epl->handle, endpoint, NULL);
-			}
+            if (substatus == CELIX_SUCCESS) {
+                substatus = epl->endpointRemoved(epl->handle, endpoint, NULL);
+            }
+            bundleContext_ungetService(manager->context, reference, NULL);
+        }
+        hashMapIterator_destroy(iter);
+        celixThreadMutex_unlock(&manager->listenerListLock);
+    }
 
-			/*            if (substatus != CELIX_SUCCESS) {
-             status = substatus;
-
-             }
-			 */
-		}
-		hashMapIterator_destroy(iter);
-		celixThreadMutex_unlock(&manager->listenerListLock);
-	}
-
-	return status;
+    return status;
 }
 
 static celix_status_t topologyManager_extendFilter(topology_manager_pt manager,  const char *filter, char **updatedFilter) {

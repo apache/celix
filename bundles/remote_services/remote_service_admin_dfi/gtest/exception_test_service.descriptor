@@ -1,0 +1,9 @@
+:header
+type=interface
+name=exception_test
+version=1.0.0
+:annotations
+classname=exception_test_service
+:types
+:methods
+func1(V)V=func1(#am=handle;P)N

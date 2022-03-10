@@ -28,13 +28,16 @@
 #define REGISTRY_CALLBACK_H_
 
 #include "celix_errno.h"
+#include "celix_types.h"
 #include "service_reference.h"
 #include "service_registration.h"
+#include <stdbool.h>
 
 typedef struct registry_callback_struct {
 	void *handle;
     celix_status_t (*getUsingBundles)(void *handle, service_registration_pt reg, array_list_pt *bundles);
 	celix_status_t (*unregister)(void *handle, bundle_pt bundle, service_registration_pt reg);
+    bool (*tryRemoveServiceReference)(void *handle, service_reference_pt ref);
 } registry_callback_t;
 
 #endif /* REGISTRY_CALLBACK_H_ */

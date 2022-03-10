@@ -17,30 +17,10 @@
  * under the License.
  */
 
-#ifndef __JSON_RPC_H_
-#define __JSON_RPC_H_
+#ifndef CELIX_BUILD_ASSERT_H
+#define CELIX_BUILD_ASSERT_H
 
-#include <jansson.h>
-#include "dfi_log_util.h"
-#include "dyn_type.h"
-#include "dyn_function.h"
-#include "dyn_interface.h"
+#define CELIX_BUILD_ASSERT(cond) \
+    do { (void) sizeof(char [1 - 2*!(cond)]); } while(0)
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-//logging
-DFI_SETUP_LOG_HEADER(jsonRpc);
-
-int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, char **out);
-
-
-int jsonRpc_prepareInvokeRequest(dyn_function_type *func, const char *id, void *args[], char **out);
-int jsonRpc_handleReply(dyn_function_type *func, const char *reply, void *args[], int *rsErrno);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif
+#endif //CELIX_BUILD_ASSERT_H

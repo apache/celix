@@ -169,13 +169,13 @@ double celix_difftime(const struct timespec *tBegin, const struct timespec *tEnd
     struct timespec diff;
     if ((tEnd->tv_nsec - tBegin->tv_nsec) < 0) {
         diff.tv_sec = tEnd->tv_sec - tBegin->tv_sec - 1;
-        diff.tv_nsec = tEnd->tv_nsec - tBegin->tv_nsec + 1000000000;
+        diff.tv_nsec = tEnd->tv_nsec - tBegin->tv_nsec + CELIX_NS_IN_SEC;
     } else {
         diff.tv_sec = tEnd->tv_sec - tBegin->tv_sec;
         diff.tv_nsec = tEnd->tv_nsec - tBegin->tv_nsec;
     }
 
-    return ((double)diff.tv_sec) + diff.tv_nsec /  1000000000.0;
+    return ((double)diff.tv_sec) + diff.tv_nsec * 1.0 /  CELIX_NS_IN_SEC;
 }
 
 struct timespec celix_gettime(clockid_t clockId) {

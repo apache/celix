@@ -276,37 +276,47 @@ There are three variants of 'add_celix_container':
 - If no launcher is specified a custom Celix launcher will be generated. This launcher also contains the configured properties.
 - If a LAUNCHER_SRC is provided a Celix launcher will be build using the provided sources. Additional sources can be added with the
   CMake 'target_sources' command.
-- If a LAUNCHER (absolute path to a executable of CMake `add_executable` target) is provided that will be used as Celix launcher. 
+- If a LAUNCHER (absolute path to a executable of CMake `add_executable` target) is provided that will be used as Celix launcher.
 
 Creating a Celix containers using 'add_celix_container' will lead to a CMake executable target (expect if a LAUNCHER is used).
 These targets can be used to run/debug Celix containers from a IDE (if the IDE supports CMake).
 
 Optional Arguments:
-- COPY: With this option the used bundles are copied to the container build dir in the 'bundles' dir.  
-  A additional result of this is that the configured references to the bundles are then relative instead of absolute. 
-- CXX: With this option the generated Celix launcher (if used) will be a C++ source instead of a C source. 
-  A additional result of this is that Celix launcher is also linked against stdlibc++.
+- COPY: With this option the used bundles are copied to the container build dir in the 'bundles' dir.
+  A additional result of this is that the configured references to the bundles are then relative instead of absolute.
+  Default is COPY
+- NO_COPY: With this option the used bundles configured for the container with absolute paths.
+  Default is COPY
+- CXX: With this option the generated Celix launcher (if used) will be a C++ source. (Default is CXX)
+  This ensures that the Celix launcher is linked against stdlibc++.
+  Default is CXX
+- C: With this option the generated Celix launcher (if used) will be a C source.
+  Default is CXX
 - USE_CONFIG: With this option config properties are generated in a 'config.properties' instead of embedded in the Celix launcher.
 - GROUP: If configured the build location will be prefixed the GROUP. Default is empty.
 - NAME: The name of the executable. Default is <celix_container_name>. Only useful for generated/LAUNCHER_SRC Celix launchers.
 - DIR: The base build directory of the Celix container. Default is `<cmake_build_dir>/deploy`.
-- BUNDLES: A list of bundles to configured for the Celix container to install and start. 
+- BUNDLES: A list of bundles for the Celix container to install and start.
   These bundle will be configured for run level 3. See 'celix_container_bundles' for more info.
-- PROPERTIES: A list of configuration properties, these can be used to configure the Celix framework and/or bundles. 
-  Normally this will be EMBEDED_PROPERTIES, but if the USE_CONFIG option is used this will be RUNTIME_PROPERTIES. 
+- INSTALL_BUNDLES: A list of bundles for the Celix container to install (but not start).
+- PROPERTIES: A list of configuration properties, these can be used to configure the Celix framework and/or bundles.
+  Normally this will be EMBEDED_PROPERTIES, but if the USE_CONFIG option is used this will be RUNTIME_PROPERTIES.
   See the framework library or bundles documentation about the available configuration options.
-- EMBEDDED_PROPERTIES: A list of configuration properties which will be used in the generated Celix launcher. 
+- EMBEDDED_PROPERTIES: A list of configuration properties which will be used in the generated Celix launcher.
 - RUNTIME_PROPERTIES: A list of configuration properties which will be used in the generated config.properties file.
 
 ```CMake
 add_celix_container(<celix_container_name>
     [COPY]
+    [NO_COPY]
     [CXX]
+    [C]
     [USE_CONFIG]
     [GROUP group_name]
     [NAME celix_container_name]
     [DIR dir]
     [BUNDLES <bundle1> <bundle2> ...]
+    [INSTALL_BUNDLES <bundle1> <bundle2> ...]
     [PROPERTIES "prop1=val1" "prop2=val2" ...]
     [EMBEDDED_PROPERTIES "prop1=val1" "prop2=val2" ...]
     [RUNTIME_PROPERTIES "prop1=val1" "prop2=val2" ...]
@@ -317,12 +327,15 @@ add_celix_container(<celix_container_name>
 add_celix_container(<celix_container_name>
     LAUNCHER launcher
     [COPY]
+    [NO_COPY]
     [CXX]
+    [C]
     [USE_CONFIG]
     [GROUP group_name]
     [NAME celix_container_name]
     [DIR dir]
     [BUNDLES <bundle1> <bundle2> ...]
+    [INSTALL_BUNDLES <bundle1> <bundle2> ...]
     [PROPERTIES "prop1=val1" "prop2=val2" ...]
     [EMBEDDED_PROPERTIES "prop1=val1" "prop2=val2" ...]
     [RUNTIME_PROPERTIES "prop1=val1" "prop2=val2" ...]
@@ -331,36 +344,42 @@ add_celix_container(<celix_container_name>
 
 ```CMake
 add_celix_container(<celix_container_name>
-    LAUNCHER_SRC launcher_src
-    [COPY]
-    [CXX]
-    [USE_CONFIG]
-    [GROUP group_name]
-    [NAME celix_container_name]
-    [DIR dir]
-    [BUNDLES <bundle1> <bundle2> ...]
-    [PROPERTIES "prop1=val1" "prop2=val2" ...]
-    [EMBEDDED_PROPERTIES "prop1=val1" "prop2=val2" ...]
-    [RUNTIME_PROPERTIES "prop1=val1" "prop2=val2" ...]
-)
+        LAUNCHER_SRC launcher_src
+        [COPY]
+        [NO_COPY]
+        [CXX]
+        [C]
+        [USE_CONFIG]
+        [GROUP group_name]
+        [NAME celix_container_name]
+        [DIR dir]
+        [BUNDLES <bundle1> <bundle2> ...]
+        [INSTALL_BUNDLES <bundle1> <bundle2> ...]
+        [PROPERTIES "prop1=val1" "prop2=val2" ...]
+        [EMBEDDED_PROPERTIES "prop1=val1" "prop2=val2" ...]
+        [RUNTIME_PROPERTIES "prop1=val1" "prop2=val2" ...]
+        )
 ```
 
 ## celix_container_bundles
 Add the selected bundles to the Celix container. These bundles are (if configured) copied to the container build dir and
 are added to the configuration properties so that they are installed and started when the Celix container executed.
 
-The Celix framework support 7 (0 - 6) run levels. Run levels can be used to control the start and stop order of bundles.
-Bundles in run level 0 are started first and bundles in run level 6 are started last. 
+The Celix framework supports 7 (0 - 6) run levels. Run levels can be used to control the start and stop order of bundles.
+Bundles in run level 0 are started first and bundles in run level 6 are started last.
 When stopping bundles in run level 6 are stopped first and bundles in run level 0 are stopped last.
 Within a run level the order of configured decides the start order; bundles added earlier are started first.
 
 
 Optional Arguments:
 - LEVEL: The run level for the added bundles. Default is 3.
+- INSTALL: If this option is present, the bundles will only be installed instead of the default install and start.
+  The bundles will be installed after all bundle in LEVEL 0..6 are installed and started.
 
 ```CMake
 celix_container_bundles(<celix_container_target_name>
-    [LEVEL (0..5)]
+    [LEVEL (0..6)]
+    [INSTALL]
     bundle1
     bundle2
     ...

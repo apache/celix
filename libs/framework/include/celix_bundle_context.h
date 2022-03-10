@@ -662,7 +662,7 @@ void celix_bundleContext_stopTracker(celix_bundle_context_t *ctx, long trackerId
  * the targeted service cannot be removed during the callback.
  *
  * The svc is should only be considered valid during the callback.
- * If no service is found the callback will not be invoked.
+ * If no service is found, the callback will not be invoked and this function will return false immediately.
  *
  * This function will block until the callback is finished. As result it is possible to provide callback data from the
  * stack.
@@ -688,7 +688,7 @@ bool celix_bundleContext_useServiceWithId(
  * The Celix framework will ensure that the targeted service cannot be removed during the callback.
  *
  * The svc is should only be considered valid during the callback.
- * If no service is found the callback will not be invoked.
+ * If no service is found, the callback will not be invoked and this function will return false immediately.
  *
  * This function will block until the callback is finished. As result it is possible to provide callback data from the
  * stack.
@@ -712,7 +712,7 @@ bool celix_bundleContext_useService(
  * The Celix framework will ensure that the targeted service cannot be removed during the callback.
  *
  * The svc is should only be considered valid during the callback.
- * If no service is found the callback will not be invoked.
+ * If no service is found, the callback will not be invoked and this function will return 0 immediately.
  *
  * This function will block until the callback is finished. As result it is possible to provide callback data from the
  * stack.
@@ -771,6 +771,17 @@ typedef struct celix_service_use_options {
      * and the bundle owning the service will also be provided to the callback.
      */
     void (*useWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *svcOwner) OPTS_INIT;
+    /**
+     * @brief Call the provided callbacks from the caller thread directly if set, otherwise the callbacks will be called from the Celix event loop (most likely indirectly).
+     * Note that using blocking service in the Celix event loop is generally a bad idea, which should be avoided if possible.
+     */
+#define CELIX_SERVICE_USE_DIRECT              (1)
+    /**
+     * @brief Whether "service on demand" pattern is supported when CELIX_SERVICE_USE_DIRECT is set.
+     * Note that it has no effect in indirect mode, in which case "service on demand" is supported.
+     */
+#define CELIX_SERVICE_USE_SOD                 (2)
+    int flags OPTS_INIT;
 } celix_service_use_options_t;
 
 /**
@@ -785,16 +796,18 @@ typedef struct celix_service_use_options {
     .callbackHandle = NULL, \
     .use = NULL, \
     .useWithProperties = NULL, \
-    .useWithOwner = NULL}
+    .useWithOwner = NULL, \
+    .flags=0}
 #endif
 
 /**
- * @brief Use the services with the provided service filter options using the provided callback.
+ * @brief Use the highest ranking service satisfying the provided service filter options using the provided callback.
  *
  * The Celix framework will ensure that the targeted service cannot be removed during the callback.
  *
  * The svc is should only be considered valid during the callback.
- * If no service is found the callback will not be invoked.
+ * If no service is found the callback will not be invoked. In such cases, if a non-zero waitTimeoutInSeconds is specified in opts,
+ * this function will block until the timeout is expired or when at least one service is found, otherwise it will return false immediately.
  *
  * This function will block until the callback is finished. As result it is possible to provide callback data from the
  * stack.
@@ -814,7 +827,8 @@ bool celix_bundleContext_useServiceWithOptions(
  * The Celix framework will ensure that the targeted service cannot be removed during the callback.
  *
  * The svc is should only be considered valid during the callback.
- * If no service is found the callback will not be invoked.
+ * If no service is found, the callback will not be invoked and this function will return 0 immediately.
+ * Note that waitTimeoutInSeconds in opts has no effect.
  *
  * This function will block until the callback is finished. As result it is possible to provide callback data from the
  * stack.
@@ -828,16 +842,24 @@ size_t celix_bundleContext_useServicesWithOptions(
         const celix_service_use_options_t *opts);
 
 
-
-
 /**
  * @brief List the installed and started bundle ids.
  * The bundle ids does not include the framework bundle (bundle id CELIX_FRAMEWORK_BUNDLE_ID).
  *
- * @param ctx The bundle context
+ * @param ctx The bundle context.
  * @return A array with bundle ids (long). The caller is responsible for destroying the array.
  */
 celix_array_list_t* celix_bundleContext_listBundles(celix_bundle_context_t *ctx);
+
+/**
+ * @brief List the installed bundle ids.
+ * The bundle ids does not include the framework bundle (bundle id CELIX_FRAMEWORK_BUNDLE_ID).
+ *
+ * @param ctx The bundle context.
+ * @return A array with bundle ids (long). The caller is responsible for destroying the array.
+ */
+celix_array_list_t* celix_bundleContext_listInstalledBundles(celix_bundle_context_t *ctx);
+
 
 /**
  * @brief Check whether a bundle is installed.

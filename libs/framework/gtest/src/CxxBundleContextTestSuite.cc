@@ -21,10 +21,11 @@
 
 #include <atomic>
 
+#include "service_tracker.h"
 #include "celix/BundleContext.h"
-
 #include "celix_framework_factory.h"
 #include "celix_framework.h"
+#include "service_tracker_customizer.h"
 
 class CxxBundleContextTestSuite : public ::testing::Test {
 public:
@@ -392,12 +393,18 @@ TEST_F(CxxBundleContextTestSuite, OnRegisterAndUnregisterCallbacks) {
 
 TEST_F(CxxBundleContextTestSuite, InstallCxxBundle) {
     EXPECT_EQ(0, ctx->listBundleIds().size());
+    EXPECT_EQ(0, ctx->listInstalledBundleIds().size());
 
     std::string loc{SIMPLE_CXX_BUNDLE_LOC};
     ASSERT_FALSE(loc.empty());
-    long bndId = ctx->installBundle(loc);
+    long bndId = ctx->installBundle(loc, false);
     EXPECT_GE(bndId, 0);
+    EXPECT_EQ(0, ctx->listBundleIds().size());
+    EXPECT_EQ(1, ctx->listInstalledBundleIds().size());
+
+    ctx->startBundle(bndId);
     EXPECT_EQ(1, ctx->listBundleIds().size());
+    EXPECT_EQ(1, ctx->listInstalledBundleIds().size());
 }
 
 TEST_F(CxxBundleContextTestSuite, LoggingUsingContext) {
@@ -616,9 +623,7 @@ TEST_F(CxxBundleContextTestSuite, setServicesWithTrackerWhenMultipleRegistration
     tracker->close();
     tracker->wait();
 
-    //TODO improve this. For now closing a tracker will inject other service before getting to nullptr.
-    //Also look into why this is not happening in the C service tracker test.
-    EXPECT_EQ(6, count.load());
+    EXPECT_EQ(2, count.load());
 }
 
 TEST_F(CxxBundleContextTestSuite, WaitForAllEvents) {
@@ -713,9 +718,65 @@ public:
 };
 
 TEST_F(CxxBundleContextTestSuite, RegisterServiceWithNameAndVersionInfo) {
-
     auto reg = ctx->registerService<TestInterfaceWithStaticInfo>(std::make_shared<TestInterfaceWithStaticInfo>())
             .build();
     EXPECT_EQ(reg->getServiceName(), "TestName");
     EXPECT_EQ(reg->getServiceVersion(), "1.2.3");
+}
+
+
+TEST_F(CxxBundleContextTestSuite, listBundles) {
+    auto list = ctx->listBundleIds();
+    EXPECT_EQ(0, list.size());
+    list = ctx->listInstalledBundleIds();
+    EXPECT_EQ(0, list.size());
+
+    long bndId = ctx->installBundle(SIMPLE_TEST_BUNDLE1_LOCATION, false);
+    EXPECT_GT(bndId, 0);
+
+    list = ctx->listBundleIds();
+    EXPECT_EQ(0, list.size()); //installed, but not started
+    list = ctx->listInstalledBundleIds();
+    EXPECT_EQ(1, list.size());
+
+    ctx->startBundle(bndId);
+
+    list = ctx->listBundleIds();
+    EXPECT_EQ(1, list.size());
+    list = ctx->listInstalledBundleIds();
+    EXPECT_EQ(1, list.size());
+
+    ctx->stopBundle(bndId);
+
+    list = ctx->listBundleIds();
+    EXPECT_EQ(0, list.size());
+    list = ctx->listInstalledBundleIds();
+    EXPECT_EQ(1, list.size()); //stopped, but still installed
+
+    ctx->uninstallBundle(bndId);
+
+    list = ctx->listBundleIds();
+    EXPECT_EQ(0, list.size());
+    list = ctx->listInstalledBundleIds();
+    EXPECT_EQ(0, list.size());
+}
+
+TEST_F(CxxBundleContextTestSuite, TestOldCStyleTrackerWithCxxMetaTracker) {
+    //rule: A old C style service tracker without an (objectClass=*) filter part, should not crash when combined with a C++ MetaTracker.
+
+    service_tracker_customizer_t *customizer = nullptr;
+    auto status = serviceTrackerCustomizer_create(this, nullptr, nullptr, nullptr, nullptr, &customizer);
+    ASSERT_EQ(status, CELIX_SUCCESS);
+    celix_service_tracker_t* tracker = nullptr;
+    status = serviceTracker_createWithFilter(ctx->getCBundleContext(), "(service.exported.interfaces=*)", customizer, &tracker);
+    ASSERT_EQ(status, CELIX_SUCCESS);
+    status = serviceTracker_open(tracker);
+    ASSERT_EQ(status, CELIX_SUCCESS);
+
+    auto metaTracker = ctx->trackAnyServiceTrackers().build();
+    ctx->waitForEvents();
+    EXPECT_EQ(metaTracker->getState(), celix::TrackerState::OPEN);
+
+    serviceTracker_close(tracker);
+    serviceTracker_destroy(tracker);
 }

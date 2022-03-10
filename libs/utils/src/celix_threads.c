@@ -29,6 +29,7 @@
 #include <time.h>
 #include "signal.h"
 #include "celix_threads.h"
+#include "celix_utils.h"
 
 
 celix_status_t celixThread_create(celix_thread_t *new_thread, celix_thread_attr_t *attr, celix_thread_start_t func, void *data) {
@@ -182,9 +183,16 @@ celix_status_t celixThreadCondition_timedwaitRelative(celix_thread_cond_t *cond,
 #else
 celix_status_t celixThreadCondition_timedwaitRelative(celix_thread_cond_t *cond, celix_thread_mutex_t *mutex, long seconds, long nanoseconds) {
     struct timespec time;
-    clock_gettime(CLOCK_MONOTONIC, &time);
+    seconds = seconds >= 0 ? seconds : 0;
+    time = celix_gettime(CLOCK_MONOTONIC);
     time.tv_sec += seconds;
-    time.tv_nsec += nanoseconds;
+    if(nanoseconds > 0) {
+        time.tv_nsec += nanoseconds;
+        while (time.tv_nsec > CELIX_NS_IN_SEC) {
+            time.tv_sec++;
+            time.tv_nsec -= CELIX_NS_IN_SEC;
+        }
+    }
     return pthread_cond_timedwait(cond, mutex, &time);
 }
 #endif
