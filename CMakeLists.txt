@@ -71,7 +71,7 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     endif()
 endif()
 
-option(ENABLE_MORE_WARNINGS "whether to enable more compiler warnings." ON)
+option(ENABLE_MORE_WARNINGS "whether to enable more compiler warnings." OFF)
 if (ENABLE_MORE_WARNINGS)
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
         if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4)
