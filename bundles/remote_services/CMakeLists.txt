@@ -19,30 +19,25 @@ celix_subproject(REMOTE_SERVICE_ADMIN "Option to enable building the Remote Serv
 if (REMOTE_SERVICE_ADMIN)
 
     add_subdirectory(remote_services_api)
-    add_subdirectory(examples)
     add_subdirectory(deprecated_rsa_spi)
     add_subdirectory(rsa_common)
     add_subdirectory(civetweb)
-    add_subdirectory(topology_manager)
     add_subdirectory(discovery_common)
     add_subdirectory(discovery_configured)
     add_subdirectory(discovery_etcd)
+    add_subdirectory(examples)
+    add_subdirectory(topology_manager)
     add_subdirectory(remote_service_admin_dfi)
 
-    if (APPLE)
-        set(RSA_SHM_DEFAULT_ENABLED OFF)
-    else ()
-        set(RSA_SHM_DEFAULT_ENABLED ON)
-    endif ()
-
-    celix_subproject(RSA_SHM "Option to enable building the Discovery (SHM) bundle" ${RSA_SHM_DEFAULT_ENABLED})
+    celix_subproject(RSA_SHM "Option to enable building the Discovery (SHM) bundle" OFF)
     if (RSA_SHM)
         add_subdirectory(discovery_shm)
-        #TODO refactor shm rsa to use dfi
+        # TODO refactor shm rsa to use dfi
+        # TODO make it work on Apple
         #add_subdirectory(remote_service_admin_shm)
     endif ()
 
-    if (BUILD_RSA_DISCOVERY_ETCD AND BUILD_RSA_REMOTE_SERVICE_ADMIN_DFI)
+    if (BUILD_RSA_DISCOVERY_ETCD AND BUILD_RSA_REMOTE_SERVICE_ADMIN_DFI AND BUILD_SHELL AND BUILD_SHELL_TUI AND BUILD_LOG_SERVICE)
         add_celix_container(remote-services-dfi
                 NAME "server"
                 GROUP "remote-services/remote-services-dfi"

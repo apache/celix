@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(SYSLOG_WRITER "Option to enable building the SysLog Writer bundle" ON DEPS FRAMEWORK)
+celix_subproject(SYSLOG_WRITER "Option to enable building the SysLog Writer bundle" ON)
 if (SYSLOG_WRITER)
     add_subdirectory(syslog_writer)
 endif ()

@@ -26,7 +26,7 @@ add_executable(test_pubsub_serializer_avrobin
 )
 target_link_libraries(test_pubsub_serializer_avrobin PRIVATE Celix::framework Celix::dfi Celix::pubsub_utils GTest::gtest GTest::gtest_main Celix::pubsub_spi)
 
-add_dependencies(test_pubsub_serializer_avrobin celix_pubsub_serializer_avrobin_bundle pubsub_avrobin_serialization_descriptor_bundle)
+add_celix_bundle_dependencies(test_pubsub_serializer_avrobin celix_pubsub_serializer_avrobin pubsub_avrobin_serialization_descriptor)
 target_compile_definitions(test_pubsub_serializer_avrobin PRIVATE -DSERIALIZATION_BUNDLE=\"$<TARGET_PROPERTY:celix_pubsub_serializer_avrobin,BUNDLE_FILE>\")
 target_compile_definitions(test_pubsub_serializer_avrobin PRIVATE -DDESCRIPTOR_BUNDLE=\"$<TARGET_PROPERTY:pubsub_avrobin_serialization_descriptor,BUNDLE_FILE>\")
 

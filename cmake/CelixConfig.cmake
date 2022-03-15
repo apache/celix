@@ -50,7 +50,10 @@ set(CELIX_INCLUDE_DIRS
 set(CELIX_FRAMEWORK_LIBRARY Celix::framework)
 set(CELIX_UTILS_LIBRARY Celix::utils)
 set(CELIX_DFI_LIBRARY Celix::dfi)
-set(CELIX_LAUNCHER Celix::launcher)
+
+if (TARGET Celix::launcher)
+  set(CELIX_LAUNCHER Celix::launcher)
+endif ()
 
 if (TARGET Celix::etcdlib)
   set(CELIX_ETCD_INCLUDE_DIRS $<TARGET_PROPERTY:Celix::etcdlib,INTERFACE_INCLUDE_DIRECTORIES>)
@@ -80,16 +83,33 @@ find_dependency(LIBZIP) #Needed by utils
 find_dependency(Jansson) #Needed by dfi, etcdlib, remote services, pubsub
 find_dependency(FFI) #Needed by dfi
 
-if (TARGET Celix::dfi)
-  find_dependency(FFI)
-endif()
+if (NOT TARGET ZLIB::ZLIB)
+  #Note more recent zlib will create ZLIB::ZLIB target
+  message("Note ZLIB::ZLIB target not created by find_package(ZLIB). Creating ZLIB::ZLIB Target.")
+  add_library(ZLIB::ZLIB SHARED IMPORTED)
+  set_target_properties(ZLIB::ZLIB PROPERTIES
+          IMPORTED_LOCATION "${ZLIB_LIBRARIES}"
+          INTERFACE_INCLUDE_DIRECTORIES "${ZLIB_INCLUDE_DIRS}"
+          )
+endif ()
+
+if (NOT TARGET CURL::libcurl)
+  #Note more recent curl will create CURL::libcurl target
+  message("Note CURL::libcurl target not created by find_package(CURL). Creating CURL::libcurl Target.")
+  add_library(CURL::libcurl SHARED IMPORTED)
+  set_target_properties(CURL::libcurl PROPERTIES
+          IMPORTED_LOCATION "${CURL_LIBRARIES}"
+          INTERFACE_INCLUDE_DIRECTORIES "${CURL_INCLUDE_DIRS}"
+          )
+endif ()
+
 if (TARGET Celix::RsaConfiguredDiscovery)
   find_dependency(RapidJSON)
 endif ()
-if (TARGET Celix::rsa_discovery_common)
+if (TARGET Celix::rsa_discovery_common OR TARGET Celix::bonjour_shell)
   find_dependency(LibXml2)
 endif ()
-if (TARGET Celix::celix_pubsub_admin_zmq OR TARGET Celix::celix_pubsub_admin_zmq_v2)
+if (TARGET  Celix::celix_pubsub_admin_zmq OR TARGET Celix::celix_pubsub_admin_zmq_v2)
   find_dependency(ZMQ)
   find_dependency(CZMQ)
 endif ()

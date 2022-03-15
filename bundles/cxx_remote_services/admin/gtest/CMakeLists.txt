@@ -20,7 +20,7 @@ add_executable(test_cxx_remote_service_admin
 )
 target_link_libraries(test_cxx_remote_service_admin PRIVATE Celix::framework GTest::gtest GTest::gtest_main Celix::rsa_spi)
 
-add_dependencies(test_cxx_remote_service_admin RemoteServiceAdmin_bundle)
+add_celix_bundle_dependencies(test_cxx_remote_service_admin RemoteServiceAdmin)
 
 celix_get_bundle_file(RemoteServiceAdmin REMOTE_SERVICE_ADMIN_BUNDLE_LOCATION)
 target_compile_definitions(test_cxx_remote_service_admin PRIVATE REMOTE_SERVICE_ADMIN_BUNDLE_LOCATION="${REMOTE_SERVICE_ADMIN_BUNDLE_LOCATION}")

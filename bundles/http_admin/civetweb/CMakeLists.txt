@@ -15,7 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 
-find_package(CURL REQUIRED)
 
 #Create shared library
 add_library(civetweb_shared SHARED
@@ -23,9 +22,7 @@ add_library(civetweb_shared SHARED
         )
 target_include_directories(civetweb_shared PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
-        $<INSTALL_INTERFACE:include/celix/http_admin>
         )
-target_link_libraries(civetweb_shared PUBLIC CURL::libcurl)
 add_library(Celix::civetweb_shared ALIAS civetweb_shared)
 
 #Create static library
@@ -35,13 +32,12 @@ add_library(civetweb_static STATIC
 
 target_include_directories(civetweb_static PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
-        $<INSTALL_INTERFACE:include/celix/http_admin>
 )
-target_link_libraries(civetweb_static PUBLIC CURL::libcurl)
 
 target_compile_options(civetweb_shared PRIVATE -w -DUSE_WEBSOCKET)
 target_compile_options(civetweb_static PRIVATE -w -DUSE_WEBSOCKET)
 
-install(TARGETS civetweb_shared EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT http_admin)
-install(DIRECTORY include/ DESTINATION include/celix/http_admin)
+install(TARGETS civetweb_shared civetweb_static EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT http_admin
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/http_admin)
+install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/http_admin)
 

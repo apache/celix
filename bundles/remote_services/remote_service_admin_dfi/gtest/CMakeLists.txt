@@ -60,10 +60,10 @@ configure_file(server.properties.in server.properties)
 #add exception service interface descriptor
 configure_file(exception_test_service.descriptor exception_test_service.descriptor)
 
-add_dependencies(test_rsa_dfi
-        rsa_dfi_bundle #note depend on the target creating the bundle zip not the lib target
-        calculator_bundle
-        remote_example_service_bundle
+add_celix_bundle_dependencies(test_rsa_dfi
+        rsa_dfi #note depend on the target creating the bundle zip not the lib target
+        calculator
+        remote_example_service
 )
 
 add_test(NAME run_test_rsa_dfi COMMAND test_rsa_dfi)

@@ -41,7 +41,7 @@ target_link_libraries(test_tm_scoped PRIVATE
         Celix::rsa_common
 )
 
-add_dependencies(test_tm_scoped rsa_dfi_bundle rsa_topology_manager_bundle)
+add_celix_bundle_dependencies(test_tm_scoped Celix::rsa_dfi Celix::rsa_topology_manager)
 
 file(GENERATE 
     OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/config.properties"

@@ -25,19 +25,19 @@ add_library(log_helper STATIC ${SOURCES})
 set_target_properties(log_helper PROPERTIES OUTPUT_NAME "celix_log_utils")
 target_include_directories(log_helper PUBLIC
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
-	$<INSTALL_INTERFACE:include/celix/log_helper>
 )
-target_link_libraries(log_helper PUBLIC Celix::utils Celix::log_service_api)
-install(TARGETS log_helper EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT logging)
-install(DIRECTORY include/ DESTINATION include/celix/log_helper COMPONENT logging)
+target_link_libraries(log_helper PUBLIC Celix::log_service_api Celix::framework PRIVATE Celix::utils)
 
 if (CELIX_INSTALL_DEPRECATED_API)
 	target_include_directories(log_helper PUBLIC
 		$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include_v1>
-		$<INSTALL_INTERFACE:include/celix/log_helper>
 	)
-	install(DIRECTORY include_v1/ DESTINATION include/celix/log_helper)
+	install(DIRECTORY include_v1/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/log_helper)
 endif ()
+
+install(TARGETS log_helper EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT logging
+		INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/log_helper)
+install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/log_helper COMPONENT logging)
 
 add_library(Celix::log_helper ALIAS log_helper)
 

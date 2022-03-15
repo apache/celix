@@ -43,7 +43,6 @@ if (PROMISES OR PROMISES_STANDALONE)
     add_library(Promises INTERFACE)
     target_include_directories(Promises INTERFACE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/api>
-        $<INSTALL_INTERFACE:include/celix/promises>
     )
     target_link_libraries(Promises INTERFACE Threads::Threads)
     add_library(Celix::Promises ALIAS Promises)
@@ -55,8 +54,9 @@ if (PROMISES OR PROMISES_STANDALONE)
         add_subdirectory(gtest)
     endif()
 
-    install(TARGETS Promises EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR})
-    install(DIRECTORY api/ DESTINATION include/celix/promises)
+    install(TARGETS Promises EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/promises)
+    install(DIRECTORY api/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/promises)
 
     if (PROMISE_STANDALONE)
         install(EXPORT celix NAMESPACE Celix:: DESTINATION share/CelixPromises/cmake FILE Targets.cmake COMPONENT cmake)

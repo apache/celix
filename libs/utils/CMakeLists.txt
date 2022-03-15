@@ -25,7 +25,7 @@ check_function_exists(open_memstream OPEN_MEMSTREAM_EXISTS)
 if (NOT OPEN_MEMSTREAM_EXISTS)
     set(MEMSTREAM_SOURCES src/memstream/open_memstream.c  src/memstream/fmemopen.c ${MEMSTREAM_SOURCES})
     set(MEMSTREAM_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/include/memstream ${MEMSTREAM_INCLUDE_DIR})
-    install(DIRECTORY include/memstream/ DESTINATION include/celix/memstream COMPONENT framework)
+    install(DIRECTORY include/memstream/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/memstream COMPONENT framework)
 endif()
 
 add_library(utils SHARED
@@ -62,7 +62,6 @@ endif ()
 target_include_directories(utils PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
         $<BUILD_INTERFACE:${MEMSTREAM_INCLUDE_DIR}>
-        $<INSTALL_INTERFACE:include/celix>
 )
 target_include_directories(utils PRIVATE src)
 set_target_properties(utils PROPERTIES "SOVERSION" 2)
@@ -73,8 +72,9 @@ ELSEIF(ANDROID)
     target_link_libraries(utils PRIVATE m)
 ENDIF()
 
-install(TARGETS utils EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework)
-install(DIRECTORY include/ DESTINATION include/celix COMPONENT framework
+install(TARGETS utils EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix)
+install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix COMPONENT framework
         PATTERN memstream* EXCLUDE)
 
 #Alias setup to match external usage
