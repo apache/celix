@@ -129,11 +129,13 @@ class CelixConan(ConanFile):
     def package_id(self):
         del self.info.options.enable_testing
         del self.info.options.celix_add_openssl_dep
+        # the followings are not installed
         del self.info.options.build_device_access_example
         del self.info.options.build_pubsub_integration
         del self.info.options.build_pubsub_examples
         del self.info.options.build_cxx_rsa_integration
         del self.info.options.build_examples
+        del self.info.options.build_shell_bonjour
 
     def build_requirements(self):
         if self.options.enable_testing:

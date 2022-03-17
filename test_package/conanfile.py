@@ -34,16 +34,28 @@ class TestPackageConan(ConanFile):
         cmake.definitions["TEST_HTTP_ADMIN"] = self.options["celix"].build_http_admin
         cmake.definitions["TEST_LOG_SERVICE"] = self.options["celix"].build_log_service
         cmake.definitions["TEST_SYSLOG_WRITER"] = self.options["celix"].build_syslog_writer
+        cmake.definitions["TEST_SHELL"] = self.options["celix"].build_shell
+        cmake.definitions["TEST_REMOTE_SHELL"] = self.options["celix"].build_remote_shell
+        cmake.definitions["TEST_SHELL_TUI"] = self.options["celix"].build_shell_tui
+        cmake.definitions["TEST_SHELL_WUI"] = self.options["celix"].build_shell_wui
         cmake.definitions["CMAKE_PROJECT_test_package_INCLUDE"] = os.path.join(self.build_folder, "conan_paths.cmake")
         cmake.configure()
         cmake.build()
 
     def test(self):
         if not tools.cross_building(self, skip_x64_x86=True):
-            self.run("./framework", run_environment=True)
+            self.run("./use_framework", run_environment=True)
             if self.options["celix"].build_http_admin:
                 self.run("./use_http_admin", cwd=os.path.join("deploy", "use_http_admin"), run_environment=True)
             if self.options["celix"].build_log_service:
                 self.run("./use_log_writer", cwd=os.path.join("deploy", "use_log_writer"), run_environment=True)
             if self.options["celix"].build_syslog_writer:
                 self.run("./use_syslog_writer", cwd=os.path.join("deploy", "use_syslog_writer"), run_environment=True)
+            if self.options["celix"].build_shell:
+                self.run("./use_shell", run_environment=True)
+            if self.options["celix"].build_remote_shell:
+                self.run("./use_remote_shell", cwd=os.path.join("deploy", "use_remote_shell"), run_environment=True)
+            if self.options["celix"].build_shell_tui:
+                self.run("./use_shell_tui", cwd=os.path.join("deploy", "use_shell_tui"), run_environment=True)
+            if self.options["celix"].build_shell_wui:
+                self.run("./use_shell_wui", cwd=os.path.join("deploy", "use_shell_wui"), run_environment=True)

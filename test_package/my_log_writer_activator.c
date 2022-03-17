@@ -19,8 +19,8 @@
 
 #define _GNU_SOURCE
 #include <stdio.h>
-#include "celix_api.h"
-#include "celix_log_sink.h"
+#include <celix_api.h>
+#include <celix_log_sink.h>
 
 typedef struct my_log_writer_activator {
     celix_log_sink_t logSinkSvc;
