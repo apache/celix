@@ -3,8 +3,7 @@
 #  distributed with this work for additional information
 #  regarding copyright ownership.  The ASF licenses this file
 #  to you under the Apache License, Version 2.0 (the
-#  "License"); you may not use this file except in compliance
-#  with the License.  You may obtain a copy of the License at
+#  "License"); you may not use this file except in compliance #  with the License.  You may obtain a copy of the License at
 #
 #    http://www.apache.org/licenses/LICENSE-2.0
 #
@@ -17,7 +16,6 @@
 
 cmake_minimum_required (VERSION 3.14)
 project(test_package)
-include(${CMAKE_BINARY_DIR}/conan_paths.cmake)
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -32,7 +30,7 @@ target_link_libraries(framework Celix::framework)
 add_celix_bundle_dependencies(framework hello)
 target_compile_definitions(framework PRIVATE HELLO_TEST_BUNDLE_LOCATION="${HELLO_TEST_BUNDLE}")
 
-option(TEST_HTTP_ADMIN "Test http_admin" ON)
+option(TEST_HTTP_ADMIN "Test http_admin" OFF)
 if (TEST_HTTP_ADMIN)
     # make sure http_admin_api is accessible
     add_celix_bundle(http_admin_sut
@@ -49,7 +47,7 @@ if (TEST_HTTP_ADMIN)
             )
 endif ()
 
-option(TEST_LOG_SERVICE "Test log_admin" ON)
+option(TEST_LOG_SERVICE "Test log_admin" OFF)
 if (TEST_LOG_SERVICE)
     add_celix_bundle(my_log_writer
             SOURCES

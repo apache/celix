@@ -24,14 +24,17 @@ class TestPackageConan(ConanFile):
     generators = "cmake_paths"
 
     def requirements(self):
+        # for test_package, `requires` is set by conan, and thus not needed
+        # the following make the test package can be used as a standalone package consumer
         if not self.requires:
             self.requires("celix/2.2.3@zhengpeng/testing")
 
     def build(self):
         cmake = CMake(self)
-        cmake.configure()
         cmake.definitions["TEST_HTTP_ADMIN"] = self.options["celix"].build_http_admin
         cmake.definitions["TEST_LOG_SERVICE"] = self.options["celix"].build_log_service
+        cmake.definitions["CMAKE_PROJECT_test_package_INCLUDE"] = os.path.join(self.build_folder, "conan_paths.cmake")
+        cmake.configure()
         cmake.build()
 
     def test(self):
