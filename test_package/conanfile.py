@@ -33,6 +33,7 @@ class TestPackageConan(ConanFile):
         cmake = CMake(self)
         cmake.definitions["TEST_HTTP_ADMIN"] = self.options["celix"].build_http_admin
         cmake.definitions["TEST_LOG_SERVICE"] = self.options["celix"].build_log_service
+        cmake.definitions["TEST_SYSLOG_WRITER"] = self.options["celix"].build_syslog_writer
         cmake.definitions["CMAKE_PROJECT_test_package_INCLUDE"] = os.path.join(self.build_folder, "conan_paths.cmake")
         cmake.configure()
         cmake.build()
@@ -44,3 +45,5 @@ class TestPackageConan(ConanFile):
                 self.run("./use_http_admin", cwd=os.path.join("deploy", "use_http_admin"), run_environment=True)
             if self.options["celix"].build_log_service:
                 self.run("./use_log_writer", cwd=os.path.join("deploy", "use_log_writer"), run_environment=True)
+            if self.options["celix"].build_syslog_writer:
+                self.run("./use_syslog_writer", cwd=os.path.join("deploy", "use_syslog_writer"), run_environment=True)

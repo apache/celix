@@ -63,3 +63,13 @@ if (TEST_LOG_SERVICE)
     celix_container_bundles(use_log_writer LEVEL 1 my_log_writer)
     celix_container_bundles(use_log_writer LEVEL 2 hello)
 endif ()
+
+option(TEST_SYSLOG_WRITER "Test syslog_writer" OFF)
+if (TEST_SYSLOG_WRITER)
+    add_celix_container(use_syslog_writer COPY)
+    # make sure log_admin is accessible
+    celix_container_bundles(use_syslog_writer LEVEL 0 Celix::log_admin)
+    # make sure my_log_writer is available to hello
+    celix_container_bundles(use_syslog_writer LEVEL 1 Celix::syslog_writer)
+    celix_container_bundles(use_syslog_writer LEVEL 2 hello)
+endif ()
