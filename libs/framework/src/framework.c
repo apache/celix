@@ -1591,7 +1591,7 @@ static inline bool fw_removeTopEventFromQueue(celix_framework_t* fw) {
 static inline void fw_handleEvents(celix_framework_t* framework) {
     celixThreadMutex_lock(&framework->dispatcher.mutex);
     int size = framework->dispatcher.eventQueueSize + celix_arrayList_size(framework->dispatcher.dynamicEventQueue);
-    if (size == 0) {
+    if (size == 0 && framework->dispatcher.active) {
         celixThreadCondition_timedwaitRelative(&framework->dispatcher.cond, &framework->dispatcher.mutex, 1, 0);
     }
     size = framework->dispatcher.eventQueueSize + celix_arrayList_size(framework->dispatcher.dynamicEventQueue);
