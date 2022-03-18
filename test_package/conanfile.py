@@ -24,8 +24,8 @@ class TestPackageConan(ConanFile):
     generators = "cmake_paths"
 
     def requirements(self):
-        # for test_package, `requires` is set by conan, and thus not needed
-        # the following make the test package can be used as a standalone package consumer
+        # strictly speaking, `requires`, which should be set by 'conan test', is not needed by test_package
+        # the following makes clion conan plugin work
         if not self.requires:
             self.requires("celix/2.2.3@zhengpeng/testing")
 
@@ -38,6 +38,10 @@ class TestPackageConan(ConanFile):
         cmake.definitions["TEST_REMOTE_SHELL"] = self.options["celix"].build_remote_shell
         cmake.definitions["TEST_SHELL_TUI"] = self.options["celix"].build_shell_tui
         cmake.definitions["TEST_SHELL_WUI"] = self.options["celix"].build_shell_wui
+        cmake.definitions["TEST_ETCD_LIB"] = self.options["celix"].build_celix_etcdlib
+        cmake.definitions["TEST_LAUNCHER"] = self.options["celix"].build_launcher
+        cmake.definitions["TEST_PROMISES"] = self.options["celix"].build_promises
+        # cmake.definitions["TEST_PUSHSTREAMS"] = self.options["celix"].build_pushstreams
         cmake.definitions["CMAKE_PROJECT_test_package_INCLUDE"] = os.path.join(self.build_folder, "conan_paths.cmake")
         cmake.configure()
         cmake.build()
@@ -59,3 +63,10 @@ class TestPackageConan(ConanFile):
                 self.run("./use_shell_tui", cwd=os.path.join("deploy", "use_shell_tui"), run_environment=True)
             if self.options["celix"].build_shell_wui:
                 self.run("./use_shell_wui", cwd=os.path.join("deploy", "use_shell_wui"), run_environment=True)
+            if self.options["celix"].build_celix_etcdlib:
+                self.run("./use_etcd_lib", run_environment=True)
+            if self.options["celix"].build_launcher:
+                self.run("./use_launcher", cwd=os.path.join("deploy", "use_launcher"), run_environment=True)
+            if self.options["celix"].build_promises:
+                self.run("./use_promises", run_environment=True)
+

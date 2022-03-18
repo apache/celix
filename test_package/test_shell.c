@@ -30,7 +30,7 @@ static void use(void *handle, void *svc) {
 }
 
 static bool executeCommand(void *handle, const char *commandLine, FILE *outStream, FILE *errorStream) {
-    printf("Executing %s\n", commandLine);
+    fprintf(outStream, "Executing %s\n", commandLine);
     return true;
 }
 

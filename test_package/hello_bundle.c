@@ -29,12 +29,12 @@ static celix_status_t activator_start(activator_data_t *data, celix_bundle_conte
     const char *key = NULL;
     data->logger = celix_logHelper_create(ctx, "test");
     printf("\nHello world from C bundle with id %li\n", celix_bundle_getId(celix_bundleContext_getBundle(ctx)));
-    celix_array_list_t *bundles = celix_bundleContext_listBundles(ctx);
+    celix_array_list_t *bundles = celix_bundleContext_listInstalledBundles(ctx);
     for (int i = 0; i < celix_arrayList_size(bundles); i++) {
         long bndId = celix_arrayList_getLong(bundles, i);
         printf("Bundle %ld: %s\n", bndId, celix_bundleContext_getBundleSymbolicName(ctx, bndId));
     }
-
+    celix_arrayList_destroy(bundles);
     celix_framework_stopBundleAsync(celix_bundleContext_getFramework(ctx), CELIX_FRAMEWORK_BUNDLE_ID); // to make container quit immediately
     return CELIX_SUCCESS;
 }
