@@ -43,6 +43,8 @@ class TestPackageConan(ConanFile):
         cmake.definitions["TEST_PROMISES"] = self.options["celix"].build_promises
         cmake.definitions["TEST_PUSHSTREAMS"] = self.options["celix"].build_pushstreams
         cmake.definitions["CMAKE_PROJECT_test_package_INCLUDE"] = os.path.join(self.build_folder, "conan_paths.cmake")
+        # the followint is workaround https://github.com/conan-io/conan/issues/7192
+        cmake.definitions["CMAKE_EXE_LINKER_FLAGS"] = "-Wl,--unresolved-symbols=ignore-in-shared-libs"
         cmake.configure()
         cmake.build()
 

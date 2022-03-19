@@ -40,10 +40,8 @@ class CelixConan(ConanFile):
 
     options = {
         "enable_testing": [True, False],
-        "enable_address_sanitizer": [True, False],
-        "enable_undefined_sanitizer": [True, False],
-        "enable_code_coverage": [True, False],
         "celix_add_openssl_dep": [True, False],
+        "build_all": [True, False],
         "build_deployment_admin": [True, False],
         "build_device_access_example": [True, False],
         "build_device_access": [True, False],
@@ -52,7 +50,6 @@ class CelixConan(ConanFile):
         "build_syslog_writer": [True, False],
         "build_pubsub": [True, False],
         "build_pubsub_psa_zmq": [True, False],
-        "build_zmq_security": [True, False],
         "build_pubsub_examples": [True, False],
         "build_pubsub_integration": [True, False],
         "build_pubsub_psa_tcp": [True, False],
@@ -81,10 +78,8 @@ class CelixConan(ConanFile):
     }
     default_options = { 
         "enable_testing": False,
-        "enable_address_sanitizer": False,
-        "enable_undefined_sanitizer": False,
-        "enable_code_coverage": False,
         "celix_add_openssl_dep": False,
+        "build_all": False,
         "build_deployment_admin": False,
         "build_device_access": False,
         "build_device_access_example": False,
@@ -93,7 +88,6 @@ class CelixConan(ConanFile):
         "build_syslog_writer": True,
         "build_pubsub": True,
         "build_pubsub_psa_zmq": False,
-        "build_zmq_security": False,
         "build_pubsub_examples": False,
         "build_pubsub_integration": False,
         "build_pubsub_psa_tcp": False,
@@ -127,6 +121,7 @@ class CelixConan(ConanFile):
             raise ConanInvalidConfiguration("Celix is only supported for Linux/Macos")
 
     def package_id(self):
+        del self.info.options.build_all
         del self.info.options.enable_testing
         del self.info.options.celix_add_openssl_dep
         # the followings are not installed
@@ -143,8 +138,14 @@ class CelixConan(ConanFile):
             self.test_requires("cpputest/4.0")
 
     def configure(self):
+        if self.options.build_all:
+            for opt, val in self.options.values.items():
+                if opt.startswith('build_'):
+                    setattr(self.options, opt, True)
         if not self.options.celix_cxx:
             self.options.build_cxx_remote_service_admin = False
+            self.options.build_promises = False
+            self.options.build_pushstreams = False
         if not self.options.build_cxx_remote_service_admin:
             self.options.build_cxx_rsa_integration = False
         if not self.options.enable_testing:
@@ -161,8 +162,6 @@ class CelixConan(ConanFile):
             self.options.build_pubsub_psa_udp_mc = False
             self.options.build_pubsub_psa_ws = False
             self.options.build_pubsub_discovery_etcd = False
-        if not self.options.build_pubsub_psa_zmq:
-            self.options.build_zmq_security = False
         if not self.options.build_remote_service_admin:
             self.options.build_rsa_remote_service_admin_dfi = False
             self.options.build_rsa_discovery_configured = False
@@ -195,7 +194,7 @@ class CelixConan(ConanFile):
         self.options['libxml2'].shared = True
         if self.options.enable_testing:
             self.options['gtest'].shared = True
-        if self.options.celix_add_openssl_dep or self.options.build_zmq_security:
+        if self.options.celix_add_openssl_dep:
             self.requires("openssl/1.1.1k")
         if self.options.build_remote_service_admin or self.options.build_shell_bonjour:
             self.requires("libxml2/[~2.9.9]")
@@ -217,6 +216,8 @@ class CelixConan(ConanFile):
         for opt, val in self.options.values.items():
             self._cmake.definitions[opt.upper()] = self.options.get_safe(opt, False)
         self._cmake.definitions["CMAKE_PROJECT_Celix_INCLUDE"] = os.path.join(self.build_folder, "conan_paths.cmake")
+        # the followint is workaround https://github.com/conan-io/conan/issues/7192
+        self._cmake.definitions["CMAKE_EXE_LINKER_FLAGS"] = "-Wl,--unresolved-symbols=ignore-in-shared-libs"
         self.output.info(self._cmake.definitions)
         v = tools.Version(self.version)
         self._cmake.configure(defs={'CELIX_MAJOR': v.major, 'CELIX_MINOR': v.minor, 'CELIX_MICRO': v.patch})

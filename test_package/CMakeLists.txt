@@ -21,9 +21,6 @@ set(CMAKE_CXX_STANDARD 17)
 
 find_package(Celix REQUIRED)
 
-set (CMAKE_SHARED_LINKER_FLAGS "-Wl,--unresolved-symbols=ignore-in-shared-libs")
-set (CMAKE_EXE_LINKER_FLAGS "-Wl,--unresolved-symbols=ignore-in-shared-libs")
-
 add_celix_bundle(hello VERSION 1.0.0 SOURCES hello_bundle.c)
 target_link_libraries(hello PRIVATE Celix::log_helper)
 celix_get_bundle_file(hello HELLO_TEST_BUNDLE)
