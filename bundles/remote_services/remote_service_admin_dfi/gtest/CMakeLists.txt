@@ -29,7 +29,7 @@ celix_bundle_files(rsa_dfi_tst_bundle ${DESCR} DESTINATION .)
 get_target_property(DESCR remote_example_api INTERFACE_DESCRIPTOR)
 celix_bundle_files(rsa_dfi_tst_bundle ${DESCR} DESTINATION .)
 
-target_link_libraries(rsa_dfi_tst_bundle PRIVATE ${CppUTest_LIBRARY} calculator_api remote_example_api)
+target_link_libraries(rsa_dfi_tst_bundle PRIVATE calculator_api remote_example_api)
 target_include_directories(rsa_dfi_tst_bundle PRIVATE src)
 
 add_executable(test_rsa_dfi

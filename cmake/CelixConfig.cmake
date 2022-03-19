@@ -82,6 +82,7 @@ find_dependency(CURL) #Needed by framework (used for curl initialization)
 find_dependency(LIBZIP) #Needed by utils
 find_dependency(Jansson) #Needed by dfi, etcdlib, remote services, pubsub
 find_dependency(FFI) #Needed by dfi
+find_dependency(Threads)
 
 if (NOT TARGET ZLIB::ZLIB)
   #Note more recent zlib will create ZLIB::ZLIB target
@@ -115,7 +116,4 @@ if (TARGET  Celix::celix_pubsub_admin_zmq OR TARGET Celix::celix_pubsub_admin_zm
 endif ()
 if (TARGET Celix::pubsub_admin_nanomsg)
   find_dependency(NanoMsg)
-endif ()
-if (TARGET Celix::Promises)
-  find_dependency(Threads)
 endif ()

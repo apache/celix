@@ -32,7 +32,7 @@ add_subdirectory(disc_mock)
 add_executable(test_tm_scoped
         tms_tests.cpp
 )
-target_include_directories(test_tm_scoped SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} PRIVATE ../src ../include)
+target_include_directories(test_tm_scoped PRIVATE ../src ../include)
 target_link_libraries(test_tm_scoped PRIVATE
         Celix::framework
         GTest::gtest GTest::gtest_main

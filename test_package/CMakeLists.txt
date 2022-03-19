@@ -21,6 +21,9 @@ set(CMAKE_CXX_STANDARD 17)
 
 find_package(Celix REQUIRED)
 
+set (CMAKE_SHARED_LINKER_FLAGS "-Wl,--unresolved-symbols=ignore-in-shared-libs")
+set (CMAKE_EXE_LINKER_FLAGS "-Wl,--unresolved-symbols=ignore-in-shared-libs")
+
 add_celix_bundle(hello VERSION 1.0.0 SOURCES hello_bundle.c)
 target_link_libraries(hello PRIVATE Celix::log_helper)
 celix_get_bundle_file(hello HELLO_TEST_BUNDLE)
@@ -106,4 +109,10 @@ option(TEST_PROMISES "Test promises" OFF)
 if (TEST_PROMISES)
     add_executable(use_promises test_promises.cpp)
     target_link_libraries(use_promises PRIVATE Celix::Promises)
+endif ()
+
+option(TEST_PUSHSTREAMS "Test pushstreams" OFF)
+if (TEST_PUSHSTREAMS)
+    add_executable(use_pushstreams test_pushstreams.cpp)
+    target_link_libraries(use_pushstreams PRIVATE Celix::PushStreams)
 endif ()

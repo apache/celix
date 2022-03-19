@@ -194,8 +194,7 @@ class CelixConan(ConanFile):
         self.options['openssl'].shared = True
         self.options['libxml2'].shared = True
         if self.options.enable_testing:
-            self.requires("gtest/1.10.0")
-            self.requires("cpputest/4.0")
+            self.options['gtest'].shared = True
         if self.options.celix_add_openssl_dep or self.options.build_zmq_security:
             self.requires("openssl/1.1.1k")
         if self.options.build_remote_service_admin or self.options.build_shell_bonjour:

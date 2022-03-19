@@ -41,7 +41,7 @@ class TestPackageConan(ConanFile):
         cmake.definitions["TEST_ETCD_LIB"] = self.options["celix"].build_celix_etcdlib
         cmake.definitions["TEST_LAUNCHER"] = self.options["celix"].build_launcher
         cmake.definitions["TEST_PROMISES"] = self.options["celix"].build_promises
-        # cmake.definitions["TEST_PUSHSTREAMS"] = self.options["celix"].build_pushstreams
+        cmake.definitions["TEST_PUSHSTREAMS"] = self.options["celix"].build_pushstreams
         cmake.definitions["CMAKE_PROJECT_test_package_INCLUDE"] = os.path.join(self.build_folder, "conan_paths.cmake")
         cmake.configure()
         cmake.build()
@@ -69,4 +69,6 @@ class TestPackageConan(ConanFile):
                 self.run("./use_launcher", cwd=os.path.join("deploy", "use_launcher"), run_environment=True)
             if self.options["celix"].build_promises:
                 self.run("./use_promises", run_environment=True)
+            if self.options["celix"].build_pushstreams:
+                self.run("./use_pushstreams", run_environment=True)
 
