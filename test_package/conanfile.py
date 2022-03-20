@@ -21,7 +21,7 @@ import os
 
 class TestPackageConan(ConanFile):
     settings = "os", "arch", "compiler", "build_type"
-    generators = "cmake_paths"
+    generators = "cmake_paths", "cmake_find_package"
 
     def requirements(self):
         # strictly speaking, `requires`, which should be set by 'conan test', is not needed by test_package
@@ -35,6 +35,8 @@ class TestPackageConan(ConanFile):
         cmake.definitions["TEST_LOG_SERVICE"] = self.options["celix"].build_log_service
         cmake.definitions["TEST_SYSLOG_WRITER"] = self.options["celix"].build_syslog_writer
         cmake.definitions["TEST_SHELL"] = self.options["celix"].build_shell
+        if self.options["celix"].build_shell:
+            cmake.definitions["TEST_CXX_SHELL"] = self.options["celix"].celix_cxx
         cmake.definitions["TEST_REMOTE_SHELL"] = self.options["celix"].build_remote_shell
         cmake.definitions["TEST_SHELL_TUI"] = self.options["celix"].build_shell_tui
         cmake.definitions["TEST_SHELL_WUI"] = self.options["celix"].build_shell_wui
@@ -42,8 +44,9 @@ class TestPackageConan(ConanFile):
         cmake.definitions["TEST_LAUNCHER"] = self.options["celix"].build_launcher
         cmake.definitions["TEST_PROMISES"] = self.options["celix"].build_promises
         cmake.definitions["TEST_PUSHSTREAMS"] = self.options["celix"].build_pushstreams
+        cmake.definitions["TEST_PUBSUB"] = self.options["celix"].build_pubsub
         cmake.definitions["CMAKE_PROJECT_test_package_INCLUDE"] = os.path.join(self.build_folder, "conan_paths.cmake")
-        # the followint is workaround https://github.com/conan-io/conan/issues/7192
+        # the following is workaround https://github.com/conan-io/conan/issues/7192
         cmake.definitions["CMAKE_EXE_LINKER_FLAGS"] = "-Wl,--unresolved-symbols=ignore-in-shared-libs"
         cmake.configure()
         cmake.build()
@@ -59,6 +62,8 @@ class TestPackageConan(ConanFile):
                 self.run("./use_syslog_writer", cwd=os.path.join("deploy", "use_syslog_writer"), run_environment=True)
             if self.options["celix"].build_shell:
                 self.run("./use_shell", run_environment=True)
+                if self.options["celix"].celix_cxx:
+                    self.run("./use_cxx_shell", run_environment=True)
             if self.options["celix"].build_remote_shell:
                 self.run("./use_remote_shell", cwd=os.path.join("deploy", "use_remote_shell"), run_environment=True)
             if self.options["celix"].build_shell_tui:
@@ -73,4 +78,6 @@ class TestPackageConan(ConanFile):
                 self.run("./use_promises", run_environment=True)
             if self.options["celix"].build_pushstreams:
                 self.run("./use_pushstreams", run_environment=True)
+            if self.options["celix"].build_pubsub:
+                self.run("./use_my_psa", cwd=os.path.join("deploy", "use_my_psa"), run_environment=True)
 

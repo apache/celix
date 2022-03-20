@@ -198,6 +198,8 @@ class CelixConan(ConanFile):
             self.requires("openssl/1.1.1k")
         if self.options.build_remote_service_admin or self.options.build_shell_bonjour:
             self.requires("libxml2/[~2.9.9]")
+        if self.options.build_cxx_remote_service_admin:
+            self.requires("rapidjson/[~1.1.0]")
         if self.options.build_shell_bonjour:
             # TODO: CC=cc is fixed in the official mdnsresponder Makefile, patching is needed to make cross-compile work
             # https://github.com/conan-io/conan-center-index/issues/9711
@@ -216,7 +218,7 @@ class CelixConan(ConanFile):
         for opt, val in self.options.values.items():
             self._cmake.definitions[opt.upper()] = self.options.get_safe(opt, False)
         self._cmake.definitions["CMAKE_PROJECT_Celix_INCLUDE"] = os.path.join(self.build_folder, "conan_paths.cmake")
-        # the followint is workaround https://github.com/conan-io/conan/issues/7192
+        # the following is workaround for https://github.com/conan-io/conan/issues/7192
         self._cmake.definitions["CMAKE_EXE_LINKER_FLAGS"] = "-Wl,--unresolved-symbols=ignore-in-shared-libs"
         self.output.info(self._cmake.definitions)
         v = tools.Version(self.version)

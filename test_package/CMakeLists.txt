@@ -16,6 +16,7 @@
 
 cmake_minimum_required (VERSION 3.14)
 project(test_package)
+include(${CMAKE_BINARY_DIR}/conan_paths.cmake)
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -73,6 +74,13 @@ if (TEST_SHELL)
     target_link_libraries(use_shell PRIVATE Celix::framework Celix::shell_api)
     celix_get_bundle_file(Celix::shell SHELL_BUNDLE)
     target_compile_definitions(use_shell PRIVATE SHELL_BUNDLE_LOCATION="${SHELL_BUNDLE}")
+    option(TEST_CXX_SHELL "Test CXX shell" OFF)
+    if (TEST_CXX_SHELL)
+        add_executable(use_cxx_shell test_cxx_shell.cpp)
+        target_link_libraries(use_cxx_shell PRIVATE Celix::framework Celix::shell_api)
+        celix_get_bundle_file(Celix::ShellCxx CXX_SHELL_BUNDLE)
+        target_compile_definitions(use_cxx_shell PRIVATE CXX_SHELL_BUNDLE_LOCATION="${CXX_SHELL_BUNDLE}")
+    endif ()
 endif ()
 
 option(TEST_REMOTE_SHELL "Test remote shell" OFF)
@@ -112,4 +120,24 @@ option(TEST_PUSHSTREAMS "Test pushstreams" OFF)
 if (TEST_PUSHSTREAMS)
     add_executable(use_pushstreams test_pushstreams.cpp)
     target_link_libraries(use_pushstreams PRIVATE Celix::PushStreams)
+endif ()
+
+option(TEST_PUBSUB "Test PubSub" OFF)
+if (TEST_PUBSUB)
+    add_celix_bundle(my_pubsub_admin
+            SOURCES
+            my_psa_activator.c
+            )
+    target_link_libraries(my_pubsub_admin PRIVATE Celix::framework Celix::dfi Celix::log_helper Celix::utils)
+    target_link_libraries(my_pubsub_admin PRIVATE Celix::pubsub_spi Celix::pubsub_utils )
+    add_celix_container(use_my_psa
+            BUNDLES
+            Celix::celix_pubsub_serializer_json
+            Celix::celix_pubsub_serializer_avrobin
+            Celix::celix_pubsub_topology_manager
+            my_pubsub_admin
+            hello
+            PROPERTIES
+            PUBSUB_TOPOLOGY_MANAGER_VERBOSE=true
+            )
 endif ()
