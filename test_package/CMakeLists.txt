@@ -141,3 +141,73 @@ if (TEST_PUBSUB)
             PUBSUB_TOPOLOGY_MANAGER_VERBOSE=true
             )
 endif ()
+
+option(TEST_PSA_ZMQ "Test ZeroMQ PubSub Admin" OFF)
+if (TEST_PSA_ZMQ)
+    add_celix_container(use_psa_zmq
+            BUNDLES
+            Celix::celix_pubsub_serializer_json
+            Celix::celix_pubsub_serializer_avrobin
+            Celix::celix_pubsub_topology_manager
+            Celix::celix_pubsub_admin_zmq
+            hello
+            PROPERTIES
+            PUBSUB_TOPOLOGY_MANAGER_VERBOSE=true
+            )
+endif ()
+
+option(TEST_PSA_TCP "Test TCP PubSub Admin" OFF)
+if (TEST_PSA_TCP)
+    add_celix_container(use_psa_tcp
+            BUNDLES
+            Celix::celix_pubsub_serializer_json
+            Celix::celix_pubsub_topology_manager
+            Celix::celix_pubsub_admin_tcp
+            hello
+            PROPERTIES
+            PSA_TCP_VERBOSE=true
+            PUBSUB_TOPOLOGY_MANAGER_VERBOSE=true
+            )
+endif ()
+
+option(TEST_PSA_UDP_MC "Test UDP MC PubSub Admin" OFF)
+if (TEST_PSA_UDP_MC)
+    add_celix_container(use_psa_udp_mc
+            BUNDLES
+            Celix::celix_pubsub_serializer_json
+            Celix::celix_pubsub_topology_manager
+            Celix::celix_pubsub_admin_udp_multicast
+            hello
+            PROPERTIES
+            PSA_UDPMC_VERBOSE=true
+            PUBSUB_TOPOLOGY_MANAGER_VERBOSE=true
+            )
+endif ()
+
+option(TEST_PSA_WS "Test WebSocket PubSub Admin" OFF)
+if (TEST_PSA_WS)
+    add_celix_container(use_psa_ws
+            BUNDLES
+            Celix::http_admin
+            Celix::celix_pubsub_serializer_json
+            Celix::celix_pubsub_topology_manager
+            Celix::celix_pubsub_admin_websocket
+            hello
+            PROPERTIES
+            PUBSUB_TOPOLOGY_MANAGER_VERBOSE=true
+            )
+endif ()
+
+option(TEST_PSA_DISCOVERY_ETCD "Test the PubSub Discovery (ETCD) bundle" OFF)
+if (TEST_PSA_DISCOVERY_ETCD)
+    add_celix_container(use_psa_discovery_etcd
+            BUNDLES
+            Celix::celix_pubsub_serializer_json
+            Celix::celix_pubsub_topology_manager
+            Celix::celix_pubsub_discovery_etcd
+            my_pubsub_admin
+            hello
+            PROPERTIES
+            PUBSUB_TOPOLOGY_MANAGER_VERBOSE=true
+            )
+endif ()

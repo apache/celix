@@ -45,6 +45,11 @@ class TestPackageConan(ConanFile):
         cmake.definitions["TEST_PROMISES"] = self.options["celix"].build_promises
         cmake.definitions["TEST_PUSHSTREAMS"] = self.options["celix"].build_pushstreams
         cmake.definitions["TEST_PUBSUB"] = self.options["celix"].build_pubsub
+        cmake.definitions["TEST_PSA_ZMQ"] = self.options["celix"].build_pubsub_psa_zmq
+        cmake.definitions["TEST_PSA_TCP"] = self.options["celix"].build_pubsub_psa_tcp
+        cmake.definitions["TEST_PSA_UDP_MC"] = self.options["celix"].build_pubsub_psa_udp_mc
+        cmake.definitions["TEST_PSA_WS"] = self.options["celix"].build_pubsub_psa_ws
+        cmake.definitions["TEST_PSA_DISCOVERY_ETCD"] = self.options["celix"].build_pubsub_discovery_etcd
         cmake.definitions["CMAKE_PROJECT_test_package_INCLUDE"] = os.path.join(self.build_folder, "conan_paths.cmake")
         # the following is workaround https://github.com/conan-io/conan/issues/7192
         cmake.definitions["CMAKE_EXE_LINKER_FLAGS"] = "-Wl,--unresolved-symbols=ignore-in-shared-libs"
@@ -80,4 +85,13 @@ class TestPackageConan(ConanFile):
                 self.run("./use_pushstreams", run_environment=True)
             if self.options["celix"].build_pubsub:
                 self.run("./use_my_psa", cwd=os.path.join("deploy", "use_my_psa"), run_environment=True)
-
+            if self.options["celix"].build_pubsub_psa_zmq:
+                self.run("./use_psa_zmq", cwd=os.path.join("deploy", "use_psa_zmq"), run_environment=True)
+            if self.options["celix"].build_pubsub_psa_tcp:
+                self.run("./use_psa_tcp", cwd=os.path.join("deploy", "use_psa_tcp"), run_environment=True)
+            if self.options["celix"].build_pubsub_psa_udp_mc:
+                self.run("./use_psa_udp_mc", cwd=os.path.join("deploy", "use_psa_udp_mc"), run_environment=True)
+            if self.options["celix"].build_pubsub_psa_ws:
+                self.run("./use_psa_ws", cwd=os.path.join("deploy", "use_psa_ws"), run_environment=True)
+            if self.options["celix"].build_pubsub_discovery_etcd:
+                self.run("./use_psa_discovery_etcd", cwd=os.path.join("deploy", "use_psa_discovery_etcd"), run_environment=True)
