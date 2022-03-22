@@ -101,6 +101,9 @@ void celix_arrayList_removeDouble(celix_array_list_t *list, double val);
 void celix_arrayList_removeBool(celix_array_list_t *list, bool val);
 void celix_arrayList_removeSize(celix_array_list_t *list, size_t val);
 
+/**
+ * @warning Never use this function with array of doubles, since on some 32-bit platform (sizeof(double)==8 && sizeof(void*)==4)
+ */
 void celix_arrayList_sort(celix_array_list_t *list, celix_arrayList_sort_fp sortFp);
 
 #ifdef __cplusplus
