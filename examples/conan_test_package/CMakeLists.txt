@@ -16,7 +16,6 @@
 
 cmake_minimum_required (VERSION 3.14)
 project(test_package)
-include(${CMAKE_BINARY_DIR}/conan_paths.cmake)
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -216,7 +215,7 @@ endif ()
 
 option(TEST_SHELL "Test shell" OFF)
 if (TEST_SHELL)
-    add_executable(use_shell test_shell.c )
+    add_executable(use_shell test_shell.c)
     target_link_libraries(use_shell PRIVATE Celix::framework Celix::shell_api)
     celix_get_bundle_file(Celix::shell SHELL_BUNDLE)
     target_compile_definitions(use_shell PRIVATE SHELL_BUNDLE_LOCATION="${SHELL_BUNDLE}")

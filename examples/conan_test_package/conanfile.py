@@ -23,12 +23,6 @@ class TestPackageConan(ConanFile):
     settings = "os", "arch", "compiler", "build_type"
     generators = "cmake_paths", "cmake_find_package"
 
-    def requirements(self):
-        # strictly speaking, `requires`, which should be set by 'conan test', is not needed by test_package
-        # the following makes clion conan plugin work
-        if not self.requires:
-            self.requires("celix/2.2.3@zhengpeng/testing")
-
     def build(self):
         cmake = CMake(self)
         cmake.definitions["TEST_HTTP_ADMIN"] = self.options["celix"].build_http_admin
