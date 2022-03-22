@@ -178,17 +178,17 @@ class CelixConan(ConanFile):
         # libffi/3.3@zhengpeng/testing is a workaround of the following buggy commit:
         # https://github.com/conan-io/conan-center-index/pull/5085#issuecomment-847487808
         #self.requires("libffi/3.3@zhengpeng/testing")
-        self.requires("libffi/[~3.2.1]")
+        self.requires("libffi/[>=3.2.1 <4.0.0]")
         self.options['libffi'].shared = True
-        self.requires("jansson/[~2.12]")
+        self.requires("jansson/[>=2.12 <3.0.0]")
         self.options['jansson'].shared = True
-        self.requires("libcurl/[~7.64.1]")
+        self.requires("libcurl/[>=7.64.1 <8.0.0]")
         self.options['libcurl'].shared = True
-        self.requires("zlib/[~1.2.8]")
+        self.requires("zlib/[>=1.2.8 <2.0.0]")
         self.options['zlib'].shared = True
         self.requires("libuuid/1.0.3")
         self.options['libuuid'].shared = True
-        self.requires("libzip/[~1.7.3]")
+        self.requires("libzip/[>=1.7.3 <2.0.0]")
         self.options['libzip'].shared = True
         self.options['openssl'].shared = True
         self.options['libxml2'].shared = True
@@ -197,9 +197,9 @@ class CelixConan(ConanFile):
         if self.options.celix_add_openssl_dep:
             self.requires("openssl/1.1.1k")
         if self.options.build_remote_service_admin or self.options.build_shell_bonjour:
-            self.requires("libxml2/[~2.9.9]")
+            self.requires("libxml2/[>=2.9.9 <3.0.0]")
         if self.options.build_cxx_remote_service_admin:
-            self.requires("rapidjson/[~1.1.0]")
+            self.requires("rapidjson/[>=1.1.0 <2.0.0]")
         if self.options.build_shell_bonjour:
             # TODO: CC=cc is fixed in the official mdnsresponder Makefile, patching is needed to make cross-compile work
             # https://github.com/conan-io/conan-center-index/issues/9711
