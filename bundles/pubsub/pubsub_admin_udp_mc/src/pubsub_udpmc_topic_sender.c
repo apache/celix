@@ -330,6 +330,7 @@ static int psa_udpmc_topicPublicationSend(void* handle, unsigned int msgTypeId, 
         printf("[PSA_UDPMC/TopicSender] No msg serializer available for msg type id %d\n", msgTypeId);
         status = -1;
     }
+    celix_properties_destroy(metadata);
     return status;
 }
 
