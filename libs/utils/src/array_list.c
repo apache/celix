@@ -525,7 +525,6 @@ void celix_arrayList_removeSize(celix_array_list_t *list, size_t val) {
 }
 
 void celix_arrayList_clear(celix_array_list_t *list) {
-    unsigned int i;
     list->modCount++;
 
     if(list->size > 0) {
