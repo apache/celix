@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(CXX_REMOTE_SERVICE_ADMIN "Option to enable building the C++17 Remote Service Admin Service bundles" ON)
+celix_subproject(CXX_REMOTE_SERVICE_ADMIN "Option to enable building the C++17 Remote Service Admin Service bundles" OFF)
 if (CXX_REMOTE_SERVICE_ADMIN)
     message(STATUS  "The C++ Remote Service Admin is still experimental; The API, SPI and implementation is not stable and will change")
 
