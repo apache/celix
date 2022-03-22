@@ -413,41 +413,58 @@ static void arrayList_addEntry(celix_array_list_t *list, celix_array_list_entry_
 }
 
 void celix_arrayList_add(celix_array_list_t *list, void * element) {
-    // All members that are not initialized explicitly are zero-initialized: https://en.cppreference.com/w/c/language/struct_initialization
-    celix_array_list_entry_t entry = { .voidPtrVal = element };
+    celix_array_list_entry_t entry;
+    memset(&entry, 0, sizeof(entry));
+    entry.voidPtrVal = element;
     arrayList_addEntry(list, entry);
 }
 
 void celix_arrayList_addInt(celix_array_list_t *list, int val) { 
-    celix_array_list_entry_t entry = { .intVal = val };
+    celix_array_list_entry_t entry;
+    memset(&entry, 0, sizeof(entry));
+    entry.intVal = val;
     arrayList_addEntry(list, entry);
 }
 void celix_arrayList_addLong(celix_array_list_t *list, long val) { 
-    celix_array_list_entry_t entry = { .longVal = val };
+    celix_array_list_entry_t entry;
+    memset(&entry, 0, sizeof(entry));
+    entry.longVal = val;
     arrayList_addEntry(list, entry);
 }
 void celix_arrayList_addUInt(celix_array_list_t *list, unsigned int val) { 
-    celix_array_list_entry_t entry = { .uintVal = val };
+    celix_array_list_entry_t entry;
+    memset(&entry, 0, sizeof(entry));
+    entry.uintVal = val;
     arrayList_addEntry(list, entry);
 }
 void celix_arrayList_addULong(celix_array_list_t *list, unsigned long val) { 
-    celix_array_list_entry_t entry = { .ulongVal = val };
+    celix_array_list_entry_t entry;
+    memset(&entry, 0, sizeof(entry));
+    entry.ulongVal = val;
     arrayList_addEntry(list, entry);
 }
 void celix_arrayList_addDouble(celix_array_list_t *list, double val) { 
-    celix_array_list_entry_t entry = { .doubleVal = val };
+    celix_array_list_entry_t entry;
+    memset(&entry, 0, sizeof(entry));
+    entry.doubleVal = val;
     arrayList_addEntry(list, entry);
 }
 void celix_arrayList_addFloat(celix_array_list_t *list, float val) { 
-    celix_array_list_entry_t entry = { .floatVal = val };
+    celix_array_list_entry_t entry;
+    memset(&entry, 0, sizeof(entry));
+    entry.floatVal = val;
     arrayList_addEntry(list, entry);
 }
 void celix_arrayList_addBool(celix_array_list_t *list, bool val) { 
-    celix_array_list_entry_t entry = { .boolVal = val };
+    celix_array_list_entry_t entry;
+    memset(&entry, 0, sizeof(entry));
+    entry.boolVal = val;
     arrayList_addEntry(list, entry);
 }
 void celix_arrayList_addSize(celix_array_list_t *list, size_t val) { 
-    celix_array_list_entry_t entry = { .sizeVal = val };
+    celix_array_list_entry_t entry;
+    memset(&entry, 0, sizeof(entry));
+    entry.sizeVal = val;
     arrayList_addEntry(list, entry);
 }
 
@@ -480,47 +497,65 @@ void celix_arrayList_removeEntry(celix_array_list_t *list, celix_array_list_entr
 
 
 void celix_arrayList_remove(celix_array_list_t *list, void *ptr) {
-    celix_array_list_entry_t entry = { .voidPtrVal = ptr };
+    celix_array_list_entry_t entry;
+    memset(&entry, 0, sizeof(entry));
+    entry.voidPtrVal = ptr;
     celix_arrayList_removeEntry(list, entry);
 }
 
 void celix_arrayList_removeInt(celix_array_list_t *list, int val) {
-    celix_array_list_entry_t entry = { .intVal = val };
+    celix_array_list_entry_t entry;
+    memset(&entry, 0, sizeof(entry));
+    entry.intVal = val;
     celix_arrayList_removeEntry(list, entry);
 }
 
 void celix_arrayList_removeLong(celix_array_list_t *list, long val) {
-    celix_array_list_entry_t entry = { .longVal = val };
+    celix_array_list_entry_t entry;
+    memset(&entry, 0, sizeof(entry));
+    entry.longVal = val;
     celix_arrayList_removeEntry(list, entry);
 }
 
 void celix_arrayList_removeUInt(celix_array_list_t *list, unsigned int val) {
-    celix_array_list_entry_t entry = { .uintVal = val };
+    celix_array_list_entry_t entry;
+    memset(&entry, 0, sizeof(entry));
+    entry.uintVal = val;
     celix_arrayList_removeEntry(list, entry);
 }
 
 void celix_arrayList_removeULong(celix_array_list_t *list, unsigned long val) {
-    celix_array_list_entry_t entry = { .ulongVal = val };
+    celix_array_list_entry_t entry;
+    memset(&entry, 0, sizeof(entry));
+    entry.ulongVal = val;
     celix_arrayList_removeEntry(list, entry);
 }
 
 void celix_arrayList_removeFloat(celix_array_list_t *list, float val) {
-    celix_array_list_entry_t entry = { .floatVal = val };
+    celix_array_list_entry_t entry;
+    memset(&entry, 0, sizeof(entry));
+    entry.floatVal = val;
     celix_arrayList_removeEntry(list, entry);
 }
 
 void celix_arrayList_removeDouble(celix_array_list_t *list, double val) {
-    celix_array_list_entry_t entry = { .doubleVal = val };
+    celix_array_list_entry_t entry;
+    memset(&entry, 0, sizeof(entry));
+    entry.doubleVal = val;
     celix_arrayList_removeEntry(list, entry);
 }
 
 void celix_arrayList_removeBool(celix_array_list_t *list, bool val) {
-    celix_array_list_entry_t entry = { .boolVal = val };
+    celix_array_list_entry_t entry;
+    memset(&entry, 0, sizeof(entry));
+    entry.boolVal = val;
     celix_arrayList_removeEntry(list, entry);
 }
 
 void celix_arrayList_removeSize(celix_array_list_t *list, size_t val) {
-    celix_array_list_entry_t entry = { .sizeVal = val };
+    celix_array_list_entry_t entry;
+    memset(&entry, 0, sizeof(entry));
+    entry.sizeVal = val;
     celix_arrayList_removeEntry(list, entry);
 }
 
