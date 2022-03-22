@@ -368,6 +368,7 @@ psa_tcp_topicPublicationSend(void *handle, unsigned int msgTypeId, const void *i
     if (status != CELIX_SUCCESS) {
         L_WARN("Cannot find serializer for msg id %u for serializer %s", msgTypeId,
                pubsub_serializerHandler_getSerializationType(sender->serializerHandler));
+        celix_properties_destroy(metadata);
         return status;
     }
 
