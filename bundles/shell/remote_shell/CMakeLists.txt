@@ -14,7 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-celix_subproject(REMOTE_SHELL "Option to enable building the Remote Shell bundles" ON SHELL)
+celix_subproject(REMOTE_SHELL "Option to enable building the Remote Shell bundles" ON DEPS SHELL)
 if (REMOTE_SHELL)
 
 	add_celix_bundle(remote_shell
