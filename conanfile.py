@@ -236,8 +236,7 @@ class CelixConan(ConanFile):
         cmake.install()
 
     def package_info(self):
-        # enable [imports] in conanfile.txt and imports() of conanfile.py to collect
-        # not only executables and shared objects but also bundles
-        # this ability of get runtime artifacts out of Conan is crucial for integration with existing infrastructure
+        # enable imports() of conanfile.py to collect bundles from the local cache using @bindirs
+        # check https://docs.conan.io/en/latest/reference/conanfile/methods.html#imports
         self.cpp_info.bindirs = ["bin", os.path.join("share", self.name, "bundles")]
         self.cpp_info.build_modules["cmake"].append(os.path.join("lib", "cmake", "Celix", "CelixConfig.cmake"))
