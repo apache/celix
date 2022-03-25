@@ -218,17 +218,14 @@ class CelixConan(ConanFile):
         for opt, val in self.options.values.items():
             self._cmake.definitions[opt.upper()] = self.options.get_safe(opt, False)
         self._cmake.definitions["CMAKE_PROJECT_Celix_INCLUDE"] = os.path.join(self.build_folder, "conan_paths.cmake")
-        # the following is workaround for https://github.com/conan-io/conan/issues/7192
-        # self._cmake.definitions["CMAKE_EXE_LINKER_FLAGS"] = "-Wl,--unresolved-symbols=ignore-in-shared-libs"
         self.output.info(self._cmake.definitions)
         v = tools.Version(self.version)
         self._cmake.configure(defs={'CELIX_MAJOR': v.major, 'CELIX_MINOR': v.minor, 'CELIX_MICRO': v.patch})
         return self._cmake
 
     def build(self):
-        # self._patch_sources()
         cmake = self._configure_cmake()
-        cmake.build()
+        self.run('cmake --build . %s' % cmake.build_config, run_environment=True)
 
     def package(self):
         self.copy("LICENSE", dst="licenses", src=self.source_folder)
