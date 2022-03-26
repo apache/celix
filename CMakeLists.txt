@@ -34,6 +34,8 @@ find_package(CURL REQUIRED) #framework, etcdlib
 find_package(LIBZIP REQUIRED) #framework, etcdlib
 find_package(Jansson REQUIRED) #etcdlib, dfi
 find_package(FFI REQUIRED) #dfi
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
 
 if (NOT TARGET ZLIB::ZLIB)
     #Note more recent zlib will create ZLIB::ZLIB target

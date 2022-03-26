@@ -82,6 +82,7 @@ find_dependency(CURL) #Needed by framework (used for curl initialization)
 find_dependency(LIBZIP) #Needed by utils
 find_dependency(Jansson) #Needed by dfi, etcdlib, remote services, pubsub
 find_dependency(FFI) #Needed by dfi
+set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_dependency(Threads)
 
 if (NOT TARGET ZLIB::ZLIB)
