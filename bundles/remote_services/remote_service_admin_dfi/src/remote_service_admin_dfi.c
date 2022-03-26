@@ -257,8 +257,9 @@ celix_status_t remoteServiceAdmin_create(celix_bundle_context_t *context, remote
 
         unsigned int port_counter = 0;
         do {
-
-            const char *options[] = { "listening_ports", newPort, "num_threads", "5", NULL};
+            char listeningPorts[50]={0};
+            const char *options[] = { "listening_ports", listeningPorts, "num_threads", "5", NULL};
+            snprintf(listeningPorts,sizeof(listeningPorts),"%s:%s",(*admin)->ip, newPort);
 
             (*admin)->ctx = mg_start(&callbacks, (*admin), options);
 

@@ -163,11 +163,13 @@ celix_status_t endpointDiscoveryServer_create(discovery_t *discovery,
     char newPort[10];
 
     do {
+        char listeningPorts[50]={0};
         const char *options[] = {
-                "listening_ports", port,
+                "listening_ports", listeningPorts,
                 "num_threads", DEFAULT_SERVER_THREADS,
                 NULL
         };
+        snprintf(listeningPorts,sizeof(listeningPorts),"%s:%s",(*server)->ip, port);
 
         (*server)->ctx = mg_start(&callbacks, (*server), options);
 
