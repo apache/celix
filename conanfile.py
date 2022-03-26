@@ -29,7 +29,7 @@ class CelixConan(ConanFile):
     url = "https://github.com/apache/celix.git"
     topics = ("conan", "celix", "osgi", "embedded", "linux", "C/C++")
     exports_sources = "CMakeLists.txt", "bundles*", "cmake*", "!cmake-build*", "examples*", "libs*", "misc*", "LICENSE"
-    generators = "cmake_paths", "cmake_find_package"
+    generators = "cmake_paths", "cmake_find_package", "virtualrunenv"
     settings = "os", "arch", "compiler", "build_type"
     license = " Apache-2.0"
     description = "Apache Celix is an implementation of the OSGi specification adapted to C and C++ (C++17). " \
