@@ -40,6 +40,9 @@ class CelixConan(ConanFile):
 
     options = {
         "enable_testing": [True, False],
+        "enable_address_sanitizer": [True, False],
+        "enable_undefined_sanitizer": [True, False],
+        "enable_thread_sanitizer": [True, False],
         "celix_add_openssl_dep": [True, False],
         "build_all": [True, False],
         "build_deployment_admin": [True, False],
@@ -78,6 +81,9 @@ class CelixConan(ConanFile):
     }
     default_options = { 
         "enable_testing": False,
+        "enable_address_sanitizer": False,
+        "enable_undefined_sanitizer": False,
+        "enable_thread_sanitizer": False,
         "celix_add_openssl_dep": False,
         "build_all": False,
         "build_deployment_admin": False,
@@ -136,6 +142,8 @@ class CelixConan(ConanFile):
         if self.options.enable_testing:
             self.test_requires("gtest/1.10.0")
             self.test_requires("cpputest/4.0")
+            if self.options.enable_address_sanitizer:
+                self.options["cpputest"].with_leak_detection = False
 
     def configure(self):
         if self.options.build_all:
@@ -175,9 +183,6 @@ class CelixConan(ConanFile):
             self.options.build_shell_bonjour = False
 
     def requirements(self):
-        # libffi/3.3@zhengpeng/testing is a workaround of the following buggy commit:
-        # https://github.com/conan-io/conan-center-index/pull/5085#issuecomment-847487808
-        #self.requires("libffi/3.3@zhengpeng/testing")
         self.requires("libffi/[>=3.2.1 <4.0.0]")
         self.options['libffi'].shared = True
         self.requires("jansson/[>=2.12 <3.0.0]")
