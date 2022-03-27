@@ -142,8 +142,6 @@ class CelixConan(ConanFile):
         if self.options.enable_testing:
             self.test_requires("gtest/1.10.0")
             self.test_requires("cpputest/4.0")
-            if self.options.enable_address_sanitizer:
-                self.options["cpputest"].with_leak_detection = False
 
     def configure(self):
         if self.options.build_all:
@@ -199,6 +197,8 @@ class CelixConan(ConanFile):
         self.options['libxml2'].shared = True
         if self.options.enable_testing:
             self.options['gtest'].shared = True
+            if self.options.enable_address_sanitizer:
+                self.options["cpputest"].with_leak_detection = False
         if self.options.celix_add_openssl_dep:
             self.requires("openssl/1.1.1k")
         if self.options.build_remote_service_admin or self.options.build_shell_bonjour:
