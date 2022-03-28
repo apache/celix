@@ -40,6 +40,7 @@ class CelixConan(ConanFile):
 
     options = {
         "enable_testing": [True, False],
+        "enable_code_coverage": [True, False],
         "enable_address_sanitizer": [True, False],
         "enable_undefined_sanitizer": [True, False],
         "enable_thread_sanitizer": [True, False],
@@ -81,6 +82,7 @@ class CelixConan(ConanFile):
     }
     default_options = { 
         "enable_testing": False,
+        "enable_code_coverage": False,
         "enable_address_sanitizer": False,
         "enable_undefined_sanitizer": False,
         "enable_thread_sanitizer": False,
@@ -128,7 +130,6 @@ class CelixConan(ConanFile):
 
     def package_id(self):
         del self.info.options.build_all
-        del self.info.options.enable_testing
         del self.info.options.celix_add_openssl_dep
         # the followings are not installed
         del self.info.options.build_device_access_example
@@ -156,6 +157,7 @@ class CelixConan(ConanFile):
             self.options.build_cxx_rsa_integration = False
         if not self.options.enable_testing:
             self.options.build_pubsub_integration = False
+            self.options.enable_code_coverage = False
         if not self.options.build_device_access:
             self.options.build_device_access_example = False
         if not self.options.build_log_service:
