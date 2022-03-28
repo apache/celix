@@ -32,6 +32,11 @@ if (ENABLE_ADDRESS_SANITIZER)
         set(CMAKE_C_FLAGS "-lasan -fsanitize=address -fno-omit-frame-pointer ${CMAKE_C_FLAGS}")
         set(CMAKE_CXX_FLAGS "-lasan -fsanitize=address -fno-omit-frame-pointer ${CMAKE_CXX_FLAGS}")
     endif ()
+
+#    if (ENABLE_TESTING)
+#        set(CMAKE_C_FLAGS "-DCPPUTEST_MEM_LEAK_DETECTION_DISABLED ${CMAKE_C_FLAGS}")
+#        set(CMAKE_CXX_FLAGS "-DCPPUTEST_MEM_LEAK_DETECTION_DISABLED ${CMAKE_CXX_FLAGS}")
+#    endif ()
 endif()
 
 if (ENABLE_UNDEFINED_SANITIZER)
