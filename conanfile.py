@@ -211,7 +211,7 @@ class CelixConan(ConanFile):
             # Another issue is in conan infrastructure: https://github.com/conan-io/conan-center-index/issues/9709
             self.requires("mdnsresponder/1310.140.1")
         if self.options.build_pubsub_psa_zmq:
-            self.requires("zeromq/4.3.2")
+            self.requires("zeromq/4.3.4")
             self.options['zeromq'].shared = True
             self.requires("czmq/4.2.0")
             self.options['czmq'].shared = True
