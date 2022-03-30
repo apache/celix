@@ -134,7 +134,7 @@ static celix_status_t etcdWatcher_addAlreadyExistingWatchpoints(etcd_watcher_t *
 static celix_status_t etcdWatcher_addOwnFramework(etcd_watcher_t *watcher)
 {
     char localNodePath[MAX_LOCALNODE_LENGTH];
-    char *value=NULL;
+    char *value = NULL;
  	char url[MAX_VALUE_LENGTH];
     int modIndex;
     char* endpoints = NULL;
