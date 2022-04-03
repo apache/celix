@@ -78,7 +78,7 @@ if (CELIX_ETCDLIB OR ETCDLIB_STANDALONE)
     target_link_libraries(etcdlib_static PUBLIC CURL::libcurl jansson::jansson ${CELIX_OPTIONAL_EXTRA_LIBS})
 
     add_executable(etcdlib_test ${CMAKE_CURRENT_SOURCE_DIR}/test/etcdlib_test.c)
-    target_link_libraries(etcdlib_test PRIVATE etcdlib_static CURL::libcurl jannson::jannson)
+    target_link_libraries(etcdlib_test PRIVATE etcdlib_static CURL::libcurl jansson::jansson)
 
     install(DIRECTORY api/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/etcdlib COMPONENT ${ETCDLIB_CMP})
     if (NOT COMMAND celix_subproject)

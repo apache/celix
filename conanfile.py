@@ -230,11 +230,11 @@ class CelixConan(ConanFile):
         if self.settings.os == "Linux":
             self._cmake.definitions["CMAKE_EXE_LINKER_FLAGS"] = "-Wl,--unresolved-symbols=ignore-in-shared-libs"
         self.output.info(self._cmake.definitions)
-        if self.version is None:
-            self._cmake.configure(defs={'CELIX_MAJOR': 2, 'CELIX_MINOR': 2, 'CELIX_MICRO': 1})
-        else :
+        if self.version is not None:
             v = tools.Version(self.version)
             self._cmake.configure(defs={'CELIX_MAJOR': v.major, 'CELIX_MINOR': v.minor, 'CELIX_MICRO': v.patch})
+        else:
+            self._cmake.configure()
         return self._cmake
 
     def build(self):
