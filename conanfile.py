@@ -193,7 +193,7 @@ class CelixConan(ConanFile):
         self.options['zlib'].shared = True
         self.requires("libuuid/1.0.3")
         self.options['libuuid'].shared = True
-        self.requires("openssl/[>=1.1.1n <2.0.0]")
+        self.requires("openssl/1.1.1n")
         self.requires("libzip/[>=1.7.3 <2.0.0]")
         self.options['libzip'].shared = True
         self.options['openssl'].shared = True
@@ -229,12 +229,11 @@ class CelixConan(ConanFile):
         # the following is workaround for https://github.com/conan-io/conan/issues/7192
         if self.settings.os == "Linux":
             self._cmake.definitions["CMAKE_EXE_LINKER_FLAGS"] = "-Wl,--unresolved-symbols=ignore-in-shared-libs"
+        elif self.settings.os == "Macos":
+            self._cmake.definitions["CMAKE_EXE_LINKER_FLAGS"] = "-Wl,-undefined -Wl,dynamic_lookup"
         self.output.info(self._cmake.definitions)
-        if self.version is not None:
-            v = tools.Version(self.version)
-            self._cmake.configure(defs={'CELIX_MAJOR': v.major, 'CELIX_MINOR': v.minor, 'CELIX_MICRO': v.patch})
-        else:
-            self._cmake.configure()
+        v = tools.Version(self.version)
+        self._cmake.configure(defs={'CELIX_MAJOR': v.major, 'CELIX_MINOR': v.minor, 'CELIX_MICRO': v.patch})
         return self._cmake
 
     def build(self):
