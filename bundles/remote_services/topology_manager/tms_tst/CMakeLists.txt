@@ -36,7 +36,7 @@ target_include_directories(test_tm_scoped PRIVATE ../src ../include)
 target_link_libraries(test_tm_scoped PRIVATE
         Celix::framework
         GTest::gtest GTest::gtest_main
-        Jansson
+        jansson::jansson
         calculator_api
         Celix::rsa_common
 )

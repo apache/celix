@@ -41,7 +41,7 @@ target_include_directories(dfi PUBLIC
 )
 
 target_link_libraries(dfi PRIVATE FFI::lib)
-target_link_libraries(dfi PUBLIC Jansson)
+target_link_libraries(dfi PUBLIC jansson::jansson)
 target_link_libraries(dfi PRIVATE Celix::utils)
 set_target_properties(dfi PROPERTIES "SOVERSION" 1)
 

@@ -57,6 +57,15 @@ if (NOT TARGET CURL::libcurl)
             )
 endif ()
 
+if (NOT TARGET jansson::jansson)
+    message("Note jansson::jansson target not created by find_package(Jansson). Creating jansson::jansson Target.")
+    add_library(jansson::jansson SHARED IMPORTED)
+    set_target_properties(jansson::jansson PROPERTIES
+            IMPORTED_LOCATION "${JANSSON_LIBRARIES}"
+            INTERFACE_INCLUDE_DIRECTORIES "${JANSSON_INCLUDE_DIRS}"
+            )
+endif ()
+
 # see https://public.kitware.com/Bug/view.php?id=15696
 IF (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} EQUAL 3.3 AND ${CMAKE_GENERATOR} STREQUAL "Unix Makefiles")
     message( FATAL_ERROR "Building Celix using CMake 3.3 and makefiles is not supported due to a bug in the Makefile Generator (see Bug 15696). Please change the used CMake version - both, CMake 3.2 and CMake 3.4 are working fine. Or use a different generator (e.g. Ninja)." )

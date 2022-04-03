@@ -41,7 +41,7 @@ if (RSA_REMOTE_SERVICE_ADMIN_DFI)
             Celix::log_helper
             Celix::rsa_common
             CURL::libcurl
-            Jansson
+            jansson::jansson
             )
 
     install_celix_bundle(rsa_dfi EXPORT celix COMPONENT rsa)

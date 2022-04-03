@@ -41,9 +41,9 @@ find_package_handle_standard_args(Jansson  DEFAULT_MSG
 
 mark_as_advanced(JANSSON_INCLUDE_DIR JANSSON_LIBRARY)
 
-if (JANSSON_FOUND AND NOT TARGET Jansson)
-    add_library(Jansson SHARED IMPORTED)
-    set_target_properties(Jansson PROPERTIES
+if (JANSSON_FOUND AND NOT TARGET jansson::jansson)
+    add_library(jansson::jansson SHARED IMPORTED)
+    set_target_properties(jansson::jansson PROPERTIES
             IMPORTED_LOCATION "${JANSSON_LIBRARY}"
             INTERFACE_INCLUDE_DIRECTORIES "${JANSSON_INCLUDE_DIR}"
     )

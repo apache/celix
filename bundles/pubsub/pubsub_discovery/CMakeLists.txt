@@ -32,7 +32,7 @@ if (PUBSUB_DISCOVERY_ETCD)
     target_link_libraries(celix_pubsub_discovery_etcd PRIVATE
             Celix::framework Celix::etcdlib_static
             Celix::shell_api Celix::log_helper
-            CURL::libcurl Jansson
+            CURL::libcurl jansson::jansson
             )
     target_link_libraries(celix_pubsub_discovery_etcd PRIVATE Celix::pubsub_spi Celix::pubsub_utils)
 

@@ -65,7 +65,7 @@ if (CELIX_ETCDLIB OR ETCDLIB_STANDALONE)
 
     set_target_properties(etcdlib PROPERTIES SOVERSION 1)
     set_target_properties(etcdlib PROPERTIES VERSION 1.0.0)
-    target_link_libraries(etcdlib PUBLIC CURL::libcurl Jansson ${CELIX_OPTIONAL_EXTRA_LIBS})
+    target_link_libraries(etcdlib PUBLIC CURL::libcurl jansson::jansson ${CELIX_OPTIONAL_EXTRA_LIBS})
 
     add_library(etcdlib_static STATIC
             src/etcd.c
@@ -75,10 +75,10 @@ if (CELIX_ETCDLIB OR ETCDLIB_STANDALONE)
             )
     target_include_directories(etcdlib_static PRIVATE src)
     set_target_properties(etcdlib_static PROPERTIES "SOVERSION" 1)
-    target_link_libraries(etcdlib_static PUBLIC CURL::libcurl Jansson ${CELIX_OPTIONAL_EXTRA_LIBS})
+    target_link_libraries(etcdlib_static PUBLIC CURL::libcurl jansson::jansson ${CELIX_OPTIONAL_EXTRA_LIBS})
 
     add_executable(etcdlib_test ${CMAKE_CURRENT_SOURCE_DIR}/test/etcdlib_test.c)
-    target_link_libraries(etcdlib_test PRIVATE etcdlib_static CURL::libcurl Jansson)
+    target_link_libraries(etcdlib_test PRIVATE etcdlib_static CURL::libcurl jannson::jannson)
 
     install(DIRECTORY api/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/etcdlib COMPONENT ${ETCDLIB_CMP})
     if (NOT COMMAND celix_subproject)

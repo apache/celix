@@ -24,7 +24,7 @@ if (PUBSUB_EXAMPLES)
 
     find_package(Jansson REQUIRED)
 
-    set(PUBSUB_CONTAINER_LIBS Jansson Celix::dfi)
+    set(PUBSUB_CONTAINER_LIBS jansson::jansson Celix::dfi)
 
     # UDP Multicast
     if (BUILD_PUBSUB_PSA_UDP_MC)
