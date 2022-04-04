@@ -44,7 +44,21 @@ FIND_PACKAGE_HANDLE_STANDARD_ARGS(CppUTest DEFAULT_MSG CppUTest_LIBRARY CppUTest
 IF(CPPUTEST_FOUND)
     SET(CppUTest_LIBRARIES ${CppUTest_LIBRARY})
     SET(CppUTest_INCLUDE_DIRS ${CppUTest_INCLUDE_DIR})
+    if(NOT TARGET CppUTest::CppUTest)
+        add_library(CppUTest::CppUTest STATIC IMPORTED)
+        set_target_properties(CppUTest::CppUTest PROPERTIES
+                IMPORTED_LOCATION "${CppUTest_LIBRARY}"
+                INTERFACE_INCLUDE_DIRECTORIES "${CppUTest_INCLUDE_DIR}"
+                )
+    endif()
 ENDIF(CPPUTEST_FOUND)
 
 SET(CppUTest_EXT_LIBRARIES ${CppUTest_EXT_LIBRARY})
 SET(CppUTest_EXT_INCLUDE_DIRS ${CppUTest_EXT_INCLUDE_DIR})
+if(NOT TARGET CppUTest::CppUTestExt)
+    add_library(CppUTest::CppUTestExt STATIC IMPORTED)
+    set_target_properties(CppUTest::CppUTestExt PROPERTIES
+            IMPORTED_LOCATION "${CppUTest_EXT_LIBRARY}"
+            INTERFACE_INCLUDE_DIRECTORIES "${CppUTest_EXT_INCLUDE_DIR}"
+            )
+endif()

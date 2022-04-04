@@ -38,17 +38,18 @@ add_library(framework SHARED ${SOURCES})
 set_target_properties(framework PROPERTIES OUTPUT_NAME "celix_framework")
 target_include_directories(framework PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
-        $<INSTALL_INTERFACE:include/celix>
 )
 target_compile_options(framework PRIVATE -DUSE_FILE32API)
 target_compile_options(framework PRIVATE -Wno-deprecated-declarations) #note part of the api is deprecated, ignore this warning on own api
-set_target_properties(framework PROPERTIES "SOVERSION" 2)
+set_target_properties(framework PROPERTIES "SOVERSION" ${CELIX_MAJOR})
 
 target_link_libraries(framework PUBLIC Celix::utils Celix::dfi ${CELIX_OPTIONAL_EXTRA_LIBS})
 target_link_libraries(framework PUBLIC UUID::lib CURL::libcurl ZLIB::ZLIB)
+target_link_libraries(framework PRIVATE ${CMAKE_DL_LIBS})
 
-install(TARGETS framework EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework)
-install(DIRECTORY include/ DESTINATION include/celix COMPONENT framework)
+install(TARGETS framework EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix)
+install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix COMPONENT framework)
 
 #Alias setup to match external usage
 add_library(Celix::framework ALIAS framework)

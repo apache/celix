@@ -32,7 +32,7 @@ SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE) #TODO needed?
 SET(CMAKE_INSTALL_RPATH "${PROJECT_BINARY_DIR}/framework" "${PROJECT_BINARY_DIR}/utils" )
 
 add_executable(config_admin_test config_admin_test.cpp)
-target_link_libraries(config_admin_test Celix::framework ${CELIX_LIBRARIES} ${CppUTest_LIBRARY} pthread)
+target_link_libraries(config_admin_test Celix::framework ${CELIX_LIBRARIES} CppUTest::CppUTest pthread)
 
 
 get_property(config_admin_bundle_file TARGET config_admin PROPERTY BUNDLE_FILE)

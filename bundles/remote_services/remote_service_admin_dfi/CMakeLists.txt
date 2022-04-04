@@ -15,38 +15,40 @@
 # specific language governing permissions and limitations
 # under the License.
 
-find_package(CURL REQUIRED)
-find_package(Jansson REQUIRED)
-find_package(UUID REQUIRED)
+celix_subproject(RSA_REMOTE_SERVICE_ADMIN_DFI "Option to enable building the Remote Service Admin Service DFI" ON)
+if (RSA_REMOTE_SERVICE_ADMIN_DFI)
+    find_package(CURL REQUIRED)
+    find_package(Jansson REQUIRED)
+    find_package(UUID REQUIRED)
 
-add_celix_bundle(rsa_dfi
-        VERSION 0.9.0
-        SYMBOLIC_NAME "apache_celix_remote_service_admin_dfi"
-        NAME "Apache Celix Remote Service Admin Dynamic Function Interface (DFI)"
-        GROUP "Celix/RSA"
-        SOURCES
-        src/remote_service_admin_dfi.c
-        src/remote_service_admin_activator.c
-        src/export_registration_dfi.c
-        src/import_registration_dfi.c
-        src/dfi_utils.c
-        $<TARGET_OBJECTS:Celix::civetweb>
-)
-celix_bundle_private_libs(rsa_dfi Celix::dfi)
-target_include_directories(rsa_dfi PRIVATE $<TARGET_PROPERTY:Celix::civetweb,INCLUDE_DIRECTORIES>)
-target_link_libraries(rsa_dfi PRIVATE
-        Celix::dfi
-        Celix::log_helper
-        Celix::rsa_common
-        CURL::libcurl
-        Jansson
-)
+    add_celix_bundle(rsa_dfi
+            VERSION 0.9.0
+            SYMBOLIC_NAME "apache_celix_remote_service_admin_dfi"
+            NAME "Apache Celix Remote Service Admin Dynamic Function Interface (DFI)"
+            GROUP "Celix/RSA"
+            SOURCES
+            src/remote_service_admin_dfi.c
+            src/remote_service_admin_activator.c
+            src/export_registration_dfi.c
+            src/import_registration_dfi.c
+            src/dfi_utils.c
+            $<TARGET_OBJECTS:Celix::civetweb>
+            )
+    celix_bundle_private_libs(rsa_dfi Celix::dfi)
+    target_include_directories(rsa_dfi PRIVATE $<TARGET_PROPERTY:Celix::civetweb,INCLUDE_DIRECTORIES>)
+    target_link_libraries(rsa_dfi PRIVATE
+            Celix::dfi
+            Celix::log_helper
+            Celix::rsa_common
+            CURL::libcurl
+            jansson::jansson
+            )
 
-if (ENABLE_TESTING)
-    add_subdirectory(gtest)
+    install_celix_bundle(rsa_dfi EXPORT celix COMPONENT rsa)
+    #Setup target aliases to match external usage
+    add_library(Celix::rsa_dfi ALIAS rsa_dfi)
+
+    if (ENABLE_TESTING)
+        add_subdirectory(gtest)
+    endif()
 endif()
-
-
-install_celix_bundle(rsa_dfi EXPORT celix COMPONENT rsa)
-#Setup target aliases to match external usage
-add_library(Celix::rsa_dfi ALIAS rsa_dfi)

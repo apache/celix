@@ -16,14 +16,13 @@
 # under the License.
 
 set(PUSHSTREAMS_DEFAULT_ON ${CELIX_CXX})
-celix_subproject(PUSHSTREAMS "Option to build the PushStreams library" ${PUSHSTREAMS_DEFAULT_ON})
+celix_subproject(PUSHSTREAMS "Option to build the PushStreams library" ${PUSHSTREAMS_DEFAULT_ON} DEPS PROMISES)
 
 if (PUSHSTREAMS)
     find_package(Threads)
     add_library(PushStreams INTERFACE)
     target_include_directories(PushStreams INTERFACE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/api>
-        $<INSTALL_INTERFACE:include/celix/pushstreams>
     )
     target_link_libraries(PushStreams INTERFACE Threads::Threads)
     target_link_libraries(PushStreams INTERFACE Celix::Promises)
@@ -37,6 +36,7 @@ if (PUSHSTREAMS)
         add_subdirectory(gtest)
     endif()
 
-    install(TARGETS PushStreams EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR})
-    install(DIRECTORY api/ DESTINATION include/celix/pushstreams)
+    install(TARGETS PushStreams EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/pushstreams)
+    install(DIRECTORY api/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/pushstreams)
 endif ()

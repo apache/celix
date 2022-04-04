@@ -20,7 +20,7 @@ add_executable(test_shell
 )
 
 target_link_libraries(test_shell PRIVATE Celix::framework Celix::shell_api GTest::gtest GTest::gtest_main)
-add_dependencies(test_shell shell_bundle)
+add_celix_bundle_dependencies(test_shell shell)
 target_compile_definitions(test_shell PRIVATE -DSHELL_BUNDLE_LOCATION=\"$<TARGET_PROPERTY:shell,BUNDLE_FILE>\")
 target_compile_options(test_shell PRIVATE -Wno-deprecated-declarations)
 if (CELIX_INSTALL_DEPRECATED_API)
@@ -31,14 +31,16 @@ add_test(NAME test_shell COMMAND test_shell)
 setup_target_for_coverage(test_shell SCAN_DIR ..)
 
 
-add_executable(test_cxx_shell
-        src/ShellTestSuite.cc
-)
+if (CELIX_CXX)
+    add_executable(test_cxx_shell
+            src/ShellTestSuite.cc
+            )
 
-target_link_libraries(test_cxx_shell PRIVATE Celix::framework Celix::shell_api GTest::gtest GTest::gtest_main)
-add_dependencies(test_cxx_shell ShellCxx_bundle)
-target_compile_definitions(test_cxx_shell PRIVATE -DSHELL_BUNDLE_LOCATION=\"$<TARGET_PROPERTY:ShellCxx,BUNDLE_FILE>\")
-target_compile_definitions(test_cxx_shell PRIVATE -DCXX_SHELL)
+    target_link_libraries(test_cxx_shell PRIVATE Celix::framework Celix::shell_api GTest::gtest GTest::gtest_main)
+    add_celix_bundle_dependencies(test_cxx_shell ShellCxx)
+    target_compile_definitions(test_cxx_shell PRIVATE -DSHELL_BUNDLE_LOCATION=\"$<TARGET_PROPERTY:ShellCxx,BUNDLE_FILE>\")
+    target_compile_definitions(test_cxx_shell PRIVATE -DCXX_SHELL)
 
-add_test(NAME test_cxx_shell COMMAND test_cxx_shell)
-setup_target_for_coverage(test_cxx_shell SCAN_DIR ..)
+    add_test(NAME test_cxx_shell COMMAND test_cxx_shell)
+    setup_target_for_coverage(test_cxx_shell SCAN_DIR ..)
+endif()

@@ -14,7 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-celix_subproject(SHELL_TUI "Option to enable building the Shell Textual User Interface bundles" ON DEPS LAUNCHER SHELL)
+celix_subproject(SHELL_TUI "Option to enable building the Shell Textual User Interface bundles" ON DEPS SHELL)
 if (SHELL_TUI)
 
     add_celix_bundle(shell_tui
@@ -37,7 +37,7 @@ if (SHELL_TUI)
 	#Alias setup to match external usage
 	add_library(Celix::shell_tui ALIAS shell_tui)
 
-	if (ENABLE_TESTING AND TARGET Celix::shell)
+	if (ENABLE_TESTING)
 		add_subdirectory(gtest)
 	endif()
 endif (SHELL_TUI)

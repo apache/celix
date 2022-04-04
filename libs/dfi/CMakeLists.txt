@@ -41,12 +41,13 @@ target_include_directories(dfi PUBLIC
 )
 
 target_link_libraries(dfi PRIVATE FFI::lib)
-target_link_libraries(dfi PUBLIC Jansson)
+target_link_libraries(dfi PUBLIC jansson::jansson)
 target_link_libraries(dfi PRIVATE Celix::utils)
 set_target_properties(dfi PROPERTIES "SOVERSION" 1)
 
-install(TARGETS dfi EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT dfi)
-install(DIRECTORY include/ DESTINATION include/celix/dfi COMPONENT dfi)
+install(TARGETS dfi EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT dfi
+		INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/dfi)
+install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/dfi COMPONENT dfi)
 
 #Alias setup to match external usage
 add_library(Celix::dfi ALIAS dfi)

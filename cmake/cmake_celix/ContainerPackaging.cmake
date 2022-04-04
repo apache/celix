@@ -277,11 +277,10 @@ $<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_RUNTIME_PROPERTIES>,
     endif ()
 
     #needed in the release.sh & run.sh files
-    #Setting CELIX_LIB_DIRS, CELIX_BIN_DIR and CELIX_LAUNCHER
+    #Setting CELIX_LIB_DIRS
     if (TARGET Celix::framework)
         #Celix Main Project
         set(CELIX_LIB_DIRS "$<TARGET_FILE_DIR:Celix::framework>:$<TARGET_FILE_DIR:Celix::utils>:$<TARGET_FILE_DIR:Celix::dfi>")
-        set(CELIX_BIN_DIR  "$<TARGET_FILE_DIR:Celix::launcher>")
     else ()
 	message(FATAL_ERROR "No Celix::framework target is defined. Did you use find_package(Celix REQUIRED)?")
     endif()

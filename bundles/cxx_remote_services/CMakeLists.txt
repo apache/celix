@@ -15,21 +15,14 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(REMOTE_SERVICE_ADMIN "Option to enable building the C++17 Remote Service Admin Service bundles" OFF)
-if (REMOTE_SERVICE_ADMIN)
+celix_subproject(CXX_REMOTE_SERVICE_ADMIN "Option to enable building the C++17 Remote Service Admin Service bundles" OFF)
+if (CXX_REMOTE_SERVICE_ADMIN)
     message(STATUS  "The C++ Remote Service Admin is still experimental; The API, SPI and implementation is not stable and will change")
 
     add_subdirectory(rsa_spi)
     add_subdirectory(admin)
     add_subdirectory(discovery_configured)
-
-    find_package(ZMQ)
-    find_package(CZMQ)
-    if (ZMQ_FOUND AND CZMQ_FOUND)
-        add_subdirectory(integration)
-    else ()
-        message(STATUS "C++ RSA integration test will not be build, because they require zmq and czmq")
-    endif ()
+    add_subdirectory(integration)
 
     #NOTE the topology manager is not yet used. The discovery and RSA need to be refactor for this
     #add_subdirectory(topology_manager)
