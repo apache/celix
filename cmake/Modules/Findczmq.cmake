@@ -18,11 +18,11 @@
 
 # - Try to find CZMQ
 # 	Once done this will define
-#  CZMQ_FOUND - System has Zmq
-#  CZMQ_INCLUDE_DIRS - The Zmq include directories
-#  CZMQ_LIBRARIES - The libraries needed to use Zmq
-#  CZMQ_DEFINITIONS - Compiler switches required for using Zmq
-#  CZMQ::lib - Imported CMake target for the library (include path + library)
+#  CZMQ_FOUND - System has czmq
+#  CZMQ_INCLUDE_DIRS - The czmq include directories
+#  CZMQ_LIBRARIES - The libraries needed to use czmq
+#  CZMQ_DEFINITIONS - Compiler switches required for using czmq
+#  czmq::czmq - Imported CMake target for the library (include path + library)
 
 find_path(CZMQ_INCLUDE_DIR czmq.h
           /usr/include
@@ -37,7 +37,7 @@ set(CZMQ_INCLUDE_DIRS ${CZMQ_INCLUDE_DIR} )
 include(FindPackageHandleStandardArgs)
 # handle the QUIETLY and REQUIRED arguments and set CZMQ_FOUND to TRUE
 # if all listed variables are TRUE
-find_package_handle_standard_args(CZMQ  DEFAULT_MSG
+find_package_handle_standard_args(czmq  DEFAULT_MSG
                                   CZMQ_LIBRARY CZMQ_INCLUDE_DIR)
 
 mark_as_advanced(CZMQ_INCLUDE_DIR CZMQ_LIBRARY)

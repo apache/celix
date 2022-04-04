@@ -32,7 +32,7 @@ find_package(ZLIB REQUIRED) #framework
 find_package(UUID REQUIRED) #framework
 find_package(CURL REQUIRED) #framework, etcdlib
 find_package(LIBZIP REQUIRED) #framework, etcdlib
-find_package(Jansson REQUIRED) #etcdlib, dfi
+find_package(jansson REQUIRED) #etcdlib, dfi
 find_package(FFI REQUIRED) #dfi
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
