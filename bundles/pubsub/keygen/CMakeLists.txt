@@ -17,14 +17,14 @@
 
 if (BUILD_ZMQ_SECURITY)
 
-    find_package(ZMQ REQUIRED)
-    find_package(CZMQ REQUIRED)
+    find_package(ZeroMQ REQUIRED)
+    find_package(czmq REQUIRED)
     find_package(OpenSSL 1.1.0 REQUIRED)
 
     add_executable(makecert makecert.c)
-    target_link_libraries(makecert CZMQ::lib)
+    target_link_libraries(makecert czmq::czmq)
     
     add_executable(ed_file ed_file.c)
-    target_link_libraries(ed_file PUBLIC ZMQ::lib CZMQ::lib OpenSSL::SSL)
+    target_link_libraries(ed_file PUBLIC ZeroMQ::ZeroMQ czmq::czmq OpenSSL::SSL)
 
 endif()

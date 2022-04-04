@@ -16,36 +16,36 @@
 # under the License.
 
 
-# - Try to find CZMQ
+# - Try to find ZMQ
 # 	Once done this will define
-#  CZMQ_FOUND - System has Zmq
-#  CZMQ_INCLUDE_DIRS - The Zmq include directories
-#  CZMQ_LIBRARIES - The libraries needed to use Zmq
-#  CZMQ_DEFINITIONS - Compiler switches required for using Zmq
-#  CZMQ::lib - Imported CMake target for the library (include path + library)
+#  ZMQ_FOUND - System has Zmq
+#  ZMQ_INCLUDE_DIRS - The Zmq include directories
+#  ZMQ_LIBRARIES - The libraries needed to use Zmq
+#  ZMQ_DEFINITIONS - Compiler switches required for using Zmq
+#  ZMQ::lib - Imported target for UUID
 
-find_path(CZMQ_INCLUDE_DIR czmq.h
+find_path(ZMQ_INCLUDE_DIR zmq.h zmq_utils.h
           /usr/include
           /usr/local/include )
 
-find_library(CZMQ_LIBRARY NAMES czmq
+find_library(ZMQ_LIBRARY NAMES zmq
              PATHS /usr/lib /usr/local/lib /usr/lib64 /usr/local/lib64 )
 
-set(CZMQ_LIBRARIES ${CZMQ_LIBRARY} )
-set(CZMQ_INCLUDE_DIRS ${CZMQ_INCLUDE_DIR} )
+set(ZMQ_LIBRARIES ${ZMQ_LIBRARY} )
+set(ZMQ_INCLUDE_DIRS ${ZMQ_INCLUDE_DIR} )
 
 include(FindPackageHandleStandardArgs)
-# handle the QUIETLY and REQUIRED arguments and set CZMQ_FOUND to TRUE
+# handle the QUIETLY and REQUIRED arguments and set ZMQ_FOUND to TRUE
 # if all listed variables are TRUE
-find_package_handle_standard_args(CZMQ  DEFAULT_MSG
-                                  CZMQ_LIBRARY CZMQ_INCLUDE_DIR)
+find_package_handle_standard_args(ZMQ  DEFAULT_MSG
+                                  ZMQ_LIBRARY ZMQ_INCLUDE_DIR)
 
-mark_as_advanced(CZMQ_INCLUDE_DIR CZMQ_LIBRARY)
+mark_as_advanced(ZMQ_INCLUDE_DIR ZMQ_LIBRARY )
 
-if (CZMQ_FOUND AND NOT TARGET CZMQ::lib)
-    add_library(CZMQ::lib SHARED IMPORTED)
-    set_target_properties(CZMQ::lib PROPERTIES
-            IMPORTED_LOCATION "${CZMQ_LIBRARY}"
-            INTERFACE_INCLUDE_DIRECTORIES "${CZMQ_INCLUDE_DIR}"
+if (ZMQ_FOUND AND NOT TARGET ZeroMQ::ZeroMQ
+    add_library(ZeroMQ::ZeroMQ SHARED IMPORTED)
+    set_target_properties(ZeroMQ::ZeroMQ PROPERTIES
+            IMPORTED_LOCATION "${ZMQ_LIBRARY}"
+            INTERFACE_INCLUDE_DIRECTORIES "${ZMQ_INCLUDE_DIR}"
     )
 endif ()
