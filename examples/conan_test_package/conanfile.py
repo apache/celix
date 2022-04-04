@@ -50,7 +50,10 @@ class TestPackageConan(ConanFile):
         cmake.definitions["TEST_PUSHSTREAMS"] = self.options["celix"].build_pushstreams
         cmake.definitions["CMAKE_PROJECT_test_package_INCLUDE"] = os.path.join(self.build_folder, "conan_paths.cmake")
         # the following is workaround https://github.com/conan-io/conan/issues/7192
-        cmake.definitions["CMAKE_EXE_LINKER_FLAGS"] = "-Wl,--unresolved-symbols=ignore-in-shared-libs"
+        if self.settings.os == "Linux":
+            cmake.definitions["CMAKE_EXE_LINKER_FLAGS"] = "-Wl,--unresolved-symbols=ignore-in-shared-libs"
+        elif self.settings.os == "Macos":
+            cmake.definitions["CMAKE_EXE_LINKER_FLAGS"] = "-Wl,-undefined -Wl,dynamic_lookup"
         cmake.configure()
         cmake.build()
 

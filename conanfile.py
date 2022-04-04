@@ -25,6 +25,7 @@ required_conan_version = ">=1.32.0"
 
 class CelixConan(ConanFile):
     name = "celix"
+    version = "2.3.0"
     homepage = "https://celix.apache.org"
     url = "https://github.com/apache/celix.git"
     topics = ("conan", "celix", "osgi", "embedded", "linux", "C/C++")
@@ -193,7 +194,6 @@ class CelixConan(ConanFile):
         self.options['zlib'].shared = True
         self.requires("libuuid/1.0.3")
         self.options['libuuid'].shared = True
-        self.requires("openssl/1.1.1n")
         self.requires("libzip/[>=1.7.3 <2.0.0]")
         self.options['libzip'].shared = True
         self.options['openssl'].shared = True
@@ -203,7 +203,9 @@ class CelixConan(ConanFile):
             if self.options.enable_address_sanitizer:
                 self.options["cpputest"].with_leak_detection = False
         if self.options.celix_add_openssl_dep:
-            self.requires("openssl/1.1.1k")
+            # fix a remotely exploitable OpenSSL/LibreSSL vulnerability
+            # https://lwn.net/Articles/887970/
+            self.requires("openssl/1.1.1n")
         if self.options.build_remote_service_admin or self.options.build_shell_bonjour:
             self.requires("libxml2/[>=2.9.9 <3.0.0]")
         if self.options.build_cxx_remote_service_admin:
