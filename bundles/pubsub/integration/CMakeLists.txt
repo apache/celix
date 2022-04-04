@@ -17,7 +17,7 @@
 
 celix_subproject(PUBSUB_INTEGRATION "Option to build the pubsub integration" ON DEPS SHELL SHELL_TUI)
 if (PUBSUB_INTEGRATION)
-    find_package(Jansson REQUIRED)
+    find_package(jansson REQUIRED)
 
     add_celix_bundle(pubsub_endpoint_sut
             #"Vanilla" bundle which is under test
@@ -376,8 +376,8 @@ if (PUBSUB_INTEGRATION)
     endif()
 
     if (BUILD_PUBSUB_PSA_ZMQ)
-        find_package(ZMQ REQUIRED)
-        find_package(CZMQ REQUIRED)
+        find_package(ZeroMQ REQUIRED)
+        find_package(czmq REQUIRED)
 
         add_celix_container(pubsub_zmq_v2_tests
                 USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
@@ -396,7 +396,7 @@ if (PUBSUB_INTEGRATION)
                 pubsub_serializer
                 )
 
-        target_link_libraries(pubsub_zmq_v2_tests PRIVATE Celix::pubsub_api Celix::dfi ZMQ::lib CZMQ::lib GTest::gtest GTest::gtest_main)
+        target_link_libraries(pubsub_zmq_v2_tests PRIVATE Celix::pubsub_api Celix::dfi ZeroMQ::ZeroMQ czmq::czmq GTest::gtest GTest::gtest_main)
         target_include_directories(pubsub_zmq_v2_tests SYSTEM PRIVATE gtest)
         add_test(NAME pubsub_zmq_v2_tests COMMAND pubsub_zmq_v2_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_zmq_v2_tests,CONTAINER_LOC>)
         setup_target_for_coverage(pubsub_zmq_v2_tests SCAN_DIR ..)
@@ -421,7 +421,7 @@ if (PUBSUB_INTEGRATION)
                 pubsub_serializer
                 )
 
-        target_link_libraries(pubsub_zmq_v2_zerocopy_tests PRIVATE Celix::pubsub_api Celix::dfi ZMQ::lib CZMQ::lib GTest::gtest GTest::gtest_main)
+        target_link_libraries(pubsub_zmq_v2_zerocopy_tests PRIVATE Celix::pubsub_api Celix::dfi ZeroMQ::ZeroMQ czmq::czmq GTest::gtest GTest::gtest_main)
         target_include_directories(pubsub_zmq_v2_zerocopy_tests SYSTEM PRIVATE gtest)
 
         add_test(NAME pubsub_zmq_v2_zerocopy_tests COMMAND pubsub_zmq_v2_zerocopy_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_zmq_v2_zerocopy_tests,CONTAINER_LOC>)
@@ -442,7 +442,7 @@ if (PUBSUB_INTEGRATION)
                 )
 
         target_compile_definitions(pstm_deadlock_zmq_v2_test PRIVATE -DDEADLOCK_SUT_BUNDLE_FILE=\"${DEADLOCK_SUT_BUNDLE_FILE}\")
-        target_link_libraries(pstm_deadlock_zmq_v2_test PRIVATE Celix::pubsub_api GTest::gtest GTest::gtest_main Celix::dfi ZMQ::lib CZMQ::lib)
+        target_link_libraries(pstm_deadlock_zmq_v2_test PRIVATE Celix::pubsub_api GTest::gtest GTest::gtest_main Celix::dfi ZeroMQ::ZeroMQ czmq::czmq)
         target_include_directories(pstm_deadlock_zmq_v2_test SYSTEM PRIVATE pstm_deadlock_zmq_v2_test)
 
         #Note we do not link to bundles, as result (to ensure a bundle zip file is created) an dependency on the bundle is needed.
@@ -535,8 +535,8 @@ if (PUBSUB_INTEGRATION)
         endif ()
 
         #Linking against zmq if present
-        if (TARGET ZMQ::lib AND TARGET CZMQ::lib)
-            target_link_libraries(${TEST_TARGET_NAME} PRIVATE ZMQ::lib CZMQ::lib)
+        if (TARGET ZeroMQ::ZeroMQ AND TARGET czmq::czmq)
+            target_link_libraries(${TEST_TARGET_NAME} PRIVATE ZeroMQ::ZeroMQ czmq::czmq)
         endif ()
     endfunction()
 

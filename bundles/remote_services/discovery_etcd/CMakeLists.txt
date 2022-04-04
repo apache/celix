@@ -19,7 +19,7 @@ celix_subproject(RSA_DISCOVERY_ETCD "Option to enable building the Discovery (ET
 if (RSA_DISCOVERY_ETCD)
 	find_package(CURL REQUIRED)
 	find_package(LibXml2 REQUIRED)
-	find_package(Jansson REQUIRED)
+	find_package(jansson REQUIRED)
 
 	add_celix_bundle(rsa_discovery_etcd
 			VERSION 0.9.0

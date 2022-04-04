@@ -18,7 +18,7 @@
 celix_subproject(PUBSUB_DISCOVERY_ETCD "Option to enable building the PubSub Discovery (ETCD) bundle" ON DEPS CELIX_ETCDLIB)
 if (PUBSUB_DISCOVERY_ETCD)
     find_package(CURL REQUIRED)
-    find_package(Jansson REQUIRED)
+    find_package(jansson REQUIRED)
 
     add_celix_bundle(celix_pubsub_discovery_etcd
             BUNDLE_SYMBOLICNAME "apache_celix_pubsub_discovery_etcd"

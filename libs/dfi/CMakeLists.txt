@@ -16,7 +16,7 @@
 # under the License.
 
 find_package(FFI REQUIRED)
-find_package(Jansson REQUIRED)
+find_package(jansson REQUIRED)
 
 set(SOURCES
 	src/dyn_common.c
