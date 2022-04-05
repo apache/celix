@@ -21,14 +21,14 @@
 #  JANSSON_FOUND - System has Jansson
 #  JANSSON_INCLUDE_DIRS - The Jansson include directories
 #  JANSSON_LIBRARIES - The libraries needed to use Jansson
-#  Jansson - Imported target for Jansson
+#  jansson::jansson - Imported target for Jansson
 
 find_path(JANSSON_INCLUDE_DIR jansson.h
-          /usr/include
-          /usr/local/include )
+        /usr/include
+        /usr/local/include )
 
 find_library(JANSSON_LIBRARY NAMES jansson
-             PATHS /usr/lib /usr/local/lib )
+        PATHS /usr/lib /usr/local/lib )
 
 set(JANSSON_LIBRARIES ${JANSSON_LIBRARY} )
 set(JANSSON_INCLUDE_DIRS ${JANSSON_INCLUDE_DIR} )
@@ -36,8 +36,8 @@ set(JANSSON_INCLUDE_DIRS ${JANSSON_INCLUDE_DIR} )
 include(FindPackageHandleStandardArgs)
 # handle the QUIETLY and REQUIRED arguments and set JANSSON_FOUND to TRUE
 # if all listed variables are TRUE
-find_package_handle_standard_args(Jansson  DEFAULT_MSG
-                                  JANSSON_LIBRARY JANSSON_INCLUDE_DIR)
+find_package_handle_standard_args(jansson  DEFAULT_MSG
+        JANSSON_LIBRARY JANSSON_INCLUDE_DIR)
 
 mark_as_advanced(JANSSON_INCLUDE_DIR JANSSON_LIBRARY)
 
@@ -46,7 +46,7 @@ if (JANSSON_FOUND AND NOT TARGET jansson::jansson)
     set_target_properties(jansson::jansson PROPERTIES
             IMPORTED_LOCATION "${JANSSON_LIBRARY}"
             INTERFACE_INCLUDE_DIRECTORIES "${JANSSON_INCLUDE_DIR}"
-    )
+            )
 
 endif ()
 

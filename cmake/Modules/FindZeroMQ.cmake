@@ -35,7 +35,7 @@ set(ZEROMQ_LIBRARIES ${ZEROMQ_LIBRARY} )
 set(ZEROMQ_INCLUDE_DIRS ${ZEROMQ_INCLUDE_DIR} )
 
 include(FindPackageHandleStandardArgs)
-# handle the QUIETLY and REQUIRED arguments and set ZMQ_FOUND to TRUE
+# handle the QUIETLY and REQUIRED arguments and set ZEROMQ_FOUND to TRUE
 # if all listed variables are TRUE
 find_package_handle_standard_args(ZeroMQ  DEFAULT_MSG
                                   ZEROMQ_LIBRARY ZEROMQ_INCLUDE_DIR)

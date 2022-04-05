@@ -58,7 +58,7 @@ if (NOT TARGET CURL::libcurl)
 endif ()
 
 if (NOT TARGET jansson::jansson)
-    message("Note jansson::jansson target not created by find_package(Jansson). Creating jansson::jansson Target.")
+    message("Note jansson::jansson target not created by find_package(jansson). Creating jansson::jansson Target.")
     add_library(jansson::jansson SHARED IMPORTED)
     set_target_properties(jansson::jansson PROPERTIES
             IMPORTED_LOCATION "${JANSSON_LIBRARIES}"

@@ -25,6 +25,7 @@ jobs:
         BUILD_OPTIONS: |
           -DENABLE_TESTING=ON
           -DENABLE_ADDRESS_SANITIZER=ON
+          -DBUILD_CXX_REMOTE_SERVICE_ADMIN=ON
       run: |
         mkdir build install
         cd build
