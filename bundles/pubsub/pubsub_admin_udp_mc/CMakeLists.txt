@@ -17,7 +17,7 @@
 
 celix_subproject(PUBSUB_PSA_UDP_MC "Build UDP MC PubSub Admin" ON)
 if (PUBSUB_PSA_UDP_MC)
-    find_package(Jansson REQUIRED)
+    find_package(jansson REQUIRED)
 
     add_celix_bundle(celix_pubsub_admin_udp_multicast
             BUNDLE_SYMBOLICNAME "apache_celix_pubsub_admin_udp_multicast"

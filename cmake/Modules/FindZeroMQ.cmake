@@ -18,34 +18,34 @@
 
 # - Try to find ZMQ
 # 	Once done this will define
-#  ZMQ_FOUND - System has Zmq
-#  ZMQ_INCLUDE_DIRS - The Zmq include directories
-#  ZMQ_LIBRARIES - The libraries needed to use Zmq
-#  ZMQ_DEFINITIONS - Compiler switches required for using Zmq
-#  ZMQ::lib - Imported target for UUID
+#  ZEROMQ_FOUND - System has Zmq
+#  ZEROMQ_INCLUDE_DIRS - The Zmq include directories
+#  ZEROMQ_LIBRARIES - The libraries needed to use Zmq
+#  ZEROMQ_DEFINITIONS - Compiler switches required for using Zmq
+#  ZeroMQ::ZeroMQ - Imported target for UUID
 
-find_path(ZMQ_INCLUDE_DIR zmq.h zmq_utils.h
+find_path(ZEROMQ_INCLUDE_DIR zmq.h zmq_utils.h
           /usr/include
           /usr/local/include )
 
-find_library(ZMQ_LIBRARY NAMES zmq
+find_library(ZEROMQ_LIBRARY NAMES zmq
              PATHS /usr/lib /usr/local/lib /usr/lib64 /usr/local/lib64 )
 
-set(ZMQ_LIBRARIES ${ZMQ_LIBRARY} )
-set(ZMQ_INCLUDE_DIRS ${ZMQ_INCLUDE_DIR} )
+set(ZEROMQ_LIBRARIES ${ZEROMQ_LIBRARY} )
+set(ZEROMQ_INCLUDE_DIRS ${ZEROMQ_INCLUDE_DIR} )
 
 include(FindPackageHandleStandardArgs)
-# handle the QUIETLY and REQUIRED arguments and set ZMQ_FOUND to TRUE
+# handle the QUIETLY and REQUIRED arguments and set ZEROMQ_FOUND to TRUE
 # if all listed variables are TRUE
-find_package_handle_standard_args(ZMQ  DEFAULT_MSG
-                                  ZMQ_LIBRARY ZMQ_INCLUDE_DIR)
+find_package_handle_standard_args(ZeroMQ  DEFAULT_MSG
+                                  ZEROMQ_LIBRARY ZEROMQ_INCLUDE_DIR)
 
-mark_as_advanced(ZMQ_INCLUDE_DIR ZMQ_LIBRARY )
+mark_as_advanced(ZEROMQ_INCLUDE_DIR ZEROMQ_LIBRARY )
 
-if (ZMQ_FOUND AND NOT TARGET ZMQ::lib)
-    add_library(ZMQ::lib SHARED IMPORTED)
-    set_target_properties(ZMQ::lib PROPERTIES
-            IMPORTED_LOCATION "${ZMQ_LIBRARY}"
-            INTERFACE_INCLUDE_DIRECTORIES "${ZMQ_INCLUDE_DIR}"
+if (ZEROMQ_FOUND AND NOT TARGET ZeroMQ::ZeroMQ)
+    add_library(ZeroMQ::ZeroMQ SHARED IMPORTED)
+    set_target_properties(ZeroMQ::ZeroMQ PROPERTIES
+            IMPORTED_LOCATION "${ZEROMQ_LIBRARY}"
+            INTERFACE_INCLUDE_DIRECTORIES "${ZEROMQ_INCLUDE_DIR}"
     )
 endif ()

@@ -18,7 +18,7 @@
 celix_subproject(RSA_REMOTE_SERVICE_ADMIN_DFI "Option to enable building the Remote Service Admin Service DFI" ON)
 if (RSA_REMOTE_SERVICE_ADMIN_DFI)
     find_package(CURL REQUIRED)
-    find_package(Jansson REQUIRED)
+    find_package(jansson REQUIRED)
     find_package(UUID REQUIRED)
 
     add_celix_bundle(rsa_dfi

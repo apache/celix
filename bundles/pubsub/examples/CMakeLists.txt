@@ -22,7 +22,7 @@ if (PUBSUB_EXAMPLES)
     find_program(ETCD_CMD NAMES etcd)
     find_program(XTERM_CMD NAMES xterm)
 
-    find_package(Jansson REQUIRED)
+    find_package(jansson REQUIRED)
 
     set(PUBSUB_CONTAINER_LIBS jansson::jansson Celix::dfi)
 
@@ -176,10 +176,10 @@ if (PUBSUB_EXAMPLES)
     endif()
 
     if (BUILD_PUBSUB_PSA_ZMQ)
-        find_package(ZMQ REQUIRED)
-        find_package(CZMQ REQUIRED)
+        find_package(ZeroMQ REQUIRED)
+        find_package(czmq REQUIRED)
 
-        set(PUBSUB_CONTAINER_LIBS ${PUBSUB_CONTAINER_LIBS} ZMQ::lib CZMQ::lib ${OPTIONAL_OPENSSL_LIB})
+        set(PUBSUB_CONTAINER_LIBS ${PUBSUB_CONTAINER_LIBS} ZeroMQ::ZeroMQ czmq::czmq ${OPTIONAL_OPENSSL_LIB})
 
         if (BUILD_PUBSUB_PSA_TCP AND BUILD_PUBSUB_PSA_UDP_MC)
             # Dynamic ZMQ / UDP / TCP admin

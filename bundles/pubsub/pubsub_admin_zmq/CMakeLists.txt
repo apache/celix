@@ -17,8 +17,8 @@
 
 celix_subproject(PUBSUB_PSA_ZMQ "Build ZeroMQ PubSub Admin (LGPL License)" ON)
 if (PUBSUB_PSA_ZMQ)
-    find_package(ZMQ REQUIRED)
-    find_package(CZMQ REQUIRED)
+    find_package(ZeroMQ REQUIRED)
+    find_package(czmq REQUIRED)
     find_package(UUID REQUIRED)
 
     set(OPTIONAL_OPENSSL_LIB )
@@ -48,7 +48,7 @@ if (PUBSUB_PSA_ZMQ)
 
     target_link_libraries(celix_pubsub_admin_zmq PRIVATE
             Celix::framework Celix::dfi Celix::log_helper Celix::utils
-            ZMQ::lib CZMQ::lib ${OPTIONAL_OPENSSL_LIB})
+            ZeroMQ::ZeroMQ czmq::czmq ${OPTIONAL_OPENSSL_LIB})
     target_link_libraries(celix_pubsub_admin_zmq PRIVATE Celix::shell_api)
     target_link_libraries(celix_pubsub_admin_zmq PRIVATE Celix::pubsub_spi Celix::pubsub_utils)
     target_include_directories(celix_pubsub_admin_zmq PRIVATE src)

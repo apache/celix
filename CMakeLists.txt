@@ -32,7 +32,7 @@ find_package(ZLIB REQUIRED) #framework
 find_package(UUID REQUIRED) #framework
 find_package(CURL REQUIRED) #framework, etcdlib
 find_package(LIBZIP REQUIRED) #framework, etcdlib
-find_package(Jansson REQUIRED) #etcdlib, dfi
+find_package(jansson REQUIRED) #etcdlib, dfi
 find_package(FFI REQUIRED) #dfi
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
@@ -58,7 +58,7 @@ if (NOT TARGET CURL::libcurl)
 endif ()
 
 if (NOT TARGET jansson::jansson)
-    message("Note jansson::jansson target not created by find_package(Jansson). Creating jansson::jansson Target.")
+    message("Note jansson::jansson target not created by find_package(jansson). Creating jansson::jansson Target.")
     add_library(jansson::jansson SHARED IMPORTED)
     set_target_properties(jansson::jansson PROPERTIES
             IMPORTED_LOCATION "${JANSSON_LIBRARIES}"
