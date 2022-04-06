@@ -47,9 +47,10 @@
 #define DISCOVERY_SERVER_MAX_EP     "DISCOVERY_CFG_SERVER_MAX_EP"
 
 /**
- * @brief It indicate that is discovery server reach-able from all network interfaces.
+ * @brief Remote Service Admin Discovery environment property (named "CELIX_DISCOVERY_BIND_ON_ALL_INTERFACES") which specifies
+ * whether the RSA discovery server is reachable from all network interfaces.
  * @details If set false, discovery server bind to the IP address configured by the user.
- * If set true, discovery server bind to 0.0.0.0.
+ * Otherwise, discovery server bind to 0.0.0.0.
  * The property is of the type boolean and the default is true
  */
 #define CELIX_DISCOVERY_BIND_ON_ALL_INTERFACES "CELIX_DISCOVERY_BIND_ON_ALL_INTERFACES"
