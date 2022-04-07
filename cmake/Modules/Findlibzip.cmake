@@ -18,7 +18,7 @@
 # - Try to find libzip
 #
 # Once done this will define
-#  LIBZIP_FOUND - System has libffi
+#  libzip_FOUND - System has libffi
 #  libzip::libzip target (if found)
 
 find_library(LIBZIP_LIBRARY NAMES zip
@@ -32,12 +32,12 @@ find_path(LIBZIP_INCLUDE_DIR zip.h
         )
 
 include(FindPackageHandleStandardArgs)
-# handle the QUIETLY and REQUIRED arguments and set LIBZIP_FOUND to TRUE
+# handle the QUIETLY and REQUIRED arguments and set libzip_FOUND to TRUE
 # if all listed variables are TRUE
-find_package_handle_standard_args(LIBZIP  DEFAULT_MSG
+find_package_handle_standard_args(libzip  DEFAULT_MSG
         LIBZIP_LIBRARY LIBZIP_INCLUDE_DIR)
 
-if(LIBZIP_FOUND AND NOT TARGET libzip::libzip)
+if(libzip_FOUND AND NOT TARGET libzip::libzip)
     add_library(libzip::libzip IMPORTED STATIC GLOBAL)
     set_target_properties(libzip::libzip PROPERTIES
             IMPORTED_LOCATION "${LIBZIP_LIBRARY}"

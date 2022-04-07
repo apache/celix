@@ -18,7 +18,7 @@
 
 # - Try to find ZMQ
 # 	Once done this will define
-#  ZEROMQ_FOUND - System has Zmq
+#  ZeroMQ_FOUND - System has Zmq
 #  ZEROMQ_INCLUDE_DIRS - The Zmq include directories
 #  ZEROMQ_LIBRARIES - The libraries needed to use Zmq
 #  ZEROMQ_DEFINITIONS - Compiler switches required for using Zmq
@@ -35,14 +35,14 @@ set(ZEROMQ_LIBRARIES ${ZEROMQ_LIBRARY} )
 set(ZEROMQ_INCLUDE_DIRS ${ZEROMQ_INCLUDE_DIR} )
 
 include(FindPackageHandleStandardArgs)
-# handle the QUIETLY and REQUIRED arguments and set ZEROMQ_FOUND to TRUE
+# handle the QUIETLY and REQUIRED arguments and set ZeroMQ_FOUND to TRUE
 # if all listed variables are TRUE
 find_package_handle_standard_args(ZeroMQ  DEFAULT_MSG
                                   ZEROMQ_LIBRARY ZEROMQ_INCLUDE_DIR)
 
 mark_as_advanced(ZEROMQ_INCLUDE_DIR ZEROMQ_LIBRARY )
 
-if (ZEROMQ_FOUND AND NOT TARGET ZeroMQ::ZeroMQ)
+if (ZeroMQ_FOUND AND NOT TARGET ZeroMQ::ZeroMQ)
     add_library(ZeroMQ::ZeroMQ SHARED IMPORTED)
     set_target_properties(ZeroMQ::ZeroMQ PROPERTIES
             IMPORTED_LOCATION "${ZEROMQ_LIBRARY}"

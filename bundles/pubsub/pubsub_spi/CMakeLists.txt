@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-find_package(UUID REQUIRED)
+find_package(libuuid REQUIRED)
 
 add_library(pubsub_spi STATIC
         src/pubsub_endpoint.c

@@ -18,7 +18,7 @@
 celix_subproject(PUBSUB_PSA_WS "Build WebSocket PubSub Admin" ON DEPS HTTP_ADMIN)
 if (PUBSUB_PSA_WS)
     find_package(jansson REQUIRED)
-    find_package(UUID REQUIRED)
+    find_package(libuuid REQUIRED)
 
     add_celix_bundle(celix_pubsub_admin_websocket
             BUNDLE_SYMBOLICNAME "apache_celix_pubsub_admin_websocket"

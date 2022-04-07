@@ -17,7 +17,7 @@
 
 celix_subproject(PUBSUB_PSA_TCP "Build TCP PubSub Admin" ON)
 if (PUBSUB_PSA_TCP)
-    find_package(UUID REQUIRED)
+    find_package(libuuid REQUIRED)
 
     add_celix_bundle(celix_pubsub_admin_tcp
             BUNDLE_SYMBOLICNAME "apache_celix_pubsub_admin_tcp"
@@ -38,7 +38,7 @@ if (PUBSUB_PSA_TCP)
     target_include_directories(celix_pubsub_admin_tcp PRIVATE src)
     # cmake find package UUID set the wrong include dir for OSX, does Conan solve this?
     if (NOT APPLE)
-        target_link_libraries(celix_pubsub_admin_tcp PRIVATE UUID::lib)
+        target_link_libraries(celix_pubsub_admin_tcp PRIVATE libuuid::libuuid)
     endif()
 
     install_celix_bundle(celix_pubsub_admin_tcp EXPORT celix COMPONENT pubsub)

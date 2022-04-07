@@ -77,11 +77,11 @@ set(CELIX_SHELL_TUI_BUNDLE ${CELIX_BUNDLES_DIR}/shell_tui.zip)
 include(CMakeFindDependencyMacro)
 
 find_dependency(ZLIB) #Needed by framework
-find_dependency(UUID) #Needed by framework
+find_dependency(libuuid) #Needed by framework
 find_dependency(CURL) #Needed by framework (used for curl initialization)
-find_dependency(LIBZIP) #Needed by utils
-find_dependency(Jansson) #Needed by dfi, etcdlib, remote services, pubsub
-find_dependency(FFI) #Needed by dfi
+find_dependency(libzip) #Needed by utils
+find_dependency(jansson) #Needed by dfi, etcdlib, remote services, pubsub
+find_dependency(libffi) #Needed by dfi
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_dependency(Threads)
 
@@ -112,8 +112,8 @@ if (TARGET Celix::rsa_discovery_common OR TARGET Celix::bonjour_shell)
   find_dependency(LibXml2)
 endif ()
 if (TARGET  Celix::celix_pubsub_admin_zmq OR TARGET Celix::celix_pubsub_admin_zmq_v2)
-  find_dependency(ZMQ)
-  find_dependency(CZMQ)
+  find_dependency(ZeroMQ)
+  find_dependency(czmq)
 endif ()
 if (TARGET Celix::pubsub_admin_nanomsg)
   find_dependency(NanoMsg)

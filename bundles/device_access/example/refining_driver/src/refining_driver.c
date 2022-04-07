@@ -24,6 +24,7 @@
  *  \copyright	Apache License, Version 2.0
  */
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -198,9 +199,10 @@ celix_status_t refiningDriver_attach(void * driverHandler, service_reference_pt 
 		status = refiningDriver_createDevice(driver, reference, device_service, &refiningDevice);
 		if (status == CELIX_SUCCESS) {
 			driver->deviceCount+=1;
-			char serial[5];
-			sprintf(serial, "%4i", driver->deviceCount);
+			char *serial;
+            asprintf(&serial, "%4i", driver->deviceCount);
 			status = refiningDriver_registerDevice(driver, refiningDevice, serial);
+            free(serial);
 		}
 	}
 	return status;

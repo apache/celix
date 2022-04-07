@@ -20,7 +20,7 @@ if (DEPLOYMENT_ADMIN)
     message(WARNING "Celix::deployment_admin is considered unstable, because develop of this bundle has been dormant for a while")
 
     find_package(CURL REQUIRED)
-    find_package(UUID REQUIRED)
+    find_package(libuuid REQUIRED)
     find_package(ZLIB REQUIRED)
 
     add_library(deployment_admin_api INTERFACE)
@@ -46,7 +46,7 @@ if (DEPLOYMENT_ADMIN)
     )
 
     target_compile_definitions(deployment_admin PRIVATE -DUSE_FILE32API)
-    target_link_libraries(deployment_admin PRIVATE CURL::libcurl UUID::lib ZLIB::ZLIB deployment_admin_api)
+    target_link_libraries(deployment_admin PRIVATE CURL::libcurl libuuid::libuuid ZLIB::ZLIB deployment_admin_api)
 
     install(TARGETS deployment_admin_api EXPORT celix COMPONENT deployment_admin
             INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/deployment_admin)

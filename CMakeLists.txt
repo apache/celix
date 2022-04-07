@@ -29,11 +29,11 @@ include(cmake/cmake_celix/UseCelix.cmake)
 
 #find required packages
 find_package(ZLIB REQUIRED) #framework
-find_package(UUID REQUIRED) #framework
+find_package(libuuid REQUIRED) #framework
 find_package(CURL REQUIRED) #framework, etcdlib
-find_package(LIBZIP REQUIRED) #framework, etcdlib
+find_package(libzip REQUIRED) #framework, etcdlib
 find_package(jansson REQUIRED) #etcdlib, dfi
-find_package(FFI REQUIRED) #dfi
+find_package(libffi REQUIRED) #dfi
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
