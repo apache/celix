@@ -18,7 +18,7 @@
 
 # - Try to find CZMQ
 # 	Once done this will define
-#  CZMQ_FOUND - System has czmq
+#  czmq_FOUND - System has czmq
 #  CZMQ_INCLUDE_DIRS - The czmq include directories
 #  CZMQ_LIBRARIES - The libraries needed to use czmq
 #  CZMQ_DEFINITIONS - Compiler switches required for using czmq
@@ -35,14 +35,14 @@ set(CZMQ_LIBRARIES ${CZMQ_LIBRARY} )
 set(CZMQ_INCLUDE_DIRS ${CZMQ_INCLUDE_DIR} )
 
 include(FindPackageHandleStandardArgs)
-# handle the QUIETLY and REQUIRED arguments and set CZMQ_FOUND to TRUE
+# handle the QUIETLY and REQUIRED arguments and set czmq_FOUND to TRUE
 # if all listed variables are TRUE
 find_package_handle_standard_args(czmq  DEFAULT_MSG
                                   CZMQ_LIBRARY CZMQ_INCLUDE_DIR)
 
 mark_as_advanced(CZMQ_INCLUDE_DIR CZMQ_LIBRARY)
 
-if (CZMQ_FOUND AND NOT TARGET czmq::czmq)
+if (czmq_FOUND AND NOT TARGET czmq::czmq)
     add_library(czmq::czmq SHARED IMPORTED)
     set_target_properties(czmq::czmq PROPERTIES
             IMPORTED_LOCATION "${CZMQ_LIBRARY}"

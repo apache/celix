@@ -19,7 +19,7 @@ celix_subproject(PUBSUB_PSA_ZMQ "Build ZeroMQ PubSub Admin (LGPL License)" ON)
 if (PUBSUB_PSA_ZMQ)
     find_package(ZeroMQ REQUIRED)
     find_package(czmq REQUIRED)
-    find_package(UUID REQUIRED)
+    find_package(libuuid REQUIRED)
 
     set(OPTIONAL_OPENSSL_LIB )
     # FIXME: ZMQ_SECURITY doesn't compile now

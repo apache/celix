@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-find_package(FFI REQUIRED)
+find_package(libffi REQUIRED)
 find_package(jansson REQUIRED)
 
 set(SOURCES
@@ -40,7 +40,7 @@ target_include_directories(dfi PUBLIC
 	$<INSTALL_INTERFACE:include/celix/dfi>
 )
 
-target_link_libraries(dfi PRIVATE FFI::lib)
+target_link_libraries(dfi PRIVATE libffi::libffi)
 target_link_libraries(dfi PUBLIC jansson::jansson)
 target_link_libraries(dfi PRIVATE Celix::utils)
 set_target_properties(dfi PROPERTIES "SOVERSION" 1)

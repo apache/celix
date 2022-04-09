@@ -18,8 +18,8 @@
 # - Try to find libffi define the variables for the binaries/headers and include 
 #
 # Once done this will define
-#  FFI_FOUND - System has libffi
-#  FFI::lib - Imported target for the libffi
+#  libffi_FOUND - System has libffi
+#  libffi::libffi - Imported target for the libffi
 
 find_library(FFI_LIBRARY NAMES ffi libffi
     PATHS $ENV{FFI_DIR} ${FFI_DIR} /usr/local/opt/libffi /opt/local /usr /usr/local
@@ -34,9 +34,9 @@ find_path(FFI_INCLUDE_DIR ffi.h
 )
 
 include(FindPackageHandleStandardArgs)
-# handle the QUIETLY and REQUIRED arguments and set FFI_FOUND to TRUE
+# handle the QUIETLY and REQUIRED arguments and set libffi_FOUND to TRUE
 # if all listed variables are TRUE
-find_package_handle_standard_args(FFI DEFAULT_MSG
+find_package_handle_standard_args(libffi DEFAULT_MSG
                                   FFI_LIBRARY FFI_INCLUDE_DIR)
 mark_as_advanced(FFI_INCLUDE_DIR FFI_LIBRARY)
 
@@ -44,9 +44,9 @@ set(FFI_LIBRARIES ${FFI_LIBRARY})
 set(FFI_INCLUDE_DIRS ${FFI_INCLUDE_DIR})
 
 
-if(FFI_FOUND AND NOT TARGET FFI::lib)
-    add_library(FFI::lib SHARED IMPORTED)
-    set_target_properties(FFI::lib PROPERTIES
+if(libffi_FOUND AND NOT TARGET libffi::libffi)
+    add_library(libffi::libffi SHARED IMPORTED)
+    set_target_properties(libffi::libffi PROPERTIES
             IMPORTED_LOCATION "${FFI_LIBRARY}"
             INTERFACE_INCLUDE_DIRECTORIES "${FFI_INCLUDE_DIR}"
     )

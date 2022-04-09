@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-find_package(LIBZIP REQUIRED)
+find_package(libzip REQUIRED)
 
 set(MEMSTREAM_SOURCES )
 set(MEMSTREAM_INCLUDES )
