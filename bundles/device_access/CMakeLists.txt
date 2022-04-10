@@ -15,11 +15,11 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(DEVICE_ACCESS "Option to enable building the Device Access Service bundles" ON DEPS LAUNCHER LOG_SERVICE SHELL shell_tui)
+celix_subproject(DEVICE_ACCESS "Option to enable building the Device Access Service bundles" ON)
 if(DEVICE_ACCESS)
     message(WARNING "DEVICE_ACCESS is considered unstable, because develop of these bundles has been dormant for a while")
 
     add_subdirectory(device_access)
-    add_subdirectory(driver_locator)   
+    add_subdirectory(driver_locator)
     add_subdirectory(example)
 endif(DEVICE_ACCESS)

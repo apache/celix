@@ -25,6 +25,50 @@ project(Celix C CXX)
 include(cmake/celix_project/CelixProject.cmake)
 include(cmake/cmake_celix/UseCelix.cmake)
 
+#find required packages
+find_package(ZLIB REQUIRED) #framework
+find_package(libuuid REQUIRED) #framework
+find_package(CURL REQUIRED) #framework, etcdlib
+find_package(libzip REQUIRED) #framework, etcdlib
+find_package(jansson REQUIRED) #etcdlib, dfi
+find_package(libffi REQUIRED) #dfi
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
+if (NOT TARGET ZLIB::ZLIB)
+    #Note more recent zlib will create ZLIB::ZLIB target
+    message("Note ZLIB::ZLIB target not created by find_package(ZLIB). Creating ZLIB::ZLIB Target.")
+    add_library(ZLIB::ZLIB SHARED IMPORTED)
+    set_target_properties(ZLIB::ZLIB PROPERTIES
+            IMPORTED_LOCATION "${ZLIB_LIBRARIES}"
+            INTERFACE_INCLUDE_DIRECTORIES "${ZLIB_INCLUDE_DIRS}"
+            )
+endif ()
+
+if (NOT TARGET CURL::libcurl)
+    #Note more recent curl will create CURL::libcurl target
+    message("Note CURL::libcurl target not created by find_package(CURL). Creating CURL::libcurl Target.")
+    add_library(CURL::libcurl SHARED IMPORTED)
+    set_target_properties(CURL::libcurl PROPERTIES
+            IMPORTED_LOCATION "${CURL_LIBRARIES}"
+            INTERFACE_INCLUDE_DIRECTORIES "${CURL_INCLUDE_DIRS}"
+            )
+endif ()
+
+if (NOT TARGET jansson::jansson)
+    message("Note jansson::jansson target not created by find_package(jansson). Creating jansson::jansson Target.")
+    add_library(jansson::jansson SHARED IMPORTED)
+    set_target_properties(jansson::jansson PROPERTIES
+            IMPORTED_LOCATION "${JANSSON_LIBRARIES}"
+            INTERFACE_INCLUDE_DIRECTORIES "${JANSSON_INCLUDE_DIRS}"
+            )
+endif ()
+
+# see https://public.kitware.com/Bug/view.php?id=15696
+IF (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} EQUAL 3.3 AND ${CMAKE_GENERATOR} STREQUAL "Unix Makefiles")
+    message( FATAL_ERROR "Building Celix using CMake 3.3 and makefiles is not supported due to a bug in the Makefile Generator (see Bug 15696). Please change the used CMake version - both, CMake 3.2 and CMake 3.4 are working fine. Or use a different generator (e.g. Ninja)." )
+ENDIF()
+
 # Options
 option(ENABLE_TESTING "Enables unit/bundle testing" FALSE)
 if (ENABLE_TESTING)
@@ -63,8 +107,12 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 endif()
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    set(CMAKE_C_FLAGS "-Wno-unused-result -Wno-format-truncation -Wno-stringop-overflow ${CMAKE_C_FLAGS}")
-    set(CMAKE_CXX_FLAGS "-Wno-unused-result -Wno-format-truncation -Wno-stringop-overflow ${CMAKE_CXX_FLAGS}")
+    set(CMAKE_C_FLAGS "-Wno-unused-result ${CMAKE_C_FLAGS}")
+    set(CMAKE_CXX_FLAGS "-Wno-unused-result ${CMAKE_CXX_FLAGS}")
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 7.0)
+        set(CMAKE_C_FLAGS "-Wno-format-truncation -Wno-stringop-overflow ${CMAKE_C_FLAGS}")
+        set(CMAKE_CXX_FLAGS "-Wno-format-truncation -Wno-stringop-overflow ${CMAKE_CXX_FLAGS}")
+    endif()
     if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 8.0)
         set(CMAKE_C_FLAGS "-Wno-stringop-truncation ${CMAKE_C_FLAGS}")
         set(CMAKE_CXX_FLAGS "-Wno-stringop-truncation ${CMAKE_CXX_FLAGS}")
@@ -108,9 +156,14 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 endif()
 
 # Set version for the framework package/release
-set(CELIX_MAJOR "2")
-set(CELIX_MINOR "3")
-set(CELIX_MICRO "0")
+if (NOT DEFINED CELIX_MAJOR)
+    set(CELIX_MAJOR "2")
+    set(CELIX_MINOR "3")
+    set(CELIX_MICRO "0")
+endif ()
+
+# Default bundle version
+set(DEFAULT_VERSION 1.0.0)
 
 if (ENABLE_TESTING)
     enable_testing()

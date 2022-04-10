@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(DEVICE_ACCESS_EXAMPLE "Option to enable building the Device Access example bundles" OFF DEPS LAUNCHER LOG_SERVICE shell_pt shell_tui)
+celix_subproject(DEVICE_ACCESS_EXAMPLE "Option to enable building the Device Access example bundles" OFF DEPS SHELL SHELL_TUI)
 if(DEVICE_ACCESS_EXAMPLE)
 	add_subdirectory(base_driver)
 	add_subdirectory(consuming_driver)

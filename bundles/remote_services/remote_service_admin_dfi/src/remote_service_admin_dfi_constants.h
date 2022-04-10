@@ -52,4 +52,20 @@
  */
 #define RSA_DFI_USE_CURL_SHARE_HANDLE_DEFAULT   false
 
+/**
+ * @brief Remote Service Admin DFI environment property (named "CELIX_RSA_BIND_ON_ALL_INTERFACES") which specifies
+ * whether the RSA server is reachable from all network interfaces.
+ * @details If set false, RSA server bind to the IP address configured by the user.
+ * Otherwise, RSA server bind to 0.0.0.0.
+ *
+ * The property is of the type boolean and the default is true
+ */
+#define CELIX_RSA_BIND_ON_ALL_INTERFACES "CELIX_RSA_BIND_ON_ALL_INTERFACES"
+
+/**
+ * @brief Default value for the property CELIX_RSA_BIND_ON_ALL_INTERFACES
+ */
+#define CELIX_RSA_BIND_ON_ALL_INTERFACES_DEFAULT true
+
+
 #endif //CELIX_REMOTE_SERVICE_ADMIN_DFI_CONSTANTS_H

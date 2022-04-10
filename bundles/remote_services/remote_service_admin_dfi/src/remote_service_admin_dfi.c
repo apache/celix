@@ -256,20 +256,30 @@ celix_status_t remoteServiceAdmin_create(celix_bundle_context_t *context, remote
         snprintf(newPort, 10, "%li", port);
 
         unsigned int port_counter = 0;
+        bool bindToAllInterfaces = celix_bundleContext_getPropertyAsBool(context, CELIX_RSA_BIND_ON_ALL_INTERFACES, CELIX_RSA_BIND_ON_ALL_INTERFACES_DEFAULT);
         do {
+            char *listeningPorts = NULL;
+            if (bindToAllInterfaces) {
+                asprintf(&listeningPorts,"0.0.0.0:%s", newPort);
+            } else {
+                asprintf(&listeningPorts,"%s:%s", (*admin)->ip, newPort);
+            }
 
-            const char *options[] = { "listening_ports", newPort, "num_threads", "5", NULL};
+            const char *options[] = { "listening_ports", listeningPorts, "num_threads", "5", NULL};
 
             (*admin)->ctx = mg_start(&callbacks, (*admin), options);
 
             if ((*admin)->ctx != NULL) {
-                celix_logHelper_log((*admin)->loghelper, CELIX_LOG_LEVEL_INFO, "RSA: Start webserver: %s", newPort);
+                celix_logHelper_log((*admin)->loghelper, CELIX_LOG_LEVEL_INFO, "RSA: Start webserver: %s", listeningPorts);
                 (*admin)->port = strdup(newPort);
 
             } else {
                 celix_logHelper_log((*admin)->loghelper, CELIX_LOG_LEVEL_ERROR, "Error while starting rsa server on port %s - retrying on port %li...", newPort, port + port_counter);
                 snprintf(newPort, 10,  "%li", port + port_counter++);
             }
+
+            free(listeningPorts);
+
         } while (((*admin)->ctx == NULL) && (port_counter < MAX_NUMBER_OF_RESTARTS));
 
     }

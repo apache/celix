@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(HTTP_ADMIN "Service to use a HTTP server with websocket support" ON DEPS UTILS)
+celix_subproject(HTTP_ADMIN "Service to use a HTTP server with websocket support" ON)
 if (HTTP_ADMIN)
 
     add_subdirectory(http_admin_api)

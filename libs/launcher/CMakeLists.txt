@@ -15,12 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(LAUNCHER "Option to build the launcher" "ON" DEPS UTILS FRAMEWORK)
+celix_subproject(LAUNCHER "Option to build the launcher" "ON")
 if (LAUNCHER) 
-    find_package(CURL REQUIRED)
-
-    include_directories(public/include)
-
     #celix launcher linked to libc
     add_executable(launcher
         src/main.c
@@ -30,10 +26,7 @@ if (LAUNCHER)
     target_include_directories(launcher PRIVATE src)
 
     target_link_libraries(launcher PRIVATE Celix::framework)
-    if (NOT ANDROID)
-        target_link_libraries(launcher PRIVATE Celix::dfi) #note not strictly needed, but ensure libdfi is a dep for the framework, useful when create docker images
-    endif()
-    
+
     install(TARGETS launcher EXPORT celix RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT framework)
     #Setup target aliases to match external usage
     add_executable(Celix::launcher ALIAS launcher)

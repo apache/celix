@@ -24,6 +24,7 @@
  *  \copyright	Apache License, Version 2.0
  */
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -187,29 +188,30 @@ static celix_status_t refiningDriver_registerDevice(refining_driver_pt driver, r
 }
 
 celix_status_t refiningDriver_attach(void * driverHandler, service_reference_pt reference, char **result) {
-	printf("REFINING_DRIVER: attached called\n");
-	celix_status_t status = CELIX_SUCCESS;
-	refining_driver_pt driver = driverHandler;
-	(*result) = NULL;
-	base_driver_device_service_pt device_service = NULL;
-	status = bundleContext_getService(driver->context, reference, (void **)&device_service);
-	if (status == CELIX_SUCCESS) {
-		refining_driver_device_pt refiningDevice = NULL;
-		status = refiningDriver_createDevice(driver, reference, device_service, &refiningDevice);
-		if (status == CELIX_SUCCESS) {
-			driver->deviceCount+=1;
-			char serial[5];
-			sprintf(serial, "%4i", driver->deviceCount);
-			status = refiningDriver_registerDevice(driver, refiningDevice, serial);
-		}
-	}
-	return status;
+    printf("REFINING_DRIVER: attached called\n");
+    celix_status_t status = CELIX_SUCCESS;
+    refining_driver_pt driver = driverHandler;
+    (*result) = NULL;
+    base_driver_device_service_pt device_service = NULL;
+    status = bundleContext_getService(driver->context, reference, (void **)&device_service);
+    if (status == CELIX_SUCCESS) {
+        refining_driver_device_pt refiningDevice = NULL;
+        status = refiningDriver_createDevice(driver, reference, device_service, &refiningDevice);
+        if (status == CELIX_SUCCESS) {
+            driver->deviceCount+=1;
+            char *serial;
+            asprintf(&serial, "%4i", driver->deviceCount);
+            status = refiningDriver_registerDevice(driver, refiningDevice, serial);
+            free(serial);
+        }
+    }
+    return status;
 }
 
 celix_status_t refiningDriver_match(void *driverHandler, service_reference_pt reference, int *value) {
-	printf("REFINING_DRIVER: match called\n");
-	int match = 0;
-	celix_status_t status = CELIX_SUCCESS;
+    printf("REFINING_DRIVER: match called\n");
+    int match = 0;
+    celix_status_t status = CELIX_SUCCESS;
 
     const char* category = NULL;
     status = serviceReference_getProperty(reference, OSGI_DEVICEACCESS_DEVICE_CATEGORY, &category);
@@ -219,8 +221,8 @@ celix_status_t refiningDriver_match(void *driverHandler, service_reference_pt re
         }
     }
 
-	(*value) = match;
-	return status;
+    (*value) = match;
+    return status;
 }
 
 celix_status_t refiningDriverDevice_createService(refining_driver_device_pt device, refining_driver_device_service_pt *service) {

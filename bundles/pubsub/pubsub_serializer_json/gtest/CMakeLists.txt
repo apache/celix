@@ -26,7 +26,7 @@ add_executable(test_pubsub_serializer_json
 )
 target_link_libraries(test_pubsub_serializer_json PRIVATE Celix::framework Celix::dfi Celix::pubsub_utils GTest::gtest GTest::gtest_main Celix::pubsub_spi)
 
-add_dependencies(test_pubsub_serializer_json celix_pubsub_serializer_json_bundle pubsub_json_serialization_descriptor_bundle)
+add_celix_bundle_dependencies(test_pubsub_serializer_json celix_pubsub_serializer_json pubsub_json_serialization_descriptor)
 target_compile_definitions(test_pubsub_serializer_json PRIVATE -DSERIALIZATION_BUNDLE=\"$<TARGET_PROPERTY:celix_pubsub_serializer_json,BUNDLE_FILE>\")
 target_compile_definitions(test_pubsub_serializer_json PRIVATE -DDESCRIPTOR_BUNDLE=\"$<TARGET_PROPERTY:pubsub_json_serialization_descriptor,BUNDLE_FILE>\")
 

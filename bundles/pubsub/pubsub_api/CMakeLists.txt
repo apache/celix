@@ -20,13 +20,12 @@ add_library(pubsub_api INTERFACE)
 
 target_include_directories(pubsub_api INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
-    $<INSTALL_INTERFACE:include/celix/pubsub>
-    $<INSTALL_INTERFACE:include/celix>
 )
 
 #install api
-install(TARGETS pubsub_api EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT pubsub)
-install(DIRECTORY include/ DESTINATION include/celix/pubsub COMPONENT pubsub)
+install(TARGETS pubsub_api EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT pubsub
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/pubsub)
+install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/pubsub COMPONENT pubsub)
 
 #Setup target aliases to match external usage
 add_library(Celix::pubsub_api ALIAS pubsub_api)

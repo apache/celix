@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-find_package(LIBZIP REQUIRED)
+find_package(libzip REQUIRED)
 
 set(MEMSTREAM_SOURCES )
 set(MEMSTREAM_INCLUDES )
@@ -25,7 +25,7 @@ check_function_exists(open_memstream OPEN_MEMSTREAM_EXISTS)
 if (NOT OPEN_MEMSTREAM_EXISTS)
     set(MEMSTREAM_SOURCES src/memstream/open_memstream.c  src/memstream/fmemopen.c ${MEMSTREAM_SOURCES})
     set(MEMSTREAM_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/include/memstream ${MEMSTREAM_INCLUDE_DIR})
-    install(DIRECTORY include/memstream/ DESTINATION include/celix/memstream COMPONENT framework)
+    install(DIRECTORY include/memstream/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/memstream COMPONENT framework)
 endif()
 
 add_library(utils SHARED
@@ -62,7 +62,6 @@ endif ()
 target_include_directories(utils PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
         $<BUILD_INTERFACE:${MEMSTREAM_INCLUDE_DIR}>
-        $<INSTALL_INTERFACE:include/celix>
 )
 target_include_directories(utils PRIVATE src)
 set_target_properties(utils PROPERTIES "SOVERSION" 2)
@@ -73,8 +72,9 @@ ELSEIF(ANDROID)
     target_link_libraries(utils PRIVATE m)
 ENDIF()
 
-install(TARGETS utils EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework)
-install(DIRECTORY include/ DESTINATION include/celix COMPONENT framework
+install(TARGETS utils EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix)
+install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix COMPONENT framework
         PATTERN memstream* EXCLUDE)
 
 #Alias setup to match external usage
@@ -91,32 +91,31 @@ if (ENABLE_TESTING)
     include_directories(src)
 
     add_executable(hash_map_test private/test/hash_map_test.cpp)
-    target_link_libraries(hash_map_test Celix::utils ${CppUTest_LIBRARY} pthread)
-    target_compile_options(hash_map_test PRIVATE -Wno-old-style-cast)
+    target_link_libraries(hash_map_test Celix::utils CppUTest::CppUTest pthread)
 
     add_executable(array_list_test private/test/array_list_test.cpp)
-    target_link_libraries(array_list_test  Celix::utils ${CppUTest_LIBRARY} pthread)
+    target_link_libraries(array_list_test  Celix::utils CppUTest::CppUTest pthread)
 
     add_executable(celix_threads_test private/test/celix_threads_test.cpp)
-    target_link_libraries(celix_threads_test Celix::utils ${CppUTest_LIBRARY} ${CppUTest_EXT_LIBRARIES} pthread)
+    target_link_libraries(celix_threads_test Celix::utils CppUTest::CppUTest ${CppUTest_EXT_LIBRARIES} pthread)
 
     add_executable(linked_list_test private/test/linked_list_test.cpp)
-    target_link_libraries(linked_list_test  Celix::utils ${CppUTest_LIBRARY} pthread)
+    target_link_libraries(linked_list_test  Celix::utils CppUTest::CppUTest pthread)
 
     add_executable(properties_test private/test/properties_test.cpp)
-    target_link_libraries(properties_test ${CppUTest_LIBRARY} ${CppUTest_EXT_LIBRARIES}  Celix::utils pthread)
+    target_link_libraries(properties_test CppUTest::CppUTest CppUTest::CppUTestExt  Celix::utils pthread)
 
     add_executable(utils_test private/test/utils_test.cpp)
-    target_link_libraries(utils_test ${CppUTest_LIBRARY}  Celix::utils pthread)
+    target_link_libraries(utils_test CppUTest::CppUTest  Celix::utils pthread)
 
     add_executable(ip_utils_test private/test/ip_utils_test.cpp)
-    target_link_libraries(ip_utils_test ${CppUTest_LIBRARY}  Celix::utils pthread)
+    target_link_libraries(ip_utils_test CppUTest::CppUTest  Celix::utils pthread)
 
     add_executable(filter_test private/test/filter_test.cpp)
-    target_link_libraries(filter_test ${CppUTest_LIBRARY}  Celix::utils pthread)
+    target_link_libraries(filter_test CppUTest::CppUTest  Celix::utils pthread)
 
     add_executable(version_test private/test/version_test.cpp)
-    target_link_libraries(version_test ${CppUTest_LIBRARY}  Celix::utils pthread)
+    target_link_libraries(version_test CppUTest::CppUTest  Celix::utils pthread)
 
     configure_file(private/resources-test/properties.txt ${CMAKE_CURRENT_BINARY_DIR}/resources-test/properties.txt COPYONLY)
 
