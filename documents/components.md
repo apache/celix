@@ -21,7 +21,7 @@ limitations under the License.
 
 # Apache Celix Components
 
-TODO refactor this documentation part
+TODO refactor this documentation file
 
 ## Introduction
 

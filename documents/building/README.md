@@ -131,3 +131,36 @@ should give the following output:
 "Error: invalid or non-existing configuration file: 'config.properties'.No such file or directory".
 
 For more info how to build your own projects and/or running the Apache Celix examples see [Celix Intro](../README.md).
+
+# Building etcdlib library standalone
+```bash
+#bash
+git clone git@github.com:apache/celix.git
+mkdir celix/build
+cd celix/build
+cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ../libs/etcdlib
+make -j
+sudo make install
+```
+
+# Building Celix Promises library standalone
+```bash
+#bash
+git clone git@github.com:apache/celix.git
+mkdir celix/build
+cd celix/build
+cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ../libs/promises
+make -j
+sudo make install
+```
+
+# Building Celix Push Streams library standalone
+```bash
+#bash
+git clone git@github.com:apache/celix.git
+mkdir celix/build
+cd celix/build
+cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ../libs/pushstreams
+make -j
+sudo make install
+```

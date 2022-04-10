@@ -20,20 +20,20 @@ limitations under the License.
 -->
 
 # Apache Celix Framework
-An Apache Celix Framework is the core of an Apache Celix applications and provides the supports for deployments of 
+The Apache Celix framework is the core of Apache Celix applications and provides supports for deployments of 
 dynamic, extensible modules known as bundles. 
 
-An instance of an Apache Celix Framework can be created with the celix framework factory or by configuring 
-[Apache Celix Containers](containers.md) using the `add_celix_container` Celix CMake command.
+An instance of an Apache Celix framework can be created with the celix framework factory or by configuring 
+[Apache Celix containers](containers.md) using the `add_celix_container` Apache Celix CMake command.
 
 
 ## Framework factory
-A new instance of an Apache Celix Framework can be created using the C/C++ functions:
+A new instance of an Apache Celix framework can be created using the C/C++ function/method:
 - `celix_frameworkFactory_createFramework`
 - `celix::createFramework`
 
-When Apache Celix Framework is destroyed it will automatically stop and uninstall all running bundles.
-For C, an Apache Celix Framework needs to be destroyed with the call `celix_frameworkFactory_destroyFramework` and
+When an Apache Celix framework is destroyed it will automatically stop and uninstall all running bundles.
+For C, an Apache Celix framework needs to be destroyed with the call `celix_frameworkFactory_destroyFramework` and
 for C++ this happens when the framework goes out of scope. 
 
 ### Example: Creating an Apache Celix Framework in C
@@ -90,10 +90,10 @@ target_link_libraries(create_framework_in_cxx PRIVATE Celix::framework)
 ```
 
 ## Apache Celix launcher
-If the Apache Celix Framework is the main application, the Apache Celix Launcher can be used to create the framework and
-wait for a framework shutdown.
+If the Apache Celix framework is the main application, the Apache Celix launcher can be used to create the framework 
+and wait for a framework shutdown.
 
-The Apache Celix Launcher also does some additional work:
+The Apache Celix launcher also does some additional work:
 
 - Handles command arguments (mainly to print to embedded and runtime framework properties).
 - Tries to read a "config.properties" file from the current workdir and combines this with the optional provided 
@@ -119,19 +119,21 @@ add_executable(create_framework_with_celix_launcher src/launcher.c)
 target_link_libraries(create_framework_with_celix_launcher PRIVATE Celix::framework)
 ```
 
-## Installing and starting bundles in an Apache Celix Framework
+## Installing and starting bundles in an Apache Celix framework
 
-Bundles can be installed and started using the Apache Celix Framework Bundle Context or - when using the Apache Celix
-Launcher - with a config properties file.
+Bundles can be installed and started using the Apache Celix framework bundle context or - when using the Apache Celix
+launcher - with a "config.properties" file.
 
-Bundles are installed using a path to a bundle zip. If the path a relative path, the framework will search for the
-bundles in the `CELIX_BUNDLES_PATH`. The value `CELIX_BUNDLES_PATH` default is "bundles", but can be configured using
-framework configuration properties. 
+Bundles are installed using a path to a zip file. If the path is a relative path, the framework will search for the
+bundle in the directories configured in the framework property `CELIX_BUNDLES_PATH`. 
+The default value of `CELIX_BUNDLES_PATH` is "bundles". 
 
 Another option is to use framework properties to configure which bundles to install and start. 
-This is done using run 7 levels (0 till 6) and bundles configured in run level 0 are installed and started first.
+This can be done by using the CELIX_AUTO_START_0 till CELIX_AUTO_START_6 framework properties. 
+(note that bundles configured in CELIX_AUTO_START_0 are installed and started first).
 For a more complete overview of possible framework properties see `celix_constants.h`
-If the Apache Celix Launcher is used the framework properties can be provided with a "config.properties" 
+
+If the Apache Celix launcher is used, the framework properties can be provided with a "config.properties" 
 file using the Java Properties File Format.
 
 Framework properties to install and start bundles:
@@ -158,6 +160,7 @@ int main() {
 
     //get framework bundle context and install a bundle
     celix_bundle_context_t* fwContext = celix_framework_getFrameworkContext(fw);
+    celix_bundleContext_installBundle(fwContext, "FooBundle.zip", true);
 
     //destroy framework
     celix_frameworkFactory_destroyFramework(fw);
@@ -181,6 +184,7 @@ int main() {
     ctx->installBundle("FooBundle.zip");
 }
 ```
+
 ### Example: Installing and starting bundles using the Apache Celix Launcher
 
 ```C

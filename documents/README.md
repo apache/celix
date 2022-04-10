@@ -22,25 +22,25 @@ limitations under the License.
 # Apache Celix Introduction
 
 ## What is Apache Celix
-Apache Celix is an implementation of the [OSGi specification](https://www.osgi.org/developer/specifications) 
-adapted to C and C++17. 
-It is a provides a framework to develop dynamic modular software applications using components and in-process services.
+Apache Celix is an implementation of a dynamic service framework inspired by the 
+[OSGi specification](https://www.osgi.org/developer/specifications) and adapted to C and C++ (C++17).
+It is a framework to develop dynamic modular software applications using component and in-process service-oriented programming.
 
 Apache Celix core is written in C and has a C++17 header-only API on top of the C API. 
 
 Building applications with Apache Celix can be done by creating `bundles` which provide and use `services`; 
 These `services` can be directly used or in a declarative way using `components`. 
-To run a selection of bundles, a Celix `container` executable can be created. A Celix `containter` will  
-start a Celix framework and install and start the provided bundles.  
+To run a selection of bundles, an Apache Celix `container` executable can be created. An Apache Celix `containter` will  
+start an Apache Celix framework and install and start the provided bundles.  
 
 ## Bundles
-An Apache Celix Bundle is a zip file which contains a dynamically loadable collection of shared libraries, 
+An Apache Celix Bundle is a zip file which contains a collection of shared libraries, 
 configuration files and optional an activation entry. 
-Bundles can be dynamically installed and started in a Celix framework.
+Bundles can be dynamically installed and started in an Apache Celix framework.
 
 ## Services
-An Apache Celix Service is a pointer registered to the Celix framework under a set of properties (metadata).
-Services can be dynamically registered into and looked up from the Celix framework.
+An Apache Celix Service is a pointer registered to the Apache Celix framework under a set of properties (metadata).
+Services can be dynamically registered into and looked up from the Apache Celix framework.
 
 By convention a C service in Apache Celix is a pointer to struct of function pointers and a C++ service is a pointer
 (which can be provided as a `std::shared_ptr`) to an object implementing a (pure) abstract class.
@@ -51,18 +51,16 @@ Apache Celix also offers a way to create components which interact with dynamic 
 This removes some complexity of dynamic services by declaring service dependency and configure the dependency 
 as required or optional. 
 
-Celix components can be created using the built-in C and C++ dependency manager.
+Apache Celix components can be created using the built-in C and C++ dependency manager.
 
 Note that the dependency manager is not part of the OSGi standard, and it is inspired by the 
 Apache Felix Dependency Manager. 
-Even though the dependency manager is not part of the OSGi specification, 
-this is the preferred way of handling dynamics services in Celix, because it uses a higher abstraction.
 
 ## Containers
-Apache Celix containers are executables which starts a Celix framework, with a set of preconfigured properties 
-and a preconfigured set of bundles. 
+Apache Celix Containers are executables which starts an Apache Celix framework, with a set of preconfigured properties 
+and a set of preconfigured bundles. 
 Although it is also possible to create and start a Celix framework in code, the benefit of a Celix container 
-is that this can be done with a single `add_celix_container` Celix CMake command. 
+is that this can be done with a single `add_celix_container` Apache Celix CMake command. 
 
 ## C++ Support
 

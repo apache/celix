@@ -21,7 +21,7 @@ limitations under the License.
 
 # Apache Celix Services
 An Apache Celix Service is a pointer registered to the Celix framework under a set of properties (metadata).
-Services can be dynamically registered into and looked up from the Celix framework.
+Services can be dynamically registered into and looked up from the Apache Celix framework.
 
 By convention a C service in Apache Celix is a pointer to struct of function pointers and a C++ service is a pointer
 (which can be provided as a `std::shared_ptr`) to an object implementing a (pure) abstract class.
@@ -34,8 +34,8 @@ If for C++ no service name is provided the service name will be inferred based o
 Note that the service name is represented in the service properties under the property name `objectClass`, 
 this is inherited for the Java OSGi specification. 
 Also note that for Celix - in contrast with Java OSGi - it is only possible to register a single interface 
-per service registration in the Celix Framework. This restriction was added because C does not (natively) supports
-multiple interfaces (struct with function pointers) on a single object/pointer.  
+per service registration in the Apache Celix Framework. This restriction was added because C does not 
+(natively) supports multiple interfaces (struct with function pointers) on a single object/pointer.  
 
 ## A C service example
 As mentioned an Apache Celix C service is a registered pointer to a struct with function pointers. 
@@ -139,7 +139,7 @@ namespace celix {
 }
 ```
 
-A with the C shell command struct, the C++ service class is documented and explains which service properties needs to 
+As with the C shell command struct, the C++ service class is documented and explains which service properties needs to 
 be provided. The `handle` construct is not needed for C++ services and using a C++ service function is just the same 
 as calling a function member of any C++ object.
 

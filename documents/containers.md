@@ -25,16 +25,16 @@ and an embedded set of bundles.
 Although it is also possible to create and start an Apache Celix framework in code, the benefit of an Apache Celix 
 Container is that this can be done with a single `add_celix_container` Apache Celix CMake command. 
 
-The `add_celix_container` CMake command eventually uses the CMake `add_executable` with the same target name.
-As result, it is possible to handle an Apache Celix Container as a normal CMake executable 
-(e.g. use `target_link_libraries`) and also ensure that the CLion IDE detects the containers as an executable.
+The `add_celix_container` Apache Celix CMake command eventually uses the CMake `add_executable` with the same 
+target name.  As result, it is possible to handle an Apache Celix Container as a normal CMake executable 
+(e.g. use `target_link_libraries`) and also ensures that the CLion IDE detects the containers as an executable.
 
-For a complete list of option the `add_celix_container` Apache Celix CMake command support see the 
+For a complete list of options the `add_celix_container` Apache Celix CMake command supports, see the 
 [Apache Celix CMake Commands documentation](cmake_commands)
 
 ## Generated main source files
-The main purpose of the `add_celix_container` is Apache Celix  CMake command is to generate a main source file 
-which starts an Apache Celix Framework with a set of preconfigured properties and set of preconfigured bundles.
+The main purpose of the `add_celix_container` Apache Celix CMake command is to generate a main source file 
+which starts an Apache Celix framework with a set of preconfigured properties and set of preconfigured bundles.
 
 For example the following (empty) Apache Celix Container:
 ```CMake
@@ -58,15 +58,15 @@ CELIX_BUNDLES_PATH=bundles\n\
 Note that because the source file is a C++ source file (.cc extension) the executable will be compiled with a C++ 
 compiler. 
 
-To create C Apache Celix Containers use the C option in the `add_celix_container` Apache Celix CMake command, 
-this will generate a `main.c` instead of `main.cc` source file:
+To create C Apache Celix Containers, use the `C` option in the `add_celix_container` Apache Celix CMake command; 
+This will generate a `main.c` instead of `main.cc` source file:
 
 ```CMake
 add_celix_container(my_empty_container C)
 ```
 
-When an Apache Celix Container is also configured with framework properties and/or auto start of bundles the
-generated main source file will add this using embedded framework properties.
+When an Apache Celix Container is also configured with framework properties and/or auto start of bundles, the
+generated main source file will add these properties as embedded framework properties.
 
 For example the following `add_celix_container` Apache Celix CMake command:
 ```CMake
