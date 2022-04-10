@@ -27,7 +27,7 @@ It is a framework to develop (dynamic) modular software applications using compo
 
 ## Documentation
 - [Building Apache Celix](documents/building/README.md)
-- [Apache Celix Intro](documents/intro/README.md)
+- [Apache Celix Intro](documents/README.md)
 
 ## Building in a Nutshell
 

@@ -1,5 +1,5 @@
 ---
-title: Bundles
+title: Apache Celix Bundles
 ---
 
 <!--
@@ -19,7 +19,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-# Bundles
+# Apache Celix Bundles
 An Apache Celix Bundle is dynamically loadable collection of shared libraries, configuration files and optional
 an activation entry combined in a zip file. Bundles can be dynamically installed and started in a Celix framework.
 
@@ -224,3 +224,61 @@ By design bundles cannot directly access the symbols of another bundle. Interact
 Celix services. This means that unless functionality is provided by means of a Celix service, bundle functionality
 is private to the bundle.
 In Celix symbols are kept private by loading bundle libraries locally (`dlopen` with `RTLD_LOCAL`). 
+
+## Installing bundles
+Celix bundles can be installed with the Celix CMake command `install_celix_bundle`.
+Bundles will be installed as zip files in the package (default the CMAKE_PROJECT_NAME) share directory 
+(e.g `/use/share/celix/bundles`).
+
+It is also possible to use Celix bundles as CMake imported targets, but this requires a more complex CMake installation 
+setup.
+
+The `install_celix_targets` can be used to generate a CMake file with the imported Celix Bundle CMake targets and
+this is ideally coupled with a CMake config file so that the bundles are made avaible when CMake's `find_package` is 
+used.
+
+Example:
+```CMake
+#Project setup
+project(ExamplePackage C CXX)
+find_package(Celix REQUIRED)
+
+#Create bundles
+add_celix_bundle(ExampleBundleA ...)
+add_celix_bundle(ExampleBundleB ...)
+
+#Install bundle zips
+install_celix_bundle(ExampleBundleA EXPORT MyExport)
+install_celix_bundle(ExampleBundleB EXPORT MyExport)
+#install exported Celix CMake targets
+install_celix_targets(MyExport NAMESPACE ExamplePackage:: DESTINATION share/ExamplePackage/cmake FILE CelixTargets)
+
+#Install Package CMake configuration
+file(GENERATE OUTPUT ${CMAKE_BINARY_DIR}/ExamplePackageConfig.cmake CONTENT "
+  # relative install dir from lib/CMake/ExamplePackage.
+  get_filename_component(REL_INSTALL_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+  get_filename_component(REL_INSTALL_DIR "${REL_INSTALL_DIR}" PATH)
+  get_filename_component(REL_INSTALL_DIR "${REL_INSTALL_DIR}" PATH)
+  get_filename_component(REL_INSTALL_DIR "${REL_INSTALL_DIR}" PATH)
+  include(${REL_INSTALL_DIR}/share/celix/cmake/CelixTargets.cmake)
+")
+
+install(FILES
+  ${CMAKE_BINARY_DIR}/ExamplePackageConfig.cmake
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ExamplePackage)
+```
+
+Downstream Usage Example:
+```CMake 
+project(UsageExample C CXX)
+find_package(Celix REQUIRED)
+find_package(ExamplePackage REQUIRED)
+add_celix_container(test_container BUNDLES
+  Celix::shell
+  Celix::shell_tui
+  ExamplePackage::ExampleBundleA
+  ExamplePackage::ExampleBundleB
+)
+```
+
+See [Apache Celix CMake Commands](cmake_commands) for more detailed information.

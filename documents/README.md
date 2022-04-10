@@ -59,7 +59,8 @@ Even though the dependency manager is not part of the OSGi specification,
 this is the preferred way of handling dynamics services in Celix, because it uses a higher abstraction.
 
 ## Containers
-Apache Celix containers are executable which start a Celix framework and a preconfigured set of bundles. 
+Apache Celix containers are executables which starts a Celix framework, with a set of preconfigured properties 
+and a preconfigured set of bundles. 
 Although it is also possible to create and start a Celix framework in code, the benefit of a Celix container 
 is that this can be done with a single `add_celix_container` Celix CMake command. 
 
@@ -75,15 +76,17 @@ libstdc++.
 Apache Celix also offers some C++ only libraries and bundles. The C++ libraries are also header only, but the C++
 bundles contains binaries depending on the stdlibc++ library.
 
-## Documentation
+## More information
 
-For more information see:
-
-* [Apache Celix - Building and Installing](../building/README.md)
-* [Apache Celix - Bundles](bundles.md)
-* [Apache Celix - Services](services.md)
-* [Apache Celix - Components](components.md)
-* TODO MAYBE add Creating Containers readme
-* TODO MAYBE Services on demand -> meta tracker in C and C++
-* [Apache Celix - Getting Started Guide](../getting_started/README.md) TODO MAYBE REMOVE, replaced with bundles.md, services.md
-* [Apache Celix - CMake Commands](../cmake_commands/README.md)
+* Building
+  * [Building and Installing Apache Celix](building)
+  * [Building and Developing Apache Celix with CLion](building/dev_celix_with_clion.md)
+* Framework 
+  * [Apache Celix Bundles](bundles.md)
+  * [Apache Celix Services](services.md)
+  * [Apache Celix Components](components.md)
+  * [Starting and stopping an Apache Celix Framework](framework.md)
+* [Apache Celix Containers](containers.md)
+* [OSGi patterns in Apache Celix](patterns.md)
+* [Apache Celix CMake Commands](cmake_commands)
+* [Apache Celix - Getting Started Guide](getting_started) TODO MAYBE REMOVE, replaced with bundles.md, services.md

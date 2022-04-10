@@ -1,5 +1,5 @@
 ---
-title: Building and Installing
+title: Building and Installing Apache Celix
 ---
 
 <!--
@@ -19,19 +19,30 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-# Apache Celix - Building and Installing
+# Building and Installing Apache Celix
 Apache Celix aims to be support a broad range of UNIX platforms.
  
-Currently, the [continuous integration build server](https://travis-ci.org/apache/celix) builds and tests Apache Celix for:
+Currently, the [continuous integration build server] builds and tests Apache Celix for:
 
 * Ubuntu Bionic Beaver (20.04)
     * GCC 
     * CLang 
 * OSX
-    * GCC 
-    * CLang 
+    * CLang
 
-# Preparing
+
+### Download the Apache Celix sources
+To get started you first have to download the Apache Celix sources. This can be done by cloning the Apache Celix git repository:
+
+```bash
+#clone the repro
+git clone --single-branch --branch master https://github.com/apache/celix.git
+```
+
+## Building and installing
+Apache Celix uses [CMake](https://cmake.org) as build system. CMake can generate (among others) makefiles.
+
+### Building and installing with preinstalled libraries
 The following packages (libraries + headers) should be installed on your system:
 
 * Development Environment
@@ -41,6 +52,8 @@ The following packages (libraries + headers) should be installed on your system:
 * Apache Celix Dependencies
     * libzip
     * uuid
+    * zlib
+    * libzip
     * curl (only initialized in the Celix framework)
     * jansson (for serialization in libdfi)
     * libffi (for libdfi)
@@ -49,12 +62,8 @@ The following packages (libraries + headers) should be installed on your system:
     * libczmq (for PubSubAdmin ZMQ)
 	
 
-For debian based systems (apt), the following command should work:
+For Ubuntu 20.04, use the following commands:
 ```bash
-#### prepare system
-sudo apt-get update
-sudo apt-get upgrade
-
 #### get dependencies
 sudo apt-get install -yq --no-install-recommends \
     build-essential \
@@ -76,25 +85,14 @@ sudo apt-get install -yq --no-install-recommends \
 snap install cmake
 ```
 
-For OSX systems with brew installed, the following command should work:
+For OSX systems with brew installed, use the following commands:
 ```bash
     brew update && \
     brew install lcov libffi libzip czmq rapidjson libxml2 cmake && \
     brew link --force libffi
-```
+``` 
 
-## Download the Apache Celix sources
-To get started you first have to download the Apache Celix sources. This can be done by cloning the Apache Celix git repository:
-
-```bash
-#clone the repro
-git clone --single-branch --branch master https://github.com/apache/celix.git
-```
-
-## Building Apache Celix
-Apache Celix uses [CMake](https://cmake.org) as build system. CMake can generate (among others) makefiles. 
-
-### Building using CMake and makefiles:
+Use CMake and make to build Apache Celix
 ```bash
 cd celix
 mkdir build
@@ -125,7 +123,6 @@ sudo make install
 ```
 
 ## Running Apache Celix
-
 If Apache Celix is successfully installed running
 ```bash
 celix
@@ -133,4 +130,4 @@ celix
 should give the following output:
 "Error: invalid or non-existing configuration file: 'config.properties'.No such file or directory".
 
-For more info how to build your own projects and/or running the Apache Celix examples see [Celix Intro](../intro/README.md).
+For more info how to build your own projects and/or running the Apache Celix examples see [Celix Intro](../README.md).

@@ -236,7 +236,7 @@ install_celix_bundle(<bundle_target>
 
 ## install_celix_targets
 Generate and install a Celix Targets cmake file which contains CMake commands to create imported targets for the bundles 
-install using the provided <export_name>. These imported CMake targets can be used in in CMake project using the installed
+install using the provided <export_name>. These imported CMake targets can be used in CMake projects using the installed
 bundles. 
 
 Optional Arguments:

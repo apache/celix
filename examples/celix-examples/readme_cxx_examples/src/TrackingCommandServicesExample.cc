@@ -76,7 +76,7 @@ public:
         cCommandServiceTracker->close();
     };
 private:
-    std::mutex mutex; //protects cxxCommandServices and cCommandServices
+    std::mutex mutex{}; //protects cxxCommandServices and cCommandServices
     std::unordered_map<long, std::shared_ptr<celix::IShellCommand>> cxxCommandServices{};
     std::unordered_map<long, std::shared_ptr<celix_shell_command>> cCommandServices{};
 

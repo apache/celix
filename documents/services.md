@@ -1,5 +1,5 @@
 ---
-title: Services
+title: Apache Celix Services
 ---
 
 <!--
@@ -19,7 +19,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-# Services
+# Apache Celix Services
 An Apache Celix Service is a pointer registered to the Celix framework under a set of properties (metadata).
 Services can be dynamically registered into and looked up from the Celix framework.
 

@@ -18,20 +18,6 @@
  */
 
 #include <celix_api.h>
-int main() {
-    //create framework properties
-    celix_properties_t* properties = properties_create();
-    properties_set(properties, "CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "debug");
-    properties_set(properties, "CELIX_BUNDLES_PATH", "bundles;/opt/alternative/bundles");
-
-    //create framework
-    celix_framework_t* fw = celix_frameworkFactory_createFramework(properties);
-
-    //get framework bundle context and log hello
-    celix_bundle_context_t* fwContext = celix_framework_getFrameworkContext(fw);
-    celix_bundleContext_log(fwContext, CELIX_LOG_LEVEL_INFO, "Hello from framework bundle context");
-    celix_bundleContext_installBundle(fwContext, "FooBundle.zip", true);
-
-    //destroy framework
-    celix_frameworkFactory_destroyFramework(fw);
+int main(int argc, char** argv) {
+    return celixLauncher_launchAndWaitForShutdown(argc, argv, NULL);
 }

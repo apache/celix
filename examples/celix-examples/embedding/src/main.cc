@@ -17,21 +17,18 @@
  * under the License.
  */
 
-#include <celix_api.h>
+#include <celix/FrameworkFactory.h>
 int main() {
     //create framework properties
-    celix_properties_t* properties = properties_create();
-    properties_set(properties, "CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "debug");
-    properties_set(properties, "CELIX_BUNDLES_PATH", "bundles;/opt/alternative/bundles");
+    celix::Properties properties{};
+    properties.set("CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "debug");
+    properties.set("CELIX_BUNDLES_PATH", "bundles;/opt/alternative/bundles");
 
     //create framework
-    celix_framework_t* fw = celix_frameworkFactory_createFramework(properties);
+    std::shared_ptr<celix::Framework> fw = celix::createFramework(properties);
 
     //get framework bundle context and log hello
-    celix_bundle_context_t* fwContext = celix_framework_getFrameworkContext(fw);
-    celix_bundleContext_log(fwContext, CELIX_LOG_LEVEL_INFO, "Hello from framework bundle context");
-    celix_bundleContext_installBundle(fwContext, "FooBundle.zip", true);
-
-    //destroy framework
-    celix_frameworkFactory_destroyFramework(fw);
+    std::shared_ptr<celix::BundleContext> ctx = fw->getFrameworkBundleContext();
+    ctx->installBundle("FooBundle.zip");
+    ctx->logInfo("Hello from framework bundle context");
 }
