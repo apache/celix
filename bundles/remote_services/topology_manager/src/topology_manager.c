@@ -207,11 +207,15 @@ celix_status_t topologyManager_rsaAdded(void * handle, service_reference_pt unus
 	remote_service_admin_service_t *rsa = (remote_service_admin_service_t *) service;
 	celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_INFO, "TOPOLOGY_MANAGER: Added RSA");
 
-	celixThreadMutex_lock(&manager->rsaListLock);
-	arrayList_add(manager->rsaList, rsa);
 
-	// add already imported services to new rsa
+    celixThreadMutex_lock(&manager->exportedServicesLock);
     celixThreadMutex_lock(&manager->importedServicesLock);
+
+    celixThreadMutex_lock(&manager->rsaListLock);
+    arrayList_add(manager->rsaList, rsa);
+    celixThreadMutex_unlock(&manager->rsaListLock);
+
+    // add already imported services to new rsa
     hash_map_iterator_pt importedServicesIterator = hashMapIterator_create(manager->importedServices);
 
     while (hashMapIterator_hasNext(importedServicesIterator)) {
@@ -238,7 +242,6 @@ celix_status_t topologyManager_rsaAdded(void * handle, service_reference_pt unus
     celixThreadMutex_unlock(&manager->importedServicesLock);
 
 	// add already exported services to new rsa
-    celixThreadMutex_lock(&manager->exportedServicesLock);
     hash_map_iterator_pt exportedServicesIterator = hashMapIterator_create(manager->exportedServices);
 
     while (hashMapIterator_hasNext(exportedServicesIterator)) {
@@ -269,8 +272,6 @@ celix_status_t topologyManager_rsaAdded(void * handle, service_reference_pt unus
     hashMapIterator_destroy(exportedServicesIterator);
     celixThreadMutex_unlock(&manager->exportedServicesLock);
 
-    celixThreadMutex_unlock(&manager->rsaListLock);
-
 	return CELIX_SUCCESS;
 }
 
@@ -288,6 +289,8 @@ celix_status_t topologyManager_rsaRemoved(void * handle, service_reference_pt re
 	remote_service_admin_service_t *rsa = (remote_service_admin_service_t *) service;
 
 	celixThreadMutex_lock(&manager->rsaListLock);
+	arrayList_removeElement(manager->rsaList, rsa);
+	celixThreadMutex_unlock(&manager->rsaListLock);
 
 	if (celixThreadMutex_lock(&manager->exportedServicesLock) == CELIX_SUCCESS) {
 		hash_map_iterator_pt iter = hashMapIterator_create(manager->exportedServices);
@@ -353,9 +356,6 @@ celix_status_t topologyManager_rsaRemoved(void * handle, service_reference_pt re
 		hashMapIterator_destroy(iter);
 		celixThreadMutex_unlock(&manager->importedServicesLock);
 	}
-
-	arrayList_removeElement(manager->rsaList, rsa);
-	celixThreadMutex_unlock(&manager->rsaListLock);
 
 	celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_INFO, "TOPOLOGY_MANAGER: Removed RSA");
 
@@ -479,32 +479,33 @@ celix_status_t topologyManager_addImportedService(void *handle, endpoint_descrip
 
 	celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_INFO, "TOPOLOGY_MANAGER: Add imported service (%s; %s).", endpoint->service, endpoint->id);
 
-	celixThreadMutex_lock(&manager->rsaListLock);
-
 	if (celixThreadMutex_lock(&manager->importedServicesLock) == CELIX_SUCCESS) {
 
 		hash_map_pt imports = hashMap_create(NULL, NULL, NULL, NULL);
 		hashMap_put(manager->importedServices, endpoint, imports);
 
 		if (scope_allowImport(manager->scope, endpoint)) {
-			int size = arrayList_size(manager->rsaList);
+			if (celixThreadMutex_lock(&manager->rsaListLock) == CELIX_SUCCESS) {
+				int size = arrayList_size(manager->rsaList);
 
-			for (int iter = 0; iter < size; iter++) {
-				import_registration_t *import = NULL;
-				remote_service_admin_service_t *rsa = arrayList_get(manager->rsaList, iter);
-				celix_status_t substatus = rsa->importService(rsa->admin, endpoint, &import);
-				if (substatus == CELIX_SUCCESS) {
-					hashMap_put(imports, rsa, import);
-				} else {
-					status = substatus;
+				for (int iter = 0; iter < size; iter++) {
+					import_registration_t *import = NULL;
+					remote_service_admin_service_t *rsa = arrayList_get(manager->rsaList, iter);
+					celix_status_t substatus = rsa->importService(rsa->admin, endpoint, &import);
+					if (substatus == CELIX_SUCCESS) {
+						hashMap_put(imports, rsa, import);
+					} else {
+						status = substatus;
+					}
 				}
+				celixThreadMutex_unlock(&manager->rsaListLock);
 			}
+
 		}
 
 		celixThreadMutex_unlock(&manager->importedServicesLock);
 	}
 
-	celixThreadMutex_unlock(&manager->rsaListLock);
 
 	return status;
 }
@@ -564,37 +565,36 @@ celix_status_t topologyManager_addExportedService(void * handle, service_referen
 
 	celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_INFO, "TOPOLOGY_MANAGER: Add exported service (%li).", serviceId);
 
-	celixThreadMutex_lock(&manager->rsaListLock);
 
 	if (celixThreadMutex_lock(&manager->exportedServicesLock) == CELIX_SUCCESS) {
 		scope_getExportProperties(manager->scope, reference, &serviceProperties);
 		hash_map_pt exports = hashMap_create(NULL, NULL, NULL, NULL);
 		hashMap_put(manager->exportedServices, reference, exports);
 
-		int size = arrayList_size(manager->rsaList);
+		if (celixThreadMutex_lock(&manager->rsaListLock) == CELIX_SUCCESS) {
+			int size = arrayList_size(manager->rsaList);
 
-		if (size == 0) {
-			celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_WARNING, "TOPOLOGY_MANAGER: No RSA available yet.");
-		}
-
-		for (int iter = 0; iter < size; iter++) {
-			remote_service_admin_service_t *rsa = arrayList_get(manager->rsaList, iter);
-
-			array_list_pt endpoints = NULL;
-			celix_status_t substatus = rsa->exportService(rsa->admin, serviceIdStr, serviceProperties, &endpoints);
-
-			if (substatus == CELIX_SUCCESS) {
-				hashMap_put(exports, rsa, endpoints);
-				topologyManager_notifyListenersEndpointAdded(manager, rsa, endpoints);
-			} else {
-				status = substatus;
+			if (size == 0) {
+				celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_WARNING, "TOPOLOGY_MANAGER: No RSA available yet.");
 			}
-		}
 
+			for (int iter = 0; iter < size; iter++) {
+				remote_service_admin_service_t *rsa = arrayList_get(manager->rsaList, iter);
+
+				array_list_pt endpoints = NULL;
+				celix_status_t substatus = rsa->exportService(rsa->admin, serviceIdStr, serviceProperties, &endpoints);
+
+				if (substatus == CELIX_SUCCESS) {
+					hashMap_put(exports, rsa, endpoints);
+					topologyManager_notifyListenersEndpointAdded(manager, rsa, endpoints);
+				} else {
+					status = substatus;
+				}
+			}
+			celixThreadMutex_unlock(&manager->rsaListLock);
+		}
 		celixThreadMutex_unlock(&manager->exportedServicesLock);
 	}
-
-    celixThreadMutex_unlock(&manager->rsaListLock);
 
 	return status;
 }
