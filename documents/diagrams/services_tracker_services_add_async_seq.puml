@@ -18,7 +18,7 @@ actor ProviderBundle
 actor TrackingBundle
 control celix_event_thread
 
-ProviderBundle -> celix_bundle_context_t ++: celix_bundleContext_registerService
+ProviderBundle -> celix_bundle_context_t ++: celix_bundleContext_registerServiceAsync
 celix_bundle_context_t -> celix_framework_t ++: celix_framework_registerServiceAsync
 celix_framework_t -> celix_service_registry_t ++: celix_serviceRegistry_nextSvcId
 return

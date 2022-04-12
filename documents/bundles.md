@@ -64,7 +64,7 @@ An Apache Celix Bundle has its own lifecycle with the following states:
   currently means that not all bundle libraries can or have been loaded. 
 - Resolved - The bundle is installed and its requirements have been met. For Celix this currently means that the
   bundle libraries have been loaded. 
-- Starting - Starting is a temporary state while the bundle activator create and start callbacks are being executed.
+- Starting - Starting is a temporary state while the bundle activator's create and start callbacks are being executed.
 - Active - The bundle is active. 
 - Stopping - Stopping is a temporary state while the bundle activator stop and destroy callbacks are being executed. 
 - Uninstalled - The bundle has been removed from the Celix framework. 

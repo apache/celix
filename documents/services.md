@@ -26,7 +26,7 @@ Services can be dynamically registered into and looked up from the Apache Celix 
 By convention a C service in Apache Celix is a pointer to struct of function pointers and a C++ service is a pointer
 (which can be provided as a `std::shared_ptr`) to an object implementing a (pure) abstract class.
 
-A service is always register under a service name and this service name is also used to lookup services. 
+A service is always registered under a service name and this service name is also used to lookup services. 
 For C the service name must be provided by the user and for C++ the service name can be provided by the user. 
 If for C++ no service name is provided the service name will be inferred based on the service template argument using
 `celix::typeName<I>`. 

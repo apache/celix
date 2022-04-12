@@ -29,7 +29,7 @@ It is a framework to develop dynamic modular software applications using compone
 Apache Celix core is written in C and has a C++17 header-only API on top of the C API. 
 
 Building applications with Apache Celix can be done by creating `bundles` which provide and use `services`; 
-These `services` can be directly used or in a declarative way using `components`. 
+These `services` can be used directly or in a declarative way using `components`. 
 To run a selection of bundles, an Apache Celix `container` executable can be created. An Apache Celix `containter` will  
 start an Apache Celix framework and install and start the provided bundles.  
 
@@ -48,7 +48,7 @@ By convention a C service in Apache Celix is a pointer to struct of function poi
 ## Components
 Apache Celix also offers a way to create components which interact with dynamic services in declarative way. 
 
-This removes some complexity of dynamic services by declaring service dependency and configure the dependency 
+This removes some complexity of dynamic services by declaring service dependency and configuring the dependency 
 as required or optional. 
 
 Apache Celix components can be created using the built-in C and C++ dependency manager.

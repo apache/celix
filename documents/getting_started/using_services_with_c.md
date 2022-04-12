@@ -68,7 +68,8 @@ Use code documentation to clearly specify who is the owner of the output paramet
 For versioning, semantic versioning should be used.
 
 A backward incompatible change should lead to a major version increase (e.g. 1.0.0 -> 2.0.0).
-For a C Service versioning is used to express binary compatibility (for the same platform / compiler), change that are incompatible are:
+For a C Service versioning is used to express binary compatibility (for the same platform / compiler), 
+changes that are incompatible are:
 
 - Removing a function
 - Adding a function to before any other function

@@ -38,7 +38,7 @@ conan profile new debug --detect
 conan profile update settings.build_type=Debug debug
 
 #generate and configure cmake-build-debug directory
-conan install . celix/2.3.0@apache/testing -pr:b default -pr:h debug -if cmake-build-debug/ -o celix:enable_testing=True -o celix:enable_address_sanitizer=True -o celix:build_all=True -b missing
+conan install . celix/2.3.0 -pr:b default -pr:h debug -if cmake-build-debug/ -o celix:enable_testing=True -o celix:enable_address_sanitizer=True -o celix:build_all=True -b missing
 conan build . -bf cmake-build-debug/ --configure
 
 #optional build
@@ -59,6 +59,6 @@ then update the "Google Test" template so that the `active_run.sh` Conan generat
 "Environment variables" entry. 
 
 If the Apache Celix CMake build directory is `home/joe/workspace/celix/cmake-build-debug` then the value for 
-"Environment variables" should be: `source /home/joe/workspace/celix/cmake-build-debug/run_activate.sh`
+"Environment variables" should be: `source /home/joe/workspace/celix/cmake-build-debug/activate_run.sh`
 
 ![Configure CLion](media/clion_run_configuration_template.png)

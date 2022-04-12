@@ -18,7 +18,7 @@ actor ProviderBundle
 actor TrackerBundle
 control celix_event_thread
 
-ProviderBundle -> celix_bundle_context_t ++: celix_bundleContext_unregisterService
+ProviderBundle -> celix_bundle_context_t ++: celix_bundleContext_unregisterServiceAsync
 celix_bundle_context_t -> celix_framework_t ++: celix_framework_unregisterAsync
 celix_framework_t -> celix_framework_t
 note right: Add new celix_framework_event_t to the event queue

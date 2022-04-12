@@ -48,12 +48,12 @@ The following packages (libraries + headers) should be installed on your system:
 * Development Environment
     * build-essentials (gcc/g++ or clang/clang++) 
     * java or zip (for packaging bundles)
-	* make (3.14 or higher)
+    * make (3.14 or higher)
+    * git
 * Apache Celix Dependencies
     * libzip
     * uuid
     * zlib
-    * libzip
     * curl (only initialized in the Celix framework)
     * jansson (for serialization in libdfi)
     * libffi (for libdfi)
