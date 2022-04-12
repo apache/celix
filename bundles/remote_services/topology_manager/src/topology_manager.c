@@ -62,6 +62,7 @@ struct topology_manager {
 	celix_thread_mutex_t importedServicesLock;
 	celix_thread_mutexattr_t importedServicesLockAttr;
 	hash_map_pt importedServices;
+	bool closed;
 
 	scope_pt scope;
 
@@ -95,6 +96,7 @@ celix_status_t topologyManager_create(celix_bundle_context_t *context, celix_log
 	celixThreadMutexAttr_create(&(*manager)->importedServicesLockAttr);
 	celixThreadMutexAttr_settype(&(*manager)->importedServicesLockAttr, CELIX_THREAD_MUTEX_RECURSIVE);
 	celixThreadMutex_create(&(*manager)->importedServicesLock, &(*manager)->importedServicesLockAttr);
+	(*manager)->closed = false;
 
 	celixThreadMutex_create(&(*manager)->exportedServicesLock, NULL);
 	celixThreadMutex_create(&(*manager)->listenerListLock, NULL);
@@ -157,7 +159,10 @@ celix_status_t topologyManager_closeImports(topology_manager_pt manager) {
 
 	status = celixThreadMutex_lock(&manager->importedServicesLock);
 
+	manager->closed = true;
+
 	hash_map_iterator_pt iter = hashMapIterator_create(manager->importedServices);
+
 	while (hashMapIterator_hasNext(iter)) {
 		hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
 		endpoint_description_t *ep = hashMapEntry_getKey(entry);
@@ -478,6 +483,13 @@ celix_status_t topologyManager_addImportedService(void *handle, endpoint_descrip
 	celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_INFO, "TOPOLOGY_MANAGER: Add imported service (%s; %s).", endpoint->service, endpoint->id);
 
 	if (celixThreadMutex_lock(&manager->importedServicesLock) == CELIX_SUCCESS) {
+
+		// We should not try to add imported services to a closed listener.
+		if (manager->closed) {
+			celixThreadMutex_unlock(&manager->importedServicesLock);
+			celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_INFO,"TOPOLOGY_MANAGER: Endpointer listener will close, Ignore imported service (%s; %s).", endpoint->service, endpoint->id);
+			return CELIX_SUCCESS;
+		}
 
 		hash_map_pt imports = hashMap_create(NULL, NULL, NULL, NULL);
 		hashMap_put(manager->importedServices, endpoint, imports);
