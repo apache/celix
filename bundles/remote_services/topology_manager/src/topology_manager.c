@@ -288,74 +288,75 @@ celix_status_t topologyManager_rsaRemoved(void * handle, service_reference_pt re
 	topology_manager_pt manager = (topology_manager_pt) handle;
 	remote_service_admin_service_t *rsa = (remote_service_admin_service_t *) service;
 
+	celixThreadMutex_lock(&manager->exportedServicesLock);
+
+	hash_map_iterator_pt exportedSvcIter = hashMapIterator_create(manager->exportedServices);
+
+	while (hashMapIterator_hasNext(exportedSvcIter)) {
+
+		hash_map_entry_pt entry = hashMapIterator_nextEntry(exportedSvcIter);
+		service_reference_pt key = hashMapEntry_getKey(entry);
+		hash_map_pt exports = hashMapEntry_getValue(entry);
+
+		/*
+		 * the problem here is that also the rsa has a a list of
+		 * endpoints which is destroyed when closing the exportRegistration
+		 */
+		array_list_pt exports_list = hashMap_get(exports, rsa);
+
+		if (exports_list != NULL) {
+			int exportsIter = 0;
+			int exportListSize = arrayList_size(exports_list);
+			for (exportsIter = 0; exports_list != NULL && exportsIter < exportListSize; exportsIter++) {
+				export_registration_t *export = arrayList_get(exports_list, exportsIter);
+				topologyManager_notifyListenersEndpointRemoved(manager, rsa, export);
+				rsa->exportRegistration_close(rsa->admin, export);
+			}
+		}
+
+		hashMap_remove(exports, rsa);
+		/*if(exports_list!=NULL){
+			arrayList_destroy(exports_list);
+		}*/
+
+		if (hashMap_size(exports) == 0) {
+			hashMap_remove(manager->exportedServices, key);
+			hashMap_destroy(exports, false, false);
+
+			hashMapIterator_destroy(exportedSvcIter);
+			exportedSvcIter = hashMapIterator_create(manager->exportedServices);
+		}
+	}
+	hashMapIterator_destroy(exportedSvcIter);
+
+	celixThreadMutex_lock(&manager->importedServicesLock);
+
+	hash_map_iterator_pt importedSvcIter = hashMapIterator_create(manager->importedServices);
+
+	while (hashMapIterator_hasNext(importedSvcIter)) {
+		hash_map_entry_pt entry = hashMapIterator_nextEntry(importedSvcIter);
+		hash_map_pt imports = hashMapEntry_getValue(entry);
+
+		import_registration_t *import = hashMap_get(imports, rsa);
+
+		if (import != NULL) {
+			celix_status_t subStatus = rsa->importRegistration_close(rsa->admin, import);
+
+			if (subStatus == CELIX_SUCCESS) {
+				hashMap_remove(imports, rsa);
+			} else {
+				status = subStatus;
+			}
+		}
+	}
+	hashMapIterator_destroy(importedSvcIter);
+
 	celixThreadMutex_lock(&manager->rsaListLock);
 	arrayList_removeElement(manager->rsaList, rsa);
 	celixThreadMutex_unlock(&manager->rsaListLock);
 
-	if (celixThreadMutex_lock(&manager->exportedServicesLock) == CELIX_SUCCESS) {
-		hash_map_iterator_pt iter = hashMapIterator_create(manager->exportedServices);
-
-		while (hashMapIterator_hasNext(iter)) {
-
-			hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
-			service_reference_pt key = hashMapEntry_getKey(entry);
-			hash_map_pt exports = hashMapEntry_getValue(entry);
-
-			/*
-			 * the problem here is that also the rsa has a a list of
-			 * endpoints which is destroyed when closing the exportRegistration
-			 */
-			array_list_pt exports_list = hashMap_get(exports, rsa);
-
-			if (exports_list != NULL) {
-				int exportsIter = 0;
-				int exportListSize = arrayList_size(exports_list);
-				for (exportsIter = 0; exports_list != NULL && exportsIter < exportListSize; exportsIter++) {
-					export_registration_t *export = arrayList_get(exports_list, exportsIter);
-					topologyManager_notifyListenersEndpointRemoved(manager, rsa, export);
-					rsa->exportRegistration_close(rsa->admin, export);
-				}
-			}
-
-			hashMap_remove(exports, rsa);
-			/*if(exports_list!=NULL){
-            	arrayList_destroy(exports_list);
-            }*/
-
-			if (hashMap_size(exports) == 0) {
-				hashMap_remove(manager->exportedServices, key);
-				hashMap_destroy(exports, false, false);
-
-				hashMapIterator_destroy(iter);
-				iter = hashMapIterator_create(manager->exportedServices);
-			}
-		}
-		hashMapIterator_destroy(iter);
-		celixThreadMutex_unlock(&manager->exportedServicesLock);
-	}
-
-	if (celixThreadMutex_lock(&manager->importedServicesLock) == CELIX_SUCCESS) {
-		hash_map_iterator_pt iter = hashMapIterator_create(manager->importedServices);
-
-		while (hashMapIterator_hasNext(iter)) {
-			hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
-			hash_map_pt imports = hashMapEntry_getValue(entry);
-
-			import_registration_t *import = hashMap_get(imports, rsa);
-
-			if (import != NULL) {
-				celix_status_t subStatus = rsa->importRegistration_close(rsa->admin, import);
-
-				if (subStatus == CELIX_SUCCESS) {
-					hashMap_remove(imports, rsa);
-				} else {
-					status = subStatus;
-				}
-			}
-		}
-		hashMapIterator_destroy(iter);
-		celixThreadMutex_unlock(&manager->importedServicesLock);
-	}
+	celixThreadMutex_unlock(&manager->importedServicesLock);
+	celixThreadMutex_unlock(&manager->exportedServicesLock);
 
 	celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_INFO, "TOPOLOGY_MANAGER: Removed RSA");
 
