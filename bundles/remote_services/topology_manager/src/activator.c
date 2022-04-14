@@ -234,12 +234,13 @@ celix_status_t bundleActivator_stop(void * userData, celix_bundle_context_t *con
 	serviceRegistration_unregister(activator->hook);
 	free(activator->hookService);
 
+
+	topologyManager_closeImports(activator->manager);
 	serviceRegistration_unregister(activator->endpointListenerService);
 	free(activator->endpointListener);
 
 	serviceRegistration_unregister(activator->scopeReg);
 
-	topologyManager_closeImports(activator->manager);
 
 	return status;
 }

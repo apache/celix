@@ -161,10 +161,18 @@ celix_status_t endpointDiscoveryServer_create(discovery_t *discovery,
 
     unsigned int port_counter = 0;
     char newPort[10];
+    bool bindToAllInterfaces = celix_bundleContext_getPropertyAsBool(context, CELIX_DISCOVERY_BIND_ON_ALL_INTERFACES, CELIX_DISCOVERY_BIND_ON_ALL_INTERFACES_DEFAULT);
 
     do {
+        char *listeningPorts = NULL;
+        if (bindToAllInterfaces) {
+            asprintf(&listeningPorts,"0.0.0.0:%s", port);
+        } else {
+            asprintf(&listeningPorts,"%s:%s", (*server)->ip, port);
+        }
+
         const char *options[] = {
-                "listening_ports", port,
+                "listening_ports", listeningPorts,
                 "num_threads", DEFAULT_SERVER_THREADS,
                 NULL
         };
@@ -173,7 +181,7 @@ celix_status_t endpointDiscoveryServer_create(discovery_t *discovery,
 
         if ((*server)->ctx != NULL)
         {
-            celix_logHelper_info(discovery->loghelper, "Starting discovery server on port %s...", port);
+            celix_logHelper_info(discovery->loghelper, "Starting discovery server on port %s...", listeningPorts);
         }
         else {
             errno = 0;
@@ -191,6 +199,8 @@ celix_status_t endpointDiscoveryServer_create(discovery_t *discovery,
             port = newPort;
 
         }
+
+        free(listeningPorts);
 
     } while(((*server)->ctx == NULL) && (port_counter < max_ep_num));
 

@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-find_package(Jansson REQUIRED)
+find_package(jansson REQUIRED)
 
 add_celix_bundle(http_admin_sut
     #"Vanilla" bundle which is under test
