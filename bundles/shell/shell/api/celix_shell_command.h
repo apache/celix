@@ -27,8 +27,6 @@ extern "C" {
 #include <stdbool.h>
 #include <stdio.h>
 
-#include "celix_errno.h"
-
 #define CELIX_SHELL_COMMAND_NAME                "command.name"
 #define CELIX_SHELL_COMMAND_USAGE               "command.usage"
 #define CELIX_SHELL_COMMAND_DESCRIPTION         "command.description"
@@ -40,7 +38,7 @@ typedef struct celix_shell_command celix_shell_command_t;
 
 /**
  * The shell command can be used to register additional shell commands.
- * This service should be register with the following properties:
+ * This service should be registered with the following properties:
  *  - command.name: mandatory, name of the command e.g. 'lb'
  *  - command.usage: optional, string describing how tu use the command e.g. 'lb [-l | -s | -u]'
  *  - command.description: optional, string describing the command e.g. 'list bundles.'

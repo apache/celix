@@ -15,6 +15,15 @@
 # specific language governing permissions and limitations
 # under the License.
 
+add_executable(create_framework_in_c src/main.c)
+target_link_libraries(create_framework_in_c PRIVATE Celix::framework)
 
-add_executable(embedding src/main.c)
-target_link_libraries(embedding Celix::framework )
+add_executable(create_framework_in_cxx src/main.cc)
+target_link_libraries(create_framework_in_cxx PRIVATE Celix::framework)
+
+file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/config.properties CONTENT "
+CELIX_BUNDLES_PATH=bundles;/opt/alternative/bundles
+CELIX_AUTO_START_3=FooBundle.zip
+")
+add_executable(create_framework_with_celix_launcher src/launcher.c)
+target_link_libraries(create_framework_with_celix_launcher PRIVATE Celix::framework)

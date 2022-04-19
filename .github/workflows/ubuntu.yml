@@ -8,7 +8,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        #os: [ubuntu-18.04, ubuntu-16.04]
+        #os: [ubuntu-20.04]
         #compiler: [gcc, clang]
         include:
           - os: ubuntu-20.04

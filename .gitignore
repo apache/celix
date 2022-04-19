@@ -26,7 +26,6 @@
 *.pyc
 *.enc
 *.pub
-*.png
 
 build
 cmake-build*

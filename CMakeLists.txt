@@ -18,11 +18,9 @@
 cmake_minimum_required (VERSION 3.14)
 cmake_policy(SET CMP0012 NEW)
 cmake_policy(SET CMP0042 NEW)
-if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.9.0")
-   cmake_policy(SET CMP0068 NEW)
-endif()
+cmake_policy(SET CMP0068 NEW)
 
-project (Celix C CXX)
+project(Celix C CXX)
 
 include(cmake/celix_project/CelixProject.cmake)
 include(cmake/cmake_celix/UseCelix.cmake)
@@ -80,8 +78,6 @@ if (ENABLE_TESTING)
     endif()
 endif ()
 
-set(ENABLE_MORE_WARNINGS OFF)
-
 # Set C specific flags
 set(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -fPIC ${CMAKE_C_FLAGS}")
 set(CMAKE_C_FLAGS "-Wall -Werror ${CMAKE_C_FLAGS}")
@@ -123,6 +119,7 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     endif()
 endif()
 
+option(ENABLE_MORE_WARNINGS "whether to enable more compiler warnings." OFF)
 if (ENABLE_MORE_WARNINGS)
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
         if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4)
@@ -161,8 +158,8 @@ endif()
 # Set version for the framework package/release
 if (NOT DEFINED CELIX_MAJOR)
     set(CELIX_MAJOR "2")
-    set(CELIX_MINOR "2")
-    set(CELIX_MICRO "1")
+    set(CELIX_MINOR "3")
+    set(CELIX_MICRO "0")
 endif ()
 
 # Default bundle version

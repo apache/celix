@@ -21,15 +21,13 @@ limitations under the License.
 
 # Apache Celix - Using Services with C
 
-## Intro 
-
+## Intro
 This example gives an overview for providing and using services with Apache Celix with C.
 
 ## Services
-
 To start of, C services in Celix are just a pointer to a memory location registered in the service registry using a name and an optional set of key/value pairs. 
 
-By convention use the following service layout:
+The convention for Celix C services it to use a struct with a handle and function pointer. For Example:
 
 ```C
 //example.h
@@ -59,30 +57,25 @@ This is explicitly done with macros to prevent symbols so to that no linking dep
 Then the actual struct for the service needs to be declared.
 The first element of the service struct should be a handle which can be used to store the service context, as convention we keep this pointer a void pointer to explicitly make it opaque.
 Note that also an opaque struct could be used (e.g a declared but not defined struct), but this can become problematic concerning components registering multiple services. 
-In that case explicit cast are needed to prevent warning and this can be confusing for the To prevent that issues void pointers are preferred.
 
-The rest of the element should be function pointers, which by convention should return an celix_status_t or int (which is technically the same). 
-The return value is used as a way of handling errors and is also needed to be able to make remote services (e.g. to be able to handle remote exceptions).
+The rest of the elements should be function pointers, which by convention should return a celix_status_t or int (technically the same). 
+The return value is used as a way of handling errors.
 
-The first argument of a service function should be the service handle and if there is a result the last argument should be a output parameter (either pre allocated (e.g. double *) or not (e.g. double **)).
-If the caller is not the owner of the output argument, a const pointer should be used (e.g. const char**). 
-It is also possible to create typedef of the pointer to the service struct (e.g. typedef struct example_struct example_t), but this is not needed. 
-
-In the Celix code base there are still service which uses a typedef with a pointer (e.g. typedef struct example_struct* example_struct_pt). This should be avoided, 
-because it is not possible to create the const pointer of those typedefs and it is not possible to include those typedef inside a existing struct without the needed for an additional malloc.
+The first argument of a service function should be the service handle and if there is a result the last argument should be an output parameter (either pre allocated (e.g. double *) or not (e.g. double **)).
+Use code documentation to clearly specify who is the owner of the output parameter (who needs to cleanup the memory).
 
 ### Semantic Versioning
-
 For versioning, semantic versioning should be used.
 
 A backward incompatible change should lead to a major version increase (e.g. 1.0.0 -> 2.0.0).
-For a C Service versioning is used to express binary compatibility (for the same platform / compiler), change that are incompatible are:
+For a C Service versioning is used to express binary compatibility (for the same platform / compiler), 
+changes that are incompatible are:
 
 - Removing a function
 - Adding a function to before any other function
-- Moving a function to an other location in the service struct
+- Moving a function to another position in the service struct
 - Changing the signature of a function
-- Changing the semantics of a argument (e.g. changing range input from "range in kilometer" to "range in meters")
+- Changing the semantics of an argument (e.g. changing range input from "range in kilometer" to "range in meters") or function.
 
 A backwards binary compatible change which extend the functionality should lead to a minor version increase (e.g. 1.0.0 -> 1.1.0).
 Changes considered backwards compatible which extend the functionality are:
@@ -95,33 +88,34 @@ Changes considered backwards binary compatible which does not extend the functio
 - Changes in the documentation
 - Renaming of arguments
 
-For C services generally platform specific calling convention are used therefore binary compatibility between service provider and consumers from different compilers is possible (e.g. gcc and clang), 
- but not advisable
-
- 
 ## Components
+Component can be created using the Celix Dependency Manager API (`celix_dependency_manager.h`).
+The Celix Dependency Manager is part of the Celix framework lib.
 
-Component should use the ADT principle (see [ADT in C](http://inst.eecs.berkeley.edu/~selfpace/studyguide/9C.sg/Output/ADTs.in.C.html)).
+C Components should use the ADT principle (see [ADT in C](http://inst.eecs.berkeley.edu/~selfpace/studyguide/9C.sg/Output/ADTs.in.C.html)).
 Note that is a convention.
+C Components should also have a `<cmpName>_create` and `<cmpName>_destroy` function.
 
-Components should have a `<cmpName>_create` and `<cmpName>_destroy` function.
-Components can have a `<cmpName>_start` and `<cmpName>_stop` function to start/stop threads or invoke functionality needed a fully created component. 
-The start function will only be called if all required service are available and the stop function will be called when some required are going or if the component needs to be stopped.
+C Components can have a `<cmpName>_start` and `<cmpName>_stop` function to start/stop threads or invoke functionality which 
+needs a fully created component. 
+The start function will only be called if all required service are available and the stop function will be called when 
+some required are going or if the component needs to be stopped (e.g. bundle is stopped).
 
-Components can also have a `<cmpName>_init` and `<cmpName>_deinit` function which will be called before and after respectively the start and stop function. 
-The init/deinit function can be used to include (de)initialization which is not needed/wanted every time when service dependencies are being removed/added. 
+C Components can also have a `<cmpName>_init` and `<cmpName>_deinit` function which will be called before and after 
+respectively the start and stop function. 
+The init/deinit function can be used to include (de)initialization which is not needed/wanted every time when service 
+dependencies are being removed/added. 
 
 ## Code Examples
-
-The next code blocks contains some code examples of components to indicate how to handle service dependencies, how to specify providing services and how to cope with locking/synchronizing.
+The next code blocks contains some code examples of components to indicate how to handle service dependencies, 
+how to specify providing services and how to cope with locking/synchronizing.
 The complete example can be found [here](../../examples/celix-examples/services_example_c).
 
-The error checking is very minimal in these example to keep the focus on how to interact with services and how to deal with errors in C / Celix.
-
+The error checking is very minimal in these example to keep the focus on how to interact with services and how to deal 
+with errors in C / Celix.
 
 ### Bar example
-
-The bar example is a simple component providing the `example` service. 
+The bar C Component is a simple component providing the `example` C service. 
  
 ```C
 //bar.h
@@ -130,7 +124,7 @@ The bar example is a simple component providing the `example` service.
 
 #include "example.h"
 
-typedef struct bar_struct bar_t;
+typedef struct bar_struct bar_t; //note opaque pointer
 
 bar_t* bar_create(void);
 void bar_destroy(bar_t *self);
@@ -151,11 +145,7 @@ struct bar_struct {
 
 bar_t* bar_create(void) {
     bar_t *self = calloc(1, sizeof(*self));
-    if (self != NULL) {
-        self->prefValue = 42;
-    } else {
-        //log error
-    }
+    self->prefValue = 42;
     return self;
 };
 
@@ -611,4 +601,4 @@ The suspend strategy has the advantage of reducing locks' usage: of course, susp
 
 ## See also
 
-See the [C Dependency Manager](../../libs/dependency_manager/README.md) and [C Dependency Manager example](../../examples/celix-examples/dm_example) for more information and a more complex working example.
+See the [C Dependency Manager](../components/README.md) and [C Dependency Manager example](../../examples/celix-examples/dm_example) for more information and a more complex working example.

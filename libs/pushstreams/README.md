@@ -4,7 +4,7 @@ title: PushStream
 
 # Celix PushStream
 
-Celix PushSteams are based on the OSGI Promises (OSGi Compendium Release 7 Specification, Chapter 706).
+Celix PushSteams are based on the OSGI Push Stream Specification (OSGi Compendium Release 7 Specification, Chapter 706).
 It follows the specification as close as possible, but some adjustments are mode for C++17.
 
 NOTE: this implementation is still experiment and the api and behaviour will probably still change.  

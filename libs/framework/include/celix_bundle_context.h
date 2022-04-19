@@ -67,7 +67,7 @@ long celix_bundleContext_registerServiceAsync(celix_bundle_context_t *ctx, void 
  * @param properties The meta properties associated with the service. The service registration will take ownership of the properties (i.e. no destroy needed)
  * @return The serviceId (>=0) or -1 if the registration was unsuccessful.
  */
-long celix_bundleContext_registerService(celix_bundle_context_t *ctx, void *svc, const char *serviceName, celix_properties_t *properties); //__attribute__((deprecated("Use celix_bundleContext_registerServiceAsync instead!")));
+long celix_bundleContext_registerService(celix_bundle_context_t *ctx, void *svc, const char *serviceName, celix_properties_t *properties);
 
 /**
  * @brief Register a service factory in the framework.
@@ -111,7 +111,7 @@ long celix_bundleContext_registerServiceFactoryAsync(celix_bundle_context_t *ctx
  * @param properties The optional service factory properties. For a service consumer this will be seen as the service properties.
  * @return The serviceId (>= 0) or < 0 if the registration was unsuccessful.
  */
-long celix_bundleContext_registerServiceFactory(celix_bundle_context_t *ctx, celix_service_factory_t *factory, const char *serviceName, celix_properties_t *props); //__attribute__((deprecated("Use celix_bundleContext_registerServiceFactoryAsync instead!")));
+long celix_bundleContext_registerServiceFactory(celix_bundle_context_t *ctx, celix_service_factory_t *factory, const char *serviceName, celix_properties_t *props);
 
 /**
  * @brief Service Registration Options when registering services to the Celix framework.
@@ -236,7 +236,7 @@ long celix_bundleContext_registerServiceWithOptionsAsync(celix_bundle_context_t 
  * @param opts The pointer to the registration options. The options are only in the during registration call.
  * @return The serviceId (>= 0) or -1 if the registration was unsuccessful and -2 if the registration was cancelled (@see celix_bundleContext_reserveSvcId).
  */
-long celix_bundleContext_registerServiceWithOptions(celix_bundle_context_t *ctx, const celix_service_registration_options_t *opts); //__attribute__((deprecated("Use celix_bundleContext_registerServiceAsyncWithOptions instead!")));
+long celix_bundleContext_registerServiceWithOptions(celix_bundle_context_t *ctx, const celix_service_registration_options_t *opts);
 
 /**
  * @brief Waits til the async service registration for the provided serviceId is done.
@@ -267,7 +267,7 @@ bool celix_bundleContext_isServiceRegistered(celix_bundle_context_t* ctx, long s
  * @param ctx The bundle context
  * @param serviceId The service id
  */
-void celix_bundleContext_unregisterService(celix_bundle_context_t *ctx, long serviceId); //__attribute__((deprecated("Use celix_bundleContext_unregisterService instead!")));
+void celix_bundleContext_unregisterService(celix_bundle_context_t *ctx, long serviceId);
 
 
 /**
@@ -469,7 +469,7 @@ long celix_bundleContext_trackServices(
         void* callbackHandle,
         void (*add)(void* handle, void* svc),
         void (*remove)(void* handle, void* svc)
-); //__attribute__((deprecated("Use celix_bundleContext_trackServicesAsync instead!")));;
+);
 
 /**
  * @brief Service Tracker Options used to fine tune which services to track and the callback to be used for the tracked services.
@@ -653,7 +653,7 @@ void celix_bundleContext_waitForAsyncStopTracker(celix_bundle_context_t* ctx, lo
  *
  * Will log a error if the provided tracker id is unknown. Will silently ignore trackerId < 0.
  */
-void celix_bundleContext_stopTracker(celix_bundle_context_t *ctx, long trackerId); //__attribute__((deprecated("Use celix_bundleContext_stopTrackerAsync instead!")));
+void celix_bundleContext_stopTracker(celix_bundle_context_t *ctx, long trackerId);
 
 
 
@@ -1094,7 +1094,7 @@ long celix_bundleContext_trackBundlesWithOptionsAsync(
 long celix_bundleContext_trackBundlesWithOptions(
         celix_bundle_context_t* ctx,
         const celix_bundle_tracking_options_t *opts
-); //__attribute__((deprecated("Use celix_bundleContext_trackBundlesWithOptionsAsync instead!")));
+);
 
 /**
  * @brief Use the bundle with the provided bundle id if it is in the active (started) state.
