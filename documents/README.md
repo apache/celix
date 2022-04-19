@@ -82,9 +82,8 @@ bundles contains binaries depending on the stdlibc++ library.
 * Framework 
   * [Apache Celix Bundles](bundles.md)
   * [Apache Celix Services](services.md)
-  * [Apache Celix Components](components.md) TODO refactor, add plantuml state diagram
+  * [Apache Celix Components](components.md) 
   * [Apache Celix Framework](framework.md)
   * [Apache Celix Containers](containers.md)
-* [OSGi patterns in Apache Celix](patterns.md) TODO
 * [Apache Celix CMake Commands](cmake_commands)
-* [Apache Celix - Getting Started Guide](getting_started) TODO REMOVE, replaced with bundles.md, services.md, etc. But check if all info is added somewhere else
+* [Apache Celix - Getting Started Guide](getting_started) 
