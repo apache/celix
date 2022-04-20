@@ -457,7 +457,7 @@ static celix_status_t topologyManager_addImportedService_nolock(void *handle, en
 	celix_status_t status = CELIX_SUCCESS;
 	topology_manager_pt manager = handle;
 
-	celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_INFO, "TOPOLOGY_MANAGER: Add imported service (%s; %s).", endpoint->service, endpoint->id);
+	celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_DEBUG, "TOPOLOGY_MANAGER: Add imported service (%s; %s).", endpoint->service, endpoint->id);
 
 	// We should not try to add imported services to a closed listener.
 	if (manager->closed) {
