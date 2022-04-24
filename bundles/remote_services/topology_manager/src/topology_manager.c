@@ -490,6 +490,8 @@ celix_status_t topologyManager_addImportedService(void *handle, endpoint_descrip
 	celix_status_t status = CELIX_SUCCESS;
 	topology_manager_pt manager = handle;
 
+	celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_INFO, "TOPOLOGY_MANAGER: Add imported service");
+
 	celixThreadMutex_lock(&manager->lock);
 
 	status = topologyManager_addImportedService_nolock(handle, endpoint, matchedFilter);
@@ -503,7 +505,7 @@ static celix_status_t topologyManager_removeImportedService_nolock(void *handle,
 	celix_status_t status = CELIX_SUCCESS;
 	topology_manager_pt manager = handle;
 
-	celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_INFO, "TOPOLOGY_MANAGER: Remove imported service (%s; %s).", endpoint->service, endpoint->id);
+	celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_DEBUG, "TOPOLOGY_MANAGER: Remove imported service (%s; %s).", endpoint->service, endpoint->id);
 
 	hash_map_iterator_pt iter = hashMapIterator_create(manager->importedServices);
 	while (hashMapIterator_hasNext(iter)) {
@@ -540,6 +542,8 @@ celix_status_t topologyManager_removeImportedService(void *handle, endpoint_desc
 	celix_status_t status = CELIX_SUCCESS;
 	topology_manager_pt manager = handle;
 
+	celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_INFO, "TOPOLOGY_MANAGER: Remove imported service");
+
 	celixThreadMutex_lock(&manager->lock);
 
 	status = topologyManager_removeImportedService_nolock(handle, endpoint, matchedFilter);
@@ -561,7 +565,7 @@ static celix_status_t topologyManager_addExportedService_nolock(void * handle, s
     serviceReference_getProperty(reference, OSGI_RSA_SERVICE_EXPORTED_INTERFACES, &export);
     assert(export != NULL);
 
-	celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_INFO, "TOPOLOGY_MANAGER: Add exported service (%li).", serviceId);
+	celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_DEBUG, "TOPOLOGY_MANAGER: Add exported service (%li).", serviceId);
 
 
 	scope_getExportProperties(manager->scope, reference, &serviceProperties);
@@ -595,6 +599,8 @@ celix_status_t topologyManager_addExportedService(void * handle, service_referen
 	topology_manager_pt manager = handle;
 	celix_status_t status = CELIX_SUCCESS;
 
+	celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_INFO, "TOPOLOGY_MANAGER: Add exported service");
+
 	celixThreadMutex_lock(&manager->lock);
 
 	status = topologyManager_addExportedService_nolock(handle, reference, service);
@@ -609,7 +615,7 @@ static celix_status_t topologyManager_removeExportedService_nolock(void * handle
 	celix_status_t status = CELIX_SUCCESS;
 	long serviceId = serviceReference_getServiceId(reference);
 
-	celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_INFO, "TOPOLOGY_MANAGER: Remove exported service (%li).", serviceId);
+	celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_DEBUG, "TOPOLOGY_MANAGER: Remove exported service (%li).", serviceId);
 
 	hash_map_pt exports = hashMap_get(manager->exportedServices, reference);
 	if (exports) {
@@ -647,6 +653,8 @@ static celix_status_t topologyManager_removeExportedService_nolock(void * handle
 celix_status_t topologyManager_removeExportedService(void * handle, service_reference_pt reference, void * service) {
 	topology_manager_pt manager = handle;
 	celix_status_t status = CELIX_SUCCESS;
+
+	celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_INFO, "TOPOLOGY_MANAGER: Remove exported service");
 
 	celixThreadMutex_lock(&manager->lock);
 
@@ -689,7 +697,7 @@ celix_status_t topologyManager_endpointListenerAdded(void* handle, service_refer
 	const char *topologyManagerEPL = NULL;
 	serviceReference_getProperty(reference, "TOPOLOGY_MANAGER", &topologyManagerEPL);
 	if (topologyManagerEPL != NULL && strcmp(topologyManagerEPL, "true") == 0) {
-		celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_INFO, "TOPOLOGY_MANAGER: Ignored itself ENDPOINT_LISTENER");
+		celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_DEBUG, "TOPOLOGY_MANAGER: Ignored itself ENDPOINT_LISTENER");
 		return CELIX_SUCCESS;
 	}
 
