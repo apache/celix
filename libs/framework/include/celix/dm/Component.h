@@ -41,10 +41,17 @@
 namespace celix { namespace dm {
 
     enum class ComponentState {
-        INACTIVE = 1,
-        WAITING_FOR_REQUIRED = 2,
-        INSTANTIATED_AND_WAITING_FOR_REQUIRED = 3,
-        TRACKING_OPTIONAL = 4,
+        INACTIVE =                              1,
+        WAITING_FOR_REQUIRED =                  2,
+        INITIALIZING =                          3,
+        DEINITIALIZING =                        4,
+        INSTANTIATED_AND_WAITING_FOR_REQUIRED = 5,
+        STARTING =                              6,
+        STOPPING =                              7,
+        TRACKING_OPTIONAL =                     8,
+        SUSPENDING =                            9,
+        SUSPENDED =                             10,
+        RESUMING =                              11,
     };
 
     class BaseComponent {
@@ -90,14 +97,28 @@ namespace celix { namespace dm {
         ComponentState getState() const {
              auto cState = celix_dmComponent_currentState(cCmp);
              switch (cState) {
-                 case DM_CMP_STATE_INACTIVE:
-                     return ComponentState::INACTIVE;
-                 case DM_CMP_STATE_WAITING_FOR_REQUIRED:
+                 case CELIX_DM_CMP_STATE_WAITING_FOR_REQUIRED:
                      return ComponentState::WAITING_FOR_REQUIRED;
-                 case DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED:
+                 case CELIX_DM_CMP_STATE_INITIALIZING:
+                     return ComponentState::INITIALIZING;
+                 case CELIX_DM_CMP_STATE_DEINITIALIZING:
+                     return ComponentState::DEINITIALIZING;
+                 case CELIX_DM_CMP_STATE_INITIALIZED_AND_WAITING_FOR_REQUIRED:
                      return ComponentState::INSTANTIATED_AND_WAITING_FOR_REQUIRED;
-                 default:
+                 case CELIX_DM_CMP_STATE_STARTING:
+                     return ComponentState::STARTING;
+                 case CELIX_DM_CMP_STATE_STOPPING:
+                     return ComponentState::STOPPING;
+                 case CELIX_DM_CMP_STATE_TRACKING_OPTIONAL:
                      return ComponentState::TRACKING_OPTIONAL;
+                 case CELIX_DM_CMP_STATE_SUSPENDING:
+                     return ComponentState::SUSPENDING;
+                 case CELIX_DM_CMP_STATE_SUSPENDED:
+                     return ComponentState::SUSPENDED;
+                 case CELIX_DM_CMP_STATE_RESUMING:
+                     return ComponentState::RESUMING;
+                 default:
+                     return ComponentState::INACTIVE;
              }
          }
 

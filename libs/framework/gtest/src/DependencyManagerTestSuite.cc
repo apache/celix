@@ -123,7 +123,7 @@ TEST_F(DependencyManagerTestSuite, DmComponentRemoveAllAsync) {
     EXPECT_EQ(1, count.load());
 }
 
-TEST_F(DependencyManagerTestSuite, CDmGetInfo) {
+TEST_F(DependencyManagerTestSuite, DmGetInfo) {
     auto* mng = celix_bundleContext_getDependencyManager(ctx);
     auto* cmp = celix_dmComponent_create(ctx, "test1");
 
@@ -207,7 +207,7 @@ TEST_F(DependencyManagerTestSuite, CxxDmGetInfo) {
     auto& cmpInfo = info.components[0];
     EXPECT_TRUE(!cmpInfo.uuid.empty());
     EXPECT_EQ(cmpInfo.name, "Cmp1");
-    EXPECT_EQ(cmpInfo.state, "WAITING_FOR_REQUIRED");
+    EXPECT_EQ(cmpInfo.state, "CELIX_DM_CMP_STATE_WAITING_FOR_REQUIRED");
     EXPECT_FALSE(cmpInfo.isActive);
     EXPECT_EQ(cmpInfo.nrOfTimesStarted, 0);
     EXPECT_EQ(cmpInfo.nrOfTimesResumed, 0);
@@ -641,13 +641,13 @@ TEST_F(DependencyManagerTestSuite, UnneededSuspendIsPrevented) {
 
     celix::dm::DependencyManager dm{ctx};
     //cmp1 has lifecycle callbacks, but not set or add/rem callbacks for the service dependency -> should not trigger suspend
-    auto& cmp1 = dm.createComponent<CounterComponent>()
+    auto& cmp1 = dm.createComponent<CounterComponent>("CounterCmp1")
             .setCallbacks(nullptr, &CounterComponent::start, &CounterComponent::stop, nullptr);
     cmp1.createServiceDependency<TestService>();
     cmp1.build();
 
     //cmp2 has lifecycle callbacks and set, add/rem callbacks for the service dependency -> should trigger suspend 2x
-    auto& cmp2 = dm.createComponent<CounterComponent>()
+    auto& cmp2 = dm.createComponent<CounterComponent>("CounterCmp2")
             .setCallbacks(nullptr, &CounterComponent::start, &CounterComponent::stop, nullptr);
     cmp2.createServiceDependency<TestService>()
             .setCallbacks(&CounterComponent::setService)
@@ -786,6 +786,35 @@ TEST_F(DependencyManagerTestSuite, installBundleWithDepManActivator) {
     list = celix_bundleContext_listBundles(ctx);
     EXPECT_EQ(celix_arrayList_size(list), 1);
     celix_arrayList_destroy(list);
+}
+
+TEST_F(DependencyManagerTestSuite, testStateToString) {
+    const char* state = celix_dmComponent_stateToString(CELIX_DM_CMP_STATE_INACTIVE);
+    EXPECT_STREQ(state, "CELIX_DM_CMP_STATE_INACTIVE");
+    state = celix_dmComponent_stateToString(CELIX_DM_CMP_STATE_WAITING_FOR_REQUIRED);
+    EXPECT_STREQ(state, "CELIX_DM_CMP_STATE_WAITING_FOR_REQUIRED");
+    state = celix_dmComponent_stateToString(CELIX_DM_CMP_STATE_INITIALIZING);
+    EXPECT_STREQ(state, "CELIX_DM_CMP_STATE_INITIALIZING");
+    state = celix_dmComponent_stateToString(CELIX_DM_CMP_STATE_DEINITIALIZING);
+    EXPECT_STREQ(state, "CELIX_DM_CMP_STATE_DEINITIALIZING");
+    state = celix_dmComponent_stateToString(CELIX_DM_CMP_STATE_INITIALIZED_AND_WAITING_FOR_REQUIRED);
+    EXPECT_STREQ(state, "CELIX_DM_CMP_STATE_INITIALIZED_AND_WAITING_FOR_REQUIRED");
+    state = celix_dmComponent_stateToString(CELIX_DM_CMP_STATE_STARTING);
+    EXPECT_STREQ(state, "CELIX_DM_CMP_STATE_STARTING");
+    state = celix_dmComponent_stateToString(CELIX_DM_CMP_STATE_STOPPING);
+    EXPECT_STREQ(state, "CELIX_DM_CMP_STATE_STOPPING");
+    state = celix_dmComponent_stateToString(CELIX_DM_CMP_STATE_TRACKING_OPTIONAL);
+    EXPECT_STREQ(state, "CELIX_DM_CMP_STATE_TRACKING_OPTIONAL");
+    state = celix_dmComponent_stateToString(CELIX_DM_CMP_STATE_SUSPENDING);
+    EXPECT_STREQ(state, "CELIX_DM_CMP_STATE_SUSPENDING");
+    state = celix_dmComponent_stateToString(CELIX_DM_CMP_STATE_SUSPENDED);
+    EXPECT_STREQ(state, "CELIX_DM_CMP_STATE_SUSPENDED");
+    state = celix_dmComponent_stateToString(CELIX_DM_CMP_STATE_RESUMING);
+    EXPECT_STREQ(state, "CELIX_DM_CMP_STATE_RESUMING");
+    state = celix_dmComponent_stateToString((celix_dm_component_state_enum)0);
+    EXPECT_STREQ(state, "CELIX_DM_CMP_STATE_INACTIVE");
+    state = celix_dmComponent_stateToString((celix_dm_component_state_enum)16);
+    EXPECT_STREQ(state, "CELIX_DM_CMP_STATE_INACTIVE");
 }
 
 #if __cplusplus >= 201703L //C++17 or higher
