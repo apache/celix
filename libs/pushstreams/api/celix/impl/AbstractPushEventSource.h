@@ -88,7 +88,7 @@ celix::AbstractPushEventSource<T>::AbstractPushEventSource(std::shared_ptr<Promi
 
 template <typename T>
 void celix::AbstractPushEventSource<T>::open(std::shared_ptr<celix::IPushEventConsumer<T>> _eventConsumer) {
-    std::lock_guard lck{mutex};
+    std::unique_lock lck{mutex};
     if (closed) {
         _eventConsumer->accept(celix::ClosePushEvent<T>());
     } else {
@@ -102,7 +102,7 @@ void celix::AbstractPushEventSource<T>::open(std::shared_ptr<celix::IPushEventCo
 
 template <typename T>
 [[nodiscard]] celix::Promise<void> celix::AbstractPushEventSource<T>::connectPromise() {
-    std::lock_guard lck{mutex};
+    std::unique_lock lck{mutex};
     auto connect = promiseFactory->deferred<void>();
     connected.push_back(connect);
     return connect.getPromise();
@@ -110,7 +110,7 @@ template <typename T>
 
 template <typename T>
 void celix::AbstractPushEventSource<T>::publish(const T& event) {
-    std::lock_guard lck{mutex};
+    std::unique_lock lck{mutex};
 
     if (closed) {
         throw IllegalStateException("AbstractPushEventSource closed");
@@ -125,28 +125,37 @@ void celix::AbstractPushEventSource<T>::publish(const T& event) {
 
 template <typename T>
 bool celix::AbstractPushEventSource<T>::isConnected() {
-    std::lock_guard lck{mutex};
+    std::unique_lock lck{mutex};
     return !eventConsumers.empty();
 }
 
 template <typename T>
 void celix::AbstractPushEventSource<T>::close() {
+    std::condition_variable cv;
+
+
     {
-        std::lock_guard lck{mutex};
+        std::unique_lock lck{mutex};
+
         if (closed) {
             return;
-        } else {
-            closed = true;
+        }
+
+        for (auto &eventConsumer : eventConsumers) {
+            execute([eventConsumer]() {
+                eventConsumer->accept(celix::ClosePushEvent<T>());
+            });
         }
     }
 
-    for(auto& eventConsumer : eventConsumers) {
-        execute([eventConsumer]() {
-            eventConsumer->accept(celix::ClosePushEvent<T>());
-        });
-    }
-
     execute([&]() {
+        std::unique_lock lck{mutex};
         eventConsumers.clear();
+        closed = true;
+        cv.notify_one();
     });
+
+    //wait upon closed
+    std::unique_lock lck{mutex};
+    cv.wait(lck, [&]() {return closed;});
 }

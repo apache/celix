@@ -75,14 +75,18 @@ public:
     std::unique_ptr<std::thread> t{};
 
     std::shared_ptr<celix::PromiseFactory> promiseFactory {std::make_shared<celix::PromiseFactory>()};
-    celix::Deferred<void> done{promiseFactory->deferred<void>()};
-    celix::Promise<void> donepromise = done.getPromise();
+    std::mutex mutex{};
+    std::condition_variable done{};
 
     template <typename T>
-    std::shared_ptr<celix::SynchronousPushEventSource<T>> createEventSource(T event, int publishCount, bool autoinc = false) {
-        auto ses = psp.template createSynchronousEventSource<T>(promiseFactory);
+    std::shared_ptr<celix::AbstractPushEventSource<T>> createEventSource(T event, int publishCount, bool autoinc = false, bool syncSource = true) {
+        std::shared_ptr<celix::AbstractPushEventSource<T>> ses;
+        if (syncSource)
+            ses = psp.template createSynchronousEventSource<T>(promiseFactory);
+        else
+            ses = psp.template createAsynchronousEventSource<T>(promiseFactory);
 
-        auto successLambda = [this, weakses = std::weak_ptr<celix::SynchronousPushEventSource<T>>(ses), event, publishCount, autoinc](celix::Promise<void> p) -> celix::Promise<void> {
+        auto successLambda = [this, weakses = std::weak_ptr<celix::AbstractPushEventSource<T>>(ses), event, publishCount, autoinc](celix::Promise<void> p) -> celix::Promise<void> {
             t = std::make_unique<std::thread>([&, event, publishCount, autoinc]() {
                 int counter = 0;
                 T data {event};
@@ -104,7 +108,8 @@ public:
             if (ses) {
                 ses->close();
             }
-            done.resolve();
+            std::unique_lock lk(mutex);
+            done.notify_one();
             return p;
         };
 
@@ -310,6 +315,8 @@ TEST_F(PushStreamTestSuite, ForEachTestBasicType) {
         int consumeCount{0};
         int consumeSum{0};
         int lastConsumed{-1};
+        std::unique_lock lk(mutex);
+
         auto ses = createEventSource<int>(0, 10'000, true);
 
         auto stream = psp.createUnbufferedStream<int>(ses, promiseFactory);
@@ -322,8 +329,8 @@ TEST_F(PushStreamTestSuite, ForEachTestBasicType) {
                     consumeSum = consumeSum + event;
                 });
 
+        done.wait(lk);
         streamEnded.wait();
-        donepromise.wait();
 
         GTEST_ASSERT_EQ(10'000, consumeCount);
         GTEST_ASSERT_EQ(49'995'000, consumeSum);
@@ -339,6 +346,8 @@ TEST_F(PushStreamTestSuite, ForEachTestBasicType_Buffered) {
         int consumeCount{0};
         int consumeSum{0};
         int lastConsumed{-1};
+        std::unique_lock lk(mutex);
+
         auto ses = createEventSource<int>(0, 10'000, true);
 
         auto stream = psp.createStream<int>(ses, promiseFactory);
@@ -351,8 +360,8 @@ TEST_F(PushStreamTestSuite, ForEachTestBasicType_Buffered) {
                     consumeSum = consumeSum + event;
                 });
 
+        done.wait(lk);
         streamEnded.wait();
-        donepromise.wait();
 
         GTEST_ASSERT_EQ(10'000, consumeCount);
         GTEST_ASSERT_EQ(49'995'000, consumeSum);
@@ -363,6 +372,8 @@ TEST_F(PushStreamTestSuite, ForEachTestBasicType_Buffered) {
 TEST_F(PushStreamTestSuite, ForEachTestObjectType) {
     int consumeCount{0};
     int consumeSum{0};
+    std::unique_lock lk(mutex);
+
     auto ses = createEventSource<EventObject>(EventObject{2}, 10);
 
     auto stream = psp.createUnbufferedStream<EventObject>(ses, promiseFactory);
@@ -372,8 +383,8 @@ TEST_F(PushStreamTestSuite, ForEachTestObjectType) {
                 consumeSum = consumeSum + event;
             });
 
+    done.wait(lk);
     streamEnded.wait();
-    donepromise.wait();
 
     GTEST_ASSERT_EQ(10, consumeCount);
     GTEST_ASSERT_EQ(20, consumeSum);
@@ -384,6 +395,8 @@ TEST_F(PushStreamTestSuite, ForEachTestObjectType) {
 TEST_F(PushStreamTestSuite, FilterTestObjectType_true) {
     int consumeCount{0};
     int consumeSum{0};
+    std::unique_lock lk(mutex);
+
     auto ses = createEventSource<EventObject>(EventObject{2}, 10);
 
     auto stream = psp.createUnbufferedStream<EventObject>(ses, promiseFactory);
@@ -396,8 +409,8 @@ TEST_F(PushStreamTestSuite, FilterTestObjectType_true) {
                 consumeSum = consumeSum + event;
             });
 
+    done.wait(lk);
     streamEnded.wait();
-    donepromise.wait();
 
     GTEST_ASSERT_EQ(10, consumeCount);
     GTEST_ASSERT_EQ(20, consumeSum);
@@ -407,6 +420,8 @@ TEST_F(PushStreamTestSuite, FilterTestObjectType_true) {
 TEST_F(PushStreamTestSuite, FilterTestObjectType_false) {
     int consumeCount{0};
     int consumeSum{0};
+    std::unique_lock lk(mutex);
+
     auto ses = createEventSource<EventObject>(EventObject{2}, 10);
 
     auto stream = psp.createUnbufferedStream<EventObject>(ses, promiseFactory);
@@ -419,8 +434,8 @@ TEST_F(PushStreamTestSuite, FilterTestObjectType_false) {
                 consumeSum = consumeSum + event;
             });
 
+    done.wait(lk);
     streamEnded.wait();
-    donepromise.wait();
 
     GTEST_ASSERT_EQ(0, consumeCount);
     GTEST_ASSERT_EQ(0, consumeSum);
@@ -429,6 +444,9 @@ TEST_F(PushStreamTestSuite, FilterTestObjectType_false) {
 TEST_F(PushStreamTestSuite, FilterTestObjectType_simple) {
     int consumeCount{0};
     int consumeSum{0};
+
+    std::unique_lock lk(mutex);
+
     auto ses = createEventSource<EventObject>(EventObject{0}, 10, true);
 
     auto stream = psp.createUnbufferedStream<EventObject>(ses, promiseFactory);
@@ -441,8 +459,8 @@ TEST_F(PushStreamTestSuite, FilterTestObjectType_simple) {
                 consumeSum = consumeSum + event;
             });
 
+    done.wait(lk);
     streamEnded.wait();
-    donepromise.wait();
 
     GTEST_ASSERT_EQ(5, consumeCount);
     GTEST_ASSERT_EQ( 0 + 1 + 2 + 3 + 4, consumeSum);
@@ -451,6 +469,8 @@ TEST_F(PushStreamTestSuite, FilterTestObjectType_simple) {
 TEST_F(PushStreamTestSuite, FilterTestObjectType_and) {
     int consumeCount{0};
     int consumeSum{0};
+    std::unique_lock lk(mutex);
+
     auto ses = createEventSource<EventObject>(EventObject{0}, 10, true);
 
     auto stream = psp.createUnbufferedStream<EventObject>(ses, promiseFactory);
@@ -466,8 +486,8 @@ TEST_F(PushStreamTestSuite, FilterTestObjectType_and) {
                 consumeSum = consumeSum + event;
             });
 
+    done.wait(lk);
     streamEnded.wait();
-    donepromise.wait();
 
     GTEST_ASSERT_EQ(2, consumeCount);
     GTEST_ASSERT_EQ(6 + 7, consumeSum); // 0 + 1 + 2 + 3 + 4
@@ -476,6 +496,8 @@ TEST_F(PushStreamTestSuite, FilterTestObjectType_and) {
 TEST_F(PushStreamTestSuite, MapTestObjectType) {
     int consumeCount{0};
     int consumeSum{0};
+    std::unique_lock lk(mutex);
+
     auto ses = createEventSource<EventObject>(EventObject{0}, 10, true);
     auto stream = psp.createUnbufferedStream<EventObject>(ses, promiseFactory);
     auto streamEnded = stream->
@@ -487,12 +509,38 @@ TEST_F(PushStreamTestSuite, MapTestObjectType) {
                 consumeSum = consumeSum + event;
             });
 
+    done.wait(lk);
     streamEnded.wait();
-    donepromise.wait();
 
     GTEST_ASSERT_EQ(10, consumeCount);
     GTEST_ASSERT_EQ(45, consumeSum);
 }
+
+TEST_F(PushStreamTestSuite, MapTestObjectType_async) {
+    for(int i = 0; i < 1000; i++) {
+        int consumeCount{0};
+        int consumeSum{0};
+        std::unique_lock lk(mutex);
+
+        auto ses = createEventSource<EventObject>(EventObject{0}, 10, true, false);
+        auto stream = psp.createUnbufferedStream<EventObject>(ses, promiseFactory);
+        auto streamEnded = stream->
+                map<int>([](const EventObject &event) -> int {
+            return event.val;
+        }).
+                forEach([&](const int &event) {
+            consumeCount++;
+            consumeSum = consumeSum + event;
+        });
+
+        done.wait(lk);
+        streamEnded.wait();
+
+        GTEST_ASSERT_EQ(10, consumeCount);
+        GTEST_ASSERT_EQ(45, consumeSum);
+    }
+}
+
 
 TEST_F(PushStreamTestSuite, MultipleStreamsTest_CloseSource) {
     int onEventStream1{0};
@@ -501,6 +549,8 @@ TEST_F(PushStreamTestSuite, MultipleStreamsTest_CloseSource) {
     int onClosedReceived2{0};
     int onErrorReceived1{0};
     int onErrorReceived2{0};
+
+    std::unique_lock lk(mutex);
 
     auto psp = PushStreamProvider();
     std::unique_ptr<std::thread> t{};
@@ -535,17 +585,15 @@ TEST_F(PushStreamTestSuite, MultipleStreamsTest_CloseSource) {
     });
 
     streamEnded1.onSuccess([]() {
-        std::cout << " ended" << std::endl;
     });
 
     streamEnded2.onSuccess([]() {
-        std::cout << "Stream2 ended" << std::endl;
     });
 
     streamEnded1.wait();
     streamEnded2.wait();
 
-    donepromise.wait();
+    done.wait(lk);
 
     GTEST_ASSERT_EQ(4, onEventStream1);
     //The first stream will start the source, thus the number of receives in second is not guaranteed
@@ -593,11 +641,9 @@ TEST_F(PushStreamTestSuite, MultipleStreamsTest_CloseStream) {
             });
 
     streamEnded1.onSuccess([]() {
-        std::cout << "Stream ended" << std::endl;
     });
 
     streamEnded2.onSuccess([]() {
-        std::cout << "Stream2 ended" << std::endl;
     });
 
     stream1->close();
@@ -612,11 +658,14 @@ TEST_F(PushStreamTestSuite, MultipleStreamsTest_CloseStream) {
     GTEST_ASSERT_EQ(1, onEventStream2);
 }
 
+
 TEST_F(PushStreamTestSuite, SplitStreamsTest) {
     std::map<int,int> counts{};
     counts[0] = 0;
     counts[1] = 0;
     int onClosedReceived{0};
+
+    std::unique_lock lk(mutex);
 
     auto psp = PushStreamProvider();
     std::unique_ptr<std::thread> t{};
@@ -644,11 +693,10 @@ TEST_F(PushStreamTestSuite, SplitStreamsTest) {
         }));
 
         streamEndeds[i].onSuccess([]() {
-            std::cout << "Stream ended" << std::endl;
         });
     }
 
-    donepromise.wait();
+    done.wait(lk);
 
     GTEST_ASSERT_EQ(2, onClosedReceived);
     GTEST_ASSERT_EQ(9, counts[0]);
