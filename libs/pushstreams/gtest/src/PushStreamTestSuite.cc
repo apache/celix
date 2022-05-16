@@ -77,9 +77,11 @@ public:
     std::shared_ptr<celix::PromiseFactory> promiseFactory {std::make_shared<celix::PromiseFactory>()};
     std::mutex mutex{};
     std::condition_variable done{};
+    bool allEventsDone{false};
 
     template <typename T>
     std::shared_ptr<celix::AbstractPushEventSource<T>> createEventSource(T event, int publishCount, bool autoinc = false, bool syncSource = true) {
+        allEventsDone = false;
         std::shared_ptr<celix::AbstractPushEventSource<T>> ses;
         if (syncSource)
             ses = psp.template createSynchronousEventSource<T>(promiseFactory);
@@ -104,13 +106,8 @@ public:
             });
 
             t->join();
-            auto ses = weakses.lock();
-            if (ses) {
-                ses->close();
-            }
-
-
             std::unique_lock lk(mutex);
+            allEventsDone = true;
             done.notify_one();
             return p;
         };
@@ -331,8 +328,9 @@ TEST_F(PushStreamTestSuite, ForEachTestBasicType) {
                     consumeSum = consumeSum + event;
                 });
 
-        done.wait(lk);
+        done.wait(lk, [&](){ return allEventsDone;});
         promiseFactory->getExecutor()->wait();
+        ses->close();
         streamEnded.wait();
 
         GTEST_ASSERT_EQ(10'000, consumeCount);
@@ -363,8 +361,9 @@ TEST_F(PushStreamTestSuite, ForEachTestBasicType_Buffered) {
                     consumeSum = consumeSum + event;
                 });
 
-        done.wait(lk);
+        done.wait(lk, [&](){ return allEventsDone;});
         promiseFactory->getExecutor()->wait();
+        ses->close();
         streamEnded.wait();
 
         GTEST_ASSERT_EQ(10'000, consumeCount);
@@ -387,8 +386,9 @@ TEST_F(PushStreamTestSuite, ForEachTestObjectType) {
                 consumeSum = consumeSum + event;
             });
 
-    done.wait(lk);
+    done.wait(lk, [&](){ return allEventsDone;});
     promiseFactory->getExecutor()->wait();
+    ses->close();
     streamEnded.wait();
 
     GTEST_ASSERT_EQ(10, consumeCount);
@@ -414,8 +414,9 @@ TEST_F(PushStreamTestSuite, FilterTestObjectType_true) {
                 consumeSum = consumeSum + event;
             });
 
-    done.wait(lk);
+    done.wait(lk, [&](){ return allEventsDone;});
     promiseFactory->getExecutor()->wait();
+    ses->close();
     streamEnded.wait();
 
     GTEST_ASSERT_EQ(10, consumeCount);
@@ -440,8 +441,9 @@ TEST_F(PushStreamTestSuite, FilterTestObjectType_false) {
                 consumeSum = consumeSum + event;
             });
 
-    done.wait(lk);
+    done.wait(lk, [&](){ return allEventsDone;});
     promiseFactory->getExecutor()->wait();
+    ses->close();
     streamEnded.wait();
 
     GTEST_ASSERT_EQ(0, consumeCount);
@@ -466,8 +468,9 @@ TEST_F(PushStreamTestSuite, FilterTestObjectType_simple) {
                 consumeSum = consumeSum + event;
             });
 
-    done.wait(lk);
+    done.wait(lk, [&](){ return allEventsDone;});
     promiseFactory->getExecutor()->wait();
+    ses->close();
     streamEnded.wait();
 
     GTEST_ASSERT_EQ(5, consumeCount);
@@ -494,8 +497,9 @@ TEST_F(PushStreamTestSuite, FilterTestObjectType_and) {
                 consumeSum = consumeSum + event;
             });
 
-    done.wait(lk);
+    done.wait(lk, [&](){ return allEventsDone;});
     promiseFactory->getExecutor()->wait();
+    ses->close();
     streamEnded.wait();
 
     GTEST_ASSERT_EQ(2, consumeCount);
@@ -518,8 +522,9 @@ TEST_F(PushStreamTestSuite, MapTestObjectType) {
                 consumeSum = consumeSum + event;
             });
 
-    done.wait(lk);
+    done.wait(lk, [&](){ return allEventsDone;});
     promiseFactory->getExecutor()->wait();
+    ses->close();
     streamEnded.wait();
 
     GTEST_ASSERT_EQ(10, consumeCount);
@@ -543,8 +548,9 @@ TEST_F(PushStreamTestSuite, MapTestObjectType_async) {
             consumeSum = consumeSum + event;
         });
 
-        done.wait(lk);
+        done.wait(lk, [&](){ return allEventsDone;});
         promiseFactory->getExecutor()->wait();
+        ses->close();
         streamEnded.wait();
 
         GTEST_ASSERT_EQ(10, consumeCount);
@@ -601,12 +607,12 @@ TEST_F(PushStreamTestSuite, MultipleStreamsTest_CloseSource) {
     streamEnded2.onSuccess([]() {
     });
 
+
+    done.wait(lk, [&](){ return allEventsDone;});
+    promiseFactory->getExecutor()->wait();
+    ses->close();
     streamEnded1.wait();
     streamEnded2.wait();
-
-    done.wait(lk);
-    promiseFactory->getExecutor()->wait();
-
 
     GTEST_ASSERT_EQ(4, onEventStream1);
     //The first stream will start the source, thus the number of receives in second is not guaranteed
@@ -709,7 +715,9 @@ TEST_F(PushStreamTestSuite, SplitStreamsTest) {
         });
     }
 
-    done.wait(lk);
+    done.wait(lk, [&](){ return allEventsDone;});
+    promiseFactory->getExecutor()->wait();
+    ses->close();
     promiseFactory->getExecutor()->wait();
 
     GTEST_ASSERT_EQ(2, onClosedReceived);
