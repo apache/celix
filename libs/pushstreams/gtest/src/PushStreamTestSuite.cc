@@ -108,6 +108,8 @@ public:
             if (ses) {
                 ses->close();
             }
+
+
             std::unique_lock lk(mutex);
             done.notify_one();
             return p;
@@ -330,6 +332,7 @@ TEST_F(PushStreamTestSuite, ForEachTestBasicType) {
                 });
 
         done.wait(lk);
+        promiseFactory->getExecutor()->wait();
         streamEnded.wait();
 
         GTEST_ASSERT_EQ(10'000, consumeCount);
@@ -361,6 +364,7 @@ TEST_F(PushStreamTestSuite, ForEachTestBasicType_Buffered) {
                 });
 
         done.wait(lk);
+        promiseFactory->getExecutor()->wait();
         streamEnded.wait();
 
         GTEST_ASSERT_EQ(10'000, consumeCount);
@@ -384,6 +388,7 @@ TEST_F(PushStreamTestSuite, ForEachTestObjectType) {
             });
 
     done.wait(lk);
+    promiseFactory->getExecutor()->wait();
     streamEnded.wait();
 
     GTEST_ASSERT_EQ(10, consumeCount);
@@ -410,6 +415,7 @@ TEST_F(PushStreamTestSuite, FilterTestObjectType_true) {
             });
 
     done.wait(lk);
+    promiseFactory->getExecutor()->wait();
     streamEnded.wait();
 
     GTEST_ASSERT_EQ(10, consumeCount);
@@ -435,6 +441,7 @@ TEST_F(PushStreamTestSuite, FilterTestObjectType_false) {
             });
 
     done.wait(lk);
+    promiseFactory->getExecutor()->wait();
     streamEnded.wait();
 
     GTEST_ASSERT_EQ(0, consumeCount);
@@ -460,6 +467,7 @@ TEST_F(PushStreamTestSuite, FilterTestObjectType_simple) {
             });
 
     done.wait(lk);
+    promiseFactory->getExecutor()->wait();
     streamEnded.wait();
 
     GTEST_ASSERT_EQ(5, consumeCount);
@@ -487,6 +495,7 @@ TEST_F(PushStreamTestSuite, FilterTestObjectType_and) {
             });
 
     done.wait(lk);
+    promiseFactory->getExecutor()->wait();
     streamEnded.wait();
 
     GTEST_ASSERT_EQ(2, consumeCount);
@@ -510,6 +519,7 @@ TEST_F(PushStreamTestSuite, MapTestObjectType) {
             });
 
     done.wait(lk);
+    promiseFactory->getExecutor()->wait();
     streamEnded.wait();
 
     GTEST_ASSERT_EQ(10, consumeCount);
@@ -534,6 +544,7 @@ TEST_F(PushStreamTestSuite, MapTestObjectType_async) {
         });
 
         done.wait(lk);
+        promiseFactory->getExecutor()->wait();
         streamEnded.wait();
 
         GTEST_ASSERT_EQ(10, consumeCount);
@@ -594,6 +605,8 @@ TEST_F(PushStreamTestSuite, MultipleStreamsTest_CloseSource) {
     streamEnded2.wait();
 
     done.wait(lk);
+    promiseFactory->getExecutor()->wait();
+
 
     GTEST_ASSERT_EQ(4, onEventStream1);
     //The first stream will start the source, thus the number of receives in second is not guaranteed
@@ -697,6 +710,7 @@ TEST_F(PushStreamTestSuite, SplitStreamsTest) {
     }
 
     done.wait(lk);
+    promiseFactory->getExecutor()->wait();
 
     GTEST_ASSERT_EQ(2, onClosedReceived);
     GTEST_ASSERT_EQ(9, counts[0]);
