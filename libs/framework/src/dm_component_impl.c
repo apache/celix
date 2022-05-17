@@ -290,7 +290,11 @@ celix_dm_component_state_t component_currentState(celix_dm_component_t *cmp) {
 }
 
 celix_dm_component_state_t celix_dmComponent_currentState(celix_dm_component_t *cmp) {
-    return cmp->state;
+    celix_dm_component_state_t state;
+    celixThreadMutex_lock(&cmp->mutex);
+    state = cmp->state;
+    celixThreadMutex_unlock(&cmp->mutex);
+    return state;
 }
 
 void* component_getImplementation(celix_dm_component_t *cmp) {
@@ -1088,26 +1092,26 @@ bool celix_dmComponent_isActive(celix_dm_component_t *component) {
 const char* celix_dmComponent_stateToString(celix_dm_component_state_t state) {
     switch(state) {
         case CELIX_DM_CMP_STATE_WAITING_FOR_REQUIRED:
-            return "CELIX_DM_CMP_STATE_WAITING_FOR_REQUIRED";
+            return "WAITING_FOR_REQUIRED";
         case CELIX_DM_CMP_STATE_INITIALIZING:
-            return "CELIX_DM_CMP_STATE_INITIALIZING";
+            return "INITIALIZING";
         case CELIX_DM_CMP_STATE_DEINITIALIZING:
-            return "CELIX_DM_CMP_STATE_DEINITIALIZING";
+            return "DEINITIALIZING";
         case CELIX_DM_CMP_STATE_INITIALIZED_AND_WAITING_FOR_REQUIRED:
-            return "CELIX_DM_CMP_STATE_INITIALIZED_AND_WAITING_FOR_REQUIRED";
+            return "INITIALIZED_AND_WAITING_FOR_REQUIRED";
         case CELIX_DM_CMP_STATE_STARTING:
-            return "CELIX_DM_CMP_STATE_STARTING";
+            return "STARTING";
         case CELIX_DM_CMP_STATE_STOPPING:
-            return "CELIX_DM_CMP_STATE_STOPPING";
+            return "STOPPING";
         case CELIX_DM_CMP_STATE_TRACKING_OPTIONAL:
-            return "CELIX_DM_CMP_STATE_TRACKING_OPTIONAL";
+            return "TRACKING_OPTIONAL";
         case CELIX_DM_CMP_STATE_SUSPENDING:
-            return "CELIX_DM_CMP_STATE_SUSPENDING";
+            return "SUSPENDING";
         case CELIX_DM_CMP_STATE_SUSPENDED:
-            return "CELIX_DM_CMP_STATE_SUSPENDED";
+            return "SUSPENDED";
         case CELIX_DM_CMP_STATE_RESUMING:
-            return "CELIX_DM_CMP_STATE_RESUMING";
+            return "RESUMING";
         default: //only CELIX_DM_CMP_STATE_INACTIVE left
-            return "CELIX_DM_CMP_STATE_INACTIVE";
+            return "INACTIVE";
     }
 }

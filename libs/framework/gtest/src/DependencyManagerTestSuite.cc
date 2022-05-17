@@ -486,6 +486,122 @@ TEST_F(DependencyManagerTestSuite, RequiredDepsAreInjectedDuringStartStop) {
     celix_bundleContext_unregisterService(dm.bundleContext(), svcId);
 }
 
+TEST_F(DependencyManagerTestSuite, IntermediaStatesDuringInitDeinitStartingAndStopping) {
+    class LifecycleComponent {
+    public:
+        enum class InMethod {
+            NO_METHOD,
+            INIT,
+            DEINIT,
+            START,
+            STOP
+        };
+
+        void init() {
+            std::cout << "in init callback\n";
+            std::unique_lock<std::mutex> lck{mutex};
+            inMethod = InMethod::INIT;
+            cond.notify_all();
+            cond.wait_for(lck, std::chrono::seconds{1});
+            inMethod = InMethod::NO_METHOD;
+        }
+
+        void deinit() {
+            std::cout << "in deinit callback\n";
+            std::unique_lock<std::mutex> lck{mutex};
+            inMethod = InMethod::DEINIT;
+            cond.notify_all();
+            cond.wait_for(lck, std::chrono::seconds{1});
+            inMethod = InMethod::NO_METHOD;
+        }
+
+        void start() {
+            std::cout << "in start callback\n";
+            std::unique_lock<std::mutex> lck{mutex};
+            inMethod = InMethod::START;
+            cond.notify_all();
+            cond.wait_for(lck, std::chrono::seconds{1});
+            inMethod = InMethod::NO_METHOD;
+        }
+
+        void stop() {
+            std::cout << "in stop callback\n";
+            std::unique_lock<std::mutex> lck{mutex};
+            inMethod = InMethod::STOP;
+            cond.notify_all();
+            cond.wait_for(lck, std::chrono::seconds{1});
+            inMethod = InMethod::NO_METHOD;
+        }
+
+        void waitFor(InMethod s) {
+            std::unique_lock<std::mutex> lck{mutex};
+            cond.wait_for(lck, std::chrono::seconds{1}, [&]{return inMethod == s;});
+        }
+
+        void cont() {
+            std::lock_guard<std::mutex> lck{mutex};
+            cond.notify_all();
+        }
+
+    private:
+        std::mutex mutex{};
+        std::condition_variable cond{};
+        InMethod inMethod = InMethod::NO_METHOD;
+    };
+
+    celix::dm::DependencyManager dm{ctx};
+    auto lifecycleCmp = std::make_shared<LifecycleComponent>();
+    auto& cmp = dm.createComponent<LifecycleComponent>(lifecycleCmp)
+            .setCallbacks(&LifecycleComponent::init, &LifecycleComponent::start, &LifecycleComponent::stop, &LifecycleComponent::deinit);
+    cmp.createServiceDependency<TestService>()
+            .setRequired(false);
+    cmp.build();
+
+    using celix::dm::ComponentState;
+    lifecycleCmp->waitFor(LifecycleComponent::InMethod::INIT);
+    EXPECT_EQ(cmp.getState(), ComponentState::INITIALIZING);
+    lifecycleCmp->cont();
+
+    lifecycleCmp->waitFor(LifecycleComponent::InMethod::START);
+    EXPECT_EQ(cmp.getState(), ComponentState::STARTING);
+    lifecycleCmp->cont();
+
+    lifecycleCmp->waitFor(LifecycleComponent::InMethod::START);
+    EXPECT_EQ(cmp.getState(), ComponentState::STARTING);
+    lifecycleCmp->cont();
+
+    //Adding service should lead to a suspend/resume (stop/start)
+    TestService svc;
+    std::string svcName = celix::typeName<TestService>();
+    celix_service_registration_options opts{};
+    opts.svc = &svc;
+    opts.serviceName = svcName.c_str();
+    long svcId = celix_bundleContext_registerServiceWithOptions(dm.bundleContext(), &opts);
+    EXPECT_GE(svcId, 0);
+
+    lifecycleCmp->waitFor(LifecycleComponent::InMethod::STOP);
+    EXPECT_EQ(cmp.getState(), ComponentState::SUSPENDING);
+    lifecycleCmp->cont();
+
+    //svc will be injected
+
+    lifecycleCmp->waitFor(LifecycleComponent::InMethod::START);
+    EXPECT_EQ(cmp.getState(), ComponentState::RESUMING);
+    lifecycleCmp->cont();
+
+    //Adding a required svc should lead to INSTANTIATED_AND_WAITING_FOR_REQUIRED
+    cmp.createServiceDependency<TestService>()
+            .setFilter("(non-existing=*)")
+            .setRequired(true)
+            .build();
+
+    lifecycleCmp->waitFor(LifecycleComponent::InMethod::STOP);
+    EXPECT_EQ(cmp.getState(), ComponentState::STOPPING);
+    lifecycleCmp->cont();
+
+    celix_bundleContext_unregisterService(dm.bundleContext(), svcId);
+}
+
 TEST_F(DependencyManagerTestSuite, DepsAreInjectedAsSharedPointers) {
     class LifecycleComponent {
     public:
