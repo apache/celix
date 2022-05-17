@@ -77,7 +77,7 @@ public:
     std::shared_ptr<celix::PromiseFactory> promiseFactory {std::make_shared<celix::PromiseFactory>()};
     std::mutex mutex{};
     std::condition_variable done{};
-    bool allEventsDone{false};
+    std::atomic<bool> allEventsDone{false};
 
     template <typename T>
     std::shared_ptr<celix::AbstractPushEventSource<T>> createEventSource(T event, int publishCount, bool autoinc = false, bool syncSource = true) {
@@ -328,7 +328,7 @@ TEST_F(PushStreamTestSuite, ForEachTestBasicType) {
                     consumeSum = consumeSum + event;
                 });
 
-        done.wait(lk, [&](){ return allEventsDone;});
+        done.wait(lk, [&](){ return allEventsDone==true;});
         promiseFactory->getExecutor()->wait();
         ses->close();
         streamEnded.wait();
@@ -361,7 +361,7 @@ TEST_F(PushStreamTestSuite, ForEachTestBasicType_Buffered) {
                     consumeSum = consumeSum + event;
                 });
 
-        done.wait(lk, [&](){ return allEventsDone;});
+        done.wait(lk, [&](){ return allEventsDone==true;});
         promiseFactory->getExecutor()->wait();
         ses->close();
         streamEnded.wait();
@@ -373,8 +373,8 @@ TEST_F(PushStreamTestSuite, ForEachTestBasicType_Buffered) {
 }
 
 TEST_F(PushStreamTestSuite, ForEachTestObjectType) {
-    int consumeCount{0};
-    int consumeSum{0};
+    std::atomic<int> consumeCount{0};
+    std::atomic<int> consumeSum{0};
     std::unique_lock lk(mutex);
 
     auto ses = createEventSource<EventObject>(EventObject{2}, 10);
@@ -386,7 +386,7 @@ TEST_F(PushStreamTestSuite, ForEachTestObjectType) {
                 consumeSum = consumeSum + event;
             });
 
-    done.wait(lk, [&](){ return allEventsDone;});
+    done.wait(lk, [&](){ return allEventsDone==true;});
     promiseFactory->getExecutor()->wait();
     ses->close();
     streamEnded.wait();
@@ -414,7 +414,7 @@ TEST_F(PushStreamTestSuite, FilterTestObjectType_true) {
                 consumeSum = consumeSum + event;
             });
 
-    done.wait(lk, [&](){ return allEventsDone;});
+    done.wait(lk, [&](){ return allEventsDone==true;});
     promiseFactory->getExecutor()->wait();
     ses->close();
     streamEnded.wait();
@@ -441,7 +441,7 @@ TEST_F(PushStreamTestSuite, FilterTestObjectType_false) {
                 consumeSum = consumeSum + event;
             });
 
-    done.wait(lk, [&](){ return allEventsDone;});
+    done.wait(lk, [&](){ return allEventsDone==true;});
     promiseFactory->getExecutor()->wait();
     ses->close();
     streamEnded.wait();
@@ -468,7 +468,7 @@ TEST_F(PushStreamTestSuite, FilterTestObjectType_simple) {
                 consumeSum = consumeSum + event;
             });
 
-    done.wait(lk, [&](){ return allEventsDone;});
+    done.wait(lk, [&](){ return allEventsDone==true;});
     promiseFactory->getExecutor()->wait();
     ses->close();
     streamEnded.wait();
@@ -497,7 +497,7 @@ TEST_F(PushStreamTestSuite, FilterTestObjectType_and) {
                 consumeSum = consumeSum + event;
             });
 
-    done.wait(lk, [&](){ return allEventsDone;});
+    done.wait(lk, [&](){ return allEventsDone==true;});
     promiseFactory->getExecutor()->wait();
     ses->close();
     streamEnded.wait();
@@ -522,7 +522,7 @@ TEST_F(PushStreamTestSuite, MapTestObjectType) {
                 consumeSum = consumeSum + event;
             });
 
-    done.wait(lk, [&](){ return allEventsDone;});
+    done.wait(lk, [&](){ return allEventsDone==true;});
     promiseFactory->getExecutor()->wait();
     ses->close();
     streamEnded.wait();
@@ -533,8 +533,8 @@ TEST_F(PushStreamTestSuite, MapTestObjectType) {
 
 TEST_F(PushStreamTestSuite, MapTestObjectType_async) {
     for(int i = 0; i < 1000; i++) {
-        int consumeCount{0};
-        int consumeSum{0};
+        std::atomic<int> consumeCount{0};
+        std::atomic<int> consumeSum{0};
         std::unique_lock lk(mutex);
 
         auto ses = createEventSource<EventObject>(EventObject{0}, 10, true, false);
@@ -545,10 +545,10 @@ TEST_F(PushStreamTestSuite, MapTestObjectType_async) {
         }).
                 forEach([&](const int &event) {
             consumeCount++;
-            consumeSum = consumeSum + event;
+            consumeSum += + event;
         });
 
-        done.wait(lk, [&](){ return allEventsDone;});
+        done.wait(lk, [&](){ return allEventsDone==true;});
         promiseFactory->getExecutor()->wait();
         ses->close();
         streamEnded.wait();
@@ -608,7 +608,7 @@ TEST_F(PushStreamTestSuite, MultipleStreamsTest_CloseSource) {
     });
 
 
-    done.wait(lk, [&](){ return allEventsDone;});
+    done.wait(lk, [&](){ return allEventsDone==true;});
     promiseFactory->getExecutor()->wait();
     ses->close();
     streamEnded1.wait();
@@ -715,7 +715,8 @@ TEST_F(PushStreamTestSuite, SplitStreamsTest) {
         });
     }
 
-    done.wait(lk, [&](){ return allEventsDone;});
+
+    done.wait(lk, [&](){ return allEventsDone==true;});
     promiseFactory->getExecutor()->wait();
     ses->close();
     promiseFactory->getExecutor()->wait();
