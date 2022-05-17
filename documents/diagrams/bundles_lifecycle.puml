@@ -31,4 +31,5 @@ state BundleActivation {
 
 Resolved -right-> BundleActivation
 BundleActivation -> Resolved
+
 @enduml

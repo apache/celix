@@ -1003,7 +1003,7 @@ TEST_F(DependencyManagerTestSuite, testStateToString) {
     state = celix_dmComponent_stateToString(DM_CMP_STATE_INACTIVE);
     EXPECT_STREQ(state, "INACTIVE");
     state = celix_dmComponent_stateToString(DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED);
-    EXPECT_STREQ(state, "INSTANTIATED_AND_WAITING_FOR_REQUIRED");
+    EXPECT_STREQ(state, "INITIALIZED_AND_WAITING_FOR_REQUIRED");
     state = celix_dmComponent_stateToString(DM_CMP_STATE_TRACKING_OPTIONAL);
     EXPECT_STREQ(state, "TRACKING_OPTIONAL");
     state = celix_dmComponent_stateToString(DM_CMP_STATE_WAITING_FOR_REQUIRED);
