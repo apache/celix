@@ -528,37 +528,39 @@ celix_status_t celix_private_dmComponent_handleEvent(celix_dm_component_t *compo
 
 static celix_status_t celix_dmComponent_suspend(celix_dm_component_t *component, celix_dm_service_dependency_t *dependency) {
 	celix_status_t status = CELIX_SUCCESS;
-	if (component->callbackStop != NULL) {
-        celixThreadMutex_lock(&component->mutex);
+    celixThreadMutex_lock(&component->mutex);
+    celix_dmComponent_logTransition(component, celix_dmComponent_currentState(component),
+                                    CELIX_DM_CMP_STATE_SUSPENDING);
+    celix_dmComponent_setCurrentState(component, CELIX_DM_CMP_STATE_SUSPENDING);
+    celix_dmComponent_unregisterServices(component, false);
+    if (component->callbackStop != NULL ) {
+        status = component->callbackStop(component->implementation);
+    }
+    if (status == CELIX_SUCCESS) {
         celix_dmComponent_logTransition(component, celix_dmComponent_currentState(component),
-                                        CELIX_DM_CMP_STATE_SUSPENDING);
-        celix_dmComponent_setCurrentState(component, CELIX_DM_CMP_STATE_SUSPENDING);
-        celix_dmComponent_unregisterServices(component, false);
-		status = component->callbackStop(component->implementation);
-        if (status == CELIX_SUCCESS) {
-            celix_dmComponent_logTransition(component, celix_dmComponent_currentState(component),
-                                            CELIX_DM_CMP_STATE_SUSPENDED);
-            celix_dmComponent_setCurrentState(component, CELIX_DM_CMP_STATE_SUSPENDED);
-        } else {
-            celix_bundleContext_log(component->context, CELIX_LOG_LEVEL_ERROR,
-                                    "Error stopping component %s (uuid=%s) using the stop callback. Disabling component.",
-                                    component->name,
-                                    component->uuid);
-            celix_dmComponent_disableDirectly(component);
-        }
-        celixThreadMutex_unlock(&component->mutex);
-	}
+                                        CELIX_DM_CMP_STATE_SUSPENDED);
+        celix_dmComponent_setCurrentState(component, CELIX_DM_CMP_STATE_SUSPENDED);
+    } else {
+        celix_bundleContext_log(component->context, CELIX_LOG_LEVEL_ERROR,
+                                "Error stopping component %s (uuid=%s) using the stop callback. Disabling component.",
+                                component->name,
+                                component->uuid);
+        celix_dmComponent_disableDirectly(component);
+    }
+    celixThreadMutex_unlock(&component->mutex);
 	return status;
 }
 
 static celix_status_t celix_dmComponent_resume(celix_dm_component_t *component, celix_dm_service_dependency_t *dependency) {
 	celix_status_t status = CELIX_SUCCESS;
-    celixThreadMutex_lock(&component->mutex);
-	if (celix_dmComponent_currentState(component) == CELIX_DM_CMP_STATE_SUSPENDED) {
+    if (celix_dmComponent_currentState(component) == CELIX_DM_CMP_STATE_SUSPENDED) {
+        celixThreadMutex_lock(&component->mutex);
         celix_dmComponent_logTransition(component, celix_dmComponent_currentState(component),
                                         CELIX_DM_CMP_STATE_RESUMING);
         celix_dmComponent_setCurrentState(component, CELIX_DM_CMP_STATE_RESUMING);
-        status = component->callbackStart(component->implementation);
+        if (component->callbackStart != NULL) {
+            status = component->callbackStart(component->implementation);
+        }
         if (status == CELIX_SUCCESS) {
             celix_dmComponent_registerServices(component, false);
             component->nrOfTimesResumed += 1;
@@ -574,8 +576,8 @@ static celix_status_t celix_dmComponent_resume(celix_dm_component_t *component, 
             celix_dmComponent_disableDirectly(component);
             celixThreadMutex_unlock(&component->mutex);
         }
+        celixThreadMutex_unlock(&component->mutex);
     }
-    celixThreadMutex_unlock(&component->mutex);
     return status;
 }
 

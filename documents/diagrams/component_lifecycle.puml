@@ -44,9 +44,13 @@ Deinitializing -down-> Inactive
 
 Initializing:   <i>Calling <b>init</b> callback</i>
 Starting:       <i>Calling <b>start</b> callback</i>
+Starting:       <i>Register provided services async</i>
+Stopping:       <i>Unregister provided services</i>
 Stopping:       <i>Calling <b>stop</b> callback</i>
 Deinitializing: <i>Calling <b>deinit</b> callback</i>
+Suspending:     <i>Unregister provided services</i>
 Suspending:     <i>Calling <b>stop</b> callback</i>
 Resuming:       <i>Calling <b>start</b> callback</i>
+Resuming:       <i>Register provided services async</i>
 
 @enduml
