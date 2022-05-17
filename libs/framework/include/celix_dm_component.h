@@ -46,6 +46,15 @@ typedef enum celix_dm_component_state_enum {
     CELIX_DM_CMP_STATE_SUSPENDING =                             9,
     CELIX_DM_CMP_STATE_SUSPENDED =                              10,
     CELIX_DM_CMP_STATE_RESUMING =                               11,
+
+    /**
+     * Note this dm state enums are deprecated, but for
+     * now still supported.
+     */
+    DM_CMP_STATE_INACTIVE =                                     1,
+    DM_CMP_STATE_WAITING_FOR_REQUIRED =                         2,
+    DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED =        5,
+    DM_CMP_STATE_TRACKING_OPTIONAL =                            8,
 } celix_dm_component_state_t;
 
 #define CELIX_DM_COMPONENT_MAX_ID_LENGTH 64

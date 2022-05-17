@@ -54,14 +54,14 @@ public:
 
 TEST_F(DependencyManagerTestSuite, DmCreateComponent) {
     auto *mng = celix_bundleContext_getDependencyManager(ctx);
-    auto *dmCmp = celix_dmComponent_create(ctx, "test1");
-    celix_dependencyManager_add(mng, dmCmp);
+    auto *cmp = celix_dmComponent_create(ctx, "test1");
+    celix_dependencyManager_add(mng, cmp);
 
     ASSERT_EQ(1, celix_dependencyManager_nrOfComponents(mng));
     ASSERT_TRUE(celix_dependencyManager_allComponentsActive(mng));
 
-    dmCmp = celix_dmComponent_create(ctx, "test2");
-    celix_dependencyManager_add(mng, dmCmp);
+    cmp = celix_dmComponent_create(ctx, "test2");
+    celix_dependencyManager_add(mng, cmp);
 
     ASSERT_EQ(2, celix_dependencyManager_nrOfComponents(mng));
     ASSERT_TRUE(celix_dependencyManager_allComponentsActive(mng));
@@ -69,17 +69,17 @@ TEST_F(DependencyManagerTestSuite, DmCreateComponent) {
 
 TEST_F(DependencyManagerTestSuite, DmComponentAddRemove) {
     auto *mng = celix_bundleContext_getDependencyManager(ctx);
-    auto *dmCmp = celix_dmComponent_create(ctx, "test1");
-    celix_dependencyManager_add(mng, dmCmp);
+    auto *cmp = celix_dmComponent_create(ctx, "test1");
+    celix_dependencyManager_add(mng, cmp);
     ASSERT_EQ(1, celix_dependencyManager_nrOfComponents(mng));
 
-    celix_dependencyManager_remove(mng, dmCmp);
+    celix_dependencyManager_remove(mng, cmp);
     ASSERT_EQ(0, celix_dependencyManager_nrOfComponents(mng));
 
-    auto *dmCmp2 = celix_dmComponent_create(ctx, "test2");
-    auto *dmCmp3 = celix_dmComponent_create(ctx, "test3");
-    celix_dependencyManager_add(mng, dmCmp2);
-    celix_dependencyManager_add(mng, dmCmp3);
+    auto *cmp2 = celix_dmComponent_create(ctx, "test2");
+    auto *cmp3 = celix_dmComponent_create(ctx, "test3");
+    celix_dependencyManager_add(mng, cmp2);
+    celix_dependencyManager_add(mng, cmp3);
     ASSERT_EQ(2, celix_dependencyManager_nrOfComponents(mng));
 
     celix_dependencyManager_removeAllComponents(mng);
@@ -89,8 +89,8 @@ TEST_F(DependencyManagerTestSuite, DmComponentAddRemove) {
 
 TEST_F(DependencyManagerTestSuite, DmComponentAddRemoveAsync) {
     auto *mng = celix_bundleContext_getDependencyManager(ctx);
-    auto *dmCmp1 = celix_dmComponent_create(ctx, "test1");
-    celix_dependencyManager_addAsync(mng, dmCmp1);
+    auto *cmp1 = celix_dmComponent_create(ctx, "test1");
+    celix_dependencyManager_addAsync(mng, cmp1);
     celix_dependencyManager_wait(mng);
     EXPECT_EQ(1, celix_dependencyManager_nrOfComponents(mng));
 
@@ -100,7 +100,7 @@ TEST_F(DependencyManagerTestSuite, DmComponentAddRemoveAsync) {
         c->fetch_add(1);
     };
 
-    celix_dependencyManager_removeAsync(mng, dmCmp1, &count, cb);
+    celix_dependencyManager_removeAsync(mng, cmp1, &count, cb);
     celix_dependencyManager_wait(mng);
     EXPECT_EQ(0, celix_dependencyManager_nrOfComponents(mng));
     EXPECT_EQ(1, count.load());
@@ -108,10 +108,10 @@ TEST_F(DependencyManagerTestSuite, DmComponentAddRemoveAsync) {
 
 TEST_F(DependencyManagerTestSuite, DmComponentRemoveAllAsync) {
     auto *mng = celix_bundleContext_getDependencyManager(ctx);
-    auto *dmCmp1 = celix_dmComponent_create(ctx, "test1");
-    auto *dmCmp2 = celix_dmComponent_create(ctx, "test2");
-    celix_dependencyManager_add(mng, dmCmp1);
-    celix_dependencyManager_add(mng, dmCmp2);
+    auto *cmp1 = celix_dmComponent_create(ctx, "test1");
+    auto *cmp2 = celix_dmComponent_create(ctx, "test2");
+    celix_dependencyManager_add(mng, cmp1);
+    celix_dependencyManager_add(mng, cmp2);
     EXPECT_EQ(2, celix_dependencyManager_nrOfComponents(mng));
 
     std::atomic<std::size_t> count{0};
@@ -126,19 +126,19 @@ TEST_F(DependencyManagerTestSuite, DmComponentRemoveAllAsync) {
 
 TEST_F(DependencyManagerTestSuite, DmGetInfo) {
     auto* mng = celix_bundleContext_getDependencyManager(ctx);
-    auto* dmCmp = celix_dmComponent_create(ctx, "test1");
+    auto* cmp = celix_dmComponent_create(ctx, "test1");
 
     void* dummyInterfacePointer = (void*)0x42;
 
     auto* p = celix_properties_create();
     celix_properties_set(p, "key", "value");
-    celix_dmComponent_addInterface(dmCmp, "test-interface", nullptr, dummyInterfacePointer, p);
+    celix_dmComponent_addInterface(cmp, "test-interface", nullptr, dummyInterfacePointer, p);
 
     auto* dep = celix_dmServiceDependency_create();
     celix_dmServiceDependency_setService(dep, "test-interface", nullptr, nullptr);
-    celix_dmComponent_addServiceDependency(dmCmp, dep);
+    celix_dmComponent_addServiceDependency(cmp, dep);
 
-    celix_dependencyManager_add(mng, dmCmp);
+    celix_dependencyManager_add(mng, cmp);
 
     auto* infos = celix_dependencyManager_createInfos(mng);
     ASSERT_EQ(1, celix_arrayList_size(infos));
@@ -154,15 +154,15 @@ TEST_F(DependencyManagerTestSuite, DmGetInfo) {
 
 TEST_F(DependencyManagerTestSuite, TestCheckActive) {
     auto *mng = celix_bundleContext_getDependencyManager(ctx);
-    auto *dmCmp = celix_dmComponent_create(ctx, "test1");
+    auto *cmp = celix_dmComponent_create(ctx, "test1");
 
     auto *dep = celix_dmServiceDependency_create();
     celix_dmServiceDependency_setService(dep, "svcname", nullptr, nullptr);
     celix_dmServiceDependency_setRequired(dep, true);
-    celix_dmComponent_addServiceDependency(dmCmp, dep); //required dep -> dmCmp not active
+    celix_dmComponent_addServiceDependency(cmp, dep); //required dep -> cmp not active
 
 
-    celix_dependencyManager_add(mng, dmCmp);
+    celix_dependencyManager_add(mng, cmp);
     ASSERT_FALSE(celix_dependencyManager_areComponentsActive(mng));
 }
 
@@ -189,9 +189,9 @@ public:
 TEST_F(DependencyManagerTestSuite, CxxDmGetInfo) {
     celix::dm::DependencyManager mng{ctx};
 
-    auto& dmCmp = mng.createComponent<Cmp1>();
-    dmCmp.createProvidedService<TestService>().addProperty("key", "value");
-    dmCmp.createServiceDependency<TestService>().setVersionRange("[1,2)").setRequired(true);
+    auto& cmp = mng.createComponent<Cmp1>();
+    cmp.createProvidedService<TestService>().addProperty("key", "value");
+    cmp.createServiceDependency<TestService>().setVersionRange("[1,2)").setRequired(true);
 
     auto infos = mng.getInfos();
     EXPECT_EQ(infos.size(), 1);
@@ -205,22 +205,22 @@ TEST_F(DependencyManagerTestSuite, CxxDmGetInfo) {
     info = mng.getInfo(); //new info
     ASSERT_EQ(info.components.size(), 1); //build
 
-    auto& dmCmpInfo = info.components[0];
-    EXPECT_TRUE(!dmCmpInfo.uuid.empty());
-    EXPECT_EQ(dmCmpInfo.name, "Cmp1");
-    EXPECT_EQ(dmCmpInfo.state, "WAITING_FOR_REQUIRED");
-    EXPECT_FALSE(dmCmpInfo.isActive);
-    EXPECT_EQ(dmCmpInfo.nrOfTimesStarted, 0);
-    EXPECT_EQ(dmCmpInfo.nrOfTimesResumed, 0);
+    auto& cmpInfo = info.components[0];
+    EXPECT_TRUE(!cmpInfo.uuid.empty());
+    EXPECT_EQ(cmpInfo.name, "Cmp1");
+    EXPECT_EQ(cmpInfo.state, "WAITING_FOR_REQUIRED");
+    EXPECT_FALSE(cmpInfo.isActive);
+    EXPECT_EQ(cmpInfo.nrOfTimesStarted, 0);
+    EXPECT_EQ(cmpInfo.nrOfTimesResumed, 0);
 
-    ASSERT_EQ(dmCmpInfo.interfacesInfo.size(), 1);
-    auto& intf = dmCmpInfo.interfacesInfo[0];
+    ASSERT_EQ(cmpInfo.interfacesInfo.size(), 1);
+    auto& intf = cmpInfo.interfacesInfo[0];
     EXPECT_EQ(intf.serviceName, "TestService");
     EXPECT_TRUE(!intf.properties.empty());
     EXPECT_NE(intf.properties.find("key"), intf.properties.end());
 
-    ASSERT_EQ(dmCmpInfo.dependenciesInfo.size(), 1);
-    auto& dep = dmCmpInfo.dependenciesInfo[0];
+    ASSERT_EQ(cmpInfo.dependenciesInfo.size(), 1);
+    auto& dep = cmpInfo.dependenciesInfo[0];
     EXPECT_EQ(dep.serviceName, "TestService");
     EXPECT_EQ(dep.isRequired, true);
     EXPECT_EQ(dep.versionRange, "[1,2)");
@@ -232,13 +232,13 @@ TEST_F(DependencyManagerTestSuite, OnlyActiveAfterBuildCheck) {
     celix::dm::DependencyManager dm{ctx};
     EXPECT_EQ(0, dm.getNrOfComponents());
 
-    auto& dmCmp = dm.createComponent<TestComponent>(std::make_shared<TestComponent>(), "test1");
+    auto& cmp = dm.createComponent<TestComponent>(std::make_shared<TestComponent>(), "test1");
     EXPECT_EQ(0, dm.getNrOfComponents()); //dm not started yet / comp not build yet
-    EXPECT_TRUE(dmCmp.isValid());
+    EXPECT_TRUE(cmp.isValid());
 
-    dmCmp.build();
-    dmCmp.build(); //should be ok to call twice
-    EXPECT_EQ(1, dm.getNrOfComponents()); //dmCmp "build", so active
+    cmp.build();
+    cmp.build(); //should be ok to call twice
+    EXPECT_EQ(1, dm.getNrOfComponents()); //cmp "build", so active
 
     dm.clear();
     dm.clear(); //should be ok to call twice
@@ -249,12 +249,12 @@ TEST_F(DependencyManagerTestSuite, StartDmWillBuildCmp) {
     celix::dm::DependencyManager dm{ctx};
     EXPECT_EQ(0, dm.getNrOfComponents());
 
-    auto& dmCmp = dm.createComponent<TestComponent>(std::make_shared<TestComponent>(), "test1");
+    auto& cmp = dm.createComponent<TestComponent>(std::make_shared<TestComponent>(), "test1");
     EXPECT_EQ(0, dm.getNrOfComponents()); //dm not started yet / comp not build yet
-    EXPECT_TRUE(dmCmp.isValid());
+    EXPECT_TRUE(cmp.isValid());
 
     dm.start();
-    EXPECT_EQ(1, dm.getNrOfComponents()); //dmCmp "build", so active
+    EXPECT_EQ(1, dm.getNrOfComponents()); //cmp "build", so active
 
     dm.stop();
     EXPECT_EQ(0, dm.getNrOfComponents()); //dm cleared so no components
@@ -280,21 +280,21 @@ TEST_F(DependencyManagerTestSuite, AddSvcProvideAfterBuild) {
     celix::dm::DependencyManager dm{ctx};
     EXPECT_EQ(0, dm.getNrOfComponents());
 
-    auto& dmCmp = dm.createComponent<TestComponent>(std::make_shared<TestComponent>(), "test1");
+    auto& cmp = dm.createComponent<TestComponent>(std::make_shared<TestComponent>(), "test1");
     EXPECT_EQ(0, dm.getNrOfComponents()); //dm not started yet / comp not build yet
-    EXPECT_TRUE(dmCmp.isValid());
+    EXPECT_TRUE(cmp.isValid());
 
-    dmCmp.build();
-    EXPECT_EQ(1, dm.getNrOfComponents()); //dmCmp "build", so active
+    cmp.build();
+    EXPECT_EQ(1, dm.getNrOfComponents()); //cmp "build", so active
 
     TestService svc{};
-    dmCmp.addCInterface(&svc, "TestService");
+    cmp.addCInterface(&svc, "TestService");
 
     long svcId = celix_bundleContext_findService(ctx, "TestService");
     EXPECT_EQ(-1, svcId); //not build -> not found
 
-    dmCmp.build();
-    dmCmp.build(); //should be ok to call twice
+    cmp.build();
+    cmp.build(); //should be ok to call twice
     svcId = celix_bundleContext_findService(ctx, "TestService");
     EXPECT_GT(svcId, -1); //(re)build -> found
 
@@ -310,21 +310,21 @@ TEST_F(DependencyManagerTestSuite, BuildSvcProvide) {
     celix::dm::DependencyManager dm{ctx};
     EXPECT_EQ(0, dm.getNrOfComponents());
 
-    auto& dmCmp = dm.createComponent<Cmp1>(std::make_shared<Cmp1>(), "test2");
+    auto& cmp = dm.createComponent<Cmp1>(std::make_shared<Cmp1>(), "test2");
     EXPECT_EQ(0, dm.getNrOfComponents()); //dm not started yet / comp not build yet
-    EXPECT_TRUE(dmCmp.isValid());
+    EXPECT_TRUE(cmp.isValid());
 
-    dmCmp.build();
-    EXPECT_EQ(1, dm.getNrOfComponents()); //dmCmp "build", so active
+    cmp.build();
+    EXPECT_EQ(1, dm.getNrOfComponents()); //cmp "build", so active
 
     TestService svc{};
-    dmCmp.createProvidedCService(&svc, "CTestService").addProperty("key1", "val1").addProperty("key2", 3);
+    cmp.createProvidedCService(&svc, "CTestService").addProperty("key1", "val1").addProperty("key2", 3);
 
     long svcId = celix_bundleContext_findService(ctx, "CTestService");
     EXPECT_EQ(-1, svcId); //not build -> not found
 
-    dmCmp.build();
-    dmCmp.build(); //should be ok to call twice
+    cmp.build();
+    cmp.build(); //should be ok to call twice
     dm.wait();
     svcId = celix_bundleContext_findService(ctx, "CTestService");
     EXPECT_GT(svcId, -1); //(re)build -> found
@@ -337,7 +337,7 @@ TEST_F(DependencyManagerTestSuite, BuildSvcProvide) {
 
     celix::dm::Properties props{};
     props["key1"] = "value";
-    dmCmp.createProvidedService<TestService>().setProperties(props).setVersion("1.0.0").build();
+    cmp.createProvidedService<TestService>().setProperties(props).setVersion("1.0.0").build();
 
     opts.serviceName = "TestService";
     opts.filter = "(key1=value)";
@@ -356,16 +356,16 @@ TEST_F(DependencyManagerTestSuite, AddSvcDepAfterBuild) {
     celix::dm::DependencyManager dm{ctx};
     EXPECT_EQ(0, dm.getNrOfComponents());
 
-    auto& dmCmp = dm.createComponent<TestComponent>(std::make_shared<TestComponent>(), "test1");
+    auto& cmp = dm.createComponent<TestComponent>(std::make_shared<TestComponent>(), "test1");
     EXPECT_EQ(0, dm.getNrOfComponents()); //dm not started yet / comp not build yet
-    EXPECT_TRUE(dmCmp.isValid());
+    EXPECT_TRUE(cmp.isValid());
 
-    dmCmp.build();
-    dmCmp.build(); //should be ok to call twice
-    EXPECT_EQ(1, dm.getNrOfComponents()); //dmCmp "build", so active
+    cmp.build();
+    cmp.build(); //should be ok to call twice
+    EXPECT_EQ(1, dm.getNrOfComponents()); //cmp "build", so active
 
     std::atomic<int> count{0};
-    auto& dep = dmCmp.createCServiceDependency<TestService>("TestService")
+    auto& dep = cmp.createCServiceDependency<TestService>("TestService")
             .setCallbacks([&count](const TestService*, celix::dm::Properties&&) {
                 count++;
             });
@@ -382,13 +382,13 @@ TEST_F(DependencyManagerTestSuite, AddSvcDepAfterBuild) {
     ASSERT_EQ(1, count); //service dep build -> so count is 1;
 
     //create another service dep
-    dmCmp.createCServiceDependency<TestService>("TestService")
+    cmp.createCServiceDependency<TestService>("TestService")
             .setCallbacks([&count](const TestService*, celix::dm::Properties&&) {
                 count++;
             });
     ASSERT_EQ(1, count); //new service dep not yet build -> so count still 1
 
-    dmCmp.build(); //dmCmp build, which will build svc dep
+    cmp.build(); //cmp build, which will build svc dep
     ASSERT_EQ(2, count); //new service dep build -> so count is 2
 
     celix_bundleContext_unregisterService(ctx, svcId);
@@ -399,28 +399,28 @@ TEST_F(DependencyManagerTestSuite, InCompleteBuildShouldNotLeak) {
     celix::dm::DependencyManager dm{ctx};
     dm.createComponent<TestComponent>(std::make_shared<TestComponent>(), "test1"); //NOTE NOT BUILD
 
-    auto& dmCmp2 = dm.createComponent<Cmp1>(std::make_shared<Cmp1>(), "test2").build(); //NOTE BUILD
-    dmCmp2.createCServiceDependency<TestService>("TestService").setFilter("(key=value"); //note not build
-    dmCmp2.createServiceDependency<TestService>().setFilter("(key=value)").setName("alternative name"); //note not build
+    auto& cmp2 = dm.createComponent<Cmp1>(std::make_shared<Cmp1>(), "test2").build(); //NOTE BUILD
+    cmp2.createCServiceDependency<TestService>("TestService").setFilter("(key=value"); //note not build
+    cmp2.createServiceDependency<TestService>().setFilter("(key=value)").setName("alternative name"); //note not build
 
     TestService svc{};
-    dmCmp2.createProvidedCService(&svc, "CTestService").addProperty("key1", "val1"); //note not build
-    dmCmp2.createProvidedService<TestService>().setVersion("1.0.0"); //note not build
+    cmp2.createProvidedCService(&svc, "CTestService").addProperty("key1", "val1"); //note not build
+    cmp2.createProvidedService<TestService>().setVersion("1.0.0"); //note not build
 }
 
 
 TEST_F(DependencyManagerTestSuite, RemoveAndClear) {
     celix::dm::DependencyManager dm{ctx};
-    auto& dmCmp1 = dm.createComponent<TestComponent>(std::make_shared<TestComponent>()).build();
-    auto& dmCmp2 = dm.createComponent<TestComponent>(std::make_shared<TestComponent>()).build();
+    auto& cmp1 = dm.createComponent<TestComponent>(std::make_shared<TestComponent>()).build();
+    auto& cmp2 = dm.createComponent<TestComponent>(std::make_shared<TestComponent>()).build();
     dm.createComponent<TestComponent>(std::make_shared<TestComponent>()).build();
-    auto& dmCmp4 = dm.createComponent<TestComponent>(std::make_shared<TestComponent>());
+    auto& cmp4 = dm.createComponent<TestComponent>(std::make_shared<TestComponent>());
     dm.wait();
 
-    dm.destroyComponent(dmCmp1);
-    bool removed = dm.removeComponent(dmCmp2.getUUID());
+    dm.destroyComponent(cmp1);
+    bool removed = dm.removeComponent(cmp2.getUUID());
     EXPECT_TRUE(removed);
-    removed = dm.removeComponentAsync(dmCmp4.getUUID());
+    removed = dm.removeComponentAsync(cmp4.getUUID());
     EXPECT_TRUE(removed);
     dm.clear();
 }
@@ -466,13 +466,13 @@ TEST_F(DependencyManagerTestSuite, RequiredDepsAreInjectedDuringStartStop) {
     };
 
     celix::dm::DependencyManager dm{ctx};
-    auto& dmCmp = dm.createComponent<LifecycleComponent>()
+    auto& cmp = dm.createComponent<LifecycleComponent>()
             .setCallbacks(nullptr, &LifecycleComponent::start, &LifecycleComponent::stop, nullptr);
-    dmCmp.createServiceDependency<TestService>()
+    cmp.createServiceDependency<TestService>()
             .setRequired(true)
             .setCallbacks(&LifecycleComponent::setService)
             .setCallbacks(&LifecycleComponent::addService, &LifecycleComponent::remService);
-    dmCmp.build();
+    cmp.build();
 
     TestService svc;
     std::string svcName = celix::typeName<TestService>();
@@ -483,7 +483,7 @@ TEST_F(DependencyManagerTestSuite, RequiredDepsAreInjectedDuringStartStop) {
     long svcId = celix_bundleContext_registerServiceWithOptions(dm.bundleContext(), &opts);
     EXPECT_GE(svcId, 0);
 
-    EXPECT_EQ(dmCmp.getState(), ComponentState::TRACKING_OPTIONAL);
+    EXPECT_EQ(cmp.getState(), ComponentState::TRACKING_OPTIONAL);
     celix_bundleContext_unregisterService(dm.bundleContext(), svcId);
 }
 
@@ -508,40 +508,40 @@ TEST_F(DependencyManagerTestSuite, RemoveOwnDependencyShouldNotLeadToDoubleStop)
 
     celix::dm::DependencyManager dm{ctx};
     auto lifecycleCmp = std::make_shared<LifecycleComponent>();
-    auto& dmCmp = dm.createComponent<LifecycleComponent>(lifecycleCmp)
+    auto& cmp = dm.createComponent<LifecycleComponent>(lifecycleCmp)
             .setCallbacks(nullptr, &LifecycleComponent::start, &LifecycleComponent::stop, nullptr);
-    dmCmp.createProvidedService<TestService>();
-    dmCmp.createServiceDependency<TestService>()
+    cmp.createProvidedService<TestService>();
+    cmp.createServiceDependency<TestService>()
             .setRequired(true);
-    dmCmp.build();
+    cmp.build();
 
     using celix::dm::ComponentState;
-    EXPECT_EQ(dmCmp.getState(), ComponentState::WAITING_FOR_REQUIRED);
+    EXPECT_EQ(cmp.getState(), ComponentState::WAITING_FOR_REQUIRED);
 
     TestService svc{};
     long svcId = celix_bundleContext_registerService(ctx, &svc, "TestService", nullptr);
     celix_bundleContext_waitForEvents(ctx);
 
-    EXPECT_EQ(dmCmp.getState(), ComponentState::TRACKING_OPTIONAL);
+    EXPECT_EQ(cmp.getState(), ComponentState::TRACKING_OPTIONAL);
     EXPECT_EQ(lifecycleCmp->getStartCount(), 1);
 
     celix_bundleContext_unregisterService(ctx, svcId); //removes req dep, but cmp can be depend on own dep
 
-    EXPECT_EQ(dmCmp.getState(), ComponentState::TRACKING_OPTIONAL);
+    EXPECT_EQ(cmp.getState(), ComponentState::TRACKING_OPTIONAL);
     EXPECT_EQ(lifecycleCmp->getStopCount(), 0);
 
     //add additional req dep -> stop component -> unregister TestService -> rem own TestService dep
-    dmCmp.createServiceDependency<TestService>("DummyName")
+    cmp.createServiceDependency<TestService>("DummyName")
             .setRequired(true)
             .buildAsync();
 
     celix_bundleContext_waitForEvents(ctx);
-    EXPECT_EQ(dmCmp.getState(), ComponentState::INSTANTIATED_AND_WAITING_FOR_REQUIRED);
+    EXPECT_EQ(cmp.getState(), ComponentState::INSTANTIATED_AND_WAITING_FOR_REQUIRED);
     EXPECT_EQ(lifecycleCmp->getStopCount(), 1);
 }
 
 
-TEST_F(DependencyManagerTestSuite, IntermediaStatesDuringInitDeinitStartingAndStopping) {
+TEST_F(DependencyManagerTestSuite, IntermediateStatesDuringInitDeinitStartingAndStopping) {
     class LifecycleComponent {
     public:
         enum class LifecycleMethod {
@@ -603,16 +603,16 @@ TEST_F(DependencyManagerTestSuite, IntermediaStatesDuringInitDeinitStartingAndSt
     celix::dm::DependencyManager dm{ctx};
     auto lifecycleCmp = std::make_shared<LifecycleComponent>();
     lifecycleCmp->setStayInMethod(LifecycleMethod::Init);
-    auto& dmCmp = dm.createComponent<LifecycleComponent>(lifecycleCmp)
+    auto& cmp = dm.createComponent<LifecycleComponent>(lifecycleCmp)
             .setCallbacks(&LifecycleComponent::init, &LifecycleComponent::start, &LifecycleComponent::stop, &LifecycleComponent::deinit);
-    dmCmp.createServiceDependency<TestService>()
+    cmp.createServiceDependency<TestService>()
             .setStrategy(celix::dm::DependencyUpdateStrategy::suspend)
             .setCallbacks([](std::shared_ptr<TestService> /*service*/, const std::shared_ptr<const celix::Properties>& /*properties*/){ std::cout << "Dummy set for svc callback\n"; })
             .setRequired(false);
-    dmCmp.createServiceDependency<TestService>("RequiredTestService")
+    cmp.createServiceDependency<TestService>("RequiredTestService")
             .setStrategy(celix::dm::DependencyUpdateStrategy::locking)
             .setRequired(true);
-    dmCmp.buildAsync();
+    cmp.buildAsync();
 
     TestService reqSvc{};
     long reqSvcId = celix_bundleContext_registerServiceAsync(ctx, &reqSvc, "RequiredTestService", nullptr);
@@ -620,11 +620,11 @@ TEST_F(DependencyManagerTestSuite, IntermediaStatesDuringInitDeinitStartingAndSt
 
     using celix::dm::ComponentState;
     lifecycleCmp->waitUntilInMethod(LifecycleMethod::Init);
-    EXPECT_EQ(dmCmp.getState(), ComponentState::INITIALIZING);
+    EXPECT_EQ(cmp.getState(), ComponentState::INITIALIZING);
 
     lifecycleCmp->setStayInMethod(LifecycleMethod::Start);
     lifecycleCmp->waitUntilInMethod(LifecycleMethod::Start);
-    EXPECT_EQ(dmCmp.getState(), ComponentState::STARTING);
+    EXPECT_EQ(cmp.getState(), ComponentState::STARTING);
 
     lifecycleCmp->setStayInMethod(LifecycleMethod::None);
     lifecycleCmp->waitUntilInMethod(LifecycleMethod::None);
@@ -641,12 +641,12 @@ TEST_F(DependencyManagerTestSuite, IntermediaStatesDuringInitDeinitStartingAndSt
     EXPECT_GE(optionalSvcId, 0);
 
     lifecycleCmp->waitUntilInMethod(LifecycleMethod::Stop);
-    EXPECT_EQ(dmCmp.getState(), ComponentState::SUSPENDING);
+    EXPECT_EQ(cmp.getState(), ComponentState::SUSPENDING);
 
     //svc will be injected -> component will resume
     lifecycleCmp->setStayInMethod(LifecycleMethod::Start);
     lifecycleCmp->waitUntilInMethod(LifecycleMethod::Start);
-    EXPECT_EQ(dmCmp.getState(), ComponentState::RESUMING);
+    EXPECT_EQ(cmp.getState(), ComponentState::RESUMING);
 
 
 
@@ -654,16 +654,16 @@ TEST_F(DependencyManagerTestSuite, IntermediaStatesDuringInitDeinitStartingAndSt
     lifecycleCmp->setStayInMethod(LifecycleMethod::Stop);
     celix_bundleContext_unregisterServiceAsync(ctx, reqSvcId, nullptr, nullptr);
     lifecycleCmp->waitUntilInMethod(LifecycleMethod::Stop);
-    EXPECT_EQ(dmCmp.getState(), ComponentState::STOPPING);
+    EXPECT_EQ(cmp.getState(), ComponentState::STOPPING);
 
     lifecycleCmp->setStayInMethod(LifecycleMethod::None);
     lifecycleCmp->waitUntilInMethod(LifecycleMethod::None);
 
     //Disable component should deinit the component
     lifecycleCmp->setStayInMethod(LifecycleMethod::Deinit);
-    dm.removeComponentAsync(dmCmp.getUUID());
+    dm.removeComponentAsync(cmp.getUUID());
     lifecycleCmp->waitUntilInMethod(LifecycleMethod::Deinit);
-    EXPECT_EQ(dmCmp.getState(), ComponentState::DEINITIALIZING);
+    EXPECT_EQ(cmp.getState(), ComponentState::DEINITIALIZING);
 
     lifecycleCmp->setStayInMethod(LifecycleMethod::None);
     celix_bundleContext_unregisterService(dm.bundleContext(), optionalSvcId);
@@ -712,13 +712,13 @@ TEST_F(DependencyManagerTestSuite, DepsAreInjectedAsSharedPointers) {
     };
 
     celix::dm::DependencyManager dm{ctx};
-    auto& dmCmp = dm.createComponent<LifecycleComponent>()
+    auto& cmp = dm.createComponent<LifecycleComponent>()
             .setCallbacks(nullptr, &LifecycleComponent::start, &LifecycleComponent::stop, nullptr);
-    dmCmp.createServiceDependency<TestService>()
+    cmp.createServiceDependency<TestService>()
             .setRequired(true)
             .setCallbacks(&LifecycleComponent::setService)
             .setCallbacks(&LifecycleComponent::addService, &LifecycleComponent::remService);
-    dmCmp.build();
+    cmp.build();
 
     TestService svc;
     std::string svcName = celix::typeName<TestService>();
@@ -729,7 +729,7 @@ TEST_F(DependencyManagerTestSuite, DepsAreInjectedAsSharedPointers) {
     long svcId = celix_bundleContext_registerServiceWithOptions(dm.bundleContext(), &opts);
     EXPECT_GE(svcId, 0);
 
-    EXPECT_EQ(dmCmp.getState(), ComponentState::TRACKING_OPTIONAL);
+    EXPECT_EQ(cmp.getState(), ComponentState::TRACKING_OPTIONAL);
     celix_bundleContext_unregisterService(dm.bundleContext(), svcId);
 }
 
@@ -774,13 +774,13 @@ TEST_F(DependencyManagerTestSuite, DepsNoPropsAreInjectedAsSharedPointers) {
     };
 
     celix::dm::DependencyManager dm{ctx};
-    auto& dmCmp = dm.createComponent<LifecycleComponent>()
+    auto& cmp = dm.createComponent<LifecycleComponent>()
             .setCallbacks(nullptr, &LifecycleComponent::start, &LifecycleComponent::stop, nullptr);
-    dmCmp.createServiceDependency<TestService>()
+    cmp.createServiceDependency<TestService>()
             .setRequired(true)
             .setCallbacks(&LifecycleComponent::setService)
             .setCallbacks(&LifecycleComponent::addService, &LifecycleComponent::remService);
-    dmCmp.build();
+    cmp.build();
 
     TestService svc;
     std::string svcName = celix::typeName<TestService>();
@@ -791,7 +791,7 @@ TEST_F(DependencyManagerTestSuite, DepsNoPropsAreInjectedAsSharedPointers) {
     long svcId = celix_bundleContext_registerServiceWithOptions(dm.bundleContext(), &opts);
     EXPECT_GE(svcId, 0);
 
-    EXPECT_EQ(dmCmp.getState(), ComponentState::TRACKING_OPTIONAL);
+    EXPECT_EQ(cmp.getState(), ComponentState::TRACKING_OPTIONAL);
     celix_bundleContext_unregisterService(dm.bundleContext(), svcId);
 }
 
@@ -823,22 +823,22 @@ TEST_F(DependencyManagerTestSuite, UnneededSuspendIsPrevented) {
     };
 
     celix::dm::DependencyManager dm{ctx};
-    //dmCmp1 has lifecycle callbacks, but not set or add/rem callbacks for the service dependency -> should not trigger suspend
-    auto& dmCmp1 = dm.createComponent<CounterComponent>("CounterCmp1")
+    //cmp1 has lifecycle callbacks, but not set or add/rem callbacks for the service dependency -> should not trigger suspend
+    auto& cmp1 = dm.createComponent<CounterComponent>("CounterCmp1")
             .setCallbacks(nullptr, &CounterComponent::start, &CounterComponent::stop, nullptr);
-    dmCmp1.createServiceDependency<TestService>();
-    dmCmp1.build();
+    cmp1.createServiceDependency<TestService>();
+    cmp1.build();
 
-    //dmCmp2 has lifecycle callbacks and set, add/rem callbacks for the service dependency -> should trigger suspend 2x
-    auto& dmCmp2 = dm.createComponent<CounterComponent>("CounterCmp2")
+    //cmp2 has lifecycle callbacks and set, add/rem callbacks for the service dependency -> should trigger suspend 2x
+    auto& cmp2 = dm.createComponent<CounterComponent>("CounterCmp2")
             .setCallbacks(nullptr, &CounterComponent::start, &CounterComponent::stop, nullptr);
-    dmCmp2.createServiceDependency<TestService>()
+    cmp2.createServiceDependency<TestService>()
             .setCallbacks(&CounterComponent::setService)
             .setCallbacks(&CounterComponent::addService, &CounterComponent::remService);
-    dmCmp2.build();
+    cmp2.build();
 
-    EXPECT_EQ(dmCmp1.getState(), celix::dm::ComponentState::TRACKING_OPTIONAL);
-    EXPECT_EQ(dmCmp2.getState(), celix::dm::ComponentState::TRACKING_OPTIONAL);
+    EXPECT_EQ(cmp1.getState(), celix::dm::ComponentState::TRACKING_OPTIONAL);
+    EXPECT_EQ(cmp2.getState(), celix::dm::ComponentState::TRACKING_OPTIONAL);
 
     TestService svc;
     std::string svcName = celix::typeName<TestService>();
@@ -849,21 +849,21 @@ TEST_F(DependencyManagerTestSuite, UnneededSuspendIsPrevented) {
     long svcId = celix_bundleContext_registerServiceWithOptions(dm.bundleContext(), &opts);
     EXPECT_GE(svcId, 0);
 
-    EXPECT_EQ(dmCmp1.getInstance().startCount, 1); //only once during creation
-    EXPECT_EQ(dmCmp1.getInstance().stopCount, 0);
-    EXPECT_EQ(dmCmp2.getInstance().startCount, 3); //1x creation, 1x suspend for set, 1x suspend for add
-    EXPECT_EQ(dmCmp2.getInstance().stopCount, 2); //1x suspend for set, 1x suspend for add
+    EXPECT_EQ(cmp1.getInstance().startCount, 1); //only once during creation
+    EXPECT_EQ(cmp1.getInstance().stopCount, 0);
+    EXPECT_EQ(cmp2.getInstance().startCount, 3); //1x creation, 1x suspend for set, 1x suspend for add
+    EXPECT_EQ(cmp2.getInstance().stopCount, 2); //1x suspend for set, 1x suspend for add
 
-    dmCmp1.getInstance().startCount = 0;
-    dmCmp1.getInstance().stopCount = 0;
-    dmCmp2.getInstance().startCount = 0;
-    dmCmp2.getInstance().stopCount = 0;
+    cmp1.getInstance().startCount = 0;
+    cmp1.getInstance().stopCount = 0;
+    cmp2.getInstance().startCount = 0;
+    cmp2.getInstance().stopCount = 0;
     celix_bundleContext_unregisterService(dm.bundleContext(), svcId);
 
-    EXPECT_EQ(dmCmp1.getInstance().startCount, 0);
-    EXPECT_EQ(dmCmp1.getInstance().stopCount, 0);
-    EXPECT_EQ(dmCmp2.getInstance().startCount, 2); //1x suspend for set nullptr, 1x suspend for rem
-    EXPECT_EQ(dmCmp2.getInstance().stopCount, 2); //1x suspend for set nullptr, 1x suspend for rem
+    EXPECT_EQ(cmp1.getInstance().startCount, 0);
+    EXPECT_EQ(cmp1.getInstance().stopCount, 0);
+    EXPECT_EQ(cmp2.getInstance().startCount, 2); //1x suspend for set nullptr, 1x suspend for rem
+    EXPECT_EQ(cmp2.getInstance().stopCount, 2); //1x suspend for set nullptr, 1x suspend for rem
 }
 
 TEST_F(DependencyManagerTestSuite, ExceptionsInLifecycle) {
@@ -907,43 +907,43 @@ TEST_F(DependencyManagerTestSuite, ExceptionsInLifecycle) {
     celix::dm::DependencyManager dm{ctx};
 
     {
-        auto& dmCmp = dm.createComponent(std::make_shared<ExceptionComponent>(ExceptionComponent::LifecycleMethod::INIT), "FailAtInitCmp")
+        auto& cmp = dm.createComponent(std::make_shared<ExceptionComponent>(ExceptionComponent::LifecycleMethod::INIT), "FailAtInitCmp")
                 .setCallbacks(&ExceptionComponent::init, &ExceptionComponent::start, &ExceptionComponent::stop, &ExceptionComponent::deinit);
-        EXPECT_EQ(dmCmp.getState(), ComponentState::INACTIVE);
-        dmCmp.build(); //fails at init and should disable
-        EXPECT_EQ(dmCmp.getState(), ComponentState::INACTIVE);
+        EXPECT_EQ(cmp.getState(), ComponentState::INACTIVE);
+        cmp.build(); //fails at init and should disable
+        EXPECT_EQ(cmp.getState(), ComponentState::INACTIVE);
         dm.clear();
     }
 
     {
-        auto& dmCmp = dm.createComponent(std::make_shared<ExceptionComponent>(ExceptionComponent::LifecycleMethod::START), "FailAtStartCmp")
+        auto& cmp = dm.createComponent(std::make_shared<ExceptionComponent>(ExceptionComponent::LifecycleMethod::START), "FailAtStartCmp")
                 .setCallbacks(&ExceptionComponent::init, &ExceptionComponent::start, &ExceptionComponent::stop, &ExceptionComponent::deinit);
-        EXPECT_EQ(dmCmp.getState(), ComponentState::INACTIVE);
-        dmCmp.build(); //fails at init and should disable
-        EXPECT_EQ(dmCmp.getState(), ComponentState::INACTIVE);
+        EXPECT_EQ(cmp.getState(), ComponentState::INACTIVE);
+        cmp.build(); //fails at init and should disable
+        EXPECT_EQ(cmp.getState(), ComponentState::INACTIVE);
         dm.clear();
     }
 
     {
-        auto& dmCmp = dm.createComponent(std::make_shared<ExceptionComponent>(ExceptionComponent::LifecycleMethod::STOP), "FailAtStopCmp")
+        auto& cmp = dm.createComponent(std::make_shared<ExceptionComponent>(ExceptionComponent::LifecycleMethod::STOP), "FailAtStopCmp")
                 .setCallbacks(&ExceptionComponent::init, &ExceptionComponent::start, &ExceptionComponent::stop, &ExceptionComponent::deinit);
-        EXPECT_EQ(dmCmp.getState(), ComponentState::INACTIVE);
-        dmCmp.build();
-        EXPECT_EQ(dmCmp.getState(), ComponentState::TRACKING_OPTIONAL);
+        EXPECT_EQ(cmp.getState(), ComponentState::INACTIVE);
+        cmp.build();
+        EXPECT_EQ(cmp.getState(), ComponentState::TRACKING_OPTIONAL);
 
         //required service -> should stop, but fails at stop and should become inactive (component will disable itself)
-        dmCmp.createServiceDependency<TestService>().setRequired(true).build();
-        dmCmp.wait();
-        EXPECT_EQ(dmCmp.getState(), ComponentState::INACTIVE);
+        cmp.createServiceDependency<TestService>().setRequired(true).build();
+        cmp.wait();
+        EXPECT_EQ(cmp.getState(), ComponentState::INACTIVE);
         dm.clear();
     }
 
     {
-        auto& dmCmp = dm.createComponent(std::make_shared<ExceptionComponent>(ExceptionComponent::LifecycleMethod::DEINIT), "FailAtDeinit")
+        auto& cmp = dm.createComponent(std::make_shared<ExceptionComponent>(ExceptionComponent::LifecycleMethod::DEINIT), "FailAtDeinit")
                 .setCallbacks(&ExceptionComponent::init, &ExceptionComponent::start, &ExceptionComponent::stop, &ExceptionComponent::deinit);
-        EXPECT_EQ(dmCmp.getState(), ComponentState::INACTIVE);
-        dmCmp.build();
-        EXPECT_EQ(dmCmp.getState(), ComponentState::TRACKING_OPTIONAL);
+        EXPECT_EQ(cmp.getState(), ComponentState::INACTIVE);
+        cmp.build();
+        EXPECT_EQ(cmp.getState(), ComponentState::TRACKING_OPTIONAL);
 
         //required service -> should stop, but fails at stop and should become inactive (component will disable itself)
         dm.clear(); //dm clear will deinit component and this should fail, but not deadlock
@@ -998,6 +998,17 @@ TEST_F(DependencyManagerTestSuite, testStateToString) {
     EXPECT_STREQ(state, "INACTIVE");
     state = celix_dmComponent_stateToString((celix_dm_component_state_enum)16);
     EXPECT_STREQ(state, "INACTIVE");
+
+    //test deprecated dm cmp states
+    state = celix_dmComponent_stateToString(DM_CMP_STATE_INACTIVE);
+    EXPECT_STREQ(state, "INACTIVE");
+    state = celix_dmComponent_stateToString(DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED);
+    EXPECT_STREQ(state, "INSTANTIATED_AND_WAITING_FOR_REQUIRED");
+    state = celix_dmComponent_stateToString(DM_CMP_STATE_TRACKING_OPTIONAL);
+    EXPECT_STREQ(state, "TRACKING_OPTIONAL");
+    state = celix_dmComponent_stateToString(DM_CMP_STATE_WAITING_FOR_REQUIRED);
+    EXPECT_STREQ(state, "WAITING_FOR_REQUIRED");
+
 }
 
 #if __cplusplus >= 201703L //C++17 or higher
@@ -1011,10 +1022,10 @@ public:
 TEST_F(DependencyManagerTestSuite, ProvideInterfaceWithStaticInfo) {
     class TestComponent : public TestInterfaceWithStaticInfo {};
     celix::dm::DependencyManager dm{ctx};
-    auto& dmCmp = dm.createComponent<TestComponent>();
-    dmCmp.createProvidedService<TestInterfaceWithStaticInfo>();
-    dmCmp.build();
-    EXPECT_EQ(dmCmp.getState(), celix::dm::ComponentState::TRACKING_OPTIONAL);
+    auto& cmp = dm.createComponent<TestComponent>();
+    cmp.createProvidedService<TestInterfaceWithStaticInfo>();
+    cmp.build();
+    EXPECT_EQ(cmp.getState(), celix::dm::ComponentState::TRACKING_OPTIONAL);
 
     auto info = dm.getInfo();
     EXPECT_EQ(info.components[0].interfacesInfo[0].serviceName, "TestName");
@@ -1027,10 +1038,10 @@ TEST_F(DependencyManagerTestSuite, ProvideInterfaceWithStaticInfo) {
 TEST_F(DependencyManagerTestSuite, CreateInterfaceWithStaticInfo) {
     class TestComponent : public TestInterfaceWithStaticInfo {};
     celix::dm::DependencyManager dm{ctx};
-    auto& dmCmp = dm.createComponent<TestComponent>();
-    dmCmp.addInterface<TestInterfaceWithStaticInfo>();
-    dmCmp.build();
-    EXPECT_EQ(dmCmp.getState(), celix::dm::ComponentState::TRACKING_OPTIONAL);
+    auto& cmp = dm.createComponent<TestComponent>();
+    cmp.addInterface<TestInterfaceWithStaticInfo>();
+    cmp.build();
+    EXPECT_EQ(cmp.getState(), celix::dm::ComponentState::TRACKING_OPTIONAL);
 
     auto info = dm.getInfo();
     EXPECT_EQ(info.components[0].interfacesInfo[0].serviceName, "TestName");
