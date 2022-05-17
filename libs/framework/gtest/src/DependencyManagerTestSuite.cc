@@ -488,6 +488,7 @@ TEST_F(DependencyManagerTestSuite, RequiredDepsAreInjectedDuringStartStop) {
 }
 
 TEST_F(DependencyManagerTestSuite, RemoveOwnDependencyShouldNotLeadToDoubleStop) {
+    //Given a component LifecycleComponent which provides and requires a TestService service
     class LifecycleComponent : public TestService {
     public:
         void start() {
@@ -514,34 +515,44 @@ TEST_F(DependencyManagerTestSuite, RemoveOwnDependencyShouldNotLeadToDoubleStop)
     cmp.createServiceDependency<TestService>()
             .setRequired(true);
     cmp.build();
-
     using celix::dm::ComponentState;
+
+    //Then the component state should be waiting for required
     EXPECT_EQ(cmp.getState(), ComponentState::WAITING_FOR_REQUIRED);
 
+    //When a TestService is registered
     TestService svc{};
     long svcId = celix_bundleContext_registerService(ctx, &svc, "TestService", nullptr);
     celix_bundleContext_waitForEvents(ctx);
 
+    //Then the component state should become tracking optional (active)
     EXPECT_EQ(cmp.getState(), ComponentState::TRACKING_OPTIONAL);
+    //And the start count should become 1
     EXPECT_EQ(lifecycleCmp->getStartCount(), 1);
 
-    celix_bundleContext_unregisterService(ctx, svcId); //removes req dep, but cmp can be depend on own dep
+    //When the TestService is unregistered
+    celix_bundleContext_unregisterService(ctx, svcId);
 
+    //Then the component state will stay tracking optional (because it now depends on its own provided services)
     EXPECT_EQ(cmp.getState(), ComponentState::TRACKING_OPTIONAL);
     EXPECT_EQ(lifecycleCmp->getStopCount(), 0);
 
-    //add additional req dep -> stop component -> unregister TestService -> rem own TestService dep
+    //When an additional required service dependency is added
     cmp.createServiceDependency<TestService>("DummyName")
             .setRequired(true)
             .buildAsync();
 
     celix_bundleContext_waitForEvents(ctx);
+    //Then the component state becomes waiting for required
     EXPECT_EQ(cmp.getState(), ComponentState::INSTANTIATED_AND_WAITING_FOR_REQUIRED);
+    //And the stop count becomes 1 (not 2 becomes of a loop the dm component handling)
     EXPECT_EQ(lifecycleCmp->getStopCount(), 1);
 }
 
 
 TEST_F(DependencyManagerTestSuite, IntermediateStatesDuringInitDeinitStartingAndStopping) {
+    //Given a component LifecycleComponent with an optional service dependency on TestService with a suspend-strategy
+    //and a required service dependency on "RequiredTestService" with a locking-strategy.
     class LifecycleComponent {
     public:
         enum class LifecycleMethod {
@@ -602,7 +613,6 @@ TEST_F(DependencyManagerTestSuite, IntermediateStatesDuringInitDeinitStartingAnd
 
     celix::dm::DependencyManager dm{ctx};
     auto lifecycleCmp = std::make_shared<LifecycleComponent>();
-    lifecycleCmp->setStayInMethod(LifecycleMethod::Init);
     auto& cmp = dm.createComponent<LifecycleComponent>(lifecycleCmp)
             .setCallbacks(&LifecycleComponent::init, &LifecycleComponent::start, &LifecycleComponent::stop, &LifecycleComponent::deinit);
     cmp.createServiceDependency<TestService>()
@@ -614,24 +624,41 @@ TEST_F(DependencyManagerTestSuite, IntermediateStatesDuringInitDeinitStartingAnd
             .setRequired(true);
     cmp.buildAsync();
 
+    //Then the component state should become waiting for required
+    cmp.wait();
+    EXPECT_EQ(cmp.getState(), ComponentState::WAITING_FOR_REQUIRED);
+
+    //When the component should wait in the init callback
+    lifecycleCmp->setStayInMethod(LifecycleMethod::Init);
+
+    //And a "RequiredTestService" service is registered
     TestService reqSvc{};
     long reqSvcId = celix_bundleContext_registerServiceAsync(ctx, &reqSvc, "RequiredTestService", nullptr);
     EXPECT_GE(reqSvcId, 0);
 
+    //Then the component state should become initializing
     using celix::dm::ComponentState;
     lifecycleCmp->waitUntilInMethod(LifecycleMethod::Init);
     EXPECT_EQ(cmp.getState(), ComponentState::INITIALIZING);
 
+    //When the component should wait in the start callback
+    //Then the component state should become starting
     lifecycleCmp->setStayInMethod(LifecycleMethod::Start);
     lifecycleCmp->waitUntilInMethod(LifecycleMethod::Start);
     EXPECT_EQ(cmp.getState(), ComponentState::STARTING);
 
+    //When the component should not wait in the lifecycle callbacks
     lifecycleCmp->setStayInMethod(LifecycleMethod::None);
-    lifecycleCmp->waitUntilInMethod(LifecycleMethod::None);
 
-    //Adding service should lead to a suspend/resume (stop/start)
+    //Then the component state should become tracking optional
+    cmp.wait();
+    EXPECT_EQ(cmp.getState(), ComponentState::TRACKING_OPTIONAL);
 
+
+    //When the component should wait in the stop callback
     lifecycleCmp->setStayInMethod(LifecycleMethod::Stop);
+
+    //And a new TestService is registered (leading to a suspending of the component)
     TestService svc;
     std::string svcName = celix::typeName<TestService>();
     celix_service_registration_options opts{};
@@ -640,28 +667,47 @@ TEST_F(DependencyManagerTestSuite, IntermediateStatesDuringInitDeinitStartingAnd
     long optionalSvcId = celix_bundleContext_registerServiceWithOptionsAsync(dm.bundleContext(), &opts);
     EXPECT_GE(optionalSvcId, 0);
 
+    //Then the component state should become suspending
     lifecycleCmp->waitUntilInMethod(LifecycleMethod::Stop);
     EXPECT_EQ(cmp.getState(), ComponentState::SUSPENDING);
 
-    //svc will be injected -> component will resume
+    //When the component should wait in the start callback
+    //Then the component state should become resuming (suspending->suspended->resuming)
     lifecycleCmp->setStayInMethod(LifecycleMethod::Start);
     lifecycleCmp->waitUntilInMethod(LifecycleMethod::Start);
     EXPECT_EQ(cmp.getState(), ComponentState::RESUMING);
 
+    //When the component should not wait in the lifecycle callbacks
+    lifecycleCmp->setStayInMethod(LifecycleMethod::None);
 
+    //Then the component state should become tracking optional
+    cmp.wait();
+    EXPECT_EQ(cmp.getState(), ComponentState::TRACKING_OPTIONAL);
 
-    //Remove required svc so that component stops
+    //When the component should wait in the stop callback
     lifecycleCmp->setStayInMethod(LifecycleMethod::Stop);
+
+    //And the "RequiredTestService" is unregistered
     celix_bundleContext_unregisterServiceAsync(ctx, reqSvcId, nullptr, nullptr);
+
+    //Then the component state should become stopping
     lifecycleCmp->waitUntilInMethod(LifecycleMethod::Stop);
     EXPECT_EQ(cmp.getState(), ComponentState::STOPPING);
 
+    //When the component should not wait in the lifecycle callbacks
     lifecycleCmp->setStayInMethod(LifecycleMethod::None);
-    lifecycleCmp->waitUntilInMethod(LifecycleMethod::None);
 
-    //Disable component should deinit the component
+    //Then the component state should become instantiated and waiting for required
+    cmp.wait();
+    EXPECT_EQ(cmp.getState(), ComponentState::INSTANTIATED_AND_WAITING_FOR_REQUIRED);
+
+    //When the component should wait in the deinit callback
     lifecycleCmp->setStayInMethod(LifecycleMethod::Deinit);
+
+    //And the component is removed from the dependency manager
     dm.removeComponentAsync(cmp.getUUID());
+
+    //Then the component state should become deinitializing
     lifecycleCmp->waitUntilInMethod(LifecycleMethod::Deinit);
     EXPECT_EQ(cmp.getState(), ComponentState::DEINITIALIZING);
 
