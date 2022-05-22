@@ -115,11 +115,28 @@ add_celix_bundle(UsingCommandServicesExampleBundle
 target_link_libraries(UsingCommandServicesExampleBundle PRIVATE Celix::shell_api)
 
 add_celix_bundle(TrackingCommandServicesExampleBundle
-        VERSION 1.0.0
+    VERSION 1.0.0
     SOURCES
         src/TrackingCommandServicesExample.cc
 )
 target_link_libraries(TrackingCommandServicesExampleBundle PRIVATE Celix::shell_api)
+
+add_celix_bundle(SimpleComponentBundle
+    VERSION 1.0.0
+    SOURCES src/SimpleComponentActivator.cc
+)
+
+add_celix_bundle(ComponentWithProvidedServiceBundle
+    VERSION 1.0.0
+    SOURCES src/ComponentWithProvidedServiceActivator.cc
+)
+target_link_libraries(ComponentWithProvidedServiceBundle PRIVATE Celix::shell_api)
+
+add_celix_bundle(ComponentWithServiceDependencyBundle
+    VERSION 1.0.0
+    SOURCES src/ComponentWithServiceDependencyActivator.cc
+)
+target_link_libraries(ComponentWithServiceDependencyBundle PRIVATE Celix::shell_api)
 
 add_celix_container(ReadmeCxxExamplesContainer
     BUNDLES
@@ -129,6 +146,9 @@ add_celix_container(ReadmeCxxExamplesContainer
         MyCShellCommandProviderBundle
         UsingCommandServicesExampleBundle
         TrackingCommandServicesExampleBundle
+        SimpleComponentBundle
+        ComponentWithProvidedServiceBundle
+        ComponentWithServiceDependencyBundle
 )
 
 if (TARGET my_shell_command_provider_bundle)

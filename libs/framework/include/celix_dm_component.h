@@ -61,6 +61,7 @@ typedef enum celix_dm_component_state_enum {
 #define CELIX_DM_COMPONENT_MAX_NAME_LENGTH 128
 
 typedef int (*celix_dm_cmp_lifecycle_fpt)(void *userData);
+typedef void (*celix_dm_cmp_impl_destroy_fpt)(void*);
 
 /**
  * Creates a DM Component with a random generated UUID.
@@ -82,14 +83,14 @@ const char* celix_dmComponent_getUUID(celix_dm_component_t* cmp);
 /**
  * Destroys a DM Component
  */
-void celix_dmComponent_destroy(celix_dm_component_t *cmp);
+void celix_dmComponent_destroy(celix_dm_component_t* cmp);
 
 /**
  * Destroys a DM Component on the event thread.
  * Will call doneCallback (if not NULL) when done.
  *
  */
-void celix_dmComponent_destroyAsync(celix_dm_component_t *cmp, void *doneData, void (*doneCallback)(void*));
+void celix_dmComponent_destroyAsync(celix_dm_component_t* cmp, void *doneData, void (*doneCallback)(void*));
 
 /**
  * Specify if a default 'service.lang=C' should be added to the properties of interfaces if no 'service.lang' has been
@@ -120,6 +121,26 @@ celix_status_t celix_dmComponent_removeInterface(celix_dm_component_t *component
 celix_status_t celix_dmComponent_setImplementation(celix_dm_component_t *component, void* implementation);
 
 /**
+ * Configures the destroy function for the component implementation.
+ *
+ * If a destroy function for the component implementation is configured, this will be used
+ * when the component is removed from the dependency manager and component is successfully de-activated.
+ *
+ * The destroy function will not be called if the component implementation is not set. e.g. if the
+ * celix_dmComponent_setImplementation is not called with a non NULL value.
+ */
+void celix_dmComponent_setImplementationDestroyFunction(celix_dm_component_t* cmp, celix_dm_cmp_impl_destroy_fpt destroyFn);
+
+/**
+ * Configures the destroy function for the component implementation using a MACRO for improving the type safety.
+ */
+#define CELIX_DM_COMPONENT_SET_IMPLEMENTATION_DESTROY_FUNCTION(dmCmp, type, destroy) \
+    do {  \
+        void (*_destroyFunction)(type*) = (destroy); \
+        celix_dmComponent_setImplementationDestroyFunction((dmCmp), (void(*)(void*))_destroyFunction); \
+    } while(0)
+
+/**
  * Returns an arraylist of service names. The caller owns the arraylist and strings (char *)
  */
 celix_status_t celix_dmComponent_getInterfaces(celix_dm_component_t *component, celix_array_list_t **servicesNames);
@@ -137,17 +158,22 @@ celix_status_t celix_dmComponent_removeServiceDependency(celix_dm_component_t *c
 /**
  * Returns the current state of the component.
  */
-celix_dm_component_state_t celix_dmComponent_currentState(celix_dm_component_t *cmp);
+celix_dm_component_state_t celix_dmComponent_currentState(celix_dm_component_t* cmp);
 
 /**
  * Returns the implementation of the component. e.g. the component handle/self/this pointer.
  */
-void * celix_dmComponent_getImplementation(celix_dm_component_t *cmp);
+void * celix_dmComponent_getImplementation(celix_dm_component_t* cmp);
+
+/**
+ * Returns the configured component implementation destroy function.
+ */
+celix_dm_cmp_impl_destroy_fpt celix_dmComponent_getImplementationDestroyFunction(celix_dm_component_t* cmp);
 
 /**
  * Returns the DM component name. This is used when printing information about the component.
  */
-const char* celix_dmComponent_getName(celix_dm_component_t *cmp);
+const char* celix_dmComponent_getName(celix_dm_component_t* cmp);
 
 /**
  * Returns bundle context for the bundle where this DM component is part of.
@@ -163,14 +189,21 @@ celix_status_t celix_dmComponent_setCallbacks(celix_dm_component_t *component, c
 /**
  * Set the component life cycle callbacks using a MACRO for improving the type safety.
  */
-#define CELIX_DMCOMPONENT_SETCALLBACKS(dmCmp, type, init, start, stop, deinit) \
+#define CELIX_DM_COMPONENT_SET_CALLBACKS(dmCmp, type, init, start, stop, deinit) \
     do {  \
-        int (*tmp_init)(type)   = (init); \
-        int (*tmp_start)(type)  = (start); \
-        int (*tmp_stop)(type)   = (stop); \
-        int (*tmp_deinit)(type) = (deinit); \
-        celix_dmComponent_setCallbacks((dmCmp), (celix_dm_cmp_lifecycle_fpt)tmp_init, (celix_dm_cmp_lifecycle_fpt)tmp_start, (celix_dm_cmp_lifecycle_fpt)tmp_stop, (celix_dm_cmp_lifecycle_fpt)tmp_deinit); \
+        int (*_tmp_init)(type*)   = (init); \
+        int (*_tmp_start)(type*)  = (start); \
+        int (*_tmp_stop)(type*)   = (stop); \
+        int (*_tmp_deinit)(type*) = (deinit); \
+        celix_dmComponent_setCallbacks((dmCmp), (celix_dm_cmp_lifecycle_fpt)_tmp_init, (celix_dm_cmp_lifecycle_fpt)_tmp_start, (celix_dm_cmp_lifecycle_fpt)_tmp_stop, (celix_dm_cmp_lifecycle_fpt)_tmp_deinit); \
     } while(0)
+
+/**
+ * Deprecated, use CELIX_DM_COMPONENT_SET_CALLBACKS instead.
+ */
+
+#define CELIX_DMCOMPONENT_SETCALLBACKS(dmCmp, type, init, start, stop, deinit) \
+    CELIX_DM_COMPONENT_SET_CALLBACKS(dmCmp, type*, init, start, stop, deinit)
 
 /**
  * Create a DM Component info struct. Containing information about the component.

@@ -53,6 +53,23 @@ add_celix_bundle(tracker_command_services_bundle
 )
 target_link_libraries(tracker_command_services_bundle PRIVATE Celix::shell_api)
 
+add_celix_bundle(simple_component_bundle
+        VERSION 1.0.0
+        SOURCES src/simple_component_activator.c
+)
+
+add_celix_bundle(component_with_provided_service_bundle
+        VERSION 1.0.0
+        SOURCES src/component_with_provided_service_activator.c
+)
+target_link_libraries(component_with_provided_service_bundle PRIVATE Celix::shell_api)
+
+add_celix_bundle(component_with_service_dependency_bundle
+    VERSION 1.0.0
+    SOURCES src/component_with_service_dependency_activator.c
+)
+target_link_libraries(component_with_service_dependency_bundle PRIVATE Celix::shell_api)
+
 add_celix_container(readme_c_examples_container
     C
     BUNDLES
@@ -61,4 +78,7 @@ add_celix_container(readme_c_examples_container
         my_shell_command_provider_bundle
         using_command_service_bundle
         tracker_command_services_bundle
+        simple_component_bundle
+        component_with_provided_service_bundle
+        component_with_service_dependency_bundle
 )
