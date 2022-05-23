@@ -68,11 +68,12 @@ Component<T>::~Component() = default;
 template<class T>
 template<class I>
 Component<T>& Component<T>::addInterfaceWithName(const std::string &serviceName, const std::string &version, const Properties &properties) {
+    static_assert(std::is_base_of<I,T>::value, "Component T must implement Interface I");
     if (!serviceName.empty()) {
         T* cmpPtr = &this->getInstance();
-        I* intfPtr = static_cast<I*>(cmpPtr); //NOTE T should implement I
-
-        auto provide = std::make_shared<ProvidedService<T,I>>(cComponent(), serviceName, intfPtr, true);
+        I* svcPtr = static_cast<I*>(cmpPtr); //NOTE T should implement I
+        std::shared_ptr<I> svc{svcPtr, [](I*){/*nop*/}};
+        auto provide = std::make_shared<ProvidedService<T,I>>(cComponent(), serviceName, std::move(svc), true);
         provide->setVersion(version);
         provide->setProperties(properties);
         std::lock_guard<std::mutex> lck{mutex};
@@ -87,7 +88,6 @@ Component<T>& Component<T>::addInterfaceWithName(const std::string &serviceName,
 template<class T>
 template<class I>
 Component<T>& Component<T>::addInterface(const std::string &version, const Properties &properties) {
-    //get name if not provided
     static_assert(std::is_base_of<I,T>::value, "Component T must implement Interface I");
     std::string serviceName = typeName<I>();
     if (serviceName.empty()) {
@@ -103,8 +103,9 @@ Component<T>& Component<T>::addInterface(const std::string &version, const Prope
 
 template<class T>
 template<class I>
-Component<T>& Component<T>::addCInterface(I* svc, const std::string &serviceName, const std::string &version, const Properties &properties) {
-    auto provide = std::make_shared<ProvidedService<T,I>>(cComponent(), serviceName, svc, false);
+Component<T>& Component<T>::addCInterface(I* svcPtr, const std::string &serviceName, const std::string &version, const Properties &properties) {
+    std::shared_ptr<I> svc{svcPtr, [](I*){/*nop*/}};
+    auto provide = std::make_shared<ProvidedService<T,I>>(cComponent(), serviceName, std::move(svc), false);
     provide->setVersion(version);
     provide->setProperties(properties);
     std::lock_guard<std::mutex> lck{mutex};
@@ -389,8 +390,9 @@ Component<T>& Component<T>::buildAsync() {
 
 template<class T>
 template<class I>
-ProvidedService<T, I> &Component<T>::createProvidedCService(I *svc, std::string serviceName) {
-    auto provide = std::make_shared<ProvidedService<T,I>>(cComponent(), serviceName, svc, false);
+ProvidedService<T, I> &Component<T>::createProvidedCService(I *svcPtr, std::string serviceName) {
+    std::shared_ptr<I> svc{svcPtr, [](I*){/*nop*/}};
+    auto provide = std::make_shared<ProvidedService<T,I>>(cComponent(), serviceName, std::move(svc), false);
     std::lock_guard<std::mutex> lck{mutex};
     providedServices.push_back(provide);
     return *provide;
@@ -398,7 +400,7 @@ ProvidedService<T, I> &Component<T>::createProvidedCService(I *svc, std::string 
 
 template<class T>
 template<class I>
-ProvidedService<T, I> &Component<T>::createProvidedService(std::string serviceName) {
+ProvidedService<T, I>& Component<T>::createProvidedService(std::string serviceName) {
     static_assert(std::is_base_of<I,T>::value, "Component T must implement Interface I");
     if (serviceName.empty()) {
         serviceName = typeName<I>();
@@ -408,7 +410,28 @@ ProvidedService<T, I> &Component<T>::createProvidedService(std::string serviceNa
     }
 
     I* svcPtr = &this->getInstance();
-    auto provide = std::make_shared<ProvidedService<T,I>>(cComponent(), serviceName, svcPtr, true);
+    std::shared_ptr<I> svc{svcPtr, [](I*){/*nop*/}};
+    auto provide = std::make_shared<ProvidedService<T,I>>(cComponent(), serviceName, std::move(svc), true);
+    auto svcVersion = celix::typeVersion<I>();
+    if (!svcVersion.empty()) {
+        provide->addProperty(celix::SERVICE_VERSION, std::move(svcVersion));
+    }
+    std::lock_guard<std::mutex> lck{mutex};
+    providedServices.push_back(provide);
+    return *provide;
+}
+
+template<class T>
+template<class I>
+ProvidedService<T, I>& Component<T>::createUnassociatedProvidedService(std::shared_ptr<I> svc, std::string serviceName) {
+    if (serviceName.empty()) {
+        serviceName = typeName<I>();
+    }
+    if (serviceName.empty()) {
+        std::cerr << "Cannot add interface, because type name could not be inferred. function: '"  << __PRETTY_FUNCTION__ << "'\n";
+    }
+
+    auto provide = std::make_shared<ProvidedService<T,I>>(cComponent(), serviceName, std::move(svc), true);
     auto svcVersion = celix::typeVersion<I>();
     if (!svcVersion.empty()) {
         provide->addProperty(celix::SERVICE_VERSION, std::move(svcVersion));

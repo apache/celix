@@ -19,39 +19,32 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-TODO refactor this documentation file
-TODO also describes when cmp is suspended: there is a svc dep with suspend-strategy and the set or add/rem
-callback is configured.
-
 # Apache Celix Components
 In Apache Celix, components are plain old C/C++ objects (POCOs) managed by the Apache Celix Dependency Manager (DM).
-Components can provide service and have services dependencies. Components are configured declarative using the DM api.
+Components can provide services and depend on services. Components are configured declarative using the DM api.
 
-Service dependencies will influence the 
-component's lifecycle as a component will only be active when all required dependencies 
-are available.   
+Service dependencies will influence the component's lifecycle as a component will only be active when all required
+dependencies are available.   
 The DM is responsible for managing the component's service dependencies, the component's lifecycle and when 
 to register/unregister the component's provided services.
 
-Note that the Apache Celix Dependency Manager is inspired by the [Apache Felix Dependency Manager](http://felix.apache.org/documentation/subprojects/apache-felix-dependency-manager.html), adapted to Apache Celix 
-and the C/C++ usage.
+Note that the Apache Celix Dependency Manager is inspired by the [Apache Felix Dependency Manager](http://felix.apache.org/documentation/subprojects/apache-felix-dependency-manager.html), adapted to Apache Celix and the C/C++ usage.
 
 # Component Lifecycle
-Each DM Component you define gets its own lifecycle. 
+Each DM Component has its own lifecycle. 
 A component's lifecycle state model is depicted in the state diagram below.
 
 ![Component Life Cycle](diagrams/component_lifecycle.png)
 
-The DM can be used to configure a component's lifecycle callbacks; Lifecycle callbacks are always called from the
-Celix event thread. 
-The following component's lifecycle callbacks can be configured:
+The DM can be used to configure a component's lifecycle callbacks, the following component's lifecycle callbacks can 
+be configured:
 
  - `init`
  - `start`
  - `stop`
  - `deinit`
-
-These callbacks are used in the intermediate component's lifecycle states `Initializing`, `Starting`, `Suspending`, `Resuming`, `Stopping` and `Deinitializing`.
+   
+These callbacks are used in the intermediate component's lifecycle states `Initializing`, `Starting`, `Suspending`, `Resuming`, `Stopping` and `Deinitializing` and the lifecycle callbacks are always called from the Celix event thread.
 
 A DM Component has the following lifecycle states:
 - `Inactive`: _The component is inactive and the DM is not managing the component yet._
@@ -75,6 +68,11 @@ A DM Component has the following lifecycle states:
 - `Stopping`: _The component has lost one or more of its required dependencies and is stopping: Unregistering its
   provided service and calling the `stop` callback._
 - `Deinitializing`: _The component is being removed and is deinitializing: Calling the `deinit` callback._
+
+## Component API
+
+The DM Component C api can be found in the `celix_dm_component.h` header and the C++ api can be found in the
+`celix/dm/Component.h` header.
 
 ## Example: Create and configure component's lifecycle callbacks in C
 The following example shows how a simple component can be created and managed with the DM in C.
@@ -357,8 +355,8 @@ Remarks for the C++ example:
 6. Set the C `executeCommand` function pointer of the `celix_shell_command_t` service interface struct to a 
    capture-less lambda expression. The lambda expression is used to forward the call to the `executeCCommand` 
    class method. Note the capture-less lambda expression can decay to function pointers. 
-7. Configures the component to provide a C `celix_shell_command_t` service. Note that for a C service, the service
-   interface struct also needs to be stored to ensure that the service interface struct will outlive the component.
+7. Configures the component to provide a C `celix_shell_command_t` service. Note that for a C service, the 
+   `createUnassociatedProvidedService` must be used, because the component does not inherit `celix_shell_command_t`. 
    The service will not directly be registered, but instead will be registered if the component enters the state
    `Tracking Optional`..
 8. "Build" the component so the DM will manage and try to activate the component. 
@@ -396,21 +394,22 @@ public:
         auto& cmp = ctx->getDependencyManager()->createComponent<ComponentWithProvidedService>(); // <---------------<4>
 
         cmp.createProvidedService<celix::IShellCommand>()
-            .addProperty(celix::IShellCommand::COMMAND_NAME, "HelloComponent"); // <---------------------------------<5>
+                .addProperty(celix::IShellCommand::COMMAND_NAME, "HelloComponent"); // <---------------------------------<5>
 
-        shellCmd.handle = static_cast<void*>(&cmp.getInstance());
-        shellCmd.executeCommand = [](void* handle, const char* commandLine, FILE* outStream, FILE*) -> bool {
+        auto shellCmd = std::make_shared<celix_shell_command_t>();
+        shellCmd->handle = static_cast<void*>(&cmp.getInstance());
+        shellCmd->executeCommand = [](void* handle, const char* commandLine, FILE* outStream, FILE*) -> bool {
             auto* impl = static_cast<ComponentWithProvidedService*>(handle);
             impl->executeCCommand(commandLine, outStream);
             return true;
         }; // <------------------------------------------------------------------------------------------------------<6>
-        cmp.createProvidedCService(&shellCmd, CELIX_SHELL_COMMAND_SERVICE_NAME)
-            .addProperty(CELIX_SHELL_COMMAND_NAME, "hello_component"); // < -----------------------------------------<7>
+
+        cmp.createUnassociatedProvidedService(std::move(shellCmd), CELIX_SHELL_COMMAND_SERVICE_NAME)
+                .addProperty(CELIX_SHELL_COMMAND_NAME, "hello_component"); // < -----------------------------------------<7>
 
         cmp.build(); // <--------------------------------------------------------------------------------------------<8>
     }
 private:
-    celix_shell_command_t shellCmd{nullptr, nullptr};
 };
 
 CELIX_GEN_CXX_BUNDLE_ACTIVATOR(ComponentWithProvidedServiceActivator)
@@ -642,3 +641,7 @@ CELIX_GEN_CXX_BUNDLE_ACTIVATOR(ComponentWithServiceDependencyActivator)
 
 TODO explain that a component will be suspended with service dependency on suspend strategy, a matching service update 
 and if there is a svc inject callback configured. TODO check also start/stop method?
+
+# TODOs
+
+overview of function (e.g. setFilter for dependencies, etc)

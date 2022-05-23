@@ -50,20 +50,20 @@ public:
         cmp.createProvidedService<celix::IShellCommand>()
                 .addProperty(celix::IShellCommand::COMMAND_NAME, "HelloComponent"); // <---------------------------------<5>
 
-        shellCmd.handle = static_cast<void*>(&cmp.getInstance());
-        shellCmd.executeCommand = [](void* handle, const char* commandLine, FILE* outStream, FILE*) -> bool {
+        auto shellCmd = std::make_shared<celix_shell_command_t>();
+        shellCmd->handle = static_cast<void*>(&cmp.getInstance());
+        shellCmd->executeCommand = [](void* handle, const char* commandLine, FILE* outStream, FILE*) -> bool {
             auto* impl = static_cast<ComponentWithProvidedService*>(handle);
             impl->executeCCommand(commandLine, outStream);
             return true;
         }; // <------------------------------------------------------------------------------------------------------<6>
 
-        cmp.createProvidedCService(&shellCmd, CELIX_SHELL_COMMAND_SERVICE_NAME)
+        cmp.createUnassociatedProvidedService(std::move(shellCmd), CELIX_SHELL_COMMAND_SERVICE_NAME)
                 .addProperty(CELIX_SHELL_COMMAND_NAME, "hello_component"); // < -----------------------------------------<7>
 
         cmp.build(); // <--------------------------------------------------------------------------------------------<8>
     }
 private:
-    celix_shell_command_t shellCmd{nullptr, nullptr};
 };
 
 CELIX_GEN_CXX_BUNDLE_ACTIVATOR(ComponentWithProvidedServiceActivator)

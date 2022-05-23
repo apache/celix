@@ -258,19 +258,38 @@ namespace celix { namespace dm {
 
 
         /**
-         * Creates a provided C services. The provided service can be fine tuned and build using a fluent API
+         * @brief Creates a provided C services the component.
+         *
+         * The provided service can be fine tuned and build using a fluent API
+         *
          * @param svc  The pointer to a C service (c struct)
          * @param serviceName The service name to use
          */
         template<class I> ProvidedService<T,I>& createProvidedCService(I* svc, std::string serviceName);
 
         /**
-         * Creates a provided C++ services. The provided service can be fine tuned and build using a fluent API
-         * The service pointer is based on the component instance.
+         * @brief Creates a provided C++ services for the component.
+         *
+         * The provided service can be fine tuned and build using a fluent API
+         *
+         * @note The service type I must be a base of component type T.
          *
          * @param serviceName The optional service name. If not provided the service name is inferred from I.
          */
         template<class I> ProvidedService<T,I>& createProvidedService(std::string serviceName = {});
+
+        /**
+         * @brief Creates a unassociated provided services for the component.
+         *
+         * The provided service can be fine tuned and build using a fluent API
+         *
+         * @note The provided service can - and is expected to be - be unassociated with the component type.
+         * I.e. it can be a C service.
+         * The ProvidedService result will store the shared_ptr of the service during its lifecycle.
+         *
+         * @param serviceName The optional service name. If not provided the service name is inferred from I.
+         */
+        template<class I> ProvidedService<T,I>& createUnassociatedProvidedService(std::shared_ptr<I> svc, std::string serviceName = {});
 
         /**
          * Adds a C interface to provide as service to the Celix framework.
