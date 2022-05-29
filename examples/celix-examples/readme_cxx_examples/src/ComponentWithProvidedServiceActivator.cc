@@ -31,7 +31,8 @@ public:
             const std::vector<std::string>& /*commandArgs*/,
             FILE* outStream,
             FILE* /*errorStream*/) override {
-        fprintf(outStream, "Hello from cmp. C++ command called %i times. commandLine is %s\n", cxxCallCount++, commandLine.c_str());
+        fprintf(outStream, "Hello from cmp. C++ command called %i times. commandLine is %s\n",
+                cxxCallCount++, commandLine.c_str());
     } // <-----------------------------------------------------------------------------------------------------------<2>
 
     void executeCCommand(const char* commandLine, FILE* outStream) {
@@ -48,7 +49,7 @@ public:
         auto& cmp = ctx->getDependencyManager()->createComponent<ComponentWithProvidedService>(); // <---------------<4>
 
         cmp.createProvidedService<celix::IShellCommand>()
-                .addProperty(celix::IShellCommand::COMMAND_NAME, "HelloComponent"); // <---------------------------------<5>
+                .addProperty(celix::IShellCommand::COMMAND_NAME, "HelloComponent"); // <-----------------------------<5>
 
         auto shellCmd = std::make_shared<celix_shell_command_t>();
         shellCmd->handle = static_cast<void*>(&cmp.getInstance());
@@ -59,7 +60,7 @@ public:
         }; // <------------------------------------------------------------------------------------------------------<6>
 
         cmp.createUnassociatedProvidedService(std::move(shellCmd), CELIX_SHELL_COMMAND_SERVICE_NAME)
-                .addProperty(CELIX_SHELL_COMMAND_NAME, "hello_component"); // < -----------------------------------------<7>
+                .addProperty(CELIX_SHELL_COMMAND_NAME, "hello_component"); // < -------------------------------------<7>
 
         cmp.build(); // <--------------------------------------------------------------------------------------------<8>
     }

@@ -287,3 +287,13 @@ add_celix_container(test_container BUNDLES
 ```
 
 See [Apache Celix CMake Commands](cmake_commands) for more detailed information.
+
+# The `celix::lb` shell command
+To interactively see the installed bundles the `celix::lb` shell command (list bundles) can be used.
+
+Examples of supported `lb` command lines are:
+ - `celix::lb` - Show an overview of the installed bundles with their bundle id, bundle state, bundle name and 
+   bundle group.
+ - `lb` - Same as `celix::lb` (as long as there is no colliding other `lb` commands). 
+ - `lb -s` - Same as `celix::lb` but instead of showing the bundle name the bundle symbolic name is printed.
+ - `lb -u` - Same as `celix::lb` but instead of showing the bundle name the bundle update location is printed.

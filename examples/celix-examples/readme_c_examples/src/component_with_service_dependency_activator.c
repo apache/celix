@@ -26,13 +26,13 @@
 
 typedef struct component_with_service_dependency {
     celix_shell_command_t* highestRankingCmdShell; //only updated when component is not active or suspended
-    celix_thread_mutex_t mutex;
+    celix_thread_mutex_t mutex; //protects cmdShells
     celix_array_list_t* cmdShells;
 } component_with_service_dependency_t;
 
 static component_with_service_dependency_t* componentWithServiceDependency_create() {
     component_with_service_dependency_t* cmp = calloc(1, sizeof(*cmp));
-    celixThreadMutex_create(&cmp->mutex, NULL);
+    celixThreadMutex_create(&cmp->mutex, NULL); // <-----------------------------------------------------------------<1>
     cmp->cmdShells = celix_arrayList_create();
     return cmp;
 }
@@ -47,7 +47,7 @@ static void componentWithServiceDependency_setHighestRankingShellCommand(
         component_with_service_dependency_t* cmp,
         celix_shell_command_t* shellCmd) {
     printf("New highest ranking service (can be NULL): %p\n", shellCmd);
-    cmp->highestRankingCmdShell = shellCmd;
+    cmp->highestRankingCmdShell = shellCmd; // <---------------------------------------------------------------------<2>
 }
 
 static void componentWithServiceDependency_addShellCommand(
@@ -56,7 +56,7 @@ static void componentWithServiceDependency_addShellCommand(
         const celix_properties_t* props) {
     long id = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_ID, -1);
     printf("Adding shell command service with service.id %li\n", id);
-    celixThreadMutex_lock(&cmp->mutex);
+    celixThreadMutex_lock(&cmp->mutex); // <-------------------------------------------------------------------------<3>
     celix_arrayList_add(cmp->cmdShells, shellCmd);
     celixThreadMutex_unlock(&cmp->mutex);
 }
@@ -91,22 +91,22 @@ static celix_status_t componentWithServiceDependencyActivator_start(component_wi
             componentWithServiceDependency_destroy);
 
     //create mandatory service dependency with cardinality one and with a suspend-strategy
-    celix_dm_service_dependency_t* dep1 = celix_dmServiceDependency_create();
-    celix_dmServiceDependency_setService(dep1, CELIX_SHELL_COMMAND_SERVICE_NAME, NULL, NULL);
-    celix_dmServiceDependency_setStrategy(dep1, DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND);
-    celix_dmServiceDependency_setRequired(dep1, true);
-    celix_dm_service_dependency_callback_options_t opts1 = CELIX_EMPTY_DM_SERVICE_DEPENDENCY_CALLBACK_OPTIONS;
-    opts1.set = (void*)componentWithServiceDependency_setHighestRankingShellCommand;
-    celix_dmServiceDependency_setCallbacksWithOptions(dep1, &opts1);
-    celix_dmComponent_addServiceDependency(dmCmp, dep1);
+    celix_dm_service_dependency_t* dep1 = celix_dmServiceDependency_create(); // <-----------------------------------<4>
+    celix_dmServiceDependency_setService(dep1, CELIX_SHELL_COMMAND_SERVICE_NAME, NULL, NULL); // <-------------------<5>
+    celix_dmServiceDependency_setStrategy(dep1, DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND); // <------------------------<6>
+    celix_dmServiceDependency_setRequired(dep1, true); // <----------------------------------------------------------<7>
+    celix_dm_service_dependency_callback_options_t opts1 = CELIX_EMPTY_DM_SERVICE_DEPENDENCY_CALLBACK_OPTIONS; // <--<8>
+    opts1.set = (void*)componentWithServiceDependency_setHighestRankingShellCommand; // <----------------------------<9>
+    celix_dmServiceDependency_setCallbacksWithOptions(dep1, &opts1); // <-------------------------------------------<10>
+    celix_dmComponent_addServiceDependency(dmCmp, dep1); // <-------------------------------------------------------<11>
 
     //create optional service dependency with cardinality many and with a locking-strategy
     celix_dm_service_dependency_t* dep2 = celix_dmServiceDependency_create();
     celix_dmServiceDependency_setService(dep2, CELIX_SHELL_COMMAND_SERVICE_NAME, NULL, NULL);
-    celix_dmServiceDependency_setStrategy(dep2, DM_SERVICE_DEPENDENCY_STRATEGY_LOCKING);
-    celix_dmServiceDependency_setRequired(dep2, false);
+    celix_dmServiceDependency_setStrategy(dep2, DM_SERVICE_DEPENDENCY_STRATEGY_LOCKING);  // <----------------------<12>
+    celix_dmServiceDependency_setRequired(dep2, false); // <--------------------------------------------------------<13>
     celix_dm_service_dependency_callback_options_t opts2 = CELIX_EMPTY_DM_SERVICE_DEPENDENCY_CALLBACK_OPTIONS;
-    opts2.addWithProps = (void*)componentWithServiceDependency_addShellCommand;
+    opts2.addWithProps = (void*)componentWithServiceDependency_addShellCommand;  // <-------------------------------<14>
     opts2.removeWithProps = (void*)componentWithServiceDependency_removeShellCommand;
     celix_dmServiceDependency_setCallbacksWithOptions(dep2, &opts2);
     celix_dmComponent_addServiceDependency(dmCmp, dep2);
