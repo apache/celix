@@ -82,3 +82,18 @@ add_celix_container(readme_c_examples_container
         component_with_provided_service_bundle
         component_with_service_dependency_bundle
 )
+
+
+add_celix_bundle(http_admin_extendee_bundle # <----------------------------------------------------------------------<1>
+    VERSION 1.0.0
+    NO_ACTIVATOR # <-------------------------------------------------------------------------------------------------<2>
+)
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/index.html" "<html><body>Hello World</body></html>") # <---------------------<3>
+celix_bundle_files(http_admin_extendee_bundle "${CMAKE_CURRENT_BINARY_DIR}/index.html" DESTINATION resources) # <----<4>
+celix_bundle_headers(http_admin_extendee_bundle "X-Web-Resource: /hello$<SEMICOLON>/resources") # <------------------<5>
+
+add_celix_container(extender_pattern_example_container # <-----------------------------------------------------------<6>
+    BUNDLES
+        Celix::http_admin
+        http_admin_extendee_bundle
+)
