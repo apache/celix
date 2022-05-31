@@ -19,26 +19,53 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-# Apache Celix / OSGi  patterns
-TODO rephrase 
-There are several design patterns typical for Apache Celix and/or OSGi that are worth mentioned.  
+# Apache Celix / OSGi  patterns 
+There are several design patterns used in Apache Celix and OSGi.  
+
+## Whiteboard Pattern
+The whiteboard pattern is a pattern where the act of registering a service is enough to participate in an existing 
+functionality. Another typical concept of the whiteboard pattern is that an application should 
+still resolve and startup even if the bundle or bundles that pick up the 
+whiteboard pattern services are absent.
+
+Many Apache Celix services are whiteboard services. For example:
+ - `celix_shell_command_t` and `celix::IShellCommand` services. These services can be 
+   picked up by the `Celix::shell` bundle, but applications should still work if there is no `Celix::shell` used.
+ - Services marked as remote service (`service.exported.interface=*`). These services will work fine - but only as 
+   local services - if there are no remote service bundles used.
+ - `celix_log_sink_t` services. If there is no `Celix::log_admin` bundle used, the log sinks services will never be
+   called, but the application should still work.
+
+On of the downsides of the whiteboard pattern is that it is not always clear why an application is not working as 
+expected or what is missing to get the application working as expected. This is because it not an error 
+if there are unused services, and as result there is no error/description to help a user what is missing. 
+
+For example: A `log_collector` bundle with a `celix_log_sink_t` service is installed and started, so that logging can 
+be sent to a central computer for analytic purposes. 
+But no logging is received on the central computer. Initially it could seem
+that the `log_collector` bundle has a bug, especially because the application will not print any warnings or errors. 
+But if the `Celix::log_admin` bundle is not installed and started the `log_collector` bundle 
+`celix_log_sink_t` service will never be called, so installed and starting the `Celix::log_admin` is the issue in this 
+example.
+
+![Whiteboard Pattern](diagrams/whiteboard_pattern.png)
+
 
 ## Extender Pattern
-The extender pattern is a design pattern which leverages the concept of bundles containing resources.
-It is a pattern where functionality of an extender bundle can be extended by installing other (extendee) bundles 
+The extender pattern is a design pattern which leverages the concept of resource containing bundles.
+With the extender pattern, functionality of a extender bundle can extended by installing (extendee) bundles 
 containing certain resources files and/or bundle manifest entries.
 
 ![Extender Pattern](diagrams/extender_pattern.png)
 
 An example of the extender pattern is the `Celix::http_admin` bundle. The `Celix::http_admin` monitors installed
-bundles and read the bundles `MANIFEST.MF` file for a `X-Web-Resource` entry. If a `X-Web-Resource` entry is found
-its value web resources to the `Celix::http_admin`. This can be used to dynamically add/remove static web resources
-to an HTTP server.
+bundles and read the bundles `MANIFEST.MF` file for a `X-Web-Resource` entry. If a `X-Web-Resource` entry is found,
+its value is used to setup new HTTP endpoint in the HTTP server of `Celix::http_admin` using the static web resources
+of the extendee bundle.
 
 ### `Celix::http_admin` Extendee Bundle Example
 The following example shows how a very simple `Celix::http_admin` extendee bundle, which provided a minimal
-hello world `index.html` page for the `Celix::http_admin` to pick up. 
-
+hello world `index.html` page for the `Celix::http_admin` to pick up.
 
 Remarks for the `Celix::http_admin` extendee bundle example:
 1. Creates a bundle which will function as an extendee bundle for the `Celix::http_admin`.
@@ -68,12 +95,8 @@ add_celix_container(extender_pattern_example_container # <----------------------
 )
 ```
 
-## Whiteboard Pattern
-
-TODO example http_admin with http service
-
-![Whiteboard Pattern](diagrams/whiteboard_pattern.png)
-
+When the `extender_pattern_example_container` executable is running the web address `http://localhost:8080/hello`
+should show the content of the `index.html`
 
 ## Service on Demand (SOD) Pattern
 

@@ -25,10 +25,12 @@ Components can provide services and depend on services. Components are configure
 
 Service dependencies will influence the component's lifecycle as a component will only be active when all required
 dependencies are available.   
-The DM is responsible for managing the co7mponent's service dependencies, the component's lifecycle and when
+The DM is responsible for managing the component's service dependencies, the component's lifecycle and when
 to register/unregister the component's provided services.
 
-Note that the Apache Celix Dependency Manager is inspired by the [Apache Felix Dependency Manager](http://felix.apache.org/documentation/subprojects/apache-felix-dependency-manager.html), adapted to Apache Celix and the C/C++ usage.
+Note that the Apache Celix Dependency Manager is inspired by the 
+[Apache Felix Dependency Manager](http://felix.apache.org/documentation/subprojects/apache-felix-dependency-manager.html), 
+adapted to Apache Celix and the C/C++ usage.
 
 # Component Lifecycle
 Each component has its own lifecycle.
@@ -342,7 +344,7 @@ CELIX_GEN_BUNDLE_ACTIVATOR(
 
 ## Example: Component with a provided service in C++
 The following example shows how a C++ component that provide a C++ `celix::IShellCommand` service
-and a C `elix_shell_command` service. For a C++ component it's possible to provide C and C++ services.
+and a C `celix_shell_command` service. For a C++ component it's possible to provide C and C++ services.
 
 Remarks for the C++ example:
 1. If a component provides a C++ services, it also expected that the component implementation inherits the service
