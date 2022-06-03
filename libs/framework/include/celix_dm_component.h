@@ -35,10 +35,26 @@ extern "C" {
 #define CELIX_DM_COMPONENT_UUID     "component.uuid"
 
 typedef enum celix_dm_component_state_enum {
-    DM_CMP_STATE_INACTIVE = 1,
-    DM_CMP_STATE_WAITING_FOR_REQUIRED = 2,
-    DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED = 3,
-    DM_CMP_STATE_TRACKING_OPTIONAL = 4,
+    CELIX_DM_CMP_STATE_INACTIVE =                               1,
+    CELIX_DM_CMP_STATE_WAITING_FOR_REQUIRED =                   2,
+    CELIX_DM_CMP_STATE_INITIALIZING =                           3,
+    CELIX_DM_CMP_STATE_DEINITIALIZING =                         4,
+    CELIX_DM_CMP_STATE_INITIALIZED_AND_WAITING_FOR_REQUIRED =   5,
+    CELIX_DM_CMP_STATE_STARTING =                               6,
+    CELIX_DM_CMP_STATE_STOPPING =                               7,
+    CELIX_DM_CMP_STATE_TRACKING_OPTIONAL =                      8,
+    CELIX_DM_CMP_STATE_SUSPENDING =                             9,
+    CELIX_DM_CMP_STATE_SUSPENDED =                              10,
+    CELIX_DM_CMP_STATE_RESUMING =                               11,
+
+    /**
+     * Note this dm state enums are deprecated, but for
+     * now still supported.
+     */
+    DM_CMP_STATE_INACTIVE =                                     1,
+    DM_CMP_STATE_WAITING_FOR_REQUIRED =                         2,
+    DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED =        5,
+    DM_CMP_STATE_TRACKING_OPTIONAL =                            8,
 } celix_dm_component_state_t;
 
 #define CELIX_DM_COMPONENT_MAX_ID_LENGTH 64

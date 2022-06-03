@@ -19,6 +19,7 @@
 
 #include <gtest/gtest.h>
 #include <atomic>
+#include <condition_variable>
 
 #include "celix/dm/DependencyManager.h"
 #include "celix_framework_factory.h"
@@ -123,7 +124,7 @@ TEST_F(DependencyManagerTestSuite, DmComponentRemoveAllAsync) {
     EXPECT_EQ(1, count.load());
 }
 
-TEST_F(DependencyManagerTestSuite, CDmGetInfo) {
+TEST_F(DependencyManagerTestSuite, DmGetInfo) {
     auto* mng = celix_bundleContext_getDependencyManager(ctx);
     auto* cmp = celix_dmComponent_create(ctx, "test1");
 
@@ -215,7 +216,7 @@ TEST_F(DependencyManagerTestSuite, CxxDmGetInfo) {
     ASSERT_EQ(cmpInfo.interfacesInfo.size(), 1);
     auto& intf = cmpInfo.interfacesInfo[0];
     EXPECT_EQ(intf.serviceName, "TestService");
-    EXPECT_TRUE(intf.properties.size() > 0);
+    EXPECT_TRUE(!intf.properties.empty());
     EXPECT_NE(intf.properties.find("key"), intf.properties.end());
 
     ASSERT_EQ(cmpInfo.dependenciesInfo.size(), 1);
@@ -486,6 +487,234 @@ TEST_F(DependencyManagerTestSuite, RequiredDepsAreInjectedDuringStartStop) {
     celix_bundleContext_unregisterService(dm.bundleContext(), svcId);
 }
 
+TEST_F(DependencyManagerTestSuite, RemoveOwnDependencyShouldNotLeadToDoubleStop) {
+    //Given a component LifecycleComponent which provides and requires a TestService service
+    class LifecycleComponent : public TestService {
+    public:
+        void start() {
+            startCount.fetch_add(1);
+        }
+
+        void stop() {
+            stopCount.fetch_add(1);
+        }
+
+        int getStartCount() const { return startCount.load(); }
+
+        int getStopCount() const { return stopCount.load(); }
+    private:
+        std::atomic<int> startCount{0};
+        std::atomic<int> stopCount{0};
+    };
+
+    celix::dm::DependencyManager dm{ctx};
+    auto lifecycleCmp = std::make_shared<LifecycleComponent>();
+    auto& cmp = dm.createComponent<LifecycleComponent>(lifecycleCmp)
+            .setCallbacks(nullptr, &LifecycleComponent::start, &LifecycleComponent::stop, nullptr);
+    cmp.createProvidedService<TestService>();
+    cmp.createServiceDependency<TestService>()
+            .setRequired(true);
+    cmp.build();
+    using celix::dm::ComponentState;
+
+    //Then the component state should be waiting for required
+    EXPECT_EQ(cmp.getState(), ComponentState::WAITING_FOR_REQUIRED);
+
+    //When a TestService is registered
+    TestService svc{};
+    long svcId = celix_bundleContext_registerService(ctx, &svc, "TestService", nullptr);
+    celix_bundleContext_waitForEvents(ctx);
+
+    //Then the component state should become tracking optional (active)
+    EXPECT_EQ(cmp.getState(), ComponentState::TRACKING_OPTIONAL);
+    //And the start count should become 1
+    EXPECT_EQ(lifecycleCmp->getStartCount(), 1);
+
+    //When the TestService is unregistered
+    celix_bundleContext_unregisterService(ctx, svcId);
+
+    //Then the component state will stay tracking optional (because it now depends on its own provided services)
+    EXPECT_EQ(cmp.getState(), ComponentState::TRACKING_OPTIONAL);
+    EXPECT_EQ(lifecycleCmp->getStopCount(), 0);
+
+    //When an additional required service dependency is added
+    cmp.createServiceDependency<TestService>("DummyName")
+            .setRequired(true)
+            .buildAsync();
+
+    celix_bundleContext_waitForEvents(ctx);
+    //Then the component state becomes waiting for required
+    EXPECT_EQ(cmp.getState(), ComponentState::INSTANTIATED_AND_WAITING_FOR_REQUIRED);
+    //And the stop count becomes 1 (not 2 becomes of a loop the dm component handling)
+    EXPECT_EQ(lifecycleCmp->getStopCount(), 1);
+}
+
+
+TEST_F(DependencyManagerTestSuite, IntermediateStatesDuringInitDeinitStartingAndStopping) {
+    //Given a component LifecycleComponent with an optional service dependency on TestService with a suspend-strategy
+    //and a required service dependency on "RequiredTestService" with a locking-strategy.
+    class LifecycleComponent {
+    public:
+        enum class LifecycleMethod {
+            None =      0,
+            Init =      1,
+            Start =     2,
+            Stop =      3,
+            Deinit =    4,
+        };
+
+        void init() {
+            std::cout << "in init callback\n";
+            setStateAndWaitToContinue(LifecycleMethod::Init);
+        }
+
+        void deinit() {
+            std::cout << "in deinit callback\n";
+            setStateAndWaitToContinue(LifecycleMethod::Deinit);
+        }
+
+        void start() {
+            std::cout << "in start callback\n";
+            setStateAndWaitToContinue(LifecycleMethod::Start);
+        }
+
+        void stop() {
+            std::cout << "in stop callback\n";
+            setStateAndWaitToContinue(LifecycleMethod::Stop);
+        }
+
+        void setStayInMethod(LifecycleMethod m) {
+            std::lock_guard<std::mutex> lck{mutex};
+            stayInMethod = m;
+            cond.notify_all();
+        }
+
+        void waitUntilInMethod(LifecycleMethod m) {
+            std::unique_lock<std::mutex> lck{mutex};
+            cond.wait_for(lck, std::chrono::seconds{5}, [&]{ return currentMethod == m; });
+        }
+    private:
+        void setStateAndWaitToContinue(LifecycleMethod m) {
+            std::unique_lock<std::mutex> lck{mutex};
+            currentMethod = m;
+            cond.notify_all();
+            cond.wait_for(lck, std::chrono::seconds{5}, [&] { return currentMethod != stayInMethod; });
+            currentMethod = LifecycleMethod::None;
+            cond.notify_all();
+        }
+
+        std::mutex mutex{};
+        std::condition_variable cond{};
+        LifecycleMethod stayInMethod = LifecycleMethod::None;
+        LifecycleMethod currentMethod = LifecycleMethod::None;
+    };
+    using LifecycleMethod = LifecycleComponent::LifecycleMethod;
+
+
+    celix::dm::DependencyManager dm{ctx};
+    auto lifecycleCmp = std::make_shared<LifecycleComponent>();
+    auto& cmp = dm.createComponent<LifecycleComponent>(lifecycleCmp)
+            .setCallbacks(&LifecycleComponent::init, &LifecycleComponent::start, &LifecycleComponent::stop, &LifecycleComponent::deinit);
+    cmp.createServiceDependency<TestService>()
+            .setStrategy(celix::dm::DependencyUpdateStrategy::suspend)
+            .setCallbacks([](std::shared_ptr<TestService> /*service*/, const std::shared_ptr<const celix::Properties>& /*properties*/){ std::cout << "Dummy set for svc callback\n"; })
+            .setRequired(false);
+    cmp.createServiceDependency<TestService>("RequiredTestService")
+            .setStrategy(celix::dm::DependencyUpdateStrategy::locking)
+            .setRequired(true);
+    cmp.buildAsync();
+
+    //Then the component state should become waiting for required
+    cmp.wait();
+    EXPECT_EQ(cmp.getState(), ComponentState::WAITING_FOR_REQUIRED);
+
+    //When the component should wait in the init callback
+    lifecycleCmp->setStayInMethod(LifecycleMethod::Init);
+
+    //And a "RequiredTestService" service is registered
+    TestService reqSvc{};
+    long reqSvcId = celix_bundleContext_registerServiceAsync(ctx, &reqSvc, "RequiredTestService", nullptr);
+    EXPECT_GE(reqSvcId, 0);
+
+    //Then the component state should become initializing
+    using celix::dm::ComponentState;
+    lifecycleCmp->waitUntilInMethod(LifecycleMethod::Init);
+    EXPECT_EQ(cmp.getState(), ComponentState::INITIALIZING);
+
+    //When the component should wait in the start callback
+    //Then the component state should become starting
+    lifecycleCmp->setStayInMethod(LifecycleMethod::Start);
+    lifecycleCmp->waitUntilInMethod(LifecycleMethod::Start);
+    EXPECT_EQ(cmp.getState(), ComponentState::STARTING);
+
+    //When the component should not wait in the lifecycle callbacks
+    lifecycleCmp->setStayInMethod(LifecycleMethod::None);
+
+    //Then the component state should become tracking optional
+    cmp.wait();
+    EXPECT_EQ(cmp.getState(), ComponentState::TRACKING_OPTIONAL);
+
+
+    //When the component should wait in the stop callback
+    lifecycleCmp->setStayInMethod(LifecycleMethod::Stop);
+
+    //And a new TestService is registered (leading to a suspending of the component)
+    TestService svc;
+    std::string svcName = celix::typeName<TestService>();
+    celix_service_registration_options opts{};
+    opts.svc = &svc;
+    opts.serviceName = svcName.c_str();
+    long optionalSvcId = celix_bundleContext_registerServiceWithOptionsAsync(dm.bundleContext(), &opts);
+    EXPECT_GE(optionalSvcId, 0);
+
+    //Then the component state should become suspending
+    lifecycleCmp->waitUntilInMethod(LifecycleMethod::Stop);
+    EXPECT_EQ(cmp.getState(), ComponentState::SUSPENDING);
+
+    //When the component should wait in the start callback
+    //Then the component state should become resuming (suspending->suspended->resuming)
+    lifecycleCmp->setStayInMethod(LifecycleMethod::Start);
+    lifecycleCmp->waitUntilInMethod(LifecycleMethod::Start);
+    EXPECT_EQ(cmp.getState(), ComponentState::RESUMING);
+
+    //When the component should not wait in the lifecycle callbacks
+    lifecycleCmp->setStayInMethod(LifecycleMethod::None);
+
+    //Then the component state should become tracking optional
+    cmp.wait();
+    EXPECT_EQ(cmp.getState(), ComponentState::TRACKING_OPTIONAL);
+
+    //When the component should wait in the stop callback
+    lifecycleCmp->setStayInMethod(LifecycleMethod::Stop);
+
+    //And the "RequiredTestService" is unregistered
+    celix_bundleContext_unregisterServiceAsync(ctx, reqSvcId, nullptr, nullptr);
+
+    //Then the component state should become stopping
+    lifecycleCmp->waitUntilInMethod(LifecycleMethod::Stop);
+    EXPECT_EQ(cmp.getState(), ComponentState::STOPPING);
+
+    //When the component should not wait in the lifecycle callbacks
+    lifecycleCmp->setStayInMethod(LifecycleMethod::None);
+
+    //Then the component state should become instantiated and waiting for required
+    cmp.wait();
+    EXPECT_EQ(cmp.getState(), ComponentState::INSTANTIATED_AND_WAITING_FOR_REQUIRED);
+
+    //When the component should wait in the deinit callback
+    lifecycleCmp->setStayInMethod(LifecycleMethod::Deinit);
+
+    //And the component is removed from the dependency manager
+    dm.removeComponentAsync(cmp.getUUID());
+
+    //Then the component state should become deinitializing
+    lifecycleCmp->waitUntilInMethod(LifecycleMethod::Deinit);
+    EXPECT_EQ(cmp.getState(), ComponentState::DEINITIALIZING);
+
+    lifecycleCmp->setStayInMethod(LifecycleMethod::None);
+    celix_bundleContext_unregisterService(dm.bundleContext(), optionalSvcId);
+}
+
 TEST_F(DependencyManagerTestSuite, DepsAreInjectedAsSharedPointers) {
     class LifecycleComponent {
     public:
@@ -641,13 +870,13 @@ TEST_F(DependencyManagerTestSuite, UnneededSuspendIsPrevented) {
 
     celix::dm::DependencyManager dm{ctx};
     //cmp1 has lifecycle callbacks, but not set or add/rem callbacks for the service dependency -> should not trigger suspend
-    auto& cmp1 = dm.createComponent<CounterComponent>()
+    auto& cmp1 = dm.createComponent<CounterComponent>("CounterCmp1")
             .setCallbacks(nullptr, &CounterComponent::start, &CounterComponent::stop, nullptr);
     cmp1.createServiceDependency<TestService>();
     cmp1.build();
 
     //cmp2 has lifecycle callbacks and set, add/rem callbacks for the service dependency -> should trigger suspend 2x
-    auto& cmp2 = dm.createComponent<CounterComponent>()
+    auto& cmp2 = dm.createComponent<CounterComponent>("CounterCmp2")
             .setCallbacks(nullptr, &CounterComponent::start, &CounterComponent::stop, nullptr);
     cmp2.createServiceDependency<TestService>()
             .setCallbacks(&CounterComponent::setService)
@@ -786,6 +1015,46 @@ TEST_F(DependencyManagerTestSuite, installBundleWithDepManActivator) {
     list = celix_bundleContext_listBundles(ctx);
     EXPECT_EQ(celix_arrayList_size(list), 1);
     celix_arrayList_destroy(list);
+}
+
+TEST_F(DependencyManagerTestSuite, testStateToString) {
+    const char* state = celix_dmComponent_stateToString(CELIX_DM_CMP_STATE_INACTIVE);
+    EXPECT_STREQ(state, "INACTIVE");
+    state = celix_dmComponent_stateToString(CELIX_DM_CMP_STATE_WAITING_FOR_REQUIRED);
+    EXPECT_STREQ(state, "WAITING_FOR_REQUIRED");
+    state = celix_dmComponent_stateToString(CELIX_DM_CMP_STATE_INITIALIZING);
+    EXPECT_STREQ(state, "INITIALIZING");
+    state = celix_dmComponent_stateToString(CELIX_DM_CMP_STATE_DEINITIALIZING);
+    EXPECT_STREQ(state, "DEINITIALIZING");
+    state = celix_dmComponent_stateToString(CELIX_DM_CMP_STATE_INITIALIZED_AND_WAITING_FOR_REQUIRED);
+    EXPECT_STREQ(state, "INITIALIZED_AND_WAITING_FOR_REQUIRED");
+    state = celix_dmComponent_stateToString(CELIX_DM_CMP_STATE_STARTING);
+    EXPECT_STREQ(state, "STARTING");
+    state = celix_dmComponent_stateToString(CELIX_DM_CMP_STATE_STOPPING);
+    EXPECT_STREQ(state, "STOPPING");
+    state = celix_dmComponent_stateToString(CELIX_DM_CMP_STATE_TRACKING_OPTIONAL);
+    EXPECT_STREQ(state, "TRACKING_OPTIONAL");
+    state = celix_dmComponent_stateToString(CELIX_DM_CMP_STATE_SUSPENDING);
+    EXPECT_STREQ(state, "SUSPENDING");
+    state = celix_dmComponent_stateToString(CELIX_DM_CMP_STATE_SUSPENDED);
+    EXPECT_STREQ(state, "SUSPENDED");
+    state = celix_dmComponent_stateToString(CELIX_DM_CMP_STATE_RESUMING);
+    EXPECT_STREQ(state, "RESUMING");
+    state = celix_dmComponent_stateToString((celix_dm_component_state_enum)0);
+    EXPECT_STREQ(state, "INACTIVE");
+    state = celix_dmComponent_stateToString((celix_dm_component_state_enum)16);
+    EXPECT_STREQ(state, "INACTIVE");
+
+    //test deprecated dm cmp states
+    state = celix_dmComponent_stateToString(DM_CMP_STATE_INACTIVE);
+    EXPECT_STREQ(state, "INACTIVE");
+    state = celix_dmComponent_stateToString(DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED);
+    EXPECT_STREQ(state, "INITIALIZED_AND_WAITING_FOR_REQUIRED");
+    state = celix_dmComponent_stateToString(DM_CMP_STATE_TRACKING_OPTIONAL);
+    EXPECT_STREQ(state, "TRACKING_OPTIONAL");
+    state = celix_dmComponent_stateToString(DM_CMP_STATE_WAITING_FOR_REQUIRED);
+    EXPECT_STREQ(state, "WAITING_FOR_REQUIRED");
+
 }
 
 #if __cplusplus >= 201703L //C++17 or higher
