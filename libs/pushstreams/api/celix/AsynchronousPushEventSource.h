@@ -64,7 +64,7 @@ celix::AsynchronousPushEventSource<T>::AsynchronousPushEventSource(std::shared_p
 
 template <typename T>
 void celix::AsynchronousPushEventSource<T>::execute(std::function<void()> task) {
-    executor->execute(task);
+    executor->execute(std::move(task));
 }
 
 

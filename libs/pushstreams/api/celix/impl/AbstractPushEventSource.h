@@ -88,7 +88,7 @@ celix::AbstractPushEventSource<T>::AbstractPushEventSource(std::shared_ptr<Promi
 
 template <typename T>
 void celix::AbstractPushEventSource<T>::open(std::shared_ptr<celix::IPushEventConsumer<T>> _eventConsumer) {
-    std::unique_lock lck{mutex};
+    std::lock_guard lck{mutex};
     if (closed) {
         _eventConsumer->accept(celix::ClosePushEvent<T>());
     } else {
@@ -102,7 +102,7 @@ void celix::AbstractPushEventSource<T>::open(std::shared_ptr<celix::IPushEventCo
 
 template <typename T>
 [[nodiscard]] celix::Promise<void> celix::AbstractPushEventSource<T>::connectPromise() {
-    std::unique_lock lck{mutex};
+    std::lock_guard lck{mutex};
     auto connect = promiseFactory->deferred<void>();
     connected.push_back(connect);
     return connect.getPromise();
@@ -110,7 +110,7 @@ template <typename T>
 
 template <typename T>
 void celix::AbstractPushEventSource<T>::publish(const T& event) {
-    std::unique_lock lck{mutex};
+    std::lock_guard lck{mutex};
 
     if (closed) {
         throw IllegalStateException("AbstractPushEventSource closed");
@@ -125,7 +125,7 @@ void celix::AbstractPushEventSource<T>::publish(const T& event) {
 
 template <typename T>
 bool celix::AbstractPushEventSource<T>::isConnected() {
-    std::unique_lock lck{mutex};
+    std::lock_guard lck{mutex};
     return !eventConsumers.empty();
 }
 
@@ -135,7 +135,7 @@ void celix::AbstractPushEventSource<T>::close() {
 
 
     {
-        std::unique_lock lck{mutex};
+        std::lock_guard lck{mutex};
 
         if (closed) {
             return;
@@ -149,7 +149,7 @@ void celix::AbstractPushEventSource<T>::close() {
     }
 
     execute([&]() {
-        std::unique_lock lck{mutex};
+        std::lock_guard lck{mutex};
         eventConsumers.clear();
         closed = true;
         cv.notify_one();
