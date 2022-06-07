@@ -95,6 +95,12 @@ All embedded bundle can be installed using the framework utils function
 `celix_framework_utils_installEmbeddedBundles` (C) or `celix::installEmbeddedBundles` (C++).
 ]]
 function(celix_target_embedded_bundle)
+    get_property(LANGUAGES GLOBAL PROPERTY ENABLED_LANGUAGES)
+    if (NOT "ASM" IN_LIST LANGUAGES)
+        message(FATAL_ERROR "celix_target_embedded_bundle is only supported it the language ASM is enabled."
+         " Please add ASM as cmake project language.")
+    endif ()
+
     list(GET ARGN 0 TARGET_NAME)
     list(REMOVE_AT ARGN 0)
 
