@@ -148,6 +148,22 @@ celix_status_t celix_dependencyManager_removeAllComponentsAsync(celix_dependency
     if (doneCallback != NULL) {
         callbackData->destroysInProgress = celix_arrayList_size(manager->components);
     }
+    if (celix_arrayList_size(manager->components) == 0 && doneCallback != NULL) {
+        //corner case: if no components are available, call done callback on event thread.
+        celix_framework_t* fw = celix_bundleContext_getFramework(manager->ctx);
+        long bndId = celix_bundleContext_getBundleId(manager->ctx);
+        celix_framework_fireGenericEvent(
+                fw,
+                -1,
+                bndId,
+                "celix_dependencyManager_removeAllComponentsAsync callback",
+                doneData,
+                doneCallback,
+                NULL,
+                NULL
+        );
+        free(callbackData);
+    }
     for (int i = 0; i < celix_arrayList_size(manager->components); ++i) {
         celix_dm_component_t *cmp = celix_arrayList_get(manager->components, i);
         if (doneCallback != NULL) {

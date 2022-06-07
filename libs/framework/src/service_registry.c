@@ -54,44 +54,32 @@ static void celix_increasePendingRegisteredEvent(celix_service_registry_t *regis
 static void celix_decreasePendingRegisteredEvent(celix_service_registry_t *registry, long svcId);
 static void celix_waitForPendingRegisteredEvents(celix_service_registry_t *registry, long svcId);
 
-celix_status_t serviceRegistry_create(framework_pt framework, service_registry_pt *out) {
-	celix_status_t status;
+celix_service_registry_t* celix_serviceRegistry_create(framework_pt framework) {
+    celix_service_registry_t* reg = calloc(1, sizeof(*reg));
 
-	service_registry_pt reg = calloc(1, sizeof(*reg));
-	if (reg == NULL) {
-		status = CELIX_ENOMEM;
-	} else {
+    reg->callback.handle = reg;
+    reg->callback.getUsingBundles = (void *)serviceRegistry_getUsingBundles;
+    reg->callback.unregister = (void *) serviceRegistry_unregisterService;
+    reg->callback.tryRemoveServiceReference = (void *) serviceRegistry_tryRemoveServiceReference;
 
-        reg->callback.handle = reg;
-        reg->callback.getUsingBundles = (void *)serviceRegistry_getUsingBundles;
-        reg->callback.unregister = (void *) serviceRegistry_unregisterService;
-        reg->callback.tryRemoveServiceReference = (void *) serviceRegistry_tryRemoveServiceReference;
+    reg->serviceRegistrations = hashMap_create(NULL, NULL, NULL, NULL);
+    reg->framework = framework;
+    reg->nextServiceId = 1L;
+    reg->serviceReferences = hashMap_create(NULL, NULL, NULL, NULL);
 
-		reg->serviceRegistrations = hashMap_create(NULL, NULL, NULL, NULL);
-		reg->framework = framework;
-        reg->nextServiceId = 1L;
-        reg->serviceReferences = hashMap_create(NULL, NULL, NULL, NULL);
+    reg->listenerHooks = celix_arrayList_create();
+    reg->serviceListeners = celix_arrayList_create();
 
-		reg->listenerHooks = celix_arrayList_create();
-		reg->serviceListeners = celix_arrayList_create();
+    celixThreadMutex_create(&reg->pendingRegisterEvents.mutex, NULL);
+    celixThreadCondition_init(&reg->pendingRegisterEvents.cond, NULL);
+    celixThreadRwlock_create(&reg->lock, NULL);
+    reg->pendingRegisterEvents.map = hashMap_create(NULL, NULL, NULL, NULL);
 
-		celixThreadMutex_create(&reg->pendingRegisterEvents.mutex, NULL);
-		celixThreadCondition_init(&reg->pendingRegisterEvents.cond, NULL);
-		reg->pendingRegisterEvents.map = hashMap_create(NULL, NULL, NULL, NULL);
 
-		status = celixThreadRwlock_create(&reg->lock, NULL);
-	}
-
-	if (status == CELIX_SUCCESS) {
-		*out = reg;
-	} else {
-		framework_logIfError(framework->logger, status, NULL, "Cannot create service registry");
-	}
-
-	return status;
+	return reg;
 }
 
-celix_status_t serviceRegistry_destroy(service_registry_pt registry) {
+void celix_serviceRegistry_destroy(celix_service_registry_t* registry) {
     celixThreadRwlock_writeLock(&registry->lock);
 
     //remove service listeners
@@ -149,8 +137,6 @@ celix_status_t serviceRegistry_destroy(service_registry_pt registry) {
     hashMap_destroy(registry->pendingRegisterEvents.map, false, false);
 
     free(registry);
-
-    return CELIX_SUCCESS;
 }
 
 celix_status_t serviceRegistry_getRegisteredServices(service_registry_pt registry, bundle_pt bundle, array_list_pt *services) {
