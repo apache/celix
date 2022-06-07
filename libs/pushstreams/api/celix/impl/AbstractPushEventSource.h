@@ -131,22 +131,31 @@ bool celix::AbstractPushEventSource<T>::isConnected() {
 
 template <typename T>
 void celix::AbstractPushEventSource<T>::close() {
+    std::condition_variable cv;
+
+
     {
         std::lock_guard lck{mutex};
+
         if (closed) {
             return;
-        } else {
-            closed = true;
+        }
+
+        for (auto &eventConsumer : eventConsumers) {
+            execute([eventConsumer]() {
+                eventConsumer->accept(celix::ClosePushEvent<T>());
+            });
         }
     }
 
-    for(auto& eventConsumer : eventConsumers) {
-        execute([eventConsumer]() {
-            eventConsumer->accept(celix::ClosePushEvent<T>());
-        });
-    }
-
     execute([&]() {
+        std::lock_guard lck{mutex};
         eventConsumers.clear();
+        closed = true;
+        cv.notify_one();
     });
+
+    //wait upon closed
+    std::unique_lock lck{mutex};
+    cv.wait(lck, [&]() {return closed;});
 }

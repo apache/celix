@@ -33,9 +33,15 @@
 
 namespace celix {
     template <typename T>
-    class SimplePushEventSource: public AbstractPushEventSource<T> {
+    class AsynchronousPushEventSource: public AbstractPushEventSource<T> {
     public:
-        explicit SimplePushEventSource(PromiseFactory& promiseFactory);
+        explicit AsynchronousPushEventSource(std::shared_ptr<PromiseFactory>& promiseFactory);
+        ~AsynchronousPushEventSource() = default;
+        AsynchronousPushEventSource() = delete;
+        AsynchronousPushEventSource(const AsynchronousPushEventSource&) = default;
+        AsynchronousPushEventSource(AsynchronousPushEventSource&&) = default;
+        AsynchronousPushEventSource& operator=(const AsynchronousPushEventSource&) = default;
+        AsynchronousPushEventSource& operator=(AsynchronousPushEventSource&&) = default;
 
     protected:
         void execute(std::function<void()> task) override;
@@ -51,19 +57,14 @@ namespace celix {
 *********************************************************************************/
 
 template <typename T>
-celix::SimplePushEventSource<T>::SimplePushEventSource(PromiseFactory& promiseFactory): AbstractPushEventSource<T>{promiseFactory},
-    executor{promiseFactory.getExecutor()} {
+celix::AsynchronousPushEventSource<T>::AsynchronousPushEventSource(std::shared_ptr<PromiseFactory>& promiseFactory): AbstractPushEventSource<T>{promiseFactory},
+                                                                                                    executor{promiseFactory->getExecutor()} {
 
-//    executor->execute([]() {
-//        for(;;) {
-//
-//        }
-//    });
 }
 
 template <typename T>
-void celix::SimplePushEventSource<T>::execute(std::function<void()> task) {
-    task();
+void celix::AsynchronousPushEventSource<T>::execute(std::function<void()> task) {
+    executor->execute(std::move(task));
 }
 
 
