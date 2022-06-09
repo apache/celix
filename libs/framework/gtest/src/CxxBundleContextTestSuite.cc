@@ -766,12 +766,16 @@ TEST_F(CxxBundleContextTestSuite, TestOldCStyleTrackerWithCxxMetaTracker) {
 
     service_tracker_customizer_t *customizer = nullptr;
     auto status = serviceTrackerCustomizer_create(this, nullptr, nullptr, nullptr, nullptr, &customizer);
-    ASSERT_EQ(status, CELIX_SUCCESS);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+
     celix_service_tracker_t* tracker = nullptr;
     status = serviceTracker_createWithFilter(ctx->getCBundleContext(), "(service.exported.interfaces=*)", customizer, &tracker);
-    ASSERT_EQ(status, CELIX_SUCCESS);
-    status = serviceTracker_open(tracker);
-    ASSERT_EQ(status, CELIX_SUCCESS);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+
+    if (status == CELIX_SUCCESS) {
+        status = serviceTracker_open(tracker);
+        EXPECT_EQ(status, CELIX_SUCCESS);
+    }
 
     auto metaTracker = ctx->trackAnyServiceTrackers().build();
     ctx->waitForEvents();

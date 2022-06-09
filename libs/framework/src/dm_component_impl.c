@@ -422,10 +422,13 @@ celix_status_t component_addInterface(celix_dm_component_t *component, const cha
 }
 
 celix_status_t celix_dmComponent_addInterface(celix_dm_component_t *component, const char* serviceName, const char* serviceVersion, const void* service, celix_properties_t* properties) {
-    celix_status_t status = CELIX_SUCCESS;
+    if (serviceName == NULL || celix_utils_stringEquals(serviceName, "")) {
+        celix_bundleContext_log(component->context, CELIX_LOG_LEVEL_ERROR, "Cannot add interface with a NULL or empty serviceName");
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
 
-    dm_interface_t *interface = (dm_interface_t *) calloc(1, sizeof(*interface));
-    char *name = strdup(serviceName);
+    dm_interface_t *interface = calloc(1, sizeof(*interface));
+    char *name = celix_utils_strdup(serviceName);
 
     if (properties == NULL) {
         properties = celix_properties_create();
@@ -434,27 +437,20 @@ celix_status_t celix_dmComponent_addInterface(celix_dm_component_t *component, c
     if ((properties_get(properties, CELIX_FRAMEWORK_SERVICE_VERSION) == NULL) && (serviceVersion != NULL)) {
         celix_properties_set(properties, CELIX_FRAMEWORK_SERVICE_VERSION, serviceVersion);
     }
-
     celix_properties_set(properties, CELIX_DM_COMPONENT_UUID, (char*)component->uuid);
 
-    if (interface && name) {
-        celixThreadMutex_lock(&component->mutex);
-        interface->serviceName = name;
-        interface->service = service;
-        interface->properties = properties;
-        interface->svcId= -1L;
-        celix_arrayList_add(component->providedInterfaces, interface);
-        if (celix_dmComponent_currentState(component) == CELIX_DM_CMP_STATE_TRACKING_OPTIONAL) {
-            celix_dmComponent_registerServices(component, false);
-        }
-        celixThreadMutex_unlock(&component->mutex);
-    } else {
-        free(interface);
-        free(name);
-        status = CELIX_ENOMEM;
+    celixThreadMutex_lock(&component->mutex);
+    interface->serviceName = name;
+    interface->service = service;
+    interface->properties = properties;
+    interface->svcId= -1L;
+    celix_arrayList_add(component->providedInterfaces, interface);
+    if (celix_dmComponent_currentState(component) == CELIX_DM_CMP_STATE_TRACKING_OPTIONAL) {
+        celix_dmComponent_registerServices(component, false);
     }
+    celixThreadMutex_unlock(&component->mutex);
 
-    return status;
+    return CELIX_SUCCESS;
 }
 
 celix_status_t component_removeInterface(celix_dm_component_t *component, const void* service) {
@@ -572,9 +568,7 @@ static celix_status_t celix_dmComponent_resume(celix_dm_component_t *component, 
                                     "Error starting component %s (uuid=%s) using the start callback. Disabling component.",
                                     component->name,
                                     component->uuid);
-            celixThreadMutex_lock(&component->mutex);
             celix_dmComponent_disableDirectly(component);
-            celixThreadMutex_unlock(&component->mutex);
         }
         celixThreadMutex_unlock(&component->mutex);
     }

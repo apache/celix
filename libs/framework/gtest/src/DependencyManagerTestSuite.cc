@@ -115,13 +115,33 @@ TEST_F(DependencyManagerTestSuite, DmComponentRemoveAllAsync) {
     EXPECT_EQ(2, celix_dependencyManager_nrOfComponents(mng));
 
     std::atomic<std::size_t> count{0};
-    celix_dependencyManager_removeAllComponentsAsync(mng, &count, [](void *data) {
+    auto callback = [](void *data) {
         auto* c = static_cast<std::atomic<std::size_t>*>(data);
         c->fetch_add(1);
-    });
+    };
+    celix_dependencyManager_removeAllComponentsAsync(mng, &count, callback);
     celix_dependencyManager_wait(mng);
     EXPECT_EQ(0, celix_dependencyManager_nrOfComponents(mng));
     EXPECT_EQ(1, count.load());
+
+    //call again if all components are removed -> should call callback
+    celix_dependencyManager_removeAllComponentsAsync(mng, &count, callback);
+    celix_dependencyManager_wait(mng);
+    EXPECT_EQ(0, celix_dependencyManager_nrOfComponents(mng));
+    EXPECT_EQ(2, count.load());
+}
+
+TEST_F(DependencyManagerTestSuite, InvalidAddInterface) {
+    auto* cmp = celix_dmComponent_create(ctx, "test");
+    void* dummyInterfacePointer = (void*)0x42;
+
+    auto status = celix_dmComponent_addInterface(cmp, "", nullptr, dummyInterfacePointer, nullptr);
+    EXPECT_NE(status, CELIX_SUCCESS);
+
+    status = celix_dmComponent_addInterface(cmp, nullptr, nullptr, dummyInterfacePointer, nullptr);
+    EXPECT_NE(status, CELIX_SUCCESS);
+
+    celix_dmComponent_destroy(cmp);
 }
 
 TEST_F(DependencyManagerTestSuite, DmGetInfo) {
