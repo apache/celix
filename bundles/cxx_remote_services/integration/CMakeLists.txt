@@ -15,49 +15,53 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_celix_bundle(TestExportImportRemoteServiceFactory
-        SOURCES src/TestExportImportRemoteServiceFactory.cc
-)
-target_link_libraries(TestExportImportRemoteServiceFactory PRIVATE Celix::rsa_spi Celix::pubsub_api Celix::Promises Celix::PushStreams Celix::log_helper)
-target_include_directories(TestExportImportRemoteServiceFactory PRIVATE include)
-celix_bundle_files(TestExportImportRemoteServiceFactory
-        resources/Calculator$add$Invoke.descriptor
-        resources/Calculator$result$Event.descriptor
-        resources/Calculator$add$Return.descriptor
-        DESTINATION "META-INF/descriptors"
-)
+celix_subproject(CXX_RSA_INTEGRATION "Option to build the C++17 Remote Service Admin Service integration" ON DEPS SHELL SHELL_TUI PUBSUB PROMISES PUSHSTREAMS PUBSUB_PSA_ZMQ PUBSUB_DISCOVERY_ETCD)
+if (CXX_RSA_INTEGRATION)
+    find_package(ZeroMQ REQUIRED)
+    find_package(czmq REQUIRED)
+    add_celix_bundle(TestExportImportRemoteServiceFactory
+            SOURCES src/TestExportImportRemoteServiceFactory.cc
+            )
+    target_link_libraries(TestExportImportRemoteServiceFactory PRIVATE Celix::rsa_spi Celix::pubsub_api Celix::Promises Celix::PushStreams Celix::log_helper)
+    target_include_directories(TestExportImportRemoteServiceFactory PRIVATE include)
+    celix_bundle_files(TestExportImportRemoteServiceFactory
+            resources/Calculator$add$Invoke.descriptor
+            resources/Calculator$result$Event.descriptor
+            resources/Calculator$add$Return.descriptor
+            DESTINATION "META-INF/descriptors"
+            )
 
-add_celix_bundle(CalculatorProvider
-        SOURCES src/CalculatorProvider.cc
-)
-target_link_libraries(CalculatorProvider PRIVATE Celix::Promises Celix::PushStreams)
-target_include_directories(CalculatorProvider PRIVATE include)
+    add_celix_bundle(CalculatorProvider
+            SOURCES src/CalculatorProvider.cc
+            )
+    target_link_libraries(CalculatorProvider PRIVATE Celix::Promises Celix::PushStreams)
+    target_include_directories(CalculatorProvider PRIVATE include)
 
-add_celix_bundle(CalculatorConsumer
-        SOURCES src/CalculatorConsumer.cc
-)
-celix_bundle_files(CalculatorConsumer ${CMAKE_CURRENT_SOURCE_DIR}/resources/endpoint_discovery.json DESTINATION "META-INF/discovery") # add configured discovery as resource in the bundle.
-target_link_libraries(CalculatorConsumer PRIVATE Celix::Promises Celix::PushStreams Celix::shell_api Celix::RsaConfiguredDiscovery_api)
-target_include_directories(CalculatorConsumer PRIVATE include)
+    add_celix_bundle(CalculatorConsumer
+            SOURCES src/CalculatorConsumer.cc
+            )
+    celix_bundle_files(CalculatorConsumer ${CMAKE_CURRENT_SOURCE_DIR}/resources/endpoint_discovery.json DESTINATION "META-INF/discovery") # add configured discovery as resource in the bundle.
+    target_link_libraries(CalculatorConsumer PRIVATE Celix::Promises Celix::PushStreams Celix::shell_api Celix::RsaConfiguredDiscovery_api)
+    target_include_directories(CalculatorConsumer PRIVATE include)
 
-if (ENABLE_TESTING)
-    add_subdirectory(gtest)
-endif()
+    if (ENABLE_TESTING)
+        add_subdirectory(gtest)
+    endif()
 
-################# Integration examples ##################################
+    ################# Integration examples ##################################
 
-add_celix_container(RemoteCalculatorProvider
-        GROUP rsa
-        PROPERTIES
+    add_celix_container(RemoteCalculatorProvider
+            GROUP rsa
+            PROPERTIES
             CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
-        BUNDLES
+            BUNDLES
             Celix::ShellCxx
             Celix::shell_tui
 
             #Pubsub needed for remote services on pubsub
             Celix::celix_pubsub_serializer_json
             Celix::celix_pubsub_topology_manager
-            Celix::celix_pubsub_admin_zmq_v2
+            Celix::celix_pubsub_admin_zmq
             Celix::celix_pubsub_protocol_wire_v2
             Celix::celix_pubsub_discovery_etcd
 
@@ -66,14 +70,14 @@ add_celix_container(RemoteCalculatorProvider
             TestExportImportRemoteServiceFactory #needed to be able to create a ExportedService for ICalculator
 
             CalculatorProvider
-)
-target_link_libraries(RemoteCalculatorProvider PRIVATE ZMQ::lib CZMQ::lib)
+            )
+    target_link_libraries(RemoteCalculatorProvider PRIVATE ZeroMQ::ZeroMQ czmq::czmq)
 
-add_celix_container(RemoteCalculatorConsumer
-        GROUP rsa
-        PROPERTIES
+    add_celix_container(RemoteCalculatorConsumer
+            GROUP rsa
+            PROPERTIES
             CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
-        BUNDLES
+            BUNDLES
             Celix::ShellCxx
             Celix::shell_tui
 
@@ -81,7 +85,7 @@ add_celix_container(RemoteCalculatorConsumer
             Celix::celix_pubsub_serializer_json
             Celix::celix_pubsub_topology_manager
             Celix::celix_pubsub_discovery_etcd
-            Celix::celix_pubsub_admin_zmq_v2
+            Celix::celix_pubsub_admin_zmq
             Celix::celix_pubsub_protocol_wire_v2
 
             #Remote Services
@@ -90,5 +94,6 @@ add_celix_container(RemoteCalculatorConsumer
             TestExportImportRemoteServiceFactory #needed to be able to create a ExportedService for ICalculator
 
             CalculatorConsumer
-)
-target_link_libraries(RemoteCalculatorConsumer PRIVATE ZMQ::lib CZMQ::lib)
+            )
+    target_link_libraries(RemoteCalculatorConsumer PRIVATE ZeroMQ::ZeroMQ czmq::czmq)
+endif()

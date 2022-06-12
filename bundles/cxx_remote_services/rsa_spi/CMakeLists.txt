@@ -18,11 +18,11 @@
 add_library(rsa_spi INTERFACE)
 target_include_directories(rsa_spi INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
-    $<INSTALL_INTERFACE:include/celix/rsa>
 )
 
-install(TARGETS rsa_spi EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT rsa)
-install(DIRECTORY include/ DESTINATION include/celix/rsa COMPONENT rsa)
+install(TARGETS rsa_spi EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT rsa
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/rsa)
+install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/rsa COMPONENT rsa)
 
 #Setup target aliases to match external usage
 add_library(Celix::rsa_spi ALIAS rsa_spi)

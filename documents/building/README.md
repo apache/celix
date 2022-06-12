@@ -1,5 +1,5 @@
 ---
-title: Building and Installing
+title: Building and Installing Apache Celix
 ---
 
 <!--
@@ -19,111 +19,86 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-# Apache Celix - Building and Installing
+# Building and Installing Apache Celix
 Apache Celix aims to be support a broad range of UNIX platforms.
  
-Currently the [continuous integration build server](https://travis-ci.org/apache/celix) builds and tests Apache Celix for:
+Currently, the [continuous integration build server] builds and tests Apache Celix for:
 
-* Ubuntu Bionic Beaver (18.04)
+* Ubuntu Bionic Beaver (20.04)
     * GCC 
     * CLang 
 * OSX
-    * GCC 
-    * CLang 
+    * CLang
 
-# Preparing
-The following packages (libraries + headers) should be installed on your system:
 
-* Development Environment
-    * build-essentials (gcc/g++ or clang/clang++) 
-	* git
-    * java (for packaging bundles)
-	* make (3.14 or higher)
-* Apache Celix Dependencies
-    * zlib
-    * libzip
-    * uuid
-    * curl (only initialized in the Celix framework)
-    * jansson (for serialization in libdfi)
-    * libffi (for libdfi)
-    * libxml2 (for remote services and bonjour shell)
-	
-
-For debian based systems (apt), the following command should work:
-```bash
-#required for celix framework and default bundles
-sudo apt-get install -yq --no-install-recommends \
-    build-essential \
-    curl \
-    uuid-dev \
-    git \
-    libjansson-dev \
-    libcurl4-openssl-dev \
-    default-jdk \
-    cmake \
-    libffi-dev \
-    libzip-dev \
-    libxml2-dev
-
-#required if the ZMQ PubSubAdmin option (BUILD_PUBSUB_PSA_ZMQ) is enabled
-sudo apt-get install -yq --no-install-recommends \
-    libczmq-dev 
-     
-#required if the ENABLE_TESTING option is enabled
-sudo apt-get install -yq --no-install-recommends \
-    libcpputest-dev
-
-#The installed cmake version for Ubuntu 18 is older than 3.14,
-#use snap to install the latest cmake version
-snap install --classic cmake
-```
-
-For Fedora based systems (dnf), the following command should work:
-```bash
-sudo dnf group install -y "C Development Tools and Libraries"
-sudo dnf install \
-    cmake \
-    make \
-    git \
-    java \
-    libcurl-devel \
-    jansson-devel \
-    libffi-devel \
-    libzip-devel \
-    libxml2-devel \
-    libuuid-devel
-```
-
-For OSX systems with brew installed, the following command should work:
-```bash
-    brew update && \
-    brew install lcov libffi libzip cmake && \
-    brew link --force libffi
-```
-
-## Download the Apache Celix sources
+### Download the Apache Celix sources
 To get started you first have to download the Apache Celix sources. This can be done by cloning the Apache Celix git repository:
 
 ```bash
-#Create a new workspace to work in, e.g:
-mkdir ${HOME}/workspace
-export WS=${HOME}/workspace
-cd ${WS}
-
 #clone the repro
 git clone --single-branch --branch master https://github.com/apache/celix.git
 ```
 
-## Building Apache Celix
-Apache Celix uses [CMake](https://cmake.org) as build system. CMake can generate (among others) makefiles. 
+## Building and installing
+Apache Celix uses [CMake](https://cmake.org) as build system. CMake can generate (among others) makefiles.
 
-### Building using CMake and makefiles:
+### Building and installing with preinstalled libraries
+The following packages (libraries + headers) should be installed on your system:
+
+* Development Environment
+    * build-essentials (gcc/g++ or clang/clang++) 
+    * java or zip (for packaging bundles)
+    * make (3.14 or higher)
+    * git
+* Apache Celix Dependencies
+    * libzip
+    * uuid
+    * zlib
+    * curl (only initialized in the Celix framework)
+    * jansson (for serialization in libdfi)
+    * libffi (for libdfi)
+    * libxml2 (for remote services and bonjour shell)
+    * rapidjson (for C++ remote service discovery)
+    * libczmq (for PubSubAdmin ZMQ)
+	
+
+For Ubuntu 20.04, use the following commands:
 ```bash
-cd ${WS}/celix
+#### get dependencies
+sudo apt-get install -yq --no-install-recommends \
+    build-essential \
+    git \
+    curl \
+    uuid-dev \
+    libjansson-dev \
+    libcurl4-openssl-dev \
+    default-jdk \
+    libffi-dev \
+    libzip-dev \
+    libxml2-dev \
+    libczmq-dev \
+    libcpputest-dev \
+    rapidjson-dev
+
+#The cmake version for Ubuntu 20 is older than 3.14,
+#use snap to install the latest cmake version
+snap install cmake
+```
+
+For OSX systems with brew installed, use the following commands:
+```bash
+    brew update && \
+    brew install lcov libffi libzip czmq rapidjson libxml2 cmake && \
+    brew link --force libffi
+``` 
+
+Use CMake and make to build Apache Celix
+```bash
+cd celix
 mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo .. 
-make 
+make -j
 ```
 
 ## Editing Build options
@@ -131,7 +106,7 @@ With use of CMake, Apache Celix makes it possible to edit build options. This en
 To edit the options use ccmake or cmake-gui. For cmake-gui an additional package install can be necessary (Fedora: `dnf install cmake-gui`). 
 
 ```bash
-cd ${WS}/celix/build
+cd celix/build
 ccmake .
 #Edit options, e.g. enable BUILD_REMOTE_SHELL to build the remote (telnet) shell
 #Edit the CMAKE_INSTALL_PREFIX config to set the install location
@@ -142,13 +117,12 @@ For this guide we assume the CMAKE_INSTALL_PREFIX is `/usr/local`.
 ## Installing Apache Celix
 
 ```bash
-cd ${WS}/celix/build
-make
+cd celix/build
+make -j
 sudo make install
 ```
 
 ## Running Apache Celix
-
 If Apache Celix is successfully installed running
 ```bash
 celix
@@ -156,4 +130,37 @@ celix
 should give the following output:
 "Error: invalid or non-existing configuration file: 'config.properties'.No such file or directory".
 
-For more info how to build your own projects and/or running the Apache Celix examples see [Getting Started](../getting_started/README.md).
+For more info how to build your own projects and/or running the Apache Celix examples see [Celix Intro](../README.md).
+
+# Building etcdlib library standalone
+```bash
+#bash
+git clone git@github.com:apache/celix.git
+mkdir celix/build
+cd celix/build
+cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ../libs/etcdlib
+make -j
+sudo make install
+```
+
+# Building Celix Promises library standalone
+```bash
+#bash
+git clone git@github.com:apache/celix.git
+mkdir celix/build
+cd celix/build
+cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ../libs/promises
+make -j
+sudo make install
+```
+
+# Building Celix Push Streams library standalone
+```bash
+#bash
+git clone git@github.com:apache/celix.git
+mkdir celix/build
+cd celix/build
+cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ../libs/pushstreams
+make -j
+sudo make install
+```

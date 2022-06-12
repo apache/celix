@@ -40,11 +40,11 @@ namespace celix {
         friend class BundleContext;
 
         //NOTE private to prevent move so that a build() call cannot be forgotten
-        ServiceTrackerBuilder(ServiceTrackerBuilder&&) = default;
+        ServiceTrackerBuilder(ServiceTrackerBuilder&&) noexcept = default;
     public:
-        explicit ServiceTrackerBuilder(std::shared_ptr<celix_bundle_context_t> _cCtx, std::string _name) :
+        explicit ServiceTrackerBuilder(std::shared_ptr<celix_bundle_context_t> _cCtx, std::string_view _name) :
                 cCtx{std::move(_cCtx)},
-                name{std::move(_name)} {}
+                name{_name} {}
 
         ServiceTrackerBuilder& operator=(ServiceTrackerBuilder&&) = delete;
         ServiceTrackerBuilder(const ServiceTrackerBuilder&) = delete;
@@ -57,7 +57,7 @@ namespace celix {
          * Example:
          *      "(property_key=value)"
          */
-        ServiceTrackerBuilder& setFilter(std::string f) { filter = celix::Filter{std::move(f)}; return *this; }
+        ServiceTrackerBuilder& setFilter(std::string_view f) { filter = celix::Filter{f}; return *this; }
 
         /**
          * @brief Set filter to be used to matching services.
@@ -74,8 +74,7 @@ namespace celix {
          */
         template<typename F>
         ServiceTrackerBuilder& addAddCallback(F&& add) {
-            //TODO improve capture with move when for C++14 is available
-            addCallbacks.emplace_back([add](const std::shared_ptr<I>& svc, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&) {
+            addCallbacks.emplace_back([add = std::forward<F>(add)](const std::shared_ptr<I>& svc, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&) {
                 add(svc);
             });
             return *this;
@@ -92,8 +91,7 @@ namespace celix {
           */
         template<typename F>
         ServiceTrackerBuilder& addAddWithPropertiesCallback(F&& add) {
-            //TODO improve capture with forward when for C++14 is available
-            addCallbacks.emplace_back([add](const std::shared_ptr<I>& svc, const std::shared_ptr<const celix::Properties>& props, const std::shared_ptr<const celix::Bundle>&) {
+            addCallbacks.emplace_back([add = std::forward<F>(add)](const std::shared_ptr<I>& svc, const std::shared_ptr<const celix::Properties>& props, const std::shared_ptr<const celix::Bundle>&) {
                 add(svc, props);
             });
             return *this;
@@ -109,8 +107,7 @@ namespace celix {
          */
         template<typename F>
         ServiceTrackerBuilder& addAddWithOwnerCallback(F&& add) {
-            //TODO improve capture with forward when for C++14 is available
-            addCallbacks.emplace_back(std::move(add));
+            addCallbacks.emplace_back(std::forward<F>(add));
             return *this;
         }
 
@@ -124,8 +121,7 @@ namespace celix {
          */
         template<typename F>
         ServiceTrackerBuilder& addRemCallback(F&& remove) {
-            //TODO improve capture with move when for C++14 is available
-            remCallbacks.emplace_back([remove](const std::shared_ptr<I>& svc, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&) {
+            remCallbacks.emplace_back([remove = std::forward<F>(remove)](const std::shared_ptr<I>& svc, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&) {
                 remove(svc);
             });
             return *this;
@@ -141,8 +137,7 @@ namespace celix {
          */
         template<typename F>
         ServiceTrackerBuilder& addRemWithPropertiesCallback(F&& remove) {
-            //TODO improve capture with move when for C++14 is available
-            remCallbacks.emplace_back([remove](const std::shared_ptr<I>& svc, const std::shared_ptr<const celix::Properties>& props, const std::shared_ptr<const celix::Bundle>&) {
+            remCallbacks.emplace_back([remove = std::forward<F>(remove)](const std::shared_ptr<I>& svc, const std::shared_ptr<const celix::Properties>& props, const std::shared_ptr<const celix::Bundle>&) {
                 remove(svc, props);
             });
             return *this;
@@ -158,7 +153,7 @@ namespace celix {
          */
         template<typename F>
         ServiceTrackerBuilder& addRemWithOwnerCallback(F&& remove) {
-            remCallbacks.emplace_back(std::move(remove));
+            remCallbacks.emplace_back(std::forward<F>(remove));
             return *this;
         }
 
@@ -173,8 +168,7 @@ namespace celix {
          */
         template<typename F>
         ServiceTrackerBuilder& addSetCallback(F&& set) {
-            //TODO improve capture with move when for C++14 is available
-            setCallbacks.emplace_back([set](const std::shared_ptr<I>& svc, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&) {
+            setCallbacks.emplace_back([set = std::forward<F>(set)](const std::shared_ptr<I>& svc, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&) {
                 set(svc);
             });
             return *this;
@@ -191,9 +185,8 @@ namespace celix {
          */
         template<typename F>
         ServiceTrackerBuilder& addSetWithPropertiesCallback(F&& set) {
-            //TODO improve capture with move when for C++14 is available
-            setCallbacks.emplace_back([set](const std::shared_ptr<I>& svc, const std::shared_ptr<const celix::Properties>& props, const std::shared_ptr<const celix::Bundle>&) {
-                set(svc, std::move(props));
+            setCallbacks.emplace_back([set = std::forward<F>(set)](const std::shared_ptr<I>& svc, const std::shared_ptr<const celix::Properties>& props, const std::shared_ptr<const celix::Bundle>&) {
+                set(svc, props);
             });
             return *this;
         }
@@ -209,17 +202,9 @@ namespace celix {
          */
         template<typename F>
         ServiceTrackerBuilder& addSetWithOwner(F&& set) {
-            setCallbacks.emplace_back(std::move(set));
+            setCallbacks.emplace_back(std::forward<F>(set));
             return *this;
         }
-
-//        /**
-//         * TODO
-//         */
-//        ServiceTrackerBuilder& addUpdateCallback(std::function<void(std::vector<std::shared_ptr<I>>)> update) {
-//            //TODO update -> vector of ordered (svc rank) services
-//            return *this;
-//        }
 
         /**
          * @brief "Builds" the service tracker and returns a ServiceTracker.
@@ -325,9 +310,9 @@ namespace celix {
         //NOTE private to prevent move so that a build() call cannot be forgotten
         MetaTrackerBuilder(MetaTrackerBuilder &&) = default;
     public:
-        explicit MetaTrackerBuilder(std::shared_ptr<celix_bundle_context_t> _cCtx, std::string _serviceName) :
+        explicit MetaTrackerBuilder(std::shared_ptr<celix_bundle_context_t> _cCtx, std::string_view _serviceName) :
                 cCtx{std::move(_cCtx)},
-                serviceName{std::move(_serviceName)}
+                serviceName{_serviceName}
         {}
 
         MetaTrackerBuilder &operator=(MetaTrackerBuilder &&) = delete;

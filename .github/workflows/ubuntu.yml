@@ -8,7 +8,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        #os: [ubuntu-18.04, ubuntu-16.04]
+        #os: [ubuntu-20.04]
         #compiler: [gcc, clang]
         include:
           - os: ubuntu-20.04
@@ -55,6 +55,7 @@ jobs:
         BUILD_OPTIONS: |
           -DENABLE_TESTING=ON
           -DBUILD_EXPERIMENTAL=ON
+          -DBUILD_CXX_REMOTE_SERVICE_ADMIN=ON
         BUILD_OPTIONS_SANITIZER: |
           -DENABLE_ADDRESS_SANITIZER=ON
         BUILD_OPTIONS_V3_API: |

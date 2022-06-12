@@ -256,20 +256,30 @@ celix_status_t remoteServiceAdmin_create(celix_bundle_context_t *context, remote
         snprintf(newPort, 10, "%li", port);
 
         unsigned int port_counter = 0;
+        bool bindToAllInterfaces = celix_bundleContext_getPropertyAsBool(context, CELIX_RSA_BIND_ON_ALL_INTERFACES, CELIX_RSA_BIND_ON_ALL_INTERFACES_DEFAULT);
         do {
+            char *listeningPorts = NULL;
+            if (bindToAllInterfaces) {
+                asprintf(&listeningPorts,"0.0.0.0:%s", newPort);
+            } else {
+                asprintf(&listeningPorts,"%s:%s", (*admin)->ip, newPort);
+            }
 
-            const char *options[] = { "listening_ports", newPort, "num_threads", "5", NULL};
+            const char *options[] = { "listening_ports", listeningPorts, "num_threads", "5", NULL};
 
             (*admin)->ctx = mg_start(&callbacks, (*admin), options);
 
             if ((*admin)->ctx != NULL) {
-                celix_logHelper_log((*admin)->loghelper, CELIX_LOG_LEVEL_INFO, "RSA: Start webserver: %s", newPort);
+                celix_logHelper_log((*admin)->loghelper, CELIX_LOG_LEVEL_INFO, "RSA: Start webserver: %s", listeningPorts);
                 (*admin)->port = strdup(newPort);
 
             } else {
                 celix_logHelper_log((*admin)->loghelper, CELIX_LOG_LEVEL_ERROR, "Error while starting rsa server on port %s - retrying on port %li...", newPort, port + port_counter);
                 snprintf(newPort, 10,  "%li", port + port_counter++);
             }
+
+            free(listeningPorts);
+
         } while (((*admin)->ctx == NULL) && (port_counter < MAX_NUMBER_OF_RESTARTS));
 
     }
@@ -501,7 +511,7 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
 
             char *response = NULL;
             int responceLength = 0;
-            int rc = exportRegistration_call(export, data, -1, metadata, &response, &responceLength);
+            int rc = exportRegistration_call(export, data, -1, &metadata, &response, &responceLength);
             if (rc != CELIX_SUCCESS) {
                 RSA_LOG_ERROR(rsa, "Error trying to invoke remove service, got error %i\n", rc);
             }
@@ -534,9 +544,12 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
 
             free(data);
             exportRegistration_decreaseUsage(export);
-
-            //TODO free metadata?
         }
+    }
+
+    //free metadata
+    if(metadata != NULL) {
+        celix_properties_destroy(metadata);
     }
 
     return result;
@@ -957,7 +970,7 @@ static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description
         fputc('\0', get.stream);
         fclose(get.stream);
         *reply = get.buf;
-        *replyStatus = res;
+        *replyStatus = (res == CURLE_OK) ? CELIX_SUCCESS:CELIX_ERROR_MAKE(CELIX_FACILITY_HTTP,res);
 
         curl_easy_cleanup(curl);
         curl_slist_free_all(metadataHeader);

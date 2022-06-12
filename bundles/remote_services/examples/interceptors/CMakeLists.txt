@@ -24,5 +24,5 @@ add_celix_bundle(celix_remote_interceptors_example
         src/second_interceptor.c
 )
 
-target_link_libraries(celix_remote_interceptors_example PRIVATE Celix::framework Celix::rsa_common)
+target_link_libraries(celix_remote_interceptors_example PRIVATE Celix::framework Celix::deprecated_rsa_spi)
 target_include_directories(celix_remote_interceptors_example PRIVATE include)

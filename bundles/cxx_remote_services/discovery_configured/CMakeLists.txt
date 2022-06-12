@@ -17,7 +17,6 @@
 
 find_package(RapidJSON REQUIRED)
 
-#TODO alias and install lib
 add_library(RsaConfiguredDiscovery_api INTERFACE)
 target_include_directories(RsaConfiguredDiscovery_api INTERFACE
         include

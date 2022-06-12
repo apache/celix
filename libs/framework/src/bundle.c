@@ -32,6 +32,7 @@
 #include "bundle_context_private.h"
 #include "service_tracker_private.h"
 
+
 celix_status_t bundle_createModule(bundle_pt bundle, module_pt *module);
 celix_status_t bundle_closeRevisions(const_bundle_pt bundle);
 
@@ -107,6 +108,9 @@ celix_status_t bundle_destroy(bundle_pt bundle) {
 	arrayList_destroy(bundle->modules);
 
 	free(bundle->symbolicName);
+    free(bundle->name);
+    free(bundle->group);
+    free(bundle->description);
 	free(bundle);
 
 	return CELIX_SUCCESS;
@@ -357,9 +361,18 @@ celix_status_t bundle_addModule(bundle_pt bundle, module_pt module) {
 	resolver_addModule(module);
 	if (bundle->symbolicName == NULL) {
 		const char *sn = NULL;
+        const char *n = NULL;
+        const char *g = NULL;
+        const char *d = NULL;
 		module_getSymbolicName(module, &sn);
+        module_getGroup(module, &g);
+        module_getName(module, &n);
+        module_getDescription(module, &d);
 		if (sn != NULL) {
             bundle->symbolicName = celix_utils_strdup(sn);
+            bundle->name = celix_utils_strdup(n);
+            bundle->group = celix_utils_strdup(g);
+            bundle->description = celix_utils_strdup(d);
         }
 	}
 
@@ -577,19 +590,19 @@ char* celix_bundle_getEntry(const bundle_t* bnd, const char *path) {
 
 
 const char* celix_bundle_getGroup(const celix_bundle_t *bnd) {
-	const char *result = NULL;
-	if (bnd != NULL) {
-		module_pt mod = NULL;
-		bundle_getCurrentModule((celix_bundle_t*)bnd, &mod);
-		if (mod != NULL) {
-			module_getGroup(mod, &result);
-		}
-	}
-	return result;
+	return bnd->group;
 }
 
 const char* celix_bundle_getSymbolicName(const celix_bundle_t *bnd) {
 	return bnd->symbolicName;
+}
+
+const char* celix_bundle_getName(const celix_bundle_t* bnd) {
+    return bnd->name;
+}
+
+const char* celix_bundle_getDescription(const celix_bundle_t* bnd) {
+    return bnd->description;
 }
 
 bool celix_bundle_isSystemBundle(const celix_bundle_t *bnd) {

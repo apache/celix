@@ -41,7 +41,7 @@ public:
     const char * const TEST_BND4_LOC = "" SIMPLE_TEST_BUNDLE4_LOCATION "";
     const char * const TEST_BND5_LOC = "" SIMPLE_TEST_BUNDLE5_LOCATION "";
     const char * const TEST_BND_WITH_EXCEPTION_LOC = "" TEST_BUNDLE_WITH_EXCEPTION_LOCATION "";
-    const char * const TEST_BND_UNRESOLVEABLE_LOC = "" TEST_BUNDLE_UNRESOLVEABLE_LOCATION "";
+    const char * const TEST_BND_UNRESOLVABLE_LOC = "" TEST_BUNDLE_UNRESOLVABLE_LOCATION "";
 
     CelixBundleContextBundlesTests() {
         properties = properties_create();
@@ -175,7 +175,7 @@ TEST_F(CelixBundleContextBundlesTests, startBundleWithException) {
 }
 
 TEST_F(CelixBundleContextBundlesTests, startUnresolveableBundle) {
-    long bndId = celix_bundleContext_installBundle(ctx, TEST_BND_UNRESOLVEABLE_LOC, true);
+    long bndId = celix_bundleContext_installBundle(ctx, TEST_BND_UNRESOLVABLE_LOC, true);
     ASSERT_TRUE(bndId > 0); //bundle is installed, but not resolved
 
     bool called = celix_framework_useBundle(fw, false, bndId, nullptr, [](void *, const celix_bundle_t *bnd) {
@@ -218,43 +218,47 @@ TEST_F(CelixBundleContextBundlesTests, StopStartTest) {
     ASSERT_FALSE(celix_bundleContext_isBundleInstalled(ctx, 600 /*non existing*/));
 
 
+    celix_array_list_t *ids = celix_bundleContext_listInstalledBundles(ctx);
+    size_t size = celix_arrayList_size(ids);
+    EXPECT_EQ(3, size);
+    celix_arrayList_destroy(ids);
 
-    celix_array_list_t *ids = celix_bundleContext_listBundles(ctx);
-    size_t size = arrayList_size(ids);
-    ASSERT_EQ(3, size);
+    ids = celix_bundleContext_listBundles(ctx);
+    size = celix_arrayList_size(ids);
+    EXPECT_EQ(3, size);
 
     int count = 0;
     celix_bundleContext_useBundles(ctx, &count, [](void *handle, const celix_bundle_t *bnd) {
         auto *c = (int*)handle;
-        ASSERT_EQ(OSGI_FRAMEWORK_BUNDLE_ACTIVE, celix_bundle_getState(bnd));
+        EXPECT_EQ(OSGI_FRAMEWORK_BUNDLE_ACTIVE, celix_bundle_getState(bnd));
         *c += 1;
     });
-    ASSERT_EQ(3, count);
+    EXPECT_EQ(3, count);
 
 
     for (size_t i = 0; i < size; ++i) {
         bool stopped = celix_bundleContext_stopBundle(ctx, celix_arrayList_getLong(ids, (int)i));
-        ASSERT_TRUE(stopped);
+        EXPECT_TRUE(stopped);
     }
 
     bool stopped = celix_bundleContext_stopBundle(ctx, 42 /*non existing*/);
-    ASSERT_FALSE(stopped);
+    EXPECT_FALSE(stopped);
 
     bool started = celix_bundleContext_startBundle(ctx, 42 /*non existing*/);
-    ASSERT_FALSE(started);
+    EXPECT_FALSE(started);
 
     for (size_t i = 0; i < size; ++i) {
         started = celix_bundleContext_startBundle(ctx, celix_arrayList_getLong(ids, (int)i));
-        ASSERT_TRUE(started);
+        EXPECT_TRUE(started);
     }
 
     count = 0;
     celix_bundleContext_useBundles(ctx, &count, [](void *handle, const celix_bundle_t *bnd) {
         auto *c = (int*)handle;
-        ASSERT_EQ(OSGI_FRAMEWORK_BUNDLE_ACTIVE, celix_bundle_getState(bnd));
+        EXPECT_EQ(OSGI_FRAMEWORK_BUNDLE_ACTIVE, celix_bundle_getState(bnd));
         *c += 1;
     });
-    ASSERT_EQ(3, count);
+    EXPECT_EQ(3, count);
 
     celix_arrayList_destroy(ids);
 }

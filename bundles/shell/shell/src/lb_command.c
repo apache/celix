@@ -135,23 +135,7 @@ static void lbCommand_listBundles(celix_bundle_context_t *ctx, const lb_options_
         }
 
         if (sub_status == CELIX_SUCCESS) {
-            if (id == CELIX_FRAMEWORK_BUNDLE_ID) {
-                name_str = "Celix framework";
-            } else {
-                bundle_archive_t* arch = NULL;
-                bundle_revision_t* rev = NULL;
-                manifest_pt man = NULL;
-                bundle_getArchive(bundle_ptr, &arch);
-                if (arch != NULL) {
-                    bundleArchive_getCurrentRevision(arch, &rev);
-                    if (rev != NULL) {
-                        bundleRevision_getManifest(rev, &man);
-                        if (man != NULL) {
-                            name_str = manifest_getValue(man, "Bundle-Name");
-                        }
-                    }
-                }
-            }
+            name_str = celix_bundle_getName(bundle_ptr);
         }
 
         if (sub_status == CELIX_SUCCESS) {

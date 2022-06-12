@@ -18,14 +18,51 @@
 cmake_minimum_required (VERSION 3.14)
 cmake_policy(SET CMP0012 NEW)
 cmake_policy(SET CMP0042 NEW)
-if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.9.0")
-   cmake_policy(SET CMP0068 NEW)
-endif()
+cmake_policy(SET CMP0068 NEW)
 
-project (Celix C CXX)
+project(Celix C CXX)
 
 include(cmake/celix_project/CelixProject.cmake)
 include(cmake/cmake_celix/UseCelix.cmake)
+
+#find required packages
+find_package(ZLIB REQUIRED) #framework
+find_package(libuuid REQUIRED) #framework
+find_package(CURL REQUIRED) #framework, etcdlib
+find_package(libzip REQUIRED) #framework, etcdlib
+find_package(jansson REQUIRED) #etcdlib, dfi
+find_package(libffi REQUIRED) #dfi
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
+if (NOT TARGET ZLIB::ZLIB)
+    #Note more recent zlib will create ZLIB::ZLIB target
+    message("Note ZLIB::ZLIB target not created by find_package(ZLIB). Creating ZLIB::ZLIB Target.")
+    add_library(ZLIB::ZLIB SHARED IMPORTED)
+    set_target_properties(ZLIB::ZLIB PROPERTIES
+            IMPORTED_LOCATION "${ZLIB_LIBRARIES}"
+            INTERFACE_INCLUDE_DIRECTORIES "${ZLIB_INCLUDE_DIRS}"
+            )
+endif ()
+
+if (NOT TARGET CURL::libcurl)
+    #Note more recent curl will create CURL::libcurl target
+    message("Note CURL::libcurl target not created by find_package(CURL). Creating CURL::libcurl Target.")
+    add_library(CURL::libcurl SHARED IMPORTED)
+    set_target_properties(CURL::libcurl PROPERTIES
+            IMPORTED_LOCATION "${CURL_LIBRARIES}"
+            INTERFACE_INCLUDE_DIRECTORIES "${CURL_INCLUDE_DIRS}"
+            )
+endif ()
+
+if (NOT TARGET jansson::jansson)
+    message("Note jansson::jansson target not created by find_package(jansson). Creating jansson::jansson Target.")
+    add_library(jansson::jansson SHARED IMPORTED)
+    set_target_properties(jansson::jansson PROPERTIES
+            IMPORTED_LOCATION "${JANSSON_LIBRARIES}"
+            INTERFACE_INCLUDE_DIRECTORIES "${JANSSON_INCLUDE_DIRS}"
+            )
+endif ()
 
 # see https://public.kitware.com/Bug/view.php?id=15696
 IF (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} EQUAL 3.3 AND ${CMAKE_GENERATOR} STREQUAL "Unix Makefiles")
@@ -41,14 +78,12 @@ if (ENABLE_TESTING)
     endif()
 endif ()
 
-set(ENABLE_MORE_WARNINGS OFF)
-
 # Set C specific flags
 set(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -fPIC ${CMAKE_C_FLAGS}")
 set(CMAKE_C_FLAGS "-Wall -Werror ${CMAKE_C_FLAGS}")
 
 # Set C++ specific flags
-set(CMAKE_CXX_STANDARD 17) #test code and newer C++ bundles can be C++17. The Celix::framework and Celix::CxxShell is still C++11
+set(CMAKE_CXX_STANDARD 17) #Celix header only C++ supported is based on C++17.
 set(CMAKE_CXX_FLAGS "-fno-rtti ${CMAKE_CXX_FLAGS}")
 set(CMAKE_CXX_FLAGS "-Wall -Werror -Wextra -Weffc++ ${CMAKE_CXX_FLAGS}")
 
@@ -72,14 +107,19 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 endif()
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    set(CMAKE_C_FLAGS "-Wno-unused-result -Wno-format-truncation -Wno-stringop-overflow ${CMAKE_C_FLAGS}")
-    set(CMAKE_CXX_FLAGS "-Wno-unused-result -Wno-format-truncation -Wno-stringop-overflow ${CMAKE_CXX_FLAGS}")
+    set(CMAKE_C_FLAGS "-Wno-unused-result ${CMAKE_C_FLAGS}")
+    set(CMAKE_CXX_FLAGS "-Wno-unused-result ${CMAKE_CXX_FLAGS}")
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 7.0)
+        set(CMAKE_C_FLAGS "-Wno-format-truncation -Wno-stringop-overflow ${CMAKE_C_FLAGS}")
+        set(CMAKE_CXX_FLAGS "-Wno-format-truncation -Wno-stringop-overflow ${CMAKE_CXX_FLAGS}")
+    endif()
     if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 8.0)
         set(CMAKE_C_FLAGS "-Wno-stringop-truncation ${CMAKE_C_FLAGS}")
         set(CMAKE_CXX_FLAGS "-Wno-stringop-truncation ${CMAKE_CXX_FLAGS}")
     endif()
 endif()
 
+option(ENABLE_MORE_WARNINGS "whether to enable more compiler warnings." OFF)
 if (ENABLE_MORE_WARNINGS)
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
         if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4)
@@ -116,9 +156,11 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 endif()
 
 # Set version for the framework package/release
-set(CELIX_MAJOR "2")
-set(CELIX_MINOR "2")
-set(CELIX_MICRO "1")
+if (NOT DEFINED CELIX_MAJOR)
+    set(CELIX_MAJOR "2")
+    set(CELIX_MINOR "3")
+    set(CELIX_MICRO "0")
+endif ()
 
 # Default bundle version
 set(DEFAULT_VERSION 1.0.0)

@@ -21,6 +21,7 @@
 
 #include "celix/PushEvent.h"
 #include "celix/IPushEventConsumer.h"
+#include <functional>
 
 namespace celix {
     template <typename T>

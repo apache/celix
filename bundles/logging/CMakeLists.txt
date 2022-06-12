@@ -17,14 +17,17 @@
 
 
 add_subdirectory(log_service_api)
-
-#Version 2 API (deprecated)
-if (CELIX_INSTALL_DEPRECATED_API)
-    add_subdirectory(log_service_v2)
-endif ()
-
-#Version 3 API
 add_subdirectory(log_helper)
-add_subdirectory(log_admin)
-add_subdirectory(log_writers)
+
+celix_subproject(LOG_SERVICE "Option to enable building the Log Service bundles" ON)
+if (LOG_SERVICE)
+    #Version 2 API (deprecated)
+    if (CELIX_INSTALL_DEPRECATED_API)
+        add_subdirectory(log_service_v2)
+    endif ()
+
+    #Version 3 API
+    add_subdirectory(log_admin)
+    add_subdirectory(log_writers)
+endif ()
 

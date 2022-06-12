@@ -21,10 +21,11 @@
 
 #include <atomic>
 
+#include "service_tracker.h"
 #include "celix/BundleContext.h"
-
 #include "celix_framework_factory.h"
 #include "celix_framework.h"
+#include "service_tracker_customizer.h"
 
 class CxxBundleContextTestSuite : public ::testing::Test {
 public:
@@ -158,7 +159,7 @@ TEST_F(CxxBundleContextTestSuite, UseServicesTest) {
 TEST_F(CxxBundleContextTestSuite, UseServicesWithFilterTest) {
     auto svc = std::make_shared<CInterface>(CInterface{nullptr, nullptr});
     auto svcReg1 = ctx->registerService<CInterface>(svc).build();
-    auto svcReg2 = ctx->registerService<CInterface>(svc).addProperty("key", "val1").build();
+    auto svcReg2 = ctx->registerService<CInterface>(svc).setProperties(celix::Properties{{"key", "val1"}}).build();
     auto svcReg3 = ctx->registerService<CInterface>(svc).addProperty("key", "val2").build();
 
     EXPECT_EQ(3, ctx->useServices<CInterface>().build());
@@ -169,7 +170,7 @@ TEST_F(CxxBundleContextTestSuite, UseServicesWithFilterTest) {
     celix::Filter f{"(key=val2)"};
     EXPECT_EQ(1, ctx->useServices<CInterface>().setFilter(f).build());
 
-    EXPECT_THROW(ctx->useServices<CInterface>().setFilter(celix::Filter{"bla"}).build(), celix::Exception);
+    EXPECT_THROW(ctx->useServices<CInterface>().setFilter(celix::Filter{"bla"}).build(), celix::FilterException);
 }
 
 
@@ -325,6 +326,7 @@ TEST_F(CxxBundleContextTestSuite, TrackBundlesTest) {
     };
 
     auto tracker = ctx->trackBundles()
+            .includeFrameworkBundleInCallback()
             .addOnInstallCallback(cb)
             .addOnStartCallback(cb)
             .addOnStopCallback(cb)
@@ -332,28 +334,30 @@ TEST_F(CxxBundleContextTestSuite, TrackBundlesTest) {
     tracker->wait();
     EXPECT_EQ(celix::TrackerState::OPEN, tracker->getState());
     EXPECT_TRUE(tracker->isOpen());
-    EXPECT_EQ(0, count.load());
+    EXPECT_EQ(2, count.load()); //count 1x install, 1x start is from the framework bundle
 
     long bndId = ctx->installBundle("non-existing");
     EXPECT_EQ(-1, bndId); //not installed
+    EXPECT_EQ(2, count.load());
 
     long bndId1 = ctx->installBundle(TEST_BND1_LOC);
     EXPECT_GE(bndId1, 0);
-    EXPECT_EQ(2, count.load()); // 1x install, 1x start
+    EXPECT_EQ(4, count.load()); // 2x install, 2x start
 
     long bndId2 = ctx->installBundle(TEST_BND2_LOC, false);
     EXPECT_GE(bndId1, 0);
-    EXPECT_EQ(3, count.load()); // 2x install, 1x start
+    EXPECT_EQ(5, count.load()); // 3x install, 2x start
     ctx->startBundle(bndId2);
-    EXPECT_EQ(4, count.load()); // 2x install, 2x start
+    EXPECT_EQ(6, count.load()); // 3x install, 3x start
 
+    count = 0;
     ctx->uninstallBundle(bndId1);
-    EXPECT_EQ(5, count.load()); // 2x install, 2x start, 1x stop
+    EXPECT_EQ(1, count.load()); // 1x stop
 
     ctx->stopBundle(bndId2);
-    EXPECT_EQ(6, count.load()); // 2x install, 2x start, 2x stop
+    EXPECT_EQ(2, count.load()); // 2x stop
     ctx->startBundle(bndId2);
-    EXPECT_EQ(7, count.load()); // 2x install, 3x start, 2x stop
+    EXPECT_EQ(3, count.load()); // 1x start, 2x stop
 }
 
 TEST_F(CxxBundleContextTestSuite, OnRegisterAndUnregisterCallbacks) {
@@ -389,12 +393,18 @@ TEST_F(CxxBundleContextTestSuite, OnRegisterAndUnregisterCallbacks) {
 
 TEST_F(CxxBundleContextTestSuite, InstallCxxBundle) {
     EXPECT_EQ(0, ctx->listBundleIds().size());
+    EXPECT_EQ(0, ctx->listInstalledBundleIds().size());
 
     std::string loc{SIMPLE_CXX_BUNDLE_LOC};
     ASSERT_FALSE(loc.empty());
-    long bndId = ctx->installBundle(loc);
+    long bndId = ctx->installBundle(loc, false);
     EXPECT_GE(bndId, 0);
+    EXPECT_EQ(0, ctx->listBundleIds().size());
+    EXPECT_EQ(1, ctx->listInstalledBundleIds().size());
+
+    ctx->startBundle(bndId);
     EXPECT_EQ(1, ctx->listBundleIds().size());
+    EXPECT_EQ(1, ctx->listInstalledBundleIds().size());
 }
 
 TEST_F(CxxBundleContextTestSuite, LoggingUsingContext) {
@@ -438,6 +448,7 @@ TEST_F(CxxBundleContextTestSuite, TrackServices) {
 
     auto metaTracker = ctx->trackServiceTrackers<TestInterface>()
             .addOnTrackerCreatedCallback([&count](const celix::ServiceTrackerInfo& info) {
+                EXPECT_GE(info.trackerOwnerBundleId, 0);
                 EXPECT_EQ(celix::typeName<TestInterface>(), info.serviceName);
                 count++;
             })
@@ -595,17 +606,24 @@ TEST_F(CxxBundleContextTestSuite, setServicesWithTrackerWhenMultipleRegistration
                 }
                 count++;
             })
+            .addSetWithOwner([&count](std::shared_ptr<TestInterface> /*svc*/, const std::shared_ptr<const celix::Properties>& props, const std::shared_ptr<const celix::Bundle>& bnd) {
+                if (props) {
+                    std::cout << "Setting svc with svc id " << props->getAsLong(celix::SERVICE_ID, -1) << std::endl;
+                    std::cout << "from bnd " << std::to_string(bnd->getId());
+                } else {
+                    std::cout << "Unsetting svc" << std::endl;
+                }
+                count++;
+            })
             .build();
     tracker->wait();
-    EXPECT_EQ(1, count.load()); //NOTE ensure that the service tracker only calls set once for opening tracker even if 3 service exists.
+    EXPECT_EQ(2, count.load()); //NOTE ensure that the service tracker only calls set once for opening tracker even if 3 service exists.
 
     count = 0;
     tracker->close();
     tracker->wait();
 
-    //TODO improve this. For now closing a tracker will inject other service before getting to nullptr.
-    //Also look into why this is not happening in the C service tracker test.
-    EXPECT_EQ(3, count.load());
+    EXPECT_EQ(2, count.load());
 }
 
 TEST_F(CxxBundleContextTestSuite, WaitForAllEvents) {
@@ -667,4 +685,102 @@ TEST_F(CxxBundleContextTestSuite, CheckStandardServiceProperties) {
     EXPECT_TRUE(called);
 
     celix_bundleContext_unregisterService(ctx->getCBundleContext(), svcId);
+}
+
+TEST_F(CxxBundleContextTestSuite, GetBundleInformation) {
+
+    EXPECT_EQ(ctx->getBundle().getSymbolicName(), std::string{"celix_framework"});
+    EXPECT_EQ(ctx->getBundle().getName(), std::string{"Celix Framework"});
+    EXPECT_EQ(ctx->getBundle().getGroup(), std::string{"Celix/Framework"});
+    EXPECT_EQ(ctx->getBundle().getDescription(), std::string{"The Celix Framework System Bundle"});
+
+    std::atomic<bool> startCalled{false};
+    auto bndTracker = ctx->trackBundles()
+        .addOnStartCallback([&startCalled](const celix::Bundle& bnd) {
+            EXPECT_EQ(bnd.getSymbolicName(), std::string{"simple_test_bundle1"});
+            EXPECT_EQ(bnd.getName(), std::string{"Simple Test Bundle"});
+            EXPECT_EQ(bnd.getGroup(), std::string{"test/group"});
+            EXPECT_EQ(bnd.getDescription(), std::string{"Test Description"});
+            startCalled = true;
+        })
+        .build();
+
+    long bndId1 = ctx->installBundle(TEST_BND1_LOC);
+    EXPECT_GE(bndId1, 0);
+    ctx->waitForEvents();
+    EXPECT_TRUE(startCalled);
+}
+
+class TestInterfaceWithStaticInfo {
+public:
+    static constexpr std::string_view NAME = "TestName";
+    static constexpr std::string_view VERSION = "1.2.3";
+};
+
+TEST_F(CxxBundleContextTestSuite, RegisterServiceWithNameAndVersionInfo) {
+    auto reg = ctx->registerService<TestInterfaceWithStaticInfo>(std::make_shared<TestInterfaceWithStaticInfo>())
+            .build();
+    EXPECT_EQ(reg->getServiceName(), "TestName");
+    EXPECT_EQ(reg->getServiceVersion(), "1.2.3");
+}
+
+
+TEST_F(CxxBundleContextTestSuite, listBundles) {
+    auto list = ctx->listBundleIds();
+    EXPECT_EQ(0, list.size());
+    list = ctx->listInstalledBundleIds();
+    EXPECT_EQ(0, list.size());
+
+    long bndId = ctx->installBundle(SIMPLE_TEST_BUNDLE1_LOCATION, false);
+    EXPECT_GT(bndId, 0);
+
+    list = ctx->listBundleIds();
+    EXPECT_EQ(0, list.size()); //installed, but not started
+    list = ctx->listInstalledBundleIds();
+    EXPECT_EQ(1, list.size());
+
+    ctx->startBundle(bndId);
+
+    list = ctx->listBundleIds();
+    EXPECT_EQ(1, list.size());
+    list = ctx->listInstalledBundleIds();
+    EXPECT_EQ(1, list.size());
+
+    ctx->stopBundle(bndId);
+
+    list = ctx->listBundleIds();
+    EXPECT_EQ(0, list.size());
+    list = ctx->listInstalledBundleIds();
+    EXPECT_EQ(1, list.size()); //stopped, but still installed
+
+    ctx->uninstallBundle(bndId);
+
+    list = ctx->listBundleIds();
+    EXPECT_EQ(0, list.size());
+    list = ctx->listInstalledBundleIds();
+    EXPECT_EQ(0, list.size());
+}
+
+TEST_F(CxxBundleContextTestSuite, TestOldCStyleTrackerWithCxxMetaTracker) {
+    //rule: A old C style service tracker without an (objectClass=*) filter part, should not crash when combined with a C++ MetaTracker.
+
+    service_tracker_customizer_t *customizer = nullptr;
+    auto status = serviceTrackerCustomizer_create(this, nullptr, nullptr, nullptr, nullptr, &customizer);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+
+    celix_service_tracker_t* tracker = nullptr;
+    status = serviceTracker_createWithFilter(ctx->getCBundleContext(), "(service.exported.interfaces=*)", customizer, &tracker);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+
+    if (status == CELIX_SUCCESS) {
+        status = serviceTracker_open(tracker);
+        EXPECT_EQ(status, CELIX_SUCCESS);
+    }
+
+    auto metaTracker = ctx->trackAnyServiceTrackers().build();
+    ctx->waitForEvents();
+    EXPECT_EQ(metaTracker->getState(), celix::TrackerState::OPEN);
+
+    serviceTracker_close(tracker);
+    serviceTracker_destroy(tracker);
 }

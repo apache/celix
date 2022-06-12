@@ -18,18 +18,18 @@
 add_library(log_service_api INTERFACE)
 target_include_directories(log_service_api INTERFACE
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
-	$<INSTALL_INTERFACE:include/celix/log_service>
 )
 target_link_libraries(log_service_api INTERFACE Celix::utils Celix::framework)
-install(TARGETS log_service_api EXPORT celix)
-install(DIRECTORY include/ DESTINATION include/celix/log_service)
 
 if (CELIX_INSTALL_DEPRECATED_API)
 	target_include_directories(log_service_api INTERFACE
 		$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include_v2>
-		$<INSTALL_INTERFACE:include/celix/log_service>
 	)
-	install(DIRECTORY include_v2/ DESTINATION include/celix/log_service)
+	install(DIRECTORY include_v2/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/log_service)
 endif ()
+
+install(TARGETS log_service_api EXPORT celix
+		INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/log_service)
+install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/log_service)
 
 add_library(Celix::log_service_api ALIAS log_service_api)

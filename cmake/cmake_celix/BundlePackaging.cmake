@@ -381,9 +381,26 @@ function(bundle_private_libs)
 endfunction()
 
 #[[
-Add libraries to a bundle. The libraries should be cmake library targets or an absolute path to an existing library.
+Add libraries to a bundle. A libraries should be a cmake library target or an absolute path to existing library.
 
 The libraries will be copied into the bundle zip and activator library will be linked (PRIVATE) against them.
+
+Apache Celix uses dlopen with RTLD_LOCAL to load the activator library in a bundle.
+It is important to note that dlopen will always load the activator library,
+but not always load the libraries the bundle activator library is linked against.
+If the activator library is linked against a library which is already loaded, the already loaded library will be used.
+More specifically dlopen will decide this based on the NEEDED header in the activator library
+and the SO_NAME headers of the already loaded libraries.
+
+For example installing in order:
+ - Bundle A with a private library libfoo (SONAME=libfoo.so) and
+ - Bundle B with a private library libfoo (SONAME=libfoo.so).
+Will result in Bundle B also using libfoo loaded from the cache dir in Bundle A.
+
+This also applies if multiple Celix frameworks are created in the same process. For example installed in order:
+ - Bundle A with a private library libfoo (SONAME=libfoo.so) in Celix Framework A and
+ - The same Bundle A in Celix Framework B.
+Will result in Bundle A from Framework B to use the libfoo loaded from the cache dir of Bundle A in framework A.
 
 celix_bundle_private_libs(<bundle_target>
     lib1 lib2 ...
@@ -891,8 +908,9 @@ function(install_celix_bundle_targets)
 
     get_target_property(EXPORT_BUNDLES celix-bundles EXPORT_${EXPORT_NAME}_BUNDLES)
 
-    if (NOT DEFINED EXPORT_BUNDLES)
-        message(FATAL_ERROR "Export ${EXPORT_NAME} not defined. Did you forgot to use a install_celix_bundle with the 'EXPORT ${EXPORT_NAME}' option?")
+    if (NOT DEFINED EXPORT_BUNDLES OR NOT EXPORT_BUNDLES)
+        message("Export ${EXPORT_NAME} not defined. Did you forgot to use a install_celix_bundle with the 'EXPORT ${EXPORT_NAME}' option?")
+        set(EXPORT_BUNDLES "")
     endif ()
     if (NOT DEFINED EXPORT_NAMESPACE)
         message(FATAL_ERROR "Please provide a namespace used for the generated cmake targets.")
