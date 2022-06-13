@@ -75,9 +75,7 @@ typedef struct celix_long_hash_map_iterator {
     long key;
     celix_hash_map_value_t value;
 
-    //internal fields
-    celix_long_hash_map_t *_map;
-    void* _entry;
+    void* _internal[2]; //internal opaque struct
 } celix_long_hash_map_iterator_t;
 
 typedef struct celix_string_hash_map_iterator {
@@ -86,10 +84,7 @@ typedef struct celix_string_hash_map_iterator {
     const char* key;
     celix_hash_map_value_t value;
 
-    struct {
-        void *map;
-        void *entry;
-    } _internal; //internal struct for used inside hash map source
+    void* _internal[2]; //internal opaque struct
 } celix_string_hash_map_iterator_t;
 
 /**
@@ -452,73 +447,54 @@ void celix_longHashMap_clear(celix_long_hash_map_t* map);
  * @param map
  * @return
  */
-celix_string_hash_map_iterator_t celix_stringHashMap_iterate(celix_string_hash_map_t* map);
+celix_string_hash_map_iterator_t celix_stringHashMap_iterate(const celix_string_hash_map_t* map);
 
 /**
  * TODO
  * @param iter
  * @return
  */
-bool celix_stringHasMapIterator_isEnd(const celix_string_hash_map_iterator_t* iter);
+bool celix_stringHashMapIterator_isEnd(const celix_string_hash_map_iterator_t* iter);
 
 /**
  * TODO
  * @param iter
  * @return
  */
-void celix_stringHasMapIterator_next(celix_string_hash_map_iterator_t* iter);
+void celix_stringHashMapIterator_next(celix_string_hash_map_iterator_t* iter);
 
 /**
  * TODO
- * @param iter
- * @return
  */
-const char* celix_stringHasMapIterator_nextKey(celix_string_hash_map_iterator_t* iter);
-
-/**
- * TODO
- * @param iter
- * @return
- */
-void* celix_stringHasMapIterator_nextValue(celix_string_hash_map_iterator_t* iter);
-
-/**
- * TODO
- * @param iter
- * @return
- */
-const char* celix_stringHasMapIterator_nextStringValue(celix_string_hash_map_iterator_t* iter);
-
-/**
- * TODO
- * @param iter
- * @return
- */
-long celix_stringHasMapIterator_nextLongValue(celix_string_hash_map_iterator_t* iter);
-
-/**
- * TODO
- * @param iter
- * @return
- */
-double celix_stringHasMapIterator_nextDoubleValue(celix_string_hash_map_iterator_t* iter);
-
-/**
- * TODO
- * @param iter
- * @return
- */
-double celix_stringHasMapIterator_nextBoolValue(celix_string_hash_map_iterator_t* iter);
+#define CELIX_STRING_HASH_MAP_ITERATE(map, iterName) \
+    for (celix_string_hash_map_iterator_t (iterName) = celix_stringHashMap_iterate((map)); !celix_stringHashMapIterator_isEnd(&(iterName)); celix_stringHashMapIterator_next(&(iterName)))
 
 /**
  * TODO
  * @param map
  * @return
  */
-celix_long_hash_map_iterator_t celix_longHashMap_iterate(celix_long_hash_map_t* map);
+celix_long_hash_map_iterator_t celix_longHashMap_iterate(const celix_long_hash_map_t* map);
 
+/**
+ * TODO
+ * @param iter
+ * @return
+ */
+bool celix_longHashMapIterator_isEnd(const celix_long_hash_map_iterator_t* iter);
 
-//TODO iterators
+/**
+ * TODO
+ * @param iter
+ * @return
+ */
+void celix_longHashMapIterator_next(celix_long_hash_map_iterator_t* iter);
+
+/**
+ * TODO
+ */
+#define CELIX_LONG_HASH_MAP_ITERATE(map, iterName) \
+    for (celix_long_hash_map_iterator_t (iterName) = celix_longHashMap_iterate((map)); !celix_longHashMapIterator_isEnd(&(iterName)); celix_longHashMapIterator_next(&(iterName)))
 
 #ifdef __cplusplus
 }

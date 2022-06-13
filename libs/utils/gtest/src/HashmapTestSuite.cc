@@ -285,8 +285,7 @@ TEST_F(HashMapTestSuite, IterateTest) {
     celix_stringHashMap_putLong(sMap, "key2", 2);
 
     size_t count = 0;
-    //TODO replace with CELIX_STRING_HASH_MAP_ITERATE macro
-    for (auto iter = celix_stringHashMap_iterate(sMap); !celix_stringHasMapIterator_isEnd(&iter); celix_stringHasMapIterator_next(&iter)) {
+    CELIX_STRING_HASH_MAP_ITERATE(sMap, iter) {
         EXPECT_EQ(count++, iter.index);
         if (iter.value.longValue == 1) {
             EXPECT_STREQ(iter.key, "key1");
@@ -295,7 +294,6 @@ TEST_F(HashMapTestSuite, IterateTest) {
         } else {
             FAIL() << "Unexpected value " << iter.value.longValue;
         }
-        ++count;
     }
     EXPECT_EQ(count, 2);
     celix_stringHashMap_destroy(sMap);
@@ -304,37 +302,47 @@ TEST_F(HashMapTestSuite, IterateTest) {
     celix_longHashMap_putLong(lMap, 1, 1);
     celix_longHashMap_putLong(lMap, 2, 2);
 
-    /*
     count = 0;
-    for (auto iter = celix_longHashMap_iterate(lMap); celix_longHasMapIterator_hasNext(&iter); celix_longHasMapIterator_next(&iter)) {
-        if (iter.iterIndex == 0) {
-            EXPECT_STREQ(iter.key, 1);
-            EXPECT_EQ(iter.value.longValue, 1);
+    CELIX_LONG_HASH_MAP_ITERATE(lMap, iter) {
+        EXPECT_EQ(count++, iter.index);
+        if (iter.value.longValue == 1) {
+            EXPECT_EQ(iter.key, 1);
+        } else if (iter.value.longValue == 2) {
+            EXPECT_EQ(iter.key, 2);
         } else {
-            EXPECT_STREQ(iter.key, 2);
-            EXPECT_EQ(iter.value.longValue, 2);
+            FAIL() << "Unexpected value " << iter.value.longValue;
         }
-        ++count;
     }
     EXPECT_EQ(count, 2);
-     */
+    celix_longHashMap_destroy(lMap);
 }
 
 TEST_F(HashMapTestSuite, IterateStressTest) {
-    int testCount = 1000;
-    auto* sMap = celix_stringHashMap_create();
+    int testCount = 100;
 
+
+    auto* sMap = celix_stringHashMap_create();
     for (int i = 0; i < testCount; ++i) {
         auto key = std::string{"key"} + std::to_string(i);
         celix_stringHashMap_putLong(sMap, key.c_str(), i);
     }
     EXPECT_EQ(testCount, celix_stringHashMap_size(sMap));
-
-    //TODO replace with CELIX_STRING_HASH_MAP_ITERATE macro
     int count = 0;
-    for (auto iter = celix_stringHashMap_iterate(sMap); !celix_stringHasMapIterator_isEnd(&iter); celix_stringHasMapIterator_next(&iter)) {
+    CELIX_STRING_HASH_MAP_ITERATE(sMap, iter) {
         EXPECT_EQ(iter.index, count++);
     }
     EXPECT_EQ(testCount, count);
     celix_stringHashMap_destroy(sMap);
+
+    auto *lMap = celix_longHashMap_create();
+    for (int i = 0; i < testCount; ++i) {
+        celix_longHashMap_putLong(lMap, i, i);
+    }
+    EXPECT_EQ(testCount, celix_longHashMap_size(lMap));
+    count = 0;
+    CELIX_LONG_HASH_MAP_ITERATE(lMap, iter) {
+        EXPECT_EQ(iter.index, count++);
+    }
+    EXPECT_EQ(testCount, count);
+    celix_longHashMap_destroy(lMap);
 }

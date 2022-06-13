@@ -340,6 +340,35 @@ static void celix_hashMap_clear(celix_hash_map_t* map) {
     map->size = 0;
 }
 
+static celix_hash_map_entry_t* celix_hashMap_firstEntry(const celix_hash_map_t* map) {
+    celix_hash_map_entry_t* entry = NULL;
+    for (unsigned int index = 0; index < map->tableLength; ++index) {
+        entry = map->table[index];
+        if (entry != NULL) {
+            break;
+        }
+    }
+    return entry;
+}
+
+static celix_hash_map_entry_t* celix_hashMap_nextEntry(const celix_hash_map_t* map, celix_hash_map_entry_t* entry) {
+    celix_hash_map_entry_t* next = NULL;
+    if (entry != NULL) {
+        if (entry->next != NULL) {
+            next = entry->next;
+        } else {
+            unsigned int index = celix_hashMap_indexFor(entry->hash, map->tableLength) + 1; //next index
+            while (index < map->tableLength) {
+                next = map->table[index++];
+                if (next != NULL) {
+                    break;
+                }
+            }
+        }
+    }
+    return next;
+}
+
 
 celix_string_hash_map_t* celix_stringHashMap_createWithOptions(const celix_string_hash_map_create_options_t* opts) {
     celix_string_hash_map_t* map = calloc(1, sizeof(*map));
@@ -496,47 +525,68 @@ void celix_longHashMap_clear(celix_long_hash_map_t* map) {
     celix_hashMap_clear(&map->genericMap);
 }
 
-celix_string_hash_map_iterator_t celix_stringHashMap_iterate(celix_string_hash_map_t* map) {
+celix_string_hash_map_iterator_t celix_stringHashMap_iterate(const celix_string_hash_map_t* map) {
     celix_string_hash_map_iterator_t iter;
     memset(&iter, 0, sizeof(iter));
-    iter._internal.map = &map->genericMap;
+    iter._internal[0] = (void*)&map->genericMap;
     if (map->genericMap.size > 0) {
-        celix_hash_map_entry_t *entry = map->genericMap.table[0];
-        iter._internal.entry = entry;
+        celix_hash_map_entry_t *entry = celix_hashMap_firstEntry(&map->genericMap);
+        iter._internal[1] = entry;
         iter.value = entry->value;
         iter.key = entry->key.strKey;
     }
     return iter;
 }
 
-bool celix_stringHasMapIterator_isEnd(const celix_string_hash_map_iterator_t* iter) {
-    return iter->_internal.entry == NULL;
-}
-
-void celix_stringHasMapIterator_next(celix_string_hash_map_iterator_t* iter) {
-    memset(iter, 0, sizeof(*iter));
-    //TODO fix bug
-
-    /*
-    celix_hash_map_t* map = iter->_internal.map;
-    celix_hash_map_entry_t *entry = iter->_internal.entry;
-    if (entry != NULL) {
-        if (entry->next == NULL) {
-            unsigned int index = celix_hashMap_indexFor(entry->hash, map->tableLength) + 1; //next index
-            while (index < map->tableLength && (entry = map->table[index++]) == NULL) {} //loop until not NULL entry found
-        } else {
-            entry = entry->next;
-        }
-
-        if (entry != NULL) {
-            iter->index += 1;
-            iter->_internal.entry = entry;
-            iter->key = entry->key.strKey;
-            iter->value = entry->value;
-        } else {
-            memset(iter, 0, sizeof(*iter));
-            iter->_internal.map = map;
-        }
+celix_long_hash_map_iterator_t celix_longHashMap_iterate(const celix_long_hash_map_t* map) {
+    celix_long_hash_map_iterator_t iter;
+    memset(&iter, 0, sizeof(iter));
+    iter._internal[0] = (void*)&map->genericMap;
+    if (map->genericMap.size > 0) {
+        celix_hash_map_entry_t *entry = celix_hashMap_firstEntry(&map->genericMap);
+        iter._internal[1] = entry;
+        iter.value = entry->value;
+        iter.key = entry->key.longKey;
     }
-     */
+    return iter;
 }
+
+bool celix_stringHashMapIterator_isEnd(const celix_string_hash_map_iterator_t* iter) {
+    return iter->_internal[1] == NULL; //check if entry is NULL
+}
+
+bool celix_longHashMapIterator_isEnd(const celix_long_hash_map_iterator_t* iter) {
+    return iter->_internal[1] == NULL; //check if entry is NULL
+}
+
+void celix_stringHashMapIterator_next(celix_string_hash_map_iterator_t* iter) {
+    const celix_hash_map_t* map = iter->_internal[0];
+    celix_hash_map_entry_t *entry = iter->_internal[1];
+    entry = celix_hashMap_nextEntry(map, entry);
+    if (entry != NULL) {
+        iter->_internal[1] = entry;
+        iter->index += 1;
+        iter->key = entry->key.strKey;
+        iter->value = entry->value;
+    } else {
+        memset(iter, 0, sizeof(*iter));
+        iter->_internal[0] = (void*)map;;
+    }
+}
+
+void celix_longHashMapIterator_next(celix_long_hash_map_iterator_t* iter) {
+    const celix_hash_map_t* map = iter->_internal[0];
+    celix_hash_map_entry_t *entry = iter->_internal[1];
+    entry = celix_hashMap_nextEntry(map, entry);
+    if (entry != NULL) {
+        iter->_internal[1] = entry;
+        iter->index += 1;
+        iter->key = entry->key.longKey;
+        iter->value = entry->value;
+    } else {
+        memset(iter, 0, sizeof(*iter));
+        iter->_internal[0] = (void*)map;;
+    }
+}
+
+
