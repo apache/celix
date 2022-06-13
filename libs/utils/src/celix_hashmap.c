@@ -17,7 +17,7 @@
  *under the License.
  */
 
-#include "celix_string_hashmap.h"
+#include "celix_hash_map.h"
 #include "celix_utils.h"
 
 #include <stdlib.h>
@@ -25,84 +25,145 @@
 #include <memory.h>
 #include <math.h>
 
+//TODO rename src to celix_hash_map.c
+
 static unsigned int DEFAULT_INITIAL_CAPACITY = 16;
-static float DEFAULT_LOAD_FACTOR = 0.75f;
+static double DEFAULT_LOAD_FACTOR = 0.75;
 static unsigned int MAXIMUM_CAPACITY = 1 << 30;
 
-typedef union celix_hashmap_key {
-    char* strKey;
+typedef enum celix_hash_map_key_type {
+    CELIX_HASH_MAP_STRING_KEY,
+    CELIX_HASH_MAP_LONG_KEY
+} celix_hash_map_key_type_e;
+
+typedef union celix_hash_map_key {
+    const char* strKey;
     long longKey;
-} celix_hashmap_key_t;
+} celix_hash_map_key_t;
 
-typedef union celix_hashmap_value {
-    void *ptrVal;
-    long int longVal;
-} celix_hashmap_value_t;
-
-typedef struct celix_hashmap_entry celix_hashmap_entry_t;
-struct celix_hashmap_entry {
-    celix_hashmap_key_t key;
-    celix_hashmap_value_t value;
-    celix_hashmap_entry_t* next;
+typedef struct celix_hash_map_entry celix_hash_map_entry_t;
+struct celix_hash_map_entry {
+    celix_hash_map_key_t key;
+    celix_hash_map_value_t value;
+    celix_hash_map_entry_t* next;
     unsigned int hash;
 };
 
-typedef struct celix_hashmap {
-    celix_hashmap_entry_t** table;
+typedef struct celix_hash_map {
+    celix_hash_map_entry_t** table;
     size_t size;
     size_t treshold;
     size_t modificationCount;
-    size_t tablelength;
-    bool stringKey;
+    size_t tableLength;
+    celix_hash_map_key_type_e keyType;
+    celix_hash_map_value_t emptyValue;
+    unsigned int (*hashKeyFunction)(const celix_hash_map_key_t* key);
+    bool (*equalsKeyFunction)(const celix_hash_map_key_t* key1, const celix_hash_map_key_t* key2);
+    void (*simpleRemovedCallback)(void* value);
+    void* removedCallbackData;
+    void (*removedStringKeyCallback)(void* data, const char* removedKey, celix_hash_map_value_t removedValue);
+    void (*removedLongKeyCallback)(void* data, long removedKey, celix_hash_map_value_t removedValue);
+    bool storeKeysWeakly;
+} celix_hash_map_t;
 
-    unsigned int (*hashKey)(const celix_hashmap_key_t* key);
-    bool (*equalsKey)(const celix_hashmap_key_t* key1, const celix_hashmap_key_t* key2);
-} celix_hashmap_t;
-
-struct celix_string_hashmap {
-    celix_hashmap_t genericMap;
+struct celix_string_hash_map {
+    celix_hash_map_t genericMap;
 };
 
-static unsigned int celix_stringHashmap_hash(const celix_hashmap_key_t* key) {
+struct celix_long_hash_map {
+    celix_hash_map_t genericMap;
+};
+
+static unsigned int celix_stringHashMap_hash(const celix_hash_map_key_t* key) {
     return celix_utils_stringHash(key->strKey);
 }
 
-static bool celix_stringHashmap_equals(const celix_hashmap_key_t* key1, const celix_hashmap_key_t* key2) {
+static unsigned int celix_longHashMap_hash(const celix_hash_map_key_t* key) {
+    return key->longKey ^ (key->longKey >> 32);
+}
+
+static bool celix_stringHashMap_equals(const celix_hash_map_key_t* key1, const celix_hash_map_key_t* key2) {
     return celix_utils_stringEquals(key1->strKey, key2->strKey);
 }
 
-static unsigned int celix_hashmap_indexFor(unsigned int h, unsigned int length) {
+static bool celix_longHashMap_equals(const celix_hash_map_key_t* key1, const celix_hash_map_key_t* key2) {
+    return key1->longKey == key2->longKey;
+}
+
+static unsigned int celix_hashMap_indexFor(unsigned int h, unsigned int length) {
     return h & (length - 1);
 }
 
-static celix_hashmap_entry_t* celix_hashmap_getEntry(celix_hashmap_t* map, celix_hashmap_key_t* key) {
-    assert(key != NULL);
-    unsigned int hash = map->hashKey(key);
-    unsigned int index = celix_hashmap_indexFor(hash, map->tablelength);
-    for (celix_hashmap_entry_t* entry = map->table[index]; entry != NULL; entry = entry->next) {
-        if (entry->hash == hash && map->equalsKey(key, &entry->key)) {
+static celix_hash_map_entry_t* celix_hashMap_getEntry(const celix_hash_map_t* map, const char* strKey, long longKey) {
+    celix_hash_map_key_t key;
+    if (map->keyType == CELIX_HASH_MAP_STRING_KEY) {
+        key.strKey = strKey;
+    } else {
+        key.longKey = longKey;
+    }
+    unsigned int hash = map->hashKeyFunction(&key);
+    unsigned int index = celix_hashMap_indexFor(hash, map->tableLength);
+    for (celix_hash_map_entry_t* entry = map->table[index]; entry != NULL; entry = entry->next) {
+        if (entry->hash == hash && map->equalsKeyFunction(&key, &entry->key)) {
             return entry;
         }
     }
     return NULL;
 }
 
-static void hashmap_resize(celix_hashmap_t* map, int newCapacity) {
-    celix_hashmap_entry_t** newTable;
+
+static void* celix_hashMap_get(const celix_hash_map_t* map, const char* strKey, long longKey) {
+    celix_hash_map_entry_t* entry = celix_hashMap_getEntry(map, strKey, longKey);
+    if (entry != NULL) {
+        return entry->value.ptrValue;
+    }
+    return NULL;
+}
+
+static long celix_hashMap_getLong(const celix_hash_map_t* map, const char* strKey, long longKey, long fallbackValue) {
+    celix_hash_map_entry_t* entry = celix_hashMap_getEntry(map, strKey, longKey);
+    if (entry != NULL) {
+        return entry->value.longValue;
+    }
+    return fallbackValue;
+}
+
+static double celix_hashMap_getDouble(const celix_hash_map_t* map, const char* strKey, long longKey, double fallbackValue) {
+    celix_hash_map_entry_t* entry = celix_hashMap_getEntry(map, strKey, longKey);
+    if (entry != NULL) {
+        return entry->value.doubleValue;
+    }
+    return fallbackValue;
+}
+
+static bool celix_hashMap_getBool(const celix_hash_map_t* map, const char* strKey, long longKey, bool fallbackValue) {
+    celix_hash_map_entry_t* entry = celix_hashMap_getEntry(map, strKey, longKey);
+    if (entry != NULL) {
+        return entry->value.boolValue;
+    }
+    return fallbackValue;
+}
+
+bool celix_hashMap_hasKey(const celix_hash_map_t* map, const char* strKey, long longKey) {
+    return celix_hashMap_getEntry(map, strKey, longKey) != NULL;
+}
+
+static void hashMap_resize(celix_hash_map_t* map, int newCapacity) {
+    celix_hash_map_entry_t** newTable;
     unsigned int j;
-    if (map->tablelength == MAXIMUM_CAPACITY) {
+    if (map->tableLength == MAXIMUM_CAPACITY) {
         return;
     }
 
-    newTable = calloc(newCapacity, sizeof(celix_hashmap_entry_t*));
+    newTable = calloc(newCapacity, sizeof(celix_hash_map_entry_t*));
 
-    for (j = 0; j < map->tablelength; j++) {
-        celix_hashmap_entry_t* entry = map->table[j];
+    for (j = 0; j < map->tableLength; j++) {
+        celix_hash_map_entry_t* entry = map->table[j];
         if (entry != NULL) {
             map->table[j] = NULL;
             do {
-                celix_hashmap_entry_t* next = entry->next;
-                unsigned int i = celix_hashmap_indexFor(entry->hash, newCapacity);
+                celix_hash_map_entry_t* next = entry->next;
+                unsigned int i = celix_hashMap_indexFor(entry->hash, newCapacity);
                 entry->next = newTable[i];
                 newTable[i] = entry;
                 entry = next;
@@ -111,160 +172,371 @@ static void hashmap_resize(celix_hashmap_t* map, int newCapacity) {
     }
     free(map->table);
     map->table = newTable;
-    map->tablelength = newCapacity;
+    map->tableLength = newCapacity;
     map->treshold = (unsigned int) ceil(newCapacity * DEFAULT_LOAD_FACTOR);
 }
 
-static void celix_hashmap_addEntry(celix_hashmap_t* map, unsigned int hash, celix_hashmap_key_t* key, celix_hashmap_value_t* value, int bucketIndex) {
-    celix_hashmap_entry_t* entry = map->table[bucketIndex];
-    celix_hashmap_entry_t* newEntry = malloc(sizeof(*newEntry));
+static void celix_hashMap_addEntry(celix_hash_map_t* map, unsigned int hash, const celix_hash_map_key_t* key, const celix_hash_map_value_t* value, unsigned int bucketIndex) {
+    celix_hash_map_entry_t* entry = map->table[bucketIndex];
+    celix_hash_map_entry_t* newEntry = malloc(sizeof(*newEntry));
     newEntry->hash = hash;
-    if (map->stringKey) {
-        memset(&newEntry->key, 0, sizeof(newEntry->key));
+    if (map->keyType == CELIX_HASH_MAP_STRING_KEY) {
         newEntry->key.strKey = celix_utils_strdup(key->strKey);
     } else {
-        memcpy(&newEntry->key, key, sizeof(*key));
+        newEntry->key.longKey = key->longKey;
     }
     memcpy(&newEntry->value, value, sizeof(*value));
     newEntry->next = entry;
     map->table[bucketIndex] = newEntry;
     if (map->size++ >= map->treshold) {
-        hashmap_resize(map, 2 * map->tablelength);
+        hashMap_resize(map, 2 * map->tableLength);
     }
 }
 
-static celix_hashmap_value_t celix_hashmap_put(celix_hashmap_t* map, celix_hashmap_key_t* key, celix_hashmap_value_t* value) {
-    assert(key != NULL);
-    celix_hashmap_value_t prev;
-    memset(&prev, 0, sizeof(prev));
-    unsigned int hash = map->hashKey(key);
-    unsigned int index = celix_hashmap_indexFor(hash, map->tablelength);
-    for (celix_hashmap_entry_t* entry = map->table[index]; entry != NULL; entry = entry->next) {
-        if (entry->hash == hash && map->equalsKey(key, &entry->key)) {
-            memcpy(&prev, &entry->value, sizeof(prev));
+static bool celix_hashMap_putValue(celix_hash_map_t* map, const char* strKey, long longKey, const celix_hash_map_value_t* value, celix_hash_map_value_t* replacedValueOut) {
+    celix_hash_map_key_t key;
+    if (map->keyType == CELIX_HASH_MAP_STRING_KEY) {
+        key.strKey = strKey;
+    } else {
+        key.longKey = longKey;
+    }
+    unsigned int hash = map->hashKeyFunction(&key);
+    unsigned int index = celix_hashMap_indexFor(hash, map->tableLength);
+    for (celix_hash_map_entry_t* entry = map->table[index]; entry != NULL; entry = entry->next) {
+        if (entry->hash == hash && map->equalsKeyFunction(&key, &entry->key)) {
+            //entry found, replacing entry
+            if (replacedValueOut != NULL) {
+                *replacedValueOut = entry->value;
+            }
             memcpy(&entry->value, value, sizeof(*value));
-            return prev;
+            return true;
         }
     }
     map->modificationCount++;
-    celix_hashmap_addEntry(map, hash, key, value, index);
-    return prev;
+    celix_hashMap_addEntry(map, hash, &key, value, index);
+    if (replacedValueOut != NULL) {
+        memset(replacedValueOut, 0, sizeof(*replacedValueOut));
+    }
+    return false;
 }
 
-static celix_hashmap_value_t celix_hashmap_remove(celix_hashmap_t* map, celix_hashmap_key_t* key) {
-    celix_hashmap_value_t removedValue;
-    memset(&removedValue, 0, sizeof(removedValue));
+static void* celix_hashMap_put(celix_hash_map_t* map, const char* strKey, long longKey, void* v) {
+    celix_hash_map_value_t value;
+    value.ptrValue = v;
+    celix_hash_map_value_t replaced;
+    celix_hashMap_putValue(map, strKey, longKey, &value, &replaced);
+    return replaced.ptrValue;
+}
 
-    unsigned int hash = map->hashKey(key);
-    unsigned int index = celix_hashmap_indexFor(hash, map->tablelength);
-    celix_hashmap_entry_t* entry = map->table[index];
-    celix_hashmap_entry_t* prev = entry;
+static bool celix_hashMap_putLong(celix_hash_map_t* map, const char* strKey, long longKey, long v) {
+    celix_hash_map_value_t value;
+    value.longValue = v;
+    return celix_hashMap_putValue(map, strKey, longKey, &value, NULL);
+}
 
-    while (entry != NULL) {
-        celix_hashmap_entry_t* next = entry->next;
-        if (entry->hash == hash && map->equalsKey(key, &entry->key)) {
+static bool celix_hashMap_putDouble(celix_hash_map_t* map, const char* strKey, long longKey, double v) {
+    celix_hash_map_value_t value;
+    value.doubleValue = v;
+    return celix_hashMap_putValue(map, strKey, longKey, &value, NULL);
+}
+
+static bool celix_hashMap_putBool(celix_hash_map_t* map, const char* strKey, long longKey, bool v) {
+    celix_hash_map_value_t value;
+    value.boolValue = v;
+    return celix_hashMap_putValue(map, strKey, longKey, &value, NULL);
+}
+
+static void celix_hashMap_destroyRemovedEntry(celix_hash_map_t* map, celix_hash_map_entry_t* removedEntry) {
+    if (map->simpleRemovedCallback) {
+        map->simpleRemovedCallback(removedEntry->value.ptrValue);
+    } else if (map->removedLongKeyCallback) {
+        map->removedLongKeyCallback(map->removedCallbackData, removedEntry->key.longKey, removedEntry->value);
+    } else if (map->removedStringKeyCallback) {
+        map->removedStringKeyCallback(map->removedStringKeyCallback, removedEntry->key.strKey, removedEntry->value);
+    }
+    if (map->keyType == CELIX_HASH_MAP_STRING_KEY && !map->storeKeysWeakly) {
+        free((char*)removedEntry->key.strKey);
+    }
+    free(removedEntry);
+}
+
+static bool celix_hashMap_remove(celix_hash_map_t* map, const char* strKey, long longKey, celix_hash_map_value_t* removedValueOut) {
+    celix_hash_map_key_t key;
+    if (map->keyType == CELIX_HASH_MAP_STRING_KEY) {
+        key.strKey = strKey;
+    } else {
+        key.longKey = longKey;
+    }
+
+    unsigned int hash = map->hashKeyFunction(&key);
+    unsigned int index = celix_hashMap_indexFor(hash, map->tableLength);
+    celix_hash_map_entry_t* visit = map->table[index];
+    celix_hash_map_entry_t* removedEntry = NULL;
+    celix_hash_map_entry_t* prev = NULL;
+
+    while (visit != NULL) {
+        if (visit->hash == hash && map->equalsKeyFunction(&key, &visit->key)) {
+            //hash & equals -> found entry
             map->modificationCount++;
             map->size--;
-            if (prev == entry) {
-                map->table[index] = next;
+            if (map->table[index] == visit) {
+                //current entry is first entry in bucket, set next to first entry in bucket
+                map->table[index] = visit->next;
             } else {
-                prev->next = next;
+                //entry is in between, update link of prev to next entry
+                prev->next = visit->next;
             }
+            removedEntry = visit;
             break;
         }
-        prev = entry;
-        entry = next;
+        prev = visit;
+        visit = visit->next;
     }
-    if (entry != NULL && map->stringKey) {
-        free(entry->key.strKey);
-        memcpy(&removedValue, &entry->value, sizeof(removedValue));
+    if (removedEntry != NULL) {
+        if (removedValueOut) {
+            *removedValueOut = removedEntry->value;
+        }
+        celix_hashMap_destroyRemovedEntry(map, removedEntry);
+        return true;
     }
-    return removedValue;
+    if (removedValueOut) {
+        memset(removedValueOut, 0, sizeof(*removedValueOut));
+    }
+    return false;
 }
 
-static void celix_hashmap_init(celix_hashmap_t* map, bool stringKey, unsigned int (*hashKey)(const celix_hashmap_key_t*), bool (*equalsKey)(const celix_hashmap_key_t*, const celix_hashmap_key_t*)) {
+static void celix_hashMap_init(
+        celix_hash_map_t* map,
+        celix_hash_map_key_type_e keyType,
+        unsigned int (*hashKeyFn)(const celix_hash_map_key_t*),
+        bool (*equalsKeyFn)(const celix_hash_map_key_t*, const celix_hash_map_key_t*)) {
     map->treshold = (size_t)((float)DEFAULT_INITIAL_CAPACITY * DEFAULT_LOAD_FACTOR);
-    map->table = calloc(DEFAULT_INITIAL_CAPACITY, sizeof(celix_hashmap_entry_t*));
+    map->table = calloc(DEFAULT_INITIAL_CAPACITY, sizeof(celix_hash_map_entry_t*));
     map->size = 0;
     map->modificationCount = 0;
-    map->tablelength = DEFAULT_INITIAL_CAPACITY;
-    map->stringKey = true;
-    map->hashKey = hashKey;
-    map->equalsKey = equalsKey;
+    map->tableLength = DEFAULT_INITIAL_CAPACITY;
+    map->keyType = keyType;
+    memset(&map->emptyValue, 0, sizeof(map->emptyValue));
+    map->hashKeyFunction = hashKeyFn;
+    map->equalsKeyFunction = equalsKeyFn;
+    map->simpleRemovedCallback = NULL;
+    map->removedCallbackData = NULL;
+    map->removedLongKeyCallback = NULL;
+    map->removedStringKeyCallback = NULL;
+    map->storeKeysWeakly = false;
 }
 
-static void celix_hashmap_clear(celix_hashmap_t* map, bool freeValues) {
+static void celix_hashMap_clear(celix_hash_map_t* map) {
     map->modificationCount++;
-    for (unsigned int i = 0; i < map->tablelength; i++) {
-        celix_hashmap_entry_t* entry = map->table[i];
+    for (unsigned int i = 0; i < map->tableLength; i++) {
+        celix_hash_map_entry_t* entry = map->table[i];
         while (entry != NULL) {
-            celix_hashmap_entry_t* clearEntry = entry;
+            celix_hash_map_entry_t* removedEntry = entry;
             entry = entry->next;
-            if (map->stringKey) {
-                free(clearEntry->key.strKey);
-            }
-            if (freeValues) {
-                free(clearEntry->value.ptrVal);
-            }
-            free(clearEntry);
+            celix_hashMap_destroyRemovedEntry(map, removedEntry);
         }
         map->table[i] = NULL;
     }
     map->size = 0;
 }
 
-static void celix_hashmap_deinit(celix_hashmap_t* map, bool freeValues) {
-    celix_hashmap_clear(map, freeValues);
-    free(map->table);
-}
 
-celix_string_hashmap_t* celix_stringHashmap_create() {
-    celix_string_hashmap_t* map = calloc(1, sizeof(*map));
-    celix_hashmap_init(&map->genericMap, true, celix_stringHashmap_hash, celix_stringHashmap_equals);
+celix_string_hash_map_t* celix_stringHashMap_createWithOptions(const celix_string_hash_map_create_options_t* opts) {
+    celix_string_hash_map_t* map = calloc(1, sizeof(*map));
+    celix_hashMap_init(&map->genericMap, CELIX_HASH_MAP_STRING_KEY, celix_stringHashMap_hash, celix_stringHashMap_equals);
+    map->genericMap.simpleRemovedCallback = opts->simpleRemovedCallback;
+    map->genericMap.removedCallbackData = opts->removedCallbackData;
+    map->genericMap.removedStringKeyCallback = opts->removedCallback;
+    map->genericMap.storeKeysWeakly = opts->storeKeysWeakly;
     return map;
 }
 
-void celix_stringHashmap_destroy(celix_string_hashmap_t* map, bool freeValues) {
-    if (map != NULL) {
-        celix_hashmap_deinit(&map->genericMap, freeValues);
-    }
-    free(map);
+celix_string_hash_map_t* celix_stringHashMap_create() {
+    celix_string_hash_map_create_options_t opts = CELIX_EMPTY_STRING_HASH_MAP_CREATE_OPTIONS;
+    return celix_stringHashMap_createWithOptions(&opts);
 }
 
-size_t celix_stringHashMap_size(celix_string_hashmap_t* map) {
+celix_long_hash_map_t* celix_longHashMap_createWithOptions(const celix_long_hash_map_create_options_t* opts) {
+    celix_long_hash_map_t* map = calloc(1, sizeof(*map));
+    celix_hashMap_init(&map->genericMap, CELIX_HASH_MAP_LONG_KEY, celix_longHashMap_hash, celix_longHashMap_equals);
+    map->genericMap.simpleRemovedCallback = opts->simpledRemoveCallback;
+    map->genericMap.removedCallbackData = opts->removedCallbackData;
+    map->genericMap.removedLongKeyCallback = opts->removedCallback;
+    map->genericMap.storeKeysWeakly = false;
+    return map;
+}
+
+celix_long_hash_map_t* celix_longHashMap_create() {
+    celix_long_hash_map_create_options_t opts = CELIX_EMPTY_LONG_HASH_MAP_CREATE_OPTIONS;
+    return celix_longHashMap_createWithOptions(&opts);
+}
+
+void celix_stringHashMap_destroy(celix_string_hash_map_t* map) {
+    if (map != NULL) {
+        celix_hashMap_clear(&map->genericMap);
+        free(map->genericMap.table);
+        free(map);
+    }
+}
+
+void celix_longHashMap_destroy(celix_long_hash_map_t* map) {
+    if (map != NULL) {
+        celix_hashMap_clear(&map->genericMap);
+        free(map->genericMap.table);
+        free(map);
+    }
+}
+
+size_t celix_stringHashMap_size(const celix_string_hash_map_t* map) {
     return map->genericMap.size;
 }
 
-void* celix_stringHashmap_get(celix_string_hashmap_t* map, const char* key) {
-    celix_hashmap_key_t hashKey;
-    hashKey.strKey = (char*)key;
-    celix_hashmap_entry_t* entry = celix_hashmap_getEntry(&map->genericMap, &hashKey);
-    void* val = NULL;
-    if (entry != NULL) {
-        val = entry->value.ptrVal;
+size_t celix_longHashMap_size(const celix_long_hash_map_t* map) {
+    return map->genericMap.size;
+}
+
+void* celix_stringHashMap_get(const celix_string_hash_map_t* map, const char* key) {
+    return celix_hashMap_get(&map->genericMap, key, 0);
+}
+
+void* celix_longHashMap_get(const celix_long_hash_map_t* map, long key) {
+    return celix_hashMap_get(&map->genericMap, NULL, key);
+}
+
+long celix_stringHashMap_getLong(const celix_string_hash_map_t* map, const char* key, long fallbackValue) {
+    return celix_hashMap_getLong(&map->genericMap, key, 0, fallbackValue);
+}
+
+long celix_longHashMap_getLong(const celix_string_hash_map_t* map, long key, long fallbackValue) {
+    return celix_hashMap_getLong(&map->genericMap, NULL, key, fallbackValue);
+
+}
+
+double celix_stringHashMap_getDouble(const celix_string_hash_map_t* map, const char* key, double fallbackValue) {
+    return celix_hashMap_getDouble(&map->genericMap, key, 0, fallbackValue);
+}
+
+double celix_longHashMap_getDouble(const celix_string_hash_map_t* map, long key, double fallbackValue) {
+    return celix_hashMap_getDouble(&map->genericMap, NULL, key, fallbackValue);
+}
+
+bool celix_stringHashMap_getBool(const celix_string_hash_map_t* map, const char* key, bool fallbackValue) {
+    return celix_hashMap_getBool(&map->genericMap, key, 0, fallbackValue);
+}
+
+bool celix_longHashMap_getBool(const celix_string_hash_map_t* map, long key, bool fallbackValue) {
+    return celix_hashMap_getBool(&map->genericMap, NULL, key, fallbackValue);
+}
+
+void* celix_stringHashMap_put(celix_string_hash_map_t* map, const char* key, void* value) {
+    return celix_hashMap_put(&map->genericMap, key, 0, value);
+}
+
+void* celix_longHashMap_put(celix_long_hash_map_t* map, long key, void* value) {
+    return celix_hashMap_put(&map->genericMap, NULL, key, value);
+}
+
+bool celix_stringHashMap_putLong(celix_string_hash_map_t* map, const char* key, long value) {
+    return celix_hashMap_putLong(&map->genericMap, key, 0, value);
+}
+
+bool celix_longHashMap_putLong(celix_long_hash_map_t* map, long key, long value) {
+    return celix_hashMap_putLong(&map->genericMap, NULL, key, value);
+}
+
+bool celix_stringHashMap_putDouble(celix_string_hash_map_t* map, const char* key, double value) {
+    return celix_hashMap_putDouble(&map->genericMap, key, 0, value);
+}
+
+bool celix_longHashMap_putDouble(celix_long_hash_map_t* map, long key, double value) {
+    return celix_hashMap_putDouble(&map->genericMap, NULL, key, value);
+}
+
+bool celix_stringHashMap_putBool(celix_string_hash_map_t* map, const char* key, bool value) {
+    return celix_hashMap_putBool(&map->genericMap, key, 0, value);
+}
+
+bool celix_longHashMap_putBool(celix_long_hash_map_t* map, long key, bool value) {
+    return celix_hashMap_putBool(&map->genericMap, NULL, key, value);
+}
+
+bool celix_stringHashMap_hasKey(const celix_string_hash_map_t* map, const char* key) {
+    return celix_hashMap_hasKey(&map->genericMap, key, 0);
+}
+
+bool celix_longHashMap_hasKey(const celix_long_hash_map_t* map, long key) {
+    return celix_hashMap_hasKey(&map->genericMap, NULL, key);
+}
+
+void* celix_stringHashMap_removeAndReturn(celix_string_hash_map_t* map, const char* key) {
+    celix_hash_map_value_t removedEntry;
+    celix_hashMap_remove(&map->genericMap, key, 0, &removedEntry);
+    return removedEntry.ptrValue;
+}
+
+void* celix_longHashMap_removeAndReturn(celix_long_hash_map_t* map, long key) {
+    celix_hash_map_value_t removedEntry;
+    celix_hashMap_remove(&map->genericMap, NULL, key, &removedEntry);
+    return removedEntry.ptrValue;
+}
+
+bool celix_stringHashMap_remove(celix_string_hash_map_t* map, const char* key) {
+    return celix_hashMap_remove(&map->genericMap, key, 0, NULL);
+}
+
+bool celix_longHashMap_remove(celix_long_hash_map_t* map, long key) {
+    return celix_hashMap_remove(&map->genericMap, NULL, key, NULL);
+}
+
+void celix_stringHashMap_clear(celix_string_hash_map_t* map) {
+    celix_hashMap_clear(&map->genericMap);
+}
+
+void celix_longHashMap_clear(celix_long_hash_map_t* map) {
+    celix_hashMap_clear(&map->genericMap);
+}
+
+celix_string_hash_map_iterator_t celix_stringHashMap_iterate(celix_string_hash_map_t* map) {
+    celix_string_hash_map_iterator_t iter;
+    memset(&iter, 0, sizeof(iter));
+    iter._internal.map = &map->genericMap;
+    if (map->genericMap.size > 0) {
+        celix_hash_map_entry_t *entry = map->genericMap.table[0];
+        iter._internal.entry = entry;
+        iter.value = entry->value;
+        iter.key = entry->key.strKey;
     }
-    return val;
+    return iter;
 }
 
-void* celix_stringHashMap_put(celix_string_hashmap_t* map, const char* key, void* value) {
-    celix_hashmap_key_t mapKey;
-    mapKey.strKey = (char*)key;
-    celix_hashmap_value_t mapValue;
-    mapValue.ptrVal = value;
-    celix_hashmap_value_t prevValue = celix_hashmap_put(&map->genericMap, &mapKey, &mapValue);
-    return prevValue.ptrVal;
+bool celix_stringHasMapIterator_isEnd(const celix_string_hash_map_iterator_t* iter) {
+    return iter->_internal.entry == NULL;
 }
 
-bool celix_stringHashmap_hasKey(celix_string_hashmap_t* map, const char* key) {
-    celix_hashmap_key_t hashKey;
-    hashKey.strKey = (char*)key;
-    celix_hashmap_entry_t* entry = celix_hashmap_getEntry(&map->genericMap, &hashKey);
-    return entry != NULL;
-}
+void celix_stringHasMapIterator_next(celix_string_hash_map_iterator_t* iter) {
+    memset(iter, 0, sizeof(*iter));
+    //TODO fix bug
 
-void* celix_stringHashMap_remove(celix_string_hashmap_t* map, const char* key) {
-    celix_hashmap_key_t hashKey;
-    hashKey.strKey = (char*)key;
-    celix_hashmap_value_t removedValue = celix_hashmap_remove(&map->genericMap, &hashKey);
-    return removedValue.ptrVal;
+    /*
+    celix_hash_map_t* map = iter->_internal.map;
+    celix_hash_map_entry_t *entry = iter->_internal.entry;
+    if (entry != NULL) {
+        if (entry->next == NULL) {
+            unsigned int index = celix_hashMap_indexFor(entry->hash, map->tableLength) + 1; //next index
+            while (index < map->tableLength && (entry = map->table[index++]) == NULL) {} //loop until not NULL entry found
+        } else {
+            entry = entry->next;
+        }
+
+        if (entry != NULL) {
+            iter->index += 1;
+            iter->_internal.entry = entry;
+            iter->key = entry->key.strKey;
+            iter->value = entry->value;
+        } else {
+            memset(iter, 0, sizeof(*iter));
+            iter->_internal.map = map;
+        }
+    }
+     */
 }

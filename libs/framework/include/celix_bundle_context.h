@@ -35,9 +35,9 @@ extern "C" {
  * Init macro so that the opts are correctly initialized for C++ compilers
  */
 #ifdef __cplusplus
-#define OPTS_INIT {}
+#define CELIX_OPTS_INIT {}
 #else
-#define OPTS_INIT
+#define CELIX_OPTS_INIT
 #endif
 
 /**
@@ -126,7 +126,7 @@ typedef struct celix_service_registration_options {
      *
      * The bundle is responsible to keep the service pointer valid as long as it is registered in the Celix framework.
      */
-    void *svc OPTS_INIT;
+    void *svc CELIX_OPTS_INIT;
 
     /**
      * @brief The service factory pointer.
@@ -143,7 +143,7 @@ typedef struct celix_service_registration_options {
      *
      * The bundle is responsible to keep the service factory pointer valid as long as it is registered in the Celix framework.
      */
-    celix_service_factory_t *factory OPTS_INIT;
+    celix_service_factory_t *factory CELIX_OPTS_INIT;
 
     /**
      * @brief The required service name.
@@ -151,7 +151,7 @@ typedef struct celix_service_registration_options {
      * This is used to identify the service. A fully qualified name with a namespace is
      * advisable to prevent name collision. (e.g. EXAMPLE_PRESSURE_SENSOR).
      */
-    const char *serviceName OPTS_INIT;
+    const char *serviceName CELIX_OPTS_INIT;
 
     /**
      * @brief The optional service properties.
@@ -162,14 +162,14 @@ typedef struct celix_service_registration_options {
      * When a service is registered the Celix framework will take ownership of the provided properties.
      * If a registration fails, the properties will be destroyed (freed) by the Celix framework.
      */
-    celix_properties_t *properties OPTS_INIT;
+    celix_properties_t *properties CELIX_OPTS_INIT;
 
     /**
      * @brief The optional service language.
      *
      * If this is NULL, CELIX_FRAMEWORK_SERVICE_LANGUAGE_C is used.
      */
-    const char *serviceLanguage OPTS_INIT;
+    const char *serviceLanguage CELIX_OPTS_INIT;
 
     /**
      * @brief The optional service version (in the form of <MAJOR>.<MINOR>.<MICRO>.<QUALIFIER>).
@@ -179,12 +179,12 @@ typedef struct celix_service_registration_options {
      * service in those version range are compatible (binary of source). It is advisable to use semantic versioning
      * for this.
      */
-    const char *serviceVersion OPTS_INIT;
+    const char *serviceVersion CELIX_OPTS_INIT;
 
     /**
      * @brief Async data pointer for the async register callback.
      */
-     void *asyncData OPTS_INIT;
+     void *asyncData CELIX_OPTS_INIT;
 
     /**
      * @brief Async callback.
@@ -196,7 +196,7 @@ typedef struct celix_service_registration_options {
      * unregistration happens before the registration event is processed. In this case the asyncCallback
      * will not be called.
      */
-    void (*asyncCallback)(void *data, long serviceId) OPTS_INIT;
+    void (*asyncCallback)(void *data, long serviceId) CELIX_OPTS_INIT;
 } celix_service_registration_options_t;
 
 /**
@@ -324,7 +324,7 @@ typedef struct celix_service_filter_options {
      *
      * If NULL is used any services which matches the filter string will be tracked.
      */
-    const char* serviceName OPTS_INIT;
+    const char* serviceName CELIX_OPTS_INIT;
 
     /**
      * @brief The optional version range.
@@ -333,27 +333,27 @@ typedef struct celix_service_filter_options {
      * only select service with a version in the version range.
      * It uses the maven version range format, e.g. [1.0.0,2.0.0) or [1.1.1], etc.
      */
-    const char* versionRange OPTS_INIT;
+    const char* versionRange CELIX_OPTS_INIT;
 
     /**
      * @brief LDAP filter to use for fine tuning the filtering, e.g. (|(location=middle)(location=front))
      *
      * The filter will be applied to all the user provided and framework provided service properties.
      */
-    const char* filter OPTS_INIT;
+    const char* filter CELIX_OPTS_INIT;
 
     /**
      * @deprecated This value is not used any more. If a service language filter is still required add it to the
      * filter.
      */
-    const char* serviceLanguage OPTS_INIT;
+    const char* serviceLanguage CELIX_OPTS_INIT;
 
 
     /**
      * @deprecated This value is not used any more. If a service language filter is still required add it to the
      * filter.
      */
-    bool ignoreServiceLanguage OPTS_INIT;
+    bool ignoreServiceLanguage CELIX_OPTS_INIT;
 } celix_service_filter_options_t;
 
 /**
@@ -478,12 +478,12 @@ typedef struct celix_service_tracking_options {
     /**
      * @brief The service filter options, used to setup the filter for the service to track.
      */
-    celix_service_filter_options_t filter OPTS_INIT;
+    celix_service_filter_options_t filter CELIX_OPTS_INIT;
 
     /**
      * @brief The optional callback pointer used in all the provided callback function (set, add, remove, setWithProperties, etc).
      */
-    void* callbackHandle OPTS_INIT;
+    void* callbackHandle CELIX_OPTS_INIT;
 
     /**
      * @brief The optional set callback will be called when a new highest ranking service is available conform the provided
@@ -491,19 +491,19 @@ typedef struct celix_service_tracking_options {
      * @param handle The callbackHandle pointer as provided in the service tracker options.
      * @param svc The service pointer of the highest ranking service.
      */
-    void (*set)(void *handle, void *svc) OPTS_INIT;
+    void (*set)(void *handle, void *svc) CELIX_OPTS_INIT;
 
     /**
      * @brief The optional setWithProperties callback is handled as the set callback, but with the addition that the service properties
      * will also be provided to the callback.
      */
-    void (*setWithProperties)(void *handle, void *svc, const celix_properties_t *props) OPTS_INIT; //highest ranking
+    void (*setWithProperties)(void *handle, void *svc, const celix_properties_t *props) CELIX_OPTS_INIT; //highest ranking
 
     /**
      * @brief The optional setWithOwner callback is handled as the set callback, but with the addition that the service properties
      * and the bundle owning the service will also be provided to the callback.
      */
-    void (*setWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *svcOwner) OPTS_INIT; //highest ranking
+    void (*setWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *svcOwner) CELIX_OPTS_INIT; //highest ranking
 
     /**
      * @brief The optional add callback will be called for every current and future service found conform the provided service filter
@@ -511,19 +511,19 @@ typedef struct celix_service_tracking_options {
      * @param handle The callbackHandle pointer as provided in the service tracker options.
      * @param svc The service pointer of a service matching the provided service filter options.
      */
-    void (*add)(void *handle, void *svc) OPTS_INIT;
+    void (*add)(void *handle, void *svc) CELIX_OPTS_INIT;
 
     /**
      * @brief The optional addWithProperties callback is handled as the add callback, but with the addition that the service properties
      * will also be provided to the callback.
      */
-    void (*addWithProperties)(void *handle, void *svc, const celix_properties_t *props) OPTS_INIT;
+    void (*addWithProperties)(void *handle, void *svc, const celix_properties_t *props) CELIX_OPTS_INIT;
 
     /**
      * @brief The optional addWithOwner callback is handled as the add callback, but with the addition that the service properties
      * and the bundle owning the service will also be provided to the callback.
      */
-    void (*addWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *svcOwner) OPTS_INIT;
+    void (*addWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *svcOwner) CELIX_OPTS_INIT;
 
     /**
      * @brief The optional remove callback will be called for every service conform the provided service filter options that is
@@ -534,25 +534,25 @@ typedef struct celix_service_tracking_options {
      * @param handle The callbackHandle pointer as provided in the service tracker options.
      * @param svc The service pointer of a service matching the provided service filter options.
      */
-    void (*remove)(void *handle, void *svc) OPTS_INIT;
+    void (*remove)(void *handle, void *svc) CELIX_OPTS_INIT;
 
     /**
      * @brief The optional removeWithProperties callback is handled as the remove callback, but with the addition that the service properties
      * will also be provided to the callback.
      */
-    void (*removeWithProperties)(void *handle, void *svc, const celix_properties_t *props) OPTS_INIT;
+    void (*removeWithProperties)(void *handle, void *svc, const celix_properties_t *props) CELIX_OPTS_INIT;
 
     /**
     * @brief The optional removeWithOwner callback is handled as the remove callback, but with the addition that the service properties
     * and the bundle owning the service will also be provided to the callback.
     */
-    void (*removeWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *svcOwner) OPTS_INIT;
+    void (*removeWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *svcOwner) CELIX_OPTS_INIT;
 
 
     /**
      * @brief Data for the trackerCreatedCallback.
      */
-    void *trackerCreatedCallbackData OPTS_INIT;
+    void *trackerCreatedCallbackData CELIX_OPTS_INIT;
 
     /**
      * @brief The callback called when the tracker has ben created (and is active) when using a async call.
@@ -561,7 +561,7 @@ typedef struct celix_service_tracking_options {
      * "stop tracker" happens before the "create tracker" event is processed. In this case the asyncCallback
      * will not be called.
      */
-    void (*trackerCreatedCallback)(void *trackerCreatedCallbackData) OPTS_INIT;
+    void (*trackerCreatedCallback)(void *trackerCreatedCallbackData) CELIX_OPTS_INIT;
 } celix_service_tracking_options_t;
 
 /**
@@ -737,19 +737,19 @@ typedef struct celix_service_use_options {
     /**
      * @brief The service filter options, used to setup the filter for the service to track.
      */
-    celix_service_filter_options_t filter OPTS_INIT;
+    celix_service_filter_options_t filter CELIX_OPTS_INIT;
 
     /**
      * @brief An optional timeout (in seconds), if > 0 the use service call will block until the timeout is expired or
      * when at least one service is found. Note that it will be ignored when use service on the event loop.
      * Default (0)
      */
-     double waitTimeoutInSeconds OPTS_INIT;
+     double waitTimeoutInSeconds CELIX_OPTS_INIT;
 
     /**
      * @brief The optional callback pointer used in all the provided callback function (set, add, remove, setWithProperties, etc).
      */
-    void *callbackHandle OPTS_INIT;
+    void *callbackHandle CELIX_OPTS_INIT;
 
     /**
      * @brief The optional use callback will be called when for every services found conform the service filter options
@@ -758,19 +758,19 @@ typedef struct celix_service_use_options {
      * @param handle The callbackHandle pointer as provided in the service tracker options.
      * @param svc The service pointer of the highest ranking service.
      */
-    void (*use)(void *handle, void *svc) OPTS_INIT;
+    void (*use)(void *handle, void *svc) CELIX_OPTS_INIT;
 
     /**
      * @brief The optional useWithProperties callback is handled as the use callback, but with the addition that the service properties
      * will also be provided to the callback.
      */
-    void (*useWithProperties)(void *handle, void *svc, const celix_properties_t *props) OPTS_INIT;
+    void (*useWithProperties)(void *handle, void *svc, const celix_properties_t *props) CELIX_OPTS_INIT;
 
     /**
      * @brief The optional useWithOwner callback is handled as the yse callback, but with the addition that the service properties
      * and the bundle owning the service will also be provided to the callback.
      */
-    void (*useWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *svcOwner) OPTS_INIT;
+    void (*useWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *svcOwner) CELIX_OPTS_INIT;
     /**
      * @brief Call the provided callbacks from the caller thread directly if set, otherwise the callbacks will be called from the Celix event loop (most likely indirectly).
      * Note that using blocking service in the Celix event loop is generally a bad idea, which should be avoided if possible.
@@ -781,7 +781,7 @@ typedef struct celix_service_use_options {
      * Note that it has no effect in indirect mode, in which case "service on demand" is supported.
      */
 #define CELIX_SERVICE_USE_SOD                 (2)
-    int flags OPTS_INIT;
+    int flags CELIX_OPTS_INIT;
 } celix_service_use_options_t;
 
 /**
@@ -999,7 +999,7 @@ typedef struct celix_bundle_tracker_options {
     /**
      * @brief The optional callback pointer used in all the provided callback function (set, add, remove, setWithProperties, etc).
      */
-    void* callbackHandle OPTS_INIT;
+    void* callbackHandle CELIX_OPTS_INIT;
 
     /**
      * @brief Tracker callback when a bundle is installed.
@@ -1007,7 +1007,7 @@ typedef struct celix_bundle_tracker_options {
      * @param bundle    The bundle which has been installed.
      *                  The bundle pointer is only guaranteed to be valid during the callback.
      */
-    void (*onInstalled)(void *handle, const celix_bundle_t *bundle) OPTS_INIT;
+    void (*onInstalled)(void *handle, const celix_bundle_t *bundle) CELIX_OPTS_INIT;
 
     /**
      * @brief Tracker callback when a bundle is started.
@@ -1015,7 +1015,7 @@ typedef struct celix_bundle_tracker_options {
      * @param bundle    The bundle which has been started.
      *                  The bundle pointer is only guaranteed to be valid during the callback.
      */
-    void (*onStarted)(void *handle, const celix_bundle_t *bundle) OPTS_INIT;
+    void (*onStarted)(void *handle, const celix_bundle_t *bundle) CELIX_OPTS_INIT;
 
     /**
      * @brief Tracker callback when a bundle is stopped.
@@ -1023,25 +1023,25 @@ typedef struct celix_bundle_tracker_options {
      * @param bundle    The bundle which has been stopped.
      *                  The bundle pointer is only guaranteed to be valid during the callback.
      */
-    void (*onStopped)(void *handle, const celix_bundle_t *bundle) OPTS_INIT;
+    void (*onStopped)(void *handle, const celix_bundle_t *bundle) CELIX_OPTS_INIT;
 
     /**
      *
      * @param handle    The handle, contains the value of the callbackHandle.
      * @param event     The bundle event. Is only valid during the callback.
      */
-    void (*onBundleEvent)(void *handle, const celix_bundle_event_t *event) OPTS_INIT;
+    void (*onBundleEvent)(void *handle, const celix_bundle_event_t *event) CELIX_OPTS_INIT;
 
     /**
      * @brief Default the framework bundle (bundle id 0) will not trigger the callbacks.
      * This is done, because the framework bundle is a special bundle which is generally not needed in the callbacks.
      */
-    bool includeFrameworkBundle OPTS_INIT;
+    bool includeFrameworkBundle CELIX_OPTS_INIT;
 
     /**
      * @brief Data for the trackerCreatedCallback.
      */
-    void *trackerCreatedCallbackData OPTS_INIT;
+    void *trackerCreatedCallbackData CELIX_OPTS_INIT;
 
     /**
      * @brief The callback called when the tracker has ben created (and is active) when using the
@@ -1051,7 +1051,7 @@ typedef struct celix_bundle_tracker_options {
      * "stop tracker" happens before the "create tracker" event is processed. In this case the asyncCallback
      * will not be called.
      */
-    void (*trackerCreatedCallback)(void *trackerCreatedCallbackData) OPTS_INIT;
+    void (*trackerCreatedCallback)(void *trackerCreatedCallbackData) CELIX_OPTS_INIT;
 } celix_bundle_tracking_options_t;
 
 /**
@@ -1301,7 +1301,7 @@ double celix_bundleContext_getPropertyAsDouble(celix_bundle_context_t *ctx, cons
  */
 bool celix_bundleContext_getPropertyAsBool(celix_bundle_context_t *ctx, const char *key, bool defaultValue);
 
-#undef OPTS_INIT
+#undef CELIX_OPTS_INIT
 
 #ifdef __cplusplus
 }
