@@ -91,6 +91,7 @@ public:
     std::unordered_map<std::string, int> stdMap;
     hash_map_t* celixHashMap{nullptr};
     celix_properties_t* celixProperties{celix_properties_create()};
+    //TODO add celix_string_hash_map
 };
 
 static void StringHashmapBenchmark_addEntryToStdMap(benchmark::State& state) {

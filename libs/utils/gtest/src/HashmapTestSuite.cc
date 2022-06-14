@@ -22,20 +22,40 @@
 #include "celix_utils.h"
 #include "celix_hash_map.h"
 
-class HashMapTestSuite : public ::testing::Test {};
+class HashMapTestSuite : public ::testing::Test {
+public:
+    celix_string_hash_map_t* createStringHashMap(int nrEntries) {
+        auto* map = celix_stringHashMap_create();
+        for (int i = 0; i < nrEntries; ++i) {
+            std::string key = "key" + std::to_string(i);
+            celix_stringHashMap_putLong(map, key.c_str(), i);
+            EXPECT_EQ(i, celix_stringHashMap_getLong(map, key.c_str(), 0));
+            EXPECT_EQ(celix_stringHashMap_size(map), i+1);
+        }
+        return map;
+    }
 
-TEST_F(HashMapTestSuite, CreateDestroyStringHashMap) {
-    auto* map = celix_stringHashMap_create();
-    EXPECT_TRUE(map != nullptr);
-    EXPECT_EQ(0, celix_stringHashMap_size(map));
-    celix_stringHashMap_destroy(map);
-}
+    celix_long_hash_map_t * createLongHashMap(int nrEntries) {
+        auto* map = celix_longHashMap_create();
+        for (int i = 0; i < nrEntries; ++i) {
+            celix_longHashMap_putLong(map, i, i);
+            EXPECT_EQ(i, celix_longHashMap_getLong(map, i, 0));
+            EXPECT_EQ(celix_longHashMap_size(map), i+1);
+        }
+        return map;
+    }
+};
 
-TEST_F(HashMapTestSuite, CreateDestroyLongHashMap) {
-    auto* map = celix_longHashMap_create();
-    EXPECT_TRUE(map != nullptr);
-    EXPECT_EQ(0, celix_longHashMap_size(map));
-    celix_longHashMap_destroy(map);
+TEST_F(HashMapTestSuite, CreateDestroyHashMap) {
+    auto* sMap = celix_stringHashMap_create();
+    EXPECT_TRUE(sMap != nullptr);
+    EXPECT_EQ(0, celix_stringHashMap_size(sMap));
+    celix_stringHashMap_destroy(sMap);
+
+    auto* lMap = celix_longHashMap_create();
+    EXPECT_TRUE(lMap != nullptr);
+    EXPECT_EQ(0, celix_longHashMap_size(lMap));
+    celix_longHashMap_destroy(lMap);
 }
 
 TEST_F(HashMapTestSuite, PutPointerEntriesInStringHashMap) {
@@ -99,73 +119,104 @@ TEST_F(HashMapTestSuite, StringKeyNullEntry) {
     celix_stringHashMap_destroy(map);
 }
 
-TEST_F(HashMapTestSuite, DestroyStringHashMapWithDestroyCallback) {
-    celix_string_hash_map_create_options_t opts{};
-    opts.simpleRemovedCallback = free;
-    auto* map = celix_stringHashMap_createWithOptions(&opts);
-    EXPECT_TRUE(map != nullptr);
-    EXPECT_EQ(0, celix_stringHashMap_size(map));
+TEST_F(HashMapTestSuite, DestroyHashMapWithSimpleRemovedCallback) {
+    celix_string_hash_map_create_options_t sOpts{};
+    sOpts.simpleRemovedCallback = free;
+    auto* sMap = celix_stringHashMap_createWithOptions(&sOpts);
+    EXPECT_TRUE(sMap != nullptr);
+    EXPECT_EQ(0, celix_stringHashMap_size(sMap));
 
-    celix_stringHashMap_put(map, "key1", celix_utils_strdup("41"));
-    celix_stringHashMap_put(map, "key2", celix_utils_strdup("42"));
-    celix_stringHashMap_put(map, "key3", celix_utils_strdup("43"));
-    celix_stringHashMap_put(map, "key4", celix_utils_strdup("44"));
-    celix_stringHashMap_put(map, nullptr, celix_utils_strdup("null"));
-    EXPECT_EQ(celix_stringHashMap_size(map), 5);
-    EXPECT_STREQ((char*)celix_stringHashMap_get(map, nullptr), "null");
+    celix_stringHashMap_put(sMap, "key1", celix_utils_strdup("41"));
+    celix_stringHashMap_put(sMap, "key2", celix_utils_strdup("42"));
+    celix_stringHashMap_put(sMap, "key3", celix_utils_strdup("43"));
+    celix_stringHashMap_put(sMap, "key4", celix_utils_strdup("44"));
+    celix_stringHashMap_put(sMap, nullptr, celix_utils_strdup("null"));
+    EXPECT_EQ(celix_stringHashMap_size(sMap), 5);
+    EXPECT_STREQ((char*)celix_stringHashMap_get(sMap, nullptr), "null");
 
-    void* ptr = celix_stringHashMap_removeAndReturn(map, "key3");
+    void* ptr = celix_stringHashMap_removeAndReturn(sMap, "key3");
     EXPECT_NE(ptr, nullptr);
-    ptr = celix_stringHashMap_removeAndReturn(map, "key3"); //double remove
+    ptr = celix_stringHashMap_removeAndReturn(sMap, "key3"); //double remove
     EXPECT_EQ(ptr, nullptr);
 
-    ptr = celix_stringHashMap_removeAndReturn(map, nullptr);
+    ptr = celix_stringHashMap_removeAndReturn(sMap, nullptr);
     EXPECT_NE(ptr, nullptr);
-    ptr = celix_stringHashMap_removeAndReturn(map, nullptr); //double remove
+    ptr = celix_stringHashMap_removeAndReturn(sMap, nullptr); //double remove
     EXPECT_EQ(ptr, nullptr);
 
-    EXPECT_EQ(celix_stringHashMap_size(map), 3);
+    EXPECT_EQ(celix_stringHashMap_size(sMap), 3);
 
-    celix_stringHashMap_destroy(map);
+
+    celix_long_hash_map_create_options_t lOpts{};
+    lOpts.simpledRemoveCallback = free;
+    auto* lMap = celix_longHashMap_createWithOptions(&lOpts);
+    EXPECT_TRUE(lMap != nullptr);
+    EXPECT_EQ(0, celix_longHashMap_size(lMap));
+
+    celix_longHashMap_put(lMap, 1, celix_utils_strdup("41"));
+    celix_longHashMap_put(lMap, 2, celix_utils_strdup("42"));
+    celix_longHashMap_put(lMap, 3, celix_utils_strdup("43"));
+    celix_longHashMap_put(lMap, 4, celix_utils_strdup("44"));
+    celix_longHashMap_put(lMap, 0, celix_utils_strdup("null"));
+    EXPECT_EQ(celix_longHashMap_size(lMap), 5);
+    EXPECT_STREQ((char*)celix_longHashMap_get(lMap, 0), "null");
+
+    celix_longHashMap_removeAndReturn(lMap, 3);
+    celix_longHashMap_removeAndReturn(lMap, 0);
+    EXPECT_EQ(celix_longHashMap_size(lMap), 3);
+
+    celix_longHashMap_destroy(lMap);
 }
 
-TEST_F(HashMapTestSuite, DestroyLongHashMapWithDestroyCallback) {
-    celix_long_hash_map_create_options_t opts{};
-    opts.simpledRemoveCallback = free;
-    auto* map = celix_longHashMap_createWithOptions(&opts);
-    EXPECT_TRUE(map != nullptr);
-    EXPECT_EQ(0, celix_longHashMap_size(map));
-
-    celix_longHashMap_put(map, 1, celix_utils_strdup("41"));
-    celix_longHashMap_put(map, 2, celix_utils_strdup("42"));
-    celix_longHashMap_put(map, 3, celix_utils_strdup("43"));
-    celix_longHashMap_put(map, 4, celix_utils_strdup("44"));
-    celix_longHashMap_put(map, 0, celix_utils_strdup("null"));
-    EXPECT_EQ(celix_longHashMap_size(map), 5);
-    EXPECT_STREQ((char*)celix_longHashMap_get(map, 0), "null");
-
-    celix_longHashMap_removeAndReturn(map, 3);
-    celix_longHashMap_removeAndReturn(map, 0);
-    EXPECT_EQ(celix_longHashMap_size(map), 3);
-
-    celix_longHashMap_destroy(map);
-}
-
-TEST_F(HashMapTestSuite, HashMapClearTests) {
-    auto* sMap = celix_stringHashMap_create();
+TEST_F(HashMapTestSuite, ClearHashMapWithRemovedCallback) {
+    std::atomic<int> count{0};
+    celix_string_hash_map_create_options_t sOpts{};
+    sOpts.removedCallbackData = &count;
+    sOpts.removedCallback = [](void *data, const char* key, celix_hash_map_value_t value) {
+        auto* c = static_cast<std::atomic<int>*>(data);
+        if (celix_utils_stringEquals(key, "key1")) {
+            c->fetch_add(1);
+            EXPECT_EQ(value.longValue, 1);
+        } else if (celix_utils_stringEquals(key, "key2")) {
+            c->fetch_add(1);
+            EXPECT_EQ(value.longValue, 2);
+        }
+    };
+    auto* sMap = celix_stringHashMap_createWithOptions(&sOpts);
     celix_stringHashMap_putLong(sMap, "key1", 1);
     celix_stringHashMap_putLong(sMap, "key2", 2);
-    celix_stringHashMap_putLong(sMap, "key3", 3);
+    celix_stringHashMap_clear(sMap);
+    EXPECT_EQ(count.load(), 2);
+
+    count = 0;
+    celix_long_hash_map_create_options_t lOpts{};
+    lOpts.removedCallbackData = &count;
+    lOpts.removedCallback = [](void *data, long key, celix_hash_map_value_t value) {
+        auto* c = static_cast<std::atomic<int>*>(data);
+        if (key == 1) {
+            c->fetch_add(1);
+            EXPECT_EQ(value.longValue, 1);
+        } else if (key == 2) {
+            c->fetch_add(1);
+            EXPECT_EQ(value.longValue, 2);
+        }
+    };
+    auto* lMap = celix_longHashMap_createWithOptions(&lOpts);
+    celix_longHashMap_putLong(lMap, 1, 1);
+    celix_longHashMap_putLong(lMap, 2, 2);
+    celix_longHashMap_clear(lMap);
+    EXPECT_EQ(count.load(), 2);
+}
+
+
+TEST_F(HashMapTestSuite, HashMapClearTests) {
+    auto* sMap = createStringHashMap(3);
     EXPECT_EQ(celix_stringHashMap_size(sMap), 3);
     celix_stringHashMap_clear(sMap);
     EXPECT_EQ(celix_stringHashMap_size(sMap), 0);
     celix_stringHashMap_destroy(sMap);
 
-
-    auto* lMap = celix_longHashMap_create();
-    celix_longHashMap_putLong(lMap, 1, 1);
-    celix_longHashMap_putLong(lMap, 2, 2);
-    celix_longHashMap_putLong(lMap, 3, 3);
+    auto* lMap = createLongHashMap(3);
     EXPECT_EQ(celix_longHashMap_size(lMap), 3);
     celix_longHashMap_clear(lMap);
     EXPECT_EQ(celix_longHashMap_size(lMap), 0);
@@ -236,22 +287,22 @@ void testMapsWithValues(const std::vector<std::tuple<std::string, long, T>>& val
             value = celix_longHashMap_get(lMap, std::get<1>(tuple));
             EXPECT_EQ(value, std::get<2>(tuple));
         } else if constexpr (std::is_same_v<long, T>) {
-            auto value = celix_stringHashMap_getLong(sMap, std::get<0>(tuple).c_str());
+            auto value = celix_stringHashMap_getLong(sMap, std::get<0>(tuple).c_str(), 0);
             EXPECT_EQ(value, std::get<2>(tuple));
 
-            value = celix_longHashMap_getLong(lMap, std::get<1>(tuple));
+            value = celix_longHashMap_getLong(lMap, std::get<1>(tuple), 0);
             EXPECT_EQ(value, std::get<2>(tuple));
         } else if constexpr (std::is_same_v<double, T>) {
-            auto value = celix_stringHashMap_getDouble(sMap, std::get<0>(tuple).c_str());
+            auto value = celix_stringHashMap_getDouble(sMap, std::get<0>(tuple).c_str(), 0.0);
             EXPECT_EQ(value, std::get<2>(tuple));
 
-            value = celix_longHashMap_getDouble(lMap, std::get<1>(tuple));
+            value = celix_longHashMap_getDouble(lMap, std::get<1>(tuple), 0.0);
             EXPECT_EQ(value, std::get<2>(tuple));
         } else if constexpr (std::is_same_v<bool, T>) {
-            auto value = celix_stringHashMap_getBool(sMap, std::get<0>(tuple).c_str());
+            auto value = celix_stringHashMap_getBool(sMap, std::get<0>(tuple).c_str(), false);
             EXPECT_EQ(value, std::get<2>(tuple));
 
-            value = celix_longHashMap_getBool(lMap, std::get<1>(tuple));
+            value = celix_longHashMap_getBool(lMap, std::get<1>(tuple), false);
             EXPECT_EQ(value, std::get<2>(tuple));
         } else {
             FAIL() << "expected of the following value types: void*, long, double or bool";
@@ -277,20 +328,55 @@ TEST_F(HashMapTestSuite, PutAndGetWithDifferentValueTypes) {
             {"key3", 3, (void*)0x44},
     };
     testMapsWithValues(values1);
+
+    std::vector<std::tuple<std::string, long, long>> values2{
+            {"key1", 1, 1},
+            {"key2", 2, 2},
+            {"key3", 3, 3},
+    };
+    testMapsWithValues(values2);
+
+    std::vector<std::tuple<std::string, long, double>> values3{
+            {"key1", 1, 1.0},
+            {"key2", 2, 2.0},
+            {"key3", 3, 3.0},
+    };
+    testMapsWithValues(values3);
+
+    std::vector<std::tuple<std::string, long, bool>> values4{
+            {"key1", 1, true},
+            {"key2", 2, false},
+            {"key3", 3, true},
+    };
+    testMapsWithValues(values4);
 }
 
-TEST_F(HashMapTestSuite, IterateTest) {
+TEST_F(HashMapTestSuite, GetWithFallbackValues) {
     auto* sMap = celix_stringHashMap_create();
-    celix_stringHashMap_putLong(sMap, "key1", 1);
-    celix_stringHashMap_putLong(sMap, "key2", 2);
+    EXPECT_EQ(celix_stringHashMap_get(sMap, "not-present"), nullptr);
+    EXPECT_EQ(celix_stringHashMap_getLong(sMap, "not-present", -1), -1);
+    EXPECT_EQ(celix_stringHashMap_getDouble(sMap, "not-present", 1.0), 1.0);
+    EXPECT_EQ(celix_stringHashMap_getBool(sMap, "not-present", true), true);
+    celix_stringHashMap_destroy(sMap);
 
+    auto* lMap = celix_longHashMap_create();
+    EXPECT_EQ(celix_longHashMap_get(lMap, 33), nullptr);
+    EXPECT_EQ(celix_longHashMap_getLong(lMap, 33, 1), 1);
+    EXPECT_EQ(celix_longHashMap_getDouble(lMap, 33, -1.0), -1.0);
+    EXPECT_EQ(celix_longHashMap_getBool(lMap, 33, false), false);
+    celix_longHashMap_destroy(lMap);
+}
+
+
+TEST_F(HashMapTestSuite, IterateTest) {
+    auto* sMap = createStringHashMap(2);
     size_t count = 0;
     CELIX_STRING_HASH_MAP_ITERATE(sMap, iter) {
         EXPECT_EQ(count++, iter.index);
-        if (iter.value.longValue == 1) {
+        if (iter.value.longValue == 0) {
+            EXPECT_STREQ(iter.key, "key0");
+        } else if (iter.value.longValue == 1) {
             EXPECT_STREQ(iter.key, "key1");
-        } else if (iter.value.longValue == 2) {
-            EXPECT_STREQ(iter.key, "key2");
         } else {
             FAIL() << "Unexpected value " << iter.value.longValue;
         }
@@ -298,17 +384,14 @@ TEST_F(HashMapTestSuite, IterateTest) {
     EXPECT_EQ(count, 2);
     celix_stringHashMap_destroy(sMap);
 
-    auto* lMap = celix_longHashMap_create();
-    celix_longHashMap_putLong(lMap, 1, 1);
-    celix_longHashMap_putLong(lMap, 2, 2);
-
+    auto* lMap = createLongHashMap(2);
     count = 0;
     CELIX_LONG_HASH_MAP_ITERATE(lMap, iter) {
         EXPECT_EQ(count++, iter.index);
-        if (iter.value.longValue == 1) {
+        if (iter.value.longValue == 0) {
+            EXPECT_EQ(iter.key, 0);
+        } else if (iter.value.longValue == 1) {
             EXPECT_EQ(iter.key, 1);
-        } else if (iter.value.longValue == 2) {
-            EXPECT_EQ(iter.key, 2);
         } else {
             FAIL() << "Unexpected value " << iter.value.longValue;
         }
@@ -319,13 +402,7 @@ TEST_F(HashMapTestSuite, IterateTest) {
 
 TEST_F(HashMapTestSuite, IterateStressTest) {
     int testCount = 100;
-
-
-    auto* sMap = celix_stringHashMap_create();
-    for (int i = 0; i < testCount; ++i) {
-        auto key = std::string{"key"} + std::to_string(i);
-        celix_stringHashMap_putLong(sMap, key.c_str(), i);
-    }
+    auto* sMap = createStringHashMap(testCount);
     EXPECT_EQ(testCount, celix_stringHashMap_size(sMap));
     int count = 0;
     CELIX_STRING_HASH_MAP_ITERATE(sMap, iter) {
@@ -334,15 +411,40 @@ TEST_F(HashMapTestSuite, IterateStressTest) {
     EXPECT_EQ(testCount, count);
     celix_stringHashMap_destroy(sMap);
 
-    auto *lMap = celix_longHashMap_create();
-    for (int i = 0; i < testCount; ++i) {
-        celix_longHashMap_putLong(lMap, i, i);
-    }
+    auto *lMap = createLongHashMap(testCount);
     EXPECT_EQ(testCount, celix_longHashMap_size(lMap));
     count = 0;
     CELIX_LONG_HASH_MAP_ITERATE(lMap, iter) {
         EXPECT_EQ(iter.index, count++);
     }
     EXPECT_EQ(testCount, count);
+    celix_longHashMap_destroy(lMap);
+}
+
+TEST_F(HashMapTestSuite, IterateWithRemoveTest) {
+    auto* sMap = createStringHashMap(6);
+    auto iter1 = celix_stringHashMap_iterate(sMap);
+    while (!celix_stringHashMapIterator_isEnd(&iter1)) {
+        if (iter1.index % 2 == 0) {
+            //note only removing entries where the iter index is even
+            celix_stringHashMapIterator_remove(&iter1);
+        } else {
+            celix_stringHashMapIterator_next(&iter1);
+        }
+    }
+    EXPECT_EQ(3, celix_stringHashMap_size(sMap));
+    celix_stringHashMap_destroy(sMap);
+
+    auto* lMap = createLongHashMap(6);
+    auto iter2 = celix_longHashMap_iterate(lMap);
+    while (!celix_longHashMapIterator_isEnd(&iter2)) {
+        if (iter2.index % 2 == 0) {
+            //note only removing entries where the iter index is even
+            celix_longHashMapIterator_remove(&iter2);
+        } else {
+            celix_longHashMapIterator_next(&iter2);
+        }
+    }
+    EXPECT_EQ(3, celix_longHashMap_size(lMap));
     celix_longHashMap_destroy(lMap);
 }

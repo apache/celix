@@ -75,6 +75,7 @@ public:
     long midEntryKey{0};
     std::unordered_map<long, int> stdMap;
     hash_map_t* celixHashMap{nullptr};
+    //TODO add celix_long_hash_map
 };
 
 static void LongHashmapBenchmark_addEntryToStdMap(benchmark::State& state) {

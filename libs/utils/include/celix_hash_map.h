@@ -361,7 +361,7 @@ void* celix_longHashMap_get(const celix_long_hash_map_t* map, long key);
  * @param fallbackValue The fallback value to use if a value for the provided key was not found.
  * @return Return the value for the key or fallbackValue if the key is not present.
  */
-long celix_longHashMap_getLong(const celix_string_hash_map_t* map, long key, long fallbackValue);
+long celix_longHashMap_getLong(const celix_long_hash_map_t* map, long key, long fallbackValue);
 
 /**
  * @brief Returns the long value for the provided key.
@@ -371,7 +371,7 @@ long celix_longHashMap_getLong(const celix_string_hash_map_t* map, long key, lon
  * @param fallbackValue The fallback value to use if a value for the provided key was not found.
  * @return Return the value for the key or fallbackValue if the key is not present.
  */
-double celix_longHashMap_getDouble(const celix_string_hash_map_t* map, long key, double fallbackValue);
+double celix_longHashMap_getDouble(const celix_long_hash_map_t* map, long key, double fallbackValue);
 
 /**
  * @brief Returns the long value for the provided key.
@@ -381,7 +381,7 @@ double celix_longHashMap_getDouble(const celix_string_hash_map_t* map, long key,
  * @param fallbackValue The fallback value to use if a value for the provided key was not found.
  * @return Return the value for the key or fallbackValue if the key is not present.
  */
-bool celix_longHashMap_getBool(const celix_string_hash_map_t* map, long key, bool fallbackValue);
+bool celix_longHashMap_getBool(const celix_long_hash_map_t* map, long key, bool fallbackValue);
 
 /**
  * @brief Returns true if the map has the provided key.
@@ -467,7 +467,14 @@ void celix_stringHashMapIterator_next(celix_string_hash_map_iterator_t* iter);
  * TODO
  */
 #define CELIX_STRING_HASH_MAP_ITERATE(map, iterName) \
-    for (celix_string_hash_map_iterator_t (iterName) = celix_stringHashMap_iterate((map)); !celix_stringHashMapIterator_isEnd(&(iterName)); celix_stringHashMapIterator_next(&(iterName)))
+    for (celix_string_hash_map_iterator_t iterName = celix_stringHashMap_iterate(map); !celix_stringHashMapIterator_isEnd(&iterName); celix_stringHashMapIterator_next(&iterName))
+
+/**
+ * TODO
+ * @param iter
+ * @return
+ */
+void celix_stringHashMapIterator_remove(celix_string_hash_map_iterator_t* iter);
 
 /**
  * TODO
@@ -494,7 +501,13 @@ void celix_longHashMapIterator_next(celix_long_hash_map_iterator_t* iter);
  * TODO
  */
 #define CELIX_LONG_HASH_MAP_ITERATE(map, iterName) \
-    for (celix_long_hash_map_iterator_t (iterName) = celix_longHashMap_iterate((map)); !celix_longHashMapIterator_isEnd(&(iterName)); celix_longHashMapIterator_next(&(iterName)))
+    for (celix_long_hash_map_iterator_t iterName = celix_longHashMap_iterate(map); !celix_longHashMapIterator_isEnd(&iterName); celix_longHashMapIterator_next(&iterName))
+
+/**
+ * TODO
+ * @param iter
+ */
+void celix_longHashMapIterator_remove(celix_long_hash_map_iterator_t* iter);
 
 #ifdef __cplusplus
 }
