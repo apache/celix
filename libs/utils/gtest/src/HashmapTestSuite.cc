@@ -145,7 +145,7 @@ TEST_F(HashMapTestSuite, DestroyHashMapWithSimpleRemovedCallback) {
     EXPECT_EQ(ptr, nullptr);
 
     EXPECT_EQ(celix_stringHashMap_size(sMap), 3);
-
+    celix_stringHashMap_destroy(sMap);
 
     celix_long_hash_map_create_options_t lOpts{};
     lOpts.simpledRemoveCallback = free;
@@ -164,7 +164,6 @@ TEST_F(HashMapTestSuite, DestroyHashMapWithSimpleRemovedCallback) {
     celix_longHashMap_removeAndReturn(lMap, 3);
     celix_longHashMap_removeAndReturn(lMap, 0);
     EXPECT_EQ(celix_longHashMap_size(lMap), 3);
-
     celix_longHashMap_destroy(lMap);
 }
 
@@ -187,6 +186,8 @@ TEST_F(HashMapTestSuite, ClearHashMapWithRemovedCallback) {
     celix_stringHashMap_putLong(sMap, "key2", 2);
     celix_stringHashMap_clear(sMap);
     EXPECT_EQ(count.load(), 2);
+    EXPECT_EQ(celix_stringHashMap_size(sMap), 0);
+    celix_stringHashMap_destroy(sMap);
 
     count = 0;
     celix_long_hash_map_create_options_t lOpts{};
@@ -206,6 +207,8 @@ TEST_F(HashMapTestSuite, ClearHashMapWithRemovedCallback) {
     celix_longHashMap_putLong(lMap, 2, 2);
     celix_longHashMap_clear(lMap);
     EXPECT_EQ(count.load(), 2);
+    EXPECT_EQ(celix_longHashMap_size(lMap), 0);
+    celix_longHashMap_destroy(lMap);
 }
 
 

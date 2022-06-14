@@ -27,15 +27,19 @@
 
 #include "hash_map.h"
 #include "celix_properties.h"
+#include "celix_hash_map.h"
 
 
 class StringHashmapBenchmark {
 public:
-    explicit StringHashmapBenchmark(int64_t _nrOfEntries, bool fillCHashmap = false, bool fillCProperties = false) : stdMap{createRandomMap(_nrOfEntries)} {
-        celixHashMap = hashMap_create(utils_stringHash, nullptr, utils_stringEquals, nullptr);
-        if (fillCHashmap) {
+    explicit StringHashmapBenchmark(int64_t _nrOfEntries, bool fillCHashMap = false, bool fillCProperties = false, bool fillDeprecatedHashMap = false) : stdMap{createRandomMap(_nrOfEntries)} {
+        deprecatedHashMap = hashMap_create(utils_stringHash, nullptr, utils_stringEquals, nullptr);
+        celix_string_hash_map_create_options_t opts{};
+        opts.storeKeysWeakly = true; //ensure that the celix hash map does not copy strings (we don't want to measure that).
+        celixHashMap = celix_stringHashMap_createWithOptions(&opts);
+        if (fillCHashMap) {
             for (const auto& pair : stdMap) {
-                hashMap_put(celixHashMap, (void*)pair.first.c_str(), reinterpret_cast<void*>(pair.second));
+                celix_stringHashMap_putLong(celixHashMap, pair.first.c_str(), pair.second);
             }
         }
         if (fillCProperties) {
@@ -43,10 +47,16 @@ public:
                 celix_properties_set(celixProperties, pair.first.c_str(), std::to_string(pair.second).c_str()); //note adding entries to properties will always copy the strings.
             }
         }
+        if (fillDeprecatedHashMap) {
+            for (const auto& pair : stdMap) {
+                hashMap_put(deprecatedHashMap, (void*)pair.first.c_str(), reinterpret_cast<void*>(pair.second));
+            }
+        }
     }
 
     ~StringHashmapBenchmark() {
-        hashMap_destroy(celixHashMap, false, false);
+        celix_stringHashMap_destroy(celixHashMap);
+        hashMap_destroy(deprecatedHashMap, false, false);
         celix_properties_destroy(celixProperties);
     }
 
@@ -89,14 +99,13 @@ public:
 
     std::string midEntryKey{};
     std::unordered_map<std::string, int> stdMap;
-    hash_map_t* celixHashMap{nullptr};
+    celix_string_hash_map_t* celixHashMap{nullptr};
     celix_properties_t* celixProperties{celix_properties_create()};
-    //TODO add celix_string_hash_map
+    hash_map_t* deprecatedHashMap{nullptr};
 };
 
 static void StringHashmapBenchmark_addEntryToStdMap(benchmark::State& state) {
     StringHashmapBenchmark benchmark{state.range(0)};
-    //std::cout << "std map size is " << benchmark.stdMap.size() << std::endl;
     for (auto _ : state) {
         // This code gets timed
         benchmark.stdMap["latest_entry"]  = 42;
@@ -106,10 +115,17 @@ static void StringHashmapBenchmark_addEntryToStdMap(benchmark::State& state) {
 
 static void StringHashmapBenchmark_addEntryToCelixHashmap(benchmark::State& state) {
     StringHashmapBenchmark benchmark{state.range(0), true};
-    //std::cout << "celix map size is " << hashMap_size(benchmark.celixHashMap) << std::endl;
     for (auto _ : state) {
         // This code gets timed
-        hashMap_put(benchmark.celixHashMap, (void*)"latest_entry", (void*)42);
+        celix_stringHashMap_putLong(benchmark.celixHashMap, "latest_entry", 42);
+    }
+    state.SetItemsProcessed(state.iterations());
+}
+static void StringHashmapBenchmark_addEntryToDeprecatedHashmap(benchmark::State& state) {
+    StringHashmapBenchmark benchmark{state.range(0), true};
+    for (auto _ : state) {
+        // This code gets timed
+        hashMap_put(benchmark.deprecatedHashMap, (void*)"latest_entry", (void*)42);
     }
     state.SetItemsProcessed(state.iterations());
 }
@@ -125,7 +141,6 @@ static void StringHashmapBenchmark_addEntryToCelixProperties(benchmark::State& s
 
 static void StringHashmapBenchmark_findEntryFromStdMap(benchmark::State& state) {
     StringHashmapBenchmark benchmark{state.range(0)};
-    //std::cout << "std map size is " << benchmark.stdMap.size() << std::endl;
     for (auto _ : state) {
         // This code gets timed
         auto it = benchmark.stdMap.find(benchmark.midEntryKey);
@@ -138,10 +153,20 @@ static void StringHashmapBenchmark_findEntryFromStdMap(benchmark::State& state) 
 
 static void StringHashmapBenchmark_findEntryFromCelixMap(benchmark::State& state) {
     StringHashmapBenchmark benchmark{state.range(0), true};
-    //std::cout << "std map size is " << benchmark.stdMap.size() << std::endl;
     for (auto _ : state) {
         // This code gets timed
-        void* entry = hashMap_get(benchmark.celixHashMap, benchmark.midEntryKey.c_str());
+        bool hasKey = celix_stringHashMap_hasKey(benchmark.celixHashMap, benchmark.midEntryKey.c_str());
+        if (!hasKey) {
+            std::cerr << "Cannot find entry " << benchmark.midEntryKey << std::endl;
+        }
+    }
+    state.SetItemsProcessed(state.iterations());
+}
+static void StringHashmapBenchmark_findEntryFromDeprecatedMap(benchmark::State& state) {
+    StringHashmapBenchmark benchmark{state.range(0), false, false, true};
+    for (auto _ : state) {
+        // This code gets timed
+        void* entry = hashMap_get(benchmark.deprecatedHashMap, benchmark.midEntryKey.c_str());
         if (entry == nullptr) {
             std::cerr << "Cannot find entry " << benchmark.midEntryKey << std::endl;
         }
@@ -164,10 +189,12 @@ static void StringHashmapBenchmark_findEntryFromCelixProperties(benchmark::State
 #define CELIX_BENCHMARK(name) \
     BENCHMARK(name)->MeasureProcessCPUTime()->UseRealTime()->Unit(benchmark::kMicrosecond)
 
-CELIX_BENCHMARK(StringHashmapBenchmark_addEntryToStdMap)->RangeMultiplier(10)->Range(100, 100000); //reference
-CELIX_BENCHMARK(StringHashmapBenchmark_addEntryToCelixHashmap)->RangeMultiplier(10)->Range(100, 100000);
-CELIX_BENCHMARK(StringHashmapBenchmark_addEntryToCelixProperties)->RangeMultiplier(10)->Range(100, 100000);
+CELIX_BENCHMARK(StringHashmapBenchmark_addEntryToStdMap)->RangeMultiplier(10)->Range(100, 10000); //reference
+CELIX_BENCHMARK(StringHashmapBenchmark_addEntryToCelixHashmap)->RangeMultiplier(10)->Range(100, 10000);
+CELIX_BENCHMARK(StringHashmapBenchmark_addEntryToDeprecatedHashmap)->RangeMultiplier(10)->Range(100, 10000);
+CELIX_BENCHMARK(StringHashmapBenchmark_addEntryToCelixProperties)->RangeMultiplier(10)->Range(100, 10000);
 
-CELIX_BENCHMARK(StringHashmapBenchmark_findEntryFromStdMap)->RangeMultiplier(10)->Range(100, 100000); //reference
-CELIX_BENCHMARK(StringHashmapBenchmark_findEntryFromCelixMap)->RangeMultiplier(10)->Range(100, 100000);
-CELIX_BENCHMARK(StringHashmapBenchmark_findEntryFromCelixProperties)->RangeMultiplier(10)->Range(100, 100000);
+CELIX_BENCHMARK(StringHashmapBenchmark_findEntryFromStdMap)->RangeMultiplier(10)->Range(100, 10000); //reference
+CELIX_BENCHMARK(StringHashmapBenchmark_findEntryFromCelixMap)->RangeMultiplier(10)->Range(100, 10000);
+CELIX_BENCHMARK(StringHashmapBenchmark_findEntryFromDeprecatedMap)->RangeMultiplier(10)->Range(100, 10000);
+CELIX_BENCHMARK(StringHashmapBenchmark_findEntryFromCelixProperties)->RangeMultiplier(10)->Range(100, 10000);

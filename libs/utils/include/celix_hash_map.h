@@ -122,7 +122,7 @@ typedef struct celix_string_hash_map_create_options {
      *
      * Note that this changes the default behaviour of the celix_stringHashMap_put* functions.
      */
-    bool storeKeysWeakly;
+    bool storeKeysWeakly CELIX_OPTS_INIT;
 } celix_string_hash_map_create_options_t;
 
 /**
@@ -470,7 +470,7 @@ void celix_stringHashMapIterator_next(celix_string_hash_map_iterator_t* iter);
     for (celix_string_hash_map_iterator_t iterName = celix_stringHashMap_iterate(map); !celix_stringHashMapIterator_isEnd(&iterName); celix_stringHashMapIterator_next(&iterName))
 
 /**
- * TODO
+ * TODO move iter to next entry and removes hash map entry of provided entry key.
  * @param iter
  * @return
  */
@@ -504,7 +504,7 @@ void celix_longHashMapIterator_next(celix_long_hash_map_iterator_t* iter);
     for (celix_long_hash_map_iterator_t iterName = celix_longHashMap_iterate(map); !celix_longHashMapIterator_isEnd(&iterName); celix_longHashMapIterator_next(&iterName))
 
 /**
- * TODO
+ * TODO move iter to next entry and removes hash map entry of provided entry key.
  * @param iter
  */
 void celix_longHashMapIterator_remove(celix_long_hash_map_iterator_t* iter);

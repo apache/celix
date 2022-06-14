@@ -25,22 +25,29 @@
 #include <climits>
 
 #include "hash_map.h"
+#include "celix_hash_map.h"
 #include "celix_properties.h"
 
 
 class LongHashmapBenchmark {
 public:
-    explicit LongHashmapBenchmark(int64_t _nrOfEntries, bool fillCHashmap = false) : stdMap{createRandomMap(_nrOfEntries)} {
-        celixHashMap = hashMap_create(nullptr, nullptr, nullptr, nullptr);
+    explicit LongHashmapBenchmark(int64_t _nrOfEntries, bool fillCHashmap = false, bool fillDeprecatedCHashMap = false) : stdMap{createRandomMap(_nrOfEntries)} {
+        deprecatedHashMap = hashMap_create(nullptr, nullptr, nullptr, nullptr);
         if (fillCHashmap) {
             for (const auto& pair : stdMap) {
-                hashMap_put(celixHashMap, reinterpret_cast<void*>(pair.first), reinterpret_cast<void*>(pair.second));
+                celix_longHashMap_putLong(celixHashMap, pair.first, pair.second);
+            }
+        }
+        if (fillDeprecatedCHashMap) {
+            for (const auto& pair : stdMap) {
+                hashMap_put(deprecatedHashMap, reinterpret_cast<void*>(pair.first), reinterpret_cast<void*>(pair.second));
             }
         }
     }
 
     ~LongHashmapBenchmark() {
-        hashMap_destroy(celixHashMap, false, false);
+        celix_longHashMap_destroy(celixHashMap);
+        hashMap_destroy(deprecatedHashMap, false, false);
     }
 
     LongHashmapBenchmark(LongHashmapBenchmark&&) = delete;
@@ -74,13 +81,12 @@ public:
 
     long midEntryKey{0};
     std::unordered_map<long, int> stdMap;
-    hash_map_t* celixHashMap{nullptr};
-    //TODO add celix_long_hash_map
+    hash_map_t* deprecatedHashMap{nullptr};
+    celix_long_hash_map_t* celixHashMap{celix_longHashMap_create()};
 };
 
 static void LongHashmapBenchmark_addEntryToStdMap(benchmark::State& state) {
     LongHashmapBenchmark benchmark{state.range(0)};
-    //std::cout << "std map size is " << benchmark.stdMap.size() << std::endl;
     for (auto _ : state) {
         // This code gets timed
         benchmark.stdMap[42]  = 42;
@@ -90,22 +96,29 @@ static void LongHashmapBenchmark_addEntryToStdMap(benchmark::State& state) {
 
 static void LongHashmapBenchmark_addEntryToCelixHashmap(benchmark::State& state) {
     LongHashmapBenchmark benchmark{state.range(0), true};
-    //std::cout << "celix map size is " << hashMap_size(benchmark.celixHashMap) << std::endl;
     for (auto _ : state) {
         // This code gets timed
-        hashMap_put(benchmark.celixHashMap, (void*)42, (void*)42);
+        celix_longHashMap_putLong(benchmark.celixHashMap, 42, 42);
+    }
+    state.SetItemsProcessed(state.iterations());
+}
+
+static void LongHashmapBenchmark_addEntryToDeprecatedHashmap(benchmark::State& state) {
+    LongHashmapBenchmark benchmark{state.range(0), false, true};
+    for (auto _ : state) {
+        // This code gets timed
+        hashMap_put(benchmark.deprecatedHashMap, (void*)42, (void*)42);
     }
     state.SetItemsProcessed(state.iterations());
 }
 
 static void LongHashmapBenchmark_findEntryFromStdMap(benchmark::State& state) {
     LongHashmapBenchmark benchmark{state.range(0)};
-    //std::cout << "std map size is " << benchmark.stdMap.size() << std::endl;
     for (auto _ : state) {
         // This code gets timed
         auto it = benchmark.stdMap.find(benchmark.midEntryKey);
         if (it == benchmark.stdMap.end()) {
-            std::cerr << "Cannot find entry " << benchmark.midEntryKey << std::endl;
+            std::cerr << "Cannot find entry " << benchmark.midEntryKey << " for std unordered_map." << std::endl;
         }
     }
     state.SetItemsProcessed(state.iterations());
@@ -113,12 +126,22 @@ static void LongHashmapBenchmark_findEntryFromStdMap(benchmark::State& state) {
 
 static void LongHashmapBenchmark_findEntryFromCelixMap(benchmark::State& state) {
     LongHashmapBenchmark benchmark{state.range(0), true};
-    //std::cout << "std map size is " << benchmark.stdMap.size() << std::endl;
     for (auto _ : state) {
         // This code gets timed
-        void* entry = hashMap_get(benchmark.celixHashMap, reinterpret_cast<void*>(benchmark.midEntryKey));
+        bool hasKey = celix_longHashMap_hasKey(benchmark.celixHashMap, benchmark.midEntryKey);
+        if (!hasKey) {
+            std::cerr << "Cannot find entry " << benchmark.midEntryKey << " for celix hash map." <<std::endl;
+        }
+    }
+    state.SetItemsProcessed(state.iterations());
+}
+static void LongHashmapBenchmark_findEntryFromDeprecatedMap(benchmark::State& state) {
+    LongHashmapBenchmark benchmark{state.range(0), false, true};
+    for (auto _ : state) {
+        // This code gets timed
+        void* entry = hashMap_get(benchmark.deprecatedHashMap, reinterpret_cast<void*>(benchmark.midEntryKey));
         if (entry == nullptr) {
-            std::cerr << "Cannot find entry " << benchmark.midEntryKey << std::endl;
+            std::cerr << "Cannot find entry " << benchmark.midEntryKey << " for deprecated hash map." << std::endl;
         }
     }
     state.SetItemsProcessed(state.iterations());
@@ -127,8 +150,10 @@ static void LongHashmapBenchmark_findEntryFromCelixMap(benchmark::State& state) 
 #define CELIX_BENCHMARK(name) \
     BENCHMARK(name)->MeasureProcessCPUTime()->UseRealTime()->Unit(benchmark::kMicrosecond)
 
-CELIX_BENCHMARK(LongHashmapBenchmark_addEntryToStdMap)->RangeMultiplier(10)->Range(100, 100000); //reference
-CELIX_BENCHMARK(LongHashmapBenchmark_addEntryToCelixHashmap)->RangeMultiplier(10)->Range(100, 100000);
+CELIX_BENCHMARK(LongHashmapBenchmark_addEntryToStdMap)->RangeMultiplier(10)->Range(100, 10000); //reference
+CELIX_BENCHMARK(LongHashmapBenchmark_addEntryToCelixHashmap)->RangeMultiplier(10)->Range(100, 10000);
+CELIX_BENCHMARK(LongHashmapBenchmark_addEntryToDeprecatedHashmap)->RangeMultiplier(10)->Range(100, 10000);
 
-CELIX_BENCHMARK(LongHashmapBenchmark_findEntryFromStdMap)->RangeMultiplier(10)->Range(100, 100000); //reference
-CELIX_BENCHMARK(LongHashmapBenchmark_findEntryFromCelixMap)->RangeMultiplier(10)->Range(100, 100000);
+CELIX_BENCHMARK(LongHashmapBenchmark_findEntryFromStdMap)->RangeMultiplier(10)->Range(100, 10000); //reference
+CELIX_BENCHMARK(LongHashmapBenchmark_findEntryFromCelixMap)->RangeMultiplier(10)->Range(100, 10000);
+CELIX_BENCHMARK(LongHashmapBenchmark_findEntryFromDeprecatedMap)->RangeMultiplier(10)->Range(100, 10000);
